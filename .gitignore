@@ -1,0 +1,79 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+
+# Xcode user state
+*.xcuserstate
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+xcuserdata/
+*.xcodeproj/xcuserdata/
+*.xcworkspace/xcuserdata/
+*.xcodeproj/project.xcworkspace/xcuserdata/
+
+# Xcode build products
+build/
+Build/
+DerivedData/
+*.hmap
+*.ipa
+*.dSYM
+*.dSYM.zip
+*.app.dSYM
+*.xcarchive
+*.result
+*.xcresult
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Packages/
+Package.pins
+
+# Keep dependency lock files committed for reproducible app builds.
+!Package.resolved
+!**/Package.resolved
+
+# CocoaPods
+Pods/
+
+# Carthage
+Carthage/Build/
+
+# Fastlane generated files
+fastlane/report.xml
+fastlane/Preview.html
+fastlane/screenshots/**/*.png
+fastlane/test_output/
+
+# AppCode / JetBrains
+.idea/
+
+# Visual Studio Code local settings
+.vscode/
+
+# Temporary files
+*.swp
+*.swo
+*~
+*.tmp
+*.temp
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+*.p8
+*.mobileprovision
+*.provisionprofile
