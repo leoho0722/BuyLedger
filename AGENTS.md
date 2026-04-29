@@ -2,28 +2,32 @@
 
 ## 專案結構與模組組織
 
-此儲存庫仍處於初始化階段，目前尚未加入 Xcode 專案或 Swift 原始碼。現有忽略規則已針對 iOS、iPadOS、macOS 的 Apple multi-platform App 準備，並涵蓋 Xcode、Swift Package Manager 與常見相依套件工具。
+此儲存庫已建立 Xcode Multiplatform 專案，目標平台為 iOS、iPadOS 與 macOS。專案目前使用 SwiftUI 與 SwiftData，Xcode 專案檔位於 `BuyLedger/BuyLedger.xcodeproj`，scheme 名稱為 `BuyLedger`。
 
-新增 App 時，建議使用下列結構：
+目前主要結構如下：
 
-- `BuyLedger/`：放置正式 Swift 原始碼、功能模組、SwiftUI View、Model、Service 與 App 進入點。
-- `BuyLedgerTests/`：放置單元測試。
-- `BuyLedgerUITests/`：放置 UI 測試與端對端流程測試。
-- `BuyLedger/Assets.xcassets/`：放置 App icon、顏色與圖片資產。
+- `BuyLedger/BuyLedger.xcodeproj/`：Xcode 專案檔。`project.pbxproj` 應納入版本控制，`xcuserdata/` 不應提交。
+- `BuyLedger/BuyLedger/`：正式 App 原始碼、SwiftUI View、SwiftData Model、資產與 entitlements。
+- `BuyLedger/BuyLedger/BuyLedgerApp.swift`：App 進入點與 SwiftData `ModelContainer` 設定。
+- `BuyLedger/BuyLedger/ContentView.swift`：目前的起始畫面。
+- `BuyLedger/BuyLedger/Item.swift`：目前 Xcode 範本產生的 SwiftData model。
+- `BuyLedger/BuyLedger/Assets.xcassets/`：App icon、顏色與圖片資產。
+- `BuyLedger/BuyLedgerTests/`：單元測試。
+- `BuyLedger/BuyLedgerUITests/`：UI 測試與啟動畫面測試。
 - `Package.swift`：只有在導入共用 Swift package，或採用 package-first 佈局時才需要加入。
 
-請勿將建置輸出、本機 Xcode 狀態、密鑰、簽署憑證或 provisioning profile 納入 Git。
+請勿將建置輸出、本機 Xcode 狀態、密鑰、簽署憑證或 provisioning profile 納入 Git。若未來建立 shared scheme，應提交 `xcshareddata/xcschemes/`。
 
 ## 建置、測試與開發指令
 
-目前尚未建立可建置的 target。加入 Xcode 專案後，可使用下列指令：
+常用指令如下：
 
-- `xcodebuild -list -project BuyLedger.xcodeproj`：檢查 schemes 與 targets。
-- `xcodebuild -showdestinations -scheme BuyLedger`：檢查可用的 iOS、iPadOS 與 macOS destination。
-- `xcodebuild -scheme BuyLedger -destination 'platform=iOS Simulator,name=iPhone 16' build`：建置 iOS simulator 版本。
-- `xcodebuild -scheme BuyLedger -destination 'platform=iOS Simulator,name=iPad Pro (13-inch) (M4)' build`：建置 iPadOS simulator 版本。
-- `xcodebuild -scheme BuyLedger -destination 'platform=macOS' build`：建置 macOS 版本。
-- `xcodebuild -scheme BuyLedger -destination 'platform=iOS Simulator,name=iPhone 16' test`：執行測試。
+- `xcodebuild -list -project BuyLedger/BuyLedger.xcodeproj`：檢查 schemes 與 targets。
+- `xcodebuild -showdestinations -project BuyLedger/BuyLedger.xcodeproj -scheme BuyLedger`：檢查可用的 iOS、iPadOS 與 macOS destinations。
+- `xcodebuild -project BuyLedger/BuyLedger.xcodeproj -scheme BuyLedger -destination 'platform=iOS Simulator,name=iPhone 16' build`：建置 iOS simulator 版本。
+- `xcodebuild -project BuyLedger/BuyLedger.xcodeproj -scheme BuyLedger -destination 'platform=iOS Simulator,name=iPad Pro (13-inch) (M4)' build`：建置 iPadOS simulator 版本。
+- `xcodebuild -project BuyLedger/BuyLedger.xcodeproj -scheme BuyLedger -destination 'platform=macOS' build`：建置 macOS 版本。
+- `xcodebuild -project BuyLedger/BuyLedger.xcodeproj -scheme BuyLedger -destination 'platform=iOS Simulator,name=iPhone 16' test`：執行測試。
 - `swift test`：當專案含有 `Package.swift` 且模組可由 SwiftPM 測試時使用。
 
 提交前請先執行 `git status --short`，確認只包含本次變更需要的檔案。
@@ -34,17 +38,19 @@ Swift 程式碼請遵循 Swift API Design Guidelines。型別名稱使用 `Upper
 
 命名請具體表達責任，例如 `TransactionListView`、`LedgerRepository`、`CurrencyFormatterService`。Swift 縮排使用四個空格。SwiftUI View 應保持小而聚焦，重複使用的 UI 請拆成獨立元件。
 
+跨平台 UI 應優先使用 SwiftUI 條件編譯與平台慣用容器，例如 `#if os(macOS)`、`NavigationSplitView` 與 iOS/iPadOS 的 toolbar placement。SwiftData schema 或持久化行為變更時，應同步檢查 migration、preview 與測試資料。
+
 避免提交本機 IDE 設定、產生的 archive、環境設定檔或任何只屬於開發機器的狀態檔。
 
 ## 測試準則
 
-單元測試放在 `BuyLedgerTests/`，UI 流程測試放在 `BuyLedgerUITests/`。測試檔名應對應被測試的型別或功能，例如 `LedgerRepositoryTests.swift` 或 `AddTransactionFlowTests.swift`。
+單元測試放在 `BuyLedger/BuyLedgerTests/`，UI 流程測試放在 `BuyLedger/BuyLedgerUITests/`。測試檔名應對應被測試的型別或功能，例如 `LedgerRepositoryTests.swift` 或 `AddTransactionFlowTests.swift`。
 
 影響帳本餘額、資料持久化、金額格式化、跨平台 UI 行為與主要使用者流程的變更都應加入測試。開啟 pull request 前，請執行完整測試指令並在 PR 說明中列出結果。
 
 ## Commit 與 Pull Request 準則
 
-目前尚未有既有提交慣例。請使用簡潔的 Conventional Commit 風格訊息，例如 `feat: add transaction list` 或 `docs: add contributor guide`。
+請使用簡潔的 Conventional Commit 風格訊息，例如 `feat: add transaction list` 或 `docs: update contributor guide`。
 
 Pull request 應包含簡短摘要、測試結果、相關 issue 連結，以及可見 UI 變更的截圖或 simulator 錄影。每個 PR 應聚焦在單一功能或修正。
 
