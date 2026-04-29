@@ -36,16 +36,17 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 目前主要結構如下：
 
 - `BuyLedger/BuyLedger.xcodeproj/`：Xcode 專案檔。`project.pbxproj` 應納入版本控制，`xcuserdata/` 不應提交。
-- `BuyLedger/BuyLedger/`：正式 App 原始碼、SwiftUI View、SwiftData Model、資產與 entitlements。
-- `BuyLedger/BuyLedger/BuyLedgerApp.swift`：App 進入點與 SwiftData `ModelContainer` 設定。
-- `BuyLedger/BuyLedger/ContentView.swift`：目前的起始畫面。
-- `BuyLedger/BuyLedger/Item.swift`：目前 Xcode 範本產生的 SwiftData model。
-- `BuyLedger/BuyLedger/Assets.xcassets/`：App icon、顏色與圖片資產。
+- `BuyLedger/BuyLedger/App/`：App 進入點、生命週期、composition root、routing 與全域啟動設定。
+- `BuyLedger/BuyLedger/Core/`：跨 feature 共用的依賴、SwiftData/CloudKit 持久化、基礎服務與工具。
+- `BuyLedger/BuyLedger/Features/`：依功能切分的 TCA feature。預設採 feature-first 扁平結構，例如 `Items/Item.swift`、`Items/ContentView.swift`；只有在 feature 變大時才再拆 `Models/`、`Clients/`、`Persistence/` 或更細分層。
+- `BuyLedger/BuyLedger/Features/Items/`：目前 Xcode 範本產生的初始 feature，後續導入 TCA 時可加入 `ItemsFeature.swift` 並將 `ContentView.swift` 改名為 `ItemsView.swift`。
+- `BuyLedger/BuyLedger/Shared/`：共用 SwiftUI 元件、Swift Charts 呈現元件、extensions 與可重用 helper。
+- `BuyLedger/BuyLedger/Resources/`：App icon、顏色、圖片資產、`Info.plist` 與 entitlements 等資源或設定檔。
 - `BuyLedger/BuyLedgerTests/`：單元測試。
 - `BuyLedger/BuyLedgerUITests/`：UI 測試與啟動畫面測試。
 - `Package.swift`：只有在導入共用 Swift package，或採用 package-first 佈局時才需要加入。
 
-請勿將建置輸出、本機 Xcode 狀態、密鑰、簽署憑證或 provisioning profile 納入 Git。若未來建立 shared scheme，應提交 `xcshareddata/xcschemes/`。
+Xcode project 使用 file system synchronized groups；新增或搬移檔案時優先調整實體資料夾，再用 build 驗證目標是否仍正確包含來源與資源。請勿將建置輸出、本機 Xcode 狀態、密鑰、簽署憑證或 provisioning profile 納入 Git。若未來建立 shared scheme，應提交 `xcshareddata/xcschemes/`。
 
 ## 主要技術棧
 

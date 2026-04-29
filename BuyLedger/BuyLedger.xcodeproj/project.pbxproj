@@ -33,7 +33,14 @@
 		D0B1FCF02FA22AA100B50E07 /* Exceptions for "BuyLedger" folder in "BuyLedger" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
-				Info.plist,
+				Core/Dependencies/.gitkeep,
+				Core/Persistence/CloudKit/.gitkeep,
+				Core/Persistence/SwiftData/.gitkeep,
+				Resources/BuyLedger.entitlements,
+				Resources/Info.plist,
+				Shared/Charts/.gitkeep,
+				Shared/Extensions/.gitkeep,
+				Shared/UI/.gitkeep,
 			);
 			target = D0B1FCCC2FA22A9F00B50E07 /* BuyLedger */;
 		};
@@ -295,7 +302,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = BuyLedger/Info.plist;
+				INFOPLIST_FILE = BuyLedger/Resources/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -341,7 +348,7 @@
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_FILE = BuyLedger/Info.plist;
+				INFOPLIST_FILE = BuyLedger/Resources/Info.plist;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
