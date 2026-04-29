@@ -2,7 +2,7 @@
 
 ## 專案結構與模組組織
 
-此儲存庫已建立 Xcode Multiplatform 專案，目標平台為 iOS、iPadOS 與 macOS。專案目前使用 SwiftUI 與 SwiftData，Xcode 專案檔位於 `BuyLedger/BuyLedger.xcodeproj`，scheme 名稱為 `BuyLedger`。
+此儲存庫已建立 Xcode Multiplatform 專案，目標平台為 iOS、iPadOS 與 macOS。專案主要技術棧為 Swift 6 + SwiftUI、TCA（Swift Composable Architecture）、SwiftData + CloudKit 與 Swift Charts。Xcode 專案檔位於 `BuyLedger/BuyLedger.xcodeproj`，scheme 名稱為 `BuyLedger`。
 
 目前主要結構如下：
 
@@ -17,6 +17,13 @@
 - `Package.swift`：只有在導入共用 Swift package，或採用 package-first 佈局時才需要加入。
 
 請勿將建置輸出、本機 Xcode 狀態、密鑰、簽署憑證或 provisioning profile 納入 Git。若未來建立 shared scheme，應提交 `xcshareddata/xcschemes/`。
+
+## 主要技術棧
+
+- Swift 6 + SwiftUI：新程式碼應以 Swift 6 concurrency 檢查為準，優先使用 SwiftUI、`async/await`、`@MainActor` 與平台原生 SwiftUI API。
+- TCA（Swift Composable Architecture）：功能狀態、商業邏輯、副作用與依賴注入應放在 reducer 與 dependency 中；SwiftUI View 保持宣告式與輕量。
+- SwiftData + CloudKit：SwiftData model 是本機持久化核心，CloudKit 同步相關 schema、entitlements、container 與 migration 需要同步檢查。
+- Swift Charts：圖表 View 只負責呈現，資料彙總、分組、排序與格式化應放在可測試的 feature/domain 層。
 
 ## 建置、測試與開發指令
 
@@ -38,7 +45,7 @@ Swift 程式碼請遵循 Swift API Design Guidelines。型別名稱使用 `Upper
 
 命名請具體表達責任，例如 `TransactionListView`、`LedgerRepository`、`CurrencyFormatterService`。Swift 縮排使用四個空格。SwiftUI View 應保持小而聚焦，重複使用的 UI 請拆成獨立元件。
 
-跨平台 UI 應優先使用 SwiftUI 條件編譯與平台慣用容器，例如 `#if os(macOS)`、`NavigationSplitView` 與 iOS/iPadOS 的 toolbar placement。SwiftData schema 或持久化行為變更時，應同步檢查 migration、preview 與測試資料。
+跨平台 UI 應優先使用 SwiftUI 條件編譯與平台慣用容器，例如 `#if os(macOS)`、`NavigationSplitView` 與 iOS/iPadOS 的 toolbar placement。TCA feature 應以 `Feature`、`State`、`Action`、`Reducer`、`Dependency` 清楚切分，避免把商業邏輯放在 SwiftUI View 中。SwiftData schema 或持久化行為變更時，應同步檢查 migration、preview 與測試資料。
 
 避免提交本機 IDE 設定、產生的 archive、環境設定檔或任何只屬於開發機器的狀態檔。
 
@@ -46,7 +53,7 @@ Swift 程式碼請遵循 Swift API Design Guidelines。型別名稱使用 `Upper
 
 單元測試放在 `BuyLedger/BuyLedgerTests/`，UI 流程測試放在 `BuyLedger/BuyLedgerUITests/`。測試檔名應對應被測試的型別或功能，例如 `LedgerRepositoryTests.swift` 或 `AddTransactionFlowTests.swift`。
 
-影響帳本餘額、資料持久化、金額格式化、跨平台 UI 行為與主要使用者流程的變更都應加入測試。開啟 pull request 前，請執行完整測試指令並在 PR 說明中列出結果。
+影響帳本餘額、資料持久化、CloudKit 同步、金額格式化、圖表資料彙總、跨平台 UI 行為與主要使用者流程的變更都應加入測試。TCA reducer 應使用 `TestStore` 驗證 action flow、state mutation 與 effects；SwiftData 測試應優先使用 in-memory container；CloudKit 相關邏輯應透過 dependency 抽象，避免單元測試直接依賴真實 iCloud 狀態。開啟 pull request 前，請執行完整測試指令並在 PR 說明中列出結果。
 
 ## Commit 與 Pull Request 準則
 
@@ -56,7 +63,7 @@ Pull request 應包含簡短摘要、測試結果、相關 issue 連結，以及
 
 ## 安全性與設定注意事項
 
-絕對不要提交 `.env`、私鑰、provisioning profile、簽署憑證或其他敏感資料。請提交 `Package.resolved` 等 lock file，讓相依套件解析結果可重現。
+絕對不要提交 `.env`、私鑰、provisioning profile、簽署憑證或其他敏感資料。CloudKit container、iCloud capability 與 entitlements 的變更需要在 PR 中明確說明。請提交 `Package.resolved` 等 lock file，讓 TCA 等相依套件解析結果可重現。
 
 ## Commit 風格
 
