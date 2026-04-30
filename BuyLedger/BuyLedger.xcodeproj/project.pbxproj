@@ -36,7 +36,6 @@
 				Core/Dependencies/.gitkeep,
 				Core/Persistence/CloudKit/.gitkeep,
 				Core/Persistence/SwiftData/.gitkeep,
-				Resources/BuyLedger.entitlements,
 				Resources/Info.plist,
 				Shared/Charts/.gitkeep,
 				Shared/Extensions/.gitkeep,

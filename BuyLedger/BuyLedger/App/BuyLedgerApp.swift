@@ -10,6 +10,7 @@ import SwiftData
 
 @main
 struct BuyLedgerApp: App {
+
     var sharedModelContainer: ModelContainer = {
         let schema = Schema([
             Item.self,

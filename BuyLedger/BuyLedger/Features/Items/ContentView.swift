@@ -9,6 +9,7 @@ import SwiftUI
 import SwiftData
 
 struct ContentView: View {
+
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item]
 
@@ -59,6 +60,7 @@ struct ContentView: View {
 }
 
 fileprivate struct NavigationViewWrapper<Content: View>: View {
+
     let content: () -> Content
 
     var body: some View {

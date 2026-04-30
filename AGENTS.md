@@ -40,7 +40,9 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 - `BuyLedger/BuyLedger/Core/`：跨 feature 共用的依賴、SwiftData/CloudKit 持久化、基礎服務與工具。
 - `BuyLedger/BuyLedger/Features/`：依功能切分的 TCA feature。預設採 feature-first 扁平結構，例如 `Items/Item.swift`、`Items/ContentView.swift`；只有在 feature 變大時才再拆 `Models/`、`Clients/`、`Persistence/` 或更細分層。
 - `BuyLedger/BuyLedger/Features/Items/`：目前 Xcode 範本產生的初始 feature，後續導入 TCA 時可加入 `ItemsFeature.swift` 並將 `ContentView.swift` 改名為 `ItemsView.swift`。
-- `BuyLedger/BuyLedger/Shared/`：共用 SwiftUI 元件、Swift Charts 呈現元件、extensions 與可重用 helper。
+- `BuyLedger/BuyLedger/Shared/`：跨 feature 共用的設計系統、SwiftUI 元件、Swift Charts 呈現元件、extensions 與可重用 helper。
+- `BuyLedger/BuyLedger/Shared/DesignSystem/Foundations/`：設計系統基礎 token，例如：語意色彩、語意狀態、尺寸、間距、陰影與文字層級。
+- `BuyLedger/BuyLedger/Shared/DesignSystem/Components/`：設計系統 UI 元件。請依元件類別建立子資料夾，例如：`Avatar/`、`Badges/`、`Buttons/`、`Cards/`、`Charts/`、`TextFields/`。
 - `BuyLedger/BuyLedger/Resources/`：App icon、顏色、圖片資產、`Info.plist` 與 entitlements 等資源或設定檔。
 - `BuyLedger/BuyLedgerTests/`：單元測試。
 - `BuyLedger/BuyLedgerUITests/`：UI 測試與啟動畫面測試。
@@ -78,6 +80,38 @@ Swift 程式碼請遵循 Swift API Design Guidelines。型別名稱使用 `Upper
 跨平台 UI 應優先使用 SwiftUI 條件編譯與平台慣用容器，例如 `#if os(macOS)`、`NavigationSplitView` 與 iOS/iPadOS 的 toolbar placement。TCA feature 應以 `Feature`、`State`、`Action`、`Reducer`、`Dependency` 清楚切分，避免把商業邏輯放在 SwiftUI View 中。SwiftData schema 或持久化行為變更時，應同步檢查 migration、preview 與測試資料。
 
 避免提交本機 IDE 設定、產生的 archive、環境設定檔或任何只屬於開發機器的狀態檔。
+
+## Design System 準則
+
+Design System 應放在 `BuyLedger/BuyLedger/Shared/DesignSystem/`，並區分 `Foundations/` 與 `Components/`。`Foundations/` 放跨元件共用的 token、modifier 與語意模型；`Components/` 放可視 UI 元件，並依類別建立子資料夾。
+
+每個主要元件或資料型別原則上各自一個 Swift 檔案，檔名必須對應主要型別名稱，例如 `BLBarChart.swift`、`BLDonutChart.swift`、`BLSparkline.swift`、`BLSearchField.swift`、`BLAmountField.swift`。避免建立 `BLCharts.swift`、`BLTextFields.swift` 這類同時涵括多種元件的大檔。若小型 enum 或 extension 只服務單一元件，可以與該元件同檔；若開始跨元件重用或變大，請拆出獨立檔案。
+
+Design System Swift 檔案 header 使用 Xcode 預設格式：
+
+```swift
+//
+//  FileName.swift
+//  BuyLedger
+//
+//  Created by Leo Ho on yyyy/m/d.
+//
+```
+
+註解請使用正體中文撰寫，語氣接近 Apple 官方文件風格。公開或內部共用的型別、屬性、`init`、`body`、helper method 與 preview sample 都應有清楚用途。不要為了補註解而新增不必要的顯式 `init`；能使用 Swift 合成 memberwise initializer 時請優先使用。只有在需要 `@ViewBuilder` trailing closure、無標籤參數的語意化 API、驗證、轉換或相依注入時才新增顯式 `init`。
+
+`struct`、`enum`、`extension`、`final class` 等型別宣告後第一行要空一行。Design System 檔案請使用一致的 `MARK` 區段，例如：
+
+- `// MARK: - View Properties`
+- `// MARK: - Init`
+- `// MARK: - View Body`
+- `// MARK: - ViewBuilder`
+- `// MARK: - Private Method`
+- `// MARK: - Preview`
+
+非 View 型別可依語意使用 `Cases`、`Data Properties`、`Identifiable Properties`、`Static Properties`、`View Method` 等段落。`#Preview` 放在檔案最後，前方加上 `// MARK: - Preview`。每個可視 Design System 元件都應提供自己的 `#Preview`；需要 binding 時使用 `.constant(...)`，需要圖表或狀態資料時用小型 sample data。
+
+調整 Design System 結構或元件後，請至少執行 macOS 與 iOS Simulator build，確認 file system synchronized groups 正確拾取新增、搬移或刪除的 Swift 檔案。
 
 ## 測試準則
 
