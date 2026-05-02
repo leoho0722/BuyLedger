@@ -60,7 +60,9 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
 
     /// 列表中顯示的主要商品描述。
     var primaryItemDescription: String {
-        guard let firstItem = items.first else { return "未命名商品" }
+        guard let firstItem = items.first else {
+            return "未命名商品"
+        }
 
         if items.count == 1 {
             return firstItem.name

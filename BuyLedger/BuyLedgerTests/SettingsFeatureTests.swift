@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 import Testing
 @testable import BuyLedger
 
@@ -62,7 +63,8 @@ struct SettingsFeatureTests {
         let stored = SettingsSnapshot(
             appearance: .dark,
             notificationsEnabled: false,
-            defaultCurrency: .jpy
+            defaultCurrency: .jpy,
+            monthlyProfitGoalTwd: 50_000
         )
 
         let store = TestStore(initialState: SettingsFeature.State()) {
@@ -78,6 +80,7 @@ struct SettingsFeatureTests {
             $0.appearance = .dark
             $0.notificationsEnabled = false
             $0.defaultCurrency = .jpy
+            $0.monthlyProfitGoalTwd = 50_000
         }
     }
 

@@ -24,6 +24,9 @@ struct BLProgressBar: View {
     /// 可選的進度列色彩；未提供時使用主強調色。
     var tint: Color? = nil
 
+    /// 可選的右側顯示文字；提供時會取代預設的百分比顯示，方便顯示金額或自訂格式的字串。
+    var trailingText: String? = nil
+
     // MARK: - View Body
 
     /// 進度列的畫面內容。
@@ -39,10 +42,17 @@ struct BLProgressBar: View {
 
                 Spacer()
 
-                Text(clampedValue, format: .percent.precision(.fractionLength(0)))
-                    .font(.caption)
-                    .foregroundStyle(palette.secondaryLabel)
-                    .monospacedDigit()
+                if let trailingText {
+                    Text(trailingText)
+                        .font(.caption)
+                        .foregroundStyle(palette.secondaryLabel)
+                        .monospacedDigit()
+                } else {
+                    Text(clampedValue, format: .percent.precision(.fractionLength(0)))
+                        .font(.caption)
+                        .foregroundStyle(palette.secondaryLabel)
+                        .monospacedDigit()
+                }
             }
 
             GeometryReader { proxy in

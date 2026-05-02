@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 客戶名單畫面。
 ///
-/// 對應設計稿 iPad / Mac 的「客戶」頁：將訂單依客戶聚合成卡片清單。Top 3 顯示為強調卡片，其餘以列表呈現。資料完全衍生自既有訂單，不維護額外狀態。
+/// 對應設計稿 iPad / Mac 的「客戶」頁：將訂單依客戶聚合成卡片清單。前 N 名（N 由 ``topHighlightCount`` 控制）顯示為強調卡片，其餘以列表呈現。資料完全衍生自既有訂單，不維護額外狀態。
 struct CustomersView: View {
 
     // MARK: - View Properties
@@ -67,20 +67,22 @@ private extension CustomersView {
         .background(palette.background)
     }
 
-    /// Top 3 客戶強調卡。
+    /// 強調區塊：累計消費排名前 ``topHighlightCount`` 名的客戶。
     /// - Parameters:
     ///   - customers: 已聚合的客戶清單（依累計消費排序）。
     ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: Top 3 卡片區塊 view。
+    /// - Returns: 強調卡片區塊 view。
     func topThree(customers: [CustomerRow], palette: BLPalette) -> some View {
-        VStack(alignment: .leading, spacing: BLSpacing.medium) {
-            Text("Top 3")
+        let topCount = Self.topHighlightCount
+
+        return VStack(alignment: .leading, spacing: BLSpacing.medium) {
+            Text("Top \(topCount)")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(palette.tertiaryLabel)
                 .textCase(.uppercase)
 
             LazyVGrid(columns: topThreeColumns, spacing: BLSpacing.medium) {
-                ForEach(Array(customers.prefix(3).enumerated()), id: \.element.id) { index, customer in
+                ForEach(Array(customers.prefix(topCount).enumerated()), id: \.element.id) { index, customer in
                     Button {
                         store.send(.customerSelected(customer.name))
                     } label: {
@@ -223,7 +225,8 @@ private extension CustomersView {
                         .accessibilityHint("查看 \(customer.name) 的訂單")
 
                         if index < customers.count - 1 {
-                            Divider().padding(.leading, BLSpacing.large + 36 + BLSpacing.small)
+                            Divider()
+                                .padding(.leading, BLSpacing.large + 36 + BLSpacing.small)
                         }
                     }
                 }
@@ -280,7 +283,10 @@ private extension CustomersView {
 
 private extension CustomersView {
 
-    /// Top 3 卡片的欄位設定，依寬度自動 1 / 2 / 3 欄。
+    /// 強調區塊顯示的客戶數量；同時驅動 ``topThree(customers:palette:)`` 的標題與 prefix 取數。
+    static let topHighlightCount = 3
+
+    /// 強調卡片的欄位設定，依寬度自動 1 / 2 / 3 欄。
     var topThreeColumns: [GridItem] {
         [GridItem(.adaptive(minimum: 240, maximum: 360), spacing: BLSpacing.medium)]
     }

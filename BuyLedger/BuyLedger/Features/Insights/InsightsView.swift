@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 分析分頁的主要畫面。
 ///
-/// 對應設計稿 iPhone / iPad / Mac 的「分析」頁：bar chart 走勢、商品類別排行、成本結構 donut、8 週下單熱力圖；可切換期間、可點擊類別 drill-down 到訂單頁。
+/// 對應設計稿 iPhone / iPad / Mac 的「分析」頁：bar chart 走勢、商品類別排行、成本結構 donut、N 週下單熱力圖（N 由 ``InsightsView/heatmapWeekCount`` 控制）；可切換期間、可點擊類別 drill-down 到訂單頁。
 struct InsightsView: View {
 
     // MARK: - View Properties
@@ -125,7 +125,7 @@ private extension InsightsView {
 
                     Text(stats.trendDelta)
                         .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(palette.green)
+                        .foregroundStyle(trendDeltaColor(stats.trendDeltaIsPositive, palette: palette))
                 }
 
                 Text(formatTwd(stats.totalProfit))
@@ -299,30 +299,31 @@ private extension InsightsView {
         }
     }
 
-    /// 過去 8 週的下單熱力圖。
+    /// 過去 N 週的下單熱力圖；N 由 ``heatmapWeekCount`` 決定。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 熱力圖卡 view。
     func heatmapCard(palette: BLPalette) -> some View {
+        let weekCount = Self.heatmapWeekCount
         let cells = computeHeatmap(orders: store.orders.orders)
         let maxCount = cells.values.max() ?? 1
 
         return BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                Text("下單熱力 · 過去 8 週")
+                Text("下單熱力 · 過去 \(weekCount) 週")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(palette.label)
 
                 LazyVGrid(
                     columns: [GridItem(.fixed(28), spacing: 6)] + Array(
                         repeating: GridItem(.flexible(), spacing: 6),
-                        count: 8
+                        count: weekCount
                     ),
                     spacing: 6
                 ) {
                     Text(" ")
                         .frame(width: 28)
 
-                    ForEach(0..<8, id: \.self) { week in
+                    ForEach(0..<weekCount, id: \.self) { week in
                         Text("W\(week + 1)")
                             .font(.caption2)
                             .foregroundStyle(palette.tertiaryLabel)
@@ -335,7 +336,7 @@ private extension InsightsView {
                             .foregroundStyle(palette.secondaryLabel)
                             .frame(width: 28, alignment: .leading)
 
-                        ForEach(0..<8, id: \.self) { week in
+                        ForEach(0..<weekCount, id: \.self) { week in
                             heatmapCell(
                                 count: cells[HeatmapKey(week: week, weekday: weekday)] ?? 0,
                                 maxCount: maxCount,
@@ -463,8 +464,11 @@ private struct InsightsStats {
     /// 期間內淨獲利總和。
     let totalProfit: Decimal
 
-    /// 顯示在走勢卡右上角的成長率字樣。
+    /// 顯示在走勢卡右上角的成長率字樣（已 format，例如 `↑ 12.3%`、`— 無對照`）。
     let trendDelta: String
+
+    /// 成長率方向旗標：`true` 上升、`false` 下降、`nil` 無對照可比；用來決定 ``InsightsView/trendCard(stats:palette:)`` 的字色。
+    let trendDeltaIsPositive: Bool?
 
     /// 各分類獲利排行（由高到低）。
     let categories: [InsightsCategory]
@@ -530,6 +534,9 @@ private extension InsightsView {
     /// 視為「已實現」的訂單狀態集合。
     static let realizedStatuses: Set<OrderStatus> = [.confirmed, .purchased, .shipping, .delivered]
 
+    /// 熱力圖顯示的週數；同時驅動 ``heatmapCard(palette:)`` 的標題、grid 欄位與 ``computeHeatmap(orders:)`` 的回填邏輯。
+    static let heatmapWeekCount = 8
+
     /// 計算 ``InsightsStats``。
     /// - Parameters:
     ///   - orders: 目前訂單清單。
@@ -542,6 +549,7 @@ private extension InsightsView {
         let trendBars = trendBars(realized: realized, range: range, calendar: calendar, now: now)
 
         let totalProfit = trendBars.reduce(Decimal(0)) { $0 + Decimal($1.value) }
+        let priorPeriodProfit = previousPeriodProfit(realized: realized, range: range, calendar: calendar, now: now)
 
         let categoryGroup = Dictionary(grouping: realized, by: { $0.category })
         let categories = categoryGroup
@@ -565,11 +573,80 @@ private extension InsightsView {
         return InsightsStats(
             trendBars: trendBars,
             totalProfit: totalProfit,
-            trendDelta: realized.isEmpty ? " " : "↑ 累計",
+            trendDelta: trendDeltaText(current: totalProfit, previous: priorPeriodProfit),
+            trendDeltaIsPositive: trendDeltaDirection(current: totalProfit, previous: priorPeriodProfit),
             categories: categories,
             costSegments: costSegments,
             totalCost: totalCost
         )
+    }
+
+    /// 計算上一個對等期間的淨獲利總和，例如目前是「最近 30 天」就回傳「30 天前那 30 天」的累計。
+    /// - Parameters:
+    ///   - realized: 已實現的訂單。
+    ///   - range: 趨勢期間。
+    ///   - calendar: 用來算日期的曆法。
+    ///   - now: 目前期間的結束基準。
+    /// - Returns: 對等期間的累計獲利；無對等資料時為 `nil`。
+    func previousPeriodProfit(
+        realized: [LedgerOrder],
+        range: InsightsDateRange,
+        calendar: Calendar,
+        now: Date
+    ) -> Decimal? {
+        let component: Calendar.Component
+        let length: Int
+
+        switch range {
+        case .thirtyDays:
+            component = .day
+            length = 30
+        case .sixMonths:
+            component = .month
+            length = 6
+        case .twelveMonths:
+            component = .month
+            length = 12
+        }
+
+        guard
+            let priorEnd = calendar.date(byAdding: component, value: -length, to: now),
+            let priorStart = calendar.date(byAdding: component, value: -length, to: priorEnd)
+        else {
+            return nil
+        }
+
+        let total = realized
+            .filter { (priorStart..<priorEnd).contains($0.date) }
+            .reduce(Decimal.zero) { $0 + $1.summary.profit }
+
+        // 沒有任何訂單落在前一同期 → 視為「無資料可比」
+        guard total != 0 else { return nil }
+        return total
+    }
+
+    /// 根據本期/上期累計獲利產生 `↑ 12.3%` 或 `— 無對照` 等顯示字串。
+    /// - Parameters:
+    ///   - current: 本期累計。
+    ///   - previous: 上期累計；`nil` 代表無資料可比。
+    /// - Returns: trend card 右上角字串。
+    func trendDeltaText(current: Decimal, previous: Decimal?) -> String {
+        guard let previous, previous != 0 else { return "— 無對照" }
+        let delta = (current - previous) / previous
+        let arrow = delta >= 0 ? "↑" : "↓"
+        let absDelta = delta < 0 ? -delta : delta
+        let formatted = absDelta.formatted(.percent.precision(.fractionLength(1)))
+        return "\(arrow) \(formatted)"
+    }
+
+    /// 對應 ``trendDeltaText(current:previous:)`` 的方向旗標，方便 view 決定文字色。
+    /// - Parameters:
+    ///   - current: 本期累計。
+    ///   - previous: 上期累計；`nil` 代表無資料可比。
+    /// - Returns: `true` 上升、`false` 下降、`nil` 無對照。
+    func trendDeltaDirection(current: Decimal, previous: Decimal?) -> Bool? {
+        guard let previous, previous != 0 else { return nil }
+        return current >= previous
     }
 
     /// 依 range 產生對應的 bar chart 資料：30 天逐日、6/12 個月逐月。
@@ -640,12 +717,13 @@ private extension InsightsView {
         }
     }
 
-    /// 計算過去 8 週每天的下單筆數（不分狀態，只看建立日期）。
+    /// 計算過去 N 週（N = ``heatmapWeekCount``）每天的下單筆數（不分狀態，只看建立日期）。
     /// - Parameter orders: 目前訂單清單。
     /// - Returns: 鍵為 `HeatmapKey`、值為訂單筆數。
     func computeHeatmap(orders: [LedgerOrder]) -> [HeatmapKey: Int] {
         let calendar = Calendar.current
         let now = Date()
+        let weekCount = Self.heatmapWeekCount
         guard let currentWeek = calendar.dateInterval(of: .weekOfYear, for: now) else {
             return [:]
         }
@@ -656,9 +734,9 @@ private extension InsightsView {
             let day = calendar.startOfDay(for: order.date)
             let daysFromCurrentWeekStart = calendar.dateComponents([.day], from: day, to: currentWeek.start).day ?? 0
             let weekOffset = -(daysFromCurrentWeekStart / 7)
-            let weekIndex = 7 - weekOffset
+            let weekIndex = (weekCount - 1) - weekOffset
 
-            guard weekIndex >= 0, weekIndex < 8 else { continue }
+            guard weekIndex >= 0, weekIndex < weekCount else { continue }
 
             // weekday: 1=週日 ... 7=週六；轉成 0=週一 ... 6=週日
             let raw = calendar.component(.weekday, from: order.date)
@@ -685,6 +763,22 @@ private extension InsightsView {
                 .precision(.fractionLength(0))
                 .locale(Locale(identifier: "zh_TW"))
         )
+    }
+
+    /// 將 ``InsightsStats/trendDeltaIsPositive`` 轉成顯示色：上升綠、下降紅、無對照灰。
+    /// - Parameters:
+    ///   - isPositive: 方向旗標。
+    ///   - palette: 目前外觀使用的色盤。
+    /// - Returns: 對應的字色。
+    func trendDeltaColor(_ isPositive: Bool?, palette: BLPalette) -> Color {
+        switch isPositive {
+        case .some(true):
+            return palette.green
+        case .some(false):
+            return palette.red
+        case .none:
+            return palette.tertiaryLabel
+        }
     }
 }
 

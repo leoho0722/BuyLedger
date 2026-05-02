@@ -29,17 +29,22 @@ struct SettingsFeature {
         /// 預設訂單幣別。
         var defaultCurrency: CurrencyCode
 
+        /// 每月淨獲利目標（TWD）；Dashboard hero 卡的目標進度條讀此值。`0` 代表使用者尚未設定，UI 應隱藏進度條。
+        var monthlyProfitGoalTwd: Decimal
+
         // MARK: - Init
 
         /// 建立預設設定。
         init(
             appearance: AppearancePreference = .system,
             notificationsEnabled: Bool = true,
-            defaultCurrency: CurrencyCode = .twd
+            defaultCurrency: CurrencyCode = .twd,
+            monthlyProfitGoalTwd: Decimal = 80_000
         ) {
             self.appearance = appearance
             self.notificationsEnabled = notificationsEnabled
             self.defaultCurrency = defaultCurrency
+            self.monthlyProfitGoalTwd = monthlyProfitGoalTwd
         }
     }
 
@@ -74,6 +79,7 @@ struct SettingsFeature {
                 state.appearance = snapshot.appearance
                 state.notificationsEnabled = snapshot.notificationsEnabled
                 state.defaultCurrency = snapshot.defaultCurrency
+                state.monthlyProfitGoalTwd = snapshot.monthlyProfitGoalTwd
                 return .none
 
             case .binding:
@@ -81,7 +87,8 @@ struct SettingsFeature {
                     SettingsSnapshot(
                         appearance: state.appearance,
                         notificationsEnabled: state.notificationsEnabled,
-                        defaultCurrency: state.defaultCurrency
+                        defaultCurrency: state.defaultCurrency,
+                        monthlyProfitGoalTwd: state.monthlyProfitGoalTwd
                     )
                 )
                 return .none
@@ -140,13 +147,17 @@ struct SettingsSnapshot: Equatable, Sendable {
     /// 預設訂單幣別。
     var defaultCurrency: CurrencyCode
 
+    /// 每月淨獲利目標（TWD）。
+    var monthlyProfitGoalTwd: Decimal
+
     // MARK: - Static Properties
 
     /// 預設設定。
     static let `default` = SettingsSnapshot(
         appearance: .system,
         notificationsEnabled: true,
-        defaultCurrency: .twd
+        defaultCurrency: .twd,
+        monthlyProfitGoalTwd: 80_000
     )
 }
 
@@ -180,11 +191,20 @@ extension SettingsStorage: DependencyKey {
             let currency = CurrencyCode(
                 rawValue: defaults.string(forKey: SettingsStorageKeys.defaultCurrency) ?? ""
             ) ?? .twd
+            // 從未寫入時 `object(forKey:)` 為 nil，預設帶入 `SettingsSnapshot.default.monthlyProfitGoalTwd`；
+            // 寫入過 `0` 也尊重使用者意圖（代表「不設目標」）。
+            let goalValue: Decimal = {
+                guard let raw = defaults.object(forKey: SettingsStorageKeys.monthlyProfitGoalTwd) as? Double else {
+                    return SettingsSnapshot.default.monthlyProfitGoalTwd
+                }
+                return Decimal(raw)
+            }()
 
             return SettingsSnapshot(
                 appearance: appearance,
                 notificationsEnabled: notifications,
-                defaultCurrency: currency
+                defaultCurrency: currency,
+                monthlyProfitGoalTwd: goalValue
             )
         },
         save: { snapshot in
@@ -192,6 +212,7 @@ extension SettingsStorage: DependencyKey {
             defaults.set(snapshot.appearance.rawValue, forKey: SettingsStorageKeys.appearance)
             defaults.set(snapshot.notificationsEnabled, forKey: SettingsStorageKeys.notifications)
             defaults.set(snapshot.defaultCurrency.rawValue, forKey: SettingsStorageKeys.defaultCurrency)
+            defaults.set(NSDecimalNumber(decimal: snapshot.monthlyProfitGoalTwd).doubleValue, forKey: SettingsStorageKeys.monthlyProfitGoalTwd)
         }
     )
 
@@ -218,6 +239,9 @@ private enum SettingsStorageKeys {
 
     /// 預設幣別的 key。
     nonisolated static let defaultCurrency = "settings.defaultCurrency"
+
+    /// 月度淨獲利目標的 key。
+    nonisolated static let monthlyProfitGoalTwd = "settings.monthlyProfitGoalTwd"
 }
 
 extension SettingsSnapshot {
@@ -228,6 +252,7 @@ extension SettingsSnapshot {
     nonisolated static let testDefault = SettingsSnapshot(
         appearance: .system,
         notificationsEnabled: true,
-        defaultCurrency: .twd
+        defaultCurrency: .twd,
+        monthlyProfitGoalTwd: 80_000
     )
 }

@@ -96,7 +96,7 @@ private extension SettingsScene_macOS {
         .formStyle(.grouped)
     }
 
-    /// 預設值分頁：建立新訂單時帶入的幣別等預設。
+    /// 預設值分頁：建立新訂單時帶入的幣別等預設與月度損益目標。
     var defaultsTab: some View {
         Form {
             Section {
@@ -109,6 +109,19 @@ private extension SettingsScene_macOS {
                 Text("新訂單")
             } footer: {
                 Text("此設定會套用到所有新建立的訂單；既有訂單不受影響。")
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                TextField(
+                    "目標金額",
+                    value: $store.monthlyProfitGoalTwd,
+                    format: .number.precision(.fractionLength(0))
+                )
+            } header: {
+                Text("月度淨獲利目標（TWD）")
+            } footer: {
+                Text("Dashboard hero 卡的進度條依此值計算；設為 0 代表不顯示進度條。")
                     .foregroundStyle(.secondary)
             }
         }

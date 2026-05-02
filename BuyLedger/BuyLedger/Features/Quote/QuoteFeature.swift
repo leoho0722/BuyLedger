@@ -58,15 +58,17 @@ struct QuoteFeature {
         // MARK: - Init
 
         /// 建立預設狀態。
+        ///
+        /// 所有數值欄位預設為 `0`：報價試算頁開啟時不預填任何示範金額或費率，避免使用者誤以為畫面上的「建議售價」是已存在的試算結果。實際數值由使用者拖動 slider / 輸入後即時運算。
         init(
             customerName: String = "",
             productName: String = "",
             fromCurrency: CurrencyCode = .krw,
-            itemPrice: Double = 150_000,
-            domesticShipping: Double = 3_000,
-            internationalShippingTwd: Double = 180,
-            cardFeePercent: Double = 2.5,
-            targetMarginPercent: Double = 25,
+            itemPrice: Double = 0,
+            domesticShipping: Double = 0,
+            internationalShippingTwd: Double = 0,
+            cardFeePercent: Double = 0,
+            targetMarginPercent: Double = 0,
             snapshot: FxRateSnapshot? = nil,
             isLoading: Bool = false,
             errorMessage: String? = nil

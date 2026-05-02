@@ -141,7 +141,7 @@ private extension QuoteView {
                 sliderRow(
                     label: "商品定價（\(store.fromCurrency.rawValue)）",
                     value: $store.itemPrice,
-                    range: 1_000...500_000,
+                    range: 0...500_000,
                     step: 1_000,
                     unit: store.fromCurrency.rawValue,
                     tint: palette.accent
@@ -178,7 +178,7 @@ private extension QuoteView {
                 sliderRow(
                     label: "目標毛利 %",
                     value: $store.targetMarginPercent,
-                    range: 5...60,
+                    range: 0...60,
                     step: 1,
                     unit: "%",
                     tint: palette.green
@@ -349,36 +349,25 @@ private extension QuoteView {
         }
     }
 
-    /// 拆解條的單列。
-    func breakdownRow(label: String, value: Double, total: Double, color: Color, palette: BLPalette) -> some View {
-        let fraction = max(0, min(1, total > 0 ? CGFloat(value / total) : 0))
+    /// 拆解條的單列；以 ``BLProgressBar`` 表現各分類占總成本的比例，trailing 顯示原始 TWD 金額而非百分比。
+    ///
+    /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLProgressBar`` 自帶色盤推導、function body 不再讀取 palette；保留外部 label 與其他 helper（``inputsCard``、``suggestedHero`` 等）一致，未來若需要客製拆解列的視覺也方便加回來。
+    /// - Parameters:
+    ///   - label: 拆解項目的名稱（如「商品金額」）。
+    ///   - value: 該項目的 TWD 金額。
+    ///   - total: 用來計算占比的總成本（避免除以 0 時取 1）。
+    ///   - color: 進度條與分類的識別色。
+    ///   - palette: 目前外觀使用的色盤；目前未使用，預留給未來客製需求。
+    /// - Returns: 拆解列 view。
+    func breakdownRow(label: String, value: Double, total: Double, color: Color, palette _: BLPalette) -> some View {
+        let fraction = total > 0 ? value / total : 0
 
-        return VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 6) {
-                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                    .fill(color)
-                    .frame(width: 8, height: 8)
-
-                Text(label)
-                    .font(.footnote)
-                    .foregroundStyle(palette.secondaryLabel)
-
-                Spacer()
-
-                Text(formatTwd(value))
-                    .font(.footnote.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(palette.label)
-            }
-
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule().fill(palette.fillQuaternary)
-                    Capsule().fill(color).frame(width: max(0, geo.size.width * fraction))
-                }
-            }
-            .frame(height: 5)
-        }
+        return BLProgressBar(
+            title: label,
+            value: fraction,
+            tint: color,
+            trailingText: formatTwd(value)
+        )
     }
 }
 

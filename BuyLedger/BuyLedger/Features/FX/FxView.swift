@@ -267,7 +267,7 @@ private extension FxView {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(palette.label)
 
-                Text("銀行牌告（範例）")
+                Text(rateSourceSubtitle(for: currency))
                     .font(.caption)
                     .foregroundStyle(palette.secondaryLabel)
             }
@@ -320,6 +320,23 @@ private extension FxView {
     func rateDisplay(for currency: CurrencyCode) -> String {
         guard let rate = store.state.displayRate(for: currency) else { return "—" }
         return rate.formatted(.number.precision(.fractionLength(4)))
+    }
+
+    /// 匯率列副標：顯示資料來源與 snapshot 時間戳；TWD 永遠顯示「基準幣別」、無 snapshot 時顯示「尚未連線」。
+    /// - Parameter currency: 幣別。
+    /// - Returns: 副標字串。
+    func rateSourceSubtitle(for currency: CurrencyCode) -> String {
+        if currency == .twd { return "基準幣別" }
+        guard let snapshot = store.snapshot else { return "尚未連線" }
+        let timestamp = snapshot.date.formatted(
+            .dateTime
+                .month(.defaultDigits)
+                .day(.defaultDigits)
+                .hour(.defaultDigits(amPM: .omitted))
+                .minute(.twoDigits)
+                .locale(Locale(identifier: "zh_TW"))
+        )
+        return "ExchangeRate-API · \(timestamp)"
     }
 
     /// 預設金額按鈕的顯示文字。

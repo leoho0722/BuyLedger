@@ -43,6 +43,23 @@ struct SettingsView: View {
                 }
             }
 
+            Section {
+                TextField(
+                    "目標金額",
+                    value: $store.monthlyProfitGoalTwd,
+                    format: .number.precision(.fractionLength(0))
+                )
+                #if !os(macOS)
+                .keyboardType(.numberPad)
+                #endif
+            } header: {
+                Text("月度淨獲利目標（TWD）")
+            } footer: {
+                Text("Dashboard hero 卡的進度條依此值計算；設為 0 代表不顯示進度條。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("資料") {
                 Button("匯出 CSV") { }
                     .disabled(true)

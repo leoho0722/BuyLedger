@@ -15,15 +15,16 @@ struct QuoteFeatureTests {
 
     // MARK: - Tests
 
-    @Test func defaultStateMatchesDesignPreset() {
+    @Test func defaultStateStartsAtZero() {
+        // 預設值全為 0：頁面剛開時不預填示範金額或費率，避免讓使用者誤以為畫面上的「建議售價」是已存在的試算結果。
         let state = QuoteFeature.State()
 
         #expect(state.fromCurrency == .krw)
-        #expect(state.itemPrice == 150_000)
-        #expect(state.domesticShipping == 3_000)
-        #expect(state.internationalShippingTwd == 180)
-        #expect(state.cardFeePercent == 2.5)
-        #expect(state.targetMarginPercent == 25)
+        #expect(state.itemPrice == 0)
+        #expect(state.domesticShipping == 0)
+        #expect(state.internationalShippingTwd == 0)
+        #expect(state.cardFeePercent == 0)
+        #expect(state.targetMarginPercent == 0)
     }
 
     @Test func costCalculationUsesRateAndCardFee() {
@@ -83,7 +84,8 @@ struct QuoteFeatureTests {
     }
 
     @Test func switchingCurrencyRecomputesItemTwd() async {
-        let store = TestStore(initialState: QuoteFeature.State()) {
+        // 預設 itemPrice 為 0，這裡顯式注入一個非零值才能驗證匯率切換對 itemTwd 的影響。
+        let store = TestStore(initialState: QuoteFeature.State(itemPrice: 150_000)) {
             QuoteFeature()
         }
 

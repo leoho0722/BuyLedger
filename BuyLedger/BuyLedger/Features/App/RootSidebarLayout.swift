@@ -127,12 +127,14 @@ private extension RootSidebarLayout {
     }
 
     /// 主要分頁列。
+    ///
+    /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLBadge`` 自帶 tone-based 色彩、function body 已不再讀取 palette；保留外部 label 是為了與其他 row helper（``smartGroupRow``、``logoRow`` 等）的呼叫風格一致，未來 nav 列若再需要色盤調整也不必動到呼叫端。
     /// - Parameters:
     ///   - tab: 對應的分頁。
-    ///   - palette: 目前外觀使用的色盤。
+    ///   - palette: 目前外觀使用的色盤；目前未使用，預留給未來不同 tab 套不同色等需求。
     ///   - badgeCount: 顯示在右側的紅色徽章數字；為 `nil` 或 `0` 時不顯示。
     /// - Returns: 分頁列 view。
-    func navRow(_ tab: RootTab, palette: BLPalette, badgeCount: Int? = nil) -> some View {
+    func navRow(_ tab: RootTab, palette _: BLPalette, badgeCount: Int? = nil) -> some View {
         HStack(spacing: BLSpacing.small) {
             Label(tab.title, systemImage: tab.systemImage)
                 .labelStyle(.titleAndIcon)
@@ -140,14 +142,7 @@ private extension RootSidebarLayout {
             Spacer(minLength: 0)
 
             if let badgeCount, badgeCount > 0 {
-                Text("\(badgeCount)")
-                    .font(.caption2.weight(.bold))
-                    .foregroundStyle(.white)
-                    .monospacedDigit()
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 1.5)
-                    .background(palette.red)
-                    .clipShape(Capsule())
+                BLBadge("\(badgeCount)", tone: .destructive, variant: .count)
                     .accessibilityLabel(Text("\(badgeCount) 件進行中"))
             }
         }

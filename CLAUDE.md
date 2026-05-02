@@ -204,13 +204,17 @@ macOS 沙盒下要打外部 API 必須加 `com.apple.security.network.client = t
 
 常用 type：`feat`（新功能）、`fix`（修正）、`refactor`（重構）、`docs`（文件）、`chore`（雜項）、`ci`（CI/CD）、`test`（測試）、`style`（排版）。
 
-由 Claude 建立或 amend 的 commit，commit message 最後必須加入：
+由 Claude 建立或 amend 的 commit，commit message 最後須加入帶模型名的 Co-Authored-By trailer（display name 含當次實際使用的模型名，email 用 Claude Code 預設）：
 
 ```text
-Co-Authored-By: Claude (<model-name>) <claude@anthropic.com>
+Co-Authored-By: Claude <model-name> <noreply@anthropic.com>
 ```
 
-其中 `<model-name>` 必須替換為當次實際使用的模型名稱，例如 `Claude Opus 4.7 (1M Context)`。
+例如本次工作使用 Claude Opus 4.7 (1M Context)：
+
+```text
+Co-Authored-By: Claude Opus 4.7 (1M Context) <noreply@anthropic.com>
+```
 
 description（body）使用列點格式，例如：
 
