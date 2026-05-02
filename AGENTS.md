@@ -57,6 +57,14 @@ Xcode project 使用 file system synchronized groups；新增或搬移檔案時�
 - SwiftData + CloudKit：SwiftData model 是本機持久化核心，CloudKit 同步相關 schema、entitlements、container 與 migration 需要同步檢查。
 - Swift Charts：圖表 View 只負責呈現，資料彙總、分組、排序與格式化應放在可測試的 feature/domain 層。
 
+## 文件查證準則
+
+使用任何框架或套件開發前，無論是 Apple 原生框架或第三方套件，都必須先使用 Context7 查詢最新官方文件與建議用法，再依查證結果進行設計與實作。不應只依賴記憶、既有範例或過去專案習慣。
+
+涉及 Apple 原生框架、平台 API 或 Xcode 工具鏈時，例如 SwiftUI、SwiftData、CloudKit、Swift Charts、Xcode build/test 與平台能力，除了 Context7 之外，還必須使用 Apple docs MCP 查詢 Apple 官方文件。實作前請比對 Context7 與 Apple 官方文件的內容；若兩者有差異，不得自行決定採用哪一方，必須先整理差異、影響與建議選項並詢問使用者，由使用者決策後再繼續實作。
+
+查證後的實作應遵循目前文件推薦的模式。例如 TCA 應優先使用目前版本推薦的 `@Reducer`、`@ObservableState`、`@Bindable var store`、`$store.property.sending(...)`、`Store.scope(state:action:)` 與 `TestStore` 測試模式；若因編譯器、平台限制或專案限制需要偏離文件建議，請在回覆或變更說明中明確說明原因。
+
 ## 建置、測試與開發指令
 
 常用指令如下：
