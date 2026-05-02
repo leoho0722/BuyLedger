@@ -1,0 +1,421 @@
+//
+//  QuoteView.swift
+//  BuyLedger
+//
+//  Created by Leo Ho on 2026/5/1.
+//
+
+import ComposableArchitecture
+import SwiftUI
+
+/// 報價試算工具畫面。
+///
+/// 對應設計稿 iPhone Quote sheet 與 iPad/Mac 的 Quote tool：
+/// - 來源幣別 chip
+/// - 多個 slider（商品本金 / 國內運費 / 國際集運 / 刷卡手續費 / 目標毛利）
+/// - 即時建議售價（綠→青漸層 hero 卡）
+/// - 成本拆解條與總成本
+struct QuoteView: View {
+
+    // MARK: - View Properties
+
+    /// 報價試算 store。
+    @Bindable var store: StoreOf<QuoteFeature>
+
+    /// 目前系統深淺色外觀。
+    @Environment(\.colorScheme) private var colorScheme
+
+    // MARK: - View Body
+
+    /// 報價試算畫面內容。
+    var body: some View {
+        let palette = BLTheme.palette(for: colorScheme)
+
+        ScrollView {
+            VStack(alignment: .leading, spacing: BLSpacing.large) {
+                statusBanner(palette: palette)
+                inputsCard(palette: palette)
+                suggestedHero(palette: palette)
+                breakdownCard(palette: palette)
+            }
+            .padding(.horizontal, BLSpacing.large)
+            .padding(.vertical, BLSpacing.large)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(palette.background)
+        .navigationTitle("報價試算")
+        .task {
+            await store.send(.task).finish()
+        }
+    }
+}
+
+// MARK: - ViewBuilder
+
+private extension QuoteView {
+
+    /// 匯率載入狀態的橫幅；無錯誤且已載入時不顯示。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 狀態 view。
+    @ViewBuilder
+    func statusBanner(palette: BLPalette) -> some View {
+        if store.isLoading {
+            HStack(spacing: BLSpacing.small) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("正在載入匯率…")
+                    .font(.footnote)
+                    .foregroundStyle(palette.secondaryLabel)
+                Spacer()
+            }
+            .padding(.horizontal, BLSpacing.medium)
+            .padding(.vertical, BLSpacing.small)
+            .background(palette.fillTertiary)
+            .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
+        } else if let message = store.errorMessage {
+            HStack(alignment: .top, spacing: BLSpacing.small) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(palette.orange)
+                Text(message)
+                    .font(.footnote)
+                    .foregroundStyle(palette.label)
+                Spacer()
+            }
+            .padding(.horizontal, BLSpacing.medium)
+            .padding(.vertical, BLSpacing.small)
+            .background(palette.orange.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
+        } else if !store.hasUsableRate {
+            HStack(spacing: BLSpacing.small) {
+                Image(systemName: "info.circle.fill")
+                    .foregroundStyle(palette.tertiaryLabel)
+                Text("尚無可用匯率資料，建議售價暫顯示為 0。")
+                    .font(.footnote)
+                    .foregroundStyle(palette.secondaryLabel)
+                Spacer()
+            }
+            .padding(.horizontal, BLSpacing.medium)
+            .padding(.vertical, BLSpacing.small)
+            .background(palette.fillQuaternary)
+            .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
+        }
+    }
+
+    /// 輸入卡：客戶/商品 + 幣別 + 各項 slider。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 輸入卡 view。
+    func inputsCard(palette: BLPalette) -> some View {
+        BLCard {
+            VStack(alignment: .leading, spacing: BLSpacing.medium) {
+                Text("基本資料")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(palette.tertiaryLabel)
+                    .textCase(.uppercase)
+
+                VStack(alignment: .leading, spacing: BLSpacing.small) {
+                    Text("客戶")
+                        .font(.footnote)
+                        .foregroundStyle(palette.secondaryLabel)
+
+                    TextField("輸入客戶名稱", text: $store.customerName)
+                        .textFieldStyle(.roundedBorder)
+                }
+
+                VStack(alignment: .leading, spacing: BLSpacing.small) {
+                    Text("商品名稱")
+                        .font(.footnote)
+                        .foregroundStyle(palette.secondaryLabel)
+
+                    TextField("例如 Tamburins 香水 Chamo 50ml", text: $store.productName)
+                        .textFieldStyle(.roundedBorder)
+                }
+
+                Text("商品資訊")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(palette.tertiaryLabel)
+                    .textCase(.uppercase)
+                    .padding(.top, BLSpacing.small)
+
+                currencyPicker(palette: palette)
+
+                sliderRow(
+                    label: "商品定價（\(store.fromCurrency.rawValue)）",
+                    value: $store.itemPrice,
+                    range: 1_000...500_000,
+                    step: 1_000,
+                    unit: store.fromCurrency.rawValue,
+                    tint: palette.accent
+                )
+
+                sliderRow(
+                    label: "當地運費（\(store.fromCurrency.rawValue)）",
+                    value: $store.domesticShipping,
+                    range: 0...20_000,
+                    step: 500,
+                    unit: store.fromCurrency.rawValue,
+                    tint: palette.teal
+                )
+
+                sliderRow(
+                    label: "國際集運（TWD/件）",
+                    value: $store.internationalShippingTwd,
+                    range: 0...1_000,
+                    step: 20,
+                    unit: "TWD",
+                    tint: palette.purple
+                )
+
+                sliderRow(
+                    label: "刷卡手續費 %",
+                    value: $store.cardFeePercent,
+                    range: 0...5,
+                    step: 0.1,
+                    unit: "%",
+                    tint: palette.orange,
+                    fractionDigits: 1
+                )
+
+                sliderRow(
+                    label: "目標毛利 %",
+                    value: $store.targetMarginPercent,
+                    range: 5...60,
+                    step: 1,
+                    unit: "%",
+                    tint: palette.green
+                )
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// 來源幣別 chip。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: chip 列 view。
+    func currencyPicker(palette: BLPalette) -> some View {
+        HStack(spacing: BLSpacing.small) {
+            ForEach(FxRates.convertibleCurrencies) { currency in
+                let isSelected = store.fromCurrency == currency
+
+                Button {
+                    store.fromCurrency = currency
+                } label: {
+                    Text("\(currency.flag) \(currency.rawValue)")
+                        .font(.subheadline.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, BLSpacing.small)
+                        .background(isSelected ? palette.accent : palette.fillTertiary)
+                        .foregroundStyle(isSelected ? Color.white : palette.label)
+                        .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    /// 單一 slider 列。
+    /// - Parameters:
+    ///   - label: 顯示在上方的欄位名稱。
+    ///   - value: 雙向繫結的值。
+    ///   - range: slider 範圍。
+    ///   - step: 滑動步進。
+    ///   - unit: 顯示在右上角的單位字串。
+    ///   - tint: slider 著色。
+    ///   - fractionDigits: 數值顯示時的小數位數。
+    /// - Returns: slider 列 view。
+    func sliderRow(
+        label: String,
+        value: Binding<Double>,
+        range: ClosedRange<Double>,
+        step: Double,
+        unit: String,
+        tint: Color,
+        fractionDigits: Int = 0
+    ) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack {
+                Text(label)
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+
+                Spacer()
+
+                Text("\(formatNumber(value.wrappedValue, fractionDigits: fractionDigits)) \(unit)")
+                    .font(.footnote.weight(.semibold))
+                    .monospacedDigit()
+            }
+
+            Slider(value: value, in: range, step: step)
+                .tint(tint)
+        }
+    }
+
+    /// 建議售價 hero 卡（漸層綠→青）。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: hero 卡 view。
+    func suggestedHero(palette: BLPalette) -> some View {
+        VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
+            if !targetSubtitle.isEmpty {
+                Text(targetSubtitle)
+                    .font(.footnote.weight(.medium))
+                    .opacity(0.9)
+                    .lineLimit(1)
+            }
+
+            Text("建議售價")
+                .font(.caption.weight(.semibold))
+                .opacity(0.95)
+                .textCase(.uppercase)
+
+            Text(formatTwd(store.suggestedTwd))
+                .font(.system(size: 40, weight: .bold))
+                .monospacedDigit()
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
+
+            Text("預估獲利 \(formatTwd(store.estimatedProfitTwd)) · \(formatPercent(store.estimatedMarginPercent))")
+                .font(.footnote)
+                .opacity(0.95)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(BLSpacing.large)
+        .foregroundStyle(.white)
+        .background(
+            LinearGradient(
+                colors: [palette.green, palette.teal],
+                startPoint: .topLeading,
+                endPoint: .bottomTrailing
+            )
+        )
+        .clipShape(RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous))
+        .blCardShadow()
+    }
+
+    /// 顯示在 hero 卡上方的「客戶 · 商品」副標；若兩者都空則隱藏。
+    var targetSubtitle: String {
+        let customer = store.customerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let product = store.productName.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        switch (customer.isEmpty, product.isEmpty) {
+        case (true, true):
+            return ""
+        case (false, true):
+            return customer
+        case (true, false):
+            return product
+        case (false, false):
+            return "\(customer) · \(product)"
+        }
+    }
+
+    /// 成本拆解卡：每項條 + 總成本。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 拆解卡 view。
+    func breakdownCard(palette: BLPalette) -> some View {
+        let total = max(store.costTwd, 1)
+        let items: [(label: String, value: Double, color: Color)] = [
+            ("商品金額", store.itemTwd, palette.accent),
+            ("國內運費", store.domesticTwd, palette.teal),
+            ("國際集運", store.internationalShippingTwd, palette.purple),
+            ("刷卡手續費", store.cardFeeTwd, palette.orange),
+        ]
+
+        return BLCard {
+            VStack(alignment: .leading, spacing: BLSpacing.medium) {
+                Text("成本拆解")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(palette.tertiaryLabel)
+                    .textCase(.uppercase)
+
+                ForEach(Array(items.enumerated()), id: \.offset) { _, item in
+                    breakdownRow(label: item.label, value: item.value, total: total, color: item.color, palette: palette)
+                }
+
+                Divider()
+
+                HStack {
+                    Text("總成本")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(palette.label)
+
+                    Spacer()
+
+                    Text(formatTwd(store.costTwd))
+                        .font(.subheadline.bold())
+                        .monospacedDigit()
+                        .foregroundStyle(palette.label)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// 拆解條的單列。
+    func breakdownRow(label: String, value: Double, total: Double, color: Color, palette: BLPalette) -> some View {
+        let fraction = max(0, min(1, total > 0 ? CGFloat(value / total) : 0))
+
+        return VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 6) {
+                RoundedRectangle(cornerRadius: 2, style: .continuous)
+                    .fill(color)
+                    .frame(width: 8, height: 8)
+
+                Text(label)
+                    .font(.footnote)
+                    .foregroundStyle(palette.secondaryLabel)
+
+                Spacer()
+
+                Text(formatTwd(value))
+                    .font(.footnote.weight(.semibold))
+                    .monospacedDigit()
+                    .foregroundStyle(palette.label)
+            }
+
+            GeometryReader { geo in
+                ZStack(alignment: .leading) {
+                    Capsule().fill(palette.fillQuaternary)
+                    Capsule().fill(color).frame(width: max(0, geo.size.width * fraction))
+                }
+            }
+            .frame(height: 5)
+        }
+    }
+}
+
+// MARK: - Formatting
+
+private extension QuoteView {
+
+    /// 將數值格式化為指定小數位數。
+    func formatNumber(_ value: Double, fractionDigits: Int) -> String {
+        let value = Decimal(value)
+
+        return value.formatted(.number.precision(.fractionLength(fractionDigits)))
+    }
+
+    /// 將金額格式化為新台幣（無小數位）。
+    func formatTwd(_ amount: Double) -> String {
+        Decimal(amount).formatted(
+            .currency(code: CurrencyCode.twd.code)
+                .precision(.fractionLength(0))
+                .locale(Locale(identifier: "zh_TW"))
+        )
+    }
+
+    /// 將百分比格式化為含一位小數的字串。
+    func formatPercent(_ value: Double) -> String {
+        Decimal(value).formatted(.number.precision(.fractionLength(1))) + "%"
+    }
+}
+
+// MARK: - Preview
+
+#Preview("報價試算") {
+    NavigationStack {
+        QuoteView(
+            store: Store(initialState: QuoteFeature.State()) {
+                QuoteFeature()
+            }
+        )
+    }
+}

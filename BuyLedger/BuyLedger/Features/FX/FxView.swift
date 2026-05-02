@@ -1,0 +1,341 @@
+//
+//  FxView.swift
+//  BuyLedger
+//
+//  Created by Leo Ho on 2026/5/1.
+//
+
+import ComposableArchitecture
+import SwiftUI
+
+/// 匯率工具畫面。
+///
+/// 對應設計稿 iPhone / iPad 的 FX tool：
+/// - 來源幣別 chip 選擇
+/// - 金額輸入欄
+/// - 換算後 TWD 金額（accent 卡片）
+/// - 即時匯率列表
+struct FxView: View {
+
+    // MARK: - View Properties
+
+    /// FX 功能 store。
+    @Bindable var store: StoreOf<FxFeature>
+
+    /// 目前系統深淺色外觀。
+    @Environment(\.colorScheme) private var colorScheme
+
+    // MARK: - View Body
+
+    /// FX 畫面內容。
+    var body: some View {
+        let palette = BLTheme.palette(for: colorScheme)
+
+        ScrollView {
+            VStack(alignment: .leading, spacing: BLSpacing.large) {
+                statusBanner(palette: palette)
+                converterCard(palette: palette)
+                quickAmountRow(palette: palette)
+                ratesList(palette: palette)
+            }
+            .padding(.horizontal, BLSpacing.large)
+            .padding(.vertical, BLSpacing.large)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(palette.background)
+        .navigationTitle("匯率工具")
+        .task {
+            await store.send(.task).finish()
+        }
+    }
+}
+
+// MARK: - ViewBuilder
+
+private extension FxView {
+
+    /// 載入或錯誤狀態的橫幅。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 狀態 view；若無內容則為空。
+    @ViewBuilder
+    func statusBanner(palette: BLPalette) -> some View {
+        if store.isLoading {
+            HStack(spacing: BLSpacing.small) {
+                ProgressView()
+                    .controlSize(.small)
+                Text("正在更新匯率…")
+                    .font(.footnote)
+                    .foregroundStyle(palette.secondaryLabel)
+                Spacer()
+            }
+            .padding(.horizontal, BLSpacing.medium)
+            .padding(.vertical, BLSpacing.small)
+            .background(palette.fillTertiary)
+            .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
+        } else if let message = store.errorMessage {
+            HStack(alignment: .top, spacing: BLSpacing.small) {
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(palette.orange)
+                Text(message)
+                    .font(.footnote)
+                    .foregroundStyle(palette.label)
+                Spacer()
+            }
+            .padding(.horizontal, BLSpacing.medium)
+            .padding(.vertical, BLSpacing.small)
+            .background(palette.orange.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
+        } else if store.snapshot != nil {
+            HStack(spacing: BLSpacing.small) {
+                Image(systemName: "checkmark.circle.fill")
+                    .foregroundStyle(palette.green)
+                Text("已連線到 ExchangeRate-API · \(snapshotDateText)")
+                    .font(.footnote)
+                    .foregroundStyle(palette.secondaryLabel)
+                Spacer()
+            }
+            .padding(.horizontal, BLSpacing.medium)
+            .padding(.vertical, BLSpacing.small)
+            .background(palette.green.opacity(0.12))
+            .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
+        }
+    }
+
+    /// 換算卡片：幣別選擇 + 金額輸入 + TWD 結果。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 換算卡 view。
+    func converterCard(palette: BLPalette) -> some View {
+        BLCard {
+            VStack(alignment: .leading, spacing: BLSpacing.medium) {
+                Text("從")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(palette.tertiaryLabel)
+                    .textCase(.uppercase)
+
+                currencyPicker(palette: palette)
+
+                Text("金額")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(palette.tertiaryLabel)
+                    .textCase(.uppercase)
+                    .padding(.top, BLSpacing.small)
+
+                amountField(palette: palette)
+
+                Divider().padding(.vertical, BLSpacing.small)
+
+                resultBlock(palette: palette)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
+    /// 來源幣別 chip。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: chip 列 view。
+    func currencyPicker(palette: BLPalette) -> some View {
+        HStack(spacing: BLSpacing.small) {
+            ForEach(FxRates.convertibleCurrencies) { currency in
+                let isSelected = store.fromCurrency == currency
+
+                Button {
+                    store.fromCurrency = currency
+                } label: {
+                    VStack(spacing: 2) {
+                        Text(currency.flag).font(.title3)
+                        Text(currency.rawValue).font(.caption.weight(.semibold))
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, BLSpacing.small)
+                    .background(isSelected ? palette.accent : palette.fillTertiary)
+                    .foregroundStyle(isSelected ? Color.white : palette.label)
+                    .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    /// 金額輸入欄。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 金額欄 view。
+    func amountField(palette: BLPalette) -> some View {
+        TextField(
+            "輸入金額",
+            value: $store.amount,
+            format: .number.precision(.fractionLength(0))
+        )
+        .font(.system(size: 32, weight: .bold))
+        .monospacedDigit()
+        .padding(.vertical, BLSpacing.medium)
+        .padding(.horizontal, BLSpacing.medium)
+        .background(palette.fillQuaternary)
+        .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
+        #if !os(macOS)
+        .keyboardType(.numberPad)
+        #endif
+    }
+
+    /// 結果區塊（accent 背景）。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 結果 view。
+    func resultBlock(palette: BLPalette) -> some View {
+        VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
+            Text("= 新台幣")
+                .font(.caption.weight(.semibold))
+                .foregroundStyle(palette.accent)
+
+            Text(formatTwd(store.convertedTwd))
+                .font(.system(size: 32, weight: .bold))
+                .monospacedDigit()
+                .foregroundStyle(palette.accent)
+
+            Text("1 \(store.fromCurrency.rawValue) = \(rateDisplay) TWD")
+                .font(.caption)
+                .foregroundStyle(palette.secondaryLabel)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .padding(BLSpacing.medium)
+        .background(palette.accent.opacity(0.12))
+        .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
+    }
+
+    /// 快速金額按鈕列。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 快速金額列 view。
+    func quickAmountRow(palette: BLPalette) -> some View {
+        let presets: [Decimal] = [10_000, 50_000, 100_000, 500_000]
+
+        return HStack(spacing: BLSpacing.small) {
+            ForEach(presets, id: \.self) { value in
+                Button {
+                    store.send(.quickAmountTapped(value))
+                } label: {
+                    Text(presetLabel(value))
+                        .font(.footnote.weight(.semibold))
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, BLSpacing.small)
+                        .background(store.amount == value ? palette.accent.opacity(0.18) : palette.fillTertiary)
+                        .foregroundStyle(store.amount == value ? palette.accent : palette.label)
+                        .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    /// 即時匯率列表。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 匯率列表 view。
+    func ratesList(palette: BLPalette) -> some View {
+        BLCard(padding: 0) {
+            VStack(spacing: 0) {
+                HStack {
+                    Text("即時匯率（對 TWD）")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(palette.label)
+
+                    Spacer()
+                }
+                .padding(.horizontal, BLSpacing.large)
+                .padding(.top, BLSpacing.large)
+                .padding(.bottom, BLSpacing.small)
+
+                ForEach(Array(FxRates.convertibleCurrencies.enumerated()), id: \.element) { index, currency in
+                    rateRow(currency: currency, palette: palette)
+
+                    if index < FxRates.convertibleCurrencies.count - 1 {
+                        Divider().padding(.leading, BLSpacing.large)
+                    }
+                }
+            }
+        }
+    }
+
+    /// 單一匯率列。
+    /// - Parameters:
+    ///   - currency: 幣別。
+    ///   - palette: 目前外觀使用的色盤。
+    /// - Returns: 匯率列 view。
+    func rateRow(currency: CurrencyCode, palette: BLPalette) -> some View {
+        HStack(spacing: BLSpacing.medium) {
+            Text(currency.flag)
+                .font(.title)
+
+            VStack(alignment: .leading) {
+                Text("1 \(currency.rawValue)")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(palette.label)
+
+                Text("銀行牌告（範例）")
+                    .font(.caption)
+                    .foregroundStyle(palette.secondaryLabel)
+            }
+
+            Spacer()
+
+            Text(rateDisplay(for: currency))
+                .font(.title3.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(palette.label)
+        }
+        .padding(.horizontal, BLSpacing.large)
+        .padding(.vertical, BLSpacing.medium)
+    }
+}
+
+// MARK: - Formatting
+
+private extension FxView {
+
+    /// 顯示在連線成功 banner 上的快照時間。
+    var snapshotDateText: String {
+        guard let snapshot = store.snapshot else { return "—" }
+        return snapshot.date.formatted(
+            .dateTime
+                .month(.defaultDigits)
+                .day(.defaultDigits)
+                .hour(.defaultDigits(amPM: .omitted))
+                .minute(.twoDigits)
+                .locale(Locale(identifier: "zh_TW"))
+        )
+    }
+
+    /// 將金額格式化為新台幣（無小數位）；`nil` 顯示為「—」。
+    func formatTwd(_ amount: Decimal?) -> String {
+        guard let amount else { return "—" }
+        return amount.formatted(
+            .currency(code: CurrencyCode.twd.code)
+                .precision(.fractionLength(0))
+                .locale(Locale(identifier: "zh_TW"))
+        )
+    }
+
+    /// 顯示在結果區塊的 `1 X = N.NNNN TWD` 中的匯率字串。
+    var rateDisplay: String {
+        rateDisplay(for: store.fromCurrency)
+    }
+
+    /// 將匯率格式化為四位小數的字串；無 snapshot 時顯示「—」。
+    func rateDisplay(for currency: CurrencyCode) -> String {
+        guard let rate = store.state.displayRate(for: currency) else { return "—" }
+        return rate.formatted(.number.precision(.fractionLength(4)))
+    }
+
+    /// 預設金額按鈕的顯示文字。
+    func presetLabel(_ value: Decimal) -> String {
+        value.formatted(.number.precision(.fractionLength(0)))
+    }
+}
+
+// MARK: - Preview
+
+#Preview("匯率工具") {
+    NavigationStack {
+        FxView(
+            store: Store(initialState: FxFeature.State()) {
+                FxFeature()
+            }
+        )
+    }
+}

@@ -70,6 +70,9 @@ fastlane/test_output/
 *.tmp
 *.temp
 
+# Local git worktrees
+.worktrees/
+
 # Environment and secrets
 .env
 .env.*
@@ -79,3 +82,9 @@ fastlane/test_output/
 *.provisionprofile
 .spectra/
 openspec/.vector-search.db*
+
+# Local API keys / build configurations（範本見 Config.example.xcconfig）
+BuyLedger/BuyLedger/Resources/Config.xcconfig
+
+# Claude Code 本機 agent state
+.claude/
