@@ -43,7 +43,7 @@ struct LedgerOrderItem: Equatable, Identifiable, Sendable {
         self.unitPrice = unitPrice
     }
 
-    // MARK: - Calculated Properties
+    // MARK: - Computed Properties
 
     /// 商品在原始幣別中的小計。
     var subtotal: Decimal {

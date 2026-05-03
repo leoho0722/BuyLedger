@@ -51,7 +51,7 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 商品類別。
     let category: String
 
-    // MARK: - Calculated Properties
+    // MARK: - Computed Properties
 
     /// 訂單的財務摘要。
     var summary: OrderSummary {
