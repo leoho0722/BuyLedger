@@ -11,9 +11,9 @@ import Testing
 
 @MainActor
 struct OrderCalculationTests {
-
+    
     // MARK: - Tests
-
+    
     @Test func summaryIncludesFeesCostProfitAndMargin() {
         let order = LedgerOrder(
             id: "BL-2604-018",
@@ -33,25 +33,33 @@ struct OrderCalculationTests {
             chargedAmount: Decimal(11_800),
             category: "美妝"
         )
-
+        
         let summary = OrderSummary(order: order)
-
+        
         #expect(summary.revenue == 11_800)
         #expect(summary.fees == 177)
         #expect(summary.totalCost == 9_469)
         #expect(summary.profit == 2_331)
         #expect(summary.margin == Decimal(2_331) / Decimal(11_800))
     }
-
+    
     @Test func quotingOrderWithoutChargeKeepsZeroMargin() {
         let order = LedgerOrder(
             id: "BL-2604-015",
-            customer: LedgerCustomer(name: "Joyce 黃", initials: "JH", tier: .vip),
+            customer: LedgerCustomer(
+                name: "Joyce 黃",
+                initials: "JH",
+                tier: .vip
+            ),
             status: .quoting,
             currency: .eur,
             date: Date(timeIntervalSince1970: 1_776_713_600),
             items: [
-                LedgerOrderItem(name: "Polène Numéro Un Nano 米色", quantity: 1, unitPrice: 390),
+                LedgerOrderItem(
+                    name: "Polène Numéro Un Nano 米色",
+                    quantity: 1,
+                    unitPrice: 390
+                ),
             ],
             itemCost: Decimal(13_728),
             domesticShipping: 0,
@@ -61,9 +69,9 @@ struct OrderCalculationTests {
             chargedAmount: 0,
             category: "精品"
         )
-
+        
         let summary = OrderSummary(order: order)
-
+        
         #expect(summary.revenue == 0)
         #expect(summary.fees == 0)
         #expect(summary.totalCost == 14_578)

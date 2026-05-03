@@ -22,7 +22,11 @@ struct OrderRowView: View {
         let summary = order.summary
 
         HStack(spacing: BLSpacing.medium) {
-            BLAvatar(name: order.customer.name, initials: order.customer.initials, size: 40)
+            BLAvatar(
+                name: order.customer.name,
+                initials: order.customer.initials,
+                size: 40
+            )
 
             VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
                 HStack(spacing: BLSpacing.extraSmall) {

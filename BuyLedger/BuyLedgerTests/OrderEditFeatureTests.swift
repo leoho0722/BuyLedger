@@ -12,64 +12,64 @@ import Testing
 
 @MainActor
 struct OrderEditFeatureTests {
-
+    
     // MARK: - Tests
-
+    
     @Test func bindingUpdatesDraftCustomerName() async {
         let store = TestStore(initialState: OrderEditFeature.State()) {
             OrderEditFeature()
         }
-
+        
         await store.send(\.binding.draftCustomerName, "新客戶") {
             $0.draftCustomerName = "新客戶"
         }
     }
-
+    
     @Test func bindingUpdatesDraftCategory() async {
         let store = TestStore(initialState: OrderEditFeature.State()) {
             OrderEditFeature()
         }
-
+        
         await store.send(\.binding.draftCategory, "美妝") {
             $0.draftCategory = "美妝"
         }
     }
-
+    
     @Test func bindingUpdatesDraftStatus() async {
         let store = TestStore(initialState: OrderEditFeature.State()) {
             OrderEditFeature()
         }
-
+        
         await store.send(\.binding.draftStatus, .delivered) {
             $0.draftStatus = .delivered
         }
     }
-
+    
     @Test func bindingUpdatesDraftCurrency() async {
         let store = TestStore(initialState: OrderEditFeature.State()) {
             OrderEditFeature()
         }
-
+        
         await store.send(\.binding.draftCurrency, .jpy) {
             $0.draftCurrency = .jpy
         }
     }
-
+    
     @Test func bindingUpdatesDraftChargedAmount() async {
         let store = TestStore(initialState: OrderEditFeature.State()) {
             OrderEditFeature()
         }
-
+        
         await store.send(\.binding.draftChargedAmount, 12_345) {
             $0.draftChargedAmount = 12_345
         }
     }
-
+    
     @Test func bindingUpdatesDraftCostFields() async {
         let store = TestStore(initialState: OrderEditFeature.State()) {
             OrderEditFeature()
         }
-
+        
         await store.send(\.binding.draftItemCost, 5_000) {
             $0.draftItemCost = 5_000
         }
@@ -86,11 +86,11 @@ struct OrderEditFeatureTests {
             $0.draftPlatformFeeRate = 0.03
         }
     }
-
+    
     @Test func draftPrefillsFromOriginal() {
         let original = LedgerOrder.sampleOrders[0]
         let state = OrderEditFeature.State(original: original)
-
+        
         #expect(state.draftCustomerName == original.customer.name)
         #expect(state.draftCategory == original.category)
         #expect(state.draftStatus == original.status)
@@ -102,10 +102,10 @@ struct OrderEditFeatureTests {
         #expect(state.draftCardFeeRate == original.cardFeeRate)
         #expect(state.draftPlatformFeeRate == original.platformFeeRate)
     }
-
+    
     @Test func newDraftStartsEmpty() {
         let state = OrderEditFeature.State()
-
+        
         #expect(state.draftCustomerName.isEmpty)
         #expect(state.draftCategory.isEmpty)
         #expect(state.draftStatus == .quoting)

@@ -100,10 +100,8 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
             return monthInterval.start..<monthInterval.end
 
         case .lastMonth:
-            guard
-                let thisMonthInterval = calendar.dateInterval(of: .month, for: referenceDate),
-                let lastMonthStart = calendar.date(byAdding: .month, value: -1, to: thisMonthInterval.start)
-            else {
+            guard let thisMonthInterval = calendar.dateInterval(of: .month, for: referenceDate),
+                  let lastMonthStart = calendar.date(byAdding: .month, value: -1, to: thisMonthInterval.start) else {
                 return nil
             }
 
@@ -114,5 +112,10 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
     // MARK: - Static Properties
 
     /// 訂單瀏覽列表中提供的固定順序。
-    static let orderBrowsingCases: [OrderDatePeriod] = [.all, .thisWeek, .thisMonth, .lastMonth]
+    static let orderBrowsingCases: [OrderDatePeriod] = [
+        .all,
+        .thisWeek,
+        .thisMonth,
+        .lastMonth
+    ]
 }

@@ -10,24 +10,24 @@ import SwiftUI
 
 /// 使用設計系統主色的簡潔長條圖。
 struct BLBarChart: View {
-
+    
     // MARK: - View Properties
-
+    
     /// 目前系統深淺色外觀。
     @Environment(\.colorScheme) private var colorScheme
-
+    
     /// 長條圖要呈現的資料。
     let data: [BLBarChartValue]
-
+    
     /// 圖表高度。
     var height: CGFloat = 180
-
+    
     // MARK: - View Body
-
+    
     /// 長條圖的畫面內容。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
-
+        
         Chart(data) { item in
             BarMark(
                 x: .value("月份", item.label),

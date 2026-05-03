@@ -16,21 +16,21 @@ import SwiftUI
 /// - 換算後 TWD 金額（accent 卡片）
 /// - 即時匯率列表
 struct FxView: View {
-
+    
     // MARK: - View Properties
-
+    
     /// FX 功能 store。
     @Bindable var store: StoreOf<FxFeature>
-
+    
     /// 目前系統深淺色外觀。
     @Environment(\.colorScheme) private var colorScheme
-
+    
     // MARK: - View Body
-
+    
     /// FX 畫面內容。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
-
+        
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 statusBanner(palette: palette)
@@ -53,7 +53,7 @@ struct FxView: View {
 // MARK: - ViewBuilder
 
 private extension FxView {
-
+    
     /// 載入或錯誤狀態的橫幅。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 狀態 view；若無內容則為空。
@@ -100,7 +100,7 @@ private extension FxView {
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
         }
     }
-
+    
     /// 換算卡片：幣別選擇 + 金額輸入 + TWD 結果。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 換算卡 view。
@@ -111,25 +111,25 @@ private extension FxView {
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(palette.tertiaryLabel)
                     .textCase(.uppercase)
-
+                
                 currencyPicker(palette: palette)
-
+                
                 Text("金額")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(palette.tertiaryLabel)
                     .textCase(.uppercase)
                     .padding(.top, BLSpacing.small)
-
+                
                 amountField(palette: palette)
-
+                
                 Divider().padding(.vertical, BLSpacing.small)
-
+                
                 resultBlock(palette: palette)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-
+    
     /// 來源幣別 chip。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: chip 列 view。
@@ -137,7 +137,7 @@ private extension FxView {
         HStack(spacing: BLSpacing.small) {
             ForEach(FxRates.convertibleCurrencies) { currency in
                 let isSelected = store.fromCurrency == currency
-
+                
                 Button {
                     store.fromCurrency = currency
                 } label: {
@@ -155,7 +155,7 @@ private extension FxView {
             }
         }
     }
-
+    
     /// 金額輸入欄。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 金額欄 view。
@@ -171,11 +171,11 @@ private extension FxView {
         .padding(.horizontal, BLSpacing.medium)
         .background(palette.fillQuaternary)
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
-        #if !os(macOS)
+#if !os(macOS)
         .keyboardType(.numberPad)
-        #endif
+#endif
     }
-
+    
     /// 結果區塊（accent 背景）。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 結果 view。
@@ -184,12 +184,12 @@ private extension FxView {
             Text("= 新台幣")
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(palette.accent)
-
+            
             Text(formatTwd(store.convertedTwd))
                 .font(.system(size: 32, weight: .bold))
                 .monospacedDigit()
                 .foregroundStyle(palette.accent)
-
+            
             Text("1 \(store.fromCurrency.rawValue) = \(rateDisplay) TWD")
                 .font(.caption)
                 .foregroundStyle(palette.secondaryLabel)
@@ -199,13 +199,13 @@ private extension FxView {
         .background(palette.accent.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
     }
-
+    
     /// 快速金額按鈕列。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 快速金額列 view。
     func quickAmountRow(palette: BLPalette) -> some View {
         let presets: [Decimal] = [10_000, 50_000, 100_000, 500_000]
-
+        
         return HStack(spacing: BLSpacing.small) {
             ForEach(presets, id: \.self) { value in
                 Button {
@@ -223,7 +223,7 @@ private extension FxView {
             }
         }
     }
-
+    
     /// 即時匯率列表。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 匯率列表 view。
@@ -234,16 +234,16 @@ private extension FxView {
                     Text("即時匯率（對 TWD）")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(palette.label)
-
+                    
                     Spacer()
                 }
                 .padding(.horizontal, BLSpacing.large)
                 .padding(.top, BLSpacing.large)
                 .padding(.bottom, BLSpacing.small)
-
+                
                 ForEach(Array(FxRates.convertibleCurrencies.enumerated()), id: \.element) { index, currency in
                     rateRow(currency: currency, palette: palette)
-
+                    
                     if index < FxRates.convertibleCurrencies.count - 1 {
                         Divider().padding(.leading, BLSpacing.large)
                     }
@@ -251,7 +251,7 @@ private extension FxView {
             }
         }
     }
-
+    
     /// 單一匯率列。
     /// - Parameters:
     ///   - currency: 幣別。
@@ -261,19 +261,19 @@ private extension FxView {
         HStack(spacing: BLSpacing.medium) {
             Text(currency.flag)
                 .font(.title)
-
+            
             VStack(alignment: .leading) {
                 Text("1 \(currency.rawValue)")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(palette.label)
-
+                
                 Text(rateSourceSubtitle(for: currency))
                     .font(.caption)
                     .foregroundStyle(palette.secondaryLabel)
             }
-
+            
             Spacer()
-
+            
             Text(rateDisplay(for: currency))
                 .font(.title3.weight(.semibold))
                 .monospacedDigit()
@@ -287,10 +287,12 @@ private extension FxView {
 // MARK: - Formatting
 
 private extension FxView {
-
+    
     /// 顯示在連線成功 banner 上的快照時間。
     var snapshotDateText: String {
-        guard let snapshot = store.snapshot else { return "—" }
+        guard let snapshot = store.snapshot else {
+            return "—"
+        }
         return snapshot.date.formatted(
             .dateTime
                 .month(.defaultDigits)
@@ -300,34 +302,38 @@ private extension FxView {
                 .locale(Locale(identifier: "zh_TW"))
         )
     }
-
+    
     /// 將金額格式化為新台幣（無小數位）；`nil` 顯示為「—」。
     func formatTwd(_ amount: Decimal?) -> String {
-        guard let amount else { return "—" }
+        guard let amount else {
+            return "—"
+        }
         return amount.formatted(
             .currency(code: CurrencyCode.twd.code)
-                .precision(.fractionLength(0))
-                .locale(Locale(identifier: "zh_TW"))
+            .precision(.fractionLength(0))
+            .locale(Locale(identifier: "zh_TW"))
         )
     }
-
+    
     /// 顯示在結果區塊的 `1 X = N.NNNN TWD` 中的匯率字串。
     var rateDisplay: String {
         rateDisplay(for: store.fromCurrency)
     }
-
+    
     /// 將匯率格式化為四位小數的字串；無 snapshot 時顯示「—」。
     func rateDisplay(for currency: CurrencyCode) -> String {
         guard let rate = store.state.displayRate(for: currency) else { return "—" }
         return rate.formatted(.number.precision(.fractionLength(4)))
     }
-
+    
     /// 匯率列副標：顯示資料來源與 snapshot 時間戳；TWD 永遠顯示「基準幣別」、無 snapshot 時顯示「尚未連線」。
     /// - Parameter currency: 幣別。
     /// - Returns: 副標字串。
     func rateSourceSubtitle(for currency: CurrencyCode) -> String {
         if currency == .twd { return "基準幣別" }
-        guard let snapshot = store.snapshot else { return "尚未連線" }
+        guard let snapshot = store.snapshot else {
+            return "尚未連線"
+        }
         let timestamp = snapshot.date.formatted(
             .dateTime
                 .month(.defaultDigits)
@@ -338,7 +344,7 @@ private extension FxView {
         )
         return "ExchangeRate-API · \(timestamp)"
     }
-
+    
     /// 預設金額按鈕的顯示文字。
     func presetLabel(_ value: Decimal) -> String {
         value.formatted(.number.precision(.fractionLength(0)))

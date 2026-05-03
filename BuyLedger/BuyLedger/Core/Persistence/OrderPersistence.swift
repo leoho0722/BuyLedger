@@ -70,7 +70,9 @@ actor OrderPersistence {
         descriptor.fetchLimit = 1
 
         let existing = try modelContext.fetch(descriptor)
-        guard existing.isEmpty else { return false }
+        guard existing.isEmpty else {
+            return false
+        }
 
         for order in samples {
             modelContext.insert(OrderRecord(order: order))

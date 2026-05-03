@@ -9,39 +9,39 @@ import SwiftUI
 
 /// BuyLedger 支援的按鈕語意。
 enum BLButtonVariant {
-
+    
     // MARK: - Cases
-
+    
     /// 主要操作。
     case primary
-
+    
     /// 次要操作。
     case secondary
-
+    
     /// 不帶背景的文字操作。
     case plain
-
+    
     /// 破壞性操作。
     case destructive
 }
 
 /// 使用設計系統色彩與最小觸控高度的按鈕樣式。
 struct BLButtonStyle: ButtonStyle {
-
+    
     // MARK: - Style Properties
-
+    
     /// 目前系統深淺色外觀。
     @Environment(\.colorScheme) private var colorScheme
-
+    
     /// 按鈕的語意樣式。
     let variant: BLButtonVariant
-
+    
     // MARK: - Style Body
-
+    
     /// 回傳套用樣式後的按鈕內容。
     func makeBody(configuration: Configuration) -> some View {
         let palette = BLTheme.palette(for: colorScheme)
-
+        
         configuration.label
             .font(.headline)
             .foregroundStyle(foregroundColor(palette: palette))
@@ -58,7 +58,7 @@ struct BLButtonStyle: ButtonStyle {
 // MARK: - Private Method
 
 private extension BLButtonStyle {
-
+    
     /// 平台對應的最小按鈕高度。
     var minimumHeight: CGFloat {
 #if os(macOS)
@@ -67,21 +67,21 @@ private extension BLButtonStyle {
         44
 #endif
     }
-
+    
     /// 回傳按鈕前景色。
     /// - Parameter palette: 目前外觀對應的色盤。
     /// - Returns: 按鈕文字與圖示使用的色彩。
     func foregroundColor(palette: BLPalette) -> Color {
         switch variant {
         case .primary:
-            .white
+                .white
         case .secondary, .plain:
             palette.accent
         case .destructive:
             palette.red
         }
     }
-
+    
     /// 回傳按鈕背景色。
     /// - Parameter palette: 目前外觀對應的色盤。
     /// - Returns: 按鈕背景使用的色彩。
@@ -92,7 +92,7 @@ private extension BLButtonStyle {
         case .secondary:
             palette.fillTertiary
         case .plain:
-            .clear
+                .clear
         case .destructive:
             palette.red.opacity(0.14)
         }
@@ -100,20 +100,28 @@ private extension BLButtonStyle {
 }
 
 extension ButtonStyle where Self == BLButtonStyle {
-
+    
     // MARK: - Static Properties
-
+    
     /// 主要操作按鈕。
-    static var blPrimary: BLButtonStyle { BLButtonStyle(variant: .primary) }
-
+    static var blPrimary: BLButtonStyle {
+        BLButtonStyle(variant: .primary)
+    }
+    
     /// 次要操作按鈕。
-    static var blSecondary: BLButtonStyle { BLButtonStyle(variant: .secondary) }
-
+    static var blSecondary: BLButtonStyle {
+        BLButtonStyle(variant: .secondary) 
+    }
+    
     /// 純文字操作按鈕。
-    static var blPlain: BLButtonStyle { BLButtonStyle(variant: .plain) }
-
+    static var blPlain: BLButtonStyle {
+        BLButtonStyle(variant: .plain) 
+    }
+    
     /// 破壞性操作按鈕。
-    static var blDestructive: BLButtonStyle { BLButtonStyle(variant: .destructive) }
+    static var blDestructive: BLButtonStyle {
+        BLButtonStyle(variant: .destructive) 
+    }
 }
 
 // MARK: - Preview
@@ -122,13 +130,13 @@ extension ButtonStyle where Self == BLButtonStyle {
     VStack(spacing: BLSpacing.medium) {
         Button("主要操作", systemImage: "plus") {}
             .buttonStyle(.blPrimary)
-
+        
         Button("次要操作", systemImage: "square.and.pencil") {}
             .buttonStyle(.blSecondary)
-
+        
         Button("純文字操作", systemImage: "arrow.clockwise") {}
             .buttonStyle(.blPlain)
-
+        
         Button("刪除資料", systemImage: "trash") {}
             .buttonStyle(.blDestructive)
     }
