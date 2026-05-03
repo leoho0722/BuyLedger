@@ -10,8 +10,7 @@ import SwiftData
 
 /// 建立 BuyLedger 用的 ``ModelContainer`` 的工廠。
 ///
-/// 設計目標：MVP 階段只跑純本機（``CloudKitOption/disabled``），但介面預留給未來打開 CloudKit 同步使用——
-/// 屆時只需在 `BuyLedgerApp` 中把 `disabled` 改成 `.privateContainer("iCloud.com.leoho.BuyLedger")`，並補上 iCloud 與 Background Modes capabilities 即可。
+/// App 預設以純本機方式運行（``CloudKitOption/disabled``）。要切換成 CloudKit 同步時，把 `BuyLedgerApp` 中 ``makeForApp()`` 換成 ``make(cloudKit:inMemoryOnly:)``、傳入 `.privateContainer("iCloud.com.leoho.BuyLedger")`，並補上 iCloud 與 Background Modes capabilities 即可。
 enum PersistenceContainer {
 
     // MARK: - Cases

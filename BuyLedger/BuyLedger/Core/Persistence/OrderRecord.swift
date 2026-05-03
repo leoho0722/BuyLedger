@@ -12,7 +12,7 @@ import SwiftData
 ///
 /// 與領域型別 ``LedgerOrder`` 一一對應，但採 `@Model class` 形式以滿足 SwiftData 要求；同名欄位之間透過 ``OrderPersistence`` 進行雙向 mapping。
 ///
-/// 設計重點（為了未來無痛打開 CloudKit 同步）：
+/// 設計重點（保留與 CloudKit 同步相容的限制，便於日後直接打開）：
 /// - 不使用 `@Attribute(.unique)`，因為 CloudKit 不支援 unique constraint；改用「id 為平凡 String，由 actor 進行 upsert 檢查」
 /// - 嵌入式型別（``LedgerCustomer`` / `[LedgerOrderItem]`）透過 Codable 以 transformable 形式儲存，避免引入 optional relationship 對 CloudKit 同步的限制
 @Model

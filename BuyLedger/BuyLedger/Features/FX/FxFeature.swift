@@ -58,9 +58,9 @@ struct FxFeature {
             self.errorMessage = errorMessage
         }
 
-        // MARK: - Calculated Properties
+        // MARK: - Computed Properties
 
-        /// 來源幣別目前的匯率（1 單位 = X TWD）；優先採 snapshot，其次 fallback 到 ``FxRates``。
+        /// 來源幣別目前的匯率（1 單位 = X TWD）；無 snapshot 時為 `nil`。
         var rate: Decimal? {
             displayRate(for: fromCurrency)
         }
@@ -72,14 +72,16 @@ struct FxFeature {
 
         /// 任意幣別目前對 TWD 的匯率（1 單位 = X TWD）。
         ///
-        /// 取值順序：（1）snapshot.base == .twd 時取 `1 / snapshot.rates[currency]`、（2）snapshot.base 與目標幣別一致時取 `snapshot.rates[.twd]`、（3）以上都不符時 fallback 到 ``FxRates``。
+        /// 取值順序：（1）查詢的幣別為 TWD 時直接回 `1`、（2）snapshot.base == .twd 時取 `1 / snapshot.rates[currency]`、（3）snapshot.base 與目標幣別一致時取 `snapshot.rates[.twd]`、（4）以上都不符或無 snapshot 時回 `nil`，由 view 端顯示「—」。
         ///
-        /// View 顯示「即時匯率列表」與「1 X = N TWD」字串時使用，確保 snapshot 一旦載入，UI 就一致使用 API 資料而非 hardcoded fallback。
+        /// View 顯示「即時匯率列表」與「1 X = N TWD」字串時使用，確保 UI 永遠呈現 API 取得的真實匯率，避免使用者誤信過期或假資料。
         /// - Parameter currency: 要查詢的幣別。
         /// - Returns: 對應的 TWD 匯率。
         func displayRate(for currency: CurrencyCode) -> Decimal? {
             if currency == .twd { return 1 }
-            guard let snapshot else { return nil }
+            guard let snapshot else {
+                return nil
+            }
             if snapshot.base == .twd, let inverse = snapshot.rates[currency], inverse > 0 {
                 return Decimal(1) / inverse
             }
@@ -133,7 +135,9 @@ struct FxFeature {
                 return .none
 
             case .task:
-                guard !state.isLoading else { return .none }
+                guard !state.isLoading else {
+                    return .none
+                }
                 state.isLoading = true
                 state.errorMessage = nil
 
@@ -171,17 +175,17 @@ struct FxFeature {
     private static func userMessage(for error: APIError) -> String {
         switch error {
         case .invalidKey:
-            return "尚未設定 ExchangeRate-API 金鑰；目前顯示的是內建匯率。"
+            return "尚未設定 ExchangeRate-API 金鑰；無法顯示即時匯率。"
         case .quotaExceeded:
-            return "本月匯率 API 配額已用完，目前顯示的是內建匯率。"
+            return "本月匯率 API 配額已用完；無法顯示即時匯率。"
         case .transport:
-            return "網路連線異常，目前顯示的是內建匯率。"
+            return "網路連線異常；無法顯示即時匯率，請稍後再試。"
         case let .http(statusCode):
-            return "匯率 API 回應 HTTP \(statusCode)，目前顯示的是內建匯率。"
+            return "匯率 API 回應 HTTP \(statusCode)；無法顯示即時匯率。"
         case .decoding:
-            return "匯率資料格式異常，目前顯示的是內建匯率。"
+            return "匯率資料格式異常；無法顯示即時匯率。"
         case let .apiError(code):
-            return "匯率 API 回應錯誤（\(code)），目前顯示的是內建匯率。"
+            return "匯率 API 回應錯誤（\(code)）；無法顯示即時匯率。"
         }
     }
 }

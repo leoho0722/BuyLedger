@@ -19,11 +19,9 @@ struct BuyLedgerApp: App {
         RootFeature()
     }
 
-    /// SwiftData 共用 ``ModelContainer``；目前以純本機方式建立。
+    /// SwiftData 共用 ``ModelContainer``；以純本機方式建立。
     ///
-    /// 未來要打開 CloudKit 同步時，把 ``PersistenceContainer/makeForApp()`` 換成
-    /// `try PersistenceContainer.make(cloudKit: .privateContainer("iCloud.com.leoho.BuyLedger"))` 並補上 iCloud
-    /// 與 Background Modes capabilities 即可。
+    /// 切換成 CloudKit 同步的步驟詳見 ``PersistenceContainer``。
     private let modelContainer: ModelContainer = PersistenceContainer.makeForApp()
 
     // MARK: - App Body
@@ -44,7 +42,7 @@ struct BuyLedgerApp: App {
 
 #if os(macOS)
         Settings {
-            SettingsScene_macOS(
+            SettingsMacView(
                 store: store.scope(state: \.settings, action: \.settings)
             )
         }

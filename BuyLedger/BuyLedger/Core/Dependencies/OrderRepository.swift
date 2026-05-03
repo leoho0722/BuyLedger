@@ -11,7 +11,7 @@ import SwiftData
 
 /// 讀取與寫入訂單資料的依賴介面。
 ///
-/// MVP 階段背後接 SwiftData（純本機，未開 CloudKit；介面已預留 ``PersistenceContainer/CloudKitOption`` 給日後擴展）。
+/// 背後接 SwiftData 純本機儲存；CloudKit 同步策略透過 ``PersistenceContainer/CloudKitOption`` 設定，目前以 ``PersistenceContainer/CloudKitOption/disabled`` 執行，待 Apple Developer 帳號完成 provision 後才會打開。
 struct OrderRepository: Sendable {
 
     // MARK: - Dependency Properties
