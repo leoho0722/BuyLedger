@@ -29,73 +29,77 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 # 儲存庫指引
 
-## 專案結構與模組組織
-
-此儲存庫已建立 Xcode Multiplatform 專案，目標平台為 iOS、iPadOS 與 macOS。專案主要技術棧為 Swift 6 + SwiftUI、TCA（Swift Composable Architecture）、SwiftData + CloudKit 與 Swift Charts。Xcode 專案檔位於 `BuyLedger/BuyLedger.xcodeproj`，scheme 名稱為 `BuyLedger`。
-
-目前主要結構如下：
-
-- `BuyLedger/BuyLedger.xcodeproj/`：Xcode 專案檔。`project.pbxproj` 應納入版本控制，`xcuserdata/` 不應提交。
-- `BuyLedger/BuyLedger/App/`：App 進入點、生命週期、composition root、routing 與全域啟動設定。
-- `BuyLedger/BuyLedger/Core/`：跨 feature 共用的依賴、SwiftData/CloudKit 持久化、基礎服務與工具。
-- `BuyLedger/BuyLedger/Features/`：依功能切分的 TCA feature。預設採 feature-first 扁平結構，例如 `Items/Item.swift`、`Items/ContentView.swift`；只有在 feature 變大時才再拆 `Models/`、`Clients/`、`Persistence/` 或更細分層。
-- `BuyLedger/BuyLedger/Features/Items/`：目前 Xcode 範本產生的初始 feature，後續導入 TCA 時可加入 `ItemsFeature.swift` 並將 `ContentView.swift` 改名為 `ItemsView.swift`。
-- `BuyLedger/BuyLedger/Shared/`：跨 feature 共用的設計系統、SwiftUI 元件、Swift Charts 呈現元件、extensions 與可重用 helper。
-- `BuyLedger/BuyLedger/Shared/DesignSystem/Foundations/`：設計系統基礎 token，例如：語意色彩、語意狀態、尺寸、間距、陰影與文字層級。
-- `BuyLedger/BuyLedger/Shared/DesignSystem/Components/`：設計系統 UI 元件。請依元件類別建立子資料夾，例如：`Avatar/`、`Badges/`、`Buttons/`、`Cards/`、`Charts/`、`TextFields/`。
-- `BuyLedger/BuyLedger/Resources/`：App icon、顏色、圖片資產、`Info.plist` 與 entitlements 等資源或設定檔。
-- `BuyLedger/BuyLedgerTests/`：單元測試。
-- `BuyLedger/BuyLedgerUITests/`：UI 測試與啟動畫面測試。
-- `Package.swift`：只有在導入共用 Swift package，或採用 package-first 佈局時才需要加入。
-
-Xcode project 使用 file system synchronized groups；新增或搬移檔案時優先調整實體資料夾，再用 build 驗證目標是否仍正確包含來源與資源。請勿將建置輸出、本機 Xcode 狀態、密鑰、簽署憑證或 provisioning profile 納入 Git。若未來建立 shared scheme，應提交 `xcshareddata/xcschemes/`。
+專案概覽、目錄結構、技術棧背景與 setup 步驟見 [`README.md`](README.md)。本檔僅記錄 Codex 寫程式時必須遵守的硬規則與隱性 gotcha。
 
 ## 主要技術棧
 
-- Swift 6 + SwiftUI：新程式碼應以 Swift 6 concurrency 檢查為準，優先使用 SwiftUI、`async/await`、`@MainActor` 與平台原生 SwiftUI API。
-- TCA（Swift Composable Architecture）：功能狀態、商業邏輯、副作用與依賴注入應放在 reducer 與 dependency 中；SwiftUI View 保持宣告式與輕量。
-- SwiftData + CloudKit：SwiftData model 是本機持久化核心，CloudKit 同步相關 schema、entitlements、container 與 migration 需要同步檢查。
-- Swift Charts：圖表 View 只負責呈現，資料彙總、分組、排序與格式化應放在可測試的 feature/domain 層。
+- **Swift 6 strict concurrency**：專案層級 `SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated`（不是 `MainActor`）。改成 `MainActor` 會讓 SwiftData `@Model` 與 `@ModelActor` 編不過。需要 main actor 才安全的型別請對個別宣告加 `@MainActor`。
+- **TCA Reducer body** 使用顯式 `some Reducer<State, Action>`，不可用 `some ReducerOf<Self>`（會 circular reference）。
 
 ## 文件查證準則
 
-使用任何框架或套件開發前，無論是 Apple 原生框架或第三方套件，都必須先使用 Context7 查詢最新官方文件與建議用法，再依查證結果進行設計與實作。不應只依賴記憶、既有範例或過去專案習慣。
-
-涉及 Apple 原生框架、平台 API 或 Xcode 工具鏈時，例如 SwiftUI、SwiftData、CloudKit、Swift Charts、Xcode build/test 與平台能力，除了 Context7 之外，還必須使用 Apple docs MCP 查詢 Apple 官方文件。實作前請比對 Context7 與 Apple 官方文件的內容；若兩者有差異，不得自行決定採用哪一方，必須先整理差異、影響與建議選項並詢問使用者，由使用者決策後再繼續實作。
-
-查證後的實作應遵循目前文件推薦的模式。例如 TCA 應優先使用目前版本推薦的 `@Reducer`、`@ObservableState`、`@Bindable var store`、`$store.property.sending(...)`、`Store.scope(state:action:)` 與 `TestStore` 測試模式；若因編譯器、平台限制或專案限制需要偏離文件建議，請在回覆或變更說明中明確說明原因。
+- 動 Apple 框架或第三方套件前先用 **Context7** 查最新官方文件，不要憑記憶或舊範例。
+- Apple 原生框架（SwiftUI、SwiftData、CloudKit、Swift Charts、Xcode 工具鏈）另外用 **Apple docs MCP** 對照；兩邊文件矛盾時不可自決，先列差異與建議選項問使用者。
 
 ## 建置、測試與開發指令
 
-常用指令如下：
+完整指令範例見 [README.md › Build & Run](README.md#2-build--run)。
 
-- `xcodebuild -list -project BuyLedger/BuyLedger.xcodeproj`：檢查 schemes 與 targets。
-- `xcodebuild -showdestinations -project BuyLedger/BuyLedger.xcodeproj -scheme BuyLedger`：檢查可用的 iOS、iPadOS 與 macOS destinations。
-- `xcodebuild -project BuyLedger/BuyLedger.xcodeproj -scheme BuyLedger -destination 'platform=iOS Simulator,name=iPhone 16' build`：建置 iOS simulator 版本。
-- `xcodebuild -project BuyLedger/BuyLedger.xcodeproj -scheme BuyLedger -destination 'platform=iOS Simulator,name=iPad Pro (13-inch) (M4)' build`：建置 iPadOS simulator 版本。
-- `xcodebuild -project BuyLedger/BuyLedger.xcodeproj -scheme BuyLedger -destination 'platform=macOS' build`：建置 macOS 版本。
-- `xcodebuild -project BuyLedger/BuyLedger.xcodeproj -scheme BuyLedger -destination 'platform=iOS Simulator,name=iPhone 16' test`：執行測試。
-- `swift test`：當專案含有 `Package.swift` 且模組可由 SwiftPM 測試時使用。
+**預設用 CLI `xcodebuildmcp <subcommand>`**：build / run / test、查狀態、列舉 simulator 或 scheme、可複現指令（CI、教學、script）、批次與管線處理（`| grep`、`| jq`、`>` 存檔）等都走 CLI。
 
-提交前請先執行 `git status --short`，確認只包含本次變更需要的檔案。
+**切到 MCP server `mcp__XcodeBuildMCP__*`** 的時機：
+
+- UI 自動化（`snapshot_ui` / `tap` / `swipe`）與 screenshot
+- 需要結構化測試結果或 coverage 報告
+- 長時間操作需可控中斷或串流 log
+- 讀取或設定 session defaults
+
+**通用鐵則**：
+
+- 絕不退回原生 `xcodebuild` / `xcrun` / `simctl`。
+- 三平台 simulator/macOS build 共用同一份 `DerivedData/.../XCBuildData/build.db`，**不能並行**——請序列化（`cmd1 && cmd2 && cmd3`），否則 `database is locked`。
+- 詳細 build error 要加 `xcodebuildmcp --log-level error <subcommand> ...`，否則 CLI 只回 trailing `BUILD FAILED`。
+- simulator 名稱不要寫死，跑 build-and-run 前先 `xcodebuildmcp simulator list-sims` 查當前可用名稱。
+- macOS rebuild-and-launch 前先 `xcodebuildmcp macos stop --app-name BuyLedger` 關掉前一個 App（XcodeBuildMCP 預設只啟 simulator 工具集，macOS 走 CLI），否則新 binary 不會被載入。
+- 模擬器跑 App 用 `build-and-run`，不要先 `build` 再 `build-and-run`。
+- 提交前先 `git status --short` 確認只包含本次變更的檔案。
+
+## App 進入點與平台導覽
+
+平台 layout 分流概覽見 [README.md › App 進入點與平台導覽](README.md#app-進入點與平台導覽)。動到這層程式碼時請遵守：
+
+- **`BuyLedgerApp.swift` 的 `#if os(macOS)`**：不可同時包住 `WindowGroup` 的 modifier 與另一個 top-level `Scene`——必須切成兩個獨立 `#if os(macOS)` 區塊，否則 result builder 會 parse fail。
+- **跨頁觸發新訂單**請使用 `RootFeature.Action.startNewOrder`：reducer 會同時把 `selectedTab` 切到 `.orders` 並把 `OrdersFeature.State.editOrder` 設成空白草稿。從非 `.orders` 分頁直接設 sheet state 會發生 view-not-in-hierarchy 的 race——`.sheet(...)` 修飾子掛在 `OrdersView` 上，當下不在 hierarchy 就不會 mount。
+- **`OrdersView` 的 `.sheet(item: $store.scope(state: \.editOrder, action: \.editOrder))`** 一律掛在 `OrdersView` 外層，三平台共用——不可移到平台分流後的子 view 裡。
+
+## 資料層與 Dependency 注入
+
+- **`liveValue` 不自動 seed sample 資料**——使用者首次啟動是真正的空狀態（Dashboard 顯示 `onboardingHero`、Insights 顯示空狀態 `ContentUnavailableView`、Orders 顯示「沒有符合條件的訂單」）。
+- **`previewValue`** 使用 in-memory container 並傳 `seedSampleOrdersIfEmpty: true`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
+- **`LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback`** 僅供 Preview / 單元測試 / `previewValue` 使用，runtime path **不應讀取**。
+- **`@ModelActor` init 帶 main actor 隔離**——actor 實例必須在 `async` context 才能建立。參考 `OrderRepository.makePersistence(container:)` 用 `MainActor.run { ... }` 跳上 main 取得 actor 後再回到原 task。
+- **Reducer body 內呼叫 State 上的 instance method** 必須走 `store.state.method(...)`，不可透過 `@dynamicMemberLookup` 的 `store.method(...)`。
+
+## 外部 API 與 Fallback 政策
+
+API key 注入鏈路與設定步驟見 [README.md › ExchangeRate-API 金鑰](README.md#1-exchangerate-api-金鑰)。
+
+- **UI 寧可顯示空狀態也不顯示假資料**——API 失敗或無資料時 view 顯示「—」、「尚無可用匯率資料」、「尚未有足夠可用於分析的資料」等空狀態，不繪空圖表也不退回 hardcoded 數字。
+- `FxRates` / `FxRateSnapshot.fallback` / `LedgerOrder.sampleOrders` 僅供 Preview / Tests，runtime path **不可讀取**。
 
 ## 程式風格與命名慣例
 
-Swift 程式碼請遵循 Swift API Design Guidelines。型別名稱使用 `UpperCamelCase`，屬性與函式使用 `lowerCamelCase`，測試方法名稱應清楚描述情境與預期結果。
+Swift 通用慣例（API Design Guidelines、camel case、四空格縮排）不重述；以下是本專案的補充。
 
-命名請具體表達責任，例如 `TransactionListView`、`LedgerRepository`、`CurrencyFormatterService`。Swift 縮排使用四個空格。SwiftUI View 應保持小而聚焦，重複使用的 UI 請拆成獨立元件。
+### 結構與命名
 
-跨平台 UI 應優先使用 SwiftUI 條件編譯與平台慣用容器，例如 `#if os(macOS)`、`NavigationSplitView` 與 iOS/iPadOS 的 toolbar placement。TCA feature 應以 `Feature`、`State`、`Action`、`Reducer`、`Dependency` 清楚切分，避免把商業邏輯放在 SwiftUI View 中。SwiftData schema 或持久化行為變更時，應同步檢查 migration、preview 與測試資料。
+- **商業邏輯／資料計算**（彙總、分組、排序、格式化）一律放 reducer 或可測試的 feature helper；SwiftUI View（含 Swift Charts）只負責呈現，不要把計算 inline 在 view body。
+- **TCA feature** 內部用 `// MARK: - State / Action / Reducer Body / Dependency Properties` 等清楚切分。
+- **SwiftData schema 或持久化行為變更**時，須同步檢查 migration、preview 與測試資料。
 
-避免提交本機 IDE 設定、產生的 archive、環境設定檔或任何只屬於開發機器的狀態檔。
+### 檔案 header
 
-## Design System 準則
-
-Design System 應放在 `BuyLedger/BuyLedger/Shared/DesignSystem/`，並區分 `Foundations/` 與 `Components/`。`Foundations/` 放跨元件共用的 token、modifier 與語意模型；`Components/` 放可視 UI 元件，並依類別建立子資料夾。
-
-每個主要元件或資料型別原則上各自一個 Swift 檔案，檔名必須對應主要型別名稱，例如 `BLBarChart.swift`、`BLDonutChart.swift`、`BLSparkline.swift`、`BLSearchField.swift`、`BLAmountField.swift`。避免建立 `BLCharts.swift`、`BLTextFields.swift` 這類同時涵括多種元件的大檔。若小型 enum 或 extension 只服務單一元件，可以與該元件同檔；若開始跨元件重用或變大，請拆出獨立檔案。
-
-Design System Swift 檔案 header 使用 Xcode 預設格式：
+所有新建 Swift 檔案的 header 一律使用 Xcode 預設格式：
 
 ```swift
 //
@@ -106,36 +110,60 @@ Design System Swift 檔案 header 使用 Xcode 預設格式：
 //
 ```
 
-註解請使用正體中文撰寫，語氣接近 Apple 官方文件風格。公開或內部共用的型別、屬性、`init`、`body`、helper method 與 preview sample 都應有清楚用途。不要為了補註解而新增不必要的顯式 `init`；能使用 Swift 合成 memberwise initializer 時請優先使用。只有在需要 `@ViewBuilder` trailing closure、無標籤參數的語意化 API、驗證、轉換或相依注入時才新增顯式 `init`。
+### 註解
 
-`struct`、`enum`、`extension`、`final class` 等型別宣告後第一行要空一行。Design System 檔案請使用一致的 `MARK` 區段，例如：
+- 註解一律使用正體中文撰寫，語氣接近 Apple 官方文件風格。
+- 不要為了補註解而新增不必要的顯式 `init`；能使用 Swift 合成 memberwise initializer 時請優先使用。只有在需要 `@ViewBuilder` trailing closure、無標籤參數的語意化 API、驗證、轉換或相依注入時才新增顯式 `init`。
 
-- `// MARK: - View Properties`
-- `// MARK: - Init`
-- `// MARK: - View Body`
-- `// MARK: - ViewBuilder`
-- `// MARK: - Private Method`
-- `// MARK: - Preview`
+### MARK 區段與排版
 
-非 View 型別可依語意使用 `Cases`、`Data Properties`、`Identifiable Properties`、`Static Properties`、`View Method` 等段落。`#Preview` 放在檔案最後，前方加上 `// MARK: - Preview`。每個可視 Design System 元件都應提供自己的 `#Preview`；需要 binding 時使用 `.constant(...)`，需要圖表或狀態資料時用小型 sample data。
+- `struct` / `enum` / `extension` / `final class` 等型別宣告後第一行要空一行。
+- View 型別常用 MARK 區段：
 
-調整 Design System 結構或元件後，請至少執行 macOS 與 iOS Simulator build，確認 file system synchronized groups 正確拾取新增、搬移或刪除的 Swift 檔案。
+  - `// MARK: - View Properties`
+  - `// MARK: - Init`
+  - `// MARK: - View Body`
+  - `// MARK: - ViewBuilder`
+  - `// MARK: - Private Method`
+  - `// MARK: - Preview`
+
+- 非 View 型別可依語意使用 `Cases`、`Data Properties`、`Identifiable Properties`、`Static Properties`、`View Method` 等段落。
+- `#Preview` 放在檔案最後，前方加上 `// MARK: - Preview`。
+
+## Design System 準則
+
+- Design System 放在 `BuyLedger/BuyLedger/Shared/DesignSystem/`，並區分 `Foundations/` 與 `Components/`。`Foundations/` 放跨元件共用的 token、modifier 與語意模型；`Components/` 放可視 UI 元件，並依類別建立子資料夾。
+- 每個主要元件或資料型別原則上各自一個 Swift 檔案，檔名必須對應主要型別名稱（例如 `BLBarChart.swift`、`BLDonutChart.swift`、`BLSparkline.swift`、`BLSearchField.swift`、`BLAmountField.swift`）。避免建立 `BLCharts.swift`、`BLTextFields.swift` 這類同時涵括多種元件的大檔。若小型 enum 或 extension 只服務單一元件，可以與該元件同檔；若開始跨元件重用或變大，請拆出獨立檔案。
+- 每個可視 Design System 元件都應提供自己的 `#Preview`；需要 binding 時使用 `.constant(...)`，需要圖表或狀態資料時用小型 sample data。
+- 調整 Design System 結構或元件後，請至少執行 macOS 與 iOS Simulator build，確認 file system synchronized groups 正確拾取新增、搬移或刪除的 Swift 檔案。
 
 ## 測試準則
 
-單元測試放在 `BuyLedger/BuyLedgerTests/`，UI 流程測試放在 `BuyLedger/BuyLedgerUITests/`。測試檔名應對應被測試的型別或功能，例如 `LedgerRepositoryTests.swift` 或 `AddTransactionFlowTests.swift`。
+單元測試放在 `BuyLedger/BuyLedgerTests/`，UI 流程測試放在 `BuyLedger/BuyLedgerUITests/`。測試檔名對應被測試的型別或功能（例如 `OrdersFeatureTests.swift`、`OrderPersistenceTests.swift`）。
 
-影響帳本餘額、資料持久化、CloudKit 同步、金額格式化、圖表資料彙總、跨平台 UI 行為與主要使用者流程的變更都應加入測試。TCA reducer 應使用 `TestStore` 驗證 action flow、state mutation 與 effects；SwiftData 測試應優先使用 in-memory container；CloudKit 相關邏輯應透過 dependency 抽象，避免單元測試直接依賴真實 iCloud 狀態。開啟 pull request 前，請執行完整測試指令並在 PR 說明中列出結果。
+### Snapshot 測試（swift-snapshot-testing）
 
-## Commit 與 Pull Request 準則
+Snapshot baseline 放在 `BuyLedger/BuyLedgerTests/__Snapshots__/`。第一次跑會 record baseline 並回報 fail（屬正常行為），確認視覺正確後 commit baseline；之後 view 變更若與 baseline 不符會 fail。`SnapshotTests.swift` 以 `#if canImport(SnapshotTesting) && os(iOS)` 包住，目前僅 iOS 393×852 baseline。設計大改時請刪掉對應 baseline 讓下一次跑自動重建。
 
-請使用簡潔的 Conventional Commit 風格訊息，例如 `feat: add transaction list` 或 `docs: update contributor guide`。
+每個 snapshot test 都必須用 `TestDependencies.withFixedNow { ... }`（位於 `BuyLedgerTests/TestDependencies.swift`）包住 view 建構與 `assertSnapshot` 呼叫；裡面把 `\.date` 注入成 2026-04-30 UTC，避免「跨日跑出不同 baseline」這類 flake。新加 snapshot 一律走這個 helper，不要在測試裡直接 `Date()`。
 
-Pull request 應包含簡短摘要、測試結果、相關 issue 連結，以及可見 UI 變更的截圖或 simulator 錄影。每個 PR 應聚焦在單一功能或修正。
+## 環境相依性與依賴注入
+
+任何讀取「現在」時間、locale、時區、UUID、隨機數的程式碼，**production code 一律走 `@Dependency`，不可直接呼叫 `Date()` / `UUID()` / `Locale.current` / `TimeZone.current` / `Calendar.current`**（除了 dependency 註冊處本身）。
+
+具體規則：
+
+- TCA Reducer：在 `// MARK: - Dependency Properties` 區塊加 `@Dependency(\.date) private var date` 等；reducer body 中以 `date.now`、`uuid()` 取值。
+- SwiftUI View：同樣可加 `@Dependency(\.date) private var date`，在 view body 或 helper method 中以 `date()` / `date.now` 取值。
+- State 上的 computed property 不可內部呼叫 `Date()`——改成 `func foo(referenceDate: Date) -> ...` 由 caller（reducer 或 view）以注入後的 date 傳入。
+
+測試端：`TestStore` 用 `withDependencies: { $0.date = .constant(TestDependencies.fixedNow) }`；snapshot test 用 `TestDependencies.withFixedNow { ... }`。Calendar 相關測試需要固定 `TimeZone(secondsFromGMT: 0)` 與 `Calendar(identifier: .gregorian)` 確保跨機器一致。
 
 ## 安全性與設定注意事項
 
-絕對不要提交 `.env`、私鑰、provisioning profile、簽署憑證或其他敏感資料。CloudKit container、iCloud capability 與 entitlements 的變更需要在 PR 中明確說明。請提交 `Package.resolved` 等 lock file，讓 TCA 等相依套件解析結果可重現。
+`BuyLedger.entitlements` 必須透過 pbxproj 的 `CODE_SIGN_ENTITLEMENTS = BuyLedger/Resources/BuyLedger.entitlements;` build setting 才會被 codesign 拿去簽；若忘了掛，binary 上只會出現 Xcode 自動加的 sandbox key，runtime 會抓不到設定的 entitlements 並出現難以診斷的錯誤。
+
+macOS 沙盒下要打外部 API 必須加 `com.apple.security.network.client = true`。CloudKit container、`aps-environment` 等 entitlement key 等 Apple Developer 帳號實際 provision 後再加；未 provision 時加上會讓 codesign 失敗。CloudKit container、iCloud capability 與 entitlements 的變更需要在 PR 中明確說明。
 
 ## Commit 風格
 
@@ -143,19 +171,18 @@ Pull request 應包含簡短摘要、測試結果、相關 issue 連結，以及
 
 常用 type：`feat`（新功能）、`fix`（修正）、`refactor`（重構）、`docs`（文件）、`chore`（雜項）、`ci`（CI/CD）、`test`（測試）、`style`（排版）。
 
-由 Codex 建立或 amend 的 commit，commit message 最後必須加入：
+由 Codex 建立或 amend 的 commit，commit message 最後必須加入 Co-Authored-By trailer，`<model-name>` 替換為當次實際使用的模型名稱：
 
 ```text
 Co-Authored-By: Codex (<model-name>) <codex@openai.com>
 ```
 
-其中 `<model-name>` 必須替換為當次實際使用的模型名稱，例如 `gpt-5.5`。
-
 description（body）使用列點格式，例如：
 
 ```text
-refactor(settings-view): 設定頁面 Cupertino → Material 3 重構
+refactor(time): 時間相依改走 @Dependency(\.date) 注入
 
-- 移除所有 Cupertino 元件
-- 統一採用 Material 3 Card.filled + ListTile 呈現
+- DashboardView / InsightsView / RootFeature 加 @Dependency(\.date)
+- OrdersFeature.State.filteredOrders 改成 func(referenceDate:)
+- 新增 TestDependencies.fixedNow 給 snapshot 與 unit test 共用
 ```
