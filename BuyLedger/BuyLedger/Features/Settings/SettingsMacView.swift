@@ -1,5 +1,5 @@
 //
-//  SettingsScene_macOS.swift
+//  SettingsMacView.swift
 //  BuyLedger
 //
 //  Created by Leo Ho on 2026/5/2.
@@ -13,7 +13,7 @@ import SwiftUI
 /// macOS 偏好設定視窗的內容視圖。
 ///
 /// 對應 macOS 標準 `Settings { ... }` scene 的呈現：以 ``TabView`` 將設定分群，每個分頁採用 ``Form`` + `.formStyle(.grouped)`，並固定視窗最小尺寸以符合 System Settings 風格。
-struct SettingsScene_macOS: View {
+struct SettingsMacView: View {
 
     // MARK: - View Properties
 
@@ -40,10 +40,12 @@ struct SettingsScene_macOS: View {
                     Label("預設值", systemImage: "tray.full")
                 }
 
+#if false
             dataTab
                 .tabItem {
                     Label("資料", systemImage: "externaldrive")
                 }
+#endif
 
             aboutTab
                 .tabItem {
@@ -59,7 +61,7 @@ struct SettingsScene_macOS: View {
 
 // MARK: - ViewBuilder
 
-private extension SettingsScene_macOS {
+private extension SettingsMacView {
 
     /// 一般偏好分頁：外觀模式。
     var generalTab: some View {
@@ -128,7 +130,8 @@ private extension SettingsScene_macOS {
         .formStyle(.grouped)
     }
 
-    /// 資料分頁：CSV 匯出與雲端同步占位。
+#if false
+    /// 資料分頁：CSV 匯出與雲端同步占位（暫時以 `#if false` 隱藏，待實作完成後再開啟）。
     var dataTab: some View {
         Form {
             Section {
@@ -151,6 +154,7 @@ private extension SettingsScene_macOS {
         }
         .formStyle(.grouped)
     }
+#endif
 
     /// 關於分頁：版本與作者。
     var aboutTab: some View {
@@ -158,12 +162,6 @@ private extension SettingsScene_macOS {
             Section {
                 LabeledContent("版本", value: appVersion)
                 LabeledContent("作者", value: "Leo Ho")
-                LabeledContent("Bundle ID") {
-                    Text(Bundle.main.bundleIdentifier ?? "—")
-                        .font(.system(.body, design: .monospaced))
-                        .foregroundStyle(.secondary)
-                        .textSelection(.enabled)
-                }
             } header: {
                 Text("BuyLedger")
             } footer: {
@@ -177,7 +175,7 @@ private extension SettingsScene_macOS {
 
 // MARK: - Private Method
 
-private extension SettingsScene_macOS {
+private extension SettingsMacView {
 
     /// 從 bundle info 讀出 `1.0 (1)` 形式的版本字串。
     var appVersion: String {
@@ -192,7 +190,7 @@ private extension SettingsScene_macOS {
 // MARK: - Preview
 
 #Preview("macOS 偏好設定") {
-    SettingsScene_macOS(
+    SettingsMacView(
         store: Store(initialState: SettingsFeature.State()) {
             SettingsFeature()
         }

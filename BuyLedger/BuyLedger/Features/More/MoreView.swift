@@ -309,7 +309,7 @@ private extension MoreView {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(palette.label)
 
-                Text("外觀、通知、預設幣別與資料匯出位於 macOS 標準的偏好設定視窗。")
+                Text("外觀、通知與預設幣別位於 macOS 標準的偏好設定視窗。")
                     .font(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
             }

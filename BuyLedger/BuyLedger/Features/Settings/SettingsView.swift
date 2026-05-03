@@ -10,16 +10,16 @@ import SwiftUI
 
 /// 設定頁畫面。
 ///
-/// 對應設計稿 iPhone 設定 / 更多頁的 sections：外觀、通知、預設幣別、匯出資料、關於。
+/// 對應設計稿 iPhone 設定 / 更多頁的 sections：外觀、通知、預設幣別、關於。資料匯出 / CloudKit 同步 section 暫時以 `#if false` 隱藏，待實作完成後再開啟。
 struct SettingsView: View {
-
+    
     // MARK: - View Properties
-
+    
     /// 設定 store。
     @Bindable var store: StoreOf<SettingsFeature>
-
+    
     // MARK: - View Body
-
+    
     /// 設定頁畫面內容。
     var body: some View {
         Form {
@@ -30,11 +30,11 @@ struct SettingsView: View {
                     }
                 }
             }
-
+            
             Section("通知") {
                 Toggle("接收訂單提醒", isOn: $store.notificationsEnabled)
             }
-
+            
             Section("預設幣別") {
                 Picker("新訂單預設", selection: $store.defaultCurrency) {
                     ForEach(CurrencyCode.allCases) { code in
@@ -42,16 +42,16 @@ struct SettingsView: View {
                     }
                 }
             }
-
+            
             Section {
                 TextField(
                     "目標金額",
                     value: $store.monthlyProfitGoalTwd,
                     format: .number.precision(.fractionLength(0))
                 )
-                #if !os(macOS)
+#if !os(macOS)
                 .keyboardType(.numberPad)
-                #endif
+#endif
             } header: {
                 Text("月度淨獲利目標（TWD）")
             } footer: {
@@ -59,7 +59,8 @@ struct SettingsView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-
+            
+#if false
             Section("資料") {
                 Button("匯出 CSV") { }
                     .disabled(true)
@@ -68,6 +69,7 @@ struct SettingsView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
+#endif
 
             Section("關於") {
                 LabeledContent("版本", value: appVersion)
@@ -84,13 +86,13 @@ struct SettingsView: View {
 // MARK: - Private Method
 
 private extension SettingsView {
-
+    
     /// 從 bundle info 讀出版本號。
     var appVersion: String {
         let dictionary = Bundle.main.infoDictionary
         let short = dictionary?["CFBundleShortVersionString"] as? String ?? "—"
         let build = dictionary?["CFBundleVersion"] as? String ?? "—"
-
+        
         return "\(short) (\(build))"
     }
 }
