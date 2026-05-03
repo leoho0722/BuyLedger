@@ -184,6 +184,22 @@ Design System Swift 檔案 header 使用 Xcode 預設格式：
 
 Snapshot baseline 放在 `BuyLedger/BuyLedgerTests/__Snapshots__/`，使用 `pointfreeco/swift-snapshot-testing` 套件，套件已在 BuyLedgerTests target 的 packageProductDependencies。第一次跑會 record baseline 並回報 fail（屬正常行為），確認視覺正確後 commit baseline；之後 view 變更若與 baseline 不符會 fail。`SnapshotTests.swift` 以 `#if canImport(SnapshotTesting) && os(iOS)` 包住，目前僅 iOS 393×852 baseline。設計大改時請刪掉對應 baseline 讓下一次跑自動重建。
 
+每個 snapshot test 都必須用 `TestDependencies.withFixedNow { ... }`（位於 `BuyLedgerTests/TestDependencies.swift`）包住 view 建構與 `assertSnapshot` 呼叫；裡面把 `\.date` 注入成 2026-04-30 UTC，避免「跨日跑出不同 baseline」這類 flake。新加 snapshot 一律走這個 helper，不要在測試裡直接 `Date()`。
+
+## 環境相依性與依賴注入
+
+任何讀取「現在」時間、locale、時區、UUID、隨機數的程式碼，**production code 一律走 `@Dependency`，不可直接呼叫 `Date()` / `UUID()` / `Locale.current` / `TimeZone.current` / `Calendar.current`**（除了 dependency 註冊處本身）。
+
+具體規則：
+
+- TCA Reducer：在 `// MARK: - Dependency Properties` 區塊加 `@Dependency(\.date) private var date` 等；reducer body 中以 `date.now`、`uuid()` 取值。
+- SwiftUI View：同樣可加 `@Dependency(\.date) private var date`，在 view body 或 helper method 中以 `date()` / `date.now` 取值。
+- State 上的 computed property 不可內部呼叫 `Date()`——改成 `func foo(referenceDate: Date) -> ...` 由 caller（reducer 或 view）以注入後的 date 傳入。
+
+測試端：`TestStore` 用 `withDependencies: { $0.date = .constant(TestDependencies.fixedNow) }`；snapshot test 用 `TestDependencies.withFixedNow { ... }`。Calendar 相關測試需要固定 `TimeZone(secondsFromGMT: 0)` 與 `Calendar(identifier: .gregorian)` 確保跨機器一致。
+
+違反這條規則的後果是 snapshot baseline 跨日漂移、單元測試在不同地區的 CI 上 flake、難以追蹤的時間相關 bug。
+
 ## Commit 與 Pull Request 準則
 
 請使用簡潔的 Conventional Commit 風格訊息，例如 `feat: add transaction list` 或 `docs: update contributor guide`。

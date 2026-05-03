@@ -14,9 +14,9 @@ import SwiftUI
 ///
 /// 採用扁平 SwiftUI ``Table`` 呈現所有訂單，搭配右側 inspector 顯示選取訂單的詳情，對應設計稿的 Mac Orders tab。
 struct OrdersMacView: View {
-
+    
     // MARK: - View Properties
-
+    
     /// 訂單功能 store。
     @Bindable var store: StoreOf<OrdersFeature>
 
@@ -26,12 +26,15 @@ struct OrdersMacView: View {
     /// 控制 inspector 是否顯示。
     @State private var showsInspector = true
 
-    // MARK: - View Body
+    /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:)`` 的「現在」時間；測試可注入固定值。
+    @Dependency(\.date) private var date
 
+    // MARK: - View Body
+    
     /// 訂單瀏覽畫面內容。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
-
+        
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
             titleAndFilters(palette: palette)
             searchAndDateRow(palette: palette)
@@ -55,7 +58,7 @@ struct OrdersMacView: View {
                 .help("建立新訂單（⌘N）")
                 .keyboardShortcut("n", modifiers: [.command])
             }
-
+            
             ToolbarItem {
                 Button {
                     showsInspector.toggle()
@@ -77,7 +80,7 @@ struct OrdersMacView: View {
 // MARK: - ViewBuilder
 
 private extension OrdersMacView {
-
+    
     /// 標題列：H1 與狀態 chip 篩選。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 標題與篩選列 view。
@@ -86,9 +89,9 @@ private extension OrdersMacView {
             Text("全部訂單")
                 .font(.title2.bold())
                 .foregroundStyle(palette.label)
-
+            
             Spacer(minLength: BLSpacing.medium)
-
+            
             OrderStatusFilterBar(
                 selection: store.selectedStatus,
                 filters: OrderStatusFilter.orderBrowsingCases
@@ -97,7 +100,7 @@ private extension OrdersMacView {
             }
         }
     }
-
+    
     /// 搜尋輸入欄與日期區間 chip 列並排。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 搜尋欄與日期 chip 列 view。
@@ -108,13 +111,13 @@ private extension OrdersMacView {
                 text: $store.searchText.sending(\.searchTextChanged)
             )
             .frame(maxWidth: 320, alignment: .leading)
-
+            
             dateChipRow(palette: palette)
-
+            
             Spacer(minLength: 0)
         }
     }
-
+    
     /// 日期區間 chip 列。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 日期 chip 列 view。
@@ -122,14 +125,14 @@ private extension OrdersMacView {
         HStack(spacing: BLSpacing.small) {
             ForEach(OrderDatePeriod.orderBrowsingCases) { period in
                 let isSelected = store.selectedDatePeriod == period
-
+                
                 Button {
                     store.send(.datePeriodSelected(period))
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "calendar")
                             .font(.caption2.weight(.semibold))
-
+                        
                         Text(period.title)
                             .font(.footnote.weight(.semibold))
                             .lineLimit(1)
@@ -144,7 +147,7 @@ private extension OrdersMacView {
             }
         }
     }
-
+    
     /// 載入失敗訊息。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 錯誤橫幅 view，沒有錯誤時為空。
@@ -156,13 +159,13 @@ private extension OrdersMacView {
                 .foregroundStyle(palette.red)
         }
     }
-
+    
     /// 訂單表格。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 訂單 ``Table`` view。
     func ordersTable(palette: BLPalette) -> some View {
         Table(
-            store.filteredOrders,
+            store.state.filteredOrders(referenceDate: date.now),
             selection: $store.selectedOrderID.sending(\.orderSelected)
         ) {
             TableColumn("單號") { order in
@@ -171,7 +174,7 @@ private extension OrdersMacView {
                     .foregroundStyle(palette.secondaryLabel)
             }
             .width(min: 110, ideal: 120, max: 140)
-
+            
             TableColumn("客戶") { order in
                 HStack(spacing: BLSpacing.small) {
                     BLAvatar(
@@ -184,26 +187,26 @@ private extension OrdersMacView {
                 }
             }
             .width(min: 140, ideal: 180)
-
+            
             TableColumn("幣別") { order in
                 Text("\(order.currency.flag) \(order.currency.rawValue)")
                     .font(.subheadline)
                     .foregroundStyle(palette.secondaryLabel)
             }
             .width(min: 70, ideal: 90, max: 110)
-
+            
             TableColumn("商品") { order in
                 Text(order.primaryItemDescription)
                     .font(.subheadline)
                     .foregroundStyle(palette.secondaryLabel)
                     .lineLimit(1)
             }
-
+            
             TableColumn("狀態") { order in
                 BLStatusPill(order.status.title, tone: order.status.tone)
             }
             .width(min: 88, ideal: 110, max: 130)
-
+            
             TableColumn("收款") { order in
                 Text(OrderFormatters.twd(order.summary.revenue))
                     .font(.subheadline.weight(.medium))
@@ -211,10 +214,10 @@ private extension OrdersMacView {
                     .frame(maxWidth: .infinity, alignment: .trailing)
             }
             .width(min: 90, ideal: 110, max: 140)
-
+            
             TableColumn("獲利") { order in
                 let profit = order.summary.profit
-
+                
                 Text("\(profit >= 0 ? "+" : "")\(OrderFormatters.twd(profit))")
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
@@ -229,14 +232,14 @@ private extension OrdersMacView {
                 ProgressView("載入訂單")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(palette.background)
-            } else if store.filteredOrders.isEmpty {
+            } else if store.state.filteredOrders(referenceDate: date.now).isEmpty {
                 ContentUnavailableView("沒有符合條件的訂單", systemImage: "tray")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(palette.background)
             }
         }
     }
-
+    
     /// Inspector 內顯示的訂單詳情或空狀態。
     ///
     /// macOS `.inspector(...)` 預設背景比 app background 淺，會讓詳情欄看起來像浮在內容區之外；統一在最外層套 `palette.background` 讓整個 inspector 與訂單表格的背景一致。
@@ -245,7 +248,7 @@ private extension OrdersMacView {
     @ViewBuilder
     func inspectorContent(palette: BLPalette) -> some View {
         Group {
-            if let order = store.selectedOrder {
+            if let order = store.state.selectedOrder(referenceDate: date.now) {
                 VStack(spacing: 0) {
                     inspectorTitleBar(order: order, palette: palette)
                     OrderDetailView(order: order, layout: .wide)
@@ -261,7 +264,7 @@ private extension OrdersMacView {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(palette.background)
     }
-
+    
     /// Inspector 上方的訂購人姓名標題列，含「編輯」按鈕。
     ///
     /// macOS inspector 不會自動顯示 ``View/navigationTitle`` 的標題，因此以自繪標題列補齊。訂單編號已由 ``OrderDetailView`` 的內容區顯示，此處不再重複。
@@ -275,9 +278,9 @@ private extension OrdersMacView {
                 .font(.title3.bold())
                 .foregroundStyle(palette.label)
                 .accessibilityAddTraits(.isHeader)
-
+            
             Spacer()
-
+            
             Menu {
                 ForEach(OrderStatus.allCases) { status in
                     Button {
@@ -295,7 +298,7 @@ private extension OrdersMacView {
             }
             .menuStyle(.borderlessButton)
             .controlSize(.small)
-
+            
             Button("編輯") {
                 store.send(.editOrderTapped(order.id))
             }
@@ -318,10 +321,11 @@ private extension OrdersMacView {
     let previewState: OrdersFeature.State = {
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
+        state.hasLoaded = true
         state.selectedOrderID = LedgerOrder.sampleOrders.first?.id
         return state
     }()
-
+    
     OrdersMacView(
         store: Store(initialState: previewState) {
             OrdersFeature()

@@ -24,24 +24,34 @@ struct DashboardView: View {
     
     /// 目前系統深淺色外觀。
     @Environment(\.colorScheme) private var colorScheme
-    
+
 #if !os(macOS)
     /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone（compact）與 iPad（regular）。
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
+
+    /// 用來計算「本月／上月」與日期子標的「現在」時間；測試可注入固定值。
+    @Dependency(\.date) private var date
 
     // MARK: - View Body
     
     /// 總覽頁的畫面內容。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
-        
-        ScrollView {
-            content(palette: palette)
-                .padding(.horizontal, BLSpacing.large)
-                .padding(.vertical, BLSpacing.large)
-                .frame(maxWidth: .infinity, alignment: .leading)
+
+        Group {
+            if !store.orders.hasLoaded {
+                loadingPlaceholder(palette: palette)
+            } else {
+                ScrollView {
+                    content(palette: palette)
+                        .padding(.horizontal, BLSpacing.large)
+                        .padding(.vertical, BLSpacing.large)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                }
+            }
         }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(palette.background)
         .task {
             // 確保使用者一進來總覽頁時，背後的訂單資料就先載入；
@@ -57,12 +67,14 @@ struct DashboardView: View {
 
 private extension DashboardView {
     
-    /// 依目前資料狀態決定顯示完整 dashboard 或第一次使用的 onboarding。
+    /// 訂單載入完成後依資料狀態決定顯示完整 dashboard 或第一次使用的 onboarding。
+    ///
+    /// 首次載入完成前的佔位畫面由 ``loadingPlaceholder(palette:)`` 在 ``body`` 中直接渲染，避免訂單為空時每次切換 tab 因 `isLoading` 暫時翻成 `true` 而落入「有資料」分支造成閃爍。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 內容 view。
     @ViewBuilder
     func content(palette: BLPalette) -> some View {
-        if !store.orders.isLoading && store.orders.orders.isEmpty {
+        if store.orders.orders.isEmpty {
             onboardingHero(palette: palette)
         } else {
             let stats = computeStats(
@@ -76,6 +88,16 @@ private extension DashboardView {
                 recentOrdersSection(stats: stats, palette: palette)
             }
         }
+    }
+
+    /// 首次載入訂單前顯示的中性佔位畫面，水平垂直置中。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 佔位 view。
+    func loadingPlaceholder(palette: BLPalette) -> some View {
+        ProgressView()
+            .controlSize(.regular)
+            .tint(palette.secondaryLabel)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
     
     /// 第一次開 App 還沒有任何訂單時的引導畫面。
@@ -512,14 +534,18 @@ private extension DashboardView {
     /// - Returns: 總覽頁需要的統計值。
     func computeStats(orders: [LedgerOrder], monthlyGoal: Decimal) -> DashboardStats {
         let calendar = Calendar.current
-        let now = Date()
+        let now = date()
 
         let current = monthlyTotals(orders: orders, calendar: calendar, referenceDate: now)
         let previous: MonthlyTotals = {
             guard let priorMonth = calendar.date(byAdding: .month, value: -1, to: now) else {
                 return .empty
             }
-            return monthlyTotals(orders: orders, calendar: calendar, referenceDate: priorMonth)
+            return monthlyTotals(
+                orders: orders,
+                calendar: calendar,
+                referenceDate: priorMonth
+            )
         }()
 
         let activeCount = orders.lazy.filter {
@@ -563,14 +589,24 @@ private extension DashboardView {
 
         // MARK: - Data Properties
 
+        /// 該月已實現訂單的營業額總和。
         let revenue: Decimal
+
+        /// 該月已實現訂單的成本總和（含商品、運費與手續費）。
         let cost: Decimal
+
+        /// 該月已實現訂單的淨獲利總和（`revenue - cost`）。
         let profit: Decimal
+
+        /// 該月毛利率（`profit / revenue`）；`revenue` 為 0 時為 0。
         let margin: Decimal
+
+        /// 該月已實現的訂單筆數，作為「上月有無資料可比」的判斷依據。
         let orderCount: Int
 
         // MARK: - Static Properties
 
+        /// 整月無資料時使用的零值彙總，避免呼叫端各自處理 nil。
         static let empty = MonthlyTotals(
             revenue: 0,
             cost: 0,
@@ -695,7 +731,7 @@ private extension DashboardView {
     /// 顯示在大標題上方的日期子標。
     /// - Returns: 例如「5月1日 週五」。
     func currentDateSubtitle() -> String {
-        Date().formatted(
+        date().formatted(
             .dateTime
                 .month(.wide)
                 .day(.defaultDigits)
@@ -769,6 +805,7 @@ private extension DashboardView {
     let previewState: RootFeature.State = {
         var state = RootFeature.State()
         state.orders.orders = LedgerOrder.sampleOrders
+        state.orders.hasLoaded = true
         return state
     }()
     

@@ -69,6 +69,11 @@ struct RootFeature {
         case settings(SettingsFeature.Action)
     }
 
+    // MARK: - Dependency Properties
+
+    /// 用來計算跨頁跳轉時的「目前」時間（套用到 ``OrdersFeature/State/filteredOrders(referenceDate:)``）；測試可注入固定值。
+    @Dependency(\.date) private var date
+
     // MARK: - Reducer Body
 
     /// App 根層級 reducer。
@@ -104,7 +109,7 @@ struct RootFeature {
                 state.selectedTab = .orders
                 state.orders.selectedStatus = .status(status)
                 state.orders.selectedDatePeriod = .all
-                state.orders.selectedOrderID = state.orders.filteredOrders.first?.id
+                state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now).first?.id
                 return .none
 
             case let .customerSelected(name):
@@ -112,7 +117,7 @@ struct RootFeature {
                 state.orders.searchText = name
                 state.orders.selectedStatus = .all
                 state.orders.selectedDatePeriod = .all
-                state.orders.selectedOrderID = state.orders.filteredOrders.first?.id
+                state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now).first?.id
                 return .none
 
             case let .categorySelected(category):
@@ -120,7 +125,7 @@ struct RootFeature {
                 state.orders.searchText = category
                 state.orders.selectedStatus = .all
                 state.orders.selectedDatePeriod = .all
-                state.orders.selectedOrderID = state.orders.filteredOrders.first?.id
+                state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now).first?.id
                 return .none
 
             case .orders:

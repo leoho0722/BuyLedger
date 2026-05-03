@@ -320,6 +320,7 @@ private enum SmartGroup: String, Identifiable, CaseIterable {
     let previewState: RootFeature.State = {
         var state = RootFeature.State()
         state.orders.orders = LedgerOrder.sampleOrders
+        state.orders.hasLoaded = true
         return state
     }()
 
