@@ -22,13 +22,16 @@ struct OrdersFeatureTests {
         } withDependencies: {
             $0[OrderRepository.self].fetchOrders = { LedgerOrder.sampleOrders }
         }
-        
+        // `.task` 還會並行送出 `categoryMasterLoaded` 與 `paymentMethodMasterLoaded`；本測試只驗證訂單載入流程，
+        // 主檔載入由其他測試覆蓋，這裡關掉 exhaustivity 避免重複斷言所有平行 effect。
+        store.exhaustivity = .off
+
         await store.send(.task) {
             $0.isLoading = true
             $0.errorMessage = nil
         }
-        
-        await store.receive(.ordersLoaded(orders)) {
+
+        await store.receive(\.ordersLoaded) {
             $0.isLoading = false
             $0.hasLoaded = true
             $0.orders = orders
@@ -160,9 +163,11 @@ struct OrdersFeatureTests {
         // BindingReducer + DismissEffect 保證，這裡不重複驗證。
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
-        
+
         let store = TestStore(initialState: state) {
             OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
         }
         store.exhaustivity = .off
         
@@ -180,11 +185,13 @@ struct OrdersFeatureTests {
     @Test func newOrderTappedSetsEmptyEditState() async {
         let store = TestStore(initialState: OrdersFeature.State()) {
             OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
         }
         store.exhaustivity = .off
-        
+
         await store.send(.newOrderTapped)
-        
+
         let editState = store.state.editOrder
         #expect(editState?.original == nil)
         #expect(editState?.draftCustomerName.isEmpty == true)
@@ -326,17 +333,20 @@ struct OrdersFeatureTests {
     }
     
     @Test func newOrderSaveInsertsAndSelectsTheNewOrder() async {
-        var draft = OrderEditFeature.State()
+        let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
+
+        // 直接把 fixedDate 帶進 `currentDate`，避免 `OrderEditFeature.State()` 內部 fallback 到 `Date()` 造成
+        // 新訂單 `date` 落在測試實際執行的當下，與下方斷言期待的 fixedDate 不符。
+        var draft = OrderEditFeature.State(currentDate: fixedDate)
         draft.draftCustomerName = "新客戶"
         draft.draftCategory = "美妝"
-        
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.editOrder = draft
-        
-        let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
+
         let originalCount = state.orders.count
-        
+
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
@@ -344,14 +354,14 @@ struct OrdersFeatureTests {
             $0.date = .constant(fixedDate)
         }
         store.exhaustivity = .off
-        
+
         await store.send(.editOrder(.presented(.saveTapped)))
         await store.finish()
-        
+
         let expectedID = "BL-DRAFT-000000"
         #expect(store.state.selectedOrderID == expectedID)
         #expect(store.state.orders.count == originalCount + 1)
-        
+
         let inserted = store.state.orders.first
         #expect(inserted?.id == expectedID)
         #expect(inserted?.customer.name == "新客戶")
