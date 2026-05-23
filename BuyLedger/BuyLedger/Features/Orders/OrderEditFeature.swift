@@ -56,6 +56,9 @@ struct OrderEditFeature {
         /// 商品明細草稿；可在編輯表單內新增、刪除、修改。
         var draftItems: [LedgerOrderItem]
 
+        /// 訂購日期草稿。
+        var draftDate: Date
+
         /// 可供選擇的商品類別清單；由父層 reducer 從現有訂單聚合後注入，並在使用者新增類別時即時擴充。
         var availableCategories: [String]
 
@@ -70,7 +73,12 @@ struct OrderEditFeature {
         /// - Parameters:
         ///   - original: 要編輯的訂單；`nil` 表示新訂單。
         ///   - availableCategories: 表單可選用的既有類別；不含原訂單類別時會在初始化時補上。
-        init(original: LedgerOrder? = nil, availableCategories: [String] = []) {
+        ///   - currentDate: 新訂單時 ``draftDate`` 的預設值；caller 應從 `@Dependency(\.date)` 取得當下時間以維持可測試性。
+        init(
+            original: LedgerOrder? = nil,
+            availableCategories: [String] = [],
+            currentDate: Date = Date()
+        ) {
             self.original = original
             self.draftCustomerName = original?.customer.name ?? ""
             self.draftCategory = original?.category ?? ""
@@ -83,6 +91,7 @@ struct OrderEditFeature {
             self.draftCardFeeRate = original?.cardFeeRate ?? 0
             self.draftPlatformFeeRate = original?.platformFeeRate ?? 0
             self.draftItems = original?.items ?? []
+            self.draftDate = original?.date ?? currentDate
 
             var categories = availableCategories
             let originalCategory = original?.category.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""

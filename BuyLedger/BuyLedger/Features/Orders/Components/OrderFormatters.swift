@@ -54,4 +54,23 @@ enum OrderFormatters {
                 .locale(Locale(identifier: "zh_TW"))
         )
     }
+
+    /// 將日期格式化為 `yyyy/MM/dd HH:mm`。
+    ///
+    /// 採固定 pattern + `en_US_POSIX` locale，確保跨地區設定皆輸出一致的格式（不被 24/12 小時或分隔符差異影響）。秒精度對使用者沒有意義（`DatePicker(.compact)` 也不支援編輯到秒），故省略。
+    /// - Parameter date: 要格式化的日期。
+    /// - Returns: 包含年月日與時分的字串。
+    static func minuteTimestamp(_ date: Date) -> String {
+        minuteTimestampFormatter.string(from: date)
+    }
+
+    // MARK: - Static Properties
+
+    /// 用於 ``minuteTimestamp(_:)`` 的固定格式 formatter。
+    private static let minuteTimestampFormatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy/MM/dd HH:mm"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        return formatter
+    }()
 }

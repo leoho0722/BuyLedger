@@ -31,13 +31,22 @@ struct OrderEditView: View {
                     TextField("客戶名稱", text: $store.draftCustomerName)
 
                     categoryPickerRow
+
+                    orderDateRow
                 } header: {
                     Text("基本資料")
                 } footer: {
-                    if !canSave {
-                        Text("客戶名稱為必填欄位。")
+                    VStack(alignment: .leading, spacing: BLSpacing.small) {
+                        Text("訂購日期：\(OrderFormatters.minuteTimestamp(store.draftDate))")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
+                            .monospacedDigit()
+
+                        if !canSave {
+                            Text("客戶名稱為必填欄位。")
+                                .font(.footnote)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
                 
@@ -153,6 +162,15 @@ private extension OrderEditView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+
+    /// 訂購日期編輯列：以 compact `DatePicker` 編輯日期與時分（秒不參與儲存）。
+    var orderDateRow: some View {
+        DatePicker(
+            "訂購日期",
+            selection: $store.draftDate,
+            displayedComponents: [.date, .hourAndMinute]
+        )
     }
 
     /// 商品明細區段：可逐項編輯名稱／數量／單價，亦可新增與刪除。

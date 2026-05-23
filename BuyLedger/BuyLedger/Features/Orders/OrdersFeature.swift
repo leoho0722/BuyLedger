@@ -222,13 +222,15 @@ struct OrdersFeature {
 
                 state.editOrder = OrderEditFeature.State(
                     original: order,
-                    availableCategories: state.distinctCategories
+                    availableCategories: state.distinctCategories,
+                    currentDate: date.now
                 )
                 return .none
 
             case .newOrderTapped:
                 state.editOrder = OrderEditFeature.State(
-                    availableCategories: state.distinctCategories
+                    availableCategories: state.distinctCategories,
+                    currentDate: date.now
                 )
                 return .none
                 
@@ -363,7 +365,7 @@ private extension OrdersFeature {
                 customer: updatedCustomer,
                 status: draft.draftStatus,
                 currency: draft.draftCurrency,
-                date: existing.date,
+                date: draft.draftDate,
                 items: draft.draftItems,
                 itemCost: normalizedItemCost,
                 domesticShipping: normalizedDom,
@@ -386,7 +388,7 @@ private extension OrdersFeature {
                 customer: LedgerCustomer(name: resolvedName, initials: initials, tier: .new),
                 status: draft.draftStatus,
                 currency: draft.draftCurrency,
-                date: date.now,
+                date: draft.draftDate,
                 items: draft.draftItems,
                 itemCost: normalizedItemCost,
                 domesticShipping: normalizedDom,
