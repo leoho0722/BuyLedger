@@ -49,11 +49,17 @@ final class OrderRecord {
     /// 國際集運成本。
     var internationalShipping: Decimal
 
+    /// 商品來源國當地的國內運費成本（TWD）；帶 default 0 走 SwiftData lightweight migration。
+    var foreignDomesticShipping: Decimal = 0
+
     /// 刷卡手續費比例。
     var cardFeeRate: Decimal
 
     /// 平台手續費比例。
     var platformFeeRate: Decimal
+
+    /// 金流手續費比例；帶 default 0 走 SwiftData lightweight migration。
+    var paymentFeeRate: Decimal = 0
 
     /// 實際向客戶收款的新台幣金額。
     var chargedAmount: Decimal
@@ -80,8 +86,10 @@ final class OrderRecord {
         self.itemCost = order.itemCost
         self.domesticShipping = order.domesticShipping
         self.internationalShipping = order.internationalShipping
+        self.foreignDomesticShipping = order.foreignDomesticShipping
         self.cardFeeRate = order.cardFeeRate
         self.platformFeeRate = order.platformFeeRate
+        self.paymentFeeRate = order.paymentFeeRate
         self.chargedAmount = order.chargedAmount
         self.category = order.category
         self.paymentMethod = order.paymentMethod
@@ -107,8 +115,10 @@ extension OrderRecord {
             itemCost: itemCost,
             domesticShipping: domesticShipping,
             internationalShipping: internationalShipping,
+            foreignDomesticShipping: foreignDomesticShipping,
             cardFeeRate: cardFeeRate,
             platformFeeRate: platformFeeRate,
+            paymentFeeRate: paymentFeeRate,
             chargedAmount: chargedAmount,
             category: category,
             paymentMethod: paymentMethod
@@ -126,8 +136,10 @@ extension OrderRecord {
         self.itemCost = order.itemCost
         self.domesticShipping = order.domesticShipping
         self.internationalShipping = order.internationalShipping
+        self.foreignDomesticShipping = order.foreignDomesticShipping
         self.cardFeeRate = order.cardFeeRate
         self.platformFeeRate = order.platformFeeRate
+        self.paymentFeeRate = order.paymentFeeRate
         self.chargedAmount = order.chargedAmount
         self.category = order.category
         self.paymentMethod = order.paymentMethod

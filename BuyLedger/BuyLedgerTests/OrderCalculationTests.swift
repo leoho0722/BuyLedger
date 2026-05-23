@@ -28,8 +28,10 @@ struct OrderCalculationTests {
             itemCost: Decimal(8_892),
             domesticShipping: 80,
             internationalShipping: 320,
+            foreignDomesticShipping: 0,
             cardFeeRate: Decimal(string: "0.015") ?? 0,
             platformFeeRate: 0,
+            paymentFeeRate: 0,
             chargedAmount: Decimal(11_800),
             category: "美妝",
             paymentMethod: ""
@@ -57,8 +59,10 @@ struct OrderCalculationTests {
             itemCost: Decimal(800),
             domesticShipping: 0,
             internationalShipping: 0,
+            foreignDomesticShipping: 0,
             cardFeeRate: 0,
             platformFeeRate: Decimal(string: "0.03") ?? 0,
+            paymentFeeRate: 0,
             chargedAmount: Decimal(1_001),
             category: "測試",
             paymentMethod: ""
@@ -93,8 +97,10 @@ struct OrderCalculationTests {
             itemCost: Decimal(13_728),
             domesticShipping: 0,
             internationalShipping: 850,
+            foreignDomesticShipping: 0,
             cardFeeRate: Decimal(string: "0.015") ?? 0,
             platformFeeRate: 0,
+            paymentFeeRate: 0,
             chargedAmount: 0,
             category: "精品",
             paymentMethod: ""

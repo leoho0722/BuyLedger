@@ -64,8 +64,10 @@ struct OrderPersistenceTests {
             itemCost: 0,
             domesticShipping: 0,
             internationalShipping: 0,
+            foreignDomesticShipping: 0,
             cardFeeRate: 0,
             platformFeeRate: 0,
+            paymentFeeRate: 0,
             chargedAmount: 0,
             category: "美妝",
             paymentMethod: ""
@@ -96,8 +98,10 @@ struct OrderPersistenceTests {
             itemCost: original.itemCost,
             domesticShipping: original.domesticShipping,
             internationalShipping: original.internationalShipping,
+            foreignDomesticShipping: 0,
             cardFeeRate: original.cardFeeRate,
             platformFeeRate: original.platformFeeRate,
+            paymentFeeRate: 0,
             chargedAmount: 9_999,
             category: original.category,
             paymentMethod: original.paymentMethod

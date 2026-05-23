@@ -46,12 +46,18 @@ struct OrderEditFeature {
         
         /// 國際集運草稿（TWD）。
         var draftInternationalShipping: Decimal
-        
+
+        /// 外國國內運費草稿（TWD）。
+        var draftForeignDomesticShipping: Decimal
+
         /// 刷卡手續費比例草稿（0–1，例如 0.015 = 1.5%）。
         var draftCardFeeRate: Decimal
-        
+
         /// 平台手續費比例草稿（0–1，例如 0.03 = 3%）。
         var draftPlatformFeeRate: Decimal
+
+        /// 金流手續費比例草稿（0–1）。
+        var draftPaymentFeeRate: Decimal
         
         /// 商品明細草稿；可在編輯表單內新增、刪除、修改。
         var draftItems: [LedgerOrderItem]
@@ -100,8 +106,10 @@ struct OrderEditFeature {
             self.draftItemCost = original?.itemCost ?? 0
             self.draftDomesticShipping = original?.domesticShipping ?? 0
             self.draftInternationalShipping = original?.internationalShipping ?? 0
+            self.draftForeignDomesticShipping = original?.foreignDomesticShipping ?? 0
             self.draftCardFeeRate = original?.cardFeeRate ?? 0
             self.draftPlatformFeeRate = original?.platformFeeRate ?? 0
+            self.draftPaymentFeeRate = original?.paymentFeeRate ?? 0
             self.draftItems = original?.items ?? []
             self.draftDate = original?.date ?? currentDate
             self.draftPaymentMethod = original?.paymentMethod ?? ""

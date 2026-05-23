@@ -34,8 +34,13 @@ struct OrderSummary: Equatable {
     init(order: LedgerOrder) {
         let cardFee = order.chargedAmount * order.cardFeeRate
         let platformFee = (order.chargedAmount * order.platformFeeRate).roundedUpToInteger()
-        let fees = cardFee + platformFee
-        let totalCost = order.itemCost + order.domesticShipping + order.internationalShipping + fees
+        let paymentFee = order.chargedAmount * order.paymentFeeRate
+        let fees = cardFee + platformFee + paymentFee
+        let totalCost = order.itemCost
+            + order.domesticShipping
+            + order.internationalShipping
+            + order.foreignDomesticShipping
+            + fees
         let profit = order.chargedAmount - totalCost
 
         self.revenue = order.chargedAmount

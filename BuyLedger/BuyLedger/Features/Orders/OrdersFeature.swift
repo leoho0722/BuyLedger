@@ -356,8 +356,10 @@ struct OrdersFeature {
                     itemCost: existing.itemCost,
                     domesticShipping: existing.domesticShipping,
                     internationalShipping: existing.internationalShipping,
+                    foreignDomesticShipping: existing.foreignDomesticShipping,
                     cardFeeRate: existing.cardFeeRate,
                     platformFeeRate: existing.platformFeeRate,
+                    paymentFeeRate: existing.paymentFeeRate,
                     chargedAmount: existing.chargedAmount,
                     category: existing.category,
                     paymentMethod: existing.paymentMethod
@@ -438,8 +440,10 @@ private extension OrdersFeature {
         let normalizedItemCost = max(0, draft.draftItemCost)
         let normalizedDom = max(0, draft.draftDomesticShipping)
         let normalizedIntl = max(0, draft.draftInternationalShipping)
+        let normalizedForeignDom = max(0, draft.draftForeignDomesticShipping)
         let normalizedCardFee = clampRate(draft.draftCardFeeRate)
         let normalizedPlatformFee = clampRate(draft.draftPlatformFeeRate)
+        let normalizedPaymentFee = clampRate(draft.draftPaymentFeeRate)
         
         if let original = draft.original,
            let index = state.orders.firstIndex(where: { $0.id == original.id }) {
@@ -460,8 +464,10 @@ private extension OrdersFeature {
                 itemCost: normalizedItemCost,
                 domesticShipping: normalizedDom,
                 internationalShipping: normalizedIntl,
+                foreignDomesticShipping: normalizedForeignDom,
                 cardFeeRate: normalizedCardFee,
                 platformFeeRate: normalizedPlatformFee,
+                paymentFeeRate: normalizedPaymentFee,
                 chargedAmount: normalizedAmount,
                 category: trimmedCategory.isEmpty ? existing.category : trimmedCategory,
                 paymentMethod: trimmedPaymentMethod.isEmpty ? existing.paymentMethod : trimmedPaymentMethod
@@ -484,8 +490,10 @@ private extension OrdersFeature {
                 itemCost: normalizedItemCost,
                 domesticShipping: normalizedDom,
                 internationalShipping: normalizedIntl,
+                foreignDomesticShipping: normalizedForeignDom,
                 cardFeeRate: normalizedCardFee,
                 platformFeeRate: normalizedPlatformFee,
+                paymentFeeRate: normalizedPaymentFee,
                 chargedAmount: normalizedAmount,
                 category: resolvedCategory,
                 paymentMethod: trimmedPaymentMethod

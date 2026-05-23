@@ -335,8 +335,10 @@ struct RootFeature {
             itemCost: order.itemCost,
             domesticShipping: order.domesticShipping,
             internationalShipping: order.internationalShipping,
+            foreignDomesticShipping: order.foreignDomesticShipping,
             cardFeeRate: order.cardFeeRate,
             platformFeeRate: order.platformFeeRate,
+            paymentFeeRate: order.paymentFeeRate,
             chargedAmount: order.chargedAmount,
             category: category ?? order.category,
             paymentMethod: paymentMethod ?? order.paymentMethod

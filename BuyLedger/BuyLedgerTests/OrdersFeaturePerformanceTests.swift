@@ -90,8 +90,10 @@ private extension OrdersFeaturePerformanceTests {
                 itemCost: Decimal(100 + index),
                 domesticShipping: 0,
                 internationalShipping: 50,
+                foreignDomesticShipping: 0,
                 cardFeeRate: Decimal(string: "0.015") ?? 0,
                 platformFeeRate: 0,
+                paymentFeeRate: 0,
                 chargedAmount: Decimal(200 + index),
                 category: category,
                 paymentMethod: ""

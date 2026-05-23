@@ -130,7 +130,9 @@ enum BuyLedgerSchemaV1: VersionedSchema {
     }
 }
 
-/// 當前 schema：將 ``OrderRecord/currency`` 從 enum 改成純 String，並新增 ``CurrencyMetadataRecord``。
+/// V2 schema：將 ``OrderRecord/currency`` 從 enum 改成純 String，並新增 ``CurrencyMetadataRecord``；尚未含 V3 的 `foreignDomesticShipping` 與 `paymentFeeRate`。
+///
+/// V2.OrderRecord 改為影子型別以「凍結」當時的 attribute 集合，避免後續變更 top-level OrderRecord 時破壞 V2 schema fingerprint。
 enum BuyLedgerSchemaV2: VersionedSchema {
 
     // MARK: - Static Properties
@@ -138,7 +140,84 @@ enum BuyLedgerSchemaV2: VersionedSchema {
     /// 版本識別。
     static var versionIdentifier: Schema.Version { Schema.Version(2, 0, 0) }
 
-    /// 此版本包含的 model 型別；直接引用 top-level 定義（不再為 V2 建影子型別，避免雙重維護）。
+    /// 此版本包含的 model 型別。
+    static var models: [any PersistentModel.Type] {
+        [
+            OrderRecord.self,
+            CategoryRecord.self,
+            PaymentMethodRecord.self,
+            CurrencyMetadataRecord.self,
+        ]
+    }
+
+    /// V2 時代的 ``OrderRecord`` 影子；只在 SwiftData migration 用，與當時版本的屬性集合一致。
+    @Model
+    final class OrderRecord {
+
+        // MARK: - Data Properties
+
+        var id: String
+        var customer: LedgerCustomer
+        var status: OrderStatus
+        var currency: String
+        var date: Date
+        var items: [LedgerOrderItem]
+        var itemCost: Decimal
+        var domesticShipping: Decimal
+        var internationalShipping: Decimal
+        var cardFeeRate: Decimal
+        var platformFeeRate: Decimal
+        var chargedAmount: Decimal
+        var category: String
+        var paymentMethod: String = ""
+
+        // MARK: - Init
+
+        init(
+            id: String,
+            customer: LedgerCustomer,
+            status: OrderStatus,
+            currency: String,
+            date: Date,
+            items: [LedgerOrderItem],
+            itemCost: Decimal,
+            domesticShipping: Decimal,
+            internationalShipping: Decimal,
+            cardFeeRate: Decimal,
+            platformFeeRate: Decimal,
+            chargedAmount: Decimal,
+            category: String,
+            paymentMethod: String = ""
+        ) {
+            self.id = id
+            self.customer = customer
+            self.status = status
+            self.currency = currency
+            self.date = date
+            self.items = items
+            self.itemCost = itemCost
+            self.domesticShipping = domesticShipping
+            self.internationalShipping = internationalShipping
+            self.cardFeeRate = cardFeeRate
+            self.platformFeeRate = platformFeeRate
+            self.chargedAmount = chargedAmount
+            self.category = category
+            self.paymentMethod = paymentMethod
+        }
+    }
+}
+
+/// V3 schema：在 V2 之上新增 ``OrderRecord/foreignDomesticShipping``（外國國內運費）與 ``OrderRecord/paymentFeeRate``（金流手續費）。
+///
+/// 兩個欄位都帶 default `0`，因此 V2 → V3 走 lightweight migration 即可。
+enum BuyLedgerSchemaV3: VersionedSchema {
+
+    // MARK: - Static Properties
+
+    /// 版本識別。
+    static var versionIdentifier: Schema.Version { Schema.Version(3, 0, 0) }
+
+    /// 此版本包含的 model 型別；引用 top-level 定義（已含 V3 新增欄位）。
     static var models: [any PersistentModel.Type] {
         [
             OrderRecord.self,
@@ -158,10 +237,10 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
 
     /// migration plan 涉及的所有 schema 版本。
     static var schemas: [any VersionedSchema.Type] {
-        [BuyLedgerSchemaV1.self, BuyLedgerSchemaV2.self]
+        [BuyLedgerSchemaV1.self, BuyLedgerSchemaV2.self, BuyLedgerSchemaV3.self]
     }
 
-    /// 連結 V1 → V2 的階段；用 willMigrate 抓資料、didMigrate 寫回。
+    /// V1 → V2（custom dump-and-restore）、V2 → V3（lightweight，新增 default 欄位）。
     static var stages: [MigrationStage] {
         [
             .custom(
@@ -203,32 +282,34 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
                     try context.save()
                 },
                 didMigrate: { context in
-                    // 在 V2 context 用 snapshot 重建。
+                    // 在 V2 context 用 V2 影子型別重建。新欄位（V3）在這階段不寫入；後續 V2 → V3 lightweight migration 會以 default 補齊。
                     let snapshot = pendingOrders
                     for pending in snapshot {
-                        let restored = OrderRecord(
-                            order: LedgerOrder(
-                                id: pending.id,
-                                customer: pending.customer,
-                                status: pending.status,
-                                currency: CurrencyCode(rawValue: pending.currency),
-                                date: pending.date,
-                                items: pending.items,
-                                itemCost: pending.itemCost,
-                                domesticShipping: pending.domesticShipping,
-                                internationalShipping: pending.internationalShipping,
-                                cardFeeRate: pending.cardFeeRate,
-                                platformFeeRate: pending.platformFeeRate,
-                                chargedAmount: pending.chargedAmount,
-                                category: pending.category,
-                                paymentMethod: pending.paymentMethod
-                            )
+                        let restored = BuyLedgerSchemaV2.OrderRecord(
+                            id: pending.id,
+                            customer: pending.customer,
+                            status: pending.status,
+                            currency: pending.currency,
+                            date: pending.date,
+                            items: pending.items,
+                            itemCost: pending.itemCost,
+                            domesticShipping: pending.domesticShipping,
+                            internationalShipping: pending.internationalShipping,
+                            cardFeeRate: pending.cardFeeRate,
+                            platformFeeRate: pending.platformFeeRate,
+                            chargedAmount: pending.chargedAmount,
+                            category: pending.category,
+                            paymentMethod: pending.paymentMethod
                         )
                         context.insert(restored)
                     }
                     try context.save()
                     pendingOrders = []
                 }
+            ),
+            .lightweight(
+                fromVersion: BuyLedgerSchemaV2.self,
+                toVersion: BuyLedgerSchemaV3.self
             )
         ]
     }
