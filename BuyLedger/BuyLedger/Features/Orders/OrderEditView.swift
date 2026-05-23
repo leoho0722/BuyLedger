@@ -78,23 +78,23 @@ struct OrderEditView: View {
                 
                 Section {
                     decimalField(
-                        title: "客戶實付（NT$）",
+                        title: "客戶實付",
                         value: $store.draftChargedAmount
                     )
 
                     if store.isSelectedPaymentMethodCardless {
                         decimalField(
-                            title: "無卡折抵金額（NT$）",
+                            title: "無卡折抵金額",
                             value: $store.draftCardlessDeductionAmount
                         )
 
                         decimalField(
-                            title: "無卡補款金額（NT$）",
+                            title: "無卡補款金額",
                             value: $store.draftCardlessSupplementAmount
                         )
                     }
                 } header: {
-                    Text("收款金額")
+                    Text("收款金額（NT$）")
                 } footer: {
                     if store.isSelectedPaymentMethodCardless {
                         Text("無卡類付款方式才會啟用「折抵」與「補款」欄位；總收款 = 客戶實付 + 補款 − 折抵。")
