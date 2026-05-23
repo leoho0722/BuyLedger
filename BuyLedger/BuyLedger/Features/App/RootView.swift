@@ -25,6 +25,7 @@ struct RootView: View {
     /// App 根畫面的內容。
     var body: some View {
         layout
+            .dismissKeyboardOnTap()
             .preferredColorScheme(preferredScheme)
             .task {
                 await store.send(.task).finish()
