@@ -21,13 +21,7 @@ struct QuoteFeature {
     /// 報價試算狀態。
     @ObservableState
     struct State: Equatable, @unchecked Sendable {
-        
-        /// 客戶名稱。
-        var customerName: String
-        
-        /// 商品名稱。
-        var productName: String
-        
+
         /// 來源幣別。
         var fromCurrency: CurrencyCode
         
@@ -64,8 +58,6 @@ struct QuoteFeature {
         ///
         /// 所有數值欄位預設為 `0`：報價試算頁開啟時不預填任何示範金額或費率，避免使用者誤以為畫面上的「建議售價」是已存在的試算結果。實際數值由使用者拖動 slider / 輸入後即時運算。
         init(
-            customerName: String = "",
-            productName: String = "",
             fromCurrency: CurrencyCode = .krw,
             itemPrice: Double = 0,
             domesticShipping: Double = 0,
@@ -76,8 +68,6 @@ struct QuoteFeature {
             isLoading: Bool = false,
             errorMessage: String? = nil
         ) {
-            self.customerName = customerName
-            self.productName = productName
             self.fromCurrency = fromCurrency
             self.itemPrice = itemPrice
             self.domesticShipping = domesticShipping

@@ -12,7 +12,7 @@ import SwiftUI
 ///
 /// 對應設計稿 iPhone Quote sheet 與 iPad/Mac 的 Quote tool：
 /// - 來源幣別 chip
-/// - 多個 slider (商品本金 / 國內運費 / 國際運費 / 刷卡手續費 / 目標毛利)
+/// - 多個數值輸入欄 (商品本金 / 國內運費 / 國際運費 / 刷卡手續費 / 目標毛利)
 /// - 即時建議售價 (綠→青漸層 hero 卡)
 /// - 成本拆解條與總成本
 struct QuoteView: View {
@@ -104,87 +104,48 @@ private extension QuoteView {
         }
     }
     
-    /// 輸入卡：客戶/商品 + 幣別 + 各項 slider。
+    /// 輸入卡：客戶/商品 + 幣別 + 各項數值輸入欄。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 輸入卡 view。
     func inputsCard(palette: BLPalette) -> some View {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                Text("基本資料")
-                    .font(.caption.weight(.semibold))
-                    .foregroundStyle(palette.tertiaryLabel)
-                    .textCase(.uppercase)
-                
-                VStack(alignment: .leading, spacing: BLSpacing.small) {
-                    Text("客戶")
-                        .font(.footnote)
-                        .foregroundStyle(palette.secondaryLabel)
-                    
-                    TextField("輸入客戶名稱", text: $store.customerName)
-                        .textFieldStyle(.roundedBorder)
-                }
-                
-                VStack(alignment: .leading, spacing: BLSpacing.small) {
-                    Text("商品名稱")
-                        .font(.footnote)
-                        .foregroundStyle(palette.secondaryLabel)
-                    
-                    TextField("例如 Tamburins 香水 Chamo 50ml", text: $store.productName)
-                        .textFieldStyle(.roundedBorder)
-                }
-                
                 Text("商品資訊")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(palette.tertiaryLabel)
                     .textCase(.uppercase)
-                    .padding(.top, BLSpacing.small)
-                
+
                 currencyPicker(palette: palette)
-                
-                sliderRow(
-                    label: "商品定價 (\(store.fromCurrency.rawValue))",
+
+                numberField(
+                    label: "商品定價",
                     value: $store.itemPrice,
-                    range: 0...500_000,
-                    step: 1_000,
-                    unit: store.fromCurrency.rawValue,
-                    tint: palette.accent
+                    unit: store.fromCurrency.rawValue
                 )
-                
-                sliderRow(
-                    label: "當地運費 (\(store.fromCurrency.rawValue))",
+
+                numberField(
+                    label: "當地運費",
                     value: $store.domesticShipping,
-                    range: 0...20_000,
-                    step: 500,
-                    unit: store.fromCurrency.rawValue,
-                    tint: palette.teal
+                    unit: store.fromCurrency.rawValue
                 )
-                
-                sliderRow(
-                    label: "國際運費 (TWD/件)",
+
+                numberField(
+                    label: "國際運費",
                     value: $store.internationalShippingTwd,
-                    range: 0...1_000,
-                    step: 20,
-                    unit: "TWD",
-                    tint: palette.purple
+                    unit: "TWD/件"
                 )
-                
-                sliderRow(
-                    label: "刷卡手續費 %",
+
+                numberField(
+                    label: "刷卡手續費",
                     value: $store.cardFeePercent,
-                    range: 0...5,
-                    step: 0.1,
                     unit: "%",
-                    tint: palette.orange,
                     fractionDigits: 1
                 )
-                
-                sliderRow(
-                    label: "目標毛利 %",
+
+                numberField(
+                    label: "目標毛利",
                     value: $store.targetMarginPercent,
-                    range: 0...60,
-                    step: 1,
-                    unit: "%",
-                    tint: palette.green
+                    unit: "%"
                 )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -255,41 +216,54 @@ private extension QuoteView {
         return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
     }
     
-    /// 單一 slider 列。
+    /// 單一數值輸入列：label 在左、右側為對齊尾端的 `TextField` 與單位，取代原本的 slider，讓使用者可直接鍵入精確數值。
     /// - Parameters:
-    ///   - label: 顯示在上方的欄位名稱。
-    ///   - value: 雙向繫結的值。
-    ///   - range: slider 範圍。
-    ///   - step: 滑動步進。
-    ///   - unit: 顯示在右上角的單位字串。
-    ///   - tint: slider 著色。
-    ///   - fractionDigits: 數值顯示時的小數位數。
-    /// - Returns: slider 列 view。
-    func sliderRow(
+    ///   - label: 欄位名稱。
+    ///   - value: 雙向繫結的值；寫入時自動 clamp 成非負數。
+    ///   - unit: 顯示在輸入框右側的單位字串。
+    ///   - fractionDigits: 數值顯示的小數位數；大於 0 時鍵盤改用 `decimalPad`，否則 `numberPad`。
+    /// - Returns: 數值輸入列 view。
+    func numberField(
         label: String,
         value: Binding<Double>,
-        range: ClosedRange<Double>,
-        step: Double,
         unit: String,
-        tint: Color,
         fractionDigits: Int = 0
     ) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack {
-                Text(label)
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                
-                Spacer()
-                
-                Text("\(formatNumber(value.wrappedValue, fractionDigits: fractionDigits)) \(unit)")
-                    .font(.footnote.weight(.semibold))
-                    .monospacedDigit()
-            }
-            
-            Slider(value: value, in: range, step: step)
-                .tint(tint)
+        HStack(spacing: BLSpacing.small) {
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+            TextField(
+                "0",
+                value: nonNegativeBinding(value),
+                format: .number.precision(.fractionLength(fractionDigits))
+            )
+            .textFieldStyle(.roundedBorder)
+            .multilineTextAlignment(.trailing)
+            .monospacedDigit()
+            .frame(width: 120)
+#if os(iOS)
+            .keyboardType(fractionDigits > 0 ? .decimalPad : .numberPad)
+#endif
+
+            Text(unit)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .frame(width: 60, alignment: .leading)
         }
+    }
+
+    /// 包裝 `Binding<Double>`，寫入時把負數 clamp 成 `0`；報價試算的所有數值皆無負值意義。
+    /// - Parameter binding: 原始繫結。
+    /// - Returns: 寫入時保證非負的繫結。
+    func nonNegativeBinding(_ binding: Binding<Double>) -> Binding<Double> {
+        Binding(
+            get: { binding.wrappedValue },
+            set: { binding.wrappedValue = max(0, $0) }
+        )
     }
     
     /// 建議售價 hero 卡 (漸層綠→青)。
@@ -297,13 +271,6 @@ private extension QuoteView {
     /// - Returns: hero 卡 view。
     func suggestedHero(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
-            if !targetSubtitle.isEmpty {
-                Text(targetSubtitle)
-                    .font(.footnote.weight(.medium))
-                    .opacity(0.9)
-                    .lineLimit(1)
-            }
-            
             Text("建議售價")
                 .font(.caption.weight(.semibold))
                 .opacity(0.95)
@@ -333,23 +300,6 @@ private extension QuoteView {
         .blCardShadow()
     }
     
-    /// 顯示在 hero 卡上方的「客戶 · 商品」副標；若兩者都空則隱藏。
-    var targetSubtitle: String {
-        let customer = store.customerName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let product = store.productName.trimmingCharacters(in: .whitespacesAndNewlines)
-        
-        switch (customer.isEmpty, product.isEmpty) {
-        case (true, true):
-            return ""
-        case (false, true):
-            return customer
-        case (true, false):
-            return product
-        case (false, false):
-            return "\(customer) · \(product)"
-        }
-    }
-    
     /// 成本拆解卡：每項條 + 總成本。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 拆解卡 view。
@@ -357,7 +307,7 @@ private extension QuoteView {
         let total = max(store.costTwd, 1)
         let items: [(label: String, value: Double, color: Color)] = [
             ("商品金額", store.itemTwd, palette.accent),
-            ("國內運費", store.domesticTwd, palette.teal),
+            ("當地運費", store.domesticTwd, palette.teal),
             ("國際運費", store.internationalShippingTwd, palette.purple),
             ("刷卡手續費", store.cardFeeTwd, palette.orange),
         ]
@@ -429,13 +379,6 @@ private extension QuoteView {
 // MARK: - Formatting
 
 private extension QuoteView {
-    
-    /// 將數值格式化為指定小數位數。
-    func formatNumber(_ value: Double, fractionDigits: Int) -> String {
-        let value = Decimal(value)
-        
-        return value.formatted(.number.precision(.fractionLength(fractionDigits)))
-    }
     
     /// 將金額格式化為新台幣 (無小數位)。
     func formatTwd(_ amount: Double) -> String {
