@@ -18,11 +18,8 @@ struct OrderEditView: View {
     /// 訂單編輯 store。
     @Bindable var store: StoreOf<OrderEditFeature>
 
-    /// 是否顯示「新增商品類別」彈窗。
-    @State private var showsNewCategoryAlert = false
-
-    /// 新增類別彈窗中的輸入草稿。
-    @State private var newCategoryDraft = ""
+    /// 是否顯示「商品類別」選擇 sheet。
+    @State private var showsCategorySheet = false
 
     // MARK: - View Body
     
@@ -109,29 +106,17 @@ struct OrderEditView: View {
                     .disabled(!canSave)
                 }
             }
-            .alert("新增商品類別", isPresented: $showsNewCategoryAlert) {
-                TextField("類別名稱", text: $newCategoryDraft)
-#if !os(macOS)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-#endif
-
-                Button("新增") {
-                    let trimmed = newCategoryDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmed.isEmpty {
-                        store.send(.addCategoryTapped(trimmed))
+            .sheet(isPresented: $showsCategorySheet) {
+                CategoryPickerSheet(
+                    categories: store.availableCategories,
+                    selected: store.draftCategory,
+                    onSelect: { category in
+                        store.draftCategory = category
+                    },
+                    onAddCategory: { name in
+                        store.send(.addCategoryTapped(name))
                     }
-                    newCategoryDraft = ""
-                }
-                .disabled(
-                    newCategoryDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 )
-
-                Button("取消", role: .cancel) {
-                    newCategoryDraft = ""
-                }
-            } message: {
-                Text("輸入新的商品類別名稱，加入後會立即套用至此訂單。")
             }
         }
 #if os(macOS)
@@ -148,42 +133,26 @@ private extension OrderEditView {
     ///
     /// 點擊「新增類別」會觸發畫面置中的 `.alert` 彈窗收集新類別名稱，送出後由 reducer 把名稱加入 ``OrderEditFeature/State/availableCategories`` 並設為目前選擇。
     var categoryPickerRow: some View {
-        LabeledContent("商品類別") {
-            Menu {
-                if store.availableCategories.isEmpty {
-                    Text("尚無類別")
-                } else {
-                    ForEach(store.availableCategories, id: \.self) { category in
-                        Button {
-                            store.draftCategory = category
-                        } label: {
-                            if category == store.draftCategory {
-                                Label(category, systemImage: "checkmark")
-                            } else {
-                                Text(category)
-                            }
-                        }
-                    }
+        // 改成 Button + `.sheet`：iOS `Menu` 是 `UIMenu` 包裝，Button action 會被排到 menu collapse 動畫結束才派發，造成可見延遲。sheet 路徑下選擇即時 commit binding，視覺更新與 sheet 收合動畫互不阻擋。
+        Button {
+            showsCategorySheet = true
+        } label: {
+            HStack(spacing: BLSpacing.small) {
+                Text("商品類別")
+                    .foregroundStyle(.primary)
 
-                    Divider()
-                }
+                Spacer(minLength: BLSpacing.small)
 
-                Button {
-                    newCategoryDraft = ""
-                    showsNewCategoryAlert = true
-                } label: {
-                    Label("新增類別", systemImage: "plus.circle")
-                }
-            } label: {
-                HStack(spacing: BLSpacing.small) {
-                    Text(store.draftCategory.isEmpty ? "選擇類別" : store.draftCategory)
-                        .foregroundStyle(store.draftCategory.isEmpty ? .secondary : .primary)
-                    Image(systemName: "chevron.up.chevron.down")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.secondary)
-                }
+                Text(store.draftCategory.isEmpty ? "選擇類別" : store.draftCategory)
+                    .foregroundStyle(store.draftCategory.isEmpty ? .secondary : .secondary)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
             }
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
     }
 
     /// 商品明細區段：可逐項編輯名稱／數量／單價，亦可新增與刪除。
