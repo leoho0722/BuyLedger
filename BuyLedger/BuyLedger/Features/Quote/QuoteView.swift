@@ -12,7 +12,7 @@ import SwiftUI
 ///
 /// 對應設計稿 iPhone Quote sheet 與 iPad/Mac 的 Quote tool：
 /// - 來源幣別 chip
-/// - 多個 slider (商品本金 / 國內運費 / 國際集運 / 刷卡手續費 / 目標毛利)
+/// - 多個 slider (商品本金 / 國內運費 / 國際運費 / 刷卡手續費 / 目標毛利)
 /// - 即時建議售價 (綠→青漸層 hero 卡)
 /// - 成本拆解條與總成本
 struct QuoteView: View {
@@ -160,7 +160,7 @@ private extension QuoteView {
                 )
                 
                 sliderRow(
-                    label: "國際集運 (TWD/件)",
+                    label: "國際運費 (TWD/件)",
                     value: $store.internationalShippingTwd,
                     range: 0...1_000,
                     step: 20,
@@ -358,7 +358,7 @@ private extension QuoteView {
         let items: [(label: String, value: Double, color: Color)] = [
             ("商品金額", store.itemTwd, palette.accent),
             ("國內運費", store.domesticTwd, palette.teal),
-            ("國際集運", store.internationalShippingTwd, palette.purple),
+            ("國際運費", store.internationalShippingTwd, palette.purple),
             ("刷卡手續費", store.cardFeeTwd, palette.orange),
         ]
         

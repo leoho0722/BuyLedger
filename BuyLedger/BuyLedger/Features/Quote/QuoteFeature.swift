@@ -37,7 +37,7 @@ struct QuoteFeature {
         /// 來源幣別下的當地運費。
         var domesticShipping: Double
         
-        /// 國際集運費 (TWD)。
+        /// 國際運費 (TWD)。
         var internationalShippingTwd: Double
         
         /// 刷卡手續費 %。

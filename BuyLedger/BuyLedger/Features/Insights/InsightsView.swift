@@ -611,7 +611,7 @@ private extension InsightsView {
                 color: palette.teal
             ),
             InsightsCostSegment(
-                label: "國際集運",
+                label: "國際運費",
                 value: totalIntl,
                 color: palette.purple
             ),

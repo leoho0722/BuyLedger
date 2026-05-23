@@ -52,7 +52,7 @@ struct OrderEditFeature {
         /// 國內運費草稿 (TWD)。
         var draftDomesticShipping: Decimal
 
-        /// 國際集運草稿 (TWD)。
+        /// 國際運費草稿 (TWD)。
         var draftInternationalShipping: Decimal
 
         /// 外國國內運費草稿 (TWD)。

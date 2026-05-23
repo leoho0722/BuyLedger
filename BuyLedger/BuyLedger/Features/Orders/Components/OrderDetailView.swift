@@ -602,7 +602,7 @@ private extension OrderDetailView {
                 color: palette.teal
             ),
             OrderCostComponent(
-                title: "國際集運",
+                title: "國際運費",
                 value: order.internationalShipping,
                 color: palette.purple
             ),

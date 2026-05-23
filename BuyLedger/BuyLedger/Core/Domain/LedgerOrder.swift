@@ -36,7 +36,7 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 國內運費成本。
     let domesticShipping: Decimal
 
-    /// 國際集運成本。
+    /// 國際運費成本。
     let internationalShipping: Decimal
 
     /// 商品來源國當地的「國內運費」成本 (折合 TWD)。例如賣家把商品從日本國內出貨到集運倉的運送費。

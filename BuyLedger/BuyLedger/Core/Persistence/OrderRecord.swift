@@ -46,7 +46,7 @@ final class OrderRecord {
     /// 國內運費成本。
     var domesticShipping: Decimal
 
-    /// 國際集運成本。
+    /// 國際運費成本。
     var internationalShipping: Decimal
 
     /// 商品來源國當地的國內運費成本 (TWD)；帶 default 0 走 SwiftData lightweight migration。

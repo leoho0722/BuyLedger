@@ -105,9 +105,9 @@ struct OrderEditView: View {
                 
                 Section("成本 (NT$)") {
                     decimalField(title: "商品成本", value: $store.draftItemCost)
-                    decimalField(title: "國內運費", value: $store.draftDomesticShipping)
                     decimalField(title: "外國國內運費", value: $store.draftForeignDomesticShipping)
-                    decimalField(title: "國際集運", value: $store.draftInternationalShipping)
+                    decimalField(title: "國際運費", value: $store.draftInternationalShipping)
+                    decimalField(title: "國內運費", value: $store.draftDomesticShipping)
                 }
 
                 Section {

@@ -59,7 +59,7 @@ struct QuoteFeatureTests {
         
         #expect(state.snapshot == nil)
         #expect(state.hasUsableRate == false)
-        // 國際集運是 TWD 計，理論上會留下；但 itemTwd / domesticTwd / cardFeeTwd 全部歸零
+        // 國際運費是 TWD 計，理論上會留下；但 itemTwd / domesticTwd / cardFeeTwd 全部歸零
         #expect(state.itemTwd == 0)
         #expect(state.domesticTwd == 0)
         #expect(state.cardFeeTwd == 0)

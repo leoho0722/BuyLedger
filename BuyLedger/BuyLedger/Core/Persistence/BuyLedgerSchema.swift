@@ -76,7 +76,7 @@ enum BuyLedgerSchemaV1: VersionedSchema {
         /// 國內運費成本。
         var domesticShipping: Decimal
 
-        /// 國際集運成本。
+        /// 國際運費成本。
         var internationalShipping: Decimal
 
         /// 刷卡手續費比例。
