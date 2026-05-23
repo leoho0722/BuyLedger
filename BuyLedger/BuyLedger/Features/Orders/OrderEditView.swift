@@ -180,7 +180,7 @@ struct OrderEditView: View {
                     displayName: { code in
                         let name = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
                             .localizedString(forCurrencyCode: code) ?? ""
-                        return name.isEmpty ? code : "\(code) · \(name)"
+                        return name.isEmpty ? code : "\(code) (\(name))"
                     },
                     searchKeywords: { code in
                         Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
@@ -445,11 +445,11 @@ private extension OrderEditView {
             .isEmpty
     }
 
-    /// 幣別選擇列 label 顯示文字：「TWD · 新台幣」格式。``Locale.localizedString(forCurrencyCode:)`` 沒有對應翻譯時 fallback 為 raw code。
+    /// 幣別選擇列 label 顯示文字：「TWD (新台幣)」格式，跟 sheet 內列項與 ``OrderDetailView`` 上方 chip 一致。``Locale.localizedString(forCurrencyCode:)`` 沒有對應翻譯時 fallback 為 raw code。
     var currencyDisplayText: String {
         let code = store.draftCurrency.rawValue
         let name = deviceLocale.localizedString(forCurrencyCode: code) ?? ""
-        return name.isEmpty ? code : "\(code) · \(name)"
+        return name.isEmpty ? code : "\(code) (\(name))"
     }
 
     /// 把 `DatePicker` 寫回的新值與「當下這一刻」`date.now` 的秒合併，產生帶秒精度的 ``OrderEditFeature/State/draftDate``。

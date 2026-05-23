@@ -126,7 +126,7 @@ private extension OrderDetailView {
                 Text("·")
                     .foregroundStyle(palette.tertiaryLabel)
                 
-                Text(order.currency.rawValue)
+                Text(currencyDisplayText(for: order.currency))
                     .font(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
             }
@@ -522,7 +522,18 @@ private extension OrderDetailView {
 // MARK: - Private Method
 
 private extension OrderDetailView {
-    
+
+    /// 取得跟隨使用者手機偏好語言的幣別顯示文字，例如 `TWD (新台幣)`。
+    ///
+    /// 透過 ``Locale/preferredLanguages`` 取得系統偏好（不受 App `CFBundleDevelopmentRegion` 與已掛載 localizations 限制），再用 `localizedString(forCurrencyCode:)` 取出在地化名稱；查不到時退化為 raw code。
+    /// - Parameter currency: 訂單幣別。
+    /// - Returns: 顯示字串。
+    func currencyDisplayText(for currency: CurrencyCode) -> String {
+        let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+        let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
+        return name.isEmpty ? currency.rawValue : "\(currency.rawValue) (\(name))"
+    }
+
     /// 回傳成本拆解使用的資料。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 成本拆解清單。
