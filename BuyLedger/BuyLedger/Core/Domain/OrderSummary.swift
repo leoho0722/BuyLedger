@@ -32,8 +32,9 @@ struct OrderSummary: Equatable {
     /// 依訂單資料建立財務摘要。
     /// - Parameter order: 要計算的訂單。
     init(order: LedgerOrder) {
-        let feeRate = order.cardFeeRate + order.platformFeeRate
-        let fees = order.chargedAmount * feeRate
+        let cardFee = order.chargedAmount * order.cardFeeRate
+        let platformFee = (order.chargedAmount * order.platformFeeRate).roundedUpToInteger()
+        let fees = cardFee + platformFee
         let totalCost = order.itemCost + order.domesticShipping + order.internationalShipping + fees
         let profit = order.chargedAmount - totalCost
 
@@ -42,5 +43,16 @@ struct OrderSummary: Equatable {
         self.totalCost = totalCost
         self.profit = profit
         self.margin = order.chargedAmount == 0 ? 0 : profit / order.chargedAmount
+    }
+}
+
+private extension Decimal {
+
+    /// 對 `Decimal` 套用無條件進位到整數。
+    func roundedUpToInteger() -> Decimal {
+        var source = self
+        var result = Decimal()
+        NSDecimalRound(&result, &source, 0, .up)
+        return result
     }
 }

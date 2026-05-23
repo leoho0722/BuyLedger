@@ -43,6 +43,33 @@ struct OrderCalculationTests {
         #expect(summary.margin == Decimal(2_331) / Decimal(11_800))
     }
     
+    @Test func platformFeeRoundsUpToInteger() {
+        let order = LedgerOrder(
+            id: "BL-2605-001",
+            customer: LedgerCustomer(name: "測試客戶", initials: "TT", tier: .regular),
+            status: .delivered,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_777_145_600),
+            items: [
+                LedgerOrderItem(name: "測試商品", quantity: 1, unitPrice: 1_000),
+            ],
+            itemCost: Decimal(800),
+            domesticShipping: 0,
+            internationalShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: Decimal(string: "0.03") ?? 0,
+            chargedAmount: Decimal(1_001),
+            category: "測試"
+        )
+
+        let summary = OrderSummary(order: order)
+
+        // 1_001 * 0.03 = 30.03，無條件進位 → 31
+        #expect(summary.fees == 31)
+        #expect(summary.totalCost == 831)
+        #expect(summary.profit == 170)
+    }
+
     @Test func quotingOrderWithoutChargeKeepsZeroMargin() {
         let order = LedgerOrder(
             id: "BL-2604-015",
