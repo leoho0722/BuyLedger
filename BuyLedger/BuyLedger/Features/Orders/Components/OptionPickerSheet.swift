@@ -11,6 +11,8 @@ import SwiftUI
 ///
 /// 取代原本的 `Menu`：iOS Menu 因為是 `UIMenu` 的二次包裝，UIKit 端會把 Button action 排到 menu collapse 動畫結束後才派發給 SwiftUI，造成「選完選項 → 約 300ms 後 label 才更新」的可見延遲。改用 sheet 後，使用者點選時 binding 立即 commit，sheet 收合與 form label 更新解耦，視覺上不再卡頓。
 ///
+/// 內容區依平台分流：macOS 採 `ScrollView` + `palette.background` + `BLCard` 卡片版面 (對齊 ``LookupManagementView`` / ``CustomersView``)；iOS / iPadOS 維持系統 `List`。
+///
 /// 透過參數讓「商品類別」「付款方式」「幣別」等選單共用同一份元件：
 /// - ``allowsAdd`` 控制是否顯示「新增」按鈕 (商品類別 / 付款方式 = `true`、幣別 = `false`，幣別僅能從 API 主檔挑)
 /// - ``searchable`` 控制是否啟用搜尋 (清單超過 ~20 項就建議開)
@@ -71,6 +73,9 @@ struct OptionPickerSheet: View {
 
     /// 由 sheet 環境注入的 dismiss action。
     @Environment(\.dismiss) private var dismiss
+
+    /// 目前系統深淺色外觀；macOS 卡片版面用來取得色盤。
+    @Environment(\.colorScheme) private var colorScheme
 
     /// 是否顯示「新增」alert (商品類別等沒有 `isCardless` 需求的入口)。
     @State private var showsAddAlert = false
@@ -143,112 +148,250 @@ struct OptionPickerSheet: View {
     // MARK: - View Body
 
     /// 選項選擇 sheet 的內容。
+    ///
+    /// 內容區依平台分流 (見 ``content``)，但 navigation 標題、toolbar 取消、搜尋、新增 alert 與付款方式 sheet 由兩平台分支共用，確保操作與業務邏輯一致。
     var body: some View {
         NavigationStack {
-            List {
-                if allowsAdd {
-                    Section {
-                        Button {
-                            if onAddPaymentMethod != nil {
-                                // 付款方式入口：alert 在實機驗證會 silently 丟掉 Toggle (只剩 TextField + 按鈕)，所以改用 sheet 收集名稱與 isCardless。
-                                showsAddPaymentMethodSheet = true
-                            } else {
-                                draft = ""
-                                showsAddAlert = true
-                            }
-                        } label: {
-                            Label(addButtonTitle, systemImage: "plus.circle.fill")
+            content
+                .navigationTitle(title)
+#if !os(macOS)
+                .navigationBarTitleDisplayMode(.inline)
+#endif
+                .toolbar {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("取消") {
+                            dismiss()
                         }
                     }
                 }
+                .modifier(SearchableModifier(text: $searchText, enabled: searchable))
+                .alert(addAlertTitle, isPresented: $showsAddAlert) {
+                    TextField(addFieldPlaceholder, text: $draft)
+#if !os(macOS)
+                        .textInputAutocapitalization(.never)
+                        .autocorrectionDisabled()
+#endif
 
-                Section {
-                    if filteredOptions.isEmpty {
-                        ContentUnavailableView(
-                            emptyTitle,
-                            systemImage: "tray",
-                            description: Text(emptyDescription)
-                        )
-                    } else {
-                        ForEach(filteredOptions, id: \.self) { option in
-                            Button {
-                                onSelect(option)
-                                dismiss()
-                            } label: {
-                                HStack {
-                                    Text(displayText(for: option))
-                                        .foregroundStyle(.primary)
-
-                                    Spacer()
-
-                                    if option == selected {
-                                        Image(systemName: "checkmark")
-                                            .foregroundStyle(.tint)
-                                    }
-                                }
-                                .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
+                    Button("新增") {
+                        let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                        if !trimmed.isEmpty {
+                            onAdd(trimmed)
+                            draft = ""
+                            dismiss()
                         }
                     }
-                }
-            }
-            .navigationTitle(title)
-#if !os(macOS)
-            .navigationBarTitleDisplayMode(.inline)
-#endif
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
-                        dismiss()
-                    }
-                }
-            }
-            .modifier(SearchableModifier(text: $searchText, enabled: searchable))
-            .alert(addAlertTitle, isPresented: $showsAddAlert) {
-                TextField(addFieldPlaceholder, text: $draft)
-#if !os(macOS)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-#endif
+                    .disabled(
+                        draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    )
 
-                Button("新增") {
-                    let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmed.isEmpty {
-                        onAdd(trimmed)
+                    Button("取消", role: .cancel) {
                         draft = ""
-                        dismiss()
                     }
+                } message: {
+                    Text(addAlertMessage)
                 }
-                .disabled(
-                    draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                )
-
-                Button("取消", role: .cancel) {
-                    draft = ""
+                .sheet(isPresented: $showsAddPaymentMethodSheet) {
+                    PaymentMethodEditorSheet(
+                        title: addAlertTitle,
+                        message: addAlertMessage,
+                        namePlaceholder: addFieldPlaceholder,
+                        submitTitle: "新增",
+                        onSubmit: { name, isCardless in
+                            onAddPaymentMethod?(name, isCardless)
+                            // 新增完成後一併關閉外層 picker sheet，使用者能立即看到新付款方式套用到此訂單。
+                            dismiss()
+                        }
+                    )
                 }
-            } message: {
-                Text(addAlertMessage)
-            }
-            .sheet(isPresented: $showsAddPaymentMethodSheet) {
-                PaymentMethodEditorSheet(
-                    title: addAlertTitle,
-                    message: addAlertMessage,
-                    namePlaceholder: addFieldPlaceholder,
-                    submitTitle: "新增",
-                    onSubmit: { name, isCardless in
-                        onAddPaymentMethod?(name, isCardless)
-                        // 新增完成後一併關閉外層 picker sheet，使用者能立即看到新付款方式套用到此訂單。
-                        dismiss()
-                    }
-                )
-            }
         }
 #if os(macOS)
         .frame(minWidth: 400, minHeight: 480)
 #endif
     }
 }
+
+// MARK: - ViewBuilder
+
+private extension OptionPickerSheet {
+
+    /// 依平台選擇內容呈現：macOS 走 Design System 卡片版面，iOS / iPadOS 維持系統 List。
+    @ViewBuilder
+    var content: some View {
+#if os(macOS)
+        macContent
+#else
+        listContent
+#endif
+    }
+
+    /// 點擊新增按鈕的共用行為：付款方式入口開 ``PaymentMethodEditorSheet``，其餘開一般新增 alert。
+    func triggerAdd() {
+        if onAddPaymentMethod != nil {
+            // 付款方式入口：alert 在實機驗證會 silently 丟掉 Toggle (只剩 TextField + 按鈕)，所以改用 sheet 收集名稱與 isCardless。
+            showsAddPaymentMethodSheet = true
+        } else {
+            draft = ""
+            showsAddAlert = true
+        }
+    }
+}
+
+#if !os(macOS)
+
+// MARK: - ViewBuilder (iOS / iPadOS List 版本)
+
+private extension OptionPickerSheet {
+
+    /// iOS / iPadOS 維持的系統 List 版本：新增按鈕 Section + 選項 Section (含勾選與空狀態)。
+    var listContent: some View {
+        List {
+            if allowsAdd {
+                Section {
+                    Button {
+                        triggerAdd()
+                    } label: {
+                        Label(addButtonTitle, systemImage: "plus.circle.fill")
+                    }
+                }
+            }
+
+            Section {
+                if filteredOptions.isEmpty {
+                    ContentUnavailableView(
+                        emptyTitle,
+                        systemImage: "tray",
+                        description: Text(emptyDescription)
+                    )
+                } else {
+                    ForEach(filteredOptions, id: \.self) { option in
+                        Button {
+                            onSelect(option)
+                            dismiss()
+                        } label: {
+                            HStack {
+                                Text(displayText(for: option))
+                                    .foregroundStyle(.primary)
+
+                                Spacer()
+
+                                if option == selected {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.tint)
+                                }
+                            }
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+        }
+    }
+}
+
+#endif
+
+#if os(macOS)
+
+// MARK: - ViewBuilder (macOS 卡片版面)
+
+private extension OptionPickerSheet {
+
+    /// macOS 的 Design System 卡片版本：以 `BLCard` 呈現選項，對齊 ``LookupManagementView`` / ``CustomersView`` 的卡片風。
+    ///
+    /// 背景採分模式處理：
+    /// - 淺色模式套上與表單 List 相同的淺灰群組底色 (`palette.background` 在淺色為 `0xF2F2F7`)，讓白色 `BLCard` 列有對比、不致與 sheet 的白底融合。
+    /// - 深色模式維持透明、沿用 sheet 預設材質——`palette.background` 在深色為純黑，會與 sheet 的標題列與底部工具列形成突兀的深色色塊。
+    var macContent: some View {
+        let palette = BLTheme.palette(for: colorScheme)
+
+        return ScrollView {
+            VStack(alignment: .leading, spacing: BLSpacing.large) {
+                if allowsAdd {
+                    addButton(palette: palette)
+                }
+
+                if filteredOptions.isEmpty {
+                    macEmptyState()
+                } else {
+                    optionsCard(palette: palette)
+                }
+            }
+            .padding(.horizontal, BLSpacing.large)
+            .padding(.vertical, BLSpacing.large)
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .background(palette.isDark ? Color.clear : palette.background)
+    }
+
+    /// macOS 卡片上方的新增按鈕，沿用 ``triggerAdd()`` 的入口邏輯。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 新增按鈕 view。
+    func addButton(palette: BLPalette) -> some View {
+        Button {
+            triggerAdd()
+        } label: {
+            Label(addButtonTitle, systemImage: "plus.circle.fill")
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(palette.accent)
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// macOS 選項卡片：單一 ``BLCard`` 內含選項列 (列間帶 leading inset 的 `Divider`)，列為點選即套用並關閉，選中項顯示勾選。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 選項卡片 view。
+    func optionsCard(palette: BLPalette) -> some View {
+        BLCard(padding: 0) {
+            VStack(spacing: 0) {
+                ForEach(Array(filteredOptions.enumerated()), id: \.element) { index, option in
+                    Button {
+                        onSelect(option)
+                        dismiss()
+                    } label: {
+                        HStack(spacing: BLSpacing.small) {
+                            Text(displayText(for: option))
+                                .font(.subheadline)
+                                .foregroundStyle(palette.label)
+
+                            Spacer()
+
+                            if option == selected {
+                                Image(systemName: "checkmark")
+                                    .font(.subheadline.weight(.semibold))
+                                    .foregroundStyle(palette.accent)
+                            }
+                        }
+                        .padding(.horizontal, BLSpacing.large)
+                        .padding(.vertical, BLSpacing.medium)
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+
+                    if index < filteredOptions.count - 1 {
+                        Divider()
+                            .padding(.leading, BLSpacing.large)
+                    }
+                }
+            }
+        }
+    }
+
+    /// macOS 空狀態：置中 `ContentUnavailableView`，沿用 sheet 預設材質背景。
+    /// - Returns: 空狀態 view。
+    func macEmptyState() -> some View {
+        ContentUnavailableView(
+            emptyTitle,
+            systemImage: "tray",
+            description: Text(emptyDescription)
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .padding(.vertical, BLSpacing.section)
+    }
+}
+
+#endif
 
 // MARK: - Private Method
 
