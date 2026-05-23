@@ -10,7 +10,7 @@ import SwiftUI
 
 /// iPadOS 與 macOS 使用的側邊欄導覽。
 ///
-/// 對應設計稿的左側欄：BL gradient logo、依語意分段的分頁清單（工作區 / 工具 / 智慧分組），以及進行中訂單數量的紅色徽章。
+/// 對應設計稿的左側欄：BL gradient logo、依語意分段的分頁清單 (工作區 / 工具 / 智慧分組)，以及進行中訂單數量的紅色徽章。
 struct RootSidebarLayout: View {
 
     // MARK: - View Properties
@@ -128,7 +128,7 @@ private extension RootSidebarLayout {
 
     /// 主要分頁列。
     ///
-    /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLBadge`` 自帶 tone-based 色彩、function body 已不再讀取 palette；保留外部 label 是為了與其他 row helper（``smartGroupRow``、``logoRow`` 等）的呼叫風格一致，未來 nav 列若再需要色盤調整也不必動到呼叫端。
+    /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLBadge`` 自帶 tone-based 色彩、function body 已不再讀取 palette；保留外部 label 是為了與其他 row helper (``smartGroupRow``、``logoRow`` 等) 的呼叫風格一致，未來 nav 列若再需要色盤調整也不必動到呼叫端。
     /// - Parameters:
     ///   - tab: 對應的分頁。
     ///   - palette: 目前外觀使用的色盤；目前未使用，預留給未來不同 tab 套不同色等需求。
@@ -211,7 +211,7 @@ private extension RootSidebarLayout {
         )
     }
 
-    /// 目前進行中（已確認 / 已下單 / 集運中）的訂單數量。
+    /// 目前進行中 (已確認 / 已下單 / 集運中) 的訂單數量。
     var activeOrderCount: Int {
         store.orders.orders.lazy
             .filter { Self.activeStatuses.contains($0.status) }
@@ -308,7 +308,7 @@ private enum SmartGroup: String, Identifiable, CaseIterable {
 
     // MARK: - Static Properties
 
-    /// 訂單瀏覽 sidebar 中提供的固定順序（依訂單生命週期由前到後排）。
+    /// 訂單瀏覽 sidebar 中提供的固定順序 (依訂單生命週期由前到後排)。
     static let orderBrowsingCases: [SmartGroup] = [
         .quoting, .confirmed, .purchased, .shipping, .delivered,
     ]

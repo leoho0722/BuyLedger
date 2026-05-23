@@ -14,7 +14,7 @@ struct CategoryRepository: Sendable {
 
     // MARK: - Dependency Properties
 
-    /// 讀取目前所有類別名稱（已排序）。
+    /// 讀取目前所有類別名稱 (已排序)。
     var fetchCategories: @Sendable () async throws -> [String]
 
     /// 加入新類別；trim 後若空字串視為 no-op；已存在不重複建立。
@@ -23,7 +23,7 @@ struct CategoryRepository: Sendable {
     /// 刪除指定名稱的類別；不存在視為 no-op。
     var removeCategory: @Sendable (String) async throws -> Void
 
-    /// 把指定類別更名（舊名 → 新名）。caller 負責把訂單表的 cascade 一併處理；本方法只更新主檔。
+    /// 把指定類別更名 (舊名 → 新名)。caller 負責把訂單表的 cascade 一併處理；本方法只更新主檔。
     var renameCategory: @Sendable (String, String) async throws -> Void
 }
 
@@ -59,7 +59,7 @@ extension CategoryRepository {
         )
     }
 
-    /// 在 main actor 上實例化 ``CategoryPersistence``（`@ModelActor` 的 init 帶有 main-actor 隔離）。
+    /// 在 main actor 上實例化 ``CategoryPersistence`` (`@ModelActor` 的 init 帶有 main-actor 隔離)。
     /// - Parameter container: 共用的 ``ModelContainer``。
     /// - Returns: 對應 container 的 ``CategoryPersistence`` 實例。
     private static func makePersistence(container: ModelContainer) async -> CategoryPersistence {

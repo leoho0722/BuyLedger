@@ -10,7 +10,7 @@ import Foundation
 
 /// 商品類別 / 付款方式主檔的獨立管理功能。
 ///
-/// 以 ``LookupKind`` 切換要操作的 repository 與顯示文案，使同一份 reducer/view 可同時服務兩種主檔。付款方式主檔額外維護 ``State/paymentMethodIsCardless`` 對應表，供 view 端在 List 中顯示「無卡」標籤；`isCardless` 的設定發生在使用者新增付款方式的當下（``Action/addConfirmed(name:isCardless:)``），不再於 List row 提供切換 toggle，以避免 UX 上不易理解。
+/// 以 ``LookupKind`` 切換要操作的 repository 與顯示文案，使同一份 reducer/view 可同時服務兩種主檔。付款方式主檔額外維護 ``State/paymentMethodIsCardless`` 對應表，供 view 端在 List 中顯示「無卡」標籤；`isCardless` 的設定發生在使用者新增付款方式的當下 (``Action/addConfirmed(name:isCardless:)``)，不再於 List row 提供切換 toggle，以避免 UX 上不易理解。
 @Reducer
 struct LookupManagementFeature {
 
@@ -23,7 +23,7 @@ struct LookupManagementFeature {
         /// 此狀態管理的主檔型別。
         let kind: LookupKind
 
-        /// 目前的主檔項目（已排序）。
+        /// 目前的主檔項目 (已排序)。
         var items: [String] = []
 
         /// 付款方式主檔的 `isCardless` 對應表；只有 `kind == .paymentMethod` 時有意義。
@@ -50,7 +50,7 @@ struct LookupManagementFeature {
         /// 商品類別主檔載入成功。
         case categoryItemsLoaded([String])
 
-        /// 付款方式主檔載入成功（含 `isCardless`）。
+        /// 付款方式主檔載入成功 (含 `isCardless`)。
         case paymentMethodInfosLoaded([PaymentMethodInfo])
 
         /// 主檔載入失敗。

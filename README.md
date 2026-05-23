@@ -5,8 +5,8 @@
 ## 技術棧
 
 - **Swift 6 + SwiftUI**：strict concurrency
-- **TCA（[Swift Composable Architecture](https://github.com/pointfreeco/swift-composable-architecture)）**：feature 狀態、商業邏輯、副作用與依賴注入
-- **SwiftData + CloudKit**：本機持久化為核心，CloudKit 同步介面（``PersistenceContainer.CloudKitOption``）已預留，待 Apple Developer 帳號 provision 後接上
+- **TCA ([Swift Composable Architecture](https://github.com/pointfreeco/swift-composable-architecture))**：feature 狀態、商業邏輯、副作用與依賴注入
+- **SwiftData + CloudKit**：本機持久化為核心，CloudKit 同步介面 (``PersistenceContainer.CloudKitOption``) 已預留，待 Apple Developer 帳號 provision 後接上
 - **Swift Charts**：Insights 頁的趨勢、類別與成本結構視覺化
 - **[swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing)**：UI 視覺迴歸測試
 
@@ -27,7 +27,7 @@ BuyLedger/
 │   ├── Features/                 # 依功能切分的 TCA feature
 │   │   ├── App/                  # RootFeature + RootView + RootSidebarLayout / RootTabLayout
 │   │   ├── Dashboard/            # 總覽頁
-│   │   ├── Orders/               # 訂單瀏覽與編輯（含三平台 view 分流）
+│   │   ├── Orders/               # 訂單瀏覽與編輯 (含三平台 view 分流)
 │   │   ├── Insights/             # 趨勢分析
 │   │   ├── Quote/                # 報價試算
 │   │   ├── FX/                   # 匯率工具
@@ -38,7 +38,7 @@ BuyLedger/
 │   │   └── DesignSystem/
 │   │       ├── Foundations/      # 色盤、字級、間距、圓角等 token
 │   │       └── Components/       # BLAvatar、BLBadge、BLCard、BLBarChart 等元件
-│   └── Resources/                # Info.plist、entitlements、Config.example.xcconfig（範本，實際 Config.xcconfig 自填且 gitignored）、assets
+│   └── Resources/                # Info.plist、entitlements、Config.example.xcconfig (範本，實際 Config.xcconfig 自填且 gitignored)、assets
 ├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
 └── BuyLedgerUITests/             # UI 與啟動畫面測試
 ```
@@ -50,7 +50,7 @@ Xcode project 使用 file system synchronized groups，新增或搬移檔案請�
 ### 1. ExchangeRate-API 金鑰
 
 1. 到 [exchangerate-api.com](https://www.exchangerate-api.com) 申請免費帳號取得 API key。
-2. 複製 `BuyLedger/Resources/Config.example.xcconfig` 為 `Config.xcconfig`（同目錄）：
+2. 複製 `BuyLedger/Resources/Config.example.xcconfig` 為 `Config.xcconfig` (同目錄)：
 
    ```bash
    cp BuyLedger/Resources/Config.example.xcconfig BuyLedger/Resources/Config.xcconfig
@@ -70,7 +70,7 @@ Xcode project 使用 file system synchronized groups，新增或搬移檔案請�
 
 ### 2. Build & Run
 
-本專案預設用 `xcodebuildmcp` CLI 跑 build / run / test（MCP server `mcp__XcodeBuildMCP__*` 留給 UI 自動化、結構化測試結果與長時間操作可控中斷的情境）：
+本專案預設用 `xcodebuildmcp` CLI 跑 build / run / test (MCP server `mcp__XcodeBuildMCP__*` 留給 UI 自動化、結構化測試結果與長時間操作可控中斷的情境)：
 
 ```bash
 # iOS Simulator
@@ -91,7 +91,7 @@ xcodebuildmcp macos build-and-run \
   --scheme BuyLedger
 ```
 
-> ⚠️ 三平台共用同一份 `DerivedData/.../XCBuildData/build.db`，**不可並行 build**——請序列化（`cmd1 && cmd2 && cmd3`）以避免 `database is locked` 失敗。
+> ⚠️ 三平台共用同一份 `DerivedData/.../XCBuildData/build.db`，**不可並行 build**——請序列化 (`cmd1 && cmd2 && cmd3`) 以避免 `database is locked` 失敗。
 >
 > ⚠️ build 失敗時 CLI 預設只回 trailing `BUILD FAILED`；用 `xcodebuildmcp --log-level error <subcommand> ...` 取得實際 diagnostic。
 >
@@ -106,40 +106,40 @@ xcodebuildmcp simulator test \
   --simulator-name "iPhone 17"
 ```
 
-Snapshot baseline 第一次跑會自動 record 並回報 fail（屬正常），確認視覺正確後 commit baseline；之後變更若與 baseline 不符會 fail。所有 snapshot test 透過 `TestDependencies.withFixedNow { ... }` 注入固定 `Date / TimeZone / Calendar`（2026-04-30 UTC）避免跨日漂移；新加 snapshot 一律走這個 helper，不要在測試裡直接 `Date()`。
+Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確認視覺正確後 commit baseline；之後變更若與 baseline 不符會 fail。所有 snapshot test 透過 `TestDependencies.withFixedNow { ... }` 注入固定 `Date / TimeZone / Calendar` (2026-04-30 UTC) 避免跨日漂移；新加 snapshot 一律走這個 helper，不要在測試裡直接 `Date()`。
 
 ## 架構速覽
 
 ### App 進入點與平台導覽
 
-`BuyLedgerApp.swift` 同時宣告 `WindowGroup` 與（macOS）`Settings { ... }` scene。`RootFeature.State.selectedTab` 驅動三種 layout：
+`BuyLedgerApp.swift` 同時宣告 `WindowGroup` 與 (macOS) `Settings { ... }` scene。`RootFeature.State.selectedTab` 驅動三種 layout：
 
 | 平台                     | Layout              | 說明                                                       |
 |--------------------------|---------------------|------------------------------------------------------------|
 | macOS                    | `RootSidebarLayout` | `NavigationSplitView` + sidebar + 訂單頁 `.inspector(...)` |
-| iPad（regular size class） | `RootSidebarLayout` | 同 macOS 的 split 結構但無 inspector                       |
-| iPhone（compact）          | `RootTabLayout`     | `TabView`                                                  |
+| iPad (regular size class) | `RootSidebarLayout` | 同 macOS 的 split 結構但無 inspector                       |
+| iPhone (compact)          | `RootTabLayout`     | `TabView`                                                  |
 
-`OrdersView` 是平台分流入口（`#if os(macOS)` → `OrdersMacView`、否則依 `horizontalSizeClass` 切 `OrdersCompactView` / 內嵌 split）。`.sheet(...)` 編輯表單一律掛在 `OrdersView` 外層，三平台共用。
+`OrdersView` 是平台分流入口 (`#if os(macOS)` → `OrdersMacView`、否則依 `horizontalSizeClass` 切 `OrdersCompactView` / 內嵌 split)。`.sheet(...)` 編輯表單一律掛在 `OrdersView` 外層，三平台共用。
 
-macOS 偏好設定走標準 `Settings { ... }` scene（⌘,），實作在 `Features/Settings/SettingsMacView.swift`，採 `TabView` + `Form` + `.formStyle(.grouped)`；iOS / iPadOS 沿用 `SettingsView`（`Form` + `Section`）由 `MoreView` push 進入。
+macOS 偏好設定走標準 `Settings { ... }` scene (⌘,)，實作在 `Features/Settings/SettingsMacView.swift`，採 `TabView` + `Form` + `.formStyle(.grouped)`；iOS / iPadOS 沿用 `SettingsView` (`Form` + `Section`) 由 `MoreView` push 進入。
 
 ### 資料層
 
-- `OrderRepository`（`Core/Dependencies/`）：訂單資料的 dependency 介面，背後接 `OrderPersistence`（`@ModelActor`）操作 SwiftData。
+- `OrderRepository` (`Core/Dependencies/`)：訂單資料的 dependency 介面，背後接 `OrderPersistence` (`@ModelActor`) 操作 SwiftData。
 - `liveValue`：純本機 SwiftData，**不自動 seed**——使用者首次啟動會看到真正的空狀態。
 - `previewValue`：in-memory + 自動 seed `LedgerOrder.sampleOrders`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
 - `LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback` **僅供 Preview / 單元測試 / `previewValue`** 使用，runtime 不讀取。
 
 ### 外部 API
 
-`ExchangeRateClient`（`Features/FX/`）封裝 ExchangeRate-API v6 的 `latest/{base}` endpoint。`fetchLatest(.twd)` 為唯一 runtime API call。
+`ExchangeRateClient` (`Features/FX/`) 封裝 ExchangeRate-API v6 的 `latest/{base}` endpoint。`fetchLatest(.twd)` 為唯一 runtime API call。
 
-**Fallback 原則**：UI 寧可顯示空狀態（「—」、「尚無可用匯率資料」、「尚未有足夠可用於分析的資料」）也不顯示假資料，避免使用者誤信過期或內建匯率。
+**Fallback 原則**：UI 寧可顯示空狀態 (「—」、「尚無可用匯率資料」、「尚未有足夠可用於分析的資料」) 也不顯示假資料，避免使用者誤信過期或內建匯率。
 
 ## Spec-Driven Development
 
-本專案採用 [Spectra](https://github.com/kaochenlong/spectra-app)（SDD）：
+本專案採用 [Spectra](https://github.com/kaochenlong/spectra-app) (SDD)：
 
 - 規格在 `openspec/specs/`
 - 變更提案在 `openspec/changes/`
@@ -157,9 +157,9 @@ macOS 版的 SwiftData store 位於：
 ~/Library/Containers/com.leoho.BuyLedger/Data/Library/Application Support/BuyLedger.store{,-shm,-wal}
 ```
 
-要回到剛安裝、無任何訂單的空狀態時，先停掉 App（釋放檔案 lock）再手動刪除這三個檔案。
+要回到剛安裝、無任何訂單的空狀態時，先停掉 App (釋放檔案 lock) 再手動刪除這三個檔案。
 
-### macOS DNS 失敗（NSURLErrorDomain Code -1003）
+### macOS DNS 失敗 (NSURLErrorDomain Code -1003)
 
 如果 macOS build 出來連外部 API 都打不通，先檢查：
 
@@ -168,7 +168,7 @@ macOS 版的 SwiftData store 位於：
 
 ### Snapshot baseline 漂移
 
-設計大改時請刪掉對應 baseline（`BuyLedgerTests/__Snapshots__/SnapshotTests/*.png`）讓下一次跑測試自動重建。Baseline 失準若不是來自設計變動，先確認測試是否走 `TestDependencies.withFixedNow { ... }` 注入固定 `Date`、`TimeZone`、`Calendar`。
+設計大改時請刪掉對應 baseline (`BuyLedgerTests/__Snapshots__/SnapshotTests/*.png`) 讓下一次跑測試自動重建。Baseline 失準若不是來自設計變動，先確認測試是否走 `TestDependencies.withFixedNow { ... }` 注入固定 `Date`、`TimeZone`、`Calendar`。
 
 ## License
 

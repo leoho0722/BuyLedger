@@ -33,10 +33,10 @@ struct OrdersFeature {
         /// 目前選取的訂單編號。
         var selectedOrderID: LedgerOrder.ID?
 
-        /// 商品類別主檔（從 ``CategoryRepository`` 載入）。
+        /// 商品類別主檔 (從 ``CategoryRepository`` 載入)。
         var categoryMaster: [String] = []
 
-        /// 付款方式主檔（從 ``PaymentMethodRepository`` 載入），含每筆方式是否屬於無卡類。
+        /// 付款方式主檔 (從 ``PaymentMethodRepository`` 載入)，含每筆方式是否屬於無卡類。
         var paymentMethodMaster: [PaymentMethodInfo] = []
 
         /// 指示訂單是否正在載入。
@@ -310,7 +310,7 @@ struct OrdersFeature {
 
             case let .editOrder(.presented(.addCategoryTapped(name))):
                 // 子 reducer 已把 name 加進 sheet 內的 availableCategories 並設成 draftCategory；
-                // 父層額外寫入主檔並更新 state.categoryMaster，使非編輯流程（管理頁、其他訂單）也能看到。
+                // 父層額外寫入主檔並更新 state.categoryMaster，使非編輯流程 (管理頁、其他訂單) 也能看到。
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return .none }
                 if !state.categoryMaster.contains(trimmed) {

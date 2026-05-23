@@ -12,17 +12,17 @@ import SwiftUI
 /// 取代原本的 `Menu`：iOS Menu 因為是 `UIMenu` 的二次包裝，UIKit 端會把 Button action 排到 menu collapse 動畫結束後才派發給 SwiftUI，造成「選完選項 → 約 300ms 後 label 才更新」的可見延遲。改用 sheet 後，使用者點選時 binding 立即 commit，sheet 收合與 form label 更新解耦，視覺上不再卡頓。
 ///
 /// 透過參數讓「商品類別」「付款方式」「幣別」等選單共用同一份元件：
-/// - ``allowsAdd`` 控制是否顯示「新增」按鈕（商品類別 / 付款方式 = `true`、幣別 = `false`，幣別僅能從 API 主檔挑）
-/// - ``searchable`` 控制是否啟用搜尋（清單超過 ~20 項就建議開）
+/// - ``allowsAdd`` 控制是否顯示「新增」按鈕 (商品類別 / 付款方式 = `true`、幣別 = `false`，幣別僅能從 API 主檔挑)
+/// - ``searchable`` 控制是否啟用搜尋 (清單超過 ~20 項就建議開)
 /// - ``displayName`` 可選的「顯示名稱」轉換 closure，用於幣別 sheet 把 `"USD"` 顯示成 `"USD · 美元"`
 struct OptionPickerSheet: View {
 
     // MARK: - View Properties
 
-    /// Sheet 的標題（顯示在 navigation bar）。
+    /// Sheet 的標題 (顯示在 navigation bar)。
     let title: String
 
-    /// 是否允許在 sheet 內新增項目（toolbar 出現「新增」按鈕）。
+    /// 是否允許在 sheet 內新增項目 (toolbar 出現「新增」按鈕)。
     let allowsAdd: Bool
 
     /// 是否啟用搜尋欄。
@@ -64,7 +64,7 @@ struct OptionPickerSheet: View {
     /// 使用者透過「新增」alert 確認新增一個選項時的 callback；`allowsAdd` 為 `false` 時不會被呼叫。
     let onAdd: (String) -> Void
 
-    /// 使用者透過「新增付款方式」sheet 確認新增時的 callback；不為 `nil` 時，「新增」按鈕會改顯示 ``PaymentMethodEditorSheet``（含 `isCardless` 切換），取代既有 alert 流程。
+    /// 使用者透過「新增付款方式」sheet 確認新增時的 callback；不為 `nil` 時，「新增」按鈕會改顯示 ``PaymentMethodEditorSheet`` (含 `isCardless` 切換)，取代既有 alert 流程。
     ///
     /// 因為 SwiftUI 的 `.alert` actions builder 不支援 `Toggle`，無法在 alert 中同時讓使用者填名稱與決定 `isCardless`；改用 sheet 是為了把這兩個輸入合併在同一張表單，避免「先 alert 輸入名稱、再到主檔管理頁切 toggle」的兩段式 UX。
     let onAddPaymentMethod: ((String, Bool) -> Void)?
@@ -72,10 +72,10 @@ struct OptionPickerSheet: View {
     /// 由 sheet 環境注入的 dismiss action。
     @Environment(\.dismiss) private var dismiss
 
-    /// 是否顯示「新增」alert（商品類別等沒有 `isCardless` 需求的入口）。
+    /// 是否顯示「新增」alert (商品類別等沒有 `isCardless` 需求的入口)。
     @State private var showsAddAlert = false
 
-    /// 是否顯示「新增付款方式」sheet（含 `isCardless` 切換）。
+    /// 是否顯示「新增付款方式」sheet (含 `isCardless` 切換)。
     @State private var showsAddPaymentMethodSheet = false
 
     /// 新增 alert 的名稱輸入草稿。
@@ -150,7 +150,7 @@ struct OptionPickerSheet: View {
                     Section {
                         Button {
                             if onAddPaymentMethod != nil {
-                                // 付款方式入口：alert 在實機驗證會 silently 丟掉 Toggle（只剩 TextField + 按鈕），所以改用 sheet 收集名稱與 isCardless。
+                                // 付款方式入口：alert 在實機驗證會 silently 丟掉 Toggle (只剩 TextField + 按鈕)，所以改用 sheet 收集名稱與 isCardless。
                                 showsAddPaymentMethodSheet = true
                             } else {
                                 draft = ""

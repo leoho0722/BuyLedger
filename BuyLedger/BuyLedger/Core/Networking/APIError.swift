@@ -14,16 +14,16 @@ enum APIError: Error, Equatable, Sendable {
 
     // MARK: - Cases
 
-    /// 網路層錯誤（DNS 失敗、timeout 等）。
+    /// 網路層錯誤 (DNS 失敗、timeout 等)。
     case transport(message: String)
 
     /// 取回 HTTP 回應但 status code 不在預期範圍。
     case http(statusCode: Int)
 
-    /// 解碼失敗（schema 不符或欄位缺漏）。
+    /// 解碼失敗 (schema 不符或欄位缺漏)。
     case decoding(message: String)
 
-    /// API 業務錯誤（HTTP 200 但 payload 帶 `result == "error"`）。
+    /// API 業務錯誤 (HTTP 200 但 payload 帶 `result == "error"`)。
     case apiError(code: String)
 
     /// API 配額耗盡。

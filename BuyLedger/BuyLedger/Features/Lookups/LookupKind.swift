@@ -32,7 +32,7 @@ enum LookupKind: String, Equatable, Sendable {
         }
     }
 
-    /// 進入點（MoreView 列表）顯示的標題。
+    /// 進入點 (MoreView 列表) 顯示的標題。
     var entryTitle: String {
         switch self {
         case .category:
@@ -42,7 +42,7 @@ enum LookupKind: String, Equatable, Sendable {
         }
     }
 
-    /// 進入點（MoreView 列表）顯示的描述。
+    /// 進入點 (MoreView 列表) 顯示的描述。
     var entrySubtitle: String {
         switch self {
         case .category:

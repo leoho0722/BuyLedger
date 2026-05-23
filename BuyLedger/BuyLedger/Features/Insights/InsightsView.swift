@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 分析分頁的主要畫面。
 ///
-/// 對應設計稿 iPhone / iPad / Mac 的「分析」頁：bar chart 走勢、商品類別排行、成本結構 donut、N 週下單熱力圖（N 由 ``InsightsView/heatmapWeekCount`` 控制）；可切換期間、可點擊類別 drill-down 到訂單頁。
+/// 對應設計稿 iPhone / iPad / Mac 的「分析」頁：bar chart 走勢、商品類別排行、成本結構 donut、N 週下單熱力圖 (N 由 ``InsightsView/heatmapWeekCount`` 控制)；可切換期間、可點擊類別 drill-down 到訂單頁。
 struct InsightsView: View {
     
     // MARK: - View Properties
@@ -22,7 +22,7 @@ struct InsightsView: View {
     @Environment(\.colorScheme) private var colorScheme
     
 #if !os(macOS)
-    /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone（compact）與 iPad（regular）。
+    /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone (compact) 與 iPad (regular)。
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
 
@@ -36,8 +36,8 @@ struct InsightsView: View {
     
     /// 分析頁的畫面內容。
     ///
-    /// 訂單為空時改顯示 ``emptyState(palette:)``——空圖表（$0、空 heatmap）對使用者沒有價值且容易誤導。
-    /// 首次載入完成前（``OrdersFeature/State/hasLoaded`` 為 `false`）顯示中性 ``loadingPlaceholder(palette:)``，
+    /// 訂單為空時改顯示 ``emptyState(palette:)``——空圖表 ($0、空 heatmap) 對使用者沒有價值且容易誤導。
+    /// 首次載入完成前 (``OrdersFeature/State/hasLoaded`` 為 `false`) 顯示中性 ``loadingPlaceholder(palette:)``，
     /// 避免訂單為空時每次切換 tab 因 `isLoading` 暫時翻成 `true` 而落入「有資料」分支造成閃爍。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
@@ -225,7 +225,7 @@ private extension InsightsView {
     /// - Parameters:
     ///   - rank: 名次。
     ///   - category: 類別資料。
-    ///   - topProfit: 第一名的獲利金額（作為比例基準）。
+    ///   - topProfit: 第一名的獲利金額 (作為比例基準)。
     ///   - tint: bar 顏色。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 類別列 view。
@@ -404,7 +404,7 @@ private extension InsightsView {
 
 private extension InsightsView {
     
-    /// 是否使用寬版面（並列兩張卡）。
+    /// 是否使用寬版面 (並列兩張卡)。
     var useWideLayout: Bool {
 #if os(macOS)
         return true
@@ -487,19 +487,19 @@ private struct InsightsStats {
     
     // MARK: - Data Properties
     
-    /// 走勢圖（依 range 動態：30 天用「日」、6/12 個月用「月」）。
+    /// 走勢圖 (依 range 動態：30 天用「日」、6/12 個月用「月」)。
     let trendBars: [BLBarChartValue]
     
     /// 期間內淨獲利總和。
     let totalProfit: Decimal
     
-    /// 顯示在走勢卡右上角的成長率字樣（已 format，例如 `↑ 12.3%`、`— 無對照`）。
+    /// 顯示在走勢卡右上角的成長率字樣 (已 format，例如 `↑ 12.3%`、`— 無對照`)。
     let trendDelta: String
     
     /// 成長率方向旗標：`true` 上升、`false` 下降、`nil` 無對照可比；用來決定 ``InsightsView/trendCard(stats:palette:)`` 的字色。
     let trendDeltaIsPositive: Bool?
     
-    /// 各分類獲利排行（由高到低）。
+    /// 各分類獲利排行 (由高到低)。
     let categories: [InsightsCategory]
     
     /// 成本結構各區塊。
@@ -551,10 +551,10 @@ private struct HeatmapKey: Hashable {
     
     // MARK: - Data Properties
     
-    /// 第幾週（0 為最早、7 為本週）。
+    /// 第幾週 (0 為最早、7 為本週)。
     let week: Int
     
-    /// 第幾天（0 為週一、6 為週日）。
+    /// 第幾天 (0 為週一、6 為週日)。
     let weekday: Int
 }
 
@@ -775,7 +775,7 @@ private extension InsightsView {
         }
     }
     
-    /// 計算過去 N 週（N = ``heatmapWeekCount``）每天的下單筆數（不分狀態，只看建立日期）。
+    /// 計算過去 N 週 (N = ``heatmapWeekCount``) 每天的下單筆數 (不分狀態，只看建立日期)。
     /// - Parameter orders: 目前訂單清單。
     /// - Returns: 鍵為 `HeatmapKey`、值為訂單筆數。
     func computeHeatmap(orders: [LedgerOrder]) -> [HeatmapKey: Int] {
@@ -814,7 +814,7 @@ private extension InsightsView {
 
 private extension InsightsView {
     
-    /// 將金額格式化為新台幣（無小數位）。
+    /// 將金額格式化為新台幣 (無小數位)。
     /// - Parameter amount: 金額。
     /// - Returns: 含 NT$ 前綴的字串。
     func formatTwd(_ amount: Decimal) -> String {

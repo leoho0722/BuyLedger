@@ -10,7 +10,7 @@ import Foundation
 
 /// 編輯或新增訂單表單的功能。
 ///
-/// 本切片僅建立 sheet 流程骨架：state 持有原始訂單（`nil` 視為新訂單）與草稿欄位，`saveTapped` 與 `cancelTapped` 都僅觸發 dismiss，不寫回資料。實際的儲存邏輯會在後續切片補上。
+/// 本切片僅建立 sheet 流程骨架：state 持有原始訂單 (`nil` 視為新訂單) 與草稿欄位，`saveTapped` 與 `cancelTapped` 都僅觸發 dismiss，不寫回資料。實際的儲存邏輯會在後續切片補上。
 @Reducer
 struct OrderEditFeature {
 
@@ -35,36 +35,36 @@ struct OrderEditFeature {
         /// 商品幣別草稿。
         var draftCurrency: CurrencyCode
 
-        /// 客戶收款金額草稿（新台幣）。
+        /// 客戶收款金額草稿 (新台幣)。
         var draftChargedAmount: Decimal
 
-        /// 無卡折抵金額草稿（TWD）。
+        /// 無卡折抵金額草稿 (TWD)。
         ///
         /// 僅在 ``isSelectedPaymentMethodCardless`` 為 `true` 時於 UI 顯示；切換到非無卡付款方式時 `applyEditDraft` 會將其歸零，避免資料殘留影響公式。
         var draftCardlessDeductionAmount: Decimal
 
-        /// 無卡補款金額草稿（TWD）。
+        /// 無卡補款金額草稿 (TWD)。
         var draftCardlessSupplementAmount: Decimal
 
         /// 商品折合 TWD 後的成本草稿。
         var draftItemCost: Decimal
 
-        /// 國內運費草稿（TWD）。
+        /// 國內運費草稿 (TWD)。
         var draftDomesticShipping: Decimal
 
-        /// 國際集運草稿（TWD）。
+        /// 國際集運草稿 (TWD)。
         var draftInternationalShipping: Decimal
 
-        /// 外國國內運費草稿（TWD）。
+        /// 外國國內運費草稿 (TWD)。
         var draftForeignDomesticShipping: Decimal
 
-        /// 刷卡手續費比例草稿（0–1，例如 0.015 = 1.5%）。
+        /// 刷卡手續費比例草稿 (0–1，例如 0.015 = 1.5%)。
         var draftCardFeeRate: Decimal
 
-        /// 平台手續費比例草稿（0–1，例如 0.03 = 3%）。
+        /// 平台手續費比例草稿 (0–1，例如 0.03 = 3%)。
         var draftPlatformFeeRate: Decimal
 
-        /// 金流手續費比例草稿（0–1）。
+        /// 金流手續費比例草稿 (0–1)。
         var draftPaymentFeeRate: Decimal
 
         /// 商品明細草稿；可在編輯表單內新增、刪除、修改。
@@ -79,10 +79,10 @@ struct OrderEditFeature {
         /// 可供選擇的商品類別清單；由父層 reducer 從現有訂單聚合後注入，並在使用者新增類別時即時擴充。
         var availableCategories: [String]
 
-        /// 可供選擇的付款方式清單（含 `isCardless` 旗標）；由父層 reducer 從現有訂單與主檔聚合後注入，並在使用者新增方式時即時擴充。
+        /// 可供選擇的付款方式清單 (含 `isCardless` 旗標)；由父層 reducer 從現有訂單與主檔聚合後注入，並在使用者新增方式時即時擴充。
         var availablePaymentMethods: [PaymentMethodInfo]
 
-        /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供（首次安裝＋無網路時 fallback 到 ``CurrencyCode/defaults``）。
+        /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供 (首次安裝＋無網路時 fallback 到 ``CurrencyCode/defaults``)。
         var availableCurrencies: [CurrencyCode]
 
         // MARK: - Identifiable Properties
@@ -107,7 +107,7 @@ struct OrderEditFeature {
         /// - Parameters:
         ///   - original: 要編輯的訂單；`nil` 表示新訂單。
         ///   - availableCategories: 表單可選用的既有類別；不含原訂單類別時會在初始化時補上。
-        ///   - availablePaymentMethods: 表單可選用的既有付款方式；不含原訂單付款方式時會在初始化時補上（補上的項目 `isCardless` 預設為 `false`）。
+        ///   - availablePaymentMethods: 表單可選用的既有付款方式；不含原訂單付款方式時會在初始化時補上 (補上的項目 `isCardless` 預設為 `false`)。
         ///   - currentDate: 新訂單時 ``draftDate`` 的預設值；caller 應從 `@Dependency(\.date)` 取得當下時間以維持可測試性。
         init(
             original: LedgerOrder? = nil,
@@ -189,7 +189,7 @@ struct OrderEditFeature {
         /// 從 ``CategoryRepository`` 取回最新類別主檔。
         case availableCategoriesLoaded([String])
 
-        /// 從 ``PaymentMethodRepository`` 取回最新付款方式主檔（含 `isCardless`）。
+        /// 從 ``PaymentMethodRepository`` 取回最新付款方式主檔 (含 `isCardless`)。
         case availablePaymentMethodsLoaded([PaymentMethodInfo])
 
         /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔。
@@ -207,7 +207,7 @@ struct OrderEditFeature {
     /// 付款方式主檔資料來源；理由同 ``categoryRepository``。
     @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
 
-    /// 幣別主檔資料來源；用於 sheet `.task` 從 cache 拉最新清單（cache 由 ``RootFeature`` 啟動時 TTL 7 天刷新）。
+    /// 幣別主檔資料來源；用於 sheet `.task` 從 cache 拉最新清單 (cache 由 ``RootFeature`` 啟動時 TTL 7 天刷新)。
     @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
 
     // MARK: - Reducer Body
@@ -279,7 +279,7 @@ struct OrderEditFeature {
                 }
 
             case let .availableCategoriesLoaded(items):
-                // 合併：把目前 draftCategory（可能是剛在 sheet 內新增、尚未走完整 add → repo 來回）保留在清單。
+                // 合併：把目前 draftCategory (可能是剛在 sheet 內新增、尚未走完整 add → repo 來回) 保留在清單。
                 var merged = Set(items)
                 let draftCategory = state.draftCategory.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !draftCategory.isEmpty {
@@ -290,7 +290,7 @@ struct OrderEditFeature {
                 return .none
 
             case let .availablePaymentMethodsLoaded(infos):
-                // 以名稱去重後合併：主檔內的 isCardless 取代舊值（讓使用者在管理頁切換 toggle 後 sheet 立刻看得到）；
+                // 以名稱去重後合併：主檔內的 isCardless 取代舊值 (讓使用者在管理頁切換 toggle 後 sheet 立刻看得到)；
                 // 但若 draftPaymentMethod 是還沒寫進主檔的暫存字串，仍補一筆 isCardless == false 維持原本顯示。
                 var merged: [String: PaymentMethodInfo] = [:]
                 for info in infos {

@@ -17,7 +17,7 @@ struct PaymentMethodInfo: Equatable, Hashable, Sendable {
     /// 付款方式名稱；同時作為主檔 upsert 識別值。
     let name: String
 
-    /// 是否屬於「無卡」類付款方式（例如「無卡」「無卡存款」）。
+    /// 是否屬於「無卡」類付款方式 (例如「無卡」「無卡存款」)。
     ///
     /// 編輯訂單時若選到 `isCardless == true` 的付款方式，會啟用「無卡折抵金額」與「無卡補款金額」兩個欄位，並把這兩個值計入 ``OrderSummary/revenue``。
     let isCardless: Bool

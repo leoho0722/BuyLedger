@@ -12,8 +12,8 @@ import SwiftUI
 ///
 /// 對應設計稿 iPhone Quote sheet 與 iPad/Mac 的 Quote tool：
 /// - 來源幣別 chip
-/// - 多個 slider（商品本金 / 國內運費 / 國際集運 / 刷卡手續費 / 目標毛利）
-/// - 即時建議售價（綠→青漸層 hero 卡）
+/// - 多個 slider (商品本金 / 國內運費 / 國際集運 / 刷卡手續費 / 目標毛利)
+/// - 即時建議售價 (綠→青漸層 hero 卡)
 /// - 成本拆解條與總成本
 struct QuoteView: View {
     
@@ -142,7 +142,7 @@ private extension QuoteView {
                 currencyPicker(palette: palette)
                 
                 sliderRow(
-                    label: "商品定價（\(store.fromCurrency.rawValue)）",
+                    label: "商品定價 (\(store.fromCurrency.rawValue))",
                     value: $store.itemPrice,
                     range: 0...500_000,
                     step: 1_000,
@@ -151,7 +151,7 @@ private extension QuoteView {
                 )
                 
                 sliderRow(
-                    label: "當地運費（\(store.fromCurrency.rawValue)）",
+                    label: "當地運費 (\(store.fromCurrency.rawValue))",
                     value: $store.domesticShipping,
                     range: 0...20_000,
                     step: 500,
@@ -160,7 +160,7 @@ private extension QuoteView {
                 )
                 
                 sliderRow(
-                    label: "國際集運（TWD/件）",
+                    label: "國際集運 (TWD/件)",
                     value: $store.internationalShippingTwd,
                     range: 0...1_000,
                     step: 20,
@@ -292,7 +292,7 @@ private extension QuoteView {
         }
     }
     
-    /// 建議售價 hero 卡（漸層綠→青）。
+    /// 建議售價 hero 卡 (漸層綠→青)。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: hero 卡 view。
     func suggestedHero(palette: BLPalette) -> some View {
@@ -400,11 +400,11 @@ private extension QuoteView {
     
     /// 拆解條的單列；以 ``BLProgressBar`` 表現各分類占總成本的比例，trailing 顯示原始 TWD 金額而非百分比。
     ///
-    /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLProgressBar`` 自帶色盤推導、function body 不再讀取 palette；保留外部 label 與其他 helper（``inputsCard``、``suggestedHero`` 等）一致，未來若需要客製拆解列的視覺也方便加回來。
+    /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLProgressBar`` 自帶色盤推導、function body 不再讀取 palette；保留外部 label 與其他 helper (``inputsCard``、``suggestedHero`` 等) 一致，未來若需要客製拆解列的視覺也方便加回來。
     /// - Parameters:
-    ///   - label: 拆解項目的名稱（如「商品金額」）。
+    ///   - label: 拆解項目的名稱 (如「商品金額」)。
     ///   - value: 該項目的 TWD 金額。
-    ///   - total: 用來計算占比的總成本（避免除以 0 時取 1）。
+    ///   - total: 用來計算占比的總成本 (避免除以 0 時取 1)。
     ///   - color: 進度條與分類的識別色。
     ///   - palette: 目前外觀使用的色盤；目前未使用，預留給未來客製需求。
     /// - Returns: 拆解列 view。
@@ -437,7 +437,7 @@ private extension QuoteView {
         return value.formatted(.number.precision(.fractionLength(fractionDigits)))
     }
     
-    /// 將金額格式化為新台幣（無小數位）。
+    /// 將金額格式化為新台幣 (無小數位)。
     func formatTwd(_ amount: Double) -> String {
         Decimal(amount).formatted(
             .currency(code: CurrencyCode.twd.code)

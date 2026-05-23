@@ -16,7 +16,7 @@ struct PaymentMethodEditorSheet: View {
 
     // MARK: - View Properties
 
-    /// Sheet 的標題（顯示在 navigation bar）。
+    /// Sheet 的標題 (顯示在 navigation bar)。
     let title: String
 
     /// 表單上方的說明訊息；空字串時不顯示。
@@ -99,7 +99,7 @@ struct PaymentMethodEditorSheet: View {
 #if os(macOS)
         .frame(minWidth: 420, minHeight: 320)
 #else
-        // 表單只有 name + isCardless 兩段，medium 高度（約半屏）已足夠呈現，
+        // 表單只有 name + isCardless 兩段，medium 高度 (約半屏) 已足夠呈現，
         // 同時讓使用者能看見背後的主檔列表，UX 上更像「貼上來的小卡」而非整頁 modal。
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)

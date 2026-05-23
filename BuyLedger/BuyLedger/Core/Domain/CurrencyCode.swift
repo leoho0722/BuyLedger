@@ -9,10 +9,10 @@ import Foundation
 
 /// BuyLedger 用來表示交易幣別的 value type。
 ///
-/// 從原本 `enum String` 改成 `struct` wrapper，目的是不再被 5 個 hardcoded case 綁住——實際可用清單由 ``ExchangeRateClient/fetchSupportedCodes`` 取得後存入 ``CurrencyMetadataRepository``。`rawValue` 仍為 ISO 4217 三位 code（例如 `"USD"`、`"TWD"`），跟舊 enum 的 `rawValue` 完全相同，因此：
+/// 從原本 `enum String` 改成 `struct` wrapper，目的是不再被 5 個 hardcoded case 綁住——實際可用清單由 ``ExchangeRateClient/fetchSupportedCodes`` 取得後存入 ``CurrencyMetadataRepository``。`rawValue` 仍為 ISO 4217 三位 code (例如 `"USD"`、`"TWD"`)，跟舊 enum 的 `rawValue` 完全相同，因此：
 /// - SwiftData 既有的 `String` column 不需要 migration plan，lightweight migration 即可
 /// - `Codable` 透過 ``Codable/init(from:)`` 與 ``Codable/encode(to:)`` 用 single value container 編 raw string，跨版本 JSON 相容
-/// - 在地化名稱不再硬編，view 端使用 ``localizedName(in:)`` 透過 `Locale.localizedString(forCurrencyCode:)` 動態取得（跟隨使用者手機）
+/// - 在地化名稱不再硬編，view 端使用 ``localizedName(in:)`` 透過 `Locale.localizedString(forCurrencyCode:)` 動態取得 (跟隨使用者手機)
 struct CurrencyCode: Hashable, Sendable, Identifiable {
 
     // MARK: - Data Properties
@@ -71,10 +71,10 @@ extension CurrencyCode: Codable {
 
 extension CurrencyCode {
 
-    /// App 預設的「常用幣別」候選集；在 API codes 尚未載入時（首次安裝＋無網路）作為 Picker 可選項，並提供給 sample data 與 unit test 直接引用。
+    /// App 預設的「常用幣別」候選集；在 API codes 尚未載入時 (首次安裝＋無網路) 作為 Picker 可選項，並提供給 sample data 與 unit test 直接引用。
     static let defaults: [CurrencyCode] = [.twd, .krw, .jpy, .usd, .cny]
 
-    /// 新台幣（基準幣別，全 App 預設）。
+    /// 新台幣 (基準幣別，全 App 預設)。
     static let twd = CurrencyCode(rawValue: "TWD")
 
     /// 韓圜。

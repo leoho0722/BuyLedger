@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 訂單列表與詳情畫面。
 ///
-/// 依平台選擇對應導覽樣式：iPhone（compact）使用 NavigationStack 對應的 ``OrdersCompactView``，macOS 使用扁平 ``Table`` 對應的 ``OrdersMacView``，iPadOS（regular）以 ``HStack`` 在父層 NavigationSplitView 的 detail 欄中自排列「清單 + 詳情」兩欄，避免巢狀 NavigationSplitView 互相搶寬度。
+/// 依平台選擇對應導覽樣式：iPhone (compact) 使用 NavigationStack 對應的 ``OrdersCompactView``，macOS 使用扁平 ``Table`` 對應的 ``OrdersMacView``，iPadOS (regular) 以 ``HStack`` 在父層 NavigationSplitView 的 detail 欄中自排列「清單 + 詳情」兩欄，避免巢狀 NavigationSplitView 互相搶寬度。
 struct OrdersView: View {
     
     // MARK: - View Properties

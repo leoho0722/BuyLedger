@@ -199,7 +199,7 @@ struct OrdersFeatureTests {
     }
     
     @Test func editingExistingOrderKeepsSelection() async {
-        // 編輯既有訂單 save 後不該改變 selectedOrderID（即使原本選的是別張）
+        // 編輯既有訂單 save 後不該改變 selectedOrderID (即使原本選的是別張)
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
         let unrelatedSelection = "BL-2604-016"

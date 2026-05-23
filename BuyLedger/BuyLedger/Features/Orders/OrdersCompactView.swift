@@ -10,7 +10,7 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// iPhone（compact）使用的訂單瀏覽畫面。
+/// iPhone (compact) 使用的訂單瀏覽畫面。
 ///
 /// 採用 NavigationStack 配合自訂大標題、橫向滾動的狀態 chip 與卡片化的訂單列表，對應設計稿的 iPhone 訂單列表樣式。
 struct OrdersCompactView: View {

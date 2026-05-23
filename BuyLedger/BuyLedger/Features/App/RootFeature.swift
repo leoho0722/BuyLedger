@@ -33,7 +33,7 @@ struct RootFeature {
         /// 設定頁狀態。
         var settings = SettingsFeature.State()
 
-        /// 商品類別主檔管理狀態；放在 root 是為了攔截 `renameRequested` 等動作後同步 ``OrdersFeature/State`` 的 in-memory 副本（cascade）。
+        /// 商品類別主檔管理狀態；放在 root 是為了攔截 `renameRequested` 等動作後同步 ``OrdersFeature/State`` 的 in-memory 副本 (cascade)。
         var categoryManagement = LookupManagementFeature.State(kind: .category)
 
         /// 付款方式主檔管理狀態；理由同 ``categoryManagement``。
@@ -52,7 +52,7 @@ struct RootFeature {
         /// 使用者切換主要分頁。
         case tabSelected(RootTab)
 
-        /// 從非訂單分頁（如 Dashboard 的 onboarding）發起「新訂單」流程；會同時把 selectedTab 切到 `.orders` 並把 ``OrdersFeature/State/editOrder`` 設好，讓 ``OrdersView`` 的 sheet 能立刻顯示。
+        /// 從非訂單分頁 (如 Dashboard 的 onboarding) 發起「新訂單」流程；會同時把 selectedTab 切到 `.orders` 並把 ``OrdersFeature/State/editOrder`` 設好，讓 ``OrdersView`` 的 sheet 能立刻顯示。
         case startNewOrder
 
         /// 使用者從側邊欄智慧分組點擊狀態，跳到訂單頁並套用篩選。
@@ -85,7 +85,7 @@ struct RootFeature {
 
     // MARK: - Dependency Properties
 
-    /// 用來計算跨頁跳轉時的「目前」時間（套用到 ``OrdersFeature/State/filteredOrders(referenceDate:)``）；測試可注入固定值。
+    /// 用來計算跨頁跳轉時的「目前」時間 (套用到 ``OrdersFeature/State/filteredOrders(referenceDate:)``)；測試可注入固定值。
     @Dependency(\.date) private var date
 
     /// 幣別主檔資料來源；App 啟動時打 ExchangeRate-API `/codes` 並 cache 7 天。
@@ -268,7 +268,7 @@ struct RootFeature {
         }
     }
 
-    /// 把 ``LookupManagementFeature`` 新增的付款方式（含 `isCardless`）加進 ``OrdersFeature/State/paymentMethodMaster`` 副本；若名稱已存在則僅更新旗標。
+    /// 把 ``LookupManagementFeature`` 新增的付款方式 (含 `isCardless`) 加進 ``OrdersFeature/State/paymentMethodMaster`` 副本；若名稱已存在則僅更新旗標。
     /// - Parameters:
     ///   - name: 新增名稱。
     ///   - isCardless: 是否屬於無卡類付款方式。
@@ -310,7 +310,7 @@ struct RootFeature {
         }
     }
 
-    /// 把 [PaymentMethodInfo] 中名稱為 `oldName` 的項目改名為 `newName`，保留原有 `isCardless`；若 `newName` 已存在則合併（任一邊曾標記無卡的就視為無卡）。
+    /// 把 [PaymentMethodInfo] 中名稱為 `oldName` 的項目改名為 `newName`，保留原有 `isCardless`；若 `newName` 已存在則合併 (任一邊曾標記無卡的就視為無卡)。
     /// - Parameters:
     ///   - list: 原始陣列。
     ///   - oldName: 舊名稱。

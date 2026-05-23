@@ -158,7 +158,7 @@ private extension SettingsMacView {
                     format: .number.precision(.fractionLength(0))
                 )
             } header: {
-                Text("月度淨獲利目標（TWD）")
+                Text("月度淨獲利目標 (TWD)")
             } footer: {
                 Text("Dashboard hero 卡的進度條依此值計算；設為 0 代表不顯示進度條。")
                     .foregroundStyle(.secondary)
@@ -168,7 +168,7 @@ private extension SettingsMacView {
     }
 
 #if false
-    /// 資料分頁：CSV 匯出與雲端同步占位（暫時以 `#if false` 隱藏，待實作完成後再開啟）。
+    /// 資料分頁：CSV 匯出與雲端同步占位 (暫時以 `#if false` 隱藏，待實作完成後再開啟)。
     var dataTab: some View {
         Form {
             Section {

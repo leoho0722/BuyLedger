@@ -6,7 +6,7 @@
 //
 //  Snapshot baseline 用於檢查視覺迴歸；第一次跑會自動寫入 baseline，之後改動視覺時若與 baseline 不符會失敗。
 //
-//  - 圖片檔放在 BuyLedgerTests/__Snapshots__/ （相對於本檔）
+//  - 圖片檔放在 BuyLedgerTests/__Snapshots__/ (相對於本檔)
 //  - 升級設計時請刪掉對應的 baseline 檔案，下次跑測試會自動重建
 //  - 所有 view 統一透過 ``TestDependencies/withFixedNow(_:)`` 包住，避免跨日跑出不同結果
 //

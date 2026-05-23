@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// 內建的匯率對照表（皆為「1 單位來源幣別 = X TWD」）。
+/// 內建的匯率對照表 (皆為「1 單位來源幣別 = X TWD」)。
 ///
 /// 僅供 SwiftUI Preview、單元測試與 ``FxRateSnapshot/fallback`` 使用，**runtime 不再讀取**——一律以 ``ExchangeRateClient`` 取得的 snapshot 為準，無 snapshot 時 view 顯示「—」。
 ///
@@ -16,7 +16,7 @@ enum FxRates {
 
     // MARK: - Static Properties
 
-    /// 對應到設計稿 `tokens.jsx` 的範例匯率，方便對照截圖。Key 用 `CurrencyCode`（struct wrapper），等同 ISO 4217 code。
+    /// 對應到設計稿 `tokens.jsx` 的範例匯率，方便對照截圖。Key 用 `CurrencyCode` (struct wrapper)，等同 ISO 4217 code。
     static let toTwd: [CurrencyCode: Decimal] = [
         .twd: 1,
         .krw: Decimal(string: "0.0228") ?? 0,

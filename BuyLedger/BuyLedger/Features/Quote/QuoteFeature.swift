@@ -37,7 +37,7 @@ struct QuoteFeature {
         /// 來源幣別下的當地運費。
         var domesticShipping: Double
         
-        /// 國際集運費（TWD）。
+        /// 國際集運費 (TWD)。
         var internationalShippingTwd: Double
         
         /// 刷卡手續費 %。
@@ -91,7 +91,7 @@ struct QuoteFeature {
         
         // MARK: - Computed Properties
         
-        /// 來源幣別的匯率（1 單位 = X TWD）；無 snapshot 時為 `0`，所有衍生金額會跟著歸零。
+        /// 來源幣別的匯率 (1 單位 = X TWD)；無 snapshot 時為 `0`，所有衍生金額會跟著歸零。
         var rate: Double {
             if fromCurrency == .twd { return 1 }
             guard let snapshot else {
@@ -125,7 +125,7 @@ struct QuoteFeature {
             itemTwd + domesticTwd + internationalShippingTwd + cardFeeTwd
         }
         
-        /// 建議售價（無條件進位到 10 元）。
+        /// 建議售價 (無條件進位到 10 元)。
         var suggestedTwd: Double {
             let raw = costTwd * (1 + targetMarginPercent / 100)
             return (raw / 10).rounded(.up) * 10
@@ -134,7 +134,7 @@ struct QuoteFeature {
         /// 預估獲利。
         var estimatedProfitTwd: Double { suggestedTwd - costTwd }
         
-        /// 預估毛利率（profit / suggested）。
+        /// 預估毛利率 (profit / suggested)。
         var estimatedMarginPercent: Double {
             suggestedTwd == 0 ? 0 : estimatedProfitTwd / suggestedTwd * 100
         }
@@ -164,7 +164,7 @@ struct QuoteFeature {
     
     // MARK: - Dependency Properties
     
-    /// 匯率 API client（與 ``FxFeature`` 共用同一個 dependency，方便未來改成共享 snapshot）。
+    /// 匯率 API client (與 ``FxFeature`` 共用同一個 dependency，方便未來改成共享 snapshot)。
     @Dependency(ExchangeRateClient.self) private var client
 
     /// 幣別主檔資料來源；用於 task 從 cache 拉最新清單。
@@ -251,7 +251,7 @@ struct QuoteFeature {
         case .decoding:
             return "匯率資料格式異常，目前無法計算建議售價。"
         case let .apiError(code):
-            return "匯率 API 回應錯誤（\(code)），目前無法計算建議售價。"
+            return "匯率 API 回應錯誤 (\(code))，目前無法計算建議售價。"
         }
     }
 }

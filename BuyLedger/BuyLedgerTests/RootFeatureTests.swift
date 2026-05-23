@@ -70,7 +70,7 @@ struct RootFeatureTests {
             $0.orders.selectedOrderID = "BL-2604-017"
         }
         
-        // 確認對應 chip 的「isSelected」判定（與 view 端 `store.selectedStatus == filter` 一致）會翻成 true，
+        // 確認對應 chip 的「isSelected」判定 (與 view 端 `store.selectedStatus == filter` 一致) 會翻成 true，
         // 其餘狀態 chip 維持 false，避免未來 reducer 變更時 UI 同步行為悄悄走樣。
         let purchasedFilter = OrderStatusFilter.status(.purchased)
         #expect(store.state.orders.selectedStatus == purchasedFilter)

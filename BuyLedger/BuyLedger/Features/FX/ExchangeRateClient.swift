@@ -161,10 +161,10 @@ struct ExchangeRateLatestResponse: Decodable, Sendable {
 
     // MARK: - Data Properties
 
-    /// API 回應狀態（"success" / "error"）。
+    /// API 回應狀態 ("success" / "error")。
     let result: String
 
-    /// 錯誤類別（僅 result == "error" 時才存在）。
+    /// 錯誤類別 (僅 result == "error" 時才存在)。
     let errorType: String?
 
     /// 報價時間 UNIX timestamp。
@@ -219,10 +219,10 @@ struct ExchangeRateCodesResponse: Decodable, Sendable {
 
     // MARK: - Data Properties
 
-    /// API 回應狀態（"success" / "error"）。
+    /// API 回應狀態 ("success" / "error")。
     let result: String
 
-    /// 錯誤類別（僅 result == "error" 時才存在）。
+    /// 錯誤類別 (僅 result == "error" 時才存在)。
     let errorType: String?
 
     /// `[[code, name], …]` 形式的支援幣別清單。

@@ -55,7 +55,7 @@ struct OrdersMacView: View {
                 } label: {
                     Label("新訂單", systemImage: "plus")
                 }
-                .help("建立新訂單（⌘N）")
+                .help("建立新訂單 (⌘N)")
                 .keyboardShortcut("n", modifiers: [.command])
             }
             

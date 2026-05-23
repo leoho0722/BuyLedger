@@ -11,10 +11,10 @@ import SwiftData
 /// BuyLedger SwiftData schema 的版本化定義。
 ///
 /// 兩個版本：
-/// - ``BuyLedgerSchemaV1``：在「幣別主檔（API codes 動態載入）」feature 之前的 schema，`OrderRecord.currency` 是 `enum CurrencyCode`（以 ISO 4217 String 作 rawValue）。
-/// - ``BuyLedgerSchemaV2``：當前 schema，`OrderRecord.currency` 改為純 `String`（因為 ``CurrencyCode`` 變成 `struct` wrapper 後 SwiftData 會把 `rawValue` 展開為子 attribute，破壞 in-place migration），且新增 ``CurrencyMetadataRecord``。
+/// - ``BuyLedgerSchemaV1``：在「幣別主檔 (API codes 動態載入)」feature 之前的 schema，`OrderRecord.currency` 是 `enum CurrencyCode` (以 ISO 4217 String 作 rawValue)。
+/// - ``BuyLedgerSchemaV2``：當前 schema，`OrderRecord.currency` 改為純 `String` (因為 ``CurrencyCode`` 變成 `struct` wrapper 後 SwiftData 會把 `rawValue` 展開為子 attribute，破壞 in-place migration)，且新增 ``CurrencyMetadataRecord``。
 ///
-/// V1 → V2 採用 lightweight 遷移：兩個版本的 `currency` 在 store 內都是 String column（V1 的 enum 本來就是 String rawValue），SwiftData 應該能直接讀回；若實測仍有相容性問題，再升級為 `.custom` 並做明確的 dump-and-restore。
+/// V1 → V2 採用 lightweight 遷移：兩個版本的 `currency` 在 store 內都是 String column (V1 的 enum 本來就是 String rawValue)，SwiftData 應該能直接讀回；若實測仍有相容性問題，再升級為 `.custom` 並做明確的 dump-and-restore。
 enum BuyLedgerSchemaV1: VersionedSchema {
 
     // MARK: - Static Properties
@@ -61,7 +61,7 @@ enum BuyLedgerSchemaV1: VersionedSchema {
         /// 訂單狀態。
         var status: OrderStatus
 
-        /// 商品原始幣別（V1 用 enum 儲存）。
+        /// 商品原始幣別 (V1 用 enum 儲存)。
         var currency: V1CurrencyCode
 
         /// 訂單日期。
@@ -91,7 +91,7 @@ enum BuyLedgerSchemaV1: VersionedSchema {
         /// 商品類別。
         var category: String
 
-        /// 付款方式（後期才加入，帶 default 走 lightweight migration）。
+        /// 付款方式 (後期才加入，帶 default 走 lightweight migration)。
         var paymentMethod: String = ""
 
         // MARK: - Init
@@ -207,7 +207,7 @@ enum BuyLedgerSchemaV2: VersionedSchema {
     }
 }
 
-/// V3 schema：在 V2 之上新增 ``OrderRecord/foreignDomesticShipping``（外國國內運費）與 ``OrderRecord/paymentFeeRate``（金流手續費）。
+/// V3 schema：在 V2 之上新增 ``OrderRecord/foreignDomesticShipping`` (外國國內運費) 與 ``OrderRecord/paymentFeeRate`` (金流手續費)。
 ///
 /// 兩個欄位都帶 default `0`，因此 V2 → V3 走 lightweight migration 即可。
 ///
@@ -229,7 +229,7 @@ enum BuyLedgerSchemaV3: VersionedSchema {
         ]
     }
 
-    /// V3 時代的 ``OrderRecord`` 影子；只在 SwiftData migration 用，與當時版本的屬性集合一致（已含 V3 新增的 `foreignDomesticShipping` 與 `paymentFeeRate`，但尚未含 V4 的無卡折抵／補款欄位）。
+    /// V3 時代的 ``OrderRecord`` 影子；只在 SwiftData migration 用，與當時版本的屬性集合一致 (已含 V3 新增的 `foreignDomesticShipping` 與 `paymentFeeRate`，但尚未含 V4 的無卡折抵／補款欄位)。
     @Model
     final class OrderRecord {
 
@@ -307,9 +307,9 @@ enum BuyLedgerSchemaV3: VersionedSchema {
     }
 }
 
-/// V4 schema：在 V3 之上新增 ``OrderRecord/cardlessDeductionAmount``（無卡折抵金額）、``OrderRecord/cardlessSupplementAmount``（無卡補款金額），以及 ``PaymentMethodRecord/isCardless``（是否屬於無卡類付款方式）。
+/// V4 schema：在 V3 之上新增 ``OrderRecord/cardlessDeductionAmount`` (無卡折抵金額)、``OrderRecord/cardlessSupplementAmount`` (無卡補款金額)，以及 ``PaymentMethodRecord/isCardless`` (是否屬於無卡類付款方式)。
 ///
-/// 三個新欄位皆帶 default 值（`0` 與 `false`），V3 → V4 走 SwiftData lightweight migration 即可。
+/// 三個新欄位皆帶 default 值 (`0` 與 `false`)，V3 → V4 走 SwiftData lightweight migration 即可。
 enum BuyLedgerSchemaV4: VersionedSchema {
 
     // MARK: - Static Properties
@@ -317,7 +317,7 @@ enum BuyLedgerSchemaV4: VersionedSchema {
     /// 版本識別。
     static var versionIdentifier: Schema.Version { Schema.Version(4, 0, 0) }
 
-    /// 此版本包含的 model 型別；引用 top-level 定義（已含 V4 新增欄位）。
+    /// 此版本包含的 model 型別；引用 top-level 定義 (已含 V4 新增欄位)。
     static var models: [any PersistentModel.Type] {
         [
             OrderRecord.self,
@@ -345,7 +345,7 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
         ]
     }
 
-    /// V1 → V2（custom dump-and-restore）、V2 → V3（lightweight，新增 default 欄位）、V3 → V4（lightweight，新增 default 欄位）。
+    /// V1 → V2 (custom dump-and-restore)、V2 → V3 (lightweight，新增 default 欄位)、V3 → V4 (lightweight，新增 default 欄位)。
     static var stages: [MigrationStage] {
         [
             .custom(
@@ -379,7 +379,7 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
                     }
                     pendingOrders = snapshot
 
-                    // V1 schema 內的 OrderRecord 在 V2 沒有對應 ID 對映（attribute 型別不同），所以這裡也把舊 row 一併刪除，
+                    // V1 schema 內的 OrderRecord 在 V2 沒有對應 ID 對映 (attribute 型別不同)，所以這裡也把舊 row 一併刪除，
                     // 避免 SwiftData 在 schema 切換時嘗試 in-place 轉型而失敗。
                     for record in oldOrders {
                         context.delete(record)
@@ -387,7 +387,7 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
                     try context.save()
                 },
                 didMigrate: { context in
-                    // 在 V2 context 用 V2 影子型別重建。新欄位（V3）在這階段不寫入；後續 V2 → V3 lightweight migration 會以 default 補齊。
+                    // 在 V2 context 用 V2 影子型別重建。新欄位 (V3) 在這階段不寫入；後續 V2 → V3 lightweight migration 會以 default 補齊。
                     let snapshot = pendingOrders
                     for pending in snapshot {
                         let restored = BuyLedgerSchemaV2.OrderRecord(

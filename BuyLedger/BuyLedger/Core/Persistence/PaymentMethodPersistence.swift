@@ -24,7 +24,7 @@ actor PaymentMethodPersistence {
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
-    /// 讀出全部付款方式（含 `isCardless` 旗標），依 locale 升冪排序。
+    /// 讀出全部付款方式 (含 `isCardless` 旗標)，依 locale 升冪排序。
     ///
     /// 與 ``fetchAll()`` 的差別在於回傳 ``PaymentMethodInfo``，讓 caller 同時拿到名稱與「是否屬於無卡類」的判定，避免在 view 端額外查詢主檔。
     /// - Returns: 付款方式資訊陣列。
@@ -36,9 +36,9 @@ actor PaymentMethodPersistence {
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
-    /// 寫入指定名稱的付款方式；若已存在則更新 `isCardless` 旗標（讓使用者重新觸發新增時能更正先前忘記勾選的狀態）。
+    /// 寫入指定名稱的付款方式；若已存在則更新 `isCardless` 旗標 (讓使用者重新觸發新增時能更正先前忘記勾選的狀態)。
     /// - Parameters:
-    ///   - name: 付款方式名稱（呼叫前由 caller 完成 trim）。
+    ///   - name: 付款方式名稱 (呼叫前由 caller 完成 trim)。
     ///   - isCardless: 是否屬於無卡類付款方式。
     func upsert(name: String, isCardless: Bool) throws {
         let descriptor = FetchDescriptor<PaymentMethodRecord>(
@@ -68,10 +68,10 @@ actor PaymentMethodPersistence {
         try modelContext.save()
     }
 
-    /// 將指定付款方式更名；若新名稱已存在則合併（刪除舊紀錄即可），訂單端的 cascade 由 caller 另外處理。
+    /// 將指定付款方式更名；若新名稱已存在則合併 (刪除舊紀錄即可)，訂單端的 cascade 由 caller 另外處理。
     /// - Parameters:
     ///   - oldName: 原本的名稱。
-    ///   - newName: 新的名稱（由 caller 完成 trim）。
+    ///   - newName: 新的名稱 (由 caller 完成 trim)。
     func rename(from oldName: String, to newName: String) throws {
         let oldDescriptor = FetchDescriptor<PaymentMethodRecord>(
             predicate: #Predicate { $0.name == oldName }
@@ -99,7 +99,7 @@ actor PaymentMethodPersistence {
 
     /// 設定指定付款方式的 `isCardless` 旗標；若該名稱不在主檔則先建立記錄。
     /// - Parameters:
-    ///   - name: 付款方式名稱（呼叫前由 caller 完成 trim）。
+    ///   - name: 付款方式名稱 (呼叫前由 caller 完成 trim)。
     ///   - isCardless: 是否屬於無卡類付款方式。
     func setIsCardless(name: String, isCardless: Bool) throws {
         let descriptor = FetchDescriptor<PaymentMethodRecord>(

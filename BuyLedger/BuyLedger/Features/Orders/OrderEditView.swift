@@ -32,7 +32,7 @@ struct OrderEditView: View {
 
     /// 訂購日期 footer 顯示使用的 locale；跟隨使用者手機設定，測試可注入固定值。
     ///
-    /// 本 View 不直接使用此值，改透過 ``deviceLocale`` 包裝：TCA 預設的 `Locale.autoupdatingCurrent` 受 App 自身 `CFBundleDevelopmentRegion` 與支援的 localizations 影響，當 App 未掛使用者偏好語言時會回退到開發語言（例如英文）。
+    /// 本 View 不直接使用此值，改透過 ``deviceLocale`` 包裝：TCA 預設的 `Locale.autoupdatingCurrent` 受 App 自身 `CFBundleDevelopmentRegion` 與支援的 localizations 影響，當 App 未掛使用者偏好語言時會回退到開發語言 (例如英文)。
     @Dependency(\.locale) private var locale
 
     // MARK: - View Body
@@ -94,7 +94,7 @@ struct OrderEditView: View {
                         )
                     }
                 } header: {
-                    Text("收款金額（NT$）")
+                    Text("收款金額 (NT$)")
                 } footer: {
                     if store.isSelectedPaymentMethodCardless {
                         Text("無卡類付款方式才會啟用「折抵」與「補款」欄位；總收款 = 客戶實付 + 補款 − 折抵。")
@@ -103,7 +103,7 @@ struct OrderEditView: View {
                     }
                 }
                 
-                Section("成本（NT$）") {
+                Section("成本 (NT$)") {
                     decimalField(title: "商品成本", value: $store.draftItemCost)
                     decimalField(title: "國內運費", value: $store.draftDomesticShipping)
                     decimalField(title: "外國國內運費", value: $store.draftForeignDomesticShipping)
@@ -115,7 +115,7 @@ struct OrderEditView: View {
                     percentField(title: "平台手續費 %", value: $store.draftPlatformFeeRate)
                     percentField(title: "金流手續費 %", value: $store.draftPaymentFeeRate)
                 } header: {
-                    Text("手續費（%）")
+                    Text("手續費 (%)")
                 } footer: {
                     Text("輸入百分比例如 1.5 表示 1.5%；超出 0%–100% 範圍會自動限制。")
                         .font(.footnote)
@@ -250,7 +250,7 @@ private extension OrderEditView {
         .buttonStyle(.plain)
     }
 
-    /// 幣別選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗，但 sheet 不允許新增（幣別來源僅限 ExchangeRate-API 支援清單）。
+    /// 幣別選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗，但 sheet 不允許新增 (幣別來源僅限 ExchangeRate-API 支援清單)。
     var currencyPickerRow: some View {
         Button {
             showsCurrencySheet = true
@@ -328,7 +328,7 @@ private extension OrderEditView {
                 Label("新增商品", systemImage: "plus.circle.fill")
             }
         } header: {
-            Text("商品明細（\(store.draftCurrency.rawValue)）")
+            Text("商品明細 (\(store.draftCurrency.rawValue))")
         } footer: {
             if store.draftItems.isEmpty {
                 Text("還沒有任何商品；點擊「新增商品」開始填寫。")
@@ -342,7 +342,7 @@ private extension OrderEditView {
         }
     }
     
-    /// 單筆商品的編輯列：商品名稱（多行）+ 數量 Stepper + 單價 TextField。
+    /// 單筆商品的編輯列：商品名稱 (多行)+ 數量 Stepper + 單價 TextField。
     /// - Parameter item: 雙向繫結的單筆商品。
     /// - Returns: 商品列 view。
     func itemEditorRow(item: Binding<LedgerOrderItem>) -> some View {

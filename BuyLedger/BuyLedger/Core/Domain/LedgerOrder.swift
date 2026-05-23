@@ -39,7 +39,7 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 國際集運成本。
     let internationalShipping: Decimal
 
-    /// 商品來源國當地的「國內運費」成本（折合 TWD）。例如賣家把商品從日本國內出貨到集運倉的運送費。
+    /// 商品來源國當地的「國內運費」成本 (折合 TWD)。例如賣家把商品從日本國內出貨到集運倉的運送費。
     let foreignDomesticShipping: Decimal
 
     /// 刷卡手續費比例。
@@ -48,18 +48,18 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 平台手續費比例。
     let platformFeeRate: Decimal
 
-    /// 金流手續費比例（0–1，例如 0.005 = 0.5%）；用於 LINE Pay、街口、信用卡之外的第三方金流抽成。
+    /// 金流手續費比例 (0–1，例如 0.005 = 0.5%)；用於 LINE Pay、街口、信用卡之外的第三方金流抽成。
     let paymentFeeRate: Decimal
 
     /// 實際向客戶收款的新台幣金額。
     let chargedAmount: Decimal
 
-    /// 無卡折抵金額（TWD）。
+    /// 無卡折抵金額 (TWD)。
     ///
     /// 用於「無卡」類付款方式紀錄客戶以儲值金、購物金等方式折抵的金額；折抵會從 ``OrderSummary/revenue`` 中扣除。非無卡訂單一律以 `0` 帶入。
     let cardlessDeductionAmount: Decimal
 
-    /// 無卡補款金額（TWD）。
+    /// 無卡補款金額 (TWD)。
     ///
     /// 用於「無卡」類付款方式紀錄客戶以 ATM 轉帳等方式補繳的金額；補款會加到 ``OrderSummary/revenue`` 中。非無卡訂單一律以 `0` 帶入。
     let cardlessSupplementAmount: Decimal

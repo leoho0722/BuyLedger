@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 商品類別 / 付款方式主檔的獨立管理畫面。
 ///
-/// 以 ``LookupManagementFeature`` 驅動：點「新增」彈出 alert（商品類別）或 sheet（付款方式，含 `isCardless` toggle）；列點 swipe 刪除或重新命名。文案、空狀態、icon 來自 ``LookupKind``。
+/// 以 ``LookupManagementFeature`` 驅動：點「新增」彈出 alert (商品類別) 或 sheet (付款方式，含 `isCardless` toggle)；列點 swipe 刪除或重新命名。文案、空狀態、icon 來自 ``LookupKind``。
 struct LookupManagementView: View {
 
     // MARK: - View Properties
@@ -18,13 +18,13 @@ struct LookupManagementView: View {
     /// 主檔管理 store。
     @Bindable var store: StoreOf<LookupManagementFeature>
 
-    /// 是否顯示「新增類別」alert（僅商品類別 kind 使用）。
+    /// 是否顯示「新增類別」alert (僅商品類別 kind 使用)。
     @State private var showsAddCategoryAlert = false
 
-    /// 是否顯示「新增付款方式」sheet（僅付款方式 kind 使用；alert 在實機驗證會 silently 丟掉 Toggle，所以付款方式入口改走 sheet）。
+    /// 是否顯示「新增付款方式」sheet (僅付款方式 kind 使用；alert 在實機驗證會 silently 丟掉 Toggle，所以付款方式入口改走 sheet)。
     @State private var showsAddPaymentMethodSheet = false
 
-    /// 新增 alert 的名稱輸入草稿（商品類別）。
+    /// 新增 alert 的名稱輸入草稿 (商品類別)。
     @State private var draft = ""
 
     /// 目前正在重新命名的項目；`nil` 表示未進行 rename。
@@ -197,7 +197,7 @@ struct LookupManagementView: View {
 
 private extension LookupManagementView {
 
-    /// 列項顯示：商品類別 kind 純文字；付款方式 kind 在右側顯示「無卡」徽章（僅作標示，不能直接切換；要修改 `isCardless` 需刪除後重新新增）。
+    /// 列項顯示：商品類別 kind 純文字；付款方式 kind 在右側顯示「無卡」徽章 (僅作標示，不能直接切換；要修改 `isCardless` 需刪除後重新新增)。
     /// - Parameter item: 要顯示的主檔項目名稱。
     /// - Returns: 列項 view。
     @ViewBuilder

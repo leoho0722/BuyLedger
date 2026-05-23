@@ -116,7 +116,7 @@ struct OrderCalculationTests {
     }
 
     @Test func cardlessAmountsDoNotAffectFeesBaseline() {
-        // 折抵與補款不應影響手續費的基準（仍以 chargedAmount 計算）。
+        // 折抵與補款不應影響手續費的基準 (仍以 chargedAmount 計算)。
         let order = LedgerOrder(
             id: "BL-CARDLESS-002",
             customer: LedgerCustomer(name: "刷卡＋無卡", initials: "MX", tier: .regular),
@@ -142,7 +142,7 @@ struct OrderCalculationTests {
 
         let summary = OrderSummary(order: order)
 
-        // fees = 10_000 * 0.015 = 150（基於 chargedAmount，不是 revenue）。
+        // fees = 10_000 * 0.015 = 150 (基於 chargedAmount，不是 revenue)。
         #expect(summary.fees == 150)
         // revenue = 10_000 - 2_000 = 8_000；totalCost = 0 + 150 = 150；profit = 7_850。
         #expect(summary.revenue == 8_000)

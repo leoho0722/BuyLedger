@@ -20,12 +20,12 @@ struct FxRateSnapshot: Equatable, Sendable {
     /// 基準幣別。
     let base: CurrencyCode
 
-    /// 對其他幣別的匯率（key 為目標幣別，value 為「1 base = value target」）。
+    /// 對其他幣別的匯率 (key 為目標幣別，value 為「1 base = value target」)。
     let rates: [CurrencyCode: Decimal]
 
     // MARK: - Static Properties
 
-    /// 預設快照：使用 ``FxRates/toTwd`` 為基礎組成的範例 snapshot，僅供 SwiftUI Preview（``ExchangeRateClient/previewValue``）與單元測試使用。
+    /// 預設快照：使用 ``FxRates/toTwd`` 為基礎組成的範例 snapshot，僅供 SwiftUI Preview (``ExchangeRateClient/previewValue``) 與單元測試使用。
     ///
     /// **runtime 不應讀取此值**——若 API 失敗，feature 應顯示錯誤訊息、所有匯率欄位顯示「—」，避免讓使用者誤以為看到的是即時匯率。
     static let fallback: FxRateSnapshot = {

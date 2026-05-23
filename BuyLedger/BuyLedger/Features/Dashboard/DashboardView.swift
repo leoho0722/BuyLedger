@@ -12,9 +12,9 @@ import SwiftUI
 ///
 /// 對應設計稿 iPhone / iPad / Mac 的「總覽」頁：
 /// - 大標題 + 日期或月份子標
-/// - 漸層 hero 卡（本月淨獲利 + sparkline + 月目標進度）
-/// - KPI 卡片格（營業額、成本、毛利率、進行中訂單）
-/// - 近期訂單卡（reuse ``OrderRowView``）
+/// - 漸層 hero 卡 (本月淨獲利 + sparkline + 月目標進度)
+/// - KPI 卡片格 (營業額、成本、毛利率、進行中訂單)
+/// - 近期訂單卡 (reuse ``OrderRowView``)
 struct DashboardView: View {
     
     // MARK: - View Properties
@@ -26,7 +26,7 @@ struct DashboardView: View {
     @Environment(\.colorScheme) private var colorScheme
 
 #if !os(macOS)
-    /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone（compact）與 iPad（regular）。
+    /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone (compact) 與 iPad (regular)。
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
 
@@ -162,7 +162,7 @@ private extension DashboardView {
     
     /// hero P&L 與 KPI 的並排組合。
     ///
-    /// 在 iPhone（compact）上維持 hero 在上、2×2 KPI grid 在下；在 iPad/Mac 上把 hero 放在左側 1.4 權重，3 個小 KPI 放在右側
+    /// 在 iPhone (compact) 上維持 hero 在上、2×2 KPI grid 在下；在 iPad/Mac 上把 hero 放在左側 1.4 權重，3 個小 KPI 放在右側
     /// 1 權重的直欄裡，對應設計稿 iPad Dashboard 的 1.4fr + 3fr 版面。
     /// - Parameters:
     ///   - stats: 已計算的本月統計。
@@ -188,7 +188,7 @@ private extension DashboardView {
         }
     }
     
-    /// 寬版面右側的 3 個 KPI 卡片（直欄排列，與 hero 等高呼應）。
+    /// 寬版面右側的 3 個 KPI 卡片 (直欄排列，與 hero 等高呼應)。
     /// - Parameters:
     ///   - stats: 已計算的本月統計。
     ///   - palette: 目前外觀使用的色盤。
@@ -271,7 +271,7 @@ private extension DashboardView {
         .blCardShadow()
     }
     
-    /// 月目標進度條；目標為 0（使用者未設定）時整列隱藏。
+    /// 月目標進度條；目標為 0 (使用者未設定) 時整列隱藏。
     /// - Parameter stats: 已計算的本月統計。
     /// - Returns: 進度條 view。
     @ViewBuilder
@@ -342,10 +342,10 @@ private extension DashboardView {
     /// 單一 KPI 卡片：左上 tint 色點 + 標籤、中段大數字、下方變化指標。
     /// - Parameters:
     ///   - label: 卡片左上方的指標名稱，例如「營業額」、「毛利率」。
-    ///   - value: 卡片中央顯示的數值字串（已預先 format）。
+    ///   - value: 卡片中央顯示的數值字串 (已預先 format)。
     ///   - tint: 左上方色點顏色，用來區分指標分類。
     ///   - delta: 下方變化字串，例如「+18.2%」、「3 open」。
-    ///   - deltaUp: 變化方向：`true` 顯示上升色（綠）、`false` 顯示下降色（紅）、`nil` 顯示中性色。
+    ///   - deltaUp: 變化方向：`true` 顯示上升色 (綠)、`false` 顯示下降色 (紅)、`nil` 顯示中性色。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: KPI 卡片 view。
     func kpiTile(
@@ -385,7 +385,7 @@ private extension DashboardView {
         }
     }
     
-    /// 近期訂單區塊（標題列 + 列表卡）。
+    /// 近期訂單區塊 (標題列 + 列表卡)。
     /// - Parameters:
     ///   - stats: 已計算的本月統計。
     ///   - palette: 目前外觀使用的色盤。
@@ -440,12 +440,12 @@ private extension DashboardView {
 
 private extension DashboardView {
     
-    /// KPI 卡片的欄位設定（僅 compact 用 2 欄）。
+    /// KPI 卡片的欄位設定 (僅 compact 用 2 欄)。
     var kpiColumns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: BLSpacing.small), count: 2)
     }
     
-    /// 是否採用 hero + 3 KPI 並排版面（iPad / Mac）。
+    /// 是否採用 hero + 3 KPI 並排版面 (iPad / Mac)。
     var useWideHero: Bool {
 #if os(macOS)
         return true
@@ -473,37 +473,37 @@ private struct DashboardStats {
     /// 本月淨獲利。
     let profit: Decimal
 
-    /// 毛利率（profit / revenue）。
+    /// 毛利率 (profit / revenue)。
     let margin: Decimal
 
-    /// 進行中（confirmed / purchased / shipping）的訂單數。
+    /// 進行中 (confirmed / purchased / shipping) 的訂單數。
     let activeCount: Int
 
     /// 本月已實現的訂單筆數。
     let orderCount: Int
 
-    /// 月目標金額（來自 `SettingsFeature.State.monthlyProfitGoalTwd`）。`0` 代表使用者未設定，UI 應隱藏進度條。
+    /// 月目標金額 (來自 `SettingsFeature.State.monthlyProfitGoalTwd`)。`0` 代表使用者未設定，UI 應隱藏進度條。
     let goal: Decimal
 
-    /// 已達月目標的比例（0 ~ 1）。
+    /// 已達月目標的比例 (0 ~ 1)。
     let goalProgress: CGFloat
 
     /// 近 12 個月的淨獲利走勢值。
     let sparkline: [Double]
 
-    /// 近期訂單（依日期由新到舊取前 4 筆）。
+    /// 近期訂單 (依日期由新到舊取前 4 筆)。
     let recentOrders: [LedgerOrder]
 
-    /// 營業額相對上月的成長率（小數形式，0.18 即 +18%）；上月為 0 或無資料時為 `nil`。
+    /// 營業額相對上月的成長率 (小數形式，0.18 即 +18%)；上月為 0 或無資料時為 `nil`。
     let revenueDelta: Decimal?
 
-    /// 成本相對上月的成長率（小數形式）；上月為 0 或無資料時為 `nil`。
+    /// 成本相對上月的成長率 (小數形式)；上月為 0 或無資料時為 `nil`。
     let costDelta: Decimal?
 
-    /// 淨獲利相對上月的成長率（小數形式）；上月為 0 或無資料時為 `nil`。
+    /// 淨獲利相對上月的成長率 (小數形式)；上月為 0 或無資料時為 `nil`。
     let profitDelta: Decimal?
 
-    /// 毛利率相對上月的差（百分點，0.024 即 +2.4pt）；上月無資料時為 `nil`。
+    /// 毛利率相對上月的差 (百分點，0.024 即 +2.4pt)；上月無資料時為 `nil`。
     let marginDelta: Decimal?
 }
 
@@ -516,7 +516,7 @@ private extension DashboardView {
         .shipping
     ]
 
-    /// 視為「已實現」的訂單狀態集合（用於本月損益）。
+    /// 視為「已實現」的訂單狀態集合 (用於本月損益)。
     static let realizedStatuses: Set<OrderStatus> = [
         .confirmed,
         .purchased,
@@ -530,7 +530,7 @@ private extension DashboardView {
     /// 計算 ``DashboardStats``。
     /// - Parameters:
     ///   - orders: 目前的訂單清單。
-    ///   - monthlyGoal: 月度淨獲利目標（來自 SettingsFeature；`0` 代表未設定）。
+    ///   - monthlyGoal: 月度淨獲利目標 (來自 SettingsFeature；`0` 代表未設定)。
     /// - Returns: 總覽頁需要的統計值。
     func computeStats(orders: [LedgerOrder], monthlyGoal: Decimal) -> DashboardStats {
         let calendar = Calendar.current
@@ -592,13 +592,13 @@ private extension DashboardView {
         /// 該月已實現訂單的營業額總和。
         let revenue: Decimal
 
-        /// 該月已實現訂單的成本總和（含商品、運費與手續費）。
+        /// 該月已實現訂單的成本總和 (含商品、運費與手續費)。
         let cost: Decimal
 
-        /// 該月已實現訂單的淨獲利總和（`revenue - cost`）。
+        /// 該月已實現訂單的淨獲利總和 (`revenue - cost`)。
         let profit: Decimal
 
-        /// 該月毛利率（`profit / revenue`）；`revenue` 為 0 時為 0。
+        /// 該月毛利率 (`profit / revenue`)；`revenue` 為 0 時為 0。
         let margin: Decimal
 
         /// 該月已實現的訂單筆數，作為「上月有無資料可比」的判斷依據。
@@ -656,7 +656,7 @@ private extension DashboardView {
     /// - Parameters:
     ///   - current: 本期值。
     ///   - previous: 上期值。
-    /// - Returns: 成長率（小數），上期為 0 時 `nil`。
+    /// - Returns: 成長率 (小數)，上期為 0 時 `nil`。
     func ratio(current: Decimal, previous: Decimal) -> Decimal? {
         guard previous != 0 else { return nil }
         return (current - previous) / previous
@@ -666,7 +666,7 @@ private extension DashboardView {
     /// - Parameters:
     ///   - orders: 目前訂單清單。
     ///   - calendar: 用來計算月份的曆法。
-    ///   - now: 基準日期（即「最後一個月」的所在日期）。
+    ///   - now: 基準日期 (即「最後一個月」的所在日期)。
     /// - Returns: 共 12 個 `Double` 的走勢值。
     func monthlyProfitSparkline(
         orders: [LedgerOrder],
@@ -710,7 +710,7 @@ private extension DashboardView {
         return profit > 0 ? "+\(formatted)" : formatted
     }
     
-    /// 將金額格式化為新台幣（無小數位）。
+    /// 將金額格式化為新台幣 (無小數位)。
     /// - Parameter amount: 金額。
     /// - Returns: 含 NT$ 前綴的字串。
     func formatTwd(_ amount: Decimal) -> String {
@@ -758,7 +758,7 @@ private extension DashboardView {
         }
     }
 
-    /// 把 MoM delta（小數型成長率）轉成 `+18.2% MoM` 風格字串；`nil` 顯示「— MoM」。
+    /// 把 MoM delta (小數型成長率) 轉成 `+18.2% MoM` 風格字串；`nil` 顯示「— MoM」。
     /// - Parameter delta: 成長率，例如 `0.182` 表示 +18.2%。
     /// - Returns: KPI 卡顯示用字串。
     func percentDeltaDisplay(_ delta: Decimal?) -> String {
@@ -768,7 +768,7 @@ private extension DashboardView {
         return "\(prefix)\(formatted) MoM"
     }
 
-    /// 把毛利率 delta（百分點）轉成 `+2.4 pt MoM` 風格字串。
+    /// 把毛利率 delta (百分點) 轉成 `+2.4 pt MoM` 風格字串。
     /// - Parameter delta: 百分點差，例如 `0.024` 表示 +2.4pt。
     /// - Returns: KPI 卡顯示用字串。
     func marginDeltaDisplay(_ delta: Decimal?) -> String {
@@ -790,7 +790,7 @@ private extension DashboardView {
         return "\(arrow) \(formatted) MoM"
     }
 
-    /// 將 delta 數值轉成 KPI tile 用的方向旗標（`true`/`false`/`nil`）。
+    /// 將 delta 數值轉成 KPI tile 用的方向旗標 (`true`/`false`/`nil`)。
     /// - Parameter delta: 成長率或百分點差。
     /// - Returns: `true` 代表上升、`false` 代表下降、`nil` 代表無上月資料可比。
     func deltaDirection(_ delta: Decimal?) -> Bool? {

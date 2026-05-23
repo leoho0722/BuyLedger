@@ -12,32 +12,32 @@ import SwiftData
 ///
 /// 與領域型別 ``LedgerOrder`` 一一對應，但採 `@Model class` 形式以滿足 SwiftData 要求；同名欄位之間透過 ``OrderPersistence`` 進行雙向 mapping。
 ///
-/// 設計重點（保留與 CloudKit 同步相容的限制，便於日後直接打開）：
+/// 設計重點 (保留與 CloudKit 同步相容的限制，便於日後直接打開)：
 /// - 不使用 `@Attribute(.unique)`，因為 CloudKit 不支援 unique constraint；改用「id 為平凡 String，由 actor 進行 upsert 檢查」
-/// - 嵌入式型別（``LedgerCustomer`` / `[LedgerOrderItem]`）透過 Codable 以 transformable 形式儲存，避免引入 optional relationship 對 CloudKit 同步的限制
+/// - 嵌入式型別 (``LedgerCustomer`` / `[LedgerOrderItem]`) 透過 Codable 以 transformable 形式儲存，避免引入 optional relationship 對 CloudKit 同步的限制
 @Model
 final class OrderRecord {
 
     // MARK: - Data Properties
 
-    /// 訂單編號（領域層級的 stable id）。
+    /// 訂單編號 (領域層級的 stable id)。
     var id: String
 
-    /// 客戶資料（嵌入式 Codable 儲存）。
+    /// 客戶資料 (嵌入式 Codable 儲存)。
     var customer: LedgerCustomer
 
     /// 訂單目前狀態。
     var status: OrderStatus
 
-    /// 商品原始幣別（以 ISO 4217 code 字串存放）。
+    /// 商品原始幣別 (以 ISO 4217 code 字串存放)。
     ///
-    /// 之所以使用 `String` 而非 ``CurrencyCode``：``CurrencyCode`` 從 `enum String` 改成 `struct` 後，SwiftData 會把它視為複合型別、把 `rawValue` 展開成子 attribute，造成舊 store（直接 String column）升級時找不到對應的 destination 屬性而 migration 失敗。直接存 String 可維持 column 形狀與舊 enum 的 `rawValue` 相同，免去自訂 migration plan。
+    /// 之所以使用 `String` 而非 ``CurrencyCode``：``CurrencyCode`` 從 `enum String` 改成 `struct` 後，SwiftData 會把它視為複合型別、把 `rawValue` 展開成子 attribute，造成舊 store (直接 String column) 升級時找不到對應的 destination 屬性而 migration 失敗。直接存 String 可維持 column 形狀與舊 enum 的 `rawValue` 相同，免去自訂 migration plan。
     var currency: String
 
     /// 訂單建立或更新日期。
     var date: Date
 
-    /// 商品項目（嵌入式 Codable 陣列儲存）。
+    /// 商品項目 (嵌入式 Codable 陣列儲存)。
     var items: [LedgerOrderItem]
 
     /// 商品折合 TWD 後的成本。
@@ -49,7 +49,7 @@ final class OrderRecord {
     /// 國際集運成本。
     var internationalShipping: Decimal
 
-    /// 商品來源國當地的國內運費成本（TWD）；帶 default 0 走 SwiftData lightweight migration。
+    /// 商品來源國當地的國內運費成本 (TWD)；帶 default 0 走 SwiftData lightweight migration。
     var foreignDomesticShipping: Decimal = 0
 
     /// 刷卡手續費比例。
@@ -64,12 +64,12 @@ final class OrderRecord {
     /// 實際向客戶收款的新台幣金額。
     var chargedAmount: Decimal
 
-    /// 無卡折抵金額（TWD）；用於「無卡」類付款方式紀錄客戶使用儲值金、購物金等折抵的金額。
+    /// 無卡折抵金額 (TWD)；用於「無卡」類付款方式紀錄客戶使用儲值金、購物金等折抵的金額。
     ///
     /// 帶 default `0` 走 SwiftData lightweight migration；只有當 ``paymentMethod`` 對應的 ``PaymentMethodRecord/isCardless`` 為 `true` 時，編輯表單才會顯示並寫入此值。
     var cardlessDeductionAmount: Decimal = 0
 
-    /// 無卡補款金額（TWD）；用於「無卡」類付款方式紀錄客戶以 ATM 轉帳等方式補繳的金額。
+    /// 無卡補款金額 (TWD)；用於「無卡」類付款方式紀錄客戶以 ATM 轉帳等方式補繳的金額。
     ///
     /// 帶 default `0` 走 SwiftData lightweight migration；行為與 ``cardlessDeductionAmount`` 相同，只在無卡類付款方式才會被使用者編輯。
     var cardlessSupplementAmount: Decimal = 0
@@ -139,7 +139,7 @@ extension OrderRecord {
         )
     }
 
-    /// 將領域型別的內容套用到本記錄（用於 upsert 流程的更新分支）。
+    /// 將領域型別的內容套用到本記錄 (用於 upsert 流程的更新分支)。
     /// - Parameter order: 來源 ``LedgerOrder``。
     func apply(_ order: LedgerOrder) {
         self.customer = order.customer

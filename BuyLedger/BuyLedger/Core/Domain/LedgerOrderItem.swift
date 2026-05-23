@@ -9,7 +9,7 @@ import Foundation
 
 /// 訂單中的單一商品項目。
 ///
-/// 為了支援表單內的 inline 編輯（避免 SwiftUI ForEach binding 隨內容變動而 reset focus），id 採用穩定的 ``UUID``，與 `name / quantity / unitPrice` 等內容欄位解耦。
+/// 為了支援表單內的 inline 編輯 (避免 SwiftUI ForEach binding 隨內容變動而 reset focus)，id 採用穩定的 ``UUID``，與 `name / quantity / unitPrice` 等內容欄位解耦。
 struct LedgerOrderItem: Equatable, Identifiable, Sendable {
 
     // MARK: - Identifiable Properties
@@ -57,7 +57,7 @@ extension LedgerOrderItem: Codable {
 
     // MARK: - Cases
 
-    /// `Codable` 使用的鍵；刻意排除 `id`，讓既有的持久化資料也能被讀回（缺 id 時自動產生新的 UUID），同時避免每次寫入都把 UUID 漏進 JSON。
+    /// `Codable` 使用的鍵；刻意排除 `id`，讓既有的持久化資料也能被讀回 (缺 id 時自動產生新的 UUID)，同時避免每次寫入都把 UUID 漏進 JSON。
     private enum CodingKeys: String, CodingKey {
         case name
         case quantity
@@ -66,7 +66,7 @@ extension LedgerOrderItem: Codable {
 
     // MARK: - Init
 
-    /// 從 decoder 還原；若資料來源沒有 `id` 欄位（例如舊版本寫入的 SwiftData blob），自動補上新的 ``UUID``。
+    /// 從 decoder 還原；若資料來源沒有 `id` 欄位 (例如舊版本寫入的 SwiftData blob)，自動補上新的 ``UUID``。
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         self.id = UUID()

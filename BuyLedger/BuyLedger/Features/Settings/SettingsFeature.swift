@@ -32,7 +32,7 @@ struct SettingsFeature {
         /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供。
         var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
 
-        /// 每月淨獲利目標（TWD）；Dashboard hero 卡的目標進度條讀此值。`0` 代表使用者尚未設定，UI 應隱藏進度條。
+        /// 每月淨獲利目標 (TWD)；Dashboard hero 卡的目標進度條讀此值。`0` 代表使用者尚未設定，UI 應隱藏進度條。
         var monthlyProfitGoalTwd: Decimal
         
         // MARK: - Init
@@ -170,7 +170,7 @@ struct SettingsSnapshot: Equatable, Sendable {
     /// 預設訂單幣別。
     var defaultCurrency: CurrencyCode
     
-    /// 每月淨獲利目標（TWD）。
+    /// 每月淨獲利目標 (TWD)。
     var monthlyProfitGoalTwd: Decimal
     
     // MARK: - Static Properties
@@ -214,7 +214,7 @@ extension SettingsStorage: DependencyKey {
             let storedCurrency = defaults.string(forKey: SettingsStorageKeys.defaultCurrency) ?? ""
             let currency: CurrencyCode = storedCurrency.isEmpty ? .twd : CurrencyCode(rawValue: storedCurrency)
             // 從未寫入時 `object(forKey:)` 為 nil，預設帶入 `SettingsSnapshot.default.monthlyProfitGoalTwd`；
-            // 寫入過 `0` 也尊重使用者意圖（代表「不設目標」）。
+            // 寫入過 `0` 也尊重使用者意圖 (代表「不設目標」)。
             let goalValue: Decimal = {
                 guard let raw = defaults.object(forKey: SettingsStorageKeys.monthlyProfitGoalTwd) as? Double else {
                     return SettingsSnapshot.default.monthlyProfitGoalTwd
@@ -248,7 +248,7 @@ extension SettingsStorage: DependencyKey {
     nonisolated static let previewValue: SettingsStorage = testValue
 }
 
-/// `UserDefaults` 中使用的 key 名稱（提到型別外避免 main-actor 隔離污染）。
+/// `UserDefaults` 中使用的 key 名稱 (提到型別外避免 main-actor 隔離污染)。
 private enum SettingsStorageKeys {
     
     // MARK: - Static Properties
@@ -270,7 +270,7 @@ extension SettingsSnapshot {
     
     // MARK: - Static Properties
     
-    /// 測試與 preview 用的預設快照（與 `.default` 內容相同，但宣告為 `nonisolated` 方便在 `@Sendable` closure 中安全引用）。
+    /// 測試與 preview 用的預設快照 (與 `.default` 內容相同，但宣告為 `nonisolated` 方便在 `@Sendable` closure 中安全引用)。
     nonisolated static let testDefault = SettingsSnapshot(
         appearance: .system,
         notificationsEnabled: true,

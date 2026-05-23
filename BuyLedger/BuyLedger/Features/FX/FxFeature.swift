@@ -63,7 +63,7 @@ struct FxFeature {
 
         // MARK: - Computed Properties
 
-        /// 來源幣別目前的匯率（1 單位 = X TWD）；無 snapshot 時為 `nil`。
+        /// 來源幣別目前的匯率 (1 單位 = X TWD)；無 snapshot 時為 `nil`。
         var rate: Decimal? {
             displayRate(for: fromCurrency)
         }
@@ -73,9 +73,9 @@ struct FxFeature {
             rate.map { amount * $0 }
         }
 
-        /// 任意幣別目前對 TWD 的匯率（1 單位 = X TWD）。
+        /// 任意幣別目前對 TWD 的匯率 (1 單位 = X TWD)。
         ///
-        /// 取值順序：（1）查詢的幣別為 TWD 時直接回 `1`、（2）snapshot.base == .twd 時取 `1 / snapshot.rates[currency]`、（3）snapshot.base 與目標幣別一致時取 `snapshot.rates[.twd]`、（4）以上都不符或無 snapshot 時回 `nil`，由 view 端顯示「—」。
+        /// 取值順序：(1) 查詢的幣別為 TWD 時直接回 `1`、(2) snapshot.base == .twd 時取 `1 / snapshot.rates[currency]`、(3) snapshot.base 與目標幣別一致時取 `snapshot.rates[.twd]`、(4) 以上都不符或無 snapshot 時回 `nil`，由 view 端顯示「—」。
         ///
         /// View 顯示「即時匯率列表」與「1 X = N TWD」字串時使用，確保 UI 永遠呈現 API 取得的真實匯率，避免使用者誤信過期或假資料。
         /// - Parameter currency: 要查詢的幣別。
@@ -213,7 +213,7 @@ struct FxFeature {
         case .decoding:
             return "匯率資料格式異常；無法顯示即時匯率。"
         case let .apiError(code):
-            return "匯率 API 回應錯誤（\(code)）；無法顯示即時匯率。"
+            return "匯率 API 回應錯誤 (\(code))；無法顯示即時匯率。"
         }
     }
 }

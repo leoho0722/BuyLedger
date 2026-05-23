@@ -16,7 +16,7 @@ enum TestDependencies {
 
     // MARK: - Static Properties
 
-    /// 預設使用的固定「現在」時間（2026-04-30 00:00:00 UTC）。
+    /// 預設使用的固定「現在」時間 (2026-04-30 00:00:00 UTC)。
     ///
     /// 落在 ``LedgerOrder/sampleOrders`` 的當月區間內，方便 Dashboard / Insights / Orders 的「本月」「近 30 天」等統計值有非零內容。
     static let fixedNow: Date = {

@@ -10,7 +10,7 @@ import Foundation
 
 /// 集中提供各個外部 API 所需的金鑰。
 ///
-/// 實作策略：先從 `Info.plist` 讀（建議透過 `Config.xcconfig` 注入並加入 `.gitignore`），讀不到再回 `nil`。
+/// 實作策略：先從 `Info.plist` 讀 (建議透過 `Config.xcconfig` 注入並加入 `.gitignore`)，讀不到再回 `nil`。
 /// 上層 client 收到 `nil` 時應該拋 ``APIError/invalidKey``，UI 顯示「請設定 API key」並提供入口給使用者輸入。
 struct APIKeyProvider: Sendable {
 

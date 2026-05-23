@@ -57,7 +57,7 @@ enum OrderFormatters {
 
     /// 將日期格式化為 `yyyy/MM/dd HH:mm:ss`。
     ///
-    /// pattern 固定，locale 由呼叫端提供（通常由 view 端 `@Dependency(\.locale)` 注入跟隨使用者手機設定）。
+    /// pattern 固定，locale 由呼叫端提供 (通常由 view 端 `@Dependency(\.locale)` 注入跟隨使用者手機設定)。
     /// - Parameters:
     ///   - date: 要格式化的日期。
     ///   - locale: 用於數字系統等 locale 相依細節的 locale。

@@ -12,7 +12,7 @@ import SwiftUI
 ///
 /// 對應設計稿 iPhone 「設定 / 更多」頁與 iPad 工具區塊的入口：以列表形式列出工具與設定子頁面，點擊後 push 到對應子畫面。
 ///
-/// macOS 上採用卡片網格佈局（避免 iOS 風格 List 顯得陽春），且不顯示「設定」入口——macOS 的偏好設定改由標準的「BuyLedger > 設定…」（⌘,）視窗承載。
+/// macOS 上採用卡片網格佈局 (避免 iOS 風格 List 顯得陽春)，且不顯示「設定」入口——macOS 的偏好設定改由標準的「BuyLedger > 設定…」(⌘,) 視窗承載。
 struct MoreView: View {
 
     // MARK: - View Properties
@@ -39,7 +39,7 @@ struct MoreView: View {
     }
 }
 
-// MARK: - ViewBuilder（共用）
+// MARK: - ViewBuilder (共用)
 
 private extension MoreView {
 
@@ -86,7 +86,7 @@ private extension MoreView {
             }
         }
 
-        /// 卡片副標題（macOS 才顯示）。
+        /// 卡片副標題 (macOS 才顯示)。
         var subtitle: String {
             switch self {
             case .fx:
@@ -118,7 +118,7 @@ private extension MoreView {
             }
         }
 
-        /// 圖示色（依語意 token）。
+        /// 圖示色 (依語意 token)。
         /// - Parameter palette: 目前外觀使用的色盤。
         /// - Returns: 對應的色彩。
         func tint(in palette: BLPalette) -> Color {
@@ -161,7 +161,7 @@ private extension MoreView {
     }
 }
 
-// MARK: - ViewBuilder（iOS / iPadOS 列表版本）
+// MARK: - ViewBuilder (iOS / iPadOS 列表版本)
 
 private extension MoreView {
 
@@ -235,7 +235,7 @@ private extension MoreView {
     }
 }
 
-// MARK: - ViewBuilder（macOS 卡片網格版本）
+// MARK: - ViewBuilder (macOS 卡片網格版本)
 
 #if os(macOS)
 

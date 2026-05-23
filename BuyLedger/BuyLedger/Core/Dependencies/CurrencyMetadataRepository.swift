@@ -17,11 +17,11 @@ struct CurrencyMetadataRepository: Sendable {
     /// 讀取目前 cache 中所有 ISO 4217 code，已排序。
     var fetchCodes: @Sendable () async throws -> [CurrencyCode]
 
-    /// 若 cache 過期（超過給定 TTL 或從未寫過），打 API 重新拉取並寫回 cache。
+    /// 若 cache 過期 (超過給定 TTL 或從未寫過)，打 API 重新拉取並寫回 cache。
     /// - 回傳值 `true` 表示實際做了 refresh、`false` 表示尚在 TTL 內未動作。
     var refreshIfStale: @Sendable (_ ttl: TimeInterval) async throws -> Bool
 
-    /// 強制重新拉取並覆寫 cache（不檢查 TTL），供使用者主動點「重試載入」時呼叫。
+    /// 強制重新拉取並覆寫 cache (不檢查 TTL)，供使用者主動點「重試載入」時呼叫。
     var forceRefresh: @Sendable () async throws -> Void
 }
 
@@ -63,7 +63,7 @@ extension CurrencyMetadataRepository {
         )
     }
 
-    /// 在 main actor 上實例化 ``CurrencyMetadataPersistence``（`@ModelActor` 的 init 帶有 main-actor 隔離）。
+    /// 在 main actor 上實例化 ``CurrencyMetadataPersistence`` (`@ModelActor` 的 init 帶有 main-actor 隔離)。
     /// - Parameter container: 共用的 ``ModelContainer``。
     /// - Returns: 對應 container 的 ``CurrencyMetadataPersistence`` 實例。
     private static func makePersistence(container: ModelContainer) async -> CurrencyMetadataPersistence {

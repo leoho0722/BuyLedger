@@ -67,7 +67,7 @@ struct SettingsView: View {
                 .keyboardType(.numberPad)
 #endif
             } header: {
-                Text("月度淨獲利目標（TWD）")
+                Text("月度淨獲利目標 (TWD)")
             } footer: {
                 Text("Dashboard hero 卡的進度條依此值計算；設為 0 代表不顯示進度條。")
                     .font(.footnote)

@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 客戶名單畫面。
 ///
-/// 對應設計稿 iPad / Mac 的「客戶」頁：將訂單依客戶聚合成卡片清單。前 N 名（N 由 ``topHighlightCount`` 控制）顯示為強調卡片，其餘以列表呈現。資料完全衍生自既有訂單，不維護額外狀態。
+/// 對應設計稿 iPad / Mac 的「客戶」頁：將訂單依客戶聚合成卡片清單。前 N 名 (N 由 ``topHighlightCount`` 控制) 顯示為強調卡片，其餘以列表呈現。資料完全衍生自既有訂單，不維護額外狀態。
 struct CustomersView: View {
 
     // MARK: - View Properties
@@ -69,7 +69,7 @@ private extension CustomersView {
 
     /// 強調區塊：累計消費排名前 ``topHighlightCount`` 名的客戶。
     /// - Parameters:
-    ///   - customers: 已聚合的客戶清單（依累計消費排序）。
+    ///   - customers: 已聚合的客戶清單 (依累計消費排序)。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 強調卡片區塊 view。
     func topThree(customers: [CustomerRow], palette: BLPalette) -> some View {
@@ -172,7 +172,7 @@ private extension CustomersView {
 
     /// 名次徽章。
     /// - Parameters:
-    ///   - rank: 名次（1 / 2 / 3）。
+    ///   - rank: 名次 (1 / 2 / 3)。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 名次膠囊 view。
     func rankBadge(rank: Int, palette: BLPalette) -> some View {
@@ -299,7 +299,7 @@ private struct CustomerRow: Identifiable {
 
     // MARK: - Identifiable Properties
 
-    /// 用客戶姓名當識別值（同名客戶會被聚合成一筆）。
+    /// 用客戶姓名當識別值 (同名客戶會被聚合成一筆)。
     var id: String { name }
 
     // MARK: - Data Properties
@@ -316,7 +316,7 @@ private struct CustomerRow: Identifiable {
     /// 已下訂單數。
     let orderCount: Int
 
-    /// 累計消費（NT$）。
+    /// 累計消費 (NT$)。
     let totalSpent: Decimal
 
     /// 最近一筆訂單的日期。

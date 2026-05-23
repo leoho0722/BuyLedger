@@ -9,7 +9,7 @@ import SwiftUI
 
 /// 訂單詳情與成本拆解畫面。
 ///
-/// 透過 ``layout`` 參數在窄欄（iPhone push）與寬欄（iPad detail / macOS inspector）之間切換不同的版面結構。
+/// 透過 ``layout`` 參數在窄欄 (iPhone push) 與寬欄 (iPad detail / macOS inspector) 之間切換不同的版面結構。
 struct OrderDetailView: View {
     
     // MARK: - View Properties
@@ -82,12 +82,12 @@ enum OrderDetailLayout {
     
     // MARK: - Cases
     
-    /// 窄欄版面（iPhone push 詳情）。
+    /// 窄欄版面 (iPhone push 詳情)。
     ///
     /// 採單欄序列：標頭 → 獲利摘要卡 → donut 成本拆解 → 商品明細。
     case compact
     
-    /// 寬欄版面（iPad detail、macOS inspector）。
+    /// 寬欄版面 (iPad detail、macOS inspector)。
     ///
     /// 採設計稿的 3-up KPI 加上 2-col「成本拆解條 + 商品明細」並排。
     case wide
@@ -470,7 +470,7 @@ private extension OrderDetailView {
         }
     }
     
-    /// 商品列卡片（窄欄版面用，內含 BLCard 包覆）。
+    /// 商品列卡片 (窄欄版面用，內含 BLCard 包覆)。
     var itemsCard: some View {
         BLCard(padding: 0) {
             itemRows
@@ -577,7 +577,7 @@ private extension OrderDetailView {
 
     /// 取得跟隨使用者手機偏好語言的幣別顯示文字，例如 `TWD (新台幣)`。
     ///
-    /// 透過 ``Locale/preferredLanguages`` 取得系統偏好（不受 App `CFBundleDevelopmentRegion` 與已掛載 localizations 限制），再用 `localizedString(forCurrencyCode:)` 取出在地化名稱；查不到時退化為 raw code。
+    /// 透過 ``Locale/preferredLanguages`` 取得系統偏好 (不受 App `CFBundleDevelopmentRegion` 與已掛載 localizations 限制)，再用 `localizedString(forCurrencyCode:)` 取出在地化名稱；查不到時退化為 raw code。
     /// - Parameter currency: 訂單幣別。
     /// - Returns: 顯示字串。
     func currencyDisplayText(for currency: CurrencyCode) -> String {
