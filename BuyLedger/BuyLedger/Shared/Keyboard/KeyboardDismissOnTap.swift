@@ -9,9 +9,9 @@ import SwiftUI
 
 extension View {
 
-    /// 讓使用者點擊畫面上任何非互動的空白處時收起軟體鍵盤。
+    /// 讓使用者點擊畫面上「真正的空白處」時收起軟體鍵盤。
     ///
-    /// iOS / iPadOS 以 window 層級的 `UITapGestureRecognizer` 實作：手勢的 `cancelsTouchesInView` 為 `false` 且允許與其他手勢同時辨識，因此不會吃掉按鈕點擊、清單捲動或 TextField 聚焦，只在點到空白處時呼叫 `endEditing(true)` 收鍵盤。手勢掛在 window 上，故同一 window 內 present 的 sheet (例如新增/編輯訂單) 也同樣適用。macOS 無軟體鍵盤，為 no-op。
+    /// iOS / iPadOS 以 window 層級的 `UITapGestureRecognizer` 實作，並透過 `gestureRecognizer(_:shouldReceive:)` 過濾：只有當點擊落在**非互動、非文字編輯、非系統文字選單**的 view 時才呼叫 `endEditing(true)`。因此點按鈕、TextField (含換頁聚焦)、文字選取控制點、以及系統編輯選單 (選取／全選／貼上) 都**不會**誤觸收鍵盤。手勢 `cancelsTouchesInView` 為 `false`，不影響底層 view 收到觸控；掛在 window 上，故同一 window 內 present 的 sheet (例如新增/編輯訂單) 也適用。macOS 無軟體鍵盤，為 no-op。
     /// - Returns: 套用收鍵盤手勢後的 view。
     func dismissKeyboardOnTap() -> some View {
 #if os(iOS)
@@ -70,20 +70,67 @@ private struct KeyboardDismissInstaller: UIViewRepresentable {
             window.addGestureRecognizer(recognizer)
         }
 
-        /// 點擊時收起目前 window 內的鍵盤。
+        /// 點擊空白處時收起目前 window 內的鍵盤。
         @objc private func handleTap() {
             installedWindow?.endEditing(true)
         }
 
         // MARK: - UIGestureRecognizerDelegate
 
-        /// 允許與其他手勢同時辨識，確保不阻擋按鈕、清單與捲動等既有互動。
+        /// 過濾觸控來源：只有點在「非互動、非文字編輯、非系統文字選單」的 view 才接受此手勢。
+        ///
+        /// 這是修正「點貼上等系統 action 也被收鍵盤」的關鍵——先前對所有觸控都接受，導致點編輯選單、選取控制點或 TextField 本身都會誤觸 `endEditing`。
+        /// - Parameters:
+        ///   - gestureRecognizer: 本手勢。
+        ///   - touch: 當下的觸控。
+        /// - Returns: 是否接受此觸控用於收鍵盤手勢。
+        func gestureRecognizer(
+            _ gestureRecognizer: UIGestureRecognizer,
+            shouldReceive touch: UITouch
+        ) -> Bool {
+            guard let touchedView = touch.view else { return true }
+            return !touchedView.blocksKeyboardDismissTap
+        }
+
+        /// 允許與其他手勢同時辨識，確保 (在接受觸控的空白處) 不阻擋捲動等既有手勢。
         func gestureRecognizer(
             _ gestureRecognizer: UIGestureRecognizer,
             shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
         ) -> Bool {
             true
         }
+    }
+}
+
+private extension UIView {
+
+    /// 此 view 或它的任一上層 view (superview) 是否屬於「不該觸發收鍵盤」的元件：互動控制項、文字輸入視圖，或系統文字編輯／選單 UI (編輯選單、選取控制點、放大鏡等)。
+    ///
+    /// 從自身沿著 superview 逐層往上檢查，搭配型別檢查 (`UIControl` / `UITextInput`) 與系統私有類別名稱關鍵字 (這些 UI 多為私有型別，只能以類別名稱比對)。
+    var blocksKeyboardDismissTap: Bool {
+        let blockingClassKeywords = [
+            "UITextField",
+            "UITextView",
+            "EditMenu",
+            "Callout",
+            "TextSelection",
+            "Magnifier",
+            "Loupe",
+        ]
+
+        var node: UIView? = self
+        while let view = node {
+            if view is UIControl { return true }
+            if view is UITextInput { return true }
+
+            let className = NSStringFromClass(type(of: view))
+            if blockingClassKeywords.contains(where: className.contains) {
+                return true
+            }
+
+            node = view.superview
+        }
+        return false
     }
 }
 
