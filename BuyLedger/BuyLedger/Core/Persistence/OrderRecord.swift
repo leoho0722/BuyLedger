@@ -29,8 +29,10 @@ final class OrderRecord {
     /// 訂單目前狀態。
     var status: OrderStatus
 
-    /// 商品原始幣別。
-    var currency: CurrencyCode
+    /// 商品原始幣別（以 ISO 4217 code 字串存放）。
+    ///
+    /// 之所以使用 `String` 而非 ``CurrencyCode``：``CurrencyCode`` 從 `enum String` 改成 `struct` 後，SwiftData 會把它視為複合型別、把 `rawValue` 展開成子 attribute，造成舊 store（直接 String column）升級時找不到對應的 destination 屬性而 migration 失敗。直接存 String 可維持 column 形狀與舊 enum 的 `rawValue` 相同，免去自訂 migration plan。
+    var currency: String
 
     /// 訂單建立或更新日期。
     var date: Date
@@ -72,7 +74,7 @@ final class OrderRecord {
         self.id = order.id
         self.customer = order.customer
         self.status = order.status
-        self.currency = order.currency
+        self.currency = order.currency.rawValue
         self.date = order.date
         self.items = order.items
         self.itemCost = order.itemCost
@@ -99,7 +101,7 @@ extension OrderRecord {
             id: id,
             customer: customer,
             status: status,
-            currency: currency,
+            currency: CurrencyCode(rawValue: currency),
             date: date,
             items: items,
             itemCost: itemCost,
@@ -118,7 +120,7 @@ extension OrderRecord {
     func apply(_ order: LedgerOrder) {
         self.customer = order.customer
         self.status = order.status
-        self.currency = order.currency
+        self.currency = order.currency.rawValue
         self.date = order.date
         self.items = order.items
         self.itemCost = order.itemCost

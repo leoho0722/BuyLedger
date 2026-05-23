@@ -20,6 +20,9 @@ struct SettingsMacView: View {
     /// 設定 store。
     @Bindable var store: StoreOf<SettingsFeature>
 
+    /// 是否顯示「預設幣別」選擇 sheet。
+    @State private var showsCurrencySheet = false
+
     // MARK: - View Body
 
     /// 偏好設定視窗的畫面內容。
@@ -102,10 +105,44 @@ private extension SettingsMacView {
     var defaultsTab: some View {
         Form {
             Section {
-                Picker("新訂單預設幣別", selection: $store.defaultCurrency) {
-                    ForEach(CurrencyCode.allCases) { code in
-                        Text("\(code.flag) \(code.rawValue)").tag(code)
+                Button {
+                    showsCurrencySheet = true
+                } label: {
+                    HStack {
+                        Text("新訂單預設幣別")
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Text(currencyDisplayText(for: store.defaultCurrency))
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
                     }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+                .sheet(isPresented: $showsCurrencySheet) {
+                    OptionPickerSheet(
+                        title: "選擇預設幣別",
+                        allowsAdd: false,
+                        searchable: true,
+                        emptyTitle: "尚無幣別",
+                        emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
+                        options: store.availableCurrencies.map(\.rawValue),
+                        selected: store.defaultCurrency.rawValue,
+                        displayName: { code in
+                            let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                            let name = locale.localizedString(forCurrencyCode: code) ?? ""
+                            return name.isEmpty ? code : "\(code) · \(name)"
+                        },
+                        searchKeywords: { code in
+                            Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                                .localizedString(forCurrencyCode: code) ?? ""
+                        },
+                        onSelect: { code in
+                            store.defaultCurrency = CurrencyCode(rawValue: code)
+                        }
+                    )
                 }
             } header: {
                 Text("新訂單")
@@ -184,6 +221,15 @@ private extension SettingsMacView {
         let build = dictionary?["CFBundleVersion"] as? String ?? "—"
 
         return "\(short) (\(build))"
+    }
+
+    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字。
+    /// - Parameter currency: 幣別。
+    /// - Returns: 顯示字串。
+    func currencyDisplayText(for currency: CurrencyCode) -> String {
+        let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+        let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
+        return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
     }
 }
 

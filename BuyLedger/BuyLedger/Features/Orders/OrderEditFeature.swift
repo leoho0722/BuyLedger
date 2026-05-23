@@ -68,6 +68,9 @@ struct OrderEditFeature {
         /// 可供選擇的付款方式清單；由父層 reducer 從現有訂單聚合後注入，並在使用者新增方式時即時擴充。
         var availablePaymentMethods: [String]
 
+        /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供（首次安裝＋無網路時 fallback 到 ``CurrencyCode/defaults``）。
+        var availableCurrencies: [CurrencyCode]
+
         // MARK: - Identifiable Properties
 
         /// 表單 instance 的穩定識別值，供 SwiftUI sheet item 使用。
@@ -85,6 +88,7 @@ struct OrderEditFeature {
             original: LedgerOrder? = nil,
             availableCategories: [String] = [],
             availablePaymentMethods: [String] = [],
+            availableCurrencies: [CurrencyCode] = CurrencyCode.defaults,
             currentDate: Date = Date()
         ) {
             self.original = original
@@ -115,6 +119,13 @@ struct OrderEditFeature {
                 paymentMethods.append(originalPaymentMethod)
             }
             self.availablePaymentMethods = paymentMethods.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+
+            var currencies = availableCurrencies
+            let originalCurrency = original?.currency ?? .twd
+            if !currencies.contains(originalCurrency) {
+                currencies.append(originalCurrency)
+            }
+            self.availableCurrencies = currencies.sorted { $0.rawValue.localizedStandardCompare($1.rawValue) == .orderedAscending }
 
             self.id = UUID()
         }
@@ -149,6 +160,9 @@ struct OrderEditFeature {
 
         /// 從 ``PaymentMethodRepository`` 取回最新付款方式主檔。
         case availablePaymentMethodsLoaded([String])
+
+        /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔。
+        case availableCurrenciesLoaded([CurrencyCode])
     }
     
     // MARK: - Dependency Properties
@@ -161,6 +175,9 @@ struct OrderEditFeature {
 
     /// 付款方式主檔資料來源；理由同 ``categoryRepository``。
     @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
+
+    /// 幣別主檔資料來源；用於 sheet `.task` 從 cache 拉最新清單（cache 由 ``RootFeature`` 啟動時 TTL 7 天刷新）。
+    @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
     
     // MARK: - Reducer Body
     
@@ -207,6 +224,7 @@ struct OrderEditFeature {
             case .task:
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
+                let currencyMetadataRepository = currencyMetadataRepository
                 return .run { send in
                     async let categoriesTask: Void = {
                         if let items = try? await categoryRepository.fetchCategories() {
@@ -218,7 +236,12 @@ struct OrderEditFeature {
                             await send(.availablePaymentMethodsLoaded(items))
                         }
                     }()
-                    _ = await (categoriesTask, paymentMethodsTask)
+                    async let currenciesTask: Void = {
+                        if let codes = try? await currencyMetadataRepository.fetchCodes(), !codes.isEmpty {
+                            await send(.availableCurrenciesLoaded(codes))
+                        }
+                    }()
+                    _ = await (categoriesTask, paymentMethodsTask, currenciesTask)
                 }
 
             case let .availableCategoriesLoaded(items):
@@ -240,6 +263,14 @@ struct OrderEditFeature {
                 }
                 state.availablePaymentMethods = merged
                     .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+                return .none
+
+            case let .availableCurrenciesLoaded(codes):
+                // 合併：把目前 draftCurrency 保留在清單，避免下拉看不到原訂單已使用的幣別。
+                var merged = Set(codes)
+                merged.insert(state.draftCurrency)
+                state.availableCurrencies = merged
+                    .sorted { $0.rawValue.localizedStandardCompare($1.rawValue) == .orderedAscending }
                 return .none
             }
         }

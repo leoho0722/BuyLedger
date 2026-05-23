@@ -21,9 +21,12 @@ struct QuoteView: View {
     
     /// 報價試算 store。
     @Bindable var store: StoreOf<QuoteFeature>
-    
+
     /// 目前系統深淺色外觀。
     @Environment(\.colorScheme) private var colorScheme
+
+    /// 是否顯示幣別選擇 sheet。
+    @State private var showsCurrencySheet = false
     
     // MARK: - View Body
     
@@ -188,28 +191,68 @@ private extension QuoteView {
         }
     }
     
-    /// 來源幣別 chip。
+    /// 來源幣別選擇按鈕：點開後以 sheet 列出主檔幣別供搜尋與選擇。
     /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: chip 列 view。
+    /// - Returns: 幣別按鈕 view。
     func currencyPicker(palette: BLPalette) -> some View {
-        HStack(spacing: BLSpacing.small) {
-            ForEach(FxRates.convertibleCurrencies) { currency in
-                let isSelected = store.fromCurrency == currency
-                
-                Button {
-                    store.fromCurrency = currency
-                } label: {
-                    Text("\(currency.flag) \(currency.rawValue)")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, BLSpacing.small)
-                        .background(isSelected ? palette.accent : palette.fillTertiary)
-                        .foregroundStyle(isSelected ? Color.white : palette.label)
-                        .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
-                }
-                .buttonStyle(.plain)
+        Button {
+            showsCurrencySheet = true
+        } label: {
+            HStack(spacing: BLSpacing.small) {
+                Text("來源幣別")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(palette.secondaryLabel)
+
+                Spacer()
+
+                Text(currencyDisplayText(for: store.fromCurrency))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(palette.label)
+                    .lineLimit(1)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(palette.tertiaryLabel)
             }
+            .padding(.vertical, BLSpacing.small)
+            .padding(.horizontal, BLSpacing.medium)
+            .background(palette.fillTertiary)
+            .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
+            .contentShape(Rectangle())
         }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showsCurrencySheet) {
+            OptionPickerSheet(
+                title: "選擇來源幣別",
+                allowsAdd: false,
+                searchable: true,
+                emptyTitle: "尚無幣別",
+                emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
+                options: store.availableCurrencies.map(\.rawValue),
+                selected: store.fromCurrency.rawValue,
+                displayName: { code in
+                    let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                    let name = locale.localizedString(forCurrencyCode: code) ?? ""
+                    return name.isEmpty ? code : "\(code) · \(name)"
+                },
+                searchKeywords: { code in
+                    Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                        .localizedString(forCurrencyCode: code) ?? ""
+                },
+                onSelect: { code in
+                    store.fromCurrency = CurrencyCode(rawValue: code)
+                }
+            )
+        }
+    }
+
+    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字。
+    /// - Parameter currency: 幣別。
+    /// - Returns: 顯示字串。
+    func currencyDisplayText(for currency: CurrencyCode) -> String {
+        let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+        let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
+        return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
     }
     
     /// 單一 slider 列。

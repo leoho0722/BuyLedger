@@ -24,6 +24,9 @@ struct OrderEditView: View {
     /// 是否顯示「付款方式」選擇 sheet。
     @State private var showsPaymentMethodSheet = false
 
+    /// 是否顯示「幣別」選擇 sheet。
+    @State private var showsCurrencySheet = false
+
     /// 用於 ``orderDateRow`` 在 picker 寫回時取得「當下這一刻」的秒；測試可注入固定值。
     @Dependency(\.date) private var date
 
@@ -68,11 +71,7 @@ struct OrderEditView: View {
                         }
                     }
 
-                    Picker("幣別", selection: $store.draftCurrency) {
-                        ForEach(CurrencyCode.allCases) { code in
-                            Text("\(code.flag) \(code.rawValue)").tag(code)
-                        }
-                    }
+                    currencyPickerRow
 
                     paymentMethodPickerRow
                 }
@@ -169,6 +168,29 @@ struct OrderEditView: View {
                     }
                 )
             }
+            .sheet(isPresented: $showsCurrencySheet) {
+                OptionPickerSheet(
+                    title: "選擇幣別",
+                    allowsAdd: false,
+                    searchable: true,
+                    emptyTitle: "尚無幣別",
+                    emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
+                    options: store.availableCurrencies.map(\.rawValue),
+                    selected: store.draftCurrency.rawValue,
+                    displayName: { code in
+                        let name = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                            .localizedString(forCurrencyCode: code) ?? ""
+                        return name.isEmpty ? code : "\(code) · \(name)"
+                    },
+                    searchKeywords: { code in
+                        Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                            .localizedString(forCurrencyCode: code) ?? ""
+                    },
+                    onSelect: { code in
+                        store.draftCurrency = CurrencyCode(rawValue: code)
+                    }
+                )
+            }
         }
 #if os(macOS)
         .frame(minWidth: 540, minHeight: 520)
@@ -196,6 +218,31 @@ private extension OrderEditView {
 
                 Text(store.draftCategory.isEmpty ? "選擇類別" : store.draftCategory)
                     .foregroundStyle(store.draftCategory.isEmpty ? .secondary : .secondary)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 幣別選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗，但 sheet 不允許新增（幣別來源僅限 ExchangeRate-API 支援清單）。
+    var currencyPickerRow: some View {
+        Button {
+            showsCurrencySheet = true
+        } label: {
+            HStack(spacing: BLSpacing.small) {
+                Text("幣別")
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: BLSpacing.small)
+
+                Text(currencyDisplayText)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
@@ -396,6 +443,13 @@ private extension OrderEditView {
         !store.draftCustomerName
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .isEmpty
+    }
+
+    /// 幣別選擇列 label 顯示文字：「TWD · 新台幣」格式。``Locale.localizedString(forCurrencyCode:)`` 沒有對應翻譯時 fallback 為 raw code。
+    var currencyDisplayText: String {
+        let code = store.draftCurrency.rawValue
+        let name = deviceLocale.localizedString(forCurrencyCode: code) ?? ""
+        return name.isEmpty ? code : "\(code) · \(name)"
     }
 
     /// 把 `DatePicker` 寫回的新值與「當下這一刻」`date.now` 的秒合併，產生帶秒精度的 ``OrderEditFeature/State/draftDate``。

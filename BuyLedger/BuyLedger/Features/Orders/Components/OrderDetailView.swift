@@ -126,7 +126,7 @@ private extension OrderDetailView {
                 Text("·")
                     .foregroundStyle(palette.tertiaryLabel)
                 
-                Text("\(order.currency.flag) \(order.currency.rawValue)")
+                Text(order.currency.rawValue)
                     .font(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
             }

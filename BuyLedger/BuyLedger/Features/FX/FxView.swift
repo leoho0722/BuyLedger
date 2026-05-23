@@ -21,9 +21,12 @@ struct FxView: View {
     
     /// FX 功能 store。
     @Bindable var store: StoreOf<FxFeature>
-    
+
     /// 目前系統深淺色外觀。
     @Environment(\.colorScheme) private var colorScheme
+
+    /// 是否顯示幣別選擇 sheet。
+    @State private var showsCurrencySheet = false
     
     // MARK: - View Body
     
@@ -130,29 +133,58 @@ private extension FxView {
         }
     }
     
-    /// 來源幣別 chip。
+    /// 來源幣別選擇按鈕：點開後以 sheet 列出主檔幣別供搜尋與選擇。
     /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: chip 列 view。
+    /// - Returns: 幣別按鈕 view。
     func currencyPicker(palette: BLPalette) -> some View {
-        HStack(spacing: BLSpacing.small) {
-            ForEach(FxRates.convertibleCurrencies) { currency in
-                let isSelected = store.fromCurrency == currency
-                
-                Button {
-                    store.fromCurrency = currency
-                } label: {
-                    VStack(spacing: 2) {
-                        Text(currency.flag).font(.title3)
-                        Text(currency.rawValue).font(.caption.weight(.semibold))
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, BLSpacing.small)
-                    .background(isSelected ? palette.accent : palette.fillTertiary)
-                    .foregroundStyle(isSelected ? Color.white : palette.label)
-                    .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
-                }
-                .buttonStyle(.plain)
+        Button {
+            showsCurrencySheet = true
+        } label: {
+            HStack(spacing: BLSpacing.small) {
+                Text("來源幣別")
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(palette.secondaryLabel)
+
+                Spacer()
+
+                Text(currencyDisplayText(for: store.fromCurrency))
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(palette.label)
+                    .lineLimit(1)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(palette.tertiaryLabel)
             }
+            .padding(.vertical, BLSpacing.small)
+            .padding(.horizontal, BLSpacing.medium)
+            .background(palette.fillTertiary)
+            .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .sheet(isPresented: $showsCurrencySheet) {
+            OptionPickerSheet(
+                title: "選擇來源幣別",
+                allowsAdd: false,
+                searchable: true,
+                emptyTitle: "尚無幣別",
+                emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
+                options: store.availableCurrencies.map(\.rawValue),
+                selected: store.fromCurrency.rawValue,
+                displayName: { code in
+                    let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                    let name = locale.localizedString(forCurrencyCode: code) ?? ""
+                    return name.isEmpty ? code : "\(code) · \(name)"
+                },
+                searchKeywords: { code in
+                    Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                        .localizedString(forCurrencyCode: code) ?? ""
+                },
+                onSelect: { code in
+                    store.fromCurrency = CurrencyCode(rawValue: code)
+                }
+            )
         }
     }
     
@@ -241,10 +273,11 @@ private extension FxView {
                 .padding(.top, BLSpacing.large)
                 .padding(.bottom, BLSpacing.small)
                 
-                ForEach(Array(FxRates.convertibleCurrencies.enumerated()), id: \.element) { index, currency in
+                let displayed = ratesListCurrencies
+                ForEach(Array(displayed.enumerated()), id: \.element) { index, currency in
                     rateRow(currency: currency, palette: palette)
-                    
-                    if index < FxRates.convertibleCurrencies.count - 1 {
+
+                    if index < displayed.count - 1 {
                         Divider().padding(.leading, BLSpacing.large)
                     }
                 }
@@ -259,21 +292,18 @@ private extension FxView {
     /// - Returns: 匯率列 view。
     func rateRow(currency: CurrencyCode, palette: BLPalette) -> some View {
         HStack(spacing: BLSpacing.medium) {
-            Text(currency.flag)
-                .font(.title)
-            
             VStack(alignment: .leading) {
                 Text("1 \(currency.rawValue)")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(palette.label)
-                
+
                 Text(rateSourceSubtitle(for: currency))
                     .font(.caption)
                     .foregroundStyle(palette.secondaryLabel)
             }
-            
+
             Spacer()
-            
+
             Text(rateDisplay(for: currency))
                 .font(.title3.weight(.semibold))
                 .monospacedDigit()
@@ -324,6 +354,20 @@ private extension FxView {
     func rateDisplay(for currency: CurrencyCode) -> String {
         guard let rate = store.state.displayRate(for: currency) else { return "—" }
         return rate.formatted(.number.precision(.fractionLength(4)))
+    }
+
+    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字（用於來源幣別 button label 與 sheet 顯示）。
+    /// - Parameter currency: 幣別。
+    /// - Returns: 顯示字串。
+    func currencyDisplayText(for currency: CurrencyCode) -> String {
+        let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+        let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
+        return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
+    }
+
+    /// 「即時匯率列表」顯示的幣別清單：以 ``FxFeature/State/availableCurrencies`` 為基礎、過濾掉基準幣別本身（基準匯率永遠 1，無顯示意義）。
+    var ratesListCurrencies: [CurrencyCode] {
+        store.availableCurrencies.filter { $0 != .twd }
     }
     
     /// 匯率列副標：顯示資料來源與 snapshot 時間戳；TWD 永遠顯示「基準幣別」、無 snapshot 時顯示「尚未連線」。

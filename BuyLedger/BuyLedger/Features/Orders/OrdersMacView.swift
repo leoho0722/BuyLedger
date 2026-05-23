@@ -189,7 +189,7 @@ private extension OrdersMacView {
             .width(min: 140, ideal: 180)
             
             TableColumn("幣別") { order in
-                Text("\(order.currency.flag) \(order.currency.rawValue)")
+                Text(order.currency.rawValue)
                     .font(.subheadline)
                     .foregroundStyle(palette.secondaryLabel)
             }

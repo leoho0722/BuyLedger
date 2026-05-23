@@ -46,6 +46,9 @@ struct RootFeature {
     @CasePathable
     enum Action: Equatable {
 
+        /// App 啟動觸發；目前用來把 ExchangeRate-API `/codes` cache 在 TTL 內更新。
+        case task
+
         /// 使用者切換主要分頁。
         case tabSelected(RootTab)
 
@@ -85,6 +88,9 @@ struct RootFeature {
     /// 用來計算跨頁跳轉時的「目前」時間（套用到 ``OrdersFeature/State/filteredOrders(referenceDate:)``）；測試可注入固定值。
     @Dependency(\.date) private var date
 
+    /// 幣別主檔資料來源；App 啟動時打 ExchangeRate-API `/codes` 並 cache 7 天。
+    @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
+
     // MARK: - Reducer Body
 
     /// App 根層級 reducer。
@@ -115,6 +121,13 @@ struct RootFeature {
 
         Reduce { state, action in
             switch action {
+            case .task:
+                let currencyMetadataRepository = currencyMetadataRepository
+                return .run { _ in
+                    // TTL 7 天：7 * 24 * 3600 = 604_800 秒。
+                    _ = try? await currencyMetadataRepository.refreshIfStale(604_800)
+                }
+
             case let .tabSelected(tab):
                 state.selectedTab = tab
                 return .none

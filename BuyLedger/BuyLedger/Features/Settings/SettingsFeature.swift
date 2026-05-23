@@ -28,7 +28,10 @@ struct SettingsFeature {
         
         /// 預設訂單幣別。
         var defaultCurrency: CurrencyCode
-        
+
+        /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供。
+        var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
+
         /// 每月淨獲利目標（TWD）；Dashboard hero 卡的目標進度條讀此值。`0` 代表使用者尚未設定，UI 應隱藏進度條。
         var monthlyProfitGoalTwd: Decimal
         
@@ -59,12 +62,18 @@ struct SettingsFeature {
         
         /// 畫面出現時觸發從持久化來源載入。
         case task
+
+        /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔。
+        case availableCurrenciesLoaded([CurrencyCode])
     }
     
     // MARK: - Dependency Properties
     
     /// 偏好的讀寫介面。
     @Dependency(SettingsStorage.self) private var storage
+
+    /// 幣別主檔資料來源；用於 `.task` 從 cache 拉最新清單。
+    @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
     
     // MARK: - Reducer Body
     
@@ -80,8 +89,22 @@ struct SettingsFeature {
                 state.notificationsEnabled = snapshot.notificationsEnabled
                 state.defaultCurrency = snapshot.defaultCurrency
                 state.monthlyProfitGoalTwd = snapshot.monthlyProfitGoalTwd
+
+                let currencyMetadataRepository = currencyMetadataRepository
+                return .run { send in
+                    if let codes = try? await currencyMetadataRepository.fetchCodes(), !codes.isEmpty {
+                        await send(.availableCurrenciesLoaded(codes))
+                    }
+                }
+
+            case let .availableCurrenciesLoaded(codes):
+                var merged = Set(codes)
+                merged.insert(state.defaultCurrency)
+                state.availableCurrencies = merged.sorted {
+                    $0.rawValue.localizedStandardCompare($1.rawValue) == .orderedAscending
+                }
                 return .none
-                
+
             case .binding:
                 storage.save(
                     SettingsSnapshot(
@@ -188,9 +211,8 @@ extension SettingsStorage: DependencyKey {
                 rawValue: defaults.string(forKey: SettingsStorageKeys.appearance) ?? ""
             ) ?? .system
             let notifications = defaults.object(forKey: SettingsStorageKeys.notifications) as? Bool ?? true
-            let currency = CurrencyCode(
-                rawValue: defaults.string(forKey: SettingsStorageKeys.defaultCurrency) ?? ""
-            ) ?? .twd
+            let storedCurrency = defaults.string(forKey: SettingsStorageKeys.defaultCurrency) ?? ""
+            let currency: CurrencyCode = storedCurrency.isEmpty ? .twd : CurrencyCode(rawValue: storedCurrency)
             // 從未寫入時 `object(forKey:)` 為 nil，預設帶入 `SettingsSnapshot.default.monthlyProfitGoalTwd`；
             // 寫入過 `0` 也尊重使用者意圖（代表「不設目標」）。
             let goalValue: Decimal = {

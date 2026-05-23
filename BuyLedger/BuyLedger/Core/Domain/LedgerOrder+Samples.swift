@@ -111,7 +111,7 @@ extension LedgerOrder {
                 tier: .vip
             ),
             status: .quoting,
-            currency: .eur,
+            currency: CurrencyCode(rawValue: "EUR"),
             date: sampleDate(year: 2026, month: 4, day: 21),
             items: [
                 LedgerOrderItem(

@@ -30,13 +30,13 @@ struct FxRateSnapshot: Equatable, Sendable {
     /// **runtime 不應讀取此值**——若 API 失敗，feature 應顯示錯誤訊息、所有匯率欄位顯示「—」，避免讓使用者誤以為看到的是即時匯率。
     static let fallback: FxRateSnapshot = {
         var rates: [CurrencyCode: Decimal] = [:]
-        for (currency, rateToTwd) in FxRates.toTwd where currency != .twd {
+        for (currency, rateToTwd) in FxRates.toTwd where currency != CurrencyCode.twd {
             // 把「1 currency = X TWD」轉成「1 TWD = (1/X) currency」
             if rateToTwd > 0 {
                 rates[currency] = Decimal(1) / rateToTwd
             }
         }
-        rates[.twd] = 1
+        rates[CurrencyCode.twd] = 1
 
         return FxRateSnapshot(
             date: Date(timeIntervalSince1970: 0),

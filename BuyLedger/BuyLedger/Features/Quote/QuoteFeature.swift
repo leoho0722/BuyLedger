@@ -54,6 +54,9 @@ struct QuoteFeature {
         
         /// 匯率載入失敗時顯示給使用者的訊息。
         var errorMessage: String?
+
+        /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供。
+        var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
         
         // MARK: - Init
         
@@ -154,12 +157,18 @@ struct QuoteFeature {
         
         /// 匯率載入失敗。
         case ratesFailed(String)
+
+        /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔。
+        case availableCurrenciesLoaded([CurrencyCode])
     }
     
     // MARK: - Dependency Properties
     
     /// 匯率 API client（與 ``FxFeature`` 共用同一個 dependency，方便未來改成共享 snapshot）。
     @Dependency(ExchangeRateClient.self) private var client
+
+    /// 幣別主檔資料來源；用於 task 從 cache 拉最新清單。
+    @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
     
     // MARK: - Reducer Body
     
@@ -173,33 +182,52 @@ struct QuoteFeature {
                 return .none
                 
             case .task:
-                guard !state.isLoading, state.snapshot == nil else {
-                    return .none
-                }
-                state.isLoading = true
-                state.errorMessage = nil
-                
+                let currencyMetadataRepository = currencyMetadataRepository
                 let client = client
-                return .run { send in
-                    do {
-                        let snapshot = try await client.fetchLatest(.twd)
-                        await send(.ratesLoaded(snapshot))
-                    } catch let error as APIError {
-                        await send(.ratesFailed(Self.userMessage(for: error)))
-                    } catch {
-                        await send(.ratesFailed("匯率載入失敗，請稍後再試。"))
-                    }
+                let shouldFetchRates = !state.isLoading && state.snapshot == nil
+                if shouldFetchRates {
+                    state.isLoading = true
+                    state.errorMessage = nil
                 }
-                
+
+                return .run { send in
+                    async let currenciesTask: Void = {
+                        if let codes = try? await currencyMetadataRepository.fetchCodes(), !codes.isEmpty {
+                            await send(.availableCurrenciesLoaded(codes))
+                        }
+                    }()
+
+                    if shouldFetchRates {
+                        do {
+                            let snapshot = try await client.fetchLatest(.twd)
+                            await send(.ratesLoaded(snapshot))
+                        } catch let error as APIError {
+                            await send(.ratesFailed(Self.userMessage(for: error)))
+                        } catch {
+                            await send(.ratesFailed("匯率載入失敗，請稍後再試。"))
+                        }
+                    }
+
+                    _ = await currenciesTask
+                }
+
             case let .ratesLoaded(snapshot):
                 state.isLoading = false
                 state.snapshot = snapshot
                 state.errorMessage = nil
                 return .none
-                
+
             case let .ratesFailed(message):
                 state.isLoading = false
                 state.errorMessage = message
+                return .none
+
+            case let .availableCurrenciesLoaded(codes):
+                var merged = Set(codes)
+                merged.insert(state.fromCurrency)
+                state.availableCurrencies = merged.sorted {
+                    $0.rawValue.localizedStandardCompare($1.rawValue) == .orderedAscending
+                }
                 return .none
             }
         }

@@ -81,7 +81,7 @@ struct OrderCalculationTests {
                 tier: .vip
             ),
             status: .quoting,
-            currency: .eur,
+            currency: CurrencyCode(rawValue: "EUR"),
             date: Date(timeIntervalSince1970: 1_776_713_600),
             items: [
                 LedgerOrderItem(

@@ -53,11 +53,7 @@ enum PersistenceContainer {
         cloudKit: CloudKitOption = .disabled,
         inMemoryOnly: Bool = false
     ) throws -> ModelContainer {
-        let schema = Schema([
-            OrderRecord.self,
-            CategoryRecord.self,
-            PaymentMethodRecord.self,
-        ])
+        let schema = Schema(versionedSchema: BuyLedgerSchemaV2.self)
 
         let configuration = ModelConfiguration(
             "BuyLedger",
@@ -70,7 +66,7 @@ enum PersistenceContainer {
 
         return try ModelContainer(
             for: schema,
-            migrationPlan: nil,
+            migrationPlan: BuyLedgerMigrationPlan.self,
             configurations: configuration
         )
     }
@@ -81,11 +77,46 @@ enum PersistenceContainer {
         do {
             return try make(cloudKit: .disabled)
         } catch {
-            // SwiftData 初始化失敗通常代表 schema 變更未做 migration；fall back 為 in-memory 仍能讓 App 跑起來，
-            // 同時把錯誤丟到 console 提醒開發者。
-            assertionFailure("SwiftData container 初始化失敗：\(error)")
-            // swiftlint:disable:next force_try
-            return try! make(cloudKit: .disabled, inMemoryOnly: true)
+            // SwiftData 初始化失敗 — 通常是 schema 改動但缺自訂 migration plan。
+            // 開發階段 App 尚未上架，把舊 store 整批清除後重建是最穩定的恢復策略；
+            // 真的需要保留資料時應改寫 `SchemaMigrationPlan` 取代這段 fallback。
+            print("[BuyLedger] SwiftData 初始化失敗，將清除舊 store 後重建：\(error)")
+
+            resetStoreFiles()
+
+            do {
+                return try make(cloudKit: .disabled)
+            } catch {
+                print("[BuyLedger] 重建仍失敗，退回 in-memory：\(error)")
+                // swiftlint:disable:next force_try
+                return try! make(cloudKit: .disabled, inMemoryOnly: true)
+            }
+        }
+    }
+
+    /// 嘗試刪除 `Application Support` 內的 SwiftData store 與相關 sidecar 檔（`-wal` / `-shm`）。
+    nonisolated private static func resetStoreFiles() {
+        let fileManager = FileManager.default
+        guard let support = try? fileManager.url(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask,
+            appropriateFor: nil,
+            create: false
+        ) else {
+            return
+        }
+
+        let candidates = [
+            "BuyLedger.store",
+            "BuyLedger.store-wal",
+            "BuyLedger.store-shm",
+            "default.store",
+            "default.store-wal",
+            "default.store-shm",
+        ].map { support.appendingPathComponent($0) }
+
+        for url in candidates where fileManager.fileExists(atPath: url.path) {
+            try? fileManager.removeItem(at: url)
         }
     }
 

@@ -17,6 +17,9 @@ struct ExchangeRateClient: Sendable {
 
     /// 抓取指定基準幣別的最新匯率快照。
     var fetchLatest: @Sendable (_ base: CurrencyCode) async throws -> FxRateSnapshot
+
+    /// 抓取 ExchangeRate-API 目前支援的所有 ISO 4217 幣別代碼。
+    var fetchSupportedCodes: @Sendable () async throws -> [String]
 }
 
 extension ExchangeRateClient: DependencyKey {
@@ -71,6 +74,53 @@ extension ExchangeRateClient: DependencyKey {
             default:
                 throw APIError.apiError(code: "unexpected-result-\(decoded.result)")
             }
+        },
+        fetchSupportedCodes: {
+            @Dependency(\.httpClient) var httpClient
+            @Dependency(\.apiKeyProvider) var apiKeyProvider
+
+            guard let key = apiKeyProvider.exchangeRateAPIKey() else {
+                throw APIError.invalidKey
+            }
+
+            let urlString = "https://v6.exchangerate-api.com/v6/\(key)/codes"
+            guard let url = URL(string: urlString) else {
+                throw APIError.transport(message: "URL 組合失敗：\(urlString)")
+            }
+
+            var request = URLRequest(url: url)
+            request.httpMethod = "GET"
+            request.timeoutInterval = 15
+
+            let (data, response) = try await httpClient.data(request)
+
+            guard 200...299 ~= response.statusCode else {
+                throw APIError.http(statusCode: response.statusCode)
+            }
+
+            let decoded: ExchangeRateCodesResponse
+            do {
+                decoded = try JSONDecoder().decode(ExchangeRateCodesResponse.self, from: data)
+            } catch {
+                throw APIError.decoding(message: String(describing: error))
+            }
+
+            switch decoded.result {
+            case "success":
+                return decoded.supportedCodes?.compactMap { $0.first } ?? []
+            case "error":
+                let code = decoded.errorType ?? "unknown"
+                switch code {
+                case "invalid-key", "inactive-account":
+                    throw APIError.invalidKey
+                case "quota-reached":
+                    throw APIError.quotaExceeded
+                default:
+                    throw APIError.apiError(code: code)
+                }
+            default:
+                throw APIError.apiError(code: "unexpected-result-\(decoded.result)")
+            }
         }
     )
 
@@ -78,12 +128,16 @@ extension ExchangeRateClient: DependencyKey {
     nonisolated static let testValue: ExchangeRateClient = ExchangeRateClient(
         fetchLatest: { _ in
             throw APIError.transport(message: "ExchangeRateClient.testValue.fetchLatest 被呼叫；請於測試中注入。")
+        },
+        fetchSupportedCodes: {
+            throw APIError.transport(message: "ExchangeRateClient.testValue.fetchSupportedCodes 被呼叫；請於測試中注入。")
         }
     )
 
-    /// SwiftUI Preview 直接回 fallback 快照。
+    /// SwiftUI Preview 直接回 fallback 快照與 default 幣別 code 集。
     nonisolated static let previewValue: ExchangeRateClient = ExchangeRateClient(
-        fetchLatest: { _ in FxRateSnapshot.fallback }
+        fetchLatest: { _ in FxRateSnapshot.fallback },
+        fetchSupportedCodes: { CurrencyCode.defaults.map(\.rawValue) }
     )
 }
 
@@ -135,16 +189,16 @@ struct ExchangeRateLatestResponse: Decodable, Sendable {
 
     // MARK: - View Method
 
-    /// 把 DTO 轉成領域層 ``FxRateSnapshot``，僅保留 ``CurrencyCode`` 認得的幣別。
+    /// 把 DTO 轉成領域層 ``FxRateSnapshot``。
+    ///
+    /// `CurrencyCode` 改成 struct wrapper 後不再 filter 未知幣別；API 回傳的所有 ISO 4217 code 都被保留進 snapshot，view 端可依當下 cache 決定顯示哪些。
     /// - Parameter base: 請求時使用的基準幣別。
     /// - Returns: 對應的快照。
     func toSnapshot(base: CurrencyCode) -> FxRateSnapshot {
         let rawRates = conversionRates ?? [:]
         var converted: [CurrencyCode: Decimal] = [:]
         for (key, value) in rawRates {
-            if let currency = CurrencyCode(rawValue: key) {
-                converted[currency] = Decimal(value)
-            }
+            converted[CurrencyCode(rawValue: key)] = Decimal(value)
         }
 
         let date: Date = {
@@ -155,5 +209,31 @@ struct ExchangeRateLatestResponse: Decodable, Sendable {
         }()
 
         return FxRateSnapshot(date: date, base: base, rates: converted)
+    }
+}
+
+/// `https://v6.exchangerate-api.com/v6/{KEY}/codes` 的回應 schema。
+///
+/// `supported_codes` 是 `[[ "USD", "United States Dollar" ], ...]`；本 App 只使用 ISO 4217 code，name 一律用 `Locale.localizedString(forCurrencyCode:)` 在 view 端計算以跟隨手機 locale。
+struct ExchangeRateCodesResponse: Decodable, Sendable {
+
+    // MARK: - Data Properties
+
+    /// API 回應狀態（"success" / "error"）。
+    let result: String
+
+    /// 錯誤類別（僅 result == "error" 時才存在）。
+    let errorType: String?
+
+    /// `[[code, name], …]` 形式的支援幣別清單。
+    let supportedCodes: [[String]]?
+
+    // MARK: - CodingKeys
+
+    /// 把 API 的 snake_case 欄位映射成 camelCase 屬性。
+    enum CodingKeys: String, CodingKey {
+        case result
+        case errorType = "error-type"
+        case supportedCodes = "supported_codes"
     }
 }
