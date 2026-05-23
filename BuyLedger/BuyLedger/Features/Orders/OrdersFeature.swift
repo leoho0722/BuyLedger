@@ -32,7 +32,13 @@ struct OrdersFeature {
         
         /// 目前選取的訂單編號。
         var selectedOrderID: LedgerOrder.ID?
-        
+
+        /// 商品類別主檔（從 ``CategoryRepository`` 載入）。
+        var categoryMaster: [String] = []
+
+        /// 付款方式主檔（從 ``PaymentMethodRepository`` 載入）。
+        var paymentMethodMaster: [String] = []
+
         /// 指示訂單是否正在載入。
         var isLoading = false
         
@@ -83,13 +89,26 @@ struct OrdersFeature {
             return filtered.first { $0.id == selectedOrderID }
         }
 
-        /// 目前訂單清單中所有不重複的商品類別，已過濾空白並依 locale 排序。
-        var distinctCategories: [String] {
-            let nonEmpty = orders
+        /// 對外提供給編輯表單的「可用類別」清單：合併主檔與既有訂單中使用過的類別，去重後依 locale 排序。
+        ///
+        /// 合併目的：使用者升級到主檔機制之前，舊訂單已經有 category 字串。為了不讓他們在編輯既有訂單時看到「自己用過的類別不在選單」，把訂單裡用過但主檔還沒有的也補進來。新增動作 (``addCategoryTapped``) 仍會把該值寫入主檔，所以這份合併清單會逐漸與主檔一致。
+        var availableCategories: [String] {
+            let fromOrders = orders
                 .map { $0.category.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty }
-            return Array(Set(nonEmpty))
-                .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            var merged = Set(categoryMaster)
+            merged.formUnion(fromOrders)
+            return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        }
+
+        /// 對外提供給編輯表單的「可用付款方式」清單；合併規則同 ``availableCategories``。
+        var availablePaymentMethods: [String] {
+            let fromOrders = orders
+                .map { $0.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            var merged = Set(paymentMethodMaster)
+            merged.formUnion(fromOrders)
+            return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
         }
     }
     
@@ -104,9 +123,15 @@ struct OrdersFeature {
         
         /// 訂單載入成功。
         case ordersLoaded([LedgerOrder])
-        
+
         /// 訂單載入失敗。
         case ordersFailed(String)
+
+        /// 商品類別主檔載入完成。
+        case categoryMasterLoaded([String])
+
+        /// 付款方式主檔載入完成。
+        case paymentMethodMasterLoaded([String])
         
         /// 使用者切換狀態篩選。
         case statusFilterSelected(OrderStatusFilter)
@@ -151,10 +176,16 @@ struct OrdersFeature {
     
     /// 訂單資料來源。
     @Dependency(OrderRepository.self) private var orderRepository
-    
+
+    /// 商品類別主檔資料來源。
+    @Dependency(CategoryRepository.self) private var categoryRepository
+
+    /// 付款方式主檔資料來源。
+    @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
+
     /// 用於新訂單的 UUID 產生器，方便在測試中注入固定值。
     @Dependency(\.uuid) private var uuid
-    
+
     /// 用於新訂單的日期來源，方便在測試中注入固定值。
     @Dependency(\.date) private var date
     
@@ -170,19 +201,42 @@ struct OrdersFeature {
                 guard !state.hasLoaded, !state.isLoading else {
                     return .none
                 }
-                
+
                 let orderRepository = orderRepository
+                let categoryRepository = categoryRepository
+                let paymentMethodRepository = paymentMethodRepository
                 state.isLoading = true
                 state.errorMessage = nil
-                
+
                 return .run { send in
+                    async let categoriesTask: Void = {
+                        if let items = try? await categoryRepository.fetchCategories() {
+                            await send(.categoryMasterLoaded(items))
+                        }
+                    }()
+                    async let paymentMethodsTask: Void = {
+                        if let items = try? await paymentMethodRepository.fetchPaymentMethods() {
+                            await send(.paymentMethodMasterLoaded(items))
+                        }
+                    }()
+
                     do {
                         let orders = try await orderRepository.fetchOrders()
                         await send(.ordersLoaded(orders))
                     } catch {
                         await send(.ordersFailed("訂單載入失敗，請稍後再試。"))
                     }
+
+                    _ = await (categoriesTask, paymentMethodsTask)
                 }
+
+            case let .categoryMasterLoaded(items):
+                state.categoryMaster = items
+                return .none
+
+            case let .paymentMethodMasterLoaded(items):
+                state.paymentMethodMaster = items
+                return .none
                 
             case let .ordersLoaded(orders):
                 state.isLoading = false
@@ -222,14 +276,16 @@ struct OrdersFeature {
 
                 state.editOrder = OrderEditFeature.State(
                     original: order,
-                    availableCategories: state.distinctCategories,
+                    availableCategories: state.availableCategories,
+                    availablePaymentMethods: state.availablePaymentMethods,
                     currentDate: date.now
                 )
                 return .none
 
             case .newOrderTapped:
                 state.editOrder = OrderEditFeature.State(
-                    availableCategories: state.distinctCategories,
+                    availableCategories: state.availableCategories,
+                    availablePaymentMethods: state.availablePaymentMethods,
                     currentDate: date.now
                 )
                 return .none
@@ -239,12 +295,44 @@ struct OrdersFeature {
                 guard let savedOrder = applyEditDraft(editState, to: &state) else {
                     return .none
                 }
-                
+
                 let orderRepository = orderRepository
                 return .run { _ in
                     try? await orderRepository.saveOrder(savedOrder)
                 }
-                
+
+            case let .editOrder(.presented(.addCategoryTapped(name))):
+                // 子 reducer 已把 name 加進 sheet 內的 availableCategories 並設成 draftCategory；
+                // 父層額外寫入主檔並更新 state.categoryMaster，使非編輯流程（管理頁、其他訂單）也能看到。
+                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return .none }
+                if !state.categoryMaster.contains(trimmed) {
+                    var updated = state.categoryMaster
+                    updated.append(trimmed)
+                    state.categoryMaster = updated.sorted {
+                        $0.localizedStandardCompare($1) == .orderedAscending
+                    }
+                }
+                let categoryRepository = categoryRepository
+                return .run { _ in
+                    try? await categoryRepository.addCategory(trimmed)
+                }
+
+            case let .editOrder(.presented(.addPaymentMethodTapped(name))):
+                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return .none }
+                if !state.paymentMethodMaster.contains(trimmed) {
+                    var updated = state.paymentMethodMaster
+                    updated.append(trimmed)
+                    state.paymentMethodMaster = updated.sorted {
+                        $0.localizedStandardCompare($1) == .orderedAscending
+                    }
+                }
+                let paymentMethodRepository = paymentMethodRepository
+                return .run { _ in
+                    try? await paymentMethodRepository.addPaymentMethod(trimmed)
+                }
+
             case .editOrder:
                 return .none
                 
@@ -271,7 +359,8 @@ struct OrdersFeature {
                     cardFeeRate: existing.cardFeeRate,
                     platformFeeRate: existing.platformFeeRate,
                     chargedAmount: existing.chargedAmount,
-                    category: existing.category
+                    category: existing.category,
+                    paymentMethod: existing.paymentMethod
                 )
                 state.orders[index] = updated
                 
@@ -343,7 +432,8 @@ private extension OrdersFeature {
     func applyEditDraft(_ draft: OrderEditFeature.State, to state: inout State) -> LedgerOrder? {
         let trimmedName = draft.draftCustomerName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedCategory = draft.draftCategory.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+        let trimmedPaymentMethod = draft.draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
+
         let normalizedAmount = max(0, draft.draftChargedAmount)
         let normalizedItemCost = max(0, draft.draftItemCost)
         let normalizedDom = max(0, draft.draftDomesticShipping)
@@ -373,7 +463,8 @@ private extension OrdersFeature {
                 cardFeeRate: normalizedCardFee,
                 platformFeeRate: normalizedPlatformFee,
                 chargedAmount: normalizedAmount,
-                category: trimmedCategory.isEmpty ? existing.category : trimmedCategory
+                category: trimmedCategory.isEmpty ? existing.category : trimmedCategory,
+                paymentMethod: trimmedPaymentMethod.isEmpty ? existing.paymentMethod : trimmedPaymentMethod
             )
             state.orders[index] = updatedOrder
             return updatedOrder
@@ -396,7 +487,8 @@ private extension OrdersFeature {
                 cardFeeRate: normalizedCardFee,
                 platformFeeRate: normalizedPlatformFee,
                 chargedAmount: normalizedAmount,
-                category: resolvedCategory
+                category: resolvedCategory,
+                paymentMethod: trimmedPaymentMethod
             )
             
             state.orders.insert(newOrder, at: 0)

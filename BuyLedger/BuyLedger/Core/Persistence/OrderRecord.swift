@@ -59,6 +59,11 @@ final class OrderRecord {
     /// 商品類別。
     var category: String
 
+    /// 付款方式。
+    ///
+    /// 帶 default value 讓 SwiftData 對既有資料庫做 lightweight migration：舊 row 升級時自動填空字串，不需要寫顯式 migration plan。
+    var paymentMethod: String = ""
+
     // MARK: - Init
 
     /// 依領域型別 ``LedgerOrder`` 建立持久化記錄。
@@ -77,6 +82,7 @@ final class OrderRecord {
         self.platformFeeRate = order.platformFeeRate
         self.chargedAmount = order.chargedAmount
         self.category = order.category
+        self.paymentMethod = order.paymentMethod
     }
 }
 
@@ -102,7 +108,8 @@ extension OrderRecord {
             cardFeeRate: cardFeeRate,
             platformFeeRate: platformFeeRate,
             chargedAmount: chargedAmount,
-            category: category
+            category: category,
+            paymentMethod: paymentMethod
         )
     }
 
@@ -121,5 +128,6 @@ extension OrderRecord {
         self.platformFeeRate = order.platformFeeRate
         self.chargedAmount = order.chargedAmount
         self.category = order.category
+        self.paymentMethod = order.paymentMethod
     }
 }

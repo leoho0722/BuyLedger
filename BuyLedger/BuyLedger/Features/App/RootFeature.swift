@@ -33,6 +33,11 @@ struct RootFeature {
         /// 設定頁狀態。
         var settings = SettingsFeature.State()
 
+        /// 商品類別主檔管理狀態；放在 root 是為了攔截 `renameRequested` 等動作後同步 ``OrdersFeature/State`` 的 in-memory 副本（cascade）。
+        var categoryManagement = LookupManagementFeature.State(kind: .category)
+
+        /// 付款方式主檔管理狀態；理由同 ``categoryManagement``。
+        var paymentMethodManagement = LookupManagementFeature.State(kind: .paymentMethod)
     }
 
     // MARK: - Action
@@ -67,6 +72,12 @@ struct RootFeature {
 
         /// 設定頁事件。
         case settings(SettingsFeature.Action)
+
+        /// 商品類別主檔管理事件。
+        case categoryManagement(LookupManagementFeature.Action)
+
+        /// 付款方式主檔管理事件。
+        case paymentMethodManagement(LookupManagementFeature.Action)
     }
 
     // MARK: - Dependency Properties
@@ -92,6 +103,14 @@ struct RootFeature {
 
         Scope(state: \.settings, action: \.settings) {
             SettingsFeature()
+        }
+
+        Scope(state: \.categoryManagement, action: \.categoryManagement) {
+            LookupManagementFeature()
+        }
+
+        Scope(state: \.paymentMethodManagement, action: \.paymentMethodManagement) {
+            LookupManagementFeature()
         }
 
         Reduce { state, action in
@@ -139,7 +158,175 @@ struct RootFeature {
 
             case .settings:
                 return .none
+
+            case let .categoryManagement(.renameRequested(from, to)):
+                cascadeRename(kind: .category, from: from, to: to, in: &state)
+                return .none
+
+            case let .categoryManagement(.addConfirmed(name)):
+                addToOrdersMaster(kind: .category, name: name, in: &state)
+                return .none
+
+            case let .categoryManagement(.deleteRequested(name)):
+                removeFromOrdersMaster(kind: .category, name: name, in: &state)
+                return .none
+
+            case .categoryManagement:
+                return .none
+
+            case let .paymentMethodManagement(.renameRequested(from, to)):
+                cascadeRename(kind: .paymentMethod, from: from, to: to, in: &state)
+                return .none
+
+            case let .paymentMethodManagement(.addConfirmed(name)):
+                addToOrdersMaster(kind: .paymentMethod, name: name, in: &state)
+                return .none
+
+            case let .paymentMethodManagement(.deleteRequested(name)):
+                removeFromOrdersMaster(kind: .paymentMethod, name: name, in: &state)
+                return .none
+
+            case .paymentMethodManagement:
+                return .none
             }
         }
+    }
+
+    // MARK: - Private Method
+
+    /// 在 root 端 cascade 主檔更名到 ``OrdersFeature/State`` 的 in-memory 副本，避免 LookupManagement 只更新 DB 但 OrdersFeature 拿到的還是舊字串。
+    /// - Parameters:
+    ///   - kind: 要 cascade 的主檔型別。
+    ///   - from: 舊名稱。
+    ///   - to: 新名稱。
+    ///   - state: 要修改的 ``RootFeature/State``。
+    private func cascadeRename(
+        kind: LookupKind,
+        from: String,
+        to: String,
+        in state: inout State
+    ) {
+        let trimmedFrom = from.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmedFrom.isEmpty, !trimmedTo.isEmpty, trimmedFrom != trimmedTo else { return }
+
+        switch kind {
+        case .category:
+            state.orders.categoryMaster = renameInList(
+                state.orders.categoryMaster,
+                from: trimmedFrom,
+                to: trimmedTo
+            )
+            state.orders.orders = state.orders.orders.map { order in
+                guard order.category == trimmedFrom else { return order }
+                return rebuildOrder(order, category: trimmedTo)
+            }
+
+        case .paymentMethod:
+            state.orders.paymentMethodMaster = renameInList(
+                state.orders.paymentMethodMaster,
+                from: trimmedFrom,
+                to: trimmedTo
+            )
+            state.orders.orders = state.orders.orders.map { order in
+                guard order.paymentMethod == trimmedFrom else { return order }
+                return rebuildOrder(order, paymentMethod: trimmedTo)
+            }
+        }
+    }
+
+    /// 把 ``LookupManagementFeature`` 新增的項目加進 ``OrdersFeature/State`` 的 master 副本。
+    /// - Parameters:
+    ///   - kind: 主檔型別。
+    ///   - name: 新增名稱。
+    ///   - state: 要修改的 ``RootFeature/State``。
+    private func addToOrdersMaster(
+        kind: LookupKind,
+        name: String,
+        in state: inout State
+    ) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        switch kind {
+        case .category:
+            guard !state.orders.categoryMaster.contains(trimmed) else { return }
+            var updated = state.orders.categoryMaster
+            updated.append(trimmed)
+            state.orders.categoryMaster = updated.sorted {
+                $0.localizedStandardCompare($1) == .orderedAscending
+            }
+
+        case .paymentMethod:
+            guard !state.orders.paymentMethodMaster.contains(trimmed) else { return }
+            var updated = state.orders.paymentMethodMaster
+            updated.append(trimmed)
+            state.orders.paymentMethodMaster = updated.sorted {
+                $0.localizedStandardCompare($1) == .orderedAscending
+            }
+        }
+    }
+
+    /// 把 ``LookupManagementFeature`` 刪除的項目從 ``OrdersFeature/State`` 的 master 副本中移除。
+    /// - Parameters:
+    ///   - kind: 主檔型別。
+    ///   - name: 要移除的名稱。
+    ///   - state: 要修改的 ``RootFeature/State``。
+    private func removeFromOrdersMaster(
+        kind: LookupKind,
+        name: String,
+        in state: inout State
+    ) {
+        switch kind {
+        case .category:
+            state.orders.categoryMaster.removeAll { $0 == name }
+        case .paymentMethod:
+            state.orders.paymentMethodMaster.removeAll { $0 == name }
+        }
+    }
+
+    /// 把 list 中等於 `oldName` 的項目替換成 `newName`，去重後依 locale 排序。
+    /// - Parameters:
+    ///   - list: 原始陣列。
+    ///   - oldName: 舊名稱。
+    ///   - newName: 新名稱。
+    /// - Returns: 重新命名後的排序陣列。
+    private func renameInList(
+        _ list: [String],
+        from oldName: String,
+        to newName: String
+    ) -> [String] {
+        let replaced = list.map { $0 == oldName ? newName : $0 }
+        return Array(Set(replaced))
+            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+    }
+
+    /// 因為 ``LedgerOrder`` 是 immutable struct，更新 category 或 paymentMethod 必須以 memberwise init 重建。
+    /// - Parameters:
+    ///   - order: 原本的訂單。
+    ///   - category: 若不為 `nil` 則覆寫 category。
+    ///   - paymentMethod: 若不為 `nil` 則覆寫 paymentMethod。
+    /// - Returns: 重建後的訂單。
+    private func rebuildOrder(
+        _ order: LedgerOrder,
+        category: String? = nil,
+        paymentMethod: String? = nil
+    ) -> LedgerOrder {
+        LedgerOrder(
+            id: order.id,
+            customer: order.customer,
+            status: order.status,
+            currency: order.currency,
+            date: order.date,
+            items: order.items,
+            itemCost: order.itemCost,
+            domesticShipping: order.domesticShipping,
+            internationalShipping: order.internationalShipping,
+            cardFeeRate: order.cardFeeRate,
+            platformFeeRate: order.platformFeeRate,
+            chargedAmount: order.chargedAmount,
+            category: category ?? order.category,
+            paymentMethod: paymentMethod ?? order.paymentMethod
+        )
     }
 }

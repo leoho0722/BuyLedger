@@ -26,6 +26,12 @@ struct OrderRepository: Sendable {
 
     /// 刪除指定編號的訂單。
     var removeOrder: @Sendable (LedgerOrder.ID) async throws -> Void
+
+    /// 把所有訂單的 ``LedgerOrder/category`` 由 `oldName` 改成 `newName`（cascade rename）。
+    var renameOrderCategory: @Sendable (String, String) async throws -> Void
+
+    /// 把所有訂單的 ``LedgerOrder/paymentMethod`` 由 `oldName` 改成 `newName`（cascade rename）。
+    var renameOrderPaymentMethod: @Sendable (String, String) async throws -> Void
 }
 
 extension OrderRepository {
@@ -60,6 +66,18 @@ extension OrderRepository {
             removeOrder: { id in
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.delete(id: id)
+            },
+            renameOrderCategory: { oldName, newName in
+                let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedNew.isEmpty, trimmedNew != oldName else { return }
+                let persistence = await Self.makePersistence(container: container)
+                try await persistence.renameCategory(from: oldName, to: trimmedNew)
+            },
+            renameOrderPaymentMethod: { oldName, newName in
+                let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedNew.isEmpty, trimmedNew != oldName else { return }
+                let persistence = await Self.makePersistence(container: container)
+                try await persistence.renamePaymentMethod(from: oldName, to: trimmedNew)
             }
         )
     }
@@ -80,9 +98,9 @@ extension OrderRepository: DependencyKey {
 
     // MARK: - Dependency Values
 
-    /// App 執行時使用本機 SwiftData 儲存。
+    /// App 執行時使用本機 SwiftData 儲存（共用 ``PersistenceContainer/shared``）。
     nonisolated static let liveValue: OrderRepository = OrderRepository.live(
-        container: PersistenceContainer.makeForApp()
+        container: PersistenceContainer.shared
     )
 
     /// SwiftUI Preview 使用 in-memory SwiftData，避免污染本機資料庫；自動 seed sample 資料以便畫面有內容可看。
@@ -96,7 +114,9 @@ extension OrderRepository: DependencyKey {
     nonisolated static let testValue = OrderRepository(
         fetchOrders: { [] },
         saveOrder: { _ in },
-        removeOrder: { _ in }
+        removeOrder: { _ in },
+        renameOrderCategory: { _, _ in },
+        renameOrderPaymentMethod: { _, _ in }
     )
 }
 

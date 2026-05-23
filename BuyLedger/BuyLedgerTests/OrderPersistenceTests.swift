@@ -67,9 +67,10 @@ struct OrderPersistenceTests {
             cardFeeRate: 0,
             platformFeeRate: 0,
             chargedAmount: 0,
-            category: "美妝"
+            category: "美妝",
+            paymentMethod: ""
         )
-        
+
         try await persistence.upsert(order)
         
         let stored = try await persistence.fetchAll()
@@ -98,7 +99,8 @@ struct OrderPersistenceTests {
             cardFeeRate: original.cardFeeRate,
             platformFeeRate: original.platformFeeRate,
             chargedAmount: 9_999,
-            category: original.category
+            category: original.category,
+            paymentMethod: original.paymentMethod
         )
         
         try await persistence.upsert(modified)

@@ -21,6 +21,9 @@ struct OrderEditView: View {
     /// 是否顯示「商品類別」選擇 sheet。
     @State private var showsCategorySheet = false
 
+    /// 是否顯示「付款方式」選擇 sheet。
+    @State private var showsPaymentMethodSheet = false
+
     /// 用於 ``orderDateRow`` 在 picker 寫回時取得「當下這一刻」的秒；測試可注入固定值。
     @Dependency(\.date) private var date
 
@@ -64,12 +67,14 @@ struct OrderEditView: View {
                             Text(status.title).tag(status)
                         }
                     }
-                    
+
                     Picker("幣別", selection: $store.draftCurrency) {
                         ForEach(CurrencyCode.allCases) { code in
                             Text("\(code.flag) \(code.rawValue)").tag(code)
                         }
                     }
+
+                    paymentMethodPickerRow
                 }
                 
                 Section("收款金額") {
@@ -123,15 +128,44 @@ struct OrderEditView: View {
                     .disabled(!canSave)
                 }
             }
+            .task {
+                await store.send(.task).finish()
+            }
             .sheet(isPresented: $showsCategorySheet) {
-                CategoryPickerSheet(
-                    categories: store.availableCategories,
+                OptionPickerSheet(
+                    title: "選擇商品類別",
+                    addButtonTitle: "新增類別",
+                    emptyTitle: "尚無類別",
+                    emptyDescription: "透過上方「新增類別」加入第一個類別。",
+                    addAlertTitle: "新增商品類別",
+                    addFieldPlaceholder: "類別名稱",
+                    addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
+                    options: store.availableCategories,
                     selected: store.draftCategory,
                     onSelect: { category in
                         store.draftCategory = category
                     },
-                    onAddCategory: { name in
+                    onAdd: { name in
                         store.send(.addCategoryTapped(name))
+                    }
+                )
+            }
+            .sheet(isPresented: $showsPaymentMethodSheet) {
+                OptionPickerSheet(
+                    title: "選擇付款方式",
+                    addButtonTitle: "新增付款方式",
+                    emptyTitle: "尚無付款方式",
+                    emptyDescription: "透過上方「新增付款方式」加入第一個項目。",
+                    addAlertTitle: "新增付款方式",
+                    addFieldPlaceholder: "付款方式名稱",
+                    addAlertMessage: "輸入新的付款方式名稱，加入後會立即套用至此訂單。",
+                    options: store.availablePaymentMethods,
+                    selected: store.draftPaymentMethod,
+                    onSelect: { method in
+                        store.draftPaymentMethod = method
+                    },
+                    onAdd: { name in
+                        store.send(.addPaymentMethodTapped(name))
                     }
                 )
             }
@@ -162,6 +196,29 @@ private extension OrderEditView {
 
                 Text(store.draftCategory.isEmpty ? "選擇類別" : store.draftCategory)
                     .foregroundStyle(store.draftCategory.isEmpty ? .secondary : .secondary)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 付款方式選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗。
+    var paymentMethodPickerRow: some View {
+        Button {
+            showsPaymentMethodSheet = true
+        } label: {
+            HStack(spacing: BLSpacing.small) {
+                Text("付款方式")
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: BLSpacing.small)
+
+                Text(store.draftPaymentMethod.isEmpty ? "選擇付款方式" : store.draftPaymentMethod)
+                    .foregroundStyle(.secondary)
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))

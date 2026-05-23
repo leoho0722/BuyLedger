@@ -53,7 +53,11 @@ enum PersistenceContainer {
         cloudKit: CloudKitOption = .disabled,
         inMemoryOnly: Bool = false
     ) throws -> ModelContainer {
-        let schema = Schema([OrderRecord.self])
+        let schema = Schema([
+            OrderRecord.self,
+            CategoryRecord.self,
+            PaymentMethodRecord.self,
+        ])
 
         let configuration = ModelConfiguration(
             "BuyLedger",
@@ -84,4 +88,11 @@ enum PersistenceContainer {
             return try! make(cloudKit: .disabled, inMemoryOnly: true)
         }
     }
+
+    // MARK: - Static Properties
+
+    /// 整個 App 共用的 production container。
+    ///
+    /// 多個 repository（``OrderRepository`` / ``CategoryRepository`` / ``PaymentMethodRepository``）若各自呼叫 ``makeForApp()`` 會各自建立 `ModelContainer` 物件；雖然底層 SQLite 檔同名，但兩個 container 在同一個 process 內並存可能造成 SwiftData 內部狀態錯亂。透過共享同一個 container 讓所有 repo 走同一條資料管線。
+    nonisolated static let shared: ModelContainer = makeForApp()
 }

@@ -43,7 +43,8 @@ extension LedgerOrder {
             cardFeeRate: decimal("0.015"),
             platformFeeRate: 0,
             chargedAmount: 11_800,
-            category: "美妝"
+            category: "美妝",
+            paymentMethod: "信用卡"
         ),
         LedgerOrder(
             id: "BL-2604-017",
@@ -68,7 +69,8 @@ extension LedgerOrder {
             cardFeeRate: decimal("0.015"),
             platformFeeRate: 0,
             chargedAmount: 4_980,
-            category: "服飾"
+            category: "服飾",
+            paymentMethod: "銀行轉帳"
         ),
         LedgerOrder(
             id: "BL-2604-016",
@@ -98,7 +100,8 @@ extension LedgerOrder {
             cardFeeRate: decimal("0.015"),
             platformFeeRate: decimal("0.03"),
             chargedAmount: 9_890,
-            category: "美妝"
+            category: "美妝",
+            paymentMethod: "信用卡"
         ),
         LedgerOrder(
             id: "BL-2604-015",
@@ -123,7 +126,8 @@ extension LedgerOrder {
             cardFeeRate: decimal("0.015"),
             platformFeeRate: 0,
             chargedAmount: 0,
-            category: "精品"
+            category: "精品",
+            paymentMethod: ""
         ),
         LedgerOrder(
             id: "BL-2604-014",
@@ -153,7 +157,8 @@ extension LedgerOrder {
             cardFeeRate: decimal("0.015"),
             platformFeeRate: 0,
             chargedAmount: 8_650,
-            category: "美妝"
+            category: "美妝",
+            paymentMethod: "LINE Pay"
         ),
         LedgerOrder(
             id: "BL-2604-013",
@@ -174,7 +179,8 @@ extension LedgerOrder {
             cardFeeRate: decimal("0.015"),
             platformFeeRate: decimal("0.03"),
             chargedAmount: 8_420,
-            category: "美妝"
+            category: "美妝",
+            paymentMethod: "Apple Pay"
         ),
         LedgerOrder(
             id: "BL-2604-012",
@@ -199,7 +205,8 @@ extension LedgerOrder {
             cardFeeRate: decimal("0.015"),
             platformFeeRate: 0,
             chargedAmount: 5_680,
-            category: "服飾"
+            category: "服飾",
+            paymentMethod: "信用卡"
         ),
     ]
 }

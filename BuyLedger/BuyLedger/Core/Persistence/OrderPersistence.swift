@@ -59,6 +59,34 @@ actor OrderPersistence {
         try modelContext.save()
     }
 
+    /// 把所有以 `oldName` 為類別的訂單，更名為 `newName`。
+    /// - Parameters:
+    ///   - oldName: 原本的類別名稱。
+    ///   - newName: 新的類別名稱。
+    func renameCategory(from oldName: String, to newName: String) throws {
+        let descriptor = FetchDescriptor<OrderRecord>(
+            predicate: #Predicate { $0.category == oldName }
+        )
+        for record in try modelContext.fetch(descriptor) {
+            record.category = newName
+        }
+        try modelContext.save()
+    }
+
+    /// 把所有以 `oldName` 為付款方式的訂單，更名為 `newName`。
+    /// - Parameters:
+    ///   - oldName: 原本的名稱。
+    ///   - newName: 新的名稱。
+    func renamePaymentMethod(from oldName: String, to newName: String) throws {
+        let descriptor = FetchDescriptor<OrderRecord>(
+            predicate: #Predicate { $0.paymentMethod == oldName }
+        )
+        for record in try modelContext.fetch(descriptor) {
+            record.paymentMethod = newName
+        }
+        try modelContext.save()
+    }
+
     /// 若目前資料表為空，將提供的 sample data 寫入；否則 no-op。
     ///
     /// 這個 helper 讓 App 第一次啟動時看到 demo 資料，後續編輯都會持久化。

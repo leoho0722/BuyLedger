@@ -31,7 +31,8 @@ struct OrderCalculationTests {
             cardFeeRate: Decimal(string: "0.015") ?? 0,
             platformFeeRate: 0,
             chargedAmount: Decimal(11_800),
-            category: "美妝"
+            category: "美妝",
+            paymentMethod: ""
         )
         
         let summary = OrderSummary(order: order)
@@ -59,7 +60,8 @@ struct OrderCalculationTests {
             cardFeeRate: 0,
             platformFeeRate: Decimal(string: "0.03") ?? 0,
             chargedAmount: Decimal(1_001),
-            category: "測試"
+            category: "測試",
+            paymentMethod: ""
         )
 
         let summary = OrderSummary(order: order)
@@ -94,7 +96,8 @@ struct OrderCalculationTests {
             cardFeeRate: Decimal(string: "0.015") ?? 0,
             platformFeeRate: 0,
             chargedAmount: 0,
-            category: "精品"
+            category: "精品",
+            paymentMethod: ""
         )
         
         let summary = OrderSummary(order: order)

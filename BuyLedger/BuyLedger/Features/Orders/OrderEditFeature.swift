@@ -59,8 +59,14 @@ struct OrderEditFeature {
         /// 訂購日期草稿。
         var draftDate: Date
 
+        /// 付款方式草稿。
+        var draftPaymentMethod: String
+
         /// 可供選擇的商品類別清單；由父層 reducer 從現有訂單聚合後注入，並在使用者新增類別時即時擴充。
         var availableCategories: [String]
+
+        /// 可供選擇的付款方式清單；由父層 reducer 從現有訂單聚合後注入，並在使用者新增方式時即時擴充。
+        var availablePaymentMethods: [String]
 
         // MARK: - Identifiable Properties
 
@@ -73,10 +79,12 @@ struct OrderEditFeature {
         /// - Parameters:
         ///   - original: 要編輯的訂單；`nil` 表示新訂單。
         ///   - availableCategories: 表單可選用的既有類別；不含原訂單類別時會在初始化時補上。
+        ///   - availablePaymentMethods: 表單可選用的既有付款方式；不含原訂單付款方式時會在初始化時補上。
         ///   - currentDate: 新訂單時 ``draftDate`` 的預設值；caller 應從 `@Dependency(\.date)` 取得當下時間以維持可測試性。
         init(
             original: LedgerOrder? = nil,
             availableCategories: [String] = [],
+            availablePaymentMethods: [String] = [],
             currentDate: Date = Date()
         ) {
             self.original = original
@@ -92,6 +100,7 @@ struct OrderEditFeature {
             self.draftPlatformFeeRate = original?.platformFeeRate ?? 0
             self.draftItems = original?.items ?? []
             self.draftDate = original?.date ?? currentDate
+            self.draftPaymentMethod = original?.paymentMethod ?? ""
 
             var categories = availableCategories
             let originalCategory = original?.category.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -99,6 +108,13 @@ struct OrderEditFeature {
                 categories.append(originalCategory)
             }
             self.availableCategories = categories.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+
+            var paymentMethods = availablePaymentMethods
+            let originalPaymentMethod = original?.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !originalPaymentMethod.isEmpty, !paymentMethods.contains(originalPaymentMethod) {
+                paymentMethods.append(originalPaymentMethod)
+            }
+            self.availablePaymentMethods = paymentMethods.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
 
             self.id = UUID()
         }
@@ -121,12 +137,30 @@ struct OrderEditFeature {
 
         /// 使用者透過「新增類別」彈窗確認新增一筆類別名稱。
         case addCategoryTapped(String)
+
+        /// 使用者透過「新增付款方式」彈窗確認新增一筆付款方式名稱。
+        case addPaymentMethodTapped(String)
+
+        /// 表單畫面 `.task` 觸發；用於從 repo 重新拉取最新的類別／付款方式主檔。
+        case task
+
+        /// 從 ``CategoryRepository`` 取回最新類別主檔。
+        case availableCategoriesLoaded([String])
+
+        /// 從 ``PaymentMethodRepository`` 取回最新付款方式主檔。
+        case availablePaymentMethodsLoaded([String])
     }
     
     // MARK: - Dependency Properties
-    
+
     /// 由父層注入的 dismiss effect。
     @Dependency(\.dismiss) private var dismiss
+
+    /// 商品類別主檔資料來源；用於 sheet `.task` 重新拉取，使「在管理頁新增的類別」也能立即出現在編輯選單。
+    @Dependency(CategoryRepository.self) private var categoryRepository
+
+    /// 付款方式主檔資料來源；理由同 ``categoryRepository``。
+    @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
     
     // MARK: - Reducer Body
     
@@ -154,6 +188,58 @@ struct OrderEditFeature {
                     }
                 }
                 state.draftCategory = trimmed
+                return .none
+
+            case let .addPaymentMethodTapped(rawName):
+                let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return .none }
+
+                if !state.availablePaymentMethods.contains(trimmed) {
+                    var updated = state.availablePaymentMethods
+                    updated.append(trimmed)
+                    state.availablePaymentMethods = updated.sorted {
+                        $0.localizedStandardCompare($1) == .orderedAscending
+                    }
+                }
+                state.draftPaymentMethod = trimmed
+                return .none
+
+            case .task:
+                let categoryRepository = categoryRepository
+                let paymentMethodRepository = paymentMethodRepository
+                return .run { send in
+                    async let categoriesTask: Void = {
+                        if let items = try? await categoryRepository.fetchCategories() {
+                            await send(.availableCategoriesLoaded(items))
+                        }
+                    }()
+                    async let paymentMethodsTask: Void = {
+                        if let items = try? await paymentMethodRepository.fetchPaymentMethods() {
+                            await send(.availablePaymentMethodsLoaded(items))
+                        }
+                    }()
+                    _ = await (categoriesTask, paymentMethodsTask)
+                }
+
+            case let .availableCategoriesLoaded(items):
+                // 合併：把目前 draftCategory（可能是剛在 sheet 內新增、尚未走完整 add → repo 來回）保留在清單。
+                var merged = Set(items)
+                let draftCategory = state.draftCategory.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !draftCategory.isEmpty {
+                    merged.insert(draftCategory)
+                }
+                state.availableCategories = merged
+                    .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+                return .none
+
+            case let .availablePaymentMethodsLoaded(items):
+                var merged = Set(items)
+                let draftPaymentMethod = state.draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !draftPaymentMethod.isEmpty {
+                    merged.insert(draftPaymentMethod)
+                }
+                state.availablePaymentMethods = merged
+                    .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
                 return .none
             }
         }

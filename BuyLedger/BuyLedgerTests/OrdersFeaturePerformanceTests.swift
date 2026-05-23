@@ -93,7 +93,8 @@ private extension OrdersFeaturePerformanceTests {
                 cardFeeRate: Decimal(string: "0.015") ?? 0,
                 platformFeeRate: 0,
                 chargedAmount: Decimal(200 + index),
-                category: category
+                category: category,
+                paymentMethod: ""
             )
         }
     }

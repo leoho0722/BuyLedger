@@ -57,6 +57,12 @@ private extension MoreView {
         /// 報價試算。
         case quote
 
+        /// 商品類別主檔管理。
+        case categories
+
+        /// 付款方式主檔管理。
+        case paymentMethods
+
         // MARK: - Identifiable Properties
 
         /// 項目的穩定識別值。
@@ -73,6 +79,10 @@ private extension MoreView {
                 "客戶名單"
             case .quote:
                 "報價試算"
+            case .categories:
+                LookupKind.category.entryTitle
+            case .paymentMethods:
+                LookupKind.paymentMethod.entryTitle
             }
         }
 
@@ -85,6 +95,10 @@ private extension MoreView {
                 "依名稱整理客戶活躍度，快速跳轉到對應訂單。"
             case .quote:
                 "輸入成本與費率，即時看到建議售價與毛利。"
+            case .categories:
+                LookupKind.category.entrySubtitle
+            case .paymentMethods:
+                LookupKind.paymentMethod.entrySubtitle
             }
         }
 
@@ -97,6 +111,10 @@ private extension MoreView {
                 "person.2"
             case .quote:
                 "function"
+            case .categories:
+                LookupKind.category.systemImage
+            case .paymentMethods:
+                LookupKind.paymentMethod.systemImage
             }
         }
 
@@ -111,6 +129,10 @@ private extension MoreView {
                 palette.purple
             case .quote:
                 palette.green
+            case .categories:
+                palette.orange
+            case .paymentMethods:
+                palette.red
             }
         }
     }
@@ -127,6 +149,14 @@ private extension MoreView {
             CustomersView(store: store)
         case .quote:
             QuoteView(store: store.scope(state: \.quote, action: \.quote))
+        case .categories:
+            LookupManagementView(
+                store: store.scope(state: \.categoryManagement, action: \.categoryManagement)
+            )
+        case .paymentMethods:
+            LookupManagementView(
+                store: store.scope(state: \.paymentMethodManagement, action: \.paymentMethodManagement)
+            )
         }
     }
 }
@@ -153,6 +183,18 @@ private extension MoreView {
                     destination(for: .customers)
                 } label: {
                     toolRow(.customers, palette: palette)
+                }
+
+                NavigationLink {
+                    destination(for: .categories)
+                } label: {
+                    toolRow(.categories, palette: palette)
+                }
+
+                NavigationLink {
+                    destination(for: .paymentMethods)
+                } label: {
+                    toolRow(.paymentMethods, palette: palette)
                 }
 
                 NavigationLink {
