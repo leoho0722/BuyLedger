@@ -36,7 +36,13 @@ struct QuoteFeature {
         
         /// 刷卡手續費 %。
         var cardFeePercent: Double
-        
+
+        /// 金流手續費 %。
+        var paymentFeePercent: Double
+
+        /// 平台手續費 %。
+        var platformFeePercent: Double
+
         /// 目標毛利 %。
         var targetMarginPercent: Double
         
@@ -63,6 +69,8 @@ struct QuoteFeature {
             domesticShipping: Double = 0,
             internationalShippingTwd: Double = 0,
             cardFeePercent: Double = 0,
+            paymentFeePercent: Double = 0,
+            platformFeePercent: Double = 0,
             targetMarginPercent: Double = 0,
             snapshot: FxRateSnapshot? = nil,
             isLoading: Bool = false,
@@ -73,6 +81,8 @@ struct QuoteFeature {
             self.domesticShipping = domesticShipping
             self.internationalShippingTwd = internationalShippingTwd
             self.cardFeePercent = cardFeePercent
+            self.paymentFeePercent = paymentFeePercent
+            self.platformFeePercent = platformFeePercent
             self.targetMarginPercent = targetMarginPercent
             self.snapshot = snapshot
             self.isLoading = isLoading
@@ -109,10 +119,16 @@ struct QuoteFeature {
         
         /// 刷卡手續費 TWD。
         var cardFeeTwd: Double { itemTwd * cardFeePercent / 100 }
-        
+
+        /// 金流手續費 TWD。
+        var paymentFeeTwd: Double { itemTwd * paymentFeePercent / 100 }
+
+        /// 平台手續費 TWD。
+        var platformFeeTwd: Double { itemTwd * platformFeePercent / 100 }
+
         /// 總成本 TWD。
         var costTwd: Double {
-            itemTwd + domesticTwd + internationalShippingTwd + cardFeeTwd
+            itemTwd + domesticTwd + internationalShippingTwd + cardFeeTwd + paymentFeeTwd + platformFeeTwd
         }
         
         /// 建議售價 (無條件進位到 10 元)。

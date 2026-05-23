@@ -12,7 +12,7 @@ import SwiftUI
 ///
 /// 對應設計稿 iPhone Quote sheet 與 iPad/Mac 的 Quote tool：
 /// - 來源幣別 chip
-/// - 多個數值輸入欄 (商品本金 / 國內運費 / 國際運費 / 刷卡手續費 / 目標毛利)
+/// - 多個數值輸入欄 (商品本金 / 當地運費 / 國際運費 / 刷卡手續費 / 金流手續費 / 平台手續費 / 目標毛利)
 /// - 即時建議售價 (綠→青漸層 hero 卡)
 /// - 成本拆解條與總成本
 struct QuoteView: View {
@@ -138,6 +138,20 @@ private extension QuoteView {
                 numberField(
                     label: "刷卡手續費",
                     value: $store.cardFeePercent,
+                    unit: "%",
+                    fractionDigits: 1
+                )
+
+                numberField(
+                    label: "金流手續費",
+                    value: $store.paymentFeePercent,
+                    unit: "%",
+                    fractionDigits: 1
+                )
+
+                numberField(
+                    label: "平台手續費",
+                    value: $store.platformFeePercent,
                     unit: "%",
                     fractionDigits: 1
                 )
@@ -310,6 +324,8 @@ private extension QuoteView {
             ("當地運費", store.domesticTwd, palette.teal),
             ("國際運費", store.internationalShippingTwd, palette.purple),
             ("刷卡手續費", store.cardFeeTwd, palette.orange),
+            ("金流手續費", store.paymentFeeTwd, palette.pink),
+            ("平台手續費", store.platformFeeTwd, palette.indigo),
         ]
         
         return BLCard {
