@@ -30,6 +30,11 @@ struct OrderSummary: Equatable {
     // MARK: - Init
 
     /// 依訂單資料建立財務摘要。
+    ///
+    /// 公式重點：
+    /// - `revenue = chargedAmount + cardlessSupplementAmount − cardlessDeductionAmount`，無卡折抵自 revenue 中扣除、無卡補款加回 revenue；對非無卡訂單兩個欄位皆為 `0`，等同維持舊行為。
+    /// - 手續費仍以 `chargedAmount` 為基準，因為刷卡 / 平台 / 金流手續費的計算對象是原始收款金額，不會因為使用者另外用儲值金折抵或事後補款而改變。
+    /// - `profit = revenue − totalCost`、`margin = profit / revenue`；`revenue == 0` 時 margin 維持 `0`。
     /// - Parameter order: 要計算的訂單。
     init(order: LedgerOrder) {
         let cardFee = order.chargedAmount * order.cardFeeRate
@@ -41,13 +46,16 @@ struct OrderSummary: Equatable {
             + order.internationalShipping
             + order.foreignDomesticShipping
             + fees
-        let profit = order.chargedAmount - totalCost
+        let revenue = order.chargedAmount
+            + order.cardlessSupplementAmount
+            - order.cardlessDeductionAmount
+        let profit = revenue - totalCost
 
-        self.revenue = order.chargedAmount
+        self.revenue = revenue
         self.fees = fees
         self.totalCost = totalCost
         self.profit = profit
-        self.margin = order.chargedAmount == 0 ? 0 : profit / order.chargedAmount
+        self.margin = revenue == 0 ? 0 : profit / revenue
     }
 }
 

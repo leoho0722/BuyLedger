@@ -24,17 +24,33 @@ actor PaymentMethodPersistence {
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
-    /// 寫入指定名稱的付款方式；若已存在不重複建立。
-    /// - Parameter name: 付款方式名稱（呼叫前由 caller 完成 trim）。
-    func upsert(name: String) throws {
+    /// 讀出全部付款方式（含 `isCardless` 旗標），依 locale 升冪排序。
+    ///
+    /// 與 ``fetchAll()`` 的差別在於回傳 ``PaymentMethodInfo``，讓 caller 同時拿到名稱與「是否屬於無卡類」的判定，避免在 view 端額外查詢主檔。
+    /// - Returns: 付款方式資訊陣列。
+    func fetchAllInfos() throws -> [PaymentMethodInfo] {
+        let descriptor = FetchDescriptor<PaymentMethodRecord>()
+        let records = try modelContext.fetch(descriptor)
+        return records
+            .map { PaymentMethodInfo(name: $0.name, isCardless: $0.isCardless) }
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+    }
+
+    /// 寫入指定名稱的付款方式；若已存在則更新 `isCardless` 旗標（讓使用者重新觸發新增時能更正先前忘記勾選的狀態）。
+    /// - Parameters:
+    ///   - name: 付款方式名稱（呼叫前由 caller 完成 trim）。
+    ///   - isCardless: 是否屬於無卡類付款方式。
+    func upsert(name: String, isCardless: Bool) throws {
         let descriptor = FetchDescriptor<PaymentMethodRecord>(
             predicate: #Predicate { $0.name == name }
         )
 
-        if try modelContext.fetch(descriptor).first == nil {
-            modelContext.insert(PaymentMethodRecord(name: name))
-            try modelContext.save()
+        if let existing = try modelContext.fetch(descriptor).first {
+            existing.isCardless = isCardless
+        } else {
+            modelContext.insert(PaymentMethodRecord(name: name, isCardless: isCardless))
         }
+        try modelContext.save()
     }
 
     /// 刪除指定名稱的付款方式；不存在時視為 no-op。
@@ -60,15 +76,40 @@ actor PaymentMethodPersistence {
         let oldDescriptor = FetchDescriptor<PaymentMethodRecord>(
             predicate: #Predicate { $0.name == oldName }
         )
-        for record in try modelContext.fetch(oldDescriptor) {
+        let oldRecords = try modelContext.fetch(oldDescriptor)
+        let preservedIsCardless = oldRecords.contains { $0.isCardless }
+        for record in oldRecords {
             modelContext.delete(record)
         }
 
         let newDescriptor = FetchDescriptor<PaymentMethodRecord>(
             predicate: #Predicate { $0.name == newName }
         )
-        if try modelContext.fetch(newDescriptor).first == nil {
-            modelContext.insert(PaymentMethodRecord(name: newName))
+        if let existing = try modelContext.fetch(newDescriptor).first {
+            // 合併時保留「任一邊曾標記為無卡」的狀態，避免使用者改名後 isCardless 莫名被清掉。
+            if preservedIsCardless {
+                existing.isCardless = true
+            }
+        } else {
+            modelContext.insert(PaymentMethodRecord(name: newName, isCardless: preservedIsCardless))
+        }
+
+        try modelContext.save()
+    }
+
+    /// 設定指定付款方式的 `isCardless` 旗標；若該名稱不在主檔則先建立記錄。
+    /// - Parameters:
+    ///   - name: 付款方式名稱（呼叫前由 caller 完成 trim）。
+    ///   - isCardless: 是否屬於無卡類付款方式。
+    func setIsCardless(name: String, isCardless: Bool) throws {
+        let descriptor = FetchDescriptor<PaymentMethodRecord>(
+            predicate: #Predicate { $0.name == name }
+        )
+
+        if let existing = try modelContext.fetch(descriptor).first {
+            existing.isCardless = isCardless
+        } else {
+            modelContext.insert(PaymentMethodRecord(name: name, isCardless: isCardless))
         }
 
         try modelContext.save()

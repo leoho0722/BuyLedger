@@ -76,11 +76,31 @@ struct OrderEditView: View {
                     paymentMethodPickerRow
                 }
                 
-                Section("收款金額") {
+                Section {
                     decimalField(
                         title: "客戶實付（NT$）",
                         value: $store.draftChargedAmount
                     )
+
+                    if store.isSelectedPaymentMethodCardless {
+                        decimalField(
+                            title: "無卡折抵金額（NT$）",
+                            value: $store.draftCardlessDeductionAmount
+                        )
+
+                        decimalField(
+                            title: "無卡補款金額（NT$）",
+                            value: $store.draftCardlessSupplementAmount
+                        )
+                    }
+                } header: {
+                    Text("收款金額")
+                } footer: {
+                    if store.isSelectedPaymentMethodCardless {
+                        Text("無卡類付款方式才會啟用「折抵」與「補款」欄位；總收款 = 客戶實付 + 補款 − 折抵。")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
                 
                 Section("成本（NT$）") {
@@ -160,13 +180,13 @@ struct OrderEditView: View {
                     addAlertTitle: "新增付款方式",
                     addFieldPlaceholder: "付款方式名稱",
                     addAlertMessage: "輸入新的付款方式名稱，加入後會立即套用至此訂單。",
-                    options: store.availablePaymentMethods,
+                    options: store.availablePaymentMethods.map(\.name),
                     selected: store.draftPaymentMethod,
                     onSelect: { method in
                         store.draftPaymentMethod = method
                     },
-                    onAdd: { name in
-                        store.send(.addPaymentMethodTapped(name))
+                    onAddPaymentMethod: { name, isCardless in
+                        store.send(.addPaymentMethodTapped(name: name, isCardless: isCardless))
                     }
                 )
             }

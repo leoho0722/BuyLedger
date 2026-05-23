@@ -64,6 +64,16 @@ final class OrderRecord {
     /// 實際向客戶收款的新台幣金額。
     var chargedAmount: Decimal
 
+    /// 無卡折抵金額（TWD）；用於「無卡」類付款方式紀錄客戶使用儲值金、購物金等折抵的金額。
+    ///
+    /// 帶 default `0` 走 SwiftData lightweight migration；只有當 ``paymentMethod`` 對應的 ``PaymentMethodRecord/isCardless`` 為 `true` 時，編輯表單才會顯示並寫入此值。
+    var cardlessDeductionAmount: Decimal = 0
+
+    /// 無卡補款金額（TWD）；用於「無卡」類付款方式紀錄客戶以 ATM 轉帳等方式補繳的金額。
+    ///
+    /// 帶 default `0` 走 SwiftData lightweight migration；行為與 ``cardlessDeductionAmount`` 相同，只在無卡類付款方式才會被使用者編輯。
+    var cardlessSupplementAmount: Decimal = 0
+
     /// 商品類別。
     var category: String
 
@@ -91,6 +101,8 @@ final class OrderRecord {
         self.platformFeeRate = order.platformFeeRate
         self.paymentFeeRate = order.paymentFeeRate
         self.chargedAmount = order.chargedAmount
+        self.cardlessDeductionAmount = order.cardlessDeductionAmount
+        self.cardlessSupplementAmount = order.cardlessSupplementAmount
         self.category = order.category
         self.paymentMethod = order.paymentMethod
     }
@@ -120,6 +132,8 @@ extension OrderRecord {
             platformFeeRate: platformFeeRate,
             paymentFeeRate: paymentFeeRate,
             chargedAmount: chargedAmount,
+            cardlessDeductionAmount: cardlessDeductionAmount,
+            cardlessSupplementAmount: cardlessSupplementAmount,
             category: category,
             paymentMethod: paymentMethod
         )
@@ -141,6 +155,8 @@ extension OrderRecord {
         self.platformFeeRate = order.platformFeeRate
         self.paymentFeeRate = order.paymentFeeRate
         self.chargedAmount = order.chargedAmount
+        self.cardlessDeductionAmount = order.cardlessDeductionAmount
+        self.cardlessSupplementAmount = order.cardlessSupplementAmount
         self.category = order.category
         self.paymentMethod = order.paymentMethod
     }

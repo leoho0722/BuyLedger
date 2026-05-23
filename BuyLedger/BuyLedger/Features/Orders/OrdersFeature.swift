@@ -36,8 +36,8 @@ struct OrdersFeature {
         /// 商品類別主檔（從 ``CategoryRepository`` 載入）。
         var categoryMaster: [String] = []
 
-        /// 付款方式主檔（從 ``PaymentMethodRepository`` 載入）。
-        var paymentMethodMaster: [String] = []
+        /// 付款方式主檔（從 ``PaymentMethodRepository`` 載入），含每筆方式是否屬於無卡類。
+        var paymentMethodMaster: [PaymentMethodInfo] = []
 
         /// 指示訂單是否正在載入。
         var isLoading = false
@@ -101,14 +101,21 @@ struct OrdersFeature {
             return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
         }
 
-        /// 對外提供給編輯表單的「可用付款方式」清單；合併規則同 ``availableCategories``。
-        var availablePaymentMethods: [String] {
-            let fromOrders = orders
-                .map { $0.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-            var merged = Set(paymentMethodMaster)
-            merged.formUnion(fromOrders)
-            return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        /// 對外提供給編輯表單的「可用付款方式」清單；合併規則同 ``availableCategories``，但保留 `isCardless` 旗標。
+        ///
+        /// 訂單裡用過但主檔還沒有的付款方式以 `isCardless == false` 補上；主檔有的則直接帶入 `isCardless`，使編輯表單能正確判斷是否顯示「無卡折抵金額」與「無卡補款金額」欄位。
+        var availablePaymentMethods: [PaymentMethodInfo] {
+            var byName: [String: PaymentMethodInfo] = [:]
+            for info in paymentMethodMaster {
+                byName[info.name] = info
+            }
+            for order in orders {
+                let trimmed = order.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty, byName[trimmed] == nil else { continue }
+                byName[trimmed] = PaymentMethodInfo(name: trimmed, isCardless: false)
+            }
+            return byName.values
+                .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         }
     }
     
@@ -131,7 +138,7 @@ struct OrdersFeature {
         case categoryMasterLoaded([String])
 
         /// 付款方式主檔載入完成。
-        case paymentMethodMasterLoaded([String])
+        case paymentMethodMasterLoaded([PaymentMethodInfo])
         
         /// 使用者切換狀態篩選。
         case statusFilterSelected(OrderStatusFilter)
@@ -215,8 +222,8 @@ struct OrdersFeature {
                         }
                     }()
                     async let paymentMethodsTask: Void = {
-                        if let items = try? await paymentMethodRepository.fetchPaymentMethods() {
-                            await send(.paymentMethodMasterLoaded(items))
+                        if let infos = try? await paymentMethodRepository.fetchPaymentMethodInfos() {
+                            await send(.paymentMethodMasterLoaded(infos))
                         }
                     }()
 
@@ -234,8 +241,8 @@ struct OrdersFeature {
                 state.categoryMaster = items
                 return .none
 
-            case let .paymentMethodMasterLoaded(items):
-                state.paymentMethodMaster = items
+            case let .paymentMethodMasterLoaded(infos):
+                state.paymentMethodMaster = infos
                 return .none
                 
             case let .ordersLoaded(orders):
@@ -318,19 +325,23 @@ struct OrdersFeature {
                     try? await categoryRepository.addCategory(trimmed)
                 }
 
-            case let .editOrder(.presented(.addPaymentMethodTapped(name))):
+            case let .editOrder(.presented(.addPaymentMethodTapped(name, isCardless))):
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return .none }
-                if !state.paymentMethodMaster.contains(trimmed) {
-                    var updated = state.paymentMethodMaster
-                    updated.append(trimmed)
-                    state.paymentMethodMaster = updated.sorted {
-                        $0.localizedStandardCompare($1) == .orderedAscending
-                    }
+                // 同名情境：以新的 isCardless 覆寫，讓 sheet 內二次新增能更正先前忘記勾選的狀態。
+                var updated = state.paymentMethodMaster
+                if let index = updated.firstIndex(where: { $0.name == trimmed }) {
+                    updated[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless)
+                } else {
+                    updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless))
                 }
+                state.paymentMethodMaster = updated.sorted {
+                    $0.name.localizedStandardCompare($1.name) == .orderedAscending
+                }
+
                 let paymentMethodRepository = paymentMethodRepository
                 return .run { _ in
-                    try? await paymentMethodRepository.addPaymentMethod(trimmed)
+                    try? await paymentMethodRepository.addPaymentMethod(trimmed, isCardless)
                 }
 
             case .editOrder:
@@ -361,6 +372,8 @@ struct OrdersFeature {
                     platformFeeRate: existing.platformFeeRate,
                     paymentFeeRate: existing.paymentFeeRate,
                     chargedAmount: existing.chargedAmount,
+                    cardlessDeductionAmount: existing.cardlessDeductionAmount,
+                    cardlessSupplementAmount: existing.cardlessSupplementAmount,
                     category: existing.category,
                     paymentMethod: existing.paymentMethod
                 )
@@ -444,7 +457,14 @@ private extension OrdersFeature {
         let normalizedCardFee = clampRate(draft.draftCardFeeRate)
         let normalizedPlatformFee = clampRate(draft.draftPlatformFeeRate)
         let normalizedPaymentFee = clampRate(draft.draftPaymentFeeRate)
-        
+        // 只在選到無卡類付款方式時保留兩個金額；切回非無卡的話一律歸零，避免使用者改完付款方式仍把舊金額算進公式。
+        let normalizedDeduction = draft.isSelectedPaymentMethodCardless
+            ? max(0, draft.draftCardlessDeductionAmount)
+            : 0
+        let normalizedSupplement = draft.isSelectedPaymentMethodCardless
+            ? max(0, draft.draftCardlessSupplementAmount)
+            : 0
+
         if let original = draft.original,
            let index = state.orders.firstIndex(where: { $0.id == original.id }) {
             let existing = state.orders[index]
@@ -453,7 +473,7 @@ private extension OrdersFeature {
                 initials: existing.customer.initials,
                 tier: existing.customer.tier
             )
-            
+
             let updatedOrder = LedgerOrder(
                 id: existing.id,
                 customer: updatedCustomer,
@@ -469,6 +489,8 @@ private extension OrdersFeature {
                 platformFeeRate: normalizedPlatformFee,
                 paymentFeeRate: normalizedPaymentFee,
                 chargedAmount: normalizedAmount,
+                cardlessDeductionAmount: normalizedDeduction,
+                cardlessSupplementAmount: normalizedSupplement,
                 category: trimmedCategory.isEmpty ? existing.category : trimmedCategory,
                 paymentMethod: trimmedPaymentMethod.isEmpty ? existing.paymentMethod : trimmedPaymentMethod
             )
@@ -479,7 +501,7 @@ private extension OrdersFeature {
             let resolvedCategory = trimmedCategory.isEmpty ? "未分類" : trimmedCategory
             let initials = String(resolvedName.prefix(2)).uppercased()
             let draftID = "BL-DRAFT-\(uuid().uuidString.prefix(6))"
-            
+
             let newOrder = LedgerOrder(
                 id: draftID,
                 customer: LedgerCustomer(name: resolvedName, initials: initials, tier: .new),
@@ -495,10 +517,12 @@ private extension OrdersFeature {
                 platformFeeRate: normalizedPlatformFee,
                 paymentFeeRate: normalizedPaymentFee,
                 chargedAmount: normalizedAmount,
+                cardlessDeductionAmount: normalizedDeduction,
+                cardlessSupplementAmount: normalizedSupplement,
                 category: resolvedCategory,
                 paymentMethod: trimmedPaymentMethod
             )
-            
+
             state.orders.insert(newOrder, at: 0)
             state.selectedOrderID = draftID
             return newOrder

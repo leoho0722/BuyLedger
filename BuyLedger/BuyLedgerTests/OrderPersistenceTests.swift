@@ -69,6 +69,8 @@ struct OrderPersistenceTests {
             platformFeeRate: 0,
             paymentFeeRate: 0,
             chargedAmount: 0,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
             category: "美妝",
             paymentMethod: ""
         )
@@ -103,6 +105,8 @@ struct OrderPersistenceTests {
             platformFeeRate: original.platformFeeRate,
             paymentFeeRate: 0,
             chargedAmount: 9_999,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
             category: original.category,
             paymentMethod: original.paymentMethod
         )

@@ -54,6 +54,16 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 實際向客戶收款的新台幣金額。
     let chargedAmount: Decimal
 
+    /// 無卡折抵金額（TWD）。
+    ///
+    /// 用於「無卡」類付款方式紀錄客戶以儲值金、購物金等方式折抵的金額；折抵會從 ``OrderSummary/revenue`` 中扣除。非無卡訂單一律以 `0` 帶入。
+    let cardlessDeductionAmount: Decimal
+
+    /// 無卡補款金額（TWD）。
+    ///
+    /// 用於「無卡」類付款方式紀錄客戶以 ATM 轉帳等方式補繳的金額；補款會加到 ``OrderSummary/revenue`` 中。非無卡訂單一律以 `0` 帶入。
+    let cardlessSupplementAmount: Decimal
+
     /// 商品類別。
     let category: String
 

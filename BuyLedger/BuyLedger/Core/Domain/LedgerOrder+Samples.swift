@@ -45,6 +45,8 @@ extension LedgerOrder {
             platformFeeRate: 0,
             paymentFeeRate: 0,
             chargedAmount: 11_800,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
             category: "美妝",
             paymentMethod: "信用卡"
         ),
@@ -73,6 +75,8 @@ extension LedgerOrder {
             platformFeeRate: 0,
             paymentFeeRate: 0,
             chargedAmount: 4_980,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
             category: "服飾",
             paymentMethod: "銀行轉帳"
         ),
@@ -106,6 +110,8 @@ extension LedgerOrder {
             platformFeeRate: decimal("0.03"),
             paymentFeeRate: 0,
             chargedAmount: 9_890,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
             category: "美妝",
             paymentMethod: "信用卡"
         ),
@@ -134,6 +140,8 @@ extension LedgerOrder {
             platformFeeRate: 0,
             paymentFeeRate: 0,
             chargedAmount: 0,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
             category: "精品",
             paymentMethod: ""
         ),
@@ -167,6 +175,8 @@ extension LedgerOrder {
             platformFeeRate: 0,
             paymentFeeRate: 0,
             chargedAmount: 8_650,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
             category: "美妝",
             paymentMethod: "LINE Pay"
         ),
@@ -191,6 +201,8 @@ extension LedgerOrder {
             platformFeeRate: decimal("0.03"),
             paymentFeeRate: 0,
             chargedAmount: 8_420,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
             category: "美妝",
             paymentMethod: "Apple Pay"
         ),
@@ -219,6 +231,8 @@ extension LedgerOrder {
             platformFeeRate: 0,
             paymentFeeRate: 0,
             chargedAmount: 5_680,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
             category: "服飾",
             paymentMethod: "信用卡"
         ),

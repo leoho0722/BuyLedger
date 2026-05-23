@@ -103,19 +103,43 @@ struct OrderEditFeatureTests {
         #expect(state.draftPlatformFeeRate == original.platformFeeRate)
     }
     
+    @Test func isSelectedPaymentMethodCardlessReflectsMasterFlag() {
+        // 主檔中「無卡存款」isCardless == true、「信用卡」isCardless == false。
+        let state = OrderEditFeature.State(
+            availablePaymentMethods: [
+                PaymentMethodInfo(name: "信用卡", isCardless: false),
+                PaymentMethodInfo(name: "無卡存款", isCardless: true),
+            ]
+        )
+
+        var mutable = state
+        mutable.draftPaymentMethod = "信用卡"
+        #expect(mutable.isSelectedPaymentMethodCardless == false)
+
+        mutable.draftPaymentMethod = "無卡存款"
+        #expect(mutable.isSelectedPaymentMethodCardless == true)
+
+        // 不在主檔的暫存值預設視為非無卡。
+        mutable.draftPaymentMethod = "未知付款方式"
+        #expect(mutable.isSelectedPaymentMethodCardless == false)
+    }
+
     @Test func newDraftStartsEmpty() {
         let state = OrderEditFeature.State()
-        
+
         #expect(state.draftCustomerName.isEmpty)
         #expect(state.draftCategory.isEmpty)
         #expect(state.draftStatus == .quoting)
         #expect(state.draftCurrency == .twd)
         #expect(state.draftChargedAmount == 0)
+        #expect(state.draftCardlessDeductionAmount == 0)
+        #expect(state.draftCardlessSupplementAmount == 0)
         #expect(state.draftItemCost == 0)
         #expect(state.draftDomesticShipping == 0)
         #expect(state.draftInternationalShipping == 0)
         #expect(state.draftCardFeeRate == 0)
         #expect(state.draftPlatformFeeRate == 0)
         #expect(state.original == nil)
+        #expect(state.availablePaymentMethods.isEmpty)
     }
 }

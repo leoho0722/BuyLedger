@@ -17,14 +17,24 @@ struct PaymentMethodRepository: Sendable {
     /// 讀取目前所有付款方式名稱（已排序）。
     var fetchPaymentMethods: @Sendable () async throws -> [String]
 
-    /// 加入新付款方式；trim 後若空字串視為 no-op；已存在不重複建立。
-    var addPaymentMethod: @Sendable (String) async throws -> Void
+    /// 讀取目前所有付款方式（含 `isCardless` 旗標，已依名稱排序）。
+    ///
+    /// 給訂單編輯與付款方式管理頁使用，避免上層只拿到名稱字串卻得另查「該方式是否屬於無卡類」。
+    var fetchPaymentMethodInfos: @Sendable () async throws -> [PaymentMethodInfo]
+
+    /// 加入新付款方式；trim 後若空字串視為 no-op。
+    ///
+    /// 若名稱已存在，會以新傳入的 `isCardless` 覆寫旗標（用來在使用者第二次新增同名項目時修正先前勾選）。
+    var addPaymentMethod: @Sendable (String, Bool) async throws -> Void
 
     /// 刪除指定名稱的付款方式；不存在視為 no-op。
     var removePaymentMethod: @Sendable (String) async throws -> Void
 
     /// 把指定付款方式更名（舊名 → 新名）。caller 負責把訂單表的 cascade 一併處理；本方法只更新主檔。
     var renamePaymentMethod: @Sendable (String, String) async throws -> Void
+
+    /// 設定指定付款方式的 `isCardless` 旗標；若該名稱尚未在主檔則建立記錄。
+    var setPaymentMethodIsCardless: @Sendable (String, Bool) async throws -> Void
 }
 
 extension PaymentMethodRepository {
@@ -40,11 +50,15 @@ extension PaymentMethodRepository {
                 let persistence = await Self.makePersistence(container: container)
                 return try await persistence.fetchAll()
             },
-            addPaymentMethod: { rawName in
+            fetchPaymentMethodInfos: {
+                let persistence = await Self.makePersistence(container: container)
+                return try await persistence.fetchAllInfos()
+            },
+            addPaymentMethod: { rawName, isCardless in
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return }
                 let persistence = await Self.makePersistence(container: container)
-                try await persistence.upsert(name: trimmed)
+                try await persistence.upsert(name: trimmed, isCardless: isCardless)
             },
             removePaymentMethod: { name in
                 let persistence = await Self.makePersistence(container: container)
@@ -55,6 +69,12 @@ extension PaymentMethodRepository {
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else { return }
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.rename(from: oldName, to: trimmedNew)
+            },
+            setPaymentMethodIsCardless: { rawName, isCardless in
+                let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return }
+                let persistence = await Self.makePersistence(container: container)
+                try await persistence.setIsCardless(name: trimmed, isCardless: isCardless)
             }
         )
     }
@@ -87,8 +107,10 @@ extension PaymentMethodRepository: DependencyKey {
     /// 測試預設使用空資料來源；TestStore 可透過 `withDependencies` 覆寫。
     nonisolated static let testValue = PaymentMethodRepository(
         fetchPaymentMethods: { [] },
-        addPaymentMethod: { _ in },
+        fetchPaymentMethodInfos: { [] },
+        addPaymentMethod: { _, _ in },
         removePaymentMethod: { _ in },
-        renamePaymentMethod: { _, _ in }
+        renamePaymentMethod: { _, _ in },
+        setPaymentMethodIsCardless: { _, _ in }
     )
 }

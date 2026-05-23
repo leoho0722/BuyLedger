@@ -10,7 +10,7 @@ import Foundation
 
 /// 商品類別 / 付款方式主檔的獨立管理功能。
 ///
-/// 以 ``LookupKind`` 切換要操作的 repository 與顯示文案，使同一份 reducer/view 可同時服務兩種主檔。
+/// 以 ``LookupKind`` 切換要操作的 repository 與顯示文案，使同一份 reducer/view 可同時服務兩種主檔。付款方式主檔額外維護 ``State/paymentMethodIsCardless`` 對應表，供 view 端在 List 中顯示「無卡」標籤；`isCardless` 的設定發生在使用者新增付款方式的當下（``Action/addConfirmed(name:isCardless:)``），不再於 List row 提供切換 toggle，以避免 UX 上不易理解。
 @Reducer
 struct LookupManagementFeature {
 
@@ -25,6 +25,11 @@ struct LookupManagementFeature {
 
         /// 目前的主檔項目（已排序）。
         var items: [String] = []
+
+        /// 付款方式主檔的 `isCardless` 對應表；只有 `kind == .paymentMethod` 時有意義。
+        ///
+        /// 以名稱為 key 的 dictionary，缺值視為 `false`。View 對 paymentMethod kind 會在 row 上顯示「無卡」標籤，但不再提供切換 toggle；要更新此旗標只能透過刪除後重新新增。
+        var paymentMethodIsCardless: [String: Bool] = [:]
 
         /// 載入失敗訊息。
         var errorMessage: String?
@@ -42,14 +47,17 @@ struct LookupManagementFeature {
         /// 畫面出現時觸發載入。
         case task
 
-        /// 主檔載入成功。
-        case itemsLoaded([String])
+        /// 商品類別主檔載入成功。
+        case categoryItemsLoaded([String])
+
+        /// 付款方式主檔載入成功（含 `isCardless`）。
+        case paymentMethodInfosLoaded([PaymentMethodInfo])
 
         /// 主檔載入失敗。
         case loadFailed(String)
 
-        /// 使用者透過「新增」alert 確認新增一筆主檔項目。
-        case addConfirmed(String)
+        /// 使用者透過「新增」流程確認新增一筆主檔項目；對商品類別 kind，`isCardless` 永遠為 `false` 並被忽略。
+        case addConfirmed(name: String, isCardless: Bool)
 
         /// 使用者要求刪除指定名稱的主檔項目。
         case deleteRequested(String)
@@ -79,8 +87,20 @@ struct LookupManagementFeature {
                 guard !state.hasLoaded else { return .none }
                 return load(kind: state.kind)
 
-            case let .itemsLoaded(items):
+            case let .categoryItemsLoaded(items):
                 state.items = items
+                state.hasLoaded = true
+                state.errorMessage = nil
+                return .none
+
+            case let .paymentMethodInfosLoaded(infos):
+                state.items = infos.map(\.name)
+                    .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+                var map: [String: Bool] = [:]
+                for info in infos {
+                    map[info.name] = info.isCardless
+                }
+                state.paymentMethodIsCardless = map
                 state.hasLoaded = true
                 state.errorMessage = nil
                 return .none
@@ -89,7 +109,7 @@ struct LookupManagementFeature {
                 state.errorMessage = message
                 return .none
 
-            case let .addConfirmed(name):
+            case let .addConfirmed(name, isCardless):
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return .none }
 
@@ -101,6 +121,11 @@ struct LookupManagementFeature {
                     }
                 }
 
+                if state.kind == .paymentMethod {
+                    // 重新觸發同名新增等同於「重新套用 isCardless」，方便使用者上次忘了勾選無卡時更正。
+                    state.paymentMethodIsCardless[trimmed] = isCardless
+                }
+
                 let kind = state.kind
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
@@ -109,12 +134,13 @@ struct LookupManagementFeature {
                     case .category:
                         try? await categoryRepository.addCategory(trimmed)
                     case .paymentMethod:
-                        try? await paymentMethodRepository.addPaymentMethod(trimmed)
+                        try? await paymentMethodRepository.addPaymentMethod(trimmed, isCardless)
                     }
                 }
 
             case let .deleteRequested(name):
                 state.items.removeAll { $0 == name }
+                state.paymentMethodIsCardless.removeValue(forKey: name)
 
                 let kind = state.kind
                 let categoryRepository = categoryRepository
@@ -142,6 +168,13 @@ struct LookupManagementFeature {
                 renamed = Array(Set(renamed))
                 state.items = renamed.sorted {
                     $0.localizedStandardCompare($1) == .orderedAscending
+                }
+
+                if state.kind == .paymentMethod,
+                   let oldFlag = state.paymentMethodIsCardless.removeValue(forKey: trimmedFrom) {
+                    // 合併：任一邊曾標記為無卡就維持無卡。
+                    let mergedFlag = oldFlag || (state.paymentMethodIsCardless[trimmedTo] ?? false)
+                    state.paymentMethodIsCardless[trimmedTo] = mergedFlag
                 }
 
                 let kind = state.kind
@@ -175,10 +208,10 @@ struct LookupManagementFeature {
                 switch kind {
                 case .category:
                     let items = try await categoryRepository.fetchCategories()
-                    await send(.itemsLoaded(items))
+                    await send(.categoryItemsLoaded(items))
                 case .paymentMethod:
-                    let items = try await paymentMethodRepository.fetchPaymentMethods()
-                    await send(.itemsLoaded(items))
+                    let infos = try await paymentMethodRepository.fetchPaymentMethodInfos()
+                    await send(.paymentMethodInfosLoaded(infos))
                 }
             } catch {
                 await send(.loadFailed("主檔載入失敗，請稍後再試。"))

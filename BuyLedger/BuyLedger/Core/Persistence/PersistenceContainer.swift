@@ -53,7 +53,7 @@ enum PersistenceContainer {
         cloudKit: CloudKitOption = .disabled,
         inMemoryOnly: Bool = false
     ) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: BuyLedgerSchemaV3.self)
+        let schema = Schema(versionedSchema: BuyLedgerSchemaV4.self)
 
         let configuration = ModelConfiguration(
             "BuyLedger",

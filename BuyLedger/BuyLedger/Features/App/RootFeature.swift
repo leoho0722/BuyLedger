@@ -176,8 +176,9 @@ struct RootFeature {
                 cascadeRename(kind: .category, from: from, to: to, in: &state)
                 return .none
 
-            case let .categoryManagement(.addConfirmed(name)):
-                addToOrdersMaster(kind: .category, name: name, in: &state)
+            case let .categoryManagement(.addConfirmed(name, _)):
+                // 商品類別無 isCardless 概念，直接忽略第二個參數。
+                addCategoryToOrdersMaster(name: name, in: &state)
                 return .none
 
             case let .categoryManagement(.deleteRequested(name)):
@@ -191,8 +192,8 @@ struct RootFeature {
                 cascadeRename(kind: .paymentMethod, from: from, to: to, in: &state)
                 return .none
 
-            case let .paymentMethodManagement(.addConfirmed(name)):
-                addToOrdersMaster(kind: .paymentMethod, name: name, in: &state)
+            case let .paymentMethodManagement(.addConfirmed(name, isCardless)):
+                addPaymentMethodToOrdersMaster(name: name, isCardless: isCardless, in: &state)
                 return .none
 
             case let .paymentMethodManagement(.deleteRequested(name)):
@@ -236,7 +237,7 @@ struct RootFeature {
             }
 
         case .paymentMethod:
-            state.orders.paymentMethodMaster = renameInList(
+            state.orders.paymentMethodMaster = renamePaymentMethods(
                 state.orders.paymentMethodMaster,
                 from: trimmedFrom,
                 to: trimmedTo
@@ -248,35 +249,46 @@ struct RootFeature {
         }
     }
 
-    /// 把 ``LookupManagementFeature`` 新增的項目加進 ``OrdersFeature/State`` 的 master 副本。
+    /// 把 ``LookupManagementFeature`` 新增的商品類別加進 ``OrdersFeature/State/categoryMaster`` 副本。
     /// - Parameters:
-    ///   - kind: 主檔型別。
     ///   - name: 新增名稱。
     ///   - state: 要修改的 ``RootFeature/State``。
-    private func addToOrdersMaster(
-        kind: LookupKind,
+    private func addCategoryToOrdersMaster(
         name: String,
         in state: inout State
     ) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else { return }
+        guard !state.orders.categoryMaster.contains(trimmed) else { return }
 
-        switch kind {
-        case .category:
-            guard !state.orders.categoryMaster.contains(trimmed) else { return }
-            var updated = state.orders.categoryMaster
-            updated.append(trimmed)
-            state.orders.categoryMaster = updated.sorted {
-                $0.localizedStandardCompare($1) == .orderedAscending
-            }
+        var updated = state.orders.categoryMaster
+        updated.append(trimmed)
+        state.orders.categoryMaster = updated.sorted {
+            $0.localizedStandardCompare($1) == .orderedAscending
+        }
+    }
 
-        case .paymentMethod:
-            guard !state.orders.paymentMethodMaster.contains(trimmed) else { return }
-            var updated = state.orders.paymentMethodMaster
-            updated.append(trimmed)
-            state.orders.paymentMethodMaster = updated.sorted {
-                $0.localizedStandardCompare($1) == .orderedAscending
-            }
+    /// 把 ``LookupManagementFeature`` 新增的付款方式（含 `isCardless`）加進 ``OrdersFeature/State/paymentMethodMaster`` 副本；若名稱已存在則僅更新旗標。
+    /// - Parameters:
+    ///   - name: 新增名稱。
+    ///   - isCardless: 是否屬於無卡類付款方式。
+    ///   - state: 要修改的 ``RootFeature/State``。
+    private func addPaymentMethodToOrdersMaster(
+        name: String,
+        isCardless: Bool,
+        in state: inout State
+    ) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        var updated = state.orders.paymentMethodMaster
+        if let index = updated.firstIndex(where: { $0.name == trimmed }) {
+            updated[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless)
+        } else {
+            updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless))
+        }
+        state.orders.paymentMethodMaster = updated.sorted {
+            $0.name.localizedStandardCompare($1.name) == .orderedAscending
         }
     }
 
@@ -294,8 +306,35 @@ struct RootFeature {
         case .category:
             state.orders.categoryMaster.removeAll { $0 == name }
         case .paymentMethod:
-            state.orders.paymentMethodMaster.removeAll { $0 == name }
+            state.orders.paymentMethodMaster.removeAll { $0.name == name }
         }
+    }
+
+    /// 把 [PaymentMethodInfo] 中名稱為 `oldName` 的項目改名為 `newName`，保留原有 `isCardless`；若 `newName` 已存在則合併（任一邊曾標記無卡的就視為無卡）。
+    /// - Parameters:
+    ///   - list: 原始陣列。
+    ///   - oldName: 舊名稱。
+    ///   - newName: 新名稱。
+    /// - Returns: 重新命名後的排序陣列。
+    private func renamePaymentMethods(
+        _ list: [PaymentMethodInfo],
+        from oldName: String,
+        to newName: String
+    ) -> [PaymentMethodInfo] {
+        var byName: [String: PaymentMethodInfo] = [:]
+        for info in list {
+            if info.name == oldName {
+                let merged = byName[newName]
+                let isCardless = info.isCardless || (merged?.isCardless ?? false)
+                byName[newName] = PaymentMethodInfo(name: newName, isCardless: isCardless)
+            } else {
+                let merged = byName[info.name]
+                let isCardless = info.isCardless || (merged?.isCardless ?? false)
+                byName[info.name] = PaymentMethodInfo(name: info.name, isCardless: isCardless)
+            }
+        }
+        return byName.values
+            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
     /// 把 list 中等於 `oldName` 的項目替換成 `newName`，去重後依 locale 排序。
@@ -340,6 +379,8 @@ struct RootFeature {
             platformFeeRate: order.platformFeeRate,
             paymentFeeRate: order.paymentFeeRate,
             chargedAmount: order.chargedAmount,
+            cardlessDeductionAmount: order.cardlessDeductionAmount,
+            cardlessSupplementAmount: order.cardlessSupplementAmount,
             category: category ?? order.category,
             paymentMethod: paymentMethod ?? order.paymentMethod
         )

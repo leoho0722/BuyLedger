@@ -40,14 +40,22 @@ struct OrderDetailView: View {
                     case .compact:
                         profitCard(summary: summary, palette: palette)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                        if hasCardlessAdjustments {
+                            cardlessAdjustmentsCard(palette: palette)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                         compactCostBreakdown(summary: summary, palette: palette)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         compactItemList
                             .frame(maxWidth: .infinity, alignment: .leading)
-                        
+
                     case .wide:
                         kpiThreeUp(summary: summary, palette: palette)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                        if hasCardlessAdjustments {
+                            cardlessAdjustmentsCard(palette: palette)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                         wideBreakdownAndItems(summary: summary, palette: palette)
                             .frame(maxWidth: .infinity, alignment: .leading)
                     }
@@ -500,6 +508,45 @@ private extension OrderDetailView {
         }
     }
     
+    /// 無卡明細卡片：當訂單為「無卡」類付款方式且有折抵或補款金額時顯示。
+    ///
+    /// 此卡片只是輔助說明 ``OrderSummary/revenue`` 的調整來源，不參與成本拆解圖；公式為 `revenue = chargedAmount + cardlessSupplementAmount − cardlessDeductionAmount`。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 無卡明細卡片 view。
+    func cardlessAdjustmentsCard(palette: BLPalette) -> some View {
+        BLCard {
+            VStack(alignment: .leading, spacing: BLSpacing.small) {
+                Text("無卡明細")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(palette.secondaryLabel)
+                    .textCase(.uppercase)
+
+                HStack {
+                    Text("無卡折抵金額")
+                        .font(.subheadline)
+                        .foregroundStyle(palette.label)
+                    Spacer()
+                    Text("-\(OrderFormatters.twd(order.cardlessDeductionAmount))")
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(palette.red)
+                }
+
+                HStack {
+                    Text("無卡補款金額")
+                        .font(.subheadline)
+                        .foregroundStyle(palette.label)
+                    Spacer()
+                    Text("+\(OrderFormatters.twd(order.cardlessSupplementAmount))")
+                        .font(.subheadline.weight(.semibold))
+                        .monospacedDigit()
+                        .foregroundStyle(palette.green)
+                }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     /// 顯示單一財務指標。
     /// - Parameters:
     ///   - title: 指標標題。
@@ -522,6 +569,11 @@ private extension OrderDetailView {
 // MARK: - Private Method
 
 private extension OrderDetailView {
+
+    /// 訂單是否需要顯示無卡明細卡片：只要折抵或補款金額任一非 0 就顯示，避免無卡訂單欄位填 0 時還浮現空卡片。
+    var hasCardlessAdjustments: Bool {
+        order.cardlessDeductionAmount > 0 || order.cardlessSupplementAmount > 0
+    }
 
     /// 取得跟隨使用者手機偏好語言的幣別顯示文字，例如 `TWD (新台幣)`。
     ///

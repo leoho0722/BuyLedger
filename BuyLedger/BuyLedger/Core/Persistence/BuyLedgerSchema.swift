@@ -210,6 +210,8 @@ enum BuyLedgerSchemaV2: VersionedSchema {
 /// V3 schema：在 V2 之上新增 ``OrderRecord/foreignDomesticShipping``（外國國內運費）與 ``OrderRecord/paymentFeeRate``（金流手續費）。
 ///
 /// 兩個欄位都帶 default `0`，因此 V2 → V3 走 lightweight migration 即可。
+///
+/// V3.OrderRecord 與 V3.PaymentMethodRecord 改為影子型別以「凍結」當時的 attribute 集合，避免後續變更 top-level 型別時破壞 V3 schema fingerprint。
 enum BuyLedgerSchemaV3: VersionedSchema {
 
     // MARK: - Static Properties
@@ -217,7 +219,105 @@ enum BuyLedgerSchemaV3: VersionedSchema {
     /// 版本識別。
     static var versionIdentifier: Schema.Version { Schema.Version(3, 0, 0) }
 
-    /// 此版本包含的 model 型別；引用 top-level 定義（已含 V3 新增欄位）。
+    /// 此版本包含的 model 型別。
+    static var models: [any PersistentModel.Type] {
+        [
+            OrderRecord.self,
+            CategoryRecord.self,
+            PaymentMethodRecord.self,
+            CurrencyMetadataRecord.self,
+        ]
+    }
+
+    /// V3 時代的 ``OrderRecord`` 影子；只在 SwiftData migration 用，與當時版本的屬性集合一致（已含 V3 新增的 `foreignDomesticShipping` 與 `paymentFeeRate`，但尚未含 V4 的無卡折抵／補款欄位）。
+    @Model
+    final class OrderRecord {
+
+        // MARK: - Data Properties
+
+        var id: String
+        var customer: LedgerCustomer
+        var status: OrderStatus
+        var currency: String
+        var date: Date
+        var items: [LedgerOrderItem]
+        var itemCost: Decimal
+        var domesticShipping: Decimal
+        var internationalShipping: Decimal
+        var foreignDomesticShipping: Decimal = 0
+        var cardFeeRate: Decimal
+        var platformFeeRate: Decimal
+        var paymentFeeRate: Decimal = 0
+        var chargedAmount: Decimal
+        var category: String
+        var paymentMethod: String = ""
+
+        // MARK: - Init
+
+        init(
+            id: String,
+            customer: LedgerCustomer,
+            status: OrderStatus,
+            currency: String,
+            date: Date,
+            items: [LedgerOrderItem],
+            itemCost: Decimal,
+            domesticShipping: Decimal,
+            internationalShipping: Decimal,
+            foreignDomesticShipping: Decimal = 0,
+            cardFeeRate: Decimal,
+            platformFeeRate: Decimal,
+            paymentFeeRate: Decimal = 0,
+            chargedAmount: Decimal,
+            category: String,
+            paymentMethod: String = ""
+        ) {
+            self.id = id
+            self.customer = customer
+            self.status = status
+            self.currency = currency
+            self.date = date
+            self.items = items
+            self.itemCost = itemCost
+            self.domesticShipping = domesticShipping
+            self.internationalShipping = internationalShipping
+            self.foreignDomesticShipping = foreignDomesticShipping
+            self.cardFeeRate = cardFeeRate
+            self.platformFeeRate = platformFeeRate
+            self.paymentFeeRate = paymentFeeRate
+            self.chargedAmount = chargedAmount
+            self.category = category
+            self.paymentMethod = paymentMethod
+        }
+    }
+
+    /// V3 時代的 ``PaymentMethodRecord`` 影子；只有 `name` 欄位，尚未加入 V4 的 `isCardless`。
+    @Model
+    final class PaymentMethodRecord {
+
+        // MARK: - Data Properties
+
+        var name: String
+
+        // MARK: - Init
+
+        init(name: String) {
+            self.name = name
+        }
+    }
+}
+
+/// V4 schema：在 V3 之上新增 ``OrderRecord/cardlessDeductionAmount``（無卡折抵金額）、``OrderRecord/cardlessSupplementAmount``（無卡補款金額），以及 ``PaymentMethodRecord/isCardless``（是否屬於無卡類付款方式）。
+///
+/// 三個新欄位皆帶 default 值（`0` 與 `false`），V3 → V4 走 SwiftData lightweight migration 即可。
+enum BuyLedgerSchemaV4: VersionedSchema {
+
+    // MARK: - Static Properties
+
+    /// 版本識別。
+    static var versionIdentifier: Schema.Version { Schema.Version(4, 0, 0) }
+
+    /// 此版本包含的 model 型別；引用 top-level 定義（已含 V4 新增欄位）。
     static var models: [any PersistentModel.Type] {
         [
             OrderRecord.self,
@@ -228,19 +328,24 @@ enum BuyLedgerSchemaV3: VersionedSchema {
     }
 }
 
-/// V1 → V2 的 migration plan。
+/// BuyLedger SwiftData migration plan。
 ///
-/// 採用 `.custom` 階段並提供完整 dump-and-restore：先在 V1 context 把所有 OrderRecord 序列化進記憶體字典，SwiftData 切到 V2 後再依字典重建。雖然繁瑣，但能確實保留資料；後續若要新增 V3，同樣依此 pattern 擴充。
+/// 採用 `.custom` 階段並提供完整 dump-and-restore：先在 V1 context 把所有 OrderRecord 序列化進記憶體字典，SwiftData 切到 V2 後再依字典重建。雖然繁瑣，但能確實保留資料；後續 V2 → V3、V3 → V4 都是新增 default 欄位，採 lightweight migration 即可。
 enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
 
     // MARK: - Static Properties
 
     /// migration plan 涉及的所有 schema 版本。
     static var schemas: [any VersionedSchema.Type] {
-        [BuyLedgerSchemaV1.self, BuyLedgerSchemaV2.self, BuyLedgerSchemaV3.self]
+        [
+            BuyLedgerSchemaV1.self,
+            BuyLedgerSchemaV2.self,
+            BuyLedgerSchemaV3.self,
+            BuyLedgerSchemaV4.self,
+        ]
     }
 
-    /// V1 → V2（custom dump-and-restore）、V2 → V3（lightweight，新增 default 欄位）。
+    /// V1 → V2（custom dump-and-restore）、V2 → V3（lightweight，新增 default 欄位）、V3 → V4（lightweight，新增 default 欄位）。
     static var stages: [MigrationStage] {
         [
             .custom(
@@ -310,6 +415,10 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
             .lightweight(
                 fromVersion: BuyLedgerSchemaV2.self,
                 toVersion: BuyLedgerSchemaV3.self
+            ),
+            .lightweight(
+                fromVersion: BuyLedgerSchemaV3.self,
+                toVersion: BuyLedgerSchemaV4.self
             )
         ]
     }

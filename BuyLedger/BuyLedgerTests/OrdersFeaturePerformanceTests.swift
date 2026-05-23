@@ -95,6 +95,8 @@ private extension OrdersFeaturePerformanceTests {
                 platformFeeRate: 0,
                 paymentFeeRate: 0,
                 chargedAmount: Decimal(200 + index),
+                cardlessDeductionAmount: 0,
+                cardlessSupplementAmount: 0,
                 category: category,
                 paymentMethod: ""
             )

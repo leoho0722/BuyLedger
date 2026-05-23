@@ -64,13 +64,21 @@ struct OptionPickerSheet: View {
     /// 使用者透過「新增」alert 確認新增一個選項時的 callback；`allowsAdd` 為 `false` 時不會被呼叫。
     let onAdd: (String) -> Void
 
+    /// 使用者透過「新增付款方式」sheet 確認新增時的 callback；不為 `nil` 時，「新增」按鈕會改顯示 ``PaymentMethodEditorSheet``（含 `isCardless` 切換），取代既有 alert 流程。
+    ///
+    /// 因為 SwiftUI 的 `.alert` actions builder 不支援 `Toggle`，無法在 alert 中同時讓使用者填名稱與決定 `isCardless`；改用 sheet 是為了把這兩個輸入合併在同一張表單，避免「先 alert 輸入名稱、再到主檔管理頁切 toggle」的兩段式 UX。
+    let onAddPaymentMethod: ((String, Bool) -> Void)?
+
     /// 由 sheet 環境注入的 dismiss action。
     @Environment(\.dismiss) private var dismiss
 
-    /// 是否顯示「新增」alert。
+    /// 是否顯示「新增」alert（商品類別等沒有 `isCardless` 需求的入口）。
     @State private var showsAddAlert = false
 
-    /// 新增 alert 的輸入草稿。
+    /// 是否顯示「新增付款方式」sheet（含 `isCardless` 切換）。
+    @State private var showsAddPaymentMethodSheet = false
+
+    /// 新增 alert 的名稱輸入草稿。
     @State private var draft = ""
 
     /// 搜尋輸入。
@@ -94,7 +102,8 @@ struct OptionPickerSheet: View {
     ///   - displayName: 自訂顯示名稱；`nil` 直接顯示原值。
     ///   - searchKeywords: 自訂搜尋補充文字；`nil` 僅以原值比對。
     ///   - onSelect: 點選 callback。
-    ///   - onAdd: 新增 callback；`allowsAdd` 為 `false` 時不會被呼叫。
+    ///   - onAdd: 新增 callback；`allowsAdd` 為 `false` 時不會被呼叫；若同時提供 ``onAddPaymentMethod`` 則此 callback 也會被忽略。
+    ///   - onAddPaymentMethod: 付款方式新增 callback；不為 `nil` 時，「新增」按鈕改開啟 ``PaymentMethodEditorSheet`` 收集名稱與 `isCardless`，取代 alert 流程。
     init(
         title: String,
         allowsAdd: Bool = true,
@@ -110,7 +119,8 @@ struct OptionPickerSheet: View {
         displayName: (@Sendable (String) -> String)? = nil,
         searchKeywords: (@Sendable (String) -> String)? = nil,
         onSelect: @escaping (String) -> Void,
-        onAdd: @escaping (String) -> Void = { _ in }
+        onAdd: @escaping (String) -> Void = { _ in },
+        onAddPaymentMethod: ((String, Bool) -> Void)? = nil
     ) {
         self.title = title
         self.allowsAdd = allowsAdd
@@ -127,6 +137,7 @@ struct OptionPickerSheet: View {
         self.searchKeywords = searchKeywords
         self.onSelect = onSelect
         self.onAdd = onAdd
+        self.onAddPaymentMethod = onAddPaymentMethod
     }
 
     // MARK: - View Body
@@ -138,8 +149,13 @@ struct OptionPickerSheet: View {
                 if allowsAdd {
                     Section {
                         Button {
-                            draft = ""
-                            showsAddAlert = true
+                            if onAddPaymentMethod != nil {
+                                // 付款方式入口：alert 在實機驗證會 silently 丟掉 Toggle（只剩 TextField + 按鈕），所以改用 sheet 收集名稱與 isCardless。
+                                showsAddPaymentMethodSheet = true
+                            } else {
+                                draft = ""
+                                showsAddAlert = true
+                            }
                         } label: {
                             Label(addButtonTitle, systemImage: "plus.circle.fill")
                         }
@@ -213,6 +229,19 @@ struct OptionPickerSheet: View {
                 }
             } message: {
                 Text(addAlertMessage)
+            }
+            .sheet(isPresented: $showsAddPaymentMethodSheet) {
+                PaymentMethodEditorSheet(
+                    title: addAlertTitle,
+                    message: addAlertMessage,
+                    namePlaceholder: addFieldPlaceholder,
+                    submitTitle: "新增",
+                    onSubmit: { name, isCardless in
+                        onAddPaymentMethod?(name, isCardless)
+                        // 新增完成後一併關閉外層 picker sheet，使用者能立即看到新付款方式套用到此訂單。
+                        dismiss()
+                    }
+                )
             }
         }
 #if os(macOS)

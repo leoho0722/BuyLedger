@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 商品類別 / 付款方式主檔的獨立管理畫面。
 ///
-/// 以 ``LookupManagementFeature`` 驅動：點「新增」彈出 alert 收集名稱、列點 swipe 刪除。文案、空狀態、icon 來自 ``LookupKind``。
+/// 以 ``LookupManagementFeature`` 驅動：點「新增」彈出 alert（商品類別）或 sheet（付款方式，含 `isCardless` toggle）；列點 swipe 刪除或重新命名。文案、空狀態、icon 來自 ``LookupKind``。
 struct LookupManagementView: View {
 
     // MARK: - View Properties
@@ -18,10 +18,13 @@ struct LookupManagementView: View {
     /// 主檔管理 store。
     @Bindable var store: StoreOf<LookupManagementFeature>
 
-    /// 是否顯示「新增」alert。
-    @State private var showsAddAlert = false
+    /// 是否顯示「新增類別」alert（僅商品類別 kind 使用）。
+    @State private var showsAddCategoryAlert = false
 
-    /// 新增 alert 的輸入草稿。
+    /// 是否顯示「新增付款方式」sheet（僅付款方式 kind 使用；alert 在實機驗證會 silently 丟掉 Toggle，所以付款方式入口改走 sheet）。
+    @State private var showsAddPaymentMethodSheet = false
+
+    /// 新增 alert 的名稱輸入草稿（商品類別）。
     @State private var draft = ""
 
     /// 目前正在重新命名的項目；`nil` 表示未進行 rename。
@@ -51,7 +54,7 @@ struct LookupManagementView: View {
                     )
                 } else {
                     ForEach(store.items, id: \.self) { item in
-                        Text(item)
+                        itemRow(for: item)
                             .contextMenu {
                                 Button {
                                     renameTarget = item
@@ -85,6 +88,12 @@ struct LookupManagementView: View {
                 }
             } header: {
                 Text("目前已建立 \(store.items.count) 項")
+            } footer: {
+                if store.state.kind == .paymentMethod {
+                    Text("「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位。要更換此設定請刪除後重新新增。")
+                        .font(.footnote)
+                        .foregroundStyle(.secondary)
+                }
             }
         }
         .navigationTitle(store.state.kind.title)
@@ -94,8 +103,13 @@ struct LookupManagementView: View {
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
-                    draft = ""
-                    showsAddAlert = true
+                    switch store.state.kind {
+                    case .category:
+                        draft = ""
+                        showsAddCategoryAlert = true
+                    case .paymentMethod:
+                        showsAddPaymentMethodSheet = true
+                    }
                 } label: {
                     Label(store.state.kind.addButtonTitle, systemImage: "plus")
                 }
@@ -140,7 +154,7 @@ struct LookupManagementView: View {
                 Text("")
             }
         }
-        .alert(store.state.kind.addAlertTitle, isPresented: $showsAddAlert) {
+        .alert(store.state.kind.addAlertTitle, isPresented: $showsAddCategoryAlert) {
             TextField(store.state.kind.addFieldPlaceholder, text: $draft)
 #if !os(macOS)
                 .textInputAutocapitalization(.never)
@@ -150,7 +164,7 @@ struct LookupManagementView: View {
             Button("新增") {
                 let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmed.isEmpty {
-                    store.send(.addConfirmed(trimmed))
+                    store.send(.addConfirmed(name: trimmed, isCardless: false))
                 }
                 draft = ""
             }
@@ -162,8 +176,53 @@ struct LookupManagementView: View {
         } message: {
             Text(store.state.kind.addAlertMessage)
         }
+        .sheet(isPresented: $showsAddPaymentMethodSheet) {
+            PaymentMethodEditorSheet(
+                title: store.state.kind.addAlertTitle,
+                message: store.state.kind.addAlertMessage,
+                namePlaceholder: store.state.kind.addFieldPlaceholder,
+                submitTitle: "新增",
+                onSubmit: { name, isCardless in
+                    store.send(.addConfirmed(name: name, isCardless: isCardless))
+                }
+            )
+        }
         .task {
             await store.send(.task).finish()
+        }
+    }
+}
+
+// MARK: - ViewBuilder
+
+private extension LookupManagementView {
+
+    /// 列項顯示：商品類別 kind 純文字；付款方式 kind 在右側顯示「無卡」徽章（僅作標示，不能直接切換；要修改 `isCardless` 需刪除後重新新增）。
+    /// - Parameter item: 要顯示的主檔項目名稱。
+    /// - Returns: 列項 view。
+    @ViewBuilder
+    func itemRow(for item: String) -> some View {
+        switch store.state.kind {
+        case .category:
+            Text(item)
+        case .paymentMethod:
+            HStack(spacing: BLSpacing.small) {
+                Text(item)
+
+                Spacer()
+
+                if store.paymentMethodIsCardless[item] == true {
+                    Text("無卡")
+                        .font(.caption.weight(.semibold))
+                        .foregroundStyle(.tint)
+                        .padding(.horizontal, BLSpacing.small)
+                        .padding(.vertical, 2)
+                        .background(
+                            Capsule()
+                                .fill(Color.accentColor.opacity(0.12))
+                        )
+                }
+            }
         }
     }
 }
