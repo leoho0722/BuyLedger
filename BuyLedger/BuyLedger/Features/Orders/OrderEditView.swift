@@ -21,6 +21,14 @@ struct OrderEditView: View {
     /// 是否顯示「商品類別」選擇 sheet。
     @State private var showsCategorySheet = false
 
+    /// 用於 ``orderDateRow`` 在 picker 寫回時取得「當下這一刻」的秒；測試可注入固定值。
+    @Dependency(\.date) private var date
+
+    /// 訂購日期 footer 顯示使用的 locale；跟隨使用者手機設定，測試可注入固定值。
+    ///
+    /// 本 View 不直接使用此值，改透過 ``deviceLocale`` 包裝：TCA 預設的 `Locale.autoupdatingCurrent` 受 App 自身 `CFBundleDevelopmentRegion` 與支援的 localizations 影響，當 App 未掛使用者偏好語言時會回退到開發語言（例如英文）。
+    @Dependency(\.locale) private var locale
+
     // MARK: - View Body
     
     /// 編輯表單的畫面內容。
@@ -37,7 +45,7 @@ struct OrderEditView: View {
                     Text("基本資料")
                 } footer: {
                     VStack(alignment: .leading, spacing: BLSpacing.small) {
-                        Text("訂購日期：\(OrderFormatters.minuteTimestamp(store.draftDate))")
+                        Text("訂購日期：\(OrderFormatters.fullTimestamp(store.draftDate, locale: deviceLocale))")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
@@ -164,13 +172,16 @@ private extension OrderEditView {
         .buttonStyle(.plain)
     }
 
-    /// 訂購日期編輯列：以 compact `DatePicker` 編輯日期與時分（秒不參與儲存）。
+    /// 訂購日期編輯列：以 compact `DatePicker` 編輯日期與時分。
+    ///
+    /// `DatePicker(.compact)` 寫回時會把秒洗成 0，section footer 又以 `yyyy/MM/dd HH:mm:ss` 完整呈現，會造成視覺上「秒永遠是 :00」。改透過 wrapper binding 攔截寫入：每次 picker 寫回時取當下 `@Dependency(\.date).now` 的秒，組進新值，使秒隨每次編輯刷新成真實當下值，footer 看得到變化。
     var orderDateRow: some View {
         DatePicker(
             "訂購日期",
-            selection: $store.draftDate,
+            selection: refreshingSecondsBinding,
             displayedComponents: [.date, .hourAndMinute]
         )
+        .environment(\.locale, deviceLocale)
     }
 
     /// 商品明細區段：可逐項編輯名稱／數量／單價，亦可新增與刪除。
@@ -311,6 +322,16 @@ private extension OrderEditView {
 
 private extension OrderEditView {
     
+    /// 使用者在系統「語言與地區」實際偏好的 locale。
+    ///
+    /// 用 `Locale.preferredLanguages` 而非 `@Dependency(\.locale)` 預設值，原因是後者 (`Locale.autoupdatingCurrent`) 會被 App 自己的 `CFBundleDevelopmentRegion`／已掛載 localizations 限制，App 未掛 zh-Hant 時即使使用者手機是繁中也會回退到開發語言；`preferredLanguages` 才是使用者在系統設定面板親手挑的語言序列。測試／預覽時若需要固定 locale，可在 `@Dependency(\.locale)` 注入後讓 fallback 走到那裡。
+    var deviceLocale: Locale {
+        if let preferred = Locale.preferredLanguages.first {
+            return Locale(identifier: preferred)
+        }
+        return locale
+    }
+
     /// 是否允許按下儲存。
     ///
     /// 客戶名稱必須含有非空白字元才視為合法。即使儲存路徑保有 trim+fallback 的防禦邏輯，前端仍以 disable 按鈕的方式給使用者明確回饋。
@@ -318,6 +339,27 @@ private extension OrderEditView {
         !store.draftCustomerName
             .trimmingCharacters(in: .whitespacesAndNewlines)
             .isEmpty
+    }
+
+    /// 把 `DatePicker` 寫回的新值與「當下這一刻」`date.now` 的秒合併，產生帶秒精度的 ``OrderEditFeature/State/draftDate``。
+    ///
+    /// 採固定 `Calendar(identifier: .gregorian)` + UTC 時區做元件分解與重組：時區只影響 year/month/day/hour 的對應，不影響「秒」這個數值，因此在 UTC calendar 下抽秒、改秒、組回 Date，結果與使用者本地時區一致；且不依賴 `Calendar.current` / `Date()`，跟 `@Dependency(\.date)` 配合可在測試中固定當下時間。
+    var refreshingSecondsBinding: Binding<Date> {
+        Binding(
+            get: { store.draftDate },
+            set: { newValue in
+                var calendar = Calendar(identifier: .gregorian)
+                calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+
+                let currentSeconds = calendar.component(.second, from: date.now)
+                var components = calendar.dateComponents(
+                    [.year, .month, .day, .hour, .minute],
+                    from: newValue
+                )
+                components.second = currentSeconds
+                store.draftDate = calendar.date(from: components) ?? newValue
+            }
+        )
     }
 }
 
