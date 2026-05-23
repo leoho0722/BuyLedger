@@ -97,6 +97,16 @@ Swift 通用慣例 (API Design Guidelines、camel case、四空格縮排) 不重
 - **TCA feature** 內部用 `// MARK: - State / Action / Reducer Body / Dependency Properties` 等清楚切分。
 - **SwiftData schema 或持久化行為變更**時，須同步檢查 migration、preview 與測試資料。
 
+### 標點與空格
+
+中英數混排的字串字面值與註解一律使用**半形括號** `()`，不用全形 `（）`；並依前後文在中文與半形內容之間補一個半形空格，讓兩者分開更易讀。
+
+- **補空格**：半形括號緊貼到 CJK 字元、英數或 inline-code backtick 時，於括號外側補一個半形空格。例如 `收款金額 (NT$)`、`為空 (最寬鬆路徑) 的成本`、`` `nonisolated` (不是 `MainActor`) ``。
+- **不補空格**：相鄰為空白、全形標點 (，。、；：！？「」)、字串或行邊界時不補，避免重複間距。例如 `` `…回應錯誤 (\(code))，目前無法…` `` 後接全形逗號不補、`Text("(TWD)")` 緊貼引號不補。
+- **括號內側不補**：`(NT$)` 而非 `( NT$ )`。
+- **Markdown 例外**：粗體結尾 `**` 前後不補空格以免破壞 `**...**` 語法——`**計算** (彙總)` 可，`**計算 **(彙總)` 不可。
+- 此規則同時適用於 UI 顯示字串與正體中文註解。
+
 ### 檔案 header
 
 所有新建 Swift 檔案的 header 一律使用 Xcode 預設格式：
