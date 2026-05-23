@@ -37,6 +37,7 @@ struct OrdersView: View {
             .sheet(item: $store.scope(state: \.editOrder, action: \.editOrder)) { editStore in
                 OrderEditView(store: editStore)
             }
+            .alert($store.scope(state: \.deletionConfirmation, action: \.deletionConfirmation))
     }
     
     /// 依平台與尺寸分類選擇對應的訂單瀏覽 view。
@@ -112,6 +113,20 @@ private extension OrdersView {
                             : palette.background
                         )
                         .tag(order.id)
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                store.send(.deleteOrderTapped(order.id))
+                            } label: {
+                                Label("刪除", systemImage: "trash")
+                            }
+                        }
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                store.send(.deleteOrderTapped(order.id))
+                            } label: {
+                                Label("刪除訂單", systemImage: "trash")
+                            }
+                        }
                     }
                 }
             }
@@ -266,12 +281,23 @@ private extension OrdersView {
             Spacer()
             
             statusUpdateMenu(order: order)
-            
+
             Button("編輯") {
                 store.send(.editOrderTapped(order.id))
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
+
+            Button(role: .destructive) {
+                store.send(.deleteOrderTapped(order.id))
+            } label: {
+                Label("刪除", systemImage: "trash")
+                    .labelStyle(.iconOnly)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .tint(palette.red)
+            .accessibilityLabel("刪除訂單")
         }
         .padding(.horizontal, BLSpacing.large)
         .padding(.vertical, BLSpacing.medium)

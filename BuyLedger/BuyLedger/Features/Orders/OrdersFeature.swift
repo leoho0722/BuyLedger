@@ -44,6 +44,11 @@ struct OrdersFeature {
         
         /// 目前呈現中的編輯／新增表單；`nil` 表示未呈現。
         @Presents var editOrder: OrderEditFeature.State?
+
+        /// 刪除訂單前的確認 alert 狀態；`nil` 表示未呈現。
+        ///
+        /// 使用 `AlertState` 而非 `ConfirmationDialogState`：iOS 26 起 `.confirmationDialog` 採 anchored popover 樣式，當觸發來源是 toolbar 按鈕而 modifier 又掛在 root view 上時，會出現位置偏移；改用 `.alert` 是 centered modal，跨 iOS 版本與平台都一致。
+        @Presents var deletionConfirmation: AlertState<Action.Alert>?
         
         // MARK: - Filter Method
 
@@ -76,6 +81,15 @@ struct OrdersFeature {
             let filtered = filteredOrders(referenceDate: referenceDate)
             guard let selectedOrderID else { return filtered.first }
             return filtered.first { $0.id == selectedOrderID }
+        }
+
+        /// 目前訂單清單中所有不重複的商品類別，已過濾空白並依 locale 排序。
+        var distinctCategories: [String] {
+            let nonEmpty = orders
+                .map { $0.category.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            return Array(Set(nonEmpty))
+                .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
         }
     }
     
@@ -117,6 +131,20 @@ struct OrdersFeature {
         
         /// 透過詳情頁的「更新狀態」menu 直接切換訂單狀態。
         case statusChanged(LedgerOrder.ID, OrderStatus)
+
+        /// 使用者點擊「刪除」按鈕，要求刪除指定訂單；先以 ``deletionConfirmation`` 二次確認。
+        case deleteOrderTapped(LedgerOrder.ID)
+
+        /// 刪除確認 dialog 事件。
+        case deletionConfirmation(PresentationAction<Alert>)
+
+        /// 刪除確認 dialog 的選項。
+        @CasePathable
+        enum Alert: Equatable {
+
+            /// 使用者確認刪除指定訂單。
+            case confirmDelete(LedgerOrder.ID)
+        }
     }
     
     // MARK: - Dependency Properties
@@ -191,12 +219,17 @@ struct OrdersFeature {
                 guard let order = state.orders.first(where: { $0.id == id }) else {
                     return .none
                 }
-                
-                state.editOrder = OrderEditFeature.State(original: order)
+
+                state.editOrder = OrderEditFeature.State(
+                    original: order,
+                    availableCategories: state.distinctCategories
+                )
                 return .none
-                
+
             case .newOrderTapped:
-                state.editOrder = OrderEditFeature.State()
+                state.editOrder = OrderEditFeature.State(
+                    availableCategories: state.distinctCategories
+                )
                 return .none
                 
             case .editOrder(.presented(.saveTapped)):
@@ -244,11 +277,54 @@ struct OrdersFeature {
                 return .run { _ in
                     try? await orderRepository.saveOrder(updated)
                 }
+
+            case let .deleteOrderTapped(id):
+                guard let order = state.orders.first(where: { $0.id == id }) else {
+                    return .none
+                }
+
+                state.deletionConfirmation = AlertState {
+                    TextState("刪除訂單")
+                } actions: {
+                    ButtonState(role: .destructive, action: .confirmDelete(id)) {
+                        TextState("刪除")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("取消")
+                    }
+                } message: {
+                    TextState("「\(order.customer.name)」的訂單 \(order.id) 將被刪除，此操作無法復原。")
+                }
+                return .none
+
+            case let .deletionConfirmation(.presented(.confirmDelete(id))):
+                guard let index = state.orders.firstIndex(where: { $0.id == id }) else {
+                    return .none
+                }
+
+                state.orders.remove(at: index)
+
+                if state.selectedOrderID == id {
+                    state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                }
+
+                if state.editOrder?.original?.id == id {
+                    state.editOrder = nil
+                }
+
+                let orderRepository = orderRepository
+                return .run { _ in
+                    try? await orderRepository.removeOrder(id)
+                }
+
+            case .deletionConfirmation:
+                return .none
             }
         }
         .ifLet(\.$editOrder, action: \.editOrder) {
             OrderEditFeature()
         }
+        .ifLet(\.$deletionConfirmation, action: \.deletionConfirmation)
     }
 }
 

@@ -26,13 +26,16 @@ struct OrdersCompactView: View {
     /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:)`` 的「現在」時間；測試可注入固定值。
     @Dependency(\.date) private var date
 
+    /// iPhone NavigationStack 的瀏覽路徑。改用 path-driven binding，使訂單被刪除時可手動把對應 id 從 path 移除，觸發系統自動 pop 回列表。
+    @State private var navigationPath: [LedgerOrder.ID] = []
+
     // MARK: - View Body
     
     /// 訂單瀏覽畫面內容。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
         
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             ScrollView {
                 VStack(alignment: .leading, spacing: BLSpacing.medium) {
                     titleHeader(palette: palette)
@@ -90,11 +93,24 @@ struct OrdersCompactView: View {
                                     store.send(.editOrderTapped(order.id))
                                 }
                             }
+
+                            ToolbarItem(placement: .primaryAction) {
+                                Button(role: .destructive) {
+                                    store.send(.deleteOrderTapped(order.id))
+                                } label: {
+                                    Image(systemName: "trash")
+                                }
+                                .accessibilityLabel("刪除訂單")
+                            }
                         }
                 }
             }
             .task {
                 await store.send(.task).finish()
+            }
+            .onChange(of: store.orders) { _, newOrders in
+                let availableIDs = Set(newOrders.map(\.id))
+                navigationPath.removeAll { !availableIDs.contains($0) }
             }
         }
     }
@@ -238,7 +254,14 @@ private extension OrdersCompactView {
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
-                        
+                        .contextMenu {
+                            Button(role: .destructive) {
+                                store.send(.deleteOrderTapped(order.id))
+                            } label: {
+                                Label("刪除訂單", systemImage: "trash")
+                            }
+                        }
+
                         if index < store.state.filteredOrders(referenceDate: date.now).count - 1 {
                             Divider()
                                 .padding(.leading, BLSpacing.large + 40 + BLSpacing.medium)

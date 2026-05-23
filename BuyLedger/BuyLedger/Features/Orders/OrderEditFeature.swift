@@ -55,17 +55,22 @@ struct OrderEditFeature {
         
         /// 商品明細草稿；可在編輯表單內新增、刪除、修改。
         var draftItems: [LedgerOrderItem]
-        
+
+        /// 可供選擇的商品類別清單；由父層 reducer 從現有訂單聚合後注入，並在使用者新增類別時即時擴充。
+        var availableCategories: [String]
+
         // MARK: - Identifiable Properties
-        
+
         /// 表單 instance 的穩定識別值，供 SwiftUI sheet item 使用。
         let id: UUID
-        
+
         // MARK: - Init
-        
+
         /// 依原始訂單建立草稿狀態。
-        /// - Parameter original: 要編輯的訂單；`nil` 表示新訂單。
-        init(original: LedgerOrder? = nil) {
+        /// - Parameters:
+        ///   - original: 要編輯的訂單；`nil` 表示新訂單。
+        ///   - availableCategories: 表單可選用的既有類別；不含原訂單類別時會在初始化時補上。
+        init(original: LedgerOrder? = nil, availableCategories: [String] = []) {
             self.original = original
             self.draftCustomerName = original?.customer.name ?? ""
             self.draftCategory = original?.category ?? ""
@@ -78,6 +83,14 @@ struct OrderEditFeature {
             self.draftCardFeeRate = original?.cardFeeRate ?? 0
             self.draftPlatformFeeRate = original?.platformFeeRate ?? 0
             self.draftItems = original?.items ?? []
+
+            var categories = availableCategories
+            let originalCategory = original?.category.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !originalCategory.isEmpty, !categories.contains(originalCategory) {
+                categories.append(originalCategory)
+            }
+            self.availableCategories = categories.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+
             self.id = UUID()
         }
     }
@@ -93,9 +106,12 @@ struct OrderEditFeature {
         
         /// 使用者按下取消。
         case cancelTapped
-        
+
         /// 使用者按下儲存。
         case saveTapped
+
+        /// 使用者透過「新增類別」彈窗確認新增一筆類別名稱。
+        case addCategoryTapped(String)
     }
     
     // MARK: - Dependency Properties
@@ -109,13 +125,27 @@ struct OrderEditFeature {
     var body: some Reducer<State, Action> {
         BindingReducer()
         
-        Reduce { _, action in
+        Reduce { state, action in
             switch action {
             case .binding:
                 return .none
-                
+
             case .cancelTapped, .saveTapped:
                 return .run { _ in await dismiss() }
+
+            case let .addCategoryTapped(rawName):
+                let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return .none }
+
+                if !state.availableCategories.contains(trimmed) {
+                    var updated = state.availableCategories
+                    updated.append(trimmed)
+                    state.availableCategories = updated.sorted {
+                        $0.localizedStandardCompare($1) == .orderedAscending
+                    }
+                }
+                state.draftCategory = trimmed
+                return .none
             }
         }
     }

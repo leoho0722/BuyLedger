@@ -227,6 +227,15 @@ private extension OrdersMacView {
             .width(min: 90, ideal: 110, max: 140)
         }
         .tableStyle(.inset(alternatesRowBackgrounds: false))
+        .contextMenu(forSelectionType: LedgerOrder.ID.self) { ids in
+            if let id = ids.first {
+                Button(role: .destructive) {
+                    store.send(.deleteOrderTapped(id))
+                } label: {
+                    Label("刪除訂單", systemImage: "trash")
+                }
+            }
+        }
         .overlay {
             if store.isLoading {
                 ProgressView("載入訂單")
@@ -298,12 +307,23 @@ private extension OrdersMacView {
             }
             .menuStyle(.borderlessButton)
             .controlSize(.small)
-            
+
             Button("編輯") {
                 store.send(.editOrderTapped(order.id))
             }
             .buttonStyle(.bordered)
             .controlSize(.small)
+
+            Button(role: .destructive) {
+                store.send(.deleteOrderTapped(order.id))
+            } label: {
+                Label("刪除", systemImage: "trash")
+                    .labelStyle(.iconOnly)
+            }
+            .buttonStyle(.bordered)
+            .controlSize(.small)
+            .tint(palette.red)
+            .accessibilityLabel("刪除訂單")
         }
         .padding(.horizontal, BLSpacing.large)
         .padding(.vertical, BLSpacing.medium)

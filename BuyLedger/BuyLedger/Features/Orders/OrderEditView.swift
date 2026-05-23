@@ -17,7 +17,13 @@ struct OrderEditView: View {
     
     /// 訂單編輯 store。
     @Bindable var store: StoreOf<OrderEditFeature>
-    
+
+    /// 是否顯示「新增商品類別」彈窗。
+    @State private var showsNewCategoryAlert = false
+
+    /// 新增類別彈窗中的輸入草稿。
+    @State private var newCategoryDraft = ""
+
     // MARK: - View Body
     
     /// 編輯表單的畫面內容。
@@ -26,8 +32,8 @@ struct OrderEditView: View {
             Form {
                 Section {
                     TextField("客戶名稱", text: $store.draftCustomerName)
-                    
-                    TextField("商品類別", text: $store.draftCategory)
+
+                    categoryPickerRow
                 } header: {
                     Text("基本資料")
                 } footer: {
@@ -94,7 +100,7 @@ struct OrderEditView: View {
                         store.send(.cancelTapped)
                     }
                 }
-                
+
                 ToolbarItem(placement: .confirmationAction) {
                     Button("儲存") {
                         store.send(.saveTapped)
@@ -102,6 +108,30 @@ struct OrderEditView: View {
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canSave)
                 }
+            }
+            .alert("新增商品類別", isPresented: $showsNewCategoryAlert) {
+                TextField("類別名稱", text: $newCategoryDraft)
+#if !os(macOS)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+#endif
+
+                Button("新增") {
+                    let trimmed = newCategoryDraft.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty {
+                        store.send(.addCategoryTapped(trimmed))
+                    }
+                    newCategoryDraft = ""
+                }
+                .disabled(
+                    newCategoryDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                )
+
+                Button("取消", role: .cancel) {
+                    newCategoryDraft = ""
+                }
+            } message: {
+                Text("輸入新的商品類別名稱，加入後會立即套用至此訂單。")
             }
         }
 #if os(macOS)
@@ -113,7 +143,49 @@ struct OrderEditView: View {
 // MARK: - ViewBuilder
 
 private extension OrderEditView {
-    
+
+    /// 商品類別選擇列：以 `Menu` 列出既有類別並提供「新增類別」入口。
+    ///
+    /// 點擊「新增類別」會觸發畫面置中的 `.alert` 彈窗收集新類別名稱，送出後由 reducer 把名稱加入 ``OrderEditFeature/State/availableCategories`` 並設為目前選擇。
+    var categoryPickerRow: some View {
+        LabeledContent("商品類別") {
+            Menu {
+                if store.availableCategories.isEmpty {
+                    Text("尚無類別")
+                } else {
+                    ForEach(store.availableCategories, id: \.self) { category in
+                        Button {
+                            store.draftCategory = category
+                        } label: {
+                            if category == store.draftCategory {
+                                Label(category, systemImage: "checkmark")
+                            } else {
+                                Text(category)
+                            }
+                        }
+                    }
+
+                    Divider()
+                }
+
+                Button {
+                    newCategoryDraft = ""
+                    showsNewCategoryAlert = true
+                } label: {
+                    Label("新增類別", systemImage: "plus.circle")
+                }
+            } label: {
+                HStack(spacing: BLSpacing.small) {
+                    Text(store.draftCategory.isEmpty ? "選擇類別" : store.draftCategory)
+                        .foregroundStyle(store.draftCategory.isEmpty ? .secondary : .primary)
+                    Image(systemName: "chevron.up.chevron.down")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(.secondary)
+                }
+            }
+        }
+    }
+
     /// 商品明細區段：可逐項編輯名稱／數量／單價，亦可新增與刪除。
     var itemsSection: some View {
         Section {
