@@ -47,6 +47,9 @@ struct LookupManagementFeature {
         /// 畫面出現時觸發載入。
         case task
 
+        /// 訂單來源主檔載入成功。
+        case orderSourceItemsLoaded([String])
+
         /// 商品類別主檔載入成功。
         case categoryItemsLoaded([String])
 
@@ -68,6 +71,9 @@ struct LookupManagementFeature {
 
     // MARK: - Dependency Properties
 
+    /// 訂單來源資料來源。
+    @Dependency(OrderSourceRepository.self) private var orderSourceRepository
+
     /// 商品類別資料來源。
     @Dependency(CategoryRepository.self) private var categoryRepository
 
@@ -86,6 +92,12 @@ struct LookupManagementFeature {
             case .task:
                 guard !state.hasLoaded else { return .none }
                 return load(kind: state.kind)
+
+            case let .orderSourceItemsLoaded(items):
+                state.items = items
+                state.hasLoaded = true
+                state.errorMessage = nil
+                return .none
 
             case let .categoryItemsLoaded(items):
                 state.items = items
@@ -127,10 +139,13 @@ struct LookupManagementFeature {
                 }
 
                 let kind = state.kind
+                let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
                 return .run { _ in
                     switch kind {
+                    case .orderSource:
+                        try? await orderSourceRepository.addOrderSource(trimmed)
                     case .category:
                         try? await categoryRepository.addCategory(trimmed)
                     case .paymentMethod:
@@ -143,10 +158,13 @@ struct LookupManagementFeature {
                 state.paymentMethodIsCardless.removeValue(forKey: name)
 
                 let kind = state.kind
+                let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
                 return .run { _ in
                     switch kind {
+                    case .orderSource:
+                        try? await orderSourceRepository.removeOrderSource(name)
                     case .category:
                         try? await categoryRepository.removeCategory(name)
                     case .paymentMethod:
@@ -178,11 +196,15 @@ struct LookupManagementFeature {
                 }
 
                 let kind = state.kind
+                let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
                 let orderRepository = orderRepository
                 return .run { _ in
                     switch kind {
+                    case .orderSource:
+                        try? await orderSourceRepository.renameOrderSource(trimmedFrom, trimmedTo)
+                        try? await orderRepository.renameOrderSource(trimmedFrom, trimmedTo)
                     case .category:
                         try? await categoryRepository.renameCategory(trimmedFrom, trimmedTo)
                         try? await orderRepository.renameOrderCategory(trimmedFrom, trimmedTo)
@@ -201,11 +223,15 @@ struct LookupManagementFeature {
     /// - Parameter kind: 要載入的主檔型別。
     /// - Returns: 對應 effect。
     private func load(kind: LookupKind) -> Effect<Action> {
+        let orderSourceRepository = orderSourceRepository
         let categoryRepository = categoryRepository
         let paymentMethodRepository = paymentMethodRepository
         return .run { send in
             do {
                 switch kind {
+                case .orderSource:
+                    let items = try await orderSourceRepository.fetchOrderSources()
+                    await send(.orderSourceItemsLoaded(items))
                 case .category:
                     let items = try await categoryRepository.fetchCategories()
                     await send(.categoryItemsLoaded(items))

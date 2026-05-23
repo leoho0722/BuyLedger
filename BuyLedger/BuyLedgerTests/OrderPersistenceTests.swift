@@ -71,6 +71,7 @@ struct OrderPersistenceTests {
             chargedAmount: 0,
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
+            orderSource: "蝦皮",
             category: "美妝",
             paymentMethod: ""
         )
@@ -107,6 +108,7 @@ struct OrderPersistenceTests {
             chargedAmount: 9_999,
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
+            orderSource: original.orderSource,
             category: original.category,
             paymentMethod: original.paymentMethod
         )

@@ -47,6 +47,7 @@ extension LedgerOrder {
             chargedAmount: 11_800,
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
+            orderSource: "蝦皮",
             category: "美妝",
             paymentMethod: "信用卡"
         ),
@@ -77,6 +78,7 @@ extension LedgerOrder {
             chargedAmount: 4_980,
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
+            orderSource: "官方網站",
             category: "服飾",
             paymentMethod: "銀行轉帳"
         ),
@@ -112,6 +114,7 @@ extension LedgerOrder {
             chargedAmount: 9_890,
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
+            orderSource: "Instagram",
             category: "美妝",
             paymentMethod: "信用卡"
         ),
@@ -142,6 +145,7 @@ extension LedgerOrder {
             chargedAmount: 0,
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
+            orderSource: "代購社團",
             category: "精品",
             paymentMethod: ""
         ),
@@ -177,6 +181,7 @@ extension LedgerOrder {
             chargedAmount: 8_650,
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
+            orderSource: "蝦皮",
             category: "美妝",
             paymentMethod: "LINE Pay"
         ),
@@ -203,6 +208,7 @@ extension LedgerOrder {
             chargedAmount: 8_420,
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
+            orderSource: "官方網站",
             category: "美妝",
             paymentMethod: "Apple Pay"
         ),
@@ -233,6 +239,7 @@ extension LedgerOrder {
             chargedAmount: 5_680,
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
+            orderSource: "Instagram",
             category: "服飾",
             paymentMethod: "信用卡"
         ),

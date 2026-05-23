@@ -26,6 +26,9 @@ struct OrderEditFeature {
         /// 客戶名稱草稿。
         var draftCustomerName: String
 
+        /// 訂單來源草稿。
+        var draftOrderSource: String
+
         /// 商品類別草稿。
         var draftCategory: String
 
@@ -76,6 +79,9 @@ struct OrderEditFeature {
         /// 付款方式草稿。
         var draftPaymentMethod: String
 
+        /// 可供選擇的訂單來源清單；由父層 reducer 從現有訂單與主檔聚合後注入，並在使用者新增來源時即時擴充。
+        var availableOrderSources: [String]
+
         /// 可供選擇的商品類別清單；由父層 reducer 從現有訂單聚合後注入，並在使用者新增類別時即時擴充。
         var availableCategories: [String]
 
@@ -106,11 +112,13 @@ struct OrderEditFeature {
         /// 依原始訂單建立草稿狀態。
         /// - Parameters:
         ///   - original: 要編輯的訂單；`nil` 表示新訂單。
+        ///   - availableOrderSources: 表單可選用的既有訂單來源；不含原訂單來源時會在初始化時補上。
         ///   - availableCategories: 表單可選用的既有類別；不含原訂單類別時會在初始化時補上。
         ///   - availablePaymentMethods: 表單可選用的既有付款方式；不含原訂單付款方式時會在初始化時補上 (補上的項目 `isCardless` 預設為 `false`)。
         ///   - currentDate: 新訂單時 ``draftDate`` 的預設值；caller 應從 `@Dependency(\.date)` 取得當下時間以維持可測試性。
         init(
             original: LedgerOrder? = nil,
+            availableOrderSources: [String] = [],
             availableCategories: [String] = [],
             availablePaymentMethods: [PaymentMethodInfo] = [],
             availableCurrencies: [CurrencyCode] = CurrencyCode.defaults,
@@ -118,6 +126,7 @@ struct OrderEditFeature {
         ) {
             self.original = original
             self.draftCustomerName = original?.customer.name ?? ""
+            self.draftOrderSource = original?.orderSource ?? ""
             self.draftCategory = original?.category ?? ""
             self.draftStatus = original?.status ?? .quoting
             self.draftCurrency = original?.currency ?? .twd
@@ -134,6 +143,13 @@ struct OrderEditFeature {
             self.draftItems = original?.items ?? []
             self.draftDate = original?.date ?? currentDate
             self.draftPaymentMethod = original?.paymentMethod ?? ""
+
+            var orderSources = availableOrderSources
+            let originalOrderSource = original?.orderSource.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !originalOrderSource.isEmpty, !orderSources.contains(originalOrderSource) {
+                orderSources.append(originalOrderSource)
+            }
+            self.availableOrderSources = orderSources.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
 
             var categories = availableCategories
             let originalCategory = original?.category.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -177,14 +193,20 @@ struct OrderEditFeature {
         /// 使用者按下儲存。
         case saveTapped
 
+        /// 使用者透過「新增來源」彈窗確認新增一筆訂單來源名稱。
+        case addOrderSourceTapped(String)
+
         /// 使用者透過「新增類別」彈窗確認新增一筆類別名稱。
         case addCategoryTapped(String)
 
         /// 使用者透過「新增付款方式」sheet 確認新增一筆付款方式，含「是否為無卡類」旗標。
         case addPaymentMethodTapped(name: String, isCardless: Bool)
 
-        /// 表單畫面 `.task` 觸發；用於從 repo 重新拉取最新的類別／付款方式主檔。
+        /// 表單畫面 `.task` 觸發；用於從 repo 重新拉取最新的訂單來源／類別／付款方式主檔。
         case task
+
+        /// 從 ``OrderSourceRepository`` 取回最新訂單來源主檔。
+        case availableOrderSourcesLoaded([String])
 
         /// 從 ``CategoryRepository`` 取回最新類別主檔。
         case availableCategoriesLoaded([String])
@@ -200,6 +222,9 @@ struct OrderEditFeature {
 
     /// 由父層注入的 dismiss effect。
     @Dependency(\.dismiss) private var dismiss
+
+    /// 訂單來源主檔資料來源；用於 sheet `.task` 重新拉取，使「在其他訂單新增的來源」也能立即出現在編輯選單。
+    @Dependency(OrderSourceRepository.self) private var orderSourceRepository
 
     /// 商品類別主檔資料來源；用於 sheet `.task` 重新拉取，使「在管理頁新增的類別」也能立即出現在編輯選單。
     @Dependency(CategoryRepository.self) private var categoryRepository
@@ -223,6 +248,20 @@ struct OrderEditFeature {
 
             case .cancelTapped, .saveTapped:
                 return .run { _ in await dismiss() }
+
+            case let .addOrderSourceTapped(rawName):
+                let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return .none }
+
+                if !state.availableOrderSources.contains(trimmed) {
+                    var updated = state.availableOrderSources
+                    updated.append(trimmed)
+                    state.availableOrderSources = updated.sorted {
+                        $0.localizedStandardCompare($1) == .orderedAscending
+                    }
+                }
+                state.draftOrderSource = trimmed
+                return .none
 
             case let .addCategoryTapped(rawName):
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -256,10 +295,16 @@ struct OrderEditFeature {
                 return .none
 
             case .task:
+                let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
                 let currencyMetadataRepository = currencyMetadataRepository
                 return .run { send in
+                    async let orderSourcesTask: Void = {
+                        if let items = try? await orderSourceRepository.fetchOrderSources() {
+                            await send(.availableOrderSourcesLoaded(items))
+                        }
+                    }()
                     async let categoriesTask: Void = {
                         if let items = try? await categoryRepository.fetchCategories() {
                             await send(.availableCategoriesLoaded(items))
@@ -275,8 +320,19 @@ struct OrderEditFeature {
                             await send(.availableCurrenciesLoaded(codes))
                         }
                     }()
-                    _ = await (categoriesTask, paymentMethodsTask, currenciesTask)
+                    _ = await (orderSourcesTask, categoriesTask, paymentMethodsTask, currenciesTask)
                 }
+
+            case let .availableOrderSourcesLoaded(items):
+                // 合併：把目前 draftOrderSource (可能是剛在 sheet 內新增、尚未走完整 add → repo 來回) 保留在清單。
+                var merged = Set(items)
+                let draftOrderSource = state.draftOrderSource.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !draftOrderSource.isEmpty {
+                    merged.insert(draftOrderSource)
+                }
+                state.availableOrderSources = merged
+                    .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+                return .none
 
             case let .availableCategoriesLoaded(items):
                 // 合併：把目前 draftCategory (可能是剛在 sheet 內新增、尚未走完整 add → repo 來回) 保留在清單。

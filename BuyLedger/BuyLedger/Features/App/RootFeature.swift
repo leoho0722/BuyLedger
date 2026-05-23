@@ -33,6 +33,9 @@ struct RootFeature {
         /// 設定頁狀態。
         var settings = SettingsFeature.State()
 
+        /// 訂單來源主檔管理狀態；理由同 ``categoryManagement``。
+        var orderSourceManagement = LookupManagementFeature.State(kind: .orderSource)
+
         /// 商品類別主檔管理狀態；放在 root 是為了攔截 `renameRequested` 等動作後同步 ``OrdersFeature/State`` 的 in-memory 副本 (cascade)。
         var categoryManagement = LookupManagementFeature.State(kind: .category)
 
@@ -76,6 +79,9 @@ struct RootFeature {
         /// 設定頁事件。
         case settings(SettingsFeature.Action)
 
+        /// 訂單來源主檔管理事件。
+        case orderSourceManagement(LookupManagementFeature.Action)
+
         /// 商品類別主檔管理事件。
         case categoryManagement(LookupManagementFeature.Action)
 
@@ -109,6 +115,10 @@ struct RootFeature {
 
         Scope(state: \.settings, action: \.settings) {
             SettingsFeature()
+        }
+
+        Scope(state: \.orderSourceManagement, action: \.orderSourceManagement) {
+            LookupManagementFeature()
         }
 
         Scope(state: \.categoryManagement, action: \.categoryManagement) {
@@ -172,6 +182,22 @@ struct RootFeature {
             case .settings:
                 return .none
 
+            case let .orderSourceManagement(.renameRequested(from, to)):
+                cascadeRename(kind: .orderSource, from: from, to: to, in: &state)
+                return .none
+
+            case let .orderSourceManagement(.addConfirmed(name, _)):
+                // 訂單來源無 isCardless 概念，直接忽略第二個參數。
+                addOrderSourceToOrdersMaster(name: name, in: &state)
+                return .none
+
+            case let .orderSourceManagement(.deleteRequested(name)):
+                removeFromOrdersMaster(kind: .orderSource, name: name, in: &state)
+                return .none
+
+            case .orderSourceManagement:
+                return .none
+
             case let .categoryManagement(.renameRequested(from, to)):
                 cascadeRename(kind: .category, from: from, to: to, in: &state)
                 return .none
@@ -225,6 +251,17 @@ struct RootFeature {
         guard !trimmedFrom.isEmpty, !trimmedTo.isEmpty, trimmedFrom != trimmedTo else { return }
 
         switch kind {
+        case .orderSource:
+            state.orders.orderSourceMaster = renameInList(
+                state.orders.orderSourceMaster,
+                from: trimmedFrom,
+                to: trimmedTo
+            )
+            state.orders.orders = state.orders.orders.map { order in
+                guard order.orderSource == trimmedFrom else { return order }
+                return rebuildOrder(order, orderSource: trimmedTo)
+            }
+
         case .category:
             state.orders.categoryMaster = renameInList(
                 state.orders.categoryMaster,
@@ -246,6 +283,25 @@ struct RootFeature {
                 guard order.paymentMethod == trimmedFrom else { return order }
                 return rebuildOrder(order, paymentMethod: trimmedTo)
             }
+        }
+    }
+
+    /// 把 ``LookupManagementFeature`` 新增的訂單來源加進 ``OrdersFeature/State/orderSourceMaster`` 副本。
+    /// - Parameters:
+    ///   - name: 新增名稱。
+    ///   - state: 要修改的 ``RootFeature/State``。
+    private func addOrderSourceToOrdersMaster(
+        name: String,
+        in state: inout State
+    ) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard !state.orders.orderSourceMaster.contains(trimmed) else { return }
+
+        var updated = state.orders.orderSourceMaster
+        updated.append(trimmed)
+        state.orders.orderSourceMaster = updated.sorted {
+            $0.localizedStandardCompare($1) == .orderedAscending
         }
     }
 
@@ -303,6 +359,8 @@ struct RootFeature {
         in state: inout State
     ) {
         switch kind {
+        case .orderSource:
+            state.orders.orderSourceMaster.removeAll { $0 == name }
         case .category:
             state.orders.categoryMaster.removeAll { $0 == name }
         case .paymentMethod:
@@ -353,14 +411,16 @@ struct RootFeature {
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
-    /// 因為 ``LedgerOrder`` 是 immutable struct，更新 category 或 paymentMethod 必須以 memberwise init 重建。
+    /// 因為 ``LedgerOrder`` 是 immutable struct，更新 orderSource、category 或 paymentMethod 必須以 memberwise init 重建。
     /// - Parameters:
     ///   - order: 原本的訂單。
+    ///   - orderSource: 若不為 `nil` 則覆寫 orderSource。
     ///   - category: 若不為 `nil` 則覆寫 category。
     ///   - paymentMethod: 若不為 `nil` 則覆寫 paymentMethod。
     /// - Returns: 重建後的訂單。
     private func rebuildOrder(
         _ order: LedgerOrder,
+        orderSource: String? = nil,
         category: String? = nil,
         paymentMethod: String? = nil
     ) -> LedgerOrder {
@@ -381,6 +441,7 @@ struct RootFeature {
             chargedAmount: order.chargedAmount,
             cardlessDeductionAmount: order.cardlessDeductionAmount,
             cardlessSupplementAmount: order.cardlessSupplementAmount,
+            orderSource: orderSource ?? order.orderSource,
             category: category ?? order.category,
             paymentMethod: paymentMethod ?? order.paymentMethod
         )

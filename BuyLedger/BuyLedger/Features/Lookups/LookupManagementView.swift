@@ -104,7 +104,7 @@ struct LookupManagementView: View {
             ToolbarItem(placement: .primaryAction) {
                 Button {
                     switch store.state.kind {
-                    case .category:
+                    case .orderSource, .category:
                         draft = ""
                         showsAddCategoryAlert = true
                     case .paymentMethod:
@@ -203,7 +203,7 @@ private extension LookupManagementView {
     @ViewBuilder
     func itemRow(for item: String) -> some View {
         switch store.state.kind {
-        case .category:
+        case .orderSource, .category:
             Text(item)
         case .paymentMethod:
             HStack(spacing: BLSpacing.small) {

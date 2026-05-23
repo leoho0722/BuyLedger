@@ -27,6 +27,9 @@ struct OrderRepository: Sendable {
     /// 刪除指定編號的訂單。
     var removeOrder: @Sendable (LedgerOrder.ID) async throws -> Void
 
+    /// 把所有訂單的 ``LedgerOrder/orderSource`` 由 `oldName` 改成 `newName` (cascade rename)。
+    var renameOrderSource: @Sendable (String, String) async throws -> Void
+
     /// 把所有訂單的 ``LedgerOrder/category`` 由 `oldName` 改成 `newName` (cascade rename)。
     var renameOrderCategory: @Sendable (String, String) async throws -> Void
 
@@ -66,6 +69,12 @@ extension OrderRepository {
             removeOrder: { id in
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.delete(id: id)
+            },
+            renameOrderSource: { oldName, newName in
+                let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedNew.isEmpty, trimmedNew != oldName else { return }
+                let persistence = await Self.makePersistence(container: container)
+                try await persistence.renameOrderSource(from: oldName, to: trimmedNew)
             },
             renameOrderCategory: { oldName, newName in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -115,6 +124,7 @@ extension OrderRepository: DependencyKey {
         fetchOrders: { [] },
         saveOrder: { _ in },
         removeOrder: { _ in },
+        renameOrderSource: { _, _ in },
         renameOrderCategory: { _, _ in },
         renameOrderPaymentMethod: { _, _ in }
     )

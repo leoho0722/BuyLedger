@@ -18,6 +18,9 @@ struct OrderEditView: View {
     /// 訂單編輯 store。
     @Bindable var store: StoreOf<OrderEditFeature>
 
+    /// 是否顯示「訂單來源」選擇 sheet。
+    @State private var showsOrderSourceSheet = false
+
     /// 是否顯示「商品類別」選擇 sheet。
     @State private var showsCategorySheet = false
 
@@ -44,6 +47,8 @@ struct OrderEditView: View {
                 Section {
                     TextField("客戶名稱", text: $store.draftCustomerName)
 
+                    orderSourcePickerRow
+
                     categoryPickerRow
 
                     orderDateRow
@@ -57,7 +62,7 @@ struct OrderEditView: View {
                             .monospacedDigit()
 
                         if !canSave {
-                            Text("客戶名稱為必填欄位。")
+                            Text("客戶名稱、訂單來源與商品類別皆為必填欄位。")
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)
                         }
@@ -152,6 +157,25 @@ struct OrderEditView: View {
             .task {
                 await store.send(.task).finish()
             }
+            .sheet(isPresented: $showsOrderSourceSheet) {
+                OptionPickerSheet(
+                    title: "選擇訂單來源",
+                    addButtonTitle: "新增來源",
+                    emptyTitle: "尚無來源",
+                    emptyDescription: "透過上方「新增來源」加入第一個訂單來源。",
+                    addAlertTitle: "新增訂單來源",
+                    addFieldPlaceholder: "來源名稱",
+                    addAlertMessage: "輸入新的訂單來源名稱，加入後會立即套用至此訂單。",
+                    options: store.availableOrderSources,
+                    selected: store.draftOrderSource,
+                    onSelect: { source in
+                        store.draftOrderSource = source
+                    },
+                    onAdd: { name in
+                        store.send(.addOrderSourceTapped(name))
+                    }
+                )
+            }
             .sheet(isPresented: $showsCategorySheet) {
                 OptionPickerSheet(
                     title: "選擇商品類別",
@@ -223,6 +247,31 @@ struct OrderEditView: View {
 // MARK: - ViewBuilder
 
 private extension OrderEditView {
+
+    /// 訂單來源選擇列：操作邏輯與 ``categoryPickerRow`` 完全一致——以 sheet 列出既有來源並提供「新增來源」入口。
+    ///
+    /// 點擊「新增來源」會收集新來源名稱，送出後由 reducer 把名稱加入 ``OrderEditFeature/State/availableOrderSources`` 並設為目前選擇。
+    var orderSourcePickerRow: some View {
+        Button {
+            showsOrderSourceSheet = true
+        } label: {
+            HStack(spacing: BLSpacing.small) {
+                Text("訂單來源")
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: BLSpacing.small)
+
+                Text(store.draftOrderSource.isEmpty ? "選擇來源" : store.draftOrderSource)
+                    .foregroundStyle(.secondary)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
 
     /// 商品類別選擇列：以 `Menu` 列出既有類別並提供「新增類別」入口。
     ///
@@ -460,11 +509,16 @@ private extension OrderEditView {
 
     /// 是否允許按下儲存。
     ///
-    /// 客戶名稱必須含有非空白字元才視為合法。即使儲存路徑保有 trim+fallback 的防禦邏輯，前端仍以 disable 按鈕的方式給使用者明確回饋。
+    /// 客戶名稱、訂單來源與商品類別都必須含有非空白字元才視為合法。即使儲存路徑保有 trim+fallback 的防禦邏輯，前端仍以 disable 按鈕的方式給使用者明確回饋。
     var canSave: Bool {
-        !store.draftCustomerName
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .isEmpty
+        let fields = [
+            store.draftCustomerName,
+            store.draftOrderSource,
+            store.draftCategory,
+        ]
+        return fields.allSatisfy {
+            !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
     }
 
     /// 幣別選擇列 label 顯示文字：「TWD (新台幣)」格式，跟 sheet 內列項與 ``OrderDetailView`` 上方 chip 一致。``Locale.localizedString(forCurrencyCode:)`` 沒有對應翻譯時 fallback 為 raw code。

@@ -35,6 +35,7 @@ struct OrderCalculationTests {
             chargedAmount: Decimal(11_800),
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
+            orderSource: "",
             category: "美妝",
             paymentMethod: ""
         )
@@ -68,6 +69,7 @@ struct OrderCalculationTests {
             chargedAmount: Decimal(1_001),
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
+            orderSource: "",
             category: "測試",
             paymentMethod: ""
         )
@@ -102,6 +104,7 @@ struct OrderCalculationTests {
             chargedAmount: Decimal(10_000),
             cardlessDeductionAmount: Decimal(200),
             cardlessSupplementAmount: Decimal(500),
+            orderSource: "",
             category: "測試",
             paymentMethod: "無卡存款"
         )
@@ -136,6 +139,7 @@ struct OrderCalculationTests {
             chargedAmount: Decimal(10_000),
             cardlessDeductionAmount: Decimal(2_000),
             cardlessSupplementAmount: Decimal(0),
+            orderSource: "",
             category: "測試",
             paymentMethod: "無卡"
         )
@@ -178,6 +182,7 @@ struct OrderCalculationTests {
             chargedAmount: 0,
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
+            orderSource: "",
             category: "精品",
             paymentMethod: ""
         )

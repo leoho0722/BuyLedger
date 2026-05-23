@@ -97,6 +97,7 @@ private extension OrdersFeaturePerformanceTests {
                 chargedAmount: Decimal(200 + index),
                 cardlessDeductionAmount: 0,
                 cardlessSupplementAmount: 0,
+                orderSource: "蝦皮",
                 category: category,
                 paymentMethod: ""
             )

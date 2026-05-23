@@ -57,6 +57,9 @@ private extension MoreView {
         /// 報價試算。
         case quote
 
+        /// 訂單來源主檔管理。
+        case orderSources
+
         /// 商品類別主檔管理。
         case categories
 
@@ -79,6 +82,8 @@ private extension MoreView {
                 "客戶名單"
             case .quote:
                 "報價試算"
+            case .orderSources:
+                LookupKind.orderSource.entryTitle
             case .categories:
                 LookupKind.category.entryTitle
             case .paymentMethods:
@@ -95,6 +100,8 @@ private extension MoreView {
                 "依名稱整理客戶活躍度，快速跳轉到對應訂單。"
             case .quote:
                 "輸入成本與費率，即時看到建議售價與毛利。"
+            case .orderSources:
+                LookupKind.orderSource.entrySubtitle
             case .categories:
                 LookupKind.category.entrySubtitle
             case .paymentMethods:
@@ -111,6 +118,8 @@ private extension MoreView {
                 "person.2"
             case .quote:
                 "function"
+            case .orderSources:
+                LookupKind.orderSource.systemImage
             case .categories:
                 LookupKind.category.systemImage
             case .paymentMethods:
@@ -129,6 +138,8 @@ private extension MoreView {
                 palette.purple
             case .quote:
                 palette.green
+            case .orderSources:
+                palette.teal
             case .categories:
                 palette.orange
             case .paymentMethods:
@@ -149,6 +160,10 @@ private extension MoreView {
             CustomersView(store: store)
         case .quote:
             QuoteView(store: store.scope(state: \.quote, action: \.quote))
+        case .orderSources:
+            LookupManagementView(
+                store: store.scope(state: \.orderSourceManagement, action: \.orderSourceManagement)
+            )
         case .categories:
             LookupManagementView(
                 store: store.scope(state: \.categoryManagement, action: \.categoryManagement)
@@ -183,6 +198,12 @@ private extension MoreView {
                     destination(for: .customers)
                 } label: {
                     toolRow(.customers, palette: palette)
+                }
+
+                NavigationLink {
+                    destination(for: .orderSources)
+                } label: {
+                    toolRow(.orderSources, palette: palette)
                 }
 
                 NavigationLink {

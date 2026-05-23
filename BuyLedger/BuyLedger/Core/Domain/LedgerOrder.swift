@@ -64,6 +64,9 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 用於「無卡」類付款方式紀錄客戶以 ATM 轉帳等方式補繳的金額；補款會加到 ``OrderSummary/revenue`` 中。非無卡訂單一律以 `0` 帶入。
     let cardlessSupplementAmount: Decimal
 
+    /// 訂單來源。
+    let orderSource: String
+
     /// 商品類別。
     let category: String
 

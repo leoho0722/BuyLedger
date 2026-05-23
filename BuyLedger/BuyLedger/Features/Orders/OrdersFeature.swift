@@ -33,6 +33,9 @@ struct OrdersFeature {
         /// 目前選取的訂單編號。
         var selectedOrderID: LedgerOrder.ID?
 
+        /// 訂單來源主檔 (從 ``OrderSourceRepository`` 載入)。
+        var orderSourceMaster: [String] = []
+
         /// 商品類別主檔 (從 ``CategoryRepository`` 載入)。
         var categoryMaster: [String] = []
 
@@ -89,6 +92,16 @@ struct OrdersFeature {
             return filtered.first { $0.id == selectedOrderID }
         }
 
+        /// 對外提供給編輯表單的「可用訂單來源」清單：合併主檔與既有訂單中使用過的來源，去重後依 locale 排序。合併規則與 ``availableCategories`` 相同。
+        var availableOrderSources: [String] {
+            let fromOrders = orders
+                .map { $0.orderSource.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            var merged = Set(orderSourceMaster)
+            merged.formUnion(fromOrders)
+            return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        }
+
         /// 對外提供給編輯表單的「可用類別」清單：合併主檔與既有訂單中使用過的類別，去重後依 locale 排序。
         ///
         /// 合併目的：使用者升級到主檔機制之前，舊訂單已經有 category 字串。為了不讓他們在編輯既有訂單時看到「自己用過的類別不在選單」，把訂單裡用過但主檔還沒有的也補進來。新增動作 (``addCategoryTapped``) 仍會把該值寫入主檔，所以這份合併清單會逐漸與主檔一致。
@@ -133,6 +146,9 @@ struct OrdersFeature {
 
         /// 訂單載入失敗。
         case ordersFailed(String)
+
+        /// 訂單來源主檔載入完成。
+        case orderSourceMasterLoaded([String])
 
         /// 商品類別主檔載入完成。
         case categoryMasterLoaded([String])
@@ -184,6 +200,9 @@ struct OrdersFeature {
     /// 訂單資料來源。
     @Dependency(OrderRepository.self) private var orderRepository
 
+    /// 訂單來源主檔資料來源。
+    @Dependency(OrderSourceRepository.self) private var orderSourceRepository
+
     /// 商品類別主檔資料來源。
     @Dependency(CategoryRepository.self) private var categoryRepository
 
@@ -210,12 +229,18 @@ struct OrdersFeature {
                 }
 
                 let orderRepository = orderRepository
+                let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
                 state.isLoading = true
                 state.errorMessage = nil
 
                 return .run { send in
+                    async let orderSourcesTask: Void = {
+                        if let items = try? await orderSourceRepository.fetchOrderSources() {
+                            await send(.orderSourceMasterLoaded(items))
+                        }
+                    }()
                     async let categoriesTask: Void = {
                         if let items = try? await categoryRepository.fetchCategories() {
                             await send(.categoryMasterLoaded(items))
@@ -234,8 +259,12 @@ struct OrdersFeature {
                         await send(.ordersFailed("訂單載入失敗，請稍後再試。"))
                     }
 
-                    _ = await (categoriesTask, paymentMethodsTask)
+                    _ = await (orderSourcesTask, categoriesTask, paymentMethodsTask)
                 }
+
+            case let .orderSourceMasterLoaded(items):
+                state.orderSourceMaster = items
+                return .none
 
             case let .categoryMasterLoaded(items):
                 state.categoryMaster = items
@@ -283,6 +312,7 @@ struct OrdersFeature {
 
                 state.editOrder = OrderEditFeature.State(
                     original: order,
+                    availableOrderSources: state.availableOrderSources,
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
                     currentDate: date.now
@@ -291,6 +321,7 @@ struct OrdersFeature {
 
             case .newOrderTapped:
                 state.editOrder = OrderEditFeature.State(
+                    availableOrderSources: state.availableOrderSources,
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
                     currentDate: date.now
@@ -306,6 +337,23 @@ struct OrdersFeature {
                 let orderRepository = orderRepository
                 return .run { _ in
                     try? await orderRepository.saveOrder(savedOrder)
+                }
+
+            case let .editOrder(.presented(.addOrderSourceTapped(name))):
+                // 子 reducer 已把 name 加進 sheet 內的 availableOrderSources 並設成 draftOrderSource；
+                // 父層額外寫入主檔並更新 state.orderSourceMaster，使非編輯流程 (其他訂單) 也能看到。
+                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return .none }
+                if !state.orderSourceMaster.contains(trimmed) {
+                    var updated = state.orderSourceMaster
+                    updated.append(trimmed)
+                    state.orderSourceMaster = updated.sorted {
+                        $0.localizedStandardCompare($1) == .orderedAscending
+                    }
+                }
+                let orderSourceRepository = orderSourceRepository
+                return .run { _ in
+                    try? await orderSourceRepository.addOrderSource(trimmed)
                 }
 
             case let .editOrder(.presented(.addCategoryTapped(name))):
@@ -374,6 +422,7 @@ struct OrdersFeature {
                     chargedAmount: existing.chargedAmount,
                     cardlessDeductionAmount: existing.cardlessDeductionAmount,
                     cardlessSupplementAmount: existing.cardlessSupplementAmount,
+                    orderSource: existing.orderSource,
                     category: existing.category,
                     paymentMethod: existing.paymentMethod
                 )
@@ -446,6 +495,7 @@ private extension OrdersFeature {
     @discardableResult
     func applyEditDraft(_ draft: OrderEditFeature.State, to state: inout State) -> LedgerOrder? {
         let trimmedName = draft.draftCustomerName.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedOrderSource = draft.draftOrderSource.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedCategory = draft.draftCategory.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedPaymentMethod = draft.draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
 
@@ -491,6 +541,7 @@ private extension OrdersFeature {
                 chargedAmount: normalizedAmount,
                 cardlessDeductionAmount: normalizedDeduction,
                 cardlessSupplementAmount: normalizedSupplement,
+                orderSource: trimmedOrderSource.isEmpty ? existing.orderSource : trimmedOrderSource,
                 category: trimmedCategory.isEmpty ? existing.category : trimmedCategory,
                 paymentMethod: trimmedPaymentMethod.isEmpty ? existing.paymentMethod : trimmedPaymentMethod
             )
@@ -498,6 +549,7 @@ private extension OrdersFeature {
             return updatedOrder
         } else {
             let resolvedName = trimmedName.isEmpty ? "未命名客戶" : trimmedName
+            let resolvedOrderSource = trimmedOrderSource.isEmpty ? "未指定" : trimmedOrderSource
             let resolvedCategory = trimmedCategory.isEmpty ? "未分類" : trimmedCategory
             let initials = String(resolvedName.prefix(2)).uppercased()
             let draftID = "BL-DRAFT-\(uuid().uuidString.prefix(6))"
@@ -519,6 +571,7 @@ private extension OrdersFeature {
                 chargedAmount: normalizedAmount,
                 cardlessDeductionAmount: normalizedDeduction,
                 cardlessSupplementAmount: normalizedSupplement,
+                orderSource: resolvedOrderSource,
                 category: resolvedCategory,
                 paymentMethod: trimmedPaymentMethod
             )
@@ -548,6 +601,7 @@ private extension LedgerOrder {
                 id,
                 customer.name,
                 customer.initials,
+                orderSource,
                 category,
                 currency.rawValue,
             ] + items.map(\.name)

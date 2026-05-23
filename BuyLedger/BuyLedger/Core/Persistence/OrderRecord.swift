@@ -74,6 +74,11 @@ final class OrderRecord {
     /// 帶 default `0` 走 SwiftData lightweight migration；行為與 ``cardlessDeductionAmount`` 相同，只在無卡類付款方式才會被使用者編輯。
     var cardlessSupplementAmount: Decimal = 0
 
+    /// 訂單來源。
+    ///
+    /// 帶 default value 讓 SwiftData 對既有資料庫做 lightweight migration：舊 row 升級時自動填空字串，不需要寫顯式 migration plan。
+    var orderSource: String = ""
+
     /// 商品類別。
     var category: String
 
@@ -103,6 +108,7 @@ final class OrderRecord {
         self.chargedAmount = order.chargedAmount
         self.cardlessDeductionAmount = order.cardlessDeductionAmount
         self.cardlessSupplementAmount = order.cardlessSupplementAmount
+        self.orderSource = order.orderSource
         self.category = order.category
         self.paymentMethod = order.paymentMethod
     }
@@ -134,6 +140,7 @@ extension OrderRecord {
             chargedAmount: chargedAmount,
             cardlessDeductionAmount: cardlessDeductionAmount,
             cardlessSupplementAmount: cardlessSupplementAmount,
+            orderSource: orderSource,
             category: category,
             paymentMethod: paymentMethod
         )
@@ -157,6 +164,7 @@ extension OrderRecord {
         self.chargedAmount = order.chargedAmount
         self.cardlessDeductionAmount = order.cardlessDeductionAmount
         self.cardlessSupplementAmount = order.cardlessSupplementAmount
+        self.orderSource = order.orderSource
         self.category = order.category
         self.paymentMethod = order.paymentMethod
     }

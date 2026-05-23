@@ -59,6 +59,20 @@ actor OrderPersistence {
         try modelContext.save()
     }
 
+    /// 把所有以 `oldName` 為訂單來源的訂單，更名為 `newName`。
+    /// - Parameters:
+    ///   - oldName: 原本的訂單來源名稱。
+    ///   - newName: 新的訂單來源名稱。
+    func renameOrderSource(from oldName: String, to newName: String) throws {
+        let descriptor = FetchDescriptor<OrderRecord>(
+            predicate: #Predicate { $0.orderSource == oldName }
+        )
+        for record in try modelContext.fetch(descriptor) {
+            record.orderSource = newName
+        }
+        try modelContext.save()
+    }
+
     /// 把所有以 `oldName` 為類別的訂單，更名為 `newName`。
     /// - Parameters:
     ///   - oldName: 原本的類別名稱。
