@@ -22,7 +22,7 @@ BuyLedger/
 │   ├── Core/
 │   │   ├── Domain/               # LedgerOrder、FxRateSnapshot、CurrencyCode 等 model
 │   │   ├── Persistence/          # OrderPersistence (@ModelActor)、PersistenceContainer、OrderRecord
-│   │   ├── Dependencies/         # OrderRepository、HTTPClient、APIKeyProvider
+│   │   ├── Dependencies/         # OrderRepository 等 5 個 Repository (type-based @Dependency 注入)
 │   │   └── Networking/           # APIError、HTTPClient、APIKeyProvider 介面
 │   ├── Features/                 # 依功能切分的 TCA feature
 │   │   ├── App/                  # RootFeature + RootView + RootSidebarLayout / RootTabLayout
@@ -120,7 +120,7 @@ Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確�
 | iPad (regular size class) | `RootSidebarLayout` | 同 macOS 的 split 結構但無 inspector                       |
 | iPhone (compact)          | `RootTabLayout`     | `TabView`                                                  |
 
-`OrdersView` 是平台分流入口：`#if os(macOS)` → `OrdersMacView` (`List` + `OrderRowView` + 右側 `.inspector(...)`；先前用 `Table`，但固定單行 row 會截斷商品明細故改用 `List`)；iPhone (compact) → `OrdersCompactView` (`NavigationStack`)；iPad (regular) → `NavigationStack` 內以 `HStack` 自排「清單 + 詳情」兩欄 (不用巢狀 `NavigationSplitView`，避免兩層 split 互搶寬度)。`.sheet(...)` 編輯表單一律掛在 `OrdersView` 外層，三平台共用。
+`OrdersView` 是平台分流入口：`#if os(macOS)` → `OrdersMacView` (`List` + `OrderRowView` + 右側 `.inspector(...)`)；iPhone (compact) → `OrdersCompactView` (`NavigationStack`)；iPad (regular) → `NavigationStack` 內以 `HStack` 自排「清單 + 詳情」兩欄 (不用巢狀 `NavigationSplitView`，避免兩層 split 互搶寬度)。`.sheet(...)` 編輯表單一律掛在 `OrdersView` 外層，三平台共用。
 
 macOS 偏好設定走標準 `Settings { ... }` scene (⌘,)，實作在 `Features/Settings/SettingsMacView.swift`，採 `TabView` + `Form` + `.formStyle(.grouped)`；iOS / iPadOS 沿用 `SettingsView` (`Form` + `Section`) 由 `MoreView` push 進入。
 
@@ -171,7 +171,3 @@ macOS 版的 SwiftData store 位於：
 ### Snapshot baseline 漂移
 
 設計大改時請刪掉對應 baseline (`BuyLedgerTests/__Snapshots__/SnapshotTests/*.png`) 讓下一次跑測試自動重建。Baseline 失準若不是來自設計變動，先確認測試是否走 `TestDependencies.withFixedNow { ... }` 注入固定 `Date`、`TimeZone`、`Calendar`。
-
-## License
-
-待補。

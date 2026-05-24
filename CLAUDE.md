@@ -43,18 +43,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 ## 建置、測試與開發指令
 
-完整指令範例見 [README.md › Build & Run](README.md#2-build--run)。
-
-**預設用 CLI `xcodebuildmcp <subcommand>`**：build / run / test、查狀態、列舉 simulator 或 scheme、可複現指令 (CI、教學、script)、批次與管線處理 (`| grep`、`| jq`、`>` 存檔) 等都走 CLI。
-
-**切到 MCP server `mcp__XcodeBuildMCP__*`** 的時機：
-
-- UI 自動化 (`snapshot_ui` / `tap` / `swipe`) 與 screenshot
-- 需要結構化測試結果或 coverage 報告
-- 長時間操作需可控中斷或串流 log
-- 讀取或設定 session defaults
-
-**通用鐵則**：
+完整指令與 CLI／MCP 分流 (本專案預設走 CLI，MCP server `mcp__XcodeBuildMCP__*` 留給 UI 自動化、結構化測試結果與可控中斷的情境) 見 [README.md › Build & Run](README.md#2-build--run)。本專案必守鐵則：
 
 - 絕不退回原生 `xcodebuild` / `xcrun` / `simctl`。
 - 三平台 simulator/macOS build 共用同一份 `DerivedData/.../XCBuildData/build.db`，**不能並行**——請序列化 (`cmd1 && cmd2 && cmd3`)，否則 `database is locked`。
@@ -77,7 +66,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 - **`liveValue` 不自動 seed sample 資料**——使用者首次啟動是真正的空狀態 (Dashboard 顯示 `onboardingHero`、Insights 顯示空狀態 `ContentUnavailableView`、Orders 顯示「沒有符合條件的訂單」)。
 - **`previewValue`** 使用 in-memory container 並傳 `seedSampleOrdersIfEmpty: true`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
-- **`LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback`** 僅供 Preview / 單元測試 / `previewValue` 使用，runtime path **不應讀取**。
+- **`LedgerOrder.sampleOrders`、`FxRateSnapshot.fallback` 與 `FxRates`** 僅供 Preview / 單元測試 / `previewValue` 使用，runtime path **不應讀取**。
 - **`@ModelActor` init 帶 main actor 隔離**——actor 實例必須在 `async` context 才能建立。參考 `OrderRepository.makePersistence(container:)` 用 `MainActor.run { ... }` 跳上 main 取得 actor 後再回到原 task。
 - **多個 repository 共用單一 `ModelContainer`**——`OrderRepository` / `CategoryRepository` / `PaymentMethodRepository` / `OrderSourceRepository` / `CurrencyMetadataRepository` 的 `liveValue` 一律走 `PersistenceContainer.shared`，**不可各自呼叫 `makeForApp()`**；同一 process 內並存多個 container (即使底層 SQLite 同名) 會造成 SwiftData 內部狀態錯亂。
 - **Repository 一律以 type-based `@Dependency(SomeRepository.self)` 注入**——新 repo 不再新增 `DependencyValues` keyPath；reducer 在 `// MARK: - Dependency Properties` 宣告 `@Dependency(OrderRepository.self) private var orderRepository`。
@@ -97,11 +86,10 @@ Schema 採版本化 `VersionedSchema` (`BuyLedgerSchemaV1`…`V5`)，遷移由 `
 
 ## 外部 API 與 Fallback 政策
 
-API key 注入鏈路與設定步驟見 [README.md › ExchangeRate-API 金鑰](README.md#1-exchangerate-api-金鑰)。
+機制與設定 (API key 注入鏈路、`ExchangeRateClient` 的 endpoint 與幣別主檔載入流程) 見 [README.md › ExchangeRate-API 金鑰](README.md#1-exchangerate-api-金鑰) 與 [README.md › 外部 API](README.md#外部-api)。硬規則：
 
-- **UI 寧可顯示空狀態也不顯示假資料**——API 失敗或無資料時 view 顯示「—」、「尚無可用匯率資料」、「尚未有足夠可用於分析的資料」等空狀態，不繪空圖表也不退回 hardcoded 數字。
-- **幣別主檔動態載入**——`RootFeature.task` 透過 `CurrencyMetadataRepository.refreshIfStale(604_800)` 打 ExchangeRate-API `/codes` 並 cache 7 天；幣別清單不再 hardcode。`ExchangeRateClient.fetchLatest(.twd)` 仍是匯率數值的 runtime call。
-- `FxRates` / `FxRateSnapshot.fallback` / `LedgerOrder.sampleOrders` 僅供 Preview / Tests，runtime path **不可讀取**。
+- **UI 寧可顯示空狀態也不顯示假資料**——API 失敗或無資料時顯示「—」、「尚無可用匯率資料」、「尚未有足夠可用於分析的資料」等空狀態，不繪空圖表也不退回 hardcoded 數字。
+- **幣別清單動態載入、不可 hardcode**——經 `CurrencyMetadataRepository.refreshIfStale(604_800)` 打 `/codes` 並 cache 7 天。
 
 ## 程式風格與命名慣例
 
@@ -170,9 +158,9 @@ Swift 通用慣例 (API Design Guidelines、camel case、四空格縮排) 不重
 
 ### Snapshot 測試 (swift-snapshot-testing)
 
-Snapshot baseline 放在 `BuyLedger/BuyLedgerTests/__Snapshots__/`。第一次跑會 record baseline 並回報 fail (屬正常行為)，確認視覺正確後 commit baseline；之後 view 變更若與 baseline 不符會 fail。`SnapshotTests.swift` 以 `#if canImport(SnapshotTesting) && os(iOS)` 包住，目前僅 iOS 393×852 baseline。設計大改時請刪掉對應 baseline 讓下一次跑自動重建。
+Baseline 在 `BuyLedgerTests/__Snapshots__/`；`SnapshotTests.swift` 以 `#if canImport(SnapshotTesting) && os(iOS)` 包住，目前僅 iOS 393×852 baseline。record / commit 流程與設計大改重建見 [README.md › 執行測試](README.md#3-執行測試) 與 README Troubleshooting。
 
-每個 snapshot test 都必須用 `TestDependencies.withFixedNow { ... }` (位於 `BuyLedgerTests/TestDependencies.swift`) 包住 view 建構與 `assertSnapshot` 呼叫；裡面把 `\.date` 注入成 2026-04-30 UTC，避免「跨日跑出不同 baseline」這類 flake。新加 snapshot 一律走這個 helper，不要在測試裡直接 `Date()`。
+**硬規則**：每個 snapshot test 必須用 `TestDependencies.withFixedNow { ... }` (`BuyLedgerTests/TestDependencies.swift`) 包住 view 建構與 `assertSnapshot`，注入固定 `\.date` (2026-04-30 UTC)；不要在測試裡直接 `Date()`。
 
 ## 環境相依性與依賴注入
 
