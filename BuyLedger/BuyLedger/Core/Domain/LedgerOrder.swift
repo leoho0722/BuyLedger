@@ -80,16 +80,12 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
         OrderSummary(order: self)
     }
 
-    /// 列表中顯示的主要商品描述。
-    var primaryItemDescription: String {
-        guard let firstItem = items.first else {
+    /// 列表中顯示的商品摘要，每項商品各自一行完整列出。
+    var itemSummary: String {
+        guard !items.isEmpty else {
             return "未命名商品"
         }
 
-        if items.count == 1 {
-            return firstItem.name
-        }
-
-        return "\(firstItem.name) +\(items.count - 1)"
+        return items.map(\.name).joined(separator: "\n")
     }
 }

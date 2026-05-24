@@ -48,10 +48,9 @@ struct OrderRowCompactView: View {
                         .foregroundStyle(palette.tertiaryLabel)
                 }
                 
-                Text(order.primaryItemDescription)
+                Text(order.itemSummary)
                     .font(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
-                    .lineLimit(1)
                 
                 HStack(alignment: .center, spacing: BLSpacing.small) {
                     BLStatusPill(order.status.title, tone: order.status.tone)

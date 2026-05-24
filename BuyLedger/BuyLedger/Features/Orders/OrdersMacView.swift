@@ -12,7 +12,7 @@ import SwiftUI
 
 /// macOS 使用的訂單瀏覽畫面。
 ///
-/// 採用扁平 SwiftUI ``Table`` 呈現所有訂單，搭配右側 inspector 顯示選取訂單的詳情，對應設計稿的 Mac Orders tab。
+/// 以 SwiftUI ``List`` 搭配 ``OrderRowView`` 呈現所有訂單，搭配右側 inspector 顯示選取訂單的詳情，對應設計稿的 Mac Orders tab。先前採用 ``Table``，但其固定單行 row 高度會截斷商品明細，改用 ``List`` 後商品明細能多行完整顯示。
 struct OrdersMacView: View {
     
     // MARK: - View Properties
@@ -39,7 +39,7 @@ struct OrdersMacView: View {
             titleAndFilters(palette: palette)
             searchAndDateRow(palette: palette)
             errorBanner(palette: palette)
-            ordersTable(palette: palette)
+            ordersList(palette: palette)
         }
         .padding(BLSpacing.large)
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
@@ -160,88 +160,35 @@ private extension OrdersMacView {
         }
     }
     
-    /// 訂單表格。
+    /// 訂單清單。
+    ///
+    /// macOS 的 SwiftUI ``Table`` 採固定單行 row 高度，商品欄會被截斷而無法逐行顯示完整商品明細；改用 ``List`` 搭配 ``OrderRowView`` 自訂列，讓每筆訂單的商品明細能多行完整呈現並自動撐高 row，與 iOS/iPad 一致。
     /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 訂單 ``Table`` view。
-    func ordersTable(palette: BLPalette) -> some View {
-        Table(
-            store.state.filteredOrders(referenceDate: date.now),
-            selection: $store.selectedOrderID.sending(\.orderSelected)
-        ) {
-            TableColumn("單號") { order in
-                Text(order.id)
-                    .font(.caption.monospacedDigit())
-                    .foregroundStyle(palette.secondaryLabel)
-            }
-            .width(min: 110, ideal: 120, max: 140)
-            
-            TableColumn("客戶") { order in
-                HStack(spacing: BLSpacing.small) {
-                    BLAvatar(
-                        name: order.customer.name,
-                        initials: order.customer.initials,
-                        size: 24
-                    )
-                    Text(order.customer.name)
-                        .font(.subheadline.weight(.medium))
-                }
-            }
-            .width(min: 140, ideal: 180)
-            
-            TableColumn("幣別") { order in
-                Text(order.currency.rawValue)
-                    .font(.subheadline)
-                    .foregroundStyle(palette.secondaryLabel)
-            }
-            .width(min: 70, ideal: 90, max: 110)
-            
-            TableColumn("商品") { order in
-                Text(order.primaryItemDescription)
-                    .font(.subheadline)
-                    .foregroundStyle(palette.secondaryLabel)
-                    .lineLimit(1)
-            }
-            
-            TableColumn("狀態") { order in
-                BLStatusPill(order.status.title, tone: order.status.tone)
-            }
-            .width(min: 88, ideal: 110, max: 130)
-            
-            TableColumn("收款") { order in
-                Text(OrderFormatters.twd(order.summary.revenue))
-                    .font(.subheadline.weight(.medium))
-                    .monospacedDigit()
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-            }
-            .width(min: 90, ideal: 110, max: 140)
-            
-            TableColumn("獲利") { order in
-                let profit = order.summary.profit
-                
-                Text("\(profit >= 0 ? "+" : "")\(OrderFormatters.twd(profit))")
-                    .font(.subheadline.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(profit >= 0 ? palette.green : palette.red)
-                    .frame(maxWidth: .infinity, alignment: .trailing)
-            }
-            .width(min: 90, ideal: 110, max: 140)
-        }
-        .tableStyle(.inset(alternatesRowBackgrounds: false))
-        .contextMenu(forSelectionType: LedgerOrder.ID.self) { ids in
-            if let id = ids.first {
-                Button(role: .destructive) {
-                    store.send(.deleteOrderTapped(id))
-                } label: {
-                    Label("刪除訂單", systemImage: "trash")
-                }
+    /// - Returns: 訂單 ``List`` view。
+    func ordersList(palette: BLPalette) -> some View {
+        let orders = store.state.filteredOrders(referenceDate: date.now)
+
+        return List(selection: $store.selectedOrderID.sending(\.orderSelected)) {
+            ForEach(orders) { order in
+                OrderRowView(order: order)
+                    .tag(order.id)
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            store.send(.deleteOrderTapped(order.id))
+                        } label: {
+                            Label("刪除訂單", systemImage: "trash")
+                        }
+                    }
             }
         }
+        .listStyle(.inset)
+        .scrollContentBackground(.hidden)
         .overlay {
             if store.isLoading {
                 ProgressView("載入訂單")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(palette.background)
-            } else if store.state.filteredOrders(referenceDate: date.now).isEmpty {
+            } else if orders.isEmpty {
                 ContentUnavailableView("沒有符合條件的訂單", systemImage: "tray")
                     .frame(maxWidth: .infinity, maxHeight: .infinity)
                     .background(palette.background)
