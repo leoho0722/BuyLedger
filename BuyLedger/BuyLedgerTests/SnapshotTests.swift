@@ -90,6 +90,40 @@ struct SnapshotTests {
             assertSnapshot(of: view, as: .image)
         }
     }
+
+    @Test func orderDetailCostBreakdownBaseline() {
+        TestDependencies.withFixedNow {
+            // 同時帶有刷卡、平台與金流手續費的訂單，用於驗證成本拆解 chart 將三種手續費分別列出。
+            let order = LedgerOrder(
+                id: "BL-FEE-SNAP-001",
+                customer: LedgerCustomer(name: "手續費拆解", initials: "FB", tier: .vip),
+                status: .delivered,
+                currency: .jpy,
+                date: Date(timeIntervalSince1970: 1_777_145_600),
+                items: [
+                    LedgerOrderItem(name: "示範商品", quantity: 1, unitPrice: 30_000),
+                ],
+                itemCost: Decimal(6_000),
+                domesticShipping: 0,
+                internationalShipping: 0,
+                foreignDomesticShipping: 0,
+                cardFeeRate: Decimal(string: "0.015") ?? 0,
+                platformFeeRate: Decimal(string: "0.03") ?? 0,
+                paymentFeeRate: Decimal(string: "0.005") ?? 0,
+                chargedAmount: Decimal(10_000),
+                cardlessDeductionAmount: 0,
+                cardlessSupplementAmount: 0,
+                orderSource: "示範",
+                category: "美妝",
+                paymentMethod: "信用卡"
+            )
+
+            let view = OrderDetailView(order: order)
+                .frame(width: 393, height: 852)
+
+            assertSnapshot(of: view, as: .image)
+        }
+    }
 }
 
 #endif

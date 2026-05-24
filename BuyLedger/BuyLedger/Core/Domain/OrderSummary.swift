@@ -15,7 +15,16 @@ struct OrderSummary: Equatable {
     /// 實際收款。
     let revenue: Decimal
 
-    /// 刷卡與平台手續費。
+    /// 刷卡手續費。
+    let cardFee: Decimal
+
+    /// 平台手續費 (無條件進位到整數)。
+    let platformFee: Decimal
+
+    /// 金流手續費。
+    let paymentFee: Decimal
+
+    /// 刷卡、平台與金流手續費的合計。
     let fees: Decimal
 
     /// 總成本。
@@ -49,6 +58,9 @@ struct OrderSummary: Equatable {
         let profit = revenue - totalCost
 
         self.revenue = revenue
+        self.cardFee = cardFee
+        self.platformFee = platformFee
+        self.paymentFee = paymentFee
         self.fees = fees
         self.totalCost = totalCost
         self.profit = profit

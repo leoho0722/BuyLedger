@@ -590,18 +590,30 @@ private extension OrderDetailView {
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 成本拆解清單。
     func costComponents(palette: BLPalette) -> [OrderCostComponent] {
-        // 運費由客人支付、不計入 ``OrderSummary/totalCost``，因此成本拆解只呈現商品金額與手續費，
-        // 各項目加總才會等於 donut/bar 中央顯示的總成本。
-        [
+        // 運費由客人支付、不計入 ``OrderSummary/totalCost``，因此成本拆解只呈現商品金額與手續費。
+        // 手續費進一步拆成刷卡 / 平台 / 金流三項分別列出，比統稱「手續費」更直覺；
+        // 商品金額與三項手續費加總才會等於 donut/bar 中央顯示的總成本。
+        let summary = order.summary
+        return [
             OrderCostComponent(
                 title: "商品金額",
                 value: order.itemCost,
                 color: palette.accent
             ),
             OrderCostComponent(
-                title: "手續費",
-                value: order.summary.fees,
+                title: "刷卡手續費",
+                value: summary.cardFee,
                 color: palette.orange
+            ),
+            OrderCostComponent(
+                title: "平台手續費",
+                value: summary.platformFee,
+                color: palette.teal
+            ),
+            OrderCostComponent(
+                title: "金流手續費",
+                value: summary.paymentFee,
+                color: palette.purple
             ),
         ]
             .filter { $0.value > 0 }

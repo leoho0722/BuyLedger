@@ -45,6 +45,9 @@ struct OrderCalculationTests {
         // 運費 (domestic 80 + international 320) 由客人支付，不計入 totalCost。
         // fees = 11_800 * 0.015 = 177；totalCost = itemCost 8_892 + fees 177 = 9_069。
         #expect(summary.revenue == 11_800)
+        #expect(summary.cardFee == 177)
+        #expect(summary.platformFee == 0)
+        #expect(summary.paymentFee == 0)
         #expect(summary.fees == 177)
         #expect(summary.totalCost == 9_069)
         #expect(summary.profit == 2_731)
@@ -79,9 +82,49 @@ struct OrderCalculationTests {
         let summary = OrderSummary(order: order)
 
         // 1_001 * 0.03 = 30.03，無條件進位 → 31
+        #expect(summary.platformFee == 31)
+        #expect(summary.cardFee == 0)
+        #expect(summary.paymentFee == 0)
         #expect(summary.fees == 31)
         #expect(summary.totalCost == 831)
         #expect(summary.profit == 170)
+    }
+
+    @Test func feesSplitIntoCardPlatformAndPayment() {
+        // 三種手續費同時存在時，summary 應分別暴露各分項，且加總等於 fees。
+        let order = LedgerOrder(
+            id: "BL-FEE-001",
+            customer: LedgerCustomer(name: "手續費測試", initials: "FE", tier: .regular),
+            status: .delivered,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_777_145_600),
+            items: [
+                LedgerOrderItem(name: "測試商品", quantity: 1, unitPrice: 10_000),
+            ],
+            itemCost: Decimal(6_000),
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: Decimal(string: "0.015") ?? 0,
+            platformFeeRate: Decimal(string: "0.02") ?? 0,
+            paymentFeeRate: Decimal(string: "0.005") ?? 0,
+            chargedAmount: Decimal(10_000),
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "",
+            category: "測試",
+            paymentMethod: ""
+        )
+
+        let summary = OrderSummary(order: order)
+
+        // cardFee = 10_000 * 0.015 = 150；platformFee = 10_000 * 0.02 = 200；
+        // paymentFee = 10_000 * 0.005 = 50；fees = 400。
+        #expect(summary.cardFee == 150)
+        #expect(summary.platformFee == 200)
+        #expect(summary.paymentFee == 50)
+        #expect(summary.fees == 400)
+        #expect(summary.cardFee + summary.platformFee + summary.paymentFee == summary.fees)
     }
 
     @Test func cardlessSupplementAndDeductionAdjustRevenueAndProfit() {
