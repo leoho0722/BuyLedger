@@ -100,57 +100,65 @@ private extension OrdersView {
     }
     
     /// 訂單列表欄。
+    ///
+    /// 與 iPhone (compact) 的 ``OrdersCompactView`` 共用同一套 ``BLCard`` + 分隔線排版，讓三平台的訂單列表呈現一致的單一圓角卡片外觀。選取狀態僅反映在右側詳情欄，列表本身不畫選取高亮 (比照 iOS)；刪除走 row 的 context menu。
     var listPane: some View {
         let palette = BLTheme.palette(for: colorScheme)
-        
+        let orders = store.state.filteredOrders(referenceDate: date.now)
+
         return VStack(spacing: 0) {
             listHeader(palette: palette)
-            
-            List(selection: $store.selectedOrderID.sending(\.orderSelected)) {
+
+            ScrollView {
                 if store.isLoading {
                     ProgressView("載入訂單")
                         .frame(maxWidth: .infinity, alignment: .center)
-                        .listRowBackground(palette.background)
-                        .listRowSeparator(.hidden)
-                } else if store.state.filteredOrders(referenceDate: date.now).isEmpty {
+                        .padding(.top, BLSpacing.large)
+                } else if orders.isEmpty {
                     ContentUnavailableView("沒有符合條件的訂單", systemImage: "tray")
-                        .listRowBackground(palette.background)
-                        .listRowSeparator(.hidden)
+                        .padding(.top, BLSpacing.extraLarge)
                 } else {
-                    ForEach(store.state.filteredOrders(referenceDate: date.now)) { order in
-                        Button {
-                            store.send(.orderSelected(order.id))
+                    orderListCard(orders: orders)
+                        .padding(.horizontal, BLSpacing.medium)
+                        .padding(.bottom, BLSpacing.medium)
+                }
+            }
+            .background(palette.background)
+        }
+    }
+
+    /// 卡片化的訂單列表，內含逐列訂單與分隔線。
+    ///
+    /// 與 ``OrdersCompactView`` 的 `listSection` 採同一套 ``BLCard`` + ``Divider`` 排版以維持三平台一致；每列以 ``Button`` 送出 ``OrdersFeature/Action/orderSelected(_:)`` 更新右側詳情。
+    /// - Parameter orders: 已套用篩選的訂單清單。
+    /// - Returns: 卡片化的訂單列表 view。
+    func orderListCard(orders: [LedgerOrder]) -> some View {
+        BLCard(padding: 0) {
+            VStack(spacing: 0) {
+                ForEach(Array(orders.enumerated()), id: \.element.id) { index, order in
+                    Button {
+                        store.send(.orderSelected(order.id))
+                    } label: {
+                        OrderRowView(order: order)
+                            .padding(.horizontal, BLSpacing.large)
+                            .padding(.vertical, BLSpacing.small)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    .contextMenu {
+                        Button(role: .destructive) {
+                            store.send(.deleteOrderTapped(order.id))
                         } label: {
-                            OrderRowView(order: order)
-                                .contentShape(Rectangle())
+                            Label("刪除訂單", systemImage: "trash")
                         }
-                        .buttonStyle(.plain)
-                        .listRowBackground(
-                            store.selectedOrderID == order.id
-                            ? palette.accent.opacity(0.12)
-                            : palette.background
-                        )
-                        .tag(order.id)
-                        .swipeActions(edge: .trailing) {
-                            Button(role: .destructive) {
-                                store.send(.deleteOrderTapped(order.id))
-                            } label: {
-                                Label("刪除", systemImage: "trash")
-                            }
-                        }
-                        .contextMenu {
-                            Button(role: .destructive) {
-                                store.send(.deleteOrderTapped(order.id))
-                            } label: {
-                                Label("刪除訂單", systemImage: "trash")
-                            }
-                        }
+                    }
+
+                    if index < orders.count - 1 {
+                        Divider()
+                            .padding(.leading, BLSpacing.large + 40 + BLSpacing.medium)
                     }
                 }
             }
-            .listStyle(.plain)
-            .scrollContentBackground(.hidden)
-            .background(palette.background)
         }
     }
     

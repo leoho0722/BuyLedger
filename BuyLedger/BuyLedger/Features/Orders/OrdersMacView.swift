@@ -162,16 +162,46 @@ private extension OrdersMacView {
     
     /// 訂單清單。
     ///
-    /// macOS 的 SwiftUI ``Table`` 採固定單行 row 高度，商品欄會被截斷而無法逐行顯示完整商品明細；改用 ``List`` 搭配 ``OrderRowView`` 自訂列，讓每筆訂單的商品明細能多行完整呈現並自動撐高 row，與 iOS/iPad 一致。
+    /// 與 iPhone (compact) 的 ``OrdersCompactView`` 及 iPad 的 ``OrdersView`` `listPane` 共用同一套 ``BLCard`` + ``Divider`` 排版，讓三平台的訂單列表呈現一致的單一圓角卡片外觀。先前採用 ``Table`` (固定單行 row 高度會截斷商品明細)，後改 ``List``；但 macOS `.inset` list 的 `List(selection:)` 會在選取列疊上不透明的系統 accent 高亮，蓋掉自訂卡片色而呈現整塊亮藍，因此改以 ``ScrollView`` + ``BLCard`` 自繪列表。選取狀態僅反映在右側 inspector，列表本身不畫選取高亮 (比照 iOS)；刪除走 row 的 context menu。
     /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 訂單 ``List`` view。
+    /// - Returns: 訂單列表 view。
     func ordersList(palette: BLPalette) -> some View {
         let orders = store.state.filteredOrders(referenceDate: date.now)
 
-        return List(selection: $store.selectedOrderID.sending(\.orderSelected)) {
-            ForEach(orders) { order in
-                OrderRowView(order: order)
-                    .tag(order.id)
+        return ScrollView {
+            if store.isLoading {
+                ProgressView("載入訂單")
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .padding(.top, BLSpacing.large)
+            } else if orders.isEmpty {
+                ContentUnavailableView("沒有符合條件的訂單", systemImage: "tray")
+                    .padding(.top, BLSpacing.extraLarge)
+            } else {
+                orderListCard(orders: orders)
+                    .padding(.top, BLSpacing.small)
+            }
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+    }
+
+    /// 卡片化的訂單列表，內含逐列訂單與分隔線。
+    ///
+    /// 與 ``OrdersCompactView`` 的 `listSection`、iPad `listPane` 的 `orderListCard` 採同一套 ``BLCard`` + ``Divider`` 排版以維持三平台一致；每列以 ``Button`` 送出 ``OrdersFeature/Action/orderSelected(_:)`` 更新右側 inspector。
+    /// - Parameter orders: 已套用篩選的訂單清單。
+    /// - Returns: 卡片化的訂單列表 view。
+    func orderListCard(orders: [LedgerOrder]) -> some View {
+        BLCard(padding: 0) {
+            VStack(spacing: 0) {
+                ForEach(Array(orders.enumerated()), id: \.element.id) { index, order in
+                    Button {
+                        store.send(.orderSelected(order.id))
+                    } label: {
+                        OrderRowView(order: order)
+                            .padding(.horizontal, BLSpacing.large)
+                            .padding(.vertical, BLSpacing.small)
+                            .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
                     .contextMenu {
                         Button(role: .destructive) {
                             store.send(.deleteOrderTapped(order.id))
@@ -179,19 +209,12 @@ private extension OrdersMacView {
                             Label("刪除訂單", systemImage: "trash")
                         }
                     }
-            }
-        }
-        .listStyle(.inset)
-        .scrollContentBackground(.hidden)
-        .overlay {
-            if store.isLoading {
-                ProgressView("載入訂單")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(palette.background)
-            } else if orders.isEmpty {
-                ContentUnavailableView("沒有符合條件的訂單", systemImage: "tray")
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .background(palette.background)
+
+                    if index < orders.count - 1 {
+                        Divider()
+                            .padding(.leading, BLSpacing.large + 40 + BLSpacing.medium)
+                    }
+                }
             }
         }
     }
