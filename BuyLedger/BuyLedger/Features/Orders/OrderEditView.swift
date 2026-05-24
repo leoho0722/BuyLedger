@@ -356,6 +356,7 @@ private extension OrderEditView {
             selection: refreshingSecondsBinding,
             displayedComponents: [.date, .hourAndMinute]
         )
+        .datePickerStyle(.compact)
         .environment(\.locale, deviceLocale)
     }
 
