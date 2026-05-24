@@ -481,7 +481,7 @@ private extension InsightsView {
                 Text("下單熱力 · 過去 \(weekCount) 週")
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(palette.label)
-                
+
                 LazyVGrid(
                     columns: [GridItem(.fixed(28), spacing: 6)] + Array(
                         repeating: GridItem(.flexible(), spacing: 6),
@@ -499,15 +499,20 @@ private extension InsightsView {
                             .frame(maxWidth: .infinity)
                     }
                     
-                    ForEach(0..<7, id: \.self) { weekday in
-                        Text(weekdayLabel(weekday))
-                            .font(.caption)
-                            .foregroundStyle(palette.secondaryLabel)
-                            .frame(width: 28, alignment: .leading)
-                        
-                        ForEach(0..<weekCount, id: \.self) { week in
+                    // 攤平成單層 ForEach；LazyVGrid 只可靠展開直接子層的 ForEach，
+                    // 外層 ForEach 內再巢狀 ForEach (且帶 sibling Text) 時，巢狀那層不會被攤成 cell。
+                    ForEach(0..<(7 * (weekCount + 1)), id: \.self) { index in
+                        let weekday = index / (weekCount + 1)
+                        let column = index % (weekCount + 1)
+
+                        if column == 0 {
+                            Text(weekdayLabel(weekday))
+                                .font(.caption)
+                                .foregroundStyle(palette.secondaryLabel)
+                                .frame(width: 28, alignment: .leading)
+                        } else {
                             heatmapCell(
-                                count: cells[HeatmapKey(week: week, weekday: weekday)] ?? 0,
+                                count: cells[HeatmapKey(week: column - 1, weekday: weekday)] ?? 0,
                                 maxCount: maxCount,
                                 palette: palette
                             )
@@ -531,9 +536,12 @@ private extension InsightsView {
             return 0.2 + (Double(count) / Double(maxCount)) * 0.8
         }()
         
+        // 用明確高度撐起格子；`RoundedRectangle` 是 Shape 無 intrinsic size，
+        // 在 LazyVGrid 中靠 `aspectRatio` 會被旁邊 Text 那列壓成 0 高度而完全不顯示。
         return RoundedRectangle(cornerRadius: 4, style: .continuous)
             .fill(palette.accent.opacity(opacity))
-            .aspectRatio(1, contentMode: .fit)
+            .frame(maxWidth: .infinity)
+            .frame(height: Self.heatmapCellHeight)
             .overlay {
                 if count > 0 {
                     Text("\(count)")
@@ -586,7 +594,10 @@ private extension InsightsView {
     
     /// 熱力圖顯示的週數；同時驅動 ``heatmapCard(palette:)`` 的標題、grid 欄位與 ``computeHeatmap(orders:)`` 的回填邏輯。
     static let heatmapWeekCount = 8
-    
+
+    /// 熱力圖單一格子的高度 (pt)；格子寬度由 grid 的 flexible 欄位決定，高度需明確指定避免 Shape 被壓扁。
+    static let heatmapCellHeight: CGFloat = 30
+
     /// 計算 ``InsightsStats``。
     /// - Parameters:
     ///   - orders: 目前訂單清單。
@@ -805,33 +816,38 @@ private extension InsightsView {
     /// - Parameter orders: 目前訂單清單。
     /// - Returns: 鍵為 `HeatmapKey`、值為訂單筆數。
     func computeHeatmap(orders: [LedgerOrder]) -> [HeatmapKey: Int] {
-        let calendar = Calendar.current
+        var calendar = Calendar.current
+        // 熱力圖視覺上以週一為每週起點 (列為 一…日)，週欄分組需與之對齊，否則週日訂單會落到相鄰欄。
+        calendar.firstWeekday = 2
         let now = date()
         let weekCount = Self.heatmapWeekCount
-        guard let currentWeek = calendar.dateInterval(of: .weekOfYear, for: now) else {
+        guard let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start else {
             return [:]
         }
-        
+
         var result: [HeatmapKey: Int] = [:]
-        
+
         for order in orders {
-            let day = calendar.startOfDay(for: order.date)
-            let daysFromCurrentWeekStart = calendar.dateComponents([.day], from: day, to: currentWeek.start).day ?? 0
-            let weekOffset = -(daysFromCurrentWeekStart / 7)
-            let weekIndex = (weekCount - 1) - weekOffset
-            
+            // 以「訂單所屬週起點」對「本週起點」相差幾週決定欄位；兩者皆對齊週界，避免用任意日期相減造成跨週 off-by-one。
+            guard let orderWeekStart = calendar.dateInterval(of: .weekOfYear, for: order.date)?.start else {
+                continue
+            }
+            let daysBetween = calendar.dateComponents([.day], from: orderWeekStart, to: currentWeekStart).day ?? 0
+            let weeksAgo = daysBetween / 7
+            let weekIndex = (weekCount - 1) - weeksAgo
+
             guard weekIndex >= 0, weekIndex < weekCount else {
                 continue
             }
-            
+
             // weekday: 1=週日 ... 7=週六；轉成 0=週一 ... 6=週日
             let raw = calendar.component(.weekday, from: order.date)
             let weekday = (raw + 5) % 7
-            
+
             let key = HeatmapKey(week: weekIndex, weekday: weekday)
             result[key, default: 0] += 1
         }
-        
+
         return result
     }
 
