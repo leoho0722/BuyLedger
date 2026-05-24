@@ -70,6 +70,134 @@ struct InsightsView: View {
     }
 }
 
+// MARK: - Nested Types
+
+private extension InsightsView {
+
+    /// 分析頁可選的趨勢期間。
+    enum InsightsDateRange: String, CaseIterable, Identifiable, Sendable {
+
+        // MARK: - Cases
+
+        /// 過去 30 天。
+        case thirtyDays
+
+        /// 過去 6 個月。
+        case sixMonths
+
+        /// 過去 12 個月。
+        case twelveMonths
+
+        // MARK: - Identifiable Properties
+
+        /// 區間穩定識別。
+        var id: String { rawValue }
+
+        // MARK: - Display Properties
+
+        /// 顯示在 segmented control 上的標題。
+        var title: String {
+            switch self {
+            case .thirtyDays:
+                "30 天"
+            case .sixMonths:
+                "6 個月"
+            case .twelveMonths:
+                "12 個月"
+            }
+        }
+
+        /// 顯示在 trend card 上的子標題。
+        var trendCardTitle: String {
+            switch self {
+            case .thirtyDays:
+                "30 天淨獲利"
+            case .sixMonths:
+                "6 個月淨獲利"
+            case .twelveMonths:
+                "12 個月淨獲利"
+            }
+        }
+    }
+
+    /// 分析頁的整體統計。
+    struct InsightsStats {
+
+        // MARK: - Data Properties
+
+        /// 走勢圖 (依 range 動態：30 天用「日」、6/12 個月用「月」)。
+        let trendBars: [BLBarChartValue]
+
+        /// 期間內淨獲利總和。
+        let totalProfit: Decimal
+
+        /// 顯示在走勢卡右上角的成長率字樣 (已 format，例如 `↑ 12.3%`、`— 無對照`)。
+        let trendDelta: String
+
+        /// 成長率方向旗標：`true` 上升、`false` 下降、`nil` 無對照可比；用來決定 ``InsightsView/trendCard(stats:palette:)`` 的字色。
+        let trendDeltaIsPositive: Bool?
+
+        /// 各分類獲利排行 (由高到低)。
+        let categories: [InsightsCategory]
+
+        /// 成本結構各區塊。
+        let costSegments: [InsightsCostSegment]
+
+        /// 全期成本總和。
+        let totalCost: Decimal
+    }
+
+    /// 類別排行資料。
+    struct InsightsCategory: Identifiable {
+
+        // MARK: - Identifiable Properties
+
+        /// 用 name 當識別值。
+        var id: String { name }
+
+        // MARK: - Data Properties
+
+        /// 類別名稱。
+        let name: String
+
+        /// 該類別累計獲利。
+        let profit: Decimal
+    }
+
+    /// 成本結構單一區塊。
+    struct InsightsCostSegment: Identifiable {
+
+        // MARK: - Identifiable Properties
+
+        /// 用 label 當識別值。
+        var id: String { label }
+
+        // MARK: - Data Properties
+
+        /// 顯示在 legend 的標籤。
+        let label: String
+
+        /// 此區塊金額。
+        let value: Decimal
+
+        /// 顯示色彩。
+        let color: Color
+    }
+
+    /// 熱力圖鍵。
+    struct HeatmapKey: Hashable {
+
+        // MARK: - Data Properties
+
+        /// 第幾週 (0 為最早、7 為本週)。
+        let week: Int
+
+        /// 第幾天 (0 為週一、6 為週日)。
+        let weekday: Int
+    }
+
+}
+
 // MARK: - ViewBuilder
 
 private extension InsightsView {
@@ -167,7 +295,11 @@ private extension InsightsView {
                     .monospacedDigit()
                     .foregroundStyle(palette.label)
                 
-                BLBarChart(data: stats.trendBars, height: 200)
+                BLBarChart(
+                    data: stats.trendBars,
+                    height: 200,
+                    isScrollEnabled: true
+                )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -414,10 +546,12 @@ private extension InsightsView {
     }
 }
 
-// MARK: - Layout Helper
+// MARK: - Private Method
 
 private extension InsightsView {
-    
+
+    // MARK: Layout
+
     /// 是否使用寬版面 (並列兩張卡)。
     var useWideLayout: Bool {
 #if os(macOS)
@@ -444,136 +578,9 @@ private extension InsightsView {
     func weekdayLabel(_ index: Int) -> String {
         ["一", "二", "三", "四", "五", "六", "日"][index]
     }
-}
 
-// MARK: - Date Range
+    // MARK: Statistics
 
-/// 分析頁可選的趨勢期間。
-enum InsightsDateRange: String, CaseIterable, Identifiable, Sendable {
-    
-    // MARK: - Cases
-    
-    /// 過去 30 天。
-    case thirtyDays
-    
-    /// 過去 6 個月。
-    case sixMonths
-    
-    /// 過去 12 個月。
-    case twelveMonths
-    
-    // MARK: - Identifiable Properties
-    
-    /// 區間穩定識別。
-    var id: String { rawValue }
-    
-    // MARK: - Display Properties
-    
-    /// 顯示在 segmented control 上的標題。
-    var title: String {
-        switch self {
-        case .thirtyDays:
-            "30 天"
-        case .sixMonths:
-            "6 個月"
-        case .twelveMonths:
-            "12 個月"
-        }
-    }
-    
-    /// 顯示在 trend card 上的子標題。
-    var trendCardTitle: String {
-        switch self {
-        case .thirtyDays:
-            "30 天淨獲利"
-        case .sixMonths:
-            "6 個月淨獲利"
-        case .twelveMonths:
-            "12 個月淨獲利"
-        }
-    }
-}
-
-// MARK: - Statistics Computation
-
-/// 分析頁的整體統計。
-private struct InsightsStats {
-    
-    // MARK: - Data Properties
-    
-    /// 走勢圖 (依 range 動態：30 天用「日」、6/12 個月用「月」)。
-    let trendBars: [BLBarChartValue]
-    
-    /// 期間內淨獲利總和。
-    let totalProfit: Decimal
-    
-    /// 顯示在走勢卡右上角的成長率字樣 (已 format，例如 `↑ 12.3%`、`— 無對照`)。
-    let trendDelta: String
-    
-    /// 成長率方向旗標：`true` 上升、`false` 下降、`nil` 無對照可比；用來決定 ``InsightsView/trendCard(stats:palette:)`` 的字色。
-    let trendDeltaIsPositive: Bool?
-    
-    /// 各分類獲利排行 (由高到低)。
-    let categories: [InsightsCategory]
-    
-    /// 成本結構各區塊。
-    let costSegments: [InsightsCostSegment]
-    
-    /// 全期成本總和。
-    let totalCost: Decimal
-}
-
-/// 類別排行資料。
-private struct InsightsCategory: Identifiable {
-    
-    // MARK: - Identifiable Properties
-    
-    /// 用 name 當識別值。
-    var id: String { name }
-    
-    // MARK: - Data Properties
-    
-    /// 類別名稱。
-    let name: String
-    
-    /// 該類別累計獲利。
-    let profit: Decimal
-}
-
-/// 成本結構單一區塊。
-private struct InsightsCostSegment: Identifiable {
-    
-    // MARK: - Identifiable Properties
-    
-    /// 用 label 當識別值。
-    var id: String { label }
-    
-    // MARK: - Data Properties
-    
-    /// 顯示在 legend 的標籤。
-    let label: String
-    
-    /// 此區塊金額。
-    let value: Decimal
-    
-    /// 顯示色彩。
-    let color: Color
-}
-
-/// 熱力圖鍵。
-private struct HeatmapKey: Hashable {
-    
-    // MARK: - Data Properties
-    
-    /// 第幾週 (0 為最早、7 為本週)。
-    let week: Int
-    
-    /// 第幾天 (0 為週一、6 為週日)。
-    let weekday: Int
-}
-
-private extension InsightsView {
-    
     /// 視為「已實現」的訂單狀態集合。
     static let realizedStatuses: Set<OrderStatus> = [.confirmed, .purchased, .shipping, .delivered]
     
@@ -750,10 +757,13 @@ private extension InsightsView {
                     .filter { (interval.start..<interval.end).contains($0.date) }
                     .reduce(Decimal.zero) { $0 + $1.summary.profit }
                 
+                // 30 天逐日標籤格式：MM/dd (verbatim，不受 locale 影響)。
                 let label = dayStart.formatted(
-                    .dateTime
-                        .day(.defaultDigits)
-                        .locale(Locale(identifier: "zh_TW"))
+                    .verbatim(
+                        "\(month: .twoDigits)/\(day: .twoDigits)",
+                        timeZone: calendar.timeZone,
+                        calendar: calendar
+                    )
                 )
                 
                 return BLBarChartValue(
@@ -775,10 +785,12 @@ private extension InsightsView {
                     .filter { (interval.start..<interval.end).contains($0.date) }
                     .reduce(Decimal.zero) { $0 + $1.summary.profit }
                 
+                // 6 個月用 YYYY/MM；12 個月空間較窄，改用 YY/MM (皆為 verbatim 精確格式)。
+                let monthFormat: Date.FormatString = range == .sixMonths
+                    ? "\(year: .padded(4))/\(month: .twoDigits)"
+                    : "\(year: .twoDigits)/\(month: .twoDigits)"
                 let label = monthStart.formatted(
-                    .dateTime
-                        .month(.defaultDigits)
-                        .locale(Locale(identifier: "zh_TW"))
+                    .verbatim(monthFormat, timeZone: calendar.timeZone, calendar: calendar)
                 )
                 
                 return BLBarChartValue(
@@ -822,12 +834,9 @@ private extension InsightsView {
         
         return result
     }
-}
 
-// MARK: - Formatting
+    // MARK: Formatting
 
-private extension InsightsView {
-    
     /// 將金額格式化為新台幣 (無小數位)。
     /// - Parameter amount: 金額。
     /// - Returns: 含 NT$ 前綴的字串。
@@ -854,6 +863,7 @@ private extension InsightsView {
             return palette.tertiaryLabel
         }
     }
+
 }
 
 // MARK: - Preview

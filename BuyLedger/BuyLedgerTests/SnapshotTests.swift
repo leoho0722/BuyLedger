@@ -124,6 +124,39 @@ struct SnapshotTests {
             assertSnapshot(of: view, as: .image)
         }
     }
+
+    @Test func blBarChartThirtyDaysBaseline() {
+        TestDependencies.withFixedNow {
+            // 模擬分析頁「30 天」逐日資料：30 根長條、X 軸帶日數字標籤。
+            // 用於守護 BLBarChart 在標籤過多時的寬度感知抽稀，避免 X 軸標籤重疊。
+            // 以固定曆法產生 30 天逐日資料 (MM/dd 標籤)，對齊真實 trendBars 格式並驗證逐日標籤與捲動邊緣。
+            var calendar = Calendar(identifier: .gregorian)
+            calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+            let base = TestDependencies.fixedNow
+
+            let bars = (0..<30).reversed().compactMap { offset -> BLBarChartValue? in
+                guard let day = calendar.date(byAdding: .day, value: -offset, to: base) else {
+                    return nil
+                }
+                return BLBarChartValue(
+                    label: day.formatted(
+                        .verbatim(
+                            "\(month: .twoDigits)/\(day: .twoDigits)",
+                            timeZone: calendar.timeZone,
+                            calendar: calendar
+                        )
+                    ),
+                    value: Double((offset * 53) % 180 + 20)
+                )
+            }
+
+            let view = BLBarChart(data: bars, height: 200, isScrollEnabled: true)
+                .frame(width: 393)
+                .padding()
+
+            assertSnapshot(of: view, as: .image)
+        }
+    }
 }
 
 #endif
