@@ -112,7 +112,7 @@ Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確�
 
 ### App 進入點與平台導覽
 
-`BuyLedgerApp.swift` 同時宣告 `WindowGroup` 與 (macOS) `Settings { ... }` scene。`RootFeature.State.selectedTab` 驅動三種 layout：
+`BuyLedgerApp.swift` 以單一 `RootFeature` store 驅動：`WindowGroup` 掛上 `RootView` 並以 `.modelContainer(...)` 注入共用 SwiftData container；macOS 額外加 `.windowStyle(.hiddenTitleBar)`、用 `CommandGroup` 在 File 選單提供「新訂單」(⌘N，透過 `FocusedValues` 與當前畫面連線)，並宣告獨立的 `Settings { ... }` scene。`RootFeature.State.selectedTab` 驅動三種 layout：
 
 | 平台                     | Layout              | 說明                                                       |
 |--------------------------|---------------------|------------------------------------------------------------|
@@ -120,20 +120,22 @@ Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確�
 | iPad (regular size class) | `RootSidebarLayout` | 同 macOS 的 split 結構但無 inspector                       |
 | iPhone (compact)          | `RootTabLayout`     | `TabView`                                                  |
 
-`OrdersView` 是平台分流入口 (`#if os(macOS)` → `OrdersMacView`、否則依 `horizontalSizeClass` 切 `OrdersCompactView` / 內嵌 split)。`.sheet(...)` 編輯表單一律掛在 `OrdersView` 外層，三平台共用。
+`OrdersView` 是平台分流入口：`#if os(macOS)` → `OrdersMacView` (`List` + `OrderRowView` + 右側 `.inspector(...)`；先前用 `Table`，但固定單行 row 會截斷商品明細故改用 `List`)；iPhone (compact) → `OrdersCompactView` (`NavigationStack`)；iPad (regular) → `NavigationStack` 內以 `HStack` 自排「清單 + 詳情」兩欄 (不用巢狀 `NavigationSplitView`，避免兩層 split 互搶寬度)。`.sheet(...)` 編輯表單一律掛在 `OrdersView` 外層，三平台共用。
 
 macOS 偏好設定走標準 `Settings { ... }` scene (⌘,)，實作在 `Features/Settings/SettingsMacView.swift`，採 `TabView` + `Form` + `.formStyle(.grouped)`；iOS / iPadOS 沿用 `SettingsView` (`Form` + `Section`) 由 `MoreView` push 進入。
 
 ### 資料層
 
-- `OrderRepository` (`Core/Dependencies/`)：訂單資料的 dependency 介面，背後接 `OrderPersistence` (`@ModelActor`) 操作 SwiftData。
+- **Repository 層** (`Core/Dependencies/`)：`OrderRepository`、`CategoryRepository`、`PaymentMethodRepository`、`OrderSourceRepository`、`CurrencyMetadataRepository`，各自背後接對應的 `@ModelActor` persistence (`Core/Persistence/`) 操作 SwiftData。所有 repo 共用 `PersistenceContainer.shared` 單一 `ModelContainer`，注入一律走 type-based `@Dependency(SomeRepository.self)`。
+- **主檔資料** (訂單來源／商品類別／付款方式) 由 `LookupManagementFeature` (`Features/Lookups/`，以 `LookupKind` 分流) 提供 CRUD；rename 會 cascade 到所有引用該名稱的訂單，cascade 與 in-memory 同步由 `RootFeature` 攔截處理。
 - `liveValue`：純本機 SwiftData，**不自動 seed**——使用者首次啟動會看到真正的空狀態。
 - `previewValue`：in-memory + 自動 seed `LedgerOrder.sampleOrders`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
 - `LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback` **僅供 Preview / 單元測試 / `previewValue`** 使用，runtime 不讀取。
+- **Schema 版本化**：`Core/Persistence/BuyLedgerSchema.swift` 以 `VersionedSchema` (`BuyLedgerSchemaV1`–`V5`) + `BuyLedgerMigrationPlan` 管理遷移。新增欄位／表走 lightweight、改型別走 custom dump-and-restore；改動流程的硬規則見 `CLAUDE.md › SwiftData Schema 與 Migration`。
 
 ### 外部 API
 
-`ExchangeRateClient` (`Features/FX/`) 封裝 ExchangeRate-API v6 的 `latest/{base}` endpoint。`fetchLatest(.twd)` 為唯一 runtime API call。
+`ExchangeRateClient` (`Features/FX/`) 封裝 ExchangeRate-API v6 的兩個 endpoint：`latest/{base}` (匯率) 與 `codes` (幣別清單)。runtime 有兩個 call——`fetchLatest(.twd)` 取最新匯率；App 啟動時經 `CurrencyMetadataRepository.refreshIfStale` 打 `/codes` 載入幣別主檔並 cache 7 天 (幣別清單不再 hardcode)。
 
 **Fallback 原則**：UI 寧可顯示空狀態 (「—」、「尚無可用匯率資料」、「尚未有足夠可用於分析的資料」) 也不顯示假資料，避免使用者誤信過期或內建匯率。
 

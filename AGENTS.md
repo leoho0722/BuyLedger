@@ -71,6 +71,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 - **`BuyLedgerApp.swift` 的 `#if os(macOS)`**：不可同時包住 `WindowGroup` 的 modifier 與另一個 top-level `Scene`——必須切成兩個獨立 `#if os(macOS)` 區塊，否則 result builder 會 parse fail。
 - **跨頁觸發新訂單**請使用 `RootFeature.Action.startNewOrder`：reducer 會同時把 `selectedTab` 切到 `.orders` 並把 `OrdersFeature.State.editOrder` 設成空白草稿。從非 `.orders` 分頁直接設 sheet state 會發生 view-not-in-hierarchy 的 race——`.sheet(...)` 修飾子掛在 `OrdersView` 上，當下不在 hierarchy 就不會 mount。
 - **`OrdersView` 的 `.sheet(item: $store.scope(state: \.editOrder, action: \.editOrder))`** 一律掛在 `OrdersView` 外層，三平台共用——不可移到平台分流後的子 view 裡。
+- **點空白處收鍵盤用 `dismissKeyboardOnTap()`** (`Shared/Keyboard/`)：iOS / iPadOS 以 **window 級** `UITapGestureRecognizer` 實作，靠 `blocksKeyboardDismissTap` 沿 superview 逐層過濾互動 (`UIControl` / `UITextInput`)、文字編輯與系統選單 view——**不可改成對所有 touch 都收鍵盤** (會誤觸貼上／選取等系統 action)。macOS 無軟體鍵盤，為 no-op。
 
 ## 資料層與 Dependency 注入
 
@@ -78,13 +79,28 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 - **`previewValue`** 使用 in-memory container 並傳 `seedSampleOrdersIfEmpty: true`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
 - **`LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback`** 僅供 Preview / 單元測試 / `previewValue` 使用，runtime path **不應讀取**。
 - **`@ModelActor` init 帶 main actor 隔離**——actor 實例必須在 `async` context 才能建立。參考 `OrderRepository.makePersistence(container:)` 用 `MainActor.run { ... }` 跳上 main 取得 actor 後再回到原 task。
+- **多個 repository 共用單一 `ModelContainer`**——`OrderRepository` / `CategoryRepository` / `PaymentMethodRepository` / `OrderSourceRepository` / `CurrencyMetadataRepository` 的 `liveValue` 一律走 `PersistenceContainer.shared`，**不可各自呼叫 `makeForApp()`**；同一 process 內並存多個 container (即使底層 SQLite 同名) 會造成 SwiftData 內部狀態錯亂。
+- **Repository 一律以 type-based `@Dependency(SomeRepository.self)` 注入**——新 repo 不再新增 `DependencyValues` keyPath；reducer 在 `// MARK: - Dependency Properties` 宣告 `@Dependency(OrderRepository.self) private var orderRepository`。
+- **主檔 (訂單來源／商品類別／付款方式) CRUD 走 `LookupManagementFeature`** (以 `LookupKind` 分流共用同一份 reducer/view)，它只負責寫各自的 DB 主檔表。**cascade 到 `OrdersFeature.State` 的 in-memory master 副本 (`orderSourceMaster` / `categoryMaster` / `paymentMethodMaster`) 與訂單表的 rename，由 `RootFeature` 攔截 `renameRequested` / `addConfirmed` / `deleteRequested` 處理**——新增主檔型別或動到 cascade 時這兩處都要顧。
+- **`LedgerOrder` 是 immutable struct**——cascade rename 等要改任一欄位時必須用 memberwise init 重建整筆 (參考 `RootFeature.rebuildOrder`)，不可就地 mutate。
 - **Reducer body 內呼叫 State 上的 instance method** 必須走 `store.state.method(...)`，不可透過 `@dynamicMemberLookup` 的 `store.method(...)`。
+
+## SwiftData Schema 與 Migration
+
+Schema 採版本化 `VersionedSchema` (`BuyLedgerSchemaV1`…`V5`)，遷移由 `BuyLedgerMigrationPlan` (`SchemaMigrationPlan`) 串接，全部定義在 `Core/Persistence/BuyLedgerSchema.swift`。
+
+- **只有最新版本引用 top-level `@Model` 型別**——`BuyLedgerSchemaV5.models` 指向 `OrderRecord` 等 top-level 定義；**所有舊版本 (V1–V4) 必須把當時的 `@Model` 凍結成內嵌於該 enum 的 shadow 型別**，保住當時的 attribute fingerprint，否則改動 top-level 型別會連帶破壞舊 schema 指紋導致 migration 失敗。
+- **加欄位／加表 → `.lightweight`；改型別 → `.custom`**——新增帶 default 的欄位或全新 model 走 lightweight (如 V2→V5)；改變既有欄位型別 (如 V1 `currency` 由 enum 改 `String`) 必須走 `.custom` 的 dump-and-restore (`willMigrate` 序列化進記憶體再刪舊 row、`didMigrate` 用新版影子型別重建)。
+- **改 schema 的標準流程**：(1) 新增 `BuyLedgerSchemaVN` 並列出 `models`；(2) 把上一版的 `OrderRecord` (與任何受影響型別) 凍結成該舊版 enum 內的 shadow `@Model`；(3) 在 `BuyLedgerMigrationPlan.schemas` 與 `stages` append 新版與遷移階段；(4) 把 `PersistenceContainer.make` 的 `Schema(versionedSchema:)` 指向新版。
+- migration 跨 `willMigrate` / `didMigrate` 的中介 snapshot 用 `nonisolated(unsafe) static` (one-shot、單執行緒，無 race)。
+- `PersistenceContainer.makeForApp()` 在 container 建立失敗時會「清掉舊 store 重建、再退回 in-memory」——這是**開發期 fallback**，要保留使用者資料時請補正確的 migration stage，不要依賴這段砍檔邏輯。
 
 ## 外部 API 與 Fallback 政策
 
 API key 注入鏈路與設定步驟見 [README.md › ExchangeRate-API 金鑰](README.md#1-exchangerate-api-金鑰)。
 
 - **UI 寧可顯示空狀態也不顯示假資料**——API 失敗或無資料時 view 顯示「—」、「尚無可用匯率資料」、「尚未有足夠可用於分析的資料」等空狀態，不繪空圖表也不退回 hardcoded 數字。
+- **幣別主檔動態載入**——`RootFeature.task` 透過 `CurrencyMetadataRepository.refreshIfStale(604_800)` 打 ExchangeRate-API `/codes` 並 cache 7 天；幣別清單不再 hardcode。`ExchangeRateClient.fetchLatest(.twd)` 仍是匯率數值的 runtime call。
 - `FxRates` / `FxRateSnapshot.fallback` / `LedgerOrder.sampleOrders` 僅供 Preview / Tests，runtime path **不可讀取**。
 
 ## 程式風格與命名慣例
@@ -96,6 +112,16 @@ Swift 通用慣例 (API Design Guidelines、camel case、四空格縮排) 不重
 - **商業邏輯／資料計算** (彙總、分組、排序、格式化) 一律放 reducer 或可測試的 feature helper；SwiftUI View (含 Swift Charts) 只負責呈現，不要把計算 inline 在 view body。
 - **TCA feature** 內部用 `// MARK: - State / Action / Reducer Body / Dependency Properties` 等清楚切分。
 - **SwiftData schema 或持久化行為變更**時，須同步檢查 migration、preview 與測試資料。
+
+### 標點與空格
+
+中英數混排的字串字面值與註解一律使用**半形括號** `()`，不用全形 `（）`；並依前後文在中文與半形內容之間補一個半形空格，讓兩者分開更易讀。
+
+- **補空格**：半形括號緊貼到 CJK 字元、英數或 inline-code backtick 時，於括號外側補一個半形空格。例如 `收款金額 (NT $)`、`為空 (最寬鬆路徑) 的成本`、`` `nonisolated` (不是 `MainActor`) ``。
+- **不補空格**：相鄰為空白、全形標點 (，。、；：！？「」)、字串或行邊界時不補，避免重複間距。例如 `` `…回應錯誤 (\(code))，目前無法…` `` 後接全形逗號不補、`Text("(TWD)")` 緊貼引號不補。
+- **括號內側不補**：`(NT $)` 而非 `( NT $ )`。
+- **Markdown 例外**：粗體結尾 `**` 前後不補空格以免破壞 `**...**` 語法——`**計算** (彙總)` 可，`**計算 **(彙總)` 不可。
+- 此規則同時適用於 UI 顯示字串與正體中文註解。
 
 ### 檔案 header
 
@@ -123,6 +149,7 @@ Swift 通用慣例 (API Design Guidelines、camel case、四空格縮排) 不重
   - `// MARK: - View Properties`
   - `// MARK: - Init`
   - `// MARK: - View Body`
+  - `// MARK: - Nested Types`
   - `// MARK: - ViewBuilder`
   - `// MARK: - Private Method`
   - `// MARK: - Preview`
