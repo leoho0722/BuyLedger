@@ -53,8 +53,7 @@ struct OrderRowView: View {
                         .foregroundStyle(.secondary)
                 }
             }
-
-            Spacer(minLength: BLSpacing.medium)
+            .frame(maxWidth: .infinity, alignment: .leading)
 
             VStack(alignment: .trailing, spacing: BLSpacing.extraSmall) {
                 Text(OrderFormatters.twd(summary.revenue))

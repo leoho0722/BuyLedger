@@ -121,7 +121,7 @@ private extension OrdersView {
                         Button {
                             store.send(.orderSelected(order.id))
                         } label: {
-                            OrderRowCompactView(order: order)
+                            OrderRowView(order: order)
                                 .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
