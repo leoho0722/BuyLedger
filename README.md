@@ -2,6 +2,24 @@
 
 為個人代購業務而生的本地優先帳本 App，跨 iOS、iPadOS、macOS 三平台執行。
 
+<details open>
+  <summary>🖥️&nbsp; <b>macOS</b></summary>
+  <br>
+  <p align="center"><img src="assets/macos-intro.png" alt="BuyLedger 於 macOS 的總覽頁" width="820"></p>
+</details>
+
+<details>
+  <summary>📱&nbsp; <b>iOS</b></summary>
+  <br>
+  <p align="center"><img src="assets/ios-intro.png" alt="BuyLedger 於 iOS 的總覽頁" height="620"></p>
+</details>
+
+<details>
+  <summary>📲&nbsp; <b>iPadOS</b></summary>
+  <br>
+  <p align="center"><img src="assets/ipados-intro.png" alt="BuyLedger 於 iPadOS 的總覽頁" height="620"></p>
+</details>
+
 ## 技術棧
 
 - **Swift 6 + SwiftUI**：strict concurrency
@@ -93,11 +111,11 @@ xcodebuildmcp macos build-and-run \
 
 > ⚠️ 三平台共用同一份 `DerivedData/.../XCBuildData/build.db`，**不可並行 build**——請序列化 (`cmd1 && cmd2 && cmd3`) 以避免 `database is locked` 失敗。
 >
-> ⚠️ build 失敗時 CLI 預設只回 trailing `BUILD FAILED`；用 `xcodebuildmcp --log-level error <subcommand> ...` 取得實際 diagnostic。
->
+⚠️ build 失敗時 CLI 預設只回 trailing `BUILD FAILED`；用 `xcodebuildmcp --log-level error <subcommand> ...` 取得實際 diagnostic。
 > 💡 simulator 名稱會隨 Xcode 升級變動，先用 `xcodebuildmcp simulator list-sims` 查當前可用名稱再改上方指令。macOS 重新跑前用 `xcodebuildmcp macos stop --app-name BuyLedger` 關掉舊 binary，否則會看到舊版。
+>
 
-### 3. 執行測試
+> ### 3. 執行測試
 
 ```bash
 xcodebuildmcp simulator test \
@@ -114,9 +132,9 @@ Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確�
 
 `BuyLedgerApp.swift` 以單一 `RootFeature` store 驅動：`WindowGroup` 掛上 `RootView` 並以 `.modelContainer(...)` 注入共用 SwiftData container；macOS 額外加 `.windowStyle(.hiddenTitleBar)`、用 `CommandGroup` 在 File 選單提供「新訂單」(⌘N，透過 `FocusedValues` 與當前畫面連線)，並宣告獨立的 `Settings { ... }` scene。`RootFeature.State.selectedTab` 驅動三種 layout：
 
-| 平台                     | Layout              | 說明                                                       |
-|--------------------------|---------------------|------------------------------------------------------------|
-| macOS                    | `RootSidebarLayout` | `NavigationSplitView` + sidebar + 訂單頁 `.inspector(...)` |
+| 平台                      | Layout              | 說明                                                       |
+|---------------------------|---------------------|------------------------------------------------------------|
+| macOS                     | `RootSidebarLayout` | `NavigationSplitView` + sidebar + 訂單頁 `.inspector(...)` |
 | iPad (regular size class) | `RootSidebarLayout` | 同 macOS 的 split 結構但無 inspector                       |
 | iPhone (compact)          | `RootTabLayout`     | `TabView`                                                  |
 
