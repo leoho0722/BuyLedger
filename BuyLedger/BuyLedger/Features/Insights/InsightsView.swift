@@ -42,7 +42,7 @@ struct InsightsView: View {
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
         
-        Group {
+        let core = Group {
             if !store.orders.hasLoaded {
                 loadingPlaceholder(palette: palette)
             } else if store.orders.orders.isEmpty {
@@ -56,6 +56,17 @@ struct InsightsView: View {
         .task {
             await store.send(.orders(.task)).finish()
         }
+
+        // iOS (iPhone + iPad) 以 NavigationStack + navigationTitle 提供系統大標題，與「更多」等分頁對齊；
+        // macOS 維持自繪標題 (見 titleHeader)。
+#if os(macOS)
+        return core
+#else
+        return NavigationStack {
+            core
+                .navigationTitle("分析")
+        }
+#endif
     }
 }
 
@@ -74,7 +85,10 @@ private extension InsightsView {
         
         return ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
+                // iOS 改由 `.navigationTitle("分析")` 提供標題；macOS 仍自繪大標題。
+#if os(macOS)
                 titleHeader(palette: palette)
+#endif
                 rangePicker
                 trendCard(stats: stats, palette: palette)
                 breakdownGrid(stats: stats, palette: palette)

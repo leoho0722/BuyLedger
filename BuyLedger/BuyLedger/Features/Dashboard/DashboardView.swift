@@ -39,7 +39,7 @@ struct DashboardView: View {
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
-        Group {
+        let core = Group {
             if !store.orders.hasLoaded {
                 loadingPlaceholder(palette: palette)
             } else {
@@ -60,6 +60,17 @@ struct DashboardView: View {
             // 同時把月度目標等設定載入，避免使用者直接從 Dashboard 啟動時看不到自訂目標。
             await store.send(.settings(.task)).finish()
         }
+
+        // iOS (iPhone + iPad) 以 NavigationStack + navigationTitle 提供系統大標題，讓頂端與「更多」等分頁一致對齊；
+        // macOS 維持自繪標題 (見 titleHeader)，與 OrdersMacView 等其他 macOS 畫面一致。
+#if os(macOS)
+        return core
+#else
+        return NavigationStack {
+            core
+                .navigationTitle("總覽")
+        }
+#endif
     }
 }
 
@@ -152,11 +163,14 @@ private extension DashboardView {
             Text(currentDateSubtitle())
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(palette.secondaryLabel)
-            
+
+            // iOS 改由 `.navigationTitle("總覽")` 提供標題；此處僅 macOS 仍自繪大標題。
+#if os(macOS)
             Text("總覽")
                 .font(.system(size: 34, weight: .bold))
                 .foregroundStyle(palette.label)
                 .accessibilityAddTraits(.isHeader)
+#endif
         }
     }
     

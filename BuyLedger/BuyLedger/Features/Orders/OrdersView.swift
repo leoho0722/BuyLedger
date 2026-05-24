@@ -61,20 +61,38 @@ private extension OrdersView {
     
     /// iPad regular 使用的「清單 + 詳情」兩欄佈局。
     ///
-    /// 此 view 已位於父層 ``NavigationSplitView`` 的 detail 欄中，因此不再使用內層 NavigationSplitView，避免兩層 split 互相搶寬度造成中間欄被擠壓。
+    /// 以 ``NavigationStack`` 包住兩欄並用 `.navigationTitle("訂單")` 提供系統大標題，讓頂端標題與「更多」等其他分頁一致對齊側邊欄 (先前用 HStack + 手動 `.padding(.top)` 會讓內容偏下、與側邊欄錯位)。內層僅用 ``HStack`` 自排「清單 + 詳情」，不再使用巢狀 ``NavigationSplitView``，避免兩層 split 互相搶寬度造成中間欄被擠壓。
     var regularSplitContent: some View {
         let palette = BLTheme.palette(for: colorScheme)
-        
-        return HStack(spacing: 0) {
-            listPane
-                .frame(minWidth: 280, idealWidth: 320, maxWidth: 360)
-                .background(palette.background)
-            
-            Divider()
-            
-            detailPane
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                .background(palette.background)
+
+        return NavigationStack {
+            HStack(spacing: 0) {
+                listPane
+                    .frame(minWidth: 280, idealWidth: 320, maxWidth: 360)
+                    .background(palette.background)
+
+                Divider()
+
+                detailPane
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                    .background(palette.background)
+            }
+            .navigationTitle("訂單")
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Text("\(store.orders.count)")
+                        .font(.subheadline.weight(.medium))
+                        .monospacedDigit()
+                        .foregroundStyle(palette.secondaryLabel)
+
+                    Button {
+                        store.send(.newOrderTapped)
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel("新增訂單")
+                }
+            }
         }
         .task {
             await store.send(.task).finish()
@@ -141,47 +159,21 @@ private extension OrdersView {
     /// - Returns: 列表 header view。
     func listHeader(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
-            HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
-                Text("訂單")
-                    .font(.title.bold())
-                    .foregroundStyle(palette.label)
-                
-                Spacer()
-                
-                Text("\(store.orders.count)")
-                    .font(.subheadline.weight(.medium))
-                    .monospacedDigit()
-                    .foregroundStyle(palette.secondaryLabel)
-                
-                Button {
-                    store.send(.newOrderTapped)
-                } label: {
-                    Image(systemName: "plus")
-                        .font(.subheadline.weight(.semibold))
-                        .frame(width: 28, height: 28)
-                        .foregroundStyle(palette.accent)
-                        .background(palette.accent.opacity(0.18))
-                        .clipShape(Circle())
-                }
-                .buttonStyle(.plain)
-                .accessibilityLabel("新增訂單")
-            }
-            
             BLSearchField(
                 placeholder: "搜尋客戶、單號或商品",
                 text: $store.searchText.sending(\.searchTextChanged)
             )
-            
+
             chipScrollStrip(palette: palette)
             dateChipScrollStrip(palette: palette)
-            
+
             if let errorMessage = store.errorMessage {
                 Text(errorMessage)
                     .font(.footnote)
                     .foregroundStyle(palette.red)
             }
         }
-        .padding(.top, BLSpacing.large)
+        .padding(.top, BLSpacing.small)
         .padding(.horizontal, BLSpacing.medium)
         .padding(.bottom, BLSpacing.medium)
     }

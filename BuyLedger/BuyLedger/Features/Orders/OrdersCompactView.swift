@@ -38,7 +38,6 @@ struct OrdersCompactView: View {
         NavigationStack(path: $navigationPath) {
             ScrollView {
                 VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                    titleHeader(palette: palette)
                     BLSearchField(
                         placeholder: "搜尋客戶、單號或商品",
                         text: $store.searchText.sending(\.searchTextChanged)
@@ -62,7 +61,22 @@ struct OrdersCompactView: View {
             }
             .background(palette.background)
             .scrollDismissesKeyboard(.immediately)
-            .toolbar(.hidden, for: .navigationBar)
+            .navigationTitle("訂單")
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    Text("\(store.orders.count)")
+                        .font(.subheadline.weight(.medium))
+                        .monospacedDigit()
+                        .foregroundStyle(palette.secondaryLabel)
+
+                    Button {
+                        store.send(.newOrderTapped)
+                    } label: {
+                        Image(systemName: "plus")
+                    }
+                    .accessibilityLabel("新增訂單")
+                }
+            }
             .navigationDestination(for: LedgerOrder.ID.self) { id in
                 if let order = store.orders.first(where: { $0.id == id }) {
                     OrderDetailView(order: order)
@@ -119,39 +133,6 @@ struct OrdersCompactView: View {
 // MARK: - ViewBuilder
 
 private extension OrdersCompactView {
-    
-    /// 大標題列：訂單名稱、目前訂單數與「新增訂單」按鈕。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 大標題 view。
-    func titleHeader(palette: BLPalette) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: BLSpacing.medium) {
-            Text("訂單")
-                .font(.system(size: 34, weight: .bold))
-                .foregroundStyle(palette.label)
-                .accessibilityAddTraits(.isHeader)
-            
-            Spacer()
-            
-            Text("\(store.orders.count)")
-                .font(.subheadline.weight(.medium))
-                .monospacedDigit()
-                .foregroundStyle(palette.secondaryLabel)
-            
-            Button {
-                store.send(.newOrderTapped)
-            } label: {
-                Image(systemName: "plus")
-                    .font(.headline.weight(.semibold))
-                    .frame(width: 32, height: 32)
-                    .foregroundStyle(palette.accent)
-                    .background(palette.accent.opacity(0.18))
-                    .clipShape(Circle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("新增訂單")
-        }
-        .padding(.horizontal, BLSpacing.large)
-    }
     
     /// 狀態篩選 chip 橫向滾動列。
     /// - Parameter palette: 目前外觀使用的色盤。
