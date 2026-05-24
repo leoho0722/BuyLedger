@@ -42,11 +42,13 @@ struct OrderCalculationTests {
 
         let summary = OrderSummary(order: order)
 
+        // 運費 (domestic 80 + international 320) 由客人支付，不計入 totalCost。
+        // fees = 11_800 * 0.015 = 177；totalCost = itemCost 8_892 + fees 177 = 9_069。
         #expect(summary.revenue == 11_800)
         #expect(summary.fees == 177)
-        #expect(summary.totalCost == 9_469)
-        #expect(summary.profit == 2_331)
-        #expect(summary.margin == Decimal(2_331) / Decimal(11_800))
+        #expect(summary.totalCost == 9_069)
+        #expect(summary.profit == 2_731)
+        #expect(summary.margin == Decimal(2_731) / Decimal(11_800))
     }
     
     @Test func platformFeeRoundsUpToInteger() {
@@ -188,11 +190,48 @@ struct OrderCalculationTests {
         )
         
         let summary = OrderSummary(order: order)
-        
+
+        // 國際運費 850 由客人支付，不計入 totalCost；chargedAmount = 0 故 fees = 0。
+        // totalCost = itemCost 13_728；profit = 0 - 13_728 = -13_728。
         #expect(summary.revenue == 0)
         #expect(summary.fees == 0)
-        #expect(summary.totalCost == 14_578)
-        #expect(summary.profit == -14_578)
+        #expect(summary.totalCost == 13_728)
+        #expect(summary.profit == -13_728)
         #expect(summary.margin == 0)
+    }
+
+    @Test func shippingIsExcludedFromTotalCost() {
+        // 國內、國際與來源國當地國內運費皆由客人支付，不計入我方成本；
+        // totalCost 僅含 itemCost + fees。
+        let order = LedgerOrder(
+            id: "BL-SHIP-001",
+            customer: LedgerCustomer(name: "運費測試", initials: "SP", tier: .regular),
+            status: .delivered,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_777_145_600),
+            items: [
+                LedgerOrderItem(name: "測試商品", quantity: 1, unitPrice: 5_000),
+            ],
+            itemCost: Decimal(3_000),
+            domesticShipping: 100,
+            internationalShipping: 500,
+            foreignDomesticShipping: 200,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: Decimal(5_000),
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "",
+            category: "測試",
+            paymentMethod: ""
+        )
+
+        let summary = OrderSummary(order: order)
+
+        // 運費合計 800 全數排除；totalCost = itemCost 3_000，profit = 5_000 - 3_000 = 2_000。
+        #expect(summary.fees == 0)
+        #expect(summary.totalCost == 3_000)
+        #expect(summary.profit == 2_000)
     }
 }

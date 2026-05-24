@@ -590,21 +590,13 @@ private extension OrderDetailView {
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 成本拆解清單。
     func costComponents(palette: BLPalette) -> [OrderCostComponent] {
+        // 運費由客人支付、不計入 ``OrderSummary/totalCost``，因此成本拆解只呈現商品金額與手續費，
+        // 各項目加總才會等於 donut/bar 中央顯示的總成本。
         [
             OrderCostComponent(
                 title: "商品金額",
                 value: order.itemCost,
                 color: palette.accent
-            ),
-            OrderCostComponent(
-                title: "國內運費",
-                value: order.domesticShipping,
-                color: palette.teal
-            ),
-            OrderCostComponent(
-                title: "國際運費",
-                value: order.internationalShipping,
-                color: palette.purple
             ),
             OrderCostComponent(
                 title: "手續費",
