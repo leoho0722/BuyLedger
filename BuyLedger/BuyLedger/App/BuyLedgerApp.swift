@@ -21,8 +21,8 @@ struct BuyLedgerApp: App {
 
     /// SwiftData 共用 ``ModelContainer``；以純本機方式建立。
     ///
-    /// 切換成 CloudKit 同步的步驟詳見 ``PersistenceContainer``。
-    private let modelContainer: ModelContainer = PersistenceContainer.makeForApp()
+    /// 直接取用 ``PersistenceContainer/shared`` (而非另呼叫 `makeForApp()`)，確保 SwiftUI environment 注入的 container 與各 repository 的 `liveValue` 是「同一個」實例，避免同一 process 內並存多個 container 造成 SwiftData 內部狀態錯亂。切換成 CloudKit 同步的步驟詳見 ``PersistenceContainer``。
+    private let modelContainer: ModelContainer = PersistenceContainer.shared
 
     // MARK: - App Body
 
