@@ -85,3 +85,6 @@ openspec/.vector-search.db*
 
 # Local API keys / build configurations（範本見 Config.example.xcconfig）
 BuyLedger/BuyLedger/Resources/Config.xcconfig
+
+# Firebase 設定（從 Firebase Console 下載 GoogleService-Info.plist 放入 Resources/）
+BuyLedger/BuyLedger/Resources/GoogleService-Info.plist

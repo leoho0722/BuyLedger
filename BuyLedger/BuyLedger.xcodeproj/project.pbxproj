@@ -17,6 +17,11 @@
 		A1D9E4B92FA3000000000009 /* Perception in Frameworks */ = {isa = PBXBuildFile; productRef = A1D9E4BD2FA300000000000D /* Perception */; };
 		A1D9E4C02FA3000000000010 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = A1D9E4C22FA3000000000012 /* PerceptionCore */; };
 		A1D9E4C12FA3000000000011 /* PerceptionCore in Frameworks */ = {isa = PBXBuildFile; productRef = A1D9E4C32FA3000000000013 /* PerceptionCore */; };
+		D00D0E7F2FC484750009F79F /* FirebaseAnalytics in Frameworks */ = {isa = PBXBuildFile; productRef = D00D0E7E2FC484750009F79F /* FirebaseAnalytics */; };
+		D00D0E812FC484750009F79F /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = D00D0E802FC484750009F79F /* FirebaseCore */; };
+		D00D0E832FC484750009F79F /* FirebaseCrashlytics in Frameworks */ = {isa = PBXBuildFile; productRef = D00D0E822FC484750009F79F /* FirebaseCrashlytics */; };
+		D00D0E852FC484750009F79F /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = D00D0E842FC484750009F79F /* FirebaseFirestore */; };
+		D00D0E872FC484750009F79F /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = D00D0E862FC484750009F79F /* FirebasePerformance */; };
 		D0B102262FA5C7F300B50E07 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = D0B102252FA5C7F300B50E07 /* SnapshotTesting */; };
 /* End PBXBuildFile section */
 
@@ -82,7 +87,12 @@
 			files = (
 				6C6581DB23B99C73CFE200F0 /* ComposableArchitecture in Frameworks */,
 				A1D9E4B12FA3000000000001 /* Dependencies in Frameworks */,
+				D00D0E872FC484750009F79F /* FirebasePerformance in Frameworks */,
+				D00D0E7F2FC484750009F79F /* FirebaseAnalytics in Frameworks */,
 				A1D9E4B62FA3000000000006 /* CasePaths in Frameworks */,
+				D00D0E812FC484750009F79F /* FirebaseCore in Frameworks */,
+				D00D0E852FC484750009F79F /* FirebaseFirestore in Frameworks */,
+				D00D0E832FC484750009F79F /* FirebaseCrashlytics in Frameworks */,
 				A1D9E4B82FA3000000000008 /* Perception in Frameworks */,
 				A1D9E4C02FA3000000000010 /* PerceptionCore in Frameworks */,
 			);
@@ -109,6 +119,34 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		D0B1FDAA2FC4849000B50E07 /* Run Script: Crashlytics Symbol Upload */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Resources/DWARF/${PRODUCT_NAME}.debug.dylib",
+				"${DWARF_DSYM_FOLDER_PATH}/${DWARF_DSYM_FILE_NAME}/Contents/Info.plist",
+				"$(TARGET_BUILD_DIR)/$(UNLOCALIZED_RESOURCES_FOLDER_PATH)/GoogleService-Info.plist",
+				"$(TARGET_BUILD_DIR)/$(EXECUTABLE_PATH)",
+			);
+			name = "Run Script: Crashlytics Symbol Upload";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "\"${BUILD_DIR%/Build/*}/SourcePackages/checkouts/firebase-ios-sdk/Crashlytics/run\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXGroup section */
 		D0B108512FA5D0BB00B50E07 /* Recovered References */ = {
@@ -150,6 +188,7 @@
 				D0B1FCC92FA22A9F00B50E07 /* Sources */,
 				D0B1FCCA2FA22A9F00B50E07 /* Frameworks */,
 				D0B1FCCB2FA22A9F00B50E07 /* Resources */,
+				D0B1FDAA2FC4849000B50E07 /* Run Script: Crashlytics Symbol Upload */,
 			);
 			buildRules = (
 			);
@@ -165,6 +204,11 @@
 				A1D9E4BA2FA300000000000A /* CasePaths */,
 				A1D9E4BC2FA300000000000C /* Perception */,
 				A1D9E4C22FA3000000000012 /* PerceptionCore */,
+				D00D0E7E2FC484750009F79F /* FirebaseAnalytics */,
+				D00D0E802FC484750009F79F /* FirebaseCore */,
+				D00D0E822FC484750009F79F /* FirebaseCrashlytics */,
+				D00D0E842FC484750009F79F /* FirebaseFirestore */,
+				D00D0E862FC484750009F79F /* FirebasePerformance */,
 			);
 			productName = BuyLedger;
 			productReference = D0B1FCCD2FA22A9F00B50E07 /* BuyLedger.app */;
@@ -260,6 +304,7 @@
 				A1D9E4BE2FA300000000000E /* XCRemoteSwiftPackageReference "swift-case-paths" */,
 				A1D9E4BF2FA300000000000F /* XCRemoteSwiftPackageReference "swift-perception" */,
 				D0B102242FA5C7F300B50E07 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
+				D00D0E7D2FC484750009F79F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D0B1FCCE2FA22A9F00B50E07 /* Products */;
@@ -344,6 +389,7 @@
 				CODE_SIGN_ENTITLEMENTS = BuyLedger/Resources/BuyLedger.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -366,6 +412,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedger;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -392,6 +439,7 @@
 				CODE_SIGN_ENTITLEMENTS = BuyLedger/Resources/BuyLedger.entitlements;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				ENABLE_APP_SANDBOX = YES;
 				ENABLE_HARDENED_RUNTIME = YES;
@@ -414,6 +462,7 @@
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
 				MARKETING_VERSION = 1.0;
+				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedger;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				REGISTER_APP_GROUPS = YES;
@@ -725,6 +774,14 @@
 				version = 2.0.10;
 			};
 		};
+		D00D0E7D2FC484750009F79F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
+			requirement = {
+				kind = exactVersion;
+				version = 12.13.0;
+			};
+		};
 		D0B102242FA5C7F300B50E07 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/pointfreeco/swift-snapshot-testing";
@@ -780,6 +837,31 @@
 			isa = XCSwiftPackageProductDependency;
 			package = A1D9E4BF2FA300000000000F /* XCRemoteSwiftPackageReference "swift-perception" */;
 			productName = PerceptionCore;
+		};
+		D00D0E7E2FC484750009F79F /* FirebaseAnalytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D00D0E7D2FC484750009F79F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseAnalytics;
+		};
+		D00D0E802FC484750009F79F /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D00D0E7D2FC484750009F79F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
+		};
+		D00D0E822FC484750009F79F /* FirebaseCrashlytics */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D00D0E7D2FC484750009F79F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCrashlytics;
+		};
+		D00D0E842FC484750009F79F /* FirebaseFirestore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D00D0E7D2FC484750009F79F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseFirestore;
+		};
+		D00D0E862FC484750009F79F /* FirebasePerformance */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = D00D0E7D2FC484750009F79F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebasePerformance;
 		};
 		D0B102252FA5C7F300B50E07 /* SnapshotTesting */ = {
 			isa = XCSwiftPackageProductDependency;

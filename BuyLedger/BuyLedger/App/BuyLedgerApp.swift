@@ -14,6 +14,16 @@ struct BuyLedgerApp: App {
 
     // MARK: - App Properties
 
+#if os(iOS)
+    /// 接上 iOS / iPadOS 的 ``AppDelegate``，於啟動時初始化 Firebase。
+    @UIApplicationDelegateAdaptor(AppDelegate.self)
+    private var appDelegate
+#elseif os(macOS)
+    /// 接上 macOS 的 ``AppDelegate``，於啟動時初始化 Firebase。
+    @NSApplicationDelegateAdaptor(AppDelegate.self)
+    private var appDelegate
+#endif
+
     /// App 根層級 store。
     private let store = Store(initialState: RootFeature.State()) {
         RootFeature()
