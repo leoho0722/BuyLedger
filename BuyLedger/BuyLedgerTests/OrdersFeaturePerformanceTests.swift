@@ -99,7 +99,8 @@ private extension OrdersFeaturePerformanceTests {
                 cardlessSupplementAmount: 0,
                 orderSource: "蝦皮",
                 category: category,
-                paymentMethod: ""
+                paymentMethod: "",
+                notes: ""
             )
         }
     }

@@ -443,7 +443,8 @@ struct RootFeature {
             cardlessSupplementAmount: order.cardlessSupplementAmount,
             orderSource: orderSource ?? order.orderSource,
             category: category ?? order.category,
-            paymentMethod: paymentMethod ?? order.paymentMethod
+            paymentMethod: paymentMethod ?? order.paymentMethod,
+            notes: order.notes
         )
     }
 }

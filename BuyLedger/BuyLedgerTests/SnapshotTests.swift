@@ -115,7 +115,8 @@ struct SnapshotTests {
                 cardlessSupplementAmount: 0,
                 orderSource: "示範",
                 category: "美妝",
-                paymentMethod: "信用卡"
+                paymentMethod: "信用卡",
+                notes: ""
             )
 
             let view = OrderDetailView(order: order)

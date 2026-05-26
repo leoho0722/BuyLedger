@@ -400,7 +400,7 @@ enum BuyLedgerSchemaV4: VersionedSchema {
 ///
 /// `orderSource` 帶 default `""`、`OrderSourceRecord` 為全新 model (新表)，兩者皆可由 SwiftData lightweight migration 處理，故 V4 → V5 走 lightweight。
 ///
-/// V5.OrderRecord 引用 top-level 定義 (已含 `orderSource`)；V4.OrderRecord 已凍結為影子型別，避免本次變更破壞 V4 schema fingerprint。
+/// V5.OrderRecord 改為影子型別以「凍結」當時的 attribute 集合 (已含 `orderSource`，但尚未含 V6 的 `notes`)，避免後續變更 top-level OrderRecord 時破壞 V5 schema fingerprint。
 enum BuyLedgerSchemaV5: VersionedSchema {
 
     // MARK: - Static Properties
@@ -408,7 +408,102 @@ enum BuyLedgerSchemaV5: VersionedSchema {
     /// 版本識別。
     static var versionIdentifier: Schema.Version { Schema.Version(5, 0, 0) }
 
-    /// 此版本包含的 model 型別；引用 top-level 定義 (已含 V5 新增的 `orderSource`)，並加入 ``OrderSourceRecord``。
+    /// 此版本包含的 model 型別。
+    static var models: [any PersistentModel.Type] {
+        [
+            OrderRecord.self,
+            CategoryRecord.self,
+            PaymentMethodRecord.self,
+            CurrencyMetadataRecord.self,
+            OrderSourceRecord.self,
+        ]
+    }
+
+    /// V5 時代的 ``OrderRecord`` 影子；只在 SwiftData migration 用，與當時版本的屬性集合一致 (已含 V5 的 `orderSource`，但尚未含 V6 的 `notes`)。
+    @Model
+    final class OrderRecord {
+
+        // MARK: - Data Properties
+
+        var id: String
+        var customer: LedgerCustomer
+        var status: OrderStatus
+        var currency: String
+        var date: Date
+        var items: [LedgerOrderItem]
+        var itemCost: Decimal
+        var domesticShipping: Decimal
+        var internationalShipping: Decimal
+        var foreignDomesticShipping: Decimal = 0
+        var cardFeeRate: Decimal
+        var platformFeeRate: Decimal
+        var paymentFeeRate: Decimal = 0
+        var chargedAmount: Decimal
+        var cardlessDeductionAmount: Decimal = 0
+        var cardlessSupplementAmount: Decimal = 0
+        var orderSource: String = ""
+        var category: String
+        var paymentMethod: String = ""
+
+        // MARK: - Init
+
+        init(
+            id: String,
+            customer: LedgerCustomer,
+            status: OrderStatus,
+            currency: String,
+            date: Date,
+            items: [LedgerOrderItem],
+            itemCost: Decimal,
+            domesticShipping: Decimal,
+            internationalShipping: Decimal,
+            foreignDomesticShipping: Decimal = 0,
+            cardFeeRate: Decimal,
+            platformFeeRate: Decimal,
+            paymentFeeRate: Decimal = 0,
+            chargedAmount: Decimal,
+            cardlessDeductionAmount: Decimal = 0,
+            cardlessSupplementAmount: Decimal = 0,
+            orderSource: String = "",
+            category: String,
+            paymentMethod: String = ""
+        ) {
+            self.id = id
+            self.customer = customer
+            self.status = status
+            self.currency = currency
+            self.date = date
+            self.items = items
+            self.itemCost = itemCost
+            self.domesticShipping = domesticShipping
+            self.internationalShipping = internationalShipping
+            self.foreignDomesticShipping = foreignDomesticShipping
+            self.cardFeeRate = cardFeeRate
+            self.platformFeeRate = platformFeeRate
+            self.paymentFeeRate = paymentFeeRate
+            self.chargedAmount = chargedAmount
+            self.cardlessDeductionAmount = cardlessDeductionAmount
+            self.cardlessSupplementAmount = cardlessSupplementAmount
+            self.orderSource = orderSource
+            self.category = category
+            self.paymentMethod = paymentMethod
+        }
+    }
+}
+
+/// V6 schema：在 V5 之上為 ``OrderRecord`` 新增 ``OrderRecord/notes`` (訂單備註)。
+///
+/// `notes` 帶 default `""`，V5 → V6 走 SwiftData lightweight migration 即可。
+///
+/// V6.OrderRecord 引用 top-level 定義 (已含 `notes`)；V5.OrderRecord 已凍結為影子型別，避免本次變更破壞 V5 schema fingerprint。
+enum BuyLedgerSchemaV6: VersionedSchema {
+
+    // MARK: - Static Properties
+
+    /// 版本識別。
+    static var versionIdentifier: Schema.Version { Schema.Version(6, 0, 0) }
+
+    /// 此版本包含的 model 型別；引用 top-level 定義 (已含 V6 新增的 `notes`)。
     static var models: [any PersistentModel.Type] {
         [
             OrderRecord.self,
@@ -435,10 +530,11 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
             BuyLedgerSchemaV3.self,
             BuyLedgerSchemaV4.self,
             BuyLedgerSchemaV5.self,
+            BuyLedgerSchemaV6.self,
         ]
     }
 
-    /// V1 → V2 (custom dump-and-restore)、V2 → V3 (lightweight，新增 default 欄位)、V3 → V4 (lightweight，新增 default 欄位)、V4 → V5 (lightweight，新增 default 欄位與 ``OrderSourceRecord`` 新表)。
+    /// V1 → V2 (custom dump-and-restore)、V2 → V3 (lightweight，新增 default 欄位)、V3 → V4 (lightweight，新增 default 欄位)、V4 → V5 (lightweight，新增 default 欄位與 ``OrderSourceRecord`` 新表)、V5 → V6 (lightweight，新增 default 欄位 `notes`)。
     static var stages: [MigrationStage] {
         [
             .custom(
@@ -516,6 +612,10 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
             .lightweight(
                 fromVersion: BuyLedgerSchemaV4.self,
                 toVersion: BuyLedgerSchemaV5.self
+            ),
+            .lightweight(
+                fromVersion: BuyLedgerSchemaV5.self,
+                toVersion: BuyLedgerSchemaV6.self
             )
         ]
     }

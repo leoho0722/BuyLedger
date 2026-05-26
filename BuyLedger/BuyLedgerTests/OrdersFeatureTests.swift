@@ -109,7 +109,31 @@ struct OrdersFeatureTests {
         let updated = store.state.orders.first { $0.id == originalID }
         #expect(updated?.customer.name == newName)
     }
-    
+
+    @Test func editFlowPersistsNotes() async {
+        // 驗證備註欄位經 save 後寫回 orders，且首尾空白會被 trim。
+        let originalID = "BL-2604-018"
+        let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
+
+        var draft = OrderEditFeature.State(original: original)
+        draft.draftNotes = "  到貨後請先聯絡客戶確認尺寸  "
+
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+        state.editOrder = draft
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editOrder(.presented(.saveTapped)))
+        await store.finish()
+
+        let updated = store.state.orders.first { $0.id == originalID }
+        #expect(updated?.notes == "到貨後請先聯絡客戶確認尺寸")
+    }
+
     @Test func editFlowSavingEmptyNameKeepsOriginalName() async {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!

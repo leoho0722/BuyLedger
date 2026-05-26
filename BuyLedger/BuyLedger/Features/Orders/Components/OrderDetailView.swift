@@ -48,6 +48,10 @@ struct OrderDetailView: View {
                             .frame(maxWidth: .infinity, alignment: .leading)
                         compactItemList
                             .frame(maxWidth: .infinity, alignment: .leading)
+                        if hasNotes {
+                            compactNotes
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
 
                     case .wide:
                         kpiThreeUp(summary: summary, palette: palette)
@@ -58,6 +62,10 @@ struct OrderDetailView: View {
                         }
                         wideBreakdownAndItems(summary: summary, palette: palette)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                        if hasNotes {
+                            wideNotesCard(palette: palette)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -261,12 +269,29 @@ private extension OrderDetailView {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             Text("商品明細")
                 .font(.headline)
-            
+
             itemsCard
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
+
+    /// 窄欄版面使用的備註卡片 (唯讀)；僅在 ``hasNotes`` 為 `true` 時顯示。
+    var compactNotes: some View {
+        VStack(alignment: .leading, spacing: BLSpacing.small) {
+            Text("備註")
+                .font(.headline)
+
+            BLCard {
+                Text(order.notes)
+                    .font(.subheadline)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
     // MARK: Wide layout
     
     /// 寬欄版面使用的 3-up KPI 列。
@@ -470,6 +495,27 @@ private extension OrderDetailView {
         }
     }
     
+    /// 寬欄版面使用的備註卡片 (唯讀)，含標題；僅在 ``hasNotes`` 為 `true` 時顯示。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 備註卡片 view。
+    func wideNotesCard(palette: BLPalette) -> some View {
+        BLCard {
+            VStack(alignment: .leading, spacing: BLSpacing.small) {
+                Text("備註")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(palette.secondaryLabel)
+                    .textCase(.uppercase)
+
+                Text(order.notes)
+                    .font(.subheadline)
+                    .foregroundStyle(palette.label)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     /// 商品列卡片 (窄欄版面用，內含 BLCard 包覆)。
     var itemsCard: some View {
         BLCard(padding: 0) {
@@ -573,6 +619,11 @@ private extension OrderDetailView {
     /// 訂單是否需要顯示無卡明細卡片：只要折抵或補款金額任一非 0 就顯示，避免無卡訂單欄位填 0 時還浮現空卡片。
     var hasCardlessAdjustments: Bool {
         order.cardlessDeductionAmount > 0 || order.cardlessSupplementAmount > 0
+    }
+
+    /// 訂單是否有備註可顯示：trim 後非空才顯示備註卡片，避免空備註浮現空卡片 (符合「寧可空狀態也不顯示假資料」原則)。
+    var hasNotes: Bool {
+        !order.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
     /// 取得跟隨使用者手機偏好語言的幣別顯示文字，例如 `TWD (新台幣)`。

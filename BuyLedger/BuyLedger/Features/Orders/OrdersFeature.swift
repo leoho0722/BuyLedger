@@ -424,7 +424,8 @@ struct OrdersFeature {
                     cardlessSupplementAmount: existing.cardlessSupplementAmount,
                     orderSource: existing.orderSource,
                     category: existing.category,
-                    paymentMethod: existing.paymentMethod
+                    paymentMethod: existing.paymentMethod,
+                    notes: existing.notes
                 )
                 state.orders[index] = updated
                 
@@ -498,6 +499,8 @@ private extension OrdersFeature {
         let trimmedOrderSource = draft.draftOrderSource.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedCategory = draft.draftCategory.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedPaymentMethod = draft.draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
+        // 備註為選填欄位：只 trim 首尾空白與換行 (保留段落間的內部換行)，清空時也如實存回空字串，不像必填欄位那樣 fallback 回原值。
+        let trimmedNotes = draft.draftNotes.trimmingCharacters(in: .whitespacesAndNewlines)
 
         let normalizedAmount = max(0, draft.draftChargedAmount)
         let normalizedItemCost = max(0, draft.draftItemCost)
@@ -543,7 +546,8 @@ private extension OrdersFeature {
                 cardlessSupplementAmount: normalizedSupplement,
                 orderSource: trimmedOrderSource.isEmpty ? existing.orderSource : trimmedOrderSource,
                 category: trimmedCategory.isEmpty ? existing.category : trimmedCategory,
-                paymentMethod: trimmedPaymentMethod.isEmpty ? existing.paymentMethod : trimmedPaymentMethod
+                paymentMethod: trimmedPaymentMethod.isEmpty ? existing.paymentMethod : trimmedPaymentMethod,
+                notes: trimmedNotes
             )
             state.orders[index] = updatedOrder
             return updatedOrder
@@ -573,7 +577,8 @@ private extension OrdersFeature {
                 cardlessSupplementAmount: normalizedSupplement,
                 orderSource: resolvedOrderSource,
                 category: resolvedCategory,
-                paymentMethod: trimmedPaymentMethod
+                paymentMethod: trimmedPaymentMethod,
+                notes: trimmedNotes
             )
 
             state.orders.insert(newOrder, at: 0)

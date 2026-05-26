@@ -73,6 +73,9 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 付款方式。
     let paymentMethod: String
 
+    /// 訂單備註；選填，無備註時為空字串。
+    let notes: String
+
     // MARK: - Computed Properties
 
     /// 訂單的財務摘要。

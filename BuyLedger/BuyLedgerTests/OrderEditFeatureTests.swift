@@ -101,6 +101,7 @@ struct OrderEditFeatureTests {
         #expect(state.draftInternationalShipping == original.internationalShipping)
         #expect(state.draftCardFeeRate == original.cardFeeRate)
         #expect(state.draftPlatformFeeRate == original.platformFeeRate)
+        #expect(state.draftNotes == original.notes)
     }
     
     @Test func isSelectedPaymentMethodCardlessReflectsMasterFlag() {
@@ -139,6 +140,7 @@ struct OrderEditFeatureTests {
         #expect(state.draftInternationalShipping == 0)
         #expect(state.draftCardFeeRate == 0)
         #expect(state.draftPlatformFeeRate == 0)
+        #expect(state.draftNotes.isEmpty)
         #expect(state.original == nil)
         #expect(state.availablePaymentMethods.isEmpty)
     }

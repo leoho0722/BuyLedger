@@ -73,15 +73,17 @@ struct OrderPersistenceTests {
             cardlessSupplementAmount: 0,
             orderSource: "蝦皮",
             category: "美妝",
-            paymentMethod: ""
+            paymentMethod: "",
+            notes: "建立時的備註"
         )
 
         try await persistence.upsert(order)
-        
+
         let stored = try await persistence.fetchAll()
         #expect(stored.count == 1)
         #expect(stored.first?.id == "BL-TEST-001")
         #expect(stored.first?.customer.name == "測試客戶")
+        #expect(stored.first?.notes == "建立時的備註", "備註應隨訂單一併持久化")
     }
     
     @Test func upsertUpdatesExistingOrderWithSameId() async throws {
@@ -110,16 +112,18 @@ struct OrderPersistenceTests {
             cardlessSupplementAmount: 0,
             orderSource: original.orderSource,
             category: original.category,
-            paymentMethod: original.paymentMethod
+            paymentMethod: original.paymentMethod,
+            notes: "更新後的備註"
         )
-        
+
         try await persistence.upsert(modified)
-        
+
         let stored = try await persistence.fetchAll()
         #expect(stored.count == 1, "upsert 不應因為 id 相同而新增重複資料")
         #expect(stored.first?.customer.name == "改名後")
         #expect(stored.first?.status == .delivered)
         #expect(stored.first?.chargedAmount == 9_999)
+        #expect(stored.first?.notes == "更新後的備註", "更新訂單時備註應一併寫回")
     }
     
     @Test func deleteRemovesOrderById() async throws {

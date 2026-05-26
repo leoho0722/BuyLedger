@@ -37,7 +37,8 @@ struct OrderCalculationTests {
             cardlessSupplementAmount: 0,
             orderSource: "",
             category: "美妝",
-            paymentMethod: ""
+            paymentMethod: "",
+            notes: ""
         )
 
         let summary = OrderSummary(order: order)
@@ -76,7 +77,8 @@ struct OrderCalculationTests {
             cardlessSupplementAmount: 0,
             orderSource: "",
             category: "測試",
-            paymentMethod: ""
+            paymentMethod: "",
+            notes: ""
         )
 
         let summary = OrderSummary(order: order)
@@ -113,7 +115,8 @@ struct OrderCalculationTests {
             cardlessSupplementAmount: 0,
             orderSource: "",
             category: "測試",
-            paymentMethod: ""
+            paymentMethod: "",
+            notes: ""
         )
 
         let summary = OrderSummary(order: order)
@@ -151,7 +154,8 @@ struct OrderCalculationTests {
             cardlessSupplementAmount: Decimal(500),
             orderSource: "",
             category: "測試",
-            paymentMethod: "無卡存款"
+            paymentMethod: "無卡存款",
+            notes: ""
         )
 
         let summary = OrderSummary(order: order)
@@ -186,7 +190,8 @@ struct OrderCalculationTests {
             cardlessSupplementAmount: Decimal(0),
             orderSource: "",
             category: "測試",
-            paymentMethod: "無卡"
+            paymentMethod: "無卡",
+            notes: ""
         )
 
         let summary = OrderSummary(order: order)
@@ -229,7 +234,8 @@ struct OrderCalculationTests {
             cardlessSupplementAmount: 0,
             orderSource: "",
             category: "精品",
-            paymentMethod: ""
+            paymentMethod: "",
+            notes: ""
         )
         
         let summary = OrderSummary(order: order)
@@ -267,7 +273,8 @@ struct OrderCalculationTests {
             cardlessSupplementAmount: 0,
             orderSource: "",
             category: "測試",
-            paymentMethod: ""
+            paymentMethod: "",
+            notes: ""
         )
 
         let summary = OrderSummary(order: order)

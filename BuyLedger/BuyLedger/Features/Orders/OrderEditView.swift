@@ -128,7 +128,9 @@ struct OrderEditView: View {
                 }
                 
                 itemsSection
-                
+
+                notesSection
+
                 if let original = store.original {
                     Section("原始訂單") {
                         LabeledContent("單號", value: original.id)
@@ -392,6 +394,16 @@ private extension OrderEditView {
         }
     }
     
+    /// 備註區段：商品明細下方的多行備註輸入；留空代表無備註，儲存時會 trim 首尾空白。
+    var notesSection: some View {
+        Section {
+            TextField("輸入備註 (選填)", text: $store.draftNotes, axis: .vertical)
+                .lineLimit(3...8)
+        } header: {
+            Text("備註")
+        }
+    }
+
     /// 單筆商品的編輯列：商品名稱 (多行)+ 數量 Stepper + 單價 TextField。
     /// - Parameter item: 雙向繫結的單筆商品。
     /// - Returns: 商品列 view。

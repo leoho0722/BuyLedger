@@ -49,7 +49,8 @@ extension LedgerOrder {
             cardlessSupplementAmount: 0,
             orderSource: "蝦皮",
             category: "美妝",
-            paymentMethod: "信用卡"
+            paymentMethod: "信用卡",
+            notes: "客戶指定到貨後先拍照確認，再安排出貨。"
         ),
         LedgerOrder(
             id: "BL-2604-017",
@@ -80,7 +81,8 @@ extension LedgerOrder {
             cardlessSupplementAmount: 0,
             orderSource: "官方網站",
             category: "服飾",
-            paymentMethod: "銀行轉帳"
+            paymentMethod: "銀行轉帳",
+            notes: ""
         ),
         LedgerOrder(
             id: "BL-2604-016",
@@ -116,7 +118,8 @@ extension LedgerOrder {
             cardlessSupplementAmount: 0,
             orderSource: "Instagram",
             category: "美妝",
-            paymentMethod: "信用卡"
+            paymentMethod: "信用卡",
+            notes: ""
         ),
         LedgerOrder(
             id: "BL-2604-015",
@@ -147,7 +150,8 @@ extension LedgerOrder {
             cardlessSupplementAmount: 0,
             orderSource: "代購社團",
             category: "精品",
-            paymentMethod: ""
+            paymentMethod: "",
+            notes: "報價中，待客戶確認顏色後再下單。"
         ),
         LedgerOrder(
             id: "BL-2604-014",
@@ -183,7 +187,8 @@ extension LedgerOrder {
             cardlessSupplementAmount: 0,
             orderSource: "蝦皮",
             category: "美妝",
-            paymentMethod: "LINE Pay"
+            paymentMethod: "LINE Pay",
+            notes: "已收訂金，尾款到貨後結清。"
         ),
         LedgerOrder(
             id: "BL-2604-013",
@@ -210,7 +215,8 @@ extension LedgerOrder {
             cardlessSupplementAmount: 0,
             orderSource: "官方網站",
             category: "美妝",
-            paymentMethod: "Apple Pay"
+            paymentMethod: "Apple Pay",
+            notes: ""
         ),
         LedgerOrder(
             id: "BL-2604-012",
@@ -241,7 +247,8 @@ extension LedgerOrder {
             cardlessSupplementAmount: 0,
             orderSource: "Instagram",
             category: "服飾",
-            paymentMethod: "信用卡"
+            paymentMethod: "信用卡",
+            notes: ""
         ),
     ]
 }

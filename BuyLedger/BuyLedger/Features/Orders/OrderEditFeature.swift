@@ -73,6 +73,9 @@ struct OrderEditFeature {
         /// 商品明細草稿；可在編輯表單內新增、刪除、修改。
         var draftItems: [LedgerOrderItem]
 
+        /// 訂單備註草稿；對應 ``LedgerOrder/notes``，可在表單中編輯，留空代表無備註。
+        var draftNotes: String
+
         /// 訂購日期草稿。
         var draftDate: Date
 
@@ -141,6 +144,7 @@ struct OrderEditFeature {
             self.draftPlatformFeeRate = original?.platformFeeRate ?? 0
             self.draftPaymentFeeRate = original?.paymentFeeRate ?? 0
             self.draftItems = original?.items ?? []
+            self.draftNotes = original?.notes ?? ""
             self.draftDate = original?.date ?? currentDate
             self.draftPaymentMethod = original?.paymentMethod ?? ""
 
