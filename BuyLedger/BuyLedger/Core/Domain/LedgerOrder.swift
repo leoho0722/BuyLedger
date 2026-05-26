@@ -80,12 +80,12 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
         OrderSummary(order: self)
     }
 
-    /// 列表中顯示的商品摘要，每項商品各自一行完整列出。
+    /// 列表中顯示的商品摘要，每項商品各自一行，名稱後接購買數量 (例如「藍牙耳機 x2」)。
     var itemSummary: String {
         guard !items.isEmpty else {
             return "未命名商品"
         }
 
-        return items.map(\.name).joined(separator: "\n")
+        return items.map { "\($0.name) x\($0.quantity)" }.joined(separator: "\n")
     }
 }
