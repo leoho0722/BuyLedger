@@ -55,6 +55,45 @@ enum OrderFormatters {
         )
     }
 
+    /// 將某一日格式化為訂單列表日期區段的標題。
+    ///
+    /// 今天／昨天以相對字串呈現；同年內顯示「M月d日 週X」，跨年則顯示「yyyy年M月d日」。相對判斷以 `referenceDate` 為基準，
+    /// caller 應從 `@Dependency(\.date)` 取得當下時間以維持可測試性。
+    /// - Parameters:
+    ///   - day: 該區段所屬日期 (通常為當日起始時刻)。
+    ///   - referenceDate: 用於判斷「今天／昨天」的基準時間。
+    ///   - calendar: 用於日期比較與分解的曆法。
+    /// - Returns: 區段標題字串。
+    static func daySectionTitle(for day: Date, referenceDate: Date, calendar: Calendar) -> String {
+        if calendar.isDate(day, inSameDayAs: referenceDate) {
+            return "今天"
+        }
+
+        if let yesterday = calendar.date(byAdding: .day, value: -1, to: referenceDate),
+           calendar.isDate(day, inSameDayAs: yesterday) {
+            return "昨天"
+        }
+
+        let sameYear = calendar.component(.year, from: day) == calendar.component(.year, from: referenceDate)
+        if sameYear {
+            return day.formatted(
+                .dateTime
+                    .month(.wide)
+                    .day(.defaultDigits)
+                    .weekday(.abbreviated)
+                    .locale(Locale(identifier: "zh_TW"))
+            )
+        }
+
+        return day.formatted(
+            .dateTime
+                .year()
+                .month(.wide)
+                .day(.defaultDigits)
+                .locale(Locale(identifier: "zh_TW"))
+        )
+    }
+
     /// 將日期格式化為 `yyyy/MM/dd HH:mm:ss`。
     ///
     /// pattern 固定，locale 由呼叫端提供 (通常由 view 端 `@Dependency(\.locale)` 注入跟隨使用者手機設定)。

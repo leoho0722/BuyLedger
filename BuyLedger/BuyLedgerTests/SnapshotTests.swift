@@ -42,6 +42,49 @@ struct SnapshotTests {
         }
     }
 
+    @Test func ordersCompactViewLongContentBaseline() {
+        // 迴歸守護：無法換行的長客戶名稱與長商品類別不可把訂單列 (進而整個垂直 ScrollView 內容) 撐得比畫面還寬，
+        // 否則 Dashboard / 訂單頁左右邊距會整個跑掉。見 OrderRowView 名稱截斷與 BLTagPill 改 lineLimit 的修正。
+        TestDependencies.withFixedNow {
+            let longOrder = LedgerOrder(
+                id: "BL-LONG-0001",
+                customer: LedgerCustomer(name: "line19991030_verylongusername", initials: "LI", tier: .vip),
+                status: .shipping,
+                currency: .twd,
+                date: TestDependencies.fixedNow,
+                items: [LedgerOrderItem(name: "示範商品", quantity: 1, unitPrice: 1_000)],
+                itemCost: 600,
+                domesticShipping: 0,
+                internationalShipping: 0,
+                foreignDomesticShipping: 0,
+                cardFeeRate: 0,
+                platformFeeRate: 0,
+                paymentFeeRate: 0,
+                chargedAmount: 1_000,
+                cardlessDeductionAmount: 0,
+                cardlessSupplementAmount: 0,
+                orderSource: "蝦皮",
+                category: "aespa Lemonade QQ 音樂限定禮包",
+                paymentMethod: "信用卡",
+                notes: ""
+            )
+
+            let state: OrdersFeature.State = {
+                var s = OrdersFeature.State()
+                s.orders = [longOrder]
+                s.hasLoaded = true
+                return s
+            }()
+
+            let view = OrdersCompactView(
+                store: Store(initialState: state) { OrdersFeature() }
+            )
+                .frame(width: 393, height: 852)
+
+            assertSnapshot(of: view, as: .image)
+        }
+    }
+
     @Test func dashboardViewBaseline() {
         TestDependencies.withFixedNow {
             let state: RootFeature.State = {

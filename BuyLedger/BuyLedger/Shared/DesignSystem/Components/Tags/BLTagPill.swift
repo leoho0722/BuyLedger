@@ -9,7 +9,7 @@ import SwiftUI
 
 /// 以 neutral 灰底膠囊呈現標籤文字，並可在膠囊外側附加前導圖示。
 ///
-/// 視覺沿用 ``BLStatusPill`` 的 neutral 外觀 (灰底、無狀態指示點)，常用於商品類別等分類標記。圖示置於膠囊外、與膠囊垂直置中對齊；膠囊文字維持單行、不提早換行。
+/// 視覺沿用 ``BLStatusPill`` 的 neutral 外觀 (灰底、無狀態指示點)，常用於商品類別等分類標記。圖示置於膠囊外、與膠囊垂直置中對齊；膠囊文字過長時換行成多行、膠囊高度隨之增加 (不截斷、也不撐爆容器寬度)。
 struct BLTagPill: View {
 
     // MARK: - View Properties
@@ -43,8 +43,13 @@ struct BLTagPill: View {
                     .foregroundStyle(.secondary)
             }
 
+            // 多行換行 + 垂直長高：不可用 `.fixedSize(horizontal:)`，否則膠囊會永遠採用文字理想寬度、不肯換行，
+            // 長類別 (例如 "aespa Lemonade QQ 音樂限定禮包") 會把整列撐到比畫面還寬。
+            // `fixedSize(horizontal: false, vertical: true)` 表示「接受容器給的寬度、需要幾行就長多高」，
+            // 膠囊底色隨多行文字一起增高，既不截斷也不溢出。
             BLStatusPill(text, tone: .neutral, showsIndicator: false)
-                .fixedSize(horizontal: true, vertical: false)
+                .lineLimit(nil)
+                .fixedSize(horizontal: false, vertical: true)
         }
     }
 }

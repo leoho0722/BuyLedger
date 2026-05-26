@@ -213,7 +213,7 @@ private extension OrdersCompactView {
         .buttonStyle(.plain)
     }
     
-    /// 訂單列表卡片區塊，包含載入、空狀態與資料列。
+    /// 訂單列表區塊，包含載入、空狀態與「以日期分組」的資料區段。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 列表區塊 view。
     @ViewBuilder
@@ -222,14 +222,37 @@ private extension OrdersCompactView {
             ProgressView("載入訂單")
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, BLSpacing.large)
-        } else if store.state.filteredOrders(referenceDate: date.now).isEmpty {
-            emptyState(palette: palette)
         } else {
+            let sections = store.state.dateSections(referenceDate: date.now)
+            if sections.isEmpty {
+                emptyState(palette: palette)
+            } else {
+                VStack(alignment: .leading, spacing: BLSpacing.medium) {
+                    ForEach(sections) { section in
+                        orderDateSection(section, palette: palette)
+                    }
+                }
+            }
+        }
+    }
+
+    /// 單一日期區段：上方日期標題 + 下方當日訂單卡片 (列內不再重複顯示日期)。
+    /// - Parameters:
+    ///   - section: 要呈現的日期區段。
+    ///   - palette: 目前外觀使用的色盤。
+    /// - Returns: 日期區段 view。
+    func orderDateSection(_ section: OrderDateSection, palette: BLPalette) -> some View {
+        VStack(alignment: .leading, spacing: BLSpacing.small) {
+            Text(section.title)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(palette.secondaryLabel)
+                .padding(.horizontal, BLSpacing.large)
+
             BLCard(padding: 0) {
                 VStack(spacing: 0) {
-                    ForEach(Array(store.state.filteredOrders(referenceDate: date.now).enumerated()), id: \.element.id) { index, order in
+                    ForEach(Array(section.orders.enumerated()), id: \.element.id) { index, order in
                         NavigationLink(value: order.id) {
-                            OrderRowView(order: order)
+                            OrderRowView(order: order, showsDate: false)
                                 .padding(.horizontal, BLSpacing.large)
                                 .padding(.vertical, BLSpacing.extraSmall)
                                 .contentShape(Rectangle())
@@ -243,7 +266,7 @@ private extension OrdersCompactView {
                             }
                         }
 
-                        if index < store.state.filteredOrders(referenceDate: date.now).count - 1 {
+                        if index < section.orders.count - 1 {
                             Divider()
                                 .padding(.leading, BLSpacing.large + 40 + BLSpacing.medium)
                         }

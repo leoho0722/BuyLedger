@@ -8,6 +8,23 @@
 import ComposableArchitecture
 import Foundation
 
+/// 訂單列表以「日」為單位分組後的單一日期區段。
+struct OrderDateSection: Equatable, Identifiable, Sendable {
+
+    // MARK: - Identifiable Properties
+
+    /// 區段識別值，使用該日的起始時刻 (start of day)。
+    let id: Date
+
+    // MARK: - Data Properties
+
+    /// 區段標題 (例如「今天」「昨天」「5月26日 週一」)。
+    let title: String
+
+    /// 該日的訂單，依時間由新到舊排序。
+    let orders: [LedgerOrder]
+}
+
 /// 訂單列表與詳情選取流程。
 @Reducer
 struct OrdersFeature {
@@ -90,6 +107,31 @@ struct OrdersFeature {
             let filtered = filteredOrders(referenceDate: referenceDate)
             guard let selectedOrderID else { return filtered.first }
             return filtered.first { $0.id == selectedOrderID }
+        }
+
+        /// 將 ``filteredOrders(referenceDate:)`` 的結果以「日」為單位分組成區段，供訂單列表以日期區段標題呈現 (列內毋須再顯示日期)。
+        ///
+        /// 分組與相對標題 (今天／昨天) 皆以 `referenceDate` 為基準，沿用 ``filteredOrders(referenceDate:)`` 的 `Calendar.current`；同一基準下結果一致。
+        /// - Parameter referenceDate: 與 ``filteredOrders(referenceDate:)`` 同一基準的「現在」時間。
+        /// - Returns: 依日期由新到舊排序的區段；每段內訂單亦由新到舊排序。
+        func dateSections(referenceDate: Date) -> [OrderDateSection] {
+            let calendar = Calendar.current
+            let grouped = Dictionary(grouping: filteredOrders(referenceDate: referenceDate)) {
+                calendar.startOfDay(for: $0.date)
+            }
+            return grouped.keys
+                .sorted(by: >)
+                .map { day in
+                    OrderDateSection(
+                        id: day,
+                        title: OrderFormatters.daySectionTitle(
+                            for: day,
+                            referenceDate: referenceDate,
+                            calendar: calendar
+                        ),
+                        orders: (grouped[day] ?? []).sorted { $0.date > $1.date }
+                    )
+                }
         }
 
         /// 對外提供給編輯表單的「可用訂單來源」清單：合併主檔與既有訂單中使用過的來源，去重後依 locale 排序。合併規則與 ``availableCategories`` 相同。
