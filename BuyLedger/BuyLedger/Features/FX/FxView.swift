@@ -195,7 +195,7 @@ private extension FxView {
         TextField(
             "輸入金額",
             value: $store.amount,
-            format: .number.precision(.fractionLength(0))
+            format: .number.precision(.fractionLength(0...2))
         )
         .font(.system(size: 32, weight: .bold))
         .monospacedDigit()
@@ -204,7 +204,7 @@ private extension FxView {
         .background(palette.fillQuaternary)
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
 #if !os(macOS)
-        .keyboardType(.numberPad)
+        .keyboardType(.decimalPad)
 #endif
     }
     

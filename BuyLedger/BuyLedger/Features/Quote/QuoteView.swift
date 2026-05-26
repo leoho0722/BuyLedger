@@ -120,13 +120,15 @@ private extension QuoteView {
                 numberField(
                     label: "商品定價",
                     value: $store.itemPrice,
-                    unit: store.fromCurrency.rawValue
+                    unit: store.fromCurrency.rawValue,
+                    allowsDecimalEntry: true
                 )
 
                 numberField(
                     label: "當地運費",
                     value: $store.domesticShipping,
-                    unit: store.fromCurrency.rawValue
+                    unit: store.fromCurrency.rawValue,
+                    allowsDecimalEntry: true
                 )
 
                 numberField(
@@ -235,13 +237,15 @@ private extension QuoteView {
     ///   - label: 欄位名稱。
     ///   - value: 雙向繫結的值；寫入時自動 clamp 成非負數。
     ///   - unit: 顯示在輸入框右側的單位字串。
-    ///   - fractionDigits: 數值顯示的小數位數；大於 0 時鍵盤改用 `decimalPad`，否則 `numberPad`。
+    ///   - fractionDigits: 固定顯示的小數位數；大於 0 時鍵盤改用 `decimalPad`，否則 `numberPad`。
+    ///   - allowsDecimalEntry: 為 `true` 時允許輸入 0 到 2 位小數 (整數不強制補零) 並使用 `decimalPad`，供金額類欄位鍵入小數價格。
     /// - Returns: 數值輸入列 view。
     func numberField(
         label: String,
         value: Binding<Double>,
         unit: String,
-        fractionDigits: Int = 0
+        fractionDigits: Int = 0,
+        allowsDecimalEntry: Bool = false
     ) -> some View {
         HStack(spacing: BLSpacing.small) {
             Text(label)
@@ -252,14 +256,16 @@ private extension QuoteView {
             TextField(
                 "0",
                 value: nonNegativeBinding(value),
-                format: .number.precision(.fractionLength(fractionDigits))
+                format: .number.precision(
+                    allowsDecimalEntry ? .fractionLength(0...2) : .fractionLength(fractionDigits)
+                )
             )
             .textFieldStyle(.roundedBorder)
             .multilineTextAlignment(.trailing)
             .monospacedDigit()
             .frame(width: 120)
 #if os(iOS)
-            .keyboardType(fractionDigits > 0 ? .decimalPad : .numberPad)
+            .keyboardType(allowsDecimalEntry || fractionDigits > 0 ? .decimalPad : .numberPad)
 #endif
 
             Text(unit)
