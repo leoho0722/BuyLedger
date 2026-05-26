@@ -436,8 +436,8 @@ private extension DashboardView {
                         ForEach(Array(stats.recentOrders.enumerated()), id: \.element.id) { index, order in
                             OrderRowView(order: order)
                                 .padding(.horizontal, BLSpacing.large)
-                                .padding(.vertical, BLSpacing.small)
-                            
+                                .padding(.vertical, BLSpacing.extraSmall)
+
                             if index < stats.recentOrders.count - 1 {
                                 Divider()
                                     .padding(.leading, BLSpacing.large + 40 + BLSpacing.medium)

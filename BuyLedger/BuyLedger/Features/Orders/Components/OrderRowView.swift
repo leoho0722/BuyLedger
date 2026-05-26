@@ -28,7 +28,7 @@ struct OrderRowView: View {
                 size: 40
             )
 
-            VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
+            VStack(alignment: .leading, spacing: BLSpacing.small) {
                 HStack(spacing: BLSpacing.extraSmall) {
                     Text(order.customer.name)
                         .font(.subheadline.weight(.semibold))
@@ -36,21 +36,20 @@ struct OrderRowView: View {
                     Text("·")
                         .foregroundStyle(.tertiary)
 
-                    Text(String(order.id.suffix(3)))
-                        .font(.caption.monospacedDigit())
+                    Text(OrderFormatters.shortDate(order.date))
+                        .font(.caption)
                         .foregroundStyle(.secondary)
+
+                    BLStatusPill(order.status.title, tone: order.status.tone)
+                        .padding(.leading, BLSpacing.extraSmall)
                 }
 
                 Text(order.itemSummary)
                     .font(.footnote)
                     .foregroundStyle(.secondary)
 
-                HStack(spacing: BLSpacing.small) {
-                    BLStatusPill(order.status.title, tone: order.status.tone)
-
-                    Text(OrderFormatters.shortDate(order.date))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                if !order.category.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                    BLTagPill(order.category, systemImage: "tag")
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)

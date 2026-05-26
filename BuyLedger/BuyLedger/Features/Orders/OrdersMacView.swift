@@ -198,7 +198,7 @@ private extension OrdersMacView {
                     } label: {
                         OrderRowView(order: order)
                             .padding(.horizontal, BLSpacing.large)
-                            .padding(.vertical, BLSpacing.small)
+                            .padding(.vertical, BLSpacing.extraSmall)
                             .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
