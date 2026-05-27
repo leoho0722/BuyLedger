@@ -38,6 +38,8 @@ struct OrderDetailView: View {
                     
                     switch layout {
                     case .compact:
+                        orderSourceCard(palette: palette)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         profitCard(summary: summary, palette: palette)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         if hasCardlessAdjustments {
@@ -54,6 +56,8 @@ struct OrderDetailView: View {
                         }
 
                     case .wide:
+                        orderSourceCard(palette: palette)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         kpiThreeUp(summary: summary, palette: palette)
                             .frame(maxWidth: .infinity, alignment: .leading)
                         if hasCardlessAdjustments {
@@ -149,7 +153,30 @@ private extension OrderDetailView {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-    
+
+    /// 訂單來源卡片：顯示訂單的 ``LedgerOrder/orderSource``，窄欄與寬欄版面共用，皆置於獲利摘要之上。
+    ///
+    /// 來源為空字串時顯示「—」空狀態，不杜撰來源名稱 (符合「寧可空狀態也不顯示假資料」原則)。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 訂單來源卡片 view。
+    func orderSourceCard(palette: BLPalette) -> some View {
+        BLCard {
+            VStack(alignment: .leading, spacing: BLSpacing.small) {
+                Text("訂單來源")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(palette.secondaryLabel)
+                    .textCase(.uppercase)
+
+                Text(orderSourceDisplayText)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(palette.label)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .textSelection(.enabled)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        }
+    }
+
     // MARK: Compact layout
     
     /// 收款、成本與獲利摘要卡片。
@@ -624,6 +651,12 @@ private extension OrderDetailView {
     /// 訂單是否有備註可顯示：trim 後非空才顯示備註卡片，避免空備註浮現空卡片 (符合「寧可空狀態也不顯示假資料」原則)。
     var hasNotes: Bool {
         !order.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// 訂單來源的顯示文字；trim 後為空時回傳「—」空狀態，不杜撰來源名稱。
+    var orderSourceDisplayText: String {
+        let trimmed = order.orderSource.trimmingCharacters(in: .whitespacesAndNewlines)
+        return trimmed.isEmpty ? "—" : trimmed
     }
 
     /// 取得跟隨使用者手機偏好語言的幣別顯示文字，例如 `TWD (新台幣)`。
