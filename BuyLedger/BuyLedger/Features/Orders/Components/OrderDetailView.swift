@@ -46,8 +46,10 @@ struct OrderDetailView: View {
                             cardlessAdjustmentsCard(palette: palette)
                                 .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        compactCostBreakdown(summary: summary, palette: palette)
-                            .frame(maxWidth: .infinity, alignment: .leading)
+                        if hasCostBreakdown {
+                            compactCostBreakdown(summary: summary, palette: palette)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
                         compactItemList
                             .frame(maxWidth: .infinity, alignment: .leading)
                         if hasNotes {
@@ -410,9 +412,11 @@ private extension OrderDetailView {
     /// - Returns: 兩欄並排 view。
     func wideBreakdownAndItems(summary: OrderSummary, palette: BLPalette) -> some View {
         HStack(alignment: .top, spacing: BLSpacing.medium) {
-            breakdownBarsCard(summary: summary, palette: palette)
-                .frame(maxWidth: .infinity, alignment: .topLeading)
-            
+            if hasCostBreakdown {
+                breakdownBarsCard(summary: summary, palette: palette)
+                    .frame(maxWidth: .infinity, alignment: .topLeading)
+            }
+
             wideItemsCard
                 .frame(maxWidth: .infinity, alignment: .topLeading)
         }
@@ -646,6 +650,11 @@ private extension OrderDetailView {
     /// 訂單是否需要顯示無卡明細卡片：只要折抵或補款金額任一非 0 就顯示，避免無卡訂單欄位填 0 時還浮現空卡片。
     var hasCardlessAdjustments: Bool {
         order.cardlessDeductionAmount > 0 || order.cardlessSupplementAmount > 0
+    }
+
+    /// 訂單是否有成本可供拆解：總成本為 0 時不顯示「成本拆解」section，避免繪出空的 donut/bar 圖 (符合「寧可空狀態也不顯示假資料」原則)。
+    var hasCostBreakdown: Bool {
+        order.summary.totalCost > 0
     }
 
     /// 訂單是否有備註可顯示：trim 後非空才顯示備註卡片，避免空備註浮現空卡片 (符合「寧可空狀態也不顯示假資料」原則)。
