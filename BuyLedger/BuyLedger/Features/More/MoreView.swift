@@ -34,6 +34,14 @@ struct MoreView: View {
             macContent(palette: palette)
             #else
             phoneContent(palette: palette)
+                .navigationDestination(
+                    isPresented: Binding(
+                        get: { store.showsSettingsFromDeepLink },
+                        set: { store.send(.setShowsSettingsFromDeepLink($0)) }
+                    )
+                ) {
+                    SettingsView(store: store.scope(state: \.settings, action: \.settings))
+                }
             #endif
         }
     }

@@ -23,6 +23,7 @@
 		D00D0E852FC484750009F79F /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = D00D0E842FC484750009F79F /* FirebaseFirestore */; };
 		D00D0E872FC484750009F79F /* FirebasePerformance in Frameworks */ = {isa = PBXBuildFile; productRef = D00D0E862FC484750009F79F /* FirebasePerformance */; };
 		D0B102262FA5C7F300B50E07 /* SnapshotTesting in Frameworks */ = {isa = PBXBuildFile; productRef = D0B102252FA5C7F300B50E07 /* SnapshotTesting */; };
+		DEC0DE0000000000000000C1 /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = DEC0DE0000000000000000B1 /* Textual */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -95,6 +96,7 @@
 				D00D0E832FC484750009F79F /* FirebaseCrashlytics in Frameworks */,
 				A1D9E4B82FA3000000000008 /* Perception in Frameworks */,
 				A1D9E4C02FA3000000000010 /* PerceptionCore in Frameworks */,
+				DEC0DE0000000000000000C1 /* Textual in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -209,6 +211,7 @@
 				D00D0E822FC484750009F79F /* FirebaseCrashlytics */,
 				D00D0E842FC484750009F79F /* FirebaseFirestore */,
 				D00D0E862FC484750009F79F /* FirebasePerformance */,
+				DEC0DE0000000000000000B1 /* Textual */,
 			);
 			productName = BuyLedger;
 			productReference = D0B1FCCD2FA22A9F00B50E07 /* BuyLedger.app */;
@@ -305,6 +308,7 @@
 				A1D9E4BF2FA300000000000F /* XCRemoteSwiftPackageReference "swift-perception" */,
 				D0B102242FA5C7F300B50E07 /* XCRemoteSwiftPackageReference "swift-snapshot-testing" */,
 				D00D0E7D2FC484750009F79F /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
+				DEC0DE0000000000000000A1 /* XCRemoteSwiftPackageReference "textual" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = D0B1FCCE2FA22A9F00B50E07 /* Products */;
@@ -407,11 +411,11 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedger;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -457,11 +461,11 @@
 				"INFOPLIST_KEY_UIStatusBarStyle[sdk=iphonesimulator*]" = UIStatusBarStyleDefault;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
-				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
 				"LD_RUNPATH_SEARCH_PATHS[sdk=macosx*]" = "@executable_path/../Frameworks";
 				MACOSX_DEPLOYMENT_TARGET = 26.0;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedger;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -606,7 +610,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedgerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -632,7 +636,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedgerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -657,7 +661,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedgerUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -682,7 +686,7 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
 				MACOSX_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedgerUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -790,6 +794,14 @@
 				version = 1.19.2;
 			};
 		};
+		DEC0DE0000000000000000A1 /* XCRemoteSwiftPackageReference "textual" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/gonzalezreal/textual";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.1.0;
+			};
+		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -872,6 +884,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = 5F378FA3EE62B1A19259B6A4 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
 			productName = ComposableArchitecture;
+		};
+		DEC0DE0000000000000000B1 /* Textual */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = DEC0DE0000000000000000A1 /* XCRemoteSwiftPackageReference "textual" */;
+			productName = Textual;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

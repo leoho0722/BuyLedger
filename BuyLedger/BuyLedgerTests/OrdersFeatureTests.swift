@@ -395,4 +395,144 @@ struct OrdersFeatureTests {
         #expect(inserted?.currency == .twd)
         #expect(inserted?.date == fixedDate)
     }
+
+    // MARK: - Category Filter
+
+    @Test func categoryFilterShowsMatchingCategoryOnly() async {
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+        let targetCategory = LedgerOrder.sampleOrders.first!.category
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+        }
+
+        let expectedFirstID = state
+            .filteredOrders(referenceDate: TestDependencies.fixedNow)
+            .first { $0.category == targetCategory }?
+            .id
+
+        await store.send(.categoryFilterSelected(targetCategory)) {
+            $0.selectedCategory = targetCategory
+            $0.selectedOrderID = expectedFirstID
+        }
+
+        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow)
+        #expect(!filtered.isEmpty)
+        #expect(filtered.allSatisfy { $0.category == targetCategory })
+
+        await store.send(.categoryFilterSelected(nil)) {
+            $0.selectedCategory = nil
+            $0.selectedOrderID = state.filteredOrders(referenceDate: TestDependencies.fixedNow).first?.id
+        }
+    }
+
+    @Test func categoryFilterCombinesWithStatusFilter() async {
+        var state = OrdersFeature.State()
+        state.orders = [
+            makeOrder(id: "O1", category: "beauty", status: .shipping),
+            makeOrder(id: "O2", category: "beauty", status: .quoting),
+            makeOrder(id: "O3", category: "snacks", status: .shipping),
+        ]
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+        }
+
+        await store.send(.statusFilterSelected(.shipping)) {
+            $0.selectedStatus = .shipping
+            $0.selectedOrderID = "O1"
+        }
+        await store.send(.categoryFilterSelected("beauty")) {
+            $0.selectedCategory = "beauty"
+            $0.selectedOrderID = "O1"
+        }
+
+        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow)
+        #expect(filtered.map(\.id) == ["O1"])
+    }
+
+    // MARK: - AI Summary Entry
+
+    @Test func aiSummaryTappedWithSettingEnabledPresentsSheet() async {
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0[SettingsStorage.self] = SettingsStorage(
+                load: {
+                    var snapshot = SettingsSnapshot.default
+                    snapshot.useAiSummary = true
+                    snapshot.aiSummaryModel = "gpt-oss:120b"
+                    return snapshot
+                },
+                save: { _ in }
+            )
+        }
+
+        await store.send(.aiSummaryTapped) {
+            $0.aiSummary = AISummaryFeature.State(
+                prompt: state.aiSummaryPrompt(referenceDate: TestDependencies.fixedNow),
+                model: "gpt-oss:120b"
+            )
+        }
+
+        #expect(store.state.aiSummary?.prompt.isEmpty == false)
+        #expect(store.state.aiDisabledAlert == nil)
+    }
+
+    @Test func aiSummaryTappedWithSettingDisabledPresentsAlert() async {
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0[SettingsStorage.self] = SettingsStorage(
+                load: { .default },
+                save: { _ in }
+            )
+        }
+        store.exhaustivity = .off
+
+        await store.send(.aiSummaryTapped)
+
+        #expect(store.state.aiDisabledAlert != nil)
+        #expect(store.state.aiSummary == nil)
+    }
+
+    // MARK: - Helpers
+
+    /// 建立僅供篩選測試使用的最小訂單；非相關欄位以零值/佔位填入。
+    private func makeOrder(id: String, category: String, status: OrderStatus) -> LedgerOrder {
+        LedgerOrder(
+            id: id,
+            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .new),
+            status: status,
+            currency: .twd,
+            date: TestDependencies.fixedNow,
+            items: [LedgerOrderItem(id: UUID(), name: "商品", quantity: 1, unitPrice: 100)],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 0,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "來源",
+            category: category,
+            paymentMethod: "付款",
+            notes: ""
+        )
+    }
 }

@@ -4,6 +4,8 @@
 <dict>
 	<key>EXCHANGE_RATE_API_KEY</key>
 	<string>$(EXCHANGE_RATE_API_KEY)</string>
+	<key>OLLAMA_API_KEY</key>
+	<string>$(OLLAMA_API_KEY)</string>
 	<key>NSApplicationCrashOnExceptions</key>
 	<true/>
 	<key>UIBackgroundModes</key>

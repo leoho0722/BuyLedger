@@ -81,4 +81,29 @@ struct RootFeatureTests {
             #expect(store.state.orders.selectedStatus != filter)
         }
     }
+
+#if !os(macOS)
+    @Test func goToAISettingsDeepLinksToMoreTabAndSettings() async {
+        var state = RootFeature.State()
+        state.selectedTab = .dashboard
+        state.orders.orders = LedgerOrder.sampleOrders
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0[SettingsStorage.self] = SettingsStorage(load: { .default }, save: { _ in })
+        }
+        store.exhaustivity = .off
+
+        // 設定關閉時點「AI 總結」→ 出現提示 alert。
+        await store.send(.orders(.aiSummaryTapped))
+        #expect(store.state.orders.aiDisabledAlert != nil)
+
+        // 點「前往開啟」→ root 攔截並切到「更多」分頁、要求 push 設定頁。
+        await store.send(.orders(.aiDisabledAlert(.presented(.goToAISettings))))
+        #expect(store.state.selectedTab == .more)
+        #expect(store.state.showsSettingsFromDeepLink == true)
+    }
+#endif
 }

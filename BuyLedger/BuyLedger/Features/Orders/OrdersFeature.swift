@@ -46,7 +46,10 @@ struct OrdersFeature {
         
         /// 目前套用的日期區間篩選。
         var selectedDatePeriod: OrderDatePeriod = .all
-        
+
+        /// 目前套用的商品類別篩選；`nil` 代表全部類別。
+        var selectedCategory: String?
+
         /// 目前選取的訂單編號。
         var selectedOrderID: LedgerOrder.ID?
 
@@ -75,7 +78,13 @@ struct OrdersFeature {
         ///
         /// 使用 `AlertState` 而非 `ConfirmationDialogState`：iOS 26 起 `.confirmationDialog` 採 anchored popover 樣式，當觸發來源是 toolbar 按鈕而 modifier 又掛在 root view 上時，會出現位置偏移；改用 `.alert` 是 centered modal，跨 iOS 版本與平台都一致。
         @Presents var deletionConfirmation: AlertState<Action.Alert>?
-        
+
+        /// AI 商品明細總結 sheet 狀態；`nil` 表示未呈現。
+        @Presents var aiSummary: AISummaryFeature.State?
+
+        /// AI 功能未開啟時的提示 alert；`nil` 表示未呈現。
+        @Presents var aiDisabledAlert: AlertState<Action.Alert>?
+
         // MARK: - Filter Method
 
         /// 套用搜尋、狀態與日期區間篩選後的訂單。
@@ -95,8 +104,9 @@ struct OrdersFeature {
                     referenceDate: referenceDate,
                     calendar: calendar
                 )
+                let matchesCategory = selectedCategory.map { $0 == order.category } ?? true
 
-                return matchesStatus && matchesSearch && matchesDate
+                return matchesStatus && matchesSearch && matchesDate && matchesCategory
             }
         }
 
@@ -172,8 +182,61 @@ struct OrdersFeature {
             return byName.values
                 .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
         }
+
+        // MARK: - AI Method
+
+        /// 把目前篩選後訂單的商品明細整理成給模型的純文字摘要輸入。
+        ///
+        /// 每筆訂單逐項列出「- [類別] 名稱 x數量 @ 單價 幣別」；為避免 token 爆量，最多納入 `maxItems` 個品項，超出以一行提示帶過。
+        /// - Parameter referenceDate: 與 ``filteredOrders(referenceDate:)`` 同一基準。
+        /// - Returns: 商品明細的純文字摘要；列表沒有任何品項時回傳提示字串。
+        func aiItemsDigest(referenceDate: Date) -> String {
+            let maxItems = 200
+            let filtered = filteredOrders(referenceDate: referenceDate)
+            var lines: [String] = []
+
+            outer: for order in filtered {
+                let category = order.category.trimmingCharacters(in: .whitespacesAndNewlines)
+                let categoryTag = category.isEmpty ? "未分類" : category
+                for item in order.items {
+                    let trimmedName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let name = trimmedName.isEmpty ? "未命名商品" : trimmedName
+                    lines.append("- [\(categoryTag)] \(name) x\(item.quantity) @ \(item.unitPrice) \(order.currency.rawValue)")
+                    if lines.count >= maxItems { break outer }
+                }
+            }
+
+            guard !lines.isEmpty else {
+                return "（目前列表沒有任何商品明細）"
+            }
+
+            var digest = lines.joined(separator: "\n")
+            let totalItems = filtered.reduce(0) { $0 + $1.items.count }
+            if totalItems > lines.count {
+                digest += "\n…（其餘 \(totalItems - lines.count) 個品項未列出）"
+            }
+            return digest
+        }
+
+        /// 組出指示模型以正體中文 Markdown 總結商品明細的完整 prompt。
+        /// - Parameter referenceDate: 與 ``filteredOrders(referenceDate:)`` 同一基準。
+        /// - Returns: 給 Ollama 的 user prompt。
+        func aiSummaryPrompt(referenceDate: Date) -> String {
+            let categoryScope = selectedCategory.map { "（已篩選類別：\($0)）" } ?? "（涵蓋目前列表所有類別）"
+            return """
+            你是個人代購 App 的分析助理。以下是目前訂單列表的商品明細\(categoryScope)，每行格式為「- [類別] 商品名稱 x數量 @ 單價 幣別」：
+
+            \(aiItemsDigest(referenceDate: referenceDate))
+
+            請用正體中文、以 Markdown 格式總結這些商品明細，內容包含：
+            - 一個 `##` 層級的標題
+            - 各品項的品名以及購買的總數量 (如果品名有編號的話，請照編號排序；如果沒有編號的話，請照字母順序排序)
+
+            請以條列與粗體強調重點，全文控制在約 200–300 字。只根據上面提供的資料作答，不要杜撰未出現的商品、數字或結論。
+            """
+        }
     }
-    
+
     // MARK: - Action
     
     /// 訂單功能可處理的事件。
@@ -203,7 +266,10 @@ struct OrdersFeature {
         
         /// 使用者切換日期區間篩選。
         case datePeriodSelected(OrderDatePeriod)
-        
+
+        /// 使用者切換商品類別篩選 (`nil` = 全部)。
+        case categoryFilterSelected(String?)
+
         /// 使用者輸入搜尋文字。
         case searchTextChanged(String)
         
@@ -228,12 +294,24 @@ struct OrdersFeature {
         /// 刪除確認 dialog 事件。
         case deletionConfirmation(PresentationAction<Alert>)
 
-        /// 刪除確認 dialog 的選項。
+        /// 使用者點擊「AI 總結」工具列按鈕。
+        case aiSummaryTapped
+
+        /// AI 總結 sheet 事件。
+        case aiSummary(PresentationAction<AISummaryFeature.Action>)
+
+        /// AI 未開啟提示 alert 事件。
+        case aiDisabledAlert(PresentationAction<Alert>)
+
+        /// 刪除確認 dialog 與 AI 提示 alert 共用的選項。
         @CasePathable
         enum Alert: Equatable {
 
             /// 使用者確認刪除指定訂單。
             case confirmDelete(LedgerOrder.ID)
+
+            /// 使用者選擇前往設定開啟 AI 總結 (導覽由 ``RootFeature`` 攔截處理)。
+            case goToAISettings
         }
     }
     
@@ -256,7 +334,10 @@ struct OrdersFeature {
 
     /// 用於新訂單的日期來源，方便在測試中注入固定值。
     @Dependency(\.date) private var date
-    
+
+    /// 設定持久化來源；用於讀取 `useAiSummary` 與 `aiSummaryModel`。
+    @Dependency(SettingsStorage.self) private var settingsStorage
+
     // MARK: - Reducer Body
     
     /// 訂單功能 reducer。
@@ -337,7 +418,12 @@ struct OrdersFeature {
                 state.selectedDatePeriod = period
                 state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
                 return .none
-                
+
+            case let .categoryFilterSelected(category):
+                state.selectedCategory = category
+                state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                return .none
+
             case let .searchTextChanged(searchText):
                 state.searchText = searchText
                 state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
@@ -517,12 +603,46 @@ struct OrdersFeature {
 
             case .deletionConfirmation:
                 return .none
+
+            case .aiSummaryTapped:
+                let snapshot = settingsStorage.load()
+                guard snapshot.useAiSummary else {
+                    state.aiDisabledAlert = AlertState {
+                        TextState("AI 商品明細總結")
+                    } actions: {
+                        ButtonState(role: .cancel) {
+                            TextState("關閉")
+                        }
+                        ButtonState(action: .goToAISettings) {
+                            TextState("前往開啟")
+                        }
+                    } message: {
+                        TextState("此功能需要先在「更多 → 設定」開啟 AI 商品明細總結。")
+                    }
+                    return .none
+                }
+                state.aiSummary = AISummaryFeature.State(
+                    prompt: state.aiSummaryPrompt(referenceDate: date.now),
+                    model: snapshot.aiSummaryModel
+                )
+                return .none
+
+            // `goToAISettings` 的導覽 (切分頁 + push 設定頁) 由 ``RootFeature`` 攔截；此處 alert 由 TCA 自動關閉。
+            case .aiDisabledAlert:
+                return .none
+
+            case .aiSummary:
+                return .none
             }
         }
         .ifLet(\.$editOrder, action: \.editOrder) {
             OrderEditFeature()
         }
         .ifLet(\.$deletionConfirmation, action: \.deletionConfirmation)
+        .ifLet(\.$aiSummary, action: \.aiSummary) {
+            AISummaryFeature()
+        }
+        .ifLet(\.$aiDisabledAlert, action: \.aiDisabledAlert)
     }
 }
 

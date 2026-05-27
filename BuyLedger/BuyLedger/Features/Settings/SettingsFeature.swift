@@ -34,20 +34,30 @@ struct SettingsFeature {
 
         /// 每月淨獲利目標 (TWD)；Dashboard hero 卡的目標進度條讀此值。`0` 代表使用者尚未設定，UI 應隱藏進度條。
         var monthlyProfitGoalTwd: Decimal
-        
+
+        /// 是否啟用 AI 商品明細總結。
+        var useAiSummary: Bool
+
+        /// AI 總結使用的 Ollama 模型名稱。
+        var aiSummaryModel: String
+
         // MARK: - Init
-        
+
         /// 建立預設設定。
         init(
             appearance: AppearancePreference = .system,
             notificationsEnabled: Bool = true,
             defaultCurrency: CurrencyCode = .twd,
-            monthlyProfitGoalTwd: Decimal = 80_000
+            monthlyProfitGoalTwd: Decimal = 80_000,
+            useAiSummary: Bool = false,
+            aiSummaryModel: String = AISummaryModelCatalog.defaultModel
         ) {
             self.appearance = appearance
             self.notificationsEnabled = notificationsEnabled
             self.defaultCurrency = defaultCurrency
             self.monthlyProfitGoalTwd = monthlyProfitGoalTwd
+            self.useAiSummary = useAiSummary
+            self.aiSummaryModel = aiSummaryModel
         }
     }
     
@@ -89,6 +99,8 @@ struct SettingsFeature {
                 state.notificationsEnabled = snapshot.notificationsEnabled
                 state.defaultCurrency = snapshot.defaultCurrency
                 state.monthlyProfitGoalTwd = snapshot.monthlyProfitGoalTwd
+                state.useAiSummary = snapshot.useAiSummary
+                state.aiSummaryModel = snapshot.aiSummaryModel
 
                 let currencyMetadataRepository = currencyMetadataRepository
                 return .run { send in
@@ -111,7 +123,9 @@ struct SettingsFeature {
                         appearance: state.appearance,
                         notificationsEnabled: state.notificationsEnabled,
                         defaultCurrency: state.defaultCurrency,
-                        monthlyProfitGoalTwd: state.monthlyProfitGoalTwd
+                        monthlyProfitGoalTwd: state.monthlyProfitGoalTwd,
+                        useAiSummary: state.useAiSummary,
+                        aiSummaryModel: state.aiSummaryModel
                     )
                 )
                 return .none
@@ -172,15 +186,23 @@ struct SettingsSnapshot: Equatable, Sendable {
     
     /// 每月淨獲利目標 (TWD)。
     var monthlyProfitGoalTwd: Decimal
-    
+
+    /// 是否啟用 AI 商品明細總結。
+    var useAiSummary: Bool
+
+    /// AI 總結使用的 Ollama 模型名稱。
+    var aiSummaryModel: String
+
     // MARK: - Static Properties
-    
+
     /// 預設設定。
     static let `default` = SettingsSnapshot(
         appearance: .system,
         notificationsEnabled: true,
         defaultCurrency: .twd,
-        monthlyProfitGoalTwd: 80_000
+        monthlyProfitGoalTwd: 80_000,
+        useAiSummary: false,
+        aiSummaryModel: AISummaryModelCatalog.defaultModel
     )
 }
 
@@ -221,12 +243,17 @@ extension SettingsStorage: DependencyKey {
                 }
                 return Decimal(raw)
             }()
-            
+            let useAiSummary = defaults.object(forKey: SettingsStorageKeys.useAiSummary) as? Bool ?? false
+            let storedModel = defaults.string(forKey: SettingsStorageKeys.aiSummaryModel)
+            let aiSummaryModel = (storedModel?.isEmpty == false) ? storedModel! : SettingsSnapshot.default.aiSummaryModel
+
             return SettingsSnapshot(
                 appearance: appearance,
                 notificationsEnabled: notifications,
                 defaultCurrency: currency,
-                monthlyProfitGoalTwd: goalValue
+                monthlyProfitGoalTwd: goalValue,
+                useAiSummary: useAiSummary,
+                aiSummaryModel: aiSummaryModel
             )
         },
         save: { snapshot in
@@ -235,6 +262,8 @@ extension SettingsStorage: DependencyKey {
             defaults.set(snapshot.notificationsEnabled, forKey: SettingsStorageKeys.notifications)
             defaults.set(snapshot.defaultCurrency.rawValue, forKey: SettingsStorageKeys.defaultCurrency)
             defaults.set(NSDecimalNumber(decimal: snapshot.monthlyProfitGoalTwd).doubleValue, forKey: SettingsStorageKeys.monthlyProfitGoalTwd)
+            defaults.set(snapshot.useAiSummary, forKey: SettingsStorageKeys.useAiSummary)
+            defaults.set(snapshot.aiSummaryModel, forKey: SettingsStorageKeys.aiSummaryModel)
         }
     )
     
@@ -264,6 +293,12 @@ private enum SettingsStorageKeys {
     
     /// 月度淨獲利目標的 key。
     nonisolated static let monthlyProfitGoalTwd = "settings.monthlyProfitGoalTwd"
+
+    /// AI 總結開關的 key。
+    nonisolated static let useAiSummary = "settings.useAiSummary"
+
+    /// AI 總結模型名稱的 key。
+    nonisolated static let aiSummaryModel = "settings.aiSummaryModel"
 }
 
 extension SettingsSnapshot {
@@ -275,6 +310,8 @@ extension SettingsSnapshot {
         appearance: .system,
         notificationsEnabled: true,
         defaultCurrency: .twd,
-        monthlyProfitGoalTwd: 80_000
+        monthlyProfitGoalTwd: 80_000,
+        useAiSummary: false,
+        aiSummaryModel: AISummaryModelCatalog.defaultModel
     )
 }

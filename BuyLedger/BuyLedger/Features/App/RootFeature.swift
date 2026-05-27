@@ -7,6 +7,9 @@
 
 import ComposableArchitecture
 import Foundation
+#if canImport(AppKit)
+import AppKit
+#endif
 
 /// App 根層級狀態與導覽。
 @Reducer
@@ -41,6 +44,9 @@ struct RootFeature {
 
         /// 付款方式主檔管理狀態；理由同 ``categoryManagement``。
         var paymentMethodManagement = LookupManagementFeature.State(kind: .paymentMethod)
+
+        /// 設為 `true` 時，「更多」分頁的 NavigationStack 會 push 到設定頁；供 AI 提示 alert 深連結開啟設定用 (iOS/iPadOS)。
+        var showsSettingsFromDeepLink = false
     }
 
     // MARK: - Action
@@ -54,6 +60,9 @@ struct RootFeature {
 
         /// 使用者切換主要分頁。
         case tabSelected(RootTab)
+
+        /// 設定「更多」分頁是否 push 到設定頁 (deep-link 開關，供 MoreView 的 navigationDestination 雙向繫結)。
+        case setShowsSettingsFromDeepLink(Bool)
 
         /// 從非訂單分頁 (如 Dashboard 的 onboarding) 發起「新訂單」流程；會同時把 selectedTab 切到 `.orders` 並把 ``OrdersFeature/State/editOrder`` 設好，讓 ``OrdersView`` 的 sheet 能立刻顯示。
         case startNewOrder
@@ -142,6 +151,10 @@ struct RootFeature {
                 state.selectedTab = tab
                 return .none
 
+            case let .setShowsSettingsFromDeepLink(value):
+                state.showsSettingsFromDeepLink = value
+                return .none
+
             case .startNewOrder:
                 state.selectedTab = .orders
                 state.orders.editOrder = OrderEditFeature.State()
@@ -169,6 +182,22 @@ struct RootFeature {
                 state.orders.selectedDatePeriod = .all
                 state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now).first?.id
                 return .none
+
+            // AI 未開啟提示 alert 的「前往開啟」：導覽由 root 負責。
+            case .orders(.aiDisabledAlert(.presented(.goToAISettings))):
+                #if os(macOS)
+                // macOS：開啟標準偏好設定視窗 (⌘,)，AI 開關位於 SettingsMacView。
+                return .run { _ in
+                    await MainActor.run {
+                        _ = NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
+                    }
+                }
+                #else
+                // iOS / iPadOS：切到「更多」分頁並 push 設定頁。
+                state.selectedTab = .more
+                state.showsSettingsFromDeepLink = true
+                return .none
+                #endif
 
             case .orders:
                 return .none

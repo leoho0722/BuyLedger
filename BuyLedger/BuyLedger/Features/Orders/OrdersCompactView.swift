@@ -46,7 +46,10 @@ struct OrdersCompactView: View {
                     
                     chipStrip(palette: palette)
                     dateChipStrip(palette: palette)
-                    
+                    if !store.availableCategories.isEmpty {
+                        categoryChipStrip(palette: palette)
+                    }
+
                     if let errorMessage = store.errorMessage {
                         Text(errorMessage)
                             .font(.footnote)
@@ -68,6 +71,14 @@ struct OrdersCompactView: View {
                         .font(.subheadline.weight(.medium))
                         .monospacedDigit()
                         .foregroundStyle(palette.secondaryLabel)
+
+                    Button {
+                        store.send(.aiSummaryTapped)
+                    } label: {
+                        Image(systemName: "sparkles")
+                    }
+                    .accessibilityLabel("AI 商品明細總結")
+                    .disabled(store.state.filteredOrders(referenceDate: date.now).isEmpty)
 
                     Button {
                         store.send(.newOrderTapped)
@@ -213,6 +224,50 @@ private extension OrdersCompactView {
         .buttonStyle(.plain)
     }
     
+    /// 商品類別篩選 chip 橫向滾動列。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 類別 chip 列 view。
+    func categoryChipStrip(palette: BLPalette) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: BLSpacing.small) {
+                categoryChipButton(title: "全部", category: nil, palette: palette)
+                ForEach(store.availableCategories, id: \.self) { category in
+                    categoryChipButton(title: category, category: category, palette: palette)
+                }
+            }
+            .padding(.horizontal, BLSpacing.large)
+        }
+    }
+
+    /// 單一商品類別 chip。
+    /// - Parameters:
+    ///   - title: 顯示文字。
+    ///   - category: 對應類別；`nil` 代表「全部」。
+    ///   - palette: 目前外觀使用的色盤。
+    /// - Returns: 類別 chip 按鈕 view。
+    func categoryChipButton(title: String, category: String?, palette: BLPalette) -> some View {
+        let isSelected = store.selectedCategory == category
+
+        return Button {
+            store.send(.categoryFilterSelected(category))
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "tag")
+                    .font(.caption.weight(.semibold))
+
+                Text(title)
+                    .font(.subheadline.weight(.semibold))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(isSelected ? palette.purple : palette.secondaryLabel)
+            .padding(.vertical, 7)
+            .padding(.horizontal, 14)
+            .background(isSelected ? palette.purple.opacity(0.18) : palette.fillTertiary)
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
     /// 訂單列表區塊，包含載入、空狀態與「以日期分組」的資料區段。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 列表區塊 view。

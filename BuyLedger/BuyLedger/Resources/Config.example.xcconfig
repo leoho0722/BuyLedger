@@ -12,3 +12,6 @@
 
 // 申請於 https://www.exchangerate-api.com/ — 30 日 sparkline 需要 Pro/Business 方案
 EXCHANGE_RATE_API_KEY =
+
+// 申請於 https://ollama.com/ (Account → API keys) — AI 商品明細總結走 Ollama Cloud chat streaming
+OLLAMA_API_KEY =

@@ -37,7 +37,11 @@ struct OrdersView: View {
             .sheet(item: $store.scope(state: \.editOrder, action: \.editOrder)) { editStore in
                 OrderEditView(store: editStore)
             }
+            .sheet(item: $store.scope(state: \.aiSummary, action: \.aiSummary)) { summaryStore in
+                AISummaryView(store: summaryStore)
+            }
             .alert($store.scope(state: \.deletionConfirmation, action: \.deletionConfirmation))
+            .alert($store.scope(state: \.aiDisabledAlert, action: \.aiDisabledAlert))
     }
     
     /// 依平台與尺寸分類選擇對應的訂單瀏覽 view。
@@ -84,6 +88,14 @@ private extension OrdersView {
                         .font(.subheadline.weight(.medium))
                         .monospacedDigit()
                         .foregroundStyle(palette.secondaryLabel)
+
+                    Button {
+                        store.send(.aiSummaryTapped)
+                    } label: {
+                        Image(systemName: "sparkles")
+                    }
+                    .accessibilityLabel("AI 商品明細總結")
+                    .disabled(store.state.filteredOrders(referenceDate: date.now).isEmpty)
 
                     Button {
                         store.send(.newOrderTapped)
@@ -174,6 +186,9 @@ private extension OrdersView {
 
             chipScrollStrip(palette: palette)
             dateChipScrollStrip(palette: palette)
+            if !store.availableCategories.isEmpty {
+                categoryChipScrollStrip(palette: palette)
+            }
 
             if let errorMessage = store.errorMessage {
                 Text(errorMessage)
@@ -247,6 +262,49 @@ private extension OrdersView {
         }
     }
     
+    /// iPad 中間欄使用的橫向滾動商品類別 chip 列。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 類別 chip 列 view。
+    func categoryChipScrollStrip(palette: BLPalette) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: BLSpacing.small) {
+                categoryChip(title: "全部", category: nil, palette: palette)
+                ForEach(store.availableCategories, id: \.self) { category in
+                    categoryChip(title: category, category: category, palette: palette)
+                }
+            }
+        }
+    }
+
+    /// 單一商品類別 chip。
+    /// - Parameters:
+    ///   - title: 顯示文字。
+    ///   - category: 對應類別；`nil` 代表「全部」。
+    ///   - palette: 目前外觀使用的色盤。
+    /// - Returns: chip view。
+    func categoryChip(title: String, category: String?, palette: BLPalette) -> some View {
+        let isSelected = store.selectedCategory == category
+
+        return Button {
+            store.send(.categoryFilterSelected(category))
+        } label: {
+            HStack(spacing: 4) {
+                Image(systemName: "tag")
+                    .font(.caption2.weight(.semibold))
+
+                Text(title)
+                    .font(.footnote.weight(.semibold))
+                    .lineLimit(1)
+            }
+            .foregroundStyle(isSelected ? palette.purple : palette.secondaryLabel)
+            .padding(.vertical, 7)
+            .padding(.horizontal, 12)
+            .background(isSelected ? palette.purple.opacity(0.18) : palette.fillTertiary)
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
     /// 訂單詳情欄。
     @ViewBuilder
     var detailPane: some View {

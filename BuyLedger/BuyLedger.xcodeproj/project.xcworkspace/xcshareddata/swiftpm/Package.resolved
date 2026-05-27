@@ -1,5 +1,5 @@
 {
-  "originHash" : "79f2177274456fe71d5eebd72a06afbd0170cee91664cb19ef75dcd2c0d43aa2",
+  "originHash" : "8dd4dbaeafc23d6c47551a342e36c569acb62ba16fb29fc4577be1f29d1aa30d",
   "pins" : [
     {
       "identity" : "abseil-cpp-binary",
@@ -242,6 +242,24 @@
       "state" : {
         "revision" : "9de99a78f099e59caf2b2beec65a4c45d54b2081",
         "version" : "603.0.1"
+      }
+    },
+    {
+      "identity" : "swiftui-math",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gonzalezreal/swiftui-math",
+      "state" : {
+        "revision" : "0b5c2cfaaec8d6193db206f675048eeb5ce95f71",
+        "version" : "0.1.0"
+      }
+    },
+    {
+      "identity" : "textual",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/gonzalezreal/textual",
+      "state" : {
+        "revision" : "5b06b811c0f5313b6b84bbef98c635a630638c38",
+        "version" : "0.3.1"
       }
     },
     {

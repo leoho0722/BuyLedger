@@ -21,6 +21,11 @@ struct SettingsView: View {
     /// 是否顯示「預設幣別」選擇 sheet。
     @State private var showsCurrencySheet = false
 
+#if DEBUG
+    /// 是否顯示「AI 模型」選擇 sheet (僅 Debug build)。
+    @State private var showsModelSheet = false
+#endif
+
     // MARK: - View Body
     
     /// 設定頁畫面內容。
@@ -37,7 +42,35 @@ struct SettingsView: View {
             Section("通知") {
                 Toggle("接收訂單提醒", isOn: $store.notificationsEnabled)
             }
-            
+
+            Section {
+                Toggle("啟用 AI 總結", isOn: $store.useAiSummary)
+#if DEBUG
+                Button {
+                    showsModelSheet = true
+                } label: {
+                    HStack {
+                        Text("模型")
+                            .foregroundStyle(.primary)
+                        Spacer()
+                        Text(store.aiSummaryModel)
+                            .foregroundStyle(.secondary)
+                        Image(systemName: "chevron.right")
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.tertiary)
+                    }
+                    .contentShape(Rectangle())
+                }
+                .buttonStyle(.plain)
+#endif
+            } header: {
+                Text("AI 商品明細總結")
+            } footer: {
+                Text("在訂單列表點「AI 總結」(sparkles) 即可彙整目前篩選的商品明細。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
             Section("預設幣別") {
                 Button {
                     showsCurrencySheet = true
@@ -114,6 +147,29 @@ struct SettingsView: View {
                 }
             )
         }
+#if DEBUG
+        .sheet(isPresented: $showsModelSheet) {
+            OptionPickerSheet(
+                title: "選擇 AI 模型",
+                allowsAdd: true,
+                searchable: false,
+                addButtonTitle: "自訂模型",
+                emptyTitle: "尚無模型",
+                emptyDescription: "輸入自訂模型名稱以開始使用。",
+                addAlertTitle: "自訂 AI 模型",
+                addFieldPlaceholder: "模型名稱 (例如 gpt-oss:120b)",
+                addAlertMessage: "輸入 Ollama Cloud 上可用的模型名稱。",
+                options: AISummaryModelCatalog.candidates,
+                selected: store.aiSummaryModel,
+                onSelect: { model in
+                    store.aiSummaryModel = model
+                },
+                onAdd: { model in
+                    store.aiSummaryModel = model
+                }
+            )
+        }
+#endif
         .task {
             await store.send(.task).finish()
         }
