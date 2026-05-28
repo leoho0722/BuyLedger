@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 import Testing
 @testable import BuyLedger
 
@@ -38,18 +39,21 @@ struct RootFeatureTests {
         state.orders.orders = LedgerOrder.sampleOrders
         state.orders.selectedStatus = .status(.delivered)
         state.orders.selectedDatePeriod = .thisMonth
+        // 預先設定殘留的類別篩選，驗證 smart group 跳轉會一併清掉它，避免「狀態 + 類別」兩條條件夾擊出空列表。
+        state.orders.selectedCategory = "美妝"
         state.orders.selectedOrderID = "BL-2604-016"
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
         }
-        
+
         await store.send(.smartGroupSelected(.shipping)) {
             $0.selectedTab = .orders
             $0.orders.selectedStatus = .status(.shipping)
             $0.orders.selectedDatePeriod = .all
+            $0.orders.selectedCategory = nil
             $0.orders.selectedOrderID = "BL-2604-018"
         }
     }
@@ -82,6 +86,85 @@ struct RootFeatureTests {
         }
     }
 
+    @Test func customerSelectedResetsResidualCategoryFilter() async {
+        var state = RootFeature.State()
+        state.selectedTab = .dashboard
+        state.orders.orders = LedgerOrder.sampleOrders
+        // 預先設定殘留的類別篩選，驗證客戶名深連結會清掉它，避免在另一頁帶著舊類別狀態跳轉後撈不到任何訂單。
+        state.orders.selectedCategory = "精品"
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+        }
+
+        await store.send(.customerSelected("Alice")) {
+            $0.selectedTab = .orders
+            $0.orders.searchText = "Alice"
+            $0.orders.selectedCategory = nil
+        }
+    }
+
+    @Test func categorySelectedJumpsToOrdersAndAppliesCategoryFilter() async {
+        var state = RootFeature.State()
+        state.selectedTab = .dashboard
+        state.orders.orders = LedgerOrder.sampleOrders
+        // 預先把幾個篩選器設成非預設值，驗證 categorySelected 會將它們一併重設、避免「狀態 + 日期 + 搜尋」與類別深連結互卡。
+        state.orders.selectedStatus = .status(.delivered)
+        state.orders.selectedDatePeriod = .thisMonth
+        state.orders.searchText = "stale query"
+        state.orders.selectedOrderID = "BL-2604-016"
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+        }
+
+        // 從「分析」分頁點擊「美妝」類別 row → 切到「訂單」分頁、類別篩選膠囊套用「美妝」、其餘篩選器全部歸零、選取為 filtered 後第一筆。
+        await store.send(.categorySelected("美妝")) {
+            $0.selectedTab = .orders
+            $0.orders.selectedStatus = .all
+            $0.orders.selectedDatePeriod = .all
+            $0.orders.searchText = ""
+            $0.orders.selectedCategory = "美妝"
+            $0.orders.selectedOrderID = "BL-2604-018"
+        }
+    }
+
+    @Test func categorySelectedFiltersOrdersByExactCategoryFieldNotSearchText() async {
+        // 設計這組 fixture 讓「searchText 路徑」與「selectedCategory 路徑」結果不同：
+        // - realBeauty1 / realBeauty2 的 category 欄位即 "美妝"，兩條路徑都會包進來。
+        // - falsePositive 的 category 是 "服飾"，但客戶名「美妝小編」會讓舊的 searchText="美妝" 模糊命中。
+        //   新的 selectedCategory="美妝" 走精準欄位比對，必須排除這筆訂單。
+        let realBeauty1 = Self.makeTestOrder(id: "TEST-BEAUTY-1", category: "美妝", customerName: "林書宇")
+        let falsePositive = Self.makeTestOrder(id: "TEST-FALSE-1", category: "服飾", customerName: "美妝小編")
+        let realBeauty2 = Self.makeTestOrder(id: "TEST-BEAUTY-2", category: "美妝", customerName: "Carol")
+
+        var state = RootFeature.State()
+        state.selectedTab = .dashboard
+        state.orders.orders = [realBeauty1, falsePositive, realBeauty2]
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+        }
+
+        await store.send(.categorySelected("美妝")) {
+            $0.selectedTab = .orders
+            $0.orders.selectedCategory = "美妝"
+            $0.orders.selectedOrderID = "TEST-BEAUTY-1"
+        }
+
+        // 進一步以 filteredOrders 驗證 false-positive 確實被排除——舊的 searchText 路徑會把 "美妝小編" 模糊命中、新的欄位精準比對不會。
+        let filteredIDs = store.state.orders
+            .filteredOrders(referenceDate: TestDependencies.fixedNow)
+            .map(\.id)
+        #expect(filteredIDs == ["TEST-BEAUTY-1", "TEST-BEAUTY-2"])
+    }
+
 #if !os(macOS)
     @Test func goToAISettingsDeepLinksToMoreTabAndSettings() async {
         var state = RootFeature.State()
@@ -106,4 +189,44 @@ struct RootFeatureTests {
         #expect(store.state.showsSettingsFromDeepLink == true)
     }
 #endif
+}
+
+// MARK: - Private Method
+
+private extension RootFeatureTests {
+
+    /// 建立用於跨頁深連結測試的最小化訂單；除了 `id`、`category`、`customerName` 之外，其餘欄位採可預測的中性預設，避免汙染篩選器斷言。
+    /// - Parameters:
+    ///   - id: 訂單編號。
+    ///   - category: 商品類別欄位 (測試精準欄位比對的關鍵欄位)。
+    ///   - customerName: 客戶名稱 (用於塞入會被舊 `searchText` 路徑模糊命中的字串)。
+    /// - Returns: 可塞進 `OrdersFeature.State.orders` 的訂單實例。
+    static func makeTestOrder(
+        id: String,
+        category: String,
+        customerName: String
+    ) -> LedgerOrder {
+        LedgerOrder(
+            id: id,
+            customer: LedgerCustomer(name: customerName, initials: "TC", tier: .new),
+            status: .purchased,
+            currency: .twd,
+            date: TestDependencies.fixedNow,
+            items: [],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 0,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "測試",
+            category: category,
+            paymentMethod: "",
+            notes: ""
+        )
+    }
 }

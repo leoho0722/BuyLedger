@@ -164,6 +164,8 @@ struct RootFeature {
                 state.selectedTab = .orders
                 state.orders.selectedStatus = .status(status)
                 state.orders.selectedDatePeriod = .all
+                // 清掉殘留類別篩選，避免使用者帶著前一頁的類別狀態跳到 smart group 後被「狀態 + 類別」夾擊出空列表。
+                state.orders.selectedCategory = nil
                 state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now).first?.id
                 return .none
 
@@ -172,14 +174,19 @@ struct RootFeature {
                 state.orders.searchText = name
                 state.orders.selectedStatus = .all
                 state.orders.selectedDatePeriod = .all
+                // 同 smart group：客戶名深連結時清掉殘留類別篩選。
+                state.orders.selectedCategory = nil
                 state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now).first?.id
                 return .none
 
             case let .categorySelected(category):
+                // 從分析頁類別排行深連結進訂單頁時，以 `selectedCategory` 精準欄位比對而非 `searchText` 模糊比對：
+                // 後者會把品名/客戶名等含相同字串的訂單誤包進來，也讓訂單頁的類別篩選膠囊無法 highlight。
                 state.selectedTab = .orders
-                state.orders.searchText = category
+                state.orders.searchText = ""
                 state.orders.selectedStatus = .all
                 state.orders.selectedDatePeriod = .all
+                state.orders.selectedCategory = category
                 state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now).first?.id
                 return .none
 
