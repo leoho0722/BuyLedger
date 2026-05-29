@@ -10,9 +10,9 @@ import SwiftUI
 
 /// iPhone Compact 訂單頁的整合篩選 sheet。
 ///
-/// 把「日期區間」與「商品類別」兩種篩選整合到單一 sheet，由 ``OrdersCompactView`` 的整合 trigger button 開啟。
+/// 把「日期區間」「商品類別」與「付款方式」三種篩選整合到單一 sheet，由 ``OrdersCompactView`` 的整合 trigger button 開啟。
 ///
-/// 結構：`NavigationStack` 包 `List` 兩個 `Section`，左上 toolbar「取消」按鈕收合 sheet。第一個 `Section` 為「日期區間」，列出 ``OrderDatePeriod/orderBrowsingCases``；第二個 `Section` 為「商品類別」，首列固定「全部」清除選項，其後依 ``OrdersFeature/State/availableCategories`` 列出 (受搜尋過濾)。點選任一列 dispatch 對應 ``OrdersFeature/Action`` 後 sheet 自動 dismiss。
+/// 結構：`NavigationStack` 包 `List` 三個 `Section`，左上 toolbar「取消」按鈕收合 sheet。第一個 `Section` 為「日期區間」，列出 ``OrderDatePeriod/orderBrowsingCases``；第二個 `Section` 為「付款方式」，首列固定「全部」清除選項，其後依 ``OrdersFeature/State/availablePaymentMethods`` 列出 (受搜尋過濾)；第三個 `Section` 為「商品類別」，同樣首列固定「全部」清除選項，其後依 ``OrdersFeature/State/availableCategories`` 列出 (受搜尋過濾)。點選任一列 dispatch 對應 ``OrdersFeature/Action`` 後 sheet 自動 dismiss。
 ///
 /// 此元件**僅供 iPhone Compact 使用**；iPad regular 與 macOS 仍使用各自的 chip 列 + ``OptionPickerSheet`` 類別 trigger，與此 sheet 無關。
 ///
@@ -40,6 +40,11 @@ struct OrderFilterSheet: View {
     /// 點 row 只更新此 pending state，不 dispatch；要按右上「套用」才把變動 commit 到 store。
     @State private var pendingCategory: String?
 
+    /// 使用者在 sheet 內 pending 的付款方式選擇 (`nil` 代表「全部」)。
+    ///
+    /// 點 row 只更新此 pending state，不 dispatch；要按右上「套用」才把變動 commit 到 store。
+    @State private var pendingPaymentMethod: String?
+
     // MARK: - Init
 
     /// 從目前 store state 取得 pending 初值。
@@ -48,6 +53,7 @@ struct OrderFilterSheet: View {
         self.store = store
         self._pendingDatePeriod = State(initialValue: store.state.selectedDatePeriod)
         self._pendingCategory = State(initialValue: store.state.selectedCategory)
+        self._pendingPaymentMethod = State(initialValue: store.state.selectedPaymentMethod)
     }
 
     // MARK: - View Body
@@ -57,6 +63,7 @@ struct OrderFilterSheet: View {
         NavigationStack {
             List {
                 datePeriodSection
+                paymentMethodSection
                 categorySection
             }
             .navigationTitle("篩選")
@@ -126,6 +133,27 @@ private extension OrderFilterSheet {
             }
         } header: {
             Text("商品類別")
+        }
+    }
+
+    /// 「付款方式」section：第一列固定「全部」clear row，其後依 ``filteredPaymentMethods`` 列出。
+    ///
+    /// 當搜尋無匹配 (`filteredPaymentMethods.isEmpty`) 時，付款方式列以 `ContentUnavailableView` 空狀態取代；clear row 仍維持顯示。
+    /// 當 `availablePaymentMethods` 本身為空時，行為相同 (clear row + 空狀態描述「尚無付款方式」)。
+    @ViewBuilder
+    var paymentMethodSection: some View {
+        Section {
+            paymentMethodClearRow
+
+            if filteredPaymentMethods.isEmpty {
+                paymentMethodEmptyStateRow
+            } else {
+                ForEach(filteredPaymentMethods, id: \.self) { paymentMethod in
+                    paymentMethodRow(paymentMethod)
+                }
+            }
+        } header: {
+            Text("付款方式")
         }
     }
 }
@@ -230,6 +258,73 @@ private extension OrderFilterSheet {
             description: Text("試試其他搜尋關鍵字，或回到設定頁新增類別。")
         )
     }
+
+    /// 付款方式「全部」清除 row：點選只把 ``pendingPaymentMethod`` 設為 `nil`，不 dispatch、不 dismiss。
+    ///
+    /// 當 ``pendingPaymentMethod`` 為 `nil` 時顯示 checkmark；不參與 ``filteredPaymentMethods`` 搜尋過濾、永遠顯示。
+    var paymentMethodClearRow: some View {
+        Button {
+            pendingPaymentMethod = nil
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
+                Image(systemName: "creditcard")
+                    .foregroundStyle(.tint)
+
+                Text("全部")
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer()
+
+                if pendingPaymentMethod == nil {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(.tint)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 單一付款方式 row：creditcard icon + 付款方式名 + 末端 checkmark (當該付款方式為目前 pending 選擇時)。
+    ///
+    /// 點選只更新 ``pendingPaymentMethod``，不 dispatch、不 dismiss。多行支援同 ``datePeriodRow(_:)`` 規格。
+    /// - Parameter paymentMethod: 該列代表的付款方式名稱。
+    /// - Returns: row view。
+    func paymentMethodRow(_ paymentMethod: String) -> some View {
+        Button {
+            pendingPaymentMethod = paymentMethod
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
+                Image(systemName: "creditcard")
+                    .foregroundStyle(.tint)
+
+                Text(paymentMethod)
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+
+                Spacer()
+
+                if pendingPaymentMethod == paymentMethod {
+                    Image(systemName: "checkmark")
+                        .foregroundStyle(.tint)
+                }
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 付款方式 section 在搜尋無匹配或付款方式清單本身為空時顯示的空狀態 row。
+    var paymentMethodEmptyStateRow: some View {
+        ContentUnavailableView(
+            "沒有符合的付款方式",
+            systemImage: "tray",
+            description: Text("試試其他搜尋關鍵字，或回到設定頁新增付款方式。")
+        )
+    }
 }
 
 // MARK: - Private Method
@@ -248,6 +343,10 @@ private extension OrderFilterSheet {
             store.send(.categoryFilterSelected(pendingCategory))
         }
 
+        if pendingPaymentMethod != store.state.selectedPaymentMethod {
+            store.send(.paymentMethodFilterSelected(pendingPaymentMethod))
+        }
+
         dismiss()
     }
 
@@ -263,6 +362,23 @@ private extension OrderFilterSheet {
 
         return store.state.availableCategories.filter { category in
             category.lowercased().contains(trimmed)
+        }
+    }
+
+    /// 依 ``searchText`` 過濾後的付款方式清單。
+    ///
+    /// 取 ``OrdersFeature/State/availablePaymentMethods`` 的 `name` 欄位 (篩選只需名稱、不需 `isCardless` 旗標)。
+    /// 空字串 (或全空白) 時返回完整清單；否則以 case-insensitive `contains` 比對付款方式名稱。
+    /// clear row「全部」不參與此過濾，由 ``paymentMethodSection`` 在外層永遠渲染。
+    var filteredPaymentMethods: [String] {
+        let names = store.state.availablePaymentMethods.map(\.name)
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        guard !trimmed.isEmpty else {
+            return names
+        }
+
+        return names.filter { name in
+            name.lowercased().contains(trimmed)
         }
     }
 }
@@ -299,15 +415,21 @@ private extension OrderFilterSheet {
     )
 }
 
-/// 共用的 Preview 起手 state：注入指定的篩選組合與 sample 類別清單。
+/// 共用的 Preview 起手 state：注入指定的篩選組合與 sample 類別、付款方式清單。
 /// - Parameters:
 ///   - date: 預設選中的日期區間。
 ///   - category: 預設選中的類別；`nil` 代表「全部」。
+///   - paymentMethod: 預設選中的付款方式；`nil` 代表「全部」。
 /// - Returns: 已套用篩選預設的 `OrdersFeature.State`。
-private func previewState(date: OrderDatePeriod, category: String?) -> OrdersFeature.State {
+private func previewState(
+    date: OrderDatePeriod,
+    category: String?,
+    paymentMethod: String? = nil
+) -> OrdersFeature.State {
     var state = OrdersFeature.State()
     state.selectedDatePeriod = date
     state.selectedCategory = category
+    state.selectedPaymentMethod = paymentMethod
     state.categoryMaster = [
         "3C",
         "美妝",
@@ -317,6 +439,12 @@ private func previewState(date: OrderDatePeriod, category: String?) -> OrdersFea
         "零食",
         "書籍",
         "aespa Lemonade QQ 音樂限定禮包"
+    ]
+    state.paymentMethodMaster = [
+        PaymentMethodInfo(name: "信用卡", isCardless: false, isBankTransfer: false),
+        PaymentMethodInfo(name: "現金", isCardless: true, isBankTransfer: false),
+        PaymentMethodInfo(name: "銀行轉帳", isCardless: false, isBankTransfer: true),
+        PaymentMethodInfo(name: "LINE Pay", isCardless: false, isBankTransfer: false)
     ]
     state.hasLoaded = true
     return state

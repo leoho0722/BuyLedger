@@ -50,6 +50,9 @@ struct OrdersFeature {
         /// 目前套用的商品類別篩選；`nil` 代表全部類別。
         var selectedCategory: String?
 
+        /// 目前套用的付款方式篩選；`nil` 代表全部付款方式。
+        var selectedPaymentMethod: String?
+
         /// 目前選取的訂單編號。
         var selectedOrderID: LedgerOrder.ID?
 
@@ -108,8 +111,9 @@ struct OrdersFeature {
                     calendar: calendar
                 )
                 let matchesCategory = selectedCategory.map { $0 == order.category } ?? true
+                let matchesPaymentMethod = selectedPaymentMethod.map { $0 == order.paymentMethod } ?? true
 
-                return matchesStatus && matchesSearch && matchesDate && matchesCategory
+                return matchesStatus && matchesSearch && matchesDate && matchesCategory && matchesPaymentMethod
             }
         }
 
@@ -286,6 +290,9 @@ struct OrdersFeature {
         /// 使用者切換商品類別篩選 (`nil` = 全部)。
         case categoryFilterSelected(String?)
 
+        /// 使用者切換付款方式篩選 (`nil` = 全部)。
+        case paymentMethodFilterSelected(String?)
+
         /// 使用者輸入搜尋文字。
         case searchTextChanged(String)
         
@@ -450,6 +457,11 @@ struct OrdersFeature {
 
             case let .categoryFilterSelected(category):
                 state.selectedCategory = category
+                state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                return .none
+
+            case let .paymentMethodFilterSelected(paymentMethod):
+                state.selectedPaymentMethod = paymentMethod
                 state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
                 return .none
 

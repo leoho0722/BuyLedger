@@ -510,6 +510,65 @@ struct OrdersFeatureTests {
         #expect(filtered.map(\.id) == ["O1"])
     }
 
+    // MARK: - Payment Method Filter
+
+    @Test func paymentMethodFilterShowsMatchingPaymentMethodOnly() async {
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+        let targetPaymentMethod = LedgerOrder.sampleOrders.first!.paymentMethod
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+        }
+
+        let expectedFirstID = state
+            .filteredOrders(referenceDate: TestDependencies.fixedNow)
+            .first { $0.paymentMethod == targetPaymentMethod }?
+            .id
+
+        await store.send(.paymentMethodFilterSelected(targetPaymentMethod)) {
+            $0.selectedPaymentMethod = targetPaymentMethod
+            $0.selectedOrderID = expectedFirstID
+        }
+
+        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow)
+        #expect(!filtered.isEmpty)
+        #expect(filtered.allSatisfy { $0.paymentMethod == targetPaymentMethod })
+
+        await store.send(.paymentMethodFilterSelected(nil)) {
+            $0.selectedPaymentMethod = nil
+            $0.selectedOrderID = state.filteredOrders(referenceDate: TestDependencies.fixedNow).first?.id
+        }
+    }
+
+    @Test func paymentMethodFilterCombinesWithCategoryFilter() async {
+        var state = OrdersFeature.State()
+        state.orders = [
+            makeOrder(id: "P1", category: "beauty", paymentMethod: "信用卡"),
+            makeOrder(id: "P2", category: "beauty", paymentMethod: "現金"),
+            makeOrder(id: "P3", category: "snacks", paymentMethod: "信用卡"),
+        ]
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+        }
+
+        await store.send(.categoryFilterSelected("beauty")) {
+            $0.selectedCategory = "beauty"
+            $0.selectedOrderID = "P1"
+        }
+        await store.send(.paymentMethodFilterSelected("信用卡")) {
+            $0.selectedPaymentMethod = "信用卡"
+            $0.selectedOrderID = "P1"
+        }
+
+        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow)
+        #expect(filtered.map(\.id) == ["P1"])
+    }
+
     // MARK: - AI Summary Entry
 
     @Test func aiSummaryTappedWithSettingEnabledPresentsSheet() async {
@@ -566,7 +625,12 @@ struct OrdersFeatureTests {
     // MARK: - Helpers
 
     /// 建立僅供篩選測試使用的最小訂單；非相關欄位以零值/佔位填入。
-    private func makeOrder(id: String, category: String, status: OrderStatus) -> LedgerOrder {
+    private func makeOrder(
+        id: String,
+        category: String,
+        status: OrderStatus = .quoting,
+        paymentMethod: String = "付款"
+    ) -> LedgerOrder {
         LedgerOrder(
             id: id,
             customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .new),
@@ -586,7 +650,7 @@ struct OrdersFeatureTests {
             cardlessSupplementAmount: 0,
             orderSource: "來源",
             category: category,
-            paymentMethod: "付款",
+            paymentMethod: paymentMethod,
             notes: "",
             verificationStatus: ""
         )

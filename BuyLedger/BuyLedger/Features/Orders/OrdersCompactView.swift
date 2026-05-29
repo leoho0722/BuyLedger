@@ -29,7 +29,7 @@ struct OrdersCompactView: View {
     /// iPhone NavigationStack 的瀏覽路徑。改用 path-driven binding，使訂單被刪除時可手動把對應 id 從 path 移除，觸發系統自動 pop 回列表。
     @State private var navigationPath: [LedgerOrder.ID] = []
 
-    /// 整合篩選 sheet (日期 + 類別) 是否呈現。點 trigger button 後設為 `true`，由 ``OrderFilterSheet`` 內部 dismiss 結束回 `false`。
+    /// 整合篩選 sheet (日期 + 類別 + 付款方式) 是否呈現。點 trigger button 後設為 `true`，由 ``OrderFilterSheet`` 內部 dismiss 結束回 `false`。
     @State private var showsFilterSheet = false
 
     // MARK: - View Body
@@ -227,17 +227,23 @@ private extension OrdersCompactView {
         .buttonStyle(.plain)
     }
     
-    /// 整合篩選 trigger button：以單顆 Capsule 呈現「日期 + 類別」的摘要 (`篩選：<summary>`)，點擊後 present ``OrderFilterSheet``。
+    /// 整合篩選 trigger button：以單顆 Capsule 呈現「日期 + 類別 + 付款方式」的摘要 (`篩選：<summary>`)，點擊後 present ``OrderFilterSheet``。
     ///
-    /// - 兩個篩選都為預設 (`selectedDatePeriod == .all` 且 `selectedCategory == nil`) 時，label 為「篩選：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`。
-    /// - 任一篩選為非預設時，summary 由 ``filterSummary(date:category:)`` 計算 (規則見該 helper)、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`。
+    /// - 三個篩選都為預設 (`selectedDatePeriod == .all`、`selectedCategory == nil` 且 `selectedPaymentMethod == nil`) 時，label 為「篩選：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`。
+    /// - 任一篩選為非預設時，summary 由 ``filterSummary(date:category:paymentMethod:)`` 計算 (規則見該 helper)、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`。
     /// - Trigger 不再條件依賴 `availableCategories.isEmpty`——即使類別清單為空，trigger 仍渲染以提供日期篩選入口。
     /// - 長 summary 時 `Text` 多行換行 (透過 ``SwiftUI/Text/multilineTextAlignment(_:)`` + ``SwiftUI/View/fixedSize(horizontal:vertical:)``)，capsule 高度隨內容增長；icon 與 chevron 對齊第一行 baseline。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: trigger button view (含左側內距，與其他篩選膠囊水平對齊)。
     func unifiedFilterTrigger(palette: BLPalette) -> some View {
-        let hasActiveFilter = store.selectedDatePeriod != .all || store.selectedCategory != nil
-        let summary = filterSummary(date: store.selectedDatePeriod, category: store.selectedCategory)
+        let hasActiveFilter = store.selectedDatePeriod != .all
+            || store.selectedCategory != nil
+            || store.selectedPaymentMethod != nil
+        let summary = filterSummary(
+            date: store.selectedDatePeriod,
+            category: store.selectedCategory,
+            paymentMethod: store.selectedPaymentMethod
+        )
 
         return Button {
             showsFilterSheet = true
@@ -265,29 +271,33 @@ private extension OrdersCompactView {
         .padding(.horizontal, BLSpacing.large)
     }
 
-    /// 計算整合 trigger 顯示的 summary 字串。純函式，輸入只看當前 `(date, category)` 組合，與外部 state 解耦，方便測試與 preview。
+    /// 計算整合 trigger 顯示的 summary 字串。純函式，輸入只看當前 `(date, category, paymentMethod)` 組合，與外部 state 解耦，方便測試與 preview。
     ///
-    /// 規則：
-    /// - `(.all, nil)` → `全部`
-    /// - `(.all, X)` → `X`
-    /// - `(non-.all, nil)` → 日期 title (例如 `本月`)
-    /// - `(non-.all, X)` → 日期 title + ` · ` + X (例如 `本月 · 美妝`)
+    /// 規則：把「日期 (非 `.all`)」「類別」「付款方式」三個非預設片段依序以 ` · ` 串接；三者皆為預設時回傳「全部」。
+    /// - `(.all, nil, nil)` → `全部`
+    /// - `(.all, 美妝, nil)` → `美妝`
+    /// - `(本月, nil, nil)` → `本月`
+    /// - `(本月, 美妝, nil)` → `本月 · 美妝`
+    /// - `(本月, 美妝, 信用卡)` → `本月 · 美妝 · 信用卡`
+    /// - `(.all, nil, 信用卡)` → `信用卡`
     ///
     /// - Parameters:
     ///   - date: 目前選中的日期區間。
     ///   - category: 目前選中的類別；`nil` 代表「全部類別」。
+    ///   - paymentMethod: 目前選中的付款方式；`nil` 代表「全部付款方式」。
     /// - Returns: trigger label 中「篩選：」後接的 summary 字串。
-    func filterSummary(date: OrderDatePeriod, category: String?) -> String {
-        switch (date, category) {
-        case (.all, nil):
-            return "全部"
-        case (.all, let category?):
-            return category
-        case (let date, nil):
-            return date.title
-        case (let date, let category?):
-            return "\(date.title) · \(category)"
+    func filterSummary(date: OrderDatePeriod, category: String?, paymentMethod: String?) -> String {
+        var segments: [String] = []
+        if date != .all {
+            segments.append(date.title)
         }
+        if let category {
+            segments.append(category)
+        }
+        if let paymentMethod {
+            segments.append(paymentMethod)
+        }
+        return segments.isEmpty ? "全部" : segments.joined(separator: " · ")
     }
 
     /// 訂單列表區塊，包含載入、空狀態與「以日期分組」的資料區段。

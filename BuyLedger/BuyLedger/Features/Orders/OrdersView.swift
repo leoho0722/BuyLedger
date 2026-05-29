@@ -32,6 +32,9 @@ struct OrdersView: View {
     /// 商品類別篩選 sheet 是否呈現。僅 iPad regular 分支使用 (透過 ``regularSplitContent`` 與 ``listHeader`` 中的 trigger 觸發)；compact 與 macOS 分支會分別委派給 ``OrdersCompactView`` 與 ``OrdersMacView`` 各自的本地 state。
     @State private var showsCategoryPicker = false
 
+    /// 付款方式篩選 sheet 是否呈現。點 trigger button 後設為 `true`，由 ``OptionPickerSheet`` 內部 dismiss 結束回 `false`。
+    @State private var showsPaymentMethodPicker = false
+
     // MARK: - View Body
     
     /// 訂單功能的畫面內容。
@@ -132,6 +135,26 @@ private extension OrdersView {
                 )
             )
         }
+        .sheet(isPresented: $showsPaymentMethodPicker) {
+            OptionPickerSheet(
+                title: "選擇付款方式",
+                allowsAdd: false,
+                searchable: true,
+                emptyTitle: "沒有符合的付款方式",
+                emptyDescription: "試試其他搜尋關鍵字。",
+                options: store.availablePaymentMethods.map(\.name),
+                selected: store.selectedPaymentMethod ?? "",
+                onSelect: { paymentMethod in
+                    store.send(.paymentMethodFilterSelected(paymentMethod))
+                },
+                clearOption: OptionPickerSheet.ClearOption(
+                    title: "全部",
+                    onClear: {
+                        store.send(.paymentMethodFilterSelected(nil))
+                    }
+                )
+            )
+        }
     }
 
     /// 訂單列表欄。
@@ -209,6 +232,9 @@ private extension OrdersView {
 
             chipScrollStrip(palette: palette)
             dateChipScrollStrip(palette: palette)
+            if !store.availablePaymentMethods.isEmpty {
+                paymentMethodFilterTrigger(palette: palette)
+            }
             if !store.availableCategories.isEmpty {
                 categoryFilterTrigger(palette: palette)
             }
@@ -306,6 +332,43 @@ private extension OrdersView {
                     .font(.caption2.weight(.semibold))
 
                 Text("類別：\(currentLabel)")
+                    .font(.footnote.weight(.semibold))
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Image(systemName: "chevron.down")
+                    .font(.caption2.weight(.semibold))
+            }
+            .foregroundStyle(isSelected ? palette.purple : palette.secondaryLabel)
+            .padding(.vertical, 7)
+            .padding(.horizontal, 12)
+            .background(isSelected ? palette.purple.opacity(0.18) : palette.fillTertiary)
+            .clipShape(Capsule())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// iPad regular 中間欄使用的付款方式篩選 trigger button。
+    ///
+    /// 與 ``categoryFilterTrigger(palette:)`` 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「付款方式：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)。
+    ///
+    /// - 未選任何付款方式時，label 顯示「付款方式：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`。
+    /// - 已選某付款方式時，label 顯示「付款方式：<付款方式名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)。
+    func paymentMethodFilterTrigger(palette: BLPalette) -> some View {
+        let isSelected = store.selectedPaymentMethod != nil
+        let currentLabel = store.selectedPaymentMethod ?? "全部"
+
+        return Button {
+            showsPaymentMethodPicker = true
+        } label: {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Image(systemName: "creditcard")
+                    .font(.caption2.weight(.semibold))
+
+                Text("付款方式：\(currentLabel)")
                     .font(.footnote.weight(.semibold))
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
