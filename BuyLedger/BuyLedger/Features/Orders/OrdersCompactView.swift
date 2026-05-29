@@ -29,6 +29,9 @@ struct OrdersCompactView: View {
     /// iPhone NavigationStack 的瀏覽路徑。改用 path-driven binding，使訂單被刪除時可手動把對應 id 從 path 移除，觸發系統自動 pop 回列表。
     @State private var navigationPath: [LedgerOrder.ID] = []
 
+    /// 整合篩選 sheet (日期 + 類別) 是否呈現。點 trigger button 後設為 `true`，由 ``OrderFilterSheet`` 內部 dismiss 結束回 `false`。
+    @State private var showsFilterSheet = false
+
     // MARK: - View Body
     
     /// 訂單瀏覽畫面內容。
@@ -45,10 +48,7 @@ struct OrdersCompactView: View {
                     .padding(.horizontal, BLSpacing.large)
                     
                     chipStrip(palette: palette)
-                    dateChipStrip(palette: palette)
-                    if !store.availableCategories.isEmpty {
-                        categoryChipStrip(palette: palette)
-                    }
+                    unifiedFilterTrigger(palette: palette)
 
                     if let errorMessage = store.errorMessage {
                         Text(errorMessage)
@@ -137,6 +137,9 @@ struct OrdersCompactView: View {
                 let availableIDs = Set(newOrders.map(\.id))
                 navigationPath.removeAll { !availableIDs.contains($0) }
             }
+            .sheet(isPresented: $showsFilterSheet) {
+                OrderFilterSheet(store: store)
+            }
         }
     }
 }
@@ -224,48 +227,67 @@ private extension OrdersCompactView {
         .buttonStyle(.plain)
     }
     
-    /// 商品類別篩選 chip 橫向滾動列。
+    /// 整合篩選 trigger button：以單顆 Capsule 呈現「日期 + 類別」的摘要 (`篩選：<summary>`)，點擊後 present ``OrderFilterSheet``。
+    ///
+    /// - 兩個篩選都為預設 (`selectedDatePeriod == .all` 且 `selectedCategory == nil`) 時，label 為「篩選：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`。
+    /// - 任一篩選為非預設時，summary 由 ``filterSummary(date:category:)`` 計算 (規則見該 helper)、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`。
+    /// - Trigger 不再條件依賴 `availableCategories.isEmpty`——即使類別清單為空，trigger 仍渲染以提供日期篩選入口。
+    /// - 長 summary 時 `Text` 多行換行 (透過 ``SwiftUI/Text/multilineTextAlignment(_:)`` + ``SwiftUI/View/fixedSize(horizontal:vertical:)``)，capsule 高度隨內容增長；icon 與 chevron 對齊第一行 baseline。
     /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 類別 chip 列 view。
-    func categoryChipStrip(palette: BLPalette) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: BLSpacing.small) {
-                categoryChipButton(title: "全部", category: nil, palette: palette)
-                ForEach(store.availableCategories, id: \.self) { category in
-                    categoryChipButton(title: category, category: category, palette: palette)
-                }
-            }
-            .padding(.horizontal, BLSpacing.large)
-        }
-    }
-
-    /// 單一商品類別 chip。
-    /// - Parameters:
-    ///   - title: 顯示文字。
-    ///   - category: 對應類別；`nil` 代表「全部」。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 類別 chip 按鈕 view。
-    func categoryChipButton(title: String, category: String?, palette: BLPalette) -> some View {
-        let isSelected = store.selectedCategory == category
+    /// - Returns: trigger button view (含左側內距，與其他篩選膠囊水平對齊)。
+    func unifiedFilterTrigger(palette: BLPalette) -> some View {
+        let hasActiveFilter = store.selectedDatePeriod != .all || store.selectedCategory != nil
+        let summary = filterSummary(date: store.selectedDatePeriod, category: store.selectedCategory)
 
         return Button {
-            store.send(.categoryFilterSelected(category))
+            showsFilterSheet = true
         } label: {
-            HStack(spacing: 4) {
-                Image(systemName: "tag")
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
+                Image(systemName: "line.3.horizontal.decrease")
                     .font(.caption.weight(.semibold))
 
-                Text(title)
+                Text("篩選：\(summary)")
                     .font(.subheadline.weight(.semibold))
-                    .lineLimit(1)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Image(systemName: "chevron.down")
+                    .font(.caption.weight(.semibold))
             }
-            .foregroundStyle(isSelected ? palette.purple : palette.secondaryLabel)
+            .foregroundStyle(hasActiveFilter ? palette.purple : palette.secondaryLabel)
             .padding(.vertical, 7)
             .padding(.horizontal, 14)
-            .background(isSelected ? palette.purple.opacity(0.18) : palette.fillTertiary)
+            .background(hasActiveFilter ? palette.purple.opacity(0.18) : palette.fillTertiary)
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
+        .padding(.horizontal, BLSpacing.large)
+    }
+
+    /// 計算整合 trigger 顯示的 summary 字串。純函式，輸入只看當前 `(date, category)` 組合，與外部 state 解耦，方便測試與 preview。
+    ///
+    /// 規則：
+    /// - `(.all, nil)` → `全部`
+    /// - `(.all, X)` → `X`
+    /// - `(non-.all, nil)` → 日期 title (例如 `本月`)
+    /// - `(non-.all, X)` → 日期 title + ` · ` + X (例如 `本月 · 美妝`)
+    ///
+    /// - Parameters:
+    ///   - date: 目前選中的日期區間。
+    ///   - category: 目前選中的類別；`nil` 代表「全部類別」。
+    /// - Returns: trigger label 中「篩選：」後接的 summary 字串。
+    func filterSummary(date: OrderDatePeriod, category: String?) -> String {
+        switch (date, category) {
+        case (.all, nil):
+            return "全部"
+        case (.all, let category?):
+            return category
+        case (let date, nil):
+            return date.title
+        case (let date, let category?):
+            return "\(date.title) · \(category)"
+        }
     }
 
     /// 訂單列表區塊，包含載入、空狀態與「以日期分組」的資料區段。

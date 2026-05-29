@@ -29,6 +29,9 @@ struct OrdersView: View {
     /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:)`` 的「現在」時間；測試可注入固定值。
     @Dependency(\.date) private var date
 
+    /// 商品類別篩選 sheet 是否呈現。僅 iPad regular 分支使用 (透過 ``regularSplitContent`` 與 ``listHeader`` 中的 trigger 觸發)；compact 與 macOS 分支會分別委派給 ``OrdersCompactView`` 與 ``OrdersMacView`` 各自的本地 state。
+    @State private var showsCategoryPicker = false
+
     // MARK: - View Body
     
     /// 訂單功能的畫面內容。
@@ -109,8 +112,28 @@ private extension OrdersView {
         .task {
             await store.send(.task).finish()
         }
+        .sheet(isPresented: $showsCategoryPicker) {
+            OptionPickerSheet(
+                title: "選擇商品類別",
+                allowsAdd: false,
+                searchable: true,
+                emptyTitle: "沒有符合的類別",
+                emptyDescription: "試試其他搜尋關鍵字。",
+                options: store.availableCategories,
+                selected: store.selectedCategory ?? "",
+                onSelect: { category in
+                    store.send(.categoryFilterSelected(category))
+                },
+                clearOption: OptionPickerSheet.ClearOption(
+                    title: "全部",
+                    onClear: {
+                        store.send(.categoryFilterSelected(nil))
+                    }
+                )
+            )
+        }
     }
-    
+
     /// 訂單列表欄。
     ///
     /// 與 iPhone (compact) 的 ``OrdersCompactView`` 共用同一套 ``BLCard`` + 分隔線排版，讓三平台的訂單列表呈現一致的單一圓角卡片外觀。選取狀態僅反映在右側詳情欄，列表本身不畫選取高亮 (比照 iOS)；刪除走 row 的 context menu。
@@ -187,7 +210,7 @@ private extension OrdersView {
             chipScrollStrip(palette: palette)
             dateChipScrollStrip(palette: palette)
             if !store.availableCategories.isEmpty {
-                categoryChipScrollStrip(palette: palette)
+                categoryFilterTrigger(palette: palette)
             }
 
             if let errorMessage = store.errorMessage {
@@ -262,39 +285,34 @@ private extension OrdersView {
         }
     }
     
-    /// iPad 中間欄使用的橫向滾動商品類別 chip 列。
+    /// iPad regular 中間欄使用的商品類別篩選 trigger button。
+    ///
+    /// 與 ``OrdersCompactView`` / ``OrdersMacView`` 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「類別：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)。padding / font 沿用 iPad 中間欄既有 chip 的尺寸 (`.footnote` / `.caption2` / `12pt horizontal`)。
+    ///
+    /// - 未選任何類別時，label 顯示「類別：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`。
+    /// - 已選某類別時，label 顯示「類別：<類別名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`。
+    /// - 類別名過長時，label 套 ``SwiftUI/Text/lineLimit(_:)`` 與 ``SwiftUI/Text/truncationMode(_:)`` 以 ellipsis 結尾，capsule 不換行。
     /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 類別 chip 列 view。
-    func categoryChipScrollStrip(palette: BLPalette) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: BLSpacing.small) {
-                categoryChip(title: "全部", category: nil, palette: palette)
-                ForEach(store.availableCategories, id: \.self) { category in
-                    categoryChip(title: category, category: category, palette: palette)
-                }
-            }
-        }
-    }
-
-    /// 單一商品類別 chip。
-    /// - Parameters:
-    ///   - title: 顯示文字。
-    ///   - category: 對應類別；`nil` 代表「全部」。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: chip view。
-    func categoryChip(title: String, category: String?, palette: BLPalette) -> some View {
-        let isSelected = store.selectedCategory == category
+    /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)。
+    func categoryFilterTrigger(palette: BLPalette) -> some View {
+        let isSelected = store.selectedCategory != nil
+        let currentLabel = store.selectedCategory ?? "全部"
 
         return Button {
-            store.send(.categoryFilterSelected(category))
+            showsCategoryPicker = true
         } label: {
-            HStack(spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Image(systemName: "tag")
                     .font(.caption2.weight(.semibold))
 
-                Text(title)
+                Text("類別：\(currentLabel)")
                     .font(.footnote.weight(.semibold))
-                    .lineLimit(1)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Image(systemName: "chevron.down")
+                    .font(.caption2.weight(.semibold))
             }
             .foregroundStyle(isSelected ? palette.purple : palette.secondaryLabel)
             .padding(.vertical, 7)

@@ -26,6 +26,9 @@ struct OrdersMacView: View {
     /// 控制 inspector 是否顯示。
     @State private var showsInspector = true
 
+    /// 商品類別篩選 sheet 是否呈現。點 trigger button 後設為 `true`，由 ``OptionPickerSheet`` 內部 dismiss 結束回 `false`。
+    @State private var showsCategoryPicker = false
+
     /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:)`` 的「現在」時間；測試可注入固定值。
     @Dependency(\.date) private var date
 
@@ -39,7 +42,7 @@ struct OrdersMacView: View {
             titleAndFilters(palette: palette)
             searchAndDateRow(palette: palette)
             if !store.availableCategories.isEmpty {
-                categoryChipRow(palette: palette)
+                categoryFilterTrigger(palette: palette)
             }
             errorBanner(palette: palette)
             ordersList(palette: palette)
@@ -86,6 +89,26 @@ struct OrdersMacView: View {
         }
         .task {
             await store.send(.task).finish()
+        }
+        .sheet(isPresented: $showsCategoryPicker) {
+            OptionPickerSheet(
+                title: "選擇商品類別",
+                allowsAdd: false,
+                searchable: true,
+                emptyTitle: "沒有符合的類別",
+                emptyDescription: "試試其他搜尋關鍵字。",
+                options: store.availableCategories,
+                selected: store.selectedCategory ?? "",
+                onSelect: { category in
+                    store.send(.categoryFilterSelected(category))
+                },
+                clearOption: OptionPickerSheet.ClearOption(
+                    title: "全部",
+                    onClear: {
+                        store.send(.categoryFilterSelected(nil))
+                    }
+                )
+            )
         }
     }
 }
@@ -161,39 +184,34 @@ private extension OrdersMacView {
         }
     }
     
-    /// 商品類別篩選 chip 列 (橫向滾動，避免類別過多時溢出)。
+    /// macOS 訂單頁的商品類別篩選 trigger button。
+    ///
+    /// 與 ``OrdersCompactView`` / iPad 的 trigger 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「類別：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)。padding / font 沿用 macOS 既有 chip 的尺寸 (`.footnote` / `.caption2` / `6pt vertical / 12pt horizontal`)；sheet 尺寸沿用 ``OptionPickerSheet`` 既有 `400×480`，與訂單編輯流程選類別時一致。
+    ///
+    /// - 未選任何類別時，label 顯示「類別：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`。
+    /// - 已選某類別時，label 顯示「類別：<類別名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`。
+    /// - 類別名過長時，label 套 ``SwiftUI/Text/lineLimit(_:)`` 與 ``SwiftUI/Text/truncationMode(_:)`` 以 ellipsis 結尾，capsule 不換行。
     /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 類別 chip 列 view。
-    func categoryChipRow(palette: BLPalette) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: BLSpacing.small) {
-                categoryChip(title: "全部", category: nil, palette: palette)
-                ForEach(store.availableCategories, id: \.self) { category in
-                    categoryChip(title: category, category: category, palette: palette)
-                }
-            }
-        }
-    }
-
-    /// 單一商品類別 chip。
-    /// - Parameters:
-    ///   - title: 顯示文字。
-    ///   - category: 對應類別；`nil` 代表「全部」。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 類別 chip 按鈕 view。
-    func categoryChip(title: String, category: String?, palette: BLPalette) -> some View {
-        let isSelected = store.selectedCategory == category
+    /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)。
+    func categoryFilterTrigger(palette: BLPalette) -> some View {
+        let isSelected = store.selectedCategory != nil
+        let currentLabel = store.selectedCategory ?? "全部"
 
         return Button {
-            store.send(.categoryFilterSelected(category))
+            showsCategoryPicker = true
         } label: {
-            HStack(spacing: 4) {
+            HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Image(systemName: "tag")
                     .font(.caption2.weight(.semibold))
 
-                Text(title)
+                Text("類別：\(currentLabel)")
                     .font(.footnote.weight(.semibold))
-                    .lineLimit(1)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                Image(systemName: "chevron.down")
+                    .font(.caption2.weight(.semibold))
             }
             .foregroundStyle(isSelected ? palette.purple : palette.secondaryLabel)
             .padding(.vertical, 6)
