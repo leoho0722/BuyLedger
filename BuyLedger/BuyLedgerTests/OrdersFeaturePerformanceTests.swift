@@ -100,7 +100,8 @@ private extension OrdersFeaturePerformanceTests {
                 orderSource: "蝦皮",
                 category: category,
                 paymentMethod: "",
-                notes: ""
+                notes: "",
+                verificationStatus: ""
             )
         }
     }

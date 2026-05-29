@@ -101,6 +101,20 @@ actor OrderPersistence {
         try modelContext.save()
     }
 
+    /// 把所有以 `oldName` 為對帳狀態的訂單，更名為 `newName`。
+    /// - Parameters:
+    ///   - oldName: 原本的對帳狀態名稱。
+    ///   - newName: 新的對帳狀態名稱。
+    func renameVerificationStatus(from oldName: String, to newName: String) throws {
+        let descriptor = FetchDescriptor<OrderRecord>(
+            predicate: #Predicate { $0.verificationStatus == oldName }
+        )
+        for record in try modelContext.fetch(descriptor) {
+            record.verificationStatus = newName
+        }
+        try modelContext.save()
+    }
+
     /// 若目前資料表為空，將提供的 sample data 寫入；否則 no-op。
     ///
     /// 這個 helper 讓 App 第一次啟動時看到 demo 資料，後續編輯都會持久化。

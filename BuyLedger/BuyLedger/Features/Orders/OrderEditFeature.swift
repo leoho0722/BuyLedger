@@ -82,14 +82,22 @@ struct OrderEditFeature {
         /// 付款方式草稿。
         var draftPaymentMethod: String
 
+        /// 對帳狀態草稿。
+        ///
+        /// 僅在 ``showsVerificationStatusRow`` 為 `true` 時於 UI 顯示與編輯；切換到非無卡／非銀行匯款付款方式時，父層 `applyEditDraft` 會在儲存時清成空字串。
+        var draftVerificationStatus: String
+
         /// 可供選擇的訂單來源清單；由父層 reducer 從現有訂單與主檔聚合後注入，並在使用者新增來源時即時擴充。
         var availableOrderSources: [String]
 
         /// 可供選擇的商品類別清單；由父層 reducer 從現有訂單聚合後注入，並在使用者新增類別時即時擴充。
         var availableCategories: [String]
 
-        /// 可供選擇的付款方式清單 (含 `isCardless` 旗標)；由父層 reducer 從現有訂單與主檔聚合後注入，並在使用者新增方式時即時擴充。
+        /// 可供選擇的付款方式清單 (含 `isCardless` / `isBankTransfer` 旗標)；由父層 reducer 從現有訂單與主檔聚合後注入，並在使用者新增方式時即時擴充。
         var availablePaymentMethods: [PaymentMethodInfo]
+
+        /// 可供選擇的對帳狀態清單；由父層 reducer 從現有訂單與主檔聚合後注入，並在使用者新增狀態時即時擴充。
+        var availableVerificationStatuses: [String]
 
         /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供 (首次安裝＋無網路時 fallback 到 ``CurrencyCode/defaults``)。
         var availableCurrencies: [CurrencyCode]
@@ -110,6 +118,18 @@ struct OrderEditFeature {
             return availablePaymentMethods.first { $0.name == trimmed }?.isCardless ?? false
         }
 
+        /// 目前選到的付款方式是否屬於「銀行匯款」類；判定方式與 ``isSelectedPaymentMethodCardless`` 相同，只是改看 `isBankTransfer` 旗標。
+        var isSelectedPaymentMethodBankTransfer: Bool {
+            let trimmed = draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return false }
+            return availablePaymentMethods.first { $0.name == trimmed }?.isBankTransfer ?? false
+        }
+
+        /// 是否在「付款方式」row 底下顯示「對帳狀態」row：選到的付款方式屬於無卡或銀行匯款 (款項不會即時入帳、需事後人工對帳) 時為 `true`。
+        var showsVerificationStatusRow: Bool {
+            isSelectedPaymentMethodCardless || isSelectedPaymentMethodBankTransfer
+        }
+
         // MARK: - Init
 
         /// 依原始訂單建立草稿狀態。
@@ -117,13 +137,15 @@ struct OrderEditFeature {
         ///   - original: 要編輯的訂單；`nil` 表示新訂單。
         ///   - availableOrderSources: 表單可選用的既有訂單來源；不含原訂單來源時會在初始化時補上。
         ///   - availableCategories: 表單可選用的既有類別；不含原訂單類別時會在初始化時補上。
-        ///   - availablePaymentMethods: 表單可選用的既有付款方式；不含原訂單付款方式時會在初始化時補上 (補上的項目 `isCardless` 預設為 `false`)。
+        ///   - availablePaymentMethods: 表單可選用的既有付款方式；不含原訂單付款方式時會在初始化時補上 (補上的項目 `isCardless` / `isBankTransfer` 預設為 `false`)。
+        ///   - availableVerificationStatuses: 表單可選用的既有對帳狀態；不含原訂單對帳狀態時會在初始化時補上。
         ///   - currentDate: 新訂單時 ``draftDate`` 的預設值；caller 應從 `@Dependency(\.date)` 取得當下時間以維持可測試性。
         init(
             original: LedgerOrder? = nil,
             availableOrderSources: [String] = [],
             availableCategories: [String] = [],
             availablePaymentMethods: [PaymentMethodInfo] = [],
+            availableVerificationStatuses: [String] = [],
             availableCurrencies: [CurrencyCode] = CurrencyCode.defaults,
             currentDate: Date = Date()
         ) {
@@ -147,6 +169,7 @@ struct OrderEditFeature {
             self.draftNotes = original?.notes ?? ""
             self.draftDate = original?.date ?? currentDate
             self.draftPaymentMethod = original?.paymentMethod ?? ""
+            self.draftVerificationStatus = original?.verificationStatus ?? ""
 
             var orderSources = availableOrderSources
             let originalOrderSource = original?.orderSource.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -166,10 +189,17 @@ struct OrderEditFeature {
             let originalPaymentMethod = original?.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if !originalPaymentMethod.isEmpty,
                !paymentMethods.contains(where: { $0.name == originalPaymentMethod }) {
-                // 既有訂單的付款方式可能還沒被加進主檔；補上時 isCardless 預設 false，使用者可在主檔管理頁勾選後再次套用。
-                paymentMethods.append(PaymentMethodInfo(name: originalPaymentMethod, isCardless: false))
+                // 既有訂單的付款方式可能還沒被加進主檔；補上時旗標預設 false，使用者可在主檔管理頁勾選後再次套用。
+                paymentMethods.append(PaymentMethodInfo(name: originalPaymentMethod, isCardless: false, isBankTransfer: false))
             }
             self.availablePaymentMethods = paymentMethods.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+
+            var verificationStatuses = availableVerificationStatuses
+            let originalVerificationStatus = original?.verificationStatus.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !originalVerificationStatus.isEmpty, !verificationStatuses.contains(originalVerificationStatus) {
+                verificationStatuses.append(originalVerificationStatus)
+            }
+            self.availableVerificationStatuses = verificationStatuses.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
 
             var currencies = availableCurrencies
             let originalCurrency = original?.currency ?? .twd
@@ -203,10 +233,13 @@ struct OrderEditFeature {
         /// 使用者透過「新增類別」彈窗確認新增一筆類別名稱。
         case addCategoryTapped(String)
 
-        /// 使用者透過「新增付款方式」sheet 確認新增一筆付款方式，含「是否為無卡類」旗標。
-        case addPaymentMethodTapped(name: String, isCardless: Bool)
+        /// 使用者透過「新增付款方式」sheet 確認新增一筆付款方式，含「是否為無卡類」與「是否為銀行匯款類」旗標。
+        case addPaymentMethodTapped(name: String, isCardless: Bool, isBankTransfer: Bool)
 
-        /// 表單畫面 `.task` 觸發；用於從 repo 重新拉取最新的訂單來源／類別／付款方式主檔。
+        /// 使用者透過「新增對帳狀態」sheet 確認新增一筆對帳狀態名稱。
+        case addVerificationStatusTapped(String)
+
+        /// 表單畫面 `.task` 觸發；用於從 repo 重新拉取最新的訂單來源／類別／付款方式／對帳狀態主檔。
         case task
 
         /// 從 ``OrderSourceRepository`` 取回最新訂單來源主檔。
@@ -215,8 +248,11 @@ struct OrderEditFeature {
         /// 從 ``CategoryRepository`` 取回最新類別主檔。
         case availableCategoriesLoaded([String])
 
-        /// 從 ``PaymentMethodRepository`` 取回最新付款方式主檔 (含 `isCardless`)。
+        /// 從 ``PaymentMethodRepository`` 取回最新付款方式主檔 (含 `isCardless` / `isBankTransfer`)。
         case availablePaymentMethodsLoaded([PaymentMethodInfo])
+
+        /// 從 ``VerificationStatusRepository`` 取回最新對帳狀態主檔。
+        case availableVerificationStatusesLoaded([String])
 
         /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔。
         case availableCurrenciesLoaded([CurrencyCode])
@@ -235,6 +271,9 @@ struct OrderEditFeature {
 
     /// 付款方式主檔資料來源；理由同 ``categoryRepository``。
     @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
+
+    /// 對帳狀態主檔資料來源；理由同 ``categoryRepository``。
+    @Dependency(VerificationStatusRepository.self) private var verificationStatusRepository
 
     /// 幣別主檔資料來源；用於 sheet `.task` 從 cache 拉最新清單 (cache 由 ``RootFeature`` 啟動時 TTL 7 天刷新)。
     @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
@@ -281,16 +320,16 @@ struct OrderEditFeature {
                 state.draftCategory = trimmed
                 return .none
 
-            case let .addPaymentMethodTapped(rawName, isCardless):
+            case let .addPaymentMethodTapped(rawName, isCardless, isBankTransfer):
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return .none }
 
                 if let index = state.availablePaymentMethods.firstIndex(where: { $0.name == trimmed }) {
-                    // 同名情境視為「重新套用 isCardless 旗標」：例如使用者上次新增時忘了勾選無卡，這次重新觸發以更正。
-                    state.availablePaymentMethods[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless)
+                    // 同名情境視為「重新套用旗標」：例如使用者上次新增時忘了勾選無卡／銀行匯款，這次重新觸發以更正。
+                    state.availablePaymentMethods[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer)
                 } else {
                     var updated = state.availablePaymentMethods
-                    updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless))
+                    updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer))
                     state.availablePaymentMethods = updated.sorted {
                         $0.name.localizedStandardCompare($1.name) == .orderedAscending
                     }
@@ -298,10 +337,25 @@ struct OrderEditFeature {
                 state.draftPaymentMethod = trimmed
                 return .none
 
+            case let .addVerificationStatusTapped(rawName):
+                let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return .none }
+
+                if !state.availableVerificationStatuses.contains(trimmed) {
+                    var updated = state.availableVerificationStatuses
+                    updated.append(trimmed)
+                    state.availableVerificationStatuses = updated.sorted {
+                        $0.localizedStandardCompare($1) == .orderedAscending
+                    }
+                }
+                state.draftVerificationStatus = trimmed
+                return .none
+
             case .task:
                 let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
+                let verificationStatusRepository = verificationStatusRepository
                 let currencyMetadataRepository = currencyMetadataRepository
                 return .run { send in
                     async let orderSourcesTask: Void = {
@@ -319,12 +373,17 @@ struct OrderEditFeature {
                             await send(.availablePaymentMethodsLoaded(infos))
                         }
                     }()
+                    async let verificationStatusesTask: Void = {
+                        if let items = try? await verificationStatusRepository.fetchVerificationStatuses() {
+                            await send(.availableVerificationStatusesLoaded(items))
+                        }
+                    }()
                     async let currenciesTask: Void = {
                         if let codes = try? await currencyMetadataRepository.fetchCodes(), !codes.isEmpty {
                             await send(.availableCurrenciesLoaded(codes))
                         }
                     }()
-                    _ = await (orderSourcesTask, categoriesTask, paymentMethodsTask, currenciesTask)
+                    _ = await (orderSourcesTask, categoriesTask, paymentMethodsTask, verificationStatusesTask, currenciesTask)
                 }
 
             case let .availableOrderSourcesLoaded(items):
@@ -358,10 +417,21 @@ struct OrderEditFeature {
                 }
                 let draftPaymentMethod = state.draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !draftPaymentMethod.isEmpty, merged[draftPaymentMethod] == nil {
-                    merged[draftPaymentMethod] = PaymentMethodInfo(name: draftPaymentMethod, isCardless: false)
+                    merged[draftPaymentMethod] = PaymentMethodInfo(name: draftPaymentMethod, isCardless: false, isBankTransfer: false)
                 }
                 state.availablePaymentMethods = merged.values
                     .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+                return .none
+
+            case let .availableVerificationStatusesLoaded(items):
+                // 合併：把目前 draftVerificationStatus (可能是剛在 sheet 內新增、尚未走完整 add → repo 來回) 保留在清單。
+                var merged = Set(items)
+                let draftVerificationStatus = state.draftVerificationStatus.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !draftVerificationStatus.isEmpty {
+                    merged.insert(draftVerificationStatus)
+                }
+                state.availableVerificationStatuses = merged
+                    .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
                 return .none
 
             case let .availableCurrenciesLoaded(codes):

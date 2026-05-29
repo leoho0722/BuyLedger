@@ -50,7 +50,8 @@ extension LedgerOrder {
             orderSource: "蝦皮",
             category: "美妝",
             paymentMethod: "信用卡",
-            notes: "客戶指定到貨後先拍照確認，再安排出貨。"
+            notes: "客戶指定到貨後先拍照確認，再安排出貨。",
+            verificationStatus: ""
         ),
         LedgerOrder(
             id: "BL-2604-017",
@@ -82,7 +83,8 @@ extension LedgerOrder {
             orderSource: "官方網站",
             category: "服飾",
             paymentMethod: "銀行轉帳",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         ),
         LedgerOrder(
             id: "BL-2604-016",
@@ -119,7 +121,8 @@ extension LedgerOrder {
             orderSource: "Instagram",
             category: "美妝",
             paymentMethod: "信用卡",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         ),
         LedgerOrder(
             id: "BL-2604-015",
@@ -151,7 +154,8 @@ extension LedgerOrder {
             orderSource: "代購社團",
             category: "精品",
             paymentMethod: "",
-            notes: "報價中，待客戶確認顏色後再下單。"
+            notes: "報價中，待客戶確認顏色後再下單。",
+            verificationStatus: ""
         ),
         LedgerOrder(
             id: "BL-2604-014",
@@ -188,7 +192,8 @@ extension LedgerOrder {
             orderSource: "蝦皮",
             category: "美妝",
             paymentMethod: "LINE Pay",
-            notes: "已收訂金，尾款到貨後結清。"
+            notes: "已收訂金，尾款到貨後結清。",
+            verificationStatus: ""
         ),
         LedgerOrder(
             id: "BL-2604-013",
@@ -216,7 +221,8 @@ extension LedgerOrder {
             orderSource: "官方網站",
             category: "美妝",
             paymentMethod: "Apple Pay",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         ),
         LedgerOrder(
             id: "BL-2604-012",
@@ -248,7 +254,8 @@ extension LedgerOrder {
             orderSource: "Instagram",
             category: "服飾",
             paymentMethod: "信用卡",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         ),
     ]
 }

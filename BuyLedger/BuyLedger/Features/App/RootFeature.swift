@@ -45,6 +45,9 @@ struct RootFeature {
         /// 付款方式主檔管理狀態；理由同 ``categoryManagement``。
         var paymentMethodManagement = LookupManagementFeature.State(kind: .paymentMethod)
 
+        /// 對帳狀態主檔管理狀態；理由同 ``categoryManagement``。
+        var verificationStatusManagement = LookupManagementFeature.State(kind: .verificationStatus)
+
         /// 設為 `true` 時，「更多」分頁的 NavigationStack 會 push 到設定頁；供 AI 提示 alert 深連結開啟設定用 (iOS/iPadOS)。
         var showsSettingsFromDeepLink = false
     }
@@ -96,6 +99,9 @@ struct RootFeature {
 
         /// 付款方式主檔管理事件。
         case paymentMethodManagement(LookupManagementFeature.Action)
+
+        /// 對帳狀態主檔管理事件。
+        case verificationStatusManagement(LookupManagementFeature.Action)
     }
 
     // MARK: - Dependency Properties
@@ -135,6 +141,10 @@ struct RootFeature {
         }
 
         Scope(state: \.paymentMethodManagement, action: \.paymentMethodManagement) {
+            LookupManagementFeature()
+        }
+
+        Scope(state: \.verificationStatusManagement, action: \.verificationStatusManagement) {
             LookupManagementFeature()
         }
 
@@ -222,8 +232,8 @@ struct RootFeature {
                 cascadeRename(kind: .orderSource, from: from, to: to, in: &state)
                 return .none
 
-            case let .orderSourceManagement(.addConfirmed(name, _)):
-                // 訂單來源無 isCardless 概念，直接忽略第二個參數。
+            case let .orderSourceManagement(.addConfirmed(name, _, _)):
+                // 訂單來源無 isCardless / isBankTransfer 概念，直接忽略後兩個參數。
                 addOrderSourceToOrdersMaster(name: name, in: &state)
                 return .none
 
@@ -238,8 +248,8 @@ struct RootFeature {
                 cascadeRename(kind: .category, from: from, to: to, in: &state)
                 return .none
 
-            case let .categoryManagement(.addConfirmed(name, _)):
-                // 商品類別無 isCardless 概念，直接忽略第二個參數。
+            case let .categoryManagement(.addConfirmed(name, _, _)):
+                // 商品類別無 isCardless / isBankTransfer 概念，直接忽略後兩個參數。
                 addCategoryToOrdersMaster(name: name, in: &state)
                 return .none
 
@@ -254,15 +264,43 @@ struct RootFeature {
                 cascadeRename(kind: .paymentMethod, from: from, to: to, in: &state)
                 return .none
 
-            case let .paymentMethodManagement(.addConfirmed(name, isCardless)):
-                addPaymentMethodToOrdersMaster(name: name, isCardless: isCardless, in: &state)
+            case let .paymentMethodManagement(.addConfirmed(name, isCardless, isBankTransfer)):
+                addPaymentMethodToOrdersMaster(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, in: &state)
                 return .none
 
             case let .paymentMethodManagement(.deleteRequested(name)):
                 removeFromOrdersMaster(kind: .paymentMethod, name: name, in: &state)
                 return .none
 
+            case let .paymentMethodManagement(.editConfirmed(originalName, name, isCardless, isBankTransfer)):
+                let trimmedOriginal = originalName.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedNew = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedNew.isEmpty else { return .none }
+                // 名稱變更先 cascade 到 in-memory master 與訂單表 (rename 會合併舊旗標)，
+                // 再以使用者實際勾選權威覆寫旗標，確保可取消勾選。
+                if trimmedNew != trimmedOriginal {
+                    cascadeRename(kind: .paymentMethod, from: trimmedOriginal, to: trimmedNew, in: &state)
+                }
+                addPaymentMethodToOrdersMaster(name: trimmedNew, isCardless: isCardless, isBankTransfer: isBankTransfer, in: &state)
+                return .none
+
             case .paymentMethodManagement:
+                return .none
+
+            case let .verificationStatusManagement(.renameRequested(from, to)):
+                cascadeRename(kind: .verificationStatus, from: from, to: to, in: &state)
+                return .none
+
+            case let .verificationStatusManagement(.addConfirmed(name, _, _)):
+                // 對帳狀態無 isCardless / isBankTransfer 概念，直接忽略後兩個參數。
+                addVerificationStatusToOrdersMaster(name: name, in: &state)
+                return .none
+
+            case let .verificationStatusManagement(.deleteRequested(name)):
+                removeFromOrdersMaster(kind: .verificationStatus, name: name, in: &state)
+                return .none
+
+            case .verificationStatusManagement:
                 return .none
             }
         }
@@ -319,6 +357,17 @@ struct RootFeature {
                 guard order.paymentMethod == trimmedFrom else { return order }
                 return rebuildOrder(order, paymentMethod: trimmedTo)
             }
+
+        case .verificationStatus:
+            state.orders.verificationStatusMaster = renameInList(
+                state.orders.verificationStatusMaster,
+                from: trimmedFrom,
+                to: trimmedTo
+            )
+            state.orders.orders = state.orders.orders.map { order in
+                guard order.verificationStatus == trimmedFrom else { return order }
+                return rebuildOrder(order, verificationStatus: trimmedTo)
+            }
         }
     }
 
@@ -360,14 +409,16 @@ struct RootFeature {
         }
     }
 
-    /// 把 ``LookupManagementFeature`` 新增的付款方式 (含 `isCardless`) 加進 ``OrdersFeature/State/paymentMethodMaster`` 副本；若名稱已存在則僅更新旗標。
+    /// 把 ``LookupManagementFeature`` 新增的付款方式 (含 `isCardless` 與 `isBankTransfer`) 加進 ``OrdersFeature/State/paymentMethodMaster`` 副本；若名稱已存在則僅更新旗標。
     /// - Parameters:
     ///   - name: 新增名稱。
     ///   - isCardless: 是否屬於無卡類付款方式。
+    ///   - isBankTransfer: 是否屬於銀行匯款類付款方式。
     ///   - state: 要修改的 ``RootFeature/State``。
     private func addPaymentMethodToOrdersMaster(
         name: String,
         isCardless: Bool,
+        isBankTransfer: Bool,
         in state: inout State
     ) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -375,12 +426,31 @@ struct RootFeature {
 
         var updated = state.orders.paymentMethodMaster
         if let index = updated.firstIndex(where: { $0.name == trimmed }) {
-            updated[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless)
+            updated[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer)
         } else {
-            updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless))
+            updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer))
         }
         state.orders.paymentMethodMaster = updated.sorted {
             $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        }
+    }
+
+    /// 把 ``LookupManagementFeature`` 新增的對帳狀態加進 ``OrdersFeature/State/verificationStatusMaster`` 副本。
+    /// - Parameters:
+    ///   - name: 新增名稱。
+    ///   - state: 要修改的 ``RootFeature/State``。
+    private func addVerificationStatusToOrdersMaster(
+        name: String,
+        in state: inout State
+    ) {
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        guard !state.orders.verificationStatusMaster.contains(trimmed) else { return }
+
+        var updated = state.orders.verificationStatusMaster
+        updated.append(trimmed)
+        state.orders.verificationStatusMaster = updated.sorted {
+            $0.localizedStandardCompare($1) == .orderedAscending
         }
     }
 
@@ -401,10 +471,12 @@ struct RootFeature {
             state.orders.categoryMaster.removeAll { $0 == name }
         case .paymentMethod:
             state.orders.paymentMethodMaster.removeAll { $0.name == name }
+        case .verificationStatus:
+            state.orders.verificationStatusMaster.removeAll { $0 == name }
         }
     }
 
-    /// 把 [PaymentMethodInfo] 中名稱為 `oldName` 的項目改名為 `newName`，保留原有 `isCardless`；若 `newName` 已存在則合併 (任一邊曾標記無卡的就視為無卡)。
+    /// 把 [PaymentMethodInfo] 中名稱為 `oldName` 的項目改名為 `newName`，保留原有 `isCardless` 與 `isBankTransfer`；若 `newName` 已存在則合併 (任一邊曾標記無卡／銀行匯款的就視為該類)。
     /// - Parameters:
     ///   - list: 原始陣列。
     ///   - oldName: 舊名稱。
@@ -417,15 +489,11 @@ struct RootFeature {
     ) -> [PaymentMethodInfo] {
         var byName: [String: PaymentMethodInfo] = [:]
         for info in list {
-            if info.name == oldName {
-                let merged = byName[newName]
-                let isCardless = info.isCardless || (merged?.isCardless ?? false)
-                byName[newName] = PaymentMethodInfo(name: newName, isCardless: isCardless)
-            } else {
-                let merged = byName[info.name]
-                let isCardless = info.isCardless || (merged?.isCardless ?? false)
-                byName[info.name] = PaymentMethodInfo(name: info.name, isCardless: isCardless)
-            }
+            let key = info.name == oldName ? newName : info.name
+            let merged = byName[key]
+            let isCardless = info.isCardless || (merged?.isCardless ?? false)
+            let isBankTransfer = info.isBankTransfer || (merged?.isBankTransfer ?? false)
+            byName[key] = PaymentMethodInfo(name: key, isCardless: isCardless, isBankTransfer: isBankTransfer)
         }
         return byName.values
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
@@ -453,12 +521,14 @@ struct RootFeature {
     ///   - orderSource: 若不為 `nil` 則覆寫 orderSource。
     ///   - category: 若不為 `nil` 則覆寫 category。
     ///   - paymentMethod: 若不為 `nil` 則覆寫 paymentMethod。
+    ///   - verificationStatus: 若不為 `nil` 則覆寫 verificationStatus。
     /// - Returns: 重建後的訂單。
     private func rebuildOrder(
         _ order: LedgerOrder,
         orderSource: String? = nil,
         category: String? = nil,
-        paymentMethod: String? = nil
+        paymentMethod: String? = nil,
+        verificationStatus: String? = nil
     ) -> LedgerOrder {
         LedgerOrder(
             id: order.id,
@@ -480,7 +550,8 @@ struct RootFeature {
             orderSource: orderSource ?? order.orderSource,
             category: category ?? order.category,
             paymentMethod: paymentMethod ?? order.paymentMethod,
-            notes: order.notes
+            notes: order.notes,
+            verificationStatus: verificationStatus ?? order.verificationStatus
         )
     }
 }

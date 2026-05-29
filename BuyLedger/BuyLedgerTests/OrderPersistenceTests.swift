@@ -74,7 +74,8 @@ struct OrderPersistenceTests {
             orderSource: "蝦皮",
             category: "美妝",
             paymentMethod: "",
-            notes: "建立時的備註"
+            notes: "建立時的備註",
+            verificationStatus: ""
         )
 
         try await persistence.upsert(order)
@@ -113,7 +114,8 @@ struct OrderPersistenceTests {
             orderSource: original.orderSource,
             category: original.category,
             paymentMethod: original.paymentMethod,
-            notes: "更新後的備註"
+            notes: "更新後的備註",
+            verificationStatus: ""
         )
 
         try await persistence.upsert(modified)
@@ -126,6 +128,72 @@ struct OrderPersistenceTests {
         #expect(stored.first?.notes == "更新後的備註", "更新訂單時備註應一併寫回")
     }
     
+    @Test func upsertPersistsVerificationStatusRoundTrip() async throws {
+        let persistence = try makePersistence()
+
+        let order = LedgerOrder(
+            id: "BL-TEST-VS",
+            customer: LedgerCustomer(name: "對帳測試", initials: "VS", tier: .regular),
+            status: .confirmed,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            items: [],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 0,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "蝦皮",
+            category: "美妝",
+            paymentMethod: "銀行匯款",
+            notes: "",
+            verificationStatus: "待對帳"
+        )
+
+        try await persistence.upsert(order)
+
+        let stored = try await persistence.fetchAll()
+        #expect(stored.first?.verificationStatus == "待對帳", "對帳狀態應隨訂單一併 round-trip")
+    }
+
+    @Test func renameVerificationStatusUpdatesMatchingOrders() async throws {
+        let persistence = try makePersistence()
+        let order = LedgerOrder(
+            id: "BL-TEST-VS-RENAME",
+            customer: LedgerCustomer(name: "對帳測試", initials: "VS", tier: .regular),
+            status: .confirmed,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            items: [],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 0,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "蝦皮",
+            category: "美妝",
+            paymentMethod: "銀行匯款",
+            notes: "",
+            verificationStatus: "待對帳"
+        )
+        try await persistence.upsert(order)
+
+        try await persistence.renameVerificationStatus(from: "待對帳", to: "對帳成功")
+
+        let stored = try await persistence.fetchAll()
+        #expect(stored.first?.verificationStatus == "對帳成功", "cascade 更名應更新引用該對帳狀態的訂單")
+    }
+
     @Test func deleteRemovesOrderById() async throws {
         let persistence = try makePersistence()
         let samples = LedgerOrder.sampleOrders

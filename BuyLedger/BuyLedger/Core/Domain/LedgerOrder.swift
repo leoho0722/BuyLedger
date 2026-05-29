@@ -76,6 +76,11 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 訂單備註；選填，無備註時為空字串。
     let notes: String
 
+    /// 對帳狀態。
+    ///
+    /// 僅在 ``paymentMethod`` 屬於無卡或銀行匯款 (款項不會即時入帳、需事後人工對帳) 時有意義；其他付款方式一律以空字串帶入。對應可自訂主檔 ``LookupKind/verificationStatus``。
+    let verificationStatus: String
+
     // MARK: - Computed Properties
 
     /// 訂單的財務摘要。

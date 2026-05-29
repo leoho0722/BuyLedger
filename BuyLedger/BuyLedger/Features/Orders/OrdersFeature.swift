@@ -62,6 +62,9 @@ struct OrdersFeature {
         /// 付款方式主檔 (從 ``PaymentMethodRepository`` 載入)，含每筆方式是否屬於無卡類。
         var paymentMethodMaster: [PaymentMethodInfo] = []
 
+        /// 對帳狀態主檔 (從 ``VerificationStatusRepository`` 載入)。
+        var verificationStatusMaster: [String] = []
+
         /// 指示訂單是否正在載入。
         var isLoading = false
         
@@ -177,10 +180,20 @@ struct OrdersFeature {
             for order in orders {
                 let trimmed = order.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty, byName[trimmed] == nil else { continue }
-                byName[trimmed] = PaymentMethodInfo(name: trimmed, isCardless: false)
+                byName[trimmed] = PaymentMethodInfo(name: trimmed, isCardless: false, isBankTransfer: false)
             }
             return byName.values
                 .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        }
+
+        /// 對外提供給編輯表單的「可用對帳狀態」清單：合併主檔與既有訂單中使用過的對帳狀態，去重後依 locale 排序。合併規則與 ``availableCategories`` 相同。
+        var availableVerificationStatuses: [String] {
+            let fromOrders = orders
+                .map { $0.verificationStatus.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            var merged = Set(verificationStatusMaster)
+            merged.formUnion(fromOrders)
+            return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
         }
 
         // MARK: - AI Method
@@ -260,7 +273,10 @@ struct OrdersFeature {
 
         /// 付款方式主檔載入完成。
         case paymentMethodMasterLoaded([PaymentMethodInfo])
-        
+
+        /// 對帳狀態主檔載入完成。
+        case verificationStatusMasterLoaded([String])
+
         /// 使用者切換狀態篩選。
         case statusFilterSelected(OrderStatusFilter)
         
@@ -329,6 +345,9 @@ struct OrdersFeature {
     /// 付款方式主檔資料來源。
     @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
 
+    /// 對帳狀態主檔資料來源。
+    @Dependency(VerificationStatusRepository.self) private var verificationStatusRepository
+
     /// 用於新訂單的 UUID 產生器，方便在測試中注入固定值。
     @Dependency(\.uuid) private var uuid
 
@@ -355,6 +374,7 @@ struct OrdersFeature {
                 let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
+                let verificationStatusRepository = verificationStatusRepository
                 state.isLoading = true
                 state.errorMessage = nil
 
@@ -374,6 +394,11 @@ struct OrdersFeature {
                             await send(.paymentMethodMasterLoaded(infos))
                         }
                     }()
+                    async let verificationStatusesTask: Void = {
+                        if let items = try? await verificationStatusRepository.fetchVerificationStatuses() {
+                            await send(.verificationStatusMasterLoaded(items))
+                        }
+                    }()
 
                     do {
                         let orders = try await orderRepository.fetchOrders()
@@ -382,7 +407,7 @@ struct OrdersFeature {
                         await send(.ordersFailed("訂單載入失敗，請稍後再試。"))
                     }
 
-                    _ = await (orderSourcesTask, categoriesTask, paymentMethodsTask)
+                    _ = await (orderSourcesTask, categoriesTask, paymentMethodsTask, verificationStatusesTask)
                 }
 
             case let .orderSourceMasterLoaded(items):
@@ -395,6 +420,10 @@ struct OrdersFeature {
 
             case let .paymentMethodMasterLoaded(infos):
                 state.paymentMethodMaster = infos
+                return .none
+
+            case let .verificationStatusMasterLoaded(items):
+                state.verificationStatusMaster = items
                 return .none
                 
             case let .ordersLoaded(orders):
@@ -443,6 +472,7 @@ struct OrdersFeature {
                     availableOrderSources: state.availableOrderSources,
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
+                    availableVerificationStatuses: state.availableVerificationStatuses,
                     currentDate: date.now
                 )
                 return .none
@@ -452,6 +482,7 @@ struct OrdersFeature {
                     availableOrderSources: state.availableOrderSources,
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
+                    availableVerificationStatuses: state.availableVerificationStatuses,
                     currentDate: date.now
                 )
                 return .none
@@ -501,15 +532,15 @@ struct OrdersFeature {
                     try? await categoryRepository.addCategory(trimmed)
                 }
 
-            case let .editOrder(.presented(.addPaymentMethodTapped(name, isCardless))):
+            case let .editOrder(.presented(.addPaymentMethodTapped(name, isCardless, isBankTransfer))):
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return .none }
-                // 同名情境：以新的 isCardless 覆寫，讓 sheet 內二次新增能更正先前忘記勾選的狀態。
+                // 同名情境：以新的 isCardless / isBankTransfer 覆寫，讓 sheet 內二次新增能更正先前忘記勾選的狀態。
                 var updated = state.paymentMethodMaster
                 if let index = updated.firstIndex(where: { $0.name == trimmed }) {
-                    updated[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless)
+                    updated[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer)
                 } else {
-                    updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless))
+                    updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer))
                 }
                 state.paymentMethodMaster = updated.sorted {
                     $0.name.localizedStandardCompare($1.name) == .orderedAscending
@@ -517,7 +548,24 @@ struct OrdersFeature {
 
                 let paymentMethodRepository = paymentMethodRepository
                 return .run { _ in
-                    try? await paymentMethodRepository.addPaymentMethod(trimmed, isCardless)
+                    try? await paymentMethodRepository.addPaymentMethod(trimmed, isCardless, isBankTransfer)
+                }
+
+            case let .editOrder(.presented(.addVerificationStatusTapped(name))):
+                // 子 reducer 已把 name 加進 sheet 內的 availableVerificationStatuses 並設成 draftVerificationStatus；
+                // 父層額外寫入主檔並更新 state.verificationStatusMaster，使非編輯流程 (管理頁、其他訂單) 也能看到。
+                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return .none }
+                if !state.verificationStatusMaster.contains(trimmed) {
+                    var updated = state.verificationStatusMaster
+                    updated.append(trimmed)
+                    state.verificationStatusMaster = updated.sorted {
+                        $0.localizedStandardCompare($1) == .orderedAscending
+                    }
+                }
+                let verificationStatusRepository = verificationStatusRepository
+                return .run { _ in
+                    try? await verificationStatusRepository.addVerificationStatus(trimmed)
                 }
 
             case .editOrder:
@@ -553,7 +601,8 @@ struct OrdersFeature {
                     orderSource: existing.orderSource,
                     category: existing.category,
                     paymentMethod: existing.paymentMethod,
-                    notes: existing.notes
+                    notes: existing.notes,
+                    verificationStatus: existing.verificationStatus
                 )
                 state.orders[index] = updated
                 
@@ -679,6 +728,10 @@ private extension OrdersFeature {
         let normalizedSupplement = draft.isSelectedPaymentMethodCardless
             ? max(0, draft.draftCardlessSupplementAmount)
             : 0
+        // 對帳狀態僅在付款方式屬於無卡或銀行匯款時有意義；切回其他付款方式一律清成空字串，避免殘留無關狀態。
+        let normalizedVerificationStatus = draft.showsVerificationStatusRow
+            ? draft.draftVerificationStatus.trimmingCharacters(in: .whitespacesAndNewlines)
+            : ""
 
         if let original = draft.original,
            let index = state.orders.firstIndex(where: { $0.id == original.id }) {
@@ -709,7 +762,8 @@ private extension OrdersFeature {
                 orderSource: trimmedOrderSource.isEmpty ? existing.orderSource : trimmedOrderSource,
                 category: trimmedCategory.isEmpty ? existing.category : trimmedCategory,
                 paymentMethod: trimmedPaymentMethod.isEmpty ? existing.paymentMethod : trimmedPaymentMethod,
-                notes: trimmedNotes
+                notes: trimmedNotes,
+                verificationStatus: normalizedVerificationStatus
             )
             state.orders[index] = updatedOrder
             return updatedOrder
@@ -740,7 +794,8 @@ private extension OrdersFeature {
                 orderSource: resolvedOrderSource,
                 category: resolvedCategory,
                 paymentMethod: trimmedPaymentMethod,
-                notes: trimmedNotes
+                notes: trimmedNotes,
+                verificationStatus: normalizedVerificationStatus
             )
 
             state.orders.insert(newOrder, at: 0)

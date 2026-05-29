@@ -9,7 +9,7 @@ import Foundation
 
 /// 表單下拉選單背後的「主檔型別」。
 ///
-/// 把訂單來源、商品類別與付款方式抽成同一個 ``LookupManagementFeature`` 處理，差異透過此 enum 注入：標題、空狀態文案、寫入哪個 repository。
+/// 把訂單來源、商品類別、付款方式與對帳狀態抽成同一個 ``LookupManagementFeature`` 處理，差異透過此 enum 注入：標題、空狀態文案、寫入哪個 repository。
 enum LookupKind: String, Equatable, Sendable {
 
     // MARK: - Cases
@@ -23,6 +23,9 @@ enum LookupKind: String, Equatable, Sendable {
     /// 付款方式主檔。
     case paymentMethod
 
+    /// 對帳狀態主檔。
+    case verificationStatus
+
     // MARK: - Display Properties
 
     /// 管理頁顯示的標題。
@@ -34,6 +37,8 @@ enum LookupKind: String, Equatable, Sendable {
             "商品類別管理"
         case .paymentMethod:
             "付款方式管理"
+        case .verificationStatus:
+            "對帳狀態管理"
         }
     }
 
@@ -46,6 +51,8 @@ enum LookupKind: String, Equatable, Sendable {
             "商品類別"
         case .paymentMethod:
             "付款方式"
+        case .verificationStatus:
+            "對帳狀態"
         }
     }
 
@@ -58,6 +65,8 @@ enum LookupKind: String, Equatable, Sendable {
             "管理訂單可選的商品類別清單。"
         case .paymentMethod:
             "管理訂單可選的付款方式清單。"
+        case .verificationStatus:
+            "管理訂單可選的對帳狀態清單。"
         }
     }
 
@@ -70,6 +79,8 @@ enum LookupKind: String, Equatable, Sendable {
             "tag"
         case .paymentMethod:
             "creditcard"
+        case .verificationStatus:
+            "checkmark.seal"
         }
     }
 
@@ -82,6 +93,8 @@ enum LookupKind: String, Equatable, Sendable {
             "新增類別"
         case .paymentMethod:
             "新增付款方式"
+        case .verificationStatus:
+            "新增對帳狀態"
         }
     }
 
@@ -94,6 +107,8 @@ enum LookupKind: String, Equatable, Sendable {
             "尚無類別"
         case .paymentMethod:
             "尚無付款方式"
+        case .verificationStatus:
+            "尚無對帳狀態"
         }
     }
 
@@ -106,6 +121,8 @@ enum LookupKind: String, Equatable, Sendable {
             "透過上方「新增類別」加入第一個類別；訂單編輯時也能新增。"
         case .paymentMethod:
             "透過上方「新增付款方式」加入第一個項目；訂單編輯時也能新增。"
+        case .verificationStatus:
+            "透過上方「新增對帳狀態」加入第一個對帳狀態；訂單編輯時也能新增。"
         }
     }
 
@@ -118,6 +135,8 @@ enum LookupKind: String, Equatable, Sendable {
             "新增商品類別"
         case .paymentMethod:
             "新增付款方式"
+        case .verificationStatus:
+            "新增對帳狀態"
         }
     }
 
@@ -130,6 +149,8 @@ enum LookupKind: String, Equatable, Sendable {
             "類別名稱"
         case .paymentMethod:
             "付款方式名稱"
+        case .verificationStatus:
+            "對帳狀態名稱"
         }
     }
 
@@ -142,6 +163,8 @@ enum LookupKind: String, Equatable, Sendable {
             "輸入新的商品類別名稱；不會自動套用到任何既有訂單。"
         case .paymentMethod:
             "輸入新的付款方式名稱；不會自動套用到任何既有訂單。"
+        case .verificationStatus:
+            "輸入新的對帳狀態名稱；不會自動套用到任何既有訂單。"
         }
     }
 }

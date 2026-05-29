@@ -394,6 +394,23 @@ enum BuyLedgerSchemaV4: VersionedSchema {
             self.paymentMethod = paymentMethod
         }
     }
+
+    /// V4 時代的 ``PaymentMethodRecord`` 影子；含 V4 新增的 `isCardless`，尚未含 V7 的 `isBankTransfer`。原本 V4–V6 共用 top-level ``PaymentMethodRecord``，V7 為其新增 `isBankTransfer` 後，V4–V6 改為各自凍結成影子以保住當時的 attribute 指紋。
+    @Model
+    final class PaymentMethodRecord {
+
+        // MARK: - Data Properties
+
+        var name: String
+        var isCardless: Bool = false
+
+        // MARK: - Init
+
+        init(name: String, isCardless: Bool = false) {
+            self.name = name
+            self.isCardless = isCardless
+        }
+    }
 }
 
 /// V5 schema：在 V4 之上為 ``OrderRecord`` 新增 ``OrderRecord/orderSource`` (訂單來源)，並加入獨立主檔 ``OrderSourceRecord``。
@@ -489,13 +506,30 @@ enum BuyLedgerSchemaV5: VersionedSchema {
             self.paymentMethod = paymentMethod
         }
     }
+
+    /// V5 時代的 ``PaymentMethodRecord`` 影子；含 `isCardless`，尚未含 V7 的 `isBankTransfer`。理由同 ``BuyLedgerSchemaV4/PaymentMethodRecord``。
+    @Model
+    final class PaymentMethodRecord {
+
+        // MARK: - Data Properties
+
+        var name: String
+        var isCardless: Bool = false
+
+        // MARK: - Init
+
+        init(name: String, isCardless: Bool = false) {
+            self.name = name
+            self.isCardless = isCardless
+        }
+    }
 }
 
 /// V6 schema：在 V5 之上為 ``OrderRecord`` 新增 ``OrderRecord/notes`` (訂單備註)。
 ///
 /// `notes` 帶 default `""`，V5 → V6 走 SwiftData lightweight migration 即可。
 ///
-/// V6.OrderRecord 引用 top-level 定義 (已含 `notes`)；V5.OrderRecord 已凍結為影子型別，避免本次變更破壞 V5 schema fingerprint。
+/// V6.OrderRecord 與 V6.PaymentMethodRecord 改為影子型別以「凍結」當時的 attribute 集合 (OrderRecord 已含 `notes`、尚未含 V7 的 `verificationStatus`；PaymentMethodRecord 已含 `isCardless`、尚未含 V7 的 `isBankTransfer`)，避免 V7 變更 top-level 型別時破壞 V6 schema fingerprint。
 enum BuyLedgerSchemaV6: VersionedSchema {
 
     // MARK: - Static Properties
@@ -503,7 +537,7 @@ enum BuyLedgerSchemaV6: VersionedSchema {
     /// 版本識別。
     static var versionIdentifier: Schema.Version { Schema.Version(6, 0, 0) }
 
-    /// 此版本包含的 model 型別；引用 top-level 定義 (已含 V6 新增的 `notes`)。
+    /// 此版本包含的 model 型別；``OrderRecord`` 與 ``PaymentMethodRecord`` 指向本 enum 內凍結的影子型別，其餘未變更型別 (``CategoryRecord`` / ``CurrencyMetadataRecord`` / ``OrderSourceRecord``) 維持引用 top-level。
     static var models: [any PersistentModel.Type] {
         [
             OrderRecord.self,
@@ -511,6 +545,122 @@ enum BuyLedgerSchemaV6: VersionedSchema {
             PaymentMethodRecord.self,
             CurrencyMetadataRecord.self,
             OrderSourceRecord.self,
+        ]
+    }
+
+    /// V6 時代的 ``OrderRecord`` 影子；與當時版本的屬性集合一致 (已含 V6 的 `notes`，尚未含 V7 的 `verificationStatus`)。
+    @Model
+    final class OrderRecord {
+
+        // MARK: - Data Properties
+
+        var id: String
+        var customer: LedgerCustomer
+        var status: OrderStatus
+        var currency: String
+        var date: Date
+        var items: [LedgerOrderItem]
+        var itemCost: Decimal
+        var domesticShipping: Decimal
+        var internationalShipping: Decimal
+        var foreignDomesticShipping: Decimal = 0
+        var cardFeeRate: Decimal
+        var platformFeeRate: Decimal
+        var paymentFeeRate: Decimal = 0
+        var chargedAmount: Decimal
+        var cardlessDeductionAmount: Decimal = 0
+        var cardlessSupplementAmount: Decimal = 0
+        var orderSource: String = ""
+        var category: String
+        var paymentMethod: String = ""
+        var notes: String = ""
+
+        // MARK: - Init
+
+        init(
+            id: String,
+            customer: LedgerCustomer,
+            status: OrderStatus,
+            currency: String,
+            date: Date,
+            items: [LedgerOrderItem],
+            itemCost: Decimal,
+            domesticShipping: Decimal,
+            internationalShipping: Decimal,
+            foreignDomesticShipping: Decimal = 0,
+            cardFeeRate: Decimal,
+            platformFeeRate: Decimal,
+            paymentFeeRate: Decimal = 0,
+            chargedAmount: Decimal,
+            cardlessDeductionAmount: Decimal = 0,
+            cardlessSupplementAmount: Decimal = 0,
+            orderSource: String = "",
+            category: String,
+            paymentMethod: String = "",
+            notes: String = ""
+        ) {
+            self.id = id
+            self.customer = customer
+            self.status = status
+            self.currency = currency
+            self.date = date
+            self.items = items
+            self.itemCost = itemCost
+            self.domesticShipping = domesticShipping
+            self.internationalShipping = internationalShipping
+            self.foreignDomesticShipping = foreignDomesticShipping
+            self.cardFeeRate = cardFeeRate
+            self.platformFeeRate = platformFeeRate
+            self.paymentFeeRate = paymentFeeRate
+            self.chargedAmount = chargedAmount
+            self.cardlessDeductionAmount = cardlessDeductionAmount
+            self.cardlessSupplementAmount = cardlessSupplementAmount
+            self.orderSource = orderSource
+            self.category = category
+            self.paymentMethod = paymentMethod
+            self.notes = notes
+        }
+    }
+
+    /// V6 時代的 ``PaymentMethodRecord`` 影子；含 `isCardless`，尚未含 V7 的 `isBankTransfer`。理由同 ``BuyLedgerSchemaV4/PaymentMethodRecord``。
+    @Model
+    final class PaymentMethodRecord {
+
+        // MARK: - Data Properties
+
+        var name: String
+        var isCardless: Bool = false
+
+        // MARK: - Init
+
+        init(name: String, isCardless: Bool = false) {
+            self.name = name
+            self.isCardless = isCardless
+        }
+    }
+}
+
+/// V7 schema：在 V6 之上為 ``OrderRecord`` 新增 ``OrderRecord/verificationStatus`` (對帳狀態)、為 ``PaymentMethodRecord`` 新增 ``PaymentMethodRecord/isBankTransfer`` (是否屬於銀行匯款類)，並加入獨立主檔 ``VerificationStatusRecord``。
+///
+/// 兩個新欄位皆帶 default 值 (`""` 與 `false`)，``VerificationStatusRecord`` 為全新 model (新表)，三者皆可由 SwiftData lightweight migration 處理，故 V6 → V7 走 lightweight。
+///
+/// V7 為目前最新版本，``models`` 引用 top-level 定義 (已含新欄位與新表)；V6 (及更早) 已凍結為影子型別。
+enum BuyLedgerSchemaV7: VersionedSchema {
+
+    // MARK: - Static Properties
+
+    /// 版本識別。
+    static var versionIdentifier: Schema.Version { Schema.Version(7, 0, 0) }
+
+    /// 此版本包含的 model 型別；引用 top-level 定義 (已含 V7 新增的欄位與 ``VerificationStatusRecord`` 新表)。
+    static var models: [any PersistentModel.Type] {
+        [
+            OrderRecord.self,
+            CategoryRecord.self,
+            PaymentMethodRecord.self,
+            CurrencyMetadataRecord.self,
+            OrderSourceRecord.self,
+            VerificationStatusRecord.self,
         ]
     }
 }
@@ -531,10 +681,11 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
             BuyLedgerSchemaV4.self,
             BuyLedgerSchemaV5.self,
             BuyLedgerSchemaV6.self,
+            BuyLedgerSchemaV7.self,
         ]
     }
 
-    /// V1 → V2 (custom dump-and-restore)、V2 → V3 (lightweight，新增 default 欄位)、V3 → V4 (lightweight，新增 default 欄位)、V4 → V5 (lightweight，新增 default 欄位與 ``OrderSourceRecord`` 新表)、V5 → V6 (lightweight，新增 default 欄位 `notes`)。
+    /// V1 → V2 (custom dump-and-restore)、V2 → V3 (lightweight，新增 default 欄位)、V3 → V4 (lightweight，新增 default 欄位)、V4 → V5 (lightweight，新增 default 欄位與 ``OrderSourceRecord`` 新表)、V5 → V6 (lightweight，新增 default 欄位 `notes`)、V6 → V7 (lightweight，新增 default 欄位 `verificationStatus` / `isBankTransfer` 與 ``VerificationStatusRecord`` 新表)。
     static var stages: [MigrationStage] {
         [
             .custom(
@@ -616,6 +767,10 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
             .lightweight(
                 fromVersion: BuyLedgerSchemaV5.self,
                 toVersion: BuyLedgerSchemaV6.self
+            ),
+            .lightweight(
+                fromVersion: BuyLedgerSchemaV6.self,
+                toVersion: BuyLedgerSchemaV7.self
             )
         ]
     }

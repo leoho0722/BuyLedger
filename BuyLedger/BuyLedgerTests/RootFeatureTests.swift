@@ -165,6 +165,62 @@ struct RootFeatureTests {
         #expect(filteredIDs == ["TEST-BEAUTY-1", "TEST-BEAUTY-2"])
     }
 
+    @Test func editPaymentMethodCascadesRenameAndOverwritesFlagToOrdersState() async {
+        // 編輯付款方式改名「匯款」→「銀行匯款」並取消銀行匯款旗標；
+        // RootFeature 應 cascade 改名到 in-memory 訂單與 master，且最終旗標以使用者選擇 (false) 為準。
+        var order = RootFeatureTests.makeTestOrder(id: "BL-PM-EDIT", category: "美妝", customerName: "編輯測試")
+        order = LedgerOrder(
+            id: order.id,
+            customer: order.customer,
+            status: order.status,
+            currency: order.currency,
+            date: order.date,
+            items: order.items,
+            itemCost: order.itemCost,
+            domesticShipping: order.domesticShipping,
+            internationalShipping: order.internationalShipping,
+            foreignDomesticShipping: order.foreignDomesticShipping,
+            cardFeeRate: order.cardFeeRate,
+            platformFeeRate: order.platformFeeRate,
+            paymentFeeRate: order.paymentFeeRate,
+            chargedAmount: order.chargedAmount,
+            cardlessDeductionAmount: order.cardlessDeductionAmount,
+            cardlessSupplementAmount: order.cardlessSupplementAmount,
+            orderSource: order.orderSource,
+            category: order.category,
+            paymentMethod: "匯款",
+            notes: order.notes,
+            verificationStatus: order.verificationStatus
+        )
+
+        var state = RootFeature.State()
+        state.orders.orders = [order]
+        state.orders.paymentMethodMaster = [
+            PaymentMethodInfo(name: "匯款", isCardless: false, isBankTransfer: true),
+        ]
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+        }
+        store.exhaustivity = .off
+
+        await store.send(
+            .paymentMethodManagement(
+                .editConfirmed(originalName: "匯款", name: "銀行匯款", isCardless: false, isBankTransfer: false)
+            )
+        )
+        await store.finish()
+
+        // 訂單付款方式 cascade 改名。
+        #expect(store.state.orders.orders.first?.paymentMethod == "銀行匯款")
+        // master 改名且旗標被權威覆寫為 false (不因 rename 合併而殘留 true)。
+        let renamed = store.state.orders.paymentMethodMaster.first { $0.name == "銀行匯款" }
+        #expect(store.state.orders.paymentMethodMaster.contains { $0.name == "匯款" } == false)
+        #expect(renamed?.isBankTransfer == false)
+    }
+
 #if !os(macOS)
     @Test func goToAISettingsDeepLinksToMoreTabAndSettings() async {
         var state = RootFeature.State()
@@ -226,7 +282,8 @@ private extension RootFeatureTests {
             orderSource: "測試",
             category: category,
             paymentMethod: "",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         )
     }
 }

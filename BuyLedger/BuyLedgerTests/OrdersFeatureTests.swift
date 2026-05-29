@@ -134,6 +134,61 @@ struct OrdersFeatureTests {
         #expect(updated?.notes == "到貨後請先聯絡客戶確認尺寸")
     }
 
+    @Test func editFlowKeepsVerificationStatusForBankTransfer() async {
+        // 付款方式屬於銀行匯款 → 對帳狀態有意義，save 後應保留。
+        let originalID = "BL-2604-018"
+        let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
+
+        var draft = OrderEditFeature.State(
+            original: original,
+            availablePaymentMethods: [
+                PaymentMethodInfo(name: "銀行匯款", isCardless: false, isBankTransfer: true),
+            ]
+        )
+        draft.draftPaymentMethod = "銀行匯款"
+        draft.draftVerificationStatus = "待對帳"
+
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+        state.editOrder = draft
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editOrder(.presented(.saveTapped)))
+        await store.finish()
+
+        let updated = store.state.orders.first { $0.id == originalID }
+        #expect(updated?.verificationStatus == "待對帳")
+    }
+
+    @Test func editFlowClearsVerificationStatusForNonReconcilingMethod() async {
+        // 付款方式非無卡／非銀行匯款 (信用卡) → 對帳狀態無意義，save 後應清成空字串，避免殘留。
+        let originalID = "BL-2604-018"
+        let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
+
+        // 原訂單付款方式為「信用卡」(預設無旗標)；殘留一個對帳狀態草稿。
+        var draft = OrderEditFeature.State(original: original)
+        draft.draftVerificationStatus = "待對帳"
+
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+        state.editOrder = draft
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editOrder(.presented(.saveTapped)))
+        await store.finish()
+
+        let updated = store.state.orders.first { $0.id == originalID }
+        #expect(updated?.verificationStatus == "")
+    }
+
     @Test func editFlowSavingEmptyNameKeepsOriginalName() async {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -532,7 +587,8 @@ struct OrdersFeatureTests {
             orderSource: "來源",
             category: category,
             paymentMethod: "付款",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         )
     }
 }

@@ -24,14 +24,21 @@ final class PaymentMethodRecord {
     /// 帶 default `false` 走 SwiftData lightweight migration；既有資料庫升級後預設都不是無卡，使用者可在付款方式管理頁逐筆勾選。
     var isCardless: Bool = false
 
+    /// 是否屬於「銀行匯款」類付款方式。
+    ///
+    /// 帶 default `false` 走 SwiftData lightweight migration；與 ``isCardless`` 為平行的獨立旗標，任一為 `true` 都會讓使用該付款方式的訂單在編輯時顯示「對帳狀態」row。
+    var isBankTransfer: Bool = false
+
     // MARK: - Init
 
-    /// 建立指定名稱與是否無卡的付款方式記錄。
+    /// 建立指定名稱、是否無卡與是否銀行匯款的付款方式記錄。
     /// - Parameters:
     ///   - name: 付款方式名稱。
     ///   - isCardless: 是否屬於無卡類付款方式，預設 `false`。
-    init(name: String, isCardless: Bool = false) {
+    ///   - isBankTransfer: 是否屬於銀行匯款類付款方式，預設 `false`。
+    init(name: String, isCardless: Bool = false, isBankTransfer: Bool = false) {
         self.name = name
         self.isCardless = isCardless
+        self.isBankTransfer = isBankTransfer
     }
 }

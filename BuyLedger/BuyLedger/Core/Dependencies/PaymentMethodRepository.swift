@@ -24,8 +24,8 @@ struct PaymentMethodRepository: Sendable {
 
     /// 加入新付款方式；trim 後若空字串視為 no-op。
     ///
-    /// 若名稱已存在，會以新傳入的 `isCardless` 覆寫旗標 (用來在使用者第二次新增同名項目時修正先前勾選)。
-    var addPaymentMethod: @Sendable (String, Bool) async throws -> Void
+    /// 參數依序為 (名稱, isCardless, isBankTransfer)。若名稱已存在，會以新傳入的旗標覆寫 (用來在使用者第二次新增同名項目時修正先前勾選)。
+    var addPaymentMethod: @Sendable (String, Bool, Bool) async throws -> Void
 
     /// 刪除指定名稱的付款方式；不存在視為 no-op。
     var removePaymentMethod: @Sendable (String) async throws -> Void
@@ -54,11 +54,11 @@ extension PaymentMethodRepository {
                 let persistence = await Self.makePersistence(container: container)
                 return try await persistence.fetchAllInfos()
             },
-            addPaymentMethod: { rawName, isCardless in
+            addPaymentMethod: { rawName, isCardless, isBankTransfer in
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return }
                 let persistence = await Self.makePersistence(container: container)
-                try await persistence.upsert(name: trimmed, isCardless: isCardless)
+                try await persistence.upsert(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer)
             },
             removePaymentMethod: { name in
                 let persistence = await Self.makePersistence(container: container)
@@ -108,7 +108,7 @@ extension PaymentMethodRepository: DependencyKey {
     nonisolated static let testValue = PaymentMethodRepository(
         fetchPaymentMethods: { [] },
         fetchPaymentMethodInfos: { [] },
-        addPaymentMethod: { _, _ in },
+        addPaymentMethod: { _, _, _ in },
         removePaymentMethod: { _ in },
         renamePaymentMethod: { _, _ in },
         setPaymentMethodIsCardless: { _, _ in }

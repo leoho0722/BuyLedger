@@ -27,6 +27,9 @@ struct OrderEditView: View {
     /// 是否顯示「付款方式」選擇 sheet。
     @State private var showsPaymentMethodSheet = false
 
+    /// 是否顯示「對帳狀態」選擇 sheet。
+    @State private var showsVerificationStatusSheet = false
+
     /// 是否顯示「幣別」選擇 sheet。
     @State private var showsCurrencySheet = false
 
@@ -79,6 +82,10 @@ struct OrderEditView: View {
                     currencyPickerRow
 
                     paymentMethodPickerRow
+
+                    if store.showsVerificationStatusRow {
+                        verificationStatusPickerRow
+                    }
                 }
                 
                 Section {
@@ -211,8 +218,27 @@ struct OrderEditView: View {
                     onSelect: { method in
                         store.draftPaymentMethod = method
                     },
-                    onAddPaymentMethod: { name, isCardless in
-                        store.send(.addPaymentMethodTapped(name: name, isCardless: isCardless))
+                    onAddPaymentMethod: { name, isCardless, isBankTransfer in
+                        store.send(.addPaymentMethodTapped(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer))
+                    }
+                )
+            }
+            .sheet(isPresented: $showsVerificationStatusSheet) {
+                OptionPickerSheet(
+                    title: "選擇對帳狀態",
+                    addButtonTitle: "新增對帳狀態",
+                    emptyTitle: "尚無對帳狀態",
+                    emptyDescription: "透過上方「新增對帳狀態」加入第一個項目。",
+                    addAlertTitle: "新增對帳狀態",
+                    addFieldPlaceholder: "對帳狀態名稱",
+                    addAlertMessage: "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。",
+                    options: store.availableVerificationStatuses,
+                    selected: store.draftVerificationStatus,
+                    onSelect: { status in
+                        store.draftVerificationStatus = status
+                    },
+                    onAddViaNameSheet: { name in
+                        store.send(.addVerificationStatusTapped(name))
                     }
                 )
             }
@@ -338,6 +364,29 @@ private extension OrderEditView {
                 Spacer(minLength: BLSpacing.small)
 
                 Text(store.draftPaymentMethod.isEmpty ? "選擇付款方式" : store.draftPaymentMethod)
+                    .foregroundStyle(.secondary)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 對帳狀態選擇列：操作體驗比照 ``paymentMethodPickerRow``，但新增動作走 name-only medium sheet (見 ``OptionPickerSheet`` 的 `onAddViaNameSheet`)。僅在選到的付款方式屬於無卡或銀行匯款 (``OrderEditFeature/State/showsVerificationStatusRow`` 為 `true`) 時，由 caller 條件顯示於「付款方式」row 底下。
+    var verificationStatusPickerRow: some View {
+        Button {
+            showsVerificationStatusSheet = true
+        } label: {
+            HStack(spacing: BLSpacing.small) {
+                Text("對帳狀態")
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: BLSpacing.small)
+
+                Text(store.draftVerificationStatus.isEmpty ? "選擇對帳狀態" : store.draftVerificationStatus)
                     .foregroundStyle(.secondary)
 
                 Image(systemName: "chevron.right")

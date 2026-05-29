@@ -38,7 +38,8 @@ struct OrderCalculationTests {
             orderSource: "",
             category: "美妝",
             paymentMethod: "",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         )
 
         let summary = OrderSummary(order: order)
@@ -78,7 +79,8 @@ struct OrderCalculationTests {
             orderSource: "",
             category: "測試",
             paymentMethod: "",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         )
 
         let summary = OrderSummary(order: order)
@@ -116,7 +118,8 @@ struct OrderCalculationTests {
             orderSource: "",
             category: "測試",
             paymentMethod: "",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         )
 
         let summary = OrderSummary(order: order)
@@ -155,7 +158,8 @@ struct OrderCalculationTests {
             orderSource: "",
             category: "測試",
             paymentMethod: "無卡存款",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         )
 
         let summary = OrderSummary(order: order)
@@ -191,7 +195,8 @@ struct OrderCalculationTests {
             orderSource: "",
             category: "測試",
             paymentMethod: "無卡",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         )
 
         let summary = OrderSummary(order: order)
@@ -235,7 +240,8 @@ struct OrderCalculationTests {
             orderSource: "",
             category: "精品",
             paymentMethod: "",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         )
         
         let summary = OrderSummary(order: order)
@@ -274,7 +280,8 @@ struct OrderCalculationTests {
             orderSource: "",
             category: "測試",
             paymentMethod: "",
-            notes: ""
+            notes: "",
+            verificationStatus: ""
         )
 
         let summary = OrderSummary(order: order)

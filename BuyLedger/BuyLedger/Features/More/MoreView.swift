@@ -74,6 +74,9 @@ private extension MoreView {
         /// 付款方式主檔管理。
         case paymentMethods
 
+        /// 對帳狀態主檔管理。
+        case verificationStatuses
+
         // MARK: - Identifiable Properties
 
         /// 項目的穩定識別值。
@@ -96,6 +99,8 @@ private extension MoreView {
                 LookupKind.category.entryTitle
             case .paymentMethods:
                 LookupKind.paymentMethod.entryTitle
+            case .verificationStatuses:
+                LookupKind.verificationStatus.entryTitle
             }
         }
 
@@ -114,6 +119,8 @@ private extension MoreView {
                 LookupKind.category.entrySubtitle
             case .paymentMethods:
                 LookupKind.paymentMethod.entrySubtitle
+            case .verificationStatuses:
+                LookupKind.verificationStatus.entrySubtitle
             }
         }
 
@@ -132,6 +139,8 @@ private extension MoreView {
                 LookupKind.category.systemImage
             case .paymentMethods:
                 LookupKind.paymentMethod.systemImage
+            case .verificationStatuses:
+                LookupKind.verificationStatus.systemImage
             }
         }
 
@@ -152,6 +161,8 @@ private extension MoreView {
                 palette.orange
             case .paymentMethods:
                 palette.red
+            case .verificationStatuses:
+                palette.indigo
             }
         }
     }
@@ -179,6 +190,10 @@ private extension MoreView {
         case .paymentMethods:
             LookupManagementView(
                 store: store.scope(state: \.paymentMethodManagement, action: \.paymentMethodManagement)
+            )
+        case .verificationStatuses:
+            LookupManagementView(
+                store: store.scope(state: \.verificationStatusManagement, action: \.verificationStatusManagement)
             )
         }
     }
@@ -224,6 +239,12 @@ private extension MoreView {
                     destination(for: .paymentMethods)
                 } label: {
                     toolRow(.paymentMethods, palette: palette)
+                }
+
+                NavigationLink {
+                    destination(for: .verificationStatuses)
+                } label: {
+                    toolRow(.verificationStatuses, palette: palette)
                 }
 
                 NavigationLink {

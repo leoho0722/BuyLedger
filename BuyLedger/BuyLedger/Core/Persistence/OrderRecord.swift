@@ -92,6 +92,11 @@ final class OrderRecord {
     /// 帶 default value 讓 SwiftData 對既有資料庫做 lightweight migration：舊 row 升級時自動填空字串，不需要寫顯式 migration plan。
     var notes: String = ""
 
+    /// 對帳狀態。
+    ///
+    /// 帶 default value 讓 SwiftData 對既有資料庫做 lightweight migration：舊 row 升級時自動填空字串。僅在 ``paymentMethod`` 對應的付款方式屬於無卡或銀行匯款時，編輯表單才會顯示並寫入此值。
+    var verificationStatus: String = ""
+
     // MARK: - Init
 
     /// 依領域型別 ``LedgerOrder`` 建立持久化記錄。
@@ -117,6 +122,7 @@ final class OrderRecord {
         self.category = order.category
         self.paymentMethod = order.paymentMethod
         self.notes = order.notes
+        self.verificationStatus = order.verificationStatus
     }
 }
 
@@ -149,7 +155,8 @@ extension OrderRecord {
             orderSource: orderSource,
             category: category,
             paymentMethod: paymentMethod,
-            notes: notes
+            notes: notes,
+            verificationStatus: verificationStatus
         )
     }
 
@@ -175,5 +182,6 @@ extension OrderRecord {
         self.category = order.category
         self.paymentMethod = order.paymentMethod
         self.notes = order.notes
+        self.verificationStatus = order.verificationStatus
     }
 }

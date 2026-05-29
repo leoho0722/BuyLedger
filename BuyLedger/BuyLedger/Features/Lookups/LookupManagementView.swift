@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 訂單來源 / 商品類別 / 付款方式主檔的獨立管理畫面。
 ///
-/// 以 ``LookupManagementFeature`` 驅動：點「新增」彈出 alert (訂單來源 / 商品類別) 或 sheet (付款方式，含 `isCardless` toggle)。macOS 採 `ScrollView` + `BLCard` 卡片版面 (對齊 ``CustomersView``)，以右鍵 contextMenu 重新命名或刪除；iOS / iPadOS 維持系統 `List`，列可左滑刪除或重新命名。文案、空狀態、icon 來自 ``LookupKind``。
+/// 以 ``LookupManagementFeature`` 驅動：點「新增」彈出 alert (訂單來源 / 商品類別) 或 sheet (付款方式含 `isCardless` / `isBankTransfer` toggle、對帳狀態為 name-only sheet)。macOS 採 `ScrollView` + `BLCard` 卡片版面 (對齊 ``CustomersView``)，以右鍵 contextMenu 編輯／重新命名或刪除；iOS / iPadOS 維持系統 `List`，列可左滑刪除或編輯／重新命名。付款方式列操作為「編輯」(開 ``PaymentMethodEditorSheet`` 帶入原資料)，其餘 kind 為「重新命名」alert。文案、空狀態、icon 來自 ``LookupKind``。
 struct LookupManagementView: View {
 
     // MARK: - View Properties
@@ -27,6 +27,9 @@ struct LookupManagementView: View {
     /// 是否顯示「新增付款方式」sheet (僅付款方式 kind 使用；alert 在實機驗證會 silently 丟掉 Toggle，所以付款方式入口改走 sheet)。
     @State private var showsAddPaymentMethodSheet = false
 
+    /// 是否顯示「新增對帳狀態」medium sheet (僅對帳狀態 kind 使用；比照付款方式以 sheet 收集名稱)。
+    @State private var showsAddVerificationStatusSheet = false
+
     /// 新增 alert 的名稱輸入草稿 (商品類別)。
     @State private var draft = ""
 
@@ -35,6 +38,9 @@ struct LookupManagementView: View {
 
     /// 重新命名 alert 的輸入草稿。
     @State private var renameDraft = ""
+
+    /// 目前正在編輯的付款方式名稱；`nil` 表示未開啟編輯 sheet (僅付款方式 kind 使用)。
+    @State private var editTarget: String?
 
     // MARK: - View Body
 
@@ -56,6 +62,8 @@ struct LookupManagementView: View {
                             showsAddCategoryAlert = true
                         case .paymentMethod:
                             showsAddPaymentMethodSheet = true
+                        case .verificationStatus:
+                            showsAddVerificationStatusSheet = true
                         }
                     } label: {
                         Label(store.state.kind.addButtonTitle, systemImage: "plus")
@@ -111,7 +119,7 @@ struct LookupManagementView: View {
                 Button("新增") {
                     let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmed.isEmpty {
-                        store.send(.addConfirmed(name: trimmed, isCardless: false))
+                        store.send(.addConfirmed(name: trimmed, isCardless: false, isBankTransfer: false))
                     }
                     draft = ""
                 }
@@ -129,10 +137,49 @@ struct LookupManagementView: View {
                     message: store.state.kind.addAlertMessage,
                     namePlaceholder: store.state.kind.addFieldPlaceholder,
                     submitTitle: "新增",
-                    onSubmit: { name, isCardless in
-                        store.send(.addConfirmed(name: name, isCardless: isCardless))
+                    onSubmit: { name, isCardless, isBankTransfer in
+                        store.send(.addConfirmed(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer))
                     }
                 )
+            }
+            .sheet(isPresented: $showsAddVerificationStatusSheet) {
+                LookupItemEditorSheet(
+                    title: store.state.kind.addAlertTitle,
+                    message: store.state.kind.addAlertMessage,
+                    namePlaceholder: store.state.kind.addFieldPlaceholder,
+                    submitTitle: "新增",
+                    onSubmit: { name in
+                        store.send(.addConfirmed(name: name, isCardless: false, isBankTransfer: false))
+                    }
+                )
+            }
+            .sheet(
+                isPresented: Binding(
+                    get: { editTarget != nil },
+                    set: { if !$0 { editTarget = nil } }
+                )
+            ) {
+                if let target = editTarget {
+                    PaymentMethodEditorSheet(
+                        title: "編輯付款方式",
+                        message: "修改名稱與分類；變更名稱會一併更新引用此付款方式的訂單。",
+                        namePlaceholder: store.state.kind.addFieldPlaceholder,
+                        submitTitle: "儲存",
+                        initialName: target,
+                        initialIsCardless: store.paymentMethodIsCardless[target] ?? false,
+                        initialIsBankTransfer: store.paymentMethodIsBankTransfer[target] ?? false,
+                        onSubmit: { name, isCardless, isBankTransfer in
+                            store.send(
+                                .editConfirmed(
+                                    originalName: target,
+                                    name: name,
+                                    isCardless: isCardless,
+                                    isBankTransfer: isBankTransfer
+                                )
+                            )
+                        }
+                    )
+                }
             }
             .task {
                 await store.send(.task).finish()
@@ -154,13 +201,13 @@ private extension LookupManagementView {
 #endif
     }
 
-    /// 列項顯示：訂單來源 / 商品類別 kind 純文字；付款方式 kind 在右側顯示「無卡」徽章 (僅作標示，不能直接切換；要修改 `isCardless` 需刪除後重新新增)。
+    /// 列項顯示：訂單來源 / 商品類別 / 對帳狀態 kind 純文字；付款方式 kind 在右側顯示「無卡」與「銀行匯款」徽章 (僅作標示，不能直接切換；要修改旗標需刪除後重新新增)。
     /// - Parameter item: 要顯示的主檔項目名稱。
     /// - Returns: 列項 view。
     @ViewBuilder
     func itemRow(for item: String) -> some View {
         switch store.state.kind {
-        case .orderSource, .category:
+        case .orderSource, .category, .verificationStatus:
             Text(item)
         case .paymentMethod:
             HStack(spacing: BLSpacing.small) {
@@ -169,16 +216,48 @@ private extension LookupManagementView {
                 Spacer()
 
                 if store.paymentMethodIsCardless[item] == true {
-                    Text("無卡")
-                        .font(.caption.weight(.semibold))
-                        .foregroundStyle(.tint)
-                        .padding(.horizontal, BLSpacing.small)
-                        .padding(.vertical, 2)
-                        .background(
-                            Capsule()
-                                .fill(Color.accentColor.opacity(0.12))
-                        )
+                    classificationBadge("無卡")
                 }
+
+                if store.paymentMethodIsBankTransfer[item] == true {
+                    classificationBadge("銀行匯款")
+                }
+            }
+        }
+    }
+
+    /// 付款方式分類徽章 (例如「無卡」「銀行匯款」)，沿用 tint 膠囊樣式。
+    /// - Parameter title: 徽章文字。
+    /// - Returns: 膠囊徽章 view。
+    func classificationBadge(_ title: String) -> some View {
+        Text(title)
+            .font(.caption.weight(.semibold))
+            .foregroundStyle(.tint)
+            .padding(.horizontal, BLSpacing.small)
+            .padding(.vertical, 2)
+            .background(
+                Capsule()
+                    .fill(Color.accentColor.opacity(0.12))
+            )
+    }
+
+    /// 列項的「編輯／重新命名」操作按鈕，依 kind 分流：付款方式開 ``PaymentMethodEditorSheet`` (帶入原名稱與旗標) 做編輯，其餘 kind 沿用重新命名 alert。
+    /// - Parameter item: 目標項目名稱。
+    /// - Returns: 對應的操作按鈕。
+    @ViewBuilder
+    func renameOrEditButton(for item: String) -> some View {
+        if store.state.kind == .paymentMethod {
+            Button {
+                editTarget = item
+            } label: {
+                Label("編輯", systemImage: "pencil")
+            }
+        } else {
+            Button {
+                renameTarget = item
+                renameDraft = item
+            } label: {
+                Label("重新命名", systemImage: "pencil")
             }
         }
     }
@@ -211,12 +290,7 @@ private extension LookupManagementView {
                     ForEach(store.items, id: \.self) { item in
                         itemRow(for: item)
                             .contextMenu {
-                                Button {
-                                    renameTarget = item
-                                    renameDraft = item
-                                } label: {
-                                    Label("重新命名", systemImage: "pencil")
-                                }
+                                renameOrEditButton(for: item)
 
                                 Button(role: .destructive) {
                                     store.send(.deleteRequested(item))
@@ -231,12 +305,7 @@ private extension LookupManagementView {
                                     Label("刪除", systemImage: "trash")
                                 }
 
-                                Button {
-                                    renameTarget = item
-                                    renameDraft = item
-                                } label: {
-                                    Label("重新命名", systemImage: "pencil")
-                                }
+                                renameOrEditButton(for: item)
                                 .tint(.orange)
                             }
                     }
@@ -245,7 +314,7 @@ private extension LookupManagementView {
                 Text("目前已建立 \(store.items.count) 項")
             } footer: {
                 if store.state.kind == .paymentMethod {
-                    Text("「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位。要更換此設定請刪除後重新新增。")
+                    Text("「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；「銀行匯款」標籤代表會顯示「對帳狀態」欄位。需要修改名稱或分類時，對該列選「編輯」即可。")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -324,12 +393,7 @@ private extension LookupManagementView {
                     ForEach(Array(store.items.enumerated()), id: \.element) { index, item in
                         macRow(for: item, palette: palette)
                             .contextMenu {
-                                Button {
-                                    renameTarget = item
-                                    renameDraft = item
-                                } label: {
-                                    Label("重新命名", systemImage: "pencil")
-                                }
+                                renameOrEditButton(for: item)
 
                                 Button(role: .destructive) {
                                     store.send(.deleteRequested(item))
@@ -348,7 +412,7 @@ private extension LookupManagementView {
 
             if store.state.kind == .paymentMethod {
                 // 與 iOS List footer 相同的無卡說明；兩個平台分支獨立呈現，因此各保留一份字串。
-                Text("「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位。要更換此設定請刪除後重新新增。")
+                Text("「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；「銀行匯款」標籤代表會顯示「對帳狀態」欄位。需要修改名稱或分類時，對該列選「編輯」即可。")
                     .font(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
             }
