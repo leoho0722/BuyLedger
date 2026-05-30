@@ -87,6 +87,12 @@ struct OrderEditFeature {
         /// 僅在 ``showsVerificationStatusRow`` 為 `true` 時於 UI 顯示與編輯；切換到非無卡／非銀行匯款付款方式時，父層 `applyEditDraft` 會在儲存時清成空字串。
         var draftVerificationStatus: String
 
+        /// 歸屬開團名稱草稿；空字串代表未歸團 (散單)。僅能從 ``availableCampaigns`` 既有開團中選擇，不在此表單內新增開團。
+        var draftCampaignName: String
+
+        /// 收款狀態草稿 (待收款／已收款)；對所有付款方式皆顯示。
+        var draftPaymentReceiptStatus: PaymentReceiptStatus
+
         /// 可供選擇的訂單來源清單；由父層 reducer 從現有訂單與主檔聚合後注入，並在使用者新增來源時即時擴充。
         var availableOrderSources: [String]
 
@@ -98,6 +104,9 @@ struct OrderEditFeature {
 
         /// 可供選擇的對帳狀態清單；由父層 reducer 從現有訂單與主檔聚合後注入，並在使用者新增狀態時即時擴充。
         var availableVerificationStatuses: [String]
+
+        /// 可供選擇的開團清單 (名稱)；由父層 reducer 從現有訂單與開團主檔聚合後注入，供訂單歸團選單使用。
+        var availableCampaigns: [String]
 
         /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供 (首次安裝＋無網路時 fallback 到 ``CurrencyCode/defaults``)。
         var availableCurrencies: [CurrencyCode]
@@ -146,6 +155,7 @@ struct OrderEditFeature {
             availableCategories: [String] = [],
             availablePaymentMethods: [PaymentMethodInfo] = [],
             availableVerificationStatuses: [String] = [],
+            availableCampaigns: [String] = [],
             availableCurrencies: [CurrencyCode] = CurrencyCode.defaults,
             currentDate: Date = Date()
         ) {
@@ -170,6 +180,8 @@ struct OrderEditFeature {
             self.draftDate = original?.date ?? currentDate
             self.draftPaymentMethod = original?.paymentMethod ?? ""
             self.draftVerificationStatus = original?.verificationStatus ?? ""
+            self.draftCampaignName = original?.campaignName ?? ""
+            self.draftPaymentReceiptStatus = original?.paymentReceiptStatus ?? .pending
 
             var orderSources = availableOrderSources
             let originalOrderSource = original?.orderSource.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -200,6 +212,13 @@ struct OrderEditFeature {
                 verificationStatuses.append(originalVerificationStatus)
             }
             self.availableVerificationStatuses = verificationStatuses.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+
+            var campaigns = availableCampaigns
+            let originalCampaign = original?.campaignName.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !originalCampaign.isEmpty, !campaigns.contains(originalCampaign) {
+                campaigns.append(originalCampaign)
+            }
+            self.availableCampaigns = campaigns.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
 
             var currencies = availableCurrencies
             let originalCurrency = original?.currency ?? .twd

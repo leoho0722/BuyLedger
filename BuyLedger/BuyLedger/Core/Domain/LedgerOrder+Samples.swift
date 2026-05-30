@@ -51,7 +51,9 @@ extension LedgerOrder {
             category: "美妝",
             paymentMethod: "信用卡",
             notes: "客戶指定到貨後先拍照確認，再安排出貨。",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         ),
         LedgerOrder(
             id: "BL-2604-017",
@@ -84,7 +86,9 @@ extension LedgerOrder {
             category: "服飾",
             paymentMethod: "銀行轉帳",
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         ),
         LedgerOrder(
             id: "BL-2604-016",
@@ -122,7 +126,9 @@ extension LedgerOrder {
             category: "美妝",
             paymentMethod: "信用卡",
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         ),
         LedgerOrder(
             id: "BL-2604-015",
@@ -155,7 +161,9 @@ extension LedgerOrder {
             category: "精品",
             paymentMethod: "",
             notes: "報價中，待客戶確認顏色後再下單。",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         ),
         LedgerOrder(
             id: "BL-2604-014",
@@ -193,7 +201,9 @@ extension LedgerOrder {
             category: "美妝",
             paymentMethod: "LINE Pay",
             notes: "已收訂金，尾款到貨後結清。",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         ),
         LedgerOrder(
             id: "BL-2604-013",
@@ -222,7 +232,9 @@ extension LedgerOrder {
             category: "美妝",
             paymentMethod: "Apple Pay",
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         ),
         LedgerOrder(
             id: "BL-2604-012",
@@ -255,7 +267,9 @@ extension LedgerOrder {
             category: "服飾",
             paymentMethod: "信用卡",
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         ),
     ]
 }

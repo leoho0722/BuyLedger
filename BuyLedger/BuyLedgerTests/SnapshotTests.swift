@@ -67,7 +67,9 @@ struct SnapshotTests {
                 category: "aespa Lemonade QQ 音樂限定禮包",
                 paymentMethod: "信用卡",
                 notes: "",
-                verificationStatus: ""
+                verificationStatus: "",
+                campaignName: "",
+                paymentReceiptStatus: .pending
             )
 
             let state: OrdersFeature.State = {
@@ -161,7 +163,9 @@ struct SnapshotTests {
                 category: "美妝",
                 paymentMethod: "信用卡",
                 notes: "",
-                verificationStatus: ""
+                verificationStatus: "",
+                campaignName: "",
+                paymentReceiptStatus: .pending
             )
 
             let view = OrderDetailView(order: order)

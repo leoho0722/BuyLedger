@@ -97,6 +97,16 @@ final class OrderRecord {
     /// 帶 default value 讓 SwiftData 對既有資料庫做 lightweight migration：舊 row 升級時自動填空字串。僅在 ``paymentMethod`` 對應的付款方式屬於無卡或銀行匯款時，編輯表單才會顯示並寫入此值。
     var verificationStatus: String = ""
 
+    /// 歸屬的開團名稱。
+    ///
+    /// 帶 default value 讓 SwiftData 對既有資料庫做 lightweight migration：舊 row 升級時自動填空字串 (散單)。
+    var campaignName: String = ""
+
+    /// 收款狀態的 rawValue (待收款／已收款)。
+    ///
+    /// 比照 ``currency`` 以 String 儲存 (而非 enum)，避免日後改動 enum 破壞 schema 指紋；帶 default value 走 lightweight migration，舊 row 升級時自動填 ``PaymentReceiptStatus/pending``。
+    var paymentReceiptStatus: String = PaymentReceiptStatus.pending.rawValue
+
     // MARK: - Init
 
     /// 依領域型別 ``LedgerOrder`` 建立持久化記錄。
@@ -123,6 +133,8 @@ final class OrderRecord {
         self.paymentMethod = order.paymentMethod
         self.notes = order.notes
         self.verificationStatus = order.verificationStatus
+        self.campaignName = order.campaignName
+        self.paymentReceiptStatus = order.paymentReceiptStatus.rawValue
     }
 }
 
@@ -156,7 +168,9 @@ extension OrderRecord {
             category: category,
             paymentMethod: paymentMethod,
             notes: notes,
-            verificationStatus: verificationStatus
+            verificationStatus: verificationStatus,
+            campaignName: campaignName,
+            paymentReceiptStatus: PaymentReceiptStatus(rawValue: paymentReceiptStatus) ?? .pending
         )
     }
 
@@ -183,5 +197,7 @@ extension OrderRecord {
         self.paymentMethod = order.paymentMethod
         self.notes = order.notes
         self.verificationStatus = order.verificationStatus
+        self.campaignName = order.campaignName
+        self.paymentReceiptStatus = order.paymentReceiptStatus.rawValue
     }
 }

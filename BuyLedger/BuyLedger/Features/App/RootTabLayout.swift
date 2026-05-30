@@ -46,6 +46,8 @@ private extension RootTabLayout {
             DashboardView(store: store)
         case .orders:
             OrdersView(store: store.scope(state: \.orders, action: \.orders))
+        case .campaigns:
+            CampaignListView(store: store)
         case .insights:
             InsightsView(store: store)
         case .more:

@@ -27,6 +27,9 @@ struct RootFeature {
         /// 訂單功能狀態。
         var orders = OrdersFeature.State()
 
+        /// 開團功能狀態。
+        var campaigns = CampaignFeature.State()
+
         /// 匯率工具狀態。
         var fx = FxFeature.State()
 
@@ -79,8 +82,14 @@ struct RootFeature {
         /// 使用者從分析頁點擊類別 bar，跳到訂單頁並把搜尋字串設為類別名。
         case categorySelected(String)
 
+        /// 使用者從 Dashboard 開團卡或 Insights 開團排行點擊某個開團，跳到開團頁並開啟該團詳情。
+        case campaignSelected(String)
+
         /// 訂單功能事件。
         case orders(OrdersFeature.Action)
+
+        /// 開團功能事件。
+        case campaigns(CampaignFeature.Action)
 
         /// 匯率工具事件。
         case fx(FxFeature.Action)
@@ -118,6 +127,10 @@ struct RootFeature {
     var body: some Reducer<State, Action> {
         Scope(state: \.orders, action: \.orders) {
             OrdersFeature()
+        }
+
+        Scope(state: \.campaigns, action: \.campaigns) {
+            CampaignFeature()
         }
 
         Scope(state: \.fx, action: \.fx) {
@@ -200,6 +213,12 @@ struct RootFeature {
                 state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now).first?.id
                 return .none
 
+            case let .campaignSelected(name):
+                // 從 Dashboard 開團卡或 Insights 開團排行深連結：切到開團頁並選取該團 (CampaignListView 觀察 selectedCampaignID 後 push 詳情)。
+                state.selectedTab = .campaigns
+                state.campaigns.selectedCampaignID = state.campaigns.campaigns.first { $0.name == name }?.id
+                return .none
+
             // AI 未開啟提示 alert 的「前往開啟」：導覽由 root 負責。
             case .orders(.aiDisabledAlert(.presented(.goToAISettings))):
                 #if os(macOS)
@@ -217,6 +236,25 @@ struct RootFeature {
                 #endif
 
             case .orders:
+                return .none
+
+            case let .campaigns(.campaignRenamed(from, to)):
+                // CampaignFeature 已處理開團主檔與訂單表 (DB) 的 cascade；此處只同步 OrdersFeature 的 in-memory 副本。
+                let trimmedFrom = from.trimmingCharacters(in: .whitespacesAndNewlines)
+                let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !trimmedFrom.isEmpty, !trimmedTo.isEmpty, trimmedFrom != trimmedTo {
+                    state.orders.orders = state.orders.orders.map { order in
+                        guard order.campaignName == trimmedFrom else { return order }
+                        return rebuildOrder(order, campaignName: trimmedTo)
+                    }
+                }
+                state.orders.campaigns = state.campaigns.campaigns
+                return .none
+
+            case .campaigns:
+                // 任何開團變更 (載入／自動轉狀態／新增／狀態／結團／刪除) 後，同步 OrdersFeature 的開團副本，
+                // 供訂單編輯選團與訂單列表按開團狀態篩選使用。
+                state.orders.campaigns = state.campaigns.campaigns
                 return .none
 
             case .fx:
@@ -522,13 +560,15 @@ struct RootFeature {
     ///   - category: 若不為 `nil` 則覆寫 category。
     ///   - paymentMethod: 若不為 `nil` 則覆寫 paymentMethod。
     ///   - verificationStatus: 若不為 `nil` 則覆寫 verificationStatus。
+    ///   - campaignName: 若不為 `nil` 則覆寫 campaignName。
     /// - Returns: 重建後的訂單。
     private func rebuildOrder(
         _ order: LedgerOrder,
         orderSource: String? = nil,
         category: String? = nil,
         paymentMethod: String? = nil,
-        verificationStatus: String? = nil
+        verificationStatus: String? = nil,
+        campaignName: String? = nil
     ) -> LedgerOrder {
         LedgerOrder(
             id: order.id,
@@ -551,7 +591,9 @@ struct RootFeature {
             category: category ?? order.category,
             paymentMethod: paymentMethod ?? order.paymentMethod,
             notes: order.notes,
-            verificationStatus: verificationStatus ?? order.verificationStatus
+            verificationStatus: verificationStatus ?? order.verificationStatus,
+            campaignName: campaignName ?? order.campaignName,
+            paymentReceiptStatus: order.paymentReceiptStatus
         )
     }
 }

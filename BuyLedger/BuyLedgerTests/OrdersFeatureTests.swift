@@ -652,7 +652,9 @@ struct OrdersFeatureTests {
             category: category,
             paymentMethod: paymentMethod,
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
     }
 }

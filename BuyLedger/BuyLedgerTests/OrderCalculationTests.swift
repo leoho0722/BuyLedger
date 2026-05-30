@@ -39,7 +39,9 @@ struct OrderCalculationTests {
             category: "美妝",
             paymentMethod: "",
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
 
         let summary = OrderSummary(order: order)
@@ -80,7 +82,9 @@ struct OrderCalculationTests {
             category: "測試",
             paymentMethod: "",
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
 
         let summary = OrderSummary(order: order)
@@ -119,7 +123,9 @@ struct OrderCalculationTests {
             category: "測試",
             paymentMethod: "",
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
 
         let summary = OrderSummary(order: order)
@@ -159,7 +165,9 @@ struct OrderCalculationTests {
             category: "測試",
             paymentMethod: "無卡存款",
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
 
         let summary = OrderSummary(order: order)
@@ -196,7 +204,9 @@ struct OrderCalculationTests {
             category: "測試",
             paymentMethod: "無卡",
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
 
         let summary = OrderSummary(order: order)
@@ -241,7 +251,9 @@ struct OrderCalculationTests {
             category: "精品",
             paymentMethod: "",
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
         
         let summary = OrderSummary(order: order)
@@ -281,7 +293,9 @@ struct OrderCalculationTests {
             category: "測試",
             paymentMethod: "",
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
 
         let summary = OrderSummary(order: order)

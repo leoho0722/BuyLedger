@@ -96,8 +96,81 @@ private extension DashboardView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 titleHeader(palette: palette)
                 heroAndKpiRow(stats: stats, palette: palette)
+                ongoingCampaignsSection(palette: palette)
                 recentOrdersSection(stats: stats, palette: palette)
             }
+        }
+    }
+
+    /// 「進行中的開團」卡：列出 ``CampaignStatus/ongoing`` 的開團與其進度；沒有進行中的開團時整卡隱藏。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 進行中的開團卡 view (無進行中團時為 `EmptyView`)。
+    @ViewBuilder
+    func ongoingCampaignsSection(palette: BLPalette) -> some View {
+        let ongoing = store.campaigns.campaigns.filter { $0.status == .ongoing }
+
+        if !ongoing.isEmpty {
+            VStack(alignment: .leading, spacing: BLSpacing.medium) {
+                Text("進行中的開團")
+                    .font(.headline)
+                    .foregroundStyle(palette.label)
+
+                BLCard {
+                    VStack(spacing: BLSpacing.medium) {
+                        ForEach(Array(ongoing.enumerated()), id: \.element.id) { index, campaign in
+                            Button {
+                                store.send(.campaignSelected(campaign.name))
+                            } label: {
+                                ongoingCampaignRow(campaign: campaign, palette: palette)
+                                    .contentShape(Rectangle())
+                            }
+                            .buttonStyle(.plain)
+
+                            if index < ongoing.count - 1 {
+                                Divider()
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    /// 「進行中的開團」卡的單列：團名、筆數／金額與到貨／收款進度。
+    /// - Parameters:
+    ///   - campaign: 進行中的開團。
+    ///   - palette: 目前外觀使用的色盤。
+    /// - Returns: 單列 view。
+    func ongoingCampaignRow(campaign: Campaign, palette: BLPalette) -> some View {
+        let summary = CampaignSummary(campaignName: campaign.name, orders: store.orders.orders)
+
+        return VStack(alignment: .leading, spacing: BLSpacing.small) {
+            HStack(spacing: BLSpacing.small) {
+                Text(campaign.name)
+                    .font(.subheadline.weight(.semibold))
+                    .foregroundStyle(palette.label)
+                    .lineLimit(1)
+
+                Spacer(minLength: 0)
+
+                Text("\(summary.orderCount) 筆 · \(CampaignFormatters.twd(summary.receivables))")
+                    .font(.caption)
+                    .foregroundStyle(palette.secondaryLabel)
+                    .monospacedDigit()
+            }
+
+            BLProgressBar(
+                title: "到貨",
+                value: summary.deliveryRatio,
+                trailingText: "\(summary.deliveredCount)/\(summary.activeCount)"
+            )
+
+            BLProgressBar(
+                title: "收款",
+                value: summary.receivedRatio,
+                tint: palette.green,
+                trailingText: CampaignFormatters.twd(summary.receivedAmount)
+            )
         }
     }
 

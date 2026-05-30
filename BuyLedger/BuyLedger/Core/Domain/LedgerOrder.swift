@@ -81,6 +81,16 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 僅在 ``paymentMethod`` 屬於無卡或銀行匯款 (款項不會即時入帳、需事後人工對帳) 時有意義；其他付款方式一律以空字串帶入。對應可自訂主檔 ``LookupKind/verificationStatus``。
     let verificationStatus: String
 
+    /// 歸屬的開團名稱。
+    ///
+    /// 沿用 ``orderSource`` 的字串名稱引用模式；空字串代表未歸屬任何開團 (散單)。開團改名時由 ``RootFeature`` 統一 cascade 更新所有相符訂單。
+    let campaignName: String
+
+    /// 收款狀態 (待收款／已收款)。
+    ///
+    /// 作為開團分貨清單與結團結算判定「已收款」的唯一來源；對所有付款方式皆有意義，預設為 ``PaymentReceiptStatus/pending``。
+    let paymentReceiptStatus: PaymentReceiptStatus
+
     // MARK: - Computed Properties
 
     /// 訂單的財務摘要。

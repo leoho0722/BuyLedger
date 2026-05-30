@@ -190,7 +190,9 @@ struct RootFeatureTests {
             category: order.category,
             paymentMethod: "匯款",
             notes: order.notes,
-            verificationStatus: order.verificationStatus
+            verificationStatus: order.verificationStatus,
+            campaignName: order.campaignName,
+            paymentReceiptStatus: order.paymentReceiptStatus
         )
 
         var state = RootFeature.State()
@@ -283,7 +285,9 @@ private extension RootFeatureTests {
             category: category,
             paymentMethod: "",
             notes: "",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
     }
 }

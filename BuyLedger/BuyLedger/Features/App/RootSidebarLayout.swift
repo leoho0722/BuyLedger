@@ -62,6 +62,7 @@ private extension RootSidebarLayout {
             Section("工作區") {
                 navRow(.dashboard, palette: palette)
                 navRow(.orders, palette: palette, badgeCount: activeOrderCount)
+                navRow(.campaigns, palette: palette)
                 navRow(.insights, palette: palette)
             }
 
@@ -187,6 +188,8 @@ private extension RootSidebarLayout {
             DashboardView(store: store)
         case .orders:
             OrdersView(store: store.scope(state: \.orders, action: \.orders))
+        case .campaigns:
+            CampaignListView(store: store)
         case .insights:
             InsightsView(store: store)
         case .more:

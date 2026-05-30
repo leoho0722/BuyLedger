@@ -68,6 +68,15 @@ struct OrdersFeature {
         /// 對帳狀態主檔 (從 ``VerificationStatusRepository`` 載入)。
         var verificationStatusMaster: [String] = []
 
+        /// 開團主檔 (從 ``CampaignRepository`` 載入)；持有完整 ``Campaign`` 而非僅名稱，以便訂單列表按開團狀態篩選時解析每筆訂單所屬團的狀態。
+        var campaigns: [Campaign] = []
+
+        /// 目前套用的指定開團篩選；`nil` 代表全部開團。
+        var selectedCampaign: String?
+
+        /// 目前套用的開團狀態篩選；`nil` 代表全部狀態。
+        var selectedCampaignStatus: CampaignStatus?
+
         /// 指示訂單是否正在載入。
         var isLoading = false
         
@@ -112,9 +121,28 @@ struct OrdersFeature {
                 )
                 let matchesCategory = selectedCategory.map { $0 == order.category } ?? true
                 let matchesPaymentMethod = selectedPaymentMethod.map { $0 == order.paymentMethod } ?? true
+                let matchesCampaign = selectedCampaign.map { $0 == order.campaignName } ?? true
+                let matchesCampaignStatus = selectedCampaignStatus.map { status in
+                    campaignStatus(for: order) == status
+                } ?? true
 
-                return matchesStatus && matchesSearch && matchesDate && matchesCategory && matchesPaymentMethod
+                return matchesStatus
+                    && matchesSearch
+                    && matchesDate
+                    && matchesCategory
+                    && matchesPaymentMethod
+                    && matchesCampaign
+                    && matchesCampaignStatus
             }
+        }
+
+        /// 解析訂單所屬開團的狀態；未歸團或在 ``campaigns`` 找不到對應開團時回傳 `nil`。
+        /// - Parameter order: 要解析的訂單。
+        /// - Returns: 所屬開團的狀態，或 `nil`。
+        func campaignStatus(for order: LedgerOrder) -> CampaignStatus? {
+            let name = order.campaignName.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty else { return nil }
+            return campaigns.first { $0.name == name }?.status
         }
 
         /// 目前選取的訂單。
@@ -200,6 +228,16 @@ struct OrdersFeature {
             return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
         }
 
+        /// 對外提供給編輯表單的「可用開團」清單：合併開團主檔名稱與既有訂單中使用過的開團名稱，去重後依 locale 排序。合併規則與 ``availableCategories`` 相同。
+        var availableCampaigns: [String] {
+            let fromOrders = orders
+                .map { $0.campaignName.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            var merged = Set(campaigns.map(\.name))
+            merged.formUnion(fromOrders)
+            return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        }
+
         // MARK: - AI Method
 
         /// 把目前篩選後訂單的商品明細整理成給模型的純文字摘要輸入。
@@ -281,6 +319,9 @@ struct OrdersFeature {
         /// 對帳狀態主檔載入完成。
         case verificationStatusMasterLoaded([String])
 
+        /// 開團主檔載入完成。
+        case campaignsLoaded([Campaign])
+
         /// 使用者切換狀態篩選。
         case statusFilterSelected(OrderStatusFilter)
         
@@ -292,6 +333,12 @@ struct OrdersFeature {
 
         /// 使用者切換付款方式篩選 (`nil` = 全部)。
         case paymentMethodFilterSelected(String?)
+
+        /// 使用者切換指定開團篩選 (`nil` = 全部開團)。
+        case campaignFilterSelected(String?)
+
+        /// 使用者切換開團狀態篩選 (`nil` = 全部狀態)。
+        case campaignStatusFilterSelected(CampaignStatus?)
 
         /// 使用者輸入搜尋文字。
         case searchTextChanged(String)
@@ -310,6 +357,9 @@ struct OrdersFeature {
         
         /// 透過詳情頁的「更新狀態」menu 直接切換訂單狀態。
         case statusChanged(LedgerOrder.ID, OrderStatus)
+
+        /// 切換訂單收款狀態 (待收款／已收款)；供開團詳情頁逐筆勾稽收款使用。
+        case receiptStatusChanged(LedgerOrder.ID, PaymentReceiptStatus)
 
         /// 使用者點擊「刪除」按鈕，要求刪除指定訂單；先以 ``deletionConfirmation`` 二次確認。
         case deleteOrderTapped(LedgerOrder.ID)
@@ -355,6 +405,9 @@ struct OrdersFeature {
     /// 對帳狀態主檔資料來源。
     @Dependency(VerificationStatusRepository.self) private var verificationStatusRepository
 
+    /// 開團主檔資料來源。
+    @Dependency(CampaignRepository.self) private var campaignRepository
+
     /// 用於新訂單的 UUID 產生器，方便在測試中注入固定值。
     @Dependency(\.uuid) private var uuid
 
@@ -382,6 +435,7 @@ struct OrdersFeature {
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
                 let verificationStatusRepository = verificationStatusRepository
+                let campaignRepository = campaignRepository
                 state.isLoading = true
                 state.errorMessage = nil
 
@@ -389,6 +443,11 @@ struct OrdersFeature {
                     async let orderSourcesTask: Void = {
                         if let items = try? await orderSourceRepository.fetchOrderSources() {
                             await send(.orderSourceMasterLoaded(items))
+                        }
+                    }()
+                    async let campaignsTask: Void = {
+                        if let items = try? await campaignRepository.fetchCampaigns() {
+                            await send(.campaignsLoaded(items))
                         }
                     }()
                     async let categoriesTask: Void = {
@@ -414,7 +473,7 @@ struct OrdersFeature {
                         await send(.ordersFailed("訂單載入失敗，請稍後再試。"))
                     }
 
-                    _ = await (orderSourcesTask, categoriesTask, paymentMethodsTask, verificationStatusesTask)
+                    _ = await (orderSourcesTask, campaignsTask, categoriesTask, paymentMethodsTask, verificationStatusesTask)
                 }
 
             case let .orderSourceMasterLoaded(items):
@@ -432,7 +491,11 @@ struct OrdersFeature {
             case let .verificationStatusMasterLoaded(items):
                 state.verificationStatusMaster = items
                 return .none
-                
+
+            case let .campaignsLoaded(campaigns):
+                state.campaigns = campaigns
+                return .none
+
             case let .ordersLoaded(orders):
                 state.isLoading = false
                 state.hasLoaded = true
@@ -465,6 +528,16 @@ struct OrdersFeature {
                 state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
                 return .none
 
+            case let .campaignFilterSelected(campaign):
+                state.selectedCampaign = campaign
+                state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                return .none
+
+            case let .campaignStatusFilterSelected(campaignStatus):
+                state.selectedCampaignStatus = campaignStatus
+                state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                return .none
+
             case let .searchTextChanged(searchText):
                 state.searchText = searchText
                 state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
@@ -485,6 +558,7 @@ struct OrdersFeature {
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
                     availableVerificationStatuses: state.availableVerificationStatuses,
+                    availableCampaigns: state.availableCampaigns,
                     currentDate: date.now
                 )
                 return .none
@@ -495,6 +569,7 @@ struct OrdersFeature {
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
                     availableVerificationStatuses: state.availableVerificationStatuses,
+                    availableCampaigns: state.availableCampaigns,
                     currentDate: date.now
                 )
                 return .none
@@ -614,10 +689,51 @@ struct OrdersFeature {
                     category: existing.category,
                     paymentMethod: existing.paymentMethod,
                     notes: existing.notes,
-                    verificationStatus: existing.verificationStatus
+                    verificationStatus: existing.verificationStatus,
+                    campaignName: existing.campaignName,
+                    paymentReceiptStatus: existing.paymentReceiptStatus
                 )
                 state.orders[index] = updated
-                
+
+                let orderRepository = orderRepository
+                return .run { _ in
+                    try? await orderRepository.saveOrder(updated)
+                }
+
+            case let .receiptStatusChanged(orderID, newReceiptStatus):
+                guard let index = state.orders.firstIndex(where: { $0.id == orderID }),
+                      state.orders[index].paymentReceiptStatus != newReceiptStatus else {
+                    return .none
+                }
+
+                let existing = state.orders[index]
+                let updated = LedgerOrder(
+                    id: existing.id,
+                    customer: existing.customer,
+                    status: existing.status,
+                    currency: existing.currency,
+                    date: existing.date,
+                    items: existing.items,
+                    itemCost: existing.itemCost,
+                    domesticShipping: existing.domesticShipping,
+                    internationalShipping: existing.internationalShipping,
+                    foreignDomesticShipping: existing.foreignDomesticShipping,
+                    cardFeeRate: existing.cardFeeRate,
+                    platformFeeRate: existing.platformFeeRate,
+                    paymentFeeRate: existing.paymentFeeRate,
+                    chargedAmount: existing.chargedAmount,
+                    cardlessDeductionAmount: existing.cardlessDeductionAmount,
+                    cardlessSupplementAmount: existing.cardlessSupplementAmount,
+                    orderSource: existing.orderSource,
+                    category: existing.category,
+                    paymentMethod: existing.paymentMethod,
+                    notes: existing.notes,
+                    verificationStatus: existing.verificationStatus,
+                    campaignName: existing.campaignName,
+                    paymentReceiptStatus: newReceiptStatus
+                )
+                state.orders[index] = updated
+
                 let orderRepository = orderRepository
                 return .run { _ in
                     try? await orderRepository.saveOrder(updated)
@@ -775,7 +891,9 @@ private extension OrdersFeature {
                 category: trimmedCategory.isEmpty ? existing.category : trimmedCategory,
                 paymentMethod: trimmedPaymentMethod.isEmpty ? existing.paymentMethod : trimmedPaymentMethod,
                 notes: trimmedNotes,
-                verificationStatus: normalizedVerificationStatus
+                verificationStatus: normalizedVerificationStatus,
+                campaignName: draft.draftCampaignName.trimmingCharacters(in: .whitespacesAndNewlines),
+                paymentReceiptStatus: draft.draftPaymentReceiptStatus
             )
             state.orders[index] = updatedOrder
             return updatedOrder
@@ -807,7 +925,9 @@ private extension OrdersFeature {
                 category: resolvedCategory,
                 paymentMethod: trimmedPaymentMethod,
                 notes: trimmedNotes,
-                verificationStatus: normalizedVerificationStatus
+                verificationStatus: normalizedVerificationStatus,
+                campaignName: draft.draftCampaignName.trimmingCharacters(in: .whitespacesAndNewlines),
+                paymentReceiptStatus: draft.draftPaymentReceiptStatus
             )
 
             state.orders.insert(newOrder, at: 0)

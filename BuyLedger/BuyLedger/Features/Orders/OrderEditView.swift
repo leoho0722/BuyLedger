@@ -115,6 +115,22 @@ struct OrderEditView: View {
                     }
                 }
                 
+                Section("開團與收款") {
+                    Picker("開團", selection: $store.draftCampaignName) {
+                        Text("未歸團").tag("")
+                        ForEach(store.availableCampaigns, id: \.self) { name in
+                            Text(name).tag(name)
+                        }
+                    }
+
+                    Picker("收款狀態", selection: $store.draftPaymentReceiptStatus) {
+                        ForEach(PaymentReceiptStatus.allCases) { status in
+                            Text(status.title).tag(status)
+                        }
+                    }
+                    .pickerStyle(.segmented)
+                }
+
                 Section("成本 (NT$)") {
                     decimalField(title: "商品成本", value: $store.draftItemCost)
                     decimalField(title: "外國國內運費", value: $store.draftForeignDomesticShipping)

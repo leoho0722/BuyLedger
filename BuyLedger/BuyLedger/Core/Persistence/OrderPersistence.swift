@@ -115,6 +115,20 @@ actor OrderPersistence {
         try modelContext.save()
     }
 
+    /// 把所有歸屬 `oldName` 開團的訂單，更名為 `newName` (開團 cascade rename)。
+    /// - Parameters:
+    ///   - oldName: 原本的開團名稱。
+    ///   - newName: 新的開團名稱。
+    func renameCampaign(from oldName: String, to newName: String) throws {
+        let descriptor = FetchDescriptor<OrderRecord>(
+            predicate: #Predicate { $0.campaignName == oldName }
+        )
+        for record in try modelContext.fetch(descriptor) {
+            record.campaignName = newName
+        }
+        try modelContext.save()
+    }
+
     /// 若目前資料表為空，將提供的 sample data 寫入；否則 no-op。
     ///
     /// 這個 helper 讓 App 第一次啟動時看到 demo 資料，後續編輯都會持久化。

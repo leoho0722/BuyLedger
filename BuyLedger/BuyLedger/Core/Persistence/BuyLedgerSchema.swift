@@ -644,7 +644,7 @@ enum BuyLedgerSchemaV6: VersionedSchema {
 ///
 /// 兩個新欄位皆帶 default 值 (`""` 與 `false`)，``VerificationStatusRecord`` 為全新 model (新表)，三者皆可由 SwiftData lightweight migration 處理，故 V6 → V7 走 lightweight。
 ///
-/// V7 為目前最新版本，``models`` 引用 top-level 定義 (已含新欄位與新表)；V6 (及更早) 已凍結為影子型別。
+/// V7.OrderRecord 改為影子型別以「凍結」當時的 attribute 集合 (已含 `verificationStatus`，但尚未含 V8 的 `campaignName` 與 `paymentReceiptStatus`)，避免 V8 變更 top-level OrderRecord 時破壞 V7 schema fingerprint。``PaymentMethodRecord`` 等其餘型別在 V8 未變更，故 V7 繼續引用 top-level。
 enum BuyLedgerSchemaV7: VersionedSchema {
 
     // MARK: - Static Properties
@@ -652,7 +652,7 @@ enum BuyLedgerSchemaV7: VersionedSchema {
     /// 版本識別。
     static var versionIdentifier: Schema.Version { Schema.Version(7, 0, 0) }
 
-    /// 此版本包含的 model 型別；引用 top-level 定義 (已含 V7 新增的欄位與 ``VerificationStatusRecord`` 新表)。
+    /// 此版本包含的 model 型別；``OrderRecord`` 指向本 enum 內凍結的影子型別，其餘未變更型別 (``CategoryRecord`` / ``PaymentMethodRecord`` / ``CurrencyMetadataRecord`` / ``OrderSourceRecord`` / ``VerificationStatusRecord``) 維持引用 top-level。
     static var models: [any PersistentModel.Type] {
         [
             OrderRecord.self,
@@ -661,6 +661,109 @@ enum BuyLedgerSchemaV7: VersionedSchema {
             CurrencyMetadataRecord.self,
             OrderSourceRecord.self,
             VerificationStatusRecord.self,
+        ]
+    }
+
+    /// V7 時代的 ``OrderRecord`` 影子；只在 SwiftData migration 用，與當時版本的屬性集合一致 (已含 V7 的 `verificationStatus`，尚未含 V8 的 `campaignName` 與 `paymentReceiptStatus`)。
+    @Model
+    final class OrderRecord {
+
+        // MARK: - Data Properties
+
+        var id: String
+        var customer: LedgerCustomer
+        var status: OrderStatus
+        var currency: String
+        var date: Date
+        var items: [LedgerOrderItem]
+        var itemCost: Decimal
+        var domesticShipping: Decimal
+        var internationalShipping: Decimal
+        var foreignDomesticShipping: Decimal = 0
+        var cardFeeRate: Decimal
+        var platformFeeRate: Decimal
+        var paymentFeeRate: Decimal = 0
+        var chargedAmount: Decimal
+        var cardlessDeductionAmount: Decimal = 0
+        var cardlessSupplementAmount: Decimal = 0
+        var orderSource: String = ""
+        var category: String
+        var paymentMethod: String = ""
+        var notes: String = ""
+        var verificationStatus: String = ""
+
+        // MARK: - Init
+
+        init(
+            id: String,
+            customer: LedgerCustomer,
+            status: OrderStatus,
+            currency: String,
+            date: Date,
+            items: [LedgerOrderItem],
+            itemCost: Decimal,
+            domesticShipping: Decimal,
+            internationalShipping: Decimal,
+            foreignDomesticShipping: Decimal = 0,
+            cardFeeRate: Decimal,
+            platformFeeRate: Decimal,
+            paymentFeeRate: Decimal = 0,
+            chargedAmount: Decimal,
+            cardlessDeductionAmount: Decimal = 0,
+            cardlessSupplementAmount: Decimal = 0,
+            orderSource: String = "",
+            category: String,
+            paymentMethod: String = "",
+            notes: String = "",
+            verificationStatus: String = ""
+        ) {
+            self.id = id
+            self.customer = customer
+            self.status = status
+            self.currency = currency
+            self.date = date
+            self.items = items
+            self.itemCost = itemCost
+            self.domesticShipping = domesticShipping
+            self.internationalShipping = internationalShipping
+            self.foreignDomesticShipping = foreignDomesticShipping
+            self.cardFeeRate = cardFeeRate
+            self.platformFeeRate = platformFeeRate
+            self.paymentFeeRate = paymentFeeRate
+            self.chargedAmount = chargedAmount
+            self.cardlessDeductionAmount = cardlessDeductionAmount
+            self.cardlessSupplementAmount = cardlessSupplementAmount
+            self.orderSource = orderSource
+            self.category = category
+            self.paymentMethod = paymentMethod
+            self.notes = notes
+            self.verificationStatus = verificationStatus
+        }
+    }
+}
+
+/// V8 schema：在 V7 之上為 ``OrderRecord`` 新增 ``OrderRecord/campaignName`` (歸屬開團) 與 ``OrderRecord/paymentReceiptStatus`` (收款狀態)，並加入獨立主檔 ``CampaignRecord``。
+///
+/// 兩個新欄位皆帶 default 值 (`""` 與 ``PaymentReceiptStatus/pending`` 的 rawValue)，``CampaignRecord`` 為全新 model (新表)，三者皆可由 SwiftData lightweight migration 處理，故 V7 → V8 走 lightweight。
+///
+/// V8 為目前最新版本，``models`` 引用 top-level 定義 (已含新欄位與 ``CampaignRecord`` 新表)；V7 (及更早) 已凍結為影子型別。
+enum BuyLedgerSchemaV8: VersionedSchema {
+
+    // MARK: - Static Properties
+
+    /// 版本識別。
+    static var versionIdentifier: Schema.Version { Schema.Version(8, 0, 0) }
+
+    /// 此版本包含的 model 型別；引用 top-level 定義 (已含 V8 新增的欄位與 ``CampaignRecord`` 新表)。
+    static var models: [any PersistentModel.Type] {
+        [
+            OrderRecord.self,
+            CategoryRecord.self,
+            PaymentMethodRecord.self,
+            CurrencyMetadataRecord.self,
+            OrderSourceRecord.self,
+            VerificationStatusRecord.self,
+            CampaignRecord.self,
         ]
     }
 }
@@ -682,10 +785,11 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
             BuyLedgerSchemaV5.self,
             BuyLedgerSchemaV6.self,
             BuyLedgerSchemaV7.self,
+            BuyLedgerSchemaV8.self,
         ]
     }
 
-    /// V1 → V2 (custom dump-and-restore)、V2 → V3 (lightweight，新增 default 欄位)、V3 → V4 (lightweight，新增 default 欄位)、V4 → V5 (lightweight，新增 default 欄位與 ``OrderSourceRecord`` 新表)、V5 → V6 (lightweight，新增 default 欄位 `notes`)、V6 → V7 (lightweight，新增 default 欄位 `verificationStatus` / `isBankTransfer` 與 ``VerificationStatusRecord`` 新表)。
+    /// V1 → V2 (custom dump-and-restore)、V2 → V3 (lightweight，新增 default 欄位)、V3 → V4 (lightweight，新增 default 欄位)、V4 → V5 (lightweight，新增 default 欄位與 ``OrderSourceRecord`` 新表)、V5 → V6 (lightweight，新增 default 欄位 `notes`)、V6 → V7 (lightweight，新增 default 欄位 `verificationStatus` / `isBankTransfer` 與 ``VerificationStatusRecord`` 新表)、V7 → V8 (lightweight，新增 default 欄位 `campaignName` / `paymentReceiptStatus` 與 ``CampaignRecord`` 新表)。
     static var stages: [MigrationStage] {
         [
             .custom(
@@ -771,6 +875,10 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
             .lightweight(
                 fromVersion: BuyLedgerSchemaV6.self,
                 toVersion: BuyLedgerSchemaV7.self
+            ),
+            .lightweight(
+                fromVersion: BuyLedgerSchemaV7.self,
+                toVersion: BuyLedgerSchemaV8.self
             )
         ]
     }

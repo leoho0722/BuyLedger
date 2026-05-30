@@ -75,7 +75,9 @@ struct OrderPersistenceTests {
             category: "美妝",
             paymentMethod: "",
             notes: "建立時的備註",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
 
         try await persistence.upsert(order)
@@ -115,7 +117,9 @@ struct OrderPersistenceTests {
             category: original.category,
             paymentMethod: original.paymentMethod,
             notes: "更新後的備註",
-            verificationStatus: ""
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
 
         try await persistence.upsert(modified)
@@ -152,7 +156,9 @@ struct OrderPersistenceTests {
             category: "美妝",
             paymentMethod: "銀行匯款",
             notes: "",
-            verificationStatus: "待對帳"
+            verificationStatus: "待對帳",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
 
         try await persistence.upsert(order)
@@ -184,7 +190,9 @@ struct OrderPersistenceTests {
             category: "美妝",
             paymentMethod: "銀行匯款",
             notes: "",
-            verificationStatus: "待對帳"
+            verificationStatus: "待對帳",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
         try await persistence.upsert(order)
 

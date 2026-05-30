@@ -220,6 +220,7 @@ private extension InsightsView {
                 rangePicker
                 trendCard(stats: stats, palette: palette)
                 breakdownGrid(stats: stats, palette: palette)
+                campaignProfitCard(palette: palette)
                 heatmapCard(palette: palette)
             }
             .padding(.horizontal, BLSpacing.large)
@@ -327,6 +328,49 @@ private extension InsightsView {
         }
     }
     
+    /// 每團毛利排行卡：依毛利由高到低排序各開團 (排除無歸屬訂單的團)；點擊跳到該開團詳情。沒有可排行的開團時整卡隱藏。
+    /// - Parameter palette: 目前外觀使用的色盤。
+    /// - Returns: 開團毛利排行卡 view (無資料時為 `EmptyView`)。
+    @ViewBuilder
+    func campaignProfitCard(palette: BLPalette) -> some View {
+        let ranked = store.campaigns.campaigns
+            .map { ($0, CampaignSummary(campaignName: $0.name, orders: store.orders.orders)) }
+            .filter { $0.1.orderCount > 0 }
+            .sorted { $0.1.profit > $1.1.profit }
+
+        if !ranked.isEmpty {
+            BLCard {
+                VStack(alignment: .leading, spacing: BLSpacing.medium) {
+                    Text("每團毛利排行")
+                        .font(.subheadline.weight(.semibold))
+                        .foregroundStyle(palette.label)
+
+                    let topProfit = max(NSDecimalNumber(decimal: ranked.first?.1.profit ?? 1).doubleValue, 1)
+                    ForEach(Array(ranked.enumerated()), id: \.element.0.id) { index, item in
+                        let campaign = item.0
+                        let summary = item.1
+                        let ratio = NSDecimalNumber(decimal: summary.profit).doubleValue / topProfit
+
+                        Button {
+                            store.send(.campaignSelected(campaign.name))
+                        } label: {
+                            BLProgressBar(
+                                title: "\(index + 1). \(campaign.name)",
+                                value: ratio,
+                                tint: palette.accent,
+                                trailingText: CampaignFormatters.twd(summary.profit)
+                            )
+                            .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityHint("查看 \(campaign.name) 的詳情")
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+        }
+    }
+
     /// 類別排行卡。
     /// - Parameters:
     ///   - stats: 已計算的分析資料。

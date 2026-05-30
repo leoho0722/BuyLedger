@@ -38,6 +38,9 @@ struct OrderRepository: Sendable {
 
     /// 把所有訂單的 ``LedgerOrder/verificationStatus`` 由 `oldName` 改成 `newName` (cascade rename)。
     var renameOrderVerificationStatus: @Sendable (String, String) async throws -> Void
+
+    /// 把所有訂單的 ``LedgerOrder/campaignName`` 由 `oldName` 改成 `newName` (開團 cascade rename)。
+    var renameOrderCampaign: @Sendable (String, String) async throws -> Void
 }
 
 extension OrderRepository {
@@ -96,6 +99,12 @@ extension OrderRepository {
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else { return }
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.renameVerificationStatus(from: oldName, to: trimmedNew)
+            },
+            renameOrderCampaign: { oldName, newName in
+                let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmedNew.isEmpty, trimmedNew != oldName else { return }
+                let persistence = await Self.makePersistence(container: container)
+                try await persistence.renameCampaign(from: oldName, to: trimmedNew)
             }
         )
     }
@@ -136,7 +145,8 @@ extension OrderRepository: DependencyKey {
         renameOrderSource: { _, _ in },
         renameOrderCategory: { _, _ in },
         renameOrderPaymentMethod: { _, _ in },
-        renameOrderVerificationStatus: { _, _ in }
+        renameOrderVerificationStatus: { _, _ in },
+        renameOrderCampaign: { _, _ in }
     )
 }
 

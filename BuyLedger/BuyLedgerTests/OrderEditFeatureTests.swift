@@ -194,7 +194,9 @@ struct OrderEditFeatureTests {
             category: "美妝",
             paymentMethod: "銀行匯款",
             notes: "",
-            verificationStatus: "待對帳"
+            verificationStatus: "待對帳",
+            campaignName: "",
+            paymentReceiptStatus: .pending
         )
 
         let state = OrderEditFeature.State(original: original)

@@ -18,6 +18,9 @@ enum RootTab: String, CaseIterable, Identifiable {
     /// 訂單頁。
     case orders
 
+    /// 開團頁。
+    case campaigns
+
     /// 分析頁。
     case insights
 
@@ -38,6 +41,8 @@ enum RootTab: String, CaseIterable, Identifiable {
             "總覽"
         case .orders:
             "訂單"
+        case .campaigns:
+            "開團"
         case .insights:
             "分析"
         case .more:
@@ -52,6 +57,8 @@ enum RootTab: String, CaseIterable, Identifiable {
             "house"
         case .orders:
             "list.bullet.rectangle"
+        case .campaigns:
+            "shippingbox"
         case .insights:
             "chart.bar.xaxis"
         case .more:
