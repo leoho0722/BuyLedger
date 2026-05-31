@@ -59,8 +59,11 @@ extension LedgerOrderItem: Codable {
 
     /// `Codable` 使用的鍵；刻意排除 `id`，讓既有的持久化資料也能被讀回 (缺 id 時自動產生新的 UUID)，同時避免每次寫入都把 UUID 漏進 JSON。
     private enum CodingKeys: String, CodingKey {
+
         case name
+
         case quantity
+
         case unitPrice
     }
 

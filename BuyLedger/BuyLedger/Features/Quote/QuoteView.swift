@@ -16,9 +16,9 @@ import SwiftUI
 /// - 即時建議售價 (綠→青漸層 hero 卡)
 /// - 成本拆解條與總成本
 struct QuoteView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 報價試算 store。
     @Bindable var store: StoreOf<QuoteFeature>
 
@@ -27,13 +27,13 @@ struct QuoteView: View {
 
     /// 是否顯示幣別選擇 sheet。
     @State private var showsCurrencySheet = false
-    
+
     // MARK: - View Body
-    
+
     /// 報價試算畫面內容。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
-        
+
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 statusBanner(palette: palette)
@@ -56,7 +56,7 @@ struct QuoteView: View {
 // MARK: - ViewBuilder
 
 private extension QuoteView {
-    
+
     /// 匯率載入狀態的橫幅；無錯誤且已載入時不顯示。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 狀態 view。
@@ -103,10 +103,11 @@ private extension QuoteView {
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
         }
     }
-    
+
     /// 輸入卡：客戶/商品 + 幣別 + 各項數值輸入欄。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 輸入卡 view。
+    @ViewBuilder
     func inputsCard(palette: BLPalette) -> some View {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
@@ -167,10 +168,11 @@ private extension QuoteView {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-    
+
     /// 來源幣別選擇按鈕：點開後以 sheet 列出主檔幣別供搜尋與選擇。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 幣別按鈕 view。
+    @ViewBuilder
     func currencyPicker(palette: BLPalette) -> some View {
         Button {
             showsCurrencySheet = true
@@ -208,12 +210,12 @@ private extension QuoteView {
                 options: store.availableCurrencies.map(\.rawValue),
                 selected: store.fromCurrency.rawValue,
                 displayName: { code in
-                    let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                    let locale = Locale.preferred()
                     let name = locale.localizedString(forCurrencyCode: code) ?? ""
                     return name.isEmpty ? code : "\(code) · \(name)"
                 },
                 searchKeywords: { code in
-                    Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                    Locale.preferred()
                         .localizedString(forCurrencyCode: code) ?? ""
                 },
                 onSelect: { code in
@@ -223,15 +225,6 @@ private extension QuoteView {
         }
     }
 
-    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字。
-    /// - Parameter currency: 幣別。
-    /// - Returns: 顯示字串。
-    func currencyDisplayText(for currency: CurrencyCode) -> String {
-        let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
-        let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
-        return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
-    }
-    
     /// 單一數值輸入列：label 在左、右側為對齊尾端的 `TextField` 與單位，取代原本的 slider，讓使用者可直接鍵入精確數值。
     /// - Parameters:
     ///   - label: 欄位名稱。
@@ -240,6 +233,7 @@ private extension QuoteView {
     ///   - fractionDigits: 固定顯示的小數位數；大於 0 時鍵盤改用 `decimalPad`，否則 `numberPad`。
     ///   - allowsDecimalEntry: 為 `true` 時允許輸入 0 到 2 位小數 (整數不強制補零) 並使用 `decimalPad`，供金額類欄位鍵入小數價格。
     /// - Returns: 數值輸入列 view。
+    @ViewBuilder
     func numberField(
         label: String,
         value: Binding<Double>,
@@ -276,32 +270,23 @@ private extension QuoteView {
         }
     }
 
-    /// 包裝 `Binding<Double>`，寫入時把負數 clamp 成 `0`；報價試算的所有數值皆無負值意義。
-    /// - Parameter binding: 原始繫結。
-    /// - Returns: 寫入時保證非負的繫結。
-    func nonNegativeBinding(_ binding: Binding<Double>) -> Binding<Double> {
-        Binding(
-            get: { binding.wrappedValue },
-            set: { binding.wrappedValue = max(0, $0) }
-        )
-    }
-    
     /// 建議售價 hero 卡 (漸層綠→青)。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: hero 卡 view。
+    @ViewBuilder
     func suggestedHero(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             Text("建議售價")
                 .font(.caption.weight(.semibold))
                 .opacity(0.95)
                 .textCase(.uppercase)
-            
+
             Text(formatTwd(store.suggestedTwd))
                 .font(.system(size: 40, weight: .bold))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-            
+
             Text("預估獲利 \(formatTwd(store.estimatedProfitTwd)) · \(formatPercent(store.estimatedMarginPercent))")
                 .font(.footnote)
                 .opacity(0.95)
@@ -319,10 +304,11 @@ private extension QuoteView {
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous))
         .blCardShadow()
     }
-    
+
     /// 成本拆解卡：每項條 + 總成本。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 拆解卡 view。
+    @ViewBuilder
     func breakdownCard(palette: BLPalette) -> some View {
         let total = max(store.costTwd, 1)
         let items: [(label: String, value: Double, color: Color)] = [
@@ -333,14 +319,14 @@ private extension QuoteView {
             ("金流手續費", store.paymentFeeTwd, palette.pink),
             ("平台手續費", store.platformFeeTwd, palette.indigo),
         ]
-        
-        return BLCard {
+
+        BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("成本拆解")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(palette.tertiaryLabel)
                     .textCase(.uppercase)
-                
+
                 ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                     breakdownRow(
                         label: item.label,
@@ -350,16 +336,16 @@ private extension QuoteView {
                         palette: palette
                     )
                 }
-                
+
                 Divider()
-                
+
                 HStack {
                     Text("總成本")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(palette.label)
-                    
+
                     Spacer()
-                    
+
                     Text(formatTwd(store.costTwd))
                         .font(.subheadline.bold())
                         .monospacedDigit()
@@ -369,7 +355,7 @@ private extension QuoteView {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-    
+
     /// 拆解條的單列；以 ``BLProgressBar`` 表現各分類占總成本的比例，trailing 顯示原始 TWD 金額而非百分比。
     ///
     /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLProgressBar`` 自帶色盤推導、function body 不再讀取 palette；保留外部 label 與其他 helper (``inputsCard``、``suggestedHero`` 等) 一致，未來若需要客製拆解列的視覺也方便加回來。
@@ -380,6 +366,7 @@ private extension QuoteView {
     ///   - color: 進度條與分類的識別色。
     ///   - palette: 目前外觀使用的色盤；目前未使用，預留給未來客製需求。
     /// - Returns: 拆解列 view。
+    @ViewBuilder
     func breakdownRow(
         label: String,
         value: Double,
@@ -388,8 +375,8 @@ private extension QuoteView {
         palette _: BLPalette
     ) -> some View {
         let fraction = total > 0 ? value / total : 0
-        
-        return BLProgressBar(
+
+        BLProgressBar(
             title: label,
             value: fraction,
             tint: color,
@@ -398,10 +385,29 @@ private extension QuoteView {
     }
 }
 
-// MARK: - Formatting
+// MARK: - Private Method
 
 private extension QuoteView {
-    
+
+    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字。
+    /// - Parameter currency: 幣別。
+    /// - Returns: 顯示字串。
+    func currencyDisplayText(for currency: CurrencyCode) -> String {
+        let locale = Locale.preferred()
+        let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
+        return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
+    }
+
+    /// 包裝 `Binding<Double>`，寫入時把負數 clamp 成 `0`；報價試算的所有數值皆無負值意義。
+    /// - Parameter binding: 原始繫結。
+    /// - Returns: 寫入時保證非負的繫結。
+    func nonNegativeBinding(_ binding: Binding<Double>) -> Binding<Double> {
+        Binding(
+            get: { binding.wrappedValue },
+            set: { binding.wrappedValue = max(0, $0) }
+        )
+    }
+
     /// 將金額格式化為新台幣 (無小數位)。
     func formatTwd(_ amount: Double) -> String {
         Decimal(amount).formatted(
@@ -410,7 +416,7 @@ private extension QuoteView {
             .locale(Locale(identifier: "zh_TW"))
         )
     }
-    
+
     /// 將百分比格式化為含一位小數的字串。
     func formatPercent(_ value: Double) -> String {
         Decimal(value).formatted(.number.precision(.fractionLength(1))) + "%"

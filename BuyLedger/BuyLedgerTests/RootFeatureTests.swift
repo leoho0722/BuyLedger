@@ -12,27 +12,28 @@ import Testing
 
 @MainActor
 struct RootFeatureTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func smartGroupSelectedJumpsToOrdersAndAppliesStatus() async {
         var state = RootFeature.State()
         state.selectedTab = .dashboard
         state.orders.orders = LedgerOrder.sampleOrders
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
-        
+
         await store.send(.smartGroupSelected(.shipping)) {
             $0.selectedTab = .orders
             $0.orders.selectedStatus = .status(.shipping)
             $0.orders.selectedOrderID = "BL-2604-018"
         }
     }
-    
+
     @Test func smartGroupSelectedResetsDatePeriodAndPreviousStatus() async {
         var state = RootFeature.State()
         state.selectedTab = .dashboard
@@ -47,6 +48,7 @@ struct RootFeatureTests {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         await store.send(.smartGroupSelected(.shipping)) {
@@ -57,28 +59,29 @@ struct RootFeatureTests {
             $0.orders.selectedOrderID = "BL-2604-018"
         }
     }
-    
+
     @Test func smartGroupSelectionFlipsCorrespondingStatusChipPredicate() async {
         var state = RootFeature.State()
         state.orders.orders = LedgerOrder.sampleOrders
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
-        
+
         await store.send(.smartGroupSelected(.purchased)) {
             $0.selectedTab = .orders
             $0.orders.selectedStatus = .status(.purchased)
             $0.orders.selectedOrderID = "BL-2604-017"
         }
-        
+
         // 確認對應 chip 的「isSelected」判定 (與 view 端 `store.selectedStatus == filter` 一致) 會翻成 true，
         // 其餘狀態 chip 維持 false，避免未來 reducer 變更時 UI 同步行為悄悄走樣。
         let purchasedFilter = OrderStatusFilter.status(.purchased)
         #expect(store.state.orders.selectedStatus == purchasedFilter)
-        
+
         let otherFilters: [OrderStatusFilter] = OrderStatusFilter.orderBrowsingCases
             .filter { $0 != purchasedFilter }
         for filter in otherFilters {
@@ -97,6 +100,7 @@ struct RootFeatureTests {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         await store.send(.customerSelected("Alice")) {
@@ -120,6 +124,7 @@ struct RootFeatureTests {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // 從「分析」分頁點擊「美妝」類別 row → 切到「訂單」分頁、類別篩選膠囊套用「美妝」、其餘篩選器全部歸零、選取為 filtered 後第一筆。
@@ -150,6 +155,7 @@ struct RootFeatureTests {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         await store.send(.categorySelected("美妝")) {
@@ -160,7 +166,7 @@ struct RootFeatureTests {
 
         // 進一步以 filteredOrders 驗證 false-positive 確實被排除——舊的 searchText 路徑會把 "美妝小編" 模糊命中、新的欄位精準比對不會。
         let filteredIDs = store.state.orders
-            .filteredOrders(referenceDate: TestDependencies.fixedNow)
+            .filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
             .map(\.id)
         #expect(filteredIDs == ["TEST-BEAUTY-1", "TEST-BEAUTY-2"])
     }
@@ -205,6 +211,7 @@ struct RootFeatureTests {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
         store.exhaustivity = .off
 
@@ -233,6 +240,7 @@ struct RootFeatureTests {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0[SettingsStorage.self] = SettingsStorage(load: { .default }, save: { _ in })
         }
         store.exhaustivity = .off

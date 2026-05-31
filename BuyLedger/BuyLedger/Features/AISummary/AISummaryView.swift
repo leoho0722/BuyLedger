@@ -105,9 +105,8 @@ struct AISummaryView: View {
         }
     }
 
-    // MARK: - ViewBuilder
-
     /// 內容生成完成後附在最末的膠囊提醒：告知此為 AI 生成內容、可能有誤。
+    @ViewBuilder
     private var aiDisclaimerCapsule: some View {
         HStack(spacing: BLSpacing.extraSmall) {
             Image(systemName: "sparkles")

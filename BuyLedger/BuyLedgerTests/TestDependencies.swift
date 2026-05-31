@@ -29,6 +29,15 @@ enum TestDependencies {
         return components.date!
     }()
 
+    /// 預設使用的固定行事曆 (gregorian + UTC)。
+    ///
+    /// 與 ``fixedNow`` 同基準，供直接呼叫帶 `calendar:` 參數的 State method (如 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)``) 的測試傳入，確保日期分組與區間判斷不受測試機器的時區與行事曆設定影響。
+    static let fixedCalendar: Calendar = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        return calendar
+    }()
+
     // MARK: - Static Method
 
     /// 在 ``fixedNow`` 注入 `\.date` 的 scope 中執行 operation。
@@ -39,6 +48,7 @@ enum TestDependencies {
     static func withFixedNow<T>(_ operation: () throws -> T) rethrows -> T {
         try withDependencies {
             $0.date = .constant(fixedNow)
+            $0.calendar = fixedCalendar
         } operation: {
             try operation()
         }

@@ -28,22 +28,22 @@ struct OrderDateSection: Equatable, Identifiable, Sendable {
 /// 訂單列表與詳情選取流程。
 @Reducer
 struct OrdersFeature {
-    
+
     // MARK: - State
-    
+
     /// 訂單功能狀態。
     @ObservableState
     struct State: Equatable {
-        
+
         /// 目前載入的訂單。
         var orders: [LedgerOrder] = []
-        
+
         /// 搜尋文字。
         var searchText = ""
-        
+
         /// 目前套用的狀態篩選。
         var selectedStatus: OrderStatusFilter = .all
-        
+
         /// 目前套用的日期區間篩選。
         var selectedDatePeriod: OrderDatePeriod = .all
 
@@ -79,13 +79,13 @@ struct OrdersFeature {
 
         /// 指示訂單是否正在載入。
         var isLoading = false
-        
+
         /// 是否已完成首次載入。`true` 後再次觸發 ``OrdersFeature/Action/task`` 會直接返回，避免在訂單為空時每次切換 tab 都重設 ``isLoading`` 造成的 UI 閃爍。
         var hasLoaded = false
-        
+
         /// 載入失敗時顯示的錯誤訊息。
         var errorMessage: String?
-        
+
         /// 目前呈現中的編輯／新增表單；`nil` 表示未呈現。
         @Presents var editOrder: OrderEditFeature.State?
 
@@ -104,12 +104,13 @@ struct OrdersFeature {
 
         /// 套用搜尋、狀態與日期區間篩選後的訂單。
         ///
-        /// 改成 method 後 caller 必須帶入 `referenceDate`；reducer 用 `@Dependency(\.date)`、view 端則由各自的 `@Dependency(\.date)` 注入。如此可在 snapshot / unit test 中固定「現在」時間，避免跨日跑出不同結果。
-        /// - Parameter referenceDate: 計算「本週／本月／上月」等相對區間的基準時間。
+        /// 改成 method 後 caller 必須帶入 `referenceDate` 與 `calendar`；reducer / view 端皆由各自的 `@Dependency(\.date)` 與 `@Dependency(\.calendar)` 注入。如此可在 snapshot / unit test 中固定「現在」時間與行事曆，避免跨日或跨時區跑出不同結果。
+        /// - Parameters:
+        ///   - referenceDate: 計算「本週／本月／上月」等相對區間的基準時間。
+        ///   - calendar: 判斷日期區間所用的行事曆 (含時區)；測試應注入固定 gregorian／UTC。
         /// - Returns: 過濾後的訂單。
-        func filteredOrders(referenceDate: Date) -> [LedgerOrder] {
+        func filteredOrders(referenceDate: Date, calendar: Calendar) -> [LedgerOrder] {
             let normalizedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            let calendar = Calendar.current
 
             return orders.filter { order in
                 let matchesStatus = selectedStatus.orderStatus.map { $0 == order.status } ?? true
@@ -146,22 +147,25 @@ struct OrdersFeature {
         }
 
         /// 目前選取的訂單。
-        /// - Parameter referenceDate: 與 ``filteredOrders(referenceDate:)`` 同一基準。
+        /// - Parameters:
+        ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準。
+        ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆。
         /// - Returns: 對應的訂單；若 `selectedOrderID` 已不在當前篩選結果中，回傳第一筆。
-        func selectedOrder(referenceDate: Date) -> LedgerOrder? {
-            let filtered = filteredOrders(referenceDate: referenceDate)
+        func selectedOrder(referenceDate: Date, calendar: Calendar) -> LedgerOrder? {
+            let filtered = filteredOrders(referenceDate: referenceDate, calendar: calendar)
             guard let selectedOrderID else { return filtered.first }
             return filtered.first { $0.id == selectedOrderID }
         }
 
-        /// 將 ``filteredOrders(referenceDate:)`` 的結果以「日」為單位分組成區段，供訂單列表以日期區段標題呈現 (列內毋須再顯示日期)。
+        /// 將 ``filteredOrders(referenceDate:calendar:)`` 的結果以「日」為單位分組成區段，供訂單列表以日期區段標題呈現 (列內毋須再顯示日期)。
         ///
-        /// 分組與相對標題 (今天／昨天) 皆以 `referenceDate` 為基準，沿用 ``filteredOrders(referenceDate:)`` 的 `Calendar.current`；同一基準下結果一致。
-        /// - Parameter referenceDate: 與 ``filteredOrders(referenceDate:)`` 同一基準的「現在」時間。
+        /// 分組與相對標題 (今天／昨天) 皆以 `referenceDate` 與 `calendar` 為基準；同一基準下結果一致。
+        /// - Parameters:
+        ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準的「現在」時間。
+        ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆。
         /// - Returns: 依日期由新到舊排序的區段；每段內訂單亦由新到舊排序。
-        func dateSections(referenceDate: Date) -> [OrderDateSection] {
-            let calendar = Calendar.current
-            let grouped = Dictionary(grouping: filteredOrders(referenceDate: referenceDate)) {
+        func dateSections(referenceDate: Date, calendar: Calendar) -> [OrderDateSection] {
+            let grouped = Dictionary(grouping: filteredOrders(referenceDate: referenceDate, calendar: calendar)) {
                 calendar.startOfDay(for: $0.date)
             }
             return grouped.keys
@@ -243,11 +247,13 @@ struct OrdersFeature {
         /// 把目前篩選後訂單的商品明細整理成給模型的純文字摘要輸入。
         ///
         /// 每筆訂單逐項列出「- [類別] 名稱 x數量 @ 單價 幣別」；為避免 token 爆量，最多納入 `maxItems` 個品項，超出以一行提示帶過。
-        /// - Parameter referenceDate: 與 ``filteredOrders(referenceDate:)`` 同一基準。
+        /// - Parameters:
+        ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準。
+        ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆。
         /// - Returns: 商品明細的純文字摘要；列表沒有任何品項時回傳提示字串。
-        func aiItemsDigest(referenceDate: Date) -> String {
+        func aiItemsDigest(referenceDate: Date, calendar: Calendar) -> String {
             let maxItems = 200
-            let filtered = filteredOrders(referenceDate: referenceDate)
+            let filtered = filteredOrders(referenceDate: referenceDate, calendar: calendar)
             var lines: [String] = []
 
             outer: for order in filtered {
@@ -262,26 +268,28 @@ struct OrdersFeature {
             }
 
             guard !lines.isEmpty else {
-                return "（目前列表沒有任何商品明細）"
+                return "(目前列表沒有任何商品明細)"
             }
 
             var digest = lines.joined(separator: "\n")
             let totalItems = filtered.reduce(0) { $0 + $1.items.count }
             if totalItems > lines.count {
-                digest += "\n…（其餘 \(totalItems - lines.count) 個品項未列出）"
+                digest += "\n…(其餘 \(totalItems - lines.count) 個品項未列出)"
             }
             return digest
         }
 
         /// 組出指示模型以正體中文 Markdown 總結商品明細的完整 prompt。
-        /// - Parameter referenceDate: 與 ``filteredOrders(referenceDate:)`` 同一基準。
+        /// - Parameters:
+        ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準。
+        ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆。
         /// - Returns: 給 Ollama 的 user prompt。
-        func aiSummaryPrompt(referenceDate: Date) -> String {
-            let categoryScope = selectedCategory.map { "（已篩選類別：\($0)）" } ?? "（涵蓋目前列表所有類別）"
+        func aiSummaryPrompt(referenceDate: Date, calendar: Calendar) -> String {
+            let categoryScope = selectedCategory.map { "(已篩選類別：\($0))" } ?? "(涵蓋目前列表所有類別)"
             return """
             你是個人代購 App 的分析助理。以下是目前訂單列表的商品明細\(categoryScope)，每行格式為「- [類別] 商品名稱 x數量 @ 單價 幣別」：
 
-            \(aiItemsDigest(referenceDate: referenceDate))
+            \(aiItemsDigest(referenceDate: referenceDate, calendar: calendar))
 
             請用正體中文、以 Markdown 格式總結這些商品明細，內容包含：
             - 一個 `##` 層級的標題
@@ -293,14 +301,14 @@ struct OrdersFeature {
     }
 
     // MARK: - Action
-    
+
     /// 訂單功能可處理的事件。
     @CasePathable
     enum Action: Equatable {
-        
+
         /// 畫面出現時觸發載入。
         case task
-        
+
         /// 訂單載入成功。
         case ordersLoaded([LedgerOrder])
 
@@ -324,7 +332,7 @@ struct OrdersFeature {
 
         /// 使用者切換狀態篩選。
         case statusFilterSelected(OrderStatusFilter)
-        
+
         /// 使用者切換日期區間篩選。
         case datePeriodSelected(OrderDatePeriod)
 
@@ -342,19 +350,19 @@ struct OrdersFeature {
 
         /// 使用者輸入搜尋文字。
         case searchTextChanged(String)
-        
+
         /// 使用者選取訂單。
         case orderSelected(LedgerOrder.ID?)
-        
+
         /// 使用者點擊「編輯」按鈕，要求編輯指定訂單。
         case editOrderTapped(LedgerOrder.ID)
-        
+
         /// 使用者點擊「新訂單」按鈕，要求建立空白訂單。
         case newOrderTapped
-        
+
         /// 編輯／新增表單事件。
         case editOrder(PresentationAction<OrderEditFeature.Action>)
-        
+
         /// 透過詳情頁的「更新狀態」menu 直接切換訂單狀態。
         case statusChanged(LedgerOrder.ID, OrderStatus)
 
@@ -387,9 +395,9 @@ struct OrdersFeature {
             case goToAISettings
         }
     }
-    
+
     // MARK: - Dependency Properties
-    
+
     /// 訂單資料來源。
     @Dependency(OrderRepository.self) private var orderRepository
 
@@ -414,11 +422,14 @@ struct OrdersFeature {
     /// 用於新訂單的日期來源，方便在測試中注入固定值。
     @Dependency(\.date) private var date
 
+    /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定 gregorian／UTC。
+    @Dependency(\.calendar) private var calendar
+
     /// 設定持久化來源；用於讀取 `useAiSummary` 與 `aiSummaryModel`。
     @Dependency(SettingsStorage.self) private var settingsStorage
 
     // MARK: - Reducer Body
-    
+
     /// 訂單功能 reducer。
     var body: some Reducer<State, Action> {
         Reduce { state, action in
@@ -502,51 +513,51 @@ struct OrdersFeature {
                 state.orders = orders
                 state.selectedOrderID = state.selectedOrderID ?? orders.first?.id
                 return .none
-                
+
             case let .ordersFailed(message):
                 state.isLoading = false
                 state.errorMessage = message
                 return .none
-                
+
             case let .statusFilterSelected(filter):
                 state.selectedStatus = filter
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
                 return .none
-                
+
             case let .datePeriodSelected(period):
                 state.selectedDatePeriod = period
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
                 return .none
 
             case let .categoryFilterSelected(category):
                 state.selectedCategory = category
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
                 return .none
 
             case let .paymentMethodFilterSelected(paymentMethod):
                 state.selectedPaymentMethod = paymentMethod
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
                 return .none
 
             case let .campaignFilterSelected(campaign):
                 state.selectedCampaign = campaign
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
                 return .none
 
             case let .campaignStatusFilterSelected(campaignStatus):
                 state.selectedCampaignStatus = campaignStatus
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
                 return .none
 
             case let .searchTextChanged(searchText):
                 state.searchText = searchText
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
                 return .none
-                
+
             case let .orderSelected(id):
                 state.selectedOrderID = id
                 return .none
-                
+
             case let .editOrderTapped(id):
                 guard let order = state.orders.first(where: { $0.id == id }) else {
                     return .none
@@ -573,7 +584,7 @@ struct OrdersFeature {
                     currentDate: date.now
                 )
                 return .none
-                
+
             case .editOrder(.presented(.saveTapped)):
                 guard let editState = state.editOrder else { return .none }
                 guard let savedOrder = applyEditDraft(editState, to: &state) else {
@@ -657,17 +668,17 @@ struct OrdersFeature {
 
             case .editOrder:
                 return .none
-                
+
             case let .statusChanged(orderID, newStatus):
                 guard let index = state.orders.firstIndex(where: { $0.id == orderID }) else {
                     return .none
                 }
-                
+
                 let existing = state.orders[index]
                 guard existing.status != newStatus else {
                     return .none
                 }
-                
+
                 let updated = LedgerOrder(
                     id: existing.id,
                     customer: existing.customer,
@@ -766,7 +777,7 @@ struct OrdersFeature {
                 state.orders.remove(at: index)
 
                 if state.selectedOrderID == id {
-                    state.selectedOrderID = state.filteredOrders(referenceDate: date.now).first?.id
+                    state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
                 }
 
                 if state.editOrder?.original?.id == id {
@@ -799,7 +810,7 @@ struct OrdersFeature {
                     return .none
                 }
                 state.aiSummary = AISummaryFeature.State(
-                    prompt: state.aiSummaryPrompt(referenceDate: date.now),
+                    prompt: state.aiSummaryPrompt(referenceDate: date.now, calendar: calendar),
                     model: snapshot.aiSummaryModel
                 )
                 return .none
@@ -826,7 +837,7 @@ struct OrdersFeature {
 // MARK: - Private Method
 
 private extension OrdersFeature {
-    
+
     /// 將 ``OrderEditFeature`` 的草稿套用到目前訂單清單。
     /// - Parameters:
     ///   - draft: 草稿狀態。
@@ -935,7 +946,7 @@ private extension OrdersFeature {
             return newOrder
         }
     }
-    
+
     /// 將手續費比例 clamp 到 `[0, 1]` 區間，避免介面誤輸入造成損益失真。
     /// - Parameter value: 待 clamp 的比例。
     /// - Returns: clamp 後的比例。
@@ -947,7 +958,7 @@ private extension OrdersFeature {
 // MARK: - Private Method
 
 private extension LedgerOrder {
-    
+
     /// 供訂單列表搜尋使用的正規化文字。
     var searchableText: String {
         (

@@ -12,9 +12,9 @@ import SwiftUI
 ///
 /// 對應設計稿 iPhone 設定 / 更多頁的 sections：外觀、通知、預設幣別、關於。資料匯出 / CloudKit 同步 section 暫時以 `#if false` 隱藏，待實作完成後再開啟。
 struct SettingsView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 設定 store。
     @Bindable var store: StoreOf<SettingsFeature>
 
@@ -27,7 +27,7 @@ struct SettingsView: View {
 #endif
 
     // MARK: - View Body
-    
+
     /// 設定頁畫面內容。
     var body: some View {
         Form {
@@ -38,7 +38,7 @@ struct SettingsView: View {
                     }
                 }
             }
-            
+
             Section("通知") {
                 Toggle("接收訂單提醒", isOn: $store.notificationsEnabled)
             }
@@ -89,7 +89,7 @@ struct SettingsView: View {
                 }
                 .buttonStyle(.plain)
             }
-            
+
             Section {
                 TextField(
                     "目標金額",
@@ -106,7 +106,7 @@ struct SettingsView: View {
                     .font(.footnote)
                     .foregroundStyle(.secondary)
             }
-            
+
 #if false
             Section("資料") {
                 Button("匯出 CSV") { }
@@ -134,12 +134,12 @@ struct SettingsView: View {
                 options: store.availableCurrencies.map(\.rawValue),
                 selected: store.defaultCurrency.rawValue,
                 displayName: { code in
-                    let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                    let locale = Locale.preferred()
                     let name = locale.localizedString(forCurrencyCode: code) ?? ""
                     return name.isEmpty ? code : "\(code) · \(name)"
                 },
                 searchKeywords: { code in
-                    Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                    Locale.preferred()
                         .localizedString(forCurrencyCode: code) ?? ""
                 },
                 onSelect: { code in
@@ -179,12 +179,12 @@ struct SettingsView: View {
 // MARK: - Private Method
 
 private extension SettingsView {
-    
+
     /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字。
     /// - Parameter currency: 幣別。
     /// - Returns: 顯示字串。
     func currencyDisplayText(for currency: CurrencyCode) -> String {
-        let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+        let locale = Locale.preferred()
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
         return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
     }
@@ -194,7 +194,7 @@ private extension SettingsView {
         let dictionary = Bundle.main.infoDictionary
         let short = dictionary?["CFBundleShortVersionString"] as? String ?? "—"
         let build = dictionary?["CFBundleVersion"] as? String ?? "—"
-        
+
         return "\(short) (\(build))"
     }
 }

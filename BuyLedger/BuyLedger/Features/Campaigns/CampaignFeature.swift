@@ -122,11 +122,12 @@ struct CampaignFeature {
         /// 將開團依目前 ``grouping`` 粒度分成頂層區段 (比照訂單列表頁)，其下再以更細一級粒度切成子群組：
         /// 按日 → 頂層即「日」、無子標題；按月 → 頂層「月」、子標題「日」；按年 → 頂層「年」、子標題「月」。
         ///
-        /// 分組與相對標題 (今天／昨天) 皆以 `referenceDate` 為基準；同一基準下結果一致。
-        /// - Parameter referenceDate: 計算「今天／昨天」等相對標題的「現在」時間。
+        /// 分組與相對標題 (今天／昨天) 皆以 `referenceDate` 與 `calendar` 為基準；同一基準下結果一致。
+        /// - Parameters:
+        ///   - referenceDate: 計算「今天／昨天」等相對標題的「現在」時間。
+        ///   - calendar: 分組與相對標題所用的行事曆 (含時區)；測試應注入固定 gregorian／UTC。
         /// - Returns: 依頂層粒度由新到舊排序的區段；每個子群組內開團依開團日期由新到舊排序 (同日再依名稱)。
-        func dateSections(referenceDate: Date) -> [CampaignDateSection] {
-            let calendar = Calendar.current
+        func dateSections(referenceDate: Date, calendar: Calendar) -> [CampaignDateSection] {
             let filtered = statusFilter.map { status in
                 campaigns.filter { $0.status == status }
             } ?? campaigns

@@ -149,14 +149,3 @@ extension OrderRepository: DependencyKey {
         renameOrderCampaign: { _, _ in }
     )
 }
-
-extension DependencyValues {
-
-    // MARK: - Dependency Values
-
-    /// 訂單資料來源。
-    var orderRepository: OrderRepository {
-        get { self[OrderRepository.self] }
-        set { self[OrderRepository.self] = newValue }
-    }
-}

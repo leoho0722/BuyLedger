@@ -21,45 +21,22 @@ struct FxFeature {
     struct State: Equatable, @unchecked Sendable {
 
         /// 目前選取的來源幣別。
-        var fromCurrency: CurrencyCode
+        var fromCurrency: CurrencyCode = .krw
 
         /// 來源幣別的金額。
-        var amount: Decimal
+        var amount: Decimal = 150_000
 
         /// 已從 API 取得的最新匯率快照；`nil` 代表尚未拉取或拉取失敗。
         var snapshot: FxRateSnapshot?
 
         /// 是否正在發 API 請求。
-        var isLoading: Bool
+        var isLoading: Bool = false
 
         /// 最新匯率失敗時顯示給使用者的訊息；`nil` 表示沒有錯誤。
         var errorMessage: String?
 
         /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供。
         var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
-
-        // MARK: - Init
-
-        /// 建立預設狀態。
-        /// - Parameters:
-        ///   - fromCurrency: 預設選取的來源幣別。
-        ///   - amount: 預設輸入金額。
-        ///   - snapshot: 預設最新匯率快照。
-        ///   - isLoading: 是否正在載入。
-        ///   - errorMessage: 最新匯率錯誤訊息。
-        init(
-            fromCurrency: CurrencyCode = .krw,
-            amount: Decimal = 150_000,
-            snapshot: FxRateSnapshot? = nil,
-            isLoading: Bool = false,
-            errorMessage: String? = nil
-        ) {
-            self.fromCurrency = fromCurrency
-            self.amount = amount
-            self.snapshot = snapshot
-            self.isLoading = isLoading
-            self.errorMessage = errorMessage
-        }
 
         // MARK: - Computed Properties
 

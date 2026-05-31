@@ -80,14 +80,9 @@ struct CampaignEditView: View {
 
 private extension CampaignEditView {
 
-    /// 使用者在系統「語言與地區」實際偏好的 locale；與「新增/編輯訂單頁」的 DatePicker 一致。
-    ///
-    /// 用 `Locale.preferredLanguages` 而非 `@Dependency(\.locale)` 預設值 (`Locale.autoupdatingCurrent`)，避免後者被 App 的 `CFBundleDevelopmentRegion`／已掛載 localizations 限制而回退到開發語言，造成日期顯示與訂單編輯頁不一致。
+    /// 使用者在系統「語言與地區」實際偏好的 locale；與「新增/編輯訂單頁」的 DatePicker 一致。未提供偏好語言時退回注入的 `@Dependency(\.locale)`。選用 `preferredLanguages` 的原因見 ``Locale/preferred(fallback:)``。
     var deviceLocale: Locale {
-        if let preferred = Locale.preferredLanguages.first {
-            return Locale(identifier: preferred)
-        }
-        return locale
+        Locale.preferred(fallback: locale)
     }
 }
 

@@ -180,10 +180,15 @@ struct ExchangeRateLatestResponse: Decodable, Sendable {
 
     /// 把 API 的 snake_case 欄位映射成 camelCase 屬性。
     enum CodingKeys: String, CodingKey {
+
         case result
+
         case errorType = "error-type"
+
         case timeLastUpdateUnix = "time_last_update_unix"
+
         case baseCode = "base_code"
+
         case conversionRates = "conversion_rates"
     }
 
@@ -232,8 +237,11 @@ struct ExchangeRateCodesResponse: Decodable, Sendable {
 
     /// 把 API 的 snake_case 欄位映射成 camelCase 屬性。
     enum CodingKeys: String, CodingKey {
+
         case result
+
         case errorType = "error-type"
+
         case supportedCodes = "supported_codes"
     }
 }

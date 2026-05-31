@@ -229,6 +229,7 @@ private extension LookupManagementView {
     /// 付款方式分類徽章 (例如「無卡」「銀行匯款」)，沿用 tint 膠囊樣式。
     /// - Parameter title: 徽章文字。
     /// - Returns: 膠囊徽章 view。
+    @ViewBuilder
     func classificationBadge(_ title: String) -> some View {
         Text(title)
             .font(.caption.weight(.semibold))
@@ -270,6 +271,7 @@ private extension LookupManagementView {
 private extension LookupManagementView {
 
     /// iOS / iPadOS 維持的系統 List 版本：section header 顯示計數、列可左滑刪除或重新命名、付款方式顯示 footer 說明。
+    @ViewBuilder
     var listContent: some View {
         List {
             if let errorMessage = store.errorMessage {
@@ -332,10 +334,11 @@ private extension LookupManagementView {
 private extension LookupManagementView {
 
     /// macOS 的 Design System 卡片版本：對齊 ``CustomersView`` 的 `ScrollView` + `palette.background` + `BLCard` 呈現。
+    @ViewBuilder
     var macContent: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
-        return ScrollView {
+        ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 if let errorMessage = store.errorMessage {
                     Text(errorMessage)
@@ -359,6 +362,7 @@ private extension LookupManagementView {
     /// macOS 空狀態：對齊 ``CustomersView`` 的置中 `ContentUnavailableView`。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 空狀態 view。
+    @ViewBuilder
     func macEmptyState(palette: BLPalette) -> some View {
         ContentUnavailableView(
             store.state.kind.emptyTitle,
@@ -373,6 +377,7 @@ private extension LookupManagementView {
     /// macOS 卡片列表：計數 header + 單一 `BLCard` 內含列 (列間帶 leading inset 的 `Divider`)，付款方式於卡片下方顯示無卡說明。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 卡片列表 view。
+    @ViewBuilder
     func macItemList(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
             HStack(alignment: .firstTextBaseline) {
@@ -424,6 +429,7 @@ private extension LookupManagementView {
     ///   - item: 要顯示的主檔項目名稱。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 卡片列 view。
+    @ViewBuilder
     func macRow(for item: String, palette: BLPalette) -> some View {
         itemRow(for: item)
             .font(.subheadline)

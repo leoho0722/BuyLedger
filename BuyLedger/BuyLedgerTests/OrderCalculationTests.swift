@@ -11,9 +11,9 @@ import Testing
 
 @MainActor
 struct OrderCalculationTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func summaryIncludesFeesCostProfitAndMargin() {
         let order = LedgerOrder(
             id: "BL-2604-018",
@@ -57,7 +57,7 @@ struct OrderCalculationTests {
         #expect(summary.profit == 2_731)
         #expect(summary.margin == Decimal(2_731) / Decimal(11_800))
     }
-    
+
     @Test func platformFeeRoundsUpToInteger() {
         let order = LedgerOrder(
             id: "BL-2605-001",
@@ -255,7 +255,7 @@ struct OrderCalculationTests {
             campaignName: "",
             paymentReceiptStatus: .pending
         )
-        
+
         let summary = OrderSummary(order: order)
 
         // 國際運費 850 由客人支付，不計入 totalCost；chargedAmount = 0 故 fees = 0。

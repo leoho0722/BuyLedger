@@ -12,9 +12,9 @@ import Testing
 
 @MainActor
 struct OrdersFeatureTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func taskLoadsOrdersAndSelectsFirstOrder() async {
         let orders = LedgerOrder.sampleOrders
         let store = TestStore(initialState: OrdersFeature.State()) {
@@ -38,7 +38,7 @@ struct OrdersFeatureTests {
             $0.selectedOrderID = orders.first?.id
         }
     }
-    
+
     @Test func searchTextFiltersOrdersByCustomerIdAndItemName() async {
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
@@ -46,6 +46,7 @@ struct OrdersFeatureTests {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         await store.send(.searchTextChanged("mika")) {
@@ -53,14 +54,14 @@ struct OrdersFeatureTests {
             $0.selectedOrderID = "BL-2604-017"
         }
 
-        #expect(store.state.filteredOrders(referenceDate: TestDependencies.fixedNow).map(\.id) == ["BL-2604-017"])
+        #expect(store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar).map(\.id) == ["BL-2604-017"])
 
         await store.send(.searchTextChanged("Aesop")) {
             $0.searchText = "Aesop"
             $0.selectedOrderID = "BL-2604-016"
         }
 
-        #expect(store.state.filteredOrders(referenceDate: TestDependencies.fixedNow).map(\.id) == ["BL-2604-016"])
+        #expect(store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar).map(\.id) == ["BL-2604-016"])
     }
 
     @Test func statusFilterShowsMatchingOrdersOnly() async {
@@ -70,6 +71,7 @@ struct OrdersFeatureTests {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         await store.send(.statusFilterSelected(.shipping)) {
@@ -77,11 +79,11 @@ struct OrdersFeatureTests {
             $0.selectedOrderID = "BL-2604-018"
         }
 
-        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow)
+        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
         #expect(filtered.allSatisfy { $0.status == .shipping })
         #expect(filtered.map(\.id) == ["BL-2604-018"])
     }
-    
+
     @Test func editFlowPersistsCustomerNameAfterSave() async {
         // 直接以草稿狀態預塞 `editOrder` 來測試 `applyEditDraft` 的寫回邏輯，
         // 因為使用 `BindingAction.set` 會踩到 Swift 6 對 `WritableKeyPath` 的 `Sendable` 限制。
@@ -90,22 +92,22 @@ struct OrdersFeatureTests {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
         let newName = "重新命名客戶"
-        
+
         var draft = OrderEditFeature.State(original: original)
         draft.draftCustomerName = newName
-        
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.editOrder = draft
-        
+
         let store = TestStore(initialState: state) {
             OrdersFeature()
         }
         store.exhaustivity = .off
-        
+
         await store.send(.editOrder(.presented(.saveTapped)))
         await store.finish()
-        
+
         let updated = store.state.orders.first { $0.id == originalID }
         #expect(updated?.customer.name == newName)
     }
@@ -192,50 +194,50 @@ struct OrdersFeatureTests {
     @Test func editFlowSavingEmptyNameKeepsOriginalName() async {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
-        
+
         var draft = OrderEditFeature.State(original: original)
         draft.draftCustomerName = "   "
-        
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.editOrder = draft
-        
+
         let store = TestStore(initialState: state) {
             OrdersFeature()
         }
         store.exhaustivity = .off
-        
+
         await store.send(.editOrder(.presented(.saveTapped)))
         await store.finish()
-        
+
         let updated = store.state.orders.first { $0.id == originalID }
         #expect(updated?.customer.name == original.customer.name)
     }
-    
+
     @Test func cancellingEditDoesNotMutateOrders() async {
         // 同上：以預塞 state 驗證 cancel 不會觸發 `applyEditDraft`，因此不檢查 `editOrder == nil`。
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
-        
+
         var draft = OrderEditFeature.State(original: original)
         draft.draftCustomerName = "暫定名字"
-        
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.editOrder = draft
-        
+
         let store = TestStore(initialState: state) {
             OrdersFeature()
         }
         store.exhaustivity = .off
-        
+
         await store.send(.editOrder(.presented(.cancelTapped)))
         await store.finish()
-        
+
         let unchanged = store.state.orders.first { $0.id == originalID }
         #expect(unchanged?.customer.name == original.customer.name)
     }
-    
+
     @Test func editOrderTappedSetsEditState() async {
         // 驗證 .editOrderTapped 走 @Presents 把 editOrder 設成對應草稿。
         // dismiss lifecycle 的 sheet 關閉行為由實機 UI 與 OrderEditFeature 標準
@@ -247,25 +249,27 @@ struct OrdersFeatureTests {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
         store.exhaustivity = .off
-        
+
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
-        
+
         await store.send(.editOrderTapped(originalID))
-        
+
         let editState = store.state.editOrder
         #expect(editState?.original?.id == originalID)
         #expect(editState?.draftCustomerName == original.customer.name)
         #expect(editState?.draftCategory == original.category)
     }
-    
+
     @Test func newOrderTappedSetsEmptyEditState() async {
         let store = TestStore(initialState: OrdersFeature.State()) {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
         store.exhaustivity = .off
 
@@ -276,54 +280,54 @@ struct OrdersFeatureTests {
         #expect(editState?.draftCustomerName.isEmpty == true)
         #expect(editState?.draftCategory.isEmpty == true)
     }
-    
+
     @Test func editingExistingOrderKeepsSelection() async {
         // 編輯既有訂單 save 後不該改變 selectedOrderID (即使原本選的是別張)
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
         let unrelatedSelection = "BL-2604-016"
-        
+
         var draft = OrderEditFeature.State(original: original)
         draft.draftCustomerName = "改過的客戶"
-        
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.editOrder = draft
         state.selectedOrderID = unrelatedSelection
-        
+
         let store = TestStore(initialState: state) {
             OrdersFeature()
         }
         store.exhaustivity = .off
-        
+
         await store.send(.editOrder(.presented(.saveTapped)))
         await store.finish()
-        
+
         #expect(store.state.selectedOrderID == unrelatedSelection)
         #expect(store.state.orders.first { $0.id == originalID }?.customer.name == "改過的客戶")
     }
-    
+
     @Test func editFlowPersistsStatusCurrencyAndAmount() async {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
-        
+
         var draft = OrderEditFeature.State(original: original)
         draft.draftStatus = .delivered
         draft.draftCurrency = .jpy
         draft.draftChargedAmount = 9_876
-        
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.editOrder = draft
-        
+
         let store = TestStore(initialState: state) {
             OrdersFeature()
         }
         store.exhaustivity = .off
-        
+
         await store.send(.editOrder(.presented(.saveTapped)))
         await store.finish()
-        
+
         let updated = store.state.orders.first { $0.id == originalID }
         #expect(updated?.status == .delivered)
         #expect(updated?.currency == .jpy)
@@ -331,30 +335,30 @@ struct OrdersFeatureTests {
         // 客戶名沒改 → 應與原本相同
         #expect(updated?.customer.name == original.customer.name)
     }
-    
+
     @Test func editFlowPersistsCostBreakdownFields() async {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
-        
+
         var draft = OrderEditFeature.State(original: original)
         draft.draftItemCost = 5_000
         draft.draftDomesticShipping = 100
         draft.draftInternationalShipping = 250
         draft.draftCardFeeRate = 0.025
         draft.draftPlatformFeeRate = 0.04
-        
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.editOrder = draft
-        
+
         let store = TestStore(initialState: state) {
             OrdersFeature()
         }
         store.exhaustivity = .off
-        
+
         await store.send(.editOrder(.presented(.saveTapped)))
         await store.finish()
-        
+
         let updated = store.state.orders.first { $0.id == originalID }
         #expect(updated?.itemCost == 5_000)
         #expect(updated?.domesticShipping == 100)
@@ -362,55 +366,55 @@ struct OrdersFeatureTests {
         #expect(updated?.cardFeeRate == 0.025)
         #expect(updated?.platformFeeRate == 0.04)
     }
-    
+
     @Test func editFlowClampsFeeRatesIntoZeroToOneRange() async {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
-        
+
         var draft = OrderEditFeature.State(original: original)
         draft.draftCardFeeRate = -0.5
         draft.draftPlatformFeeRate = 5
-        
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.editOrder = draft
-        
+
         let store = TestStore(initialState: state) {
             OrdersFeature()
         }
         store.exhaustivity = .off
-        
+
         await store.send(.editOrder(.presented(.saveTapped)))
         await store.finish()
-        
+
         let updated = store.state.orders.first { $0.id == originalID }
         #expect(updated?.cardFeeRate == 0)
         #expect(updated?.platformFeeRate == 1)
     }
-    
+
     @Test func editFlowClampsNegativeChargedAmountToZero() async {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
-        
+
         var draft = OrderEditFeature.State(original: original)
         draft.draftChargedAmount = -500
-        
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.editOrder = draft
-        
+
         let store = TestStore(initialState: state) {
             OrdersFeature()
         }
         store.exhaustivity = .off
-        
+
         await store.send(.editOrder(.presented(.saveTapped)))
         await store.finish()
-        
+
         let updated = store.state.orders.first { $0.id == originalID }
         #expect(updated?.chargedAmount == 0)
     }
-    
+
     @Test func newOrderSaveInsertsAndSelectsTheNewOrder() async {
         let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
 
@@ -431,6 +435,7 @@ struct OrdersFeatureTests {
         } withDependencies: {
             $0.uuid = .incrementing
             $0.date = .constant(fixedDate)
+            $0.calendar = TestDependencies.fixedCalendar
         }
         store.exhaustivity = .off
 
@@ -462,10 +467,11 @@ struct OrdersFeatureTests {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         let expectedFirstID = state
-            .filteredOrders(referenceDate: TestDependencies.fixedNow)
+            .filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
             .first { $0.category == targetCategory }?
             .id
 
@@ -474,13 +480,13 @@ struct OrdersFeatureTests {
             $0.selectedOrderID = expectedFirstID
         }
 
-        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow)
+        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
         #expect(!filtered.isEmpty)
         #expect(filtered.allSatisfy { $0.category == targetCategory })
 
         await store.send(.categoryFilterSelected(nil)) {
             $0.selectedCategory = nil
-            $0.selectedOrderID = state.filteredOrders(referenceDate: TestDependencies.fixedNow).first?.id
+            $0.selectedOrderID = state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar).first?.id
         }
     }
 
@@ -495,6 +501,7 @@ struct OrdersFeatureTests {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         await store.send(.statusFilterSelected(.shipping)) {
@@ -506,7 +513,7 @@ struct OrdersFeatureTests {
             $0.selectedOrderID = "O1"
         }
 
-        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow)
+        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
         #expect(filtered.map(\.id) == ["O1"])
     }
 
@@ -521,10 +528,11 @@ struct OrdersFeatureTests {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         let expectedFirstID = state
-            .filteredOrders(referenceDate: TestDependencies.fixedNow)
+            .filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
             .first { $0.paymentMethod == targetPaymentMethod }?
             .id
 
@@ -533,13 +541,13 @@ struct OrdersFeatureTests {
             $0.selectedOrderID = expectedFirstID
         }
 
-        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow)
+        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
         #expect(!filtered.isEmpty)
         #expect(filtered.allSatisfy { $0.paymentMethod == targetPaymentMethod })
 
         await store.send(.paymentMethodFilterSelected(nil)) {
             $0.selectedPaymentMethod = nil
-            $0.selectedOrderID = state.filteredOrders(referenceDate: TestDependencies.fixedNow).first?.id
+            $0.selectedOrderID = state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar).first?.id
         }
     }
 
@@ -554,6 +562,7 @@ struct OrdersFeatureTests {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         await store.send(.categoryFilterSelected("beauty")) {
@@ -565,7 +574,7 @@ struct OrdersFeatureTests {
             $0.selectedOrderID = "P1"
         }
 
-        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow)
+        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
         #expect(filtered.map(\.id) == ["P1"])
     }
 
@@ -579,6 +588,7 @@ struct OrdersFeatureTests {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0[SettingsStorage.self] = SettingsStorage(
                 load: {
                     var snapshot = SettingsSnapshot.default
@@ -592,7 +602,7 @@ struct OrdersFeatureTests {
 
         await store.send(.aiSummaryTapped) {
             $0.aiSummary = AISummaryFeature.State(
-                prompt: state.aiSummaryPrompt(referenceDate: TestDependencies.fixedNow),
+                prompt: state.aiSummaryPrompt(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar),
                 model: "gpt-oss:120b"
             )
         }
@@ -609,6 +619,7 @@ struct OrdersFeatureTests {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0[SettingsStorage.self] = SettingsStorage(
                 load: { .default },
                 save: { _ in }

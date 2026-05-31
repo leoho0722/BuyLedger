@@ -261,17 +261,6 @@ extension OptionPickerSheet {
 
         /// 使用者點擊 clear row 時觸發的 callback；執行後 sheet 會自動 dismiss。
         let onClear: () -> Void
-
-        // MARK: - Init
-
-        /// 建立 clear row 設定。
-        /// - Parameters:
-        ///   - title: clear row 顯示的 label 文字。
-        ///   - onClear: 點擊 clear row 時觸發的 callback。
-        init(title: String, onClear: @escaping () -> Void) {
-            self.title = title
-            self.onClear = onClear
-        }
     }
 }
 
@@ -288,20 +277,6 @@ private extension OptionPickerSheet {
         listContent
 #endif
     }
-
-    /// 點擊新增按鈕的共用行為，依 handler precedence 決定呈現：付款方式入口開 ``PaymentMethodEditorSheet``、name-only 入口開 ``LookupItemEditorSheet``，其餘開一般新增 alert。
-    func triggerAdd() {
-        if onAddPaymentMethod != nil {
-            // 付款方式入口：alert 在實機驗證會 silently 丟掉 Toggle (只剩 TextField + 按鈕)，所以改用 sheet 收集名稱與 isCardless / isBankTransfer。
-            showsAddPaymentMethodSheet = true
-        } else if onAddViaNameSheet != nil {
-            // 對帳狀態等只需名稱的主檔：比照「新增付款方式」改用 medium sheet (而非 alert)，操作體驗一致。
-            showsAddNameSheet = true
-        } else {
-            draft = ""
-            showsAddAlert = true
-        }
-    }
 }
 
 #if !os(macOS)
@@ -313,6 +288,7 @@ private extension OptionPickerSheet {
     /// iOS / iPadOS 維持的系統 List 版本：新增按鈕 Section + 選項 Section (含 optional clear row、勾選與空狀態)。
     ///
     /// 排列順序：新增按鈕 Section (如有) → 選項 Section { clear row (如有) → 空狀態 / 選項列 }。clear row 不參與 ``filteredOptions`` 過濾，搜尋時也永遠顯示在最上方。
+    @ViewBuilder
     var listContent: some View {
         List {
             if allowsAdd {
@@ -350,6 +326,7 @@ private extension OptionPickerSheet {
     /// 文字以 `.fixedSize(horizontal: false, vertical: true)` 強制取得需要的垂直空間，配合 `.multilineTextAlignment(.leading)`，讓過長 label 自然換行而不被 trailing checkmark 截斷。
     /// - Parameter clearOption: 已設定的 clear row 設定。
     /// - Returns: clear row view。
+    @ViewBuilder
     func listClearRow(_ clearOption: ClearOption) -> some View {
         Button {
             clearOption.onClear()
@@ -378,6 +355,7 @@ private extension OptionPickerSheet {
     /// 文字以 `.fixedSize(horizontal: false, vertical: true)` 強制取得需要的垂直空間，配合 `.multilineTextAlignment(.leading)`，讓過長類別名稱自然換行 (row 高度隨內容增長)，而不被 trailing checkmark 截斷。
     /// - Parameter option: 該列代表的選項字串。
     /// - Returns: 選項列 view。
+    @ViewBuilder
     func listOptionRow(_ option: String) -> some View {
         Button {
             onSelect(option)
@@ -417,10 +395,11 @@ private extension OptionPickerSheet {
     /// 背景採分模式處理：
     /// - 淺色模式套上與表單 List 相同的淺灰群組底色 (`palette.background` 在淺色為 `0xF2F2F7`)，讓白色 `BLCard` 列有對比、不致與 sheet 的白底融合。
     /// - 深色模式維持透明、沿用 sheet 預設材質——`palette.background` 在深色為純黑，會與 sheet 的標題列與底部工具列形成突兀的深色色塊。
+    @ViewBuilder
     var macContent: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
-        return ScrollView {
+        ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 if allowsAdd {
                     addButton(palette: palette)
@@ -444,6 +423,7 @@ private extension OptionPickerSheet {
     /// macOS 卡片上方的新增按鈕，沿用 ``triggerAdd()`` 的入口邏輯。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 新增按鈕 view。
+    @ViewBuilder
     func addButton(palette: BLPalette) -> some View {
         Button {
             triggerAdd()
@@ -458,6 +438,7 @@ private extension OptionPickerSheet {
     /// macOS 選項卡片：單一 ``BLCard`` 內含 optional clear row + 選項列 (列間帶 leading inset 的 `Divider`)；列為點選即套用並關閉，選中項顯示勾選。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 選項卡片 view。
+    @ViewBuilder
     func optionsCard(palette: BLPalette) -> some View {
         BLCard(padding: 0) {
             VStack(spacing: 0) {
@@ -489,6 +470,7 @@ private extension OptionPickerSheet {
     ///   - clearOption: 已設定的 clear row 設定。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: clear row view。
+    @ViewBuilder
     func macClearRow(_ clearOption: ClearOption, palette: BLPalette) -> some View {
         Button {
             clearOption.onClear()
@@ -524,6 +506,7 @@ private extension OptionPickerSheet {
     ///   - option: 該列代表的選項字串。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 選項列 view。
+    @ViewBuilder
     func macOptionRow(_ option: String, palette: BLPalette) -> some View {
         Button {
             onSelect(option)
@@ -554,6 +537,7 @@ private extension OptionPickerSheet {
 
     /// macOS 空狀態：置中 `ContentUnavailableView`，沿用 sheet 預設材質背景。
     /// - Returns: 空狀態 view。
+    @ViewBuilder
     func macEmptyState() -> some View {
         ContentUnavailableView(
             emptyTitle,
@@ -595,9 +579,23 @@ private extension OptionPickerSheet {
     func displayText(for option: String) -> String {
         displayName?(option) ?? option
     }
+
+    /// 點擊新增按鈕的共用行為，依 handler precedence 決定呈現：付款方式入口開 ``PaymentMethodEditorSheet``、name-only 入口開 ``LookupItemEditorSheet``，其餘開一般新增 alert。
+    func triggerAdd() {
+        if onAddPaymentMethod != nil {
+            // 付款方式入口：alert 在實機驗證會 silently 丟掉 Toggle (只剩 TextField + 按鈕)，所以改用 sheet 收集名稱與 isCardless / isBankTransfer。
+            showsAddPaymentMethodSheet = true
+        } else if onAddViaNameSheet != nil {
+            // 對帳狀態等只需名稱的主檔：比照「新增付款方式」改用 medium sheet (而非 alert)，操作體驗一致。
+            showsAddNameSheet = true
+        } else {
+            draft = ""
+            showsAddAlert = true
+        }
+    }
 }
 
-// MARK: - ViewBuilder
+// MARK: - ViewModifier
 
 /// 條件式 `.searchable` modifier；用 `ViewModifier` 包裝是為了避免 `View` 上的條件 modifier 改變 view identity。
 private struct SearchableModifier: ViewModifier {
@@ -611,6 +609,7 @@ private struct SearchableModifier: ViewModifier {
     /// 依 ``enabled`` 決定是否套上 `.searchable`。
     /// - Parameter content: 原始 view。
     /// - Returns: 套用後的 view。
+    @ViewBuilder
     func body(content: Content) -> some View {
         if enabled {
 #if os(macOS)

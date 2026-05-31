@@ -12,29 +12,29 @@ import SwiftUI
 /// 功能模組應自行將商業狀態轉換成語意狀態，設計系統不直接認識訂單、
 /// 客戶或帳本等領域模型。
 enum BLTone: CaseIterable {
-    
+
     // MARK: - Cases
-    
+
     /// 中性狀態。
     case neutral
-    
+
     /// 主要強調狀態。
     case accent
-    
+
     /// 成功狀態。
     case success
-    
+
     /// 警示狀態。
     case warning
-    
+
     /// 破壞性或錯誤狀態。
     case destructive
-    
+
     /// 資訊提示狀態。
     case informative
-    
+
     // MARK: - Tone Method
-    
+
     /// 回傳語意狀態的前景色。
     /// - Parameter palette: 目前外觀對應的色盤。
     /// - Returns: 適合文字、圖示或指示點使用的色彩。
@@ -54,7 +54,7 @@ enum BLTone: CaseIterable {
             palette.indigo
         }
     }
-    
+
     /// 回傳語意狀態的背景色。
     /// - Parameter palette: 目前外觀對應的色盤。
     /// - Returns: 適合 badge、pill 或輕量狀態容器使用的色彩。
@@ -79,7 +79,7 @@ enum BLTone: CaseIterable {
         ("Destructive", .destructive),
         ("Informative", .informative),
     ]
-    
+
     VStack(alignment: .leading, spacing: BLSpacing.small) {
         ForEach(samples.indices, id: \.self) { index in
             BLStatusPill(samples[index].0, tone: samples[index].1)

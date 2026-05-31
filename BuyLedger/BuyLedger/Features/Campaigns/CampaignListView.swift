@@ -21,6 +21,9 @@ struct CampaignListView: View {
     /// 用於日期區段「今天／昨天」相對標題的「現在」時間；測試可注入固定值。
     @Dependency(\.date) private var date
 
+    /// 開團日期分組所用的行事曆 (含時區)；測試可注入固定值。
+    @Dependency(\.calendar) private var calendar
+
     // MARK: - View Body
 
     /// 開團列表的畫面內容。
@@ -100,7 +103,7 @@ private extension CampaignListView {
                 )
             }
         } else {
-            let sections = store.campaigns.dateSections(referenceDate: date.now)
+            let sections = store.campaigns.dateSections(referenceDate: date.now, calendar: calendar)
             if sections.isEmpty {
                 ContentUnavailableView(
                     "沒有符合的開團",
@@ -124,6 +127,7 @@ private extension CampaignListView {
     /// 單一頂層日期區段：頂層標題 (月／年／日) + 其下各子群組。
     /// - Parameter section: 要呈現的頂層區段。
     /// - Returns: 區段 view。
+    @ViewBuilder
     func sectionView(_ section: CampaignDateSection) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             Text(section.title)
@@ -169,6 +173,7 @@ private extension CampaignListView {
     /// 單一開團卡片列：點擊進詳情、長按 (contextMenu) 可編輯／刪除。
     /// - Parameter campaign: 對應的開團。
     /// - Returns: 開團列 view。
+    @ViewBuilder
     func campaignRowButton(_ campaign: Campaign) -> some View {
         Button {
             store.send(.campaigns(.campaignSelected(campaign.id)))

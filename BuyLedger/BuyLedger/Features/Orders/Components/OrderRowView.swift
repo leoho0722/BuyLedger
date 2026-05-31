@@ -82,10 +82,6 @@ struct OrderRowView: View {
     }
 }
 
-// MARK: - ViewBuilder
-
-private extension OrderRowView {}
-
 // MARK: - Preview
 
 #Preview("訂單列") {

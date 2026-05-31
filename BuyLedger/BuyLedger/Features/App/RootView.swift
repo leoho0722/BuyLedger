@@ -50,6 +50,11 @@ private extension RootView {
         }
 #endif
     }
+}
+
+// MARK: - Private Method
+
+private extension RootView {
 
     /// 將 ``SettingsFeature`` 的外觀偏好對映到 SwiftUI 的 `ColorScheme`。
     var preferredScheme: ColorScheme? {
@@ -63,10 +68,6 @@ private extension RootView {
         }
     }
 }
-
-// MARK: - ViewBuilder
-
-private extension RootView {}
 
 // MARK: - Preview
 

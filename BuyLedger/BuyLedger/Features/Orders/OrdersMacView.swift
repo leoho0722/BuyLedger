@@ -14,9 +14,9 @@ import SwiftUI
 ///
 /// 以 SwiftUI ``List`` 搭配 ``OrderRowView`` 呈現所有訂單，搭配右側 inspector 顯示選取訂單的詳情，對應設計稿的 Mac Orders tab。先前採用 ``Table``，但其固定單行 row 高度會截斷商品明細，改用 ``List`` 後商品明細能多行完整顯示。
 struct OrdersMacView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 訂單功能 store。
     @Bindable var store: StoreOf<OrdersFeature>
 
@@ -32,15 +32,18 @@ struct OrdersMacView: View {
     /// 付款方式篩選 sheet 是否呈現。點 trigger button 後設為 `true`，由 ``OptionPickerSheet`` 內部 dismiss 結束回 `false`。
     @State private var showsPaymentMethodPicker = false
 
-    /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:)`` 的「現在」時間；測試可注入固定值。
+    /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)`` 的「現在」時間；測試可注入固定值。
     @Dependency(\.date) private var date
 
+    /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值。
+    @Dependency(\.calendar) private var calendar
+
     // MARK: - View Body
-    
+
     /// 訂單瀏覽畫面內容。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
-        
+
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
             titleAndFilters(palette: palette)
             searchAndDateRow(palette: palette)
@@ -78,7 +81,7 @@ struct OrdersMacView: View {
                     Label("AI 總結", systemImage: "sparkles")
                 }
                 .help("AI 商品明細總結")
-                .disabled(store.state.filteredOrders(referenceDate: date.now).isEmpty)
+                .disabled(store.state.filteredOrders(referenceDate: date.now, calendar: calendar).isEmpty)
             }
 
             ToolbarItem {
@@ -142,18 +145,19 @@ struct OrdersMacView: View {
 // MARK: - ViewBuilder
 
 private extension OrdersMacView {
-    
+
     /// 標題列：H1 與狀態 chip 篩選。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 標題與篩選列 view。
+    @ViewBuilder
     func titleAndFilters(palette: BLPalette) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: BLSpacing.large) {
             Text("全部訂單")
                 .font(.title2.bold())
                 .foregroundStyle(palette.label)
-            
+
             Spacer(minLength: BLSpacing.medium)
-            
+
             OrderStatusFilterBar(
                 selection: store.selectedStatus,
                 filters: OrderStatusFilter.orderBrowsingCases
@@ -162,10 +166,11 @@ private extension OrdersMacView {
             }
         }
     }
-    
+
     /// 搜尋輸入欄與日期區間 chip 列並排。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 搜尋欄與日期 chip 列 view。
+    @ViewBuilder
     func searchAndDateRow(palette: BLPalette) -> some View {
         HStack(spacing: BLSpacing.medium) {
             BLSearchField(
@@ -173,28 +178,29 @@ private extension OrdersMacView {
                 text: $store.searchText.sending(\.searchTextChanged)
             )
             .frame(maxWidth: 320, alignment: .leading)
-            
+
             dateChipRow(palette: palette)
-            
+
             Spacer(minLength: 0)
         }
     }
-    
+
     /// 日期區間 chip 列。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 日期 chip 列 view。
+    @ViewBuilder
     func dateChipRow(palette: BLPalette) -> some View {
         HStack(spacing: BLSpacing.small) {
             ForEach(OrderDatePeriod.orderBrowsingCases) { period in
                 let isSelected = store.selectedDatePeriod == period
-                
+
                 Button {
                     store.send(.datePeriodSelected(period))
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "calendar")
                             .font(.caption2.weight(.semibold))
-                        
+
                         Text(period.title)
                             .font(.footnote.weight(.semibold))
                             .lineLimit(1)
@@ -209,7 +215,7 @@ private extension OrdersMacView {
             }
         }
     }
-    
+
     /// macOS 訂單頁的商品類別篩選 trigger button。
     ///
     /// 與 ``OrdersCompactView`` / iPad 的 trigger 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「類別：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)。padding / font 沿用 macOS 既有 chip 的尺寸 (`.footnote` / `.caption2` / `6pt vertical / 12pt horizontal`)；sheet 尺寸沿用 ``OptionPickerSheet`` 既有 `400×480`，與訂單編輯流程選類別時一致。
@@ -219,11 +225,12 @@ private extension OrdersMacView {
     /// - 類別名過長時，label 套 ``SwiftUI/Text/lineLimit(_:)`` 與 ``SwiftUI/Text/truncationMode(_:)`` 以 ellipsis 結尾，capsule 不換行。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)。
+    @ViewBuilder
     func categoryFilterTrigger(palette: BLPalette) -> some View {
         let isSelected = store.selectedCategory != nil
         let currentLabel = store.selectedCategory ?? "全部"
 
-        return Button {
+        Button {
             showsCategoryPicker = true
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -256,11 +263,12 @@ private extension OrdersMacView {
     /// - 已選某付款方式時，label 顯示「付款方式：<付款方式名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)。
+    @ViewBuilder
     func paymentMethodFilterTrigger(palette: BLPalette) -> some View {
         let isSelected = store.selectedPaymentMethod != nil
         let currentLabel = store.selectedPaymentMethod ?? "全部"
 
-        return Button {
+        Button {
             showsPaymentMethodPicker = true
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
@@ -296,16 +304,17 @@ private extension OrdersMacView {
                 .foregroundStyle(palette.red)
         }
     }
-    
+
     /// 訂單清單。
     ///
     /// 與 iPhone (compact) 的 ``OrdersCompactView`` 及 iPad 的 ``OrdersView`` `listPane` 共用同一套 ``BLCard`` + ``Divider`` 排版，讓三平台的訂單列表呈現一致的單一圓角卡片外觀。先前採用 ``Table`` (固定單行 row 高度會截斷商品明細)，後改 ``List``；但 macOS `.inset` list 的 `List(selection:)` 會在選取列疊上不透明的系統 accent 高亮，蓋掉自訂卡片色而呈現整塊亮藍，因此改以 ``ScrollView`` + ``BLCard`` 自繪列表。選取狀態僅反映在右側 inspector，列表本身不畫選取高亮 (比照 iOS)；刪除走 row 的 context menu。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 訂單列表 view。
+    @ViewBuilder
     func ordersList(palette: BLPalette) -> some View {
-        let orders = store.state.filteredOrders(referenceDate: date.now)
+        let orders = store.state.filteredOrders(referenceDate: date.now, calendar: calendar)
 
-        return ScrollView {
+        ScrollView {
             if store.isLoading {
                 ProgressView("載入訂單")
                     .frame(maxWidth: .infinity, alignment: .center)
@@ -326,6 +335,7 @@ private extension OrdersMacView {
     /// 與 ``OrdersCompactView`` 的 `listSection`、iPad `listPane` 的 `orderListCard` 採同一套 ``BLCard`` + ``Divider`` 排版以維持三平台一致；每列以 ``Button`` 送出 ``OrdersFeature/Action/orderSelected(_:)`` 更新右側 inspector。
     /// - Parameter orders: 已套用篩選的訂單清單。
     /// - Returns: 卡片化的訂單列表 view。
+    @ViewBuilder
     func orderListCard(orders: [LedgerOrder]) -> some View {
         BLCard(padding: 0) {
             VStack(spacing: 0) {
@@ -355,7 +365,7 @@ private extension OrdersMacView {
             }
         }
     }
-    
+
     /// Inspector 內顯示的訂單詳情或空狀態。
     ///
     /// macOS `.inspector(...)` 預設背景比 app background 淺，會讓詳情欄看起來像浮在內容區之外；統一在最外層套 `palette.background` 讓整個 inspector 與訂單表格的背景一致。
@@ -364,7 +374,7 @@ private extension OrdersMacView {
     @ViewBuilder
     func inspectorContent(palette: BLPalette) -> some View {
         Group {
-            if let order = store.state.selectedOrder(referenceDate: date.now) {
+            if let order = store.state.selectedOrder(referenceDate: date.now, calendar: calendar) {
                 VStack(spacing: 0) {
                     inspectorTitleBar(order: order, palette: palette)
                     OrderDetailView(order: order, layout: .wide)
@@ -380,7 +390,7 @@ private extension OrdersMacView {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(palette.background)
     }
-    
+
     /// Inspector 上方的訂購人姓名標題列，含「編輯」按鈕。
     ///
     /// macOS inspector 不會自動顯示 ``View/navigationTitle`` 的標題，因此以自繪標題列補齊。訂單編號已由 ``OrderDetailView`` 的內容區顯示，此處不再重複。
@@ -388,15 +398,16 @@ private extension OrdersMacView {
     ///   - order: 要顯示的訂單。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 自繪標題列 view。
+    @ViewBuilder
     func inspectorTitleBar(order: LedgerOrder, palette: BLPalette) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
             Text(order.customer.name)
                 .font(.title3.bold())
                 .foregroundStyle(palette.label)
                 .accessibilityAddTraits(.isHeader)
-            
+
             Spacer()
-            
+
             Menu {
                 ForEach(OrderStatus.allCases) { status in
                     Button {
@@ -452,7 +463,7 @@ private extension OrdersMacView {
         state.selectedOrderID = LedgerOrder.sampleOrders.first?.id
         return state
     }()
-    
+
     OrdersMacView(
         store: Store(initialState: previewState) {
             OrdersFeature()

@@ -98,6 +98,7 @@ private extension BLSearchField {
     /// 清空欄位文字的清除按鈕。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 清除按鈕 view。
+    @ViewBuilder
     func clearButton(palette: BLPalette) -> some View {
         Button {
             text = ""

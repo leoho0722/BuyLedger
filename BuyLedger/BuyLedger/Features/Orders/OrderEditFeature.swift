@@ -10,7 +10,7 @@ import Foundation
 
 /// 編輯或新增訂單表單的功能。
 ///
-/// 本切片僅建立 sheet 流程骨架：state 持有原始訂單 (`nil` 視為新訂單) 與草稿欄位，`saveTapped` 與 `cancelTapped` 都僅觸發 dismiss，不寫回資料。實際的儲存邏輯會在後續切片補上。
+/// State 持有原始訂單 (`nil` 視為新訂單) 與各草稿欄位，並維護表單內可即時新增的主檔清單 (訂單來源／商品類別／付款方式／對帳狀態／幣別)。`saveTapped` 與 `cancelTapped` 僅觸發 dismiss；實際寫回資料由父層 ``OrdersFeature`` 攔截 `saveTapped` (`applyEditDraft`) 後持久化。
 @Reducer
 struct OrderEditFeature {
 

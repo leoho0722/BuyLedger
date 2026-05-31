@@ -77,6 +77,7 @@ struct SettingsMacView: View {
 private extension SettingsMacView {
 
     /// 一般偏好分頁：外觀模式。
+    @ViewBuilder
     var generalTab: some View {
         Form {
             Section {
@@ -97,6 +98,7 @@ private extension SettingsMacView {
     }
 
     /// 通知分頁：是否接收提醒。
+    @ViewBuilder
     var notificationsTab: some View {
         Form {
             Section {
@@ -112,6 +114,7 @@ private extension SettingsMacView {
     }
 
     /// AI 分頁：AI 商品明細總結開關與 (Debug) 模型切換。
+    @ViewBuilder
     var aiTab: some View {
         Form {
             Section {
@@ -162,6 +165,7 @@ private extension SettingsMacView {
     }
 
     /// 預設值分頁：建立新訂單時帶入的幣別等預設與月度損益目標。
+    @ViewBuilder
     var defaultsTab: some View {
         Form {
             Section {
@@ -191,12 +195,12 @@ private extension SettingsMacView {
                         options: store.availableCurrencies.map(\.rawValue),
                         selected: store.defaultCurrency.rawValue,
                         displayName: { code in
-                            let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                            let locale = Locale.preferred()
                             let name = locale.localizedString(forCurrencyCode: code) ?? ""
                             return name.isEmpty ? code : "\(code) · \(name)"
                         },
                         searchKeywords: { code in
-                            Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                            Locale.preferred()
                                 .localizedString(forCurrencyCode: code) ?? ""
                         },
                         onSelect: { code in
@@ -229,6 +233,7 @@ private extension SettingsMacView {
 
 #if false
     /// 資料分頁：CSV 匯出與雲端同步占位 (暫時以 `#if false` 隱藏，待實作完成後再開啟)。
+    @ViewBuilder
     var dataTab: some View {
         Form {
             Section {
@@ -254,6 +259,7 @@ private extension SettingsMacView {
 #endif
 
     /// 關於分頁：版本與作者。
+    @ViewBuilder
     var aboutTab: some View {
         Form {
             Section {
@@ -287,7 +293,7 @@ private extension SettingsMacView {
     /// - Parameter currency: 幣別。
     /// - Returns: 顯示字串。
     func currencyDisplayText(for currency: CurrencyCode) -> String {
-        let locale = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+        let locale = Locale.preferred()
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
         return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
     }

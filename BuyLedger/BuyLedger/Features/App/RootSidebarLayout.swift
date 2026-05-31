@@ -34,11 +34,89 @@ struct RootSidebarLayout: View {
     }
 }
 
+// MARK: - Nested Types
+
+private extension RootSidebarLayout {
+
+
+    /// 側邊欄「智慧分組」中以狀態 + 顏色呈現的項目。
+    ///
+    /// 涵蓋訂單從報價到交付的整條 pipeline；`cancelled` 不列入，避免使用者誤以為這是常用入口。
+    enum SmartGroup: String, Identifiable, CaseIterable {
+
+        // MARK: - Cases
+
+        /// 報價中的訂單分組。
+        case quoting
+
+        /// 已確認但尚未下單的訂單分組。
+        case confirmed
+
+        /// 已下單但尚未集運的訂單分組。
+        case purchased
+
+        /// 集運中的訂單分組。
+        case shipping
+
+        /// 已交付完成的訂單分組。
+        case delivered
+
+        // MARK: - Identifiable Properties
+
+        /// 分組的穩定識別值。
+        var id: String { rawValue }
+
+        // MARK: - Data Properties
+
+        /// 對應的訂單狀態。
+        var status: OrderStatus {
+            switch self {
+            case .quoting:
+                .quoting
+            case .confirmed:
+                .confirmed
+            case .purchased:
+                .purchased
+            case .shipping:
+                .shipping
+            case .delivered:
+                .delivered
+            }
+        }
+
+        /// 在側邊欄顯示的色點顏色。
+        /// - Parameter palette: 目前外觀使用的色盤。
+        /// - Returns: 色點顏色。
+        func color(in palette: BLPalette) -> Color {
+            switch self {
+            case .quoting:
+                palette.teal
+            case .confirmed:
+                palette.accent
+            case .purchased:
+                palette.indigo
+            case .shipping:
+                palette.orange
+            case .delivered:
+                palette.green
+            }
+        }
+
+        // MARK: - Static Properties
+
+        /// 訂單瀏覽 sidebar 中提供的固定順序 (依訂單生命週期由前到後排)。
+        static let orderBrowsingCases: [SmartGroup] = [
+            .quoting, .confirmed, .purchased, .shipping, .delivered,
+        ]
+    }
+}
+
 // MARK: - ViewBuilder
 
 private extension RootSidebarLayout {
 
     /// 根層級分欄導覽。
+    @ViewBuilder
     var splitView: some View {
         NavigationSplitView {
             sidebar
@@ -48,10 +126,11 @@ private extension RootSidebarLayout {
     }
 
     /// 側邊欄內容。
+    @ViewBuilder
     var sidebar: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
-        return List(selection: tabSelectionBinding) {
+        List(selection: tabSelectionBinding) {
             Section {
                 logoRow(palette: palette)
                     .listRowSeparator(.hidden)
@@ -101,6 +180,7 @@ private extension RootSidebarLayout {
     /// BL gradient logo 與 App 名稱列。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: logo 列 view。
+    @ViewBuilder
     func logoRow(palette: BLPalette) -> some View {
         HStack(spacing: BLSpacing.small) {
             ZStack {
@@ -135,6 +215,7 @@ private extension RootSidebarLayout {
     ///   - palette: 目前外觀使用的色盤；目前未使用，預留給未來不同 tab 套不同色等需求。
     ///   - badgeCount: 顯示在右側的紅色徽章數字；為 `nil` 或 `0` 時不顯示。
     /// - Returns: 分頁列 view。
+    @ViewBuilder
     func navRow(_ tab: RootTab, palette _: BLPalette, badgeCount: Int? = nil) -> some View {
         HStack(spacing: BLSpacing.small) {
             Label(tab.title, systemImage: tab.systemImage)
@@ -155,10 +236,11 @@ private extension RootSidebarLayout {
     ///   - group: 智慧分組項目。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 智慧分組列 view。
+    @ViewBuilder
     func smartGroupRow(_ group: SmartGroup, palette: BLPalette) -> some View {
         let count = orderCount(for: group.status)
 
-        return HStack(spacing: BLSpacing.small) {
+        HStack(spacing: BLSpacing.small) {
             Circle()
                 .fill(group.color(in: palette))
                 .frame(width: 9, height: 9)
@@ -242,79 +324,6 @@ private extension RootSidebarLayout {
 
     /// 視為「進行中」的訂單狀態集合。
     static let activeStatuses: Set<OrderStatus> = [.confirmed, .purchased, .shipping]
-}
-
-// MARK: - Smart Group
-
-/// 側邊欄「智慧分組」中以狀態 + 顏色呈現的項目。
-///
-/// 涵蓋訂單從報價到交付的整條 pipeline；`cancelled` 不列入，避免使用者誤以為這是常用入口。
-private enum SmartGroup: String, Identifiable, CaseIterable {
-
-    // MARK: - Cases
-
-    /// 報價中的訂單分組。
-    case quoting
-
-    /// 已確認但尚未下單的訂單分組。
-    case confirmed
-
-    /// 已下單但尚未集運的訂單分組。
-    case purchased
-
-    /// 集運中的訂單分組。
-    case shipping
-
-    /// 已交付完成的訂單分組。
-    case delivered
-
-    // MARK: - Identifiable Properties
-
-    /// 分組的穩定識別值。
-    var id: String { rawValue }
-
-    // MARK: - Data Properties
-
-    /// 對應的訂單狀態。
-    var status: OrderStatus {
-        switch self {
-        case .quoting:
-            .quoting
-        case .confirmed:
-            .confirmed
-        case .purchased:
-            .purchased
-        case .shipping:
-            .shipping
-        case .delivered:
-            .delivered
-        }
-    }
-
-    /// 在側邊欄顯示的色點顏色。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 色點顏色。
-    func color(in palette: BLPalette) -> Color {
-        switch self {
-        case .quoting:
-            palette.teal
-        case .confirmed:
-            palette.accent
-        case .purchased:
-            palette.indigo
-        case .shipping:
-            palette.orange
-        case .delivered:
-            palette.green
-        }
-    }
-
-    // MARK: - Static Properties
-
-    /// 訂單瀏覽 sidebar 中提供的固定順序 (依訂單生命週期由前到後排)。
-    static let orderBrowsingCases: [SmartGroup] = [
-        .quoting, .confirmed, .purchased, .shipping, .delivered,
-    ]
 }
 
 // MARK: - Preview

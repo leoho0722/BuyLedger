@@ -21,6 +21,7 @@ struct CampaignFeatureTests {
             CampaignFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0[CampaignRepository.self].fetchCampaigns = { [campaign] }
         }
 
@@ -45,6 +46,7 @@ struct CampaignFeatureTests {
             CampaignFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0[CampaignRepository.self].fetchCampaigns = { [pastDue, future] }
             $0[CampaignRepository.self].saveCampaign = { _ in }
         }
@@ -73,6 +75,7 @@ struct CampaignFeatureTests {
             CampaignFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0[CampaignRepository.self].saveCampaign = { _ in }
         }
 
@@ -90,6 +93,7 @@ struct CampaignFeatureTests {
             CampaignFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0[CampaignRepository.self].saveCampaign = { _ in }
         }
 
@@ -109,6 +113,7 @@ struct CampaignFeatureTests {
             CampaignFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0[CampaignRepository.self].removeCampaign = { _ in }
         }
         store.exhaustivity = .off
@@ -125,6 +130,7 @@ struct CampaignFeatureTests {
             CampaignFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
         // CampaignEditFeature.State 內含隨機 `id: UUID()`，無法做等值斷言；改以非窮舉模式驗證表單已呈現且為新開團。
         store.exhaustivity = .off

@@ -9,9 +9,9 @@ import Foundation
 
 /// 訂單畫面使用的格式化工具。
 enum OrderFormatters {
-    
+
     // MARK: - Format Method
-    
+
     /// 將新台幣金額格式化為無小數位字串。
     /// - Parameter amount: 要格式化的金額。
     /// - Returns: 使用台灣地區格式的金額字串。
@@ -22,7 +22,7 @@ enum OrderFormatters {
             .locale(Locale(identifier: "zh_TW"))
         )
     }
-    
+
     /// 將原始幣別金額格式化為無小數位字串。
     /// - Parameters:
     ///   - amount: 要格式化的金額。
@@ -35,14 +35,14 @@ enum OrderFormatters {
             .locale(Locale(identifier: "zh_TW"))
         )
     }
-    
+
     /// 將比例格式化為百分比。
     /// - Parameter value: `0` 到 `1` 之間的比例。
     /// - Returns: 百分比字串。
     static func percent(_ value: Decimal) -> String {
         value.formatted(.percent.precision(.fractionLength(1)))
     }
-    
+
     /// 將日期格式化為列表使用的短日期。
     /// - Parameter date: 要格式化的日期。
     /// - Returns: 月日格式字串。

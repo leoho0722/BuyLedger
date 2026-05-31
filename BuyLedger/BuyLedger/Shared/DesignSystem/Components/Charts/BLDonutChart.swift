@@ -10,27 +10,27 @@ import SwiftUI
 
 /// 可放置中心文字的圈狀圖。
 struct BLDonutChart: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 目前系統深淺色外觀。
     @Environment(\.colorScheme) private var colorScheme
-    
+
     /// 圈狀圖要呈現的區段。
     let segments: [BLDonutSegment]
-    
+
     /// 圈狀圖中央上方的輔助標題。
     let centerTitle: String
-    
+
     /// 圈狀圖中央主要顯示值。
     let centerValue: String
-    
+
     // MARK: - View Body
-    
+
     /// 圈狀圖的畫面內容。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
-        
+
         ZStack {
             Chart(segments) { segment in
                 SectorMark(
@@ -42,12 +42,12 @@ struct BLDonutChart: View {
             }
             .chartLegend(.hidden)
             .frame(width: 150, height: 150)
-            
+
             VStack(spacing: 2) {
                 Text(centerTitle)
                     .font(.caption2)
                     .foregroundStyle(palette.secondaryLabel)
-                
+
                 Text(centerValue)
                     .font(.headline)
                     .foregroundStyle(palette.label)
@@ -56,10 +56,6 @@ struct BLDonutChart: View {
         }
     }
 }
-
-// MARK: - ViewBuilder
-
-private extension BLDonutChart {}
 
 // MARK: - Preview
 

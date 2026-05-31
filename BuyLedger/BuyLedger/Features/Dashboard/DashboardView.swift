@@ -16,12 +16,12 @@ import SwiftUI
 /// - KPI 卡片格 (營業額、成本、毛利率、進行中訂單)
 /// - 近期訂單卡 (reuse ``OrderRowView``)
 struct DashboardView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// App 根層級 store；用來讀取訂單以及切換分頁。
     @Bindable var store: StoreOf<RootFeature>
-    
+
     /// 目前系統深淺色外觀。
     @Environment(\.colorScheme) private var colorScheme
 
@@ -33,8 +33,11 @@ struct DashboardView: View {
     /// 用來計算「本月／上月」與日期子標的「現在」時間；測試可注入固定值。
     @Dependency(\.date) private var date
 
+    /// 月份分組與相對日期計算所用的行事曆 (含時區)；測試可注入固定 gregorian／UTC。
+    @Dependency(\.calendar) private var calendar
+
     // MARK: - View Body
-    
+
     /// 總覽頁的畫面內容。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
@@ -77,7 +80,7 @@ struct DashboardView: View {
 // MARK: - ViewBuilder
 
 private extension DashboardView {
-    
+
     /// 訂單載入完成後依資料狀態決定顯示完整 dashboard 或第一次使用的 onboarding。
     ///
     /// 首次載入完成前的佔位畫面由 ``loadingPlaceholder(palette:)`` 在 ``body`` 中直接渲染，避免訂單為空時每次切換 tab 因 `isLoading` 暫時翻成 `true` 而落入「有資料」分支造成閃爍。
@@ -141,10 +144,11 @@ private extension DashboardView {
     ///   - campaign: 進行中的開團。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 單列 view。
+    @ViewBuilder
     func ongoingCampaignRow(campaign: Campaign, palette: BLPalette) -> some View {
         let summary = CampaignSummary(campaignName: campaign.name, orders: store.orders.orders)
 
-        return VStack(alignment: .leading, spacing: BLSpacing.small) {
+        VStack(alignment: .leading, spacing: BLSpacing.small) {
             HStack(spacing: BLSpacing.small) {
                 Text(campaign.name)
                     .font(.subheadline.weight(.semibold))
@@ -177,16 +181,18 @@ private extension DashboardView {
     /// 首次載入訂單前顯示的中性佔位畫面，水平垂直置中。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 佔位 view。
+    @ViewBuilder
     func loadingPlaceholder(palette: BLPalette) -> some View {
         ProgressView()
             .controlSize(.regular)
             .tint(palette.secondaryLabel)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
-    
+
     /// 第一次開 App 還沒有任何訂單時的引導畫面。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: onboarding view。
+    @ViewBuilder
     func onboardingHero(palette: BLPalette) -> some View {
         VStack(spacing: BLSpacing.large) {
             ZStack {
@@ -199,24 +205,24 @@ private extension DashboardView {
                         )
                     )
                     .frame(width: 132, height: 132)
-                
+
                 Image(systemName: "shippingbox.fill")
                     .font(.system(size: 56, weight: .semibold))
                     .foregroundStyle(.white)
             }
-            
+
             VStack(spacing: BLSpacing.small) {
                 Text("歡迎使用 BuyLedger")
                     .font(.title.bold())
                     .foregroundStyle(palette.label)
-                
+
                 Text("還沒有任何訂單。建立第一筆，馬上開始追蹤代購損益。")
                     .font(.subheadline)
                     .foregroundStyle(palette.secondaryLabel)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, BLSpacing.large)
-            
+
             Button {
                 store.send(.startNewOrder)
             } label: {
@@ -227,10 +233,11 @@ private extension DashboardView {
         .frame(maxWidth: .infinity)
         .padding(.vertical, BLSpacing.section * 2)
     }
-    
+
     /// 大標題與日期子標。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 標題列 view。
+    @ViewBuilder
     func titleHeader(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: 2) {
             Text(currentDateSubtitle())
@@ -246,7 +253,7 @@ private extension DashboardView {
 #endif
         }
     }
-    
+
     /// hero P&L 與 KPI 的並排組合。
     ///
     /// 在 iPhone (compact) 上維持 hero 在上、2×2 KPI grid 在下；在 iPad/Mac 上把 hero 放在左側 1.4 權重，3 個小 KPI 放在右側
@@ -261,7 +268,7 @@ private extension DashboardView {
             HStack(alignment: .top, spacing: BLSpacing.medium) {
                 heroCard(stats: stats, palette: palette)
                     .frame(maxWidth: .infinity)
-                
+
                 VStack(spacing: BLSpacing.small) {
                     wideKpiTiles(stats: stats, palette: palette)
                 }
@@ -274,7 +281,7 @@ private extension DashboardView {
             }
         }
     }
-    
+
     /// 寬版面右側的 3 個 KPI 卡片 (直欄排列，與 hero 等高呼應)。
     /// - Parameters:
     ///   - stats: 已計算的本月統計。
@@ -307,25 +314,26 @@ private extension DashboardView {
             palette: palette
         )
     }
-    
+
     /// 漸層 hero 卡：本月淨獲利、sparkline 與月目標進度。
     /// - Parameters:
     ///   - stats: 已計算的本月統計。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: hero 卡片 view。
+    @ViewBuilder
     func heroCard(stats: DashboardStats, palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
             VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
                 Text("本月 · 淨獲利")
                     .font(.footnote.weight(.medium))
                     .opacity(0.85)
-                
+
                 Text(profitDisplay(stats.profit))
                     .font(.system(size: 36, weight: .bold))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)
-                
+
                 HStack(spacing: BLSpacing.small) {
                     Text(profitDeltaDisplay(stats.profitDelta))
                         .font(.footnote)
@@ -338,10 +346,10 @@ private extension DashboardView {
                         .opacity(0.9)
                 }
             }
-            
+
             BLSparkline(data: stats.sparkline, tint: .white, height: 36)
                 .opacity(0.6)
-            
+
             goalProgressBar(stats: stats)
         }
         .padding(BLSpacing.large)
@@ -357,7 +365,7 @@ private extension DashboardView {
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous))
         .blCardShadow()
     }
-    
+
     /// 月目標進度條；目標為 0 (使用者未設定) 時整列隱藏。
     /// - Parameter stats: 已計算的本月統計。
     /// - Returns: 進度條 view。
@@ -383,12 +391,13 @@ private extension DashboardView {
             }
         }
     }
-    
+
     /// KPI 卡片格。
     /// - Parameters:
     ///   - stats: 已計算的本月統計。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: KPI 區塊 view。
+    @ViewBuilder
     func kpiGrid(stats: DashboardStats, palette: BLPalette) -> some View {
         LazyVGrid(columns: kpiColumns, spacing: BLSpacing.small) {
             kpiTile(
@@ -425,7 +434,7 @@ private extension DashboardView {
             )
         }
     }
-    
+
     /// 單一 KPI 卡片：左上 tint 色點 + 標籤、中段大數字、下方變化指標。
     /// - Parameters:
     ///   - label: 卡片左上方的指標名稱，例如「營業額」、「毛利率」。
@@ -435,6 +444,7 @@ private extension DashboardView {
     ///   - deltaUp: 變化方向：`true` 顯示上升色 (綠)、`false` 顯示下降色 (紅)、`nil` 顯示中性色。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: KPI 卡片 view。
+    @ViewBuilder
     func kpiTile(
         label: String,
         value: String,
@@ -450,14 +460,14 @@ private extension DashboardView {
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(palette.secondaryLabel)
             }
-            
+
             Text(value)
                 .font(.title3.bold())
                 .monospacedDigit()
                 .foregroundStyle(palette.label)
                 .lineLimit(1)
                 .minimumScaleFactor(0.8)
-            
+
             Text(delta)
                 .font(.caption.weight(.medium))
                 .foregroundStyle(deltaColor(deltaUp, palette: palette))
@@ -471,21 +481,22 @@ private extension DashboardView {
                 .stroke(palette.separator, lineWidth: 0.5)
         }
     }
-    
+
     /// 近期訂單區塊 (標題列 + 列表卡)。
     /// - Parameters:
     ///   - stats: 已計算的本月統計。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 近期訂單區塊 view。
+    @ViewBuilder
     func recentOrdersSection(stats: DashboardStats, palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             HStack(alignment: .firstTextBaseline) {
                 Text("近期訂單")
                     .font(.title3.bold())
                     .foregroundStyle(palette.label)
-                
+
                 Spacer()
-                
+
                 Button("查看全部") {
                     store.send(.tabSelected(.orders))
                 }
@@ -493,7 +504,7 @@ private extension DashboardView {
                 .foregroundStyle(palette.accent)
                 .font(.subheadline.weight(.medium))
             }
-            
+
             if stats.recentOrders.isEmpty {
                 ContentUnavailableView(
                     "尚無訂單",
@@ -526,12 +537,12 @@ private extension DashboardView {
 // MARK: - Layout Helper
 
 private extension DashboardView {
-    
+
     /// KPI 卡片的欄位設定 (僅 compact 用 2 欄)。
     var kpiColumns: [GridItem] {
         Array(repeating: GridItem(.flexible(), spacing: BLSpacing.small), count: 2)
     }
-    
+
     /// 是否採用 hero + 3 KPI 並排版面 (iPad / Mac)。
     var useWideHero: Bool {
 #if os(macOS)
@@ -595,7 +606,7 @@ private struct DashboardStats {
 }
 
 private extension DashboardView {
-    
+
     /// 視為「進行中」的訂單狀態集合。
     static let activeStatuses: Set<OrderStatus> = [
         .confirmed,
@@ -613,14 +624,14 @@ private extension DashboardView {
 
     /// 「近期訂單」列表顯示的筆數；同時控制 ``computeStats(orders:monthlyGoal:)`` 的 prefix 取數。
     static let recentOrdersCount = 4
-    
+
     /// 計算 ``DashboardStats``。
     /// - Parameters:
     ///   - orders: 目前的訂單清單。
     ///   - monthlyGoal: 月度淨獲利目標 (來自 SettingsFeature；`0` 代表未設定)。
     /// - Returns: 總覽頁需要的統計值。
     func computeStats(orders: [LedgerOrder], monthlyGoal: Decimal) -> DashboardStats {
-        let calendar = Calendar.current
+        let calendar = self.calendar
         let now = date()
 
         let current = monthlyTotals(orders: orders, calendar: calendar, referenceDate: now)
@@ -748,7 +759,7 @@ private extension DashboardView {
         guard previous != 0 else { return nil }
         return (current - previous) / previous
     }
-    
+
     /// 產生最近 12 個月的淨獲利走勢資料。
     /// - Parameters:
     ///   - orders: 目前訂單清單。
@@ -763,7 +774,7 @@ private extension DashboardView {
         let realized = orders.filter {
             Self.realizedStatuses.contains($0.status)
         }
-        
+
         return (0..<12).reversed().map { offset in
             guard let monthStart = calendar.date(
                 byAdding: .month,
@@ -773,12 +784,12 @@ private extension DashboardView {
                   let interval = calendar.dateInterval(of: .month, for: monthStart) else {
                 return 0
             }
-            
+
             let total = realized
                 .filter {
                     (interval.start..<interval.end).contains($0.date) }
                 .reduce(Decimal.zero) { $0 + $1.summary.profit }
-            
+
             return NSDecimalNumber(decimal: total).doubleValue
         }
     }
@@ -787,16 +798,16 @@ private extension DashboardView {
 // MARK: - Formatting
 
 private extension DashboardView {
-    
+
     /// 將獲利金額格式化為含正負號的新台幣字串。
     /// - Parameter profit: 獲利金額。
     /// - Returns: 顯示在 hero 卡上的金額字串。
     func profitDisplay(_ profit: Decimal) -> String {
         let formatted = formatTwd(profit)
-        
+
         return profit > 0 ? "+\(formatted)" : formatted
     }
-    
+
     /// 將金額格式化為新台幣 (無小數位)。
     /// - Parameter amount: 金額。
     /// - Returns: 含 NT$ 前綴的字串。
@@ -807,14 +818,14 @@ private extension DashboardView {
             .locale(Locale(identifier: "zh_TW"))
         )
     }
-    
+
     /// 將比例格式化為百分比。
     /// - Parameter value: 介於 0 與 1 之間的比例。
     /// - Returns: 含一位小數的百分比字串。
     func formatPercent(_ value: Decimal) -> String {
         value.formatted(.percent.precision(.fractionLength(1)))
     }
-    
+
     /// 顯示在大標題上方的日期子標。
     /// - Returns: 例如「5月1日 週五」。
     func currentDateSubtitle() -> String {
@@ -826,7 +837,7 @@ private extension DashboardView {
                 .locale(Locale(identifier: "zh_TW"))
         )
     }
-    
+
     /// 將 KPI delta 的方向轉成色彩。
     ///
     /// 一律以「上升 → 綠、下降 → 紅、未知 → 中性」表示**原始方向**；針對成本這類「漲是壞」的指標，UI 不主動翻轉色彩，由 label 與內容由使用者自行判讀。
@@ -895,7 +906,7 @@ private extension DashboardView {
         state.orders.hasLoaded = true
         return state
     }()
-    
+
     return DashboardView(
         store: Store(initialState: previewState) {
             RootFeature()

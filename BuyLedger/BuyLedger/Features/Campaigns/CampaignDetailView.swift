@@ -89,6 +89,7 @@ private extension CampaignDetailView {
     /// 開團詳情主體。
     /// - Parameter campaign: 目前的開團。
     /// - Returns: 詳情 list view。
+    @ViewBuilder
     func detail(for campaign: Campaign) -> some View {
         List {
             infoSection(campaign: campaign)
@@ -136,6 +137,7 @@ private extension CampaignDetailView {
     }
 
     /// 結團結算區段：收款面與損益面。
+    @ViewBuilder
     var settlementSection: some View {
         Section("結團結算") {
             LabeledContent("應收", value: CampaignFormatters.twd(summary.receivables))
@@ -192,6 +194,7 @@ private extension CampaignDetailView {
     /// 分貨列標題：客戶、件數、金額與收款標記。
     /// - Parameter row: 分貨列。
     /// - Returns: 標題 view。
+    @ViewBuilder
     func distributionLabel(_ row: CampaignDistributionRow) -> some View {
         HStack(spacing: BLSpacing.small) {
             Image(systemName: row.isFullyReceived ? "checkmark.circle.fill" : "circle")
@@ -212,6 +215,7 @@ private extension CampaignDetailView {
     /// 分貨列展開後的單筆訂單：品項摘要與收款狀態切換。
     /// - Parameter order: 該客戶在此開團的訂單。
     /// - Returns: 訂單列 view。
+    @ViewBuilder
     func orderRow(_ order: LedgerOrder) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             Text(order.id)

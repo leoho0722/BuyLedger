@@ -9,31 +9,31 @@ import SwiftUI
 
 /// 訂單列表使用的狀態篩選列。
 struct OrderStatusFilterBar: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 目前系統深淺色外觀。
     @Environment(\.colorScheme) private var colorScheme
-    
+
     /// 目前選取的篩選。
     let selection: OrderStatusFilter
-    
+
     /// 可選擇的篩選清單。
     let filters: [OrderStatusFilter]
-    
+
     /// 使用者選取篩選時呼叫的 closure。
     let onSelect: (OrderStatusFilter) -> Void
-    
+
     // MARK: - View Body
-    
+
     /// 篩選列的畫面內容。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
-        
+
         ViewThatFits(in: .horizontal) {
             filterRow(palette: palette)
                 .fixedSize(horizontal: true, vertical: false)
-            
+
             filterGrid(palette: palette)
         }
     }
@@ -42,10 +42,11 @@ struct OrderStatusFilterBar: View {
 // MARK: - ViewBuilder
 
 private extension OrderStatusFilterBar {
-    
+
     /// 單列呈現所有篩選項目。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 單列篩選 view。
+    @ViewBuilder
     func filterRow(palette: BLPalette) -> some View {
         HStack(spacing: BLSpacing.small) {
             ForEach(filters) { filter in
@@ -53,10 +54,11 @@ private extension OrderStatusFilterBar {
             }
         }
     }
-    
+
     /// 空間不足時換行呈現所有篩選項目。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 換行篩選 view。
+    @ViewBuilder
     func filterGrid(palette: BLPalette) -> some View {
         LazyVGrid(
             columns: [
@@ -70,16 +72,17 @@ private extension OrderStatusFilterBar {
             }
         }
     }
-    
+
     /// 建立單一狀態篩選按鈕。
     /// - Parameters:
     ///   - filter: 要顯示的狀態篩選。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 狀態篩選按鈕 view。
+    @ViewBuilder
     func filterButton(_ filter: OrderStatusFilter, palette: BLPalette) -> some View {
         let isSelected = selection == filter
-        
-        return Button {
+
+        Button {
             onSelect(filter)
         } label: {
             Text(filter.title)

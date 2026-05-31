@@ -49,6 +49,40 @@ struct CustomersView: View {
     }
 }
 
+// MARK: - Nested Types
+
+private extension CustomersView {
+
+    /// 客戶名單顯示用的彙總列。
+    struct CustomerRow: Identifiable {
+
+        // MARK: - Identifiable Properties
+
+        /// 用客戶姓名當識別值 (同名客戶會被聚合成一筆)。
+        var id: String { name }
+
+        // MARK: - Data Properties
+
+        /// 客戶姓名。
+        let name: String
+
+        /// 顯示在頭像上的姓名縮寫。
+        let initials: String
+
+        /// 客戶分級。
+        let tier: CustomerTier
+
+        /// 已下訂單數。
+        let orderCount: Int
+
+        /// 累計消費 (NT$)。
+        let totalSpent: Decimal
+
+        /// 最近一筆訂單的日期。
+        let lastOrderDate: Date
+    }
+}
+
 // MARK: - ViewBuilder
 
 private extension CustomersView {
@@ -56,6 +90,7 @@ private extension CustomersView {
     /// 沒有訂單時的空狀態。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 空狀態 view。
+    @ViewBuilder
     func emptyState(palette: BLPalette) -> some View {
         ContentUnavailableView(
             "尚無客戶",
@@ -72,10 +107,11 @@ private extension CustomersView {
     ///   - customers: 已聚合的客戶清單 (依累計消費排序)。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 強調卡片區塊 view。
+    @ViewBuilder
     func topThree(customers: [CustomerRow], palette: BLPalette) -> some View {
         let topCount = Self.topHighlightCount
 
-        return VStack(alignment: .leading, spacing: BLSpacing.medium) {
+        VStack(alignment: .leading, spacing: BLSpacing.medium) {
             Text("Top \(topCount)")
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(palette.tertiaryLabel)
@@ -102,6 +138,7 @@ private extension CustomersView {
     ///   - customer: 客戶資料。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: Top 卡 view。
+    @ViewBuilder
     func topCard(rank: Int, customer: CustomerRow, palette: BLPalette) -> some View {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.small) {
@@ -175,20 +212,14 @@ private extension CustomersView {
     ///   - rank: 名次 (1 / 2 / 3)。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 名次膠囊 view。
+    @ViewBuilder
     func rankBadge(rank: Int, palette: BLPalette) -> some View {
-        let background: Color
-        switch rank {
-        case 1: background = palette.orange
-        case 2: background = palette.secondaryLabel
-        default: background = palette.fillTertiary
-        }
-
-        return Text("#\(rank)")
+        Text("#\(rank)")
             .font(.caption.weight(.bold))
             .foregroundStyle(.white)
             .padding(.horizontal, 8)
             .padding(.vertical, 2)
-            .background(background)
+            .background(rankBadgeBackground(rank: rank, palette: palette))
             .clipShape(Capsule())
     }
 
@@ -197,6 +228,7 @@ private extension CustomersView {
     ///   - customers: 已聚合的客戶清單。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 客戶列表 view。
+    @ViewBuilder
     func customerList(customers: [CustomerRow], palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
             HStack(alignment: .firstTextBaseline) {
@@ -239,6 +271,7 @@ private extension CustomersView {
     ///   - customer: 客戶資料。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 客戶列 view。
+    @ViewBuilder
     func customerRow(customer: CustomerRow, palette: BLPalette) -> some View {
         HStack(spacing: BLSpacing.small) {
             BLAvatar(name: customer.name, initials: customer.initials, size: 36)
@@ -279,7 +312,7 @@ private extension CustomersView {
     }
 }
 
-// MARK: - Layout Helper
+// MARK: - Private Method
 
 private extension CustomersView {
 
@@ -290,40 +323,24 @@ private extension CustomersView {
     var topThreeColumns: [GridItem] {
         [GridItem(.adaptive(minimum: 240, maximum: 360), spacing: BLSpacing.medium)]
     }
-}
 
-// MARK: - Aggregation
-
-/// 客戶名單顯示用的彙總列。
-private struct CustomerRow: Identifiable {
-
-    // MARK: - Identifiable Properties
-
-    /// 用客戶姓名當識別值 (同名客戶會被聚合成一筆)。
-    var id: String { name }
-
-    // MARK: - Data Properties
-
-    /// 客戶姓名。
-    let name: String
-
-    /// 顯示在頭像上的姓名縮寫。
-    let initials: String
-
-    /// 客戶分級。
-    let tier: CustomerTier
-
-    /// 已下訂單數。
-    let orderCount: Int
-
-    /// 累計消費 (NT$)。
-    let totalSpent: Decimal
-
-    /// 最近一筆訂單的日期。
-    let lastOrderDate: Date
-}
-
-private extension CustomersView {
+    /// 名次徽章的底色：第一名橙、第二名次要色、其餘填充色。
+    /// - Parameters:
+    ///   - rank: 名次 (1 / 2 / 3)。
+    ///   - palette: 目前外觀使用的色盤。
+    /// - Returns: 對應底色。
+    func rankBadgeBackground(rank: Int, palette: BLPalette) -> Color {
+        let background: Color
+        switch rank {
+        case 1:
+            background = palette.orange
+        case 2:
+            background = palette.secondaryLabel
+        default:
+            background = palette.fillTertiary
+        }
+        return background
+    }
 
     /// 將訂單聚合成客戶列。
     /// - Parameter orders: 目前訂單清單。
@@ -332,8 +349,8 @@ private extension CustomersView {
         let grouped = Dictionary(grouping: orders, by: { $0.customer.name })
 
         return grouped
-            .map { name, list in
-                let first = list.first!
+            .compactMap { name, list -> CustomerRow? in
+                guard let first = list.first else { return nil }
                 let totalSpent = list.reduce(Decimal.zero) { $0 + $1.summary.revenue }
                 let lastDate = list.map(\.date).max() ?? first.date
 
@@ -348,11 +365,6 @@ private extension CustomersView {
             }
             .sorted { $0.totalSpent > $1.totalSpent }
     }
-}
-
-// MARK: - Formatting
-
-private extension CustomersView {
 
     /// 將金額格式化為新台幣。
     func formatTwd(_ amount: Decimal) -> String {

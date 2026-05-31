@@ -115,8 +115,11 @@ struct RootFeature {
 
     // MARK: - Dependency Properties
 
-    /// 用來計算跨頁跳轉時的「目前」時間 (套用到 ``OrdersFeature/State/filteredOrders(referenceDate:)``)；測試可注入固定值。
+    /// 用來計算跨頁跳轉時的「目前」時間 (套用到 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)``)；測試可注入固定值。
     @Dependency(\.date) private var date
+
+    /// 跨頁跳轉重算選取訂單時，訂單篩選所用的行事曆 (含時區)；測試可注入固定值。
+    @Dependency(\.calendar) private var calendar
 
     /// 幣別主檔資料來源；App 啟動時打 ExchangeRate-API `/codes` 並 cache 7 天。
     @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
@@ -180,7 +183,7 @@ struct RootFeature {
 
             case .startNewOrder:
                 state.selectedTab = .orders
-                state.orders.editOrder = OrderEditFeature.State()
+                state.orders.editOrder = OrderEditFeature.State(currentDate: date.now)
                 return .none
 
             case let .smartGroupSelected(status):
@@ -189,7 +192,7 @@ struct RootFeature {
                 state.orders.selectedDatePeriod = .all
                 // 清掉殘留類別篩選，避免使用者帶著前一頁的類別狀態跳到 smart group 後被「狀態 + 類別」夾擊出空列表。
                 state.orders.selectedCategory = nil
-                state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now).first?.id
+                state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
                 return .none
 
             case let .customerSelected(name):
@@ -199,7 +202,7 @@ struct RootFeature {
                 state.orders.selectedDatePeriod = .all
                 // 同 smart group：客戶名深連結時清掉殘留類別篩選。
                 state.orders.selectedCategory = nil
-                state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now).first?.id
+                state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
                 return .none
 
             case let .categorySelected(category):
@@ -210,7 +213,7 @@ struct RootFeature {
                 state.orders.selectedStatus = .all
                 state.orders.selectedDatePeriod = .all
                 state.orders.selectedCategory = category
-                state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now).first?.id
+                state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
                 return .none
 
             case let .campaignSelected(name):

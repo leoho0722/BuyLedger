@@ -10,11 +10,11 @@ import SwiftUI
 
 /// 編輯或新增訂單的表單畫面。
 ///
-/// 對應 ``OrderEditFeature``：以 sheet 形式呈現，包含取消與儲存按鈕。本切片表單只展示骨架欄位，實際資料寫入會在後續切片補上。
+/// 對應 ``OrderEditFeature``：以 sheet 形式呈現，包含取消與儲存按鈕，以及訂單來源／商品類別／付款方式／對帳狀態的選擇與即時新增入口。儲存時由父層 ``OrdersFeature`` 將草稿寫回資料庫。
 struct OrderEditView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 訂單編輯 store。
     @Bindable var store: StoreOf<OrderEditFeature>
 
@@ -42,7 +42,7 @@ struct OrderEditView: View {
     @Dependency(\.locale) private var locale
 
     // MARK: - View Body
-    
+
     /// 編輯表單的畫面內容。
     var body: some View {
         NavigationStack {
@@ -71,7 +71,7 @@ struct OrderEditView: View {
                         }
                     }
                 }
-                
+
                 Section("狀態與幣別") {
                     Picker("狀態", selection: $store.draftStatus) {
                         ForEach(OrderStatus.allCases) { status in
@@ -87,7 +87,7 @@ struct OrderEditView: View {
                         verificationStatusPickerRow
                     }
                 }
-                
+
                 Section {
                     decimalField(
                         title: "客戶實付",
@@ -114,7 +114,7 @@ struct OrderEditView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                
+
                 Section("開團與收款") {
                     Picker("開團", selection: $store.draftCampaignName) {
                         Text("未歸團").tag("")
@@ -149,7 +149,7 @@ struct OrderEditView: View {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
-                
+
                 itemsSection
 
                 notesSection
@@ -268,12 +268,12 @@ struct OrderEditView: View {
                     options: store.availableCurrencies.map(\.rawValue),
                     selected: store.draftCurrency.rawValue,
                     displayName: { code in
-                        let name = Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                        let name = Locale.preferred()
                             .localizedString(forCurrencyCode: code) ?? ""
                         return name.isEmpty ? code : "\(code) (\(name))"
                     },
                     searchKeywords: { code in
-                        Locale(identifier: Locale.preferredLanguages.first ?? Locale.current.identifier)
+                        Locale.preferred()
                             .localizedString(forCurrencyCode: code) ?? ""
                     },
                     onSelect: { code in
@@ -295,6 +295,7 @@ private extension OrderEditView {
     /// 訂單來源選擇列：操作邏輯與 ``categoryPickerRow`` 完全一致——以 sheet 列出既有來源並提供「新增來源」入口。
     ///
     /// 點擊「新增來源」會收集新來源名稱，送出後由 reducer 把名稱加入 ``OrderEditFeature/State/availableOrderSources`` 並設為目前選擇。
+    @ViewBuilder
     var orderSourcePickerRow: some View {
         Button {
             showsOrderSourceSheet = true
@@ -320,6 +321,7 @@ private extension OrderEditView {
     /// 商品類別選擇列：以 `Menu` 列出既有類別並提供「新增類別」入口。
     ///
     /// 點擊「新增類別」會觸發畫面置中的 `.alert` 彈窗收集新類別名稱，送出後由 reducer 把名稱加入 ``OrderEditFeature/State/availableCategories`` 並設為目前選擇。
+    @ViewBuilder
     var categoryPickerRow: some View {
         // 改成 Button + `.sheet`：iOS `Menu` 是 `UIMenu` 包裝，Button action 會被排到 menu collapse 動畫結束才派發，造成可見延遲。sheet 路徑下選擇即時 commit binding，視覺更新與 sheet 收合動畫互不阻擋。
         Button {
@@ -332,7 +334,7 @@ private extension OrderEditView {
                 Spacer(minLength: BLSpacing.small)
 
                 Text(store.draftCategory.isEmpty ? "選擇類別" : store.draftCategory)
-                    .foregroundStyle(store.draftCategory.isEmpty ? .secondary : .secondary)
+                    .foregroundStyle(.secondary)
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
@@ -344,6 +346,7 @@ private extension OrderEditView {
     }
 
     /// 幣別選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗，但 sheet 不允許新增 (幣別來源僅限 ExchangeRate-API 支援清單)。
+    @ViewBuilder
     var currencyPickerRow: some View {
         Button {
             showsCurrencySheet = true
@@ -369,6 +372,7 @@ private extension OrderEditView {
     }
 
     /// 付款方式選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗。
+    @ViewBuilder
     var paymentMethodPickerRow: some View {
         Button {
             showsPaymentMethodSheet = true
@@ -392,6 +396,7 @@ private extension OrderEditView {
     }
 
     /// 對帳狀態選擇列：操作體驗比照 ``paymentMethodPickerRow``，但新增動作走 name-only medium sheet (見 ``OptionPickerSheet`` 的 `onAddViaNameSheet`)。僅在選到的付款方式屬於無卡或銀行匯款 (``OrderEditFeature/State/showsVerificationStatusRow`` 為 `true`) 時，由 caller 條件顯示於「付款方式」row 底下。
+    @ViewBuilder
     var verificationStatusPickerRow: some View {
         Button {
             showsVerificationStatusSheet = true
@@ -417,6 +422,7 @@ private extension OrderEditView {
     /// 訂購日期編輯列：以 compact `DatePicker` 編輯日期與時分。
     ///
     /// `DatePicker(.compact)` 寫回時會把秒洗成 0，section footer 又以 `yyyy/MM/dd HH:mm:ss` 完整呈現，會造成視覺上「秒永遠是 :00」。改透過 wrapper binding 攔截寫入：每次 picker 寫回時取當下 `@Dependency(\.date).now` 的秒，組進新值，使秒隨每次編輯刷新成真實當下值，footer 看得到變化。
+    @ViewBuilder
     var orderDateRow: some View {
         DatePicker(
             "訂購日期",
@@ -428,6 +434,7 @@ private extension OrderEditView {
     }
 
     /// 商品明細區段：可逐項編輯名稱／數量／單價，亦可新增與刪除。
+    @ViewBuilder
     var itemsSection: some View {
         Section {
             ForEach($store.draftItems) { $item in
@@ -436,7 +443,7 @@ private extension OrderEditView {
             .onDelete { offsets in
                 store.draftItems.remove(atOffsets: offsets)
             }
-            
+
             Button {
                 store.draftItems.append(
                     LedgerOrderItem(name: "", quantity: 1, unitPrice: 0)
@@ -458,8 +465,9 @@ private extension OrderEditView {
             }
         }
     }
-    
+
     /// 備註區段：商品明細下方的多行備註輸入；留空代表無備註，儲存時會 trim 首尾空白。
+    @ViewBuilder
     var notesSection: some View {
         Section {
             TextField("輸入備註 (選填)", text: $store.draftNotes, axis: .vertical)
@@ -472,12 +480,13 @@ private extension OrderEditView {
     /// 單筆商品的編輯列：商品名稱 (多行)+ 數量 Stepper + 單價 TextField。
     /// - Parameter item: 雙向繫結的單筆商品。
     /// - Returns: 商品列 view。
+    @ViewBuilder
     func itemEditorRow(item: Binding<LedgerOrderItem>) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             TextField("商品名稱", text: item.name, axis: .vertical)
                 .font(.body.weight(.medium))
                 .lineLimit(1...3)
-            
+
             HStack(spacing: BLSpacing.medium) {
                 Stepper(value: item.quantity, in: 1...999) {
                     Text("數量 \(item.quantity.wrappedValue)")
@@ -487,14 +496,14 @@ private extension OrderEditView {
 #if os(macOS)
                 .controlSize(.small)
 #endif
-                
+
                 Spacer()
-                
+
                 HStack(spacing: 4) {
                     Text("單價")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
-                    
+
                     TextField(
                         "",
                         value: item.unitPrice,
@@ -511,7 +520,7 @@ private extension OrderEditView {
             }
         }
     }
-    
+
     /// 整數金額輸入欄。
     ///
     /// 把 `TextField` 的 placeholder 留空，避免在 macOS `.formStyle(.grouped)` 下 `LabeledContent` 與 `TextField` 同時顯示標題造成的重複文字。
@@ -519,6 +528,7 @@ private extension OrderEditView {
     ///   - title: 欄位標題。
     ///   - value: 雙向繫結的值。
     /// - Returns: `LabeledContent` + `TextField` 組合 view。
+    @ViewBuilder
     func decimalField(title: String, value: Binding<Decimal>) -> some View {
         LabeledContent(title) {
             TextField(
@@ -534,7 +544,7 @@ private extension OrderEditView {
 #endif
         }
     }
-    
+
     /// 百分比輸入欄。
     ///
     /// 介面顯示 0–100 的百分比數字，內部以 0–1 的 ``Decimal`` 儲存以對應 ``LedgerOrder/cardFeeRate`` 等欄位的單位。`TextField` 的 placeholder 同樣留空，由 `LabeledContent` 提供唯一的標題。
@@ -542,6 +552,7 @@ private extension OrderEditView {
     ///   - title: 欄位標題。
     ///   - value: 雙向繫結的 0–1 比例值。
     /// - Returns: `LabeledContent` + `TextField` 組合 view。
+    @ViewBuilder
     func percentField(title: String, value: Binding<Decimal>) -> some View {
         let proxy = Binding<Double>(
             get: { NSDecimalNumber(decimal: value.wrappedValue).doubleValue * 100 },
@@ -549,8 +560,8 @@ private extension OrderEditView {
                 value.wrappedValue = Decimal(newValue / 100)
             }
         )
-        
-        return LabeledContent(title) {
+
+        LabeledContent(title) {
             HStack(spacing: 4) {
                 TextField(
                     "",
@@ -563,7 +574,7 @@ private extension OrderEditView {
 #if !os(macOS)
                 .keyboardType(.decimalPad)
 #endif
-                
+
                 Text("%")
                     .foregroundStyle(.secondary)
             }
@@ -574,15 +585,10 @@ private extension OrderEditView {
 // MARK: - Private Method
 
 private extension OrderEditView {
-    
-    /// 使用者在系統「語言與地區」實際偏好的 locale。
-    ///
-    /// 用 `Locale.preferredLanguages` 而非 `@Dependency(\.locale)` 預設值，原因是後者 (`Locale.autoupdatingCurrent`) 會被 App 自己的 `CFBundleDevelopmentRegion`／已掛載 localizations 限制，App 未掛 zh-Hant 時即使使用者手機是繁中也會回退到開發語言；`preferredLanguages` 才是使用者在系統設定面板親手挑的語言序列。測試／預覽時若需要固定 locale，可在 `@Dependency(\.locale)` 注入後讓 fallback 走到那裡。
+
+    /// 使用者在系統「語言與地區」實際偏好的 locale；未提供偏好語言時退回注入的 `@Dependency(\.locale)`，方便測試／預覽固定。選用 `preferredLanguages` 而非 `@Dependency(\.locale)` 預設值的原因見 ``Locale/preferred(fallback:)``。
     var deviceLocale: Locale {
-        if let preferred = Locale.preferredLanguages.first {
-            return Locale(identifier: preferred)
-        }
-        return locale
+        Locale.preferred(fallback: locale)
     }
 
     /// 是否允許按下儲存。
@@ -627,10 +633,6 @@ private extension OrderEditView {
         )
     }
 }
-
-// MARK: - ViewBuilder
-
-private extension OrderEditView {}
 
 // MARK: - Preview
 

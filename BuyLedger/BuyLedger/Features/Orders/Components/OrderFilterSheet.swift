@@ -105,6 +105,7 @@ private extension OrderFilterSheet {
     /// 「日期區間」section：固定 4 列，順序為 ``OrderDatePeriod/orderBrowsingCases``。
     ///
     /// 搜尋輸入完全不影響此 section——4 列永遠顯示。
+    @ViewBuilder
     var datePeriodSection: some View {
         Section {
             ForEach(OrderDatePeriod.orderBrowsingCases) { period in
@@ -167,6 +168,7 @@ private extension OrderFilterSheet {
     /// 點選只更新 ``pendingDatePeriod``，**不** dispatch、**不** dismiss；使用者改完所有想改的欄位後再按右上「套用」(``applyAndDismiss()``) 才 commit 變動。
     /// - Parameter period: 該列代表的日期區間。
     /// - Returns: row view。
+    @ViewBuilder
     func datePeriodRow(_ period: OrderDatePeriod) -> some View {
         Button {
             pendingDatePeriod = period
@@ -195,6 +197,7 @@ private extension OrderFilterSheet {
     /// 類別「全部」清除 row：點選只把 ``pendingCategory`` 設為 `nil`，不 dispatch、不 dismiss。
     ///
     /// 當 ``pendingCategory`` 為 `nil` 時顯示 checkmark；不參與 ``filteredCategories`` 搜尋過濾、永遠顯示。
+    @ViewBuilder
     var categoryClearRow: some View {
         Button {
             pendingCategory = nil
@@ -225,6 +228,7 @@ private extension OrderFilterSheet {
     /// 點選只更新 ``pendingCategory``，不 dispatch、不 dismiss。多行支援同 ``datePeriodRow(_:)`` 規格。
     /// - Parameter category: 該列代表的類別名稱。
     /// - Returns: row view。
+    @ViewBuilder
     func categoryRow(_ category: String) -> some View {
         Button {
             pendingCategory = category
@@ -251,6 +255,7 @@ private extension OrderFilterSheet {
     }
 
     /// 類別 section 在搜尋無匹配或類別清單本身為空時顯示的空狀態 row。
+    @ViewBuilder
     var categoryEmptyStateRow: some View {
         ContentUnavailableView(
             "沒有符合的類別",
@@ -262,6 +267,7 @@ private extension OrderFilterSheet {
     /// 付款方式「全部」清除 row：點選只把 ``pendingPaymentMethod`` 設為 `nil`，不 dispatch、不 dismiss。
     ///
     /// 當 ``pendingPaymentMethod`` 為 `nil` 時顯示 checkmark；不參與 ``filteredPaymentMethods`` 搜尋過濾、永遠顯示。
+    @ViewBuilder
     var paymentMethodClearRow: some View {
         Button {
             pendingPaymentMethod = nil
@@ -292,6 +298,7 @@ private extension OrderFilterSheet {
     /// 點選只更新 ``pendingPaymentMethod``，不 dispatch、不 dismiss。多行支援同 ``datePeriodRow(_:)`` 規格。
     /// - Parameter paymentMethod: 該列代表的付款方式名稱。
     /// - Returns: row view。
+    @ViewBuilder
     func paymentMethodRow(_ paymentMethod: String) -> some View {
         Button {
             pendingPaymentMethod = paymentMethod
@@ -318,6 +325,7 @@ private extension OrderFilterSheet {
     }
 
     /// 付款方式 section 在搜尋無匹配或付款方式清單本身為空時顯示的空狀態 row。
+    @ViewBuilder
     var paymentMethodEmptyStateRow: some View {
         ContentUnavailableView(
             "沒有符合的付款方式",

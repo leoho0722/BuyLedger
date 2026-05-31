@@ -60,6 +60,7 @@ struct CampaignIntegrationTests {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
         store.exhaustivity = .off
 
@@ -83,12 +84,13 @@ struct CampaignIntegrationTests {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
         store.exhaustivity = .off
 
         await store.send(.campaignFilterSelected("團A"))
 
-        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow)
+        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
         #expect(filtered.map(\.id) == ["O1"])
     }
 
@@ -108,14 +110,15 @@ struct CampaignIntegrationTests {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
         store.exhaustivity = .off
 
         await store.send(.campaignStatusFilterSelected(.ongoing))
-        #expect(store.state.filteredOrders(referenceDate: TestDependencies.fixedNow).map(\.id) == ["O1"])
+        #expect(store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar).map(\.id) == ["O1"])
 
         await store.send(.campaignStatusFilterSelected(.closed))
-        #expect(store.state.filteredOrders(referenceDate: TestDependencies.fixedNow).map(\.id) == ["O2"])
+        #expect(store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar).map(\.id) == ["O2"])
     }
 
     // MARK: - Helper

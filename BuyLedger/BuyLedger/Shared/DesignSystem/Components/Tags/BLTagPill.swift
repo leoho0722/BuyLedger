@@ -54,10 +54,6 @@ struct BLTagPill: View {
     }
 }
 
-// MARK: - ViewBuilder
-
-private extension BLTagPill {}
-
 // MARK: - Preview
 
 #Preview("標籤膠囊") {

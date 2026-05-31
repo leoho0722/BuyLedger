@@ -206,6 +206,7 @@ private extension MoreView {
     /// iOS / iPadOS 的列表版本：保持 phone-friendly 的 grouped list 風格。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 列表 view。
+    @ViewBuilder
     func phoneContent(palette: BLPalette) -> some View {
         List {
             Section("工具") {
@@ -275,6 +276,7 @@ private extension MoreView {
     ///   - item: 工具項目。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 工具列 view。
+    @ViewBuilder
     func toolRow(_ item: ToolItem, palette: BLPalette) -> some View {
         Label {
             Text(item.title).font(.body.weight(.medium))
@@ -294,6 +296,7 @@ private extension MoreView {
     /// macOS 的卡片網格版本：放大資訊密度，並使用 BLCard 與 LazyVGrid 取代 phone-style List。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 內容 view。
+    @ViewBuilder
     func macContent(palette: BLPalette) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
@@ -312,6 +315,7 @@ private extension MoreView {
     /// macOS 內容頂部的標題卡片。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: header view。
+    @ViewBuilder
     func header(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             Text("工具與管理")
@@ -328,12 +332,13 @@ private extension MoreView {
     /// macOS 工具網格。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 網格 view。
+    @ViewBuilder
     func toolGrid(palette: BLPalette) -> some View {
         let columns = [
             GridItem(.adaptive(minimum: 280, maximum: 420), spacing: BLSpacing.medium, alignment: .top),
         ]
 
-        return LazyVGrid(columns: columns, spacing: BLSpacing.medium) {
+        LazyVGrid(columns: columns, spacing: BLSpacing.medium) {
             ForEach(ToolItem.allCases) { item in
                 NavigationLink {
                     destination(for: item)
@@ -350,6 +355,7 @@ private extension MoreView {
     ///   - item: 工具項目。
     ///   - palette: 目前外觀使用的色盤。
     /// - Returns: 卡片 view。
+    @ViewBuilder
     func toolTile(_ item: ToolItem, palette: BLPalette) -> some View {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.small) {
@@ -390,6 +396,7 @@ private extension MoreView {
     /// macOS 內容底部的設定提示。
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 提示 view。
+    @ViewBuilder
     func settingsHint(palette: BLPalette) -> some View {
         HStack(alignment: .top, spacing: BLSpacing.small) {
             Image(systemName: "gear")
