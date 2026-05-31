@@ -99,7 +99,8 @@ Swift 通用慣例 (API Design Guidelines、camel case、四空格縮排) 不重
 ### 結構與命名
 
 - **商業邏輯／資料計算** (彙總、分組、排序、格式化) 一律放 reducer 或可測試的 feature helper；SwiftUI View (含 Swift Charts) 只負責呈現，不要把計算 inline 在 view body。
-- **TCA feature** 內部用 `// MARK: - State / Action / Reducer Body / Dependency Properties` 等清楚切分。
+- **TCA feature** 內部用 `// MARK: - State / Action / Dependency Properties / Reducer Body` 等清楚切分 (順序見「MARK 區段與排版」一節的對照表)。
+- **不用 `switch`／`if` 運算式賦值**：避免 `let x = switch … { … }` / `let x = if … { … }` 這種運算式寫法；改用傳統陳述式 (先宣告 `let x: T`，再於各分支賦值)。若該計算寫在 `@ViewBuilder` body 內會與 result builder 衝突，請抽成獨立 helper 回傳該值，view body 只呼叫 helper。
 - **SwiftData schema 或持久化行為變更**時，須同步檢查 migration、preview 與測試資料。
 
 ### 標點與空格
@@ -133,18 +134,104 @@ Swift 通用慣例 (API Design Guidelines、camel case、四空格縮排) 不重
 ### MARK 區段與排版
 
 - `struct` / `enum` / `extension` / `final class` 等型別宣告後第一行要空一行。
-- View 型別常用 MARK 區段：
+- 所有型別共用同一套「由上到下」的區段順序。View 型別用完整版；非 View 型別沿用**相同順序**，只是把 View 專屬段落換成語意對應段名、或在無內容時直接略過。**沒有對應成員的段落不要寫**——不留空 `// MARK:`、不留空 `extension` (例如沒有任何 `@ViewBuilder` 方法時，不保留 `// MARK: - ViewBuilder`)。
 
-  - `// MARK: - View Properties`
-  - `// MARK: - Init`
-  - `// MARK: - View Body`
-  - `// MARK: - Nested Types`
-  - `// MARK: - ViewBuilder`
-  - `// MARK: - Private Method`
-  - `// MARK: - Preview`
+  | # | 位置語意             | View                   | TCA Reducer             | 其他型別 (enum / struct / class)                                                            |
+  |---|----------------------|------------------------|-------------------------|---------------------------------------------------------------------------------------------|
+  | 1 | 內容定義 (狀態／屬性) | `View Properties`      | `State`、`Action`        | `Cases` (enum) → `Identifiable Properties` → `Data Properties` → `Static Properties`        |
+  | 2 | 初始化               | `Init`                 | (少見)                  | `Init`                                                                                      |
+  | 3 | 相依注入             | 併入 `View Properties` | `Dependency Properties` | `Dependency Properties` (若有)                                                              |
+  | 4 | 主體／核心計算        | `View Body`            | `Reducer Body`          | `Computed Properties`／主要對外計算 (可用語意名，如 `Display Properties`)                     |
+  | 5 | 巢狀型別             | `Nested Types`         | `Nested Types`          | `Nested Types`                                                                              |
+  | 6 | ViewBuilder          | `ViewBuilder`          | —                       | —                                                                                           |
+  | 7 | 方法                 | `Private Method`       | `Private Method`        | `Private Method` (靜態成員可另立 `Static Method`)                                            |
+  | 8 | 預覽                 | `Preview`              | —                       | `Preview` (僅 Design System 元件等可預覽型別)                                               |
 
-- 非 View 型別可依語意使用 `Cases`、`Data Properties`、`Identifiable Properties`、`Static Properties`、`View Method` 等段落。
+- **第 5～8 區段一律寫在型別主體外**，讓主體專注在「它是什麼」與「主要計算」。其中 Nested Types 視該巢狀型別是否需被外部 (其他檔／測試) 引用，用 `extension` 或 `private extension` 切分 (型別本身的 access level 也據此決定)；ViewBuilder 與 Private Method 一律 `private extension`；Preview 則是檔尾的 `#Preview`。
+- **`ViewBuilder` 段的成員 (`func` 或 `var` 回傳 `some View`) 一律標註 `@ViewBuilder`**——即使只回傳單一 view 也要標，全專案統一這一種寫法，不採「不標 `@ViewBuilder`、改用 `return` 回傳單一 view」的另一種。理由：`@ViewBuilder` 對單一 view 同樣合法，且日後加 `if`／`switch` 分支或並列多個 view 時不必改寫。此規定僅適用於「組合 view 內容」的 helper；下列不在此列：協定的 `body`／`makeBody`／`ViewModifier.body(content:)` (已隱含 builder)、以及 `View` 擴充上「套一層 modifier 就回傳」的 API (如 `blCardShadow()`／`blTextStyle()`，歸 `// MARK: - View Method`)。
+- **方法一律收在 `// MARK: - Private Method`**：不要用 `Formatting`、`Layout Helper`、`Aggregation` 等 purpose 名稱另立方法段；需要分小類時，在同一個 `private extension` 內用無破折號的 `// MARK: <子分類>` 細分 (靜態成員可另立 `// MARK: - Static Method`)。property／計算類語意名 (如 `Display Properties`) 仍可用，放第 1 或第 4 區段。
+- **`ViewModifier` 型別**比照 View 排序 (其 `body(content:)` 即第 4 區段「主體」，由協定隱含 `@ViewBuilder` 故毋須標)；若是某檔的次要型別，段首以 `// MARK: - ViewModifier` 標示 (而非 `ViewBuilder`)。Design System 中可重用的 ViewModifier 各自獨立一檔，集中放 `Shared/DesignSystem/Foundations/ViewModifiers/`。
 - `#Preview` 放在檔案最後，前方加上 `// MARK: - Preview`。
+
+View 完整版 (第 5～8 段移到主體外的 extension)：
+
+```swift
+struct OrdersView: View {
+
+    // MARK: - View Properties
+
+    @Bindable var store: StoreOf<OrdersFeature>
+
+    // MARK: - View Body
+
+    var body: some View { ... }
+}
+
+// MARK: - Nested Types
+
+// 視巢狀型別是否需被外部引用，決定 extension / private extension
+extension OrdersView { ... }
+
+// MARK: - ViewBuilder
+
+private extension OrdersView {
+
+    @ViewBuilder
+    func listSection() -> some View { ... }
+}
+
+// MARK: - Private Method
+
+private extension OrdersView { ... }
+
+// MARK: - Preview
+
+#Preview { ... }
+```
+
+非 View 型別沿用同一順序、省去 View 專屬段的範例：
+
+```swift
+enum RootTab: String, CaseIterable, Identifiable {
+
+    // MARK: - Cases
+
+    case dashboard
+
+    // MARK: - Identifiable Properties
+
+    var id: String { rawValue }
+
+    // MARK: - Display Properties
+
+    var title: String { ... }
+}
+```
+
+TCA Reducer 範例 (`Dependency Properties` 排在 `Reducer Body` 之前)：
+
+```swift
+@Reducer
+struct OrdersFeature {
+
+    // MARK: - State
+
+    @ObservableState
+    struct State: Equatable { ... }
+
+    // MARK: - Action
+
+    enum Action: Equatable { ... }
+
+    // MARK: - Dependency Properties
+
+    @Dependency(\.date) private var date
+
+    // MARK: - Reducer Body
+
+    var body: some Reducer<State, Action> { ... }
+}
+```
 
 ## Design System 準則
 
