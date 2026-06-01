@@ -43,7 +43,7 @@ struct LookupManagementFeatureTests {
         store.exhaustivity = .off
 
         // 對帳狀態無 isCardless / isBankTransfer 概念，旗標被忽略；僅把名稱加入 items。
-        await store.send(.addConfirmed(name: "待對帳", isCardless: false, isBankTransfer: false)) {
+        await store.send(.addConfirmed(name: "待對帳", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)) {
             $0.items = ["待對帳"]
         }
         await store.finish()
@@ -66,7 +66,7 @@ struct LookupManagementFeatureTests {
         }
         store.exhaustivity = .off
 
-        await store.send(.editConfirmed(originalName: "匯款", name: "銀行匯款", isCardless: false, isBankTransfer: false)) {
+        await store.send(.editConfirmed(originalName: "匯款", name: "銀行匯款", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)) {
             $0.items = ["銀行匯款"]
             $0.paymentMethodIsBankTransfer = ["銀行匯款": false]
             $0.paymentMethodIsCardless = ["銀行匯款": false]
@@ -90,7 +90,7 @@ struct LookupManagementFeatureTests {
         store.exhaustivity = .off
 
         // 名稱不變、把銀行匯款旗標打開。
-        await store.send(.editConfirmed(originalName: "銀行匯款", name: "銀行匯款", isCardless: false, isBankTransfer: true)) {
+        await store.send(.editConfirmed(originalName: "銀行匯款", name: "銀行匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)) {
             $0.items = ["銀行匯款"]
             $0.paymentMethodIsBankTransfer = ["銀行匯款": true]
         }

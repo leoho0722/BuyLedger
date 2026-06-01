@@ -144,7 +144,7 @@ struct OrdersFeatureTests {
         var draft = OrderEditFeature.State(
             original: original,
             availablePaymentMethods: [
-                PaymentMethodInfo(name: "銀行匯款", isCardless: false, isBankTransfer: true),
+                PaymentMethodInfo(name: "銀行匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false),
             ]
         )
         draft.draftPaymentMethod = "銀行匯款"
@@ -665,7 +665,8 @@ struct OrdersFeatureTests {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
     }
 }

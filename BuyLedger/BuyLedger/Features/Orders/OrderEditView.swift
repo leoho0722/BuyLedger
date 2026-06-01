@@ -131,11 +131,19 @@ struct OrderEditView: View {
                     .pickerStyle(.segmented)
                 }
 
-                Section("成本 (NT$)") {
+                Section {
                     decimalField(title: "商品成本", value: $store.draftItemCost)
                     decimalField(title: "外國國內運費", value: $store.draftForeignDomesticShipping)
                     decimalField(title: "國際運費", value: $store.draftInternationalShipping)
                     decimalField(title: "國內運費", value: $store.draftDomesticShipping)
+                } header: {
+                    Text("成本 (NT$)")
+                } footer: {
+                    if store.isSelectedPaymentMethodCOD {
+                        Text("貨到付款：收款金額已含預估運費，獲利會自動扣除上方三種運費 (國內 + 國際 + 外國國內)。")
+                            .font(.footnote)
+                            .foregroundStyle(.secondary)
+                    }
                 }
 
                 Section {
@@ -234,8 +242,8 @@ struct OrderEditView: View {
                     onSelect: { method in
                         store.draftPaymentMethod = method
                     },
-                    onAddPaymentMethod: { name, isCardless, isBankTransfer in
-                        store.send(.addPaymentMethodTapped(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer))
+                    onAddPaymentMethod: { name, isCardless, isBankTransfer, isCashOnDelivery in
+                        store.send(.addPaymentMethodTapped(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery))
                     }
                 )
             }

@@ -273,8 +273,8 @@ struct RootFeature {
                 cascadeRename(kind: .orderSource, from: from, to: to, in: &state)
                 return .none
 
-            case let .orderSourceManagement(.addConfirmed(name, _, _)):
-                // 訂單來源無 isCardless / isBankTransfer 概念，直接忽略後兩個參數。
+            case let .orderSourceManagement(.addConfirmed(name, _, _, _)):
+                // 訂單來源無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數。
                 addOrderSourceToOrdersMaster(name: name, in: &state)
                 return .none
 
@@ -289,8 +289,8 @@ struct RootFeature {
                 cascadeRename(kind: .category, from: from, to: to, in: &state)
                 return .none
 
-            case let .categoryManagement(.addConfirmed(name, _, _)):
-                // 商品類別無 isCardless / isBankTransfer 概念，直接忽略後兩個參數。
+            case let .categoryManagement(.addConfirmed(name, _, _, _)):
+                // 商品類別無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數。
                 addCategoryToOrdersMaster(name: name, in: &state)
                 return .none
 
@@ -305,15 +305,15 @@ struct RootFeature {
                 cascadeRename(kind: .paymentMethod, from: from, to: to, in: &state)
                 return .none
 
-            case let .paymentMethodManagement(.addConfirmed(name, isCardless, isBankTransfer)):
-                addPaymentMethodToOrdersMaster(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, in: &state)
+            case let .paymentMethodManagement(.addConfirmed(name, isCardless, isBankTransfer, isCashOnDelivery)):
+                addPaymentMethodToOrdersMaster(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery, in: &state)
                 return .none
 
             case let .paymentMethodManagement(.deleteRequested(name)):
                 removeFromOrdersMaster(kind: .paymentMethod, name: name, in: &state)
                 return .none
 
-            case let .paymentMethodManagement(.editConfirmed(originalName, name, isCardless, isBankTransfer)):
+            case let .paymentMethodManagement(.editConfirmed(originalName, name, isCardless, isBankTransfer, isCashOnDelivery)):
                 let trimmedOriginal = originalName.trimmingCharacters(in: .whitespacesAndNewlines)
                 let trimmedNew = name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty else { return .none }
@@ -322,7 +322,7 @@ struct RootFeature {
                 if trimmedNew != trimmedOriginal {
                     cascadeRename(kind: .paymentMethod, from: trimmedOriginal, to: trimmedNew, in: &state)
                 }
-                addPaymentMethodToOrdersMaster(name: trimmedNew, isCardless: isCardless, isBankTransfer: isBankTransfer, in: &state)
+                addPaymentMethodToOrdersMaster(name: trimmedNew, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery, in: &state)
                 return .none
 
             case .paymentMethodManagement:
@@ -332,8 +332,8 @@ struct RootFeature {
                 cascadeRename(kind: .verificationStatus, from: from, to: to, in: &state)
                 return .none
 
-            case let .verificationStatusManagement(.addConfirmed(name, _, _)):
-                // 對帳狀態無 isCardless / isBankTransfer 概念，直接忽略後兩個參數。
+            case let .verificationStatusManagement(.addConfirmed(name, _, _, _)):
+                // 對帳狀態無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數。
                 addVerificationStatusToOrdersMaster(name: name, in: &state)
                 return .none
 
@@ -450,16 +450,18 @@ struct RootFeature {
         }
     }
 
-    /// 把 ``LookupManagementFeature`` 新增的付款方式 (含 `isCardless` 與 `isBankTransfer`) 加進 ``OrdersFeature/State/paymentMethodMaster`` 副本；若名稱已存在則僅更新旗標。
+    /// 把 ``LookupManagementFeature`` 新增的付款方式 (含 `isCardless`、`isBankTransfer` 與 `isCashOnDelivery`) 加進 ``OrdersFeature/State/paymentMethodMaster`` 副本；若名稱已存在則僅更新旗標。
     /// - Parameters:
     ///   - name: 新增名稱。
     ///   - isCardless: 是否屬於無卡類付款方式。
     ///   - isBankTransfer: 是否屬於銀行匯款類付款方式。
+    ///   - isCashOnDelivery: 是否屬於貨到付款類付款方式。
     ///   - state: 要修改的 ``RootFeature/State``。
     private func addPaymentMethodToOrdersMaster(
         name: String,
         isCardless: Bool,
         isBankTransfer: Bool,
+        isCashOnDelivery: Bool,
         in state: inout State
     ) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -467,9 +469,9 @@ struct RootFeature {
 
         var updated = state.orders.paymentMethodMaster
         if let index = updated.firstIndex(where: { $0.name == trimmed }) {
-            updated[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer)
+            updated[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery)
         } else {
-            updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer))
+            updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery))
         }
         state.orders.paymentMethodMaster = updated.sorted {
             $0.name.localizedStandardCompare($1.name) == .orderedAscending
@@ -517,7 +519,7 @@ struct RootFeature {
         }
     }
 
-    /// 把 [PaymentMethodInfo] 中名稱為 `oldName` 的項目改名為 `newName`，保留原有 `isCardless` 與 `isBankTransfer`；若 `newName` 已存在則合併 (任一邊曾標記無卡／銀行匯款的就視為該類)。
+    /// 把 [PaymentMethodInfo] 中名稱為 `oldName` 的項目改名為 `newName`，保留原有 `isCardless`、`isBankTransfer` 與 `isCashOnDelivery`；若 `newName` 已存在則合併 (任一邊曾標記無卡／銀行匯款／貨到付款的就視為該類)。
     /// - Parameters:
     ///   - list: 原始陣列。
     ///   - oldName: 舊名稱。
@@ -534,7 +536,8 @@ struct RootFeature {
             let merged = byName[key]
             let isCardless = info.isCardless || (merged?.isCardless ?? false)
             let isBankTransfer = info.isBankTransfer || (merged?.isBankTransfer ?? false)
-            byName[key] = PaymentMethodInfo(name: key, isCardless: isCardless, isBankTransfer: isBankTransfer)
+            let isCashOnDelivery = info.isCashOnDelivery || (merged?.isCashOnDelivery ?? false)
+            byName[key] = PaymentMethodInfo(name: key, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery)
         }
         return byName.values
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
@@ -596,7 +599,8 @@ struct RootFeature {
             notes: order.notes,
             verificationStatus: verificationStatus ?? order.verificationStatus,
             campaignName: campaignName ?? order.campaignName,
-            paymentReceiptStatus: order.paymentReceiptStatus
+            paymentReceiptStatus: order.paymentReceiptStatus,
+            isCashOnDelivery: order.isCashOnDelivery
         )
     }
 }

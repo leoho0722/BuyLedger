@@ -723,10 +723,15 @@ private extension OrderDetailView {
     /// - Parameter palette: 目前外觀使用的色盤。
     /// - Returns: 成本拆解清單。
     func costComponents(palette: BLPalette) -> [OrderCostComponent] {
-        // 運費由客人支付、不計入 ``OrderSummary/totalCost``，因此成本拆解只呈現商品金額與手續費。
+        // 一般訂單運費由客人支付、不計入 ``OrderSummary/totalCost``，成本拆解只呈現商品金額與手續費；
+        // 貨到付款的收款金額已含預估運費，故三種運費計入總成本，並比照編輯表單以「國內 / 國際 / 外國國內」原始類別分別列出。
         // 手續費進一步拆成刷卡 / 平台 / 金流三項分別列出，比統稱「手續費」更直覺；
-        // 商品金額與三項手續費加總才會等於 donut/bar 中央顯示的總成本。
+        // 商品金額、三項手續費與 (貨到付款) 三種運費加總才會等於 donut/bar 中央顯示的總成本。
         let summary = order.summary
+        // 三種運費僅在貨到付款時計入成本；非貨到付款一律以 0 帶入，由下方 filter 濾除。
+        let codDomesticShipping = order.isCashOnDelivery ? order.domesticShipping : 0
+        let codInternationalShipping = order.isCashOnDelivery ? order.internationalShipping : 0
+        let codForeignDomesticShipping = order.isCashOnDelivery ? order.foreignDomesticShipping : 0
         return [
             OrderCostComponent(
                 title: "商品金額",
@@ -747,6 +752,21 @@ private extension OrderDetailView {
                 title: "金流手續費",
                 value: summary.paymentFee,
                 color: palette.purple
+            ),
+            OrderCostComponent(
+                title: "國內運費",
+                value: codDomesticShipping,
+                color: palette.indigo
+            ),
+            OrderCostComponent(
+                title: "國際運費",
+                value: codInternationalShipping,
+                color: palette.pink
+            ),
+            OrderCostComponent(
+                title: "外國國內運費",
+                value: codForeignDomesticShipping,
+                color: palette.yellow
             ),
         ]
             .filter { $0.value > 0 }

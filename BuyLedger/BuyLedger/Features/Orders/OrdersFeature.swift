@@ -216,7 +216,12 @@ struct OrdersFeature {
             for order in orders {
                 let trimmed = order.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty, byName[trimmed] == nil else { continue }
-                byName[trimmed] = PaymentMethodInfo(name: trimmed, isCardless: false, isBankTransfer: false)
+                byName[trimmed] = PaymentMethodInfo(
+                    name: trimmed, 
+                    isCardless: false, 
+                    isBankTransfer: false, 
+                    isCashOnDelivery: false
+                )
             }
             return byName.values
                 .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
@@ -630,15 +635,25 @@ struct OrdersFeature {
                     try? await categoryRepository.addCategory(trimmed)
                 }
 
-            case let .editOrder(.presented(.addPaymentMethodTapped(name, isCardless, isBankTransfer))):
+            case let .editOrder(.presented(.addPaymentMethodTapped(name, isCardless, isBankTransfer, isCashOnDelivery))):
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return .none }
-                // 同名情境：以新的 isCardless / isBankTransfer 覆寫，讓 sheet 內二次新增能更正先前忘記勾選的狀態。
+                // 同名情境：以新的 isCardless / isBankTransfer / isCashOnDelivery 覆寫，讓 sheet 內二次新增能更正先前忘記勾選的狀態。
                 var updated = state.paymentMethodMaster
                 if let index = updated.firstIndex(where: { $0.name == trimmed }) {
-                    updated[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer)
+                    updated[index] = PaymentMethodInfo(
+                        name: trimmed, 
+                        isCardless: isCardless, 
+                        isBankTransfer: isBankTransfer, 
+                        isCashOnDelivery: isCashOnDelivery
+                    )
                 } else {
-                    updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer))
+                    updated.append(PaymentMethodInfo(
+                        name: trimmed, 
+                        isCardless: isCardless, 
+                        isBankTransfer: isBankTransfer, 
+                        isCashOnDelivery: isCashOnDelivery
+                    ))
                 }
                 state.paymentMethodMaster = updated.sorted {
                     $0.name.localizedStandardCompare($1.name) == .orderedAscending
@@ -646,7 +661,7 @@ struct OrdersFeature {
 
                 let paymentMethodRepository = paymentMethodRepository
                 return .run { _ in
-                    try? await paymentMethodRepository.addPaymentMethod(trimmed, isCardless, isBankTransfer)
+                    try? await paymentMethodRepository.addPaymentMethod(trimmed, isCardless, isBankTransfer, isCashOnDelivery)
                 }
 
             case let .editOrder(.presented(.addVerificationStatusTapped(name))):
@@ -702,7 +717,8 @@ struct OrdersFeature {
                     notes: existing.notes,
                     verificationStatus: existing.verificationStatus,
                     campaignName: existing.campaignName,
-                    paymentReceiptStatus: existing.paymentReceiptStatus
+                    paymentReceiptStatus: existing.paymentReceiptStatus,
+                    isCashOnDelivery: existing.isCashOnDelivery
                 )
                 state.orders[index] = updated
 
@@ -741,7 +757,8 @@ struct OrdersFeature {
                     notes: existing.notes,
                     verificationStatus: existing.verificationStatus,
                     campaignName: existing.campaignName,
-                    paymentReceiptStatus: newReceiptStatus
+                    paymentReceiptStatus: newReceiptStatus,
+                    isCashOnDelivery: existing.isCashOnDelivery
                 )
                 state.orders[index] = updated
 
@@ -904,7 +921,8 @@ private extension OrdersFeature {
                 notes: trimmedNotes,
                 verificationStatus: normalizedVerificationStatus,
                 campaignName: draft.draftCampaignName.trimmingCharacters(in: .whitespacesAndNewlines),
-                paymentReceiptStatus: draft.draftPaymentReceiptStatus
+                paymentReceiptStatus: draft.draftPaymentReceiptStatus,
+                isCashOnDelivery: draft.isSelectedPaymentMethodCOD
             )
             state.orders[index] = updatedOrder
             return updatedOrder
@@ -938,7 +956,8 @@ private extension OrdersFeature {
                 notes: trimmedNotes,
                 verificationStatus: normalizedVerificationStatus,
                 campaignName: draft.draftCampaignName.trimmingCharacters(in: .whitespacesAndNewlines),
-                paymentReceiptStatus: draft.draftPaymentReceiptStatus
+                paymentReceiptStatus: draft.draftPaymentReceiptStatus,
+                isCashOnDelivery: draft.isSelectedPaymentMethodCOD
             )
 
             state.orders.insert(newOrder, at: 0)

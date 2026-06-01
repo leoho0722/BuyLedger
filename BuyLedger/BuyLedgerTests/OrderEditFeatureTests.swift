@@ -108,8 +108,8 @@ struct OrderEditFeatureTests {
         // 主檔中「無卡存款」isCardless == true、「信用卡」isCardless == false。
         let state = OrderEditFeature.State(
             availablePaymentMethods: [
-                PaymentMethodInfo(name: "信用卡", isCardless: false, isBankTransfer: false),
-                PaymentMethodInfo(name: "無卡存款", isCardless: true, isBankTransfer: false),
+                PaymentMethodInfo(name: "信用卡", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
+                PaymentMethodInfo(name: "無卡存款", isCardless: true, isBankTransfer: false, isCashOnDelivery: false),
             ]
         )
 
@@ -129,9 +129,9 @@ struct OrderEditFeatureTests {
         // 主檔中「無卡存款」為無卡、「銀行匯款」為銀行匯款、「信用卡」兩者皆否。
         let state = OrderEditFeature.State(
             availablePaymentMethods: [
-                PaymentMethodInfo(name: "信用卡", isCardless: false, isBankTransfer: false),
-                PaymentMethodInfo(name: "無卡存款", isCardless: true, isBankTransfer: false),
-                PaymentMethodInfo(name: "銀行匯款", isCardless: false, isBankTransfer: true),
+                PaymentMethodInfo(name: "信用卡", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
+                PaymentMethodInfo(name: "無卡存款", isCardless: true, isBankTransfer: false, isCashOnDelivery: false),
+                PaymentMethodInfo(name: "銀行匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false),
             ]
         )
 
@@ -196,7 +196,8 @@ struct OrderEditFeatureTests {
             notes: "",
             verificationStatus: "待對帳",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
 
         let state = OrderEditFeature.State(original: original)

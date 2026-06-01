@@ -18,8 +18,8 @@ struct PaymentMethodPersistenceTests {
     @Test func upsertPersistsBothFlagsRoundTrip() async throws {
         let persistence = try makePersistence()
 
-        try await persistence.upsert(name: "銀行匯款", isCardless: false, isBankTransfer: true)
-        try await persistence.upsert(name: "無卡存款", isCardless: true, isBankTransfer: false)
+        try await persistence.upsert(name: "銀行匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)
+        try await persistence.upsert(name: "無卡存款", isCardless: true, isBankTransfer: false, isCashOnDelivery: false)
 
         let infos = try await persistence.fetchAllInfos()
         let bankTransfer = infos.first { $0.name == "銀行匯款" }
@@ -34,9 +34,9 @@ struct PaymentMethodPersistenceTests {
     @Test func upsertSameNameOverwritesFlags() async throws {
         let persistence = try makePersistence()
 
-        try await persistence.upsert(name: "綠界", isCardless: false, isBankTransfer: false)
+        try await persistence.upsert(name: "綠界", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
         // 二次新增同名：以新旗標覆寫 (使用者上次忘了勾選銀行匯款，這次更正)。
-        try await persistence.upsert(name: "綠界", isCardless: false, isBankTransfer: true)
+        try await persistence.upsert(name: "綠界", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)
 
         let infos = try await persistence.fetchAllInfos()
         #expect(infos.count == 1)
@@ -45,7 +45,7 @@ struct PaymentMethodPersistenceTests {
 
     @Test func renamePreservesBankTransferFlag() async throws {
         let persistence = try makePersistence()
-        try await persistence.upsert(name: "匯款", isCardless: false, isBankTransfer: true)
+        try await persistence.upsert(name: "匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)
 
         try await persistence.rename(from: "匯款", to: "銀行匯款")
 
@@ -53,6 +53,22 @@ struct PaymentMethodPersistenceTests {
         let renamed = infos.first { $0.name == "銀行匯款" }
         #expect(infos.contains { $0.name == "匯款" } == false)
         #expect(renamed?.isBankTransfer == true, "更名應保留 isBankTransfer 旗標")
+    }
+
+    @Test func upsertAndRenamePreserveCashOnDeliveryFlag() async throws {
+        let persistence = try makePersistence()
+
+        try await persistence.upsert(name: "貨到付款", isCardless: false, isBankTransfer: false, isCashOnDelivery: true)
+
+        let info = try await persistence.fetchAllInfos().first { $0.name == "貨到付款" }
+        #expect(info?.isCashOnDelivery == true)
+        #expect(info?.isCardless == false)
+        #expect(info?.isBankTransfer == false)
+
+        // 更名應保留 isCashOnDelivery 旗標。
+        try await persistence.rename(from: "貨到付款", to: "超商取貨付款")
+        let renamed = try await persistence.fetchAllInfos().first { $0.name == "超商取貨付款" }
+        #expect(renamed?.isCashOnDelivery == true, "更名應保留 isCashOnDelivery 旗標")
     }
 }
 

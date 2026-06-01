@@ -119,7 +119,7 @@ struct LookupManagementView: View {
                 Button("新增") {
                     let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmed.isEmpty {
-                        store.send(.addConfirmed(name: trimmed, isCardless: false, isBankTransfer: false))
+                        store.send(.addConfirmed(name: trimmed, isCardless: false, isBankTransfer: false, isCashOnDelivery: false))
                     }
                     draft = ""
                 }
@@ -137,8 +137,8 @@ struct LookupManagementView: View {
                     message: store.state.kind.addAlertMessage,
                     namePlaceholder: store.state.kind.addFieldPlaceholder,
                     submitTitle: "新增",
-                    onSubmit: { name, isCardless, isBankTransfer in
-                        store.send(.addConfirmed(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer))
+                    onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
+                        store.send(.addConfirmed(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery))
                     }
                 )
             }
@@ -149,7 +149,7 @@ struct LookupManagementView: View {
                     namePlaceholder: store.state.kind.addFieldPlaceholder,
                     submitTitle: "新增",
                     onSubmit: { name in
-                        store.send(.addConfirmed(name: name, isCardless: false, isBankTransfer: false))
+                        store.send(.addConfirmed(name: name, isCardless: false, isBankTransfer: false, isCashOnDelivery: false))
                     }
                 )
             }
@@ -168,13 +168,15 @@ struct LookupManagementView: View {
                         initialName: target,
                         initialIsCardless: store.paymentMethodIsCardless[target] ?? false,
                         initialIsBankTransfer: store.paymentMethodIsBankTransfer[target] ?? false,
-                        onSubmit: { name, isCardless, isBankTransfer in
+                        initialIsCashOnDelivery: store.paymentMethodIsCashOnDelivery[target] ?? false,
+                        onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
                             store.send(
                                 .editConfirmed(
                                     originalName: target,
                                     name: name,
                                     isCardless: isCardless,
-                                    isBankTransfer: isBankTransfer
+                                    isBankTransfer: isBankTransfer,
+                                    isCashOnDelivery: isCashOnDelivery
                                 )
                             )
                         }
@@ -201,7 +203,7 @@ private extension LookupManagementView {
 #endif
     }
 
-    /// 列項顯示：訂單來源 / 商品類別 / 對帳狀態 kind 純文字；付款方式 kind 在右側顯示「無卡」與「銀行匯款」徽章 (僅作標示，不能直接切換；要修改旗標需刪除後重新新增)。
+    /// 列項顯示：訂單來源 / 商品類別 / 對帳狀態 kind 純文字；付款方式 kind 在右側顯示「無卡」「銀行匯款」與「貨到付款」徽章 (僅作標示，不能直接切換；要修改旗標需對該列選「編輯」)。
     /// - Parameter item: 要顯示的主檔項目名稱。
     /// - Returns: 列項 view。
     @ViewBuilder
@@ -222,11 +224,15 @@ private extension LookupManagementView {
                 if store.paymentMethodIsBankTransfer[item] == true {
                     classificationBadge("銀行匯款")
                 }
+
+                if store.paymentMethodIsCashOnDelivery[item] == true {
+                    classificationBadge("貨到付款")
+                }
             }
         }
     }
 
-    /// 付款方式分類徽章 (例如「無卡」「銀行匯款」)，沿用 tint 膠囊樣式。
+    /// 付款方式分類徽章 (例如「無卡」「銀行匯款」「貨到付款」)，沿用 tint 膠囊樣式。
     /// - Parameter title: 徽章文字。
     /// - Returns: 膠囊徽章 view。
     @ViewBuilder
@@ -316,7 +322,7 @@ private extension LookupManagementView {
                 Text("目前已建立 \(store.items.count) 項")
             } footer: {
                 if store.state.kind == .paymentMethod {
-                    Text("「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；「銀行匯款」標籤代表會顯示「對帳狀態」欄位。需要修改名稱或分類時，對該列選「編輯」即可。")
+                    Text("「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；「銀行匯款」標籤代表會顯示「對帳狀態」欄位；「貨到付款」標籤代表收款金額已含預估運費，獲利會自動扣除三種運費。需要修改名稱或分類時，對該列選「編輯」即可。")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
@@ -417,7 +423,7 @@ private extension LookupManagementView {
 
             if store.state.kind == .paymentMethod {
                 // 與 iOS List footer 相同的無卡說明；兩個平台分支獨立呈現，因此各保留一份字串。
-                Text("「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；「銀行匯款」標籤代表會顯示「對帳狀態」欄位。需要修改名稱或分類時，對該列選「編輯」即可。")
+                Text("「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；「銀行匯款」標籤代表會顯示「對帳狀態」欄位；「貨到付款」標籤代表收款金額已含預估運費，獲利會自動扣除三種運費。需要修改名稱或分類時，對該列選「編輯」即可。")
                     .font(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
             }

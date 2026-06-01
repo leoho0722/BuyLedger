@@ -32,16 +32,17 @@ actor PaymentMethodPersistence {
         let descriptor = FetchDescriptor<PaymentMethodRecord>()
         let records = try modelContext.fetch(descriptor)
         return records
-            .map { PaymentMethodInfo(name: $0.name, isCardless: $0.isCardless, isBankTransfer: $0.isBankTransfer) }
+            .map { PaymentMethodInfo(name: $0.name, isCardless: $0.isCardless, isBankTransfer: $0.isBankTransfer, isCashOnDelivery: $0.isCashOnDelivery) }
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
 
-    /// 寫入指定名稱的付款方式；若已存在則更新 `isCardless` 與 `isBankTransfer` 旗標 (讓使用者重新觸發新增時能更正先前忘記勾選的狀態)。
+    /// 寫入指定名稱的付款方式；若已存在則更新 `isCardless`、`isBankTransfer` 與 `isCashOnDelivery` 旗標 (讓使用者重新觸發新增時能更正先前忘記勾選的狀態)。
     /// - Parameters:
     ///   - name: 付款方式名稱 (呼叫前由 caller 完成 trim)。
     ///   - isCardless: 是否屬於無卡類付款方式。
     ///   - isBankTransfer: 是否屬於銀行匯款類付款方式。
-    func upsert(name: String, isCardless: Bool, isBankTransfer: Bool) throws {
+    ///   - isCashOnDelivery: 是否屬於貨到付款類付款方式。
+    func upsert(name: String, isCardless: Bool, isBankTransfer: Bool, isCashOnDelivery: Bool) throws {
         let descriptor = FetchDescriptor<PaymentMethodRecord>(
             predicate: #Predicate { $0.name == name }
         )
@@ -49,8 +50,9 @@ actor PaymentMethodPersistence {
         if let existing = try modelContext.fetch(descriptor).first {
             existing.isCardless = isCardless
             existing.isBankTransfer = isBankTransfer
+            existing.isCashOnDelivery = isCashOnDelivery
         } else {
-            modelContext.insert(PaymentMethodRecord(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer))
+            modelContext.insert(PaymentMethodRecord(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery))
         }
         try modelContext.save()
     }
@@ -81,6 +83,7 @@ actor PaymentMethodPersistence {
         let oldRecords = try modelContext.fetch(oldDescriptor)
         let preservedIsCardless = oldRecords.contains { $0.isCardless }
         let preservedIsBankTransfer = oldRecords.contains { $0.isBankTransfer }
+        let preservedIsCashOnDelivery = oldRecords.contains { $0.isCashOnDelivery }
         for record in oldRecords {
             modelContext.delete(record)
         }
@@ -89,15 +92,18 @@ actor PaymentMethodPersistence {
             predicate: #Predicate { $0.name == newName }
         )
         if let existing = try modelContext.fetch(newDescriptor).first {
-            // 合併時保留「任一邊曾標記為無卡／銀行匯款」的狀態，避免使用者改名後旗標莫名被清掉。
+            // 合併時保留「任一邊曾標記為無卡／銀行匯款／貨到付款」的狀態，避免使用者改名後旗標莫名被清掉。
             if preservedIsCardless {
                 existing.isCardless = true
             }
             if preservedIsBankTransfer {
                 existing.isBankTransfer = true
             }
+            if preservedIsCashOnDelivery {
+                existing.isCashOnDelivery = true
+            }
         } else {
-            modelContext.insert(PaymentMethodRecord(name: newName, isCardless: preservedIsCardless, isBankTransfer: preservedIsBankTransfer))
+            modelContext.insert(PaymentMethodRecord(name: newName, isCardless: preservedIsCardless, isBankTransfer: preservedIsBankTransfer, isCashOnDelivery: preservedIsCashOnDelivery))
         }
 
         try modelContext.save()

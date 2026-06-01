@@ -103,7 +103,8 @@ private extension OrdersFeaturePerformanceTests {
                 notes: "",
                 verificationStatus: "",
                 campaignName: "",
-                paymentReceiptStatus: .pending
+                paymentReceiptStatus: .pending,
+                isCashOnDelivery: false
             )
         }
     }

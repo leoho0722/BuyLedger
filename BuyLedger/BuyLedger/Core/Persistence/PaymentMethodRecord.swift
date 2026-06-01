@@ -29,16 +29,28 @@ final class PaymentMethodRecord {
     /// 帶 default `false` 走 SwiftData lightweight migration；與 ``isCardless`` 為平行的獨立旗標，任一為 `true` 都會讓使用該付款方式的訂單在編輯時顯示「對帳狀態」row。
     var isBankTransfer: Bool = false
 
+    /// 是否屬於「貨到付款」類付款方式。
+    ///
+    /// 帶 default `false` 走 SwiftData lightweight migration；與 ``isCardless``、``isBankTransfer`` 為平行的獨立旗標。使用此付款方式的訂單會被標記為貨到付款，``OrderSummary`` 會在獲利中額外扣除三種運費 (因收款金額已含預估運費)。
+    var isCashOnDelivery: Bool = false
+
     // MARK: - Init
 
-    /// 建立指定名稱、是否無卡與是否銀行匯款的付款方式記錄。
+    /// 建立指定名稱、是否無卡、是否銀行匯款與是否貨到付款的付款方式記錄。
     /// - Parameters:
     ///   - name: 付款方式名稱。
     ///   - isCardless: 是否屬於無卡類付款方式，預設 `false`。
     ///   - isBankTransfer: 是否屬於銀行匯款類付款方式，預設 `false`。
-    init(name: String, isCardless: Bool = false, isBankTransfer: Bool = false) {
+    ///   - isCashOnDelivery: 是否屬於貨到付款類付款方式，預設 `false`。
+    init(
+        name: String, 
+        isCardless: Bool = false, 
+        isBankTransfer: Bool = false, 
+        isCashOnDelivery: Bool = false
+    ) {
         self.name = name
         self.isCardless = isCardless
         self.isBankTransfer = isBankTransfer
+        self.isCashOnDelivery = isCashOnDelivery
     }
 }

@@ -449,10 +449,10 @@ private func previewState(
         "aespa Lemonade QQ 音樂限定禮包"
     ]
     state.paymentMethodMaster = [
-        PaymentMethodInfo(name: "信用卡", isCardless: false, isBankTransfer: false),
-        PaymentMethodInfo(name: "現金", isCardless: true, isBankTransfer: false),
-        PaymentMethodInfo(name: "銀行轉帳", isCardless: false, isBankTransfer: true),
-        PaymentMethodInfo(name: "LINE Pay", isCardless: false, isBankTransfer: false)
+        PaymentMethodInfo(name: "信用卡", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
+        PaymentMethodInfo(name: "現金", isCardless: true, isBankTransfer: false, isCashOnDelivery: false),
+        PaymentMethodInfo(name: "銀行轉帳", isCardless: false, isBankTransfer: true, isCashOnDelivery: false),
+        PaymentMethodInfo(name: "貨到付款", isCardless: false, isBankTransfer: false, isCashOnDelivery: true)
     ]
     state.hasLoaded = true
     return state

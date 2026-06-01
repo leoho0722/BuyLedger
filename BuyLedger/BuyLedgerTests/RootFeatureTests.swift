@@ -198,13 +198,14 @@ struct RootFeatureTests {
             notes: order.notes,
             verificationStatus: order.verificationStatus,
             campaignName: order.campaignName,
-            paymentReceiptStatus: order.paymentReceiptStatus
+            paymentReceiptStatus: order.paymentReceiptStatus,
+            isCashOnDelivery: order.isCashOnDelivery
         )
 
         var state = RootFeature.State()
         state.orders.orders = [order]
         state.orders.paymentMethodMaster = [
-            PaymentMethodInfo(name: "匯款", isCardless: false, isBankTransfer: true),
+            PaymentMethodInfo(name: "匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false),
         ]
 
         let store = TestStore(initialState: state) {
@@ -217,7 +218,7 @@ struct RootFeatureTests {
 
         await store.send(
             .paymentMethodManagement(
-                .editConfirmed(originalName: "匯款", name: "銀行匯款", isCardless: false, isBankTransfer: false)
+                .editConfirmed(originalName: "匯款", name: "銀行匯款", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
             )
         )
         await store.finish()
@@ -295,7 +296,8 @@ private extension RootFeatureTests {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
     }
 }

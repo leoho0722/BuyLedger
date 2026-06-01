@@ -77,7 +77,8 @@ struct OrderPersistenceTests {
             notes: "建立時的備註",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
 
         try await persistence.upsert(order)
@@ -119,7 +120,8 @@ struct OrderPersistenceTests {
             notes: "更新後的備註",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
 
         try await persistence.upsert(modified)
@@ -158,7 +160,8 @@ struct OrderPersistenceTests {
             notes: "",
             verificationStatus: "待對帳",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
 
         try await persistence.upsert(order)
@@ -192,7 +195,8 @@ struct OrderPersistenceTests {
             notes: "",
             verificationStatus: "待對帳",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
         try await persistence.upsert(order)
 

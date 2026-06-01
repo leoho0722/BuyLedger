@@ -71,8 +71,8 @@ struct OptionPickerSheet: View {
 
     /// 使用者透過「新增付款方式」sheet 確認新增時的 callback；不為 `nil` 時，「新增」按鈕會改顯示 ``PaymentMethodEditorSheet`` (含 `isCardless` 切換)，取代既有 alert 流程。
     ///
-    /// 因為 SwiftUI 的 `.alert` actions builder 不支援 `Toggle`，無法在 alert 中同時讓使用者填名稱與決定 `isCardless` / `isBankTransfer`；改用 sheet 是為了把這些輸入合併在同一張表單。callback 參數依序為 (名稱, isCardless, isBankTransfer)。
-    let onAddPaymentMethod: ((String, Bool, Bool) -> Void)?
+    /// 因為 SwiftUI 的 `.alert` actions builder 不支援 `Toggle`，無法在 alert 中同時讓使用者填名稱與決定 `isCardless` / `isBankTransfer` / `isCashOnDelivery`；改用 sheet 是為了把這些輸入合併在同一張表單。callback 參數依序為 (名稱, isCardless, isBankTransfer, isCashOnDelivery)。
+    let onAddPaymentMethod: ((String, Bool, Bool, Bool) -> Void)?
 
     /// 使用者透過「新增」name-only medium sheet 確認新增時的 callback；不為 `nil` 且 ``onAddPaymentMethod`` 為 `nil` 時，「新增」按鈕會改顯示 ``LookupItemEditorSheet`` (只收名稱)，取代既有 alert 流程。供對帳狀態等只需名稱的主檔比照「新增付款方式」使用 medium sheet。
     let onAddViaNameSheet: ((String) -> Void)?
@@ -124,7 +124,7 @@ struct OptionPickerSheet: View {
     ///   - searchKeywords: 自訂搜尋補充文字；`nil` 僅以原值比對。
     ///   - onSelect: 點選 callback。
     ///   - onAdd: 新增 callback；`allowsAdd` 為 `false` 時不會被呼叫；若同時提供 ``onAddPaymentMethod`` 則此 callback 也會被忽略。
-    ///   - onAddPaymentMethod: 付款方式新增 callback；不為 `nil` 時，「新增」按鈕改開啟 ``PaymentMethodEditorSheet`` 收集名稱與 `isCardless` / `isBankTransfer`，取代 alert 流程。
+    ///   - onAddPaymentMethod: 付款方式新增 callback；不為 `nil` 時，「新增」按鈕改開啟 ``PaymentMethodEditorSheet`` 收集名稱與 `isCardless` / `isBankTransfer` / `isCashOnDelivery`，取代 alert 流程。
     ///   - onAddViaNameSheet: name-only 主檔新增 callback；不為 `nil` 且 `onAddPaymentMethod` 為 `nil` 時，「新增」按鈕改開啟 ``LookupItemEditorSheet`` (只收名稱) 的 medium sheet，取代 alert 流程。
     ///   - clearOption: 可選的「清除目前選擇」row 設定；預設 `nil` (不顯示 clear row、行為與既有版本一致)。
     init(
@@ -143,7 +143,7 @@ struct OptionPickerSheet: View {
         searchKeywords: (@Sendable (String) -> String)? = nil,
         onSelect: @escaping (String) -> Void,
         onAdd: @escaping (String) -> Void = { _ in },
-        onAddPaymentMethod: ((String, Bool, Bool) -> Void)? = nil,
+        onAddPaymentMethod: ((String, Bool, Bool, Bool) -> Void)? = nil,
         onAddViaNameSheet: ((String) -> Void)? = nil,
         clearOption: ClearOption? = nil
     ) {
@@ -218,8 +218,8 @@ struct OptionPickerSheet: View {
                         message: addAlertMessage,
                         namePlaceholder: addFieldPlaceholder,
                         submitTitle: "新增",
-                        onSubmit: { name, isCardless, isBankTransfer in
-                            onAddPaymentMethod?(name, isCardless, isBankTransfer)
+                        onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
+                            onAddPaymentMethod?(name, isCardless, isBankTransfer, isCashOnDelivery)
                             // 新增完成後一併關閉外層 picker sheet，使用者能立即看到新付款方式套用到此訂單。
                             dismiss()
                         }

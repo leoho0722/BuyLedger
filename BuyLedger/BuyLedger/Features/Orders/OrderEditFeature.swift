@@ -134,6 +134,15 @@ struct OrderEditFeature {
             return availablePaymentMethods.first { $0.name == trimmed }?.isBankTransfer ?? false
         }
 
+        /// 目前選到的付款方式是否屬於「貨到付款」類；判定方式與 ``isSelectedPaymentMethodCardless`` 相同，只是改看 `isCashOnDelivery` 旗標。
+        ///
+        /// 儲存時由父層 ``OrdersFeature`` 以此值快照寫入 ``LedgerOrder/isCashOnDelivery``，讓 ``OrderSummary`` 能在獲利中扣除三種運費。
+        var isSelectedPaymentMethodCOD: Bool {
+            let trimmed = draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { return false }
+            return availablePaymentMethods.first { $0.name == trimmed }?.isCashOnDelivery ?? false
+        }
+
         /// 是否在「付款方式」row 底下顯示「對帳狀態」row：選到的付款方式屬於無卡或銀行匯款 (款項不會即時入帳、需事後人工對帳) 時為 `true`。
         var showsVerificationStatusRow: Bool {
             isSelectedPaymentMethodCardless || isSelectedPaymentMethodBankTransfer
@@ -202,7 +211,7 @@ struct OrderEditFeature {
             if !originalPaymentMethod.isEmpty,
                !paymentMethods.contains(where: { $0.name == originalPaymentMethod }) {
                 // 既有訂單的付款方式可能還沒被加進主檔；補上時旗標預設 false，使用者可在主檔管理頁勾選後再次套用。
-                paymentMethods.append(PaymentMethodInfo(name: originalPaymentMethod, isCardless: false, isBankTransfer: false))
+                paymentMethods.append(PaymentMethodInfo(name: originalPaymentMethod, isCardless: false, isBankTransfer: false, isCashOnDelivery: false))
             }
             self.availablePaymentMethods = paymentMethods.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
 
@@ -252,8 +261,8 @@ struct OrderEditFeature {
         /// 使用者透過「新增類別」彈窗確認新增一筆類別名稱。
         case addCategoryTapped(String)
 
-        /// 使用者透過「新增付款方式」sheet 確認新增一筆付款方式，含「是否為無卡類」與「是否為銀行匯款類」旗標。
-        case addPaymentMethodTapped(name: String, isCardless: Bool, isBankTransfer: Bool)
+        /// 使用者透過「新增付款方式」sheet 確認新增一筆付款方式，含「是否為無卡類」「是否為銀行匯款類」與「是否為貨到付款類」旗標。
+        case addPaymentMethodTapped(name: String, isCardless: Bool, isBankTransfer: Bool, isCashOnDelivery: Bool)
 
         /// 使用者透過「新增對帳狀態」sheet 確認新增一筆對帳狀態名稱。
         case addVerificationStatusTapped(String)
@@ -339,16 +348,16 @@ struct OrderEditFeature {
                 state.draftCategory = trimmed
                 return .none
 
-            case let .addPaymentMethodTapped(rawName, isCardless, isBankTransfer):
+            case let .addPaymentMethodTapped(rawName, isCardless, isBankTransfer, isCashOnDelivery):
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return .none }
 
                 if let index = state.availablePaymentMethods.firstIndex(where: { $0.name == trimmed }) {
-                    // 同名情境視為「重新套用旗標」：例如使用者上次新增時忘了勾選無卡／銀行匯款，這次重新觸發以更正。
-                    state.availablePaymentMethods[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer)
+                    // 同名情境視為「重新套用旗標」：例如使用者上次新增時忘了勾選無卡／銀行匯款／貨到付款，這次重新觸發以更正。
+                    state.availablePaymentMethods[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery)
                 } else {
                     var updated = state.availablePaymentMethods
-                    updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer))
+                    updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery))
                     state.availablePaymentMethods = updated.sorted {
                         $0.name.localizedStandardCompare($1.name) == .orderedAscending
                     }
@@ -436,7 +445,12 @@ struct OrderEditFeature {
                 }
                 let draftPaymentMethod = state.draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !draftPaymentMethod.isEmpty, merged[draftPaymentMethod] == nil {
-                    merged[draftPaymentMethod] = PaymentMethodInfo(name: draftPaymentMethod, isCardless: false, isBankTransfer: false)
+                    merged[draftPaymentMethod] = PaymentMethodInfo(
+                        name: draftPaymentMethod,
+                        isCardless: false, 
+                        isBankTransfer: false, 
+                        isCashOnDelivery: false
+                    )
                 }
                 state.availablePaymentMethods = merged.values
                     .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }

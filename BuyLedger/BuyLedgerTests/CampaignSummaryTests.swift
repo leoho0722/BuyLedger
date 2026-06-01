@@ -146,7 +146,8 @@ struct CampaignSummaryTests {
             notes: "",
             verificationStatus: "",
             campaignName: campaign,
-            paymentReceiptStatus: receipt
+            paymentReceiptStatus: receipt,
+            isCashOnDelivery: false
         )
     }
 }

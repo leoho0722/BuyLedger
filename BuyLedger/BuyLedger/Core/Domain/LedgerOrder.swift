@@ -91,6 +91,11 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 作為開團分貨清單與結團結算判定「已收款」的唯一來源；對所有付款方式皆有意義，預設為 ``PaymentReceiptStatus/pending``。
     let paymentReceiptStatus: PaymentReceiptStatus
 
+    /// 此訂單是否以「貨到付款」類付款方式成立。
+    ///
+    /// 於儲存時依選到的付款方式 ``PaymentMethodInfo/isCashOnDelivery`` 快照寫入 (與無卡欄位同樣為 data-driven，``OrderSummary`` 只拿得到本型別、看不到付款方式主檔旗標)。為 `true` 時，因收款金額已含預估的三種運費，``OrderSummary`` 會在獲利中額外扣除 ``domesticShipping`` + ``internationalShipping`` + ``foreignDomesticShipping``；非貨到付款一律為 `false`，等同維持舊行為。
+    let isCashOnDelivery: Bool
+
     // MARK: - Computed Properties
 
     /// 訂單的財務摘要。

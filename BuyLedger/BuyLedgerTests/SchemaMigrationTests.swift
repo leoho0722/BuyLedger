@@ -18,18 +18,18 @@ struct SchemaMigrationTests {
 
     // MARK: - Tests
 
-    /// floor 版本 (V7) 的 store 開啟後，應以 lightweight migration 遷到 V8 並保留所有既有訂單與欄位；V8 新增欄位以 default 補齊。
-    @Test func v7StoreMigratesToV8PreservingOrders() throws {
+    /// floor 版本 (V7) 的 store 開啟後，應以 lightweight migration 逐段遷到 target (V9) 並保留所有既有訂單與欄位；V8 / V9 新增欄位以 default 補齊。
+    @Test func v7StoreMigratesToV9PreservingOrders() throws {
         let storeURL = Self.makeTemporaryStoreURL()
         defer { Self.removeStore(at: storeURL) }
 
         // 1. 以 floor 版本 V7 schema 在實體檔案寫入訂單。
         try Self.seedV7Store(at: storeURL)
 
-        // 2. 用收斂後的 plan (target V8 + BuyLedgerMigrationPlan) 開啟同一 store。
+        // 2. 用收斂後的 plan (target V9 + BuyLedgerMigrationPlan) 開啟同一 store。
         let migrated = try Self.fetchOrders(
             at: storeURL,
-            versionedSchema: BuyLedgerSchemaV8.self,
+            versionedSchema: BuyLedgerSchemaV9.self,
             migrationPlan: BuyLedgerMigrationPlan.self
         )
 
@@ -47,26 +47,51 @@ struct SchemaMigrationTests {
         // V8 新增欄位 (V7 store 沒有) 應由 lightweight migration 以 default 補齊。
         #expect(first.campaignName == "")
         #expect(first.paymentReceiptStatus == PaymentReceiptStatus.pending.rawValue)
+        // V9 新增欄位 (V7 store 沒有) 同樣以 default 補齊。
+        #expect(first.isCashOnDelivery == false)
     }
 
-    /// 已在 target (V8) 的 store 重新開啟時不應觸發遷移，資料與筆數原封不動。
-    ///
-    /// 此測試同時作為「V8 schema 指紋未被意外更動」的守門：若移除 V1~V6 時誤動了 top-level `@Model` 或 V7／V8 定義導致指紋改變，開啟既有 V8 store 會嘗試非預期的遷移或拋錯，本測試即失敗。
-    @Test func v8StoreReopensWithoutMigration() throws {
+    /// V8 store 開啟後，應以 lightweight migration 遷到 target (V9)，保留 V8 欄位、`isCashOnDelivery` 以 default `false` 補齊。
+    @Test func v8StoreMigratesToV9AddingCashOnDeliveryDefault() throws {
         let storeURL = Self.makeTemporaryStoreURL()
         defer { Self.removeStore(at: storeURL) }
 
-        // 1. 以 target V8 直接建立 store 並寫入一筆帶有 V8 專屬欄位的訂單。
+        // 1. 以 V8 影子型別在實體檔案落下「V8 指紋」store。
+        try Self.seedV8Store(at: storeURL)
+
+        // 2. 用收斂後的 plan (target V9) 開啟同一 store。
+        let migrated = try Self.fetchOrders(
+            at: storeURL,
+            versionedSchema: BuyLedgerSchemaV9.self,
+            migrationPlan: BuyLedgerMigrationPlan.self
+        )
+
+        // 3. V8 資料存活、V9 新欄位 isCashOnDelivery 以 default `false` 補齊。
+        #expect(migrated.count == 1)
+        let order = try #require(migrated.first { $0.id == "BL-V8-001" })
+        #expect(order.campaignName == "春團")
+        #expect(order.paymentReceiptStatus == PaymentReceiptStatus.pending.rawValue)
+        #expect(order.isCashOnDelivery == false)
+    }
+
+    /// 已在 target (V9) 的 store 重新開啟時不應觸發遷移，資料與筆數原封不動。
+    ///
+    /// 此測試同時作為「V9 schema 指紋未被意外更動」的守門：若改動 top-level `@Model` 或 V7／V8／V9 定義導致指紋改變，開啟既有 V9 store 會嘗試非預期的遷移或拋錯，本測試即失敗。
+    @Test func v9StoreReopensWithoutMigration() throws {
+        let storeURL = Self.makeTemporaryStoreURL()
+        defer { Self.removeStore(at: storeURL) }
+
+        // 1. 以 target V9 直接建立 store 並寫入一筆帶有貨到付款旗標的訂單。
         let order = LedgerOrder(
-            id: "BL-V8-001",
-            customer: LedgerCustomer(name: "原生 V8", initials: "V8", tier: .regular),
+            id: "BL-V9-001",
+            customer: LedgerCustomer(name: "原生 V9", initials: "V9", tier: .regular),
             status: .confirmed,
             currency: .twd,
             date: Date(timeIntervalSince1970: 1_700_000_000),
             items: [],
             itemCost: 0,
-            domesticShipping: 0,
-            internationalShipping: 0,
+            domesticShipping: 100,
+            internationalShipping: 200,
             foreignDomesticShipping: 0,
             cardFeeRate: 0,
             platformFeeRate: 0,
@@ -76,15 +101,16 @@ struct SchemaMigrationTests {
             cardlessSupplementAmount: 0,
             orderSource: "蝦皮",
             category: "美妝",
-            paymentMethod: "",
+            paymentMethod: "貨到付款",
             notes: "",
             verificationStatus: "",
             campaignName: "春團",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: true
         )
         do {
             let container = try Self.makeContainer(
-                versionedSchema: BuyLedgerSchemaV8.self,
+                versionedSchema: BuyLedgerSchemaV9.self,
                 migrationPlan: nil,
                 url: storeURL
             )
@@ -96,14 +122,15 @@ struct SchemaMigrationTests {
         // 2. 用收斂後的 plan 重新開啟同一 store。
         let reopened = try Self.fetchOrders(
             at: storeURL,
-            versionedSchema: BuyLedgerSchemaV8.self,
+            versionedSchema: BuyLedgerSchemaV9.self,
             migrationPlan: BuyLedgerMigrationPlan.self
         )
 
-        // 3. 已在 target 的 store 不觸發遷移，資料原封不動。
+        // 3. 已在 target 的 store 不觸發遷移，資料原封不動 (含 isCashOnDelivery)。
         #expect(reopened.count == 1)
-        #expect(reopened.first?.id == "BL-V8-001")
+        #expect(reopened.first?.id == "BL-V9-001")
         #expect(reopened.first?.campaignName == "春團")
+        #expect(reopened.first?.isCashOnDelivery == true)
     }
 }
 
@@ -229,6 +256,47 @@ private extension SchemaMigrationTests {
                 paymentMethod: "",
                 notes: "",
                 verificationStatus: ""
+            )
+        )
+        try context.save()
+    }
+
+    /// 以 V8 影子 ``BuyLedgerSchemaV8/OrderRecord`` 在實體 store 寫入一筆訂單，落下「V8 指紋」store 供 V8 → V9 遷移測試。
+    ///
+    /// 直接使用 ``BuyLedgerSchemaV8/OrderRecord`` (而非 top-level 型別) 才能落下不含 `isCashOnDelivery` 的 V8 指紋；top-level ``OrderRecord`` 已是 V9 (含該欄位)。
+    static func seedV8Store(at url: URL) throws {
+        let container = try makeContainer(
+            versionedSchema: BuyLedgerSchemaV8.self,
+            migrationPlan: nil,
+            url: url
+        )
+        let context = ModelContext(container)
+
+        context.insert(
+            BuyLedgerSchemaV8.OrderRecord(
+                id: "BL-V8-001",
+                customer: LedgerCustomer(name: "原生 V8", initials: "V8", tier: .regular),
+                status: .confirmed,
+                currency: "TWD",
+                date: Date(timeIntervalSince1970: 1_700_000_000),
+                items: [],
+                itemCost: 0,
+                domesticShipping: 0,
+                internationalShipping: 0,
+                foreignDomesticShipping: 0,
+                cardFeeRate: 0,
+                platformFeeRate: 0,
+                paymentFeeRate: 0,
+                chargedAmount: 0,
+                cardlessDeductionAmount: 0,
+                cardlessSupplementAmount: 0,
+                orderSource: "蝦皮",
+                category: "美妝",
+                paymentMethod: "",
+                notes: "",
+                verificationStatus: "",
+                campaignName: "春團",
+                paymentReceiptStatus: PaymentReceiptStatus.pending.rawValue
             )
         )
         try context.save()

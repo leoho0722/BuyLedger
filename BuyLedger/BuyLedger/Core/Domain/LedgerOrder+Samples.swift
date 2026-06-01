@@ -53,7 +53,8 @@ extension LedgerOrder {
             notes: "客戶指定到貨後先拍照確認，再安排出貨。",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         ),
         LedgerOrder(
             id: "BL-2604-017",
@@ -88,7 +89,8 @@ extension LedgerOrder {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         ),
         LedgerOrder(
             id: "BL-2604-016",
@@ -128,7 +130,8 @@ extension LedgerOrder {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         ),
         LedgerOrder(
             id: "BL-2604-015",
@@ -163,7 +166,8 @@ extension LedgerOrder {
             notes: "報價中，待客戶確認顏色後再下單。",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         ),
         LedgerOrder(
             id: "BL-2604-014",
@@ -203,7 +207,8 @@ extension LedgerOrder {
             notes: "已收訂金，尾款到貨後結清。",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         ),
         LedgerOrder(
             id: "BL-2604-013",
@@ -234,7 +239,8 @@ extension LedgerOrder {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         ),
         LedgerOrder(
             id: "BL-2604-012",
@@ -269,7 +275,8 @@ extension LedgerOrder {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         ),
     ]
 }

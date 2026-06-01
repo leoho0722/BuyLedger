@@ -107,6 +107,11 @@ final class OrderRecord {
     /// 比照 ``currency`` 以 String 儲存 (而非 enum)，避免日後改動 enum 破壞 schema 指紋；帶 default value 走 lightweight migration，舊 row 升級時自動填 ``PaymentReceiptStatus/pending``。
     var paymentReceiptStatus: String = PaymentReceiptStatus.pending.rawValue
 
+    /// 此訂單是否以「貨到付款」類付款方式成立。
+    ///
+    /// 帶 default `false` 走 SwiftData lightweight migration；只有當 ``paymentMethod`` 對應的 ``PaymentMethodRecord/isCashOnDelivery`` 為 `true` 時，儲存表單才會寫入 `true`。為 `true` 時 ``OrderSummary`` 會在獲利中額外扣除三種運費。
+    var isCashOnDelivery: Bool = false
+
     // MARK: - Init
 
     /// 依領域型別 ``LedgerOrder`` 建立持久化記錄。
@@ -135,6 +140,7 @@ final class OrderRecord {
         self.verificationStatus = order.verificationStatus
         self.campaignName = order.campaignName
         self.paymentReceiptStatus = order.paymentReceiptStatus.rawValue
+        self.isCashOnDelivery = order.isCashOnDelivery
     }
 }
 
@@ -170,7 +176,8 @@ extension OrderRecord {
             notes: notes,
             verificationStatus: verificationStatus,
             campaignName: campaignName,
-            paymentReceiptStatus: PaymentReceiptStatus(rawValue: paymentReceiptStatus) ?? .pending
+            paymentReceiptStatus: PaymentReceiptStatus(rawValue: paymentReceiptStatus) ?? .pending,
+            isCashOnDelivery: isCashOnDelivery
         )
     }
 
@@ -199,5 +206,6 @@ extension OrderRecord {
         self.verificationStatus = order.verificationStatus
         self.campaignName = order.campaignName
         self.paymentReceiptStatus = order.paymentReceiptStatus.rawValue
+        self.isCashOnDelivery = order.isCashOnDelivery
     }
 }

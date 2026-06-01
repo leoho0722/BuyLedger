@@ -41,7 +41,8 @@ struct OrderCalculationTests {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
 
         let summary = OrderSummary(order: order)
@@ -84,7 +85,8 @@ struct OrderCalculationTests {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
 
         let summary = OrderSummary(order: order)
@@ -125,7 +127,8 @@ struct OrderCalculationTests {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
 
         let summary = OrderSummary(order: order)
@@ -167,7 +170,8 @@ struct OrderCalculationTests {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
 
         let summary = OrderSummary(order: order)
@@ -206,7 +210,8 @@ struct OrderCalculationTests {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
 
         let summary = OrderSummary(order: order)
@@ -253,7 +258,8 @@ struct OrderCalculationTests {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
 
         let summary = OrderSummary(order: order)
@@ -295,13 +301,95 @@ struct OrderCalculationTests {
             notes: "",
             verificationStatus: "",
             campaignName: "",
-            paymentReceiptStatus: .pending
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
         )
 
         let summary = OrderSummary(order: order)
 
         // 運費合計 800 全數排除；totalCost = itemCost 3_000，profit = 5_000 - 3_000 = 2_000。
         #expect(summary.fees == 0)
+        #expect(summary.totalCost == 3_000)
+        #expect(summary.profit == 2_000)
+    }
+
+    @Test func cashOnDeliveryIncludesShippingInTotalCost() {
+        // 貨到付款：收款金額已含預估運費，三種運費 (國內 + 國際 + 外國國內) 計入總成本。
+        // 與 shippingIsExcludedFromTotalCost 對照：完全相同的訂單，差別只在 isCashOnDelivery == true。
+        let order = LedgerOrder(
+            id: "BL-COD-001",
+            customer: LedgerCustomer(name: "貨到付款測試", initials: "CD", tier: .regular),
+            status: .delivered,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_777_145_600),
+            items: [
+                LedgerOrderItem(name: "測試商品", quantity: 1, unitPrice: 5_000),
+            ],
+            itemCost: Decimal(3_000),
+            domesticShipping: 100,
+            internationalShipping: 500,
+            foreignDomesticShipping: 200,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: Decimal(5_000),
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "",
+            category: "測試",
+            paymentMethod: "貨到付款",
+            notes: "",
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: true
+        )
+
+        let summary = OrderSummary(order: order)
+
+        // fees = 0；三種運費合計 800 計入總成本：totalCost = itemCost 3_000 + 運費 800 = 3_800。
+        // profit = revenue 5_000 - totalCost 3_800 = 1_200。
+        #expect(summary.fees == 0)
+        #expect(summary.codShippingCost == 800)
+        #expect(summary.totalCost == 3_800)
+        #expect(summary.profit == 1_200)
+        #expect(summary.margin == Decimal(1_200) / Decimal(5_000))
+    }
+
+    @Test func nonCashOnDeliveryHasZeroCodShippingCost() {
+        // 對照組：同一筆運費結構，非貨到付款時 codShippingCost 為 0、運費不計入總成本。
+        let order = LedgerOrder(
+            id: "BL-COD-002",
+            customer: LedgerCustomer(name: "非貨到付款", initials: "NC", tier: .regular),
+            status: .delivered,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_777_145_600),
+            items: [
+                LedgerOrderItem(name: "測試商品", quantity: 1, unitPrice: 5_000),
+            ],
+            itemCost: Decimal(3_000),
+            domesticShipping: 100,
+            internationalShipping: 500,
+            foreignDomesticShipping: 200,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: Decimal(5_000),
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "",
+            category: "測試",
+            paymentMethod: "信用卡",
+            notes: "",
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false
+        )
+
+        let summary = OrderSummary(order: order)
+
+        #expect(summary.codShippingCost == 0)
         #expect(summary.totalCost == 3_000)
         #expect(summary.profit == 2_000)
     }

@@ -69,7 +69,8 @@ struct SnapshotTests {
                 notes: "",
                 verificationStatus: "",
                 campaignName: "",
-                paymentReceiptStatus: .pending
+                paymentReceiptStatus: .pending,
+                isCashOnDelivery: false
             )
 
             let state: OrdersFeature.State = {
@@ -165,7 +166,8 @@ struct SnapshotTests {
                 notes: "",
                 verificationStatus: "",
                 campaignName: "",
-                paymentReceiptStatus: .pending
+                paymentReceiptStatus: .pending,
+                isCashOnDelivery: false
             )
 
             let view = OrderDetailView(order: order)
