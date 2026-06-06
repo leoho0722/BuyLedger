@@ -48,14 +48,15 @@ extension LedgerOrder {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "蝦皮",
-            category: "美妝",
+            categories: ["美妝"],
             paymentMethod: "信用卡",
             notes: "客戶指定到貨後先拍照確認，再安排出貨。",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         ),
         LedgerOrder(
             id: "BL-2604-017",
@@ -85,14 +86,15 @@ extension LedgerOrder {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "官方網站",
-            category: "服飾",
+            categories: ["服飾"],
             paymentMethod: "銀行轉帳",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         ),
         LedgerOrder(
             id: "BL-2604-016",
@@ -127,14 +129,15 @@ extension LedgerOrder {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "Instagram",
-            category: "美妝",
+            categories: ["美妝"],
             paymentMethod: "信用卡",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         ),
         LedgerOrder(
             id: "BL-2604-015",
@@ -164,14 +167,15 @@ extension LedgerOrder {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "代購社團",
-            category: "精品",
+            categories: ["精品"],
             paymentMethod: "",
             notes: "報價中，待客戶確認顏色後再下單。",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         ),
         LedgerOrder(
             id: "BL-2604-014",
@@ -206,14 +210,15 @@ extension LedgerOrder {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "蝦皮",
-            category: "美妝",
+            categories: ["美妝"],
             paymentMethod: "LINE Pay",
             notes: "已收訂金，尾款到貨後結清。",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         ),
         LedgerOrder(
             id: "BL-2604-013",
@@ -239,14 +244,15 @@ extension LedgerOrder {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "官方網站",
-            category: "美妝",
+            categories: ["美妝"],
             paymentMethod: "Apple Pay",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         ),
         LedgerOrder(
             id: "BL-2604-012",
@@ -276,14 +282,58 @@ extension LedgerOrder {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "Instagram",
-            category: "服飾",
+            categories: ["服飾"],
             paymentMethod: "信用卡",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
+        ),
+        LedgerOrder(
+            id: "BL-2604-011",
+            customer: LedgerCustomer(
+                name: "Mika 周",
+                initials: "MZ",
+                tier: .regular
+            ),
+            status: .shipping,
+            currency: .krw,
+            date: sampleDate(year: 2026, month: 4, day: 12),
+            items: [
+                LedgerOrderItem(
+                    name: "Hince 絲絨唇釉 #07",
+                    quantity: 1,
+                    unitPrice: 22_000
+                ),
+                LedgerOrderItem(
+                    name: "Matin Kim 寬版牛仔褲 (S)",
+                    quantity: 1,
+                    unitPrice: 79_000
+                ),
+            ],
+            itemCost: decimal("101000") * decimal("0.0228"),
+            domesticShipping: 60,
+            internationalShipping: 300,
+            foreignDomesticShipping: 0,
+            cardFeeRate: decimal("0.015"),
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 4_360,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "Instagram",
+            categories: ["美妝", "服飾"],
+            paymentMethod: "信用卡",
+            notes: "原訂單 A 備註。\n----------\n原訂單 B 備註。",
+            verificationStatus: "",
+            campaignNames: ["四月韓國團", "三月日本團"],
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false,
+            photos: [],
+            mergedSourceIDs: ["BL-2603-905", "BL-2603-906"]
         ),
     ]
 }

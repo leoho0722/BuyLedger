@@ -614,13 +614,8 @@ private extension DashboardView {
         .shipping
     ]
 
-    /// 視為「已實現」的訂單狀態集合 (用於本月損益)。
-    static let realizedStatuses: Set<OrderStatus> = [
-        .confirmed,
-        .purchased,
-        .shipping,
-        .delivered
-    ]
+    /// 視為「已實現」的訂單狀態集合 (用於本月損益)，引用 domain 層的單一事實來源。
+    static let realizedStatuses = OrderStatus.realizedStatuses
 
     /// 「近期訂單」列表顯示的筆數；同時控制 ``computeStats(orders:monthlyGoal:)`` 的 prefix 取數。
     static let recentOrdersCount = 4

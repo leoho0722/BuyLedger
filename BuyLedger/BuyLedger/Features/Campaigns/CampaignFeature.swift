@@ -295,7 +295,7 @@ struct CampaignFeature {
     /// 開團主檔資料來源。
     @Dependency(CampaignRepository.self) private var campaignRepository
 
-    /// 訂單資料來源；開團改名時用於 cascade 更新所有歸屬訂單的 ``LedgerOrder/campaignName`` (DB 端)。
+    /// 訂單資料來源；開團改名時用於 cascade 更新所有歸屬訂單的 ``LedgerOrder/campaignNames`` (DB 端)。
     @Dependency(OrderRepository.self) private var orderRepository
 
     /// 用於新開團的日期來源，方便在測試中注入固定值。

@@ -46,9 +46,9 @@ struct CampaignIntegrationTests {
 
         await store.send(.campaigns(.campaignRenamed(from: "舊團", to: "新團")))
 
-        #expect(store.state.orders.orders.filter { $0.campaignName == "新團" }.map(\.id) == ["O1", "O2"])
-        #expect(store.state.orders.orders.filter { $0.campaignName == "舊團" }.isEmpty)
-        #expect(store.state.orders.orders.first { $0.id == "O3" }?.campaignName == "")
+        #expect(store.state.orders.orders.filter { $0.campaignNames == ["新團"] }.map(\.id) == ["O1", "O2"])
+        #expect(store.state.orders.orders.filter { $0.campaignNames == ["舊團"] }.isEmpty)
+        #expect(store.state.orders.orders.first { $0.id == "O3" }?.campaignNames.isEmpty == true)
         #expect(store.state.orders.campaigns.map(\.name) == ["新團"])
     }
 
@@ -142,14 +142,15 @@ struct CampaignIntegrationTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "",
-            category: "",
+            categories: [],
             paymentMethod: "",
             notes: "",
             verificationStatus: "",
-            campaignName: campaign,
+            campaignNames: campaign.isEmpty ? [] : [campaign],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
     }
 

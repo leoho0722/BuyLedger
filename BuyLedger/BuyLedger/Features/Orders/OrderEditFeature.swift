@@ -31,8 +31,10 @@ struct OrderEditFeature {
         /// 訂單來源草稿。
         var draftOrderSource: String
 
-        /// 商品類別草稿。
-        var draftCategory: String
+        /// 商品類別草稿 (至少一個才可儲存)。
+        ///
+        /// 一般訂單編輯為單選、維持單元素陣列；合併情境 (``isMergeContext``) 才開放多選。
+        var draftCategories: [String]
 
         /// 訂單狀態草稿。
         var draftStatus: OrderStatus
@@ -89,8 +91,10 @@ struct OrderEditFeature {
         /// 僅在 ``showsVerificationStatusRow`` 為 `true` 時於 UI 顯示與編輯；切換到非無卡／非銀行匯款付款方式時，父層 `applyEditDraft` 會在儲存時清成空字串。
         var draftVerificationStatus: String
 
-        /// 歸屬開團名稱草稿；空字串代表未歸團 (散單)。僅能從 ``availableCampaigns`` 既有開團中選擇，不在此表單內新增開團。
-        var draftCampaignName: String
+        /// 歸屬開團名稱草稿；空陣列代表未歸團 (散單)。僅能從 ``availableCampaigns`` 既有開團中選擇，不在此表單內新增開團。
+        ///
+        /// 一般訂單編輯為單選、維持單元素陣列；合併情境 (``isMergeContext``) 才開放多選。
+        var draftCampaignNames: [String]
 
         /// 收款狀態草稿 (待收款／已收款)；對所有付款方式皆顯示。
         var draftPaymentReceiptStatus: PaymentReceiptStatus
@@ -100,6 +104,11 @@ struct OrderEditFeature {
 
         /// PhotosPicker 的當前選取項目；one-shot 模式——匯入完成即清空，讓下次開啟 picker 重新選取。
         var photoPickerSelection: [PhotosPickerItem] = []
+
+        /// 合併來源訂單編號；非空代表這是「合併訂單」的確認草稿。
+        ///
+        /// 由 ``OrdersFeature`` 在合併流程建立草稿時填入；儲存時父層據此把舊單轉「已合併」並把這組 id 寫入新訂單的 ``LedgerOrder/mergedSourceIDs``。一般編輯／新增流程一律為空陣列。
+        var mergeSourceIDs: [LedgerOrder.ID] = []
 
         /// 可供選擇的訂單來源清單；由父層 reducer 從現有訂單與主檔聚合後注入，並在使用者新增來源時即時擴充。
         var availableOrderSources: [String]
@@ -156,6 +165,30 @@ struct OrderEditFeature {
             isSelectedPaymentMethodCardless || isSelectedPaymentMethodBankTransfer
         }
 
+        /// 是否處於合併情境：本草稿是合併確認草稿 (``mergeSourceIDs`` 非空)，或正在編輯由合併產生的訂單。
+        ///
+        /// 類別與開團僅在此情境改用多選 picker；一般訂單編輯維持單選體驗。
+        var isMergeContext: Bool {
+            !mergeSourceIDs.isEmpty || !(original?.mergedSourceIDs.isEmpty ?? true)
+        }
+
+        /// 狀態 Picker 的可選清單。
+        ///
+        /// 「已合併」只能由合併流程寫入，不開放手動選擇；僅當目前狀態已是「已合併」時保留該選項 (顯示現值，並作為誤合併後把舊單改回其他狀態的手動回復路徑)。
+        var availableStatuses: [OrderStatus] {
+            OrderStatus.allCases.filter { $0 != .merged || draftStatus == .merged }
+        }
+
+        /// 類別 trigger row 的顯示文字：以「、」串接已選類別；未選任何類別時為空字串 (由 view 顯示 placeholder)。
+        var categoriesDisplayText: String {
+            draftCategories.joined(separator: "、")
+        }
+
+        /// 開團 trigger row 的顯示文字：以「、」串接已選開團；未選任何開團時顯示「未歸團」。
+        var campaignsDisplayText: String {
+            draftCampaignNames.isEmpty ? "未歸團" : draftCampaignNames.joined(separator: "、")
+        }
+
         /// 還可加入的照片張數；供 PhotosPicker 的 `maxSelectionCount` 與計數標籤使用。
         var remainingPhotoCapacity: Int {
             max(0, LedgerOrder.maxPhotoCount - draftPhotos.count)
@@ -189,7 +222,7 @@ struct OrderEditFeature {
             self.original = original
             self.draftCustomerName = original?.customer.name ?? ""
             self.draftOrderSource = original?.orderSource ?? ""
-            self.draftCategory = original?.category ?? ""
+            self.draftCategories = original?.categories ?? []
             self.draftStatus = original?.status ?? .quoting
             self.draftCurrency = original?.currency ?? .twd
             self.draftChargedAmount = original?.chargedAmount ?? 0
@@ -207,7 +240,7 @@ struct OrderEditFeature {
             self.draftDate = original?.date ?? currentDate
             self.draftPaymentMethod = original?.paymentMethod ?? ""
             self.draftVerificationStatus = original?.verificationStatus ?? ""
-            self.draftCampaignName = original?.campaignName ?? ""
+            self.draftCampaignNames = original?.campaignNames ?? []
             self.draftPaymentReceiptStatus = original?.paymentReceiptStatus ?? .pending
             self.draftPhotos = original?.photos ?? []
 
@@ -219,9 +252,10 @@ struct OrderEditFeature {
             self.availableOrderSources = orderSources.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
 
             var categories = availableCategories
-            let originalCategory = original?.category.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            if !originalCategory.isEmpty, !categories.contains(originalCategory) {
-                categories.append(originalCategory)
+            for originalCategory in (original?.categories ?? []).map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) }) {
+                if !originalCategory.isEmpty, !categories.contains(originalCategory) {
+                    categories.append(originalCategory)
+                }
             }
             self.availableCategories = categories.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
 
@@ -242,9 +276,10 @@ struct OrderEditFeature {
             self.availableVerificationStatuses = verificationStatuses.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
 
             var campaigns = availableCampaigns
-            let originalCampaign = original?.campaignName.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            if !originalCampaign.isEmpty, !campaigns.contains(originalCampaign) {
-                campaigns.append(originalCampaign)
+            for originalCampaign in (original?.campaignNames ?? []).map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) }) {
+                if !originalCampaign.isEmpty, !campaigns.contains(originalCampaign) {
+                    campaigns.append(originalCampaign)
+                }
             }
             self.availableCampaigns = campaigns.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
 
@@ -279,6 +314,18 @@ struct OrderEditFeature {
 
         /// 使用者透過「新增類別」彈窗確認新增一筆類別名稱。
         case addCategoryTapped(String)
+
+        /// 單選模式下選擇一個商品類別 (覆寫為單元素陣列)。
+        case categorySelected(String)
+
+        /// 多選模式 (合併情境) 下 toggle 一個商品類別的選取狀態。
+        case categoryToggled(String)
+
+        /// 單選模式下選擇一個開團；空字串代表未歸團。
+        case campaignSelected(String)
+
+        /// 多選模式 (合併情境) 下 toggle 一個開團的選取狀態。
+        case campaignToggled(String)
 
         /// 使用者透過「新增付款方式」sheet 確認新增一筆付款方式，含「是否為無卡類」「是否為銀行匯款類」與「是否為貨到付款類」旗標。
         case addPaymentMethodTapped(name: String, isCardless: Bool, isBankTransfer: Bool, isCashOnDelivery: Bool)
@@ -382,7 +429,42 @@ struct OrderEditFeature {
                         $0.localizedStandardCompare($1) == .orderedAscending
                     }
                 }
-                state.draftCategory = trimmed
+                if state.isMergeContext {
+                    // 多選情境：新增的類別直接加入選取，不覆蓋既有選取。
+                    if !state.draftCategories.contains(trimmed) {
+                        state.draftCategories.append(trimmed)
+                    }
+                } else {
+                    state.draftCategories = [trimmed]
+                }
+                return .none
+
+            case let .categorySelected(name):
+                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else { return .none }
+
+                state.draftCategories = [trimmed]
+                return .none
+
+            case let .categoryToggled(name):
+                if let index = state.draftCategories.firstIndex(of: name) {
+                    state.draftCategories.remove(at: index)
+                } else {
+                    state.draftCategories.append(name)
+                }
+                return .none
+
+            case let .campaignSelected(name):
+                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                state.draftCampaignNames = trimmed.isEmpty ? [] : [trimmed]
+                return .none
+
+            case let .campaignToggled(name):
+                if let index = state.draftCampaignNames.firstIndex(of: name) {
+                    state.draftCampaignNames.remove(at: index)
+                } else {
+                    state.draftCampaignNames.append(name)
+                }
                 return .none
 
             case let .addPaymentMethodTapped(rawName, isCardless, isBankTransfer, isCashOnDelivery):
@@ -463,10 +545,9 @@ struct OrderEditFeature {
                 return .none
 
             case let .availableCategoriesLoaded(items):
-                // 合併：把目前 draftCategory (可能是剛在 sheet 內新增、尚未走完整 add → repo 來回) 保留在清單。
+                // 合併：把目前 draftCategories (可能含剛在 sheet 內新增、尚未走完整 add → repo 來回的項目) 保留在清單。
                 var merged = Set(items)
-                let draftCategory = state.draftCategory.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !draftCategory.isEmpty {
+                for draftCategory in state.draftCategories.map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) }) where !draftCategory.isEmpty {
                     merged.insert(draftCategory)
                 }
                 state.availableCategories = merged

@@ -13,38 +13,166 @@ The orders list SHALL provide a product-category filter that coexists with the e
 #### Scenario: Select a specific category
 
 - **WHEN** the user selects a specific category in the filter
-- **THEN** the orders list shows only orders whose category equals the selected category, while still honoring the active status, date-period, and search filters
+- **THEN** the orders list shows only orders whose category list contains the selected category, while still honoring the active status, date-period, and search filters
 
 #### Scenario: Select all categories
 
 - **WHEN** the user selects the "all categories" option
 - **THEN** the category constraint is cleared and the orders list is no longer narrowed by category
 
+
+<!-- @trace
+source: add-order-merge
+updated: 2026-06-07
+code:
+  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+  - BuyLedger/BuyLedgerTests/InsightsAttributionTests.swift
+  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
+  - BuyLedger/BuyLedger/Features/Insights/InsightsView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
+  - BuyLedger/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - BuyLedger/BuyLedgerTests/OrderStatusTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
+  - BuyLedger/BuyLedgerTests/OrderMergeTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Campaigns/CampaignSummary.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderStatus+Presentation.swift
+  - BuyLedger/BuyLedger/Features/Dashboard/DashboardView.swift
+  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - BuyLedger/BuyLedger/Core/Domain/Campaign.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
+  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/OrderMerge.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - BuyLedger/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
+  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - BuyLedger/BuyLedger/Core/Domain/OrderStatus.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderDetailView.swift
+  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderStatusFilter.swift
+-->
+
 ---
 ### Requirement: Category filter combines with existing filters
 
-The filtered orders result SHALL be the conjunction of the status, search, date-period, and category predicates. A category constraint SHALL match an order only when the order's category equals the selected category.
+The filtered orders result SHALL be the conjunction of the status, search, date-period, and category predicates. A category constraint SHALL match an order only when the order's category list contains the selected category.
 
 #### Scenario: Category combined with status filter
 
 - **WHEN** both a status filter and a category filter are active
 - **THEN** only orders matching both the status and the category appear in the list
 
-##### Example: conjunction of filters
+##### Example: conjunction of filters with multi-category orders
 
-- **GIVEN** orders: O1(category="beauty", status=purchased), O2(category="beauty", status=quoting), O3(category="snacks", status=purchased)
+- **GIVEN** orders: O1(categories=["beauty"], status=purchased), O2(categories=["beauty", "snacks"], status=quoting), O3(categories=["snacks"], status=purchased), O4(categories=["beauty", "snacks"], status=purchased)
 - **WHEN** the status filter is "purchased" and the category filter is "beauty"
-- **THEN** the list shows only O1
+- **THEN** the list shows exactly { O1, O4 }
 
 #### Scenario: Selection recomputes the active selection
 
 - **WHEN** the user changes the category filter
 - **THEN** the system recomputes the currently selected order to the first order of the newly filtered list
 
+
+<!-- @trace
+source: add-order-merge
+updated: 2026-06-07
+code:
+  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+  - BuyLedger/BuyLedgerTests/InsightsAttributionTests.swift
+  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
+  - BuyLedger/BuyLedger/Features/Insights/InsightsView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
+  - BuyLedger/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - BuyLedger/BuyLedgerTests/OrderStatusTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
+  - BuyLedger/BuyLedgerTests/OrderMergeTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Campaigns/CampaignSummary.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderStatus+Presentation.swift
+  - BuyLedger/BuyLedger/Features/Dashboard/DashboardView.swift
+  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - BuyLedger/BuyLedger/Core/Domain/Campaign.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
+  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/OrderMerge.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - BuyLedger/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
+  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - BuyLedger/BuyLedger/Core/Domain/OrderStatus.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderDetailView.swift
+  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderStatusFilter.swift
+-->
+
 ---
 ### Requirement: Deep link from analytics applies the category filter
 
-When the user taps a category row in the analytics page's category ranking, the app SHALL navigate to the orders tab and apply the tapped category as the active category filter on the orders list. The active category filter value SHALL drive both the orders list filtering and the visual state of the category filter trigger button and picker sheet (trigger label and picker selected-row indicator compare against the active category filter value). The orders list SHALL be filtered by exact match on each order's `category` field — it SHALL NOT rely on text search to approximate the filter.
+When the user taps a category row in the analytics page's category ranking, the app SHALL navigate to the orders tab and apply the tapped category as the active category filter on the orders list. The active category filter value SHALL drive both the orders list filtering and the visual state of the category filter trigger button and picker sheet (trigger label and picker selected-row indicator compare against the active category filter value). The orders list SHALL be filtered by containment against each order's category list — it SHALL NOT rely on text search to approximate the filter.
 
 #### Scenario: Tapping a category row navigates and applies the filter
 
@@ -53,11 +181,11 @@ When the user taps a category row in the analytics page's category ranking, the 
 - **AND** the orders list's active category filter equals "beauty"
 - **AND** the category filter trigger button label reads `類別：beauty` and the trigger background uses the active-selection style
 - **AND** opening the picker sheet shows the `beauty` row as the currently selected row
-- **AND** the orders list contains exactly those orders whose `category` field equals "beauty"
+- **AND** the orders list contains exactly those orders whose category list contains "beauty"
 
 ##### Example: deep link with mixed-category data
 
-- **GIVEN** orders: O1(category="beauty", customer="Alice"), O2(category="snacks", customer="Beauty Bob"), O3(category="beauty", customer="Carol")
+- **GIVEN** orders: O1(categories=["beauty"], customer="Alice"), O2(categories=["snacks"], customer="Beauty Bob"), O3(categories=["beauty", "snacks"], customer="Carol")
 - **WHEN** the user taps the "beauty" row in the analytics category ranking
 - **THEN** the orders list contains exactly { O1, O3 } and excludes O2, even though O2's customer name contains the substring "Beauty"
 
@@ -71,15 +199,66 @@ When the user taps a category row in the analytics page's category ranking, the 
 
 
 <!-- @trace
-source: orders-category-filter-sheet-picker
-updated: 2026-05-29
+source: add-order-merge
+updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
   - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+  - BuyLedger/BuyLedgerTests/InsightsAttributionTests.swift
+  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
+  - BuyLedger/BuyLedger/Features/Insights/InsightsView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
+  - BuyLedger/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - BuyLedger/BuyLedgerTests/OrderStatusTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
+  - BuyLedger/BuyLedgerTests/OrderMergeTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Campaigns/CampaignSummary.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderStatus+Presentation.swift
+  - BuyLedger/BuyLedger/Features/Dashboard/DashboardView.swift
+  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - BuyLedger/BuyLedger/Core/Domain/Campaign.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
+  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/OrderMerge.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - BuyLedger/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
+  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - BuyLedger/BuyLedger/Core/Domain/OrderStatus.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderDetailView.swift
+  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderStatusFilter.swift
 -->
 
 ---
@@ -173,7 +352,7 @@ Tapping the trigger button SHALL present a category picker sheet that:
 - **THEN** the active category filter equals "beauty"
 - **AND** the picker sheet dismisses
 - **AND** the trigger button label reads `類別：beauty` and the trigger background uses the active-selection style
-- **AND** the orders list is filtered to orders whose `category` equals "beauty" (combined with any other active filters)
+- **AND** the orders list is filtered to orders whose category list contains "beauty" (combined with any other active filters)
 - **AND** reopening the picker sheet shows `beauty` as the currently selected row
 
 #### Scenario: Selecting the clear row from the picker sheet clears the filter
@@ -200,14 +379,64 @@ Tapping the trigger button SHALL present a category picker sheet that:
 - **AND** the active category filter remains cleared
 
 <!-- @trace
-source: orders-unified-filter-sheet
-updated: 2026-05-29
+source: add-order-merge
+updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
   - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
   - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+  - BuyLedger/BuyLedgerTests/InsightsAttributionTests.swift
+  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
+  - BuyLedger/BuyLedger/Features/Insights/InsightsView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
+  - BuyLedger/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - BuyLedger/BuyLedgerTests/OrderStatusTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
+  - BuyLedger/BuyLedgerTests/OrderMergeTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Campaigns/CampaignSummary.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderStatus+Presentation.swift
+  - BuyLedger/BuyLedger/Features/Dashboard/DashboardView.swift
+  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - BuyLedger/BuyLedger/Core/Domain/Campaign.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
+  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/OrderMerge.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - BuyLedger/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
+  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - BuyLedger/BuyLedger/Core/Domain/OrderStatus.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderDetailView.swift
+  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderStatusFilter.swift
 -->

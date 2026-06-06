@@ -64,14 +64,15 @@ struct SnapshotTests {
                 cardlessDeductionAmount: 0,
                 cardlessSupplementAmount: 0,
                 orderSource: "蝦皮",
-                category: "aespa Lemonade QQ 音樂限定禮包",
+                categories: ["aespa Lemonade QQ 音樂限定禮包"],
                 paymentMethod: "信用卡",
                 notes: "",
                 verificationStatus: "",
-                campaignName: "",
+                campaignNames: [],
                 paymentReceiptStatus: .pending,
                 isCashOnDelivery: false,
-                photos: []
+                photos: [],
+                mergedSourceIDs: []
             )
 
             let state: OrdersFeature.State = {
@@ -139,6 +140,21 @@ struct SnapshotTests {
         }
     }
 
+    @Test func orderEditViewMergeContextBaseline() {
+        // 合併產生的訂單：類別/開團為多選 trigger row (「、」串接顯示)；金額與明細欄位與一般訂單相同、維持可編輯。
+        TestDependencies.withFixedNow {
+            let mergedOrder = LedgerOrder.sampleOrders.first { !$0.mergedSourceIDs.isEmpty }!
+            let state = OrderEditFeature.State(original: mergedOrder)
+
+            let view = OrderEditView(
+                store: Store(initialState: state) { OrderEditFeature() }
+            )
+                .frame(width: 393, height: 852)
+
+            assertSnapshot(of: view, as: .image)
+        }
+    }
+
     @Test func orderDetailCostBreakdownBaseline() {
         TestDependencies.withFixedNow {
             // 同時帶有刷卡、平台與金流手續費的訂單，用於驗證成本拆解 chart 將三種手續費分別列出。
@@ -162,14 +178,15 @@ struct SnapshotTests {
                 cardlessDeductionAmount: 0,
                 cardlessSupplementAmount: 0,
                 orderSource: "示範",
-                category: "美妝",
+                categories: ["美妝"],
                 paymentMethod: "信用卡",
                 notes: "",
                 verificationStatus: "",
-                campaignName: "",
+                campaignNames: [],
                 paymentReceiptStatus: .pending,
                 isCashOnDelivery: false,
-                photos: []
+                photos: [],
+                mergedSourceIDs: []
             )
 
             let view = OrderDetailView(order: order)

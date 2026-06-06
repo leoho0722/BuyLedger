@@ -54,7 +54,8 @@ struct OrdersFeatureTests {
             $0.selectedOrderID = "BL-2604-017"
         }
 
-        #expect(store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar).map(\.id) == ["BL-2604-017"])
+        // 樣本中 "Mika 周" 有兩筆訂單 (BL-2604-017 與合併樣本 BL-2604-011)，依日期由新到舊排序。
+        #expect(store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar).map(\.id) == ["BL-2604-017", "BL-2604-011"])
 
         await store.send(.searchTextChanged("Aesop")) {
             $0.searchText = "Aesop"
@@ -81,7 +82,8 @@ struct OrdersFeatureTests {
 
         let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
         #expect(filtered.allSatisfy { $0.status == .shipping })
-        #expect(filtered.map(\.id) == ["BL-2604-018"])
+        // 樣本中集運中的訂單有兩筆 (BL-2604-018 與合併樣本 BL-2604-011)。
+        #expect(filtered.map(\.id) == ["BL-2604-018", "BL-2604-011"])
     }
 
     @Test func editFlowPersistsCustomerNameAfterSave() async {
@@ -311,7 +313,7 @@ struct OrdersFeatureTests {
         let editState = store.state.editOrder
         #expect(editState?.original?.id == originalID)
         #expect(editState?.draftCustomerName == original.customer.name)
-        #expect(editState?.draftCategory == original.category)
+        #expect(editState?.draftCategories == original.categories)
     }
 
     @Test func newOrderTappedSetsEmptyEditState() async {
@@ -328,7 +330,7 @@ struct OrdersFeatureTests {
         let editState = store.state.editOrder
         #expect(editState?.original == nil)
         #expect(editState?.draftCustomerName.isEmpty == true)
-        #expect(editState?.draftCategory.isEmpty == true)
+        #expect(editState?.draftCategories.isEmpty == true)
     }
 
     @Test func editingExistingOrderKeepsSelection() async {
@@ -472,7 +474,7 @@ struct OrdersFeatureTests {
         // 新訂單 `date` 落在測試實際執行的當下，與下方斷言期待的 fixedDate 不符。
         var draft = OrderEditFeature.State(currentDate: fixedDate)
         draft.draftCustomerName = "新客戶"
-        draft.draftCategory = "美妝"
+        draft.draftCategories = ["美妝"]
 
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
@@ -500,10 +502,185 @@ struct OrdersFeatureTests {
         #expect(inserted?.id == expectedID)
         #expect(inserted?.customer.name == "新客戶")
         #expect(inserted?.customer.tier == .new)
-        #expect(inserted?.category == "美妝")
+        #expect(inserted?.categories == ["美妝"])
         #expect(inserted?.status == .quoting)
         #expect(inserted?.currency == .twd)
         #expect(inserted?.date == fixedDate)
+    }
+
+    @Test func saveNormalizesCategoryAndCampaignArrays() async {
+        // 儲存時逐元素 trim、去除空字串與重複 (保序)。
+        var draft = OrderEditFeature.State(currentDate: TestDependencies.fixedNow)
+        draft.draftCustomerName = "新客戶"
+        draft.draftCategories = [" 美妝 ", "美妝", "", "服飾", "   "]
+        draft.draftCampaignNames = ["四月韓國團", " 四月韓國團 ", ""]
+
+        var state = OrdersFeature.State()
+        state.editOrder = draft
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.uuid = .incrementing
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editOrder(.presented(.saveTapped)))
+        await store.finish()
+
+        let inserted = store.state.orders.first
+        #expect(inserted?.categories == ["美妝", "服飾"])
+        #expect(inserted?.campaignNames == ["四月韓國團"])
+        #expect(inserted?.mergedSourceIDs.isEmpty == true)
+    }
+
+    // MARK: - Merge Entry
+
+    @Test func mergeOrderTappedOpensCandidateSheet() async {
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+        let primaryID = "BL-2604-018"
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+        store.exhaustivity = .off
+
+        await store.send(.mergeOrderTapped(primaryID))
+
+        // 主訂單為林書宇 (KRW)：候選僅同幣別、同客戶且非已合併/已取消的 BL-2604-012。
+        #expect(store.state.orderMerge?.primary.id == primaryID)
+        #expect(store.state.orderMerge?.candidates.map(\.id) == ["BL-2604-012"])
+    }
+
+    @Test func mergeOrderTappedRejectsMergedAndCancelledPrimary() async {
+        var state = OrdersFeature.State()
+        state.orders = [
+            makeOrder(id: "M1", category: "美妝", status: .merged),
+            makeOrder(id: "C1", category: "美妝", status: .cancelled),
+        ]
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+        store.exhaustivity = .off
+
+        await store.send(.mergeOrderTapped("M1"))
+        #expect(store.state.orderMerge == nil)
+
+        await store.send(.mergeOrderTapped("C1"))
+        #expect(store.state.orderMerge == nil)
+    }
+
+    @Test func mergeCompletionOpensPrefilledDraft() async {
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+        let primaryID = "BL-2604-018"
+        let secondaryID = "BL-2604-012"
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            // 測試 target 未連結 swift-clocks 的 ImmediateClock，改注入真實 clock；延遲僅 0.5 秒，配合下方 finish timeout。
+            $0.continuousClock = ContinuousClock()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.mergeOrderTapped(primaryID))
+        await store.send(.orderMerge(.presented(.candidateTapped(secondaryID))))
+        // 依序收到：子 feature 的完成 delegate → 延遲一拍後的確認表單開啟。
+        await store.receive(\.orderMerge.presented.delegate)
+        await store.receive(\.mergeConfirmationReady, timeout: .seconds(3))
+
+        // 合併 sheet 收合、確認表單以合併草稿預填 (全部欄位可編輯)。
+        #expect(store.state.orderMerge == nil)
+
+        let edit = store.state.editOrder
+        #expect(edit?.mergeSourceIDs == [primaryID, secondaryID])
+        // 客戶實付加總：11,800 + 5,680。
+        #expect(edit?.draftChargedAmount == 17_480)
+        // 類別聯集：美妝 (主) + 服飾 (副)。
+        #expect(edit?.draftCategories == ["美妝", "服飾"])
+        // 訂購日期為合併當下。
+        #expect(edit?.draftDate == TestDependencies.fixedNow)
+        #expect(edit?.isMergeContext == true)
+    }
+
+    @Test func mergeDraftSaveCommitsNewOrderAndMarksSourcesMerged() async {
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+        let primaryID = "BL-2604-018"
+        let secondaryID = "BL-2604-012"
+
+        // 預塞合併確認草稿 (帶 mergeSourceIDs)，直接驗證 saveTapped 的合併寫回路徑。
+        var draft = OrderEditFeature.State(currentDate: TestDependencies.fixedNow)
+        draft.draftCustomerName = "林書宇"
+        draft.draftCategories = ["美妝", "服飾"]
+        draft.draftChargedAmount = 17_480
+        draft.mergeSourceIDs = [primaryID, secondaryID]
+        state.editOrder = draft
+
+        let originalCount = state.orders.count
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.uuid = .incrementing
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editOrder(.presented(.saveTapped)))
+        await store.finish()
+
+        // 新訂單插入且記錄來源 id；兩筆來源訂單轉「已合併」。
+        #expect(store.state.orders.count == originalCount + 1)
+
+        let inserted = store.state.orders.first
+        #expect(inserted?.mergedSourceIDs == [primaryID, secondaryID])
+        #expect(inserted?.categories == ["美妝", "服飾"])
+        // 合併草稿沿用主訂單客戶的 initials 與 tier。
+        #expect(inserted?.customer.initials == "SY")
+        #expect(inserted?.customer.tier == .vip)
+
+        #expect(store.state.orders.first { $0.id == primaryID }?.status == .merged)
+        #expect(store.state.orders.first { $0.id == secondaryID }?.status == .merged)
+    }
+
+    @Test func mergeDraftCancelLeavesOrdersUntouched() async {
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+
+        var draft = OrderEditFeature.State(currentDate: TestDependencies.fixedNow)
+        draft.mergeSourceIDs = ["BL-2604-018", "BL-2604-012"]
+        state.editOrder = draft
+
+        let snapshot = state.orders
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editOrder(.presented(.cancelTapped)))
+        await store.finish()
+
+        // 取消不留任何變更：筆數與每筆內容皆不變。
+        #expect(store.state.orders == snapshot)
     }
 
     // MARK: - Category Filter
@@ -511,7 +688,7 @@ struct OrdersFeatureTests {
     @Test func categoryFilterShowsMatchingCategoryOnly() async {
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
-        let targetCategory = LedgerOrder.sampleOrders.first!.category
+        let targetCategory = LedgerOrder.sampleOrders.first!.categories.first ?? ""
 
         let store = TestStore(initialState: state) {
             OrdersFeature()
@@ -522,7 +699,7 @@ struct OrdersFeatureTests {
 
         let expectedFirstID = state
             .filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
-            .first { $0.category == targetCategory }?
+            .first { ($0.categories.first ?? "") == targetCategory }?
             .id
 
         await store.send(.categoryFilterSelected(targetCategory)) {
@@ -532,7 +709,7 @@ struct OrdersFeatureTests {
 
         let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
         #expect(!filtered.isEmpty)
-        #expect(filtered.allSatisfy { $0.category == targetCategory })
+        #expect(filtered.allSatisfy { ($0.categories.first ?? "") == targetCategory })
 
         await store.send(.categoryFilterSelected(nil)) {
             $0.selectedCategory = nil
@@ -683,6 +860,105 @@ struct OrdersFeatureTests {
         #expect(store.state.aiSummary == nil)
     }
 
+    // MARK: - Multi-Value Filter (contains)
+
+    @Test func categoryFilterMatchesAnyAssignedCategory() async {
+        // 多類別訂單：類別陣列「包含」所選類別即命中。
+        var state = OrdersFeature.State()
+        state.orders = [
+            makeOrder(id: "O1", categories: ["beauty"], status: .purchased),
+            makeOrder(id: "O2", categories: ["beauty", "snacks"], status: .quoting),
+            makeOrder(id: "O3", categories: ["snacks"], status: .purchased),
+            makeOrder(id: "O4", categories: ["beauty", "snacks"], status: .purchased),
+        ]
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+        store.exhaustivity = .off
+
+        // 類別 beauty + 狀態已下單：spec 例「conjunction of filters with multi-category orders」。
+        await store.send(.statusFilterSelected(.status(.purchased)))
+        await store.send(.categoryFilterSelected("beauty"))
+
+        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
+        #expect(filtered.map(\.id) == ["O1", "O4"])
+    }
+
+    @Test func specificCampaignFilterMatchesAnyAssignedCampaign() async {
+        // spec 例「specific-campaign filter with multi-campaign orders」。
+        var state = OrdersFeature.State()
+        state.orders = [
+            makeOrder(id: "O1", categories: ["x"], campaignNames: ["May-JP"]),
+            makeOrder(id: "O2", categories: ["x"], campaignNames: ["May-JP", "June-KR"]),
+            makeOrder(id: "O3", categories: ["x"], campaignNames: ["June-KR"]),
+            makeOrder(id: "O4", categories: ["x"], campaignNames: []),
+        ]
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+        store.exhaustivity = .off
+
+        await store.send(.campaignFilterSelected("May-JP"))
+
+        let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
+        #expect(filtered.map(\.id) == ["O1", "O2"])
+    }
+
+    @Test func campaignStatusFilterMatchesWhenAnyAssignedCampaignHasStatus() async {
+        // spec 例「campaign-status filter with multi-campaign orders」：跨團 (一進行中、一已收單) 的訂單兩種篩選都命中。
+        var state = OrdersFeature.State()
+        state.campaigns = [
+            Campaign(
+                id: "C-ONGOING",
+                name: "May-JP",
+                openDate: TestDependencies.fixedNow,
+                closeDate: TestDependencies.fixedNow,
+                status: .ongoing,
+                settledDate: nil,
+                notes: ""
+            ),
+            Campaign(
+                id: "C-CLOSED",
+                name: "April-KR",
+                openDate: TestDependencies.fixedNow,
+                closeDate: TestDependencies.fixedNow,
+                status: .closed,
+                settledDate: nil,
+                notes: ""
+            ),
+        ]
+        state.orders = [
+            makeOrder(id: "O1", categories: ["x"], campaignNames: ["May-JP"]),
+            makeOrder(id: "O2", categories: ["x"], campaignNames: ["April-KR"]),
+            makeOrder(id: "O3", categories: ["x"], campaignNames: ["April-KR", "May-JP"]),
+            makeOrder(id: "O4", categories: ["x"], campaignNames: []),
+        ]
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+        store.exhaustivity = .off
+
+        await store.send(.campaignStatusFilterSelected(.ongoing))
+        var filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
+        #expect(filtered.map(\.id) == ["O1", "O3"])
+
+        await store.send(.campaignStatusFilterSelected(.closed))
+        filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
+        #expect(filtered.map(\.id) == ["O2", "O3"])
+    }
+
     // MARK: - Helpers
 
     /// 建立僅供篩選測試使用的最小訂單；非相關欄位以零值/佔位填入。
@@ -691,6 +967,17 @@ struct OrdersFeatureTests {
         category: String,
         status: OrderStatus = .quoting,
         paymentMethod: String = "付款"
+    ) -> LedgerOrder {
+        makeOrder(id: id, categories: [category], status: status, paymentMethod: paymentMethod)
+    }
+
+    /// 多類別/多開團版本的最小訂單 helper。
+    private func makeOrder(
+        id: String,
+        categories: [String],
+        status: OrderStatus = .quoting,
+        paymentMethod: String = "付款",
+        campaignNames: [String] = []
     ) -> LedgerOrder {
         LedgerOrder(
             id: id,
@@ -710,14 +997,15 @@ struct OrdersFeatureTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "來源",
-            category: category,
+            categories: categories,
             paymentMethod: paymentMethod,
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: campaignNames,
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
     }
 }

@@ -79,8 +79,8 @@ final class OrderRecord {
     /// 帶 default value 讓 SwiftData 對既有資料庫做 lightweight migration：舊 row 升級時自動填空字串，不需要寫顯式 migration plan。
     var orderSource: String = ""
 
-    /// 商品類別。
-    var category: String
+    /// 商品類別清單 (V11 起為字串陣列；至少一個，由編輯流程守門)。
+    var categories: [String] = []
 
     /// 付款方式。
     ///
@@ -97,10 +97,8 @@ final class OrderRecord {
     /// 帶 default value 讓 SwiftData 對既有資料庫做 lightweight migration：舊 row 升級時自動填空字串。僅在 ``paymentMethod`` 對應的付款方式屬於無卡或銀行匯款時，編輯表單才會顯示並寫入此值。
     var verificationStatus: String = ""
 
-    /// 歸屬的開團名稱。
-    ///
-    /// 帶 default value 讓 SwiftData 對既有資料庫做 lightweight migration：舊 row 升級時自動填空字串 (散單)。
-    var campaignName: String = ""
+    /// 歸屬的開團名稱清單 (V11 起為字串陣列；空陣列代表未歸團)。
+    var campaignNames: [String] = []
 
     /// 收款狀態的 rawValue (待收款／已收款)。
     ///
@@ -116,6 +114,11 @@ final class OrderRecord {
     ///
     /// 帶 default 空陣列走 SwiftData lightweight migration：舊 row 升級時自動填空陣列。張數上限由 ``LedgerOrder/maxPhotoCount`` 於編輯流程守門，持久層不重複驗證。
     var photos: [Data] = []
+
+    /// 合併來源訂單編號 (V11 新增)。
+    ///
+    /// 由「合併訂單」產生的新訂單記錄兩筆來源訂單 id；非合併產生的訂單一律為空陣列。
+    var mergedSourceIDs: [String] = []
 
     // MARK: - Init
 
@@ -139,14 +142,15 @@ final class OrderRecord {
         self.cardlessDeductionAmount = order.cardlessDeductionAmount
         self.cardlessSupplementAmount = order.cardlessSupplementAmount
         self.orderSource = order.orderSource
-        self.category = order.category
+        self.categories = order.categories
         self.paymentMethod = order.paymentMethod
         self.notes = order.notes
         self.verificationStatus = order.verificationStatus
-        self.campaignName = order.campaignName
+        self.campaignNames = order.campaignNames
         self.paymentReceiptStatus = order.paymentReceiptStatus.rawValue
         self.isCashOnDelivery = order.isCashOnDelivery
         self.photos = order.photos
+        self.mergedSourceIDs = order.mergedSourceIDs
     }
 }
 
@@ -177,14 +181,15 @@ extension OrderRecord {
             cardlessDeductionAmount: cardlessDeductionAmount,
             cardlessSupplementAmount: cardlessSupplementAmount,
             orderSource: orderSource,
-            category: category,
+            categories: categories,
             paymentMethod: paymentMethod,
             notes: notes,
             verificationStatus: verificationStatus,
-            campaignName: campaignName,
+            campaignNames: campaignNames,
             paymentReceiptStatus: PaymentReceiptStatus(rawValue: paymentReceiptStatus) ?? .pending,
             isCashOnDelivery: isCashOnDelivery,
-            photos: photos
+            photos: photos,
+            mergedSourceIDs: mergedSourceIDs
         )
     }
 
@@ -207,13 +212,14 @@ extension OrderRecord {
         self.cardlessDeductionAmount = order.cardlessDeductionAmount
         self.cardlessSupplementAmount = order.cardlessSupplementAmount
         self.orderSource = order.orderSource
-        self.category = order.category
+        self.categories = order.categories
         self.paymentMethod = order.paymentMethod
         self.notes = order.notes
         self.verificationStatus = order.verificationStatus
-        self.campaignName = order.campaignName
+        self.campaignNames = order.campaignNames
         self.paymentReceiptStatus = order.paymentReceiptStatus.rawValue
         self.isCashOnDelivery = order.isCashOnDelivery
         self.photos = order.photos
+        self.mergedSourceIDs = order.mergedSourceIDs
     }
 }

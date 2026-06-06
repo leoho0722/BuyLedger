@@ -97,11 +97,13 @@ struct CampaignSummary: Equatable, Sendable {
     // MARK: - Init
 
     /// 依開團名稱與全部訂單建立彙總。
+    ///
+    /// 成員規則 (統計歸屬採「合併前收益」)：僅「葉端訂單」(非由合併產生) 且 ``LedgerOrder/campaignNames`` 包含該名稱者；由合併產生的新訂單不是成員，其收益由合併前舊單以原始金額與收款狀態入帳，避免重複計算。除此之外不加新的狀態過濾——分貨清單本來就需要報價中／已確認訂單。
     /// - Parameters:
     ///   - campaignName: 開團名稱 (作為歸屬鍵)。
-    ///   - allOrders: 全部訂單；本型別只取 ``LedgerOrder/campaignName`` 與其相符者。
+    ///   - allOrders: 全部訂單。
     init(campaignName: String, orders allOrders: [LedgerOrder]) {
-        let members = allOrders.filter { $0.campaignName == campaignName }
+        let members = allOrders.filter { !$0.isMergeResult && $0.campaignNames.contains(campaignName) }
         self.memberOrders = members
         self.orderCount = members.count
 
@@ -123,7 +125,8 @@ struct CampaignSummary: Equatable, Sendable {
         self.margin = totalRevenue == 0 ? 0 : profit / totalRevenue
 
         self.deliveredCount = members.filter { $0.status == .delivered }.count
-        self.activeCount = members.filter { $0.status != .cancelled }.count
+        // 到貨進度分母排除已取消與已合併——被合併的舊單已不再各自等待到貨。
+        self.activeCount = members.filter { $0.status != .cancelled && $0.status != .merged }.count
         self.deliveryRatio = activeCount == 0
             ? 0
             : Double(deliveredCount) / Double(activeCount)

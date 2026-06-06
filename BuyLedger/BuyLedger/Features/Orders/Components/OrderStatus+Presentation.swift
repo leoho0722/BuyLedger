@@ -26,6 +26,8 @@ extension OrderStatus {
             .success
         case .cancelled:
             .destructive
+        case .merged:
+            .neutral
         }
     }
 }

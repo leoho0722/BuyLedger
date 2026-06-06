@@ -49,6 +49,9 @@ struct OrdersView: View {
             .sheet(item: $store.scope(state: \.aiSummary, action: \.aiSummary)) { summaryStore in
                 AISummaryView(store: summaryStore)
             }
+            .sheet(item: $store.scope(state: \.orderMerge, action: \.orderMerge)) { mergeStore in
+                OrderMergeCandidateSheet(store: mergeStore)
+            }
             .alert($store.scope(state: \.deletionConfirmation, action: \.deletionConfirmation))
             .alert($store.scope(state: \.aiDisabledAlert, action: \.aiDisabledAlert))
     }
@@ -210,6 +213,14 @@ private extension OrdersView {
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
+                        if order.status != .merged, order.status != .cancelled {
+                            Button {
+                                store.send(.mergeOrderTapped(order.id))
+                            } label: {
+                                Label("合併訂單", systemImage: "arrow.triangle.merge")
+                            }
+                        }
+
                         Button(role: .destructive) {
                             store.send(.deleteOrderTapped(order.id))
                         } label: {
@@ -433,6 +444,15 @@ private extension OrdersView {
 
             statusUpdateMenu(order: order)
 
+            if order.status != .merged, order.status != .cancelled {
+                Button("合併") {
+                    store.send(.mergeOrderTapped(order.id))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel("合併訂單")
+            }
+
             Button("編輯") {
                 store.send(.editOrderTapped(order.id))
             }
@@ -459,13 +479,13 @@ private extension OrdersView {
         }
     }
 
-    /// 詳情頁右上角的「更新狀態」menu，列出所有 ``OrderStatus``，目前狀態加 checkmark。
+    /// 詳情頁右上角的「更新狀態」menu，目前狀態加 checkmark；「已合併」只能由合併流程寫入，僅當目前狀態已是已合併時保留該選項。
     /// - Parameter order: 對應訂單。
     /// - Returns: menu view。
     @ViewBuilder
     func statusUpdateMenu(order: LedgerOrder) -> some View {
         Menu {
-            ForEach(OrderStatus.allCases) { status in
+            ForEach(OrderStatus.allCases.filter { $0 != .merged || order.status == .merged }) { status in
                 Button {
                     store.send(.statusChanged(order.id, status))
                 } label: {

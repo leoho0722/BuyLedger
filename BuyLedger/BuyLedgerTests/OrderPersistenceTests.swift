@@ -72,14 +72,15 @@ struct OrderPersistenceTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "蝦皮",
-            category: "美妝",
+            categories: ["美妝"],
             paymentMethod: "",
             notes: "建立時的備註",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         try await persistence.upsert(order)
@@ -116,14 +117,15 @@ struct OrderPersistenceTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: original.orderSource,
-            category: original.category,
+            categories: original.categories,
             paymentMethod: original.paymentMethod,
             notes: "更新後的備註",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         try await persistence.upsert(modified)
@@ -157,14 +159,15 @@ struct OrderPersistenceTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "蝦皮",
-            category: "美妝",
+            categories: ["美妝"],
             paymentMethod: "銀行匯款",
             notes: "",
             verificationStatus: "待對帳",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         try await persistence.upsert(order)
@@ -196,14 +199,15 @@ struct OrderPersistenceTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "蝦皮",
-            category: "美妝",
+            categories: ["美妝"],
             paymentMethod: "",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: [photoA, photoB]
+            photos: [photoA, photoB],
+            mergedSourceIDs: []
         )
 
         try await persistence.upsert(order)
@@ -230,14 +234,15 @@ struct OrderPersistenceTests {
             cardlessDeductionAmount: order.cardlessDeductionAmount,
             cardlessSupplementAmount: order.cardlessSupplementAmount,
             orderSource: order.orderSource,
-            category: order.category,
+            categories: order.categories,
             paymentMethod: order.paymentMethod,
             notes: order.notes,
             verificationStatus: order.verificationStatus,
-            campaignName: order.campaignName,
+            campaignNames: order.campaignNames,
             paymentReceiptStatus: order.paymentReceiptStatus,
             isCashOnDelivery: order.isCashOnDelivery,
-            photos: [photoC]
+            photos: [photoC],
+            mergedSourceIDs: []
         )
 
         try await persistence.upsert(modified)
@@ -267,14 +272,15 @@ struct OrderPersistenceTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "蝦皮",
-            category: "美妝",
+            categories: ["美妝"],
             paymentMethod: "銀行匯款",
             notes: "",
             verificationStatus: "待對帳",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
         try await persistence.upsert(order)
 
@@ -306,6 +312,98 @@ struct OrderPersistenceTests {
         let stored = try await persistence.fetchAll()
         #expect(stored.count == LedgerOrder.sampleOrders.count)
     }
+
+    @Test func mergeOrdersInsertsNewAndMarksSourcesMergedInOneOperation() async throws {
+        // 取兩筆同客戶同幣別的樣本作來源 (林書宇, KRW)。
+        let persistence = try makePersistence()
+        let samples = LedgerOrder.sampleOrders
+        try await persistence.seedIfEmpty(with: samples)
+
+        let primaryID = "BL-2604-018"
+        let secondaryID = "BL-2604-012"
+        let primary = samples.first { $0.id == primaryID }!
+        let secondary = samples.first { $0.id == secondaryID }!
+
+        // 以純函式計算合併草稿後組出新訂單。
+        let draft = OrderMerge.makeDraft(
+            primary: primary,
+            secondary: secondary,
+            now: Date(timeIntervalSince1970: 1_777_000_000),
+            isCardless: { _ in false }
+        )
+        let merged = LedgerOrder(
+            id: "BL-MERGED-001",
+            customer: draft.customer,
+            status: draft.status,
+            currency: draft.currency,
+            date: draft.date,
+            items: draft.items,
+            itemCost: draft.itemCost,
+            domesticShipping: draft.domesticShipping,
+            internationalShipping: draft.internationalShipping,
+            foreignDomesticShipping: draft.foreignDomesticShipping,
+            cardFeeRate: draft.cardFeeRate,
+            platformFeeRate: draft.platformFeeRate,
+            paymentFeeRate: draft.paymentFeeRate,
+            chargedAmount: draft.chargedAmount,
+            cardlessDeductionAmount: draft.cardlessDeductionAmount,
+            cardlessSupplementAmount: draft.cardlessSupplementAmount,
+            orderSource: draft.orderSource,
+            categories: draft.categories,
+            paymentMethod: draft.paymentMethod,
+            notes: draft.notes,
+            verificationStatus: draft.verificationStatus,
+            campaignNames: draft.campaignNames,
+            paymentReceiptStatus: draft.paymentReceiptStatus,
+            isCashOnDelivery: draft.isCashOnDelivery,
+            photos: draft.photos,
+            mergedSourceIDs: draft.mergeSourceIDs
+        )
+
+        try await persistence.mergeOrders(newOrder: merged, consumedIDs: [primaryID, secondaryID])
+
+        let stored = try await persistence.fetchAll()
+
+        // 新訂單存在且記錄兩筆來源 id。
+        let storedMerged = stored.first { $0.id == "BL-MERGED-001" }
+        #expect(storedMerged != nil)
+        #expect(storedMerged?.mergedSourceIDs == [primaryID, secondaryID])
+        #expect(storedMerged?.categories == ["美妝", "服飾"])
+        #expect(storedMerged?.chargedAmount == 17_480)
+
+        // 兩筆來源訂單同一操作內轉「已合併」，其餘訂單不受影響。
+        #expect(stored.first { $0.id == primaryID }?.status == .merged)
+        #expect(stored.first { $0.id == secondaryID }?.status == .merged)
+        #expect(stored.count == samples.count + 1)
+        let untouched = stored.filter { ![primaryID, secondaryID, "BL-MERGED-001"].contains($0.id) }
+        #expect(untouched.allSatisfy { $0.status != .merged })
+    }
+
+    @Test func renameCategoryRewritesElementsInsideArrays() async throws {
+        // 多類別訂單僅目標元素改名 (保序)；未含目標的訂單不受影響。
+        let persistence = try makePersistence()
+        try await persistence.upsert(Self.makeArrayOrder(id: "BL-CAT-1", categories: ["美妝", "服飾"]))
+        try await persistence.upsert(Self.makeArrayOrder(id: "BL-CAT-2", categories: ["服飾"]))
+
+        try await persistence.renameCategory(from: "美妝", to: "彩妝保養")
+
+        let stored = try await persistence.fetchAll()
+        #expect(stored.first { $0.id == "BL-CAT-1" }?.categories == ["彩妝保養", "服飾"])
+        #expect(stored.first { $0.id == "BL-CAT-2" }?.categories == ["服飾"])
+    }
+
+    @Test func renameCampaignRewritesElementsInsideArrays() async throws {
+        // 多開團訂單僅目標元素改名 (保序)。
+        let persistence = try makePersistence()
+        try await persistence.upsert(Self.makeArrayOrder(id: "BL-CAMP-1", categories: ["美妝"], campaignNames: ["三月日本團", "四月韓國團"]))
+        try await persistence.upsert(Self.makeArrayOrder(id: "BL-CAMP-2", categories: ["美妝"], campaignNames: []))
+
+        try await persistence.renameCampaign(from: "三月日本團", to: "三月日本團 (補)")
+
+        let stored = try await persistence.fetchAll()
+        #expect(stored.first { $0.id == "BL-CAMP-1" }?.campaignNames == ["三月日本團 (補)", "四月韓國團"])
+        #expect(stored.first { $0.id == "BL-CAMP-2" }?.campaignNames == [])
+    }
 }
 
 // MARK: - Helpers
@@ -317,5 +415,41 @@ private extension OrderPersistenceTests {
     func makePersistence() throws -> OrderPersistence {
         let container = try PersistenceContainer.make(inMemoryOnly: true)
         return OrderPersistence(modelContainer: container)
+    }
+
+    /// 建立陣列 rename 測試用的最小訂單。
+    static func makeArrayOrder(
+        id: String,
+        categories: [String],
+        campaignNames: [String] = []
+    ) -> LedgerOrder {
+        LedgerOrder(
+            id: id,
+            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
+            status: .confirmed,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_770_000_000),
+            items: [],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 0,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "蝦皮",
+            categories: categories,
+            paymentMethod: "信用卡",
+            notes: "",
+            verificationStatus: "",
+            campaignNames: campaignNames,
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false,
+            photos: [],
+            mergedSourceIDs: []
+        )
     }
 }

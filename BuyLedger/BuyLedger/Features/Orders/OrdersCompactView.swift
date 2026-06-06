@@ -99,7 +99,8 @@ struct OrdersCompactView: View {
                         .toolbar {
                             ToolbarItem(placement: .primaryAction) {
                                 Menu {
-                                    ForEach(OrderStatus.allCases) { status in
+                                    // 「已合併」只能由合併流程寫入，僅當目前狀態已是已合併時保留選項。
+                                    ForEach(OrderStatus.allCases.filter { $0 != .merged || order.status == .merged }) { status in
                                         Button {
                                             store.send(.statusChanged(order.id, status))
                                         } label: {
@@ -114,6 +115,17 @@ struct OrdersCompactView: View {
                                     Image(systemName: "arrow.triangle.2.circlepath")
                                 }
                                 .accessibilityLabel("更新狀態")
+                            }
+
+                            if order.status != .merged, order.status != .cancelled {
+                                ToolbarItem(placement: .primaryAction) {
+                                    Button {
+                                        store.send(.mergeOrderTapped(order.id))
+                                    } label: {
+                                        Image(systemName: "arrow.triangle.merge")
+                                    }
+                                    .accessibilityLabel("合併訂單")
+                                }
                             }
 
                             ToolbarItem(placement: .primaryAction) {
@@ -311,6 +323,14 @@ private extension OrdersCompactView {
                         }
                         .buttonStyle(.plain)
                         .contextMenu {
+                            if order.status != .merged, order.status != .cancelled {
+                                Button {
+                                    store.send(.mergeOrderTapped(order.id))
+                                } label: {
+                                    Label("合併訂單", systemImage: "arrow.triangle.merge")
+                                }
+                            }
+
                             Button(role: .destructive) {
                                 store.send(.deleteOrderTapped(order.id))
                             } label: {

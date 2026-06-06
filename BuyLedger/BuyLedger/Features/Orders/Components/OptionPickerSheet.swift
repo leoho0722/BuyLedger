@@ -18,6 +18,7 @@ import SwiftUI
 /// - ``searchable`` 控制是否啟用搜尋 (清單超過 ~20 項就建議開)
 /// - ``displayName`` 可選的「顯示名稱」轉換 closure，用於幣別 sheet 把 `"USD"` 顯示成 `"USD · 美元"`
 /// - ``clearOption`` 可選的「清除目前選擇」row 設定；用於 picker 需要支援「不選任何項目」的場景 (例如訂單頁類別篩選的「全部」)。未傳時 picker 行為與外觀完全不變，與既有 call site 向後相容。
+/// - ``multiSelection`` 可選的多選模式設定；非 `nil` 時點列改為 toggle 勾選、sheet 不自動關閉、toolbar 改提供「完成」。用於合併情境的類別與開團多選。未傳時維持單選行為，與既有 call site 向後相容。
 struct OptionPickerSheet: View {
 
     // MARK: - View Properties
@@ -84,6 +85,11 @@ struct OptionPickerSheet: View {
     /// 採用獨立參數而非在 ``options`` 中注入 sentinel 字串，是為了避免與使用者自建選項撞名 (例如使用者真的建立一個叫「全部」的類別)。
     let clearOption: ClearOption?
 
+    /// 可選的多選模式設定。
+    ///
+    /// 當非 `nil` 時：點選選項列改為 toggle 勾選 (呼叫 ``MultiSelection/onToggle``、sheet 不自動關閉)、已選集合由 caller 經 ``MultiSelection/selections`` 持有並驅動勾選指示、toolbar 以「完成」取代「取消」供使用者結束選取。搜尋與新增選項流程與單選模式完全一致。為 `nil` 時維持既有單選行為 (與既有 call site 向後相容)；``selected`` 與 ``onSelect`` 僅在單選模式有效。
+    let multiSelection: MultiSelection?
+
     /// 由 sheet 環境注入的 dismiss action。
     @Environment(\.dismiss) private var dismiss
 
@@ -127,6 +133,7 @@ struct OptionPickerSheet: View {
     ///   - onAddPaymentMethod: 付款方式新增 callback；不為 `nil` 時，「新增」按鈕改開啟 ``PaymentMethodEditorSheet`` 收集名稱與 `isCardless` / `isBankTransfer` / `isCashOnDelivery`，取代 alert 流程。
     ///   - onAddViaNameSheet: name-only 主檔新增 callback；不為 `nil` 且 `onAddPaymentMethod` 為 `nil` 時，「新增」按鈕改開啟 ``LookupItemEditorSheet`` (只收名稱) 的 medium sheet，取代 alert 流程。
     ///   - clearOption: 可選的「清除目前選擇」row 設定；預設 `nil` (不顯示 clear row、行為與既有版本一致)。
+    ///   - multiSelection: 可選的多選模式設定；預設 `nil` (維持單選行為)。非 `nil` 時 `selected` 與 `onSelect` 不會被使用。
     init(
         title: String,
         allowsAdd: Bool = true,
@@ -138,14 +145,15 @@ struct OptionPickerSheet: View {
         addFieldPlaceholder: String = "",
         addAlertMessage: String = "",
         options: [String],
-        selected: String,
+        selected: String = "",
         displayName: (@Sendable (String) -> String)? = nil,
         searchKeywords: (@Sendable (String) -> String)? = nil,
-        onSelect: @escaping (String) -> Void,
+        onSelect: @escaping (String) -> Void = { _ in },
         onAdd: @escaping (String) -> Void = { _ in },
         onAddPaymentMethod: ((String, Bool, Bool, Bool) -> Void)? = nil,
         onAddViaNameSheet: ((String) -> Void)? = nil,
-        clearOption: ClearOption? = nil
+        clearOption: ClearOption? = nil,
+        multiSelection: MultiSelection? = nil
     ) {
         self.title = title
         self.allowsAdd = allowsAdd
@@ -165,6 +173,7 @@ struct OptionPickerSheet: View {
         self.onAddPaymentMethod = onAddPaymentMethod
         self.onAddViaNameSheet = onAddViaNameSheet
         self.clearOption = clearOption
+        self.multiSelection = multiSelection
     }
 
     // MARK: - View Body
@@ -180,9 +189,18 @@ struct OptionPickerSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
 #endif
                 .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("取消") {
-                            dismiss()
+                    if multiSelection != nil {
+                        // 多選模式：toggle 即時生效，「完成」僅負責關閉 sheet。
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("完成") {
+                                dismiss()
+                            }
+                        }
+                    } else {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button("取消") {
+                                dismiss()
+                            }
                         }
                     }
                 }
@@ -261,6 +279,20 @@ extension OptionPickerSheet {
 
         /// 使用者點擊 clear row 時觸發的 callback；執行後 sheet 會自動 dismiss。
         let onClear: () -> Void
+    }
+
+    /// 多選模式的設定。
+    ///
+    /// 已選集合由 caller 持有 (例如 TCA store 的草稿陣列)，picker 只負責呈現勾選與回報 toggle；點列不會關閉 sheet，使用者以 toolbar 的「完成」結束選取。
+    struct MultiSelection {
+
+        // MARK: - Data Properties
+
+        /// 目前已選取的選項集合；驅動每一列的勾選指示。
+        let selections: Set<String>
+
+        /// 使用者點擊某列時觸發的 toggle callback；caller 應依目前是否已選取自行加入或移除該選項。
+        let onToggle: (String) -> Void
     }
 }
 
@@ -350,7 +382,7 @@ private extension OptionPickerSheet {
         .buttonStyle(.plain)
     }
 
-    /// iOS / iPadOS 的選項列：點擊呼叫 ``onSelect`` 並 dismiss；目前選中項顯示 checkmark。
+    /// iOS / iPadOS 的選項列：單選模式點擊呼叫 ``onSelect`` 並 dismiss；多選模式點擊 toggle 勾選且 sheet 維持開啟。已選項顯示 checkmark。
     ///
     /// 文字以 `.fixedSize(horizontal: false, vertical: true)` 強制取得需要的垂直空間，配合 `.multilineTextAlignment(.leading)`，讓過長類別名稱自然換行 (row 高度隨內容增長)，而不被 trailing checkmark 截斷。
     /// - Parameter option: 該列代表的選項字串。
@@ -358,8 +390,7 @@ private extension OptionPickerSheet {
     @ViewBuilder
     func listOptionRow(_ option: String) -> some View {
         Button {
-            onSelect(option)
-            dismiss()
+            handleOptionTap(option)
         } label: {
             HStack(alignment: .firstTextBaseline) {
                 Text(displayText(for: option))
@@ -369,7 +400,7 @@ private extension OptionPickerSheet {
 
                 Spacer()
 
-                if option == selected {
+                if isSelected(option) {
                     Image(systemName: "checkmark")
                         .foregroundStyle(.tint)
                 }
@@ -499,7 +530,7 @@ private extension OptionPickerSheet {
         .buttonStyle(.plain)
     }
 
-    /// macOS 的選項列：點擊呼叫 ``onSelect`` 並 dismiss；目前選中項以 `palette.accent` 顯示 checkmark。
+    /// macOS 的選項列：單選模式點擊呼叫 ``onSelect`` 並 dismiss；多選模式點擊 toggle 勾選且 sheet 維持開啟。已選項以 `palette.accent` 顯示 checkmark。
     ///
     /// 文字以 `.fixedSize(horizontal: false, vertical: true)` 強制取得需要的垂直空間，配合 `.multilineTextAlignment(.leading)`，讓過長類別名稱自然換行 (BLCard 列高度隨內容增長)，而不被 trailing checkmark 截斷。
     /// - Parameters:
@@ -509,8 +540,7 @@ private extension OptionPickerSheet {
     @ViewBuilder
     func macOptionRow(_ option: String, palette: BLPalette) -> some View {
         Button {
-            onSelect(option)
-            dismiss()
+            handleOptionTap(option)
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
                 Text(displayText(for: option))
@@ -521,7 +551,7 @@ private extension OptionPickerSheet {
 
                 Spacer()
 
-                if option == selected {
+                if isSelected(option) {
                     Image(systemName: "checkmark")
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(palette.accent)
@@ -578,6 +608,27 @@ private extension OptionPickerSheet {
     /// - Returns: 顯示文字。
     func displayText(for option: String) -> String {
         displayName?(option) ?? option
+    }
+
+    /// 判斷選項是否處於已選取狀態：多選模式查 caller 持有的集合，單選模式比對 ``selected``。
+    /// - Parameter option: 要判斷的選項。
+    /// - Returns: 是否已選取。
+    func isSelected(_ option: String) -> Bool {
+        if let multiSelection {
+            return multiSelection.selections.contains(option)
+        }
+        return option == selected
+    }
+
+    /// 選項列點擊的共用行為：多選模式 toggle 且維持 sheet 開啟，單選模式套用後 dismiss。
+    /// - Parameter option: 被點擊的選項。
+    func handleOptionTap(_ option: String) {
+        if let multiSelection {
+            multiSelection.onToggle(option)
+        } else {
+            onSelect(option)
+            dismiss()
+        }
     }
 
     /// 點擊新增按鈕的共用行為，依 handler precedence 決定呈現：付款方式入口開 ``PaymentMethodEditorSheet``、name-only 入口開 ``LookupItemEditorSheet``，其餘開一般新增 alert。
@@ -687,5 +738,31 @@ private struct SearchableModifier: ViewModifier {
         selected: "美妝",
         onSelect: { _ in },
         clearOption: .init(title: "全部", onClear: { })
+    )
+}
+
+#Preview("商品類別 (多選模式)") {
+    @Previewable @State var selections: Set<String> = ["美妝", "服飾"]
+
+    OptionPickerSheet(
+        title: "選擇商品類別",
+        allowsAdd: true,
+        addButtonTitle: "新增類別",
+        emptyTitle: "尚無類別",
+        emptyDescription: "透過上方「新增類別」加入第一個類別。",
+        addAlertTitle: "新增商品類別",
+        addFieldPlaceholder: "類別名稱",
+        addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
+        options: ["3C", "美妝", "服飾", "精品", "食品"],
+        multiSelection: .init(
+            selections: selections,
+            onToggle: { option in
+                if selections.contains(option) {
+                    selections.remove(option)
+                } else {
+                    selections.insert(option)
+                }
+            }
+        )
     )
 }

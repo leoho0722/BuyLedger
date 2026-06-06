@@ -34,6 +34,9 @@ struct OrderEditView: View {
     /// 是否顯示「幣別」選擇 sheet。
     @State private var showsCurrencySheet = false
 
+    /// 是否顯示「開團」多選 sheet (僅合併情境使用；一般訂單編輯維持 inline `Picker`)。
+    @State private var showsCampaignSheet = false
+
     /// 照片檢視器目前聚焦的照片；`nil` 代表檢視器未開啟。
     @State private var photoViewerSelection: PhotoViewerSelection?
 
@@ -78,7 +81,7 @@ struct OrderEditView: View {
 
                 Section("狀態與幣別") {
                     Picker("狀態", selection: $store.draftStatus) {
-                        ForEach(OrderStatus.allCases) { status in
+                        ForEach(store.availableStatuses) { status in
                             Text(status.title).tag(status)
                         }
                     }
@@ -120,10 +123,15 @@ struct OrderEditView: View {
                 }
 
                 Section("開團與收款") {
-                    Picker("開團", selection: $store.draftCampaignName) {
-                        Text("未歸團").tag("")
-                        ForEach(store.availableCampaigns, id: \.self) { name in
-                            Text(name).tag(name)
+                    if store.isMergeContext {
+                        // 合併情境：開團改為多選 trigger row + 多選 sheet。
+                        campaignPickerRow
+                    } else {
+                        Picker("開團", selection: campaignSelectionBinding) {
+                            Text("未歸團").tag("")
+                            ForEach(store.availableCampaigns, id: \.self) { name in
+                                Text(name).tag(name)
+                            }
                         }
                     }
 
@@ -216,22 +224,60 @@ struct OrderEditView: View {
                 )
             }
             .sheet(isPresented: $showsCategorySheet) {
+                if store.isMergeContext {
+                    // 合併情境：多選模式，點列 toggle、以「完成」結束選取；新增類別流程沿用。
+                    OptionPickerSheet(
+                        title: "選擇商品類別",
+                        addButtonTitle: "新增類別",
+                        emptyTitle: "尚無類別",
+                        emptyDescription: "透過上方「新增類別」加入第一個類別。",
+                        addAlertTitle: "新增商品類別",
+                        addFieldPlaceholder: "類別名稱",
+                        addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
+                        options: store.availableCategories,
+                        onAdd: { name in
+                            store.send(.addCategoryTapped(name))
+                        },
+                        multiSelection: .init(
+                            selections: Set(store.draftCategories),
+                            onToggle: { category in
+                                store.send(.categoryToggled(category))
+                            }
+                        )
+                    )
+                } else {
+                    OptionPickerSheet(
+                        title: "選擇商品類別",
+                        addButtonTitle: "新增類別",
+                        emptyTitle: "尚無類別",
+                        emptyDescription: "透過上方「新增類別」加入第一個類別。",
+                        addAlertTitle: "新增商品類別",
+                        addFieldPlaceholder: "類別名稱",
+                        addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
+                        options: store.availableCategories,
+                        selected: store.draftCategories.first ?? "",
+                        onSelect: { category in
+                            store.send(.categorySelected(category))
+                        },
+                        onAdd: { name in
+                            store.send(.addCategoryTapped(name))
+                        }
+                    )
+                }
+            }
+            .sheet(isPresented: $showsCampaignSheet) {
                 OptionPickerSheet(
-                    title: "選擇商品類別",
-                    addButtonTitle: "新增類別",
-                    emptyTitle: "尚無類別",
-                    emptyDescription: "透過上方「新增類別」加入第一個類別。",
-                    addAlertTitle: "新增商品類別",
-                    addFieldPlaceholder: "類別名稱",
-                    addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
-                    options: store.availableCategories,
-                    selected: store.draftCategory,
-                    onSelect: { category in
-                        store.draftCategory = category
-                    },
-                    onAdd: { name in
-                        store.send(.addCategoryTapped(name))
-                    }
+                    title: "選擇開團",
+                    allowsAdd: false,
+                    emptyTitle: "尚無開團",
+                    emptyDescription: "請先在「開團」頁建立開團，再回到此處歸團。",
+                    options: store.availableCampaigns,
+                    multiSelection: .init(
+                        selections: Set(store.draftCampaignNames),
+                        onToggle: { name in
+                            store.send(.campaignToggled(name))
+                        }
+                    )
                 )
             }
             .sheet(isPresented: $showsPaymentMethodSheet) {
@@ -373,8 +419,34 @@ private extension OrderEditView {
 
                 Spacer(minLength: BLSpacing.small)
 
-                Text(store.draftCategory.isEmpty ? "選擇類別" : store.draftCategory)
+                Text(store.draftCategories.isEmpty ? "選擇類別" : store.categoriesDisplayText)
                     .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.trailing)
+
+                Image(systemName: "chevron.right")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.tertiary)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+
+    /// 開團選擇列 (僅合併情境)：以 trigger row 開啟多選 sheet；顯示文字以「、」串接已選開團、空選取顯示「未歸團」。
+    @ViewBuilder
+    var campaignPickerRow: some View {
+        Button {
+            showsCampaignSheet = true
+        } label: {
+            HStack(spacing: BLSpacing.small) {
+                Text("開團")
+                    .foregroundStyle(.primary)
+
+                Spacer(minLength: BLSpacing.small)
+
+                Text(store.campaignsDisplayText)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.trailing)
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
@@ -676,16 +748,26 @@ private extension OrderEditView {
 
     /// 是否允許按下儲存。
     ///
-    /// 客戶名稱、訂單來源與商品類別都必須含有非空白字元才視為合法。即使儲存路徑保有 trim+fallback 的防禦邏輯，前端仍以 disable 按鈕的方式給使用者明確回饋。
+    /// 客戶名稱與訂單來源必須含有非空白字元、商品類別至少選一個才視為合法。即使儲存路徑保有 trim+fallback 的防禦邏輯，前端仍以 disable 按鈕的方式給使用者明確回饋。
     var canSave: Bool {
         let fields = [
             store.draftCustomerName,
             store.draftOrderSource,
-            store.draftCategory,
         ]
-        return fields.allSatisfy {
+        let hasCategory = store.draftCategories.contains {
             !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
+        return hasCategory && fields.allSatisfy {
+            !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
+    }
+
+    /// 單選模式下開團 `Picker` 的選取繫結：以陣列首元素對應單選值，寫入時送 ``OrderEditFeature/Action/campaignSelected(_:)`` 正規化回單元素陣列 (空字串 = 未歸團 = 空陣列)。
+    var campaignSelectionBinding: Binding<String> {
+        Binding(
+            get: { store.draftCampaignNames.first ?? "" },
+            set: { store.send(.campaignSelected($0)) }
+        )
     }
 
     /// 幣別選擇列 label 顯示文字：「TWD (新台幣)」格式，跟 sheet 內列項與 ``OrderDetailView`` 上方 chip 一致。``Locale.localizedString(forCurrencyCode:)`` 沒有對應翻譯時 fallback 為 raw code。

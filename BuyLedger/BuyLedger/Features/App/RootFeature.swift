@@ -247,8 +247,11 @@ struct RootFeature {
                 let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmedFrom.isEmpty, !trimmedTo.isEmpty, trimmedFrom != trimmedTo {
                     state.orders.orders = state.orders.orders.map { order in
-                        guard order.campaignName == trimmedFrom else { return order }
-                        return rebuildOrder(order, campaignName: trimmedTo)
+                        guard order.campaignNames.contains(trimmedFrom) else { return order }
+                        return rebuildOrder(
+                            order,
+                            campaignNames: order.campaignNames.map { $0 == trimmedFrom ? trimmedTo : $0 }
+                        )
                     }
                 }
                 state.orders.campaigns = state.campaigns.campaigns
@@ -384,8 +387,11 @@ struct RootFeature {
                 to: trimmedTo
             )
             state.orders.orders = state.orders.orders.map { order in
-                guard order.category == trimmedFrom else { return order }
-                return rebuildOrder(order, category: trimmedTo)
+                guard order.categories.contains(trimmedFrom) else { return order }
+                return rebuildOrder(
+                    order,
+                    categories: order.categories.map { $0 == trimmedFrom ? trimmedTo : $0 }
+                )
             }
 
         case .paymentMethod:
@@ -559,22 +565,22 @@ struct RootFeature {
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
-    /// 因為 ``LedgerOrder`` 是 immutable struct，更新 orderSource、category 或 paymentMethod 必須以 memberwise init 重建。
+    /// 因為 ``LedgerOrder`` 是 immutable struct，更新 orderSource、categories 或 paymentMethod 必須以 memberwise init 重建。
     /// - Parameters:
     ///   - order: 原本的訂單。
     ///   - orderSource: 若不為 `nil` 則覆寫 orderSource。
-    ///   - category: 若不為 `nil` 則覆寫 category。
+    ///   - categories: 若不為 `nil` 則覆寫 categories。
     ///   - paymentMethod: 若不為 `nil` 則覆寫 paymentMethod。
     ///   - verificationStatus: 若不為 `nil` 則覆寫 verificationStatus。
-    ///   - campaignName: 若不為 `nil` 則覆寫 campaignName。
+    ///   - campaignNames: 若不為 `nil` 則覆寫 campaignNames。
     /// - Returns: 重建後的訂單。
     private func rebuildOrder(
         _ order: LedgerOrder,
         orderSource: String? = nil,
-        category: String? = nil,
+        categories: [String]? = nil,
         paymentMethod: String? = nil,
         verificationStatus: String? = nil,
-        campaignName: String? = nil
+        campaignNames: [String]? = nil
     ) -> LedgerOrder {
         LedgerOrder(
             id: order.id,
@@ -594,14 +600,15 @@ struct RootFeature {
             cardlessDeductionAmount: order.cardlessDeductionAmount,
             cardlessSupplementAmount: order.cardlessSupplementAmount,
             orderSource: orderSource ?? order.orderSource,
-            category: category ?? order.category,
+            categories: categories ?? order.categories,
             paymentMethod: paymentMethod ?? order.paymentMethod,
             notes: order.notes,
             verificationStatus: verificationStatus ?? order.verificationStatus,
-            campaignName: campaignName ?? order.campaignName,
+            campaignNames: campaignNames ?? order.campaignNames,
             paymentReceiptStatus: order.paymentReceiptStatus,
             isCashOnDelivery: order.isCashOnDelivery,
-            photos: order.photos
+            photos: order.photos,
+            mergedSourceIDs: order.mergedSourceIDs
         )
     }
 }

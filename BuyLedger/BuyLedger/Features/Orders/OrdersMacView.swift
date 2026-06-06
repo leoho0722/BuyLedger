@@ -350,6 +350,14 @@ private extension OrdersMacView {
                     }
                     .buttonStyle(.plain)
                     .contextMenu {
+                        if order.status != .merged, order.status != .cancelled {
+                            Button {
+                                store.send(.mergeOrderTapped(order.id))
+                            } label: {
+                                Label("合併訂單", systemImage: "arrow.triangle.merge")
+                            }
+                        }
+
                         Button(role: .destructive) {
                             store.send(.deleteOrderTapped(order.id))
                         } label: {
@@ -409,7 +417,8 @@ private extension OrdersMacView {
             Spacer()
 
             Menu {
-                ForEach(OrderStatus.allCases) { status in
+                // 「已合併」只能由合併流程寫入，僅當目前狀態已是已合併時保留選項。
+                ForEach(OrderStatus.allCases.filter { $0 != .merged || order.status == .merged }) { status in
                     Button {
                         store.send(.statusChanged(order.id, status))
                     } label: {
@@ -425,6 +434,15 @@ private extension OrdersMacView {
             }
             .menuStyle(.borderlessButton)
             .controlSize(.small)
+
+            if order.status != .merged, order.status != .cancelled {
+                Button("合併") {
+                    store.send(.mergeOrderTapped(order.id))
+                }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .accessibilityLabel("合併訂單")
+            }
 
             Button("編輯") {
                 store.send(.editOrderTapped(order.id))

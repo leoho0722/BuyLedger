@@ -139,3 +139,89 @@ code:
   - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
   - CLAUDE.md
 -->
+
+---
+### Requirement: Type-changing migrations preserve values through a custom stage
+
+When a schema version changes the type of an existing attribute, the bridging stage SHALL be a custom (dump-and-restore) stage that maps every persisted value into the new shape without data loss. The V10 → V11 stage SHALL convert each order's single category string into a category list (a non-empty string becomes a one-element list; an empty string becomes an empty list), convert each order's campaign name into a campaign list (a non-empty name becomes a one-element list; the empty unassigned string becomes an empty list), and initialize the new merged-source list to empty for every migrated order. The V10 schema SHALL be frozen as an embedded shadow definition so its attribute fingerprint stays intact.
+
+#### Scenario: Single-select values migrate into lists
+
+- **WHEN** a V10 store is opened with the plan targeting V11
+- **THEN** every order's category and campaign values are mapped into lists per the conversion rules and no record is lost
+
+##### Example: V10 to V11 value mapping
+
+| V10 category | V10 campaignName | V11 categories | V11 campaignNames | V11 mergedSourceIDs |
+| ------------ | ---------------- | -------------- | ----------------- | ------------------- |
+| "beauty"     | "May-JP"         | ["beauty"]     | ["May-JP"]        | []                  |
+| "beauty"     | ""               | ["beauty"]     | []                | []                  |
+| ""           | ""               | []             | []                | []                  |
+
+#### Scenario: On-disk regression covers the custom stage
+
+- **WHEN** the on-disk migration regression suite runs
+- **THEN** it includes a store persisted at V10 that is reopened with the plan, asserting the list conversions above and the survival of every other field
+
+<!-- @trace
+source: add-order-merge
+updated: 2026-06-07
+code:
+  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+  - BuyLedger/BuyLedgerTests/InsightsAttributionTests.swift
+  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
+  - BuyLedger/BuyLedger/Features/Insights/InsightsView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
+  - BuyLedger/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - BuyLedger/BuyLedgerTests/OrderStatusTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
+  - BuyLedger/BuyLedgerTests/OrderMergeTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Campaigns/CampaignSummary.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderStatus+Presentation.swift
+  - BuyLedger/BuyLedger/Features/Dashboard/DashboardView.swift
+  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - BuyLedger/BuyLedger/Core/Domain/Campaign.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
+  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/OrderMerge.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - BuyLedger/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
+  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - BuyLedger/BuyLedger/Core/Domain/OrderStatus.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderDetailView.swift
+  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderStatusFilter.swift
+-->

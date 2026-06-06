@@ -67,8 +67,10 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 訂單來源。
     let orderSource: String
 
-    /// 商品類別。
-    let category: String
+    /// 商品類別 (至少一個)。
+    ///
+    /// 多個類別僅會由「合併訂單」產生 (聯集兩筆來源訂單的類別)；一般訂單編輯維持單選、儲存為單元素陣列。
+    let categories: [String]
 
     /// 付款方式。
     let paymentMethod: String
@@ -81,10 +83,10 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 僅在 ``paymentMethod`` 屬於無卡或銀行匯款 (款項不會即時入帳、需事後人工對帳) 時有意義；其他付款方式一律以空字串帶入。對應可自訂主檔 ``LookupKind/verificationStatus``。
     let verificationStatus: String
 
-    /// 歸屬的開團名稱。
+    /// 歸屬的開團名稱清單。
     ///
-    /// 沿用 ``orderSource`` 的字串名稱引用模式；空字串代表未歸屬任何開團 (散單)。開團改名時由 ``RootFeature`` 統一 cascade 更新所有相符訂單。
-    let campaignName: String
+    /// 沿用 ``orderSource`` 的字串名稱引用模式；空陣列代表未歸屬任何開團 (散單)。多個開團僅會由「合併訂單」產生。開團改名時由 ``RootFeature`` 統一 cascade 更新所有相符訂單 (陣列內逐元素取代)。
+    let campaignNames: [String]
 
     /// 收款狀態 (待收款／已收款)。
     ///
@@ -101,6 +103,11 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 每張照片於匯入時經 `PhotoDataProcessor` 降採樣與重編碼後存入；張數上限為 ``maxPhotoCount``，由 ``OrderEditFeature`` 的 reducer 守門。無照片時為空陣列。
     let photos: [Data]
 
+    /// 合併來源訂單編號。
+    ///
+    /// 由「合併訂單」產生的新訂單記錄兩筆來源訂單的 ``id``，作為統計歸屬 (採合併前收益) 與鏈式合併判定的依據；非合併產生的訂單一律為空陣列 (即「葉端訂單」)。
+    let mergedSourceIDs: [String]
+
     // MARK: - Static Properties
 
     /// 單筆訂單可附加的照片張數上限。
@@ -113,6 +120,18 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 訂單的財務摘要。
     var summary: OrderSummary {
         OrderSummary(order: self)
+    }
+
+    /// 是否由「合併訂單」產生 (即非葉端訂單)。
+    var isMergeResult: Bool {
+        !mergedSourceIDs.isEmpty
+    }
+
+    /// 是否計入「類別收益」彙總。
+    ///
+    /// 統計歸屬採「合併前收益」：僅葉端訂單入組，狀態沿用既有 realized 規則並額外放行「已合併」，讓被合併的舊單以原始類別、金額與日期入帳；由合併產生的訂單一律不入組，避免重複計算。
+    var contributesToCategoryBreakdown: Bool {
+        !isMergeResult && (OrderStatus.realizedStatuses.contains(status) || status == .merged)
     }
 
     /// 列表中顯示的商品摘要，每項商品各自一行，名稱後接購買數量 (例如「藍牙耳機 x2」)。

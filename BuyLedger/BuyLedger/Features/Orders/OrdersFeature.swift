@@ -100,6 +100,9 @@ struct OrdersFeature {
         /// AI 功能未開啟時的提示 alert；`nil` 表示未呈現。
         @Presents var aiDisabledAlert: AlertState<Action.Alert>?
 
+        /// 「合併訂單」流程 (候選選擇 → 照片挑選) 的 sheet 狀態；`nil` 表示未呈現。
+        @Presents var orderMerge: OrderMergeFeature.State?
+
         // MARK: - Filter Method
 
         /// 套用搜尋、狀態與日期區間篩選後的訂單。
@@ -120,11 +123,11 @@ struct OrdersFeature {
                     referenceDate: referenceDate,
                     calendar: calendar
                 )
-                let matchesCategory = selectedCategory.map { $0 == order.category } ?? true
+                let matchesCategory = selectedCategory.map { order.categories.contains($0) } ?? true
                 let matchesPaymentMethod = selectedPaymentMethod.map { $0 == order.paymentMethod } ?? true
-                let matchesCampaign = selectedCampaign.map { $0 == order.campaignName } ?? true
+                let matchesCampaign = selectedCampaign.map { order.campaignNames.contains($0) } ?? true
                 let matchesCampaignStatus = selectedCampaignStatus.map { status in
-                    campaignStatus(for: order) == status
+                    campaignStatuses(for: order).contains(status)
                 } ?? true
 
                 return matchesStatus
@@ -137,13 +140,17 @@ struct OrdersFeature {
             }
         }
 
-        /// 解析訂單所屬開團的狀態；未歸團或在 ``campaigns`` 找不到對應開團時回傳 `nil`。
+        /// 解析訂單所屬開團的狀態集合；任一所屬開團符合篩選狀態即視為命中。未歸團或在 ``campaigns`` 找不到對應開團時為空集合。
         /// - Parameter order: 要解析的訂單。
-        /// - Returns: 所屬開團的狀態，或 `nil`。
-        func campaignStatus(for order: LedgerOrder) -> CampaignStatus? {
-            let name = order.campaignName.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !name.isEmpty else { return nil }
-            return campaigns.first { $0.name == name }?.status
+        /// - Returns: 所屬各開團的狀態集合。
+        func campaignStatuses(for order: LedgerOrder) -> Set<CampaignStatus> {
+            Set(
+                order.campaignNames.compactMap { name -> CampaignStatus? in
+                    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else { return nil }
+                    return campaigns.first { $0.name == trimmed }?.status
+                }
+            )
         }
 
         /// 目前選取的訂單。
@@ -198,7 +205,8 @@ struct OrdersFeature {
         /// 合併目的：使用者升級到主檔機制之前，舊訂單已經有 category 字串。為了不讓他們在編輯既有訂單時看到「自己用過的類別不在選單」，把訂單裡用過但主檔還沒有的也補進來。新增動作 (``addCategoryTapped``) 仍會把該值寫入主檔，所以這份合併清單會逐漸與主檔一致。
         var availableCategories: [String] {
             let fromOrders = orders
-                .map { $0.category.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .flatMap(\.categories)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty }
             var merged = Set(categoryMaster)
             merged.formUnion(fromOrders)
@@ -240,7 +248,8 @@ struct OrdersFeature {
         /// 對外提供給編輯表單的「可用開團」清單：合併開團主檔名稱與既有訂單中使用過的開團名稱，去重後依 locale 排序。合併規則與 ``availableCategories`` 相同。
         var availableCampaigns: [String] {
             let fromOrders = orders
-                .map { $0.campaignName.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .flatMap(\.campaignNames)
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty }
             var merged = Set(campaigns.map(\.name))
             merged.formUnion(fromOrders)
@@ -262,8 +271,10 @@ struct OrdersFeature {
             var lines: [String] = []
 
             outer: for order in filtered {
-                let category = order.category.trimmingCharacters(in: .whitespacesAndNewlines)
-                let categoryTag = category.isEmpty ? "未分類" : category
+                let categoryNames = order.categories
+                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                    .filter { !$0.isEmpty }
+                let categoryTag = categoryNames.isEmpty ? "未分類" : categoryNames.joined(separator: "、")
                 for item in order.items {
                     let trimmedName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
                     let name = trimmedName.isEmpty ? "未命名商品" : trimmedName
@@ -368,6 +379,18 @@ struct OrdersFeature {
         /// 編輯／新增表單事件。
         case editOrder(PresentationAction<OrderEditFeature.Action>)
 
+        /// 使用者從訂單列 context menu 或詳情頁觸發「合併訂單」；參數為主訂單編號。
+        case mergeOrderTapped(LedgerOrder.ID)
+
+        /// 合併流程 sheet 事件；完成 delegate 由父層在此回收。
+        case orderMerge(PresentationAction<OrderMergeFeature.Action>)
+
+        /// 合併資料選定完成、合併 sheet 收合後，以合併草稿與保留照片開啟確認表單 (兩段 sheet 序列化呈現)。
+        case mergeConfirmationReady(OrderMerge.Draft, keptPhotos: [Data])
+
+        /// 合併持久化失敗：以快照整批回復 in-memory 訂單，避免半合併狀態。
+        case mergePersistenceFailed([LedgerOrder])
+
         /// 透過詳情頁的「更新狀態」menu 直接切換訂單狀態。
         case statusChanged(LedgerOrder.ID, OrderStatus)
 
@@ -429,6 +452,9 @@ struct OrdersFeature {
 
     /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定 gregorian／UTC。
     @Dependency(\.calendar) private var calendar
+
+    /// 合併流程兩段 sheet 序列化呈現的延遲時脈；測試可注入 immediate clock。
+    @Dependency(\.continuousClock) private var clock
 
     /// 設定持久化來源；用於讀取 `useAiSummary` 與 `aiSummaryModel`。
     @Dependency(SettingsStorage.self) private var settingsStorage
@@ -592,6 +618,31 @@ struct OrdersFeature {
 
             case .editOrder(.presented(.saveTapped)):
                 guard let editState = state.editOrder else { return .none }
+
+                // 合併草稿：寫入新訂單之外，還要把來源訂單轉「已合併」，並以單一持久化操作落盤。
+                if !editState.mergeSourceIDs.isEmpty {
+                    // 快照供持久化失敗時整批回復，確保 in-memory 不留半合併狀態。
+                    let previousOrders = state.orders
+                    guard let savedOrder = applyEditDraft(editState, to: &state) else {
+                        return .none
+                    }
+
+                    let sourceIDs = editState.mergeSourceIDs
+                    state.orders = state.orders.map { order in
+                        guard sourceIDs.contains(order.id), order.id != savedOrder.id else { return order }
+                        return order.withStatus(.merged)
+                    }
+
+                    let orderRepository = orderRepository
+                    return .run { send in
+                        do {
+                            try await orderRepository.mergeOrders(savedOrder, sourceIDs)
+                        } catch {
+                            await send(.mergePersistenceFailed(previousOrders))
+                        }
+                    }
+                }
+
                 guard let savedOrder = applyEditDraft(editState, to: &state) else {
                     return .none
                 }
@@ -619,7 +670,7 @@ struct OrdersFeature {
                 }
 
             case let .editOrder(.presented(.addCategoryTapped(name))):
-                // 子 reducer 已把 name 加進 sheet 內的 availableCategories 並設成 draftCategory；
+                // 子 reducer 已把 name 加進 sheet 內的 availableCategories 並設成 draftCategories；
                 // 父層額外寫入主檔並更新 state.categoryMaster，使非編輯流程 (管理頁、其他訂單) 也能看到。
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else { return .none }
@@ -684,6 +735,80 @@ struct OrdersFeature {
             case .editOrder:
                 return .none
 
+            case let .mergeOrderTapped(orderID):
+                // 已合併/已取消的訂單不可作為主訂單 (入口在 view 端同樣隱藏，此處為防衛)。
+                guard let primary = state.orders.first(where: { $0.id == orderID }),
+                      primary.status != .merged,
+                      primary.status != .cancelled else {
+                    return .none
+                }
+
+                state.orderMerge = OrderMergeFeature.State(primary: primary, orders: state.orders)
+                return .none
+
+            case let .orderMerge(.presented(.delegate(.completed(primary, secondary, keptPhotos)))):
+                // 以付款方式主檔旗標建構無卡判定，計算合併草稿 (純函式)。
+                let cardlessNames = Set(state.availablePaymentMethods.filter(\.isCardless).map(\.name))
+                let draft = OrderMerge.makeDraft(
+                    primary: primary,
+                    secondary: secondary,
+                    now: date.now,
+                    isCardless: { cardlessNames.contains($0) }
+                )
+
+                // 先收合合併 sheet，延遲一拍再開啟確認表單，避免同 frame 換 sheet 的 presentation race。
+                state.orderMerge = nil
+                let clock = clock
+                return .run { send in
+                    try? await clock.sleep(for: .milliseconds(500))
+                    await send(.mergeConfirmationReady(draft, keptPhotos: keptPhotos))
+                }
+
+            case .orderMerge:
+                return .none
+
+            case let .mergeConfirmationReady(draft, keptPhotos):
+                var editState = OrderEditFeature.State(
+                    availableOrderSources: state.availableOrderSources,
+                    availableCategories: state.availableCategories,
+                    availablePaymentMethods: state.availablePaymentMethods,
+                    availableVerificationStatuses: state.availableVerificationStatuses,
+                    availableCampaigns: state.availableCampaigns,
+                    currentDate: date.now
+                )
+                editState.draftCustomerName = draft.customer.name
+                editState.draftOrderSource = draft.orderSource
+                editState.draftCategories = draft.categories
+                editState.draftStatus = draft.status
+                editState.draftCurrency = draft.currency
+                editState.draftChargedAmount = draft.chargedAmount
+                editState.draftCardlessDeductionAmount = draft.cardlessDeductionAmount
+                editState.draftCardlessSupplementAmount = draft.cardlessSupplementAmount
+                editState.draftItemCost = draft.itemCost
+                editState.draftDomesticShipping = draft.domesticShipping
+                editState.draftInternationalShipping = draft.internationalShipping
+                editState.draftForeignDomesticShipping = draft.foreignDomesticShipping
+                editState.draftCardFeeRate = draft.cardFeeRate
+                editState.draftPlatformFeeRate = draft.platformFeeRate
+                editState.draftPaymentFeeRate = draft.paymentFeeRate
+                editState.draftItems = draft.items
+                editState.draftNotes = draft.notes
+                editState.draftDate = draft.date
+                editState.draftPaymentMethod = draft.paymentMethod
+                editState.draftVerificationStatus = draft.verificationStatus
+                editState.draftCampaignNames = draft.campaignNames
+                editState.draftPaymentReceiptStatus = draft.paymentReceiptStatus
+                editState.draftPhotos = keptPhotos
+                editState.mergeSourceIDs = draft.mergeSourceIDs
+                state.editOrder = editState
+                return .none
+
+            case let .mergePersistenceFailed(previousOrders):
+                // 持久化失敗：回復快照，新單與舊單狀態同進退；以既有錯誤訊息路徑提示。
+                state.orders = previousOrders
+                state.errorMessage = "合併訂單儲存失敗，請稍後再試。"
+                return .none
+
             case let .statusChanged(orderID, newStatus):
                 guard let index = state.orders.firstIndex(where: { $0.id == orderID }) else {
                     return .none
@@ -712,14 +837,15 @@ struct OrdersFeature {
                     cardlessDeductionAmount: existing.cardlessDeductionAmount,
                     cardlessSupplementAmount: existing.cardlessSupplementAmount,
                     orderSource: existing.orderSource,
-                    category: existing.category,
+                    categories: existing.categories,
                     paymentMethod: existing.paymentMethod,
                     notes: existing.notes,
                     verificationStatus: existing.verificationStatus,
-                    campaignName: existing.campaignName,
+                    campaignNames: existing.campaignNames,
                     paymentReceiptStatus: existing.paymentReceiptStatus,
                     isCashOnDelivery: existing.isCashOnDelivery,
-                    photos: existing.photos
+                    photos: existing.photos,
+                    mergedSourceIDs: existing.mergedSourceIDs
                 )
                 state.orders[index] = updated
 
@@ -753,14 +879,15 @@ struct OrdersFeature {
                     cardlessDeductionAmount: existing.cardlessDeductionAmount,
                     cardlessSupplementAmount: existing.cardlessSupplementAmount,
                     orderSource: existing.orderSource,
-                    category: existing.category,
+                    categories: existing.categories,
                     paymentMethod: existing.paymentMethod,
                     notes: existing.notes,
                     verificationStatus: existing.verificationStatus,
-                    campaignName: existing.campaignName,
+                    campaignNames: existing.campaignNames,
                     paymentReceiptStatus: newReceiptStatus,
                     isCashOnDelivery: existing.isCashOnDelivery,
-                    photos: existing.photos
+                    photos: existing.photos,
+                    mergedSourceIDs: existing.mergedSourceIDs
                 )
                 state.orders[index] = updated
 
@@ -846,6 +973,9 @@ struct OrdersFeature {
             OrderEditFeature()
         }
         .ifLet(\.$deletionConfirmation, action: \.deletionConfirmation)
+        .ifLet(\.$orderMerge, action: \.orderMerge) {
+            OrderMergeFeature()
+        }
         .ifLet(\.$aiSummary, action: \.aiSummary) {
             AISummaryFeature()
         }
@@ -866,10 +996,11 @@ private extension OrdersFeature {
     func applyEditDraft(_ draft: OrderEditFeature.State, to state: inout State) -> LedgerOrder? {
         let trimmedName = draft.draftCustomerName.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedOrderSource = draft.draftOrderSource.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedCategory = draft.draftCategory.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedCategories = normalizedNames(draft.draftCategories)
         let trimmedPaymentMethod = draft.draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
         // 備註為選填欄位：只 trim 首尾空白與換行 (保留段落間的內部換行)，清空時也如實存回空字串，不像必填欄位那樣 fallback 回原值。
         let trimmedNotes = draft.draftNotes.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedCampaignNames = normalizedNames(draft.draftCampaignNames)
 
         let normalizedAmount = max(0, draft.draftChargedAmount)
         let normalizedItemCost = max(0, draft.draftItemCost)
@@ -918,27 +1049,35 @@ private extension OrdersFeature {
                 cardlessDeductionAmount: normalizedDeduction,
                 cardlessSupplementAmount: normalizedSupplement,
                 orderSource: trimmedOrderSource.isEmpty ? existing.orderSource : trimmedOrderSource,
-                category: trimmedCategory.isEmpty ? existing.category : trimmedCategory,
+                categories: normalizedCategories.isEmpty ? existing.categories : normalizedCategories,
                 paymentMethod: trimmedPaymentMethod.isEmpty ? existing.paymentMethod : trimmedPaymentMethod,
                 notes: trimmedNotes,
                 verificationStatus: normalizedVerificationStatus,
-                campaignName: draft.draftCampaignName.trimmingCharacters(in: .whitespacesAndNewlines),
+                campaignNames: normalizedCampaignNames,
                 paymentReceiptStatus: draft.draftPaymentReceiptStatus,
                 isCashOnDelivery: draft.isSelectedPaymentMethodCOD,
-                photos: draft.draftPhotos
+                photos: draft.draftPhotos,
+                mergedSourceIDs: existing.mergedSourceIDs
             )
             state.orders[index] = updatedOrder
             return updatedOrder
         } else {
             let resolvedName = trimmedName.isEmpty ? "未命名客戶" : trimmedName
             let resolvedOrderSource = trimmedOrderSource.isEmpty ? "未指定" : trimmedOrderSource
-            let resolvedCategory = trimmedCategory.isEmpty ? "未分類" : trimmedCategory
+            let resolvedCategories = normalizedCategories.isEmpty ? ["未分類"] : normalizedCategories
             let initials = String(resolvedName.prefix(2)).uppercased()
             let draftID = "BL-DRAFT-\(uuid().uuidString.prefix(6))"
 
+            // 合併草稿沿用主訂單的客戶 (保留 initials 與 tier，避免被視為新客戶)；一般新訂單維持 .new。
+            let mergePrimaryCustomer = draft.mergeSourceIDs.first
+                .flatMap { primaryID in state.orders.first { $0.id == primaryID }?.customer }
+            let resolvedCustomer = mergePrimaryCustomer.map {
+                LedgerCustomer(name: resolvedName, initials: $0.initials, tier: $0.tier)
+            } ?? LedgerCustomer(name: resolvedName, initials: initials, tier: .new)
+
             let newOrder = LedgerOrder(
                 id: draftID,
-                customer: LedgerCustomer(name: resolvedName, initials: initials, tier: .new),
+                customer: resolvedCustomer,
                 status: draft.draftStatus,
                 currency: draft.draftCurrency,
                 date: draft.draftDate,
@@ -954,14 +1093,15 @@ private extension OrdersFeature {
                 cardlessDeductionAmount: normalizedDeduction,
                 cardlessSupplementAmount: normalizedSupplement,
                 orderSource: resolvedOrderSource,
-                category: resolvedCategory,
+                categories: resolvedCategories,
                 paymentMethod: trimmedPaymentMethod,
                 notes: trimmedNotes,
                 verificationStatus: normalizedVerificationStatus,
-                campaignName: draft.draftCampaignName.trimmingCharacters(in: .whitespacesAndNewlines),
+                campaignNames: normalizedCampaignNames,
                 paymentReceiptStatus: draft.draftPaymentReceiptStatus,
                 isCashOnDelivery: draft.isSelectedPaymentMethodCOD,
-                photos: draft.draftPhotos
+                photos: draft.draftPhotos,
+                mergedSourceIDs: draft.mergeSourceIDs
             )
 
             state.orders.insert(newOrder, at: 0)
@@ -976,11 +1116,55 @@ private extension OrdersFeature {
     func clampRate(_ value: Decimal) -> Decimal {
         max(0, min(1, value))
     }
+
+    /// 將草稿名稱陣列正規化：逐元素 trim、去除空字串與重複 (保序)。
+    /// - Parameter names: 草稿陣列 (類別或開團)。
+    /// - Returns: 正規化後的名稱陣列。
+    func normalizedNames(_ names: [String]) -> [String] {
+        var seen = Set<String>()
+        return names
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && seen.insert($0).inserted }
+    }
 }
 
 // MARK: - Private Method
 
 private extension LedgerOrder {
+
+    /// 回傳僅變更狀態的複本；``LedgerOrder`` 為 immutable struct，須以 memberwise init 重建。
+    /// - Parameter newStatus: 新的訂單狀態。
+    /// - Returns: 重建後的訂單。
+    func withStatus(_ newStatus: OrderStatus) -> LedgerOrder {
+        LedgerOrder(
+            id: id,
+            customer: customer,
+            status: newStatus,
+            currency: currency,
+            date: date,
+            items: items,
+            itemCost: itemCost,
+            domesticShipping: domesticShipping,
+            internationalShipping: internationalShipping,
+            foreignDomesticShipping: foreignDomesticShipping,
+            cardFeeRate: cardFeeRate,
+            platformFeeRate: platformFeeRate,
+            paymentFeeRate: paymentFeeRate,
+            chargedAmount: chargedAmount,
+            cardlessDeductionAmount: cardlessDeductionAmount,
+            cardlessSupplementAmount: cardlessSupplementAmount,
+            orderSource: orderSource,
+            categories: categories,
+            paymentMethod: paymentMethod,
+            notes: notes,
+            verificationStatus: verificationStatus,
+            campaignNames: campaignNames,
+            paymentReceiptStatus: paymentReceiptStatus,
+            isCashOnDelivery: isCashOnDelivery,
+            photos: photos,
+            mergedSourceIDs: mergedSourceIDs
+        )
+    }
 
     /// 供訂單列表搜尋使用的正規化文字。
     var searchableText: String {
@@ -990,9 +1174,8 @@ private extension LedgerOrder {
                 customer.name,
                 customer.initials,
                 orderSource,
-                category,
                 currency.rawValue,
-            ] + items.map(\.name)
+            ] + categories + items.map(\.name)
         )
         .joined(separator: " ")
         .lowercased()

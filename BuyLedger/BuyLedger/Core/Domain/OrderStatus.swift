@@ -30,10 +30,19 @@ enum OrderStatus: String, CaseIterable, Codable, Identifiable, Sendable {
     /// 訂單已取消。
     case cancelled
 
+    /// 訂單已被合併到另一筆新訂單，僅保留作歷史紀錄。
+    case merged
+
     // MARK: - Identifiable Properties
 
     /// 狀態的穩定識別值。
     var id: String { rawValue }
+
+    // MARK: - Static Properties
+
+    /// 視為「已實現」的訂單狀態集合，為收益統計的單一事實來源。
+    /// 「已合併」與「已取消」「報價中」同樣不屬於已實現，避免合併後重複計算收益。
+    static let realizedStatuses: Set<OrderStatus> = [.confirmed, .purchased, .shipping, .delivered]
 
     // MARK: - Display Properties
 
@@ -52,6 +61,8 @@ enum OrderStatus: String, CaseIterable, Codable, Identifiable, Sendable {
             "已交付"
         case .cancelled:
             "已取消"
+        case .merged:
+            "已合併"
         }
     }
 }

@@ -110,6 +110,57 @@ struct CampaignSummaryTests {
         #expect(summary.distribution.isEmpty)
     }
 
+    @Test func mergeResultOrdersAreNotMembers() {
+        // 統計歸屬採「合併前收益」：合併產生的新訂單不是成員，被合併的葉端舊單照常入帳。
+        let orders = [
+            makeOrder(id: "A", customer: "客", campaign: "May-JP", charged: 1_000, status: .merged, itemCost: 200),
+            makeOrder(id: "B", customer: "客", campaign: "June-KR", charged: 2_000, status: .merged, itemCost: 300),
+            makeOrder(
+                id: "M",
+                customer: "客",
+                campaign: "",
+                charged: 3_000,
+                status: .shipping,
+                itemCost: 500,
+                campaignNames: ["May-JP", "June-KR"],
+                mergedSourceIDs: ["A", "B"]
+            ),
+        ]
+
+        let mayTeam = CampaignSummary(campaignName: "May-JP", orders: orders)
+        #expect(mayTeam.memberOrders.map(\.id) == ["A"])
+        #expect(mayTeam.receivables == 1_000)
+        #expect(mayTeam.profit == 800)
+
+        let juneTeam = CampaignSummary(campaignName: "June-KR", orders: orders)
+        #expect(juneTeam.memberOrders.map(\.id) == ["B"])
+        #expect(juneTeam.receivables == 2_000)
+    }
+
+    @Test func multiCampaignLeafCountsFullyInEachCampaign() {
+        // 防衛性規則：葉端訂單若帶多個開團，全額計入它的每一團。
+        let orders = [
+            makeOrder(id: "O1", customer: "客", campaign: "", charged: 900, campaignNames: ["May-JP", "June-KR"]),
+        ]
+
+        #expect(CampaignSummary(campaignName: "May-JP", orders: orders).receivables == 900)
+        #expect(CampaignSummary(campaignName: "June-KR", orders: orders).receivables == 900)
+    }
+
+    @Test func deliveryRatioExcludesMergedFromDenominator() {
+        // 已合併舊單已不再各自等待到貨：到貨進度分母比照已取消排除。
+        let orders = [
+            makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, status: .delivered),
+            makeOrder(id: "O2", customer: "B", campaign: "團", charged: 100, status: .merged),
+            makeOrder(id: "O3", customer: "C", campaign: "團", charged: 100, status: .shipping),
+        ]
+        let summary = CampaignSummary(campaignName: "團", orders: orders)
+
+        #expect(summary.deliveredCount == 1)
+        #expect(summary.activeCount == 2)
+        #expect(abs(summary.deliveryRatio - 0.5) < 0.0001)
+    }
+
     // MARK: - Helper
 
     /// 建立僅填入 ``CampaignSummary`` 相關欄位的訂單；其餘成本／費率欄位皆為 0，使 profit = charged − itemCost。
@@ -121,7 +172,9 @@ struct CampaignSummaryTests {
         quantity: Int = 1,
         receipt: PaymentReceiptStatus = .pending,
         status: OrderStatus = .confirmed,
-        itemCost: Decimal = 0
+        itemCost: Decimal = 0,
+        campaignNames: [String]? = nil,
+        mergedSourceIDs: [String] = []
     ) -> LedgerOrder {
         LedgerOrder(
             id: id,
@@ -141,14 +194,15 @@ struct CampaignSummaryTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "",
-            category: "",
+            categories: [],
             paymentMethod: "",
             notes: "",
             verificationStatus: "",
-            campaignName: campaign,
+            campaignNames: campaignNames ?? (campaign.isEmpty ? [] : [campaign]),
             paymentReceiptStatus: receipt,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: mergedSourceIDs
         )
     }
 }

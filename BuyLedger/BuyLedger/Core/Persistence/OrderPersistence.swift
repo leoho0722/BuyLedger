@@ -73,16 +73,16 @@ actor OrderPersistence {
         try modelContext.save()
     }
 
-    /// 把所有以 `oldName` 為類別的訂單，更名為 `newName`。
+    /// 把所有類別清單包含 `oldName` 的訂單，於陣列內逐元素更名為 `newName`。
+    ///
+    /// `categories` 為複合 (陣列) attribute，SQLite store 不支援以 `#Predicate` 對其做 contains 查詢，故改為全量讀出後在記憶體過濾；cascade rename 屬低頻操作，成本可接受。
     /// - Parameters:
     ///   - oldName: 原本的類別名稱。
     ///   - newName: 新的類別名稱。
     func renameCategory(from oldName: String, to newName: String) throws {
-        let descriptor = FetchDescriptor<OrderRecord>(
-            predicate: #Predicate { $0.category == oldName }
-        )
-        for record in try modelContext.fetch(descriptor) {
-            record.category = newName
+        let records = try modelContext.fetch(FetchDescriptor<OrderRecord>())
+        for record in records where record.categories.contains(oldName) {
+            record.categories = record.categories.map { $0 == oldName ? newName : $0 }
         }
         try modelContext.save()
     }
@@ -115,17 +115,44 @@ actor OrderPersistence {
         try modelContext.save()
     }
 
-    /// 把所有歸屬 `oldName` 開團的訂單，更名為 `newName` (開團 cascade rename)。
+    /// 把所有開團清單包含 `oldName` 的訂單，於陣列內逐元素更名為 `newName` (開團 cascade rename)。
+    ///
+    /// 與 ``renameCategory(from:to:)`` 相同，陣列 attribute 不支援 `#Predicate` contains 查詢，改為全量讀出後在記憶體過濾。
     /// - Parameters:
     ///   - oldName: 原本的開團名稱。
     ///   - newName: 新的開團名稱。
     func renameCampaign(from oldName: String, to newName: String) throws {
-        let descriptor = FetchDescriptor<OrderRecord>(
-            predicate: #Predicate { $0.campaignName == oldName }
-        )
-        for record in try modelContext.fetch(descriptor) {
-            record.campaignName = newName
+        let records = try modelContext.fetch(FetchDescriptor<OrderRecord>())
+        for record in records where record.campaignNames.contains(oldName) {
+            record.campaignNames = record.campaignNames.map { $0 == oldName ? newName : $0 }
         }
+        try modelContext.save()
+    }
+
+    /// 以單一交易完成「寫入合併後新訂單 + 將來源訂單狀態改為已合併」。
+    ///
+    /// 新訂單 upsert 與來源訂單的狀態變更在同一次 `save()` 落盤——任一步失敗時整批不生效，避免中途失敗造成「新單已存在但舊單未轉已合併」的半合併狀態。
+    /// - Parameters:
+    ///   - newOrder: 合併後的新訂單 (含 ``LedgerOrder/mergedSourceIDs``)。
+    ///   - consumedIDs: 被合併的來源訂單編號。
+    func mergeOrders(newOrder: LedgerOrder, consumedIDs: [LedgerOrder.ID]) throws {
+        let newID = newOrder.id
+        let descriptor = FetchDescriptor<OrderRecord>(
+            predicate: #Predicate { $0.id == newID }
+        )
+
+        if let existing = try modelContext.fetch(descriptor).first {
+            existing.apply(newOrder)
+        } else {
+            modelContext.insert(OrderRecord(order: newOrder))
+        }
+
+        let ids = Set(consumedIDs)
+        let records = try modelContext.fetch(FetchDescriptor<OrderRecord>())
+        for record in records where ids.contains(record.id) && record.id != newID {
+            record.status = .merged
+        }
+
         try modelContext.save()
     }
 

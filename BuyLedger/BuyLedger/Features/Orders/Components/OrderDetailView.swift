@@ -188,20 +188,39 @@ private extension OrderDetailView {
     @ViewBuilder
     func orderSourceCard(palette: BLPalette) -> some View {
         BLCard {
-            VStack(alignment: .leading, spacing: BLSpacing.small) {
-                Text("訂單來源")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(palette.secondaryLabel)
-                    .textCase(.uppercase)
+            VStack(alignment: .leading, spacing: BLSpacing.medium) {
+                infoPair(title: "訂單來源", value: orderSourceDisplayText, palette: palette)
 
-                Text(orderSourceDisplayText)
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(palette.label)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .textSelection(.enabled)
+                infoPair(title: "商品類別", value: categoriesDisplayText, palette: palette)
+
+                infoPair(title: "開團", value: campaignsDisplayText, palette: palette)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+    }
+
+    /// 來源卡片內的單組「標題 + 值」；值支援多行換行，多類別/多開團的完整內容在此可見 (列表 tag 截斷時的對照)。
+    /// - Parameters:
+    ///   - title: 欄位標題。
+    ///   - value: 顯示值。
+    ///   - palette: 目前外觀使用的色盤。
+    /// - Returns: 標題與值的直排 view。
+    @ViewBuilder
+    func infoPair(title: String, value: String, palette: BLPalette) -> some View {
+        VStack(alignment: .leading, spacing: BLSpacing.small) {
+            Text(title)
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(palette.secondaryLabel)
+                .textCase(.uppercase)
+
+            Text(value)
+                .font(.subheadline.weight(.semibold))
+                .foregroundStyle(palette.label)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .fixedSize(horizontal: false, vertical: true)
+                .textSelection(.enabled)
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
     }
 
     // MARK: Compact layout
@@ -706,6 +725,22 @@ private extension OrderDetailView {
     var orderSourceDisplayText: String {
         let trimmed = order.orderSource.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "—" : trimmed
+    }
+
+    /// 商品類別顯示文字：以「、」串接全部非空白類別；無有效類別回傳「—」空狀態。
+    var categoriesDisplayText: String {
+        let names = order.categories
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return names.isEmpty ? "—" : names.joined(separator: "、")
+    }
+
+    /// 開團顯示文字：以「、」串接全部非空白開團；未歸團回傳「未歸團」。
+    var campaignsDisplayText: String {
+        let names = order.campaignNames
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+        return names.isEmpty ? "未歸團" : names.joined(separator: "、")
     }
 
     /// 取得跟隨使用者手機偏好語言的幣別顯示文字，例如 `TWD (新台幣)`。

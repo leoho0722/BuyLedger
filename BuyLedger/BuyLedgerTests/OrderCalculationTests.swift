@@ -36,14 +36,15 @@ struct OrderCalculationTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "",
-            category: "美妝",
+            categories: ["美妝"],
             paymentMethod: "",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         let summary = OrderSummary(order: order)
@@ -81,14 +82,15 @@ struct OrderCalculationTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "",
-            category: "測試",
+            categories: ["測試"],
             paymentMethod: "",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         let summary = OrderSummary(order: order)
@@ -124,14 +126,15 @@ struct OrderCalculationTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "",
-            category: "測試",
+            categories: ["測試"],
             paymentMethod: "",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         let summary = OrderSummary(order: order)
@@ -168,14 +171,15 @@ struct OrderCalculationTests {
             cardlessDeductionAmount: Decimal(200),
             cardlessSupplementAmount: Decimal(500),
             orderSource: "",
-            category: "測試",
+            categories: ["測試"],
             paymentMethod: "無卡存款",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         let summary = OrderSummary(order: order)
@@ -209,14 +213,15 @@ struct OrderCalculationTests {
             cardlessDeductionAmount: Decimal(2_000),
             cardlessSupplementAmount: Decimal(0),
             orderSource: "",
-            category: "測試",
+            categories: ["測試"],
             paymentMethod: "無卡",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         let summary = OrderSummary(order: order)
@@ -258,14 +263,15 @@ struct OrderCalculationTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "",
-            category: "精品",
+            categories: ["精品"],
             paymentMethod: "",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         let summary = OrderSummary(order: order)
@@ -302,14 +308,15 @@ struct OrderCalculationTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "",
-            category: "測試",
+            categories: ["測試"],
             paymentMethod: "",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         let summary = OrderSummary(order: order)
@@ -343,14 +350,15 @@ struct OrderCalculationTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "",
-            category: "測試",
+            categories: ["測試"],
             paymentMethod: "貨到付款",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: true,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         let summary = OrderSummary(order: order)
@@ -386,14 +394,15 @@ struct OrderCalculationTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "",
-            category: "測試",
+            categories: ["測試"],
             paymentMethod: "信用卡",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         let summary = OrderSummary(order: order)

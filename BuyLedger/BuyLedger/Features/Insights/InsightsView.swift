@@ -75,7 +75,8 @@ struct InsightsView: View {
 
 // MARK: - Nested Types
 
-private extension InsightsView {
+// 巢狀型別開放 internal：類別收益歸屬 (``InsightsView/categoryBreakdown(orders:)``) 需由單元測試引用。
+extension InsightsView {
 
     /// 分析頁可選的趨勢期間。
     enum InsightsDateRange: String, CaseIterable, Identifiable, Sendable {
@@ -222,6 +223,35 @@ private extension InsightsView {
         let ratio: Double
     }
 
+}
+
+// MARK: - Static Method
+
+extension InsightsView {
+
+    /// 依「合併前收益」歸屬規則彙總各類別獲利 (由高到低)；供 ``computeStats(orders:range:)`` 與單元測試共用。
+    ///
+    /// 僅葉端訂單入組 (``LedgerOrder/contributesToCategoryBreakdown``)：狀態屬已實現或已合併、且非由合併產生；合併產生的訂單不入組，其收益由合併前舊單以原始類別與金額入帳。一筆訂單的獲利全額計入它的每一個類別；類別為空的訂單不歸入任何卡片。
+    /// - Parameter orders: 全部訂單。
+    /// - Returns: 各類別獲利排行。
+    static func categoryBreakdown(orders: [LedgerOrder]) -> [InsightsCategory] {
+        let attributionOrders = orders.filter(\.contributesToCategoryBreakdown)
+        let categoryPairs = attributionOrders.flatMap { order in
+            order.categories
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+                .map { ($0, order) }
+        }
+
+        return Dictionary(grouping: categoryPairs, by: \.0)
+            .map { name, pairs in
+                InsightsCategory(
+                    name: name,
+                    profit: pairs.reduce(Decimal.zero) { $0 + $1.1.summary.profit }
+                )
+            }
+            .sorted { $0.profit > $1.profit }
+    }
 }
 
 // MARK: - ViewBuilder
@@ -689,8 +719,8 @@ private extension InsightsView {
 
     // MARK: Statistics
 
-    /// 視為「已實現」的訂單狀態集合。
-    static let realizedStatuses: Set<OrderStatus> = [.confirmed, .purchased, .shipping, .delivered]
+    /// 視為「已實現」的訂單狀態集合，引用 domain 層的單一事實來源。
+    static let realizedStatuses = OrderStatus.realizedStatuses
 
     /// 熱力圖顯示的週數；同時驅動 ``heatmapCard(palette:)`` 的標題、grid 欄位與 ``computeHeatmap(orders:)`` 的回填邏輯。
     static let heatmapWeekCount = 8
@@ -712,17 +742,7 @@ private extension InsightsView {
         let totalProfit = trendBars.reduce(Decimal(0)) { $0 + Decimal($1.value) }
         let priorPeriodProfit = previousPeriodProfit(realized: realized, range: range, calendar: calendar, now: now)
 
-        let categoryGroup = Dictionary(grouping: realized, by: { $0.category })
-        let categories = categoryGroup
-            .map {
-                InsightsCategory(
-                    name: $0.key,
-                    profit: $0.value.reduce(Decimal.zero) {
-                        $0 + $1.summary.profit
-                    }
-                )
-            }
-            .sorted { $0.profit > $1.profit }
+        let categories = Self.categoryBreakdown(orders: orders)
 
         let palette = BLTheme.palette(for: colorScheme)
         let totalCost = realized.reduce(Decimal.zero) { $0 + $1.summary.totalCost }

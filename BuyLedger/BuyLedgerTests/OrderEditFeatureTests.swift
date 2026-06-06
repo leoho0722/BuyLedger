@@ -27,13 +27,13 @@ struct OrderEditFeatureTests {
         }
     }
 
-    @Test func bindingUpdatesDraftCategory() async {
+    @Test func bindingUpdatesDraftCategories() async {
         let store = TestStore(initialState: OrderEditFeature.State()) {
             OrderEditFeature()
         }
 
-        await store.send(\.binding.draftCategory, "美妝") {
-            $0.draftCategory = "美妝"
+        await store.send(\.binding.draftCategories, ["美妝"]) {
+            $0.draftCategories = ["美妝"]
         }
     }
 
@@ -94,7 +94,7 @@ struct OrderEditFeatureTests {
         let state = OrderEditFeature.State(original: original)
 
         #expect(state.draftCustomerName == original.customer.name)
-        #expect(state.draftCategory == original.category)
+        #expect(state.draftCategories == original.categories)
         #expect(state.draftStatus == original.status)
         #expect(state.draftCurrency == original.currency)
         #expect(state.draftChargedAmount == original.chargedAmount)
@@ -195,14 +195,15 @@ struct OrderEditFeatureTests {
             cardlessDeductionAmount: sample.cardlessDeductionAmount,
             cardlessSupplementAmount: sample.cardlessSupplementAmount,
             orderSource: sample.orderSource,
-            category: sample.category,
+            categories: sample.categories,
             paymentMethod: sample.paymentMethod,
             notes: sample.notes,
             verificationStatus: sample.verificationStatus,
-            campaignName: sample.campaignName,
+            campaignNames: sample.campaignNames,
             paymentReceiptStatus: sample.paymentReceiptStatus,
             isCashOnDelivery: sample.isCashOnDelivery,
-            photos: photos
+            photos: photos,
+            mergedSourceIDs: []
         )
 
         let state = OrderEditFeature.State(original: original)
@@ -298,14 +299,15 @@ struct OrderEditFeatureTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "蝦皮",
-            category: "美妝",
+            categories: ["美妝"],
             paymentMethod: "銀行匯款",
             notes: "",
             verificationStatus: "待對帳",
-            campaignName: "",
+            campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
 
         let state = OrderEditFeature.State(original: original)
@@ -318,7 +320,7 @@ struct OrderEditFeatureTests {
         let state = OrderEditFeature.State()
 
         #expect(state.draftCustomerName.isEmpty)
-        #expect(state.draftCategory.isEmpty)
+        #expect(state.draftCategories.isEmpty)
         #expect(state.draftStatus == .quoting)
         #expect(state.draftCurrency == .twd)
         #expect(state.draftChargedAmount == 0)
@@ -333,4 +335,196 @@ struct OrderEditFeatureTests {
         #expect(state.original == nil)
         #expect(state.availablePaymentMethods.isEmpty)
     }
+
+    // MARK: 單/多選分流 (合併情境)
+
+    @Test func categorySelectedReplacesSelectionWithSingleElement() async {
+        var initial = OrderEditFeature.State()
+        initial.draftCategories = ["美妝", "服飾"]
+
+        let store = TestStore(initialState: initial) {
+            OrderEditFeature()
+        }
+
+        await store.send(.categorySelected("精品")) {
+            $0.draftCategories = ["精品"]
+        }
+    }
+
+    @Test func categoryToggledAddsAndRemovesSelection() async {
+        var initial = OrderEditFeature.State()
+        initial.draftCategories = ["美妝"]
+
+        let store = TestStore(initialState: initial) {
+            OrderEditFeature()
+        }
+
+        await store.send(.categoryToggled("服飾")) {
+            $0.draftCategories = ["美妝", "服飾"]
+        }
+        await store.send(.categoryToggled("美妝")) {
+            $0.draftCategories = ["服飾"]
+        }
+    }
+
+    @Test func campaignSelectedMapsEmptyStringToUnassigned() async {
+        var initial = OrderEditFeature.State()
+        initial.draftCampaignNames = ["四月韓國團"]
+
+        let store = TestStore(initialState: initial) {
+            OrderEditFeature()
+        }
+
+        await store.send(.campaignSelected("")) {
+            $0.draftCampaignNames = []
+        }
+        await store.send(.campaignSelected("三月日本團")) {
+            $0.draftCampaignNames = ["三月日本團"]
+        }
+    }
+
+    @Test func campaignToggledAddsAndRemovesSelection() async {
+        var initial = OrderEditFeature.State()
+        initial.draftCampaignNames = ["四月韓國團"]
+
+        let store = TestStore(initialState: initial) {
+            OrderEditFeature()
+        }
+
+        await store.send(.campaignToggled("三月日本團")) {
+            $0.draftCampaignNames = ["四月韓國團", "三月日本團"]
+        }
+        await store.send(.campaignToggled("四月韓國團")) {
+            $0.draftCampaignNames = ["三月日本團"]
+        }
+    }
+
+    @Test func isMergeContextReflectsMergeSources() {
+        // 一般新訂單與一般既有訂單皆非合併情境。
+        #expect(OrderEditFeature.State().isMergeContext == false)
+        #expect(OrderEditFeature.State(original: LedgerOrder.sampleOrders[0]).isMergeContext == false)
+
+        // 合併確認草稿 (mergeSourceIDs 非空)。
+        var mergeDraft = OrderEditFeature.State()
+        mergeDraft.mergeSourceIDs = ["BL-2604-018", "BL-2604-012"]
+        #expect(mergeDraft.isMergeContext)
+
+        // 編輯由合併產生的訂單 (original.mergedSourceIDs 非空)。
+        let mergedOrder = LedgerOrder.sampleOrders.first { !$0.mergedSourceIDs.isEmpty }
+        #expect(mergedOrder != nil)
+        if let mergedOrder {
+            #expect(OrderEditFeature.State(original: mergedOrder).isMergeContext)
+        }
+    }
+
+    @Test func addCategoryAppendsInMergeContextAndReplacesOtherwise() async {
+        // 合併情境：新增類別直接加入選取，不覆蓋既有選取。
+        var mergeDraft = OrderEditFeature.State()
+        mergeDraft.mergeSourceIDs = ["BL-A", "BL-B"]
+        mergeDraft.draftCategories = ["美妝"]
+
+        let mergeStore = TestStore(initialState: mergeDraft) {
+            OrderEditFeature()
+        }
+        mergeStore.exhaustivity = .off
+
+        await mergeStore.send(.addCategoryTapped("服飾"))
+        #expect(mergeStore.state.draftCategories == ["美妝", "服飾"])
+
+        // 一般情境：新增類別覆寫為單元素陣列。
+        var singleDraft = OrderEditFeature.State()
+        singleDraft.draftCategories = ["美妝"]
+
+        let singleStore = TestStore(initialState: singleDraft) {
+            OrderEditFeature()
+        }
+        singleStore.exhaustivity = .off
+
+        await singleStore.send(.addCategoryTapped("服飾"))
+        #expect(singleStore.state.draftCategories == ["服飾"])
+    }
+
+    // MARK: 金額與明細欄位編輯性 (合併情境不鎖定)
+
+    @Test func mergeRelatedOrdersKeepAmountFieldsEditable() async {
+        // (1) 合併確認草稿：金額欄位 binding 寫入照常生效。
+        var mergeDraft = OrderEditFeature.State()
+        mergeDraft.mergeSourceIDs = ["BL-A", "BL-B"]
+
+        let mergeStore = TestStore(initialState: mergeDraft) {
+            OrderEditFeature()
+        }
+        await mergeStore.send(\.binding.draftChargedAmount, 9_999) {
+            $0.draftChargedAmount = 9_999
+        }
+        await mergeStore.send(\.binding.draftItemCost, 1_234) {
+            $0.draftItemCost = 1_234
+        }
+
+        // (2) 編輯由合併產生的訂單：同樣可編輯。
+        let mergedResult = LedgerOrder.sampleOrders.first { !$0.mergedSourceIDs.isEmpty }
+        #expect(mergedResult != nil)
+        if let mergedResult {
+            let store = TestStore(initialState: OrderEditFeature.State(original: mergedResult)) {
+                OrderEditFeature()
+            }
+            await store.send(\.binding.draftCardFeeRate, 0.02) {
+                $0.draftCardFeeRate = 0.02
+            }
+        }
+
+        // (3) 編輯狀態為「已合併」的舊訂單：同樣可編輯。
+        let mergedAwayStore = TestStore(initialState: OrderEditFeature.State(original: Self.mergedAwayOrder)) {
+            OrderEditFeature()
+        }
+        await mergedAwayStore.send(\.binding.draftChargedAmount, 777) {
+            $0.draftChargedAmount = 777
+        }
+    }
+
+    @Test func availableStatusesHidesMergedUnlessCurrent() {
+        // 一般訂單的狀態選單不提供「已合併」(只能由合併流程寫入)。
+        let normal = OrderEditFeature.State(original: LedgerOrder.sampleOrders[0])
+        #expect(!normal.availableStatuses.contains(.merged))
+
+        // 已合併舊單保留「已合併」選項顯示現值，並可改回其他狀態作為手動回復路徑。
+        let mergedAway = OrderEditFeature.State(original: Self.mergedAwayOrder)
+        #expect(mergedAway.availableStatuses.contains(.merged))
+        #expect(mergedAway.availableStatuses.contains(.purchased))
+    }
+}
+
+// MARK: - Helpers
+
+private extension OrderEditFeatureTests {
+
+    /// 狀態為「已合併」的葉端舊訂單樣本，供金額鎖定與狀態選單測試使用。
+    static let mergedAwayOrder = LedgerOrder(
+        id: "BL-MERGED-AWAY",
+        customer: LedgerCustomer(name: "測試客戶", initials: "TC", tier: .regular),
+        status: .merged,
+        currency: .twd,
+        date: Date(timeIntervalSince1970: 1_700_000_000),
+        items: [],
+        itemCost: 100,
+        domesticShipping: 0,
+        internationalShipping: 0,
+        foreignDomesticShipping: 0,
+        cardFeeRate: 0,
+        platformFeeRate: 0,
+        paymentFeeRate: 0,
+        chargedAmount: 500,
+        cardlessDeductionAmount: 0,
+        cardlessSupplementAmount: 0,
+        orderSource: "蝦皮",
+        categories: ["美妝"],
+        paymentMethod: "信用卡",
+        notes: "",
+        verificationStatus: "",
+        campaignNames: [],
+        paymentReceiptStatus: .pending,
+        isCashOnDelivery: false,
+        photos: [],
+        mergedSourceIDs: []
+    )
 }

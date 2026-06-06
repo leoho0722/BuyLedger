@@ -58,8 +58,8 @@ struct OrderRowView: View {
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
 
-                if !order.category.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
-                    BLTagPill(order.category, systemImage: "tag")
+                if !categoriesTagText.isEmpty {
+                    BLTagPill(categoriesTagText, systemImage: "tag")
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -79,6 +79,31 @@ struct OrderRowView: View {
             }
         }
         .padding(.vertical, BLSpacing.extraSmall)
+    }
+}
+
+// MARK: - Static Method
+
+extension OrderRowView {
+
+    /// 第三行類別 tag 的顯示文字：以「、」串接全部非空白類別 (單一 capsule)；無有效類別時為空字串、不渲染第三行。開放 internal 供單元測試斷言 join/缺席邏輯。
+    /// - Parameter categories: 訂單的類別清單。
+    /// - Returns: tag 顯示文字。
+    static func categoriesTagText(for categories: [String]) -> String {
+        categories
+            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty }
+            .joined(separator: "、")
+    }
+}
+
+// MARK: - Private Method
+
+private extension OrderRowView {
+
+    /// 第三行類別 tag 的顯示文字 (instance 便利存取)。
+    var categoriesTagText: String {
+        Self.categoriesTagText(for: order.categories)
     }
 }
 

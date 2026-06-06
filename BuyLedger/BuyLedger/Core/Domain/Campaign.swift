@@ -9,7 +9,7 @@ import Foundation
 
 /// 開團 (一次團購批次)。
 ///
-/// 開團是有狀態的獨立實體：自帶生命週期狀態與開團／結單日期，並以 ``settledDate`` 記錄「結團」這個完成里程碑。訂單透過 ``LedgerOrder/campaignName`` 以名稱字串歸屬到某個開團；分貨清單與結團結算則完全由歸屬訂單彙總而來，本型別不保存任何彙總值。
+/// 開團是有狀態的獨立實體：自帶生命週期狀態與開團／結單日期，並以 ``settledDate`` 記錄「結團」這個完成里程碑。訂單透過 ``LedgerOrder/campaignNames`` 以名稱字串歸屬到某個開團；分貨清單與結團結算則完全由歸屬訂單彙總而來，本型別不保存任何彙總值。
 struct Campaign: Equatable, Identifiable, Sendable {
 
     // MARK: - Identifiable Properties
@@ -19,7 +19,7 @@ struct Campaign: Equatable, Identifiable, Sendable {
 
     // MARK: - Data Properties
 
-    /// 開團名稱；同時是訂單 ``LedgerOrder/campaignName`` 的歸屬鍵。
+    /// 開團名稱；同時是訂單 ``LedgerOrder/campaignNames`` 的歸屬鍵。
     var name: String
 
     /// 開團日期。

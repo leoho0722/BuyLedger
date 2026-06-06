@@ -252,3 +252,91 @@ code:
   - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
   - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
 -->
+
+---
+### Requirement: Optional multi-select mode
+
+The option picker SHALL support an opt-in multi-select mode driven by a set of selected option strings. In this mode, tapping an option row SHALL toggle that option's membership in the selection without dismissing the sheet, every selected row SHALL show the selection indicator simultaneously, and the sheet SHALL provide an explicit done action that dismisses it. Search and the add-option flows SHALL behave identically to single-select mode. When multi-select mode is not requested, the picker SHALL preserve the existing single-select behavior unchanged.
+
+#### Scenario: Toggling rows keeps the sheet open
+
+- **WHEN** the picker is presented in multi-select mode and the user taps the rows "beauty" and "snacks"
+- **THEN** both rows show the selection indicator and the sheet remains presented
+
+#### Scenario: Deselecting a selected row
+
+- **WHEN** the user taps an already-selected row in multi-select mode
+- **THEN** that row's selection indicator is removed while the other selections are kept
+
+#### Scenario: Done dismisses with the final selection
+
+- **WHEN** the user taps the done action in multi-select mode
+- **THEN** the sheet dismisses and the caller receives the final selected set
+
+#### Scenario: Single-select callers are unaffected
+
+- **WHEN** the picker is presented without multi-select mode
+- **THEN** tapping a row selects exactly that option and dismisses the sheet, identical to the existing behavior
+
+<!-- @trace
+source: add-order-merge
+updated: 2026-06-07
+code:
+  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+  - BuyLedger/BuyLedgerTests/InsightsAttributionTests.swift
+  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
+  - BuyLedger/BuyLedger/Features/Insights/InsightsView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
+  - BuyLedger/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - BuyLedger/BuyLedgerTests/OrderStatusTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
+  - BuyLedger/BuyLedgerTests/OrderMergeTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Campaigns/CampaignSummary.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.2.png
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderStatus+Presentation.swift
+  - BuyLedger/BuyLedger/Features/Dashboard/DashboardView.swift
+  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - BuyLedger/BuyLedger/Core/Domain/Campaign.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
+  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
+  - BuyLedger/BuyLedger/Core/Domain/OrderMerge.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - BuyLedger/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
+  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
+  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - BuyLedger/BuyLedger/Core/Domain/OrderStatus.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderDetailView.swift
+  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderStatusFilter.swift
+-->

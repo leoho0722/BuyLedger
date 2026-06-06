@@ -68,14 +68,15 @@ extension LedgerOrder {
                 cardlessDeductionAmount: order.cardlessDeductionAmount,
                 cardlessSupplementAmount: order.cardlessSupplementAmount,
                 orderSource: order.orderSource,
-                category: order.category,
+                categories: order.categories,
                 paymentMethod: order.paymentMethod,
                 notes: order.notes,
                 verificationStatus: order.verificationStatus,
-                campaignName: assignment.campaign,
+                campaignNames: [assignment.campaign],
                 paymentReceiptStatus: assignment.receipt,
                 isCashOnDelivery: order.isCashOnDelivery,
-                photos: order.photos
+                photos: order.photos,
+                mergedSourceIDs: order.mergedSourceIDs
             )
         }
 

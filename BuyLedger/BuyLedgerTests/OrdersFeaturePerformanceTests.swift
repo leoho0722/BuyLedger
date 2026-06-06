@@ -98,14 +98,15 @@ private extension OrdersFeaturePerformanceTests {
                 cardlessDeductionAmount: 0,
                 cardlessSupplementAmount: 0,
                 orderSource: "蝦皮",
-                category: category,
+                categories: [category],
                 paymentMethod: "",
                 notes: "",
                 verificationStatus: "",
-                campaignName: "",
+                campaignNames: [],
                 paymentReceiptStatus: .pending,
                 isCashOnDelivery: false,
-                photos: []
+                photos: [],
+                mergedSourceIDs: []
             )
         }
     }

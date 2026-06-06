@@ -193,14 +193,15 @@ struct RootFeatureTests {
             cardlessDeductionAmount: order.cardlessDeductionAmount,
             cardlessSupplementAmount: order.cardlessSupplementAmount,
             orderSource: order.orderSource,
-            category: order.category,
+            categories: order.categories,
             paymentMethod: "匯款",
             notes: order.notes,
             verificationStatus: order.verificationStatus,
-            campaignName: order.campaignName,
+            campaignNames: order.campaignNames,
             paymentReceiptStatus: order.paymentReceiptStatus,
             isCashOnDelivery: order.isCashOnDelivery,
-            photos: order.photos
+            photos: order.photos,
+            mergedSourceIDs: []
         )
 
         var state = RootFeature.State()
@@ -230,6 +231,58 @@ struct RootFeatureTests {
         let renamed = store.state.orders.paymentMethodMaster.first { $0.name == "銀行匯款" }
         #expect(store.state.orders.paymentMethodMaster.contains { $0.name == "匯款" } == false)
         #expect(renamed?.isBankTransfer == false)
+    }
+
+    @Test func categoryRenameCascadesInsideMultiCategoryOrders() async {
+        // 多類別訂單僅目標元素改名，其餘元素與順序不變；未含目標的訂單不受影響。
+        let multi = Self.makeTestOrder(id: "T-MULTI", categories: ["美妝", "服飾"], customerName: "客")
+        let single = Self.makeTestOrder(id: "T-SINGLE", categories: ["服飾"], customerName: "客")
+
+        var state = RootFeature.State()
+        state.orders.orders = [multi, single]
+        state.orders.categoryMaster = ["美妝", "服飾"]
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+        store.exhaustivity = .off
+
+        await store.send(.categoryManagement(.renameRequested(from: "美妝", to: "彩妝保養")))
+        await store.finish()
+
+        #expect(store.state.orders.orders.first { $0.id == "T-MULTI" }?.categories == ["彩妝保養", "服飾"])
+        #expect(store.state.orders.orders.first { $0.id == "T-SINGLE" }?.categories == ["服飾"])
+        #expect(store.state.orders.categoryMaster.contains("彩妝保養"))
+        #expect(!store.state.orders.categoryMaster.contains("美妝"))
+    }
+
+    @Test func campaignRenameCascadesInsideMultiCampaignOrders() async {
+        // 開團改名於陣列內逐元素取代 (in-memory 副本)；其餘元素不變。
+        let multi = Self.makeTestOrder(
+            id: "T-CAMP",
+            categories: ["美妝"],
+            customerName: "客",
+            campaignNames: ["三月日本團", "四月韓國團"]
+        )
+
+        var state = RootFeature.State()
+        state.orders.orders = [multi]
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+        store.exhaustivity = .off
+
+        await store.send(.campaigns(.campaignRenamed(from: "三月日本團", to: "三月日本團 (補)")))
+        await store.finish()
+
+        #expect(store.state.orders.orders.first?.campaignNames == ["三月日本團 (補)", "四月韓國團"])
     }
 
 #if !os(macOS)
@@ -274,6 +327,16 @@ private extension RootFeatureTests {
         category: String,
         customerName: String
     ) -> LedgerOrder {
+        makeTestOrder(id: id, categories: [category], customerName: customerName)
+    }
+
+    /// 多類別/多開團版本的測試訂單 helper。
+    static func makeTestOrder(
+        id: String,
+        categories: [String],
+        customerName: String,
+        campaignNames: [String] = []
+    ) -> LedgerOrder {
         LedgerOrder(
             id: id,
             customer: LedgerCustomer(name: customerName, initials: "TC", tier: .new),
@@ -292,14 +355,15 @@ private extension RootFeatureTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "測試",
-            category: category,
+            categories: categories,
             paymentMethod: "",
             notes: "",
             verificationStatus: "",
-            campaignName: "",
+            campaignNames: campaignNames,
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
-            photos: []
+            photos: [],
+            mergedSourceIDs: []
         )
     }
 }
