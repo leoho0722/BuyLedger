@@ -600,7 +600,8 @@ struct RootFeature {
             verificationStatus: verificationStatus ?? order.verificationStatus,
             campaignName: campaignName ?? order.campaignName,
             paymentReceiptStatus: order.paymentReceiptStatus,
-            isCashOnDelivery: order.isCashOnDelivery
+            isCashOnDelivery: order.isCashOnDelivery,
+            photos: order.photos
         )
     }
 }

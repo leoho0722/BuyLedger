@@ -78,7 +78,8 @@ struct OrderPersistenceTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
 
         try await persistence.upsert(order)
@@ -121,7 +122,8 @@ struct OrderPersistenceTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
 
         try await persistence.upsert(modified)
@@ -161,13 +163,88 @@ struct OrderPersistenceTests {
             verificationStatus: "待對帳",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
 
         try await persistence.upsert(order)
 
         let stored = try await persistence.fetchAll()
         #expect(stored.first?.verificationStatus == "待對帳", "對帳狀態應隨訂單一併 round-trip")
+    }
+
+    @Test func upsertPersistsPhotosRoundTrip() async throws {
+        let persistence = try makePersistence()
+
+        let photoA = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x01])
+        let photoB = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x02])
+        let order = LedgerOrder(
+            id: "BL-TEST-PHOTO",
+            customer: LedgerCustomer(name: "照片測試", initials: "PH", tier: .regular),
+            status: .confirmed,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_700_000_000),
+            items: [],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 0,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "蝦皮",
+            category: "美妝",
+            paymentMethod: "",
+            notes: "",
+            verificationStatus: "",
+            campaignName: "",
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false,
+            photos: [photoA, photoB]
+        )
+
+        try await persistence.upsert(order)
+
+        let inserted = try await persistence.fetchAll()
+        #expect(inserted.first?.photos == [photoA, photoB], "照片應隨訂單一併 round-trip 且 byte 級不變")
+
+        let photoC = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x03])
+        let modified = LedgerOrder(
+            id: order.id,
+            customer: order.customer,
+            status: order.status,
+            currency: order.currency,
+            date: order.date,
+            items: order.items,
+            itemCost: order.itemCost,
+            domesticShipping: order.domesticShipping,
+            internationalShipping: order.internationalShipping,
+            foreignDomesticShipping: order.foreignDomesticShipping,
+            cardFeeRate: order.cardFeeRate,
+            platformFeeRate: order.platformFeeRate,
+            paymentFeeRate: order.paymentFeeRate,
+            chargedAmount: order.chargedAmount,
+            cardlessDeductionAmount: order.cardlessDeductionAmount,
+            cardlessSupplementAmount: order.cardlessSupplementAmount,
+            orderSource: order.orderSource,
+            category: order.category,
+            paymentMethod: order.paymentMethod,
+            notes: order.notes,
+            verificationStatus: order.verificationStatus,
+            campaignName: order.campaignName,
+            paymentReceiptStatus: order.paymentReceiptStatus,
+            isCashOnDelivery: order.isCashOnDelivery,
+            photos: [photoC]
+        )
+
+        try await persistence.upsert(modified)
+
+        let updated = try await persistence.fetchAll()
+        #expect(updated.count == 1, "同 id upsert 不應新增重複資料")
+        #expect(updated.first?.photos == [photoC], "更新訂單時照片應一併覆寫")
     }
 
     @Test func renameVerificationStatusUpdatesMatchingOrders() async throws {
@@ -196,7 +273,8 @@ struct OrderPersistenceTests {
             verificationStatus: "待對帳",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
         try await persistence.upsert(order)
 

@@ -112,6 +112,11 @@ final class OrderRecord {
     /// 帶 default `false` 走 SwiftData lightweight migration；只有當 ``paymentMethod`` 對應的 ``PaymentMethodRecord/isCashOnDelivery`` 為 `true` 時，儲存表單才會寫入 `true`。為 `true` 時 ``OrderSummary`` 會在獲利中額外扣除三種運費。
     var isCashOnDelivery: Bool = false
 
+    /// 訂單照片 (已正規化的 JPEG data，嵌入式 Codable 陣列儲存)。
+    ///
+    /// 帶 default 空陣列走 SwiftData lightweight migration：舊 row 升級時自動填空陣列。張數上限由 ``LedgerOrder/maxPhotoCount`` 於編輯流程守門，持久層不重複驗證。
+    var photos: [Data] = []
+
     // MARK: - Init
 
     /// 依領域型別 ``LedgerOrder`` 建立持久化記錄。
@@ -141,6 +146,7 @@ final class OrderRecord {
         self.campaignName = order.campaignName
         self.paymentReceiptStatus = order.paymentReceiptStatus.rawValue
         self.isCashOnDelivery = order.isCashOnDelivery
+        self.photos = order.photos
     }
 }
 
@@ -177,7 +183,8 @@ extension OrderRecord {
             verificationStatus: verificationStatus,
             campaignName: campaignName,
             paymentReceiptStatus: PaymentReceiptStatus(rawValue: paymentReceiptStatus) ?? .pending,
-            isCashOnDelivery: isCashOnDelivery
+            isCashOnDelivery: isCashOnDelivery,
+            photos: photos
         )
     }
 
@@ -207,5 +214,6 @@ extension OrderRecord {
         self.campaignName = order.campaignName
         self.paymentReceiptStatus = order.paymentReceiptStatus.rawValue
         self.isCashOnDelivery = order.isCashOnDelivery
+        self.photos = order.photos
     }
 }

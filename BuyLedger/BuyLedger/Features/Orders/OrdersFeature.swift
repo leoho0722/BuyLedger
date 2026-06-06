@@ -718,7 +718,8 @@ struct OrdersFeature {
                     verificationStatus: existing.verificationStatus,
                     campaignName: existing.campaignName,
                     paymentReceiptStatus: existing.paymentReceiptStatus,
-                    isCashOnDelivery: existing.isCashOnDelivery
+                    isCashOnDelivery: existing.isCashOnDelivery,
+                    photos: existing.photos
                 )
                 state.orders[index] = updated
 
@@ -758,7 +759,8 @@ struct OrdersFeature {
                     verificationStatus: existing.verificationStatus,
                     campaignName: existing.campaignName,
                     paymentReceiptStatus: newReceiptStatus,
-                    isCashOnDelivery: existing.isCashOnDelivery
+                    isCashOnDelivery: existing.isCashOnDelivery,
+                    photos: existing.photos
                 )
                 state.orders[index] = updated
 
@@ -922,7 +924,8 @@ private extension OrdersFeature {
                 verificationStatus: normalizedVerificationStatus,
                 campaignName: draft.draftCampaignName.trimmingCharacters(in: .whitespacesAndNewlines),
                 paymentReceiptStatus: draft.draftPaymentReceiptStatus,
-                isCashOnDelivery: draft.isSelectedPaymentMethodCOD
+                isCashOnDelivery: draft.isSelectedPaymentMethodCOD,
+                photos: draft.draftPhotos
             )
             state.orders[index] = updatedOrder
             return updatedOrder
@@ -957,7 +960,8 @@ private extension OrdersFeature {
                 verificationStatus: normalizedVerificationStatus,
                 campaignName: draft.draftCampaignName.trimmingCharacters(in: .whitespacesAndNewlines),
                 paymentReceiptStatus: draft.draftPaymentReceiptStatus,
-                isCashOnDelivery: draft.isSelectedPaymentMethodCOD
+                isCashOnDelivery: draft.isSelectedPaymentMethodCOD,
+                photos: draft.draftPhotos
             )
 
             state.orders.insert(newOrder, at: 0)

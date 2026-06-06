@@ -148,7 +148,8 @@ struct CampaignIntegrationTests {
             verificationStatus: "",
             campaignName: campaign,
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
     }
 

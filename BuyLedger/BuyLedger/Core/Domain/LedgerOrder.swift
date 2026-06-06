@@ -96,6 +96,18 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 於儲存時依選到的付款方式 ``PaymentMethodInfo/isCashOnDelivery`` 快照寫入 (與無卡欄位同樣為 data-driven，``OrderSummary`` 只拿得到本型別、看不到付款方式主檔旗標)。為 `true` 時，因收款金額已含預估的三種運費，``OrderSummary`` 會在獲利中額外扣除 ``domesticShipping`` + ``internationalShipping`` + ``foreignDomesticShipping``；非貨到付款一律為 `false`，等同維持舊行為。
     let isCashOnDelivery: Bool
 
+    /// 訂單照片 (已正規化的 JPEG data)。
+    ///
+    /// 每張照片於匯入時經 `PhotoDataProcessor` 降採樣與重編碼後存入；張數上限為 ``maxPhotoCount``，由 ``OrderEditFeature`` 的 reducer 守門。無照片時為空陣列。
+    let photos: [Data]
+
+    // MARK: - Static Properties
+
+    /// 單筆訂單可附加的照片張數上限。
+    ///
+    /// 作為唯一來源：編輯表單的 PhotosPicker `maxSelectionCount`、計數標籤與 reducer 的截斷守門皆引用此值。
+    static let maxPhotoCount = 5
+
     // MARK: - Computed Properties
 
     /// 訂單的財務摘要。

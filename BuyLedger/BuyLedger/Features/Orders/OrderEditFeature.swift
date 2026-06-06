@@ -7,6 +7,8 @@
 
 import ComposableArchitecture
 import Foundation
+import PhotosUI
+import SwiftUI
 
 /// 編輯或新增訂單表單的功能。
 ///
@@ -93,6 +95,12 @@ struct OrderEditFeature {
         /// 收款狀態草稿 (待收款／已收款)；對所有付款方式皆顯示。
         var draftPaymentReceiptStatus: PaymentReceiptStatus
 
+        /// 訂單照片草稿 (已正規化的 JPEG data)；上限 ``LedgerOrder/maxPhotoCount`` 張，由 reducer 在 ``OrderEditFeature/Action/photosImported(_:)`` 截斷守門。
+        var draftPhotos: [Data]
+
+        /// PhotosPicker 的當前選取項目；one-shot 模式——匯入完成即清空，讓下次開啟 picker 重新選取。
+        var photoPickerSelection: [PhotosPickerItem] = []
+
         /// 可供選擇的訂單來源清單；由父層 reducer 從現有訂單與主檔聚合後注入，並在使用者新增來源時即時擴充。
         var availableOrderSources: [String]
 
@@ -148,6 +156,16 @@ struct OrderEditFeature {
             isSelectedPaymentMethodCardless || isSelectedPaymentMethodBankTransfer
         }
 
+        /// 還可加入的照片張數；供 PhotosPicker 的 `maxSelectionCount` 與計數標籤使用。
+        var remainingPhotoCapacity: Int {
+            max(0, LedgerOrder.maxPhotoCount - draftPhotos.count)
+        }
+
+        /// 是否還能加入照片 (尚未達 ``LedgerOrder/maxPhotoCount`` 上限)；上限已滿時編輯表單隱藏加入按鈕。
+        var canAddMorePhotos: Bool {
+            remainingPhotoCapacity > 0
+        }
+
         // MARK: - Init
 
         /// 依原始訂單建立草稿狀態。
@@ -191,6 +209,7 @@ struct OrderEditFeature {
             self.draftVerificationStatus = original?.verificationStatus ?? ""
             self.draftCampaignName = original?.campaignName ?? ""
             self.draftPaymentReceiptStatus = original?.paymentReceiptStatus ?? .pending
+            self.draftPhotos = original?.photos ?? []
 
             var orderSources = availableOrderSources
             let originalOrderSource = original?.orderSource.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
@@ -284,6 +303,12 @@ struct OrderEditFeature {
 
         /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔。
         case availableCurrenciesLoaded([CurrencyCode])
+
+        /// PhotosPicker 選取項目經 ``PhotoClient`` 載入與正規化完成。
+        case photosImported([Data])
+
+        /// 使用者點擊縮圖的刪除鈕，移除指定 index 的草稿照片。
+        case deletePhotoTapped(Int)
     }
 
     // MARK: - Dependency Properties
@@ -306,6 +331,9 @@ struct OrderEditFeature {
     /// 幣別主檔資料來源；用於 sheet `.task` 從 cache 拉最新清單 (cache 由 ``RootFeature`` 啟動時 TTL 7 天刷新)。
     @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
 
+    /// 照片匯入管線；把 PhotosPicker 選取項目載入並正規化為可持久化的 JPEG data。
+    @Dependency(PhotoClient.self) private var photoClient
+
     // MARK: - Reducer Body
 
     /// 表單 reducer。
@@ -314,6 +342,15 @@ struct OrderEditFeature {
 
         Reduce { state, action in
             switch action {
+            case .binding(\.photoPickerSelection):
+                let items = state.photoPickerSelection
+                guard !items.isEmpty else { return .none }
+
+                let photoClient = photoClient
+                return .run { send in
+                    await send(.photosImported(photoClient.importPhotos(items)))
+                }
+
             case .binding:
                 return .none
 
@@ -473,6 +510,18 @@ struct OrderEditFeature {
                 merged.insert(state.draftCurrency)
                 state.availableCurrencies = merged
                     .sorted { $0.rawValue.localizedStandardCompare($1.rawValue) == .orderedAscending }
+                return .none
+
+            case let .photosImported(imported):
+                // 以剩餘容量截斷，無論 picker 回傳幾張都不超過上限；匯入完成即清空選取 (one-shot)。
+                state.draftPhotos.append(contentsOf: imported.prefix(state.remainingPhotoCapacity))
+                state.photoPickerSelection = []
+                return .none
+
+            case let .deletePhotoTapped(index):
+                guard state.draftPhotos.indices.contains(index) else { return .none }
+
+                state.draftPhotos.remove(at: index)
                 return .none
             }
         }

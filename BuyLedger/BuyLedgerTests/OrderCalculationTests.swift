@@ -42,7 +42,8 @@ struct OrderCalculationTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
 
         let summary = OrderSummary(order: order)
@@ -86,7 +87,8 @@ struct OrderCalculationTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
 
         let summary = OrderSummary(order: order)
@@ -128,7 +130,8 @@ struct OrderCalculationTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
 
         let summary = OrderSummary(order: order)
@@ -171,7 +174,8 @@ struct OrderCalculationTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
 
         let summary = OrderSummary(order: order)
@@ -211,7 +215,8 @@ struct OrderCalculationTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
 
         let summary = OrderSummary(order: order)
@@ -259,7 +264,8 @@ struct OrderCalculationTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
 
         let summary = OrderSummary(order: order)
@@ -302,7 +308,8 @@ struct OrderCalculationTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
 
         let summary = OrderSummary(order: order)
@@ -342,7 +349,8 @@ struct OrderCalculationTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: true
+            isCashOnDelivery: true,
+            photos: []
         )
 
         let summary = OrderSummary(order: order)
@@ -384,7 +392,8 @@ struct OrderCalculationTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
 
         let summary = OrderSummary(order: order)

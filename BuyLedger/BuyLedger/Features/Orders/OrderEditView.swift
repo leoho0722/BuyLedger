@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import PhotosUI
 import SwiftUI
 
 /// 編輯或新增訂單的表單畫面。
@@ -32,6 +33,9 @@ struct OrderEditView: View {
 
     /// 是否顯示「幣別」選擇 sheet。
     @State private var showsCurrencySheet = false
+
+    /// 照片檢視器目前聚焦的照片；`nil` 代表檢視器未開啟。
+    @State private var photoViewerSelection: PhotoViewerSelection?
 
     /// 用於 ``orderDateRow`` 在 picker 寫回時取得「當下這一刻」的秒；測試可注入固定值。
     @Dependency(\.date) private var date
@@ -162,6 +166,8 @@ struct OrderEditView: View {
 
                 notesSection
 
+                photosSection
+
                 if let original = store.original {
                     Section("原始訂單") {
                         LabeledContent("單號", value: original.id)
@@ -289,10 +295,36 @@ struct OrderEditView: View {
                     }
                 )
             }
+            .sheet(item: $photoViewerSelection) { selection in
+                // 三平台統一以 sheet 呈現照片檢視器：title 置中顯示計數、右上 toolbar ✕ 關閉。
+                BLPhotoViewer(
+                    photos: store.draftPhotos,
+                    initialIndex: selection.id
+                ) {
+                    photoViewerSelection = nil
+                }
+#if os(macOS)
+                .frame(minWidth: 640, minHeight: 480)
+#endif
+            }
         }
 #if os(macOS)
         .frame(minWidth: 540, minHeight: 520)
 #endif
+    }
+}
+
+// MARK: - Nested Types
+
+private extension OrderEditView {
+
+    /// 照片檢視器的開啟狀態：以被點擊照片的 index 作為 sheet item 的識別值。
+    struct PhotoViewerSelection: Identifiable {
+
+        // MARK: - Identifiable Properties
+
+        /// 被點擊照片在 ``OrderEditFeature/State/draftPhotos`` 中的 index，同時作為 item 識別。
+        let id: Int
     }
 }
 
@@ -482,6 +514,49 @@ private extension OrderEditView {
                 .lineLimit(3...8)
         } header: {
             Text("備註")
+        }
+    }
+
+    /// 訂單照片區段：已加入照片的縮圖橫列 + PhotosPicker 加入按鈕與計數標籤。
+    ///
+    /// 加入按鈕僅在尚未達 ``LedgerOrder/maxPhotoCount`` 上限時顯示；picker 的 `maxSelectionCount` 設為剩餘容量，reducer 端另以截斷守門。
+    @ViewBuilder
+    var photosSection: some View {
+        Section {
+            if !store.draftPhotos.isEmpty {
+                ScrollView(.horizontal) {
+                    HStack(spacing: BLSpacing.small) {
+                        ForEach(Array(store.draftPhotos.enumerated()), id: \.offset) { index, data in
+                            BLPhotoThumbnail(
+                                imageData: data,
+                                onTap: {
+                                    photoViewerSelection = PhotoViewerSelection(id: index)
+                                }
+                            ) {
+                                store.send(.deletePhotoTapped(index))
+                            }
+                        }
+                    }
+                    .padding(.vertical, 2)
+                }
+                .scrollIndicators(.hidden)
+            }
+
+            if store.canAddMorePhotos {
+                PhotosPicker(
+                    selection: $store.photoPickerSelection,
+                    maxSelectionCount: store.remainingPhotoCapacity,
+                    matching: .images
+                ) {
+                    Label("加入照片", systemImage: "photo.badge.plus")
+                }
+            }
+        } header: {
+            Text("訂單照片 (\(store.draftPhotos.count)/\(LedgerOrder.maxPhotoCount))")
+        } footer: {
+            Text("最多 \(LedgerOrder.maxPhotoCount) 張；照片會縮圖壓縮後隨訂單儲存。")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
     }
 

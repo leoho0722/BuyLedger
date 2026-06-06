@@ -199,7 +199,8 @@ struct RootFeatureTests {
             verificationStatus: order.verificationStatus,
             campaignName: order.campaignName,
             paymentReceiptStatus: order.paymentReceiptStatus,
-            isCashOnDelivery: order.isCashOnDelivery
+            isCashOnDelivery: order.isCashOnDelivery,
+            photos: order.photos
         )
 
         var state = RootFeature.State()
@@ -297,7 +298,8 @@ private extension RootFeatureTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
     }
 }

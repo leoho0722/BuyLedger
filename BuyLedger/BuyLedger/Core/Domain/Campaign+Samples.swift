@@ -74,7 +74,8 @@ extension LedgerOrder {
                 verificationStatus: order.verificationStatus,
                 campaignName: assignment.campaign,
                 paymentReceiptStatus: assignment.receipt,
-                isCashOnDelivery: order.isCashOnDelivery
+                isCashOnDelivery: order.isCashOnDelivery,
+                photos: order.photos
             )
         }
 

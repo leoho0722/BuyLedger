@@ -104,7 +104,8 @@ private extension OrdersFeaturePerformanceTests {
                 verificationStatus: "",
                 campaignName: "",
                 paymentReceiptStatus: .pending,
-                isCashOnDelivery: false
+                isCashOnDelivery: false,
+                photos: []
             )
         }
     }

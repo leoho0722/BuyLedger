@@ -7,6 +7,8 @@
 
 import ComposableArchitecture
 import Foundation
+import PhotosUI
+import SwiftUI
 import Testing
 @testable import BuyLedger
 
@@ -104,6 +106,111 @@ struct OrderEditFeatureTests {
         #expect(state.draftNotes == original.notes)
     }
 
+    @Test func photosImportedAppendsUpToCap() async {
+        let store = TestStore(initialState: OrderEditFeature.State()) {
+            OrderEditFeature()
+        }
+
+        // 0 + 5 → 5：全數收下。
+        let five = (1...5).map { Data([UInt8($0)]) }
+        await store.send(.photosImported(five)) {
+            $0.draftPhotos = five
+        }
+
+        // 5 + 1 → 5：已滿不再追加 (state 無變化)。
+        await store.send(.photosImported([Data([0x06])]))
+    }
+
+    @Test func photosImportedTruncatesBatchExceedingCap() async {
+        var initial = OrderEditFeature.State()
+        initial.draftPhotos = [Data([0x01]), Data([0x02]), Data([0x03])]
+        let store = TestStore(initialState: initial) {
+            OrderEditFeature()
+        }
+
+        // 3 + 4 → 5：依序只收前 2 張，超出上限的捨棄。
+        let batch = [Data([0x04]), Data([0x05]), Data([0x06]), Data([0x07])]
+        await store.send(.photosImported(batch)) {
+            $0.draftPhotos = [Data([0x01]), Data([0x02]), Data([0x03]), Data([0x04]), Data([0x05])]
+        }
+    }
+
+    @Test func pickerSelectionImportsPhotosAndClearsSelection() async {
+        let imported = [Data([0xAA]), Data([0xBB])]
+        let store = TestStore(initialState: OrderEditFeature.State()) {
+            OrderEditFeature()
+        } withDependencies: {
+            $0[PhotoClient.self] = PhotoClient(importPhotos: { _ in imported })
+        }
+
+        let item = PhotosPickerItem(itemIdentifier: "test-item")
+        await store.send(\.binding.photoPickerSelection, [item]) {
+            $0.photoPickerSelection = [item]
+        }
+
+        // 匯入完成：照片進草稿、picker 選取清空 (one-shot)。
+        await store.receive(\.photosImported) {
+            $0.draftPhotos = imported
+            $0.photoPickerSelection = []
+        }
+    }
+
+    @Test func deletePhotoRemovesExactIndexPreservingOrder() async {
+        let photoA = Data([0x0A])
+        let photoB = Data([0x0B])
+        let photoC = Data([0x0C])
+        var initial = OrderEditFeature.State()
+        initial.draftPhotos = [photoA, photoB, photoC]
+        let store = TestStore(initialState: initial) {
+            OrderEditFeature()
+        }
+
+        // [A, B, C] 刪 B → [A, C]，其餘保序。
+        await store.send(.deletePhotoTapped(1)) {
+            $0.draftPhotos = [photoA, photoC]
+        }
+
+        // 越界 index 為 no-op (state 無變化)。
+        await store.send(.deletePhotoTapped(5))
+    }
+
+    @Test func draftPrefillsPhotosFromOriginal() {
+        let photos = [Data([0x01]), Data([0x02])]
+        let sample = LedgerOrder.sampleOrders[0]
+        let original = LedgerOrder(
+            id: sample.id,
+            customer: sample.customer,
+            status: sample.status,
+            currency: sample.currency,
+            date: sample.date,
+            items: sample.items,
+            itemCost: sample.itemCost,
+            domesticShipping: sample.domesticShipping,
+            internationalShipping: sample.internationalShipping,
+            foreignDomesticShipping: sample.foreignDomesticShipping,
+            cardFeeRate: sample.cardFeeRate,
+            platformFeeRate: sample.platformFeeRate,
+            paymentFeeRate: sample.paymentFeeRate,
+            chargedAmount: sample.chargedAmount,
+            cardlessDeductionAmount: sample.cardlessDeductionAmount,
+            cardlessSupplementAmount: sample.cardlessSupplementAmount,
+            orderSource: sample.orderSource,
+            category: sample.category,
+            paymentMethod: sample.paymentMethod,
+            notes: sample.notes,
+            verificationStatus: sample.verificationStatus,
+            campaignName: sample.campaignName,
+            paymentReceiptStatus: sample.paymentReceiptStatus,
+            isCashOnDelivery: sample.isCashOnDelivery,
+            photos: photos
+        )
+
+        let state = OrderEditFeature.State(original: original)
+
+        #expect(state.draftPhotos == photos)
+        #expect(state.photoPickerSelection.isEmpty)
+    }
+
     @Test func isSelectedPaymentMethodCardlessReflectsMasterFlag() {
         // 主檔中「無卡存款」isCardless == true、「信用卡」isCardless == false。
         let state = OrderEditFeature.State(
@@ -197,7 +304,8 @@ struct OrderEditFeatureTests {
             verificationStatus: "待對帳",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
 
         let state = OrderEditFeature.State(original: original)

@@ -54,7 +54,8 @@ extension LedgerOrder {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         ),
         LedgerOrder(
             id: "BL-2604-017",
@@ -90,7 +91,8 @@ extension LedgerOrder {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         ),
         LedgerOrder(
             id: "BL-2604-016",
@@ -131,7 +133,8 @@ extension LedgerOrder {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         ),
         LedgerOrder(
             id: "BL-2604-015",
@@ -167,7 +170,8 @@ extension LedgerOrder {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         ),
         LedgerOrder(
             id: "BL-2604-014",
@@ -208,7 +212,8 @@ extension LedgerOrder {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         ),
         LedgerOrder(
             id: "BL-2604-013",
@@ -240,7 +245,8 @@ extension LedgerOrder {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         ),
         LedgerOrder(
             id: "BL-2604-012",
@@ -276,7 +282,8 @@ extension LedgerOrder {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         ),
     ]
 }

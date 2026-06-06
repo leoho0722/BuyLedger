@@ -18,18 +18,18 @@ struct SchemaMigrationTests {
 
     // MARK: - Tests
 
-    /// floor 版本 (V7) 的 store 開啟後，應以 lightweight migration 逐段遷到 target (V9) 並保留所有既有訂單與欄位；V8 / V9 新增欄位以 default 補齊。
-    @Test func v7StoreMigratesToV9PreservingOrders() throws {
+    /// floor 版本 (V7) 的 store 開啟後，應以 lightweight migration 逐段遷到 target (V10) 並保留所有既有訂單與欄位；V8～V10 新增欄位以 default 補齊。
+    @Test func v7StoreMigratesToV10PreservingOrders() throws {
         let storeURL = Self.makeTemporaryStoreURL()
         defer { Self.removeStore(at: storeURL) }
 
         // 1. 以 floor 版本 V7 schema 在實體檔案寫入訂單。
         try Self.seedV7Store(at: storeURL)
 
-        // 2. 用收斂後的 plan (target V9 + BuyLedgerMigrationPlan) 開啟同一 store。
+        // 2. 用收斂後的 plan (target V10 + BuyLedgerMigrationPlan) 開啟同一 store。
         let migrated = try Self.fetchOrders(
             at: storeURL,
-            versionedSchema: BuyLedgerSchemaV9.self,
+            versionedSchema: BuyLedgerSchemaV10.self,
             migrationPlan: BuyLedgerMigrationPlan.self
         )
 
@@ -49,42 +49,79 @@ struct SchemaMigrationTests {
         #expect(first.paymentReceiptStatus == PaymentReceiptStatus.pending.rawValue)
         // V9 新增欄位 (V7 store 沒有) 同樣以 default 補齊。
         #expect(first.isCashOnDelivery == false)
+        // V10 新增欄位 (V7 store 沒有) 以 default 空陣列補齊。
+        #expect(first.photos.isEmpty)
     }
 
-    /// V8 store 開啟後，應以 lightweight migration 遷到 target (V9)，保留 V8 欄位、`isCashOnDelivery` 以 default `false` 補齊。
-    @Test func v8StoreMigratesToV9AddingCashOnDeliveryDefault() throws {
+    /// V8 store 開啟後，應以 lightweight migration 逐段遷到 target (V10)，保留 V8 欄位、V9／V10 新增欄位以 default 補齊。
+    @Test func v8StoreMigratesToV10AddingDefaults() throws {
         let storeURL = Self.makeTemporaryStoreURL()
         defer { Self.removeStore(at: storeURL) }
 
         // 1. 以 V8 影子型別在實體檔案落下「V8 指紋」store。
         try Self.seedV8Store(at: storeURL)
 
-        // 2. 用收斂後的 plan (target V9) 開啟同一 store。
+        // 2. 用收斂後的 plan (target V10) 開啟同一 store。
         let migrated = try Self.fetchOrders(
             at: storeURL,
-            versionedSchema: BuyLedgerSchemaV9.self,
+            versionedSchema: BuyLedgerSchemaV10.self,
             migrationPlan: BuyLedgerMigrationPlan.self
         )
 
-        // 3. V8 資料存活、V9 新欄位 isCashOnDelivery 以 default `false` 補齊。
+        // 3. V8 資料存活、V9 / V10 新欄位以 default 補齊。
         #expect(migrated.count == 1)
         let order = try #require(migrated.first { $0.id == "BL-V8-001" })
         #expect(order.campaignName == "春團")
         #expect(order.paymentReceiptStatus == PaymentReceiptStatus.pending.rawValue)
         #expect(order.isCashOnDelivery == false)
+        #expect(order.photos.isEmpty)
     }
 
-    /// 已在 target (V9) 的 store 重新開啟時不應觸發遷移，資料與筆數原封不動。
-    ///
-    /// 此測試同時作為「V9 schema 指紋未被意外更動」的守門：若改動 top-level `@Model` 或 V7／V8／V9 定義導致指紋改變，開啟既有 V9 store 會嘗試非預期的遷移或拋錯，本測試即失敗。
-    @Test func v9StoreReopensWithoutMigration() throws {
+    /// V9 store (上一版) 開啟後，應以 lightweight migration 遷到 target (V10)：既有訂單與欄位值完整保留，新欄位 `photos` 以 default 空陣列補齊。
+    @Test func v9StoreMigratesToV10WithEmptyPhotos() throws {
         let storeURL = Self.makeTemporaryStoreURL()
         defer { Self.removeStore(at: storeURL) }
 
-        // 1. 以 target V9 直接建立 store 並寫入一筆帶有貨到付款旗標的訂單。
+        // 1. 以 V9 影子型別在實體檔案落下「V9 指紋」store (3 筆訂單)。
+        try Self.seedV9Store(at: storeURL)
+
+        // 2. 用收斂後的 plan (target V10) 開啟同一 store。
+        let migrated = try Self.fetchOrders(
+            at: storeURL,
+            versionedSchema: BuyLedgerSchemaV10.self,
+            migrationPlan: BuyLedgerMigrationPlan.self
+        )
+
+        // 3. 3 筆訂單與其欄位值完整保留，photos 以 default 空陣列補齊。
+        #expect(migrated.count == 3)
+
+        let first = try #require(migrated.first { $0.id == "BL-V9-001" })
+        #expect(first.campaignName == "春團")
+        #expect(first.isCashOnDelivery == true)
+        #expect(first.chargedAmount == 1_500)
+        #expect(first.photos.isEmpty)
+
+        let second = try #require(migrated.first { $0.id == "BL-V9-002" })
+        #expect(second.orderSource == "Instagram")
+        #expect(second.photos.isEmpty)
+
+        let third = try #require(migrated.first { $0.id == "BL-V9-003" })
+        #expect(third.notes == "V9 時代的備註")
+        #expect(third.photos.isEmpty)
+    }
+
+    /// 已在 target (V10) 的 store 重新開啟時不應觸發遷移，資料與筆數原封不動 (含照片 data)。
+    ///
+    /// 此測試同時作為「V10 schema 指紋未被意外更動」的守門：若改動 top-level `@Model` 或 V7～V10 定義導致指紋改變，開啟既有 V10 store 會嘗試非預期的遷移或拋錯，本測試即失敗。
+    @Test func v10StoreReopensWithoutMigration() throws {
+        let storeURL = Self.makeTemporaryStoreURL()
+        defer { Self.removeStore(at: storeURL) }
+
+        // 1. 以 target V10 直接建立 store 並寫入一筆帶照片的訂單。
+        let photo = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x10])
         let order = LedgerOrder(
-            id: "BL-V9-001",
-            customer: LedgerCustomer(name: "原生 V9", initials: "V9", tier: .regular),
+            id: "BL-V10-001",
+            customer: LedgerCustomer(name: "原生 V10", initials: "VX", tier: .regular),
             status: .confirmed,
             currency: .twd,
             date: Date(timeIntervalSince1970: 1_700_000_000),
@@ -106,11 +143,12 @@ struct SchemaMigrationTests {
             verificationStatus: "",
             campaignName: "春團",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: true
+            isCashOnDelivery: true,
+            photos: [photo]
         )
         do {
             let container = try Self.makeContainer(
-                versionedSchema: BuyLedgerSchemaV9.self,
+                versionedSchema: BuyLedgerSchemaV10.self,
                 migrationPlan: nil,
                 url: storeURL
             )
@@ -122,15 +160,16 @@ struct SchemaMigrationTests {
         // 2. 用收斂後的 plan 重新開啟同一 store。
         let reopened = try Self.fetchOrders(
             at: storeURL,
-            versionedSchema: BuyLedgerSchemaV9.self,
+            versionedSchema: BuyLedgerSchemaV10.self,
             migrationPlan: BuyLedgerMigrationPlan.self
         )
 
-        // 3. 已在 target 的 store 不觸發遷移，資料原封不動 (含 isCashOnDelivery)。
+        // 3. 已在 target 的 store 不觸發遷移，資料原封不動 (含 isCashOnDelivery 與照片 data)。
         #expect(reopened.count == 1)
-        #expect(reopened.first?.id == "BL-V9-001")
+        #expect(reopened.first?.id == "BL-V10-001")
         #expect(reopened.first?.campaignName == "春團")
         #expect(reopened.first?.isCashOnDelivery == true)
+        #expect(reopened.first?.photos == [photo])
     }
 }
 
@@ -261,9 +300,9 @@ private extension SchemaMigrationTests {
         try context.save()
     }
 
-    /// 以 V8 影子 ``BuyLedgerSchemaV8/OrderRecord`` 在實體 store 寫入一筆訂單，落下「V8 指紋」store 供 V8 → V9 遷移測試。
+    /// 以 V8 影子 ``BuyLedgerSchemaV8/OrderRecord`` 在實體 store 寫入一筆訂單，落下「V8 指紋」store 供 V8 → V10 遷移測試。
     ///
-    /// 直接使用 ``BuyLedgerSchemaV8/OrderRecord`` (而非 top-level 型別) 才能落下不含 `isCashOnDelivery` 的 V8 指紋；top-level ``OrderRecord`` 已是 V9 (含該欄位)。
+    /// 直接使用 ``BuyLedgerSchemaV8/OrderRecord`` (而非 top-level 型別) 才能落下不含 `isCashOnDelivery` 的 V8 指紋；top-level ``OrderRecord`` 已是 V10 (含 `photos`)。
     static func seedV8Store(at url: URL) throws {
         let container = try makeContainer(
             versionedSchema: BuyLedgerSchemaV8.self,
@@ -297,6 +336,98 @@ private extension SchemaMigrationTests {
                 verificationStatus: "",
                 campaignName: "春團",
                 paymentReceiptStatus: PaymentReceiptStatus.pending.rawValue
+            )
+        )
+        try context.save()
+    }
+
+    /// 以 V9 影子 ``BuyLedgerSchemaV9/OrderRecord`` 在實體 store 寫入三筆訂單，落下「V9 指紋」store 供 V9 → V10 遷移測試。
+    ///
+    /// 直接使用 ``BuyLedgerSchemaV9/OrderRecord`` (而非 top-level 型別) 才能落下不含 `photos` 的 V9 指紋；top-level ``OrderRecord`` 已是 V10 (含該欄位)。
+    static func seedV9Store(at url: URL) throws {
+        let container = try makeContainer(
+            versionedSchema: BuyLedgerSchemaV9.self,
+            migrationPlan: nil,
+            url: url
+        )
+        let context = ModelContext(container)
+
+        context.insert(
+            BuyLedgerSchemaV9.OrderRecord(
+                id: "BL-V9-001",
+                customer: LedgerCustomer(name: "原生 V9", initials: "V9", tier: .regular),
+                status: .confirmed,
+                currency: "TWD",
+                date: Date(timeIntervalSince1970: 1_700_000_000),
+                items: [],
+                itemCost: 0,
+                domesticShipping: 100,
+                internationalShipping: 200,
+                foreignDomesticShipping: 0,
+                cardFeeRate: 0,
+                platformFeeRate: 0,
+                paymentFeeRate: 0,
+                chargedAmount: 1_500,
+                cardlessDeductionAmount: 0,
+                cardlessSupplementAmount: 0,
+                orderSource: "蝦皮",
+                category: "美妝",
+                paymentMethod: "貨到付款",
+                notes: "",
+                verificationStatus: "",
+                campaignName: "春團",
+                paymentReceiptStatus: PaymentReceiptStatus.pending.rawValue,
+                isCashOnDelivery: true
+            )
+        )
+        context.insert(
+            BuyLedgerSchemaV9.OrderRecord(
+                id: "BL-V9-002",
+                customer: LedgerCustomer(name: "原生 V9 二", initials: "92", tier: .vip),
+                status: .shipping,
+                currency: "KRW",
+                date: Date(timeIntervalSince1970: 1_700_100_000),
+                items: [],
+                itemCost: 800,
+                domesticShipping: 0,
+                internationalShipping: 0,
+                foreignDomesticShipping: 0,
+                cardFeeRate: 0,
+                platformFeeRate: 0,
+                paymentFeeRate: 0,
+                chargedAmount: 990,
+                cardlessDeductionAmount: 0,
+                cardlessSupplementAmount: 0,
+                orderSource: "Instagram",
+                category: "服飾",
+                paymentMethod: "信用卡",
+                notes: "",
+                verificationStatus: ""
+            )
+        )
+        context.insert(
+            BuyLedgerSchemaV9.OrderRecord(
+                id: "BL-V9-003",
+                customer: LedgerCustomer(name: "原生 V9 三", initials: "93", tier: .new),
+                status: .delivered,
+                currency: "JPY",
+                date: Date(timeIntervalSince1970: 1_700_200_000),
+                items: [],
+                itemCost: 0,
+                domesticShipping: 0,
+                internationalShipping: 0,
+                foreignDomesticShipping: 0,
+                cardFeeRate: 0,
+                platformFeeRate: 0,
+                paymentFeeRate: 0,
+                chargedAmount: 0,
+                cardlessDeductionAmount: 0,
+                cardlessSupplementAmount: 0,
+                orderSource: "",
+                category: "雜貨",
+                paymentMethod: "",
+                notes: "V9 時代的備註",
+                verificationStatus: ""
             )
         )
         try context.save()

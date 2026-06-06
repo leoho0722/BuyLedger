@@ -136,6 +136,56 @@ struct OrdersFeatureTests {
         #expect(updated?.notes == "到貨後請先聯絡客戶確認尺寸")
     }
 
+    @Test func editFlowPersistsPhotosAfterSave() async {
+        // 驗證照片草稿經 save 後寫回 orders (更新分支)。
+        let originalID = "BL-2604-018"
+        let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
+        let photos = [Data([0x01]), Data([0x02])]
+
+        var draft = OrderEditFeature.State(original: original)
+        draft.draftPhotos = photos
+
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+        state.editOrder = draft
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editOrder(.presented(.saveTapped)))
+        await store.finish()
+
+        let updated = store.state.orders.first { $0.id == originalID }
+        #expect(updated?.photos == photos)
+    }
+
+    @Test func editFlowPersistsPhotosForNewOrder() async {
+        // 驗證新增訂單分支 (original == nil) 也會把照片草稿寫進新訂單。
+        let photos = [Data([0xA1])]
+
+        var draft = OrderEditFeature.State()
+        draft.draftCustomerName = "新照片客戶"
+        draft.draftPhotos = photos
+
+        var state = OrdersFeature.State()
+        state.editOrder = draft
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.uuid = .incrementing
+        }
+        store.exhaustivity = .off
+
+        await store.send(.editOrder(.presented(.saveTapped)))
+        await store.finish()
+
+        let created = store.state.orders.first { $0.customer.name == "新照片客戶" }
+        #expect(created?.photos == photos)
+    }
+
     @Test func editFlowKeepsVerificationStatusForBankTransfer() async {
         // 付款方式屬於銀行匯款 → 對帳狀態有意義，save 後應保留。
         let originalID = "BL-2604-018"
@@ -666,7 +716,8 @@ struct OrdersFeatureTests {
             verificationStatus: "",
             campaignName: "",
             paymentReceiptStatus: .pending,
-            isCashOnDelivery: false
+            isCashOnDelivery: false,
+            photos: []
         )
     }
 }
