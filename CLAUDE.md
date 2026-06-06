@@ -29,7 +29,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 # 儲存庫指引
 
-專案概覽、目錄結構、技術棧背景與 setup 步驟見 [`README.md`](README.md)。本檔僅記錄 Claude 寫程式時必須遵守的硬規則與隱性 gotcha。
+本檔僅記錄 Claude 寫程式時必須遵守的硬規則與隱性 gotcha。
 
 ## 主要技術棧
 
@@ -43,7 +43,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 ## 建置、測試與開發指令
 
-完整指令與 CLI／MCP 分流 (本專案預設走 CLI，MCP server `mcp__XcodeBuildMCP__*` 留給 UI 自動化、結構化測試結果與可控中斷的情境) 見 [README.md › Build & Run](README.md#2-build--run)。本專案必守鐵則：
+本專案必守鐵則：
 
 - 絕不退回原生 `xcodebuild` / `xcrun` / `simctl`。
 - 三平台 simulator/macOS build 共用同一份 `DerivedData/.../XCBuildData/build.db`，**不能並行**——請序列化 (`cmd1 && cmd2 && cmd3`)，否則 `database is locked`。
@@ -55,7 +55,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 ## App 進入點與平台導覽
 
-平台 layout 分流概覽見 [README.md › App 進入點與平台導覽](README.md#app-進入點與平台導覽)。動到這層程式碼時請遵守：
+動到這層程式碼時請遵守：
 
 - **`BuyLedgerApp.swift` 的 `#if os(macOS)`**：不可同時包住 `WindowGroup` 的 modifier 與另一個 top-level `Scene`——必須切成兩個獨立 `#if os(macOS)` 區塊，否則 result builder 會 parse fail。
 - **跨頁觸發新訂單**請使用 `RootFeature.Action.startNewOrder`：reducer 會同時把 `selectedTab` 切到 `.orders` 並把 `OrdersFeature.State.editOrder` 設成空白草稿。從非 `.orders` 分頁直接設 sheet state 會發生 view-not-in-hierarchy 的 race——`.sheet(...)` 修飾子掛在 `OrdersView` 上，當下不在 hierarchy 就不會 mount。
@@ -76,18 +76,18 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 ## SwiftData Schema 與 Migration
 
-Schema 採版本化 `VersionedSchema`，目前保留 `BuyLedgerSchemaV7` (migration floor) 至 `BuyLedgerSchemaV10` (最新版本／target)，中間版本 V8 / V9 凍結為影子，遷移由 `BuyLedgerMigrationPlan` (`SchemaMigrationPlan`) 串接，全部定義在 `Core/Persistence/BuyLedgerSchema.swift`。V1~V6 已於 pre-release 階段移除 (見 `prune-legacy-schema-versions` change)。
+Schema 採版本化 `VersionedSchema`，設有 migration floor（floor 以下的版本已移除），floor 到 target 之間的中間版本凍結為影子，遷移由 `BuyLedgerMigrationPlan` (`SchemaMigrationPlan`) 串接，全部定義在 `Core/Persistence/BuyLedgerSchema.swift`。
 
 - **只有最新版本引用 top-level `@Model` 型別**——`BuyLedgerSchemaV10.models` 指向 `OrderRecord` 等 top-level 定義；**floor 以外的每個保留舊版本必須把當時的 `@Model` 凍結成內嵌於該 enum 的 shadow 型別**，保住當時的 attribute fingerprint，否則改動 top-level 型別會連帶破壞舊 schema 指紋導致 migration 失敗 (目前 floor 即 V7，其 `OrderRecord` 已是凍結影子)。
 - **加欄位／加表 → `.lightweight`；改型別 → `.custom`**——新增帶 default 的欄位或全新 model 走 lightweight (如 V7→V8 新增 `campaignName` / `paymentReceiptStatus` 與 `CampaignRecord` 新表、V9→V10 新增 `photos`)；改變既有欄位型別必須走 `.custom` 的 dump-and-restore (`willMigrate` 序列化進記憶體再刪舊 row、`didMigrate` 用新版影子型別重建)，其中介 snapshot 用 `nonisolated(unsafe) static` (one-shot、單執行緒，無 race)。
-- **改 schema 的標準流程**：(1) 新增 `BuyLedgerSchemaVN` 並列出 `models`；(2) 把上一版的 `OrderRecord` (與任何受影響型別) 凍結成該舊版 enum 內的 shadow `@Model`；(3) 在 `BuyLedgerMigrationPlan.schemas` 與 `stages` append 新版與遷移階段；(4) 把 `PersistenceContainer.make` 的 `Schema(versionedSchema:)` 指向新版。
+- **改 schema 時，invoke `/swiftdata-schema-migration` 取得逐步操作指引**（新增版本 enum、凍結舊版 shadow、append migration stage、更新 `PersistenceContainer.make`）。
 - **移除舊版本是單向操作**——遷移為 forward-only，plan 只需「最舊仍存在的 store 版本 (floor) → target」之間連續的 stage 鏈。移除舊版會把 floor 往上抬；任何停在低於新 floor 的 on-disk store 將失去遷移路徑，開啟時 `ModelContainer` init 拋錯、進而觸發 `makeForApp()` 砍檔。**只有確定沒有任何已安裝 store 停在被移除的版本 (或更早) 時才可移除**；上架後此前提幾乎不成立，務必保留能回溯到最舊可能 store 的完整版本鏈。
 - **「已在最新版就安全」僅限單機**——「已在 target 的 store 不觸發遷移、移除舊版不受影響」是 per-device 結論。目前 CloudKit 為 `.disabled` (code 與 entitlements 皆關) 故成立；一旦啟用 sync，離線停在舊版的第二台裝置升級後同樣會觸發砍檔，且刪除可能透過 sync 傳播——啟用 sync 前必須重新評估版本移除策略。
 - `PersistenceContainer.makeForApp()` 在 container 建立失敗時會「清掉舊 store 重建、再退回 in-memory」——這是**開發期 fallback**，要保留使用者資料時請補正確的 migration stage，不要依賴這段砍檔邏輯。
 
 ## 外部 API 與 Fallback 政策
 
-機制與設定 (API key 注入鏈路、`ExchangeRateClient` 的 endpoint 與幣別主檔載入流程) 見 [README.md › ExchangeRate-API 金鑰](README.md#1-exchangerate-api-金鑰) 與 [README.md › 外部 API](README.md#外部-api)。硬規則：
+硬規則：
 
 - **UI 寧可顯示空狀態也不顯示假資料**——API 失敗或無資料時顯示「—」、「尚無可用匯率資料」、「尚未有足夠可用於分析的資料」等空狀態，不繪空圖表也不退回 hardcoded 數字。
 - **幣別清單動態載入、不可 hardcode**——經 `CurrencyMetadataRepository.refreshIfStale(604_800)` 打 `/codes` 並 cache 7 天。
@@ -112,19 +112,6 @@ Swift 通用慣例 (API Design Guidelines、camel case、四空格縮排) 不重
 - **括號內側不補**：`(NT $)` 而非 `( NT $ )`。
 - **Markdown 例外**：粗體結尾 `**` 前後不補空格以免破壞 `**...**` 語法——`**計算** (彙總)` 可，`**計算 **(彙總)` 不可。
 - 此規則同時適用於 UI 顯示字串與正體中文註解。
-
-### 檔案 header
-
-所有新建 Swift 檔案的 header 一律使用 Xcode 預設格式：
-
-```swift
-//
-//  FileName.swift
-//  BuyLedger
-//
-//  Created by Leo Ho on yyyy/m/d.
-//
-```
 
 ### 註解
 
@@ -153,85 +140,7 @@ Swift 通用慣例 (API Design Guidelines、camel case、四空格縮排) 不重
 - **`ViewModifier` 型別**比照 View 排序 (其 `body(content:)` 即第 4 區段「主體」，由協定隱含 `@ViewBuilder` 故毋須標)；若是某檔的次要型別，段首以 `// MARK: - ViewModifier` 標示 (而非 `ViewBuilder`)。Design System 中可重用的 ViewModifier 各自獨立一檔，集中放 `Shared/DesignSystem/Foundations/ViewModifiers/`。
 - `#Preview` 放在檔案最後，前方加上 `// MARK: - Preview`。
 
-View 完整版 (第 5～8 段移到主體外的 extension)：
-
-```swift
-struct OrdersView: View {
-
-    // MARK: - View Properties
-
-    @Bindable var store: StoreOf<OrdersFeature>
-
-    // MARK: - View Body
-
-    var body: some View { ... }
-}
-
-// MARK: - Nested Types
-
-// 視巢狀型別是否需被外部引用，決定 extension / private extension
-extension OrdersView { ... }
-
-// MARK: - ViewBuilder
-
-private extension OrdersView {
-
-    @ViewBuilder
-    func listSection() -> some View { ... }
-}
-
-// MARK: - Private Method
-
-private extension OrdersView { ... }
-
-// MARK: - Preview
-
-#Preview { ... }
-```
-
-非 View 型別沿用同一順序、省去 View 專屬段的範例：
-
-```swift
-enum RootTab: String, CaseIterable, Identifiable {
-
-    // MARK: - Cases
-
-    case dashboard
-
-    // MARK: - Identifiable Properties
-
-    var id: String { rawValue }
-
-    // MARK: - Display Properties
-
-    var title: String { ... }
-}
-```
-
-TCA Reducer 範例 (`Dependency Properties` 排在 `Reducer Body` 之前)：
-
-```swift
-@Reducer
-struct OrdersFeature {
-
-    // MARK: - State
-
-    @ObservableState
-    struct State: Equatable { ... }
-
-    // MARK: - Action
-
-    enum Action: Equatable { ... }
-
-    // MARK: - Dependency Properties
-
-    @Dependency(\.date) private var date
-
-    // MARK: - Reducer Body
-
-    var body: some Reducer<State, Action> { ... }
-}
-```
+建立新 Swift 檔案時，invoke `/swift-file-template` 取得檔案 header 格式與 View / 非 View 型別 / TCA Reducer 的具體程式碼範本。
 
 ## Design System 準則
 
