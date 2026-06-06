@@ -9,8 +9,8 @@ BuyLedger SwiftData schema 升級的逐步操作指引。決策規則 (何時用
 
 執行前先確認：
 
-- **加欄位／加表** → `.lightweight` migration (新增帶 default 的欄位或全新 model)
-- **改既有欄位型別** → `.custom` migration (dump-and-restore pattern，中介 snapshot 用 `nonisolated(unsafe) static`)
+- **加欄位／加表** → `.lightweight` migration (新增帶 default 的欄位或全新 model)。歷史案例：V7→V8 新增 `campaignName` / `paymentReceiptStatus` 欄位與 `CampaignRecord` 新表、V9→V10 新增 `photos`。
+- **改既有欄位型別** → `.custom` migration 的 dump-and-restore：`willMigrate` 把舊 row 序列化進記憶體後刪除，`didMigrate` 用新版影子型別重建；中介 snapshot 用 `nonisolated(unsafe) static` (one-shot、單執行緒，無 race)。
 
 schema 定義全部在 `Core/Persistence/BuyLedgerSchema.swift`。動手前先讀此檔確認當前 floor 與 target 版本號，並以檔內既有宣告為準。
 

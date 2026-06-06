@@ -58,6 +58,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 動到這層程式碼時請遵守：
 
 - **`BuyLedgerApp.swift` 的 `#if os(macOS)`**：不可同時包住 `WindowGroup` 的 modifier 與另一個 top-level `Scene`——必須切成兩個獨立 `#if os(macOS)` 區塊，否則 result builder 會 parse fail。
+- **啟動時的服務初始化集中在 `AppLaunchConfigurator.configure()`** (Firebase Analytics / Crashlytics / Performance / Firestore)——三平台分流的 `AppDelegate` 都只在 `didFinishLaunching` 呼叫它，新增啟動設定請加在這裡，不要散落各平台進入點。Firebase 依賴 pbxproj 的 `OTHER_LDFLAGS = "-ObjC"`，不可移除。
 - **跨頁觸發新訂單**請使用 `RootFeature.Action.startNewOrder`：reducer 會同時把 `selectedTab` 切到 `.orders` 並把 `OrdersFeature.State.editOrder` 設成空白草稿。從非 `.orders` 分頁直接設 sheet state 會發生 view-not-in-hierarchy 的 race——`.sheet(...)` 修飾子掛在 `OrdersView` 上，當下不在 hierarchy 就不會 mount。
 - **`OrdersView` 的 `.sheet(item: $store.scope(state: \.editOrder, action: \.editOrder))`** 一律掛在 `OrdersView` 外層，三平台共用——不可移到平台分流後的子 view 裡。
 - **點空白處收鍵盤用 `dismissKeyboardOnTap()`** (`Shared/Keyboard/`)：iOS / iPadOS 以 **window 級** `UITapGestureRecognizer` 實作，靠 `blocksKeyboardDismissTap` 沿 superview 逐層過濾互動 (`UIControl` / `UITextInput`)、文字編輯與系統選單 view——**不可改成對所有 touch 都收鍵盤** (會誤觸貼上／選取等系統 action)。macOS 無軟體鍵盤，為 no-op。
@@ -68,7 +69,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 - **`previewValue`** 使用 in-memory container 並傳 `seedSampleOrdersIfEmpty: true`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
 - **`LedgerOrder.sampleOrders`、`FxRateSnapshot.fallback` 與 `FxRates`** 僅供 Preview / 單元測試 / `previewValue` 使用，runtime path **不應讀取**。
 - **`@ModelActor` init 帶 main actor 隔離**——actor 實例必須在 `async` context 才能建立。參考 `OrderRepository.makePersistence(container:)` 用 `MainActor.run { ... }` 跳上 main 取得 actor 後再回到原 task。
-- **多個 repository 共用單一 `ModelContainer`**——`OrderRepository` / `CategoryRepository` / `PaymentMethodRepository` / `OrderSourceRepository` / `CurrencyMetadataRepository` 的 `liveValue` 一律走 `PersistenceContainer.shared`，**不可各自呼叫 `makeForApp()`**；同一 process 內並存多個 container (即使底層 SQLite 同名) 會造成 SwiftData 內部狀態錯亂。
+- **多個 repository 共用單一 `ModelContainer`**——`Core/Dependencies/` 下所有 `*Repository` 的 `liveValue` 一律走 `PersistenceContainer.shared`，**不可各自呼叫 `makeForApp()`**；同一 process 內並存多個 container (即使底層 SQLite 同名) 會造成 SwiftData 內部狀態錯亂。
 - **Repository 一律以 type-based `@Dependency(SomeRepository.self)` 注入**——新 repo 不再新增 `DependencyValues` keyPath；reducer 在 `// MARK: - Dependency Properties` 宣告 `@Dependency(OrderRepository.self) private var orderRepository`。
 - **主檔 (訂單來源／商品類別／付款方式) CRUD 走 `LookupManagementFeature`** (以 `LookupKind` 分流共用同一份 reducer/view)，它只負責寫各自的 DB 主檔表。**cascade 到 `OrdersFeature.State` 的 in-memory master 副本 (`orderSourceMaster` / `categoryMaster` / `paymentMethodMaster`) 與訂單表的 rename，由 `RootFeature` 攔截 `renameRequested` / `addConfirmed` / `deleteRequested` 處理**——新增主檔型別或動到 cascade 時這兩處都要顧。
 - **`LedgerOrder` 是 immutable struct**——cascade rename 等要改任一欄位時必須用 memberwise init 重建整筆 (參考 `RootFeature.rebuildOrder`)，不可就地 mutate。
@@ -79,7 +80,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 Schema 採版本化 `VersionedSchema`，設有 migration floor (floor 以下的版本已移除)，floor 到 target 之間的中間版本凍結為影子，遷移由 `BuyLedgerMigrationPlan` (`SchemaMigrationPlan`) 串接，全部定義在 `Core/Persistence/BuyLedgerSchema.swift`。
 
 - **只有最新版本引用 top-level `@Model` 型別**——target 版本的 `models` 指向 `OrderRecord` 等 top-level 定義；**floor 以外的每個保留舊版本必須把當時的 `@Model` 凍結成內嵌於該 enum 的 shadow 型別**，保住當時的 attribute fingerprint，否則改動 top-level 型別會連帶破壞舊 schema 指紋導致 migration 失敗 (floor 本身的 `OrderRecord` 也已是凍結影子)。
-- **加欄位／加表 → `.lightweight`；改型別 → `.custom`**——新增帶 default 的欄位或全新 model 走 lightweight (如 V7→V8 新增 `campaignName` / `paymentReceiptStatus` 與 `CampaignRecord` 新表、V9→V10 新增 `photos`)；改變既有欄位型別必須走 `.custom` 的 dump-and-restore (`willMigrate` 序列化進記憶體再刪舊 row、`didMigrate` 用新版影子型別重建)，其中介 snapshot 用 `nonisolated(unsafe) static` (one-shot、單執行緒，無 race)。
+- **加欄位／加表 → `.lightweight`；改型別 → `.custom`**——新增帶 default 的欄位或全新 model 走 lightweight；改變既有欄位型別必須走 `.custom` 的 dump-and-restore (歷史案例與 pattern 細節見 `/swiftdata-schema-migration` skill)。
 - **改 schema 時，invoke `/swiftdata-schema-migration` 取得逐步操作指引** (新增版本 enum、凍結舊版 shadow、append migration stage、更新 `PersistenceContainer.make`)。
 - **移除舊版本是單向操作**——遷移為 forward-only，plan 只需「最舊仍存在的 store 版本 (floor) → target」之間連續的 stage 鏈。移除舊版會把 floor 往上抬；任何停在低於新 floor 的 on-disk store 將失去遷移路徑，開啟時 `ModelContainer` init 拋錯、進而觸發 `makeForApp()` 砍檔。**只有確定沒有任何已安裝 store 停在被移除的版本 (或更早) 時才可移除**；上架後此前提幾乎不成立，務必保留能回溯到最舊可能 store 的完整版本鏈。
 - **「已在最新版就安全」僅限單機**——「已在 target 的 store 不觸發遷移、移除舊版不受影響」是 per-device 結論。目前 CloudKit 為 `.disabled` (code 與 entitlements 皆關) 故成立；一旦啟用 sync，離線停在舊版的第二台裝置升級後同樣會觸發砍檔，且刪除可能透過 sync 傳播——啟用 sync 前必須重新評估版本移除策略。
@@ -101,7 +102,6 @@ Swift 通用慣例 (API Design Guidelines、camel case、四空格縮排) 不重
 - **商業邏輯／資料計算** (彙總、分組、排序、格式化) 一律放 reducer 或可測試的 feature helper；SwiftUI View (含 Swift Charts) 只負責呈現，不要把計算 inline 在 view body。
 - **TCA feature** 內部用 `// MARK: - State / Action / Dependency Properties / Reducer Body` 等清楚切分 (順序見「MARK 區段與排版」一節的對照表)。
 - **不用 `switch`／`if` 運算式賦值**：避免 `let x = switch … { … }` / `let x = if … { … }` 這種運算式寫法；改用傳統陳述式 (先宣告 `let x: T`，再於各分支賦值)。若該計算寫在 `@ViewBuilder` body 內會與 result builder 衝突，請抽成獨立 helper 回傳該值，view body 只呼叫 helper。
-- **SwiftData schema 或持久化行為變更**時，須同步檢查 migration、preview 與測試資料。
 
 ### 標點與空格
 
