@@ -1,6 +1,6 @@
 ---
 name: swift-file-template
-description: BuyLedger 專案 Swift 檔案結構範本。建立任何新 Swift 檔案前 invoke，取得 View / 非 View 型別 / TCA Reducer 的具體 MARK 排版樣板。
+description: BuyLedger 專案 Swift 檔案結構範本。建立任何新 Swift 檔案前 invoke，取得檔案 header 格式與 View / 非 View 型別 / TCA Reducer 的具體 MARK 排版樣板。
 ---
 
 BuyLedger Swift 檔案的格式範本。MARK 排版規則與區段順序表格見 CLAUDE.md「MARK 區段與排版」一節；本 skill 提供可直接對照的樣板。
@@ -20,7 +20,7 @@ BuyLedger Swift 檔案的格式範本。MARK 排版規則與區段順序表格�
 
 ## View 完整版
 
-第 5～8 區段（Nested Types、ViewBuilder、Private Method、Preview）一律寫在型別主體**外**的 extension：
+第 5～8 區段 (Nested Types、ViewBuilder、Private Method、Preview) 一律寫在型別主體**外**的 extension：
 
 ```swift
 struct OrdersView: View {
