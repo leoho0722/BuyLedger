@@ -25,6 +25,38 @@ struct OrderDateSection: Equatable, Identifiable, Sendable {
     let orders: [LedgerOrder]
 }
 
+// MARK: - Static Method
+
+extension OrderDateSection {
+
+    /// 把訂單依「日」分組為日期區段，供訂單列表與合併候選清單共用。
+    ///
+    /// 分組鍵為 `calendar.startOfDay`；區段依日期由新到舊排序，段內訂單亦由新到舊排序，標題經 ``OrderFormatters/daySectionTitle(for:referenceDate:calendar:)`` 產生 (今天/昨天/格式化日期)。
+    /// - Parameters:
+    ///   - orders: 要分組的訂單。
+    ///   - referenceDate: 判斷「今天／昨天」的基準時間。
+    ///   - calendar: 分組與標題使用的曆法。
+    /// - Returns: 依日期由新到舊排序的區段。
+    static func group(_ orders: [LedgerOrder], referenceDate: Date, calendar: Calendar) -> [OrderDateSection] {
+        let grouped = Dictionary(grouping: orders) {
+            calendar.startOfDay(for: $0.date)
+        }
+        return grouped.keys
+            .sorted(by: >)
+            .map { day in
+                OrderDateSection(
+                    id: day,
+                    title: OrderFormatters.daySectionTitle(
+                        for: day,
+                        referenceDate: referenceDate,
+                        calendar: calendar
+                    ),
+                    orders: (grouped[day] ?? []).sorted { $0.date > $1.date }
+                )
+            }
+    }
+}
+
 /// 訂單列表與詳情選取流程。
 @Reducer
 struct OrdersFeature {
@@ -172,22 +204,11 @@ struct OrdersFeature {
         ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆。
         /// - Returns: 依日期由新到舊排序的區段；每段內訂單亦由新到舊排序。
         func dateSections(referenceDate: Date, calendar: Calendar) -> [OrderDateSection] {
-            let grouped = Dictionary(grouping: filteredOrders(referenceDate: referenceDate, calendar: calendar)) {
-                calendar.startOfDay(for: $0.date)
-            }
-            return grouped.keys
-                .sorted(by: >)
-                .map { day in
-                    OrderDateSection(
-                        id: day,
-                        title: OrderFormatters.daySectionTitle(
-                            for: day,
-                            referenceDate: referenceDate,
-                            calendar: calendar
-                        ),
-                        orders: (grouped[day] ?? []).sorted { $0.date > $1.date }
-                    )
-                }
+            OrderDateSection.group(
+                filteredOrders(referenceDate: referenceDate, calendar: calendar),
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
         }
 
         /// 對外提供給編輯表單的「可用訂單來源」清單：合併主檔與既有訂單中使用過的來源，去重後依 locale 排序。合併規則與 ``availableCategories`` 相同。

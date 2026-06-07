@@ -399,7 +399,7 @@ private extension OrdersMacView {
         .background(palette.background)
     }
 
-    /// Inspector 上方的訂購人姓名標題列，含「編輯」按鈕。
+    /// Inspector 上方的訂購人姓名標題列，含「更新狀態」選單與「更多」操作選單 (合併/編輯/刪除)。
     ///
     /// macOS inspector 不會自動顯示 ``View/navigationTitle`` 的標題，因此以自繪標題列補齊。訂單編號已由 ``OrderDetailView`` 的內容區顯示，此處不再重複。
     /// - Parameters:
@@ -435,31 +435,36 @@ private extension OrdersMacView {
             .menuStyle(.borderlessButton)
             .controlSize(.small)
 
-            if order.status != .merged, order.status != .cancelled {
-                Button("合併") {
-                    store.send(.mergeOrderTapped(order.id))
+            // 合併/編輯/刪除功能性質相近，收進單一「更多」選單，避免標題列四個操作並排擁擠。
+            Menu {
+                if order.status != .merged, order.status != .cancelled {
+                    Button {
+                        store.send(.mergeOrderTapped(order.id))
+                    } label: {
+                        Label("合併訂單", systemImage: "arrow.triangle.merge")
+                    }
                 }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .accessibilityLabel("合併訂單")
-            }
 
-            Button("編輯") {
-                store.send(.editOrderTapped(order.id))
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
+                Button {
+                    store.send(.editOrderTapped(order.id))
+                } label: {
+                    Label("編輯", systemImage: "pencil")
+                }
 
-            Button(role: .destructive) {
-                store.send(.deleteOrderTapped(order.id))
+                Divider()
+
+                Button(role: .destructive) {
+                    store.send(.deleteOrderTapped(order.id))
+                } label: {
+                    Label("刪除", systemImage: "trash")
+                }
             } label: {
-                Label("刪除", systemImage: "trash")
+                Label("更多", systemImage: "ellipsis.circle")
                     .labelStyle(.iconOnly)
             }
-            .buttonStyle(.bordered)
+            .menuStyle(.borderlessButton)
             .controlSize(.small)
-            .tint(palette.red)
-            .accessibilityLabel("刪除訂單")
+            .accessibilityLabel("更多操作")
         }
         .padding(.horizontal, BLSpacing.large)
         .padding(.vertical, BLSpacing.medium)

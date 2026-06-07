@@ -58,11 +58,14 @@ BuyLedger 的訂單目前以單一字串欄位記錄商品類別 (`LedgerOrder.c
 
 - 新增子 feature `OrderMergeFeature`，由 `OrdersFeature` 以 optional 子 state + `.sheet(item:)` 呈現，sheet 一律掛在 `OrdersView` 最外層 (與 `editOrder` sheet 同層，三平台共用)。
 - 兩步驟狀態機：
-  1. **候選選擇**：列出可合併訂單——排除主訂單自身、排除狀態為「已合併」與「已取消」者、限與主訂單同幣別、限與主訂單同客戶名稱 (不支援跨客戶合併)；支援搜尋；每列顯示客戶名稱、訂購日期、客戶實付。
+  1. **候選選擇**：列出可合併訂單——排除主訂單自身、排除狀態為「已合併」與「已取消」者、限與主訂單同幣別、限與主訂單同客戶名稱 (不支援跨客戶合併)；支援搜尋；每列顯示客戶名稱、訂購日期、商品明細、客戶實付。商品明細以 `LedgerOrder.itemSummary` 呈現 (每項商品一行「名稱 x數量」、`items` 為空時由 domain 回退「未命名商品」)，樣式同訂單列表 row (`footnote`、`secondary`、`fixedSize(horizontal: false, vertical: true)` 允許多行)——取代原本顯示的訂單編號，因編號 (如 BL-DRAFT-1FA842) 對挑選候選沒有辨識價值 (2026-06-07 視覺回饋調整)。
+     候選列版面直接重用 `OrderRowView` (2026-06-07 同日第二次調整)：`OrderRowView` 新增 `Trailing` nested enum (`statusAndProfit` / `chargedAmount`) 與 `trailing` 屬性 (預設 `.statusAndProfit`)——預設變體維持現行「狀態膠囊 + 實際收款 + 損益」右欄，訂單頁、Dashboard 既有 call site 毋須修改；`.chargedAmount` 變體右欄改顯示客戶實付金額與「客戶實付」caption 標籤 (狀態與損益對挑選候選參考價值低，且客戶實付正對應合併計算的逐項加總)。候選列以 `OrderRowView(order:trailing: .chargedAmount)` 取代自繪欄位，左欄 (頭像、名稱、明細、類別 tag) 與訂單頁完全一致。
+     候選清單比照訂單頁以「訂購日」分組 (2026-06-07 同日第三次調整)：把 `OrdersFeature.State.dateSections` 內的分組邏輯抽成 `OrderDateSection.group(_ orders:referenceDate:calendar:)` 靜態共用 helper (與 `OrderDateSection` 同檔)，`dateSections` 委派給它、訂單頁行為零變更；`OrderMergeFeature.State` 新增 `func candidateSections(referenceDate:calendar:) -> [OrderDateSection]` 以 `filteredCandidates` 餵共用 helper (搜尋過濾照常生效)。`OrderMergeCandidateSheet` 加 `@Dependency(\.date)` 與 `@Dependency(\.calendar)`，`List` 改為 ForEach sections、每段以 `Section` header 顯示 `section.title` (今天/昨天/格式化日期，同訂單頁標題字串)，資格說明 footer 掛在最後一段；候選列改傳 `showsDate: false`，日期改由 section 標題提供、列內不重複。空狀態 (無候選或搜尋無符合) 與點選行為不變。
   2. **照片挑選** (條件步驟)：兩筆照片合計超過 `LedgerOrder.maxPhotoCount` (5) 時，sheet 內切換到照片格狀挑選頁，使用者勾選保留至多 5 張後按「繼續」；合計未超限則跳過此步驟。
 - 入口：
   - 訂單列 context menu (`OrdersView`、`OrdersCompactView` 與 `OrdersMacView` 三處，與現有「刪除」同層) 新增「合併訂單」，發起的訂單即主訂單；主訂單狀態為「已合併」或「已取消」時不顯示此項。
   - 詳情頁入口由各 host 的標題列／toolbar 直接送 `OrdersFeature` 同一個 action：`OrdersView` 寬版自繪標題列與 `OrdersMacView` inspector 標題列加「合併」按鈕、`OrdersCompactView` push 頁 toolbar 加合併動作；`OrderDetailView` 本身維持無 store、毋須修改。已合併/已取消訂單不顯示該動作。三處的「更新狀態」快速選單同步過濾「已合併」(僅當目前狀態已是已合併時保留)。
+  - 詳情操作列呈現 (2026-06-07 視覺回饋調整)：三平台詳情操作列收斂為兩個控制項——「更新狀態」選單維持獨立；「合併訂單、編輯、刪除」收進單一「更多」Menu (label 用 `ellipsis.circle` 圖示、accessibilityLabel「更多操作」)，Menu 內依序為「合併訂單」(沿用已合併/已取消不顯示的條件)、「編輯」、`Divider`、「刪除」(destructive role)。僅呈現容器改變，三個動作 dispatch 的 `OrdersFeature` action 不變；對「已合併/已取消」訂單，「更多」Menu 仍顯示 (內含編輯與刪除)，只是少了合併項目。
 - 完成後 `OrderMergeFeature` 以 delegate action 回傳 (主訂單、副訂單、保留照片)；`OrdersFeature` 關閉合併 sheet、以合併結果預填 `editOrder` (新訂單草稿，`original = nil`)。合併 sheet 關閉與編輯 sheet 開啟需序列化，避免 SwiftUI 同 frame 換 sheet 的 presentation race (以 effect 延遲一拍再開編輯表單)。
 - `OrderEditFeature.State` 新增 `mergeSourceIDs: [LedgerOrder.ID]` (預設空陣列)：非空代表這是合併草稿，儲存時父層據此把舊單轉「已合併」並把這組 ID 寫入新訂單的 `mergedSourceIDs`；取消則整個流程不留任何變更。
 
@@ -102,13 +105,14 @@ BuyLedger 的訂單目前以單一字串欄位記錄商品類別 (`LedgerOrder.c
 
 **可觀察行為：**
 
-1. 在訂單列 context menu 或訂單詳情頁對狀態非「已合併/已取消」的訂單觸發「合併訂單」，會出現候選 sheet：僅列同幣別、同客戶名稱、非已合併/已取消的其他訂單，可搜尋。
+1. 在訂單列 context menu 或訂單詳情頁對狀態非「已合併/已取消」的訂單觸發「合併訂單」，會出現候選 sheet：僅列同幣別、同客戶名稱、非已合併/已取消的其他訂單，可搜尋。候選清單依訂購日分組，section 標題同訂單頁 (今天/昨天/格式化日期)、段落與段內皆新到舊排序。每列重用訂單頁 row 版面——左欄為頭像、客戶名稱、商品明細 (每項商品一行)、類別 tag (列內不顯示日期，日期由 section 標題提供)，右欄顯示客戶實付金額與「客戶實付」標籤 (非訂單頁的狀態膠囊與損益)，不顯示訂單編號；訂單頁與 Dashboard 的 row 外觀不受影響。
 2. 選定候選後：兩筆照片合計 ≤ 5 直接進入預填的新訂單表單；> 5 先進入照片挑選頁，勾選至多 5 張後才進表單。
 3. 預填表單各 section 值符合「合併計算 OrderMerge 純函式」一節的欄位規則；全部欄位 (含收款金額、成本、手續費、商品明細) 皆可調整後按「儲存」。
 4. 儲存後：訂單列表出現一筆新訂單 (記錄兩筆來源訂單 ID)，兩筆舊訂單狀態變為「已合併」且仍可在列表 (狀態篩選「已合併」) 找到。整體總收益僅計入新訂單；類別收益與開團統計則由合併前舊訂單以原始類別/開團/金額/日期入帳 (合併產生的訂單不參與分組)，收益不重複計算。在表單按「取消」則資料庫與列表完全不變。
 5. 合併情境 (合併確認表單、編輯合併產生的訂單) 的類別與開團為多選 (類別至少一個才能儲存、開團可全不選 = 未歸團)；一般訂單編輯維持單選體驗。列表第三行與詳情頁以「、」串接顯示多值。
 6. 編輯合併產生的訂單或狀態為「已合併」的舊訂單時，所有欄位 (含收款金額、成本、手續費、商品明細) 照常可編輯；類別與開團維持多選 picker，狀態 Picker 仍過濾「已合併」(僅當目前狀態已是已合併時保留)。
 7. 既有單類別/單開團的 on-disk 資料升級 App 後自動遷移為單元素陣列，未歸團遷移為空陣列，資料不遺失。
+8. 訂單詳情操作列 (三平台) 僅顯示「更新狀態」與「更多」兩個控制項；「更多」選單內依序提供合併訂單 (狀態非已合併/已取消時)、編輯、刪除 (destructive、與前兩項以分隔線隔開)，三者觸發的行為與原並排按鈕完全一致。
 
 **介面／資料形狀：**
 
@@ -119,6 +123,9 @@ BuyLedger 的訂單目前以單一字串欄位記錄商品類別 (`LedgerOrder.c
 - `OrderMergeFeature` (TCA reducer，兩步驟 state machine，delegate 回傳合併三元組)。
 - `OrderEditFeature.State.mergeSourceIDs: [LedgerOrder.ID]`。
 - `OptionPickerSheet` 多選模式 (Set 選取 + 完成按鈕)，單選 API 不變。
+- `OrderRowView.Trailing` nested enum (`statusAndProfit` / `chargedAmount`) 與 `trailing` 屬性 (預設 `.statusAndProfit`)，既有 call site 不變。
+- `OrderDateSection.group(_ orders:referenceDate:calendar:) -> [OrderDateSection]` 靜態共用 helper；`OrdersFeature.State.dateSections` 委派之，行為不變。
+- `OrderMergeFeature.State.candidateSections(referenceDate:calendar:) -> [OrderDateSection]`。
 
 **失敗模式：**
 

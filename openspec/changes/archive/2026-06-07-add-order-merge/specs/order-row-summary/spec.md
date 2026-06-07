@@ -1,3 +1,20 @@
+## ADDED Requirements
+
+### Requirement: Optional charged-amount trailing variant
+
+The order row component SHALL offer an optional trailing-column variant for hosting contexts that need the charged amount: in this variant the trailing column SHALL display the order's charged amount with a charged-amount caption label, replacing the status pill, revenue, and profit. The leading column (avatar, customer name, date, item summary, category tag) SHALL render identically to the default variant. The default variant SHALL remain the status pill with revenue and profit, and call sites that do not specify a variant SHALL be unaffected.
+
+#### Scenario: Charged-amount variant
+
+- **WHEN** a host renders the order row with the charged-amount trailing variant
+- **THEN** the trailing column shows the order's charged amount and the charged-amount label, and the leading column renders identically to the default variant
+
+#### Scenario: Default variant unchanged
+
+- **WHEN** a host renders the order row without specifying a trailing variant
+- **THEN** the row renders the status pill, revenue, and profit exactly as before the variant was introduced
+
+---
 ## MODIFIED Requirements
 
 ### Requirement: Row third line shows product category as a tag

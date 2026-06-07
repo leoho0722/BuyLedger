@@ -61,6 +61,17 @@ struct OrderMergeFeature {
             }
         }
 
+        /// 依搜尋過濾後的候選清單，比照訂單列表以「日」分組為日期區段。
+        ///
+        /// 區段與段內皆由新到舊排序，標題同訂單頁 (今天/昨天/格式化日期)；候選列因此不再於列內重複顯示日期。
+        /// - Parameters:
+        ///   - referenceDate: 判斷「今天／昨天」的基準時間。
+        ///   - calendar: 分組與標題使用的曆法。
+        /// - Returns: 依日期由新到舊排序的候選區段。
+        func candidateSections(referenceDate: Date, calendar: Calendar) -> [OrderDateSection] {
+            OrderDateSection.group(filteredCandidates, referenceDate: referenceDate, calendar: calendar)
+        }
+
         // MARK: - Init
 
         /// 依主訂單與全部訂單建立合併流程狀態；候選清單在此一次過濾完成。

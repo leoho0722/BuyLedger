@@ -425,7 +425,7 @@ private extension OrdersView {
         }
     }
 
-    /// 詳情欄頂部的訂購人姓名標題列，含「編輯」按鈕。
+    /// 詳情欄頂部的訂購人姓名標題列，含「更新狀態」選單與「更多」操作選單 (合併/編輯/刪除)。
     ///
     /// 因 iPad regular 的訂單詳情位於父層 NavigationSplitView 的 detail 中，但本 view 內部已不再使用 NavigationStack，所以以自繪標題列代替系統 navigation title。訂單編號已由 ``OrderDetailView`` 的內容區顯示，此處不再重複。
     /// - Parameter order: 要顯示的訂單。
@@ -444,31 +444,7 @@ private extension OrdersView {
 
             statusUpdateMenu(order: order)
 
-            if order.status != .merged, order.status != .cancelled {
-                Button("合併") {
-                    store.send(.mergeOrderTapped(order.id))
-                }
-                .buttonStyle(.bordered)
-                .controlSize(.small)
-                .accessibilityLabel("合併訂單")
-            }
-
-            Button("編輯") {
-                store.send(.editOrderTapped(order.id))
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-
-            Button(role: .destructive) {
-                store.send(.deleteOrderTapped(order.id))
-            } label: {
-                Label("刪除", systemImage: "trash")
-                    .labelStyle(.iconOnly)
-            }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .tint(palette.red)
-            .accessibilityLabel("刪除訂單")
+            moreActionsMenu(order: order)
         }
         .padding(.horizontal, BLSpacing.large)
         .padding(.vertical, BLSpacing.medium)
@@ -501,6 +477,44 @@ private extension OrdersView {
         }
         .menuStyle(.borderlessButton)
         .controlSize(.small)
+    }
+
+    /// 詳情頁右上角的「更多」操作選單，收納功能性質相近的合併/編輯/刪除，避免操作列擁擠。
+    ///
+    /// 「合併訂單」沿用既有條件——狀態為「已合併」或「已取消」時不顯示；「刪除」為 destructive 並以分隔線與前兩項隔開。三個動作 dispatch 的 action 與原並排按鈕完全一致。
+    /// - Parameter order: 對應訂單。
+    /// - Returns: menu view。
+    @ViewBuilder
+    func moreActionsMenu(order: LedgerOrder) -> some View {
+        Menu {
+            if order.status != .merged, order.status != .cancelled {
+                Button {
+                    store.send(.mergeOrderTapped(order.id))
+                } label: {
+                    Label("合併訂單", systemImage: "arrow.triangle.merge")
+                }
+            }
+
+            Button {
+                store.send(.editOrderTapped(order.id))
+            } label: {
+                Label("編輯", systemImage: "pencil")
+            }
+
+            Divider()
+
+            Button(role: .destructive) {
+                store.send(.deleteOrderTapped(order.id))
+            } label: {
+                Label("刪除", systemImage: "trash")
+            }
+        } label: {
+            Label("更多", systemImage: "ellipsis.circle")
+                .labelStyle(.iconOnly)
+        }
+        .menuStyle(.borderlessButton)
+        .controlSize(.small)
+        .accessibilityLabel("更多操作")
     }
 }
 

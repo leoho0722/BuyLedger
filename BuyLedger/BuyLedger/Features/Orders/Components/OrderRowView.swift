@@ -21,6 +21,9 @@ struct OrderRowView: View {
     /// Dashboard 近期訂單為不分組的精簡清單，仍需列內日期提供時間感，故維持預設 `true`。
     var showsDate: Bool = true
 
+    /// 右欄呈現變體，預設為訂單頁的「狀態膠囊 + 實際收款 + 損益」。
+    var trailing: Trailing = .statusAndProfit
+
     // MARK: - View Body
 
     /// 訂單列的畫面內容。
@@ -31,8 +34,6 @@ struct OrderRowView: View {
     ///
     /// 如此任何長字串都只會往下長高、不會把列撐得比可用寬度寬，避免外層垂直 ScrollView 內容溢出造成整頁左右邊距跑版。
     var body: some View {
-        let summary = order.summary
-
         HStack(spacing: BLSpacing.medium) {
             BLAvatar(
                 name: order.customer.name,
@@ -64,7 +65,41 @@ struct OrderRowView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // 狀態膠囊與金額同欄、整體垂直置中 (外層 HStack 維持預設 .center)。
+            // 右欄與金額同欄、整體垂直置中 (外層 HStack 維持預設 .center)，內容依 trailing 變體切換。
+            trailingColumn
+        }
+        .padding(.vertical, BLSpacing.extraSmall)
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrderRowView {
+
+    /// 右欄呈現變體。
+    ///
+    /// 預設 ``statusAndProfit`` 維持訂單列表與 Dashboard 的「狀態膠囊 + 實際收款 + 損益」；``chargedAmount`` 供合併候選列等需要客戶實付的情境使用——僅替換右欄，左欄 (頭像、名稱、日期、商品明細、類別 tag) 與預設變體完全一致。
+    enum Trailing {
+
+        /// 狀態膠囊、實際收款與損益 (訂單列表與 Dashboard 預設)。
+        case statusAndProfit
+
+        /// 客戶實付金額與「客戶實付」標籤 (合併候選列)。
+        case chargedAmount
+    }
+}
+
+// MARK: - ViewBuilder
+
+private extension OrderRowView {
+
+    /// 右欄內容，依 ``Trailing`` 變體切換。
+    @ViewBuilder
+    var trailingColumn: some View {
+        switch trailing {
+        case .statusAndProfit:
+            let summary = order.summary
+
             VStack(alignment: .trailing, spacing: BLSpacing.extraSmall) {
                 BLStatusPill(order.status.title, tone: order.status.tone)
 
@@ -77,8 +112,18 @@ struct OrderRowView: View {
                     .foregroundStyle(summary.profit >= 0 ? .green : .red)
                     .monospacedDigit()
             }
+
+        case .chargedAmount:
+            VStack(alignment: .trailing, spacing: BLSpacing.extraSmall) {
+                Text(OrderFormatters.twd(order.chargedAmount))
+                    .font(.subheadline.weight(.semibold))
+                    .monospacedDigit()
+
+                Text("客戶實付")
+                    .font(.caption)
+                    .foregroundStyle(.tertiary)
+            }
         }
-        .padding(.vertical, BLSpacing.extraSmall)
     }
 }
 
@@ -112,5 +157,7 @@ private extension OrderRowView {
 #Preview("訂單列") {
     List {
         OrderRowView(order: LedgerOrder.sampleOrders[0])
+
+        OrderRowView(order: LedgerOrder.sampleOrders[0], trailing: .chargedAmount)
     }
 }

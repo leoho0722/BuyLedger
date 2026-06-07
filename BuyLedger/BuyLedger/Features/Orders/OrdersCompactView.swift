@@ -117,30 +117,34 @@ struct OrdersCompactView: View {
                                 .accessibilityLabel("更新狀態")
                             }
 
-                            if order.status != .merged, order.status != .cancelled {
-                                ToolbarItem(placement: .primaryAction) {
-                                    Button {
-                                        store.send(.mergeOrderTapped(order.id))
-                                    } label: {
-                                        Image(systemName: "arrow.triangle.merge")
+                            // 合併/編輯/刪除功能性質相近，收進單一「更多」選單，避免 toolbar 四個操作並排擁擠。
+                            ToolbarItem(placement: .primaryAction) {
+                                Menu {
+                                    if order.status != .merged, order.status != .cancelled {
+                                        Button {
+                                            store.send(.mergeOrderTapped(order.id))
+                                        } label: {
+                                            Label("合併訂單", systemImage: "arrow.triangle.merge")
+                                        }
                                     }
-                                    .accessibilityLabel("合併訂單")
-                                }
-                            }
 
-                            ToolbarItem(placement: .primaryAction) {
-                                Button("編輯") {
-                                    store.send(.editOrderTapped(order.id))
-                                }
-                            }
+                                    Button {
+                                        store.send(.editOrderTapped(order.id))
+                                    } label: {
+                                        Label("編輯", systemImage: "pencil")
+                                    }
 
-                            ToolbarItem(placement: .primaryAction) {
-                                Button(role: .destructive) {
-                                    store.send(.deleteOrderTapped(order.id))
+                                    Divider()
+
+                                    Button(role: .destructive) {
+                                        store.send(.deleteOrderTapped(order.id))
+                                    } label: {
+                                        Label("刪除", systemImage: "trash")
+                                    }
                                 } label: {
-                                    Image(systemName: "trash")
+                                    Image(systemName: "ellipsis.circle")
                                 }
-                                .accessibilityLabel("刪除訂單")
+                                .accessibilityLabel("更多操作")
                             }
                         }
                 }

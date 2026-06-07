@@ -53,6 +53,63 @@ struct OrderMergeFeatureTests {
         #expect(store.state.filteredCandidates.map(\.id) == ["O2"])
     }
 
+    @Test func candidateSectionsGroupByDayNewestFirst() {
+        // 跨日候選依「日」分組：段排序新到舊、段內新到舊，標題同訂單頁 (今天/昨天)。
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let reference = Date(timeIntervalSince1970: 1_770_000_000)
+        let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
+        let orders = [
+            primary,
+            Self.makeOrder(
+                id: "O2", customer: "Alice", currency: .jpy, status: .purchased,
+                date: reference.addingTimeInterval(-3_600)
+            ),
+            Self.makeOrder(
+                id: "O3", customer: "Alice", currency: .jpy, status: .purchased,
+                date: reference.addingTimeInterval(-60)
+            ),
+            Self.makeOrder(
+                id: "O4", customer: "Alice", currency: .jpy, status: .purchased,
+                date: reference.addingTimeInterval(-86_400)
+            ),
+        ]
+
+        let state = OrderMergeFeature.State(primary: primary, orders: orders)
+        let sections = state.candidateSections(referenceDate: reference, calendar: calendar)
+
+        #expect(sections.map(\.title) == ["今天", "昨天"])
+        #expect(sections.map { $0.orders.map(\.id) } == [["O3", "O2"], ["O4"]])
+    }
+
+    @Test func candidateSectionsApplySearchFilter() {
+        // 搜尋過濾先於分組生效：無符合候選的日子不產生區段。
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+
+        let reference = Date(timeIntervalSince1970: 1_770_000_000)
+        let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
+        let orders = [
+            primary,
+            Self.makeOrder(
+                id: "O2", customer: "Alice", currency: .jpy, status: .purchased,
+                itemName: "香水", date: reference.addingTimeInterval(-3_600)
+            ),
+            Self.makeOrder(
+                id: "O3", customer: "Alice", currency: .jpy, status: .purchased,
+                itemName: "外套", date: reference.addingTimeInterval(-86_400)
+            ),
+        ]
+
+        var state = OrderMergeFeature.State(primary: primary, orders: orders)
+        state.searchText = "香水"
+        let sections = state.candidateSections(referenceDate: reference, calendar: calendar)
+
+        #expect(sections.map(\.title) == ["今天"])
+        #expect(sections.flatMap { $0.orders.map(\.id) } == ["O2"])
+    }
+
     @Test func candidateTappedWithinPhotoLimitCompletesDirectly() async {
         // 照片合計 ≤ 上限：跳過挑選步驟直接 delegate，照片主前副後串接。
         let primaryPhotos = [Data([0x01]), Data([0x02])]
@@ -160,6 +217,7 @@ private extension OrderMergeFeatureTests {
         currency: CurrencyCode,
         status: OrderStatus,
         itemName: String = "示範商品",
+        date: Date = Date(timeIntervalSince1970: 1_770_000_000),
         photos: [Data] = []
     ) -> LedgerOrder {
         LedgerOrder(
@@ -167,7 +225,7 @@ private extension OrderMergeFeatureTests {
             customer: LedgerCustomer(name: customer, initials: "XX", tier: .regular),
             status: status,
             currency: currency,
-            date: Date(timeIntervalSince1970: 1_770_000_000),
+            date: date,
             items: [LedgerOrderItem(name: itemName, quantity: 1, unitPrice: 100)],
             itemCost: 100,
             domesticShipping: 0,

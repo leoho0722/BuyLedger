@@ -100,63 +100,14 @@ The order list row SHALL display the order's categories on its third line as a n
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
-  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
   - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
-  - BuyLedger/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
-  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
-  - BuyLedger/BuyLedgerTests/InsightsAttributionTests.swift
-  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
-  - BuyLedger/BuyLedger/Features/Insights/InsightsView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderPersistence.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
-  - BuyLedger/BuyLedgerTests/OrderStatusTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
-  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.2.png
-  - BuyLedger/BuyLedger/Features/Campaigns/CampaignSummary.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.2.png
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderStatus+Presentation.swift
-  - BuyLedger/BuyLedger/Features/Dashboard/DashboardView.swift
-  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
   - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Core/Domain/Campaign.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
-  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/OrderMerge.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
-  - BuyLedger/BuyLedger/Core/Dependencies/OrderRepository.swift
   - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
-  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - BuyLedger/BuyLedger/Core/Domain/OrderStatus.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderDetailView.swift
-  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderStatusFilter.swift
+  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---
@@ -196,3 +147,35 @@ code:
   - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
   - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
 -->
+
+---
+### Requirement: Optional charged-amount trailing variant
+
+The order row component SHALL offer an optional trailing-column variant for hosting contexts that need the charged amount: in this variant the trailing column SHALL display the order's charged amount with a charged-amount caption label, replacing the status pill, revenue, and profit. The leading column (avatar, customer name, date, item summary, category tag) SHALL render identically to the default variant. The default variant SHALL remain the status pill with revenue and profit, and call sites that do not specify a variant SHALL be unaffected.
+
+#### Scenario: Charged-amount variant
+
+- **WHEN** a host renders the order row with the charged-amount trailing variant
+- **THEN** the trailing column shows the order's charged amount and the charged-amount label, and the leading column renders identically to the default variant
+
+#### Scenario: Default variant unchanged
+
+- **WHEN** a host renders the order row without specifying a trailing variant
+- **THEN** the row renders the status pill, revenue, and profit exactly as before the variant was introduced
+
+
+<!-- @trace
+source: add-order-merge
+updated: 2026-06-07
+code:
+  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
+  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+-->
+
+---
