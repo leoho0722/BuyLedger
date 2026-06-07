@@ -38,32 +38,32 @@ The order edit form SHALL provide an order-photos section that opens the system 
 source: add-order-photos
 updated: 2026-06-06
 code:
-  - BuyLedger/BuyLedger/Core/Dependencies/PhotoClient.swift
-  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
-  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - BuyLedger/BuyLedger/Shared/Media/PhotoDataProcessor.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedgerTests/PhotoDataProcessorTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
-  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+  - apps/apple/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/apple/BuyLedger/Features/App/RootFeature.swift
+  - apps/apple/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
+  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/apple/BuyLedger/Shared/Media/PhotoDataProcessor.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedgerTests/PhotoDataProcessorTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
+  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/apple/BuyLedgerTests/CampaignSummaryTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
+  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+  - apps/apple/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - apps/apple/BuyLedgerTests/SnapshotTests.swift
   - CLAUDE.md
 -->
 
@@ -87,32 +87,32 @@ Each successfully loaded photo SHALL be downscaled so that its longest edge is a
 source: add-order-photos
 updated: 2026-06-06
 code:
-  - BuyLedger/BuyLedger/Core/Dependencies/PhotoClient.swift
-  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
-  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - BuyLedger/BuyLedger/Shared/Media/PhotoDataProcessor.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedgerTests/PhotoDataProcessorTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
-  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+  - apps/apple/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/apple/BuyLedger/Features/App/RootFeature.swift
+  - apps/apple/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
+  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/apple/BuyLedger/Shared/Media/PhotoDataProcessor.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedgerTests/PhotoDataProcessorTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
+  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/apple/BuyLedgerTests/CampaignSummaryTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
+  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+  - apps/apple/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - apps/apple/BuyLedgerTests/SnapshotTests.swift
   - CLAUDE.md
 -->
 
@@ -132,32 +132,32 @@ Each attached photo SHALL be rendered as a thumbnail with a delete control that 
 source: add-order-photos
 updated: 2026-06-06
 code:
-  - BuyLedger/BuyLedger/Core/Dependencies/PhotoClient.swift
-  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
-  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - BuyLedger/BuyLedger/Shared/Media/PhotoDataProcessor.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedgerTests/PhotoDataProcessorTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
-  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+  - apps/apple/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/apple/BuyLedger/Features/App/RootFeature.swift
+  - apps/apple/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
+  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/apple/BuyLedger/Shared/Media/PhotoDataProcessor.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedgerTests/PhotoDataProcessorTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
+  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/apple/BuyLedgerTests/CampaignSummaryTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
+  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+  - apps/apple/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - apps/apple/BuyLedgerTests/SnapshotTests.swift
   - CLAUDE.md
 -->
 
@@ -181,32 +181,32 @@ Order photos SHALL be stored in SwiftData as binary data on the order record and
 source: add-order-photos
 updated: 2026-06-06
 code:
-  - BuyLedger/BuyLedger/Core/Dependencies/PhotoClient.swift
-  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
-  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - BuyLedger/BuyLedger/Shared/Media/PhotoDataProcessor.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedgerTests/PhotoDataProcessorTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
-  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+  - apps/apple/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/apple/BuyLedger/Features/App/RootFeature.swift
+  - apps/apple/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
+  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/apple/BuyLedger/Shared/Media/PhotoDataProcessor.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedgerTests/PhotoDataProcessorTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
+  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/apple/BuyLedgerTests/CampaignSummaryTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
+  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+  - apps/apple/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - apps/apple/BuyLedgerTests/SnapshotTests.swift
   - CLAUDE.md
 -->
 
@@ -226,32 +226,32 @@ The schema SHALL advance to a new version that adds the photos attribute with an
 source: add-order-photos
 updated: 2026-06-06
 code:
-  - BuyLedger/BuyLedger/Core/Dependencies/PhotoClient.swift
-  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
-  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - BuyLedger/BuyLedger/Shared/Media/PhotoDataProcessor.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedgerTests/PhotoDataProcessorTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
-  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+  - apps/apple/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/apple/BuyLedger/Features/App/RootFeature.swift
+  - apps/apple/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
+  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/apple/BuyLedger/Shared/Media/PhotoDataProcessor.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedgerTests/PhotoDataProcessorTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
+  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/apple/BuyLedgerTests/CampaignSummaryTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
+  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+  - apps/apple/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - apps/apple/BuyLedgerTests/SnapshotTests.swift
   - CLAUDE.md
 -->
 
@@ -295,31 +295,31 @@ Tapping a photo thumbnail outside its delete control SHALL present a photo viewe
 source: add-order-photos
 updated: 2026-06-06
 code:
-  - BuyLedger/BuyLedger/Core/Dependencies/PhotoClient.swift
-  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-  - BuyLedger/BuyLedgerTests/CampaignIntegrationTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
-  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - BuyLedger/BuyLedger/Shared/Media/PhotoDataProcessor.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedgerTests/PhotoDataProcessorTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-  - BuyLedger/BuyLedger/Core/Domain/Campaign+Samples.swift
-  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+  - apps/apple/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/apple/BuyLedger/Features/App/RootFeature.swift
+  - apps/apple/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
+  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/apple/BuyLedger/Shared/Media/PhotoDataProcessor.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedgerTests/PhotoDataProcessorTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
+  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/apple/BuyLedgerTests/CampaignSummaryTests.swift
+  - apps/apple/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
+  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+  - apps/apple/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - apps/apple/BuyLedgerTests/SnapshotTests.swift
   - CLAUDE.md
 -->

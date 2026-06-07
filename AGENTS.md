@@ -29,7 +29,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 # 儲存庫指引
 
-本檔只記錄 Codex 專屬差異；其餘硬規則、隱性 gotcha、技術棧背景與程式風格一律以 [`CLAUDE.md`](CLAUDE.md) 為準，專案概覽與 setup 見 [`README.md`](README.md)。
+本檔只記錄 Codex 專屬差異；跨平台通用規範以 [`CLAUDE.md`](CLAUDE.md) 為準，各平台硬規則與隱性 gotcha 見對應平台目錄的 `CLAUDE.md` (如 [`apps/apple/CLAUDE.md`](apps/apple/CLAUDE.md))，專案概覽見 [`README.md`](README.md)，Apple 平台 setup 見 [`apps/apple/README.md`](apps/apple/README.md)。
 
 ## Codex 專屬差異
 

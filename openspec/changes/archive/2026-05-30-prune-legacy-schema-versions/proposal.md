@@ -28,8 +28,8 @@ BuyLedger 的 SwiftData schema 已演進到 V8，但 `BuyLedgerSchema.swift` 仍
 - Affected specs: 新增 `schema-migration-plan`
 - Affected code:
   - Modified:
-    - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+    - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
     - CLAUDE.md (同步「SwiftData Schema 與 Migration」段，反映 floor 已升至 V7、V1~V6 已移除)
-  - New: BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
-  - Removed: (無檔案刪除；移除的是 BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift 內的 V1~V6 定義與對應 stages)
+  - New: apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
+  - Removed: (無檔案刪除；移除的是 apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift 內的 V1~V6 定義與對應 stages)
 - 其他：測試 target 採 file system synchronized groups，新增測試檔會自動被拾取，無需手動編輯 pbxproj。`PersistenceContainer.swift` 不需變更 (持續引用 `BuyLedgerSchemaV8` 與 `BuyLedgerMigrationPlan`)。

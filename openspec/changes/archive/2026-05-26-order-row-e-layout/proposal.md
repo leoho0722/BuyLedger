@@ -26,9 +26,9 @@
 - Affected specs: 新增 order-row-summary
 - Affected code:
   - Modified:
-    - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-    - BuyLedger/BuyLedgerTests/SnapshotTests.swift (重錄 baseline)
+    - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+    - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+    - apps/apple/BuyLedgerTests/SnapshotTests.swift (重錄 baseline)
   - New:
-    - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift
+    - apps/apple/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift
   - Removed: (none)

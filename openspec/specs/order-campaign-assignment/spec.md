@@ -30,14 +30,14 @@ The system SHALL let the order editor choose among existing campaigns only, and 
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---
@@ -55,14 +55,14 @@ The system SHALL replace every occurrence of the old campaign name inside each o
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---
@@ -84,12 +84,12 @@ The system SHALL store an order's campaign assignment as an ordered list of camp
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->

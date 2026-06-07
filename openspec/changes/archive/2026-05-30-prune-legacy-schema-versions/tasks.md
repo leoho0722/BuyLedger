@@ -1,6 +1,6 @@
 ## 1. 以 on-disk 回歸測試鎖定遷移行為 (TDD 先行)
 
-- [x] 1.1 新增 `BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift`：以 floor 版本 `BuyLedgerSchemaV7` 在 temp on-disk store URL (非 in-memory) 寫入多筆訂單與相關主檔並 save，再以收斂後 plan 開啟同一 URL，斷言所有訂單與 currency／orderSource／notes／verificationStatus 全數存活——交付 spec「Data preservation across retained migrations」與「On-disk migration regression coverage」的可執行守門，對應 design「新增 on-disk migration 回歸測試作為砍檔守門」。驗證：在現行完整 plan 下執行此測試即通過 (characterization guard)。
+- [x] 1.1 新增 `apps/apple/BuyLedgerTests/SchemaMigrationTests.swift`：以 floor 版本 `BuyLedgerSchemaV7` 在 temp on-disk store URL (非 in-memory) 寫入多筆訂單與相關主檔並 save，再以收斂後 plan 開啟同一 URL，斷言所有訂單與 currency／orderSource／notes／verificationStatus 全數存活——交付 spec「Data preservation across retained migrations」與「On-disk migration regression coverage」的可執行守門，對應 design「新增 on-disk migration 回歸測試作為砍檔守門」。驗證：在現行完整 plan 下執行此測試即通過 (characterization guard)。
 - [x] 1.2 於同檔補測 spec「Contiguous migration chain from floor to target」的兩個 scenario：floor (V7) store 開啟後遷到 V8、已在 target (V8) 的 store 開啟不觸發遷移且資料不變；此案例同時守門 spec「Schema-version removal preserves the target fingerprint」。驗證：測試斷言已在 V8 的 store 開啟前後 row 數與欄位一致。
 
 ## 2. 收斂 BuyLedgerMigrationPlan 並移除 V1~V6

@@ -30,7 +30,7 @@ code:
   - .agents/skills/spectra-ingest/SKILL.md
   - .agents/skills/spectra-apply/SKILL.md
   - .agents/skills/spectra-propose/SKILL.md
-  - BuyLedger/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
 -->
 
 ---
@@ -73,7 +73,7 @@ code:
   - .agents/skills/spectra-ingest/SKILL.md
   - .agents/skills/spectra-apply/SKILL.md
   - .agents/skills/spectra-propose/SKILL.md
-  - BuyLedger/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
 -->
 
 ---
@@ -96,7 +96,7 @@ code:
   - .agents/skills/spectra-ingest/SKILL.md
   - .agents/skills/spectra-apply/SKILL.md
   - .agents/skills/spectra-propose/SKILL.md
-  - BuyLedger/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
 -->
 
 ---
@@ -123,7 +123,7 @@ code:
   - .agents/skills/spectra-ingest/SKILL.md
   - .agents/skills/spectra-apply/SKILL.md
   - .agents/skills/spectra-propose/SKILL.md
-  - BuyLedger/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
 -->
 
 ---
@@ -156,40 +156,40 @@ The lookup management screen SHALL support reconciliation status as a managed ki
 source: order-reconciliation-status
 updated: 2026-05-29
 code:
-  - BuyLedger/BuyLedger/Features/Lookups/LookupManagementFeature.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - BuyLedger/BuyLedger/Core/Dependencies/OrderRepository.swift
-  - BuyLedger/BuyLedger/Features/More/MoreView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
-  - BuyLedger/BuyLedger/Features/Lookups/LookupKind.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - BuyLedger/BuyLedgerTests/PaymentMethodPersistenceTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/PaymentMethodInfo.swift
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedger/Features/Lookups/LookupManagementView.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift
-  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderPersistence.swift
-  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
-  - BuyLedger/BuyLedger/Core/Dependencies/VerificationStatusRepository.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-  - BuyLedger/BuyLedgerTests/LookupManagementFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/VerificationStatusRecord.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/VerificationStatusPersistence.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/apple/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/apple/BuyLedger/Features/More/MoreView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+  - apps/apple/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupKind.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/apple/BuyLedgerTests/PaymentMethodPersistenceTests.swift
+  - apps/apple/BuyLedger/Core/Domain/PaymentMethodInfo.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift
+  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
+  - apps/apple/BuyLedgerTests/SnapshotTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/apple/BuyLedger/Core/Dependencies/VerificationStatusRepository.swift
+  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/apple/BuyLedger/Features/App/RootFeature.swift
+  - apps/apple/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/VerificationStatusRecord.swift
+  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/VerificationStatusPersistence.swift
 -->
 
 ---
@@ -212,40 +212,40 @@ For the payment method kind, the screen SHALL display a "bank transfer" (銀行�
 source: order-reconciliation-status
 updated: 2026-05-29
 code:
-  - BuyLedger/BuyLedger/Features/Lookups/LookupManagementFeature.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - BuyLedger/BuyLedger/Core/Dependencies/OrderRepository.swift
-  - BuyLedger/BuyLedger/Features/More/MoreView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
-  - BuyLedger/BuyLedger/Features/Lookups/LookupKind.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - BuyLedger/BuyLedgerTests/PaymentMethodPersistenceTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/PaymentMethodInfo.swift
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedger/Features/Lookups/LookupManagementView.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift
-  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderPersistence.swift
-  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
-  - BuyLedger/BuyLedger/Core/Dependencies/VerificationStatusRepository.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-  - BuyLedger/BuyLedgerTests/LookupManagementFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/VerificationStatusRecord.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/VerificationStatusPersistence.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/apple/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/apple/BuyLedger/Features/More/MoreView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+  - apps/apple/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupKind.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/apple/BuyLedgerTests/PaymentMethodPersistenceTests.swift
+  - apps/apple/BuyLedger/Core/Domain/PaymentMethodInfo.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift
+  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
+  - apps/apple/BuyLedgerTests/SnapshotTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/apple/BuyLedger/Core/Dependencies/VerificationStatusRepository.swift
+  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/apple/BuyLedger/Features/App/RootFeature.swift
+  - apps/apple/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/VerificationStatusRecord.swift
+  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/VerificationStatusPersistence.swift
 -->
 
 ---
@@ -273,38 +273,38 @@ For the payment method kind, the per-item edit action SHALL be labeled "編輯" 
 source: order-reconciliation-status
 updated: 2026-05-29
 code:
-  - BuyLedger/BuyLedger/Features/Lookups/LookupManagementFeature.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - BuyLedger/BuyLedger/Core/Dependencies/OrderRepository.swift
-  - BuyLedger/BuyLedger/Features/More/MoreView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
-  - BuyLedger/BuyLedger/Features/Lookups/LookupKind.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - BuyLedger/BuyLedgerTests/PaymentMethodPersistenceTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/PaymentMethodInfo.swift
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedger/Features/Lookups/LookupManagementView.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift
-  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderPersistence.swift
-  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
-  - BuyLedger/BuyLedger/Core/Dependencies/VerificationStatusRepository.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-  - BuyLedger/BuyLedgerTests/LookupManagementFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/VerificationStatusRecord.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/VerificationStatusPersistence.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/apple/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/apple/BuyLedger/Features/More/MoreView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+  - apps/apple/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupKind.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/apple/BuyLedgerTests/PaymentMethodPersistenceTests.swift
+  - apps/apple/BuyLedger/Core/Domain/PaymentMethodInfo.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift
+  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
+  - apps/apple/BuyLedgerTests/SnapshotTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/apple/BuyLedger/Core/Dependencies/VerificationStatusRepository.swift
+  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/apple/BuyLedger/Features/App/RootFeature.swift
+  - apps/apple/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/VerificationStatusRecord.swift
+  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/VerificationStatusPersistence.swift
 -->

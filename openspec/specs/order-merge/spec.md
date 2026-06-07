@@ -35,14 +35,14 @@ The system SHALL provide a "merge order" action on the orders list row context m
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---
@@ -89,14 +89,14 @@ The merge candidate sheet SHALL list the orders eligible to merge with the prima
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---
@@ -119,14 +119,14 @@ When the combined photo count of the primary and secondary orders exceeds the or
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---
@@ -193,14 +193,14 @@ The form SHALL behave as a normal new-order draft afterwards: every prefilled va
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---
@@ -223,14 +223,14 @@ When editing an order produced by a merge (non-empty merged-source list) or an o
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---
@@ -253,14 +253,14 @@ When the user saves the prefilled merge form, the system SHALL, in a single pers
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---
@@ -278,14 +278,14 @@ Dismissing the candidate sheet, the photo selection step, or cancelling the pref
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---
@@ -319,12 +319,12 @@ The merged status SHALL NOT be part of the realized-status allowlist, so overall
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->

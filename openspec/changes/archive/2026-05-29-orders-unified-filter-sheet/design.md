@@ -194,9 +194,9 @@ Apply 行為：
 
 **In scope**
 
-- 新增：`BuyLedger/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift`
-- 修改：`BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift` (移除既有 dateChipStrip 呼叫、移除 categoryFilterTrigger helper / showsCategoryPicker @State / 既有 .sheet 連接；新增 unifiedFilterTrigger helper、showsFilterSheet @State、新 .sheet 連接)
-- 重錄：`BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView*.1.png`
+- 新增：`apps/apple/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift`
+- 修改：`apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift` (移除既有 dateChipStrip 呼叫、移除 categoryFilterTrigger helper / showsCategoryPicker @State / 既有 .sheet 連接；新增 unifiedFilterTrigger helper、showsFilterSheet @State、新 .sheet 連接)
+- 重錄：`apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView*.1.png`
 
 **Out of scope**
 

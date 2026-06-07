@@ -48,7 +48,7 @@ macOS 卡片上方以 `CustomersView.customerList` 的 header 樣式呈現計數
 
 ## Implementation Contract
 
-**範圍**：僅修改 `BuyLedger/BuyLedger/Features/Lookups/LookupManagementView.swift` 的呈現層。
+**範圍**：僅修改 `apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift` 的呈現層。
 
 **可觀察行為：**
 

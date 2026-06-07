@@ -71,7 +71,7 @@ BuyLedger 的訂單目前以單一字串欄位記錄商品類別 (`LedgerOrder.c
 
 ### 合併計算 OrderMerge 純函式
 
-- 新增 domain 型別 `OrderMerge` (檔案 BuyLedger/BuyLedger/Core/Domain/OrderMerge.swift)，提供靜態純函式：輸入主訂單、副訂單與當下時間 (由 caller 以 `@Dependency(\.date)` 注入)，輸出合併草稿值 (供 `OrdersFeature` 映射到 `OrderEditFeature.State`)。
+- 新增 domain 型別 `OrderMerge` (檔案 apps/apple/BuyLedger/Core/Domain/OrderMerge.swift)，提供靜態純函式：輸入主訂單、副訂單與當下時間 (由 caller 以 `@Dependency(\.date)` 注入)，輸出合併草稿值 (供 `OrdersFeature` 映射到 `OrderEditFeature.State`)。
 - 欄位規則 (對齊需求 2-1)：
   - 客戶名稱、訂單來源、狀態、幣別、收款狀態：取主訂單值 (客戶名稱因合併限同客戶，兩筆必然相同)。
   - 付款方式：兩筆相同時取該值；不同時，若恰有一筆屬無卡類則取該筆的付款方式 (以無卡為主，保住折抵/補款加總不被非無卡的歸零規則清掉)，其餘情況取主訂單值。對帳狀態與是否貨到付款一律隨「付款方式來源」那筆訂單。

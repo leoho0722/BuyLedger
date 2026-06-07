@@ -31,7 +31,7 @@
 - Affected specs: `order-category-filter`
 - Affected code:
   - Modified:
-    - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-    - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
+    - apps/apple/BuyLedger/Features/App/RootFeature.swift
+    - apps/apple/BuyLedgerTests/RootFeatureTests.swift
   - New: （無）
   - Removed: （無）

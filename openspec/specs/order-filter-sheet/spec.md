@@ -58,13 +58,13 @@ The trigger SHALL be rendered regardless of whether the available categories lis
 source: orders-unified-filter-sheet
 updated: 2026-05-29
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
 -->
 
 ---
@@ -135,13 +135,13 @@ Every row SHALL support multi-line text wrapping when its label exceeds the avai
 source: orders-unified-filter-sheet
 updated: 2026-05-29
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
 -->
 
 ---
@@ -193,13 +193,13 @@ The sheet SHALL also continue to expose a cancel control in the navigation bar (
 source: orders-unified-filter-sheet
 updated: 2026-05-29
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
 -->
 
 ---
@@ -232,11 +232,11 @@ When the search produces no matching category rows, the category section SHALL d
 source: orders-unified-filter-sheet
 updated: 2026-05-29
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
 -->

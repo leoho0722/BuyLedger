@@ -32,14 +32,14 @@ The system SHALL let the orders list filter by campaign status with three option
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---
@@ -67,12 +67,12 @@ The system SHALL let the orders list filter by a specific campaign name. A speci
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->

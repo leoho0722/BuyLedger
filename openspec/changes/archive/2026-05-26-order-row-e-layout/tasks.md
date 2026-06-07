@@ -1,6 +1,6 @@
 ## 1. Design System：BLTagPill 元件
 
-- [x] 1.1 [P] 新增 `BuyLedger/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift`：定義 `BLTagPill(_ text: String, systemImage: String? = nil)`，以 neutral tone 灰底 `Capsule` 呈現 `text`，`systemImage` 非 nil 時於膠囊左側 (膠囊外) 放置該 SF Symbol，圖示與膠囊以 `HStack(alignment: .center)` 垂直置中、膠囊文字 `fixedSize` 維持單行。行為：提供可重用的類別標籤元件，呼叫端不需碰 `BLTheme.palette`。驗證：附 `#Preview` 展示「有 icon」與「無 icon」兩種樣態，iOS Simulator build 通過。實作設計決策：將類別膠囊抽成 BLTagPill Design System 元件。
+- [x] 1.1 [P] 新增 `apps/apple/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift`：定義 `BLTagPill(_ text: String, systemImage: String? = nil)`，以 neutral tone 灰底 `Capsule` 呈現 `text`，`systemImage` 非 nil 時於膠囊左側 (膠囊外) 放置該 SF Symbol，圖示與膠囊以 `HStack(alignment: .center)` 垂直置中、膠囊文字 `fixedSize` 維持單行。行為：提供可重用的類別標籤元件，呼叫端不需碰 `BLTheme.palette`。驗證：附 `#Preview` 展示「有 icon」與「無 icon」兩種樣態，iOS Simulator build 通過。實作設計決策：將類別膠囊抽成 BLTagPill Design System 元件。
 
 ## 2. OrderRowView E 版型
 
@@ -20,4 +20,4 @@
 
 ## 5. 測試
 
-- [x] 5.1 以 `TestDependencies.withFixedNow { ... }` 重錄 `BuyLedger/BuyLedgerTests/__Snapshots__/` 的 iOS 393×852 baseline 並提交。行為：snapshot baseline 反映新版單列摘要。驗證：snapshot 測試 (`SnapshotTests`) 對新 baseline 通過。設計決策 (design)：重錄 iOS snapshot baseline。
+- [x] 5.1 以 `TestDependencies.withFixedNow { ... }` 重錄 `apps/apple/BuyLedgerTests/__Snapshots__/` 的 iOS 393×852 baseline 並提交。行為：snapshot baseline 反映新版單列摘要。驗證：snapshot 測試 (`SnapshotTests`) 對新 baseline 通過。設計決策 (design)：重錄 iOS snapshot baseline。

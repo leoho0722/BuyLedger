@@ -33,37 +33,37 @@
   - Modified: `lookup-management`, `option-picker`
 - Affected code:
   - New:
-    - BuyLedger/BuyLedger/Core/Domain/ReconciliationStatus.swift（若採詞彙常數／預設集合的輕量型別；不一定需要）
-    - BuyLedger/BuyLedger/Core/Persistence/ReconciliationStatusRecord.swift
-    - BuyLedger/BuyLedger/Core/Persistence/ReconciliationStatusPersistence.swift
-    - BuyLedger/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
-    - BuyLedger/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift（name-only medium sheet 共用元件）
+    - apps/apple/BuyLedger/Core/Domain/ReconciliationStatus.swift（若採詞彙常數／預設集合的輕量型別；不一定需要）
+    - apps/apple/BuyLedger/Core/Persistence/ReconciliationStatusRecord.swift
+    - apps/apple/BuyLedger/Core/Persistence/ReconciliationStatusPersistence.swift
+    - apps/apple/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
+    - apps/apple/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift（name-only medium sheet 共用元件）
   - Modified:
-    - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-    - BuyLedger/BuyLedger/Core/Domain/PaymentMethodInfo.swift
-    - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-    - BuyLedger/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
-    - BuyLedger/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
-    - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-    - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-    - BuyLedger/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
-    - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-    - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-    - BuyLedger/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
-    - BuyLedger/BuyLedger/Features/Lookups/LookupKind.swift
-    - BuyLedger/BuyLedger/Features/Lookups/LookupManagementFeature.swift
-    - BuyLedger/BuyLedger/Features/Lookups/LookupManagementView.swift
-    - BuyLedger/BuyLedger/Features/More/MoreView.swift
-    - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-    - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-    - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
-    - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
-    - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
-    - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-    - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-    - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+    - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+    - apps/apple/BuyLedger/Core/Domain/PaymentMethodInfo.swift
+    - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+    - apps/apple/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
+    - apps/apple/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+    - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+    - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
+    - apps/apple/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+    - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+    - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+    - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+    - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+    - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+    - apps/apple/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
+    - apps/apple/BuyLedger/Features/Lookups/LookupKind.swift
+    - apps/apple/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+    - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
+    - apps/apple/BuyLedger/Features/More/MoreView.swift
+    - apps/apple/BuyLedger/Features/App/RootFeature.swift
+    - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
+    - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
+    - apps/apple/BuyLedgerTests/RootFeatureTests.swift
+    - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
+    - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
+    - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+    - apps/apple/BuyLedgerTests/SnapshotTests.swift
   - Removed: （無）
 - 資料 / 同步：SwiftData schema V6 → V7 lightweight migration；維持與 CloudKit 同步相容 (不使用 unique constraint、新欄位帶 default)。

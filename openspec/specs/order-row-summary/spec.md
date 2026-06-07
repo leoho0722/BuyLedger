@@ -22,21 +22,21 @@ The order list row SHALL display, on its first line, the customer name followed 
 source: order-row-e-layout
 updated: 2026-05-26
 code:
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
-  - BuyLedger/BuyLedger/Features/Dashboard/DashboardView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
-  - BuyLedger/BuyLedger.xcodeproj/project.pbxproj
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
+  - apps/apple/BuyLedger/Features/Dashboard/DashboardView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
+  - apps/apple/BuyLedger.xcodeproj/project.pbxproj
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
 -->
 
 ---
@@ -54,21 +54,21 @@ The order list row SHALL display the order's item summary on its second line, li
 source: order-row-e-layout
 updated: 2026-05-26
 code:
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
-  - BuyLedger/BuyLedger/Features/Dashboard/DashboardView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
-  - BuyLedger/BuyLedger.xcodeproj/project.pbxproj
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
+  - apps/apple/BuyLedger/Features/Dashboard/DashboardView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
+  - apps/apple/BuyLedger.xcodeproj/project.pbxproj
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
 -->
 
 ---
@@ -100,14 +100,14 @@ The order list row SHALL display the order's categories on its third line as a n
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---
@@ -131,21 +131,21 @@ The order list row SHALL use uniform vertical spacing between its content lines 
 source: order-row-e-layout
 updated: 2026-05-26
 code:
-  - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
-  - BuyLedger/BuyLedger/Features/Dashboard/DashboardView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
-  - BuyLedger/BuyLedger.xcodeproj/project.pbxproj
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
+  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
+  - apps/apple/BuyLedger/Features/Dashboard/DashboardView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
+  - apps/apple/BuyLedger.xcodeproj/project.pbxproj
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
 -->
 
 ---
@@ -168,14 +168,14 @@ The order row component SHALL offer an optional trailing-column variant for host
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
 
 ---

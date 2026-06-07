@@ -52,10 +52,10 @@
   - Modified: `option-picker`（新增「optional clear option」requirement）
 - Affected code:
   - Modified:
-    - `BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift`：新增 `ClearOption` nested type 與 `clearOption: ClearOption?` 參數；iOS `listContent` 與 macOS `optionsCard` 渲染 clear row；filteredOptions 不受 clearOption 影響（clear row 不參與搜尋）
-    - `BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift`：移除 `categoryChipStrip` / `categoryChipButton`，新增 `categoryFilterTrigger(palette:)` helper 與 `.sheet` 控制 state
-    - `BuyLedger/BuyLedger/Features/Orders/OrdersView.swift`：移除 `categoryChipScrollStrip` / `categoryChip`，新增 `categoryFilterTrigger(palette:)` helper 與 `.sheet` 控制 state
-    - `BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift`：移除 `categoryChipRow` / `categoryChip`，新增 `categoryFilterTrigger(palette:)` helper 與 `.sheet` 控制 state
-    - `BuyLedger/BuyLedgerTests/__Snapshots__/`：iOS 393×852 baseline 因為篩選列從膠囊列改為單顆 trigger button 而需要 re-record
+    - `apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift`：新增 `ClearOption` nested type 與 `clearOption: ClearOption?` 參數；iOS `listContent` 與 macOS `optionsCard` 渲染 clear row；filteredOptions 不受 clearOption 影響（clear row 不參與搜尋）
+    - `apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift`：移除 `categoryChipStrip` / `categoryChipButton`，新增 `categoryFilterTrigger(palette:)` helper 與 `.sheet` 控制 state
+    - `apps/apple/BuyLedger/Features/Orders/OrdersView.swift`：移除 `categoryChipScrollStrip` / `categoryChip`，新增 `categoryFilterTrigger(palette:)` helper 與 `.sheet` 控制 state
+    - `apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift`：移除 `categoryChipRow` / `categoryChip`，新增 `categoryFilterTrigger(palette:)` helper 與 `.sheet` 控制 state
+    - `apps/apple/BuyLedgerTests/__Snapshots__/`：iOS 393×852 baseline 因為篩選列從膠囊列改為單顆 trigger button 而需要 re-record
   - New: (none — `ClearOption` 為 `OptionPickerSheet` 的 nested type，不獨立成檔案)
   - Removed: (none — 舊的 chip 相關 helper 被新 trigger helper 取代，不獨立成檔案故無檔案刪除)

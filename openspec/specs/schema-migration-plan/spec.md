@@ -25,8 +25,8 @@ The migration plan SHALL declare its versioned schemas as a contiguous, totally-
 source: prune-legacy-schema-versions
 updated: 2026-05-30
 code:
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
   - CLAUDE.md
 -->
 
@@ -51,8 +51,8 @@ Opening a store at any retained version SHALL preserve every persisted record an
 source: prune-legacy-schema-versions
 updated: 2026-05-30
 code:
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
   - CLAUDE.md
 -->
 
@@ -76,8 +76,8 @@ Removing the oldest versioned schemas and their stages SHALL raise the floor to 
 source: prune-legacy-schema-versions
 updated: 2026-05-30
 code:
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
   - CLAUDE.md
 -->
 
@@ -96,8 +96,8 @@ Removing legacy versioned schemas SHALL NOT alter the attribute fingerprint of t
 source: prune-legacy-schema-versions
 updated: 2026-05-30
 code:
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
   - CLAUDE.md
 -->
 
@@ -116,8 +116,8 @@ The test suite SHALL include an on-disk regression test, distinct from in-memory
 source: prune-legacy-schema-versions
 updated: 2026-05-30
 code:
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
   - CLAUDE.md
 -->
 
@@ -135,8 +135,8 @@ The plan SHALL record that the per-device safety of removing pre-floor versions 
 source: prune-legacy-schema-versions
 updated: 2026-05-30
 code:
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
   - CLAUDE.md
 -->
 
@@ -167,12 +167,12 @@ When a schema version changes the type of an existing attribute, the bridging st
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->

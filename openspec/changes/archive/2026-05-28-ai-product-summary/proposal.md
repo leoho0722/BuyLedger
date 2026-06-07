@@ -38,24 +38,24 @@
 - Affected specs: 新增 `ai-order-summary`、`order-category-filter` 兩個 capability spec。
 - Affected code:
   - New:
-    - BuyLedger/BuyLedger/Core/Networking/OllamaClient.swift
-    - BuyLedger/BuyLedger/Features/AISummary/AISummaryFeature.swift
-    - BuyLedger/BuyLedger/Features/AISummary/AISummaryView.swift
+    - apps/apple/BuyLedger/Core/Networking/OllamaClient.swift
+    - apps/apple/BuyLedger/Features/AISummary/AISummaryFeature.swift
+    - apps/apple/BuyLedger/Features/AISummary/AISummaryView.swift
   - Modified:
-    - BuyLedger/BuyLedger/Core/Networking/APIKeyProvider.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-    - BuyLedger/BuyLedger/Features/Settings/SettingsFeature.swift
-    - BuyLedger/BuyLedger/Features/Settings/SettingsView.swift
-    - BuyLedger/BuyLedger/Features/Settings/SettingsMacView.swift
-    - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-    - BuyLedger/BuyLedger/Features/More/MoreView.swift
-    - BuyLedger/BuyLedger/Resources/Config.xcconfig
-    - BuyLedger/BuyLedger/Resources/Config.example.xcconfig
-    - BuyLedger/BuyLedger/Resources/Info.plist
-    - BuyLedger/BuyLedger.xcodeproj/project.pbxproj
+    - apps/apple/BuyLedger/Core/Networking/APIKeyProvider.swift
+    - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+    - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+    - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+    - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+    - apps/apple/BuyLedger/Features/Settings/SettingsFeature.swift
+    - apps/apple/BuyLedger/Features/Settings/SettingsView.swift
+    - apps/apple/BuyLedger/Features/Settings/SettingsMacView.swift
+    - apps/apple/BuyLedger/Features/App/RootFeature.swift
+    - apps/apple/BuyLedger/Features/More/MoreView.swift
+    - apps/apple/BuyLedger/Resources/Config.xcconfig
+    - apps/apple/BuyLedger/Resources/Config.example.xcconfig
+    - apps/apple/BuyLedger/Resources/Info.plist
+    - apps/apple/BuyLedger.xcodeproj/project.pbxproj
   - Removed: (none)
 - Dependencies: 新增 SPM 套件 Textual (gonzalezreal/textual)，連結至 app target；新增外部服務 Ollama Cloud (chat streaming) 與金鑰 OLLAMA_API_KEY。
 - Platforms: iOS / iPadOS / macOS 三平台皆受影響 (深連結與模型切換有平台分流)。

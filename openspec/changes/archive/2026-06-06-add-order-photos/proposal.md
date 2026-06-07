@@ -27,23 +27,23 @@
 - Affected specs: 新增 `order-photo-attachments`
 - Affected code:
   - New:
-    - BuyLedger/BuyLedger/Core/Dependencies/PhotoClient.swift (PhotosPickerItem 載入與縮圖處理的 dependency client)
-    - BuyLedger/BuyLedger/Shared/Media/PhotoDataProcessor.swift (ImageIO 降採樣 + JPEG 重新編碼 helper)
-    - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift (可刪除、可點擊開啟檢視的照片縮圖元件)
-    - BuyLedger/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift (全螢幕照片檢視器，支援左右滑動切換)
-    - BuyLedger/BuyLedgerTests/PhotoDataProcessorTests.swift (降採樣與 JPEG 重編碼的單元測試)
+    - apps/apple/BuyLedger/Core/Dependencies/PhotoClient.swift (PhotosPickerItem 載入與縮圖處理的 dependency client)
+    - apps/apple/BuyLedger/Shared/Media/PhotoDataProcessor.swift (ImageIO 降採樣 + JPEG 重新編碼 helper)
+    - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift (可刪除、可點擊開啟檢視的照片縮圖元件)
+    - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift (全螢幕照片檢視器，支援左右滑動切換)
+    - apps/apple/BuyLedgerTests/PhotoDataProcessorTests.swift (降採樣與 JPEG 重編碼的單元測試)
   - Modified:
-    - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-    - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-    - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-    - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-    - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-    - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-    - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-    - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-    - BuyLedger/BuyLedgerTests/SchemaMigrationTests.swift
-    - BuyLedger/BuyLedgerTests/SnapshotTests.swift
+    - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+    - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+    - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+    - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+    - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
+    - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+    - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+    - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+    - apps/apple/BuyLedger/Features/App/RootFeature.swift
+    - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
+    - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
+    - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
+    - apps/apple/BuyLedgerTests/SnapshotTests.swift
   - Removed: (none)

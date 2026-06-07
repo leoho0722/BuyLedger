@@ -26,7 +26,7 @@ The single-select option picker (used for order source, category, payment method
 source: option-picker-sheet-macos-card-style
 updated: 2026-05-24
 code:
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
 -->
 
 ---
@@ -49,7 +49,7 @@ The picker SHALL let the user select one option on every platform. Selecting an 
 source: option-picker-sheet-macos-card-style
 updated: 2026-05-24
 code:
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
 -->
 
 ---
@@ -83,40 +83,40 @@ Confirming an add SHALL invoke the corresponding add callback with the collected
 source: order-reconciliation-status
 updated: 2026-05-29
 code:
-  - BuyLedger/BuyLedger/Features/Lookups/LookupManagementFeature.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - BuyLedger/BuyLedger/Core/Dependencies/OrderRepository.swift
-  - BuyLedger/BuyLedger/Features/More/MoreView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
-  - BuyLedger/BuyLedger/Features/Lookups/LookupKind.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - BuyLedger/BuyLedgerTests/PaymentMethodPersistenceTests.swift
-  - BuyLedger/BuyLedger/Core/Domain/PaymentMethodInfo.swift
-  - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - BuyLedger/BuyLedger/Features/Lookups/LookupManagementView.swift
-  - BuyLedger/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift
-  - BuyLedger/BuyLedgerTests/OrderEditFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-  - BuyLedger/BuyLedgerTests/RootFeatureTests.swift
-  - BuyLedger/BuyLedgerTests/SnapshotTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - BuyLedger/BuyLedgerTests/OrderPersistenceTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/OrderPersistence.swift
-  - BuyLedger/BuyLedgerTests/OrderCalculationTests.swift
-  - BuyLedger/BuyLedger/Core/Dependencies/VerificationStatusRepository.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-  - BuyLedger/BuyLedgerTests/LookupManagementFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/VerificationStatusRecord.swift
-  - BuyLedger/BuyLedgerTests/OrdersFeatureTests.swift
-  - BuyLedger/BuyLedger/Core/Persistence/VerificationStatusPersistence.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/apple/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/apple/BuyLedger/Features/More/MoreView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+  - apps/apple/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupKind.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/apple/BuyLedgerTests/PaymentMethodPersistenceTests.swift
+  - apps/apple/BuyLedger/Core/Domain/PaymentMethodInfo.swift
+  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift
+  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
+  - apps/apple/BuyLedgerTests/SnapshotTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/apple/BuyLedger/Core/Dependencies/VerificationStatusRepository.swift
+  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/apple/BuyLedger/Features/App/RootFeature.swift
+  - apps/apple/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/VerificationStatusRecord.swift
+  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/apple/BuyLedger/Core/Persistence/VerificationStatusPersistence.swift
 -->
 
 ---
@@ -138,7 +138,7 @@ When search is enabled, the picker SHALL filter options by the search text using
 source: option-picker-sheet-macos-card-style
 updated: 2026-05-24
 code:
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
 -->
 
 ---
@@ -211,12 +211,12 @@ The clear-selection row SHALL be composable with the existing add-option control
 source: orders-category-filter-sheet-picker
 updated: 2026-05-29
 code:
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
 -->
 
 ---
@@ -245,12 +245,12 @@ When a row wraps to multiple lines, the trailing selection-state accessory (for 
 source: orders-category-filter-sheet-picker
 updated: 2026-05-29
 code:
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
-  - BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
 -->
 
 ---
@@ -282,12 +282,12 @@ The option picker SHALL support an opt-in multi-select mode driven by a set of s
 source: add-order-merge
 updated: 2026-06-07
 code:
-  - BuyLedger/BuyLedger/Features/Orders/OrdersView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersMacView.swift
-  - BuyLedger/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - BuyLedger/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - BuyLedger/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
+  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->

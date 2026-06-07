@@ -20,7 +20,7 @@
 
 - [x] 3.1 處理超長類別名稱不撐爆 trigger capsule——對應「Trigger button 的 label format 與視覺」決議。可觀察行為：在三平台 `categoryFilterTrigger` 的 label `Text("類別：<current>")` 上套 `.lineLimit(1) + .truncationMode(.tail)`，使類別名稱超過可用寬度時以 ellipsis 結尾、capsule 保持合理寬度不換行。驗證：以 `LookupManagementFeature` 新增一個 30 字以上的中文類別（例如「美妝保養品-開架平價彩妝品牌補貨」），在 iPhone 與 macOS 訂單頁觀察 trigger capsule 寬度不撐破畫面、文字以 ellipsis 結尾；再開啟 sheet 確認長類別名在列表 row 內可完整呈現（受 List / BLCard 自身排版規則影響不需額外處理）。
 
-- [x] 3.2 重錄 iOS snapshot baseline——對應「snapshot baseline 處理策略」決議。可觀察行為：iOS 393×852 baseline（`BuyLedger/BuyLedgerTests/__Snapshots__/`）涵蓋兩種情境的訂單列表畫面：類別非空且未選（trigger label「類別：全部」、capsule fill 為 fillTertiary）、類別非空且已選（trigger label「類別：<x>」、capsule fill 為 purple）；類別為空時 baseline 保持原樣（UI 不呈現）；sheet 內部畫面不在 baseline 範圍內。驗證：按 README 既有流程將 `record: true` 跑 `xcodebuildmcp --log-level error simulator test --scheme BuyLedger --simulator-name <iPhone 17 Pro>` 中 `SnapshotTests` 重錄、檢視新 PNG 兩種情境正確、改回 `record: false` 再跑同一測試全綠、`git status --short BuyLedger/BuyLedgerTests/__Snapshots__/` 列出新 baseline。
+- [x] 3.2 重錄 iOS snapshot baseline——對應「snapshot baseline 處理策略」決議。可觀察行為：iOS 393×852 baseline（`apps/apple/BuyLedgerTests/__Snapshots__/`）涵蓋兩種情境的訂單列表畫面：類別非空且未選（trigger label「類別：全部」、capsule fill 為 fillTertiary）、類別非空且已選（trigger label「類別：<x>」、capsule fill 為 purple）；類別為空時 baseline 保持原樣（UI 不呈現）；sheet 內部畫面不在 baseline 範圍內。驗證：按 README 既有流程將 `record: true` 跑 `xcodebuildmcp --log-level error simulator test --scheme BuyLedger --simulator-name <iPhone 17 Pro>` 中 `SnapshotTests` 重錄、檢視新 PNG 兩種情境正確、改回 `record: false` 再跑同一測試全綠、`git status --short apps/apple/BuyLedgerTests/__Snapshots__/` 列出新 baseline。
 
 ## 4. Deep-link 與既有測試回歸
 

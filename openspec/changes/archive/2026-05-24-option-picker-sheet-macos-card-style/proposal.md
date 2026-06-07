@@ -23,6 +23,6 @@ macOS 上 `OptionPickerSheet` 的單選 pop-up 沿用系統原生 `List`，呈�
 
 - Affected specs: `option-picker` (new)
 - Affected code:
-  - Modified: BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - Modified: apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
   - New: (none)
   - Removed: (none)

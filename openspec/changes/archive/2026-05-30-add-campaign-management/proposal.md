@@ -32,35 +32,35 @@
 - Affected specs: 新增 campaign-management、order-campaign-assignment、order-payment-receipt-status、order-campaign-filter、campaign-analytics-surfaces 五個 capability。
 - Affected code:
   - New:
-    - BuyLedger/BuyLedger/Core/Domain/Campaign.swift
-    - BuyLedger/BuyLedger/Core/Domain/CampaignStatus.swift
-    - BuyLedger/BuyLedger/Core/Domain/PaymentReceiptStatus.swift
-    - BuyLedger/BuyLedger/Core/Persistence/CampaignRecord.swift
-    - BuyLedger/BuyLedger/Core/Persistence/CampaignPersistence.swift
-    - BuyLedger/BuyLedger/Core/Dependencies/CampaignRepository.swift
-    - BuyLedger/BuyLedger/Features/Campaigns/CampaignFeature.swift
-    - BuyLedger/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-    - BuyLedger/BuyLedger/Features/Campaigns/CampaignSummary.swift
-    - BuyLedger/BuyLedger/Features/Campaigns/CampaignListView.swift
-    - BuyLedger/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-    - BuyLedger/BuyLedgerTests/CampaignSummaryTests.swift
-    - BuyLedger/BuyLedgerTests/CampaignFeatureTests.swift
-    - BuyLedger/BuyLedgerTests/CampaignPersistenceTests.swift
+    - apps/apple/BuyLedger/Core/Domain/Campaign.swift
+    - apps/apple/BuyLedger/Core/Domain/CampaignStatus.swift
+    - apps/apple/BuyLedger/Core/Domain/PaymentReceiptStatus.swift
+    - apps/apple/BuyLedger/Core/Persistence/CampaignRecord.swift
+    - apps/apple/BuyLedger/Core/Persistence/CampaignPersistence.swift
+    - apps/apple/BuyLedger/Core/Dependencies/CampaignRepository.swift
+    - apps/apple/BuyLedger/Features/Campaigns/CampaignFeature.swift
+    - apps/apple/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
+    - apps/apple/BuyLedger/Features/Campaigns/CampaignSummary.swift
+    - apps/apple/BuyLedger/Features/Campaigns/CampaignListView.swift
+    - apps/apple/BuyLedger/Features/Campaigns/CampaignDetailView.swift
+    - apps/apple/BuyLedgerTests/CampaignSummaryTests.swift
+    - apps/apple/BuyLedgerTests/CampaignFeatureTests.swift
+    - apps/apple/BuyLedgerTests/CampaignPersistenceTests.swift
   - Modified:
-    - BuyLedger/BuyLedger/Core/Domain/LedgerOrder.swift
-    - BuyLedger/BuyLedger/Core/Persistence/OrderRecord.swift
-    - BuyLedger/BuyLedger/Core/Persistence/OrderPersistence.swift
-    - BuyLedger/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-    - BuyLedger/BuyLedger/Core/Dependencies/OrderRepository.swift
-    - BuyLedger/BuyLedger/Features/App/RootFeature.swift
-    - BuyLedger/BuyLedger/Features/App/RootTab.swift
-    - BuyLedger/BuyLedger/Features/App/RootTabLayout.swift
-    - BuyLedger/BuyLedger/Features/App/RootSidebarLayout.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrdersFeature.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrderEditFeature.swift
-    - BuyLedger/BuyLedger/Features/Orders/OrderEditView.swift
-    - BuyLedger/BuyLedger/Features/Dashboard/DashboardView.swift
-    - BuyLedger/BuyLedger/Features/Insights/InsightsView.swift
+    - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
+    - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
+    - apps/apple/BuyLedger/Core/Persistence/OrderPersistence.swift
+    - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+    - apps/apple/BuyLedger/Core/Dependencies/OrderRepository.swift
+    - apps/apple/BuyLedger/Features/App/RootFeature.swift
+    - apps/apple/BuyLedger/Features/App/RootTab.swift
+    - apps/apple/BuyLedger/Features/App/RootTabLayout.swift
+    - apps/apple/BuyLedger/Features/App/RootSidebarLayout.swift
+    - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
+    - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
+    - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
+    - apps/apple/BuyLedger/Features/Dashboard/DashboardView.swift
+    - apps/apple/BuyLedger/Features/Insights/InsightsView.swift
   - Removed: (none)
 - 持久化與同步：SwiftData Schema V8 lightweight 遷移；CloudKit 多裝置同步沿用既有相容設計 (不使用唯一性約束、新欄位帶 default)，cascade rename 與截單日自動轉狀態的並發行為於 design.md 補充說明。
 - 範圍邊界：客戶主檔 (讓分貨分組更可靠) 不在本次，另開後續獨立 change。

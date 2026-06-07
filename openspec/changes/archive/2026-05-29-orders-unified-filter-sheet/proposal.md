@@ -85,9 +85,9 @@ iPhone Compact 從篩選列移除 `dateChipStrip(palette:)` 的呼叫；helper �
   - Modified: `order-category-filter` (把現有 requirement「Category filter is presented as a trigger button with a searchable picker sheet」改為僅在 iPad regular 與 macOS 適用；iPhone Compact 上的類別篩選改由新 capability 描述)
 - Affected code:
   - New:
-    - `BuyLedger/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift`
+    - `apps/apple/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift`
   - Modified:
-    - `BuyLedger/BuyLedger/Features/Orders/OrdersCompactView.swift` (移除 dateChipStrip 呼叫、移除 categoryFilterTrigger helper、移除 showsCategoryPicker @State 與其 .sheet 連接；新增 unifiedFilterTrigger helper、showsFilterSheet @State、`.sheet(isPresented: $showsFilterSheet) { OrderFilterSheet(...) }` 連接)
-    - `BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png` (篩選列改變)
-    - `BuyLedger/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png` (篩選列改變)
+    - `apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift` (移除 dateChipStrip 呼叫、移除 categoryFilterTrigger helper、移除 showsCategoryPicker @State 與其 .sheet 連接；新增 unifiedFilterTrigger helper、showsFilterSheet @State、`.sheet(isPresented: $showsFilterSheet) { OrderFilterSheet(...) }` 連接)
+    - `apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png` (篩選列改變)
+    - `apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png` (篩選列改變)
   - Removed: (none — `categoryChipStrip` / `categoryFilterTrigger` 已在上次 change 移除完畢；本次只是再次替換 trigger 邏輯)

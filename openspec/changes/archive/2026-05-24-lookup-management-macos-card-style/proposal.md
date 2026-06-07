@@ -25,6 +25,6 @@
 
 - Affected specs: `lookup-management` (new)
 - Affected code:
-  - Modified: BuyLedger/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - Modified: apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
   - New: (none)
   - Removed: (none)

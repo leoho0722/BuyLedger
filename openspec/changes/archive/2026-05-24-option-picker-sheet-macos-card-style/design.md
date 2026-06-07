@@ -62,7 +62,7 @@ macOS 選項包在單一 `BLCard(padding: 0)`，每列為 Button (點選呼叫 `
 
 ## Implementation Contract
 
-**範圍**：僅修改 BuyLedger/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift 的呈現層。
+**範圍**：僅修改 apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift 的呈現層。
 
 **可觀察行為：**
 
