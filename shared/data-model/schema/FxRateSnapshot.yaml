@@ -1,0 +1,18 @@
+types:
+  - name: FxRateSnapshot
+    kind: entity
+    doc: |-
+      單一基準幣別在某個時間點的所有匯率快照。
+
+      rates 以「1 單位 base = X 單位 target」表示；多筆快照可串成匯率歷史走勢。
+    traits: [value-equality]
+    fields:
+      - name: date
+        type: date
+        doc: 報價時間。
+      - name: base
+        type: CurrencyCode
+        doc: 基準幣別。
+      - name: rates
+        type: map<CurrencyCode, decimal>
+        doc: 對其他幣別的匯率 (key 為目標幣別，value 為「1 base = value target」)。

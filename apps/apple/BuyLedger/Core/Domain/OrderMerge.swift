@@ -37,7 +37,11 @@ enum OrderMerge {
         now: Date,
         isCardless: (String) -> Bool
     ) -> Draft {
-        let paymentSource = paymentMethodSource(primary: primary, secondary: secondary, isCardless: isCardless)
+        let paymentSource = paymentMethodSource(
+            primary: primary,
+            secondary: secondary,
+            isCardless: isCardless
+        )
 
         return Draft(
             customer: primary.customer,

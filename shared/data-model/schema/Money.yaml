@@ -1,0 +1,12 @@
+types:
+  - name: Money
+    kind: entity
+    doc: 帶有幣別的金額值。
+    traits: [value-equality, serializable]
+    fields:
+      - name: amount
+        type: decimal
+        doc: 金額數值。
+      - name: currency
+        type: CurrencyCode
+        doc: 金額所屬幣別。

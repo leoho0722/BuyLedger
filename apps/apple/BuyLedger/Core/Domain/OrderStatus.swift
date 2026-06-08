@@ -4,47 +4,24 @@
 //
 //  Created by Leo Ho on 2026/5/1.
 //
+//  資料形狀 (cases、Identifiable) 由 Generated/OrderStatus.generated.swift 產生；
+//  本檔僅保留手寫業務邏輯。改欄位請改 shared/data-model/schema/ 後重新 generate。
+//
 
 import Foundation
 
-/// 訂單在代購流程中的目前狀態。
-enum OrderStatus: String, CaseIterable, Codable, Identifiable, Sendable {
+// MARK: - Static Properties
 
-    // MARK: - Cases
-
-    /// 正在報價，尚未成立正式訂單。
-    case quoting
-
-    /// 客戶已確認訂單。
-    case confirmed
-
-    /// 已完成海外下單。
-    case purchased
-
-    /// 商品正在集運或國際運送。
-    case shipping
-
-    /// 商品已交付客戶。
-    case delivered
-
-    /// 訂單已取消。
-    case cancelled
-
-    /// 訂單已被合併到另一筆新訂單，僅保留作歷史紀錄。
-    case merged
-
-    // MARK: - Identifiable Properties
-
-    /// 狀態的穩定識別值。
-    var id: String { rawValue }
-
-    // MARK: - Static Properties
+extension OrderStatus {
 
     /// 視為「已實現」的訂單狀態集合，為收益統計的單一事實來源。
     /// 「已合併」與「已取消」「報價中」同樣不屬於已實現，避免合併後重複計算收益。
     static let realizedStatuses: Set<OrderStatus> = [.confirmed, .purchased, .shipping, .delivered]
+}
 
-    // MARK: - Display Properties
+// MARK: - Display Properties
+
+extension OrderStatus {
 
     /// 顯示在介面中的狀態名稱。
     var title: String {

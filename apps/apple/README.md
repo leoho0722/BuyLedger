@@ -119,6 +119,26 @@ xcodebuildmcp simulator test \
 
 Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確認視覺正確後 commit baseline；之後變更若與 baseline 不符會 fail。固定時間注入的硬規則 (`TestDependencies.withFixedNow`) 見 [CLAUDE.md › 測試準則](CLAUDE.md#測試準則)。
 
+### 4. 重新產生 data model (codegen)
+
+`Core/Domain/` 的資料形狀由 `shared/data-model` 的跨平台 schema 產生 (格式與細節見 [shared/data-model/README.md](../../shared/data-model/README.md))，生成檔在 `Core/Domain/Generated/`，**不可手改**。增刪欄位或改型別時：
+
+```bash
+# 首次安裝產生器依賴 (需 Bun >= 1.3，brew install bun)
+cd shared/data-model/generator && bun install
+
+# 改 shared/data-model/schema/ 後重新產生 Swift (輸出到 apps/apple 的 Core/Domain/Generated/)
+bun run generate
+
+# 提交前確認生成檔與 schema 同步 (exit 0 才算同步)
+bun run check
+
+# (少用) 把生成檔改回可寫，僅供刻意手動檢視／實驗；下次 generate 會重新鎖唯讀
+bun run unlock
+```
+
+生成檔與 schema 一起 commit。生成檔在磁碟上**預設唯讀** (`generate` 會 chmod `0o444` 防手改)；Xcode 編譯只讀取、不受影響，重生成會自動解鎖重寫。`Core/Domain/` 是 file system synchronized group，新增／刪除型別後請 iOS + iPadOS + macOS 各 build 一次，確認新檔被正確拾取。手寫業務邏輯 (computed properties、display title、自訂 `Codable`) 放在與型別同名的 extension 檔，不放生成檔。
+
 ## 架構速覽
 
 ### App 進入點與平台導覽

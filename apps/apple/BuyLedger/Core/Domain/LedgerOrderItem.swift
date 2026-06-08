@@ -4,46 +4,16 @@
 //
 //  Created by Leo Ho on 2026/5/1.
 //
+//  資料形狀 (id / name / quantity / unitPrice、init) 由 Generated/LedgerOrderItem.generated.swift 產生；
+//  本檔僅保留手寫業務邏輯 (小計、刻意排除 id 的自訂 Codable)。
+//  改欄位請改 shared/data-model/schema/ 後重新 generate。
+//
 
 import Foundation
 
-/// 訂單中的單一商品項目。
-///
-/// 為了支援表單內的 inline 編輯 (避免 SwiftUI ForEach binding 隨內容變動而 reset focus)，id 採用穩定的 ``UUID``，與 `name / quantity / unitPrice` 等內容欄位解耦。
-struct LedgerOrderItem: Equatable, Identifiable, Sendable {
+// MARK: - Computed Properties
 
-    // MARK: - Identifiable Properties
-
-    /// 商品項目的穩定識別值，與內容無關。
-    let id: UUID
-
-    // MARK: - Data Properties
-
-    /// 商品名稱。
-    var name: String
-
-    /// 商品數量。
-    var quantity: Int
-
-    /// 商品在原始幣別中的單價。
-    var unitPrice: Decimal
-
-    // MARK: - Init
-
-    /// 建立商品項目。
-    /// - Parameters:
-    ///   - id: 穩定識別值；預設自動產生新的 ``UUID``。
-    ///   - name: 商品名稱。
-    ///   - quantity: 商品數量。
-    ///   - unitPrice: 商品在原始幣別中的單價。
-    init(id: UUID = UUID(), name: String, quantity: Int, unitPrice: Decimal) {
-        self.id = id
-        self.name = name
-        self.quantity = quantity
-        self.unitPrice = unitPrice
-    }
-
-    // MARK: - Computed Properties
+extension LedgerOrderItem {
 
     /// 商品在原始幣別中的小計。
     var subtotal: Decimal {
@@ -69,13 +39,13 @@ extension LedgerOrderItem: Codable {
 
     // MARK: - Init
 
-    /// 從 decoder 還原；若資料來源沒有 `id` 欄位 (例如舊版本寫入的 SwiftData blob)，自動補上新的 ``UUID``。
+    /// 從 decoder 還原；因生成的 init 對 `id` 帶有 `= UUID()` 預設，未提供 `id` 欄位的資料來源 (例如舊版本寫入的 SwiftData blob) 會自動補上新的 ``UUID``。
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
-        self.id = UUID()
-        self.name = try container.decode(String.self, forKey: .name)
-        self.quantity = try container.decode(Int.self, forKey: .quantity)
-        self.unitPrice = try container.decode(Decimal.self, forKey: .unitPrice)
+        let name = try container.decode(String.self, forKey: .name)
+        let quantity = try container.decode(Int.self, forKey: .quantity)
+        let unitPrice = try container.decode(Decimal.self, forKey: .unitPrice)
+        self.init(name: name, quantity: quantity, unitPrice: unitPrice)
     }
 
     /// 編碼成 JSON / SwiftData blob，刻意不寫出 `id` 欄位。

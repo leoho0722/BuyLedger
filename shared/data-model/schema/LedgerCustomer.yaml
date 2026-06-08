@@ -1,0 +1,15 @@
+types:
+  - name: LedgerCustomer
+    kind: entity
+    doc: 訂單中的客戶摘要資料。
+    traits: [value-equality, serializable]
+    fields:
+      - name: name
+        type: string
+        doc: 客戶顯示名稱。
+      - name: initials
+        type: string
+        doc: 頭像與列表使用的姓名縮寫。
+      - name: tier
+        type: CustomerTier
+        doc: 客戶分級。

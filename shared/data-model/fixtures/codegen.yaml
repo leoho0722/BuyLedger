@@ -1,0 +1,14 @@
+# fixture 專用 codegen：三語言 target 各輸出到 expected/<lang>/，作為 golden file。
+# 正式產線設定見 ../codegen.yaml (僅 swift target)。
+version: 1
+targets:
+  - language: swift
+    output: expected/swift
+    options: {}
+  - language: kotlin
+    output: expected/kotlin
+    options:
+      package: com.buyledger.datamodel
+  - language: typescript
+    output: expected/typescript
+    options: {}

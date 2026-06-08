@@ -1,0 +1,18 @@
+# fixture：enum 與 wrapper，與 sample-orders.yaml 跨檔互相引用 (驗證目錄合併載入)。
+types:
+  - name: SampleStatus
+    kind: enum
+    doc: 範例狀態 (示範 enum + identity + case-iterable)。
+    traits: [case-iterable, serializable, identity]
+    cases:
+      - name: active
+        doc: 進行中。
+      - name: archived
+        doc: 已封存。
+
+  - name: SampleTag
+    kind: wrapper
+    doc: 範例標籤 (示範 wrapper + 自訂序列化 + identity)。
+    traits: [hashable, identity]
+    serialization: custom
+    base: string

@@ -88,3 +88,10 @@ apps/apple/BuyLedger/Resources/Config.xcconfig
 
 # Firebase 設定（從 Firebase Console 下載 GoogleService-Info.plist 放入 Resources/）
 apps/apple/BuyLedger/Resources/GoogleService-Info.plist
+
+# CodeGen node modules
+shared/data-model/generator/node_modules
+
+# xcode-build-server files
+buildServer.json
+.compile

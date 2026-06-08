@@ -4,26 +4,16 @@
 //
 //  Created by Leo Ho on 2026/5/2.
 //
+//  資料形狀 (date / base / rates) 由 Generated/FxRateSnapshot.generated.swift 產生；
+//  本檔僅保留手寫業務邏輯 (預設快照 fallback)。
+//  改欄位請改 shared/data-model/schema/ 後重新 generate。
+//
 
 import Foundation
 
-/// 單一基準幣別在某個時間點的所有匯率快照。
-///
-/// `rates` 以「1 unit of base = X target」表示；之後做歷史走勢時會把多筆 ``FxRateSnapshot`` 串成 sparkline。
-struct FxRateSnapshot: Equatable, Sendable {
+// MARK: - Static Properties
 
-    // MARK: - Data Properties
-
-    /// 報價時間。
-    let date: Date
-
-    /// 基準幣別。
-    let base: CurrencyCode
-
-    /// 對其他幣別的匯率 (key 為目標幣別，value 為「1 base = value target」)。
-    let rates: [CurrencyCode: Decimal]
-
-    // MARK: - Static Properties
+extension FxRateSnapshot {
 
     /// 預設快照：使用 ``FxRates/toTwd`` 為基礎組成的範例 snapshot，僅供 SwiftUI Preview (``ExchangeRateClient/previewValue``) 與單元測試使用。
     ///

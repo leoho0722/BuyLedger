@@ -1,0 +1,26 @@
+{
+  "name": "datamodel-gen",
+  "version": "1.0.0",
+  "description": "BuyLedger 跨平台 data model 產生器 (TypeScript + Bun)：自統一 schema 目錄產生 Swift / Kotlin / TypeScript 程式碼",
+  "private": true,
+  "type": "module",
+  "module": "src/datamodel-gen.ts",
+  "bin": {
+    "datamodel-gen": "src/datamodel-gen.ts"
+  },
+  "scripts": {
+    "generate": "bun run src/datamodel-gen.ts generate --schema ../schema --config ../codegen.yaml",
+    "check": "bun run src/datamodel-gen.ts check --schema ../schema --config ../codegen.yaml",
+    "unlock": "bun run src/datamodel-gen.ts unlock --config ../codegen.yaml",
+    "test": "bun test",
+    "typecheck": "bunx tsc --noEmit"
+  },
+  "dependencies": {
+    "yaml": "^2.7.0",
+    "zod": "^4.0.0"
+  },
+  "devDependencies": {
+    "@types/bun": "latest",
+    "typescript": "^5.7.0"
+  }
+}

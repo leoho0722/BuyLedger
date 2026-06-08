@@ -1,0 +1,62 @@
+# fixture：entity，涵蓋型別映射表全列、nullable/default 解析表，以及全域 Sendable 注入。
+types:
+  - name: SampleOrder
+    kind: entity
+    doc: |-
+      範例訂單 (示範型別映射、nullable 與 default 規則)。
+
+      涵蓋基礎型別、容器、跨檔引用，以及顯式 init 為 nullable 欄位補 nil 的路徑。
+    traits: [value-equality, serializable, identity]
+    fields:
+      - name: id
+        type: string
+        doc: 穩定識別值。
+      - name: title
+        type: string
+        doc: 標題；可變。
+        mutable: true
+      - name: quantity
+        type: int
+        doc: 數量；預設 0。
+        mutable: true
+        default: 0
+      - name: status
+        type: SampleStatus
+        doc: 目前狀態；預設 active。
+        default: SampleStatus.active
+      - name: tags
+        type: array<SampleTag>
+        doc: 標籤清單；預設空陣列。
+        default: []
+      - name: rate
+        type: decimal
+        doc: 匯率 (非 nullable、無 default — 必填參數)。
+      - name: createdAt
+        type: date
+        doc: 建立時間。
+      - name: closeDate
+        type: date
+        doc: 結束時間；nullable 且無 default，顯式 init 應補 = nil。
+        nullable: true
+      - name: payload
+        type: data
+        doc: 二進位附載；nullable。
+        nullable: true
+      - name: itemId
+        type: uuid
+        doc: 項目識別值；計算 default $newUUID。
+        default: $newUUID
+      - name: rates
+        type: map<SampleTag, decimal>
+        doc: 各標籤對應的費率。
+
+  - name: SampleMetadata
+    kind: entity
+    doc: 範例 metadata (不列任何 trait，驗證 Swift 全域 Sendable 注入)。
+    fields:
+      - name: key
+        type: string
+        doc: 鍵。
+      - name: value
+        type: string
+        doc: 值。

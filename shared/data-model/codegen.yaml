@@ -1,0 +1,8 @@
+# 產線 codegen 設定。schema 來源為同層的 schema/ 目錄 (見 package.json 的 generate / check script)。
+# 目前僅 Swift target——Android / Web 平台尚未動工，屆時於此處加 kotlin / typescript target 即接上
+# (Kotlin / TypeScript emitter 的正確性目前由 generator 的 golden file 測試鎖定)。
+version: 1
+targets:
+  - language: swift
+    output: ../../apps/apple/BuyLedger/Core/Domain/Generated
+    options: {}

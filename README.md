@@ -34,12 +34,15 @@ BuyLedger (repo)/
 │   ├── web/                              # (未來，尚未建立) Web App
 │   └── backend/                          # (未來，尚未建立) Backend
 ├── shared/                               # 跨平台共享內容
-│   └── data-model/                       # (未來，尚未建立) 跨平台 Data Model schema
+│   └── data-model/                       # 跨平台 Data Model schema 與產生器
+│       ├── schema/                       # 統一 schema (YAML，一型一檔)
+│       ├── generator/                    # datamodel-gen 產生器 (TypeScript + Bun)
+│       └── fixtures/                     # 產生器 golden file 測試素材
 ├── openspec/                             # Spectra 規格與變更提案
 └── assets/                               # README 圖片等共用素材
 ```
 
-**佈局契約**：可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。未來平台 (Android、Web、Backend) 與共享 Data Model 等目錄，待實際動工時才建立——目前不放 stub，僅在此文件化保留位置。
+**佈局契約**：可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。未來平台 (Android、Web、Backend) 待實際動工時才建立——目前不放 stub，僅在此文件化保留位置；`shared/data-model` 已實際動工，含 schema 目錄、產生器與 fixtures。
 
 ## 平台導覽
 
