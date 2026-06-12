@@ -277,6 +277,15 @@ struct OrdersFeature {
             return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
         }
 
+        /// 對外提供給編輯表單下拉選單的「可歸屬開團」清單：僅取狀態為開團中 (``CampaignStatus/ongoing``) 的開團名稱，依 locale 排序。
+        /// 已收單的開團不列入，避免下拉選單項目過長；正在編輯的訂單若已歸屬已收單開團，由 ``OrderEditFeature`` 的 init 自動保留該既有選項，不會遺失。
+        var ongoingCampaigns: [String] {
+            let names = campaigns
+                .filter { $0.status == .ongoing }
+                .map(\.name)
+            return Set(names).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        }
+
         // MARK: - AI Method
 
         /// 把目前篩選後訂單的商品明細整理成給模型的純文字摘要輸入。
@@ -621,7 +630,7 @@ struct OrdersFeature {
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
                     availableVerificationStatuses: state.availableVerificationStatuses,
-                    availableCampaigns: state.availableCampaigns,
+                    availableCampaigns: state.ongoingCampaigns,
                     currentDate: date.now
                 )
                 return .none
@@ -632,7 +641,7 @@ struct OrdersFeature {
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
                     availableVerificationStatuses: state.availableVerificationStatuses,
-                    availableCampaigns: state.availableCampaigns,
+                    availableCampaigns: state.ongoingCampaigns,
                     currentDate: date.now
                 )
                 return .none

@@ -333,7 +333,7 @@ struct OrderEditFeature {
         /// 使用者透過「新增對帳狀態」sheet 確認新增一筆對帳狀態名稱。
         case addVerificationStatusTapped(String)
 
-        /// 表單畫面 `.task` 觸發；用於從 repo 重新拉取最新的訂單來源／類別／付款方式／對帳狀態主檔。
+        /// 表單畫面 `.task` 觸發；用於從 repo 重新拉取最新的訂單來源／類別／付款方式／對帳狀態／開團主檔。
         case task
 
         /// 從 ``OrderSourceRepository`` 取回最新訂單來源主檔。
@@ -347,6 +347,9 @@ struct OrderEditFeature {
 
         /// 從 ``VerificationStatusRepository`` 取回最新對帳狀態主檔。
         case availableVerificationStatusesLoaded([String])
+
+        /// 從 ``CampaignRepository`` 取回最新開團主檔；handler 只取開團中 (``CampaignStatus/ongoing``) 的名稱填入選單。
+        case availableCampaignsLoaded([Campaign])
 
         /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔。
         case availableCurrenciesLoaded([CurrencyCode])
@@ -374,6 +377,9 @@ struct OrderEditFeature {
 
     /// 對帳狀態主檔資料來源；理由同 ``categoryRepository``。
     @Dependency(VerificationStatusRepository.self) private var verificationStatusRepository
+
+    /// 開團主檔資料來源；用於 sheet `.task` 自行載入開團，讓任一入口 (含 Dashboard 直接開新訂單) 的選單都拿得到開團中的開團，不必依賴 caller 傳入。
+    @Dependency(CampaignRepository.self) private var campaignRepository
 
     /// 幣別主檔資料來源；用於 sheet `.task` 從 cache 拉最新清單 (cache 由 ``RootFeature`` 啟動時 TTL 7 天刷新)。
     @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
@@ -503,6 +509,7 @@ struct OrderEditFeature {
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
                 let verificationStatusRepository = verificationStatusRepository
+                let campaignRepository = campaignRepository
                 let currencyMetadataRepository = currencyMetadataRepository
                 return .run { send in
                     async let orderSourcesTask: Void = {
@@ -525,12 +532,17 @@ struct OrderEditFeature {
                             await send(.availableVerificationStatusesLoaded(items))
                         }
                     }()
+                    async let campaignsTask: Void = {
+                        if let items = try? await campaignRepository.fetchCampaigns() {
+                            await send(.availableCampaignsLoaded(items))
+                        }
+                    }()
                     async let currenciesTask: Void = {
                         if let codes = try? await currencyMetadataRepository.fetchCodes(), !codes.isEmpty {
                             await send(.availableCurrenciesLoaded(codes))
                         }
                     }()
-                    _ = await (orderSourcesTask, categoriesTask, paymentMethodsTask, verificationStatusesTask, currenciesTask)
+                    _ = await (orderSourcesTask, categoriesTask, paymentMethodsTask, verificationStatusesTask, campaignsTask, currenciesTask)
                 }
 
             case let .availableOrderSourcesLoaded(items):
@@ -582,6 +594,17 @@ struct OrderEditFeature {
                     merged.insert(draftVerificationStatus)
                 }
                 state.availableVerificationStatuses = merged
+                    .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+                return .none
+
+            case let .availableCampaignsLoaded(campaigns):
+                // 只取開團中 (ongoing) 的開團名稱填入選單，避免項目過長；已收單的開團不列入。
+                // 合併目前 draftCampaignNames (正在編輯訂單已歸屬的已收單開團、或合併情境的多選來源) 保留在清單，避免既有歸屬選項消失。
+                var merged = Set(campaigns.filter { $0.status == .ongoing }.map(\.name))
+                for draftCampaign in state.draftCampaignNames.map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) }) where !draftCampaign.isEmpty {
+                    merged.insert(draftCampaign)
+                }
+                state.availableCampaigns = merged
                     .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
                 return .none
 
