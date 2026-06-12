@@ -25,7 +25,10 @@ struct OrderStatusTests {
 
     @Test func mergedIsExcludedFromRealizedStatuses() {
         #expect(!OrderStatus.realizedStatuses.contains(.merged))
-        #expect(OrderStatus.realizedStatuses == [.confirmed, .purchased, .shipping, .delivered])
+        #expect(
+            OrderStatus.realizedStatuses
+                == [.confirmed, .purchased, .shipping, .partiallyArrived, .arrived, .delivered]
+        )
     }
 
     @Test func statusFilterBrowsingCasesIncludeMerged() {

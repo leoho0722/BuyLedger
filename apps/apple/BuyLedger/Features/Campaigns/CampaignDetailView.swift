@@ -154,7 +154,7 @@ private extension CampaignDetailView {
             BLProgressBar(
                 title: "到貨進度",
                 value: summary.deliveryRatio,
-                trailingText: "\(summary.deliveredCount)/\(summary.activeCount)"
+                trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
             )
 
             LabeledContent("總成本", value: CampaignFormatters.twd(summary.totalCost))

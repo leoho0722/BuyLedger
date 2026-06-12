@@ -37,7 +37,7 @@ struct CampaignDistributionRow: Equatable, Identifiable, Sendable {
 
 /// 開團 (Campaign) 的分貨與結算彙總。
 ///
-/// 完全 derive 自歸屬該開團的訂單 (單一真實來源，零雙重輸入)：依客戶名稱分組產生分貨清單；以 ``LedgerOrder/chargedAmount`` 為基準算收款面 (應收／已收／未收)；重用 ``OrderSummary`` 加總算損益面 (成本／毛利／利潤率)；到貨進度以 ``OrderStatus/delivered`` 比例 (分母排除 ``OrderStatus/cancelled``)。所有彙總皆不依賴「現在」時間。
+/// 完全 derive 自歸屬該開團的訂單 (單一真實來源，零雙重輸入)：依客戶名稱分組產生分貨清單；以 ``LedgerOrder/chargedAmount`` 為基準算收款面 (應收／已收／未收)；重用 ``OrderSummary`` 加總算損益面 (成本／毛利／利潤率)；到貨進度以已到貨比例 (分子為 ``OrderStatus/arrived`` 與 ``OrderStatus/delivered``；``OrderStatus/partiallyArrived`` 不計入分子但仍列入分母，分母僅排除 ``OrderStatus/cancelled`` 與 ``OrderStatus/merged``)。所有彙總皆不依賴「現在」時間。
 struct CampaignSummary: Equatable, Sendable {
 
     // MARK: - Data Properties
@@ -75,13 +75,13 @@ struct CampaignSummary: Equatable, Sendable {
     /// 利潤率 (毛利 / 總實際收款)；總實際收款為 0 時為 0，不除以零。
     let margin: Decimal
 
-    /// 已交付訂單筆數。
-    let deliveredCount: Int
+    /// 已到貨訂單筆數 (含已交付：已交付必然已到貨；不含部分到貨)。
+    let arrivedCount: Int
 
     /// 未取消訂單筆數 (到貨進度分母)。
     let activeCount: Int
 
-    /// 到貨進度 (已交付 / 未取消)；未取消筆數為 0 時為 0，不除以零。
+    /// 到貨進度 (已到貨 / 未取消)；未取消筆數為 0 時為 0，不除以零。
     let deliveryRatio: Double
 
     /// 依客戶名稱分組的分貨清單，依客戶名稱排序。
@@ -124,12 +124,13 @@ struct CampaignSummary: Equatable, Sendable {
         self.profit = summaries.reduce(0) { $0 + $1.profit }
         self.margin = totalRevenue == 0 ? 0 : profit / totalRevenue
 
-        self.deliveredCount = members.filter { $0.status == .delivered }.count
+        // 到貨進度分子計入已到貨與已交付——已交付必然已先到貨，兩者皆算「已到貨」。
+        self.arrivedCount = members.filter { $0.status == .arrived || $0.status == .delivered }.count
         // 到貨進度分母排除已取消與已合併——被合併的舊單已不再各自等待到貨。
         self.activeCount = members.filter { $0.status != .cancelled && $0.status != .merged }.count
         self.deliveryRatio = activeCount == 0
             ? 0
-            : Double(deliveredCount) / Double(activeCount)
+            : Double(arrivedCount) / Double(activeCount)
 
         self.distribution = CampaignSummary.makeDistribution(from: members)
     }

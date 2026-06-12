@@ -70,9 +70,38 @@ struct CampaignSummaryTests {
         ]
         let summary = CampaignSummary(campaignName: "團", orders: orders)
 
-        #expect(summary.deliveredCount == 2)
+        #expect(summary.arrivedCount == 2)
         #expect(summary.activeCount == 3)
         #expect(abs(summary.deliveryRatio - (2.0 / 3.0)) < 0.0001)
+    }
+
+    @Test func arrivedCountsTowardDeliveryProgress() {
+        // 已到貨與已交付都算「已到貨」：到貨進度分子同時計入兩者。
+        let orders = [
+            makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, status: .arrived),
+            makeOrder(id: "O2", customer: "B", campaign: "團", charged: 100, status: .delivered),
+            makeOrder(id: "O3", customer: "C", campaign: "團", charged: 100, status: .shipping),
+            makeOrder(id: "O4", customer: "D", campaign: "團", charged: 100, status: .cancelled),
+        ]
+        let summary = CampaignSummary(campaignName: "團", orders: orders)
+
+        #expect(summary.arrivedCount == 2)
+        #expect(summary.activeCount == 3)
+        #expect(abs(summary.deliveryRatio - (2.0 / 3.0)) < 0.0001)
+    }
+
+    @Test func partiallyArrivedCountsInDenominatorButNotNumerator() {
+        // 部分到貨不計入分子 (arrivedCount)，但仍是進行中訂單、列入分母 (activeCount)。
+        let orders = [
+            makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, status: .arrived),
+            makeOrder(id: "O2", customer: "B", campaign: "團", charged: 100, status: .partiallyArrived),
+            makeOrder(id: "O3", customer: "C", campaign: "團", charged: 100, status: .shipping),
+        ]
+        let summary = CampaignSummary(campaignName: "團", orders: orders)
+
+        #expect(summary.arrivedCount == 1)
+        #expect(summary.activeCount == 3)
+        #expect(abs(summary.deliveryRatio - (1.0 / 3.0)) < 0.0001)
     }
 
     @Test func unassignedOrdersAreExcluded() {
@@ -156,7 +185,7 @@ struct CampaignSummaryTests {
         ]
         let summary = CampaignSummary(campaignName: "團", orders: orders)
 
-        #expect(summary.deliveredCount == 1)
+        #expect(summary.arrivedCount == 1)
         #expect(summary.activeCount == 2)
         #expect(abs(summary.deliveryRatio - 0.5) < 0.0001)
     }

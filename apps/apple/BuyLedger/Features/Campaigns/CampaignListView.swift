@@ -285,7 +285,7 @@ private struct CampaignRow: View {
             BLProgressBar(
                 title: "到貨",
                 value: summary.deliveryRatio,
-                trailingText: "\(summary.deliveredCount)/\(summary.activeCount)"
+                trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
             )
 
             BLProgressBar(

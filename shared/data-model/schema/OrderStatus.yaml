@@ -12,6 +12,10 @@ types:
         doc: 已完成海外下單。
       - name: shipping
         doc: 商品正在集運或國際運送。
+      - name: partiallyArrived
+        doc: 部分商品已到貨，其餘仍在集運或國際運送。
+      - name: arrived
+        doc: 商品已到貨 (抵達代購者或取貨點)，但尚未交付客戶。
       - name: delivered
         doc: 商品已交付客戶。
       - name: cancelled

@@ -22,6 +22,10 @@ extension OrderStatus {
             .warning
         case .shipping:
             .informative
+        case .partiallyArrived:
+            .warning
+        case .arrived:
+            .accent
         case .delivered:
             .success
         case .cancelled:

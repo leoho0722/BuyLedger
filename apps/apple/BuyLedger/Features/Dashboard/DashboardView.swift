@@ -166,7 +166,7 @@ private extension DashboardView {
             BLProgressBar(
                 title: "到貨",
                 value: summary.deliveryRatio,
-                trailingText: "\(summary.deliveredCount)/\(summary.activeCount)"
+                trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
             )
 
             BLProgressBar(
@@ -611,7 +611,9 @@ private extension DashboardView {
     static let activeStatuses: Set<OrderStatus> = [
         .confirmed,
         .purchased,
-        .shipping
+        .shipping,
+        .partiallyArrived,
+        .arrived
     ]
 
     /// 視為「已實現」的訂單狀態集合 (用於本月損益)，引用 domain 層的單一事實來源。

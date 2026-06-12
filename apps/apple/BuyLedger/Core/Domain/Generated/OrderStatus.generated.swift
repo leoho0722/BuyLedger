@@ -25,6 +25,12 @@ enum OrderStatus: String, CaseIterable, Codable, Identifiable, Sendable {
     /// 商品正在集運或國際運送。
     case shipping
 
+    /// 部分商品已到貨，其餘仍在集運或國際運送。
+    case partiallyArrived
+
+    /// 商品已到貨 (抵達代購者或取貨點)，但尚未交付客戶。
+    case arrived
+
     /// 商品已交付客戶。
     case delivered
 

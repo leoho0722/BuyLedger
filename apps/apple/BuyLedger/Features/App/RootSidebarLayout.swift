@@ -58,6 +58,12 @@ private extension RootSidebarLayout {
         /// 集運中的訂單分組。
         case shipping
 
+        /// 部分商品已到貨的訂單分組。
+        case partiallyArrived
+
+        /// 已到貨但尚未交付的訂單分組。
+        case arrived
+
         /// 已交付完成的訂單分組。
         case delivered
 
@@ -79,6 +85,10 @@ private extension RootSidebarLayout {
                 .purchased
             case .shipping:
                 .shipping
+            case .partiallyArrived:
+                .partiallyArrived
+            case .arrived:
+                .arrived
             case .delivered:
                 .delivered
             }
@@ -97,6 +107,10 @@ private extension RootSidebarLayout {
                 palette.indigo
             case .shipping:
                 palette.orange
+            case .partiallyArrived:
+                palette.purple
+            case .arrived:
+                palette.yellow
             case .delivered:
                 palette.green
             }
@@ -106,7 +120,7 @@ private extension RootSidebarLayout {
 
         /// 訂單瀏覽 sidebar 中提供的固定順序 (依訂單生命週期由前到後排)。
         static let orderBrowsingCases: [SmartGroup] = [
-            .quoting, .confirmed, .purchased, .shipping, .delivered,
+            .quoting, .confirmed, .purchased, .shipping, .partiallyArrived, .arrived, .delivered,
         ]
     }
 }
@@ -323,7 +337,9 @@ private extension RootSidebarLayout {
     }
 
     /// 視為「進行中」的訂單狀態集合。
-    static let activeStatuses: Set<OrderStatus> = [.confirmed, .purchased, .shipping]
+    static let activeStatuses: Set<OrderStatus> = [
+        .confirmed, .purchased, .shipping, .partiallyArrived, .arrived,
+    ]
 }
 
 // MARK: - Preview
