@@ -18,12 +18,12 @@ import { BLStatusPill } from '@/components/ds/BLStatusPill';
 import { BLTagPill } from '@/components/ds/BLTagPill';
 import { BLAvatar } from '@/components/ds/BLAvatar';
 import { OptionPicker } from '@/components/ds/OptionPicker';
+import { PhotoViewer } from '@/components/ds/PhotoViewer';
 import { SectionHeader } from '@/components/ds/SectionHeader';
 import { Sheet } from '@/components/ds/Sheet';
 import { cn } from '@/lib/cn';
 import { api } from '@/lib/api';
 import {
-  CATEGORY_TINTS,
   CUSTOMER_TIER_TITLE,
   ORDER_STATUS_ORDER,
   ORDER_STATUS_TITLE,
@@ -78,12 +78,18 @@ export default function OrderDetailPage() {
   };
 
   const s = order.summary;
-  const costSegments = [
-    { label: '商品成本', value: Number(order.itemCost), color: CATEGORY_TINTS[0] },
-    { label: '手續費', value: Number(s.fees), color: CATEGORY_TINTS[1] },
-    { label: '國內運費', value: Number(order.domesticShipping), color: CATEGORY_TINTS[3] },
-    { label: '國際運費', value: Number(order.internationalShipping), color: CATEGORY_TINTS[2] },
-  ].filter((seg) => seg.value > 0);
+  const cod = order.isCashOnDelivery;
+  // 成本拆解項目 (對齊 iOS)：商品金額 + 刷卡/平台/金流手續費 + (僅貨到付款) 三種運費。
+  // 一般訂單運費由客人支付、不計入總成本，非貨到付款以 0 帶入後濾除；加總等於總成本。
+  const costComponents = [
+    { label: '商品金額', value: Number(order.itemCost), color: 'var(--bl-accent)' },
+    { label: '刷卡手續費', value: Number(s.cardFee), color: 'var(--bl-orange)' },
+    { label: '平台手續費', value: Number(s.platformFee), color: 'var(--bl-teal)' },
+    { label: '金流手續費', value: Number(s.paymentFee), color: 'var(--bl-purple)' },
+    { label: '國內運費', value: cod ? Number(order.domesticShipping) : 0, color: 'var(--bl-indigo)' },
+    { label: '國際運費', value: cod ? Number(order.internationalShipping) : 0, color: 'var(--bl-pink)' },
+    { label: '外國國內運費', value: cod ? Number(order.foreignDomesticShipping) : 0, color: 'var(--bl-yellow)' },
+  ].filter((c) => c.value > 0);
 
   return (
     <div className="space-y-4">
@@ -122,7 +128,7 @@ export default function OrderDetailPage() {
           </div>
         )}
         {order.campaignNames.length > 0 && (
-          <InfoRow label="歸屬開團" value={order.campaignNames.join('、')} />
+          <InfoRow label="開團" value={order.campaignNames.join('、')} />
         )}
       </BLCard>
 
@@ -139,25 +145,58 @@ export default function OrderDetailPage() {
         />
       </BLCard>
 
-      {/* 財務摘要 */}
-      <BLCard className="space-y-3">
-        <SectionHeader title="財務摘要" />
-        <div className="flex items-center gap-4">
-          {costSegments.length > 0 && (
-            <BLDonutChart segments={costSegments} centerTitle="總成本" centerValue={formatTWD(s.totalCost)} />
-          )}
-          <div className="flex-1 space-y-2">
-            <Metric label="收益" value={formatTWD(s.revenue)} />
-            <Metric
-              label="獲利"
-              value={formatSignedTWD(Number(s.profit))}
-              tone={Number(s.profit) >= 0 ? 'green' : 'red'}
-            />
-            <Metric label="毛利率" value={formatPercent(s.margin)} />
-            <Metric label="手續費" value={formatTWD(s.fees)} />
+      {/* 獲利摘要 */}
+      <BLCard className="space-y-4">
+        <div className="flex items-end justify-between gap-3">
+          <div className="space-y-0.5">
+            <span className="text-xs font-semibold text-bl-secondary-label">獲利</span>
+            <p
+              className={cn(
+                'text-[32px] font-bold bl-tabular',
+                Number(s.profit) >= 0 ? 'text-bl-green' : 'text-bl-red',
+              )}
+            >
+              {formatSignedTWD(Number(s.profit))}
+            </p>
+          </div>
+          <div className="space-y-0.5 text-right">
+            <span className="text-xs font-semibold text-bl-secondary-label">毛利率</span>
+            <p className="text-[20px] font-bold text-bl-label bl-tabular">{formatPercent(s.margin)}</p>
           </div>
         </div>
+        <div className="border-t border-bl-separator" />
+        <div className="flex justify-between gap-3">
+          {[
+            { label: '總收款', value: formatTWD(s.revenue) },
+            { label: '總成本', value: formatTWD(s.totalCost) },
+            { label: '手續費', value: formatTWD(s.fees) },
+          ].map((m) => (
+            <div key={m.label} className="space-y-0.5">
+              <p className="text-xs font-semibold text-bl-secondary-label">{m.label}</p>
+              <p className="text-[15px] font-semibold text-bl-label bl-tabular">{m.value}</p>
+            </div>
+          ))}
+        </div>
       </BLCard>
+
+      {/* 成本拆解 (僅成本面，對齊 iOS) */}
+      {costComponents.length > 0 && (
+        <BLCard className="space-y-3">
+          <SectionHeader title="成本拆解" />
+          <div className="flex items-center gap-5">
+            <BLDonutChart segments={costComponents} centerTitle="總成本" centerValue={formatTWD(s.totalCost)} />
+            <ul className="flex-1 space-y-2">
+              {costComponents.map((c) => (
+                <li key={c.label} className="flex items-center gap-2">
+                  <span className="h-2.5 w-2.5 shrink-0 rounded-full" style={{ backgroundColor: c.color }} />
+                  <span className="flex-1 text-[15px] text-bl-label">{c.label}</span>
+                  <span className="text-[15px] text-bl-secondary-label bl-tabular">{formatTWD(c.value)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </BLCard>
+      )}
 
       {/* 商品明細 */}
       <BLCard className="space-y-2">
@@ -331,22 +370,6 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-function Metric({ label, value, tone }: { label: string; value: string; tone?: 'green' | 'red' }) {
-  return (
-    <div className="flex items-center justify-between text-[15px]">
-      <span className="text-bl-secondary-label">{label}</span>
-      <span
-        className={cn(
-          'font-semibold bl-tabular',
-          tone === 'green' ? 'text-bl-green' : tone === 'red' ? 'text-bl-red' : 'text-bl-label',
-        )}
-      >
-        {value}
-      </span>
-    </div>
-  );
-}
-
 function MenuButton({
   icon: Icon,
   label,
@@ -370,39 +393,6 @@ function MenuButton({
       <Icon className="h-5 w-5" />
       {label}
     </button>
-  );
-}
-
-function PhotoViewer({
-  photos,
-  index,
-  onIndex,
-  onClose,
-}: {
-  photos: string[];
-  index: number;
-  onIndex: (i: number) => void;
-  onClose: () => void;
-}) {
-  return (
-    <Sheet open onClose={onClose} title={`${index + 1} / ${photos.length}`}>
-      <div className="space-y-3">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={photos[index]} alt="照片" className="mx-auto max-h-[60vh] rounded-bl-md object-contain" />
-        <div className="flex justify-between">
-          <BLButton variant="plain" onClick={() => onIndex(Math.max(0, index - 1))} disabled={index === 0}>
-            上一張
-          </BLButton>
-          <BLButton
-            variant="plain"
-            onClick={() => onIndex(Math.min(photos.length - 1, index + 1))}
-            disabled={index === photos.length - 1}
-          >
-            下一張
-          </BLButton>
-        </div>
-      </div>
-    </Sheet>
   );
 }
 

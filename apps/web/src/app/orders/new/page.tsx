@@ -38,7 +38,7 @@ function NewOrderInner() {
 
   return (
     <div>
-      <PageHeader title={isMerge ? '合併訂單' : '新增訂單'} />
+      <PageHeader title={isMerge ? '合併訂單' : '新訂單'} />
       <OrderEditForm
         mode="create"
         initial={initial}

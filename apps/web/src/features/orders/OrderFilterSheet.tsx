@@ -84,7 +84,7 @@ export function OrderFilterSheet({
           onClick={() => setPicker('payment')}
         />
         <BLSelectRow
-          label="歸屬開團"
+          label="開團"
           value={draft.campaign ?? '全部'}
           onClick={() => setPicker('campaign')}
         />
@@ -143,7 +143,7 @@ export function OrderFilterSheet({
       <OptionPicker
         open={picker === 'campaign'}
         onClose={() => setPicker(null)}
-        title="歸屬開團"
+        title="選擇開團"
         options={campaigns.map((c) => ({ value: c.name, label: c.name }))}
         selected={draft.campaign ?? ''}
         clearLabel="全部開團"

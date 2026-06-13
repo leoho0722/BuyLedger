@@ -84,9 +84,9 @@ export default function CampaignDetailPage() {
       {/* 結團結算 */}
       <BLCard className="space-y-3">
         <SectionHeader title="結團結算" />
-        <Row label="應收金額" value={formatTWD(summary.receivables)} />
-        <Row label="已收金額" value={formatTWD(summary.receivedAmount)} />
-        <Row label="未收金額" value={formatTWD(summary.outstandingAmount)} />
+        <Row label="應收" value={formatTWD(summary.receivables)} />
+        <Row label="已收" value={formatTWD(summary.receivedAmount)} />
+        <Row label="未收" value={formatTWD(summary.outstandingAmount)} />
         <Row label="總成本" value={formatTWD(summary.totalCost)} />
         <Row label="獲利" value={formatTWD(summary.profit)} />
         <Row label="毛利率" value={formatPercent(summary.margin)} />
@@ -97,7 +97,7 @@ export default function CampaignDetailPage() {
       {/* 客戶分貨 */}
       <BLCard className="space-y-3">
         <SectionHeader title="客戶分貨" />
-        <BLToggle label="僅顯示未收齊" checked={unpaidOnly} onChange={setUnpaidOnly} />
+        <BLToggle label="只看未收款" checked={unpaidOnly} onChange={setUnpaidOnly} />
         {distribution.length === 0 ? (
           <p className="py-4 text-center text-sm text-bl-tertiary-label">尚無分貨資料</p>
         ) : (

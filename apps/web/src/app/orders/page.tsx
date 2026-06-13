@@ -105,22 +105,47 @@ function OrdersInner() {
               type="button"
               onClick={openAi}
               disabled={filtered.length === 0}
-              className="rounded-bl-sm bg-bl-fill-tertiary p-2 text-bl-accent disabled:opacity-40"
-              aria-label="AI 總結"
+              className="inline-flex items-center gap-1.5 rounded-bl-md bg-bl-fill-tertiary px-3 py-2 text-[15px] font-semibold text-bl-accent transition hover:bg-bl-fill-secondary disabled:pointer-events-none disabled:opacity-40"
             >
-              <Sparkles className="h-5 w-5" />
+              <Sparkles className="h-4 w-4" />
+              <span className="hidden sm:inline">AI 總結</span>
             </button>
             <button
               type="button"
               onClick={() => router.push('/orders/new')}
-              className="rounded-bl-sm bg-bl-accent p-2 text-white"
-              aria-label="新增訂單"
+              className="inline-flex items-center gap-1.5 rounded-bl-md bg-bl-accent px-3 py-2 text-[15px] font-semibold text-white transition hover:opacity-90"
             >
-              <Plus className="h-5 w-5" />
+              <Plus className="h-4 w-4" />
+              <span className="hidden sm:inline">新增訂單</span>
             </button>
           </div>
         }
       />
+
+      {/* Web 工具列：搜尋 + 篩選同列 */}
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="sm:flex-1">
+          <BLSearchField
+            value={filters.search}
+            onChange={(v) => setFilters((f) => ({ ...f, search: v }))}
+            placeholder="搜尋客戶、單號或商品"
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setFilterOpen(true)}
+          className={cn(
+            'flex w-full items-center justify-center gap-2 rounded-bl-md px-4 py-2.5 text-[15px] transition sm:w-auto sm:shrink-0',
+            filterActive
+              ? 'bg-bl-accent/14 text-bl-accent hover:bg-bl-accent/20'
+              : 'bg-bl-fill-tertiary text-bl-secondary-label hover:bg-bl-fill-secondary',
+          )}
+        >
+          <ListFilter className="h-4 w-4" />
+          <span>篩選</span>
+          {filterActive && <span className="h-2 w-2 rounded-full bg-bl-accent" />}
+        </button>
+      </div>
 
       {/* 狀態快篩 chips */}
       <div className="flex gap-2 overflow-x-auto bl-no-scrollbar pb-1">
@@ -141,43 +166,24 @@ function OrdersInner() {
         ))}
       </div>
 
-      <BLSearchField
-        value={filters.search}
-        onChange={(v) => setFilters((f) => ({ ...f, search: v }))}
-        placeholder="搜尋客戶或商品"
-      />
-
-      <button
-        type="button"
-        onClick={() => setFilterOpen(true)}
-        className={cn(
-          'flex w-full items-center gap-2 rounded-bl-pill px-4 py-2.5 text-[15px]',
-          filterActive ? 'bg-bl-accent/14 text-bl-accent' : 'bg-bl-fill-tertiary text-bl-secondary-label',
-        )}
-      >
-        <ListFilter className="h-4 w-4" />
-        <span className="flex-1 text-left">篩選</span>
-        {filterActive && <span className="h-2 w-2 rounded-full bg-bl-accent" />}
-      </button>
-
       {isLoading ? (
         <p className="py-12 text-center text-bl-secondary-label">載入中…</p>
       ) : filtered.length === 0 ? (
         <EmptyState icon={Inbox} title="沒有符合條件的訂單" description="調整篩選或新增一筆訂單" />
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-6">
           {sections.map((section) => (
-            <div key={section.key} className="space-y-1">
+            <div key={section.key} className="space-y-2">
               <p className="px-1 text-xs font-semibold text-bl-secondary-label">
                 {formatSectionDate(section.date, now)}
               </p>
-              <BLCard padded={false}>
+              <div className="space-y-3">
                 {section.orders.map((o) => (
-                  <div key={o.id} className="border-b border-bl-separator last:border-b-0">
+                  <BLCard key={o.id} padded={false} className="overflow-hidden">
                     <OrderRow order={o} onClick={() => router.push(`/orders/${o.id}`)} />
-                  </div>
+                  </BLCard>
                 ))}
-              </BLCard>
+              </div>
             </div>
           ))}
         </div>
@@ -198,9 +204,9 @@ function OrdersInner() {
         orderIds={filtered.map((o) => o.id)}
         selectedCategory={filters.category}
       />
-      <Sheet open={aiBlocked} onClose={() => setAiBlocked(false)} title="AI 商品總結">
+      <Sheet open={aiBlocked} onClose={() => setAiBlocked(false)} title="AI 商品明細總結">
         <div className="space-y-4 py-2 text-center">
-          <p className="text-[15px] text-bl-secondary-label">尚未啟用 AI 商品總結，請先於設定開啟。</p>
+          <p className="text-[15px] text-bl-secondary-label">尚未啟用 AI 商品明細總結，請先於設定開啟。</p>
           <Link href="/more/settings">
             <BLButton variant="secondary" onClick={() => setAiBlocked(false)}>
               前往設定

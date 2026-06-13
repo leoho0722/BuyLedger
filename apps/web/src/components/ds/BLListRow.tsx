@@ -46,7 +46,7 @@ export function BLListRow({
       <button
         type="button"
         onClick={onClick}
-        className="flex w-full items-center gap-3 px-3.5 py-3 text-left transition active:bg-bl-fill-quaternary"
+        className="flex w-full items-center gap-3 px-3.5 py-3 text-left transition hover:bg-bl-fill-quaternary active:bg-bl-fill-quaternary"
       >
         {content}
       </button>

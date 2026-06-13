@@ -11,6 +11,7 @@ import { SectionHeader } from '@/components/ds/SectionHeader';
 import { OrderRow } from '@/components/OrderRow';
 import { PageHeader } from '@/components/PageHeader';
 import { campaignSummary, dashboardStats } from '@/lib/domain/aggregations';
+import { cn } from '@/lib/cn';
 import { formatPercent, formatProgressPercent, formatSignedTWD, formatTWD } from '@/lib/format';
 import { useCampaigns, useOrders, useSettings } from '@/lib/queries';
 
@@ -49,7 +50,7 @@ export default function DashboardPage() {
           </div>
           <div className="space-y-1">
             <p className="text-[20px] font-bold text-bl-label">歡迎使用 BuyLedger</p>
-            <p className="text-[15px] text-bl-secondary-label">建立第一筆訂單，開始記帳</p>
+            <p className="text-[15px] text-bl-secondary-label">還沒有任何訂單。建立第一筆，馬上開始追蹤代購損益。</p>
           </div>
           <BLButton fullWidth>
             <Link href="/orders/new">建立第一筆訂單</Link>
@@ -64,96 +65,110 @@ export default function DashboardPage() {
   const goal = Number(settings.data?.monthlyProfitGoal ?? '80000');
   const ongoingCampaigns = campaignList.filter((c) => c.status === 'ongoing');
 
+  const hasOngoing = ongoingCampaigns.length > 0;
+
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <PageHeader title="總覽" />
 
-      {/* Hero：本月淨獲利 */}
-      <div className="rounded-bl-lg p-5 text-white" style={{ background: HERO_GRADIENT }}>
-        <p className="text-sm text-white/80">本月淨獲利</p>
-        <p className="text-[36px] font-bold bl-tabular">{formatSignedTWD(stats.current.profit)}</p>
-        {stats.profitDelta != null && (
-          <div className="mt-1 flex items-center gap-1 text-sm text-white/90">
-            {stats.profitDelta >= 0 ? (
-              <ArrowUp className="h-4 w-4" strokeWidth={2.25} />
-            ) : (
-              <ArrowDown className="h-4 w-4" strokeWidth={2.25} />
-            )}
-            <span className="bl-tabular">{formatPercent(Math.abs(stats.profitDelta))}</span>
-            <span className="text-white/70">較上月</span>
-          </div>
-        )}
-        <div className="mt-3">
-          <BLSparkline values={stats.sparkline} stroke="rgba(255,255,255,0.9)" />
+      {/* Hero：本月淨獲利 (全寬 banner，桌機橫式) */}
+      <div
+        className="rounded-bl-lg p-5 text-white lg:flex lg:items-center lg:gap-10 lg:p-6"
+        style={{ background: HERO_GRADIENT }}
+      >
+        <div className="lg:flex-1">
+          <p className="text-sm text-white/80">本月 · 淨獲利</p>
+          <p className="text-[36px] font-bold bl-tabular lg:text-[44px]">
+            {formatSignedTWD(stats.current.profit)}
+          </p>
+          {stats.profitDelta != null && (
+            <div className="mt-1 flex items-center gap-1 text-sm text-white/90">
+              {stats.profitDelta >= 0 ? (
+                <ArrowUp className="h-4 w-4" strokeWidth={2.25} />
+              ) : (
+                <ArrowDown className="h-4 w-4" strokeWidth={2.25} />
+              )}
+              <span className="bl-tabular">{formatPercent(Math.abs(stats.profitDelta))}</span>
+              <span className="text-white/70">較上月</span>
+            </div>
+          )}
         </div>
-        {goal > 0 && (
-          <div className="mt-3 [&_span]:text-white">
-            <BLProgressBar
-              title="本月目標"
-              value={stats.goalProgress}
-              trailingText={formatProgressPercent(stats.goalProgress)}
-              tintClassName="bg-white"
-            />
-          </div>
-        )}
+        <div className="mt-4 space-y-3 lg:mt-0 lg:flex-1">
+          <BLSparkline values={stats.sparkline} stroke="rgba(255,255,255,0.9)" />
+          {goal > 0 && (
+            <div className="[&_span]:text-white">
+              <BLProgressBar
+                title="本月目標"
+                value={stats.goalProgress}
+                trailingText={formatProgressPercent(stats.goalProgress)}
+                tintClassName="bg-white"
+              />
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* KPI 磁貼 */}
-      <div className="grid grid-cols-2 gap-3">
+      {/* KPI 磁貼 (桌機 4 欄) */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <KpiTile label="營業額" value={formatTWD(stats.current.revenue)} />
         <KpiTile label="成本" value={formatTWD(stats.current.cost)} />
         <KpiTile label="毛利率" value={formatPercent(stats.current.margin)} />
         <KpiTile label="進行中訂單" value={`${stats.activeCount} 筆`} />
       </div>
 
-      {/* 進行中開團 */}
-      {ongoingCampaigns.length > 0 && (
-        <div className="space-y-2">
-          <SectionHeader title="進行中開團" />
-          <BLCard className="space-y-4">
-            {ongoingCampaigns.map((c) => {
-              const summary = campaignSummary(orderList, c.name);
-              return (
-                <Link key={c.id} href={`/campaigns/${c.id}`} className="block space-y-2">
-                  <p className="text-[15px] font-semibold text-bl-label">{c.name}</p>
-                  <BLProgressBar
-                    title="到貨進度"
-                    value={summary.deliveryRatio}
-                    trailingText={formatProgressPercent(summary.deliveryRatio)}
-                  />
-                  <BLProgressBar
-                    title="收款進度"
-                    value={summary.receivedRatio}
-                    trailingText={formatProgressPercent(summary.receivedRatio)}
-                    tintClassName="bg-bl-green"
-                  />
-                </Link>
-              );
-            })}
+      {/* 主內容：近期訂單 (主) + 進行中開團 (側欄) */}
+      <div className={cn('grid gap-6 lg:items-start', hasOngoing && 'lg:grid-cols-3')}>
+        <div className={cn('space-y-2', hasOngoing && 'lg:col-span-2')}>
+          <SectionHeader
+            title="近期訂單"
+            action={
+              <Link href="/orders" className="text-[15px] text-bl-accent transition hover:opacity-80">
+                查看全部
+              </Link>
+            }
+          />
+          <BLCard padded={false}>
+            {stats.recentOrders.map((o, i) => (
+              <div
+                key={o.id}
+                className={i < stats.recentOrders.length - 1 ? 'border-b border-bl-separator' : undefined}
+              >
+                <OrderRow order={o} onClick={() => router.push(`/orders/${o.id}`)} />
+              </div>
+            ))}
           </BLCard>
         </div>
-      )}
 
-      {/* 近期訂單 */}
-      <div className="space-y-2">
-        <SectionHeader
-          title="近期訂單"
-          action={
-            <Link href="/orders" className="text-[15px] text-bl-accent">
-              查看全部
-            </Link>
-          }
-        />
-        <BLCard padded={false}>
-          {stats.recentOrders.map((o, i) => (
-            <div
-              key={o.id}
-              className={i < stats.recentOrders.length - 1 ? 'border-b border-bl-separator' : undefined}
-            >
-              <OrderRow order={o} onClick={() => router.push(`/orders/${o.id}`)} />
-            </div>
-          ))}
-        </BLCard>
+        {hasOngoing && (
+          <div className="space-y-2">
+            <SectionHeader title="進行中的開團" />
+            <BLCard className="space-y-4">
+              {ongoingCampaigns.map((c) => {
+                const summary = campaignSummary(orderList, c.name);
+                return (
+                  <Link
+                    key={c.id}
+                    href={`/campaigns/${c.id}`}
+                    className="block space-y-2 rounded-bl-sm transition hover:opacity-80"
+                  >
+                    <p className="text-[15px] font-semibold text-bl-label">{c.name}</p>
+                    <BLProgressBar
+                      title="到貨進度"
+                      value={summary.deliveryRatio}
+                      trailingText={formatProgressPercent(summary.deliveryRatio)}
+                    />
+                    <BLProgressBar
+                      title="收款進度"
+                      value={summary.receivedRatio}
+                      trailingText={formatProgressPercent(summary.receivedRatio)}
+                      tintClassName="bg-bl-green"
+                    />
+                  </Link>
+                );
+              })}
+            </BLCard>
+          </div>
+        )}
       </div>
     </div>
   );

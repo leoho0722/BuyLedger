@@ -1,7 +1,7 @@
 'use client';
 
 import { Plus, Trash2, X } from 'lucide-react';
-import { useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { BLAmountField, BLField } from '@/components/ds/BLField';
 import { BLButton } from '@/components/ds/BLButton';
 import { BLCard } from '@/components/ds/BLCard';
@@ -10,15 +10,11 @@ import { BLSegmentedControl } from '@/components/ds/BLSegmentedControl';
 import { BLSelectRow } from '@/components/ds/BLSelectRow';
 import { BLToggle } from '@/components/ds/BLToggle';
 import { OptionPicker, type PickerOption } from '@/components/ds/OptionPicker';
+import { PhotoViewer } from '@/components/ds/PhotoViewer';
 import { SectionHeader } from '@/components/ds/SectionHeader';
 import { api, type OrderInputBody } from '@/lib/api';
 import { cn } from '@/lib/cn';
-import {
-  CUSTOMER_TIER_TITLE,
-  MAX_PHOTO_COUNT,
-  ORDER_STATUS_ORDER,
-  ORDER_STATUS_TITLE,
-} from '@/lib/domain/constants';
+import { MAX_PHOTO_COUNT, ORDER_STATUS_ORDER, ORDER_STATUS_TITLE } from '@/lib/domain/constants';
 import {
   useCampaigns,
   useCategories,
@@ -29,7 +25,7 @@ import {
   useSettings,
   useVerificationStatuses,
 } from '@/lib/queries';
-import type { CustomerTier, OrderDTO, OrderStatus, PaymentReceiptStatus } from '@/lib/types';
+import type { OrderDTO, OrderStatus, PaymentReceiptStatus } from '@/lib/types';
 import { fileToNormalizedDataUrl } from './photoUtils';
 
 type PickerKind =
@@ -80,9 +76,10 @@ export function OrderEditForm({
   const mergeMode = (initial?.mergedSourceIDs?.length ?? 0) > 0;
 
   const [customerName, setCustomerName] = useState(initial?.customer?.name ?? '');
-  const [tier, setTier] = useState<CustomerTier>(initial?.customer?.tier ?? 'new');
+  // 客戶分級在訂單表單不開放編輯 (對齊 iOS)：新訂單預設 new、編輯沿用原值、合併沿用主訂單。
+  const tier = initial?.customer?.tier ?? 'new';
   const [currency, setCurrency] = useState(initial?.currency ?? settings?.defaultCurrency ?? 'TWD');
-  const [date] = useState(initial?.date ?? new Date().toISOString());
+  const [date, setDate] = useState(initial?.date ?? new Date().toISOString());
   const [status, setStatus] = useState<OrderStatus>(initial?.status ?? 'quoting');
   const [orderSource, setOrderSource] = useState(initial?.orderSource ?? '');
   const [cats, setCats] = useState<string[]>(initial?.categories ?? []);
@@ -112,7 +109,7 @@ export function OrderEditForm({
   const [notes, setNotes] = useState(initial?.notes ?? '');
 
   const [picker, setPicker] = useState<PickerKind>(null);
-  const fileInput = useRef<HTMLInputElement>(null);
+  const [photoIndex, setPhotoIndex] = useState<number | null>(null);
 
   const selectedPm = paymentMethods.find((p) => p.name === paymentMethod);
   const isCardless = selectedPm?.isCardless ?? false;
@@ -183,93 +180,11 @@ export function OrderEditForm({
 
   return (
     <div className="space-y-4 pb-4">
-      {/* 客戶 */}
+      {/* 基本資料 */}
       <BLCard className="space-y-3">
-        <SectionHeader title="客戶" />
+        <SectionHeader title="基本資料" />
         <BLField label="客戶名稱" value={customerName} onChange={setCustomerName} placeholder="必填" />
-        <div className="space-y-1">
-          <span className="text-xs font-semibold text-bl-secondary-label">客戶分級</span>
-          <BLSegmentedControl
-            value={tier}
-            onChange={setTier}
-            options={(['new', 'regular', 'vip'] as CustomerTier[]).map((t) => ({
-              value: t,
-              label: CUSTOMER_TIER_TITLE[t],
-            }))}
-          />
-        </div>
-      </BLCard>
-
-      {/* 商品明細 */}
-      <BLCard className="space-y-3">
-        <SectionHeader
-          title="商品明細"
-          action={
-            <button
-              type="button"
-              onClick={() => setItems((prev) => [...prev, { name: '', quantity: '1', unitPrice: '' }])}
-              className="flex items-center gap-1 text-[15px] text-bl-accent"
-            >
-              <Plus className="h-4 w-4" />
-              新增
-            </button>
-          }
-        />
-        {items.map((it, i) => (
-          <div key={i} className="flex items-end gap-2">
-            <div className="flex-1">
-              <BLField
-                label={`品項 ${i + 1}`}
-                value={it.name}
-                onChange={(v) => updateItem(setItems, i, { name: v })}
-                placeholder="商品名稱"
-              />
-            </div>
-            <div className="w-16">
-              <BLField label="數量" value={it.quantity} onChange={(v) => updateItem(setItems, i, { quantity: v })} inputMode="numeric" />
-            </div>
-            <div className="w-24">
-              <BLField label="單價" value={it.unitPrice} onChange={(v) => updateItem(setItems, i, { unitPrice: v })} inputMode="decimal" />
-            </div>
-            <button
-              type="button"
-              onClick={() => setItems((prev) => prev.filter((_, idx) => idx !== i))}
-              className="mb-2.5 text-bl-red"
-              aria-label="刪除品項"
-            >
-              <Trash2 className="h-4 w-4" />
-            </button>
-          </div>
-        ))}
-      </BLCard>
-
-      {/* 金額與成本 */}
-      <BLCard className="space-y-3">
-        <SectionHeader title="金額與成本" />
-        <BLAmountField label="收款金額 (TWD)" value={chargedAmount} onChange={setCharged} currencyLabel="TWD" />
-        <div className="grid grid-cols-2 gap-3">
-          <BLField label="商品成本 (TWD)" value={itemCost} onChange={setItemCost} inputMode="decimal" />
-          <BLField label="國內運費" value={domesticShipping} onChange={setDomestic} inputMode="decimal" />
-          <BLField label="國際運費" value={internationalShipping} onChange={setInternational} inputMode="decimal" />
-          <BLField label="來源國當地運費" value={foreignDomesticShipping} onChange={setForeignDomestic} inputMode="decimal" />
-        </div>
-        <div className="grid grid-cols-3 gap-3">
-          <BLField label="刷卡費率 (%)" value={cardFeePercent} onChange={setCardFeePercent} inputMode="decimal" />
-          <BLField label="平台費率 (%)" value={platformFeePercent} onChange={setPlatformFeePercent} inputMode="decimal" />
-          <BLField label="金流費率 (%)" value={paymentFeePercent} onChange={setPaymentFeePercent} inputMode="decimal" />
-        </div>
-        {isCardless && (
-          <div className="grid grid-cols-2 gap-3">
-            <BLField label="無卡折抵金額" value={cardlessDeduction} onChange={setCardlessDeduction} inputMode="decimal" />
-            <BLField label="無卡補款金額" value={cardlessSupplement} onChange={setCardlessSupplement} inputMode="decimal" />
-          </div>
-        )}
-      </BLCard>
-
-      {/* 歸屬與狀態 */}
-      <BLCard className="space-y-3">
-        <SectionHeader title="歸屬與狀態" />
-        <BLSelectRow label="幣別" value={currency} onClick={() => setPicker('currency')} />
+        <BLSelectRow label="訂單來源" value={orderSource} onClick={() => setPicker('orderSource')} />
         <BLSelectRow
           label="商品類別 (至少一個)"
           value={cats.join('、')}
@@ -277,7 +192,22 @@ export function OrderEditForm({
           active={cats.length === 0}
           onClick={() => setPicker('category')}
         />
-        <BLSelectRow label="訂單來源" value={orderSource} onClick={() => setPicker('orderSource')} />
+        <BLField
+          label="訂購日期"
+          type="datetime-local"
+          value={isoToLocalInput(date)}
+          onChange={(v) => {
+            const iso = localInputToIso(v);
+            if (iso) setDate(iso);
+          }}
+        />
+      </BLCard>
+
+      {/* 狀態與幣別 */}
+      <BLCard className="space-y-3">
+        <SectionHeader title="狀態與幣別" />
+        <BLSelectRow label="狀態" value={ORDER_STATUS_TITLE[status]} onClick={() => setPicker('status')} />
+        <BLSelectRow label="幣別" value={currency} onClick={() => setPicker('currency')} />
         <BLSelectRow label="付款方式" value={paymentMethod} onClick={() => setPicker('paymentMethod')} />
         {showVerification && (
           <BLSelectRow
@@ -287,13 +217,29 @@ export function OrderEditForm({
             onClick={() => setPicker('verification')}
           />
         )}
+      </BLCard>
+
+      {/* 收款金額 */}
+      <BLCard className="space-y-3">
+        <SectionHeader title="收款金額 (NT$)" />
+        <BLAmountField label="客戶實付" value={chargedAmount} onChange={setCharged} />
+        {isCardless && (
+          <div className="grid grid-cols-2 gap-3">
+            <BLField label="無卡折抵金額" value={cardlessDeduction} onChange={setCardlessDeduction} inputMode="decimal" />
+            <BLField label="無卡補款金額" value={cardlessSupplement} onChange={setCardlessSupplement} inputMode="decimal" />
+          </div>
+        )}
+      </BLCard>
+
+      {/* 開團與收款 */}
+      <BLCard className="space-y-3">
+        <SectionHeader title="開團與收款" />
         <BLSelectRow
-          label="歸屬開團"
+          label="開團"
           value={campaignNames.join('、')}
           placeholder="未歸團"
           onClick={() => setPicker('campaign')}
         />
-        <BLSelectRow label="訂單狀態" value={ORDER_STATUS_TITLE[status]} onClick={() => setPicker('status')} />
         <div className="space-y-1">
           <span className="text-xs font-semibold text-bl-secondary-label">收款狀態</span>
           <BLSegmentedControl
@@ -307,14 +253,95 @@ export function OrderEditForm({
         </div>
       </BLCard>
 
-      {/* 照片 */}
+      {/* 成本 */}
+      <BLCard className="space-y-3">
+        <SectionHeader title="成本 (NT$)" />
+        <div className="grid grid-cols-2 gap-3">
+          <BLField label="商品成本" value={itemCost} onChange={setItemCost} inputMode="decimal" />
+          <BLField label="外國國內運費" value={foreignDomesticShipping} onChange={setForeignDomestic} inputMode="decimal" />
+          <BLField label="國際運費" value={internationalShipping} onChange={setInternational} inputMode="decimal" />
+          <BLField label="國內運費" value={domesticShipping} onChange={setDomestic} inputMode="decimal" />
+        </div>
+      </BLCard>
+
+      {/* 手續費 */}
+      <BLCard className="space-y-3">
+        <SectionHeader title="手續費 (%)" />
+        <div className="grid grid-cols-3 gap-3">
+          <BLField label="刷卡手續費 %" value={cardFeePercent} onChange={setCardFeePercent} inputMode="decimal" />
+          <BLField label="平台手續費 %" value={platformFeePercent} onChange={setPlatformFeePercent} inputMode="decimal" />
+          <BLField label="金流手續費 %" value={paymentFeePercent} onChange={setPaymentFeePercent} inputMode="decimal" />
+        </div>
+      </BLCard>
+
+      {/* 商品明細 */}
+      <BLCard className="space-y-3">
+        <SectionHeader
+          title={`商品明細 (${currency})`}
+          action={
+            <button
+              type="button"
+              onClick={() => setItems((prev) => [...prev, { name: '', quantity: '1', unitPrice: '' }])}
+              className="flex items-center gap-1 text-[15px] text-bl-accent"
+            >
+              <Plus className="h-4 w-4" />
+              新增商品
+            </button>
+          }
+        />
+        {items.map((it, i) => (
+          <div
+            key={i}
+            className="space-y-2 border-t border-bl-separator pt-3 first:border-t-0 first:pt-0 md:flex md:items-end md:gap-2 md:space-y-0 md:border-t-0 md:pt-0"
+          >
+            <div className="md:min-w-0 md:flex-1">
+              <BLField
+                label={`品項 ${i + 1}`}
+                value={it.name}
+                onChange={(v) => updateItem(setItems, i, { name: v })}
+                placeholder="商品名稱"
+              />
+            </div>
+            <div className="flex items-end gap-2">
+              <div className="w-24 md:w-16">
+                <BLField label="數量" value={it.quantity} onChange={(v) => updateItem(setItems, i, { quantity: v })} inputMode="numeric" />
+              </div>
+              <div className="min-w-0 flex-1 md:w-24 md:flex-none">
+                <BLField label="單價" value={it.unitPrice} onChange={(v) => updateItem(setItems, i, { unitPrice: v })} inputMode="decimal" />
+              </div>
+              <button
+                type="button"
+                onClick={() => setItems((prev) => prev.filter((_, idx) => idx !== i))}
+                className="mb-2.5 shrink-0 text-bl-red"
+                aria-label="刪除品項"
+              >
+                <Trash2 className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        ))}
+      </BLCard>
+
+      {/* 備註 */}
+      <BLCard>
+        <BLField label="備註" value={notes} onChange={setNotes} multiline placeholder="輸入備註 (選填)" />
+      </BLCard>
+
+      {/* 訂單照片 */}
       <BLCard className="space-y-3">
         <SectionHeader title={`訂單照片 (${photos.length}/${MAX_PHOTO_COUNT})`} />
         <div className="flex flex-wrap gap-2">
           {photos.map((src, i) => (
-            <div key={i} className="relative h-20 w-20 overflow-hidden rounded-bl-sm">
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={src} alt={`照片 ${i + 1}`} className="h-full w-full object-cover" />
+            <div key={i} className="relative h-20 w-20">
+              <button
+                type="button"
+                onClick={() => setPhotoIndex(i)}
+                className="block h-full w-full overflow-hidden rounded-bl-sm"
+                aria-label={`預覽照片 ${i + 1}`}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={src} alt={`照片 ${i + 1}`} className="h-full w-full object-cover" />
+              </button>
               <button
                 type="button"
                 onClick={() => setPhotos((prev) => prev.filter((_, idx) => idx !== i))}
@@ -326,28 +353,18 @@ export function OrderEditForm({
             </div>
           ))}
           {photos.length < MAX_PHOTO_COUNT && (
-            <button
-              type="button"
-              onClick={() => fileInput.current?.click()}
-              className="flex h-20 w-20 items-center justify-center rounded-bl-sm border border-dashed border-bl-separator text-bl-secondary-label"
-            >
+            <label className="flex h-20 w-20 cursor-pointer items-center justify-center rounded-bl-sm border border-dashed border-bl-separator text-bl-secondary-label transition hover:bg-bl-fill-quaternary">
               <Plus className="h-6 w-6" />
-            </button>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                className="sr-only"
+                onChange={(e) => void addPhotos(e.target.files)}
+              />
+            </label>
           )}
         </div>
-        <input
-          ref={fileInput}
-          type="file"
-          accept="image/*"
-          multiple
-          hidden
-          onChange={(e) => void addPhotos(e.target.files)}
-        />
-      </BLCard>
-
-      {/* 備註 */}
-      <BLCard>
-        <BLField label="備註" value={notes} onChange={setNotes} multiline placeholder="選填" />
       </BLCard>
 
       <div className="flex gap-3">
@@ -371,7 +388,7 @@ export function OrderEditForm({
       <OptionPicker
         open={picker === 'category'}
         onClose={() => setPicker(null)}
-        title="商品類別"
+        title="選擇商品類別"
         options={categories.map((c) => ({ value: c, label: c }))}
         multi={mergeMode}
         selected={cats[0]}
@@ -382,12 +399,12 @@ export function OrderEditForm({
           await api.lookups.categories.add(name);
           setCats((prev) => (mergeMode ? [...prev, name] : [name]));
         }}
-        emptyTitle="尚無商品類別"
+        emptyTitle="尚無類別"
       />
       <OptionPicker
         open={picker === 'orderSource'}
         onClose={() => setPicker(null)}
-        title="訂單來源"
+        title="選擇訂單來源"
         options={orderSources.map((c) => ({ value: c, label: c }))}
         selected={orderSource}
         onSelect={setOrderSource}
@@ -395,12 +412,12 @@ export function OrderEditForm({
           await api.lookups.orderSources.add(name);
           setOrderSource(name);
         }}
-        emptyTitle="尚無訂單來源"
+        emptyTitle="尚無來源"
       />
       <OptionPicker
         open={picker === 'paymentMethod'}
         onClose={() => setPicker(null)}
-        title="付款方式"
+        title="選擇付款方式"
         options={paymentMethods.map((p) => ({ value: p.name, label: p.name }))}
         selected={paymentMethod}
         onSelect={setPaymentMethod}
@@ -413,7 +430,7 @@ export function OrderEditForm({
       <OptionPicker
         open={picker === 'verification'}
         onClose={() => setPicker(null)}
-        title="對帳狀態"
+        title="選擇對帳狀態"
         options={verificationStatuses.map((c) => ({ value: c, label: c }))}
         selected={verificationStatus}
         onSelect={setVerificationStatus}
@@ -426,7 +443,7 @@ export function OrderEditForm({
       <OptionPicker
         open={picker === 'campaign'}
         onClose={() => setPicker(null)}
-        title="歸屬開團"
+        title="選擇開團"
         options={campaignOptions}
         multi={mergeMode}
         selected={campaignNames[0] ?? ''}
@@ -437,12 +454,12 @@ export function OrderEditForm({
         onToggle={(v) =>
           setCampaignNames((prev) => (prev.includes(v) ? prev.filter((x) => x !== v) : [...prev, v]))
         }
-        emptyTitle="尚無開團中團購"
+        emptyTitle="尚無開團"
       />
       <OptionPicker
         open={picker === 'status'}
         onClose={() => setPicker(null)}
-        title="訂單狀態"
+        title="選擇狀態"
         searchable={false}
         options={ORDER_STATUS_ORDER.filter((s) => s !== 'merged' || status === 'merged').map((s) => ({
           value: s,
@@ -451,6 +468,15 @@ export function OrderEditForm({
         selected={status}
         onSelect={(v) => setStatus(v as OrderStatus)}
       />
+
+      {photoIndex !== null && (
+        <PhotoViewer
+          photos={photos}
+          index={photoIndex}
+          onIndex={setPhotoIndex}
+          onClose={() => setPhotoIndex(null)}
+        />
+      )}
     </div>
   );
 }
@@ -461,6 +487,20 @@ function updateItem(
   patch: Partial<ItemDraft>,
 ): void {
   setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)));
+}
+
+// ISO 字串 → `<input type="datetime-local">` 的本地值 (yyyy-MM-ddTHH:mm，分鐘精度)。
+function isoToLocalInput(iso: string): string {
+  const d = new Date(iso);
+  if (Number.isNaN(d.getTime())) return '';
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+// datetime-local 本地值 → ISO 字串；無效 (含清空) 回空字串，由 caller 略過寫入。
+function localInputToIso(value: string): string {
+  const d = new Date(value);
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString();
 }
 
 function fractionToPercent(value: string | undefined): string {

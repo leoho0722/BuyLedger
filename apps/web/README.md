@@ -4,37 +4,38 @@ Next.js (App Router) + React + Tailwind v4 + TanStack Query 的前端，功能�
 
 ## 技術棧
 
-| 項目 | 選型 |
-|------|------|
-| 框架 | Next.js 15 (App Router) + React 19 |
-| 樣式 | Tailwind CSS v4 (token 化設計系統，對齊 iOS BLPalette) |
-| 資料層 | TanStack Query v5 (對獨立後端 REST) |
-| 金額 | decimal.js (彙總)、Intl 格式化 (zh-TW) |
-| 型別來源 | `shared/data-model` 生成的 TypeScript |
-| 端對端測試 | Playwright |
+| 項目       | 選型                                                  |
+|------------|-------------------------------------------------------|
+| 框架       | Next.js 15 (App Router) + React 19                    |
+| 樣式       | Tailwind CSS v4 (token 化設計系統，對齊 iOS BLPalette) |
+| 資料層     | TanStack Query v5 (對獨立後端 REST)                   |
+| 金額       | decimal.js (彙總)、Intl 格式化 (zh-TW)                 |
+| 型別來源   | `shared/data-model` 生成的 TypeScript                 |
+| 端對端測試 | Playwright                                            |
 
 ## 專案結構
 
 ```text
 src/
-├── app/                 # App Router 路由
-│   ├── page.tsx         # 總覽 (儀表板)
-│   ├── orders/          # 訂單列表/詳情/新增/編輯
-│   ├── campaigns/       # 開團列表/詳情/新增/編輯
-│   ├── insights/        # 分析
-│   └── more/            # 客戶/匯率/報價/設定/主檔管理
+├── app/                            # App Router 路由
+│   ├── page.tsx                    # 總覽 (儀表板)
+│   ├── orders/                     # 訂單列表/詳情/新增/編輯
+│   ├── campaigns/                  # 開團列表/詳情/新增/編輯
+│   ├── insights/                   # 分析
+│   ├── more/                       # 客戶/匯率/報價/設定/主檔管理
+│   └── icon.png                    # 分頁 favicon (由 iOS AppIcon-Any-1024 縮放 512px；iOS icon 換了要重新同步)
 ├── components/
-│   ├── ds/              # 設計系統元件 (BLCard, BLStatusPill, OptionPicker …)
-│   ├── AppShell.tsx     # 側欄/底部分頁導覽
-│   └── OrderRow.tsx     # 訂單列 (含 charged 變體)
-├── features/            # orders/ (表單、合併、AI 總結、篩選)、campaigns/ (表單)
+│   ├── ds/                         # 設計系統元件 (BLCard, BLStatusPill, OptionPicker …)
+│   ├── AppShell.tsx                # 導覽殼 (桌機固定側欄、手機頂部列 + 漢堡抽屜)
+│   └── OrderRow.tsx                # 訂單列 (含 charged 變體)
+├── features/                       # orders/ (表單、合併、AI 總結、篩選)、campaigns/ (表單)
 └── lib/
-    ├── api.ts queries.ts          # API client 與 hooks
+    ├── api.ts queries.ts           # API client 與 hooks
     ├── domain/                     # constants/orders(篩選)/aggregations(彙總)/fx
     ├── format.ts decimal.ts        # 格式化與精確運算
     ├── data-model/generated/       # 生成型別
     └── theme.tsx providers.tsx     # 外觀切換與 Provider
-e2e/                     # Playwright 測試
+e2e/                                # Playwright 測試
 ```
 
 ## 開發

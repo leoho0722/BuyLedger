@@ -15,6 +15,13 @@ import { useCampaigns, useOrders } from '@/lib/queries';
 import { insightsStats, type InsightsRange, type RankRow } from '@/lib/domain/aggregations';
 import { formatPercent, formatTWD } from '@/lib/format';
 
+// 走勢區段標題依區間動態顯示「{區間}淨獲利」(對齊 iOS)。
+const TREND_TITLE: Record<InsightsRange, string> = {
+  thirtyDays: '30 天淨獲利',
+  sixMonths: '6 個月淨獲利',
+  twelveMonths: '12 個月淨獲利',
+};
+
 // 排名水平 bar：依絕對值佔最大值的比例決定寬度，正值 accent、負值 red。
 function RankList({ rows, onSelect }: { rows: RankRow[]; onSelect: (name: string) => void }) {
   const max = Math.max(1, ...rows.map((r) => Math.abs(r.profitNumber)));
@@ -68,21 +75,23 @@ export default function InsightsPage() {
       ) : (orders ?? []).length === 0 ? (
         <EmptyState icon={BarChart3} title="尚未有足夠可用於分析的資料" />
       ) : (
-        <div className="space-y-4">
-          <BLSegmentedControl
-            value={range}
-            onChange={setRange}
-            options={[
-              { value: 'thirtyDays', label: '30 天' },
-              { value: 'sixMonths', label: '6 個月' },
-              { value: 'twelveMonths', label: '12 個月' },
-            ]}
-          />
+        <div className="grid gap-4 lg:grid-cols-2 lg:items-start">
+          <div className="lg:col-span-2">
+            <BLSegmentedControl
+              value={range}
+              onChange={setRange}
+              options={[
+                { value: 'thirtyDays', label: '30 天' },
+                { value: 'sixMonths', label: '6 個月' },
+                { value: 'twelveMonths', label: '12 個月' },
+              ]}
+            />
+          </div>
 
           {/* 獲利走勢 */}
-          <BLCard>
+          <BLCard className="lg:col-span-2">
             <SectionHeader
-              title="獲利走勢"
+              title={TREND_TITLE[range]}
               action={
                 stats.trendDelta != null ? (
                   <span
@@ -109,7 +118,7 @@ export default function InsightsPage() {
 
           {/* 類別與成本 */}
           <BLCard>
-            <SectionHeader title="類別收益排名" />
+            <SectionHeader title="類別排行" />
             <div className="mt-3">
               {stats.categoryBreakdown.length > 0 ? (
                 <RankList
@@ -157,7 +166,7 @@ export default function InsightsPage() {
 
           {/* 開團獲利 */}
           <BLCard>
-            <SectionHeader title="開團獲利" />
+            <SectionHeader title="每團毛利排行" />
             <div className="mt-3">
               {stats.campaignRanking.length > 0 ? (
                 <RankList rows={stats.campaignRanking} onSelect={() => router.push('/campaigns')} />
@@ -168,8 +177,8 @@ export default function InsightsPage() {
           </BLCard>
 
           {/* 訂單熱度 */}
-          <BLCard>
-            <SectionHeader title="訂單熱度" />
+          <BLCard className="lg:col-span-2">
+            <SectionHeader title="下單熱力" />
             <div className="mt-3 overflow-x-auto bl-no-scrollbar">
               <BLHeatmap grid={stats.heatmap} />
             </div>

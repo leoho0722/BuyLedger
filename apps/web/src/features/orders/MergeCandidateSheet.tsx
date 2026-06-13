@@ -40,7 +40,7 @@ export function MergeCandidateSheet({
   return (
     <Sheet open={open} onClose={onClose} title="選擇要合併的訂單" size="lg">
       <div className="space-y-3">
-        <BLSearchField value={search} onChange={setSearch} placeholder="搜尋客戶或商品" />
+        <BLSearchField value={search} onChange={setSearch} placeholder="搜尋客戶、單號或商品" />
         {candidates.length === 0 ? (
           <EmptyState icon={Inbox} title="沒有可合併的訂單" description="僅能合併同客戶、同幣別且未取消/合併的訂單" />
         ) : (

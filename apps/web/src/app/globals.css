@@ -91,12 +91,18 @@
   --color-bl-glass-background: var(--bl-glass-background);
   --color-bl-glass-border: var(--bl-glass-border);
 
-  /* 圓角 (對齊 BLRadius)。 */
+  /*
+   * 圓角 (對齊 BLRadius)。先清掉 Tailwind 預設 radius scale、只保留 bl-* token：
+   * 否則 `rounded-bl-*` 會被 Tailwind 當成「左下角 (bottom-left)」工具、用預設 radius
+   * 蓋掉左下角，導致左下角與其他三角不一致。清掉後 `rounded-bl-lg` 只解析成四角同值。
+   */
+  --radius-*: initial;
   --radius-bl-xs: 6px;
   --radius-bl-sm: 10px;
   --radius-bl-md: 12px;
   --radius-bl-lg: 16px;
   --radius-bl-xl: 22px;
+  --radius-bl-pill: 9999px;
 
   --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
     "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;

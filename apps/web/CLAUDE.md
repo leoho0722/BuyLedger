@@ -11,9 +11,11 @@
 ## 設計系統 (對齊 iOS)
 
 - **色票/間距/圓角 token 定義在 `src/app/globals.css`** (`@theme inline` + `:root`/`.dark` CSS 變數)，值逐一對齊 iOS `BLPalette`。元件**只用語意 class** (`text-bl-label`、`bg-bl-surface`、`border-bl-separator`、`rounded-bl-lg` 等)，不寫死色碼。
+- **圓角 token 與 Tailwind 「左下角」工具撞名**：`bl` 前綴的 `rounded-bl-*` 會被 Tailwind 當成 bottom-left 角、用預設 radius 蓋掉左下角 (與其他三角不一致)。因此 `@theme` 用 **`--radius-*: initial`** 清掉預設 radius scale、只留 `--radius-bl-*` (含 `--radius-bl-pill: 9999px`)，`rounded-bl-*` 才會套到四個角。**勿移除該 `--radius-*: initial`**，也勿新增裸 `--radius-{sm,md,lg…}`，否則左下角 bug 會重現。
 - **深淺色以 `html.dark` class 切換** (`src/lib/theme.tsx`，`system` 跟隨 `prefers-color-scheme`)；`layout.tsx` 有 anti-flash inline script。深色不用陰影、改靠 0.5px 邊框 (`.bl-card-shadow` 在 `.dark` 下清空)。
 - **`BLTone` → `TONE_CLASSES`** (`src/lib/domain/constants.ts`)：非中性背景為前景色 14%。商業狀態→tone 對照 (`ORDER_STATUS_TONE` 等) 也在此。
 - DS 元件在 `src/components/ds/`，一元件一檔。
+- **token 對齊 iOS，但佈局走 Web 風格**：色票/間距/圓角沿用 iOS 值，版面與導覽則用 Web 慣例——桌機固定側欄、手機頂部 app bar + 漢堡抽屜 (`AppShell`，無 iOS 底部 tab bar)；內容區 `max-w-7xl`、總覽/分析多欄並排、訂單/開團為單欄寬列、更多頁為工具卡片網格 (圖示色塊+標題+說明，非 iOS inset 清單列)、列與卡片有 hover 態。勿改回 iOS 行動樣式 (底部 tab、窄單欄 `max-w-3xl`、以滿版 sheet 為主要互動)。
 
 ## 資料層與職責切分
 
@@ -35,10 +37,20 @@
 
 ## 表單與流程 gotcha
 
+- **訂單表單 section 順序/分組對齊 iOS `OrderEditView`** (`OrderEditForm`)：基本資料 → 狀態與幣別 → 收款金額 → 開團與收款 → 成本 → 手續費 → 商品明細 → 備註 → 訂單照片；成本欄位順序亦同 iOS (商品成本 → 來源國當地運費 → 國際運費 → 國內運費)。改版面時勿讓兩端 section 順序漂移。
+- **訂單表單欄位集合也對齊 iOS**：**客戶分級不在訂單表單編輯** (新訂單存 `new`、編輯沿用原值、合併沿用主訂單)，勿加回 tier 選擇器；**訂購日期**以 `datetime-local` 編輯 (ISO ↔ 本地值互轉見 `isoToLocalInput`/`localInputToIso`，分鐘精度)。
+- **檔案上傳 input 不可用 `hidden`/`display:none`**：Safari/Firefox 會拒絕對 `display:none` 的 `<input type=file>` 觸發檔案選擇器 (Chrome 可，故易漏測)。新增照片改用 `<label>` 包一個 `sr-only` (clip 隱藏、非 `display:none`) 的 input、點 label 原生開啟，跨瀏覽器一致 (`OrderEditForm`)。
+- **商品明細列走 RWD** (`OrderEditForm`)：手機 (`<md`) 直式 (商品名稱一列、數量/單價/刪除一列，避免橫向溢位)；桌機 (`md`+) 維持單列 (名稱 `flex-1` + 數量/單價/刪除並排)。橫排的彈性子項記得加 `min-w-0` 才不會撐破卡片寬度。
 - **費率欄位 UI 以「百分比」輸入**，儲存前 `÷100` 轉 fraction (`OrderEditForm`)；載入時 `×100` 還原。
 - **類別/開團在「合併模式」(非空 `mergedSourceIDs`) 才多選**，否則單選 (對齊 iOS)。
 - **合併流程**：訂單詳情 → `mergeDraft` API → 合併照片若超過 5 張先挑選 → 草稿存 `sessionStorage` → 導 `/orders/new?merge=1` 預填。
 - 照片於前端正規化 (最長邊 ≤1600、JPEG dataURL，`src/features/orders/photoUtils.ts`)，上限 5 張。
+
+## 用詞 (對齊 iOS)
+
+- **訂單詳情財務區拆成兩張卡 (對齊 iOS `OrderDetailView`)**：「獲利摘要」(獲利 + 毛利率 + 總收款/總成本/手續費) 與「成本拆解」(**僅成本面**)。成本拆解 = donut(中央總成本) + 元件清單：商品金額(itemCost)、刷卡/平台/金流手續費 (`summary.cardFee/platformFee/paymentFee`)、**僅貨到付款** (`isCashOnDelivery`) 才計國內/國際/外國國內運費；元件濾除 0 後加總須等於 `summary.totalCost`。勿把營收/獲利/毛利率放進「成本拆解」。
+
+- **使用者可見字串一律對齊 iOS App 用詞** (iOS 為基準)，新增/修改文案前先比對 iOS 對應畫面。已知關鍵慣例：手續費 (非「費率」)、外國國內運費 (非「來源國當地運費」)、訂單金額區段標題帶 `(NT$)`／成本帶 `(NT$)`／手續費帶 `(%)`、picker sheet 標題用「選擇X」、訂單表單狀態列用「狀態」(非「訂單狀態」)、開團 (非「歸屬開團」)、新訂單 (非「新增訂單」)、總收款 (訂單詳情，非「收益」)、月度淨獲利目標 (非「每月獲利目標」)、分析的下單熱力／類別排行／每團毛利排行、走勢標題隨區間顯示「{區間}淨獲利」。domain 標題 (狀態/分級/收款狀態) 已與 iOS 一致，定義在 `src/lib/domain/constants.ts`。
 
 ## 註解
 

@@ -74,7 +74,7 @@ export default function SettingsPage() {
 
         {/* AI 商品總結 */}
         <div className="space-y-2">
-          <SectionHeader title="AI 商品總結" />
+          <SectionHeader title="AI 商品明細總結" />
           <BLCard>
             <div className="space-y-3">
               <BLToggle
@@ -107,7 +107,7 @@ export default function SettingsPage() {
 
         {/* 每月獲利目標 */}
         <div className="space-y-2">
-          <SectionHeader title="每月獲利目標" />
+          <SectionHeader title="月度淨獲利目標" />
           <BLCard>
             <div
               onBlur={() => {
@@ -118,7 +118,7 @@ export default function SettingsPage() {
               }}
             >
               <BLField
-                label="每月獲利目標 (TWD)"
+                label="月度淨獲利目標 (TWD)"
                 inputMode="decimal"
                 value={goalLocal}
                 onChange={setGoalLocal}

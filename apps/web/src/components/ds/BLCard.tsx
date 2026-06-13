@@ -22,7 +22,7 @@ export function BLCard({
         'rounded-bl-lg border-[0.5px] border-bl-separator bg-bl-surface',
         floating ? 'bl-card-shadow-floating' : 'bl-card-shadow',
         padded && 'p-4',
-        onClick && 'cursor-pointer',
+        onClick && 'cursor-pointer transition hover:border-bl-accent/30 hover:bl-card-shadow-floating',
         className,
       )}
     >

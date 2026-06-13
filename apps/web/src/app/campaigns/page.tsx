@@ -49,40 +49,46 @@ export default function CampaignsPage() {
           <button
             type="button"
             onClick={() => router.push('/campaigns/new')}
-            className="rounded-bl-sm bg-bl-accent p-2 text-white"
-            aria-label="新增開團"
+            className="inline-flex items-center gap-1.5 rounded-bl-md bg-bl-accent px-3 py-2 text-[15px] font-semibold text-white transition hover:opacity-90"
           >
-            <Plus className="h-5 w-5" />
+            <Plus className="h-4 w-4" />
+            <span className="hidden sm:inline">新增開團</span>
           </button>
         }
       />
 
-      <BLSegmentedControl
-        value={statusFilter}
-        onChange={setStatusFilter}
-        options={[
-          { value: 'all', label: '全部' },
-          { value: 'ongoing', label: '開團中' },
-          { value: 'closed', label: '已收單' },
-        ]}
-      />
-      <BLSegmentedControl
-        value={granularity}
-        onChange={setGranularity}
-        options={[
-          { value: 'day', label: '日' },
-          { value: 'month', label: '月' },
-          { value: 'year', label: '年' },
-        ]}
-      />
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="sm:flex-1">
+          <BLSegmentedControl
+            value={statusFilter}
+            onChange={setStatusFilter}
+            options={[
+              { value: 'all', label: '全部' },
+              { value: 'ongoing', label: '開團中' },
+              { value: 'closed', label: '已收單' },
+            ]}
+          />
+        </div>
+        <div className="sm:flex-1">
+          <BLSegmentedControl
+            value={granularity}
+            onChange={setGranularity}
+            options={[
+              { value: 'day', label: '日' },
+              { value: 'month', label: '月' },
+              { value: 'year', label: '年' },
+            ]}
+          />
+        </div>
+      </div>
 
       {isLoading ? (
         <p className="py-12 text-center text-bl-secondary-label">載入中…</p>
       ) : sections.length === 0 ? (
-        <EmptyState icon={Package} title="尚無開團" description="建立第一個團購批次" />
+        <EmptyState icon={Package} title="尚無開團" description="建立第一個開團，把訂單歸到團裡即可追蹤進度。" />
       ) : (
         sections.map((section) => (
-          <div key={section.label} className="space-y-1">
+          <div key={section.label} className="space-y-2">
             <p className="px-1 text-xs font-semibold text-bl-secondary-label">{section.label}</p>
             <div className="space-y-3">
               {section.items.map((c) => {
