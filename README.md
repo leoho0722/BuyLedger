@@ -2,20 +2,6 @@
 
 為個人代購業務而生的帳本 App。提供 Apple 平台版本 (iOS、iPadOS、macOS) 與 Web 全棧版本 (Next.js 前端 + NestJS 後端 + PostgreSQL)；功能與設計語言跨平台一致。Android 為未來規劃。
 
-## Web 全棧一鍵啟動
-
-```bash
-# 需要 Docker、Docker Compose 與 make
-make env                      # 由範本建立 deploy/ 下的 .env 與 *.env (再填入實值)
-make up                       # 建置並啟動 PostgreSQL 18 + 後端 (:4000) + 前端 (:3000)
-```
-
-部署物件統一收斂在 **`deploy/`**。環境變數分層：**`deploy/common.env`** 放 compose 內插用的非祕密拓樸值 (ports 與前端 build arg)；**`deploy/<service>.env`** 為各容器執行期變數 (per-service `env_file`)——`deploy/db.env` (PostgreSQL 帳密)、`deploy/backend.env` (DATABASE_URL / CORS / 選填 API key)，祕密只進對應容器，web 容器不帶任何祕密。各 `*.example` 為範本、其餘不入版控。
-
-`make up` 會把 backend / web 的 **image tag 自動帶上各自 `package.json` 的 version** (例 `buyledger-web:1.0.0`)；其他指令見 `make`（`env` / `build` / `down` / `logs` / `ps` / `versions`）。也可直接 `docker compose -f deploy/docker-compose.yml up --build`，但 image 會退回 `:latest`。
-
-啟動後開啟 <http://localhost:3000>；首次啟動會自動套用資料庫 schema 並種子示範資料。未提供外部 API key 時，AI 商品總結與即時匯率以空狀態降級 (不偽造資料)。端對端驗收見 [apps/web/README.md](apps/web/README.md#端對端測試-playwright)。
-
 <details open>
   <summary>🖥️&nbsp; <b>macOS</b></summary>
   <br>
@@ -44,14 +30,14 @@ BuyLedger (repo)/
 │   │   ├── BuyLedger/                    # App source root (App / Core / Features / Shared / Resources)
 │   │   ├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
 │   │   └── BuyLedgerUITests/             # UI 與啟動畫面測試
-│   ├── web/                             # Web 前端 (Next.js + React + Tailwind v4 + TanStack Query)
+│   ├── web/                              # Web 前端 (Next.js + React + Tailwind v4 + TanStack Query)
 │   │   ├── src/app/                      # App Router 頁面 (儀表板/訂單/開團/分析/更多)
 │   │   ├── src/components/               # 設計系統 (ds/) 與共用元件
 │   │   ├── src/features/                 # 訂單/開團功能模組 (表單、合併、AI 總結等)
 │   │   ├── src/lib/                      # 資料層、領域邏輯、格式化、生成型別
 │   │   ├── e2e/                          # Playwright 端對端測試
 │   │   └── Dockerfile                    # standalone 容器
-│   ├── backend/                         # Web 後端 (NestJS + Prisma + PostgreSQL)
+│   ├── backend/                          # Web 後端 (NestJS + Prisma + PostgreSQL)
 │   │   ├── src/                          # 各 feature module + domain/ (財務公式移植) + 生成型別
 │   │   ├── prisma/                       # schema.prisma 與種子
 │   │   └── Dockerfile                    # 多階段容器
@@ -74,11 +60,25 @@ BuyLedger (repo)/
 | 平台                         | 位置            | 開發指南                                                                                           |
 |------------------------------|-----------------|----------------------------------------------------------------------------------------------------|
 | Apple (iOS / iPadOS / macOS) | `apps/apple/`   | [apps/apple/README.md](apps/apple/README.md)：技術棧、環境設定、build / test、架構速覽、Troubleshooting |
-| Web 前端                     | `apps/web/`     | [apps/web/README.md](apps/web/README.md)：技術棧、開發、設計系統、Playwright                          |
-| Web 後端                     | `apps/backend/` | [apps/backend/README.md](apps/backend/README.md)：技術棧、API、Prisma、容器化                         |
+| Web 前端                     | `apps/web/`     | [apps/web/README.md](apps/web/README.md)：技術棧、開發、設計系統、Playwright                           |
+| Web 後端                     | `apps/backend/` | [apps/backend/README.md](apps/backend/README.md)：技術棧、API、Prisma、容器化                          |
 | Android                      | `apps/android/` | (未來，尚未建立)                                                                                    |
 
 各平台的 AI 協作硬規則見該平台目錄的 `CLAUDE.md`；跨平台通用規範見根目錄 [`CLAUDE.md`](CLAUDE.md)。
+
+## Web 全棧一鍵啟動
+
+```bash
+# 需要 Docker、Docker Compose 與 make
+make env                      # 由範本建立 deploy/ 下的 .env 與 *.env (再填入實值)
+make up                       # 建置並啟動 PostgreSQL 18 + 後端 (:4000) + 前端 (:3000)
+```
+
+部署物件統一收斂在 **`deploy/`**。環境變數分層：**`deploy/common.env`** 放 compose 內插用的非祕密拓樸值 (ports 與前端 build arg)；**`deploy/<service>.env`** 為各容器執行期變數 (per-service `env_file`)——`deploy/db.env` (PostgreSQL 帳密)、`deploy/backend.env` (DATABASE_URL / CORS / 選填 API key)，祕密只進對應容器，web 容器不帶任何祕密。各 `*.example` 為範本、其餘不入版控。
+
+`make up` 會把 backend / web 的 **image tag 自動帶上各自 `package.json` 的 version** (例 `buyledger-web:1.0.0`)；其他指令見 `make`（`env` / `build` / `down` / `logs` / `ps` / `versions`）。也可直接 `docker compose -f deploy/docker-compose.yml up --build`，但 image 會退回 `:latest`。
+
+啟動後開啟 <http://localhost:3000>；首次啟動會自動套用資料庫 schema 並種子示範資料。未提供外部 API key 時，AI 商品總結與即時匯率以空狀態降級 (不偽造資料)。端對端驗收見 [apps/web/README.md](apps/web/README.md#端對端測試-playwright)。
 
 ## 產品政策
 
