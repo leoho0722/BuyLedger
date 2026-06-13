@@ -1,0 +1,141 @@
+@import "tailwindcss";
+
+/* 深色模式以 html.dark class 切換 (ThemeProvider 依設定/系統外觀設定)。 */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * 語意色票：對齊 iOS BLPalette 的 sRGB 值，light/dark 各一組。
+ * 元件只引用語意 token，深淺色由此處 CSS 變數切換。
+ */
+:root {
+  --bl-background: #f2f2f7;
+  --bl-secondary-background: #ffffff;
+  --bl-tertiary-background: #f2f2f7;
+  --bl-surface: #ffffff;
+  --bl-elevated-surface: #ffffff;
+  --bl-label: #000000;
+  --bl-secondary-label: rgba(0, 0, 0, 0.6);
+  --bl-tertiary-label: rgba(0, 0, 0, 0.3);
+  --bl-separator: rgba(0, 0, 0, 0.16);
+  --bl-opaque-separator: #c6c6c8;
+  --bl-fill-primary: rgba(120, 120, 128, 0.2);
+  --bl-fill-secondary: rgba(120, 120, 128, 0.16);
+  --bl-fill-tertiary: rgba(118, 118, 128, 0.12);
+  --bl-fill-quaternary: rgba(116, 116, 128, 0.08);
+  --bl-accent: #007aff;
+  --bl-green: #34c759;
+  --bl-red: #ff3b30;
+  --bl-orange: #ff9500;
+  --bl-yellow: #ffcc00;
+  --bl-purple: #af52de;
+  --bl-pink: #ff2d55;
+  --bl-teal: #5ac8fa;
+  --bl-indigo: #5856d6;
+  --bl-glass-background: rgba(255, 255, 255, 0.72);
+  --bl-glass-border: rgba(255, 255, 255, 0.7);
+}
+
+.dark {
+  --bl-background: #000000;
+  --bl-secondary-background: #1c1c1e;
+  --bl-tertiary-background: #2c2c2e;
+  --bl-surface: #1c1c1e;
+  --bl-elevated-surface: #2c2c2e;
+  --bl-label: #ffffff;
+  --bl-secondary-label: rgba(255, 255, 255, 0.6);
+  --bl-tertiary-label: rgba(255, 255, 255, 0.3);
+  --bl-separator: rgba(255, 255, 255, 0.14);
+  --bl-opaque-separator: #38383a;
+  --bl-fill-primary: rgba(120, 120, 128, 0.36);
+  --bl-fill-secondary: rgba(120, 120, 128, 0.32);
+  --bl-fill-tertiary: rgba(118, 118, 128, 0.24);
+  --bl-fill-quaternary: rgba(118, 118, 128, 0.18);
+  --bl-accent: #0a84ff;
+  --bl-green: #30d158;
+  --bl-red: #ff453a;
+  --bl-orange: #ff9f0a;
+  --bl-yellow: #ffd60a;
+  --bl-purple: #bf5af2;
+  --bl-pink: #ff375f;
+  --bl-teal: #64d2ff;
+  --bl-indigo: #5e5ce6;
+  --bl-glass-background: rgba(28, 28, 30, 0.72);
+  --bl-glass-border: rgba(255, 255, 255, 0.12);
+}
+
+/* 將語意 CSS 變數接成 Tailwind utilities (text-bl-accent / bg-bl-surface ...)。 */
+@theme inline {
+  --color-bl-background: var(--bl-background);
+  --color-bl-secondary-background: var(--bl-secondary-background);
+  --color-bl-tertiary-background: var(--bl-tertiary-background);
+  --color-bl-surface: var(--bl-surface);
+  --color-bl-elevated-surface: var(--bl-elevated-surface);
+  --color-bl-label: var(--bl-label);
+  --color-bl-secondary-label: var(--bl-secondary-label);
+  --color-bl-tertiary-label: var(--bl-tertiary-label);
+  --color-bl-separator: var(--bl-separator);
+  --color-bl-opaque-separator: var(--bl-opaque-separator);
+  --color-bl-fill-primary: var(--bl-fill-primary);
+  --color-bl-fill-secondary: var(--bl-fill-secondary);
+  --color-bl-fill-tertiary: var(--bl-fill-tertiary);
+  --color-bl-fill-quaternary: var(--bl-fill-quaternary);
+  --color-bl-accent: var(--bl-accent);
+  --color-bl-green: var(--bl-green);
+  --color-bl-red: var(--bl-red);
+  --color-bl-orange: var(--bl-orange);
+  --color-bl-yellow: var(--bl-yellow);
+  --color-bl-purple: var(--bl-purple);
+  --color-bl-pink: var(--bl-pink);
+  --color-bl-teal: var(--bl-teal);
+  --color-bl-indigo: var(--bl-indigo);
+  --color-bl-glass-background: var(--bl-glass-background);
+  --color-bl-glass-border: var(--bl-glass-border);
+
+  /* 圓角 (對齊 BLRadius)。 */
+  --radius-bl-xs: 6px;
+  --radius-bl-sm: 10px;
+  --radius-bl-md: 12px;
+  --radius-bl-lg: 16px;
+  --radius-bl-xl: 22px;
+
+  --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", system-ui, sans-serif;
+}
+
+html,
+body {
+  background-color: var(--bl-background);
+  color: var(--bl-label);
+}
+
+body {
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* 數字一律 tabular，對齊 iOS monospacedDigit。 */
+.bl-tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* 卡片陰影：淺色細陰影、深色不用陰影 (改靠 0.5px 邊框)。 */
+.bl-card-shadow {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.bl-card-shadow-floating {
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.18);
+}
+.dark .bl-card-shadow,
+.dark .bl-card-shadow-floating {
+  box-shadow: none;
+}
+
+/* 隱藏 scrollbar (橫向 chip / 候選列等)。 */
+.bl-no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.bl-no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}

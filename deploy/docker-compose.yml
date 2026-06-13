@@ -1,0 +1,59 @@
+# BuyLedger Web 全棧一鍵啟動：PostgreSQL 18 + 後端 (NestJS) + 前端 (Next.js)。
+# 部署物件統一收斂在 deploy/；以 `-f deploy/docker-compose.yml` 執行時 project-directory 即 deploy/，
+# 故 env_file 解析為 deploy/*.env、build context 以 ../apps/... 回指。
+# 環境變數分層：
+#   - deploy/common.env → compose 內插用 (ports 與 build arg)，由 Makefile 以 --env-file 載入。
+#   - deploy/<svc>.env  → 各容器執行期變數 (per-service env_file，祕密只進對應容器)。
+# image tag 跟隨各 app package.json 版號 (由 Makefile 注入)。啟動見根目錄 Makefile (make env / make up)。
+name: buyledger
+
+services:
+  db:
+    image: postgres:18-alpine
+    container_name: buyledger-db
+    env_file: db.env
+    volumes:
+      # PostgreSQL 18+ 改以版本子目錄存資料，掛載點需為 /var/lib/postgresql (非 .../data)。
+      - bl_pgdata:/var/lib/postgresql
+    ports:
+      # 僅綁 loopback：DB 不對外網開放，host port 僅供本機工具連線 (backend 走 compose 內網 db:5432)。
+      - "127.0.0.1:${DB_PORT}:5432"
+    healthcheck:
+      # $$ 逸出給容器內 shell 展開 (POSTGRES_* 由 db.env 載入)。
+      test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d $$POSTGRES_DB"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  backend:
+    build:
+      context: ../apps/backend
+    # image tag 跟隨 apps/backend/package.json 的 version (由 Makefile 注入；裸跑 compose 則為 latest)。
+    image: buyledger-backend:${BACKEND_VERSION:-latest}
+    container_name: buyledger-backend
+    env_file: backend.env
+    depends_on:
+      db:
+        condition: service_healthy
+    ports:
+      # 內部固定 4000，對外發佈埠由 BACKEND_PORT 控制。
+      - "${BACKEND_PORT}:4000"
+
+  web:
+    build:
+      context: ../apps/web
+      args:
+        # NEXT_PUBLIC_* 須於 build 期 inline，build arg 無法由 env_file 提供，故保留內插 (值取自 deploy/common.env)。
+        NEXT_PUBLIC_API_BASE_URL: ${NEXT_PUBLIC_API_BASE_URL}
+    # image tag 跟隨 apps/web/package.json 的 version。
+    image: buyledger-web:${WEB_VERSION:-latest}
+    container_name: buyledger-web
+    # web 執行期不需注入環境變數 (NEXT_PUBLIC 於 build 期 inline)，故無 env_file，亦不帶任何祕密。
+    depends_on:
+      - backend
+    ports:
+      # 內部固定 3000，對外發佈埠由 WEB_PORT 控制。
+      - "${WEB_PORT}:3000"
+
+volumes:
+  bl_pgdata:

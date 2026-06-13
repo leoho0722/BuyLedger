@@ -1,0 +1,115 @@
+// BuyLedger 後端持久化 schema。資料形狀對齊 shared/data-model 生成型別。
+// 金額/比率一律 NUMERIC (decimal.js)，不可用浮點；日期用 timestamptz。
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// 訂單。customer 攤平為三欄、items 以 JSON 內嵌、photos 以 base64 字串陣列存。
+model Order {
+  id                       String   @id
+  customerName             String
+  customerInitials         String
+  customerTier             String // CustomerTier raw value: new/regular/vip
+  status                   String // OrderStatus raw value
+  currency                 String // ISO 4217
+  date                     DateTime @db.Timestamptz(3)
+  items                    Json // LedgerOrderItem[]：{ id, name, quantity, unitPrice(string) }
+  itemCost                 Decimal  @db.Decimal(28, 10)
+  domesticShipping         Decimal  @db.Decimal(28, 10)
+  internationalShipping    Decimal  @db.Decimal(28, 10)
+  foreignDomesticShipping  Decimal  @db.Decimal(28, 10)
+  cardFeeRate              Decimal  @db.Decimal(18, 10)
+  platformFeeRate          Decimal  @db.Decimal(18, 10)
+  paymentFeeRate           Decimal  @db.Decimal(18, 10)
+  chargedAmount            Decimal  @db.Decimal(28, 10)
+  cardlessDeductionAmount  Decimal  @db.Decimal(28, 10)
+  cardlessSupplementAmount Decimal  @db.Decimal(28, 10)
+  orderSource              String
+  categories               String[]
+  paymentMethod            String
+  notes                    String
+  verificationStatus       String
+  campaignNames            String[]
+  paymentReceiptStatus     String // PaymentReceiptStatus raw value: pending/received
+  isCashOnDelivery         Boolean
+  photos                   String[] // base64 (已正規化 JPEG)
+  mergedSourceIDs          String[]
+  createdAt                DateTime @default(now())
+  updatedAt                DateTime @updatedAt
+
+  @@index([date])
+  @@index([status])
+}
+
+// 開團。狀態僅 ongoing/closed；結團以 settledDate 紀錄、不改 status。
+model Campaign {
+  id          String    @id
+  name        String
+  openDate    DateTime  @db.Timestamptz(3)
+  closeDate   DateTime? @db.Timestamptz(3)
+  status      String // CampaignStatus raw value
+  settledDate DateTime? @db.Timestamptz(3)
+  notes       String    @default("")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}
+
+// 商品類別主檔 (name 即識別值)。
+model Category {
+  name      String   @id
+  createdAt DateTime @default(now())
+}
+
+// 訂單來源主檔。
+model OrderSource {
+  name      String   @id
+  createdAt DateTime @default(now())
+}
+
+// 對帳狀態主檔 (verificationStatus)。
+model VerificationStatus {
+  name      String   @id
+  createdAt DateTime @default(now())
+}
+
+// 付款方式主檔，帶三個獨立旗標。
+model PaymentMethod {
+  name             String   @id
+  isCardless       Boolean  @default(false)
+  isBankTransfer   Boolean  @default(false)
+  isCashOnDelivery Boolean  @default(false)
+  createdAt        DateTime @default(now())
+}
+
+// 幣別清單快取 (單例)；7 天 TTL 由 service 依 updatedAt 判定。
+model CurrencyMetadata {
+  id        String    @id @default("singleton")
+  codes     String[]
+  updatedAt DateTime?
+}
+
+// 最新匯率快照 (單例)；rates 為 { 目標幣別: decimal 字串 }。
+model FxSnapshot {
+  id    String   @id @default("latest")
+  base  String
+  date  DateTime @db.Timestamptz(3)
+  rates Json
+}
+
+// App 設定 (單例)，對齊 iOS Settings。
+model Settings {
+  id                String  @id @default("singleton")
+  appearance        String  @default("system")
+  notifications     Boolean @default(true)
+  useAiSummary      Boolean @default(false)
+  aiSummaryModel    String  @default("gemma4:31b-cloud")
+  defaultCurrency   String  @default("TWD")
+  monthlyProfitGoal Decimal @default(80000) @db.Decimal(28, 10)
+}

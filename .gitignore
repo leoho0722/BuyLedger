@@ -77,6 +77,9 @@ fastlane/test_output/
 .env
 .env.*
 !.env.example
+# deploy/ 下的環境變數 (compose 內插 .env 與 per-service *.env；僅 .example 入版控)
+deploy/*.env
+!deploy/*.env.example
 *.p8
 *.mobileprovision
 *.provisionprofile
@@ -88,6 +91,19 @@ apps/apple/BuyLedger/Resources/Config.xcconfig
 
 # Firebase 設定（從 Firebase Console 下載 GoogleService-Info.plist 放入 Resources/）
 apps/apple/BuyLedger/Resources/GoogleService-Info.plist
+
+# Web 建置與測試產物
+apps/web/node_modules
+apps/web/.next
+apps/web/next-env.d.ts
+apps/web/test-results
+apps/web/playwright-report
+apps/web/*.tsbuildinfo
+
+# Backend 建置產物
+apps/backend/node_modules
+apps/backend/dist
+apps/backend/*.tsbuildinfo
 
 # CodeGen node modules
 shared/data-model/generator/node_modules
