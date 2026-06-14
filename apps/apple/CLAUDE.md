@@ -144,3 +144,11 @@ root `CLAUDE.md` 的注入原則在本平台的具體落地：production code **
 `BuyLedger.entitlements` 必須透過 pbxproj 的 `CODE_SIGN_ENTITLEMENTS = BuyLedger/Resources/BuyLedger.entitlements;` build setting 才會被 codesign 拿去簽；若忘了掛，binary 上只會出現 Xcode 自動加的 sandbox key，runtime 會抓不到設定的 entitlements 並出現難以診斷的錯誤。
 
 macOS 沙盒下要打外部 API 必須加 `com.apple.security.network.client = true`。CloudKit container、`aps-environment` 等 entitlement key 等 Apple Developer 帳號實際 provision 後再加；未 provision 時加上會讓 codesign 失敗。CloudKit container、iCloud capability 與 entitlements 的變更需要在 PR 中明確說明。
+
+## Firebase 雲端同步 (預設關閉)
+
+跨平台雲端同步 (change `firebase-auth-multiuser-sync`) 在 iOS 採「**串接但以 feature flag 預設關閉**」：總開關為 `App/CloudSyncFeatureFlag.swift` 的 `CloudSyncFeatureFlag.isEnabled` (預設 `false`)。flag 關閉時 iOS 維持本機 SwiftData (+ CloudKit)、不顯示登入、不存取 Firestore，行為與導入前一致。owner 為後端持久化概念，**iOS 領域模型不帶 ownerUid** (Option B)。
+
+- **目前 target 只 link 了 `FirebaseCore` / `FirebaseFirestore` / `FirebaseAnalytics`**，`GoogleService-Info.plist` 已放在 `BuyLedger/Resources/`。
+- **要做 Firebase Auth (Google / Apple) 登入須先在 Xcode 對 target 加 `FirebaseAuth` (同 firebase-ios-sdk 套件、已解析) 與 `GoogleSignIn` (新 SPM 套件) 兩個產品**——加 SPM 產品請用 Xcode 操作、勿手改 pbxproj。Apple 登入走內建 `AuthenticationServices` + Firebase `OAuthProvider("apple.com")`。
+- 啟用流程：登入取得 Firebase ID token → 各 API 請求夾帶 `Authorization: Bearer` → 讀自己的 `users/{uid}/…` Firestore 子集合即時同步。

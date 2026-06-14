@@ -8,6 +8,7 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
+import { CurrentUid } from '../auth/current-user.decorator';
 import { OrdersService } from './orders.service';
 import {
   MergeDraftInput,
@@ -21,44 +22,44 @@ export class OrdersController {
   constructor(private readonly orders: OrdersService) {}
 
   @Get()
-  list() {
-    return this.orders.list();
+  list(@CurrentUid() uid: string) {
+    return this.orders.list(uid);
   }
 
   // 合併草稿：靜態路徑置於 :id 之前避免被動態段攔截。
   @Post('merge/draft')
-  mergeDraft(@Body() body: MergeDraftInput) {
-    return this.orders.mergeDraft(body);
+  mergeDraft(@CurrentUid() uid: string, @Body() body: MergeDraftInput) {
+    return this.orders.mergeDraft(uid, body);
   }
 
   @Get(':id')
-  get(@Param('id') id: string) {
-    return this.orders.get(id);
+  get(@CurrentUid() uid: string, @Param('id') id: string) {
+    return this.orders.get(uid, id);
   }
 
   @Post()
-  create(@Body() body: OrderInput) {
-    return this.orders.create(body);
+  create(@CurrentUid() uid: string, @Body() body: OrderInput) {
+    return this.orders.create(uid, body);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: OrderInput) {
-    return this.orders.update(id, body);
+  update(@CurrentUid() uid: string, @Param('id') id: string, @Body() body: OrderInput) {
+    return this.orders.update(uid, id, body);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  async remove(@Param('id') id: string): Promise<void> {
-    await this.orders.remove(id);
+  async remove(@CurrentUid() uid: string, @Param('id') id: string): Promise<void> {
+    await this.orders.remove(uid, id);
   }
 
   @Post(':id/status')
-  setStatus(@Param('id') id: string, @Body() body: StatusChangeInput) {
-    return this.orders.setStatus(id, body);
+  setStatus(@CurrentUid() uid: string, @Param('id') id: string, @Body() body: StatusChangeInput) {
+    return this.orders.setStatus(uid, id, body);
   }
 
   @Post(':id/receipt')
-  setReceipt(@Param('id') id: string, @Body() body: ReceiptChangeInput) {
-    return this.orders.setReceipt(id, body);
+  setReceipt(@CurrentUid() uid: string, @Param('id') id: string, @Body() body: ReceiptChangeInput) {
+    return this.orders.setReceipt(uid, id, body);
   }
 }

@@ -11,6 +11,7 @@ Next.js (App Router) + React + Tailwind v4 + TanStack Query 的前端，功能�
 | 資料層     | TanStack Query v5 (對獨立後端 REST)                   |
 | 金額       | decimal.js (彙總)、Intl 格式化 (zh-TW)                 |
 | 型別來源   | `shared/data-model` 生成的 TypeScript                 |
+| 身分驗證   | Firebase Authentication (Google / Apple)；AuthGate 把關 |
 | 端對端測試 | Playwright                                            |
 
 ## 專案結構
@@ -34,7 +35,8 @@ src/
     ├── domain/                     # constants/orders(篩選)/aggregations(彙總)/fx
     ├── format.ts decimal.ts        # 格式化與精確運算
     ├── data-model/generated/       # 生成型別
-    └── theme.tsx providers.tsx     # 外觀切換與 Provider
+    ├── firebase.ts auth.tsx        # Firebase client (延遲初始化) 與 AuthProvider / AuthGate / 登入頁
+    └── theme.tsx providers.tsx     # 外觀切換與 Provider (含 AuthProvider + AuthGate)
 e2e/                                # Playwright 測試
 ```
 
@@ -49,6 +51,10 @@ npm run typecheck    # tsc --noEmit
 ```
 
 API 位址以 `NEXT_PUBLIC_API_BASE_URL` 控制 (預設 `http://localhost:4000/api`，build 期 inline)。
+
+## 身分驗證
+
+未登入時 `AuthGate` 顯示登入頁 (僅 Google / Apple)；登入後 `api.ts` 自動為每個請求夾帶 `Authorization: Bearer <Firebase ID token>`，收到 401 即登出並導回登入。Firebase web 設定走 `NEXT_PUBLIC_FIREBASE_*` 環境變數 (見 [`.env.example`](.env.example)；`apiKey` / `appId` 需在 Firebase Console 註冊 Web app 後取得)。`firebase.ts` 採延遲初始化，避免 build 期 prerender 觸發 `getAuth` 的 apiKey 驗證。
 
 ## 端對端測試 (Playwright)
 

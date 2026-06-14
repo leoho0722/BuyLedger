@@ -1,5 +1,6 @@
 'use client';
 
+import { UserRound } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { PageHeader } from '@/components/PageHeader';
 import { BLCard } from '@/components/ds/BLCard';
@@ -7,9 +8,11 @@ import { SectionHeader } from '@/components/ds/SectionHeader';
 import { BLSegmentedControl } from '@/components/ds/BLSegmentedControl';
 import { BLToggle } from '@/components/ds/BLToggle';
 import { BLSelectRow } from '@/components/ds/BLSelectRow';
+import { BLButton } from '@/components/ds/BLButton';
 import { OptionPicker } from '@/components/ds/OptionPicker';
 import { BLField } from '@/components/ds/BLField';
 import { useSettings, useSettingsMutation, useCurrencyCodes } from '@/lib/queries';
+import { useAuth } from '@/lib/auth';
 import { useTheme } from '@/lib/theme';
 
 export default function SettingsPage() {
@@ -18,6 +21,7 @@ export default function SettingsPage() {
   const save = useSettingsMutation();
   const { appearance, setAppearance } = useTheme();
   const currencyCodes = useCurrencyCodes().data ?? [];
+  const { user, signOut } = useAuth();
 
   // 每月獲利目標本地鏡射，blur 時才寫回。
   const [goalLocal, setGoalLocal] = useState('');
@@ -44,6 +48,29 @@ export default function SettingsPage() {
       <PageHeader title="設定" />
 
       <div className="space-y-4">
+        {/* 帳號管理 */}
+        <div className="space-y-2">
+          <SectionHeader title="帳號管理" />
+          <BLCard>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3">
+                <UserRound className="h-5 w-5 shrink-0 text-bl-accent" strokeWidth={2} />
+                <div className="min-w-0 flex-1">
+                  {user?.displayName && (
+                    <p className="truncate text-[15px] text-bl-label">{user.displayName}</p>
+                  )}
+                  <p className="truncate text-[13px] text-bl-secondary-label">
+                    {user?.email ?? '已登入'}
+                  </p>
+                </div>
+              </div>
+              <BLButton variant="destructive" fullWidth onClick={() => void signOut()}>
+                登出
+              </BLButton>
+            </div>
+          </BLCard>
+        </div>
+
         {/* 外觀 */}
         <div className="space-y-2">
           <SectionHeader title="外觀" />

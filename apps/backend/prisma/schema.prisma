@@ -14,6 +14,7 @@ datasource db {
 // 訂單。customer 攤平為三欄、items 以 JSON 內嵌、photos 以 base64 字串陣列存。
 model Order {
   id                       String   @id
+  ownerUid                 String
   customerName             String
   customerInitials         String
   customerTier             String // CustomerTier raw value: new/regular/vip
@@ -44,6 +45,7 @@ model Order {
   createdAt                DateTime @default(now())
   updatedAt                DateTime @updatedAt
 
+  @@index([ownerUid])
   @@index([date])
   @@index([status])
 }
@@ -51,6 +53,7 @@ model Order {
 // 開團。狀態僅 ongoing/closed；結團以 settledDate 紀錄、不改 status。
 model Campaign {
   id          String    @id
+  ownerUid    String
   name        String
   openDate    DateTime  @db.Timestamptz(3)
   closeDate   DateTime? @db.Timestamptz(3)
@@ -59,33 +62,47 @@ model Campaign {
   notes       String    @default("")
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
+
+  @@index([ownerUid])
 }
 
 // 商品類別主檔 (name 即識別值)。
 model Category {
-  name      String   @id
+  ownerUid  String
+  name      String
   createdAt DateTime @default(now())
+
+  @@id([ownerUid, name])
 }
 
 // 訂單來源主檔。
 model OrderSource {
-  name      String   @id
+  ownerUid  String
+  name      String
   createdAt DateTime @default(now())
+
+  @@id([ownerUid, name])
 }
 
 // 對帳狀態主檔 (verificationStatus)。
 model VerificationStatus {
-  name      String   @id
+  ownerUid  String
+  name      String
   createdAt DateTime @default(now())
+
+  @@id([ownerUid, name])
 }
 
 // 付款方式主檔，帶三個獨立旗標。
 model PaymentMethod {
-  name             String   @id
+  ownerUid         String
+  name             String
   isCardless       Boolean  @default(false)
   isBankTransfer   Boolean  @default(false)
   isCashOnDelivery Boolean  @default(false)
   createdAt        DateTime @default(now())
+
+  @@id([ownerUid, name])
 }
 
 // 幣別清單快取 (單例)；7 天 TTL 由 service 依 updatedAt 判定。
@@ -105,7 +122,7 @@ model FxSnapshot {
 
 // App 設定 (單例)，對齊 iOS Settings。
 model Settings {
-  id                String  @id @default("singleton")
+  ownerUid          String  @id
   appearance        String  @default("system")
   notifications     Boolean @default(true)
   useAiSummary      Boolean @default(false)

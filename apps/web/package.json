@@ -1,6 +1,6 @@
 {
   "name": "buyledger-web",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "BuyLedger Web 前端 (Next.js + React + Tailwind v4 + TanStack Query)",
   "private": true,
   "scripts": {
@@ -13,6 +13,7 @@
   "dependencies": {
     "@tanstack/react-query": "^5.62.0",
     "decimal.js": "^10.4.3",
+    "firebase": "^12.14.0",
     "lucide-react": "^0.469.0",
     "next": "^15.1.4",
     "react": "^19.0.0",

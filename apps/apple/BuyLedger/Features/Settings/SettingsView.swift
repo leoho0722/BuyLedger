@@ -31,6 +31,11 @@ struct SettingsView: View {
     /// 設定頁畫面內容。
     var body: some View {
         Form {
+            // 帳號管理 (僅在雲端同步旗標開啟時顯示；未登入則 section 自身不顯示)。登出後閘門自動回登入畫面。
+            if CloudSyncFeatureFlag.isEnabled {
+                CloudAccountSettingsSection()
+            }
+
             Section("外觀") {
                 Picker("介面模式", selection: $store.appearance) {
                     ForEach(AppearancePreference.allCases) { mode in

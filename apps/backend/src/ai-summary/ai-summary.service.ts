@@ -20,7 +20,7 @@ export class AiSummaryService {
   constructor(private readonly prisma: PrismaService) {}
 
   // 串流 AI 商品明細總結到 res；缺 key 時回 400 讓前端顯示失敗狀態 (不偽造內容)。
-  async stream(input: AiSummaryInput, res: Response): Promise<void> {
+  async stream(uid: string, input: AiSummaryInput, res: Response): Promise<void> {
     const apiKey = (process.env.OLLAMA_API_KEY ?? '').trim();
     if (!apiKey) {
       res.status(400).json({ error: 'missing_key', message: '尚未設定 AI 服務金鑰' });
@@ -28,9 +28,9 @@ export class AiSummaryService {
     }
 
     const orderIds = input.orderIds ?? [];
-    const orders = await this.loadOrders(orderIds);
+    const orders = await this.loadOrders(uid, orderIds);
     const prompt = this.buildPrompt(orders, input.selectedCategory ?? null);
-    const model = await this.resolveModel();
+    const model = await this.resolveModel(uid);
 
     const controller = new AbortController();
     res.on('close', () => controller.abort());
@@ -109,15 +109,17 @@ export class AiSummaryService {
     }
   }
 
-  private async loadOrders(orderIds: string[]): Promise<LedgerOrder[]> {
+  private async loadOrders(uid: string, orderIds: string[]): Promise<LedgerOrder[]> {
     if (orderIds.length === 0) return [];
-    const rows = await this.prisma.order.findMany({ where: { id: { in: orderIds } } });
+    const rows = await this.prisma.order.findMany({
+      where: { id: { in: orderIds }, ownerUid: uid },
+    });
     const map = new Map(rows.map((r) => [r.id, rowToDomain(r)]));
     return orderIds.map((id) => map.get(id)).filter((o): o is LedgerOrder => Boolean(o));
   }
 
-  private async resolveModel(): Promise<string> {
-    const settings = await this.prisma.settings.findUnique({ where: { id: 'singleton' } });
+  private async resolveModel(uid: string): Promise<string> {
+    const settings = await this.prisma.settings.findUnique({ where: { ownerUid: uid } });
     return settings?.aiSummaryModel || DEFAULT_AI_MODEL;
   }
 

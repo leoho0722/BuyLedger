@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
+import { FirebaseModule } from './firebase/firebase.module';
+import { AuthModule } from './auth/auth.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { CommonModule } from './common/now.service';
 import { OrdersModule } from './orders/orders.module';
@@ -13,6 +15,8 @@ import { AppController } from './app.controller';
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true }),
+    FirebaseModule,
+    AuthModule,
     PrismaModule,
     CommonModule,
     OrdersModule,

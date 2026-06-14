@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { FirestoreMirrorService } from '../firebase/firestore-mirror.service';
 import { D, Decimal } from '../domain/decimal';
 import {
   AI_MODEL_CANDIDATES,
@@ -27,16 +28,17 @@ export interface SettingsInput {
   monthlyProfitGoal?: string;
 }
 
-const SINGLETON = 'singleton';
-
 @Injectable()
 export class SettingsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly mirror: FirestoreMirrorService,
+  ) {}
 
-  async get(): Promise<SettingsDTO> {
+  async get(uid: string): Promise<SettingsDTO> {
     const row = await this.prisma.settings.upsert({
-      where: { id: SINGLETON },
-      create: { id: SINGLETON },
+      where: { ownerUid: uid },
+      create: { ownerUid: uid },
       update: {},
     });
     return {
@@ -50,15 +52,15 @@ export class SettingsService {
     };
   }
 
-  async update(input: SettingsInput): Promise<SettingsDTO> {
+  async update(uid: string, input: SettingsInput): Promise<SettingsDTO> {
     const goal =
       input.monthlyProfitGoal !== undefined
         ? Decimal.max(0, D(input.monthlyProfitGoal)).toString()
         : undefined;
     await this.prisma.settings.upsert({
-      where: { id: SINGLETON },
+      where: { ownerUid: uid },
       create: {
-        id: SINGLETON,
+        ownerUid: uid,
         appearance: input.appearance ?? 'system',
         notifications: input.notifications ?? true,
         useAiSummary: input.useAiSummary ?? false,
@@ -75,6 +77,9 @@ export class SettingsService {
         monthlyProfitGoal: goal,
       },
     });
-    return this.get();
+    const dto = await this.get(uid);
+    // 設定為 per-user 單一文件，以 uid 為 Firestore 文件 id 鏡像。
+    await this.mirror.upsert(uid, 'settings', uid, dto);
+    return dto;
   }
 }

@@ -8,8 +8,15 @@ import type {
   PaymentReceiptStatus,
   SettingsDTO,
 } from './types';
+import { getCurrentIdToken } from './firebase';
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000/api';
+
+// API 收到 401 時呼叫的處理器 (由 AuthProvider 註冊：登出後 AuthGate 導回登入)。
+let onUnauthorized: (() => void) | null = null;
+export function setUnauthorizedHandler(handler: () => void): void {
+  onUnauthorized = handler;
+}
 
 export class ApiError extends Error {
   constructor(
@@ -23,10 +30,16 @@ export class ApiError extends Error {
 }
 
 async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const token = await getCurrentIdToken();
   const res = await fetch(`${BASE}${path}`, {
     ...init,
-    headers: { 'Content-Type': 'application/json', ...(init?.headers ?? {}) },
+    headers: {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(init?.headers ?? {}),
+    },
   });
+  if (res.status === 401) onUnauthorized?.();
   if (!res.ok) {
     let code: string | undefined;
     let message = `請求失敗 (${res.status})`;
@@ -171,12 +184,17 @@ export const api = {
       onChunk: (text: string) => void,
       signal?: AbortSignal,
     ): Promise<void> => {
+      const token = await getCurrentIdToken();
       const res = await fetch(`${BASE}/ai-summary/stream`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        },
         body: JSON.stringify({ orderIds, selectedCategory }),
         signal,
       });
+      if (res.status === 401) onUnauthorized?.();
       if (!res.ok || !res.body) {
         let code: string | undefined;
         let message = `AI 總結失敗 (${res.status})`;

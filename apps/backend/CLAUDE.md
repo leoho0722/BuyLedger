@@ -47,3 +47,19 @@
 
 - 缺 `EXCHANGE_RATE_API_KEY` → 匯率快照回 `null` (前端空狀態)、幣別清單退回預載 fallback；缺 `OLLAMA_API_KEY` → AI 串流回 400 讓前端顯示失敗狀態。**不偽造資料** (對齊產品政策)。
 - 幣別清單 7 天 TTL 快取於 `CurrencyMetadata` 單例。
+
+## 身分驗證與多使用者
+
+- **身分驗證走 Firebase、fail-closed (不同於上述可降級服務)**：`FirebaseAuthGuard` 以 `APP_GUARD` 全域註冊，所有端點預設需 `Authorization: Bearer <Firebase ID token>`；公開端點 (如 `/health`) 以 `@Public()` 豁免。缺 Firebase service account 憑證 (`FIREBASE_PROJECT_ID` / `CLIENT_EMAIL` / `PRIVATE_KEY`) 時 **`FirebaseService` 啟動即拋錯、後端拒絕啟動**，絕不靜默放行未驗證請求。controller 以 `@CurrentUid()` 取呼叫者 uid 傳入 service。
+- **所有領域資料一律按 `ownerUid` 圈**：service 層每個查詢帶 caller uid、寫入填入 caller uid、update/delete 只命中自己擁有的紀錄 (否則回 not-found)；**漏一個 uid 過濾＝跨使用者資料外洩**。`ownerUid` 只存於後端 Prisma (Option B)，**不進 shared/data-model schema** (避免污染 iOS 本機模型、對 client 冗餘)。
+- **lookups (Category / OrderSource / VerificationStatus / PaymentMethod) 主鍵為複合鍵 `@@id([ownerUid, name])`**：findUnique/upsert/delete 一律用 `ownerUid_name: { ownerUid, name }`。`Settings` 主鍵為 `ownerUid` (per-user)；`CurrencyMetadata` / `FxSnapshot` 維持全域單例、不 per-user。
+
+## Firestore 即時投影
+
+- **後端為唯一寫入方**：`FirestoreMirrorService` 在 Postgres 寫入成功後鏡像到 `users/{uid}/{collection}/{id}`；client 不直寫 Firestore。**Firestore 非權威 (Postgres 為 SoT)**：鏡像失敗只記錄告警、不拋出、不回退已成功的寫入。cascade 改名 / 合併 / 自動收單等衍生變動須一併重新鏡像受影響紀錄 (見 `OrdersService.remirrorOrders`、`CampaignsService.autoClose`)。
+- **訂單照片改存 Firebase Storage**：`mirrorOrder` 把 base64 照片上傳 `users/{uid}/orders/{id}/photo-{i}.jpg`、Firestore 文件只放路徑參照 (避免超過 Firestore 單文件 1 MiB 上限)；Postgres 與 API 維持 base64 不變。
+
+## 測試 gotcha
+
+- **`firebase-admin` v14 依賴 ESM-only 的 `jose`，jest (CJS) 直接 import 會解析失敗**。凡測試檔會 (直接或經由 `FirebaseService` / `FirestoreMirrorService` 間接) import firebase-admin，檔頭一律加 `jest.mock('firebase-admin/app'|'/auth'|'/firestore'|'/storage', …)`。production 走 `nest build` (tsc) 與 Node 不受影響。
+- 單元測試以 mock Prisma 驗 uid 圈選；全域 guard 行為用 `@nestjs/testing` + `supertest` 整合測試。

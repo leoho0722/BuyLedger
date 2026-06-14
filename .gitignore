@@ -91,6 +91,7 @@ apps/apple/BuyLedger/Resources/Config.xcconfig
 
 # Firebase 設定（從 Firebase Console 下載 GoogleService-Info.plist 放入 Resources/）
 apps/apple/BuyLedger/Resources/GoogleService-Info.plist
+apps/backend/buyledger-3330d-firebase-adminsdk-fbsvc-9f6f5cf19d.json
 
 # Web 建置與測試產物
 apps/web/node_modules

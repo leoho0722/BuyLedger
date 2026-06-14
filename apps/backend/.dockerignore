@@ -5,3 +5,5 @@ dist
 npm-debug.log
 *.tsbuildinfo
 test
+# Firebase service account 金鑰：機密，絕不烤進 image (改由 compose volume 於執行期掛入)。
+*firebase-adminsdk*.json

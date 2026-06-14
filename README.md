@@ -47,7 +47,7 @@ BuyLedger (repo)/
 │       ├── schema/                       # 統一 schema (YAML，一型一檔)
 │       ├── generator/                    # datamodel-gen 產生器 (TypeScript + Bun)
 │       └── fixtures/                     # 產生器 golden file 測試素材
-├── deploy/                               # Web 全棧部署：docker-compose.yml + 分層 env (compose common.env + per-service *.env)
+├── deploy/                               # Web 全棧部署：docker-compose.yml + 分層 env (common.env 拓樸 + web.env build args + per-service *.env)
 ├── Makefile                              # 部署入口 (make env / up / build / down / logs / ps / versions)
 ├── openspec/                             # Spectra 規格與變更提案
 └── assets/                               # README 圖片等共用素材
@@ -74,7 +74,7 @@ make env                      # 由範本建立 deploy/ 下的 .env 與 *.env (�
 make up                       # 建置並啟動 PostgreSQL 18 + 後端 (:4000) + 前端 (:3000)
 ```
 
-部署物件統一收斂在 **`deploy/`**。環境變數分層：**`deploy/common.env`** 放 compose 內插用的非祕密拓樸值 (ports 與前端 build arg)；**`deploy/<service>.env`** 為各容器執行期變數 (per-service `env_file`)——`deploy/db.env` (PostgreSQL 帳密)、`deploy/backend.env` (DATABASE_URL / CORS / 選填 API key)，祕密只進對應容器，web 容器不帶任何祕密。各 `*.example` 為範本、其餘不入版控。
+部署物件統一收斂在 **`deploy/`**。環境變數分層：**`deploy/common.env`** 放 compose 內插用的拓樸值 (ports)；**`deploy/web.env`** 放 web 的 `NEXT_PUBLIC_*` build args (API base 與 Firebase web 設定，build 期 inline 進 client bundle)；**`deploy/<service>.env`** 為各容器執行期變數 (per-service `env_file`)——`deploy/db.env` (PostgreSQL 帳密)、`deploy/backend.env` (DATABASE_URL / CORS / 選填 API key / Firebase service account 路徑與 Storage bucket)。**Firebase service account 金鑰 JSON 放 `apps/backend/`(gitignore)，由 compose volume 唯讀掛入後端容器**；缺則後端 fail-closed、拒絕啟動。各 `*.example` 為範本、其餘不入版控。
 
 `make up` 會把 backend / web 的 **image tag 自動帶上各自 `package.json` 的 version** (例 `buyledger-web:1.0.0`)；其他指令見 `make`（`env` / `build` / `down` / `logs` / `ps` / `versions`）。也可直接 `docker compose -f deploy/docker-compose.yml up --build`，但 image 會退回 `:latest`。
 

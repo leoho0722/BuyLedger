@@ -5,6 +5,10 @@ import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
+// dev 種子資料的擁有者 uid (對齊 spec「Seeded development data carries explicit ownership」)；
+// 可用 SEED_OWNER_UID 覆寫成實際 Firebase uid 以便用該帳號登入看到種子資料。
+const SEED_OWNER = process.env.SEED_OWNER_UID ?? 'dev-user';
+
 const base = process.env.BUYLEDGER_FIXED_NOW
   ? new Date(process.env.BUYLEDGER_FIXED_NOW)
   : new Date();
@@ -59,6 +63,7 @@ interface OrderSeed {
 function toRow(o: OrderSeed): Prisma.OrderCreateManyInput {
   return {
     id: o.id,
+    ownerUid: SEED_OWNER,
     customerName: o.customerName,
     customerInitials: deriveInitials(o.customerName),
     customerTier: o.customerTier ?? 'regular',
@@ -214,13 +219,13 @@ async function main(): Promise<void> {
   await prisma.currencyMetadata.deleteMany();
 
   await prisma.category.createMany({
-    data: ['美妝', '3C', '服飾', '食品', '生活雜貨'].map((name) => ({ name })),
+    data: ['美妝', '3C', '服飾', '食品', '生活雜貨'].map((name) => ({ ownerUid: SEED_OWNER, name })),
   });
   await prisma.orderSource.createMany({
-    data: ['官網', '蝦皮', 'IG', 'LINE', '代購社團'].map((name) => ({ name })),
+    data: ['官網', '蝦皮', 'IG', 'LINE', '代購社團'].map((name) => ({ ownerUid: SEED_OWNER, name })),
   });
   await prisma.verificationStatus.createMany({
-    data: ['待對帳', '對帳成功', '對帳異常'].map((name) => ({ name })),
+    data: ['待對帳', '對帳成功', '對帳異常'].map((name) => ({ ownerUid: SEED_OWNER, name })),
   });
   await prisma.paymentMethod.createMany({
     data: [
@@ -229,12 +234,14 @@ async function main(): Promise<void> {
       { name: '銀行轉帳', isCardless: false, isBankTransfer: true, isCashOnDelivery: false },
       { name: '貨到付款', isCardless: false, isBankTransfer: false, isCashOnDelivery: true },
       { name: '街口支付', isCardless: false, isBankTransfer: false, isCashOnDelivery: false },
-    ],
+    ].map((pm) => ({ ...pm, ownerUid: SEED_OWNER })),
   });
 
-  await prisma.campaign.createMany({ data: campaigns });
+  await prisma.campaign.createMany({
+    data: campaigns.map((c) => ({ ...c, ownerUid: SEED_OWNER })),
+  });
   await prisma.order.createMany({ data: orders.map(toRow) });
-  await prisma.settings.create({ data: { id: 'singleton' } });
+  await prisma.settings.create({ data: { ownerUid: SEED_OWNER } });
   await prisma.currencyMetadata.create({
     data: { id: 'singleton', codes: ['TWD', 'JPY', 'KRW', 'USD', 'CNY', 'EUR', 'GBP', 'HKD', 'THB', 'SGD'], updatedAt: null },
   });

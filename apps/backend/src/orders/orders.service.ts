@@ -5,6 +5,7 @@ import {
 } from '@nestjs/common';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
+import { FirestoreMirrorService } from '../firebase/firestore-mirror.service';
 import { IdService, NowService } from '../common/now.service';
 import { D, Decimal } from '../domain/decimal';
 import { makeMergeDraft, MergeDraft } from '../domain/order-merge';
@@ -40,77 +41,95 @@ export class OrdersService {
     private readonly prisma: PrismaService,
     private readonly now: NowService,
     private readonly ids: IdService,
+    private readonly mirror: FirestoreMirrorService,
   ) {}
 
-  async list(): Promise<OrderDTO[]> {
-    const rows = await this.prisma.order.findMany({ orderBy: { date: 'desc' } });
+  async list(uid: string): Promise<OrderDTO[]> {
+    const rows = await this.prisma.order.findMany({
+      where: { ownerUid: uid },
+      orderBy: { date: 'desc' },
+    });
     return rows.map(rowToDto);
   }
 
-  async get(id: string): Promise<OrderDTO> {
-    const row = await this.prisma.order.findUnique({ where: { id } });
+  async get(uid: string, id: string): Promise<OrderDTO> {
+    const row = await this.prisma.order.findFirst({ where: { id, ownerUid: uid } });
     if (!row) throw new NotFoundException(`找不到訂單 ${id}`);
     return rowToDto(row);
   }
 
-  async create(input: OrderInput): Promise<OrderDTO> {
-    const domain = await this.normalize(input, { isNew: true });
-    const data = this.toPrismaData(domain);
+  async create(uid: string, input: OrderInput): Promise<OrderDTO> {
+    const domain = await this.normalize(uid, input, { isNew: true });
+    const data = this.toPrismaData(domain, uid);
 
     // 合併產生的訂單：單一交易內插入新訂單並將來源訂單設為 merged (原子性)。
+    // 來源訂單一律限縮在呼叫者自己的資料。
     if (domain.mergedSourceIDs.length > 0) {
       const [created] = await this.prisma.$transaction([
         this.prisma.order.create({ data }),
         this.prisma.order.updateMany({
-          where: { id: { in: domain.mergedSourceIDs } },
+          where: { id: { in: domain.mergedSourceIDs }, ownerUid: uid },
           data: { status: 'merged' },
         }),
       ]);
-      return rowToDto(created);
+      const dto = rowToDto(created);
+      await this.mirror.mirrorOrder(uid, dto);
+      // 來源訂單狀態改為 merged，一併重新鏡像。
+      await this.remirrorOrders(uid, domain.mergedSourceIDs);
+      return dto;
     }
 
     const created = await this.prisma.order.create({ data });
-    return rowToDto(created);
+    const dto = rowToDto(created);
+    await this.mirror.mirrorOrder(uid, dto);
+    return dto;
   }
 
-  async update(id: string, input: OrderInput): Promise<OrderDTO> {
-    await this.ensureExists(id);
-    const domain = await this.normalize({ ...input, id }, { isNew: false });
-    const data = this.toPrismaData(domain);
+  async update(uid: string, id: string, input: OrderInput): Promise<OrderDTO> {
+    await this.ensureExists(uid, id);
+    const domain = await this.normalize(uid, { ...input, id }, { isNew: false });
+    const data = this.toPrismaData(domain, uid);
     const updated = await this.prisma.order.update({ where: { id }, data });
-    return rowToDto(updated);
+    const dto = rowToDto(updated);
+    await this.mirror.mirrorOrder(uid, dto);
+    return dto;
   }
 
-  async remove(id: string): Promise<void> {
-    await this.ensureExists(id);
+  async remove(uid: string, id: string): Promise<void> {
+    await this.ensureExists(uid, id);
     await this.prisma.order.delete({ where: { id } });
+    await this.mirror.remove(uid, 'orders', id);
   }
 
-  async setStatus(id: string, input: StatusChangeInput): Promise<OrderDTO> {
+  async setStatus(uid: string, id: string, input: StatusChangeInput): Promise<OrderDTO> {
     const status = this.validStatus(input.status);
     if (!status) throw new BadRequestException('無效的訂單狀態');
-    await this.ensureExists(id);
+    await this.ensureExists(uid, id);
     const updated = await this.prisma.order.update({
       where: { id },
       data: { status },
     });
-    return rowToDto(updated);
+    const dto = rowToDto(updated);
+    await this.mirror.mirrorOrder(uid, dto);
+    return dto;
   }
 
-  async setReceipt(id: string, input: ReceiptChangeInput): Promise<OrderDTO> {
+  async setReceipt(uid: string, id: string, input: ReceiptChangeInput): Promise<OrderDTO> {
     if (!input.status || !RECEIPT_STATUSES.includes(input.status)) {
       throw new BadRequestException('無效的收款狀態');
     }
-    await this.ensureExists(id);
+    await this.ensureExists(uid, id);
     const updated = await this.prisma.order.update({
       where: { id },
       data: { paymentReceiptStatus: input.status },
     });
-    return rowToDto(updated);
+    const dto = rowToDto(updated);
+    await this.mirror.mirrorOrder(uid, dto);
+    return dto;
   }
 
   // 合併草稿：取兩筆訂單算出合併欄位 (含加權費率)，照片是否超量交由前端挑選步驟處理。
-  async mergeDraft(input: MergeDraftInput): Promise<{
+  async mergeDraft(uid: string, input: MergeDraftInput): Promise<{
     draft: MergeDraft;
     photosOverLimit: boolean;
     combinedPhotoCount: number;
@@ -124,8 +143,8 @@ export class OrdersService {
     }
 
     const [primaryRow, secondaryRow] = await Promise.all([
-      this.prisma.order.findUnique({ where: { id: input.primaryId } }),
-      this.prisma.order.findUnique({ where: { id: input.secondaryId } }),
+      this.prisma.order.findFirst({ where: { id: input.primaryId, ownerUid: uid } }),
+      this.prisma.order.findFirst({ where: { id: input.secondaryId, ownerUid: uid } }),
     ]);
     if (!primaryRow || !secondaryRow) throw new NotFoundException('找不到訂單');
 
@@ -143,7 +162,7 @@ export class OrdersService {
       throw new BadRequestException('兩筆訂單不符合併資格');
     }
 
-    const cardlessNames = await this.cardlessNameSet();
+    const cardlessNames = await this.cardlessNameSet(uid);
     const isCardless = (name: string): boolean => cardlessNames.has(name);
 
     const draft = makeMergeDraft(primary, secondary, this.now.now(), isCardless);
@@ -157,37 +176,44 @@ export class OrdersService {
     };
   }
 
-  // 主檔改名時 cascade 到訂單 (純量欄位 updateMany)。
+  // 主檔改名時 cascade 到訂單 (純量欄位 updateMany)，僅限該使用者的訂單。
   async cascadeRenameScalar(
+    uid: string,
     field: 'orderSource' | 'paymentMethod' | 'verificationStatus',
     oldName: string,
     newName: string,
   ): Promise<void> {
     if (oldName === newName) return;
     await this.prisma.order.updateMany({
-      where: { [field]: oldName },
+      where: { [field]: oldName, ownerUid: uid },
       data: { [field]: newName },
     });
+    const affected = await this.prisma.order.findMany({
+      where: { [field]: newName, ownerUid: uid },
+      select: { id: true },
+    });
+    await this.remirrorOrders(uid, affected.map((r) => r.id));
   }
 
   // 類別改名 cascade：逐筆把 categories 陣列內 old→new 取代並去重。
-  async cascadeRenameCategory(oldName: string, newName: string): Promise<void> {
-    await this.cascadeRenameArray('categories', oldName, newName);
+  async cascadeRenameCategory(uid: string, oldName: string, newName: string): Promise<void> {
+    await this.cascadeRenameArray(uid, 'categories', oldName, newName);
   }
 
   // 開團改名 cascade：逐筆把 campaignNames 陣列內 old→new 取代並去重。
-  async cascadeRenameCampaign(oldName: string, newName: string): Promise<void> {
-    await this.cascadeRenameArray('campaignNames', oldName, newName);
+  async cascadeRenameCampaign(uid: string, oldName: string, newName: string): Promise<void> {
+    await this.cascadeRenameArray(uid, 'campaignNames', oldName, newName);
   }
 
   private async cascadeRenameArray(
+    uid: string,
     field: 'categories' | 'campaignNames',
     oldName: string,
     newName: string,
   ): Promise<void> {
     if (oldName === newName) return;
     const rows = await this.prisma.order.findMany({
-      where: { [field]: { has: oldName } },
+      where: { [field]: { has: oldName }, ownerUid: uid },
       select: { id: true, categories: true, campaignNames: true },
     });
     await this.prisma.$transaction(
@@ -200,18 +226,28 @@ export class OrdersService {
         });
       }),
     );
+    await this.remirrorOrders(uid, rows.map((r) => r.id));
   }
 
   // MARK: - 私有
 
-  private async ensureExists(id: string): Promise<void> {
-    const count = await this.prisma.order.count({ where: { id } });
+  // 重新鏡像一組訂單 (cascade 改名或合併後欄位變動)。
+  private async remirrorOrders(uid: string, ids: string[]): Promise<void> {
+    if (ids.length === 0) return;
+    const rows = await this.prisma.order.findMany({ where: { id: { in: ids }, ownerUid: uid } });
+    await Promise.all(rows.map((row) => this.mirror.mirrorOrder(uid, rowToDto(row))));
+  }
+
+  private async ensureExists(uid: string, id: string): Promise<void> {
+    const count = await this.prisma.order.count({ where: { id, ownerUid: uid } });
     if (count === 0) throw new NotFoundException(`找不到訂單 ${id}`);
   }
 
-  private async resolvePaymentFlags(name: string): Promise<PaymentFlags> {
+  private async resolvePaymentFlags(uid: string, name: string): Promise<PaymentFlags> {
     if (!name) return { isCardless: false, isBankTransfer: false, isCashOnDelivery: false };
-    const pm = await this.prisma.paymentMethod.findUnique({ where: { name } });
+    const pm = await this.prisma.paymentMethod.findUnique({
+      where: { ownerUid_name: { ownerUid: uid, name } },
+    });
     return {
       isCardless: pm?.isCardless ?? false,
       isBankTransfer: pm?.isBankTransfer ?? false,
@@ -219,9 +255,9 @@ export class OrdersService {
     };
   }
 
-  private async cardlessNameSet(): Promise<Set<string>> {
+  private async cardlessNameSet(uid: string): Promise<Set<string>> {
     const methods = await this.prisma.paymentMethod.findMany({
-      where: { isCardless: true },
+      where: { isCardless: true, ownerUid: uid },
       select: { name: true },
     });
     return new Set(methods.map((m) => m.name));
@@ -229,11 +265,12 @@ export class OrdersService {
 
   // 正規化前端草稿 (對齊 iOS applyEditDraft)：clamp 金額/費率、依付款方式旗標清欄位、補 fallback。
   private async normalize(
+    uid: string,
     input: OrderInput,
     opts: { isNew: boolean },
   ): Promise<LedgerOrder> {
     const paymentMethod = (input.paymentMethod ?? '').trim();
-    const flags = await this.resolvePaymentFlags(paymentMethod);
+    const flags = await this.resolvePaymentFlags(uid, paymentMethod);
 
     const cardlessDeduction = flags.isCardless ? clampMin0(input.cardlessDeductionAmount) : '0';
     const cardlessSupplement = flags.isCardless ? clampMin0(input.cardlessSupplementAmount) : '0';
@@ -302,9 +339,10 @@ export class OrdersService {
     return ORDER_STATUSES.includes(value as never) ? (value as LedgerOrder['status']) : null;
   }
 
-  private toPrismaData(o: LedgerOrder): Prisma.OrderUncheckedCreateInput {
+  private toPrismaData(o: LedgerOrder, uid: string): Prisma.OrderUncheckedCreateInput {
     return {
       id: o.id,
+      ownerUid: uid,
       customerName: o.customer.name,
       customerInitials: o.customer.initials,
       customerTier: o.customer.tier,

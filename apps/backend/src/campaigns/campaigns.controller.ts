@@ -8,6 +8,7 @@ import {
   Post,
   Put,
 } from '@nestjs/common';
+import { CurrentUid } from '../auth/current-user.decorator';
 import {
   CampaignInput,
   CampaignStatusInput,
@@ -19,38 +20,38 @@ export class CampaignsController {
   constructor(private readonly campaigns: CampaignsService) {}
 
   @Get()
-  list() {
-    return this.campaigns.list();
+  list(@CurrentUid() uid: string) {
+    return this.campaigns.list(uid);
   }
 
   @Get(':id')
-  get(@Param('id') id: string) {
-    return this.campaigns.get(id);
+  get(@CurrentUid() uid: string, @Param('id') id: string) {
+    return this.campaigns.get(uid, id);
   }
 
   @Post()
-  create(@Body() body: CampaignInput) {
-    return this.campaigns.create(body);
+  create(@CurrentUid() uid: string, @Body() body: CampaignInput) {
+    return this.campaigns.create(uid, body);
   }
 
   @Put(':id')
-  update(@Param('id') id: string, @Body() body: CampaignInput) {
-    return this.campaigns.update(id, body);
+  update(@CurrentUid() uid: string, @Param('id') id: string, @Body() body: CampaignInput) {
+    return this.campaigns.update(uid, id, body);
   }
 
   @Delete(':id')
   @HttpCode(204)
-  async remove(@Param('id') id: string): Promise<void> {
-    await this.campaigns.remove(id);
+  async remove(@CurrentUid() uid: string, @Param('id') id: string): Promise<void> {
+    await this.campaigns.remove(uid, id);
   }
 
   @Post(':id/settle')
-  settle(@Param('id') id: string) {
-    return this.campaigns.settle(id);
+  settle(@CurrentUid() uid: string, @Param('id') id: string) {
+    return this.campaigns.settle(uid, id);
   }
 
   @Post(':id/status')
-  setStatus(@Param('id') id: string, @Body() body: CampaignStatusInput) {
-    return this.campaigns.setStatus(id, body);
+  setStatus(@CurrentUid() uid: string, @Param('id') id: string, @Body() body: CampaignStatusInput) {
+    return this.campaigns.setStatus(uid, id, body);
   }
 }

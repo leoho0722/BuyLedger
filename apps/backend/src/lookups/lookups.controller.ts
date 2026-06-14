@@ -1,4 +1,5 @@
 import { Body, Controller, Delete, Get, Param, Post, Put } from '@nestjs/common';
+import { CurrentUid } from '../auth/current-user.decorator';
 import {
   LookupsService,
   NameInput,
@@ -11,85 +12,93 @@ export class LookupsController {
 
   // 商品類別
   @Get('categories')
-  listCategories() {
-    return this.lookups.listCategories();
+  listCategories(@CurrentUid() uid: string) {
+    return this.lookups.listCategories(uid);
   }
 
   @Post('categories')
-  addCategory(@Body() body: NameInput) {
-    return this.lookups.addCategory(body.name ?? '');
+  addCategory(@CurrentUid() uid: string, @Body() body: NameInput) {
+    return this.lookups.addCategory(uid, body.name ?? '');
   }
 
   @Put('categories/:name')
-  renameCategory(@Param('name') name: string, @Body() body: NameInput) {
-    return this.lookups.renameCategory(name, body.name ?? '');
+  renameCategory(@CurrentUid() uid: string, @Param('name') name: string, @Body() body: NameInput) {
+    return this.lookups.renameCategory(uid, name, body.name ?? '');
   }
 
   @Delete('categories/:name')
-  removeCategory(@Param('name') name: string) {
-    return this.lookups.removeCategory(name);
+  removeCategory(@CurrentUid() uid: string, @Param('name') name: string) {
+    return this.lookups.removeCategory(uid, name);
   }
 
   // 訂單來源
   @Get('order-sources')
-  listOrderSources() {
-    return this.lookups.listOrderSources();
+  listOrderSources(@CurrentUid() uid: string) {
+    return this.lookups.listOrderSources(uid);
   }
 
   @Post('order-sources')
-  addOrderSource(@Body() body: NameInput) {
-    return this.lookups.addOrderSource(body.name ?? '');
+  addOrderSource(@CurrentUid() uid: string, @Body() body: NameInput) {
+    return this.lookups.addOrderSource(uid, body.name ?? '');
   }
 
   @Put('order-sources/:name')
-  renameOrderSource(@Param('name') name: string, @Body() body: NameInput) {
-    return this.lookups.renameOrderSource(name, body.name ?? '');
+  renameOrderSource(@CurrentUid() uid: string, @Param('name') name: string, @Body() body: NameInput) {
+    return this.lookups.renameOrderSource(uid, name, body.name ?? '');
   }
 
   @Delete('order-sources/:name')
-  removeOrderSource(@Param('name') name: string) {
-    return this.lookups.removeOrderSource(name);
+  removeOrderSource(@CurrentUid() uid: string, @Param('name') name: string) {
+    return this.lookups.removeOrderSource(uid, name);
   }
 
   // 對帳狀態
   @Get('verification-statuses')
-  listVerificationStatuses() {
-    return this.lookups.listVerificationStatuses();
+  listVerificationStatuses(@CurrentUid() uid: string) {
+    return this.lookups.listVerificationStatuses(uid);
   }
 
   @Post('verification-statuses')
-  addVerificationStatus(@Body() body: NameInput) {
-    return this.lookups.addVerificationStatus(body.name ?? '');
+  addVerificationStatus(@CurrentUid() uid: string, @Body() body: NameInput) {
+    return this.lookups.addVerificationStatus(uid, body.name ?? '');
   }
 
   @Put('verification-statuses/:name')
-  renameVerificationStatus(@Param('name') name: string, @Body() body: NameInput) {
-    return this.lookups.renameVerificationStatus(name, body.name ?? '');
+  renameVerificationStatus(
+    @CurrentUid() uid: string,
+    @Param('name') name: string,
+    @Body() body: NameInput,
+  ) {
+    return this.lookups.renameVerificationStatus(uid, name, body.name ?? '');
   }
 
   @Delete('verification-statuses/:name')
-  removeVerificationStatus(@Param('name') name: string) {
-    return this.lookups.removeVerificationStatus(name);
+  removeVerificationStatus(@CurrentUid() uid: string, @Param('name') name: string) {
+    return this.lookups.removeVerificationStatus(uid, name);
   }
 
   // 付款方式 (帶旗標)
   @Get('payment-methods')
-  listPaymentMethods() {
-    return this.lookups.listPaymentMethods();
+  listPaymentMethods(@CurrentUid() uid: string) {
+    return this.lookups.listPaymentMethods(uid);
   }
 
   @Post('payment-methods')
-  addPaymentMethod(@Body() body: PaymentMethodInput) {
-    return this.lookups.addPaymentMethod(body);
+  addPaymentMethod(@CurrentUid() uid: string, @Body() body: PaymentMethodInput) {
+    return this.lookups.addPaymentMethod(uid, body);
   }
 
   @Put('payment-methods/:name')
-  updatePaymentMethod(@Param('name') name: string, @Body() body: PaymentMethodInput) {
-    return this.lookups.updatePaymentMethod(name, body);
+  updatePaymentMethod(
+    @CurrentUid() uid: string,
+    @Param('name') name: string,
+    @Body() body: PaymentMethodInput,
+  ) {
+    return this.lookups.updatePaymentMethod(uid, name, body);
   }
 
   @Delete('payment-methods/:name')
-  removePaymentMethod(@Param('name') name: string) {
-    return this.lookups.removePaymentMethod(name);
+  removePaymentMethod(@CurrentUid() uid: string, @Param('name') name: string) {
+    return this.lookups.removePaymentMethod(uid, name);
   }
 }
