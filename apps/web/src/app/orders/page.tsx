@@ -1,12 +1,13 @@
 'use client';
 
-import { Plus, Inbox, ListFilter, Sparkles } from 'lucide-react';
+import { Plus, Inbox, ListFilter, ListChecks, Sparkles, X } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Suspense, useEffect, useMemo, useState } from 'react';
 import { BLCard } from '@/components/ds/BLCard';
 import { BLSearchField } from '@/components/ds/BLSearchField';
 import { EmptyState } from '@/components/ds/EmptyState';
+import { OptionPicker } from '@/components/ds/OptionPicker';
 import { OrderRow } from '@/components/OrderRow';
 import { PageHeader } from '@/components/PageHeader';
 import { Sheet } from '@/components/ds/Sheet';
@@ -25,10 +26,11 @@ import {
   useCampaigns,
   useCategories,
   useOrders,
+  useOrderMutations,
   usePaymentMethods,
   useSettings,
 } from '@/lib/queries';
-import type { CampaignStatus } from '@/lib/types';
+import type { CampaignStatus, OrderStatus } from '@/lib/types';
 import { AiSummarySheet } from '@/features/orders/AiSummarySheet';
 import { OrderFilterSheet } from '@/features/orders/OrderFilterSheet';
 
@@ -54,6 +56,12 @@ function OrdersInner() {
   const [filterOpen, setFilterOpen] = useState(false);
   const [aiOpen, setAiOpen] = useState(false);
   const [aiBlocked, setAiBlocked] = useState(false);
+
+  // 多選模式狀態 (UI 暫態，不入全域 store)。
+  const [selecting, setSelecting] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [statusPicker, setStatusPicker] = useState(false);
+  const { batchSetStatus } = useOrderMutations();
 
   // 深層連結：?category= / ?search= (來自分析/客戶頁)。
   useEffect(() => {
@@ -95,76 +103,146 @@ function OrdersInner() {
     else setAiBlocked(true);
   };
 
+  // 多選模式操作。
+  const exitSelection = () => {
+    setSelecting(false);
+    setSelectedIds(new Set());
+  };
+  const toggleSelect = (id: string) =>
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const allSelected = filtered.length > 0 && selectedIds.size === filtered.length;
+  const toggleSelectAll = () =>
+    setSelectedIds(allSelected ? new Set() : new Set(filtered.map((o) => o.id)));
+  const applyBatchStatus = (status: OrderStatus) => {
+    const ids = [...selectedIds];
+    if (ids.length === 0) return;
+    // 成功才退出多選並清空 (mutation onSuccess 已 invalidate orders + campaigns)；失敗保留選取供重試。
+    batchSetStatus.mutate({ ids, status }, { onSuccess: exitSelection });
+  };
+
   return (
     <div className="space-y-4">
       <PageHeader
         title="訂單"
         action={
-          <div className="flex items-center gap-2">
+          selecting ? (
             <button
               type="button"
-              onClick={openAi}
-              disabled={filtered.length === 0}
-              className="inline-flex items-center gap-1.5 rounded-bl-md bg-bl-fill-tertiary px-3 py-2 text-[15px] font-semibold text-bl-accent transition hover:bg-bl-fill-secondary disabled:pointer-events-none disabled:opacity-40"
+              onClick={exitSelection}
+              className="inline-flex items-center gap-1.5 rounded-bl-md bg-bl-fill-tertiary px-3 py-2 text-[15px] font-semibold text-bl-accent transition hover:bg-bl-fill-secondary"
             >
-              <Sparkles className="h-4 w-4" />
-              <span className="hidden sm:inline">AI 總結</span>
+              <X className="h-4 w-4" />
+              <span className="hidden sm:inline">取消</span>
             </button>
-            <button
-              type="button"
-              onClick={() => router.push('/orders/new')}
-              className="inline-flex items-center gap-1.5 rounded-bl-md bg-bl-accent px-3 py-2 text-[15px] font-semibold text-white transition hover:opacity-90"
-            >
-              <Plus className="h-4 w-4" />
-              <span className="hidden sm:inline">新增訂單</span>
-            </button>
-          </div>
+          ) : (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={openAi}
+                disabled={filtered.length === 0}
+                className="inline-flex items-center gap-1.5 rounded-bl-md bg-bl-fill-tertiary px-3 py-2 text-[15px] font-semibold text-bl-accent transition hover:bg-bl-fill-secondary disabled:pointer-events-none disabled:opacity-40"
+              >
+                <Sparkles className="h-4 w-4" />
+                <span className="hidden sm:inline">AI 總結</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setSelecting(true)}
+                disabled={orders.length === 0}
+                className="inline-flex items-center gap-1.5 rounded-bl-md bg-bl-fill-tertiary px-3 py-2 text-[15px] font-semibold text-bl-accent transition hover:bg-bl-fill-secondary disabled:pointer-events-none disabled:opacity-40"
+              >
+                <ListChecks className="h-4 w-4" />
+                <span className="hidden sm:inline">選取</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => router.push('/orders/new')}
+                className="inline-flex items-center gap-1.5 rounded-bl-md bg-bl-accent px-3 py-2 text-[15px] font-semibold text-white transition hover:opacity-90"
+              >
+                <Plus className="h-4 w-4" />
+                <span className="hidden sm:inline">新增訂單</span>
+              </button>
+            </div>
+          )
         }
       />
 
-      {/* Web 工具列：搜尋 + 篩選同列 */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
-        <div className="sm:flex-1">
-          <BLSearchField
-            value={filters.search}
-            onChange={(v) => setFilters((f) => ({ ...f, search: v }))}
-            placeholder="搜尋客戶、單號或商品"
-          />
+      {selecting ? (
+        /* 多選工具列：全選/清除 + 已選筆數 + 批次更改狀態 */
+        <div className="flex items-center justify-between gap-3 rounded-bl-md bg-bl-fill-tertiary px-3 py-2">
+          <div className="flex items-center gap-3">
+            <button
+              type="button"
+              onClick={toggleSelectAll}
+              className="text-[15px] font-semibold text-bl-accent"
+            >
+              {allSelected ? '清除' : '全選'}
+            </button>
+            <span className="text-[15px] text-bl-secondary-label bl-tabular">
+              已選 {selectedIds.size} 筆
+            </span>
+          </div>
+          <BLButton
+            variant="primary"
+            disabled={selectedIds.size === 0 || batchSetStatus.isPending}
+            onClick={() => setStatusPicker(true)}
+            className="min-h-[40px] text-[15px]"
+          >
+            更改狀態
+          </BLButton>
         </div>
-        <button
-          type="button"
-          onClick={() => setFilterOpen(true)}
-          className={cn(
-            'flex w-full items-center justify-center gap-2 rounded-bl-md px-4 py-2.5 text-[15px] transition sm:w-auto sm:shrink-0',
-            filterActive
-              ? 'bg-bl-accent/14 text-bl-accent hover:bg-bl-accent/20'
-              : 'bg-bl-fill-tertiary text-bl-secondary-label hover:bg-bl-fill-secondary',
-          )}
-        >
-          <ListFilter className="h-4 w-4" />
-          <span>篩選</span>
-          {filterActive && <span className="h-2 w-2 rounded-full bg-bl-accent" />}
-        </button>
-      </div>
+      ) : (
+        <>
+          {/* Web 工具列：搜尋 + 篩選同列 */}
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <div className="sm:flex-1">
+              <BLSearchField
+                value={filters.search}
+                onChange={(v) => setFilters((f) => ({ ...f, search: v }))}
+                placeholder="搜尋客戶、單號或商品"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setFilterOpen(true)}
+              className={cn(
+                'flex w-full items-center justify-center gap-2 rounded-bl-md px-4 py-2.5 text-[15px] transition sm:w-auto sm:shrink-0',
+                filterActive
+                  ? 'bg-bl-accent/14 text-bl-accent hover:bg-bl-accent/20'
+                  : 'bg-bl-fill-tertiary text-bl-secondary-label hover:bg-bl-fill-secondary',
+              )}
+            >
+              <ListFilter className="h-4 w-4" />
+              <span>篩選</span>
+              {filterActive && <span className="h-2 w-2 rounded-full bg-bl-accent" />}
+            </button>
+          </div>
 
-      {/* 狀態快篩 chips */}
-      <div className="flex gap-2 overflow-x-auto bl-no-scrollbar pb-1">
-        <StatusChip
-          label="全部"
-          count={orders.length}
-          active={filters.status === 'all'}
-          onClick={() => setFilters((f) => ({ ...f, status: 'all' }))}
-        />
-        {ORDER_STATUS_ORDER.map((s) => (
-          <StatusChip
-            key={s}
-            label={ORDER_STATUS_TITLE[s]}
-            count={statusCounts.get(s) ?? 0}
-            active={filters.status === s}
-            onClick={() => setFilters((f) => ({ ...f, status: s as StatusFilter }))}
-          />
-        ))}
-      </div>
+          {/* 狀態快篩 chips */}
+          <div className="flex gap-2 overflow-x-auto bl-no-scrollbar pb-1">
+            <StatusChip
+              label="全部"
+              count={orders.length}
+              active={filters.status === 'all'}
+              onClick={() => setFilters((f) => ({ ...f, status: 'all' }))}
+            />
+            {ORDER_STATUS_ORDER.map((s) => (
+              <StatusChip
+                key={s}
+                label={ORDER_STATUS_TITLE[s]}
+                count={statusCounts.get(s) ?? 0}
+                active={filters.status === s}
+                onClick={() => setFilters((f) => ({ ...f, status: s as StatusFilter }))}
+              />
+            ))}
+          </div>
+        </>
+      )}
 
       {isLoading ? (
         <p className="py-12 text-center text-bl-secondary-label">載入中…</p>
@@ -179,8 +257,22 @@ function OrdersInner() {
               </p>
               <div className="space-y-3">
                 {section.orders.map((o) => (
-                  <BLCard key={o.id} padded={false} className="overflow-hidden">
-                    <OrderRow order={o} onClick={() => router.push(`/orders/${o.id}`)} />
+                  <BLCard
+                    key={o.id}
+                    padded={false}
+                    className={cn(
+                      'overflow-hidden',
+                      selecting && selectedIds.has(o.id) && 'ring-2 ring-inset ring-bl-accent',
+                    )}
+                  >
+                    <OrderRow
+                      order={o}
+                      selecting={selecting}
+                      selected={selectedIds.has(o.id)}
+                      onClick={() =>
+                        selecting ? toggleSelect(o.id) : router.push(`/orders/${o.id}`)
+                      }
+                    />
                   </BLCard>
                 ))}
               </div>
@@ -188,6 +280,19 @@ function OrdersInner() {
           ))}
         </div>
       )}
+
+      {/* 批次更改狀態：目標清單排除 merged (僅合併流程可寫入) */}
+      <OptionPicker
+        open={statusPicker}
+        onClose={() => setStatusPicker(false)}
+        title="更改狀態"
+        searchable={false}
+        options={ORDER_STATUS_ORDER.filter((st) => st !== 'merged').map((st) => ({
+          value: st,
+          label: ORDER_STATUS_TITLE[st],
+        }))}
+        onSelect={(v) => applyBatchStatus(v as OrderStatus)}
+      />
 
       <OrderFilterSheet
         open={filterOpen}

@@ -23,6 +23,7 @@ import {
   rowToDto,
 } from './order.mapper';
 import {
+  BatchStatusChangeInput,
   MergeDraftInput,
   OrderInput,
   ReceiptChangeInput,
@@ -112,6 +113,30 @@ export class OrdersService {
     const dto = rowToDto(updated);
     await this.mirror.mirrorOrder(uid, dto);
     return dto;
+  }
+
+  // 批次更改狀態：以單一 updateMany 依 ownerUid 圈更新已選訂單，更新後重新鏡像受影響訂單。
+  // 不屬呼叫者的 id 一律不受影響也不報錯；merged 為終態僅由合併流程寫入，端點層拒絕。
+  async batchSetStatus(uid: string, input: BatchStatusChangeInput): Promise<OrderDTO[]> {
+    const status = this.validStatus(input.status);
+    if (!status) throw new BadRequestException('無效的訂單狀態');
+    if (status === 'merged') throw new BadRequestException('不可批次設為已合併狀態');
+
+    const rawIds = Array.isArray(input.ids) ? input.ids : [];
+    const ids = uniqueNonEmpty(rawIds.filter((v): v is string => typeof v === 'string'));
+    if (ids.length === 0) return [];
+
+    await this.prisma.order.updateMany({
+      where: { id: { in: ids }, ownerUid: uid },
+      data: { status },
+    });
+
+    // 查回實際受影響 (屬該使用者) 的訂單，逐筆 remirror 並回傳更新後 DTO。
+    const rows = await this.prisma.order.findMany({
+      where: { id: { in: ids }, ownerUid: uid },
+    });
+    await Promise.all(rows.map((row) => this.mirror.mirrorOrder(uid, rowToDto(row))));
+    return rows.map(rowToDto);
   }
 
   async setReceipt(uid: string, id: string, input: ReceiptChangeInput): Promise<OrderDTO> {

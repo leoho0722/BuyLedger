@@ -43,6 +43,8 @@ struct OrdersMacView: View {
     /// 訂單瀏覽畫面內容。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
+        let filteredIDs = store.state.filteredOrders(referenceDate: date.now, calendar: calendar).map(\.id)
+        let allFilteredSelected = !filteredIDs.isEmpty && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
 
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
             titleAndFilters(palette: palette)
@@ -64,33 +66,80 @@ struct OrdersMacView: View {
                 .inspectorColumnWidth(min: 560, ideal: 720, max: 960)
         }
         .toolbar {
-            ToolbarItem {
-                Button {
-                    store.send(.newOrderTapped)
-                } label: {
-                    Label("新訂單", systemImage: "plus")
+            if store.isSelecting {
+                ToolbarItem {
+                    Text("已選 \(store.selectedOrderIDs.count) 筆")
+                        .font(.subheadline)
+                        .monospacedDigit()
+                        .foregroundStyle(palette.secondaryLabel)
                 }
-                .help("建立新訂單 (⌘N)")
-                .keyboardShortcut("n", modifiers: [.command])
-            }
 
-            ToolbarItem {
-                Button {
-                    store.send(.aiSummaryTapped)
-                } label: {
-                    Label("AI 總結", systemImage: "sparkles")
+                ToolbarItem {
+                    Button(allFilteredSelected ? "清除" : "全選") {
+                        store.send(allFilteredSelected ? .clearSelectionTapped : .selectAllTapped)
+                    }
+                    .help("全選或清除目前篩選後的訂單")
                 }
-                .help("AI 商品明細總結")
-                .disabled(store.state.filteredOrders(referenceDate: date.now, calendar: calendar).isEmpty)
-            }
 
-            ToolbarItem {
-                Button {
-                    showsInspector.toggle()
-                } label: {
-                    Label("詳情", systemImage: "sidebar.right")
+                ToolbarItem {
+                    Menu {
+                        // 「已合併」僅能由合併流程寫入，批次目標清單一律排除。
+                        ForEach(OrderStatus.allCases.filter { $0 != .merged }) { status in
+                            Button(status.title) {
+                                store.send(.batchStatusChanged(status))
+                            }
+                        }
+                    } label: {
+                        Label("更改狀態", systemImage: "arrow.triangle.2.circlepath")
+                    }
+                    .disabled(store.selectedOrderIDs.isEmpty)
+                    .help("批次更改已選訂單狀態")
                 }
-                .help(showsInspector ? "隱藏訂單詳情" : "顯示訂單詳情")
+
+                ToolbarItem {
+                    Button("完成") {
+                        store.send(.selectionModeToggled)
+                    }
+                }
+            } else {
+                ToolbarItem {
+                    Button {
+                        store.send(.newOrderTapped)
+                    } label: {
+                        Label("新訂單", systemImage: "plus")
+                    }
+                    .help("建立新訂單 (⌘N)")
+                    .keyboardShortcut("n", modifiers: [.command])
+                }
+
+                ToolbarItem {
+                    Button {
+                        store.send(.selectionModeToggled)
+                    } label: {
+                        Label("選取", systemImage: "checklist")
+                    }
+                    .help("多選訂單以批次更改狀態")
+                    .disabled(store.orders.isEmpty)
+                }
+
+                ToolbarItem {
+                    Button {
+                        store.send(.aiSummaryTapped)
+                    } label: {
+                        Label("AI 總結", systemImage: "sparkles")
+                    }
+                    .help("AI 商品明細總結")
+                    .disabled(store.state.filteredOrders(referenceDate: date.now, calendar: calendar).isEmpty)
+                }
+
+                ToolbarItem {
+                    Button {
+                        showsInspector.toggle()
+                    } label: {
+                        Label("詳情", systemImage: "sidebar.right")
+                    }
+                    .help(showsInspector ? "隱藏訂單詳情" : "顯示訂單詳情")
+                }
             }
         }
         .focusedSceneValue(\.newOrderAction) {
@@ -337,32 +386,15 @@ private extension OrdersMacView {
     /// - Returns: 卡片化的訂單列表 view。
     @ViewBuilder
     func orderListCard(orders: [LedgerOrder]) -> some View {
+        let palette = BLTheme.palette(for: colorScheme)
+
         BLCard(padding: 0) {
             VStack(spacing: 0) {
                 ForEach(Array(orders.enumerated()), id: \.element.id) { index, order in
-                    Button {
-                        store.send(.orderSelected(order.id))
-                    } label: {
-                        OrderRowView(order: order)
-                            .padding(.horizontal, BLSpacing.large)
-                            .padding(.vertical, BLSpacing.extraSmall)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .contextMenu {
-                        if order.status != .merged, order.status != .cancelled {
-                            Button {
-                                store.send(.mergeOrderTapped(order.id))
-                            } label: {
-                                Label("合併訂單", systemImage: "arrow.triangle.merge")
-                            }
-                        }
-
-                        Button(role: .destructive) {
-                            store.send(.deleteOrderTapped(order.id))
-                        } label: {
-                            Label("刪除訂單", systemImage: "trash")
-                        }
+                    if store.isSelecting {
+                        selectableRow(order: order, palette: palette)
+                    } else {
+                        selectDetailRow(order: order)
                     }
 
                     if index < orders.count - 1 {
@@ -372,6 +404,63 @@ private extension OrdersMacView {
                 }
             }
         }
+    }
+
+    /// 一般 (非多選) 模式的訂單列：點擊更新右側 inspector，長按提供合併／刪除 context menu。
+    /// - Parameter order: 要呈現的訂單。
+    /// - Returns: 可選取詳情的訂單列 view。
+    @ViewBuilder
+    func selectDetailRow(order: LedgerOrder) -> some View {
+        Button {
+            store.send(.orderSelected(order.id))
+        } label: {
+            OrderRowView(order: order)
+                .padding(.horizontal, BLSpacing.large)
+                .padding(.vertical, BLSpacing.extraSmall)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            if order.status != .merged, order.status != .cancelled {
+                Button {
+                    store.send(.mergeOrderTapped(order.id))
+                } label: {
+                    Label("合併訂單", systemImage: "arrow.triangle.merge")
+                }
+            }
+
+            Button(role: .destructive) {
+                store.send(.deleteOrderTapped(order.id))
+            } label: {
+                Label("刪除訂單", systemImage: "trash")
+            }
+        }
+    }
+
+    /// 多選模式的訂單列：左側勾選圈，點擊切換選取而非更新 inspector。
+    /// - Parameters:
+    ///   - order: 要呈現的訂單。
+    ///   - palette: 目前外觀使用的色盤。
+    /// - Returns: 可勾選的訂單列 view。
+    @ViewBuilder
+    func selectableRow(order: LedgerOrder, palette: BLPalette) -> some View {
+        let isSelected = store.selectedOrderIDs.contains(order.id)
+
+        Button {
+            store.send(.orderSelectionToggled(order.id))
+        } label: {
+            HStack(spacing: BLSpacing.medium) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(isSelected ? palette.accent : palette.tertiaryLabel)
+
+                OrderRowView(order: order)
+            }
+            .padding(.horizontal, BLSpacing.large)
+            .padding(.vertical, BLSpacing.extraSmall)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// Inspector 內顯示的訂單詳情或空狀態。

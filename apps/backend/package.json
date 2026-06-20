@@ -1,6 +1,6 @@
 {
   "name": "buyledger-backend",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "BuyLedger Web 後端 (NestJS + Prisma + PostgreSQL)",
   "private": true,
   "scripts": {

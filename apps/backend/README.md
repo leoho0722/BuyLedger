@@ -63,7 +63,7 @@ Firebase service account (身分驗證與雲端投影，**缺則 fail-closed、�
 | 資源 | 路由 |
 |------|------|
 | 健康檢查 | `GET /health` (公開，免驗證) |
-| 訂單 | `GET/POST /orders`、`GET/PUT/DELETE /orders/:id`、`POST /orders/:id/status`、`POST /orders/:id/receipt`、`POST /orders/merge/draft` |
+| 訂單 | `GET/POST /orders`、`GET/PUT/DELETE /orders/:id`、`POST /orders/:id/status`、`POST /orders/status/batch`、`POST /orders/:id/receipt`、`POST /orders/merge/draft` |
 | 開團 | `GET/POST /campaigns`、`GET/PUT/DELETE /campaigns/:id`、`POST /campaigns/:id/settle`、`POST /campaigns/:id/status` |
 | 主檔 | `GET/POST /lookups/{categories,order-sources,verification-statuses,payment-methods}`、`PUT/DELETE …/:name` |
 | 幣別/匯率 | `GET /currency/codes`、`POST /currency/codes/refresh`、`GET /fx/latest`、`POST /fx/refresh` |

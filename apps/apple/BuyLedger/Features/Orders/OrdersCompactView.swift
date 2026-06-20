@@ -40,6 +40,12 @@ struct OrdersCompactView: View {
     /// 訂單瀏覽畫面內容。
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
+        let filteredIDs = store.state.filteredOrders(referenceDate: date.now, calendar: calendar).map(\.id)
+        let allFilteredSelected = !filteredIDs.isEmpty && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
+        // 多選時導覽標題顯示已選筆數 (iPhone 底部 tab bar 會蓋掉 .bottomBar，故批次控制改放右上角工具列)。
+        let navigationTitle = store.isSelecting
+            ? (store.selectedOrderIDs.isEmpty ? "選擇訂單" : "已選 \(store.selectedOrderIDs.count) 筆")
+            : "訂單"
 
         NavigationStack(path: $navigationPath) {
             ScrollView {
@@ -67,28 +73,62 @@ struct OrdersCompactView: View {
             }
             .background(palette.background)
             .scrollDismissesKeyboard(.immediately)
-            .navigationTitle("訂單")
+            .navigationTitle(navigationTitle)
             .toolbar {
-                ToolbarItemGroup(placement: .primaryAction) {
-                    Text("\(store.orders.count)")
-                        .font(.subheadline.weight(.medium))
-                        .monospacedDigit()
-                        .foregroundStyle(palette.secondaryLabel)
-
-                    Button {
-                        store.send(.aiSummaryTapped)
-                    } label: {
-                        Image(systemName: "sparkles")
+                if store.isSelecting {
+                    ToolbarItem(placement: .topBarLeading) {
+                        Button(allFilteredSelected ? "清除" : "全選") {
+                            store.send(allFilteredSelected ? .clearSelectionTapped : .selectAllTapped)
+                        }
                     }
-                    .accessibilityLabel("AI 商品明細總結")
-                    .disabled(store.state.filteredOrders(referenceDate: date.now, calendar: calendar).isEmpty)
 
-                    Button {
-                        store.send(.newOrderTapped)
-                    } label: {
-                        Image(systemName: "plus")
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        Menu {
+                            // 「已合併」僅能由合併流程寫入，批次目標清單一律排除。
+                            ForEach(OrderStatus.allCases.filter { $0 != .merged }) { status in
+                                Button(status.title) {
+                                    store.send(.batchStatusChanged(status))
+                                }
+                            }
+                        } label: {
+                            Text("更改狀態")
+                        }
+                        .disabled(store.selectedOrderIDs.isEmpty)
+
+                        Button("完成") {
+                            store.send(.selectionModeToggled)
+                        }
                     }
-                    .accessibilityLabel("新增訂單")
+                } else {
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        Text("\(store.orders.count)")
+                            .font(.subheadline.weight(.medium))
+                            .monospacedDigit()
+                            .foregroundStyle(palette.secondaryLabel)
+
+                        Button {
+                            store.send(.aiSummaryTapped)
+                        } label: {
+                            Image(systemName: "sparkles")
+                        }
+                        .accessibilityLabel("AI 商品明細總結")
+                        .disabled(store.state.filteredOrders(referenceDate: date.now, calendar: calendar).isEmpty)
+
+                        Button {
+                            store.send(.selectionModeToggled)
+                        } label: {
+                            Image(systemName: "checklist")
+                        }
+                        .accessibilityLabel("選取訂單")
+                        .disabled(store.orders.isEmpty)
+
+                        Button {
+                            store.send(.newOrderTapped)
+                        } label: {
+                            Image(systemName: "plus")
+                        }
+                        .accessibilityLabel("新增訂單")
+                    }
                 }
             }
             .navigationDestination(for: LedgerOrder.ID.self) { id in
@@ -319,27 +359,10 @@ private extension OrdersCompactView {
             BLCard(padding: 0) {
                 VStack(spacing: 0) {
                     ForEach(Array(section.orders.enumerated()), id: \.element.id) { index, order in
-                        NavigationLink(value: order.id) {
-                            OrderRowView(order: order, showsDate: false)
-                                .padding(.horizontal, BLSpacing.large)
-                                .padding(.vertical, BLSpacing.extraSmall)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            if order.status != .merged, order.status != .cancelled {
-                                Button {
-                                    store.send(.mergeOrderTapped(order.id))
-                                } label: {
-                                    Label("合併訂單", systemImage: "arrow.triangle.merge")
-                                }
-                            }
-
-                            Button(role: .destructive) {
-                                store.send(.deleteOrderTapped(order.id))
-                            } label: {
-                                Label("刪除訂單", systemImage: "trash")
-                            }
+                        if store.isSelecting {
+                            selectableRow(order: order, palette: palette)
+                        } else {
+                            navigableRow(order: order)
                         }
 
                         if index < section.orders.count - 1 {
@@ -351,6 +374,61 @@ private extension OrdersCompactView {
             }
             .padding(.horizontal, BLSpacing.large)
         }
+    }
+
+    /// 一般 (非多選) 模式的訂單列：點擊進入詳情，長按提供合併／刪除 context menu。
+    /// - Parameter order: 要呈現的訂單。
+    /// - Returns: 可導覽的訂單列 view。
+    @ViewBuilder
+    func navigableRow(order: LedgerOrder) -> some View {
+        NavigationLink(value: order.id) {
+            OrderRowView(order: order, showsDate: false)
+                .padding(.horizontal, BLSpacing.large)
+                .padding(.vertical, BLSpacing.extraSmall)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .contextMenu {
+            if order.status != .merged, order.status != .cancelled {
+                Button {
+                    store.send(.mergeOrderTapped(order.id))
+                } label: {
+                    Label("合併訂單", systemImage: "arrow.triangle.merge")
+                }
+            }
+
+            Button(role: .destructive) {
+                store.send(.deleteOrderTapped(order.id))
+            } label: {
+                Label("刪除訂單", systemImage: "trash")
+            }
+        }
+    }
+
+    /// 多選模式的訂單列：左側勾選圈，點擊切換選取而非導覽。
+    /// - Parameters:
+    ///   - order: 要呈現的訂單。
+    ///   - palette: 目前外觀使用的色盤。
+    /// - Returns: 可勾選的訂單列 view。
+    @ViewBuilder
+    func selectableRow(order: LedgerOrder, palette: BLPalette) -> some View {
+        let isSelected = store.selectedOrderIDs.contains(order.id)
+
+        Button {
+            store.send(.orderSelectionToggled(order.id))
+        } label: {
+            HStack(spacing: BLSpacing.medium) {
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.title3)
+                    .foregroundStyle(isSelected ? palette.accent : palette.tertiaryLabel)
+
+                OrderRowView(order: order, showsDate: false)
+            }
+            .padding(.horizontal, BLSpacing.large)
+            .padding(.vertical, BLSpacing.extraSmall)
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
     }
 
     /// 沒有符合條件的訂單時顯示的空狀態。

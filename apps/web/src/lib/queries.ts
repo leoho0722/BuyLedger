@@ -95,12 +95,18 @@ export function useOrderMutations() {
       api.orders.setStatus(id, status),
     onSuccess: invalidate,
   });
+  // 批次更改狀態：多選訂單套用同一目標狀態，成功後沿用 orders + campaigns 失效。
+  const batchSetStatus = useMutation({
+    mutationFn: ({ ids, status }: { ids: string[]; status: Parameters<typeof api.orders.batchSetStatus>[1] }) =>
+      api.orders.batchSetStatus(ids, status),
+    onSuccess: invalidate,
+  });
   const setReceipt = useMutation({
     mutationFn: ({ id, status }: { id: string; status: Parameters<typeof api.orders.setReceipt>[1] }) =>
       api.orders.setReceipt(id, status),
     onSuccess: invalidate,
   });
-  return { create, update, remove, setStatus, setReceipt };
+  return { create, update, remove, setStatus, batchSetStatus, setReceipt };
 }
 
 export function useCampaignMutations() {

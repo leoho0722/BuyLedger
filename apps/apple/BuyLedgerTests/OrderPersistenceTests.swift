@@ -404,6 +404,34 @@ struct OrderPersistenceTests {
         #expect(stored.first { $0.id == "BL-CAMP-1" }?.campaignNames == ["三月日本團 (補)", "四月韓國團"])
         #expect(stored.first { $0.id == "BL-CAMP-2" }?.campaignNames == [])
     }
+
+    @Test func upsertAllInsertsAndUpdatesInOneBatch() async throws {
+        // 對齊 spec「Batch status persistence is atomic on Apple」：一次批次同時更新既有與插入新訂單。
+        let persistence = try makePersistence()
+
+        let existing1 = Self.makeStatusOrder(id: "BL-B-1", status: .shipping)
+        let existing2 = Self.makeStatusOrder(id: "BL-B-2", status: .shipping)
+        try await persistence.upsertAll([existing1, existing2])
+
+        // 批次：更新兩筆既有狀態 + 插入一筆新訂單，單一操作落盤。
+        let updated1 = Self.makeStatusOrder(id: "BL-B-1", status: .arrived)
+        let updated2 = Self.makeStatusOrder(id: "BL-B-2", status: .arrived)
+        let inserted = Self.makeStatusOrder(id: "BL-B-3", status: .arrived)
+        try await persistence.upsertAll([updated1, updated2, inserted])
+
+        let stored = try await persistence.fetchAll()
+        #expect(stored.count == 3)
+        #expect(stored.first { $0.id == "BL-B-1" }?.status == .arrived)
+        #expect(stored.first { $0.id == "BL-B-2" }?.status == .arrived)
+        #expect(stored.first { $0.id == "BL-B-3" }?.status == .arrived)
+    }
+
+    @Test func upsertAllWithEmptyArrayIsNoOp() async throws {
+        let persistence = try makePersistence()
+        try await persistence.upsertAll([])
+        let stored = try await persistence.fetchAll()
+        #expect(stored.isEmpty)
+    }
 }
 
 // MARK: - Helpers
@@ -415,6 +443,38 @@ private extension OrderPersistenceTests {
     func makePersistence() throws -> OrderPersistence {
         let container = try PersistenceContainer.make(inMemoryOnly: true)
         return OrderPersistence(modelContainer: container)
+    }
+
+    /// 建立批次 upsert 測試用、可指定狀態的最小訂單。
+    static func makeStatusOrder(id: String, status: OrderStatus) -> LedgerOrder {
+        LedgerOrder(
+            id: id,
+            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .new),
+            status: status,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_770_000_000),
+            items: [],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 0,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "蝦皮",
+            categories: ["美妝"],
+            paymentMethod: "信用卡",
+            notes: "",
+            verificationStatus: "",
+            campaignNames: [],
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false,
+            photos: [],
+            mergedSourceIDs: []
+        )
     }
 
     /// 建立陣列 rename 測試用的最小訂單。

@@ -110,6 +110,11 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ status }),
       }),
+    batchSetStatus: (ids: string[], status: OrderStatus) =>
+      request<OrderDTO[]>('/orders/status/batch', {
+        method: 'POST',
+        body: JSON.stringify({ ids, status }),
+      }),
     setReceipt: (id: string, status: PaymentReceiptStatus) =>
       request<OrderDTO>(`/orders/${encodeURIComponent(id)}/receipt`, {
         method: 'POST',

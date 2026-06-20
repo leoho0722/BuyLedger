@@ -11,6 +11,7 @@ import {
 import { CurrentUid } from '../auth/current-user.decorator';
 import { OrdersService } from './orders.service';
 import {
+  BatchStatusChangeInput,
   MergeDraftInput,
   OrderInput,
   ReceiptChangeInput,
@@ -30,6 +31,12 @@ export class OrdersController {
   @Post('merge/draft')
   mergeDraft(@CurrentUid() uid: string, @Body() body: MergeDraftInput) {
     return this.orders.mergeDraft(uid, body);
+  }
+
+  // 批次更改狀態：靜態路徑置於 :id 之前避免被動態段攔截。
+  @Post('status/batch')
+  batchSetStatus(@CurrentUid() uid: string, @Body() body: BatchStatusChangeInput) {
+    return this.orders.batchSetStatus(uid, body);
   }
 
   @Get(':id')

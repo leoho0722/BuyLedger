@@ -24,6 +24,9 @@ struct OrderRepository: Sendable {
     /// 將單筆訂單寫入或更新 (依 id upsert)。
     var saveOrder: @Sendable (LedgerOrder) async throws -> Void
 
+    /// 將多筆訂單以單一持久化操作 (單次 save) 寫入或更新 (依 id upsert)，供批次更改狀態原子落盤。
+    var saveOrders: @Sendable ([LedgerOrder]) async throws -> Void
+
     /// 刪除指定編號的訂單。
     var removeOrder: @Sendable (LedgerOrder.ID) async throws -> Void
 
@@ -74,6 +77,10 @@ extension OrderRepository {
             saveOrder: { order in
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.upsert(order)
+            },
+            saveOrders: { orders in
+                let persistence = await Self.makePersistence(container: container)
+                try await persistence.upsertAll(orders)
             },
             removeOrder: { id in
                 let persistence = await Self.makePersistence(container: container)
@@ -148,6 +155,7 @@ extension OrderRepository: DependencyKey {
     nonisolated static let testValue = OrderRepository(
         fetchOrders: { [] },
         saveOrder: { _ in },
+        saveOrders: { _ in },
         removeOrder: { _ in },
         mergeOrders: { _, _ in },
         renameOrderSource: { _, _ in },

@@ -37,6 +37,12 @@ export interface StatusChangeInput {
   status?: LedgerOrder['status'];
 }
 
+// 批次更改狀態：一組訂單 id 套用同一目標狀態。用 TS interface 規避全域 ValidationPipe whitelist 剝除，於 service 內手動正規化。
+export interface BatchStatusChangeInput {
+  ids?: string[];
+  status?: LedgerOrder['status'];
+}
+
 export interface ReceiptChangeInput {
   status?: LedgerOrder['paymentReceiptStatus'];
 }

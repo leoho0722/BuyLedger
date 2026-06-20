@@ -88,6 +88,12 @@ struct OrdersFeature {
         /// 目前選取的訂單編號。
         var selectedOrderID: LedgerOrder.ID?
 
+        /// 是否處於多選模式 (進入後列點擊改為勾選、顯示批次工具列)。
+        var isSelecting = false
+
+        /// 多選模式下已勾選的訂單編號集合。
+        var selectedOrderIDs: Set<LedgerOrder.ID> = []
+
         /// 訂單來源主檔 (從 ``OrderSourceRepository`` 載入)。
         var orderSourceMaster: [String] = []
 
@@ -423,6 +429,21 @@ struct OrdersFeature {
 
         /// 透過詳情頁的「更新狀態」menu 直接切換訂單狀態。
         case statusChanged(LedgerOrder.ID, OrderStatus)
+
+        /// 進入／退出多選模式；退出時清空已選集合。
+        case selectionModeToggled
+
+        /// 多選模式下切換單筆訂單的勾選狀態。
+        case orderSelectionToggled(LedgerOrder.ID)
+
+        /// 全選目前篩選後清單。
+        case selectAllTapped
+
+        /// 清除目前已選集合。
+        case clearSelectionTapped
+
+        /// 對已選訂單批次套用同一目標狀態 (目標清單已排除 merged)。
+        case batchStatusChanged(OrderStatus)
 
         /// 切換訂單收款狀態 (待收款／已收款)；供開團詳情頁逐筆勾稽收款使用。
         case receiptStatusChanged(LedgerOrder.ID, PaymentReceiptStatus)
@@ -882,6 +903,63 @@ struct OrdersFeature {
                 let orderRepository = orderRepository
                 return .run { _ in
                     try? await orderRepository.saveOrder(updated)
+                }
+
+            case .selectionModeToggled:
+                state.isSelecting.toggle()
+                if !state.isSelecting {
+                    state.selectedOrderIDs = []
+                }
+                return .none
+
+            case let .orderSelectionToggled(id):
+                if state.selectedOrderIDs.contains(id) {
+                    state.selectedOrderIDs.remove(id)
+                } else {
+                    state.selectedOrderIDs.insert(id)
+                }
+                return .none
+
+            case .selectAllTapped:
+                let filtered = state.filteredOrders(referenceDate: date.now, calendar: calendar)
+                state.selectedOrderIDs = Set(filtered.map(\.id))
+                return .none
+
+            case .clearSelectionTapped:
+                state.selectedOrderIDs = []
+                return .none
+
+            case let .batchStatusChanged(newStatus):
+                // merged 僅由合併流程寫入；批次目標清單已於 view 端排除，此處為防衛。
+                guard newStatus != .merged else {
+                    return .none
+                }
+
+                // 對已選訂單逐筆重建狀態，略過已是目標狀態者；收集實際變更以單次批次落盤。
+                let selectedIDs = state.selectedOrderIDs
+                var changed: [LedgerOrder] = []
+                for index in state.orders.indices {
+                    let order = state.orders[index]
+                    guard selectedIDs.contains(order.id), order.status != newStatus else {
+                        continue
+                    }
+                    let updated = order.withStatus(newStatus)
+                    state.orders[index] = updated
+                    changed.append(updated)
+                }
+
+                // 無論是否有實際變更皆退出多選並清空選取。
+                state.isSelecting = false
+                state.selectedOrderIDs = []
+
+                guard !changed.isEmpty else {
+                    return .none
+                }
+
+                let orderRepository = orderRepository
+                let changedOrders = changed
+                return .run { _ in
+                    try? await orderRepository.saveOrders(changedOrders)
                 }
 
             case let .receiptStatusChanged(orderID, newReceiptStatus):

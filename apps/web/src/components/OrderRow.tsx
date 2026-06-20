@@ -1,5 +1,6 @@
 'use client';
 
+import { Check } from 'lucide-react';
 import { cn } from '@/lib/cn';
 import { ORDER_STATUS_TITLE, ORDER_STATUS_TONE } from '@/lib/domain/constants';
 import { orderCategoryTag, orderItemSummary } from '@/lib/domain/orders';
@@ -14,16 +15,31 @@ export function OrderRow({
   order,
   variant = 'default',
   onClick,
+  selecting = false,
+  selected = false,
 }: {
   order: OrderDTO;
   variant?: 'default' | 'charged';
   onClick?: () => void;
+  // 多選模式：顯示勾選圈，列點擊改為切換選取。
+  selecting?: boolean;
+  selected?: boolean;
 }) {
   const categoryTag = orderCategoryTag(order);
   const profit = Number(order.summary.profit);
 
   const inner = (
     <>
+      {selecting && (
+        <span
+          className={cn(
+            'mt-2.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full border transition',
+            selected ? 'border-bl-accent bg-bl-accent text-white' : 'border-bl-separator',
+          )}
+        >
+          {selected && <Check className="h-3.5 w-3.5" />}
+        </span>
+      )}
       <BLAvatar name={order.customer.name} initials={order.customer.initials} size={40} />
 
       <div className="min-w-0 flex-1 space-y-1.5">

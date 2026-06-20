@@ -959,6 +959,95 @@ struct OrdersFeatureTests {
         #expect(filtered.map(\.id) == ["O2", "O3"])
     }
 
+    // MARK: - Batch Status Tests
+
+    @Test func selectionModeToggleEntersSelectsAndClearsOnExit() async {
+        // 對齊 spec「Orders list provides a multi-select mode」：進出多選、勾選切換、退出清空。
+        let orders = [makeOrder(id: "O1", categories: ["beauty"], status: .shipping)]
+        var state = OrdersFeature.State()
+        state.orders = orders
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        }
+
+        await store.send(.selectionModeToggled) { $0.isSelecting = true }
+        await store.send(.orderSelectionToggled("O1")) { $0.selectedOrderIDs = ["O1"] }
+        await store.send(.orderSelectionToggled("O1")) { $0.selectedOrderIDs = [] }
+        await store.send(.orderSelectionToggled("O1")) { $0.selectedOrderIDs = ["O1"] }
+        await store.send(.selectionModeToggled) {
+            $0.isSelecting = false
+            $0.selectedOrderIDs = []
+        }
+    }
+
+    @Test func selectAllSelectsFilteredThenClear() async {
+        // 對齊 spec「Orders list provides a multi-select mode」：全選目前篩選後清單、清除。
+        let orders = [
+            makeOrder(id: "O1", categories: ["beauty"], status: .shipping),
+            makeOrder(id: "O2", categories: ["snacks"], status: .quoting),
+        ]
+        var state = OrdersFeature.State()
+        state.orders = orders
+        state.isSelecting = true
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        await store.send(.selectAllTapped) { $0.selectedOrderIDs = ["O1", "O2"] }
+        await store.send(.clearSelectionTapped) { $0.selectedOrderIDs = [] }
+    }
+
+    @Test func batchStatusChangedAppliesToSelectedSkipsAlreadyTargetAndExits() async {
+        // 對齊 spec「Batch apply a single target status to selected orders」：
+        // O1/O3 為 shipping、O2 已是目標 arrived；批次套用 arrived 只重建並落盤 O1/O3，O2 略過，最後退出多選。
+        let orders = [
+            makeOrder(id: "O1", categories: ["beauty"], status: .shipping),
+            makeOrder(id: "O2", categories: ["beauty"], status: .arrived),
+            makeOrder(id: "O3", categories: ["snacks"], status: .shipping),
+        ]
+        var state = OrdersFeature.State()
+        state.orders = orders
+        state.isSelecting = true
+        state.selectedOrderIDs = ["O1", "O2", "O3"]
+
+        let box = BatchBox()
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        } withDependencies: {
+            $0[OrderRepository.self].saveOrders = { box.saved = $0 }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.batchStatusChanged(.arrived))
+        await store.finish()
+
+        #expect(store.state.orders.first { $0.id == "O1" }?.status == .arrived)
+        #expect(store.state.orders.first { $0.id == "O2" }?.status == .arrived)
+        #expect(store.state.orders.first { $0.id == "O3" }?.status == .arrived)
+        #expect(store.state.isSelecting == false)
+        #expect(store.state.selectedOrderIDs.isEmpty)
+        // 只落盤實際變更的 O1/O3 (O2 已是 arrived 被略過)，且為單次批次呼叫。
+        #expect(Set((box.saved ?? []).map(\.id)) == ["O1", "O3"])
+    }
+
+    @Test func batchStatusChangedRejectsMerged() async {
+        // 對齊 spec「Batch target status list excludes merged」：merged 僅由合併流程寫入，批次防衛拒絕、不改狀態。
+        let orders = [makeOrder(id: "O1", categories: ["beauty"], status: .shipping)]
+        var state = OrdersFeature.State()
+        state.orders = orders
+        state.isSelecting = true
+        state.selectedOrderIDs = ["O1"]
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        }
+
+        await store.send(.batchStatusChanged(.merged))
+        await store.finish()
+    }
+
     // MARK: - Helpers
 
     /// 建立僅供篩選測試使用的最小訂單；非相關欄位以零值/佔位填入。
@@ -1008,4 +1097,13 @@ struct OrdersFeatureTests {
             mergedSourceIDs: []
         )
     }
+}
+
+/// 捕捉批次落盤訂單的容器；避免引入 `ConcurrencyExtras.LockIsolated` 在測試 target 中遭遇連結問題。
+private final class BatchBox: @unchecked Sendable {
+
+    // MARK: - Data Properties
+
+    /// 由 `saveOrders` closure 寫入、測試讀取的批次訂單。
+    var saved: [LedgerOrder]?
 }

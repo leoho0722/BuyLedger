@@ -44,6 +44,31 @@ actor OrderPersistence {
         try modelContext.save()
     }
 
+    /// 以單一 `save()` 寫入或更新多筆訂單 (依 id upsert)，達成批次原子落盤。
+    ///
+    /// 供「多選批次更改狀態」使用：先一次讀出既有紀錄建索引，逐筆 apply 或 insert，最後單次 `save()`——
+    /// 任一步失敗整批不生效，避免逐筆 `upsert` 的多次落盤與部分成功。
+    /// - Parameter orders: 要寫入或更新的訂單；空陣列為 no-op。
+    func upsertAll(_ orders: [LedgerOrder]) throws {
+        guard !orders.isEmpty else { return }
+
+        let existing = try modelContext.fetch(FetchDescriptor<OrderRecord>())
+        var recordByID: [String: OrderRecord] = [:]
+        for record in existing {
+            recordByID[record.id] = record
+        }
+
+        for order in orders {
+            if let record = recordByID[order.id] {
+                record.apply(order)
+            } else {
+                modelContext.insert(OrderRecord(order: order))
+            }
+        }
+
+        try modelContext.save()
+    }
+
     /// 刪除指定 id 的訂單；若不存在不視為錯誤。
     /// - Parameter id: 要刪除的訂單編號。
     func delete(id: LedgerOrder.ID) throws {
