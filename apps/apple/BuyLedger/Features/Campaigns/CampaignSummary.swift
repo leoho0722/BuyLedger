@@ -124,8 +124,10 @@ struct CampaignSummary: Equatable, Sendable {
         self.profit = summaries.reduce(0) { $0 + $1.profit }
         self.margin = totalRevenue == 0 ? 0 : profit / totalRevenue
 
-        // 到貨進度分子計入已到貨與已交付——已交付必然已先到貨，兩者皆算「已到貨」。
-        self.arrivedCount = members.filter { $0.status == .arrived || $0.status == .delivered }.count
+        // 到貨進度分子計入已到貨、已交付與已取貨——已交付與已取貨必然已先到貨，三者皆算「已到貨」。
+        self.arrivedCount = members.filter {
+            $0.status == .arrived || $0.status == .delivered || $0.status == .pickedUp
+        }.count
         // 到貨進度分母排除已取消與已合併——被合併的舊單已不再各自等待到貨。
         self.activeCount = members.filter { $0.status != .cancelled && $0.status != .merged }.count
         self.deliveryRatio = activeCount == 0

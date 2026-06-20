@@ -20,9 +20,10 @@ extension OrderStatus {
         .confirmed, 
         .purchased, 
         .shipping, 
-        .partiallyArrived, 
+        .partiallyArrived,
         .arrived,
         .delivered,
+        .pickedUp,
     ]
 }
 
@@ -47,6 +48,8 @@ extension OrderStatus {
             "已到貨"
         case .delivered:
             "已交付"
+        case .pickedUp:
+            "已取貨"
         case .cancelled:
             "已取消"
         case .merged:

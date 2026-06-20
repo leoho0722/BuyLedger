@@ -64,6 +64,7 @@ enum OrderStatusFilter: Hashable, Identifiable {
         .status(.partiallyArrived),
         .status(.arrived),
         .status(.delivered),
+        .status(.pickedUp),
         .status(.merged),
     ]
 

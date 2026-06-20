@@ -17,5 +17,6 @@ export type OrderStatus =
   | "partiallyArrived"
   | "arrived"
   | "delivered"
+  | "pickedUp"
   | "cancelled"
   | "merged";

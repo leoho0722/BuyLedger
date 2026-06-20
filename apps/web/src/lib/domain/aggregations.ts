@@ -50,7 +50,7 @@ export function campaignSummary(orders: OrderDTO[], campaignName: string): Campa
     totalRevenue = totalRevenue.plus(o.summary.revenue);
     profit = profit.plus(o.summary.profit);
     totalItemQuantity += o.items.reduce((acc, it) => acc + it.quantity, 0);
-    if (o.status === 'arrived' || o.status === 'delivered') arrivedCount += 1;
+    if (o.status === 'arrived' || o.status === 'delivered' || o.status === 'pickedUp') arrivedCount += 1;
     if (o.status !== 'cancelled' && o.status !== 'merged') activeCount += 1;
   }
 

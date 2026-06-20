@@ -28,6 +28,8 @@ extension OrderStatus {
             .accent
         case .delivered:
             .success
+        case .pickedUp:
+            .success
         case .cancelled:
             .destructive
         case .merged:

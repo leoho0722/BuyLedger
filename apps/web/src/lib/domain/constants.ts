@@ -27,6 +27,7 @@ export const ORDER_STATUS_ORDER: OrderStatus[] = [
   'partiallyArrived',
   'arrived',
   'delivered',
+  'pickedUp',
   'cancelled',
   'merged',
 ];
@@ -39,6 +40,7 @@ export const ORDER_STATUS_TITLE: Record<OrderStatus, string> = {
   partiallyArrived: '部分到貨',
   arrived: '已到貨',
   delivered: '已交付',
+  pickedUp: '已取貨',
   cancelled: '已取消',
   merged: '已合併',
 };
@@ -51,11 +53,12 @@ export const ORDER_STATUS_TONE: Record<OrderStatus, Tone> = {
   partiallyArrived: 'warning',
   arrived: 'accent',
   delivered: 'success',
+  pickedUp: 'success',
   cancelled: 'destructive',
   merged: 'neutral',
 };
 
-// 已實現狀態 (收益統計唯一事實來源)：含 delivered，不含 quoting/cancelled/merged。
+// 已實現狀態 (收益統計唯一事實來源)：含 delivered、pickedUp，不含 quoting/cancelled/merged。
 export const REALIZED_STATUSES: Set<OrderStatus> = new Set([
   'confirmed',
   'purchased',
@@ -63,6 +66,7 @@ export const REALIZED_STATUSES: Set<OrderStatus> = new Set([
   'partiallyArrived',
   'arrived',
   'delivered',
+  'pickedUp',
 ]);
 
 // 進行中訂單 (側欄紅點/儀表板計數)：排除 delivered。

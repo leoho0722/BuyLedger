@@ -27,8 +27,20 @@ struct OrderStatusTests {
         #expect(!OrderStatus.realizedStatuses.contains(.merged))
         #expect(
             OrderStatus.realizedStatuses
-                == [.confirmed, .purchased, .shipping, .partiallyArrived, .arrived, .delivered]
+                == [.confirmed, .purchased, .shipping, .partiallyArrived, .arrived, .delivered, .pickedUp]
         )
+    }
+
+    @Test func pickedUpCaseHasExpectedRawValueAndTitle() {
+        #expect(OrderStatus.pickedUp.rawValue == "pickedUp")
+        #expect(OrderStatus.pickedUp.title == "已取貨")
+    }
+
+    @Test func pickedUpIsRealizedAndOrderedAfterDelivered() {
+        // 已取貨是比「已交付」更完整的終態，買家已收到貨，收益必然已實現。
+        #expect(OrderStatus.realizedStatuses.contains(.pickedUp))
+        let allCases = OrderStatus.allCases
+        #expect(allCases.firstIndex(of: .pickedUp)! > allCases.firstIndex(of: .delivered)!)
     }
 
     @Test func statusFilterBrowsingCasesIncludeMerged() {

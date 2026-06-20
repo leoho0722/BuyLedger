@@ -34,6 +34,9 @@ enum OrderStatus: String, CaseIterable, Codable, Identifiable, Sendable {
     /// 商品已交付客戶。
     case delivered
 
+    /// 買家已完成取貨，商品已交到買家手中。
+    case pickedUp
+
     /// 訂單已取消。
     case cancelled
 

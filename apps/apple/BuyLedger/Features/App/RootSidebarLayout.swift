@@ -67,6 +67,9 @@ private extension RootSidebarLayout {
         /// 已交付完成的訂單分組。
         case delivered
 
+        /// 買家已取貨完成的訂單分組。
+        case pickedUp
+
         // MARK: - Identifiable Properties
 
         /// 分組的穩定識別值。
@@ -91,6 +94,8 @@ private extension RootSidebarLayout {
                 .arrived
             case .delivered:
                 .delivered
+            case .pickedUp:
+                .pickedUp
             }
         }
 
@@ -113,6 +118,8 @@ private extension RootSidebarLayout {
                 palette.yellow
             case .delivered:
                 palette.green
+            case .pickedUp:
+                palette.pink
             }
         }
 
@@ -121,6 +128,7 @@ private extension RootSidebarLayout {
         /// 訂單瀏覽 sidebar 中提供的固定順序 (依訂單生命週期由前到後排)。
         static let orderBrowsingCases: [SmartGroup] = [
             .quoting, .confirmed, .purchased, .shipping, .partiallyArrived, .arrived, .delivered,
+            .pickedUp,
         ]
     }
 }

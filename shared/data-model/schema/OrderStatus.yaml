@@ -18,6 +18,8 @@ types:
         doc: 商品已到貨 (抵達代購者或取貨點)，但尚未交付客戶。
       - name: delivered
         doc: 商品已交付客戶。
+      - name: pickedUp
+        doc: 買家已完成取貨，商品已交到買家手中。
       - name: cancelled
         doc: 訂單已取消。
       - name: merged
