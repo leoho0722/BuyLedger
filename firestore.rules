@@ -1,0 +1,15 @@
+rules_version = '2';
+
+// BuyLedger Firestore 安全規則。
+// 架構：後端 (firebase-admin 服務帳號) 為唯一寫入方、寫入會繞過本規則；client 一律不直寫，
+// 只即時讀取自己的 per-user 投影 users/{uid}/**。
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /users/{uid}/{document=**} {
+      // 登入者只能讀自己的子樹 (跨使用者隔離)。
+      allow read: if request.auth != null && request.auth.uid == uid;
+      // client 不得直寫 Firestore；領域寫入一律經後端 API。
+      allow write: if false;
+    }
+  }
+}
