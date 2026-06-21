@@ -10,7 +10,7 @@ import Foundation
 
 /// 高階 client：對 BuyLedger 隱藏 ExchangeRate-API 的 URL 細節。
 ///
-/// 內部組合 ``HTTPClient`` 與 ``APIKeyProvider``。失敗時會 throw ``APIError``，由 Reducer 決定 UI 呈現。
+/// 內部組合 ``HTTPClient`` 與 ``AppConfiguration``。失敗時會 throw ``APIError``，由 Reducer 決定 UI 呈現。
 struct ExchangeRateClient: Sendable {
 
     // MARK: - Dependency Properties
@@ -26,13 +26,13 @@ extension ExchangeRateClient: DependencyKey {
 
     // MARK: - Dependency Values
 
-    /// App 執行時透過 ``HTTPClient`` 與 ``APIKeyProvider`` 真實打 API。
+    /// App 執行時透過 ``HTTPClient`` 與 ``AppConfiguration`` 真實打 API。
     nonisolated static let liveValue: ExchangeRateClient = ExchangeRateClient(
         fetchLatest: { base in
             @Dependency(\.httpClient) var httpClient
-            @Dependency(\.apiKeyProvider) var apiKeyProvider
+            @Dependency(\.appConfiguration) var appConfiguration
 
-            guard let key = apiKeyProvider.exchangeRateAPIKey() else {
+            guard let key = appConfiguration.exchangeRateAPIKey() else {
                 throw APIError.invalidKey
             }
 
@@ -41,15 +41,7 @@ extension ExchangeRateClient: DependencyKey {
                 throw APIError.transport(message: "URL 組合失敗：\(urlString)")
             }
 
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.timeoutInterval = 15
-
-            let (data, response) = try await httpClient.data(request)
-
-            guard 200...299 ~= response.statusCode else {
-                throw APIError.http(statusCode: response.statusCode)
-            }
+            let data = try await httpClient.send(url: url, timeout: 15)
 
             let decoded: ExchangeRateLatestResponse
             do {
@@ -77,9 +69,9 @@ extension ExchangeRateClient: DependencyKey {
         },
         fetchSupportedCodes: {
             @Dependency(\.httpClient) var httpClient
-            @Dependency(\.apiKeyProvider) var apiKeyProvider
+            @Dependency(\.appConfiguration) var appConfiguration
 
-            guard let key = apiKeyProvider.exchangeRateAPIKey() else {
+            guard let key = appConfiguration.exchangeRateAPIKey() else {
                 throw APIError.invalidKey
             }
 
@@ -88,15 +80,7 @@ extension ExchangeRateClient: DependencyKey {
                 throw APIError.transport(message: "URL 組合失敗：\(urlString)")
             }
 
-            var request = URLRequest(url: url)
-            request.httpMethod = "GET"
-            request.timeoutInterval = 15
-
-            let (data, response) = try await httpClient.data(request)
-
-            guard 200...299 ~= response.statusCode else {
-                throw APIError.http(statusCode: response.statusCode)
-            }
+            let data = try await httpClient.send(url: url, timeout: 15)
 
             let decoded: ExchangeRateCodesResponse
             do {

@@ -84,8 +84,8 @@ struct AISummaryFeature {
     /// Ollama Cloud 串流 client。
     @Dependency(OllamaClient.self) private var ollamaClient
 
-    /// API 金鑰提供者。
-    @Dependency(\.apiKeyProvider) private var apiKeyProvider
+    /// App 環境設定提供者。
+    @Dependency(\.appConfiguration) private var appConfiguration
 
     /// 關閉 sheet 用的 dismiss effect。
     @Dependency(\.dismiss) private var dismiss
@@ -106,7 +106,7 @@ struct AISummaryFeature {
         Reduce { state, action in
             switch action {
             case .task, .retryTapped:
-                guard let apiKey = apiKeyProvider.ollamaAPIKey() else {
+                guard let apiKey = appConfiguration.ollamaAPIKey() else {
                     state.phase = .failed
                     state.errorMessage = "尚未設定 OLLAMA_API_KEY。"
                     return .none

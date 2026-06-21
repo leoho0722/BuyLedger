@@ -11,8 +11,8 @@ import Foundation
 /// 串接 Ollama Cloud chat streaming 的高階 client。
 ///
 /// 對 BuyLedger 隱藏 endpoint 與 NDJSON 串流細節：`streamSummary` 回傳逐段增量文字的 `AsyncThrowingStream`，
-/// 失敗時以 ``APIError`` 結束串流，由 Reducer 決定 UI 呈現。現有 ``HTTPClient`` 只抽象 `(Data, HTTPURLResponse)`，
-/// 與逐位元組串流模型不同，因此本 client 在 `liveValue` 直接使用 `URLSession.shared.bytes(for:)`，
+/// 失敗時以 ``APIError`` 結束串流，由 Reducer 決定 UI 呈現。逐位元組串流走 ``HTTPClient/stream`` 取得
+/// `(URLSession.AsyncBytes, HTTPURLResponse)`，本 client 只負責組請求、判讀狀態碼與解析 NDJSON 行；
 /// 並以可注入的 `streamSummary` closure 作為測試縫。
 struct OllamaClient: Sendable {
 
@@ -51,39 +51,39 @@ extension OllamaClient: DependencyKey {
 
     // MARK: - Dependency Values
 
-    /// App 執行時以 `URLSession.shared.bytes(for:)` 串流 NDJSON。
+    /// App 執行時透過 ``HTTPClient/stream`` 串流 NDJSON。
     nonisolated static let liveValue: OllamaClient = OllamaClient(
         streamSummary: { prompt, model, apiKey in
-            AsyncThrowingStream { continuation in
+            @Dependency(\.httpClient) var httpClient
+
+            return AsyncThrowingStream { [httpClient] continuation in
                 let task = Task {
                     do {
                         guard let url = URL(string: "https://ollama.com/api/chat") else {
                             throw APIError.transport(message: "URL 組合失敗。")
                         }
 
-                        var request = URLRequest(url: url)
-                        request.httpMethod = "POST"
-                        request.setValue("Bearer \(apiKey)", forHTTPHeaderField: "Authorization")
-                        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
-                        request.httpBody = try JSONEncoder().encode(
+                        let bodyData = try JSONEncoder().encode(
                             ChatRequest(
                                 model: model,
                                 messages: [ChatRequest.Message(role: "user", content: prompt)],
                                 stream: true
                             )
                         )
+                        let request = URLRequestBuilder(url: url)
+                            .method(.post)
+                            .header("Authorization", "Bearer \(apiKey)")
+                            .header("Content-Type", "application/json")
+                            .body(bodyData)
+                            .build()
 
-                        let (bytes, response) = try await URLSession.shared.bytes(for: request)
+                        let (bytes, response) = try await httpClient.stream(request)
 
-                        guard let http = response as? HTTPURLResponse else {
-                            throw APIError.transport(message: "回應不是 HTTPURLResponse。")
-                        }
-
-                        guard 200...299 ~= http.statusCode else {
-                            if http.statusCode == 401 || http.statusCode == 403 {
+                        guard 200...299 ~= response.statusCode else {
+                            if response.statusCode == 401 || response.statusCode == 403 {
                                 throw APIError.invalidKey
                             }
-                            throw APIError.http(statusCode: http.statusCode)
+                            throw APIError.http(statusCode: response.statusCode)
                         }
 
                         for try await line in bytes.lines {

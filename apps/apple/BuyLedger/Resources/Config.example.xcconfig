@@ -7,7 +7,7 @@
 //  指向 `Config.xcconfig`。
 //
 //  Info.plist 已經以 `$(EXCHANGE_RATE_API_KEY)` 引用此變數，App 啟動時透過
-//  `APIKeyProvider.liveValue` 從 `Bundle.main.infoDictionary` 讀回。
+//  `AppConfiguration.liveValue` 從 `Bundle.main.infoDictionary` 讀回。
 //
 
 // 申請於 https://www.exchangerate-api.com/ — 30 日 sparkline 需要 Pro/Business 方案

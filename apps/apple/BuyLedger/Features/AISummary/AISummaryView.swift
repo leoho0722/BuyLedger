@@ -134,7 +134,7 @@ struct AISummaryView: View {
             AISummaryFeature()
         } withDependencies: {
             $0[OllamaClient.self] = .previewValue
-            $0.apiKeyProvider = .previewValue
+            $0.appConfiguration = .previewValue
         }
     )
 }

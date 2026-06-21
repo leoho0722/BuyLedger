@@ -15,8 +15,8 @@ struct AISummaryFeatureTests {
 
     // MARK: - Helpers
 
-    private func keyedProvider(_ key: String?) -> APIKeyProvider {
-        APIKeyProvider(exchangeRateAPIKey: { nil }, ollamaAPIKey: { key })
+    private func keyedConfiguration(_ key: String?) -> AppConfiguration {
+        AppConfiguration(exchangeRateAPIKey: { nil }, ollamaAPIKey: { key }, backendBaseURL: { nil })
     }
 
     // MARK: - Tests
@@ -25,7 +25,7 @@ struct AISummaryFeatureTests {
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
         } withDependencies: {
-            $0.apiKeyProvider = keyedProvider("k")
+            $0.appConfiguration = keyedConfiguration("k")
             $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
                 AsyncThrowingStream { continuation in
                     continuation.yield("# 標題\n")
@@ -57,7 +57,7 @@ struct AISummaryFeatureTests {
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
         } withDependencies: {
-            $0.apiKeyProvider = keyedProvider(nil)
+            $0.appConfiguration = keyedConfiguration(nil)
         }
 
         await store.send(.task) {
@@ -70,7 +70,7 @@ struct AISummaryFeatureTests {
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
         } withDependencies: {
-            $0.apiKeyProvider = keyedProvider("k")
+            $0.appConfiguration = keyedConfiguration("k")
             $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
                 AsyncThrowingStream { continuation in
                     continuation.finish(throwing: APIError.invalidKey)
@@ -91,7 +91,7 @@ struct AISummaryFeatureTests {
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
         } withDependencies: {
-            $0.apiKeyProvider = keyedProvider("k")
+            $0.appConfiguration = keyedConfiguration("k")
             $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
                 AsyncThrowingStream { continuation in
                     continuation.yield("部分內容")
