@@ -32,7 +32,7 @@ final class CloudAuth {
     @ObservationIgnored
     private var currentNonce: String?
 
-    // MARK: - Lifecycle
+    // MARK: - Init
 
     /// 取目前使用者並開始監聽 Firebase Auth 狀態變化。
     init() {
@@ -63,9 +63,31 @@ final class CloudAuth {
     var email: String? { user?.email }
 
     /// 取得目前使用者的 Firebase ID token (供後端 API 夾帶 Authorization)；未登入回 `nil`。
+    /// - Returns: 目前使用者的 Firebase ID token；未登入為 `nil`。
     func idToken() async throws -> String? {
         try await user?.getIDToken()
     }
+
+#if DEBUG
+    /// Dev-only 自動登入：以後端 `/dev/token` 鑄的 custom token 換 ID token，繞過互動式
+    /// Google / Apple OAuth (模擬器與自動化演示用)。後端 `DEV_AUTH_ENABLED` 未開時此呼叫失敗，
+    /// 不影響正式登入流程。
+    func signInWithDevToken(uid: String = "demo-user") async throws {
+        var request = URLRequest(url: URL(string: "http://localhost:4000/api/dev/token")!)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: ["uid": uid])
+
+        let (data, _) = try await URLSession.shared.data(for: request)
+        guard
+            let object = try JSONSerialization.jsonObject(with: data) as? [String: Any],
+            let token = object["token"] as? String
+        else {
+            throw APIError.transport(message: "dev token 取得失敗")
+        }
+        try await Auth.auth().signIn(withCustomToken: token)
+    }
+#endif
 
     /// 登出。
     func signOut() throws {
@@ -97,6 +119,7 @@ final class CloudAuth {
     // MARK: - Apple
 
     /// 產生 Apple 登入請求用的 nonce；回傳 SHA256 雜湊 (放進 `ASAuthorizationAppleIDRequest.nonce`)，原始值留存供登入完成時比對。
+    /// - Returns: nonce 的 SHA256 雜湊字串。
     func makeAppleRequestNonce() -> String {
         let nonce = Self.randomNonceString()
         currentNonce = nonce
@@ -104,6 +127,7 @@ final class CloudAuth {
     }
 
     /// 以 Apple 授權結果換成 Firebase 憑證登入。
+    /// - Parameter authorization: `ASAuthorizationController` 回傳的 Apple 授權結果。
     func handleAppleAuthorization(_ authorization: ASAuthorization) async throws {
         guard let appleCredential = authorization.credential as? ASAuthorizationAppleIDCredential,
               let nonce = currentNonce,
@@ -120,10 +144,16 @@ final class CloudAuth {
         currentNonce = nil
     }
 
-    // MARK: - Nonce Helpers
+}
+
+// MARK: - Private Method
+
+private extension CloudAuth {
 
     /// 產生密碼學隨機 nonce 字串 (Apple 登入防重放)。此為安全用途的隨機值、不走可注入時鐘/亂數。
-    private static func randomNonceString(length: Int = 32) -> String {
+    /// - Parameter length: nonce 長度 (預設 32)。
+    /// - Returns: 指定長度的隨機 nonce 字串。
+    static func randomNonceString(length: Int = 32) -> String {
         let charset = Array("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz-._")
         var result = ""
         var remaining = length
@@ -140,7 +170,9 @@ final class CloudAuth {
     }
 
     /// 對 nonce 取 SHA256 十六進位字串。
-    private static func sha256(_ input: String) -> String {
+    /// - Parameter input: 來源字串。
+    /// - Returns: SHA256 的十六進位字串。
+    static func sha256(_ input: String) -> String {
         SHA256.hash(data: Data(input.utf8))
             .map { String(format: "%02x", $0) }
             .joined()

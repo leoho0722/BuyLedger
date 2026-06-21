@@ -77,49 +77,83 @@ extension OrderRepository {
             saveOrder: { order in
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.upsert(order)
+                Self.postOrderSaved(order)
             },
             saveOrders: { orders in
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.upsertAll(orders)
+                Self.postResyncNeeded()
             },
             removeOrder: { id in
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.delete(id: id)
+                Self.postOrderDeleted(id)
             },
             mergeOrders: { newOrder, consumedIDs in
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.mergeOrders(newOrder: newOrder, consumedIDs: consumedIDs)
+                Self.postResyncNeeded()
             },
             renameOrderSource: { oldName, newName in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else { return }
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.renameOrderSource(from: oldName, to: trimmedNew)
+                Self.postResyncNeeded()
             },
             renameOrderCategory: { oldName, newName in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else { return }
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.renameCategory(from: oldName, to: trimmedNew)
+                Self.postResyncNeeded()
             },
             renameOrderPaymentMethod: { oldName, newName in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else { return }
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.renamePaymentMethod(from: oldName, to: trimmedNew)
+                Self.postResyncNeeded()
             },
             renameOrderVerificationStatus: { oldName, newName in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else { return }
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.renameVerificationStatus(from: oldName, to: trimmedNew)
+                Self.postResyncNeeded()
             },
             renameOrderCampaign: { oldName, newName in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else { return }
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.renameCampaign(from: oldName, to: trimmedNew)
+                Self.postResyncNeeded()
             }
+        )
+    }
+
+    /// 發出單筆儲存通知，供 ``CloudSyncEngine`` diff 後推送變更欄位。
+    /// - Parameter order: 剛寫入或更新的訂單。
+    nonisolated static func postOrderSaved(_ order: LedgerOrder) {
+        NotificationCenter.default.post(
+            name: .buyLedgerOrderSaved,
+            object: nil,
+            userInfo: ["order": order]
+        )
+    }
+
+    /// 發出 resync 通知 (批次 / 合併 / cascade 改名用)，供 ``CloudSyncEngine`` 重新比對所有本機訂單並推送變更。
+    nonisolated static func postResyncNeeded() {
+        NotificationCenter.default.post(name: .buyLedgerOrdersResyncNeeded, object: nil)
+    }
+
+    /// 發出刪除通知，供 ``CloudSyncEngine`` 推送刪除 (後端硬刪 + Firestore tombstone)。
+    /// - Parameter id: 被刪除的訂單 id。
+    nonisolated static func postOrderDeleted(_ id: LedgerOrder.ID) {
+        NotificationCenter.default.post(
+            name: .buyLedgerOrderDeleted,
+            object: nil,
+            userInfo: ["id": id]
         )
     }
 

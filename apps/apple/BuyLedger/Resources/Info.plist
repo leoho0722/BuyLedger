@@ -6,11 +6,22 @@
 	<string>$(EXCHANGE_RATE_API_KEY)</string>
 	<key>OLLAMA_API_KEY</key>
 	<string>$(OLLAMA_API_KEY)</string>
+	<key>BACKEND_API_BASE_URL</key>
+	<string>http://localhost:4000/api</string>
 	<key>NSApplicationCrashOnExceptions</key>
 	<true/>
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>remote-notification</string>
+	</array>
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>com.googleusercontent.apps.375455351535-feoce5j49avt21gtnhvep0ok1jjog0k3</string>
+			</array>
+		</dict>
 	</array>
 </dict>
 </plist>

@@ -48,6 +48,17 @@ struct CloudSignInView: View {
                     Task { await handleApple(result) }
                 }
                 .frame(height: 44)
+
+#if DEBUG
+                Button {
+                    Task { await signInWithDevToken() }
+                } label: {
+                    Text("Dev 登入 (demo-user)")
+                        .frame(maxWidth: .infinity)
+                        .padding(.vertical, 4)
+                }
+                .buttonStyle(.bordered)
+#endif
             }
             .frame(maxWidth: 320)
 
@@ -85,6 +96,18 @@ private extension CloudSignInView {
         let scene = UIApplication.shared.connectedScenes
             .first { $0.activationState == .foregroundActive } as? UIWindowScene
         return scene?.keyWindow?.rootViewController
+    }
+#endif
+
+#if DEBUG
+    /// Dev-only 自動登入 (custom token)，繞過互動式 OAuth 供模擬器演示。
+    func signInWithDevToken() async {
+        errorMessage = nil
+        do {
+            try await auth.signInWithDevToken()
+        } catch {
+            errorMessage = "Dev 登入失敗 (需後端 DEV_AUTH_ENABLED)"
+        }
     }
 #endif
 

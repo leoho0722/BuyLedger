@@ -22,9 +22,10 @@ final class CloudSync {
     /// Firestore 實例。
     private let firestore: Firestore
 
-    // MARK: - Lifecycle
+    // MARK: - Init
 
     /// 以登入使用者的 uid 建立同步進入點。
+    /// - Parameter uid: 目前登入使用者的 uid (資料歸屬鍵)。
     init(uid: String) {
         self.uid = uid
         self.firestore = Firestore.firestore()
@@ -38,15 +39,14 @@ final class CloudSync {
     }
 
     /// 訂單即時投影集合 `users/{uid}/orders` (後端為唯一寫入方，client 只讀)。
+    /// - Returns: 訂單即時投影集合的參照。
     func ordersCollection() -> CollectionReference {
         userDocument.collection("orders")
     }
 
     /// 開團即時投影集合 `users/{uid}/campaigns`。
+    /// - Returns: 開團即時投影集合的參照。
     func campaignsCollection() -> CollectionReference {
         userDocument.collection("campaigns")
     }
-
-    // 後續啟用同步時，於此監聽各 collection 的快照並與本機 SwiftData 合併。
-    // 本次 scope 為「串接、預設關閉」，故僅提供受 uid 限縮的進入點。
 }
