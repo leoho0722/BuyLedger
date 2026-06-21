@@ -1,0 +1,35 @@
+{
+  "$comment": "跨平台 Hybrid Logical Clock (HLC) conformance vectors。backend/web/iOS 各自的 HLC 實作須對同一組向量全綠，確保三平台 generate/receive/compare/encode 行為一致。p=物理毫秒、c=邏輯計數器、w=writerId。toleranceMs 預設 300000 (5 分鐘)。",
+  "encode": [
+    { "hlc": { "p": 1700000000000, "c": 0, "w": "server" }, "expected": "1700000000000:000000:server" },
+    { "hlc": { "p": 1700000000000, "c": 12, "w": "device-a" }, "expected": "1700000000000:000012:device-a" },
+    { "hlc": { "p": 5, "c": 0, "w": "x" }, "expected": "0000000000005:000000:x" },
+    { "hlc": { "p": 1700000000000, "c": 999999, "w": "w1" }, "expected": "1700000000000:999999:w1" }
+  ],
+  "compare": [
+    { "a": { "p": 1700000000000, "c": 0, "w": "a" }, "b": { "p": 1700000000001, "c": 0, "w": "a" }, "expected": -1 },
+    { "a": { "p": 1700000000000, "c": 5, "w": "a" }, "b": { "p": 1700000000000, "c": 6, "w": "a" }, "expected": -1 },
+    { "a": { "p": 1700000000000, "c": 5, "w": "a" }, "b": { "p": 1700000000000, "c": 5, "w": "b" }, "expected": -1 },
+    { "a": { "p": 1700000000000, "c": 5, "w": "a" }, "b": { "p": 1700000000000, "c": 5, "w": "a" }, "expected": 0 },
+    { "a": { "p": 1700000000200, "c": 0, "w": "a" }, "b": { "p": 1700000000100, "c": 9, "w": "z" }, "expected": 1 }
+  ],
+  "generate": [
+    { "lastIssued": null, "nowMs": 1700000000000, "writerId": "server", "expected": { "p": 1700000000000, "c": 0, "w": "server" } },
+    { "lastIssued": { "p": 1700000000000, "c": 0, "w": "server" }, "nowMs": 1700000000000, "writerId": "server", "expected": { "p": 1700000000000, "c": 1, "w": "server" } },
+    { "lastIssued": { "p": 1700000000000, "c": 3, "w": "server" }, "nowMs": 1699999999000, "writerId": "server", "expected": { "p": 1700000000000, "c": 4, "w": "server" } },
+    { "lastIssued": { "p": 1700000000000, "c": 3, "w": "server" }, "nowMs": 1700000000050, "writerId": "server", "expected": { "p": 1700000000050, "c": 0, "w": "server" } }
+  ],
+  "receive": [
+    { "lastIssued": { "p": 1700000000000, "c": 2, "w": "A" }, "remote": { "p": 1700000000010, "c": 5, "w": "B" }, "nowMs": 1700000000005, "writerId": "A", "expected": { "p": 1700000000010, "c": 6, "w": "A" } },
+    { "lastIssued": { "p": 1700000000020, "c": 1, "w": "A" }, "remote": { "p": 1700000000010, "c": 5, "w": "B" }, "nowMs": 1700000000005, "writerId": "A", "expected": { "p": 1700000000020, "c": 2, "w": "A" } },
+    { "lastIssued": { "p": 1700000000010, "c": 4, "w": "A" }, "remote": { "p": 1700000000010, "c": 7, "w": "B" }, "nowMs": 1700000000010, "writerId": "A", "expected": { "p": 1700000000010, "c": 8, "w": "A" } },
+    { "lastIssued": { "p": 1700000000000, "c": 9, "w": "A" }, "remote": { "p": 1700000000005, "c": 0, "w": "B" }, "nowMs": 1700000000050, "writerId": "A", "expected": { "p": 1700000000050, "c": 0, "w": "A" } },
+    { "lastIssued": null, "remote": { "p": 1700000000005, "c": 3, "w": "B" }, "nowMs": 1700000000000, "writerId": "A", "expected": { "p": 1700000000005, "c": 4, "w": "A" } }
+  ],
+  "tolerance": [
+    { "remoteP": 1700000000000, "nowMs": 1700000000000, "toleranceMs": 300000, "expected": true },
+    { "remoteP": 1700000300000, "nowMs": 1700000000000, "toleranceMs": 300000, "expected": true },
+    { "remoteP": 1700000300001, "nowMs": 1700000000000, "toleranceMs": 300000, "expected": false },
+    { "remoteP": 1699999999000, "nowMs": 1700000000000, "toleranceMs": 300000, "expected": true }
+  ]
+}
