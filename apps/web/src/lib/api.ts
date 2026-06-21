@@ -103,6 +103,15 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(body),
       }),
+    // 欄位級合併寫入：只送變更欄位 + 每欄位 HLC，後端逐欄合併 (不同欄位皆存活)。
+    patch: (
+      id: string,
+      body: { changedFields: Record<string, unknown>; fieldClocks: Record<string, string> },
+    ) =>
+      request<{ order: OrderDTO; appliedFieldClocks: Record<string, string> }>(
+        `/orders/${encodeURIComponent(id)}`,
+        { method: 'PATCH', body: JSON.stringify(body) },
+      ),
     remove: (id: string) =>
       request<void>(`/orders/${encodeURIComponent(id)}`, { method: 'DELETE' }),
     setStatus: (id: string, status: OrderStatus) =>

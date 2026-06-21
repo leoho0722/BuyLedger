@@ -13,6 +13,7 @@ import { OptionPicker, type PickerOption } from '@/components/ds/OptionPicker';
 import { PhotoViewer } from '@/components/ds/PhotoViewer';
 import { SectionHeader } from '@/components/ds/SectionHeader';
 import { api, type OrderInputBody } from '@/lib/api';
+import { diffOrderFields } from '@/lib/sync/orderPatch';
 import { cn } from '@/lib/cn';
 import { MAX_PHOTO_COUNT, ORDER_STATUS_ORDER, ORDER_STATUS_TITLE } from '@/lib/domain/constants';
 import {
@@ -71,7 +72,7 @@ export function OrderEditForm({
   const campaigns = useCampaigns().data ?? [];
   const currencyCodes = useCurrencyCodes().data ?? [];
   const settings = useSettings().data;
-  const { create, update } = useOrderMutations();
+  const { create, patch } = useOrderMutations();
 
   const mergeMode = (initial?.mergedSourceIDs?.length ?? 0) > 0;
 
@@ -164,7 +165,12 @@ export function OrderEditForm({
     if (mode === 'create') {
       create.mutate(body, { onSuccess: onSaved });
     } else {
-      update.mutate({ id: orderId as string, body }, { onSuccess: onSaved });
+      // 只送與原值不同的欄位 (欄位級合併)；無變更時送空 patch、後端回傳現值。
+      const changedFields = diffOrderFields(body, initial as OrderInputBody | undefined);
+      patch.mutate(
+        { id: orderId as string, changedFields },
+        { onSuccess: (res) => onSaved(res.order) },
+      );
     }
   };
 
@@ -176,7 +182,7 @@ export function OrderEditForm({
     setPhotos((prev) => [...prev, ...results.filter((r): r is string => Boolean(r))].slice(0, MAX_PHOTO_COUNT));
   };
 
-  const pending = create.isPending || update.isPending;
+  const pending = create.isPending || patch.isPending;
 
   return (
     <div className="space-y-4 pb-4">

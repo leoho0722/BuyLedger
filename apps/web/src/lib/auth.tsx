@@ -5,6 +5,7 @@ import {
   OAuthProvider,
   onAuthStateChanged,
   signInWithPopup,
+  signInWithCustomToken,
   signOut as firebaseSignOut,
   type User,
 } from 'firebase/auth';
@@ -38,6 +39,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUnauthorizedHandler(() => {
       void firebaseSignOut(getFirebaseAuth());
     });
+    // Dev-only 自動登入掛鉤：以後端 dev custom token 換 ID token，繞過互動式 OAuth
+    // (CDP 控制的瀏覽器無法完成 Google/Apple 登入)。安全邊界在後端：DEV_AUTH_ENABLED
+    // 未開時 /dev/token 回 404、此掛鉤即無效。瀏覽器 console 可呼叫 window.__devSignIn('uid')。
+    (window as unknown as { __devSignIn?: (uid?: string) => Promise<void> }).__devSignIn = async (
+      uid = 'demo-user',
+    ) => {
+      const base = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000/api';
+      const res = await fetch(`${base}/dev/token`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid }),
+      });
+      if (!res.ok) throw new Error(`dev token 取得失敗 (${res.status})`);
+      const { token } = (await res.json()) as { token: string };
+      await signInWithCustomToken(getFirebaseAuth(), token);
+    };
     return unsubscribe;
   }, []);
 

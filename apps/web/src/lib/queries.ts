@@ -2,7 +2,9 @@
 
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { api, CampaignInputBody, OrderInputBody } from './api';
-import type { Campaign, PaymentMethodDTO, SettingsDTO } from './types';
+import type { Campaign, OrderDTO, PaymentMethodDTO, SettingsDTO } from './types';
+import { applyOptimistic, attachClocks, type ChangedFields } from './sync/orderPatch';
+import { enqueueWrite } from './sync/writeQueue';
 
 // Query keys。
 export const qk = {
@@ -77,6 +79,7 @@ function useInvalidateOrders() {
 }
 
 export function useOrderMutations() {
+  const qc = useQueryClient();
   const invalidate = useInvalidateOrders();
   const create = useMutation({
     mutationFn: (body: OrderInputBody) => api.orders.create(body),
@@ -85,6 +88,31 @@ export function useOrderMutations() {
   const update = useMutation({
     mutationFn: ({ id, body }: { id: string; body: OrderInputBody }) => api.orders.update(id, body),
     onSuccess: invalidate,
+  });
+  // 欄位級合併寫入：只送變更欄位 + 每欄位 HLC (供衝突情境：兩裝置改不同欄位皆存活)。
+  // 失敗 (離線/網路/5xx) 時進本機待送佇列、樂觀更新 cache，UI 顯示「待同步」、恢復後自動重送。
+  const patch = useMutation({
+    mutationFn: async ({ id, changedFields }: { id: string; changedFields: ChangedFields }) => {
+      const body = attachClocks(changedFields);
+      try {
+        const res = await api.orders.patch(id, body);
+        invalidate();
+        return res;
+      } catch {
+        enqueueWrite(id, body);
+        const prev =
+          qc.getQueryData<OrderDTO[]>(qk.orders)?.find((o) => o.id === id) ??
+          qc.getQueryData<OrderDTO>(qk.order(id));
+        const optimistic = prev ? applyOptimistic(prev, changedFields) : prev;
+        if (optimistic) {
+          qc.setQueryData<OrderDTO[]>(qk.orders, (old) =>
+            old?.map((o) => (o.id === id ? optimistic : o)),
+          );
+          qc.setQueryData(qk.order(id), optimistic);
+        }
+        return { order: optimistic as OrderDTO, appliedFieldClocks: {} };
+      }
+    },
   });
   const remove = useMutation({
     mutationFn: (id: string) => api.orders.remove(id),
@@ -106,7 +134,7 @@ export function useOrderMutations() {
       api.orders.setReceipt(id, status),
     onSuccess: invalidate,
   });
-  return { create, update, remove, setStatus, batchSetStatus, setReceipt };
+  return { create, update, patch, remove, setStatus, batchSetStatus, setReceipt };
 }
 
 export function useCampaignMutations() {

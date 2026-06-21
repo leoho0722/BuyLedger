@@ -1,5 +1,6 @@
 import { getApp, getApps, initializeApp, type FirebaseApp } from 'firebase/app';
 import { getAuth, type Auth } from 'firebase/auth';
+import { getFirestore, type Firestore } from 'firebase/firestore';
 
 // Firebase web 設定由 NEXT_PUBLIC_FIREBASE_* 於 build 期 inline (對齊 web CLAUDE.md 的
 // NEXT_PUBLIC_* 慣例)；實際值見 .env.local，不寫死於程式碼。
@@ -23,6 +24,17 @@ export function getFirebaseAuth(): Auth {
     cachedAuth = getAuth(app);
   }
   return cachedAuth;
+}
+
+// Firestore 即時投影的讀取進入點 (後端為唯一寫入方；web 僅 onSnapshot 讀取)。延遲初始化。
+let cachedDb: Firestore | null = null;
+
+export function getFirestoreDb(): Firestore {
+  if (!cachedDb) {
+    const app: FirebaseApp = getApps().length ? getApp() : initializeApp(firebaseConfig);
+    cachedDb = getFirestore(app);
+  }
+  return cachedDb;
 }
 
 // 取得目前使用者的 Firebase ID token (供 API client 夾帶 Authorization)；SSR 或未登入回 null。
