@@ -39,7 +39,7 @@ describe('OrdersService uid scoping', () => {
       upsert: jest.fn().mockResolvedValue(undefined),
       remove: jest.fn().mockResolvedValue(undefined),
     };
-    const service = new OrdersService(prisma as never, now as never, ids as never, mirror as never);
+    const service = new OrdersService(prisma as never, now as never, ids as never, mirror as never, {} as never);
     return { service, prisma };
   }
 
@@ -127,7 +127,7 @@ describe('OrdersService batchSetStatus', () => {
       upsert: jest.fn().mockResolvedValue(undefined),
       remove: jest.fn().mockResolvedValue(undefined),
     };
-    const service = new OrdersService(prisma as never, now as never, ids as never, mirror as never);
+    const service = new OrdersService(prisma as never, now as never, ids as never, mirror as never, {} as never);
     return { service, prisma, mirror };
   }
 

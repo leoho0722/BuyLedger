@@ -7,6 +7,8 @@ import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { FirestoreMirrorService } from '../firebase/firestore-mirror.service';
 import { IdService, NowService } from '../common/now.service';
+import { HlcService } from '../sync/hlc.service';
+import { ClockMap, FieldMap, mergeFieldWrites } from '../sync/apply-field-writes';
 import { D, Decimal } from '../domain/decimal';
 import { makeMergeDraft, MergeDraft } from '../domain/order-merge';
 import {
@@ -26,6 +28,7 @@ import {
   BatchStatusChangeInput,
   MergeDraftInput,
   OrderInput,
+  OrderPatchInput,
   ReceiptChangeInput,
   StatusChangeInput,
 } from './orders.types';
@@ -43,6 +46,7 @@ export class OrdersService {
     private readonly now: NowService,
     private readonly ids: IdService,
     private readonly mirror: FirestoreMirrorService,
+    private readonly hlc: HlcService,
   ) {}
 
   async list(uid: string): Promise<OrderDTO[]> {
@@ -94,6 +98,69 @@ export class OrdersService {
     const dto = rowToDto(updated);
     await this.mirror.mirrorOrder(uid, dto);
     return dto;
+  }
+
+  // 欄位級合併寫入 (對齊 sync-conflict-resolution「Field-level merge with strict-greater
+  // clock acceptance」)：以每欄位 HLC 逐欄合併 incoming partial patch——不同欄位各自存活、
+  // 同欄位由時鐘決勝；重送相同 patch 為 no-op。回傳合併後 DTO 與每個被 patch 欄位的權威
+  // 時鐘 (appliedFieldClocks)，供 client 對帳清 dirty。對完整合併列重跑 normalize 以重算
+  // isCashOnDelivery 等衍生欄位並 clamp。
+  async patch(
+    uid: string,
+    id: string,
+    input: OrderPatchInput,
+  ): Promise<{ order: OrderDTO; appliedFieldClocks: Record<string, string> }> {
+    const changedFields = input.changedFields ?? {};
+    const fieldClocks = input.fieldClocks ?? {};
+    const fields = Object.keys(changedFields);
+
+    // 偏移守門 + 推進伺服器 HLC (合併前必跑)：缺欄位時鐘即 400、未來時鐘超容忍即 400。
+    for (const field of fields) {
+      const enc = fieldClocks[field];
+      if (!enc) throw new BadRequestException(`欄位 ${field} 缺少時鐘`);
+      const clock = this.hlc.decode(enc);
+      this.hlc.assertWithinTolerance(clock);
+      this.hlc.receive(clock);
+    }
+
+    const existing = await this.prisma.order.findFirst({ where: { id, ownerUid: uid } });
+
+    if (fields.length === 0) {
+      if (!existing) throw new BadRequestException('空白 patch 無法建立訂單');
+      return { order: rowToDto(existing), appliedFieldClocks: {} };
+    }
+
+    const storedValues: FieldMap = existing ? orderDomainToFlat(rowToDomain(existing)) : {};
+    const storedClocks: ClockMap = (existing?.fieldClocks as ClockMap | null) ?? {};
+    const merged = mergeFieldWrites(storedValues, storedClocks, { changedFields, fieldClocks });
+
+    // 跨使用者碰撞守門 (client UUID 理論上不撞；防覆蓋他人資料、且不洩漏存在性)。
+    if (!existing) {
+      const collision = await this.prisma.order.findUnique({
+        where: { id },
+        select: { ownerUid: true },
+      });
+      if (collision && collision.ownerUid !== uid) {
+        throw new NotFoundException(`找不到訂單 ${id}`);
+      }
+    }
+
+    const domain = await this.normalize(uid, orderFlatToInput(merged.values, id), {
+      isNew: false,
+    });
+    const data: Prisma.OrderUncheckedCreateInput = {
+      ...this.toPrismaData(domain, uid),
+      fieldClocks: merged.clocks as Prisma.InputJsonValue,
+    };
+    const saved = await this.prisma.order.upsert({
+      where: { id },
+      create: data,
+      update: data,
+    });
+
+    const dto = rowToDto(saved);
+    await this.mirror.mirrorOrder(uid, dto, { fieldClocks: merged.clocks });
+    return { order: dto, appliedFieldClocks: merged.appliedClocks };
   }
 
   async remove(uid: string, id: string): Promise<void> {
@@ -444,4 +511,73 @@ function deriveInitials(name: string): string {
   const first = trimmed[0];
   if (/[A-Za-z]/.test(first)) return trimmed.slice(0, 2).toUpperCase();
   return first;
+}
+
+// 領域訂單 → 可合併的 flat 欄位圖：攤平 customer；排除 id、mergedSourceIDs (建立後唯讀) 與
+// 衍生的 isCashOnDelivery (交由 normalize 依付款方式重算、不參與合併)。
+function orderDomainToFlat(o: LedgerOrder): FieldMap {
+  return {
+    customerName: o.customer.name,
+    customerInitials: o.customer.initials,
+    customerTier: o.customer.tier,
+    status: o.status,
+    currency: o.currency,
+    date: o.date,
+    items: o.items,
+    itemCost: o.itemCost,
+    domesticShipping: o.domesticShipping,
+    internationalShipping: o.internationalShipping,
+    foreignDomesticShipping: o.foreignDomesticShipping,
+    cardFeeRate: o.cardFeeRate,
+    platformFeeRate: o.platformFeeRate,
+    paymentFeeRate: o.paymentFeeRate,
+    chargedAmount: o.chargedAmount,
+    cardlessDeductionAmount: o.cardlessDeductionAmount,
+    cardlessSupplementAmount: o.cardlessSupplementAmount,
+    orderSource: o.orderSource,
+    categories: o.categories,
+    paymentMethod: o.paymentMethod,
+    notes: o.notes,
+    verificationStatus: o.verificationStatus,
+    campaignNames: o.campaignNames,
+    paymentReceiptStatus: o.paymentReceiptStatus,
+    photos: o.photos,
+  };
+}
+
+// flat 欄位圖 → OrderInput (供 normalize)；缺欄位帶 undefined 由 normalize 補預設與 clamp。
+function orderFlatToInput(flat: FieldMap, id: string): OrderInput {
+  const str = (v: unknown): string | undefined => (v === undefined ? undefined : String(v));
+  return {
+    id,
+    customer: {
+      name: str(flat.customerName),
+      initials: str(flat.customerInitials),
+      tier: flat.customerTier as LedgerOrder['customer']['tier'] | undefined,
+    },
+    status: flat.status as LedgerOrder['status'] | undefined,
+    currency: str(flat.currency),
+    date: str(flat.date),
+    items: flat.items as OrderInput['items'],
+    itemCost: str(flat.itemCost),
+    domesticShipping: str(flat.domesticShipping),
+    internationalShipping: str(flat.internationalShipping),
+    foreignDomesticShipping: str(flat.foreignDomesticShipping),
+    cardFeeRate: str(flat.cardFeeRate),
+    platformFeeRate: str(flat.platformFeeRate),
+    paymentFeeRate: str(flat.paymentFeeRate),
+    chargedAmount: str(flat.chargedAmount),
+    cardlessDeductionAmount: str(flat.cardlessDeductionAmount),
+    cardlessSupplementAmount: str(flat.cardlessSupplementAmount),
+    orderSource: str(flat.orderSource),
+    categories: flat.categories as string[] | undefined,
+    paymentMethod: str(flat.paymentMethod),
+    notes: str(flat.notes),
+    verificationStatus: str(flat.verificationStatus),
+    campaignNames: flat.campaignNames as string[] | undefined,
+    paymentReceiptStatus: flat.paymentReceiptStatus as
+      | LedgerOrder['paymentReceiptStatus']
+      | undefined,
+    photos: flat.photos as string[] | undefined,
+  };
 }

@@ -5,6 +5,7 @@ import {
   Get,
   HttpCode,
   Param,
+  Patch,
   Post,
   Put,
 } from '@nestjs/common';
@@ -14,6 +15,7 @@ import {
   BatchStatusChangeInput,
   MergeDraftInput,
   OrderInput,
+  OrderPatchInput,
   ReceiptChangeInput,
   StatusChangeInput,
 } from './orders.types';
@@ -52,6 +54,12 @@ export class OrdersController {
   @Put(':id')
   update(@CurrentUid() uid: string, @Param('id') id: string, @Body() body: OrderInput) {
     return this.orders.update(uid, id, body);
+  }
+
+  // 欄位級合併寫入：client 送 partial patch (僅變更欄位 + 每欄位 HLC)，後端逐欄合併。
+  @Patch(':id')
+  patch(@CurrentUid() uid: string, @Param('id') id: string, @Body() body: OrderPatchInput) {
+    return this.orders.patch(uid, id, body);
   }
 
   @Delete(':id')

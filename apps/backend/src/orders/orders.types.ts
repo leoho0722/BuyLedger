@@ -51,3 +51,10 @@ export interface MergeDraftInput {
   primaryId?: string;
   secondaryId?: string;
 }
+
+// 欄位級合併寫入：client 送變更欄位 + 每欄位 HLC (decimal 欄位仍字串)。
+// 用 TS interface 規避全域 ValidationPipe whitelist 剝除，於 service 內手動合併與正規化。
+export interface OrderPatchInput {
+  changedFields?: Record<string, unknown>;
+  fieldClocks?: Record<string, string>;
+}

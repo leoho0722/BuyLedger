@@ -7,6 +7,11 @@ export interface OrderMirrorData {
   photos?: string[];
 }
 
+// 鏡像時附帶的同步信封 metadata (每欄位 HLC 等)，寫入文件的 _fieldClocks。
+export interface OrderMirrorMeta {
+  fieldClocks?: Record<string, string>;
+}
+
 // 去除 data URL 前綴 (data:image/...;base64,)，只留 base64 內容。
 function stripDataUrl(value: string): string {
   const comma = value.indexOf(',');
@@ -56,9 +61,17 @@ export class FirestoreMirrorService {
   // 鏡像訂單：照片改存 Firebase Storage、Firestore 文件僅放參照 (對齊 spec
   // 「Mirrored documents stay within the Firestore document size limit」)，避免 base64
   // 內嵌撐爆 Firestore 單文件 1 MiB 上限。
-  async mirrorOrder(uid: string, order: OrderMirrorData): Promise<void> {
+  async mirrorOrder(
+    uid: string,
+    order: OrderMirrorData,
+    meta?: OrderMirrorMeta,
+  ): Promise<void> {
     const photoRefs = await this.uploadOrderPhotos(uid, order.id, order.photos ?? []);
-    await this.upsert(uid, 'orders', order.id, { ...order, photos: photoRefs });
+    const doc: Record<string, unknown> = { ...order, photos: photoRefs };
+    if (meta?.fieldClocks) {
+      doc._fieldClocks = meta.fieldClocks;
+    }
+    await this.upsert(uid, 'orders', order.id, doc);
   }
 
   // 上傳訂單 base64 照片到 Storage users/{uid}/orders/{id}/photo-{i}.jpg，回傳參照路徑陣列。
