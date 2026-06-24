@@ -6,22 +6,23 @@
 //
 
 import AuthenticationServices
+import GoogleSignInSwift
 import SwiftUI
 
-/// 雲端登入畫面 (僅 Google / Apple)。只有在 ``CloudSyncFeatureFlag/isEnabled`` 開啟且尚未登入時顯示。
+/// 雲端登入畫面 (僅 Google / Apple)。只有在 ``CloudSyncFeatureFlag/isEnabled`` 開啟且尚未登入時顯示
 struct CloudSignInView: View {
 
     // MARK: - View Properties
 
-    /// 雲端身分驗證。
+    /// 雲端身分驗證
     let auth: CloudAuth
 
-    /// 登入錯誤訊息；無錯誤為 `nil`。
+    /// 登入錯誤訊息；無錯誤為 `nil`
     @State private var errorMessage: String?
 
     // MARK: - View Body
 
-    /// 登入畫面內容。
+    /// 登入畫面內容
     var body: some View {
         VStack(spacing: 24) {
             Text("BuyLedger")
@@ -31,14 +32,10 @@ struct CloudSignInView: View {
 
             VStack(spacing: 12) {
 #if os(iOS)
-                Button {
+                GoogleSignInButton(style: .wide) {
                     Task { await signInWithGoogle() }
-                } label: {
-                    Text("以 Google 登入")
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 4)
                 }
-                .buttonStyle(.borderedProminent)
+                .frame(maxWidth: .infinity)
 #endif
 
                 SignInWithAppleButton(.signIn) { request in
@@ -48,17 +45,6 @@ struct CloudSignInView: View {
                     Task { await handleApple(result) }
                 }
                 .frame(height: 44)
-
-#if DEBUG
-                Button {
-                    Task { await signInWithDevToken() }
-                } label: {
-                    Text("Dev 登入 (demo-user)")
-                        .frame(maxWidth: .infinity)
-                        .padding(.vertical, 4)
-                }
-                .buttonStyle(.bordered)
-#endif
             }
             .frame(maxWidth: 320)
 
@@ -77,7 +63,7 @@ struct CloudSignInView: View {
 private extension CloudSignInView {
 
 #if os(iOS)
-    /// 以 Google 登入。
+    /// 以 Google 登入
     func signInWithGoogle() async {
         errorMessage = nil
         guard let presenting = Self.topViewController() else {
@@ -91,27 +77,17 @@ private extension CloudSignInView {
         }
     }
 
-    /// 取得目前前景視窗的 root view controller，供 Google 登入呈現。
+    /// 取得目前前景視窗的 root view controller，供 Google 登入呈現
     static func topViewController() -> UIViewController? {
-        let scene = UIApplication.shared.connectedScenes
-            .first { $0.activationState == .foregroundActive } as? UIWindowScene
-        return scene?.keyWindow?.rootViewController
-    }
-#endif
-
-#if DEBUG
-    /// Dev-only 自動登入 (custom token)，繞過互動式 OAuth 供模擬器演示。
-    func signInWithDevToken() async {
-        errorMessage = nil
-        do {
-            try await auth.signInWithDevToken()
-        } catch {
-            errorMessage = "Dev 登入失敗 (需後端 DEV_AUTH_ENABLED)"
+        guard let scene = UIApplication.shared.connectedScenes.first(where: { $0.activationState == .foregroundActive }) as? UIWindowScene,
+              let keyWindow = scene.keyWindow else {
+            return nil
         }
+        return keyWindow.rootViewController
     }
 #endif
 
-    /// 處理 Apple 登入結果。
+    /// 處理 Apple 登入結果
     func handleApple(_ result: Result<ASAuthorization, Error>) async {
         errorMessage = nil
         switch result {
