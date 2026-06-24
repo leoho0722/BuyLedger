@@ -1,440 +1,24 @@
-# firestore-realtime-projection Specification
+# sync-failure-recovery Specification
 
 ## Purpose
 
-TBD - created by archiving change 'firebase-auth-multiuser-sync'. Update Purpose after archive.
+TBD - created by archiving change 'enable-cross-device-sync'. Update Purpose after archive.
 
 ## Requirements
 
-### Requirement: Backend is the sole writer of Firestore
+### Requirement: Bounded client retry then observable pending or failed state
 
-Only the backend SHALL write Firestore documents that mirror domain data. Clients SHALL NOT write these Firestore documents directly.
+A client write that fails because of being offline, a network error, or a 5xx response SHALL retry up to 3 times with backoff. If the write still fails, the affected record SHALL show an observable pending or failed state, SHALL remain in a durable local queue, and SHALL auto-resend on reconnect or next launch. The client SHALL NOT drop the user's input on failure and SHALL NOT render fake or hardcoded data in place of the failed record.
 
-#### Scenario: Client writes go through the backend
+#### Scenario: Failed write surfaces and auto-resends
 
-- **WHEN** a client needs to create, update, or delete domain data
-- **THEN** the client SHALL call the backend API, and the backend SHALL be the only writer of the corresponding Firestore documents
+- **WHEN** a push fails 3 times
+- **THEN** the record SHALL show a pending or failed indication, SHALL stay queued, and SHALL auto-resend on reconnect or relaunch
 
+#### Scenario: Offline edits drain in order on reconnect
 
-<!-- @trace
-source: firebase-auth-multiuser-sync
-updated: 2026-06-14
-code:
-  - apps/web/Dockerfile
-  - apps/backend/src/app.module.ts
-  - apps/backend/src/settings/settings.controller.ts
-  - apps/backend/src/auth/public.decorator.ts
-  - apps/web/src/lib/firebase.ts
-  - apps/web/src/lib/providers.tsx
-  - apps/backend/src/campaigns/campaigns.controller.ts
-  - apps/web/package.json
-  - apps/backend/src/firebase/firebase.service.ts
-  - deploy/docker-compose.yml
-  - README.md
-  - apps/backend/src/lookups/lookups.controller.ts
-  - apps/apple/BuyLedger/Features/App/AppRootView.swift
-  - apps/backend/CLAUDE.md
-  - apps/web/README.md
-  - apps/backend/src/app.controller.ts
-  - apps/backend/jest.config.js
-  - apps/backend/src/settings/settings.service.ts
-  - apps/backend/src/ai-summary/ai-summary.service.ts
-  - apps/apple/BuyLedger/Features/App/CloudSync.swift
-  - apps/backend/src/orders/orders.service.ts
-  - apps/backend/src/campaigns/campaigns.service.ts
-  - apps/backend/.env.example
-  - apps/apple/BuyLedger/App/CloudSyncFeatureFlag.swift
-  - apps/backend/src/ai-summary/ai-summary.controller.ts
-  - deploy/backend.env.example
-  - apps/backend/src/auth/firebase-auth.guard.ts
-  - apps/apple/BuyLedger/Features/Settings/SettingsMacView.swift
-  - apps/backend/prisma/seed.ts
-  - apps/backend/src/firebase/firebase.config.ts
-  - apps/backend/src/firebase/firebase.module.ts
-  - apps/backend/.dockerignore
-  - apps/apple/CLAUDE.md
-  - apps/backend/README.md
-  - apps/apple/BuyLedger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-  - apps/apple/BuyLedger/Features/Settings/SettingsView.swift
-  - apps/backend/src/auth/auth.module.ts
-  - apps/backend/src/firebase/firestore-mirror.service.ts
-  - apps/backend/prisma/schema.prisma
-  - deploy/web.env.example
-  - apps/backend/src/lookups/lookups.service.ts
-  - apps/web/src/lib/auth.tsx
-  - apps/apple/BuyLedger.xcodeproj/project.pbxproj
-  - apps/backend/src/orders/orders.controller.ts
-  - apps/web/src/app/more/settings/page.tsx
-  - apps/apple/BuyLedger/Features/App/CloudAuth.swift
-  - apps/apple/BuyLedger/Features/App/CloudAccountSettingsSection.swift
-  - apps/backend/package.json
-  - apps/web/src/lib/api.ts
-  - apps/apple/BuyLedger/App/BuyLedgerApp.swift
-  - apps/apple/BuyLedger/Features/App/CloudSignInView.swift
-  - deploy/common.env.example
-  - Makefile
-  - apps/backend/src/auth/current-user.decorator.ts
-tests:
-  - apps/backend/src/orders/orders.service.spec.ts
-  - apps/backend/src/auth/global-auth-guard.spec.ts
-  - apps/backend/src/auth/firebase-auth.guard.spec.ts
-  - apps/backend/src/firebase/firebase.service.spec.ts
-  - apps/backend/src/lookups/lookups.service.spec.ts
-  - apps/backend/src/settings/settings.service.spec.ts
-  - apps/backend/src/auth/current-user.decorator.spec.ts
-  - apps/backend/src/firebase/firestore-mirror.service.spec.ts
-  - apps/backend/src/firebase/firebase.config.spec.ts
--->
-
----
-### Requirement: Authoritative writes are mirrored to per-user Firestore collections
-
-After the backend commits a create or update to PostgreSQL, it SHALL upsert a matching Firestore document under the owning user's collection, reflecting the same data including the backend-computed summary. On delete, it SHALL remove the corresponding document.
-
-#### Scenario: Create is mirrored
-
-- **WHEN** the backend commits a new order for user with uid U
-- **THEN** the backend SHALL upsert a Firestore document for that order under user U's orders collection, containing the same fields and the backend-computed summary
-
-#### Scenario: Delete is mirrored
-
-- **WHEN** the backend deletes an order owned by user U
-- **THEN** the backend SHALL delete the corresponding Firestore document
-
-##### Example: per-user document path
-
-- **GIVEN** an order with id ORD1 owned by uid U1
-- **WHEN** the backend mirrors it
-- **THEN** the document path SHALL be `users/U1/orders/ORD1`
-
-
-<!-- @trace
-source: firebase-auth-multiuser-sync
-updated: 2026-06-14
-code:
-  - apps/web/Dockerfile
-  - apps/backend/src/app.module.ts
-  - apps/backend/src/settings/settings.controller.ts
-  - apps/backend/src/auth/public.decorator.ts
-  - apps/web/src/lib/firebase.ts
-  - apps/web/src/lib/providers.tsx
-  - apps/backend/src/campaigns/campaigns.controller.ts
-  - apps/web/package.json
-  - apps/backend/src/firebase/firebase.service.ts
-  - deploy/docker-compose.yml
-  - README.md
-  - apps/backend/src/lookups/lookups.controller.ts
-  - apps/apple/BuyLedger/Features/App/AppRootView.swift
-  - apps/backend/CLAUDE.md
-  - apps/web/README.md
-  - apps/backend/src/app.controller.ts
-  - apps/backend/jest.config.js
-  - apps/backend/src/settings/settings.service.ts
-  - apps/backend/src/ai-summary/ai-summary.service.ts
-  - apps/apple/BuyLedger/Features/App/CloudSync.swift
-  - apps/backend/src/orders/orders.service.ts
-  - apps/backend/src/campaigns/campaigns.service.ts
-  - apps/backend/.env.example
-  - apps/apple/BuyLedger/App/CloudSyncFeatureFlag.swift
-  - apps/backend/src/ai-summary/ai-summary.controller.ts
-  - deploy/backend.env.example
-  - apps/backend/src/auth/firebase-auth.guard.ts
-  - apps/apple/BuyLedger/Features/Settings/SettingsMacView.swift
-  - apps/backend/prisma/seed.ts
-  - apps/backend/src/firebase/firebase.config.ts
-  - apps/backend/src/firebase/firebase.module.ts
-  - apps/backend/.dockerignore
-  - apps/apple/CLAUDE.md
-  - apps/backend/README.md
-  - apps/apple/BuyLedger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-  - apps/apple/BuyLedger/Features/Settings/SettingsView.swift
-  - apps/backend/src/auth/auth.module.ts
-  - apps/backend/src/firebase/firestore-mirror.service.ts
-  - apps/backend/prisma/schema.prisma
-  - deploy/web.env.example
-  - apps/backend/src/lookups/lookups.service.ts
-  - apps/web/src/lib/auth.tsx
-  - apps/apple/BuyLedger.xcodeproj/project.pbxproj
-  - apps/backend/src/orders/orders.controller.ts
-  - apps/web/src/app/more/settings/page.tsx
-  - apps/apple/BuyLedger/Features/App/CloudAuth.swift
-  - apps/apple/BuyLedger/Features/App/CloudAccountSettingsSection.swift
-  - apps/backend/package.json
-  - apps/web/src/lib/api.ts
-  - apps/apple/BuyLedger/App/BuyLedgerApp.swift
-  - apps/apple/BuyLedger/Features/App/CloudSignInView.swift
-  - deploy/common.env.example
-  - Makefile
-  - apps/backend/src/auth/current-user.decorator.ts
-tests:
-  - apps/backend/src/orders/orders.service.spec.ts
-  - apps/backend/src/auth/global-auth-guard.spec.ts
-  - apps/backend/src/auth/firebase-auth.guard.spec.ts
-  - apps/backend/src/firebase/firebase.service.spec.ts
-  - apps/backend/src/lookups/lookups.service.spec.ts
-  - apps/backend/src/settings/settings.service.spec.ts
-  - apps/backend/src/auth/current-user.decorator.spec.ts
-  - apps/backend/src/firebase/firestore-mirror.service.spec.ts
-  - apps/backend/src/firebase/firebase.config.spec.ts
--->
-
----
-### Requirement: Firestore is non-authoritative
-
-PostgreSQL SHALL remain the source of truth. A Firestore mirroring failure SHALL NOT roll back an already-committed PostgreSQL write or fail the API response; the failure SHALL be recorded so it can be retried.
-
-#### Scenario: Mirror failure does not fail the write
-
-- **WHEN** a PostgreSQL write commits successfully but the subsequent Firestore mirror fails
-- **THEN** the API response SHALL reflect the successful PostgreSQL write, and the mirror failure SHALL be recorded for retry
-
-
-<!-- @trace
-source: firebase-auth-multiuser-sync
-updated: 2026-06-14
-code:
-  - apps/web/Dockerfile
-  - apps/backend/src/app.module.ts
-  - apps/backend/src/settings/settings.controller.ts
-  - apps/backend/src/auth/public.decorator.ts
-  - apps/web/src/lib/firebase.ts
-  - apps/web/src/lib/providers.tsx
-  - apps/backend/src/campaigns/campaigns.controller.ts
-  - apps/web/package.json
-  - apps/backend/src/firebase/firebase.service.ts
-  - deploy/docker-compose.yml
-  - README.md
-  - apps/backend/src/lookups/lookups.controller.ts
-  - apps/apple/BuyLedger/Features/App/AppRootView.swift
-  - apps/backend/CLAUDE.md
-  - apps/web/README.md
-  - apps/backend/src/app.controller.ts
-  - apps/backend/jest.config.js
-  - apps/backend/src/settings/settings.service.ts
-  - apps/backend/src/ai-summary/ai-summary.service.ts
-  - apps/apple/BuyLedger/Features/App/CloudSync.swift
-  - apps/backend/src/orders/orders.service.ts
-  - apps/backend/src/campaigns/campaigns.service.ts
-  - apps/backend/.env.example
-  - apps/apple/BuyLedger/App/CloudSyncFeatureFlag.swift
-  - apps/backend/src/ai-summary/ai-summary.controller.ts
-  - deploy/backend.env.example
-  - apps/backend/src/auth/firebase-auth.guard.ts
-  - apps/apple/BuyLedger/Features/Settings/SettingsMacView.swift
-  - apps/backend/prisma/seed.ts
-  - apps/backend/src/firebase/firebase.config.ts
-  - apps/backend/src/firebase/firebase.module.ts
-  - apps/backend/.dockerignore
-  - apps/apple/CLAUDE.md
-  - apps/backend/README.md
-  - apps/apple/BuyLedger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-  - apps/apple/BuyLedger/Features/Settings/SettingsView.swift
-  - apps/backend/src/auth/auth.module.ts
-  - apps/backend/src/firebase/firestore-mirror.service.ts
-  - apps/backend/prisma/schema.prisma
-  - deploy/web.env.example
-  - apps/backend/src/lookups/lookups.service.ts
-  - apps/web/src/lib/auth.tsx
-  - apps/apple/BuyLedger.xcodeproj/project.pbxproj
-  - apps/backend/src/orders/orders.controller.ts
-  - apps/web/src/app/more/settings/page.tsx
-  - apps/apple/BuyLedger/Features/App/CloudAuth.swift
-  - apps/apple/BuyLedger/Features/App/CloudAccountSettingsSection.swift
-  - apps/backend/package.json
-  - apps/web/src/lib/api.ts
-  - apps/apple/BuyLedger/App/BuyLedgerApp.swift
-  - apps/apple/BuyLedger/Features/App/CloudSignInView.swift
-  - deploy/common.env.example
-  - Makefile
-  - apps/backend/src/auth/current-user.decorator.ts
-tests:
-  - apps/backend/src/orders/orders.service.spec.ts
-  - apps/backend/src/auth/global-auth-guard.spec.ts
-  - apps/backend/src/auth/firebase-auth.guard.spec.ts
-  - apps/backend/src/firebase/firebase.service.spec.ts
-  - apps/backend/src/lookups/lookups.service.spec.ts
-  - apps/backend/src/settings/settings.service.spec.ts
-  - apps/backend/src/auth/current-user.decorator.spec.ts
-  - apps/backend/src/firebase/firestore-mirror.service.spec.ts
-  - apps/backend/src/firebase/firebase.config.spec.ts
--->
-
----
-### Requirement: Mirror covers all mirrored collections
-
-The backend SHALL mirror all domain collections — orders, campaigns, lookups, and per-user settings — to Firestore.
-
-#### Scenario: Each collection is mirrored
-
-- **WHEN** a record in orders, campaigns, lookups, or settings is created or updated
-- **THEN** the backend SHALL mirror that record to the corresponding Firestore collection
-
-
-<!-- @trace
-source: firebase-auth-multiuser-sync
-updated: 2026-06-14
-code:
-  - apps/web/Dockerfile
-  - apps/backend/src/app.module.ts
-  - apps/backend/src/settings/settings.controller.ts
-  - apps/backend/src/auth/public.decorator.ts
-  - apps/web/src/lib/firebase.ts
-  - apps/web/src/lib/providers.tsx
-  - apps/backend/src/campaigns/campaigns.controller.ts
-  - apps/web/package.json
-  - apps/backend/src/firebase/firebase.service.ts
-  - deploy/docker-compose.yml
-  - README.md
-  - apps/backend/src/lookups/lookups.controller.ts
-  - apps/apple/BuyLedger/Features/App/AppRootView.swift
-  - apps/backend/CLAUDE.md
-  - apps/web/README.md
-  - apps/backend/src/app.controller.ts
-  - apps/backend/jest.config.js
-  - apps/backend/src/settings/settings.service.ts
-  - apps/backend/src/ai-summary/ai-summary.service.ts
-  - apps/apple/BuyLedger/Features/App/CloudSync.swift
-  - apps/backend/src/orders/orders.service.ts
-  - apps/backend/src/campaigns/campaigns.service.ts
-  - apps/backend/.env.example
-  - apps/apple/BuyLedger/App/CloudSyncFeatureFlag.swift
-  - apps/backend/src/ai-summary/ai-summary.controller.ts
-  - deploy/backend.env.example
-  - apps/backend/src/auth/firebase-auth.guard.ts
-  - apps/apple/BuyLedger/Features/Settings/SettingsMacView.swift
-  - apps/backend/prisma/seed.ts
-  - apps/backend/src/firebase/firebase.config.ts
-  - apps/backend/src/firebase/firebase.module.ts
-  - apps/backend/.dockerignore
-  - apps/apple/CLAUDE.md
-  - apps/backend/README.md
-  - apps/apple/BuyLedger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-  - apps/apple/BuyLedger/Features/Settings/SettingsView.swift
-  - apps/backend/src/auth/auth.module.ts
-  - apps/backend/src/firebase/firestore-mirror.service.ts
-  - apps/backend/prisma/schema.prisma
-  - deploy/web.env.example
-  - apps/backend/src/lookups/lookups.service.ts
-  - apps/web/src/lib/auth.tsx
-  - apps/apple/BuyLedger.xcodeproj/project.pbxproj
-  - apps/backend/src/orders/orders.controller.ts
-  - apps/web/src/app/more/settings/page.tsx
-  - apps/apple/BuyLedger/Features/App/CloudAuth.swift
-  - apps/apple/BuyLedger/Features/App/CloudAccountSettingsSection.swift
-  - apps/backend/package.json
-  - apps/web/src/lib/api.ts
-  - apps/apple/BuyLedger/App/BuyLedgerApp.swift
-  - apps/apple/BuyLedger/Features/App/CloudSignInView.swift
-  - deploy/common.env.example
-  - Makefile
-  - apps/backend/src/auth/current-user.decorator.ts
-tests:
-  - apps/backend/src/orders/orders.service.spec.ts
-  - apps/backend/src/auth/global-auth-guard.spec.ts
-  - apps/backend/src/auth/firebase-auth.guard.spec.ts
-  - apps/backend/src/firebase/firebase.service.spec.ts
-  - apps/backend/src/lookups/lookups.service.spec.ts
-  - apps/backend/src/settings/settings.service.spec.ts
-  - apps/backend/src/auth/current-user.decorator.spec.ts
-  - apps/backend/src/firebase/firestore-mirror.service.spec.ts
-  - apps/backend/src/firebase/firebase.config.spec.ts
--->
-
----
-### Requirement: Mirrored documents stay within the Firestore document size limit
-
-Mirrored documents SHALL stay within Firestore's per-document size limit. The backend SHALL NOT embed raw base64 order-photo payloads inside Firestore documents. Instead, the backend SHALL upload each order photo to Firebase Storage and store only a reference (path or download URL) in the Firestore document.
-
-#### Scenario: Order photo is uploaded to Storage and referenced
-
-- **WHEN** the backend mirrors an order that has an embedded base64 photo
-- **THEN** the backend SHALL upload the photo to Firebase Storage, and the Firestore document SHALL contain only a Storage reference (path or URL), SHALL NOT contain the raw base64 payload, and SHALL stay within the per-document size limit
-
-
-<!-- @trace
-source: firebase-auth-multiuser-sync
-updated: 2026-06-14
-code:
-  - apps/web/Dockerfile
-  - apps/backend/src/app.module.ts
-  - apps/backend/src/settings/settings.controller.ts
-  - apps/backend/src/auth/public.decorator.ts
-  - apps/web/src/lib/firebase.ts
-  - apps/web/src/lib/providers.tsx
-  - apps/backend/src/campaigns/campaigns.controller.ts
-  - apps/web/package.json
-  - apps/backend/src/firebase/firebase.service.ts
-  - deploy/docker-compose.yml
-  - README.md
-  - apps/backend/src/lookups/lookups.controller.ts
-  - apps/apple/BuyLedger/Features/App/AppRootView.swift
-  - apps/backend/CLAUDE.md
-  - apps/web/README.md
-  - apps/backend/src/app.controller.ts
-  - apps/backend/jest.config.js
-  - apps/backend/src/settings/settings.service.ts
-  - apps/backend/src/ai-summary/ai-summary.service.ts
-  - apps/apple/BuyLedger/Features/App/CloudSync.swift
-  - apps/backend/src/orders/orders.service.ts
-  - apps/backend/src/campaigns/campaigns.service.ts
-  - apps/backend/.env.example
-  - apps/apple/BuyLedger/App/CloudSyncFeatureFlag.swift
-  - apps/backend/src/ai-summary/ai-summary.controller.ts
-  - deploy/backend.env.example
-  - apps/backend/src/auth/firebase-auth.guard.ts
-  - apps/apple/BuyLedger/Features/Settings/SettingsMacView.swift
-  - apps/backend/prisma/seed.ts
-  - apps/backend/src/firebase/firebase.config.ts
-  - apps/backend/src/firebase/firebase.module.ts
-  - apps/backend/.dockerignore
-  - apps/apple/CLAUDE.md
-  - apps/backend/README.md
-  - apps/apple/BuyLedger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
-  - apps/apple/BuyLedger/Features/Settings/SettingsView.swift
-  - apps/backend/src/auth/auth.module.ts
-  - apps/backend/src/firebase/firestore-mirror.service.ts
-  - apps/backend/prisma/schema.prisma
-  - deploy/web.env.example
-  - apps/backend/src/lookups/lookups.service.ts
-  - apps/web/src/lib/auth.tsx
-  - apps/apple/BuyLedger.xcodeproj/project.pbxproj
-  - apps/backend/src/orders/orders.controller.ts
-  - apps/web/src/app/more/settings/page.tsx
-  - apps/apple/BuyLedger/Features/App/CloudAuth.swift
-  - apps/apple/BuyLedger/Features/App/CloudAccountSettingsSection.swift
-  - apps/backend/package.json
-  - apps/web/src/lib/api.ts
-  - apps/apple/BuyLedger/App/BuyLedgerApp.swift
-  - apps/apple/BuyLedger/Features/App/CloudSignInView.swift
-  - deploy/common.env.example
-  - Makefile
-  - apps/backend/src/auth/current-user.decorator.ts
-tests:
-  - apps/backend/src/orders/orders.service.spec.ts
-  - apps/backend/src/auth/global-auth-guard.spec.ts
-  - apps/backend/src/auth/firebase-auth.guard.spec.ts
-  - apps/backend/src/firebase/firebase.service.spec.ts
-  - apps/backend/src/lookups/lookups.service.spec.ts
-  - apps/backend/src/settings/settings.service.spec.ts
-  - apps/backend/src/auth/current-user.decorator.spec.ts
-  - apps/backend/src/firebase/firestore-mirror.service.spec.ts
-  - apps/backend/src/firebase/firebase.config.spec.ts
--->
-
----
-### Requirement: iOS Firestore sync is gated behind a default-off feature flag
-
-On iOS, Firestore reads and writes SHALL be controlled by a feature flag that is disabled by default. With the flag disabled, iOS SHALL rely on local SwiftData and SHALL NOT access Firestore, SHALL NOT call the backend API, and SHALL NOT migrate its on-disk store for sync. With the flag enabled and the user signed in, iOS SHALL consume the per-user projection live, merging it field-wise into local SwiftData, while local SwiftData remains the local source of truth and offline create, edit, and delete continue to work.
-
-#### Scenario: iOS with flag disabled does not access Firestore
-
-- **WHEN** iOS runs with the sync feature flag disabled
-- **THEN** iOS SHALL NOT read from or write to Firestore, SHALL NOT call the backend API, and SHALL rely on local SwiftData
-
-#### Scenario: iOS with flag enabled consumes the projection live
-
-- **WHEN** iOS runs with the sync feature flag enabled and the user is signed in
-- **THEN** iOS SHALL subscribe to the per-user projection and merge incoming changes field-wise into local SwiftData while keeping local edits offline-capable
+- **WHEN** several edits are queued while offline and connectivity returns
+- **THEN** the queued patches SHALL be resent and merged at the backend, and the records SHALL transition to a synced state
 
 
 <!-- @trace
@@ -819,19 +403,20 @@ tests:
 -->
 
 ---
-### Requirement: Projection carries clocks, tombstones, and photo references
+### Requirement: Resends are idempotent and side effects are clock-guarded
 
-The per-user Firestore projection SHALL carry per-field HLC clocks, an explicit deleted flag with a deleteClock, and photo references rather than base64 image payloads. Clients SHALL consume the projection live through real-time listeners and SHALL reconcile a full re-read on every subscribe or relaunch. The backend SHALL remain the sole writer of Firestore and Firebase Storage, and Postgres SHALL remain the source of truth.
+Resends SHALL be idempotent through client-generated UUID upsert and a deterministic server clock, so that a redelivered patch is a no-op. Cross-entity merge side effects, such as flipping source orders to merged status, MUST be clock-guarded and MUST short-circuit when the merged entity already exists, so that a resend cannot revert a concurrent later edit. The system SHALL NOT rely on a persistent server-side payload outbox.
 
-#### Scenario: Client merges live projection updates
+#### Scenario: Lost-ack resend does not duplicate or revert
 
-- **WHEN** the backend mirrors a merged order
-- **THEN** subscribed clients SHALL receive the document with its field clocks and SHALL merge it field-wise, resolving photo references to bytes before the merge
+- **WHEN** the first push lands but its response is lost and the client resends the same create or patch
+- **THEN** no duplicate entity SHALL be created and no concurrent later edit on a source order SHALL be reverted
 
-#### Scenario: Delete is an explicit event
+##### Example: idempotent merge-create resend
 
-- **WHEN** an order is deleted
-- **THEN** the projection SHALL carry an explicit deleted marker with a deleteClock rather than document absence, and the document SHALL be purged only after the bounded retention window
+- **GIVEN** an order merge that creates M and flips sources A and B to merged at mergeClock 10, and a later concurrent edit sets A back to active at clock 12
+- **WHEN** the merge-create patch is redelivered
+- **THEN** the transaction SHALL short-circuit because M exists, and A SHALL remain active at clock 12
 
 
 <!-- @trace
@@ -1216,14 +801,14 @@ tests:
 -->
 
 ---
-### Requirement: A permanently failed mirror still converges
+### Requirement: A lost ack does not pin a field dirty forever
 
-A mirror failure SHALL do bounded inline retry, then log and return success without rolling back the committed Postgres write. On exhausting inline retries, the backend SHALL stamp a per-row mirror-dirty key, and a background or lazy sweep SHALL re-mirror dirty rows recomputed from Postgres so that the projection self-heals. This mechanism SHALL NOT be a persistent payload outbox.
+When a push lands but its acknowledgement is lost, a client SHALL clear the field's dirty flag by reconciling against the projection on resubscribe rather than re-pushing indefinitely. When the projection already reflects the device's value at a clock greater than or equal to the local dirty clock, the client SHALL clear the dirty flag even though the original acknowledgement was lost.
 
-#### Scenario: Permanently failed mirror is repaired by the sweep
+#### Scenario: Dirty clears via projection reconciliation
 
-- **WHEN** a mirror exhausts its inline retries and no later write touches the entity
-- **THEN** the row SHALL be marked mirror-dirty, the sweep SHALL re-mirror it from Postgres, and an offline device reconnecting SHALL reach the Postgres value rather than a stale document
+- **WHEN** an iOS push lands but its ack is lost
+- **THEN** on resubscribe the device SHALL detect its value in the projection at a clock greater than or equal to the local dirty clock and SHALL clear the dirty flag, and the queue SHALL NOT remain wedged
 
 <!-- @trace
 source: enable-cross-device-sync
