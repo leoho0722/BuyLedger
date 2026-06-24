@@ -13,6 +13,7 @@ NestJS + Prisma + PostgreSQL 的 REST 後端，功能與財務邏輯對齊 iOS �
 | 型別來源 | `shared/data-model` 生成的 TypeScript |
 | 身分驗證 | Firebase Authentication (firebase-admin)；全域 guard 驗 ID token |
 | 雲端投影 | Firestore (後端唯一寫入方鏡像) + Firebase Storage (訂單照片) |
+| 背景排程 | `@nestjs/schedule` (`ScheduleModule.forRoot()`)；鏡像失敗自我修復掃描 (`MirrorSweepService` @Interval 30s) |
 | 測試 | Jest + ts-jest + supertest |
 
 ## 專案結構
@@ -23,7 +24,8 @@ src/
 ├── data-model/        # 生成型別 (generated/) 與 barrel
 ├── common/            # NowService / IdService (環境相依注入)
 ├── auth/              # Firebase ID token 驗證 guard、@CurrentUid / @Public、全域 APP_GUARD
-├── firebase/          # firebase-admin 初始化 (fail-closed) + Firestore 鏡像 service (含照片上 Storage)
+├── firebase/          # firebase-admin 初始化 (fail-closed) + Firestore 鏡像 service (含照片內容定址上 Storage、tombstone)
+├── sync/              # HLC (hlc.ts / hlc.service)、欄位級合併核心 (apply-field-writes)、鏡像自我修復掃描 (mirror-sweep)
 ├── prisma/            # PrismaService / Module
 ├── orders/            # 訂單 CRUD + 合併 + 狀態/收款 + cascade 改名 (皆按 uid 圈)
 ├── campaigns/         # 開團 CRUD + 結團 + 自動收單
@@ -63,7 +65,7 @@ Firebase service account (身分驗證與雲端投影，**缺則 fail-closed、�
 | 資源 | 路由 |
 |------|------|
 | 健康檢查 | `GET /health` (公開，免驗證) |
-| 訂單 | `GET/POST /orders`、`GET/PUT/DELETE /orders/:id`、`POST /orders/:id/status`、`POST /orders/status/batch`、`POST /orders/:id/receipt`、`POST /orders/merge/draft` |
+| 訂單 | `GET/POST /orders`、`GET/PUT/PATCH/DELETE /orders/:id` (`PATCH` 為欄位級合併同步寫入、`DELETE` 為帶時鐘 tombstone)、`POST /orders/:id/status`、`POST /orders/status/batch`、`POST /orders/:id/receipt`、`POST /orders/merge/draft` |
 | 開團 | `GET/POST /campaigns`、`GET/PUT/DELETE /campaigns/:id`、`POST /campaigns/:id/settle`、`POST /campaigns/:id/status` |
 | 主檔 | `GET/POST /lookups/{categories,order-sources,verification-statuses,payment-methods}`、`PUT/DELETE …/:name` |
 | 幣別/匯率 | `GET /currency/codes`、`POST /currency/codes/refresh`、`GET /fx/latest`、`POST /fx/refresh` |

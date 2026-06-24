@@ -1,4 +1,5 @@
-// 載入 OrdersService 會經由 FirestoreMirrorService 連帶 import firebase-admin (ESM jose)，需 mock。
+// OrdersService 經 FirestoreMirrorService 間接 import firebase-admin (ESM jose)，
+// jest 須 mock
 jest.mock('firebase-admin/app', () => ({
   initializeApp: jest.fn(),
   getApps: jest.fn(() => []),
@@ -11,8 +12,7 @@ jest.mock('firebase-admin/storage', () => ({ getStorage: jest.fn() }));
 import { BadRequestException, NotFoundException } from '@nestjs/common';
 import { OrdersService } from './orders.service';
 
-// 對齊 spec「Reads are scoped to the caller's uid」「Writes target only records owned by the caller」
-// 「Domain entities are owned by a single user」：所有讀寫一律按 ownerUid 圈，跨使用者隔離。
+// 所有讀寫按 ownerUid 圈，跨使用者隔離
 describe('OrdersService uid scoping', () => {
   function makeService(overrides: Record<string, unknown> = {}) {
     const prisma = {
@@ -46,8 +46,9 @@ describe('OrdersService uid scoping', () => {
   it('list scopes findMany by the caller ownerUid', async () => {
     const { service, prisma } = makeService();
     await service.list('user-A');
+    // 按 ownerUid 圈並濾掉軟刪除 tombstone (deletedAt IS NULL)
     expect(prisma.order.findMany).toHaveBeenCalledWith(
-      expect.objectContaining({ where: { ownerUid: 'user-A' } }),
+      expect.objectContaining({ where: { ownerUid: 'user-A', deletedAt: null } }),
     );
   });
 
@@ -55,14 +56,18 @@ describe('OrdersService uid scoping', () => {
     const { service, prisma } = makeService();
     await expect(service.get('user-A', 'BL-x')).rejects.toBeInstanceOf(NotFoundException);
     expect(prisma.order.findFirst).toHaveBeenCalledWith({
-      where: { id: 'BL-x', ownerUid: 'user-A' },
+      where: { id: 'BL-x', ownerUid: 'user-A', deletedAt: null },
     });
   });
 
-  it('remove of an order not owned by the caller throws NotFound and never deletes', async () => {
+  it('remove of an order not owned by the caller throws NotFound and never soft-deletes', async () => {
     const { service, prisma } = makeService();
+    // 軟刪除前先 findFirst 驗所有權，非本人 → NotFound 且不動列
     await expect(service.remove('user-A', 'BL-x')).rejects.toBeInstanceOf(NotFoundException);
-    expect(prisma.order.count).toHaveBeenCalledWith({ where: { id: 'BL-x', ownerUid: 'user-A' } });
+    expect(prisma.order.findFirst).toHaveBeenCalledWith({
+      where: { id: 'BL-x', ownerUid: 'user-A' },
+    });
+    expect(prisma.order.update).not.toHaveBeenCalled();
     expect(prisma.order.delete).not.toHaveBeenCalled();
   });
 
@@ -74,10 +79,9 @@ describe('OrdersService uid scoping', () => {
   });
 });
 
-// 對齊 spec「Backend batch status endpoint is owner-scoped and re-mirrors Firestore」：
-// 批次更新一律按 ownerUid 圈、拒絕 merged 目標、更新後 remirror 受影響訂單。
+// 批次更新按 ownerUid 圈、拒絕 merged 目標、更新後 remirror 受影響訂單
 describe('OrdersService batchSetStatus', () => {
-  // 構造一筆可被 rowToDto 處理的最小有效 Prisma 列。
+  // 可被 rowToDto 處理的最小有效 Prisma 列
   function makeRow(id: string, status = 'shipping') {
     return {
       id,

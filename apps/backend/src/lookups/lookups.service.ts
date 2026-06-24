@@ -6,6 +6,7 @@ import {
 import { PrismaService } from '../prisma/prisma.service';
 import { FirestoreMirrorService } from '../firebase/firestore-mirror.service';
 import { OrdersService } from '../orders/orders.service';
+import { HlcService } from '../sync/hlc.service';
 
 export interface PaymentMethodDTO {
   name: string;
@@ -31,7 +32,13 @@ export class LookupsService {
     private readonly prisma: PrismaService,
     private readonly orders: OrdersService,
     private readonly mirror: FirestoreMirrorService,
+    private readonly hlc: HlcService,
   ) {}
+
+  // lookup 整筆 LWW 用的 server HLC，蓋在 recordClock 供拉取端決勝
+  private nextRecordClock(): string {
+    return this.hlc.encode(this.hlc.generate());
+  }
 
   // MARK: - 商品類別
 
@@ -45,34 +52,41 @@ export class LookupsService {
 
   async addCategory(uid: string, name: string): Promise<string[]> {
     const n = requireName(name);
+    const recordClock = this.nextRecordClock();
     await this.prisma.category.upsert({
       where: { ownerUid_name: { ownerUid: uid, name: n } },
-      create: { ownerUid: uid, name: n },
-      update: {},
+      create: { ownerUid: uid, name: n, recordClock },
+      update: { recordClock },
     });
-    await this.mirror.upsert(uid, 'categories', n, { name: n });
+    await this.mirror.upsert(uid, 'categories', n, { name: n, recordClock });
     return this.listCategories(uid);
   }
 
+  // 改名 = 舊名 tombstone + 新名建檔 (非硬刪)；
+  // cascade 到訂單 categories 為元素級
   async renameCategory(uid: string, oldName: string, newName: string): Promise<string[]> {
     const n = requireName(newName);
     await this.ensureExists('category', uid, oldName);
     if (n !== oldName) {
       await this.assertFree('category', uid, n);
+      const recordClock = this.nextRecordClock();
       await this.orders.cascadeRenameCategory(uid, oldName, n);
       await this.prisma.$transaction([
-        this.prisma.category.create({ data: { ownerUid: uid, name: n } }),
+        this.prisma.category.create({ data: { ownerUid: uid, name: n, recordClock } }),
         this.prisma.category.delete({ where: { ownerUid_name: { ownerUid: uid, name: oldName } } }),
       ]);
-      await this.mirror.remove(uid, 'categories', oldName);
-      await this.mirror.upsert(uid, 'categories', n, { name: n });
+      await this.mirror.mirrorTombstone(uid, 'categories', oldName, { recordClock });
+      await this.mirror.upsert(uid, 'categories', n, { name: n, recordClock });
     }
     return this.listCategories(uid);
   }
 
+  // 刪除：cascade-strip 訂單 categories 陣列、投影採 tombstone (非硬刪)
   async removeCategory(uid: string, name: string): Promise<string[]> {
+    const recordClock = this.nextRecordClock();
+    await this.orders.cascadeStripCategory(uid, name);
     await this.prisma.category.deleteMany({ where: { ownerUid: uid, name } });
-    await this.mirror.remove(uid, 'categories', name);
+    await this.mirror.mirrorTombstone(uid, 'categories', name, { recordClock });
     return this.listCategories(uid);
   }
 
@@ -88,12 +102,13 @@ export class LookupsService {
 
   async addOrderSource(uid: string, name: string): Promise<string[]> {
     const n = requireName(name);
+    const recordClock = this.nextRecordClock();
     await this.prisma.orderSource.upsert({
       where: { ownerUid_name: { ownerUid: uid, name: n } },
-      create: { ownerUid: uid, name: n },
-      update: {},
+      create: { ownerUid: uid, name: n, recordClock },
+      update: { recordClock },
     });
-    await this.mirror.upsert(uid, 'orderSources', n, { name: n });
+    await this.mirror.upsert(uid, 'orderSources', n, { name: n, recordClock });
     return this.listOrderSources(uid);
   }
 
@@ -102,20 +117,25 @@ export class LookupsService {
     await this.ensureExists('orderSource', uid, oldName);
     if (n !== oldName) {
       await this.assertFree('orderSource', uid, n);
+      const recordClock = this.nextRecordClock();
       await this.orders.cascadeRenameScalar(uid, 'orderSource', oldName, n);
       await this.prisma.$transaction([
-        this.prisma.orderSource.create({ data: { ownerUid: uid, name: n } }),
+        this.prisma.orderSource.create({ data: { ownerUid: uid, name: n, recordClock } }),
         this.prisma.orderSource.delete({ where: { ownerUid_name: { ownerUid: uid, name: oldName } } }),
       ]);
-      await this.mirror.remove(uid, 'orderSources', oldName);
-      await this.mirror.upsert(uid, 'orderSources', n, { name: n });
+      await this.mirror.mirrorTombstone(uid, 'orderSources', oldName, { recordClock });
+      await this.mirror.upsert(uid, 'orderSources', n, { name: n, recordClock });
     }
     return this.listOrderSources(uid);
   }
 
+  // 刪除：cascade-strip 訂單 orderSource 純量 (normalize 補 fallback)、
+  // 投影採 tombstone
   async removeOrderSource(uid: string, name: string): Promise<string[]> {
+    const recordClock = this.nextRecordClock();
+    await this.orders.cascadeStripScalar(uid, 'orderSource', name);
     await this.prisma.orderSource.deleteMany({ where: { ownerUid: uid, name } });
-    await this.mirror.remove(uid, 'orderSources', name);
+    await this.mirror.mirrorTombstone(uid, 'orderSources', name, { recordClock });
     return this.listOrderSources(uid);
   }
 
@@ -131,12 +151,13 @@ export class LookupsService {
 
   async addVerificationStatus(uid: string, name: string): Promise<string[]> {
     const n = requireName(name);
+    const recordClock = this.nextRecordClock();
     await this.prisma.verificationStatus.upsert({
       where: { ownerUid_name: { ownerUid: uid, name: n } },
-      create: { ownerUid: uid, name: n },
-      update: {},
+      create: { ownerUid: uid, name: n, recordClock },
+      update: { recordClock },
     });
-    await this.mirror.upsert(uid, 'verificationStatuses', n, { name: n });
+    await this.mirror.upsert(uid, 'verificationStatuses', n, { name: n, recordClock });
     return this.listVerificationStatuses(uid);
   }
 
@@ -145,22 +166,26 @@ export class LookupsService {
     await this.ensureExists('verificationStatus', uid, oldName);
     if (n !== oldName) {
       await this.assertFree('verificationStatus', uid, n);
+      const recordClock = this.nextRecordClock();
       await this.orders.cascadeRenameScalar(uid, 'verificationStatus', oldName, n);
       await this.prisma.$transaction([
-        this.prisma.verificationStatus.create({ data: { ownerUid: uid, name: n } }),
+        this.prisma.verificationStatus.create({ data: { ownerUid: uid, name: n, recordClock } }),
         this.prisma.verificationStatus.delete({
           where: { ownerUid_name: { ownerUid: uid, name: oldName } },
         }),
       ]);
-      await this.mirror.remove(uid, 'verificationStatuses', oldName);
-      await this.mirror.upsert(uid, 'verificationStatuses', n, { name: n });
+      await this.mirror.mirrorTombstone(uid, 'verificationStatuses', oldName, { recordClock });
+      await this.mirror.upsert(uid, 'verificationStatuses', n, { name: n, recordClock });
     }
     return this.listVerificationStatuses(uid);
   }
 
+  // 刪除：cascade-strip 訂單 verificationStatus 純量、投影採 tombstone
   async removeVerificationStatus(uid: string, name: string): Promise<string[]> {
+    const recordClock = this.nextRecordClock();
+    await this.orders.cascadeStripScalar(uid, 'verificationStatus', name);
     await this.prisma.verificationStatus.deleteMany({ where: { ownerUid: uid, name } });
-    await this.mirror.remove(uid, 'verificationStatuses', name);
+    await this.mirror.mirrorTombstone(uid, 'verificationStatuses', name, { recordClock });
     return this.listVerificationStatuses(uid);
   }
 
@@ -186,16 +211,18 @@ export class LookupsService {
       isBankTransfer: input.isBankTransfer ?? false,
       isCashOnDelivery: input.isCashOnDelivery ?? false,
     };
+    const recordClock = this.nextRecordClock();
     await this.prisma.paymentMethod.upsert({
       where: { ownerUid_name: { ownerUid: uid, name: n } },
-      create: { ownerUid: uid, name: n, ...flags },
-      update: { ...flags },
+      create: { ownerUid: uid, name: n, ...flags, recordClock },
+      update: { ...flags, recordClock },
     });
-    await this.mirror.upsert(uid, 'paymentMethods', n, { name: n, ...flags });
+    await this.mirror.upsert(uid, 'paymentMethods', n, { name: n, ...flags, recordClock });
     return this.listPaymentMethods(uid);
   }
 
-  // 編輯付款方式：改名 (cascade) 並把三旗標設成「使用者選擇的確切值」(含清除既有旗標)。
+  // 編輯付款方式：改名 (cascade) 並以使用者選的確切值覆蓋三旗標
+  // (含清除既有旗標)
   async updatePaymentMethod(
     uid: string,
     oldName: string,
@@ -213,6 +240,7 @@ export class LookupsService {
       isCashOnDelivery: input.isCashOnDelivery ?? false,
     };
 
+    const recordClock = this.nextRecordClock();
     if (n !== oldName) {
       const clash = await this.prisma.paymentMethod.findUnique({
         where: { ownerUid_name: { ownerUid: uid, name: n } },
@@ -220,26 +248,30 @@ export class LookupsService {
       if (clash) throw new BadRequestException('名稱已存在');
       await this.orders.cascadeRenameScalar(uid, 'paymentMethod', oldName, n);
       await this.prisma.$transaction([
-        this.prisma.paymentMethod.create({ data: { ownerUid: uid, name: n, ...flags } }),
+        this.prisma.paymentMethod.create({ data: { ownerUid: uid, name: n, ...flags, recordClock } }),
         this.prisma.paymentMethod.delete({
           where: { ownerUid_name: { ownerUid: uid, name: oldName } },
         }),
       ]);
-      await this.mirror.remove(uid, 'paymentMethods', oldName);
-      await this.mirror.upsert(uid, 'paymentMethods', n, { name: n, ...flags });
+      await this.mirror.mirrorTombstone(uid, 'paymentMethods', oldName, { recordClock });
+      await this.mirror.upsert(uid, 'paymentMethods', n, { name: n, ...flags, recordClock });
     } else {
       await this.prisma.paymentMethod.update({
         where: { ownerUid_name: { ownerUid: uid, name: oldName } },
-        data: flags,
+        data: { ...flags, recordClock },
       });
-      await this.mirror.upsert(uid, 'paymentMethods', oldName, { name: oldName, ...flags });
+      await this.mirror.upsert(uid, 'paymentMethods', oldName, { name: oldName, ...flags, recordClock });
     }
     return this.listPaymentMethods(uid);
   }
 
+  // 刪除：cascade-strip 訂單 paymentMethod 純量 (normalize 重算 isCashOnDelivery)、
+  // 投影採 tombstone
   async removePaymentMethod(uid: string, name: string): Promise<PaymentMethodDTO[]> {
+    const recordClock = this.nextRecordClock();
+    await this.orders.cascadeStripScalar(uid, 'paymentMethod', name);
     await this.prisma.paymentMethod.deleteMany({ where: { ownerUid: uid, name } });
-    await this.mirror.remove(uid, 'paymentMethods', name);
+    await this.mirror.mirrorTombstone(uid, 'paymentMethods', name, { recordClock });
     return this.listPaymentMethods(uid);
   }
 

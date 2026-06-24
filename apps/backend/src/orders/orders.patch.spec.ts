@@ -1,4 +1,4 @@
-// 載入 OrdersService 會經由 FirestoreMirrorService 連帶 import firebase-admin (ESM jose)，需 mock。
+// OrdersService 會間接 import firebase-admin (ESM jose)，jest 須 mock
 jest.mock('firebase-admin/app', () => ({
   initializeApp: jest.fn(),
   getApps: jest.fn(() => []),
@@ -77,6 +77,24 @@ function makeService(initial?: Record<string, unknown>) {
           return next;
         },
       ),
+      update: jest.fn(
+        async ({ where, data }: { where: { id: string }; data: Record<string, unknown> }) => {
+          const existing = store.get(where.id) ?? {};
+          const next = { ...existing, ...data };
+          store.set(where.id, next);
+          return next;
+        },
+      ),
+      updateMany: jest.fn(
+        async ({ where, data }: { where: { id?: string }; data: Record<string, unknown> }) => {
+          if (where.id && store.has(where.id)) {
+            store.set(where.id, { ...store.get(where.id), ...data });
+            return { count: 1 };
+          }
+          return { count: 0 };
+        },
+      ),
+      deleteMany: jest.fn(async () => ({ count: 0 })),
     },
     paymentMethod: {
       findUnique: jest.fn(async () => null),
@@ -89,9 +107,11 @@ function makeService(initial?: Record<string, unknown>) {
   const hlc = new HlcService(now);
   const ids = { uuid: () => 'uuid-x', newOrderId: () => 'BL-NEW' };
   const mirror = {
-    mirrorOrder: jest.fn(async () => undefined),
-    upsert: jest.fn(),
-    remove: jest.fn(),
+    mirrorOrder: jest.fn(async () => true),
+    mirrorOrderTombstone: jest.fn(async () => true),
+    mirrorTombstone: jest.fn(async () => true),
+    upsert: jest.fn(async () => true),
+    remove: jest.fn(async () => true),
   };
   const service = new OrdersService(
     prisma as never,
@@ -122,7 +142,10 @@ describe('OrdersService.patch field-level merge', () => {
     expect(mirror.mirrorOrder).toHaveBeenCalledWith(
       'U1',
       expect.objectContaining({ id: 'ORD1' }),
-      { fieldClocks: expect.objectContaining({ chargedAmount: clock }) },
+      expect.objectContaining({
+        fieldClocks: expect.objectContaining({ chargedAmount: clock }),
+        writerId: 'server',
+      }),
     );
   });
 

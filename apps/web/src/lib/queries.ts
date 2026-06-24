@@ -6,7 +6,7 @@ import type { Campaign, OrderDTO, PaymentMethodDTO, SettingsDTO } from './types'
 import { applyOptimistic, attachClocks, type ChangedFields } from './sync/orderPatch';
 import { enqueueWrite } from './sync/writeQueue';
 
-// Query keys。
+// 查詢鍵
 export const qk = {
   orders: ['orders'] as const,
   order: (id: string) => ['orders', id] as const,
@@ -21,7 +21,7 @@ export const qk = {
   settings: ['settings'] as const,
 };
 
-// MARK: - Queries
+// MARK: - 查詢
 
 export function useOrders() {
   return useQuery({ queryKey: qk.orders, queryFn: api.orders.list });
@@ -67,9 +67,9 @@ export function useSettings() {
   return useQuery({ queryKey: qk.settings, queryFn: api.settings.get });
 }
 
-// MARK: - Mutations
+// MARK: - 變更
 
-// 訂單異動會連動開團統計，故同時失效 orders + campaigns。
+// 訂單異動會連動開團統計，故同時失效 orders + campaigns
 function useInvalidateOrders() {
   const qc = useQueryClient();
   return () => {
@@ -89,16 +89,13 @@ export function useOrderMutations() {
     mutationFn: ({ id, body }: { id: string; body: OrderInputBody }) => api.orders.update(id, body),
     onSuccess: invalidate,
   });
-  // 欄位級合併寫入：只送變更欄位 + 每欄位 HLC (供衝突情境：兩裝置改不同欄位皆存活)。
-  // 失敗 (離線/網路/5xx) 時進本機待送佇列、樂觀更新 cache，UI 顯示「待同步」、恢復後自動重送。
+  // 欄位級合併寫入：
+  // 只送變更欄位 + 每欄位 HLC，讓兩裝置改不同欄位皆存活
   const patch = useMutation({
     mutationFn: async ({ id, changedFields }: { id: string; changedFields: ChangedFields }) => {
       const body = attachClocks(changedFields);
-      try {
-        const res = await api.orders.patch(id, body);
-        invalidate();
-        return res;
-      } catch {
+      // 失敗/離線回退：進待送佇列並樂觀更新 cache
+      const queueOptimistically = () => {
         enqueueWrite(id, body);
         const prev =
           qc.getQueryData<OrderDTO[]>(qk.orders)?.find((o) => o.id === id) ??
@@ -111,8 +108,23 @@ export function useOrderMutations() {
           qc.setQueryData(qk.order(id), optimistic);
         }
         return { order: optimistic as OrderDTO, appliedFieldClocks: {} };
+      };
+      // 離線時略過送出：
+      // getCurrentIdToken 的 token refresh 會 hang
+      if (typeof navigator !== 'undefined' && !navigator.onLine) {
+        return queueOptimistically();
+      }
+      try {
+        const res = await api.orders.patch(id, body);
+        invalidate();
+        return res;
+      } catch {
+        return queueOptimistically();
       }
     },
+    // 必設 'always'：
+    // 預設 'online' 會在離線時暫停 mutation、mutationFn 不執行
+    networkMode: 'always',
   });
   const remove = useMutation({
     mutationFn: (id: string) => api.orders.remove(id),
@@ -123,7 +135,7 @@ export function useOrderMutations() {
       api.orders.setStatus(id, status),
     onSuccess: invalidate,
   });
-  // 批次更改狀態：多選訂單套用同一目標狀態，成功後沿用 orders + campaigns 失效。
+  // 批次更改狀態：多選訂單套用同一目標狀態
   const batchSetStatus = useMutation({
     mutationFn: ({ ids, status }: { ids: string[]; status: Parameters<typeof api.orders.batchSetStatus>[1] }) =>
       api.orders.batchSetStatus(ids, status),

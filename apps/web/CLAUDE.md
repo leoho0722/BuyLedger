@@ -29,6 +29,18 @@
 
 - `src/lib/data-model/generated/` 由 `shared/data-model` 產出 (decimal/date 皆字串)，**不可手改**；改形狀改 schema 再 `bun run generate`。
 
+## 跨裝置同步 (cross-device-sync)
+
+同帳號任意兩平台 (iOS↔web) 經後端 (Postgres 為 SoT) + per-user Firestore 投影即時傳播 Order/Campaign；衝突解決為每欄位 HLC 的欄位級合併、集中在後端 (web 不做合併判定)。web 端硬規則：
+
+- **後端是唯一寫入方、web 只讀 Firestore**：即時讀取走 `onSnapshot` 訂閱 `users/{uid}/orders|campaigns` 投影 (`src/lib/sync/useFirestoreSync.tsx` 的 `FirestoreSync`、Firestore 進入點 `getFirestoreDb()` 在 `src/lib/firebase.ts`)，每次快照覆寫既有 TanStack Query cache (`qk.orders`/`qk.campaigns`)，使另一裝置的變更即時出現、無需手動刷新。**勿在 web 端寫 Firestore，也勿用 REST 輪詢取代 listener** (前一代的 30 秒 cache 已淘汰)。
+- **帶 `_deleted` 的 tombstone 文件略過不顯示** (非以文件缺席表示刪除)；快照文件帶的 `_fieldClocks` 須逐一餵 `observeClock()` (HLC RECEIVE) 推進本地時鐘，確保後續本地寫入時鐘必大於已見的遠端時鐘。
+- **HLC client 狀態持久化於 localStorage** (`src/lib/sync/hlc.ts`)：`writerId` 為每安裝穩定 UUID (`buyledger.sync.writerId`)、`lastIssued` 跨 reload 持久化 (`buyledger.sync.lastIssuedHlc`) 以維持時鐘單調遞增。實體時間集中在本檔 `now()` 單一呼叫點 (對齊環境相依注入精神)；演算法須與後端 `apps/backend/src/sync/hlc.ts` 完全一致 (規格與 conformance vectors 見 `shared/sync-conformance/`)，**勿單平台改動編碼寬度或比較順序** (`p→c→w`)。
+- **同步寫入走 partial PATCH、不走 PUT、不靠 409**：訂單異動以 `api.orders.patch` → `PATCH /orders/:id` 送 `{ changedFields, fieldClocks }` (僅變更欄位 + 每欄位 HLC，diff 與時鐘附掛見 `src/lib/sync/orderPatch.ts`)，讓兩裝置改不同欄位皆存活；後端逐欄合併。**勿改回整筆 PUT + expectedVersion + 409 樂觀並行模型** (會丟掉並行不相交欄位修改)。送出欄位對齊後端 flat 欄位名 (`customerName`/`customerTier` 攤平)，不送衍生的 `isCashOnDelivery` 與建立後唯讀的 `mergedSourceIDs`/`customerInitials`。
+- **照片一律以 base64 字串送** (`OrderInputBody.photos: string[]`，現行 Postgres/DTO 現實)；web 絕不上傳 Storage 或在 patch 送路徑參照。
+- **寫入失敗走 localStorage 持久化待送佇列** (`src/lib/sync/writeQueue.ts`)：PATCH 失敗 (離線/網路/5xx) 時把操作存 `buyledger.sync.writeQueue` 並樂觀更新 cache，UI 顯示「待同步/失敗」(`SyncStatusBadge`)；retry 上限 3 次 (`MAX_ATTEMPTS`)、達上限標 `failed` 仍留佇列供手動重試；連線恢復或重新載入自動 `drainQueue` 重送。每筆帶 `opId` (UUID)，重送以 client UUID upsert + 每欄位 HLC 對後端為冪等 no-op (不重複套用)。
+- **同步寫入 mutation 必須設 `networkMode: 'always'`** (`src/lib/queries.ts` 的 `patch`)：TanStack Query v5 預設 `networkMode: 'online'`，在 `navigator.onLine === false` 時會**暫停整個 mutation、`mutationFn` 根本不執行**，離線存檔永久卡在「儲存中」、連待送佇列都進不去。改 `'always'` 讓 `mutationFn` 離線也照跑，再由其內離線分支 (`!navigator.onLine`) 直接走樂觀更新 + `enqueueWrite`、**不 `await api.orders.patch`** (`getCurrentIdToken` 對過期 token 的網路 refresh 在離線時會 hang，會卡在送出之前、進不到 catch)。
+
 ## Next.js / 容器 gotcha
 
 - **用 `useSearchParams()` 的頁面必須包 `<Suspense>`**，否則 `next build` 會因 CSR bailout 失敗 (見 `app/orders/page.tsx`、`app/orders/new/page.tsx` 的 inner 拆法)。

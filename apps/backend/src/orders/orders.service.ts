@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { createHash } from 'node:crypto';
 import type { Prisma } from '@prisma/client';
 import { PrismaService } from '../prisma/prisma.service';
 import { FirestoreMirrorService } from '../firebase/firestore-mirror.service';
@@ -50,43 +51,67 @@ export class OrdersService {
   ) {}
 
   async list(uid: string): Promise<OrderDTO[]> {
+    // 排除已軟刪除 (tombstone) 的訂單
     const rows = await this.prisma.order.findMany({
-      where: { ownerUid: uid },
+      where: { ownerUid: uid, deletedAt: null },
       orderBy: { date: 'desc' },
     });
     return rows.map(rowToDto);
   }
 
   async get(uid: string, id: string): Promise<OrderDTO> {
-    const row = await this.prisma.order.findFirst({ where: { id, ownerUid: uid } });
+    const row = await this.prisma.order.findFirst({
+      where: { id, ownerUid: uid, deletedAt: null },
+    });
     if (!row) throw new NotFoundException(`找不到訂單 ${id}`);
     return rowToDto(row);
   }
 
   async create(uid: string, input: OrderInput): Promise<OrderDTO> {
-    const domain = await this.normalize(uid, input, { isNew: true });
+    const isMergeCreate = (input.mergedSourceIDs ?? []).length > 0;
+    // merge-create 保留 client id 走 (ownerUid,id) upsert；
+    // 重生隨機 id 會使重送短路失效而重複合併
+    const domain = await this.normalize(uid, input, { isNew: !isMergeCreate });
     const data = this.toPrismaData(domain, uid);
 
-    // 合併產生的訂單：單一交易內插入新訂單並將來源訂單設為 merged (原子性)。
-    // 來源訂單一律限縮在呼叫者自己的資料。
     if (domain.mergedSourceIDs.length > 0) {
-      const [created] = await this.prisma.$transaction([
-        this.prisma.order.create({ data }),
-        this.prisma.order.updateMany({
-          where: { id: { in: domain.mergedSourceIDs }, ownerUid: uid },
-          data: { status: 'merged' },
-        }),
-      ]);
+      // 重送冪等：合併後訂單已存在則短路整個交易，
+      // 避免回退來源較晚的並行修改
+      const existingMerged = await this.prisma.order.findFirst({
+        where: { id: domain.id, ownerUid: uid },
+      });
+      if (existingMerged) {
+        return rowToDto(existingMerged);
+      }
+
+      // 來源翻 merged 受時鐘守衛：
+      // 僅當 mergeClock 嚴格大於來源 status 時鐘才設，否則保留來源較晚狀態
+      const mergeClock = this.hlc.encode(this.hlc.generate());
+      const sources = await this.prisma.order.findMany({
+        where: { id: { in: domain.mergedSourceIDs }, ownerUid: uid },
+      });
+      const created = await this.prisma.order.create({ data });
+      for (const src of sources) {
+        const clocks = ((src.fieldClocks as ClockMap | null) ?? {});
+        const srcStatusClock = clocks.status ? this.hlc.decode(clocks.status) : null;
+        if (srcStatusClock && this.hlc.compare(this.hlc.decode(mergeClock), srcStatusClock) <= 0) {
+          continue; // 來源 status 時鐘 ≥ mergeClock：保留來源較晚狀態
+        }
+        await this.prisma.order.update({
+          where: { id: src.id },
+          data: { status: 'merged', fieldClocks: { ...clocks, status: mergeClock } },
+        });
+      }
       const dto = rowToDto(created);
-      await this.mirror.mirrorOrder(uid, dto);
-      // 來源訂單狀態改為 merged，一併重新鏡像。
+      await this.mirror.mirrorOrder(uid, dto, { writerId: 'server' });
+      // 來源訂單狀態可能改為 merged，一併重新鏡像
       await this.remirrorOrders(uid, domain.mergedSourceIDs);
       return dto;
     }
 
     const created = await this.prisma.order.create({ data });
     const dto = rowToDto(created);
-    await this.mirror.mirrorOrder(uid, dto);
+    await this.mirror.mirrorOrder(uid, dto, { writerId: 'server' });
     return dto;
   }
 
@@ -96,25 +121,35 @@ export class OrdersService {
     const data = this.toPrismaData(domain, uid);
     const updated = await this.prisma.order.update({ where: { id }, data });
     const dto = rowToDto(updated);
-    await this.mirror.mirrorOrder(uid, dto);
+    // 帶投影信封 (既有每欄位 HLC + writerId)，
+    // 避免整份覆蓋清掉 _fieldClocks 使 pull 端退化整欄 LWW
+    await this.mirror.mirrorOrder(uid, dto, {
+      fieldClocks: ((updated.fieldClocks as ClockMap | null) ?? {}),
+      writerId: 'server',
+    });
     return dto;
   }
 
-  // 欄位級合併寫入 (對齊 sync-conflict-resolution「Field-level merge with strict-greater
-  // clock acceptance」)：以每欄位 HLC 逐欄合併 incoming partial patch——不同欄位各自存活、
-  // 同欄位由時鐘決勝；重送相同 patch 為 no-op。回傳合併後 DTO 與每個被 patch 欄位的權威
-  // 時鐘 (appliedFieldClocks)，供 client 對帳清 dirty。對完整合併列重跑 normalize 以重算
-  // isCashOnDelivery 等衍生欄位並 clamp。
+  // 欄位級合併寫入：以每欄位 HLC 逐欄合併 incoming patch (同欄位時鐘決勝、不同欄位各自存活)，
+  // 回傳合併後 DTO 與被套用欄位的權威時鐘 (供 client 清 dirty)；對完整列重跑 normalize 重算衍生欄位
   async patch(
     uid: string,
     id: string,
     input: OrderPatchInput,
   ): Promise<{ order: OrderDTO; appliedFieldClocks: Record<string, string> }> {
-    const changedFields = input.changedFields ?? {};
+    const rawFields = input.changedFields ?? {};
     const fieldClocks = input.fieldClocks ?? {};
+
+    // status 為 sticky 終態欄：
+    // 一般 PATCH 忽略它 (merged 只由合併流程寫入)，於合併前剝除
+    const changedFields: Record<string, unknown> = {};
+    for (const [k, v] of Object.entries(rawFields)) {
+      if (k === 'status') continue;
+      changedFields[k] = v;
+    }
     const fields = Object.keys(changedFields);
 
-    // 偏移守門 + 推進伺服器 HLC (合併前必跑)：缺欄位時鐘即 400、未來時鐘超容忍即 400。
+    // 偏移守門 + 推進伺服器 HLC (合併前必跑)：缺時鐘或超容忍即 400
     for (const field of fields) {
       const enc = fieldClocks[field];
       if (!enc) throw new BadRequestException(`欄位 ${field} 缺少時鐘`);
@@ -123,18 +158,20 @@ export class OrdersService {
       this.hlc.receive(clock);
     }
 
-    const existing = await this.prisma.order.findFirst({ where: { id, ownerUid: uid } });
-
-    if (fields.length === 0) {
-      if (!existing) throw new BadRequestException('空白 patch 無法建立訂單');
-      return { order: rowToDto(existing), appliedFieldClocks: {} };
+    // 刪除 tombstone 的時鐘亦先守門 + receive (與欄位時鐘同一套 p→c→w 比較器)
+    let deleteClockEnc: string | null = null;
+    if (input.delete) {
+      if (!input.delete.clock) throw new BadRequestException('刪除缺少時鐘');
+      const dc = this.hlc.decode(input.delete.clock);
+      this.hlc.assertWithinTolerance(dc);
+      this.hlc.receive(dc);
+      deleteClockEnc = input.delete.clock;
     }
 
-    const storedValues: FieldMap = existing ? orderDomainToFlat(rowToDomain(existing)) : {};
-    const storedClocks: ClockMap = (existing?.fieldClocks as ClockMap | null) ?? {};
-    const merged = mergeFieldWrites(storedValues, storedClocks, { changedFields, fieldClocks });
+    const existing = await this.prisma.order.findFirst({ where: { id, ownerUid: uid } });
 
-    // 跨使用者碰撞守門 (client UUID 理論上不撞；防覆蓋他人資料、且不洩漏存在性)。
+    // 跨使用者碰撞守門
+    // (client UUID 理論上不撞；防覆蓋他人資料、且不洩漏存在性)
     if (!existing) {
       const collision = await this.prisma.order.findUnique({
         where: { id },
@@ -145,12 +182,82 @@ export class OrdersService {
       }
     }
 
+    // 純刪除 (無 changedFields)：
+    // 設 deletedAt + deleteClock、保留整列與 fieldClocks、鏡像顯式 tombstone
+    if (fields.length === 0 && deleteClockEnc) {
+      if (!existing) throw new BadRequestException('空白 patch 無法建立訂單');
+      return this.applyDelete(uid, id, existing, deleteClockEnc);
+    }
+
+    if (fields.length === 0) {
+      if (!existing) throw new BadRequestException('空白 patch 無法建立訂單');
+      return { order: rowToDto(existing), appliedFieldClocks: {} };
+    }
+
+    // 復活判定：tombstone 列僅當任一 incoming 欄位 clock 嚴格大於 storedDeleteClock 才復活
+    const storedDeleteClock =
+      existing && (existing.deleteClock as string) ? (existing.deleteClock as string) : null;
+    const isDeleted = !!(existing && existing.deletedAt);
+
+    const storedValues: FieldMap = existing ? orderDomainToFlat(rowToDomain(existing)) : {};
+    const storedClocks: ClockMap = (existing?.fieldClocks as ClockMap | null) ?? {};
+    const merged = mergeFieldWrites(storedValues, storedClocks, { changedFields, fieldClocks });
+
+    // photos 內容雜湊 union：含 photos 時一律與 stored 取聯集、不受時鐘門檻吞掉 (兩端新增皆存活)；
+    // photos 欄位 clock 取兩端 max，確保聯集值在投影傳播 (否則停在較低 clock 會被既有較高 stored 略過)
+    if (changedFields.photos !== undefined) {
+      merged.values.photos = unionPhotos(
+        (storedValues.photos as string[] | undefined) ?? [],
+        changedFields.photos as string[],
+      );
+      const incomingPhotoClock = fieldClocks.photos;
+      const storedPhotoClock = storedClocks.photos;
+      const maxPhotoClock = this.maxClock(storedPhotoClock, incomingPhotoClock);
+      if (maxPhotoClock) {
+        merged.clocks.photos = maxPhotoClock;
+        merged.appliedClocks.photos = maxPhotoClock;
+      }
+    }
+
+    if (isDeleted) {
+      // 畸形列防護：有 deletedAt 但 deleteClock 為空字串時視為硬 tombstone，
+      // 否則任何 patch 都能免費復活
+      if (!storedDeleteClock) {
+        return this.persistDeleted(
+          uid,
+          id,
+          merged.values,
+          merged.clocks,
+          '',
+          merged.appliedClocks,
+        );
+      }
+
+      // 復活判定須用 incoming 原始 fieldClocks 與 deleteClock 比，不可用 merged.appliedClocks——
+      // 後者在 incoming 落敗時 fallback 成 stored clock，會把落敗寫入誤判為復活
+      const beatsDelete = this.anyIncomingBeatsDelete(fieldClocks, fields, storedDeleteClock);
+      if (!beatsDelete) {
+        // 維持刪除：保留 tombstone (含已合併但不足以復活的較高欄位時鐘)、重寫 tombstone 鏡像
+        return this.persistDeleted(
+          uid,
+          id,
+          merged.values,
+          merged.clocks,
+          storedDeleteClock as string,
+          merged.appliedClocks,
+        );
+      }
+    }
+
+    // 復活或一般合併：清 deletedAt/deleteClock、寫入合併後完整列
     const domain = await this.normalize(uid, orderFlatToInput(merged.values, id), {
       isNew: false,
     });
     const data: Prisma.OrderUncheckedCreateInput = {
       ...this.toPrismaData(domain, uid),
       fieldClocks: merged.clocks as Prisma.InputJsonValue,
+      deletedAt: null,
+      deleteClock: '',
     };
     const saved = await this.prisma.order.upsert({
       where: { id },
@@ -159,14 +266,31 @@ export class OrdersService {
     });
 
     const dto = rowToDto(saved);
-    await this.mirror.mirrorOrder(uid, dto, { fieldClocks: merged.clocks });
+    const mirrored = await this.mirror.mirrorOrder(uid, dto, {
+      fieldClocks: merged.clocks,
+      writerId: 'server',
+    });
+    await this.markMirrorState(uid, id, mirrored);
     return { order: dto, appliedFieldClocks: merged.appliedClocks };
   }
 
+  // 軟刪除：設 deletedAt + server HLC deleteClock、
+  // 保留整列與 fieldClocks、鏡像顯式 tombstone (不硬刪)
   async remove(uid: string, id: string): Promise<void> {
-    await this.ensureExists(uid, id);
-    await this.prisma.order.delete({ where: { id } });
-    await this.mirror.remove(uid, 'orders', id);
+    const existing = await this.prisma.order.findFirst({ where: { id, ownerUid: uid } });
+    if (!existing) throw new NotFoundException(`找不到訂單 ${id}`);
+    const deleteClock = this.hlc.encode(this.hlc.generate());
+    await this.applyDelete(uid, id, existing, deleteClock);
+  }
+
+  // tombstone 90 天保留窗後硬清除 (由 MirrorSweepService 的 @Interval 一併呼叫)；
+  // 保留界以注入的 now 計算
+  async purgeExpiredTombstones(retentionDays = TOMBSTONE_RETENTION_DAYS): Promise<number> {
+    const cutoff = new Date(this.now.now().getTime() - retentionDays * DAY_MS);
+    const result = await this.prisma.order.deleteMany({
+      where: { deletedAt: { not: null, lt: cutoff } },
+    });
+    return result.count ?? 0;
   }
 
   async setStatus(uid: string, id: string, input: StatusChangeInput): Promise<OrderDTO> {
@@ -178,12 +302,15 @@ export class OrdersService {
       data: { status },
     });
     const dto = rowToDto(updated);
-    await this.mirror.mirrorOrder(uid, dto);
+    await this.mirror.mirrorOrder(uid, dto, {
+      fieldClocks: ((updated.fieldClocks as ClockMap | null) ?? {}),
+      writerId: 'server',
+    });
     return dto;
   }
 
-  // 批次更改狀態：以單一 updateMany 依 ownerUid 圈更新已選訂單，更新後重新鏡像受影響訂單。
-  // 不屬呼叫者的 id 一律不受影響也不報錯；merged 為終態僅由合併流程寫入，端點層拒絕。
+  // 批次更改狀態：updateMany 依 ownerUid 圈更新已選訂單後重新鏡像；
+  // 不屬呼叫者的 id 不受影響也不報錯
   async batchSetStatus(uid: string, input: BatchStatusChangeInput): Promise<OrderDTO[]> {
     const status = this.validStatus(input.status);
     if (!status) throw new BadRequestException('無效的訂單狀態');
@@ -198,11 +325,17 @@ export class OrdersService {
       data: { status },
     });
 
-    // 查回實際受影響 (屬該使用者) 的訂單，逐筆 remirror 並回傳更新後 DTO。
     const rows = await this.prisma.order.findMany({
       where: { id: { in: ids }, ownerUid: uid },
     });
-    await Promise.all(rows.map((row) => this.mirror.mirrorOrder(uid, rowToDto(row))));
+    await Promise.all(
+      rows.map((row) =>
+        this.mirror.mirrorOrder(uid, rowToDto(row), {
+          fieldClocks: ((row.fieldClocks as ClockMap | null) ?? {}),
+          writerId: 'server',
+        }),
+      ),
+    );
     return rows.map(rowToDto);
   }
 
@@ -216,11 +349,15 @@ export class OrdersService {
       data: { paymentReceiptStatus: input.status },
     });
     const dto = rowToDto(updated);
-    await this.mirror.mirrorOrder(uid, dto);
+    await this.mirror.mirrorOrder(uid, dto, {
+      fieldClocks: ((updated.fieldClocks as ClockMap | null) ?? {}),
+      writerId: 'server',
+    });
     return dto;
   }
 
-  // 合併草稿：取兩筆訂單算出合併欄位 (含加權費率)，照片是否超量交由前端挑選步驟處理。
+  // 合併草稿：取兩筆訂單算出合併欄位 (含加權費率)，
+  // 照片是否超量交由前端挑選步驟處理
   async mergeDraft(uid: string, input: MergeDraftInput): Promise<{
     draft: MergeDraft;
     photosOverLimit: boolean;
@@ -243,7 +380,7 @@ export class OrdersService {
     const primary = rowToDomain(primaryRow);
     const secondary = rowToDomain(secondaryRow);
 
-    // 合併資格：同幣別、同客戶名稱、雙方狀態皆非 merged/cancelled。
+    // 合併資格：同幣別、同客戶名稱、雙方狀態皆非 merged/cancelled
     const blocked = new Set(['merged', 'cancelled']);
     if (
       primary.currency !== secondary.currency ||
@@ -268,7 +405,7 @@ export class OrdersService {
     };
   }
 
-  // 主檔改名時 cascade 到訂單 (純量欄位 updateMany)，僅限該使用者的訂單。
+  // 主檔改名時 cascade 到訂單 (純量欄位 updateMany)，僅限該使用者的訂單
   async cascadeRenameScalar(
     uid: string,
     field: 'orderSource' | 'paymentMethod' | 'verificationStatus',
@@ -276,25 +413,106 @@ export class OrdersService {
     newName: string,
   ): Promise<void> {
     if (oldName === newName) return;
-    await this.prisma.order.updateMany({
-      where: { [field]: oldName, ownerUid: uid },
-      data: { [field]: newName },
-    });
+    // 僅圈未刪除列：tombstone 列不得被 cascade 改名觸及 (避免在投影復活成活文件)
     const affected = await this.prisma.order.findMany({
-      where: { [field]: newName, ownerUid: uid },
-      select: { id: true },
+      where: { [field]: oldName, ownerUid: uid, deletedAt: null },
+      select: { id: true, fieldClocks: true },
     });
+    if (affected.length === 0) return;
+    // cascade 為 server 權威改名：逐列改值並以 server HLC 蓋章 fieldClock，
+    // 否則舊 clock 的 client 寫入會回退它
+    await this.prisma.$transaction(
+      affected.map((row) => {
+        const clocks = (row.fieldClocks as ClockMap | null) ?? {};
+        return this.prisma.order.update({
+          where: { id: row.id },
+          data: {
+            [field]: newName,
+            fieldClocks: { ...clocks, [field]: this.hlc.encode(this.hlc.generate()) },
+          },
+        });
+      }),
+    );
     await this.remirrorOrders(uid, affected.map((r) => r.id));
   }
 
-  // 類別改名 cascade：逐筆把 categories 陣列內 old→new 取代並去重。
+  // 類別改名 cascade：逐筆把 categories 陣列內 old→new 取代並去重
   async cascadeRenameCategory(uid: string, oldName: string, newName: string): Promise<void> {
     await this.cascadeRenameArray(uid, 'categories', oldName, newName);
   }
 
-  // 開團改名 cascade：逐筆把 campaignNames 陣列內 old→new 取代並去重。
+  // 開團改名 cascade：逐筆把 campaignNames 陣列內 old→new 取代並去重
   async cascadeRenameCampaign(uid: string, oldName: string, newName: string): Promise<void> {
     await this.cascadeRenameArray(uid, 'campaignNames', oldName, newName);
+  }
+
+  // lookup 刪除 cascade-strip：把被刪除的純量值從該使用者訂單清空，
+  // 使刪除不致孤立參照 (清空後 normalize 補 fallback)
+  async cascadeStripScalar(
+    uid: string,
+    field: 'orderSource' | 'paymentMethod' | 'verificationStatus',
+    name: string,
+  ): Promise<void> {
+    if (!name) return;
+    const rows = await this.prisma.order.findMany({
+      where: { [field]: name, ownerUid: uid, deletedAt: null },
+      select: { id: true, fieldClocks: true },
+    });
+    if (rows.length === 0) return;
+    // cascade-strip 為 server 權威清空：逐列清值並以 server HLC 蓋章 fieldClock，
+    // 不被舊 clock 的 client 寫入回退
+    await this.prisma.$transaction(
+      rows.map((row) => {
+        const clocks = (row.fieldClocks as ClockMap | null) ?? {};
+        return this.prisma.order.update({
+          where: { id: row.id },
+          data: {
+            [field]: '',
+            fieldClocks: { ...clocks, [field]: this.hlc.encode(this.hlc.generate()) },
+          },
+        });
+      }),
+    );
+    await this.remirrorOrders(uid, rows.map((r) => r.id));
+  }
+
+  // 類別 / 開團刪除 cascade-strip：逐筆把被刪除的元素從 categories / campaignNames 陣列剝除
+  // (元素級、只動含該元素的列；並行不相交元素存活)
+  async cascadeStripCategory(uid: string, name: string): Promise<void> {
+    await this.cascadeStripArray(uid, 'categories', name);
+  }
+
+  async cascadeStripCampaign(uid: string, name: string): Promise<void> {
+    await this.cascadeStripArray(uid, 'campaignNames', name);
+  }
+
+  private async cascadeStripArray(
+    uid: string,
+    field: 'categories' | 'campaignNames',
+    name: string,
+  ): Promise<void> {
+    if (!name) return;
+    const rows = await this.prisma.order.findMany({
+      where: { [field]: { has: name }, ownerUid: uid, deletedAt: null },
+      select: { id: true, categories: true, campaignNames: true, fieldClocks: true },
+    });
+    if (rows.length === 0) return;
+    await this.prisma.$transaction(
+      rows.map((row) => {
+        const current = field === 'categories' ? row.categories : row.campaignNames;
+        const stripped = current.filter((v) => v !== name);
+        // 以 server HLC 蓋章該陣列欄位 fieldClock，使 cascade-strip 成帶時鐘的權威寫入
+        const clocks = (row.fieldClocks as ClockMap | null) ?? {};
+        return this.prisma.order.update({
+          where: { id: row.id },
+          data: {
+            [field]: stripped,
+            fieldClocks: { ...clocks, [field]: this.hlc.encode(this.hlc.generate()) },
+          },
+        });
+      }),
+    );
+    await this.remirrorOrders(uid, rows.map((r) => r.id));
   }
 
   private async cascadeRenameArray(
@@ -304,17 +522,23 @@ export class OrdersService {
     newName: string,
   ): Promise<void> {
     if (oldName === newName) return;
+    // 僅圈未刪除列：tombstone 列不得被 cascade 改名觸及 (避免在投影復活成活文件)
     const rows = await this.prisma.order.findMany({
-      where: { [field]: { has: oldName }, ownerUid: uid },
-      select: { id: true, categories: true, campaignNames: true },
+      where: { [field]: { has: oldName }, ownerUid: uid, deletedAt: null },
+      select: { id: true, categories: true, campaignNames: true, fieldClocks: true },
     });
     await this.prisma.$transaction(
       rows.map((row) => {
         const current = field === 'categories' ? row.categories : row.campaignNames;
         const replaced = uniquePreserve(current.map((v) => (v === oldName ? newName : v)));
+        // 以 server HLC 蓋章該陣列欄位 fieldClock，使 cascade 改名成帶時鐘的權威寫入
+        const clocks = (row.fieldClocks as ClockMap | null) ?? {};
         return this.prisma.order.update({
           where: { id: row.id },
-          data: { [field]: replaced },
+          data: {
+            [field]: replaced,
+            fieldClocks: { ...clocks, [field]: this.hlc.encode(this.hlc.generate()) },
+          },
         });
       }),
     );
@@ -323,11 +547,114 @@ export class OrdersService {
 
   // MARK: - 私有
 
-  // 重新鏡像一組訂單 (cascade 改名或合併後欄位變動)。
+  // 套用刪除 tombstone：設 deletedAt + deleteClock、
+  // 保留整列與 fieldClocks、鏡像顯式 tombstone
+  private async applyDelete(
+    uid: string,
+    id: string,
+    existing: Record<string, unknown>,
+    deleteClock: string,
+  ): Promise<{ order: OrderDTO; appliedFieldClocks: Record<string, string> }> {
+    const saved = await this.prisma.order.update({
+      where: { id },
+      data: { deletedAt: this.now.now(), deleteClock },
+    });
+    const dto = rowToDto(saved as never);
+    const fieldClocks = (existing.fieldClocks as ClockMap | null) ?? {};
+    const mirrored = await this.mirror.mirrorOrderTombstone(uid, dto, deleteClock, {
+      fieldClocks,
+      writerId: 'server',
+    });
+    await this.markMirrorState(uid, id, mirrored);
+    return { order: dto, appliedFieldClocks: {} };
+  }
+
+  // 維持刪除但仍持久化已合併 (未足以復活) 的較高欄位時鐘與值：
+  // 保留 tombstone、重寫 tombstone 鏡像
+  private async persistDeleted(
+    uid: string,
+    id: string,
+    values: FieldMap,
+    clocks: ClockMap,
+    deleteClock: string,
+    appliedClocks: ClockMap,
+  ): Promise<{ order: OrderDTO; appliedFieldClocks: Record<string, string> }> {
+    const domain = await this.normalize(uid, orderFlatToInput(values, id), { isNew: false });
+    const data: Prisma.OrderUncheckedCreateInput = {
+      ...this.toPrismaData(domain, uid),
+      fieldClocks: clocks as Prisma.InputJsonValue,
+      deletedAt: this.now.now(),
+      deleteClock,
+    };
+    const saved = await this.prisma.order.upsert({ where: { id }, create: data, update: data });
+    const dto = rowToDto(saved);
+    const mirrored = await this.mirror.mirrorOrderTombstone(uid, dto, deleteClock, {
+      fieldClocks: clocks,
+      writerId: 'server',
+    });
+    await this.markMirrorState(uid, id, mirrored);
+    return { order: dto, appliedFieldClocks: appliedClocks };
+  }
+
+  // 取兩個編碼 HLC 的較大者 (p→c→w)；
+  // 任一為空時回另一個 (photos 欄位 clock 取兩端 max 用)
+  private maxClock(a: string | undefined, b: string | undefined): string | undefined {
+    if (!a) return b;
+    if (!b) return a;
+    return this.hlc.compare(this.hlc.decode(a), this.hlc.decode(b)) >= 0 ? a : b;
+  }
+
+  // 復活判定：任一 incoming 欄位時鐘嚴格大於 storedDeleteClock 即復活 (p→c→w，位元全等 delete 勝)；
+  // storedDeleteClock 為空視為無 tombstone
+  private anyIncomingBeatsDelete(
+    appliedClocks: ClockMap,
+    fields: string[],
+    storedDeleteClock: string | null,
+  ): boolean {
+    if (!storedDeleteClock) return true;
+    const dc = this.hlc.decode(storedDeleteClock);
+    for (const field of fields) {
+      const applied = appliedClocks[field];
+      if (!applied) continue;
+      if (this.hlc.compare(this.hlc.decode(applied), dc) > 0) return true;
+    }
+    return false;
+  }
+
+  // 鏡像結果回填：成功清 mirrorDirty；
+  // 失敗蓋 mirrorDirty + mirrorPendingSinceClock 交 MirrorSweepService 修復
+  private async markMirrorState(uid: string, id: string, mirrored: boolean): Promise<void> {
+    if (mirrored) {
+      await this.prisma.order.updateMany({
+        where: { id, ownerUid: uid, mirrorDirty: true },
+        data: { mirrorDirty: false, mirrorPendingSinceClock: null },
+      });
+      return;
+    }
+    await this.prisma.order.updateMany({
+      where: { id, ownerUid: uid },
+      data: { mirrorDirty: true, mirrorPendingSinceClock: this.hlc.encode(this.hlc.generate()) },
+    });
+  }
+
+  // 重新鏡像一組訂單 (cascade 改名或合併後)。依 deletedAt 分流：tombstone 列走 mirrorOrderTombstone
+  // 以維持顯式 _deleted:true 不被復活；信封一律帶 row.fieldClocks + writerId='server' 避免退化整欄 LWW
   private async remirrorOrders(uid: string, ids: string[]): Promise<void> {
     if (ids.length === 0) return;
     const rows = await this.prisma.order.findMany({ where: { id: { in: ids }, ownerUid: uid } });
-    await Promise.all(rows.map((row) => this.mirror.mirrorOrder(uid, rowToDto(row))));
+    await Promise.all(
+      rows.map((row) => {
+        const fieldClocks = (row.fieldClocks as ClockMap | null) ?? {};
+        const dto = rowToDto(row as never);
+        if (row.deletedAt) {
+          return this.mirror.mirrorOrderTombstone(uid, dto, (row.deleteClock as string) ?? '', {
+            fieldClocks,
+            writerId: 'server',
+          });
+        }
+        return this.mirror.mirrorOrder(uid, dto, { fieldClocks, writerId: 'server' });
+      }),
+    );
   }
 
   private async ensureExists(uid: string, id: string): Promise<void> {
@@ -355,7 +682,8 @@ export class OrdersService {
     return new Set(methods.map((m) => m.name));
   }
 
-  // 正規化前端草稿 (對齊 iOS applyEditDraft)：clamp 金額/費率、依付款方式旗標清欄位、補 fallback。
+  // 正規化前端草稿 (對齊 iOS applyEditDraft)：
+  // clamp 金額/費率、依付款方式旗標清欄位、補 fallback
   private async normalize(
     uid: string,
     input: OrderInput,
@@ -398,7 +726,9 @@ export class OrdersService {
     const photos = (input.photos ?? []).slice(0, MAX_PHOTO_COUNT);
 
     return {
-      id: opts.isNew ? this.ids.newOrderId() : (input.id as string),
+      // isNew → server 生成 id；
+      // 否則保留 client input.id (merge-create/update/patch 走 upsert)；缺則生成一次
+      id: opts.isNew ? this.ids.newOrderId() : (input.id as string) || this.ids.newOrderId(),
       customer: { name, initials, tier },
       status,
       currency: (input.currency ?? 'TWD').trim() || 'TWD',
@@ -466,17 +796,43 @@ export class OrdersService {
   }
 }
 
-// 金額 clamp 至 >= 0；空值視為 0。
+// tombstone 保留窗 90 天 (= 支援的最大「離線且持續編輯」窗)
+const TOMBSTONE_RETENTION_DAYS = 90;
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+// 照片以內容雜湊取聯集：相同內容只保留一張、兩端並行新增皆存活
+// (切片到 MAX_PHOTO_COUNT 由 normalize 處理)
+function unionPhotos(stored: string[], incoming: string[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const p of [...stored, ...incoming]) {
+    const hash = photoContentHash(p);
+    if (seen.has(hash)) continue;
+    seen.add(hash);
+    out.push(p);
+  }
+  return out;
+}
+
+// 照片內容雜湊：去 data URL 前綴後對解碼位元組取 sha256，
+// 使相同影像得相同鍵
+function photoContentHash(value: string): string {
+  const comma = value.indexOf(',');
+  const base64 = value.startsWith('data:') && comma >= 0 ? value.slice(comma + 1) : value;
+  return createHash('sha256').update(Buffer.from(base64, 'base64')).digest('hex');
+}
+
+// 金額 clamp 至 >= 0；空值視為 0
 function clampMin0(value: string | undefined): string {
   return Decimal.max(0, D(value)).toString();
 }
 
-// 費率 clamp 至 [0, 1]。
+// 費率 clamp 至 [0, 1]
 function clampRate(value: string | undefined): string {
   return Decimal.max(0, Decimal.min(1, D(value))).toString();
 }
 
-// 去重並保序 (cascade 改名後可能產生重複元素)。
+// 去重並保序 (cascade 改名後可能產生重複元素)
 function uniquePreserve(values: string[]): string[] {
   const seen = new Set<string>();
   const out: string[] = [];
@@ -500,7 +856,8 @@ function uniqueNonEmpty(values: string[]): string[] {
   return out;
 }
 
-// 由客戶名稱推導縮寫：多詞取前兩詞首字母；單詞拉丁取前兩字母、CJK 取首字。
+// 由客戶名稱推導縮寫：多詞取前兩詞首字母；
+// 單詞拉丁取前兩字母、CJK 取首字
 function deriveInitials(name: string): string {
   const trimmed = name.trim();
   if (!trimmed) return '?';
@@ -513,12 +870,12 @@ function deriveInitials(name: string): string {
   return first;
 }
 
-// 領域訂單 → 可合併的 flat 欄位圖：攤平 customer；排除 id、mergedSourceIDs (建立後唯讀) 與
-// 衍生的 isCashOnDelivery (交由 normalize 依付款方式重算、不參與合併)。
-function orderDomainToFlat(o: LedgerOrder): FieldMap {
+// 領域訂單 → 可合併的 flat 欄位圖：攤平 customer，排除 id、mergedSourceIDs (唯讀) 與衍生欄位
+// isCashOnDelivery、customerInitials (由 normalize 重算、不參與合併)
+// export 供 conformance 測試核對欄位分類
+export function orderDomainToFlat(o: LedgerOrder): FieldMap {
   return {
     customerName: o.customer.name,
-    customerInitials: o.customer.initials,
     customerTier: o.customer.tier,
     status: o.status,
     currency: o.currency,
@@ -545,14 +902,14 @@ function orderDomainToFlat(o: LedgerOrder): FieldMap {
   };
 }
 
-// flat 欄位圖 → OrderInput (供 normalize)；缺欄位帶 undefined 由 normalize 補預設與 clamp。
+// flat 欄位圖 → OrderInput (供 normalize)；缺欄位帶 undefined 由 normalize 補預設與 clamp
 function orderFlatToInput(flat: FieldMap, id: string): OrderInput {
   const str = (v: unknown): string | undefined => (v === undefined ? undefined : String(v));
   return {
     id,
     customer: {
       name: str(flat.customerName),
-      initials: str(flat.customerInitials),
+      // customerInitials 為 B 類衍生：不從 flat 帶入，由 normalize 從勝出的 customerName 重算
       tier: flat.customerTier as LedgerOrder['customer']['tier'] | undefined,
     },
     status: flat.status as LedgerOrder['status'] | undefined,
