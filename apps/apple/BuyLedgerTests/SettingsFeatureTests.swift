@@ -80,7 +80,7 @@ struct SettingsFeatureTests {
             )
         }
         // `.task` 還會從 `CurrencyMetadataRepository` 並行載入幣別清單並 dispatch `availableCurrenciesLoaded`；
-        // 本測試只驗證 storage 套用流程，幣別主檔由 `CurrencyMetadataRepository` 自身覆蓋。
+        // 本測試只驗證 storage 套用流程，幣別主檔由 `CurrencyMetadataRepository` 自身覆蓋
         store.exhaustivity = .off
 
         await store.send(.task) {
@@ -154,11 +154,11 @@ struct SettingsFeatureTests {
     }
 }
 
-/// 簡易的 `@unchecked Sendable` 容器，避免引入 `ConcurrencyExtras.LockIsolated` 在測試 target 中遭遇連結問題。
+/// 簡易的 `@unchecked Sendable` 容器，避免引入 `ConcurrencyExtras.LockIsolated` 在測試 target 中遭遇連結問題
 private final class SnapshotBox: @unchecked Sendable {
 
     // MARK: - Data Properties
 
-    /// 由 closure 寫入並由測試讀取的快照。
+    /// 由 closure 寫入並由測試讀取的快照
     var value: SettingsSnapshot?
 }

@@ -10,37 +10,37 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// macOS 使用的訂單瀏覽畫面。
+/// macOS 使用的訂單瀏覽畫面
 ///
-/// 以 SwiftUI ``List`` 搭配 ``OrderRowView`` 呈現所有訂單，搭配右側 inspector 顯示選取訂單的詳情，對應設計稿的 Mac Orders tab。先前採用 ``Table``，但其固定單行 row 高度會截斷商品明細，改用 ``List`` 後商品明細能多行完整顯示。
+/// 以 SwiftUI ``List`` 搭配 ``OrderRowView`` 呈現所有訂單，搭配右側 inspector 顯示選取訂單的詳情，對應設計稿的 Mac Orders tab。先前採用 ``Table``，但其固定單行 row 高度會截斷商品明細，改用 ``List`` 後商品明細能多行完整顯示
 struct OrdersMacView: View {
 
     // MARK: - View Properties
 
-    /// 訂單功能 store。
+    /// 訂單功能 store
     @Bindable var store: StoreOf<OrdersFeature>
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 控制 inspector 是否顯示。
+    /// 控制 inspector 是否顯示
     @State private var showsInspector = true
 
-    /// 商品類別篩選 sheet 是否呈現。點 trigger button 後設為 `true`，由 ``OptionPickerSheet`` 內部 dismiss 結束回 `false`。
+    /// 商品類別篩選 sheet 是否呈現。點 trigger button 後設為 `true`，由 ``OptionPickerSheet`` 內部 dismiss 結束回 `false`
     @State private var showsCategoryPicker = false
 
-    /// 付款方式篩選 sheet 是否呈現。點 trigger button 後設為 `true`，由 ``OptionPickerSheet`` 內部 dismiss 結束回 `false`。
+    /// 付款方式篩選 sheet 是否呈現。點 trigger button 後設為 `true`，由 ``OptionPickerSheet`` 內部 dismiss 結束回 `false`
     @State private var showsPaymentMethodPicker = false
 
-    /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)`` 的「現在」時間；測試可注入固定值。
+    /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)`` 的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
 
-    /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值。
+    /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
 
     // MARK: - View Body
 
-    /// 訂單瀏覽畫面內容。
+    /// 訂單瀏覽畫面內容
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
         let filteredIDs = store.state.filteredOrders(referenceDate: date.now, calendar: calendar).map(\.id)
@@ -83,7 +83,7 @@ struct OrdersMacView: View {
 
                 ToolbarItem {
                     Menu {
-                        // 「已合併」僅能由合併流程寫入，批次目標清單一律排除。
+                        // 「已合併」僅能由合併流程寫入，批次目標清單一律排除
                         ForEach(OrderStatus.allCases.filter { $0 != .merged }) { status in
                             Button(status.title) {
                                 store.send(.batchStatusChanged(status))
@@ -195,9 +195,9 @@ struct OrdersMacView: View {
 
 private extension OrdersMacView {
 
-    /// 標題列：H1 與狀態 chip 篩選。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 標題與篩選列 view。
+    /// 標題列：H1 與狀態 chip 篩選
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 標題與篩選列 view
     @ViewBuilder
     func titleAndFilters(palette: BLPalette) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: BLSpacing.large) {
@@ -216,9 +216,9 @@ private extension OrdersMacView {
         }
     }
 
-    /// 搜尋輸入欄與日期區間 chip 列並排。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 搜尋欄與日期 chip 列 view。
+    /// 搜尋輸入欄與日期區間 chip 列並排
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 搜尋欄與日期 chip 列 view
     @ViewBuilder
     func searchAndDateRow(palette: BLPalette) -> some View {
         HStack(spacing: BLSpacing.medium) {
@@ -234,9 +234,9 @@ private extension OrdersMacView {
         }
     }
 
-    /// 日期區間 chip 列。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 日期 chip 列 view。
+    /// 日期區間 chip 列
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 日期 chip 列 view
     @ViewBuilder
     func dateChipRow(palette: BLPalette) -> some View {
         HStack(spacing: BLSpacing.small) {
@@ -265,15 +265,15 @@ private extension OrdersMacView {
         }
     }
 
-    /// macOS 訂單頁的商品類別篩選 trigger button。
+    /// macOS 訂單頁的商品類別篩選 trigger button
     ///
-    /// 與 ``OrdersCompactView`` / iPad 的 trigger 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「類別：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)。padding / font 沿用 macOS 既有 chip 的尺寸 (`.footnote` / `.caption2` / `6pt vertical / 12pt horizontal`)；sheet 尺寸沿用 ``OptionPickerSheet`` 既有 `400×480`，與訂單編輯流程選類別時一致。
+    /// 與 ``OrdersCompactView`` / iPad 的 trigger 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「類別：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)。padding / font 沿用 macOS 既有 chip 的尺寸 (`.footnote` / `.caption2` / `6pt vertical / 12pt horizontal`)；sheet 尺寸沿用 ``OptionPickerSheet`` 既有 `400×480`，與訂單編輯流程選類別時一致
     ///
-    /// - 未選任何類別時，label 顯示「類別：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`。
-    /// - 已選某類別時，label 顯示「類別：<類別名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`。
-    /// - 類別名過長時，label 套 ``SwiftUI/Text/lineLimit(_:)`` 與 ``SwiftUI/Text/truncationMode(_:)`` 以 ellipsis 結尾，capsule 不換行。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)。
+    /// - 未選任何類別時，label 顯示「類別：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`
+    /// - 已選某類別時，label 顯示「類別：<類別名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`
+    /// - 類別名過長時，label 套 ``SwiftUI/Text/lineLimit(_:)`` 與 ``SwiftUI/Text/truncationMode(_:)`` 以 ellipsis 結尾，capsule 不換行
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)
     @ViewBuilder
     func categoryFilterTrigger(palette: BLPalette) -> some View {
         let isSelected = store.selectedCategory != nil
@@ -304,14 +304,14 @@ private extension OrdersMacView {
         .buttonStyle(.plain)
     }
 
-    /// macOS 訂單頁的付款方式篩選 trigger button。
+    /// macOS 訂單頁的付款方式篩選 trigger button
     ///
-    /// 與 ``categoryFilterTrigger(palette:)`` 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「付款方式：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)。
+    /// 與 ``categoryFilterTrigger(palette:)`` 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「付款方式：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)
     ///
-    /// - 未選任何付款方式時，label 顯示「付款方式：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`。
-    /// - 已選某付款方式時，label 顯示「付款方式：<付款方式名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)。
+    /// - 未選任何付款方式時，label 顯示「付款方式：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`
+    /// - 已選某付款方式時，label 顯示「付款方式：<付款方式名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)
     @ViewBuilder
     func paymentMethodFilterTrigger(palette: BLPalette) -> some View {
         let isSelected = store.selectedPaymentMethod != nil
@@ -342,9 +342,9 @@ private extension OrdersMacView {
         .buttonStyle(.plain)
     }
 
-    /// 載入失敗訊息。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 錯誤橫幅 view，沒有錯誤時為空。
+    /// 載入失敗訊息
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 錯誤橫幅 view，沒有錯誤時為空
     @ViewBuilder
     func errorBanner(palette: BLPalette) -> some View {
         if let errorMessage = store.errorMessage {
@@ -354,11 +354,11 @@ private extension OrdersMacView {
         }
     }
 
-    /// 訂單清單。
+    /// 訂單清單
     ///
-    /// 與 iPhone (compact) 的 ``OrdersCompactView`` 及 iPad 的 ``OrdersView`` `listPane` 共用同一套 ``BLCard`` + ``Divider`` 排版，讓三平台的訂單列表呈現一致的單一圓角卡片外觀。先前採用 ``Table`` (固定單行 row 高度會截斷商品明細)，後改 ``List``；但 macOS `.inset` list 的 `List(selection:)` 會在選取列疊上不透明的系統 accent 高亮，蓋掉自訂卡片色而呈現整塊亮藍，因此改以 ``ScrollView`` + ``BLCard`` 自繪列表。選取狀態僅反映在右側 inspector，列表本身不畫選取高亮 (比照 iOS)；刪除走 row 的 context menu。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 訂單列表 view。
+    /// 與 iPhone (compact) 的 ``OrdersCompactView`` 及 iPad 的 ``OrdersView`` `listPane` 共用同一套 ``BLCard`` + ``Divider`` 排版，讓三平台的訂單列表呈現一致的單一圓角卡片外觀。先前採用 ``Table`` (固定單行 row 高度會截斷商品明細)，後改 ``List``；但 macOS `.inset` list 的 `List(selection:)` 會在選取列疊上不透明的系統 accent 高亮，蓋掉自訂卡片色而呈現整塊亮藍，因此改以 ``ScrollView`` + ``BLCard`` 自繪列表。選取狀態僅反映在右側 inspector，列表本身不畫選取高亮 (比照 iOS)；刪除走 row 的 context menu
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 訂單列表 view
     @ViewBuilder
     func ordersList(palette: BLPalette) -> some View {
         let orders = store.state.filteredOrders(referenceDate: date.now, calendar: calendar)
@@ -379,11 +379,11 @@ private extension OrdersMacView {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
     }
 
-    /// 卡片化的訂單列表，內含逐列訂單與分隔線。
+    /// 卡片化的訂單列表，內含逐列訂單與分隔線
     ///
-    /// 與 ``OrdersCompactView`` 的 `listSection`、iPad `listPane` 的 `orderListCard` 採同一套 ``BLCard`` + ``Divider`` 排版以維持三平台一致；每列以 ``Button`` 送出 ``OrdersFeature/Action/orderSelected(_:)`` 更新右側 inspector。
-    /// - Parameter orders: 已套用篩選的訂單清單。
-    /// - Returns: 卡片化的訂單列表 view。
+    /// 與 ``OrdersCompactView`` 的 `listSection`、iPad `listPane` 的 `orderListCard` 採同一套 ``BLCard`` + ``Divider`` 排版以維持三平台一致；每列以 ``Button`` 送出 ``OrdersFeature/Action/orderSelected(_:)`` 更新右側 inspector
+    /// - Parameter orders: 已套用篩選的訂單清單
+    /// - Returns: 卡片化的訂單列表 view
     @ViewBuilder
     func orderListCard(orders: [LedgerOrder]) -> some View {
         let palette = BLTheme.palette(for: colorScheme)
@@ -406,9 +406,9 @@ private extension OrdersMacView {
         }
     }
 
-    /// 一般 (非多選) 模式的訂單列：點擊更新右側 inspector，長按提供合併／刪除 context menu。
-    /// - Parameter order: 要呈現的訂單。
-    /// - Returns: 可選取詳情的訂單列 view。
+    /// 一般 (非多選) 模式的訂單列：點擊更新右側 inspector，長按提供合併／刪除 context menu
+    /// - Parameter order: 要呈現的訂單
+    /// - Returns: 可選取詳情的訂單列 view
     @ViewBuilder
     func selectDetailRow(order: LedgerOrder) -> some View {
         Button {
@@ -437,11 +437,11 @@ private extension OrdersMacView {
         }
     }
 
-    /// 多選模式的訂單列：左側勾選圈，點擊切換選取而非更新 inspector。
+    /// 多選模式的訂單列：左側勾選圈，點擊切換選取而非更新 inspector
     /// - Parameters:
-    ///   - order: 要呈現的訂單。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 可勾選的訂單列 view。
+    ///   - order: 要呈現的訂單
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 可勾選的訂單列 view
     @ViewBuilder
     func selectableRow(order: LedgerOrder, palette: BLPalette) -> some View {
         let isSelected = store.selectedOrderIDs.contains(order.id)
@@ -463,11 +463,11 @@ private extension OrdersMacView {
         .buttonStyle(.plain)
     }
 
-    /// Inspector 內顯示的訂單詳情或空狀態。
+    /// Inspector 內顯示的訂單詳情或空狀態
     ///
-    /// macOS `.inspector(...)` 預設背景比 app background 淺，會讓詳情欄看起來像浮在內容區之外；統一在最外層套 `palette.background` 讓整個 inspector 與訂單表格的背景一致。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: inspector 內容 view。
+    /// macOS `.inspector(...)` 預設背景比 app background 淺，會讓詳情欄看起來像浮在內容區之外；統一在最外層套 `palette.background` 讓整個 inspector 與訂單表格的背景一致
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: inspector 內容 view
     @ViewBuilder
     func inspectorContent(palette: BLPalette) -> some View {
         Group {
@@ -488,13 +488,13 @@ private extension OrdersMacView {
         .background(palette.background)
     }
 
-    /// Inspector 上方的訂購人姓名標題列，含「更新狀態」選單與「更多」操作選單 (合併/編輯/刪除)。
+    /// Inspector 上方的訂購人姓名標題列，含「更新狀態」選單與「更多」操作選單 (合併/編輯/刪除)
     ///
-    /// macOS inspector 不會自動顯示 ``View/navigationTitle`` 的標題，因此以自繪標題列補齊。訂單編號已由 ``OrderDetailView`` 的內容區顯示，此處不再重複。
+    /// macOS inspector 不會自動顯示 ``View/navigationTitle`` 的標題，因此以自繪標題列補齊。訂單編號已由 ``OrderDetailView`` 的內容區顯示，此處不再重複
     /// - Parameters:
-    ///   - order: 要顯示的訂單。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 自繪標題列 view。
+    ///   - order: 要顯示的訂單
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 自繪標題列 view
     @ViewBuilder
     func inspectorTitleBar(order: LedgerOrder, palette: BLPalette) -> some View {
         HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
@@ -506,7 +506,7 @@ private extension OrdersMacView {
             Spacer()
 
             Menu {
-                // 「已合併」只能由合併流程寫入，僅當目前狀態已是已合併時保留選項。
+                // 「已合併」只能由合併流程寫入，僅當目前狀態已是已合併時保留選項
                 ForEach(OrderStatus.allCases.filter { $0 != .merged || order.status == .merged }) { status in
                     Button {
                         store.send(.statusChanged(order.id, status))
@@ -524,7 +524,7 @@ private extension OrdersMacView {
             .menuStyle(.borderlessButton)
             .controlSize(.small)
 
-            // 合併/編輯/刪除功能性質相近，收進單一「更多」選單，避免標題列四個操作並排擁擠。
+            // 合併/編輯/刪除功能性質相近，收進單一「更多」選單，避免標題列四個操作並排擁擠
             Menu {
                 if order.status != .merged, order.status != .cancelled {
                     Button {

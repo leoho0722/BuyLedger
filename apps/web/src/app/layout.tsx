@@ -8,7 +8,7 @@ export const metadata: Metadata = {
   description: '個人代購記帳與開團管理',
 };
 
-// 在繪製前依偏好套用深色，避免閃爍。
+// 在繪製前依偏好套用深色，避免閃爍
 const antiFlash = `(function(){try{var a=localStorage.getItem('bl-appearance')||'system';var d=a==='dark'||(a==='system'&&window.matchMedia('(prefers-color-scheme: dark)').matches);if(d)document.documentElement.classList.add('dark');}catch(e){}})();`;
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

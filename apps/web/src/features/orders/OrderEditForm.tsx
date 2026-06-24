@@ -51,7 +51,7 @@ export interface OrderFormInitial extends Partial<OrderInputBody> {
   id?: string;
 }
 
-// 訂單編輯表單 (新增/編輯共用)。合併模式 (mergedSourceIDs 非空) 時類別/開團改多選。
+// 訂單編輯表單 (新增/編輯共用)。合併模式 (mergedSourceIDs 非空) 時類別/開團改多選
 export function OrderEditForm({
   mode,
   orderId,
@@ -77,7 +77,7 @@ export function OrderEditForm({
   const mergeMode = (initial?.mergedSourceIDs?.length ?? 0) > 0;
 
   const [customerName, setCustomerName] = useState(initial?.customer?.name ?? '');
-  // 客戶分級在訂單表單不開放編輯 (對齊 iOS)：新訂單預設 new、編輯沿用原值、合併沿用主訂單。
+  // 客戶分級在訂單表單不開放編輯 (對齊 iOS)：新訂單預設 new、編輯沿用原值、合併沿用主訂單
   const tier = initial?.customer?.tier ?? 'new';
   const [currency, setCurrency] = useState(initial?.currency ?? settings?.defaultCurrency ?? 'TWD');
   const [date, setDate] = useState(initial?.date ?? new Date().toISOString());
@@ -116,7 +116,7 @@ export function OrderEditForm({
   const isCardless = selectedPm?.isCardless ?? false;
   const showVerification = isCardless || (selectedPm?.isBankTransfer ?? false);
 
-  // 開團選單：開團中 + 已指派 (即使已收單)。
+  // 開團選單：開團中 + 已指派 (即使已收單)
   const campaignOptions: PickerOption[] = useMemo(
     () =>
       campaigns
@@ -165,7 +165,7 @@ export function OrderEditForm({
     if (mode === 'create') {
       create.mutate(body, { onSuccess: onSaved });
     } else {
-      // 只送與原值不同的欄位 (欄位級合併)；無變更時送空 patch、後端回傳現值。
+      // 只送與原值不同的欄位 (欄位級合併)；無變更時送空 patch、後端回傳現值
       const changedFields = diffOrderFields(body, initial as OrderInputBody | undefined);
       patch.mutate(
         { id: orderId as string, changedFields },
@@ -495,7 +495,7 @@ function updateItem(
   setItems((prev) => prev.map((it, i) => (i === index ? { ...it, ...patch } : it)));
 }
 
-// ISO 字串 → `<input type="datetime-local">` 的本地值 (yyyy-MM-ddTHH:mm，分鐘精度)。
+// ISO 字串 → `<input type="datetime-local">` 的本地值 (yyyy-MM-ddTHH:mm，分鐘精度)
 function isoToLocalInput(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return '';
@@ -503,7 +503,7 @@ function isoToLocalInput(iso: string): string {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-// datetime-local 本地值 → ISO 字串；無效 (含清空) 回空字串，由 caller 略過寫入。
+// datetime-local 本地值 → ISO 字串；無效 (含清空) 回空字串，由 caller 略過寫入
 function localInputToIso(value: string): string {
   const d = new Date(value);
   return Number.isNaN(d.getTime()) ? '' : d.toISOString();

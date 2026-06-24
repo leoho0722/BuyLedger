@@ -7,51 +7,51 @@
 
 import SwiftUI
 
-/// BuyLedger 支援的文字層級。
+/// BuyLedger 支援的文字層級
 ///
-/// 文字樣式使用 SwiftUI 動態字級，讓內容可跟隨系統輔助使用設定縮放。
+/// 文字樣式使用 SwiftUI 動態字級，讓內容可跟隨系統輔助使用設定縮放
 enum BLTypographyStyle: String, CaseIterable, Identifiable {
 
     // MARK: - Cases
 
-    /// 頁面最主要標題。
+    /// 頁面最主要標題
     case largeTitle = "Large Title"
 
-    /// 第一層標題。
+    /// 第一層標題
     case title1 = "Title 1"
 
-    /// 第二層標題。
+    /// 第二層標題
     case title2 = "Title 2"
 
-    /// 第三層標題。
+    /// 第三層標題
     case title3 = "Title 3"
 
-    /// 列表或卡片中的強調標題。
+    /// 列表或卡片中的強調標題
     case headline = "Headline"
 
-    /// 主要內文。
+    /// 主要內文
     case body = "Body"
 
-    /// 次要內文或輔助說明。
+    /// 次要內文或輔助說明
     case subhead = "Subhead"
 
-    /// 補充說明文字。
+    /// 補充說明文字
     case footnote = "Footnote"
 
-    /// 標籤或圖說文字。
+    /// 標籤或圖說文字
     case caption = "Caption"
 
-    /// 最小文字層級。
+    /// 最小文字層級
     case caption2 = "Caption 2"
 
     // MARK: - Identifiable Properties
 
-    /// 文字層級的穩定識別值。
+    /// 文字層級的穩定識別值
     var id: String { rawValue }
 
     // MARK: - Typography Properties
 
-    /// 對應到 SwiftUI 動態字級的字型。
+    /// 對應到 SwiftUI 動態字級的字型
     var font: Font {
         switch self {
         case .largeTitle:

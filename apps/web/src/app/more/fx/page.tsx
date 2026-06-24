@@ -15,19 +15,19 @@ import { formatNumber, formatTWD } from '@/lib/format';
 import { useCurrencyCodes, useFxLatest, useFxRefresh, useSettings } from '@/lib/queries';
 
 export default function FxToolPage() {
-  // 資料層。
+  // 資料層
   const fxQuery = useFxLatest();
   const snapshot = fxQuery.data;
   const codes = useCurrencyCodes().data ?? [];
   useSettings();
   const fxRefresh = useFxRefresh();
 
-  // 互動狀態。
+  // 互動狀態
   const [fromCurrency, setFromCurrency] = useState('JPY');
   const [amount, setAmount] = useState('10000');
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  // 重新整理鈕 (轉圈圖示，refresh 進行中淡出鎖定)。
+  // 重新整理鈕 (轉圈圖示，refresh 進行中淡出鎖定)
   const refreshButton = (
     <BLButton
       variant="plain"
@@ -39,7 +39,7 @@ export default function FxToolPage() {
     </BLButton>
   );
 
-  // 載入中 → 不要閃現空狀態 (區分「載入中」與「無資料」)。
+  // 載入中 → 不要閃現空狀態 (區分「載入中」與「無資料」)
   if (fxQuery.isLoading) {
     return (
       <div>
@@ -49,7 +49,7 @@ export default function FxToolPage() {
     );
   }
 
-  // 載入完成仍無快照 → 空狀態 (不偽造匯率)。
+  // 載入完成仍無快照 → 空狀態 (不偽造匯率)
   if (!snapshot) {
     return (
       <div>
@@ -65,7 +65,7 @@ export default function FxToolPage() {
     );
   }
 
-  // 來源幣別對 TWD 的匯率 (null 代表無資料)。
+  // 來源幣別對 TWD 的匯率 (null 代表無資料)
   const rate = displayRate(snapshot, fromCurrency);
   const amountValue = Number(amount);
   const safeAmount = Number.isFinite(amountValue) ? amountValue : 0;

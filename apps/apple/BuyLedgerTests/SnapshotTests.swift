@@ -4,7 +4,7 @@
 //
 //  Created by Leo Ho on 2026/5/2.
 //
-//  Snapshot baseline 用於檢查視覺迴歸；第一次跑會自動寫入 baseline，之後改動視覺時若與 baseline 不符會失敗。
+//  Snapshot baseline 用於檢查視覺迴歸；第一次跑會自動寫入 baseline，之後改動視覺時若與 baseline 不符會失敗
 //
 //  - 圖片檔放在 BuyLedgerTests/__Snapshots__/ (相對於本檔)
 //  - 升級設計時請刪掉對應的 baseline 檔案，下次跑測試會自動重建
@@ -44,7 +44,7 @@ struct SnapshotTests {
 
     @Test func ordersCompactViewLongContentBaseline() {
         // 迴歸守護：無法換行的長客戶名稱與長商品類別不可把訂單列 (進而整個垂直 ScrollView 內容) 撐得比畫面還寬，
-        // 否則 Dashboard / 訂單頁左右邊距會整個跑掉。見 OrderRowView 名稱截斷與 BLTagPill 改 lineLimit 的修正。
+        // 否則 Dashboard / 訂單頁左右邊距會整個跑掉。見 OrderRowView 名稱截斷與 BLTagPill 改 lineLimit 的修正
         TestDependencies.withFixedNow {
             let longOrder = LedgerOrder(
                 id: "BL-LONG-0001",
@@ -141,7 +141,7 @@ struct SnapshotTests {
     }
 
     @Test func orderEditViewMergeContextBaseline() {
-        // 合併產生的訂單：類別/開團為多選 trigger row (「、」串接顯示)；金額與明細欄位與一般訂單相同、維持可編輯。
+        // 合併產生的訂單：類別/開團為多選 trigger row (「、」串接顯示)；金額與明細欄位與一般訂單相同、維持可編輯
         TestDependencies.withFixedNow {
             let mergedOrder = LedgerOrder.sampleOrders.first { !$0.mergedSourceIDs.isEmpty }!
             let state = OrderEditFeature.State(original: mergedOrder)
@@ -157,7 +157,7 @@ struct SnapshotTests {
 
     @Test func orderDetailCostBreakdownBaseline() {
         TestDependencies.withFixedNow {
-            // 同時帶有刷卡、平台與金流手續費的訂單，用於驗證成本拆解 chart 將三種手續費分別列出。
+            // 同時帶有刷卡、平台與金流手續費的訂單，用於驗證成本拆解 chart 將三種手續費分別列出
             let order = LedgerOrder(
                 id: "BL-FEE-SNAP-001",
                 customer: LedgerCustomer(name: "手續費拆解", initials: "FB", tier: .vip),
@@ -198,9 +198,9 @@ struct SnapshotTests {
 
     @Test func blBarChartThirtyDaysBaseline() {
         TestDependencies.withFixedNow {
-            // 模擬分析頁「30 天」逐日資料：30 根長條、X 軸帶日數字標籤。
-            // 用於守護 BLBarChart 在標籤過多時的寬度感知抽稀，避免 X 軸標籤重疊。
-            // 以固定曆法產生 30 天逐日資料 (MM/dd 標籤)，對齊真實 trendBars 格式並驗證逐日標籤與捲動邊緣。
+            // 模擬分析頁「30 天」逐日資料：30 根長條、X 軸帶日數字標籤
+            // 用於守護 BLBarChart 在標籤過多時的寬度感知抽稀，避免 X 軸標籤重疊
+            // 以固定曆法產生 30 天逐日資料 (MM/dd 標籤)，對齊真實 trendBars 格式並驗證逐日標籤與捲動邊緣
             var calendar = Calendar(identifier: .gregorian)
             calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
             let base = TestDependencies.fixedNow

@@ -7,51 +7,51 @@
 
 import SwiftUI
 
-/// 設計系統共用圓角。
+/// 設計系統共用圓角
 enum BLRadius {
 
     // MARK: - Radius Values
 
-    /// 最小圓角，適合 macOS 工具列按鈕。
+    /// 最小圓角，適合 macOS 工具列按鈕
     static let extraSmall: CGFloat = 6
 
-    /// 小圓角，適合列、chip 與輸入欄。
+    /// 小圓角，適合列、chip 與輸入欄
     static let small: CGFloat = 10
 
-    /// 中圓角，適合 iOS 卡片與基礎控制項。
+    /// 中圓角，適合 iOS 卡片與基礎控制項
     static let medium: CGFloat = 12
 
-    /// 大圓角，適合 iPadOS 與 macOS 卡片。
+    /// 大圓角，適合 iPadOS 與 macOS 卡片
     static let large: CGFloat = 16
 
-    /// 特大圓角，適合 sheet 或浮層頂部。
+    /// 特大圓角，適合 sheet 或浮層頂部
     static let extraLarge: CGFloat = 22
 
-    /// 膠囊樣式圓角。
+    /// 膠囊樣式圓角
     static let pill: CGFloat = 999
 }
 
-/// 設計系統共用間距。
+/// 設計系統共用間距
 enum BLSpacing {
 
     // MARK: - Spacing Values
 
-    /// 最小間距。
+    /// 最小間距
     static let extraSmall: CGFloat = 4
 
-    /// 小間距。
+    /// 小間距
     static let small: CGFloat = 8
 
-    /// 中間距。
+    /// 中間距
     static let medium: CGFloat = 12
 
-    /// 大間距。
+    /// 大間距
     static let large: CGFloat = 16
 
-    /// 特大間距。
+    /// 特大間距
     static let extraLarge: CGFloat = 24
 
-    /// 區段之間的標準間距。
+    /// 區段之間的標準間距
     static let section: CGFloat = 32
 }
 

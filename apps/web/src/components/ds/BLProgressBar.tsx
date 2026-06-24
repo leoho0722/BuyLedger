@@ -1,6 +1,6 @@
 import { cn } from '@/lib/cn';
 
-// 進度條：標題 + 數值文字 + 6pt 軌道/填色 (預設 accent)。
+// 進度條：標題 + 數值文字 + 6pt 軌道/填色 (預設 accent)
 export function BLProgressBar({
   title,
   value,

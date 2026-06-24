@@ -80,13 +80,13 @@ struct CampaignPersistenceTests {
 
     // MARK: - Helper
 
-    /// 用 in-memory 的 ``ModelContainer`` 建立每個測試獨立的 ``CampaignPersistence``。
+    /// 用 in-memory 的 ``ModelContainer`` 建立每個測試獨立的 ``CampaignPersistence``
     private func makePersistence() throws -> CampaignPersistence {
         let container = try PersistenceContainer.make(inMemoryOnly: true)
         return CampaignPersistence(modelContainer: container)
     }
 
-    /// 建立測試用開團；日期以 2026 年 4 月的固定日帶入，方便驗證排序。
+    /// 建立測試用開團；日期以 2026 年 4 月的固定日帶入，方便驗證排序
     private func makeCampaign(
         id: String,
         name: String,

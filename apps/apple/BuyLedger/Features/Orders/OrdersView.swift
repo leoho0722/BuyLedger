@@ -8,39 +8,39 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 訂單列表與詳情畫面。
+/// 訂單列表與詳情畫面
 ///
-/// 依平台選擇對應導覽樣式：iPhone (compact) 使用 NavigationStack 對應的 ``OrdersCompactView``，macOS 使用扁平 ``Table`` 對應的 ``OrdersMacView``，iPadOS (regular) 以 ``HStack`` 在父層 NavigationSplitView 的 detail 欄中自排列「清單 + 詳情」兩欄，避免巢狀 NavigationSplitView 互相搶寬度。
+/// 依平台選擇對應導覽樣式：iPhone (compact) 使用 NavigationStack 對應的 ``OrdersCompactView``，macOS 使用扁平 ``Table`` 對應的 ``OrdersMacView``，iPadOS (regular) 以 ``HStack`` 在父層 NavigationSplitView 的 detail 欄中自排列「清單 + 詳情」兩欄，避免巢狀 NavigationSplitView 互相搶寬度
 struct OrdersView: View {
 
     // MARK: - View Properties
 
-    /// 訂單功能 store。
+    /// 訂單功能 store
     @Bindable var store: StoreOf<OrdersFeature>
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
 #if !os(macOS)
-    /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone 與 iPad 佈局。
+    /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone 與 iPad 佈局
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
 
-    /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)`` 的「現在」時間；測試可注入固定值。
+    /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)`` 的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
 
-    /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值。
+    /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
 
-    /// 商品類別篩選 sheet 是否呈現。僅 iPad regular 分支使用 (透過 ``regularSplitContent`` 與 ``listHeader`` 中的 trigger 觸發)；compact 與 macOS 分支會分別委派給 ``OrdersCompactView`` 與 ``OrdersMacView`` 各自的本地 state。
+    /// 商品類別篩選 sheet 是否呈現。僅 iPad regular 分支使用 (透過 ``regularSplitContent`` 與 ``listHeader`` 中的 trigger 觸發)；compact 與 macOS 分支會分別委派給 ``OrdersCompactView`` 與 ``OrdersMacView`` 各自的本地 state
     @State private var showsCategoryPicker = false
 
-    /// 付款方式篩選 sheet 是否呈現。點 trigger button 後設為 `true`，由 ``OptionPickerSheet`` 內部 dismiss 結束回 `false`。
+    /// 付款方式篩選 sheet 是否呈現。點 trigger button 後設為 `true`，由 ``OptionPickerSheet`` 內部 dismiss 結束回 `false`
     @State private var showsPaymentMethodPicker = false
 
     // MARK: - View Body
 
-    /// 訂單功能的畫面內容。
+    /// 訂單功能的畫面內容
     var body: some View {
         platformContent
             .sheet(item: $store.scope(state: \.editOrder, action: \.editOrder)) { editStore in
@@ -56,7 +56,7 @@ struct OrdersView: View {
             .alert($store.scope(state: \.aiDisabledAlert, action: \.aiDisabledAlert))
     }
 
-    /// 依平台與尺寸分類選擇對應的訂單瀏覽 view。
+    /// 依平台與尺寸分類選擇對應的訂單瀏覽 view
     @ViewBuilder
     private var platformContent: some View {
 #if os(macOS)
@@ -75,9 +75,9 @@ struct OrdersView: View {
 
 private extension OrdersView {
 
-    /// iPad regular 使用的「清單 + 詳情」兩欄佈局。
+    /// iPad regular 使用的「清單 + 詳情」兩欄佈局
     ///
-    /// 以 ``NavigationStack`` 包住兩欄並用 `.navigationTitle("訂單")` 提供系統大標題，讓頂端標題與「更多」等其他分頁一致對齊側邊欄 (先前用 HStack + 手動 `.padding(.top)` 會讓內容偏下、與側邊欄錯位)。內層僅用 ``HStack`` 自排「清單 + 詳情」，不再使用巢狀 ``NavigationSplitView``，避免兩層 split 互相搶寬度造成中間欄被擠壓。
+    /// 以 ``NavigationStack`` 包住兩欄並用 `.navigationTitle("訂單")` 提供系統大標題，讓頂端標題與「更多」等其他分頁一致對齊側邊欄 (先前用 HStack + 手動 `.padding(.top)` 會讓內容偏下、與側邊欄錯位)。內層僅用 ``HStack`` 自排「清單 + 詳情」，不再使用巢狀 ``NavigationSplitView``，避免兩層 split 互相搶寬度造成中間欄被擠壓
     @ViewBuilder
     var regularSplitContent: some View {
         let palette = BLTheme.palette(for: colorScheme)
@@ -120,7 +120,7 @@ private extension OrdersView {
                         Spacer()
 
                         Menu {
-                            // 「已合併」僅能由合併流程寫入，批次目標清單一律排除。
+                            // 「已合併」僅能由合併流程寫入，批次目標清單一律排除
                             ForEach(OrderStatus.allCases.filter { $0 != .merged }) { status in
                                 Button(status.title) {
                                     store.send(.batchStatusChanged(status))
@@ -209,9 +209,9 @@ private extension OrdersView {
         }
     }
 
-    /// 訂單列表欄。
+    /// 訂單列表欄
     ///
-    /// 與 iPhone (compact) 的 ``OrdersCompactView`` 共用同一套 ``BLCard`` + 分隔線排版，讓三平台的訂單列表呈現一致的單一圓角卡片外觀。選取狀態僅反映在右側詳情欄，列表本身不畫選取高亮 (比照 iOS)；刪除走 row 的 context menu。
+    /// 與 iPhone (compact) 的 ``OrdersCompactView`` 共用同一套 ``BLCard`` + 分隔線排版，讓三平台的訂單列表呈現一致的單一圓角卡片外觀。選取狀態僅反映在右側詳情欄，列表本身不畫選取高亮 (比照 iOS)；刪除走 row 的 context menu
     @ViewBuilder
     var listPane: some View {
         let palette = BLTheme.palette(for: colorScheme)
@@ -238,11 +238,11 @@ private extension OrdersView {
         }
     }
 
-    /// 卡片化的訂單列表，內含逐列訂單與分隔線。
+    /// 卡片化的訂單列表，內含逐列訂單與分隔線
     ///
-    /// 與 ``OrdersCompactView`` 的 `listSection` 採同一套 ``BLCard`` + ``Divider`` 排版以維持三平台一致；每列以 ``Button`` 送出 ``OrdersFeature/Action/orderSelected(_:)`` 更新右側詳情。
-    /// - Parameter orders: 已套用篩選的訂單清單。
-    /// - Returns: 卡片化的訂單列表 view。
+    /// 與 ``OrdersCompactView`` 的 `listSection` 採同一套 ``BLCard`` + ``Divider`` 排版以維持三平台一致；每列以 ``Button`` 送出 ``OrdersFeature/Action/orderSelected(_:)`` 更新右側詳情
+    /// - Parameter orders: 已套用篩選的訂單清單
+    /// - Returns: 卡片化的訂單列表 view
     @ViewBuilder
     func orderListCard(orders: [LedgerOrder]) -> some View {
         let palette = BLTheme.palette(for: colorScheme)
@@ -265,9 +265,9 @@ private extension OrdersView {
         }
     }
 
-    /// 一般 (非多選) 模式的訂單列：點擊更新右側詳情，長按提供合併／刪除 context menu。
-    /// - Parameter order: 要呈現的訂單。
-    /// - Returns: 可選取詳情的訂單列 view。
+    /// 一般 (非多選) 模式的訂單列：點擊更新右側詳情，長按提供合併／刪除 context menu
+    /// - Parameter order: 要呈現的訂單
+    /// - Returns: 可選取詳情的訂單列 view
     @ViewBuilder
     func selectDetailRow(order: LedgerOrder) -> some View {
         Button {
@@ -296,11 +296,11 @@ private extension OrdersView {
         }
     }
 
-    /// 多選模式的訂單列：左側勾選圈，點擊切換選取而非更新詳情。
+    /// 多選模式的訂單列：左側勾選圈，點擊切換選取而非更新詳情
     /// - Parameters:
-    ///   - order: 要呈現的訂單。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 可勾選的訂單列 view。
+    ///   - order: 要呈現的訂單
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 可勾選的訂單列 view
     @ViewBuilder
     func selectableRow(order: LedgerOrder, palette: BLPalette) -> some View {
         let isSelected = store.selectedOrderIDs.contains(order.id)
@@ -322,9 +322,9 @@ private extension OrdersView {
         .buttonStyle(.plain)
     }
 
-    /// 訂單列表上方的標題、搜尋與狀態篩選。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 列表 header view。
+    /// 訂單列表上方的標題、搜尋與狀態篩選
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 列表 header view
     @ViewBuilder
     func listHeader(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
@@ -353,11 +353,11 @@ private extension OrdersView {
         .padding(.bottom, BLSpacing.medium)
     }
 
-    /// iPad 中間欄使用的橫向滾動狀態 chip 列。
+    /// iPad 中間欄使用的橫向滾動狀態 chip 列
     ///
-    /// 在 320 px 寬的中間欄內，6 個 chip 無法單行排列，因此改用橫向滾動避免換行造成的視覺斷裂。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: chip 列 view。
+    /// 在 320 px 寬的中間欄內，6 個 chip 無法單行排列，因此改用橫向滾動避免換行造成的視覺斷裂
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: chip 列 view
     @ViewBuilder
     func chipScrollStrip(palette: BLPalette) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -383,9 +383,9 @@ private extension OrdersView {
         }
     }
 
-    /// iPad 中間欄使用的橫向滾動日期區間 chip 列。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 日期 chip 列 view。
+    /// iPad 中間欄使用的橫向滾動日期區間 chip 列
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 日期 chip 列 view
     @ViewBuilder
     func dateChipScrollStrip(palette: BLPalette) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -416,15 +416,15 @@ private extension OrdersView {
         }
     }
 
-    /// iPad regular 中間欄使用的商品類別篩選 trigger button。
+    /// iPad regular 中間欄使用的商品類別篩選 trigger button
     ///
-    /// 與 ``OrdersCompactView`` / ``OrdersMacView`` 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「類別：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)。padding / font 沿用 iPad 中間欄既有 chip 的尺寸 (`.footnote` / `.caption2` / `12pt horizontal`)。
+    /// 與 ``OrdersCompactView`` / ``OrdersMacView`` 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「類別：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)。padding / font 沿用 iPad 中間欄既有 chip 的尺寸 (`.footnote` / `.caption2` / `12pt horizontal`)
     ///
-    /// - 未選任何類別時，label 顯示「類別：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`。
-    /// - 已選某類別時，label 顯示「類別：<類別名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`。
-    /// - 類別名過長時，label 套 ``SwiftUI/Text/lineLimit(_:)`` 與 ``SwiftUI/Text/truncationMode(_:)`` 以 ellipsis 結尾，capsule 不換行。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)。
+    /// - 未選任何類別時，label 顯示「類別：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`
+    /// - 已選某類別時，label 顯示「類別：<類別名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`
+    /// - 類別名過長時，label 套 ``SwiftUI/Text/lineLimit(_:)`` 與 ``SwiftUI/Text/truncationMode(_:)`` 以 ellipsis 結尾，capsule 不換行
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)
     @ViewBuilder
     func categoryFilterTrigger(palette: BLPalette) -> some View {
         let isSelected = store.selectedCategory != nil
@@ -455,14 +455,14 @@ private extension OrdersView {
         .buttonStyle(.plain)
     }
 
-    /// iPad regular 中間欄使用的付款方式篩選 trigger button。
+    /// iPad regular 中間欄使用的付款方式篩選 trigger button
     ///
-    /// 與 ``categoryFilterTrigger(palette:)`` 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「付款方式：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)。
+    /// 與 ``categoryFilterTrigger(palette:)`` 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「付款方式：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)
     ///
-    /// - 未選任何付款方式時，label 顯示「付款方式：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`。
-    /// - 已選某付款方式時，label 顯示「付款方式：<付款方式名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)。
+    /// - 未選任何付款方式時，label 顯示「付款方式：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`
+    /// - 已選某付款方式時，label 顯示「付款方式：<付款方式名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)
     @ViewBuilder
     func paymentMethodFilterTrigger(palette: BLPalette) -> some View {
         let isSelected = store.selectedPaymentMethod != nil
@@ -493,7 +493,7 @@ private extension OrdersView {
         .buttonStyle(.plain)
     }
 
-    /// 訂單詳情欄。
+    /// 訂單詳情欄
     @ViewBuilder
     var detailPane: some View {
         let palette = BLTheme.palette(for: colorScheme)
@@ -510,11 +510,11 @@ private extension OrdersView {
         }
     }
 
-    /// 詳情欄頂部的訂購人姓名標題列，含「更新狀態」選單與「更多」操作選單 (合併/編輯/刪除)。
+    /// 詳情欄頂部的訂購人姓名標題列，含「更新狀態」選單與「更多」操作選單 (合併/編輯/刪除)
     ///
-    /// 因 iPad regular 的訂單詳情位於父層 NavigationSplitView 的 detail 中，但本 view 內部已不再使用 NavigationStack，所以以自繪標題列代替系統 navigation title。訂單編號已由 ``OrderDetailView`` 的內容區顯示，此處不再重複。
-    /// - Parameter order: 要顯示的訂單。
-    /// - Returns: 自繪標題列 view。
+    /// 因 iPad regular 的訂單詳情位於父層 NavigationSplitView 的 detail 中，但本 view 內部已不再使用 NavigationStack，所以以自繪標題列代替系統 navigation title。訂單編號已由 ``OrderDetailView`` 的內容區顯示，此處不再重複
+    /// - Parameter order: 要顯示的訂單
+    /// - Returns: 自繪標題列 view
     @ViewBuilder
     func detailTitleBar(order: LedgerOrder) -> some View {
         let palette = BLTheme.palette(for: colorScheme)
@@ -540,9 +540,9 @@ private extension OrdersView {
         }
     }
 
-    /// 詳情頁右上角的「更新狀態」menu，目前狀態加 checkmark；「已合併」只能由合併流程寫入，僅當目前狀態已是已合併時保留該選項。
-    /// - Parameter order: 對應訂單。
-    /// - Returns: menu view。
+    /// 詳情頁右上角的「更新狀態」menu，目前狀態加 checkmark；「已合併」只能由合併流程寫入，僅當目前狀態已是已合併時保留該選項
+    /// - Parameter order: 對應訂單
+    /// - Returns: menu view
     @ViewBuilder
     func statusUpdateMenu(order: LedgerOrder) -> some View {
         Menu {
@@ -564,11 +564,11 @@ private extension OrdersView {
         .controlSize(.small)
     }
 
-    /// 詳情頁右上角的「更多」操作選單，收納功能性質相近的合併/編輯/刪除，避免操作列擁擠。
+    /// 詳情頁右上角的「更多」操作選單，收納功能性質相近的合併/編輯/刪除，避免操作列擁擠
     ///
-    /// 「合併訂單」沿用既有條件——狀態為「已合併」或「已取消」時不顯示；「刪除」為 destructive 並以分隔線與前兩項隔開。三個動作 dispatch 的 action 與原並排按鈕完全一致。
-    /// - Parameter order: 對應訂單。
-    /// - Returns: menu view。
+    /// 「合併訂單」沿用既有條件——狀態為「已合併」或「已取消」時不顯示；「刪除」為 destructive 並以分隔線與前兩項隔開。三個動作 dispatch 的 action 與原並排按鈕完全一致
+    /// - Parameter order: 對應訂單
+    /// - Returns: menu view
     @ViewBuilder
     func moreActionsMenu(order: LedgerOrder) -> some View {
         Menu {

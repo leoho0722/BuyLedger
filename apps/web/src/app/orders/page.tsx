@@ -57,13 +57,13 @@ function OrdersInner() {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiBlocked, setAiBlocked] = useState(false);
 
-  // 多選模式狀態 (UI 暫態，不入全域 store)。
+  // 多選模式狀態 (UI 暫態，不入全域 store)
   const [selecting, setSelecting] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [statusPicker, setStatusPicker] = useState(false);
   const { batchSetStatus } = useOrderMutations();
 
-  // 深層連結：?category= / ?search= (來自分析/客戶頁)。
+  // 深層連結：?category= / ?search= (來自分析/客戶頁)
   useEffect(() => {
     const category = params.get('category');
     const search = params.get('search');
@@ -103,7 +103,7 @@ function OrdersInner() {
     else setAiBlocked(true);
   };
 
-  // 多選模式操作。
+  // 多選模式操作
   const exitSelection = () => {
     setSelecting(false);
     setSelectedIds(new Set());
@@ -121,7 +121,7 @@ function OrdersInner() {
   const applyBatchStatus = (status: OrderStatus) => {
     const ids = [...selectedIds];
     if (ids.length === 0) return;
-    // 成功才退出多選並清空 (mutation onSuccess 已 invalidate orders + campaigns)；失敗保留選取供重試。
+    // 成功才退出多選並清空 (mutation onSuccess 已 invalidate orders + campaigns)；失敗保留選取供重試
     batchSetStatus.mutate({ ids, status }, { onSuccess: exitSelection });
   };
 

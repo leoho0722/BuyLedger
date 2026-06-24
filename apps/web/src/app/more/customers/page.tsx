@@ -14,20 +14,20 @@ import type { Tone } from '@/lib/domain/constants';
 import type { CustomerTier } from '@/lib/types';
 import { formatTWD, formatShortDate } from '@/lib/format';
 
-// 階層 → 徽章語意色：VIP 警示色、常客主色、其餘中性。
+// 階層 → 徽章語意色：VIP 警示色、常客主色、其餘中性
 function tierTone(tier: CustomerTier): Tone {
   if (tier === 'vip') return 'warning';
   if (tier === 'regular') return 'accent';
   return 'neutral';
 }
 
-// 客戶名單頁：依累計消費降冪排序的客戶彙總。
+// 客戶名單頁：依累計消費降冪排序的客戶彙總
 export default function CustomersPage() {
   const router = useRouter();
   const { data: orders, isLoading } = useOrders();
   const rows = customerRollup(orders ?? []);
 
-  // 點客戶跳訂單列表並帶入搜尋條件。
+  // 點客戶跳訂單列表並帶入搜尋條件
   const openOrders = (name: string) => {
     router.push(`/orders?search=${encodeURIComponent(name)}`);
   };
@@ -87,7 +87,7 @@ export default function CustomersPage() {
   );
 }
 
-// 高亮卡片：頭像 + 名稱 + 階層徽章 + 累計消費，整張可點。
+// 高亮卡片：頭像 + 名稱 + 階層徽章 + 累計消費，整張可點
 function HighlightCard({ row, onClick }: { row: CustomerRow; onClick: () => void }) {
   return (
     <BLCard onClick={onClick} className="flex flex-col items-center gap-2 text-center">

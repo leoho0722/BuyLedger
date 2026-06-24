@@ -314,7 +314,7 @@ struct OrderPersistenceTests {
     }
 
     @Test func mergeOrdersInsertsNewAndMarksSourcesMergedInOneOperation() async throws {
-        // 取兩筆同客戶同幣別的樣本作來源 (林書宇, KRW)。
+        // 取兩筆同客戶同幣別的樣本作來源 (林書宇, KRW)
         let persistence = try makePersistence()
         let samples = LedgerOrder.sampleOrders
         try await persistence.seedIfEmpty(with: samples)
@@ -324,7 +324,7 @@ struct OrderPersistenceTests {
         let primary = samples.first { $0.id == primaryID }!
         let secondary = samples.first { $0.id == secondaryID }!
 
-        // 以純函式計算合併草稿後組出新訂單。
+        // 以純函式計算合併草稿後組出新訂單
         let draft = OrderMerge.makeDraft(
             primary: primary,
             secondary: secondary,
@@ -364,14 +364,14 @@ struct OrderPersistenceTests {
 
         let stored = try await persistence.fetchAll()
 
-        // 新訂單存在且記錄兩筆來源 id。
+        // 新訂單存在且記錄兩筆來源 id
         let storedMerged = stored.first { $0.id == "BL-MERGED-001" }
         #expect(storedMerged != nil)
         #expect(storedMerged?.mergedSourceIDs == [primaryID, secondaryID])
         #expect(storedMerged?.categories == ["美妝", "服飾"])
         #expect(storedMerged?.chargedAmount == 17_480)
 
-        // 兩筆來源訂單同一操作內轉「已合併」，其餘訂單不受影響。
+        // 兩筆來源訂單同一操作內轉「已合併」，其餘訂單不受影響
         #expect(stored.first { $0.id == primaryID }?.status == .merged)
         #expect(stored.first { $0.id == secondaryID }?.status == .merged)
         #expect(stored.count == samples.count + 1)
@@ -380,7 +380,7 @@ struct OrderPersistenceTests {
     }
 
     @Test func renameCategoryRewritesElementsInsideArrays() async throws {
-        // 多類別訂單僅目標元素改名 (保序)；未含目標的訂單不受影響。
+        // 多類別訂單僅目標元素改名 (保序)；未含目標的訂單不受影響
         let persistence = try makePersistence()
         try await persistence.upsert(Self.makeArrayOrder(id: "BL-CAT-1", categories: ["美妝", "服飾"]))
         try await persistence.upsert(Self.makeArrayOrder(id: "BL-CAT-2", categories: ["服飾"]))
@@ -393,7 +393,7 @@ struct OrderPersistenceTests {
     }
 
     @Test func renameCampaignRewritesElementsInsideArrays() async throws {
-        // 多開團訂單僅目標元素改名 (保序)。
+        // 多開團訂單僅目標元素改名 (保序)
         let persistence = try makePersistence()
         try await persistence.upsert(Self.makeArrayOrder(id: "BL-CAMP-1", categories: ["美妝"], campaignNames: ["三月日本團", "四月韓國團"]))
         try await persistence.upsert(Self.makeArrayOrder(id: "BL-CAMP-2", categories: ["美妝"], campaignNames: []))
@@ -406,14 +406,14 @@ struct OrderPersistenceTests {
     }
 
     @Test func upsertAllInsertsAndUpdatesInOneBatch() async throws {
-        // 對齊 spec「Batch status persistence is atomic on Apple」：一次批次同時更新既有與插入新訂單。
+        // 對齊 spec「Batch status persistence is atomic on Apple」：一次批次同時更新既有與插入新訂單
         let persistence = try makePersistence()
 
         let existing1 = Self.makeStatusOrder(id: "BL-B-1", status: .shipping)
         let existing2 = Self.makeStatusOrder(id: "BL-B-2", status: .shipping)
         try await persistence.upsertAll([existing1, existing2])
 
-        // 批次：更新兩筆既有狀態 + 插入一筆新訂單，單一操作落盤。
+        // 批次：更新兩筆既有狀態 + 插入一筆新訂單，單一操作落盤
         let updated1 = Self.makeStatusOrder(id: "BL-B-1", status: .arrived)
         let updated2 = Self.makeStatusOrder(id: "BL-B-2", status: .arrived)
         let inserted = Self.makeStatusOrder(id: "BL-B-3", status: .arrived)
@@ -438,14 +438,14 @@ struct OrderPersistenceTests {
 
 private extension OrderPersistenceTests {
 
-    /// 用 in-memory 的 ``ModelContainer`` 建立每個測試獨立的 ``OrderPersistence``。
-    /// - Returns: 不污染 production store 的測試 actor。
+    /// 用 in-memory 的 ``ModelContainer`` 建立每個測試獨立的 ``OrderPersistence``
+    /// - Returns: 不污染 production store 的測試 actor
     func makePersistence() throws -> OrderPersistence {
         let container = try PersistenceContainer.make(inMemoryOnly: true)
         return OrderPersistence(modelContainer: container)
     }
 
-    /// 建立批次 upsert 測試用、可指定狀態的最小訂單。
+    /// 建立批次 upsert 測試用、可指定狀態的最小訂單
     static func makeStatusOrder(id: String, status: OrderStatus) -> LedgerOrder {
         LedgerOrder(
             id: id,
@@ -477,7 +477,7 @@ private extension OrderPersistenceTests {
         )
     }
 
-    /// 建立陣列 rename 測試用的最小訂單。
+    /// 建立陣列 rename 測試用的最小訂單
     static func makeArrayOrder(
         id: String,
         categories: [String],

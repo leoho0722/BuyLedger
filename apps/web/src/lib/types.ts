@@ -1,4 +1,4 @@
-// 生成型別彙整 + 後端 DTO 形狀 (與 apps/backend 對齊)。
+// 生成型別彙整 + 後端 DTO 形狀 (與 apps/backend 對齊)
 export type { Campaign } from './data-model/generated/Campaign';
 export type { CampaignStatus } from './data-model/generated/CampaignStatus';
 export type { CurrencyCode } from './data-model/generated/CurrencyCode';
@@ -17,7 +17,7 @@ import type { LedgerCustomer } from './data-model/generated/LedgerCustomer';
 import type { OrderStatus } from './data-model/generated/OrderStatus';
 import type { PaymentReceiptStatus } from './data-model/generated/PaymentReceiptStatus';
 
-// 後端算好的財務摘要 (字串金額)。
+// 後端算好的財務摘要 (字串金額)
 export interface OrderSummaryDTO {
   revenue: string;
   cardFee: string;
@@ -30,7 +30,7 @@ export interface OrderSummaryDTO {
   margin: string;
 }
 
-// 訂單 DTO = 生成型別 + 摘要。
+// 訂單 DTO = 生成型別 + 摘要
 export type OrderDTO = LedgerOrder & { summary: OrderSummaryDTO };
 
 export interface PaymentMethodDTO {
@@ -56,7 +56,7 @@ export interface SettingsDTO {
   aiModelCandidates: string[];
 }
 
-// 合併草稿 (對齊後端 MergeDraft)。
+// 合併草稿 (對齊後端 MergeDraft)
 export interface MergeDraftDTO {
   customer: LedgerCustomer;
   orderSource: string;

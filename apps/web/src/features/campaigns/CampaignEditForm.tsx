@@ -16,7 +16,7 @@ export interface CampaignFormInitial {
   notes?: string;
 }
 
-// 開團編輯表單 (新增/編輯共用)。
+// 開團編輯表單 (新增/編輯共用)
 export function CampaignEditForm({
   mode,
   campaignId,

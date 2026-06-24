@@ -3,7 +3,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
-// 一般輸入欄位 (文字/數字)，標籤在上。
+// 一般輸入欄位 (文字/數字)，標籤在上
 export function BLField({
   label,
   value,
@@ -60,7 +60,7 @@ export function BLField({
   );
 }
 
-// 金額欄位：標籤 accent、數值大字、accent 邊框。
+// 金額欄位：標籤 accent、數值大字、accent 邊框
 export function BLAmountField({
   label,
   value,

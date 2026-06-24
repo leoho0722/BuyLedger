@@ -23,7 +23,7 @@ const ThemeContext = createContext<ThemeContextValue>({
 
 const STORAGE_KEY = 'bl-appearance';
 
-// 依外觀偏好套用 html.dark (system 跟隨 prefers-color-scheme)。
+// 依外觀偏好套用 html.dark (system 跟隨 prefers-color-scheme)
 function applyAppearance(value: Appearance): void {
   const dark =
     value === 'dark' ||

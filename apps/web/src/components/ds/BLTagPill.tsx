@@ -1,7 +1,7 @@
 import { Tag } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
-// 標籤膠囊：中性灰膠囊，前置 tag 圖示置於膠囊外、垂直置中。
+// 標籤膠囊：中性灰膠囊，前置 tag 圖示置於膠囊外、垂直置中
 export function BLTagPill({ label, className }: { label: string; className?: string }) {
   return (
     <span className={cn('inline-flex items-center gap-1.5', className)}>

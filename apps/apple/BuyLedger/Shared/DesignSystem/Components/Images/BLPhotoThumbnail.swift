@@ -9,30 +9,30 @@ import ImageIO
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// 可刪除、可點擊開啟檢視的照片縮圖：固定尺寸圓角影像 + 右上角刪除鈕。
+/// 可刪除、可點擊開啟檢視的照片縮圖：固定尺寸圓角影像 + 右上角刪除鈕
 ///
-/// 影像 data 無法解碼時顯示 placeholder 圖示 (寧可空狀態也不顯示假資料)，不會 crash。
+/// 影像 data 無法解碼時顯示 placeholder 圖示 (寧可空狀態也不顯示假資料)，不會 crash
 struct BLPhotoThumbnail: View {
 
     // MARK: - View Properties
 
-    /// 縮圖要顯示的影像 data。
+    /// 縮圖要顯示的影像 data
     let imageData: Data
 
-    /// 縮圖寬高。
+    /// 縮圖寬高
     var size: CGFloat = 72
 
-    /// 點擊縮圖內容區時的 callback (例如開啟全螢幕檢視)；`nil` 代表縮圖不可點擊。
+    /// 點擊縮圖內容區時的 callback (例如開啟全螢幕檢視)；`nil` 代表縮圖不可點擊
     ///
-    /// tap gesture 僅掛在縮圖內容區——右上角刪除鈕本身是 `Button`，命中優先於 tap gesture，點刪除不會誤觸此 callback。
+    /// tap gesture 僅掛在縮圖內容區——右上角刪除鈕本身是 `Button`，命中優先於 tap gesture，點刪除不會誤觸此 callback
     var onTap: (() -> Void)? = nil
 
-    /// 點擊右上角刪除鈕時的 callback。
+    /// 點擊右上角刪除鈕時的 callback
     let onDelete: () -> Void
 
     // MARK: - View Body
 
-    /// 縮圖的畫面內容。
+    /// 縮圖的畫面內容
     var body: some View {
         ZStack(alignment: .topTrailing) {
             thumbnailContent
@@ -60,7 +60,7 @@ struct BLPhotoThumbnail: View {
 
 private extension BLPhotoThumbnail {
 
-    /// 縮圖內容：可解碼時顯示影像並填滿裁切，否則顯示 placeholder 圖示。
+    /// 縮圖內容：可解碼時顯示影像並填滿裁切，否則顯示 placeholder 圖示
     @ViewBuilder
     var thumbnailContent: some View {
         if let image = Image(photoData: imageData) {
@@ -83,7 +83,7 @@ private extension BLPhotoThumbnail {
 // MARK: - Preview
 
 #Preview("照片縮圖") {
-    /// 以 CoreGraphics 合成的純色 JPEG sample，讓 Preview 不依賴外部資源。
+    /// 以 CoreGraphics 合成的純色 JPEG sample，讓 Preview 不依賴外部資源
     func sampleJPEGData(red: CGFloat, green: CGFloat, blue: CGFloat) -> Data {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         guard let context = CGContext(
@@ -114,7 +114,7 @@ private extension BLPhotoThumbnail {
     return HStack(spacing: BLSpacing.medium) {
         BLPhotoThumbnail(imageData: sampleJPEGData(red: 0.35, green: 0.6, blue: 0.9)) {}
         BLPhotoThumbnail(imageData: sampleJPEGData(red: 0.9, green: 0.5, blue: 0.4), size: 96) {}
-        // 無法解碼的 data → placeholder。
+        // 無法解碼的 data → placeholder
         BLPhotoThumbnail(imageData: Data([0x00, 0x01])) {}
     }
     .padding()

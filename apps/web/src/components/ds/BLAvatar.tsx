@@ -1,4 +1,4 @@
-// 客戶頭像：圓形、名稱雜湊決定漸層色、白色縮寫。
+// 客戶頭像：圓形、名稱雜湊決定漸層色、白色縮寫
 export function BLAvatar({
   name,
   initials,
@@ -9,7 +9,7 @@ export function BLAvatar({
   size?: number;
 }) {
   const hue = hueForName(name);
-  // HSB→HSL 近似 iOS 兩段漸層。
+  // HSB→HSL 近似 iOS 兩段漸層
   const background = `linear-gradient(135deg, hsl(${hue}, 55%, 65%), hsl(${(hue + 40) % 360}, 36%, 50%))`;
   return (
     <div

@@ -8,14 +8,14 @@
 import Foundation
 import SwiftData
 
-/// SwiftData 上對商品類別主檔做 CRUD 的背景 actor。
+/// SwiftData 上對商品類別主檔做 CRUD 的背景 actor
 @ModelActor
 actor CategoryPersistence {
 
     // MARK: - View Method
 
-    /// 讀出全部類別名稱，依 locale 升冪排序。
-    /// - Returns: 類別名稱陣列。
+    /// 讀出全部類別名稱，依 locale 升冪排序
+    /// - Returns: 類別名稱陣列
     func fetchAll() throws -> [String] {
         let descriptor = FetchDescriptor<CategoryRecord>()
         let records = try modelContext.fetch(descriptor)
@@ -24,8 +24,8 @@ actor CategoryPersistence {
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
 
-    /// 寫入指定名稱的類別；若已存在不重複建立。
-    /// - Parameter name: 類別名稱 (呼叫前由 caller 完成 trim)。
+    /// 寫入指定名稱的類別；若已存在不重複建立
+    /// - Parameter name: 類別名稱 (呼叫前由 caller 完成 trim)
     func upsert(name: String) throws {
         let descriptor = FetchDescriptor<CategoryRecord>(
             predicate: #Predicate { $0.name == name }
@@ -37,8 +37,8 @@ actor CategoryPersistence {
         }
     }
 
-    /// 刪除指定名稱的類別；不存在時視為 no-op。
-    /// - Parameter name: 類別名稱。
+    /// 刪除指定名稱的類別；不存在時視為 no-op
+    /// - Parameter name: 類別名稱
     func delete(name: String) throws {
         let descriptor = FetchDescriptor<CategoryRecord>(
             predicate: #Predicate { $0.name == name }
@@ -52,10 +52,10 @@ actor CategoryPersistence {
         try modelContext.save()
     }
 
-    /// 將指定類別更名；若新名稱已存在則合併 (刪除舊紀錄即可)，訂單端的 cascade 由 caller 另外處理。
+    /// 將指定類別更名；若新名稱已存在則合併 (刪除舊紀錄即可)，訂單端的 cascade 由 caller 另外處理
     /// - Parameters:
-    ///   - oldName: 原本的類別名稱。
-    ///   - newName: 新的類別名稱 (由 caller 完成 trim)。
+    ///   - oldName: 原本的類別名稱
+    ///   - newName: 新的類別名稱 (由 caller 完成 trim)
     func rename(from oldName: String, to newName: String) throws {
         let oldDescriptor = FetchDescriptor<CategoryRecord>(
             predicate: #Predicate { $0.name == oldName }

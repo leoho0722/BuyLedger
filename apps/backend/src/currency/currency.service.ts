@@ -6,7 +6,7 @@ import {
   DEFAULT_CURRENCY_CODES,
 } from '../domain/constants';
 
-// 匯率快照 DTO (rates 為 { 目標幣別: decimal 字串 })。
+// 匯率快照 DTO (rates 為 { 目標幣別: decimal 字串 })
 export interface FxSnapshotDTO {
   date: string;
   base: string;
@@ -30,7 +30,7 @@ export class CurrencyService {
     return (process.env.EXCHANGE_RATE_API_KEY ?? '').trim();
   }
 
-  // 幣別清單：7 天 TTL，逾期才打 /codes；取不到時退回快取或預載 fallback。
+  // 幣別清單：7 天 TTL，逾期才打 /codes；取不到時退回快取或預載 fallback
   async getCodes(): Promise<string[]> {
     const meta = await this.prisma.currencyMetadata.findUnique({
       where: { id: CODES_SINGLETON },
@@ -65,7 +65,7 @@ export class CurrencyService {
     return this.getCodes();
   }
 
-  // 最新匯率：有快照直接回；無快照且有 key 時嘗試抓一次；皆無回 null (空狀態，不偽造)。
+  // 最新匯率：有快照直接回；無快照且有 key 時嘗試抓一次；皆無回 null (空狀態，不偽造)
   async getLatest(): Promise<FxSnapshotDTO | null> {
     const row = await this.prisma.fxSnapshot.findUnique({ where: { id: SNAPSHOT_ID } });
     if (row) {

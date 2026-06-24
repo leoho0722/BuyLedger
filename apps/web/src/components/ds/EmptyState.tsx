@@ -1,6 +1,6 @@
 import type { LucideIcon } from 'lucide-react';
 
-// 空狀態：圖示 + 標題 + 說明 (對齊產品政策：寧可空狀態也不顯示假資料)。
+// 空狀態：圖示 + 標題 + 說明 (對齊產品政策：寧可空狀態也不顯示假資料)
 export function EmptyState({
   icon: Icon,
   title,

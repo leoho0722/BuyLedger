@@ -7,7 +7,7 @@ export interface SegmentOption<T extends string> {
   label: string;
 }
 
-// 分段控制：track fillTertiary、選取段 surface。
+// 分段控制：track fillTertiary、選取段 surface
 export function BLSegmentedControl<T extends string>({
   options,
   value,

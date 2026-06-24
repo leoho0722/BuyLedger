@@ -25,7 +25,7 @@ const PROD_CONFIG = join(HERE, "../../codegen.yaml");
 const FIX_SCHEMA = join(HERE, "../../fixtures/schema");
 const FIX_CONFIG = join(HERE, "../../fixtures/codegen.yaml");
 
-// 測試用：最小合法 entity，可用 over 覆寫欄位。
+// 測試用：最小合法 entity，可用 over 覆寫欄位
 function entity(over: Record<string, unknown> = {}): Record<string, unknown> {
   return {
     name: "E",
@@ -432,10 +432,10 @@ describe("生成檔唯讀鎖", () => {
 // MARK: - 設定驗證
 
 describe("codegen 設定驗證", () => {
-  test("正式設定僅含 swift target", () => {
+  test("正式設定含 swift 與 web/backend 兩個 typescript target", () => {
     const config = loadConfig(PROD_CONFIG);
     expect(config.version).toBe(1);
-    expect(config.targets.map((t) => t.language)).toEqual(["swift"]);
+    expect(config.targets.map((t) => t.language)).toEqual(["swift", "typescript", "typescript"]);
   });
 
   test("不支援的語言 → error", () => {

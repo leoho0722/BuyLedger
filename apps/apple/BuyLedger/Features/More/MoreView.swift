@@ -8,24 +8,24 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 更多分頁的入口畫面。
+/// 更多分頁的入口畫面
 ///
-/// 對應設計稿 iPhone 「設定 / 更多」頁與 iPad 工具區塊的入口：以列表形式列出工具與設定子頁面，點擊後 push 到對應子畫面。
+/// 對應設計稿 iPhone 「設定 / 更多」頁與 iPad 工具區塊的入口：以列表形式列出工具與設定子頁面，點擊後 push 到對應子畫面
 ///
-/// macOS 上採用卡片網格佈局 (避免 iOS 風格 List 顯得陽春)，且不顯示「設定」入口——macOS 的偏好設定改由標準的「BuyLedger > 設定…」(⌘,) 視窗承載。
+/// macOS 上採用卡片網格佈局 (避免 iOS 風格 List 顯得陽春)，且不顯示「設定」入口——macOS 的偏好設定改由標準的「BuyLedger > 設定…」(⌘,) 視窗承載
 struct MoreView: View {
 
     // MARK: - View Properties
 
-    /// App 根層級 store。
+    /// App 根層級 store
     let store: StoreOf<RootFeature>
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
     // MARK: - View Body
 
-    /// 更多頁的畫面內容。
+    /// 更多頁的畫面內容
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
@@ -51,40 +51,40 @@ struct MoreView: View {
 
 private extension MoreView {
 
-    /// 工具項目的領域定義；同時供 iOS/macOS 兩種佈局使用。
+    /// 工具項目的領域定義；同時供 iOS/macOS 兩種佈局使用
     enum ToolItem: String, CaseIterable, Identifiable {
 
         // MARK: - Cases
 
-        /// 匯率工具。
+        /// 匯率工具
         case fx
 
-        /// 客戶名單。
+        /// 客戶名單
         case customers
 
-        /// 報價試算。
+        /// 報價試算
         case quote
 
-        /// 訂單來源主檔管理。
+        /// 訂單來源主檔管理
         case orderSources
 
-        /// 商品類別主檔管理。
+        /// 商品類別主檔管理
         case categories
 
-        /// 付款方式主檔管理。
+        /// 付款方式主檔管理
         case paymentMethods
 
-        /// 對帳狀態主檔管理。
+        /// 對帳狀態主檔管理
         case verificationStatuses
 
         // MARK: - Identifiable Properties
 
-        /// 項目的穩定識別值。
+        /// 項目的穩定識別值
         var id: String { rawValue }
 
         // MARK: - Display Properties
 
-        /// 顯示在卡片或列表上的標題。
+        /// 顯示在卡片或列表上的標題
         var title: String {
             switch self {
             case .fx:
@@ -104,7 +104,7 @@ private extension MoreView {
             }
         }
 
-        /// 卡片副標題 (macOS 才顯示)。
+        /// 卡片副標題 (macOS 才顯示)
         var subtitle: String {
             switch self {
             case .fx:
@@ -124,7 +124,7 @@ private extension MoreView {
             }
         }
 
-        /// 對應的 SF Symbol。
+        /// 對應的 SF Symbol
         var systemImage: String {
             switch self {
             case .fx:
@@ -144,9 +144,9 @@ private extension MoreView {
             }
         }
 
-        /// 圖示色 (依語意 token)。
-        /// - Parameter palette: 目前外觀使用的色盤。
-        /// - Returns: 對應的色彩。
+        /// 圖示色 (依語意 token)
+        /// - Parameter palette: 目前外觀使用的色盤
+        /// - Returns: 對應的色彩
         func tint(in palette: BLPalette) -> Color {
             switch self {
             case .fx:
@@ -167,9 +167,9 @@ private extension MoreView {
         }
     }
 
-    /// 將工具項目導向到對應 view。
-    /// - Parameter item: 工具項目。
-    /// - Returns: 對應目的地 view。
+    /// 將工具項目導向到對應 view
+    /// - Parameter item: 工具項目
+    /// - Returns: 對應目的地 view
     @ViewBuilder
     func destination(for item: ToolItem) -> some View {
         switch item {
@@ -203,9 +203,9 @@ private extension MoreView {
 
 private extension MoreView {
 
-    /// iOS / iPadOS 的列表版本：保持 phone-friendly 的 grouped list 風格。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 列表 view。
+    /// iOS / iPadOS 的列表版本：保持 phone-friendly 的 grouped list 風格
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 列表 view
     @ViewBuilder
     func phoneContent(palette: BLPalette) -> some View {
         List {
@@ -271,11 +271,11 @@ private extension MoreView {
         .navigationTitle("更多")
     }
 
-    /// iOS 列表的單列。
+    /// iOS 列表的單列
     /// - Parameters:
-    ///   - item: 工具項目。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 工具列 view。
+    ///   - item: 工具項目
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 工具列 view
     @ViewBuilder
     func toolRow(_ item: ToolItem, palette: BLPalette) -> some View {
         Label {
@@ -293,9 +293,9 @@ private extension MoreView {
 
 private extension MoreView {
 
-    /// macOS 的卡片網格版本：放大資訊密度，並使用 BLCard 與 LazyVGrid 取代 phone-style List。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 內容 view。
+    /// macOS 的卡片網格版本：放大資訊密度，並使用 BLCard 與 LazyVGrid 取代 phone-style List
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 內容 view
     @ViewBuilder
     func macContent(palette: BLPalette) -> some View {
         ScrollView {
@@ -312,9 +312,9 @@ private extension MoreView {
         .navigationTitle("更多工具")
     }
 
-    /// macOS 內容頂部的標題卡片。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: header view。
+    /// macOS 內容頂部的標題卡片
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: header view
     @ViewBuilder
     func header(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
@@ -329,9 +329,9 @@ private extension MoreView {
         }
     }
 
-    /// macOS 工具網格。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 網格 view。
+    /// macOS 工具網格
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 網格 view
     @ViewBuilder
     func toolGrid(palette: BLPalette) -> some View {
         let columns = [
@@ -350,11 +350,11 @@ private extension MoreView {
         }
     }
 
-    /// 單張工具卡片。
+    /// 單張工具卡片
     /// - Parameters:
-    ///   - item: 工具項目。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 卡片 view。
+    ///   - item: 工具項目
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 卡片 view
     @ViewBuilder
     func toolTile(_ item: ToolItem, palette: BLPalette) -> some View {
         BLCard {
@@ -393,9 +393,9 @@ private extension MoreView {
         .contentShape(Rectangle())
     }
 
-    /// macOS 內容底部的設定提示。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 提示 view。
+    /// macOS 內容底部的設定提示
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 提示 view
     @ViewBuilder
     func settingsHint(palette: BLPalette) -> some View {
         HStack(alignment: .top, spacing: BLSpacing.small) {

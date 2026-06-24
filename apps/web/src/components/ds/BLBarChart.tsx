@@ -1,4 +1,4 @@
-// 長條圖：accent 漸層、頂端圓角、隱藏 Y 軸、X 標籤；支援零基線上下 (獲利可負)。
+// 長條圖：accent 漸層、頂端圓角、隱藏 Y 軸、X 標籤；支援零基線上下 (獲利可負)
 export function BLBarChart({
   data,
   height = 180,

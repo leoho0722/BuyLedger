@@ -10,7 +10,7 @@ import { eligibleForMerge, groupOrdersByDay } from '@/lib/domain/orders';
 import { formatSectionDate } from '@/lib/format';
 import type { OrderDTO } from '@/lib/types';
 
-// 合併候選 sheet：列出同客戶同幣別、可合併的訂單，依日期分段；選定後回呼。
+// 合併候選 sheet：列出同客戶同幣別、可合併的訂單，依日期分段；選定後回呼
 export function MergeCandidateSheet({
   open,
   onClose,

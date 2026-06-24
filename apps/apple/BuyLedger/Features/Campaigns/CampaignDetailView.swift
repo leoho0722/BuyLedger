@@ -8,37 +8,37 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 開團詳情：開團資訊、結團結算 (收款面與損益面)、客戶分貨清單與逐筆收款勾稽。
+/// 開團詳情：開團資訊、結團結算 (收款面與損益面)、客戶分貨清單與逐筆收款勾稽
 ///
-/// 吃 ``RootFeature`` store：開團本身取自 `store.campaigns`，分貨與結算由 ``CampaignSummary`` 自 `store.orders.orders` 投影。
+/// 吃 ``RootFeature`` store：開團本身取自 `store.campaigns`，分貨與結算由 ``CampaignSummary`` 自 `store.orders.orders` 投影
 struct CampaignDetailView: View {
 
     // MARK: - View Properties
 
-    /// App 根層級 store。
+    /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
 
-    /// 要顯示的開團識別值。
+    /// 要顯示的開團識別值
     let campaignID: Campaign.ID
 
-    /// 是否只顯示未收款的分貨列。
+    /// 是否只顯示未收款的分貨列
     @State private var showsUnpaidOnly = false
 
     // MARK: - Computed Properties
 
-    /// 目前顯示的開團；若已被刪除則為 `nil`。
+    /// 目前顯示的開團；若已被刪除則為 `nil`
     private var campaign: Campaign? {
         store.campaigns.campaigns.first { $0.id == campaignID }
     }
 
-    /// 由訂單投影的彙總。
+    /// 由訂單投影的彙總
     private var summary: CampaignSummary {
         CampaignSummary(campaignName: campaign?.name ?? "", orders: store.orders.orders)
     }
 
     // MARK: - View Body
 
-    /// 開團詳情的畫面內容。
+    /// 開團詳情的畫面內容
     var body: some View {
         Group {
             if let campaign {
@@ -86,9 +86,9 @@ struct CampaignDetailView: View {
 
 private extension CampaignDetailView {
 
-    /// 開團詳情主體。
-    /// - Parameter campaign: 目前的開團。
-    /// - Returns: 詳情 list view。
+    /// 開團詳情主體
+    /// - Parameter campaign: 目前的開團
+    /// - Returns: 詳情 list view
     @ViewBuilder
     func detail(for campaign: Campaign) -> some View {
         List {
@@ -98,9 +98,9 @@ private extension CampaignDetailView {
         }
     }
 
-    /// 開團資訊區段。
-    /// - Parameter campaign: 目前的開團。
-    /// - Returns: 資訊區段 view。
+    /// 開團資訊區段
+    /// - Parameter campaign: 目前的開團
+    /// - Returns: 資訊區段 view
     @ViewBuilder
     func infoSection(campaign: Campaign) -> some View {
         Section("開團資訊") {
@@ -136,7 +136,7 @@ private extension CampaignDetailView {
         }
     }
 
-    /// 結團結算區段：收款面與損益面。
+    /// 結團結算區段：收款面與損益面
     @ViewBuilder
     var settlementSection: some View {
         Section("結團結算") {
@@ -163,7 +163,7 @@ private extension CampaignDetailView {
         }
     }
 
-    /// 客戶分貨區段：可切換只看未收款，每列可展開檢視品項與逐筆收款。
+    /// 客戶分貨區段：可切換只看未收款，每列可展開檢視品項與逐筆收款
     @ViewBuilder
     var distributionSection: some View {
         let rows = showsUnpaidOnly ? summary.unpaidDistribution : summary.distribution
@@ -191,9 +191,9 @@ private extension CampaignDetailView {
         }
     }
 
-    /// 分貨列標題：客戶、件數、金額與收款標記。
-    /// - Parameter row: 分貨列。
-    /// - Returns: 標題 view。
+    /// 分貨列標題：客戶、件數、金額與收款標記
+    /// - Parameter row: 分貨列
+    /// - Returns: 標題 view
     @ViewBuilder
     func distributionLabel(_ row: CampaignDistributionRow) -> some View {
         HStack(spacing: BLSpacing.small) {
@@ -212,9 +212,9 @@ private extension CampaignDetailView {
         }
     }
 
-    /// 分貨列展開後的單筆訂單：品項摘要與收款狀態切換。
-    /// - Parameter order: 該客戶在此開團的訂單。
-    /// - Returns: 訂單列 view。
+    /// 分貨列展開後的單筆訂單：品項摘要與收款狀態切換
+    /// - Parameter order: 該客戶在此開團的訂單
+    /// - Returns: 訂單列 view
     @ViewBuilder
     func orderRow(_ order: LedgerOrder) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
@@ -256,9 +256,9 @@ private extension CampaignDetailView {
 
 private extension CampaignDetailView {
 
-    /// 狀態 Picker 的 binding：選取後送出 ``CampaignFeature/Action/statusChanged(_:_:)``。
-    /// - Parameter campaign: 目前的開團。
-    /// - Returns: 對應的狀態 binding。
+    /// 狀態 Picker 的 binding：選取後送出 ``CampaignFeature/Action/statusChanged(_:_:)``
+    /// - Parameter campaign: 目前的開團
+    /// - Returns: 對應的狀態 binding
     func statusBinding(for campaign: Campaign) -> Binding<CampaignStatus> {
         Binding(
             get: { campaign.status },
@@ -266,9 +266,9 @@ private extension CampaignDetailView {
         )
     }
 
-    /// 將比例格式化為百分比字串。
-    /// - Parameter value: 介於 0 與 1 之間的比例。
-    /// - Returns: 含整數百分比的字串。
+    /// 將比例格式化為百分比字串
+    /// - Parameter value: 介於 0 與 1 之間的比例
+    /// - Returns: 含整數百分比的字串
     func percentString(_ value: Double) -> String {
         value.formatted(.percent.precision(.fractionLength(0)))
     }

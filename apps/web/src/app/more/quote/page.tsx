@@ -10,14 +10,14 @@ import { displayRate } from '@/lib/domain/fx';
 import { formatPercent, formatTWD } from '@/lib/format';
 import { useCurrencyCodes, useFxLatest } from '@/lib/queries';
 
-// 報價試算頁：依匯率與各項費率推算建議售價 (對齊 iOS QuoteFeature)。
+// 報價試算頁：依匯率與各項費率推算建議售價 (對齊 iOS QuoteFeature)
 export default function QuotePage() {
   const fxQuery = useFxLatest();
   const codesQuery = useCurrencyCodes();
   const snapshot = fxQuery.data ?? null;
   const codes = codesQuery.data ?? [];
 
-  // 表單狀態：金額/費率皆以 string 保存，計算時再轉數值。
+  // 表單狀態：金額/費率皆以 string 保存，計算時再轉數值
   const [fromCurrency, setFromCurrency] = useState('JPY');
   const [itemPrice, setItemPrice] = useState('');
   const [localShipping, setLocalShipping] = useState('');
@@ -28,10 +28,10 @@ export default function QuotePage() {
   const [targetMarginPercent, setTargetMarginPercent] = useState('');
   const [pickerOpen, setPickerOpen] = useState(false);
 
-  // 1 單位來源幣別折合 TWD；無資料回 0 (結果卡顯示空狀態)。
+  // 1 單位來源幣別折合 TWD；無資料回 0 (結果卡顯示空狀態)
   const rate = displayRate(snapshot, fromCurrency) ?? 0;
 
-  // 試算 (空值當 0、NaN 防護；費率為整數百分比)。
+  // 試算 (空值當 0、NaN 防護；費率為整數百分比)
   const result = useMemo(() => {
     const num = (s: string) => {
       const n = Number(s || 0);
@@ -73,7 +73,7 @@ export default function QuotePage() {
       <PageHeader title="報價試算" />
 
       <div className="space-y-4">
-        {/* 表單卡：幣別 + 各項金額/費率輸入。 */}
+        {/* 表單卡：幣別 + 各項金額/費率輸入 */}
         <BLCard className="space-y-4">
           <BLSelectRow
             label="來源幣別"
@@ -129,7 +129,7 @@ export default function QuotePage() {
           />
         </BLCard>
 
-        {/* 結果卡：無匯率顯示空狀態，否則顯示建議售價與明細。 */}
+        {/* 結果卡：無匯率顯示空狀態，否則顯示建議售價與明細 */}
         <BLCard className="space-y-4">
           {rate === 0 ? (
             <p className="py-2 text-center text-[15px] text-bl-tertiary-label">尚無匯率資料，無法換算</p>
@@ -169,7 +169,7 @@ export default function QuotePage() {
   );
 }
 
-// 明細列：左標籤、右數值。
+// 明細列：左標籤、右數值
 function DetailRow({
   label,
   value,

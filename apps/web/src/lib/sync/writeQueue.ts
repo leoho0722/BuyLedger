@@ -3,7 +3,7 @@
 // 失敗重送的本機待送佇列 (對齊 sync-failure-recovery「Bounded client retry then observable
 // pending or failed state」)：寫入後端失敗 (離線/網路/5xx) 時把操作存 localStorage、UI 顯示
 // 待同步/失敗，連線恢復或重新載入時自動重送。重送以 client UUID upsert + 每欄位 HLC 冪等
-// (後端 PATCH 對相同時鐘為 no-op)，不會重複套用。
+// (後端 PATCH 對相同時鐘為 no-op)，不會重複套用
 
 import { api } from '../api';
 
@@ -41,7 +41,7 @@ function load(): QueueItem[] {
 }
 
 // 快取快照：useSyncExternalStore 要求 getSnapshot 在未變更時回穩定參照，故只在 save 或
-// 跨分頁 storage 事件時重算。
+// 跨分頁 storage 事件時重算
 let snapshot: QueueItem[] = typeof window !== 'undefined' ? load() : [];
 
 function save(items: QueueItem[]): void {
@@ -78,7 +78,7 @@ export function enqueueWrite(orderId: string, body: QueueItem['body']): void {
 
 let draining = false;
 
-// 逐筆重送：成功即出列；失敗累加 attempts，達上限標記 failed (仍留佇列、供手動重試)。
+// 逐筆重送：成功即出列；失敗累加 attempts，達上限標記 failed (仍留佇列、供手動重試)
 export async function drainQueue(): Promise<void> {
   if (draining || typeof window === 'undefined') return;
   draining = true;
@@ -102,7 +102,7 @@ export async function drainQueue(): Promise<void> {
   }
 }
 
-// 手動重試：把 failed 重設為 pending 後再 drain。
+// 手動重試：把 failed 重設為 pending 後再 drain
 export async function retryFailed(): Promise<void> {
   save(load().map((i) => (i.status === 'failed' ? { ...i, attempts: 0, status: 'pending' } : i)));
   await drainQueue();

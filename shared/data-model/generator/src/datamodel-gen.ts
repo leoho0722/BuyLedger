@@ -1,7 +1,7 @@
 // datamodel-gen — BuyLedger 跨平台 data model 產生器
 //
-// 資料流：schema 目錄 → [yaml 解析] → raw → [zod 驗證] → IR → [emitters] → Swift / Kotlin / TypeScript。
-// 解析層 (yaml) 與 IR 驗證層 (zod) 嚴格分離 (design Decision 6)：schema 格式可逆替換，emitter 不受影響。
+// 資料流：schema 目錄 → [yaml 解析] → raw → [zod 驗證] → IR → [emitters] → Swift / Kotlin / TypeScript
+// 解析層 (yaml) 與 IR 驗證層 (zod) 嚴格分離 (design Decision 6)：schema 格式可逆替換，emitter 不受影響
 
 import { readdirSync, readFileSync, existsSync, mkdirSync, writeFileSync, chmodSync } from "node:fs";
 import { join, resolve, dirname, basename } from "node:path";
@@ -11,7 +11,7 @@ import { z } from "zod";
 
 // MARK: - 錯誤型別
 
-/** schema 驗證 / 解析失敗時拋出；message 一律指明違規的型別或欄位。 */
+/** schema 驗證 / 解析失敗時拋出；message 一律指明違規的型別或欄位 */
 export class SchemaError extends Error {
   constructor(message: string) {
     super(message);
@@ -21,7 +21,7 @@ export class SchemaError extends Error {
 
 // MARK: - 中立 trait 與平台對應
 
-/** schema 認可的平台中立 trait 詞彙 (design Decision 3)。Sendable 不在此列——它是 Swift emitter 的全域政策。 */
+/** schema 認可的平台中立 trait 詞彙 (design Decision 3)。Sendable 不在此列——它是 Swift emitter 的全域政策 */
 export const NEUTRAL_TRAITS = [
   "value-equality",
   "serializable",
@@ -31,7 +31,7 @@ export const NEUTRAL_TRAITS = [
 ] as const;
 export type NeutralTrait = (typeof NEUTRAL_TRAITS)[number];
 
-/** 基礎型別關鍵字。 */
+/** 基礎型別關鍵字 */
 export const BASE_TYPES = ["string", "int", "bool", "decimal", "date", "data", "uuid"] as const;
 export type BaseTypeName = (typeof BASE_TYPES)[number];
 
@@ -209,7 +209,7 @@ const RawCodegen = z.strictObject({
 
 // MARK: - 型別文法 parser (字串 DSL，nullability 不在內 — design Decision 4)
 
-/** 解析型別表達式字串為 TypeExpr。`?` 後綴一律報錯 (nullability 改由欄位 nullable 承載)。 */
+/** 解析型別表達式字串為 TypeExpr。`?` 後綴一律報錯 (nullability 改由欄位 nullable 承載) */
 export function parseTypeExpr(input: string, context: string): TypeExpr {
   if (input.includes("?")) {
     throw new SchemaError(
@@ -318,7 +318,7 @@ function parseDefault(raw: unknown, context: string): DefaultValue {
 
 // MARK: - 目錄載入
 
-/** glob 目錄下所有 .yaml，依檔名排序、檔內 types 宣告序串接，回傳 raw type 陣列 (尚未跨型別驗證)。 */
+/** glob 目錄下所有 .yaml，依檔名排序、檔內 types 宣告序串接，回傳 raw type 陣列 (尚未跨型別驗證) */
 export function loadSchemaDir(schemaDir: string): RawTypeT[] {
   const dir = resolve(schemaDir);
   if (!existsSync(dir)) throw new SchemaError(`schema 目錄不存在：${dir}`);
@@ -368,7 +368,7 @@ function formatIssues(issues: z.core.$ZodIssue[]): string {
 
 // MARK: - IR 建構與跨型別驗證
 
-/** 把 raw type 陣列驗證、解析型別文法與 default，串成單一 IR。違規一律拋 SchemaError。 */
+/** 把 raw type 陣列驗證、解析型別文法與 default，串成單一 IR。違規一律拋 SchemaError */
 export function buildModel(rawTypes: RawTypeT[], version: number): Model {
   // 跨型別：重複型別名
   const byName = new Map<string, TypeDecl>();
@@ -460,7 +460,7 @@ function resolveReferences(types: TypeDecl[], byName: Map<string, TypeDecl>): vo
   }
 }
 
-/** 把單一 raw 物件 (來自 YAML 或測試) 過 zod 驗證，失敗時拋 SchemaError 並指明型別名。 */
+/** 把單一 raw 物件 (來自 YAML 或測試) 過 zod 驗證，失敗時拋 SchemaError 並指明型別名 */
 export function parseRawType(entry: unknown): RawTypeT {
   const parsed = RawType.safeParse(entry);
   if (!parsed.success) {
@@ -473,7 +473,7 @@ export function parseRawType(entry: unknown): RawTypeT {
   return parsed.data;
 }
 
-/** 測試用：直接從 raw 物件陣列建 Model (等同 loadSchemaDir → buildModel 的記憶體版)。 */
+/** 測試用：直接從 raw 物件陣列建 Model (等同 loadSchemaDir → buildModel 的記憶體版) */
 export function buildModelFromRaw(entries: unknown[], version = 1): Model {
   return buildModel(entries.map(parseRawType), version);
 }
@@ -504,15 +504,20 @@ export function loadConfig(configPath: string): Codegen {
 
 // MARK: - 共用 emit helper
 
-/** Swift `///` 行註解：每行加 `{indent}/// `，空行為 `{indent}///`。 */
-function docLines(doc: string, prefix: string): string[] {
-  return doc.split("\n").map((line) => (line.length === 0 ? prefix.trimEnd() : `${prefix}${line}`));
+/** Swift `///` 行註解：每行加 `{indent}/// `，空行為 `{indent}///` */
+/** 去掉 doc 行結尾的中文句號 (對齊「程式碼註解結尾不加句號」規範) */
+function stripDocPeriod(line: string): string {
+  return line.replace(/。+$/u, "");
 }
 
-// Kotlin KDoc / TypeScript JSDoc 區塊註解：開頭 /** 、每行前綴 " * "、結尾收斂行。
+function docLines(doc: string, prefix: string): string[] {
+  return doc.split("\n").map((line) => (line.length === 0 ? prefix.trimEnd() : `${prefix}${stripDocPeriod(line)}`));
+}
+
+// Kotlin KDoc / TypeScript JSDoc 區塊註解：開頭 /** 、每行前綴 " * "、結尾收斂行
 function blockDoc(doc: string, indent: string): string[] {
   const out: string[] = [`${indent}/**`];
-  for (const line of doc.split("\n")) out.push(line.length === 0 ? `${indent} *` : `${indent} * ${line}`);
+  for (const line of doc.split("\n")) out.push(line.length === 0 ? `${indent} *` : `${indent} * ${stripDocPeriod(line)}`);
   out.push(`${indent} */`);
   return out;
 }
@@ -523,8 +528,8 @@ function generatedHeader(fileName: string, commentLeader: string): string {
     `  ${fileName}`,
     "  BuyLedger",
     "",
-    "  此檔由 datamodel-gen 自動產生，請勿手動編輯。",
-    "  若要調整資料形狀，請改 shared/data-model/schema/ 後重新執行 `bun run generate`。",
+    "  此檔由 datamodel-gen 自動產生，請勿手動編輯",
+    "  若要調整資料形狀，請改 shared/data-model/schema/ 後重新執行 `bun run generate`",
     "",
   ];
   return lines.map((l) => `${commentLeader}${l}`.trimEnd()).join("\n");
@@ -603,7 +608,7 @@ function swiftConformances(t: TypeDecl): string[] {
   return out;
 }
 
-/** entity 需要顯式 init 的條件：任一欄位 nullable 或帶 default (spec：generated owns the data shape)。 */
+/** entity 需要顯式 init 的條件：任一欄位 nullable 或帶 default (spec：generated owns the data shape) */
 function needsExplicitInit(fields: FieldDecl[]): boolean {
   return fields.some((f) => f.nullable || f.default !== undefined);
 }
@@ -625,7 +630,7 @@ function emitSwift(t: TypeDecl): string {
       parts.push("");
       parts.push("    // MARK: - Identifiable Properties");
       parts.push("");
-      parts.push("    /// 穩定識別值 (以 rawValue 表示)。");
+      parts.push("    /// 穩定識別值 (以 rawValue 表示)");
       parts.push("    var id: String { rawValue }");
     }
     parts.push("}");
@@ -637,13 +642,13 @@ function emitSwift(t: TypeDecl): string {
     parts.push("");
     parts.push("    // MARK: - Data Properties");
     parts.push("");
-    parts.push("    /// 包裝的原始值。");
+    parts.push("    /// 包裝的原始值");
     parts.push(`    let rawValue: ${swiftType(t.base)}`);
     if (t.traits.has("identity")) {
       parts.push("");
       parts.push("    // MARK: - Identifiable Properties");
       parts.push("");
-      parts.push("    /// 穩定識別值 (以 rawValue 表示)。");
+      parts.push("    /// 穩定識別值 (以 rawValue 表示)");
       parts.push(`    var id: ${swiftType(t.base)} { rawValue }`);
     }
     parts.push("}");
@@ -665,7 +670,7 @@ function emitSwift(t: TypeDecl): string {
     parts.push("");
     parts.push("    // MARK: - Init");
     parts.push("");
-    parts.push(`    /// 建立 ${t.name}。`);
+    parts.push(`    /// 建立 ${t.name}`);
     const params = t.fields.map((f) => {
       let p = `${f.name}: ${swiftFieldType(f)}`;
       if (f.default !== undefined) p += ` = ${swiftDefaultLiteral(f.default)}`;
@@ -910,7 +915,7 @@ export function emitType(language: Language, t: TypeDecl, options: Record<string
   }
 }
 
-/** 對單一 target 產出 fileName → content 的有序陣列 (型別順序即 model.types 順序，保決定性)。 */
+/** 對單一 target 產出 fileName → content 的有序陣列 (型別順序即 model.types 順序，保決定性) */
 export function emitTarget(model: Model, target: Target): Array<{ fileName: string; content: string }> {
   const suffix = FILE_SUFFIX[target.language];
   return model.types.map((t) => ({
@@ -923,7 +928,7 @@ export function emitTarget(model: Model, target: Target): Array<{ fileName: stri
 
 export interface GeneratedFile {
   language: Language;
-  /** target 輸出目錄 (絕對路徑)。 */
+  /** target 輸出目錄 (絕對路徑) */
   outputDir: string;
   fileName: string;
   absPath: string;
@@ -933,11 +938,11 @@ export interface GeneratedFile {
 export interface GenerateOptions {
   schemaDir: string;
   configPath: string;
-  /** 覆寫所有 target 的輸出根目錄 (e2e 寫到暫存目錄用)；各 target 改寫到 outDirOverride/<language>/。 */
+  /** 覆寫所有 target 的輸出根目錄 (e2e 寫到暫存目錄用)；各 target 改寫到 outDirOverride/<language>/ */
   outDirOverride?: string;
 }
 
-/** 純計算：載入 + 驗證 + emit，回傳所有 target 的輸出檔 (不寫入磁碟)。 */
+/** 純計算：載入 + 驗證 + emit，回傳所有 target 的輸出檔 (不寫入磁碟) */
 export function planGeneration(opts: GenerateOptions): { model: Model; files: GeneratedFile[] } {
   const config = loadConfig(opts.configPath);
   const rawTypes = loadSchemaDir(opts.schemaDir);
@@ -962,16 +967,16 @@ export function planGeneration(opts: GenerateOptions): { model: Model; files: Ge
   return { model, files };
 }
 
-/** 生成檔的權限：預設唯讀 (0o444) 防手動編輯；覆寫前暫時改回可寫 (0o644)。 */
+/** 生成檔的權限：預設唯讀 (0o444) 防手動編輯；覆寫前暫時改回可寫 (0o644) */
 const MODE_READONLY = 0o444;
 const MODE_WRITABLE = 0o644;
 
-/** 寫出所有 target 檔案到磁碟；每個生成檔寫完後鎖為唯讀，防止被手動編輯。 */
+/** 寫出所有 target 檔案到磁碟；每個生成檔寫完後鎖為唯讀，防止被手動編輯 */
 export function generate(opts: GenerateOptions): GeneratedFile[] {
   const { files } = planGeneration(opts);
   for (const f of files) {
     mkdirSync(f.outputDir, { recursive: true });
-    // 既有檔可能已被鎖成唯讀——先解鎖才能覆寫，寫完再重新上鎖 (generate 為冪等的「重生 + 重鎖」)。
+    // 既有檔可能已被鎖成唯讀——先解鎖才能覆寫，寫完再重新上鎖 (generate 為冪等的「重生 + 重鎖」)
     if (existsSync(f.absPath)) chmodSync(f.absPath, MODE_WRITABLE);
     writeFileSync(f.absPath, f.content, "utf8");
     chmodSync(f.absPath, MODE_READONLY);
@@ -979,8 +984,8 @@ export function generate(opts: GenerateOptions): GeneratedFile[] {
   return files;
 }
 
-/** 把各 target 輸出目錄中的生成檔解鎖 (改回可寫)，供刻意手動檢視／實驗用；下次 generate 會再上鎖。
- *  只依 codegen 設定掃描輸出目錄，不需 schema 有效，故 schema 編輯到一半也能解鎖。 */
+/** 把各 target 輸出目錄中的生成檔解鎖 (改回可寫)，供刻意手動檢視／實驗用；下次 generate 會再上鎖
+ *  只依 codegen 設定掃描輸出目錄，不需 schema 有效，故 schema 編輯到一半也能解鎖 */
 export function unlock(opts: { configPath: string; outDirOverride?: string }): string[] {
   const config = loadConfig(opts.configPath);
   const configDir = dirname(resolve(opts.configPath));
@@ -1014,7 +1019,7 @@ export interface CheckResult {
   drifted: DriftEntry[];
 }
 
-/** 比對磁碟產出與 schema 是否同步；不修改任何檔案。 */
+/** 比對磁碟產出與 schema 是否同步；不修改任何檔案 */
 export function check(opts: GenerateOptions): CheckResult {
   const { files } = planGeneration(opts);
   const drifted: DriftEntry[] = [];
@@ -1073,7 +1078,7 @@ function runCli(argv: string[]): number {
     allowPositionals: false,
   });
 
-  // unlock 只需 --config (掃描輸出目錄)；generate / check 需要 --schema 與 --config。
+  // unlock 只需 --config (掃描輸出目錄)；generate / check 需要 --schema 與 --config
   if (command === "unlock" ? !values.config : !values.schema || !values.config) {
     process.stderr.write(`缺少必要參數 (unlock 需 --config；generate / check 需 --schema 與 --config)\n`);
     return 1;

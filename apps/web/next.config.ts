@@ -1,6 +1,6 @@
 import type { NextConfig } from 'next';
 
-// standalone 輸出供容器精簡部署；API base 由環境變數提供 (預設本機後端)。
+// standalone 輸出供容器精簡部署；API base 由環境變數提供 (預設本機後端)
 const nextConfig: NextConfig = {
   output: 'standalone',
   env: {

@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test';
 
-// Playwright 驗收設定：對 docker compose 起的前端 (:3000) 跑端對端測試。
+// Playwright 驗收設定：對 docker compose 起的前端 (:3000) 跑端對端測試
 export default defineConfig({
   testDir: './e2e',
   timeout: 40_000,

@@ -7,60 +7,60 @@
 
 import SwiftUI
 
-/// 新增或編輯付款方式時的 sheet 表單。
+/// 新增或編輯付款方式時的 sheet 表單
 ///
-/// SwiftUI 的 `.alert` actions builder 只支援 `Button`／`TextField`，無法塞入 `Toggle`；而「是否為無卡類／銀行匯款類／貨到付款類」必須在當下決定，所以付款方式的新增與編輯流程改採獨立 sheet，將名稱輸入與三個旗標切換放在同一張表單，確認後一次帶出 `(name, isCardless, isBankTransfer, isCashOnDelivery)` 給 caller。
+/// SwiftUI 的 `.alert` actions builder 只支援 `Button`／`TextField`，無法塞入 `Toggle`；而「是否為無卡類／銀行匯款類／貨到付款類」必須在當下決定，所以付款方式的新增與編輯流程改採獨立 sheet，將名稱輸入與三個旗標切換放在同一張表單，確認後一次帶出 `(name, isCardless, isBankTransfer, isCashOnDelivery)` 給 caller
 ///
-/// 編輯既有付款方式時，caller 透過 `initialName` / `initialIsCardless` / `initialIsBankTransfer` / `initialIsCashOnDelivery` 帶入原有資料，並把 `title` 設為「編輯付款方式」、`submitTitle` 設為「儲存」。
+/// 編輯既有付款方式時，caller 透過 `initialName` / `initialIsCardless` / `initialIsBankTransfer` / `initialIsCashOnDelivery` 帶入原有資料，並把 `title` 設為「編輯付款方式」、`submitTitle` 設為「儲存」
 ///
-/// 商品類別等沒有旗標概念的主檔不走這張 sheet (改用 alert 或 ``LookupItemEditorSheet``)。
+/// 商品類別等沒有旗標概念的主檔不走這張 sheet (改用 alert 或 ``LookupItemEditorSheet``)
 struct PaymentMethodEditorSheet: View {
 
     // MARK: - View Properties
 
-    /// Sheet 的標題 (顯示在 navigation bar)。
+    /// Sheet 的標題 (顯示在 navigation bar)
     let title: String
 
-    /// 表單上方的說明訊息；空字串時不顯示。
+    /// 表單上方的說明訊息；空字串時不顯示
     let message: String
 
-    /// 名稱 TextField 的 placeholder。
+    /// 名稱 TextField 的 placeholder
     let namePlaceholder: String
 
-    /// 提交按鈕的文字。
+    /// 提交按鈕的文字
     let submitTitle: String
 
-    /// 使用者按下儲存時的 callback；caller 拿到 `(name, isCardless, isBankTransfer, isCashOnDelivery)` 後負責寫入主檔。
+    /// 使用者按下儲存時的 callback；caller 拿到 `(name, isCardless, isBankTransfer, isCashOnDelivery)` 後負責寫入主檔
     let onSubmit: (_ name: String, _ isCardless: Bool, _ isBankTransfer: Bool, _ isCashOnDelivery: Bool) -> Void
 
-    /// 由 sheet 環境注入的 dismiss action。
+    /// 由 sheet 環境注入的 dismiss action
     @Environment(\.dismiss) private var dismiss
 
-    /// 名稱輸入草稿。
+    /// 名稱輸入草稿
     @State private var draftName: String
 
-    /// 是否標記為無卡類付款方式。
+    /// 是否標記為無卡類付款方式
     @State private var draftIsCardless: Bool
 
-    /// 是否標記為銀行匯款類付款方式。
+    /// 是否標記為銀行匯款類付款方式
     @State private var draftIsBankTransfer: Bool
 
-    /// 是否標記為貨到付款類付款方式。
+    /// 是否標記為貨到付款類付款方式
     @State private var draftIsCashOnDelivery: Bool
 
     // MARK: - Init
 
-    /// 建立付款方式 sheet。
+    /// 建立付款方式 sheet
     /// - Parameters:
-    ///   - title: navigation 標題 (新增用「新增付款方式」、編輯用「編輯付款方式」)。
-    ///   - message: 表單上方說明；空字串時不顯示。
-    ///   - namePlaceholder: 名稱 TextField placeholder。
-    ///   - submitTitle: 提交按鈕文字 (新增用「新增」、編輯用「儲存」)。
-    ///   - initialName: 名稱初始值；編輯時帶入原名稱，新增時留空。
-    ///   - initialIsCardless: 無卡旗標初始值；編輯時帶入原狀態。
-    ///   - initialIsBankTransfer: 銀行匯款旗標初始值；編輯時帶入原狀態。
-    ///   - initialIsCashOnDelivery: 貨到付款旗標初始值；編輯時帶入原狀態。
-    ///   - onSubmit: 確認時的 callback，帶出 `(name, isCardless, isBankTransfer, isCashOnDelivery)`。
+    ///   - title: navigation 標題 (新增用「新增付款方式」、編輯用「編輯付款方式」)
+    ///   - message: 表單上方說明；空字串時不顯示
+    ///   - namePlaceholder: 名稱 TextField placeholder
+    ///   - submitTitle: 提交按鈕文字 (新增用「新增」、編輯用「儲存」)
+    ///   - initialName: 名稱初始值；編輯時帶入原名稱，新增時留空
+    ///   - initialIsCardless: 無卡旗標初始值；編輯時帶入原狀態
+    ///   - initialIsBankTransfer: 銀行匯款旗標初始值；編輯時帶入原狀態
+    ///   - initialIsCashOnDelivery: 貨到付款旗標初始值；編輯時帶入原狀態
+    ///   - onSubmit: 確認時的 callback，帶出 `(name, isCardless, isBankTransfer, isCashOnDelivery)`
     init(
         title: String,
         message: String,
@@ -85,7 +85,7 @@ struct PaymentMethodEditorSheet: View {
 
     // MARK: - View Body
 
-    /// 新增付款方式 sheet 的內容。
+    /// 新增付款方式 sheet 的內容
     var body: some View {
         NavigationStack {
             Form {
@@ -163,7 +163,7 @@ struct PaymentMethodEditorSheet: View {
         .frame(minWidth: 420, minHeight: 420)
 #else
         // 表單為 name + 無卡／銀行匯款／貨到付款三個旗標段；medium (約半屏) 仍維持「貼上來的小卡」的
-        // 輕量感、讓使用者看見背後的主檔列表，但同時提供 large 供需要看完整三段說明時展開。
+        // 輕量感、讓使用者看見背後的主檔列表，但同時提供 large 供需要看完整三段說明時展開
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
 #endif

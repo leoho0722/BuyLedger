@@ -9,48 +9,48 @@ import ComposableArchitecture
 import PhotosUI
 import SwiftUI
 
-/// 編輯或新增訂單的表單畫面。
+/// 編輯或新增訂單的表單畫面
 ///
-/// 對應 ``OrderEditFeature``：以 sheet 形式呈現，包含取消與儲存按鈕，以及訂單來源／商品類別／付款方式／對帳狀態的選擇與即時新增入口。儲存時由父層 ``OrdersFeature`` 將草稿寫回資料庫。
+/// 對應 ``OrderEditFeature``：以 sheet 形式呈現，包含取消與儲存按鈕，以及訂單來源／商品類別／付款方式／對帳狀態的選擇與即時新增入口。儲存時由父層 ``OrdersFeature`` 將草稿寫回資料庫
 struct OrderEditView: View {
 
     // MARK: - View Properties
 
-    /// 訂單編輯 store。
+    /// 訂單編輯 store
     @Bindable var store: StoreOf<OrderEditFeature>
 
-    /// 是否顯示「訂單來源」選擇 sheet。
+    /// 是否顯示「訂單來源」選擇 sheet
     @State private var showsOrderSourceSheet = false
 
-    /// 是否顯示「商品類別」選擇 sheet。
+    /// 是否顯示「商品類別」選擇 sheet
     @State private var showsCategorySheet = false
 
-    /// 是否顯示「付款方式」選擇 sheet。
+    /// 是否顯示「付款方式」選擇 sheet
     @State private var showsPaymentMethodSheet = false
 
-    /// 是否顯示「對帳狀態」選擇 sheet。
+    /// 是否顯示「對帳狀態」選擇 sheet
     @State private var showsVerificationStatusSheet = false
 
-    /// 是否顯示「幣別」選擇 sheet。
+    /// 是否顯示「幣別」選擇 sheet
     @State private var showsCurrencySheet = false
 
-    /// 是否顯示「開團」多選 sheet (僅合併情境使用；一般訂單編輯維持 inline `Picker`)。
+    /// 是否顯示「開團」多選 sheet (僅合併情境使用；一般訂單編輯維持 inline `Picker`)
     @State private var showsCampaignSheet = false
 
-    /// 照片檢視器目前聚焦的照片；`nil` 代表檢視器未開啟。
+    /// 照片檢視器目前聚焦的照片；`nil` 代表檢視器未開啟
     @State private var photoViewerSelection: PhotoViewerSelection?
 
-    /// 用於 ``orderDateRow`` 在 picker 寫回時取得「當下這一刻」的秒；測試可注入固定值。
+    /// 用於 ``orderDateRow`` 在 picker 寫回時取得「當下這一刻」的秒；測試可注入固定值
     @Dependency(\.date) private var date
 
-    /// 訂購日期 footer 顯示使用的 locale；跟隨使用者手機設定，測試可注入固定值。
+    /// 訂購日期 footer 顯示使用的 locale；跟隨使用者手機設定，測試可注入固定值
     ///
-    /// 本 View 不直接使用此值，改透過 ``deviceLocale`` 包裝：TCA 預設的 `Locale.autoupdatingCurrent` 受 App 自身 `CFBundleDevelopmentRegion` 與支援的 localizations 影響，當 App 未掛使用者偏好語言時會回退到開發語言 (例如英文)。
+    /// 本 View 不直接使用此值，改透過 ``deviceLocale`` 包裝：TCA 預設的 `Locale.autoupdatingCurrent` 受 App 自身 `CFBundleDevelopmentRegion` 與支援的 localizations 影響，當 App 未掛使用者偏好語言時會回退到開發語言 (例如英文)
     @Dependency(\.locale) private var locale
 
     // MARK: - View Body
 
-    /// 編輯表單的畫面內容。
+    /// 編輯表單的畫面內容
     var body: some View {
         NavigationStack {
             Form {
@@ -124,7 +124,7 @@ struct OrderEditView: View {
 
                 Section("開團與收款") {
                     if store.isMergeContext {
-                        // 合併情境：開團改為多選 trigger row + 多選 sheet。
+                        // 合併情境：開團改為多選 trigger row + 多選 sheet
                         campaignPickerRow
                     } else {
                         Picker("開團", selection: campaignSelectionBinding) {
@@ -225,7 +225,7 @@ struct OrderEditView: View {
             }
             .sheet(isPresented: $showsCategorySheet) {
                 if store.isMergeContext {
-                    // 合併情境：多選模式，點列 toggle、以「完成」結束選取；新增類別流程沿用。
+                    // 合併情境：多選模式，點列 toggle、以「完成」結束選取；新增類別流程沿用
                     OptionPickerSheet(
                         title: "選擇商品類別",
                         addButtonTitle: "新增類別",
@@ -342,7 +342,7 @@ struct OrderEditView: View {
                 )
             }
             .sheet(item: $photoViewerSelection) { selection in
-                // 三平台統一以 sheet 呈現照片檢視器：title 置中顯示計數、右上 toolbar ✕ 關閉。
+                // 三平台統一以 sheet 呈現照片檢視器：title 置中顯示計數、右上 toolbar ✕ 關閉
                 BLPhotoViewer(
                     photos: store.draftPhotos,
                     initialIndex: selection.id
@@ -364,12 +364,12 @@ struct OrderEditView: View {
 
 private extension OrderEditView {
 
-    /// 照片檢視器的開啟狀態：以被點擊照片的 index 作為 sheet item 的識別值。
+    /// 照片檢視器的開啟狀態：以被點擊照片的 index 作為 sheet item 的識別值
     struct PhotoViewerSelection: Identifiable {
 
         // MARK: - Identifiable Properties
 
-        /// 被點擊照片在 ``OrderEditFeature/State/draftPhotos`` 中的 index，同時作為 item 識別。
+        /// 被點擊照片在 ``OrderEditFeature/State/draftPhotos`` 中的 index，同時作為 item 識別
         let id: Int
     }
 }
@@ -378,9 +378,9 @@ private extension OrderEditView {
 
 private extension OrderEditView {
 
-    /// 訂單來源選擇列：操作邏輯與 ``categoryPickerRow`` 完全一致——以 sheet 列出既有來源並提供「新增來源」入口。
+    /// 訂單來源選擇列：操作邏輯與 ``categoryPickerRow`` 完全一致——以 sheet 列出既有來源並提供「新增來源」入口
     ///
-    /// 點擊「新增來源」會收集新來源名稱，送出後由 reducer 把名稱加入 ``OrderEditFeature/State/availableOrderSources`` 並設為目前選擇。
+    /// 點擊「新增來源」會收集新來源名稱，送出後由 reducer 把名稱加入 ``OrderEditFeature/State/availableOrderSources`` 並設為目前選擇
     @ViewBuilder
     var orderSourcePickerRow: some View {
         Button {
@@ -404,12 +404,12 @@ private extension OrderEditView {
         .buttonStyle(.plain)
     }
 
-    /// 商品類別選擇列：以 `Menu` 列出既有類別並提供「新增類別」入口。
+    /// 商品類別選擇列：以 `Menu` 列出既有類別並提供「新增類別」入口
     ///
-    /// 點擊「新增類別」會觸發畫面置中的 `.alert` 彈窗收集新類別名稱，送出後由 reducer 把名稱加入 ``OrderEditFeature/State/availableCategories`` 並設為目前選擇。
+    /// 點擊「新增類別」會觸發畫面置中的 `.alert` 彈窗收集新類別名稱，送出後由 reducer 把名稱加入 ``OrderEditFeature/State/availableCategories`` 並設為目前選擇
     @ViewBuilder
     var categoryPickerRow: some View {
-        // 改成 Button + `.sheet`：iOS `Menu` 是 `UIMenu` 包裝，Button action 會被排到 menu collapse 動畫結束才派發，造成可見延遲。sheet 路徑下選擇即時 commit binding，視覺更新與 sheet 收合動畫互不阻擋。
+        // 改成 Button + `.sheet`：iOS `Menu` 是 `UIMenu` 包裝，Button action 會被排到 menu collapse 動畫結束才派發，造成可見延遲。sheet 路徑下選擇即時 commit binding，視覺更新與 sheet 收合動畫互不阻擋
         Button {
             showsCategorySheet = true
         } label: {
@@ -432,7 +432,7 @@ private extension OrderEditView {
         .buttonStyle(.plain)
     }
 
-    /// 開團選擇列 (僅合併情境)：以 trigger row 開啟多選 sheet；顯示文字以「、」串接已選開團、空選取顯示「未歸團」。
+    /// 開團選擇列 (僅合併情境)：以 trigger row 開啟多選 sheet；顯示文字以「、」串接已選開團、空選取顯示「未歸團」
     @ViewBuilder
     var campaignPickerRow: some View {
         Button {
@@ -457,7 +457,7 @@ private extension OrderEditView {
         .buttonStyle(.plain)
     }
 
-    /// 幣別選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗，但 sheet 不允許新增 (幣別來源僅限 ExchangeRate-API 支援清單)。
+    /// 幣別選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗，但 sheet 不允許新增 (幣別來源僅限 ExchangeRate-API 支援清單)
     @ViewBuilder
     var currencyPickerRow: some View {
         Button {
@@ -483,7 +483,7 @@ private extension OrderEditView {
         .buttonStyle(.plain)
     }
 
-    /// 付款方式選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗。
+    /// 付款方式選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗
     @ViewBuilder
     var paymentMethodPickerRow: some View {
         Button {
@@ -507,7 +507,7 @@ private extension OrderEditView {
         .buttonStyle(.plain)
     }
 
-    /// 對帳狀態選擇列：操作體驗比照 ``paymentMethodPickerRow``，但新增動作走 name-only medium sheet (見 ``OptionPickerSheet`` 的 `onAddViaNameSheet`)。僅在選到的付款方式屬於無卡或銀行匯款 (``OrderEditFeature/State/showsVerificationStatusRow`` 為 `true`) 時，由 caller 條件顯示於「付款方式」row 底下。
+    /// 對帳狀態選擇列：操作體驗比照 ``paymentMethodPickerRow``，但新增動作走 name-only medium sheet (見 ``OptionPickerSheet`` 的 `onAddViaNameSheet`)。僅在選到的付款方式屬於無卡或銀行匯款 (``OrderEditFeature/State/showsVerificationStatusRow`` 為 `true`) 時，由 caller 條件顯示於「付款方式」row 底下
     @ViewBuilder
     var verificationStatusPickerRow: some View {
         Button {
@@ -531,9 +531,9 @@ private extension OrderEditView {
         .buttonStyle(.plain)
     }
 
-    /// 訂購日期編輯列：以 compact `DatePicker` 編輯日期與時分。
+    /// 訂購日期編輯列：以 compact `DatePicker` 編輯日期與時分
     ///
-    /// `DatePicker(.compact)` 寫回時會把秒洗成 0，section footer 又以 `yyyy/MM/dd HH:mm:ss` 完整呈現，會造成視覺上「秒永遠是 :00」。改透過 wrapper binding 攔截寫入：每次 picker 寫回時取當下 `@Dependency(\.date).now` 的秒，組進新值，使秒隨每次編輯刷新成真實當下值，footer 看得到變化。
+    /// `DatePicker(.compact)` 寫回時會把秒洗成 0，section footer 又以 `yyyy/MM/dd HH:mm:ss` 完整呈現，會造成視覺上「秒永遠是 :00」。改透過 wrapper binding 攔截寫入：每次 picker 寫回時取當下 `@Dependency(\.date).now` 的秒，組進新值，使秒隨每次編輯刷新成真實當下值，footer 看得到變化
     @ViewBuilder
     var orderDateRow: some View {
         DatePicker(
@@ -545,7 +545,7 @@ private extension OrderEditView {
         .environment(\.locale, deviceLocale)
     }
 
-    /// 商品明細區段：可逐項編輯名稱／數量／單價，亦可新增與刪除。
+    /// 商品明細區段：可逐項編輯名稱／數量／單價，亦可新增與刪除
     @ViewBuilder
     var itemsSection: some View {
         Section {
@@ -578,7 +578,7 @@ private extension OrderEditView {
         }
     }
 
-    /// 備註區段：商品明細下方的多行備註輸入；留空代表無備註，儲存時會 trim 首尾空白。
+    /// 備註區段：商品明細下方的多行備註輸入；留空代表無備註，儲存時會 trim 首尾空白
     @ViewBuilder
     var notesSection: some View {
         Section {
@@ -589,9 +589,9 @@ private extension OrderEditView {
         }
     }
 
-    /// 訂單照片區段：已加入照片的縮圖橫列 + PhotosPicker 加入按鈕與計數標籤。
+    /// 訂單照片區段：已加入照片的縮圖橫列 + PhotosPicker 加入按鈕與計數標籤
     ///
-    /// 加入按鈕僅在尚未達 ``LedgerOrder/maxPhotoCount`` 上限時顯示；picker 的 `maxSelectionCount` 設為剩餘容量，reducer 端另以截斷守門。
+    /// 加入按鈕僅在尚未達 ``LedgerOrder/maxPhotoCount`` 上限時顯示；picker 的 `maxSelectionCount` 設為剩餘容量，reducer 端另以截斷守門
     @ViewBuilder
     var photosSection: some View {
         Section {
@@ -632,9 +632,9 @@ private extension OrderEditView {
         }
     }
 
-    /// 單筆商品的編輯列：商品名稱 (多行)+ 數量 Stepper + 單價 TextField。
-    /// - Parameter item: 雙向繫結的單筆商品。
-    /// - Returns: 商品列 view。
+    /// 單筆商品的編輯列：商品名稱 (多行)+ 數量 Stepper + 單價 TextField
+    /// - Parameter item: 雙向繫結的單筆商品
+    /// - Returns: 商品列 view
     @ViewBuilder
     func itemEditorRow(item: Binding<LedgerOrderItem>) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
@@ -676,13 +676,13 @@ private extension OrderEditView {
         }
     }
 
-    /// 整數金額輸入欄。
+    /// 整數金額輸入欄
     ///
-    /// 把 `TextField` 的 placeholder 留空，避免在 macOS `.formStyle(.grouped)` 下 `LabeledContent` 與 `TextField` 同時顯示標題造成的重複文字。
+    /// 把 `TextField` 的 placeholder 留空，避免在 macOS `.formStyle(.grouped)` 下 `LabeledContent` 與 `TextField` 同時顯示標題造成的重複文字
     /// - Parameters:
-    ///   - title: 欄位標題。
-    ///   - value: 雙向繫結的值。
-    /// - Returns: `LabeledContent` + `TextField` 組合 view。
+    ///   - title: 欄位標題
+    ///   - value: 雙向繫結的值
+    /// - Returns: `LabeledContent` + `TextField` 組合 view
     @ViewBuilder
     func decimalField(title: String, value: Binding<Decimal>) -> some View {
         LabeledContent(title) {
@@ -700,13 +700,13 @@ private extension OrderEditView {
         }
     }
 
-    /// 百分比輸入欄。
+    /// 百分比輸入欄
     ///
-    /// 介面顯示 0–100 的百分比數字，內部以 0–1 的 ``Decimal`` 儲存以對應 ``LedgerOrder/cardFeeRate`` 等欄位的單位。`TextField` 的 placeholder 同樣留空，由 `LabeledContent` 提供唯一的標題。
+    /// 介面顯示 0–100 的百分比數字，內部以 0–1 的 ``Decimal`` 儲存以對應 ``LedgerOrder/cardFeeRate`` 等欄位的單位。`TextField` 的 placeholder 同樣留空，由 `LabeledContent` 提供唯一的標題
     /// - Parameters:
-    ///   - title: 欄位標題。
-    ///   - value: 雙向繫結的 0–1 比例值。
-    /// - Returns: `LabeledContent` + `TextField` 組合 view。
+    ///   - title: 欄位標題
+    ///   - value: 雙向繫結的 0–1 比例值
+    /// - Returns: `LabeledContent` + `TextField` 組合 view
     @ViewBuilder
     func percentField(title: String, value: Binding<Decimal>) -> some View {
         let proxy = Binding<Double>(
@@ -741,14 +741,14 @@ private extension OrderEditView {
 
 private extension OrderEditView {
 
-    /// 使用者在系統「語言與地區」實際偏好的 locale；未提供偏好語言時退回注入的 `@Dependency(\.locale)`，方便測試／預覽固定。選用 `preferredLanguages` 而非 `@Dependency(\.locale)` 預設值的原因見 ``Locale/preferred(fallback:)``。
+    /// 使用者在系統「語言與地區」實際偏好的 locale；未提供偏好語言時退回注入的 `@Dependency(\.locale)`，方便測試／預覽固定。選用 `preferredLanguages` 而非 `@Dependency(\.locale)` 預設值的原因見 ``Locale/preferred(fallback:)``
     var deviceLocale: Locale {
         Locale.preferred(fallback: locale)
     }
 
-    /// 是否允許按下儲存。
+    /// 是否允許按下儲存
     ///
-    /// 客戶名稱與訂單來源必須含有非空白字元、商品類別至少選一個才視為合法。即使儲存路徑保有 trim+fallback 的防禦邏輯，前端仍以 disable 按鈕的方式給使用者明確回饋。
+    /// 客戶名稱與訂單來源必須含有非空白字元、商品類別至少選一個才視為合法。即使儲存路徑保有 trim+fallback 的防禦邏輯，前端仍以 disable 按鈕的方式給使用者明確回饋
     var canSave: Bool {
         let fields = [
             store.draftCustomerName,
@@ -762,7 +762,7 @@ private extension OrderEditView {
         }
     }
 
-    /// 單選模式下開團 `Picker` 的選取繫結：以陣列首元素對應單選值，寫入時送 ``OrderEditFeature/Action/campaignSelected(_:)`` 正規化回單元素陣列 (空字串 = 未歸團 = 空陣列)。
+    /// 單選模式下開團 `Picker` 的選取繫結：以陣列首元素對應單選值，寫入時送 ``OrderEditFeature/Action/campaignSelected(_:)`` 正規化回單元素陣列 (空字串 = 未歸團 = 空陣列)
     var campaignSelectionBinding: Binding<String> {
         Binding(
             get: { store.draftCampaignNames.first ?? "" },
@@ -770,16 +770,16 @@ private extension OrderEditView {
         )
     }
 
-    /// 幣別選擇列 label 顯示文字：「TWD (新台幣)」格式，跟 sheet 內列項與 ``OrderDetailView`` 上方 chip 一致。``Locale.localizedString(forCurrencyCode:)`` 沒有對應翻譯時 fallback 為 raw code。
+    /// 幣別選擇列 label 顯示文字：「TWD (新台幣)」格式，跟 sheet 內列項與 ``OrderDetailView`` 上方 chip 一致。``Locale.localizedString(forCurrencyCode:)`` 沒有對應翻譯時 fallback 為 raw code
     var currencyDisplayText: String {
         let code = store.draftCurrency.rawValue
         let name = deviceLocale.localizedString(forCurrencyCode: code) ?? ""
         return name.isEmpty ? code : "\(code) (\(name))"
     }
 
-    /// 把 `DatePicker` 寫回的新值與「當下這一刻」`date.now` 的秒合併，產生帶秒精度的 ``OrderEditFeature/State/draftDate``。
+    /// 把 `DatePicker` 寫回的新值與「當下這一刻」`date.now` 的秒合併，產生帶秒精度的 ``OrderEditFeature/State/draftDate``
     ///
-    /// 採固定 `Calendar(identifier: .gregorian)` + UTC 時區做元件分解與重組：時區只影響 year/month/day/hour 的對應，不影響「秒」這個數值，因此在 UTC calendar 下抽秒、改秒、組回 Date，結果與使用者本地時區一致；且不依賴 `Calendar.current` / `Date()`，跟 `@Dependency(\.date)` 配合可在測試中固定當下時間。
+    /// 採固定 `Calendar(identifier: .gregorian)` + UTC 時區做元件分解與重組：時區只影響 year/month/day/hour 的對應，不影響「秒」這個數值，因此在 UTC calendar 下抽秒、改秒、組回 Date，結果與使用者本地時區一致；且不依賴 `Calendar.current` / `Date()`，跟 `@Dependency(\.date)` 配合可在測試中固定當下時間
     var refreshingSecondsBinding: Binding<Date> {
         Binding(
             get: { store.draftDate },

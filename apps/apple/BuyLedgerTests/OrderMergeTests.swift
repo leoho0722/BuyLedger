@@ -69,7 +69,7 @@ struct OrderMergeTests {
     }
 
     @Test func feeRatesFallBackToPrimaryWhenOneSideHasZeroCharge() {
-        // 副訂單實付 0：加權平均退化為主訂單值仍正確 ((1.5%×1000 + 3%×0) ÷ 1000 = 1.5%)。
+        // 副訂單實付 0：加權平均退化為主訂單值仍正確 ((1.5%×1000 + 3%×0) ÷ 1000 = 1.5%)
         let primary = Self.makeOrder(id: "P", chargedAmount: 1_000, cardFeeRate: Self.decimal("0.015"))
         let secondary = Self.makeOrder(id: "S", chargedAmount: 0, cardFeeRate: Self.decimal("0.03"))
 
@@ -84,7 +84,7 @@ struct OrderMergeTests {
     }
 
     @Test func feeRatesUsePrimaryWhenBothChargesAreZero() {
-        // 兩筆實付皆 0：分母為 0，沿用主訂單比例、不得產生 NaN。
+        // 兩筆實付皆 0：分母為 0，沿用主訂單比例、不得產生 NaN
         let primary = Self.makeOrder(id: "P", chargedAmount: 0, cardFeeRate: Self.decimal("0.015"), platformFeeRate: Self.decimal("0.03"), paymentFeeRate: Self.decimal("0.005"))
         let secondary = Self.makeOrder(id: "S", chargedAmount: 0, cardFeeRate: Self.decimal("0.03"))
 
@@ -116,7 +116,7 @@ struct OrderMergeTests {
     }
 
     @Test func notesJoinWithDashSeparatorLine() {
-        // (主, 副) → 合併備註的三種組合。
+        // (主, 副) → 合併備註的三種組合
         let cases: [(String, String, String)] = [
             ("急件", "含贈品", "急件\n----------\n含贈品"),
             ("急件", "", "急件"),
@@ -136,7 +136,7 @@ struct OrderMergeTests {
     }
 
     @Test func cardlessPaymentMethodWinsOnConflict() {
-        // 恰有一筆 (副) 屬無卡：付款方式取副訂單，對帳狀態與貨到付款隨之。
+        // 恰有一筆 (副) 屬無卡：付款方式取副訂單，對帳狀態與貨到付款隨之
         let primary = Self.makeOrder(id: "P", paymentMethod: "信用卡", verificationStatus: "", isCashOnDelivery: false)
         let secondary = Self.makeOrder(id: "S", paymentMethod: "全家好開店", verificationStatus: "待對帳", isCashOnDelivery: true)
 
@@ -153,7 +153,7 @@ struct OrderMergeTests {
     }
 
     @Test func primaryPaymentMethodWinsWhenSameOrNoCardlessConflict() {
-        // 兩筆相同：取該值、對帳狀態隨主訂單。
+        // 兩筆相同：取該值、對帳狀態隨主訂單
         let same = OrderMerge.makeDraft(
             primary: Self.makeOrder(id: "P", paymentMethod: "信用卡", verificationStatus: "主對帳"),
             secondary: Self.makeOrder(id: "S", paymentMethod: "信用卡", verificationStatus: "副對帳"),
@@ -163,7 +163,7 @@ struct OrderMergeTests {
         #expect(same.paymentMethod == "信用卡")
         #expect(same.verificationStatus == "主對帳")
 
-        // 不同且皆非無卡：取主訂單。
+        // 不同且皆非無卡：取主訂單
         let neither = OrderMerge.makeDraft(
             primary: Self.makeOrder(id: "P", paymentMethod: "信用卡"),
             secondary: Self.makeOrder(id: "S", paymentMethod: "銀行轉帳"),
@@ -172,7 +172,7 @@ struct OrderMergeTests {
         )
         #expect(neither.paymentMethod == "信用卡")
 
-        // 兩筆皆無卡且不同：仍取主訂單 (「恰有一筆無卡」才換邊)。
+        // 兩筆皆無卡且不同：仍取主訂單 (「恰有一筆無卡」才換邊)
         let bothCardless = OrderMerge.makeDraft(
             primary: Self.makeOrder(id: "P", paymentMethod: "全家好開店"),
             secondary: Self.makeOrder(id: "S", paymentMethod: "7-11 賣貨便"),
@@ -233,15 +233,15 @@ struct OrderMergeTests {
 
 private extension OrderMergeTests {
 
-    /// 固定的合併當下時間。
+    /// 固定的合併當下時間
     static let mergeDate = Date(timeIntervalSince1970: 1_777_000_000)
 
-    /// 以固定字串建立 `Decimal`，避免浮點誤差。
+    /// 以固定字串建立 `Decimal`，避免浮點誤差
     static func decimal(_ value: String) -> Decimal {
         Decimal(string: value, locale: Locale(identifier: "en_US_POSIX")) ?? 0
     }
 
-    /// 建立測試訂單；未指定的欄位使用中性預設值。
+    /// 建立測試訂單；未指定的欄位使用中性預設值
     static func makeOrder(
         id: String,
         status: OrderStatus = .purchased,

@@ -10,7 +10,7 @@ const VARIANT_CLASSES: Record<Variant, string> = {
   destructive: 'bg-bl-red/14 text-bl-red px-[18px]',
 };
 
-// 按鈕：四種變體，最小高度 44，按下縮放/淡出。
+// 按鈕：四種變體，最小高度 44，按下縮放/淡出
 export function BLButton({
   children,
   variant = 'primary',

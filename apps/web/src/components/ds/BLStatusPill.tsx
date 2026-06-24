@@ -1,7 +1,7 @@
 import { cn } from '@/lib/cn';
 import { TONE_CLASSES, type Tone } from '@/lib/domain/constants';
 
-// 狀態膠囊：tone 決定前景/背景，選配 5pt 指示點。
+// 狀態膠囊：tone 決定前景/背景，選配 5pt 指示點
 export function BLStatusPill({
   label,
   tone = 'neutral',

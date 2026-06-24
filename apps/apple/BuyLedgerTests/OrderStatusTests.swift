@@ -37,14 +37,14 @@ struct OrderStatusTests {
     }
 
     @Test func pickedUpIsRealizedAndOrderedAfterDelivered() {
-        // 已取貨是比「已交付」更完整的終態，買家已收到貨，收益必然已實現。
+        // 已取貨是比「已交付」更完整的終態，買家已收到貨，收益必然已實現
         #expect(OrderStatus.realizedStatuses.contains(.pickedUp))
         let allCases = OrderStatus.allCases
         #expect(allCases.firstIndex(of: .pickedUp)! > allCases.firstIndex(of: .delivered)!)
     }
 
     @Test func statusFilterBrowsingCasesIncludeMerged() {
-        // spec「Merged orders remain findable」：訂單列表的狀態篩選需包含「已合併」，讓使用者找回被合併的舊單。
+        // spec「Merged orders remain findable」：訂單列表的狀態篩選需包含「已合併」，讓使用者找回被合併的舊單
         #expect(OrderStatusFilter.orderBrowsingCases.contains(.status(.merged)))
     }
 }

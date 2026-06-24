@@ -5,7 +5,7 @@
 //  Created by Leo Ho on 2026/5/1.
 //
 //  資料形狀 (cases、Identifiable) 由 Generated/OrderStatus.generated.swift 產生；
-//  本檔僅保留手寫業務邏輯。改欄位請改 shared/data-model/schema/ 後重新 generate。
+//  本檔僅保留手寫業務邏輯。改欄位請改 shared/data-model/schema/ 後重新 generate
 //
 
 import Foundation
@@ -14,8 +14,8 @@ import Foundation
 
 extension OrderStatus {
 
-    /// 視為「已實現」的訂單狀態集合，為收益統計的單一事實來源。
-    /// 「已合併」與「已取消」「報價中」同樣不屬於已實現，避免合併後重複計算收益。
+    /// 視為「已實現」的訂單狀態集合，為收益統計的單一事實來源
+    /// 「已合併」與「已取消」「報價中」同樣不屬於已實現，避免合併後重複計算收益
     static let realizedStatuses: Set<OrderStatus> = [
         .confirmed, 
         .purchased, 
@@ -31,7 +31,7 @@ extension OrderStatus {
 
 extension OrderStatus {
 
-    /// 顯示在介面中的狀態名稱。
+    /// 顯示在介面中的狀態名稱
     var title: String {
         switch self {
         case .quoting:

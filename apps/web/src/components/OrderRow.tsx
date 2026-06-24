@@ -10,7 +10,7 @@ import { BLAvatar } from './ds/BLAvatar';
 import { BLStatusPill } from './ds/BLStatusPill';
 import { BLTagPill } from './ds/BLTagPill';
 
-// 訂單列：左欄頭像 + 客戶/日期/明細/類別；右欄狀態+收益+獲利 (預設) 或收款金額 (charged 變體)。
+// 訂單列：左欄頭像 + 客戶/日期/明細/類別；右欄狀態+收益+獲利 (預設) 或收款金額 (charged 變體)
 export function OrderRow({
   order,
   variant = 'default',
@@ -21,7 +21,7 @@ export function OrderRow({
   order: OrderDTO;
   variant?: 'default' | 'charged';
   onClick?: () => void;
-  // 多選模式：顯示勾選圈，列點擊改為切換選取。
+  // 多選模式：顯示勾選圈，列點擊改為切換選取
   selecting?: boolean;
   selected?: boolean;
 }) {

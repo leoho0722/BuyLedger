@@ -1,4 +1,4 @@
-// 走勢線：圓角線條 + 線色 16% 區域填色。
+// 走勢線：圓角線條 + 線色 16% 區域填色
 export function BLSparkline({
   values,
   width = 240,

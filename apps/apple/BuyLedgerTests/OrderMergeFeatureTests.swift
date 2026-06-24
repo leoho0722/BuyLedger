@@ -16,7 +16,7 @@ struct OrderMergeFeatureTests {
     // MARK: - Tests
 
     @Test func eligibleCandidatesFilterMatrix() {
-        // 資格矩陣：同幣別 + 同客戶 + 非已合併/已取消，且排除主訂單自身。
+        // 資格矩陣：同幣別 + 同客戶 + 非已合併/已取消，且排除主訂單自身
         let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
         let orders = [
             primary,
@@ -54,7 +54,7 @@ struct OrderMergeFeatureTests {
     }
 
     @Test func candidateSectionsGroupByDayNewestFirst() {
-        // 跨日候選依「日」分組：段排序新到舊、段內新到舊，標題同訂單頁 (今天/昨天)。
+        // 跨日候選依「日」分組：段排序新到舊、段內新到舊，標題同訂單頁 (今天/昨天)
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
 
@@ -84,7 +84,7 @@ struct OrderMergeFeatureTests {
     }
 
     @Test func candidateSectionsApplySearchFilter() {
-        // 搜尋過濾先於分組生效：無符合候選的日子不產生區段。
+        // 搜尋過濾先於分組生效：無符合候選的日子不產生區段
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
 
@@ -111,7 +111,7 @@ struct OrderMergeFeatureTests {
     }
 
     @Test func candidateTappedWithinPhotoLimitCompletesDirectly() async {
-        // 照片合計 ≤ 上限：跳過挑選步驟直接 delegate，照片主前副後串接。
+        // 照片合計 ≤ 上限：跳過挑選步驟直接 delegate，照片主前副後串接
         let primaryPhotos = [Data([0x01]), Data([0x02])]
         let secondaryPhotos = [Data([0x03]), Data([0x04]), Data([0x05])]
         let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping, photos: primaryPhotos)
@@ -130,7 +130,7 @@ struct OrderMergeFeatureTests {
     }
 
     @Test func candidateTappedOverPhotoLimitEntersPhotoStep() async {
-        // 4 + 3 = 7 張 > 5：進入照片挑選步驟並預選前 5 張 (主訂單照片在前)。
+        // 4 + 3 = 7 張 > 5：進入照片挑選步驟並預選前 5 張 (主訂單照片在前)
         let primaryPhotos = (1...4).map { Data([UInt8($0)]) }
         let secondaryPhotos = (5...7).map { Data([UInt8($0)]) }
         let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping, photos: primaryPhotos)
@@ -165,11 +165,11 @@ struct OrderMergeFeatureTests {
 
         await store.send(.candidateTapped("O2"))
 
-        // 已選滿 5 張：再勾第 6 張會被守門忽略。
+        // 已選滿 5 張：再勾第 6 張會被守門忽略
         await store.send(.photoToggled(5))
         #expect(store.state.selectedPhotoIndices == Set(0..<5))
 
-        // 取消一張後即可改勾其他照片。
+        // 取消一張後即可改勾其他照片
         await store.send(.photoToggled(0))
         await store.send(.photoToggled(6))
         #expect(store.state.selectedPhotoIndices == Set([1, 2, 3, 4, 6]))
@@ -189,7 +189,7 @@ struct OrderMergeFeatureTests {
         store.exhaustivity = .off
 
         await store.send(.candidateTapped("O2"))
-        // 改保留 index 1, 2, 6 三張。
+        // 改保留 index 1, 2, 6 三張
         await store.send(.photoToggled(0))
         await store.send(.photoToggled(3))
         await store.send(.photoToggled(4))
@@ -198,7 +198,7 @@ struct OrderMergeFeatureTests {
         await store.send(.photoStepConfirmTapped)
         await store.receive(\.delegate.completed)
 
-        // delegate payload 驗證：以 case path 取出參數。
+        // delegate payload 驗證：以 case path 取出參數
         let combined = primaryPhotos + secondaryPhotos
         let expectedKept = [combined[1], combined[2], combined[6]]
         #expect(store.state.selectedPhotoIndices.sorted() == [1, 2, 6])
@@ -210,7 +210,7 @@ struct OrderMergeFeatureTests {
 
 private extension OrderMergeFeatureTests {
 
-    /// 建立測試訂單；未指定的欄位使用中性預設值。
+    /// 建立測試訂單；未指定的欄位使用中性預設值
     static func makeOrder(
         id: String,
         customer: String,

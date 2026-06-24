@@ -75,7 +75,7 @@ export class CampaignsService {
     const name = input.name !== undefined ? (input.name ?? '').trim() : existing.name;
     if (!name) throw new BadRequestException('開團名稱不可為空');
 
-    // 改名 cascade 到訂單 campaignNames (限該使用者)；cascade 內會一併重新鏡像受影響訂單。
+    // 改名 cascade 到訂單 campaignNames (限該使用者)；cascade 內會一併重新鏡像受影響訂單
     if (name !== existing.name) {
       await this.orders.cascadeRenameCampaign(uid, existing.name, name);
     }
@@ -106,7 +106,7 @@ export class CampaignsService {
     await this.mirror.remove(uid, 'campaigns', id);
   }
 
-  // 結團：紀錄結團日期、不改 status、不鎖訂單。已結團則維持原日期。
+  // 結團：紀錄結團日期、不改 status、不鎖訂單。已結團則維持原日期
   async settle(uid: string, id: string): Promise<Campaign> {
     const existing = await this.prisma.campaign.findFirst({ where: { id, ownerUid: uid } });
     if (!existing) throw new NotFoundException(`找不到開團 ${id}`);
@@ -136,7 +136,7 @@ export class CampaignsService {
   }
 
   // 結單日已過期的開團中團，自動轉為已收單 (用注入的現在時間)，僅限該使用者；
-  // 自動收單的團一併重新鏡像，使 Firestore 投影同步狀態。
+  // 自動收單的團一併重新鏡像，使 Firestore 投影同步狀態
   private async autoClose(uid: string): Promise<void> {
     const toClose = await this.prisma.campaign.findMany({
       where: { ownerUid: uid, status: 'ongoing', closeDate: { not: null, lt: this.now.now() } },

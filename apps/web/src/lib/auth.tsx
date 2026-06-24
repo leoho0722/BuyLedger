@@ -35,13 +35,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setUser(next);
       setLoading(false);
     });
-    // API 收到 401 時登出，AuthGate 隨即導回登入。
+    // API 收到 401 時登出，AuthGate 隨即導回登入
     setUnauthorizedHandler(() => {
       void firebaseSignOut(getFirebaseAuth());
     });
     // Dev-only 自動登入掛鉤：以後端 dev custom token 換 ID token，繞過互動式 OAuth
     // (CDP 控制的瀏覽器無法完成 Google/Apple 登入)。安全邊界在後端：DEV_AUTH_ENABLED
-    // 未開時 /dev/token 回 404、此掛鉤即無效。瀏覽器 console 可呼叫 window.__devSignIn('uid')。
+    // 未開時 /dev/token 回 404、此掛鉤即無效。瀏覽器 console 可呼叫 window.__devSignIn('uid')
     (window as unknown as { __devSignIn?: (uid?: string) => Promise<void> }).__devSignIn = async (
       uid = 'demo-user',
     ) => {
@@ -68,7 +68,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async (): Promise<void> => {
     await firebaseSignOut(getFirebaseAuth());
-    // 登出後導回首頁，再登入時落在總覽 (而非原本的設定頁)。
+    // 登出後導回首頁，再登入時落在總覽 (而非原本的設定頁)
     router.replace('/');
   };
 
@@ -85,7 +85,7 @@ export function useAuth(): AuthState {
   return context;
 }
 
-// 未登入時顯示登入畫面、登入後才放行 App 內容。
+// 未登入時顯示登入畫面、登入後才放行 App 內容
 export function AuthGate({ children }: { children: ReactNode }) {
   const { user, loading } = useAuth();
   if (loading) {

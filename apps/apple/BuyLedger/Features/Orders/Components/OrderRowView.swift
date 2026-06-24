@@ -7,32 +7,32 @@
 
 import SwiftUI
 
-/// 訂單列表中的單列摘要。
+/// 訂單列表中的單列摘要
 struct OrderRowView: View {
 
     // MARK: - View Properties
 
-    /// 要顯示的訂單。
+    /// 要顯示的訂單
     let order: LedgerOrder
 
-    /// 是否在列內顯示訂購日期。
+    /// 是否在列內顯示訂購日期
     ///
     /// 訂單列表頁已改以「日期區段標題」分組呈現日期 (見 ``OrdersCompactView``)，列內毋須重複，故傳 `false`；
-    /// Dashboard 近期訂單為不分組的精簡清單，仍需列內日期提供時間感，故維持預設 `true`。
+    /// Dashboard 近期訂單為不分組的精簡清單，仍需列內日期提供時間感，故維持預設 `true`
     var showsDate: Bool = true
 
-    /// 右欄呈現變體，預設為訂單頁的「狀態膠囊 + 實際收款 + 損益」。
+    /// 右欄呈現變體，預設為訂單頁的「狀態膠囊 + 實際收款 + 損益」
     var trailing: Trailing = .statusAndProfit
 
     // MARK: - View Body
 
-    /// 訂單列的畫面內容。
+    /// 訂單列的畫面內容
     ///
     /// 採三欄結構，並把「會換行的文字」(名稱、商品明細、類別膠囊) 與「短而固定的資訊」(狀態膠囊、金額) 分開：
-    /// - 左欄 (彈性寬)：名稱完整顯示、必要時換行；商品明細與類別膠囊同樣允許多行。
-    /// - 右欄 (短/固定)：狀態膠囊與金額垂直堆疊、整體置中。
+    /// - 左欄 (彈性寬)：名稱完整顯示、必要時換行；商品明細與類別膠囊同樣允許多行
+    /// - 右欄 (短/固定)：狀態膠囊與金額垂直堆疊、整體置中
     ///
-    /// 如此任何長字串都只會往下長高、不會把列撐得比可用寬度寬，避免外層垂直 ScrollView 內容溢出造成整頁左右邊距跑版。
+    /// 如此任何長字串都只會往下長高、不會把列撐得比可用寬度寬，避免外層垂直 ScrollView 內容溢出造成整頁左右邊距跑版
     var body: some View {
         HStack(spacing: BLSpacing.medium) {
             BLAvatar(
@@ -42,8 +42,8 @@ struct OrderRowView: View {
             )
 
             VStack(alignment: .leading, spacing: BLSpacing.small) {
-                // 名稱完整顯示、需要時換行 (含無空白長字串的字元級換行)，不截斷。
-                // `fixedSize(horizontal: false, vertical: true)` 表示「接受容器給的寬度、改往下長高」。
+                // 名稱完整顯示、需要時換行 (含無空白長字串的字元級換行)，不截斷
+                // `fixedSize(horizontal: false, vertical: true)` 表示「接受容器給的寬度、改往下長高」
                 Text(order.customer.name)
                     .font(.subheadline.weight(.semibold))
                     .fixedSize(horizontal: false, vertical: true)
@@ -65,7 +65,7 @@ struct OrderRowView: View {
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
-            // 右欄與金額同欄、整體垂直置中 (外層 HStack 維持預設 .center)，內容依 trailing 變體切換。
+            // 右欄與金額同欄、整體垂直置中 (外層 HStack 維持預設 .center)，內容依 trailing 變體切換
             trailingColumn
         }
         .padding(.vertical, BLSpacing.extraSmall)
@@ -76,15 +76,15 @@ struct OrderRowView: View {
 
 extension OrderRowView {
 
-    /// 右欄呈現變體。
+    /// 右欄呈現變體
     ///
-    /// 預設 ``statusAndProfit`` 維持訂單列表與 Dashboard 的「狀態膠囊 + 實際收款 + 損益」；``chargedAmount`` 供合併候選列等需要客戶實付的情境使用——僅替換右欄，左欄 (頭像、名稱、日期、商品明細、類別 tag) 與預設變體完全一致。
+    /// 預設 ``statusAndProfit`` 維持訂單列表與 Dashboard 的「狀態膠囊 + 實際收款 + 損益」；``chargedAmount`` 供合併候選列等需要客戶實付的情境使用——僅替換右欄，左欄 (頭像、名稱、日期、商品明細、類別 tag) 與預設變體完全一致
     enum Trailing {
 
-        /// 狀態膠囊、實際收款與損益 (訂單列表與 Dashboard 預設)。
+        /// 狀態膠囊、實際收款與損益 (訂單列表與 Dashboard 預設)
         case statusAndProfit
 
-        /// 客戶實付金額與「客戶實付」標籤 (合併候選列)。
+        /// 客戶實付金額與「客戶實付」標籤 (合併候選列)
         case chargedAmount
     }
 }
@@ -93,7 +93,7 @@ extension OrderRowView {
 
 private extension OrderRowView {
 
-    /// 右欄內容，依 ``Trailing`` 變體切換。
+    /// 右欄內容，依 ``Trailing`` 變體切換
     @ViewBuilder
     var trailingColumn: some View {
         switch trailing {
@@ -131,9 +131,9 @@ private extension OrderRowView {
 
 extension OrderRowView {
 
-    /// 第三行類別 tag 的顯示文字：以「、」串接全部非空白類別 (單一 capsule)；無有效類別時為空字串、不渲染第三行。開放 internal 供單元測試斷言 join/缺席邏輯。
-    /// - Parameter categories: 訂單的類別清單。
-    /// - Returns: tag 顯示文字。
+    /// 第三行類別 tag 的顯示文字：以「、」串接全部非空白類別 (單一 capsule)；無有效類別時為空字串、不渲染第三行。開放 internal 供單元測試斷言 join/缺席邏輯
+    /// - Parameter categories: 訂單的類別清單
+    /// - Returns: tag 顯示文字
     static func categoriesTagText(for categories: [String]) -> String {
         categories
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -146,7 +146,7 @@ extension OrderRowView {
 
 private extension OrderRowView {
 
-    /// 第三行類別 tag 的顯示文字 (instance 便利存取)。
+    /// 第三行類別 tag 的顯示文字 (instance 便利存取)
     var categoriesTagText: String {
         Self.categoriesTagText(for: order.categories)
     }

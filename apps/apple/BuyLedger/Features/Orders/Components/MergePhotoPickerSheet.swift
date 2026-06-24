@@ -8,9 +8,9 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 合併流程的照片挑選步驟：兩筆訂單照片合計超過上限時，以格狀縮圖讓使用者勾選要保留的照片 (至多 ``LedgerOrder/maxPhotoCount`` 張)。
+/// 合併流程的照片挑選步驟：兩筆訂單照片合計超過上限時，以格狀縮圖讓使用者勾選要保留的照片 (至多 ``LedgerOrder/maxPhotoCount`` 張)
 ///
-/// 由 ``OrderMergeCandidateSheet`` 在 ``OrderMergeFeature/Step/selectPhotos`` 步驟內嵌呈現；「繼續」按鈕在外層 toolbar，本 view 只負責縮圖格與勾選狀態。
+/// 由 ``OrderMergeCandidateSheet`` 在 ``OrderMergeFeature/Step/selectPhotos`` 步驟內嵌呈現；「繼續」按鈕在外層 toolbar，本 view 只負責縮圖格與勾選狀態
 struct MergePhotoPickerSheet: View {
 
     // MARK: - View Properties
@@ -19,7 +19,7 @@ struct MergePhotoPickerSheet: View {
 
     // MARK: - View Body
 
-    /// 照片挑選步驟的內容：說明文字 + 縮圖格。
+    /// 照片挑選步驟的內容：說明文字 + 縮圖格
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
@@ -45,11 +45,11 @@ struct MergePhotoPickerSheet: View {
 
 private extension MergePhotoPickerSheet {
 
-    /// 單格照片縮圖：點擊 toggle 勾選；已勾選顯示外框與右上角 checkmark。
+    /// 單格照片縮圖：點擊 toggle 勾選；已勾選顯示外框與右上角 checkmark
     /// - Parameters:
-    ///   - index: 照片在 ``OrderMergeFeature/State/combinedPhotos`` 中的 index。
-    ///   - data: 照片 data。
-    /// - Returns: 照片格 view。
+    ///   - index: 照片在 ``OrderMergeFeature/State/combinedPhotos`` 中的 index
+    ///   - data: 照片 data
+    /// - Returns: 照片格 view
     @ViewBuilder
     func photoCell(index: Int, data: Data) -> some View {
         let isSelected = store.selectedPhotoIndices.contains(index)
@@ -80,9 +80,9 @@ private extension MergePhotoPickerSheet {
         .accessibilityLabel(isSelected ? "取消保留這張照片" : "保留這張照片")
     }
 
-    /// 縮圖內容：可解碼時顯示影像，否則顯示 placeholder (寧可空狀態也不顯示假資料)。
-    /// - Parameter data: 照片 data。
-    /// - Returns: 縮圖內容 view。
+    /// 縮圖內容：可解碼時顯示影像，否則顯示 placeholder (寧可空狀態也不顯示假資料)
+    /// - Parameter data: 照片 data
+    /// - Returns: 縮圖內容 view
     @ViewBuilder
     func photoContent(data: Data) -> some View {
         if let image = Image(photoData: data) {

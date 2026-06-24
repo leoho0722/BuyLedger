@@ -4,7 +4,7 @@ import { ChevronRight, type LucideIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
-// 設定/清單列：選配前置圖示、標題、尾端值或自訂內容、可點。
+// 設定/清單列：選配前置圖示、標題、尾端值或自訂內容、可點
 export function BLListRow({
   icon: Icon,
   title,

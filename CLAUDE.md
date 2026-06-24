@@ -77,6 +77,8 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 ### 註解
 
 - 註解一律使用正體中文撰寫，語氣接近官方文件風格。
+- 程式碼註解結尾不加中文句號 (。)——`//`／`///`／`/* */`／JSX `{/* */}` 等各語言註解皆然；句中分隔用的 。 保留 (只去結尾那一個)。此規範僅約束程式碼註解，不含 Markdown 文件等散文。
+- 生成檔的註解由 `shared/data-model` 的 `datamodel-gen` emitter 統一在 emit 時去尾 。 (`docLines`／`blockDoc` 與檔頭模板)，故 schema 的 `doc:` 可照常書寫、不需手動去 。；改 emitter 後須 `bun run generate` 重生並 `bun run check` 守門。
 
 ## 文件同步鐵則
 

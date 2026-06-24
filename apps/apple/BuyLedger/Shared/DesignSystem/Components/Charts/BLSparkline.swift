@@ -7,26 +7,26 @@
 
 import SwiftUI
 
-/// 呈現小型走勢的折線圖。
+/// 呈現小型走勢的折線圖
 struct BLSparkline: View {
 
     // MARK: - View Properties
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 走勢圖要呈現的數值。
+    /// 走勢圖要呈現的數值
     let data: [Double]
 
-    /// 可選的線條色彩；未提供時使用成功色。
+    /// 可選的線條色彩；未提供時使用成功色
     var tint: Color? = nil
 
-    /// 走勢圖高度。
+    /// 走勢圖高度
     var height: CGFloat = 40
 
     // MARK: - View Body
 
-    /// 小型走勢圖的畫面內容。
+    /// 小型走勢圖的畫面內容
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
         let color = tint ?? palette.green
@@ -64,9 +64,9 @@ struct BLSparkline: View {
 
 private extension BLSparkline {
 
-    /// 將資料轉換成繪製路徑使用的座標點。
-    /// - Parameter size: 圖表可用繪製尺寸。
-    /// - Returns: 對應到目前尺寸的座標點集合。
+    /// 將資料轉換成繪製路徑使用的座標點
+    /// - Parameter size: 圖表可用繪製尺寸
+    /// - Returns: 對應到目前尺寸的座標點集合
     func points(in size: CGSize) -> [CGPoint] {
         guard data.count > 1 else { return [] }
 

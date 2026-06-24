@@ -15,7 +15,7 @@ import { cn } from '@/lib/cn';
 import { formatPercent, formatProgressPercent, formatSignedTWD, formatTWD } from '@/lib/format';
 import { useCampaigns, useOrders, useSettings } from '@/lib/queries';
 
-// 漸層底 (accent → indigo)，Hero 卡與 onboarding 圖示共用。
+// 漸層底 (accent → indigo)，Hero 卡與 onboarding 圖示共用
 const HERO_GRADIENT = 'linear-gradient(135deg,var(--bl-accent),var(--bl-indigo))';
 
 export default function DashboardPage() {
@@ -28,7 +28,7 @@ export default function DashboardPage() {
   const orderList = orders.data ?? [];
   const campaignList = campaigns.data ?? [];
 
-  // 1) 載入中。
+  // 1) 載入中
   if (orders.isLoading) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center text-[15px] text-bl-secondary-label">
@@ -37,7 +37,7 @@ export default function DashboardPage() {
     );
   }
 
-  // 2) 無訂單：onboarding。
+  // 2) 無訂單：onboarding
   if (orderList.length === 0) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
@@ -60,7 +60,7 @@ export default function DashboardPage() {
     );
   }
 
-  // 3) 有訂單：完整儀表板。
+  // 3) 有訂單：完整儀表板
   const stats = dashboardStats(orderList, now, settings.data?.monthlyProfitGoal ?? '80000');
   const goal = Number(settings.data?.monthlyProfitGoal ?? '80000');
   const ongoingCampaigns = campaignList.filter((c) => c.status === 'ongoing');
@@ -174,7 +174,7 @@ export default function DashboardPage() {
   );
 }
 
-// KPI 磁貼：小 label + 大值。
+// KPI 磁貼：小 label + 大值
 function KpiTile({ label, value }: { label: string; value: string }) {
   return (
     <BLCard>

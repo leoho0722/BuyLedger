@@ -7,34 +7,34 @@
 
 import Foundation
 
-/// App 主要導覽分頁。
+/// App 主要導覽分頁
 enum RootTab: String, CaseIterable, Identifiable {
 
     // MARK: - Cases
 
-    /// 總覽頁。
+    /// 總覽頁
     case dashboard
 
-    /// 訂單頁。
+    /// 訂單頁
     case orders
 
-    /// 開團頁。
+    /// 開團頁
     case campaigns
 
-    /// 分析頁。
+    /// 分析頁
     case insights
 
-    /// 更多與設定頁。
+    /// 更多與設定頁
     case more
 
     // MARK: - Identifiable Properties
 
-    /// 分頁的穩定識別值。
+    /// 分頁的穩定識別值
     var id: String { rawValue }
 
     // MARK: - Display Properties
 
-    /// 分頁標題。
+    /// 分頁標題
     var title: String {
         switch self {
         case .dashboard:
@@ -50,7 +50,7 @@ enum RootTab: String, CaseIterable, Identifiable {
         }
     }
 
-    /// 分頁使用的 SF Symbols 名稱。
+    /// 分頁使用的 SF Symbols 名稱
     var systemImage: String {
         switch self {
         case .dashboard:

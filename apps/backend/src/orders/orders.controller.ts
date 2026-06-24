@@ -29,13 +29,13 @@ export class OrdersController {
     return this.orders.list(uid);
   }
 
-  // 合併草稿：靜態路徑置於 :id 之前避免被動態段攔截。
+  // 合併草稿：靜態路徑置於 :id 之前避免被動態段攔截
   @Post('merge/draft')
   mergeDraft(@CurrentUid() uid: string, @Body() body: MergeDraftInput) {
     return this.orders.mergeDraft(uid, body);
   }
 
-  // 批次更改狀態：靜態路徑置於 :id 之前避免被動態段攔截。
+  // 批次更改狀態：靜態路徑置於 :id 之前避免被動態段攔截
   @Post('status/batch')
   batchSetStatus(@CurrentUid() uid: string, @Body() body: BatchStatusChangeInput) {
     return this.orders.batchSetStatus(uid, body);
@@ -56,7 +56,7 @@ export class OrdersController {
     return this.orders.update(uid, id, body);
   }
 
-  // 欄位級合併寫入：client 送 partial patch (僅變更欄位 + 每欄位 HLC)，後端逐欄合併。
+  // 欄位級合併寫入：client 送 partial patch (僅變更欄位 + 每欄位 HLC)，後端逐欄合併
   @Patch(':id')
   patch(@CurrentUid() uid: string, @Param('id') id: string, @Body() body: OrderPatchInput) {
     return this.orders.patch(uid, id, body);

@@ -35,7 +35,7 @@ struct PaymentMethodPersistenceTests {
         let persistence = try makePersistence()
 
         try await persistence.upsert(name: "綠界", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
-        // 二次新增同名：以新旗標覆寫 (使用者上次忘了勾選銀行匯款，這次更正)。
+        // 二次新增同名：以新旗標覆寫 (使用者上次忘了勾選銀行匯款，這次更正)
         try await persistence.upsert(name: "綠界", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)
 
         let infos = try await persistence.fetchAllInfos()
@@ -65,7 +65,7 @@ struct PaymentMethodPersistenceTests {
         #expect(info?.isCardless == false)
         #expect(info?.isBankTransfer == false)
 
-        // 更名應保留 isCashOnDelivery 旗標。
+        // 更名應保留 isCashOnDelivery 旗標
         try await persistence.rename(from: "貨到付款", to: "超商取貨付款")
         let renamed = try await persistence.fetchAllInfos().first { $0.name == "超商取貨付款" }
         #expect(renamed?.isCashOnDelivery == true, "更名應保留 isCashOnDelivery 旗標")
@@ -76,8 +76,8 @@ struct PaymentMethodPersistenceTests {
 
 private extension PaymentMethodPersistenceTests {
 
-    /// 用 in-memory 的 ``ModelContainer`` 建立每個測試獨立的 ``PaymentMethodPersistence``。
-    /// - Returns: 不污染 production store 的測試 actor。
+    /// 用 in-memory 的 ``ModelContainer`` 建立每個測試獨立的 ``PaymentMethodPersistence``
+    /// - Returns: 不污染 production store 的測試 actor
     func makePersistence() throws -> PaymentMethodPersistence {
         let container = try PersistenceContainer.make(inMemoryOnly: true)
         return PaymentMethodPersistence(modelContainer: container)

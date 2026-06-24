@@ -79,8 +79,8 @@ export default function OrderDetailPage() {
 
   const s = order.summary;
   const cod = order.isCashOnDelivery;
-  // 成本拆解項目 (對齊 iOS)：商品金額 + 刷卡/平台/金流手續費 + (僅貨到付款) 三種運費。
-  // 一般訂單運費由客人支付、不計入總成本，非貨到付款以 0 帶入後濾除；加總等於總成本。
+  // 成本拆解項目 (對齊 iOS)：商品金額 + 刷卡/平台/金流手續費 + (僅貨到付款) 三種運費
+  // 一般訂單運費由客人支付、不計入總成本，非貨到付款以 0 帶入後濾除；加總等於總成本
   const costComponents = [
     { label: '商品金額', value: Number(order.itemCost), color: 'var(--bl-accent)' },
     { label: '刷卡手續費', value: Number(s.cardFee), color: 'var(--bl-orange)' },
@@ -396,7 +396,7 @@ function MenuButton({
   );
 }
 
-// 合併草稿 → 表單初始值。
+// 合併草稿 → 表單初始值
 function draftToInitial(draft: import('@/lib/types').MergeDraftDTO): OrderFormInitial {
   return {
     customer: { name: draft.customer.name, tier: draft.customer.tier },

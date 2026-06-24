@@ -20,7 +20,7 @@ function NewOrderInner() {
   const [initial, setInitial] = useState<OrderFormInitial | undefined>(undefined);
   const [ready, setReady] = useState(!isMerge);
 
-  // 合併草稿暫存在 sessionStorage；待讀取完成才掛載表單 (initial 只在初次生效)。
+  // 合併草稿暫存在 sessionStorage；待讀取完成才掛載表單 (initial 只在初次生效)
   useEffect(() => {
     if (!isMerge) return;
     const raw = sessionStorage.getItem('bl-merge-draft');

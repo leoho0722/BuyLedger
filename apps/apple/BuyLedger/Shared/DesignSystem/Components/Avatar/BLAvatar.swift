@@ -7,23 +7,23 @@
 
 import SwiftUI
 
-/// 以姓名縮寫產生穩定漸層背景的頭像。
+/// 以姓名縮寫產生穩定漸層背景的頭像
 struct BLAvatar: View {
 
     // MARK: - View Properties
 
-    /// 頭像代表的完整名稱。
+    /// 頭像代表的完整名稱
     let name: String
 
-    /// 顯示在頭像中的縮寫文字。
+    /// 顯示在頭像中的縮寫文字
     let initials: String
 
-    /// 頭像寬高。
+    /// 頭像寬高
     var size: CGFloat = 36
 
     // MARK: - View Body
 
-    /// 頭像的畫面內容。
+    /// 頭像的畫面內容
     var body: some View {
         Text(initials)
             .font(.system(size: size * 0.38, weight: .semibold, design: .default))
@@ -39,7 +39,7 @@ struct BLAvatar: View {
 
 private extension BLAvatar {
 
-    /// 依名稱產生的穩定漸層。
+    /// 依名稱產生的穩定漸層
     var gradient: LinearGradient {
         let hue = hueValue(for: name)
 
@@ -57,9 +57,9 @@ private extension BLAvatar {
         )
     }
 
-    /// 將名稱轉換為穩定色相。
-    /// - Parameter name: 用來計算色相的名稱。
-    /// - Returns: 介於 `0` 到 `1` 的色相值。
+    /// 將名稱轉換為穩定色相
+    /// - Parameter name: 用來計算色相的名稱
+    /// - Returns: 介於 `0` 到 `1` 的色相值
     func hueValue(for name: String) -> Double {
         let total = name.unicodeScalars.reduce(0) { $0 + Int($1.value) }
         return Double(total % 360) / 360

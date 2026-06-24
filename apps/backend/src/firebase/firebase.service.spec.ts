@@ -1,5 +1,5 @@
 // firebase-admin v14 依賴 ESM-only 的 jose，jest (CJS) 直接載入會失敗；單元測試一律
-// mock firebase-admin 子模組，避免載入真 SDK，也確保不對外建立連線。
+// mock firebase-admin 子模組，避免載入真 SDK，也確保不對外建立連線
 jest.mock('firebase-admin/app', () => ({
   initializeApp: jest.fn(),
   getApps: jest.fn(() => []),
@@ -13,7 +13,7 @@ import { cert, initializeApp } from 'firebase-admin/app';
 import { FirebaseService } from './firebase.service';
 
 // 對齊 spec「Missing Firebase credentials fail closed」：初始化時缺憑證一律拋錯，
-// 不得靜默略過初始化讓後端在未驗證狀態下啟動。
+// 不得靜默略過初始化讓後端在未驗證狀態下啟動
 describe('FirebaseService fail-closed initialization', () => {
   const savedEnv = { ...process.env };
 
@@ -30,7 +30,7 @@ describe('FirebaseService fail-closed initialization', () => {
 
     const service = new FirebaseService();
     expect(() => service.onModuleInit()).toThrow(/FIREBASE_/);
-    // fail closed：缺憑證時絕不進行初始化。
+    // fail closed：缺憑證時絕不進行初始化
     expect(initializeApp).not.toHaveBeenCalled();
   });
 
@@ -53,7 +53,7 @@ describe('FirebaseService fail-closed initialization', () => {
 
     const service = new FirebaseService();
     service.onModuleInit();
-    // 以檔案路徑作為憑證來源 (不需三個分開的 env 變數)。
+    // 以檔案路徑作為憑證來源 (不需三個分開的 env 變數)
     expect(cert).toHaveBeenCalledWith('/secrets/sa.json');
     expect(initializeApp).toHaveBeenCalledTimes(1);
   });

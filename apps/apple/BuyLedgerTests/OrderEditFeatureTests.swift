@@ -111,13 +111,13 @@ struct OrderEditFeatureTests {
             OrderEditFeature()
         }
 
-        // 0 + 5 → 5：全數收下。
+        // 0 + 5 → 5：全數收下
         let five = (1...5).map { Data([UInt8($0)]) }
         await store.send(.photosImported(five)) {
             $0.draftPhotos = five
         }
 
-        // 5 + 1 → 5：已滿不再追加 (state 無變化)。
+        // 5 + 1 → 5：已滿不再追加 (state 無變化)
         await store.send(.photosImported([Data([0x06])]))
     }
 
@@ -128,7 +128,7 @@ struct OrderEditFeatureTests {
             OrderEditFeature()
         }
 
-        // 3 + 4 → 5：依序只收前 2 張，超出上限的捨棄。
+        // 3 + 4 → 5：依序只收前 2 張，超出上限的捨棄
         let batch = [Data([0x04]), Data([0x05]), Data([0x06]), Data([0x07])]
         await store.send(.photosImported(batch)) {
             $0.draftPhotos = [Data([0x01]), Data([0x02]), Data([0x03]), Data([0x04]), Data([0x05])]
@@ -148,7 +148,7 @@ struct OrderEditFeatureTests {
             $0.photoPickerSelection = [item]
         }
 
-        // 匯入完成：照片進草稿、picker 選取清空 (one-shot)。
+        // 匯入完成：照片進草稿、picker 選取清空 (one-shot)
         await store.receive(\.photosImported) {
             $0.draftPhotos = imported
             $0.photoPickerSelection = []
@@ -165,12 +165,12 @@ struct OrderEditFeatureTests {
             OrderEditFeature()
         }
 
-        // [A, B, C] 刪 B → [A, C]，其餘保序。
+        // [A, B, C] 刪 B → [A, C]，其餘保序
         await store.send(.deletePhotoTapped(1)) {
             $0.draftPhotos = [photoA, photoC]
         }
 
-        // 越界 index 為 no-op (state 無變化)。
+        // 越界 index 為 no-op (state 無變化)
         await store.send(.deletePhotoTapped(5))
     }
 
@@ -213,7 +213,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func isSelectedPaymentMethodCardlessReflectsMasterFlag() {
-        // 主檔中「無卡存款」isCardless == true、「信用卡」isCardless == false。
+        // 主檔中「無卡存款」isCardless == true、「信用卡」isCardless == false
         let state = OrderEditFeature.State(
             availablePaymentMethods: [
                 PaymentMethodInfo(name: "信用卡", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
@@ -228,13 +228,13 @@ struct OrderEditFeatureTests {
         mutable.draftPaymentMethod = "無卡存款"
         #expect(mutable.isSelectedPaymentMethodCardless == true)
 
-        // 不在主檔的暫存值預設視為非無卡。
+        // 不在主檔的暫存值預設視為非無卡
         mutable.draftPaymentMethod = "未知付款方式"
         #expect(mutable.isSelectedPaymentMethodCardless == false)
     }
 
     @Test func showsVerificationStatusRowForCardlessOrBankTransfer() {
-        // 主檔中「無卡存款」為無卡、「銀行匯款」為銀行匯款、「信用卡」兩者皆否。
+        // 主檔中「無卡存款」為無卡、「銀行匯款」為銀行匯款、「信用卡」兩者皆否
         let state = OrderEditFeature.State(
             availablePaymentMethods: [
                 PaymentMethodInfo(name: "信用卡", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
@@ -244,21 +244,21 @@ struct OrderEditFeatureTests {
         )
 
         var mutable = state
-        // 信用卡：非無卡、非銀行匯款 → 不顯示對帳狀態 row。
+        // 信用卡：非無卡、非銀行匯款 → 不顯示對帳狀態 row
         mutable.draftPaymentMethod = "信用卡"
         #expect(mutable.isSelectedPaymentMethodBankTransfer == false)
         #expect(mutable.showsVerificationStatusRow == false)
 
-        // 無卡存款：無卡 → 顯示。
+        // 無卡存款：無卡 → 顯示
         mutable.draftPaymentMethod = "無卡存款"
         #expect(mutable.showsVerificationStatusRow == true)
 
-        // 銀行匯款：銀行匯款 → 顯示。
+        // 銀行匯款：銀行匯款 → 顯示
         mutable.draftPaymentMethod = "銀行匯款"
         #expect(mutable.isSelectedPaymentMethodBankTransfer == true)
         #expect(mutable.showsVerificationStatusRow == true)
 
-        // 不在主檔的暫存值預設視為兩者皆否 → 不顯示。
+        // 不在主檔的暫存值預設視為兩者皆否 → 不顯示
         mutable.draftPaymentMethod = "未知付款方式"
         #expect(mutable.showsVerificationStatusRow == false)
     }
@@ -273,7 +273,7 @@ struct OrderEditFeatureTests {
             $0.draftVerificationStatus = "待對帳"
         }
 
-        // 再新增一筆，清單依 locale 排序 (localizedStandardCompare 下「待」排在「對」前)、draft 切換為最新值。
+        // 再新增一筆，清單依 locale 排序 (localizedStandardCompare 下「待」排在「對」前)、draft 切換為最新值
         await store.send(.addVerificationStatusTapped("對帳成功")) {
             $0.availableVerificationStatuses = ["待對帳", "對帳成功"]
             $0.draftVerificationStatus = "對帳成功"
@@ -312,7 +312,7 @@ struct OrderEditFeatureTests {
 
         let state = OrderEditFeature.State(original: original)
         #expect(state.draftVerificationStatus == "待對帳")
-        // 原訂單的對帳狀態若不在傳入清單，初始化時會補進可選清單。
+        // 原訂單的對帳狀態若不在傳入清單，初始化時會補進可選清單
         #expect(state.availableVerificationStatuses.contains("待對帳"))
     }
 
@@ -400,16 +400,16 @@ struct OrderEditFeatureTests {
     }
 
     @Test func isMergeContextReflectsMergeSources() {
-        // 一般新訂單與一般既有訂單皆非合併情境。
+        // 一般新訂單與一般既有訂單皆非合併情境
         #expect(OrderEditFeature.State().isMergeContext == false)
         #expect(OrderEditFeature.State(original: LedgerOrder.sampleOrders[0]).isMergeContext == false)
 
-        // 合併確認草稿 (mergeSourceIDs 非空)。
+        // 合併確認草稿 (mergeSourceIDs 非空)
         var mergeDraft = OrderEditFeature.State()
         mergeDraft.mergeSourceIDs = ["BL-2604-018", "BL-2604-012"]
         #expect(mergeDraft.isMergeContext)
 
-        // 編輯由合併產生的訂單 (original.mergedSourceIDs 非空)。
+        // 編輯由合併產生的訂單 (original.mergedSourceIDs 非空)
         let mergedOrder = LedgerOrder.sampleOrders.first { !$0.mergedSourceIDs.isEmpty }
         #expect(mergedOrder != nil)
         if let mergedOrder {
@@ -418,7 +418,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func addCategoryAppendsInMergeContextAndReplacesOtherwise() async {
-        // 合併情境：新增類別直接加入選取，不覆蓋既有選取。
+        // 合併情境：新增類別直接加入選取，不覆蓋既有選取
         var mergeDraft = OrderEditFeature.State()
         mergeDraft.mergeSourceIDs = ["BL-A", "BL-B"]
         mergeDraft.draftCategories = ["美妝"]
@@ -431,7 +431,7 @@ struct OrderEditFeatureTests {
         await mergeStore.send(.addCategoryTapped("服飾"))
         #expect(mergeStore.state.draftCategories == ["美妝", "服飾"])
 
-        // 一般情境：新增類別覆寫為單元素陣列。
+        // 一般情境：新增類別覆寫為單元素陣列
         var singleDraft = OrderEditFeature.State()
         singleDraft.draftCategories = ["美妝"]
 
@@ -447,7 +447,7 @@ struct OrderEditFeatureTests {
     // MARK: 金額與明細欄位編輯性 (合併情境不鎖定)
 
     @Test func mergeRelatedOrdersKeepAmountFieldsEditable() async {
-        // (1) 合併確認草稿：金額欄位 binding 寫入照常生效。
+        // (1) 合併確認草稿：金額欄位 binding 寫入照常生效
         var mergeDraft = OrderEditFeature.State()
         mergeDraft.mergeSourceIDs = ["BL-A", "BL-B"]
 
@@ -461,7 +461,7 @@ struct OrderEditFeatureTests {
             $0.draftItemCost = 1_234
         }
 
-        // (2) 編輯由合併產生的訂單：同樣可編輯。
+        // (2) 編輯由合併產生的訂單：同樣可編輯
         let mergedResult = LedgerOrder.sampleOrders.first { !$0.mergedSourceIDs.isEmpty }
         #expect(mergedResult != nil)
         if let mergedResult {
@@ -473,7 +473,7 @@ struct OrderEditFeatureTests {
             }
         }
 
-        // (3) 編輯狀態為「已合併」的舊訂單：同樣可編輯。
+        // (3) 編輯狀態為「已合併」的舊訂單：同樣可編輯
         let mergedAwayStore = TestStore(initialState: OrderEditFeature.State(original: Self.mergedAwayOrder)) {
             OrderEditFeature()
         }
@@ -483,11 +483,11 @@ struct OrderEditFeatureTests {
     }
 
     @Test func availableStatusesHidesMergedUnlessCurrent() {
-        // 一般訂單的狀態選單不提供「已合併」(只能由合併流程寫入)。
+        // 一般訂單的狀態選單不提供「已合併」(只能由合併流程寫入)
         let normal = OrderEditFeature.State(original: LedgerOrder.sampleOrders[0])
         #expect(!normal.availableStatuses.contains(.merged))
 
-        // 已合併舊單保留「已合併」選項顯示現值，並可改回其他狀態作為手動回復路徑。
+        // 已合併舊單保留「已合併」選項顯示現值，並可改回其他狀態作為手動回復路徑
         let mergedAway = OrderEditFeature.State(original: Self.mergedAwayOrder)
         #expect(mergedAway.availableStatuses.contains(.merged))
         #expect(mergedAway.availableStatuses.contains(.purchased))
@@ -498,7 +498,7 @@ struct OrderEditFeatureTests {
 
 private extension OrderEditFeatureTests {
 
-    /// 狀態為「已合併」的葉端舊訂單樣本，供金額鎖定與狀態選單測試使用。
+    /// 狀態為「已合併」的葉端舊訂單樣本，供金額鎖定與狀態選單測試使用
     static let mergedAwayOrder = LedgerOrder(
         id: "BL-MERGED-AWAY",
         customer: LedgerCustomer(name: "測試客戶", initials: "TC", tier: .regular),

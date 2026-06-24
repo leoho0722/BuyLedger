@@ -15,14 +15,14 @@ import { useCampaigns, useOrders } from '@/lib/queries';
 import { insightsStats, type InsightsRange, type RankRow } from '@/lib/domain/aggregations';
 import { formatPercent, formatTWD } from '@/lib/format';
 
-// 走勢區段標題依區間動態顯示「{區間}淨獲利」(對齊 iOS)。
+// 走勢區段標題依區間動態顯示「{區間}淨獲利」(對齊 iOS)
 const TREND_TITLE: Record<InsightsRange, string> = {
   thirtyDays: '30 天淨獲利',
   sixMonths: '6 個月淨獲利',
   twelveMonths: '12 個月淨獲利',
 };
 
-// 排名水平 bar：依絕對值佔最大值的比例決定寬度，正值 accent、負值 red。
+// 排名水平 bar：依絕對值佔最大值的比例決定寬度，正值 accent、負值 red
 function RankList({ rows, onSelect }: { rows: RankRow[]; onSelect: (name: string) => void }) {
   const max = Math.max(1, ...rows.map((r) => Math.abs(r.profitNumber)));
   return (
@@ -63,7 +63,7 @@ export default function InsightsPage() {
 
   const stats = insightsStats(orders ?? [], campaigns ?? [], range, now);
 
-  // 成本結構總和：用於甜甜圈中央值。
+  // 成本結構總和：用於甜甜圈中央值
   const costTotal = stats.costStructure.reduce((acc, s) => acc + s.value, 0);
 
   return (

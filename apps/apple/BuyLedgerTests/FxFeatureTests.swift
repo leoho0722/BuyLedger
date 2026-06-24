@@ -31,7 +31,7 @@ struct FxFeatureTests {
     }
 
     @Test func switchingCurrencyRecomputesRateFromSnapshot() async {
-        // 注入 snapshot 後切換幣別，rate / convertedTwd 應反映 snapshot 的數值 (而不是已被移除的 hardcoded fallback)。
+        // 注入 snapshot 後切換幣別，rate / convertedTwd 應反映 snapshot 的數值 (而不是已被移除的 hardcoded fallback)
         let store = TestStore(
             initialState: FxFeature.State(snapshot: FxRateSnapshot.fallback)
         ) {

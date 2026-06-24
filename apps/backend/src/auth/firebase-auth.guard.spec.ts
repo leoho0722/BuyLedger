@@ -1,4 +1,4 @@
-// 載入 guard 會經由 FirebaseService 連帶 import firebase-admin (ESM jose)，單元測試一律 mock。
+// 載入 guard 會經由 FirebaseService 連帶 import firebase-admin (ESM jose)，單元測試一律 mock
 jest.mock('firebase-admin/app', () => ({
   initializeApp: jest.fn(),
   getApps: jest.fn(() => []),
@@ -14,7 +14,7 @@ import { FirebaseAuthGuard } from './firebase-auth.guard';
 import { FirebaseService } from '../firebase/firebase.service';
 
 // 對齊 spec「Backend verifies Firebase ID tokens on protected endpoints」與
-// 「Authenticated request context exposes the caller uid」。
+// 「Authenticated request context exposes the caller uid」
 describe('FirebaseAuthGuard', () => {
   const verifyIdToken = jest.fn();
   const firebase = { auth: { verifyIdToken } } as unknown as FirebaseService;

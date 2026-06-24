@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 
-// 頁面大標題列。
+// 頁面大標題列
 export function PageHeader({
   title,
   subtitle,

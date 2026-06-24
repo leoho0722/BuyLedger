@@ -2,7 +2,7 @@
 
 import { cn } from '@/lib/cn';
 
-// iOS 風格開關。
+// iOS 風格開關
 export function BLToggle({
   checked,
   onChange,

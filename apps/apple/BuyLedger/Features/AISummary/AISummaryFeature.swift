@@ -8,100 +8,100 @@
 import ComposableArchitecture
 import Foundation
 
-/// AI 商品明細總結 sheet 的狀態與串流流程。
+/// AI 商品明細總結 sheet 的狀態與串流流程
 ///
-/// 以 ``OllamaClient`` 串流 Markdown 總結；缺金鑰或服務錯誤時進入 `failed` 並提供重試，關閉時取消串流。
+/// 以 ``OllamaClient`` 串流 Markdown 總結；缺金鑰或服務錯誤時進入 `failed` 並提供重試，關閉時取消串流
 @Reducer
 struct AISummaryFeature {
 
     // MARK: - State
 
-    /// 總結 sheet 狀態。
+    /// 總結 sheet 狀態
     @ObservableState
     struct State: Equatable {
 
-        /// 已組好的完整 prompt。
+        /// 已組好的完整 prompt
         let prompt: String
 
-        /// 使用的 Ollama 模型名稱。
+        /// 使用的 Ollama 模型名稱
         let model: String
 
-        /// 累加的串流總結文字 (Markdown)。
+        /// 累加的串流總結文字 (Markdown)
         var summaryText: String = ""
 
-        /// 目前的串流階段。
+        /// 目前的串流階段
         var phase: Phase = .idle
 
-        /// 失敗時顯示的友善訊息。
+        /// 失敗時顯示的友善訊息
         var errorMessage: String?
 
         // MARK: - Nested Types
 
-        /// 串流階段。
+        /// 串流階段
         enum Phase: Equatable {
 
-            /// 尚未開始。
+            /// 尚未開始
             case idle
 
-            /// 串流進行中。
+            /// 串流進行中
             case streaming
 
-            /// 已完成。
+            /// 已完成
             case finished
 
-            /// 失敗。
+            /// 失敗
             case failed
         }
     }
 
     // MARK: - Action
 
-    /// 總結 sheet 事件。
+    /// 總結 sheet 事件
     @CasePathable
     enum Action: Equatable {
 
-        /// 畫面出現時開始串流。
+        /// 畫面出現時開始串流
         case task
 
-        /// 收到一段串流增量內容。
+        /// 收到一段串流增量內容
         case chunkReceived(String)
 
-        /// 串流正常結束。
+        /// 串流正常結束
         case streamFinished
 
-        /// 串流失敗，帶友善訊息。
+        /// 串流失敗，帶友善訊息
         case streamFailed(String)
 
-        /// 使用者點擊重試。
+        /// 使用者點擊重試
         case retryTapped
 
-        /// 使用者點擊完成 (關閉 sheet)。
+        /// 使用者點擊完成 (關閉 sheet)
         case closeTapped
     }
 
     // MARK: - Dependency Properties
 
-    /// Ollama Cloud 串流 client。
+    /// Ollama Cloud 串流 client
     @Dependency(OllamaClient.self) private var ollamaClient
 
-    /// App 環境設定提供者。
+    /// App 環境設定提供者
     @Dependency(\.appConfiguration) private var appConfiguration
 
-    /// 關閉 sheet 用的 dismiss effect。
+    /// 關閉 sheet 用的 dismiss effect
     @Dependency(\.dismiss) private var dismiss
 
     // MARK: - Cancel ID
 
-    /// 串流 effect 的取消識別。
+    /// 串流 effect 的取消識別
     private enum CancelID {
 
-        /// 串流任務。
+        /// 串流任務
         case stream
     }
 
     // MARK: - Reducer Body
 
-    /// 總結 reducer。
+    /// 總結 reducer
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
@@ -125,7 +125,7 @@ struct AISummaryFeature {
                         }
                         await send(.streamFinished)
                     } catch is CancellationError {
-                        // sheet 關閉導致取消，靜默結束、不視為錯誤。
+                        // sheet 關閉導致取消，靜默結束、不視為錯誤
                     } catch let error as APIError {
                         await send(.streamFailed(error.summaryFailureMessage))
                     } catch {
@@ -164,7 +164,7 @@ extension APIError {
 
     // MARK: - Data Properties
 
-    /// 對應到 AI 總結 sheet 的友善失敗訊息。
+    /// 對應到 AI 總結 sheet 的友善失敗訊息
     var summaryFailureMessage: String {
         switch self {
         case .invalidKey:

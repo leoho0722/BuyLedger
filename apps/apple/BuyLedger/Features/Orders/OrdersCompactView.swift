@@ -10,39 +10,39 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// iPhone (compact) 使用的訂單瀏覽畫面。
+/// iPhone (compact) 使用的訂單瀏覽畫面
 ///
-/// 採用 NavigationStack 配合自訂大標題、橫向滾動的狀態 chip 與卡片化的訂單列表，對應設計稿的 iPhone 訂單列表樣式。
+/// 採用 NavigationStack 配合自訂大標題、橫向滾動的狀態 chip 與卡片化的訂單列表，對應設計稿的 iPhone 訂單列表樣式
 struct OrdersCompactView: View {
 
     // MARK: - View Properties
 
-    /// 訂單功能 store。
+    /// 訂單功能 store
     @Bindable var store: StoreOf<OrdersFeature>
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)`` 的「現在」時間；測試可注入固定值。
+    /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)`` 的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
 
-    /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值。
+    /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
 
-    /// iPhone NavigationStack 的瀏覽路徑。改用 path-driven binding，使訂單被刪除時可手動把對應 id 從 path 移除，觸發系統自動 pop 回列表。
+    /// iPhone NavigationStack 的瀏覽路徑。改用 path-driven binding，使訂單被刪除時可手動把對應 id 從 path 移除，觸發系統自動 pop 回列表
     @State private var navigationPath: [LedgerOrder.ID] = []
 
-    /// 整合篩選 sheet (日期 + 類別 + 付款方式) 是否呈現。點 trigger button 後設為 `true`，由 ``OrderFilterSheet`` 內部 dismiss 結束回 `false`。
+    /// 整合篩選 sheet (日期 + 類別 + 付款方式) 是否呈現。點 trigger button 後設為 `true`，由 ``OrderFilterSheet`` 內部 dismiss 結束回 `false`
     @State private var showsFilterSheet = false
 
     // MARK: - View Body
 
-    /// 訂單瀏覽畫面內容。
+    /// 訂單瀏覽畫面內容
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
         let filteredIDs = store.state.filteredOrders(referenceDate: date.now, calendar: calendar).map(\.id)
         let allFilteredSelected = !filteredIDs.isEmpty && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
-        // 多選時導覽標題顯示已選筆數 (iPhone 底部 tab bar 會蓋掉 .bottomBar，故批次控制改放右上角工具列)。
+        // 多選時導覽標題顯示已選筆數 (iPhone 底部 tab bar 會蓋掉 .bottomBar，故批次控制改放右上角工具列)
         let navigationTitle = store.isSelecting
             ? (store.selectedOrderIDs.isEmpty ? "選擇訂單" : "已選 \(store.selectedOrderIDs.count) 筆")
             : "訂單"
@@ -84,7 +84,7 @@ struct OrdersCompactView: View {
 
                     ToolbarItemGroup(placement: .primaryAction) {
                         Menu {
-                            // 「已合併」僅能由合併流程寫入，批次目標清單一律排除。
+                            // 「已合併」僅能由合併流程寫入，批次目標清單一律排除
                             ForEach(OrderStatus.allCases.filter { $0 != .merged }) { status in
                                 Button(status.title) {
                                     store.send(.batchStatusChanged(status))
@@ -139,7 +139,7 @@ struct OrdersCompactView: View {
                         .toolbar {
                             ToolbarItem(placement: .primaryAction) {
                                 Menu {
-                                    // 「已合併」只能由合併流程寫入，僅當目前狀態已是已合併時保留選項。
+                                    // 「已合併」只能由合併流程寫入，僅當目前狀態已是已合併時保留選項
                                     ForEach(OrderStatus.allCases.filter { $0 != .merged || order.status == .merged }) { status in
                                         Button {
                                             store.send(.statusChanged(order.id, status))
@@ -157,7 +157,7 @@ struct OrdersCompactView: View {
                                 .accessibilityLabel("更新狀態")
                             }
 
-                            // 合併/編輯/刪除功能性質相近，收進單一「更多」選單，避免 toolbar 四個操作並排擁擠。
+                            // 合併/編輯/刪除功能性質相近，收進單一「更多」選單，避免 toolbar 四個操作並排擁擠
                             ToolbarItem(placement: .primaryAction) {
                                 Menu {
                                     if order.status != .merged, order.status != .cancelled {
@@ -207,9 +207,9 @@ struct OrdersCompactView: View {
 
 private extension OrdersCompactView {
 
-    /// 狀態篩選 chip 橫向滾動列。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: chip 列 view。
+    /// 狀態篩選 chip 橫向滾動列
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: chip 列 view
     @ViewBuilder
     func chipStrip(palette: BLPalette) -> some View {
         ScrollView(.horizontal, showsIndicators: false) {
@@ -222,11 +222,11 @@ private extension OrdersCompactView {
         }
     }
 
-    /// 單一狀態篩選 chip。
+    /// 單一狀態篩選 chip
     /// - Parameters:
-    ///   - filter: 要顯示的狀態篩選。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: chip 按鈕 view。
+    ///   - filter: 要顯示的狀態篩選
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: chip 按鈕 view
     @ViewBuilder
     func chipButton(_ filter: OrderStatusFilter, palette: BLPalette) -> some View {
         let isSelected = store.selectedStatus == filter
@@ -246,14 +246,14 @@ private extension OrdersCompactView {
         .buttonStyle(.plain)
     }
 
-    /// 整合篩選 trigger button：以單顆 Capsule 呈現「日期 + 類別 + 付款方式」的摘要 (`篩選：<summary>`)，點擊後 present ``OrderFilterSheet``。
+    /// 整合篩選 trigger button：以單顆 Capsule 呈現「日期 + 類別 + 付款方式」的摘要 (`篩選：<summary>`)，點擊後 present ``OrderFilterSheet``
     ///
-    /// - 三個篩選都為預設 (`selectedDatePeriod == .all`、`selectedCategory == nil` 且 `selectedPaymentMethod == nil`) 時，label 為「篩選：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`。
-    /// - 任一篩選為非預設時，summary 由 ``filterSummary(date:category:paymentMethod:)`` 計算 (規則見該 helper)、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`。
-    /// - Trigger 不再條件依賴 `availableCategories.isEmpty`——即使類別清單為空，trigger 仍渲染以提供日期篩選入口。
-    /// - 長 summary 時 `Text` 多行換行 (透過 ``SwiftUI/Text/multilineTextAlignment(_:)`` + ``SwiftUI/View/fixedSize(horizontal:vertical:)``)，capsule 高度隨內容增長；icon 與 chevron 對齊第一行 baseline。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: trigger button view (含左側內距，與其他篩選膠囊水平對齊)。
+    /// - 三個篩選都為預設 (`selectedDatePeriod == .all`、`selectedCategory == nil` 且 `selectedPaymentMethod == nil`) 時，label 為「篩選：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`
+    /// - 任一篩選為非預設時，summary 由 ``filterSummary(date:category:paymentMethod:)`` 計算 (規則見該 helper)、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`
+    /// - Trigger 不再條件依賴 `availableCategories.isEmpty`——即使類別清單為空，trigger 仍渲染以提供日期篩選入口
+    /// - 長 summary 時 `Text` 多行換行 (透過 ``SwiftUI/Text/multilineTextAlignment(_:)`` + ``SwiftUI/View/fixedSize(horizontal:vertical:)``)，capsule 高度隨內容增長；icon 與 chevron 對齊第一行 baseline
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: trigger button view (含左側內距，與其他篩選膠囊水平對齊)
     @ViewBuilder
     func unifiedFilterTrigger(palette: BLPalette) -> some View {
         let hasActiveFilter = store.selectedDatePeriod != .all
@@ -291,9 +291,9 @@ private extension OrdersCompactView {
         .padding(.horizontal, BLSpacing.large)
     }
 
-    /// 計算整合 trigger 顯示的 summary 字串。純函式，輸入只看當前 `(date, category, paymentMethod)` 組合，與外部 state 解耦，方便測試與 preview。
+    /// 計算整合 trigger 顯示的 summary 字串。純函式，輸入只看當前 `(date, category, paymentMethod)` 組合，與外部 state 解耦，方便測試與 preview
     ///
-    /// 規則：把「日期 (非 `.all`)」「類別」「付款方式」三個非預設片段依序以 ` · ` 串接；三者皆為預設時回傳「全部」。
+    /// 規則：把「日期 (非 `.all`)」「類別」「付款方式」三個非預設片段依序以 ` · ` 串接；三者皆為預設時回傳「全部」
     /// - `(.all, nil, nil)` → `全部`
     /// - `(.all, 美妝, nil)` → `美妝`
     /// - `(本月, nil, nil)` → `本月`
@@ -302,10 +302,10 @@ private extension OrdersCompactView {
     /// - `(.all, nil, 信用卡)` → `信用卡`
     ///
     /// - Parameters:
-    ///   - date: 目前選中的日期區間。
-    ///   - category: 目前選中的類別；`nil` 代表「全部類別」。
-    ///   - paymentMethod: 目前選中的付款方式；`nil` 代表「全部付款方式」。
-    /// - Returns: trigger label 中「篩選：」後接的 summary 字串。
+    ///   - date: 目前選中的日期區間
+    ///   - category: 目前選中的類別；`nil` 代表「全部類別」
+    ///   - paymentMethod: 目前選中的付款方式；`nil` 代表「全部付款方式」
+    /// - Returns: trigger label 中「篩選：」後接的 summary 字串
     func filterSummary(date: OrderDatePeriod, category: String?, paymentMethod: String?) -> String {
         var segments: [String] = []
         if date != .all {
@@ -320,9 +320,9 @@ private extension OrdersCompactView {
         return segments.isEmpty ? "全部" : segments.joined(separator: " · ")
     }
 
-    /// 訂單列表區塊，包含載入、空狀態與「以日期分組」的資料區段。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 列表區塊 view。
+    /// 訂單列表區塊，包含載入、空狀態與「以日期分組」的資料區段
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 列表區塊 view
     @ViewBuilder
     func listSection(palette: BLPalette) -> some View {
         if store.isLoading {
@@ -343,11 +343,11 @@ private extension OrdersCompactView {
         }
     }
 
-    /// 單一日期區段：上方日期標題 + 下方當日訂單卡片 (列內不再重複顯示日期)。
+    /// 單一日期區段：上方日期標題 + 下方當日訂單卡片 (列內不再重複顯示日期)
     /// - Parameters:
-    ///   - section: 要呈現的日期區段。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 日期區段 view。
+    ///   - section: 要呈現的日期區段
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 日期區段 view
     @ViewBuilder
     func orderDateSection(_ section: OrderDateSection, palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
@@ -376,9 +376,9 @@ private extension OrdersCompactView {
         }
     }
 
-    /// 一般 (非多選) 模式的訂單列：點擊進入詳情，長按提供合併／刪除 context menu。
-    /// - Parameter order: 要呈現的訂單。
-    /// - Returns: 可導覽的訂單列 view。
+    /// 一般 (非多選) 模式的訂單列：點擊進入詳情，長按提供合併／刪除 context menu
+    /// - Parameter order: 要呈現的訂單
+    /// - Returns: 可導覽的訂單列 view
     @ViewBuilder
     func navigableRow(order: LedgerOrder) -> some View {
         NavigationLink(value: order.id) {
@@ -405,11 +405,11 @@ private extension OrdersCompactView {
         }
     }
 
-    /// 多選模式的訂單列：左側勾選圈，點擊切換選取而非導覽。
+    /// 多選模式的訂單列：左側勾選圈，點擊切換選取而非導覽
     /// - Parameters:
-    ///   - order: 要呈現的訂單。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 可勾選的訂單列 view。
+    ///   - order: 要呈現的訂單
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 可勾選的訂單列 view
     @ViewBuilder
     func selectableRow(order: LedgerOrder, palette: BLPalette) -> some View {
         let isSelected = store.selectedOrderIDs.contains(order.id)
@@ -431,9 +431,9 @@ private extension OrdersCompactView {
         .buttonStyle(.plain)
     }
 
-    /// 沒有符合條件的訂單時顯示的空狀態。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 空狀態 view。
+    /// 沒有符合條件的訂單時顯示的空狀態
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 空狀態 view
     @ViewBuilder
     func emptyState(palette: BLPalette) -> some View {
         ContentUnavailableView(

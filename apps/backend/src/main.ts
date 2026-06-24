@@ -7,12 +7,12 @@ import { AppModule } from './app.module';
 async function bootstrap(): Promise<void> {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  // 訂單照片以 base64 內嵌，放寬 body 上限。
+  // 訂單照片以 base64 內嵌，放寬 body 上限
   app.useBodyParser('json', { limit: '50mb' });
 
   app.setGlobalPrefix('api');
 
-  // 前端來源 CORS (預設 localhost:3000)。
+  // 前端來源 CORS (預設 localhost:3000)
   app.enableCors({
     origin: process.env.WEB_ORIGIN?.split(',').map((s) => s.trim()) ?? true,
     credentials: true,

@@ -7,38 +7,38 @@
 
 import SwiftUI
 
-/// BuyLedger 支援的按鈕語意。
+/// BuyLedger 支援的按鈕語意
 enum BLButtonVariant {
 
     // MARK: - Cases
 
-    /// 主要操作。
+    /// 主要操作
     case primary
 
-    /// 次要操作。
+    /// 次要操作
     case secondary
 
-    /// 不帶背景的文字操作。
+    /// 不帶背景的文字操作
     case plain
 
-    /// 破壞性操作。
+    /// 破壞性操作
     case destructive
 }
 
-/// 使用設計系統色彩與最小觸控高度的按鈕樣式。
+/// 使用設計系統色彩與最小觸控高度的按鈕樣式
 struct BLButtonStyle: ButtonStyle {
 
     // MARK: - Style Properties
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 按鈕的語意樣式。
+    /// 按鈕的語意樣式
     let variant: BLButtonVariant
 
     // MARK: - Style Body
 
-    /// 回傳套用樣式後的按鈕內容。
+    /// 回傳套用樣式後的按鈕內容
     func makeBody(configuration: Configuration) -> some View {
         let palette = BLTheme.palette(for: colorScheme)
 
@@ -59,7 +59,7 @@ struct BLButtonStyle: ButtonStyle {
 
 private extension BLButtonStyle {
 
-    /// 平台對應的最小按鈕高度。
+    /// 平台對應的最小按鈕高度
     var minimumHeight: CGFloat {
 #if os(macOS)
         32
@@ -68,9 +68,9 @@ private extension BLButtonStyle {
 #endif
     }
 
-    /// 回傳按鈕前景色。
-    /// - Parameter palette: 目前外觀對應的色盤。
-    /// - Returns: 按鈕文字與圖示使用的色彩。
+    /// 回傳按鈕前景色
+    /// - Parameter palette: 目前外觀對應的色盤
+    /// - Returns: 按鈕文字與圖示使用的色彩
     func foregroundColor(palette: BLPalette) -> Color {
         switch variant {
         case .primary:
@@ -82,9 +82,9 @@ private extension BLButtonStyle {
         }
     }
 
-    /// 回傳按鈕背景色。
-    /// - Parameter palette: 目前外觀對應的色盤。
-    /// - Returns: 按鈕背景使用的色彩。
+    /// 回傳按鈕背景色
+    /// - Parameter palette: 目前外觀對應的色盤
+    /// - Returns: 按鈕背景使用的色彩
     func backgroundColor(palette: BLPalette) -> Color {
         switch variant {
         case .primary:
@@ -103,22 +103,22 @@ extension ButtonStyle where Self == BLButtonStyle {
 
     // MARK: - Static Properties
 
-    /// 主要操作按鈕。
+    /// 主要操作按鈕
     static var blPrimary: BLButtonStyle {
         BLButtonStyle(variant: .primary)
     }
 
-    /// 次要操作按鈕。
+    /// 次要操作按鈕
     static var blSecondary: BLButtonStyle {
         BLButtonStyle(variant: .secondary)
     }
 
-    /// 純文字操作按鈕。
+    /// 純文字操作按鈕
     static var blPlain: BLButtonStyle {
         BLButtonStyle(variant: .plain)
     }
 
-    /// 破壞性操作按鈕。
+    /// 破壞性操作按鈕
     static var blDestructive: BLButtonStyle {
         BLButtonStyle(variant: .destructive)
     }

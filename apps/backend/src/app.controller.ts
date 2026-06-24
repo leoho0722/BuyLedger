@@ -3,7 +3,7 @@ import { Public } from './auth/public.decorator';
 
 @Controller()
 export class AppController {
-  // 健康檢查不需驗證，標記為公開端點。
+  // 健康檢查不需驗證，標記為公開端點
   @Public()
   @Get('health')
   health(): { status: string } {

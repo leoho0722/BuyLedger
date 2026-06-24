@@ -11,9 +11,9 @@ extension LedgerOrder {
 
     // MARK: - Sample Data
 
-    /// SwiftUI Preview、單元測試以及 ``OrderRepository/previewValue`` 使用的本機訂單範例。
+    /// SwiftUI Preview、單元測試以及 ``OrderRepository/previewValue`` 使用的本機訂單範例
     ///
-    /// **runtime 不會自動 seed**——`OrderRepository.liveValue` 預設不填充 sample 資料，使用者首次啟動會看到空狀態，必須自行新增訂單。
+    /// **runtime 不會自動 seed**——`OrderRepository.liveValue` 預設不填充 sample 資料，使用者首次啟動會看到空狀態，必須自行新增訂單
     nonisolated static let sampleOrders: [LedgerOrder] = [
         LedgerOrder(
             id: "BL-2604-018",
@@ -342,12 +342,12 @@ extension LedgerOrder {
 
 private extension LedgerOrder {
 
-    /// 建立固定時區的範例日期。
+    /// 建立固定時區的範例日期
     /// - Parameters:
-    ///   - year: 年份。
-    ///   - month: 月份。
-    ///   - day: 日期。
-    /// - Returns: 可重現的範例日期。
+    ///   - year: 年份
+    ///   - month: 月份
+    ///   - day: 日期
+    /// - Returns: 可重現的範例日期
     nonisolated static func sampleDate(year: Int, month: Int, day: Int) -> Date {
         var components = DateComponents()
         components.calendar = Calendar(identifier: .gregorian)
@@ -359,9 +359,9 @@ private extension LedgerOrder {
         return components.date ?? Date(timeIntervalSince1970: 0)
     }
 
-    /// 將固定範例資料字串轉為 `Decimal`。
-    /// - Parameter value: 十進位數字字串。
-    /// - Returns: 可用於金額計算的十進位數值。
+    /// 將固定範例資料字串轉為 `Decimal`
+    /// - Parameter value: 十進位數字字串
+    /// - Returns: 可用於金額計算的十進位數值
     nonisolated static func decimal(_ value: String) -> Decimal {
         Decimal(string: value, locale: Locale(identifier: "en_US_POSIX")) ?? 0
     }

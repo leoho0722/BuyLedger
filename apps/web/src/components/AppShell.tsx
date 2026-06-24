@@ -32,12 +32,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const activeCount = (orders ?? []).filter((o) => ACTIVE_STATUSES.has(o.status)).length;
   const [drawerOpen, setDrawerOpen] = useState(false);
 
-  // 路由變更時自動收起手機抽屜。
+  // 路由變更時自動收起手機抽屜
   useEffect(() => {
     setDrawerOpen(false);
   }, [pathname]);
 
-  // 抽屜開啟時鎖住背景捲動。
+  // 抽屜開啟時鎖住背景捲動
   useEffect(() => {
     if (!drawerOpen) return;
     document.body.style.overflow = 'hidden';
@@ -46,7 +46,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     };
   }, [drawerOpen]);
 
-  // 導覽連結清單 (側欄與抽屜共用)。
+  // 導覽連結清單 (側欄與抽屜共用)
   const navLinks = (onNavigate?: () => void) => (
     <nav className="flex flex-col gap-1">
       {NAV.map((item) => {

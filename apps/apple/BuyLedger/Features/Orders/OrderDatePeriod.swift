@@ -7,29 +7,29 @@
 
 import Foundation
 
-/// 訂單列表使用的日期區間篩選。
+/// 訂單列表使用的日期區間篩選
 enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
 
     // MARK: - Cases
 
-    /// 顯示全部日期。
+    /// 顯示全部日期
     case all
 
-    /// 僅顯示本週的訂單。
+    /// 僅顯示本週的訂單
     case thisWeek
 
-    /// 僅顯示本月的訂單。
+    /// 僅顯示本月的訂單
     case thisMonth
 
-    /// 僅顯示上個月的訂單。
+    /// 僅顯示上個月的訂單
     case lastMonth
 
     // MARK: - Identifiable Properties
 
-    /// 篩選選項的穩定識別值。
+    /// 篩選選項的穩定識別值
     var id: String { rawIdentifier }
 
-    /// 篩選選項在 UI 與測試中使用的字串識別值。
+    /// 篩選選項在 UI 與測試中使用的字串識別值
     private var rawIdentifier: String {
         switch self {
         case .all:
@@ -45,7 +45,7 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
 
     // MARK: - Display Properties
 
-    /// 顯示在篩選列中的標題。
+    /// 顯示在篩選列中的標題
     var title: String {
         switch self {
         case .all:
@@ -61,12 +61,12 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
 
     // MARK: - Filter Method
 
-    /// 判斷指定日期是否在此區間內。
+    /// 判斷指定日期是否在此區間內
     /// - Parameters:
-    ///   - date: 要判斷的訂單日期。
-    ///   - referenceDate: 計算「本週/本月」等相對區間的基準日，通常為現在時間。
-    ///   - calendar: 用來計算區間的曆法。
-    /// - Returns: 若 `.all` 永遠回傳 `true`，否則只在 `date` 落於區間內時回傳 `true`。
+    ///   - date: 要判斷的訂單日期
+    ///   - referenceDate: 計算「本週/本月」等相對區間的基準日，通常為現在時間
+    ///   - calendar: 用來計算區間的曆法
+    /// - Returns: 若 `.all` 永遠回傳 `true`，否則只在 `date` 落於區間內時回傳 `true`
     func includes(_ date: Date, referenceDate: Date, calendar: Calendar) -> Bool {
         guard let range = dateRange(referenceDate: referenceDate, calendar: calendar) else {
             return true
@@ -75,11 +75,11 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
         return range.contains(date)
     }
 
-    /// 回傳此區間在指定基準日下的時間範圍。
+    /// 回傳此區間在指定基準日下的時間範圍
     /// - Parameters:
-    ///   - referenceDate: 計算區間的基準日。
-    ///   - calendar: 用來計算區間的曆法。
-    /// - Returns: `.all` 回傳 `nil`，其他狀態回傳半開區間 `[start, end)`；若曆法無法解析則回傳 `nil`。
+    ///   - referenceDate: 計算區間的基準日
+    ///   - calendar: 用來計算區間的曆法
+    /// - Returns: `.all` 回傳 `nil`，其他狀態回傳半開區間 `[start, end)`；若曆法無法解析則回傳 `nil`
     func dateRange(referenceDate: Date, calendar: Calendar) -> Range<Date>? {
         switch self {
         case .all:
@@ -111,7 +111,7 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
 
     // MARK: - Static Properties
 
-    /// 訂單瀏覽列表中提供的固定順序。
+    /// 訂單瀏覽列表中提供的固定順序
     static let orderBrowsingCases: [OrderDatePeriod] = [
         .all,
         .thisWeek,

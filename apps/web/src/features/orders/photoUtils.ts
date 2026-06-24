@@ -1,4 +1,4 @@
-// 照片正規化：最長邊 ≤ maxEdge，重編碼為 JPEG dataURL。失敗回 null (略過)。
+// 照片正規化：最長邊 ≤ maxEdge，重編碼為 JPEG dataURL。失敗回 null (略過)
 export async function fileToNormalizedDataUrl(file: File, maxEdge = 1600): Promise<string | null> {
   try {
     const bitmap = await createImageBitmap(file);

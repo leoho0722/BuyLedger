@@ -23,10 +23,10 @@ import {
 import type { PaymentMethodDTO } from '@/lib/types';
 import { formatNumber } from '@/lib/format';
 
-// 主檔種類。
+// 主檔種類
 type Kind = 'category' | 'order-source' | 'payment-method' | 'verification-status';
 
-// 一般 (字串型) 主檔設定：標題、查詢 hook、API endpoints、空狀態文案、對應 query key。
+// 一般 (字串型) 主檔設定：標題、查詢 hook、API endpoints、空狀態文案、對應 query key
 const STRING_LOOKUPS = {
   category: {
     title: '商品類別',
@@ -51,7 +51,7 @@ const STRING_LOOKUPS = {
   },
 } as const;
 
-// 主檔管理動態頁：依路由 kind 分流字串主檔與付款方式主檔。
+// 主檔管理動態頁：依路由 kind 分流字串主檔與付款方式主檔
 export default function LookupsPage() {
   const params = useParams();
   const kind = (Array.isArray(params.kind) ? params.kind[0] : params.kind) as Kind;
@@ -68,7 +68,7 @@ function StringLookup({ kind }: { kind: Exclude<Kind, 'payment-method'> }) {
   const { data } = config.useData();
   const items = data ?? [];
 
-  // 任一異動同時失效自身與訂單 (訂單會引用這些主檔)。
+  // 任一異動同時失效自身與訂單 (訂單會引用這些主檔)
   const invalidate = () => {
     void qc.invalidateQueries({ queryKey: config.queryKey });
     void qc.invalidateQueries({ queryKey: qk.orders });
@@ -88,7 +88,7 @@ function StringLookup({ kind }: { kind: Exclude<Kind, 'payment-method'> }) {
     onSuccess: invalidate,
   });
 
-  // 新增 / 改名 sheet 狀態：editing 為 null 代表新增、否則為被改名的原始名稱。
+  // 新增 / 改名 sheet 狀態：editing 為 null 代表新增、否則為被改名的原始名稱
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [draftName, setDraftName] = useState('');
@@ -188,7 +188,7 @@ function StringLookup({ kind }: { kind: Exclude<Kind, 'payment-method'> }) {
 
 // MARK: - 付款方式主檔 (帶旗標)
 
-// 付款方式編輯草稿。
+// 付款方式編輯草稿
 interface PaymentDraft {
   name: string;
   isCardless: boolean;
@@ -227,7 +227,7 @@ function PaymentMethodLookup() {
     onSuccess: invalidate,
   });
 
-  // editing 為 null 代表新增、否則為被編輯的原始名稱。
+  // editing 為 null 代表新增、否則為被編輯的原始名稱
   const [sheetOpen, setSheetOpen] = useState(false);
   const [editing, setEditing] = useState<string | null>(null);
   const [draft, setDraft] = useState<PaymentDraft>(EMPTY_PAYMENT_DRAFT);
@@ -261,7 +261,7 @@ function PaymentMethodLookup() {
     }
   };
 
-  // 旗標 → 標籤徽章清單。
+  // 旗標 → 標籤徽章清單
   const flagBadges = (pm: PaymentMethodDTO) => {
     const badges: string[] = [];
     if (pm.isCardless) badges.push('無卡');

@@ -4,7 +4,7 @@ import { X } from 'lucide-react';
 import { useEffect, type ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
-// 通用 sheet/modal：手機由下浮出、桌機置中；含標題列與可捲動內容。
+// 通用 sheet/modal：手機由下浮出、桌機置中；含標題列與可捲動內容
 export function Sheet({
   open,
   onClose,

@@ -7,20 +7,20 @@
 
 import Foundation
 
-/// 長條圖使用的單筆資料。
+/// 長條圖使用的單筆資料
 struct BLBarChartValue: Identifiable {
 
     // MARK: - Identifiable Properties
 
-    /// 資料的穩定識別值。
+    /// 資料的穩定識別值
     var id: String { label }
 
     // MARK: - Data Properties
 
-    /// X 軸顯示的標籤。
+    /// X 軸顯示的標籤
     let label: String
 
-    /// Y 軸使用的數值。
+    /// Y 軸使用的數值
     let value: Double
 
 }

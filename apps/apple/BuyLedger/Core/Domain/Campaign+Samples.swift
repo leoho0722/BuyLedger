@@ -11,9 +11,9 @@ extension Campaign {
 
     // MARK: - Sample Data
 
-    /// SwiftUI Preview 與單元測試使用的開團範例。
+    /// SwiftUI Preview 與單元測試使用的開團範例
     ///
-    /// **runtime 不會自動 seed**——`CampaignRepository.liveValue` 預設不填充 sample 資料，使用者首次啟動會看到空狀態。
+    /// **runtime 不會自動 seed**——`CampaignRepository.liveValue` 預設不填充 sample 資料，使用者首次啟動會看到空狀態
     nonisolated static let sampleCampaigns: [Campaign] = [
         Campaign(
             id: "CMP-SAMPLE-KR-APR",
@@ -40,7 +40,7 @@ extension LedgerOrder {
 
     // MARK: - Sample Data
 
-    /// 把 ``LedgerOrder/sampleOrders`` 前幾筆指派到 ``Campaign/sampleCampaigns``，供開團相關畫面的 Preview 呈現分貨與進度。
+    /// 把 ``LedgerOrder/sampleOrders`` 前幾筆指派到 ``Campaign/sampleCampaigns``，供開團相關畫面的 Preview 呈現分貨與進度
     nonisolated static let sampleCampaignOrders: [LedgerOrder] = {
         let assignments: [(campaign: String, receipt: PaymentReceiptStatus)] = [
             ("四月韓國團", .received),
@@ -88,12 +88,12 @@ extension LedgerOrder {
 
 private extension Campaign {
 
-    /// 建立固定時區的範例日期。
+    /// 建立固定時區的範例日期
     /// - Parameters:
-    ///   - year: 年份。
-    ///   - month: 月份。
-    ///   - day: 日期。
-    /// - Returns: 可重現的範例日期。
+    ///   - year: 年份
+    ///   - month: 月份
+    ///   - day: 日期
+    /// - Returns: 可重現的範例日期
     nonisolated static func sampleDate(year: Int, month: Int, day: Int) -> Date {
         var components = DateComponents()
         components.calendar = Calendar(identifier: .gregorian)

@@ -3,7 +3,7 @@
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/cn';
 
-// 表單選擇列：標籤在上，點擊開啟挑選器。
+// 表單選擇列：標籤在上，點擊開啟挑選器
 export function BLSelectRow({
   label,
   value,

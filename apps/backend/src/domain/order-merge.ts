@@ -1,7 +1,7 @@
 import { D, Decimal } from './decimal';
 import type { LedgerOrder, LedgerOrderItem } from '../data-model';
 
-// 合併草稿：對齊 iOS OrderMerge.Draft，金額以字串輸出。不含訂單 id (儲存時才產生)。
+// 合併草稿：對齊 iOS OrderMerge.Draft，金額以字串輸出。不含訂單 id (儲存時才產生)
 export interface MergeDraft {
   customer: LedgerOrder['customer'];
   orderSource: string;
@@ -32,8 +32,8 @@ export interface MergeDraft {
 
 const NOTES_SEPARATOR = '----------';
 
-/// 依合併規則整合兩筆訂單為草稿 (對齊 iOS OrderMerge.makeDraft)。
-/// isCardless 由 caller 從付款方式主檔旗標建構。照片僅串接、不截斷。
+/// 依合併規則整合兩筆訂單為草稿 (對齊 iOS OrderMerge.makeDraft)
+/// isCardless 由 caller 從付款方式主檔旗標建構。照片僅串接、不截斷
 export function makeMergeDraft(
   primary: LedgerOrder,
   secondary: LedgerOrder,
@@ -71,7 +71,7 @@ export function makeMergeDraft(
   };
 }
 
-// 保序聯集：主在前、去重。
+// 保序聯集：主在前、去重
 function orderedUnion(primary: string[], secondary: string[]): string[] {
   const seen = new Set<string>();
   return [...primary, ...secondary].filter((v) => {
@@ -85,7 +85,7 @@ function sum(a: string, b: string): string {
   return D(a).plus(b).toString();
 }
 
-// 以兩筆實付為權重的加權平均比例；分母為 0 沿用主訂單比例，clamp 至 [0, 1]。
+// 以兩筆實付為權重的加權平均比例；分母為 0 沿用主訂單比例，clamp 至 [0, 1]
 function weightedRate(
   primaryRate: string,
   secondaryRate: string,
@@ -103,7 +103,7 @@ function weightedRate(
   return Decimal.max(0, Decimal.min(1, weighted)).toString();
 }
 
-// 兩筆皆非空 (trim 後) 以 dash line 分隔串接；任一邊空取非空者；皆空回空字串。
+// 兩筆皆非空 (trim 後) 以 dash line 分隔串接；任一邊空取非空者；皆空回空字串
 function mergedNotes(primaryNotes: string, secondaryNotes: string): string {
   const p = primaryNotes.trim();
   const s = secondaryNotes.trim();
@@ -113,7 +113,7 @@ function mergedNotes(primaryNotes: string, secondaryNotes: string): string {
   return '';
 }
 
-// 付款方式來源：相同取主；不同且恰副屬無卡而主非無卡取副；其餘取主。三欄位同源。
+// 付款方式來源：相同取主；不同且恰副屬無卡而主非無卡取副；其餘取主。三欄位同源
 function paymentMethodSource(
   primary: LedgerOrder,
   secondary: LedgerOrder,

@@ -14,7 +14,7 @@ export interface PickerOption {
   keywords?: string;
 }
 
-// 可重用選項挑選器：單選/多選、搜尋、清除列、新增。對齊 iOS OptionPicker 行為。
+// 可重用選項挑選器：單選/多選、搜尋、清除列、新增。對齊 iOS OptionPicker 行為
 export function OptionPicker({
   open,
   onClose,

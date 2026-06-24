@@ -8,67 +8,67 @@
 import ComposableArchitecture
 import Foundation
 
-/// 設定頁狀態。
+/// 設定頁狀態
 ///
-/// 偏好透過 ``SettingsStorage`` 依賴持久化到 `UserDefaults`；測試時注入 ``SettingsStorage/testValue`` 即可避免污染 `.standard`。
+/// 偏好透過 ``SettingsStorage`` 依賴持久化到 `UserDefaults`；測試時注入 ``SettingsStorage/testValue`` 即可避免污染 `.standard`
 @Reducer
 struct SettingsFeature {
 
     // MARK: - State
 
-    /// 設定狀態。
+    /// 設定狀態
     @ObservableState
     struct State: Equatable, @unchecked Sendable {
 
-        /// 介面外觀模式偏好。
+        /// 介面外觀模式偏好
         var appearance: AppearancePreference = .system
 
-        /// 是否開啟通知。
+        /// 是否開啟通知
         var notificationsEnabled: Bool = true
 
-        /// 預設訂單幣別。
+        /// 預設訂單幣別
         var defaultCurrency: CurrencyCode = .twd
 
-        /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供。
+        /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供
         var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
 
-        /// 每月淨獲利目標 (TWD)；Dashboard hero 卡的目標進度條讀此值。`0` 代表使用者尚未設定，UI 應隱藏進度條。
+        /// 每月淨獲利目標 (TWD)；Dashboard hero 卡的目標進度條讀此值。`0` 代表使用者尚未設定，UI 應隱藏進度條
         var monthlyProfitGoalTwd: Decimal = 80_000
 
-        /// 是否啟用 AI 商品明細總結。
+        /// 是否啟用 AI 商品明細總結
         var useAiSummary: Bool = false
 
-        /// AI 總結使用的 Ollama 模型名稱。
+        /// AI 總結使用的 Ollama 模型名稱
         var aiSummaryModel: String = AISummaryModelCatalog.defaultModel
     }
 
     // MARK: - Action
 
-    /// 設定頁事件。
+    /// 設定頁事件
     @CasePathable
     enum Action: BindableAction, Equatable {
 
-        /// SwiftUI 雙向繫結。
+        /// SwiftUI 雙向繫結
         case binding(BindingAction<State>)
 
-        /// 畫面出現時觸發從持久化來源載入。
+        /// 畫面出現時觸發從持久化來源載入
         case task
 
-        /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔。
+        /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔
         case availableCurrenciesLoaded([CurrencyCode])
     }
 
     // MARK: - Dependency Properties
 
-    /// 偏好的讀寫介面。
+    /// 偏好的讀寫介面
     @Dependency(SettingsStorage.self) private var storage
 
-    /// 幣別主檔資料來源；用於 `.task` 從 cache 拉最新清單。
+    /// 幣別主檔資料來源；用於 `.task` 從 cache 拉最新清單
     @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
 
     // MARK: - Reducer Body
 
-    /// 設定 reducer。
+    /// 設定 reducer
     var body: some Reducer<State, Action> {
         BindingReducer()
 

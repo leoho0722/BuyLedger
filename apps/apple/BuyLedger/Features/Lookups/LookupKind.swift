@@ -7,28 +7,28 @@
 
 import Foundation
 
-/// 表單下拉選單背後的「主檔型別」。
+/// 表單下拉選單背後的「主檔型別」
 ///
-/// 把訂單來源、商品類別、付款方式與對帳狀態抽成同一個 ``LookupManagementFeature`` 處理，差異透過此 enum 注入：標題、空狀態文案、寫入哪個 repository。
+/// 把訂單來源、商品類別、付款方式與對帳狀態抽成同一個 ``LookupManagementFeature`` 處理，差異透過此 enum 注入：標題、空狀態文案、寫入哪個 repository
 enum LookupKind: String, Equatable, Sendable {
 
     // MARK: - Cases
 
-    /// 訂單來源主檔。
+    /// 訂單來源主檔
     case orderSource
 
-    /// 商品類別主檔。
+    /// 商品類別主檔
     case category
 
-    /// 付款方式主檔。
+    /// 付款方式主檔
     case paymentMethod
 
-    /// 對帳狀態主檔。
+    /// 對帳狀態主檔
     case verificationStatus
 
     // MARK: - Display Properties
 
-    /// 管理頁顯示的標題。
+    /// 管理頁顯示的標題
     var title: String {
         switch self {
         case .orderSource:
@@ -42,7 +42,7 @@ enum LookupKind: String, Equatable, Sendable {
         }
     }
 
-    /// 進入點 (MoreView 列表) 顯示的標題。
+    /// 進入點 (MoreView 列表) 顯示的標題
     var entryTitle: String {
         switch self {
         case .orderSource:
@@ -56,7 +56,7 @@ enum LookupKind: String, Equatable, Sendable {
         }
     }
 
-    /// 進入點 (MoreView 列表) 顯示的描述。
+    /// 進入點 (MoreView 列表) 顯示的描述
     var entrySubtitle: String {
         switch self {
         case .orderSource:
@@ -70,7 +70,7 @@ enum LookupKind: String, Equatable, Sendable {
         }
     }
 
-    /// 對應的 SF Symbol。
+    /// 對應的 SF Symbol
     var systemImage: String {
         switch self {
         case .orderSource:
@@ -84,7 +84,7 @@ enum LookupKind: String, Equatable, Sendable {
         }
     }
 
-    /// 「新增」按鈕標題。
+    /// 「新增」按鈕標題
     var addButtonTitle: String {
         switch self {
         case .orderSource:
@@ -98,7 +98,7 @@ enum LookupKind: String, Equatable, Sendable {
         }
     }
 
-    /// 空狀態標題。
+    /// 空狀態標題
     var emptyTitle: String {
         switch self {
         case .orderSource:
@@ -112,7 +112,7 @@ enum LookupKind: String, Equatable, Sendable {
         }
     }
 
-    /// 空狀態描述。
+    /// 空狀態描述
     var emptyDescription: String {
         switch self {
         case .orderSource:
@@ -126,7 +126,7 @@ enum LookupKind: String, Equatable, Sendable {
         }
     }
 
-    /// 新增 alert 標題。
+    /// 新增 alert 標題
     var addAlertTitle: String {
         switch self {
         case .orderSource:
@@ -140,7 +140,7 @@ enum LookupKind: String, Equatable, Sendable {
         }
     }
 
-    /// 新增 alert 內 TextField 的 placeholder。
+    /// 新增 alert 內 TextField 的 placeholder
     var addFieldPlaceholder: String {
         switch self {
         case .orderSource:
@@ -154,7 +154,7 @@ enum LookupKind: String, Equatable, Sendable {
         }
     }
 
-    /// 新增 alert 的提示文字。
+    /// 新增 alert 的提示文字
     var addAlertMessage: String {
         switch self {
         case .orderSource:

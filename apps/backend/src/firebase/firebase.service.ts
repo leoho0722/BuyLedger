@@ -5,12 +5,12 @@ import { Firestore, getFirestore } from 'firebase-admin/firestore';
 import { Storage, getStorage } from 'firebase-admin/storage';
 import { resolveFirebaseCredentialSource } from './firebase.config';
 
-// 具名 app，避免與其他 firebase-admin 初始化 (或測試重複初始化) 衝突。
+// 具名 app，避免與其他 firebase-admin 初始化 (或測試重複初始化) 衝突
 const APP_NAME = 'buyledger';
 
 // firebase-admin 初始化點。對齊 spec「Missing Firebase credentials fail closed」：
 // 初始化於 onModuleInit，缺憑證時 resolveFirebaseCredentialSource 拋錯，Nest bootstrap 隨之失敗，
-// 受保護端點不會在未驗證狀態下對外服務。憑證可用 service account JSON 檔或三個分開的環境變數。
+// 受保護端點不會在未驗證狀態下對外服務。憑證可用 service account JSON 檔或三個分開的環境變數
 @Injectable()
 export class FirebaseService implements OnModuleInit {
   private app!: App;
@@ -31,7 +31,7 @@ export class FirebaseService implements OnModuleInit {
       initializeApp(
         {
           credential,
-          // 供訂單照片上傳使用；未設定時 storage() 取用預設 bucket。
+          // 供訂單照片上傳使用；未設定時 storage() 取用預設 bucket
           storageBucket: process.env.FIREBASE_STORAGE_BUCKET,
         },
         APP_NAME,

@@ -15,7 +15,7 @@ struct InsightsAttributionTests {
     // MARK: - Tests
 
     @Test func categoryBreakdownAttributesPreMergeAmountsFromLeafOrders() {
-        // spec「attribution matrix」：合併產生的訂單不入組，已合併葉端舊單以原始類別與金額入帳，報價中葉端不入組。
+        // spec「attribution matrix」：合併產生的訂單不入組，已合併葉端舊單以原始類別與金額入帳，報價中葉端不入組
         let orders = [
             Self.makeOrder(id: "A", status: .merged, categories: ["beauty"], charged: 1_000),
             Self.makeOrder(id: "B", status: .merged, categories: ["snacks"], charged: 2_000),
@@ -31,7 +31,7 @@ struct InsightsAttributionTests {
     }
 
     @Test func chainedMergeStaysSingleCounted() {
-        // spec「chained merge stays single-counted」：A+B → M1、M1+C → M2；beauty = A + C、snacks = B。
+        // spec「chained merge stays single-counted」：A+B → M1、M1+C → M2；beauty = A + C、snacks = B
         let orders = [
             Self.makeOrder(id: "A", status: .merged, categories: ["beauty"], charged: 1_000),
             Self.makeOrder(id: "B", status: .merged, categories: ["snacks"], charged: 2_000),
@@ -47,7 +47,7 @@ struct InsightsAttributionTests {
     }
 
     @Test func orderRowCategoriesTagJoinsAndOmits() {
-        // spec「category rendering by value」：多類別以「、」串接單一 capsule；空陣列與純空白不渲染。
+        // spec「category rendering by value」：多類別以「、」串接單一 capsule；空陣列與純空白不渲染
         #expect(OrderRowView.categoriesTagText(for: ["服飾"]) == "服飾")
         #expect(OrderRowView.categoriesTagText(for: ["服飾", "美妝"]) == "服飾、美妝")
         #expect(OrderRowView.categoriesTagText(for: []).isEmpty)
@@ -55,7 +55,7 @@ struct InsightsAttributionTests {
     }
 
     @Test func multiCategoryLeafCountsFullyInEachCategoryAndEmptyIsExcluded() {
-        // 防衛性規則：葉端多類別全額計入每一類；類別為空的葉端訂單不歸入任何卡片。
+        // 防衛性規則：葉端多類別全額計入每一類；類別為空的葉端訂單不歸入任何卡片
         let orders = [
             Self.makeOrder(id: "C", status: .delivered, categories: ["beauty", "snacks"], charged: 900),
             Self.makeOrder(id: "E", status: .delivered, categories: [], charged: 700),
@@ -72,7 +72,7 @@ struct InsightsAttributionTests {
 
 private extension InsightsAttributionTests {
 
-    /// 建立統計歸屬測試用的最小訂單；成本與費率皆 0，獲利即為 `charged`。
+    /// 建立統計歸屬測試用的最小訂單；成本與費率皆 0，獲利即為 `charged`
     static func makeOrder(
         id: String,
         status: OrderStatus,

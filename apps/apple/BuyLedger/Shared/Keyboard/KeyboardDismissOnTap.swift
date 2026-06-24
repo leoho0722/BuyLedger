@@ -9,10 +9,10 @@ import SwiftUI
 
 extension View {
 
-    /// 讓使用者點擊畫面上「真正的空白處」時收起軟體鍵盤。
+    /// 讓使用者點擊畫面上「真正的空白處」時收起軟體鍵盤
     ///
-    /// iOS / iPadOS 以 window 層級的 `UITapGestureRecognizer` 實作，並透過 `gestureRecognizer(_:shouldReceive:)` 過濾：只有當點擊落在**非互動、非文字編輯、非系統文字選單**的 view 時才呼叫 `endEditing(true)`。因此點按鈕、TextField (含換頁聚焦)、文字選取控制點、以及系統編輯選單 (選取／全選／貼上) 都**不會**誤觸收鍵盤。手勢 `cancelsTouchesInView` 為 `false`，不影響底層 view 收到觸控；掛在 window 上，故同一 window 內 present 的 sheet (例如新增/編輯訂單) 也適用。macOS 無軟體鍵盤，為 no-op。
-    /// - Returns: 套用收鍵盤手勢後的 view。
+    /// iOS / iPadOS 以 window 層級的 `UITapGestureRecognizer` 實作，並透過 `gestureRecognizer(_:shouldReceive:)` 過濾：只有當點擊落在**非互動、非文字編輯、非系統文字選單**的 view 時才呼叫 `endEditing(true)`。因此點按鈕、TextField (含換頁聚焦)、文字選取控制點、以及系統編輯選單 (選取／全選／貼上) 都**不會**誤觸收鍵盤。手勢 `cancelsTouchesInView` 為 `false`，不影響底層 view 收到觸控；掛在 window 上，故同一 window 內 present 的 sheet (例如新增/編輯訂單) 也適用。macOS 無軟體鍵盤，為 no-op
+    /// - Returns: 套用收鍵盤手勢後的 view
     func dismissKeyboardOnTap() -> some View {
 #if os(iOS)
         background(KeyboardDismissInstaller().accessibilityHidden(true))
@@ -25,7 +25,7 @@ extension View {
 #if os(iOS)
 import UIKit
 
-/// 在所在 window 安裝「點擊收鍵盤」手勢的橋接 view；本身不繪製內容也不攔截觸控。
+/// 在所在 window 安裝「點擊收鍵盤」手勢的橋接 view；本身不繪製內容也不攔截觸控
 private struct KeyboardDismissInstaller: UIViewRepresentable {
 
     // MARK: - Coordinator
@@ -49,14 +49,14 @@ private struct KeyboardDismissInstaller: UIViewRepresentable {
 
     // MARK: - Coordinator
 
-    /// 持有手勢並處理收鍵盤的協調者。
+    /// 持有手勢並處理收鍵盤的協調者
     final class Coordinator: NSObject, UIGestureRecognizerDelegate {
 
-        /// 已安裝手勢的 window；避免同一個 window 重複加掛。
+        /// 已安裝手勢的 window；避免同一個 window 重複加掛
         private weak var installedWindow: UIWindow?
 
-        /// 在指定 window 安裝收鍵盤手勢 (若尚未安裝)。
-        /// - Parameter window: 目標 window；`nil` 時 (view 離開畫面) 不處理。
+        /// 在指定 window 安裝收鍵盤手勢 (若尚未安裝)
+        /// - Parameter window: 目標 window；`nil` 時 (view 離開畫面) 不處理
         func install(on window: UIWindow?) {
             guard let window, installedWindow !== window else { return }
             installedWindow = window
@@ -70,20 +70,20 @@ private struct KeyboardDismissInstaller: UIViewRepresentable {
             window.addGestureRecognizer(recognizer)
         }
 
-        /// 點擊空白處時收起目前 window 內的鍵盤。
+        /// 點擊空白處時收起目前 window 內的鍵盤
         @objc private func handleTap() {
             installedWindow?.endEditing(true)
         }
 
         // MARK: - UIGestureRecognizerDelegate
 
-        /// 過濾觸控來源：只有點在「非互動、非文字編輯、非系統文字選單」的 view 才接受此手勢。
+        /// 過濾觸控來源：只有點在「非互動、非文字編輯、非系統文字選單」的 view 才接受此手勢
         ///
-        /// 這是修正「點貼上等系統 action 也被收鍵盤」的關鍵——先前對所有觸控都接受，導致點編輯選單、選取控制點或 TextField 本身都會誤觸 `endEditing`。
+        /// 這是修正「點貼上等系統 action 也被收鍵盤」的關鍵——先前對所有觸控都接受，導致點編輯選單、選取控制點或 TextField 本身都會誤觸 `endEditing`
         /// - Parameters:
-        ///   - gestureRecognizer: 本手勢。
-        ///   - touch: 當下的觸控。
-        /// - Returns: 是否接受此觸控用於收鍵盤手勢。
+        ///   - gestureRecognizer: 本手勢
+        ///   - touch: 當下的觸控
+        /// - Returns: 是否接受此觸控用於收鍵盤手勢
         func gestureRecognizer(
             _ gestureRecognizer: UIGestureRecognizer,
             shouldReceive touch: UITouch
@@ -92,7 +92,7 @@ private struct KeyboardDismissInstaller: UIViewRepresentable {
             return !touchedView.blocksKeyboardDismissTap
         }
 
-        /// 允許與其他手勢同時辨識，確保 (在接受觸控的空白處) 不阻擋捲動等既有手勢。
+        /// 允許與其他手勢同時辨識，確保 (在接受觸控的空白處) 不阻擋捲動等既有手勢
         func gestureRecognizer(
             _ gestureRecognizer: UIGestureRecognizer,
             shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
@@ -104,9 +104,9 @@ private struct KeyboardDismissInstaller: UIViewRepresentable {
 
 private extension UIView {
 
-    /// 此 view 或它的任一上層 view (superview) 是否屬於「不該觸發收鍵盤」的元件：互動控制項、文字輸入視圖，或系統文字編輯／選單 UI (編輯選單、選取控制點、放大鏡等)。
+    /// 此 view 或它的任一上層 view (superview) 是否屬於「不該觸發收鍵盤」的元件：互動控制項、文字輸入視圖，或系統文字編輯／選單 UI (編輯選單、選取控制點、放大鏡等)
     ///
-    /// 從自身沿著 superview 逐層往上檢查，搭配型別檢查 (`UIControl` / `UITextInput`) 與系統私有類別名稱關鍵字 (這些 UI 多為私有型別，只能以類別名稱比對)。
+    /// 從自身沿著 superview 逐層往上檢查，搭配型別檢查 (`UIControl` / `UITextInput`) 與系統私有類別名稱關鍵字 (這些 UI 多為私有型別，只能以類別名稱比對)
     var blocksKeyboardDismissTap: Bool {
         let blockingClassKeywords = [
             "UITextField",
@@ -134,10 +134,10 @@ private extension UIView {
     }
 }
 
-/// 透過 `didMoveToWindow` 回報自身所在 window 的輔助 view。
+/// 透過 `didMoveToWindow` 回報自身所在 window 的輔助 view
 private final class WindowTrackingView: UIView {
 
-    /// 當 view 掛到 (或離開) window 時呼叫，帶入目前所在的 window。
+    /// 當 view 掛到 (或離開) window 時呼叫，帶入目前所在的 window
     var onMoveToWindow: ((UIWindow?) -> Void)?
 
     override func didMoveToWindow() {

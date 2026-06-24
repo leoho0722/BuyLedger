@@ -38,7 +38,7 @@ struct CampaignFeatureTests {
     }
 
     @Test func loadingAutoTransitionsOngoingPastCloseDateToClosed() async {
-        // fixedNow = 2026-04-30。closeDate 4/20 已過 → 轉 closed；closeDate 5/10 未到 → 維持 ongoing。
+        // fixedNow = 2026-04-30。closeDate 4/20 已過 → 轉 closed；closeDate 5/10 未到 → 維持 ongoing
         let pastDue = makeCampaign(id: "past", name: "過期團", status: .ongoing, closeDate: day(month: 4, day: 20))
         let future = makeCampaign(id: "future", name: "未到團", status: .ongoing, closeDate: day(month: 5, day: 10))
 
@@ -132,7 +132,7 @@ struct CampaignFeatureTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        // CampaignEditFeature.State 內含隨機 `id: UUID()`，無法做等值斷言；改以非窮舉模式驗證表單已呈現且為新開團。
+        // CampaignEditFeature.State 內含隨機 `id: UUID()`，無法做等值斷言；改以非窮舉模式驗證表單已呈現且為新開團
         store.exhaustivity = .off
 
         await store.send(.newCampaignTapped)
@@ -143,7 +143,7 @@ struct CampaignFeatureTests {
 
     // MARK: - Helper
 
-    /// 建立測試用開團。
+    /// 建立測試用開團
     private func makeCampaign(
         id: String,
         name: String,
@@ -161,7 +161,7 @@ struct CampaignFeatureTests {
         )
     }
 
-    /// 建立 2026 年指定月日的固定日期 (UTC)。
+    /// 建立 2026 年指定月日的固定日期 (UTC)
     private func day(month: Int, day: Int) -> Date {
         var components = DateComponents()
         components.calendar = Calendar(identifier: .gregorian)

@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react';
 import { cn } from '@/lib/cn';
 
-// 內容卡片：surface 底、16 圓角、0.5px 分隔線邊框、淺色細陰影 (深色改靠邊框)。
+// 內容卡片：surface 底、16 圓角、0.5px 分隔線邊框、淺色細陰影 (深色改靠邊框)
 export function BLCard({
   children,
   className,

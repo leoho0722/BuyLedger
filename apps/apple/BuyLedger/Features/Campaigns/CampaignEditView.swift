@@ -8,20 +8,20 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 新增或編輯開團的表單。
+/// 新增或編輯開團的表單
 struct CampaignEditView: View {
 
     // MARK: - View Properties
 
-    /// 表單 store。
+    /// 表單 store
     @Bindable var store: StoreOf<CampaignEditFeature>
 
-    /// TCA 注入的 locale；作為 ``deviceLocale`` 取不到偏好語言時的 fallback。
+    /// TCA 注入的 locale；作為 ``deviceLocale`` 取不到偏好語言時的 fallback
     @Dependency(\.locale) private var locale
 
     // MARK: - View Body
 
-    /// 表單的畫面內容。
+    /// 表單的畫面內容
     var body: some View {
         NavigationStack {
             Form {
@@ -80,7 +80,7 @@ struct CampaignEditView: View {
 
 private extension CampaignEditView {
 
-    /// 使用者在系統「語言與地區」實際偏好的 locale；與「新增/編輯訂單頁」的 DatePicker 一致。未提供偏好語言時退回注入的 `@Dependency(\.locale)`。選用 `preferredLanguages` 的原因見 ``Locale/preferred(fallback:)``。
+    /// 使用者在系統「語言與地區」實際偏好的 locale；與「新增/編輯訂單頁」的 DatePicker 一致。未提供偏好語言時退回注入的 `@Dependency(\.locale)`。選用 `preferredLanguages` 的原因見 ``Locale/preferred(fallback:)``
     var deviceLocale: Locale {
         Locale.preferred(fallback: locale)
     }

@@ -8,15 +8,15 @@
 import ComposableArchitecture
 import Foundation
 
-/// 把設定偏好讀寫到 `UserDefaults` 的依賴介面。
+/// 把設定偏好讀寫到 `UserDefaults` 的依賴介面
 struct SettingsStorage: Sendable {
 
     // MARK: - Dependency Properties
 
-    /// 從 `UserDefaults` 讀取一份設定快照。
+    /// 從 `UserDefaults` 讀取一份設定快照
     var load: @Sendable () -> SettingsSnapshot
 
-    /// 將設定快照寫回 `UserDefaults`。
+    /// 將設定快照寫回 `UserDefaults`
     var save: @Sendable (SettingsSnapshot) -> Void
 }
 
@@ -24,27 +24,27 @@ struct SettingsStorage: Sendable {
 
 private extension SettingsStorage {
 
-    /// `UserDefaults` 讀寫所使用的 key 名稱；各 key 以 `nonisolated static` 宣告，可在 `@Sendable` closure 中安全引用。
+    /// `UserDefaults` 讀寫所使用的 key 名稱；各 key 以 `nonisolated static` 宣告，可在 `@Sendable` closure 中安全引用
     enum SettingsStorageKeys {
 
         // MARK: - Static Properties
 
-        /// 外觀偏好的 key。
+        /// 外觀偏好的 key
         nonisolated static let appearance = "settings.appearance"
 
-        /// 通知開關的 key。
+        /// 通知開關的 key
         nonisolated static let notifications = "settings.notifications"
 
-        /// 預設幣別的 key。
+        /// 預設幣別的 key
         nonisolated static let defaultCurrency = "settings.defaultCurrency"
 
-        /// 月度淨獲利目標的 key。
+        /// 月度淨獲利目標的 key
         nonisolated static let monthlyProfitGoalTwd = "settings.monthlyProfitGoalTwd"
 
-        /// AI 總結開關的 key。
+        /// AI 總結開關的 key
         nonisolated static let useAiSummary = "settings.useAiSummary"
 
-        /// AI 總結模型名稱的 key。
+        /// AI 總結模型名稱的 key
         nonisolated static let aiSummaryModel = "settings.aiSummaryModel"
     }
 }
@@ -53,10 +53,10 @@ extension SettingsStorage: DependencyKey {
 
     // MARK: - Dependency Values
 
-    /// App 執行時實際讀寫 `UserDefaults.standard`。
+    /// App 執行時實際讀寫 `UserDefaults.standard`
     ///
     /// `UserDefaults` 為執行緒安全，但 Swift 6 strict concurrency 並不認可；因此 closure 內每次都從
-    /// `.standard` 取得引用，而非透過捕獲傳遞，避免 `Sendable` 報錯。
+    /// `.standard` 取得引用，而非透過捕獲傳遞，避免 `Sendable` 報錯
     nonisolated static let liveValue: SettingsStorage = SettingsStorage(
         load: {
             let defaults = UserDefaults.standard
@@ -67,7 +67,7 @@ extension SettingsStorage: DependencyKey {
             let storedCurrency = defaults.string(forKey: SettingsStorageKeys.defaultCurrency) ?? ""
             let currency: CurrencyCode = storedCurrency.isEmpty ? .twd : CurrencyCode(rawValue: storedCurrency)
             // 從未寫入時 `object(forKey:)` 為 nil，預設帶入 `SettingsSnapshot.default.monthlyProfitGoalTwd`；
-            // 寫入過 `0` 也尊重使用者意圖 (代表「不設目標」)。
+            // 寫入過 `0` 也尊重使用者意圖 (代表「不設目標」)
             let goalValue: Decimal = {
                 guard let raw = defaults.object(forKey: SettingsStorageKeys.monthlyProfitGoalTwd) as? Double else {
                     return SettingsSnapshot.default.monthlyProfitGoalTwd
@@ -98,12 +98,12 @@ extension SettingsStorage: DependencyKey {
         }
     )
 
-    /// 測試時使用的版本：load 永遠回傳預設值，save 為 no-op，避免污染 `.standard`。
+    /// 測試時使用的版本：load 永遠回傳預設值，save 為 no-op，避免污染 `.standard`
     nonisolated static let testValue: SettingsStorage = SettingsStorage(
         load: { SettingsSnapshot.testDefault },
         save: { _ in }
     )
 
-    /// SwiftUI Preview 直接沿用測試值即可。
+    /// SwiftUI Preview 直接沿用測試值即可
     nonisolated static let previewValue: SettingsStorage = testValue
 }

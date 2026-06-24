@@ -19,7 +19,7 @@ export class AiSummaryService {
 
   constructor(private readonly prisma: PrismaService) {}
 
-  // 串流 AI 商品明細總結到 res；缺 key 時回 400 讓前端顯示失敗狀態 (不偽造內容)。
+  // 串流 AI 商品明細總結到 res；缺 key 時回 400 讓前端顯示失敗狀態 (不偽造內容)
   async stream(uid: string, input: AiSummaryInput, res: Response): Promise<void> {
     const apiKey = (process.env.OLLAMA_API_KEY ?? '').trim();
     if (!apiKey) {
@@ -85,7 +85,7 @@ export class AiSummaryService {
       res.end();
     } catch (err) {
       if (controller.signal.aborted) {
-        // 前端關閉串流屬正常取消，不視為錯誤。
+        // 前端關閉串流屬正常取消，不視為錯誤
         return;
       }
       this.logger.warn(`AI 串流失敗：${String(err)}`);
@@ -97,7 +97,7 @@ export class AiSummaryService {
     }
   }
 
-  // 解析一行 NDJSON，寫出 content，回傳是否已完成。
+  // 解析一行 NDJSON，寫出 content，回傳是否已完成
   private writeChunk(line: string, res: Response): boolean {
     try {
       const json = JSON.parse(line) as { message?: { content?: string }; done?: boolean };
@@ -123,7 +123,7 @@ export class AiSummaryService {
     return settings?.aiSummaryModel || DEFAULT_AI_MODEL;
   }
 
-  // 組商品明細 digest (對齊 iOS aiItemsDigest)。
+  // 組商品明細 digest (對齊 iOS aiItemsDigest)
   private buildDigest(orders: LedgerOrder[]): string {
     const lines: string[] = [];
     let totalItems = 0;
@@ -147,7 +147,7 @@ export class AiSummaryService {
     return digest;
   }
 
-  // 組完整 prompt (對齊 iOS aiSummaryPrompt)。
+  // 組完整 prompt (對齊 iOS aiSummaryPrompt)
   private buildPrompt(orders: LedgerOrder[], selectedCategory: string | null): string {
     const categoryScope = selectedCategory
       ? `(已篩選類別：${selectedCategory})`

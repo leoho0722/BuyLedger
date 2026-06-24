@@ -7,30 +7,30 @@
 
 import SwiftUI
 
-/// 以短文字與語意狀態呈現狀態。
+/// 以短文字與語意狀態呈現狀態
 struct BLStatusPill: View {
 
     // MARK: - View Properties
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 狀態膠囊顯示的文字。
+    /// 狀態膠囊顯示的文字
     let title: String
 
-    /// 狀態膠囊使用的語意狀態。
+    /// 狀態膠囊使用的語意狀態
     let tone: BLTone
 
-    /// 指示是否顯示左側狀態點。
+    /// 指示是否顯示左側狀態點
     let showsIndicator: Bool
 
     // MARK: - Init
 
-    /// 建立狀態膠囊。
+    /// 建立狀態膠囊
     /// - Parameters:
-    ///   - title: 狀態膠囊顯示的文字。
-    ///   - tone: 狀態膠囊使用的語意狀態。
-    ///   - showsIndicator: 指示是否顯示左側狀態點。
+    ///   - title: 狀態膠囊顯示的文字
+    ///   - tone: 狀態膠囊使用的語意狀態
+    ///   - showsIndicator: 指示是否顯示左側狀態點
     init(_ title: String, tone: BLTone = .neutral, showsIndicator: Bool = true) {
         self.title = title
         self.tone = tone
@@ -39,7 +39,7 @@ struct BLStatusPill: View {
 
     // MARK: - View Body
 
-    /// 狀態膠囊的畫面內容。
+    /// 狀態膠囊的畫面內容
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
         let foreground = tone.foreground(in: palette)

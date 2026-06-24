@@ -7,30 +7,30 @@
 
 import SwiftUI
 
-/// 左側標題、右側值的標準列。
+/// 左側標題、右側值的標準列
 struct BLListRow: View {
 
     // MARK: - View Properties
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 列左側顯示的標題。
+    /// 列左側顯示的標題
     let title: String
 
-    /// 列右側顯示的值。
+    /// 列右側顯示的值
     let value: String
 
-    /// 列左側可選的 SF Symbols 名稱。
+    /// 列左側可選的 SF Symbols 名稱
     let systemImage: String?
 
     // MARK: - Init
 
-    /// 建立標準列。
+    /// 建立標準列
     /// - Parameters:
-    ///   - title: 列左側顯示的標題。
-    ///   - value: 列右側顯示的值。
-    ///   - systemImage: 列左側可選的 SF Symbols 名稱。
+    ///   - title: 列左側顯示的標題
+    ///   - value: 列右側顯示的值
+    ///   - systemImage: 列左側可選的 SF Symbols 名稱
     init(_ title: String, value: String, systemImage: String? = nil) {
         self.title = title
         self.value = value
@@ -39,7 +39,7 @@ struct BLListRow: View {
 
     // MARK: - View Body
 
-    /// 標準列的畫面內容。
+    /// 標準列的畫面內容
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
 

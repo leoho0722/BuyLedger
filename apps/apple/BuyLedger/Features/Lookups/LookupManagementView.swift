@@ -8,45 +8,45 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 訂單來源 / 商品類別 / 付款方式主檔的獨立管理畫面。
+/// 訂單來源 / 商品類別 / 付款方式主檔的獨立管理畫面
 ///
-/// 以 ``LookupManagementFeature`` 驅動：點「新增」彈出 alert (訂單來源 / 商品類別) 或 sheet (付款方式含 `isCardless` / `isBankTransfer` toggle、對帳狀態為 name-only sheet)。macOS 採 `ScrollView` + `BLCard` 卡片版面 (對齊 ``CustomersView``)，以右鍵 contextMenu 編輯／重新命名或刪除；iOS / iPadOS 維持系統 `List`，列可左滑刪除或編輯／重新命名。付款方式列操作為「編輯」(開 ``PaymentMethodEditorSheet`` 帶入原資料)，其餘 kind 為「重新命名」alert。文案、空狀態、icon 來自 ``LookupKind``。
+/// 以 ``LookupManagementFeature`` 驅動：點「新增」彈出 alert (訂單來源 / 商品類別) 或 sheet (付款方式含 `isCardless` / `isBankTransfer` toggle、對帳狀態為 name-only sheet)。macOS 採 `ScrollView` + `BLCard` 卡片版面 (對齊 ``CustomersView``)，以右鍵 contextMenu 編輯／重新命名或刪除；iOS / iPadOS 維持系統 `List`，列可左滑刪除或編輯／重新命名。付款方式列操作為「編輯」(開 ``PaymentMethodEditorSheet`` 帶入原資料)，其餘 kind 為「重新命名」alert。文案、空狀態、icon 來自 ``LookupKind``
 struct LookupManagementView: View {
 
     // MARK: - View Properties
 
-    /// 主檔管理 store。
+    /// 主檔管理 store
     @Bindable var store: StoreOf<LookupManagementFeature>
 
-    /// 目前系統深淺色外觀；macOS 卡片版面用來取得色盤。
+    /// 目前系統深淺色外觀；macOS 卡片版面用來取得色盤
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 是否顯示「新增類別」alert (僅商品類別 kind 使用)。
+    /// 是否顯示「新增類別」alert (僅商品類別 kind 使用)
     @State private var showsAddCategoryAlert = false
 
-    /// 是否顯示「新增付款方式」sheet (僅付款方式 kind 使用；alert 在實機驗證會 silently 丟掉 Toggle，所以付款方式入口改走 sheet)。
+    /// 是否顯示「新增付款方式」sheet (僅付款方式 kind 使用；alert 在實機驗證會 silently 丟掉 Toggle，所以付款方式入口改走 sheet)
     @State private var showsAddPaymentMethodSheet = false
 
-    /// 是否顯示「新增對帳狀態」medium sheet (僅對帳狀態 kind 使用；比照付款方式以 sheet 收集名稱)。
+    /// 是否顯示「新增對帳狀態」medium sheet (僅對帳狀態 kind 使用；比照付款方式以 sheet 收集名稱)
     @State private var showsAddVerificationStatusSheet = false
 
-    /// 新增 alert 的名稱輸入草稿 (商品類別)。
+    /// 新增 alert 的名稱輸入草稿 (商品類別)
     @State private var draft = ""
 
-    /// 目前正在重新命名的項目；`nil` 表示未進行 rename。
+    /// 目前正在重新命名的項目；`nil` 表示未進行 rename
     @State private var renameTarget: String?
 
-    /// 重新命名 alert 的輸入草稿。
+    /// 重新命名 alert 的輸入草稿
     @State private var renameDraft = ""
 
-    /// 目前正在編輯的付款方式名稱；`nil` 表示未開啟編輯 sheet (僅付款方式 kind 使用)。
+    /// 目前正在編輯的付款方式名稱；`nil` 表示未開啟編輯 sheet (僅付款方式 kind 使用)
     @State private var editTarget: String?
 
     // MARK: - View Body
 
-    /// 主檔管理畫面內容。
+    /// 主檔管理畫面內容
     ///
-    /// 內容區依平台分流 (見 ``content``)，但 toolbar、新增 / 重新命名 alert、付款方式新增 sheet 與 `task` 載入由兩個平台分支共用，確保操作與業務邏輯一致。
+    /// 內容區依平台分流 (見 ``content``)，但 toolbar、新增 / 重新命名 alert、付款方式新增 sheet 與 `task` 載入由兩個平台分支共用，確保操作與業務邏輯一致
     var body: some View {
         content
             .navigationTitle(store.state.kind.title)
@@ -193,7 +193,7 @@ struct LookupManagementView: View {
 
 private extension LookupManagementView {
 
-    /// 依平台選擇內容呈現：macOS 走 Design System 卡片版面，iOS / iPadOS 維持系統 List。
+    /// 依平台選擇內容呈現：macOS 走 Design System 卡片版面，iOS / iPadOS 維持系統 List
     @ViewBuilder
     var content: some View {
 #if os(macOS)
@@ -203,9 +203,9 @@ private extension LookupManagementView {
 #endif
     }
 
-    /// 列項顯示：訂單來源 / 商品類別 / 對帳狀態 kind 純文字；付款方式 kind 在右側顯示「無卡」「銀行匯款」與「貨到付款」徽章 (僅作標示，不能直接切換；要修改旗標需對該列選「編輯」)。
-    /// - Parameter item: 要顯示的主檔項目名稱。
-    /// - Returns: 列項 view。
+    /// 列項顯示：訂單來源 / 商品類別 / 對帳狀態 kind 純文字；付款方式 kind 在右側顯示「無卡」「銀行匯款」與「貨到付款」徽章 (僅作標示，不能直接切換；要修改旗標需對該列選「編輯」)
+    /// - Parameter item: 要顯示的主檔項目名稱
+    /// - Returns: 列項 view
     @ViewBuilder
     func itemRow(for item: String) -> some View {
         switch store.state.kind {
@@ -232,9 +232,9 @@ private extension LookupManagementView {
         }
     }
 
-    /// 付款方式分類徽章 (例如「無卡」「銀行匯款」「貨到付款」)，沿用 tint 膠囊樣式。
-    /// - Parameter title: 徽章文字。
-    /// - Returns: 膠囊徽章 view。
+    /// 付款方式分類徽章 (例如「無卡」「銀行匯款」「貨到付款」)，沿用 tint 膠囊樣式
+    /// - Parameter title: 徽章文字
+    /// - Returns: 膠囊徽章 view
     @ViewBuilder
     func classificationBadge(_ title: String) -> some View {
         Text(title)
@@ -248,9 +248,9 @@ private extension LookupManagementView {
             )
     }
 
-    /// 列項的「編輯／重新命名」操作按鈕，依 kind 分流：付款方式開 ``PaymentMethodEditorSheet`` (帶入原名稱與旗標) 做編輯，其餘 kind 沿用重新命名 alert。
-    /// - Parameter item: 目標項目名稱。
-    /// - Returns: 對應的操作按鈕。
+    /// 列項的「編輯／重新命名」操作按鈕，依 kind 分流：付款方式開 ``PaymentMethodEditorSheet`` (帶入原名稱與旗標) 做編輯，其餘 kind 沿用重新命名 alert
+    /// - Parameter item: 目標項目名稱
+    /// - Returns: 對應的操作按鈕
     @ViewBuilder
     func renameOrEditButton(for item: String) -> some View {
         if store.state.kind == .paymentMethod {
@@ -276,7 +276,7 @@ private extension LookupManagementView {
 
 private extension LookupManagementView {
 
-    /// iOS / iPadOS 維持的系統 List 版本：section header 顯示計數、列可左滑刪除或重新命名、付款方式顯示 footer 說明。
+    /// iOS / iPadOS 維持的系統 List 版本：section header 顯示計數、列可左滑刪除或重新命名、付款方式顯示 footer 說明
     @ViewBuilder
     var listContent: some View {
         List {
@@ -339,7 +339,7 @@ private extension LookupManagementView {
 
 private extension LookupManagementView {
 
-    /// macOS 的 Design System 卡片版本：對齊 ``CustomersView`` 的 `ScrollView` + `palette.background` + `BLCard` 呈現。
+    /// macOS 的 Design System 卡片版本：對齊 ``CustomersView`` 的 `ScrollView` + `palette.background` + `BLCard` 呈現
     @ViewBuilder
     var macContent: some View {
         let palette = BLTheme.palette(for: colorScheme)
@@ -365,9 +365,9 @@ private extension LookupManagementView {
         .background(palette.background)
     }
 
-    /// macOS 空狀態：對齊 ``CustomersView`` 的置中 `ContentUnavailableView`。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 空狀態 view。
+    /// macOS 空狀態：對齊 ``CustomersView`` 的置中 `ContentUnavailableView`
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 空狀態 view
     @ViewBuilder
     func macEmptyState(palette: BLPalette) -> some View {
         ContentUnavailableView(
@@ -380,9 +380,9 @@ private extension LookupManagementView {
         .background(palette.background)
     }
 
-    /// macOS 卡片列表：計數 header + 單一 `BLCard` 內含列 (列間帶 leading inset 的 `Divider`)，付款方式於卡片下方顯示無卡說明。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 卡片列表 view。
+    /// macOS 卡片列表：計數 header + 單一 `BLCard` 內含列 (列間帶 leading inset 的 `Divider`)，付款方式於卡片下方顯示無卡說明
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 卡片列表 view
     @ViewBuilder
     func macItemList(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
@@ -422,7 +422,7 @@ private extension LookupManagementView {
             }
 
             if store.state.kind == .paymentMethod {
-                // 與 iOS List footer 相同的無卡說明；兩個平台分支獨立呈現，因此各保留一份字串。
+                // 與 iOS List footer 相同的無卡說明；兩個平台分支獨立呈現，因此各保留一份字串
                 Text("「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；「銀行匯款」標籤代表會顯示「對帳狀態」欄位；「貨到付款」標籤代表收款金額已含預估運費，獲利會自動扣除三種運費。需要修改名稱或分類時，對該列選「編輯」即可。")
                     .font(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
@@ -430,11 +430,11 @@ private extension LookupManagementView {
         }
     }
 
-    /// macOS 卡片中的單一列：沿用 ``itemRow(for:)`` 內容，補上卡片列內距與整列點擊範圍。
+    /// macOS 卡片中的單一列：沿用 ``itemRow(for:)`` 內容，補上卡片列內距與整列點擊範圍
     /// - Parameters:
-    ///   - item: 要顯示的主檔項目名稱。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 卡片列 view。
+    ///   - item: 要顯示的主檔項目名稱
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 卡片列 view
     @ViewBuilder
     func macRow(for item: String, palette: BLPalette) -> some View {
         itemRow(for: item)

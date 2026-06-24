@@ -7,25 +7,25 @@
 
 import SwiftUI
 
-/// 訂單詳情與成本拆解畫面。
+/// 訂單詳情與成本拆解畫面
 ///
-/// 透過 ``layout`` 參數在窄欄 (iPhone push) 與寬欄 (iPad detail / macOS inspector) 之間切換不同的版面結構。
+/// 透過 ``layout`` 參數在窄欄 (iPhone push) 與寬欄 (iPad detail / macOS inspector) 之間切換不同的版面結構
 struct OrderDetailView: View {
 
     // MARK: - View Properties
 
-    /// 要顯示的訂單。
+    /// 要顯示的訂單
     let order: LedgerOrder
 
-    /// 詳情頁的版面樣式。
+    /// 詳情頁的版面樣式
     var layout: OrderDetailLayout = .compact
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
     // MARK: - View Body
 
-    /// 訂單詳情的畫面內容。
+    /// 訂單詳情的畫面內容
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
         let summary = order.summary
@@ -92,57 +92,57 @@ struct OrderDetailView: View {
 
 extension OrderDetailView {
 
-    /// 訂單詳情頁可採用的版面樣式。
+    /// 訂單詳情頁可採用的版面樣式
     enum OrderDetailLayout {
 
         // MARK: - Cases
 
-        /// 窄欄版面 (iPhone push 詳情)。
+        /// 窄欄版面 (iPhone push 詳情)
         ///
-        /// 採單欄序列：標頭 → 獲利摘要卡 → donut 成本拆解 → 商品明細。
+        /// 採單欄序列：標頭 → 獲利摘要卡 → donut 成本拆解 → 商品明細
         case compact
 
-        /// 寬欄版面 (iPad detail、macOS inspector)。
+        /// 寬欄版面 (iPad detail、macOS inspector)
         ///
-        /// 採設計稿的 3-up KPI 加上 2-col「成本拆解條 + 商品明細」並排。
+        /// 採設計稿的 3-up KPI 加上 2-col「成本拆解條 + 商品明細」並排
         case wide
     }
 
-    /// 訂單詳情頁使用的版面限制。
+    /// 訂單詳情頁使用的版面限制
     private enum OrderDetailLayoutMetrics {
 
         // MARK: - Static Properties
 
-        /// 詳情內容在寬視窗與全螢幕下的最大可讀寬度。
+        /// 詳情內容在寬視窗與全螢幕下的最大可讀寬度
         static let maximumContentWidth: CGFloat = 1_440
 
         // MARK: - Static Method
 
-        /// 依照 detail 欄目前可用寬度回傳內容容器寬度。
-        /// - Parameter availableWidth: detail 欄目前可用寬度。
-        /// - Returns: 套用最大寬度上限後的內容容器寬度。
+        /// 依照 detail 欄目前可用寬度回傳內容容器寬度
+        /// - Parameter availableWidth: detail 欄目前可用寬度
+        /// - Returns: 套用最大寬度上限後的內容容器寬度
         static func contentWidth(for availableWidth: CGFloat) -> CGFloat {
             min(max(availableWidth, 0), maximumContentWidth)
         }
     }
 
-    /// 成本拆解中的單一項目。
+    /// 成本拆解中的單一項目
     fileprivate struct OrderCostComponent: Identifiable {
 
         // MARK: - Identifiable Properties
 
-        /// 成本項目的穩定識別值。
+        /// 成本項目的穩定識別值
         var id: String { title }
 
         // MARK: - Data Properties
 
-        /// 成本項目名稱。
+        /// 成本項目名稱
         let title: String
 
-        /// 成本項目金額。
+        /// 成本項目金額
         let value: Decimal
 
-        /// 成本項目顏色。
+        /// 成本項目顏色
         let color: Color
     }
 }
@@ -152,9 +152,9 @@ extension OrderDetailView {
 
 private extension OrderDetailView {
 
-    /// 訂單標頭內容。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 訂單標頭 view。
+    /// 訂單標頭內容
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 訂單標頭 view
     @ViewBuilder
     func header(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
@@ -180,11 +180,11 @@ private extension OrderDetailView {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// 訂單來源卡片：顯示訂單的 ``LedgerOrder/orderSource``，窄欄與寬欄版面共用，皆置於獲利摘要之上。
+    /// 訂單來源卡片：顯示訂單的 ``LedgerOrder/orderSource``，窄欄與寬欄版面共用，皆置於獲利摘要之上
     ///
-    /// 來源為空字串時顯示「—」空狀態，不杜撰來源名稱 (符合「寧可空狀態也不顯示假資料」原則)。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 訂單來源卡片 view。
+    /// 來源為空字串時顯示「—」空狀態，不杜撰來源名稱 (符合「寧可空狀態也不顯示假資料」原則)
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 訂單來源卡片 view
     @ViewBuilder
     func orderSourceCard(palette: BLPalette) -> some View {
         BLCard {
@@ -199,12 +199,12 @@ private extension OrderDetailView {
         }
     }
 
-    /// 來源卡片內的單組「標題 + 值」；值支援多行換行，多類別/多開團的完整內容在此可見 (列表 tag 截斷時的對照)。
+    /// 來源卡片內的單組「標題 + 值」；值支援多行換行，多類別/多開團的完整內容在此可見 (列表 tag 截斷時的對照)
     /// - Parameters:
-    ///   - title: 欄位標題。
-    ///   - value: 顯示值。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 標題與值的直排 view。
+    ///   - title: 欄位標題
+    ///   - value: 顯示值
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 標題與值的直排 view
     @ViewBuilder
     func infoPair(title: String, value: String, palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
@@ -225,11 +225,11 @@ private extension OrderDetailView {
 
     // MARK: Compact layout
 
-    /// 收款、成本與獲利摘要卡片。
+    /// 收款、成本與獲利摘要卡片
     /// - Parameters:
-    ///   - summary: 訂單財務摘要。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 財務摘要 view。
+    ///   - summary: 訂單財務摘要
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 財務摘要 view
     @ViewBuilder
     func profitCard(summary: OrderSummary, palette: BLPalette) -> some View {
         BLCard {
@@ -285,11 +285,11 @@ private extension OrderDetailView {
         }
     }
 
-    /// 窄欄版面使用的 donut 成本拆解卡片。
+    /// 窄欄版面使用的 donut 成本拆解卡片
     /// - Parameters:
-    ///   - summary: 訂單財務摘要。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 成本拆解 view。
+    ///   - summary: 訂單財務摘要
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 成本拆解 view
     @ViewBuilder
     func compactCostBreakdown(summary: OrderSummary, palette: BLPalette) -> some View {
         let components = costComponents(palette: palette)
@@ -339,7 +339,7 @@ private extension OrderDetailView {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// 窄欄版面使用的商品明細卡片。
+    /// 窄欄版面使用的商品明細卡片
     @ViewBuilder
     var compactItemList: some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
@@ -351,7 +351,7 @@ private extension OrderDetailView {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// 窄欄版面使用的備註卡片 (唯讀)；僅在 ``hasNotes`` 為 `true` 時顯示。
+    /// 窄欄版面使用的備註卡片 (唯讀)；僅在 ``hasNotes`` 為 `true` 時顯示
     @ViewBuilder
     var compactNotes: some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
@@ -371,11 +371,11 @@ private extension OrderDetailView {
 
     // MARK: Wide layout
 
-    /// 寬欄版面使用的 3-up KPI 列。
+    /// 寬欄版面使用的 3-up KPI 列
     /// - Parameters:
-    ///   - summary: 訂單財務摘要。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: KPI 列 view。
+    ///   - summary: 訂單財務摘要
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: KPI 列 view
     @ViewBuilder
     func kpiThreeUp(summary: OrderSummary, palette: BLPalette) -> some View {
         HStack(alignment: .top, spacing: BLSpacing.medium) {
@@ -402,15 +402,15 @@ private extension OrderDetailView {
         }
     }
 
-    /// 單一 KPI 卡片。
+    /// 單一 KPI 卡片
     /// - Parameters:
-    ///   - label: 指標標題。
-    ///   - value: 主要數值。
-    ///   - delta: 副標數值，例如毛利率，可省略。
-    ///   - deltaUp: `delta` 是否表示正向變化，影響色彩。
-    ///   - tint: 標籤前色點與主要數值的強調色。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: KPI 卡片 view。
+    ///   - label: 指標標題
+    ///   - value: 主要數值
+    ///   - delta: 副標數值，例如毛利率，可省略
+    ///   - deltaUp: `delta` 是否表示正向變化，影響色彩
+    ///   - tint: 標籤前色點與主要數值的強調色
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: KPI 卡片 view
     @ViewBuilder
     func kpiTile(
         label: String,
@@ -455,11 +455,11 @@ private extension OrderDetailView {
         }
     }
 
-    /// 寬欄版面：成本拆解條與商品明細並排。
+    /// 寬欄版面：成本拆解條與商品明細並排
     /// - Parameters:
-    ///   - summary: 訂單財務摘要。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 兩欄並排 view。
+    ///   - summary: 訂單財務摘要
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 兩欄並排 view
     @ViewBuilder
     func wideBreakdownAndItems(summary: OrderSummary, palette: BLPalette) -> some View {
         HStack(alignment: .top, spacing: BLSpacing.medium) {
@@ -473,11 +473,11 @@ private extension OrderDetailView {
         }
     }
 
-    /// 寬欄版面使用的成本拆解條卡片。
+    /// 寬欄版面使用的成本拆解條卡片
     /// - Parameters:
-    ///   - summary: 訂單財務摘要。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 成本拆解條 view。
+    ///   - summary: 訂單財務摘要
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 成本拆解條 view
     @ViewBuilder
     func breakdownBarsCard(summary: OrderSummary, palette: BLPalette) -> some View {
         let components = costComponents(palette: palette)
@@ -514,12 +514,12 @@ private extension OrderDetailView {
         }
     }
 
-    /// 成本拆解條的單列。
+    /// 成本拆解條的單列
     /// - Parameters:
-    ///   - component: 成本項目。
-    ///   - total: 用於計算比例的總成本。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 成本條列 view。
+    ///   - component: 成本項目
+    ///   - total: 用於計算比例的總成本
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 成本條列 view
     @ViewBuilder
     func breakdownBarRow(
         _ component: OrderCostComponent,
@@ -561,7 +561,7 @@ private extension OrderDetailView {
         }
     }
 
-    /// 寬欄版面使用的商品明細卡片，含標題。
+    /// 寬欄版面使用的商品明細卡片，含標題
     @ViewBuilder
     var wideItemsCard: some View {
         BLCard(padding: 0) {
@@ -580,9 +580,9 @@ private extension OrderDetailView {
         }
     }
 
-    /// 寬欄版面使用的備註卡片 (唯讀)，含標題；僅在 ``hasNotes`` 為 `true` 時顯示。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 備註卡片 view。
+    /// 寬欄版面使用的備註卡片 (唯讀)，含標題；僅在 ``hasNotes`` 為 `true` 時顯示
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 備註卡片 view
     @ViewBuilder
     func wideNotesCard(palette: BLPalette) -> some View {
         BLCard {
@@ -602,7 +602,7 @@ private extension OrderDetailView {
         }
     }
 
-    /// 商品列卡片 (窄欄版面用，內含 BLCard 包覆)。
+    /// 商品列卡片 (窄欄版面用，內含 BLCard 包覆)
     @ViewBuilder
     var itemsCard: some View {
         BLCard(padding: 0) {
@@ -612,7 +612,7 @@ private extension OrderDetailView {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// 商品列序列，不含外層卡片。
+    /// 商品列序列，不含外層卡片
     @ViewBuilder
     var itemRows: some View {
         VStack(spacing: 0) {
@@ -642,11 +642,11 @@ private extension OrderDetailView {
         }
     }
 
-    /// 無卡明細卡片：當訂單為「無卡」類付款方式且有折抵或補款金額時顯示。
+    /// 無卡明細卡片：當訂單為「無卡」類付款方式且有折抵或補款金額時顯示
     ///
-    /// 此卡片只是輔助說明 ``OrderSummary/revenue`` 的調整來源，不參與成本拆解圖；公式為 `revenue = chargedAmount + cardlessSupplementAmount − cardlessDeductionAmount`。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 無卡明細卡片 view。
+    /// 此卡片只是輔助說明 ``OrderSummary/revenue`` 的調整來源，不參與成本拆解圖；公式為 `revenue = chargedAmount + cardlessSupplementAmount − cardlessDeductionAmount`
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 無卡明細卡片 view
     @ViewBuilder
     func cardlessAdjustmentsCard(palette: BLPalette) -> some View {
         BLCard {
@@ -682,12 +682,12 @@ private extension OrderDetailView {
         }
     }
 
-    /// 顯示單一財務指標。
+    /// 顯示單一財務指標
     /// - Parameters:
-    ///   - title: 指標標題。
-    ///   - value: 指標值。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 指標 view。
+    ///   - title: 指標標題
+    ///   - value: 指標值
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 指標 view
     @ViewBuilder
     func metric(_ title: String, value: String, palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
@@ -706,28 +706,28 @@ private extension OrderDetailView {
 
 private extension OrderDetailView {
 
-    /// 訂單是否需要顯示無卡明細卡片：只要折抵或補款金額任一非 0 就顯示，避免無卡訂單欄位填 0 時還浮現空卡片。
+    /// 訂單是否需要顯示無卡明細卡片：只要折抵或補款金額任一非 0 就顯示，避免無卡訂單欄位填 0 時還浮現空卡片
     var hasCardlessAdjustments: Bool {
         order.cardlessDeductionAmount > 0 || order.cardlessSupplementAmount > 0
     }
 
-    /// 訂單是否有成本可供拆解：總成本為 0 時不顯示「成本拆解」section，避免繪出空的 donut/bar 圖 (符合「寧可空狀態也不顯示假資料」原則)。
+    /// 訂單是否有成本可供拆解：總成本為 0 時不顯示「成本拆解」section，避免繪出空的 donut/bar 圖 (符合「寧可空狀態也不顯示假資料」原則)
     var hasCostBreakdown: Bool {
         order.summary.totalCost > 0
     }
 
-    /// 訂單是否有備註可顯示：trim 後非空才顯示備註卡片，避免空備註浮現空卡片 (符合「寧可空狀態也不顯示假資料」原則)。
+    /// 訂單是否有備註可顯示：trim 後非空才顯示備註卡片，避免空備註浮現空卡片 (符合「寧可空狀態也不顯示假資料」原則)
     var hasNotes: Bool {
         !order.notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
     }
 
-    /// 訂單來源的顯示文字；trim 後為空時回傳「—」空狀態，不杜撰來源名稱。
+    /// 訂單來源的顯示文字；trim 後為空時回傳「—」空狀態，不杜撰來源名稱
     var orderSourceDisplayText: String {
         let trimmed = order.orderSource.trimmingCharacters(in: .whitespacesAndNewlines)
         return trimmed.isEmpty ? "—" : trimmed
     }
 
-    /// 商品類別顯示文字：以「、」串接全部非空白類別；無有效類別回傳「—」空狀態。
+    /// 商品類別顯示文字：以「、」串接全部非空白類別；無有效類別回傳「—」空狀態
     var categoriesDisplayText: String {
         let names = order.categories
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -735,7 +735,7 @@ private extension OrderDetailView {
         return names.isEmpty ? "—" : names.joined(separator: "、")
     }
 
-    /// 開團顯示文字：以「、」串接全部非空白開團；未歸團回傳「未歸團」。
+    /// 開團顯示文字：以「、」串接全部非空白開團；未歸團回傳「未歸團」
     var campaignsDisplayText: String {
         let names = order.campaignNames
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -743,27 +743,27 @@ private extension OrderDetailView {
         return names.isEmpty ? "未歸團" : names.joined(separator: "、")
     }
 
-    /// 取得跟隨使用者手機偏好語言的幣別顯示文字，例如 `TWD (新台幣)`。
+    /// 取得跟隨使用者手機偏好語言的幣別顯示文字，例如 `TWD (新台幣)`
     ///
-    /// 透過 ``Locale/preferredLanguages`` 取得系統偏好 (不受 App `CFBundleDevelopmentRegion` 與已掛載 localizations 限制)，再用 `localizedString(forCurrencyCode:)` 取出在地化名稱；查不到時退化為 raw code。
-    /// - Parameter currency: 訂單幣別。
-    /// - Returns: 顯示字串。
+    /// 透過 ``Locale/preferredLanguages`` 取得系統偏好 (不受 App `CFBundleDevelopmentRegion` 與已掛載 localizations 限制)，再用 `localizedString(forCurrencyCode:)` 取出在地化名稱；查不到時退化為 raw code
+    /// - Parameter currency: 訂單幣別
+    /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
         let locale = Locale.preferred()
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
         return name.isEmpty ? currency.rawValue : "\(currency.rawValue) (\(name))"
     }
 
-    /// 回傳成本拆解使用的資料。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 成本拆解清單。
+    /// 回傳成本拆解使用的資料
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 成本拆解清單
     func costComponents(palette: BLPalette) -> [OrderCostComponent] {
         // 一般訂單運費由客人支付、不計入 ``OrderSummary/totalCost``，成本拆解只呈現商品金額與手續費；
-        // 貨到付款的收款金額已含預估運費，故三種運費計入總成本，並比照編輯表單以「國內 / 國際 / 外國國內」原始類別分別列出。
+        // 貨到付款的收款金額已含預估運費，故三種運費計入總成本，並比照編輯表單以「國內 / 國際 / 外國國內」原始類別分別列出
         // 手續費進一步拆成刷卡 / 平台 / 金流三項分別列出，比統稱「手續費」更直覺；
-        // 商品金額、三項手續費與 (貨到付款) 三種運費加總才會等於 donut/bar 中央顯示的總成本。
+        // 商品金額、三項手續費與 (貨到付款) 三種運費加總才會等於 donut/bar 中央顯示的總成本
         let summary = order.summary
-        // 三種運費僅在貨到付款時計入成本；非貨到付款一律以 0 帶入，由下方 filter 濾除。
+        // 三種運費僅在貨到付款時計入成本；非貨到付款一律以 0 帶入，由下方 filter 濾除
         let codDomesticShipping = order.isCashOnDelivery ? order.domesticShipping : 0
         let codInternationalShipping = order.isCashOnDelivery ? order.internationalShipping : 0
         let codForeignDomesticShipping = order.isCashOnDelivery ? order.foreignDomesticShipping : 0
@@ -807,11 +807,11 @@ private extension OrderDetailView {
             .filter { $0.value > 0 }
     }
 
-    /// 將 KPI delta 的方向轉換為色彩。
+    /// 將 KPI delta 的方向轉換為色彩
     /// - Parameters:
-    ///   - up: 是否為正向變化。`nil` 視為中性。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 對應 delta 文字色。
+    ///   - up: 是否為正向變化。`nil` 視為中性
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 對應 delta 文字色
     func deltaColor(_ up: Bool?, palette: BLPalette) -> Color {
         switch up {
         case .some(true):

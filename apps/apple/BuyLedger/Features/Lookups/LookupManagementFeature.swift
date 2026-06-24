@@ -8,105 +8,105 @@
 import ComposableArchitecture
 import Foundation
 
-/// 商品類別 / 付款方式主檔的獨立管理功能。
+/// 商品類別 / 付款方式主檔的獨立管理功能
 ///
-/// 以 ``LookupKind`` 切換要操作的 repository 與顯示文案，使同一份 reducer/view 可同時服務多種主檔。付款方式主檔額外維護 ``State/paymentMethodIsCardless``、``State/paymentMethodIsBankTransfer`` 與 ``State/paymentMethodIsCashOnDelivery`` 三個對應表，供 view 端在 List 中顯示「無卡」「銀行匯款」「貨到付款」標籤；旗標的設定發生在使用者新增或編輯付款方式的當下，不再於 List row 提供切換 toggle，以避免 UX 上不易理解。
+/// 以 ``LookupKind`` 切換要操作的 repository 與顯示文案，使同一份 reducer/view 可同時服務多種主檔。付款方式主檔額外維護 ``State/paymentMethodIsCardless``、``State/paymentMethodIsBankTransfer`` 與 ``State/paymentMethodIsCashOnDelivery`` 三個對應表，供 view 端在 List 中顯示「無卡」「銀行匯款」「貨到付款」標籤；旗標的設定發生在使用者新增或編輯付款方式的當下，不再於 List row 提供切換 toggle，以避免 UX 上不易理解
 @Reducer
 struct LookupManagementFeature {
 
     // MARK: - State
 
-    /// 主檔管理畫面狀態。
+    /// 主檔管理畫面狀態
     @ObservableState
     struct State: Equatable {
 
-        /// 此狀態管理的主檔型別。
+        /// 此狀態管理的主檔型別
         let kind: LookupKind
 
-        /// 目前的主檔項目 (已排序)。
+        /// 目前的主檔項目 (已排序)
         var items: [String] = []
 
-        /// 付款方式主檔的 `isCardless` 對應表；只有 `kind == .paymentMethod` 時有意義。
+        /// 付款方式主檔的 `isCardless` 對應表；只有 `kind == .paymentMethod` 時有意義
         ///
-        /// 以名稱為 key 的 dictionary，缺值視為 `false`。View 對 paymentMethod kind 會在 row 上顯示「無卡」標籤，但不再提供切換 toggle；要更新此旗標只能透過刪除後重新新增。
+        /// 以名稱為 key 的 dictionary，缺值視為 `false`。View 對 paymentMethod kind 會在 row 上顯示「無卡」標籤，但不再提供切換 toggle；要更新此旗標只能透過刪除後重新新增
         var paymentMethodIsCardless: [String: Bool] = [:]
 
-        /// 付款方式主檔的 `isBankTransfer` 對應表；只有 `kind == .paymentMethod` 時有意義。
+        /// 付款方式主檔的 `isBankTransfer` 對應表；只有 `kind == .paymentMethod` 時有意義
         ///
-        /// 以名稱為 key 的 dictionary，缺值視為 `false`。View 對 paymentMethod kind 會在 row 上顯示「銀行匯款」標籤；設定方式與 ``paymentMethodIsCardless`` 相同 (新增當下決定)。
+        /// 以名稱為 key 的 dictionary，缺值視為 `false`。View 對 paymentMethod kind 會在 row 上顯示「銀行匯款」標籤；設定方式與 ``paymentMethodIsCardless`` 相同 (新增當下決定)
         var paymentMethodIsBankTransfer: [String: Bool] = [:]
 
-        /// 付款方式主檔的 `isCashOnDelivery` 對應表；只有 `kind == .paymentMethod` 時有意義。
+        /// 付款方式主檔的 `isCashOnDelivery` 對應表；只有 `kind == .paymentMethod` 時有意義
         ///
-        /// 以名稱為 key 的 dictionary，缺值視為 `false`。View 對 paymentMethod kind 會在 row 上顯示「貨到付款」標籤；設定方式與 ``paymentMethodIsCardless`` 相同 (新增當下決定)。
+        /// 以名稱為 key 的 dictionary，缺值視為 `false`。View 對 paymentMethod kind 會在 row 上顯示「貨到付款」標籤；設定方式與 ``paymentMethodIsCardless`` 相同 (新增當下決定)
         var paymentMethodIsCashOnDelivery: [String: Bool] = [:]
 
-        /// 載入失敗訊息。
+        /// 載入失敗訊息
         var errorMessage: String?
 
-        /// 是否已完成首次載入。
+        /// 是否已完成首次載入
         var hasLoaded = false
     }
 
     // MARK: - Action
 
-    /// 主檔管理可處理的事件。
+    /// 主檔管理可處理的事件
     @CasePathable
     enum Action: Equatable {
 
-        /// 畫面出現時觸發載入。
+        /// 畫面出現時觸發載入
         case task
 
-        /// 訂單來源主檔載入成功。
+        /// 訂單來源主檔載入成功
         case orderSourceItemsLoaded([String])
 
-        /// 商品類別主檔載入成功。
+        /// 商品類別主檔載入成功
         case categoryItemsLoaded([String])
 
-        /// 付款方式主檔載入成功 (含 `isCardless` 與 `isBankTransfer`)。
+        /// 付款方式主檔載入成功 (含 `isCardless` 與 `isBankTransfer`)
         case paymentMethodInfosLoaded([PaymentMethodInfo])
 
-        /// 對帳狀態主檔載入成功。
+        /// 對帳狀態主檔載入成功
         case verificationStatusItemsLoaded([String])
 
-        /// 主檔載入失敗。
+        /// 主檔載入失敗
         case loadFailed(String)
 
-        /// 使用者透過「新增」流程確認新增一筆主檔項目；對付款方式以外的 kind，`isCardless`、`isBankTransfer` 與 `isCashOnDelivery` 永遠為 `false` 並被忽略。
+        /// 使用者透過「新增」流程確認新增一筆主檔項目；對付款方式以外的 kind，`isCardless`、`isBankTransfer` 與 `isCashOnDelivery` 永遠為 `false` 並被忽略
         case addConfirmed(name: String, isCardless: Bool, isBankTransfer: Bool, isCashOnDelivery: Bool)
 
-        /// 使用者要求刪除指定名稱的主檔項目。
+        /// 使用者要求刪除指定名稱的主檔項目
         case deleteRequested(String)
 
-        /// 使用者要求把指定名稱改成新名稱；同時 cascade 到所有引用該名稱的訂單。
+        /// 使用者要求把指定名稱改成新名稱；同時 cascade 到所有引用該名稱的訂單
         case renameRequested(from: String, to: String)
 
-        /// 使用者透過「編輯」sheet 確認修改一筆付款方式 (名稱 + 旗標)；僅 `kind == .paymentMethod` 使用。
+        /// 使用者透過「編輯」sheet 確認修改一筆付款方式 (名稱 + 旗標)；僅 `kind == .paymentMethod` 使用
         ///
-        /// 與 ``renameRequested`` + ``addConfirmed`` 分開送的差別：編輯為「權威設定」，名稱變更後會以使用者實際勾選的旗標覆寫，允許取消勾選 (`renameRequested` 的合併規則會把任一邊為 `true` 的旗標保留，無法取消)。
+        /// 與 ``renameRequested`` + ``addConfirmed`` 分開送的差別：編輯為「權威設定」，名稱變更後會以使用者實際勾選的旗標覆寫，允許取消勾選 (`renameRequested` 的合併規則會把任一邊為 `true` 的旗標保留，無法取消)
         case editConfirmed(originalName: String, name: String, isCardless: Bool, isBankTransfer: Bool, isCashOnDelivery: Bool)
     }
 
     // MARK: - Dependency Properties
 
-    /// 訂單來源資料來源。
+    /// 訂單來源資料來源
     @Dependency(OrderSourceRepository.self) private var orderSourceRepository
 
-    /// 商品類別資料來源。
+    /// 商品類別資料來源
     @Dependency(CategoryRepository.self) private var categoryRepository
 
-    /// 付款方式資料來源。
+    /// 付款方式資料來源
     @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
 
-    /// 對帳狀態資料來源。
+    /// 對帳狀態資料來源
     @Dependency(VerificationStatusRepository.self) private var verificationStatusRepository
 
-    /// 訂單資料來源；rename 時把 cascade 寫入訂單表。
+    /// 訂單資料來源；rename 時把 cascade 寫入訂單表
     @Dependency(OrderRepository.self) private var orderRepository
 
     // MARK: - Reducer Body
 
-    /// 主檔管理 reducer。
+    /// 主檔管理 reducer
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
@@ -167,7 +167,7 @@ struct LookupManagementFeature {
                 }
 
                 if state.kind == .paymentMethod {
-                    // 重新觸發同名新增等同於「重新套用 isCardless / isBankTransfer / isCashOnDelivery」，方便使用者上次忘了勾選時更正。
+                    // 重新觸發同名新增等同於「重新套用 isCardless / isBankTransfer / isCashOnDelivery」，方便使用者上次忘了勾選時更正
                     state.paymentMethodIsCardless[trimmed] = isCardless
                     state.paymentMethodIsBankTransfer[trimmed] = isBankTransfer
                     state.paymentMethodIsCashOnDelivery[trimmed] = isCashOnDelivery
@@ -224,7 +224,7 @@ struct LookupManagementFeature {
                     return .none
                 }
 
-                // 本地 state 同步更新：把舊名稱替換、去重後排序。
+                // 本地 state 同步更新：把舊名稱替換、去重後排序
                 var renamed = state.items.map { $0 == trimmedFrom ? trimmedTo : $0 }
                 renamed = Array(Set(renamed))
                 state.items = renamed.sorted {
@@ -233,15 +233,15 @@ struct LookupManagementFeature {
 
                 if state.kind == .paymentMethod {
                     if let oldFlag = state.paymentMethodIsCardless.removeValue(forKey: trimmedFrom) {
-                        // 合併：任一邊曾標記為無卡就維持無卡。
+                        // 合併：任一邊曾標記為無卡就維持無卡
                         state.paymentMethodIsCardless[trimmedTo] = oldFlag || (state.paymentMethodIsCardless[trimmedTo] ?? false)
                     }
                     if let oldFlag = state.paymentMethodIsBankTransfer.removeValue(forKey: trimmedFrom) {
-                        // 合併：任一邊曾標記為銀行匯款就維持銀行匯款。
+                        // 合併：任一邊曾標記為銀行匯款就維持銀行匯款
                         state.paymentMethodIsBankTransfer[trimmedTo] = oldFlag || (state.paymentMethodIsBankTransfer[trimmedTo] ?? false)
                     }
                     if let oldFlag = state.paymentMethodIsCashOnDelivery.removeValue(forKey: trimmedFrom) {
-                        // 合併：任一邊曾標記為貨到付款就維持貨到付款。
+                        // 合併：任一邊曾標記為貨到付款就維持貨到付款
                         state.paymentMethodIsCashOnDelivery[trimmedTo] = oldFlag || (state.paymentMethodIsCashOnDelivery[trimmedTo] ?? false)
                     }
                 }
@@ -270,7 +270,7 @@ struct LookupManagementFeature {
                 }
 
             case let .editConfirmed(originalName, rawName, isCardless, isBankTransfer, isCashOnDelivery):
-                // 僅付款方式使用編輯流程；其他 kind 不會送此 action。
+                // 僅付款方式使用編輯流程；其他 kind 不會送此 action
                 guard state.kind == .paymentMethod else { return .none }
                 let trimmedOriginal = originalName.trimmingCharacters(in: .whitespacesAndNewlines)
                 let trimmedNew = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -278,7 +278,7 @@ struct LookupManagementFeature {
 
                 let didRename = trimmedNew != trimmedOriginal
                 if didRename {
-                    // 名稱變更：把舊名稱替換、去重後排序，並清掉舊名稱的旗標對應。
+                    // 名稱變更：把舊名稱替換、去重後排序，並清掉舊名稱的旗標對應
                     var renamed = state.items.map { $0 == trimmedOriginal ? trimmedNew : $0 }
                     renamed = Array(Set(renamed))
                     state.items = renamed.sorted {
@@ -294,7 +294,7 @@ struct LookupManagementFeature {
                         $0.localizedStandardCompare($1) == .orderedAscending
                     }
                 }
-                // 編輯為權威設定：直接以使用者實際勾選覆寫旗標 (允許取消勾選)。
+                // 編輯為權威設定：直接以使用者實際勾選覆寫旗標 (允許取消勾選)
                 state.paymentMethodIsCardless[trimmedNew] = isCardless
                 state.paymentMethodIsBankTransfer[trimmedNew] = isBankTransfer
                 state.paymentMethodIsCashOnDelivery[trimmedNew] = isCashOnDelivery
@@ -306,7 +306,7 @@ struct LookupManagementFeature {
                         try? await paymentMethodRepository.renamePaymentMethod(trimmedOriginal, trimmedNew)
                         try? await orderRepository.renameOrderPaymentMethod(trimmedOriginal, trimmedNew)
                     }
-                    // rename 會合併保留舊旗標；最後以使用者選擇權威覆寫，確保可取消勾選。必須在 rename 之後執行。
+                    // rename 會合併保留舊旗標；最後以使用者選擇權威覆寫，確保可取消勾選。必須在 rename 之後執行
                     try? await paymentMethodRepository.addPaymentMethod(trimmedNew, isCardless, isBankTransfer, isCashOnDelivery)
                 }
             }
@@ -315,9 +315,9 @@ struct LookupManagementFeature {
 
     // MARK: - Private Method
 
-    /// 依 ``LookupKind`` 選擇對應 repository 觸發 fetch。
-    /// - Parameter kind: 要載入的主檔型別。
-    /// - Returns: 對應 effect。
+    /// 依 ``LookupKind`` 選擇對應 repository 觸發 fetch
+    /// - Parameter kind: 要載入的主檔型別
+    /// - Returns: 對應 effect
     private func load(kind: LookupKind) -> Effect<Action> {
         let orderSourceRepository = orderSourceRepository
         let categoryRepository = categoryRepository

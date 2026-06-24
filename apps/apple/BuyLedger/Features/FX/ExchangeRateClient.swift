@@ -8,17 +8,17 @@
 import ComposableArchitecture
 import Foundation
 
-/// 高階 client：對 BuyLedger 隱藏 ExchangeRate-API 的 URL 細節。
+/// 高階 client：對 BuyLedger 隱藏 ExchangeRate-API 的 URL 細節
 ///
-/// 內部組合 ``HTTPClient`` 與 ``AppConfiguration``。失敗時會 throw ``APIError``，由 Reducer 決定 UI 呈現。
+/// 內部組合 ``HTTPClient`` 與 ``AppConfiguration``。失敗時會 throw ``APIError``，由 Reducer 決定 UI 呈現
 struct ExchangeRateClient: Sendable {
 
     // MARK: - Dependency Properties
 
-    /// 抓取指定基準幣別的最新匯率快照。
+    /// 抓取指定基準幣別的最新匯率快照
     var fetchLatest: @Sendable (_ base: CurrencyCode) async throws -> FxRateSnapshot
 
-    /// 抓取 ExchangeRate-API 目前支援的所有 ISO 4217 幣別代碼。
+    /// 抓取 ExchangeRate-API 目前支援的所有 ISO 4217 幣別代碼
     var fetchSupportedCodes: @Sendable () async throws -> [String]
 }
 
@@ -26,7 +26,7 @@ extension ExchangeRateClient: DependencyKey {
 
     // MARK: - Dependency Values
 
-    /// App 執行時透過 ``HTTPClient`` 與 ``AppConfiguration`` 真實打 API。
+    /// App 執行時透過 ``HTTPClient`` 與 ``AppConfiguration`` 真實打 API
     nonisolated static let liveValue: ExchangeRateClient = ExchangeRateClient(
         fetchLatest: { base in
             @Dependency(\.httpClient) var httpClient
@@ -108,7 +108,7 @@ extension ExchangeRateClient: DependencyKey {
         }
     )
 
-    /// 測試預設拋出 transport 錯誤；具體測試以 `withDependencies` 注入 stub。
+    /// 測試預設拋出 transport 錯誤；具體測試以 `withDependencies` 注入 stub
     nonisolated static let testValue: ExchangeRateClient = ExchangeRateClient(
         fetchLatest: { _ in
             throw APIError.transport(message: "ExchangeRateClient.testValue.fetchLatest 被呼叫；請於測試中注入。")
@@ -118,7 +118,7 @@ extension ExchangeRateClient: DependencyKey {
         }
     )
 
-    /// SwiftUI Preview 直接回 fallback 快照與 default 幣別 code 集。
+    /// SwiftUI Preview 直接回 fallback 快照與 default 幣別 code 集
     nonisolated static let previewValue: ExchangeRateClient = ExchangeRateClient(
         fetchLatest: { _ in FxRateSnapshot.fallback },
         fetchSupportedCodes: { CurrencyCode.defaults.map(\.rawValue) }
@@ -129,7 +129,7 @@ extension DependencyValues {
 
     // MARK: - Dependency Values
 
-    /// 匯率 API client。
+    /// 匯率 API client
     var exchangeRateClient: ExchangeRateClient {
         get { self[ExchangeRateClient.self] }
         set { self[ExchangeRateClient.self] = newValue }
@@ -138,31 +138,31 @@ extension DependencyValues {
 
 // MARK: - Response DTO
 
-/// `https://v6.exchangerate-api.com/v6/{KEY}/latest/{BASE}` 的回應 schema。
+/// `https://v6.exchangerate-api.com/v6/{KEY}/latest/{BASE}` 的回應 schema
 ///
-/// 即使 HTTP 200，`result` 也可能是 `"error"`，此時 `error_type` 會帶上具體類別。`Decodable` 全欄位都標 optional 以容錯不同情境。
+/// 即使 HTTP 200，`result` 也可能是 `"error"`，此時 `error_type` 會帶上具體類別。`Decodable` 全欄位都標 optional 以容錯不同情境
 struct ExchangeRateLatestResponse: Decodable, Sendable {
 
     // MARK: - Data Properties
 
-    /// API 回應狀態 ("success" / "error")。
+    /// API 回應狀態 ("success" / "error")
     let result: String
 
-    /// 錯誤類別 (僅 result == "error" 時才存在)。
+    /// 錯誤類別 (僅 result == "error" 時才存在)
     let errorType: String?
 
-    /// 報價時間 UNIX timestamp。
+    /// 報價時間 UNIX timestamp
     let timeLastUpdateUnix: TimeInterval?
 
-    /// 基準幣別。
+    /// 基準幣別
     let baseCode: String?
 
-    /// 各目標幣別的匯率。
+    /// 各目標幣別的匯率
     let conversionRates: [String: Double]?
 
     // MARK: - CodingKeys
 
-    /// 把 API 的 snake_case 欄位映射成 camelCase 屬性。
+    /// 把 API 的 snake_case 欄位映射成 camelCase 屬性
     enum CodingKeys: String, CodingKey {
 
         case result
@@ -178,11 +178,11 @@ struct ExchangeRateLatestResponse: Decodable, Sendable {
 
     // MARK: - View Method
 
-    /// 把 DTO 轉成領域層 ``FxRateSnapshot``。
+    /// 把 DTO 轉成領域層 ``FxRateSnapshot``
     ///
-    /// `CurrencyCode` 改成 struct wrapper 後不再 filter 未知幣別；API 回傳的所有 ISO 4217 code 都被保留進 snapshot，view 端可依當下 cache 決定顯示哪些。
-    /// - Parameter base: 請求時使用的基準幣別。
-    /// - Returns: 對應的快照。
+    /// `CurrencyCode` 改成 struct wrapper 後不再 filter 未知幣別；API 回傳的所有 ISO 4217 code 都被保留進 snapshot，view 端可依當下 cache 決定顯示哪些
+    /// - Parameter base: 請求時使用的基準幣別
+    /// - Returns: 對應的快照
     func toSnapshot(base: CurrencyCode) -> FxRateSnapshot {
         let rawRates = conversionRates ?? [:]
         var converted: [CurrencyCode: Decimal] = [:]
@@ -201,25 +201,25 @@ struct ExchangeRateLatestResponse: Decodable, Sendable {
     }
 }
 
-/// `https://v6.exchangerate-api.com/v6/{KEY}/codes` 的回應 schema。
+/// `https://v6.exchangerate-api.com/v6/{KEY}/codes` 的回應 schema
 ///
-/// `supported_codes` 是 `[[ "USD", "United States Dollar" ], ...]`；本 App 只使用 ISO 4217 code，name 一律用 `Locale.localizedString(forCurrencyCode:)` 在 view 端計算以跟隨手機 locale。
+/// `supported_codes` 是 `[[ "USD", "United States Dollar" ], ...]`；本 App 只使用 ISO 4217 code，name 一律用 `Locale.localizedString(forCurrencyCode:)` 在 view 端計算以跟隨手機 locale
 struct ExchangeRateCodesResponse: Decodable, Sendable {
 
     // MARK: - Data Properties
 
-    /// API 回應狀態 ("success" / "error")。
+    /// API 回應狀態 ("success" / "error")
     let result: String
 
-    /// 錯誤類別 (僅 result == "error" 時才存在)。
+    /// 錯誤類別 (僅 result == "error" 時才存在)
     let errorType: String?
 
-    /// `[[code, name], …]` 形式的支援幣別清單。
+    /// `[[code, name], …]` 形式的支援幣別清單
     let supportedCodes: [[String]]?
 
     // MARK: - CodingKeys
 
-    /// 把 API 的 snake_case 欄位映射成 camelCase 屬性。
+    /// 把 API 的 snake_case 欄位映射成 camelCase 屬性
     enum CodingKeys: String, CodingKey {
 
         case result

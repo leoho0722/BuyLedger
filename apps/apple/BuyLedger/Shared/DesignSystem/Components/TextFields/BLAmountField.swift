@@ -7,23 +7,23 @@
 
 import SwiftUI
 
-/// 強調金額輸入情境的標籤式欄位。
+/// 強調金額輸入情境的標籤式欄位
 struct BLAmountField: View {
 
     // MARK: - View Properties
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 欄位上方顯示的標題。
+    /// 欄位上方顯示的標題
     let title: String
 
-    /// 金額文字的雙向繫結。
+    /// 金額文字的雙向繫結
     @Binding var amount: String
 
     // MARK: - View Body
 
-    /// 金額輸入欄的畫面內容。
+    /// 金額輸入欄的畫面內容
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
 

@@ -10,7 +10,7 @@ const SOLID_BG: Record<Tone, string> = {
   informative: 'bg-bl-indigo',
 };
 
-// 計數徽章：實色底、白字 (側欄/分頁通知計數)。
+// 計數徽章：實色底、白字 (側欄/分頁通知計數)
 export function BLCountBadge({ count, tone = 'destructive' }: { count: number; tone?: Tone }) {
   return (
     <span
@@ -24,7 +24,7 @@ export function BLCountBadge({ count, tone = 'destructive' }: { count: number; t
   );
 }
 
-// 標籤徽章：14% 淡色底、tone 前景字 (如「無卡」「銀行匯款」)。
+// 標籤徽章：14% 淡色底、tone 前景字 (如「無卡」「銀行匯款」)
 export function BLLabelBadge({ label, tone = 'neutral' }: { label: string; tone?: Tone }) {
   const c = TONE_CLASSES[tone];
   return (

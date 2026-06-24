@@ -1,19 +1,19 @@
-// 開發/示範用種子資料。可重複執行 (先清空再寫入)。
-// 注意：FX 匯率快照刻意不種 (無 API key 時應顯示空狀態，不偽造數字)。
+// 開發/示範用種子資料。可重複執行 (先清空再寫入)
+// 注意：FX 匯率快照刻意不種 (無 API key 時應顯示空狀態，不偽造數字)
 import { randomUUID } from 'node:crypto';
 import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 // dev 種子資料的擁有者 uid (對齊 spec「Seeded development data carries explicit ownership」)；
-// 可用 SEED_OWNER_UID 覆寫成實際 Firebase uid 以便用該帳號登入看到種子資料。
+// 可用 SEED_OWNER_UID 覆寫成實際 Firebase uid 以便用該帳號登入看到種子資料
 const SEED_OWNER = process.env.SEED_OWNER_UID ?? 'dev-user';
 
 const base = process.env.BUYLEDGER_FIXED_NOW
   ? new Date(process.env.BUYLEDGER_FIXED_NOW)
   : new Date();
 
-// n 天前 (負值為未來)。
+// n 天前 (負值為未來)
 function daysAgo(n: number): Date {
   return new Date(base.getTime() - n * 86_400_000);
 }
@@ -169,7 +169,7 @@ const orders: OrderSeed[] = [
     itemCost: '2200', chargedAmount: '3800', orderSource: '蝦皮', categories: ['食品'],
     paymentMethod: '信用卡', campaignNames: ['六月零食團'], paymentReceiptStatus: 'received',
   },
-  // 合併示範：兩筆來源訂單 (已合併) + 一筆合併結果。
+  // 合併示範：兩筆來源訂單 (已合併) + 一筆合併結果
   {
     id: 'BL-0013', customerName: '黃靜怡', customerTier: 'new', status: 'merged', currency: 'JPY',
     date: daysAgo(7), items: [{ name: 'Disney 玩偶', quantity: 1, unitPrice: '3200' }],
@@ -198,7 +198,7 @@ const campaigns = [
 ];
 
 async function main(): Promise<void> {
-  // 已有資料則略過 (避免容器每次啟動覆蓋使用者資料)；SEED_FORCE=true 可強制重置。
+  // 已有資料則略過 (避免容器每次啟動覆蓋使用者資料)；SEED_FORCE=true 可強制重置
   if (process.env.SEED_FORCE !== 'true') {
     const existing = await prisma.order.count();
     if (existing > 0) {
@@ -208,7 +208,7 @@ async function main(): Promise<void> {
     }
   }
 
-  // 清空後重新寫入。
+  // 清空後重新寫入
   await prisma.order.deleteMany();
   await prisma.campaign.deleteMany();
   await prisma.category.deleteMany();

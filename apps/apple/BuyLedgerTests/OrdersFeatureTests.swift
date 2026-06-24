@@ -23,7 +23,7 @@ struct OrdersFeatureTests {
             $0[OrderRepository.self].fetchOrders = { LedgerOrder.sampleOrders }
         }
         // `.task` 還會並行送出 `categoryMasterLoaded` 與 `paymentMethodMasterLoaded`；本測試只驗證訂單載入流程，
-        // 主檔載入由其他測試覆蓋，這裡關掉 exhaustivity 避免重複斷言所有平行 effect。
+        // 主檔載入由其他測試覆蓋，這裡關掉 exhaustivity 避免重複斷言所有平行 effect
         store.exhaustivity = .off
 
         await store.send(.task) {
@@ -54,7 +54,7 @@ struct OrdersFeatureTests {
             $0.selectedOrderID = "BL-2604-017"
         }
 
-        // 樣本中 "Mika 周" 有兩筆訂單 (BL-2604-017 與合併樣本 BL-2604-011)，依日期由新到舊排序。
+        // 樣本中 "Mika 周" 有兩筆訂單 (BL-2604-017 與合併樣本 BL-2604-011)，依日期由新到舊排序
         #expect(store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar).map(\.id) == ["BL-2604-017", "BL-2604-011"])
 
         await store.send(.searchTextChanged("Aesop")) {
@@ -82,15 +82,15 @@ struct OrdersFeatureTests {
 
         let filtered = store.state.filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
         #expect(filtered.allSatisfy { $0.status == .shipping })
-        // 樣本中集運中的訂單有兩筆 (BL-2604-018 與合併樣本 BL-2604-011)。
+        // 樣本中集運中的訂單有兩筆 (BL-2604-018 與合併樣本 BL-2604-011)
         #expect(filtered.map(\.id) == ["BL-2604-018", "BL-2604-011"])
     }
 
     @Test func editFlowPersistsCustomerNameAfterSave() async {
         // 直接以草稿狀態預塞 `editOrder` 來測試 `applyEditDraft` 的寫回邏輯，
-        // 因為使用 `BindingAction.set` 會踩到 Swift 6 對 `WritableKeyPath` 的 `Sendable` 限制。
+        // 因為使用 `BindingAction.set` 會踩到 Swift 6 對 `WritableKeyPath` 的 `Sendable` 限制
         // 此路徑跳過 `@Presents` 啟動 lifecycle，所以 `await dismiss()` 不會清掉 `state.editOrder`，
-        // 因此本測試只驗證 orders 寫回，不驗證 sheet dismiss。
+        // 因此本測試只驗證 orders 寫回，不驗證 sheet dismiss
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
         let newName = "重新命名客戶"
@@ -115,7 +115,7 @@ struct OrdersFeatureTests {
     }
 
     @Test func editFlowPersistsNotes() async {
-        // 驗證備註欄位經 save 後寫回 orders，且首尾空白會被 trim。
+        // 驗證備註欄位經 save 後寫回 orders，且首尾空白會被 trim
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
@@ -139,7 +139,7 @@ struct OrdersFeatureTests {
     }
 
     @Test func editFlowPersistsPhotosAfterSave() async {
-        // 驗證照片草稿經 save 後寫回 orders (更新分支)。
+        // 驗證照片草稿經 save 後寫回 orders (更新分支)
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
         let photos = [Data([0x01]), Data([0x02])]
@@ -164,7 +164,7 @@ struct OrdersFeatureTests {
     }
 
     @Test func editFlowPersistsPhotosForNewOrder() async {
-        // 驗證新增訂單分支 (original == nil) 也會把照片草稿寫進新訂單。
+        // 驗證新增訂單分支 (original == nil) 也會把照片草稿寫進新訂單
         let photos = [Data([0xA1])]
 
         var draft = OrderEditFeature.State()
@@ -189,7 +189,7 @@ struct OrdersFeatureTests {
     }
 
     @Test func editFlowKeepsVerificationStatusForBankTransfer() async {
-        // 付款方式屬於銀行匯款 → 對帳狀態有意義，save 後應保留。
+        // 付款方式屬於銀行匯款 → 對帳狀態有意義，save 後應保留
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
@@ -219,11 +219,11 @@ struct OrdersFeatureTests {
     }
 
     @Test func editFlowClearsVerificationStatusForNonReconcilingMethod() async {
-        // 付款方式非無卡／非銀行匯款 (信用卡) → 對帳狀態無意義，save 後應清成空字串，避免殘留。
+        // 付款方式非無卡／非銀行匯款 (信用卡) → 對帳狀態無意義，save 後應清成空字串，避免殘留
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
-        // 原訂單付款方式為「信用卡」(預設無旗標)；殘留一個對帳狀態草稿。
+        // 原訂單付款方式為「信用卡」(預設無旗標)；殘留一個對帳狀態草稿
         var draft = OrderEditFeature.State(original: original)
         draft.draftVerificationStatus = "待對帳"
 
@@ -267,7 +267,7 @@ struct OrdersFeatureTests {
     }
 
     @Test func cancellingEditDoesNotMutateOrders() async {
-        // 同上：以預塞 state 驗證 cancel 不會觸發 `applyEditDraft`，因此不檢查 `editOrder == nil`。
+        // 同上：以預塞 state 驗證 cancel 不會觸發 `applyEditDraft`，因此不檢查 `editOrder == nil`
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
@@ -291,9 +291,9 @@ struct OrdersFeatureTests {
     }
 
     @Test func editOrderTappedSetsEditState() async {
-        // 驗證 .editOrderTapped 走 @Presents 把 editOrder 設成對應草稿。
+        // 驗證 .editOrderTapped 走 @Presents 把 editOrder 設成對應草稿
         // dismiss lifecycle 的 sheet 關閉行為由實機 UI 與 OrderEditFeature 標準
-        // BindingReducer + DismissEffect 保證，這裡不重複驗證。
+        // BindingReducer + DismissEffect 保證，這裡不重複驗證
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
 
@@ -471,7 +471,7 @@ struct OrdersFeatureTests {
         let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
 
         // 直接把 fixedDate 帶進 `currentDate`，避免 `OrderEditFeature.State()` 內部 fallback 到 `Date()` 造成
-        // 新訂單 `date` 落在測試實際執行的當下，與下方斷言期待的 fixedDate 不符。
+        // 新訂單 `date` 落在測試實際執行的當下，與下方斷言期待的 fixedDate 不符
         var draft = OrderEditFeature.State(currentDate: fixedDate)
         draft.draftCustomerName = "新客戶"
         draft.draftCategories = ["美妝"]
@@ -509,7 +509,7 @@ struct OrdersFeatureTests {
     }
 
     @Test func saveNormalizesCategoryAndCampaignArrays() async {
-        // 儲存時逐元素 trim、去除空字串與重複 (保序)。
+        // 儲存時逐元素 trim、去除空字串與重複 (保序)
         var draft = OrderEditFeature.State(currentDate: TestDependencies.fixedNow)
         draft.draftCustomerName = "新客戶"
         draft.draftCategories = [" 美妝 ", "美妝", "", "服飾", "   "]
@@ -553,7 +553,7 @@ struct OrdersFeatureTests {
 
         await store.send(.mergeOrderTapped(primaryID))
 
-        // 主訂單為林書宇 (KRW)：候選僅同幣別、同客戶且非已合併/已取消的 BL-2604-012。
+        // 主訂單為林書宇 (KRW)：候選僅同幣別、同客戶且非已合併/已取消的 BL-2604-012
         #expect(store.state.orderMerge?.primary.id == primaryID)
         #expect(store.state.orderMerge?.candidates.map(\.id) == ["BL-2604-012"])
     }
@@ -591,27 +591,27 @@ struct OrdersFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            // 測試 target 未連結 swift-clocks 的 ImmediateClock，改注入真實 clock；延遲僅 0.5 秒，配合下方 finish timeout。
+            // 測試 target 未連結 swift-clocks 的 ImmediateClock，改注入真實 clock；延遲僅 0.5 秒，配合下方 finish timeout
             $0.continuousClock = ContinuousClock()
         }
         store.exhaustivity = .off
 
         await store.send(.mergeOrderTapped(primaryID))
         await store.send(.orderMerge(.presented(.candidateTapped(secondaryID))))
-        // 依序收到：子 feature 的完成 delegate → 延遲一拍後的確認表單開啟。
+        // 依序收到：子 feature 的完成 delegate → 延遲一拍後的確認表單開啟
         await store.receive(\.orderMerge.presented.delegate)
         await store.receive(\.mergeConfirmationReady, timeout: .seconds(3))
 
-        // 合併 sheet 收合、確認表單以合併草稿預填 (全部欄位可編輯)。
+        // 合併 sheet 收合、確認表單以合併草稿預填 (全部欄位可編輯)
         #expect(store.state.orderMerge == nil)
 
         let edit = store.state.editOrder
         #expect(edit?.mergeSourceIDs == [primaryID, secondaryID])
-        // 客戶實付加總：11,800 + 5,680。
+        // 客戶實付加總：11,800 + 5,680
         #expect(edit?.draftChargedAmount == 17_480)
-        // 類別聯集：美妝 (主) + 服飾 (副)。
+        // 類別聯集：美妝 (主) + 服飾 (副)
         #expect(edit?.draftCategories == ["美妝", "服飾"])
-        // 訂購日期為合併當下。
+        // 訂購日期為合併當下
         #expect(edit?.draftDate == TestDependencies.fixedNow)
         #expect(edit?.isMergeContext == true)
     }
@@ -622,7 +622,7 @@ struct OrdersFeatureTests {
         let primaryID = "BL-2604-018"
         let secondaryID = "BL-2604-012"
 
-        // 預塞合併確認草稿 (帶 mergeSourceIDs)，直接驗證 saveTapped 的合併寫回路徑。
+        // 預塞合併確認草稿 (帶 mergeSourceIDs)，直接驗證 saveTapped 的合併寫回路徑
         var draft = OrderEditFeature.State(currentDate: TestDependencies.fixedNow)
         draft.draftCustomerName = "林書宇"
         draft.draftCategories = ["美妝", "服飾"]
@@ -644,13 +644,13 @@ struct OrdersFeatureTests {
         await store.send(.editOrder(.presented(.saveTapped)))
         await store.finish()
 
-        // 新訂單插入且記錄來源 id；兩筆來源訂單轉「已合併」。
+        // 新訂單插入且記錄來源 id；兩筆來源訂單轉「已合併」
         #expect(store.state.orders.count == originalCount + 1)
 
         let inserted = store.state.orders.first
         #expect(inserted?.mergedSourceIDs == [primaryID, secondaryID])
         #expect(inserted?.categories == ["美妝", "服飾"])
-        // 合併草稿沿用主訂單客戶的 initials 與 tier。
+        // 合併草稿沿用主訂單客戶的 initials 與 tier
         #expect(inserted?.customer.initials == "SY")
         #expect(inserted?.customer.tier == .vip)
 
@@ -679,7 +679,7 @@ struct OrdersFeatureTests {
         await store.send(.editOrder(.presented(.cancelTapped)))
         await store.finish()
 
-        // 取消不留任何變更：筆數與每筆內容皆不變。
+        // 取消不留任何變更：筆數與每筆內容皆不變
         #expect(store.state.orders == snapshot)
     }
 
@@ -863,7 +863,7 @@ struct OrdersFeatureTests {
     // MARK: - Multi-Value Filter (contains)
 
     @Test func categoryFilterMatchesAnyAssignedCategory() async {
-        // 多類別訂單：類別陣列「包含」所選類別即命中。
+        // 多類別訂單：類別陣列「包含」所選類別即命中
         var state = OrdersFeature.State()
         state.orders = [
             makeOrder(id: "O1", categories: ["beauty"], status: .purchased),
@@ -880,7 +880,7 @@ struct OrdersFeatureTests {
         }
         store.exhaustivity = .off
 
-        // 類別 beauty + 狀態已下單：spec 例「conjunction of filters with multi-category orders」。
+        // 類別 beauty + 狀態已下單：spec 例「conjunction of filters with multi-category orders」
         await store.send(.statusFilterSelected(.status(.purchased)))
         await store.send(.categoryFilterSelected("beauty"))
 
@@ -889,7 +889,7 @@ struct OrdersFeatureTests {
     }
 
     @Test func specificCampaignFilterMatchesAnyAssignedCampaign() async {
-        // spec 例「specific-campaign filter with multi-campaign orders」。
+        // spec 例「specific-campaign filter with multi-campaign orders」
         var state = OrdersFeature.State()
         state.orders = [
             makeOrder(id: "O1", categories: ["x"], campaignNames: ["May-JP"]),
@@ -913,7 +913,7 @@ struct OrdersFeatureTests {
     }
 
     @Test func campaignStatusFilterMatchesWhenAnyAssignedCampaignHasStatus() async {
-        // spec 例「campaign-status filter with multi-campaign orders」：跨團 (一進行中、一已收單) 的訂單兩種篩選都命中。
+        // spec 例「campaign-status filter with multi-campaign orders」：跨團 (一進行中、一已收單) 的訂單兩種篩選都命中
         var state = OrdersFeature.State()
         state.campaigns = [
             Campaign(
@@ -962,7 +962,7 @@ struct OrdersFeatureTests {
     // MARK: - Batch Status Tests
 
     @Test func selectionModeToggleEntersSelectsAndClearsOnExit() async {
-        // 對齊 spec「Orders list provides a multi-select mode」：進出多選、勾選切換、退出清空。
+        // 對齊 spec「Orders list provides a multi-select mode」：進出多選、勾選切換、退出清空
         let orders = [makeOrder(id: "O1", categories: ["beauty"], status: .shipping)]
         var state = OrdersFeature.State()
         state.orders = orders
@@ -981,7 +981,7 @@ struct OrdersFeatureTests {
     }
 
     @Test func selectAllSelectsFilteredThenClear() async {
-        // 對齊 spec「Orders list provides a multi-select mode」：全選目前篩選後清單、清除。
+        // 對齊 spec「Orders list provides a multi-select mode」：全選目前篩選後清單、清除
         let orders = [
             makeOrder(id: "O1", categories: ["beauty"], status: .shipping),
             makeOrder(id: "O2", categories: ["snacks"], status: .quoting),
@@ -1002,7 +1002,7 @@ struct OrdersFeatureTests {
 
     @Test func batchStatusChangedAppliesToSelectedSkipsAlreadyTargetAndExits() async {
         // 對齊 spec「Batch apply a single target status to selected orders」：
-        // O1/O3 為 shipping、O2 已是目標 arrived；批次套用 arrived 只重建並落盤 O1/O3，O2 略過，最後退出多選。
+        // O1/O3 為 shipping、O2 已是目標 arrived；批次套用 arrived 只重建並落盤 O1/O3，O2 略過，最後退出多選
         let orders = [
             makeOrder(id: "O1", categories: ["beauty"], status: .shipping),
             makeOrder(id: "O2", categories: ["beauty"], status: .arrived),
@@ -1029,12 +1029,12 @@ struct OrdersFeatureTests {
         #expect(store.state.orders.first { $0.id == "O3" }?.status == .arrived)
         #expect(store.state.isSelecting == false)
         #expect(store.state.selectedOrderIDs.isEmpty)
-        // 只落盤實際變更的 O1/O3 (O2 已是 arrived 被略過)，且為單次批次呼叫。
+        // 只落盤實際變更的 O1/O3 (O2 已是 arrived 被略過)，且為單次批次呼叫
         #expect(Set((box.saved ?? []).map(\.id)) == ["O1", "O3"])
     }
 
     @Test func batchStatusChangedRejectsMerged() async {
-        // 對齊 spec「Batch target status list excludes merged」：merged 僅由合併流程寫入，批次防衛拒絕、不改狀態。
+        // 對齊 spec「Batch target status list excludes merged」：merged 僅由合併流程寫入，批次防衛拒絕、不改狀態
         let orders = [makeOrder(id: "O1", categories: ["beauty"], status: .shipping)]
         var state = OrdersFeature.State()
         state.orders = orders
@@ -1050,7 +1050,7 @@ struct OrdersFeatureTests {
 
     // MARK: - Helpers
 
-    /// 建立僅供篩選測試使用的最小訂單；非相關欄位以零值/佔位填入。
+    /// 建立僅供篩選測試使用的最小訂單；非相關欄位以零值/佔位填入
     private func makeOrder(
         id: String,
         category: String,
@@ -1060,7 +1060,7 @@ struct OrdersFeatureTests {
         makeOrder(id: id, categories: [category], status: status, paymentMethod: paymentMethod)
     }
 
-    /// 多類別/多開團版本的最小訂單 helper。
+    /// 多類別/多開團版本的最小訂單 helper
     private func makeOrder(
         id: String,
         categories: [String],
@@ -1099,11 +1099,11 @@ struct OrdersFeatureTests {
     }
 }
 
-/// 捕捉批次落盤訂單的容器；避免引入 `ConcurrencyExtras.LockIsolated` 在測試 target 中遭遇連結問題。
+/// 捕捉批次落盤訂單的容器；避免引入 `ConcurrencyExtras.LockIsolated` 在測試 target 中遭遇連結問題
 private final class BatchBox: @unchecked Sendable {
 
     // MARK: - Data Properties
 
-    /// 由 `saveOrders` closure 寫入、測試讀取的批次訂單。
+    /// 由 `saveOrders` closure 寫入、測試讀取的批次訂單
     var saved: [LedgerOrder]?
 }

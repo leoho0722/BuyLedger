@@ -8,40 +8,40 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 分析分頁的主要畫面。
+/// 分析分頁的主要畫面
 ///
-/// 對應設計稿 iPhone / iPad / Mac 的「分析」頁：bar chart 走勢、商品類別排行、成本結構 donut、N 週下單熱力圖 (N 由 ``InsightsView/heatmapWeekCount`` 控制)；可切換期間、可點擊類別 drill-down 到訂單頁。
+/// 對應設計稿 iPhone / iPad / Mac 的「分析」頁：bar chart 走勢、商品類別排行、成本結構 donut、N 週下單熱力圖 (N 由 ``InsightsView/heatmapWeekCount`` 控制)；可切換期間、可點擊類別 drill-down 到訂單頁
 struct InsightsView: View {
 
     // MARK: - View Properties
 
-    /// App 根層級 store。
+    /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
 #if !os(macOS)
-    /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone (compact) 與 iPad (regular)。
+    /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone (compact) 與 iPad (regular)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 #endif
 
-    /// 用來計算趨勢期間與熱力圖的「現在」時間；測試可注入固定值。
+    /// 用來計算趨勢期間與熱力圖的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
 
-    /// 趨勢分組與熱力圖週界計算所用的行事曆 (含時區)；測試可注入固定 gregorian／UTC。
+    /// 趨勢分組與熱力圖週界計算所用的行事曆 (含時區)；測試可注入固定 gregorian／UTC
     @Dependency(\.calendar) private var calendar
 
-    /// 目前選取的趨勢期間。
+    /// 目前選取的趨勢期間
     @State private var selectedRange: InsightsDateRange = .twelveMonths
 
     // MARK: - View Body
 
-    /// 分析頁的畫面內容。
+    /// 分析頁的畫面內容
     ///
-    /// 訂單為空時改顯示 ``emptyState(palette:)``——空圖表 ($0、空 heatmap) 對使用者沒有價值且容易誤導。
+    /// 訂單為空時改顯示 ``emptyState(palette:)``——空圖表 ($0、空 heatmap) 對使用者沒有價值且容易誤導
     /// 首次載入完成前 (``OrdersFeature/State/hasLoaded`` 為 `false`) 顯示中性 ``loadingPlaceholder(palette:)``，
-    /// 避免訂單為空時每次切換 tab 因 `isLoading` 暫時翻成 `true` 而落入「有資料」分支造成閃爍。
+    /// 避免訂單為空時每次切換 tab 因 `isLoading` 暫時翻成 `true` 而落入「有資料」分支造成閃爍
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
@@ -61,7 +61,7 @@ struct InsightsView: View {
         }
 
         // iOS (iPhone + iPad) 以 NavigationStack + navigationTitle 提供系統大標題，與「更多」等分頁對齊；
-        // macOS 維持自繪標題 (見 titleHeader)。
+        // macOS 維持自繪標題 (見 titleHeader)
 #if os(macOS)
         return core
 #else
@@ -75,31 +75,31 @@ struct InsightsView: View {
 
 // MARK: - Nested Types
 
-// 巢狀型別開放 internal：類別收益歸屬 (``InsightsView/categoryBreakdown(orders:)``) 需由單元測試引用。
+// 巢狀型別開放 internal：類別收益歸屬 (``InsightsView/categoryBreakdown(orders:)``) 需由單元測試引用
 extension InsightsView {
 
-    /// 分析頁可選的趨勢期間。
+    /// 分析頁可選的趨勢期間
     enum InsightsDateRange: String, CaseIterable, Identifiable, Sendable {
 
         // MARK: - Cases
 
-        /// 過去 30 天。
+        /// 過去 30 天
         case thirtyDays
 
-        /// 過去 6 個月。
+        /// 過去 6 個月
         case sixMonths
 
-        /// 過去 12 個月。
+        /// 過去 12 個月
         case twelveMonths
 
         // MARK: - Identifiable Properties
 
-        /// 區間穩定識別。
+        /// 區間穩定識別
         var id: String { rawValue }
 
         // MARK: - Display Properties
 
-        /// 顯示在 segmented control 上的標題。
+        /// 顯示在 segmented control 上的標題
         var title: String {
             switch self {
             case .thirtyDays:
@@ -111,7 +111,7 @@ extension InsightsView {
             }
         }
 
-        /// 顯示在 trend card 上的子標題。
+        /// 顯示在 trend card 上的子標題
         var trendCardTitle: String {
             switch self {
             case .thirtyDays:
@@ -124,102 +124,102 @@ extension InsightsView {
         }
     }
 
-    /// 分析頁的整體統計。
+    /// 分析頁的整體統計
     struct InsightsStats {
 
         // MARK: - Data Properties
 
-        /// 走勢圖 (依 range 動態：30 天用「日」、6/12 個月用「月」)。
+        /// 走勢圖 (依 range 動態：30 天用「日」、6/12 個月用「月」)
         let trendBars: [BLBarChartValue]
 
-        /// 期間內淨獲利總和。
+        /// 期間內淨獲利總和
         let totalProfit: Decimal
 
-        /// 顯示在走勢卡右上角的成長率字樣 (已 format，例如 `↑ 12.3%`、`— 無對照`)。
+        /// 顯示在走勢卡右上角的成長率字樣 (已 format，例如 `↑ 12.3%`、`— 無對照`)
         let trendDelta: String
 
-        /// 成長率方向旗標：`true` 上升、`false` 下降、`nil` 無對照可比；用來決定 ``InsightsView/trendCard(stats:palette:)`` 的字色。
+        /// 成長率方向旗標：`true` 上升、`false` 下降、`nil` 無對照可比；用來決定 ``InsightsView/trendCard(stats:palette:)`` 的字色
         let trendDeltaIsPositive: Bool?
 
-        /// 各分類獲利排行 (由高到低)。
+        /// 各分類獲利排行 (由高到低)
         let categories: [InsightsCategory]
 
-        /// 成本結構各區塊。
+        /// 成本結構各區塊
         let costSegments: [InsightsCostSegment]
 
-        /// 全期成本總和。
+        /// 全期成本總和
         let totalCost: Decimal
     }
 
-    /// 類別排行資料。
+    /// 類別排行資料
     struct InsightsCategory: Identifiable {
 
         // MARK: - Identifiable Properties
 
-        /// 用 name 當識別值。
+        /// 用 name 當識別值
         var id: String { name }
 
         // MARK: - Data Properties
 
-        /// 類別名稱。
+        /// 類別名稱
         let name: String
 
-        /// 該類別累計獲利。
+        /// 該類別累計獲利
         let profit: Decimal
     }
 
-    /// 成本結構單一區塊。
+    /// 成本結構單一區塊
     struct InsightsCostSegment: Identifiable {
 
         // MARK: - Identifiable Properties
 
-        /// 用 label 當識別值。
+        /// 用 label 當識別值
         var id: String { label }
 
         // MARK: - Data Properties
 
-        /// 顯示在 legend 的標籤。
+        /// 顯示在 legend 的標籤
         let label: String
 
-        /// 此區塊金額。
+        /// 此區塊金額
         let value: Decimal
 
-        /// 顯示色彩。
+        /// 顯示色彩
         let color: Color
     }
 
-    /// 熱力圖鍵。
+    /// 熱力圖鍵
     struct HeatmapKey: Hashable {
 
         // MARK: - Data Properties
 
-        /// 第幾週 (0 為最早、7 為本週)。
+        /// 第幾週 (0 為最早、7 為本週)
         let week: Int
 
-        /// 第幾天 (0 為週一、6 為週日)。
+        /// 第幾天 (0 為週一、6 為週日)
         let weekday: Int
     }
 
-    /// 每團毛利排行的單列資料。
+    /// 每團毛利排行的單列資料
     struct CampaignProfitRank: Identifiable {
 
         // MARK: - Identifiable Properties
 
-        /// 對應開團的識別值。
+        /// 對應開團的識別值
         let id: Campaign.ID
 
         // MARK: - Data Properties
 
-        /// 名次 (由 1 起算，依毛利由高到低)。
+        /// 名次 (由 1 起算，依毛利由高到低)
         let rank: Int
 
-        /// 開團名稱。
+        /// 開團名稱
         let campaignName: String
 
-        /// 該團毛利。
+        /// 該團毛利
         let profit: Decimal
 
-        /// 相對於最高毛利團的比例 (0...1)，供進度條呈現。
+        /// 相對於最高毛利團的比例 (0...1)，供進度條呈現
         let ratio: Double
     }
 
@@ -229,11 +229,11 @@ extension InsightsView {
 
 extension InsightsView {
 
-    /// 依「合併前收益」歸屬規則彙總各類別獲利 (由高到低)；供 ``computeStats(orders:range:)`` 與單元測試共用。
+    /// 依「合併前收益」歸屬規則彙總各類別獲利 (由高到低)；供 ``computeStats(orders:range:)`` 與單元測試共用
     ///
-    /// 僅葉端訂單入組 (``LedgerOrder/contributesToCategoryBreakdown``)：狀態屬已實現或已合併、且非由合併產生；合併產生的訂單不入組，其收益由合併前舊單以原始類別與金額入帳。一筆訂單的獲利全額計入它的每一個類別；類別為空的訂單不歸入任何卡片。
-    /// - Parameter orders: 全部訂單。
-    /// - Returns: 各類別獲利排行。
+    /// 僅葉端訂單入組 (``LedgerOrder/contributesToCategoryBreakdown``)：狀態屬已實現或已合併、且非由合併產生；合併產生的訂單不入組，其收益由合併前舊單以原始類別與金額入帳。一筆訂單的獲利全額計入它的每一個類別；類別為空的訂單不歸入任何卡片
+    /// - Parameter orders: 全部訂單
+    /// - Returns: 各類別獲利排行
     static func categoryBreakdown(orders: [LedgerOrder]) -> [InsightsCategory] {
         let attributionOrders = orders.filter(\.contributesToCategoryBreakdown)
         let categoryPairs = attributionOrders.flatMap { order in
@@ -258,9 +258,9 @@ extension InsightsView {
 
 private extension InsightsView {
 
-    /// 有訂單資料時的完整分析內容。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 分析內容 view。
+    /// 有訂單資料時的完整分析內容
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 分析內容 view
     @ViewBuilder
     func analyticsContent(palette: BLPalette) -> some View {
         let stats = computeStats(
@@ -270,7 +270,7 @@ private extension InsightsView {
 
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
-                // iOS 改由 `.navigationTitle("分析")` 提供標題；macOS 仍自繪大標題。
+                // iOS 改由 `.navigationTitle("分析")` 提供標題；macOS 仍自繪大標題
 #if os(macOS)
                 titleHeader(palette: palette)
 #endif
@@ -286,9 +286,9 @@ private extension InsightsView {
         }
     }
 
-    /// 沒有訂單時的空狀態，引導使用者先建立訂單。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 空狀態 view。
+    /// 沒有訂單時的空狀態，引導使用者先建立訂單
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 空狀態 view
     @ViewBuilder
     func emptyState(palette: BLPalette) -> some View {
         ContentUnavailableView {
@@ -299,9 +299,9 @@ private extension InsightsView {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// 首次載入訂單前顯示的中性佔位畫面。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 佔位 view。
+    /// 首次載入訂單前顯示的中性佔位畫面
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 佔位 view
     @ViewBuilder
     func loadingPlaceholder(palette: BLPalette) -> some View {
         ProgressView()
@@ -310,9 +310,9 @@ private extension InsightsView {
             .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// 大標題列。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 標題列 view。
+    /// 大標題列
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 標題列 view
     @ViewBuilder
     func titleHeader(palette: BLPalette) -> some View {
         Text("分析")
@@ -321,7 +321,7 @@ private extension InsightsView {
             .accessibilityAddTraits(.isHeader)
     }
 
-    /// 期間選擇器。
+    /// 期間選擇器
     @ViewBuilder
     var rangePicker: some View {
         Picker("期間", selection: $selectedRange) {
@@ -332,11 +332,11 @@ private extension InsightsView {
         .pickerStyle(.segmented)
     }
 
-    /// 走勢卡。
+    /// 走勢卡
     /// - Parameters:
-    ///   - stats: 已計算的分析資料。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 走勢卡 view。
+    ///   - stats: 已計算的分析資料
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 走勢卡 view
     @ViewBuilder
     func trendCard(stats: InsightsStats, palette: BLPalette) -> some View {
         BLCard {
@@ -368,11 +368,11 @@ private extension InsightsView {
         }
     }
 
-    /// 類別排行 + 成本結構並列。
+    /// 類別排行 + 成本結構並列
     /// - Parameters:
-    ///   - stats: 已計算的分析資料。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 並列卡片 view。
+    ///   - stats: 已計算的分析資料
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 並列卡片 view
     @ViewBuilder
     func breakdownGrid(stats: InsightsStats, palette: BLPalette) -> some View {
         if useWideLayout {
@@ -390,9 +390,9 @@ private extension InsightsView {
         }
     }
 
-    /// 每團毛利排行卡：依毛利由高到低排序各開團 (排除無歸屬訂單的團)；點擊跳到該開團詳情。沒有可排行的開團時整卡隱藏。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 開團毛利排行卡 view (無資料時為 `EmptyView`)。
+    /// 每團毛利排行卡：依毛利由高到低排序各開團 (排除無歸屬訂單的團)；點擊跳到該開團詳情。沒有可排行的開團時整卡隱藏
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 開團毛利排行卡 view (無資料時為 `EmptyView`)
     @ViewBuilder
     func campaignProfitCard(palette: BLPalette) -> some View {
         let ranks = Self.campaignProfitRanking(
@@ -428,11 +428,11 @@ private extension InsightsView {
         }
     }
 
-    /// 類別排行卡。
+    /// 類別排行卡
     /// - Parameters:
-    ///   - stats: 已計算的分析資料。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 類別卡 view。
+    ///   - stats: 已計算的分析資料
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 類別卡 view
     @ViewBuilder
     func categoryCard(stats: InsightsStats, palette: BLPalette) -> some View {
         BLCard {
@@ -469,14 +469,14 @@ private extension InsightsView {
         }
     }
 
-    /// 類別排行單列。
+    /// 類別排行單列
     /// - Parameters:
-    ///   - rank: 名次。
-    ///   - category: 類別資料。
-    ///   - topProfit: 第一名的獲利金額 (作為比例基準)。
-    ///   - tint: bar 顏色。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 類別列 view。
+    ///   - rank: 名次
+    ///   - category: 類別資料
+    ///   - topProfit: 第一名的獲利金額 (作為比例基準)
+    ///   - tint: bar 顏色
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 類別列 view
     @ViewBuilder
     func categoryRow(
         rank: Int,
@@ -520,11 +520,11 @@ private extension InsightsView {
         }
     }
 
-    /// 成本結構 donut 卡。
+    /// 成本結構 donut 卡
     /// - Parameters:
-    ///   - stats: 已計算的分析資料。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 成本結構卡 view。
+    ///   - stats: 已計算的分析資料
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 成本結構卡 view
     @ViewBuilder
     func costStructureCard(stats: InsightsStats, palette: BLPalette) -> some View {
         BLCard {
@@ -572,9 +572,9 @@ private extension InsightsView {
         }
     }
 
-    /// 過去 N 週的下單熱力圖；N 由 ``heatmapWeekCount`` 決定。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 熱力圖卡 view。
+    /// 過去 N 週的下單熱力圖；N 由 ``heatmapWeekCount`` 決定
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 熱力圖卡 view
     @ViewBuilder
     func heatmapCard(palette: BLPalette) -> some View {
         let weekCount = Self.heatmapWeekCount
@@ -605,7 +605,7 @@ private extension InsightsView {
                     }
 
                     // 攤平成單層 ForEach；LazyVGrid 只可靠展開直接子層的 ForEach，
-                    // 外層 ForEach 內再巢狀 ForEach (且帶 sibling Text) 時，巢狀那層不會被攤成 cell。
+                    // 外層 ForEach 內再巢狀 ForEach (且帶 sibling Text) 時，巢狀那層不會被攤成 cell
                     ForEach(0..<(7 * (weekCount + 1)), id: \.self) { index in
                         let weekday = index / (weekCount + 1)
                         let column = index % (weekCount + 1)
@@ -629,12 +629,12 @@ private extension InsightsView {
         }
     }
 
-    /// 熱力圖單一 cell。
+    /// 熱力圖單一 cell
     /// - Parameters:
-    ///   - count: 訂單筆數。
-    ///   - maxCount: 整張熱力圖中最高的訂單筆數，用來決定相對深淺。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: cell view。
+    ///   - count: 訂單筆數
+    ///   - maxCount: 整張熱力圖中最高的訂單筆數，用來決定相對深淺
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: cell view
     @ViewBuilder
     func heatmapCell(count: Int, maxCount: Int, palette: BLPalette) -> some View {
         let opacity: Double = {
@@ -643,7 +643,7 @@ private extension InsightsView {
         }()
 
         // 用明確高度撐起格子；`RoundedRectangle` 是 Shape 無 intrinsic size，
-        // 在 LazyVGrid 中靠 `aspectRatio` 會被旁邊 Text 那列壓成 0 高度而完全不顯示。
+        // 在 LazyVGrid 中靠 `aspectRatio` 會被旁邊 Text 那列壓成 0 高度而完全不顯示
         RoundedRectangle(cornerRadius: 4, style: .continuous)
             .fill(palette.accent.opacity(opacity))
             .frame(maxWidth: .infinity)
@@ -666,11 +666,11 @@ private extension InsightsView {
 
     // MARK: Campaign Ranking
 
-    /// 計算每團毛利排行：排除無歸屬訂單的團，依毛利由高到低排序，並附上相對最高毛利的比例。
+    /// 計算每團毛利排行：排除無歸屬訂單的團，依毛利由高到低排序，並附上相對最高毛利的比例
     /// - Parameters:
-    ///   - campaigns: 目前所有開團。
-    ///   - orders: 目前所有訂單；用於以 ``CampaignSummary`` 彙總各團毛利。
-    /// - Returns: 已排序並附上名次與比例的排行資料；無可排行開團時為空陣列。
+    ///   - campaigns: 目前所有開團
+    ///   - orders: 目前所有訂單；用於以 ``CampaignSummary`` 彙總各團毛利
+    /// - Returns: 已排序並附上名次與比例的排行資料；無可排行開團時為空陣列
     static func campaignProfitRanking(campaigns: [Campaign], orders: [LedgerOrder]) -> [CampaignProfitRank] {
         let ranked = campaigns
             .map { ($0, CampaignSummary(campaignName: $0.name, orders: orders)) }
@@ -690,7 +690,7 @@ private extension InsightsView {
 
     // MARK: Layout
 
-    /// 是否使用寬版面 (並列兩張卡)。
+    /// 是否使用寬版面 (並列兩張卡)
     var useWideLayout: Bool {
 #if os(macOS)
         return true
@@ -699,7 +699,7 @@ private extension InsightsView {
 #endif
     }
 
-    /// 類別 bar 的色盤序列。
+    /// 類別 bar 的色盤序列
     func categoryTints(palette: BLPalette) -> [Color] {
         [
             palette.accent,
@@ -710,29 +710,29 @@ private extension InsightsView {
         ]
     }
 
-    /// 顯示在熱力圖左側的星期縮寫。
-    /// - Parameter index: 0 為週一、6 為週日。
-    /// - Returns: 中文單字星期縮寫。
+    /// 顯示在熱力圖左側的星期縮寫
+    /// - Parameter index: 0 為週一、6 為週日
+    /// - Returns: 中文單字星期縮寫
     func weekdayLabel(_ index: Int) -> String {
         ["一", "二", "三", "四", "五", "六", "日"][index]
     }
 
     // MARK: Statistics
 
-    /// 視為「已實現」的訂單狀態集合，引用 domain 層的單一事實來源。
+    /// 視為「已實現」的訂單狀態集合，引用 domain 層的單一事實來源
     static let realizedStatuses = OrderStatus.realizedStatuses
 
-    /// 熱力圖顯示的週數；同時驅動 ``heatmapCard(palette:)`` 的標題、grid 欄位與 ``computeHeatmap(orders:)`` 的回填邏輯。
+    /// 熱力圖顯示的週數；同時驅動 ``heatmapCard(palette:)`` 的標題、grid 欄位與 ``computeHeatmap(orders:)`` 的回填邏輯
     static let heatmapWeekCount = 8
 
-    /// 熱力圖單一格子的高度 (pt)；格子寬度由 grid 的 flexible 欄位決定，高度需明確指定避免 Shape 被壓扁。
+    /// 熱力圖單一格子的高度 (pt)；格子寬度由 grid 的 flexible 欄位決定，高度需明確指定避免 Shape 被壓扁
     static let heatmapCellHeight: CGFloat = 30
 
-    /// 計算 ``InsightsStats``。
+    /// 計算 ``InsightsStats``
     /// - Parameters:
-    ///   - orders: 目前訂單清單。
-    ///   - range: 趨勢期間。
-    /// - Returns: 分析頁需要的統計值。
+    ///   - orders: 目前訂單清單
+    ///   - range: 趨勢期間
+    /// - Returns: 分析頁需要的統計值
     func computeStats(orders: [LedgerOrder], range: InsightsDateRange) -> InsightsStats {
         let realized = orders.filter { Self.realizedStatuses.contains($0.status) }
         let calendar = self.calendar
@@ -791,13 +791,13 @@ private extension InsightsView {
         )
     }
 
-    /// 計算上一個對等期間的淨獲利總和，例如目前是「最近 30 天」就回傳「30 天前那 30 天」的累計。
+    /// 計算上一個對等期間的淨獲利總和，例如目前是「最近 30 天」就回傳「30 天前那 30 天」的累計
     /// - Parameters:
-    ///   - realized: 已實現的訂單。
-    ///   - range: 趨勢期間。
-    ///   - calendar: 用來算日期的曆法。
-    ///   - now: 目前期間的結束基準。
-    /// - Returns: 對等期間的累計獲利；無對等資料時為 `nil`。
+    ///   - realized: 已實現的訂單
+    ///   - range: 趨勢期間
+    ///   - calendar: 用來算日期的曆法
+    ///   - now: 目前期間的結束基準
+    /// - Returns: 對等期間的累計獲利；無對等資料時為 `nil`
     func previousPeriodProfit(
         realized: [LedgerOrder],
         range: InsightsDateRange,
@@ -835,11 +835,11 @@ private extension InsightsView {
         return total
     }
 
-    /// 根據本期/上期累計獲利產生 `↑ 12.3%` 或 `— 無對照` 等顯示字串。
+    /// 根據本期/上期累計獲利產生 `↑ 12.3%` 或 `— 無對照` 等顯示字串
     /// - Parameters:
-    ///   - current: 本期累計。
-    ///   - previous: 上期累計；`nil` 代表無資料可比。
-    /// - Returns: trend card 右上角字串。
+    ///   - current: 本期累計
+    ///   - previous: 上期累計；`nil` 代表無資料可比
+    /// - Returns: trend card 右上角字串
     func trendDeltaText(current: Decimal, previous: Decimal?) -> String {
         guard let previous, previous != 0 else {
             return "— 無對照"
@@ -851,11 +851,11 @@ private extension InsightsView {
         return "\(arrow) \(formatted)"
     }
 
-    /// 對應 ``trendDeltaText(current:previous:)`` 的方向旗標，方便 view 決定文字色。
+    /// 對應 ``trendDeltaText(current:previous:)`` 的方向旗標，方便 view 決定文字色
     /// - Parameters:
-    ///   - current: 本期累計。
-    ///   - previous: 上期累計；`nil` 代表無資料可比。
-    /// - Returns: `true` 上升、`false` 下降、`nil` 無對照。
+    ///   - current: 本期累計
+    ///   - previous: 上期累計；`nil` 代表無資料可比
+    /// - Returns: `true` 上升、`false` 下降、`nil` 無對照
     func trendDeltaDirection(current: Decimal, previous: Decimal?) -> Bool? {
         guard let previous, previous != 0 else {
             return nil
@@ -863,13 +863,13 @@ private extension InsightsView {
         return current >= previous
     }
 
-    /// 依 range 產生對應的 bar chart 資料：30 天逐日、6/12 個月逐月。
+    /// 依 range 產生對應的 bar chart 資料：30 天逐日、6/12 個月逐月
     /// - Parameters:
-    ///   - realized: 已實現的訂單。
-    ///   - range: 趨勢期間。
-    ///   - calendar: 用來分組的曆法。
-    ///   - now: 基準日。
-    /// - Returns: 對應每段時間的累計獲利。
+    ///   - realized: 已實現的訂單
+    ///   - range: 趨勢期間
+    ///   - calendar: 用來分組的曆法
+    ///   - now: 基準日
+    /// - Returns: 對應每段時間的累計獲利
     func trendBars(
         realized: [LedgerOrder],
         range: InsightsDateRange,
@@ -888,7 +888,7 @@ private extension InsightsView {
                     .filter { (interval.start..<interval.end).contains($0.date) }
                     .reduce(Decimal.zero) { $0 + $1.summary.profit }
 
-                // 30 天逐日標籤格式：MM/dd (verbatim，不受 locale 影響)。
+                // 30 天逐日標籤格式：MM/dd (verbatim，不受 locale 影響)
                 let label = dayStart.formatted(
                     .verbatim(
                         "\(month: .twoDigits)/\(day: .twoDigits)",
@@ -916,7 +916,7 @@ private extension InsightsView {
                     .filter { (interval.start..<interval.end).contains($0.date) }
                     .reduce(Decimal.zero) { $0 + $1.summary.profit }
 
-                // 6 個月用 YYYY/MM；12 個月空間較窄，改用 YY/MM (皆為 verbatim 精確格式)。
+                // 6 個月用 YYYY/MM；12 個月空間較窄，改用 YY/MM (皆為 verbatim 精確格式)
                 let monthFormat: Date.FormatString = range == .sixMonths
                     ? "\(year: .padded(4))/\(month: .twoDigits)"
                     : "\(year: .twoDigits)/\(month: .twoDigits)"
@@ -932,12 +932,12 @@ private extension InsightsView {
         }
     }
 
-    /// 計算過去 N 週 (N = ``heatmapWeekCount``) 每天的下單筆數 (不分狀態，只看建立日期)。
-    /// - Parameter orders: 目前訂單清單。
-    /// - Returns: 鍵為 `HeatmapKey`、值為訂單筆數。
+    /// 計算過去 N 週 (N = ``heatmapWeekCount``) 每天的下單筆數 (不分狀態，只看建立日期)
+    /// - Parameter orders: 目前訂單清單
+    /// - Returns: 鍵為 `HeatmapKey`、值為訂單筆數
     func computeHeatmap(orders: [LedgerOrder]) -> [HeatmapKey: Int] {
         var calendar = self.calendar
-        // 熱力圖視覺上以週一為每週起點 (列為 一…日)，週欄分組需與之對齊，否則週日訂單會落到相鄰欄。
+        // 熱力圖視覺上以週一為每週起點 (列為 一…日)，週欄分組需與之對齊，否則週日訂單會落到相鄰欄
         calendar.firstWeekday = 2
         let now = date()
         let weekCount = Self.heatmapWeekCount
@@ -948,7 +948,7 @@ private extension InsightsView {
         var result: [HeatmapKey: Int] = [:]
 
         for order in orders {
-            // 以「訂單所屬週起點」對「本週起點」相差幾週決定欄位；兩者皆對齊週界，避免用任意日期相減造成跨週 off-by-one。
+            // 以「訂單所屬週起點」對「本週起點」相差幾週決定欄位；兩者皆對齊週界，避免用任意日期相減造成跨週 off-by-one
             guard let orderWeekStart = calendar.dateInterval(of: .weekOfYear, for: order.date)?.start else {
                 continue
             }
@@ -973,9 +973,9 @@ private extension InsightsView {
 
     // MARK: Formatting
 
-    /// 將金額格式化為新台幣 (無小數位)。
-    /// - Parameter amount: 金額。
-    /// - Returns: 含 NT$ 前綴的字串。
+    /// 將金額格式化為新台幣 (無小數位)
+    /// - Parameter amount: 金額
+    /// - Returns: 含 NT$ 前綴的字串
     func formatTwd(_ amount: Decimal) -> String {
         amount.formatted(
             .currency(code: CurrencyCode.twd.code)
@@ -984,11 +984,11 @@ private extension InsightsView {
         )
     }
 
-    /// 將 ``InsightsStats/trendDeltaIsPositive`` 轉成顯示色：上升綠、下降紅、無對照灰。
+    /// 將 ``InsightsStats/trendDeltaIsPositive`` 轉成顯示色：上升綠、下降紅、無對照灰
     /// - Parameters:
-    ///   - isPositive: 方向旗標。
-    ///   - palette: 目前外觀使用的色盤。
-    /// - Returns: 對應的字色。
+    ///   - isPositive: 方向旗標
+    ///   - palette: 目前外觀使用的色盤
+    /// - Returns: 對應的字色
     func trendDeltaColor(_ isPositive: Bool?, palette: BLPalette) -> Color {
         switch isPositive {
         case .some(true):

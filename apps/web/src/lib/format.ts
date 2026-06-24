@@ -1,4 +1,4 @@
-// 顯示格式化工具 (locale 一律 zh-TW，對齊 iOS)。金額預設 0 小數。
+// 顯示格式化工具 (locale 一律 zh-TW，對齊 iOS)。金額預設 0 小數
 
 const LOCALE = 'zh-TW';
 
@@ -16,7 +16,7 @@ export function formatTWD(value: string | number): string {
   return formatCurrency(value, 'TWD');
 }
 
-// 帶正負號的 TWD (正值補 +)，用於獲利。
+// 帶正負號的 TWD (正值補 +)，用於獲利
 export function formatSignedTWD(value: string | number): string {
   const n = typeof value === 'number' ? value : Number(value);
   const formatted = formatTWD(Math.abs(n));
@@ -25,7 +25,7 @@ export function formatSignedTWD(value: string | number): string {
   return formatted;
 }
 
-// 比例值 (0–1) → 百分比字串。
+// 比例值 (0–1) → 百分比字串
 export function formatPercent(ratio: string | number, fractionDigits = 1): string {
   const n = typeof ratio === 'number' ? ratio : Number(ratio);
   return new Intl.NumberFormat(LOCALE, {
@@ -53,12 +53,12 @@ export function formatNumber(value: string | number, fractionDigits = 0): string
   }).format(Number.isFinite(n) ? n : 0);
 }
 
-// M月d日 (列表短日期)。
+// M月d日 (列表短日期)
 export function formatShortDate(iso: string): string {
   return new Intl.DateTimeFormat(LOCALE, { month: 'numeric', day: 'numeric' }).format(new Date(iso));
 }
 
-// M月d日 週X。
+// M月d日 週X
 export function formatDayWeekday(iso: string): string {
   const d = new Date(iso);
   const day = new Intl.DateTimeFormat(LOCALE, { month: 'numeric', day: 'numeric' }).format(d);
@@ -66,7 +66,7 @@ export function formatDayWeekday(iso: string): string {
   return `${day} ${weekday}`;
 }
 
-// 區段標題 (相對今天/昨天，同年顯示 M月d日 週X，跨年顯示 yyyy年M月d日)。
+// 區段標題 (相對今天/昨天，同年顯示 M月d日 週X，跨年顯示 yyyy年M月d日)
 export function formatSectionDate(iso: string, now: Date): string {
   const d = new Date(iso);
   const startOf = (x: Date) => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
@@ -93,7 +93,7 @@ export function formatFullTimestamp(iso: string): string {
   }).format(new Date(iso));
 }
 
-// 月份區段標題 (yyyy年M月)。
+// 月份區段標題 (yyyy年M月)
 export function formatMonthLabel(year: number, month1: number): string {
   return `${year}年${month1}月`;
 }

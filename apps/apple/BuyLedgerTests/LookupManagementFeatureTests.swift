@@ -42,7 +42,7 @@ struct LookupManagementFeatureTests {
         }
         store.exhaustivity = .off
 
-        // 對帳狀態無 isCardless / isBankTransfer 概念，旗標被忽略；僅把名稱加入 items。
+        // 對帳狀態無 isCardless / isBankTransfer 概念，旗標被忽略；僅把名稱加入 items
         await store.send(.addConfirmed(name: "待對帳", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)) {
             $0.items = ["待對帳"]
         }
@@ -50,8 +50,8 @@ struct LookupManagementFeatureTests {
     }
 
     @Test func editConfirmedRenamesPaymentMethodAndClearsFlag() async {
-        // 關鍵 edge case：改名同時「取消勾選」銀行匯款。
-        // rename 的合併規則會保留舊旗標，但編輯為權威設定，最終必須以使用者實際勾選 (false) 為準。
+        // 關鍵 edge case：改名同時「取消勾選」銀行匯款
+        // rename 的合併規則會保留舊旗標，但編輯為權威設定，最終必須以使用者實際勾選 (false) 為準
         var state = LookupManagementFeature.State(kind: .paymentMethod)
         state.items = ["匯款"]
         state.paymentMethodIsBankTransfer = ["匯款": true]
@@ -89,7 +89,7 @@ struct LookupManagementFeatureTests {
         }
         store.exhaustivity = .off
 
-        // 名稱不變、把銀行匯款旗標打開。
+        // 名稱不變、把銀行匯款旗標打開
         await store.send(.editConfirmed(originalName: "銀行匯款", name: "銀行匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)) {
             $0.items = ["銀行匯款"]
             $0.paymentMethodIsBankTransfer = ["銀行匯款": true]

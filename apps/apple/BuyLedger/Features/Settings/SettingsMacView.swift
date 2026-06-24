@@ -10,27 +10,27 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// macOS 偏好設定視窗的內容視圖。
+/// macOS 偏好設定視窗的內容視圖
 ///
-/// 對應 macOS 標準 `Settings { ... }` scene 的呈現：以 ``TabView`` 將設定分群，每個分頁採用 ``Form`` + `.formStyle(.grouped)`，並固定視窗最小尺寸以符合 System Settings 風格。
+/// 對應 macOS 標準 `Settings { ... }` scene 的呈現：以 ``TabView`` 將設定分群，每個分頁採用 ``Form`` + `.formStyle(.grouped)`，並固定視窗最小尺寸以符合 System Settings 風格
 struct SettingsMacView: View {
 
     // MARK: - View Properties
 
-    /// 設定 store。
+    /// 設定 store
     @Bindable var store: StoreOf<SettingsFeature>
 
-    /// 是否顯示「預設幣別」選擇 sheet。
+    /// 是否顯示「預設幣別」選擇 sheet
     @State private var showsCurrencySheet = false
 
 #if DEBUG
-    /// 是否顯示「AI 模型」選擇 sheet (僅 Debug build)。
+    /// 是否顯示「AI 模型」選擇 sheet (僅 Debug build)
     @State private var showsModelSheet = false
 #endif
 
     // MARK: - View Body
 
-    /// 偏好設定視窗的畫面內容。
+    /// 偏好設定視窗的畫面內容
     var body: some View {
         TabView {
             generalTab
@@ -76,11 +76,11 @@ struct SettingsMacView: View {
 
 private extension SettingsMacView {
 
-    /// 一般偏好分頁：帳號管理 (旗標開啟) 與外觀模式。
+    /// 一般偏好分頁：帳號管理 (旗標開啟) 與外觀模式
     @ViewBuilder
     var generalTab: some View {
         Form {
-            // 帳號管理 (僅在雲端同步旗標開啟時顯示；未登入則 section 自身不顯示)。登出後閘門自動回登入畫面。
+            // 帳號管理 (僅在雲端同步旗標開啟時顯示；未登入則 section 自身不顯示)。登出後閘門自動回登入畫面
             if CloudSyncFeatureFlag.isEnabled {
                 CloudAccountSettingsSection()
             }
@@ -102,7 +102,7 @@ private extension SettingsMacView {
         .formStyle(.grouped)
     }
 
-    /// 通知分頁：是否接收提醒。
+    /// 通知分頁：是否接收提醒
     @ViewBuilder
     var notificationsTab: some View {
         Form {
@@ -118,7 +118,7 @@ private extension SettingsMacView {
         .formStyle(.grouped)
     }
 
-    /// AI 分頁：AI 商品明細總結開關與 (Debug) 模型切換。
+    /// AI 分頁：AI 商品明細總結開關與 (Debug) 模型切換
     @ViewBuilder
     var aiTab: some View {
         Form {
@@ -169,7 +169,7 @@ private extension SettingsMacView {
         .formStyle(.grouped)
     }
 
-    /// 預設值分頁：建立新訂單時帶入的幣別等預設與月度損益目標。
+    /// 預設值分頁：建立新訂單時帶入的幣別等預設與月度損益目標
     @ViewBuilder
     var defaultsTab: some View {
         Form {
@@ -237,7 +237,7 @@ private extension SettingsMacView {
     }
 
 #if false
-    /// 資料分頁：CSV 匯出與雲端同步占位 (暫時以 `#if false` 隱藏，待實作完成後再開啟)。
+    /// 資料分頁：CSV 匯出與雲端同步占位 (暫時以 `#if false` 隱藏，待實作完成後再開啟)
     @ViewBuilder
     var dataTab: some View {
         Form {
@@ -247,7 +247,7 @@ private extension SettingsMacView {
                 }
 
                 Button {
-                    // 尚未實作。
+                    // 尚未實作
                 } label: {
                     Label("匯出全部訂單…", systemImage: "square.and.arrow.up")
                 }
@@ -263,7 +263,7 @@ private extension SettingsMacView {
     }
 #endif
 
-    /// 關於分頁：版本與作者。
+    /// 關於分頁：版本與作者
     @ViewBuilder
     var aboutTab: some View {
         Form {
@@ -285,7 +285,7 @@ private extension SettingsMacView {
 
 private extension SettingsMacView {
 
-    /// 從 bundle info 讀出 `1.0 (1)` 形式的版本字串。
+    /// 從 bundle info 讀出 `1.0 (1)` 形式的版本字串
     var appVersion: String {
         let dictionary = Bundle.main.infoDictionary
         let short = dictionary?["CFBundleShortVersionString"] as? String ?? "—"
@@ -294,9 +294,9 @@ private extension SettingsMacView {
         return "\(short) (\(build))"
     }
 
-    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字。
-    /// - Parameter currency: 幣別。
-    /// - Returns: 顯示字串。
+    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字
+    /// - Parameter currency: 幣別
+    /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
         let locale = Locale.preferred()
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""

@@ -1,6 +1,6 @@
 import type { FxSnapshotDTO } from '../types';
 
-// 顯示匯率：回傳「1 單位 currency = X TWD」；無快照或無資料回 null (空狀態，不偽造)。
+// 顯示匯率：回傳「1 單位 currency = X TWD」；無快照或無資料回 null (空狀態，不偽造)
 export function displayRate(
   snapshot: FxSnapshotDTO | null | undefined,
   currency: string,
@@ -18,7 +18,7 @@ export function displayRate(
   return null;
 }
 
-// 折合新台幣 (amount 為來源幣別金額)。
+// 折合新台幣 (amount 為來源幣別金額)
 export function convertToTwd(amount: number, rate: number | null): number | null {
   if (rate === null) return null;
   return amount * rate;

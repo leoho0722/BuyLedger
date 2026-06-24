@@ -11,9 +11,9 @@ test.describe('訂單流程', () => {
   test('狀態快篩可切換', async ({ page }) => {
     await page.goto('/orders');
     await expect(page.getByText('王小明').first()).toBeVisible();
-    // 狀態快篩 chip 在最前 (列表訂單列亦含狀態字樣，故取第一個)。
+    // 狀態快篩 chip 在最前 (列表訂單列亦含狀態字樣，故取第一個)
     await page.getByRole('button', { name: /已交付/ }).first().click();
-    // 已交付狀態的訂單仍在 (王小明 BL-0001)。
+    // 已交付狀態的訂單仍在 (王小明 BL-0001)
     await expect(page.getByText('王小明').first()).toBeVisible();
   });
 
@@ -22,7 +22,7 @@ test.describe('訂單流程', () => {
     await expect(page.getByRole('heading', { name: '新增訂單' })).toBeVisible();
     await page.getByLabel('客戶名稱').fill('端對端測試客戶');
 
-    // 選擇商品類別 (BLSelectRow：label span 後的 button)。
+    // 選擇商品類別 (BLSelectRow：label span 後的 button)
     await page.getByText('商品類別 (至少一個)').locator('xpath=following-sibling::button').click();
     await page.getByRole('button', { name: '美妝', exact: true }).click();
 

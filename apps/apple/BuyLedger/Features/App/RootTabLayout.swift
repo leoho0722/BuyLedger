@@ -8,17 +8,17 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// iPhone 使用的分頁導覽。
+/// iPhone 使用的分頁導覽
 struct RootTabLayout: View {
 
     // MARK: - View Properties
 
-    /// App 根層級 store。
+    /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
 
     // MARK: - View Body
 
-    /// 分頁導覽的畫面內容。
+    /// 分頁導覽的畫面內容
     var body: some View {
         TabView(selection: $store.selectedTab.sending(\.tabSelected)) {
             ForEach(RootTab.allCases) { tab in
@@ -36,9 +36,9 @@ struct RootTabLayout: View {
 
 private extension RootTabLayout {
 
-    /// 回傳指定分頁的主要內容。
-    /// - Parameter tab: 要顯示的分頁。
-    /// - Returns: 分頁對應的 SwiftUI view。
+    /// 回傳指定分頁的主要內容
+    /// - Parameter tab: 要顯示的分頁
+    /// - Returns: 分頁對應的 SwiftUI view
     @ViewBuilder
     func destination(for tab: RootTab) -> some View {
         switch tab {

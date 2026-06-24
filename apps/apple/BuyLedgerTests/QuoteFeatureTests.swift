@@ -16,7 +16,7 @@ struct QuoteFeatureTests {
     // MARK: - Tests
 
     @Test func defaultStateStartsAtZero() {
-        // 預設值全為 0：頁面剛開時不預填示範金額或費率，避免讓使用者誤以為畫面上的「建議售價」是已存在的試算結果。
+        // 預設值全為 0：頁面剛開時不預填示範金額或費率，避免讓使用者誤以為畫面上的「建議售價」是已存在的試算結果
         let state = QuoteFeature.State()
 
         #expect(state.fromCurrency == .krw)
@@ -28,7 +28,7 @@ struct QuoteFeatureTests {
     }
 
     @Test func costCalculationUsesRateAndCardFee() {
-        // 注入 fallback snapshot 模擬 API 已回應；runtime 已不再使用 hardcoded fallback。
+        // 注入 fallback snapshot 模擬 API 已回應；runtime 已不再使用 hardcoded fallback
         let state = QuoteFeature.State(
             fromCurrency: .krw,
             itemPrice: 100_000,
@@ -41,13 +41,13 @@ struct QuoteFeatureTests {
 
         // snapshot 使用 base = .twd，rates[.krw] = 1 / 0.0228 ≈ 43.86 KRW per TWD
         // 所以 1 KRW = 0.0228 TWD，100,000 × 0.0228 = 2280 TWD
-        // 注意：Double 乘法會帶 1e-12 級的浮點誤差，需以 tolerance 比較。
+        // 注意：Double 乘法會帶 1e-12 級的浮點誤差，需以 tolerance 比較
         #expect(abs(state.itemTwd - 2_280) < 0.0001)
         #expect(abs(state.costTwd - 2_280) < 0.0001)
     }
 
     @Test func costCalculationIsZeroWithoutSnapshot() {
-        // 沒有 snapshot 時 rate = 0、所有衍生金額一併歸零，view 應顯示「尚無可用匯率資料」橫幅。
+        // 沒有 snapshot 時 rate = 0、所有衍生金額一併歸零，view 應顯示「尚無可用匯率資料」橫幅
         let state = QuoteFeature.State(
             fromCurrency: .krw,
             itemPrice: 100_000,
@@ -84,7 +84,7 @@ struct QuoteFeatureTests {
     }
 
     @Test func switchingCurrencyRecomputesItemTwd() async {
-        // 預設 itemPrice 為 0，這裡顯式注入一個非零值才能驗證匯率切換對 itemTwd 的影響。
+        // 預設 itemPrice 為 0，這裡顯式注入一個非零值才能驗證匯率切換對 itemTwd 的影響
         let store = TestStore(initialState: QuoteFeature.State(itemPrice: 150_000)) {
             QuoteFeature()
         }

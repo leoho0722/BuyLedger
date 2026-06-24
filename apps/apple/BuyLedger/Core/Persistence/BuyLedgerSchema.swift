@@ -8,22 +8,22 @@
 import Foundation
 import SwiftData
 
-/// BuyLedger SwiftData schema 的版本化定義。
+/// BuyLedger SwiftData schema 的版本化定義
 ///
 /// 目前保留的版本：
-/// - ``BuyLedgerSchemaV10``：收斂後的 migration floor。`OrderRecord` 凍結為內嵌影子型別 (含 `photos`、`category` / `campaignName` 仍為單一字串、尚未含 V11 的 `mergedSourceIDs`)；其餘未變更型別維持引用 top-level。
-/// - ``BuyLedgerSchemaV11``：把 ``OrderRecord`` 的 `category` / `campaignName` 由單一字串改為字串陣列 (`categories` / `campaignNames`)、新增 `mergedSourceIDs`。`OrderRecord` 形狀自 V11 起未再變更，故 V11 與 V12 皆引用同一 top-level 定義。
-/// - ``BuyLedgerSchemaV12``：當前最新版本 (target)，在 V11 之上新增跨裝置同步的本機 sidecar (``SyncMeta`` / ``SyncQueueItem``)；領域 model 形狀不變、`models` 引用 top-level。
+/// - ``BuyLedgerSchemaV10``：收斂後的 migration floor。`OrderRecord` 凍結為內嵌影子型別 (含 `photos`、`category` / `campaignName` 仍為單一字串、尚未含 V11 的 `mergedSourceIDs`)；其餘未變更型別維持引用 top-level
+/// - ``BuyLedgerSchemaV11``：把 ``OrderRecord`` 的 `category` / `campaignName` 由單一字串改為字串陣列 (`categories` / `campaignNames`)、新增 `mergedSourceIDs`。`OrderRecord` 形狀自 V11 起未再變更，故 V11 與 V12 皆引用同一 top-level 定義
+/// - ``BuyLedgerSchemaV12``：當前最新版本 (target)，在 V11 之上新增跨裝置同步的本機 sidecar (``SyncMeta`` / ``SyncQueueItem``)；領域 model 形狀不變、`models` 引用 top-level
 ///
-/// V1~V9 已於 pre-release 階段移除。SwiftData 的 migration 為 forward-only：已在 V12 的 store 不會觸發任何 stage，停在 V10 的 store 以 custom (V10 → V11) 與 lightweight (V11 → V12) 逐段遷到 target。**移除版本會把 floor 往上抬，屬於單向操作**——任何停在低於 floor (V10) 的 store 將失去遷移路徑，開啟時 `ModelContainer` init 會拋錯、進而觸發 `makeForApp()` 砍檔。因此上架後不可再回頭移除版本。
+/// V1~V9 已於 pre-release 階段移除。SwiftData 的 migration 為 forward-only：已在 V12 的 store 不會觸發任何 stage，停在 V10 的 store 以 custom (V10 → V11) 與 lightweight (V11 → V12) 逐段遷到 target。**移除版本會把 floor 往上抬，屬於單向操作**——任何停在低於 floor (V10) 的 store 將失去遷移路徑，開啟時 `ModelContainer` init 會拋錯、進而觸發 `makeForApp()` 砍檔。因此上架後不可再回頭移除版本
 enum BuyLedgerSchemaV10: VersionedSchema {
 
     // MARK: - Static Properties
 
-    /// 版本識別。
+    /// 版本識別
     static var versionIdentifier: Schema.Version { Schema.Version(10, 0, 0) }
 
-    /// 此版本包含的 model 型別；``OrderRecord`` 指向本 enum 內凍結的影子型別，其餘 (``CategoryRecord`` / ``PaymentMethodRecord`` / ``CurrencyMetadataRecord`` / ``OrderSourceRecord`` / ``VerificationStatusRecord`` / ``CampaignRecord``) 維持引用 top-level。
+    /// 此版本包含的 model 型別；``OrderRecord`` 指向本 enum 內凍結的影子型別，其餘 (``CategoryRecord`` / ``PaymentMethodRecord`` / ``CurrencyMetadataRecord`` / ``OrderSourceRecord`` / ``VerificationStatusRecord`` / ``CampaignRecord``) 維持引用 top-level
     static var models: [any PersistentModel.Type] {
         [
             OrderRecord.self,
@@ -36,7 +36,7 @@ enum BuyLedgerSchemaV10: VersionedSchema {
         ]
     }
 
-    /// 收斂後 migration floor (V10) 的 ``OrderRecord`` 影子；含 `photos`，`category` / `campaignName` 仍為單一字串，尚未含 V11 的 `mergedSourceIDs`。
+    /// 收斂後 migration floor (V10) 的 ``OrderRecord`` 影子；含 `photos`，`category` / `campaignName` 仍為單一字串，尚未含 V11 的 `mergedSourceIDs`
     @Model
     final class OrderRecord {
 
@@ -126,19 +126,19 @@ enum BuyLedgerSchemaV10: VersionedSchema {
     }
 }
 
-/// V11 schema：在 V10 之上把 ``OrderRecord`` 的 `category` / `campaignName` 由單一字串改為字串陣列 (`categories` / `campaignNames`)，並新增 `mergedSourceIDs` (合併來源訂單編號)。
+/// V11 schema：在 V10 之上把 ``OrderRecord`` 的 `category` / `campaignName` 由單一字串改為字串陣列 (`categories` / `campaignNames`)，並新增 `mergedSourceIDs` (合併來源訂單編號)
 ///
-/// 因涉及既有欄位「型別改變」，V10 → V11 必須走 `.custom` 的 dump-and-restore，不可用 lightweight。
+/// 因涉及既有欄位「型別改變」，V10 → V11 必須走 `.custom` 的 dump-and-restore，不可用 lightweight
 ///
-/// `OrderRecord` 形狀自 V11 起未再變更，V12 仍引用同一 top-level 定義，故 V11 維持引用 top-level (毋須凍結影子)；floor (V10) 的 `OrderRecord` 已凍結為影子型別。
+/// `OrderRecord` 形狀自 V11 起未再變更，V12 仍引用同一 top-level 定義，故 V11 維持引用 top-level (毋須凍結影子)；floor (V10) 的 `OrderRecord` 已凍結為影子型別
 enum BuyLedgerSchemaV11: VersionedSchema {
 
     // MARK: - Static Properties
 
-    /// 版本識別。
+    /// 版本識別
     static var versionIdentifier: Schema.Version { Schema.Version(11, 0, 0) }
 
-    /// 此版本包含的 model 型別；引用 top-level 定義 (已含 V11 的 `categories` / `campaignNames` / `mergedSourceIDs`)。
+    /// 此版本包含的 model 型別；引用 top-level 定義 (已含 V11 的 `categories` / `campaignNames` / `mergedSourceIDs`)
     static var models: [any PersistentModel.Type] {
         [
             OrderRecord.self,
@@ -152,15 +152,15 @@ enum BuyLedgerSchemaV11: VersionedSchema {
     }
 }
 
-/// V12 schema：當前最新版本 (target)，在 V11 之上新增跨裝置同步的本機 sidecar (``SyncMeta`` / ``SyncQueueItem``)；領域 model 形狀不變、``models`` 引用 top-level。
+/// V12 schema：當前最新版本 (target)，在 V11 之上新增跨裝置同步的本機 sidecar (``SyncMeta`` / ``SyncQueueItem``)；領域 model 形狀不變、``models`` 引用 top-level
 enum BuyLedgerSchemaV12: VersionedSchema {
 
     // MARK: - Static Properties
 
-    /// 版本識別。
+    /// 版本識別
     static var versionIdentifier: Schema.Version { Schema.Version(12, 0, 0) }
 
-    /// 此版本在 V11 之上新增跨裝置同步的本機 sidecar (``SyncMeta`` / ``SyncQueueItem``)；領域 model 形狀不變。
+    /// 此版本在 V11 之上新增跨裝置同步的本機 sidecar (``SyncMeta`` / ``SyncQueueItem``)；領域 model 形狀不變
     static var models: [any PersistentModel.Type] {
         [
             OrderRecord.self,
@@ -176,14 +176,14 @@ enum BuyLedgerSchemaV12: VersionedSchema {
     }
 }
 
-/// BuyLedger SwiftData migration plan。
+/// BuyLedger SwiftData migration plan
 ///
-/// 保留 V10 → V11 一段 custom 與 V11 → V12 一段 lightweight 遷移：V10 → V11 把 `category` / `campaignName` 改為字串陣列並新增 ``OrderRecord/mergedSourceIDs`` (型別改變，走 dump-and-restore)；V11 → V12 新增跨裝置同步的本機 sidecar (``SyncMeta`` / ``SyncQueueItem``) 新表 (走 lightweight)。floor 為 V10：停在 V10 的 store 會逐段遷到 V12，已在 V12 的 store 開啟時 delta 為 0、不觸發任何 stage。新增版本時，於 ``schemas`` 與 ``stages`` append 新版與遷移階段，並把上一版凍結為影子型別保住其 attribute 指紋 (該型別有變更時)。
+/// 保留 V10 → V11 一段 custom 與 V11 → V12 一段 lightweight 遷移：V10 → V11 把 `category` / `campaignName` 改為字串陣列並新增 ``OrderRecord/mergedSourceIDs`` (型別改變，走 dump-and-restore)；V11 → V12 新增跨裝置同步的本機 sidecar (``SyncMeta`` / ``SyncQueueItem``) 新表 (走 lightweight)。floor 為 V10：停在 V10 的 store 會逐段遷到 V12，已在 V12 的 store 開啟時 delta 為 0、不觸發任何 stage。新增版本時，於 ``schemas`` 與 ``stages`` append 新版與遷移階段，並把上一版凍結為影子型別保住其 attribute 指紋 (該型別有變更時)
 enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
 
     // MARK: - Static Properties
 
-    /// migration plan 涉及的所有 schema 版本。
+    /// migration plan 涉及的所有 schema 版本
     static var schemas: [any VersionedSchema.Type] {
         [
             BuyLedgerSchemaV10.self,
@@ -192,10 +192,10 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
         ]
     }
 
-    /// V10 → V11 dump-and-restore 的中介 snapshot；one-shot、單執行緒使用，無 race 疑慮。
+    /// V10 → V11 dump-and-restore 的中介 snapshot；one-shot、單執行緒使用，無 race 疑慮
     nonisolated(unsafe) private static var orderSnapshotsV10: [OrderSnapshotV10] = []
 
-    /// V10 → V11 (custom，`category` / `campaignName` 改為字串陣列、新增 `mergedSourceIDs`——`willMigrate` 把 V10 row 序列化進記憶體後刪除，`didMigrate` 以 V11 形狀重建：非空字串映射為單元素陣列、空字串映射為空陣列、`mergedSourceIDs` 一律空陣列)；V11 → V12 (lightweight，新增跨裝置同步 sidecar ``SyncMeta`` / ``SyncQueueItem`` 新表)。
+    /// V10 → V11 (custom，`category` / `campaignName` 改為字串陣列、新增 `mergedSourceIDs`——`willMigrate` 把 V10 row 序列化進記憶體後刪除，`didMigrate` 以 V11 形狀重建：非空字串映射為單元素陣列、空字串映射為空陣列、`mergedSourceIDs` 一律空陣列)；V11 → V12 (lightweight，新增跨裝置同步 sidecar ``SyncMeta`` / ``SyncQueueItem`` 新表)
     static var stages: [MigrationStage] {
         [
             .custom(
@@ -229,7 +229,7 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
 
 private extension BuyLedgerMigrationPlan {
 
-    /// V10 ``OrderRecord`` 的記憶體 snapshot；`willMigrate` 讀出舊 row 暫存於此，`didMigrate` 據此以 V11 形狀重建。
+    /// V10 ``OrderRecord`` 的記憶體 snapshot；`willMigrate` 讀出舊 row 暫存於此，`didMigrate` 據此以 V11 形狀重建
     struct OrderSnapshotV10 {
 
         // MARK: - Data Properties
@@ -262,8 +262,8 @@ private extension BuyLedgerMigrationPlan {
 
         // MARK: - Init
 
-        /// 自 V10 影子記錄擷取全部欄位。
-        /// - Parameter record: V10 的 ``BuyLedgerSchemaV10/OrderRecord`` 影子。
+        /// 自 V10 影子記錄擷取全部欄位
+        /// - Parameter record: V10 的 ``BuyLedgerSchemaV10/OrderRecord`` 影子
         init(record: BuyLedgerSchemaV10.OrderRecord) {
             self.id = record.id
             self.customer = record.customer
@@ -298,8 +298,8 @@ private extension BuyLedgerMigrationPlan {
 
 private extension BuyLedgerMigrationPlan.OrderSnapshotV10 {
 
-    /// 以 V11 形狀重建 top-level ``OrderRecord``：`category` / `campaignName` 非空字串映射為單元素陣列、空字串映射為空陣列；`mergedSourceIDs` 一律空陣列 (V10 以前不存在合併訂單)。
-    /// - Returns: 重建後的 V11 記錄。
+    /// 以 V11 形狀重建 top-level ``OrderRecord``：`category` / `campaignName` 非空字串映射為單元素陣列、空字串映射為空陣列；`mergedSourceIDs` 一律空陣列 (V10 以前不存在合併訂單)
+    /// - Returns: 重建後的 V11 記錄
     func makeV11Record() -> OrderRecord {
         OrderRecord(
             order: LedgerOrder(

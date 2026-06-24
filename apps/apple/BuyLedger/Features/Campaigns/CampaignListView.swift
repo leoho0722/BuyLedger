@@ -8,25 +8,25 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 開團列表：顯示每個開團的狀態與彙總進度 (到貨／收款)，點擊進入詳情。
+/// 開團列表：顯示每個開團的狀態與彙總進度 (到貨／收款)，點擊進入詳情
 ///
-/// 沿用 ``DashboardView`` / ``InsightsView`` 直接吃 ``RootFeature`` store 的作法，以便同時讀取開團 (`store.campaigns`) 與訂單 (`store.orders.orders`)；分貨與進度由 ``CampaignSummary`` 自訂單投影。
+/// 沿用 ``DashboardView`` / ``InsightsView`` 直接吃 ``RootFeature`` store 的作法，以便同時讀取開團 (`store.campaigns`) 與訂單 (`store.orders.orders`)；分貨與進度由 ``CampaignSummary`` 自訂單投影
 struct CampaignListView: View {
 
     // MARK: - View Properties
 
-    /// App 根層級 store。
+    /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
 
-    /// 用於日期區段「今天／昨天」相對標題的「現在」時間；測試可注入固定值。
+    /// 用於日期區段「今天／昨天」相對標題的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
 
-    /// 開團日期分組所用的行事曆 (含時區)；測試可注入固定值。
+    /// 開團日期分組所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
 
     // MARK: - View Body
 
-    /// 開團列表的畫面內容。
+    /// 開團列表的畫面內容
     var body: some View {
         NavigationStack(path: campaignPath) {
             content
@@ -88,7 +88,7 @@ struct CampaignListView: View {
 
 private extension CampaignListView {
 
-    /// 依載入與資料狀態切換列表、空狀態或載入中。
+    /// 依載入與資料狀態切換列表、空狀態或載入中
     @ViewBuilder
     var content: some View {
         if store.campaigns.campaigns.isEmpty {
@@ -124,9 +124,9 @@ private extension CampaignListView {
         }
     }
 
-    /// 單一頂層日期區段：頂層標題 (月／年／日) + 其下各子群組。
-    /// - Parameter section: 要呈現的頂層區段。
-    /// - Returns: 區段 view。
+    /// 單一頂層日期區段：頂層標題 (月／年／日) + 其下各子群組
+    /// - Parameter section: 要呈現的頂層區段
+    /// - Returns: 區段 view
     @ViewBuilder
     func sectionView(_ section: CampaignDateSection) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
@@ -140,9 +140,9 @@ private extension CampaignListView {
         }
     }
 
-    /// 單一子群組：可選的日期小標 (完全自繪、可控上下間距) + 該群組的開團卡片。
-    /// - Parameter subgroup: 要呈現的子群組。
-    /// - Returns: 子群組 view。
+    /// 單一子群組：可選的日期小標 (完全自繪、可控上下間距) + 該群組的開團卡片
+    /// - Parameter subgroup: 要呈現的子群組
+    /// - Returns: 子群組 view
     @ViewBuilder
     func subgroupView(_ subgroup: CampaignSubgroup) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
@@ -170,9 +170,9 @@ private extension CampaignListView {
         }
     }
 
-    /// 單一開團卡片列：點擊進詳情、長按 (contextMenu) 可編輯／刪除。
-    /// - Parameter campaign: 對應的開團。
-    /// - Returns: 開團列 view。
+    /// 單一開團卡片列：點擊進詳情、長按 (contextMenu) 可編輯／刪除
+    /// - Parameter campaign: 對應的開團
+    /// - Returns: 開團列 view
     @ViewBuilder
     func campaignRowButton(_ campaign: Campaign) -> some View {
         Button {
@@ -209,9 +209,9 @@ private extension CampaignListView {
         }
     }
 
-    /// 以 ``CampaignFeature/State/selectedCampaignID`` 驅動的 `NavigationStack` 路徑 (0 或 1 筆)。
+    /// 以 ``CampaignFeature/State/selectedCampaignID`` 驅動的 `NavigationStack` 路徑 (0 或 1 筆)
     ///
-    /// 採用原生值導向的 `navigationDestination(for:)` 而非 `navigationDestination(item:)`：後者在低於 iOS 17 的部署目標會解析到 SwiftUINavigation 的 backport overload，導致連結到該符號；改用以開團 id 為值的路徑可避開此相依，並同時支援列表點擊與 Dashboard／Insights 的深連結。
+    /// 採用原生值導向的 `navigationDestination(for:)` 而非 `navigationDestination(item:)`：後者在低於 iOS 17 的部署目標會解析到 SwiftUINavigation 的 backport overload，導致連結到該符號；改用以開團 id 為值的路徑可避開此相依，並同時支援列表點擊與 Dashboard／Insights 的深連結
     var campaignPath: Binding<[String]> {
         Binding(
             get: { store.campaigns.selectedCampaignID.map { [$0] } ?? [] },
@@ -219,7 +219,7 @@ private extension CampaignListView {
         )
     }
 
-    /// 工具列篩選 Menu 用的 binding：選取後送出 ``CampaignFeature/Action/statusFilterSelected(_:)``。
+    /// 工具列篩選 Menu 用的 binding：選取後送出 ``CampaignFeature/Action/statusFilterSelected(_:)``
     var statusFilterBinding: Binding<CampaignStatus?> {
         Binding(
             get: { store.campaigns.statusFilter },
@@ -227,7 +227,7 @@ private extension CampaignListView {
         )
     }
 
-    /// 工具列分組 Menu 用的 binding：選取後送出 ``CampaignFeature/Action/groupingSelected(_:)``。
+    /// 工具列分組 Menu 用的 binding：選取後送出 ``CampaignFeature/Action/groupingSelected(_:)``
     var groupingBinding: Binding<CampaignGrouping> {
         Binding(
             get: { store.campaigns.grouping },
@@ -238,23 +238,23 @@ private extension CampaignListView {
 
 // MARK: - Campaign Row
 
-/// 開團列表的單列：團名、狀態、筆數／金額與到貨／收款進度。
+/// 開團列表的單列：團名、狀態、筆數／金額與到貨／收款進度
 private struct CampaignRow: View {
 
     // MARK: - View Properties
 
-    /// 對應的開團。
+    /// 對應的開團
     let campaign: Campaign
 
-    /// 由訂單投影的彙總。
+    /// 由訂單投影的彙總
     let summary: CampaignSummary
 
-    /// 區段標題粗於「日」時 (按月／按年) 於列上顯示的開團日期；`nil` 表示不顯示 (按日分組時日期已在區段標題)。
+    /// 區段標題粗於「日」時 (按月／按年) 於列上顯示的開團日期；`nil` 表示不顯示 (按日分組時日期已在區段標題)
     let dateText: String?
 
     // MARK: - View Body
 
-    /// 單列的畫面內容。
+    /// 單列的畫面內容
     var body: some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             if let dateText {

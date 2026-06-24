@@ -1,4 +1,4 @@
-// 甜甜圈圖：innerRadius 比例 0.68、各段以 stroke-dasharray 疊放，中央顯示標題/數值。
+// 甜甜圈圖：innerRadius 比例 0.68、各段以 stroke-dasharray 疊放，中央顯示標題/數值
 export function BLDonutChart({
   segments,
   centerTitle,

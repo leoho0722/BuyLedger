@@ -7,26 +7,26 @@
 
 import SwiftUI
 
-/// 使用設計系統表面與填色的分段控制。
+/// 使用設計系統表面與填色的分段控制
 struct BLSegmentedControl<Option: Hashable>: View {
 
     // MARK: - View Properties
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 可供選擇的選項。
+    /// 可供選擇的選項
     let options: [Option]
 
-    /// 目前選取選項的雙向繫結。
+    /// 目前選取選項的雙向繫結
     @Binding var selection: Option
 
-    /// 將選項轉換成顯示文字的 closure。
+    /// 將選項轉換成顯示文字的 closure
     let title: (Option) -> String
 
     // MARK: - View Body
 
-    /// 分段控制的畫面內容。
+    /// 分段控制的畫面內容
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
 

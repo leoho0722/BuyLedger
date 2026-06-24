@@ -9,19 +9,19 @@ import ComposableArchitecture
 import SwiftUI
 import Textual
 
-/// AI 商品明細總結 sheet。
+/// AI 商品明細總結 sheet
 ///
-/// 串流期間以 ``StructuredText`` 漸進渲染 Markdown；尚無內容時顯示讀取中，失敗時顯示錯誤態與重試。樣式比照 ``PaymentMethodEditorSheet``。
+/// 串流期間以 ``StructuredText`` 漸進渲染 Markdown；尚無內容時顯示讀取中，失敗時顯示錯誤態與重試。樣式比照 ``PaymentMethodEditorSheet``
 struct AISummaryView: View {
 
     // MARK: - View Properties
 
-    /// 總結功能的 store。
+    /// 總結功能的 store
     @Bindable var store: StoreOf<AISummaryFeature>
 
     // MARK: - View Body
 
-    /// 總結 sheet 的內容。
+    /// 總結 sheet 的內容
     var body: some View {
         NavigationStack {
             content
@@ -51,7 +51,7 @@ struct AISummaryView: View {
 
     // MARK: - ViewBuilder
 
-    /// 依目前串流階段呈現的主內容。
+    /// 依目前串流階段呈現的主內容
     @ViewBuilder
     private var content: some View {
         switch store.phase {
@@ -105,7 +105,7 @@ struct AISummaryView: View {
         }
     }
 
-    /// 內容生成完成後附在最末的膠囊提醒：告知此為 AI 生成內容、可能有誤。
+    /// 內容生成完成後附在最末的膠囊提醒：告知此為 AI 生成內容、可能有誤
     @ViewBuilder
     private var aiDisclaimerCapsule: some View {
         HStack(spacing: BLSpacing.extraSmall) {

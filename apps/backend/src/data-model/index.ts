@@ -1,4 +1,4 @@
-// 生成型別的彙整出口 (生成檔本身不產 barrel)。資料形狀請改 shared/data-model/schema 後重生成。
+// 生成型別的彙整出口 (生成檔本身不產 barrel)。資料形狀請改 shared/data-model/schema 後重生成
 export type { Campaign } from './generated/Campaign';
 export type { CampaignStatus } from './generated/CampaignStatus';
 export type { CurrencyCode } from './generated/CurrencyCode';

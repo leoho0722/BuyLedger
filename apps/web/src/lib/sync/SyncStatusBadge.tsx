@@ -5,7 +5,7 @@ import { useEffect, useSyncExternalStore } from 'react';
 import { drainQueue, getQueue, retryFailed, subscribeQueue } from './writeQueue';
 
 // 待送佇列的可觀察狀態 (對齊 sync-failure-recovery)：佇列非空時於右下角顯示「待同步 N 筆」
-// 或「同步失敗 N 筆」與「重試」。掛載時與連線恢復 (window online) 時自動 drain。
+// 或「同步失敗 N 筆」與「重試」。掛載時與連線恢復 (window online) 時自動 drain
 export function SyncStatusBadge() {
   const queue = useSyncExternalStore(subscribeQueue, getQueue, () => []);
 
@@ -18,7 +18,7 @@ export function SyncStatusBadge() {
 
   if (queue.length === 0) return null;
 
-  // 依狀態拆兩種計數：failed 達重試上限 (需手動重試)、其餘皆視為 pending (待自動重送)。
+  // 依狀態拆兩種計數：failed 達重試上限 (需手動重試)、其餘皆視為 pending (待自動重送)
   const failed = queue.filter((q) => q.status === 'failed').length;
   const pending = queue.length - failed;
 

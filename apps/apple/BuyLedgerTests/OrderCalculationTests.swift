@@ -49,8 +49,8 @@ struct OrderCalculationTests {
 
         let summary = OrderSummary(order: order)
 
-        // 運費 (domestic 80 + international 320) 由客人支付，不計入 totalCost。
-        // fees = 11_800 * 0.015 = 177；totalCost = itemCost 8_892 + fees 177 = 9_069。
+        // 運費 (domestic 80 + international 320) 由客人支付，不計入 totalCost
+        // fees = 11_800 * 0.015 = 177；totalCost = itemCost 8_892 + fees 177 = 9_069
         #expect(summary.revenue == 11_800)
         #expect(summary.cardFee == 177)
         #expect(summary.platformFee == 0)
@@ -105,7 +105,7 @@ struct OrderCalculationTests {
     }
 
     @Test func feesSplitIntoCardPlatformAndPayment() {
-        // 三種手續費同時存在時，summary 應分別暴露各分項，且加總等於 fees。
+        // 三種手續費同時存在時，summary 應分別暴露各分項，且加總等於 fees
         let order = LedgerOrder(
             id: "BL-FEE-001",
             customer: LedgerCustomer(name: "手續費測試", initials: "FE", tier: .regular),
@@ -140,7 +140,7 @@ struct OrderCalculationTests {
         let summary = OrderSummary(order: order)
 
         // cardFee = 10_000 * 0.015 = 150；platformFee = 10_000 * 0.02 = 200；
-        // paymentFee = 10_000 * 0.005 = 50；fees = 400。
+        // paymentFee = 10_000 * 0.005 = 50；fees = 400
         #expect(summary.cardFee == 150)
         #expect(summary.platformFee == 200)
         #expect(summary.paymentFee == 50)
@@ -150,7 +150,7 @@ struct OrderCalculationTests {
 
     @Test func cardlessSupplementAndDeductionAdjustRevenueAndProfit() {
         // 客戶實付 10_000，另以無卡補款 500、無卡折抵 200；
-        // revenue = 10_000 + 500 - 200 = 10_300；fees 仍以 chargedAmount = 10_000 為基準。
+        // revenue = 10_000 + 500 - 200 = 10_300；fees 仍以 chargedAmount = 10_000 為基準
         let order = LedgerOrder(
             id: "BL-CARDLESS-001",
             customer: LedgerCustomer(name: "無卡測試", initials: "CL", tier: .regular),
@@ -192,7 +192,7 @@ struct OrderCalculationTests {
     }
 
     @Test func cardlessAmountsDoNotAffectFeesBaseline() {
-        // 折抵與補款不應影響手續費的基準 (仍以 chargedAmount 計算)。
+        // 折抵與補款不應影響手續費的基準 (仍以 chargedAmount 計算)
         let order = LedgerOrder(
             id: "BL-CARDLESS-002",
             customer: LedgerCustomer(name: "刷卡＋無卡", initials: "MX", tier: .regular),
@@ -226,9 +226,9 @@ struct OrderCalculationTests {
 
         let summary = OrderSummary(order: order)
 
-        // fees = 10_000 * 0.015 = 150 (基於 chargedAmount，不是 revenue)。
+        // fees = 10_000 * 0.015 = 150 (基於 chargedAmount，不是 revenue)
         #expect(summary.fees == 150)
-        // revenue = 10_000 - 2_000 = 8_000；totalCost = 0 + 150 = 150；profit = 7_850。
+        // revenue = 10_000 - 2_000 = 8_000；totalCost = 0 + 150 = 150；profit = 7_850
         #expect(summary.revenue == 8_000)
         #expect(summary.totalCost == 150)
         #expect(summary.profit == 7_850)
@@ -276,8 +276,8 @@ struct OrderCalculationTests {
 
         let summary = OrderSummary(order: order)
 
-        // 國際運費 850 由客人支付，不計入 totalCost；chargedAmount = 0 故 fees = 0。
-        // totalCost = itemCost 13_728；profit = 0 - 13_728 = -13_728。
+        // 國際運費 850 由客人支付，不計入 totalCost；chargedAmount = 0 故 fees = 0
+        // totalCost = itemCost 13_728；profit = 0 - 13_728 = -13_728
         #expect(summary.revenue == 0)
         #expect(summary.fees == 0)
         #expect(summary.totalCost == 13_728)
@@ -287,7 +287,7 @@ struct OrderCalculationTests {
 
     @Test func shippingIsExcludedFromTotalCost() {
         // 國內、國際與來源國當地國內運費皆由客人支付，不計入我方成本；
-        // totalCost 僅含 itemCost + fees。
+        // totalCost 僅含 itemCost + fees
         let order = LedgerOrder(
             id: "BL-SHIP-001",
             customer: LedgerCustomer(name: "運費測試", initials: "SP", tier: .regular),
@@ -321,15 +321,15 @@ struct OrderCalculationTests {
 
         let summary = OrderSummary(order: order)
 
-        // 運費合計 800 全數排除；totalCost = itemCost 3_000，profit = 5_000 - 3_000 = 2_000。
+        // 運費合計 800 全數排除；totalCost = itemCost 3_000，profit = 5_000 - 3_000 = 2_000
         #expect(summary.fees == 0)
         #expect(summary.totalCost == 3_000)
         #expect(summary.profit == 2_000)
     }
 
     @Test func cashOnDeliveryIncludesShippingInTotalCost() {
-        // 貨到付款：收款金額已含預估運費，三種運費 (國內 + 國際 + 外國國內) 計入總成本。
-        // 與 shippingIsExcludedFromTotalCost 對照：完全相同的訂單，差別只在 isCashOnDelivery == true。
+        // 貨到付款：收款金額已含預估運費，三種運費 (國內 + 國際 + 外國國內) 計入總成本
+        // 與 shippingIsExcludedFromTotalCost 對照：完全相同的訂單，差別只在 isCashOnDelivery == true
         let order = LedgerOrder(
             id: "BL-COD-001",
             customer: LedgerCustomer(name: "貨到付款測試", initials: "CD", tier: .regular),
@@ -363,8 +363,8 @@ struct OrderCalculationTests {
 
         let summary = OrderSummary(order: order)
 
-        // fees = 0；三種運費合計 800 計入總成本：totalCost = itemCost 3_000 + 運費 800 = 3_800。
-        // profit = revenue 5_000 - totalCost 3_800 = 1_200。
+        // fees = 0；三種運費合計 800 計入總成本：totalCost = itemCost 3_000 + 運費 800 = 3_800
+        // profit = revenue 5_000 - totalCost 3_800 = 1_200
         #expect(summary.fees == 0)
         #expect(summary.codShippingCost == 800)
         #expect(summary.totalCost == 3_800)
@@ -373,7 +373,7 @@ struct OrderCalculationTests {
     }
 
     @Test func nonCashOnDeliveryHasZeroCodShippingCost() {
-        // 對照組：同一筆運費結構，非貨到付款時 codShippingCost 為 0、運費不計入總成本。
+        // 對照組：同一筆運費結構，非貨到付款時 codShippingCost 為 0、運費不計入總成本
         let order = LedgerOrder(
             id: "BL-COD-002",
             customer: LedgerCustomer(name: "非貨到付款", initials: "NC", tier: .regular),

@@ -20,7 +20,7 @@ export class CurrencyController {
 export class FxController {
   constructor(private readonly currency: CurrencyService) {}
 
-  // 最新匯率快照；無資料回 null (前端顯示「尚無可用匯率資料」空狀態)。
+  // 最新匯率快照；無資料回 null (前端顯示「尚無可用匯率資料」空狀態)
   @Get('latest')
   latest() {
     return this.currency.getLatest();

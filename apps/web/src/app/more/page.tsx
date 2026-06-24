@@ -15,7 +15,7 @@ import {
 import { SectionHeader } from '@/components/ds/SectionHeader';
 import { PageHeader } from '@/components/PageHeader';
 
-// 選單項定義 (含一句說明，呈現為 Web 工具卡片)。
+// 選單項定義 (含一句說明，呈現為 Web 工具卡片)
 type MenuItem = { icon: LucideIcon; title: string; description: string; href: string };
 
 const TOOLS: MenuItem[] = [
@@ -35,7 +35,7 @@ const LOOKUPS: MenuItem[] = [
 export default function MorePage() {
   const router = useRouter();
 
-  // 工具卡片網格：圖示色塊 + 標題 + 說明，hover 浮起 (Web 風格，非 iOS 清單列)。
+  // 工具卡片網格：圖示色塊 + 標題 + 說明，hover 浮起 (Web 風格，非 iOS 清單列)
   const grid = (items: MenuItem[]) => (
     <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
       {items.map((item) => (

@@ -8,21 +8,21 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// App 根畫面，依平台與水平尺寸切換主要導覽樣式。
+/// App 根畫面，依平台與水平尺寸切換主要導覽樣式
 struct RootView: View {
 
     // MARK: - View Properties
 
-    /// App 根層級 store。
+    /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
 
-    /// 目前水平尺寸分類。
+    /// 目前水平尺寸分類
     @Environment(\.horizontalSizeClass)
     private var horizontalSizeClass
 
     // MARK: - View Body
 
-    /// App 根畫面的內容。
+    /// App 根畫面的內容
     var body: some View {
         layout
             .dismissKeyboardOnTap()
@@ -37,7 +37,7 @@ struct RootView: View {
 
 private extension RootView {
 
-    /// 依平台與尺寸分類選擇對應的根層級導覽佈局。
+    /// 依平台與尺寸分類選擇對應的根層級導覽佈局
     @ViewBuilder
     var layout: some View {
 #if os(macOS)
@@ -56,7 +56,7 @@ private extension RootView {
 
 private extension RootView {
 
-    /// 將 ``SettingsFeature`` 的外觀偏好對映到 SwiftUI 的 `ColorScheme`。
+    /// 將 ``SettingsFeature`` 的外觀偏好對映到 SwiftUI 的 `ColorScheme`
     var preferredScheme: ColorScheme? {
         switch store.settings.appearance {
         case .system:

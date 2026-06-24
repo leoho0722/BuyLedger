@@ -1,4 +1,4 @@
-// 載入 SettingsService 會經由 FirestoreMirrorService 連帶 import firebase-admin (ESM jose)，需 mock。
+// 載入 SettingsService 會經由 FirestoreMirrorService 連帶 import firebase-admin (ESM jose)，需 mock
 jest.mock('firebase-admin/app', () => ({
   initializeApp: jest.fn(),
   getApps: jest.fn(() => []),
@@ -10,7 +10,7 @@ jest.mock('firebase-admin/storage', () => ({ getStorage: jest.fn() }));
 
 import { SettingsService } from './settings.service';
 
-// 對齊 spec「Settings are per-user」：以 uid 為鍵讀寫各自的設定。
+// 對齊 spec「Settings are per-user」：以 uid 為鍵讀寫各自的設定
 describe('SettingsService per-user', () => {
   function makeService() {
     const upsert = jest.fn().mockResolvedValue({

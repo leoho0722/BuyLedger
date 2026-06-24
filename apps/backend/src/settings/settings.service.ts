@@ -78,7 +78,7 @@ export class SettingsService {
       },
     });
     const dto = await this.get(uid);
-    // 設定為 per-user 單一文件，以 uid 為 Firestore 文件 id 鏡像。
+    // 設定為 per-user 單一文件，以 uid 為 Firestore 文件 id 鏡像
     await this.mirror.upsert(uid, 'settings', uid, dto);
     return dto;
   }

@@ -1,4 +1,4 @@
-// 載入 guard 會經由 FirebaseService 連帶 import firebase-admin (ESM jose)，測試一律 mock。
+// 載入 guard 會經由 FirebaseService 連帶 import firebase-admin (ESM jose)，測試一律 mock
 jest.mock('firebase-admin/app', () => ({
   initializeApp: jest.fn(),
   getApps: jest.fn(() => []),
@@ -32,7 +32,7 @@ class ProbeController {
 }
 
 // 對齊 spec「Backend verifies Firebase ID tokens on protected endpoints」的全域套用面：
-// guard 經 APP_GUARD 全域註冊後，預設端點需 token、@Public 端點放行。
+// guard 經 APP_GUARD 全域註冊後，預設端點需 token、@Public 端點放行
 describe('global FirebaseAuthGuard (integration)', () => {
   let app: INestApplication;
   const verifyIdToken = jest.fn();

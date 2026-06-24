@@ -8,30 +8,30 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 設定頁畫面。
+/// 設定頁畫面
 ///
-/// 對應設計稿 iPhone 設定 / 更多頁的 sections：外觀、通知、預設幣別、關於。資料匯出 / CloudKit 同步 section 暫時以 `#if false` 隱藏，待實作完成後再開啟。
+/// 對應設計稿 iPhone 設定 / 更多頁的 sections：外觀、通知、預設幣別、關於。資料匯出 / CloudKit 同步 section 暫時以 `#if false` 隱藏，待實作完成後再開啟
 struct SettingsView: View {
 
     // MARK: - View Properties
 
-    /// 設定 store。
+    /// 設定 store
     @Bindable var store: StoreOf<SettingsFeature>
 
-    /// 是否顯示「預設幣別」選擇 sheet。
+    /// 是否顯示「預設幣別」選擇 sheet
     @State private var showsCurrencySheet = false
 
 #if DEBUG
-    /// 是否顯示「AI 模型」選擇 sheet (僅 Debug build)。
+    /// 是否顯示「AI 模型」選擇 sheet (僅 Debug build)
     @State private var showsModelSheet = false
 #endif
 
     // MARK: - View Body
 
-    /// 設定頁畫面內容。
+    /// 設定頁畫面內容
     var body: some View {
         Form {
-            // 帳號管理 (僅在雲端同步旗標開啟時顯示；未登入則 section 自身不顯示)。登出後閘門自動回登入畫面。
+            // 帳號管理 (僅在雲端同步旗標開啟時顯示；未登入則 section 自身不顯示)。登出後閘門自動回登入畫面
             if CloudSyncFeatureFlag.isEnabled {
                 CloudAccountSettingsSection()
             }
@@ -185,16 +185,16 @@ struct SettingsView: View {
 
 private extension SettingsView {
 
-    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字。
-    /// - Parameter currency: 幣別。
-    /// - Returns: 顯示字串。
+    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字
+    /// - Parameter currency: 幣別
+    /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
         let locale = Locale.preferred()
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
         return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
     }
 
-    /// 從 bundle info 讀出版本號。
+    /// 從 bundle info 讀出版本號
     var appVersion: String {
         let dictionary = Bundle.main.infoDictionary
         let short = dictionary?["CFBundleShortVersionString"] as? String ?? "—"

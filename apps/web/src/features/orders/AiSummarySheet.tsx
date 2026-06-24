@@ -10,7 +10,7 @@ import { api } from '@/lib/api';
 
 type Phase = 'streaming' | 'done' | 'error';
 
-// AI 商品明細總結 sheet：串流渲染 Markdown，關閉即取消串流。
+// AI 商品明細總結 sheet：串流渲染 Markdown，關閉即取消串流
 export function AiSummarySheet({
   open,
   onClose,

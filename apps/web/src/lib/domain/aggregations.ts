@@ -30,7 +30,7 @@ export interface CampaignSummary {
   distribution: DistributionRow[];
 }
 
-// 開團結算：全由葉端成員訂單推導 (對齊 iOS CampaignSummary)。
+// 開團結算：全由葉端成員訂單推導 (對齊 iOS CampaignSummary)
 export function campaignSummary(orders: OrderDTO[], campaignName: string): CampaignSummary {
   const members = orders.filter((o) => isLeaf(o) && o.campaignNames.includes(campaignName));
 
@@ -77,7 +77,7 @@ export function campaignSummary(orders: OrderDTO[], campaignName: string): Campa
   };
 }
 
-// 客戶分貨：依 trim 後客戶名稱分組，全員已收款才算 fullyReceived。
+// 客戶分貨：依 trim 後客戶名稱分組，全員已收款才算 fullyReceived
 function buildDistribution(members: OrderDTO[]): DistributionRow[] {
   const map = new Map<string, OrderDTO[]>();
   for (const o of members) {
@@ -222,7 +222,7 @@ export function insightsStats(
 ): InsightsStats {
   const realized = orders.filter((o) => REALIZED_STATUSES.has(o.status));
 
-  // 類別收益拆解：葉端 + (已實現或 merged)，多類別全額計入每個類別。
+  // 類別收益拆解：葉端 + (已實現或 merged)，多類別全額計入每個類別
   const categoryMap = new Map<string, Decimal>();
   for (const o of orders) {
     if (!contributesToCategoryBreakdown(o)) continue;
@@ -236,7 +236,7 @@ export function insightsStats(
     .map(([name, profit]) => ({ name, profit: profit.toString(), profitNumber: profit.toNumber() }))
     .sort((a, b) => b.profitNumber - a.profitNumber);
 
-  // 成本結構甜甜圈：原始 itemCost / 國內 / 國際 / 手續費。
+  // 成本結構甜甜圈：原始 itemCost / 國內 / 國際 / 手續費
   let itemCost = new Decimal(0);
   let domestic = new Decimal(0);
   let international = new Decimal(0);
@@ -254,7 +254,7 @@ export function insightsStats(
     { label: '手續費', value: fees.toNumber(), color: CATEGORY_TINTS[1] },
   ].filter((s) => s.value > 0);
 
-  // 開團獲利排名：orderCount > 0，依獲利降冪。
+  // 開團獲利排名：orderCount > 0，依獲利降冪
   const campaignRanking: RankRow[] = campaigns
     .map((c) => {
       const summary = campaignSummary(orders, c.name);
@@ -330,7 +330,7 @@ function sumProfitInRange(orders: OrderDTO[], start: number, end: number): Decim
   return sum;
 }
 
-// 8 週 × 7 天 (週一為始) 訂單數熱力圖。
+// 8 週 × 7 天 (週一為始) 訂單數熱力圖
 function buildHeatmap(orders: OrderDTO[], now: Date): number[][] {
   const weeks = 8;
   const grid: number[][] = Array.from({ length: weeks }, () => Array.from({ length: 7 }, () => 0));

@@ -12,7 +12,7 @@ import { getCurrentIdToken } from './firebase';
 
 const BASE = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:4000/api';
 
-// API 收到 401 時呼叫的處理器 (由 AuthProvider 註冊：登出後 AuthGate 導回登入)。
+// API 收到 401 時呼叫的處理器 (由 AuthProvider 註冊：登出後 AuthGate 導回登入)
 let onUnauthorized: (() => void) | null = null;
 export function setUnauthorizedHandler(handler: () => void): void {
   onUnauthorized = handler;
@@ -56,7 +56,7 @@ async function request<T>(path: string, init?: RequestInit): Promise<T> {
   return (await res.json()) as T;
 }
 
-// 訂單草稿輸入 (前端送出形狀；decimal 欄位皆字串)。
+// 訂單草稿輸入 (前端送出形狀；decimal 欄位皆字串)
 export interface OrderInputBody {
   id?: string;
   customer?: { name?: string; initials?: string; tier?: OrderDTO['customer']['tier'] };
@@ -103,7 +103,7 @@ export const api = {
         method: 'PUT',
         body: JSON.stringify(body),
       }),
-    // 欄位級合併寫入：只送變更欄位 + 每欄位 HLC，後端逐欄合併 (不同欄位皆存活)。
+    // 欄位級合併寫入：只送變更欄位 + 每欄位 HLC，後端逐欄合併 (不同欄位皆存活)
     patch: (
       id: string,
       body: { changedFields: Record<string, unknown>; fieldClocks: Record<string, string> },
@@ -191,7 +191,7 @@ export const api = {
       request<SettingsDTO>('/settings', { method: 'PUT', body: JSON.stringify(body) }),
   },
   aiSummary: {
-    // 串流總結：逐塊回呼，回傳 Promise 於串流結束 resolve。
+    // 串流總結：逐塊回呼，回傳 Promise 於串流結束 resolve
     stream: async (
       orderIds: string[],
       selectedCategory: string | null,

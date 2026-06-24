@@ -23,13 +23,13 @@ export default function SettingsPage() {
   const currencyCodes = useCurrencyCodes().data ?? [];
   const { user, signOut } = useAuth();
 
-  // 每月獲利目標本地鏡射，blur 時才寫回。
+  // 每月獲利目標本地鏡射，blur 時才寫回
   const [goalLocal, setGoalLocal] = useState('');
-  // 挑選器開關。
+  // 挑選器開關
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [currencyPickerOpen, setCurrencyPickerOpen] = useState(false);
 
-  // settings 載入後同步初始值。
+  // settings 載入後同步初始值
   useEffect(() => {
     if (s) setGoalLocal(s.monthlyProfitGoal);
   }, [s?.monthlyProfitGoal]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -138,7 +138,7 @@ export default function SettingsPage() {
           <BLCard>
             <div
               onBlur={() => {
-                // 失焦時寫回，避免逐字觸發 mutation。
+                // 失焦時寫回，避免逐字觸發 mutation
                 if (goalLocal !== s.monthlyProfitGoal) {
                   save.mutate({ monthlyProfitGoal: goalLocal });
                 }

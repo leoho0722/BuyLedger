@@ -3,7 +3,7 @@
 import { BLButton } from './BLButton';
 import { Sheet } from './Sheet';
 
-// 照片檢視器：以 sheet 呈現，title 顯示計數 (x / n)、上一張/下一張切換 (對齊 iOS BLPhotoViewer)。
+// 照片檢視器：以 sheet 呈現，title 顯示計數 (x / n)、上一張/下一張切換 (對齊 iOS BLPhotoViewer)
 export function PhotoViewer({
   photos,
   index,

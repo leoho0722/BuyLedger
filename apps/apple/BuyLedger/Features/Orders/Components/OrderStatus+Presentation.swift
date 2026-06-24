@@ -11,7 +11,7 @@ extension OrderStatus {
 
     // MARK: - Presentation Properties
 
-    /// 對應設計系統語意狀態。
+    /// 對應設計系統語意狀態
     var tone: BLTone {
         switch self {
         case .quoting:

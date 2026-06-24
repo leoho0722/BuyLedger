@@ -13,7 +13,7 @@ import {
 } from './hlc';
 import { HlcService } from './hlc.service';
 
-// 跨平台 conformance vectors 的唯一來源 (backend/web/iOS 共用同一檔)。
+// 跨平台 conformance vectors 的唯一來源 (backend/web/iOS 共用同一檔)
 const vectorsPath = path.join(
   __dirname,
   '../../../../shared/sync-conformance/hlc-vectors.json',

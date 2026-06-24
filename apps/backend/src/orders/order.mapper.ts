@@ -2,10 +2,10 @@ import type { Order as OrderRow } from '@prisma/client';
 import type { LedgerOrder, LedgerOrderItem } from '../data-model';
 import { computeOrderSummary, OrderSummary } from '../domain/order-summary';
 
-// 對外的訂單 DTO：生成型別 + 後端算好的財務摘要。
+// 對外的訂單 DTO：生成型別 + 後端算好的財務摘要
 export type OrderDTO = LedgerOrder & { summary: OrderSummary };
 
-// Prisma 列轉領域型別 (decimal → 字串、date → ISO)。
+// Prisma 列轉領域型別 (decimal → 字串、date → ISO)
 export function rowToDomain(row: OrderRow): LedgerOrder {
   return {
     id: row.id,
@@ -41,7 +41,7 @@ export function rowToDomain(row: OrderRow): LedgerOrder {
   };
 }
 
-// 領域型別 + 摘要組成 DTO。
+// 領域型別 + 摘要組成 DTO
 export function domainToDto(order: LedgerOrder): OrderDTO {
   return { ...order, summary: computeOrderSummary(order) };
 }

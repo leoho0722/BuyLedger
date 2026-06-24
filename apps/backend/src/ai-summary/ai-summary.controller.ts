@@ -7,7 +7,7 @@ import { AiSummaryInput, AiSummaryService } from './ai-summary.service';
 export class AiSummaryController {
   constructor(private readonly ai: AiSummaryService) {}
 
-  // 串流回應：前端以 fetch ReadableStream 逐塊讀取並即時渲染 Markdown。
+  // 串流回應：前端以 fetch ReadableStream 逐塊讀取並即時渲染 Markdown
   @Post('stream')
   async stream(
     @CurrentUid() uid: string,

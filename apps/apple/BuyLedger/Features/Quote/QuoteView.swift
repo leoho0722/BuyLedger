@@ -8,7 +8,7 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 報價試算工具畫面。
+/// 報價試算工具畫面
 ///
 /// 對應設計稿 iPhone Quote sheet 與 iPad/Mac 的 Quote tool：
 /// - 來源幣別 chip
@@ -19,18 +19,18 @@ struct QuoteView: View {
 
     // MARK: - View Properties
 
-    /// 報價試算 store。
+    /// 報價試算 store
     @Bindable var store: StoreOf<QuoteFeature>
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 是否顯示幣別選擇 sheet。
+    /// 是否顯示幣別選擇 sheet
     @State private var showsCurrencySheet = false
 
     // MARK: - View Body
 
-    /// 報價試算畫面內容。
+    /// 報價試算畫面內容
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
@@ -57,9 +57,9 @@ struct QuoteView: View {
 
 private extension QuoteView {
 
-    /// 匯率載入狀態的橫幅；無錯誤且已載入時不顯示。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 狀態 view。
+    /// 匯率載入狀態的橫幅；無錯誤且已載入時不顯示
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 狀態 view
     @ViewBuilder
     func statusBanner(palette: BLPalette) -> some View {
         if store.isLoading {
@@ -104,9 +104,9 @@ private extension QuoteView {
         }
     }
 
-    /// 輸入卡：客戶/商品 + 幣別 + 各項數值輸入欄。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 輸入卡 view。
+    /// 輸入卡：客戶/商品 + 幣別 + 各項數值輸入欄
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 輸入卡 view
     @ViewBuilder
     func inputsCard(palette: BLPalette) -> some View {
         BLCard {
@@ -169,9 +169,9 @@ private extension QuoteView {
         }
     }
 
-    /// 來源幣別選擇按鈕：點開後以 sheet 列出主檔幣別供搜尋與選擇。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 幣別按鈕 view。
+    /// 來源幣別選擇按鈕：點開後以 sheet 列出主檔幣別供搜尋與選擇
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 幣別按鈕 view
     @ViewBuilder
     func currencyPicker(palette: BLPalette) -> some View {
         Button {
@@ -225,14 +225,14 @@ private extension QuoteView {
         }
     }
 
-    /// 單一數值輸入列：label 在左、右側為對齊尾端的 `TextField` 與單位，取代原本的 slider，讓使用者可直接鍵入精確數值。
+    /// 單一數值輸入列：label 在左、右側為對齊尾端的 `TextField` 與單位，取代原本的 slider，讓使用者可直接鍵入精確數值
     /// - Parameters:
-    ///   - label: 欄位名稱。
-    ///   - value: 雙向繫結的值；寫入時自動 clamp 成非負數。
-    ///   - unit: 顯示在輸入框右側的單位字串。
-    ///   - fractionDigits: 固定顯示的小數位數；大於 0 時鍵盤改用 `decimalPad`，否則 `numberPad`。
-    ///   - allowsDecimalEntry: 為 `true` 時允許輸入 0 到 2 位小數 (整數不強制補零) 並使用 `decimalPad`，供金額類欄位鍵入小數價格。
-    /// - Returns: 數值輸入列 view。
+    ///   - label: 欄位名稱
+    ///   - value: 雙向繫結的值；寫入時自動 clamp 成非負數
+    ///   - unit: 顯示在輸入框右側的單位字串
+    ///   - fractionDigits: 固定顯示的小數位數；大於 0 時鍵盤改用 `decimalPad`，否則 `numberPad`
+    ///   - allowsDecimalEntry: 為 `true` 時允許輸入 0 到 2 位小數 (整數不強制補零) 並使用 `decimalPad`，供金額類欄位鍵入小數價格
+    /// - Returns: 數值輸入列 view
     @ViewBuilder
     func numberField(
         label: String,
@@ -270,9 +270,9 @@ private extension QuoteView {
         }
     }
 
-    /// 建議售價 hero 卡 (漸層綠→青)。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: hero 卡 view。
+    /// 建議售價 hero 卡 (漸層綠→青)
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: hero 卡 view
     @ViewBuilder
     func suggestedHero(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
@@ -305,9 +305,9 @@ private extension QuoteView {
         .blCardShadow()
     }
 
-    /// 成本拆解卡：每項條 + 總成本。
-    /// - Parameter palette: 目前外觀使用的色盤。
-    /// - Returns: 拆解卡 view。
+    /// 成本拆解卡：每項條 + 總成本
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 拆解卡 view
     @ViewBuilder
     func breakdownCard(palette: BLPalette) -> some View {
         let total = max(store.costTwd, 1)
@@ -356,16 +356,16 @@ private extension QuoteView {
         }
     }
 
-    /// 拆解條的單列；以 ``BLProgressBar`` 表現各分類占總成本的比例，trailing 顯示原始 TWD 金額而非百分比。
+    /// 拆解條的單列；以 ``BLProgressBar`` 表現各分類占總成本的比例，trailing 顯示原始 TWD 金額而非百分比
     ///
-    /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLProgressBar`` 自帶色盤推導、function body 不再讀取 palette；保留外部 label 與其他 helper (``inputsCard``、``suggestedHero`` 等) 一致，未來若需要客製拆解列的視覺也方便加回來。
+    /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLProgressBar`` 自帶色盤推導、function body 不再讀取 palette；保留外部 label 與其他 helper (``inputsCard``、``suggestedHero`` 等) 一致，未來若需要客製拆解列的視覺也方便加回來
     /// - Parameters:
-    ///   - label: 拆解項目的名稱 (如「商品金額」)。
-    ///   - value: 該項目的 TWD 金額。
-    ///   - total: 用來計算占比的總成本 (避免除以 0 時取 1)。
-    ///   - color: 進度條與分類的識別色。
-    ///   - palette: 目前外觀使用的色盤；目前未使用，預留給未來客製需求。
-    /// - Returns: 拆解列 view。
+    ///   - label: 拆解項目的名稱 (如「商品金額」)
+    ///   - value: 該項目的 TWD 金額
+    ///   - total: 用來計算占比的總成本 (避免除以 0 時取 1)
+    ///   - color: 進度條與分類的識別色
+    ///   - palette: 目前外觀使用的色盤；目前未使用，預留給未來客製需求
+    /// - Returns: 拆解列 view
     @ViewBuilder
     func breakdownRow(
         label: String,
@@ -389,18 +389,18 @@ private extension QuoteView {
 
 private extension QuoteView {
 
-    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字。
-    /// - Parameter currency: 幣別。
-    /// - Returns: 顯示字串。
+    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字
+    /// - Parameter currency: 幣別
+    /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
         let locale = Locale.preferred()
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
         return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
     }
 
-    /// 包裝 `Binding<Double>`，寫入時把負數 clamp 成 `0`；報價試算的所有數值皆無負值意義。
-    /// - Parameter binding: 原始繫結。
-    /// - Returns: 寫入時保證非負的繫結。
+    /// 包裝 `Binding<Double>`，寫入時把負數 clamp 成 `0`；報價試算的所有數值皆無負值意義
+    /// - Parameter binding: 原始繫結
+    /// - Returns: 寫入時保證非負的繫結
     func nonNegativeBinding(_ binding: Binding<Double>) -> Binding<Double> {
         Binding(
             get: { binding.wrappedValue },
@@ -408,7 +408,7 @@ private extension QuoteView {
         )
     }
 
-    /// 將金額格式化為新台幣 (無小數位)。
+    /// 將金額格式化為新台幣 (無小數位)
     func formatTwd(_ amount: Double) -> String {
         Decimal(amount).formatted(
             .currency(code: CurrencyCode.twd.code)
@@ -417,7 +417,7 @@ private extension QuoteView {
         )
     }
 
-    /// 將百分比格式化為含一位小數的字串。
+    /// 將百分比格式化為含一位小數的字串
     func formatPercent(_ value: Double) -> String {
         Decimal(value).formatted(.number.precision(.fractionLength(1))) + "%"
     }

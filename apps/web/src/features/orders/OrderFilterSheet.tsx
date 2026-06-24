@@ -13,7 +13,7 @@ import {
   type OrderFilters,
 } from '@/lib/domain/orders';
 
-// 訂單篩選 sheet：日期區間 + 類別 + 付款方式 + 開團 + 開團狀態，套用時一次提交。
+// 訂單篩選 sheet：日期區間 + 類別 + 付款方式 + 開團 + 開團狀態，套用時一次提交
 export function OrderFilterSheet({
   open,
   onClose,

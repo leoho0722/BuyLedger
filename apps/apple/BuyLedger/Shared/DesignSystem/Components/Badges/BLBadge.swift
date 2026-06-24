@@ -7,42 +7,42 @@
 
 import SwiftUI
 
-/// 決定徽章的尺寸與填色方式。
+/// 決定徽章的尺寸與填色方式
 enum BLBadgeVariant {
 
     // MARK: - Cases
 
-    /// 數量徽章。
+    /// 數量徽章
     case count
 
-    /// 短文字標籤。
+    /// 短文字標籤
     case label
 }
 
-/// 顯示短文字或數量的徽章。
+/// 顯示短文字或數量的徽章
 struct BLBadge: View {
 
     // MARK: - View Properties
 
-    /// 目前系統深淺色外觀。
+    /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 徽章顯示的文字。
+    /// 徽章顯示的文字
     let text: String
 
-    /// 徽章使用的語意狀態。
+    /// 徽章使用的語意狀態
     let tone: BLTone
 
-    /// 徽章的尺寸與填色樣式。
+    /// 徽章的尺寸與填色樣式
     let variant: BLBadgeVariant
 
     // MARK: - Init
 
-    /// 建立徽章。
+    /// 建立徽章
     /// - Parameters:
-    ///   - text: 徽章顯示的文字。
-    ///   - tone: 徽章使用的語意狀態。
-    ///   - variant: 徽章的尺寸與填色樣式。
+    ///   - text: 徽章顯示的文字
+    ///   - tone: 徽章使用的語意狀態
+    ///   - variant: 徽章的尺寸與填色樣式
     init(_ text: String, tone: BLTone = .accent, variant: BLBadgeVariant = .label) {
         self.text = text
         self.tone = tone
@@ -51,7 +51,7 @@ struct BLBadge: View {
 
     // MARK: - View Body
 
-    /// 徽章的畫面內容。
+    /// 徽章的畫面內容
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
@@ -71,9 +71,9 @@ struct BLBadge: View {
 
 private extension BLBadge {
 
-    /// 回傳徽章前景色。
-    /// - Parameter palette: 目前外觀對應的色盤。
-    /// - Returns: 徽章文字使用的色彩。
+    /// 回傳徽章前景色
+    /// - Parameter palette: 目前外觀對應的色盤
+    /// - Returns: 徽章文字使用的色彩
     func foregroundColor(palette: BLPalette) -> Color {
         switch variant {
         case .count:
@@ -83,9 +83,9 @@ private extension BLBadge {
         }
     }
 
-    /// 回傳徽章背景色。
-    /// - Parameter palette: 目前外觀對應的色盤。
-    /// - Returns: 徽章背景使用的色彩。
+    /// 回傳徽章背景色
+    /// - Parameter palette: 目前外觀對應的色盤
+    /// - Returns: 徽章背景使用的色彩
     func backgroundColor(palette: BLPalette) -> Color {
         switch variant {
         case .count:

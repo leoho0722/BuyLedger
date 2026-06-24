@@ -22,7 +22,7 @@ final class BuyLedgerUITestsLaunchTests: XCTestCase {
         let app = XCUIApplication()
         app.launch()
 
-        // 如需在啟動後、截圖前執行額外步驟 (例如登入測試帳號或導覽到特定畫面)，可在此插入。
+        // 如需在啟動後、截圖前執行額外步驟 (例如登入測試帳號或導覽到特定畫面)，可在此插入
 
         let attachment = XCTAttachment(screenshot: app.screenshot())
         attachment.name = "Launch Screen"

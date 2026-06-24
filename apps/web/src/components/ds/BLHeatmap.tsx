@@ -1,4 +1,4 @@
-// 訂單數熱力圖：8 週 × 7 天 (週一為始)，accent 依數量調整不透明度。
+// 訂單數熱力圖：8 週 × 7 天 (週一為始)，accent 依數量調整不透明度
 export function BLHeatmap({ grid }: { grid: number[][] }) {
   const max = Math.max(1, ...grid.flat());
   const dayLabels = ['一', '二', '三', '四', '五', '六', '日'];
