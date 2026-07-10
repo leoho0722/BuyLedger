@@ -42,6 +42,5 @@ struct AppConfigurationTests {
         let configuration = AppConfiguration.testValue
         #expect(configuration.exchangeRateAPIKey() == nil)
         #expect(configuration.ollamaAPIKey() == nil)
-        #expect(configuration.backendBaseURL() == nil)
     }
 }

@@ -1,8 +1,6 @@
 # BuyLedger
 
-為個人代購業務而生的帳本 App。提供 Apple 平台版本 (iOS、iPadOS、macOS) 與 Web 全棧版本；功能與設計語言跨平台一致。
-
-支援同帳號的跨裝置即時同步 (opt-in、預設關閉)，細節見各平台目錄文件。
+為個人代購業務而生的帳本 App，支援 Apple 平台 (iOS、iPadOS、macOS)。
 
 <details open>
   <summary>🖥️&nbsp; <b>macOS</b></summary>
@@ -32,55 +30,26 @@ BuyLedger (repo)/
 │   │   ├── BuyLedger/                    # App source root (App / Core / Features / Shared / Resources)
 │   │   ├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
 │   │   └── BuyLedgerUITests/             # UI 與啟動畫面測試
-│   ├── web/                              # Web 前端 (Next.js + React + Tailwind v4 + TanStack Query)
-│   │   ├── src/app/                      # App Router 頁面 (儀表板/訂單/開團/分析/更多)
-│   │   ├── src/components/               # 設計系統 (ds/) 與共用元件
-│   │   ├── src/features/                 # 訂單/開團功能模組 (表單、合併、AI 總結等)
-│   │   ├── src/lib/                      # 資料層、領域邏輯、格式化、生成型別
-│   │   ├── e2e/                          # Playwright 端對端測試
-│   │   └── Dockerfile                    # standalone 容器
-│   ├── backend/                          # Web 後端 (NestJS + Prisma + PostgreSQL)
-│   │   ├── src/                          # 各 feature module + domain/ (財務公式移植) + 生成型別
-│   │   ├── prisma/                       # schema.prisma 與種子
-│   │   └── Dockerfile                    # 多階段容器
 │   └── android/                          # (未來，尚未建立) Android App
 ├── shared/                               # 跨平台共享內容
 │   └── data-model/                       # 跨平台 Data Model schema 與產生器
 │       ├── schema/                       # 統一 schema (YAML，一型一檔)
 │       ├── generator/                    # datamodel-gen 產生器 (TypeScript + Bun)
 │       └── fixtures/                     # 產生器 golden file 測試素材
-├── deploy/                               # Web 全棧部署：docker-compose.yml + 分層 env (common.env 拓樸 + web.env build args + per-service *.env)
-├── Makefile                              # 部署入口 (make env / up / build / down / logs / ps / versions)
 ├── openspec/                             # Spectra 規格與變更提案
 └── assets/                               # README 圖片等共用素材
 ```
 
-**佈局契約**：可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。`apps/apple`、`apps/web`、`apps/backend` 與 `shared/data-model` 均已實際動工；`apps/android` 為文件化保留位置，待動工時才建立 (目前不放 stub)。
+**佈局契約**：可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。`apps/apple` 與 `shared/data-model` 均已實際動工；`apps/android` 為文件化保留位置，待動工時才建立 (目前不放 stub)。
 
 ## 平台導覽
 
 | 平台                         | 位置            | 開發指南                                                                                           |
 |------------------------------|-----------------|----------------------------------------------------------------------------------------------------|
 | Apple (iOS / iPadOS / macOS) | `apps/apple/`   | [apps/apple/README.md](apps/apple/README.md)：技術棧、環境設定、build / test、架構速覽、Troubleshooting |
-| Web 前端                     | `apps/web/`     | [apps/web/README.md](apps/web/README.md)：技術棧、開發、設計系統、Playwright                           |
-| Web 後端                     | `apps/backend/` | [apps/backend/README.md](apps/backend/README.md)：技術棧、API、Prisma、容器化                          |
 | Android                      | `apps/android/` | (未來，尚未建立)                                                                                    |
 
 各平台的 AI 協作硬規則見該平台目錄的 `CLAUDE.md`；跨平台通用規範見根目錄 [`CLAUDE.md`](CLAUDE.md)。
-
-## Web 全棧一鍵啟動
-
-```bash
-# 需要 Docker、Docker Compose 與 make
-make env                      # 由範本建立 deploy/ 下的 .env 與 *.env (再填入實值)
-make up                       # 建置並啟動 PostgreSQL 18 + 後端 (:4000) + 前端 (:3000)
-```
-
-部署物件統一收斂在 **`deploy/`**。環境變數分層：**`deploy/common.env`** 放 compose 內插用的拓樸值 (ports)；**`deploy/web.env`** 放 web 的 `NEXT_PUBLIC_*` build args (API base 與 Firebase web 設定，build 期 inline 進 client bundle)；**`deploy/<service>.env`** 為各容器執行期變數 (per-service `env_file`)——`deploy/db.env` (PostgreSQL 帳密)、`deploy/backend.env` (DATABASE_URL / CORS / 選填 API key / Firebase service account 路徑與 Storage bucket)。**Firebase service account 金鑰 JSON 放 `apps/backend/`(gitignore)，由 compose volume 唯讀掛入後端容器**；缺則後端 fail-closed、拒絕啟動。各 `*.example` 為範本、其餘不入版控。
-
-`make up` 會把 backend / web 的 **image tag 自動帶上各自 `package.json` 的 version** (例 `buyledger-web:1.0.0`)；其他指令見 `make` (`env` / `build` / `down` / `logs` / `ps` / `versions`)。也可直接 `docker compose -f deploy/docker-compose.yml up --build`，但 image 會退回 `:latest`。
-
-啟動後開啟 <http://localhost:3000>；首次啟動會自動套用資料庫 schema 並種子示範資料。未提供外部 API key 時，AI 商品總結與即時匯率以空狀態降級 (不偽造資料)。端對端驗收見 [apps/web/README.md](apps/web/README.md#端對端測試-playwright)。
 
 ## 產品政策
 

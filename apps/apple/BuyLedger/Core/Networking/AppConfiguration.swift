@@ -8,10 +8,10 @@
 import ComposableArchitecture
 import Foundation
 
-/// 集中提供 App 的環境設定：兩把外部 API key 與跨裝置同步的後端 API base URL
+/// 集中提供 App 的環境設定：兩把外部 API key
 ///
 /// 值皆於 build 期注入、App 啟動時自 `Bundle.main.infoDictionary` 讀回：機密的 API key 經 gitignored 的
-/// `Config.xcconfig` → `Info.plist` 的 `$(VAR)` 引用注入；非機密的後端位址直接定義於 `Info.plist`
+/// `Config.xcconfig` → `Info.plist` 的 `$(VAR)` 引用注入
 /// 上層 client 收到 `nil` key 時應拋 ``APIError/invalidKey``，UI 顯示「請設定 API key」並提供入口給使用者輸入
 struct AppConfiguration: Sendable {
 
@@ -22,9 +22,6 @@ struct AppConfiguration: Sendable {
 
     /// 取得 Ollama Cloud 的 API key；若未設定則回 `nil`
     var ollamaAPIKey: @Sendable () -> String?
-
-    /// 取得跨裝置同步的後端 API base URL；若未設定或格式非法則回 `nil`
-    var backendBaseURL: @Sendable () -> URL?
 }
 
 extension AppConfiguration {
@@ -62,25 +59,19 @@ extension AppConfiguration: DependencyKey {
                 Bundle.main.object(forInfoDictionaryKey: "OLLAMA_API_KEY") as? String,
                 placeholder: "$(OLLAMA_API_KEY)"
             )
-        },
-        backendBaseURL: {
-            normalize(Bundle.main.object(forInfoDictionaryKey: "BACKEND_API_BASE_URL") as? String)
-                .flatMap { URL(string: $0) }
         }
     )
 
     /// 測試預設不提供任何設定；要驗證 happy path 的測試應自行 inject
     nonisolated static let testValue = AppConfiguration(
         exchangeRateAPIKey: { nil },
-        ollamaAPIKey: { nil },
-        backendBaseURL: { nil }
+        ollamaAPIKey: { nil }
     )
 
     /// SwiftUI Preview 用 stub，避免真的觸發 API call
     nonisolated static let previewValue = AppConfiguration(
         exchangeRateAPIKey: { "preview-stub-key" },
-        ollamaAPIKey: { "preview-stub-key" },
-        backendBaseURL: { URL(string: "http://localhost:4000/api") }
+        ollamaAPIKey: { "preview-stub-key" }
     )
 }
 

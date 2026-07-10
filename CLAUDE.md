@@ -33,13 +33,13 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 ## Monorepo 佈局
 
-- 可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。目前有 `apps/apple` (iOS / iPadOS / macOS)、`apps/web` (Next.js 前端)、`apps/backend` (NestJS 後端) 與 `shared/data-model` (跨平台 data model schema + 產生器)；`apps/android` 為文件化保留位置，動工時才建立目錄。Web 全棧部署物件收斂在 `deploy/` (compose + 分層 env)，以根目錄 `Makefile` 的 `make up` 一鍵啟動。
+- 可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。目前有 `apps/apple` (iOS / iPadOS / macOS) 與 `shared/data-model` (跨平台 data model schema + 產生器)；`apps/android` 為文件化保留位置，動工時才建立目錄。
 - **每個平台目錄都要有一份自己的 `CLAUDE.md`** (如 `apps/apple/CLAUDE.md`) 記錄該平台的硬規則與 gotcha；新平台動工時第一件事就是建立它。本檔不得參雜平台細節。
 - 文件與設定中的路徑引用必須與實際佈局一致；repo 不保留空的 stub 目錄或占位檔。
 
 ## 跨平台 Data Model (codegen)
 
-`shared/data-model/` 是跨平台 data model 形狀的唯一宣告來源：一份統一 schema (YAML，一型一檔) 經 `datamodel-gen` 產生器輸出各平台語言的型別程式碼 (格式與指令見 `shared/data-model/README.md`)。硬規則：
+`shared/data-model/` 是跨平台 data model 形狀的唯一宣告來源：一份統一 schema (YAML，一型一檔) 經 `datamodel-gen` 產生器輸出型別程式碼 (格式與指令見 `shared/data-model/README.md`)。目前產線僅配置 Swift target (輸出至 `apps/apple`)；TypeScript 與 Kotlin emitter 仍由 generator 的 golden-file 測試鎖定，待其他平台動工時再加對應 target。硬規則：
 
 - **形狀變更一律改 schema、再 generate**——要增刪欄位、改型別或調整 trait，改 `shared/data-model/schema/` 後執行 `bun run generate`，**不可直接編輯生成檔** (`*.generated.swift` 等，檔頭都有「請勿手動編輯」警語)。
 - **生成檔預設唯讀**——`generate` 會把所有生成檔鎖成唯讀 (`0o444`) 以防手動編輯；要重生成直接再跑 `generate` (會自動解鎖→重寫→重鎖)，只有刻意手動檢視／實驗才跑 `bun run unlock` 解鎖。此唯讀是本機工作副本的防線 (git 不追蹤 write bit，clone 後會回到可寫)，與檔頭警語、`check` 守門三者並行。

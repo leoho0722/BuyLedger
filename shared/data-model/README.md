@@ -4,7 +4,7 @@
 
 `shared/data-model/` 是 BuyLedger 跨平台 data model 形狀的唯一宣告來源 (single source of truth)。一份統一的 schema (以 YAML 撰寫) 經 `datamodel-gen` 產生器，輸出各平台語言的 data model 程式碼。
 
-目前實際接上的目標為 Swift (Apple 平台) 與 TypeScript (Web 前端 `apps/web` 與後端 `apps/backend` 各一份)；Kotlin 的 emitter 已就緒、由 golden file 測試鎖定其正確性，待 Android 平台動工時於 `codegen.yaml` 加上對應 target 即可接上。
+目前實際接上的產線目標為 Swift (Apple 平台)；TypeScript 與 Kotlin 的 emitter 已就緒、由 golden file 測試鎖定其正確性，待對應平台動工時於 `codegen.yaml` 加上 target 即可接上。
 
 資料形狀的任何變更一律改 schema、再重新產生，**不手改生成檔**。schema 是唯一可編輯的來源，生成檔 (例如 `.generated.swift`) 為衍生產物。
 

@@ -361,9 +361,6 @@ struct OrdersFeature {
         /// 畫面出現時觸發載入
         case task
 
-        /// 跨裝置同步把遠端變更 upsert 進本機 store 後，重新讀取訂單刷新畫面 (繞過 ``task`` 的 `hasLoaded` 防重載)
-        case reloadFromStore
-
         /// 訂單載入成功
         case ordersLoaded([LedgerOrder])
 
@@ -570,15 +567,6 @@ struct OrdersFeature {
                     }
 
                     _ = await (orderSourcesTask, campaignsTask, categoriesTask, paymentMethodsTask, verificationStatusesTask)
-                }
-
-            case .reloadFromStore:
-                // 同步合併後的背景刷新：只重讀訂單、不動 `isLoading` (避免空狀態閃爍)，並繞過 `task` 的 `hasLoaded` 防重載
-                let orderRepository = orderRepository
-                return .run { send in
-                    if let orders = try? await orderRepository.fetchOrders() {
-                        await send(.ordersLoaded(orders))
-                    }
                 }
 
             case let .orderSourceMasterLoaded(items):

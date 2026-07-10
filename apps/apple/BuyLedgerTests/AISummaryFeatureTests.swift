@@ -16,7 +16,7 @@ struct AISummaryFeatureTests {
     // MARK: - Helpers
 
     private func keyedConfiguration(_ key: String?) -> AppConfiguration {
-        AppConfiguration(exchangeRateAPIKey: { nil }, ollamaAPIKey: { key }, backendBaseURL: { nil })
+        AppConfiguration(exchangeRateAPIKey: { nil }, ollamaAPIKey: { key })
     }
 
     // MARK: - Tests

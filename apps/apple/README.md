@@ -27,7 +27,7 @@ apps/apple/
 │   │   ├── Persistence/          # OrderPersistence (@ModelActor)、PersistenceContainer、OrderRecord
 │   │   ├── Dependencies/         # OrderRepository 等 5 個 Repository (type-based @Dependency 注入)
 │   │   ├── Networking/           # APIError、HTTPClient (send/stream)、HTTPMethod、URLRequestBuilder、AppConfiguration
-│   │   └── Sync/                 # 跨裝置同步基礎件：Hlc / HlcClient (每欄位 HLC)、BackendAPIClient (PATCH/DELETE)、SyncMeta / SyncMetaPersistence、SyncQueueItem / SyncQueuePersistence (待送佇列)、CloudSyncFieldMerge、PhotoRefResolver、NetworkPathMonitor
+│   │   └── Sync/                 # SwiftData 本機 sidecar 的 @Model 定義 (SyncMeta / SyncQueueItem)，供 V12 schema 引用；雲端同步已移除，兩表恆為空
 │   ├── Features/                 # 依功能切分的 TCA feature
 │   │   ├── AISummary/            # 訂單 AI 商品明細總結 (Ollama Cloud 串流)
 │   │   ├── App/                  # RootFeature + RootView + RootSidebarLayout / RootTabLayout
@@ -77,8 +77,6 @@ App 使用兩把 API key，皆透過 `Config.xcconfig` 注入 (機密)：
 `Config.xcconfig` 已列入 `.gitignore`，**請勿提交**。
 
 注入鏈路說明 (兩把 key 相同)：`Config.xcconfig` → pbxproj 的 `baseConfigurationReference` 掛到 app target 的 Debug + Release config → `Info.plist` 內以 `$(EXCHANGE_RATE_API_KEY)` / `$(OLLAMA_API_KEY)` 引用 build setting，build 時被注入 → `AppConfiguration.liveValue` 從 `Bundle.main.infoDictionary` 讀回。
-
-跨裝置同步的後端位址 `BACKEND_API_BASE_URL` 為非機密，直接定義於 `Info.plist` (本機預設 `http://localhost:4000/api`)，同樣由 `AppConfiguration` 讀回供 `BackendAPIClient` 使用。
 
 未設 key 時 App 仍可啟動：匯率工具與報價頁顯示「尚未設定 ExchangeRate-API 金鑰」橫幅；AI 總結面板顯示「尚未設定 OLLAMA_API_KEY。」並提供重試。
 
@@ -174,17 +172,6 @@ macOS 偏好設定走標準 `Settings { ... }` scene (⌘,)，實作在 `Feature
 `OllamaClient` (`Features/AISummary/`) 串接 Ollama Cloud chat streaming (`POST https://ollama.com/api/chat`)，在訂單詳情串流產生 Markdown 商品明細總結；缺金鑰或服務錯誤時進入 failed 狀態並提供重試，面板關閉時取消串流。逐位元組串流走 `HTTPClient.stream`。
 
 **Fallback 原則**：遵循 root [README.md › 產品政策](../../README.md#產品政策)——匯率與分析 UI 顯示「—」、「尚無可用匯率資料」、「尚未有足夠可用於分析的資料」等空狀態，避免使用者誤信過期或內建匯率。
-
-### 跨裝置同步 (離線優先、預設關閉)
-
-同一帳號的任意兩平台 (iOS↔web) 經後端 (Postgres 為 source of truth) + per-user Firestore 即時投影傳播 Order/Campaign 變更；iOS 端為**離線優先 + opt-in**：SwiftData 維持本機 source of truth，總開關 `Features/App/CloudSyncFeatureFlag.swift` 的 `isEnabled` **預設關閉**。關閉時純本機可用、零網路、不實例化任何引擎；開啟 (Firebase 登入後) 才接通同步通道。基礎件集中在 `Core/Sync/`：
-
-- **欄位級合併以 HLC 決勝**：每欄位帶 Hybrid Logical Clock (`Hlc` / `HlcClient`，序列 `p → c → writerId`，writerId 為 Firebase Installation ID)；client 只送變更欄位的 partial patch，合併集中在後端——不同欄位的並行修改全部保留、同欄位以 HLC 決定性決勝，後端為線性化點並 clamp 時鐘偏移 (5 分鐘)。本機合併套用走 `CloudSyncFieldMerge` 與單一 `OrderPersistence @ModelActor`，使 TCA 功能不與引擎競態。
-- **同步引擎**：`Features/App/CloudSyncEngine.swift` 以 `handleLocalSave` (單筆 diff 推送) / `syncAllLocalChanges` (批次／合併／改名全量重比) / `handleLocalDelete` 接收 `OrderRepository` 層統一發出的異動通知，推送 dirty 欄位 patch 至 `BackendAPIClient` (`PATCH`／`DELETE /orders/:id`)，並把投影拉回 upsert 進 SwiftData、觸發 `OrdersFeature.reloadFromStore` 即時刷新畫面。
-- **刪除為帶時鐘 tombstone**：刪除帶 `deleteClock`、後端保留 tombstone 90 天，較晚的欄位修改可非破壞性復活 (保留未觸及欄位)，避免殭屍重推。
-- **同步失敗不丟資料**：寫入失敗 client retry 3 次後該筆顯示可觀察的待同步／失敗狀態，留在持久化本機佇列 (`SyncQueueItem` / `SyncQueuePersistence`)，連線恢復 (`NetworkPathMonitor`) 或下次啟動自動重送；重送以 client UUID upsert + 確定性伺服器時鐘保證冪等。每欄位時鐘、dirty 集、tombstone、pending／failed、lastIssued HLC、照片參照等同步 metadata 放本機專屬 sidecar (`SyncMeta` / `SyncMetaPersistence`)，不污染 `OrderRecord` 或生成型別。照片參照 (Firestore 投影的 `photoRefs`) 在欄位合併前先經 `PhotoRefResolver` 解析回 `[Data]`。
-
-> 後端鏡像失敗的自我修復 (有限次內聯重試後標 `mirrorDirty`、由 `@Interval` 每 30 秒掃描自 Postgres 重新鏡像) 屬後端職責，見 [`apps/backend/README.md`](../backend/README.md)。
 
 ## Troubleshooting
 

@@ -38,7 +38,7 @@ struct BuyLedgerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            AppRootView(store: store)
+            RootView(store: store)
         }
         .modelContainer(modelContainer)
 #if os(macOS)

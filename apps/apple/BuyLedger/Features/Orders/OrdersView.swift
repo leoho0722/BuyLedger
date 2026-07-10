@@ -81,8 +81,10 @@ private extension OrdersView {
     @ViewBuilder
     var regularSplitContent: some View {
         let palette = BLTheme.palette(for: colorScheme)
+#if !os(macOS)
         let filteredIDs = store.state.filteredOrders(referenceDate: date.now, calendar: calendar).map(\.id)
         let allFilteredSelected = !filteredIDs.isEmpty && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
+#endif
 
         NavigationStack {
             HStack(spacing: 0) {
@@ -99,11 +101,13 @@ private extension OrdersView {
             .navigationTitle("訂單")
             .toolbar {
                 if store.isSelecting {
+#if !os(macOS)
                     ToolbarItem(placement: .topBarLeading) {
                         Button(allFilteredSelected ? "清除" : "全選") {
                             store.send(allFilteredSelected ? .clearSelectionTapped : .selectAllTapped)
                         }
                     }
+#endif
 
                     ToolbarItem(placement: .primaryAction) {
                         Button("完成") {
@@ -111,6 +115,7 @@ private extension OrdersView {
                         }
                     }
 
+#if !os(macOS)
                     ToolbarItemGroup(placement: .bottomBar) {
                         Text("已選 \(store.selectedOrderIDs.count) 筆")
                             .font(.subheadline)
@@ -131,6 +136,7 @@ private extension OrdersView {
                         }
                         .disabled(store.selectedOrderIDs.isEmpty)
                     }
+#endif
                 } else {
                     ToolbarItemGroup(placement: .primaryAction) {
                         Text("\(store.orders.count)")
