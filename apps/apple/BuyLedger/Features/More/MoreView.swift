@@ -11,8 +11,6 @@ import SwiftUI
 /// 更多分頁的入口畫面
 ///
 /// 對應設計稿 iPhone 「設定 / 更多」頁與 iPad 工具區塊的入口：以列表形式列出工具與設定子頁面，點擊後 push 到對應子畫面
-///
-/// macOS 上採用卡片網格佈局 (避免 iOS 風格 List 顯得陽春)，且不顯示「設定」入口——macOS 的偏好設定改由標準的「BuyLedger > 設定…」(⌘,) 視窗承載
 struct MoreView: View {
 
     // MARK: - View Properties
@@ -30,9 +28,6 @@ struct MoreView: View {
         let palette = BLTheme.palette(for: colorScheme)
 
         NavigationStack {
-            #if os(macOS)
-            macContent(palette: palette)
-            #else
             phoneContent(palette: palette)
                 .navigationDestination(
                     isPresented: Binding(
@@ -42,7 +37,6 @@ struct MoreView: View {
                 ) {
                     SettingsView(store: store.scope(state: \.settings, action: \.settings))
                 }
-            #endif
         }
     }
 }
@@ -51,7 +45,7 @@ struct MoreView: View {
 
 private extension MoreView {
 
-    /// 工具項目的領域定義；同時供 iOS/macOS 兩種佈局使用
+    /// 工具項目的領域定義
     enum ToolItem: String, CaseIterable, Identifiable {
 
         // MARK: - Cases
@@ -104,7 +98,7 @@ private extension MoreView {
             }
         }
 
-        /// 卡片副標題 (macOS 才顯示)
+        /// 卡片副標題
         var subtitle: String {
             switch self {
             case .fx:
@@ -286,149 +280,6 @@ private extension MoreView {
         }
     }
 }
-
-// MARK: - ViewBuilder (macOS 卡片網格版本)
-
-#if os(macOS)
-
-private extension MoreView {
-
-    /// macOS 的卡片網格版本：放大資訊密度，並使用 BLCard 與 LazyVGrid 取代 phone-style List
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 內容 view
-    @ViewBuilder
-    func macContent(palette: BLPalette) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: BLSpacing.large) {
-                header(palette: palette)
-                toolGrid(palette: palette)
-                settingsHint(palette: palette)
-            }
-            .padding(.horizontal, BLSpacing.large)
-            .padding(.vertical, BLSpacing.large)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(palette.background)
-        .navigationTitle("更多工具")
-    }
-
-    /// macOS 內容頂部的標題卡片
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: header view
-    @ViewBuilder
-    func header(palette: BLPalette) -> some View {
-        VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text("工具與管理")
-                .font(.largeTitle.weight(.bold))
-                .foregroundStyle(palette.label)
-
-            Text("常用的非主流程功能集中在這。偏好設定請改用「BuyLedger > 設定…」或快速鍵 ⌘,。")
-                .font(.subheadline)
-                .foregroundStyle(palette.secondaryLabel)
-                .frame(maxWidth: 640, alignment: .leading)
-        }
-    }
-
-    /// macOS 工具網格
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 網格 view
-    @ViewBuilder
-    func toolGrid(palette: BLPalette) -> some View {
-        let columns = [
-            GridItem(.adaptive(minimum: 280, maximum: 420), spacing: BLSpacing.medium, alignment: .top),
-        ]
-
-        LazyVGrid(columns: columns, spacing: BLSpacing.medium) {
-            ForEach(ToolItem.allCases) { item in
-                NavigationLink {
-                    destination(for: item)
-                } label: {
-                    toolTile(item, palette: palette)
-                }
-                .buttonStyle(.plain)
-            }
-        }
-    }
-
-    /// 單張工具卡片
-    /// - Parameters:
-    ///   - item: 工具項目
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 卡片 view
-    @ViewBuilder
-    func toolTile(_ item: ToolItem, palette: BLPalette) -> some View {
-        BLCard {
-            VStack(alignment: .leading, spacing: BLSpacing.small) {
-                ZStack {
-                    RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous)
-                        .fill(item.tint(in: palette).opacity(0.16))
-                        .frame(width: 44, height: 44)
-
-                    Image(systemName: item.systemImage)
-                        .font(.system(size: 20, weight: .semibold))
-                        .foregroundStyle(item.tint(in: palette))
-                }
-
-                Text(item.title)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(palette.label)
-                    .padding(.top, BLSpacing.extraSmall)
-
-                Text(item.subtitle)
-                    .font(.subheadline)
-                    .foregroundStyle(palette.secondaryLabel)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                HStack {
-                    Spacer()
-                    Image(systemName: "arrow.right")
-                        .font(.footnote.weight(.semibold))
-                        .foregroundStyle(item.tint(in: palette))
-                }
-                .padding(.top, BLSpacing.small)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .contentShape(Rectangle())
-    }
-
-    /// macOS 內容底部的設定提示
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 提示 view
-    @ViewBuilder
-    func settingsHint(palette: BLPalette) -> some View {
-        HStack(alignment: .top, spacing: BLSpacing.small) {
-            Image(systemName: "gear")
-                .font(.body.weight(.semibold))
-                .foregroundStyle(palette.tertiaryLabel)
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text("App 設定")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(palette.label)
-
-                Text("外觀、通知與預設幣別位於 macOS 標準的偏好設定視窗。")
-                    .font(.footnote)
-                    .foregroundStyle(palette.secondaryLabel)
-            }
-
-            Spacer(minLength: BLSpacing.medium)
-
-            Text("⌘,")
-                .font(.system(.subheadline, design: .monospaced).weight(.semibold))
-                .padding(.horizontal, BLSpacing.small)
-                .padding(.vertical, BLSpacing.extraSmall)
-                .background(palette.fillTertiary)
-                .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
-        }
-        .padding(BLSpacing.medium)
-        .background(palette.fillQuaternary)
-        .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
-    }
-}
-
-#endif
 
 // MARK: - Preview
 

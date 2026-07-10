@@ -30,9 +30,7 @@ struct OrderMergeCandidateSheet: View {
         NavigationStack {
             content
                 .navigationTitle(store.step == .selectCandidate ? "合併訂單" : "選擇保留照片")
-#if !os(macOS)
                 .navigationBarTitleDisplayMode(.inline)
-#endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("取消") {
@@ -49,9 +47,6 @@ struct OrderMergeCandidateSheet: View {
                     }
                 }
         }
-#if os(macOS)
-        .frame(minWidth: 420, minHeight: 520)
-#endif
     }
 }
 
@@ -103,15 +98,11 @@ private extension OrderMergeCandidateSheet {
                 }
             }
         }
-#if os(macOS)
-        .searchable(text: $store.searchText, prompt: Text("搜尋"))
-#else
         .searchable(
             text: $store.searchText,
             placement: .navigationBarDrawer(displayMode: .always),
             prompt: Text("搜尋")
         )
-#endif
     }
 
     /// 單筆候選訂單列：重用訂單頁的 ``OrderRowView`` 版面，右欄以 ``OrderRowView/Trailing/chargedAmount`` 變體顯示客戶實付

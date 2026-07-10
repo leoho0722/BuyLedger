@@ -7,9 +7,6 @@
 
 import ComposableArchitecture
 import Foundation
-#if canImport(AppKit)
-import AppKit
-#endif
 
 /// App 根層級狀態與導覽
 @Reducer
@@ -224,19 +221,10 @@ struct RootFeature {
 
             // AI 未開啟提示 alert 的「前往開啟」：導覽由 root 負責
             case .orders(.aiDisabledAlert(.presented(.goToAISettings))):
-                #if os(macOS)
-                // macOS：開啟標準偏好設定視窗 (⌘,)，AI 開關位於 SettingsMacView
-                return .run { _ in
-                    await MainActor.run {
-                        _ = NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil)
-                    }
-                }
-                #else
-                // iOS / iPadOS：切到「更多」分頁並 push 設定頁
+                // 切到「更多」分頁並 push 設定頁
                 state.selectedTab = .more
                 state.showsSettingsFromDeepLink = true
                 return .none
-                #endif
 
             case .orders:
                 return .none

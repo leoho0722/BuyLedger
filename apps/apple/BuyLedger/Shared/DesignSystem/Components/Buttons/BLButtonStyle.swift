@@ -59,14 +59,8 @@ struct BLButtonStyle: ButtonStyle {
 
 private extension BLButtonStyle {
 
-    /// 平台對應的最小按鈕高度
-    var minimumHeight: CGFloat {
-#if os(macOS)
-        32
-#else
-        44
-#endif
-    }
+    /// 最小按鈕高度
+    var minimumHeight: CGFloat { 44 }
 
     /// 回傳按鈕前景色
     /// - Parameter palette: 目前外觀對應的色盤

@@ -285,7 +285,6 @@ struct RootFeatureTests {
         #expect(store.state.orders.orders.first?.campaignNames == ["三月日本團 (補)", "四月韓國團"])
     }
 
-#if !os(macOS)
     @Test func goToAISettingsDeepLinksToMoreTabAndSettings() async {
         var state = RootFeature.State()
         state.selectedTab = .dashboard
@@ -309,7 +308,6 @@ struct RootFeatureTests {
         #expect(store.state.selectedTab == .more)
         #expect(store.state.showsSettingsFromDeepLink == true)
     }
-#endif
 }
 
 // MARK: - Private Method

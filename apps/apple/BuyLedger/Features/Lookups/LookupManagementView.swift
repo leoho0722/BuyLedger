@@ -10,16 +10,15 @@ import SwiftUI
 
 /// 訂單來源 / 商品類別 / 付款方式主檔的獨立管理畫面
 ///
-/// 以 ``LookupManagementFeature`` 驅動：點「新增」彈出 alert (訂單來源 / 商品類別) 或 sheet (付款方式含 `isCardless` / `isBankTransfer` toggle、對帳狀態為 name-only sheet)。macOS 採 `ScrollView` + `BLCard` 卡片版面 (對齊 ``CustomersView``)，以右鍵 contextMenu 編輯／重新命名或刪除；iOS / iPadOS 維持系統 `List`，列可左滑刪除或編輯／重新命名。付款方式列操作為「編輯」(開 ``PaymentMethodEditorSheet`` 帶入原資料)，其餘 kind 為「重新命名」alert。文案、空狀態、icon 來自 ``LookupKind``
+/// 以 ``LookupManagementFeature`` 驅動：點「新增」彈出 alert (訂單來源 / 商品類別) 或 sheet (付款方式含 `isCardless` / `isBankTransfer` toggle、對帳狀態為 name-only sheet)。
+/// iOS / iPadOS 以系統 `List` 呈現，列可左滑刪除或編輯／重新命名。
+/// 付款方式列操作為「編輯」(開 ``PaymentMethodEditorSheet`` 帶入原資料)，其餘 kind 為「重新命名」alert。文案、空狀態、icon 來自 ``LookupKind``
 struct LookupManagementView: View {
 
     // MARK: - View Properties
 
     /// 主檔管理 store
     @Bindable var store: StoreOf<LookupManagementFeature>
-
-    /// 目前系統深淺色外觀；macOS 卡片版面用來取得色盤
-    @Environment(\.colorScheme) private var colorScheme
 
     /// 是否顯示「新增類別」alert (僅商品類別 kind 使用)
     @State private var showsAddCategoryAlert = false
@@ -50,9 +49,7 @@ struct LookupManagementView: View {
     var body: some View {
         content
             .navigationTitle(store.state.kind.title)
-#if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
-#endif
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -78,10 +75,8 @@ struct LookupManagementView: View {
                 )
             ) {
                 TextField(store.state.kind.addFieldPlaceholder, text: $renameDraft)
-#if !os(macOS)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-#endif
 
                 Button("儲存") {
                     if let from = renameTarget {
@@ -111,10 +106,8 @@ struct LookupManagementView: View {
             }
             .alert(store.state.kind.addAlertTitle, isPresented: $showsAddCategoryAlert) {
                 TextField(store.state.kind.addFieldPlaceholder, text: $draft)
-#if !os(macOS)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-#endif
 
                 Button("新增") {
                     let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -193,14 +186,10 @@ struct LookupManagementView: View {
 
 private extension LookupManagementView {
 
-    /// 依平台選擇內容呈現：macOS 走 Design System 卡片版面，iOS / iPadOS 維持系統 List
+    /// 內容區呈現
     @ViewBuilder
     var content: some View {
-#if os(macOS)
-        macContent
-#else
         listContent
-#endif
     }
 
     /// 列項顯示：訂單來源 / 商品類別 / 對帳狀態 kind 純文字；付款方式 kind 在右側顯示「無卡」「銀行匯款」與「貨到付款」徽章 (僅作標示，不能直接切換；要修改旗標需對該列選「編輯」)
@@ -270,8 +259,6 @@ private extension LookupManagementView {
     }
 }
 
-#if !os(macOS)
-
 // MARK: - ViewBuilder (iOS / iPadOS List 版本)
 
 private extension LookupManagementView {
@@ -330,124 +317,6 @@ private extension LookupManagementView {
         }
     }
 }
-
-#endif
-
-#if os(macOS)
-
-// MARK: - ViewBuilder (macOS 卡片版面)
-
-private extension LookupManagementView {
-
-    /// macOS 的 Design System 卡片版本：對齊 ``CustomersView`` 的 `ScrollView` + `palette.background` + `BLCard` 呈現
-    @ViewBuilder
-    var macContent: some View {
-        let palette = BLTheme.palette(for: colorScheme)
-
-        ScrollView {
-            VStack(alignment: .leading, spacing: BLSpacing.large) {
-                if let errorMessage = store.errorMessage {
-                    Text(errorMessage)
-                        .font(.footnote)
-                        .foregroundStyle(palette.red)
-                }
-
-                if store.items.isEmpty {
-                    macEmptyState(palette: palette)
-                } else {
-                    macItemList(palette: palette)
-                }
-            }
-            .padding(.horizontal, BLSpacing.large)
-            .padding(.vertical, BLSpacing.large)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(palette.background)
-    }
-
-    /// macOS 空狀態：對齊 ``CustomersView`` 的置中 `ContentUnavailableView`
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 空狀態 view
-    @ViewBuilder
-    func macEmptyState(palette: BLPalette) -> some View {
-        ContentUnavailableView(
-            store.state.kind.emptyTitle,
-            systemImage: "tray",
-            description: Text(store.state.kind.emptyDescription)
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.vertical, BLSpacing.section)
-        .background(palette.background)
-    }
-
-    /// macOS 卡片列表：計數 header + 單一 `BLCard` 內含列 (列間帶 leading inset 的 `Divider`)，付款方式於卡片下方顯示無卡說明
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 卡片列表 view
-    @ViewBuilder
-    func macItemList(palette: BLPalette) -> some View {
-        VStack(alignment: .leading, spacing: BLSpacing.medium) {
-            HStack(alignment: .firstTextBaseline) {
-                Text("全部\(store.state.kind.entryTitle)")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(palette.tertiaryLabel)
-                    .textCase(.uppercase)
-
-                Spacer()
-
-                Text("\(store.items.count) 項")
-                    .font(.footnote)
-                    .foregroundStyle(palette.secondaryLabel)
-            }
-
-            BLCard(padding: 0) {
-                VStack(spacing: 0) {
-                    ForEach(Array(store.items.enumerated()), id: \.element) { index, item in
-                        macRow(for: item, palette: palette)
-                            .contextMenu {
-                                renameOrEditButton(for: item)
-
-                                Button(role: .destructive) {
-                                    store.send(.deleteRequested(item))
-                                } label: {
-                                    Label("刪除", systemImage: "trash")
-                                }
-                            }
-
-                        if index < store.items.count - 1 {
-                            Divider()
-                                .padding(.leading, BLSpacing.large)
-                        }
-                    }
-                }
-            }
-
-            if store.state.kind == .paymentMethod {
-                // 與 iOS List footer 相同的無卡說明；兩個平台分支獨立呈現，因此各保留一份字串
-                Text("「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；「銀行匯款」標籤代表會顯示「對帳狀態」欄位；「貨到付款」標籤代表收款金額已含預估運費，獲利會自動扣除三種運費。需要修改名稱或分類時，對該列選「編輯」即可。")
-                    .font(.footnote)
-                    .foregroundStyle(palette.secondaryLabel)
-            }
-        }
-    }
-
-    /// macOS 卡片中的單一列：沿用 ``itemRow(for:)`` 內容，補上卡片列內距與整列點擊範圍
-    /// - Parameters:
-    ///   - item: 要顯示的主檔項目名稱
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 卡片列 view
-    @ViewBuilder
-    func macRow(for item: String, palette: BLPalette) -> some View {
-        itemRow(for: item)
-            .font(.subheadline)
-            .foregroundStyle(palette.label)
-            .padding(.horizontal, BLSpacing.large)
-            .padding(.vertical, BLSpacing.medium)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-    }
-}
-
-#endif
 
 // MARK: - Preview
 

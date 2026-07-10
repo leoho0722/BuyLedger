@@ -9,7 +9,7 @@ import SwiftUI
 
 /// 訂單詳情與成本拆解畫面
 ///
-/// 透過 ``layout`` 參數在窄欄 (iPhone push) 與寬欄 (iPad detail / macOS inspector) 之間切換不同的版面結構
+/// 透過 ``layout`` 參數在窄欄 (iPhone push) 與寬欄 (iPad detail) 之間切換不同的版面結構
 struct OrderDetailView: View {
 
     // MARK: - View Properties
@@ -102,7 +102,7 @@ extension OrderDetailView {
         /// 採單欄序列：標頭 → 獲利摘要卡 → donut 成本拆解 → 商品明細
         case compact
 
-        /// 寬欄版面 (iPad detail、macOS inspector)
+        /// 寬欄版面 (iPad detail)
         ///
         /// 採設計稿的 3-up KPI 加上 2-col「成本拆解條 + 商品明細」並排
         case wide

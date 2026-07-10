@@ -33,7 +33,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 ## Monorepo 佈局
 
-- 可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。目前有 `apps/apple` (iOS / iPadOS / macOS) 與 `shared/data-model` (跨平台 data model schema + 產生器)；`apps/android` 為文件化保留位置，動工時才建立目錄。
+- 可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。目前有 `apps/apple` (iOS / iPadOS) 與 `shared/data-model` (跨平台 data model schema + 產生器)；`apps/android` 為文件化保留位置，動工時才建立目錄。
 - **每個平台目錄都要有一份自己的 `CLAUDE.md`** (如 `apps/apple/CLAUDE.md`) 記錄該平台的硬規則與 gotcha；新平台動工時第一件事就是建立它。本檔不得參雜平台細節。
 - 文件與設定中的路徑引用必須與實際佈局一致；repo 不保留空的 stub 目錄或占位檔。
 

@@ -11,7 +11,7 @@ import SwiftUI
 ///
 /// 取代原本的 `Menu`：iOS Menu 因為是 `UIMenu` 的二次包裝，UIKit 端會把 Button action 排到 menu collapse 動畫結束後才派發給 SwiftUI，造成「選完選項 → 約 300ms 後 label 才更新」的可見延遲。改用 sheet 後，使用者點選時 binding 立即 commit，sheet 收合與 form label 更新解耦，視覺上不再卡頓
 ///
-/// 內容區依平台分流：macOS 採 `ScrollView` + `palette.background` + `BLCard` 卡片版面 (對齊 ``LookupManagementView`` / ``CustomersView``)；iOS / iPadOS 維持系統 `List`
+/// 內容區以系統 `List` 呈現選項清單
 ///
 /// 透過參數讓「商品類別」「付款方式」「幣別」等選單共用同一份元件：
 /// - ``allowsAdd`` 控制是否顯示「新增」按鈕 (商品類別 / 付款方式 = `true`、幣別 = `false`，幣別僅能從 API 主檔挑)
@@ -92,9 +92,6 @@ struct OptionPickerSheet: View {
 
     /// 由 sheet 環境注入的 dismiss action
     @Environment(\.dismiss) private var dismiss
-
-    /// 目前系統深淺色外觀；macOS 卡片版面用來取得色盤
-    @Environment(\.colorScheme) private var colorScheme
 
     /// 是否顯示「新增」alert (商品類別等沒有 `isCardless` 需求的入口)
     @State private var showsAddAlert = false
@@ -180,14 +177,12 @@ struct OptionPickerSheet: View {
 
     /// 選項選擇 sheet 的內容
     ///
-    /// 內容區依平台分流 (見 ``content``)，但 navigation 標題、toolbar 取消、搜尋、新增 alert 與付款方式 sheet 由兩平台分支共用，確保操作與業務邏輯一致
+    /// navigation 標題、toolbar 取消、搜尋、新增 alert 與付款方式 sheet 於此統一組合，內容區見 ``content``
     var body: some View {
         NavigationStack {
             content
                 .navigationTitle(title)
-#if !os(macOS)
                 .navigationBarTitleDisplayMode(.inline)
-#endif
                 .toolbar {
                     if multiSelection != nil {
                         // 多選模式：toggle 即時生效，「完成」僅負責關閉 sheet
@@ -207,10 +202,8 @@ struct OptionPickerSheet: View {
                 .modifier(SearchableModifier(text: $searchText, enabled: searchable))
                 .alert(addAlertTitle, isPresented: $showsAddAlert) {
                     TextField(addFieldPlaceholder, text: $draft)
-#if !os(macOS)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-#endif
 
                     Button("新增") {
                         let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -257,9 +250,6 @@ struct OptionPickerSheet: View {
                     )
                 }
         }
-#if os(macOS)
-        .frame(minWidth: 400, minHeight: 480)
-#endif
     }
 }
 
@@ -300,24 +290,13 @@ extension OptionPickerSheet {
 
 private extension OptionPickerSheet {
 
-    /// 依平台選擇內容呈現：macOS 走 Design System 卡片版面，iOS / iPadOS 維持系統 List
+    /// 選項選擇 sheet 的內容
     @ViewBuilder
     var content: some View {
-#if os(macOS)
-        macContent
-#else
         listContent
-#endif
     }
-}
 
-#if !os(macOS)
-
-// MARK: - ViewBuilder (iOS / iPadOS List 版本)
-
-private extension OptionPickerSheet {
-
-    /// iOS / iPadOS 維持的系統 List 版本：新增按鈕 Section + 選項 Section (含 optional clear row、勾選與空狀態)
+    /// 系統 `List` 版面：新增按鈕 Section + 選項 Section (含 optional clear row、勾選與空狀態)
     ///
     /// 排列順序：新增按鈕 Section (如有) → 選項 Section { clear row (如有) → 空狀態 / 選項列 }。clear row 不參與 ``filteredOptions`` 過濾，搜尋時也永遠顯示在最上方
     @ViewBuilder
@@ -411,176 +390,6 @@ private extension OptionPickerSheet {
     }
 }
 
-#endif
-
-#if os(macOS)
-
-// MARK: - ViewBuilder (macOS 卡片版面)
-
-private extension OptionPickerSheet {
-
-    /// macOS 的 Design System 卡片版本：以 `BLCard` 呈現選項，對齊 ``LookupManagementView`` / ``CustomersView`` 的卡片風
-    ///
-    /// 排列順序：新增按鈕 (如有) → 卡片 (clear row + Divider + 選項列；只在「clear row 存在或有可顯示選項」時呈現) → 空狀態 (`filteredOptions` 為空時，顯示在卡片下方)
-    ///
-    /// 背景採分模式處理：
-    /// - 淺色模式套上與表單 List 相同的淺灰群組底色 (`palette.background` 在淺色為 `0xF2F2F7`)，讓白色 `BLCard` 列有對比、不致與 sheet 的白底融合
-    /// - 深色模式維持透明、沿用 sheet 預設材質——`palette.background` 在深色為純黑，會與 sheet 的標題列與底部工具列形成突兀的深色色塊
-    @ViewBuilder
-    var macContent: some View {
-        let palette = BLTheme.palette(for: colorScheme)
-
-        ScrollView {
-            VStack(alignment: .leading, spacing: BLSpacing.large) {
-                if allowsAdd {
-                    addButton(palette: palette)
-                }
-
-                if clearOption != nil || !filteredOptions.isEmpty {
-                    optionsCard(palette: palette)
-                }
-
-                if filteredOptions.isEmpty {
-                    macEmptyState()
-                }
-            }
-            .padding(.horizontal, BLSpacing.large)
-            .padding(.vertical, BLSpacing.large)
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-        .background(palette.isDark ? Color.clear : palette.background)
-    }
-
-    /// macOS 卡片上方的新增按鈕，沿用 ``triggerAdd()`` 的入口邏輯
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 新增按鈕 view
-    @ViewBuilder
-    func addButton(palette: BLPalette) -> some View {
-        Button {
-            triggerAdd()
-        } label: {
-            Label(addButtonTitle, systemImage: "plus.circle.fill")
-                .font(.subheadline.weight(.semibold))
-                .foregroundStyle(palette.accent)
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// macOS 選項卡片：單一 ``BLCard`` 內含 optional clear row + 選項列 (列間帶 leading inset 的 `Divider`)；列為點選即套用並關閉，選中項顯示勾選
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 選項卡片 view
-    @ViewBuilder
-    func optionsCard(palette: BLPalette) -> some View {
-        BLCard(padding: 0) {
-            VStack(spacing: 0) {
-                if let clearOption {
-                    macClearRow(clearOption, palette: palette)
-
-                    if !filteredOptions.isEmpty {
-                        Divider()
-                            .padding(.leading, BLSpacing.large)
-                    }
-                }
-
-                ForEach(Array(filteredOptions.enumerated()), id: \.element) { index, option in
-                    macOptionRow(option, palette: palette)
-
-                    if index < filteredOptions.count - 1 {
-                        Divider()
-                            .padding(.leading, BLSpacing.large)
-                    }
-                }
-            }
-        }
-    }
-
-    /// macOS 的 clear row：點擊呼叫 ``ClearOption/onClear`` 並 dismiss；`selected` 為空字串時以 `palette.accent` 顯示 checkmark
-    ///
-    /// 文字以 `.fixedSize(horizontal: false, vertical: true)` 強制取得需要的垂直空間，配合 `.multilineTextAlignment(.leading)`，讓過長 label 自然換行 (BLCard 列高度隨內容增長)，而不被 trailing checkmark 截斷
-    /// - Parameters:
-    ///   - clearOption: 已設定的 clear row 設定
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: clear row view
-    @ViewBuilder
-    func macClearRow(_ clearOption: ClearOption, palette: BLPalette) -> some View {
-        Button {
-            clearOption.onClear()
-            dismiss()
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
-                Text(clearOption.title)
-                    .font(.subheadline)
-                    .foregroundStyle(palette.label)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Spacer()
-
-                if selected.isEmpty {
-                    Image(systemName: "checkmark")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(palette.accent)
-                }
-            }
-            .padding(.horizontal, BLSpacing.large)
-            .padding(.vertical, BLSpacing.medium)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// macOS 的選項列：單選模式點擊呼叫 ``onSelect`` 並 dismiss；多選模式點擊 toggle 勾選且 sheet 維持開啟。已選項以 `palette.accent` 顯示 checkmark
-    ///
-    /// 文字以 `.fixedSize(horizontal: false, vertical: true)` 強制取得需要的垂直空間，配合 `.multilineTextAlignment(.leading)`，讓過長類別名稱自然換行 (BLCard 列高度隨內容增長)，而不被 trailing checkmark 截斷
-    /// - Parameters:
-    ///   - option: 該列代表的選項字串
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 選項列 view
-    @ViewBuilder
-    func macOptionRow(_ option: String, palette: BLPalette) -> some View {
-        Button {
-            handleOptionTap(option)
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
-                Text(displayText(for: option))
-                    .font(.subheadline)
-                    .foregroundStyle(palette.label)
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-
-                Spacer()
-
-                if isSelected(option) {
-                    Image(systemName: "checkmark")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(palette.accent)
-                }
-            }
-            .padding(.horizontal, BLSpacing.large)
-            .padding(.vertical, BLSpacing.medium)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-    }
-
-    /// macOS 空狀態：置中 `ContentUnavailableView`，沿用 sheet 預設材質背景
-    /// - Returns: 空狀態 view
-    @ViewBuilder
-    func macEmptyState() -> some View {
-        ContentUnavailableView(
-            emptyTitle,
-            systemImage: "tray",
-            description: Text(emptyDescription)
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.vertical, BLSpacing.section)
-    }
-}
-
-#endif
-
 // MARK: - Private Method
 
 private extension OptionPickerSheet {
@@ -663,15 +472,11 @@ private struct SearchableModifier: ViewModifier {
     @ViewBuilder
     func body(content: Content) -> some View {
         if enabled {
-#if os(macOS)
-            content.searchable(text: $text, prompt: Text("搜尋"))
-#else
             content.searchable(
                 text: $text,
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: Text("搜尋")
             )
-#endif
         } else {
             content
         }

@@ -93,7 +93,7 @@ struct CampaignFeature {
         /// 目前載入的開團，依開團日期由新到舊排序
         var campaigns: [Campaign] = []
 
-        /// 目前選取的開團識別值 (供 iPad／macOS detail 選取)
+        /// 目前選取的開團識別值 (供 iPad detail 選取)
         var selectedCampaignID: Campaign.ID?
 
         /// 目前套用的開團狀態篩選；`nil` 代表全部狀態

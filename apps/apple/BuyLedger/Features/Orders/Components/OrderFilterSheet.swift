@@ -14,7 +14,7 @@ import SwiftUI
 ///
 /// 結構：`NavigationStack` 包 `List` 三個 `Section`，左上 toolbar「取消」按鈕收合 sheet。第一個 `Section` 為「日期區間」，列出 ``OrderDatePeriod/orderBrowsingCases``；第二個 `Section` 為「付款方式」，首列固定「全部」清除選項，其後依 ``OrdersFeature/State/availablePaymentMethods`` 列出 (受搜尋過濾)；第三個 `Section` 為「商品類別」，同樣首列固定「全部」清除選項，其後依 ``OrdersFeature/State/availableCategories`` 列出 (受搜尋過濾)。點選任一列 dispatch 對應 ``OrdersFeature/Action`` 後 sheet 自動 dismiss
 ///
-/// 此元件**僅供 iPhone Compact 使用**；iPad regular 與 macOS 仍使用各自的 chip 列 + ``OptionPickerSheet`` 類別 trigger，與此 sheet 無關
+/// 此元件**僅供 iPhone Compact 使用**；iPad regular 仍使用各自的 chip 列 + ``OptionPickerSheet`` 類別 trigger，與此 sheet 無關
 ///
 /// 故意不重用 ``OptionPickerSheet``：OptionPickerSheet 是「一個 sheet 對應一個單選 picker」的完整元件 (內含自己的 `NavigationStack` 與 toolbar)，要嵌入此 sheet 必須拆分元件，回歸風險高於從零實作
 struct OrderFilterSheet: View {
@@ -67,9 +67,7 @@ struct OrderFilterSheet: View {
                 categorySection
             }
             .navigationTitle("篩選")
-#if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
-#endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") {
@@ -83,15 +81,11 @@ struct OrderFilterSheet: View {
                     }
                 }
             }
-#if !os(macOS)
             .searchable(
                 text: $searchText,
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: Text("搜尋類別")
             )
-#else
-            .searchable(text: $searchText, prompt: Text("搜尋類別"))
-#endif
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)

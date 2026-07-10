@@ -91,10 +91,8 @@ struct PaymentMethodEditorSheet: View {
             Form {
                 Section {
                     TextField(namePlaceholder, text: $draftName)
-#if !os(macOS)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-#endif
                 } header: {
                     Text("付款方式名稱")
                 } footer: {
@@ -137,9 +135,7 @@ struct PaymentMethodEditorSheet: View {
             }
             .formStyle(.grouped)
             .navigationTitle(title)
-#if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
-#endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") {
@@ -159,14 +155,10 @@ struct PaymentMethodEditorSheet: View {
                 }
             }
         }
-#if os(macOS)
-        .frame(minWidth: 420, minHeight: 420)
-#else
         // 表單為 name + 無卡／銀行匯款／貨到付款三個旗標段；medium (約半屏) 仍維持「貼上來的小卡」的
         // 輕量感、讓使用者看見背後的主檔列表，但同時提供 large 供需要看完整三段說明時展開
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-#endif
     }
 }
 

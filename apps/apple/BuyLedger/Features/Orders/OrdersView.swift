@@ -10,7 +10,9 @@ import SwiftUI
 
 /// 訂單列表與詳情畫面
 ///
-/// 依平台選擇對應導覽樣式：iPhone (compact) 使用 NavigationStack 對應的 ``OrdersCompactView``，macOS 使用扁平 ``Table`` 對應的 ``OrdersMacView``，iPadOS (regular) 以 ``HStack`` 在父層 NavigationSplitView 的 detail 欄中自排列「清單 + 詳情」兩欄，避免巢狀 NavigationSplitView 互相搶寬度
+/// 依尺寸選擇對應導覽樣式：
+/// - iPhone (compact) 使用 NavigationStack 對應的 ``OrdersCompactView``
+/// - iPadOS (regular) 以 ``HStack`` 在父層 NavigationSplitView 的 detail 欄中自排列「清單 + 詳情」兩欄，避免巢狀 NavigationSplitView 互相搶寬度
 struct OrdersView: View {
 
     // MARK: - View Properties
@@ -21,10 +23,8 @@ struct OrdersView: View {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-#if !os(macOS)
-    /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone 與 iPad 佈局
+    /// 目前水平尺寸分類，用來區分 iPhone 與 iPad 佈局
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-#endif
 
     /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)`` 的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
@@ -32,7 +32,7 @@ struct OrdersView: View {
     /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
 
-    /// 商品類別篩選 sheet 是否呈現。僅 iPad regular 分支使用 (透過 ``regularSplitContent`` 與 ``listHeader`` 中的 trigger 觸發)；compact 與 macOS 分支會分別委派給 ``OrdersCompactView`` 與 ``OrdersMacView`` 各自的本地 state
+    /// 商品類別篩選 sheet 是否呈現。僅 iPad regular 分支使用 (透過 ``regularSplitContent`` 與 ``listHeader`` 中的 trigger 觸發)；compact 分支委派給 ``OrdersCompactView`` 各自的本地 state
     @State private var showsCategoryPicker = false
 
     /// 付款方式篩選 sheet 是否呈現。點 trigger button 後設為 `true`，由 ``OptionPickerSheet`` 內部 dismiss 結束回 `false`
@@ -56,18 +56,14 @@ struct OrdersView: View {
             .alert($store.scope(state: \.aiDisabledAlert, action: \.aiDisabledAlert))
     }
 
-    /// 依平台與尺寸分類選擇對應的訂單瀏覽 view
+    /// 依尺寸分類選擇對應的訂單瀏覽 view
     @ViewBuilder
     private var platformContent: some View {
-#if os(macOS)
-        OrdersMacView(store: store)
-#else
         if horizontalSizeClass == .compact {
             OrdersCompactView(store: store)
         } else {
             regularSplitContent
         }
-#endif
     }
 }
 
@@ -81,10 +77,8 @@ private extension OrdersView {
     @ViewBuilder
     var regularSplitContent: some View {
         let palette = BLTheme.palette(for: colorScheme)
-#if !os(macOS)
         let filteredIDs = store.state.filteredOrders(referenceDate: date.now, calendar: calendar).map(\.id)
         let allFilteredSelected = !filteredIDs.isEmpty && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
-#endif
 
         NavigationStack {
             HStack(spacing: 0) {
@@ -101,13 +95,11 @@ private extension OrdersView {
             .navigationTitle("訂單")
             .toolbar {
                 if store.isSelecting {
-#if !os(macOS)
                     ToolbarItem(placement: .topBarLeading) {
                         Button(allFilteredSelected ? "清除" : "全選") {
                             store.send(allFilteredSelected ? .clearSelectionTapped : .selectAllTapped)
                         }
                     }
-#endif
 
                     ToolbarItem(placement: .primaryAction) {
                         Button("完成") {
@@ -115,7 +107,6 @@ private extension OrdersView {
                         }
                     }
 
-#if !os(macOS)
                     ToolbarItemGroup(placement: .bottomBar) {
                         Text("已選 \(store.selectedOrderIDs.count) 筆")
                             .font(.subheadline)
@@ -136,7 +127,6 @@ private extension OrdersView {
                         }
                         .disabled(store.selectedOrderIDs.isEmpty)
                     }
-#endif
                 } else {
                     ToolbarItemGroup(placement: .primaryAction) {
                         Text("\(store.orders.count)")
@@ -424,7 +414,7 @@ private extension OrdersView {
 
     /// iPad regular 中間欄使用的商品類別篩選 trigger button
     ///
-    /// 與 ``OrdersCompactView`` / ``OrdersMacView`` 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「類別：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)。padding / font 沿用 iPad 中間欄既有 chip 的尺寸 (`.footnote` / `.caption2` / `12pt horizontal`)
+    /// 與 ``OrdersCompactView`` 共用同一個視覺契約：以單顆 Capsule 呈現當前選擇 (「類別：<current>」)，點擊後 present ``OptionPickerSheet`` (含搜尋與「全部」清除選項)。padding / font 沿用 iPad 中間欄既有 chip 的尺寸 (`.footnote` / `.caption2` / `12pt horizontal`)
     ///
     /// - 未選任何類別時，label 顯示「類別：全部」、capsule fill 為 `fillTertiary`、前景色為 `secondaryLabel`
     /// - 已選某類別時，label 顯示「類別：<類別名>」、capsule fill 為 `purple.opacity(0.18)`、前景色為 `purple`

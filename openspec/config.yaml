@@ -1,7 +1,7 @@
 schema: spec-driven
 context: |
   專案名稱：BuyLedger
-  專案型態：Apple Multiplatform App，支援 iOS、iPadOS 與 macOS。
+  專案型態：Apple App，支援 iOS 與 iPadOS。
   主要技術棧：
   - Swift 6 + SwiftUI
   - TCA（Swift Composable Architecture）
@@ -13,7 +13,7 @@ context: |
   - 使用 TCA 管理功能狀態、Action flow、副作用與依賴注入；SwiftUI View 應保持宣告式與輕量。
   - SwiftData model 是本機持久化核心；CloudKit 同步相關 schema、entitlements、container 與 migration 必須同步檢查。
   - Swift Charts 只負責圖表呈現；資料彙總、分組、排序與格式化應放在可測試的 feature/domain 層。
-  - 跨平台 UI 應使用 SwiftUI 條件編譯與平台慣用容器，例如 NavigationSplitView、toolbar placement 與 #if os(macOS)。
+  - 跨平台 UI 應使用 SwiftUI 條件編譯與平台慣用容器，例如 NavigationSplitView、toolbar placement。
   - TCA reducer 應使用 TestStore 驗證 action flow、state mutation 與 effects。
   - SwiftData 測試優先使用 in-memory container；CloudKit 相關邏輯應透過 dependency 抽象，避免單元測試依賴真實 iCloud 狀態。
   - 不提交本機 Xcode 狀態、建置輸出、私鑰、provisioning profile、簽署憑證或其他敏感資料。

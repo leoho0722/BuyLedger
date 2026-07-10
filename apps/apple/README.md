@@ -1,4 +1,4 @@
-# BuyLedger — Apple 平台 (iOS / iPadOS / macOS)
+# BuyLedger — Apple 平台 (iOS / iPadOS)
 
 BuyLedger 的 Apple 平台實作。產品介紹與 monorepo 結構見 repo 根目錄的 [`README.md`](../../README.md)；本檔涵蓋開發環境設定、build / test 與架構速覽。
 
@@ -21,7 +21,7 @@ Xcode project 使用 file system synchronized groups，新增或搬移檔案請�
 apps/apple/
 ├── BuyLedger.xcodeproj/          # Xcode 專案；project.pbxproj 提交、xcuserdata/ 不提交
 ├── BuyLedger/                    # App source root
-│   ├── App/                      # 進入點：BuyLedgerApp、WindowGroup、macOS Settings scene、CommandGroup
+│   ├── App/                      # 進入點：BuyLedgerApp、WindowGroup
 │   ├── Core/
 │   │   ├── Domain/               # LedgerOrder、FxRateSnapshot、CurrencyCode 等 model
 │   │   ├── Persistence/          # OrderPersistence (@ModelActor)、PersistenceContainer、OrderRecord
@@ -37,10 +37,10 @@ apps/apple/
 │   │   ├── FX/                   # 匯率工具
 │   │   ├── Insights/             # 趨勢分析
 │   │   ├── Lookups/              # 主檔管理 (訂單來源／商品類別／付款方式)
-│   │   ├── More/                 # iOS / macOS 「更多」入口
-│   │   ├── Orders/               # 訂單瀏覽與編輯 (含三平台 view 分流)
+│   │   ├── More/                 # iOS「更多」入口
+│   │   ├── Orders/               # 訂單瀏覽與編輯 (含 iPhone/iPad view 分流)
 │   │   ├── Quote/                # 報價試算
-│   │   └── Settings/             # iOS SettingsView + macOS SettingsMacView
+│   │   └── Settings/             # iOS SettingsView
 │   ├── Shared/
 │   │   └── DesignSystem/
 │   │       ├── Foundations/      # 色盤、字級、間距、圓角等 token
@@ -96,18 +96,13 @@ xcodebuildmcp simulator build-and-run \
   --project-path apps/apple/BuyLedger.xcodeproj \
   --scheme BuyLedger \
   --simulator-name "iPad Pro 13-inch (M5)"
-
-# macOS
-xcodebuildmcp macos build-and-run \
-  --project-path apps/apple/BuyLedger.xcodeproj \
-  --scheme BuyLedger
 ```
 
-> ⚠️ 三平台共用同一份 `DerivedData/.../XCBuildData/build.db`，**不可並行 build**——請序列化 (`cmd1 && cmd2 && cmd3`) 以避免 `database is locked` 失敗。
+> ⚠️ iOS 與 iPadOS 兩個 simulator build 共用同一份 `DerivedData/.../XCBuildData/build.db`，**不可並行 build**——請序列化 (`cmd1 && cmd2`) 以避免 `database is locked` 失敗。
 >
 > ⚠️ build 失敗時 CLI 預設只回 trailing `BUILD FAILED`；用 `xcodebuildmcp --log-level error <subcommand> ...` 取得實際 diagnostic。
 >
-> 💡 simulator 名稱會隨 Xcode 升級變動，先用 `xcodebuildmcp simulator list-sims` 查當前可用名稱再改上方指令。macOS 重新跑前用 `xcodebuildmcp macos stop --app-name BuyLedger` 關掉舊 binary，否則會看到舊版。
+> 💡 simulator 名稱會隨 Xcode 升級變動，先用 `xcodebuildmcp simulator list-sims` 查當前可用名稱再改上方指令。
 
 ### 3. 執行測試
 
@@ -138,23 +133,20 @@ bun run check
 bun run unlock
 ```
 
-生成檔與 schema 一起 commit。生成檔在磁碟上**預設唯讀** (`generate` 會 chmod `0o444` 防手改)；Xcode 編譯只讀取、不受影響，重生成會自動解鎖重寫。`Core/Domain/` 是 file system synchronized group，新增／刪除型別後請 iOS + iPadOS + macOS 各 build 一次，確認新檔被正確拾取。手寫業務邏輯 (computed properties、display title、自訂 `Codable`) 放在與型別同名的 extension 檔，不放生成檔。
+生成檔與 schema 一起 commit。生成檔在磁碟上**預設唯讀** (`generate` 會 chmod `0o444` 防手改)；Xcode 編譯只讀取、不受影響，重生成會自動解鎖重寫。`Core/Domain/` 是 file system synchronized group，新增／刪除型別後請 iOS + iPadOS 各 build 一次，確認新檔被正確拾取。手寫業務邏輯 (computed properties、display title、自訂 `Codable`) 放在與型別同名的 extension 檔，不放生成檔。
 
 ## 架構速覽
 
 ### App 進入點與平台導覽
 
-`BuyLedgerApp.swift` 以單一 `RootFeature` store 驅動：`WindowGroup` 掛上 `RootView` 並以 `.modelContainer(...)` 注入共用 SwiftData container；macOS 額外加 `.windowStyle(.hiddenTitleBar)`、用 `CommandGroup` 在 File 選單提供「新訂單」(⌘N，透過 `FocusedValues` 與當前畫面連線)，並宣告獨立的 `Settings { ... }` scene。`RootFeature.State.selectedTab` 驅動三種 layout：
+`BuyLedgerApp.swift` 以單一 `RootFeature` store 驅動：`WindowGroup` 掛上 `RootView` 並以 `.modelContainer(...)` 注入共用 SwiftData container。`RootFeature.State.selectedTab` 驅動兩種 layout：
 
-| 平台                      | Layout              | 說明                                                       |
-|---------------------------|---------------------|------------------------------------------------------------|
-| macOS                     | `RootSidebarLayout` | `NavigationSplitView` + sidebar + 訂單頁 `.inspector(...)` |
-| iPad (regular size class) | `RootSidebarLayout` | 同 macOS 的 split 結構但無 inspector                       |
-| iPhone (compact)          | `RootTabLayout`     | `TabView`                                                  |
+| 平台                      | Layout              | 說明                                          |
+|---------------------------|---------------------|-----------------------------------------------|
+| iPad (regular size class) | `RootSidebarLayout` | `NavigationSplitView` + sidebar，無 inspector |
+| iPhone (compact)          | `RootTabLayout`     | `TabView`                                     |
 
-`OrdersView` 是平台分流入口：`#if os(macOS)` → `OrdersMacView` (`List` + `OrderRowView` + 右側 `.inspector(...)`)；iPhone (compact) → `OrdersCompactView` (`NavigationStack`)；iPad (regular) → `NavigationStack` 內以 `HStack` 自排「清單 + 詳情」兩欄 (不用巢狀 `NavigationSplitView`，避免兩層 split 互搶寬度)。`.sheet(...)` 編輯表單一律掛在 `OrdersView` 外層，三平台共用。
-
-macOS 偏好設定走標準 `Settings { ... }` scene (⌘,)，實作在 `Features/Settings/SettingsMacView.swift`，採 `TabView` + `Form` + `.formStyle(.grouped)`；iOS / iPadOS 沿用 `SettingsView` (`Form` + `Section`) 由 `MoreView` push 進入。
+`OrdersView` 是平台分流入口：iPhone (compact) → `OrdersCompactView` (`NavigationStack`)；iPad (regular) → `NavigationStack` 內以 `HStack` 自排「清單 + 詳情」兩欄 (不用巢狀 `NavigationSplitView`，避免兩層 split 互搶寬度)。`.sheet(...)` 編輯表單一律掛在 `OrdersView` 外層，iPhone / iPad 共用。
 
 ### 資料層
 
@@ -174,23 +166,6 @@ macOS 偏好設定走標準 `Settings { ... }` scene (⌘,)，實作在 `Feature
 **Fallback 原則**：遵循 root [README.md › 產品政策](../../README.md#產品政策)——匯率與分析 UI 顯示「—」、「尚無可用匯率資料」、「尚未有足夠可用於分析的資料」等空狀態，避免使用者誤信過期或內建匯率。
 
 ## Troubleshooting
-
-### macOS 沙盒下回到「真正空狀態」
-
-macOS 版的 SwiftData store 位於：
-
-```text
-~/Library/Containers/com.leoho.BuyLedger/Data/Library/Application Support/BuyLedger.store{,-shm,-wal}
-```
-
-要回到剛安裝、無任何訂單的空狀態時，先停掉 App (釋放檔案 lock) 再手動刪除這三個檔案。
-
-### macOS DNS 失敗 (NSURLErrorDomain Code -1003)
-
-如果 macOS build 出來連外部 API 都打不通，先檢查：
-
-1. `BuyLedger.entitlements` 是否含 `com.apple.security.network.client = true`。
-2. pbxproj 是否正確掛上 `CODE_SIGN_ENTITLEMENTS = BuyLedger/Resources/BuyLedger.entitlements;`——若沒掛，binary 上只會有 Xcode 自動加的 sandbox key，runtime 抓不到設定的 entitlements。
 
 ### Snapshot baseline 漂移
 

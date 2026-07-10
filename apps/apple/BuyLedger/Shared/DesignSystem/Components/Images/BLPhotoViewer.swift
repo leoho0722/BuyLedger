@@ -11,7 +11,7 @@ import UniformTypeIdentifiers
 
 /// 照片檢視器：影像 scaledToFit 帶小圓角，左右滑動切換同一組照片；背景隨系統深淺色模式自適應
 ///
-/// 以 sheet 形式呈現 (由 caller 掛 `.sheet`)：NavigationStack 的置中 title 顯示計數 (x/n)、右上 toolbar ✕ 關閉。換頁以橫向 paging ScrollView (`scrollTargetBehavior(.paging)` + `scrollPosition`) 實作，iOS / iPadOS / macOS 三平台共用；滑到第一張／最後一張即停止。單張影像無法解碼時顯示 placeholder 圖示
+/// 以 sheet 形式呈現 (由 caller 掛 `.sheet`)：NavigationStack 的置中 title 顯示計數 (x/n)、右上 toolbar ✕ 關閉。換頁以橫向 paging ScrollView (`scrollTargetBehavior(.paging)` + `scrollPosition`) 實作，iOS / iPadOS 共用；滑到第一張／最後一張即停止。單張影像無法解碼時顯示 placeholder 圖示
 struct BLPhotoViewer: View {
 
     // MARK: - View Properties
@@ -52,9 +52,7 @@ struct BLPhotoViewer: View {
             pager
                 .padding(BLSpacing.small)
                 .navigationTitle(counterText)
-#if !os(macOS)
                 .navigationBarTitleDisplayMode(.inline)
-#endif
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {
                         Button(action: onDismiss) {

@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 分析分頁的主要畫面
 ///
-/// 對應設計稿 iPhone / iPad / Mac 的「分析」頁：bar chart 走勢、商品類別排行、成本結構 donut、N 週下單熱力圖 (N 由 ``InsightsView/heatmapWeekCount`` 控制)；可切換期間、可點擊類別 drill-down 到訂單頁
+/// 對應設計稿 iPhone / iPad 的「分析」頁：bar chart 走勢、商品類別排行、成本結構 donut、N 週下單熱力圖 (N 由 ``InsightsView/heatmapWeekCount`` 控制)；可切換期間、可點擊類別 drill-down 到訂單頁
 struct InsightsView: View {
 
     // MARK: - View Properties
@@ -21,10 +21,8 @@ struct InsightsView: View {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-#if !os(macOS)
     /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone (compact) 與 iPad (regular)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-#endif
 
     /// 用來計算趨勢期間與熱力圖的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
@@ -60,16 +58,10 @@ struct InsightsView: View {
             await store.send(.orders(.task)).finish()
         }
 
-        // iOS (iPhone + iPad) 以 NavigationStack + navigationTitle 提供系統大標題，與「更多」等分頁對齊；
-        // macOS 維持自繪標題 (見 titleHeader)
-#if os(macOS)
-        return core
-#else
         return NavigationStack {
             core
                 .navigationTitle("分析")
         }
-#endif
     }
 }
 
@@ -270,10 +262,6 @@ private extension InsightsView {
 
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
-                // iOS 改由 `.navigationTitle("分析")` 提供標題；macOS 仍自繪大標題
-#if os(macOS)
-                titleHeader(palette: palette)
-#endif
                 rangePicker
                 trendCard(stats: stats, palette: palette)
                 breakdownGrid(stats: stats, palette: palette)
@@ -308,17 +296,6 @@ private extension InsightsView {
             .controlSize(.regular)
             .tint(palette.secondaryLabel)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    /// 大標題列
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 標題列 view
-    @ViewBuilder
-    func titleHeader(palette: BLPalette) -> some View {
-        Text("分析")
-            .font(.system(size: 34, weight: .bold))
-            .foregroundStyle(palette.label)
-            .accessibilityAddTraits(.isHeader)
     }
 
     /// 期間選擇器
@@ -692,11 +669,7 @@ private extension InsightsView {
 
     /// 是否使用寬版面 (並列兩張卡)
     var useWideLayout: Bool {
-#if os(macOS)
-        return true
-#else
         return horizontalSizeClass != .compact
-#endif
     }
 
     /// 類別 bar 的色盤序列

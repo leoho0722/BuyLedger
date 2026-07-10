@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 總覽分頁的主要畫面
 ///
-/// 對應設計稿 iPhone / iPad / Mac 的「總覽」頁：
+/// 對應設計稿 iPhone / iPad 的「總覽」頁：
 /// - 大標題 + 日期或月份子標
 /// - 漸層 hero 卡 (本月淨獲利 + sparkline + 月目標進度)
 /// - KPI 卡片格 (營業額、成本、毛利率、進行中訂單)
@@ -25,10 +25,8 @@ struct DashboardView: View {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-#if !os(macOS)
     /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone (compact) 與 iPad (regular)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-#endif
 
     /// 用來計算「本月／上月」與日期子標的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
@@ -64,16 +62,10 @@ struct DashboardView: View {
             await store.send(.settings(.task)).finish()
         }
 
-        // iOS (iPhone + iPad) 以 NavigationStack + navigationTitle 提供系統大標題，讓頂端與「更多」等分頁一致對齊；
-        // macOS 維持自繪標題 (見 titleHeader)，與 OrdersMacView 等其他 macOS 畫面一致
-#if os(macOS)
-        return core
-#else
         return NavigationStack {
             core
                 .navigationTitle("總覽")
         }
-#endif
     }
 }
 
@@ -234,7 +226,7 @@ private extension DashboardView {
         .padding(.vertical, BLSpacing.section * 2)
     }
 
-    /// 大標題與日期子標
+    /// 日期子標
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 標題列 view
     @ViewBuilder
@@ -243,20 +235,12 @@ private extension DashboardView {
             Text(currentDateSubtitle())
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(palette.secondaryLabel)
-
-            // iOS 改由 `.navigationTitle("總覽")` 提供標題；此處僅 macOS 仍自繪大標題
-#if os(macOS)
-            Text("總覽")
-                .font(.system(size: 34, weight: .bold))
-                .foregroundStyle(palette.label)
-                .accessibilityAddTraits(.isHeader)
-#endif
         }
     }
 
     /// hero P&L 與 KPI 的並排組合
     ///
-    /// 在 iPhone (compact) 上維持 hero 在上、2×2 KPI grid 在下；在 iPad/Mac 上把 hero 放在左側 1.4 權重，3 個小 KPI 放在右側
+    /// 在 iPhone (compact) 上維持 hero 在上、2×2 KPI grid 在下；在 iPad 上把 hero 放在左側 1.4 權重，3 個小 KPI 放在右側
     /// 1 權重的直欄裡，對應設計稿 iPad Dashboard 的 1.4fr + 3fr 版面
     /// - Parameters:
     ///   - stats: 已計算的本月統計
@@ -543,13 +527,9 @@ private extension DashboardView {
         Array(repeating: GridItem(.flexible(), spacing: BLSpacing.small), count: 2)
     }
 
-    /// 是否採用 hero + 3 KPI 並排版面 (iPad / Mac)
+    /// 是否採用 hero + 3 KPI 並排版面 (iPad)
     var useWideHero: Bool {
-#if os(macOS)
-        return true
-#else
         return horizontalSizeClass != .compact
-#endif
     }
 }
 

@@ -1,14 +1,8 @@
 # BuyLedger
 
-為個人代購業務而生的帳本 App，支援 Apple 平台 (iOS、iPadOS、macOS)。
+為個人代購業務而生的帳本 App，支援 Apple 平台 (iOS、iPadOS)。
 
 <details open>
-  <summary>🖥️&nbsp; <b>macOS</b></summary>
-  <br>
-  <p align="center"><img src="assets/macos-intro.png" alt="BuyLedger 於 macOS 的總覽頁" width="820"></p>
-</details>
-
-<details>
   <summary>📱&nbsp; <b>iOS</b></summary>
   <br>
   <p align="center"><img src="assets/ios-intro.png" alt="BuyLedger 於 iOS 的總覽頁" height="620"></p>
@@ -25,7 +19,7 @@
 ```text
 BuyLedger (repo)/
 ├── apps/                                 # 可部署單元 (每個平台一個子目錄)
-│   ├── apple/                            # Apple 平台 App (iOS / iPadOS / macOS)
+│   ├── apple/                            # Apple 平台 App (iOS / iPadOS)
 │   │   ├── BuyLedger.xcodeproj/          # Xcode 專案；project.pbxproj 提交、xcuserdata/ 不提交
 │   │   ├── BuyLedger/                    # App source root (App / Core / Features / Shared / Resources)
 │   │   ├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
@@ -46,7 +40,7 @@ BuyLedger (repo)/
 
 | 平台                         | 位置            | 開發指南                                                                                           |
 |------------------------------|-----------------|----------------------------------------------------------------------------------------------------|
-| Apple (iOS / iPadOS / macOS) | `apps/apple/`   | [apps/apple/README.md](apps/apple/README.md)：技術棧、環境設定、build / test、架構速覽、Troubleshooting |
+| Apple (iOS / iPadOS)         | `apps/apple/`   | [apps/apple/README.md](apps/apple/README.md)：技術棧、環境設定、build / test、架構速覽、Troubleshooting |
 | Android                      | `apps/android/` | (未來，尚未建立)                                                                                    |
 
 各平台的 AI 協作硬規則見該平台目錄的 `CLAUDE.md`；跨平台通用規範見根目錄 [`CLAUDE.md`](CLAUDE.md)。

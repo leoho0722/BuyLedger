@@ -349,14 +349,8 @@ struct OrderEditView: View {
                 ) {
                     photoViewerSelection = nil
                 }
-#if os(macOS)
-                .frame(minWidth: 640, minHeight: 480)
-#endif
             }
         }
-#if os(macOS)
-        .frame(minWidth: 540, minHeight: 520)
-#endif
     }
 }
 
@@ -648,9 +642,6 @@ private extension OrderEditView {
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
-#if os(macOS)
-                .controlSize(.small)
-#endif
 
                 Spacer()
 
@@ -668,9 +659,7 @@ private extension OrderEditView {
                     .multilineTextAlignment(.trailing)
                     .monospacedDigit()
                     .frame(maxWidth: 120)
-#if !os(macOS)
                     .keyboardType(.numberPad)
-#endif
                 }
             }
         }
@@ -678,7 +667,7 @@ private extension OrderEditView {
 
     /// 整數金額輸入欄
     ///
-    /// 把 `TextField` 的 placeholder 留空，避免在 macOS `.formStyle(.grouped)` 下 `LabeledContent` 與 `TextField` 同時顯示標題造成的重複文字
+    /// 把 `TextField` 的 placeholder 留空，避免 `.formStyle(.grouped)` 下 `LabeledContent` 與 `TextField` 同時顯示標題造成的重複文字
     /// - Parameters:
     ///   - title: 欄位標題
     ///   - value: 雙向繫結的值
@@ -694,9 +683,7 @@ private extension OrderEditView {
             .labelsHidden()
             .multilineTextAlignment(.trailing)
             .monospacedDigit()
-#if !os(macOS)
             .keyboardType(.numberPad)
-#endif
         }
     }
 
@@ -726,9 +713,7 @@ private extension OrderEditView {
                 .labelsHidden()
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()
-#if !os(macOS)
                 .keyboardType(.decimalPad)
-#endif
 
                 Text("%")
                     .foregroundStyle(.secondary)

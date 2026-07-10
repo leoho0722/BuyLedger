@@ -12,7 +12,7 @@ enum BLRadius {
 
     // MARK: - Radius Values
 
-    /// 最小圓角，適合 macOS 工具列按鈕
+    /// 最小圓角，適合工具列按鈕
     static let extraSmall: CGFloat = 6
 
     /// 小圓角，適合列、chip 與輸入欄
@@ -21,7 +21,7 @@ enum BLRadius {
     /// 中圓角，適合 iOS 卡片與基礎控制項
     static let medium: CGFloat = 12
 
-    /// 大圓角，適合 iPadOS 與 macOS 卡片
+    /// 大圓角，適合 iPadOS 卡片
     static let large: CGFloat = 16
 
     /// 特大圓角，適合 sheet 或浮層頂部

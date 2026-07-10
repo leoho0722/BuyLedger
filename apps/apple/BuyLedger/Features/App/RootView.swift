@@ -37,18 +37,14 @@ struct RootView: View {
 
 private extension RootView {
 
-    /// 依平台與尺寸分類選擇對應的根層級導覽佈局
+    /// 依尺寸分類選擇對應的根層級導覽佈局
     @ViewBuilder
     var layout: some View {
-#if os(macOS)
-        RootSidebarLayout(store: store)
-#else
         if horizontalSizeClass == .compact {
             RootTabLayout(store: store)
         } else {
             RootSidebarLayout(store: store)
         }
-#endif
     }
 }
 

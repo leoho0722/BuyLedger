@@ -96,9 +96,7 @@ struct SettingsView: View {
                     value: $store.monthlyProfitGoalTwd,
                     format: .number.precision(.fractionLength(0))
                 )
-#if !os(macOS)
                 .keyboardType(.numberPad)
-#endif
             } header: {
                 Text("月度淨獲利目標 (TWD)")
             } footer: {

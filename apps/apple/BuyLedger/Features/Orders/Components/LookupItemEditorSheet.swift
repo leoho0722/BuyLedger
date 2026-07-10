@@ -43,10 +43,8 @@ struct LookupItemEditorSheet: View {
             Form {
                 Section {
                     TextField(namePlaceholder, text: $draftName)
-#if !os(macOS)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
-#endif
                 } header: {
                     Text(namePlaceholder)
                 } footer: {
@@ -59,9 +57,7 @@ struct LookupItemEditorSheet: View {
             }
             .formStyle(.grouped)
             .navigationTitle(title)
-#if !os(macOS)
             .navigationBarTitleDisplayMode(.inline)
-#endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") {
@@ -81,13 +77,9 @@ struct LookupItemEditorSheet: View {
                 }
             }
         }
-#if os(macOS)
-        .frame(minWidth: 420, minHeight: 240)
-#else
         // 只有單一名稱欄位，medium 高度 (約半屏) 已足夠呈現，並比照「新增付款方式」維持一致的「貼上來的小卡」體驗
         .presentationDetents([.medium])
         .presentationDragIndicator(.visible)
-#endif
     }
 }
 

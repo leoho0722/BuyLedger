@@ -26,9 +26,7 @@ struct AISummaryView: View {
         NavigationStack {
             content
                 .navigationTitle("AI 商品明細總結")
-#if !os(macOS)
                 .navigationBarTitleDisplayMode(.inline)
-#endif
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button("完成") {
@@ -41,12 +39,8 @@ struct AISummaryView: View {
                     await store.send(.task).finish()
                 }
         }
-#if os(macOS)
-        .frame(minWidth: 480, minHeight: 520)
-#else
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
-#endif
     }
 
     // MARK: - ViewBuilder

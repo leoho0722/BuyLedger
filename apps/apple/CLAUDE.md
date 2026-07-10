@@ -1,4 +1,4 @@
-# Apple 平台指引 (iOS / iPadOS / macOS)
+# Apple 平台指引 (iOS / iPadOS)
 
 本檔記錄 Apple 平台 (apps/apple) 的硬規則與隱性 gotcha；跨平台通用規範 (產品政策、標點、註解、Commit 風格等) 見 repo 根目錄的 [`CLAUDE.md`](../../CLAUDE.md)，產品介紹與 monorepo 結構見根目錄 [`README.md`](../../README.md)，平台環境設定與 build / test 見本目錄 [`README.md`](README.md)。
 
@@ -16,23 +16,21 @@
 本平台必守鐵則：
 
 - 絕不退回原生 `xcodebuild` / `xcrun` / `simctl`。
-- **任何 build 前先把 build number +1**——凡 build / build-and-run (不論 simulator / macOS / device、不論 MCP 工具或 CLI)，執行前必須先跑 `cd apps/apple && agvtool next-version -all`，將 `CURRENT_PROJECT_VERSION` (即 CFBundleVersion，相當於 Android 的 versionCode) 遞增 1；**跑 test 不遞增** (test binary 不會被安裝或散佈，遞增只製造 pbxproj 雜訊)。`agvtool` 是上一條「絕不退回原生工具」的明文例外 (版本管理不在 XcodeBuildMCP 能力範圍)。同一輪驗證中以 `&&` 串接的多平台 build 視為一次、只遞增一次；遞增產生的 pbxproj 變更隨當次工作一併 commit，不可丟棄。
-- 三平台 simulator/macOS build 共用同一份 `DerivedData/.../XCBuildData/build.db`，**不能並行**——請序列化 (`cmd1 && cmd2 && cmd3`)，否則 `database is locked`。
+- **任何 build 前先把 build number +1**——凡 build / build-and-run (不論 simulator / device、不論 MCP 工具或 CLI)，執行前必須先跑 `cd apps/apple && agvtool next-version -all`，將 `CURRENT_PROJECT_VERSION` (即 CFBundleVersion，相當於 Android 的 versionCode) 遞增 1；**跑 test 不遞增** (test binary 不會被安裝或散佈，遞增只製造 pbxproj 雜訊)。`agvtool` 是上一條「絕不退回原生工具」的明文例外 (版本管理不在 XcodeBuildMCP 能力範圍)。同一輪驗證中以 `&&` 串接的多平台 build 視為一次、只遞增一次；遞增產生的 pbxproj 變更隨當次工作一併 commit，不可丟棄。
+- iOS 與 iPadOS simulator build 共用同一份 `DerivedData/.../XCBuildData/build.db`，**不能並行**——請序列化 (`cmd1 && cmd2`)，否則 `database is locked`。
 - 詳細 build error 要加 `xcodebuildmcp --log-level error <subcommand> ...`，否則 CLI 只回 trailing `BUILD FAILED`。
 - simulator 名稱不要寫死，跑 build-and-run 前先 `xcodebuildmcp simulator list-sims` 查當前可用名稱。
-- macOS rebuild-and-launch 前先 `xcodebuildmcp macos stop --app-name BuyLedger` 關掉前一個 App (XcodeBuildMCP 預設只啟 simulator 工具集，macOS 走 CLI)，否則新 binary 不會被載入。
 - 模擬器跑 App 用 `build-and-run`，不要先 `build` 再 `build-and-run`。
 
 ## App 進入點與平台導覽
 
 動到這層程式碼時請遵守：
 
-- **`BuyLedgerApp.swift` 的 `#if os(macOS)`**：不可同時包住 `WindowGroup` 的 modifier 與另一個 top-level `Scene`——必須切成兩個獨立 `#if os(macOS)` 區塊，否則 result builder 會 parse fail。
-- **啟動時的服務初始化集中在 `AppLaunchConfigurator.configure()`** (Firebase Analytics / Crashlytics / Performance)——三平台分流的 `AppDelegate` 都只在 `didFinishLaunching` 呼叫它，新增啟動設定請加在這裡，不要散落各平台進入點。Firebase 依賴 pbxproj 的 `OTHER_LDFLAGS = "-ObjC"`，不可移除。
+- **啟動時的服務初始化集中在 `AppLaunchConfigurator.configure()`** (Firebase Analytics / Crashlytics / Performance)——iOS / iPadOS 的 `AppDelegate` 在 `didFinishLaunching` 呼叫它，新增啟動設定請加在這裡，不要散落各進入點。Firebase 依賴 pbxproj 的 `OTHER_LDFLAGS = "-ObjC"`，不可移除。
 - **跨頁觸發新訂單**請使用 `RootFeature.Action.startNewOrder`：reducer 會同時把 `selectedTab` 切到 `.orders` 並把 `OrdersFeature.State.editOrder` 設成空白草稿。從非 `.orders` 分頁直接設 sheet state 會發生 view-not-in-hierarchy 的 race——`.sheet(...)` 修飾子掛在 `OrdersView` 上，當下不在 hierarchy 就不會 mount。
-- **`OrdersView` 的 `.sheet(item: $store.scope(state: \.editOrder, action: \.editOrder))`** 一律掛在 `OrdersView` 外層，三平台共用——不可移到平台分流後的子 view 裡。
-- **點空白處收鍵盤用 `dismissKeyboardOnTap()`** (`Shared/Keyboard/`)：iOS / iPadOS 以 **window 級** `UITapGestureRecognizer` 實作，靠 `blocksKeyboardDismissTap` 沿 superview 逐層過濾互動 (`UIControl` / `UITextInput`)、文字編輯與系統選單 view——**不可改成對所有 touch 都收鍵盤** (會誤觸貼上／選取等系統 action)。macOS 無軟體鍵盤，為 no-op。
-- **iPhone (compact) 的 NavigationStack 不要用 `.toolbar` 的 `.bottomBar`**：compact 走 `RootTabLayout` 的 `TabView`，底部 tab bar 會蓋掉 `.bottomBar`，工具列項目 (如多選的批次操作) 在實機上看不到。批次／選取類操作改放 `.primaryAction` 等頂部 placement，筆數等資訊可放 `navigationTitle`。iPad (regular) 走 `RootSidebarLayout` 無底部 tab bar，`.bottomBar` 在 iPad 才安全 (`OrdersView.regularSplitContent` 仍用之)。**但 `.bottomBar` / `.topBarLeading` 是 iOS-only placement，macOS 不可用**——`regularSplitContent` 雖只在非 macOS 被呼叫 (macOS 走 `OrdersMacView`)，該 `var` 仍會在 macOS 編譯，故其中的 `.bottomBar` / `.topBarLeading` 必須以 `#if !os(macOS)` 包住，否則 macOS build 會報 `'bottomBar' is unavailable in macOS`。
+- **`OrdersView` 的 `.sheet(item: $store.scope(state: \.editOrder, action: \.editOrder))`** 一律掛在 `OrdersView` 外層，iPhone / iPad 共用——不可移到平台分流後的子 view 裡。
+- **點空白處收鍵盤用 `dismissKeyboardOnTap()`** (`Shared/Keyboard/`)：iOS / iPadOS 以 **window 級** `UITapGestureRecognizer` 實作，靠 `blocksKeyboardDismissTap` 沿 superview 逐層過濾互動 (`UIControl` / `UITextInput`)、文字編輯與系統選單 view——**不可改成對所有 touch 都收鍵盤** (會誤觸貼上／選取等系統 action)。
+- **iPhone (compact) 的 NavigationStack 不要用 `.toolbar` 的 `.bottomBar`**：compact 走 `RootTabLayout` 的 `TabView`，底部 tab bar 會蓋掉 `.bottomBar`，工具列項目 (如多選的批次操作) 在實機上看不到。批次／選取類操作改放 `.primaryAction` 等頂部 placement，筆數等資訊可放 `navigationTitle`。iPad (regular) 走 `RootSidebarLayout` 無底部 tab bar，`.bottomBar` 在 iPad 才安全 (`OrdersView.regularSplitContent` 仍用之)。
 
 ## 資料層與 Dependency 注入
 
@@ -56,7 +54,7 @@
 - **全型別補 `Sendable`**——emitter 對所有生成 struct / enum 無條件加 `Sendable` (補上編譯器本已合成、舊源碼漏標的標註)；`sendable` 不是 schema trait，不要寫進 schema。
 - **`serialization: custom` 的型別** (`CurrencyCode`、`LedgerOrderItem`) 生成宣告不含 `Codable`，自訂 `Codable` 留在手寫 extension，保住既有編碼形狀 (如 `LedgerOrderItem` 刻意不寫出 `id`)。
 - **提交前跑 `bun run check`** (於 `shared/data-model/generator`) 確認生成檔與 schema 同步 (exit 0)；生成檔與 schema 一起 commit。
-- **新增／刪除 Domain 型別後以三平台 build 驗證**——`Core/Domain/` 是 file system synchronized group，新檔 (含 `Generated/` 子資料夾) 自動納入；務必 iOS + iPadOS + macOS 各 build 一次確認拾取正確。
+- **新增／刪除 Domain 型別後以 iOS + iPadOS build 驗證**——`Core/Domain/` 是 file system synchronized group，新檔 (含 `Generated/` 子資料夾) 自動納入；務必 iOS + iPadOS 各 build 一次確認拾取正確。
 
 ## SwiftData Schema 與 Migration
 
@@ -116,7 +114,7 @@ Schema 採版本化 `VersionedSchema`，設有 migration floor (floor 以下的�
 - Design System 放在 `apps/apple/BuyLedger/Shared/DesignSystem/`，並區分 `Foundations/` 與 `Components/`。`Foundations/` 放跨元件共用的 token、modifier 與語意模型；`Components/` 放可視 UI 元件，並依類別建立子資料夾。
 - 每個主要元件或資料型別原則上各自一個 Swift 檔案，檔名必須對應主要型別名稱 (例如 `BLBarChart.swift`、`BLDonutChart.swift`、`BLSparkline.swift`、`BLSearchField.swift`、`BLAmountField.swift`)。避免建立 `BLCharts.swift`、`BLTextFields.swift` 這類同時涵括多種元件的大檔。若小型 enum 或 extension 只服務單一元件，可以與該元件同檔；若開始跨元件重用或變大，請拆出獨立檔案。
 - 每個可視 Design System 元件都應提供自己的 `#Preview`；需要 binding 時使用 `.constant(...)`，需要圖表或狀態資料時用小型 sample data。
-- 調整 Design System 結構或元件後，請至少執行 macOS 與 iOS Simulator build，確認 file system synchronized groups 正確拾取新增、搬移或刪除的 Swift 檔案。
+- 調整 Design System 結構或元件後，請至少執行 iPhone 與 iPad Simulator build，確認 file system synchronized groups 正確拾取新增、搬移或刪除的 Swift 檔案。
 
 ## 測試準則
 
@@ -142,9 +140,9 @@ root `CLAUDE.md` 的注入原則在本平台的具體落地：production code **
 
 ## 安全性與設定注意事項
 
-`BuyLedger.entitlements` 必須透過 pbxproj 的 `CODE_SIGN_ENTITLEMENTS = BuyLedger/Resources/BuyLedger.entitlements;` build setting 才會被 codesign 拿去簽；若忘了掛，binary 上只會出現 Xcode 自動加的 sandbox key，runtime 會抓不到設定的 entitlements 並出現難以診斷的錯誤。
+目前專案無 entitlements 檔；日後若加 App Groups / CloudKit / Push 需新增 entitlements 檔並在 pbxproj 掛上 `CODE_SIGN_ENTITLEMENTS = BuyLedger/Resources/BuyLedger.entitlements;` build setting，否則 binary 上只會出現 Xcode 自動加的預設 key，runtime 會抓不到設定的 entitlements 並出現難以診斷的錯誤。
 
-macOS 沙盒下要打外部 API 必須加 `com.apple.security.network.client = true`。CloudKit container、`aps-environment` 等 entitlement key 等 Apple Developer 帳號實際 provision 後再加；未 provision 時加上會讓 codesign 失敗。CloudKit container、iCloud capability 與 entitlements 的變更需要在 PR 中明確說明。
+CloudKit container、`aps-environment` 等 entitlement key 等 Apple Developer 帳號實際 provision 後再加；未 provision 時加上會讓 codesign 失敗。CloudKit container、iCloud capability 與 entitlements 的變更需要在 PR 中明確說明。
 
 ## Firebase (遙測底座、無雲端同步)
 

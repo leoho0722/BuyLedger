@@ -5,8 +5,6 @@
 //  Created by Leo Ho on 2026/5/1.
 //
 
-#if !os(macOS)
-
 import ComposableArchitecture
 import SwiftUI
 
@@ -463,5 +461,3 @@ private extension OrdersCompactView {
         }
     )
 }
-
-#endif

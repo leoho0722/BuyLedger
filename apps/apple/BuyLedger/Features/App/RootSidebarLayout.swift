@@ -8,7 +8,7 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// iPadOS 與 macOS 使用的側邊欄導覽
+/// iPadOS 使用的側邊欄導覽
 ///
 /// 對應設計稿的左側欄：BL gradient logo、依語意分段的分頁清單 (工作區 / 工具 / 智慧分組)，以及進行中訂單數量的紅色徽章
 struct RootSidebarLayout: View {
@@ -25,12 +25,7 @@ struct RootSidebarLayout: View {
 
     /// 側邊欄導覽的畫面內容
     var body: some View {
-        #if os(macOS)
         splitView
-            .toolbarBackgroundVisibility(.hidden, for: .windowToolbar)
-        #else
-        splitView
-        #endif
     }
 }
 
@@ -191,12 +186,6 @@ private extension RootSidebarLayout {
         }
         .listStyle(.sidebar)
         .navigationSplitViewColumnWidth(min: 220, ideal: 240, max: 280)
-#if os(macOS)
-        // macOS 上把 List 的預設灰底拿掉，讓 NSWindow 的半透明 vibrancy 直接透出，配合
-        // `.windowStyle(.hiddenTitleBar)` 與 sidebar list style 取得 design 稿期望的玻璃感
-        .scrollContentBackground(.hidden)
-        .background(.ultraThinMaterial)
-#endif
     }
 
     /// BL gradient logo 與 App 名稱列

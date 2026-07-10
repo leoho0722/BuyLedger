@@ -206,9 +206,7 @@ private extension FxView {
         .padding(.horizontal, BLSpacing.medium)
         .background(palette.fillQuaternary)
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
-#if !os(macOS)
         .keyboardType(.decimalPad)
-#endif
     }
 
     /// 結果區塊 (accent 背景)
