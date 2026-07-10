@@ -8,35 +8,17 @@ TBD - created by archiving change 'lookup-management-macos-card-style'. Update P
 
 ### Requirement: Platform-adaptive lookup management presentation
 
-The lookup management screen (used for order source, category, and payment method) SHALL render a Design System card layout on macOS and SHALL render a system List on iOS and iPadOS. The choice of layout MUST NOT change the available operations or the underlying data.
-
-#### Scenario: macOS renders the card layout
-
-- **WHEN** the order source, category, or payment method management screen is shown on macOS
-- **THEN** the screen presents a scrolling view with the Design System background and the items inside a single card with separators between rows, visually consistent with the customer list screen
+The lookup management screen (used for order source, category, and payment method) SHALL render a system List on iOS and iPadOS. The presentation MUST NOT change the available operations or the underlying data.
 
 #### Scenario: iOS and iPadOS keep the system List
 
 - **WHEN** the order source, category, or payment method management screen is shown on iOS or iPadOS
 - **THEN** the screen presents the system List with a section header, trailing swipe actions for delete and rename, and the existing footer, unchanged from before this change
 
-
-<!-- @trace
-source: lookup-management-macos-card-style
-updated: 2026-05-24
-code:
-  - .agents/skills/spectra-discuss/SKILL.md
-  - .agents/skills/spectra-drift/SKILL.md
-  - .agents/skills/spectra-ingest/SKILL.md
-  - .agents/skills/spectra-apply/SKILL.md
-  - .agents/skills/spectra-propose/SKILL.md
-  - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
--->
-
 ---
 ### Requirement: Lookup item management operations are preserved across platforms
 
-The screen SHALL allow the user to add, rename, and delete lookup items on every platform. The add, rename, and delete operations and their validation SHALL behave identically regardless of the platform layout, and SHALL write through the same management feature as before this change.
+The screen SHALL allow the user to add, rename, and delete lookup items on iOS and iPadOS. The add, rename, and delete operations and their validation SHALL behave identically on both, and SHALL write through the same management feature as before this change.
 
 #### Scenario: Add a lookup item
 
@@ -53,28 +35,10 @@ The screen SHALL allow the user to add, rename, and delete lookup items on every
 - **WHEN** the user triggers delete on an item
 - **THEN** the item is removed through the management feature
 
-#### Scenario: macOS rename and delete use the context menu
-
-- **WHEN** the user opens the context menu on an item row on macOS
-- **THEN** the menu offers rename and delete, matching the behavior available before this change
-
 #### Scenario: iOS swipe-to-delete is retained
 
 - **WHEN** the user swipes an item row on iOS or iPadOS
 - **THEN** the swipe actions for delete and rename are available, unchanged from before this change
-
-
-<!-- @trace
-source: lookup-management-macos-card-style
-updated: 2026-05-24
-code:
-  - .agents/skills/spectra-discuss/SKILL.md
-  - .agents/skills/spectra-drift/SKILL.md
-  - .agents/skills/spectra-ingest/SKILL.md
-  - .agents/skills/spectra-apply/SKILL.md
-  - .agents/skills/spectra-propose/SKILL.md
-  - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
--->
 
 ---
 ### Requirement: Payment method cardless indicator
@@ -129,7 +93,7 @@ code:
 ---
 ### Requirement: Reconciliation status is a managed lookup kind
 
-The lookup management screen SHALL support reconciliation status as a managed kind, with the same add, rename, and delete operations and the same platform-adaptive presentation (Design System card on macOS, system List on iOS and iPadOS) as the existing order source, category, and payment method kinds. Adding a reconciliation status SHALL use a medium-height name editor sheet on all platforms (matching the add-payment-method interaction), not a plain alert. Renaming a reconciliation status SHALL update orders that reference the old value.
+The lookup management screen SHALL support reconciliation status as a managed kind, with the same add, rename, and delete operations and the same presentation (system List on iOS and iPadOS) as the existing order source, category, and payment method kinds. Adding a reconciliation status SHALL use a medium-height name editor sheet (matching the add-payment-method interaction), not a plain alert. Renaming a reconciliation status SHALL update orders that reference the old value.
 
 #### Scenario: Add a reconciliation status via the medium sheet
 
@@ -150,47 +114,6 @@ The lookup management screen SHALL support reconciliation status as a managed ki
 
 - **WHEN** the reconciliation status management screen is shown with no items
 - **THEN** the screen displays the reconciliation-status empty title and description
-
-
-<!-- @trace
-source: order-reconciliation-status
-updated: 2026-05-29
-code:
-  - apps/apple/BuyLedger/Features/Lookups/LookupManagementFeature.swift
-  - apps/apple/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
-  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - apps/apple/BuyLedger/Core/Dependencies/OrderRepository.swift
-  - apps/apple/BuyLedger/Features/More/MoreView.swift
-  - apps/apple/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
-  - apps/apple/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
-  - apps/apple/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
-  - apps/apple/BuyLedger/Features/Lookups/LookupKind.swift
-  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
-  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - apps/apple/BuyLedgerTests/PaymentMethodPersistenceTests.swift
-  - apps/apple/BuyLedger/Core/Domain/PaymentMethodInfo.swift
-  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
-  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
-  - apps/apple/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift
-  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
-  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
-  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
-  - apps/apple/BuyLedgerTests/SnapshotTests.swift
-  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
-  - apps/apple/BuyLedger/Core/Persistence/OrderPersistence.swift
-  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
-  - apps/apple/BuyLedger/Core/Dependencies/VerificationStatusRepository.swift
-  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - apps/apple/BuyLedger/Features/App/RootFeature.swift
-  - apps/apple/BuyLedgerTests/LookupManagementFeatureTests.swift
-  - apps/apple/BuyLedger/Core/Persistence/VerificationStatusRecord.swift
-  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
-  - apps/apple/BuyLedger/Core/Persistence/VerificationStatusPersistence.swift
--->
 
 ---
 ### Requirement: Payment method bank-transfer indicator
@@ -251,7 +174,7 @@ code:
 ---
 ### Requirement: Payment method editing via the editor sheet
 
-For the payment method kind, the per-item edit action SHALL be labeled "編輯" and SHALL present the payment method editor pre-filled with the item's current name, cardless flag, and bank-transfer flag. Confirming SHALL apply the edited name and flags authoritatively: changing the name SHALL rename the item and cascade to orders referencing the old name, and the cardless and bank-transfer flags SHALL be set to exactly the user's selection — including clearing a previously-set flag. The edit action SHALL be available from every per-item entry point that previously offered rename (iOS swipe, iOS context menu, macOS context menu). Other lookup kinds (order source, category, reconciliation status) SHALL retain the rename-only action labeled "重新命名".
+For the payment method kind, the per-item edit action SHALL be labeled "編輯" and SHALL present the payment method editor pre-filled with the item's current name, cardless flag, and bank-transfer flag. Confirming SHALL apply the edited name and flags authoritatively: changing the name SHALL rename the item and cascade to orders referencing the old name, and the cardless and bank-transfer flags SHALL be set to exactly the user's selection — including clearing a previously-set flag. The edit action SHALL be available from every per-item entry point that previously offered rename (iOS swipe, iOS context menu). Other lookup kinds (order source, category, reconciliation status) SHALL retain the rename-only action labeled "重新命名".
 
 #### Scenario: Edit a payment method's name and flags
 
@@ -268,43 +191,3 @@ For the payment method kind, the per-item edit action SHALL be labeled "編輯" 
 
 - **WHEN** the user triggers the per-item edit action on an order source, category, or reconciliation status
 - **THEN** the action is labeled "重新命名" and presents a name-only rename flow without flag toggles
-
-<!-- @trace
-source: order-reconciliation-status
-updated: 2026-05-29
-code:
-  - apps/apple/BuyLedger/Features/Lookups/LookupManagementFeature.swift
-  - apps/apple/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
-  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - apps/apple/BuyLedger/Core/Dependencies/OrderRepository.swift
-  - apps/apple/BuyLedger/Features/More/MoreView.swift
-  - apps/apple/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
-  - apps/apple/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
-  - apps/apple/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
-  - apps/apple/BuyLedger/Features/Lookups/LookupKind.swift
-  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
-  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - apps/apple/BuyLedgerTests/PaymentMethodPersistenceTests.swift
-  - apps/apple/BuyLedger/Core/Domain/PaymentMethodInfo.swift
-  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/apple/BuyLedger/Features/Lookups/LookupManagementView.swift
-  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
-  - apps/apple/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift
-  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
-  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
-  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
-  - apps/apple/BuyLedgerTests/SnapshotTests.swift
-  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
-  - apps/apple/BuyLedger/Core/Persistence/OrderPersistence.swift
-  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
-  - apps/apple/BuyLedger/Core/Dependencies/VerificationStatusRepository.swift
-  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - apps/apple/BuyLedger/Features/App/RootFeature.swift
-  - apps/apple/BuyLedgerTests/LookupManagementFeatureTests.swift
-  - apps/apple/BuyLedger/Core/Persistence/VerificationStatusRecord.swift
-  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
-  - apps/apple/BuyLedger/Core/Persistence/VerificationStatusPersistence.swift
--->

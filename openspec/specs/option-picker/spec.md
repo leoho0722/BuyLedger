@@ -8,26 +8,12 @@ TBD - created by archiving change 'option-picker-sheet-macos-card-style'. Update
 
 ### Requirement: Platform-adaptive option picker presentation
 
-The single-select option picker (used for order source, category, payment method, currency, and tool-page selections) SHALL render a Design System card layout on macOS and SHALL render a system List on iOS and iPadOS. The choice of layout MUST NOT change the available actions or the selectable options.
-
-#### Scenario: macOS renders the card layout
-
-- **WHEN** the option picker is presented on macOS
-- **THEN** the picker presents a scrolling view with the options inside a Design System card with separators between rows, consistent with the customer list and lookup management screens
-- **AND** in light mode the content background uses the same light-gray grouped color as the form List so the white card rows have contrast, while in dark mode it keeps the sheet's default material rather than a deep black background, so it never introduces a jarring block
+The single-select option picker (used for order source, category, payment method, currency, and tool-page selections) SHALL render a system List on iOS and iPadOS. The presentation MUST NOT change the available actions or the selectable options.
 
 #### Scenario: iOS and iPadOS keep the system List
 
 - **WHEN** the option picker is presented on iOS or iPadOS
 - **THEN** the picker presents the system List with the add section, option rows, and empty state, unchanged from before this change
-
-
-<!-- @trace
-source: option-picker-sheet-macos-card-style
-updated: 2026-05-24
-code:
-  - apps/apple/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
--->
 
 ---
 ### Requirement: Option selection is preserved across platforms

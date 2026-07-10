@@ -8,7 +8,7 @@ TBD - created by archiving change 'order-batch-status-update'. Update Purpose af
 
 ### Requirement: Orders list provides a multi-select mode
 
-The orders list SHALL provide a multi-select mode on iOS, iPadOS, macOS, and Web. The system SHALL provide a control to enter and exit multi-select mode. While in multi-select mode, tapping or clicking an order row SHALL toggle that order's selection instead of navigating to its detail. The system SHALL provide a way to select all orders in the current filtered list and to clear the current selection, and SHALL display the count of currently selected orders. Exiting multi-select mode SHALL clear the current selection.
+The orders list SHALL provide a multi-select mode on iOS and iPadOS. The system SHALL provide a control to enter and exit multi-select mode. While in multi-select mode, tapping or clicking an order row SHALL toggle that order's selection instead of navigating to its detail. The system SHALL provide a way to select all orders in the current filtered list and to clear the current selection, and SHALL display the count of currently selected orders. Exiting multi-select mode SHALL clear the current selection.
 
 #### Scenario: Enter multi-select and toggle selection
 
@@ -24,33 +24,6 @@ The orders list SHALL provide a multi-select mode on iOS, iPadOS, macOS, and Web
 
 - **WHEN** the user has selected orders and exits multi-select mode
 - **THEN** the selection is empty and rows return to navigating to detail on tap
-
-
-<!-- @trace
-source: order-batch-status-update
-updated: 2026-06-20
-code:
-  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
-  - apps/apple/BuyLedger.xcodeproj/project.pbxproj
-  - apps/backend/src/orders/orders.types.ts
-  - apps/apple/CLAUDE.md
-  - apps/backend/README.md
-  - apps/apple/BuyLedger/Core/Persistence/OrderPersistence.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
-  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
-  - apps/web/src/components/OrderRow.tsx
-  - apps/backend/src/orders/orders.service.ts
-  - apps/web/src/lib/api.ts
-  - apps/web/src/lib/queries.ts
-  - apps/web/src/app/orders/page.tsx
-  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
-  - apps/apple/BuyLedger/Core/Dependencies/OrderRepository.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - apps/backend/src/orders/orders.controller.ts
-tests:
-  - apps/backend/src/orders/orders.service.spec.ts
--->
 
 ---
 ### Requirement: Batch apply a single target status to selected orders
@@ -140,38 +113,9 @@ tests:
 ---
 ### Requirement: Batch status persistence is atomic on Apple
 
-On Apple platforms (iOS, iPadOS, macOS) where orders persist to the local store, a batch status update SHALL persist all changed orders in a single save operation rather than one save per order.
+On Apple platforms (iOS and iPadOS) where orders persist to the local store, a batch status update SHALL persist all changed orders in a single save operation rather than one save per order.
 
 #### Scenario: Single persistence for a multi-order batch
 
 - **WHEN** a batch status update changes the status of four orders
 - **THEN** all four changed orders are written to the local store in one save operation
-
-
-<!-- @trace
-source: order-batch-status-update
-updated: 2026-06-20
-code:
-  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
-  - apps/apple/BuyLedger.xcodeproj/project.pbxproj
-  - apps/backend/src/orders/orders.types.ts
-  - apps/apple/CLAUDE.md
-  - apps/backend/README.md
-  - apps/apple/BuyLedger/Core/Persistence/OrderPersistence.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
-  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
-  - apps/web/src/components/OrderRow.tsx
-  - apps/backend/src/orders/orders.service.ts
-  - apps/web/src/lib/api.ts
-  - apps/web/src/lib/queries.ts
-  - apps/web/src/app/orders/page.tsx
-  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
-  - apps/apple/BuyLedger/Core/Dependencies/OrderRepository.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - apps/backend/src/orders/orders.controller.ts
-tests:
-  - apps/backend/src/orders/orders.service.spec.ts
--->
-
----

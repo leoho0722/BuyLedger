@@ -8,7 +8,7 @@ TBD - created by archiving change 'ai-product-summary'. Update Purpose after arc
 
 ### Requirement: AI summary entry point gated by setting
 
-The orders list SHALL present an "AI summary" toolbar action on iOS, iPadOS, and macOS, placed alongside the existing new-order action. The action SHALL be disabled when the currently filtered orders list is empty. When activated, the system SHALL read the `useAiSummary` setting and branch: if enabled, it SHALL present the streaming summary sheet; if disabled, it SHALL present a prompt alert.
+The orders list SHALL present an "AI summary" toolbar action on iOS and iPadOS, placed alongside the existing new-order action. The action SHALL be disabled when the currently filtered orders list is empty. When activated, the system SHALL read the `useAiSummary` setting and branch: if enabled, it SHALL present the streaming summary sheet; if disabled, it SHALL present a prompt alert.
 
 #### Scenario: Activate with AI summary enabled
 
@@ -63,7 +63,7 @@ The summary input SHALL be derived from the product details (item name, quantity
 ---
 ### Requirement: Disabled-state prompt alert with deep link to settings
 
-When AI summary is disabled, the prompt alert SHALL present two actions: a left "close" action that dismisses the alert, and a right "go to settings" action. Activating the right action SHALL navigate the user to the settings page where the toggle lives. On iOS and iPadOS this SHALL switch to the more tab and push the settings page; on macOS it SHALL open the standard preferences window.
+When AI summary is disabled, the prompt alert SHALL present two actions: a left "close" action that dismisses the alert, and a right "go to settings" action. Activating the right action SHALL navigate the user to the settings page where the toggle lives. On iOS and iPadOS this SHALL switch to the more tab and push the settings page.
 
 #### Scenario: Close the prompt
 
@@ -74,11 +74,6 @@ When AI summary is disabled, the prompt alert SHALL present two actions: a left 
 
 - **WHEN** the user activates the right "go to settings" action on iOS or iPadOS
 - **THEN** the app switches to the more tab and pushes the settings page
-
-#### Scenario: Navigate to settings (macOS)
-
-- **WHEN** the user activates the right "go to settings" action on macOS
-- **THEN** the app opens the standard preferences window
 
 ---
 ### Requirement: AI summary setting and model configuration

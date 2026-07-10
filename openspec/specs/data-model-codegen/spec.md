@@ -568,8 +568,8 @@ The Swift target SHALL emit one file per schema type into apps/apple/BuyLedger/C
 
 #### Scenario: Apple platforms build and tests pass after the split
 
-- **WHEN** the iOS, iPadOS, and macOS builds and the BuyLedgerTests suite run after the generated/handwritten split
-- **THEN** all three builds SHALL succeed and all existing tests SHALL pass without modifying any call site of the twelve domain types
+- **WHEN** the iOS and iPadOS builds and the BuyLedgerTests suite run after the generated/handwritten split
+- **THEN** both builds SHALL succeed and all existing tests SHALL pass without modifying any call site of the twelve domain types
 
 #### Scenario: Custom serialization shape is preserved
 
@@ -580,78 +580,6 @@ The Swift target SHALL emit one file per schema type into apps/apple/BuyLedger/C
 
 - **WHEN** a developer hand-edits any file under apps/apple/BuyLedger/Core/Domain/Generated/ and runs the check command
 - **THEN** the check command SHALL exit non-zero and list that file as drifted
-
-
-<!-- @trace
-source: add-data-model-codegen
-updated: 2026-06-09
-code:
-  - shared/data-model/fixtures/expected/kotlin/SampleMetadata.kt
-  - shared/data-model/schema/CustomerTier.yaml
-  - apps/apple/BuyLedger/Core/Domain/Generated/CampaignStatus.generated.swift
-  - apps/apple/BuyLedger/Core/Domain/Campaign.swift
-  - apps/apple/BuyLedger.xcodeproj/project.pbxproj
-  - apps/apple/BuyLedger/Core/Domain/Generated/Money.generated.swift
-  - shared/data-model/fixtures/expected/typescript/SampleOrder.ts
-  - shared/data-model/fixtures/schema/sample-orders.yaml
-  - shared/data-model/generator/src/datamodel-gen.ts
-  - apps/apple/BuyLedger/Core/Domain/CurrencyCode.swift
-  - shared/data-model/fixtures/expected/typescript/SampleStatus.ts
-  - shared/data-model/schema/CampaignStatus.yaml
-  - shared/data-model/fixtures/expected/swift/SampleStatus.generated.swift
-  - shared/data-model/fixtures/expected/typescript/SampleTag.ts
-  - shared/data-model/schema/Money.yaml
-  - README.md
-  - apps/apple/BuyLedger/Core/Domain/Generated/OrderStatus.generated.swift
-  - apps/apple/BuyLedger/Core/Domain/PaymentMethodInfo.swift
-  - shared/data-model/fixtures/expected/kotlin/SampleTag.kt
-  - shared/data-model/schema/LedgerOrderItem.yaml
-  - apps/apple/README.md
-  - shared/data-model/schema/FxRateSnapshot.yaml
-  - apps/apple/BuyLedger/Core/Domain/Generated/LedgerOrder.generated.swift
-  - apps/apple/BuyLedger/Core/Domain/PaymentReceiptStatus.swift
-  - shared/data-model/fixtures/codegen.yaml
-  - shared/data-model/fixtures/schema/sample-enums.yaml
-  - apps/apple/BuyLedger/Core/Domain/Generated/FxRateSnapshot.generated.swift
-  - apps/apple/BuyLedger/Core/Domain/Generated/CurrencyCode.generated.swift
-  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
-  - apps/apple/BuyLedger/Core/Domain/Generated/PaymentMethodInfo.generated.swift
-  - apps/apple/BuyLedger/Core/Domain/OrderStatus.swift
-  - shared/data-model/schema/CurrencyCode.yaml
-  - shared/data-model/schema/LedgerOrder.yaml
-  - shared/data-model/fixtures/expected/swift/SampleMetadata.generated.swift
-  - apps/apple/BuyLedger/Core/Domain/Generated/PaymentReceiptStatus.generated.swift
-  - apps/apple/BuyLedger/Core/Domain/OrderMerge.swift
-  - shared/data-model/README.md
-  - shared/data-model/schema/OrderStatus.yaml
-  - apps/apple/BuyLedger/Core/Domain/CampaignStatus.swift
-  - apps/apple/BuyLedger/Core/Domain/LedgerCustomer.swift
-  - apps/apple/BuyLedger/Core/Domain/Generated/Campaign.generated.swift
-  - shared/data-model/schema/LedgerCustomer.yaml
-  - shared/data-model/codegen.yaml
-  - apps/apple/BuyLedger/Core/Domain/Generated/LedgerOrderItem.generated.swift
-  - apps/apple/BuyLedger/Core/Domain/CustomerTier.swift
-  - shared/data-model/generator/tsconfig.json
-  - shared/data-model/generator/bun.lock
-  - apps/apple/BuyLedger/Core/Domain/FxRateSnapshot.swift
-  - shared/data-model/schema/Campaign.yaml
-  - shared/data-model/schema/PaymentMethodInfo.yaml
-  - CLAUDE.md
-  - apps/apple/BuyLedger/Core/Domain/LedgerOrderItem.swift
-  - shared/data-model/fixtures/expected/swift/SampleOrder.generated.swift
-  - apps/apple/BuyLedger/Core/Domain/Generated/LedgerCustomer.generated.swift
-  - apps/apple/BuyLedger/Core/Domain/Money.swift
-  - apps/apple/CLAUDE.md
-  - apps/apple/BuyLedger/Core/Domain/Generated/CustomerTier.generated.swift
-  - shared/data-model/fixtures/expected/kotlin/SampleOrder.kt
-  - shared/data-model/fixtures/expected/swift/SampleTag.generated.swift
-  - shared/data-model/generator/package.json
-  - shared/data-model/fixtures/expected/typescript/SampleMetadata.ts
-  - shared/data-model/schema/PaymentReceiptStatus.yaml
-  - shared/data-model/fixtures/expected/kotlin/SampleStatus.kt
-tests:
-  - shared/data-model/generator/test/datamodel-gen.test.ts
--->
 
 ---
 ### Requirement: Kotlin and TypeScript emitters are locked by golden-file tests

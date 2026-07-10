@@ -8,7 +8,7 @@ TBD - created by archiving change 'add-order-merge'. Update Purpose after archiv
 
 ### Requirement: Order merge entry points
 
-The system SHALL provide a "merge order" action on the orders list row context menu and in the order detail page's "more" actions menu, on iOS, iPadOS, and macOS. On the order detail page, the merge, edit, and delete actions SHALL be grouped into a single "more" menu (ellipsis label) — ordered as merge, edit, then delete, with delete presented as a destructive action separated from the others by a divider — while the status update control SHALL remain a separate control outside that menu. Both entry points SHALL open the same merge candidate sheet, with the originating order as the primary order. The merge action SHALL NOT be offered for orders whose status is merged or cancelled.
+The system SHALL provide a "merge order" action on the orders list row context menu and in the order detail page's "more" actions menu, on iOS and iPadOS. On the order detail page, the merge, edit, and delete actions SHALL be grouped into a single "more" menu (ellipsis label) — ordered as merge, edit, then delete, with delete presented as a destructive action separated from the others by a divider — while the status update control SHALL remain a separate control outside that menu. Both entry points SHALL open the same merge candidate sheet, with the originating order as the primary order. The merge action SHALL NOT be offered for orders whose status is merged or cancelled.
 
 #### Scenario: Entry from the orders list context menu
 
@@ -29,21 +29,6 @@ The system SHALL provide a "merge order" action on the orders list row context m
 
 - **WHEN** an order's status is merged or cancelled
 - **THEN** neither the context menu nor the detail page "more" menu offers the merge action, while the "more" menu still offers edit and delete
-
-
-<!-- @trace
-source: add-order-merge
-updated: 2026-06-07
-code:
-  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
-  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
-  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
--->
 
 ---
 ### Requirement: Merge candidate selection
