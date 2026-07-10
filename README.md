@@ -34,13 +34,13 @@ BuyLedger (repo)/
 └── assets/                               # README 圖片等共用素材
 ```
 
-**佈局契約**：可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。`apps/apple` 與 `shared/data-model` 均已實際動工；`apps/android` 為文件化保留位置，待動工時才建立 (目前不放 stub)。
+**佈局契約**：可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。`apps/ios` 與 `shared/data-model` 均已實際動工；`apps/android` 為文件化保留位置，待動工時才建立 (目前不放 stub)。
 
 ## 平台導覽
 
 | 平台                         | 位置            | 開發指南                                                                                           |
 |------------------------------|-----------------|----------------------------------------------------------------------------------------------------|
-| Apple (iOS / iPadOS)         | `apps/apple/`   | [apps/apple/README.md](apps/apple/README.md)：技術棧、環境設定、build / test、架構速覽、Troubleshooting |
+| Apple (iOS / iPadOS)         | `apps/ios/`   | [apps/ios/README.md](apps/ios/README.md)：技術棧、環境設定、build / test、架構速覽、Troubleshooting |
 | Android                      | `apps/android/` | (未來，尚未建立)                                                                                    |
 
 各平台的 AI 協作硬規則見該平台目錄的 `CLAUDE.md`；跨平台通用規範見根目錄 [`CLAUDE.md`](CLAUDE.md)。

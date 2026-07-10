@@ -1,8 +1,8 @@
 # 產線 codegen 設定。schema 來源為同層的 schema/ 目錄 (見 package.json 的 generate / check script)。
-# 目前僅 Apple 平台在產線消費：Swift target 產出至 apps/apple。
+# 目前僅 Apple 平台在產線消費：Swift target 產出至 apps/ios。
 # TypeScript 與 Kotlin emitter 仍由 generator 的 golden-file 測試鎖定，待其他平台動工時再加對應 target。
 version: 1
 targets:
   - language: swift
-    output: ../../apps/apple/BuyLedger/Core/Domain/Generated
+    output: ../../apps/ios/BuyLedger/Core/Domain/Generated
     options: {}

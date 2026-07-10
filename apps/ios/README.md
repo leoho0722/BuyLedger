@@ -11,14 +11,14 @@ BuyLedger 的 Apple 平台實作。產品介紹與 monorepo 結構見 repo 根�
 - **Ollama Cloud**：訂單 AI 商品明細總結 (chat streaming，`OllamaClient`)
 - **[swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing)**：UI 視覺迴歸測試
 
-Xcode 專案：`apps/apple/BuyLedger.xcodeproj`，scheme：`BuyLedger`。需要 **Xcode 26+** 與 Swift 6 toolchain。
+Xcode 專案：`apps/ios/BuyLedger.xcodeproj`，scheme：`BuyLedger`。需要 **Xcode 26+** 與 Swift 6 toolchain。
 
 Xcode project 使用 file system synchronized groups，新增或搬移檔案請優先動實體資料夾，再用 build 驗證 target 仍正確包含來源與資源。
 
 ## 專案結構
 
 ```text
-apps/apple/
+apps/ios/
 ├── BuyLedger.xcodeproj/          # Xcode 專案；project.pbxproj 提交、xcuserdata/ 不提交
 ├── BuyLedger/                    # App source root
 │   ├── App/                      # 進入點：BuyLedgerApp、WindowGroup
@@ -61,10 +61,10 @@ App 使用兩把 API key，皆透過 `Config.xcconfig` 注入 (機密)：
 | `EXCHANGE_RATE_API_KEY` | 匯率與幣別清單 (ExchangeRate-API v6) | [exchangerate-api.com](https://www.exchangerate-api.com)；30 日 sparkline 需 Pro/Business 方案 |
 | `OLLAMA_API_KEY` | 訂單 AI 商品明細總結 (Ollama Cloud chat streaming) | [ollama.com](https://ollama.com) → Account → API keys |
 
-1. 複製 `apps/apple/BuyLedger/Resources/Config.example.xcconfig` 為 `Config.xcconfig` (同目錄)：
+1. 複製 `apps/ios/BuyLedger/Resources/Config.example.xcconfig` 為 `Config.xcconfig` (同目錄)：
 
    ```bash
-   cp apps/apple/BuyLedger/Resources/Config.example.xcconfig apps/apple/BuyLedger/Resources/Config.xcconfig
+   cp apps/ios/BuyLedger/Resources/Config.example.xcconfig apps/ios/BuyLedger/Resources/Config.xcconfig
    ```
 
 2. 編輯 `Config.xcconfig`，填入你的 key：
@@ -87,13 +87,13 @@ App 使用兩把 API key，皆透過 `Config.xcconfig` 注入 (機密)：
 ```bash
 # iOS Simulator
 xcodebuildmcp simulator build-and-run \
-  --project-path apps/apple/BuyLedger.xcodeproj \
+  --project-path apps/ios/BuyLedger.xcodeproj \
   --scheme BuyLedger \
   --simulator-name "iPhone 17"
 
 # iPadOS Simulator
 xcodebuildmcp simulator build-and-run \
-  --project-path apps/apple/BuyLedger.xcodeproj \
+  --project-path apps/ios/BuyLedger.xcodeproj \
   --scheme BuyLedger \
   --simulator-name "iPad Pro 13-inch (M5)"
 ```
@@ -108,7 +108,7 @@ xcodebuildmcp simulator build-and-run \
 
 ```bash
 xcodebuildmcp simulator test \
-  --project-path apps/apple/BuyLedger.xcodeproj \
+  --project-path apps/ios/BuyLedger.xcodeproj \
   --scheme BuyLedger \
   --simulator-name "iPhone 17"
 ```
@@ -123,7 +123,7 @@ Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確�
 # 首次安裝產生器依賴 (需 Bun >= 1.3，brew install bun)
 cd shared/data-model/generator && bun install
 
-# 改 shared/data-model/schema/ 後重新產生 Swift (輸出到 apps/apple 的 Core/Domain/Generated/)
+# 改 shared/data-model/schema/ 後重新產生 Swift (輸出到 apps/ios 的 Core/Domain/Generated/)
 bun run generate
 
 # 提交前確認生成檔與 schema 同步 (exit 0 才算同步)

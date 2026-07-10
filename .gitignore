@@ -84,10 +84,10 @@ fastlane/test_output/
 openspec/.vector-search.db*
 
 # Local API keys / build configurations（範本見 Config.example.xcconfig）
-apps/apple/BuyLedger/Resources/Config.xcconfig
+apps/ios/BuyLedger/Resources/Config.xcconfig
 
 # Firebase 設定（從 Firebase Console 下載 GoogleService-Info.plist 放入 Resources/）
-apps/apple/BuyLedger/Resources/GoogleService-Info.plist
+apps/ios/BuyLedger/Resources/GoogleService-Info.plist
 
 # CodeGen node modules
 shared/data-model/generator/node_modules
