@@ -8,6 +8,7 @@ BuyLedger 的 Apple 平台實作。產品介紹與 monorepo 結構見 repo 根�
 - **TCA ([Swift Composable Architecture](https://github.com/pointfreeco/swift-composable-architecture))**：feature 狀態、商業邏輯、副作用與依賴注入
 - **SwiftData + CloudKit**：本機持久化為核心，CloudKit 同步介面 (``PersistenceContainer.CloudKitOption``) 已預留，待 Apple Developer 帳號 provision 後接上
 - **Swift Charts**：Insights 頁的趨勢、類別與成本結構視覺化
+- **EventKit**：開團訂購提醒寫入／移除系統行事曆 (`CalendarReminderClient`)；因需支援移除既有事件而請求 full access，Info.plist 帶 `NSCalendarsFullAccessUsageDescription`
 - **Ollama Cloud**：訂單 AI 商品明細總結 (chat streaming，`OllamaClient`)
 - **[swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing)**：UI 視覺迴歸測試
 
@@ -155,7 +156,7 @@ bun run unlock
 - `liveValue`：純本機 SwiftData，**不自動 seed**——使用者首次啟動會看到真正的空狀態。
 - `previewValue`：in-memory + 自動 seed `LedgerOrder.sampleOrders`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
 - `LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback` **僅供 Preview / 單元測試 / `previewValue`** 使用，runtime 不讀取。
-- **Schema 版本化**：`Core/Persistence/BuyLedgerSchema.swift` 以 `VersionedSchema` (floor `BuyLedgerSchemaV10` → target `BuyLedgerSchemaV12`，floor 以下版本已移除) + `BuyLedgerMigrationPlan` 管理遷移。新增欄位／表走 lightweight、改型別走 custom dump-and-restore；改動流程的硬規則見 [`CLAUDE.md › SwiftData Schema 與 Migration`](CLAUDE.md#swiftdata-schema-與-migration)。`V12` 為 lightweight，加入同步專屬的 `SyncMeta` / `SyncQueueItem` 本機 sidecar 表 (與領域型別解耦)；sync 關閉時這兩張表保持空、on-disk 行為與導入前等價。
+- **Schema 版本化**：`Core/Persistence/BuyLedgerSchema.swift` 以 `VersionedSchema` (floor `BuyLedgerSchemaV13` → target `BuyLedgerSchemaV15`，V13 以下版本已移除) + `BuyLedgerMigrationPlan` 管理遷移。新增欄位／表走 lightweight、改型別走 custom dump-and-restore；改動流程的硬規則見 [`CLAUDE.md › SwiftData Schema 與 Migration`](CLAUDE.md#swiftdata-schema-與-migration)。`V13` (floor) 含開團訂購提醒連結表 `CampaignReminderRecord` (campaignID → 行事曆 eventIdentifier，與領域型別 `Campaign` 解耦；行事曆識別碼屬裝置本機資料，不入跨平台 schema)；`V14` 為該表加提示時間欄位、`V15` 再把它改為使用者自選的提醒時間戳 `reminderTimestamp` (皆 lightweight)。
 
 ### 外部 API
 

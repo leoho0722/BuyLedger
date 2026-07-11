@@ -60,7 +60,7 @@
 
 Schema 採版本化 `VersionedSchema`，設有 migration floor (floor 以下的版本已移除)，floor 到 target 之間的中間版本凍結為影子，遷移由 `BuyLedgerMigrationPlan` (`SchemaMigrationPlan`) 串接，全部定義在 `Core/Persistence/BuyLedgerSchema.swift`。
 
-- **只有最新版本引用 top-level `@Model` 型別**——target 版本的 `models` 指向 `OrderRecord` 等 top-level 定義；**floor 以外的每個保留舊版本必須把當時的 `@Model` 凍結成內嵌於該 enum 的 shadow 型別**，保住當時的 attribute fingerprint，否則改動 top-level 型別會連帶破壞舊 schema 指紋導致 migration 失敗 (floor 本身的 `OrderRecord` 也已是凍結影子)。
+- **只有最新版本引用 top-level `@Model` 型別**——target 版本的 `models` 指向 `OrderRecord` 等 top-level 定義；**floor 以外的每個保留舊版本必須把當時的 `@Model` 凍結成內嵌於該 enum 的 shadow 型別**，保住當時的 attribute fingerprint，否則改動 top-level 型別會連帶破壞舊 schema 指紋導致 migration 失敗 (floor V13 本身即把有變更的 `CampaignReminderRecord` 凍結為影子)。
 - **加欄位／加表 → `.lightweight`；改型別 → `.custom`**——新增帶 default 的欄位或全新 model 走 lightweight；改變既有欄位型別必須走 `.custom` 的 dump-and-restore (歷史案例與 pattern 細節見 `/swiftdata-schema-migration` skill)。
 - **改 schema 時，invoke `/swiftdata-schema-migration` 取得逐步操作指引** (新增版本 enum、凍結舊版 shadow、append migration stage、更新 `PersistenceContainer.make`)。
 - **移除舊版本是單向操作**——遷移為 forward-only，plan 只需「最舊仍存在的 store 版本 (floor) → target」之間連續的 stage 鏈。移除舊版會把 floor 往上抬；任何停在低於新 floor 的 on-disk store 將失去遷移路徑，開啟時 `ModelContainer` init 拋錯、進而觸發 `makeForApp()` 砍檔。**只有確定沒有任何已安裝 store 停在被移除的版本 (或更早) 時才可移除**；上架後此前提幾乎不成立，務必保留能回溯到最舊可能 store 的完整版本鏈。
@@ -70,6 +70,14 @@ Schema 採版本化 `VersionedSchema`，設有 migration floor (floor 以下的�
 ## 外部 API 實作
 
 - 幣別清單經 `CurrencyMetadataRepository.refreshIfStale(604_800)` 打 `/codes` 並 cache 7 天 (動態載入、不可 hardcode 的政策見 root `CLAUDE.md`)。
+
+## 行事曆整合 (EventKit)
+
+開團訂購提醒經 `CalendarReminderClient` (`Core/Dependencies/`，比照 `PhotoClient` 的 system-call client 範本) 寫入／移除系統行事曆。硬規則與 gotcha：
+
+- **必須請求 full access、不能只用 write-only**——「移除提醒」需先 `event(withIdentifier:)` 讀回事件才能刪，write-only 讀不到事件。故走 `requestFullAccessToEvents()`，Info.plist 帶 `NSCalendarsFullAccessUsageDescription` (權限在實際新增／移除的當下才請求，非啟動即請求)。
+- **campaign 連結存 iOS-only 的 `CampaignReminderRecord` (SwiftData 表)，不入跨平台 `Campaign` schema**——記 `eventIdentifier` 與使用者自選的提醒時間戳 `reminderTimestamp` (Date)；行事曆識別碼是裝置本機資料，寫進跨平台生成型別會違反平台中立原則且與 CloudKit 耦合。V13 建此表、V14 加提示時間欄位、V15 改為 `reminderTimestamp` (皆 lightweight)。連結資料以 `CampaignReminderLink` 值型別在 repository / reducer 間流轉。
+- **提醒日期＋時間由使用者自選、以時間戳保存**：不再自動掛結單日。事件為**全天事件** (`isAllDay`)，事件日期＝`calendar.startOfDay(for: reminderTimestamp)`，提示 (`EKAlarm(relativeOffset:)`) 以該時間戳的當天分鐘數換算秒數 (`Campaign.reminderTitle` 提供標題)。新增／編輯開團頁點「新增提醒」以 sheet (graphical `DatePicker([.date, .hourAndMinute])`、`presentationDetents([.fraction(0.7)])` 螢幕 70% 高，狀態/流程全在 reducer、view 只送 action) 選日期＋提示時間 (預設結單日／今天 09:00)，儲存時 reconcile (名稱或時間戳變更即重建事件)；**開團詳情頁純顯示**該提醒時間戳、不提供新增／移除 (管理走編輯頁)。
 
 ## 程式風格 Apple 補充
 

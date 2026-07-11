@@ -38,6 +38,13 @@ enum CampaignFormatters {
         let weekday = date.formatted(.dateTime.weekday(.abbreviated).locale(Locale(identifier: "zh_TW")))
         return "\(day) \(weekday)"
     }
+
+    /// 將訂購提醒時間戳格式化為「月日 時:分」，供顯示提醒的日期與提示時間
+    /// - Parameter date: 提醒時間戳
+    /// - Returns: 例如「7月26日 下午6:00」的字串
+    static func reminderTimestamp(_ date: Date) -> String {
+        date.formatted(.dateTime.month(.abbreviated).day().hour().minute().locale(Locale(identifier: "zh_TW")))
+    }
 }
 
 /// 開團狀態對應的視覺語意

@@ -78,6 +78,9 @@ struct CampaignListView: View {
         .alert(
             $store.scope(state: \.campaigns.deletionConfirmation, action: \.campaigns.deletionConfirmation)
         )
+        .alert(
+            $store.scope(state: \.campaigns.reminderAccessAlert, action: \.campaigns.reminderAccessAlert)
+        )
         .task {
             await store.send(.campaigns(.task)).finish()
         }

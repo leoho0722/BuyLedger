@@ -111,11 +111,17 @@ struct CampaignFeature {
         /// 載入失敗時顯示的錯誤訊息
         var errorMessage: String?
 
+        /// 每個開團目前的提醒連結 (事件識別碼 + 提示時間)；有值代表該開團已建立訂購提醒
+        var reminderLinks: [Campaign.ID: CampaignReminderLink] = [:]
+
         /// 目前呈現中的新增／編輯開團表單；`nil` 表示未呈現
         @Presents var editCampaign: CampaignEditFeature.State?
 
         /// 刪除開團前的確認 alert 狀態；`nil` 表示未呈現
         @Presents var deletionConfirmation: AlertState<Action.Alert>?
+
+        /// 行事曆權限被拒時的提示 alert；`nil` 表示未呈現
+        @Presents var reminderAccessAlert: AlertState<Action.ReminderAlert>?
 
         // MARK: - Section Method
 
@@ -281,6 +287,18 @@ struct CampaignFeature {
         /// 開團改名通知；由 ``RootFeature`` 攔截做訂單表 cascade 與 ``OrdersFeature`` 副本同步
         case campaignRenamed(from: String, to: String)
 
+        /// 提醒連結載入完成 (campaignID → 連結資料)
+        case reminderLinksLoaded([Campaign.ID: CampaignReminderLink])
+
+        /// 提醒建立或移除後更新記憶體連結；`link` 為 `nil` 表示已移除
+        case reminderStored(Campaign.ID, CampaignReminderLink?)
+
+        /// 行事曆權限被拒，彈出提示 alert
+        case reminderAccessDenied
+
+        /// 權限提示 alert 事件
+        case reminderAccessAlert(PresentationAction<ReminderAlert>)
+
         /// 刪除確認 alert 的選項
         @CasePathable
         enum Alert: Equatable {
@@ -288,6 +306,10 @@ struct CampaignFeature {
             /// 使用者確認刪除指定開團
             case confirmDelete(Campaign.ID)
         }
+
+        /// 權限提示 alert 的選項；僅「知道了」關閉，無自訂動作
+        @CasePathable
+        enum ReminderAlert: Equatable {}
     }
 
     // MARK: - Dependency Properties
@@ -298,8 +320,17 @@ struct CampaignFeature {
     /// 訂單資料來源；開團改名時用於 cascade 更新所有歸屬訂單的 ``LedgerOrder/campaignNames`` (DB 端)
     @Dependency(OrderRepository.self) private var orderRepository
 
+    /// 開團訂購提醒與系統行事曆整合的介面
+    @Dependency(CalendarReminderClient.self) private var calendarReminderClient
+
+    /// 開團訂購提醒連結 (campaignID → eventIdentifier) 的資料來源
+    @Dependency(CampaignReminderRepository.self) private var reminderRepository
+
     /// 用於新開團的日期來源，方便在測試中注入固定值
     @Dependency(\.date) private var date
+
+    /// 用於計算提醒事件「當天 09:00」的行事曆 (含時區)，方便在測試中注入固定值
+    @Dependency(\.calendar) private var calendar
 
     /// 用於新開團的 UUID 產生器，方便在測試中注入固定值
     @Dependency(\.uuid) private var uuid
@@ -315,6 +346,7 @@ struct CampaignFeature {
                     return .none
                 }
                 let campaignRepository = campaignRepository
+                let reminderRepository = reminderRepository
                 state.isLoading = true
                 state.errorMessage = nil
                 return .run { send in
@@ -323,6 +355,10 @@ struct CampaignFeature {
                         await send(.campaignsLoaded(campaigns))
                     } catch {
                         await send(.campaignsFailed("開團載入失敗，請稍後再試。"))
+                    }
+
+                    if let links = try? await reminderRepository.fetchLinks() {
+                        await send(.reminderLinksLoaded(links))
                     }
                 }
 
@@ -373,14 +409,23 @@ struct CampaignFeature {
                 return .none
 
             case .newCampaignTapped:
-                state.editCampaign = CampaignEditFeature.State(currentDate: date.now)
+                state.editCampaign = CampaignEditFeature.State(
+                    currentDate: date.now,
+                    reminderTimestamp: defaultReminderTimestamp(closeDate: nil)
+                )
                 return .none
 
             case let .editCampaignTapped(id):
                 guard let campaign = state.campaigns.first(where: { $0.id == id }) else {
                     return .none
                 }
-                state.editCampaign = CampaignEditFeature.State(original: campaign, currentDate: date.now)
+                let link = state.reminderLinks[id]
+                state.editCampaign = CampaignEditFeature.State(
+                    original: campaign,
+                    currentDate: date.now,
+                    wantsReminder: link != nil,
+                    reminderTimestamp: link?.reminderTimestamp ?? defaultReminderTimestamp(closeDate: campaign.closeDate)
+                )
                 return .none
 
             case .editCampaign(.presented(.saveTapped)):
@@ -401,8 +446,33 @@ struct CampaignFeature {
                 )
                 upsert(campaign, into: &state)
 
+                // 依「是否要提醒」意圖與現有事件差異，決定儲存時對行事曆的調解
+                let reminderTitle = campaign.reminderTitle
+                let chosenTimestamp = editState.reminderTimestamp
+                let reminderEventDate = calendar.startOfDay(for: chosenTimestamp)
+                let reminderAlarmOffset = TimeInterval(minuteOfDay(from: chosenTimestamp) * 60)
+                let existingLink = state.reminderLinks[id]
+                let nameChanged = existingLink != nil && (editState.original.map { $0.reminderTitle != reminderTitle } ?? false)
+                let timestampChanged = existingLink.map { $0.reminderTimestamp != chosenTimestamp } ?? false
+                let reminderContentChanged = nameChanged || timestampChanged
+
+                let reconcile: CampaignReminderReconcile
+                if editState.wantsReminder {
+                    if let existingLink {
+                        reconcile = reminderContentChanged ? .rebuild(existingLink.eventIdentifier) : .none
+                    } else {
+                        reconcile = .create
+                    }
+                } else if let existingLink {
+                    reconcile = .remove(existingLink.eventIdentifier)
+                } else {
+                    reconcile = .none
+                }
+
                 let campaignRepository = campaignRepository
                 let orderRepository = orderRepository
+                let calendarReminderClient = calendarReminderClient
+                let reminderRepository = reminderRepository
                 let didRename = oldName != nil && oldName != trimmedName
                 return .run { send in
                     try? await campaignRepository.saveCampaign(campaign)
@@ -410,6 +480,42 @@ struct CampaignFeature {
                         // DB 端 cascade：更新所有歸屬此開團的訂單；in-memory 副本由 RootFeature 攔截 campaignRenamed 處理
                         try? await orderRepository.renameOrderCampaign(oldName, trimmedName)
                         await send(.campaignRenamed(from: oldName, to: trimmedName))
+                    }
+
+                    switch reconcile {
+                    case .none:
+                        break
+                    case .create:
+                        await Self.addReminder(
+                            campaignID: id,
+                            title: reminderTitle,
+                            date: reminderEventDate,
+                            alarmOffset: reminderAlarmOffset,
+                            reminderTimestamp: chosenTimestamp,
+                            client: calendarReminderClient,
+                            repository: reminderRepository,
+                            send: send
+                        )
+                    case let .remove(identifier):
+                        await Self.removeReminder(
+                            campaignID: id,
+                            eventIdentifier: identifier,
+                            client: calendarReminderClient,
+                            repository: reminderRepository,
+                            send: send
+                        )
+                    case let .rebuild(identifier):
+                        try? await calendarReminderClient.removeReminder(identifier)
+                        await Self.addReminder(
+                            campaignID: id,
+                            title: reminderTitle,
+                            date: reminderEventDate,
+                            alarmOffset: reminderAlarmOffset,
+                            reminderTimestamp: chosenTimestamp,
+                            client: calendarReminderClient,
+                            repository: reminderRepository,
+                            send: send
+                        )
                     }
                 }
 
@@ -474,12 +580,36 @@ struct CampaignFeature {
             case .campaignRenamed:
                 // 訂單表 cascade 與 OrdersFeature 副本同步由 RootFeature 攔截處理
                 return .none
+
+            case let .reminderLinksLoaded(links):
+                state.reminderLinks = links
+                return .none
+
+            case let .reminderStored(id, link):
+                state.reminderLinks[id] = link
+                return .none
+
+            case .reminderAccessDenied:
+                state.reminderAccessAlert = AlertState {
+                    TextState("需要行事曆權限")
+                } actions: {
+                    ButtonState(role: .cancel) {
+                        TextState("知道了")
+                    }
+                } message: {
+                    TextState("請到「設定」開啟行事曆存取權限，才能新增或移除訂購提醒。")
+                }
+                return .none
+
+            case .reminderAccessAlert:
+                return .none
             }
         }
         .ifLet(\.$editCampaign, action: \.editCampaign) {
             CampaignEditFeature()
         }
         .ifLet(\.$deletionConfirmation, action: \.deletionConfirmation)
+        .ifLet(\.$reminderAccessAlert, action: \.reminderAccessAlert)
     }
 
     // MARK: - Private Method
@@ -496,4 +626,94 @@ struct CampaignFeature {
         }
         state.campaigns.sort { $0.openDate > $1.openDate }
     }
+
+    // MARK: 訂購提醒時間
+
+    /// 每團訂購提醒的預設時間戳：結單日 (無則今天) 當天 09:00
+    /// - Parameter closeDate: 該開團的結單日；`nil` 表示無結單日或新開團
+    /// - Returns: 預設提醒時間戳
+    func defaultReminderTimestamp(closeDate: Date?) -> Date {
+        let baseDay = calendar.startOfDay(for: closeDate ?? date.now)
+        return calendar.date(bySettingHour: 9, minute: 0, second: 0, of: baseDay) ?? baseDay
+    }
+
+    /// 從提醒時間戳取出「當天第幾分鐘」，供換算全天事件的提示位移
+    /// - Parameter time: 提醒時間戳
+    /// - Returns: 當天第幾分鐘
+    func minuteOfDay(from time: Date) -> Int {
+        calendar.component(.hour, from: time) * 60 + calendar.component(.minute, from: time)
+    }
+
+    // MARK: 訂購提醒副作用
+
+    /// 請求行事曆權限後建立全天提醒事件、寫入連結並回報；權限被拒或建立失敗時改送 ``Action/reminderAccessDenied``
+    /// - Parameters:
+    ///   - campaignID: 建立提醒的開團識別值
+    ///   - title: 提醒事件標題
+    ///   - date: 全天事件的日期 (提醒時間戳當天起始)
+    ///   - alarmOffset: 提示自當天 00:00 起算的秒數
+    ///   - reminderTimestamp: 要保存的提醒時間戳 (日期＋提示時間)
+    ///   - client: 行事曆整合介面
+    ///   - repository: 提醒連結資料來源
+    ///   - send: 送出後續 action 的通道
+    private static func addReminder(
+        campaignID: Campaign.ID,
+        title: String,
+        date: Date,
+        alarmOffset: TimeInterval,
+        reminderTimestamp: Date,
+        client: CalendarReminderClient,
+        repository: CampaignReminderRepository,
+        send: Send<Action>
+    ) async {
+        guard await client.requestAccess() else {
+            await send(.reminderAccessDenied)
+            return
+        }
+
+        do {
+            let identifier = try await client.addReminder(title, date, alarmOffset)
+            try await repository.saveLink(campaignID, identifier, reminderTimestamp)
+            await send(.reminderStored(campaignID, CampaignReminderLink(eventIdentifier: identifier, reminderTimestamp: reminderTimestamp)))
+        } catch {
+            await send(.reminderAccessDenied)
+        }
+    }
+
+    /// 移除提醒事件並清除連結後回報；事件不存在或移除失敗一律仍清除連結 (使用者意圖即移除)
+    /// - Parameters:
+    ///   - campaignID: 移除提醒的開團識別值
+    ///   - eventIdentifier: 要移除的行事曆事件識別碼
+    ///   - client: 行事曆整合介面
+    ///   - repository: 提醒連結資料來源
+    ///   - send: 送出後續 action 的通道
+    private static func removeReminder(
+        campaignID: Campaign.ID,
+        eventIdentifier: String,
+        client: CalendarReminderClient,
+        repository: CampaignReminderRepository,
+        send: Send<Action>
+    ) async {
+        try? await client.removeReminder(eventIdentifier)
+        try? await repository.removeLink(campaignID)
+        await send(.reminderStored(campaignID, nil))
+    }
+}
+
+/// 儲存開團時對訂購提醒行事曆事件的調解結果
+private enum CampaignReminderReconcile: Equatable {
+
+    // MARK: - Cases
+
+    /// 不需變更行事曆
+    case none
+
+    /// 建立新的提醒事件
+    case create
+
+    /// 移除既有事件 (帶其識別碼)
+    case remove(String)
+
+    /// 先移除舊事件再以新內容重建 (帶舊識別碼)
+    case rebuild(String)
 }

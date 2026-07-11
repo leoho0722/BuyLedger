@@ -128,6 +128,11 @@ private extension CampaignDetailView {
                 LabeledContent("結團日期", value: CampaignFormatters.shortDate(settledDate))
             }
 
+            if let reminderLink = store.campaigns.reminderLinks[campaign.id] {
+                // 純顯示：有新增提醒時才顯示其日期與提示時間 (新增/移除/改時間走「編輯開團」)
+                LabeledContent("訂購提醒", value: CampaignFormatters.reminderTimestamp(reminderLink.reminderTimestamp))
+            }
+
             if !campaign.notes.isEmpty {
                 Text(campaign.notes)
                     .font(.subheadline)
