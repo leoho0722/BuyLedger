@@ -19,7 +19,7 @@
 ```text
 BuyLedger (repo)/
 ├── apps/                                 # 可部署單元 (每個平台一個子目錄)
-│   ├── apple/                            # Apple 平台 App (iOS / iPadOS)
+│   ├── ios/                              # Apple 平台 App (iOS / iPadOS)
 │   │   ├── BuyLedger.xcodeproj/          # Xcode 專案；project.pbxproj 提交、xcuserdata/ 不提交
 │   │   ├── BuyLedger/                    # App source root (App / Core / Features / Shared / Resources)
 │   │   ├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
