@@ -1048,6 +1048,74 @@ struct OrdersFeatureTests {
         await store.finish()
     }
 
+    // MARK: - Compact Detail Navigation Stack
+
+    @Test func detailPathPushAddsStackElement() async {
+        // 對齊 design「訂單 compact 導覽改用 OrdersFeature 的 StackState」：push 一筆訂單詳情後，堆疊應有對應元素
+        let orderID = "BL-2604-018"
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.detailPath(.push(id: 0, state: OrderDetailPath.State(orderID: orderID))))
+
+        #expect(store.state.detailPath.count == 1)
+        #expect(store.state.detailPath[id: 0]?.orderID == orderID)
+    }
+
+    @Test func detailPathPrunesRemovedOrderAfterDelete() async {
+        // push 進堆疊的訂單詳情被刪除後，對應 detailPath 元素應同步被移除，
+        // 等價於原本 View 端 onChange(of: store.orders) 的收斂邏輯 (現已收進 reducer)
+        let originalID = "BL-2604-018"
+        var state = OrdersFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+        state.detailPath = StackState([OrderDetailPath.State(orderID: originalID)])
+
+        let store = TestStore(initialState: state) {
+            OrdersFeature()
+        }
+        store.exhaustivity = .off
+
+        await store.send(.deleteOrderTapped(originalID))
+        #expect(store.state.deletionConfirmation != nil)
+
+        await store.send(.deletionConfirmation(.presented(.confirmDelete(originalID))))
+        await store.finish()
+
+        #expect(store.state.detailPath.isEmpty)
+    }
+
+    // MARK: - Filter Sheet Binding
+
+    @Test func bindingTogglesShowsFilterSheet() async {
+        let store = TestStore(initialState: OrdersFeature.State()) {
+            OrdersFeature()
+        }
+
+        await store.send(\.binding.showsFilterSheet, true) {
+            $0.showsFilterSheet = true
+        }
+    }
+
+    @Test func bindingTogglesRegularPickerSheets() async {
+        // iPad regular 的類別／付款方式篩選 picker 開關已下放 State，走 binding 管理
+        let store = TestStore(initialState: OrdersFeature.State()) {
+            OrdersFeature()
+        }
+
+        await store.send(\.binding.showsCategoryPicker, true) {
+            $0.showsCategoryPicker = true
+        }
+
+        await store.send(\.binding.showsPaymentMethodPicker, true) {
+            $0.showsPaymentMethodPicker = true
+        }
+    }
+
     // MARK: - Helpers
 
     /// 建立僅供篩選測試使用的最小訂單；非相關欄位以零值/佔位填入

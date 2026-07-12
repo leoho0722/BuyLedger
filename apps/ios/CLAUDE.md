@@ -86,6 +86,7 @@ Schema 採版本化 `VersionedSchema`，設有 migration floor (floor 以下的�
 ### 結構與命名
 
 - **商業邏輯／資料計算** (彙總、分組、排序、格式化) 一律放 reducer 或可測試的 feature helper；SwiftUI View (含 Swift Charts) 只負責呈現，不要把計算 inline 在 view body。
+- **綁 store 的 View 不持有 presentation 狀態**——sheet／picker 呈現開關、編輯草稿、選取焦點、導覽路徑等一律下放對應 `Feature.State`，以 `$store.xxx` binding 綁定，不留 `@State`。Feature 未採 `BindableAction` 時，先讓 `Action` conform `BindableAction` 並在 reducer body 最前加 `BindingReducer()` (與既有 `.ifLet`／`.forEach` 正交、可並存)；導覽堆疊用 `StackState`。若某 `.binding` 帶副作用 (如 `SettingsFeature` 在 `.binding` 存檔)，對純 UI 欄位用 `case .binding(\.showsXxx): return .none` 排除，避免開 sheet 就觸發副作用。**例外**：不綁 store、以 closure 與 caller 溝通的可重用元件 sheet (`OptionPickerSheet`／`PaymentMethodEditorSheet`／`LookupItemEditorSheet` 等) 的本地 `@State` 屬元件內部狀態，不在此列。
 - **TCA feature** 內部用 `// MARK: - State / Action / Dependency Properties / Reducer Body` 等清楚切分 (順序見「MARK 區段與排版」一節的對照表)。
 - **不用 `switch`／`if` 運算式賦值**：避免 `let x = switch … { … }` / `let x = if … { … }` 這種運算式寫法；改用傳統陳述式 (先宣告 `let x: T`，再於各分支賦值)。若該計算寫在 `@ViewBuilder` body 內會與 result builder 衝突，請抽成獨立 helper 回傳該值，view body 只呼叫 helper。
 

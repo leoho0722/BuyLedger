@@ -120,4 +120,43 @@ struct QuoteFeatureTests {
         // 1000 × 1.50 = 1500 → already on 10
         #expect(store.state.suggestedTwd == 1_500)
     }
+
+    @Test func negativeInputsClampToZeroOnBinding() async {
+        // 非負驗證下放 reducer：任何寫入負值的數值欄 binding 都在 Store 被 clamp 成 0，唯一把關點在 reducer
+        let store = TestStore(
+            initialState: QuoteFeature.State(
+                fromCurrency: .twd,
+                itemPrice: 500,
+                targetMarginPercent: 30
+            )
+        ) {
+            QuoteFeature()
+        }
+
+        // 負的本金 → 0
+        await store.send(\.binding.itemPrice, -100) {
+            $0.itemPrice = 0
+        }
+
+        // 負的目標毛利 → 0 (目標毛利僅保證非負、不設上限)
+        await store.send(\.binding.targetMarginPercent, -5) {
+            $0.targetMarginPercent = 0
+        }
+
+        // 正值不受影響
+        await store.send(\.binding.domesticShipping, 250) {
+            $0.domesticShipping = 250
+        }
+    }
+
+    @Test func bindingTogglesCurrencySheet() async {
+        // 幣別選擇 sheet 的顯示狀態改由 State 管理，binding 寫入後不受非負 clamp 影響
+        let store = TestStore(initialState: QuoteFeature.State()) {
+            QuoteFeature()
+        }
+
+        await store.send(\.binding.showsCurrencySheet, true) {
+            $0.showsCurrencySheet = true
+        }
+    }
 }

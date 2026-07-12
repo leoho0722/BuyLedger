@@ -21,9 +21,6 @@ struct CampaignDetailView: View {
     /// 要顯示的開團識別值
     let campaignID: Campaign.ID
 
-    /// 是否只顯示未收款的分貨列
-    @State private var showsUnpaidOnly = false
-
     // MARK: - Computed Properties
 
     /// 目前顯示的開團；若已被刪除則為 `nil`
@@ -171,10 +168,11 @@ private extension CampaignDetailView {
     /// 客戶分貨區段：可切換只看未收款，每列可展開檢視品項與逐筆收款
     @ViewBuilder
     var distributionSection: some View {
+        let showsUnpaidOnly = store.campaigns.showsUnpaidOnly
         let rows = showsUnpaidOnly ? summary.unpaidDistribution : summary.distribution
 
         Section {
-            Toggle("只看未收款", isOn: $showsUnpaidOnly)
+            Toggle("只看未收款", isOn: unpaidOnlyBinding)
 
             if rows.isEmpty {
                 Text(showsUnpaidOnly ? "全部已收款。" : "尚無歸屬此開團的訂單。")
@@ -268,6 +266,14 @@ private extension CampaignDetailView {
         Binding(
             get: { campaign.status },
             set: { store.send(.campaigns(.statusChanged(campaign.id, $0))) }
+        )
+    }
+
+    /// 「只看未收款」Toggle 的 binding：切換後送出 ``CampaignFeature/Action/unpaidOnlyToggled(_:)``
+    var unpaidOnlyBinding: Binding<Bool> {
+        Binding(
+            get: { store.campaigns.showsUnpaidOnly },
+            set: { store.send(.campaigns(.unpaidOnlyToggled($0))) }
         )
     }
 

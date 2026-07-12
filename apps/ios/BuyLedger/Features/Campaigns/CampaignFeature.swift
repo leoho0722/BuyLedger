@@ -102,6 +102,9 @@ struct CampaignFeature {
         /// 目前列表的日期分組粒度
         var grouping: CampaignGrouping = .day
 
+        /// 開團詳情頁「只看未收款」的分貨篩選；跨導覽存活於 feature state，不隨 view 重建重置
+        var showsUnpaidOnly = false
+
         /// 指示是否正在載入
         var isLoading = false
 
@@ -263,6 +266,9 @@ struct CampaignFeature {
         /// 使用者切換列表日期分組粒度 (日／月／年)
         case groupingSelected(CampaignGrouping)
 
+        /// 使用者切換開團詳情「只看未收款」篩選
+        case unpaidOnlyToggled(Bool)
+
         /// 使用者點擊「新增開團」
         case newCampaignTapped
 
@@ -406,6 +412,10 @@ struct CampaignFeature {
 
             case let .groupingSelected(grouping):
                 state.grouping = grouping
+                return .none
+
+            case let .unpaidOnlyToggled(showsUnpaidOnly):
+                state.showsUnpaidOnly = showsUnpaidOnly
                 return .none
 
             case .newCampaignTapped:

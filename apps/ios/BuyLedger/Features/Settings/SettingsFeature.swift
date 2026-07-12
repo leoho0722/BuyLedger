@@ -40,6 +40,12 @@ struct SettingsFeature {
 
         /// AI 總結使用的 Ollama 模型名稱
         var aiSummaryModel: String = AISummaryModelCatalog.defaultModel
+
+        /// 是否顯示幣別選擇 sheet
+        var showsCurrencySheet: Bool = false
+
+        /// 是否顯示 AI 模型選擇 sheet (僅 DEBUG 建置使用)
+        var showsModelSheet: Bool = false
     }
 
     // MARK: - Action
@@ -96,6 +102,10 @@ struct SettingsFeature {
                 state.availableCurrencies = merged.sorted {
                     $0.rawValue.localizedStandardCompare($1.rawValue) == .orderedAscending
                 }
+                return .none
+
+            case .binding(\.showsCurrencySheet), .binding(\.showsModelSheet):
+                // sheet 呈現屬短暫 UI 狀態，切換時不觸發設定存檔
                 return .none
 
             case .binding:

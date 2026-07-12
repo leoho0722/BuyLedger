@@ -18,13 +18,6 @@ struct SettingsView: View {
     /// 設定 store
     @Bindable var store: StoreOf<SettingsFeature>
 
-    /// 是否顯示「預設幣別」選擇 sheet
-    @State private var showsCurrencySheet = false
-
-#if DEBUG
-    /// 是否顯示「AI 模型」選擇 sheet (僅 Debug build)
-    @State private var showsModelSheet = false
-#endif
 
     // MARK: - View Body
 
@@ -47,7 +40,7 @@ struct SettingsView: View {
                 Toggle("啟用 AI 總結", isOn: $store.useAiSummary)
 #if DEBUG
                 Button {
-                    showsModelSheet = true
+                    store.showsModelSheet = true
                 } label: {
                     HStack {
                         Text("模型")
@@ -73,7 +66,7 @@ struct SettingsView: View {
 
             Section("預設幣別") {
                 Button {
-                    showsCurrencySheet = true
+                    store.showsCurrencySheet = true
                 } label: {
                     HStack {
                         Text("新訂單預設")
@@ -122,7 +115,7 @@ struct SettingsView: View {
             }
         }
         .navigationTitle("設定")
-        .sheet(isPresented: $showsCurrencySheet) {
+        .sheet(isPresented: $store.showsCurrencySheet) {
             OptionPickerSheet(
                 title: "選擇預設幣別",
                 allowsAdd: false,
@@ -146,7 +139,7 @@ struct SettingsView: View {
             )
         }
 #if DEBUG
-        .sheet(isPresented: $showsModelSheet) {
+        .sheet(isPresented: $store.showsModelSheet) {
             OptionPickerSheet(
                 title: "選擇 AI 模型",
                 allowsAdd: true,

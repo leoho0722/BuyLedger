@@ -24,6 +24,9 @@ struct RootFeature {
         /// 訂單功能狀態
         var orders = OrdersFeature.State()
 
+        /// 客戶彙總功能狀態；``orders`` 內容經 reducer 的 onChange 與 ``OrdersFeature/State/orders`` 保持同步
+        var customers = CustomersFeature.State()
+
         /// 開團功能狀態
         var campaigns = CampaignFeature.State()
 
@@ -50,6 +53,9 @@ struct RootFeature {
 
         /// 設為 `true` 時，「更多」分頁的 NavigationStack 會 push 到設定頁；供 AI 提示 alert 深連結開啟設定用 (iOS/iPadOS)
         var showsSettingsFromDeepLink = false
+
+        /// 分析頁目前選取的趨勢期間；由 state 擁有以避免 iPad 側邊欄切換分頁重建 View 時被重置
+        var insightsDateRange: InsightsDateRange = .twelveMonths
     }
 
     // MARK: - Action
@@ -79,11 +85,17 @@ struct RootFeature {
         /// 使用者從分析頁點擊類別 bar，跳到訂單頁並把搜尋字串設為類別名
         case categorySelected(String)
 
+        /// 使用者在分析頁切換趨勢期間
+        case insightsRangeSelected(InsightsDateRange)
+
         /// 使用者從 Dashboard 開團卡或 Insights 開團排行點擊某個開團，跳到開團頁並開啟該團詳情
         case campaignSelected(String)
 
         /// 訂單功能事件
         case orders(OrdersFeature.Action)
+
+        /// 客戶彙總功能事件
+        case customers(CustomersFeature.Action)
 
         /// 開團功能事件
         case campaigns(CampaignFeature.Action)
@@ -125,216 +137,235 @@ struct RootFeature {
 
     /// App 根層級 reducer
     var body: some Reducer<State, Action> {
-        Scope(state: \.orders, action: \.orders) {
-            OrdersFeature()
-        }
-
-        Scope(state: \.campaigns, action: \.campaigns) {
-            CampaignFeature()
-        }
-
-        Scope(state: \.fx, action: \.fx) {
-            FxFeature()
-        }
-
-        Scope(state: \.quote, action: \.quote) {
-            QuoteFeature()
-        }
-
-        Scope(state: \.settings, action: \.settings) {
-            SettingsFeature()
-        }
-
-        Scope(state: \.orderSourceManagement, action: \.orderSourceManagement) {
-            LookupManagementFeature()
-        }
-
-        Scope(state: \.categoryManagement, action: \.categoryManagement) {
-            LookupManagementFeature()
-        }
-
-        Scope(state: \.paymentMethodManagement, action: \.paymentMethodManagement) {
-            LookupManagementFeature()
-        }
-
-        Scope(state: \.verificationStatusManagement, action: \.verificationStatusManagement) {
-            LookupManagementFeature()
-        }
-
-        Reduce { state, action in
-            switch action {
-            case .task:
-                let currencyMetadataRepository = currencyMetadataRepository
-                return .run { _ in
-                    // TTL 7 天：7 * 24 * 3600 = 604_800 秒
-                    _ = try? await currencyMetadataRepository.refreshIfStale(604_800)
-                }
-
-            case let .tabSelected(tab):
-                state.selectedTab = tab
-                return .none
-
-            case let .setShowsSettingsFromDeepLink(value):
-                state.showsSettingsFromDeepLink = value
-                return .none
-
-            case .startNewOrder:
-                state.selectedTab = .orders
-                state.orders.editOrder = OrderEditFeature.State(currentDate: date.now)
-                return .none
-
-            case let .smartGroupSelected(status):
-                state.selectedTab = .orders
-                state.orders.selectedStatus = .status(status)
-                state.orders.selectedDatePeriod = .all
-                // 清掉殘留類別篩選，避免使用者帶著前一頁的類別狀態跳到 smart group 後被「狀態 + 類別」夾擊出空列表
-                state.orders.selectedCategory = nil
-                state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
-                return .none
-
-            case let .customerSelected(name):
-                state.selectedTab = .orders
-                state.orders.searchText = name
-                state.orders.selectedStatus = .all
-                state.orders.selectedDatePeriod = .all
-                // 同 smart group：客戶名深連結時清掉殘留類別篩選
-                state.orders.selectedCategory = nil
-                state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
-                return .none
-
-            case let .categorySelected(category):
-                // 從分析頁類別排行深連結進訂單頁時，以 `selectedCategory` 精準欄位比對而非 `searchText` 模糊比對：
-                // 後者會把品名/客戶名等含相同字串的訂單誤包進來，也讓訂單頁的類別篩選膠囊無法 highlight
-                state.selectedTab = .orders
-                state.orders.searchText = ""
-                state.orders.selectedStatus = .all
-                state.orders.selectedDatePeriod = .all
-                state.orders.selectedCategory = category
-                state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
-                return .none
-
-            case let .campaignSelected(name):
-                // 從 Dashboard 開團卡或 Insights 開團排行深連結：切到開團頁並選取該團 (CampaignListView 觀察 selectedCampaignID 後 push 詳情)
-                state.selectedTab = .campaigns
-                state.campaigns.selectedCampaignID = state.campaigns.campaigns.first { $0.name == name }?.id
-                return .none
-
-            // AI 未開啟提示 alert 的「前往開啟」：導覽由 root 負責
-            case .orders(.aiDisabledAlert(.presented(.goToAISettings))):
-                // 切到「更多」分頁並 push 設定頁
-                state.selectedTab = .more
-                state.showsSettingsFromDeepLink = true
-                return .none
-
-            case .orders:
-                return .none
-
-            case let .campaigns(.campaignRenamed(from, to)):
-                // CampaignFeature 已處理開團主檔與訂單表 (DB) 的 cascade；此處只同步 OrdersFeature 的 in-memory 副本
-                let trimmedFrom = from.trimmingCharacters(in: .whitespacesAndNewlines)
-                let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmedFrom.isEmpty, !trimmedTo.isEmpty, trimmedFrom != trimmedTo {
-                    state.orders.orders = state.orders.orders.map { order in
-                        guard order.campaignNames.contains(trimmedFrom) else { return order }
-                        return rebuildOrder(
-                            order,
-                            campaignNames: order.campaignNames.map { $0 == trimmedFrom ? trimmedTo : $0 }
-                        )
-                    }
-                }
-                state.orders.campaigns = state.campaigns.campaigns
-                return .none
-
-            case .campaigns:
-                // 任何開團變更 (載入／自動轉狀態／新增／狀態／結團／刪除) 後，同步 OrdersFeature 的開團副本，
-                // 供訂單編輯選團與訂單列表按開團狀態篩選使用
-                state.orders.campaigns = state.campaigns.campaigns
-                return .none
-
-            case .fx:
-                return .none
-
-            case .quote:
-                return .none
-
-            case .settings:
-                return .none
-
-            case let .orderSourceManagement(.renameRequested(from, to)):
-                cascadeRename(kind: .orderSource, from: from, to: to, in: &state)
-                return .none
-
-            case let .orderSourceManagement(.addConfirmed(name, _, _, _)):
-                // 訂單來源無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數
-                addOrderSourceToOrdersMaster(name: name, in: &state)
-                return .none
-
-            case let .orderSourceManagement(.deleteRequested(name)):
-                removeFromOrdersMaster(kind: .orderSource, name: name, in: &state)
-                return .none
-
-            case .orderSourceManagement:
-                return .none
-
-            case let .categoryManagement(.renameRequested(from, to)):
-                cascadeRename(kind: .category, from: from, to: to, in: &state)
-                return .none
-
-            case let .categoryManagement(.addConfirmed(name, _, _, _)):
-                // 商品類別無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數
-                addCategoryToOrdersMaster(name: name, in: &state)
-                return .none
-
-            case let .categoryManagement(.deleteRequested(name)):
-                removeFromOrdersMaster(kind: .category, name: name, in: &state)
-                return .none
-
-            case .categoryManagement:
-                return .none
-
-            case let .paymentMethodManagement(.renameRequested(from, to)):
-                cascadeRename(kind: .paymentMethod, from: from, to: to, in: &state)
-                return .none
-
-            case let .paymentMethodManagement(.addConfirmed(name, isCardless, isBankTransfer, isCashOnDelivery)):
-                addPaymentMethodToOrdersMaster(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery, in: &state)
-                return .none
-
-            case let .paymentMethodManagement(.deleteRequested(name)):
-                removeFromOrdersMaster(kind: .paymentMethod, name: name, in: &state)
-                return .none
-
-            case let .paymentMethodManagement(.editConfirmed(originalName, name, isCardless, isBankTransfer, isCashOnDelivery)):
-                let trimmedOriginal = originalName.trimmingCharacters(in: .whitespacesAndNewlines)
-                let trimmedNew = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmedNew.isEmpty else { return .none }
-                // 名稱變更先 cascade 到 in-memory master 與訂單表 (rename 會合併舊旗標)，
-                // 再以使用者實際勾選權威覆寫旗標，確保可取消勾選
-                if trimmedNew != trimmedOriginal {
-                    cascadeRename(kind: .paymentMethod, from: trimmedOriginal, to: trimmedNew, in: &state)
-                }
-                addPaymentMethodToOrdersMaster(name: trimmedNew, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery, in: &state)
-                return .none
-
-            case .paymentMethodManagement:
-                return .none
-
-            case let .verificationStatusManagement(.renameRequested(from, to)):
-                cascadeRename(kind: .verificationStatus, from: from, to: to, in: &state)
-                return .none
-
-            case let .verificationStatusManagement(.addConfirmed(name, _, _, _)):
-                // 對帳狀態無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數
-                addVerificationStatusToOrdersMaster(name: name, in: &state)
-                return .none
-
-            case let .verificationStatusManagement(.deleteRequested(name)):
-                removeFromOrdersMaster(kind: .verificationStatus, name: name, in: &state)
-                return .none
-
-            case .verificationStatusManagement:
-                return .none
+        CombineReducers {
+            Scope(state: \.orders, action: \.orders) {
+                OrdersFeature()
             }
+
+            Scope(state: \.customers, action: \.customers) {
+                CustomersFeature()
+            }
+
+            Scope(state: \.campaigns, action: \.campaigns) {
+                CampaignFeature()
+            }
+
+            Scope(state: \.fx, action: \.fx) {
+                FxFeature()
+            }
+
+            Scope(state: \.quote, action: \.quote) {
+                QuoteFeature()
+            }
+
+            Scope(state: \.settings, action: \.settings) {
+                SettingsFeature()
+            }
+
+            Scope(state: \.orderSourceManagement, action: \.orderSourceManagement) {
+                LookupManagementFeature()
+            }
+
+            Scope(state: \.categoryManagement, action: \.categoryManagement) {
+                LookupManagementFeature()
+            }
+
+            Scope(state: \.paymentMethodManagement, action: \.paymentMethodManagement) {
+                LookupManagementFeature()
+            }
+
+            Scope(state: \.verificationStatusManagement, action: \.verificationStatusManagement) {
+                LookupManagementFeature()
+            }
+
+            Reduce { state, action in
+                switch action {
+                case .task:
+                    let currencyMetadataRepository = currencyMetadataRepository
+                    return .run { _ in
+                        // TTL 7 天：7 * 24 * 3600 = 604_800 秒
+                        _ = try? await currencyMetadataRepository.refreshIfStale(604_800)
+                    }
+
+                case let .tabSelected(tab):
+                    state.selectedTab = tab
+                    return .none
+
+                case let .setShowsSettingsFromDeepLink(value):
+                    state.showsSettingsFromDeepLink = value
+                    return .none
+
+                case .startNewOrder:
+                    state.selectedTab = .orders
+                    state.orders.editOrder = OrderEditFeature.State(currentDate: date.now)
+                    return .none
+
+                case let .smartGroupSelected(status):
+                    state.selectedTab = .orders
+                    state.orders.selectedStatus = .status(status)
+                    state.orders.selectedDatePeriod = .all
+                    // 清掉殘留類別篩選，避免使用者帶著前一頁的類別狀態跳到 smart group 後被「狀態 + 類別」夾擊出空列表
+                    state.orders.selectedCategory = nil
+                    state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
+                    return .none
+
+                case let .customerSelected(name):
+                    state.selectedTab = .orders
+                    state.orders.searchText = name
+                    state.orders.selectedStatus = .all
+                    state.orders.selectedDatePeriod = .all
+                    // 同 smart group：客戶名深連結時清掉殘留類別篩選
+                    state.orders.selectedCategory = nil
+                    state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
+                    return .none
+
+                case let .categorySelected(category):
+                    // 從分析頁類別排行深連結進訂單頁時，以 `selectedCategory` 精準欄位比對而非 `searchText` 模糊比對：
+                    // 後者會把品名/客戶名等含相同字串的訂單誤包進來，也讓訂單頁的類別篩選膠囊無法 highlight
+                    state.selectedTab = .orders
+                    state.orders.searchText = ""
+                    state.orders.selectedStatus = .all
+                    state.orders.selectedDatePeriod = .all
+                    state.orders.selectedCategory = category
+                    state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
+                    return .none
+
+                case let .insightsRangeSelected(range):
+                    state.insightsDateRange = range
+                    return .none
+
+                case let .campaignSelected(name):
+                    // 從 Dashboard 開團卡或 Insights 開團排行深連結：切到開團頁並選取該團 (CampaignListView 觀察 selectedCampaignID 後 push 詳情)
+                    state.selectedTab = .campaigns
+                    state.campaigns.selectedCampaignID = state.campaigns.campaigns.first { $0.name == name }?.id
+                    return .none
+
+                // AI 未開啟提示 alert 的「前往開啟」：導覽由 root 負責
+                case .orders(.aiDisabledAlert(.presented(.goToAISettings))):
+                    // 切到「更多」分頁並 push 設定頁
+                    state.selectedTab = .more
+                    state.showsSettingsFromDeepLink = true
+                    return .none
+
+                case .orders:
+                    return .none
+
+                case .customers:
+                    return .none
+
+                case let .campaigns(.campaignRenamed(from, to)):
+                    // CampaignFeature 已處理開團主檔與訂單表 (DB) 的 cascade；此處只同步 OrdersFeature 的 in-memory 副本
+                    let trimmedFrom = from.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmedFrom.isEmpty, !trimmedTo.isEmpty, trimmedFrom != trimmedTo {
+                        state.orders.orders = state.orders.orders.map { order in
+                            guard order.campaignNames.contains(trimmedFrom) else { return order }
+                            return rebuildOrder(
+                                order,
+                                campaignNames: order.campaignNames.map { $0 == trimmedFrom ? trimmedTo : $0 }
+                            )
+                        }
+                    }
+                    state.orders.campaigns = state.campaigns.campaigns
+                    return .none
+
+                case .campaigns:
+                    // 任何開團變更 (載入／自動轉狀態／新增／狀態／結團／刪除) 後，同步 OrdersFeature 的開團副本，
+                    // 供訂單編輯選團與訂單列表按開團狀態篩選使用
+                    state.orders.campaigns = state.campaigns.campaigns
+                    return .none
+
+                case .fx:
+                    return .none
+
+                case .quote:
+                    return .none
+
+                case .settings:
+                    return .none
+
+                case let .orderSourceManagement(.renameRequested(from, to)):
+                    cascadeRename(kind: .orderSource, from: from, to: to, in: &state)
+                    return .none
+
+                case let .orderSourceManagement(.addConfirmed(name, _, _, _)):
+                    // 訂單來源無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數
+                    addOrderSourceToOrdersMaster(name: name, in: &state)
+                    return .none
+
+                case let .orderSourceManagement(.deleteRequested(name)):
+                    removeFromOrdersMaster(kind: .orderSource, name: name, in: &state)
+                    return .none
+
+                case .orderSourceManagement:
+                    return .none
+
+                case let .categoryManagement(.renameRequested(from, to)):
+                    cascadeRename(kind: .category, from: from, to: to, in: &state)
+                    return .none
+
+                case let .categoryManagement(.addConfirmed(name, _, _, _)):
+                    // 商品類別無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數
+                    addCategoryToOrdersMaster(name: name, in: &state)
+                    return .none
+
+                case let .categoryManagement(.deleteRequested(name)):
+                    removeFromOrdersMaster(kind: .category, name: name, in: &state)
+                    return .none
+
+                case .categoryManagement:
+                    return .none
+
+                case let .paymentMethodManagement(.renameRequested(from, to)):
+                    cascadeRename(kind: .paymentMethod, from: from, to: to, in: &state)
+                    return .none
+
+                case let .paymentMethodManagement(.addConfirmed(name, isCardless, isBankTransfer, isCashOnDelivery)):
+                    addPaymentMethodToOrdersMaster(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery, in: &state)
+                    return .none
+
+                case let .paymentMethodManagement(.deleteRequested(name)):
+                    removeFromOrdersMaster(kind: .paymentMethod, name: name, in: &state)
+                    return .none
+
+                case let .paymentMethodManagement(.editConfirmed(originalName, name, isCardless, isBankTransfer, isCashOnDelivery)):
+                    let trimmedOriginal = originalName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let trimmedNew = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmedNew.isEmpty else { return .none }
+                    // 名稱變更先 cascade 到 in-memory master 與訂單表 (rename 會合併舊旗標)，
+                    // 再以使用者實際勾選權威覆寫旗標，確保可取消勾選
+                    if trimmedNew != trimmedOriginal {
+                        cascadeRename(kind: .paymentMethod, from: trimmedOriginal, to: trimmedNew, in: &state)
+                    }
+                    addPaymentMethodToOrdersMaster(name: trimmedNew, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery, in: &state)
+                    return .none
+
+                case .paymentMethodManagement:
+                    return .none
+
+                case let .verificationStatusManagement(.renameRequested(from, to)):
+                    cascadeRename(kind: .verificationStatus, from: from, to: to, in: &state)
+                    return .none
+
+                case let .verificationStatusManagement(.addConfirmed(name, _, _, _)):
+                    // 對帳狀態無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數
+                    addVerificationStatusToOrdersMaster(name: name, in: &state)
+                    return .none
+
+                case let .verificationStatusManagement(.deleteRequested(name)):
+                    removeFromOrdersMaster(kind: .verificationStatus, name: name, in: &state)
+                    return .none
+
+                case .verificationStatusManagement:
+                    return .none
+                }
+            }
+        }
+        .onChange(of: \.orders.orders) { _, state in
+            // CustomersFeature 的訂單投影與 OrdersFeature 保持同步；onChange 只偵測「本 reducer 直接造成」的變化，
+            // 故需 CombineReducers 把上述所有 Scope 與 Reduce 併成同一個 base，才能涵蓋 cascade rename 等改在 Root 自身 Reduce 內的路徑
+            state.customers.orders = state.orders.orders
+            return .none
         }
     }
 

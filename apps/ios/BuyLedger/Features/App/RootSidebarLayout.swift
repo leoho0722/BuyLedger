@@ -157,7 +157,7 @@ private extension RootSidebarLayout {
 
             Section("工作區") {
                 navRow(.dashboard, palette: palette)
-                navRow(.orders, palette: palette, badgeCount: activeOrderCount)
+                navRow(.orders, palette: palette, badgeCount: SidebarBadgeCounts.activeOrderCount(orders: store.orders.orders))
                 navRow(.campaigns, palette: palette)
                 navRow(.insights, palette: palette)
             }
@@ -249,7 +249,7 @@ private extension RootSidebarLayout {
     /// - Returns: 智慧分組列 view
     @ViewBuilder
     func smartGroupRow(_ group: SmartGroup, palette: BLPalette) -> some View {
-        let count = orderCount(for: group.status)
+        let count = SidebarBadgeCounts.orderCount(for: group.status, orders: store.orders.orders)
 
         HStack(spacing: BLSpacing.small) {
             Circle()
@@ -307,22 +307,6 @@ private extension RootSidebarLayout {
         )
     }
 
-    /// 目前進行中 (已確認 / 已下單 / 集運中) 的訂單數量
-    var activeOrderCount: Int {
-        store.orders.orders.lazy
-            .filter { Self.activeStatuses.contains($0.status) }
-            .count
-    }
-
-    /// 計算指定狀態的訂單數量
-    /// - Parameter status: 要計算的狀態
-    /// - Returns: 該狀態的訂單數量
-    func orderCount(for status: OrderStatus) -> Int {
-        store.orders.orders.lazy
-            .filter { $0.status == status }
-            .count
-    }
-
     /// 智慧分組列是否應顯示「目前生效」的 highlight
     ///
     /// 條件為：使用者當下停留在訂單頁，且訂單頁的狀態篩選正套用到此 group 對應的狀態
@@ -332,11 +316,6 @@ private extension RootSidebarLayout {
         store.selectedTab == .orders
             && store.orders.selectedStatus == .status(group.status)
     }
-
-    /// 視為「進行中」的訂單狀態集合
-    static let activeStatuses: Set<OrderStatus> = [
-        .confirmed, .purchased, .shipping, .partiallyArrived, .arrived,
-    ]
 }
 
 // MARK: - Preview

@@ -32,11 +32,6 @@ struct OrdersView: View {
     /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
 
-    /// 商品類別篩選 sheet 是否呈現。僅 iPad regular 分支使用 (透過 ``regularSplitContent`` 與 ``listHeader`` 中的 trigger 觸發)；compact 分支委派給 ``OrdersCompactView`` 各自的本地 state
-    @State private var showsCategoryPicker = false
-
-    /// 付款方式篩選 sheet 是否呈現。點 trigger button 後設為 `true`，由 ``OptionPickerSheet`` 內部 dismiss 結束回 `false`
-    @State private var showsPaymentMethodPicker = false
 
     // MARK: - View Body
 
@@ -163,7 +158,7 @@ private extension OrdersView {
         .task {
             await store.send(.task).finish()
         }
-        .sheet(isPresented: $showsCategoryPicker) {
+        .sheet(isPresented: $store.showsCategoryPicker) {
             OptionPickerSheet(
                 title: "選擇商品類別",
                 allowsAdd: false,
@@ -183,7 +178,7 @@ private extension OrdersView {
                 )
             )
         }
-        .sheet(isPresented: $showsPaymentMethodPicker) {
+        .sheet(isPresented: $store.showsPaymentMethodPicker) {
             OptionPickerSheet(
                 title: "選擇付款方式",
                 allowsAdd: false,
@@ -427,7 +422,7 @@ private extension OrdersView {
         let currentLabel = store.selectedCategory ?? "全部"
 
         Button {
-            showsCategoryPicker = true
+            store.showsCategoryPicker = true
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Image(systemName: "tag")
@@ -465,7 +460,7 @@ private extension OrdersView {
         let currentLabel = store.selectedPaymentMethod ?? "全部"
 
         Button {
-            showsPaymentMethodPicker = true
+            store.showsPaymentMethodPicker = true
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Image(systemName: "creditcard")

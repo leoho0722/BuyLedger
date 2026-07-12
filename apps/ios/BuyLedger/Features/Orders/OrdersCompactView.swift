@@ -27,12 +27,6 @@ struct OrdersCompactView: View {
     /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
 
-    /// iPhone NavigationStack 的瀏覽路徑。改用 path-driven binding，使訂單被刪除時可手動把對應 id 從 path 移除，觸發系統自動 pop 回列表
-    @State private var navigationPath: [LedgerOrder.ID] = []
-
-    /// 整合篩選 sheet (日期 + 類別 + 付款方式) 是否呈現。點 trigger button 後設為 `true`，由 ``OrderFilterSheet`` 內部 dismiss 結束回 `false`
-    @State private var showsFilterSheet = false
-
     // MARK: - View Body
 
     /// 訂單瀏覽畫面內容
@@ -45,7 +39,7 @@ struct OrdersCompactView: View {
             ? (store.selectedOrderIDs.isEmpty ? "選擇訂單" : "已選 \(store.selectedOrderIDs.count) 筆")
             : "訂單"
 
-        NavigationStack(path: $navigationPath) {
+        NavigationStack(path: $store.scope(state: \.detailPath, action: \.detailPath)) {
             ScrollView {
                 VStack(alignment: .leading, spacing: BLSpacing.medium) {
                     BLSearchField(
@@ -129,73 +123,68 @@ struct OrdersCompactView: View {
                     }
                 }
             }
-            .navigationDestination(for: LedgerOrder.ID.self) { id in
-                if let order = store.orders.first(where: { $0.id == id }) {
-                    OrderDetailView(order: order)
-                        .navigationTitle(order.customer.name)
-                        .navigationBarTitleDisplayMode(.inline)
-                        .toolbar {
-                            ToolbarItem(placement: .primaryAction) {
-                                Menu {
-                                    // 「已合併」只能由合併流程寫入，僅當目前狀態已是已合併時保留選項
-                                    ForEach(OrderStatus.allCases.filter { $0 != .merged || order.status == .merged }) { status in
-                                        Button {
-                                            store.send(.statusChanged(order.id, status))
-                                        } label: {
-                                            if status == order.status {
-                                                Label(status.title, systemImage: "checkmark")
-                                            } else {
-                                                Text(status.title)
-                                            }
-                                        }
-                                    }
-                                } label: {
-                                    Image(systemName: "arrow.triangle.2.circlepath")
-                                }
-                                .accessibilityLabel("更新狀態")
-                            }
-
-                            // 合併/編輯/刪除功能性質相近，收進單一「更多」選單，避免 toolbar 四個操作並排擁擠
-                            ToolbarItem(placement: .primaryAction) {
-                                Menu {
-                                    if order.status != .merged, order.status != .cancelled {
-                                        Button {
-                                            store.send(.mergeOrderTapped(order.id))
-                                        } label: {
-                                            Label("合併訂單", systemImage: "arrow.triangle.merge")
-                                        }
-                                    }
-
-                                    Button {
-                                        store.send(.editOrderTapped(order.id))
-                                    } label: {
-                                        Label("編輯", systemImage: "pencil")
-                                    }
-
-                                    Divider()
-
-                                    Button(role: .destructive) {
-                                        store.send(.deleteOrderTapped(order.id))
-                                    } label: {
-                                        Label("刪除", systemImage: "trash")
-                                    }
-                                } label: {
-                                    Image(systemName: "ellipsis.circle")
-                                }
-                                .accessibilityLabel("更多操作")
-                            }
-                        }
-                }
-            }
             .task {
                 await store.send(.task).finish()
             }
-            .onChange(of: store.orders) { _, newOrders in
-                let availableIDs = Set(newOrders.map(\.id))
-                navigationPath.removeAll { !availableIDs.contains($0) }
-            }
-            .sheet(isPresented: $showsFilterSheet) {
+            .sheet(isPresented: $store.showsFilterSheet) {
                 OrderFilterSheet(store: store)
+            }
+        } destination: { detailStore in
+            if let order = store.orders.first(where: { $0.id == detailStore.orderID }) {
+                OrderDetailView(order: order)
+                    .navigationTitle(order.customer.name)
+                    .navigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .primaryAction) {
+                            Menu {
+                                // 「已合併」只能由合併流程寫入，僅當目前狀態已是已合併時保留選項
+                                ForEach(OrderStatus.allCases.filter { $0 != .merged || order.status == .merged }) { status in
+                                    Button {
+                                        store.send(.statusChanged(order.id, status))
+                                    } label: {
+                                        if status == order.status {
+                                            Label(status.title, systemImage: "checkmark")
+                                        } else {
+                                            Text(status.title)
+                                        }
+                                    }
+                                }
+                            } label: {
+                                Image(systemName: "arrow.triangle.2.circlepath")
+                            }
+                            .accessibilityLabel("更新狀態")
+                        }
+
+                        // 合併/編輯/刪除功能性質相近，收進單一「更多」選單，避免 toolbar 四個操作並排擁擠
+                        ToolbarItem(placement: .primaryAction) {
+                            Menu {
+                                if order.status != .merged, order.status != .cancelled {
+                                    Button {
+                                        store.send(.mergeOrderTapped(order.id))
+                                    } label: {
+                                        Label("合併訂單", systemImage: "arrow.triangle.merge")
+                                    }
+                                }
+
+                                Button {
+                                    store.send(.editOrderTapped(order.id))
+                                } label: {
+                                    Label("編輯", systemImage: "pencil")
+                                }
+
+                                Divider()
+
+                                Button(role: .destructive) {
+                                    store.send(.deleteOrderTapped(order.id))
+                                } label: {
+                                    Label("刪除", systemImage: "trash")
+                                }
+                            } label: {
+                                Image(systemName: "ellipsis.circle")
+                            }
+                            .accessibilityLabel("更多操作")
+                        }
+                    }
             }
         }
     }
@@ -264,7 +253,7 @@ private extension OrdersCompactView {
         )
 
         Button {
-            showsFilterSheet = true
+            store.showsFilterSheet = true
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Image(systemName: "line.3.horizontal.decrease")
@@ -379,7 +368,7 @@ private extension OrdersCompactView {
     /// - Returns: 可導覽的訂單列 view
     @ViewBuilder
     func navigableRow(order: LedgerOrder) -> some View {
-        NavigationLink(value: order.id) {
+        NavigationLink(state: OrderDetailPath.State(orderID: order.id)) {
             OrderRowView(order: order, showsDate: false)
                 .padding(.horizontal, BLSpacing.large)
                 .padding(.vertical, BLSpacing.extraSmall)

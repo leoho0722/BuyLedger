@@ -105,6 +105,27 @@ struct OrderEditFeature {
         /// PhotosPicker 的當前選取項目；one-shot 模式——匯入完成即清空，讓下次開啟 picker 重新選取
         var photoPickerSelection: [PhotosPickerItem] = []
 
+        /// 是否顯示「訂單來源」選擇 sheet
+        var showsOrderSourceSheet = false
+
+        /// 是否顯示「商品類別」選擇 sheet
+        var showsCategorySheet = false
+
+        /// 是否顯示「付款方式」選擇 sheet
+        var showsPaymentMethodSheet = false
+
+        /// 是否顯示「對帳狀態」選擇 sheet
+        var showsVerificationStatusSheet = false
+
+        /// 是否顯示「幣別」選擇 sheet
+        var showsCurrencySheet = false
+
+        /// 是否顯示「開團」多選 sheet (僅合併情境使用；一般訂單編輯維持 inline `Picker`)
+        var showsCampaignSheet = false
+
+        /// 照片檢視器目前聚焦的照片；`nil` 代表檢視器未開啟
+        var photoViewerSelection: PhotoViewerSelection?
+
         /// 合併來源訂單編號；非空代表這是「合併訂單」的確認草稿
         ///
         /// 由 ``OrdersFeature`` 在合併流程建立草稿時填入；儲存時父層據此把舊單轉「已合併」並把這組 id 寫入新訂單的 ``LedgerOrder/mergedSourceIDs``。一般編輯／新增流程一律為空陣列
@@ -303,6 +324,9 @@ struct OrderEditFeature {
         /// SwiftUI 雙向繫結事件
         case binding(BindingAction<State>)
 
+        /// 日期選擇器寫回新值：reducer 以注入時間補上當下秒數後寫入 ``State/draftDate``
+        case dateComponentsChanged(Date)
+
         /// 使用者按下取消
         case cancelTapped
 
@@ -366,6 +390,9 @@ struct OrderEditFeature {
     /// 由父層注入的 dismiss effect
     @Dependency(\.dismiss) private var dismiss
 
+    /// 「現在」時間；日期選擇器寫回時用來補上當下秒數，測試可注入固定值
+    @Dependency(\.date) private var date
+
     /// 訂單來源主檔資料來源；用於 sheet `.task` 重新拉取，使「在其他訂單新增的來源」也能立即出現在編輯選單
     @Dependency(OrderSourceRepository.self) private var orderSourceRepository
 
@@ -405,6 +432,21 @@ struct OrderEditFeature {
                 }
 
             case .binding:
+                return .none
+
+            case let .dateComponentsChanged(newValue):
+                // 把 picker 寫回的年月日時分，與「當下這一刻」的秒合併寫入 draftDate
+                // 採固定 gregorian + UTC 曆：時區只影響年月日時的對應、不影響「秒」數值，故在 UTC 下抽秒/改秒/組回與本地時區一致；當下時間走注入的 date 以維持可測試
+                var calendar = Calendar(identifier: .gregorian)
+                calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+
+                let currentSeconds = calendar.component(.second, from: date.now)
+                var components = calendar.dateComponents(
+                    [.year, .month, .day, .hour, .minute],
+                    from: newValue
+                )
+                components.second = currentSeconds
+                state.draftDate = calendar.date(from: components) ?? newValue
                 return .none
 
             case .cancelTapped, .saveTapped:
@@ -629,5 +671,19 @@ struct OrderEditFeature {
                 return .none
             }
         }
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrderEditFeature {
+
+    /// 照片檢視器的開啟狀態：以被點擊照片的 index 作為 sheet item 的識別值
+    struct PhotoViewerSelection: Identifiable, Equatable {
+
+        // MARK: - Identifiable Properties
+
+        /// 被點擊照片在 ``OrderEditFeature/State/draftPhotos`` 中的 index，同時作為 item 識別
+        let id: Int
     }
 }

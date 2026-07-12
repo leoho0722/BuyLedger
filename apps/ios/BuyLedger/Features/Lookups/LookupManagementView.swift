@@ -20,27 +20,6 @@ struct LookupManagementView: View {
     /// 主檔管理 store
     @Bindable var store: StoreOf<LookupManagementFeature>
 
-    /// 是否顯示「新增類別」alert (僅商品類別 kind 使用)
-    @State private var showsAddCategoryAlert = false
-
-    /// 是否顯示「新增付款方式」sheet (僅付款方式 kind 使用；alert 在實機驗證會 silently 丟掉 Toggle，所以付款方式入口改走 sheet)
-    @State private var showsAddPaymentMethodSheet = false
-
-    /// 是否顯示「新增對帳狀態」medium sheet (僅對帳狀態 kind 使用；比照付款方式以 sheet 收集名稱)
-    @State private var showsAddVerificationStatusSheet = false
-
-    /// 新增 alert 的名稱輸入草稿 (商品類別)
-    @State private var draft = ""
-
-    /// 目前正在重新命名的項目；`nil` 表示未進行 rename
-    @State private var renameTarget: String?
-
-    /// 重新命名 alert 的輸入草稿
-    @State private var renameDraft = ""
-
-    /// 目前正在編輯的付款方式名稱；`nil` 表示未開啟編輯 sheet (僅付款方式 kind 使用)
-    @State private var editTarget: String?
-
     // MARK: - View Body
 
     /// 主檔管理畫面內容
@@ -55,12 +34,12 @@ struct LookupManagementView: View {
                     Button {
                         switch store.state.kind {
                         case .orderSource, .category:
-                            draft = ""
-                            showsAddCategoryAlert = true
+                            store.addDraft = ""
+                            store.showsAddCategoryAlert = true
                         case .paymentMethod:
-                            showsAddPaymentMethodSheet = true
+                            store.showsAddPaymentMethodSheet = true
                         case .verificationStatus:
-                            showsAddVerificationStatusSheet = true
+                            store.showsAddVerificationStatusSheet = true
                         }
                     } label: {
                         Label(store.state.kind.addButtonTitle, systemImage: "plus")
@@ -70,61 +49,56 @@ struct LookupManagementView: View {
             .alert(
                 "重新命名\(store.state.kind.entryTitle)",
                 isPresented: Binding(
-                    get: { renameTarget != nil },
-                    set: { if !$0 { renameTarget = nil } }
+                    get: { store.destination?.rename != nil },
+                    set: { if !$0 { store.send(.destination(.dismiss)) } }
                 )
             ) {
-                TextField(store.state.kind.addFieldPlaceholder, text: $renameDraft)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
+                TextField(
+                    store.state.kind.addFieldPlaceholder,
+                    text: Binding(
+                        get: { store.destination?.rename?.draft ?? "" },
+                        set: { store.send(.destination(.presented(.rename(.draftChanged($0))))) }
+                    )
+                )
+                .textInputAutocapitalization(.never)
+                .autocorrectionDisabled()
 
                 Button("儲存") {
-                    if let from = renameTarget {
-                        let trimmed = renameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !trimmed.isEmpty, trimmed != from {
-                            store.send(.renameRequested(from: from, to: trimmed))
-                        }
-                    }
-                    renameTarget = nil
-                    renameDraft = ""
+                    store.send(.destination(.presented(.rename(.saveButtonTapped))))
                 }
-                .disabled({
-                    let trimmed = renameDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    return trimmed.isEmpty || trimmed == renameTarget
-                }())
+                .disabled(!(store.destination?.rename?.canSave ?? false))
 
                 Button("取消", role: .cancel) {
-                    renameTarget = nil
-                    renameDraft = ""
+                    store.send(.destination(.dismiss))
                 }
             } message: {
-                if let from = renameTarget {
-                    Text("把「\(from)」改成新名稱；引用此名稱的訂單也會一併更新。")
+                if let renameState = store.destination?.rename {
+                    Text("把「\(renameState.originalName)」改成新名稱；引用此名稱的訂單也會一併更新。")
                 } else {
                     Text("")
                 }
             }
-            .alert(store.state.kind.addAlertTitle, isPresented: $showsAddCategoryAlert) {
-                TextField(store.state.kind.addFieldPlaceholder, text: $draft)
+            .alert(store.state.kind.addAlertTitle, isPresented: $store.showsAddCategoryAlert) {
+                TextField(store.state.kind.addFieldPlaceholder, text: $store.addDraft)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
 
                 Button("新增") {
-                    let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                    let trimmed = store.addDraft.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmed.isEmpty {
                         store.send(.addConfirmed(name: trimmed, isCardless: false, isBankTransfer: false, isCashOnDelivery: false))
                     }
-                    draft = ""
+                    store.addDraft = ""
                 }
-                .disabled(draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                .disabled(store.addDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                 Button("取消", role: .cancel) {
-                    draft = ""
+                    store.addDraft = ""
                 }
             } message: {
                 Text(store.state.kind.addAlertMessage)
             }
-            .sheet(isPresented: $showsAddPaymentMethodSheet) {
+            .sheet(isPresented: $store.showsAddPaymentMethodSheet) {
                 PaymentMethodEditorSheet(
                     title: store.state.kind.addAlertTitle,
                     message: store.state.kind.addAlertMessage,
@@ -135,7 +109,7 @@ struct LookupManagementView: View {
                     }
                 )
             }
-            .sheet(isPresented: $showsAddVerificationStatusSheet) {
+            .sheet(isPresented: $store.showsAddVerificationStatusSheet) {
                 LookupItemEditorSheet(
                     title: store.state.kind.addAlertTitle,
                     message: store.state.kind.addAlertMessage,
@@ -148,28 +122,33 @@ struct LookupManagementView: View {
             }
             .sheet(
                 isPresented: Binding(
-                    get: { editTarget != nil },
-                    set: { if !$0 { editTarget = nil } }
+                    get: { store.destination?.editPaymentMethod != nil },
+                    set: { if !$0 { store.send(.destination(.dismiss)) } }
                 )
             ) {
-                if let target = editTarget {
+                if let editState = store.destination?.editPaymentMethod {
                     PaymentMethodEditorSheet(
                         title: "編輯付款方式",
                         message: "修改名稱與分類；變更名稱會一併更新引用此付款方式的訂單。",
                         namePlaceholder: store.state.kind.addFieldPlaceholder,
                         submitTitle: "儲存",
-                        initialName: target,
-                        initialIsCardless: store.paymentMethodIsCardless[target] ?? false,
-                        initialIsBankTransfer: store.paymentMethodIsBankTransfer[target] ?? false,
-                        initialIsCashOnDelivery: store.paymentMethodIsCashOnDelivery[target] ?? false,
+                        initialName: editState.originalName,
+                        initialIsCardless: editState.isCardless,
+                        initialIsBankTransfer: editState.isBankTransfer,
+                        initialIsCashOnDelivery: editState.isCashOnDelivery,
                         onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
                             store.send(
-                                .editConfirmed(
-                                    originalName: target,
-                                    name: name,
-                                    isCardless: isCardless,
-                                    isBankTransfer: isBankTransfer,
-                                    isCashOnDelivery: isCashOnDelivery
+                                .destination(
+                                    .presented(
+                                        .editPaymentMethod(
+                                            .saveButtonTapped(
+                                                name: name,
+                                                isCardless: isCardless,
+                                                isBankTransfer: isBankTransfer,
+                                                isCashOnDelivery: isCashOnDelivery
+                                            )
+                                        )
+                                    )
                                 )
                             )
                         }
@@ -244,14 +223,13 @@ private extension LookupManagementView {
     func renameOrEditButton(for item: String) -> some View {
         if store.state.kind == .paymentMethod {
             Button {
-                editTarget = item
+                store.send(.editButtonTapped(name: item))
             } label: {
                 Label("編輯", systemImage: "pencil")
             }
         } else {
             Button {
-                renameTarget = item
-                renameDraft = item
+                store.send(.renameButtonTapped(name: item))
             } label: {
                 Label("重新命名", systemImage: "pencil")
             }

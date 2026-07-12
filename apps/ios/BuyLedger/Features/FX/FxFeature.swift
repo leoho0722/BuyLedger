@@ -38,6 +38,9 @@ struct FxFeature {
         /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供
         var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
 
+        /// 是否顯示幣別選擇 sheet
+        var showsCurrencySheet: Bool = false
+
         // MARK: - Computed Properties
 
         /// 來源幣別目前的匯率 (1 單位 = X TWD)；無 snapshot 時為 `nil`

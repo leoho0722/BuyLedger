@@ -260,3 +260,63 @@ code:
   - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
   - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
 -->
+
+---
+### Requirement: Insights analysis range is owned by feature state and persists
+
+The insights view's selected analysis range (for example, the trailing-twelve-months selection) SHALL be owned by feature state rather than transient view-local state. While the app is running, the selected range SHALL persist when the user leaves the insights surface and returns — including switching tabs on iPhone and switching the selected sidebar destination on iPad — and SHALL NOT reset to its default on return. Changing the range SHALL update feature state through a dedicated action.
+
+#### Scenario: Range persists across navigating away and back
+
+- **WHEN** the user selects a non-default analysis range on the insights view, leaves the insights surface, and returns to it
+- **THEN** the insights view shows the previously selected range rather than the default
+
+#### Scenario: Range persists across iPad sidebar switches
+
+- **WHEN** on iPad the user selects a non-default analysis range, switches the sidebar to another destination, and switches back to insights
+- **THEN** the insights view still shows the previously selected range
+
+<!-- @trace
+source: tca-view-store-refactor
+updated: 2026-07-12
+code:
+  - apps/ios/BuyLedgerTests/CustomersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/FxFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomersFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardStats.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsStats.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/BuyLedgerTests/InsightsAttributionTests.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteFeature.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedger/Features/App/SidebarBadgeCounts.swift
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsView.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/InsightsStatsTests.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomersView.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
+  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedger/Features/FX/FxView.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
+  - apps/ios/BuyLedgerTests/DashboardStatsTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderDetailPath.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteView.swift
+  - apps/ios/BuyLedger/Features/App/RootSidebarLayout.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardView.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsDateRange.swift
+-->

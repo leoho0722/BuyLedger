@@ -129,6 +129,20 @@ struct CampaignFeatureTests {
         #expect(store.state.campaigns.isEmpty)
     }
 
+    @Test func unpaidOnlyToggledUpdatesState() async {
+        let store = TestStore(initialState: CampaignFeature.State()) {
+            CampaignFeature()
+        }
+
+        await store.send(.unpaidOnlyToggled(true)) {
+            $0.showsUnpaidOnly = true
+        }
+
+        await store.send(.unpaidOnlyToggled(false)) {
+            $0.showsUnpaidOnly = false
+        }
+    }
+
     @Test func newCampaignTappedPresentsEmptyEditForm() async {
         let store = TestStore(initialState: CampaignFeature.State()) {
             CampaignFeature()

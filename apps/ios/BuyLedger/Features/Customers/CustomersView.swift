@@ -26,7 +26,7 @@ struct CustomersView: View {
     /// 客戶名單畫面內容
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
-        let customers = aggregateCustomers(orders: store.orders.orders)
+        let customers = store.customers.customers
 
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
@@ -46,40 +46,6 @@ struct CustomersView: View {
         .task {
             await store.send(.orders(.task)).finish()
         }
-    }
-}
-
-// MARK: - Nested Types
-
-private extension CustomersView {
-
-    /// 客戶名單顯示用的彙總列
-    struct CustomerRow: Identifiable {
-
-        // MARK: - Identifiable Properties
-
-        /// 用客戶姓名當識別值 (同名客戶會被聚合成一筆)
-        var id: String { name }
-
-        // MARK: - Data Properties
-
-        /// 客戶姓名
-        let name: String
-
-        /// 顯示在頭像上的姓名縮寫
-        let initials: String
-
-        /// 客戶分級
-        let tier: CustomerTier
-
-        /// 已下訂單數
-        let orderCount: Int
-
-        /// 累計消費 (NT$)
-        let totalSpent: Decimal
-
-        /// 最近一筆訂單的日期
-        let lastOrderDate: Date
     }
 }
 
@@ -342,30 +308,6 @@ private extension CustomersView {
         return background
     }
 
-    /// 將訂單聚合成客戶列
-    /// - Parameter orders: 目前訂單清單
-    /// - Returns: 依累計消費由高到低排序的客戶列
-    func aggregateCustomers(orders: [LedgerOrder]) -> [CustomerRow] {
-        let grouped = Dictionary(grouping: orders, by: { $0.customer.name })
-
-        return grouped
-            .compactMap { name, list -> CustomerRow? in
-                guard let first = list.first else { return nil }
-                let totalSpent = list.reduce(Decimal.zero) { $0 + $1.summary.revenue }
-                let lastDate = list.map(\.date).max() ?? first.date
-
-                return CustomerRow(
-                    name: name,
-                    initials: first.customer.initials,
-                    tier: first.customer.tier,
-                    orderCount: list.count,
-                    totalSpent: totalSpent,
-                    lastOrderDate: lastDate
-                )
-            }
-            .sorted { $0.totalSpent > $1.totalSpent }
-    }
-
     /// 將金額格式化為新台幣
     func formatTwd(_ amount: Decimal) -> String {
         amount.formatted(
@@ -393,6 +335,7 @@ private extension CustomersView {
         var state = RootFeature.State()
         state.orders.orders = LedgerOrder.sampleOrders
         state.orders.hasLoaded = true
+        state.customers.orders = LedgerOrder.sampleOrders
         return state
     }()
 

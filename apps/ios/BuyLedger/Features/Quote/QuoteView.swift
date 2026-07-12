@@ -25,9 +25,6 @@ struct QuoteView: View {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 是否顯示幣別選擇 sheet
-    @State private var showsCurrencySheet = false
-
     // MARK: - View Body
 
     /// 報價試算畫面內容
@@ -175,7 +172,7 @@ private extension QuoteView {
     @ViewBuilder
     func currencyPicker(palette: BLPalette) -> some View {
         Button {
-            showsCurrencySheet = true
+            store.showsCurrencySheet = true
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("來源幣別")
@@ -200,7 +197,7 @@ private extension QuoteView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .sheet(isPresented: $showsCurrencySheet) {
+        .sheet(isPresented: $store.showsCurrencySheet) {
             OptionPickerSheet(
                 title: "選擇來源幣別",
                 allowsAdd: false,
@@ -249,7 +246,7 @@ private extension QuoteView {
 
             TextField(
                 "0",
-                value: nonNegativeBinding(value),
+                value: value,
                 format: .number.precision(
                     allowsDecimalEntry ? .fractionLength(0...2) : .fractionLength(fractionDigits)
                 )
@@ -396,16 +393,6 @@ private extension QuoteView {
         let locale = Locale.preferred()
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
         return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
-    }
-
-    /// 包裝 `Binding<Double>`，寫入時把負數 clamp 成 `0`；報價試算的所有數值皆無負值意義
-    /// - Parameter binding: 原始繫結
-    /// - Returns: 寫入時保證非負的繫結
-    func nonNegativeBinding(_ binding: Binding<Double>) -> Binding<Double> {
-        Binding(
-            get: { binding.wrappedValue },
-            set: { binding.wrappedValue = max(0, $0) }
-        )
     }
 
     /// 將金額格式化為新台幣 (無小數位)

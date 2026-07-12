@@ -285,6 +285,22 @@ struct RootFeatureTests {
         #expect(store.state.orders.orders.first?.campaignNames == ["三月日本團 (補)", "四月韓國團"])
     }
 
+    @Test func insightsRangeSelectedUpdatesState() async {
+        var state = RootFeature.State()
+        state.selectedTab = .more
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        await store.send(.insightsRangeSelected(.thirtyDays)) {
+            $0.insightsDateRange = .thirtyDays
+        }
+    }
+
     @Test func goToAISettingsDeepLinksToMoreTabAndSettings() async {
         var state = RootFeature.State()
         state.selectedTab = .dashboard

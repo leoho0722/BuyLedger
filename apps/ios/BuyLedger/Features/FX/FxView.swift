@@ -25,9 +25,6 @@ struct FxView: View {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
-    /// 是否顯示幣別選擇 sheet
-    @State private var showsCurrencySheet = false
-
     // MARK: - View Body
 
     /// FX 畫面內容
@@ -140,7 +137,7 @@ private extension FxView {
     @ViewBuilder
     func currencyPicker(palette: BLPalette) -> some View {
         Button {
-            showsCurrencySheet = true
+            store.showsCurrencySheet = true
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("來源幣別")
@@ -165,7 +162,7 @@ private extension FxView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .sheet(isPresented: $showsCurrencySheet) {
+        .sheet(isPresented: $store.showsCurrencySheet) {
             OptionPickerSheet(
                 title: "選擇來源幣別",
                 allowsAdd: false,

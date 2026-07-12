@@ -141,6 +141,18 @@ struct OrdersFeature {
         /// 「合併訂單」流程 (候選選擇 → 照片挑選) 的 sheet 狀態；`nil` 表示未呈現
         @Presents var orderMerge: OrderMergeFeature.State?
 
+        /// iPhone (compact) 訂單詳情的導覽堆疊；push 進的每筆訂單詳情由 ``OrderDetailPath`` 承載，訂單載入／刪除／合併回滾後由 reducer 同步修剪
+        var detailPath = StackState<OrderDetailPath.State>()
+
+        /// iPhone (compact) 整合篩選 sheet (日期 + 類別 + 付款方式) 是否呈現
+        var showsFilterSheet: Bool = false
+
+        /// iPad (regular) 商品類別篩選 picker sheet 是否呈現
+        var showsCategoryPicker: Bool = false
+
+        /// iPad (regular) 付款方式篩選 picker sheet 是否呈現
+        var showsPaymentMethodPicker: Bool = false
+
         // MARK: - Filter Method
 
         /// 套用搜尋、狀態與日期區間篩選後的訂單
@@ -356,7 +368,10 @@ struct OrdersFeature {
 
     /// 訂單功能可處理的事件
     @CasePathable
-    enum Action: Equatable {
+    enum Action: BindableAction, Equatable {
+
+        /// SwiftUI 雙向繫結事件
+        case binding(BindingAction<State>)
 
         /// 畫面出現時觸發載入
         case task
@@ -463,6 +478,9 @@ struct OrdersFeature {
         /// AI 未開啟提示 alert 事件
         case aiDisabledAlert(PresentationAction<Alert>)
 
+        /// iPhone (compact) 訂單詳情導覽堆疊事件；push／pop 由 ``Reducer/forEach(_:action:destination:fileID:filePath:line:column:)`` 自動處理
+        case detailPath(StackActionOf<OrderDetailPath>)
+
         /// 刪除確認 dialog 與 AI 提示 alert 共用的選項
         @CasePathable
         enum Alert: Equatable {
@@ -514,8 +532,13 @@ struct OrdersFeature {
 
     /// 訂單功能 reducer
     var body: some Reducer<State, Action> {
+        BindingReducer()
+
         Reduce { state, action in
             switch action {
+            case .binding:
+                return .none
+
             case .task:
                 // 首次載入完成後就不再重觸發；否則訂單為空時每次切換 tab 都會把 `isLoading` 翻成 `true`，
                 // 讓依賴 `!isLoading` 判斷空狀態的 view 瞬間落入「有資料」分支
@@ -594,6 +617,7 @@ struct OrdersFeature {
                 state.hasLoaded = true
                 state.orders = orders
                 state.selectedOrderID = state.selectedOrderID ?? orders.first?.id
+                pruneDetailPath(&state)
                 return .none
 
             case let .ordersFailed(message):
@@ -858,6 +882,7 @@ struct OrdersFeature {
             case let .mergePersistenceFailed(previousOrders):
                 // 持久化失敗：回復快照，新單與舊單狀態同進退；以既有錯誤訊息路徑提示
                 state.orders = previousOrders
+                pruneDetailPath(&state)
                 state.errorMessage = "合併訂單儲存失敗，請稍後再試。"
                 return .none
 
@@ -1030,6 +1055,7 @@ struct OrdersFeature {
                 }
 
                 state.orders.remove(at: index)
+                pruneDetailPath(&state)
 
                 if state.selectedOrderID == id {
                     state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
@@ -1045,6 +1071,9 @@ struct OrdersFeature {
                 }
 
             case .deletionConfirmation:
+                return .none
+
+            case .detailPath:
                 return .none
 
             case .aiSummaryTapped:
@@ -1089,6 +1118,9 @@ struct OrdersFeature {
             AISummaryFeature()
         }
         .ifLet(\.$aiDisabledAlert, action: \.aiDisabledAlert)
+        .forEach(\.detailPath, action: \.detailPath) {
+            OrderDetailPath()
+        }
     }
 }
 
@@ -1224,6 +1256,15 @@ private extension OrdersFeature {
     /// - Returns: clamp 後的比例
     func clampRate(_ value: Decimal) -> Decimal {
         max(0, min(1, value))
+    }
+
+    /// 依目前 `orders` 修剪 iPhone (compact) 的訂單詳情導覽堆疊：移除對應訂單已不存在的元素
+    ///
+    /// 等價於原本 View 端 `onChange(of: store.orders)` 的收斂邏輯，改在訂單載入／刪除／合併回滾等既有 domain 事件後同步執行，讓被移除訂單的詳情頁自動 pop 回列表
+    /// - Parameter state: 將被修改的 ``State``
+    func pruneDetailPath(_ state: inout State) {
+        let availableIDs = Set(state.orders.map(\.id))
+        state.detailPath.removeAll { !availableIDs.contains($0.orderID) }
     }
 
     /// 將草稿名稱陣列正規化：逐元素 trim、去除空字串與重複 (保序)

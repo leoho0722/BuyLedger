@@ -23,7 +23,7 @@ struct InsightsAttributionTests {
             Self.makeOrder(id: "D", status: .quoting, categories: ["beauty"], charged: 400),
         ]
 
-        let breakdown = InsightsView.categoryBreakdown(orders: orders)
+        let breakdown = InsightsStats.categoryBreakdown(orders: orders)
 
         #expect(breakdown.map(\.name) == ["snacks", "beauty"])
         #expect(breakdown.first { $0.name == "beauty" }?.profit == 1_000)
@@ -40,7 +40,7 @@ struct InsightsAttributionTests {
             Self.makeOrder(id: "M2", status: .shipping, categories: ["beauty", "snacks"], charged: 3_500, mergedSourceIDs: ["M1", "C"]),
         ]
 
-        let breakdown = InsightsView.categoryBreakdown(orders: orders)
+        let breakdown = InsightsStats.categoryBreakdown(orders: orders)
 
         #expect(breakdown.first { $0.name == "beauty" }?.profit == 1_500)
         #expect(breakdown.first { $0.name == "snacks" }?.profit == 2_000)
@@ -61,7 +61,7 @@ struct InsightsAttributionTests {
             Self.makeOrder(id: "E", status: .delivered, categories: [], charged: 700),
         ]
 
-        let breakdown = InsightsView.categoryBreakdown(orders: orders)
+        let breakdown = InsightsStats.categoryBreakdown(orders: orders)
 
         #expect(breakdown.map(\.name).sorted() == ["beauty", "snacks"])
         #expect(breakdown.allSatisfy { $0.profit == 900 })

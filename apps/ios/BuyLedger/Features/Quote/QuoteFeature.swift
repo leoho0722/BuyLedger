@@ -60,6 +60,9 @@ struct QuoteFeature {
         /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供
         var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
 
+        /// 是否顯示幣別選擇 sheet
+        var showsCurrencySheet: Bool = false
+
         // MARK: - Computed Properties
 
         /// 來源幣別的匯率 (1 單位 = X TWD)；無 snapshot 時為 `0`，所有衍生金額會跟著歸零
@@ -156,6 +159,14 @@ struct QuoteFeature {
         Reduce { state, action in
             switch action {
             case .binding:
+                // 非負把關的唯一入口：BindingReducer 寫入後在此 clamp 所有數值欄，任何寫入路徑 (含測試直接 send) 皆收斂到合法值。目標毛利僅保證非負、不設上限
+                state.itemPrice = max(0, state.itemPrice)
+                state.domesticShipping = max(0, state.domesticShipping)
+                state.internationalShippingTwd = max(0, state.internationalShippingTwd)
+                state.cardFeePercent = max(0, state.cardFeePercent)
+                state.paymentFeePercent = max(0, state.paymentFeePercent)
+                state.platformFeePercent = max(0, state.platformFeePercent)
+                state.targetMarginPercent = max(0, state.targetMarginPercent)
                 return .none
 
             case .task:

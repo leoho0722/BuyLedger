@@ -67,6 +67,26 @@ struct OrderEditFeatureTests {
         }
     }
 
+    @Test func bindingUpdatesShowsCategorySheet() async {
+        let store = TestStore(initialState: OrderEditFeature.State()) {
+            OrderEditFeature()
+        }
+
+        await store.send(\.binding.showsCategorySheet, true) {
+            $0.showsCategorySheet = true
+        }
+    }
+
+    @Test func bindingUpdatesPhotoViewerSelection() async {
+        let store = TestStore(initialState: OrderEditFeature.State()) {
+            OrderEditFeature()
+        }
+
+        await store.send(\.binding.photoViewerSelection, OrderEditFeature.PhotoViewerSelection(id: 1)) {
+            $0.photoViewerSelection = OrderEditFeature.PhotoViewerSelection(id: 1)
+        }
+    }
+
     @Test func bindingUpdatesDraftCostFields() async {
         let store = TestStore(initialState: OrderEditFeature.State()) {
             OrderEditFeature()
@@ -491,6 +511,38 @@ struct OrderEditFeatureTests {
         let mergedAway = OrderEditFeature.State(original: Self.mergedAwayOrder)
         #expect(mergedAway.availableStatuses.contains(.merged))
         #expect(mergedAway.availableStatuses.contains(.purchased))
+    }
+
+    // MARK: 日期補秒
+
+    @Test func dateComponentsChangedMergesInjectedSeconds() async {
+        // 日期選擇器寫回的年月日時分，與注入時間的「秒」合併寫入 draftDate；計算由 reducer 完成、可測試
+        let fixedNow = TestDependencies.fixedNow
+        let store = TestStore(initialState: OrderEditFeature.State()) {
+            OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(fixedNow)
+        }
+
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+
+        // picker 寫回時秒為 0 的目標日期
+        let picked = calendar.date(
+            from: DateComponents(year: 2026, month: 6, day: 15, hour: 9, minute: 30, second: 0)
+        )!
+
+        // 預期：picked 的年月日時分 + fixedNow 的秒
+        var expectedComponents = calendar.dateComponents(
+            [.year, .month, .day, .hour, .minute],
+            from: picked
+        )
+        expectedComponents.second = calendar.component(.second, from: fixedNow)
+        let expected = calendar.date(from: expectedComponents)!
+
+        await store.send(.dateComponentsChanged(picked)) {
+            $0.draftDate = expected
+        }
     }
 }
 

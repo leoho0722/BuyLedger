@@ -638,3 +638,58 @@ code:
   - apps/apple/BuyLedger/Core/Domain/Campaign.swift
   - apps/apple/BuyLedger/Features/Campaigns/CampaignFeature.swift
 -->
+
+---
+### Requirement: Campaign detail unpaid-only view filter persists across navigation
+
+The campaign detail distribution's "unpaid only" view filter (which restricts the distribution list to customers that are not fully received) SHALL be owned by feature state rather than transient view-local state. While the app is running, its value SHALL persist when the user navigates away from a campaign detail and reopens a campaign detail, and SHALL NOT reset to showing all customers on return. Toggling the filter SHALL update feature state through a dedicated action.
+
+#### Scenario: Unpaid-only filter persists across leaving and re-entering detail
+
+- **WHEN** the user enables "unpaid only" on a campaign detail, navigates back to the campaign list, and reopens a campaign detail
+- **THEN** the "unpaid only" filter is still enabled
+
+<!-- @trace
+source: tca-view-store-refactor
+updated: 2026-07-12
+code:
+  - apps/ios/BuyLedgerTests/CustomersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/FxFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomersFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardStats.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsStats.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/BuyLedgerTests/InsightsAttributionTests.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteFeature.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedger/Features/App/SidebarBadgeCounts.swift
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsView.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/InsightsStatsTests.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomersView.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
+  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedger/Features/FX/FxView.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
+  - apps/ios/BuyLedgerTests/DashboardStatsTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderDetailPath.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteView.swift
+  - apps/ios/BuyLedger/Features/App/RootSidebarLayout.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardView.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsDateRange.swift
+-->

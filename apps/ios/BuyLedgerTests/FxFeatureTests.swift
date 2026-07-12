@@ -77,4 +77,15 @@ struct FxFeatureTests {
 
         #expect(state.displayRate(for: .twd) == 1)
     }
+
+    @Test func bindingTogglesCurrencySheet() async {
+        // 幣別選擇 sheet 開關已下放 State，走 binding 管理
+        let store = TestStore(initialState: FxFeature.State()) {
+            FxFeature()
+        }
+
+        await store.send(\.binding.showsCurrencySheet, true) {
+            $0.showsCurrencySheet = true
+        }
+    }
 }

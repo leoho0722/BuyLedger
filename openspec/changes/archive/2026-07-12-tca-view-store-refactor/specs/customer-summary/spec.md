@@ -1,0 +1,21 @@
+## ADDED Requirements
+
+### Requirement: Customers screen aggregates orders into per-customer summaries
+
+The customers screen SHALL derive its rows entirely from the existing orders, grouping orders by customer name. For each customer the screen SHALL report the customer's order count, total spent (the sum of each member order's revenue), and the most-recent order date, and SHALL carry that customer's initials and tier. The list SHALL be sorted by total spent in descending order. The screen SHALL NOT hold any persisted customer state of its own; when the underlying orders change, the summaries SHALL recompute from the current orders.
+
+#### Scenario: Aggregate orders by customer
+
+- **WHEN** the customers screen is shown with existing orders
+- **THEN** each row represents one customer with that customer's order count, total spent, and most-recent order date, and the rows are ordered by total spent descending
+
+##### Example: three customers ranked by spend
+
+- **GIVEN** orders: Amy(revenue=300, date=2026-03-01), Amy(revenue=200, date=2026-03-05), Bob(revenue=400, date=2026-03-02), Cara(revenue=100, date=2026-03-03)
+- **WHEN** the customers screen aggregates them
+- **THEN** the rows are: Amy(orderCount=2, totalSpent=500, lastOrderDate=2026-03-05), Bob(orderCount=1, totalSpent=400, lastOrderDate=2026-03-02), Cara(orderCount=1, totalSpent=100, lastOrderDate=2026-03-03), in that order
+
+#### Scenario: Empty state when there are no orders
+
+- **WHEN** there are no orders
+- **THEN** the customers screen shows its empty state and no customer rows

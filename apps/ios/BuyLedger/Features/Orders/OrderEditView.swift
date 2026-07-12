@@ -19,30 +19,6 @@ struct OrderEditView: View {
     /// 訂單編輯 store
     @Bindable var store: StoreOf<OrderEditFeature>
 
-    /// 是否顯示「訂單來源」選擇 sheet
-    @State private var showsOrderSourceSheet = false
-
-    /// 是否顯示「商品類別」選擇 sheet
-    @State private var showsCategorySheet = false
-
-    /// 是否顯示「付款方式」選擇 sheet
-    @State private var showsPaymentMethodSheet = false
-
-    /// 是否顯示「對帳狀態」選擇 sheet
-    @State private var showsVerificationStatusSheet = false
-
-    /// 是否顯示「幣別」選擇 sheet
-    @State private var showsCurrencySheet = false
-
-    /// 是否顯示「開團」多選 sheet (僅合併情境使用；一般訂單編輯維持 inline `Picker`)
-    @State private var showsCampaignSheet = false
-
-    /// 照片檢視器目前聚焦的照片；`nil` 代表檢視器未開啟
-    @State private var photoViewerSelection: PhotoViewerSelection?
-
-    /// 用於 ``orderDateRow`` 在 picker 寫回時取得「當下這一刻」的秒；測試可注入固定值
-    @Dependency(\.date) private var date
-
     /// 訂購日期 footer 顯示使用的 locale；跟隨使用者手機設定，測試可注入固定值
     ///
     /// 本 View 不直接使用此值，改透過 ``deviceLocale`` 包裝：TCA 預設的 `Locale.autoupdatingCurrent` 受 App 自身 `CFBundleDevelopmentRegion` 與支援的 localizations 影響，當 App 未掛使用者偏好語言時會回退到開發語言 (例如英文)
@@ -204,7 +180,7 @@ struct OrderEditView: View {
             .task {
                 await store.send(.task).finish()
             }
-            .sheet(isPresented: $showsOrderSourceSheet) {
+            .sheet(isPresented: $store.showsOrderSourceSheet) {
                 OptionPickerSheet(
                     title: "選擇訂單來源",
                     addButtonTitle: "新增來源",
@@ -223,7 +199,7 @@ struct OrderEditView: View {
                     }
                 )
             }
-            .sheet(isPresented: $showsCategorySheet) {
+            .sheet(isPresented: $store.showsCategorySheet) {
                 if store.isMergeContext {
                     // 合併情境：多選模式，點列 toggle、以「完成」結束選取；新增類別流程沿用
                     OptionPickerSheet(
@@ -265,7 +241,7 @@ struct OrderEditView: View {
                     )
                 }
             }
-            .sheet(isPresented: $showsCampaignSheet) {
+            .sheet(isPresented: $store.showsCampaignSheet) {
                 OptionPickerSheet(
                     title: "選擇開團",
                     allowsAdd: false,
@@ -280,7 +256,7 @@ struct OrderEditView: View {
                     )
                 )
             }
-            .sheet(isPresented: $showsPaymentMethodSheet) {
+            .sheet(isPresented: $store.showsPaymentMethodSheet) {
                 OptionPickerSheet(
                     title: "選擇付款方式",
                     addButtonTitle: "新增付款方式",
@@ -299,7 +275,7 @@ struct OrderEditView: View {
                     }
                 )
             }
-            .sheet(isPresented: $showsVerificationStatusSheet) {
+            .sheet(isPresented: $store.showsVerificationStatusSheet) {
                 OptionPickerSheet(
                     title: "選擇對帳狀態",
                     addButtonTitle: "新增對帳狀態",
@@ -318,7 +294,7 @@ struct OrderEditView: View {
                     }
                 )
             }
-            .sheet(isPresented: $showsCurrencySheet) {
+            .sheet(isPresented: $store.showsCurrencySheet) {
                 OptionPickerSheet(
                     title: "選擇幣別",
                     allowsAdd: false,
@@ -341,30 +317,16 @@ struct OrderEditView: View {
                     }
                 )
             }
-            .sheet(item: $photoViewerSelection) { selection in
+            .sheet(item: $store.photoViewerSelection) { selection in
                 // 三平台統一以 sheet 呈現照片檢視器：title 置中顯示計數、右上 toolbar ✕ 關閉
                 BLPhotoViewer(
                     photos: store.draftPhotos,
                     initialIndex: selection.id
                 ) {
-                    photoViewerSelection = nil
+                    store.photoViewerSelection = nil
                 }
             }
         }
-    }
-}
-
-// MARK: - Nested Types
-
-private extension OrderEditView {
-
-    /// 照片檢視器的開啟狀態：以被點擊照片的 index 作為 sheet item 的識別值
-    struct PhotoViewerSelection: Identifiable {
-
-        // MARK: - Identifiable Properties
-
-        /// 被點擊照片在 ``OrderEditFeature/State/draftPhotos`` 中的 index，同時作為 item 識別
-        let id: Int
     }
 }
 
@@ -378,7 +340,7 @@ private extension OrderEditView {
     @ViewBuilder
     var orderSourcePickerRow: some View {
         Button {
-            showsOrderSourceSheet = true
+            store.showsOrderSourceSheet = true
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("訂單來源")
@@ -405,7 +367,7 @@ private extension OrderEditView {
     var categoryPickerRow: some View {
         // 改成 Button + `.sheet`：iOS `Menu` 是 `UIMenu` 包裝，Button action 會被排到 menu collapse 動畫結束才派發，造成可見延遲。sheet 路徑下選擇即時 commit binding，視覺更新與 sheet 收合動畫互不阻擋
         Button {
-            showsCategorySheet = true
+            store.showsCategorySheet = true
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("商品類別")
@@ -430,7 +392,7 @@ private extension OrderEditView {
     @ViewBuilder
     var campaignPickerRow: some View {
         Button {
-            showsCampaignSheet = true
+            store.showsCampaignSheet = true
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("開團")
@@ -455,7 +417,7 @@ private extension OrderEditView {
     @ViewBuilder
     var currencyPickerRow: some View {
         Button {
-            showsCurrencySheet = true
+            store.showsCurrencySheet = true
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("幣別")
@@ -481,7 +443,7 @@ private extension OrderEditView {
     @ViewBuilder
     var paymentMethodPickerRow: some View {
         Button {
-            showsPaymentMethodSheet = true
+            store.showsPaymentMethodSheet = true
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("付款方式")
@@ -505,7 +467,7 @@ private extension OrderEditView {
     @ViewBuilder
     var verificationStatusPickerRow: some View {
         Button {
-            showsVerificationStatusSheet = true
+            store.showsVerificationStatusSheet = true
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("對帳狀態")
@@ -527,7 +489,7 @@ private extension OrderEditView {
 
     /// 訂購日期編輯列：以 compact `DatePicker` 編輯日期與時分
     ///
-    /// `DatePicker(.compact)` 寫回時會把秒洗成 0，section footer 又以 `yyyy/MM/dd HH:mm:ss` 完整呈現，會造成視覺上「秒永遠是 :00」。改透過 wrapper binding 攔截寫入：每次 picker 寫回時取當下 `@Dependency(\.date).now` 的秒，組進新值，使秒隨每次編輯刷新成真實當下值，footer 看得到變化
+    /// `DatePicker(.compact)` 寫回時會把秒洗成 0，section footer 又以 `yyyy/MM/dd HH:mm:ss` 完整呈現，會造成視覺上「秒永遠是 :00」。改透過 ``refreshingSecondsBinding`` 攔截寫入：每次 picker 寫回時交給 reducer 以注入時間補上當下秒數，使秒隨每次編輯刷新成真實當下值，footer 看得到變化
     @ViewBuilder
     var orderDateRow: some View {
         DatePicker(
@@ -596,7 +558,7 @@ private extension OrderEditView {
                             BLPhotoThumbnail(
                                 imageData: data,
                                 onTap: {
-                                    photoViewerSelection = PhotoViewerSelection(id: index)
+                                    store.photoViewerSelection = OrderEditFeature.PhotoViewerSelection(id: index)
                                 }
                             ) {
                                 store.send(.deletePhotoTapped(index))
@@ -762,24 +724,11 @@ private extension OrderEditView {
         return name.isEmpty ? code : "\(code) (\(name))"
     }
 
-    /// 把 `DatePicker` 寫回的新值與「當下這一刻」`date.now` 的秒合併，產生帶秒精度的 ``OrderEditFeature/State/draftDate``
-    ///
-    /// 採固定 `Calendar(identifier: .gregorian)` + UTC 時區做元件分解與重組：時區只影響 year/month/day/hour 的對應，不影響「秒」這個數值，因此在 UTC calendar 下抽秒、改秒、組回 Date，結果與使用者本地時區一致；且不依賴 `Calendar.current` / `Date()`，跟 `@Dependency(\.date)` 配合可在測試中固定當下時間
+    /// 日期選擇器的繫結：寫回時把新值交給 reducer 的 ``OrderEditFeature/Action/dateComponentsChanged(_:)``，由 reducer 以注入時間補上當下秒數後寫入 ``OrderEditFeature/State/draftDate``；View 端不再讀取當下時間做寫入前計算
     var refreshingSecondsBinding: Binding<Date> {
         Binding(
             get: { store.draftDate },
-            set: { newValue in
-                var calendar = Calendar(identifier: .gregorian)
-                calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
-
-                let currentSeconds = calendar.component(.second, from: date.now)
-                var components = calendar.dateComponents(
-                    [.year, .month, .day, .hour, .minute],
-                    from: newValue
-                )
-                components.second = currentSeconds
-                store.draftDate = calendar.date(from: components) ?? newValue
-            }
+            set: { store.send(.dateComponentsChanged($0)) }
         )
     }
 }

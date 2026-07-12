@@ -46,13 +46,28 @@ struct LookupManagementFeature {
 
         /// 是否已完成首次載入
         var hasLoaded = false
+
+        /// 是否顯示「新增」alert (僅訂單來源 / 商品類別 kind 使用)
+        var showsAddCategoryAlert = false
+
+        /// 是否顯示「新增付款方式」sheet (僅付款方式 kind 使用；alert 在實機驗證會 silently 丟掉 Toggle，所以付款方式入口改走 sheet)
+        var showsAddPaymentMethodSheet = false
+
+        /// 是否顯示「新增對帳狀態」medium sheet (僅對帳狀態 kind 使用；比照付款方式以 sheet 收集名稱)
+        var showsAddVerificationStatusSheet = false
+
+        /// 新增 alert / sheet 的名稱輸入草稿
+        var addDraft = ""
+
+        /// 目前呈現中的改名或編輯付款方式流程；`nil` 表示未呈現
+        @Presents var destination: Destination.State?
     }
 
     // MARK: - Action
 
     /// 主檔管理可處理的事件
     @CasePathable
-    enum Action: Equatable {
+    enum Action: BindableAction, Equatable {
 
         /// 畫面出現時觸發載入
         case task
@@ -78,13 +93,25 @@ struct LookupManagementFeature {
         /// 使用者要求刪除指定名稱的主檔項目
         case deleteRequested(String)
 
+        /// 使用者點擊指定項目的「重新命名」；由 reducer 以該名稱為初值呈現 ``Destination/rename(_:)``，取代 view 端直接組裝表單初值
+        case renameButtonTapped(name: String)
+
         /// 使用者要求把指定名稱改成新名稱；同時 cascade 到所有引用該名稱的訂單
         case renameRequested(from: String, to: String)
+
+        /// 使用者點擊指定付款方式的「編輯」；由 reducer 自 ``State/paymentMethodIsCardless`` 等主檔字典快照旗標，呈現 ``Destination/editPaymentMethod(_:)``，取代 view 端直接索引字典組裝表單初值
+        case editButtonTapped(name: String)
 
         /// 使用者透過「編輯」sheet 確認修改一筆付款方式 (名稱 + 旗標)；僅 `kind == .paymentMethod` 使用
         ///
         /// 與 ``renameRequested`` + ``addConfirmed`` 分開送的差別：編輯為「權威設定」，名稱變更後會以使用者實際勾選的旗標覆寫，允許取消勾選 (`renameRequested` 的合併規則會把任一邊為 `true` 的旗標保留，無法取消)
         case editConfirmed(originalName: String, name: String, isCardless: Bool, isBankTransfer: Bool, isCashOnDelivery: Bool)
+
+        /// 改名 / 編輯付款方式呈現目的地事件
+        case destination(PresentationAction<Destination.Action>)
+
+        /// SwiftUI binding 更新 (新增流程的 alert / sheet 呈現狀態與草稿文字)
+        case binding(BindingAction<State>)
     }
 
     // MARK: - Dependency Properties
@@ -108,6 +135,7 @@ struct LookupManagementFeature {
 
     /// 主檔管理 reducer
     var body: some Reducer<State, Action> {
+        BindingReducer()
         Reduce { state, action in
             switch action {
             case .task:
@@ -215,6 +243,10 @@ struct LookupManagementFeature {
                     }
                 }
 
+            case let .renameButtonTapped(name):
+                state.destination = .rename(Destination.RenameFeature.State(originalName: name, draft: name))
+                return .none
+
             case let .renameRequested(from, to):
                 let trimmedFrom = from.trimmingCharacters(in: .whitespacesAndNewlines)
                 let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -269,6 +301,18 @@ struct LookupManagementFeature {
                     }
                 }
 
+            case let .editButtonTapped(name):
+                guard state.kind == .paymentMethod else { return .none }
+                state.destination = .editPaymentMethod(
+                    Destination.EditPaymentMethodFeature.State(
+                        originalName: name,
+                        isCardless: state.paymentMethodIsCardless[name] ?? false,
+                        isBankTransfer: state.paymentMethodIsBankTransfer[name] ?? false,
+                        isCashOnDelivery: state.paymentMethodIsCashOnDelivery[name] ?? false
+                    )
+                )
+                return .none
+
             case let .editConfirmed(originalName, rawName, isCardless, isBankTransfer, isCashOnDelivery):
                 // 僅付款方式使用編輯流程；其他 kind 不會送此 action
                 guard state.kind == .paymentMethod else { return .none }
@@ -309,8 +353,38 @@ struct LookupManagementFeature {
                     // rename 會合併保留舊旗標；最後以使用者選擇權威覆寫，確保可取消勾選。必須在 rename 之後執行
                     try? await paymentMethodRepository.addPaymentMethod(trimmedNew, isCardless, isBankTransfer, isCashOnDelivery)
                 }
+
+            case .destination(.presented(.rename(.saveButtonTapped))):
+                // ifLet 已先跑過 rename 子 reducer，此刻 destination 仍持有草稿，取出後才 dismiss
+                guard let renameState = state.destination?.rename, renameState.canSave else {
+                    return .none
+                }
+                state.destination = nil
+                return .send(.renameRequested(from: renameState.originalName, to: renameState.draft))
+
+            case let .destination(.presented(.editPaymentMethod(.saveButtonTapped(name, isCardless, isBankTransfer, isCashOnDelivery)))):
+                guard let editState = state.destination?.editPaymentMethod else {
+                    return .none
+                }
+                state.destination = nil
+                return .send(
+                    .editConfirmed(
+                        originalName: editState.originalName,
+                        name: name,
+                        isCardless: isCardless,
+                        isBankTransfer: isBankTransfer,
+                        isCashOnDelivery: isCashOnDelivery
+                    )
+                )
+
+            case .destination:
+                return .none
+
+            case .binding:
+                return .none
             }
         }
+        .ifLet(\.$destination, action: \.destination)
     }
 
     // MARK: - Private Method
@@ -341,6 +415,126 @@ struct LookupManagementFeature {
                 }
             } catch {
                 await send(.loadFailed("主檔載入失敗，請稍後再試。"))
+            }
+        }
+    }
+}
+
+// MARK: - Nested Types
+
+extension LookupManagementFeature {
+
+    /// 改名 / 編輯付款方式的呈現目的地
+    ///
+    /// 兩個 case 分別取代 ``LookupManagementView`` 原本以 view-local `@State` (`renameTarget`／`renameDraft`／`editTarget`) 驅動的兩個流程；改由此處的 `@Presents` 狀態擁有，並由 reducer 在呈現當下自 ``State/paymentMethodIsCardless`` 等主檔字典快照初值，取代 view 直接索引字典組裝表單初值
+    @Reducer
+    enum Destination {
+
+        /// 重新命名 (訂單來源／商品類別／付款方式／對帳狀態皆適用)
+        case rename(RenameFeature)
+
+        /// 編輯付款方式 (含 `isCardless`／`isBankTransfer`／`isCashOnDelivery` 三個旗標快照)；僅 `kind == .paymentMethod` 使用
+        case editPaymentMethod(EditPaymentMethodFeature)
+    }
+}
+
+extension LookupManagementFeature.Destination.State: Equatable {}
+extension LookupManagementFeature.Destination.Action: Equatable {}
+
+extension LookupManagementFeature.Destination {
+
+    /// 重新命名表單狀態與事件
+    @Reducer
+    struct RenameFeature {
+
+        // MARK: - State
+
+        /// 重新命名表單狀態
+        @ObservableState
+        struct State: Equatable {
+
+            /// 原始名稱
+            let originalName: String
+
+            /// 使用者輸入的新名稱草稿
+            var draft: String
+
+            // MARK: - Computed Properties
+
+            /// 是否可儲存：草稿 trim 後非空，且與原始名稱不同 (對齊 ``LookupManagementFeature/Action/renameRequested(from:to:)`` 的既有 guard 邏輯)
+            var canSave: Bool {
+                let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                return !trimmed.isEmpty && trimmed != originalName
+            }
+        }
+
+        // MARK: - Action
+
+        /// 重新命名表單可處理的事件
+        enum Action: Equatable {
+
+            /// 使用者編輯草稿文字
+            case draftChanged(String)
+
+            /// 使用者按下「儲存」；由父層 ``LookupManagementFeature`` 攔截並轉送 ``LookupManagementFeature/Action/renameRequested(from:to:)``
+            case saveButtonTapped
+        }
+
+        // MARK: - Reducer Body
+
+        /// 重新命名表單 reducer；僅負責草稿文字更新，實際改名 domain effect 由父層攔截 `saveButtonTapped` 處理
+        var body: some Reducer<State, Action> {
+            Reduce { state, action in
+                switch action {
+                case let .draftChanged(draft):
+                    state.draft = draft
+                    return .none
+
+                case .saveButtonTapped:
+                    return .none
+                }
+            }
+        }
+    }
+
+    /// 編輯付款方式表單狀態與事件
+    @Reducer
+    struct EditPaymentMethodFeature {
+
+        // MARK: - State
+
+        /// 編輯付款方式表單狀態；三個旗標為進入編輯當下自主檔字典快照的初值。表單內的即時編輯留在 ``PaymentMethodEditorSheet`` 的 view-local `@State`，僅在使用者按下儲存時把最終值一次帶出
+        @ObservableState
+        struct State: Equatable {
+
+            /// 原始付款方式名稱
+            let originalName: String
+
+            /// 進入編輯當下的「無卡」旗標快照
+            let isCardless: Bool
+
+            /// 進入編輯當下的「銀行匯款」旗標快照
+            let isBankTransfer: Bool
+
+            /// 進入編輯當下的「貨到付款」旗標快照
+            let isCashOnDelivery: Bool
+        }
+
+        // MARK: - Action
+
+        /// 編輯付款方式表單可處理的事件
+        enum Action: Equatable {
+
+            /// 使用者按下「儲存」，帶出表單最終值；由父層 ``LookupManagementFeature`` 攔截並轉送 ``LookupManagementFeature/Action/editConfirmed(originalName:name:isCardless:isBankTransfer:isCashOnDelivery:)``
+            case saveButtonTapped(name: String, isCardless: Bool, isBankTransfer: Bool, isCashOnDelivery: Bool)
+        }
+
+        // MARK: - Reducer Body
+
+        /// 編輯付款方式表單 reducer；本身不持有可變狀態，實際編輯 domain effect 由父層攔截 `saveButtonTapped` 處理
+        var body: some Reducer<State, Action> {
+            Reduce { _, _ in
+                .none
             }
         }
     }
