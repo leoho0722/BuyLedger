@@ -32,15 +32,7 @@ struct LookupManagementView: View {
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
-                        switch store.state.kind {
-                        case .orderSource, .category:
-                            store.addDraft = ""
-                            store.showsAddCategoryAlert = true
-                        case .paymentMethod:
-                            store.showsAddPaymentMethodSheet = true
-                        case .verificationStatus:
-                            store.showsAddVerificationStatusSheet = true
-                        }
+                        store.send(.addButtonTapped)
                     } label: {
                         Label(store.state.kind.addButtonTitle, systemImage: "plus")
                     }
@@ -88,12 +80,12 @@ struct LookupManagementView: View {
                     if !trimmed.isEmpty {
                         store.send(.addConfirmed(name: trimmed, isCardless: false, isBankTransfer: false, isCashOnDelivery: false))
                     }
-                    store.addDraft = ""
+                    store.send(.addDraftCleared)
                 }
                 .disabled(store.addDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
 
                 Button("取消", role: .cancel) {
-                    store.addDraft = ""
+                    store.send(.addDraftCleared)
                 }
             } message: {
                 Text(store.state.kind.addAlertMessage)
@@ -235,13 +227,8 @@ private extension LookupManagementView {
             }
         }
     }
-}
 
-// MARK: - ViewBuilder (iOS / iPadOS List 版本)
-
-private extension LookupManagementView {
-
-    /// iOS / iPadOS 維持的系統 List 版本：section header 顯示計數、列可左滑刪除或重新命名、付款方式顯示 footer 說明
+    /// section header 顯示計數、列可左滑刪除或重新命名、付款方式顯示 footer 說明
     @ViewBuilder
     var listContent: some View {
         List {

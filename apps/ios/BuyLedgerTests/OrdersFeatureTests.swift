@@ -1115,11 +1115,14 @@ struct OrdersFeatureTests {
             $0.showsPaymentMethodPicker = true
         }
     }
+}
 
-    // MARK: - Helpers
+// MARK: - Private Method
+
+private extension OrdersFeatureTests {
 
     /// 建立僅供篩選測試使用的最小訂單；非相關欄位以零值/佔位填入
-    private func makeOrder(
+    func makeOrder(
         id: String,
         category: String,
         status: OrderStatus = .quoting,
@@ -1129,7 +1132,7 @@ struct OrdersFeatureTests {
     }
 
     /// 多類別/多開團版本的最小訂單 helper
-    private func makeOrder(
+    func makeOrder(
         id: String,
         categories: [String],
         status: OrderStatus = .quoting,

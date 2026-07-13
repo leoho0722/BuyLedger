@@ -10,7 +10,9 @@ import Foundation
 
 /// 匯率工具：選擇來源幣別與輸入金額，即時換算為 TWD
 ///
-/// 開啟後背景透過 ``ExchangeRateClient`` 讀取最新匯率快照；若 API key 缺失或 API 失敗，畫面顯示錯誤訊息並把所有匯率字串以「—」呈現，**不再退回到 hardcoded 對照表**——避免使用者誤以為看到的是即時匯率
+/// 開啟後背景透過 ``ExchangeRateClient`` 讀取最新匯率快照；若 API key 缺失或 API 失敗，畫面顯示錯誤訊息並把所有匯率字串以「—」呈現
+///
+/// **不再退回到 hardcoded 對照表**——避免使用者誤以為看到的是即時匯率
 @Reducer
 struct FxFeature {
 
@@ -55,7 +57,11 @@ struct FxFeature {
 
         /// 任意幣別目前對 TWD 的匯率 (1 單位 = X TWD)
         ///
-        /// 取值順序：(1) 查詢的幣別為 TWD 時直接回 `1`、(2) snapshot.base == .twd 時取 `1 / snapshot.rates[currency]`、(3) snapshot.base 與目標幣別一致時取 `snapshot.rates[.twd]`、(4) 以上都不符或無 snapshot 時回 `nil`，由 view 端顯示「—」
+        /// 取值順序：
+        /// 1. 查詢的幣別為 TWD 時直接回 `1`
+        /// 2. `snapshot.base == .twd` 時取 `1 / snapshot.rates[currency]`
+        /// 3. `snapshot.base` 與目標幣別一致時取 `snapshot.rates[.twd]`
+        /// 4. 以上都不符或無 snapshot 時回 `nil`，由 view 端顯示「—」
         ///
         /// View 顯示「即時匯率列表」與「1 X = N TWD」字串時使用，確保 UI 永遠呈現 API 取得的真實匯率，避免使用者誤信過期或假資料
         /// - Parameter currency: 要查詢的幣別
@@ -86,6 +92,12 @@ struct FxFeature {
 
         /// 使用者點擊預設金額按鈕
         case quickAmountTapped(Decimal)
+
+        /// 使用者點擊來源幣別按鈕，開啟幣別選擇 sheet
+        case currencyPickerTapped
+
+        /// 使用者在幣別選擇 sheet 選定來源幣別
+        case fromCurrencySelected(String)
 
         /// 畫面 onAppear 觸發載入最新匯率
         case task
@@ -121,6 +133,14 @@ struct FxFeature {
 
             case let .quickAmountTapped(value):
                 state.amount = value
+                return .none
+
+            case .currencyPickerTapped:
+                state.showsCurrencySheet = true
+                return .none
+
+            case let .fromCurrencySelected(code):
+                state.fromCurrency = CurrencyCode(rawValue: code)
                 return .none
 
             case .task:
@@ -174,13 +194,16 @@ struct FxFeature {
             }
         }
     }
+}
 
-    // MARK: - Private Method
+// MARK: - Private Method
+
+private extension FxFeature {
 
     /// 把 ``APIError`` 轉成顯示給使用者的訊息
     /// - Parameter error: API 錯誤
     /// - Returns: 中文使用者訊息
-    private static func userMessage(for error: APIError) -> String {
+    static func userMessage(for error: APIError) -> String {
         switch error {
         case .invalidKey:
             return "尚未設定 ExchangeRate-API 金鑰；無法顯示即時匯率。"

@@ -137,7 +137,7 @@ private extension FxView {
     @ViewBuilder
     func currencyPicker(palette: BLPalette) -> some View {
         Button {
-            store.showsCurrencySheet = true
+            store.send(.currencyPickerTapped)
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("來源幣別")
@@ -181,7 +181,7 @@ private extension FxView {
                         .localizedString(forCurrencyCode: code) ?? ""
                 },
                 onSelect: { code in
-                    store.fromCurrency = CurrencyCode(rawValue: code)
+                    store.send(.fromCurrencySelected(code))
                 }
             )
         }
@@ -316,7 +316,7 @@ private extension FxView {
     }
 }
 
-// MARK: - Formatting
+// MARK: - Private Method
 
 private extension FxView {
 
@@ -354,7 +354,9 @@ private extension FxView {
 
     /// 將匯率格式化為四位小數的字串；無 snapshot 時顯示「—」
     func rateDisplay(for currency: CurrencyCode) -> String {
-        guard let rate = store.state.displayRate(for: currency) else { return "—" }
+        guard let rate = store.state.displayRate(for: currency) else {
+            return "—"
+        }
         return rate.formatted(.number.precision(.fractionLength(4)))
     }
 

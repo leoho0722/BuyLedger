@@ -18,7 +18,6 @@ struct SettingsView: View {
     /// 設定 store
     @Bindable var store: StoreOf<SettingsFeature>
 
-
     // MARK: - View Body
 
     /// 設定頁畫面內容
@@ -40,7 +39,7 @@ struct SettingsView: View {
                 Toggle("啟用 AI 總結", isOn: $store.useAiSummary)
 #if DEBUG
                 Button {
-                    store.showsModelSheet = true
+                    store.send(.modelPickerTapped)
                 } label: {
                     HStack {
                         Text("模型")
@@ -66,7 +65,7 @@ struct SettingsView: View {
 
             Section("預設幣別") {
                 Button {
-                    store.showsCurrencySheet = true
+                    store.send(.currencyPickerTapped)
                 } label: {
                     HStack {
                         Text("新訂單預設")
@@ -134,7 +133,7 @@ struct SettingsView: View {
                         .localizedString(forCurrencyCode: code) ?? ""
                 },
                 onSelect: { code in
-                    store.defaultCurrency = CurrencyCode(rawValue: code)
+                    store.send(.defaultCurrencySelected(code))
                 }
             )
         }
@@ -153,10 +152,10 @@ struct SettingsView: View {
                 options: AISummaryModelCatalog.candidates,
                 selected: store.aiSummaryModel,
                 onSelect: { model in
-                    store.aiSummaryModel = model
+                    store.send(.aiSummaryModelSelected(model))
                 },
                 onAdd: { model in
-                    store.aiSummaryModel = model
+                    store.send(.aiSummaryModelSelected(model))
                 }
             )
         }

@@ -544,13 +544,113 @@ struct OrderEditFeatureTests {
             $0.draftDate = expected
         }
     }
+
+    // MARK: OrderEditView 新 action (商品明細 / picker / 選取 / 照片)
+
+    @Test func addItemTappedAppendsBlankItem() async {
+        let store = TestStore(initialState: OrderEditFeature.State()) {
+            OrderEditFeature()
+        } withDependencies: {
+            $0.uuid = .incrementing
+        }
+        store.exhaustivity = .off
+
+        // 空清單 → 附加一筆空白商品 (名稱空、數量 1、單價 0)，id 由注入的 uuid 產生
+        await store.send(.addItemTapped)
+        #expect(store.state.draftItems.count == 1)
+        #expect(store.state.draftItems[0].name.isEmpty)
+        #expect(store.state.draftItems[0].quantity == 1)
+        #expect(store.state.draftItems[0].unitPrice == 0)
+
+        // 再點一次 → 兩筆
+        await store.send(.addItemTapped)
+        #expect(store.state.draftItems.count == 2)
+    }
+
+    @Test func deleteItemsRemovesAtOffsetsPreservingOrder() async {
+        let itemA = LedgerOrderItem(name: "A", quantity: 1, unitPrice: 100)
+        let itemB = LedgerOrderItem(name: "B", quantity: 2, unitPrice: 200)
+        let itemC = LedgerOrderItem(name: "C", quantity: 3, unitPrice: 300)
+        var initial = OrderEditFeature.State()
+        initial.draftItems = [itemA, itemB, itemC]
+        let store = TestStore(initialState: initial) {
+            OrderEditFeature()
+        }
+
+        // [A, B, C] 刪 index 1 → [A, C]，其餘保序
+        await store.send(.deleteItems(IndexSet(integer: 1))) {
+            $0.draftItems = [itemA, itemC]
+        }
+    }
+
+    @Test func pickerTappedActionsPresentCorrespondingSheets() async {
+        let store = TestStore(initialState: OrderEditFeature.State()) {
+            OrderEditFeature()
+        }
+
+        await store.send(.orderSourcePickerTapped) {
+            $0.showsOrderSourceSheet = true
+        }
+        await store.send(.categoryPickerTapped) {
+            $0.showsCategorySheet = true
+        }
+        await store.send(.campaignPickerTapped) {
+            $0.showsCampaignSheet = true
+        }
+        await store.send(.currencyPickerTapped) {
+            $0.showsCurrencySheet = true
+        }
+        await store.send(.paymentMethodPickerTapped) {
+            $0.showsPaymentMethodSheet = true
+        }
+        await store.send(.verificationStatusPickerTapped) {
+            $0.showsVerificationStatusSheet = true
+        }
+    }
+
+    @Test func selectionActionsUpdateDraftFields() async {
+        let store = TestStore(initialState: OrderEditFeature.State()) {
+            OrderEditFeature()
+        }
+
+        await store.send(.orderSourceSelected("蝦皮")) {
+            $0.draftOrderSource = "蝦皮"
+        }
+        await store.send(.paymentMethodSelected("信用卡")) {
+            $0.draftPaymentMethod = "信用卡"
+        }
+        await store.send(.verificationStatusSelected("待對帳")) {
+            $0.draftVerificationStatus = "待對帳"
+        }
+        await store.send(.currencySelected("JPY")) {
+            $0.draftCurrency = .jpy
+        }
+    }
+
+    @Test func photoTappedOpensViewerAndDismissClears() async {
+        var initial = OrderEditFeature.State()
+        initial.draftPhotos = [Data([0x01]), Data([0x02]), Data([0x03])]
+        let store = TestStore(initialState: initial) {
+            OrderEditFeature()
+        }
+
+        // 點第 2 張縮圖 → 開啟檢視器並指向該 index
+        await store.send(.photoTapped(2)) {
+            $0.photoViewerSelection = OrderEditFeature.PhotoViewerSelection(id: 2)
+        }
+
+        // 關閉檢視器 → 清空選取
+        await store.send(.photoViewerDismissed) {
+            $0.photoViewerSelection = nil
+        }
+    }
 }
 
 // MARK: - Helpers
 
 private extension OrderEditFeatureTests {
 
-    /// 狀態為「已合併」的葉端舊訂單樣本，供金額鎖定與狀態選單測試使用
+    /// 狀態為「已合併」的原始舊訂單樣本 (被合併掉的來源單)，供金額鎖定與狀態選單測試使用
     static let mergedAwayOrder = LedgerOrder(
         id: "BL-MERGED-AWAY",
         customer: LedgerCustomer(name: "測試客戶", initials: "TC", tier: .regular),

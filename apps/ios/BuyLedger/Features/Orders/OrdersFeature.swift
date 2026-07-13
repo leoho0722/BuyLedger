@@ -25,7 +25,7 @@ struct OrderDateSection: Equatable, Identifiable, Sendable {
     let orders: [LedgerOrder]
 }
 
-// MARK: - Static Method
+// MARK: - Internal Method
 
 extension OrderDateSection {
 
@@ -153,81 +153,7 @@ struct OrdersFeature {
         /// iPad (regular) 付款方式篩選 picker sheet 是否呈現
         var showsPaymentMethodPicker: Bool = false
 
-        // MARK: - Filter Method
-
-        /// 套用搜尋、狀態與日期區間篩選後的訂單
-        ///
-        /// 改成 method 後 caller 必須帶入 `referenceDate` 與 `calendar`；reducer / view 端皆由各自的 `@Dependency(\.date)` 與 `@Dependency(\.calendar)` 注入。如此可在 snapshot / unit test 中固定「現在」時間與行事曆，避免跨日或跨時區跑出不同結果
-        /// - Parameters:
-        ///   - referenceDate: 計算「本週／本月／上月」等相對區間的基準時間
-        ///   - calendar: 判斷日期區間所用的行事曆 (含時區)；測試應注入固定 gregorian／UTC
-        /// - Returns: 過濾後的訂單
-        func filteredOrders(referenceDate: Date, calendar: Calendar) -> [LedgerOrder] {
-            let normalizedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-
-            return orders.filter { order in
-                let matchesStatus = selectedStatus.orderStatus.map { $0 == order.status } ?? true
-                let matchesSearch = normalizedQuery.isEmpty || order.searchableText.contains(normalizedQuery)
-                let matchesDate = selectedDatePeriod.includes(
-                    order.date,
-                    referenceDate: referenceDate,
-                    calendar: calendar
-                )
-                let matchesCategory = selectedCategory.map { order.categories.contains($0) } ?? true
-                let matchesPaymentMethod = selectedPaymentMethod.map { $0 == order.paymentMethod } ?? true
-                let matchesCampaign = selectedCampaign.map { order.campaignNames.contains($0) } ?? true
-                let matchesCampaignStatus = selectedCampaignStatus.map { status in
-                    campaignStatuses(for: order).contains(status)
-                } ?? true
-
-                return matchesStatus
-                    && matchesSearch
-                    && matchesDate
-                    && matchesCategory
-                    && matchesPaymentMethod
-                    && matchesCampaign
-                    && matchesCampaignStatus
-            }
-        }
-
-        /// 解析訂單所屬開團的狀態集合；任一所屬開團符合篩選狀態即視為命中。未歸團或在 ``campaigns`` 找不到對應開團時為空集合
-        /// - Parameter order: 要解析的訂單
-        /// - Returns: 所屬各開團的狀態集合
-        func campaignStatuses(for order: LedgerOrder) -> Set<CampaignStatus> {
-            Set(
-                order.campaignNames.compactMap { name -> CampaignStatus? in
-                    let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmed.isEmpty else { return nil }
-                    return campaigns.first { $0.name == trimmed }?.status
-                }
-            )
-        }
-
-        /// 目前選取的訂單
-        /// - Parameters:
-        ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準
-        ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
-        /// - Returns: 對應的訂單；若 `selectedOrderID` 已不在當前篩選結果中，回傳第一筆
-        func selectedOrder(referenceDate: Date, calendar: Calendar) -> LedgerOrder? {
-            let filtered = filteredOrders(referenceDate: referenceDate, calendar: calendar)
-            guard let selectedOrderID else { return filtered.first }
-            return filtered.first { $0.id == selectedOrderID }
-        }
-
-        /// 將 ``filteredOrders(referenceDate:calendar:)`` 的結果以「日」為單位分組成區段，供訂單列表以日期區段標題呈現 (列內毋須再顯示日期)
-        ///
-        /// 分組與相對標題 (今天／昨天) 皆以 `referenceDate` 與 `calendar` 為基準；同一基準下結果一致
-        /// - Parameters:
-        ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準的「現在」時間
-        ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
-        /// - Returns: 依日期由新到舊排序的區段；每段內訂單亦由新到舊排序
-        func dateSections(referenceDate: Date, calendar: Calendar) -> [OrderDateSection] {
-            OrderDateSection.group(
-                filteredOrders(referenceDate: referenceDate, calendar: calendar),
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-        }
+        // MARK: - Computed Properties
 
         /// 對外提供給編輯表單的「可用訂單來源」清單：合併主檔與既有訂單中使用過的來源，去重後依 locale 排序。合併規則與 ``availableCategories`` 相同
         var availableOrderSources: [String] {
@@ -262,11 +188,13 @@ struct OrdersFeature {
             }
             for order in orders {
                 let trimmed = order.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty, byName[trimmed] == nil else { continue }
+                guard !trimmed.isEmpty, byName[trimmed] == nil else {
+                    continue
+                }
                 byName[trimmed] = PaymentMethodInfo(
-                    name: trimmed, 
-                    isCardless: false, 
-                    isBankTransfer: false, 
+                    name: trimmed,
+                    isCardless: false,
+                    isBankTransfer: false,
                     isCashOnDelivery: false
                 )
             }
@@ -302,65 +230,6 @@ struct OrdersFeature {
                 .filter { $0.status == .ongoing }
                 .map(\.name)
             return Set(names).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
-        }
-
-        // MARK: - AI Method
-
-        /// 把目前篩選後訂單的商品明細整理成給模型的純文字摘要輸入
-        ///
-        /// 每筆訂單逐項列出「- [類別] 名稱 x數量 @ 單價 幣別」；為避免 token 爆量，最多納入 `maxItems` 個品項，超出以一行提示帶過
-        /// - Parameters:
-        ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準
-        ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
-        /// - Returns: 商品明細的純文字摘要；列表沒有任何品項時回傳提示字串
-        func aiItemsDigest(referenceDate: Date, calendar: Calendar) -> String {
-            let maxItems = 200
-            let filtered = filteredOrders(referenceDate: referenceDate, calendar: calendar)
-            var lines: [String] = []
-
-            outer: for order in filtered {
-                let categoryNames = order.categories
-                    .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                    .filter { !$0.isEmpty }
-                let categoryTag = categoryNames.isEmpty ? "未分類" : categoryNames.joined(separator: "、")
-                for item in order.items {
-                    let trimmedName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let name = trimmedName.isEmpty ? "未命名商品" : trimmedName
-                    lines.append("- [\(categoryTag)] \(name) x\(item.quantity) @ \(item.unitPrice) \(order.currency.rawValue)")
-                    if lines.count >= maxItems { break outer }
-                }
-            }
-
-            guard !lines.isEmpty else {
-                return "(目前列表沒有任何商品明細)"
-            }
-
-            var digest = lines.joined(separator: "\n")
-            let totalItems = filtered.reduce(0) { $0 + $1.items.count }
-            if totalItems > lines.count {
-                digest += "\n…(其餘 \(totalItems - lines.count) 個品項未列出)"
-            }
-            return digest
-        }
-
-        /// 組出指示模型以正體中文 Markdown 總結商品明細的完整 prompt
-        /// - Parameters:
-        ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準
-        ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
-        /// - Returns: 給 Ollama 的 user prompt
-        func aiSummaryPrompt(referenceDate: Date, calendar: Calendar) -> String {
-            let categoryScope = selectedCategory.map { "(已篩選類別：\($0))" } ?? "(涵蓋目前列表所有類別)"
-            return """
-            你是個人代購 App 的分析助理。以下是目前訂單列表的商品明細\(categoryScope)，每行格式為「- [類別] 商品名稱 x數量 @ 單價 幣別」：
-
-            \(aiItemsDigest(referenceDate: referenceDate, calendar: calendar))
-
-            請用正體中文、以 Markdown 格式總結這些商品明細，內容包含：
-            - 一個 `##` 層級的標題
-            - 各品項的品名以及購買的總數量 (如果品名有編號的話，請照編號排序；如果沒有編號的話，請照字母順序排序)
-
-            請以條列與粗體強調重點，全文控制在約 200–300 字。只根據上面提供的資料作答，不要杜撰未出現的商品、數字或結論。
-            """
         }
     }
 
@@ -414,6 +283,15 @@ struct OrdersFeature {
 
         /// 使用者切換開團狀態篩選 (`nil` = 全部狀態)
         case campaignStatusFilterSelected(CampaignStatus?)
+
+        /// 使用者點擊 iPad (regular) 商品類別篩選 trigger，開啟類別 picker sheet
+        case categoryPickerTapped
+
+        /// 使用者點擊 iPad (regular) 付款方式篩選 trigger，開啟付款方式 picker sheet
+        case paymentMethodPickerTapped
+
+        /// 使用者點擊 iPhone (compact) 整合篩選 trigger，開啟篩選 sheet
+        case filterSheetTapped
 
         /// 使用者輸入搜尋文字
         case searchTextChanged(String)
@@ -655,6 +533,18 @@ struct OrdersFeature {
                 state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
                 return .none
 
+            case .categoryPickerTapped:
+                state.showsCategoryPicker = true
+                return .none
+
+            case .paymentMethodPickerTapped:
+                state.showsPaymentMethodPicker = true
+                return .none
+
+            case .filterSheetTapped:
+                state.showsFilterSheet = true
+                return .none
+
             case let .searchTextChanged(searchText):
                 state.searchText = searchText
                 state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
@@ -692,7 +582,9 @@ struct OrdersFeature {
                 return .none
 
             case .editOrder(.presented(.saveTapped)):
-                guard let editState = state.editOrder else { return .none }
+                guard let editState = state.editOrder else {
+                    return .none
+                }
 
                 // 合併草稿：寫入新訂單之外，還要把來源訂單轉「已合併」，並以單一持久化操作落盤
                 if !editState.mergeSourceIDs.isEmpty {
@@ -704,7 +596,9 @@ struct OrdersFeature {
 
                     let sourceIDs = editState.mergeSourceIDs
                     state.orders = state.orders.map { order in
-                        guard sourceIDs.contains(order.id), order.id != savedOrder.id else { return order }
+                        guard sourceIDs.contains(order.id), order.id != savedOrder.id else {
+                            return order
+                        }
                         return order.withStatus(.merged)
                     }
 
@@ -732,7 +626,9 @@ struct OrdersFeature {
                 // 子 reducer 已把 name 加進 sheet 內的 availableOrderSources 並設成 draftOrderSource；
                 // 父層額外寫入主檔並更新 state.orderSourceMaster，使非編輯流程 (其他訂單) 也能看到
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return .none }
+                guard !trimmed.isEmpty else {
+                    return .none
+                }
                 if !state.orderSourceMaster.contains(trimmed) {
                     var updated = state.orderSourceMaster
                     updated.append(trimmed)
@@ -749,7 +645,9 @@ struct OrdersFeature {
                 // 子 reducer 已把 name 加進 sheet 內的 availableCategories 並設成 draftCategories；
                 // 父層額外寫入主檔並更新 state.categoryMaster，使非編輯流程 (管理頁、其他訂單) 也能看到
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return .none }
+                guard !trimmed.isEmpty else {
+                    return .none
+                }
                 if !state.categoryMaster.contains(trimmed) {
                     var updated = state.categoryMaster
                     updated.append(trimmed)
@@ -764,21 +662,23 @@ struct OrdersFeature {
 
             case let .editOrder(.presented(.addPaymentMethodTapped(name, isCardless, isBankTransfer, isCashOnDelivery))):
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return .none }
+                guard !trimmed.isEmpty else {
+                    return .none
+                }
                 // 同名情境：以新的 isCardless / isBankTransfer / isCashOnDelivery 覆寫，讓 sheet 內二次新增能更正先前忘記勾選的狀態
                 var updated = state.paymentMethodMaster
                 if let index = updated.firstIndex(where: { $0.name == trimmed }) {
                     updated[index] = PaymentMethodInfo(
-                        name: trimmed, 
-                        isCardless: isCardless, 
-                        isBankTransfer: isBankTransfer, 
+                        name: trimmed,
+                        isCardless: isCardless,
+                        isBankTransfer: isBankTransfer,
                         isCashOnDelivery: isCashOnDelivery
                     )
                 } else {
                     updated.append(PaymentMethodInfo(
-                        name: trimmed, 
-                        isCardless: isCardless, 
-                        isBankTransfer: isBankTransfer, 
+                        name: trimmed,
+                        isCardless: isCardless,
+                        isBankTransfer: isBankTransfer,
                         isCashOnDelivery: isCashOnDelivery
                     ))
                 }
@@ -795,7 +695,9 @@ struct OrdersFeature {
                 // 子 reducer 已把 name 加進 sheet 內的 availableVerificationStatuses 並設成 draftVerificationStatus；
                 // 父層額外寫入主檔並更新 state.verificationStatusMaster，使非編輯流程 (管理頁、其他訂單) 也能看到
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return .none }
+                guard !trimmed.isEmpty else {
+                    return .none
+                }
                 if !state.verificationStatusMaster.contains(trimmed) {
                     var updated = state.verificationStatusMaster
                     updated.append(trimmed)
@@ -1121,6 +1023,146 @@ struct OrdersFeature {
         .forEach(\.detailPath, action: \.detailPath) {
             OrderDetailPath()
         }
+    }
+}
+
+// MARK: - Internal Method
+
+extension OrdersFeature.State {
+
+    /// 套用搜尋、狀態與日期區間篩選後的訂單
+    ///
+    /// 改成 method 後 caller 必須帶入 `referenceDate` 與 `calendar`；reducer / view 端皆由各自的 `@Dependency(\.date)` 與 `@Dependency(\.calendar)` 注入。如此可在 snapshot / unit test 中固定「現在」時間與行事曆，避免跨日或跨時區跑出不同結果
+    /// - Parameters:
+    ///   - referenceDate: 計算「本週／本月／上月」等相對區間的基準時間
+    ///   - calendar: 判斷日期區間所用的行事曆 (含時區)；測試應注入固定 gregorian／UTC
+    /// - Returns: 過濾後的訂單
+    func filteredOrders(referenceDate: Date, calendar: Calendar) -> [LedgerOrder] {
+        let normalizedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
+        return orders.filter { order in
+            let matchesStatus = selectedStatus.orderStatus.map { $0 == order.status } ?? true
+            let matchesSearch = normalizedQuery.isEmpty || order.searchableText.contains(normalizedQuery)
+            let matchesDate = selectedDatePeriod.includes(
+                order.date,
+                referenceDate: referenceDate,
+                calendar: calendar
+            )
+            let matchesCategory = selectedCategory.map { order.categories.contains($0) } ?? true
+            let matchesPaymentMethod = selectedPaymentMethod.map { $0 == order.paymentMethod } ?? true
+            let matchesCampaign = selectedCampaign.map { order.campaignNames.contains($0) } ?? true
+            let matchesCampaignStatus = selectedCampaignStatus.map { status in
+                campaignStatuses(for: order).contains(status)
+            } ?? true
+
+            return matchesStatus
+                && matchesSearch
+                && matchesDate
+                && matchesCategory
+                && matchesPaymentMethod
+                && matchesCampaign
+                && matchesCampaignStatus
+        }
+    }
+
+    /// 解析訂單所屬開團的狀態集合；任一所屬開團符合篩選狀態即視為命中。未歸團或在 ``campaigns`` 找不到對應開團時為空集合
+    /// - Parameter order: 要解析的訂單
+    /// - Returns: 所屬各開團的狀態集合
+    func campaignStatuses(for order: LedgerOrder) -> Set<CampaignStatus> {
+        Set(
+            order.campaignNames.compactMap { name -> CampaignStatus? in
+                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard !trimmed.isEmpty else {
+                    return nil
+                }
+                return campaigns.first { $0.name == trimmed }?.status
+            }
+        )
+    }
+
+    /// 目前選取的訂單
+    /// - Parameters:
+    ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準
+    ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
+    /// - Returns: 對應的訂單；若 `selectedOrderID` 已不在當前篩選結果中，回傳第一筆
+    func selectedOrder(referenceDate: Date, calendar: Calendar) -> LedgerOrder? {
+        let filtered = filteredOrders(referenceDate: referenceDate, calendar: calendar)
+        guard let selectedOrderID else {
+            return filtered.first
+        }
+        return filtered.first { $0.id == selectedOrderID }
+    }
+
+    /// 將 ``filteredOrders(referenceDate:calendar:)`` 的結果以「日」為單位分組成區段，供訂單列表以日期區段標題呈現 (列內毋須再顯示日期)
+    ///
+    /// 分組與相對標題 (今天／昨天) 皆以 `referenceDate` 與 `calendar` 為基準；同一基準下結果一致
+    /// - Parameters:
+    ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準的「現在」時間
+    ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
+    /// - Returns: 依日期由新到舊排序的區段；每段內訂單亦由新到舊排序
+    func dateSections(referenceDate: Date, calendar: Calendar) -> [OrderDateSection] {
+        OrderDateSection.group(
+            filteredOrders(referenceDate: referenceDate, calendar: calendar),
+            referenceDate: referenceDate,
+            calendar: calendar
+        )
+    }
+
+    /// 把目前篩選後訂單的商品明細整理成給模型的純文字摘要輸入
+    ///
+    /// 每筆訂單逐項列出「- [類別] 名稱 x數量 @ 單價 幣別」；為避免 token 爆量，最多納入 `maxItems` 個品項，超出以一行提示帶過
+    /// - Parameters:
+    ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準
+    ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
+    /// - Returns: 商品明細的純文字摘要；列表沒有任何品項時回傳提示字串
+    func aiItemsDigest(referenceDate: Date, calendar: Calendar) -> String {
+        let maxItems = 200
+        let filtered = filteredOrders(referenceDate: referenceDate, calendar: calendar)
+        var lines: [String] = []
+
+        outer: for order in filtered {
+            let categoryNames = order.categories
+                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .filter { !$0.isEmpty }
+            let categoryTag = categoryNames.isEmpty ? "未分類" : categoryNames.joined(separator: "、")
+            for item in order.items {
+                let trimmedName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
+                let name = trimmedName.isEmpty ? "未命名商品" : trimmedName
+                lines.append("- [\(categoryTag)] \(name) x\(item.quantity) @ \(item.unitPrice) \(order.currency.rawValue)")
+                if lines.count >= maxItems { break outer }
+            }
+        }
+
+        guard !lines.isEmpty else {
+            return "(目前列表沒有任何商品明細)"
+        }
+
+        var digest = lines.joined(separator: "\n")
+        let totalItems = filtered.reduce(0) { $0 + $1.items.count }
+        if totalItems > lines.count {
+            digest += "\n…(其餘 \(totalItems - lines.count) 個品項未列出)"
+        }
+        return digest
+    }
+
+    /// 組出指示模型以正體中文 Markdown 總結商品明細的完整 prompt
+    /// - Parameters:
+    ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準
+    ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
+    /// - Returns: 給 Ollama 的 user prompt
+    func aiSummaryPrompt(referenceDate: Date, calendar: Calendar) -> String {
+        let categoryScope = selectedCategory.map { "(已篩選類別：\($0))" } ?? "(涵蓋目前列表所有類別)"
+        return """
+        你是個人代購 App 的分析助理。以下是目前訂單列表的商品明細\(categoryScope)，每行格式為「- [類別] 商品名稱 x數量 @ 單價 幣別」：
+
+        \(aiItemsDigest(referenceDate: referenceDate, calendar: calendar))
+
+        請用正體中文、以 Markdown 格式總結這些商品明細，內容包含：
+        - 一個 `##` 層級的標題
+        - 各品項的品名以及購買的總數量 (如果品名有編號的話，請照編號排序；如果沒有編號的話，請照字母順序排序)
+
+        請以條列與粗體強調重點，全文控制在約 200–300 字。只根據上面提供的資料作答，不要杜撰未出現的商品、數字或結論。
+        """
     }
 }
 

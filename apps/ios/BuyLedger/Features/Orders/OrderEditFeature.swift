@@ -154,72 +154,6 @@ struct OrderEditFeature {
         /// 表單 instance 的穩定識別值，供 SwiftUI sheet item 使用
         let id: UUID
 
-        // MARK: - Computed Properties
-
-        /// 目前選到的付款方式是否屬於「無卡」類；用於決定收款金額區段是否顯示「無卡折抵金額」與「無卡補款金額」欄位
-        ///
-        /// 在 ``availablePaymentMethods`` 中找不到對應名稱時回傳 `false`，避免使用者尚未在主檔標記 isCardless 的情況下意外顯示欄位
-        var isSelectedPaymentMethodCardless: Bool {
-            let trimmed = draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return false }
-            return availablePaymentMethods.first { $0.name == trimmed }?.isCardless ?? false
-        }
-
-        /// 目前選到的付款方式是否屬於「銀行匯款」類；判定方式與 ``isSelectedPaymentMethodCardless`` 相同，只是改看 `isBankTransfer` 旗標
-        var isSelectedPaymentMethodBankTransfer: Bool {
-            let trimmed = draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return false }
-            return availablePaymentMethods.first { $0.name == trimmed }?.isBankTransfer ?? false
-        }
-
-        /// 目前選到的付款方式是否屬於「貨到付款」類；判定方式與 ``isSelectedPaymentMethodCardless`` 相同，只是改看 `isCashOnDelivery` 旗標
-        ///
-        /// 儲存時由父層 ``OrdersFeature`` 以此值快照寫入 ``LedgerOrder/isCashOnDelivery``，讓 ``OrderSummary`` 能在獲利中扣除三種運費
-        var isSelectedPaymentMethodCOD: Bool {
-            let trimmed = draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else { return false }
-            return availablePaymentMethods.first { $0.name == trimmed }?.isCashOnDelivery ?? false
-        }
-
-        /// 是否在「付款方式」row 底下顯示「對帳狀態」row：選到的付款方式屬於無卡或銀行匯款 (款項不會即時入帳、需事後人工對帳) 時為 `true`
-        var showsVerificationStatusRow: Bool {
-            isSelectedPaymentMethodCardless || isSelectedPaymentMethodBankTransfer
-        }
-
-        /// 是否處於合併情境：本草稿是合併確認草稿 (``mergeSourceIDs`` 非空)，或正在編輯由合併產生的訂單
-        ///
-        /// 類別與開團僅在此情境改用多選 picker；一般訂單編輯維持單選體驗
-        var isMergeContext: Bool {
-            !mergeSourceIDs.isEmpty || !(original?.mergedSourceIDs.isEmpty ?? true)
-        }
-
-        /// 狀態 Picker 的可選清單
-        ///
-        /// 「已合併」只能由合併流程寫入，不開放手動選擇；僅當目前狀態已是「已合併」時保留該選項 (顯示現值，並作為誤合併後把舊單改回其他狀態的手動回復路徑)
-        var availableStatuses: [OrderStatus] {
-            OrderStatus.allCases.filter { $0 != .merged || draftStatus == .merged }
-        }
-
-        /// 類別 trigger row 的顯示文字：以「、」串接已選類別；未選任何類別時為空字串 (由 view 顯示 placeholder)
-        var categoriesDisplayText: String {
-            draftCategories.joined(separator: "、")
-        }
-
-        /// 開團 trigger row 的顯示文字：以「、」串接已選開團；未選任何開團時顯示「未歸團」
-        var campaignsDisplayText: String {
-            draftCampaignNames.isEmpty ? "未歸團" : draftCampaignNames.joined(separator: "、")
-        }
-
-        /// 還可加入的照片張數；供 PhotosPicker 的 `maxSelectionCount` 與計數標籤使用
-        var remainingPhotoCapacity: Int {
-            max(0, LedgerOrder.maxPhotoCount - draftPhotos.count)
-        }
-
-        /// 是否還能加入照片 (尚未達 ``LedgerOrder/maxPhotoCount`` 上限)；上限已滿時編輯表單隱藏加入按鈕
-        var canAddMorePhotos: Bool {
-            remainingPhotoCapacity > 0
-        }
-
         // MARK: - Init
 
         /// 依原始訂單建立草稿狀態
@@ -313,6 +247,78 @@ struct OrderEditFeature {
 
             self.id = UUID()
         }
+
+        // MARK: - Computed Properties
+
+        /// 目前選到的付款方式是否屬於「無卡」類；用於決定收款金額區段是否顯示「無卡折抵金額」與「無卡補款金額」欄位
+        ///
+        /// 在 ``availablePaymentMethods`` 中找不到對應名稱時回傳 `false`，避免使用者尚未在主檔標記 isCardless 的情況下意外顯示欄位
+        var isSelectedPaymentMethodCardless: Bool {
+            let trimmed = draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else {
+                return false
+            }
+            return availablePaymentMethods.first { $0.name == trimmed }?.isCardless ?? false
+        }
+
+        /// 目前選到的付款方式是否屬於「銀行匯款」類；判定方式與 ``isSelectedPaymentMethodCardless`` 相同，只是改看 `isBankTransfer` 旗標
+        var isSelectedPaymentMethodBankTransfer: Bool {
+            let trimmed = draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else {
+                return false
+            }
+            return availablePaymentMethods.first { $0.name == trimmed }?.isBankTransfer ?? false
+        }
+
+        /// 目前選到的付款方式是否屬於「貨到付款」類；判定方式與 ``isSelectedPaymentMethodCardless`` 相同，只是改看 `isCashOnDelivery` 旗標
+        ///
+        /// 儲存時由父層 ``OrdersFeature`` 以此值快照寫入 ``LedgerOrder/isCashOnDelivery``，讓 ``OrderSummary`` 能在獲利中扣除三種運費
+        var isSelectedPaymentMethodCOD: Bool {
+            let trimmed = draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else {
+                return false
+            }
+            return availablePaymentMethods.first { $0.name == trimmed }?.isCashOnDelivery ?? false
+        }
+
+        /// 是否在「付款方式」row 底下顯示「對帳狀態」row：選到的付款方式屬於無卡或銀行匯款 (款項不會即時入帳、需事後人工對帳) 時為 `true`
+        var showsVerificationStatusRow: Bool {
+            isSelectedPaymentMethodCardless || isSelectedPaymentMethodBankTransfer
+        }
+
+        /// 是否處於合併情境：本草稿是合併確認草稿 (``mergeSourceIDs`` 非空)，或正在編輯由合併產生的訂單
+        ///
+        /// 類別與開團僅在此情境改用多選 picker；一般訂單編輯維持單選體驗
+        var isMergeContext: Bool {
+            !mergeSourceIDs.isEmpty || !(original?.mergedSourceIDs.isEmpty ?? true)
+        }
+
+        /// 狀態 Picker 的可選清單
+        ///
+        /// 「已合併」只能由合併流程寫入，不開放手動選擇；僅當目前狀態已是「已合併」時保留該選項 (顯示現值，並作為誤合併後把舊單改回其他狀態的手動回復路徑)
+        var availableStatuses: [OrderStatus] {
+            OrderStatus.allCases.filter { $0 != .merged || draftStatus == .merged }
+        }
+
+        /// 類別 trigger row 的顯示文字：以「、」串接已選類別；未選任何類別時為空字串 (由 view 顯示 placeholder)
+        var categoriesDisplayText: String {
+            draftCategories.joined(separator: "、")
+        }
+
+        /// 開團 trigger row 的顯示文字：以「、」串接已選開團；未選任何開團時顯示「未歸團」
+        var campaignsDisplayText: String {
+            draftCampaignNames.isEmpty ? "未歸團" : draftCampaignNames.joined(separator: "、")
+        }
+
+        /// 還可加入的照片張數；供 PhotosPicker 的 `maxSelectionCount` 與計數標籤使用
+        var remainingPhotoCapacity: Int {
+            max(0, LedgerOrder.maxPhotoCount - draftPhotos.count)
+        }
+
+        /// 是否還能加入照片 (尚未達 ``LedgerOrder/maxPhotoCount`` 上限)；上限已滿時編輯表單隱藏加入按鈕
+        var canAddMorePhotos: Bool {
+            remainingPhotoCapacity > 0
+        }
     }
 
     // MARK: - Action
@@ -383,6 +389,48 @@ struct OrderEditFeature {
 
         /// 使用者點擊縮圖的刪除鈕，移除指定 index 的草稿照片
         case deletePhotoTapped(Int)
+
+        /// 使用者點擊「新增商品」，附加一筆空白商品明細
+        case addItemTapped
+
+        /// 使用者滑動刪除指定位置的商品明細
+        case deleteItems(IndexSet)
+
+        /// 使用者點擊「訂單來源」列，開啟來源選擇 sheet
+        case orderSourcePickerTapped
+
+        /// 使用者點擊「商品類別」列，開啟類別選擇 sheet
+        case categoryPickerTapped
+
+        /// 使用者點擊「開團」列 (合併情境)，開啟開團多選 sheet
+        case campaignPickerTapped
+
+        /// 使用者點擊「幣別」列，開啟幣別選擇 sheet
+        case currencyPickerTapped
+
+        /// 使用者點擊「付款方式」列，開啟付款方式選擇 sheet
+        case paymentMethodPickerTapped
+
+        /// 使用者點擊「對帳狀態」列，開啟對帳狀態選擇 sheet
+        case verificationStatusPickerTapped
+
+        /// 使用者在 sheet 選定訂單來源
+        case orderSourceSelected(String)
+
+        /// 使用者在 sheet 選定付款方式
+        case paymentMethodSelected(String)
+
+        /// 使用者在 sheet 選定對帳狀態
+        case verificationStatusSelected(String)
+
+        /// 使用者在 sheet 選定幣別 (以 ISO 4217 code 傳入)
+        case currencySelected(String)
+
+        /// 使用者點擊縮圖，開啟指定 index 的照片檢視器
+        case photoTapped(Int)
+
+        /// 使用者關閉照片檢視器
+        case photoViewerDismissed
     }
 
     // MARK: - Dependency Properties
@@ -392,6 +440,9 @@ struct OrderEditFeature {
 
     /// 「現在」時間；日期選擇器寫回時用來補上當下秒數，測試可注入固定值
     @Dependency(\.date) private var date
+
+    /// 產生新商品明細列的 id；測試可注入固定值以維持可測試性
+    @Dependency(\.uuid) private var uuid
 
     /// 訂單來源主檔資料來源；用於 sheet `.task` 重新拉取，使「在其他訂單新增的來源」也能立即出現在編輯選單
     @Dependency(OrderSourceRepository.self) private var orderSourceRepository
@@ -424,7 +475,9 @@ struct OrderEditFeature {
             switch action {
             case .binding(\.photoPickerSelection):
                 let items = state.photoPickerSelection
-                guard !items.isEmpty else { return .none }
+                guard !items.isEmpty else {
+                    return .none
+                }
 
                 let photoClient = photoClient
                 return .run { send in
@@ -436,7 +489,8 @@ struct OrderEditFeature {
 
             case let .dateComponentsChanged(newValue):
                 // 把 picker 寫回的年月日時分，與「當下這一刻」的秒合併寫入 draftDate
-                // 採固定 gregorian + UTC 曆：時區只影響年月日時的對應、不影響「秒」數值，故在 UTC 下抽秒/改秒/組回與本地時區一致；當下時間走注入的 date 以維持可測試
+                // 採固定 gregorian + UTC 曆：時區只影響年月日時的對應、不影響「秒」數值，
+                // 故在 UTC 下抽秒/改秒/組回與本地時區一致；當下時間走注入的 date 以維持可測試
                 var calendar = Calendar(identifier: .gregorian)
                 calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
 
@@ -454,7 +508,9 @@ struct OrderEditFeature {
 
             case let .addOrderSourceTapped(rawName):
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return .none }
+                guard !trimmed.isEmpty else {
+                    return .none
+                }
 
                 if !state.availableOrderSources.contains(trimmed) {
                     var updated = state.availableOrderSources
@@ -468,7 +524,9 @@ struct OrderEditFeature {
 
             case let .addCategoryTapped(rawName):
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return .none }
+                guard !trimmed.isEmpty else {
+                    return .none
+                }
 
                 if !state.availableCategories.contains(trimmed) {
                     var updated = state.availableCategories
@@ -489,7 +547,9 @@ struct OrderEditFeature {
 
             case let .categorySelected(name):
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return .none }
+                guard !trimmed.isEmpty else {
+                    return .none
+                }
 
                 state.draftCategories = [trimmed]
                 return .none
@@ -517,7 +577,9 @@ struct OrderEditFeature {
 
             case let .addPaymentMethodTapped(rawName, isCardless, isBankTransfer, isCashOnDelivery):
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return .none }
+                guard !trimmed.isEmpty else {
+                    return .none
+                }
 
                 if let index = state.availablePaymentMethods.firstIndex(where: { $0.name == trimmed }) {
                     // 同名情境視為「重新套用旗標」：例如使用者上次新增時忘了勾選無卡／銀行匯款／貨到付款，這次重新觸發以更正
@@ -534,7 +596,9 @@ struct OrderEditFeature {
 
             case let .addVerificationStatusTapped(rawName):
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { return .none }
+                guard !trimmed.isEmpty else {
+                    return .none
+                }
 
                 if !state.availableVerificationStatuses.contains(trimmed) {
                     var updated = state.availableVerificationStatuses
@@ -619,8 +683,8 @@ struct OrderEditFeature {
                 if !draftPaymentMethod.isEmpty, merged[draftPaymentMethod] == nil {
                     merged[draftPaymentMethod] = PaymentMethodInfo(
                         name: draftPaymentMethod,
-                        isCardless: false, 
-                        isBankTransfer: false, 
+                        isCardless: false,
+                        isBankTransfer: false,
                         isCashOnDelivery: false
                     )
                 }
@@ -665,9 +729,69 @@ struct OrderEditFeature {
                 return .none
 
             case let .deletePhotoTapped(index):
-                guard state.draftPhotos.indices.contains(index) else { return .none }
+                guard state.draftPhotos.indices.contains(index) else {
+                    return .none
+                }
 
                 state.draftPhotos.remove(at: index)
+                return .none
+
+            case .addItemTapped:
+                state.draftItems.append(
+                    LedgerOrderItem(id: uuid(), name: "", quantity: 1, unitPrice: 0)
+                )
+                return .none
+
+            case let .deleteItems(offsets):
+                state.draftItems.remove(atOffsets: offsets)
+                return .none
+
+            case .orderSourcePickerTapped:
+                state.showsOrderSourceSheet = true
+                return .none
+
+            case .categoryPickerTapped:
+                state.showsCategorySheet = true
+                return .none
+
+            case .campaignPickerTapped:
+                state.showsCampaignSheet = true
+                return .none
+
+            case .currencyPickerTapped:
+                state.showsCurrencySheet = true
+                return .none
+
+            case .paymentMethodPickerTapped:
+                state.showsPaymentMethodSheet = true
+                return .none
+
+            case .verificationStatusPickerTapped:
+                state.showsVerificationStatusSheet = true
+                return .none
+
+            case let .orderSourceSelected(source):
+                state.draftOrderSource = source
+                return .none
+
+            case let .paymentMethodSelected(method):
+                state.draftPaymentMethod = method
+                return .none
+
+            case let .verificationStatusSelected(status):
+                state.draftVerificationStatus = status
+                return .none
+
+            case let .currencySelected(code):
+                state.draftCurrency = CurrencyCode(rawValue: code)
+                return .none
+
+            case let .photoTapped(index):
+                state.photoViewerSelection = PhotoViewerSelection(id: index)
+                return .none
+
+            case .photoViewerDismissed:
+                state.photoViewerSelection = nil
                 return .none
             }
         }

@@ -88,4 +88,31 @@ struct FxFeatureTests {
             $0.showsCurrencySheet = true
         }
     }
+
+    @Test func currencyPickerTappedShowsCurrencySheet() async {
+        let store = TestStore(initialState: FxFeature.State()) {
+            FxFeature()
+        }
+
+        await store.send(.currencyPickerTapped) {
+            $0.showsCurrencySheet = true
+        }
+    }
+
+    @Test func fromCurrencySelectedRecomputesRateFromSnapshot() async {
+        // 與 switchingCurrencyRecomputesRateFromSnapshot 對應：改走 fromCurrencySelected action 而非直接 binding，rate / convertedTwd 仍需反映 snapshot 的數值
+        let store = TestStore(
+            initialState: FxFeature.State(snapshot: FxRateSnapshot.fallback)
+        ) {
+            FxFeature()
+        }
+
+        await store.send(.fromCurrencySelected("JPY")) {
+            $0.fromCurrency = .jpy
+        }
+
+        let expectedRate = FxRateSnapshot.fallback.rates[.jpy].map { Decimal(1) / $0 }
+        #expect(store.state.rate == expectedRate)
+        #expect(store.state.convertedTwd == expectedRate.map { 150_000 * $0 })
+    }
 }

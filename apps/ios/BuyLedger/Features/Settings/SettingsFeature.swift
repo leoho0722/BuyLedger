@@ -62,6 +62,18 @@ struct SettingsFeature {
 
         /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔
         case availableCurrenciesLoaded([CurrencyCode])
+
+        /// 點按預設幣別列，開啟幣別選擇 sheet
+        case currencyPickerTapped
+
+        /// 點按 AI 模型列，開啟模型選擇 sheet (僅 DEBUG 建置使用)
+        case modelPickerTapped
+
+        /// 使用者選定預設幣別；傳入 ISO code 字串，由 reducer 建構 ``CurrencyCode``
+        case defaultCurrencySelected(String)
+
+        /// 使用者選定 (或自訂) AI 總結模型
+        case aiSummaryModelSelected(String)
     }
 
     // MARK: - Dependency Properties
@@ -104,23 +116,52 @@ struct SettingsFeature {
                 }
                 return .none
 
+            case .currencyPickerTapped:
+                state.showsCurrencySheet = true
+                return .none
+
+            case .modelPickerTapped:
+                state.showsModelSheet = true
+                return .none
+
+            case let .defaultCurrencySelected(code):
+                state.defaultCurrency = CurrencyCode(rawValue: code)
+                persist(state)
+                return .none
+
+            case let .aiSummaryModelSelected(model):
+                state.aiSummaryModel = model
+                persist(state)
+                return .none
+
             case .binding(\.showsCurrencySheet), .binding(\.showsModelSheet):
                 // sheet 呈現屬短暫 UI 狀態，切換時不觸發設定存檔
                 return .none
 
             case .binding:
-                storage.save(
-                    SettingsSnapshot(
-                        appearance: state.appearance,
-                        notificationsEnabled: state.notificationsEnabled,
-                        defaultCurrency: state.defaultCurrency,
-                        monthlyProfitGoalTwd: state.monthlyProfitGoalTwd,
-                        useAiSummary: state.useAiSummary,
-                        aiSummaryModel: state.aiSummaryModel
-                    )
-                )
+                persist(state)
                 return .none
             }
         }
+    }
+}
+
+// MARK: - Private Method
+
+private extension SettingsFeature {
+
+    /// 將目前設定狀態寫回持久化來源；供 `.binding` 與各設定選定 action 共用同一條存檔路徑
+    /// - Parameter state: 目前設定狀態
+    func persist(_ state: State) {
+        storage.save(
+            SettingsSnapshot(
+                appearance: state.appearance,
+                notificationsEnabled: state.notificationsEnabled,
+                defaultCurrency: state.defaultCurrency,
+                monthlyProfitGoalTwd: state.monthlyProfitGoalTwd,
+                useAiSummary: state.useAiSummary,
+                aiSummaryModel: state.aiSummaryModel
+            )
+        )
     }
 }

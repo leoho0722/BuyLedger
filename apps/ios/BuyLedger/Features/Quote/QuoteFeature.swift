@@ -140,6 +140,12 @@ struct QuoteFeature {
 
         /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔
         case availableCurrenciesLoaded([CurrencyCode])
+
+        /// 點擊來源幣別列，開啟幣別選擇 sheet
+        case currencyPickerTapped
+
+        /// 使用者於幣別選擇 sheet 選定來源幣別
+        case fromCurrencySelected(String)
     }
 
     // MARK: - Dependency Properties
@@ -159,7 +165,8 @@ struct QuoteFeature {
         Reduce { state, action in
             switch action {
             case .binding:
-                // 非負把關的唯一入口：BindingReducer 寫入後在此 clamp 所有數值欄，任何寫入路徑 (含測試直接 send) 皆收斂到合法值。目標毛利僅保證非負、不設上限
+                // 非負把關的唯一入口：BindingReducer 寫入後在此 clamp 所有數值欄，任何寫入路徑 (含測試直接 send) 皆收斂到合法值。
+                // 目標毛利僅保證非負、不設上限
                 state.itemPrice = max(0, state.itemPrice)
                 state.domesticShipping = max(0, state.domesticShipping)
                 state.internationalShippingTwd = max(0, state.internationalShippingTwd)
@@ -216,6 +223,14 @@ struct QuoteFeature {
                 state.availableCurrencies = merged.sorted {
                     $0.rawValue.localizedStandardCompare($1.rawValue) == .orderedAscending
                 }
+                return .none
+
+            case .currencyPickerTapped:
+                state.showsCurrencySheet = true
+                return .none
+
+            case let .fromCurrencySelected(code):
+                state.fromCurrency = CurrencyCode(rawValue: code)
                 return .none
             }
         }

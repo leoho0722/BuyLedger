@@ -192,7 +192,7 @@ struct OrderEditView: View {
                     options: store.availableOrderSources,
                     selected: store.draftOrderSource,
                     onSelect: { source in
-                        store.draftOrderSource = source
+                        store.send(.orderSourceSelected(source))
                     },
                     onAdd: { name in
                         store.send(.addOrderSourceTapped(name))
@@ -268,7 +268,7 @@ struct OrderEditView: View {
                     options: store.availablePaymentMethods.map(\.name),
                     selected: store.draftPaymentMethod,
                     onSelect: { method in
-                        store.draftPaymentMethod = method
+                        store.send(.paymentMethodSelected(method))
                     },
                     onAddPaymentMethod: { name, isCardless, isBankTransfer, isCashOnDelivery in
                         store.send(.addPaymentMethodTapped(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery))
@@ -287,7 +287,7 @@ struct OrderEditView: View {
                     options: store.availableVerificationStatuses,
                     selected: store.draftVerificationStatus,
                     onSelect: { status in
-                        store.draftVerificationStatus = status
+                        store.send(.verificationStatusSelected(status))
                     },
                     onAddViaNameSheet: { name in
                         store.send(.addVerificationStatusTapped(name))
@@ -313,17 +313,17 @@ struct OrderEditView: View {
                             .localizedString(forCurrencyCode: code) ?? ""
                     },
                     onSelect: { code in
-                        store.draftCurrency = CurrencyCode(rawValue: code)
+                        store.send(.currencySelected(code))
                     }
                 )
             }
             .sheet(item: $store.photoViewerSelection) { selection in
-                // 三平台統一以 sheet 呈現照片檢視器：title 置中顯示計數、右上 toolbar ✕ 關閉
+                // 統一以 sheet 呈現照片檢視器：title 置中顯示計數、右上 toolbar ✕ 關閉
                 BLPhotoViewer(
                     photos: store.draftPhotos,
                     initialIndex: selection.id
                 ) {
-                    store.photoViewerSelection = nil
+                    store.send(.photoViewerDismissed)
                 }
             }
         }
@@ -340,7 +340,7 @@ private extension OrderEditView {
     @ViewBuilder
     var orderSourcePickerRow: some View {
         Button {
-            store.showsOrderSourceSheet = true
+            store.send(.orderSourcePickerTapped)
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("訂單來源")
@@ -365,9 +365,10 @@ private extension OrderEditView {
     /// 點擊「新增類別」會觸發畫面置中的 `.alert` 彈窗收集新類別名稱，送出後由 reducer 把名稱加入 ``OrderEditFeature/State/availableCategories`` 並設為目前選擇
     @ViewBuilder
     var categoryPickerRow: some View {
-        // 改成 Button + `.sheet`：iOS `Menu` 是 `UIMenu` 包裝，Button action 會被排到 menu collapse 動畫結束才派發，造成可見延遲。sheet 路徑下選擇即時 commit binding，視覺更新與 sheet 收合動畫互不阻擋
+        // 改成 Button + `.sheet`：iOS `Menu` 是 `UIMenu` 包裝，Button action 會被排到 menu collapse
+        // 動畫結束才派發，造成可見延遲。sheet 路徑下選擇即時 commit binding，視覺更新與 sheet 收合動畫互不阻擋
         Button {
-            store.showsCategorySheet = true
+            store.send(.categoryPickerTapped)
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("商品類別")
@@ -392,7 +393,7 @@ private extension OrderEditView {
     @ViewBuilder
     var campaignPickerRow: some View {
         Button {
-            store.showsCampaignSheet = true
+            store.send(.campaignPickerTapped)
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("開團")
@@ -417,7 +418,7 @@ private extension OrderEditView {
     @ViewBuilder
     var currencyPickerRow: some View {
         Button {
-            store.showsCurrencySheet = true
+            store.send(.currencyPickerTapped)
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("幣別")
@@ -443,7 +444,7 @@ private extension OrderEditView {
     @ViewBuilder
     var paymentMethodPickerRow: some View {
         Button {
-            store.showsPaymentMethodSheet = true
+            store.send(.paymentMethodPickerTapped)
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("付款方式")
@@ -467,7 +468,7 @@ private extension OrderEditView {
     @ViewBuilder
     var verificationStatusPickerRow: some View {
         Button {
-            store.showsVerificationStatusSheet = true
+            store.send(.verificationStatusPickerTapped)
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("對帳狀態")
@@ -509,13 +510,11 @@ private extension OrderEditView {
                 itemEditorRow(item: $item)
             }
             .onDelete { offsets in
-                store.draftItems.remove(atOffsets: offsets)
+                store.send(.deleteItems(offsets))
             }
 
             Button {
-                store.draftItems.append(
-                    LedgerOrderItem(name: "", quantity: 1, unitPrice: 0)
-                )
+                store.send(.addItemTapped)
             } label: {
                 Label("新增商品", systemImage: "plus.circle.fill")
             }
@@ -558,7 +557,7 @@ private extension OrderEditView {
                             BLPhotoThumbnail(
                                 imageData: data,
                                 onTap: {
-                                    store.photoViewerSelection = OrderEditFeature.PhotoViewerSelection(id: index)
+                                    store.send(.photoTapped(index))
                                 }
                             ) {
                                 store.send(.deletePhotoTapped(index))

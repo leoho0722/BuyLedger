@@ -32,7 +32,6 @@ struct OrdersView: View {
     /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
 
-
     // MARK: - View Body
 
     /// 訂單功能的畫面內容
@@ -50,21 +49,21 @@ struct OrdersView: View {
             .alert($store.scope(state: \.deletionConfirmation, action: \.deletionConfirmation))
             .alert($store.scope(state: \.aiDisabledAlert, action: \.aiDisabledAlert))
     }
+}
+
+// MARK: - ViewBuilder
+
+private extension OrdersView {
 
     /// 依尺寸分類選擇對應的訂單瀏覽 view
     @ViewBuilder
-    private var platformContent: some View {
+    var platformContent: some View {
         if horizontalSizeClass == .compact {
             OrdersCompactView(store: store)
         } else {
             regularSplitContent
         }
     }
-}
-
-// MARK: - ViewBuilder
-
-private extension OrdersView {
 
     /// iPad regular 使用的「清單 + 詳情」兩欄佈局
     ///
@@ -202,7 +201,8 @@ private extension OrdersView {
 
     /// 訂單列表欄
     ///
-    /// 與 iPhone (compact) 的 ``OrdersCompactView`` 共用同一套 ``BLCard`` + 分隔線排版，讓三平台的訂單列表呈現一致的單一圓角卡片外觀。選取狀態僅反映在右側詳情欄，列表本身不畫選取高亮 (比照 iOS)；刪除走 row 的 context menu
+    /// 與 iPhone (compact) 的 ``OrdersCompactView`` 共用同一套 ``BLCard`` + 分隔線排版，讓各平台訂單列表呈現一致的單一圓角卡片外觀。
+    /// 選取狀態僅反映在右側詳情欄，列表本身不畫選取高亮；刪除走 row 的 context menu
     @ViewBuilder
     var listPane: some View {
         let palette = BLTheme.palette(for: colorScheme)
@@ -231,7 +231,8 @@ private extension OrdersView {
 
     /// 卡片化的訂單列表，內含逐列訂單與分隔線
     ///
-    /// 與 ``OrdersCompactView`` 的 `listSection` 採同一套 ``BLCard`` + ``Divider`` 排版以維持三平台一致；每列以 ``Button`` 送出 ``OrdersFeature/Action/orderSelected(_:)`` 更新右側詳情
+    /// 與 ``OrdersCompactView`` 的 `listSection` 採同一套 ``BLCard`` + ``Divider`` 排版以維持各平台一致
+    /// 每列以 ``Button`` 送出 ``OrdersFeature/Action/orderSelected(_:)`` 更新右側詳情
     /// - Parameter orders: 已套用篩選的訂單清單
     /// - Returns: 卡片化的訂單列表 view
     @ViewBuilder
@@ -346,7 +347,7 @@ private extension OrdersView {
 
     /// iPad 中間欄使用的橫向滾動狀態 chip 列
     ///
-    /// 在 320 px 寬的中間欄內，6 個 chip 無法單行排列，因此改用橫向滾動避免換行造成的視覺斷裂
+    /// 在 320 px 寬的中間欄內，狀態 chip 較多、無法單行排列，因此改用橫向滾動避免換行造成的視覺斷裂
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: chip 列 view
     @ViewBuilder
@@ -422,7 +423,7 @@ private extension OrdersView {
         let currentLabel = store.selectedCategory ?? "全部"
 
         Button {
-            store.showsCategoryPicker = true
+            store.send(.categoryPickerTapped)
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Image(systemName: "tag")
@@ -460,7 +461,7 @@ private extension OrdersView {
         let currentLabel = store.selectedPaymentMethod ?? "全部"
 
         Button {
-            store.showsPaymentMethodPicker = true
+            store.send(.paymentMethodPickerTapped)
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Image(systemName: "creditcard")

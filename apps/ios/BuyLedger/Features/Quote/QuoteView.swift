@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 報價試算工具畫面
 ///
-/// 對應設計稿 iPhone Quote sheet 與 iPad/Mac 的 Quote tool：
+/// 對應設計稿 iPhone Quote sheet 與 iPad 的 Quote tool：
 /// - 來源幣別 chip
 /// - 多個數值輸入欄 (商品本金 / 當地運費 / 國際運費 / 刷卡手續費 / 金流手續費 / 平台手續費 / 目標毛利)
 /// - 即時建議售價 (綠→青漸層 hero 卡)
@@ -172,7 +172,7 @@ private extension QuoteView {
     @ViewBuilder
     func currencyPicker(palette: BLPalette) -> some View {
         Button {
-            store.showsCurrencySheet = true
+            store.send(.currencyPickerTapped)
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("來源幣別")
@@ -216,7 +216,7 @@ private extension QuoteView {
                         .localizedString(forCurrencyCode: code) ?? ""
                 },
                 onSelect: { code in
-                    store.fromCurrency = CurrencyCode(rawValue: code)
+                    store.send(.fromCurrencySelected(code))
                 }
             )
         }
@@ -255,9 +255,7 @@ private extension QuoteView {
             .multilineTextAlignment(.trailing)
             .monospacedDigit()
             .frame(width: 120)
-#if os(iOS)
             .keyboardType(allowsDecimalEntry || fractionDigits > 0 ? .decimalPad : .numberPad)
-#endif
 
             Text(unit)
                 .font(.footnote)
@@ -355,7 +353,9 @@ private extension QuoteView {
 
     /// 拆解條的單列；以 ``BLProgressBar`` 表現各分類占總成本的比例，trailing 顯示原始 TWD 金額而非百分比
     ///
-    /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLProgressBar`` 自帶色盤推導、function body 不再讀取 palette；保留外部 label 與其他 helper (``inputsCard``、``suggestedHero`` 等) 一致，未來若需要客製拆解列的視覺也方便加回來
+    /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLProgressBar`` 自帶色盤推導、function body 不再讀取 palette
+    ///
+    /// 保留外部 label 與其他 helper (``inputsCard``、``suggestedHero`` 等) 一致，未來若需要客製拆解列的視覺也方便加回來
     /// - Parameters:
     ///   - label: 拆解項目的名稱 (如「商品金額」)
     ///   - value: 該項目的 TWD 金額

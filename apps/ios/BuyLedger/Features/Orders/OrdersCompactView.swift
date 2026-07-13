@@ -253,7 +253,7 @@ private extension OrdersCompactView {
         )
 
         Button {
-            store.showsFilterSheet = true
+            store.send(.filterSheetTapped)
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: 4) {
                 Image(systemName: "line.3.horizontal.decrease")
@@ -276,35 +276,6 @@ private extension OrdersCompactView {
         }
         .buttonStyle(.plain)
         .padding(.horizontal, BLSpacing.large)
-    }
-
-    /// 計算整合 trigger 顯示的 summary 字串。純函式，輸入只看當前 `(date, category, paymentMethod)` 組合，與外部 state 解耦，方便測試與 preview
-    ///
-    /// 規則：把「日期 (非 `.all`)」「類別」「付款方式」三個非預設片段依序以 ` · ` 串接；三者皆為預設時回傳「全部」
-    /// - `(.all, nil, nil)` → `全部`
-    /// - `(.all, 美妝, nil)` → `美妝`
-    /// - `(本月, nil, nil)` → `本月`
-    /// - `(本月, 美妝, nil)` → `本月 · 美妝`
-    /// - `(本月, 美妝, 信用卡)` → `本月 · 美妝 · 信用卡`
-    /// - `(.all, nil, 信用卡)` → `信用卡`
-    ///
-    /// - Parameters:
-    ///   - date: 目前選中的日期區間
-    ///   - category: 目前選中的類別；`nil` 代表「全部類別」
-    ///   - paymentMethod: 目前選中的付款方式；`nil` 代表「全部付款方式」
-    /// - Returns: trigger label 中「篩選：」後接的 summary 字串
-    func filterSummary(date: OrderDatePeriod, category: String?, paymentMethod: String?) -> String {
-        var segments: [String] = []
-        if date != .all {
-            segments.append(date.title)
-        }
-        if let category {
-            segments.append(category)
-        }
-        if let paymentMethod {
-            segments.append(paymentMethod)
-        }
-        return segments.isEmpty ? "全部" : segments.joined(separator: " · ")
     }
 
     /// 訂單列表區塊，包含載入、空狀態與「以日期分組」的資料區段
@@ -431,6 +402,40 @@ private extension OrdersCompactView {
         .padding(.top, BLSpacing.extraLarge)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(palette.background)
+    }
+}
+
+// MARK: - Private Method
+
+private extension OrdersCompactView {
+
+    /// 計算整合 trigger 顯示的 summary 字串。純函式，輸入只看當前 `(date, category, paymentMethod)` 組合，與外部 state 解耦，方便測試與 preview
+    ///
+    /// 規則：把「日期 (非 `.all`)」「類別」「付款方式」三個非預設片段依序以 ` · ` 串接；三者皆為預設時回傳「全部」
+    /// - `(.all, nil, nil)` → `全部`
+    /// - `(.all, 美妝, nil)` → `美妝`
+    /// - `(本月, nil, nil)` → `本月`
+    /// - `(本月, 美妝, nil)` → `本月 · 美妝`
+    /// - `(本月, 美妝, 信用卡)` → `本月 · 美妝 · 信用卡`
+    /// - `(.all, nil, 信用卡)` → `信用卡`
+    ///
+    /// - Parameters:
+    ///   - date: 目前選中的日期區間
+    ///   - category: 目前選中的類別；`nil` 代表「全部類別」
+    ///   - paymentMethod: 目前選中的付款方式；`nil` 代表「全部付款方式」
+    /// - Returns: trigger label 中「篩選：」後接的 summary 字串
+    func filterSummary(date: OrderDatePeriod, category: String?, paymentMethod: String?) -> String {
+        var segments: [String] = []
+        if date != .all {
+            segments.append(date.title)
+        }
+        if let category {
+            segments.append(category)
+        }
+        if let paymentMethod {
+            segments.append(paymentMethod)
+        }
+        return segments.isEmpty ? "全部" : segments.joined(separator: " · ")
     }
 }
 

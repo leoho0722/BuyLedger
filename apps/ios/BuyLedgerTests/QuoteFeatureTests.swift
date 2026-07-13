@@ -16,7 +16,8 @@ struct QuoteFeatureTests {
     // MARK: - Tests
 
     @Test func defaultStateStartsAtZero() {
-        // 預設值全為 0：頁面剛開時不預填示範金額或費率，避免讓使用者誤以為畫面上的「建議售價」是已存在的試算結果
+        // 預設值全為 0：頁面剛開時不預填示範金額或費率
+        // 避免讓使用者誤以為畫面上的「建議售價」是已存在的試算結果
         let state = QuoteFeature.State()
 
         #expect(state.fromCurrency == .krw)
@@ -158,5 +159,30 @@ struct QuoteFeatureTests {
         await store.send(\.binding.showsCurrencySheet, true) {
             $0.showsCurrencySheet = true
         }
+    }
+
+    @Test func currencyPickerTappedShowsSheet() async {
+        // 點擊來源幣別列 → reducer 開啟幣別選擇 sheet，View 不再直接寫入 store
+        let store = TestStore(initialState: QuoteFeature.State()) {
+            QuoteFeature()
+        }
+
+        await store.send(.currencyPickerTapped) {
+            $0.showsCurrencySheet = true
+        }
+    }
+
+    @Test func fromCurrencySelectedUpdatesCurrencyAndRecomputesItemTwd() async {
+        // 幣別選擇 sheet 選定幣別 → reducer 建構 CurrencyCode 並寫入 state，itemTwd 等衍生金額隨之連動重算
+        let store = TestStore(initialState: QuoteFeature.State(itemPrice: 150_000)) {
+            QuoteFeature()
+        }
+
+        await store.send(.fromCurrencySelected("TWD")) {
+            $0.fromCurrency = .twd
+        }
+
+        // TWD rate = 1, so itemTwd == itemPrice
+        #expect(store.state.itemTwd == 150_000)
     }
 }

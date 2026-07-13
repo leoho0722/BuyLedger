@@ -97,6 +97,58 @@ struct LookupManagementFeatureTests {
         await store.finish()
     }
 
+    // MARK: - 新增流程 (addButtonTapped / addDraftCleared) Tests
+
+    @Test func addButtonTappedForCategoryResetsDraftAndOpensAlert() async {
+        // 訂單來源 / 商品類別走 alert：reducer 依 kind 清空草稿並開啟 alert (取代 view 端分支寫入)
+        var state = LookupManagementFeature.State(kind: .category)
+        state.addDraft = "殘留草稿"
+
+        let store = TestStore(initialState: state) {
+            LookupManagementFeature()
+        }
+
+        await store.send(.addButtonTapped) {
+            $0.addDraft = ""
+            $0.showsAddCategoryAlert = true
+        }
+    }
+
+    @Test func addButtonTappedForPaymentMethodOpensSheet() async {
+        // 付款方式走 sheet，不重置 addDraft (由 sheet 內元件自持草稿)
+        let store = TestStore(initialState: LookupManagementFeature.State(kind: .paymentMethod)) {
+            LookupManagementFeature()
+        }
+
+        await store.send(.addButtonTapped) {
+            $0.showsAddPaymentMethodSheet = true
+        }
+    }
+
+    @Test func addButtonTappedForVerificationStatusOpensSheet() async {
+        // 對帳狀態走 sheet
+        let store = TestStore(initialState: LookupManagementFeature.State(kind: .verificationStatus)) {
+            LookupManagementFeature()
+        }
+
+        await store.send(.addButtonTapped) {
+            $0.showsAddVerificationStatusSheet = true
+        }
+    }
+
+    @Test func addDraftClearedResetsDraft() async {
+        var state = LookupManagementFeature.State(kind: .category)
+        state.addDraft = "尚未送出的草稿"
+
+        let store = TestStore(initialState: state) {
+            LookupManagementFeature()
+        }
+
+        await store.send(.addDraftCleared) {
+            $0.addDraft = ""
+        }
+    }
+
     // MARK: - Binding Tests
 
     @Test func showsAddCategoryAlertBindingUpdatesState() async {
@@ -216,7 +268,8 @@ struct LookupManagementFeatureTests {
             LookupManagementFeature()
         }
 
-        // 由 reducer 自 paymentMethodIsCardless / paymentMethodIsBankTransfer / paymentMethodIsCashOnDelivery 快照三個旗標，取代 view 端直接索引字典組裝表單初值
+        // 由 reducer 自 paymentMethodIsCardless / paymentMethodIsBankTransfer / paymentMethodIsCashOnDelivery 快照三個旗標
+        // 取代 view 端直接索引字典組裝表單初值
         await store.send(.editButtonTapped(name: "匯款")) {
             $0.destination = .editPaymentMethod(
                 LookupManagementFeature.Destination.EditPaymentMethodFeature.State(
