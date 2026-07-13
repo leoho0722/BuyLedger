@@ -23,12 +23,21 @@ struct OllamaClient: Sendable {
     /// - 每個元素是一段 `message.content` 增量文字
     /// - 串流在收到 `done == true` 或連線結束時正常結束
     /// - 失敗時以 ``APIError`` 結束 (401/403 → `invalidKey`、其他非 2xx → `http`、連線錯誤 → `transport`)
-    var streamSummary: @Sendable (_ prompt: String, _ model: String, _ apiKey: String) -> AsyncThrowingStream<String, Error>
+    /// - Parameters:
+    ///   - prompt: 要送給模型的完整 prompt (已組好的商品明細總結指令)
+    ///   - model: 使用的 Ollama 模型名稱
+    ///   - apiKey: Ollama Cloud 的 API 金鑰
+    /// - Returns: 逐段增量文字的 `AsyncThrowingStream<String, Error>`
+    var streamSummary: @Sendable (
+        _ prompt: String,
+        _ model: String,
+        _ apiKey: String
+    ) -> AsyncThrowingStream<String, Error>
 }
 
-extension OllamaClient {
+// MARK: - Internal Method
 
-    // MARK: - Static Method
+extension OllamaClient {
 
     /// 解析單行 NDJSON 串流回應
     ///
@@ -40,16 +49,16 @@ extension OllamaClient {
         guard !trimmed.isEmpty, let data = trimmed.data(using: .utf8) else {
             return nil
         }
-        guard let decoded = try? JSONDecoder().decode(StreamLine.self, from: data) else {
+        guard let decoded = try? JSONDecoder().decode(ChatResponse.self, from: data) else {
             return nil
         }
         return (decoded.message?.content ?? "", decoded.done)
     }
 }
 
-extension OllamaClient: DependencyKey {
+// MARK: - Dependency Values
 
-    // MARK: - Dependency Values
+extension OllamaClient: DependencyKey {
 
     /// App 執行時透過 ``HTTPClient/stream`` 串流 NDJSON
     nonisolated static let liveValue: OllamaClient = OllamaClient(
@@ -88,7 +97,9 @@ extension OllamaClient: DependencyKey {
 
                         for try await line in bytes.lines {
                             try Task.checkCancellation()
-                            guard let parsed = OllamaClient.parse(line: line) else { continue }
+                            guard let parsed = OllamaClient.parse(line: line) else {
+                                continue
+                            }
                             if !parsed.content.isEmpty {
                                 continuation.yield(parsed.content)
                             }
@@ -144,59 +155,4 @@ extension OllamaClient: DependencyKey {
             }
         }
     )
-}
-
-// MARK: - Request DTO
-
-/// `POST https://ollama.com/api/chat` 的請求 body
-private struct ChatRequest: Encodable {
-
-    // MARK: - Data Properties
-
-    /// 模型名稱
-    let model: String
-
-    /// 對話訊息陣列
-    let messages: [Message]
-
-    /// 是否啟用串流回應
-    let stream: Bool
-
-    // MARK: - Nested Types
-
-    /// 單則對話訊息
-    struct Message: Encodable {
-
-        /// 角色 (例如 `user`)
-        let role: String
-
-        /// 訊息內容
-        let content: String
-    }
-}
-
-// MARK: - Response DTO
-
-extension OllamaClient {
-
-    // MARK: - Nested Types
-
-    /// NDJSON 串流的單行回應 schema
-    ///
-    /// `message` 在最後一行 (`done == true`) 可能缺漏，故標為 optional；其餘統計欄位本 App 不使用，略過不解
-    fileprivate struct StreamLine: Decodable {
-
-        /// 該段的部分助理訊息
-        let message: Message?
-
-        /// 是否為串流的最後一段
-        let done: Bool
-
-        /// 串流訊息片段
-        struct Message: Decodable {
-
-            /// 增量文字內容
-            let content: String
-        }
-    }
 }
