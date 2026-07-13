@@ -7,9 +7,9 @@
 
 import Foundation
 
-extension Campaign {
+// MARK: - Sample Data
 
-    // MARK: - Sample Data
+extension Campaign {
 
     /// SwiftUI Preview 與單元測試使用的開團範例
     ///
@@ -34,54 +34,6 @@ extension Campaign {
             notes: ""
         ),
     ]
-}
-
-extension LedgerOrder {
-
-    // MARK: - Sample Data
-
-    /// 把 ``LedgerOrder/sampleOrders`` 前幾筆指派到 ``Campaign/sampleCampaigns``，供開團相關畫面的 Preview 呈現分貨與進度
-    nonisolated static let sampleCampaignOrders: [LedgerOrder] = {
-        let assignments: [(campaign: String, receipt: PaymentReceiptStatus)] = [
-            ("四月韓國團", .received),
-            ("四月韓國團", .pending),
-            ("三月日本團", .received),
-            ("四月韓國團", .received),
-        ]
-
-        let assigned = zip(LedgerOrder.sampleOrders.prefix(assignments.count), assignments).map { order, assignment in
-            LedgerOrder(
-                id: order.id,
-                customer: order.customer,
-                status: order.status,
-                currency: order.currency,
-                date: order.date,
-                items: order.items,
-                itemCost: order.itemCost,
-                domesticShipping: order.domesticShipping,
-                internationalShipping: order.internationalShipping,
-                foreignDomesticShipping: order.foreignDomesticShipping,
-                cardFeeRate: order.cardFeeRate,
-                platformFeeRate: order.platformFeeRate,
-                paymentFeeRate: order.paymentFeeRate,
-                chargedAmount: order.chargedAmount,
-                cardlessDeductionAmount: order.cardlessDeductionAmount,
-                cardlessSupplementAmount: order.cardlessSupplementAmount,
-                orderSource: order.orderSource,
-                categories: order.categories,
-                paymentMethod: order.paymentMethod,
-                notes: order.notes,
-                verificationStatus: order.verificationStatus,
-                campaignNames: [assignment.campaign],
-                paymentReceiptStatus: assignment.receipt,
-                isCashOnDelivery: order.isCashOnDelivery,
-                photos: order.photos,
-                mergedSourceIDs: order.mergedSourceIDs
-            )
-        }
-
-        return assigned + LedgerOrder.sampleOrders.dropFirst(assignments.count)
-    }()
 }
 
 // MARK: - Private Method
