@@ -43,9 +43,10 @@ apps/ios/
 │   │   ├── Quote/                # 報價試算
 │   │   └── Settings/             # iOS SettingsView
 │   ├── Shared/
-│   │   └── DesignSystem/
-│   │       ├── Foundations/      # 色盤、字級、間距、圓角等 token
-│   │       └── Components/       # BLAvatar、BLBadge、BLCard、BLBarChart 等元件
+│   │   ├── DesignSystem/
+│   │   │   ├── Foundations/      # 色盤、字級、間距、圓角等 token
+│   │   │   └── Components/       # BLAvatar、BLBadge、BLCard、BLBarChart 等元件
+│   │   └── Extensions/           # Swift/SwiftUI 內建型別的通用 extension (Image/Color/Locale/Decimal 等，一型一檔)
 │   └── Resources/                # Info.plist、entitlements、Config.example.xcconfig (範本，實際 Config.xcconfig 自填且 gitignored)、assets
 ├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
 └── BuyLedgerUITests/             # UI 與啟動畫面測試

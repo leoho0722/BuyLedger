@@ -12,10 +12,12 @@ import SwiftUI
 /// 色彩以使用情境命名，讓功能畫面不需要直接依賴固定色碼
 struct BLPalette {
 
-    // MARK: - Palette Properties
+    // MARK: - Data Properties
 
     /// 指示目前色盤是否使用深色外觀
     let isDark: Bool
+
+    // MARK: - Display Properties
 
     /// App 主要背景色
     var background: Color {
@@ -144,34 +146,17 @@ struct BLPalette {
 }
 
 /// 依目前系統外觀產生對應的設計系統色盤
-enum BLTheme {
+enum BLTheme {}
 
-    // MARK: - Theme Method
+// MARK: - Internal Method
+
+extension BLTheme {
 
     /// 回傳指定系統外觀對應的色盤
     /// - Parameter colorScheme: 目前環境中的系統深淺色外觀
     /// - Returns: 可供 SwiftUI view 使用的 `BLPalette`
     static func palette(for colorScheme: ColorScheme) -> BLPalette {
         BLPalette(isDark: colorScheme == .dark)
-    }
-}
-
-extension Color {
-
-    // MARK: - Init
-
-    /// 使用 sRGB 十六進位色碼建立 SwiftUI 色彩
-    /// - Parameters:
-    ///   - hex: `0xRRGGBB` 格式的 sRGB 色碼
-    ///   - opacity: 色彩透明度，預設為 `1`
-    init(blHex hex: UInt, opacity: Double = 1) {
-        self.init(
-            .sRGB,
-            red: Double((hex >> 16) & 0xFF) / 255,
-            green: Double((hex >> 8) & 0xFF) / 255,
-            blue: Double(hex & 0xFF) / 255,
-            opacity: opacity
-        )
     }
 }
 
