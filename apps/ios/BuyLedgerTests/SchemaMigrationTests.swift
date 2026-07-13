@@ -12,13 +12,19 @@ import Testing
 
 /// 驗證收斂後的 ``BuyLedgerMigrationPlan`` (floor V13) 在 on-disk store 上的遷移行為
 ///
-/// 與其他 persistence 測試刻意不同：這裡使用「實體檔案」store 而非 in-memory。SwiftData 的 migration 只在開啟既有 store、且其 schema 指紋與 target 有 delta 時才會執行；in-memory 永遠是全新的 target store，無法行經遷移路徑，因此無法守住砍檔 fallback 與指紋穩定性
+/// 與其他 persistence 測試刻意不同：這裡使用「實體檔案」store 而非 in-memory
+///
+/// SwiftData 的 migration 只在開啟既有 store、且其 schema 指紋與 target 有 delta 時才會執行；
+/// in-memory 永遠是全新的 target store，無法行經遷移路徑，因此無法守住砍檔 fallback 與指紋穩定性
 @MainActor
 struct SchemaMigrationTests {
 
     // MARK: - Tests
 
-    /// V13 (floor) store 開啟後，應以 lightweight (V13 → V14 → V15) 逐段遷到 target：``OrderRecord`` 資料原封不動；``CampaignReminderRecord`` 保留 `campaignID` / `eventIdentifier`，新欄位 `reminderTimestamp` 帶預設值 (中間版本的 `minuteOfDay` 已於 lightweight 汰換)
+    /// V13 (floor) store 開啟後，應以 lightweight (V13 → V14 → V15) 逐段遷到 target
+    ///
+    /// ``OrderRecord`` 資料原封不動；``CampaignReminderRecord`` 保留 `campaignID` / `eventIdentifier`，
+    /// 新欄位 `reminderTimestamp` 帶預設值 (中間版本的 `minuteOfDay` 已於 lightweight 汰換)
     @Test func v13StoreMigratesToV15() throws {
         let storeURL = Self.makeTemporaryStoreURL()
         defer { Self.removeStore(at: storeURL) }
@@ -57,7 +63,9 @@ struct SchemaMigrationTests {
 
     /// V15 store 以 V15 schema 重新開啟時不應觸發遷移，資料與筆數原封不動
     ///
-    /// 此測試同時作為「V15 schema 指紋未被意外更動」的守門：若改動 top-level `@Model` 或 V13～V15 定義導致指紋改變，開啟既有 V15 store 會嘗試非預期的遷移或拋錯，本測試即失敗
+    /// 此測試同時作為「V15 schema 指紋未被意外更動」的守門
+    ///
+    /// 若改動 top-level `@Model` 或 V13～V15 定義導致指紋改變，開啟既有 V15 store 會嘗試非預期的遷移或拋錯，本測試即失敗
     @Test func v15StoreReopensWithoutMigration() throws {
         let storeURL = Self.makeTemporaryStoreURL()
         defer { Self.removeStore(at: storeURL) }
@@ -92,7 +100,7 @@ struct SchemaMigrationTests {
     }
 }
 
-// MARK: - Helpers
+// MARK: - Private Method
 
 private extension SchemaMigrationTests {
 
