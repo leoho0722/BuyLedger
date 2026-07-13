@@ -128,7 +128,9 @@ private extension BLBarChart {
     /// - Returns: 要繪製標籤的標籤子集；資料為空時回傳空陣列
     func stridedLabels(renderWidth: CGFloat) -> [String] {
         let total = data.count
-        guard total > 0 else { return [] }
+        guard total > 0 else {
+            return []
+        }
 
         let capacity = max(1, Int(renderWidth / minLabelSpacing))
         let stride = max(1, Int((Double(total) / Double(capacity)).rounded(.up)))

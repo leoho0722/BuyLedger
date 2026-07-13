@@ -9,7 +9,9 @@ import Foundation
 
 /// 總覽頁使用的本月與走勢統計
 ///
-/// 完全 derive 自訂單清單，不依賴「現在」時間內部讀取：由呼叫端 (View 或測試) 以 `referenceDate` 與 `calendar` 注入基準時間。MoM (month-over-month) 相關欄位在「上月無資料」時為 `nil`，UI 應顯示「—」並停用方向色
+/// 完全 derive 自訂單清單，不依賴「現在」時間內部讀取：由呼叫端 (View 或測試) 以 `referenceDate` 與 `calendar` 注入基準時間
+///
+/// MoM (month-over-month) 相關欄位在「上月無資料」時為 `nil`，UI 應顯示「—」並停用方向色
 struct DashboardStats {
 
     // MARK: - Data Properties
@@ -127,8 +129,48 @@ struct DashboardStats {
         self.profitDelta = DashboardStats.ratio(current: current.profit, previous: previous.profit)
         self.marginDelta = previous.orderCount == 0 ? nil : current.margin - previous.margin
     }
+}
 
-    // MARK: - Static Method
+// MARK: - Nested Types
+
+extension DashboardStats {
+
+    /// 任意月份的彙總值，用來複用「本月」與「上月」的計算
+    fileprivate struct MonthlyTotals {
+
+        // MARK: - Data Properties
+
+        /// 該月已實現訂單的營業額總和
+        let revenue: Decimal
+
+        /// 該月已實現訂單的成本總和 (含商品、運費與手續費)
+        let cost: Decimal
+
+        /// 該月已實現訂單的淨獲利總和 (`revenue - cost`)
+        let profit: Decimal
+
+        /// 該月毛利率 (`profit / revenue`)；`revenue` 為 0 時為 0
+        let margin: Decimal
+
+        /// 該月已實現的訂單筆數，作為「上月有無資料可比」的判斷依據
+        let orderCount: Int
+
+        // MARK: - Static Properties
+
+        /// 整月無資料時使用的零值彙總，避免呼叫端各自處理 nil
+        static let empty = MonthlyTotals(
+            revenue: 0,
+            cost: 0,
+            profit: 0,
+            margin: 0,
+            orderCount: 0
+        )
+    }
+}
+
+// MARK: - Private Method
+
+private extension DashboardStats {
 
     /// 計算指定月份的營收／成本／獲利／毛利率／訂單筆數
     /// - Parameters:
@@ -136,7 +178,7 @@ struct DashboardStats {
     ///   - calendar: 用來算月份區間的曆法
     ///   - referenceDate: 基準日期，會以此日的所在月份為查詢範圍
     /// - Returns: 月度彙總值；找不到月份區間時回傳 `.empty`
-    private static func monthlyTotals(orders: [LedgerOrder], calendar: Calendar, referenceDate: Date) -> MonthlyTotals {
+    static func monthlyTotals(orders: [LedgerOrder], calendar: Calendar, referenceDate: Date) -> MonthlyTotals {
         guard let interval = calendar.dateInterval(of: .month, for: referenceDate) else {
             return .empty
         }
@@ -171,8 +213,10 @@ struct DashboardStats {
     ///   - current: 本期值
     ///   - previous: 上期值
     /// - Returns: 成長率 (小數)，上期為 0 時 `nil`
-    private static func ratio(current: Decimal, previous: Decimal) -> Decimal? {
-        guard previous != 0 else { return nil }
+    static func ratio(current: Decimal, previous: Decimal) -> Decimal? {
+        guard previous != 0 else {
+            return nil
+        }
         return (current - previous) / previous
     }
 
@@ -182,7 +226,7 @@ struct DashboardStats {
     ///   - calendar: 用來計算月份的曆法
     ///   - referenceDate: 基準日期 (即「最後一個月」的所在日期)
     /// - Returns: 共 12 個 `Double` 的走勢值
-    private static func monthlyProfitSparkline(
+    static func monthlyProfitSparkline(
         orders: [LedgerOrder],
         calendar: Calendar,
         referenceDate: Date
@@ -208,36 +252,4 @@ struct DashboardStats {
             return NSDecimalNumber(decimal: total).doubleValue
         }
     }
-}
-
-/// 任意月份的彙總值，用來複用「本月」與「上月」的計算
-private struct MonthlyTotals {
-
-    // MARK: - Data Properties
-
-    /// 該月已實現訂單的營業額總和
-    let revenue: Decimal
-
-    /// 該月已實現訂單的成本總和 (含商品、運費與手續費)
-    let cost: Decimal
-
-    /// 該月已實現訂單的淨獲利總和 (`revenue - cost`)
-    let profit: Decimal
-
-    /// 該月毛利率 (`profit / revenue`)；`revenue` 為 0 時為 0
-    let margin: Decimal
-
-    /// 該月已實現的訂單筆數，作為「上月有無資料可比」的判斷依據
-    let orderCount: Int
-
-    // MARK: - Static Properties
-
-    /// 整月無資料時使用的零值彙總，避免呼叫端各自處理 nil
-    static let empty = MonthlyTotals(
-        revenue: 0,
-        cost: 0,
-        profit: 0,
-        margin: 0,
-        orderCount: 0
-    )
 }

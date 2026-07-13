@@ -13,8 +13,11 @@ import SwiftData
 /// 每次 ``replace(codes:at:)`` 會把舊 cache 全部刪掉再寫入新的，符合「API 是 source of truth」的設計：API 對某 code 已停止支援時，本地 cache 也應跟著消失
 @ModelActor
 actor CurrencyMetadataPersistence {
+}
 
-    // MARK: - View Method
+// MARK: - Internal Method
+
+extension CurrencyMetadataPersistence {
 
     /// 讀出全部 code，依 locale 升冪排序
     /// - Returns: ISO 4217 code 陣列

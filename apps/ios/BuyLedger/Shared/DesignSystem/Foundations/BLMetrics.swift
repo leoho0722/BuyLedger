@@ -10,7 +10,7 @@ import SwiftUI
 /// 設計系統共用圓角
 enum BLRadius {
 
-    // MARK: - Radius Values
+    // MARK: - Static Properties
 
     /// 最小圓角，適合工具列按鈕
     static let extraSmall: CGFloat = 6
@@ -34,7 +34,7 @@ enum BLRadius {
 /// 設計系統共用間距
 enum BLSpacing {
 
-    // MARK: - Spacing Values
+    // MARK: - Static Properties
 
     /// 最小間距
     static let extraSmall: CGFloat = 4

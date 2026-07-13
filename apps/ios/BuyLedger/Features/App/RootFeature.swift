@@ -73,7 +73,9 @@ struct RootFeature {
         /// 設定「更多」分頁是否 push 到設定頁 (deep-link 開關，供 MoreView 的 navigationDestination 雙向繫結)
         case setShowsSettingsFromDeepLink(Bool)
 
-        /// 從非訂單分頁 (如 Dashboard 的 onboarding) 發起「新訂單」流程；會同時把 selectedTab 切到 `.orders` 並把 ``OrdersFeature/State/editOrder`` 設好，讓 ``OrdersView`` 的 sheet 能立刻顯示
+        /// 從非訂單分頁 (如 Dashboard 的 onboarding) 發起「新訂單」流程
+        ///
+        /// 會同時把 selectedTab 切到 `.orders` 並把 ``OrdersFeature/State/editOrder`` 設好，讓 ``OrdersView`` 的 sheet 能立刻顯示
         case startNewOrder
 
         /// 使用者從側邊欄智慧分組點擊狀態，跳到訂單頁並套用篩選
@@ -178,7 +180,9 @@ struct RootFeature {
                 LookupManagementFeature()
             }
 
-            Reduce { state, action in
+            Reduce {
+                state,
+                action in
                 switch action {
                 case .task:
                     let currencyMetadataRepository = currencyMetadataRepository
@@ -186,29 +190,32 @@ struct RootFeature {
                         // TTL 7 天：7 * 24 * 3600 = 604_800 秒
                         _ = try? await currencyMetadataRepository.refreshIfStale(604_800)
                     }
-
+                    
                 case let .tabSelected(tab):
                     state.selectedTab = tab
                     return .none
-
+                    
                 case let .setShowsSettingsFromDeepLink(value):
                     state.showsSettingsFromDeepLink = value
                     return .none
-
+                    
                 case .startNewOrder:
                     state.selectedTab = .orders
                     state.orders.editOrder = OrderEditFeature.State(currentDate: date.now)
                     return .none
-
+                    
                 case let .smartGroupSelected(status):
                     state.selectedTab = .orders
                     state.orders.selectedStatus = .status(status)
                     state.orders.selectedDatePeriod = .all
                     // 清掉殘留類別篩選，避免使用者帶著前一頁的類別狀態跳到 smart group 後被「狀態 + 類別」夾擊出空列表
                     state.orders.selectedCategory = nil
-                    state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
+                    state.orders.selectedOrderID = state.orders.filteredOrders(
+                        referenceDate: date.now,
+                        calendar: calendar
+                    ).first?.id
                     return .none
-
+                    
                 case let .customerSelected(name):
                     state.selectedTab = .orders
                     state.orders.searchText = name
@@ -216,9 +223,12 @@ struct RootFeature {
                     state.orders.selectedDatePeriod = .all
                     // 同 smart group：客戶名深連結時清掉殘留類別篩選
                     state.orders.selectedCategory = nil
-                    state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
+                    state.orders.selectedOrderID = state.orders.filteredOrders(
+                        referenceDate: date.now,
+                        calendar: calendar
+                    ).first?.id
                     return .none
-
+                    
                 case let .categorySelected(category):
                     // 從分析頁類別排行深連結進訂單頁時，以 `selectedCategory` 精準欄位比對而非 `searchText` 模糊比對：
                     // 後者會把品名/客戶名等含相同字串的訂單誤包進來，也讓訂單頁的類別篩選膠囊無法 highlight
@@ -227,39 +237,47 @@ struct RootFeature {
                     state.orders.selectedStatus = .all
                     state.orders.selectedDatePeriod = .all
                     state.orders.selectedCategory = category
-                    state.orders.selectedOrderID = state.orders.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
+                    state.orders.selectedOrderID = state.orders.filteredOrders(
+                        referenceDate: date.now,
+                        calendar: calendar
+                    ).first?.id
                     return .none
-
+                    
                 case let .insightsRangeSelected(range):
                     state.insightsDateRange = range
                     return .none
-
+                    
                 case let .campaignSelected(name):
-                    // 從 Dashboard 開團卡或 Insights 開團排行深連結：切到開團頁並選取該團 (CampaignListView 觀察 selectedCampaignID 後 push 詳情)
+                    // 從 Dashboard 開團卡或 Insights 開團排行深連結：切到開團頁並選取該團
+                    // (CampaignListView 觀察 selectedCampaignID 後 push 詳情)
                     state.selectedTab = .campaigns
                     state.campaigns.selectedCampaignID = state.campaigns.campaigns.first { $0.name == name }?.id
                     return .none
-
-                // AI 未開啟提示 alert 的「前往開啟」：導覽由 root 負責
+                    
+                    // AI 未開啟提示 alert 的「前往開啟」：導覽由 root 負責
                 case .orders(.aiDisabledAlert(.presented(.goToAISettings))):
                     // 切到「更多」分頁並 push 設定頁
                     state.selectedTab = .more
                     state.showsSettingsFromDeepLink = true
                     return .none
-
+                    
                 case .orders:
                     return .none
-
+                    
                 case .customers:
                     return .none
-
+                    
                 case let .campaigns(.campaignRenamed(from, to)):
                     // CampaignFeature 已處理開團主檔與訂單表 (DB) 的 cascade；此處只同步 OrdersFeature 的 in-memory 副本
                     let trimmedFrom = from.trimmingCharacters(in: .whitespacesAndNewlines)
                     let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmedFrom.isEmpty, !trimmedTo.isEmpty, trimmedFrom != trimmedTo {
+                    if !trimmedFrom.isEmpty,
+                       !trimmedTo.isEmpty,
+                       trimmedFrom != trimmedTo {
                         state.orders.orders = state.orders.orders.map { order in
-                            guard order.campaignNames.contains(trimmedFrom) else { return order }
+                            guard order.campaignNames.contains(trimmedFrom) else {
+                                return order
+                            }
                             return rebuildOrder(
                                 order,
                                 campaignNames: order.campaignNames.map { $0 == trimmedFrom ? trimmedTo : $0 }
@@ -321,7 +339,13 @@ struct RootFeature {
                     return .none
 
                 case let .paymentMethodManagement(.addConfirmed(name, isCardless, isBankTransfer, isCashOnDelivery)):
-                    addPaymentMethodToOrdersMaster(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery, in: &state)
+                    addPaymentMethodToOrdersMaster(
+                        name: name,
+                        isCardless: isCardless,
+                        isBankTransfer: isBankTransfer,
+                        isCashOnDelivery: isCashOnDelivery,
+                        in: &state
+                    )
                     return .none
 
                 case let .paymentMethodManagement(.deleteRequested(name)):
@@ -331,13 +355,26 @@ struct RootFeature {
                 case let .paymentMethodManagement(.editConfirmed(originalName, name, isCardless, isBankTransfer, isCashOnDelivery)):
                     let trimmedOriginal = originalName.trimmingCharacters(in: .whitespacesAndNewlines)
                     let trimmedNew = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmedNew.isEmpty else { return .none }
+                    guard !trimmedNew.isEmpty else {
+                        return .none
+                    }
                     // 名稱變更先 cascade 到 in-memory master 與訂單表 (rename 會合併舊旗標)，
                     // 再以使用者實際勾選權威覆寫旗標，確保可取消勾選
                     if trimmedNew != trimmedOriginal {
-                        cascadeRename(kind: .paymentMethod, from: trimmedOriginal, to: trimmedNew, in: &state)
+                        cascadeRename(
+                            kind: .paymentMethod,
+                            from: trimmedOriginal,
+                            to: trimmedNew,
+                            in: &state
+                        )
                     }
-                    addPaymentMethodToOrdersMaster(name: trimmedNew, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery, in: &state)
+                    addPaymentMethodToOrdersMaster(
+                        name: trimmedNew,
+                        isCardless: isCardless,
+                        isBankTransfer: isBankTransfer,
+                        isCashOnDelivery: isCashOnDelivery,
+                        in: &state
+                    )
                     return .none
 
                 case .paymentMethodManagement:
@@ -368,8 +405,11 @@ struct RootFeature {
             return .none
         }
     }
+}
 
-    // MARK: - Private Method
+// MARK: - Private Method
+
+private extension RootFeature {
 
     /// 在 root 端 cascade 主檔更名到 ``OrdersFeature/State`` 的 in-memory 副本，避免 LookupManagement 只更新 DB 但 OrdersFeature 拿到的還是舊字串
     /// - Parameters:
@@ -377,7 +417,7 @@ struct RootFeature {
     ///   - from: 舊名稱
     ///   - to: 新名稱
     ///   - state: 要修改的 ``RootFeature/State``
-    private func cascadeRename(
+    func cascadeRename(
         kind: LookupKind,
         from: String,
         to: String,
@@ -385,7 +425,11 @@ struct RootFeature {
     ) {
         let trimmedFrom = from.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedFrom.isEmpty, !trimmedTo.isEmpty, trimmedFrom != trimmedTo else { return }
+        guard !trimmedFrom.isEmpty,
+              !trimmedTo.isEmpty,
+              trimmedFrom != trimmedTo else {
+            return
+        }
 
         switch kind {
         case .orderSource:
@@ -395,7 +439,9 @@ struct RootFeature {
                 to: trimmedTo
             )
             state.orders.orders = state.orders.orders.map { order in
-                guard order.orderSource == trimmedFrom else { return order }
+                guard order.orderSource == trimmedFrom else {
+                    return order
+                }
                 return rebuildOrder(order, orderSource: trimmedTo)
             }
 
@@ -406,7 +452,9 @@ struct RootFeature {
                 to: trimmedTo
             )
             state.orders.orders = state.orders.orders.map { order in
-                guard order.categories.contains(trimmedFrom) else { return order }
+                guard order.categories.contains(trimmedFrom) else {
+                    return order
+                }
                 return rebuildOrder(
                     order,
                     categories: order.categories.map { $0 == trimmedFrom ? trimmedTo : $0 }
@@ -420,7 +468,9 @@ struct RootFeature {
                 to: trimmedTo
             )
             state.orders.orders = state.orders.orders.map { order in
-                guard order.paymentMethod == trimmedFrom else { return order }
+                guard order.paymentMethod == trimmedFrom else {
+                    return order
+                }
                 return rebuildOrder(order, paymentMethod: trimmedTo)
             }
 
@@ -431,7 +481,9 @@ struct RootFeature {
                 to: trimmedTo
             )
             state.orders.orders = state.orders.orders.map { order in
-                guard order.verificationStatus == trimmedFrom else { return order }
+                guard order.verificationStatus == trimmedFrom else {
+                    return order
+                }
                 return rebuildOrder(order, verificationStatus: trimmedTo)
             }
         }
@@ -441,13 +493,17 @@ struct RootFeature {
     /// - Parameters:
     ///   - name: 新增名稱
     ///   - state: 要修改的 ``RootFeature/State``
-    private func addOrderSourceToOrdersMaster(
+    func addOrderSourceToOrdersMaster(
         name: String,
         in state: inout State
     ) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        guard !state.orders.orderSourceMaster.contains(trimmed) else { return }
+        guard !trimmed.isEmpty else {
+            return
+        }
+        guard !state.orders.orderSourceMaster.contains(trimmed) else {
+            return
+        }
 
         var updated = state.orders.orderSourceMaster
         updated.append(trimmed)
@@ -460,13 +516,17 @@ struct RootFeature {
     /// - Parameters:
     ///   - name: 新增名稱
     ///   - state: 要修改的 ``RootFeature/State``
-    private func addCategoryToOrdersMaster(
+    func addCategoryToOrdersMaster(
         name: String,
         in state: inout State
     ) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        guard !state.orders.categoryMaster.contains(trimmed) else { return }
+        guard !trimmed.isEmpty else {
+            return
+        }
+        guard !state.orders.categoryMaster.contains(trimmed) else {
+            return
+        }
 
         var updated = state.orders.categoryMaster
         updated.append(trimmed)
@@ -482,7 +542,7 @@ struct RootFeature {
     ///   - isBankTransfer: 是否屬於銀行匯款類付款方式
     ///   - isCashOnDelivery: 是否屬於貨到付款類付款方式
     ///   - state: 要修改的 ``RootFeature/State``
-    private func addPaymentMethodToOrdersMaster(
+    func addPaymentMethodToOrdersMaster(
         name: String,
         isCardless: Bool,
         isBankTransfer: Bool,
@@ -490,13 +550,27 @@ struct RootFeature {
         in state: inout State
     ) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
+        guard !trimmed.isEmpty else {
+            return
+        }
 
         var updated = state.orders.paymentMethodMaster
         if let index = updated.firstIndex(where: { $0.name == trimmed }) {
-            updated[index] = PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery)
+            updated[index] = PaymentMethodInfo(
+                name: trimmed,
+                isCardless: isCardless,
+                isBankTransfer: isBankTransfer,
+                isCashOnDelivery: isCashOnDelivery
+            )
         } else {
-            updated.append(PaymentMethodInfo(name: trimmed, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery))
+            updated.append(
+                PaymentMethodInfo(
+                    name: trimmed,
+                    isCardless: isCardless,
+                    isBankTransfer: isBankTransfer,
+                    isCashOnDelivery: isCashOnDelivery
+                )
+            )
         }
         state.orders.paymentMethodMaster = updated.sorted {
             $0.name.localizedStandardCompare($1.name) == .orderedAscending
@@ -507,13 +581,17 @@ struct RootFeature {
     /// - Parameters:
     ///   - name: 新增名稱
     ///   - state: 要修改的 ``RootFeature/State``
-    private func addVerificationStatusToOrdersMaster(
+    func addVerificationStatusToOrdersMaster(
         name: String,
         in state: inout State
     ) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return }
-        guard !state.orders.verificationStatusMaster.contains(trimmed) else { return }
+        guard !trimmed.isEmpty else {
+            return
+        }
+        guard !state.orders.verificationStatusMaster.contains(trimmed) else {
+            return
+        }
 
         var updated = state.orders.verificationStatusMaster
         updated.append(trimmed)
@@ -527,7 +605,7 @@ struct RootFeature {
     ///   - kind: 主檔型別
     ///   - name: 要移除的名稱
     ///   - state: 要修改的 ``RootFeature/State``
-    private func removeFromOrdersMaster(
+    func removeFromOrdersMaster(
         kind: LookupKind,
         name: String,
         in state: inout State
@@ -550,7 +628,7 @@ struct RootFeature {
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
     /// - Returns: 重新命名後的排序陣列
-    private func renamePaymentMethods(
+    func renamePaymentMethods(
         _ list: [PaymentMethodInfo],
         from oldName: String,
         to newName: String
@@ -562,7 +640,12 @@ struct RootFeature {
             let isCardless = info.isCardless || (merged?.isCardless ?? false)
             let isBankTransfer = info.isBankTransfer || (merged?.isBankTransfer ?? false)
             let isCashOnDelivery = info.isCashOnDelivery || (merged?.isCashOnDelivery ?? false)
-            byName[key] = PaymentMethodInfo(name: key, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery)
+            byName[key] = PaymentMethodInfo(
+                name: key,
+                isCardless: isCardless,
+                isBankTransfer: isBankTransfer,
+                isCashOnDelivery: isCashOnDelivery
+            )
         }
         return byName.values
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
@@ -574,7 +657,7 @@ struct RootFeature {
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
     /// - Returns: 重新命名後的排序陣列
-    private func renameInList(
+    func renameInList(
         _ list: [String],
         from oldName: String,
         to newName: String
@@ -593,7 +676,7 @@ struct RootFeature {
     ///   - verificationStatus: 若不為 `nil` 則覆寫 verificationStatus
     ///   - campaignNames: 若不為 `nil` 則覆寫 campaignNames
     /// - Returns: 重建後的訂單
-    private func rebuildOrder(
+    func rebuildOrder(
         _ order: LedgerOrder,
         orderSource: String? = nil,
         categories: [String]? = nil,

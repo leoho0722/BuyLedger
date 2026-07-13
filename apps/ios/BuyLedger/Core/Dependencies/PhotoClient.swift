@@ -20,12 +20,13 @@ struct PhotoClient: Sendable {
     /// 將選取項目逐一載入 `Data` 並交由 ``PhotoDataProcessor`` 正規化
     ///
     /// 單一項目載入失敗 (如 iCloud 照片離線) 或無法解碼時靜默略過，不阻斷其餘照片、不回傳錯誤——與「寧可空狀態也不顯示假資料」的原則一致，使用者可由縮圖數量察覺缺漏
-    var importPhotos: @Sendable ([PhotosPickerItem]) async -> [Data]
+    /// - Parameter items: 使用者由 `PhotosPicker` 選取的項目
+    var importPhotos: @Sendable (_ items: [PhotosPickerItem]) async -> [Data]
 }
 
-extension PhotoClient: DependencyKey {
+// MARK: - Dependency Values
 
-    // MARK: - Dependency Values
+extension PhotoClient: DependencyKey {
 
     /// App 執行時逐一呼叫 `loadTransferable(type: Data.self)` 取得原始影像，再經 ``PhotoDataProcessor`` 降採樣與 JPEG 重編碼
     nonisolated static let liveValue = PhotoClient(

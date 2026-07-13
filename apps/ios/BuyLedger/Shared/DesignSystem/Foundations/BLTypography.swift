@@ -49,7 +49,7 @@ enum BLTypographyStyle: String, CaseIterable, Identifiable {
     /// 文字層級的穩定識別值
     var id: String { rawValue }
 
-    // MARK: - Typography Properties
+    // MARK: - Display Properties
 
     /// 對應到 SwiftUI 動態字級的字型
     var font: Font {

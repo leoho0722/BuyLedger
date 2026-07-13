@@ -78,8 +78,12 @@ extension OrderRowView {
 
     /// 右欄呈現變體
     ///
-    /// 預設 ``statusAndProfit`` 維持訂單列表與 Dashboard 的「狀態膠囊 + 實際收款 + 損益」；``chargedAmount`` 供合併候選列等需要客戶實付的情境使用——僅替換右欄，左欄 (頭像、名稱、日期、商品明細、類別 tag) 與預設變體完全一致
+    /// 預設 ``statusAndProfit`` 維持訂單列表與 Dashboard 的「狀態膠囊 + 實際收款 + 損益」
+    ///
+    /// ``chargedAmount`` 供合併候選列等需要客戶實付的情境使用——僅替換右欄，左欄 (頭像、名稱、日期、商品明細、類別 tag) 與預設變體完全一致
     enum Trailing {
+
+        // MARK: - Cases
 
         /// 狀態膠囊、實際收款與損益 (訂單列表與 Dashboard 預設)
         case statusAndProfit
@@ -127,7 +131,7 @@ private extension OrderRowView {
     }
 }
 
-// MARK: - Static Method
+// MARK: - Internal Method
 
 extension OrderRowView {
 

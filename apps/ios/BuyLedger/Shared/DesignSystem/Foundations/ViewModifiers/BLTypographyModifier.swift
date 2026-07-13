@@ -27,9 +27,9 @@ struct BLTypographyModifier: ViewModifier {
     }
 }
 
-extension View {
+// MARK: - View Method
 
-    // MARK: - View Method
+extension View {
 
     /// 套用 BuyLedger 設計系統的文字樣式
     /// - Parameter style: 要套用的文字層級

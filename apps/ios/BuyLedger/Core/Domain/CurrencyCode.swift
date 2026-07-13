@@ -4,10 +4,6 @@
 //
 //  Created by Leo Ho on 2026/5/1.
 //
-//  資料形狀 (rawValue、Identifiable、init) 由 Generated/CurrencyCode.generated.swift 產生；
-//  本檔僅保留手寫業務邏輯 (顯示、在地化、自訂 Codable、常用幣別常數)
-//  改欄位請改 shared/data-model/schema/ 後重新 generate
-//
 
 import Foundation
 
@@ -19,7 +15,7 @@ extension CurrencyCode {
     var code: String { rawValue }
 }
 
-// MARK: - View Method
+// MARK: - Internal Method
 
 extension CurrencyCode {
 
@@ -54,7 +50,8 @@ extension CurrencyCode: Codable {
 
 extension CurrencyCode {
 
-    /// App 預設的「常用幣別」候選集；在 API codes 尚未載入時 (首次安裝＋無網路) 作為 Picker 可選項，並提供給 sample data 與 unit test 直接引用
+    /// App 預設的「常用幣別」候選集
+    /// 在 API codes 尚未載入時 (首次安裝＋無網路) 作為 Picker 可選項，並提供給 sample data 與 unit test 直接引用
     static let defaults: [CurrencyCode] = [.twd, .krw, .jpy, .usd, .cny]
 
     /// 新台幣 (基準幣別，全 App 預設)

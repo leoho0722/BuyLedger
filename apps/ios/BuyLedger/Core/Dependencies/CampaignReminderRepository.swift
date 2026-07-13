@@ -23,7 +23,9 @@ struct CampaignReminderLink: Equatable, Sendable {
 
 /// 「開團訂購提醒連結」(campaignID → ``CampaignReminderLink``) 的依賴介面
 ///
-/// 連結存於 iOS 端專屬的 ``CampaignReminderRecord`` 表，與跨平台 ``Campaign`` 型別解耦。儲存以 campaignID upsert，涵蓋新增與更新
+/// 連結存於 iOS 端專屬的 ``CampaignReminderRecord`` 表，與跨平台 ``Campaign`` 型別解耦
+///
+/// 儲存以 campaignID upsert，涵蓋新增與更新
 struct CampaignReminderRepository: Sendable {
 
     // MARK: - Dependency Properties
@@ -32,15 +34,24 @@ struct CampaignReminderRepository: Sendable {
     var fetchLinks: @Sendable () async throws -> [String: CampaignReminderLink]
 
     /// 寫入或更新單一連結 (依 campaignID upsert)
-    var saveLink: @Sendable (_ campaignID: String, _ eventIdentifier: String, _ reminderTimestamp: Date) async throws -> Void
+    /// - Parameters:
+    ///   - campaignID: 開團編號
+    ///   - eventIdentifier: 對應的系統行事曆事件識別碼
+    ///   - reminderTimestamp: 提醒時間戳 (使用者選定的日期＋提示時間)
+    var saveLink: @Sendable (
+        _ campaignID: String,
+        _ eventIdentifier: String,
+        _ reminderTimestamp: Date
+    ) async throws -> Void
 
     /// 刪除指定 campaignID 的連結；不存在視為 no-op
+    /// - Parameter campaignID: 開團編號
     var removeLink: @Sendable (_ campaignID: String) async throws -> Void
 }
 
-extension CampaignReminderRepository {
+// MARK: - Internal Method
 
-    // MARK: - Static Method
+extension CampaignReminderRepository {
 
     /// 以指定的 SwiftData ``ModelContainer`` 建立 repository
     /// - Parameter container: 用於建立背景 actor 的 SwiftData container
@@ -53,7 +64,11 @@ extension CampaignReminderRepository {
             },
             saveLink: { campaignID, eventIdentifier, reminderTimestamp in
                 let persistence = await Self.makePersistence(container: container)
-                try await persistence.upsert(campaignID: campaignID, eventIdentifier: eventIdentifier, reminderTimestamp: reminderTimestamp)
+                try await persistence.upsert(
+                    campaignID: campaignID,
+                    eventIdentifier: eventIdentifier,
+                    reminderTimestamp: reminderTimestamp
+                )
             },
             removeLink: { campaignID in
                 let persistence = await Self.makePersistence(container: container)
@@ -61,20 +76,25 @@ extension CampaignReminderRepository {
             }
         )
     }
+}
+
+// MARK: - Private Method
+
+private extension CampaignReminderRepository {
 
     /// 在 main actor 上實例化 ``CampaignReminderPersistence`` (`@ModelActor` 的 init 帶有 main-actor 隔離)
     /// - Parameter container: 共用的 ``ModelContainer``
     /// - Returns: 對應 container 的 ``CampaignReminderPersistence`` 實例
-    private static func makePersistence(container: ModelContainer) async -> CampaignReminderPersistence {
+    static func makePersistence(container: ModelContainer) async -> CampaignReminderPersistence {
         await MainActor.run {
             CampaignReminderPersistence(modelContainer: container)
         }
     }
 }
 
-extension CampaignReminderRepository: DependencyKey {
+// MARK: - Dependency Values
 
-    // MARK: - Dependency Values
+extension CampaignReminderRepository: DependencyKey {
 
     /// App 執行時使用共用 SwiftData container
     nonisolated static let liveValue: CampaignReminderRepository = CampaignReminderRepository.live(

@@ -211,6 +211,11 @@ private extension CampaignListView {
             }
         }
     }
+}
+
+// MARK: - Private Method
+
+private extension CampaignListView {
 
     /// 以 ``CampaignFeature/State/selectedCampaignID`` 驅動的 `NavigationStack` 路徑 (0 或 1 筆)
     ///

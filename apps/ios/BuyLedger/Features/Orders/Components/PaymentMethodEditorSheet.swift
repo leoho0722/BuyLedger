@@ -9,7 +9,9 @@ import SwiftUI
 
 /// 新增或編輯付款方式時的 sheet 表單
 ///
-/// SwiftUI 的 `.alert` actions builder 只支援 `Button`／`TextField`，無法塞入 `Toggle`；而「是否為無卡類／銀行匯款類／貨到付款類」必須在當下決定，所以付款方式的新增與編輯流程改採獨立 sheet，將名稱輸入與三個旗標切換放在同一張表單，確認後一次帶出 `(name, isCardless, isBankTransfer, isCashOnDelivery)` 給 caller
+/// SwiftUI 的 `.alert` actions builder 只支援 `Button`／`TextField`，無法塞入 `Toggle`；而「是否為無卡類／銀行匯款類／貨到付款類」必須在當下決定
+///
+/// 所以付款方式的新增與編輯流程改採獨立 sheet，將名稱輸入與三個旗標切換放在同一張表單，確認後一次帶出 `(name, isCardless, isBankTransfer, isCashOnDelivery)` 給 caller
 ///
 /// 編輯既有付款方式時，caller 透過 `initialName` / `initialIsCardless` / `initialIsBankTransfer` / `initialIsCashOnDelivery` 帶入原有資料，並把 `title` 設為「編輯付款方式」、`submitTitle` 設為「儲存」
 ///
@@ -146,7 +148,9 @@ struct PaymentMethodEditorSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(submitTitle) {
                         let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !trimmed.isEmpty else { return }
+                        guard !trimmed.isEmpty else {
+                            return
+                        }
                         onSubmit(trimmed, draftIsCardless, draftIsBankTransfer, draftIsCashOnDelivery)
                         dismiss()
                     }

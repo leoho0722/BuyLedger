@@ -162,8 +162,6 @@ struct AISummaryFeature {
 
 extension APIError {
 
-    // MARK: - Data Properties
-
     /// 對應到 AI 總結 sheet 的友善失敗訊息
     var summaryFailureMessage: String {
         switch self {

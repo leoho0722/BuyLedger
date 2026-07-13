@@ -87,9 +87,7 @@ struct CampaignEditView: View {
                 }
             }
             .navigationTitle(store.original == nil ? "新增開團" : "編輯開團")
-#if os(iOS)
             .navigationBarTitleDisplayMode(.inline)
-#endif
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("取消") {

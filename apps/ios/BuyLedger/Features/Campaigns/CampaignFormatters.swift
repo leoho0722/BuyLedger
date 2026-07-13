@@ -8,9 +8,11 @@
 import SwiftUI
 
 /// 開團相關畫面共用的格式化工具
-enum CampaignFormatters {
+enum CampaignFormatters {}
 
-    // MARK: - Static Method
+// MARK: - Internal Method
+
+extension CampaignFormatters {
 
     /// 將金額格式化為新台幣 (無小數位)
     /// - Parameter amount: 金額
@@ -48,9 +50,11 @@ enum CampaignFormatters {
 }
 
 /// 開團狀態對應的視覺語意
-enum CampaignStatusStyle {
+enum CampaignStatusStyle {}
 
-    // MARK: - Static Method
+// MARK: - Internal Method
+
+extension CampaignStatusStyle {
 
     /// 取得開團狀態對應的 ``BLTone``
     /// - Parameter status: 開團狀態

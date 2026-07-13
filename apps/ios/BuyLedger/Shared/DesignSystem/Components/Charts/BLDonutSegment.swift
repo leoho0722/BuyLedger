@@ -25,5 +25,4 @@ struct BLDonutSegment: Identifiable {
 
     /// 區段色彩
     let color: Color
-
 }

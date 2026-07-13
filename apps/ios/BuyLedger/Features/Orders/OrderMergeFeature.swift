@@ -46,32 +46,6 @@ struct OrderMergeFeature {
         /// sheet item 的穩定識別值
         let id: UUID
 
-        // MARK: - Computed Properties
-
-        /// 依搜尋字串過濾後的候選清單；比對客戶名稱、單號、類別與商品名稱
-        var filteredCandidates: [LedgerOrder] {
-            let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-            guard !query.isEmpty else { return candidates }
-
-            return candidates.filter { order in
-                ([order.id, order.customer.name] + order.categories + order.items.map(\.name))
-                    .joined(separator: " ")
-                    .lowercased()
-                    .contains(query)
-            }
-        }
-
-        /// 依搜尋過濾後的候選清單，比照訂單列表以「日」分組為日期區段
-        ///
-        /// 區段與段內皆由新到舊排序，標題同訂單頁 (今天/昨天/格式化日期)；候選列因此不再於列內重複顯示日期
-        /// - Parameters:
-        ///   - referenceDate: 判斷「今天／昨天」的基準時間
-        ///   - calendar: 分組與標題使用的曆法
-        /// - Returns: 依日期由新到舊排序的候選區段
-        func candidateSections(referenceDate: Date, calendar: Calendar) -> [OrderDateSection] {
-            OrderDateSection.group(filteredCandidates, referenceDate: referenceDate, calendar: calendar)
-        }
-
         // MARK: - Init
 
         /// 依主訂單與全部訂單建立合併流程狀態；候選清單在此一次過濾完成
@@ -82,6 +56,23 @@ struct OrderMergeFeature {
             self.primary = primary
             self.candidates = Self.eligibleCandidates(for: primary, in: orders)
             self.id = UUID()
+        }
+
+        // MARK: - Computed Properties
+
+        /// 依搜尋字串過濾後的候選清單；比對客戶名稱、單號、類別與商品名稱
+        var filteredCandidates: [LedgerOrder] {
+            let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            guard !query.isEmpty else {
+                return candidates
+            }
+
+            return candidates.filter { order in
+                ([order.id, order.customer.name] + order.categories + order.items.map(\.name))
+                    .joined(separator: " ")
+                    .lowercased()
+                    .contains(query)
+            }
         }
     }
 
@@ -138,7 +129,9 @@ struct OrderMergeFeature {
                 return .run { _ in await dismiss() }
 
             case let .candidateTapped(id):
-                guard let secondary = state.candidates.first(where: { $0.id == id }) else { return .none }
+                guard let secondary = state.candidates.first(where: { $0.id == id }) else {
+                    return .none
+                }
 
                 let combined = state.primary.photos + secondary.photos
                 guard combined.count > LedgerOrder.maxPhotoCount else {
@@ -154,7 +147,9 @@ struct OrderMergeFeature {
                 return .none
 
             case let .photoToggled(index):
-                guard state.combinedPhotos.indices.contains(index) else { return .none }
+                guard state.combinedPhotos.indices.contains(index) else {
+                    return .none
+                }
 
                 if state.selectedPhotoIndices.contains(index) {
                     state.selectedPhotoIndices.remove(index)
@@ -165,7 +160,9 @@ struct OrderMergeFeature {
                 return .none
 
             case .photoStepConfirmTapped:
-                guard let secondary = state.selectedSecondary else { return .none }
+                guard let secondary = state.selectedSecondary else {
+                    return .none
+                }
 
                 let kept = state.selectedPhotoIndices.sorted().map { state.combinedPhotos[$0] }
                 return .send(.delegate(.completed(primary: state.primary, secondary: secondary, keptPhotos: kept)))
@@ -192,9 +189,20 @@ extension OrderMergeFeature {
     }
 }
 
+// MARK: - Internal Method
+
 extension OrderMergeFeature.State {
 
-    // MARK: - Static Method
+    /// 依搜尋過濾後的候選清單，比照訂單列表以「日」分組為日期區段
+    ///
+    /// 區段與段內皆由新到舊排序，標題同訂單頁 (今天/昨天/格式化日期)；候選列因此不再於列內重複顯示日期
+    /// - Parameters:
+    ///   - referenceDate: 判斷「今天／昨天」的基準時間
+    ///   - calendar: 分組與標題使用的曆法
+    /// - Returns: 依日期由新到舊排序的候選區段
+    func candidateSections(referenceDate: Date, calendar: Calendar) -> [OrderDateSection] {
+        OrderDateSection.group(filteredCandidates, referenceDate: referenceDate, calendar: calendar)
+    }
 
     /// 依資格規則過濾可合併的候選訂單
     ///

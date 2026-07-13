@@ -43,6 +43,16 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
         }
     }
 
+    // MARK: - Static Properties
+
+    /// 訂單瀏覽列表中提供的固定順序
+    static let orderBrowsingCases: [OrderDatePeriod] = [
+        .all,
+        .thisWeek,
+        .thisMonth,
+        .lastMonth
+    ]
+
     // MARK: - Display Properties
 
     /// 顯示在篩選列中的標題
@@ -58,8 +68,11 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
             "上月"
         }
     }
+}
 
-    // MARK: - Filter Method
+// MARK: - Internal Method
+
+extension OrderDatePeriod {
 
     /// 判斷指定日期是否在此區間內
     /// - Parameters:
@@ -108,14 +121,4 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
             return lastMonthStart..<thisMonthInterval.start
         }
     }
-
-    // MARK: - Static Properties
-
-    /// 訂單瀏覽列表中提供的固定順序
-    static let orderBrowsingCases: [OrderDatePeriod] = [
-        .all,
-        .thisWeek,
-        .thisMonth,
-        .lastMonth
-    ]
 }

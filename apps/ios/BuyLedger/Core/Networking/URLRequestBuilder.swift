@@ -28,7 +28,7 @@ struct URLRequestBuilder: Sendable {
     }
 }
 
-// MARK: - Building
+// MARK: - Internal Method
 
 extension URLRequestBuilder {
 

@@ -21,8 +21,6 @@ struct CampaignDetailView: View {
     /// 要顯示的開團識別值
     let campaignID: Campaign.ID
 
-    // MARK: - Computed Properties
-
     /// 目前顯示的開團；若已被刪除則為 `nil`
     private var campaign: Campaign? {
         store.campaigns.campaigns.first { $0.id == campaignID }
@@ -45,9 +43,7 @@ struct CampaignDetailView: View {
             }
         }
         .navigationTitle("開團詳情")
-#if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
-#endif
         .toolbar {
             if let campaign {
                 ToolbarItem(placement: .primaryAction) {

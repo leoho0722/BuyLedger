@@ -440,7 +440,9 @@ private extension InsightsView {
     @ViewBuilder
     func heatmapCell(count: Int, maxCount: Int, palette: BLPalette) -> some View {
         let opacity: Double = {
-            guard count > 0, maxCount > 0 else { return 0.06 }
+            guard count > 0, maxCount > 0 else {
+                return 0.06
+            }
             return 0.2 + (Double(count) / Double(maxCount)) * 0.8
         }()
 
@@ -524,7 +526,6 @@ private extension InsightsView {
             return palette.tertiaryLabel
         }
     }
-
 }
 
 // MARK: - Preview

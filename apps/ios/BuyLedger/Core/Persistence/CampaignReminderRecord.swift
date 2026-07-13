@@ -10,7 +10,11 @@ import SwiftData
 
 /// SwiftData 持久化的「開團訂購提醒連結」記錄
 ///
-/// 記錄某開團 (``campaignID``) 對應到系統行事曆事件 (``eventIdentifier``) 的連結。行事曆事件識別碼是 iOS 裝置本機資料，故獨立於跨平台 ``Campaign`` 型別另存一表。比照 ``CampaignRecord`` 不使用 `@Attribute(.unique)` (CloudKit 不支援)，由 ``CampaignReminderPersistence`` 依 campaignID upsert 避免重複
+/// 記錄某開團 (``campaignID``) 對應到系統行事曆事件 (``eventIdentifier``) 的連結
+///
+/// 行事曆事件識別碼是 iOS 裝置本機資料，故獨立於跨平台 ``Campaign`` 型別另存一表
+///
+/// 比照 ``CampaignRecord`` 不使用 `@Attribute(.unique)` (CloudKit 不支援)，由 ``CampaignReminderPersistence`` 依 campaignID upsert 避免重複
 @Model
 final class CampaignReminderRecord {
 

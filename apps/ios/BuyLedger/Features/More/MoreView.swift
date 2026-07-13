@@ -41,7 +41,7 @@ struct MoreView: View {
     }
 }
 
-// MARK: - ViewBuilder (共用)
+// MARK: - Nested Types
 
 private extension MoreView {
 
@@ -160,6 +160,11 @@ private extension MoreView {
             }
         }
     }
+}
+
+// MARK: - ViewBuilder
+
+private extension MoreView {
 
     /// 將工具項目導向到對應 view
     /// - Parameter item: 工具項目
@@ -191,13 +196,8 @@ private extension MoreView {
             )
         }
     }
-}
 
-// MARK: - ViewBuilder (iOS / iPadOS 列表版本)
-
-private extension MoreView {
-
-    /// iOS / iPadOS 的列表版本：保持 phone-friendly 的 grouped list 風格
+    /// 保持 phone-friendly 的 grouped list 風格
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 列表 view
     @ViewBuilder

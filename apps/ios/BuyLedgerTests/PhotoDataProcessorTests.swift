@@ -50,7 +50,7 @@ struct PhotoDataProcessorTests {
     }
 }
 
-// MARK: - Helpers
+// MARK: - Private Method
 
 private extension PhotoDataProcessorTests {
 

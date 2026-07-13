@@ -11,7 +11,9 @@ import Foundation
 
 /// 將開團訂購提醒寫入／移除系統行事曆的依賴介面
 ///
-/// 以依賴反轉隔離 `EKEventStore` 的系統呼叫，讓 ``CampaignFeature`` 的提醒流程可在 TestStore 中以 fake 實作完整驗證。因需支援「移除」既有事件 (須先以識別碼讀回事件)，故請求完整存取 (full access) 而非僅寫入
+/// 以依賴反轉隔離 `EKEventStore` 的系統呼叫，讓 ``CampaignFeature`` 的提醒流程可在 TestStore 中以 fake 實作完整驗證
+///
+/// 請求完整存取 (full access) 而非僅寫入：移除既有事件須先以識別碼讀回，write-only 讀不到
 struct CalendarReminderClient: Sendable {
 
     // MARK: - Dependency Properties
@@ -20,14 +22,22 @@ struct CalendarReminderClient: Sendable {
     var requestAccess: @Sendable () async -> Bool
 
     /// 以標題、日期與提示位移建立全天提醒事件，回傳事件識別碼
-    ///
-    /// `alarmOffset` 為提示自事件起始 (當天 00:00) 起算的秒數，由 caller 以每團設定的提示時間換算 (例如 09:00 = `9 * 3600`)
-    var addReminder: @Sendable (_ title: String, _ date: Date, _ alarmOffset: TimeInterval) async throws -> String
+    /// - Parameters:
+    ///   - title: 提醒事件標題
+    ///   - date: 事件日期 (全天事件)
+    ///   - alarmOffset: 提示自事件起始 (當天 00:00) 起算的秒數，由 caller 以每團設定的提示時間換算 (例如 09:00 = `9 * 3600`)
+    var addReminder: @Sendable (
+        _ title: String,
+        _ date: Date,
+        _ alarmOffset: TimeInterval
+    ) async throws -> String
 
     /// 依識別碼移除事件；找不到視為 no-op
+    /// - Parameter eventIdentifier: 要移除的事件識別碼
     var removeReminder: @Sendable (_ eventIdentifier: String) async throws -> Void
 
     /// 依識別碼查詢事件是否仍存在
+    /// - Parameter eventIdentifier: 要查詢的事件識別碼
     var reminderExists: @Sendable (_ eventIdentifier: String) async -> Bool
 }
 
@@ -45,11 +55,13 @@ extension CalendarReminderClient {
     }
 }
 
+// MARK: - Dependency Values
+
 extension CalendarReminderClient: DependencyKey {
 
-    // MARK: - Dependency Values
-
-    /// App 執行時以真實 `EKEventStore` 操作系統行事曆；每次呼叫建立獨立 store 以符合 `@Sendable` 隔離，事件識別碼為行事曆全域穩定值、跨 store 實例可讀回
+    /// App 執行時以真實 `EKEventStore` 操作系統行事曆
+    ///
+    /// 每次呼叫建立獨立 store 以符合 `@Sendable` 隔離；事件識別碼是行事曆全域穩定值，跨 store 可讀回
     nonisolated static let liveValue = CalendarReminderClient(
         requestAccess: {
             let store = EKEventStore()

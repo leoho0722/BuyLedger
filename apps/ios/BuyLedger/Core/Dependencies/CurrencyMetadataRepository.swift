@@ -18,16 +18,17 @@ struct CurrencyMetadataRepository: Sendable {
     var fetchCodes: @Sendable () async throws -> [CurrencyCode]
 
     /// 若 cache 過期 (超過給定 TTL 或從未寫過)，打 API 重新拉取並寫回 cache
-    /// - 回傳值 `true` 表示實際做了 refresh、`false` 表示尚在 TTL 內未動作
+    /// - Parameter ttl: 判斷 cache 是否過期的存活時間門檻
+    /// - Returns: `true` 表示實際做了 refresh、`false` 表示尚在 TTL 內未動作
     var refreshIfStale: @Sendable (_ ttl: TimeInterval) async throws -> Bool
 
     /// 強制重新拉取並覆寫 cache (不檢查 TTL)，供使用者主動點「重試載入」時呼叫
     var forceRefresh: @Sendable () async throws -> Void
 }
 
-extension CurrencyMetadataRepository {
+// MARK: - Internal Method
 
-    // MARK: - Static Method
+extension CurrencyMetadataRepository {
 
     /// 以指定的 SwiftData ``ModelContainer`` 與 API client 建立 repository
     /// - Parameters:
@@ -62,20 +63,25 @@ extension CurrencyMetadataRepository {
             }
         )
     }
+}
+
+// MARK: - Private Method
+
+private extension CurrencyMetadataRepository {
 
     /// 在 main actor 上實例化 ``CurrencyMetadataPersistence`` (`@ModelActor` 的 init 帶有 main-actor 隔離)
     /// - Parameter container: 共用的 ``ModelContainer``
     /// - Returns: 對應 container 的 ``CurrencyMetadataPersistence`` 實例
-    private static func makePersistence(container: ModelContainer) async -> CurrencyMetadataPersistence {
+    static func makePersistence(container: ModelContainer) async -> CurrencyMetadataPersistence {
         await MainActor.run {
             CurrencyMetadataPersistence(modelContainer: container)
         }
     }
 }
 
-extension CurrencyMetadataRepository: DependencyKey {
+// MARK: - Dependency Values
 
-    // MARK: - Dependency Values
+extension CurrencyMetadataRepository: DependencyKey {
 
     /// App 執行時使用共用 SwiftData container 與 live ``ExchangeRateClient``
     nonisolated static let liveValue: CurrencyMetadataRepository = CurrencyMetadataRepository.live(

@@ -10,9 +10,11 @@ import SwiftData
 
 /// SwiftData 上對對帳狀態主檔做 CRUD 的背景 actor
 @ModelActor
-actor VerificationStatusPersistence {
+actor VerificationStatusPersistence {}
 
-    // MARK: - View Method
+// MARK: - Internal Method
+
+extension VerificationStatusPersistence {
 
     /// 讀出全部對帳狀態名稱，依 locale 升冪排序
     /// - Returns: 對帳狀態名稱陣列

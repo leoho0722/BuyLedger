@@ -12,7 +12,15 @@ import SwiftUI
 ///
 /// 把「日期區間」「商品類別」與「付款方式」三種篩選整合到單一 sheet，由 ``OrdersCompactView`` 的整合 trigger button 開啟
 ///
-/// 結構：`NavigationStack` 包 `List` 三個 `Section`，左上 toolbar「取消」按鈕收合 sheet。第一個 `Section` 為「日期區間」，列出 ``OrderDatePeriod/orderBrowsingCases``；第二個 `Section` 為「付款方式」，首列固定「全部」清除選項，其後依 ``OrdersFeature/State/availablePaymentMethods`` 列出 (受搜尋過濾)；第三個 `Section` 為「商品類別」，同樣首列固定「全部」清除選項，其後依 ``OrdersFeature/State/availableCategories`` 列出 (受搜尋過濾)。點選任一列 dispatch 對應 ``OrdersFeature/Action`` 後 sheet 自動 dismiss
+/// 結構：`NavigationStack` 包 `List` 三個 `Section`，左上 toolbar「取消」按鈕收合 sheet
+///
+/// 第一個 `Section` 為「日期區間」，列出 ``OrderDatePeriod/orderBrowsingCases``
+///
+/// 第二個 `Section` 為「付款方式」，首列固定「全部」清除選項，其後依 ``OrdersFeature/State/availablePaymentMethods`` 列出 (受搜尋過濾)
+///
+/// 第三個 `Section` 為「商品類別」，同樣首列固定「全部」清除選項，其後依 ``OrdersFeature/State/availableCategories`` 列出 (受搜尋過濾)
+///
+/// 點選任一列 dispatch 對應 ``OrdersFeature/Action`` 後 sheet 自動 dismiss
 ///
 /// 此元件**僅供 iPhone Compact 使用**；iPad regular 仍使用各自的 chip 列 + ``OptionPickerSheet`` 類別 trigger，與此 sheet 無關
 ///
@@ -92,9 +100,11 @@ struct OrderFilterSheet: View {
     }
 }
 
-// MARK: - ViewBuilder (Sections)
+// MARK: - ViewBuilder
 
 private extension OrderFilterSheet {
+
+    // MARK: Sections
 
     /// 「日期區間」section：固定 4 列，順序為 ``OrderDatePeriod/orderBrowsingCases``
     ///
@@ -151,11 +161,8 @@ private extension OrderFilterSheet {
             Text("付款方式")
         }
     }
-}
 
-// MARK: - ViewBuilder (Rows)
-
-private extension OrderFilterSheet {
+    // MARK: Rows
 
     /// 單一日期區間 row：calendar icon + 區間 title + 末端 checkmark (當該區間為目前 pending 選擇時)
     ///
@@ -335,7 +342,9 @@ private extension OrderFilterSheet {
 
     /// 把 pending 篩選 commit 到 store，然後關 sheet
     ///
-    /// 只在 pending 與 store 目前值不同時才 dispatch 對應 action，避免冗餘 reducer 觸發 (例如 `selectedOrderID` 只在篩選真有變動時才重算)。即使無任何 pending 變動，仍會呼叫 `dismiss()`——「套用」永遠 dismiss sheet
+    /// 只在 pending 與 store 目前值不同時才 dispatch 對應 action，避免冗餘 reducer 觸發 (例如 `selectedOrderID` 只在篩選真有變動時才重算)
+    ///
+    /// 即使無任何 pending 變動，仍會呼叫 `dismiss()`——「套用」永遠 dismiss sheet
     func applyAndDismiss() {
         if pendingDatePeriod != store.state.selectedDatePeriod {
             store.send(.datePeriodSelected(pendingDatePeriod))

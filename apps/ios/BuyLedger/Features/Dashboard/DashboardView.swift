@@ -75,7 +75,9 @@ private extension DashboardView {
 
     /// 訂單載入完成後依資料狀態決定顯示完整 dashboard 或第一次使用的 onboarding
     ///
-    /// 首次載入完成前的佔位畫面由 ``loadingPlaceholder(palette:)`` 在 ``body`` 中直接渲染，避免訂單為空時每次切換 tab 因 `isLoading` 暫時翻成 `true` 而落入「有資料」分支造成閃爍
+    /// 首次載入完成前的佔位畫面由 ``loadingPlaceholder(palette:)`` 在 ``body`` 中直接渲染
+    ///
+    /// 避免訂單為空時每次切換 tab 因 `isLoading` 暫時翻成 `true` 而落入「有資料」分支造成閃爍
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 內容 view
     @ViewBuilder
@@ -242,8 +244,8 @@ private extension DashboardView {
 
     /// hero P&L 與 KPI 的並排組合
     ///
-    /// 在 iPhone (compact) 上維持 hero 在上、2×2 KPI grid 在下；在 iPad 上把 hero 放在左側 1.4 權重，3 個小 KPI 放在右側
-    /// 1 權重的直欄裡，對應設計稿 iPad Dashboard 的 1.4fr + 3fr 版面
+    /// 在 iPhone (compact) 上維持 hero 在上、2×2 KPI grid 在下；
+    /// 在 iPad 上把 hero 放在左側 1.4 權重、3 個小 KPI 放在右側 1 權重的直欄裡，對應設計稿 iPad Dashboard 的 1.4fr + 3fr 版面
     /// - Parameters:
     ///   - stats: 已計算的本月統計
     ///   - palette: 目前外觀使用的色盤
@@ -520,9 +522,11 @@ private extension DashboardView {
     }
 }
 
-// MARK: - Layout Helper
+// MARK: - Private Method
 
 private extension DashboardView {
+
+    // MARK: Layout
 
     /// KPI 卡片的欄位設定 (僅 compact 用 2 欄)
     var kpiColumns: [GridItem] {
@@ -533,11 +537,8 @@ private extension DashboardView {
     var useWideHero: Bool {
         return horizontalSizeClass != .compact
     }
-}
 
-// MARK: - Formatting
-
-private extension DashboardView {
+    // MARK: Formatting
 
     /// 將獲利金額格式化為含正負號的新台幣字串
     /// - Parameter profit: 獲利金額
@@ -580,7 +581,9 @@ private extension DashboardView {
 
     /// 將 KPI delta 的方向轉成色彩
     ///
-    /// 一律以「上升 → 綠、下降 → 紅、未知 → 中性」表示**原始方向**；針對成本這類「漲是壞」的指標，UI 不主動翻轉色彩，由 label 與內容由使用者自行判讀
+    /// 一律以「上升 → 綠、下降 → 紅、未知 → 中性」表示**原始方向**
+    ///
+    /// 針對成本這類「漲是壞」的指標，UI 不主動翻轉色彩，由使用者依 label 與內容自行判讀
     /// - Parameters:
     ///   - up: `nil` 視為中性
     ///   - palette: 目前外觀使用的色盤
@@ -600,7 +603,9 @@ private extension DashboardView {
     /// - Parameter delta: 成長率，例如 `0.182` 表示 +18.2%
     /// - Returns: KPI 卡顯示用字串
     func percentDeltaDisplay(_ delta: Decimal?) -> String {
-        guard let delta else { return "— MoM" }
+        guard let delta else {
+            return "— MoM"
+        }
         let formatted = delta.formatted(.percent.precision(.fractionLength(1)))
         let prefix = delta >= 0 ? "+" : ""
         return "\(prefix)\(formatted) MoM"
@@ -610,7 +615,9 @@ private extension DashboardView {
     /// - Parameter delta: 百分點差，例如 `0.024` 表示 +2.4pt
     /// - Returns: KPI 卡顯示用字串
     func marginDeltaDisplay(_ delta: Decimal?) -> String {
-        guard let delta else { return "— MoM" }
+        guard let delta else {
+            return "— MoM"
+        }
         let pts = delta * 100
         let formatted = pts.formatted(.number.precision(.fractionLength(1)))
         let prefix = delta >= 0 ? "+" : ""
@@ -621,7 +628,9 @@ private extension DashboardView {
     /// - Parameter delta: 成長率，例如 `0.243` 表示 +24.3%
     /// - Returns: hero 卡顯示用字串；無資料時顯示「— MoM」
     func profitDeltaDisplay(_ delta: Decimal?) -> String {
-        guard let delta else { return "— MoM" }
+        guard let delta else {
+            return "— MoM"
+        }
         let arrow = delta >= 0 ? "↑" : "↓"
         let absDelta = delta < 0 ? -delta : delta
         let formatted = absDelta.formatted(.percent.precision(.fractionLength(1)))
@@ -632,7 +641,9 @@ private extension DashboardView {
     /// - Parameter delta: 成長率或百分點差
     /// - Returns: `true` 代表上升、`false` 代表下降、`nil` 代表無上月資料可比
     func deltaDirection(_ delta: Decimal?) -> Bool? {
-        guard let delta else { return nil }
+        guard let delta else {
+            return nil
+        }
         return delta >= 0
     }
 }

@@ -4,9 +4,6 @@
 //
 //  Created by Leo Ho on 2026/5/1.
 //
-//  資料形狀 (cases) 由 Generated/CustomerTier.generated.swift 產生；
-//  本檔僅保留手寫業務邏輯。改欄位請改 shared/data-model/schema/ 後重新 generate
-//
 
 import Foundation
 

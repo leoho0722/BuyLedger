@@ -30,27 +30,7 @@ enum OrderStatusFilter: Hashable, Identifiable {
         }
     }
 
-    // MARK: - Filter Properties
-
-    /// 篩選對應的訂單狀態
-    var orderStatus: OrderStatus? {
-        switch self {
-        case .all:
-            nil
-        case let .status(status):
-            status
-        }
-    }
-
-    /// 顯示在篩選列中的標題
-    var title: String {
-        switch self {
-        case .all:
-            "全部"
-        case let .status(status):
-            status.title
-        }
-    }
+    // MARK: - Static Properties
 
     /// 第一階段訂單列表使用的篩選選項
     ///
@@ -70,4 +50,28 @@ enum OrderStatusFilter: Hashable, Identifiable {
 
     /// 集運中訂單的快捷篩選
     static let shipping = OrderStatusFilter.status(.shipping)
+
+    // MARK: - Computed Properties
+
+    /// 篩選對應的訂單狀態
+    var orderStatus: OrderStatus? {
+        switch self {
+        case .all:
+            nil
+        case let .status(status):
+            status
+        }
+    }
+
+    // MARK: - Display Properties
+
+    /// 顯示在篩選列中的標題
+    var title: String {
+        switch self {
+        case .all:
+            "全部"
+        case let .status(status):
+            status.title
+        }
+    }
 }

@@ -39,7 +39,7 @@ struct CustomerRow: Equatable, Identifiable, Sendable {
     let lastOrderDate: Date
 }
 
-// MARK: - Static Method
+// MARK: - Internal Method
 
 extension CustomerRow {
 
@@ -51,7 +51,9 @@ extension CustomerRow {
 
         return grouped
             .compactMap { name, list -> CustomerRow? in
-                guard let first = list.first else { return nil }
+                guard let first = list.first else {
+                    return nil
+                }
                 let totalSpent = list.reduce(Decimal.zero) { $0 + $1.summary.revenue }
                 let lastDate = list.map(\.date).max() ?? first.date
 
@@ -70,7 +72,9 @@ extension CustomerRow {
 
 /// 客戶彙總功能：承載訂單來源投影、衍生出客戶消費彙總
 ///
-/// 狀態完全衍生自 ``RootFeature`` 同步進來的訂單、不維護額外持久化資料；本 feature 目前無自身互動，導覽 (如點擊客戶跳轉訂單頁) 由 ``RootFeature`` 處理，故 Action 為空
+/// 狀態完全衍生自 ``RootFeature`` 同步進來的訂單、不維護額外持久化資料
+///
+/// 本 feature 目前無自身互動，導覽 (如點擊客戶跳轉訂單頁) 由 ``RootFeature`` 處理，故 Action 為空
 @Reducer
 struct CustomersFeature {
 

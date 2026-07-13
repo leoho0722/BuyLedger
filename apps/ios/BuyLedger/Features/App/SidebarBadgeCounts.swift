@@ -18,8 +18,11 @@ enum SidebarBadgeCounts {
     static let activeStatuses: Set<OrderStatus> = [
         .confirmed, .purchased, .shipping, .partiallyArrived, .arrived,
     ]
+}
 
-    // MARK: - Static Method
+// MARK: - Internal Method
+
+extension SidebarBadgeCounts {
 
     /// 目前進行中的訂單數量，顯示在側邊欄「訂單」分頁的紅色徽章
     /// - Parameter orders: 目前的訂單清單

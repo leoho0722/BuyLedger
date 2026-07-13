@@ -125,121 +125,6 @@ struct CampaignFeature {
 
         /// 行事曆權限被拒時的提示 alert；`nil` 表示未呈現
         @Presents var reminderAccessAlert: AlertState<Action.ReminderAlert>?
-
-        // MARK: - Section Method
-
-        /// 將開團依目前 ``grouping`` 粒度分成頂層區段 (比照訂單列表頁)，其下再以更細一級粒度切成子群組：
-        /// 按日 → 頂層即「日」、無子標題；按月 → 頂層「月」、子標題「日」；按年 → 頂層「年」、子標題「月」
-        ///
-        /// 分組與相對標題 (今天／昨天) 皆以 `referenceDate` 與 `calendar` 為基準；同一基準下結果一致
-        /// - Parameters:
-        ///   - referenceDate: 計算「今天／昨天」等相對標題的「現在」時間
-        ///   - calendar: 分組與相對標題所用的行事曆 (含時區)；測試應注入固定 gregorian／UTC
-        /// - Returns: 依頂層粒度由新到舊排序的區段；每個子群組內開團依開團日期由新到舊排序 (同日再依名稱)
-        func dateSections(referenceDate: Date, calendar: Calendar) -> [CampaignDateSection] {
-            let filtered = statusFilter.map { status in
-                campaigns.filter { $0.status == status }
-            } ?? campaigns
-            let topGrouped = Dictionary(grouping: filtered) { campaign in
-                topBucketStart(for: campaign.openDate, calendar: calendar)
-            }
-            return topGrouped.keys
-                .sorted(by: >)
-                .map { topBucket in
-                    CampaignDateSection(
-                        id: topBucket,
-                        title: topTitle(for: topBucket, referenceDate: referenceDate, calendar: calendar),
-                        subgroups: subgroups(
-                            of: topGrouped[topBucket] ?? [],
-                            referenceDate: referenceDate,
-                            calendar: calendar
-                        )
-                    )
-                }
-        }
-
-        /// 把頂層區段內的開團，依更細一級粒度切成子群組；按日分組時回傳單一 `title` 為 `nil` 的子群組
-        private func subgroups(
-            of topCampaigns: [Campaign],
-            referenceDate: Date,
-            calendar: Calendar
-        ) -> [CampaignSubgroup] {
-            guard grouping != .day else {
-                return [
-                    CampaignSubgroup(
-                        id: topCampaigns.first.map { calendar.startOfDay(for: $0.openDate) } ?? .distantPast,
-                        title: nil,
-                        campaigns: sortedByDate(topCampaigns)
-                    )
-                ]
-            }
-            let subGrouped = Dictionary(grouping: topCampaigns) { campaign in
-                subBucketStart(for: campaign.openDate, calendar: calendar)
-            }
-            return subGrouped.keys
-                .sorted(by: >)
-                .map { subBucket in
-                    CampaignSubgroup(
-                        id: subBucket,
-                        title: subTitle(for: subBucket, referenceDate: referenceDate, calendar: calendar),
-                        campaigns: sortedByDate(subGrouped[subBucket] ?? [])
-                    )
-                }
-        }
-
-        /// 將開團依開團日期由新到舊排序 (同日再依名稱)
-        private func sortedByDate(_ list: [Campaign]) -> [Campaign] {
-            list.sorted { lhs, rhs in
-                if lhs.openDate != rhs.openDate {
-                    return lhs.openDate > rhs.openDate
-                }
-                return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
-            }
-        }
-
-        /// 頂層分組鍵：按日取當日起始、按月取當月起始、按年取當年起始
-        private func topBucketStart(for date: Date, calendar: Calendar) -> Date {
-            switch grouping {
-            case .day:
-                calendar.startOfDay(for: date)
-            case .month:
-                calendar.dateInterval(of: .month, for: date)?.start ?? calendar.startOfDay(for: date)
-            case .year:
-                calendar.dateInterval(of: .year, for: date)?.start ?? calendar.startOfDay(for: date)
-            }
-        }
-
-        /// 子群組分組鍵：按月時以「日」切、按年時以「月」切 (按日無子群組，不使用)
-        private func subBucketStart(for date: Date, calendar: Calendar) -> Date {
-            switch grouping {
-            case .day, .month:
-                calendar.startOfDay(for: date)
-            case .year:
-                calendar.dateInterval(of: .month, for: date)?.start ?? calendar.startOfDay(for: date)
-            }
-        }
-
-        /// 頂層標題：日 → 今天／昨天／日期；月 → yyyy年M月；年 → yyyy年
-        private func topTitle(for bucket: Date, referenceDate: Date, calendar: Calendar) -> String {
-            switch grouping {
-            case .day:
-                OrderFormatters.daySectionTitle(for: bucket, referenceDate: referenceDate, calendar: calendar)
-            case .month:
-                bucket.formatted(.dateTime.year().month().locale(Locale(identifier: "zh_TW")))
-            case .year:
-                bucket.formatted(.dateTime.year().locale(Locale(identifier: "zh_TW")))
-            }
-        }
-
-        /// 子標題：按月 → 日 (今天／昨天／5月27日 週三)；按年 → 月 (例如「5月」)
-        private func subTitle(for bucket: Date, referenceDate: Date, calendar: Calendar) -> String {
-            switch grouping {
-            case .day, .month:
-                OrderFormatters.daySectionTitle(for: bucket, referenceDate: referenceDate, calendar: calendar)
-            case .year:
-                "\(calendar.component(.month, from: bucket))月"
-            }
-        }
     }
 
     // MARK: - Action
@@ -372,7 +257,7 @@ struct CampaignFeature {
                 state.isLoading = false
                 state.hasLoaded = true
 
-                // 結單日自動轉狀態：結單日已過期的開團中團，自動轉為已收單
+                // 結單日自動轉狀態：結單日已過期的進行中開團，自動轉為已收單
                 let now = date.now
                 var transitioned: [Campaign] = []
                 let updated = loaded.map { campaign -> Campaign in
@@ -388,7 +273,9 @@ struct CampaignFeature {
                 }
                 state.campaigns = updated
 
-                guard !transitioned.isEmpty else { return .none }
+                guard !transitioned.isEmpty else {
+                    return .none
+                }
                 let campaignRepository = campaignRepository
                 let transitionedToSave = transitioned
                 return .run { _ in
@@ -439,9 +326,13 @@ struct CampaignFeature {
                 return .none
 
             case .editCampaign(.presented(.saveTapped)):
-                guard let editState = state.editCampaign else { return .none }
+                guard let editState = state.editCampaign else {
+                    return .none
+                }
                 let trimmedName = editState.draftName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmedName.isEmpty else { return .none }
+                guard !trimmedName.isEmpty else {
+                    return .none
+                }
 
                 let id = editState.original?.id ?? uuid().uuidString
                 let oldName = editState.original?.name
@@ -621,23 +512,157 @@ struct CampaignFeature {
         .ifLet(\.$deletionConfirmation, action: \.deletionConfirmation)
         .ifLet(\.$reminderAccessAlert, action: \.reminderAccessAlert)
     }
+}
 
-    // MARK: - Private Method
+// MARK: - Internal Method
 
-    /// 把開團 upsert 進 ``State/campaigns`` (依 id 取代或新增)，並維持依開團日期由新到舊排序
+extension CampaignFeature.State {
+
+    /// 將開團依目前 ``grouping`` 粒度分成頂層區段 (比照訂單列表頁)，其下再以更細一級粒度切成子群組：
+    /// 按日 → 頂層即「日」、無子標題；按月 → 頂層「月」、子標題「日」；按年 → 頂層「年」、子標題「月」
+    ///
+    /// 分組與相對標題 (今天／昨天) 皆以 `referenceDate` 與 `calendar` 為基準；同一基準下結果一致
     /// - Parameters:
-    ///   - campaign: 要寫入的開團
-    ///   - state: 將被修改的 ``State``
-    private func upsert(_ campaign: Campaign, into state: inout State) {
-        if let index = state.campaigns.firstIndex(where: { $0.id == campaign.id }) {
-            state.campaigns[index] = campaign
-        } else {
-            state.campaigns.append(campaign)
+    ///   - referenceDate: 計算「今天／昨天」等相對標題的「現在」時間
+    ///   - calendar: 分組與相對標題所用的行事曆 (含時區)；測試應注入固定 gregorian／UTC
+    /// - Returns: 依頂層粒度由新到舊排序的區段；每個子群組內開團依開團日期由新到舊排序 (同日再依名稱)
+    func dateSections(referenceDate: Date, calendar: Calendar) -> [CampaignDateSection] {
+        let filtered = statusFilter.map { status in
+            campaigns.filter { $0.status == status }
+        } ?? campaigns
+        let topGrouped = Dictionary(grouping: filtered) { campaign in
+            topBucketStart(for: campaign.openDate, calendar: calendar)
         }
-        state.campaigns.sort { $0.openDate > $1.openDate }
+        return topGrouped.keys
+            .sorted(by: >)
+            .map { topBucket in
+                CampaignDateSection(
+                    id: topBucket,
+                    title: topTitle(for: topBucket, referenceDate: referenceDate, calendar: calendar),
+                    subgroups: subgroups(
+                        of: topGrouped[topBucket] ?? [],
+                        referenceDate: referenceDate,
+                        calendar: calendar
+                    )
+                )
+            }
+    }
+}
+
+// MARK: - Private Method
+
+private extension CampaignFeature.State {
+
+    /// 把頂層區段內的開團，依更細一級粒度切成子群組；按日分組時回傳單一 `title` 為 `nil` 的子群組
+    func subgroups(
+        of topCampaigns: [Campaign],
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> [CampaignSubgroup] {
+        guard grouping != .day else {
+            return [
+                CampaignSubgroup(
+                    id: topCampaigns.first.map { calendar.startOfDay(for: $0.openDate) } ?? .distantPast,
+                    title: nil,
+                    campaigns: sortedByDate(topCampaigns)
+                )
+            ]
+        }
+        let subGrouped = Dictionary(grouping: topCampaigns) { campaign in
+            subBucketStart(for: campaign.openDate, calendar: calendar)
+        }
+        return subGrouped.keys
+            .sorted(by: >)
+            .map { subBucket in
+                CampaignSubgroup(
+                    id: subBucket,
+                    title: subTitle(for: subBucket, referenceDate: referenceDate, calendar: calendar),
+                    campaigns: sortedByDate(subGrouped[subBucket] ?? [])
+                )
+            }
     }
 
-    // MARK: 訂購提醒時間
+    /// 將開團依開團日期由新到舊排序 (同日再依名稱)
+    func sortedByDate(_ list: [Campaign]) -> [Campaign] {
+        list.sorted { lhs, rhs in
+            if lhs.openDate != rhs.openDate {
+                return lhs.openDate > rhs.openDate
+            }
+            return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+        }
+    }
+
+    /// 頂層分組鍵：按日取當日起始、按月取當月起始、按年取當年起始
+    func topBucketStart(for date: Date, calendar: Calendar) -> Date {
+        switch grouping {
+        case .day:
+            calendar.startOfDay(for: date)
+        case .month:
+            calendar.dateInterval(of: .month, for: date)?.start ?? calendar.startOfDay(for: date)
+        case .year:
+            calendar.dateInterval(of: .year, for: date)?.start ?? calendar.startOfDay(for: date)
+        }
+    }
+
+    /// 子群組分組鍵：按月時以「日」切、按年時以「月」切 (按日無子群組，不使用)
+    func subBucketStart(for date: Date, calendar: Calendar) -> Date {
+        switch grouping {
+        case .day, .month:
+            calendar.startOfDay(for: date)
+        case .year:
+            calendar.dateInterval(of: .month, for: date)?.start ?? calendar.startOfDay(for: date)
+        }
+    }
+
+    /// 頂層標題：日 → 今天／昨天／日期；月 → yyyy年M月；年 → yyyy年
+    func topTitle(for bucket: Date, referenceDate: Date, calendar: Calendar) -> String {
+        switch grouping {
+        case .day:
+            OrderFormatters.daySectionTitle(for: bucket, referenceDate: referenceDate, calendar: calendar)
+        case .month:
+            bucket.formatted(.dateTime.year().month().locale(Locale(identifier: "zh_TW")))
+        case .year:
+            bucket.formatted(.dateTime.year().locale(Locale(identifier: "zh_TW")))
+        }
+    }
+
+    /// 子標題：按月 → 日 (今天／昨天／5月27日 週三)；按年 → 月 (例如「5月」)
+    func subTitle(for bucket: Date, referenceDate: Date, calendar: Calendar) -> String {
+        switch grouping {
+        case .day, .month:
+            OrderFormatters.daySectionTitle(for: bucket, referenceDate: referenceDate, calendar: calendar)
+        case .year:
+            "\(calendar.component(.month, from: bucket))月"
+        }
+    }
+}
+
+// MARK: - Nested Types
+
+extension CampaignFeature {
+
+    /// 儲存開團時對訂購提醒行事曆事件的調解結果
+    private enum CampaignReminderReconcile: Equatable {
+
+        // MARK: - Cases
+
+        /// 不需變更行事曆
+        case none
+
+        /// 建立新的提醒事件
+        case create
+
+        /// 移除既有事件 (帶其識別碼)
+        case remove(String)
+
+        /// 先移除舊事件再以新內容重建 (帶舊識別碼)
+        case rebuild(String)
+    }
+}
+
+// MARK: - Internal Method
+
+extension CampaignFeature {
 
     /// 每團訂購提醒的預設時間戳：結單日 (無則今天) 當天 09:00
     /// - Parameter closeDate: 該開團的結單日；`nil` 表示無結單日或新開團
@@ -653,6 +678,24 @@ struct CampaignFeature {
     func minuteOfDay(from time: Date) -> Int {
         calendar.component(.hour, from: time) * 60 + calendar.component(.minute, from: time)
     }
+}
+
+// MARK: - Private Method
+
+private extension CampaignFeature {
+
+    /// 把開團 upsert 進 ``State/campaigns`` (依 id 取代或新增)，並維持依開團日期由新到舊排序
+    /// - Parameters:
+    ///   - campaign: 要寫入的開團
+    ///   - state: 將被修改的 ``State``
+    func upsert(_ campaign: Campaign, into state: inout State) {
+        if let index = state.campaigns.firstIndex(where: { $0.id == campaign.id }) {
+            state.campaigns[index] = campaign
+        } else {
+            state.campaigns.append(campaign)
+        }
+        state.campaigns.sort { $0.openDate > $1.openDate }
+    }
 
     // MARK: 訂購提醒副作用
 
@@ -666,7 +709,7 @@ struct CampaignFeature {
     ///   - client: 行事曆整合介面
     ///   - repository: 提醒連結資料來源
     ///   - send: 送出後續 action 的通道
-    private static func addReminder(
+    static func addReminder(
         campaignID: Campaign.ID,
         title: String,
         date: Date,
@@ -697,7 +740,7 @@ struct CampaignFeature {
     ///   - client: 行事曆整合介面
     ///   - repository: 提醒連結資料來源
     ///   - send: 送出後續 action 的通道
-    private static func removeReminder(
+    static func removeReminder(
         campaignID: Campaign.ID,
         eventIdentifier: String,
         client: CalendarReminderClient,
@@ -708,22 +751,4 @@ struct CampaignFeature {
         try? await repository.removeLink(campaignID)
         await send(.reminderStored(campaignID, nil))
     }
-}
-
-/// 儲存開團時對訂購提醒行事曆事件的調解結果
-private enum CampaignReminderReconcile: Equatable {
-
-    // MARK: - Cases
-
-    /// 不需變更行事曆
-    case none
-
-    /// 建立新的提醒事件
-    case create
-
-    /// 移除既有事件 (帶其識別碼)
-    case remove(String)
-
-    /// 先移除舊事件再以新內容重建 (帶舊識別碼)
-    case rebuild(String)
 }

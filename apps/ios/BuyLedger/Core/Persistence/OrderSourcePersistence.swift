@@ -10,9 +10,11 @@ import SwiftData
 
 /// SwiftData 上對訂單來源主檔做 CRUD 的背景 actor
 @ModelActor
-actor OrderSourcePersistence {
+actor OrderSourcePersistence {}
 
-    // MARK: - View Method
+// MARK: - Internal Method
+
+extension OrderSourcePersistence {
 
     /// 讀出全部訂單來源名稱，依 locale 升冪排序
     /// - Returns: 訂單來源名稱陣列

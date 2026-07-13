@@ -36,7 +36,9 @@ struct BLSparkline: View {
 
             ZStack {
                 Path { path in
-                    guard let first = points.first else { return }
+                    guard let first = points.first else {
+                        return
+                    }
                     path.move(to: CGPoint(x: first.x, y: proxy.size.height))
                     points.forEach { point in
                         path.addLine(to: point)
@@ -49,7 +51,9 @@ struct BLSparkline: View {
                 .fill(color.opacity(0.16))
 
                 Path { path in
-                    guard let first = points.first else { return }
+                    guard let first = points.first else {
+                        return
+                    }
                     path.move(to: first)
                     points.dropFirst().forEach { path.addLine(to: $0) }
                 }
@@ -68,7 +72,9 @@ private extension BLSparkline {
     /// - Parameter size: 圖表可用繪製尺寸
     /// - Returns: 對應到目前尺寸的座標點集合
     func points(in size: CGSize) -> [CGPoint] {
-        guard data.count > 1 else { return [] }
+        guard data.count > 1 else {
+            return []
+        }
 
         let maxValue = data.max() ?? 1
         let minValue = data.min() ?? 0

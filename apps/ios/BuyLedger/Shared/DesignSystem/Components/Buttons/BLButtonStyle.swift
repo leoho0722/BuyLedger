@@ -28,7 +28,7 @@ enum BLButtonVariant {
 /// 使用設計系統色彩與最小觸控高度的按鈕樣式
 struct BLButtonStyle: ButtonStyle {
 
-    // MARK: - Style Properties
+    // MARK: - View Properties
 
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
@@ -36,7 +36,7 @@ struct BLButtonStyle: ButtonStyle {
     /// 按鈕的語意樣式
     let variant: BLButtonVariant
 
-    // MARK: - Style Body
+    // MARK: - View Body
 
     /// 回傳套用樣式後的按鈕內容
     func makeBody(configuration: Configuration) -> some View {
@@ -93,9 +93,9 @@ private extension BLButtonStyle {
     }
 }
 
-extension ButtonStyle where Self == BLButtonStyle {
+// MARK: - Static Properties
 
-    // MARK: - Static Properties
+extension ButtonStyle where Self == BLButtonStyle {
 
     /// 主要操作按鈕
     static var blPrimary: BLButtonStyle {

@@ -22,5 +22,4 @@ struct BLBarChartValue: Identifiable {
 
     /// Y 軸使用的數值
     let value: Double
-
 }

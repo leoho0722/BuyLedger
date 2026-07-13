@@ -434,7 +434,7 @@ struct OrderPersistenceTests {
     }
 }
 
-// MARK: - Helpers
+// MARK: - Private Method
 
 private extension OrderPersistenceTests {
 

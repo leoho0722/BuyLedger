@@ -44,9 +44,9 @@ struct BLCardShadow: ViewModifier {
     }
 }
 
-extension View {
+// MARK: - View Method
 
-    // MARK: - View Method
+extension View {
 
     /// 套用 BuyLedger 卡片陰影
     /// - Parameter floating: 傳入 `true` 時使用較高的浮層陰影

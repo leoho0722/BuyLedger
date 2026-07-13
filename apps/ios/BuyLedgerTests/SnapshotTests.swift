@@ -4,12 +4,6 @@
 //
 //  Created by Leo Ho on 2026/5/2.
 //
-//  Snapshot baseline 用於檢查視覺迴歸；第一次跑會自動寫入 baseline，之後改動視覺時若與 baseline 不符會失敗
-//
-//  - 圖片檔放在 BuyLedgerTests/__Snapshots__/ (相對於本檔)
-//  - 升級設計時請刪掉對應的 baseline 檔案，下次跑測試會自動重建
-//  - 所有 view 統一透過 ``TestDependencies/withFixedNow(_:)`` 包住，避免跨日跑出不同結果
-//
 
 #if canImport(SnapshotTesting) && os(iOS)
 
@@ -19,6 +13,11 @@ import SwiftUI
 import Testing
 @testable import BuyLedger
 
+/// Snapshot baseline 用於檢查視覺迴歸；第一次跑會自動寫入 baseline，之後改動視覺時若與 baseline 不符會失敗
+///
+/// - 圖片檔放在 BuyLedgerTests/__Snapshots__/ (相對於本檔)
+/// - 升級設計時請刪掉對應的 baseline 檔案，下次跑測試會自動重建
+/// - 所有 view 統一透過 ``TestDependencies/withFixedNow(_:)`` 包住，避免跨日跑出不同結果
 @MainActor
 struct SnapshotTests {
 
@@ -141,7 +140,8 @@ struct SnapshotTests {
     }
 
     @Test func orderEditViewMergeContextBaseline() {
-        // 合併產生的訂單：類別/開團為多選 trigger row (「、」串接顯示)；金額與明細欄位與一般訂單相同、維持可編輯
+        // 合併產生的訂單：類別/開團為多選 trigger row (「、」串接顯示)
+        // 金額與明細欄位與一般訂單相同、維持可編輯
         TestDependencies.withFixedNow {
             let mergedOrder = LedgerOrder.sampleOrders.first { !$0.mergedSourceIDs.isEmpty }!
             let state = OrderEditFeature.State(original: mergedOrder)

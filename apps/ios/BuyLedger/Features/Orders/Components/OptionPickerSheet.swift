@@ -9,7 +9,11 @@ import SwiftUI
 
 /// 訂單編輯表單與設定／報價／匯率工具裡用於「單選一個字串選項」的通用 sheet
 ///
-/// 取代原本的 `Menu`：iOS Menu 因為是 `UIMenu` 的二次包裝，UIKit 端會把 Button action 排到 menu collapse 動畫結束後才派發給 SwiftUI，造成「選完選項 → 約 300ms 後 label 才更新」的可見延遲。改用 sheet 後，使用者點選時 binding 立即 commit，sheet 收合與 form label 更新解耦，視覺上不再卡頓
+/// 取代原本的 `Menu`
+///
+/// iOS Menu 因為是 `UIMenu` 的二次包裝，UIKit 端會把 Button action 排到 menu collapse 動畫結束後才派發給 SwiftUI，造成「選完選項 → 約 300ms 後 label 才更新」的可見延遲
+///
+/// 改用 sheet 後，使用者點選時 binding 立即 commit，sheet 收合與 form label 更新解耦，視覺上不再卡頓
 ///
 /// 內容區以系統 `List` 呈現選項清單
 ///
@@ -72,22 +76,32 @@ struct OptionPickerSheet: View {
 
     /// 使用者透過「新增付款方式」sheet 確認新增時的 callback；不為 `nil` 時，「新增」按鈕會改顯示 ``PaymentMethodEditorSheet`` (含 `isCardless` 切換)，取代既有 alert 流程
     ///
-    /// 因為 SwiftUI 的 `.alert` actions builder 不支援 `Toggle`，無法在 alert 中同時讓使用者填名稱與決定 `isCardless` / `isBankTransfer` / `isCashOnDelivery`；改用 sheet 是為了把這些輸入合併在同一張表單。callback 參數依序為 (名稱, isCardless, isBankTransfer, isCashOnDelivery)
+    /// 因為 SwiftUI 的 `.alert` actions builder 不支援 `Toggle`，無法在 alert 中同時讓使用者填名稱與決定 `isCardless` / `isBankTransfer` / `isCashOnDelivery`；改用 sheet 是為了把這些輸入合併在同一張表單
+    ///
+    /// callback 參數依序為 (名稱, isCardless, isBankTransfer, isCashOnDelivery)
     let onAddPaymentMethod: ((String, Bool, Bool, Bool) -> Void)?
 
-    /// 使用者透過「新增」name-only medium sheet 確認新增時的 callback；不為 `nil` 且 ``onAddPaymentMethod`` 為 `nil` 時，「新增」按鈕會改顯示 ``LookupItemEditorSheet`` (只收名稱)，取代既有 alert 流程。供對帳狀態等只需名稱的主檔比照「新增付款方式」使用 medium sheet
+    /// 使用者透過「新增」name-only medium sheet 確認新增時的 callback；不為 `nil` 且 ``onAddPaymentMethod`` 為 `nil` 時，「新增」按鈕會改顯示 ``LookupItemEditorSheet`` (只收名稱)，取代既有 alert 流程
+    ///
+    /// 供對帳狀態等只需名稱的主檔比照「新增付款方式」使用 medium sheet
     let onAddViaNameSheet: ((String) -> Void)?
 
     /// 可選的「清除目前選擇」row 設定
     ///
-    /// 當非 `nil` 時，picker 會在選項列上方額外渲染一列以 ``ClearOption/title`` 為 label 的 row；點擊該 row 會呼叫 ``ClearOption/onClear`` 並 dismiss，且 picker 會把 `selected == ""` 視為「目前處於 clear 狀態」並在 clear row 上顯示 checkmark。為 `nil` 時，picker 行為與外觀完全不變 (與既有 call site 向後相容)
+    /// 當非 `nil` 時，picker 會在選項列上方額外渲染一列以 ``ClearOption/title`` 為 label 的 row；點擊該 row 會呼叫 ``ClearOption/onClear`` 並 dismiss，且 picker 會把 `selected == ""` 視為「目前處於 clear 狀態」並在 clear row 上顯示 checkmark
+    ///
+    /// 為 `nil` 時，picker 行為與外觀完全不變 (與既有 call site 向後相容)
     ///
     /// 採用獨立參數而非在 ``options`` 中注入 sentinel 字串，是為了避免與使用者自建選項撞名 (例如使用者真的建立一個叫「全部」的類別)
     let clearOption: ClearOption?
 
     /// 可選的多選模式設定
     ///
-    /// 當非 `nil` 時：點選選項列改為 toggle 勾選 (呼叫 ``MultiSelection/onToggle``、sheet 不自動關閉)、已選集合由 caller 經 ``MultiSelection/selections`` 持有並驅動勾選指示、toolbar 以「完成」取代「取消」供使用者結束選取。搜尋與新增選項流程與單選模式完全一致。為 `nil` 時維持既有單選行為 (與既有 call site 向後相容)；``selected`` 與 ``onSelect`` 僅在單選模式有效
+    /// 當非 `nil` 時：點選選項列改為 toggle 勾選 (呼叫 ``MultiSelection/onToggle``、sheet 不自動關閉)、已選集合由 caller 經 ``MultiSelection/selections`` 持有並驅動勾選指示、toolbar 以「完成」取代「取消」供使用者結束選取
+    ///
+    /// 搜尋與新增選項流程與單選模式完全一致
+    ///
+    /// 為 `nil` 時維持既有單選行為 (與既有 call site 向後相容)；``selected`` 與 ``onSelect`` 僅在單選模式有效
     let multiSelection: MultiSelection?
 
     /// 由 sheet 環境注入的 dismiss action
@@ -259,7 +273,9 @@ extension OptionPickerSheet {
 
     /// 「清除目前選擇」row 的設定
     ///
-    /// 用於需要在 picker 中表達「不選任何項目」的場景 (例如訂單頁類別篩選的「全部」)。採用獨立參數而非在 `options` 中注入 sentinel 字串，避免與使用者自建選項撞名以及破壞既有 picker 的「必選一個」契約
+    /// 用於需要在 picker 中表達「不選任何項目」的場景 (例如訂單頁類別篩選的「全部」)
+    ///
+    /// 採用獨立參數而非在 `options` 中注入 sentinel 字串，避免與使用者自建選項撞名以及破壞既有 picker 的「必選一個」契約
     struct ClearOption {
 
         // MARK: - Data Properties
@@ -399,7 +415,9 @@ private extension OptionPickerSheet {
     /// 注意：clear row (`clearOption`) 不參與此過濾，永遠在選項列上方獨立呈現
     var filteredOptions: [String] {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-        guard !trimmed.isEmpty else { return options }
+        guard !trimmed.isEmpty else {
+            return options
+        }
 
         return options.filter { option in
             if displayText(for: option).lowercased().contains(trimmed) {

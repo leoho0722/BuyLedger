@@ -10,9 +10,11 @@ import SwiftData
 
 /// SwiftData 上對付款方式主檔做 CRUD 的背景 actor
 @ModelActor
-actor PaymentMethodPersistence {
+actor PaymentMethodPersistence {}
 
-    // MARK: - View Method
+// MARK: - Internal Method
+
+extension PaymentMethodPersistence {
 
     /// 讀出全部付款方式名稱，依 locale 升冪排序
     /// - Returns: 付款方式名稱陣列

@@ -17,7 +17,8 @@ struct SettingsStorage: Sendable {
     var load: @Sendable () -> SettingsSnapshot
 
     /// 將設定快照寫回 `UserDefaults`
-    var save: @Sendable (SettingsSnapshot) -> Void
+    /// - Parameter snapshot: 欲寫入的設定快照
+    var save: @Sendable (_ snapshot: SettingsSnapshot) -> Void
 }
 
 // MARK: - Nested Types
@@ -49,9 +50,9 @@ private extension SettingsStorage {
     }
 }
 
-extension SettingsStorage: DependencyKey {
+// MARK: - Dependency Values
 
-    // MARK: - Dependency Values
+extension SettingsStorage: DependencyKey {
 
     /// App 執行時實際讀寫 `UserDefaults.standard`
     ///

@@ -13,8 +13,11 @@ import SwiftData
 /// 採用 `@ModelActor`，由 SwiftData 自動把 actor 綁到專屬 context。連結以 ``CampaignReminderRecord/campaignID`` 識別，upsert 即涵蓋新增與更新
 @ModelActor
 actor CampaignReminderPersistence {
+}
 
-    // MARK: - View Method
+// MARK: - Internal Method
+
+extension CampaignReminderPersistence {
 
     /// 讀出全部連結，回傳 campaignID → 連結資料 (事件識別碼 + 提醒時間戳) 字典
     /// - Returns: 開團識別值對應 ``CampaignReminderLink`` 的字典

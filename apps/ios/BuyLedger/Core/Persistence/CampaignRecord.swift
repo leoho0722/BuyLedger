@@ -10,7 +10,11 @@ import SwiftData
 
 /// SwiftData 持久化的「開團 (Campaign)」記錄
 ///
-/// 與領域型別 ``Campaign`` 一一對應。沿用 ``OrderSourceRecord`` 的設計準則：不使用 `@Attribute(.unique)` (CloudKit 不支援)，由 ``CampaignPersistence`` 在 upsert／rename 時自行檢查避免重複。狀態以 ``statusRaw`` (String rawValue) 儲存，避免日後改動 ``CampaignStatus`` 時破壞 schema 指紋
+/// 與領域型別 ``Campaign`` 一一對應
+///
+/// 沿用 ``OrderSourceRecord`` 的設計準則：不使用 `@Attribute(.unique)` (CloudKit 不支援)，由 ``CampaignPersistence`` 在 upsert／rename 時自行檢查避免重複
+///
+/// 狀態以 ``statusRaw`` (String rawValue) 儲存，避免日後改動 ``CampaignStatus`` 時破壞 schema 指紋
 @Model
 final class CampaignRecord {
 
@@ -52,11 +56,11 @@ final class CampaignRecord {
     }
 }
 
-// MARK: - View Method
+// MARK: - Internal Method
 
 extension CampaignRecord {
 
-    // MARK: - Mapping
+    // MARK: Mapping
 
     /// 將 SwiftData 記錄轉回領域型別
     /// - Returns: 對應的 ``Campaign``

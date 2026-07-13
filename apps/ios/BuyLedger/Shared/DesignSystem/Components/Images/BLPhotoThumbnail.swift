@@ -104,7 +104,9 @@ private extension BLPhotoThumbnail {
 
         context.setFillColor(CGColor(red: red, green: green, blue: blue, alpha: 1))
         context.fill(CGRect(x: 0, y: 0, width: 240, height: 240))
-        guard let image = context.makeImage() else { return Data() }
+        guard let image = context.makeImage() else {
+            return Data()
+        }
 
         CGImageDestinationAddImage(destination.1, image, nil)
         CGImageDestinationFinalize(destination.1)

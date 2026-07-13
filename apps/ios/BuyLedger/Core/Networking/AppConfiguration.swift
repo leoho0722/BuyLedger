@@ -24,14 +24,16 @@ struct AppConfiguration: Sendable {
     var ollamaAPIKey: @Sendable () -> String?
 }
 
+// MARK: - Internal Method
+
 extension AppConfiguration {
 
-    // MARK: - Static Method
-
-    /// 將 `Info.plist` 取回的原始字串正規化：去除前後空白，並把空字串或「尚未被 `Config.xcconfig` 取代的 `$(VAR)` 佔位」視為「未設定」回 `nil`
+    /// 將 `Info.plist` 取回的原始字串正規化：
+    /// 去除前後空白，並把空字串或「尚未被 `Config.xcconfig` 取代的 `$(VAR)` 佔位」視為「未設定」回 `nil`
     /// - Parameters:
     ///   - raw: 從 `Bundle.main.object(forInfoDictionaryKey:)` 取回的原始值
-    ///   - placeholder: 對應 build setting 變數的佔位字串 (例如 `$(OLLAMA_API_KEY)`)；原始值等於它代表 xcconfig 未注入。直接定義於 `Info.plist` 的值無佔位，預設空字串即可
+    ///   - placeholder: 對應 build setting 變數的佔位字串 (例如 `$(OLLAMA_API_KEY)`)；原始值等於它代表 xcconfig 未注入。
+    ///     直接定義於 `Info.plist` 的值無佔位，預設空字串即可
     /// - Returns: 有效字串，或在未設定時回 `nil`
     nonisolated static func normalize(_ raw: String?, placeholder: String = "") -> String? {
         let trimmed = raw?.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -42,9 +44,9 @@ extension AppConfiguration {
     }
 }
 
-extension AppConfiguration: DependencyKey {
+// MARK: - Dependency Values
 
-    // MARK: - Dependency Values
+extension AppConfiguration: DependencyKey {
 
     /// App 執行時從 `Bundle.main.infoDictionary` 讀取各設定值
     nonisolated static let liveValue = AppConfiguration(
@@ -75,9 +77,9 @@ extension AppConfiguration: DependencyKey {
     )
 }
 
-extension DependencyValues {
+// MARK: - DependencyValues Accessor
 
-    // MARK: - Dependency Values
+extension DependencyValues {
 
     /// App 環境設定提供者
     var appConfiguration: AppConfiguration {

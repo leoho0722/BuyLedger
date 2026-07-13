@@ -8,9 +8,11 @@
 import Foundation
 
 /// 訂單畫面使用的格式化工具
-enum OrderFormatters {
+enum OrderFormatters {}
 
-    // MARK: - Format Method
+// MARK: - Internal Method
+
+extension OrderFormatters {
 
     /// 將新台幣金額格式化為無小數位字串
     /// - Parameter amount: 要格式化的金額

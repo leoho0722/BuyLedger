@@ -9,7 +9,8 @@ import Foundation
 
 /// BuyLedger 在發送網路請求時可能遇到的錯誤分類
 ///
-/// 細分原因方便上層根據錯誤型別決定 UI 展示與 retry 策略——例如 `.quotaExceeded` 或 `.invalidKey` 不重試、`.transport` 與 5xx 才重試
+/// 細分原因方便上層根據錯誤型別決定 UI 展示與 retry 策略——
+/// 例如 `.quotaExceeded` 或 `.invalidKey` 不重試、`.transport` 與 5xx 才重試
 enum APIError: Error, Equatable, Sendable {
 
     // MARK: - Cases

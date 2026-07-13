@@ -57,7 +57,7 @@ final class OrdersFeaturePerformanceTests: XCTestCase {
     }
 }
 
-// MARK: - Helpers
+// MARK: - Private Method
 
 private extension OrdersFeaturePerformanceTests {
 

@@ -32,8 +32,11 @@ enum BLTone: CaseIterable {
 
     /// 資訊提示狀態
     case informative
+}
 
-    // MARK: - Tone Method
+// MARK: - Internal Method
+
+extension BLTone {
 
     /// 回傳語意狀態的前景色
     /// - Parameter palette: 目前外觀對應的色盤

@@ -11,8 +11,11 @@ import SwiftData
 /// SwiftData 上對商品類別主檔做 CRUD 的背景 actor
 @ModelActor
 actor CategoryPersistence {
+}
 
-    // MARK: - View Method
+// MARK: - Internal Method
+
+extension CategoryPersistence {
 
     /// 讀出全部類別名稱，依 locale 升冪排序
     /// - Returns: 類別名稱陣列

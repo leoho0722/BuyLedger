@@ -4,10 +4,6 @@
 //
 //  Created by Leo Ho on 2026/5/2.
 //
-//  資料形狀 (date / base / rates) 由 Generated/FxRateSnapshot.generated.swift 產生；
-//  本檔僅保留手寫業務邏輯 (預設快照 fallback)
-//  改欄位請改 shared/data-model/schema/ 後重新 generate
-//
 
 import Foundation
 

@@ -42,12 +42,15 @@ struct AISummaryView: View {
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
+}
 
-    // MARK: - ViewBuilder
+// MARK: - ViewBuilder
+
+private extension AISummaryView {
 
     /// 依目前串流階段呈現的主內容
     @ViewBuilder
-    private var content: some View {
+    var content: some View {
         switch store.phase {
         case .failed:
             ContentUnavailableView {
@@ -101,7 +104,7 @@ struct AISummaryView: View {
 
     /// 內容生成完成後附在最末的膠囊提醒：告知此為 AI 生成內容、可能有誤
     @ViewBuilder
-    private var aiDisclaimerCapsule: some View {
+    var aiDisclaimerCapsule: some View {
         HStack(spacing: BLSpacing.extraSmall) {
             Image(systemName: "sparkles")
                 .font(.caption2.weight(.semibold))

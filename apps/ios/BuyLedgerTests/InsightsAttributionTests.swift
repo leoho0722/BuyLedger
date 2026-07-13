@@ -15,7 +15,7 @@ struct InsightsAttributionTests {
     // MARK: - Tests
 
     @Test func categoryBreakdownAttributesPreMergeAmountsFromLeafOrders() {
-        // spec「attribution matrix」：合併產生的訂單不入組，已合併葉端舊單以原始類別與金額入帳，報價中葉端不入組
+        // spec「attribution matrix」：合併產生的新訂單不入組，被合併掉的原始舊單以原始類別與金額入帳，報價中的原始訂單不入組
         let orders = [
             Self.makeOrder(id: "A", status: .merged, categories: ["beauty"], charged: 1_000),
             Self.makeOrder(id: "B", status: .merged, categories: ["snacks"], charged: 2_000),
@@ -55,7 +55,7 @@ struct InsightsAttributionTests {
     }
 
     @Test func multiCategoryLeafCountsFullyInEachCategoryAndEmptyIsExcluded() {
-        // 防衛性規則：葉端多類別全額計入每一類；類別為空的葉端訂單不歸入任何卡片
+        // 防衛性規則：原始訂單的多個類別全額計入每一類；沒有類別的原始訂單不歸入任何卡片
         let orders = [
             Self.makeOrder(id: "C", status: .delivered, categories: ["beauty", "snacks"], charged: 900),
             Self.makeOrder(id: "E", status: .delivered, categories: [], charged: 700),

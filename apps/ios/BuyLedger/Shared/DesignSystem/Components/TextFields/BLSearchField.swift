@@ -81,20 +81,6 @@ extension BLSearchField {
 
 private extension BLSearchField {
 
-    /// 依 ``ClearButtonMode`` 與目前文字、焦點狀態，決定是否顯示清除按鈕
-    var isClearButtonVisible: Bool {
-        guard !text.isEmpty else { return false }
-
-        switch clearButtonMode {
-        case .never:
-            return false
-        case .whenEditing:
-            return isEditing
-        case .always:
-            return true
-        }
-    }
-
     /// 清空欄位文字的清除按鈕
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 清除按鈕 view
@@ -111,6 +97,27 @@ private extension BLSearchField {
         }
         .buttonStyle(.plain)
         .accessibilityLabel("清除搜尋")
+    }
+}
+
+// MARK: - Private Method
+
+private extension BLSearchField {
+
+    /// 依 ``ClearButtonMode`` 與目前文字、焦點狀態，決定是否顯示清除按鈕
+    var isClearButtonVisible: Bool {
+        guard !text.isEmpty else {
+            return false
+        }
+
+        switch clearButtonMode {
+        case .never:
+            return false
+        case .whenEditing:
+            return isEditing
+        case .always:
+            return true
+        }
     }
 }
 

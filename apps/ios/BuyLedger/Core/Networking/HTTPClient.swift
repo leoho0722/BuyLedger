@@ -17,13 +17,17 @@ struct HTTPClient: Sendable {
     // MARK: - Dependency Properties
 
     /// 對應到 `URLSession.data(for:)` 的可注入封裝 (buffered 回應)
-    var data: @Sendable (URLRequest) async throws -> (Data, HTTPURLResponse)
+    /// - Parameter request: 欲送出的請求
+    /// - Returns: 回應 data 與 HTTP 回應資訊
+    var data: @Sendable (_ request: URLRequest) async throws -> (Data, HTTPURLResponse)
 
     /// 對應到 `URLSession.bytes(for:)` 的可注入封裝，回傳逐位元組串流供 NDJSON / SSE 等串流式回應使用
-    var stream: @Sendable (URLRequest) async throws -> (URLSession.AsyncBytes, HTTPURLResponse)
+    /// - Parameter request: 欲送出的請求
+    /// - Returns: 逐位元組串流與 HTTP 回應資訊
+    var stream: @Sendable (_ request: URLRequest) async throws -> (URLSession.AsyncBytes, HTTPURLResponse)
 }
 
-// MARK: - Request
+// MARK: - Internal Method
 
 extension HTTPClient {
 
@@ -60,11 +64,12 @@ extension HTTPClient {
     }
 }
 
+// MARK: - Dependency Values
+
 extension HTTPClient: DependencyKey {
 
-    // MARK: - Dependency Values
-
-    /// `liveValue` 共用的設定化 session：以 `URLSessionConfiguration.default` 建立，取代 `URLSession.shared` 以保留 configuration 控制權
+    /// `liveValue` 共用的設定化 session：
+    /// 以 `URLSessionConfiguration.default` 建立，取代 `URLSession.shared` 以保留 configuration 控制權
     private nonisolated static let session = URLSession(configuration: .default)
 
     /// App 執行時以 `URLSessionConfiguration.default` 的專屬 session 發送請求
@@ -102,9 +107,9 @@ extension HTTPClient: DependencyKey {
     nonisolated static let previewValue: HTTPClient = testValue
 }
 
-extension DependencyValues {
+// MARK: - DependencyValues Accessor
 
-    // MARK: - Dependency Values
+extension DependencyValues {
 
     /// 通用 HTTP 客戶端
     var httpClient: HTTPClient {

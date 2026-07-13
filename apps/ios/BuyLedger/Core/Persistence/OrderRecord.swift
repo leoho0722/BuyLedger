@@ -31,7 +31,9 @@ final class OrderRecord {
 
     /// 商品原始幣別 (以 ISO 4217 code 字串存放)
     ///
-    /// 之所以使用 `String` 而非 ``CurrencyCode``：``CurrencyCode`` 從 `enum String` 改成 `struct` 後，SwiftData 會把它視為複合型別、把 `rawValue` 展開成子 attribute，造成舊 store (直接 String column) 升級時找不到對應的 destination 屬性而 migration 失敗。直接存 String 可維持 column 形狀與舊 enum 的 `rawValue` 相同，免去自訂 migration plan
+    /// 之所以使用 `String` 而非 ``CurrencyCode``：``CurrencyCode`` 從 `enum String` 改成 `struct` 後，SwiftData 會把它視為複合型別、把 `rawValue` 展開成子 attribute，造成舊 store (直接 String column) 升級時找不到對應的 destination 屬性而 migration 失敗
+    ///
+    /// 直接存 String 可維持 column 形狀與舊 enum 的 `rawValue` 相同，免去自訂 migration plan
     var currency: String
 
     /// 訂單建立或更新日期
@@ -94,7 +96,9 @@ final class OrderRecord {
 
     /// 對帳狀態
     ///
-    /// 帶 default value 讓 SwiftData 對既有資料庫做 lightweight migration：舊 row 升級時自動填空字串。僅在 ``paymentMethod`` 對應的付款方式屬於無卡或銀行匯款時，編輯表單才會顯示並寫入此值
+    /// 帶 default value 讓 SwiftData 對既有資料庫做 lightweight migration：舊 row 升級時自動填空字串
+    ///
+    /// 僅在 ``paymentMethod`` 對應的付款方式屬於無卡或銀行匯款時，編輯表單才會顯示並寫入此值
     var verificationStatus: String = ""
 
     /// 歸屬的開團名稱清單 (V11 起為字串陣列；空陣列代表未歸團)
@@ -107,12 +111,16 @@ final class OrderRecord {
 
     /// 此訂單是否以「貨到付款」類付款方式成立
     ///
-    /// 帶 default `false` 走 SwiftData lightweight migration；只有當 ``paymentMethod`` 對應的 ``PaymentMethodRecord/isCashOnDelivery`` 為 `true` 時，儲存表單才會寫入 `true`。為 `true` 時 ``OrderSummary`` 會在獲利中額外扣除三種運費
+    /// 帶 default `false` 走 SwiftData lightweight migration；只有當 ``paymentMethod`` 對應的 ``PaymentMethodRecord/isCashOnDelivery`` 為 `true` 時，儲存表單才會寫入 `true`
+    ///
+    /// 為 `true` 時 ``OrderSummary`` 會在獲利中額外扣除三種運費
     var isCashOnDelivery: Bool = false
 
     /// 訂單照片 (已正規化的 JPEG data，嵌入式 Codable 陣列儲存)
     ///
-    /// 帶 default 空陣列走 SwiftData lightweight migration：舊 row 升級時自動填空陣列。張數上限由 ``LedgerOrder/maxPhotoCount`` 於編輯流程守門，持久層不重複驗證
+    /// 帶 default 空陣列走 SwiftData lightweight migration：舊 row 升級時自動填空陣列
+    ///
+    /// 張數上限由 ``LedgerOrder/maxPhotoCount`` 於編輯流程守門，持久層不重複驗證
     var photos: [Data] = []
 
     /// 合併來源訂單編號 (V11 新增)
@@ -154,11 +162,11 @@ final class OrderRecord {
     }
 }
 
-// MARK: - View Method
+// MARK: - Internal Method
 
 extension OrderRecord {
 
-    // MARK: - Mapping
+    // MARK: Mapping
 
     /// 將 SwiftData 記錄轉回領域型別
     /// - Returns: 對應的 ``LedgerOrder``

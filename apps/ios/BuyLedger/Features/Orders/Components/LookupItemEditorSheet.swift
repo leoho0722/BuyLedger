@@ -9,7 +9,9 @@ import SwiftUI
 
 /// 新增「只需要名稱、沒有額外旗標」主檔項目時的 medium sheet 表單
 ///
-/// 對帳狀態等主檔比照「新增付款方式」改用 medium sheet 收集名稱 (而非系統 alert)，操作體驗一致。與 ``PaymentMethodEditorSheet`` 的差別在於本表單沒有任何 Toggle，僅有單一名稱欄位，供 ``OptionPickerSheet`` 與 ``LookupManagementView`` 共用
+/// 對帳狀態等主檔比照「新增付款方式」改用 medium sheet 收集名稱 (而非系統 alert)，操作體驗一致
+///
+/// 與 ``PaymentMethodEditorSheet`` 的差別在於本表單沒有任何 Toggle，僅有單一名稱欄位，供 ``OptionPickerSheet`` 與 ``LookupManagementView`` 共用
 struct LookupItemEditorSheet: View {
 
     // MARK: - View Properties
@@ -68,7 +70,9 @@ struct LookupItemEditorSheet: View {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(submitTitle) {
                         let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !trimmed.isEmpty else { return }
+                        guard !trimmed.isEmpty else {
+                            return
+                        }
                         onSubmit(trimmed)
                         dismiss()
                     }

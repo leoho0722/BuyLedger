@@ -10,7 +10,9 @@ import SwiftUI
 
 /// 客戶名單畫面
 ///
-/// 對應設計稿 iPad / Mac 的「客戶」頁：將訂單依客戶聚合成卡片清單。前 N 名 (N 由 ``topHighlightCount`` 控制) 顯示為強調卡片，其餘以列表呈現。資料完全衍生自既有訂單，不維護額外狀態
+/// 對應設計稿 iPad 的「客戶」頁：將訂單依客戶聚合成卡片清單
+///
+/// 前 N 名 (N 由 ``topHighlightCount`` 控制) 顯示為強調卡片，其餘以列表呈現；資料完全衍生自既有訂單，不維護額外狀態
 struct CustomersView: View {
 
     // MARK: - View Properties

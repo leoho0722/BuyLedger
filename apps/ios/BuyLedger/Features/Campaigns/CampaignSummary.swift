@@ -37,7 +37,13 @@ struct CampaignDistributionRow: Equatable, Identifiable, Sendable {
 
 /// 開團 (Campaign) 的分貨與結算彙總
 ///
-/// 完全 derive 自歸屬該開團的訂單 (單一真實來源，零雙重輸入)：依客戶名稱分組產生分貨清單；以 ``LedgerOrder/chargedAmount`` 為基準算收款面 (應收／已收／未收)；重用 ``OrderSummary`` 加總算損益面 (成本／毛利／利潤率)；到貨進度以已到貨比例 (分子為 ``OrderStatus/arrived`` 與 ``OrderStatus/delivered``；``OrderStatus/partiallyArrived`` 不計入分子但仍列入分母，分母僅排除 ``OrderStatus/cancelled`` 與 ``OrderStatus/merged``)。所有彙總皆不依賴「現在」時間
+/// 完全 derive 自歸屬該開團的訂單 (單一真實來源，零雙重輸入)：依客戶名稱分組產生分貨清單
+///
+/// 以 ``LedgerOrder/chargedAmount`` 為基準算收款面 (應收／已收／未收)；重用 ``OrderSummary`` 加總算損益面 (成本／毛利／利潤率)
+///
+/// 到貨進度以已到貨比例 (分子為 ``OrderStatus/arrived`` 與 ``OrderStatus/delivered``；``OrderStatus/partiallyArrived`` 不計入分子但仍列入分母，分母僅排除 ``OrderStatus/cancelled`` 與 ``OrderStatus/merged``)
+///
+/// 所有彙總皆不依賴「現在」時間
 struct CampaignSummary: Equatable, Sendable {
 
     // MARK: - Data Properties
@@ -87,18 +93,15 @@ struct CampaignSummary: Equatable, Sendable {
     /// 依客戶名稱分組的分貨清單，依客戶名稱排序
     let distribution: [CampaignDistributionRow]
 
-    // MARK: - Computed Properties
-
-    /// 尚未全部收款的分貨列 (未付款名單)
-    var unpaidDistribution: [CampaignDistributionRow] {
-        distribution.filter { !$0.isFullyReceived }
-    }
-
     // MARK: - Init
 
     /// 依開團名稱與全部訂單建立彙總
     ///
-    /// 成員規則 (統計歸屬採「合併前收益」)：僅「葉端訂單」(非由合併產生) 且 ``LedgerOrder/campaignNames`` 包含該名稱者；由合併產生的新訂單不是成員，其收益由合併前舊單以原始金額與收款狀態入帳，避免重複計算。除此之外不加新的狀態過濾——分貨清單本來就需要報價中／已確認訂單
+    /// 成員規則 (統計採「合併前」的原始訂單)：僅「原始訂單」(非合併產生的) 且 ``LedgerOrder/campaignNames`` 包含該名稱者
+    ///
+    /// 由合併產生的新訂單不是成員，其收益由合併前舊單以原始金額與收款狀態入帳，避免重複計算
+    ///
+    /// 除此之外不加新的狀態過濾——分貨清單本來就需要報價中／已確認訂單
     /// - Parameters:
     ///   - campaignName: 開團名稱 (作為歸屬鍵)
     ///   - allOrders: 全部訂單
@@ -137,12 +140,22 @@ struct CampaignSummary: Equatable, Sendable {
         self.distribution = CampaignSummary.makeDistribution(from: members)
     }
 
-    // MARK: - Static Method
+    // MARK: - Computed Properties
+
+    /// 尚未全部收款的分貨列 (未付款名單)
+    var unpaidDistribution: [CampaignDistributionRow] {
+        distribution.filter { !$0.isFullyReceived }
+    }
+}
+
+// MARK: - Private Method
+
+private extension CampaignSummary {
 
     /// 把成員訂單依客戶名稱 (去頭尾空白) 分組成分貨清單
     /// - Parameter members: 歸屬此開團的訂單
     /// - Returns: 依客戶名稱排序的分貨列
-    private static func makeDistribution(from members: [LedgerOrder]) -> [CampaignDistributionRow] {
+    static func makeDistribution(from members: [LedgerOrder]) -> [CampaignDistributionRow] {
         let grouped = Dictionary(grouping: members) {
             $0.customer.name.trimmingCharacters(in: .whitespacesAndNewlines)
         }
@@ -170,8 +183,10 @@ struct CampaignSummary: Equatable, Sendable {
     ///   - value: 分子
     ///   - total: 分母
     /// - Returns: `value / total` 的 `Double`；`total == 0` 時為 0
-    private static func ratio(_ value: Decimal, of total: Decimal) -> Double {
-        guard total != 0 else { return 0 }
+    static func ratio(_ value: Decimal, of total: Decimal) -> Double {
+        guard total != 0 else {
+            return 0
+        }
         return NSDecimalNumber(decimal: value).doubleValue / NSDecimalNumber(decimal: total).doubleValue
     }
 }

@@ -90,12 +90,17 @@ struct InsightsStats {
         ].filter { $0.value > 0 }
         self.totalCost = totalCost
     }
+}
 
-    // MARK: - Static Method
+// MARK: - Internal Method
+
+extension InsightsStats {
 
     /// 依「合併前收益」歸屬規則彙總各類別獲利 (由高到低)；供 ``init(orders:range:referenceDate:calendar:palette:)`` 與單元測試共用
     ///
-    /// 僅葉端訂單入組 (``LedgerOrder/contributesToCategoryBreakdown``)：狀態屬已實現或已合併、且非由合併產生；合併產生的訂單不入組，其收益由合併前舊單以原始類別與金額入帳。一筆訂單的獲利全額計入它的每一個類別；類別為空的訂單不歸入任何卡片
+    /// 只算「原始訂單」(非合併產生的) 入組 (``LedgerOrder/contributesToCategoryBreakdown``)：狀態屬已實現或已合併；合併產生的新訂單不入組，其收益由合併前的舊單以原始類別與金額入帳
+    ///
+    /// 一筆訂單的獲利全額計入它的每一個類別；類別為空的訂單不歸入任何卡片
     /// - Parameter orders: 全部訂單
     /// - Returns: 各類別獲利排行
     static func categoryBreakdown(orders: [LedgerOrder]) -> [InsightsCategory] {
@@ -180,6 +185,11 @@ struct InsightsStats {
 
         return result
     }
+}
+
+// MARK: - Private Method
+
+private extension InsightsStats {
 
     /// 計算上一個對等期間的淨獲利總和，例如目前是「最近 30 天」就回傳「30 天前那 30 天」的累計
     /// - Parameters:
@@ -188,7 +198,7 @@ struct InsightsStats {
     ///   - calendar: 用來算日期的曆法
     ///   - now: 目前期間的結束基準
     /// - Returns: 對等期間的累計獲利；無對等資料時為 `nil`
-    private static func previousPeriodProfit(
+    static func previousPeriodProfit(
         realized: [LedgerOrder],
         range: InsightsDateRange,
         calendar: Calendar,
@@ -230,7 +240,7 @@ struct InsightsStats {
     ///   - current: 本期累計
     ///   - previous: 上期累計；`nil` 代表無資料可比
     /// - Returns: trend card 右上角字串
-    private static func trendDeltaText(current: Decimal, previous: Decimal?) -> String {
+    static func trendDeltaText(current: Decimal, previous: Decimal?) -> String {
         guard let previous, previous != 0 else {
             return "— 無對照"
         }
@@ -246,7 +256,7 @@ struct InsightsStats {
     ///   - current: 本期累計
     ///   - previous: 上期累計；`nil` 代表無資料可比
     /// - Returns: `true` 上升、`false` 下降、`nil` 無對照
-    private static func trendDeltaDirection(current: Decimal, previous: Decimal?) -> Bool? {
+    static func trendDeltaDirection(current: Decimal, previous: Decimal?) -> Bool? {
         guard let previous, previous != 0 else {
             return nil
         }
@@ -260,7 +270,7 @@ struct InsightsStats {
     ///   - calendar: 用來分組的曆法
     ///   - now: 基準日
     /// - Returns: 對應每段時間的累計獲利
-    private static func trendBars(
+    static func trendBars(
         realized: [LedgerOrder],
         range: InsightsDateRange,
         calendar: Calendar,

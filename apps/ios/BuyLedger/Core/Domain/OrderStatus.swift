@@ -4,9 +4,6 @@
 //
 //  Created by Leo Ho on 2026/5/1.
 //
-//  資料形狀 (cases、Identifiable) 由 Generated/OrderStatus.generated.swift 產生；
-//  本檔僅保留手寫業務邏輯。改欄位請改 shared/data-model/schema/ 後重新 generate
-//
 
 import Foundation
 
@@ -17,9 +14,9 @@ extension OrderStatus {
     /// 視為「已實現」的訂單狀態集合，為收益統計的單一事實來源
     /// 「已合併」與「已取消」「報價中」同樣不屬於已實現，避免合併後重複計算收益
     static let realizedStatuses: Set<OrderStatus> = [
-        .confirmed, 
-        .purchased, 
-        .shipping, 
+        .confirmed,
+        .purchased,
+        .shipping,
         .partiallyArrived,
         .arrived,
         .delivered,

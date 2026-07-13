@@ -40,7 +40,8 @@ struct RootFeatureTests {
         state.orders.orders = LedgerOrder.sampleOrders
         state.orders.selectedStatus = .status(.delivered)
         state.orders.selectedDatePeriod = .thisMonth
-        // 預先設定殘留的類別篩選，驗證 smart group 跳轉會一併清掉它，避免「狀態 + 類別」兩條條件夾擊出空列表
+        // 預先設定殘留的類別篩選，驗證 smart group 跳轉會一併清掉它
+        // 避免「狀態 + 類別」兩條條件夾擊出空列表
         state.orders.selectedCategory = "美妝"
         state.orders.selectedOrderID = "BL-2604-016"
 
@@ -93,7 +94,8 @@ struct RootFeatureTests {
         var state = RootFeature.State()
         state.selectedTab = .dashboard
         state.orders.orders = LedgerOrder.sampleOrders
-        // 預先設定殘留的類別篩選，驗證客戶名深連結會清掉它，避免在另一頁帶著舊類別狀態跳轉後撈不到任何訂單
+        // 預先設定殘留的類別篩選，驗證客戶名深連結會清掉它
+        // 避免在另一頁帶著舊類別狀態跳轉後撈不到任何訂單
         state.orders.selectedCategory = "精品"
 
         let store = TestStore(initialState: state) {
@@ -114,7 +116,8 @@ struct RootFeatureTests {
         var state = RootFeature.State()
         state.selectedTab = .dashboard
         state.orders.orders = LedgerOrder.sampleOrders
-        // 預先把幾個篩選器設成非預設值，驗證 categorySelected 會將它們一併重設、避免「狀態 + 日期 + 搜尋」與類別深連結互卡
+        // 預先把幾個篩選器設成非預設值，驗證 categorySelected 會將它們一併重設
+        // 避免「狀態 + 日期 + 搜尋」與類別深連結互卡
         state.orders.selectedStatus = .status(.delivered)
         state.orders.selectedDatePeriod = .thisMonth
         state.orders.searchText = "stale query"
@@ -127,7 +130,8 @@ struct RootFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
-        // 從「分析」分頁點擊「美妝」類別 row → 切到「訂單」分頁、類別篩選膠囊套用「美妝」、其餘篩選器全部歸零、選取為 filtered 後第一筆
+        // 從「分析」分頁點擊「美妝」類別 row → 切到「訂單」分頁、類別篩選膠囊套用「美妝」
+        // 其餘篩選器全部歸零、選取為 filtered 後第一筆
         await store.send(.categorySelected("美妝")) {
             $0.selectedTab = .orders
             $0.orders.selectedStatus = .all
@@ -164,7 +168,8 @@ struct RootFeatureTests {
             $0.orders.selectedOrderID = "TEST-BEAUTY-1"
         }
 
-        // 進一步以 filteredOrders 驗證 false-positive 確實被排除——舊的 searchText 路徑會把 "美妝小編" 模糊命中、新的欄位精準比對不會
+        // 進一步以 filteredOrders 驗證 false-positive 確實被排除
+        // 舊的 searchText 路徑會把 "美妝小編" 模糊命中、新的欄位精準比對不會
         let filteredIDs = store.state.orders
             .filteredOrders(referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
             .map(\.id)
@@ -330,7 +335,9 @@ struct RootFeatureTests {
 
 private extension RootFeatureTests {
 
-    /// 建立用於跨頁深連結測試的最小化訂單；除了 `id`、`category`、`customerName` 之外，其餘欄位採可預測的中性預設，避免汙染篩選器斷言
+    /// 建立用於跨頁深連結測試的最小化訂單；除了 `id`、`category`、`customerName` 之外，其餘欄位採可預測的中性預設
+    ///
+    /// 避免汙染篩選器斷言
     /// - Parameters:
     ///   - id: 訂單編號
     ///   - category: 商品類別欄位 (測試精準欄位比對的關鍵欄位)

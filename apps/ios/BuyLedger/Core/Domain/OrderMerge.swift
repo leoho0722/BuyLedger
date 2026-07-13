@@ -9,69 +9,10 @@ import Foundation
 
 /// 兩筆訂單合併為一筆新訂單的純函式計算
 ///
-/// 只負責把主訂單 (P) 與副訂單 (S) 依合併規則整合成草稿值，不做任何持久化或 UI 呈現；「現在」時間由 caller 以 `@Dependency(\.date)` 注入，付款方式是否屬無卡由 caller 以 predicate 注入 (主檔旗標在 feature 層)。照片僅串接、不截斷——超過上限時由合併流程的照片挑選步驟決定保留集合
-enum OrderMerge {
-
-    // MARK: - Static Method
-
-    /// 依合併規則整合兩筆訂單，產生合併確認表單的草稿值
-    ///
-    /// 欄位規則：
-    /// - 客戶、訂單來源、狀態、幣別、收款狀態：取主訂單值
-    /// - 類別與開團：主訂單在前的保序聯集 (去重)
-    /// - 訂購日期：合併當下時間 (`now`)
-    /// - 金額七欄位 (客戶實付／無卡折抵／無卡補款／商品成本／外國國內運費／國際運費／國內運費)：逐項相加
-    /// - 手續費三項：以兩筆客戶實付為權重做加權平均 (金額守恆)，clamp 至 [0, 1]；兩筆實付皆為 0 時沿用主訂單比例
-    /// - 付款方式：兩筆相同取該值；不同時，恰有一筆屬無卡則取該筆 (保住折抵/補款加總不被歸零規則清掉)，其餘取主訂單。對帳狀態與貨到付款旗標一律隨付款方式來源那筆訂單
-    /// - 商品明細與照片：主訂單在前、副訂單在後串接，內容不變動
-    /// - 備註：兩筆皆非空時以獨立一行 dash line 分隔串接；任一邊為空則直接取非空者
-    /// - Parameters:
-    ///   - primary: 主訂單 (發起合併的那筆)
-    ///   - secondary: 副訂單 (候選 sheet 選定的那筆)
-    ///   - now: 合併當下時間；caller 應從 `@Dependency(\.date)` 取得
-    ///   - isCardless: 判定付款方式名稱是否屬「無卡」類的 predicate；caller 從付款方式主檔旗標建構
-    /// - Returns: 合併後的草稿值
-    static func makeDraft(
-        primary: LedgerOrder,
-        secondary: LedgerOrder,
-        now: Date,
-        isCardless: (String) -> Bool
-    ) -> Draft {
-        let paymentSource = paymentMethodSource(
-            primary: primary,
-            secondary: secondary,
-            isCardless: isCardless
-        )
-
-        return Draft(
-            customer: primary.customer,
-            orderSource: primary.orderSource,
-            status: primary.status,
-            currency: primary.currency,
-            date: now,
-            categories: orderedUnion(primary.categories, secondary.categories),
-            campaignNames: orderedUnion(primary.campaignNames, secondary.campaignNames),
-            paymentMethod: paymentSource.paymentMethod,
-            verificationStatus: paymentSource.verificationStatus,
-            isCashOnDelivery: paymentSource.isCashOnDelivery,
-            paymentReceiptStatus: primary.paymentReceiptStatus,
-            chargedAmount: primary.chargedAmount + secondary.chargedAmount,
-            cardlessDeductionAmount: primary.cardlessDeductionAmount + secondary.cardlessDeductionAmount,
-            cardlessSupplementAmount: primary.cardlessSupplementAmount + secondary.cardlessSupplementAmount,
-            itemCost: primary.itemCost + secondary.itemCost,
-            foreignDomesticShipping: primary.foreignDomesticShipping + secondary.foreignDomesticShipping,
-            internationalShipping: primary.internationalShipping + secondary.internationalShipping,
-            domesticShipping: primary.domesticShipping + secondary.domesticShipping,
-            cardFeeRate: weightedRate(primary.cardFeeRate, secondary.cardFeeRate, primary: primary, secondary: secondary),
-            platformFeeRate: weightedRate(primary.platformFeeRate, secondary.platformFeeRate, primary: primary, secondary: secondary),
-            paymentFeeRate: weightedRate(primary.paymentFeeRate, secondary.paymentFeeRate, primary: primary, secondary: secondary),
-            items: primary.items + secondary.items,
-            notes: mergedNotes(primary.notes, secondary.notes),
-            photos: primary.photos + secondary.photos,
-            mergeSourceIDs: [primary.id, secondary.id]
-        )
-    }
-}
+/// 只負責把主訂單 (P) 與副訂單 (S) 依合併規則整合成草稿值，不做任何持久化或 UI 呈現
+/// 「現在」時間由 caller 以 `@Dependency(\.date)` 注入，付款方式是否屬無卡由 caller 以 predicate 注入 (主檔旗標在 feature 層)
+/// 照片僅串接、不截斷，超過上限時由合併流程的照片挑選步驟決定保留集合
+enum OrderMerge {}
 
 // MARK: - Nested Types
 
@@ -161,6 +102,96 @@ extension OrderMerge {
     }
 }
 
+// MARK: - Internal Method
+
+extension OrderMerge {
+
+    /// 依合併規則整合兩筆訂單，產生合併確認表單的草稿值
+    ///
+    /// 欄位規則：
+    /// - 客戶、訂單來源、狀態、幣別、收款狀態：取主訂單值
+    /// - 類別與開團：主訂單在前的保序聯集 (去重)
+    /// - 訂購日期：合併當下時間 (`now`)
+    /// - 金額七欄位 (客戶實付／無卡折抵／無卡補款／商品成本／外國國內運費／國際運費／國內運費)：逐項相加
+    /// - 手續費三項：以兩筆客戶實付為權重做加權平均 (金額守恆)，clamp 至 [0, 1]；兩筆實付皆為 0 時沿用主訂單比例
+    /// - 付款方式：兩筆相同取該值；不同時，恰有一筆屬無卡則取該筆 (保住折抵/補款加總不被歸零規則清掉)，其餘取主訂單。對帳狀態與貨到付款旗標一律隨付款方式來源那筆訂單
+    /// - 商品明細與照片：主訂單在前、副訂單在後串接，內容不變動
+    /// - 備註：兩筆皆非空時以獨立一行 dash line 分隔串接；任一邊為空則直接取非空者
+    /// - Parameters:
+    ///   - primary: 主訂單 (發起合併的那筆)
+    ///   - secondary: 副訂單 (候選 sheet 選定的那筆)
+    ///   - now: 合併當下時間；caller 應從 `@Dependency(\.date)` 取得
+    ///   - isCardless: 判定付款方式名稱是否屬「無卡」類的 predicate；caller 從付款方式主檔旗標建構
+    /// - Returns: 合併後的草稿值
+    static func makeDraft(
+        primary: LedgerOrder,
+        secondary: LedgerOrder,
+        now: Date,
+        isCardless: (String) -> Bool
+    ) -> Draft {
+        let paymentSource = paymentMethodSource(
+            primary: primary,
+            secondary: secondary,
+            isCardless: isCardless
+        )
+
+        return Draft(
+            customer: primary.customer,
+            orderSource: primary.orderSource,
+            status: primary.status,
+            currency: primary.currency,
+            date: now,
+            categories: orderedUnion(
+                primary.categories,
+                secondary.categories
+            ),
+            campaignNames: orderedUnion(
+                primary.campaignNames,
+                secondary.campaignNames
+            ),
+            paymentMethod: paymentSource.paymentMethod,
+            verificationStatus: paymentSource.verificationStatus,
+            isCashOnDelivery: paymentSource.isCashOnDelivery,
+            paymentReceiptStatus: primary.paymentReceiptStatus,
+            chargedAmount: primary.chargedAmount + secondary.chargedAmount,
+            cardlessDeductionAmount: primary.cardlessDeductionAmount + secondary.cardlessDeductionAmount,
+            cardlessSupplementAmount: primary.cardlessSupplementAmount + secondary.cardlessSupplementAmount,
+            itemCost: primary.itemCost + secondary.itemCost,
+            foreignDomesticShipping: primary.foreignDomesticShipping + secondary.foreignDomesticShipping,
+            internationalShipping: primary.internationalShipping + secondary.internationalShipping,
+            domesticShipping: primary.domesticShipping + secondary.domesticShipping,
+            cardFeeRate: weightedRate(
+                primary.cardFeeRate,
+                secondary.cardFeeRate,
+                primary: primary,
+                secondary: secondary
+            ),
+            platformFeeRate: weightedRate(
+                primary.platformFeeRate,
+                secondary.platformFeeRate,
+                primary: primary,
+                secondary: secondary
+            ),
+            paymentFeeRate: weightedRate(
+                primary.paymentFeeRate,
+                secondary.paymentFeeRate,
+                primary: primary,
+                secondary: secondary
+            ),
+            items: primary.items + secondary.items,
+            notes: mergedNotes(
+                primary.notes,
+                secondary.notes
+            ),
+            photos: primary.photos + secondary.photos,
+            mergeSourceIDs: [
+                primary.id,
+                secondary.id
+            ]
+        )
+    }
+}
+
 // MARK: - Private Method
 
 private extension OrderMerge {
@@ -192,7 +223,9 @@ private extension OrderMerge {
         secondary: LedgerOrder
     ) -> Decimal {
         let totalCharged = primary.chargedAmount + secondary.chargedAmount
-        guard totalCharged > 0 else { return primaryRate }
+        guard totalCharged > 0 else {
+            return primaryRate
+        }
 
         let weighted = (primaryRate * primary.chargedAmount + secondaryRate * secondary.chargedAmount) / totalCharged
         return max(0, min(1, weighted))

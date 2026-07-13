@@ -31,7 +31,9 @@ final class PaymentMethodRecord {
 
     /// 是否屬於「貨到付款」類付款方式
     ///
-    /// 帶 default `false` 走 SwiftData lightweight migration；與 ``isCardless``、``isBankTransfer`` 為平行的獨立旗標。使用此付款方式的訂單會被標記為貨到付款，``OrderSummary`` 會在獲利中額外扣除三種運費 (因收款金額已含預估運費)
+    /// 帶 default `false` 走 SwiftData lightweight migration；與 ``isCardless``、``isBankTransfer`` 為平行的獨立旗標
+    ///
+    /// 使用此付款方式的訂單會被標記為貨到付款，``OrderSummary`` 會在獲利中額外扣除三種運費 (因收款金額已含預估運費)
     var isCashOnDelivery: Bool = false
 
     // MARK: - Init

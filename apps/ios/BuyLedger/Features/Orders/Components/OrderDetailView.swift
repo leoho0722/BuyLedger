@@ -88,6 +88,7 @@ struct OrderDetailView: View {
         .background(palette.background)
     }
 }
+
 // MARK: - Nested Types
 
 extension OrderDetailView {
@@ -116,7 +117,7 @@ extension OrderDetailView {
         /// 詳情內容在寬視窗與全螢幕下的最大可讀寬度
         static let maximumContentWidth: CGFloat = 1_440
 
-        // MARK: - Static Method
+        // MARK: - Private Method
 
         /// 依照 detail 欄目前可用寬度回傳內容容器寬度
         /// - Parameter availableWidth: detail 欄目前可用寬度
@@ -146,7 +147,6 @@ extension OrderDetailView {
         let color: Color
     }
 }
-
 
 // MARK: - ViewBuilder
 

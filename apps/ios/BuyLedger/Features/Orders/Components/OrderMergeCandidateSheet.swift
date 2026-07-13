@@ -10,7 +10,9 @@ import SwiftUI
 
 /// 「合併訂單」流程的 sheet 容器：候選選擇步驟列出可合併訂單，照片超限時切換到 ``MergePhotoPickerSheet``
 ///
-/// 候選清單僅列與主訂單同幣別、同客戶名稱且狀態非「已合併」「已取消」的訂單 (由 ``OrderMergeFeature/State`` 過濾)，並比照訂單頁以訂購日分組 (section 標題為今天/昨天/格式化日期)；每列重用訂單頁的 ``OrderRowView`` 版面、右欄改顯示客戶實付，支援即時搜尋
+/// 候選清單僅列與主訂單同幣別、同客戶名稱且狀態非「已合併」「已取消」的訂單 (由 ``OrderMergeFeature/State`` 過濾)
+///
+/// 並比照訂單頁以訂購日分組 (section 標題為今天/昨天/格式化日期)；每列重用訂單頁的 ``OrderRowView`` 版面、右欄改顯示客戶實付，支援即時搜尋
 struct OrderMergeCandidateSheet: View {
 
     // MARK: - View Properties
@@ -107,7 +109,9 @@ private extension OrderMergeCandidateSheet {
 
     /// 單筆候選訂單列：重用訂單頁的 ``OrderRowView`` 版面，右欄以 ``OrderRowView/Trailing/chargedAmount`` 變體顯示客戶實付
     ///
-    /// 左欄 (頭像、客戶名稱、商品明細、類別 tag) 與訂單頁完全一致——比訂單編號更易辨識要合併哪筆訂單；日期由 section 標題提供故列內不重複，狀態與損益對挑選候選參考價值低，故右欄改顯示對應合併金額逐項加總的客戶實付
+    /// 左欄 (頭像、客戶名稱、商品明細、類別 tag) 與訂單頁完全一致——比訂單編號更易辨識要合併哪筆訂單
+    ///
+    /// 日期由 section 標題提供故列內不重複，狀態與損益對挑選候選參考價值低，故右欄改顯示對應合併金額逐項加總的客戶實付
     /// - Parameter order: 該列代表的候選訂單
     /// - Returns: 候選列 view
     @ViewBuilder

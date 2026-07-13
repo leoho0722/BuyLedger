@@ -11,7 +11,7 @@ import UniformTypeIdentifiers
 
 /// 將相簿匯入的影像 data 正規化的純函式工具：以 ImageIO 降採樣後重編碼為 JPEG
 ///
-/// 訂單照片在寫入 SwiftData 前一律經過此處理，把單張容量控制在數百 KB 等級，避免 ``OrderRecord`` 的 row 過大拖慢 `fetchAll`；同時把 HEIC 等來源格式統一成 JPEG，確保三平台解碼一致
+/// 訂單照片在寫入 SwiftData 前一律經過此處理，把單張容量控制在數百 KB 等級，避免 ``OrderRecord`` 的 row 過大拖慢 `fetchAll`；同時把 HEIC 等來源格式統一成 JPEG，確保各平台解碼一致
 enum PhotoDataProcessor {
 
     // MARK: - Static Properties
@@ -23,7 +23,7 @@ enum PhotoDataProcessor {
     static let defaultCompressionQuality: CGFloat = 0.75
 }
 
-// MARK: - Static Method
+// MARK: - Internal Method
 
 extension PhotoDataProcessor {
 

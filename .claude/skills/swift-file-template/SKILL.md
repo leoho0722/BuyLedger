@@ -20,7 +20,7 @@ BuyLedger Swift 檔案的格式範本。MARK 排版規則與區段順序表格�
 
 ## View 完整版
 
-第 5～8 區段 (Nested Types、ViewBuilder、Private Method、Preview) 一律寫在型別主體**外**的 extension：
+第 5～8 區段 (Nested Types、ViewBuilder、方法、Preview) 一律寫在型別主體**外**的 extension。方法段依 access 拆兩段：`internal` 收 `// MARK: - Internal Method` (在上)、`private` 收 `// MARK: - Private Method` (在下)；`static` 方法不另立段，依 access 併入對應段 (不用 `Static Method`)：
 
 ```swift
 struct OrdersView: View {
@@ -46,6 +46,11 @@ private extension OrdersView {
     @ViewBuilder
     func listSection() -> some View { ... }
 }
+
+// MARK: - Internal Method
+
+// internal 方法 (含 internal static) 收這裡，用非 private 的 extension
+extension OrdersView { ... }
 
 // MARK: - Private Method
 

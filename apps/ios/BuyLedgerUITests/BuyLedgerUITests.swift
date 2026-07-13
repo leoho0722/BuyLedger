@@ -27,7 +27,7 @@ final class BuyLedgerUITests: XCTestCase {
 
     @MainActor
     func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
+        // 測量 App 啟動所需時間
         measure(metrics: [XCTApplicationLaunchMetric()]) {
             XCUIApplication().launch()
         }

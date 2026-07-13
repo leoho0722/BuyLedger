@@ -140,7 +140,7 @@ struct CampaignSummaryTests {
     }
 
     @Test func mergeResultOrdersAreNotMembers() {
-        // 統計歸屬採「合併前收益」：合併產生的新訂單不是成員，被合併的葉端舊單照常入帳
+        // 統計採「合併前」的原始訂單：合併產生的新訂單不是成員，被合併掉的原始舊單照常入帳
         let orders = [
             makeOrder(id: "A", customer: "客", campaign: "May-JP", charged: 1_000, status: .merged, itemCost: 200),
             makeOrder(id: "B", customer: "客", campaign: "June-KR", charged: 2_000, status: .merged, itemCost: 300),
@@ -167,7 +167,7 @@ struct CampaignSummaryTests {
     }
 
     @Test func multiCampaignLeafCountsFullyInEachCampaign() {
-        // 防衛性規則：葉端訂單若帶多個開團，全額計入它的每一團
+        // 防衛性規則：原始訂單若帶多個開團，全額計入它的每一團
         let orders = [
             makeOrder(id: "O1", customer: "客", campaign: "", charged: 900, campaignNames: ["May-JP", "June-KR"]),
         ]

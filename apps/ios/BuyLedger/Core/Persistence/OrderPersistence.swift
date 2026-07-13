@@ -14,10 +14,12 @@ import SwiftData
 ///
 /// 領域層 `LedgerOrder` 與持久層 `OrderRecord` 在 actor 內互轉
 @ModelActor
-actor OrderPersistence {
-    
-    // MARK: - View Method
-    
+actor OrderPersistence {}
+
+// MARK: - Internal Method
+
+extension OrderPersistence {
+
     /// 讀出全部訂單，依日期由新到舊排序
     /// - Returns: 領域型別陣列
     func fetchAll() throws -> [LedgerOrder] {
@@ -25,10 +27,10 @@ actor OrderPersistence {
             sortBy: [SortDescriptor(\.date, order: .reverse)]
         )
         let records = try modelContext.fetch(descriptor)
-        
+
         return records.map { $0.toDomain() }
     }
-    
+
     /// 讀取單筆訂單 (依 id)；不存在回 nil
     ///
     /// 供跨裝置同步逐欄合併時取本機 baseline
@@ -41,7 +43,7 @@ actor OrderPersistence {
         )
         return try modelContext.fetch(descriptor).first?.toDomain()
     }
-    
+
     /// 寫入或更新單筆訂單
     /// - Parameter order: 來源領域訂單
     func upsert(_ order: LedgerOrder) throws {
@@ -49,29 +51,31 @@ actor OrderPersistence {
         let descriptor = FetchDescriptor<OrderRecord>(
             predicate: #Predicate { $0.id == id }
         )
-        
+
         if let existing = try modelContext.fetch(descriptor).first {
             existing.apply(order)
         } else {
             modelContext.insert(OrderRecord(order: order))
         }
-        
+
         try modelContext.save()
     }
-    
+
     /// 以單一 `save()` 批次 upsert 多筆訂單 (依 id)，達成原子落盤
     ///
     /// 供「多選批次更改狀態」使用；單次 `save()` 確保任一步失敗整批不生效，避免逐筆 `upsert` 的部分成功
     /// - Parameter orders: 要寫入或更新的訂單；空陣列為 no-op
     func upsertAll(_ orders: [LedgerOrder]) throws {
-        guard !orders.isEmpty else { return }
-        
+        guard !orders.isEmpty else {
+            return
+        }
+
         let existing = try modelContext.fetch(FetchDescriptor<OrderRecord>())
         var recordByID: [String: OrderRecord] = [:]
         for record in existing {
             recordByID[record.id] = record
         }
-        
+
         for order in orders {
             if let record = recordByID[order.id] {
                 record.apply(order)
@@ -79,25 +83,25 @@ actor OrderPersistence {
                 modelContext.insert(OrderRecord(order: order))
             }
         }
-        
+
         try modelContext.save()
     }
-    
+
     /// 刪除指定 id 的訂單；若不存在不視為錯誤
     /// - Parameter id: 要刪除的訂單編號
     func delete(id: LedgerOrder.ID) throws {
         let descriptor = FetchDescriptor<OrderRecord>(
             predicate: #Predicate { $0.id == id }
         )
-        
+
         let records = try modelContext.fetch(descriptor)
         for record in records {
             modelContext.delete(record)
         }
-        
+
         try modelContext.save()
     }
-    
+
     /// 把所有以 `oldName` 為訂單來源的訂單，更名為 `newName`
     /// - Parameters:
     ///   - oldName: 原本的訂單來源名稱
@@ -111,7 +115,7 @@ actor OrderPersistence {
         }
         try modelContext.save()
     }
-    
+
     /// 把所有類別清單包含 `oldName` 的訂單，於陣列內逐元素更名為 `newName`
     /// - Parameters:
     ///   - oldName: 原本的類別名稱
@@ -123,7 +127,7 @@ actor OrderPersistence {
         }
         try modelContext.save()
     }
-    
+
     /// 把所有以 `oldName` 為付款方式的訂單，更名為 `newName`
     /// - Parameters:
     ///   - oldName: 原本的名稱
@@ -137,7 +141,7 @@ actor OrderPersistence {
         }
         try modelContext.save()
     }
-    
+
     /// 把所有以 `oldName` 為對帳狀態的訂單，更名為 `newName`
     /// - Parameters:
     ///   - oldName: 原本的對帳狀態名稱
@@ -151,7 +155,7 @@ actor OrderPersistence {
         }
         try modelContext.save()
     }
-    
+
     /// 把所有開團清單包含 `oldName` 的訂單，於陣列內逐元素更名為 `newName` (開團 cascade rename)
     /// - Parameters:
     ///   - oldName: 原本的開團名稱
@@ -163,7 +167,7 @@ actor OrderPersistence {
         }
         try modelContext.save()
     }
-    
+
     /// 以單一交易完成「寫入合併後新訂單 + 將來源訂單狀態改為已合併」
     ///
     /// 兩者同一次 `save()` 落盤，避免半合併狀態 (新單已存在但舊單未轉已合併)
@@ -175,22 +179,22 @@ actor OrderPersistence {
         let descriptor = FetchDescriptor<OrderRecord>(
             predicate: #Predicate { $0.id == newID }
         )
-        
+
         if let existing = try modelContext.fetch(descriptor).first {
             existing.apply(newOrder)
         } else {
             modelContext.insert(OrderRecord(order: newOrder))
         }
-        
+
         let ids = Set(consumedIDs)
         let records = try modelContext.fetch(FetchDescriptor<OrderRecord>())
         for record in records where ids.contains(record.id) && record.id != newID {
             record.status = .merged
         }
-        
+
         try modelContext.save()
     }
-    
+
     /// 若目前資料表為空，將提供的 sample data 寫入；
     /// 否則 no-op (供首次啟動看到 demo 資料)
     /// - Parameter samples: 要 seed 的訂單；通常傳入 ``LedgerOrder/sampleOrders``
@@ -199,16 +203,16 @@ actor OrderPersistence {
     func seedIfEmpty(with samples: [LedgerOrder]) throws -> Bool {
         var descriptor = FetchDescriptor<OrderRecord>()
         descriptor.fetchLimit = 1
-        
+
         let existing = try modelContext.fetch(descriptor)
         guard existing.isEmpty else {
             return false
         }
-        
+
         for order in samples {
             modelContext.insert(OrderRecord(order: order))
         }
-        
+
         try modelContext.save()
         return true
     }

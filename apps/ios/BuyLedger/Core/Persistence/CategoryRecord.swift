@@ -10,7 +10,9 @@ import SwiftData
 
 /// SwiftData 持久化的「商品類別主檔」記錄
 ///
-/// 用於使用者在「更多」頁獨立管理類別 (不依賴任何一張訂單存在)，亦作為訂單編輯選單的選項來源。沿用 ``OrderRecord`` 的設計準則：不使用 `@Attribute(.unique)` (CloudKit 不支援)，由 actor 在 upsert 時自行檢查避免重複
+/// 用於使用者在「更多」頁獨立管理類別 (不依賴任何一張訂單存在)，亦作為訂單編輯選單的選項來源
+///
+/// 沿用 ``OrderRecord`` 的設計準則：不使用 `@Attribute(.unique)` (CloudKit 不支援)，由 actor 在 upsert 時自行檢查避免重複
 @Model
 final class CategoryRecord {
 

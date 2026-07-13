@@ -9,7 +9,8 @@ import UIKit
 
 /// iOS / iPadOS 的應用程式委派
 ///
-/// 透過 ``BuyLedgerApp`` 的 `@UIApplicationDelegateAdaptor` 接入 SwiftUI 生命週期，在 App 完成啟動時呼叫 ``AppLaunchConfigurator/configure()`` 執行啟動設定
+/// 透過 ``BuyLedgerApp`` 的 `@UIApplicationDelegateAdaptor` 接入 SwiftUI 生命週期，
+/// 在 App 完成啟動時呼叫 ``AppLaunchConfigurator/configure()`` 執行啟動設定
 final class AppDelegate: NSObject, UIApplicationDelegate {
 
     // MARK: - UIApplicationDelegate

@@ -18,7 +18,9 @@ enum TestDependencies {
 
     /// 預設使用的固定「現在」時間 (2026-04-30 00:00:00 UTC)
     ///
-    /// 落在 ``LedgerOrder/sampleOrders`` 的當月區間內，方便 Dashboard / Insights / Orders 的「本月」「近 30 天」等統計值有非零內容
+    /// 落在 ``LedgerOrder/sampleOrders`` 的當月區間內
+    ///
+    /// 方便 Dashboard / Insights / Orders 的「本月」「近 30 天」等統計值有非零內容
     static let fixedNow: Date = {
         var components = DateComponents()
         components.calendar = Calendar(identifier: .gregorian)
@@ -31,14 +33,20 @@ enum TestDependencies {
 
     /// 預設使用的固定行事曆 (gregorian + UTC)
     ///
-    /// 與 ``fixedNow`` 同基準，供直接呼叫帶 `calendar:` 參數的 State method (如 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)``) 的測試傳入，確保日期分組與區間判斷不受測試機器的時區與行事曆設定影響
+    /// 與 ``fixedNow`` 同基準，供直接呼叫帶 `calendar:` 參數的 State method
+    /// (如 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)``) 的測試傳入
+    ///
+    /// 確保日期分組與區間判斷不受測試機器的時區與行事曆設定影響
     static let fixedCalendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
         return calendar
     }()
+}
 
-    // MARK: - Static Method
+// MARK: - Internal Method
+
+extension TestDependencies {
 
     /// 在 ``fixedNow`` 注入 `\.date` 的 scope 中執行 operation
     ///

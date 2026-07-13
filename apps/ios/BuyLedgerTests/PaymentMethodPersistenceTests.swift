@@ -72,7 +72,7 @@ struct PaymentMethodPersistenceTests {
     }
 }
 
-// MARK: - Helpers
+// MARK: - Private Method
 
 private extension PaymentMethodPersistenceTests {
 
