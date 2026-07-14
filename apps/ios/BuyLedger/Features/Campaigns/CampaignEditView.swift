@@ -60,6 +60,8 @@ struct CampaignEditView: View {
                                 store.wantsReminder ? "移除提醒" : "新增提醒",
                                 systemImage: store.wantsReminder ? "bell.slash" : "bell"
                             )
+                            // 強制 icon 與文字貼合：Form row 的自動 label style 會把 icon/title 撐到兩端
+                            .labelStyle(.titleAndIcon)
                             .foregroundStyle(store.wantsReminder ? Color.red : Color.blue)
                         }
                         .buttonStyle(.borderless)

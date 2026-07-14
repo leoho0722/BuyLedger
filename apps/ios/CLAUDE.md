@@ -90,6 +90,7 @@ Schema 採版本化 `VersionedSchema`，設有 migration floor (floor 以下的�
 - **TCA feature** 內部用 `// MARK: - State / Action / Dependency Properties / Reducer Body` 等清楚切分 (順序見「MARK 區段與排版」一節的對照表)。
 - **Swift/SwiftUI 內建型別的通用 extension 放 `Shared/Extensions/`**，一型一檔，檔名 `<型別>+Extensions.swift` (如 `Image+Extensions.swift`、`Color+Extensions.swift`)。**與特定 DesignSystem 元件或功能耦合的 extension 不搬到這裡、留在該元件檔**：「套一層 modifier 就回傳」的 `View` 方法 (`blCardShadow()`／`blTextStyle()`) 與其 `ViewModifier` 同檔、`ButtonStyle where Self == BLButtonStyle` 的工廠留在 `BLButtonStyle.swift`、`dismissKeyboardOnTap()` 與其 `private UIView` helper 留在 `KeyboardDismissOnTap.swift`。判準：可獨立重用的通用 helper 才進 `Shared/Extensions/`。
 - **不用 `switch`／`if` 運算式賦值**：避免 `let x = switch … { … }` / `let x = if … { … }` 這種運算式寫法；改用傳統陳述式 (先宣告 `let x: T`，再於各分支賦值)。若該計算寫在 `@ViewBuilder` body 內會與 result builder 衝突，請抽成獨立 helper 回傳該值，view body 只呼叫 helper。
+- **`Label` 放在 `Form`／`List` row 內且後接 `Spacer`**：自動 label style 會把 icon 與 title 撐到 row 兩端 (icon 與文字中間出現大空隙)，須加 `.labelStyle(.titleAndIcon)` 讓兩者貼合 (`RootSidebarLayout` nav row、`CampaignEditView` 訂購提醒按鈕皆然)。
 
 ### 註解
 
