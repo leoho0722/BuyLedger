@@ -55,21 +55,19 @@ extension ExchangeRateLatestResponse {
     /// 把 DTO 轉成領域層 ``FxRateSnapshot``
     ///
     /// `CurrencyCode` 改成 struct wrapper 後不再 filter 未知幣別；API 回傳的所有 ISO 4217 code 都被保留進 snapshot，view 端可依當下 cache 決定顯示哪些
-    /// - Parameter base: 請求時使用的基準幣別
+    /// - Parameters:
+    ///   - base: 請求時使用的基準幣別
+    ///   - fallbackDate: API 未回 `time_last_update_unix` 時採用的快照時間；caller 應從 `@Dependency(\.date)` 取得以維持可測試性
     /// - Returns: 對應的快照
-    func toSnapshot(base: CurrencyCode) -> FxRateSnapshot {
+    func toSnapshot(base: CurrencyCode, fallbackDate: Date) -> FxRateSnapshot {
         let rawRates = conversionRates ?? [:]
         var converted: [CurrencyCode: Decimal] = [:]
         for (key, value) in rawRates {
             converted[CurrencyCode(rawValue: key)] = Decimal(value)
         }
 
-        let date: Date = {
-            if let unix = timeLastUpdateUnix {
-                return Date(timeIntervalSince1970: unix)
-            }
-            return Date()
-        }()
+        let date = timeLastUpdateUnix
+            .map { Date(timeIntervalSince1970: $0) } ?? fallbackDate
 
         return FxRateSnapshot(date: date, base: base, rates: converted)
     }

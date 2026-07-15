@@ -159,7 +159,13 @@ private extension CampaignEditView {
 
 #Preview("新增開團") {
     CampaignEditView(
-        store: Store(initialState: CampaignEditFeature.State()) {
+        store: Store(
+            initialState: CampaignEditFeature.State(
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+                currentDate: Date(timeIntervalSince1970: 0),
+                reminderTimestamp: Date(timeIntervalSince1970: 0)
+            )
+        ) {
             CampaignEditFeature()
         }
     )

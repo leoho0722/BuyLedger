@@ -39,10 +39,11 @@ struct BLSegmentedControl<Option: Hashable>: View {
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(selection == option ? palette.label : palette.secondaryLabel)
                         .frame(maxWidth: .infinity)
-                        .frame(minHeight: 30)
-                        .contentShape(Rectangle())
+                        .frame(minHeight: 44)
+                        .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
+                .accessibilityAddTraits(selection == option ? .isSelected : [])
                 .background(selection == option ? palette.surface : .clear)
                 .clipShape(
                     RoundedRectangle(

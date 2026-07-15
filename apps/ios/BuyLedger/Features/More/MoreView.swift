@@ -16,7 +16,7 @@ struct MoreView: View {
     // MARK: - View Properties
 
     /// App 根層級 store
-    let store: StoreOf<RootFeature>
+    @Bindable var store: StoreOf<RootFeature>
 
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
@@ -29,12 +29,7 @@ struct MoreView: View {
 
         NavigationStack {
             phoneContent(palette: palette)
-                .navigationDestination(
-                    isPresented: Binding(
-                        get: { store.showsSettingsFromDeepLink },
-                        set: { store.send(.setShowsSettingsFromDeepLink($0)) }
-                    )
-                ) {
+                .navigationDestination(isPresented: $store.showsSettingsFromDeepLink) {
                     SettingsView(store: store.scope(state: \.settings, action: \.settings))
                 }
         }

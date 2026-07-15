@@ -53,16 +53,17 @@ struct OrderMergeFeature {
         ///   - primary: 主訂單
         ///   - orders: 全部訂單 (通常為 ``OrdersFeature/State/orders``)
         init(primary: LedgerOrder, orders: [LedgerOrder]) {
+            @Dependency(\.uuid) var uuid
             self.primary = primary
             self.candidates = Self.eligibleCandidates(for: primary, in: orders)
-            self.id = UUID()
+            self.id = uuid()
         }
 
         // MARK: - Computed Properties
 
         /// 依搜尋字串過濾後的候選清單；比對客戶名稱、單號、類別與商品名稱
         var filteredCandidates: [LedgerOrder] {
-            let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+            let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
             guard !query.isEmpty else {
                 return candidates
             }
@@ -70,8 +71,7 @@ struct OrderMergeFeature {
             return candidates.filter { order in
                 ([order.id, order.customer.name] + order.categories + order.items.map(\.name))
                     .joined(separator: " ")
-                    .lowercased()
-                    .contains(query)
+                    .localizedStandardContains(query)
             }
         }
     }

@@ -95,7 +95,7 @@ struct OrdersFeatureTests {
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
         let newName = "重新命名客戶"
 
-        var draft = OrderEditFeature.State(original: original)
+        var draft = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftCustomerName = newName
 
         var state = OrdersFeature.State()
@@ -119,7 +119,7 @@ struct OrdersFeatureTests {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
-        var draft = OrderEditFeature.State(original: original)
+        var draft = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftNotes = "  到貨後請先聯絡客戶確認尺寸  "
 
         var state = OrdersFeature.State()
@@ -144,7 +144,7 @@ struct OrdersFeatureTests {
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
         let photos = [Data([0x01]), Data([0x02])]
 
-        var draft = OrderEditFeature.State(original: original)
+        var draft = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftPhotos = photos
 
         var state = OrdersFeature.State()
@@ -167,7 +167,7 @@ struct OrdersFeatureTests {
         // 驗證新增訂單分支 (original == nil) 也會把照片草稿寫進新訂單
         let photos = [Data([0xA1])]
 
-        var draft = OrderEditFeature.State()
+        var draft = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftCustomerName = "新照片客戶"
         draft.draftPhotos = photos
 
@@ -195,9 +195,11 @@ struct OrdersFeatureTests {
 
         var draft = OrderEditFeature.State(
             original: original,
+            id: UUID(0),
             availablePaymentMethods: [
                 PaymentMethodInfo(name: "銀行匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false),
-            ]
+            ],
+            currentDate: TestDependencies.fixedNow
         )
         draft.draftPaymentMethod = "銀行匯款"
         draft.draftVerificationStatus = "待對帳"
@@ -224,7 +226,7 @@ struct OrdersFeatureTests {
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
         // 原訂單付款方式為「信用卡」(預設無旗標)；殘留一個對帳狀態草稿
-        var draft = OrderEditFeature.State(original: original)
+        var draft = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftVerificationStatus = "待對帳"
 
         var state = OrdersFeature.State()
@@ -247,7 +249,7 @@ struct OrdersFeatureTests {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
-        var draft = OrderEditFeature.State(original: original)
+        var draft = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftCustomerName = "   "
 
         var state = OrdersFeature.State()
@@ -271,7 +273,7 @@ struct OrdersFeatureTests {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
-        var draft = OrderEditFeature.State(original: original)
+        var draft = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftCustomerName = "暫定名字"
 
         var state = OrdersFeature.State()
@@ -302,6 +304,7 @@ struct OrdersFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
+            $0.uuid = .incrementing
         }
         store.exhaustivity = .off
 
@@ -322,6 +325,7 @@ struct OrdersFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
+            $0.uuid = .incrementing
         }
         store.exhaustivity = .off
 
@@ -339,7 +343,7 @@ struct OrdersFeatureTests {
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
         let unrelatedSelection = "BL-2604-016"
 
-        var draft = OrderEditFeature.State(original: original)
+        var draft = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftCustomerName = "改過的客戶"
 
         var state = OrdersFeature.State()
@@ -363,7 +367,7 @@ struct OrdersFeatureTests {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
-        var draft = OrderEditFeature.State(original: original)
+        var draft = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftStatus = .delivered
         draft.draftCurrency = .jpy
         draft.draftChargedAmount = 9_876
@@ -392,7 +396,7 @@ struct OrdersFeatureTests {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
-        var draft = OrderEditFeature.State(original: original)
+        var draft = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftItemCost = 5_000
         draft.draftDomesticShipping = 100
         draft.draftInternationalShipping = 250
@@ -423,7 +427,7 @@ struct OrdersFeatureTests {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
-        var draft = OrderEditFeature.State(original: original)
+        var draft = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftCardFeeRate = -0.5
         draft.draftPlatformFeeRate = 5
 
@@ -448,7 +452,7 @@ struct OrdersFeatureTests {
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
-        var draft = OrderEditFeature.State(original: original)
+        var draft = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftChargedAmount = -500
 
         var state = OrdersFeature.State()
@@ -470,9 +474,9 @@ struct OrdersFeatureTests {
     @Test func newOrderSaveInsertsAndSelectsTheNewOrder() async {
         let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
 
-        // 直接把 fixedDate 帶進 `currentDate`，避免 `OrderEditFeature.State()` 內部 fallback 到 `Date()` 造成
-        // 新訂單 `date` 落在測試實際執行的當下，與下方斷言期待的 fixedDate 不符
-        var draft = OrderEditFeature.State(currentDate: fixedDate)
+        // 顯式把 fixedDate 帶進 `currentDate`，讓新訂單的 `draftDate` 為固定值、
+        // 與下方斷言期待的 fixedDate 一致 (不落在測試實際執行的當下)
+        var draft = OrderEditFeature.State(id: UUID(0), currentDate: fixedDate)
         draft.draftCustomerName = "新客戶"
         draft.draftCategories = ["美妝"]
 
@@ -510,7 +514,7 @@ struct OrdersFeatureTests {
 
     @Test func saveNormalizesCategoryAndCampaignArrays() async {
         // 儲存時逐元素 trim、去除空字串與重複 (保序)
-        var draft = OrderEditFeature.State(currentDate: TestDependencies.fixedNow)
+        var draft = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftCustomerName = "新客戶"
         draft.draftCategories = [" 美妝 ", "美妝", "", "服飾", "   "]
         draft.draftCampaignNames = ["四月韓國團", " 四月韓國團 ", ""]
@@ -548,6 +552,7 @@ struct OrdersFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
+            $0.uuid = .incrementing
         }
         store.exhaustivity = .off
 
@@ -591,6 +596,7 @@ struct OrdersFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
+            $0.uuid = .incrementing
             // 測試 target 未連結 swift-clocks 的 ImmediateClock，改注入真實 clock；延遲僅 0.5 秒，配合下方 finish timeout
             $0.continuousClock = ContinuousClock()
         }
@@ -623,7 +629,7 @@ struct OrdersFeatureTests {
         let secondaryID = "BL-2604-012"
 
         // 預塞合併確認草稿 (帶 mergeSourceIDs)，直接驗證 saveTapped 的合併寫回路徑
-        var draft = OrderEditFeature.State(currentDate: TestDependencies.fixedNow)
+        var draft = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draftCustomerName = "林書宇"
         draft.draftCategories = ["美妝", "服飾"]
         draft.draftChargedAmount = 17_480
@@ -662,7 +668,7 @@ struct OrdersFeatureTests {
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
 
-        var draft = OrderEditFeature.State(currentDate: TestDependencies.fixedNow)
+        var draft = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.mergeSourceIDs = ["BL-2604-018", "BL-2604-012"]
         state.editOrder = draft
 

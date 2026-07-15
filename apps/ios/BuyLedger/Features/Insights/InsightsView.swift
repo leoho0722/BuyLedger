@@ -30,6 +30,9 @@ struct InsightsView: View {
     /// 趨勢分組與熱力圖週界計算所用的行事曆 (含時區)；測試可注入固定 gregorian／UTC
     @Dependency(\.calendar) private var calendar
 
+    /// hero 總獲利金額字級，隨 Dynamic Type 縮放 (以 `.title` 為基準)
+    @ScaledMetric(relativeTo: .title) private var heroProfitSize: CGFloat = 28
+
     // MARK: - View Body
 
     /// 分析頁的畫面內容
@@ -78,14 +81,24 @@ private extension InsightsView {
             calendar: calendar,
             palette: palette
         )
+        // 掃全部訂單的排行與熱力圖在一次 render 內各算一次，避免 card view builder 每次重算
+        let campaignRanks = InsightsStats.campaignProfitRanking(
+            campaigns: store.campaigns.campaigns,
+            orders: store.orders.orders
+        )
+        let heatmapCells = InsightsStats.computeHeatmap(
+            orders: store.orders.orders,
+            referenceDate: date(),
+            calendar: calendar
+        )
 
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 rangePicker
                 trendCard(stats: stats, palette: palette)
                 breakdownGrid(stats: stats, palette: palette)
-                campaignProfitCard(palette: palette)
-                heatmapCard(palette: palette)
+                campaignProfitCard(ranks: campaignRanks, palette: palette)
+                heatmapCard(cells: heatmapCells, palette: palette)
             }
             .padding(.horizontal, BLSpacing.large)
             .padding(.vertical, BLSpacing.large)
@@ -120,13 +133,7 @@ private extension InsightsView {
     /// 期間選擇器
     @ViewBuilder
     var rangePicker: some View {
-        Picker(
-            "期間",
-            selection: Binding(
-                get: { store.insightsDateRange },
-                set: { store.send(.insightsRangeSelected($0)) }
-            )
-        ) {
+        Picker("期間", selection: $store.insightsDateRange) {
             ForEach(InsightsDateRange.allCases) { range in
                 Text(range.title).tag(range)
             }
@@ -156,7 +163,7 @@ private extension InsightsView {
                 }
 
                 Text(formatTwd(stats.totalProfit))
-                    .font(.system(size: 28, weight: .bold))
+                    .font(.system(size: heroProfitSize, weight: .bold))
                     .monospacedDigit()
                     .foregroundStyle(palette.label)
 
@@ -193,15 +200,12 @@ private extension InsightsView {
     }
 
     /// 每團毛利排行卡：依毛利由高到低排序各開團 (排除無歸屬訂單的團)；點擊跳到該開團詳情。沒有可排行的開團時整卡隱藏
-    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Parameters:
+    ///   - ranks: 由 ``analyticsContent(palette:)`` 一次算好的開團毛利排行
+    ///   - palette: 目前外觀使用的色盤
     /// - Returns: 開團毛利排行卡 view (無資料時為 `EmptyView`)
     @ViewBuilder
-    func campaignProfitCard(palette: BLPalette) -> some View {
-        let ranks = InsightsStats.campaignProfitRanking(
-            campaigns: store.campaigns.campaigns,
-            orders: store.orders.orders
-        )
-
+    func campaignProfitCard(ranks: [CampaignProfitRank], palette: BLPalette) -> some View {
         if !ranks.isEmpty {
             BLCard {
                 VStack(alignment: .leading, spacing: BLSpacing.medium) {
@@ -219,7 +223,7 @@ private extension InsightsView {
                                 tint: palette.accent,
                                 trailingText: CampaignFormatters.twd(rank.profit)
                             )
-                            .contentShape(Rectangle())
+                            .contentShape(.rect)
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint("查看 \(rank.campaignName) 的詳情")
@@ -260,7 +264,7 @@ private extension InsightsView {
                                 tint: categoryTints(palette: palette)[index % categoryTints(palette: palette).count],
                                 palette: palette
                             )
-                            .contentShape(Rectangle())
+                            .contentShape(.rect)
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint("查看 \(category.name) 類別的訂單")
@@ -375,12 +379,13 @@ private extension InsightsView {
     }
 
     /// 過去 N 週的下單熱力圖；N 由 ``InsightsStats/heatmapWeekCount`` 決定
-    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Parameters:
+    ///   - cells: 由 ``analyticsContent(palette:)`` 一次算好的熱力圖格值
+    ///   - palette: 目前外觀使用的色盤
     /// - Returns: 熱力圖卡 view
     @ViewBuilder
-    func heatmapCard(palette: BLPalette) -> some View {
+    func heatmapCard(cells: [HeatmapKey: Int], palette: BLPalette) -> some View {
         let weekCount = InsightsStats.heatmapWeekCount
-        let cells = InsightsStats.computeHeatmap(orders: store.orders.orders, referenceDate: date(), calendar: calendar)
         let maxCount = cells.values.max() ?? 1
 
         BLCard {

@@ -561,6 +561,7 @@ struct OrdersFeature {
 
                 state.editOrder = OrderEditFeature.State(
                     original: order,
+                    id: uuid(),
                     availableOrderSources: state.availableOrderSources,
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
@@ -572,6 +573,7 @@ struct OrdersFeature {
 
             case .newOrderTapped:
                 state.editOrder = OrderEditFeature.State(
+                    id: uuid(),
                     availableOrderSources: state.availableOrderSources,
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
@@ -619,7 +621,9 @@ struct OrdersFeature {
                 let orderRepository = orderRepository
                 return .run { _ in
                     // 同步觸發已下沉到 OrderRepository.saveOrder (各異動路徑統一發通知、避免漏發)
-                    try? await orderRepository.saveOrder(savedOrder)
+                    try await orderRepository.saveOrder(savedOrder)
+                } catch: { _, send in
+                    await send(.ordersFailed("訂單儲存失敗，請稍後再試。"))
                 }
 
             case let .editOrder(.presented(.addOrderSourceTapped(name))):
@@ -638,7 +642,9 @@ struct OrdersFeature {
                 }
                 let orderSourceRepository = orderSourceRepository
                 return .run { _ in
-                    try? await orderSourceRepository.addOrderSource(trimmed)
+                    try await orderSourceRepository.addOrderSource(trimmed)
+                } catch: { _, send in
+                    await send(.ordersFailed("訂單來源新增失敗，請稍後再試。"))
                 }
 
             case let .editOrder(.presented(.addCategoryTapped(name))):
@@ -657,7 +663,9 @@ struct OrdersFeature {
                 }
                 let categoryRepository = categoryRepository
                 return .run { _ in
-                    try? await categoryRepository.addCategory(trimmed)
+                    try await categoryRepository.addCategory(trimmed)
+                } catch: { _, send in
+                    await send(.ordersFailed("商品類別新增失敗，請稍後再試。"))
                 }
 
             case let .editOrder(.presented(.addPaymentMethodTapped(name, isCardless, isBankTransfer, isCashOnDelivery))):
@@ -688,7 +696,9 @@ struct OrdersFeature {
 
                 let paymentMethodRepository = paymentMethodRepository
                 return .run { _ in
-                    try? await paymentMethodRepository.addPaymentMethod(trimmed, isCardless, isBankTransfer, isCashOnDelivery)
+                    try await paymentMethodRepository.addPaymentMethod(trimmed, isCardless, isBankTransfer, isCashOnDelivery)
+                } catch: { _, send in
+                    await send(.ordersFailed("付款方式新增失敗，請稍後再試。"))
                 }
 
             case let .editOrder(.presented(.addVerificationStatusTapped(name))):
@@ -707,7 +717,9 @@ struct OrdersFeature {
                 }
                 let verificationStatusRepository = verificationStatusRepository
                 return .run { _ in
-                    try? await verificationStatusRepository.addVerificationStatus(trimmed)
+                    try await verificationStatusRepository.addVerificationStatus(trimmed)
+                } catch: { _, send in
+                    await send(.ordersFailed("對帳狀態新增失敗，請稍後再試。"))
                 }
 
             case .editOrder:
@@ -747,6 +759,7 @@ struct OrdersFeature {
 
             case let .mergeConfirmationReady(draft, keptPhotos):
                 var editState = OrderEditFeature.State(
+                    id: uuid(),
                     availableOrderSources: state.availableOrderSources,
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
@@ -830,7 +843,9 @@ struct OrdersFeature {
 
                 let orderRepository = orderRepository
                 return .run { _ in
-                    try? await orderRepository.saveOrder(updated)
+                    try await orderRepository.saveOrder(updated)
+                } catch: { _, send in
+                    await send(.ordersFailed("訂單狀態更新失敗，請稍後再試。"))
                 }
 
             case .selectionModeToggled:
@@ -887,7 +902,9 @@ struct OrdersFeature {
                 let orderRepository = orderRepository
                 let changedOrders = changed
                 return .run { _ in
-                    try? await orderRepository.saveOrders(changedOrders)
+                    try await orderRepository.saveOrders(changedOrders)
+                } catch: { _, send in
+                    await send(.ordersFailed("批次更新狀態失敗，請稍後再試。"))
                 }
 
             case let .receiptStatusChanged(orderID, newReceiptStatus):
@@ -929,7 +946,9 @@ struct OrdersFeature {
 
                 let orderRepository = orderRepository
                 return .run { _ in
-                    try? await orderRepository.saveOrder(updated)
+                    try await orderRepository.saveOrder(updated)
+                } catch: { _, send in
+                    await send(.ordersFailed("收款狀態更新失敗，請稍後再試。"))
                 }
 
             case let .deleteOrderTapped(id):
@@ -969,7 +988,9 @@ struct OrdersFeature {
 
                 let orderRepository = orderRepository
                 return .run { _ in
-                    try? await orderRepository.removeOrder(id)
+                    try await orderRepository.removeOrder(id)
+                } catch: { _, send in
+                    await send(.ordersFailed("訂單刪除失敗，請稍後再試。"))
                 }
 
             case .deletionConfirmation:

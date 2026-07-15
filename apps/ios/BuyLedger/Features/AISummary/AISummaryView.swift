@@ -108,6 +108,7 @@ private extension AISummaryView {
         HStack(spacing: BLSpacing.extraSmall) {
             Image(systemName: "sparkles")
                 .font(.caption2.weight(.semibold))
+                .accessibilityHidden(true)
 
             Text("此內容由 AI 生成，可能包含錯誤資訊，請自行核對。")
                 .font(.caption)

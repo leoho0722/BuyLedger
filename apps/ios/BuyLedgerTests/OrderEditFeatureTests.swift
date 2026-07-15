@@ -18,7 +18,7 @@ struct OrderEditFeatureTests {
     // MARK: - Tests
 
     @Test func bindingUpdatesDraftCustomerName() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
@@ -28,7 +28,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func bindingUpdatesDraftCategories() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
@@ -38,7 +38,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func bindingUpdatesDraftStatus() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
@@ -48,7 +48,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func bindingUpdatesDraftCurrency() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
@@ -58,7 +58,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func bindingUpdatesDraftChargedAmount() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
@@ -68,7 +68,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func bindingUpdatesShowsCategorySheet() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
@@ -78,7 +78,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func bindingUpdatesPhotoViewerSelection() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
@@ -88,7 +88,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func bindingUpdatesDraftCostFields() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
@@ -111,7 +111,7 @@ struct OrderEditFeatureTests {
 
     @Test func draftPrefillsFromOriginal() {
         let original = LedgerOrder.sampleOrders[0]
-        let state = OrderEditFeature.State(original: original)
+        let state = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
 
         #expect(state.draftCustomerName == original.customer.name)
         #expect(state.draftCategories == original.categories)
@@ -127,7 +127,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func photosImportedAppendsUpToCap() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
@@ -142,7 +142,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func photosImportedTruncatesBatchExceedingCap() async {
-        var initial = OrderEditFeature.State()
+        var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         initial.draftPhotos = [Data([0x01]), Data([0x02]), Data([0x03])]
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
@@ -157,7 +157,7 @@ struct OrderEditFeatureTests {
 
     @Test func pickerSelectionImportsPhotosAndClearsSelection() async {
         let imported = [Data([0xAA]), Data([0xBB])]
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         } withDependencies: {
             $0[PhotoClient.self] = PhotoClient(importPhotos: { _ in imported })
@@ -179,7 +179,7 @@ struct OrderEditFeatureTests {
         let photoA = Data([0x0A])
         let photoB = Data([0x0B])
         let photoC = Data([0x0C])
-        var initial = OrderEditFeature.State()
+        var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         initial.draftPhotos = [photoA, photoB, photoC]
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
@@ -226,7 +226,7 @@ struct OrderEditFeatureTests {
             mergedSourceIDs: []
         )
 
-        let state = OrderEditFeature.State(original: original)
+        let state = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
 
         #expect(state.draftPhotos == photos)
         #expect(state.photoPickerSelection.isEmpty)
@@ -235,10 +235,12 @@ struct OrderEditFeatureTests {
     @Test func isSelectedPaymentMethodCardlessReflectsMasterFlag() {
         // 主檔中「無卡存款」isCardless == true、「信用卡」isCardless == false
         let state = OrderEditFeature.State(
+            id: UUID(0),
             availablePaymentMethods: [
                 PaymentMethodInfo(name: "信用卡", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
                 PaymentMethodInfo(name: "無卡存款", isCardless: true, isBankTransfer: false, isCashOnDelivery: false),
-            ]
+            ],
+            currentDate: TestDependencies.fixedNow
         )
 
         var mutable = state
@@ -256,11 +258,13 @@ struct OrderEditFeatureTests {
     @Test func showsVerificationStatusRowForCardlessOrBankTransfer() {
         // 主檔中「無卡存款」為無卡、「銀行匯款」為銀行匯款、「信用卡」兩者皆否
         let state = OrderEditFeature.State(
+            id: UUID(0),
             availablePaymentMethods: [
                 PaymentMethodInfo(name: "信用卡", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
                 PaymentMethodInfo(name: "無卡存款", isCardless: true, isBankTransfer: false, isCashOnDelivery: false),
                 PaymentMethodInfo(name: "銀行匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false),
-            ]
+            ],
+            currentDate: TestDependencies.fixedNow
         )
 
         var mutable = state
@@ -284,7 +288,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func addVerificationStatusTappedAppliesAndExtendsOptions() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
@@ -330,14 +334,14 @@ struct OrderEditFeatureTests {
             mergedSourceIDs: []
         )
 
-        let state = OrderEditFeature.State(original: original)
+        let state = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
         #expect(state.draftVerificationStatus == "待對帳")
         // 原訂單的對帳狀態若不在傳入清單，初始化時會補進可選清單
         #expect(state.availableVerificationStatuses.contains("待對帳"))
     }
 
     @Test func newDraftStartsEmpty() {
-        let state = OrderEditFeature.State()
+        let state = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
 
         #expect(state.draftCustomerName.isEmpty)
         #expect(state.draftCategories.isEmpty)
@@ -359,7 +363,7 @@ struct OrderEditFeatureTests {
     // MARK: 單/多選分流 (合併情境)
 
     @Test func categorySelectedReplacesSelectionWithSingleElement() async {
-        var initial = OrderEditFeature.State()
+        var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         initial.draftCategories = ["美妝", "服飾"]
 
         let store = TestStore(initialState: initial) {
@@ -372,7 +376,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func categoryToggledAddsAndRemovesSelection() async {
-        var initial = OrderEditFeature.State()
+        var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         initial.draftCategories = ["美妝"]
 
         let store = TestStore(initialState: initial) {
@@ -388,7 +392,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func campaignSelectedMapsEmptyStringToUnassigned() async {
-        var initial = OrderEditFeature.State()
+        var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         initial.draftCampaignNames = ["四月韓國團"]
 
         let store = TestStore(initialState: initial) {
@@ -404,7 +408,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func campaignToggledAddsAndRemovesSelection() async {
-        var initial = OrderEditFeature.State()
+        var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         initial.draftCampaignNames = ["四月韓國團"]
 
         let store = TestStore(initialState: initial) {
@@ -421,11 +425,11 @@ struct OrderEditFeatureTests {
 
     @Test func isMergeContextReflectsMergeSources() {
         // 一般新訂單與一般既有訂單皆非合併情境
-        #expect(OrderEditFeature.State().isMergeContext == false)
-        #expect(OrderEditFeature.State(original: LedgerOrder.sampleOrders[0]).isMergeContext == false)
+        #expect(OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow).isMergeContext == false)
+        #expect(OrderEditFeature.State(original: LedgerOrder.sampleOrders[0], id: UUID(0), currentDate: TestDependencies.fixedNow).isMergeContext == false)
 
         // 合併確認草稿 (mergeSourceIDs 非空)
-        var mergeDraft = OrderEditFeature.State()
+        var mergeDraft = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         mergeDraft.mergeSourceIDs = ["BL-2604-018", "BL-2604-012"]
         #expect(mergeDraft.isMergeContext)
 
@@ -433,13 +437,13 @@ struct OrderEditFeatureTests {
         let mergedOrder = LedgerOrder.sampleOrders.first { !$0.mergedSourceIDs.isEmpty }
         #expect(mergedOrder != nil)
         if let mergedOrder {
-            #expect(OrderEditFeature.State(original: mergedOrder).isMergeContext)
+            #expect(OrderEditFeature.State(original: mergedOrder, id: UUID(0), currentDate: TestDependencies.fixedNow).isMergeContext)
         }
     }
 
     @Test func addCategoryAppendsInMergeContextAndReplacesOtherwise() async {
         // 合併情境：新增類別直接加入選取，不覆蓋既有選取
-        var mergeDraft = OrderEditFeature.State()
+        var mergeDraft = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         mergeDraft.mergeSourceIDs = ["BL-A", "BL-B"]
         mergeDraft.draftCategories = ["美妝"]
 
@@ -452,7 +456,7 @@ struct OrderEditFeatureTests {
         #expect(mergeStore.state.draftCategories == ["美妝", "服飾"])
 
         // 一般情境：新增類別覆寫為單元素陣列
-        var singleDraft = OrderEditFeature.State()
+        var singleDraft = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         singleDraft.draftCategories = ["美妝"]
 
         let singleStore = TestStore(initialState: singleDraft) {
@@ -468,7 +472,7 @@ struct OrderEditFeatureTests {
 
     @Test func mergeRelatedOrdersKeepAmountFieldsEditable() async {
         // (1) 合併確認草稿：金額欄位 binding 寫入照常生效
-        var mergeDraft = OrderEditFeature.State()
+        var mergeDraft = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         mergeDraft.mergeSourceIDs = ["BL-A", "BL-B"]
 
         let mergeStore = TestStore(initialState: mergeDraft) {
@@ -485,7 +489,7 @@ struct OrderEditFeatureTests {
         let mergedResult = LedgerOrder.sampleOrders.first { !$0.mergedSourceIDs.isEmpty }
         #expect(mergedResult != nil)
         if let mergedResult {
-            let store = TestStore(initialState: OrderEditFeature.State(original: mergedResult)) {
+            let store = TestStore(initialState: OrderEditFeature.State(original: mergedResult, id: UUID(0), currentDate: TestDependencies.fixedNow)) {
                 OrderEditFeature()
             }
             await store.send(\.binding.draftCardFeeRate, 0.02) {
@@ -494,7 +498,7 @@ struct OrderEditFeatureTests {
         }
 
         // (3) 編輯狀態為「已合併」的舊訂單：同樣可編輯
-        let mergedAwayStore = TestStore(initialState: OrderEditFeature.State(original: Self.mergedAwayOrder)) {
+        let mergedAwayStore = TestStore(initialState: OrderEditFeature.State(original: Self.mergedAwayOrder, id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
         await mergedAwayStore.send(\.binding.draftChargedAmount, 777) {
@@ -504,11 +508,11 @@ struct OrderEditFeatureTests {
 
     @Test func availableStatusesHidesMergedUnlessCurrent() {
         // 一般訂單的狀態選單不提供「已合併」(只能由合併流程寫入)
-        let normal = OrderEditFeature.State(original: LedgerOrder.sampleOrders[0])
+        let normal = OrderEditFeature.State(original: LedgerOrder.sampleOrders[0], id: UUID(0), currentDate: TestDependencies.fixedNow)
         #expect(!normal.availableStatuses.contains(.merged))
 
         // 已合併舊單保留「已合併」選項顯示現值，並可改回其他狀態作為手動回復路徑
-        let mergedAway = OrderEditFeature.State(original: Self.mergedAwayOrder)
+        let mergedAway = OrderEditFeature.State(original: Self.mergedAwayOrder, id: UUID(0), currentDate: TestDependencies.fixedNow)
         #expect(mergedAway.availableStatuses.contains(.merged))
         #expect(mergedAway.availableStatuses.contains(.purchased))
     }
@@ -518,7 +522,7 @@ struct OrderEditFeatureTests {
     @Test func dateComponentsChangedMergesInjectedSeconds() async {
         // 日期選擇器寫回的年月日時分，與注入時間的「秒」合併寫入 draftDate；計算由 reducer 完成、可測試
         let fixedNow = TestDependencies.fixedNow
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         } withDependencies: {
             $0.date = .constant(fixedNow)
@@ -548,7 +552,7 @@ struct OrderEditFeatureTests {
     // MARK: OrderEditView 新 action (商品明細 / picker / 選取 / 照片)
 
     @Test func addItemTappedAppendsBlankItem() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         } withDependencies: {
             $0.uuid = .incrementing
@@ -571,7 +575,7 @@ struct OrderEditFeatureTests {
         let itemA = LedgerOrderItem(name: "A", quantity: 1, unitPrice: 100)
         let itemB = LedgerOrderItem(name: "B", quantity: 2, unitPrice: 200)
         let itemC = LedgerOrderItem(name: "C", quantity: 3, unitPrice: 300)
-        var initial = OrderEditFeature.State()
+        var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         initial.draftItems = [itemA, itemB, itemC]
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
@@ -584,7 +588,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func pickerTappedActionsPresentCorrespondingSheets() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
@@ -609,7 +613,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func selectionActionsUpdateDraftFields() async {
-        let store = TestStore(initialState: OrderEditFeature.State()) {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
@@ -628,7 +632,7 @@ struct OrderEditFeatureTests {
     }
 
     @Test func photoTappedOpensViewerAndDismissClears() async {
-        var initial = OrderEditFeature.State()
+        var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         initial.draftPhotos = [Data([0x01]), Data([0x02]), Data([0x03])]
         let store = TestStore(initialState: initial) {
             OrderEditFeature()

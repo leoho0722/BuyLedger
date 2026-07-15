@@ -91,7 +91,7 @@ private extension CustomersView {
                         store.send(.customerSelected(customer.name))
                     } label: {
                         topCard(rank: index + 1, customer: customer, palette: palette)
-                            .contentShape(Rectangle())
+                            .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("查看 \(customer.name) 的訂單")
@@ -213,13 +213,13 @@ private extension CustomersView {
             }
 
             BLCard(padding: 0) {
-                VStack(spacing: 0) {
+                LazyVStack(spacing: 0) {
                     ForEach(Array(customers.enumerated()), id: \.element.id) { index, customer in
                         Button {
                             store.send(.customerSelected(customer.name))
                         } label: {
                             customerRow(customer: customer, palette: palette)
-                                .contentShape(Rectangle())
+                                .contentShape(.rect)
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint("查看 \(customer.name) 的訂單")

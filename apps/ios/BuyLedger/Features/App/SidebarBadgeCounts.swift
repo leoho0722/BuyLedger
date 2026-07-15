@@ -28,9 +28,7 @@ extension SidebarBadgeCounts {
     /// - Parameter orders: 目前的訂單清單
     /// - Returns: 進行中的訂單數量
     static func activeOrderCount(orders: [LedgerOrder]) -> Int {
-        orders.lazy
-            .filter { activeStatuses.contains($0.status) }
-            .count
+        orders.count { activeStatuses.contains($0.status) }
     }
 
     /// 計算指定狀態的訂單數量，顯示在側邊欄「智慧分組」各列
@@ -39,8 +37,6 @@ extension SidebarBadgeCounts {
     ///   - orders: 目前的訂單清單
     /// - Returns: 該狀態的訂單數量
     static func orderCount(for status: OrderStatus, orders: [LedgerOrder]) -> Int {
-        orders.lazy
-            .filter { $0.status == status }
-            .count
+        orders.count { $0.status == status }
     }
 }

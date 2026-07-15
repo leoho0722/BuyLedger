@@ -290,7 +290,7 @@ struct RootFeatureTests {
         #expect(store.state.orders.orders.first?.campaignNames == ["三月日本團 (補)", "四月韓國團"])
     }
 
-    @Test func insightsRangeSelectedUpdatesState() async {
+    @Test func insightsDateRangeBindingUpdatesState() async {
         var state = RootFeature.State()
         state.selectedTab = .more
 
@@ -301,7 +301,7 @@ struct RootFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
-        await store.send(.insightsRangeSelected(.thirtyDays)) {
+        await store.send(\.binding.insightsDateRange, .thirtyDays) {
             $0.insightsDateRange = .thirtyDays
         }
     }

@@ -163,16 +163,18 @@ struct OrderEditFeature {
         ///   - availableCategories: 表單可選用的既有類別；不含原訂單類別時會在初始化時補上
         ///   - availablePaymentMethods: 表單可選用的既有付款方式；不含原訂單付款方式時會在初始化時補上 (補上的項目 `isCardless` / `isBankTransfer` 預設為 `false`)
         ///   - availableVerificationStatuses: 表單可選用的既有對帳狀態；不含原訂單對帳狀態時會在初始化時補上
+        ///   - id: 表單 instance 的穩定識別值；caller 應從 `@Dependency(\.uuid)` 取得以維持可測試性
         ///   - currentDate: 新訂單時 ``draftDate`` 的預設值；caller 應從 `@Dependency(\.date)` 取得當下時間以維持可測試性
         init(
             original: LedgerOrder? = nil,
+            id: UUID,
             availableOrderSources: [String] = [],
             availableCategories: [String] = [],
             availablePaymentMethods: [PaymentMethodInfo] = [],
             availableVerificationStatuses: [String] = [],
             availableCampaigns: [String] = [],
             availableCurrencies: [CurrencyCode] = CurrencyCode.defaults,
-            currentDate: Date = Date()
+            currentDate: Date
         ) {
             self.original = original
             self.draftCustomerName = original?.customer.name ?? ""
@@ -245,7 +247,7 @@ struct OrderEditFeature {
             }
             self.availableCurrencies = currencies.sorted { $0.rawValue.localizedStandardCompare($1.rawValue) == .orderedAscending }
 
-            self.id = UUID()
+            self.id = id
         }
 
         // MARK: - Computed Properties

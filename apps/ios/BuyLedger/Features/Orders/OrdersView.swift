@@ -352,7 +352,7 @@ private extension OrdersView {
     /// - Returns: chip 列 view
     @ViewBuilder
     func chipScrollStrip(palette: BLPalette) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        ScrollView(.horizontal) {
             HStack(spacing: BLSpacing.small) {
                 ForEach(OrderStatusFilter.orderBrowsingCases) { filter in
                     let isSelected = store.selectedStatus == filter
@@ -373,6 +373,7 @@ private extension OrdersView {
                 }
             }
         }
+        .scrollIndicators(.hidden)
     }
 
     /// iPad 中間欄使用的橫向滾動日期區間 chip 列
@@ -380,7 +381,7 @@ private extension OrdersView {
     /// - Returns: 日期 chip 列 view
     @ViewBuilder
     func dateChipScrollStrip(palette: BLPalette) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        ScrollView(.horizontal) {
             HStack(spacing: BLSpacing.small) {
                 ForEach(OrderDatePeriod.orderBrowsingCases) { period in
                     let isSelected = store.selectedDatePeriod == period
@@ -406,6 +407,7 @@ private extension OrdersView {
                 }
             }
         }
+        .scrollIndicators(.hidden)
     }
 
     /// iPad regular 中間欄使用的商品類別篩選 trigger button

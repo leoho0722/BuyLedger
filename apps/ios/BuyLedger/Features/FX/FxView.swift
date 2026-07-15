@@ -25,6 +25,9 @@ struct FxView: View {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
+    /// 金額輸入欄與換算結果的字級，隨 Dynamic Type 縮放 (以 `.title` 為基準)
+    @ScaledMetric(relativeTo: .title) private var heroAmountSize: CGFloat = 32
+
     // MARK: - View Body
 
     /// FX 畫面內容
@@ -197,7 +200,7 @@ private extension FxView {
             value: $store.amount,
             format: .number.precision(.fractionLength(0...2))
         )
-        .font(.system(size: 32, weight: .bold))
+        .font(.system(size: heroAmountSize, weight: .bold))
         .monospacedDigit()
         .padding(.vertical, BLSpacing.medium)
         .padding(.horizontal, BLSpacing.medium)
@@ -217,7 +220,7 @@ private extension FxView {
                 .foregroundStyle(palette.accent)
 
             Text(formatTwd(store.convertedTwd))
-                .font(.system(size: 32, weight: .bold))
+                .font(.system(size: heroAmountSize, weight: .bold))
                 .monospacedDigit()
                 .foregroundStyle(palette.accent)
 
@@ -262,7 +265,7 @@ private extension FxView {
     @ViewBuilder
     func ratesList(palette: BLPalette) -> some View {
         BLCard(padding: 0) {
-            VStack(spacing: 0) {
+            LazyVStack(spacing: 0) {
                 HStack {
                     Text("即時匯率 (對 TWD)")
                         .font(.subheadline.weight(.semibold))

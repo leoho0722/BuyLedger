@@ -96,9 +96,9 @@ struct DashboardStats {
             )
         }()
 
-        let activeCount = orders.lazy.filter {
+        let activeCount = orders.count {
             DashboardStats.activeStatuses.contains($0.status)
-        }.count
+        }
 
         let pct: CGFloat
         if monthlyGoal == 0 {

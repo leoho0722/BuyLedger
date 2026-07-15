@@ -26,11 +26,6 @@ struct CampaignDetailView: View {
         store.campaigns.campaigns.first { $0.id == campaignID }
     }
 
-    /// 由訂單投影的彙總
-    private var summary: CampaignSummary {
-        CampaignSummary(campaignName: campaign?.name ?? "", orders: store.orders.orders)
-    }
-
     // MARK: - View Body
 
     /// 開團詳情的畫面內容
@@ -84,10 +79,11 @@ private extension CampaignDetailView {
     /// - Returns: 詳情 list view
     @ViewBuilder
     func detail(for campaign: Campaign) -> some View {
+        let summary = CampaignSummary(campaignName: campaign.name, orders: store.orders.orders)
         List {
             infoSection(campaign: campaign)
-            settlementSection
-            distributionSection
+            settlementSection(summary)
+            distributionSection(summary)
         }
     }
 
@@ -135,8 +131,10 @@ private extension CampaignDetailView {
     }
 
     /// 結團結算區段：收款面與損益面
+    /// - Parameter summary: 由 ``detail(for:)`` 一次算好的開團彙總
+    /// - Returns: 結算區段 view
     @ViewBuilder
-    var settlementSection: some View {
+    func settlementSection(_ summary: CampaignSummary) -> some View {
         Section("結團結算") {
             LabeledContent("應收", value: CampaignFormatters.twd(summary.receivables))
             LabeledContent("已收", value: CampaignFormatters.twd(summary.receivedAmount))
@@ -162,8 +160,10 @@ private extension CampaignDetailView {
     }
 
     /// 客戶分貨區段：可切換只看未收款，每列可展開檢視品項與逐筆收款
+    /// - Parameter summary: 由 ``detail(for:)`` 一次算好的開團彙總
+    /// - Returns: 分貨區段 view
     @ViewBuilder
-    var distributionSection: some View {
+    func distributionSection(_ summary: CampaignSummary) -> some View {
         let showsUnpaidOnly = store.campaigns.showsUnpaidOnly
         let rows = showsUnpaidOnly ? summary.unpaidDistribution : summary.distribution
 

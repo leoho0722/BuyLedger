@@ -24,9 +24,9 @@ struct LookupManagementView: View {
 
     /// 主檔管理畫面內容
     ///
-    /// 內容區依平台分流 (見 ``content``)，但 toolbar、新增 / 重新命名 alert、付款方式新增 sheet 與 `task` 載入由兩個平台分支共用，確保操作與業務邏輯一致
+    /// 以系統 `List` 呈現主檔項目，toolbar、新增 / 重新命名 alert、付款方式與對帳狀態新增 sheet 與 `task` 載入一併掛在其上
     var body: some View {
-        content
+        listContent
             .navigationTitle(store.state.kind.title)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -112,40 +112,27 @@ struct LookupManagementView: View {
                     }
                 )
             }
-            .sheet(
-                isPresented: Binding(
-                    get: { store.destination?.editPaymentMethod != nil },
-                    set: { if !$0 { store.send(.destination(.dismiss)) } }
-                )
-            ) {
-                if let editState = store.destination?.editPaymentMethod {
-                    PaymentMethodEditorSheet(
-                        title: "編輯付款方式",
-                        message: "修改名稱與分類；變更名稱會一併更新引用此付款方式的訂單。",
-                        namePlaceholder: store.state.kind.addFieldPlaceholder,
-                        submitTitle: "儲存",
-                        initialName: editState.originalName,
-                        initialIsCardless: editState.isCardless,
-                        initialIsBankTransfer: editState.isBankTransfer,
-                        initialIsCashOnDelivery: editState.isCashOnDelivery,
-                        onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
-                            store.send(
-                                .destination(
-                                    .presented(
-                                        .editPaymentMethod(
-                                            .saveButtonTapped(
-                                                name: name,
-                                                isCardless: isCardless,
-                                                isBankTransfer: isBankTransfer,
-                                                isCashOnDelivery: isCashOnDelivery
-                                            )
-                                        )
-                                    )
-                                )
+            .sheet(item: $store.scope(state: \.destination?.editPaymentMethod, action: \.destination.editPaymentMethod)) { editStore in
+                PaymentMethodEditorSheet(
+                    title: "編輯付款方式",
+                    message: "修改名稱與分類；變更名稱會一併更新引用此付款方式的訂單。",
+                    namePlaceholder: store.state.kind.addFieldPlaceholder,
+                    submitTitle: "儲存",
+                    initialName: editStore.originalName,
+                    initialIsCardless: editStore.isCardless,
+                    initialIsBankTransfer: editStore.isBankTransfer,
+                    initialIsCashOnDelivery: editStore.isCashOnDelivery,
+                    onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
+                        editStore.send(
+                            .saveButtonTapped(
+                                name: name,
+                                isCardless: isCardless,
+                                isBankTransfer: isBankTransfer,
+                                isCashOnDelivery: isCashOnDelivery
                             )
-                        }
-                    )
-                }
+                        )
+                    }
+                )
             }
             .task {
                 await store.send(.task).finish()
@@ -156,12 +143,6 @@ struct LookupManagementView: View {
 // MARK: - ViewBuilder
 
 private extension LookupManagementView {
-
-    /// 內容區呈現
-    @ViewBuilder
-    var content: some View {
-        listContent
-    }
 
     /// 列項顯示：訂單來源 / 商品類別 / 對帳狀態 kind 純文字；付款方式 kind 在右側顯示「無卡」「銀行匯款」與「貨到付款」徽章 (僅作標示，不能直接切換；要修改旗標需對該列選「編輯」)
     /// - Parameter item: 要顯示的主檔項目名稱

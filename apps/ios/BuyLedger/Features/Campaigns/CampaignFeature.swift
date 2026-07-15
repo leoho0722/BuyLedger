@@ -307,6 +307,7 @@ struct CampaignFeature {
 
             case .newCampaignTapped:
                 state.editCampaign = CampaignEditFeature.State(
+                    id: uuid(),
                     currentDate: date.now,
                     reminderTimestamp: defaultReminderTimestamp(closeDate: nil)
                 )
@@ -319,6 +320,7 @@ struct CampaignFeature {
                 let link = state.reminderLinks[id]
                 state.editCampaign = CampaignEditFeature.State(
                     original: campaign,
+                    id: uuid(),
                     currentDate: date.now,
                     wantsReminder: link != nil,
                     reminderTimestamp: link?.reminderTimestamp ?? defaultReminderTimestamp(closeDate: campaign.closeDate)
@@ -376,10 +378,10 @@ struct CampaignFeature {
                 let reminderRepository = reminderRepository
                 let didRename = oldName != nil && oldName != trimmedName
                 return .run { send in
-                    try? await campaignRepository.saveCampaign(campaign)
+                    try await campaignRepository.saveCampaign(campaign)
                     if didRename, let oldName {
                         // DB 端 cascade：更新所有歸屬此開團的訂單；in-memory 副本由 RootFeature 攔截 campaignRenamed 處理
-                        try? await orderRepository.renameOrderCampaign(oldName, trimmedName)
+                        try await orderRepository.renameOrderCampaign(oldName, trimmedName)
                         await send(.campaignRenamed(from: oldName, to: trimmedName))
                     }
 
@@ -418,6 +420,8 @@ struct CampaignFeature {
                             send: send
                         )
                     }
+                } catch: { _, send in
+                    await send(.campaignsFailed("開團儲存失敗，請稍後再試。"))
                 }
 
             case .editCampaign:
@@ -432,7 +436,9 @@ struct CampaignFeature {
                 let updated = state.campaigns[index]
                 let campaignRepository = campaignRepository
                 return .run { _ in
-                    try? await campaignRepository.saveCampaign(updated)
+                    try await campaignRepository.saveCampaign(updated)
+                } catch: { _, send in
+                    await send(.campaignsFailed("開團狀態更新失敗，請稍後再試。"))
                 }
 
             case let .settleTapped(id):
@@ -444,7 +450,9 @@ struct CampaignFeature {
                 let updated = state.campaigns[index]
                 let campaignRepository = campaignRepository
                 return .run { _ in
-                    try? await campaignRepository.saveCampaign(updated)
+                    try await campaignRepository.saveCampaign(updated)
+                } catch: { _, send in
+                    await send(.campaignsFailed("結團失敗，請稍後再試。"))
                 }
 
             case let .deleteCampaignTapped(id):
@@ -472,7 +480,9 @@ struct CampaignFeature {
                 }
                 let campaignRepository = campaignRepository
                 return .run { _ in
-                    try? await campaignRepository.removeCampaign(id)
+                    try await campaignRepository.removeCampaign(id)
+                } catch: { _, send in
+                    await send(.campaignsFailed("開團刪除失敗，請稍後再試。"))
                 }
 
             case .deletionConfirmation:

@@ -414,19 +414,19 @@ private extension OptionPickerSheet {
     ///
     /// 注意：clear row (`clearOption`) 不參與此過濾，永遠在選項列上方獨立呈現
     var filteredOptions: [String] {
-        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             return options
         }
 
         return options.filter { option in
-            if displayText(for: option).lowercased().contains(trimmed) {
+            if displayText(for: option).localizedStandardContains(trimmed) {
                 return true
             }
-            if let keywords = searchKeywords?(option), keywords.lowercased().contains(trimmed) {
+            if let keywords = searchKeywords?(option), keywords.localizedStandardContains(trimmed) {
                 return true
             }
-            return option.lowercased().contains(trimmed)
+            return option.localizedStandardContains(trimmed)
         }
     }
 

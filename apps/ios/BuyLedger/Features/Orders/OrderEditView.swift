@@ -736,7 +736,12 @@ private extension OrderEditView {
 
 #Preview("新訂單") {
     OrderEditView(
-        store: Store(initialState: OrderEditFeature.State()) {
+        store: Store(
+            initialState: OrderEditFeature.State(
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+                currentDate: Date(timeIntervalSince1970: 0)
+            )
+        ) {
             OrderEditFeature()
         }
     )
@@ -745,7 +750,11 @@ private extension OrderEditView {
 #Preview("編輯訂單") {
     OrderEditView(
         store: Store(
-            initialState: OrderEditFeature.State(original: LedgerOrder.sampleOrders[0])
+            initialState: OrderEditFeature.State(
+                original: LedgerOrder.sampleOrders[0],
+                id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+                currentDate: Date(timeIntervalSince1970: 0)
+            )
         ) {
             OrderEditFeature()
         }

@@ -25,6 +25,9 @@ struct QuoteView: View {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
+    /// hero 建議售價字級，隨 Dynamic Type 縮放 (以 `.largeTitle` 為基準)
+    @ScaledMetric(relativeTo: .largeTitle) private var heroPriceSize: CGFloat = 40
+
     // MARK: - View Body
 
     /// 報價試算畫面內容
@@ -277,7 +280,7 @@ private extension QuoteView {
                 .textCase(.uppercase)
 
             Text(formatTwd(store.suggestedTwd))
-                .font(.system(size: 40, weight: .bold))
+                .font(.system(size: heroPriceSize, weight: .bold))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)

@@ -199,7 +199,7 @@ private extension OrdersCompactView {
     /// - Returns: chip 列 view
     @ViewBuilder
     func chipStrip(palette: BLPalette) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
+        ScrollView(.horizontal) {
             HStack(spacing: BLSpacing.small) {
                 ForEach(OrderStatusFilter.orderBrowsingCases) { filter in
                     chipButton(filter, palette: palette)
@@ -207,6 +207,7 @@ private extension OrdersCompactView {
             }
             .padding(.horizontal, BLSpacing.large)
         }
+        .scrollIndicators(.hidden)
     }
 
     /// 單一狀態篩選 chip
@@ -379,6 +380,7 @@ private extension OrdersCompactView {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .font(.title3)
                     .foregroundStyle(isSelected ? palette.accent : palette.tertiaryLabel)
+                    .accessibilityHidden(true)
 
                 OrderRowView(order: order, showsDate: false)
             }
@@ -387,6 +389,7 @@ private extension OrdersCompactView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     /// 沒有符合條件的訂單時顯示的空狀態

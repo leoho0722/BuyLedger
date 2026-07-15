@@ -34,6 +34,7 @@ struct BLAmountField: View {
 
             TextField("0", text: $amount)
                 .textFieldStyle(.plain)
+                .keyboardType(.decimalPad)
                 .font(.title2.bold())
                 .foregroundStyle(palette.label)
                 .monospacedDigit()

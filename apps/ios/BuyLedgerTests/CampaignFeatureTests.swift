@@ -149,8 +149,9 @@ struct CampaignFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
+            $0.uuid = .incrementing
         }
-        // CampaignEditFeature.State 內含隨機 `id: UUID()`，無法做等值斷言；改以非窮舉模式驗證表單已呈現且為新開團
+        // 以非窮舉模式驗證表單已呈現且為新開團 (不逐欄比對整個 CampaignEditFeature.State)
         store.exhaustivity = .off
 
         await store.send(.newCampaignTapped)
@@ -163,7 +164,7 @@ struct CampaignFeatureTests {
 
     @Test func reminderPickerRequestedReseedsDraftAndPresents() async {
         let committed = day(month: 4, day: 20).addingTimeInterval(9 * 3600)
-        var initial = CampaignEditFeature.State(currentDate: TestDependencies.fixedNow, reminderTimestamp: committed)
+        var initial = CampaignEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow, reminderTimestamp: committed)
         initial.draftReminderTimestamp = day(month: 4, day: 26).addingTimeInterval(18 * 3600) // 之前未提交的草稿
         let store = TestStore(initialState: initial) {
             CampaignEditFeature()
@@ -178,7 +179,7 @@ struct CampaignFeatureTests {
     @Test func reminderPickerConfirmedCommitsDraftAndSetsIntent() async {
         let committed = day(month: 4, day: 20).addingTimeInterval(9 * 3600)
         let picked = day(month: 4, day: 26).addingTimeInterval(18 * 3600)
-        var initial = CampaignEditFeature.State(currentDate: TestDependencies.fixedNow, reminderTimestamp: committed)
+        var initial = CampaignEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow, reminderTimestamp: committed)
         initial.draftReminderTimestamp = picked
         initial.isReminderPickerPresented = true
         let store = TestStore(initialState: initial) {
@@ -194,7 +195,7 @@ struct CampaignFeatureTests {
 
     @Test func reminderPickerCancelledClosesWithoutCommitting() async {
         let committed = day(month: 4, day: 20).addingTimeInterval(9 * 3600)
-        var initial = CampaignEditFeature.State(currentDate: TestDependencies.fixedNow, reminderTimestamp: committed)
+        var initial = CampaignEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow, reminderTimestamp: committed)
         initial.draftReminderTimestamp = day(month: 4, day: 26).addingTimeInterval(18 * 3600)
         initial.isReminderPickerPresented = true
         let store = TestStore(initialState: initial) {
@@ -211,6 +212,7 @@ struct CampaignFeatureTests {
     @Test func removeReminderTappedClearsIntent() async {
         let store = TestStore(
             initialState: CampaignEditFeature.State(
+                id: UUID(0),
                 currentDate: TestDependencies.fixedNow,
                 wantsReminder: true,
                 reminderTimestamp: day(month: 4, day: 20).addingTimeInterval(9 * 3600)
@@ -241,6 +243,7 @@ struct CampaignFeatureTests {
     @Test func saveWithDeniedAccessShowsAlertAndStoresNoLink() async {
         let newID = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
         var editState = CampaignEditFeature.State(
+            id: UUID(0),
             currentDate: TestDependencies.fixedNow,
             wantsReminder: true,
             reminderTimestamp: day(month: 4, day: 20).addingTimeInterval(9 * 3600)
@@ -271,6 +274,7 @@ struct CampaignFeatureTests {
         // 使用者在 popup 選 4/20 18:00
         let chosen = day(month: 4, day: 20).addingTimeInterval(18 * 3600)
         var editState = CampaignEditFeature.State(
+            id: UUID(0),
             currentDate: TestDependencies.fixedNow,
             wantsReminder: true,
             reminderTimestamp: chosen
@@ -311,6 +315,7 @@ struct CampaignFeatureTests {
         let campaign = makeCampaign(id: "C1", name: "四月團", status: .ongoing, closeDate: nil)
         var editState = CampaignEditFeature.State(
             original: campaign,
+            id: UUID(0),
             currentDate: TestDependencies.fixedNow,
             wantsReminder: false,
             reminderTimestamp: day(month: 4, day: 20).addingTimeInterval(9 * 3600)
@@ -348,6 +353,7 @@ struct CampaignFeatureTests {
         let timestamp = day(month: 4, day: 20).addingTimeInterval(9 * 3600)
         var editState = CampaignEditFeature.State(
             original: campaign,
+            id: UUID(0),
             currentDate: TestDependencies.fixedNow,
             wantsReminder: true,
             reminderTimestamp: timestamp
@@ -387,6 +393,7 @@ struct CampaignFeatureTests {
         let newTimestamp = day(month: 4, day: 26).addingTimeInterval(18 * 3600)
         var editState = CampaignEditFeature.State(
             original: campaign,
+            id: UUID(0),
             currentDate: TestDependencies.fixedNow,
             wantsReminder: true,
             reminderTimestamp: newTimestamp

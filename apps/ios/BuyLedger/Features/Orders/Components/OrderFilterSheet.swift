@@ -363,33 +363,33 @@ private extension OrderFilterSheet {
 
     /// 依 ``searchText`` 過濾後的類別清單
     ///
-    /// 空字串 (或全空白) 時返回完整 `availableCategories`；否則以 case-insensitive `contains` 比對類別名稱
+    /// 空字串 (或全空白) 時返回完整 `availableCategories`；否則以 `localizedStandardContains` 比對類別名稱 (自動折疊大小寫／變音／全半形)
     /// clear row「全部」不參與此過濾，由 ``categorySection`` 在外層永遠渲染
     var filteredCategories: [String] {
-        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             return store.state.availableCategories
         }
 
         return store.state.availableCategories.filter { category in
-            category.lowercased().contains(trimmed)
+            category.localizedStandardContains(trimmed)
         }
     }
 
     /// 依 ``searchText`` 過濾後的付款方式清單
     ///
     /// 取 ``OrdersFeature/State/availablePaymentMethods`` 的 `name` 欄位 (篩選只需名稱、不需 `isCardless` 旗標)
-    /// 空字串 (或全空白) 時返回完整清單；否則以 case-insensitive `contains` 比對付款方式名稱
+    /// 空字串 (或全空白) 時返回完整清單；否則以 `localizedStandardContains` 比對付款方式名稱 (自動折疊大小寫／變音／全半形)
     /// clear row「全部」不參與此過濾，由 ``paymentMethodSection`` 在外層永遠渲染
     var filteredPaymentMethods: [String] {
         let names = store.state.availablePaymentMethods.map(\.name)
-        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             return names
         }
 
         return names.filter { name in
-            name.lowercased().contains(trimmed)
+            name.localizedStandardContains(trimmed)
         }
     }
 }

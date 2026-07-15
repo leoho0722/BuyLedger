@@ -34,6 +34,9 @@ struct DashboardView: View {
     /// 月份分組與相對日期計算所用的行事曆 (含時區)；測試可注入固定 gregorian／UTC
     @Dependency(\.calendar) private var calendar
 
+    /// hero 淨獲利金額字級，隨 Dynamic Type 縮放 (以 `.largeTitle` 為基準)
+    @ScaledMetric(relativeTo: .largeTitle) private var heroProfitSize: CGFloat = 36
+
     // MARK: - View Body
 
     /// 總覽頁的畫面內容
@@ -106,9 +109,13 @@ private extension DashboardView {
     /// - Returns: 進行中的開團卡 view (無進行中團時為 `EmptyView`)
     @ViewBuilder
     func ongoingCampaignsSection(palette: BLPalette) -> some View {
-        let ongoing = store.campaigns.campaigns.filter { $0.status == .ongoing }
+        // 一次 render 只為每個進行中開團投影一次彙總，避免每列於 body 重算 O(團 × 訂單)
+        let orders = store.orders.orders
+        let rows = store.campaigns.campaigns
+            .filter { $0.status == .ongoing }
+            .map { (campaign: $0, summary: CampaignSummary(campaignName: $0.name, orders: orders)) }
 
-        if !ongoing.isEmpty {
+        if !rows.isEmpty {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("進行中的開團")
                     .font(.headline)
@@ -116,16 +123,16 @@ private extension DashboardView {
 
                 BLCard {
                     VStack(spacing: BLSpacing.medium) {
-                        ForEach(Array(ongoing.enumerated()), id: \.element.id) { index, campaign in
+                        ForEach(Array(rows.enumerated()), id: \.element.campaign.id) { index, entry in
                             Button {
-                                store.send(.campaignSelected(campaign.name))
+                                store.send(.campaignSelected(entry.campaign.name))
                             } label: {
-                                ongoingCampaignRow(campaign: campaign, palette: palette)
-                                    .contentShape(Rectangle())
+                                ongoingCampaignRow(campaign: entry.campaign, summary: entry.summary, palette: palette)
+                                    .contentShape(.rect)
                             }
                             .buttonStyle(.plain)
 
-                            if index < ongoing.count - 1 {
+                            if index < rows.count - 1 {
                                 Divider()
                             }
                         }
@@ -138,12 +145,11 @@ private extension DashboardView {
     /// 「進行中的開團」卡的單列：團名、筆數／金額與到貨／收款進度
     /// - Parameters:
     ///   - campaign: 進行中的開團
+    ///   - summary: 由 ``ongoingCampaignsSection(palette:)`` 一次算好的該團彙總
     ///   - palette: 目前外觀使用的色盤
     /// - Returns: 單列 view
     @ViewBuilder
-    func ongoingCampaignRow(campaign: Campaign, palette: BLPalette) -> some View {
-        let summary = CampaignSummary(campaignName: campaign.name, orders: store.orders.orders)
-
+    func ongoingCampaignRow(campaign: Campaign, summary: CampaignSummary, palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             HStack(spacing: BLSpacing.small) {
                 Text(campaign.name)
@@ -317,7 +323,7 @@ private extension DashboardView {
                     .opacity(0.85)
 
                 Text(profitDisplay(stats.profit))
-                    .font(.system(size: 36, weight: .bold))
+                    .font(.system(size: heroProfitSize, weight: .bold))
                     .monospacedDigit()
                     .lineLimit(1)
                     .minimumScaleFactor(0.7)

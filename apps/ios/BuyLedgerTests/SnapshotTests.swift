@@ -128,7 +128,7 @@ struct SnapshotTests {
 
     @Test func orderEditViewBaseline() {
         TestDependencies.withFixedNow {
-            let state = OrderEditFeature.State(original: LedgerOrder.sampleOrders[0])
+            let state = OrderEditFeature.State(original: LedgerOrder.sampleOrders[0], id: UUID(0), currentDate: TestDependencies.fixedNow)
 
             let view = OrderEditView(
                 store: Store(initialState: state) { OrderEditFeature() }
@@ -144,7 +144,7 @@ struct SnapshotTests {
         // 金額與明細欄位與一般訂單相同、維持可編輯
         TestDependencies.withFixedNow {
             let mergedOrder = LedgerOrder.sampleOrders.first { !$0.mergedSourceIDs.isEmpty }!
-            let state = OrderEditFeature.State(original: mergedOrder)
+            let state = OrderEditFeature.State(original: mergedOrder, id: UUID(0), currentDate: TestDependencies.fixedNow)
 
             let view = OrderEditView(
                 store: Store(initialState: state) { OrderEditFeature() }

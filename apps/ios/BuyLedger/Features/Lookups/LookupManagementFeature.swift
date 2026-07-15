@@ -239,14 +239,16 @@ struct LookupManagementFeature {
                 return .run { _ in
                     switch kind {
                     case .orderSource:
-                        try? await orderSourceRepository.addOrderSource(trimmed)
+                        try await orderSourceRepository.addOrderSource(trimmed)
                     case .category:
-                        try? await categoryRepository.addCategory(trimmed)
+                        try await categoryRepository.addCategory(trimmed)
                     case .paymentMethod:
-                        try? await paymentMethodRepository.addPaymentMethod(trimmed, isCardless, isBankTransfer, isCashOnDelivery)
+                        try await paymentMethodRepository.addPaymentMethod(trimmed, isCardless, isBankTransfer, isCashOnDelivery)
                     case .verificationStatus:
-                        try? await verificationStatusRepository.addVerificationStatus(trimmed)
+                        try await verificationStatusRepository.addVerificationStatus(trimmed)
                     }
+                } catch: { _, send in
+                    await send(.loadFailed("新增失敗，請稍後再試。"))
                 }
 
             case .addDraftCleared:
@@ -267,14 +269,16 @@ struct LookupManagementFeature {
                 return .run { _ in
                     switch kind {
                     case .orderSource:
-                        try? await orderSourceRepository.removeOrderSource(name)
+                        try await orderSourceRepository.removeOrderSource(name)
                     case .category:
-                        try? await categoryRepository.removeCategory(name)
+                        try await categoryRepository.removeCategory(name)
                     case .paymentMethod:
-                        try? await paymentMethodRepository.removePaymentMethod(name)
+                        try await paymentMethodRepository.removePaymentMethod(name)
                     case .verificationStatus:
-                        try? await verificationStatusRepository.removeVerificationStatus(name)
+                        try await verificationStatusRepository.removeVerificationStatus(name)
                     }
+                } catch: { _, send in
+                    await send(.loadFailed("刪除失敗，請稍後再試。"))
                 }
 
             case let .renameButtonTapped(name):
@@ -321,18 +325,20 @@ struct LookupManagementFeature {
                 return .run { _ in
                     switch kind {
                     case .orderSource:
-                        try? await orderSourceRepository.renameOrderSource(trimmedFrom, trimmedTo)
-                        try? await orderRepository.renameOrderSource(trimmedFrom, trimmedTo)
+                        try await orderSourceRepository.renameOrderSource(trimmedFrom, trimmedTo)
+                        try await orderRepository.renameOrderSource(trimmedFrom, trimmedTo)
                     case .category:
-                        try? await categoryRepository.renameCategory(trimmedFrom, trimmedTo)
-                        try? await orderRepository.renameOrderCategory(trimmedFrom, trimmedTo)
+                        try await categoryRepository.renameCategory(trimmedFrom, trimmedTo)
+                        try await orderRepository.renameOrderCategory(trimmedFrom, trimmedTo)
                     case .paymentMethod:
-                        try? await paymentMethodRepository.renamePaymentMethod(trimmedFrom, trimmedTo)
-                        try? await orderRepository.renameOrderPaymentMethod(trimmedFrom, trimmedTo)
+                        try await paymentMethodRepository.renamePaymentMethod(trimmedFrom, trimmedTo)
+                        try await orderRepository.renameOrderPaymentMethod(trimmedFrom, trimmedTo)
                     case .verificationStatus:
-                        try? await verificationStatusRepository.renameVerificationStatus(trimmedFrom, trimmedTo)
-                        try? await orderRepository.renameOrderVerificationStatus(trimmedFrom, trimmedTo)
+                        try await verificationStatusRepository.renameVerificationStatus(trimmedFrom, trimmedTo)
+                        try await orderRepository.renameOrderVerificationStatus(trimmedFrom, trimmedTo)
                     }
+                } catch: { _, send in
+                    await send(.loadFailed("重新命名失敗，請稍後再試。"))
                 }
 
             case let .editButtonTapped(name):
@@ -387,11 +393,13 @@ struct LookupManagementFeature {
                 let orderRepository = orderRepository
                 return .run { _ in
                     if didRename {
-                        try? await paymentMethodRepository.renamePaymentMethod(trimmedOriginal, trimmedNew)
-                        try? await orderRepository.renameOrderPaymentMethod(trimmedOriginal, trimmedNew)
+                        try await paymentMethodRepository.renamePaymentMethod(trimmedOriginal, trimmedNew)
+                        try await orderRepository.renameOrderPaymentMethod(trimmedOriginal, trimmedNew)
                     }
                     // rename 會合併保留舊旗標；最後以使用者選擇權威覆寫，確保可取消勾選。必須在 rename 之後執行
-                    try? await paymentMethodRepository.addPaymentMethod(trimmedNew, isCardless, isBankTransfer, isCashOnDelivery)
+                    try await paymentMethodRepository.addPaymentMethod(trimmedNew, isCardless, isBankTransfer, isCashOnDelivery)
+                } catch: { _, send in
+                    await send(.loadFailed("編輯失敗，請稍後再試。"))
                 }
 
             case .destination(.presented(.rename(.saveButtonTapped))):

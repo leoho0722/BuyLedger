@@ -60,14 +60,16 @@ struct CampaignEditFeature {
         /// 依原始開團建立草稿狀態
         /// - Parameters:
         ///   - original: 要編輯的開團；`nil` 表示新開團
+        ///   - id: 表單 instance 的穩定識別值；caller 應從 `@Dependency(\.uuid)` 取得以維持可測試性
         ///   - currentDate: 新開團時 ``draftOpenDate`` 與 ``draftCloseDate`` 的預設值；caller 應從 `@Dependency(\.date)` 取得當下時間以維持可測試性
         ///   - wantsReminder: 是否要建立訂購提醒的初始意圖；新開團預設 `false`，編輯既有開團時由 caller 依「該開團目前是否已有提醒」帶入
         ///   - reminderTimestamp: 提醒時間戳 (日期＋提示時間) 初值；由 caller 依每團現有設定 (無則預設結單日/今天 09:00) 帶入
         init(
             original: Campaign? = nil,
-            currentDate: Date = Date(),
+            id: UUID,
+            currentDate: Date,
             wantsReminder: Bool = false,
-            reminderTimestamp: Date = Date()
+            reminderTimestamp: Date
         ) {
             self.original = original
             self.draftName = original?.name ?? ""
@@ -79,7 +81,7 @@ struct CampaignEditFeature {
             self.reminderTimestamp = reminderTimestamp
             self.draftReminderTimestamp = reminderTimestamp
             self.isReminderPickerPresented = false
-            self.id = UUID()
+            self.id = id
         }
     }
 

@@ -62,16 +62,16 @@ struct RootFeature {
 
     /// App 根層級可處理的事件
     @CasePathable
-    enum Action: Equatable {
+    enum Action: BindableAction, Equatable {
+
+        /// SwiftUI 雙向繫結事件 (分析頁期間、設定深連結開關等純 UI 狀態)
+        case binding(BindingAction<State>)
 
         /// App 啟動觸發；目前用來把 ExchangeRate-API `/codes` cache 在 TTL 內更新
         case task
 
         /// 使用者切換主要分頁
         case tabSelected(RootTab)
-
-        /// 設定「更多」分頁是否 push 到設定頁 (deep-link 開關，供 MoreView 的 navigationDestination 雙向繫結)
-        case setShowsSettingsFromDeepLink(Bool)
 
         /// 從非訂單分頁 (如 Dashboard 的 onboarding) 發起「新訂單」流程
         ///
@@ -86,9 +86,6 @@ struct RootFeature {
 
         /// 使用者從分析頁點擊類別 bar，跳到訂單頁並把搜尋字串設為類別名
         case categorySelected(String)
-
-        /// 使用者在分析頁切換趨勢期間
-        case insightsRangeSelected(InsightsDateRange)
 
         /// 使用者從 Dashboard 開團卡或 Insights 開團排行點擊某個開團，跳到開團頁並開啟該團詳情
         case campaignSelected(String)
@@ -129,6 +126,9 @@ struct RootFeature {
     /// 用來計算跨頁跳轉時的「目前」時間 (套用到 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)``)；測試可注入固定值
     @Dependency(\.date) private var date
 
+    /// 跨頁發起新訂單時，``OrderEditFeature/State`` 的識別值來源；測試可注入固定值
+    @Dependency(\.uuid) private var uuid
+
     /// 跨頁跳轉重算選取訂單時，訂單篩選所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
 
@@ -139,6 +139,8 @@ struct RootFeature {
 
     /// App 根層級 reducer
     var body: some Reducer<State, Action> {
+        BindingReducer()
+
         CombineReducers {
             Scope(state: \.orders, action: \.orders) {
                 OrdersFeature()
@@ -180,10 +182,11 @@ struct RootFeature {
                 LookupManagementFeature()
             }
 
-            Reduce {
-                state,
-                action in
+            Reduce { state, action in
                 switch action {
+                case .binding:
+                    return .none
+
                 case .task:
                     let currencyMetadataRepository = currencyMetadataRepository
                     return .run { _ in
@@ -194,14 +197,10 @@ struct RootFeature {
                 case let .tabSelected(tab):
                     state.selectedTab = tab
                     return .none
-                    
-                case let .setShowsSettingsFromDeepLink(value):
-                    state.showsSettingsFromDeepLink = value
-                    return .none
-                    
+
                 case .startNewOrder:
                     state.selectedTab = .orders
-                    state.orders.editOrder = OrderEditFeature.State(currentDate: date.now)
+                    state.orders.editOrder = OrderEditFeature.State(id: uuid(), currentDate: date.now)
                     return .none
                     
                 case let .smartGroupSelected(status):
@@ -241,10 +240,6 @@ struct RootFeature {
                         referenceDate: date.now,
                         calendar: calendar
                     ).first?.id
-                    return .none
-                    
-                case let .insightsRangeSelected(range):
-                    state.insightsDateRange = range
                     return .none
                     
                 case let .campaignSelected(name):

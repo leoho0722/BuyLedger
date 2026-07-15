@@ -42,6 +42,7 @@ struct BLPhotoThumbnail: View {
                 .onTapGesture {
                     onTap?()
                 }
+                .accessibilityAddTraits(onTap != nil ? .isButton : [])
 
             Button(action: onDelete) {
                 Image(systemName: "xmark.circle.fill")

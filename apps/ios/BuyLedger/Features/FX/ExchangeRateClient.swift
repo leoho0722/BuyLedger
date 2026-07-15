@@ -32,6 +32,7 @@ extension ExchangeRateClient: DependencyKey {
         fetchLatest: { base in
             @Dependency(\.httpClient) var httpClient
             @Dependency(\.appConfiguration) var appConfiguration
+            @Dependency(\.date) var date
 
             guard let key = appConfiguration.exchangeRateAPIKey() else {
                 throw APIError.invalidKey
@@ -53,7 +54,7 @@ extension ExchangeRateClient: DependencyKey {
 
             switch decoded.result {
             case "success":
-                return decoded.toSnapshot(base: base)
+                return decoded.toSnapshot(base: base, fallbackDate: date.now)
             case "error":
                 let code = decoded.errorType ?? "unknown"
                 switch code {
@@ -124,15 +125,4 @@ extension ExchangeRateClient: DependencyKey {
         fetchLatest: { _ in FxRateSnapshot.fallback },
         fetchSupportedCodes: { CurrencyCode.defaults.map(\.rawValue) }
     )
-}
-
-// MARK: - DependencyValues Accessor
-
-extension DependencyValues {
-
-    /// 匯率 API client
-    var exchangeRateClient: ExchangeRateClient {
-        get { self[ExchangeRateClient.self] }
-        set { self[ExchangeRateClient.self] = newValue }
-    }
 }

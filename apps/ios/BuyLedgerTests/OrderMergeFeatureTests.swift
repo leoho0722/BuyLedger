@@ -44,6 +44,8 @@ struct OrderMergeFeatureTests {
             initialState: OrderMergeFeature.State(primary: primary, orders: orders)
         ) {
             OrderMergeFeature()
+        } withDependencies: {
+            $0.uuid = .incrementing
         }
 
         await store.send(\.binding.searchText, "香水") {
@@ -76,7 +78,11 @@ struct OrderMergeFeatureTests {
             ),
         ]
 
-        let state = OrderMergeFeature.State(primary: primary, orders: orders)
+        let state = withDependencies {
+            $0.uuid = .incrementing
+        } operation: {
+            OrderMergeFeature.State(primary: primary, orders: orders)
+        }
         let sections = state.candidateSections(referenceDate: reference, calendar: calendar)
 
         #expect(sections.map(\.title) == ["今天", "昨天"])
@@ -102,7 +108,11 @@ struct OrderMergeFeatureTests {
             ),
         ]
 
-        var state = OrderMergeFeature.State(primary: primary, orders: orders)
+        var state = withDependencies {
+            $0.uuid = .incrementing
+        } operation: {
+            OrderMergeFeature.State(primary: primary, orders: orders)
+        }
         state.searchText = "香水"
         let sections = state.candidateSections(referenceDate: reference, calendar: calendar)
 
@@ -121,6 +131,8 @@ struct OrderMergeFeatureTests {
             initialState: OrderMergeFeature.State(primary: primary, orders: [primary, secondary])
         ) {
             OrderMergeFeature()
+        } withDependencies: {
+            $0.uuid = .incrementing
         }
 
         await store.send(.candidateTapped("O2"))
@@ -140,6 +152,8 @@ struct OrderMergeFeatureTests {
             initialState: OrderMergeFeature.State(primary: primary, orders: [primary, secondary])
         ) {
             OrderMergeFeature()
+        } withDependencies: {
+            $0.uuid = .incrementing
         }
 
         await store.send(.candidateTapped("O2")) {
@@ -160,6 +174,8 @@ struct OrderMergeFeatureTests {
             initialState: OrderMergeFeature.State(primary: primary, orders: [primary, secondary])
         ) {
             OrderMergeFeature()
+        } withDependencies: {
+            $0.uuid = .incrementing
         }
         store.exhaustivity = .off
 
@@ -185,6 +201,8 @@ struct OrderMergeFeatureTests {
             initialState: OrderMergeFeature.State(primary: primary, orders: [primary, secondary])
         ) {
             OrderMergeFeature()
+        } withDependencies: {
+            $0.uuid = .incrementing
         }
         store.exhaustivity = .off
 

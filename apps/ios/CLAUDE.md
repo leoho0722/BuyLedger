@@ -6,6 +6,7 @@
 
 - **Swift 6 strict concurrency**：專案層級 `SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated` (不是 `MainActor`)。改成 `MainActor` 會讓 SwiftData `@Model` 與 `@ModelActor` 編不過。需要 main actor 才安全的型別請對個別宣告加 `@MainActor`。
 - **TCA Reducer body** 使用顯式 `some Reducer<State, Action>`，不可用 `some ReducerOf<Self>` (會 circular reference)。
+- **`IPHONEOS_DEPLOYMENT_TARGET = 18.0`**：`EnumeratedSequence` 對 `RandomAccessCollection` 的條件遵循是 iOS 26+ 才具備，`ForEach` 直接吃 `x.enumerated()` 會編不過 (「conformance of 'EnumeratedSequence' to 'RandomAccessCollection' is only available in iOS 26.0 or newer」)。`ForEach(indexed:)` 一律包 `Array(x.enumerated())`，不要為了「現代化」拿掉 `Array()`。
 
 ## 文件查證準則
 
