@@ -37,7 +37,7 @@ struct CampaignSubgroup: Equatable, Identifiable, Sendable {
 
     // MARK: - Data Properties
 
-    /// 子標題 (例如「5月27日 週三」「5月」)；`nil` 表示頂層已是最細粒度 (按日分組)，不顯示子標題
+    /// 依 App 選定 locale 格式化的子標題；`nil` 表示頂層已是最細粒度 (按日分組)，不顯示子標題
     let title: String?
 
     /// 該子群組內的開團，依開團日期由新到舊排序 (同日再依名稱)
@@ -535,8 +535,9 @@ extension CampaignFeature.State {
     /// - Parameters:
     ///   - referenceDate: 計算「今天／昨天」等相對標題的「現在」時間
     ///   - calendar: 分組與相對標題所用的行事曆 (含時區)；測試應注入固定 gregorian／UTC
+    ///   - locale: App 選定、用於日期區段標題的 locale
     /// - Returns: 依頂層粒度由新到舊排序的區段；每個子群組內開團依開團日期由新到舊排序 (同日再依名稱)
-    func dateSections(referenceDate: Date, calendar: Calendar) -> [CampaignDateSection] {
+    func dateSections(referenceDate: Date, calendar: Calendar, locale: Locale) -> [CampaignDateSection] {
         let filtered = statusFilter.map { status in
             campaigns.filter { $0.status == status }
         } ?? campaigns
@@ -548,11 +549,17 @@ extension CampaignFeature.State {
             .map { topBucket in
                 CampaignDateSection(
                     id: topBucket,
-                    title: topTitle(for: topBucket, referenceDate: referenceDate, calendar: calendar),
+                    title: topTitle(
+                        for: topBucket,
+                        referenceDate: referenceDate,
+                        calendar: calendar,
+                        locale: locale
+                    ),
                     subgroups: subgroups(
                         of: topGrouped[topBucket] ?? [],
                         referenceDate: referenceDate,
-                        calendar: calendar
+                        calendar: calendar,
+                        locale: locale
                     )
                 )
             }
@@ -564,10 +571,16 @@ extension CampaignFeature.State {
 private extension CampaignFeature.State {
 
     /// 把頂層區段內的開團，依更細一級粒度切成子群組；按日分組時回傳單一 `title` 為 `nil` 的子群組
+    /// - Parameters:
+    ///   - topCampaigns: 頂層區段內的開團
+    ///   - referenceDate: 計算相對日期標題的「現在」時間
+    ///   - calendar: 分組與標題所用的行事曆
+    ///   - locale: App 選定、用於子區段標題的 locale
     func subgroups(
         of topCampaigns: [Campaign],
         referenceDate: Date,
-        calendar: Calendar
+        calendar: Calendar,
+        locale: Locale
     ) -> [CampaignSubgroup] {
         guard grouping != .day else {
             return [
@@ -586,7 +599,12 @@ private extension CampaignFeature.State {
             .map { subBucket in
                 CampaignSubgroup(
                     id: subBucket,
-                    title: subTitle(for: subBucket, referenceDate: referenceDate, calendar: calendar),
+                    title: subTitle(
+                        for: subBucket,
+                        referenceDate: referenceDate,
+                        calendar: calendar,
+                        locale: locale
+                    ),
                     campaigns: sortedByDate(subGrouped[subBucket] ?? [])
                 )
             }
@@ -625,24 +643,44 @@ private extension CampaignFeature.State {
     }
 
     /// 頂層標題：日 → 今天／昨天／日期；月 → yyyy年M月；年 → yyyy年
-    func topTitle(for bucket: Date, referenceDate: Date, calendar: Calendar) -> String {
+    /// - Parameters:
+    ///   - bucket: 頂層區段的起始日期
+    ///   - referenceDate: 計算相對日期標題的「現在」時間
+    ///   - calendar: 用於日區段標題的行事曆
+    ///   - locale: App 選定、用於日期標題的 locale
+    func topTitle(for bucket: Date, referenceDate: Date, calendar: Calendar, locale: Locale) -> String {
         switch grouping {
         case .day:
-            OrderFormatters.daySectionTitle(for: bucket, referenceDate: referenceDate, calendar: calendar)
+            OrderFormatters.daySectionTitle(
+                for: bucket,
+                referenceDate: referenceDate,
+                calendar: calendar,
+                locale: locale
+            )
         case .month:
-            bucket.formatted(.dateTime.year().month().locale(Locale(identifier: "zh_TW")))
+            bucket.formatted(.dateTime.year().month().locale(locale))
         case .year:
-            bucket.formatted(.dateTime.year().locale(Locale(identifier: "zh_TW")))
+            bucket.formatted(.dateTime.year().locale(locale))
         }
     }
 
-    /// 子標題：按月 → 日 (今天／昨天／5月27日 週三)；按年 → 月 (例如「5月」)
-    func subTitle(for bucket: Date, referenceDate: Date, calendar: Calendar) -> String {
+    /// 子標題：按月 → 日 (相對日期或格式化日期)；按年 → 月
+    /// - Parameters:
+    ///   - bucket: 子區段的起始日期
+    ///   - referenceDate: 計算相對日期標題的「現在」時間
+    ///   - calendar: 用於日區段標題的行事曆
+    ///   - locale: App 選定、用於日期標題的 locale
+    func subTitle(for bucket: Date, referenceDate: Date, calendar: Calendar, locale: Locale) -> String {
         switch grouping {
         case .day, .month:
-            OrderFormatters.daySectionTitle(for: bucket, referenceDate: referenceDate, calendar: calendar)
+            OrderFormatters.daySectionTitle(
+                for: bucket,
+                referenceDate: referenceDate,
+                calendar: calendar,
+                locale: locale
+            )
         case .year:
-            "\(calendar.component(.month, from: bucket))月"
+            bucket.formatted(.dateTime.month(.wide).locale(locale))
         }
     }
 }

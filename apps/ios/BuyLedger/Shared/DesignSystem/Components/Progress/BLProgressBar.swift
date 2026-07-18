@@ -36,7 +36,7 @@ struct BLProgressBar: View {
 
         VStack(alignment: .leading, spacing: 5) {
             HStack {
-                Text(title)
+                Text(LocalizedStringKey(title))
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(palette.label)
 

@@ -22,7 +22,7 @@ struct RootTabLayout: View {
     var body: some View {
         TabView(selection: $store.selectedTab.sending(\.tabSelected)) {
             ForEach(RootTab.allCases) { tab in
-                Tab(tab.title, systemImage: tab.systemImage, value: tab) {
+                Tab(LocalizedStringKey(tab.title), systemImage: tab.systemImage, value: tab) {
                     destination(for: tab)
                 }
             }

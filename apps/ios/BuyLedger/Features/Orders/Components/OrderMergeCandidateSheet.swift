@@ -19,6 +19,9 @@ struct OrderMergeCandidateSheet: View {
 
     @Bindable var store: StoreOf<OrderMergeFeature>
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 用於 ``OrderMergeFeature/State/candidateSections(referenceDate:calendar:)`` 的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
 
@@ -31,7 +34,9 @@ struct OrderMergeCandidateSheet: View {
     var body: some View {
         NavigationStack {
             content
-                .navigationTitle(store.step == .selectCandidate ? "合併訂單" : "選擇保留照片")
+                .navigationTitle(Text(LocalizedStringKey(
+                    store.step == .selectCandidate ? "合併訂單" : "選擇保留照片"
+                )))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -71,7 +76,11 @@ private extension OrderMergeCandidateSheet {
     /// 候選訂單清單：比照訂單頁以訂購日分組 (section 標題為今天/昨天/格式化日期)，含搜尋、空狀態與資格說明 footer (掛於最後一段)
     @ViewBuilder
     var candidateList: some View {
-        let sections = store.state.candidateSections(referenceDate: date.now, calendar: calendar)
+        let sections = store.state.candidateSections(
+            referenceDate: date.now,
+            calendar: calendar,
+            locale: locale
+        )
 
         Group {
             if sections.isEmpty {
@@ -88,7 +97,7 @@ private extension OrderMergeCandidateSheet {
                                 candidateRow(order)
                             }
                         } header: {
-                            Text(section.title)
+                            Text(LocalizedStringKey(section.title))
                         } footer: {
                             if section.id == sections.last?.id {
                                 Text("僅列出與主訂單同幣別 (\(store.primary.currency.rawValue))、同客戶「\(store.primary.customer.name)」的訂單；選擇後會以兩筆訂單整合的資料開啟確認表單。")

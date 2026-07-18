@@ -18,6 +18,9 @@ struct CampaignListView: View {
     /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 用於日期區段「今天／昨天」相對標題的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
 
@@ -30,14 +33,14 @@ struct CampaignListView: View {
     var body: some View {
         NavigationStack(path: campaignPath) {
             content
-                .navigationTitle("開團")
+                .navigationTitle(Text("開團"))
                 .toolbar {
                     ToolbarItemGroup(placement: .primaryAction) {
                         Menu {
                             Picker("開團狀態", selection: statusFilterBinding) {
                                 Text("全部").tag(CampaignStatus?.none)
                                 ForEach(CampaignStatus.allCases) { status in
-                                    Text(status.title).tag(CampaignStatus?.some(status))
+                                    Text(LocalizedStringKey(status.title)).tag(CampaignStatus?.some(status))
                                 }
                             }
                             .pickerStyle(.inline)
@@ -45,7 +48,7 @@ struct CampaignListView: View {
                             Menu("顯示方式") {
                                 Picker("分組方式", selection: groupingBinding) {
                                     ForEach(CampaignGrouping.allCases) { grouping in
-                                        Text(grouping.title).tag(grouping)
+                                        Text(LocalizedStringKey(grouping.title)).tag(grouping)
                                     }
                                 }
                                 .pickerStyle(.inline)
@@ -106,7 +109,11 @@ private extension CampaignListView {
                 )
             }
         } else {
-            let sections = store.campaigns.dateSections(referenceDate: date.now, calendar: calendar)
+            let sections = store.campaigns.dateSections(
+                referenceDate: date.now,
+                calendar: calendar,
+                locale: locale
+            )
             if sections.isEmpty {
                 ContentUnavailableView(
                     "沒有符合的開團",
@@ -133,7 +140,7 @@ private extension CampaignListView {
     @ViewBuilder
     func sectionView(_ section: CampaignDateSection) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text(section.title)
+            Text(LocalizedStringKey(section.title))
                 .font(.subheadline.weight(.bold))
                 .padding(.horizontal, BLSpacing.large)
 
@@ -188,7 +195,7 @@ private extension CampaignListView {
                     orders: store.orders.orders
                 ),
                 dateText: store.campaigns.grouping == .year
-                    ? CampaignFormatters.dayWithWeekday(campaign.openDate)
+                    ? CampaignFormatters.dayWithWeekday(campaign.openDate, locale: locale)
                     : nil
             )
             .padding(.horizontal, BLSpacing.large)
@@ -260,6 +267,9 @@ private struct CampaignRow: View {
     /// 區段標題粗於「日」時 (按月／按年) 於列上顯示的開團日期；`nil` 表示不顯示 (按日分組時日期已在區段標題)
     let dateText: String?
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     // MARK: - View Body
 
     /// 單列的畫面內容
@@ -286,7 +296,7 @@ private struct CampaignRow: View {
                 }
             }
 
-            Text("\(summary.orderCount) 筆 · \(CampaignFormatters.twd(summary.receivables))")
+            Text("\(summary.orderCount) 筆 · \(CampaignFormatters.twd(summary.receivables, locale: locale))")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
 
@@ -300,7 +310,7 @@ private struct CampaignRow: View {
                 title: "收款",
                 value: summary.receivedRatio,
                 tint: .green,
-                trailingText: CampaignFormatters.twd(summary.receivedAmount)
+                trailingText: CampaignFormatters.twd(summary.receivedAmount, locale: locale)
             )
         }
     }

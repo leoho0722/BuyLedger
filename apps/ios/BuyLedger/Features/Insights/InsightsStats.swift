@@ -52,12 +52,14 @@ struct InsightsStats {
     ///   - range: 趨勢期間
     ///   - referenceDate: 基準「現在」時間，決定走勢區間與上期對照範圍
     ///   - calendar: 用來分組走勢與計算期間的曆法
+    ///   - locale: App 選定、用於趨勢百分比呈現的 locale
     ///   - palette: 目前外觀使用的色盤，供成本結構區塊上色
     init(
         orders: [LedgerOrder],
         range: InsightsDateRange,
         referenceDate: Date,
         calendar: Calendar,
+        locale: Locale,
         palette: BLPalette
     ) {
         let realized = orders.filter { InsightsStats.realizedStatuses.contains($0.status) }
@@ -79,7 +81,11 @@ struct InsightsStats {
 
         self.trendBars = trendBars
         self.totalProfit = totalProfit
-        self.trendDelta = InsightsStats.trendDeltaText(current: totalProfit, previous: priorPeriodProfit)
+        self.trendDelta = InsightsStats.trendDeltaText(
+            current: totalProfit,
+            previous: priorPeriodProfit,
+            locale: locale
+        )
         self.trendDeltaIsPositive = InsightsStats.trendDeltaDirection(current: totalProfit, previous: priorPeriodProfit)
         self.categories = InsightsStats.categoryBreakdown(orders: orders)
         self.costSegments = [
@@ -239,15 +245,16 @@ private extension InsightsStats {
     /// - Parameters:
     ///   - current: 本期累計
     ///   - previous: 上期累計；`nil` 代表無資料可比
+    ///   - locale: App 選定、用於百分比呈現的 locale
     /// - Returns: trend card 右上角字串
-    static func trendDeltaText(current: Decimal, previous: Decimal?) -> String {
+    static func trendDeltaText(current: Decimal, previous: Decimal?, locale: Locale) -> String {
         guard let previous, previous != 0 else {
             return "— 無對照"
         }
         let delta = (current - previous) / previous
         let arrow = delta >= 0 ? "↑" : "↓"
         let absDelta = delta < 0 ? -delta : delta
-        let formatted = absDelta.formatted(.percent.precision(.fractionLength(1)))
+        let formatted = absDelta.formatted(.percent.precision(.fractionLength(1)).locale(locale))
         return "\(arrow) \(formatted)"
     }
 

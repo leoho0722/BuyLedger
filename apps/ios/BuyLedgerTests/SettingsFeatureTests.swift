@@ -18,11 +18,54 @@ struct SettingsFeatureTests {
     @Test func defaultStateMatchesProductDefaults() {
         let state = SettingsFeature.State()
 
+        #expect(state.language == .traditionalChinese)
         #expect(state.appearance == .system)
         #expect(state.notificationsEnabled == true)
         #expect(state.defaultCurrency == .twd)
         #expect(state.useAiSummary == false)
         #expect(state.aiSummaryModel == "gemma4:31b-cloud")
+    }
+
+    @Test func appLanguageUsesSupportedLocaleIdentifiers() {
+        #expect(AppLanguage.traditionalChinese.localeIdentifier == "zh-Hant")
+        #expect(AppLanguage.english.localeIdentifier == "en")
+    }
+
+    @Test func appLanguageProvidesMatchingLocale() {
+        #expect(AppLanguage.traditionalChinese.locale.identifier == "zh-Hant")
+        #expect(AppLanguage.english.locale.identifier == "en")
+    }
+
+    @Test func appLanguageTitlesUseLocalizedResources() {
+        #expect(String(localized: AppLanguage.traditionalChinese.title) == "正體中文")
+        #expect(String(localized: AppLanguage.english.title) == "English")
+    }
+
+    @Test func appLanguageStoredValueFallsBackToTraditionalChinese() {
+        #expect(AppLanguage(storedValue: nil) == .traditionalChinese)
+        #expect(AppLanguage(storedValue: "") == .traditionalChinese)
+        #expect(AppLanguage(storedValue: "unsupported") == .traditionalChinese)
+        #expect(AppLanguage(storedValue: "english") == .english)
+    }
+
+    @Test func bindingUpdatesLanguageAndSaves() async {
+        let saved = SnapshotBox()
+
+        let store = TestStore(initialState: SettingsFeature.State()) {
+            SettingsFeature()
+        } withDependencies: {
+            $0[SettingsStorage.self] = SettingsStorage(
+                load: { .default },
+                save: { snapshot in saved.value = snapshot }
+            )
+        }
+
+        await store.send(\.binding.language, .english) {
+            $0.language = .english
+        }
+
+        #expect(saved.value?.language == .english)
+        #expect(saved.value?.appearance == .system)
     }
 
     @Test func bindingUpdatesAppearance() async {
@@ -63,6 +106,7 @@ struct SettingsFeatureTests {
 
     @Test func taskLoadsFromInjectedStorage() async {
         let stored = SettingsSnapshot(
+            language: .english,
             appearance: .dark,
             notificationsEnabled: false,
             defaultCurrency: .jpy,
@@ -84,6 +128,7 @@ struct SettingsFeatureTests {
         store.exhaustivity = .off
 
         await store.send(.task) {
+            $0.language = .english
             $0.appearance = .dark
             $0.notificationsEnabled = false
             $0.defaultCurrency = .jpy

@@ -18,6 +18,9 @@ struct CampaignDetailView: View {
     /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 要顯示的開團識別值
     let campaignID: Campaign.ID
 
@@ -37,7 +40,7 @@ struct CampaignDetailView: View {
                 ContentUnavailableView("開團不存在", systemImage: "shippingbox")
             }
         }
-        .navigationTitle("開團詳情")
+        .navigationTitle(Text("開團詳情"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if let campaign {
@@ -51,14 +54,17 @@ struct CampaignDetailView: View {
 
                         Picker("狀態", selection: statusBinding(for: campaign)) {
                             ForEach(CampaignStatus.allCases) { status in
-                                Text(status.title).tag(status)
+                                Text(LocalizedStringKey(status.title)).tag(status)
                             }
                         }
 
                         Button {
                             store.send(.campaigns(.settleTapped(campaign.id)))
                         } label: {
-                            Label(campaign.isSettled ? "已結團" : "結團結算", systemImage: "checkmark.seal")
+                            Label(
+                                LocalizedStringKey(campaign.isSettled ? "已結團" : "結團結算"),
+                                systemImage: "checkmark.seal"
+                            )
                         }
                         .disabled(campaign.isSettled)
                     } label: {
@@ -107,19 +113,19 @@ private extension CampaignDetailView {
                 }
             }
 
-            LabeledContent("開團日期", value: CampaignFormatters.shortDate(campaign.openDate))
+            LabeledContent("開團日期", value: CampaignFormatters.shortDate(campaign.openDate, locale: locale))
 
             if let closeDate = campaign.closeDate {
-                LabeledContent("結單日期", value: CampaignFormatters.shortDate(closeDate))
+                LabeledContent("結單日期", value: CampaignFormatters.shortDate(closeDate, locale: locale))
             }
 
             if let settledDate = campaign.settledDate {
-                LabeledContent("結團日期", value: CampaignFormatters.shortDate(settledDate))
+                LabeledContent("結團日期", value: CampaignFormatters.shortDate(settledDate, locale: locale))
             }
 
             if let reminderLink = store.campaigns.reminderLinks[campaign.id] {
                 // 純顯示：有新增提醒時才顯示其日期與提示時間 (新增/移除/改時間走「編輯開團」)
-                LabeledContent("訂購提醒", value: CampaignFormatters.reminderTimestamp(reminderLink.reminderTimestamp))
+                LabeledContent("訂購提醒", value: CampaignFormatters.reminderTimestamp(reminderLink.reminderTimestamp, locale: locale))
             }
 
             if !campaign.notes.isEmpty {
@@ -136,9 +142,9 @@ private extension CampaignDetailView {
     @ViewBuilder
     func settlementSection(_ summary: CampaignSummary) -> some View {
         Section("結團結算") {
-            LabeledContent("應收", value: CampaignFormatters.twd(summary.receivables))
-            LabeledContent("已收", value: CampaignFormatters.twd(summary.receivedAmount))
-            LabeledContent("未收", value: CampaignFormatters.twd(summary.outstandingAmount))
+            LabeledContent("應收", value: CampaignFormatters.twd(summary.receivables, locale: locale))
+            LabeledContent("已收", value: CampaignFormatters.twd(summary.receivedAmount, locale: locale))
+            LabeledContent("未收", value: CampaignFormatters.twd(summary.outstandingAmount, locale: locale))
 
             BLProgressBar(
                 title: "收款進度",
@@ -153,9 +159,12 @@ private extension CampaignDetailView {
                 trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
             )
 
-            LabeledContent("總成本", value: CampaignFormatters.twd(summary.totalCost))
-            LabeledContent("毛利", value: CampaignFormatters.twd(summary.profit))
-            LabeledContent("利潤率", value: summary.margin.formatted(.percent.precision(.fractionLength(1))))
+            LabeledContent("總成本", value: CampaignFormatters.twd(summary.totalCost, locale: locale))
+            LabeledContent("毛利", value: CampaignFormatters.twd(summary.profit, locale: locale))
+            LabeledContent(
+                "利潤率",
+                value: summary.margin.formatted(.percent.precision(.fractionLength(1)).locale(locale))
+            )
         }
     }
 
@@ -171,7 +180,9 @@ private extension CampaignDetailView {
             Toggle("只看未收款", isOn: unpaidOnlyBinding)
 
             if rows.isEmpty {
-                Text(showsUnpaidOnly ? "全部已收款。" : "尚無歸屬此開團的訂單。")
+                Text(LocalizedStringKey(
+                    showsUnpaidOnly ? "全部已收款。" : "尚無歸屬此開團的訂單。"
+                ))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             } else {
@@ -204,7 +215,7 @@ private extension CampaignDetailView {
 
             Spacer(minLength: 0)
 
-            Text("\(row.totalQuantity) 件 · \(CampaignFormatters.twd(row.totalAmount))")
+            Text("\(row.totalQuantity) 件 · \(CampaignFormatters.twd(row.totalAmount, locale: locale))")
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .monospacedDigit()
@@ -225,7 +236,7 @@ private extension CampaignDetailView {
                 .font(.footnote)
 
             HStack {
-                Text(CampaignFormatters.twd(order.chargedAmount))
+                Text(CampaignFormatters.twd(order.chargedAmount, locale: locale))
                     .font(.footnote.weight(.medium))
                     .monospacedDigit()
 
@@ -237,10 +248,11 @@ private extension CampaignDetailView {
                         order.paymentReceiptStatus == .received ? .pending : .received
                     )))
                 } label: {
-                    Label(
-                        order.paymentReceiptStatus.title,
-                        systemImage: order.paymentReceiptStatus == .received ? "checkmark.circle.fill" : "circle"
-                    )
+                    Label {
+                        Text(LocalizedStringKey(order.paymentReceiptStatus.title))
+                    } icon: {
+                        Image(systemName: order.paymentReceiptStatus == .received ? "checkmark.circle.fill" : "circle")
+                    }
                     .font(.caption)
                     .foregroundStyle(order.paymentReceiptStatus == .received ? Color.green : Color.accentColor)
                 }
@@ -273,11 +285,11 @@ private extension CampaignDetailView {
         )
     }
 
-    /// 將比例格式化為百分比字串
+    /// 依 App 選定 locale 將比例格式化為百分比字串
     /// - Parameter value: 介於 0 與 1 之間的比例
     /// - Returns: 含整數百分比的字串
     func percentString(_ value: Double) -> String {
-        value.formatted(.percent.precision(.fractionLength(0)))
+        value.formatted(.percent.precision(.fractionLength(0)).locale(locale))
     }
 }
 

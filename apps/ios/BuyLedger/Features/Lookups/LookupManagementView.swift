@@ -20,6 +20,20 @@ struct LookupManagementView: View {
     /// 主檔管理 store
     @Bindable var store: StoreOf<LookupManagementFeature>
 
+    /// 依主檔類型回傳可由 String Catalog 翻譯的重新命名標題
+    private var renameAlertTitle: LocalizedStringKey {
+        switch store.state.kind {
+        case .orderSource:
+            "重新命名訂單來源"
+        case .category:
+            "重新命名商品類別"
+        case .paymentMethod:
+            "重新命名付款方式"
+        case .verificationStatus:
+            "重新命名對帳狀態"
+        }
+    }
+
     // MARK: - View Body
 
     /// 主檔管理畫面內容
@@ -27,26 +41,26 @@ struct LookupManagementView: View {
     /// 以系統 `List` 呈現主檔項目，toolbar、新增 / 重新命名 alert、付款方式與對帳狀態新增 sheet 與 `task` 載入一併掛在其上
     var body: some View {
         listContent
-            .navigationTitle(store.state.kind.title)
+            .navigationTitle(Text(LocalizedStringKey(store.state.kind.title)))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
                         store.send(.addButtonTapped)
                     } label: {
-                        Label(store.state.kind.addButtonTitle, systemImage: "plus")
+                        Label(LocalizedStringKey(store.state.kind.addButtonTitle), systemImage: "plus")
                     }
                 }
             }
             .alert(
-                "重新命名\(store.state.kind.entryTitle)",
+                renameAlertTitle,
                 isPresented: Binding(
                     get: { store.destination?.rename != nil },
                     set: { if !$0 { store.send(.destination(.dismiss)) } }
                 )
             ) {
                 TextField(
-                    store.state.kind.addFieldPlaceholder,
+                    LocalizedStringKey(store.state.kind.addFieldPlaceholder),
                     text: Binding(
                         get: { store.destination?.rename?.draft ?? "" },
                         set: { store.send(.destination(.presented(.rename(.draftChanged($0))))) }
@@ -70,8 +84,8 @@ struct LookupManagementView: View {
                     Text("")
                 }
             }
-            .alert(store.state.kind.addAlertTitle, isPresented: $store.showsAddCategoryAlert) {
-                TextField(store.state.kind.addFieldPlaceholder, text: $store.addDraft)
+            .alert(LocalizedStringKey(store.state.kind.addAlertTitle), isPresented: $store.showsAddCategoryAlert) {
+                TextField(LocalizedStringKey(store.state.kind.addFieldPlaceholder), text: $store.addDraft)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
 
@@ -88,7 +102,7 @@ struct LookupManagementView: View {
                     store.send(.addDraftCleared)
                 }
             } message: {
-                Text(store.state.kind.addAlertMessage)
+                Text(LocalizedStringKey(store.state.kind.addAlertMessage))
             }
             .sheet(isPresented: $store.showsAddPaymentMethodSheet) {
                 PaymentMethodEditorSheet(
@@ -178,7 +192,7 @@ private extension LookupManagementView {
     /// - Returns: 膠囊徽章 view
     @ViewBuilder
     func classificationBadge(_ title: String) -> some View {
-        Text(title)
+        Text(LocalizedStringKey(title))
             .font(.caption.weight(.semibold))
             .foregroundStyle(.tint)
             .padding(.horizontal, BLSpacing.small)
@@ -215,7 +229,7 @@ private extension LookupManagementView {
         List {
             if let errorMessage = store.errorMessage {
                 Section {
-                    Text(errorMessage)
+                    Text(LocalizedStringKey(errorMessage))
                         .foregroundStyle(.red)
                 }
             }
@@ -223,9 +237,9 @@ private extension LookupManagementView {
             Section {
                 if store.items.isEmpty {
                     ContentUnavailableView(
-                        store.state.kind.emptyTitle,
+                        LocalizedStringKey(store.state.kind.emptyTitle),
                         systemImage: "tray",
-                        description: Text(store.state.kind.emptyDescription)
+                        description: Text(LocalizedStringKey(store.state.kind.emptyDescription))
                     )
                 } else {
                     ForEach(store.items, id: \.self) { item in

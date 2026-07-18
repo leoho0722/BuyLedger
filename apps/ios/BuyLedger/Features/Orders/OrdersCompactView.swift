@@ -21,6 +21,9 @@ struct OrdersCompactView: View {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
+    /// App 目前選用的顯示語系
+    @Environment(\.locale) private var locale
+
     /// 用於 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)`` 的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
 
@@ -35,8 +38,10 @@ struct OrdersCompactView: View {
         let filteredIDs = store.state.filteredOrders(referenceDate: date.now, calendar: calendar).map(\.id)
         let allFilteredSelected = !filteredIDs.isEmpty && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
         // 多選時導覽標題顯示已選筆數 (iPhone 底部 tab bar 會蓋掉 .bottomBar，故批次控制改放右上角工具列)
-        let navigationTitle = store.isSelecting
-            ? (store.selectedOrderIDs.isEmpty ? "選擇訂單" : "已選 \(store.selectedOrderIDs.count) 筆")
+        let navigationTitle: LocalizedStringKey = store.isSelecting
+            ? (store.selectedOrderIDs.isEmpty
+                ? "選擇訂單"
+                : "已選 \(store.selectedOrderIDs.count) 筆")
             : "訂單"
 
         NavigationStack(path: $store.scope(state: \.detailPath, action: \.detailPath)) {
@@ -52,7 +57,7 @@ struct OrdersCompactView: View {
                     unifiedFilterTrigger(palette: palette)
 
                     if let errorMessage = store.errorMessage {
-                        Text(errorMessage)
+                        Text(LocalizedStringKey(errorMessage))
                             .font(.footnote)
                             .foregroundStyle(palette.red)
                             .padding(.horizontal, BLSpacing.large)
@@ -65,11 +70,11 @@ struct OrdersCompactView: View {
             }
             .background(palette.background)
             .scrollDismissesKeyboard(.immediately)
-            .navigationTitle(navigationTitle)
+            .navigationTitle(Text(navigationTitle))
             .toolbar {
                 if store.isSelecting {
                     ToolbarItem(placement: .topBarLeading) {
-                        Button(allFilteredSelected ? "清除" : "全選") {
+                        Button(LocalizedStringKey(allFilteredSelected ? "清除" : "全選")) {
                             store.send(allFilteredSelected ? .clearSelectionTapped : .selectAllTapped)
                         }
                     }
@@ -78,7 +83,7 @@ struct OrdersCompactView: View {
                         Menu {
                             // 「已合併」僅能由合併流程寫入，批次目標清單一律排除
                             ForEach(OrderStatus.allCases.filter { $0 != .merged }) { status in
-                                Button(status.title) {
+                                Button(LocalizedStringKey(status.title)) {
                                     store.send(.batchStatusChanged(status))
                                 }
                             }
@@ -132,7 +137,7 @@ struct OrdersCompactView: View {
         } destination: { detailStore in
             if let order = store.orders.first(where: { $0.id == detailStore.orderID }) {
                 OrderDetailView(order: order)
-                    .navigationTitle(order.customer.name)
+                    .navigationTitle(Text(verbatim: order.customer.name))
                     .navigationBarTitleDisplayMode(.inline)
                     .toolbar {
                         ToolbarItem(placement: .primaryAction) {
@@ -143,9 +148,9 @@ struct OrdersCompactView: View {
                                         store.send(.statusChanged(order.id, status))
                                     } label: {
                                         if status == order.status {
-                                            Label(status.title, systemImage: "checkmark")
+                                            Label(LocalizedStringKey(status.title), systemImage: "checkmark")
                                         } else {
-                                            Text(status.title)
+                                            Text(LocalizedStringKey(status.title))
                                         }
                                     }
                                 }
@@ -222,7 +227,7 @@ private extension OrdersCompactView {
         Button {
             store.send(.statusFilterSelected(filter))
         } label: {
-            Text(filter.title)
+            Text(LocalizedStringKey(filter.title))
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
                 .foregroundStyle(isSelected ? palette.background : palette.secondaryLabel)
@@ -247,7 +252,7 @@ private extension OrdersCompactView {
         let hasActiveFilter = store.selectedDatePeriod != .all
             || store.selectedCategory != nil
             || store.selectedPaymentMethod != nil
-        let summary = filterSummary(
+        let summary = filterSummaryText(
             date: store.selectedDatePeriod,
             category: store.selectedCategory,
             paymentMethod: store.selectedPaymentMethod
@@ -260,7 +265,7 @@ private extension OrdersCompactView {
                 Image(systemName: "line.3.horizontal.decrease")
                     .font(.caption.weight(.semibold))
 
-                Text("篩選：\(summary)")
+                Text("\(Text(\"篩選\")): \(summary)")
                     .font(.subheadline.weight(.semibold))
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -289,7 +294,7 @@ private extension OrdersCompactView {
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, BLSpacing.large)
         } else {
-            let sections = store.state.dateSections(referenceDate: date.now, calendar: calendar)
+            let sections = store.state.dateSections(referenceDate: date.now, calendar: calendar, locale: locale)
             if sections.isEmpty {
                 emptyState(palette: palette)
             } else {
@@ -310,7 +315,7 @@ private extension OrdersCompactView {
     @ViewBuilder
     func orderDateSection(_ section: OrderDateSection, palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text(section.title)
+            Text(LocalizedStringKey(section.title))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(palette.secondaryLabel)
                 .padding(.horizontal, BLSpacing.large)
@@ -427,18 +432,26 @@ private extension OrdersCompactView {
     ///   - category: 目前選中的類別；`nil` 代表「全部類別」
     ///   - paymentMethod: 目前選中的付款方式；`nil` 代表「全部付款方式」
     /// - Returns: trigger label 中「篩選：」後接的 summary 字串
-    func filterSummary(date: OrderDatePeriod, category: String?, paymentMethod: String?) -> String {
-        var segments: [String] = []
+    func filterSummaryText(date: OrderDatePeriod, category: String?, paymentMethod: String?) -> Text {
+        var summary: Text?
         if date != .all {
-            segments.append(date.title)
+            summary = Text(LocalizedStringKey(date.title))
         }
         if let category {
-            segments.append(category)
+            summary = appendVerbatim(category, to: summary)
         }
         if let paymentMethod {
-            segments.append(paymentMethod)
+            summary = appendVerbatim(paymentMethod, to: summary)
         }
-        return segments.isEmpty ? "全部" : segments.joined(separator: " · ")
+        return summary ?? Text("全部")
+    }
+
+    /// 將外部／使用者資料以 verbatim 形式串接，避免內容恰好等於 catalog key 時被翻譯
+    func appendVerbatim(_ value: String, to summary: Text?) -> Text {
+        guard let summary else {
+            return Text(verbatim: value)
+        }
+        return summary + Text(verbatim: " · \(value)")
     }
 }
 

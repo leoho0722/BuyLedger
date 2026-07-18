@@ -28,7 +28,7 @@ struct BLAmountField: View {
         let palette = BLTheme.palette(for: colorScheme)
 
         VStack(alignment: .leading, spacing: 3) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.caption.weight(.semibold))
                 .foregroundStyle(palette.accent)
 

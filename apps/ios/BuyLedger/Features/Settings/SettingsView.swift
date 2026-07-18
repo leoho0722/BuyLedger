@@ -18,15 +18,29 @@ struct SettingsView: View {
     /// 設定 store
     @Bindable var store: StoreOf<SettingsFeature>
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
+    /// 關閉目前設定導覽層級；自訂返回按鈕避免切換語言後系統快取舊 back title
+    @Environment(\.dismiss) private var dismiss
+
     // MARK: - View Body
 
     /// 設定頁畫面內容
     var body: some View {
         Form {
+            Section("語言") {
+                Picker("App 語言", selection: $store.language) {
+                    ForEach(AppLanguage.allCases) { language in
+                        Text(language.title).tag(language)
+                    }
+                }
+            }
+
             Section("外觀") {
                 Picker("介面模式", selection: $store.appearance) {
                     ForEach(AppearancePreference.allCases) { mode in
-                        Text(mode.title).tag(mode)
+                        Text(LocalizedStringKey(mode.title)).tag(mode)
                     }
                 }
             }
@@ -113,8 +127,21 @@ struct SettingsView: View {
                 LabeledContent("作者", value: "Leo Ho")
             }
         }
-        .navigationTitle("設定")
+        .navigationTitle(Text(LocalizedStringResource("設定", locale: store.language.locale)))
+        .navigationBarBackButtonHidden(true)
+        .toolbar {
+            ToolbarItem(placement: .topBarLeading) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "chevron.left")
+                }
+                .accessibilityLabel(Text("返回"))
+            }
+        }
         .sheet(isPresented: $store.showsCurrencySheet) {
+            let locale = locale
+
             OptionPickerSheet(
                 title: "選擇預設幣別",
                 allowsAdd: false,
@@ -124,13 +151,11 @@ struct SettingsView: View {
                 options: store.availableCurrencies.map(\.rawValue),
                 selected: store.defaultCurrency.rawValue,
                 displayName: { code in
-                    let locale = Locale.preferred()
                     let name = locale.localizedString(forCurrencyCode: code) ?? ""
                     return name.isEmpty ? code : "\(code) · \(name)"
                 },
                 searchKeywords: { code in
-                    Locale.preferred()
-                        .localizedString(forCurrencyCode: code) ?? ""
+                    locale.localizedString(forCurrencyCode: code) ?? ""
                 },
                 onSelect: { code in
                     store.send(.defaultCurrencySelected(code))
@@ -170,11 +195,10 @@ struct SettingsView: View {
 
 private extension SettingsView {
 
-    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字
+    /// 依 App 選定 locale 把幣別 ISO code 轉成「TWD · 幣別名稱」顯示文字
     /// - Parameter currency: 幣別
     /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
-        let locale = Locale.preferred()
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
         return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
     }

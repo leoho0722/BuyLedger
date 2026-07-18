@@ -92,14 +92,14 @@ struct PaymentMethodEditorSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField(namePlaceholder, text: $draftName)
+                    TextField(LocalizedStringKey(namePlaceholder), text: $draftName)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                 } header: {
                     Text("付款方式名稱")
                 } footer: {
                     if !message.isEmpty {
-                        Text(message)
+                        Text(LocalizedStringKey(message))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -136,7 +136,7 @@ struct PaymentMethodEditorSheet: View {
                 }
             }
             .formStyle(.grouped)
-            .navigationTitle(title)
+            .navigationTitle(Text(LocalizedStringKey(title)))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -146,7 +146,7 @@ struct PaymentMethodEditorSheet: View {
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(submitTitle) {
+                    Button(LocalizedStringKey(submitTitle)) {
                         let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
                         guard !trimmed.isEmpty else {
                             return

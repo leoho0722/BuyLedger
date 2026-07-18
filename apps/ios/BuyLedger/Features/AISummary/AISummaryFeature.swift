@@ -33,7 +33,7 @@ struct AISummaryFeature {
         var phase: Phase = .idle
 
         /// 失敗時顯示的友善訊息
-        var errorMessage: String?
+        var errorMessage: LocalizedStringResource?
 
         // MARK: - Nested Types
 
@@ -70,7 +70,7 @@ struct AISummaryFeature {
         case streamFinished
 
         /// 串流失敗，帶友善訊息
-        case streamFailed(String)
+        case streamFailed(LocalizedStringResource)
 
         /// 使用者點擊重試
         case retryTapped
@@ -163,7 +163,7 @@ struct AISummaryFeature {
 extension APIError {
 
     /// 對應到 AI 總結 sheet 的友善失敗訊息
-    var summaryFailureMessage: String {
+    var summaryFailureMessage: LocalizedStringResource {
         switch self {
         case .invalidKey:
             "API key 無效或未設定，請確認 OLLAMA_API_KEY。"

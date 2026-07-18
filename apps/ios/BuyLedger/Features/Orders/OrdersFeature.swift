@@ -36,8 +36,14 @@ extension OrderDateSection {
     ///   - orders: 要分組的訂單
     ///   - referenceDate: 判斷「今天／昨天」的基準時間
     ///   - calendar: 分組與標題使用的曆法
+    ///   - locale: App 選定、用於日期區段標題的 locale
     /// - Returns: 依日期由新到舊排序的區段
-    static func group(_ orders: [LedgerOrder], referenceDate: Date, calendar: Calendar) -> [OrderDateSection] {
+    static func group(
+        _ orders: [LedgerOrder],
+        referenceDate: Date,
+        calendar: Calendar,
+        locale: Locale
+    ) -> [OrderDateSection] {
         let grouped = Dictionary(grouping: orders) {
             calendar.startOfDay(for: $0.date)
         }
@@ -49,7 +55,8 @@ extension OrderDateSection {
                     title: OrderFormatters.daySectionTitle(
                         for: day,
                         referenceDate: referenceDate,
-                        calendar: calendar
+                        calendar: calendar,
+                        locale: locale
                     ),
                     orders: (grouped[day] ?? []).sorted { $0.date > $1.date }
                 )
@@ -1120,12 +1127,14 @@ extension OrdersFeature.State {
     /// - Parameters:
     ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準的「現在」時間
     ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
+    ///   - locale: App 選定、用於日期區段標題的 locale
     /// - Returns: 依日期由新到舊排序的區段；每段內訂單亦由新到舊排序
-    func dateSections(referenceDate: Date, calendar: Calendar) -> [OrderDateSection] {
+    func dateSections(referenceDate: Date, calendar: Calendar, locale: Locale) -> [OrderDateSection] {
         OrderDateSection.group(
             filteredOrders(referenceDate: referenceDate, calendar: calendar),
             referenceDate: referenceDate,
-            calendar: calendar
+            calendar: calendar,
+            locale: locale
         )
     }
 

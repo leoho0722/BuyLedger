@@ -189,10 +189,13 @@ struct RootFeature {
 
                 case .task:
                     let currencyMetadataRepository = currencyMetadataRepository
-                    return .run { _ in
-                        // TTL 7 天：7 * 24 * 3600 = 604_800 秒
-                        _ = try? await currencyMetadataRepository.refreshIfStale(604_800)
-                    }
+                    return .merge(
+                        .send(.settings(.task)),
+                        .run { _ in
+                            // TTL 7 天：7 * 24 * 3600 = 604_800 秒
+                            _ = try? await currencyMetadataRepository.refreshIfStale(604_800)
+                        }
+                    )
                     
                 case let .tabSelected(tab):
                     state.selectedTab = tab

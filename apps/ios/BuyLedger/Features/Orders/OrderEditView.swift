@@ -19,10 +19,8 @@ struct OrderEditView: View {
     /// 訂單編輯 store
     @Bindable var store: StoreOf<OrderEditFeature>
 
-    /// 訂購日期 footer 顯示使用的 locale；跟隨使用者手機設定，測試可注入固定值
-    ///
-    /// 本 View 不直接使用此值，改透過 ``deviceLocale`` 包裝：TCA 預設的 `Locale.autoupdatingCurrent` 受 App 自身 `CFBundleDevelopmentRegion` 與支援的 localizations 影響，當 App 未掛使用者偏好語言時會回退到開發語言 (例如英文)
-    @Dependency(\.locale) private var locale
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
 
     // MARK: - View Body
 
@@ -42,7 +40,7 @@ struct OrderEditView: View {
                     Text("基本資料")
                 } footer: {
                     VStack(alignment: .leading, spacing: BLSpacing.small) {
-                        Text("訂購日期：\(OrderFormatters.fullTimestamp(store.draftDate, locale: deviceLocale))")
+                        Text("訂購日期：\(OrderFormatters.fullTimestamp(store.draftDate, locale: locale))")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                             .monospacedDigit()
@@ -58,7 +56,7 @@ struct OrderEditView: View {
                 Section("狀態與幣別") {
                     Picker("狀態", selection: $store.draftStatus) {
                         ForEach(store.availableStatuses) { status in
-                            Text(status.title).tag(status)
+                            Text(LocalizedStringKey(status.title)).tag(status)
                         }
                     }
 
@@ -113,7 +111,7 @@ struct OrderEditView: View {
 
                     Picker("收款狀態", selection: $store.draftPaymentReceiptStatus) {
                         ForEach(PaymentReceiptStatus.allCases) { status in
-                            Text(status.title).tag(status)
+                            Text(LocalizedStringKey(status.title)).tag(status)
                         }
                     }
                     .pickerStyle(.segmented)
@@ -160,7 +158,7 @@ struct OrderEditView: View {
                 }
             }
             .formStyle(.grouped)
-            .navigationTitle(store.original == nil ? "新訂單" : "編輯訂單")
+            .navigationTitle(Text(LocalizedStringKey(store.original == nil ? "新訂單" : "編輯訂單")))
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -295,6 +293,8 @@ struct OrderEditView: View {
                 )
             }
             .sheet(isPresented: $store.showsCurrencySheet) {
+                let locale = locale
+
                 OptionPickerSheet(
                     title: "選擇幣別",
                     allowsAdd: false,
@@ -304,13 +304,11 @@ struct OrderEditView: View {
                     options: store.availableCurrencies.map(\.rawValue),
                     selected: store.draftCurrency.rawValue,
                     displayName: { code in
-                        let name = Locale.preferred()
-                            .localizedString(forCurrencyCode: code) ?? ""
+                        let name = locale.localizedString(forCurrencyCode: code) ?? ""
                         return name.isEmpty ? code : "\(code) (\(name))"
                     },
                     searchKeywords: { code in
-                        Locale.preferred()
-                            .localizedString(forCurrencyCode: code) ?? ""
+                        locale.localizedString(forCurrencyCode: code) ?? ""
                     },
                     onSelect: { code in
                         store.send(.currencySelected(code))
@@ -348,8 +346,14 @@ private extension OrderEditView {
 
                 Spacer(minLength: BLSpacing.small)
 
-                Text(store.draftOrderSource.isEmpty ? "選擇來源" : store.draftOrderSource)
-                    .foregroundStyle(.secondary)
+                Group {
+                    if store.draftOrderSource.isEmpty {
+                        Text("選擇來源")
+                    } else {
+                        Text(verbatim: store.draftOrderSource)
+                    }
+                }
+                .foregroundStyle(.secondary)
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
@@ -376,9 +380,15 @@ private extension OrderEditView {
 
                 Spacer(minLength: BLSpacing.small)
 
-                Text(store.draftCategories.isEmpty ? "選擇類別" : store.categoriesDisplayText)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.trailing)
+                Group {
+                    if store.draftCategories.isEmpty {
+                        Text("選擇類別")
+                    } else {
+                        Text(verbatim: store.categoriesDisplayText)
+                    }
+                }
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
@@ -401,9 +411,15 @@ private extension OrderEditView {
 
                 Spacer(minLength: BLSpacing.small)
 
-                Text(store.campaignsDisplayText)
-                    .foregroundStyle(.secondary)
-                    .multilineTextAlignment(.trailing)
+                Group {
+                    if store.draftCampaignNames.isEmpty {
+                        Text("未歸團")
+                    } else {
+                        Text(verbatim: store.campaignsDisplayText)
+                    }
+                }
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.trailing)
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
@@ -452,8 +468,14 @@ private extension OrderEditView {
 
                 Spacer(minLength: BLSpacing.small)
 
-                Text(store.draftPaymentMethod.isEmpty ? "選擇付款方式" : store.draftPaymentMethod)
-                    .foregroundStyle(.secondary)
+                Group {
+                    if store.draftPaymentMethod.isEmpty {
+                        Text("選擇付款方式")
+                    } else {
+                        Text(verbatim: store.draftPaymentMethod)
+                    }
+                }
+                .foregroundStyle(.secondary)
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
@@ -476,8 +498,14 @@ private extension OrderEditView {
 
                 Spacer(minLength: BLSpacing.small)
 
-                Text(store.draftVerificationStatus.isEmpty ? "選擇對帳狀態" : store.draftVerificationStatus)
-                    .foregroundStyle(.secondary)
+                Group {
+                    if store.draftVerificationStatus.isEmpty {
+                        Text("選擇對帳狀態")
+                    } else {
+                        Text(verbatim: store.draftVerificationStatus)
+                    }
+                }
+                .foregroundStyle(.secondary)
 
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
@@ -499,7 +527,7 @@ private extension OrderEditView {
             displayedComponents: [.date, .hourAndMinute]
         )
         .datePickerStyle(.compact)
-        .environment(\.locale, deviceLocale)
+        .environment(\.locale, locale)
     }
 
     /// 商品明細區段：可逐項編輯名稱／數量／單價，亦可新增與刪除
@@ -635,7 +663,7 @@ private extension OrderEditView {
     /// - Returns: `LabeledContent` + `TextField` 組合 view
     @ViewBuilder
     func decimalField(title: String, value: Binding<Decimal>) -> some View {
-        LabeledContent(title) {
+        LabeledContent(LocalizedStringKey(title)) {
             TextField(
                 "",
                 value: value,
@@ -664,7 +692,7 @@ private extension OrderEditView {
             }
         )
 
-        LabeledContent(title) {
+        LabeledContent(LocalizedStringKey(title)) {
             HStack(spacing: 4) {
                 TextField(
                     "",
@@ -686,11 +714,6 @@ private extension OrderEditView {
 // MARK: - Private Method
 
 private extension OrderEditView {
-
-    /// 使用者在系統「語言與地區」實際偏好的 locale；未提供偏好語言時退回注入的 `@Dependency(\.locale)`，方便測試／預覽固定。選用 `preferredLanguages` 而非 `@Dependency(\.locale)` 預設值的原因見 ``Locale/preferred(fallback:)``
-    var deviceLocale: Locale {
-        Locale.preferred(fallback: locale)
-    }
 
     /// 是否允許按下儲存
     ///
@@ -719,7 +742,7 @@ private extension OrderEditView {
     /// 幣別選擇列 label 顯示文字：「TWD (新台幣)」格式，跟 sheet 內列項與 ``OrderDetailView`` 上方 chip 一致。``Locale.localizedString(forCurrencyCode:)`` 沒有對應翻譯時 fallback 為 raw code
     var currencyDisplayText: String {
         let code = store.draftCurrency.rawValue
-        let name = deviceLocale.localizedString(forCurrencyCode: code) ?? ""
+        let name = locale.localizedString(forCurrencyCode: code) ?? ""
         return name.isEmpty ? code : "\(code) (\(name))"
     }
 

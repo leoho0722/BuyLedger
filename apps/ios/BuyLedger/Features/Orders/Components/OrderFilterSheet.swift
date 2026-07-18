@@ -74,7 +74,7 @@ struct OrderFilterSheet: View {
                 paymentMethodSection
                 categorySection
             }
-            .navigationTitle("篩選")
+            .navigationTitle(Text("篩選"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -178,7 +178,7 @@ private extension OrderFilterSheet {
                 Image(systemName: "calendar")
                     .foregroundStyle(.tint)
 
-                Text(period.title)
+                Text(LocalizedStringKey(period.title))
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)

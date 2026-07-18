@@ -28,6 +28,9 @@ struct DashboardView: View {
     /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone (compact) 與 iPad (regular)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 用來計算「本月／上月」與日期子標的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
 
@@ -67,7 +70,7 @@ struct DashboardView: View {
 
         return NavigationStack {
             core
-                .navigationTitle("總覽")
+                .navigationTitle(Text("總覽"))
         }
     }
 }
@@ -159,7 +162,7 @@ private extension DashboardView {
 
                 Spacer(minLength: 0)
 
-                Text("\(summary.orderCount) 筆 · \(CampaignFormatters.twd(summary.receivables))")
+                Text("\(summary.orderCount) 筆 · \(CampaignFormatters.twd(summary.receivables, locale: locale))")
                     .font(.caption)
                     .foregroundStyle(palette.secondaryLabel)
                     .monospacedDigit()
@@ -175,7 +178,7 @@ private extension DashboardView {
                 title: "收款",
                 value: summary.receivedRatio,
                 tint: palette.green,
-                trailingText: CampaignFormatters.twd(summary.receivedAmount)
+                trailingText: CampaignFormatters.twd(summary.receivedAmount, locale: locale)
             )
         }
     }
@@ -450,7 +453,7 @@ private extension DashboardView {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             HStack(spacing: 6) {
                 Circle().fill(tint).frame(width: 8, height: 8)
-                Text(label)
+                Text(LocalizedStringKey(label))
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(palette.secondaryLabel)
             }
@@ -555,33 +558,33 @@ private extension DashboardView {
         return profit > 0 ? "+\(formatted)" : formatted
     }
 
-    /// 將金額格式化為新台幣 (無小數位)
+    /// 依 App 選定 locale 將金額格式化為新台幣 (無小數位)
     /// - Parameter amount: 金額
     /// - Returns: 含 NT$ 前綴的字串
     func formatTwd(_ amount: Decimal) -> String {
         amount.formatted(
             .currency(code: CurrencyCode.twd.code)
             .precision(.fractionLength(0))
-            .locale(Locale(identifier: "zh_TW"))
+            .locale(locale)
         )
     }
 
-    /// 將比例格式化為百分比
+    /// 依 App 選定 locale 將比例格式化為百分比
     /// - Parameter value: 介於 0 與 1 之間的比例
     /// - Returns: 含一位小數的百分比字串
     func formatPercent(_ value: Decimal) -> String {
-        value.formatted(.percent.precision(.fractionLength(1)))
+        value.formatted(.percent.precision(.fractionLength(1)).locale(locale))
     }
 
-    /// 顯示在大標題上方的日期子標
-    /// - Returns: 例如「5月1日 週五」
+    /// 顯示在大標題上方、依 App 選定 locale 格式化的日期子標
+    /// - Returns: 依選定 locale 呈現的日期字串
     func currentDateSubtitle() -> String {
         date().formatted(
             .dateTime
                 .month(.wide)
                 .day(.defaultDigits)
                 .weekday(.wide)
-                .locale(Locale(identifier: "zh_TW"))
+                .locale(locale)
         )
     }
 
@@ -605,19 +608,19 @@ private extension DashboardView {
         }
     }
 
-    /// 把 MoM delta (小數型成長率) 轉成 `+18.2% MoM` 風格字串；`nil` 顯示「— MoM」
+    /// 依 App 選定 locale 把 MoM delta (小數型成長率) 轉成 `+18.2% MoM` 風格字串；`nil` 顯示「— MoM」
     /// - Parameter delta: 成長率，例如 `0.182` 表示 +18.2%
     /// - Returns: KPI 卡顯示用字串
     func percentDeltaDisplay(_ delta: Decimal?) -> String {
         guard let delta else {
             return "— MoM"
         }
-        let formatted = delta.formatted(.percent.precision(.fractionLength(1)))
+        let formatted = delta.formatted(.percent.precision(.fractionLength(1)).locale(locale))
         let prefix = delta >= 0 ? "+" : ""
         return "\(prefix)\(formatted) MoM"
     }
 
-    /// 把毛利率 delta (百分點) 轉成 `+2.4 pt MoM` 風格字串
+    /// 依 App 選定 locale 把毛利率 delta (百分點) 轉成 `+2.4 pt MoM` 風格字串
     /// - Parameter delta: 百分點差，例如 `0.024` 表示 +2.4pt
     /// - Returns: KPI 卡顯示用字串
     func marginDeltaDisplay(_ delta: Decimal?) -> String {
@@ -625,12 +628,12 @@ private extension DashboardView {
             return "— MoM"
         }
         let pts = delta * 100
-        let formatted = pts.formatted(.number.precision(.fractionLength(1)))
+        let formatted = pts.formatted(.number.precision(.fractionLength(1)).locale(locale))
         let prefix = delta >= 0 ? "+" : ""
         return "\(prefix)\(formatted) pt MoM"
     }
 
-    /// 把獲利 delta 轉成 hero 卡上的 `↑ 24.3% MoM` 風格字串
+    /// 依 App 選定 locale 把獲利 delta 轉成 hero 卡上的 `↑ 24.3% MoM` 風格字串
     /// - Parameter delta: 成長率，例如 `0.243` 表示 +24.3%
     /// - Returns: hero 卡顯示用字串；無資料時顯示「— MoM」
     func profitDeltaDisplay(_ delta: Decimal?) -> String {
@@ -639,7 +642,7 @@ private extension DashboardView {
         }
         let arrow = delta >= 0 ? "↑" : "↓"
         let absDelta = delta < 0 ? -delta : delta
-        let formatted = absDelta.formatted(.percent.precision(.fractionLength(1)))
+        let formatted = absDelta.formatted(.percent.precision(.fractionLength(1)).locale(locale))
         return "\(arrow) \(formatted) MoM"
     }
 

@@ -25,6 +25,9 @@ struct FxView: View {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 金額輸入欄與換算結果的字級，隨 Dynamic Type 縮放 (以 `.title` 為基準)
     @ScaledMetric(relativeTo: .title) private var heroAmountSize: CGFloat = 32
 
@@ -46,7 +49,7 @@ struct FxView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(palette.background)
-        .navigationTitle("匯率工具")
+        .navigationTitle(Text("匯率工具"))
         .task {
             await store.send(.task).finish()
         }
@@ -166,6 +169,8 @@ private extension FxView {
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $store.showsCurrencySheet) {
+            let locale = locale
+
             OptionPickerSheet(
                 title: "選擇來源幣別",
                 allowsAdd: false,
@@ -175,13 +180,11 @@ private extension FxView {
                 options: store.availableCurrencies.map(\.rawValue),
                 selected: store.fromCurrency.rawValue,
                 displayName: { code in
-                    let locale = Locale.preferred()
                     let name = locale.localizedString(forCurrencyCode: code) ?? ""
                     return name.isEmpty ? code : "\(code) · \(name)"
                 },
                 searchKeywords: { code in
-                    Locale.preferred()
-                        .localizedString(forCurrencyCode: code) ?? ""
+                    locale.localizedString(forCurrencyCode: code) ?? ""
                 },
                 onSelect: { code in
                     store.send(.fromCurrencySelected(code))
@@ -302,7 +305,7 @@ private extension FxView {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(palette.label)
 
-                Text(rateSourceSubtitle(for: currency))
+                Text(LocalizedStringKey(rateSourceSubtitle(for: currency)))
                     .font(.caption)
                     .foregroundStyle(palette.secondaryLabel)
             }
@@ -323,7 +326,7 @@ private extension FxView {
 
 private extension FxView {
 
-    /// 顯示在連線成功 banner 上的快照時間
+    /// 顯示在連線成功 banner 上、依 App 選定 locale 格式化的快照時間
     var snapshotDateText: String {
         guard let snapshot = store.snapshot else {
             return "—"
@@ -334,11 +337,11 @@ private extension FxView {
                 .day(.defaultDigits)
                 .hour(.defaultDigits(amPM: .omitted))
                 .minute(.twoDigits)
-                .locale(Locale(identifier: "zh_TW"))
+                .locale(locale)
         )
     }
 
-    /// 將金額格式化為新台幣 (無小數位)；`nil` 顯示為「—」
+    /// 依 App 選定 locale 將金額格式化為新台幣 (無小數位)；`nil` 顯示為「—」
     func formatTwd(_ amount: Decimal?) -> String {
         guard let amount else {
             return "—"
@@ -346,7 +349,7 @@ private extension FxView {
         return amount.formatted(
             .currency(code: CurrencyCode.twd.code)
             .precision(.fractionLength(0))
-            .locale(Locale(identifier: "zh_TW"))
+            .locale(locale)
         )
     }
 
@@ -355,19 +358,18 @@ private extension FxView {
         rateDisplay(for: store.fromCurrency)
     }
 
-    /// 將匯率格式化為四位小數的字串；無 snapshot 時顯示「—」
+    /// 依 App 選定 locale 將匯率格式化為四位小數的字串；無 snapshot 時顯示「—」
     func rateDisplay(for currency: CurrencyCode) -> String {
         guard let rate = store.state.displayRate(for: currency) else {
             return "—"
         }
-        return rate.formatted(.number.precision(.fractionLength(4)))
+        return rate.formatted(.number.precision(.fractionLength(4)).locale(locale))
     }
 
-    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字 (用於來源幣別 button label 與 sheet 顯示)
+    /// 依 App 選定 locale 把幣別 ISO code 轉成「TWD · 幣別名稱」顯示文字 (用於來源幣別 button label 與 sheet 顯示)
     /// - Parameter currency: 幣別
     /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
-        let locale = Locale.preferred()
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
         return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
     }
@@ -377,7 +379,7 @@ private extension FxView {
         store.availableCurrencies.filter { $0 != .twd }
     }
 
-    /// 匯率列副標：顯示資料來源與 snapshot 時間戳；TWD 永遠顯示「基準幣別」、無 snapshot 時顯示「尚未連線」
+    /// 匯率列副標：顯示資料來源與依 App 選定 locale 格式化的 snapshot 時間戳；TWD 永遠顯示「基準幣別」、無 snapshot 時顯示「尚未連線」
     /// - Parameter currency: 幣別
     /// - Returns: 副標字串
     func rateSourceSubtitle(for currency: CurrencyCode) -> String {
@@ -391,14 +393,14 @@ private extension FxView {
                 .day(.defaultDigits)
                 .hour(.defaultDigits(amPM: .omitted))
                 .minute(.twoDigits)
-                .locale(Locale(identifier: "zh_TW"))
+                .locale(locale)
         )
         return "ExchangeRate-API · \(timestamp)"
     }
 
-    /// 預設金額按鈕的顯示文字
+    /// 依 App 選定 locale 格式化的預設金額按鈕文字
     func presetLabel(_ value: Decimal) -> String {
-        value.formatted(.number.precision(.fractionLength(0)))
+        value.formatted(.number.precision(.fractionLength(0)).locale(locale))
     }
 }
 

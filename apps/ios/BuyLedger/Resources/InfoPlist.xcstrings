@@ -1,0 +1,22 @@
+{
+  "sourceLanguage" : "zh-Hant",
+  "strings" : {
+    "NSCalendarsFullAccessUsageDescription" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calendar access is required to add group-order reminders to your calendar and remove their corresponding events when you delete them."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要行事曆權限，才能將開團的訂購提醒加入你的行事曆，並在你移除時刪除對應事件。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

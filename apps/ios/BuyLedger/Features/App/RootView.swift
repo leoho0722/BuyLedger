@@ -27,6 +27,7 @@ struct RootView: View {
         layout
             .dismissKeyboardOnTap()
             .preferredColorScheme(preferredScheme)
+            .environment(\.locale, store.settings.language.locale)
             .task {
                 await store.send(.task).finish()
             }

@@ -35,7 +35,7 @@ struct FxFeature {
         var isLoading: Bool = false
 
         /// 最新匯率失敗時顯示給使用者的訊息；`nil` 表示沒有錯誤
-        var errorMessage: String?
+        var errorMessage: LocalizedStringResource?
 
         /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供
         var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
@@ -106,7 +106,7 @@ struct FxFeature {
         case ratesLoaded(FxRateSnapshot)
 
         /// 最新匯率載入失敗
-        case ratesFailed(String)
+        case ratesFailed(LocalizedStringResource)
 
         /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔
         case availableCurrenciesLoaded([CurrencyCode])
@@ -203,7 +203,7 @@ private extension FxFeature {
     /// 把 ``APIError`` 轉成顯示給使用者的訊息
     /// - Parameter error: API 錯誤
     /// - Returns: 中文使用者訊息
-    static func userMessage(for error: APIError) -> String {
+    static func userMessage(for error: APIError) -> LocalizedStringResource {
         switch error {
         case .invalidKey:
             return "尚未設定 ExchangeRate-API 金鑰；無法顯示即時匯率。"

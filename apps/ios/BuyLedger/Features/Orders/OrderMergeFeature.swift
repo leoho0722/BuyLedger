@@ -199,9 +199,15 @@ extension OrderMergeFeature.State {
     /// - Parameters:
     ///   - referenceDate: 判斷「今天／昨天」的基準時間
     ///   - calendar: 分組與標題使用的曆法
+    ///   - locale: App 選定、用於日期區段標題的 locale
     /// - Returns: 依日期由新到舊排序的候選區段
-    func candidateSections(referenceDate: Date, calendar: Calendar) -> [OrderDateSection] {
-        OrderDateSection.group(filteredCandidates, referenceDate: referenceDate, calendar: calendar)
+    func candidateSections(referenceDate: Date, calendar: Calendar, locale: Locale) -> [OrderDateSection] {
+        OrderDateSection.group(
+            filteredCandidates,
+            referenceDate: referenceDate,
+            calendar: calendar,
+            locale: locale
+        )
     }
 
     /// 依資格規則過濾可合併的候選訂單

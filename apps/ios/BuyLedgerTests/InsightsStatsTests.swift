@@ -23,6 +23,7 @@ struct InsightsStatsTests {
             range: .thirtyDays,
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar,
+            locale: Locale(identifier: "zh-Hant"),
             palette: BLPalette(isDark: false)
         )
 
@@ -41,6 +42,7 @@ struct InsightsStatsTests {
             range: .twelveMonths,
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar,
+            locale: Locale(identifier: "zh-Hant"),
             palette: BLPalette(isDark: false)
         )
 
@@ -58,6 +60,7 @@ struct InsightsStatsTests {
             range: .twelveMonths,
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar,
+            locale: Locale(identifier: "zh-Hant"),
             palette: BLPalette(isDark: false)
         )
 
@@ -75,6 +78,7 @@ struct InsightsStatsTests {
             range: .twelveMonths,
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar,
+            locale: Locale(identifier: "zh-Hant"),
             palette: BLPalette(isDark: false)
         )
 

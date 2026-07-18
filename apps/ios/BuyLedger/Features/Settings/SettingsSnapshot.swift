@@ -12,6 +12,9 @@ struct SettingsSnapshot: Equatable, Sendable {
 
     // MARK: - Data Properties
 
+    /// App 介面語言偏好
+    var language: AppLanguage
+
     /// 介面外觀模式偏好
     var appearance: AppearancePreference
 
@@ -34,6 +37,7 @@ struct SettingsSnapshot: Equatable, Sendable {
 
     /// 預設設定
     static let `default` = SettingsSnapshot(
+        language: .traditionalChinese,
         appearance: .system,
         notificationsEnabled: true,
         defaultCurrency: .twd,
@@ -44,6 +48,7 @@ struct SettingsSnapshot: Equatable, Sendable {
 
     /// 測試與 preview 用的預設快照 (與 `default` 內容相同，但宣告為 `nonisolated` 方便在 `@Sendable` closure 中安全引用)
     nonisolated static let testDefault = SettingsSnapshot(
+        language: .traditionalChinese,
         appearance: .system,
         notificationsEnabled: true,
         defaultCurrency: .twd,

@@ -25,6 +25,9 @@ struct QuoteView: View {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// hero 建議售價字級，隨 Dynamic Type 縮放 (以 `.largeTitle` 為基準)
     @ScaledMetric(relativeTo: .largeTitle) private var heroPriceSize: CGFloat = 40
 
@@ -46,7 +49,7 @@ struct QuoteView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(palette.background)
-        .navigationTitle("報價試算")
+        .navigationTitle(Text("報價試算"))
         .task {
             await store.send(.task).finish()
         }
@@ -201,6 +204,8 @@ private extension QuoteView {
         }
         .buttonStyle(.plain)
         .sheet(isPresented: $store.showsCurrencySheet) {
+            let locale = locale
+
             OptionPickerSheet(
                 title: "選擇來源幣別",
                 allowsAdd: false,
@@ -210,13 +215,11 @@ private extension QuoteView {
                 options: store.availableCurrencies.map(\.rawValue),
                 selected: store.fromCurrency.rawValue,
                 displayName: { code in
-                    let locale = Locale.preferred()
                     let name = locale.localizedString(forCurrencyCode: code) ?? ""
                     return name.isEmpty ? code : "\(code) · \(name)"
                 },
                 searchKeywords: { code in
-                    Locale.preferred()
-                        .localizedString(forCurrencyCode: code) ?? ""
+                    locale.localizedString(forCurrencyCode: code) ?? ""
                 },
                 onSelect: { code in
                     store.send(.fromCurrencySelected(code))
@@ -242,7 +245,7 @@ private extension QuoteView {
         allowsDecimalEntry: Bool = false
     ) -> some View {
         HStack(spacing: BLSpacing.small) {
-            Text(label)
+            Text(LocalizedStringKey(label))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -260,7 +263,7 @@ private extension QuoteView {
             .frame(width: 120)
             .keyboardType(allowsDecimalEntry || fractionDigits > 0 ? .decimalPad : .numberPad)
 
-            Text(unit)
+            Text(LocalizedStringKey(unit))
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
@@ -389,27 +392,30 @@ private extension QuoteView {
 
 private extension QuoteView {
 
-    /// 把幣別 ISO code 轉成「TWD · 新台幣」顯示文字
+    /// 依 App 選定 locale 把幣別 ISO code 轉成「TWD · 幣別名稱」顯示文字
     /// - Parameter currency: 幣別
     /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
-        let locale = Locale.preferred()
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
         return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
     }
 
-    /// 將金額格式化為新台幣 (無小數位)
+    /// 依 App 選定 locale 將金額格式化為新台幣 (無小數位)
+    /// - Parameter amount: 金額
+    /// - Returns: 依選定 locale 呈現的金額字串
     func formatTwd(_ amount: Double) -> String {
         Decimal(amount).formatted(
             .currency(code: CurrencyCode.twd.code)
             .precision(.fractionLength(0))
-            .locale(Locale(identifier: "zh_TW"))
+            .locale(locale)
         )
     }
 
-    /// 將百分比格式化為含一位小數的字串
+    /// 依 App 選定 locale 將百分比格式化為含一位小數的字串
+    /// - Parameter value: 百分比數值
+    /// - Returns: 依選定 locale 呈現的百分比字串
     func formatPercent(_ value: Double) -> String {
-        Decimal(value).formatted(.number.precision(.fractionLength(1))) + "%"
+        Decimal(value).formatted(.number.precision(.fractionLength(1)).locale(locale)) + "%"
     }
 }
 

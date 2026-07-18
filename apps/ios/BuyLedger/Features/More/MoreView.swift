@@ -257,7 +257,7 @@ private extension MoreView {
                 }
             }
         }
-        .navigationTitle("更多")
+        .navigationTitle(Text(LocalizedStringResource("更多", locale: store.settings.language.locale)))
     }
 
     /// iOS 列表的單列
@@ -268,7 +268,7 @@ private extension MoreView {
     @ViewBuilder
     func toolRow(_ item: ToolItem, palette: BLPalette) -> some View {
         Label {
-            Text(item.title).font(.body.weight(.medium))
+            Text(LocalizedStringKey(item.title)).font(.body.weight(.medium))
         } icon: {
             Image(systemName: item.systemImage)
                 .foregroundStyle(item.tint(in: palette))

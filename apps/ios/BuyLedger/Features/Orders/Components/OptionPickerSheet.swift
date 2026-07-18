@@ -195,7 +195,7 @@ struct OptionPickerSheet: View {
     var body: some View {
         NavigationStack {
             content
-                .navigationTitle(title)
+                .navigationTitle(Text(LocalizedStringKey(title)))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     if multiSelection != nil {
@@ -214,8 +214,8 @@ struct OptionPickerSheet: View {
                     }
                 }
                 .modifier(SearchableModifier(text: $searchText, enabled: searchable))
-                .alert(addAlertTitle, isPresented: $showsAddAlert) {
-                    TextField(addFieldPlaceholder, text: $draft)
+                .alert(LocalizedStringKey(addAlertTitle), isPresented: $showsAddAlert) {
+                    TextField(LocalizedStringKey(addFieldPlaceholder), text: $draft)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
 
@@ -235,7 +235,7 @@ struct OptionPickerSheet: View {
                         draft = ""
                     }
                 } message: {
-                    Text(addAlertMessage)
+                    Text(LocalizedStringKey(addAlertMessage))
                 }
                 .sheet(isPresented: $showsAddPaymentMethodSheet) {
                     PaymentMethodEditorSheet(
@@ -323,7 +323,7 @@ private extension OptionPickerSheet {
                     Button {
                         triggerAdd()
                     } label: {
-                        Label(addButtonTitle, systemImage: "plus.circle.fill")
+                        Label(LocalizedStringKey(addButtonTitle), systemImage: "plus.circle.fill")
                     }
                 }
             }
@@ -335,9 +335,9 @@ private extension OptionPickerSheet {
 
                 if filteredOptions.isEmpty {
                     ContentUnavailableView(
-                        emptyTitle,
+                        LocalizedStringKey(emptyTitle),
                         systemImage: "tray",
-                        description: Text(emptyDescription)
+                        description: Text(LocalizedStringKey(emptyDescription))
                     )
                 } else {
                     ForEach(filteredOptions, id: \.self) { option in
@@ -360,7 +360,7 @@ private extension OptionPickerSheet {
             dismiss()
         } label: {
             HStack(alignment: .firstTextBaseline) {
-                Text(clearOption.title)
+                Text(LocalizedStringKey(clearOption.title))
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)

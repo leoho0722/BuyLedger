@@ -24,6 +24,9 @@ struct InsightsView: View {
     /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone (compact) 與 iPad (regular)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 用來計算趨勢期間與熱力圖的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
 
@@ -60,7 +63,7 @@ struct InsightsView: View {
 
         return NavigationStack {
             core
-                .navigationTitle("分析")
+                .navigationTitle(Text("分析"))
         }
     }
 }
@@ -79,6 +82,7 @@ private extension InsightsView {
             range: store.insightsDateRange,
             referenceDate: date(),
             calendar: calendar,
+            locale: locale,
             palette: palette
         )
         // 掃全部訂單的排行與熱力圖在一次 render 內各算一次，避免 card view builder 每次重算
@@ -135,7 +139,7 @@ private extension InsightsView {
     var rangePicker: some View {
         Picker("期間", selection: $store.insightsDateRange) {
             ForEach(InsightsDateRange.allCases) { range in
-                Text(range.title).tag(range)
+                Text(LocalizedStringKey(range.title)).tag(range)
             }
         }
         .pickerStyle(.segmented)
@@ -151,13 +155,13 @@ private extension InsightsView {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 HStack(alignment: .firstTextBaseline) {
-                    Text(store.insightsDateRange.trendCardTitle)
+                    Text(LocalizedStringKey(store.insightsDateRange.trendCardTitle))
                         .font(.subheadline.weight(.medium))
                         .foregroundStyle(palette.secondaryLabel)
 
                     Spacer()
 
-                    Text(stats.trendDelta)
+                    Text(LocalizedStringKey(stats.trendDelta))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(trendDeltaColor(stats.trendDeltaIsPositive, palette: palette))
                 }
@@ -221,7 +225,7 @@ private extension InsightsView {
                                 title: "\(rank.rank). \(rank.campaignName)",
                                 value: rank.ratio,
                                 tint: palette.accent,
-                                trailingText: CampaignFormatters.twd(rank.profit)
+                                trailingText: CampaignFormatters.twd(rank.profit, locale: locale)
                             )
                             .contentShape(.rect)
                         }
@@ -491,11 +495,15 @@ private extension InsightsView {
         ]
     }
 
-    /// 顯示在熱力圖左側的星期縮寫
+    /// 依 App 選定 locale 顯示在熱力圖左側的星期縮寫
     /// - Parameter index: 0 為週一、6 為週日
-    /// - Returns: 中文單字星期縮寫
+    /// - Returns: 依選定 locale 呈現的星期縮寫
     func weekdayLabel(_ index: Int) -> String {
-        ["一", "二", "三", "四", "五", "六", "日"][index]
+        var localizedCalendar = Calendar.current
+        localizedCalendar.locale = locale
+        let symbols = localizedCalendar.veryShortStandaloneWeekdaySymbols
+        let mondayFirstIndex = (index + 1) % symbols.count
+        return symbols[mondayFirstIndex]
     }
 
     // MARK: Heatmap
@@ -505,14 +513,14 @@ private extension InsightsView {
 
     // MARK: Formatting
 
-    /// 將金額格式化為新台幣 (無小數位)
+    /// 依 App 選定 locale 將金額格式化為新台幣 (無小數位)
     /// - Parameter amount: 金額
-    /// - Returns: 含 NT$ 前綴的字串
+    /// - Returns: 依選定 locale 呈現的金額字串
     func formatTwd(_ amount: Decimal) -> String {
         amount.formatted(
             .currency(code: CurrencyCode.twd.code)
             .precision(.fractionLength(0))
-            .locale(Locale(identifier: "zh_TW"))
+            .locale(locale)
         )
     }
 

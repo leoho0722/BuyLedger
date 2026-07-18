@@ -230,7 +230,7 @@ private extension RootSidebarLayout {
     @ViewBuilder
     func navRow(_ tab: RootTab, palette _: BLPalette, badgeCount: Int? = nil) -> some View {
         HStack(spacing: BLSpacing.small) {
-            Label(tab.title, systemImage: tab.systemImage)
+            Label(LocalizedStringKey(tab.title), systemImage: tab.systemImage)
                 .labelStyle(.titleAndIcon)
 
             Spacer(minLength: 0)
@@ -257,7 +257,7 @@ private extension RootSidebarLayout {
                 .fill(group.color(in: palette))
                 .frame(width: 9, height: 9)
 
-            Text(group.status.title)
+            Text(LocalizedStringKey(group.status.title))
                 .font(.subheadline)
                 .foregroundStyle(palette.label)
 
@@ -269,7 +269,8 @@ private extension RootSidebarLayout {
                 .foregroundStyle(palette.tertiaryLabel)
         }
         .accessibilityElement(children: .combine)
-        .accessibilityLabel(Text("\(group.status.title) \(count) 件"))
+        .accessibilityLabel(Text(LocalizedStringKey(group.status.title)))
+        .accessibilityValue(Text(" \(count) 件"))
     }
 
     /// 目前選取分頁的內容

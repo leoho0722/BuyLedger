@@ -55,7 +55,7 @@ struct BLPhotoViewer: View {
             // 背景不另外鋪色，沿用 sheet 的系統背景，隨深淺色模式自適應
             pager
                 .padding(BLSpacing.small)
-                .navigationTitle(counterText)
+                .navigationTitle(Text(verbatim: counterText))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .primaryAction) {

@@ -44,21 +44,21 @@ struct LookupItemEditorSheet: View {
         NavigationStack {
             Form {
                 Section {
-                    TextField(namePlaceholder, text: $draftName)
+                    TextField(LocalizedStringKey(namePlaceholder), text: $draftName)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                 } header: {
-                    Text(namePlaceholder)
+                    Text(LocalizedStringKey(namePlaceholder))
                 } footer: {
                     if !message.isEmpty {
-                        Text(message)
+                        Text(LocalizedStringKey(message))
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
             .formStyle(.grouped)
-            .navigationTitle(title)
+            .navigationTitle(Text(LocalizedStringKey(title)))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -68,7 +68,7 @@ struct LookupItemEditorSheet: View {
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(submitTitle) {
+                    Button(LocalizedStringKey(submitTitle)) {
                         let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
                         guard !trimmed.isEmpty else {
                             return

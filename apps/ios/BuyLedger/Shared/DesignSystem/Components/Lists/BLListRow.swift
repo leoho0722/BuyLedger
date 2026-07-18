@@ -51,7 +51,7 @@ struct BLListRow: View {
                     .frame(width: 22)
             }
 
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.subheadline)
                 .foregroundStyle(palette.label)
 

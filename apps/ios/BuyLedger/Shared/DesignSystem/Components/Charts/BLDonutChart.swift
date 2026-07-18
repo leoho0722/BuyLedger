@@ -44,7 +44,7 @@ struct BLDonutChart: View {
             .frame(width: 150, height: 150)
 
             VStack(spacing: 2) {
-                Text(centerTitle)
+                Text(LocalizedStringKey(centerTitle))
                     .font(.caption2)
                     .foregroundStyle(palette.secondaryLabel)
 

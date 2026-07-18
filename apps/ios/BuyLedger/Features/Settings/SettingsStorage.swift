@@ -30,6 +30,9 @@ private extension SettingsStorage {
 
         // MARK: - Static Properties
 
+        /// App 介面語言偏好的 key
+        nonisolated static let language = "settings.language"
+
         /// 外觀偏好的 key
         nonisolated static let appearance = "settings.appearance"
 
@@ -61,6 +64,9 @@ extension SettingsStorage: DependencyKey {
     nonisolated static let liveValue: SettingsStorage = SettingsStorage(
         load: {
             let defaults = UserDefaults.standard
+            let language = AppLanguage(
+                storedValue: defaults.string(forKey: SettingsStorageKeys.language)
+            )
             let appearance = AppearancePreference(
                 rawValue: defaults.string(forKey: SettingsStorageKeys.appearance) ?? ""
             ) ?? .system
@@ -80,6 +86,7 @@ extension SettingsStorage: DependencyKey {
             let aiSummaryModel = storedModel.isEmpty ? SettingsSnapshot.default.aiSummaryModel : storedModel
 
             return SettingsSnapshot(
+                language: language,
                 appearance: appearance,
                 notificationsEnabled: notifications,
                 defaultCurrency: currency,
@@ -90,6 +97,7 @@ extension SettingsStorage: DependencyKey {
         },
         save: { snapshot in
             let defaults = UserDefaults.standard
+            defaults.set(snapshot.language.rawValue, forKey: SettingsStorageKeys.language)
             defaults.set(snapshot.appearance.rawValue, forKey: SettingsStorageKeys.appearance)
             defaults.set(snapshot.notificationsEnabled, forKey: SettingsStorageKeys.notifications)
             defaults.set(snapshot.defaultCurrency.rawValue, forKey: SettingsStorageKeys.defaultCurrency)

@@ -15,6 +15,43 @@ struct RootFeatureTests {
 
     // MARK: - Tests
 
+    @Test func taskRestoresSettingsBeforeSettingsScreenIsVisited() async {
+        var snapshot = SettingsSnapshot.default
+        snapshot.language = .english
+        snapshot.appearance = .dark
+        let storedSnapshot = snapshot
+        let refresh = RootTaskRefreshBox()
+
+        let store = TestStore(initialState: RootFeature.State()) {
+            RootFeature()
+        } withDependencies: {
+            $0[SettingsStorage.self] = SettingsStorage(
+                load: { storedSnapshot },
+                save: { _ in }
+            )
+            $0[CurrencyMetadataRepository.self] = CurrencyMetadataRepository(
+                fetchCodes: { CurrencyCode.defaults },
+                refreshIfStale: { _ in
+                    refresh.wasCalled = true
+                    return false
+                },
+                forceRefresh: { }
+            )
+        }
+        store.exhaustivity = .off
+
+        await store.send(.task)
+        await store.receive(.settings(.task)) {
+            $0.settings.language = .english
+            $0.settings.appearance = .dark
+        }
+        await store.finish()
+
+        #expect(store.state.settings.language == .english)
+        #expect(store.state.settings.appearance == .dark)
+        #expect(refresh.wasCalled)
+    }
+
     @Test func smartGroupSelectedJumpsToOrdersAndAppliesStatus() async {
         var state = RootFeature.State()
         state.selectedTab = .dashboard
@@ -329,6 +366,15 @@ struct RootFeatureTests {
         #expect(store.state.selectedTab == .more)
         #expect(store.state.showsSettingsFromDeepLink == true)
     }
+}
+
+/// 記錄 Root 啟動 task 是否保留幣別 cache refresh effect
+private final class RootTaskRefreshBox: @unchecked Sendable {
+
+    // MARK: - Data Properties
+
+    /// 是否呼叫過 refresh
+    var wasCalled = false
 }
 
 // MARK: - Private Method

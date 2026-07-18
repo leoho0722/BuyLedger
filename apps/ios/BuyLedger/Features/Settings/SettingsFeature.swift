@@ -20,6 +20,9 @@ struct SettingsFeature {
     @ObservableState
     struct State: Equatable, @unchecked Sendable {
 
+        /// App 介面語言偏好
+        var language: AppLanguage = .traditionalChinese
+
         /// 介面外觀模式偏好
         var appearance: AppearancePreference = .system
 
@@ -94,6 +97,7 @@ struct SettingsFeature {
             switch action {
             case .task:
                 let snapshot = storage.load()
+                state.language = snapshot.language
                 state.appearance = snapshot.appearance
                 state.notificationsEnabled = snapshot.notificationsEnabled
                 state.defaultCurrency = snapshot.defaultCurrency
@@ -155,6 +159,7 @@ private extension SettingsFeature {
     func persist(_ state: State) {
         storage.save(
             SettingsSnapshot(
+                language: state.language,
                 appearance: state.appearance,
                 notificationsEnabled: state.notificationsEnabled,
                 defaultCurrency: state.defaultCurrency,

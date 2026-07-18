@@ -23,6 +23,9 @@ struct OrderDetailView: View {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     // MARK: - View Body
 
     /// 訂單詳情的畫面內容
@@ -165,7 +168,7 @@ private extension OrderDetailView {
             HStack(spacing: BLSpacing.small) {
                 BLStatusPill(order.status.title, tone: order.status.tone)
 
-                Text(OrderFormatters.shortDate(order.date))
+                Text(OrderFormatters.shortDate(order.date, locale: locale))
                     .font(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
 
@@ -208,7 +211,7 @@ private extension OrderDetailView {
     @ViewBuilder
     func infoPair(title: String, value: String, palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.footnote.weight(.semibold))
                 .foregroundStyle(palette.secondaryLabel)
                 .textCase(.uppercase)
@@ -240,7 +243,7 @@ private extension OrderDetailView {
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(palette.secondaryLabel)
 
-                        Text("\(summary.profit >= 0 ? "+" : "")\(OrderFormatters.twd(summary.profit))")
+                        Text("\(summary.profit >= 0 ? "+" : "")\(OrderFormatters.twd(summary.profit, locale: locale))")
                             .font(.largeTitle.bold())
                             .foregroundStyle(summary.profit >= 0 ? palette.green : palette.red)
                             .monospacedDigit()
@@ -253,7 +256,7 @@ private extension OrderDetailView {
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(palette.secondaryLabel)
 
-                        Text(OrderFormatters.percent(summary.margin))
+                        Text(OrderFormatters.percent(summary.margin, locale: locale))
                             .font(.title3.bold())
                             .monospacedDigit()
                     }
@@ -264,19 +267,19 @@ private extension OrderDetailView {
                 HStack {
                     metric(
                         "總收款",
-                        value: OrderFormatters.twd(summary.revenue),
+                        value: OrderFormatters.twd(summary.revenue, locale: locale),
                         palette: palette
                     )
                     Spacer()
                     metric(
                         "總成本",
-                        value: OrderFormatters.twd(summary.totalCost),
+                        value: OrderFormatters.twd(summary.totalCost, locale: locale),
                         palette: palette
                     )
                     Spacer()
                     metric(
                         "手續費",
-                        value: OrderFormatters.twd(summary.fees),
+                        value: OrderFormatters.twd(summary.fees, locale: locale),
                         palette: palette
                     )
                 }
@@ -309,7 +312,7 @@ private extension OrderDetailView {
                             )
                         },
                         centerTitle: "總成本",
-                        centerValue: OrderFormatters.twd(summary.totalCost)
+                        centerValue: OrderFormatters.twd(summary.totalCost, locale: locale)
                     )
 
                     VStack(alignment: .leading, spacing: BLSpacing.medium) {
@@ -319,13 +322,13 @@ private extension OrderDetailView {
                                     .fill(component.color)
                                     .frame(width: 8, height: 8)
 
-                                Text(component.title)
+                                Text(LocalizedStringKey(component.title))
                                     .font(.footnote)
                                     .foregroundStyle(palette.secondaryLabel)
 
                                 Spacer()
 
-                                Text(OrderFormatters.twd(component.value))
+                                Text(OrderFormatters.twd(component.value, locale: locale))
                                     .font(.footnote.weight(.semibold))
                                     .monospacedDigit()
                             }
@@ -381,20 +384,20 @@ private extension OrderDetailView {
         HStack(alignment: .top, spacing: BLSpacing.medium) {
             kpiTile(
                 label: "總收款",
-                value: OrderFormatters.twd(summary.revenue),
+                value: OrderFormatters.twd(summary.revenue, locale: locale),
                 tint: palette.accent,
                 palette: palette
             )
             kpiTile(
                 label: "總成本",
-                value: OrderFormatters.twd(summary.totalCost),
+                value: OrderFormatters.twd(summary.totalCost, locale: locale),
                 tint: palette.orange,
                 palette: palette
             )
             kpiTile(
                 label: "獲利",
-                value: "\(summary.profit >= 0 ? "+" : "")\(OrderFormatters.twd(summary.profit))",
-                delta: OrderFormatters.percent(summary.margin),
+                value: "\(summary.profit >= 0 ? "+" : "")\(OrderFormatters.twd(summary.profit, locale: locale))",
+                delta: OrderFormatters.percent(summary.margin, locale: locale),
                 deltaUp: summary.profit >= 0,
                 tint: summary.profit >= 0 ? palette.green : palette.red,
                 palette: palette
@@ -426,7 +429,7 @@ private extension OrderDetailView {
                     .fill(tint)
                     .frame(width: 8, height: 8)
 
-                Text(label)
+                Text(LocalizedStringKey(label))
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(palette.secondaryLabel)
             }
@@ -504,7 +507,7 @@ private extension OrderDetailView {
 
                     Spacer()
 
-                    Text(OrderFormatters.twd(summary.totalCost))
+                    Text(OrderFormatters.twd(summary.totalCost, locale: locale))
                         .font(.subheadline.bold())
                         .monospacedDigit()
                         .foregroundStyle(palette.label)
@@ -535,13 +538,13 @@ private extension OrderDetailView {
                     .fill(component.color)
                     .frame(width: 8, height: 8)
 
-                Text(component.title)
+                Text(LocalizedStringKey(component.title))
                     .font(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
 
                 Spacer()
 
-                Text(OrderFormatters.twd(component.value))
+                Text(OrderFormatters.twd(component.value, locale: locale))
                     .font(.footnote.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(palette.label)
@@ -629,7 +632,7 @@ private extension OrderDetailView {
 
                     Spacer()
 
-                    Text(OrderFormatters.currency(item.subtotal, currency: order.currency))
+                    Text(OrderFormatters.currency(item.subtotal, currency: order.currency, locale: locale))
                         .font(.subheadline.weight(.semibold))
                         .monospacedDigit()
                 }
@@ -661,7 +664,7 @@ private extension OrderDetailView {
                         .font(.subheadline)
                         .foregroundStyle(palette.label)
                     Spacer()
-                    Text("-\(OrderFormatters.twd(order.cardlessDeductionAmount))")
+                    Text("-\(OrderFormatters.twd(order.cardlessDeductionAmount, locale: locale))")
                         .font(.subheadline.weight(.semibold))
                         .monospacedDigit()
                         .foregroundStyle(palette.red)
@@ -672,7 +675,7 @@ private extension OrderDetailView {
                         .font(.subheadline)
                         .foregroundStyle(palette.label)
                     Spacer()
-                    Text("+\(OrderFormatters.twd(order.cardlessSupplementAmount))")
+                    Text("+\(OrderFormatters.twd(order.cardlessSupplementAmount, locale: locale))")
                         .font(.subheadline.weight(.semibold))
                         .monospacedDigit()
                         .foregroundStyle(palette.green)
@@ -691,7 +694,7 @@ private extension OrderDetailView {
     @ViewBuilder
     func metric(_ title: String, value: String, palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.caption)
                 .foregroundStyle(palette.secondaryLabel)
 
@@ -743,13 +746,10 @@ private extension OrderDetailView {
         return names.isEmpty ? "未歸團" : names.joined(separator: "、")
     }
 
-    /// 取得跟隨使用者手機偏好語言的幣別顯示文字，例如 `TWD (新台幣)`
-    ///
-    /// 透過 ``Locale/preferredLanguages`` 取得系統偏好 (不受 App `CFBundleDevelopmentRegion` 與已掛載 localizations 限制)，再用 `localizedString(forCurrencyCode:)` 取出在地化名稱；查不到時退化為 raw code
+    /// 取得跟隨 App 語言偏好的幣別顯示文字，例如 `TWD (新台幣)`
     /// - Parameter currency: 訂單幣別
     /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
-        let locale = Locale.preferred()
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
         return name.isEmpty ? currency.rawValue : "\(currency.rawValue) (\(name))"
     }

@@ -16,8 +16,8 @@ struct CampaignEditView: View {
     /// 表單 store
     @Bindable var store: StoreOf<CampaignEditFeature>
 
-    /// TCA 注入的 locale；作為 ``deviceLocale`` 取不到偏好語言時的 fallback
-    @Dependency(\.locale) private var locale
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
 
     // MARK: - View Body
 
@@ -33,18 +33,18 @@ struct CampaignEditView: View {
                         selection: $store.draftOpenDate,
                         displayedComponents: .date
                     )
-                    .environment(\.locale, deviceLocale)
+                    .environment(\.locale, locale)
 
                     DatePicker(
                         "結單日期",
                         selection: $store.draftCloseDate,
                         displayedComponents: .date
                     )
-                    .environment(\.locale, deviceLocale)
+                    .environment(\.locale, locale)
 
                     Picker("狀態", selection: $store.draftStatus) {
                         ForEach(CampaignStatus.allCases) { status in
-                            Text(status.title).tag(status)
+                            Text(LocalizedStringKey(status.title)).tag(status)
                         }
                     }
 
@@ -76,7 +76,7 @@ struct CampaignEditView: View {
                         } label: {
                             LabeledContent(
                                 "提醒時間",
-                                value: CampaignFormatters.reminderTimestamp(store.reminderTimestamp)
+                                value: CampaignFormatters.reminderTimestamp(store.reminderTimestamp, locale: locale)
                             )
                         }
                         .buttonStyle(.plain)
@@ -88,7 +88,7 @@ struct CampaignEditView: View {
                         .lineLimit(2...5)
                 }
             }
-            .navigationTitle(store.original == nil ? "新增開團" : "編輯開團")
+            .navigationTitle(Text(LocalizedStringKey(store.original == nil ? "新增開團" : "編輯開團")))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -122,10 +122,10 @@ private extension CampaignEditView {
                 displayedComponents: [.date, .hourAndMinute]
             )
             .datePickerStyle(.graphical)
-            .environment(\.locale, deviceLocale)
+            .environment(\.locale, locale)
             .padding()
             .frame(maxHeight: .infinity, alignment: .top)
-            .navigationTitle("訂購提醒")
+            .navigationTitle(Text("訂購提醒"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -135,23 +135,13 @@ private extension CampaignEditView {
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(store.wantsReminder ? "完成" : "加入提醒") {
+                    Button(LocalizedStringKey(store.wantsReminder ? "完成" : "加入提醒")) {
                         store.send(.reminderPickerConfirmed)
                     }
                 }
             }
         }
         .presentationDetents([.fraction(0.7)])
-    }
-}
-
-// MARK: - Private Method
-
-private extension CampaignEditView {
-
-    /// 使用者在系統「語言與地區」實際偏好的 locale；與「新增/編輯訂單頁」的 DatePicker 一致。未提供偏好語言時退回注入的 `@Dependency(\.locale)`。選用 `preferredLanguages` 的原因見 ``Locale/preferred(fallback:)``
-    var deviceLocale: Locale {
-        Locale.preferred(fallback: locale)
     }
 }
 

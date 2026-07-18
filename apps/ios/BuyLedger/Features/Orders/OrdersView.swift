@@ -67,7 +67,7 @@ private extension OrdersView {
 
     /// iPad regular 使用的「清單 + 詳情」兩欄佈局
     ///
-    /// 以 ``NavigationStack`` 包住兩欄並用 `.navigationTitle("訂單")` 提供系統大標題，讓頂端標題與「更多」等其他分頁一致對齊側邊欄 (先前用 HStack + 手動 `.padding(.top)` 會讓內容偏下、與側邊欄錯位)。內層僅用 ``HStack`` 自排「清單 + 詳情」，不再使用巢狀 ``NavigationSplitView``，避免兩層 split 互相搶寬度造成中間欄被擠壓
+    /// 以 ``NavigationStack`` 包住兩欄並用 `.navigationTitle(Text("訂單"))` 提供系統大標題，讓頂端標題與「更多」等其他分頁一致對齊側邊欄 (先前用 HStack + 手動 `.padding(.top)` 會讓內容偏下、與側邊欄錯位)。內層僅用 ``HStack`` 自排「清單 + 詳情」，不再使用巢狀 ``NavigationSplitView``，避免兩層 split 互相搶寬度造成中間欄被擠壓
     @ViewBuilder
     var regularSplitContent: some View {
         let palette = BLTheme.palette(for: colorScheme)
@@ -86,11 +86,11 @@ private extension OrdersView {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .background(palette.background)
             }
-            .navigationTitle("訂單")
+            .navigationTitle(Text("訂單"))
             .toolbar {
                 if store.isSelecting {
                     ToolbarItem(placement: .topBarLeading) {
-                        Button(allFilteredSelected ? "清除" : "全選") {
+                        Button(LocalizedStringKey(allFilteredSelected ? "清除" : "全選")) {
                             store.send(allFilteredSelected ? .clearSelectionTapped : .selectAllTapped)
                         }
                     }
@@ -112,7 +112,7 @@ private extension OrdersView {
                         Menu {
                             // 「已合併」僅能由合併流程寫入，批次目標清單一律排除
                             ForEach(OrderStatus.allCases.filter { $0 != .merged }) { status in
-                                Button(status.title) {
+                                Button(LocalizedStringKey(status.title)) {
                                     store.send(.batchStatusChanged(status))
                                 }
                             }
@@ -335,7 +335,7 @@ private extension OrdersView {
             }
 
             if let errorMessage = store.errorMessage {
-                Text(errorMessage)
+                Text(LocalizedStringKey(errorMessage))
                     .font(.footnote)
                     .foregroundStyle(palette.red)
             }
@@ -360,7 +360,7 @@ private extension OrdersView {
                     Button {
                         store.send(.statusFilterSelected(filter))
                     } label: {
-                        Text(filter.title)
+                        Text(LocalizedStringKey(filter.title))
                             .font(.footnote.weight(.semibold))
                             .lineLimit(1)
                             .foregroundStyle(isSelected ? palette.background : palette.secondaryLabel)
@@ -393,7 +393,7 @@ private extension OrdersView {
                             Image(systemName: "calendar")
                                 .font(.caption2.weight(.semibold))
 
-                            Text(period.title)
+                            Text(LocalizedStringKey(period.title))
                                 .font(.footnote.weight(.semibold))
                                 .lineLimit(1)
                         }
@@ -545,9 +545,9 @@ private extension OrdersView {
                     store.send(.statusChanged(order.id, status))
                 } label: {
                     if status == order.status {
-                        Label(status.title, systemImage: "checkmark")
+                        Label(LocalizedStringKey(status.title), systemImage: "checkmark")
                     } else {
-                        Text(status.title)
+                        Text(LocalizedStringKey(status.title))
                     }
                 }
             }

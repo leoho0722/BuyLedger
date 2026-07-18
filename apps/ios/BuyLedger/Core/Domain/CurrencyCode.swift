@@ -20,7 +20,7 @@ extension CurrencyCode {
 extension CurrencyCode {
 
     /// 取得依指定 locale 的在地化幣別名稱
-    /// - Parameter locale: 想顯示的 locale，預設為 `.current`；view 端常傳手機偏好 locale
+    /// - Parameter locale: 想顯示的 locale，預設為 `.current`；view 端應傳 App 選定 locale
     /// - Returns: 在地化字串，例如 `"美元"`、`"日圓"`；若 locale 無對應翻譯則 fallback 為 ``rawValue``
     func localizedName(in locale: Locale = .current) -> String {
         locale.localizedString(forCurrencyCode: rawValue) ?? rawValue

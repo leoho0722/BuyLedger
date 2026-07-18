@@ -1,0 +1,5974 @@
+{
+  "sourceLanguage" : "zh-Hant",
+  "strings" : {
+    "" : {
+      "shouldTranslate" : false
+    },
+    " " : {
+      "shouldTranslate" : false
+    },
+    " %lld 件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " %lld items"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : " %lld 件"
+          }
+        }
+      }
+    },
+    "#%lld" : {
+      "shouldTranslate" : false
+    },
+    "$12,480" : {
+      "shouldTranslate" : false
+    },
+    "%" : {
+      "shouldTranslate" : false
+    },
+    "%@ %lld 件" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ · %lld items"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$@ %2$lld 件"
+          }
+        }
+      }
+    },
+    "%@%@" : {
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@%2$@"
+          }
+        }
+      },
+      "shouldTranslate" : false
+    },
+    "%lld" : {
+      "shouldTranslate" : false
+    },
+    "%lld 件 · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld items · %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld 件 · %2$@"
+          }
+        }
+      }
+    },
+    "%lld 件進行中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld in progress"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 件進行中"
+          }
+        }
+      }
+    },
+    "%lld 位" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld customers"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 位"
+          }
+        }
+      }
+    },
+    "%lld 單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld 單"
+          }
+        }
+      }
+    },
+    "%lld 筆 · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld orders · %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld 筆 · %2$@"
+          }
+        }
+      }
+    },
+    "%lld%% / %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld%% / %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld%% / %2$@"
+          }
+        }
+      }
+    },
+    "%lld. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld. %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%1$lld. %2$@"
+          }
+        }
+      }
+    },
+    "+%@" : {
+      "shouldTranslate" : false
+    },
+    "-%@" : {
+      "shouldTranslate" : false
+    },
+    "0" : {
+      "shouldTranslate" : false
+    },
+    "0 單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "0 orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "0 單"
+          }
+        }
+      }
+    },
+    "1 %@" : {
+      "shouldTranslate" : false
+    },
+    "1 %@ = %@ TWD" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 %@ = %@ TWD"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 %1$@ = %2$@ TWD"
+          }
+        }
+      }
+    },
+    "12 個月" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "12 Months"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "12 個月"
+          }
+        }
+      }
+    },
+    "12 個月淨獲利" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "12-Month Net Profit"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "12 個月淨獲利"
+          }
+        }
+      }
+    },
+    "30 天" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 Days"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 天"
+          }
+        }
+      }
+    },
+    "30 天淨獲利" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30-Day Net Profit"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "30 天淨獲利"
+          }
+        }
+      }
+    },
+    "6 個月" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6 Months"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6 個月"
+          }
+        }
+      }
+    },
+    "6 個月淨獲利" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6-Month Net Profit"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "6 個月淨獲利"
+          }
+        }
+      }
+    },
+    "= 新台幣" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "= TWD"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "= 新台幣"
+          }
+        }
+      }
+    },
+    "AI 商品明細總結" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI Item Summary"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 商品明細總結"
+          }
+        }
+      }
+    },
+    "AI 正在分析商品明細…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI is analyzing item details…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 正在分析商品明細…"
+          }
+        }
+      }
+    },
+    "API key 無效或未設定，請確認 OLLAMA_API_KEY。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The API key is invalid or missing. Check OLLAMA_API_KEY."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "API key 無效或未設定，請確認 OLLAMA_API_KEY。"
+          }
+        }
+      }
+    },
+    "API 配額已用罄，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The API quota has been exhausted. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "API 配額已用罄，請稍後再試。"
+          }
+        }
+      }
+    },
+    "App" : {
+      "shouldTranslate" : false
+    },
+    "App 語言" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App Language"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "App 語言"
+          }
+        }
+      }
+    },
+    "BL" : {
+      "shouldTranslate" : false
+    },
+    "BuyLedger" : {
+      "shouldTranslate" : false
+    },
+    "Dashboard hero 卡的進度條依此值計算；設為 0 代表不顯示進度條。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The Dashboard hero progress bar uses this value. Set it to 0 to hide the progress bar."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dashboard hero 卡的進度條依此值計算；設為 0 代表不顯示進度條。"
+          }
+        }
+      }
+    },
+    "English" : {
+      "shouldTranslate" : false
+    },
+    "Top %lld" : {
+      "shouldTranslate" : false
+    },
+    "VIP" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VIP"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "VIP"
+          }
+        }
+      }
+    },
+    "W%lld" : {
+      "shouldTranslate" : false
+    },
+    "·" : {
+      "shouldTranslate" : false
+    },
+    "★ VIP" : {
+      "shouldTranslate" : false
+    },
+    "「%@」將被刪除，此操作無法復原。歸屬此開團的訂單不會被刪除，但會變回未歸團。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "“%@” will be deleted and cannot be recovered. Its orders will not be deleted, but will become unassigned."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%@」將被刪除，此操作無法復原。歸屬此開團的訂單不會被刪除，但會變回未歸團。"
+          }
+        }
+      }
+    },
+    "「%@」的訂單 %@ 將被刪除，此操作無法復原。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order %@ for “%@” will be deleted. This action cannot be undone."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「%1$@」的訂單 %2$@ 將被刪除，此操作無法復原。"
+          }
+        }
+      }
+    },
+    "「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；「銀行匯款」標籤代表會顯示「對帳狀態」欄位；「貨到付款」標籤代表收款金額已含預估運費，獲利會自動扣除三種運費。需要修改名稱或分類時，對該列選「編輯」即可。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The “Cardless” tag shows deduction and supplemental payment fields when editing orders. “Bank Transfer” shows the reconciliation status field. “Cash on Delivery” means the received amount includes estimated shipping, so all three shipping costs are deducted from profit. To change a name or category, choose Edit on its row."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；「銀行匯款」標籤代表會顯示「對帳狀態」欄位；「貨到付款」標籤代表收款金額已含預估運費，獲利會自動扣除三種運費。需要修改名稱或分類時，對該列選「編輯」即可。"
+          }
+        }
+      }
+    },
+    "上月" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Last Month"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "上月"
+          }
+        }
+      }
+    },
+    "下單熱力 · 過去 %lld 週" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order Heatmap · Past %lld Weeks"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下單熱力 · 過去 %lld 週"
+          }
+        }
+      }
+    },
+    "主要操作" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Primary Action"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "主要操作"
+          }
+        }
+      }
+    },
+    "介面模式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appearance Mode"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "介面模式"
+          }
+        }
+      }
+    },
+    "付款方式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment Method"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "付款方式"
+          }
+        }
+      }
+    },
+    "付款方式名稱" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment Method Name"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "付款方式名稱"
+          }
+        }
+      }
+    },
+    "付款方式管理" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage Payment Methods"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "付款方式管理"
+          }
+        }
+      }
+    },
+    "付款方式：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment Method: %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "付款方式：%@"
+          }
+        }
+      }
+    },
+    "伺服器回應錯誤 (%lld)，目前無法完成總結。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The server returned an error (%lld), so the summary could not be completed."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "伺服器回應錯誤 (%lld)，目前無法完成總結。"
+          }
+        }
+      }
+    },
+    "作者" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Author"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "作者"
+          }
+        }
+      }
+    },
+    "來源名稱" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source Name"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "來源名稱"
+          }
+        }
+      }
+    },
+    "來源幣別" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Source Currency"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "來源幣別"
+          }
+        }
+      }
+    },
+    "依名稱整理客戶活躍度，快速跳轉到對應訂單。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Review customer activity by name and jump quickly to their orders."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "依名稱整理客戶活躍度，快速跳轉到對應訂單。"
+          }
+        }
+      }
+    },
+    "保留這張照片" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep This Photo"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "保留這張照片"
+          }
+        }
+      }
+    },
+    "備註" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notes"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "備註"
+          }
+        }
+      }
+    },
+    "僅列出與主訂單同幣別 (%@)、同客戶「%@」的訂單；選擇後會以兩筆訂單整合的資料開啟確認表單。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only orders in the same currency (%@) and for the same customer, “%@”, are shown. After selection, a confirmation form opens with the combined order data."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "僅列出與主訂單同幣別 (%1$@)、同客戶「%2$@」的訂單；選擇後會以兩筆訂單整合的資料開啟確認表單。"
+          }
+        }
+      }
+    },
+    "僅能與同幣別、同客戶且非「已合併」「已取消」的訂單合併。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orders can only be merged when they use the same currency, belong to the same customer, and are neither merged nor canceled."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "僅能與同幣別、同客戶且非「已合併」「已取消」的訂單合併。"
+          }
+        }
+      }
+    },
+    "儲存" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Save"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "儲存"
+          }
+        }
+      }
+    },
+    "先到「訂單」分頁新增幾筆訂單，這裡就會出現走勢、類別排行、成本結構與下單熱力圖。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add a few orders in the Orders tab to see trends, category rankings, cost structure, and the order heatmap here."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先到「訂單」分頁新增幾筆訂單，這裡就會出現走勢、類別排行、成本結構與下單熱力圖。"
+          }
+        }
+      }
+    },
+    "先建立第一筆訂單，這裡會顯示近期紀錄。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create your first order to see recent activity here."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先建立第一筆訂單，這裡會顯示近期紀錄。"
+          }
+        }
+      }
+    },
+    "先建立訂單，這裡會自動依客戶彙總統計。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create an order to see customer summaries here."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "先建立訂單，這裡會自動依客戶彙總統計。"
+          }
+        }
+      }
+    },
+    "全選" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select All"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全選"
+          }
+        }
+      }
+    },
+    "全部" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部"
+          }
+        }
+      }
+    },
+    "全部客戶" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Customers"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部客戶"
+          }
+        }
+      }
+    },
+    "全部已收款。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All orders are paid."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部已收款。"
+          }
+        }
+      }
+    },
+    "全部時間" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "All Time"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "全部時間"
+          }
+        }
+      }
+    },
+    "兩筆訂單共有 %lld 張照片，超過上限 %lld 張；請勾選要保留的照片 (已選 %lld/%lld)，按「繼續」帶入合併後的新訂單。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The two orders contain %lld photos, exceeding the limit of %lld. Select the photos to keep (%lld/%lld selected), then tap Continue to add them to the merged order."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "兩筆訂單共有 %1$lld 張照片，超過上限 %2$lld 張；請勾選要保留的照片 (已選 %3$lld/%4$lld)，按「繼續」帶入合併後的新訂單。"
+          }
+        }
+      }
+    },
+    "分析" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Insights"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分析"
+          }
+        }
+      }
+    },
+    "分組方式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Group By"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "分組方式"
+          }
+        }
+      }
+    },
+    "利潤率" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profit Margin"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "利潤率"
+          }
+        }
+      }
+    },
+    "刪除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除"
+          }
+        }
+      }
+    },
+    "刪除照片" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Photo"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除照片"
+          }
+        }
+      }
+    },
+    "刪除訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Order"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除訂單"
+          }
+        }
+      }
+    },
+    "刪除資料" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Data"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除資料"
+          }
+        }
+      }
+    },
+    "刪除開團" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Campaign"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除開團"
+          }
+        }
+      }
+    },
+    "前往開啟" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前往開啟"
+          }
+        }
+      }
+    },
+    "加入提醒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Reminder"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加入提醒"
+          }
+        }
+      }
+    },
+    "加入照片" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Photos"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "加入照片"
+          }
+        }
+      }
+    },
+    "匯率 API 回應 HTTP %lld，目前無法計算建議售價。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The exchange-rate API returned HTTP %lld, so the suggested price cannot be calculated."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匯率 API 回應 HTTP %lld，目前無法計算建議售價。"
+          }
+        }
+      }
+    },
+    "匯率 API 回應 HTTP %lld；無法顯示即時匯率。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The exchange-rate API returned HTTP %lld, so live rates cannot be displayed."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匯率 API 回應 HTTP %lld；無法顯示即時匯率。"
+          }
+        }
+      }
+    },
+    "匯率 API 回應錯誤 (%@)，目前無法計算建議售價。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The exchange-rate API returned error (%@), so the suggested price cannot be calculated."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匯率 API 回應錯誤 (%@)，目前無法計算建議售價。"
+          }
+        }
+      }
+    },
+    "匯率 API 回應錯誤 (%@)；無法顯示即時匯率。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The exchange-rate API returned error (%@), so live rates cannot be displayed."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匯率 API 回應錯誤 (%@)；無法顯示即時匯率。"
+          }
+        }
+      }
+    },
+    "匯率工具" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exchange Rates"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匯率工具"
+          }
+        }
+      }
+    },
+    "匯率資料格式異常，目前無法計算建議售價。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The exchange-rate data is invalid, so the suggested price cannot be calculated."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匯率資料格式異常，目前無法計算建議售價。"
+          }
+        }
+      }
+    },
+    "匯率資料格式異常；無法顯示即時匯率。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The exchange-rate data is invalid, so live rates cannot be displayed."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匯率資料格式異常；無法顯示即時匯率。"
+          }
+        }
+      }
+    },
+    "匯率載入失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Exchange rates could not be loaded. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "匯率載入失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "占比" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Share"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "占比"
+          }
+        }
+      }
+    },
+    "即時匯率 (對 TWD)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Live Rates (to TWD)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "即時匯率 (對 TWD)"
+          }
+        }
+      }
+    },
+    "即時連線 ExchangeRate-API，將外幣換算為 TWD。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Convert foreign currencies to TWD using live ExchangeRate-API data."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "即時連線 ExchangeRate-API，將外幣換算為 TWD。"
+          }
+        }
+      }
+    },
+    "原始訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Original Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "原始訂單"
+          }
+        }
+      }
+    },
+    "取消" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cancel"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消"
+          }
+        }
+      }
+    },
+    "取消保留這張照片" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Do Not Keep This Photo"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "取消保留這張照片"
+          }
+        }
+      }
+    },
+    "只看未收款" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unpaid Only"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "只看未收款"
+          }
+        }
+      }
+    },
+    "合併訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merge Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合併訂單"
+          }
+        }
+      }
+    },
+    "商品名稱" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Item Name"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商品名稱"
+          }
+        }
+      }
+    },
+    "商品單價以原始幣別記錄，總成本與獲利仍以上方「成本」欄位的 NT$ 數值為準。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Item prices are recorded in the original currency. Total cost and profit still use the NT$ value in the Cost field above."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商品單價以原始幣別記錄，總成本與獲利仍以上方「成本」欄位的 NT$ 數值為準。"
+          }
+        }
+      }
+    },
+    "商品明細" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Item Details"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商品明細"
+          }
+        }
+      }
+    },
+    "商品明細 (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Item Details (%@)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商品明細 (%@)"
+          }
+        }
+      }
+    },
+    "商品資訊" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Item Information"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商品資訊"
+          }
+        }
+      }
+    },
+    "商品類別" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Item Category"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商品類別"
+          }
+        }
+      }
+    },
+    "商品類別管理" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage Item Categories"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商品類別管理"
+          }
+        }
+      }
+    },
+    "啟用 AI 總結" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable AI Summary"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "啟用 AI 總結"
+          }
+        }
+      }
+    },
+    "啟用後，使用此付款方式的訂單因收款金額已含預估運費，獲利會自動扣除國內、國際與外國國內三種運費。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When enabled, orders using this payment method treat the received amount as including estimated shipping, so domestic, international, and foreign domestic shipping are deducted from profit."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "啟用後，使用此付款方式的訂單因收款金額已含預估運費，獲利會自動扣除國內、國際與外國國內三種運費。"
+          }
+        }
+      }
+    },
+    "啟用後，使用此付款方式的訂單在「收款金額」區段會出現「無卡折抵金額」與「無卡補款金額」兩個欄位，並計入總收款公式。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When enabled, orders using this payment method show Cardless Deduction and Cardless Supplemental Payment fields in Received Amount, and include them in the total received formula."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "啟用後，使用此付款方式的訂單在「收款金額」區段會出現「無卡折抵金額」與「無卡補款金額」兩個欄位，並計入總收款公式。"
+          }
+        }
+      }
+    },
+    "啟用後，使用此付款方式的訂單在編輯時會出現「對帳狀態」欄位，供你在款項入帳後標記對帳結果。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "When enabled, orders using this payment method show a Reconciliation Status field so you can mark the result after funds arrive."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "啟用後，使用此付款方式的訂單在編輯時會出現「對帳狀態」欄位，供你在款項入帳後標記對帳結果。"
+          }
+        }
+      }
+    },
+    "單價" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unit Price"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "單價"
+          }
+        }
+      }
+    },
+    "單號" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order Number"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "單號"
+          }
+        }
+      }
+    },
+    "回應格式無法解析，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The response could not be parsed. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "回應格式無法解析，請稍後再試。"
+          }
+        }
+      }
+    },
+    "在訂單列表點「AI 總結」(sparkles) 即可彙整目前篩選的商品明細。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap AI Summary (sparkles) in the order list to summarize the currently filtered item details."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "在訂單列表點「AI 總結」(sparkles) 即可彙整目前篩選的商品明細。"
+          }
+        }
+      }
+    },
+    "基本資料" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Basic Information"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基本資料"
+          }
+        }
+      }
+    },
+    "報價中" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quoting"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "報價中"
+          }
+        }
+      }
+    },
+    "報價試算" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quote Calculator"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "報價試算"
+          }
+        }
+      }
+    },
+    "外觀" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Appearance"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "外觀"
+          }
+        }
+      }
+    },
+    "套用" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Apply"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "套用"
+          }
+        }
+      }
+    },
+    "完成" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Done"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
+          }
+        }
+      }
+    },
+    "客戶分貨" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Customer Allocation"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "客戶分貨"
+          }
+        }
+      }
+    },
+    "客戶名單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Customers"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "客戶名單"
+          }
+        }
+      }
+    },
+    "客戶名稱" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Customer Name"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "客戶名稱"
+          }
+        }
+      }
+    },
+    "客戶名稱、訂單來源與商品類別皆為必填欄位。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Customer name, order source, and item category are required."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "客戶名稱、訂單來源與商品類別皆為必填欄位。"
+          }
+        }
+      }
+    },
+    "客戶實付" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Customer Payment"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "客戶實付"
+          }
+        }
+      }
+    },
+    "對帳狀態" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconciliation Status"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "對帳狀態"
+          }
+        }
+      }
+    },
+    "對帳狀態名稱" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reconciliation Status Name"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "對帳狀態名稱"
+          }
+        }
+      }
+    },
+    "對帳狀態管理" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage Reconciliation Statuses"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "對帳狀態管理"
+          }
+        }
+      }
+    },
+    "尚未有足夠可用於分析的資料" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not Enough Data for Insights"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未有足夠可用於分析的資料"
+          }
+        }
+      }
+    },
+    "尚未設定 ExchangeRate-API 金鑰，目前無法計算建議售價。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ExchangeRate-API key is missing, so the suggested price cannot be calculated."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未設定 ExchangeRate-API 金鑰，目前無法計算建議售價。"
+          }
+        }
+      }
+    },
+    "尚未設定 ExchangeRate-API 金鑰；無法顯示即時匯率。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The ExchangeRate-API key is missing, so live rates cannot be displayed."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未設定 ExchangeRate-API 金鑰；無法顯示即時匯率。"
+          }
+        }
+      }
+    },
+    "尚未設定 OLLAMA_API_KEY。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OLLAMA_API_KEY has not been configured."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未設定 OLLAMA_API_KEY。"
+          }
+        }
+      }
+    },
+    "尚無付款方式" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Payment Methods"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無付款方式"
+          }
+        }
+      }
+    },
+    "尚無來源" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Sources"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無來源"
+          }
+        }
+      }
+    },
+    "尚無分類資料" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Category Data"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無分類資料"
+          }
+        }
+      }
+    },
+    "尚無可用匯率資料，建議售價暫顯示為 0。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No exchange-rate data is available. The suggested price is temporarily shown as 0."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無可用匯率資料，建議售價暫顯示為 0。"
+          }
+        }
+      }
+    },
+    "尚無客戶" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Customers"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無客戶"
+          }
+        }
+      }
+    },
+    "尚無對帳狀態" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Reconciliation Statuses"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無對帳狀態"
+          }
+        }
+      }
+    },
+    "尚無歸屬此開團的訂單。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No orders are assigned to this campaign."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無歸屬此開團的訂單。"
+          }
+        }
+      }
+    },
+    "尚無訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無訂單"
+          }
+        }
+      }
+    },
+    "尚無開團" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Campaigns"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無開團"
+          }
+        }
+      }
+    },
+    "尚無類別" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Categories"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無類別"
+          }
+        }
+      }
+    },
+    "工作區" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Workspace"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工作區"
+          }
+        }
+      }
+    },
+    "工具" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tools"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "工具"
+          }
+        }
+      }
+    },
+    "已下單" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Purchased"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已下單"
+          }
+        }
+      }
+    },
+    "已交付" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delivered"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已交付"
+          }
+        }
+      }
+    },
+    "已到貨" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Arrived"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已到貨"
+          }
+        }
+      }
+    },
+    "已取消" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Canceled"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取消"
+          }
+        }
+      }
+    },
+    "已取貨" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Picked Up"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已取貨"
+          }
+        }
+      }
+    },
+    "已合併" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Merged"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已合併"
+          }
+        }
+      }
+    },
+    "已收" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paid"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已收"
+          }
+        }
+      }
+    },
+    "已收單" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orders Closed"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已收單"
+          }
+        }
+      }
+    },
+    "已收款" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment Received"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已收款"
+          }
+        }
+      }
+    },
+    "已確認" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirmed"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已確認"
+          }
+        }
+      }
+    },
+    "已結團" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closed"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已結團"
+          }
+        }
+      }
+    },
+    "已連線到 ExchangeRate-API · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Connected to ExchangeRate-API · %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已連線到 ExchangeRate-API · %@"
+          }
+        }
+      }
+    },
+    "已選 %lld 筆" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Selected"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已選 %lld 筆"
+          }
+        }
+      }
+    },
+    "常客" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Returning"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "常客"
+          }
+        }
+      }
+    },
+    "幣別" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Currency"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "幣別"
+          }
+        }
+      }
+    },
+    "建立第一筆訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Create First Order"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建立第一筆訂單"
+          }
+        }
+      }
+    },
+    "建議售價" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggested Price"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "建議售價"
+          }
+        }
+      }
+    },
+    "待收款" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment Pending"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "待收款"
+          }
+        }
+      }
+    },
+    "今天" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Today"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "今天"
+          }
+        }
+      }
+    },
+    "昨天" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Yesterday"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "昨天"
+          }
+        }
+      }
+    },
+    "從" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "From"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "從"
+          }
+        }
+      }
+    },
+    "應收" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Receivable"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "應收"
+          }
+        }
+      }
+    },
+    "成本" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cost"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "成本"
+          }
+        }
+      }
+    },
+    "成本 (NT$)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cost (NT$)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "成本 (NT$)"
+          }
+        }
+      }
+    },
+    "成本拆解" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cost Breakdown"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "成本拆解"
+          }
+        }
+      }
+    },
+    "成本結構" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cost Structure"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "成本結構"
+          }
+        }
+      }
+    },
+    "手續費 (%)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Fees (%)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "手續費 (%)"
+          }
+        }
+      }
+    },
+    "把「%@」改成新名稱；引用此名稱的訂單也會一併更新。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename “%@”. Orders referencing this name will also be updated."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "把「%@」改成新名稱；引用此名稱的訂單也會一併更新。"
+          }
+        }
+      }
+    },
+    "按年分組" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Group by Year"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按年分組"
+          }
+        }
+      }
+    },
+    "按日分組" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Group by Day"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按日分組"
+          }
+        }
+      }
+    },
+    "按月分組" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Group by Month"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "按月分組"
+          }
+        }
+      }
+    },
+    "接收訂單提醒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Receive Order Reminders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "接收訂單提醒"
+          }
+        }
+      }
+    },
+    "提醒時間" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Reminder Time"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提醒時間"
+          }
+        }
+      }
+    },
+    "搜尋" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜尋"
+          }
+        }
+      }
+    },
+    "搜尋類別" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search Categories"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜尋類別"
+          }
+        }
+      }
+    },
+    "收款狀態" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment Status"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收款狀態"
+          }
+        }
+      }
+    },
+    "收款金額 (NT$)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Received Amount (NT$)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收款金額 (NT$)"
+          }
+        }
+      }
+    },
+    "數量 %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quantity %lld"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "數量 %lld"
+          }
+        }
+      }
+    },
+    "新增" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增"
+          }
+        }
+      }
+    },
+    "新增付款方式" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Payment Method"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增付款方式"
+          }
+        }
+      }
+    },
+    "新增來源" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Source"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增來源"
+          }
+        }
+      }
+    },
+    "新增商品" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Item"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增商品"
+          }
+        }
+      }
+    },
+    "新增商品類別" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Item Category"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增商品類別"
+          }
+        }
+      }
+    },
+    "新增對帳狀態" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Reconciliation Status"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增對帳狀態"
+          }
+        }
+      }
+    },
+    "新增提醒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Reminder"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增提醒"
+          }
+        }
+      }
+    },
+    "新增訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Order"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增訂單"
+          }
+        }
+      }
+    },
+    "新增訂單來源" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Order Source"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增訂單來源"
+          }
+        }
+      }
+    },
+    "新增開團" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Campaign"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增開團"
+          }
+        }
+      }
+    },
+    "新增類別" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Add Category"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增類別"
+          }
+        }
+      }
+    },
+    "新客" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新客"
+          }
+        }
+      }
+    },
+    "新訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Order"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新訂單"
+          }
+        }
+      }
+    },
+    "新訂單預設" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "New Order Default"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新訂單預設"
+          }
+        }
+      }
+    },
+    "日期" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日期"
+          }
+        }
+      }
+    },
+    "日期區間" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Date Range"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "日期區間"
+          }
+        }
+      }
+    },
+    "智慧分組" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Smart Groups"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "智慧分組"
+          }
+        }
+      }
+    },
+    "更多" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多"
+          }
+        }
+      }
+    },
+    "更多操作" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "More Actions"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多操作"
+          }
+        }
+      }
+    },
+    "更改狀態" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Change Status"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更改狀態"
+          }
+        }
+      }
+    },
+    "更新狀態" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Update Status"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更新狀態"
+          }
+        }
+      }
+    },
+    "最多 %lld 張；照片會縮圖壓縮後隨訂單儲存。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Up to %lld photos. Photos are resized and compressed before being saved with the order."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最多 %lld 張；照片會縮圖壓縮後隨訂單儲存。"
+          }
+        }
+      }
+    },
+    "最近訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "最近訂單"
+          }
+        }
+      }
+    },
+    "月度淨獲利目標 (TWD)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monthly Net Profit Goal (TWD)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月度淨獲利目標 (TWD)"
+          }
+        }
+      }
+    },
+    "服務發生錯誤 (%@)，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The service returned an error (%@). Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "服務發生錯誤 (%@)，請稍後再試。"
+          }
+        }
+      }
+    },
+    "期間" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Period"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "期間"
+          }
+        }
+      }
+    },
+    "未收" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unpaid"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未收"
+          }
+        }
+      }
+    },
+    "未歸團" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unassigned"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "未歸團"
+          }
+        }
+      }
+    },
+    "本月" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Month"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本月"
+          }
+        }
+      }
+    },
+    "本月 · 淨獲利" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Month · Net Profit"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本月 · 淨獲利"
+          }
+        }
+      }
+    },
+    "本月匯率 API 配額已用完，目前無法計算建議售價。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This month's exchange-rate API quota is exhausted, so the suggested price cannot be calculated."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本月匯率 API 配額已用完，目前無法計算建議售價。"
+          }
+        }
+      }
+    },
+    "本月匯率 API 配額已用完；無法顯示即時匯率。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This month's exchange-rate API quota is exhausted, so live rates cannot be displayed."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本月匯率 API 配額已用完；無法顯示即時匯率。"
+          }
+        }
+      }
+    },
+    "本月支出" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Spending This Month"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本月支出"
+          }
+        }
+      }
+    },
+    "本週" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This Week"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "本週"
+          }
+        }
+      }
+    },
+    "查看 %@ 的訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View %@’s Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看 %@ 的訂單"
+          }
+        }
+      }
+    },
+    "查看 %@ 的詳情" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View %@ Details"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看 %@ 的詳情"
+          }
+        }
+      }
+    },
+    "查看 %@ 類別的訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View %@ Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看 %@ 類別的訂單"
+          }
+        }
+      }
+    },
+    "查看全部" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "View All"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看全部"
+          }
+        }
+      }
+    },
+    "標準卡片陰影" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Standard Card Shadow"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標準卡片陰影"
+          }
+        }
+      }
+    },
+    "標記為「無卡」付款方式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as Cardless Payment Method"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標記為「無卡」付款方式"
+          }
+        }
+      }
+    },
+    "標記為「貨到付款」付款方式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as Cash on Delivery"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標記為「貨到付款」付款方式"
+          }
+        }
+      }
+    },
+    "標記為「銀行匯款」付款方式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Mark as Bank Transfer"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "標記為「銀行匯款」付款方式"
+          }
+        }
+      }
+    },
+    "模型" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Model"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "模型"
+          }
+        }
+      }
+    },
+    "次要操作" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Secondary Action"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "次要操作"
+          }
+        }
+      }
+    },
+    "歡迎使用 BuyLedger" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Welcome to BuyLedger"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "歡迎使用 BuyLedger"
+          }
+        }
+      }
+    },
+    "正在更新匯率…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Updating exchange rates…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在更新匯率…"
+          }
+        }
+      }
+    },
+    "正在載入匯率…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading exchange rates…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正在載入匯率…"
+          }
+        }
+      }
+    },
+    "正體中文" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Traditional Chinese"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "正體中文"
+          }
+        }
+      }
+    },
+    "此內容由 AI 生成，可能包含錯誤資訊，請自行核對。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This content was generated by AI and may contain errors. Please verify it independently."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此內容由 AI 生成，可能包含錯誤資訊，請自行核對。"
+          }
+        }
+      }
+    },
+    "此功能需要先在「更多 → 設定」開啟 AI 商品明細總結。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enable AI Item Summary in More → Settings before using this feature."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "此功能需要先在「更多 → 設定」開啟 AI 商品明細總結。"
+          }
+        }
+      }
+    },
+    "每團毛利排行" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campaign Profit Ranking"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "每團毛利排行"
+          }
+        }
+      }
+    },
+    "毛利" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gross Profit"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "毛利"
+          }
+        }
+      }
+    },
+    "毛利率" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Gross Margin"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "毛利率"
+          }
+        }
+      }
+    },
+    "沒有可合併的訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Orders Available to Merge"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沒有可合併的訂單"
+          }
+        }
+      }
+    },
+    "沒有符合條件的訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Matching Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沒有符合條件的訂單"
+          }
+        }
+      }
+    },
+    "沒有符合的付款方式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Matching Payment Methods"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沒有符合的付款方式"
+          }
+        }
+      }
+    },
+    "沒有符合的開團" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Matching Campaigns"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沒有符合的開團"
+          }
+        }
+      }
+    },
+    "沒有符合的類別" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Matching Categories"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "沒有符合的類別"
+          }
+        }
+      }
+    },
+    "浮層卡片陰影" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Raised Card Shadow"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "浮層卡片陰影"
+          }
+        }
+      }
+    },
+    "深色" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Dark"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "深色"
+          }
+        }
+      }
+    },
+    "淺色" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Light"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "淺色"
+          }
+        }
+      }
+    },
+    "清除" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清除"
+          }
+        }
+      }
+    },
+    "清除搜尋" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Clear Search"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "清除搜尋"
+          }
+        }
+      }
+    },
+    "無卡" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cardless"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無卡"
+          }
+        }
+      }
+    },
+    "無卡折抵金額" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cardless Deduction"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無卡折抵金額"
+          }
+        }
+      }
+    },
+    "無卡明細" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cardless Details"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無卡明細"
+          }
+        }
+      }
+    },
+    "無卡補款金額" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cardless Supplemental Payment"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無卡補款金額"
+          }
+        }
+      }
+    },
+    "無卡類付款方式才會啟用「折抵」與「補款」欄位；總收款 = 客戶實付 + 補款 − 折抵。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Only cardless payment methods enable Deduction and Supplemental Payment. Total received = customer payment + supplemental payment − deduction."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無卡類付款方式才會啟用「折抵」與「補款」欄位；總收款 = 客戶實付 + 補款 − 折抵。"
+          }
+        }
+      }
+    },
+    "無法顯示的照片" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Photo Unavailable"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法顯示的照片"
+          }
+        }
+      }
+    },
+    "營業額" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Revenue"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "營業額"
+          }
+        }
+      }
+    },
+    "版本" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "版本"
+          }
+        }
+      }
+    },
+    "狀態" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "狀態"
+          }
+        }
+      }
+    },
+    "狀態與幣別" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Status and Currency"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "狀態與幣別"
+          }
+        }
+      }
+    },
+    "獲利" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Profit"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "獲利"
+          }
+        }
+      }
+    },
+    "產生中…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Generating…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "產生中…"
+          }
+        }
+      }
+    },
+    "目前已建立 %lld 項" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld Items Created"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前已建立 %lld 項"
+          }
+        }
+      }
+    },
+    "目前的狀態篩選下沒有開團，換個篩選或選「全部」。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No campaigns match the current status filter. Try another filter or select All."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目前的狀態篩選下沒有開團，換個篩選或選「全部」。"
+          }
+        }
+      }
+    },
+    "目標金額" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Goal Amount"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目標金額"
+          }
+        }
+      }
+    },
+    "知道了" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "OK"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "知道了"
+          }
+        }
+      }
+    },
+    "移除提醒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Remove Reminder"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "移除提醒"
+          }
+        }
+      }
+    },
+    "管理" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理"
+          }
+        }
+      }
+    },
+    "管理訂單可選的付款方式清單。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage the payment methods available when editing orders."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理訂單可選的付款方式清單。"
+          }
+        }
+      }
+    },
+    "管理訂單可選的商品類別清單。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage the item categories available when editing orders."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理訂單可選的商品類別清單。"
+          }
+        }
+      }
+    },
+    "管理訂單可選的對帳狀態清單。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage the reconciliation statuses available when editing orders."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理訂單可選的對帳狀態清單。"
+          }
+        }
+      }
+    },
+    "管理訂單可選的訂單來源清單。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage the order sources available when editing orders."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "管理訂單可選的訂單來源清單。"
+          }
+        }
+      }
+    },
+    "篩選" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "篩選"
+          }
+        }
+      }
+    },
+    "篩選與分組" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter and Group"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "篩選與分組"
+          }
+        }
+      }
+    },
+    "篩選：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter: %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "篩選：%@"
+          }
+        }
+      }
+    },
+    "純文字操作" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Text Action"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "純文字操作"
+          }
+        }
+      }
+    },
+    "累計消費" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total Spending"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "累計消費"
+          }
+        }
+      }
+    },
+    "結單日期" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order Deadline"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "結單日期"
+          }
+        }
+      }
+    },
+    "結團日期" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Closing Date"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "結團日期"
+          }
+        }
+      }
+    },
+    "結團結算" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campaign Settlement"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "結團結算"
+          }
+        }
+      }
+    },
+    "網路連線異常，目前無法計算建議售價。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A network error occurred, so the suggested price cannot be calculated."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "網路連線異常，目前無法計算建議售價。"
+          }
+        }
+      }
+    },
+    "網路連線異常；無法顯示即時匯率，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A network error occurred, so live rates cannot be displayed. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "網路連線異常；無法顯示即時匯率，請稍後再試。"
+          }
+        }
+      }
+    },
+    "編輯" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "編輯"
+          }
+        }
+      }
+    },
+    "編輯訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Order"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "編輯訂單"
+          }
+        }
+      }
+    },
+    "編輯開團" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Campaign"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "編輯開團"
+          }
+        }
+      }
+    },
+    "總成本" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Total Cost"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "總成本"
+          }
+        }
+      }
+    },
+    "總結失敗" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Summary Failed"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "總結失敗"
+          }
+        }
+      }
+    },
+    "總結失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The summary failed. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "總結失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "總覽" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Overview"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "總覽"
+          }
+        }
+      }
+    },
+    "繼續" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Continue"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "繼續"
+          }
+        }
+      }
+    },
+    "自動" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatic"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "自動"
+          }
+        }
+      }
+    },
+    "訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂單"
+          }
+        }
+      }
+    },
+    "訂單來源" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order Source"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂單來源"
+          }
+        }
+      }
+    },
+    "訂單來源管理" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Manage Order Sources"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂單來源管理"
+          }
+        }
+      }
+    },
+    "訂單照片" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order Photos"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂單照片"
+          }
+        }
+      }
+    },
+    "訂單照片 (%lld/%lld)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order Photos (%lld/%lld)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂單照片 (%1$lld/%2$lld)"
+          }
+        }
+      }
+    },
+    "訂購提醒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order Reminder"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂購提醒"
+          }
+        }
+      }
+    },
+    "訂購日期" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order Date"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂購日期"
+          }
+        }
+      }
+    },
+    "訂購日期：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order Date: %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂購日期：%@"
+          }
+        }
+      }
+    },
+    "設定" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settings"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "設定"
+          }
+        }
+      }
+    },
+    "試著調整搜尋字詞或狀態篩選。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try changing the search text or status filter."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "試著調整搜尋字詞或狀態篩選。"
+          }
+        }
+      }
+    },
+    "試試其他搜尋關鍵字，或回到設定頁新增付款方式。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try another search term, or add a payment method in Settings."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "試試其他搜尋關鍵字，或回到設定頁新增付款方式。"
+          }
+        }
+      }
+    },
+    "試試其他搜尋關鍵字，或回到設定頁新增類別。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try another search term, or add a category in Settings."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "試試其他搜尋關鍵字，或回到設定頁新增類別。"
+          }
+        }
+      }
+    },
+    "語言" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Language"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "語言"
+          }
+        }
+      }
+    },
+    "請到「設定」開啟行事曆存取權限，才能新增或移除訂購提醒。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allow Calendar access in Settings to add or remove order reminders."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請到「設定」開啟行事曆存取權限，才能新增或移除訂購提醒。"
+          }
+        }
+      }
+    },
+    "貨到付款" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cash on Delivery"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "貨到付款"
+          }
+        }
+      }
+    },
+    "貨到付款：收款金額已含預估運費，獲利會自動扣除上方三種運費 (國內 + 國際 + 外國國內)。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Cash on delivery: the received amount includes estimated shipping, so profit deducts all three shipping costs above (domestic + international + foreign domestic)."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "貨到付款：收款金額已含預估運費，獲利會自動扣除上方三種運費 (國內 + 國際 + 外國國內)。"
+          }
+        }
+      }
+    },
+    "較上月減少 8%" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "8% Lower Than Last Month"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "較上月減少 8%"
+          }
+        }
+      }
+    },
+    "載入訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Load Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "載入訂單"
+          }
+        }
+      }
+    },
+    "輸入備註 (選填)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter Notes (Optional)"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入備註 (選填)"
+          }
+        }
+      }
+    },
+    "輸入成本與費率，即時看到建議售價與毛利。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter costs and rates to see the suggested price and gross profit instantly."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入成本與費率，即時看到建議售價與毛利。"
+          }
+        }
+      }
+    },
+    "輸入新的付款方式名稱；不會自動套用到任何既有訂單。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter a new payment method name. It will not be applied to existing orders automatically."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入新的付款方式名稱；不會自動套用到任何既有訂單。"
+          }
+        }
+      }
+    },
+    "輸入新的商品類別名稱；不會自動套用到任何既有訂單。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter a new item category name. It will not be applied to existing orders automatically."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入新的商品類別名稱；不會自動套用到任何既有訂單。"
+          }
+        }
+      }
+    },
+    "輸入新的對帳狀態名稱；不會自動套用到任何既有訂單。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter a new reconciliation status name. It will not be applied to existing orders automatically."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入新的對帳狀態名稱；不會自動套用到任何既有訂單。"
+          }
+        }
+      }
+    },
+    "輸入新的訂單來源名稱；不會自動套用到任何既有訂單。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter a new order source name. It will not be applied to existing orders automatically."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入新的訂單來源名稱；不會自動套用到任何既有訂單。"
+          }
+        }
+      }
+    },
+    "輸入百分比例如 1.5 表示 1.5%；超出 0%–100% 範圍會自動限制。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter 1.5 for 1.5%. Values outside 0%–100% are automatically limited."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入百分比例如 1.5 表示 1.5%；超出 0%–100% 範圍會自動限制。"
+          }
+        }
+      }
+    },
+    "輸入金額" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enter Amount"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "輸入金額"
+          }
+        }
+      }
+    },
+    "近期訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Recent Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "近期訂單"
+          }
+        }
+      }
+    },
+    "透過上方「新增付款方式」加入第一個項目；訂單編輯時也能新增。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Add Payment Method above to create the first item. You can also add one while editing an order."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "透過上方「新增付款方式」加入第一個項目；訂單編輯時也能新增。"
+          }
+        }
+      }
+    },
+    "透過上方「新增來源」加入第一個訂單來源；訂單編輯時也能新增。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Add Source above to create the first order source. You can also add one while editing an order."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "透過上方「新增來源」加入第一個訂單來源；訂單編輯時也能新增。"
+          }
+        }
+      }
+    },
+    "透過上方「新增對帳狀態」加入第一個對帳狀態；訂單編輯時也能新增。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Add Reconciliation Status above to create the first status. You can also add one while editing an order."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "透過上方「新增對帳狀態」加入第一個對帳狀態；訂單編輯時也能新增。"
+          }
+        }
+      }
+    },
+    "透過上方「新增類別」加入第一個類別；訂單編輯時也能新增。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Use Add Category above to create the first category. You can also add one while editing an order."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "透過上方「新增類別」加入第一個類別；訂單編輯時也能新增。"
+          }
+        }
+      }
+    },
+    "通知" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Notifications"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "通知"
+          }
+        }
+      }
+    },
+    "連線發生問題，請檢查網路後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A connection problem occurred. Check your network and try again."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "連線發生問題，請檢查網路後再試。"
+          }
+        }
+      }
+    },
+    "進行中的開團" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active Campaigns"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "進行中的開團"
+          }
+        }
+      }
+    },
+    "進行中訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "進行中訂單"
+          }
+        }
+      }
+    },
+    "選取訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Select Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選取訂單"
+          }
+        }
+      }
+    },
+    "選填" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Optional"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選填"
+          }
+        }
+      }
+    },
+    "選擇保留照片" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Photos to Keep"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選擇保留照片"
+          }
+        }
+      }
+    },
+    "選擇訂單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Choose Orders"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "選擇訂單"
+          }
+        }
+      }
+    },
+    "還沒有任何商品；點擊「新增商品」開始填寫。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There are no items yet. Tap Add Item to get started."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "還沒有任何商品；點擊「新增商品」開始填寫。"
+          }
+        }
+      }
+    },
+    "還沒有任何訂單。建立第一筆，馬上開始追蹤代購損益。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "There are no orders yet. Create your first order to start tracking purchasing profit and loss."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "還沒有任何訂單。建立第一筆，馬上開始追蹤代購損益。"
+          }
+        }
+      }
+    },
+    "部分到貨" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partially Arrived"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "部分到貨"
+          }
+        }
+      }
+    },
+    "重新命名" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新命名"
+          }
+        }
+      }
+    },
+    "重新命名%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新命名%@"
+          }
+        }
+      }
+    },
+    "重新命名付款方式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename Payment Method"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新命名付款方式"
+          }
+        }
+      }
+    },
+    "重新命名商品類別" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename Product Category"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新命名商品類別"
+          }
+        }
+      }
+    },
+    "重新命名對帳狀態" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename Verification Status"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新命名對帳狀態"
+          }
+        }
+      }
+    },
+    "重新命名訂單來源" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Rename Order Source"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新命名訂單來源"
+          }
+        }
+      }
+    },
+    "重試" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retry"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重試"
+          }
+        }
+      }
+    },
+    "金額" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Amount"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "金額"
+          }
+        }
+      }
+    },
+    "銀行匯款" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bank Transfer"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "銀行匯款"
+          }
+        }
+      }
+    },
+    "開團" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campaigns"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團"
+          }
+        }
+      }
+    },
+    "開團不存在" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campaign Not Found"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團不存在"
+          }
+        }
+      }
+    },
+    "開團中" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Active"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團中"
+          }
+        }
+      }
+    },
+    "開團名稱" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campaign Name"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團名稱"
+          }
+        }
+      }
+    },
+    "開團日期" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Opening Date"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團日期"
+          }
+        }
+      }
+    },
+    "開團狀態" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campaign Status"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團狀態"
+          }
+        }
+      }
+    },
+    "開團與收款" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campaigns and Payments"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團與收款"
+          }
+        }
+      }
+    },
+    "開團詳情" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campaign Details"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團詳情"
+          }
+        }
+      }
+    },
+    "開團資訊" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Campaign Information"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團資訊"
+          }
+        }
+      }
+    },
+    "關於" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "About"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "關於"
+          }
+        }
+      }
+    },
+    "關閉" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "關閉"
+          }
+        }
+      }
+    },
+    "關閉檢視器" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Close Viewer"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "關閉檢視器"
+          }
+        }
+      }
+    },
+    "集運中" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Consolidating"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "集運中"
+          }
+        }
+      }
+    },
+    "需要行事曆權限" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calendar Access Required"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要行事曆權限"
+          }
+        }
+      }
+    },
+    "預估獲利 %@ · %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Estimated Profit %@ · %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "預估獲利 %1$@ · %2$@"
+          }
+        }
+      }
+    },
+    "預設幣別" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Default Currency"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "預設幣別"
+          }
+        }
+      }
+    },
+    "類別名稱" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Category Name"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "類別名稱"
+          }
+        }
+      }
+    },
+    "類別排行" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Category Ranking"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "類別排行"
+          }
+        }
+      }
+    },
+    "類別：%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Category: %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "類別：%@"
+          }
+        }
+      }
+    },
+    "顯示方式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Display"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "顯示方式"
+          }
+        }
+      }
+    },
+    "搜尋客戶、單號或商品" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search customers, order numbers, or items"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜尋客戶、單號或商品"
+          }
+        }
+      }
+    },
+    "商品定價" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Item Price"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商品定價"
+          }
+        }
+      }
+    },
+    "當地運費" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Local Shipping"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "當地運費"
+          }
+        }
+      }
+    },
+    "國際運費" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "International Shipping"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "國際運費"
+          }
+        }
+      }
+    },
+    "刷卡手續費" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Card Fee"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刷卡手續費"
+          }
+        }
+      }
+    },
+    "金流手續費" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment Processing Fee"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "金流手續費"
+          }
+        }
+      }
+    },
+    "平台手續費" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Platform Fee"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "平台手續費"
+          }
+        }
+      }
+    },
+    "目標毛利" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Target Margin"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目標毛利"
+          }
+        }
+      }
+    },
+    "商品金額" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Item Cost"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商品金額"
+          }
+        }
+      }
+    },
+    "TWD/件" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TWD/item"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TWD/件"
+          }
+        }
+      }
+    },
+    "返回" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Back"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "返回"
+          }
+        }
+      }
+    },
+    "點右上角「＋」建立第一個開團，把訂單歸到團裡即可追蹤進度。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Tap + in the top-right corner to create your first campaign, then assign orders to track progress."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "點右上角「＋」建立第一個開團，把訂單歸到團裡即可追蹤進度。"
+          }
+        }
+      }
+    },
+    "— 無對照" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "— No comparison"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "— 無對照"
+          }
+        }
+      }
+    },
+    "基準幣別" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Base currency"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "基準幣別"
+          }
+        }
+      }
+    },
+    "尚未連線" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Not connected"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚未連線"
+          }
+        }
+      }
+    },
+    "到貨" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Arrived" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "到貨" } }
+      }
+    },
+    "到貨進度" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Arrival Progress" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "到貨進度" } }
+      }
+    },
+    "收款" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Payment" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "收款" } }
+      }
+    },
+    "收款進度" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Payment Progress" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "收款進度" } }
+      }
+    },
+    "選擇 AI 模型" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select AI Model" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇 AI 模型" } }
+      }
+    },
+    "選擇來源" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Source" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇來源" } }
+      }
+    },
+    "選擇來源幣別" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Source Currency" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇來源幣別" } }
+      }
+    },
+    "選擇商品類別" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Product Categories" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇商品類別" } }
+      }
+    },
+    "選擇訂單來源" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Order Source" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇訂單來源" } }
+      }
+    },
+    "選擇付款方式" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Payment Method" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇付款方式" } }
+      }
+    },
+    "選擇預設幣別" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Default Currency" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇預設幣別" } }
+      }
+    },
+    "選擇類別" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Categories" } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇類別" } }
+      }
+    },
+    "輸入新的商品類別名稱，加入後會立即套用至此訂單。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a new product category name. It will be applied to this order immediately." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入新的商品類別名稱，加入後會立即套用至此訂單。" } }
+      }
+    },
+    "輸入新的訂單來源名稱，加入後會立即套用至此訂單。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a new order source name. It will be applied to this order immediately." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入新的訂單來源名稱，加入後會立即套用至此訂單。" } }
+      }
+    },
+    "刷卡手續費 %" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Card Fee %" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "刷卡手續費 %" } } } },
+    "商品成本" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Item Cost" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "商品成本" } } } },
+    "國內運費" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Domestic Shipping" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "國內運費" } } } },
+    "外國國內運費" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Foreign Domestic Shipping" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "外國國內運費" } } } },
+    "尚無幣別" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No currencies available" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "尚無幣別" } } } },
+    "平台手續費 %" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Platform Fee %" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "平台手續費 %" } } } },
+    "手續費" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Fees" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "手續費" } } } },
+    "總收款" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Total Payment" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "總收款" } } } },
+    "輸入新的付款方式名稱，加入後會立即套用至此訂單。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a new payment method name. It will be applied to this order immediately." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入新的付款方式名稱，加入後會立即套用至此訂單。" } } } },
+    "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a new verification status name. It will be applied to this order immediately." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。" } } } },
+    "透過上方「新增付款方式」加入第一個項目。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add your first payment method using the button above." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "透過上方「新增付款方式」加入第一個項目。" } } } },
+    "透過上方「新增來源」加入第一個訂單來源。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add your first order source using the button above." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "透過上方「新增來源」加入第一個訂單來源。" } } } },
+    "透過上方「新增對帳狀態」加入第一個項目。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add your first verification status using the button above." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "透過上方「新增對帳狀態」加入第一個項目。" } } } },
+    "透過上方「新增類別」加入第一個類別。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add your first category using the button above." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "透過上方「新增類別」加入第一個類別。" } } } },
+    "選擇對帳狀態" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Verification Status" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇對帳狀態" } } } },
+    "選擇幣別" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Currency" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇幣別" } } } },
+    "選擇開團" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Campaigns" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇開團" } } } },
+    "金流手續費 %" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Payment Processing Fee %" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "金流手續費 %" } } } },
+    "需要網路連線載入幣別清單；請稍後再試。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "An internet connection is required to load currencies. Please try again later." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "需要網路連線載入幣別清單；請稍後再試。" } } } },
+    "請先在「開團」頁建立開團，再回到此處歸團。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Create a campaign on the Campaigns screen first, then assign it here." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請先在「開團」頁建立開團，再回到此處歸團。" } } } },
+    "AI 總結" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "AI Summary" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "AI 總結" } } } },
+    "匯出 CSV" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Export CSV" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "匯出 CSV" } } } },
+    "匯出與雲端同步功能尚未實作。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Export and cloud sync are not available yet." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "匯出與雲端同步功能尚未實作。" } } } },
+    "尚無模型" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No models available" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "尚無模型" } } } },
+    "自訂 AI 模型" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom AI Model" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "自訂 AI 模型" } } } },
+    "自訂模型" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom Model" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "自訂模型" } } } },
+    "模型名稱 (例如 gpt-oss:120b)" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Model name (for example, gpt-oss:120b)" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "模型名稱 (例如 gpt-oss:120b)" } } } },
+    "輸入自訂模型名稱以開始使用。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a custom model name to start using it." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入自訂模型名稱以開始使用。" } } } },
+    "輸入 Ollama Cloud 上可用的模型名稱。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a model name available on Ollama Cloud." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入 Ollama Cloud 上可用的模型名稱。" } } } },
+    "請稍後再試。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Please try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "請稍後再試。"
+          }
+        }
+      }
+    }
+  },
+  "version" : "1.0"
+}

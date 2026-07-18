@@ -51,7 +51,7 @@ struct BLStatusPill: View {
                     .frame(width: 5, height: 5)
             }
 
-            Text(title)
+            Text(LocalizedStringKey(title))
                 .font(.caption.weight(.semibold))
         }
         .foregroundStyle(foreground)

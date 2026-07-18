@@ -14,38 +14,46 @@ enum CampaignFormatters {}
 
 extension CampaignFormatters {
 
-    /// 將金額格式化為新台幣 (無小數位)
-    /// - Parameter amount: 金額
-    /// - Returns: 含 NT$ 前綴的字串
-    static func twd(_ amount: Decimal) -> String {
+    /// 依指定 locale 將金額格式化為新台幣 (無小數位)
+    /// - Parameters:
+    ///   - amount: 金額
+    ///   - locale: App 選定、用於金額呈現的 locale
+    /// - Returns: 依選定 locale 呈現的新台幣金額字串
+    static func twd(_ amount: Decimal, locale: Locale) -> String {
         amount.formatted(
             .currency(code: CurrencyCode.twd.code)
             .precision(.fractionLength(0))
-            .locale(Locale(identifier: "zh_TW"))
+            .locale(locale)
         )
     }
 
-    /// 將開團日期格式化為精簡的年月日
-    /// - Parameter date: 日期
-    /// - Returns: 例如「4月10日」的字串
-    static func shortDate(_ date: Date) -> String {
-        date.formatted(.dateTime.month(.abbreviated).day().locale(Locale(identifier: "zh_TW")))
+    /// 依指定 locale 將開團日期格式化為精簡日期
+    /// - Parameters:
+    ///   - date: 日期
+    ///   - locale: App 選定、用於日期呈現的 locale
+    /// - Returns: 依選定 locale 呈現的日期字串
+    static func shortDate(_ date: Date, locale: Locale) -> String {
+        date.formatted(.dateTime.month(.abbreviated).day().locale(locale))
     }
 
-    /// 將開團日期格式化為「月日 星期」，供分組粗於「日」時於列上顯示開團日期
-    /// - Parameter date: 日期
-    /// - Returns: 例如「5月27日 週三」的字串
-    static func dayWithWeekday(_ date: Date) -> String {
-        let day = date.formatted(.dateTime.month(.abbreviated).day().locale(Locale(identifier: "zh_TW")))
-        let weekday = date.formatted(.dateTime.weekday(.abbreviated).locale(Locale(identifier: "zh_TW")))
+    /// 依指定 locale 將開團日期格式化為「月日 星期」風格，供分組粗於「日」時於列上顯示開團日期
+    /// - Parameters:
+    ///   - date: 日期
+    ///   - locale: App 選定、用於日期呈現的 locale
+    /// - Returns: 依選定 locale 呈現的日期與星期字串
+    static func dayWithWeekday(_ date: Date, locale: Locale) -> String {
+        let day = date.formatted(.dateTime.month(.abbreviated).day().locale(locale))
+        let weekday = date.formatted(.dateTime.weekday(.abbreviated).locale(locale))
         return "\(day) \(weekday)"
     }
 
-    /// 將訂購提醒時間戳格式化為「月日 時:分」，供顯示提醒的日期與提示時間
-    /// - Parameter date: 提醒時間戳
-    /// - Returns: 例如「7月26日 下午6:00」的字串
-    static func reminderTimestamp(_ date: Date) -> String {
-        date.formatted(.dateTime.month(.abbreviated).day().hour().minute().locale(Locale(identifier: "zh_TW")))
+    /// 依指定 locale 將訂購提醒時間戳格式化為日期與提示時間
+    /// - Parameters:
+    ///   - date: 提醒時間戳
+    ///   - locale: App 選定、用於日期與時間呈現的 locale
+    /// - Returns: 依選定 locale 呈現的日期與時間字串
+    static func reminderTimestamp(_ date: Date, locale: Locale) -> String {
+        date.formatted(.dateTime.month(.abbreviated).day().hour().minute().locale(locale))
     }
 }
 

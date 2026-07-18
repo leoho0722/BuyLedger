@@ -24,6 +24,9 @@ struct OrderRowView: View {
     /// 右欄呈現變體，預設為訂單頁的「狀態膠囊 + 實際收款 + 損益」
     var trailing: Trailing = .statusAndProfit
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     // MARK: - View Body
 
     /// 訂單列的畫面內容
@@ -49,7 +52,7 @@ struct OrderRowView: View {
                     .fixedSize(horizontal: false, vertical: true)
 
                 if showsDate {
-                    Text(OrderFormatters.shortDate(order.date))
+                    Text(OrderFormatters.shortDate(order.date, locale: locale))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -107,11 +110,11 @@ private extension OrderRowView {
             VStack(alignment: .trailing, spacing: BLSpacing.extraSmall) {
                 BLStatusPill(order.status.title, tone: order.status.tone)
 
-                Text(OrderFormatters.twd(summary.revenue))
+                Text(OrderFormatters.twd(summary.revenue, locale: locale))
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
 
-                Text("\(summary.profit >= 0 ? "+" : "")\(OrderFormatters.twd(summary.profit))")
+                Text("\(summary.profit >= 0 ? "+" : "")\(OrderFormatters.twd(summary.profit, locale: locale))")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(summary.profit >= 0 ? .green : .red)
                     .monospacedDigit()
@@ -119,7 +122,7 @@ private extension OrderRowView {
 
         case .chargedAmount:
             VStack(alignment: .trailing, spacing: BLSpacing.extraSmall) {
-                Text(OrderFormatters.twd(order.chargedAmount))
+                Text(OrderFormatters.twd(order.chargedAmount, locale: locale))
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
 

@@ -83,7 +83,11 @@ struct OrderMergeFeatureTests {
         } operation: {
             OrderMergeFeature.State(primary: primary, orders: orders)
         }
-        let sections = state.candidateSections(referenceDate: reference, calendar: calendar)
+        let sections = state.candidateSections(
+            referenceDate: reference,
+            calendar: calendar,
+            locale: Locale(identifier: "zh-Hant")
+        )
 
         #expect(sections.map(\.title) == ["今天", "昨天"])
         #expect(sections.map { $0.orders.map(\.id) } == [["O3", "O2"], ["O4"]])
@@ -114,7 +118,11 @@ struct OrderMergeFeatureTests {
             OrderMergeFeature.State(primary: primary, orders: orders)
         }
         state.searchText = "香水"
-        let sections = state.candidateSections(referenceDate: reference, calendar: calendar)
+        let sections = state.candidateSections(
+            referenceDate: reference,
+            calendar: calendar,
+            locale: Locale(identifier: "zh-Hant")
+        )
 
         #expect(sections.map(\.title) == ["今天"])
         #expect(sections.flatMap { $0.orders.map(\.id) } == ["O2"])

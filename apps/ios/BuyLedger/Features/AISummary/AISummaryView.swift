@@ -25,7 +25,7 @@ struct AISummaryView: View {
     var body: some View {
         NavigationStack {
             content
-                .navigationTitle("AI 商品明細總結")
+                .navigationTitle(Text("AI 商品明細總結"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {

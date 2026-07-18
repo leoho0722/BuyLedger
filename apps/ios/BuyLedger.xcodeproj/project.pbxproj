@@ -270,9 +270,10 @@
 				};
 			};
 			buildConfigurationList = D0B1FCC82FA22A9F00B50E07 /* Build configuration list for PBXProject "BuyLedger" */;
-			developmentRegion = en;
+			developmentRegion = "zh-Hant";
 			hasScannedForEncodings = 0;
 			knownRegions = (
+				"zh-Hant",
 				en,
 				Base,
 			);
@@ -396,7 +397,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 83;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				ENABLE_PREVIEWS = YES;
@@ -439,7 +440,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 83;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				ENABLE_PREVIEWS = YES;
@@ -596,7 +597,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 83;
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
@@ -621,7 +622,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 83;
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
@@ -645,7 +646,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 83;
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
@@ -669,7 +670,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 80;
+				CURRENT_PROJECT_VERSION = 83;
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;

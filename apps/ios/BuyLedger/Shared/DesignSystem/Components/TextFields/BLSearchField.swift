@@ -38,7 +38,7 @@ struct BLSearchField: View {
                 .font(.subheadline.weight(.semibold))
                 .foregroundStyle(palette.secondaryLabel)
 
-            TextField(placeholder, text: $text)
+            TextField(LocalizedStringKey(placeholder), text: $text)
                 .textFieldStyle(.plain)
                 .font(.subheadline)
                 .focused($isEditing)

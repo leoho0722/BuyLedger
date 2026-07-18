@@ -35,6 +35,7 @@ struct SnapshotTests {
             let view = OrdersCompactView(
                 store: Store(initialState: state) { OrdersFeature() }
             )
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
                 .frame(width: 393, height: 852)
 
             assertSnapshot(of: view, as: .image)
@@ -84,6 +85,7 @@ struct SnapshotTests {
             let view = OrdersCompactView(
                 store: Store(initialState: state) { OrdersFeature() }
             )
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
                 .frame(width: 393, height: 852)
 
             assertSnapshot(of: view, as: .image)
@@ -102,6 +104,7 @@ struct SnapshotTests {
             let view = DashboardView(
                 store: Store(initialState: state) { RootFeature() }
             )
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
                 .frame(width: 393, height: 852)
 
             assertSnapshot(of: view, as: .image)
@@ -120,6 +123,7 @@ struct SnapshotTests {
             let view = InsightsView(
                 store: Store(initialState: state) { RootFeature() }
             )
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
                 .frame(width: 393, height: 852)
 
             assertSnapshot(of: view, as: .image)
@@ -133,6 +137,7 @@ struct SnapshotTests {
             let view = OrderEditView(
                 store: Store(initialState: state) { OrderEditFeature() }
             )
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
                 .frame(width: 393, height: 852)
 
             assertSnapshot(of: view, as: .image)
@@ -149,6 +154,7 @@ struct SnapshotTests {
             let view = OrderEditView(
                 store: Store(initialState: state) { OrderEditFeature() }
             )
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
                 .frame(width: 393, height: 852)
 
             assertSnapshot(of: view, as: .image)
@@ -190,6 +196,7 @@ struct SnapshotTests {
             )
 
             let view = OrderDetailView(order: order)
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
                 .frame(width: 393, height: 852)
 
             assertSnapshot(of: view, as: .image)

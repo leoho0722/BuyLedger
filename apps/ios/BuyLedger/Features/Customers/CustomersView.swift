@@ -23,6 +23,9 @@ struct CustomersView: View {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     // MARK: - View Body
 
     /// 客戶名單畫面內容
@@ -44,7 +47,7 @@ struct CustomersView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background(palette.background)
-        .navigationTitle("客戶名單")
+        .navigationTitle(Text("客戶名單"))
         .task {
             await store.send(.orders(.task)).finish()
         }
@@ -124,7 +127,7 @@ private extension CustomersView {
                                     .font(.caption.weight(.semibold))
                                     .foregroundStyle(palette.orange)
                             } else {
-                                Text(customer.tier.title)
+                                Text(LocalizedStringKey(customer.tier.title))
                                     .font(.caption)
                                     .foregroundStyle(palette.secondaryLabel)
                             }
@@ -250,7 +253,7 @@ private extension CustomersView {
                     .foregroundStyle(palette.label)
 
                 HStack(spacing: 4) {
-                    Text(customer.tier.title)
+                    Text(LocalizedStringKey(customer.tier.title))
                         .font(.caption)
                         .foregroundStyle(customer.tier == .vip ? palette.orange : palette.secondaryLabel)
 
@@ -310,22 +313,26 @@ private extension CustomersView {
         return background
     }
 
-    /// 將金額格式化為新台幣
+    /// 依 App 選定 locale 將金額格式化為新台幣
+    /// - Parameter amount: 金額
+    /// - Returns: 依選定 locale 呈現的金額字串
     func formatTwd(_ amount: Decimal) -> String {
         amount.formatted(
             .currency(code: CurrencyCode.twd.code)
                 .precision(.fractionLength(0))
-                .locale(Locale(identifier: "zh_TW"))
+                .locale(locale)
         )
     }
 
-    /// 將日期格式化為「月/日」
+    /// 依 App 選定 locale 將日期格式化為短日期
+    /// - Parameter date: 日期
+    /// - Returns: 依選定 locale 呈現的短日期字串
     func formatDate(_ date: Date) -> String {
         date.formatted(
             .dateTime
                 .month(.defaultDigits)
                 .day(.defaultDigits)
-                .locale(Locale(identifier: "zh_TW"))
+                .locale(locale)
         )
     }
 }
