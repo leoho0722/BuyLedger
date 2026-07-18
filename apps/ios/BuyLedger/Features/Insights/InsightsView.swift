@@ -342,7 +342,7 @@ private extension InsightsView {
                     .font(.subheadline.weight(.semibold))
                     .foregroundStyle(palette.label)
 
-                HStack(alignment: .center, spacing: BLSpacing.large) {
+                VStack(alignment: .leading, spacing: BLSpacing.large) {
                     BLDonutChart(
                         segments: stats.costSegments.map {
                             BLDonutSegment(
@@ -354,6 +354,7 @@ private extension InsightsView {
                         centerTitle: "總成本",
                         centerValue: formatTwd(stats.totalCost)
                     )
+                    .frame(maxWidth: .infinity)
 
                     VStack(alignment: .leading, spacing: BLSpacing.small) {
                         ForEach(stats.costSegments) { segment in
@@ -362,7 +363,7 @@ private extension InsightsView {
                                     .fill(segment.color)
                                     .frame(width: 8, height: 8)
 
-                                Text(segment.label)
+                                Text(LocalizedStringKey(segment.label))
                                     .font(.caption)
                                     .foregroundStyle(palette.secondaryLabel)
 

@@ -663,7 +663,12 @@ private extension OrderEditView {
     /// - Returns: `LabeledContent` + `TextField` 組合 view
     @ViewBuilder
     func decimalField(title: String, value: Binding<Decimal>) -> some View {
-        LabeledContent(LocalizedStringKey(title)) {
+        HStack(alignment: .center, spacing: BLSpacing.small) {
+            // 長標籤換行並撐高整列，值在多行標籤中垂直置中
+            Text(LocalizedStringKey(title))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
             TextField(
                 "",
                 value: value,
@@ -673,6 +678,7 @@ private extension OrderEditView {
             .multilineTextAlignment(.trailing)
             .monospacedDigit()
             .keyboardType(.numberPad)
+            .frame(maxWidth: 140, alignment: .trailing)
         }
     }
 
@@ -692,7 +698,12 @@ private extension OrderEditView {
             }
         )
 
-        LabeledContent(LocalizedStringKey(title)) {
+        HStack(alignment: .center, spacing: BLSpacing.small) {
+            // 長標籤換行並撐高整列，值在多行標籤中垂直置中
+            Text(LocalizedStringKey(title))
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+
             HStack(spacing: 4) {
                 TextField(
                     "",
@@ -707,6 +718,7 @@ private extension OrderEditView {
                 Text("%")
                     .foregroundStyle(.secondary)
             }
+            .frame(maxWidth: 140, alignment: .trailing)
         }
     }
 }
@@ -739,11 +751,15 @@ private extension OrderEditView {
         )
     }
 
-    /// 幣別選擇列 label 顯示文字：「TWD (新台幣)」格式，跟 sheet 內列項與 ``OrderDetailView`` 上方 chip 一致。``Locale.localizedString(forCurrencyCode:)`` 沒有對應翻譯時 fallback 為 raw code
+    /// 幣別選擇列 label 顯示文字：依 App 選定 locale——中文顯示名稱 (如「新台幣」)、其他語言顯示 ISO code (如「TWD」)，避免英文全名過長
     var currencyDisplayText: String {
         let code = store.draftCurrency.rawValue
+        guard locale.language.languageCode?.identifier == "zh" else {
+            return code
+        }
+
         let name = locale.localizedString(forCurrencyCode: code) ?? ""
-        return name.isEmpty ? code : "\(code) (\(name))"
+        return name.isEmpty ? code : name
     }
 
     /// 日期選擇器的繫結：寫回時把新值交給 reducer 的 ``OrderEditFeature/Action/dateComponentsChanged(_:)``，由 reducer 以注入時間補上當下秒數後寫入 ``OrderEditFeature/State/draftDate``；View 端不再讀取當下時間做寫入前計算

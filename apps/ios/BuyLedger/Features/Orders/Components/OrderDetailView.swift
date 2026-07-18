@@ -302,7 +302,7 @@ private extension OrderDetailView {
                 .font(.headline)
 
             BLCard {
-                HStack(alignment: .center, spacing: BLSpacing.large) {
+                VStack(alignment: .leading, spacing: BLSpacing.large) {
                     BLDonutChart(
                         segments: components.map {
                             BLDonutSegment(
@@ -314,6 +314,7 @@ private extension OrderDetailView {
                         centerTitle: "總成本",
                         centerValue: OrderFormatters.twd(summary.totalCost, locale: locale)
                     )
+                    .frame(maxWidth: .infinity)
 
                     VStack(alignment: .leading, spacing: BLSpacing.medium) {
                         ForEach(components) { component in
@@ -746,12 +747,17 @@ private extension OrderDetailView {
         return names.isEmpty ? "未歸團" : names.joined(separator: "、")
     }
 
-    /// 取得跟隨 App 語言偏好的幣別顯示文字，例如 `TWD (新台幣)`
+    /// 依 App 語言偏好產生幣別顯示文字
+    /// 中文顯示名稱 (如「新台幣」)、其他語言顯示 ISO code (如「TWD」)
     /// - Parameter currency: 訂單幣別
     /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
+        guard locale.language.languageCode?.identifier == "zh" else {
+            return currency.rawValue
+        }
+
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
-        return name.isEmpty ? currency.rawValue : "\(currency.rawValue) (\(name))"
+        return name.isEmpty ? currency.rawValue : name
     }
 
     /// 回傳成本拆解使用的資料

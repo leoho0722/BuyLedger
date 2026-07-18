@@ -135,9 +135,16 @@ private extension CampaignEditView {
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button(LocalizedStringKey(store.wantsReminder ? "完成" : "加入提醒")) {
+                    Button {
                         store.send(.reminderPickerConfirmed)
+                    } label: {
+                        // 改 icon-only 騰出中央寬度讓 inline 標題完整顯示，文字保留為無障礙標籤
+                        Label(
+                            LocalizedStringKey(store.wantsReminder ? "完成" : "加入提醒"),
+                            systemImage: store.wantsReminder ? "checkmark" : "plus"
+                        )
                     }
+                    .labelStyle(.iconOnly)
                 }
             }
         }

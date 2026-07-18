@@ -48,8 +48,10 @@ struct LookupManagementView: View {
                     Button {
                         store.send(.addButtonTapped)
                     } label: {
+                        // icon-only 只留 +，完整標題留作無障礙標籤、新增流程標題仍顯示於 sheet
                         Label(LocalizedStringKey(store.state.kind.addButtonTitle), systemImage: "plus")
                     }
+                    .labelStyle(.iconOnly)
                 }
             }
             .alert(

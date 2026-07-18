@@ -195,12 +195,17 @@ struct SettingsView: View {
 
 private extension SettingsView {
 
-    /// 依 App 選定 locale 把幣別 ISO code 轉成「TWD · 幣別名稱」顯示文字
+    /// 依 App 選定 locale 產生幣別顯示文字
+    /// 中文顯示名稱 (如「新台幣」)、其他語言顯示 ISO code (如「TWD」)
     /// - Parameter currency: 幣別
     /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
+        guard locale.language.languageCode?.identifier == "zh" else {
+            return currency.rawValue
+        }
+
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
-        return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
+        return name.isEmpty ? currency.rawValue : name
     }
 
     /// 從 bundle info 讀出版本號

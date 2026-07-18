@@ -366,15 +366,22 @@ private extension FxView {
         return rate.formatted(.number.precision(.fractionLength(4)).locale(locale))
     }
 
-    /// 依 App 選定 locale 把幣別 ISO code 轉成「TWD · 幣別名稱」顯示文字 (用於來源幣別 button label 與 sheet 顯示)
+    /// 依 App 選定 locale 產生幣別顯示文字
+    /// 中文顯示名稱 (如「新台幣」)、其他語言顯示 ISO code (如「TWD」)
+    /// 用於來源幣別 button label 與 sheet
     /// - Parameter currency: 幣別
     /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
+        guard locale.language.languageCode?.identifier == "zh" else {
+            return currency.rawValue
+        }
+
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
-        return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
+        return name.isEmpty ? currency.rawValue : name
     }
 
-    /// 「即時匯率列表」顯示的幣別清單：以 ``FxFeature/State/availableCurrencies`` 為基礎、過濾掉基準幣別本身 (基準匯率永遠 1，無顯示意義)
+    /// 「即時匯率列表」顯示的幣別清單
+    /// 以 ``FxFeature/State/availableCurrencies`` 為基礎、過濾掉基準幣別本身 (基準匯率永遠 1，無顯示意義)
     var ratesListCurrencies: [CurrencyCode] {
         store.availableCurrencies.filter { $0 != .twd }
     }

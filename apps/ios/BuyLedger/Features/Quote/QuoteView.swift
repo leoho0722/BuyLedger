@@ -248,6 +248,8 @@ private extension QuoteView {
             Text(LocalizedStringKey(label))
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                // 長標籤 (如 International Shipping) 換行顯示、不截斷
+                .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
 
             TextField(
@@ -267,7 +269,8 @@ private extension QuoteView {
                 .font(.footnote)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
-                .frame(width: 60, alignment: .leading)
+                // 短單位對齊 60pt，較長單位 (如 TWD/item) 自適應變寬、不截斷
+                .frame(minWidth: 60, alignment: .leading)
         }
     }
 
@@ -392,12 +395,17 @@ private extension QuoteView {
 
 private extension QuoteView {
 
-    /// 依 App 選定 locale 把幣別 ISO code 轉成「TWD · 幣別名稱」顯示文字
+    /// 依 App 選定 locale 產生幣別顯示文字
+    /// 中文顯示名稱 (如「新台幣」)、其他語言顯示 ISO code (如「TWD」)
     /// - Parameter currency: 幣別
     /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
+        guard locale.language.languageCode?.identifier == "zh" else {
+            return currency.rawValue
+        }
+
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
-        return name.isEmpty ? currency.rawValue : "\(currency.rawValue) · \(name)"
+        return name.isEmpty ? currency.rawValue : name
     }
 
     /// 依 App 選定 locale 將金額格式化為新台幣 (無小數位)

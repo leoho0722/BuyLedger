@@ -289,7 +289,7 @@ private extension DashboardView {
             label: "營業額",
             value: formatTwd(stats.revenue),
             tint: palette.accent,
-            delta: percentDeltaDisplay(stats.revenueDelta),
+            delta: LocalizedStringKey(percentDeltaDisplay(stats.revenueDelta)),
             deltaUp: deltaDirection(stats.revenueDelta),
             palette: palette
         )
@@ -297,7 +297,7 @@ private extension DashboardView {
             label: "毛利率",
             value: formatPercent(stats.margin),
             tint: palette.green,
-            delta: marginDeltaDisplay(stats.marginDelta),
+            delta: LocalizedStringKey(marginDeltaDisplay(stats.marginDelta)),
             deltaUp: deltaDirection(stats.marginDelta),
             palette: palette
         )
@@ -400,7 +400,7 @@ private extension DashboardView {
                 label: "營業額",
                 value: formatTwd(stats.revenue),
                 tint: palette.accent,
-                delta: percentDeltaDisplay(stats.revenueDelta),
+                delta: LocalizedStringKey(percentDeltaDisplay(stats.revenueDelta)),
                 deltaUp: deltaDirection(stats.revenueDelta),
                 palette: palette
             )
@@ -408,7 +408,7 @@ private extension DashboardView {
                 label: "成本",
                 value: formatTwd(stats.cost),
                 tint: palette.orange,
-                delta: percentDeltaDisplay(stats.costDelta),
+                delta: LocalizedStringKey(percentDeltaDisplay(stats.costDelta)),
                 deltaUp: deltaDirection(stats.costDelta),
                 palette: palette
             )
@@ -416,7 +416,7 @@ private extension DashboardView {
                 label: "毛利率",
                 value: formatPercent(stats.margin),
                 tint: palette.green,
-                delta: marginDeltaDisplay(stats.marginDelta),
+                delta: LocalizedStringKey(marginDeltaDisplay(stats.marginDelta)),
                 deltaUp: deltaDirection(stats.marginDelta),
                 palette: palette
             )
@@ -436,7 +436,7 @@ private extension DashboardView {
     ///   - label: 卡片左上方的指標名稱，例如「營業額」、「毛利率」
     ///   - value: 卡片中央顯示的數值字串 (已預先 format)
     ///   - tint: 左上方色點顏色，用來區分指標分類
-    ///   - delta: 下方變化字串，例如「+18.2%」、「3 open」
+    ///   - delta: 下方變化指標 (LocalizedStringKey，隨 App 語言解析)，例如 +18.2% MoM、X in progress
     ///   - deltaUp: 變化方向：`true` 顯示上升色 (綠)、`false` 顯示下降色 (紅)、`nil` 顯示中性色
     ///   - palette: 目前外觀使用的色盤
     /// - Returns: KPI 卡片 view
@@ -445,7 +445,7 @@ private extension DashboardView {
         label: String,
         value: String,
         tint: Color,
-        delta: String,
+        delta: LocalizedStringKey,
         deltaUp: Bool?,
         palette: BLPalette
     ) -> some View {

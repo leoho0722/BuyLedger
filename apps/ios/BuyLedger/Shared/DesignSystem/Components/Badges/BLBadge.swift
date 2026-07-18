@@ -55,7 +55,9 @@ struct BLBadge: View {
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
-        Text(text)
+        // label variant 傳固定中文詞時需本地化
+        // count variant 的數字字串會 passthrough 不受影響
+        Text(LocalizedStringKey(text))
             .font(variant == .count ? .caption.weight(.bold) : .caption2.weight(.bold))
             .foregroundStyle(foregroundColor(palette: palette))
             .lineLimit(1)

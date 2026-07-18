@@ -35,7 +35,8 @@ struct BLSegmentedControl<Option: Hashable>: View {
                 Button {
                     selection = option
                 } label: {
-                    Text(title(option))
+                    // 選項標題可能是固定中文詞，需本地化才不會在英文模式露中文
+                    Text(LocalizedStringKey(title(option)))
                         .font(.subheadline.weight(.semibold))
                         .foregroundStyle(selection == option ? palette.label : palette.secondaryLabel)
                         .frame(maxWidth: .infinity)

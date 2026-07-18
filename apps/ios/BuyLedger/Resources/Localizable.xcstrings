@@ -624,7 +624,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Manage Payment Methods"
+            "value" : "Payment Methods"
           }
         },
         "zh-Hant" : {
@@ -1493,7 +1493,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Manage Item Categories"
+            "value" : "Item Categories"
           }
         },
         "zh-Hant" : {
@@ -1848,7 +1848,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Manage Reconciliation Statuses"
+            "value" : "Reconciliation Statuses"
           }
         },
         "zh-Hant" : {
@@ -2243,7 +2243,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Orders Closed"
+            "value" : "Closed"
           }
         },
         "zh-Hant" : {
@@ -2260,7 +2260,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Payment Received"
+            "value" : "Received"
           }
         },
         "zh-Hant" : {
@@ -2293,7 +2293,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Closed"
+            "value" : "Settled"
           }
         },
         "zh-Hant" : {
@@ -2407,7 +2407,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Payment Pending"
+            "value" : "Pending"
           }
         },
         "zh-Hant" : {
@@ -2774,6 +2774,40 @@
         }
       }
     },
+    "修改名稱與分類；變更名稱會一併更新引用此付款方式的訂單。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit the name and tags. Renaming also updates all orders that use this payment method."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "修改名稱與分類；變更名稱會一併更新引用此付款方式的訂單。"
+          }
+        }
+      }
+    },
+    "編輯付款方式" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Edit Payment Method"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "編輯付款方式"
+          }
+        }
+      }
+    },
     "新增來源" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -2830,7 +2864,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Add Reconciliation Status"
+            "value" : "Add Status"
           }
         },
         "zh-Hant" : {
@@ -3813,7 +3847,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Cardless Supplemental Payment"
+            "value" : "Cardless Top-Up"
           }
         },
         "zh-Hant" : {
@@ -4201,7 +4235,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Order Deadline"
+            "value" : "Close Date"
           }
         },
         "zh-Hant" : {
@@ -4459,7 +4493,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Manage Order Sources"
+            "value" : "Order Sources"
           }
         },
         "zh-Hant" : {
@@ -5028,7 +5062,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Choose Photos to Keep"
+            "value" : "Keep Photos"
           }
         },
         "zh-Hant" : {
@@ -5173,7 +5207,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "Rename Verification Status"
+            "value" : "Rename Status"
           }
         },
         "zh-Hant" : {
@@ -5877,7 +5911,7 @@
     "選擇商品類別" : {
       "extractionState" : "manual",
       "localizations" : {
-        "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Product Categories" } },
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "Category" } },
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇商品類別" } }
       }
     },
@@ -5925,19 +5959,19 @@
     },
     "刷卡手續費 %" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Card Fee %" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "刷卡手續費 %" } } } },
     "商品成本" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Item Cost" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "商品成本" } } } },
-    "國內運費" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Domestic Shipping" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "國內運費" } } } },
-    "外國國內運費" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Foreign Domestic Shipping" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "外國國內運費" } } } },
+    "國內運費" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Local Shipping" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "國內運費" } } } },
+    "外國國內運費" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Foreign Local Shipping" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "外國國內運費" } } } },
     "尚無幣別" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No currencies available" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "尚無幣別" } } } },
     "平台手續費 %" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Platform Fee %" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "平台手續費 %" } } } },
     "手續費" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Fees" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "手續費" } } } },
     "總收款" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Total Payment" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "總收款" } } } },
     "輸入新的付款方式名稱，加入後會立即套用至此訂單。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a new payment method name. It will be applied to this order immediately." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入新的付款方式名稱，加入後會立即套用至此訂單。" } } } },
-    "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a new verification status name. It will be applied to this order immediately." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。" } } } },
+    "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a new reconciliation status name. It will be applied to this order immediately." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。" } } } },
     "透過上方「新增付款方式」加入第一個項目。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add your first payment method using the button above." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "透過上方「新增付款方式」加入第一個項目。" } } } },
     "透過上方「新增來源」加入第一個訂單來源。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add your first order source using the button above." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "透過上方「新增來源」加入第一個訂單來源。" } } } },
-    "透過上方「新增對帳狀態」加入第一個項目。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add your first verification status using the button above." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "透過上方「新增對帳狀態」加入第一個項目。" } } } },
+    "透過上方「新增對帳狀態」加入第一個項目。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add your first reconciliation status using the button above." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "透過上方「新增對帳狀態」加入第一個項目。" } } } },
     "透過上方「新增類別」加入第一個類別。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add your first category using the button above." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "透過上方「新增類別」加入第一個類別。" } } } },
-    "選擇對帳狀態" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Verification Status" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇對帳狀態" } } } },
+    "選擇對帳狀態" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Reconciliation Status" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇對帳狀態" } } } },
     "選擇幣別" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Currency" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇幣別" } } } },
     "選擇開團" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Select Campaigns" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇開團" } } } },
     "金流手續費 %" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Payment Processing Fee %" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "金流手續費 %" } } } },
