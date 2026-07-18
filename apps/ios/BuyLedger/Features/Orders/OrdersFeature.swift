@@ -1058,6 +1058,19 @@ struct OrdersFeature {
 
 extension OrdersFeature.State {
 
+    // MARK: - Computed Properties
+
+    /// 依選取模式衍生的導覽標題 key；純衍生自 isSelecting/selectedOrderIDs，無注入依賴
+    var navigationTitleKey: String.LocalizationValue {
+        guard isSelecting else { 
+            return "訂單" 
+        }
+        guard !selectedOrderIDs.isEmpty else { 
+            return "選擇訂單"
+        }
+        return "已選 \(selectedOrderIDs.count) 筆"
+    }
+
     /// 套用搜尋、狀態與日期區間篩選後的訂單
     ///
     /// 改成 method 後 caller 必須帶入 `referenceDate` 與 `calendar`；reducer / view 端皆由各自的 `@Dependency(\.date)` 與 `@Dependency(\.calendar)` 注入。如此可在 snapshot / unit test 中固定「現在」時間與行事曆，避免跨日或跨時區跑出不同結果

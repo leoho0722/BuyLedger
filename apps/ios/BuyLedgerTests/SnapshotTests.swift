@@ -33,7 +33,8 @@ struct SnapshotTests {
             }()
 
             let view = OrdersCompactView(
-                store: Store(initialState: state) { OrdersFeature() }
+                store: Store(initialState: state) { OrdersFeature() },
+                language: .traditionalChinese
             )
                 .environment(\.locale, AppLanguage.traditionalChinese.locale)
                 .frame(width: 393, height: 852)
@@ -83,7 +84,8 @@ struct SnapshotTests {
             }()
 
             let view = OrdersCompactView(
-                store: Store(initialState: state) { OrdersFeature() }
+                store: Store(initialState: state) { OrdersFeature() },
+                language: .traditionalChinese
             )
                 .environment(\.locale, AppLanguage.traditionalChinese.locale)
                 .frame(width: 393, height: 852)

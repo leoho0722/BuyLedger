@@ -18,6 +18,9 @@ struct RootSidebarLayout: View {
     /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
 
+    /// App 目前選用的顯示語系
+    let language: AppLanguage
+
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
@@ -282,7 +285,7 @@ private extension RootSidebarLayout {
         case .dashboard:
             DashboardView(store: store)
         case .orders:
-            OrdersView(store: store.scope(state: \.orders, action: \.orders))
+            OrdersView(store: store.scope(state: \.orders, action: \.orders), language: language)
         case .campaigns:
             CampaignListView(store: store)
         case .insights:
@@ -335,6 +338,7 @@ private extension RootSidebarLayout {
     return RootSidebarLayout(
         store: Store(initialState: previewState) {
             RootFeature()
-        }
+        },
+        language: .traditionalChinese
     )
 }

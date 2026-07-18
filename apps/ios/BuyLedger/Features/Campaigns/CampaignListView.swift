@@ -33,7 +33,7 @@ struct CampaignListView: View {
     var body: some View {
         NavigationStack(path: campaignPath) {
             content
-                .navigationTitle(Text("開團"))
+                .rootNavigationTitle("開團", language: store.settings.language)
                 .toolbar {
                     ToolbarItemGroup(placement: .primaryAction) {
                         Menu {

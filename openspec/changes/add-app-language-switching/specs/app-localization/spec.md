@@ -43,6 +43,18 @@ The App SHALL localize all shipped static user-facing iOS and iPadOS interface t
 - **THEN** the add-source and add-category placeholders and helper text are presented in English
 - **THEN** user-entered source, category, payment-method, product, and customer values remain unchanged
 
+### Requirement: Root navigation titles follow the selected App language
+
+The App SHALL present the Dashboard, Orders, Campaigns, Insights, and More root navigation titles using the selected App language. The title presentation path SHALL resolve the String Catalog through the selected App language's localization bundle so it remains correct after an in-app language change.
+
+#### Scenario: Root titles update in both directions
+
+- **GIVEN** the user is on each root tab in turn
+- **WHEN** the user selects English
+- **THEN** the navigation titles are `Overview`, `Orders`, `Campaigns`, `Insights`, and `More`
+- **WHEN** the user selects Traditional Chinese
+- **THEN** the navigation titles are `總覽`, `訂單`, `開團`, `分析`, and `更多`
+
 ### Requirement: Language selection in Settings
 
 The Settings screen SHALL provide an App language Picker with Traditional Chinese and English options. Its interaction and visual structure SHALL match the existing appearance mode Picker.

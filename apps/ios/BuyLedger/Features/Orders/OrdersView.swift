@@ -20,6 +20,9 @@ struct OrdersView: View {
     /// 訂單功能 store
     @Bindable var store: StoreOf<OrdersFeature>
 
+    /// App 目前選用的顯示語系
+    let language: AppLanguage
+
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
@@ -59,7 +62,7 @@ private extension OrdersView {
     @ViewBuilder
     var platformContent: some View {
         if horizontalSizeClass == .compact {
-            OrdersCompactView(store: store)
+            OrdersCompactView(store: store, language: language)
         } else {
             regularSplitContent
         }
@@ -67,13 +70,12 @@ private extension OrdersView {
 
     /// iPad regular 使用的「清單 + 詳情」兩欄佈局
     ///
-    /// 以 ``NavigationStack`` 包住兩欄並用 `.navigationTitle(Text("訂單"))` 提供系統大標題，讓頂端標題與「更多」等其他分頁一致對齊側邊欄 (先前用 HStack + 手動 `.padding(.top)` 會讓內容偏下、與側邊欄錯位)。內層僅用 ``HStack`` 自排「清單 + 詳情」，不再使用巢狀 ``NavigationSplitView``，避免兩層 split 互相搶寬度造成中間欄被擠壓
+    /// 以 ``NavigationStack`` 包住兩欄並用 `rootNavigationTitle(_:language:)` 提供系統大標題，讓頂端標題與「更多」等其他分頁一致對齊側邊欄 (先前用 HStack + 手動 `.padding(.top)` 會讓內容偏下、與側邊欄錯位)。內層僅用 ``HStack`` 自排「清單 + 詳情」，不再使用巢狀 ``NavigationSplitView``，避免兩層 split 互相搶寬度造成中間欄被擠壓
     @ViewBuilder
     var regularSplitContent: some View {
         let palette = BLTheme.palette(for: colorScheme)
         let filteredIDs = store.state.filteredOrders(referenceDate: date.now, calendar: calendar).map(\.id)
         let allFilteredSelected = !filteredIDs.isEmpty && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
-
         NavigationStack {
             HStack(spacing: 0) {
                 listPane
@@ -86,7 +88,7 @@ private extension OrdersView {
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .background(palette.background)
             }
-            .navigationTitle(Text("訂單"))
+            .rootNavigationTitle(store.navigationTitleKey, language: language)
             .toolbar {
                 if store.isSelecting {
                     ToolbarItem(placement: .topBarLeading) {
@@ -611,6 +613,7 @@ private extension OrdersView {
     OrdersView(
         store: Store(initialState: previewState) {
             OrdersFeature()
-        }
+        },
+        language: .traditionalChinese
     )
 }

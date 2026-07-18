@@ -42,9 +42,9 @@ private extension RootView {
     @ViewBuilder
     var layout: some View {
         if horizontalSizeClass == .compact {
-            RootTabLayout(store: store)
+            RootTabLayout(store: store, language: store.settings.language)
         } else {
-            RootSidebarLayout(store: store)
+            RootSidebarLayout(store: store, language: store.settings.language)
         }
     }
 }

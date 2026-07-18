@@ -29,3 +29,13 @@
 - [x] 6.1 以 TDD 擴充「English 全頁面 runtime 覆蓋驗證」的 LocalizationCatalogTests：先對 More、幣別／AI 模型、收款／到貨進度、來源／類別／付款方式選擇器及其新增說明建立缺翻 RED keys，再確認英文翻譯不含 CJK 且使用者資料不在靜態翻譯範圍內
 - [x] 6.2 實作「訂單流程的具名覆蓋矩陣」：修正 More、Lookup 選擇器、訂單新增／編輯與詳情的 static SwiftUI presentation boundaries 和 Localizable.xcstrings，使 English 模式的控制項、欄位、進度與 helper text 全部為英文；以 6.1 tests、SwiftUI code review 與 simulator build 驗證
 - [x] 6.3 完成「Reported order-flow controls use English consistently」runtime 回歸：以 English 狀態巡覽 More、所有回報選擇器及有資料訂單的新增／編輯／詳情頁，確認靜態文案均為英文且切回正體中文後恢復中文；以 iPhone simulator traversal、完整 iOS tests 和 spectra analyze/validate 驗證
+
+## 7. 根分頁 navigation title 語系回歸修正
+
+- [x] 7.1 以 TDD 擴充「Root navigation titles follow the selected App language」的 LocalizationCatalogTests：先對總覽、訂單、開團、分析、更多建立 root navigation title presentation boundary 的 RED 原始碼回歸檢查與兩種語言 catalog 斷言，證明 title 必須經 AppLanguage bundle 解析
+- [x] 7.2 實作「根分頁 navigation title 跟隨選定 App 語言」：修正 DashboardView、OrdersCompactView／OrdersView、CampaignListView、InsightsView 與 MoreView 的 title presentation，讓正體中文與英文切換均立即使用正確 title；以 7.1 tests、SwiftUI navigation review、iPhone runtime traversal 及 spectra analyze/validate 驗證
+
+## 8. 審查回饋修正
+
+- [x] 8.1 以行為測試取代脆弱的根標題原始碼字面比對：保留 `AppLanguage.localized(_:)` 的雙語根標題斷言，新增 `OrdersFeature.State.navigationTitleKey` 三態雙語斷言，並只掃描傳給原生 `.navigationTitle` 的本地化字面，放行 `Text(verbatim:)` 與變數名稱；以 LocalizationCatalogTests 驗證
+- [x] 8.2 實作「根分頁 navigation title 使用顯式 AppLanguage 參數解析」：刪除 `AppLanguageEnvironment.swift` 與 RootView 的自訂 environment 注入，新增 `rootNavigationTitle(_:language:)`，根分頁與 Settings 顯式傳入語言；Orders 的三態 title key 改為 State 計算屬性並由 RootTabLayout／RootSidebarLayout 傳遞語言；同步設計、proposal、tasks 與 iOS gotcha，並以 simulator build、LocalizationCatalogTests、SwiftUI review 與 spectra analyze/validate 驗證

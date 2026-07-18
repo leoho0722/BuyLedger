@@ -257,7 +257,7 @@ private extension MoreView {
                 }
             }
         }
-        .navigationTitle(Text(LocalizedStringResource("更多", locale: store.settings.language.locale)))
+        .rootNavigationTitle("更多", language: store.settings.language)
     }
 
     /// iOS 列表的單列

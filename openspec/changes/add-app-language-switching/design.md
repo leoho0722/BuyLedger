@@ -15,6 +15,7 @@ BuyLedger 的 SwiftUI 畫面目前大量以正體中文字串常值呈現，專�
 - 將選擇寫入 SettingsStorage，重新啟動後恢復
 - 切換後立即更新整個 App 的 SwiftUI 文案與 locale-aware 顯示，不要求重新啟動
 - English 模式下所有可到達頁面的 shipped static UI 文案均為英文，不殘留正體中文；使用者輸入與外部資料維持原值
+- 五個根分頁的 navigation title 在正體中文與英文模式下均立即呈現所選語言的翻譯
 - 以 TestStore、catalog 完整性檢查、analyze、build 與 iPhone 15 Plus 實機執行驗收
 
 **Non-Goals:**
@@ -52,6 +53,10 @@ catalog validator 除了檢查值非空，還要辨識 shipped Chinese source ke
 
 LocalizationCatalogTests 必須鎖定本次回報的 source keys，包含「更多」、三個選擇器標題、收款／到貨進度與狀態、來源／類別／付款方式選擇器及其新增說明。訂單新增／編輯和詳情 View 的靜態 `Text`、`Label`、`TextField` placeholder 與 navigation title 必須由 String Catalog 解析；選取中的使用者資料、既有來源／類別／付款方式名稱仍以 verbatim 呈現。英文 runtime traversal 必須以有訂單資料的狀態開啟新增／編輯與詳情，確認欄位和進度文字均為英文，並在切回正體中文後恢復 source 文案。
 
+### 根分頁 navigation title 使用顯式 AppLanguage 參數解析
+
+iOS 18+ 的 `navigationTitle` 不會在執行期可靠地隨 SwiftUI `\.locale` 重新解析 String Catalog (FB16124687)。`AppLanguage.swift` 提供 `rootNavigationTitle(_:language:)`，呼叫端必須顯式傳入 `AppLanguage`，由選定的 `en.lproj` 或 `zh-Hant.lproj` bundle 先解析 title，再直接傳給原生 `.navigationTitle(_:)`。Dashboard、Campaigns、Insights 與 More 從 `store.settings.language` 傳值，Settings 從 `store.language` 傳值；OrdersView 與 OrdersCompactView 以儲存屬性接收 root layout 傳入的語言。`OrdersFeature.State.navigationTitleKey` 是由多選狀態衍生的計算屬性，涵蓋「訂單／選擇訂單／已選 N 筆」三態。RootView 保留 locale 注入給一般 SwiftUI 文案與格式化器，不注入自訂 EnvironmentKey。
+
 ## Implementation Contract
 
 **Observable behavior**
@@ -61,6 +66,7 @@ LocalizationCatalogTests 必須鎖定本次回報的 source keys，包含「更�
 - 使用者選擇 English 後，目前 navigation stack 不重置，畫面文字與 locale-aware 顯示立即改為英文；選回 Traditional Chinese 時立即恢復正體中文
 - English 模式下，總覽、訂單、開團、分析、更多、設定及其可到達子頁面的 navigation title、section、control、status、filter、empty/error state 與日期／格式化文字全部以英文呈現
 - English 模式下，More、來源幣別／預設幣別／AI 模型選擇器、收款／到貨進度、來源／類別／付款方式選擇器、訂單新增／編輯及詳情頁的 shipped static 文案全部以英文呈現
+- 正體中文模式下，總覽、訂單、開團、分析與更多的 navigation title 全部以正體中文呈現；英文模式下，同五個 title 全部以英文呈現
 - App 終止並重新啟動後仍使用上次選擇的語言
 - 深淺色偏好既有行為保持不變
 
@@ -84,6 +90,8 @@ LocalizationCatalogTests 必須鎖定本次回報的 source keys，包含「更�
 - 靜態 catalog 檢查證明 sourceLanguage、兩種 localization 及 key 完整性
 - English runtime traversal 覆蓋所有主要分頁與可到達子頁面；實機截圖不得出現 shipped static 中文，且日期使用 English locale
 - LocalizationCatalogTests 對本次回報的具名 keys 驗證英文翻譯，並以有資料的訂單流程 runtime traversal 驗證新增／編輯和詳情 UI；使用者或外部提供的名稱維持原樣
+- LocalizationCatalogTests 以原始碼回歸檢查鎖定根分頁與 Settings 的 navigation title 均由 `rootNavigationTitle(_:language:)` 呈現，並驗證其 catalog 英文翻譯
+- LocalizationCatalogTests 直接驗證 `AppLanguage.english.localized("總覽") == "Overview"`、Orders 三態 key 的雙語解析，並僅掃描傳給原生 `.navigationTitle` 的本地化字面，放行 `Text(verbatim:)` 與變數名稱
 - spectra analyze 與 spectra validate 無 Critical 或 Warning
 - flutter 以外不相關平台不受影響；iOS 測試與 analyze 通過
 - xcodebuildmcp CLI 對連線中的 iPhone 15 Plus 執行 device build-and-run 成功，裝置上可由設定頁切換並觀察英文與正體中文畫面

@@ -175,29 +175,77 @@ struct LocalizationCatalogTests {
             )
         )
         let swiftFiles = enumerator.compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" }
-        var literalNavigationTitles: [String] = []
         var hardCodedTraditionalChineseLocales: [String] = []
 
         for file in swiftFiles {
             let source = try String(contentsOf: file, encoding: .utf8)
             let relativePath = file.path.replacingOccurrences(of: sourceRoot.path + "/", with: "")
 
-            if source.contains(".navigationTitle(\"") {
-                literalNavigationTitles.append(relativePath)
-            }
             if source.contains(".locale(Locale(identifier: \"zh_TW\"))") {
                 hardCodedTraditionalChineseLocales.append(relativePath)
             }
         }
 
         #expect(
-            literalNavigationTitles.isEmpty,
-            "Static navigation titles must cross an explicit localizable Text boundary: \(literalNavigationTitles)"
-        )
-        #expect(
             hardCodedTraditionalChineseLocales.isEmpty,
             "Presentation formatters must use the selected App locale: \(hardCodedTraditionalChineseLocales)"
         )
+    }
+
+    @Test func rootNavigationTitlesResolveUsingTheSelectedAppLanguage() {
+        #expect(AppLanguage.english.localized("總覽") == "Overview")
+        #expect(AppLanguage.traditionalChinese.localized("總覽") == "總覽")
+        #expect(AppLanguage.english.localized("訂單") == "Orders")
+        #expect(AppLanguage.traditionalChinese.localized("訂單") == "訂單")
+        #expect(AppLanguage.english.localized("開團") == "Campaigns")
+        #expect(AppLanguage.traditionalChinese.localized("開團") == "開團")
+        #expect(AppLanguage.english.localized("分析") == "Insights")
+        #expect(AppLanguage.traditionalChinese.localized("分析") == "分析")
+        #expect(AppLanguage.english.localized("更多") == "More")
+        #expect(AppLanguage.traditionalChinese.localized("更多") == "更多")
+    }
+
+    @Test func ordersNavigationTitleKeysFollowSelectionState() {
+        var state = OrdersFeature.State()
+
+        #expect(AppLanguage.english.localized(state.navigationTitleKey) == "Orders")
+        #expect(AppLanguage.traditionalChinese.localized(state.navigationTitleKey) == "訂單")
+
+        state.isSelecting = true
+
+        #expect(AppLanguage.english.localized(state.navigationTitleKey) == "Select Orders")
+        #expect(AppLanguage.traditionalChinese.localized(state.navigationTitleKey) == "選擇訂單")
+
+        state.selectedOrderIDs = ["O1", "O2"]
+
+        #expect(AppLanguage.english.localized(state.navigationTitleKey) == "2 Selected")
+        #expect(AppLanguage.traditionalChinese.localized(state.navigationTitleKey) == "已選 2 筆")
+    }
+
+    @Test func rootNavigationTitlesUseTheExplicitLanguageModifier() throws {
+        let sourceRoot = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+            .appending(path: "BuyLedger")
+        let rootViews = [
+            "Features/Dashboard/DashboardView.swift",
+            "Features/Orders/OrdersCompactView.swift",
+            "Features/Orders/OrdersView.swift",
+            "Features/Campaigns/CampaignListView.swift",
+            "Features/Insights/InsightsView.swift",
+            "Features/More/MoreView.swift",
+            "Features/Settings/SettingsView.swift",
+        ]
+
+        for relativePath in rootViews {
+            let source = try String(contentsOf: sourceRoot.appending(path: relativePath), encoding: .utf8)
+            #expect(
+                !source.contains(".navigationTitle(\"")
+                    && !source.contains(".navigationTitle(Text(\"")
+                    && !source.contains(".navigationTitle(Text(LocalizedStringKey("),
+                "\(relativePath) must not pass localized literals to native navigationTitle."
+            )
+        }
     }
 
     @Test func campaignDetailReceiptStatusesCrossLocalizationBoundary() throws {

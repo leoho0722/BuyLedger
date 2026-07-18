@@ -18,6 +18,9 @@ struct OrdersCompactView: View {
     /// 訂單功能 store
     @Bindable var store: StoreOf<OrdersFeature>
 
+    /// App 目前選用的顯示語系
+    let language: AppLanguage
+
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
@@ -37,13 +40,6 @@ struct OrdersCompactView: View {
         let palette = BLTheme.palette(for: colorScheme)
         let filteredIDs = store.state.filteredOrders(referenceDate: date.now, calendar: calendar).map(\.id)
         let allFilteredSelected = !filteredIDs.isEmpty && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
-        // 多選時導覽標題顯示已選筆數 (iPhone 底部 tab bar 會蓋掉 .bottomBar，故批次控制改放右上角工具列)
-        let navigationTitle: LocalizedStringKey = store.isSelecting
-            ? (store.selectedOrderIDs.isEmpty
-                ? "選擇訂單"
-                : "已選 \(store.selectedOrderIDs.count) 筆")
-            : "訂單"
-
         NavigationStack(path: $store.scope(state: \.detailPath, action: \.detailPath)) {
             ScrollView {
                 VStack(alignment: .leading, spacing: BLSpacing.medium) {
@@ -70,7 +66,7 @@ struct OrdersCompactView: View {
             }
             .background(palette.background)
             .scrollDismissesKeyboard(.immediately)
-            .navigationTitle(Text(navigationTitle))
+            .rootNavigationTitle(store.navigationTitleKey, language: language)
             .toolbar {
                 if store.isSelecting {
                     ToolbarItem(placement: .topBarLeading) {
@@ -265,7 +261,7 @@ private extension OrdersCompactView {
                 Image(systemName: "line.3.horizontal.decrease")
                     .font(.caption.weight(.semibold))
 
-                Text("\(Text(\"篩選\")): \(summary)")
+                Text("\(Text("篩選")): \(summary)")
                     .font(.subheadline.weight(.semibold))
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
@@ -468,6 +464,7 @@ private extension OrdersCompactView {
     OrdersCompactView(
         store: Store(initialState: previewState) {
             OrdersFeature()
-        }
+        },
+        language: .traditionalChinese
     )
 }

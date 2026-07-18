@@ -60,10 +60,9 @@ struct InsightsView: View {
         .task {
             await store.send(.orders(.task)).finish()
         }
-
         return NavigationStack {
             core
-                .navigationTitle(Text("分析"))
+                .rootNavigationTitle("分析", language: store.settings.language)
         }
     }
 }

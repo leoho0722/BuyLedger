@@ -67,10 +67,9 @@ struct DashboardView: View {
             // 同時把月度目標等設定載入，避免使用者直接從 Dashboard 啟動時看不到自訂目標
             await store.send(.settings(.task)).finish()
         }
-
         return NavigationStack {
             core
-                .navigationTitle(Text("總覽"))
+                .rootNavigationTitle("總覽", language: store.settings.language)
         }
     }
 }

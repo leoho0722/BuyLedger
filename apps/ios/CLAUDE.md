@@ -32,6 +32,7 @@
 - **`OrdersView` 的 `.sheet(item: $store.scope(state: \.editOrder, action: \.editOrder))`** 一律掛在 `OrdersView` 外層，iPhone / iPad 共用——不可移到平台分流後的子 view 裡。
 - **點空白處收鍵盤用 `dismissKeyboardOnTap()`** (`Shared/Keyboard/`)：iOS / iPadOS 以 **window 級** `UITapGestureRecognizer` 實作，靠 `blocksKeyboardDismissTap` 沿 superview 逐層過濾互動 (`UIControl` / `UITextInput`)、文字編輯與系統選單 view——**不可改成對所有 touch 都收鍵盤** (會誤觸貼上／選取等系統 action)。
 - **iPhone (compact) 的 NavigationStack 不要用 `.toolbar` 的 `.bottomBar`**：compact 走 `RootTabLayout` 的 `TabView`，底部 tab bar 會蓋掉 `.bottomBar`，工具列項目 (如多選的批次操作) 在實機上看不到。批次／選取類操作改放 `.primaryAction` 等頂部 placement，筆數等資訊可放 `navigationTitle`。iPad (regular) 走 `RootSidebarLayout` 無底部 tab bar，`.bottomBar` 在 iPad 才安全 (`OrdersView.regularSplitContent` 仍用之)。
+- **App 內切換語言後的根分頁 `navigationTitle`**：iOS 18+ 不會可靠地讓 `navigationTitle` 隨 `\.locale` 重新解析 String Catalog。Dashboard、Orders、Campaigns、Insights、More 與 Settings 一律以必填 `language` 參數呼叫 `rootNavigationTitle(_:language:)`，由 `AppLanguage.localized(_:)` 先從對應 `.lproj` bundle 解析再交給原生 `.navigationTitle(_:)`；Orders 的多選三態 key 必須由 `OrdersFeature.State.navigationTitleKey` 計算屬性衍生。RootView 僅保留 `\.locale` 注入給一般 SwiftUI 文案與格式化器；`Tab(LocalizedStringKey)` 不需要此 workaround。
 
 ## 資料層與 Dependency 注入
 

@@ -127,7 +127,7 @@ struct SettingsView: View {
                 LabeledContent("作者", value: "Leo Ho")
             }
         }
-        .navigationTitle(Text(LocalizedStringResource("設定", locale: store.language.locale)))
+        .rootNavigationTitle("設定", language: store.language)
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {

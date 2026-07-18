@@ -16,6 +16,9 @@ struct RootTabLayout: View {
     /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
 
+    /// App 目前選用的顯示語系
+    let language: AppLanguage
+
     // MARK: - View Body
 
     /// 分頁導覽的畫面內容
@@ -43,7 +46,7 @@ private extension RootTabLayout {
         case .dashboard:
             DashboardView(store: store)
         case .orders:
-            OrdersView(store: store.scope(state: \.orders, action: \.orders))
+            OrdersView(store: store.scope(state: \.orders, action: \.orders), language: language)
         case .campaigns:
             CampaignListView(store: store)
         case .insights:
@@ -60,6 +63,7 @@ private extension RootTabLayout {
     RootTabLayout(
         store: Store(initialState: RootFeature.State()) {
             RootFeature()
-        }
+        },
+        language: .traditionalChinese
     )
 }
