@@ -81,11 +81,6 @@ struct OptionPickerSheet: View {
     /// callback 參數依序為 (名稱, isCardless, isBankTransfer, isCashOnDelivery)
     let onAddPaymentMethod: ((String, Bool, Bool, Bool) -> Void)?
 
-    /// 使用者透過「新增」name-only medium sheet 確認新增時的 callback；不為 `nil` 且 ``onAddPaymentMethod`` 為 `nil` 時，「新增」按鈕會改顯示 ``LookupItemEditorSheet`` (只收名稱)，取代既有 alert 流程
-    ///
-    /// 供對帳狀態等只需名稱的主檔比照「新增付款方式」使用 medium sheet
-    let onAddViaNameSheet: ((String) -> Void)?
-
     /// 可選的「清除目前選擇」row 設定
     ///
     /// 當非 `nil` 時，picker 會在選項列上方額外渲染一列以 ``ClearOption/title`` 為 label 的 row；點擊該 row 會呼叫 ``ClearOption/onClear`` 並 dismiss，且 picker 會把 `selected == ""` 視為「目前處於 clear 狀態」並在 clear row 上顯示 checkmark
@@ -113,9 +108,6 @@ struct OptionPickerSheet: View {
     /// 是否顯示「新增付款方式」sheet (含 `isCardless` / `isBankTransfer` 切換)
     @State private var showsAddPaymentMethodSheet = false
 
-    /// 是否顯示 name-only 的「新增」medium sheet (對帳狀態等只需名稱的主檔)
-    @State private var showsAddNameSheet = false
-
     /// 新增 alert 的名稱輸入草稿
     @State private var draft = ""
 
@@ -142,7 +134,6 @@ struct OptionPickerSheet: View {
     ///   - onSelect: 點選 callback
     ///   - onAdd: 新增 callback；`allowsAdd` 為 `false` 時不會被呼叫；若同時提供 ``onAddPaymentMethod`` 則此 callback 也會被忽略
     ///   - onAddPaymentMethod: 付款方式新增 callback；不為 `nil` 時，「新增」按鈕改開啟 ``PaymentMethodEditorSheet`` 收集名稱與 `isCardless` / `isBankTransfer` / `isCashOnDelivery`，取代 alert 流程
-    ///   - onAddViaNameSheet: name-only 主檔新增 callback；不為 `nil` 且 `onAddPaymentMethod` 為 `nil` 時，「新增」按鈕改開啟 ``LookupItemEditorSheet`` (只收名稱) 的 medium sheet，取代 alert 流程
     ///   - clearOption: 可選的「清除目前選擇」row 設定；預設 `nil` (不顯示 clear row、行為與既有版本一致)
     ///   - multiSelection: 可選的多選模式設定；預設 `nil` (維持單選行為)。非 `nil` 時 `selected` 與 `onSelect` 不會被使用
     init(
@@ -162,7 +153,6 @@ struct OptionPickerSheet: View {
         onSelect: @escaping (String) -> Void = { _ in },
         onAdd: @escaping (String) -> Void = { _ in },
         onAddPaymentMethod: ((String, Bool, Bool, Bool) -> Void)? = nil,
-        onAddViaNameSheet: ((String) -> Void)? = nil,
         clearOption: ClearOption? = nil,
         multiSelection: MultiSelection? = nil
     ) {
@@ -182,7 +172,6 @@ struct OptionPickerSheet: View {
         self.onSelect = onSelect
         self.onAdd = onAdd
         self.onAddPaymentMethod = onAddPaymentMethod
-        self.onAddViaNameSheet = onAddViaNameSheet
         self.clearOption = clearOption
         self.multiSelection = multiSelection
     }
@@ -249,19 +238,6 @@ struct OptionPickerSheet: View {
                         onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
                             onAddPaymentMethod?(name, isCardless, isBankTransfer, isCashOnDelivery)
                             // 新增完成後一併關閉外層 picker sheet，使用者能立即看到新付款方式套用到此訂單
-                            dismiss()
-                        }
-                    )
-                }
-                .sheet(isPresented: $showsAddNameSheet) {
-                    LookupItemEditorSheet(
-                        title: addAlertTitle,
-                        message: addAlertMessage,
-                        namePlaceholder: addFieldPlaceholder,
-                        submitTitle: "新增",
-                        onSubmit: { name in
-                            onAddViaNameSheet?(name)
-                            // 新增完成後一併關閉外層 picker sheet，使用者能立即看到新項目套用到此訂單
                             dismiss()
                         }
                     )
@@ -461,14 +437,11 @@ private extension OptionPickerSheet {
         }
     }
 
-    /// 點擊新增按鈕的共用行為，依 handler precedence 決定呈現：付款方式入口開 ``PaymentMethodEditorSheet``、name-only 入口開 ``LookupItemEditorSheet``，其餘開一般新增 alert
+    /// 點擊新增按鈕的共用行為：付款方式入口開 ``PaymentMethodEditorSheet`` (需收集旗標)，其餘開一般新增 alert
     func triggerAdd() {
         if onAddPaymentMethod != nil {
             // 付款方式入口：alert 在實機驗證會 silently 丟掉 Toggle (只剩 TextField + 按鈕)，所以改用 sheet 收集名稱與 isCardless / isBankTransfer
             showsAddPaymentMethodSheet = true
-        } else if onAddViaNameSheet != nil {
-            // 對帳狀態等只需名稱的主檔：比照「新增付款方式」改用 medium sheet (而非 alert)，操作體驗一致
-            showsAddNameSheet = true
         } else {
             draft = ""
             showsAddAlert = true

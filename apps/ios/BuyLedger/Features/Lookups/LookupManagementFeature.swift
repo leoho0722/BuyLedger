@@ -51,14 +51,11 @@ struct LookupManagementFeature {
         /// 是否已完成首次載入
         var hasLoaded = false
 
-        /// 是否顯示「新增」alert (僅訂單來源 / 商品類別 kind 使用)
-        var showsAddCategoryAlert = false
+        /// 是否顯示「新增」alert (訂單來源 / 商品類別 / 對帳狀態等純名稱 kind 使用)
+        var showsAddNameOnlyAlert = false
 
         /// 是否顯示「新增付款方式」sheet (僅付款方式 kind 使用；alert 在實機驗證會 silently 丟掉 Toggle，所以付款方式入口改走 sheet)
         var showsAddPaymentMethodSheet = false
-
-        /// 是否顯示「新增對帳狀態」medium sheet (僅對帳狀態 kind 使用；比照付款方式以 sheet 收集名稱)
-        var showsAddVerificationStatusSheet = false
 
         /// 新增 alert / sheet 的名稱輸入草稿
         var addDraft = ""
@@ -200,13 +197,11 @@ struct LookupManagementFeature {
 
             case .addButtonTapped:
                 switch state.kind {
-                case .orderSource, .category:
+                case .orderSource, .category, .verificationStatus:
                     state.addDraft = ""
-                    state.showsAddCategoryAlert = true
+                    state.showsAddNameOnlyAlert = true
                 case .paymentMethod:
                     state.showsAddPaymentMethodSheet = true
-                case .verificationStatus:
-                    state.showsAddVerificationStatusSheet = true
                 }
                 return .none
 

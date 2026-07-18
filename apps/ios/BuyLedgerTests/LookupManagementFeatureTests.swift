@@ -110,7 +110,7 @@ struct LookupManagementFeatureTests {
 
         await store.send(.addButtonTapped) {
             $0.addDraft = ""
-            $0.showsAddCategoryAlert = true
+            $0.showsAddNameOnlyAlert = true
         }
     }
 
@@ -125,14 +125,18 @@ struct LookupManagementFeatureTests {
         }
     }
 
-    @Test func addButtonTappedForVerificationStatusOpensSheet() async {
-        // 對帳狀態走 sheet
-        let store = TestStore(initialState: LookupManagementFeature.State(kind: .verificationStatus)) {
+    @Test func addButtonTappedForVerificationStatusResetsDraftAndOpensAlert() async {
+        // 對帳狀態比照訂單來源 / 商品類別走 alert：reducer 依 kind 清空草稿並開啟 alert
+        var state = LookupManagementFeature.State(kind: .verificationStatus)
+        state.addDraft = "殘留草稿"
+
+        let store = TestStore(initialState: state) {
             LookupManagementFeature()
         }
 
         await store.send(.addButtonTapped) {
-            $0.showsAddVerificationStatusSheet = true
+            $0.addDraft = ""
+            $0.showsAddNameOnlyAlert = true
         }
     }
 
@@ -151,13 +155,13 @@ struct LookupManagementFeatureTests {
 
     // MARK: - Binding Tests
 
-    @Test func showsAddCategoryAlertBindingUpdatesState() async {
+    @Test func showsAddNameOnlyAlertBindingUpdatesState() async {
         let store = TestStore(initialState: LookupManagementFeature.State(kind: .category)) {
             LookupManagementFeature()
         }
 
-        await store.send(\.binding.showsAddCategoryAlert, true) {
-            $0.showsAddCategoryAlert = true
+        await store.send(\.binding.showsAddNameOnlyAlert, true) {
+            $0.showsAddNameOnlyAlert = true
         }
     }
 

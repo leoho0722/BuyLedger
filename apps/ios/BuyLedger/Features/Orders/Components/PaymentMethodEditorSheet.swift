@@ -14,8 +14,6 @@ import SwiftUI
 /// 所以付款方式的新增與編輯流程改採獨立 sheet，將名稱輸入與三個旗標切換放在同一張表單，確認後一次帶出 `(name, isCardless, isBankTransfer, isCashOnDelivery)` 給 caller
 ///
 /// 編輯既有付款方式時，caller 透過 `initialName` / `initialIsCardless` / `initialIsBankTransfer` / `initialIsCashOnDelivery` 帶入原有資料，並把 `title` 設為「編輯付款方式」、`submitTitle` 設為「儲存」
-///
-/// 商品類別等沒有旗標概念的主檔不走這張 sheet (改用 alert 或 ``LookupItemEditorSheet``)
 struct PaymentMethodEditorSheet: View {
 
     // MARK: - View Properties

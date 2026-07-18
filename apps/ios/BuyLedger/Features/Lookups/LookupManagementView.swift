@@ -86,7 +86,7 @@ struct LookupManagementView: View {
                     Text("")
                 }
             }
-            .alert(LocalizedStringKey(store.state.kind.addAlertTitle), isPresented: $store.showsAddCategoryAlert) {
+            .alert(LocalizedStringKey(store.state.kind.addAlertTitle), isPresented: $store.showsAddNameOnlyAlert) {
                 TextField(LocalizedStringKey(store.state.kind.addFieldPlaceholder), text: $store.addDraft)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
@@ -114,17 +114,6 @@ struct LookupManagementView: View {
                     submitTitle: "新增",
                     onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
                         store.send(.addConfirmed(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery))
-                    }
-                )
-            }
-            .sheet(isPresented: $store.showsAddVerificationStatusSheet) {
-                LookupItemEditorSheet(
-                    title: store.state.kind.addAlertTitle,
-                    message: store.state.kind.addAlertMessage,
-                    namePlaceholder: store.state.kind.addFieldPlaceholder,
-                    submitTitle: "新增",
-                    onSubmit: { name in
-                        store.send(.addConfirmed(name: name, isCardless: false, isBankTransfer: false, isCashOnDelivery: false))
                     }
                 )
             }

@@ -290,7 +290,7 @@ struct OrderEditView: View {
                     onSelect: { status in
                         store.send(.verificationStatusSelected(status))
                     },
-                    onAddViaNameSheet: { name in
+                    onAdd: { name in
                         store.send(.addVerificationStatusTapped(name))
                     }
                 )
@@ -489,7 +489,7 @@ private extension OrderEditView {
         .buttonStyle(.plain)
     }
 
-    /// 對帳狀態選擇列：操作體驗比照 ``paymentMethodPickerRow``，但新增動作走 name-only medium sheet (見 ``OptionPickerSheet`` 的 `onAddViaNameSheet`)。僅在選到的付款方式屬於無卡或銀行匯款 (``OrderEditFeature/State/showsVerificationStatusRow`` 為 `true`) 時，由 caller 條件顯示於「付款方式」row 底下
+    /// 對帳狀態選擇列
     @ViewBuilder
     var verificationStatusPickerRow: some View {
         Button {
