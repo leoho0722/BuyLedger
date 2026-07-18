@@ -65,8 +65,9 @@ struct CampaignListView: View {
                         Button {
                             store.send(.campaigns(.newCampaignTapped))
                         } label: {
-                            Label("新增開團", systemImage: "plus")
+                            Image(systemName: "plus")
                         }
+                        .accessibilityLabel(Text("新增開團"))
                     }
                 }
                 .navigationDestination(for: String.self) { id in

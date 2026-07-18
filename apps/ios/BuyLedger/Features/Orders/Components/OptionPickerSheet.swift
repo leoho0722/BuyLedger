@@ -207,9 +207,12 @@ struct OptionPickerSheet: View {
                         }
                     } else {
                         ToolbarItem(placement: .cancellationAction) {
-                            Button("取消") {
+                            Button {
                                 dismiss()
+                            } label: {
+                                Image(systemName: "xmark")
                             }
+                            .accessibilityLabel(Text("取消"))
                         }
                     }
                 }

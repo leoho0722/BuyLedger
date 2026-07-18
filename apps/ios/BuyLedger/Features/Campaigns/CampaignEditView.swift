@@ -92,9 +92,12 @@ struct CampaignEditView: View {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
+                    Button {
                         store.send(.cancelTapped)
+                    } label: {
+                        Image(systemName: "xmark")
                     }
+                    .accessibilityLabel(Text("取消"))
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
@@ -129,9 +132,12 @@ private extension CampaignEditView {
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("取消") {
+                    Button {
                         store.send(.reminderPickerCancelled)
+                    } label: {
+                        Image(systemName: "xmark")
                     }
+                    .accessibilityLabel(Text("取消"))
                 }
 
                 ToolbarItem(placement: .confirmationAction) {

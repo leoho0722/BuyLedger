@@ -40,9 +40,12 @@ struct OrderMergeCandidateSheet: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("取消") {
+                        Button {
                             store.send(.cancelTapped)
+                        } label: {
+                            Image(systemName: "xmark")
                         }
+                        .accessibilityLabel(Text("取消"))
                     }
 
                     if store.step == .selectPhotos {

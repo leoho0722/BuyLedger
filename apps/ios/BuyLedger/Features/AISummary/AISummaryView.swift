@@ -29,10 +29,12 @@ struct AISummaryView: View {
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
-                        Button("完成") {
+                        Button {
                             store.send(.closeTapped)
+                        } label: {
+                            Image(systemName: "xmark")
                         }
-                        .keyboardShortcut(.defaultAction)
+                        .accessibilityLabel(Text("關閉"))
                     }
                 }
                 .task {
