@@ -105,26 +105,18 @@ struct OrderEditFeature {
         /// PhotosPicker 的當前選取項目；one-shot 模式——匯入完成即清空，讓下次開啟 picker 重新選取
         var photoPickerSelection: [PhotosPickerItem] = []
 
-        /// 是否顯示「訂單來源」選擇 sheet
-        var showsOrderSourceSheet = false
-
-        /// 是否顯示「商品類別」選擇 sheet
-        var showsCategorySheet = false
-
-        /// 是否顯示「付款方式」選擇 sheet
-        var showsPaymentMethodSheet = false
-
-        /// 是否顯示「對帳狀態」選擇 sheet
-        var showsReconciliationStatusSheet = false
-
-        /// 是否顯示「幣別」選擇 sheet
-        var showsCurrencySheet = false
-
-        /// 是否顯示「開團」多選 sheet (僅合併情境使用；一般訂單編輯維持 inline `Picker`)
-        var showsCampaignSheet = false
+        /// 目前以 push 呈現的選項選擇器 route；`nil` 代表未開啟
+        ///
+        /// 取代原本各選擇器的獨立布林，驅動訂單編輯表單 `NavigationStack` 的單一 `navigationDestination`，使選擇器沿宿主堆疊 push (帶 Back) 而非疊出第二層 sheet
+        var pickerRoute: PickerRoute?
 
         /// 照片檢視器目前聚焦的照片；`nil` 代表檢視器未開啟
         var photoViewerSelection: PhotoViewerSelection?
+
+        /// 有未儲存變更時，取消所觸發的「捨棄變更／繼續編輯」確認彈窗；`nil` 代表未顯示
+        ///
+        /// 採 `AlertState` (centered modal) 而非 `ConfirmationDialogState`：取消是 toolbar 按鈕，iOS 26 起 `.confirmationDialog` 對 toolbar 觸發會位置偏移
+        @Presents var discardConfirmation: AlertState<Action.DiscardAlert>? = nil
 
         /// 合併來源訂單編號；非空代表這是「合併訂單」的確認草稿
         ///
@@ -153,6 +145,9 @@ struct OrderEditFeature {
 
         /// 表單 instance 的穩定識別值，供 SwiftUI sheet item 使用
         let id: UUID
+
+        /// 表單開啟當下的草稿指紋；與 ``draftFingerprint`` 比對得出 ``isDirty``，供未儲存變更關閉確認使用
+        let initialDraftFingerprint: DraftFingerprint
 
         // MARK: - Init
 
@@ -248,9 +243,71 @@ struct OrderEditFeature {
             self.availableCurrencies = currencies.sorted { $0.rawValue.localizedStandardCompare($1.rawValue) == .orderedAscending }
 
             self.id = id
+
+            // 初始指紋＝表單開啟時的基準 (original 或新訂單預設)，與 ``draftFingerprint`` 比對得出 dirty
+            // 各欄位運算式須與上方 draftX 的初始賦值保持一致
+            self.initialDraftFingerprint = DraftFingerprint(
+                customerName: original?.customer.name ?? "",
+                orderSource: original?.orderSource ?? "",
+                categories: original?.categories ?? [],
+                status: original?.status ?? .quoting,
+                currency: original?.currency ?? .twd,
+                chargedAmount: original?.chargedAmount ?? 0,
+                cardlessDeductionAmount: original?.cardlessDeductionAmount ?? 0,
+                cardlessSupplementAmount: original?.cardlessSupplementAmount ?? 0,
+                itemCost: original?.itemCost ?? 0,
+                domesticShipping: original?.domesticShipping ?? 0,
+                internationalShipping: original?.internationalShipping ?? 0,
+                foreignDomesticShipping: original?.foreignDomesticShipping ?? 0,
+                cardFeeRate: original?.cardFeeRate ?? 0,
+                platformFeeRate: original?.platformFeeRate ?? 0,
+                paymentFeeRate: original?.paymentFeeRate ?? 0,
+                items: original?.items ?? [],
+                notes: original?.notes ?? "",
+                date: original?.date ?? currentDate,
+                paymentMethod: original?.paymentMethod ?? "",
+                reconciliationStatus: original?.reconciliationStatus ?? "",
+                campaignNames: original?.campaignNames ?? [],
+                paymentReceiptStatus: original?.paymentReceiptStatus ?? .pending,
+                photos: original?.photos ?? []
+            )
         }
 
         // MARK: - Computed Properties
+
+        /// 目前草稿指紋；涵蓋全部可編輯草稿欄位，與 ``initialDraftFingerprint`` 比對得出 ``isDirty``
+        var draftFingerprint: DraftFingerprint {
+            DraftFingerprint(
+                customerName: draftCustomerName,
+                orderSource: draftOrderSource,
+                categories: draftCategories,
+                status: draftStatus,
+                currency: draftCurrency,
+                chargedAmount: draftChargedAmount,
+                cardlessDeductionAmount: draftCardlessDeductionAmount,
+                cardlessSupplementAmount: draftCardlessSupplementAmount,
+                itemCost: draftItemCost,
+                domesticShipping: draftDomesticShipping,
+                internationalShipping: draftInternationalShipping,
+                foreignDomesticShipping: draftForeignDomesticShipping,
+                cardFeeRate: draftCardFeeRate,
+                platformFeeRate: draftPlatformFeeRate,
+                paymentFeeRate: draftPaymentFeeRate,
+                items: draftItems,
+                notes: draftNotes,
+                date: draftDate,
+                paymentMethod: draftPaymentMethod,
+                reconciliationStatus: draftReconciliationStatus,
+                campaignNames: draftCampaignNames,
+                paymentReceiptStatus: draftPaymentReceiptStatus,
+                photos: draftPhotos
+            )
+        }
+
+        /// 草稿是否已被修改：目前草稿指紋與開啟時的初始指紋不同即為 `true`；供未儲存變更下滑關閉確認判斷
+        var isDirty: Bool {
+            draftFingerprint != initialDraftFingerprint
+        }
 
         /// 目前選到的付款方式是否屬於「無卡」類；用於決定收款金額區段是否顯示「無卡折抵金額」與「無卡補款金額」欄位
         ///
@@ -340,6 +397,9 @@ struct OrderEditFeature {
 
         /// 使用者按下儲存
         case saveTapped
+
+        /// 有未儲存變更時、取消所觸發的捨棄確認彈窗事件
+        case discardConfirmation(PresentationAction<DiscardAlert>)
 
         /// 使用者透過「新增來源」彈窗確認新增一筆訂單來源名稱
         case addOrderSourceTapped(String)
@@ -433,6 +493,14 @@ struct OrderEditFeature {
 
         /// 使用者關閉照片檢視器
         case photoViewerDismissed
+
+        /// 捨棄確認彈窗的選項
+        @CasePathable
+        enum DiscardAlert: Equatable {
+
+            /// 使用者確認捨棄未儲存的變更並關閉表單
+            case discard
+        }
     }
 
     // MARK: - Dependency Properties
@@ -505,8 +573,34 @@ struct OrderEditFeature {
                 state.draftDate = calendar.date(from: components) ?? newValue
                 return .none
 
-            case .cancelTapped, .saveTapped:
+            case .saveTapped:
                 return .run { _ in await dismiss() }
+
+            case .cancelTapped:
+                // 有未儲存變更時先以彈窗確認、避免下滑或取消靜默遺失草稿；無變更則直接關閉
+                guard state.isDirty else {
+                    return .run { _ in await dismiss() }
+                }
+
+                state.discardConfirmation = AlertState {
+                    TextState("捨棄變更")
+                } actions: {
+                    ButtonState(role: .destructive, action: .discard) {
+                        TextState("捨棄變更")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("繼續編輯")
+                    }
+                } message: {
+                    TextState("這張訂單有尚未儲存的變更，離開後將不會保留。")
+                }
+                return .none
+
+            case .discardConfirmation(.presented(.discard)):
+                return .run { _ in await dismiss() }
+
+            case .discardConfirmation:
+                return .none
 
             case let .addOrderSourceTapped(rawName):
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -749,27 +843,27 @@ struct OrderEditFeature {
                 return .none
 
             case .orderSourcePickerTapped:
-                state.showsOrderSourceSheet = true
+                state.pickerRoute = .orderSource
                 return .none
 
             case .categoryPickerTapped:
-                state.showsCategorySheet = true
+                state.pickerRoute = .category
                 return .none
 
             case .campaignPickerTapped:
-                state.showsCampaignSheet = true
+                state.pickerRoute = .campaign
                 return .none
 
             case .currencyPickerTapped:
-                state.showsCurrencySheet = true
+                state.pickerRoute = .currency
                 return .none
 
             case .paymentMethodPickerTapped:
-                state.showsPaymentMethodSheet = true
+                state.pickerRoute = .paymentMethod
                 return .none
 
             case .reconciliationStatusPickerTapped:
-                state.showsReconciliationStatusSheet = true
+                state.pickerRoute = .reconciliationStatus
                 return .none
 
             case let .orderSourceSelected(source):
@@ -797,6 +891,7 @@ struct OrderEditFeature {
                 return .none
             }
         }
+        .ifLet(\.$discardConfirmation, action: \.discardConfirmation)
     }
 }
 
@@ -811,5 +906,66 @@ extension OrderEditFeature {
 
         /// 被點擊照片在 ``OrderEditFeature/State/draftPhotos`` 中的 index，同時作為 item 識別
         let id: Int
+    }
+}
+
+extension OrderEditFeature.State {
+
+    /// 訂單編輯表單內可 push 呈現的選項選擇器 route
+    ///
+    /// 驅動表單 `NavigationStack` 的單一 `navigationDestination(for:)`，一次只 push 一個選擇器
+    enum PickerRoute: Hashable {
+
+        // MARK: - Cases
+
+        /// 訂單來源選擇器
+        case orderSource
+
+        /// 商品類別選擇器
+        case category
+
+        /// 開團選擇器 (合併情境多選)
+        case campaign
+
+        /// 付款方式選擇器
+        case paymentMethod
+
+        /// 對帳狀態選擇器
+        case reconciliationStatus
+
+        /// 幣別選擇器
+        case currency
+    }
+
+    /// 訂單編輯草稿的指紋：聚合全部可編輯欄位，供 dirty 判斷偵測未儲存變更
+    ///
+    /// 集中定義所有草稿欄位；日後新增草稿欄位時須同步補進此型別，否則該欄位的變更不會被 ``OrderEditFeature/State/isDirty`` 偵測
+    struct DraftFingerprint: Equatable {
+
+        // MARK: - Data Properties
+
+        let customerName: String
+        let orderSource: String
+        let categories: [String]
+        let status: OrderStatus
+        let currency: CurrencyCode
+        let chargedAmount: Decimal
+        let cardlessDeductionAmount: Decimal
+        let cardlessSupplementAmount: Decimal
+        let itemCost: Decimal
+        let domesticShipping: Decimal
+        let internationalShipping: Decimal
+        let foreignDomesticShipping: Decimal
+        let cardFeeRate: Decimal
+        let platformFeeRate: Decimal
+        let paymentFeeRate: Decimal
+        let items: [LedgerOrderItem]
+        let notes: String
+        let date: Date
+        let paymentMethod: String
+        let reconciliationStatus: String
+        let campaignNames: [String]
+        let paymentReceiptStatus: PaymentReceiptStatus
+        let photos: [Data]
     }
 }

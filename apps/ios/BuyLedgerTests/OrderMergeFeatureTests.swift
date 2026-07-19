@@ -172,6 +172,36 @@ struct OrderMergeFeatureTests {
         }
     }
 
+    @Test func backToCandidatesTappedReturnsToCandidateStepAndClearsPhotoState() async {
+        let primaryPhotos = (1...4).map { Data([UInt8($0)]) }
+        let secondaryPhotos = (5...7).map { Data([UInt8($0)]) }
+        let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping, photos: primaryPhotos)
+        let secondary = Self.makeOrder(id: "O2", customer: "Alice", currency: .jpy, status: .purchased, photos: secondaryPhotos)
+
+        let store = TestStore(
+            initialState: OrderMergeFeature.State(primary: primary, orders: [primary, secondary])
+        ) {
+            OrderMergeFeature()
+        } withDependencies: {
+            $0.uuid = .incrementing
+        }
+
+        await store.send(.candidateTapped("O2")) {
+            $0.selectedSecondary = secondary
+            $0.combinedPhotos = primaryPhotos + secondaryPhotos
+            $0.selectedPhotoIndices = Set(0..<LedgerOrder.maxPhotoCount)
+            $0.step = .selectPhotos
+        }
+
+        // Back 返回候選步驟並清掉照片步驟暫存
+        await store.send(.backToCandidatesTapped) {
+            $0.step = .selectCandidate
+            $0.selectedSecondary = nil
+            $0.combinedPhotos = []
+            $0.selectedPhotoIndices = []
+        }
+    }
+
     @Test func photoToggleGuardsTheKeepLimit() async {
         let primaryPhotos = (1...4).map { Data([UInt8($0)]) }
         let secondaryPhotos = (5...7).map { Data([UInt8($0)]) }

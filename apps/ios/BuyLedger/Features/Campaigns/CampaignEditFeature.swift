@@ -41,19 +41,21 @@ struct CampaignEditFeature {
         /// 是否要為此開團建立訂購提醒的意圖；僅切換意圖、不觸碰行事曆，實際建立／移除由父層 ``CampaignFeature`` 在儲存時 reconcile
         var wantsReminder: Bool
 
-        /// 訂購提醒的時間戳 (日期＋提示時間)；意圖開啟時由使用者在 popup 選定，儲存時換算全天事件日期與提示位移
+        /// 訂購提醒的時間戳 (日期＋提示時間)；意圖開啟時由使用者以表單內 inline `DatePicker` 直接編輯，儲存時換算全天事件日期與提示位移
         var reminderTimestamp: Date
 
-        /// popup 內暫存的提醒時間戳；按「加入提醒／完成」才提交回 ``reminderTimestamp``，「取消」不提交
-        var draftReminderTimestamp: Date
-
-        /// 是否呈現日期＋時間選擇 popup
-        var isReminderPickerPresented: Bool
+        /// 有未儲存變更時，取消所觸發的「捨棄變更／繼續編輯」確認彈窗；`nil` 代表未顯示
+        ///
+        /// 採 `AlertState` (centered modal) 而非 `ConfirmationDialogState`：取消是 toolbar 按鈕，iOS 26 起 `.confirmationDialog` 對 toolbar 觸發會位置偏移
+        @Presents var discardConfirmation: AlertState<Action.DiscardAlert>? = nil
 
         // MARK: - Identifiable Properties
 
         /// 表單 instance 的穩定識別值，供 SwiftUI sheet item 使用
         let id: UUID
+
+        /// 表單開啟當下的草稿指紋；與 ``draftFingerprint`` 比對得出 ``isDirty``，供未儲存變更關閉確認使用
+        let initialDraftFingerprint: DraftFingerprint
 
         // MARK: - Init
 
@@ -79,9 +81,39 @@ struct CampaignEditFeature {
             self.draftNotes = original?.notes ?? ""
             self.wantsReminder = wantsReminder
             self.reminderTimestamp = reminderTimestamp
-            self.draftReminderTimestamp = reminderTimestamp
-            self.isReminderPickerPresented = false
             self.id = id
+
+            // 初始指紋＝表單開啟時的基準 (original 或新開團預設；提醒意圖由 caller 帶入)，與 ``draftFingerprint`` 比對得出 dirty
+            // 各欄位運算式須與上方 draft 的初始賦值保持一致
+            self.initialDraftFingerprint = DraftFingerprint(
+                name: original?.name ?? "",
+                openDate: original?.openDate ?? currentDate,
+                closeDate: original?.closeDate ?? currentDate,
+                status: original?.status ?? .ongoing,
+                notes: original?.notes ?? "",
+                wantsReminder: wantsReminder,
+                reminderTimestamp: reminderTimestamp
+            )
+        }
+
+        // MARK: - Computed Properties
+
+        /// 目前草稿指紋；涵蓋全部可儲存草稿欄位 (含提醒意圖與時間戳)，與 ``initialDraftFingerprint`` 比對得出 ``isDirty``
+        var draftFingerprint: DraftFingerprint {
+            DraftFingerprint(
+                name: draftName,
+                openDate: draftOpenDate,
+                closeDate: draftCloseDate,
+                status: draftStatus,
+                notes: draftNotes,
+                wantsReminder: wantsReminder,
+                reminderTimestamp: reminderTimestamp
+            )
+        }
+
+        /// 草稿是否已被修改：目前草稿指紋與開啟時的初始指紋不同即為 `true`；供未儲存變更下滑關閉確認判斷
+        var isDirty: Bool {
+            draftFingerprint != initialDraftFingerprint
         }
     }
 
@@ -100,17 +132,16 @@ struct CampaignEditFeature {
         /// 使用者按下儲存
         case saveTapped
 
-        /// 使用者點「新增提醒」或提醒時間列，開啟日期＋時間選擇 popup
-        case reminderPickerRequested
+        /// 有未儲存變更時、取消所觸發的捨棄確認彈窗事件
+        case discardConfirmation(PresentationAction<DiscardAlert>)
 
-        /// 使用者點「移除提醒」，清除提醒意圖
-        case removeReminderTapped
+        /// 捨棄確認彈窗的選項
+        @CasePathable
+        enum DiscardAlert: Equatable {
 
-        /// popup 按「加入提醒／完成」，提交草稿時間戳並開啟意圖
-        case reminderPickerConfirmed
-
-        /// popup 取消，關閉不提交
-        case reminderPickerCancelled
+            /// 使用者確認捨棄未儲存的變更並關閉表單
+            case discard
+        }
     }
 
     // MARK: - Dependency Properties
@@ -129,28 +160,57 @@ struct CampaignEditFeature {
             case .binding:
                 return .none
 
-            case .cancelTapped, .saveTapped:
+            case .saveTapped:
                 return .run { _ in await dismiss() }
 
-            case .reminderPickerRequested:
-                state.draftReminderTimestamp = state.reminderTimestamp
-                state.isReminderPickerPresented = true
+            case .cancelTapped:
+                // 有未儲存變更時先以彈窗確認、避免下滑或取消靜默遺失草稿；無變更則直接關閉
+                guard state.isDirty else {
+                    return .run { _ in await dismiss() }
+                }
+
+                state.discardConfirmation = AlertState {
+                    TextState("捨棄變更")
+                } actions: {
+                    ButtonState(role: .destructive, action: .discard) {
+                        TextState("捨棄變更")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("繼續編輯")
+                    }
+                } message: {
+                    TextState("這個開團有尚未儲存的變更，離開後將不會保留。")
+                }
                 return .none
 
-            case .removeReminderTapped:
-                state.wantsReminder = false
-                return .none
+            case .discardConfirmation(.presented(.discard)):
+                return .run { _ in await dismiss() }
 
-            case .reminderPickerConfirmed:
-                state.reminderTimestamp = state.draftReminderTimestamp
-                state.wantsReminder = true
-                state.isReminderPickerPresented = false
-                return .none
-
-            case .reminderPickerCancelled:
-                state.isReminderPickerPresented = false
+            case .discardConfirmation:
                 return .none
             }
         }
+        .ifLet(\.$discardConfirmation, action: \.discardConfirmation)
+    }
+}
+
+// MARK: - Nested Types
+
+extension CampaignEditFeature.State {
+
+    /// 開團編輯草稿的指紋：聚合全部可儲存欄位 (含提醒意圖)，供 dirty 判斷偵測未儲存變更
+    ///
+    /// 集中定義所有草稿欄位；日後新增草稿欄位時須同步補進此型別，否則該欄位的變更不會被 ``CampaignEditFeature/State/isDirty`` 偵測
+    struct DraftFingerprint: Equatable {
+
+        // MARK: - Data Properties
+
+        let name: String
+        let openDate: Date
+        let closeDate: Date
+        let status: CampaignStatus
+        let notes: String
+        let wantsReminder: Bool
+        let reminderTimestamp: Date
     }
 }

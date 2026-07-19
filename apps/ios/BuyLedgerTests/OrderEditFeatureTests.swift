@@ -27,6 +27,66 @@ struct OrderEditFeatureTests {
         }
     }
 
+    // MARK: Dirty State
+
+    @Test func newOrderIsNotDirtyUntilEdited() async {
+        var state = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
+        #expect(state.isDirty == false)
+
+        state.draftCustomerName = "小明"
+        #expect(state.isDirty == true)
+    }
+
+    @Test func existingOrderIsDirtyThenCleanWhenRestored() async {
+        let original = LedgerOrder.sampleOrders[0]
+        var state = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
+        #expect(state.isDirty == false)
+
+        state.draftChargedAmount += 1
+        #expect(state.isDirty == true)
+
+        state.draftChargedAmount = original.chargedAmount
+        #expect(state.isDirty == false)
+    }
+
+    @Test func nonDraftFieldChangeDoesNotMarkDirty() async {
+        var state = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
+        #expect(state.isDirty == false)
+
+        // 開啟選擇器 route 屬暫時性 UI 狀態、非草稿內容，不應觸發 dirty
+        state.pickerRoute = .category
+        #expect(state.isDirty == false)
+    }
+
+    @Test func cancelWithChangesPresentsDiscardConfirmation() async {
+        var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
+        initial.draftCustomerName = "小明"
+        let store = TestStore(initialState: initial) {
+            OrderEditFeature()
+        } withDependencies: {
+            $0.dismiss = DismissEffect { }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.cancelTapped)
+        #expect(store.state.discardConfirmation != nil)
+
+        // 確認捨棄後關閉表單 (dismiss 由注入的 no-op 承接)
+        await store.send(.discardConfirmation(.presented(.discard)))
+    }
+
+    @Test func cancelWithoutChangesDismissesDirectly() async {
+        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
+            OrderEditFeature()
+        } withDependencies: {
+            $0.dismiss = DismissEffect { }
+        }
+        store.exhaustivity = .off
+
+        await store.send(.cancelTapped)
+        #expect(store.state.discardConfirmation == nil)
+    }
+
     @Test func bindingUpdatesDraftCategories() async {
         let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
@@ -64,16 +124,6 @@ struct OrderEditFeatureTests {
 
         await store.send(\.binding.draftChargedAmount, 12_345) {
             $0.draftChargedAmount = 12_345
-        }
-    }
-
-    @Test func bindingUpdatesShowsCategorySheet() async {
-        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
-            OrderEditFeature()
-        }
-
-        await store.send(\.binding.showsCategorySheet, true) {
-            $0.showsCategorySheet = true
         }
     }
 
@@ -587,28 +637,28 @@ struct OrderEditFeatureTests {
         }
     }
 
-    @Test func pickerTappedActionsPresentCorrespondingSheets() async {
+    @Test func pickerTappedActionsSetCorrespondingPickerRoute() async {
         let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
         await store.send(.orderSourcePickerTapped) {
-            $0.showsOrderSourceSheet = true
+            $0.pickerRoute = .orderSource
         }
         await store.send(.categoryPickerTapped) {
-            $0.showsCategorySheet = true
+            $0.pickerRoute = .category
         }
         await store.send(.campaignPickerTapped) {
-            $0.showsCampaignSheet = true
+            $0.pickerRoute = .campaign
         }
         await store.send(.currencyPickerTapped) {
-            $0.showsCurrencySheet = true
+            $0.pickerRoute = .currency
         }
         await store.send(.paymentMethodPickerTapped) {
-            $0.showsPaymentMethodSheet = true
+            $0.pickerRoute = .paymentMethod
         }
         await store.send(.reconciliationStatusPickerTapped) {
-            $0.showsReconciliationStatusSheet = true
+            $0.pickerRoute = .reconciliationStatus
         }
     }
 

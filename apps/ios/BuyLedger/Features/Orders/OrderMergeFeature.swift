@@ -97,6 +97,9 @@ struct OrderMergeFeature {
         /// 照片挑選步驟按下「繼續」，以目前勾選集合完成流程
         case photoStepConfirmTapped
 
+        /// 照片挑選步驟按下 Back，返回候選選擇步驟重選副訂單
+        case backToCandidatesTapped
+
         /// 對父層的回報事件
         case delegate(Delegate)
 
@@ -167,6 +170,14 @@ struct OrderMergeFeature {
                 let kept = state.selectedPhotoIndices.sorted().map { state.combinedPhotos[$0] }
                 return .send(.delegate(.completed(primary: state.primary, secondary: secondary, keptPhotos: kept)))
 
+            case .backToCandidatesTapped:
+                // 返回候選選擇步驟並清掉照片步驟暫存，讓使用者改選其他副訂單
+                state.step = .selectCandidate
+                state.selectedSecondary = nil
+                state.combinedPhotos = []
+                state.selectedPhotoIndices = []
+                return .none
+
             case .delegate:
                 return .none
             }
@@ -179,7 +190,9 @@ struct OrderMergeFeature {
 extension OrderMergeFeature {
 
     /// 合併流程的步驟
-    enum Step: Equatable {
+    ///
+    /// `Hashable` 供 ``OrderMergeCandidateSheet`` 以 `navigationDestination(for:)` 將照片步驟 push 上導覽堆疊 (取得原生 push／pop 動畫)
+    enum Step: Hashable {
 
         /// 選擇要合併的第二筆訂單
         case selectCandidate

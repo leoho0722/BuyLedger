@@ -1,6 +1,86 @@
 {
   "sourceLanguage" : "zh-Hant",
   "strings" : {
+    "捨棄變更" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Discard Changes"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "捨棄變更"
+          }
+        }
+      }
+    },
+    "繼續編輯" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Keep Editing"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "繼續編輯"
+          }
+        }
+      }
+    },
+    "這張訂單有尚未儲存的變更，離開後將不會保留。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This order has unsaved changes that will be lost if you leave."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這張訂單有尚未儲存的變更，離開後將不會保留。"
+          }
+        }
+      }
+    },
+    "這個開團有尚未儲存的變更，離開後將不會保留。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This campaign has unsaved changes that will be lost if you leave."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這個開團有尚未儲存的變更，離開後將不會保留。"
+          }
+        }
+      }
+    },
+    "這個付款方式有尚未儲存的變更，離開後將不會保留。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This payment method has unsaved changes that will be lost if you leave."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這個付款方式有尚未儲存的變更，離開後將不會保留。"
+          }
+        }
+      }
+    },
     "" : {
       "shouldTranslate" : false
     },

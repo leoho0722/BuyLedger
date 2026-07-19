@@ -99,7 +99,10 @@ struct OptionPickerSheet: View {
     /// 為 `nil` 時維持既有單選行為 (與既有 call site 向後相容)；``selected`` 與 ``onSelect`` 僅在單選模式有效
     let multiSelection: MultiSelection?
 
-    /// 由 sheet 環境注入的 dismiss action
+    /// 是否為嵌入 (push) 呈現：`true` 時不自帶 `NavigationStack`、不放取消鍵 (由宿主導覽堆疊的 Back 取代)，供訂單編輯表單內以 push 呈現；`false` (預設) 維持既有自帶 `NavigationStack` + 取消鍵的單層 sheet 呈現
+    let isEmbedded: Bool
+
+    /// 由 sheet 環境注入的 dismiss action；嵌入 (push) 時 `dismiss()` 為 pop、單層 sheet 時為關閉
     @Environment(\.dismiss) private var dismiss
 
     /// 是否顯示「新增」alert (商品類別等沒有 `isCardless` 需求的入口)
@@ -154,7 +157,8 @@ struct OptionPickerSheet: View {
         onAdd: @escaping (String) -> Void = { _ in },
         onAddPaymentMethod: ((String, Bool, Bool, Bool) -> Void)? = nil,
         clearOption: ClearOption? = nil,
-        multiSelection: MultiSelection? = nil
+        multiSelection: MultiSelection? = nil,
+        isEmbedded: Bool = false
     ) {
         self.title = title
         self.allowsAdd = allowsAdd
@@ -174,74 +178,21 @@ struct OptionPickerSheet: View {
         self.onAddPaymentMethod = onAddPaymentMethod
         self.clearOption = clearOption
         self.multiSelection = multiSelection
+        self.isEmbedded = isEmbedded
     }
 
     // MARK: - View Body
 
-    /// 選項選擇 sheet 的內容
+    /// 選項選擇的內容
     ///
-    /// navigation 標題、toolbar 取消、搜尋、新增 alert 與付款方式 sheet 於此統一組合，內容區見 ``content``
+    /// 單層 sheet 呈現 (``isEmbedded`` == `false`) 時自帶 `NavigationStack`；嵌入 (push) 呈現時直接回傳內容，由宿主導覽堆疊提供標題列與 Back。組合細節見 ``configuredContent``
     var body: some View {
-        NavigationStack {
-            content
-                .navigationTitle(Text(LocalizedStringKey(title)))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    if multiSelection != nil {
-                        // 多選模式：toggle 即時生效，「完成」僅負責關閉 sheet
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("完成") {
-                                dismiss()
-                            }
-                        }
-                    } else {
-                        ToolbarItem(placement: .cancellationAction) {
-                            Button {
-                                dismiss()
-                            } label: {
-                                Image(systemName: "xmark")
-                            }
-                            .accessibilityLabel(Text("取消"))
-                        }
-                    }
-                }
-                .modifier(SearchableModifier(text: $searchText, enabled: searchable))
-                .alert(LocalizedStringKey(addAlertTitle), isPresented: $showsAddAlert) {
-                    TextField(LocalizedStringKey(addFieldPlaceholder), text: $draft)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-
-                    Button("新增") {
-                        let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-                        if !trimmed.isEmpty {
-                            onAdd(trimmed)
-                            draft = ""
-                            dismiss()
-                        }
-                    }
-                    .disabled(
-                        draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                    )
-
-                    Button("取消", role: .cancel) {
-                        draft = ""
-                    }
-                } message: {
-                    Text(LocalizedStringKey(addAlertMessage))
-                }
-                .sheet(isPresented: $showsAddPaymentMethodSheet) {
-                    PaymentMethodEditorSheet(
-                        title: addAlertTitle,
-                        message: addAlertMessage,
-                        namePlaceholder: addFieldPlaceholder,
-                        submitTitle: "新增",
-                        onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
-                            onAddPaymentMethod?(name, isCardless, isBankTransfer, isCashOnDelivery)
-                            // 新增完成後一併關閉外層 picker sheet，使用者能立即看到新付款方式套用到此訂單
-                            dismiss()
-                        }
-                    )
-                }
+        if isEmbedded {
+            configuredContent
+        } else {
+            NavigationStack {
+                configuredContent
+            }
         }
     }
 }
@@ -284,6 +235,73 @@ extension OptionPickerSheet {
 // MARK: - ViewBuilder
 
 private extension OptionPickerSheet {
+
+    /// 組好標題列、toolbar、搜尋、新增 alert 與新增付款方式 push 的完整內容；由 ``body`` 依 ``isEmbedded`` 決定是否再包一層 `NavigationStack`
+    @ViewBuilder
+    var configuredContent: some View {
+        content
+            .navigationTitle(Text(LocalizedStringKey(title)))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                if multiSelection != nil {
+                    // 多選模式：toggle 即時生效，「完成」負責結束選取 (嵌入時亦保留，Back 亦可返回)
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button("完成") {
+                            dismiss()
+                        }
+                    }
+                } else if !isEmbedded {
+                    // 單層 sheet 才放取消鍵；嵌入 (push) 時由宿主導覽堆疊的 Back 取代
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button {
+                            dismiss()
+                        } label: {
+                            Image(systemName: "xmark")
+                        }
+                        .accessibilityLabel(Text("取消"))
+                    }
+                }
+            }
+            .modifier(SearchableModifier(text: $searchText, enabled: searchable))
+            .alert(LocalizedStringKey(addAlertTitle), isPresented: $showsAddAlert) {
+                TextField(LocalizedStringKey(addFieldPlaceholder), text: $draft)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+
+                Button("新增") {
+                    let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
+                    if !trimmed.isEmpty {
+                        onAdd(trimmed)
+                        draft = ""
+                        dismiss()
+                    }
+                }
+                .disabled(
+                    draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                )
+
+                Button("取消", role: .cancel) {
+                    draft = ""
+                }
+            } message: {
+                Text(LocalizedStringKey(addAlertMessage))
+            }
+            .navigationDestination(isPresented: $showsAddPaymentMethodSheet) {
+                // 新增付款方式改以 push 呈現 (消除訂單編輯的三層疊 sheet)；嵌入模式沿宿主堆疊、單層模式沿自帶 NavigationStack
+                PaymentMethodEditorSheet(
+                    title: addAlertTitle,
+                    message: addAlertMessage,
+                    namePlaceholder: addFieldPlaceholder,
+                    submitTitle: "新增",
+                    isEmbedded: true,
+                    onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
+                        onAddPaymentMethod?(name, isCardless, isBankTransfer, isCashOnDelivery)
+                        // 新增完成後一併返回訂單表單，使用者能立即看到新付款方式套用到此訂單
+                        dismiss()
+                    }
+                )
+            }
+    }
 
     /// 選項選擇 sheet 的內容
     @ViewBuilder

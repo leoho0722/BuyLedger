@@ -30,6 +30,9 @@ struct PaymentMethodEditorSheet: View {
     /// 提交按鈕的文字
     let submitTitle: String
 
+    /// 是否為嵌入 (push) 呈現：`true` 時不自帶 `NavigationStack`、不放取消鍵與 sheet 專屬修飾 (detents／grabber／未儲存確認)，由宿主導覽堆疊的 Back 返回；`false` (預設) 維持既有單層 sheet 呈現。用於訂單編輯的付款方式選擇器內以 push 新增付款方式，消除三層疊 sheet
+    let isEmbedded: Bool
+
     /// 使用者按下儲存時的 callback；caller 拿到 `(name, isCardless, isBankTransfer, isCashOnDelivery)` 後負責寫入主檔
     let onSubmit: (_ name: String, _ isCardless: Bool, _ isBankTransfer: Bool, _ isCashOnDelivery: Bool) -> Void
 
@@ -47,6 +50,15 @@ struct PaymentMethodEditorSheet: View {
 
     /// 是否標記為貨到付款類付款方式
     @State private var draftIsCashOnDelivery: Bool
+
+    /// 是否顯示「捨棄變更／繼續編輯」確認彈窗
+    @State private var showsDiscardConfirmation = false
+
+    /// 表單開啟時的初始值快照；供 ``isDirty`` 判斷未儲存變更
+    private let initialName: String
+    private let initialIsCardless: Bool
+    private let initialIsBankTransfer: Bool
+    private let initialIsCashOnDelivery: Bool
 
     // MARK: - Init
 
@@ -70,100 +82,155 @@ struct PaymentMethodEditorSheet: View {
         initialIsCardless: Bool = false,
         initialIsBankTransfer: Bool = false,
         initialIsCashOnDelivery: Bool = false,
+        isEmbedded: Bool = false,
         onSubmit: @escaping (_ name: String, _ isCardless: Bool, _ isBankTransfer: Bool, _ isCashOnDelivery: Bool) -> Void
     ) {
         self.title = title
         self.message = message
         self.namePlaceholder = namePlaceholder
         self.submitTitle = submitTitle
+        self.isEmbedded = isEmbedded
         self.onSubmit = onSubmit
         self._draftName = State(initialValue: initialName)
         self._draftIsCardless = State(initialValue: initialIsCardless)
         self._draftIsBankTransfer = State(initialValue: initialIsBankTransfer)
         self._draftIsCashOnDelivery = State(initialValue: initialIsCashOnDelivery)
+        self.initialName = initialName
+        self.initialIsCardless = initialIsCardless
+        self.initialIsBankTransfer = initialIsBankTransfer
+        self.initialIsCashOnDelivery = initialIsCashOnDelivery
     }
 
     // MARK: - View Body
 
-    /// 新增付款方式 sheet 的內容
+    /// 新增／編輯付款方式的內容
+    ///
+    /// 單層 sheet 呈現 (``isEmbedded`` == `false`) 時自帶 `NavigationStack` 與 sheet 專屬修飾 (detents／grabber／未儲存確認)；嵌入 (push) 時直接回傳表單，由宿主導覽堆疊提供標題列與 Back
     var body: some View {
-        NavigationStack {
-            Form {
-                Section {
-                    TextField(LocalizedStringKey(namePlaceholder), text: $draftName)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                } header: {
-                    Text("付款方式名稱")
-                } footer: {
-                    if !message.isEmpty {
-                        Text(LocalizedStringKey(message))
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                    }
+        if isEmbedded {
+            formContent
+        } else {
+            NavigationStack {
+                formContent
+            }
+            // 表單為 name + 無卡／銀行匯款／貨到付款三個旗標段；medium (約半屏) 仍維持「貼上來的小卡」的
+            // 輕量感、讓使用者看見背後的主檔列表，但同時提供 large 供需要看完整三段說明時展開
+            .presentationDetents([.medium, .large])
+            .presentationDragIndicator(.visible)
+            // 有未儲存變更時阻擋下滑關閉，避免草稿靜默遺失；取消鍵改以彈窗確認
+            .interactiveDismissDisabled(isDirty)
+            .alert("捨棄變更", isPresented: $showsDiscardConfirmation) {
+                Button("捨棄變更", role: .destructive) {
+                    dismiss()
                 }
+                Button("繼續編輯", role: .cancel) { }
+            } message: {
+                Text("這個付款方式有尚未儲存的變更，離開後將不會保留。")
+            }
+        }
+    }
+}
 
-                Section {
-                    Toggle(isOn: $draftIsCardless) {
-                        Text("標記為「無卡」付款方式")
-                    }
-                } footer: {
-                    Text("啟用後，使用此付款方式的訂單在「收款金額」區段會出現「無卡折抵金額」與「無卡補款金額」兩個欄位，並計入總收款公式。")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+// MARK: - ViewBuilder
 
-                Section {
-                    Toggle(isOn: $draftIsBankTransfer) {
-                        Text("標記為「銀行匯款」付款方式")
-                    }
-                } footer: {
-                    Text("啟用後，使用此付款方式的訂單在編輯時會出現「對帳狀態」欄位，供你在款項入帳後標記對帳結果。")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
+private extension PaymentMethodEditorSheet {
 
-                Section {
-                    Toggle(isOn: $draftIsCashOnDelivery) {
-                        Text("標記為「貨到付款」付款方式")
-                    }
-                } footer: {
-                    Text("啟用後，使用此付款方式的訂單因收款金額已含預估運費，獲利會自動扣除國內、國際與外國國內三種運費。")
+    /// 付款方式表單內容 (含標題列、旗標段與 toolbar)；由 ``body`` 依 ``isEmbedded`` 決定是否再包 `NavigationStack` 與 sheet 專屬修飾
+    ///
+    /// 嵌入 (push) 時不放取消鍵，由宿主導覽堆疊的 Back 返回；提交鍵始終保留
+    @ViewBuilder
+    var formContent: some View {
+        Form {
+            Section {
+                TextField(LocalizedStringKey(namePlaceholder), text: $draftName)
+                    .textInputAutocapitalization(.never)
+                    .autocorrectionDisabled()
+            } header: {
+                Text("付款方式名稱")
+            } footer: {
+                if !message.isEmpty {
+                    Text(LocalizedStringKey(message))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                 }
             }
-            .formStyle(.grouped)
-            .navigationTitle(Text(LocalizedStringKey(title)))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
+
+            Section {
+                Toggle(isOn: $draftIsCardless) {
+                    Text("標記為「無卡」付款方式")
+                }
+            } footer: {
+                Text("啟用後，使用此付款方式的訂單在「收款金額」區段會出現「無卡折抵金額」與「無卡補款金額」兩個欄位，並計入總收款公式。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle(isOn: $draftIsBankTransfer) {
+                    Text("標記為「銀行匯款」付款方式")
+                }
+            } footer: {
+                Text("啟用後，使用此付款方式的訂單在編輯時會出現「對帳狀態」欄位，供你在款項入帳後標記對帳結果。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+
+            Section {
+                Toggle(isOn: $draftIsCashOnDelivery) {
+                    Text("標記為「貨到付款」付款方式")
+                }
+            } footer: {
+                Text("啟用後，使用此付款方式的訂單因收款金額已含預估運費，獲利會自動扣除國內、國際與外國國內三種運費。")
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .formStyle(.grouped)
+        .navigationTitle(Text(LocalizedStringKey(title)))
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            if !isEmbedded {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
-                        dismiss()
+                        // 有未儲存變更時先彈窗確認，避免取消靜默遺失草稿
+                        if isDirty {
+                            showsDiscardConfirmation = true
+                        } else {
+                            dismiss()
+                        }
                     } label: {
                         Image(systemName: "xmark")
                     }
                     .accessibilityLabel(Text("取消"))
                 }
+            }
 
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(LocalizedStringKey(submitTitle)) {
-                        let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
-                        guard !trimmed.isEmpty else {
-                            return
-                        }
-                        onSubmit(trimmed, draftIsCardless, draftIsBankTransfer, draftIsCashOnDelivery)
-                        dismiss()
+            ToolbarItem(placement: .confirmationAction) {
+                Button(LocalizedStringKey(submitTitle)) {
+                    let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard !trimmed.isEmpty else {
+                        return
                     }
-                    .keyboardShortcut(.defaultAction)
-                    .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    onSubmit(trimmed, draftIsCardless, draftIsBankTransfer, draftIsCashOnDelivery)
+                    dismiss()
                 }
+                .keyboardShortcut(.defaultAction)
+                .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
-        // 表單為 name + 無卡／銀行匯款／貨到付款三個旗標段；medium (約半屏) 仍維持「貼上來的小卡」的
-        // 輕量感、讓使用者看見背後的主檔列表，但同時提供 large 供需要看完整三段說明時展開
-        .presentationDetents([.medium, .large])
-        .presentationDragIndicator(.visible)
+    }
+}
+
+// MARK: - Private Method
+
+private extension PaymentMethodEditorSheet {
+
+    /// 草稿是否已被修改：任一欄位與開啟時的初始值不同即為 `true`；供未儲存變更下滑關閉確認判斷
+    var isDirty: Bool {
+        draftName != initialName
+            || draftIsCardless != initialIsCardless
+            || draftIsBankTransfer != initialIsBankTransfer
+            || draftIsCashOnDelivery != initialIsCashOnDelivery
     }
 }
 

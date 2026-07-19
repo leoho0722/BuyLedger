@@ -30,13 +30,13 @@ struct OrderMergeCandidateSheet: View {
 
     // MARK: - View Body
 
-    /// 合併流程 sheet 的內容；navigation 標題與 toolbar 依步驟切換
+    /// 合併流程 sheet：候選選擇為 root、照片挑選步驟以 `navigationDestination(for:)` push
+    ///
+    /// 多步驟採真 navigation push：前進與返回都有系統原生 push／pop 動畫，返回由原生 Back 處理 (帶 pop 動畫，取代自製按鈕，亦符合 HIG「後續步驟以 Back 取代 Cancel」)
     var body: some View {
-        NavigationStack {
-            content
-                .navigationTitle(Text(LocalizedStringKey(
-                    store.step == .selectCandidate ? "合併訂單" : "選擇保留照片"
-                )))
+        NavigationStack(path: stepPath) {
+            candidateList
+                .navigationTitle(Text("合併訂單"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -47,14 +47,9 @@ struct OrderMergeCandidateSheet: View {
                         }
                         .accessibilityLabel(Text("取消"))
                     }
-
-                    if store.step == .selectPhotos {
-                        ToolbarItem(placement: .confirmationAction) {
-                            Button("繼續") {
-                                store.send(.photoStepConfirmTapped)
-                            }
-                        }
-                    }
+                }
+                .navigationDestination(for: OrderMergeFeature.Step.self) { _ in
+                    photoSelectionStep
                 }
         }
     }
@@ -64,16 +59,19 @@ struct OrderMergeCandidateSheet: View {
 
 private extension OrderMergeCandidateSheet {
 
-    /// 依步驟切換內容：候選清單或照片挑選
+    /// 照片挑選步驟 (push 目的地)：照片挑選內容 + 標題 +「繼續」；返回由系統原生 Back 處理 (帶 pop 動畫)
     @ViewBuilder
-    var content: some View {
-        switch store.step {
-        case .selectCandidate:
-            candidateList
-
-        case .selectPhotos:
-            MergePhotoPickerSheet(store: store)
-        }
+    var photoSelectionStep: some View {
+        MergePhotoPickerSheet(store: store)
+            .navigationTitle(Text("選擇保留照片"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("繼續") {
+                        store.send(.photoStepConfirmTapped)
+                    }
+                }
+            }
     }
 
     /// 候選訂單清單：比照訂單頁以訂購日分組 (section 標題為今天/昨天/格式化日期)，含搜尋、空狀態與資格說明 footer (掛於最後一段)
@@ -135,6 +133,25 @@ private extension OrderMergeCandidateSheet {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Private Method
+
+private extension OrderMergeCandidateSheet {
+
+    /// 合併流程 `NavigationStack` 的 push 路徑：把 ``OrderMergeFeature/Step`` 映射成 0 或 1 元素的路徑陣列
+    ///
+    /// 使用者點系統原生 Back pop 到空路徑時，經此 setter 送 ``OrderMergeFeature/Action/backToCandidatesTapped`` 返回候選步驟並清照片暫存
+    var stepPath: Binding<[OrderMergeFeature.Step]> {
+        Binding(
+            get: { store.step == .selectPhotos ? [.selectPhotos] : [] },
+            set: { newPath in
+                if newPath.isEmpty, store.step == .selectPhotos {
+                    store.send(.backToCandidatesTapped)
+                }
+            }
+        )
     }
 }
 

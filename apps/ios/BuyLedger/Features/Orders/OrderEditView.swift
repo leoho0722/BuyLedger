@@ -26,7 +26,7 @@ struct OrderEditView: View {
 
     /// 編輯表單的畫面內容
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: pickerPath) {
             Form {
                 Section {
                     TextField("客戶名稱", text: $store.draftCustomerName)
@@ -181,145 +181,11 @@ struct OrderEditView: View {
             .task {
                 await store.send(.task).finish()
             }
-            .sheet(isPresented: $store.showsOrderSourceSheet) {
-                OptionPickerSheet(
-                    title: "選擇訂單來源",
-                    addButtonTitle: "新增來源",
-                    emptyTitle: "尚無來源",
-                    emptyDescription: "透過上方「新增來源」加入第一個訂單來源。",
-                    addAlertTitle: "新增訂單來源",
-                    addFieldPlaceholder: "來源名稱",
-                    addAlertMessage: "輸入新的訂單來源名稱，加入後會立即套用至此訂單。",
-                    options: store.availableOrderSources,
-                    selected: store.draftOrderSource,
-                    onSelect: { source in
-                        store.send(.orderSourceSelected(source))
-                    },
-                    onAdd: { name in
-                        store.send(.addOrderSourceTapped(name))
-                    }
-                )
+            .navigationDestination(for: OrderEditFeature.State.PickerRoute.self) { route in
+                pickerDestination(for: route)
             }
-            .sheet(isPresented: $store.showsCategorySheet) {
-                if store.isMergeContext {
-                    // 合併情境：多選模式，點列 toggle、以「完成」結束選取；新增類別流程沿用
-                    OptionPickerSheet(
-                        title: "選擇商品類別",
-                        addButtonTitle: "新增類別",
-                        emptyTitle: "尚無類別",
-                        emptyDescription: "透過上方「新增類別」加入第一個類別。",
-                        addAlertTitle: "新增商品類別",
-                        addFieldPlaceholder: "類別名稱",
-                        addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
-                        options: store.availableCategories,
-                        onAdd: { name in
-                            store.send(.addCategoryTapped(name))
-                        },
-                        multiSelection: .init(
-                            selections: Set(store.draftCategories),
-                            onToggle: { category in
-                                store.send(.categoryToggled(category))
-                            }
-                        )
-                    )
-                } else {
-                    OptionPickerSheet(
-                        title: "選擇商品類別",
-                        addButtonTitle: "新增類別",
-                        emptyTitle: "尚無類別",
-                        emptyDescription: "透過上方「新增類別」加入第一個類別。",
-                        addAlertTitle: "新增商品類別",
-                        addFieldPlaceholder: "類別名稱",
-                        addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
-                        options: store.availableCategories,
-                        selected: store.draftCategories.first ?? "",
-                        onSelect: { category in
-                            store.send(.categorySelected(category))
-                        },
-                        onAdd: { name in
-                            store.send(.addCategoryTapped(name))
-                        }
-                    )
-                }
-            }
-            .sheet(isPresented: $store.showsCampaignSheet) {
-                OptionPickerSheet(
-                    title: "選擇開團",
-                    allowsAdd: false,
-                    emptyTitle: "尚無開團",
-                    emptyDescription: "請先在「開團」頁建立開團，再回到此處歸團。",
-                    options: store.availableCampaigns,
-                    multiSelection: .init(
-                        selections: Set(store.draftCampaignNames),
-                        onToggle: { name in
-                            store.send(.campaignToggled(name))
-                        }
-                    )
-                )
-            }
-            .sheet(isPresented: $store.showsPaymentMethodSheet) {
-                OptionPickerSheet(
-                    title: "選擇付款方式",
-                    addButtonTitle: "新增付款方式",
-                    emptyTitle: "尚無付款方式",
-                    emptyDescription: "透過上方「新增付款方式」加入第一個項目。",
-                    addAlertTitle: "新增付款方式",
-                    addFieldPlaceholder: "付款方式名稱",
-                    addAlertMessage: "輸入新的付款方式名稱，加入後會立即套用至此訂單。",
-                    options: store.availablePaymentMethods.map(\.name),
-                    selected: store.draftPaymentMethod,
-                    onSelect: { method in
-                        store.send(.paymentMethodSelected(method))
-                    },
-                    onAddPaymentMethod: { name, isCardless, isBankTransfer, isCashOnDelivery in
-                        store.send(.addPaymentMethodTapped(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery))
-                    }
-                )
-            }
-            .sheet(isPresented: $store.showsReconciliationStatusSheet) {
-                OptionPickerSheet(
-                    title: "選擇對帳狀態",
-                    addButtonTitle: "新增對帳狀態",
-                    emptyTitle: "尚無對帳狀態",
-                    emptyDescription: "透過上方「新增對帳狀態」加入第一個項目。",
-                    addAlertTitle: "新增對帳狀態",
-                    addFieldPlaceholder: "對帳狀態名稱",
-                    addAlertMessage: "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。",
-                    options: store.availableReconciliationStatuses,
-                    selected: store.draftReconciliationStatus,
-                    onSelect: { status in
-                        store.send(.reconciliationStatusSelected(status))
-                    },
-                    onAdd: { name in
-                        store.send(.addReconciliationStatusTapped(name))
-                    }
-                )
-            }
-            .sheet(isPresented: $store.showsCurrencySheet) {
-                let locale = locale
-
-                OptionPickerSheet(
-                    title: "選擇幣別",
-                    allowsAdd: false,
-                    searchable: true,
-                    emptyTitle: "尚無幣別",
-                    emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
-                    options: store.availableCurrencies.map(\.rawValue),
-                    selected: store.draftCurrency.rawValue,
-                    displayName: { code in
-                        let name = locale.localizedString(forCurrencyCode: code) ?? ""
-                        return name.isEmpty ? code : "\(code) (\(name))"
-                    },
-                    searchKeywords: { code in
-                        locale.localizedString(forCurrencyCode: code) ?? ""
-                    },
-                    onSelect: { code in
-                        store.send(.currencySelected(code))
-                    }
-                )
-            }
-            .sheet(item: $store.photoViewerSelection) { selection in
-                // 統一以 sheet 呈現照片檢視器：title 置中顯示計數、右上 toolbar ✕ 關閉
+            .fullScreenCover(item: $store.photoViewerSelection) { selection in
+                // 照片檢視屬 media，依 HIG 以 full-screen modal 呈現 (而非在編輯 sheet 上再疊 sheet)：title 置中顯示計數、右上 toolbar ✕ 關閉
                 BLPhotoViewer(
                     photos: store.draftPhotos,
                     initialIndex: selection.id
@@ -328,12 +194,167 @@ struct OrderEditView: View {
                 }
             }
         }
+        // 有未儲存變更時阻擋下滑關閉，避免草稿靜默遺失；取消鍵改以彈窗確認
+        .interactiveDismissDisabled(store.isDirty)
+        .alert($store.scope(state: \.discardConfirmation, action: \.discardConfirmation))
     }
 }
 
 // MARK: - ViewBuilder
 
 private extension OrderEditView {
+
+    /// 依 route 建對應的嵌入式選項選擇器 (push 呈現)；內容沿用原設定，僅以 `isEmbedded: true` 去除自帶 `NavigationStack` 與取消鍵，由宿主堆疊的 Back 返回
+    /// - Parameter route: 目前要 push 的選擇器 route
+    /// - Returns: 對應的嵌入式 ``OptionPickerSheet``
+    @ViewBuilder
+    func pickerDestination(for route: OrderEditFeature.State.PickerRoute) -> some View {
+        switch route {
+        case .orderSource:
+            OptionPickerSheet(
+                title: "選擇訂單來源",
+                addButtonTitle: "新增來源",
+                emptyTitle: "尚無來源",
+                emptyDescription: "透過上方「新增來源」加入第一個訂單來源。",
+                addAlertTitle: "新增訂單來源",
+                addFieldPlaceholder: "來源名稱",
+                addAlertMessage: "輸入新的訂單來源名稱，加入後會立即套用至此訂單。",
+                options: store.availableOrderSources,
+                selected: store.draftOrderSource,
+                onSelect: { source in
+                    store.send(.orderSourceSelected(source))
+                },
+                onAdd: { name in
+                    store.send(.addOrderSourceTapped(name))
+                },
+                isEmbedded: true
+            )
+
+        case .category:
+            if store.isMergeContext {
+                // 合併情境：多選模式，點列 toggle、以「完成」結束選取；新增類別流程沿用
+                OptionPickerSheet(
+                    title: "選擇商品類別",
+                    addButtonTitle: "新增類別",
+                    emptyTitle: "尚無類別",
+                    emptyDescription: "透過上方「新增類別」加入第一個類別。",
+                    addAlertTitle: "新增商品類別",
+                    addFieldPlaceholder: "類別名稱",
+                    addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
+                    options: store.availableCategories,
+                    onAdd: { name in
+                        store.send(.addCategoryTapped(name))
+                    },
+                    multiSelection: .init(
+                        selections: Set(store.draftCategories),
+                        onToggle: { category in
+                            store.send(.categoryToggled(category))
+                        }
+                    ),
+                    isEmbedded: true
+                )
+            } else {
+                OptionPickerSheet(
+                    title: "選擇商品類別",
+                    addButtonTitle: "新增類別",
+                    emptyTitle: "尚無類別",
+                    emptyDescription: "透過上方「新增類別」加入第一個類別。",
+                    addAlertTitle: "新增商品類別",
+                    addFieldPlaceholder: "類別名稱",
+                    addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
+                    options: store.availableCategories,
+                    selected: store.draftCategories.first ?? "",
+                    onSelect: { category in
+                        store.send(.categorySelected(category))
+                    },
+                    onAdd: { name in
+                        store.send(.addCategoryTapped(name))
+                    },
+                    isEmbedded: true
+                )
+            }
+
+        case .campaign:
+            OptionPickerSheet(
+                title: "選擇開團",
+                allowsAdd: false,
+                emptyTitle: "尚無開團",
+                emptyDescription: "請先在「開團」頁建立開團，再回到此處歸團。",
+                options: store.availableCampaigns,
+                multiSelection: .init(
+                    selections: Set(store.draftCampaignNames),
+                    onToggle: { name in
+                        store.send(.campaignToggled(name))
+                    }
+                ),
+                isEmbedded: true
+            )
+
+        case .paymentMethod:
+            OptionPickerSheet(
+                title: "選擇付款方式",
+                addButtonTitle: "新增付款方式",
+                emptyTitle: "尚無付款方式",
+                emptyDescription: "透過上方「新增付款方式」加入第一個項目。",
+                addAlertTitle: "新增付款方式",
+                addFieldPlaceholder: "付款方式名稱",
+                addAlertMessage: "輸入新的付款方式名稱，加入後會立即套用至此訂單。",
+                options: store.availablePaymentMethods.map(\.name),
+                selected: store.draftPaymentMethod,
+                onSelect: { method in
+                    store.send(.paymentMethodSelected(method))
+                },
+                onAddPaymentMethod: { name, isCardless, isBankTransfer, isCashOnDelivery in
+                    store.send(.addPaymentMethodTapped(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery))
+                },
+                isEmbedded: true
+            )
+
+        case .reconciliationStatus:
+            OptionPickerSheet(
+                title: "選擇對帳狀態",
+                addButtonTitle: "新增對帳狀態",
+                emptyTitle: "尚無對帳狀態",
+                emptyDescription: "透過上方「新增對帳狀態」加入第一個項目。",
+                addAlertTitle: "新增對帳狀態",
+                addFieldPlaceholder: "對帳狀態名稱",
+                addAlertMessage: "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。",
+                options: store.availableReconciliationStatuses,
+                selected: store.draftReconciliationStatus,
+                onSelect: { status in
+                    store.send(.reconciliationStatusSelected(status))
+                },
+                onAdd: { name in
+                    store.send(.addReconciliationStatusTapped(name))
+                },
+                isEmbedded: true
+            )
+
+        case .currency:
+            let locale = locale
+
+            OptionPickerSheet(
+                title: "選擇幣別",
+                allowsAdd: false,
+                searchable: true,
+                emptyTitle: "尚無幣別",
+                emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
+                options: store.availableCurrencies.map(\.rawValue),
+                selected: store.draftCurrency.rawValue,
+                displayName: { code in
+                    let name = locale.localizedString(forCurrencyCode: code) ?? ""
+                    return name.isEmpty ? code : "\(code) (\(name))"
+                },
+                searchKeywords: { code in
+                    locale.localizedString(forCurrencyCode: code) ?? ""
+                },
+                onSelect: { code in
+                    store.send(.currencySelected(code))
+                },
+                isEmbedded: true
+            )
+        }
+    }
 
     /// 訂單來源選擇列：操作邏輯與 ``categoryPickerRow`` 完全一致——以 sheet 列出既有來源並提供「新增來源」入口
     ///
@@ -744,6 +765,16 @@ private extension OrderEditView {
         return hasCategory && fields.allSatisfy {
             !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
+    }
+
+    /// 訂單編輯表單 `NavigationStack` 的 push 路徑：把單一 optional ``OrderEditFeature/State/PickerRoute`` 映射成 0 或 1 元素的路徑陣列
+    ///
+    /// 使用者點 Back 或選擇器內 `dismiss()` pop 時，SwiftUI 清空路徑、經此 setter 把 route 設回 `nil`
+    var pickerPath: Binding<[OrderEditFeature.State.PickerRoute]> {
+        Binding(
+            get: { store.pickerRoute.map { [$0] } ?? [] },
+            set: { store.pickerRoute = $0.last }
+        )
     }
 
     /// 單選模式下開團 `Picker` 的選取繫結：以陣列首元素對應單選值，寫入時送 ``OrderEditFeature/Action/campaignSelected(_:)`` 正規化回單元素陣列 (空字串 = 未歸團 = 空陣列)

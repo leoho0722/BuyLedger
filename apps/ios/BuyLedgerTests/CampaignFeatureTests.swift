@@ -162,67 +162,41 @@ struct CampaignFeatureTests {
 
     // MARK: - Reminder Tests
 
-    @Test func reminderPickerRequestedReseedsDraftAndPresents() async {
-        let committed = day(month: 4, day: 20).addingTimeInterval(9 * 3600)
-        var initial = CampaignEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow, reminderTimestamp: committed)
-        initial.draftReminderTimestamp = day(month: 4, day: 26).addingTimeInterval(18 * 3600) // 之前未提交的草稿
-        let store = TestStore(initialState: initial) {
-            CampaignEditFeature()
-        }
-
-        await store.send(.reminderPickerRequested) {
-            $0.draftReminderTimestamp = committed
-            $0.isReminderPickerPresented = true
-        }
-    }
-
-    @Test func reminderPickerConfirmedCommitsDraftAndSetsIntent() async {
-        let committed = day(month: 4, day: 20).addingTimeInterval(9 * 3600)
-        let picked = day(month: 4, day: 26).addingTimeInterval(18 * 3600)
-        var initial = CampaignEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow, reminderTimestamp: committed)
-        initial.draftReminderTimestamp = picked
-        initial.isReminderPickerPresented = true
-        let store = TestStore(initialState: initial) {
-            CampaignEditFeature()
-        }
-
-        await store.send(.reminderPickerConfirmed) {
-            $0.reminderTimestamp = picked
-            $0.wantsReminder = true
-            $0.isReminderPickerPresented = false
-        }
-    }
-
-    @Test func reminderPickerCancelledClosesWithoutCommitting() async {
-        let committed = day(month: 4, day: 20).addingTimeInterval(9 * 3600)
-        var initial = CampaignEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow, reminderTimestamp: committed)
-        initial.draftReminderTimestamp = day(month: 4, day: 26).addingTimeInterval(18 * 3600)
-        initial.isReminderPickerPresented = true
-        let store = TestStore(initialState: initial) {
-            CampaignEditFeature()
-        }
-
-        await store.send(.reminderPickerCancelled) {
-            $0.isReminderPickerPresented = false
-        }
-        // reminderTimestamp 未受草稿影響
-        #expect(store.state.reminderTimestamp == committed)
-    }
-
-    @Test func removeReminderTappedClearsIntent() async {
+    @Test func reminderIntentToggledViaBinding() async {
         let store = TestStore(
             initialState: CampaignEditFeature.State(
                 id: UUID(0),
                 currentDate: TestDependencies.fixedNow,
-                wantsReminder: true,
                 reminderTimestamp: day(month: 4, day: 20).addingTimeInterval(9 * 3600)
             )
         ) {
             CampaignEditFeature()
         }
 
-        await store.send(.removeReminderTapped) {
+        await store.send(\.binding.wantsReminder, true) {
+            $0.wantsReminder = true
+        }
+        await store.send(\.binding.wantsReminder, false) {
             $0.wantsReminder = false
+        }
+    }
+
+    @Test func reminderTimestampEditedViaBinding() async {
+        let committed = day(month: 4, day: 20).addingTimeInterval(9 * 3600)
+        let picked = day(month: 4, day: 26).addingTimeInterval(18 * 3600)
+        let store = TestStore(
+            initialState: CampaignEditFeature.State(
+                id: UUID(0),
+                currentDate: TestDependencies.fixedNow,
+                wantsReminder: true,
+                reminderTimestamp: committed
+            )
+        ) {
+            CampaignEditFeature()
+        }
+
+        await store.send(\.binding.reminderTimestamp, picked) {
+            $0.reminderTimestamp = picked
         }
     }
 

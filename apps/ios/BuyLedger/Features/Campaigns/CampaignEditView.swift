@@ -48,38 +48,16 @@ struct CampaignEditView: View {
                         }
                     }
 
-                    HStack {
-                        Text("訂購提醒")
-
-                        Spacer(minLength: 0)
-
-                        Button(role: store.wantsReminder ? .destructive : nil) {
-                            store.send(store.wantsReminder ? .removeReminderTapped : .reminderPickerRequested)
-                        } label: {
-                            Label(
-                                store.wantsReminder ? "移除提醒" : "新增提醒",
-                                systemImage: store.wantsReminder ? "bell.slash" : "bell"
-                            )
-                            // 強制 icon 與文字貼合：Form row 的自動 label style 會把 icon/title 撐到兩端
-                            .labelStyle(.titleAndIcon)
-                            .foregroundStyle(store.wantsReminder ? Color.red : Color.blue)
-                        }
-                        .buttonStyle(.borderless)
-                    }
-                    .sheet(isPresented: $store.isReminderPickerPresented) {
-                        reminderPickerSheet
-                    }
+                    Toggle("訂購提醒", isOn: $store.wantsReminder)
 
                     if store.wantsReminder {
-                        Button {
-                            store.send(.reminderPickerRequested)
-                        } label: {
-                            LabeledContent(
-                                "提醒時間",
-                                value: CampaignFormatters.reminderTimestamp(store.reminderTimestamp, locale: locale)
-                            )
-                        }
-                        .buttonStyle(.plain)
+                        // 提醒時間以原生 inline DatePicker 編輯 (同上方開團／結單日期列)，點擊跳系統月曆／時間浮層
+                        DatePicker(
+                            "提醒時間",
+                            selection: $store.reminderTimestamp,
+                            displayedComponents: [.date, .hourAndMinute]
+                        )
+                        .environment(\.locale, locale)
                     }
                 }
 
@@ -108,53 +86,9 @@ struct CampaignEditView: View {
                 }
             }
         }
-    }
-}
-
-// MARK: - ViewBuilder
-
-private extension CampaignEditView {
-
-    /// 訂購提醒的日期＋時間選擇 sheet：以 graphical `DatePicker` 讓使用者自選日期與提示時間，按「加入提醒／完成」提交、「取消」不提交；高度取螢幕 70% (`.fraction(0.7)`)
-    @ViewBuilder
-    var reminderPickerSheet: some View {
-        NavigationStack {
-            DatePicker(
-                "提醒時間",
-                selection: $store.draftReminderTimestamp,
-                displayedComponents: [.date, .hourAndMinute]
-            )
-            .datePickerStyle(.graphical)
-            .environment(\.locale, locale)
-            .padding()
-            .frame(maxHeight: .infinity, alignment: .top)
-            .navigationTitle(Text("訂購提醒"))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        store.send(.reminderPickerCancelled)
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                    .accessibilityLabel(Text("取消"))
-                }
-
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        store.send(.reminderPickerConfirmed)
-                    } label: {
-                        // 改 icon-only 騰出中央寬度讓 inline 標題完整顯示，文字保留為無障礙標籤
-                        Label(
-                            LocalizedStringKey(store.wantsReminder ? "完成" : "加入提醒"),
-                            systemImage: store.wantsReminder ? "checkmark" : "plus"
-                        )
-                    }
-                    .labelStyle(.iconOnly)
-                }
-            }
-        }
-        .presentationDetents([.fraction(0.7)])
+        // 有未儲存變更時阻擋下滑關閉，避免草稿靜默遺失；取消鍵改以彈窗確認
+        .interactiveDismissDisabled(store.isDirty)
+        .alert($store.scope(state: \.discardConfirmation, action: \.discardConfirmation))
     }
 }
 
