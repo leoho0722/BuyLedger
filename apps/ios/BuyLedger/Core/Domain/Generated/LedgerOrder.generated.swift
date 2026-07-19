@@ -82,7 +82,7 @@ struct LedgerOrder: Codable, Equatable, Identifiable, Sendable {
     /// 對帳狀態
     ///
     /// 僅在付款方式屬於無卡或銀行匯款 (款項不會即時入帳、需事後人工對帳) 時有意義；其他付款方式一律以空字串帶入。其值對應一份可自訂的對帳狀態清單
-    let verificationStatus: String
+    let reconciliationStatus: String
 
     /// 歸屬的開團名稱清單
     ///

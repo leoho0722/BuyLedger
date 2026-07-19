@@ -1,5 +1,5 @@
 //
-//  VerificationStatusRecord.swift
+//  ReconciliationStatusRecord.swift
 //  BuyLedger
 //
 //  Created by Leo Ho on 2026/5/29.
@@ -14,7 +14,7 @@ import SwiftData
 ///
 /// 沿用 ``OrderSourceRecord`` 的設計準則：不使用 `@Attribute(.unique)` (CloudKit 不支援)，由 actor 在 upsert 時自行檢查避免重複
 @Model
-final class VerificationStatusRecord {
+final class ReconciliationStatusRecord {
 
     // MARK: - Data Properties
 

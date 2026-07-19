@@ -50,7 +50,7 @@ extension OrderMerge {
         let paymentMethod: String
 
         /// 對帳狀態 (隨付款方式來源訂單)
-        let verificationStatus: String
+        let reconciliationStatus: String
 
         /// 貨到付款旗標 (隨付款方式來源訂單)
         let isCashOnDelivery: Bool
@@ -150,7 +150,7 @@ extension OrderMerge {
                 secondary.campaignNames
             ),
             paymentMethod: paymentSource.paymentMethod,
-            verificationStatus: paymentSource.verificationStatus,
+            reconciliationStatus: paymentSource.reconciliationStatus,
             isCashOnDelivery: paymentSource.isCashOnDelivery,
             paymentReceiptStatus: primary.paymentReceiptStatus,
             chargedAmount: primary.chargedAmount + secondary.chargedAmount,
@@ -262,7 +262,7 @@ private extension OrderMerge {
         primary: LedgerOrder,
         secondary: LedgerOrder,
         isCardless: (String) -> Bool
-    ) -> (paymentMethod: String, verificationStatus: String, isCashOnDelivery: Bool) {
+    ) -> (paymentMethod: String, reconciliationStatus: String, isCashOnDelivery: Bool) {
         let source: LedgerOrder
         if primary.paymentMethod == secondary.paymentMethod {
             source = primary
@@ -273,6 +273,6 @@ private extension OrderMerge {
             source = primary
         }
 
-        return (source.paymentMethod, source.verificationStatus, source.isCashOnDelivery)
+        return (source.paymentMethod, source.reconciliationStatus, source.isCashOnDelivery)
     }
 }

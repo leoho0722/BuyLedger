@@ -72,7 +72,7 @@ extension PersistenceContainer {
         cloudKit: CloudKitOption = .disabled,
         inMemoryOnly: Bool = false
     ) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: BuyLedgerSchemaV15.self)
+        let schema = Schema(versionedSchema: BuyLedgerSchemaV16.self)
 
         let configuration = ModelConfiguration(
             "BuyLedger",

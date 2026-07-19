@@ -178,7 +178,7 @@ struct InsightsStatsTests {
             categories: categories,
             paymentMethod: "",
             notes: "",
-            verificationStatus: "",
+            reconciliationStatus: "",
             campaignNames: campaignNames,
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,

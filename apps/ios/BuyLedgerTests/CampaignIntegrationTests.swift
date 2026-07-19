@@ -145,7 +145,7 @@ struct CampaignIntegrationTests {
             categories: [],
             paymentMethod: "",
             notes: "",
-            verificationStatus: "",
+            reconciliationStatus: "",
             campaignNames: campaign.isEmpty ? [] : [campaign],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,

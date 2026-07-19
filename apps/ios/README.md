@@ -157,7 +157,7 @@ bun run unlock
 - `liveValue`：純本機 SwiftData，**不自動 seed**——使用者首次啟動會看到真正的空狀態。
 - `previewValue`：in-memory + 自動 seed `LedgerOrder.sampleOrders`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
 - `LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback` **僅供 Preview / 單元測試 / `previewValue`** 使用，runtime 不讀取。
-- **Schema 版本化**：`Core/Persistence/BuyLedgerSchema.swift` 以 `VersionedSchema` (floor `BuyLedgerSchemaV13` → target `BuyLedgerSchemaV15`，V13 以下版本已移除) + `BuyLedgerMigrationPlan` 管理遷移。新增欄位／表走 lightweight、改型別走 custom dump-and-restore；改動流程的硬規則見 [`CLAUDE.md › SwiftData Schema 與 Migration`](CLAUDE.md#swiftdata-schema-與-migration)。`V13` (floor) 含開團訂購提醒連結表 `CampaignReminderRecord` (campaignID → 行事曆 eventIdentifier，與領域型別 `Campaign` 解耦；行事曆識別碼屬裝置本機資料，不入跨平台 schema)；`V14` 為該表加提示時間欄位、`V15` 再把它改為使用者自選的提醒時間戳 `reminderTimestamp` (皆 lightweight)。
+- **Schema 版本化**：`Core/Persistence/BuyLedgerSchema.swift` 以 `VersionedSchema` (floor `BuyLedgerSchemaV15` → target `BuyLedgerSchemaV16`) + `BuyLedgerMigrationPlan` 管理遷移。新增欄位／表走 lightweight、改既有欄位型別或 `@Model` 類別名走 custom dump-and-restore；版本移除、shadow 凍結等硬規則見 [`CLAUDE.md › SwiftData Schema 與 Migration`](CLAUDE.md#swiftdata-schema-與-migration)。開團訂購提醒連結表 `CampaignReminderRecord` 是唯一的 iOS-only 表 (記行事曆 `eventIdentifier` 與提醒時間戳，與跨平台 `Campaign` 解耦、不入跨平台 schema)。
 
 ### 外部 API
 

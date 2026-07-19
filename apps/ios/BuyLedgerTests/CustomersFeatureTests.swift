@@ -79,7 +79,7 @@ struct CustomersFeatureTests {
             categories: [],
             paymentMethod: "",
             notes: "",
-            verificationStatus: "",
+            reconciliationStatus: "",
             campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,

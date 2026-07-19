@@ -57,11 +57,11 @@ struct OrderRepository: Sendable {
     ///   - newName: 新名稱
     var renameOrderPaymentMethod: @Sendable (_ oldName: String, _ newName: String) async throws -> Void
 
-    /// 把所有訂單的 ``LedgerOrder/verificationStatus`` 由 `oldName` 改成 `newName` (cascade rename)
+    /// 把所有訂單的 ``LedgerOrder/reconciliationStatus`` 由 `oldName` 改成 `newName` (cascade rename)
     /// - Parameters:
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
-    var renameOrderVerificationStatus: @Sendable (_ oldName: String, _ newName: String) async throws -> Void
+    var renameOrderReconciliationStatus: @Sendable (_ oldName: String, _ newName: String) async throws -> Void
 
     /// 把所有訂單的 ``LedgerOrder/campaignNames`` 由 `oldName` 改成 `newName` (開團 cascade rename)
     /// - Parameters:
@@ -135,13 +135,13 @@ extension OrderRepository {
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.renamePaymentMethod(from: oldName, to: trimmedNew)
             },
-            renameOrderVerificationStatus: { oldName, newName in
+            renameOrderReconciliationStatus: { oldName, newName in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
                 }
                 let persistence = await Self.makePersistence(container: container)
-                try await persistence.renameVerificationStatus(from: oldName, to: trimmedNew)
+                try await persistence.renameReconciliationStatus(from: oldName, to: trimmedNew)
             },
             renameOrderCampaign: { oldName, newName in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -195,7 +195,7 @@ extension OrderRepository: DependencyKey {
         renameOrderSource: { _, _ in },
         renameOrderCategory: { _, _ in },
         renameOrderPaymentMethod: { _, _ in },
-        renameOrderVerificationStatus: { _, _ in },
+        renameOrderReconciliationStatus: { _, _ in },
         renameOrderCampaign: { _, _ in }
     )
 }

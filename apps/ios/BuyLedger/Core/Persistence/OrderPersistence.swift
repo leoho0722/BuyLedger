@@ -146,12 +146,12 @@ extension OrderPersistence {
     /// - Parameters:
     ///   - oldName: 原本的對帳狀態名稱
     ///   - newName: 新的對帳狀態名稱
-    func renameVerificationStatus(from oldName: String, to newName: String) throws {
+    func renameReconciliationStatus(from oldName: String, to newName: String) throws {
         let descriptor = FetchDescriptor<OrderRecord>(
-            predicate: #Predicate { $0.verificationStatus == oldName }
+            predicate: #Predicate { $0.reconciliationStatus == oldName }
         )
         for record in try modelContext.fetch(descriptor) {
-            record.verificationStatus = newName
+            record.reconciliationStatus = newName
         }
         try modelContext.save()
     }

@@ -64,7 +64,7 @@ private extension MoreView {
         case paymentMethods
 
         /// 對帳狀態主檔管理
-        case verificationStatuses
+        case reconciliationStatuses
 
         // MARK: - Identifiable Properties
 
@@ -88,8 +88,8 @@ private extension MoreView {
                 LookupKind.category.entryTitle
             case .paymentMethods:
                 LookupKind.paymentMethod.entryTitle
-            case .verificationStatuses:
-                LookupKind.verificationStatus.entryTitle
+            case .reconciliationStatuses:
+                LookupKind.reconciliationStatus.entryTitle
             }
         }
 
@@ -108,8 +108,8 @@ private extension MoreView {
                 LookupKind.category.entrySubtitle
             case .paymentMethods:
                 LookupKind.paymentMethod.entrySubtitle
-            case .verificationStatuses:
-                LookupKind.verificationStatus.entrySubtitle
+            case .reconciliationStatuses:
+                LookupKind.reconciliationStatus.entrySubtitle
             }
         }
 
@@ -128,8 +128,8 @@ private extension MoreView {
                 LookupKind.category.systemImage
             case .paymentMethods:
                 LookupKind.paymentMethod.systemImage
-            case .verificationStatuses:
-                LookupKind.verificationStatus.systemImage
+            case .reconciliationStatuses:
+                LookupKind.reconciliationStatus.systemImage
             }
         }
 
@@ -150,7 +150,7 @@ private extension MoreView {
                 palette.orange
             case .paymentMethods:
                 palette.red
-            case .verificationStatuses:
+            case .reconciliationStatuses:
                 palette.indigo
             }
         }
@@ -185,9 +185,9 @@ private extension MoreView {
             LookupManagementView(
                 store: store.scope(state: \.paymentMethodManagement, action: \.paymentMethodManagement)
             )
-        case .verificationStatuses:
+        case .reconciliationStatuses:
             LookupManagementView(
-                store: store.scope(state: \.verificationStatusManagement, action: \.verificationStatusManagement)
+                store: store.scope(state: \.reconciliationStatusManagement, action: \.reconciliationStatusManagement)
             )
         }
     }
@@ -232,9 +232,9 @@ private extension MoreView {
                 }
 
                 NavigationLink {
-                    destination(for: .verificationStatuses)
+                    destination(for: .reconciliationStatuses)
                 } label: {
-                    toolRow(.verificationStatuses, palette: palette)
+                    toolRow(.reconciliationStatuses, palette: palette)
                 }
 
                 NavigationLink {

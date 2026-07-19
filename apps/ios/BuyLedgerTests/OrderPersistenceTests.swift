@@ -75,7 +75,7 @@ struct OrderPersistenceTests {
             categories: ["美妝"],
             paymentMethod: "",
             notes: "建立時的備註",
-            verificationStatus: "",
+            reconciliationStatus: "",
             campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
@@ -120,7 +120,7 @@ struct OrderPersistenceTests {
             categories: original.categories,
             paymentMethod: original.paymentMethod,
             notes: "更新後的備註",
-            verificationStatus: "",
+            reconciliationStatus: "",
             campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
@@ -138,7 +138,7 @@ struct OrderPersistenceTests {
         #expect(stored.first?.notes == "更新後的備註", "更新訂單時備註應一併寫回")
     }
 
-    @Test func upsertPersistsVerificationStatusRoundTrip() async throws {
+    @Test func upsertPersistsReconciliationStatusRoundTrip() async throws {
         let persistence = try makePersistence()
 
         let order = LedgerOrder(
@@ -162,7 +162,7 @@ struct OrderPersistenceTests {
             categories: ["美妝"],
             paymentMethod: "銀行匯款",
             notes: "",
-            verificationStatus: "待對帳",
+            reconciliationStatus: "待對帳",
             campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
@@ -173,7 +173,7 @@ struct OrderPersistenceTests {
         try await persistence.upsert(order)
 
         let stored = try await persistence.fetchAll()
-        #expect(stored.first?.verificationStatus == "待對帳", "對帳狀態應隨訂單一併 round-trip")
+        #expect(stored.first?.reconciliationStatus == "待對帳", "對帳狀態應隨訂單一併 round-trip")
     }
 
     @Test func upsertPersistsPhotosRoundTrip() async throws {
@@ -202,7 +202,7 @@ struct OrderPersistenceTests {
             categories: ["美妝"],
             paymentMethod: "",
             notes: "",
-            verificationStatus: "",
+            reconciliationStatus: "",
             campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
@@ -237,7 +237,7 @@ struct OrderPersistenceTests {
             categories: order.categories,
             paymentMethod: order.paymentMethod,
             notes: order.notes,
-            verificationStatus: order.verificationStatus,
+            reconciliationStatus: order.reconciliationStatus,
             campaignNames: order.campaignNames,
             paymentReceiptStatus: order.paymentReceiptStatus,
             isCashOnDelivery: order.isCashOnDelivery,
@@ -252,7 +252,7 @@ struct OrderPersistenceTests {
         #expect(updated.first?.photos == [photoC], "更新訂單時照片應一併覆寫")
     }
 
-    @Test func renameVerificationStatusUpdatesMatchingOrders() async throws {
+    @Test func renameReconciliationStatusUpdatesMatchingOrders() async throws {
         let persistence = try makePersistence()
         let order = LedgerOrder(
             id: "BL-TEST-VS-RENAME",
@@ -275,7 +275,7 @@ struct OrderPersistenceTests {
             categories: ["美妝"],
             paymentMethod: "銀行匯款",
             notes: "",
-            verificationStatus: "待對帳",
+            reconciliationStatus: "待對帳",
             campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
@@ -284,10 +284,10 @@ struct OrderPersistenceTests {
         )
         try await persistence.upsert(order)
 
-        try await persistence.renameVerificationStatus(from: "待對帳", to: "對帳成功")
+        try await persistence.renameReconciliationStatus(from: "待對帳", to: "對帳成功")
 
         let stored = try await persistence.fetchAll()
-        #expect(stored.first?.verificationStatus == "對帳成功", "cascade 更名應更新引用該對帳狀態的訂單")
+        #expect(stored.first?.reconciliationStatus == "對帳成功", "cascade 更名應更新引用該對帳狀態的訂單")
     }
 
     @Test func deleteRemovesOrderById() async throws {
@@ -352,7 +352,7 @@ struct OrderPersistenceTests {
             categories: draft.categories,
             paymentMethod: draft.paymentMethod,
             notes: draft.notes,
-            verificationStatus: draft.verificationStatus,
+            reconciliationStatus: draft.reconciliationStatus,
             campaignNames: draft.campaignNames,
             paymentReceiptStatus: draft.paymentReceiptStatus,
             isCashOnDelivery: draft.isCashOnDelivery,
@@ -468,7 +468,7 @@ private extension OrderPersistenceTests {
             categories: ["美妝"],
             paymentMethod: "信用卡",
             notes: "",
-            verificationStatus: "",
+            reconciliationStatus: "",
             campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
@@ -504,7 +504,7 @@ private extension OrderPersistenceTests {
             categories: categories,
             paymentMethod: "信用卡",
             notes: "",
-            verificationStatus: "",
+            reconciliationStatus: "",
             campaignNames: campaignNames,
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,

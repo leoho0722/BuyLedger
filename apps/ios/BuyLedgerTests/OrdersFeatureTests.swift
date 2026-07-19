@@ -188,7 +188,7 @@ struct OrdersFeatureTests {
         #expect(created?.photos == photos)
     }
 
-    @Test func editFlowKeepsVerificationStatusForBankTransfer() async {
+    @Test func editFlowKeepsReconciliationStatusForBankTransfer() async {
         // 付款方式屬於銀行匯款 → 對帳狀態有意義，save 後應保留
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -202,7 +202,7 @@ struct OrdersFeatureTests {
             currentDate: TestDependencies.fixedNow
         )
         draft.draftPaymentMethod = "銀行匯款"
-        draft.draftVerificationStatus = "待對帳"
+        draft.draftReconciliationStatus = "待對帳"
 
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
@@ -217,17 +217,17 @@ struct OrdersFeatureTests {
         await store.finish()
 
         let updated = store.state.orders.first { $0.id == originalID }
-        #expect(updated?.verificationStatus == "待對帳")
+        #expect(updated?.reconciliationStatus == "待對帳")
     }
 
-    @Test func editFlowClearsVerificationStatusForNonReconcilingMethod() async {
+    @Test func editFlowClearsReconciliationStatusForNonReconcilingMethod() async {
         // 付款方式非無卡／非銀行匯款 (信用卡) → 對帳狀態無意義，save 後應清成空字串，避免殘留
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
         // 原訂單付款方式為「信用卡」(預設無旗標)；殘留一個對帳狀態草稿
         var draft = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
-        draft.draftVerificationStatus = "待對帳"
+        draft.draftReconciliationStatus = "待對帳"
 
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
@@ -242,7 +242,7 @@ struct OrdersFeatureTests {
         await store.finish()
 
         let updated = store.state.orders.first { $0.id == originalID }
-        #expect(updated?.verificationStatus == "")
+        #expect(updated?.reconciliationStatus == "")
     }
 
     @Test func editFlowSavingEmptyNameKeepsOriginalName() async {
@@ -1166,7 +1166,7 @@ private extension OrdersFeatureTests {
             categories: categories,
             paymentMethod: paymentMethod,
             notes: "",
-            verificationStatus: "",
+            reconciliationStatus: "",
             campaignNames: campaignNames,
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,

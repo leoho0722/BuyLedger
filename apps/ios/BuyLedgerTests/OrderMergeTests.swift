@@ -137,8 +137,8 @@ struct OrderMergeTests {
 
     @Test func cardlessPaymentMethodWinsOnConflict() {
         // 恰有一筆 (副) 屬無卡：付款方式取副訂單，對帳狀態與貨到付款隨之
-        let primary = Self.makeOrder(id: "P", paymentMethod: "信用卡", verificationStatus: "", isCashOnDelivery: false)
-        let secondary = Self.makeOrder(id: "S", paymentMethod: "全家好開店", verificationStatus: "待對帳", isCashOnDelivery: true)
+        let primary = Self.makeOrder(id: "P", paymentMethod: "信用卡", reconciliationStatus: "", isCashOnDelivery: false)
+        let secondary = Self.makeOrder(id: "S", paymentMethod: "全家好開店", reconciliationStatus: "待對帳", isCashOnDelivery: true)
 
         let draft = OrderMerge.makeDraft(
             primary: primary,
@@ -148,20 +148,20 @@ struct OrderMergeTests {
         )
 
         #expect(draft.paymentMethod == "全家好開店")
-        #expect(draft.verificationStatus == "待對帳")
+        #expect(draft.reconciliationStatus == "待對帳")
         #expect(draft.isCashOnDelivery == true)
     }
 
     @Test func primaryPaymentMethodWinsWhenSameOrNoCardlessConflict() {
         // 兩筆相同：取該值、對帳狀態隨主訂單
         let same = OrderMerge.makeDraft(
-            primary: Self.makeOrder(id: "P", paymentMethod: "信用卡", verificationStatus: "主對帳"),
-            secondary: Self.makeOrder(id: "S", paymentMethod: "信用卡", verificationStatus: "副對帳"),
+            primary: Self.makeOrder(id: "P", paymentMethod: "信用卡", reconciliationStatus: "主對帳"),
+            secondary: Self.makeOrder(id: "S", paymentMethod: "信用卡", reconciliationStatus: "副對帳"),
             now: Self.mergeDate,
             isCardless: { _ in false }
         )
         #expect(same.paymentMethod == "信用卡")
-        #expect(same.verificationStatus == "主對帳")
+        #expect(same.reconciliationStatus == "主對帳")
 
         // 不同且皆非無卡：取主訂單
         let neither = OrderMerge.makeDraft(
@@ -258,7 +258,7 @@ private extension OrderMergeTests {
         categories: [String] = ["美妝"],
         campaignNames: [String] = [],
         paymentMethod: String = "信用卡",
-        verificationStatus: String = "",
+        reconciliationStatus: String = "",
         notes: String = "",
         paymentReceiptStatus: PaymentReceiptStatus = .pending,
         isCashOnDelivery: Bool = false,
@@ -286,7 +286,7 @@ private extension OrderMergeTests {
             categories: categories,
             paymentMethod: paymentMethod,
             notes: notes,
-            verificationStatus: verificationStatus,
+            reconciliationStatus: reconciliationStatus,
             campaignNames: campaignNames,
             paymentReceiptStatus: paymentReceiptStatus,
             isCashOnDelivery: isCashOnDelivery,

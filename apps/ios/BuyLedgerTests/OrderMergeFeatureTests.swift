@@ -267,7 +267,7 @@ private extension OrderMergeFeatureTests {
             categories: ["美妝"],
             paymentMethod: "信用卡",
             notes: "",
-            verificationStatus: "",
+            reconciliationStatus: "",
             campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,

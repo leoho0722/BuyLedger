@@ -218,7 +218,7 @@ struct OrderEditFeatureTests {
             categories: sample.categories,
             paymentMethod: sample.paymentMethod,
             notes: sample.notes,
-            verificationStatus: sample.verificationStatus,
+            reconciliationStatus: sample.reconciliationStatus,
             campaignNames: sample.campaignNames,
             paymentReceiptStatus: sample.paymentReceiptStatus,
             isCashOnDelivery: sample.isCashOnDelivery,
@@ -255,7 +255,7 @@ struct OrderEditFeatureTests {
         #expect(mutable.isSelectedPaymentMethodCardless == false)
     }
 
-    @Test func showsVerificationStatusRowForCardlessOrBankTransfer() {
+    @Test func showsReconciliationStatusRowForCardlessOrBankTransfer() {
         // 主檔中「無卡存款」為無卡、「銀行匯款」為銀行匯款、「信用卡」兩者皆否
         let state = OrderEditFeature.State(
             id: UUID(0),
@@ -271,40 +271,40 @@ struct OrderEditFeatureTests {
         // 信用卡：非無卡、非銀行匯款 → 不顯示對帳狀態 row
         mutable.draftPaymentMethod = "信用卡"
         #expect(mutable.isSelectedPaymentMethodBankTransfer == false)
-        #expect(mutable.showsVerificationStatusRow == false)
+        #expect(mutable.showsReconciliationStatusRow == false)
 
         // 無卡存款：無卡 → 顯示
         mutable.draftPaymentMethod = "無卡存款"
-        #expect(mutable.showsVerificationStatusRow == true)
+        #expect(mutable.showsReconciliationStatusRow == true)
 
         // 銀行匯款：銀行匯款 → 顯示
         mutable.draftPaymentMethod = "銀行匯款"
         #expect(mutable.isSelectedPaymentMethodBankTransfer == true)
-        #expect(mutable.showsVerificationStatusRow == true)
+        #expect(mutable.showsReconciliationStatusRow == true)
 
         // 不在主檔的暫存值預設視為兩者皆否 → 不顯示
         mutable.draftPaymentMethod = "未知付款方式"
-        #expect(mutable.showsVerificationStatusRow == false)
+        #expect(mutable.showsReconciliationStatusRow == false)
     }
 
-    @Test func addVerificationStatusTappedAppliesAndExtendsOptions() async {
+    @Test func addReconciliationStatusTappedAppliesAndExtendsOptions() async {
         let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
         }
 
-        await store.send(.addVerificationStatusTapped("待對帳")) {
-            $0.availableVerificationStatuses = ["待對帳"]
-            $0.draftVerificationStatus = "待對帳"
+        await store.send(.addReconciliationStatusTapped("待對帳")) {
+            $0.availableReconciliationStatuses = ["待對帳"]
+            $0.draftReconciliationStatus = "待對帳"
         }
 
         // 再新增一筆，清單依 locale 排序 (localizedStandardCompare 下「待」排在「對」前)、draft 切換為最新值
-        await store.send(.addVerificationStatusTapped("對帳成功")) {
-            $0.availableVerificationStatuses = ["待對帳", "對帳成功"]
-            $0.draftVerificationStatus = "對帳成功"
+        await store.send(.addReconciliationStatusTapped("對帳成功")) {
+            $0.availableReconciliationStatuses = ["待對帳", "對帳成功"]
+            $0.draftReconciliationStatus = "對帳成功"
         }
     }
 
-    @Test func draftPrefillsVerificationStatusFromOriginal() {
+    @Test func draftPrefillsReconciliationStatusFromOriginal() {
         let original = LedgerOrder(
             id: "BL-TEST-RS",
             customer: LedgerCustomer(name: "對帳測試", initials: "RS", tier: .regular),
@@ -326,7 +326,7 @@ struct OrderEditFeatureTests {
             categories: ["美妝"],
             paymentMethod: "銀行匯款",
             notes: "",
-            verificationStatus: "待對帳",
+            reconciliationStatus: "待對帳",
             campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,
@@ -335,9 +335,9 @@ struct OrderEditFeatureTests {
         )
 
         let state = OrderEditFeature.State(original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
-        #expect(state.draftVerificationStatus == "待對帳")
+        #expect(state.draftReconciliationStatus == "待對帳")
         // 原訂單的對帳狀態若不在傳入清單，初始化時會補進可選清單
-        #expect(state.availableVerificationStatuses.contains("待對帳"))
+        #expect(state.availableReconciliationStatuses.contains("待對帳"))
     }
 
     @Test func newDraftStartsEmpty() {
@@ -607,8 +607,8 @@ struct OrderEditFeatureTests {
         await store.send(.paymentMethodPickerTapped) {
             $0.showsPaymentMethodSheet = true
         }
-        await store.send(.verificationStatusPickerTapped) {
-            $0.showsVerificationStatusSheet = true
+        await store.send(.reconciliationStatusPickerTapped) {
+            $0.showsReconciliationStatusSheet = true
         }
     }
 
@@ -623,8 +623,8 @@ struct OrderEditFeatureTests {
         await store.send(.paymentMethodSelected("信用卡")) {
             $0.draftPaymentMethod = "信用卡"
         }
-        await store.send(.verificationStatusSelected("待對帳")) {
-            $0.draftVerificationStatus = "待對帳"
+        await store.send(.reconciliationStatusSelected("待對帳")) {
+            $0.draftReconciliationStatus = "待對帳"
         }
         await store.send(.currencySelected("JPY")) {
             $0.draftCurrency = .jpy
@@ -676,7 +676,7 @@ private extension OrderEditFeatureTests {
         categories: ["美妝"],
         paymentMethod: "信用卡",
         notes: "",
-        verificationStatus: "",
+        reconciliationStatus: "",
         campaignNames: [],
         paymentReceiptStatus: .pending,
         isCashOnDelivery: false,

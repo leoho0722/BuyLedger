@@ -49,7 +49,7 @@ struct RootFeature {
         var paymentMethodManagement = LookupManagementFeature.State(kind: .paymentMethod)
 
         /// 對帳狀態主檔管理狀態；理由同 ``categoryManagement``
-        var verificationStatusManagement = LookupManagementFeature.State(kind: .verificationStatus)
+        var reconciliationStatusManagement = LookupManagementFeature.State(kind: .reconciliationStatus)
 
         /// 設為 `true` 時，「更多」分頁的 NavigationStack 會 push 到設定頁；供 AI 提示 alert 深連結開啟設定用 (iOS/iPadOS)
         var showsSettingsFromDeepLink = false
@@ -118,7 +118,7 @@ struct RootFeature {
         case paymentMethodManagement(LookupManagementFeature.Action)
 
         /// 對帳狀態主檔管理事件
-        case verificationStatusManagement(LookupManagementFeature.Action)
+        case reconciliationStatusManagement(LookupManagementFeature.Action)
     }
 
     // MARK: - Dependency Properties
@@ -178,7 +178,7 @@ struct RootFeature {
                 LookupManagementFeature()
             }
 
-            Scope(state: \.verificationStatusManagement, action: \.verificationStatusManagement) {
+            Scope(state: \.reconciliationStatusManagement, action: \.reconciliationStatusManagement) {
                 LookupManagementFeature()
             }
 
@@ -378,20 +378,20 @@ struct RootFeature {
                 case .paymentMethodManagement:
                     return .none
 
-                case let .verificationStatusManagement(.renameRequested(from, to)):
-                    cascadeRename(kind: .verificationStatus, from: from, to: to, in: &state)
+                case let .reconciliationStatusManagement(.renameRequested(from, to)):
+                    cascadeRename(kind: .reconciliationStatus, from: from, to: to, in: &state)
                     return .none
 
-                case let .verificationStatusManagement(.addConfirmed(name, _, _, _)):
+                case let .reconciliationStatusManagement(.addConfirmed(name, _, _, _)):
                     // 對帳狀態無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數
-                    addVerificationStatusToOrdersMaster(name: name, in: &state)
+                    addReconciliationStatusToOrdersMaster(name: name, in: &state)
                     return .none
 
-                case let .verificationStatusManagement(.deleteRequested(name)):
-                    removeFromOrdersMaster(kind: .verificationStatus, name: name, in: &state)
+                case let .reconciliationStatusManagement(.deleteRequested(name)):
+                    removeFromOrdersMaster(kind: .reconciliationStatus, name: name, in: &state)
                     return .none
 
-                case .verificationStatusManagement:
+                case .reconciliationStatusManagement:
                     return .none
                 }
             }
@@ -472,17 +472,17 @@ private extension RootFeature {
                 return rebuildOrder(order, paymentMethod: trimmedTo)
             }
 
-        case .verificationStatus:
-            state.orders.verificationStatusMaster = renameInList(
-                state.orders.verificationStatusMaster,
+        case .reconciliationStatus:
+            state.orders.reconciliationStatusMaster = renameInList(
+                state.orders.reconciliationStatusMaster,
                 from: trimmedFrom,
                 to: trimmedTo
             )
             state.orders.orders = state.orders.orders.map { order in
-                guard order.verificationStatus == trimmedFrom else {
+                guard order.reconciliationStatus == trimmedFrom else {
                     return order
                 }
-                return rebuildOrder(order, verificationStatus: trimmedTo)
+                return rebuildOrder(order, reconciliationStatus: trimmedTo)
             }
         }
     }
@@ -575,11 +575,11 @@ private extension RootFeature {
         }
     }
 
-    /// 把 ``LookupManagementFeature`` 新增的對帳狀態加進 ``OrdersFeature/State/verificationStatusMaster`` 副本
+    /// 把 ``LookupManagementFeature`` 新增的對帳狀態加進 ``OrdersFeature/State/reconciliationStatusMaster`` 副本
     /// - Parameters:
     ///   - name: 新增名稱
     ///   - state: 要修改的 ``RootFeature/State``
-    func addVerificationStatusToOrdersMaster(
+    func addReconciliationStatusToOrdersMaster(
         name: String,
         in state: inout State
     ) {
@@ -587,13 +587,13 @@ private extension RootFeature {
         guard !trimmed.isEmpty else {
             return
         }
-        guard !state.orders.verificationStatusMaster.contains(trimmed) else {
+        guard !state.orders.reconciliationStatusMaster.contains(trimmed) else {
             return
         }
 
-        var updated = state.orders.verificationStatusMaster
+        var updated = state.orders.reconciliationStatusMaster
         updated.append(trimmed)
-        state.orders.verificationStatusMaster = updated.sorted {
+        state.orders.reconciliationStatusMaster = updated.sorted {
             $0.localizedStandardCompare($1) == .orderedAscending
         }
     }
@@ -615,8 +615,8 @@ private extension RootFeature {
             state.orders.categoryMaster.removeAll { $0 == name }
         case .paymentMethod:
             state.orders.paymentMethodMaster.removeAll { $0.name == name }
-        case .verificationStatus:
-            state.orders.verificationStatusMaster.removeAll { $0 == name }
+        case .reconciliationStatus:
+            state.orders.reconciliationStatusMaster.removeAll { $0 == name }
         }
     }
 
@@ -671,7 +671,7 @@ private extension RootFeature {
     ///   - orderSource: 若不為 `nil` 則覆寫 orderSource
     ///   - categories: 若不為 `nil` 則覆寫 categories
     ///   - paymentMethod: 若不為 `nil` 則覆寫 paymentMethod
-    ///   - verificationStatus: 若不為 `nil` 則覆寫 verificationStatus
+    ///   - reconciliationStatus: 若不為 `nil` 則覆寫 reconciliationStatus
     ///   - campaignNames: 若不為 `nil` 則覆寫 campaignNames
     /// - Returns: 重建後的訂單
     func rebuildOrder(
@@ -679,7 +679,7 @@ private extension RootFeature {
         orderSource: String? = nil,
         categories: [String]? = nil,
         paymentMethod: String? = nil,
-        verificationStatus: String? = nil,
+        reconciliationStatus: String? = nil,
         campaignNames: [String]? = nil
     ) -> LedgerOrder {
         LedgerOrder(
@@ -703,7 +703,7 @@ private extension RootFeature {
             categories: categories ?? order.categories,
             paymentMethod: paymentMethod ?? order.paymentMethod,
             notes: order.notes,
-            verificationStatus: verificationStatus ?? order.verificationStatus,
+            reconciliationStatus: reconciliationStatus ?? order.reconciliationStatus,
             campaignNames: campaignNames ?? order.campaignNames,
             paymentReceiptStatus: order.paymentReceiptStatus,
             isCashOnDelivery: order.isCashOnDelivery,

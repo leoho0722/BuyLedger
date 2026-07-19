@@ -1,5 +1,5 @@
 //
-//  VerificationStatusPersistence.swift
+//  ReconciliationStatusPersistence.swift
 //  BuyLedger
 //
 //  Created by Leo Ho on 2026/5/29.
@@ -10,16 +10,16 @@ import SwiftData
 
 /// SwiftData 上對對帳狀態主檔做 CRUD 的背景 actor
 @ModelActor
-actor VerificationStatusPersistence {}
+actor ReconciliationStatusPersistence {}
 
 // MARK: - Internal Method
 
-extension VerificationStatusPersistence {
+extension ReconciliationStatusPersistence {
 
     /// 讀出全部對帳狀態名稱，依 locale 升冪排序
     /// - Returns: 對帳狀態名稱陣列
     func fetchAll() throws -> [String] {
-        let descriptor = FetchDescriptor<VerificationStatusRecord>()
+        let descriptor = FetchDescriptor<ReconciliationStatusRecord>()
         let records = try modelContext.fetch(descriptor)
         return records
             .map { $0.name }
@@ -29,12 +29,12 @@ extension VerificationStatusPersistence {
     /// 寫入指定名稱的對帳狀態；若已存在不重複建立
     /// - Parameter name: 對帳狀態名稱 (呼叫前由 caller 完成 trim)
     func upsert(name: String) throws {
-        let descriptor = FetchDescriptor<VerificationStatusRecord>(
+        let descriptor = FetchDescriptor<ReconciliationStatusRecord>(
             predicate: #Predicate { $0.name == name }
         )
 
         if try modelContext.fetch(descriptor).first == nil {
-            modelContext.insert(VerificationStatusRecord(name: name))
+            modelContext.insert(ReconciliationStatusRecord(name: name))
             try modelContext.save()
         }
     }
@@ -42,7 +42,7 @@ extension VerificationStatusPersistence {
     /// 刪除指定名稱的對帳狀態；不存在時視為 no-op
     /// - Parameter name: 對帳狀態名稱
     func delete(name: String) throws {
-        let descriptor = FetchDescriptor<VerificationStatusRecord>(
+        let descriptor = FetchDescriptor<ReconciliationStatusRecord>(
             predicate: #Predicate { $0.name == name }
         )
 
@@ -59,18 +59,18 @@ extension VerificationStatusPersistence {
     ///   - oldName: 原本的對帳狀態名稱
     ///   - newName: 新的對帳狀態名稱 (由 caller 完成 trim)
     func rename(from oldName: String, to newName: String) throws {
-        let oldDescriptor = FetchDescriptor<VerificationStatusRecord>(
+        let oldDescriptor = FetchDescriptor<ReconciliationStatusRecord>(
             predicate: #Predicate { $0.name == oldName }
         )
         for record in try modelContext.fetch(oldDescriptor) {
             modelContext.delete(record)
         }
 
-        let newDescriptor = FetchDescriptor<VerificationStatusRecord>(
+        let newDescriptor = FetchDescriptor<ReconciliationStatusRecord>(
             predicate: #Predicate { $0.name == newName }
         )
         if try modelContext.fetch(newDescriptor).first == nil {
-            modelContext.insert(VerificationStatusRecord(name: newName))
+            modelContext.insert(ReconciliationStatusRecord(name: newName))
         }
 
         try modelContext.save()

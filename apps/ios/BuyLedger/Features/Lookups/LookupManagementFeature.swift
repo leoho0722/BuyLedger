@@ -83,7 +83,7 @@ struct LookupManagementFeature {
         case paymentMethodInfosLoaded([PaymentMethodInfo])
 
         /// 對帳狀態主檔載入成功
-        case verificationStatusItemsLoaded([String])
+        case reconciliationStatusItemsLoaded([String])
 
         /// 主檔載入失敗
         case loadFailed(String)
@@ -137,7 +137,7 @@ struct LookupManagementFeature {
     @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
 
     /// 對帳狀態資料來源
-    @Dependency(VerificationStatusRepository.self) private var verificationStatusRepository
+    @Dependency(ReconciliationStatusRepository.self) private var reconciliationStatusRepository
 
     /// 訂單資料來源；rename 時把 cascade 寫入訂單表
     @Dependency(OrderRepository.self) private var orderRepository
@@ -185,7 +185,7 @@ struct LookupManagementFeature {
                 state.errorMessage = nil
                 return .none
 
-            case let .verificationStatusItemsLoaded(items):
+            case let .reconciliationStatusItemsLoaded(items):
                 state.items = items
                 state.hasLoaded = true
                 state.errorMessage = nil
@@ -197,7 +197,7 @@ struct LookupManagementFeature {
 
             case .addButtonTapped:
                 switch state.kind {
-                case .orderSource, .category, .verificationStatus:
+                case .orderSource, .category, .reconciliationStatus:
                     state.addDraft = ""
                     state.showsAddNameOnlyAlert = true
                 case .paymentMethod:
@@ -230,7 +230,7 @@ struct LookupManagementFeature {
                 let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
-                let verificationStatusRepository = verificationStatusRepository
+                let reconciliationStatusRepository = reconciliationStatusRepository
                 return .run { _ in
                     switch kind {
                     case .orderSource:
@@ -239,8 +239,8 @@ struct LookupManagementFeature {
                         try await categoryRepository.addCategory(trimmed)
                     case .paymentMethod:
                         try await paymentMethodRepository.addPaymentMethod(trimmed, isCardless, isBankTransfer, isCashOnDelivery)
-                    case .verificationStatus:
-                        try await verificationStatusRepository.addVerificationStatus(trimmed)
+                    case .reconciliationStatus:
+                        try await reconciliationStatusRepository.addReconciliationStatus(trimmed)
                     }
                 } catch: { _, send in
                     await send(.loadFailed("新增失敗，請稍後再試。"))
@@ -260,7 +260,7 @@ struct LookupManagementFeature {
                 let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
-                let verificationStatusRepository = verificationStatusRepository
+                let reconciliationStatusRepository = reconciliationStatusRepository
                 return .run { _ in
                     switch kind {
                     case .orderSource:
@@ -269,8 +269,8 @@ struct LookupManagementFeature {
                         try await categoryRepository.removeCategory(name)
                     case .paymentMethod:
                         try await paymentMethodRepository.removePaymentMethod(name)
-                    case .verificationStatus:
-                        try await verificationStatusRepository.removeVerificationStatus(name)
+                    case .reconciliationStatus:
+                        try await reconciliationStatusRepository.removeReconciliationStatus(name)
                     }
                 } catch: { _, send in
                     await send(.loadFailed("刪除失敗，請稍後再試。"))
@@ -315,7 +315,7 @@ struct LookupManagementFeature {
                 let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
-                let verificationStatusRepository = verificationStatusRepository
+                let reconciliationStatusRepository = reconciliationStatusRepository
                 let orderRepository = orderRepository
                 return .run { _ in
                     switch kind {
@@ -328,9 +328,9 @@ struct LookupManagementFeature {
                     case .paymentMethod:
                         try await paymentMethodRepository.renamePaymentMethod(trimmedFrom, trimmedTo)
                         try await orderRepository.renameOrderPaymentMethod(trimmedFrom, trimmedTo)
-                    case .verificationStatus:
-                        try await verificationStatusRepository.renameVerificationStatus(trimmedFrom, trimmedTo)
-                        try await orderRepository.renameOrderVerificationStatus(trimmedFrom, trimmedTo)
+                    case .reconciliationStatus:
+                        try await reconciliationStatusRepository.renameReconciliationStatus(trimmedFrom, trimmedTo)
+                        try await orderRepository.renameOrderReconciliationStatus(trimmedFrom, trimmedTo)
                     }
                 } catch: { _, send in
                     await send(.loadFailed("重新命名失敗，請稍後再試。"))
@@ -442,7 +442,7 @@ private extension LookupManagementFeature {
         let orderSourceRepository = orderSourceRepository
         let categoryRepository = categoryRepository
         let paymentMethodRepository = paymentMethodRepository
-        let verificationStatusRepository = verificationStatusRepository
+        let reconciliationStatusRepository = reconciliationStatusRepository
         return .run { send in
             do {
                 switch kind {
@@ -455,9 +455,9 @@ private extension LookupManagementFeature {
                 case .paymentMethod:
                     let infos = try await paymentMethodRepository.fetchPaymentMethodInfos()
                     await send(.paymentMethodInfosLoaded(infos))
-                case .verificationStatus:
-                    let items = try await verificationStatusRepository.fetchVerificationStatuses()
-                    await send(.verificationStatusItemsLoaded(items))
+                case .reconciliationStatus:
+                    let items = try await reconciliationStatusRepository.fetchReconciliationStatuses()
+                    await send(.reconciliationStatusItemsLoaded(items))
                 }
             } catch {
                 await send(.loadFailed("主檔載入失敗，請稍後再試。"))

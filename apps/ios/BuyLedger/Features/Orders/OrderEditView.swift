@@ -64,8 +64,8 @@ struct OrderEditView: View {
 
                     paymentMethodPickerRow
 
-                    if store.showsVerificationStatusRow {
-                        verificationStatusPickerRow
+                    if store.showsReconciliationStatusRow {
+                        reconciliationStatusPickerRow
                     }
                 }
 
@@ -276,7 +276,7 @@ struct OrderEditView: View {
                     }
                 )
             }
-            .sheet(isPresented: $store.showsVerificationStatusSheet) {
+            .sheet(isPresented: $store.showsReconciliationStatusSheet) {
                 OptionPickerSheet(
                     title: "選擇對帳狀態",
                     addButtonTitle: "新增對帳狀態",
@@ -285,13 +285,13 @@ struct OrderEditView: View {
                     addAlertTitle: "新增對帳狀態",
                     addFieldPlaceholder: "對帳狀態名稱",
                     addAlertMessage: "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。",
-                    options: store.availableVerificationStatuses,
-                    selected: store.draftVerificationStatus,
+                    options: store.availableReconciliationStatuses,
+                    selected: store.draftReconciliationStatus,
                     onSelect: { status in
-                        store.send(.verificationStatusSelected(status))
+                        store.send(.reconciliationStatusSelected(status))
                     },
                     onAdd: { name in
-                        store.send(.addVerificationStatusTapped(name))
+                        store.send(.addReconciliationStatusTapped(name))
                     }
                 )
             }
@@ -491,9 +491,9 @@ private extension OrderEditView {
 
     /// 對帳狀態選擇列
     @ViewBuilder
-    var verificationStatusPickerRow: some View {
+    var reconciliationStatusPickerRow: some View {
         Button {
-            store.send(.verificationStatusPickerTapped)
+            store.send(.reconciliationStatusPickerTapped)
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("對帳狀態")
@@ -502,10 +502,10 @@ private extension OrderEditView {
                 Spacer(minLength: BLSpacing.small)
 
                 Group {
-                    if store.draftVerificationStatus.isEmpty {
+                    if store.draftReconciliationStatus.isEmpty {
                         Text("選擇對帳狀態")
                     } else {
-                        Text(verbatim: store.draftVerificationStatus)
+                        Text(verbatim: store.draftReconciliationStatus)
                     }
                 }
                 .foregroundStyle(.secondary)

@@ -73,7 +73,7 @@ types:
       - name: notes
         type: string
         doc: 訂單備註；選填，無備註時為空字串。
-      - name: verificationStatus
+      - name: reconciliationStatus
         type: string
         doc: |-
           對帳狀態。

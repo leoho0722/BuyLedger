@@ -29,7 +29,7 @@ struct LookupManagementView: View {
             "重新命名商品類別"
         case .paymentMethod:
             "重新命名付款方式"
-        case .verificationStatus:
+        case .reconciliationStatus:
             "重新命名對帳狀態"
         }
     }
@@ -155,7 +155,7 @@ private extension LookupManagementView {
     @ViewBuilder
     func itemRow(for item: String) -> some View {
         switch store.state.kind {
-        case .orderSource, .category, .verificationStatus:
+        case .orderSource, .category, .reconciliationStatus:
             Text(item)
         case .paymentMethod:
             HStack(spacing: BLSpacing.small) {

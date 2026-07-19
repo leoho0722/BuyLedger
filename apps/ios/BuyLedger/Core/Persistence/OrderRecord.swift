@@ -98,8 +98,11 @@ final class OrderRecord {
     ///
     /// 帶 default value 讓 SwiftData 對既有資料庫做 lightweight migration：舊 row 升級時自動填空字串
     ///
+    /// 由 `verificationStatus` 改名而來，`originalName` 保住底層欄位名不變、既有值零搬遷 (走 lightweight)
+    ///
     /// 僅在 ``paymentMethod`` 對應的付款方式屬於無卡或銀行匯款時，編輯表單才會顯示並寫入此值
-    var verificationStatus: String = ""
+    @Attribute(originalName: "verificationStatus")
+    var reconciliationStatus: String = ""
 
     /// 歸屬的開團名稱清單 (V11 起為字串陣列；空陣列代表未歸團)
     var campaignNames: [String] = []
@@ -153,7 +156,7 @@ final class OrderRecord {
         self.categories = order.categories
         self.paymentMethod = order.paymentMethod
         self.notes = order.notes
-        self.verificationStatus = order.verificationStatus
+        self.reconciliationStatus = order.reconciliationStatus
         self.campaignNames = order.campaignNames
         self.paymentReceiptStatus = order.paymentReceiptStatus.rawValue
         self.isCashOnDelivery = order.isCashOnDelivery
@@ -192,7 +195,7 @@ extension OrderRecord {
             categories: categories,
             paymentMethod: paymentMethod,
             notes: notes,
-            verificationStatus: verificationStatus,
+            reconciliationStatus: reconciliationStatus,
             campaignNames: campaignNames,
             paymentReceiptStatus: PaymentReceiptStatus(rawValue: paymentReceiptStatus) ?? .pending,
             isCashOnDelivery: isCashOnDelivery,
@@ -223,7 +226,7 @@ extension OrderRecord {
         self.categories = order.categories
         self.paymentMethod = order.paymentMethod
         self.notes = order.notes
-        self.verificationStatus = order.verificationStatus
+        self.reconciliationStatus = order.reconciliationStatus
         self.campaignNames = order.campaignNames
         self.paymentReceiptStatus = order.paymentReceiptStatus.rawValue
         self.isCashOnDelivery = order.isCashOnDelivery

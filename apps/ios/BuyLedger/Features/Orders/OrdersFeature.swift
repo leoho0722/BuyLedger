@@ -110,8 +110,8 @@ struct OrdersFeature {
         /// 付款方式主檔 (從 ``PaymentMethodRepository`` 載入)，含每筆方式是否屬於無卡類
         var paymentMethodMaster: [PaymentMethodInfo] = []
 
-        /// 對帳狀態主檔 (從 ``VerificationStatusRepository`` 載入)
-        var verificationStatusMaster: [String] = []
+        /// 對帳狀態主檔 (從 ``ReconciliationStatusRepository`` 載入)
+        var reconciliationStatusMaster: [String] = []
 
         /// 開團主檔 (從 ``CampaignRepository`` 載入)；持有完整 ``Campaign`` 而非僅名稱，以便訂單列表按開團狀態篩選時解析每筆訂單所屬團的狀態
         var campaigns: [Campaign] = []
@@ -210,11 +210,11 @@ struct OrdersFeature {
         }
 
         /// 對外提供給編輯表單的「可用對帳狀態」清單：合併主檔與既有訂單中使用過的對帳狀態，去重後依 locale 排序。合併規則與 ``availableCategories`` 相同
-        var availableVerificationStatuses: [String] {
+        var availableReconciliationStatuses: [String] {
             let fromOrders = orders
-                .map { $0.verificationStatus.trimmingCharacters(in: .whitespacesAndNewlines) }
+                .map { $0.reconciliationStatus.trimmingCharacters(in: .whitespacesAndNewlines) }
                 .filter { !$0.isEmpty }
-            var merged = Set(verificationStatusMaster)
+            var merged = Set(reconciliationStatusMaster)
             merged.formUnion(fromOrders)
             return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
         }
@@ -268,7 +268,7 @@ struct OrdersFeature {
         case paymentMethodMasterLoaded([PaymentMethodInfo])
 
         /// 對帳狀態主檔載入完成
-        case verificationStatusMasterLoaded([String])
+        case reconciliationStatusMasterLoaded([String])
 
         /// 開團主檔載入完成
         case campaignsLoaded([Campaign])
@@ -393,7 +393,7 @@ struct OrdersFeature {
     @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
 
     /// 對帳狀態主檔資料來源
-    @Dependency(VerificationStatusRepository.self) private var verificationStatusRepository
+    @Dependency(ReconciliationStatusRepository.self) private var reconciliationStatusRepository
 
     /// 開團主檔資料來源
     @Dependency(CampaignRepository.self) private var campaignRepository
@@ -435,7 +435,7 @@ struct OrdersFeature {
                 let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
-                let verificationStatusRepository = verificationStatusRepository
+                let reconciliationStatusRepository = reconciliationStatusRepository
                 let campaignRepository = campaignRepository
                 state.isLoading = true
                 state.errorMessage = nil
@@ -461,9 +461,9 @@ struct OrdersFeature {
                             await send(.paymentMethodMasterLoaded(infos))
                         }
                     }()
-                    async let verificationStatusesTask: Void = {
-                        if let items = try? await verificationStatusRepository.fetchVerificationStatuses() {
-                            await send(.verificationStatusMasterLoaded(items))
+                    async let reconciliationStatusesTask: Void = {
+                        if let items = try? await reconciliationStatusRepository.fetchReconciliationStatuses() {
+                            await send(.reconciliationStatusMasterLoaded(items))
                         }
                     }()
 
@@ -474,7 +474,7 @@ struct OrdersFeature {
                         await send(.ordersFailed("訂單載入失敗，請稍後再試。"))
                     }
 
-                    _ = await (orderSourcesTask, campaignsTask, categoriesTask, paymentMethodsTask, verificationStatusesTask)
+                    _ = await (orderSourcesTask, campaignsTask, categoriesTask, paymentMethodsTask, reconciliationStatusesTask)
                 }
 
             case let .orderSourceMasterLoaded(items):
@@ -489,8 +489,8 @@ struct OrdersFeature {
                 state.paymentMethodMaster = infos
                 return .none
 
-            case let .verificationStatusMasterLoaded(items):
-                state.verificationStatusMaster = items
+            case let .reconciliationStatusMasterLoaded(items):
+                state.reconciliationStatusMaster = items
                 return .none
 
             case let .campaignsLoaded(campaigns):
@@ -572,7 +572,7 @@ struct OrdersFeature {
                     availableOrderSources: state.availableOrderSources,
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
-                    availableVerificationStatuses: state.availableVerificationStatuses,
+                    availableReconciliationStatuses: state.availableReconciliationStatuses,
                     availableCampaigns: state.ongoingCampaigns,
                     currentDate: date.now
                 )
@@ -584,7 +584,7 @@ struct OrdersFeature {
                     availableOrderSources: state.availableOrderSources,
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
-                    availableVerificationStatuses: state.availableVerificationStatuses,
+                    availableReconciliationStatuses: state.availableReconciliationStatuses,
                     availableCampaigns: state.ongoingCampaigns,
                     currentDate: date.now
                 )
@@ -708,23 +708,23 @@ struct OrdersFeature {
                     await send(.ordersFailed("付款方式新增失敗，請稍後再試。"))
                 }
 
-            case let .editOrder(.presented(.addVerificationStatusTapped(name))):
-                // 子 reducer 已把 name 加進 sheet 內的 availableVerificationStatuses 並設成 draftVerificationStatus；
-                // 父層額外寫入主檔並更新 state.verificationStatusMaster，使非編輯流程 (管理頁、其他訂單) 也能看到
+            case let .editOrder(.presented(.addReconciliationStatusTapped(name))):
+                // 子 reducer 已把 name 加進 sheet 內的 availableReconciliationStatuses 並設成 draftReconciliationStatus；
+                // 父層額外寫入主檔並更新 state.reconciliationStatusMaster，使非編輯流程 (管理頁、其他訂單) 也能看到
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else {
                     return .none
                 }
-                if !state.verificationStatusMaster.contains(trimmed) {
-                    var updated = state.verificationStatusMaster
+                if !state.reconciliationStatusMaster.contains(trimmed) {
+                    var updated = state.reconciliationStatusMaster
                     updated.append(trimmed)
-                    state.verificationStatusMaster = updated.sorted {
+                    state.reconciliationStatusMaster = updated.sorted {
                         $0.localizedStandardCompare($1) == .orderedAscending
                     }
                 }
-                let verificationStatusRepository = verificationStatusRepository
+                let reconciliationStatusRepository = reconciliationStatusRepository
                 return .run { _ in
-                    try await verificationStatusRepository.addVerificationStatus(trimmed)
+                    try await reconciliationStatusRepository.addReconciliationStatus(trimmed)
                 } catch: { _, send in
                     await send(.ordersFailed("對帳狀態新增失敗，請稍後再試。"))
                 }
@@ -770,7 +770,7 @@ struct OrdersFeature {
                     availableOrderSources: state.availableOrderSources,
                     availableCategories: state.availableCategories,
                     availablePaymentMethods: state.availablePaymentMethods,
-                    availableVerificationStatuses: state.availableVerificationStatuses,
+                    availableReconciliationStatuses: state.availableReconciliationStatuses,
                     availableCampaigns: state.availableCampaigns,
                     currentDate: date.now
                 )
@@ -793,7 +793,7 @@ struct OrdersFeature {
                 editState.draftNotes = draft.notes
                 editState.draftDate = draft.date
                 editState.draftPaymentMethod = draft.paymentMethod
-                editState.draftVerificationStatus = draft.verificationStatus
+                editState.draftReconciliationStatus = draft.reconciliationStatus
                 editState.draftCampaignNames = draft.campaignNames
                 editState.draftPaymentReceiptStatus = draft.paymentReceiptStatus
                 editState.draftPhotos = keptPhotos
@@ -839,7 +839,7 @@ struct OrdersFeature {
                     categories: existing.categories,
                     paymentMethod: existing.paymentMethod,
                     notes: existing.notes,
-                    verificationStatus: existing.verificationStatus,
+                    reconciliationStatus: existing.reconciliationStatus,
                     campaignNames: existing.campaignNames,
                     paymentReceiptStatus: existing.paymentReceiptStatus,
                     isCashOnDelivery: existing.isCashOnDelivery,
@@ -942,7 +942,7 @@ struct OrdersFeature {
                     categories: existing.categories,
                     paymentMethod: existing.paymentMethod,
                     notes: existing.notes,
-                    verificationStatus: existing.verificationStatus,
+                    reconciliationStatus: existing.reconciliationStatus,
                     campaignNames: existing.campaignNames,
                     paymentReceiptStatus: newReceiptStatus,
                     isCashOnDelivery: existing.isCashOnDelivery,
@@ -1244,8 +1244,8 @@ private extension OrdersFeature {
             ? max(0, draft.draftCardlessSupplementAmount)
             : 0
         // 對帳狀態僅在付款方式屬於無卡或銀行匯款時有意義；切回其他付款方式一律清成空字串，避免殘留無關狀態
-        let normalizedVerificationStatus = draft.showsVerificationStatusRow
-            ? draft.draftVerificationStatus.trimmingCharacters(in: .whitespacesAndNewlines)
+        let normalizedReconciliationStatus = draft.showsReconciliationStatusRow
+            ? draft.draftReconciliationStatus.trimmingCharacters(in: .whitespacesAndNewlines)
             : ""
 
         if let original = draft.original,
@@ -1278,7 +1278,7 @@ private extension OrdersFeature {
                 categories: normalizedCategories.isEmpty ? existing.categories : normalizedCategories,
                 paymentMethod: trimmedPaymentMethod.isEmpty ? existing.paymentMethod : trimmedPaymentMethod,
                 notes: trimmedNotes,
-                verificationStatus: normalizedVerificationStatus,
+                reconciliationStatus: normalizedReconciliationStatus,
                 campaignNames: normalizedCampaignNames,
                 paymentReceiptStatus: draft.draftPaymentReceiptStatus,
                 isCashOnDelivery: draft.isSelectedPaymentMethodCOD,
@@ -1322,7 +1322,7 @@ private extension OrdersFeature {
                 categories: resolvedCategories,
                 paymentMethod: trimmedPaymentMethod,
                 notes: trimmedNotes,
-                verificationStatus: normalizedVerificationStatus,
+                reconciliationStatus: normalizedReconciliationStatus,
                 campaignNames: normalizedCampaignNames,
                 paymentReceiptStatus: draft.draftPaymentReceiptStatus,
                 isCashOnDelivery: draft.isSelectedPaymentMethodCOD,
@@ -1392,7 +1392,7 @@ private extension LedgerOrder {
             categories: categories,
             paymentMethod: paymentMethod,
             notes: notes,
-            verificationStatus: verificationStatus,
+            reconciliationStatus: reconciliationStatus,
             campaignNames: campaignNames,
             paymentReceiptStatus: paymentReceiptStatus,
             isCashOnDelivery: isCashOnDelivery,

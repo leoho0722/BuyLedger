@@ -15,30 +15,30 @@ struct LookupManagementFeatureTests {
 
     // MARK: - Tests
 
-    @Test func verificationStatusKindLoadsFromRepository() async {
-        let store = TestStore(initialState: LookupManagementFeature.State(kind: .verificationStatus)) {
+    @Test func reconciliationStatusKindLoadsFromRepository() async {
+        let store = TestStore(initialState: LookupManagementFeature.State(kind: .reconciliationStatus)) {
             LookupManagementFeature()
         } withDependencies: {
-            $0[VerificationStatusRepository.self] = VerificationStatusRepository(
-                fetchVerificationStatuses: { ["待對帳", "對帳成功"] },
-                addVerificationStatus: { _ in },
-                removeVerificationStatus: { _ in },
-                renameVerificationStatus: { _, _ in }
+            $0[ReconciliationStatusRepository.self] = ReconciliationStatusRepository(
+                fetchReconciliationStatuses: { ["待對帳", "對帳成功"] },
+                addReconciliationStatus: { _ in },
+                removeReconciliationStatus: { _ in },
+                renameReconciliationStatus: { _, _ in }
             )
         }
 
         await store.send(.task)
-        await store.receive(\.verificationStatusItemsLoaded) {
+        await store.receive(\.reconciliationStatusItemsLoaded) {
             $0.items = ["待對帳", "對帳成功"]
             $0.hasLoaded = true
         }
     }
 
-    @Test func verificationStatusAddConfirmedAppendsItem() async {
-        let store = TestStore(initialState: LookupManagementFeature.State(kind: .verificationStatus)) {
+    @Test func reconciliationStatusAddConfirmedAppendsItem() async {
+        let store = TestStore(initialState: LookupManagementFeature.State(kind: .reconciliationStatus)) {
             LookupManagementFeature()
         } withDependencies: {
-            $0[VerificationStatusRepository.self] = .testValue
+            $0[ReconciliationStatusRepository.self] = .testValue
         }
         store.exhaustivity = .off
 
@@ -125,9 +125,9 @@ struct LookupManagementFeatureTests {
         }
     }
 
-    @Test func addButtonTappedForVerificationStatusResetsDraftAndOpensAlert() async {
+    @Test func addButtonTappedForReconciliationStatusResetsDraftAndOpensAlert() async {
         // 對帳狀態比照訂單來源 / 商品類別走 alert：reducer 依 kind 清空草稿並開啟 alert
-        var state = LookupManagementFeature.State(kind: .verificationStatus)
+        var state = LookupManagementFeature.State(kind: .reconciliationStatus)
         state.addDraft = "殘留草稿"
 
         let store = TestStore(initialState: state) {

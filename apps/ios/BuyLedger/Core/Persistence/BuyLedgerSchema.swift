@@ -11,113 +11,14 @@ import SwiftData
 /// BuyLedger SwiftData schema 的版本化定義
 ///
 /// 目前保留的版本：
-/// - ``BuyLedgerSchemaV13``：收斂後的 migration floor。含開團訂購提醒連結表 (``CampaignReminderRecord``)；V14 改動該表形狀，故 V13 把其凍結為內嵌影子 (僅 `campaignID` / `eventIdentifier`)，其餘 model (``OrderRecord`` 等) 形狀與 top-level 一致、維持引用 top-level
-/// - ``BuyLedgerSchemaV14``：為 ``CampaignReminderRecord`` 新增每團提示時間 `minuteOfDay` 欄位；V15 改動該表形狀，故 V14 把其凍結為影子
-/// - ``BuyLedgerSchemaV15``：當前最新版本 (target)，把 ``CampaignReminderRecord`` 的 `minuteOfDay` (Int) 換成 `reminderTimestamp` (Date，使用者自選日期＋提示時間)；其餘 model 形狀不變、`models` 引用 top-level
+/// - ``BuyLedgerSchemaV15``：收斂後的 migration floor。此版本的 ``OrderRecord`` 對帳狀態欄位名為 `verificationStatus`、對帳狀態主檔為 `VerificationStatusRecord` entity；V16 改動此二者，故 V15 把 ``OrderRecord`` 與 ``VerificationStatusRecord`` 凍結為內嵌影子保住當時指紋。``CampaignReminderRecord`` 自 V15 未再變、引用 top-level
+/// - ``BuyLedgerSchemaV16``：當前最新版本 (target)，把 ``OrderRecord`` 的對帳狀態欄位由 `verificationStatus` 改名為 `reconciliationStatus` (以 `@Attribute(originalName:)` 保欄位)，並把對帳狀態主檔 entity 由 `VerificationStatusRecord` 改名為 ``ReconciliationStatusRecord``；`models` 全部引用 top-level
 ///
-/// V1~V12 已於 pre-release 階段移除
+/// V1~V14 已移除：V1~V12 於 pre-release 階段移除；V13/V14 為 v1.5.0 開團提醒功能的中間遷移版本、與 V15 同一個 release commit 落地 (target 一律為 V15)，故無任何已安裝 store 曾停在 V13/V14，floor 收斂到 V15 不會孤立任何 store
 ///
-/// Migration 為 forward-only：停在 V13 的 store 逐段 lightweight 遷到 V15
+/// Migration 為 forward-only：停在 V15 的 store 以 `.custom` 遷到 V16
 ///
-/// **移除版本會把 floor 往上抬 (單向操作)**：停在低於 V13 的 store 將失去遷移路徑、開啟時被 `makeForApp()` 砍檔重建，故上架後不可再回頭移除
-enum BuyLedgerSchemaV13: VersionedSchema {
-
-    // MARK: - Static Properties
-
-    /// 版本識別
-    static var versionIdentifier: Schema.Version { Schema.Version(13, 0, 0) }
-
-    /// 此版本的 model 型別；``CampaignReminderRecord`` 指向本 enum 內凍結的影子，其餘維持引用 top-level
-    static var models: [any PersistentModel.Type] {
-        [
-            OrderRecord.self,
-            CategoryRecord.self,
-            PaymentMethodRecord.self,
-            CurrencyMetadataRecord.self,
-            OrderSourceRecord.self,
-            VerificationStatusRecord.self,
-            CampaignRecord.self,
-            SyncMeta.self,
-            SyncQueueItem.self,
-            CampaignReminderRecord.self,
-        ]
-    }
-
-    // MARK: - Nested Types
-
-    /// 收斂後 migration floor (V13) 的 ``CampaignReminderRecord`` 影子：僅 `campaignID` / `eventIdentifier`，尚未含 V14 的 `minuteOfDay`
-    @Model
-    final class CampaignReminderRecord {
-
-        // MARK: - Data Properties
-
-        var campaignID: String
-        var eventIdentifier: String
-
-        // MARK: - Init
-
-        init(campaignID: String, eventIdentifier: String) {
-            self.campaignID = campaignID
-            self.eventIdentifier = eventIdentifier
-        }
-    }
-}
-
-/// V14 schema：在 V13 之上為 ``CampaignReminderRecord`` 新增每團提示時間 `minuteOfDay` 欄位
-///
-/// V15 把 ``CampaignReminderRecord`` 的 `minuteOfDay` 改為 `reminderTimestamp`，故此版本把當時的 ``CampaignReminderRecord`` (含 `minuteOfDay`) 凍結為內嵌影子，保住 V14 attribute 指紋
-///
-/// 其餘 top-level model 自 V13 未變、維持引用 top-level
-enum BuyLedgerSchemaV14: VersionedSchema {
-
-    // MARK: - Static Properties
-
-    /// 版本識別
-    static var versionIdentifier: Schema.Version { Schema.Version(14, 0, 0) }
-
-    /// 此版本的 model 型別；``CampaignReminderRecord`` 指向本 enum 內凍結的影子，其餘維持引用 top-level
-    static var models: [any PersistentModel.Type] {
-        [
-            OrderRecord.self,
-            CategoryRecord.self,
-            PaymentMethodRecord.self,
-            CurrencyMetadataRecord.self,
-            OrderSourceRecord.self,
-            VerificationStatusRecord.self,
-            CampaignRecord.self,
-            SyncMeta.self,
-            SyncQueueItem.self,
-            CampaignReminderRecord.self,
-        ]
-    }
-
-    // MARK: - Nested Types
-
-    /// V14 的 ``CampaignReminderRecord`` 影子：含 `minuteOfDay` (Int)，尚未改為 V15 的 `reminderTimestamp`
-    @Model
-    final class CampaignReminderRecord {
-
-        // MARK: - Data Properties
-
-        var campaignID: String
-        var eventIdentifier: String
-        var minuteOfDay: Int = 540
-
-        // MARK: - Init
-
-        init(campaignID: String, eventIdentifier: String, minuteOfDay: Int = 540) {
-            self.campaignID = campaignID
-            self.eventIdentifier = eventIdentifier
-            self.minuteOfDay = minuteOfDay
-        }
-    }
-}
-
-/// V15 schema：當前最新版本 (target)，把 ``CampaignReminderRecord`` 的每團提示時間由 `minuteOfDay` (Int) 改為 `reminderTimestamp` (Date，使用者自選的日期＋提示時間)
-///
-/// 其餘 model 形狀不變、``models`` 引用 top-level
-///
-/// 因僅為既有 model 移除舊欄位、新增帶預設值的新欄位 (非既有欄位的型別變更)，V14 → V15 走 `.lightweight`
+/// **移除版本會把 floor 往上抬 (單向操作)**：停在低於 V15 的 store 將失去遷移路徑、開啟時被 `makeForApp()` 砍檔重建，故上架後不可再回頭移除
 enum BuyLedgerSchemaV15: VersionedSchema {
 
     // MARK: - Static Properties
@@ -125,7 +26,7 @@ enum BuyLedgerSchemaV15: VersionedSchema {
     /// 版本識別
     static var versionIdentifier: Schema.Version { Schema.Version(15, 0, 0) }
 
-    /// 此版本的 ``CampaignReminderRecord`` 引用新 top-level 定義 (含 `reminderTimestamp`)
+    /// 此版本的 model 型別；``OrderRecord`` / ``VerificationStatusRecord`` 指向本 enum 內凍結的影子，其餘 (含 ``CampaignReminderRecord``) 維持引用 top-level
     static var models: [any PersistentModel.Type] {
         [
             OrderRecord.self,
@@ -140,13 +41,140 @@ enum BuyLedgerSchemaV15: VersionedSchema {
             CampaignReminderRecord.self,
         ]
     }
+
+    // MARK: - Nested Types
+
+    /// V15 的 ``OrderRecord`` 影子：對帳狀態欄位仍名為 `verificationStatus` (V16 才改名)，保住當時 attribute 指紋
+    @Model
+    final class OrderRecord {
+
+        // MARK: - Data Properties
+
+        var id: String
+        var customer: LedgerCustomer
+        var status: OrderStatus
+        var currency: String
+        var date: Date
+        var items: [LedgerOrderItem]
+        var itemCost: Decimal
+        var domesticShipping: Decimal
+        var internationalShipping: Decimal
+        var foreignDomesticShipping: Decimal = 0
+        var cardFeeRate: Decimal
+        var platformFeeRate: Decimal
+        var paymentFeeRate: Decimal = 0
+        var chargedAmount: Decimal
+        var cardlessDeductionAmount: Decimal = 0
+        var cardlessSupplementAmount: Decimal = 0
+        var orderSource: String = ""
+        var categories: [String] = []
+        var paymentMethod: String = ""
+        var notes: String = ""
+        var verificationStatus: String = ""
+        var campaignNames: [String] = []
+        var paymentReceiptStatus: String = PaymentReceiptStatus.pending.rawValue
+        var isCashOnDelivery: Bool = false
+        var photos: [Data] = []
+        var mergedSourceIDs: [String] = []
+
+        // MARK: - Init
+
+        init(order: LedgerOrder) {
+            self.id = order.id
+            self.customer = order.customer
+            self.status = order.status
+            self.currency = order.currency.rawValue
+            self.date = order.date
+            self.items = order.items
+            self.itemCost = order.itemCost
+            self.domesticShipping = order.domesticShipping
+            self.internationalShipping = order.internationalShipping
+            self.foreignDomesticShipping = order.foreignDomesticShipping
+            self.cardFeeRate = order.cardFeeRate
+            self.platformFeeRate = order.platformFeeRate
+            self.paymentFeeRate = order.paymentFeeRate
+            self.chargedAmount = order.chargedAmount
+            self.cardlessDeductionAmount = order.cardlessDeductionAmount
+            self.cardlessSupplementAmount = order.cardlessSupplementAmount
+            self.orderSource = order.orderSource
+            self.categories = order.categories
+            self.paymentMethod = order.paymentMethod
+            self.notes = order.notes
+            self.verificationStatus = order.reconciliationStatus
+            self.campaignNames = order.campaignNames
+            self.paymentReceiptStatus = order.paymentReceiptStatus.rawValue
+            self.isCashOnDelivery = order.isCashOnDelivery
+            self.photos = order.photos
+            self.mergedSourceIDs = order.mergedSourceIDs
+        }
+    }
+
+    /// V15 的對帳狀態主檔影子 (entity 名 `VerificationStatusRecord`)；V16 改名為 ``ReconciliationStatusRecord``
+    @Model
+    final class VerificationStatusRecord {
+
+        // MARK: - Data Properties
+
+        var name: String
+
+        // MARK: - Init
+
+        init(name: String) {
+            self.name = name
+        }
+    }
+}
+
+/// V16 schema：當前最新版本 (target)，把對帳狀態的程式識別字由 verification 對齊為 reconciliation
+///
+/// - ``OrderRecord`` 的對帳狀態欄位由 `verificationStatus` 改名為 `reconciliationStatus`，以 `@Attribute(originalName: "verificationStatus")` 保住底層欄位名、既有值零搬遷
+/// - 對帳狀態主檔 entity 由 `VerificationStatusRecord` 改名為 ``ReconciliationStatusRecord``；SwiftData 無 entity 級 originalName，故 V15 → V16 以 `.custom` stage dump/restore 保住主檔名稱清單
+///
+/// 其餘 model 形狀不變、``models`` 全部引用 top-level
+enum BuyLedgerSchemaV16: VersionedSchema {
+
+    // MARK: - Static Properties
+
+    /// 版本識別
+    static var versionIdentifier: Schema.Version { Schema.Version(16, 0, 0) }
+
+    /// 此版本的 model 型別全部引用 top-level (含改名後的 ``OrderRecord`` 與 ``ReconciliationStatusRecord``)
+    static var models: [any PersistentModel.Type] {
+        [
+            OrderRecord.self,
+            CategoryRecord.self,
+            PaymentMethodRecord.self,
+            CurrencyMetadataRecord.self,
+            OrderSourceRecord.self,
+            ReconciliationStatusRecord.self,
+            CampaignRecord.self,
+            SyncMeta.self,
+            SyncQueueItem.self,
+            CampaignReminderRecord.self,
+        ]
+    }
+}
+
+/// 對帳狀態主檔改名 (V15 → V16) 的跨階段暫存
+///
+/// SwiftData 的 `.custom` migration 中，`willMigrate` 只見舊 schema、`didMigrate` 只見新 schema，兩者無法同時取用；故在 `willMigrate` 讀出舊 entity 名稱清單暫存於此，`didMigrate` 再寫進新 entity
+///
+/// migration 於 `ModelContainer` init 期間單執行緒執行 (one-shot、無 race)，故以 `nonisolated(unsafe) static` 承載
+enum ReconciliationStatusRenameMigration {
+
+    // MARK: - Static Properties
+
+    /// `willMigrate` 讀出、`didMigrate` 寫回的對帳狀態主檔名稱清單
+    nonisolated(unsafe) static var carriedNames: [String] = []
 }
 
 /// BuyLedger SwiftData migration plan
 ///
-/// 保留 V13 → V14、V14 → V15 兩段 lightweight 遷移：V13 → V14 為 ``CampaignReminderRecord`` 新增 `minuteOfDay` 欄位；V14 → V15 把 `minuteOfDay` 換成帶預設值的 `reminderTimestamp` 欄位
+/// floor 為 V15：唯一保留的遷移為 V15 → V16 對帳狀態改名
 ///
-/// floor 為 V13：停在 V13 的 store 會逐段遷到 V15，已在 V15 的 store 開啟時 delta 為 0、不觸發任何 stage
+/// V15 → V16 為 `.custom`：``OrderRecord`` 欄位改名由 `@Attribute(originalName:)` 走自動 (lightweight) 映射；對帳狀態主檔 entity 改名以 `willMigrate` dump／`didMigrate` restore 保住名稱清單
+///
+/// 停在 V15 的 store 遷到 V16，已在 V16 的 store 開啟時 delta 為 0、不觸發任何 stage
 ///
 /// 新增版本時，於 ``schemas`` 與 ``stages`` append 新版與遷移階段，並把上一版凍結為影子型別保住其 attribute 指紋 (該型別有變更時)
 enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
@@ -156,24 +184,30 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
     /// migration plan 涉及的所有 schema 版本
     static var schemas: [any VersionedSchema.Type] {
         [
-            BuyLedgerSchemaV13.self,
-            BuyLedgerSchemaV14.self,
             BuyLedgerSchemaV15.self,
+            BuyLedgerSchemaV16.self,
         ]
     }
 
-    /// V13 → V14 (lightweight，為 ``CampaignReminderRecord`` 新增帶預設值的 `minuteOfDay` 欄位)
-    ///
-    /// V14 → V15 (lightweight，把 `minuteOfDay` 換成帶預設值的 `reminderTimestamp` 欄位)
+    /// V15 → V16 (custom，對帳狀態改名：``OrderRecord`` 欄位以 originalName 自動映射，對帳狀態主檔 entity 以 dump/restore 保住名稱清單)
     static var stages: [MigrationStage] {
         [
-            .lightweight(
-                fromVersion: BuyLedgerSchemaV13.self,
-                toVersion: BuyLedgerSchemaV14.self
-            ),
-            .lightweight(
-                fromVersion: BuyLedgerSchemaV14.self,
-                toVersion: BuyLedgerSchemaV15.self
+            .custom(
+                fromVersion: BuyLedgerSchemaV15.self,
+                toVersion: BuyLedgerSchemaV16.self,
+                willMigrate: { context in
+                    let records = try context.fetch(
+                        FetchDescriptor<BuyLedgerSchemaV15.VerificationStatusRecord>()
+                    )
+                    ReconciliationStatusRenameMigration.carriedNames = records.map { $0.name }
+                },
+                didMigrate: { context in
+                    for name in ReconciliationStatusRenameMigration.carriedNames {
+                        context.insert(ReconciliationStatusRecord(name: name))
+                    }
+                    try context.save()
+                    ReconciliationStatusRenameMigration.carriedNames = []
+                }
             ),
         ]
     }

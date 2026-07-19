@@ -61,14 +61,19 @@
 
 ## SwiftData Schema 與 Migration
 
-Schema 採版本化 `VersionedSchema`，設有 migration floor (floor 以下的版本已移除)，floor 到 target 之間的中間版本凍結為影子，遷移由 `BuyLedgerMigrationPlan` (`SchemaMigrationPlan`) 串接，全部定義在 `Core/Persistence/BuyLedgerSchema.swift`。
+Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration floor，全定義在 `Core/Persistence/BuyLedgerSchema.swift`。**改 schema 前先 invoke `/swiftdata-schema-migration`** 取得逐步指引 (新增版本 enum、凍結舊版 shadow、append stage、更新 `PersistenceContainer.make`)。
 
-- **只有最新版本引用 top-level `@Model` 型別**——target 版本的 `models` 指向 `OrderRecord` 等 top-level 定義；**floor 以外的每個保留舊版本必須把當時的 `@Model` 凍結成內嵌於該 enum 的 shadow 型別**，保住當時的 attribute fingerprint，否則改動 top-level 型別會連帶破壞舊 schema 指紋導致 migration 失敗 (floor V13 本身即把有變更的 `CampaignReminderRecord` 凍結為影子)。
-- **加欄位／加表 → `.lightweight`；改型別 → `.custom`**——新增帶 default 的欄位或全新 model 走 lightweight；改變既有欄位型別必須走 `.custom` 的 dump-and-restore (歷史案例與 pattern 細節見 `/swiftdata-schema-migration` skill)。
-- **改 schema 時，invoke `/swiftdata-schema-migration` 取得逐步操作指引** (新增版本 enum、凍結舊版 shadow、append migration stage、更新 `PersistenceContainer.make`)。
-- **移除舊版本是單向操作**——遷移為 forward-only，plan 只需「最舊仍存在的 store 版本 (floor) → target」之間連續的 stage 鏈。移除舊版會把 floor 往上抬；任何停在低於新 floor 的 on-disk store 將失去遷移路徑，開啟時 `ModelContainer` init 拋錯、進而觸發 `makeForApp()` 砍檔。**只有確定沒有任何已安裝 store 停在被移除的版本 (或更早) 時才可移除**；上架後此前提幾乎不成立，務必保留能回溯到最舊可能 store 的完整版本鏈。
-- **「已在最新版就安全」僅限單機**——「已在 target 的 store 不觸發遷移、移除舊版不受影響」是 per-device 結論。目前 CloudKit 為 `.disabled` (code 與 entitlements 皆關) 故成立；一旦啟用 sync，離線停在舊版的第二台裝置升級後同樣會觸發砍檔，且刪除可能透過 sync 傳播——啟用 sync 前必須重新評估版本移除策略。
-- `PersistenceContainer.makeForApp()` 在 container 建立失敗時會「清掉舊 store 重建、再退回 in-memory」——這是**開發期 fallback**，要保留使用者資料時請補正確的 migration stage，不要依賴這段砍檔邏輯。
+- **shadow 凍結**：floor 以外每個保留版本必須把當時的 `@Model` 凍結為內嵌 shadow，保住當時 attribute fingerprint。
+  - target 的 `models` 引用 top-level `@Model`；改動 top-level 型別會破壞舊版指紋、導致 migration 失敗。
+  - 現況 floor V15 即把對帳狀態改名前的 `OrderRecord` 與 `VerificationStatusRecord` 凍結為影子。
+- **遷移方式**依改動類型選擇：
+  - 加欄位／加表 → `.lightweight`；改既有欄位型別 → `.custom` dump-and-restore。
+  - 改欄位名 → `@Attribute(originalName:)` (lightweight，底層欄位名不變)。
+  - 改 `@Model` 類別名 (=entity 名) → 必須 `.custom`：SwiftData **無 entity 級 originalName**，類別改名等同新 entity、舊表資料不自動帶入。凍舊 shadow 後於 `.custom` 的 `willMigrate` 讀舊 entity 暫存 (`nonisolated(unsafe) static`)、`didMigrate` 寫新 entity (兩 closure 各只見舊／新 schema)。
+- **移除舊版本是單向操作**：forward-only，移除會把 floor 往上抬，停在低於新 floor 的 store 失去遷移路徑、開啟時 `makeForApp()` 砍檔。
+  - 只在確定無 store 停在被移除版本時才可移除；上架後此前提幾乎不成立、須保留完整版本鏈。
+  - 「已在 target 就安全」是 per-device 結論：目前 CloudKit `.disabled` 故成立；啟用 sync 前須重評 (離線舊版第二台裝置升級同樣砍檔、刪除可能經 sync 傳播)。
+- **`makeForApp()` fallback** (清舊 store 重建 → 退 in-memory) 是開發期救援：要保資料請補正確 migration stage、勿依賴這段砍檔。
 
 ## 外部 API 實作
 
@@ -79,7 +84,7 @@ Schema 採版本化 `VersionedSchema`，設有 migration floor (floor 以下的�
 開團訂購提醒經 `CalendarReminderClient` (`Core/Dependencies/`，比照 `PhotoClient` 的 system-call client 範本) 寫入／移除系統行事曆。硬規則與 gotcha：
 
 - **必須請求 full access、不能只用 write-only**——「移除提醒」需先 `event(withIdentifier:)` 讀回事件才能刪，write-only 讀不到事件。故走 `requestFullAccessToEvents()`，Info.plist 帶 `NSCalendarsFullAccessUsageDescription` (權限在實際新增／移除的當下才請求，非啟動即請求)。
-- **campaign 連結存 iOS-only 的 `CampaignReminderRecord` (SwiftData 表)，不入跨平台 `Campaign` schema**——記 `eventIdentifier` 與使用者自選的提醒時間戳 `reminderTimestamp` (Date)；行事曆識別碼是裝置本機資料，寫進跨平台生成型別會違反平台中立原則且與 CloudKit 耦合。V13 建此表、V14 加提示時間欄位、V15 改為 `reminderTimestamp` (皆 lightweight)。連結資料以 `CampaignReminderLink` 值型別在 repository / reducer 間流轉。
+- **campaign 連結存 iOS-only 的 `CampaignReminderRecord` (SwiftData 表)，不入跨平台 `Campaign` schema**——記 `eventIdentifier` 與使用者自選的提醒時間戳 `reminderTimestamp` (Date)；行事曆識別碼是裝置本機資料，寫進跨平台生成型別會違反平台中立原則且與 CloudKit 耦合。此表於 v1.5.0 建立並演進為使用者自選的 `reminderTimestamp` (當時的 V13 建表、V14 加提示時間、V15 改 `reminderTimestamp` 皆 lightweight；V13/V14 已隨 floor 收斂到 V15 而移除)。連結資料以 `CampaignReminderLink` 值型別在 repository / reducer 間流轉。
 - **提醒日期＋時間由使用者自選、以時間戳保存**：不再自動掛結單日。事件為**全天事件** (`isAllDay`)，事件日期＝`calendar.startOfDay(for: reminderTimestamp)`，提示 (`EKAlarm(relativeOffset:)`) 以該時間戳的當天分鐘數換算秒數 (`Campaign.reminderTitle` 提供標題)。新增／編輯開團頁點「新增提醒」以 sheet (graphical `DatePicker([.date, .hourAndMinute])`、`presentationDetents([.fraction(0.7)])` 螢幕 70% 高，狀態/流程全在 reducer、view 只送 action) 選日期＋提示時間 (預設結單日／今天 09:00)，儲存時 reconcile (名稱或時間戳變更即重建事件)；**開團詳情頁純顯示**該提醒時間戳、不提供新增／移除 (管理走編輯頁)。
 
 ## 程式風格 Apple 補充

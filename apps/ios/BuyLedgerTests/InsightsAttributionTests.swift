@@ -101,7 +101,7 @@ private extension InsightsAttributionTests {
             categories: categories,
             paymentMethod: "信用卡",
             notes: "",
-            verificationStatus: "",
+            reconciliationStatus: "",
             campaignNames: [],
             paymentReceiptStatus: .pending,
             isCashOnDelivery: false,

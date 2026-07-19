@@ -226,7 +226,7 @@ struct CampaignSummaryTests {
             categories: [],
             paymentMethod: "",
             notes: "",
-            verificationStatus: "",
+            reconciliationStatus: "",
             campaignNames: campaignNames ?? (campaign.isEmpty ? [] : [campaign]),
             paymentReceiptStatus: receipt,
             isCashOnDelivery: false,

@@ -101,7 +101,7 @@ private extension OrdersFeaturePerformanceTests {
                 categories: [category],
                 paymentMethod: "",
                 notes: "",
-                verificationStatus: "",
+                reconciliationStatus: "",
                 campaignNames: [],
                 paymentReceiptStatus: .pending,
                 isCashOnDelivery: false,

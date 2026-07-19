@@ -88,8 +88,8 @@ struct OrderEditFeature {
 
         /// 對帳狀態草稿
         ///
-        /// 僅在 ``showsVerificationStatusRow`` 為 `true` 時於 UI 顯示與編輯；切換到非無卡／非銀行匯款付款方式時，父層 `applyEditDraft` 會在儲存時清成空字串
-        var draftVerificationStatus: String
+        /// 僅在 ``showsReconciliationStatusRow`` 為 `true` 時於 UI 顯示與編輯；切換到非無卡／非銀行匯款付款方式時，父層 `applyEditDraft` 會在儲存時清成空字串
+        var draftReconciliationStatus: String
 
         /// 歸屬開團名稱草稿；空陣列代表未歸團 (散單)。僅能從 ``availableCampaigns`` 既有開團中選擇，不在此表單內新增開團
         ///
@@ -115,7 +115,7 @@ struct OrderEditFeature {
         var showsPaymentMethodSheet = false
 
         /// 是否顯示「對帳狀態」選擇 sheet
-        var showsVerificationStatusSheet = false
+        var showsReconciliationStatusSheet = false
 
         /// 是否顯示「幣別」選擇 sheet
         var showsCurrencySheet = false
@@ -141,7 +141,7 @@ struct OrderEditFeature {
         var availablePaymentMethods: [PaymentMethodInfo]
 
         /// 可供選擇的對帳狀態清單；由父層 reducer 從現有訂單與主檔聚合後注入，並在使用者新增狀態時即時擴充
-        var availableVerificationStatuses: [String]
+        var availableReconciliationStatuses: [String]
 
         /// 可供選擇的開團清單 (名稱)；由父層 reducer 從現有訂單與開團主檔聚合後注入，供訂單歸團選單使用
         var availableCampaigns: [String]
@@ -162,7 +162,7 @@ struct OrderEditFeature {
         ///   - availableOrderSources: 表單可選用的既有訂單來源；不含原訂單來源時會在初始化時補上
         ///   - availableCategories: 表單可選用的既有類別；不含原訂單類別時會在初始化時補上
         ///   - availablePaymentMethods: 表單可選用的既有付款方式；不含原訂單付款方式時會在初始化時補上 (補上的項目 `isCardless` / `isBankTransfer` 預設為 `false`)
-        ///   - availableVerificationStatuses: 表單可選用的既有對帳狀態；不含原訂單對帳狀態時會在初始化時補上
+        ///   - availableReconciliationStatuses: 表單可選用的既有對帳狀態；不含原訂單對帳狀態時會在初始化時補上
         ///   - id: 表單 instance 的穩定識別值；caller 應從 `@Dependency(\.uuid)` 取得以維持可測試性
         ///   - currentDate: 新訂單時 ``draftDate`` 的預設值；caller 應從 `@Dependency(\.date)` 取得當下時間以維持可測試性
         init(
@@ -171,7 +171,7 @@ struct OrderEditFeature {
             availableOrderSources: [String] = [],
             availableCategories: [String] = [],
             availablePaymentMethods: [PaymentMethodInfo] = [],
-            availableVerificationStatuses: [String] = [],
+            availableReconciliationStatuses: [String] = [],
             availableCampaigns: [String] = [],
             availableCurrencies: [CurrencyCode] = CurrencyCode.defaults,
             currentDate: Date
@@ -196,7 +196,7 @@ struct OrderEditFeature {
             self.draftNotes = original?.notes ?? ""
             self.draftDate = original?.date ?? currentDate
             self.draftPaymentMethod = original?.paymentMethod ?? ""
-            self.draftVerificationStatus = original?.verificationStatus ?? ""
+            self.draftReconciliationStatus = original?.reconciliationStatus ?? ""
             self.draftCampaignNames = original?.campaignNames ?? []
             self.draftPaymentReceiptStatus = original?.paymentReceiptStatus ?? .pending
             self.draftPhotos = original?.photos ?? []
@@ -225,12 +225,12 @@ struct OrderEditFeature {
             }
             self.availablePaymentMethods = paymentMethods.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
 
-            var verificationStatuses = availableVerificationStatuses
-            let originalVerificationStatus = original?.verificationStatus.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            if !originalVerificationStatus.isEmpty, !verificationStatuses.contains(originalVerificationStatus) {
-                verificationStatuses.append(originalVerificationStatus)
+            var reconciliationStatuses = availableReconciliationStatuses
+            let originalReconciliationStatus = original?.reconciliationStatus.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            if !originalReconciliationStatus.isEmpty, !reconciliationStatuses.contains(originalReconciliationStatus) {
+                reconciliationStatuses.append(originalReconciliationStatus)
             }
-            self.availableVerificationStatuses = verificationStatuses.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+            self.availableReconciliationStatuses = reconciliationStatuses.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
 
             var campaigns = availableCampaigns
             for originalCampaign in (original?.campaignNames ?? []).map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) }) {
@@ -284,7 +284,7 @@ struct OrderEditFeature {
         }
 
         /// 是否在「付款方式」row 底下顯示「對帳狀態」row：選到的付款方式屬於無卡或銀行匯款 (款項不會即時入帳、需事後人工對帳) 時為 `true`
-        var showsVerificationStatusRow: Bool {
+        var showsReconciliationStatusRow: Bool {
             isSelectedPaymentMethodCardless || isSelectedPaymentMethodBankTransfer
         }
 
@@ -363,7 +363,7 @@ struct OrderEditFeature {
         case addPaymentMethodTapped(name: String, isCardless: Bool, isBankTransfer: Bool, isCashOnDelivery: Bool)
 
         /// 使用者透過「新增對帳狀態」sheet 確認新增一筆對帳狀態名稱
-        case addVerificationStatusTapped(String)
+        case addReconciliationStatusTapped(String)
 
         /// 表單畫面 `.task` 觸發；用於從 repo 重新拉取最新的訂單來源／類別／付款方式／對帳狀態／開團主檔
         case task
@@ -377,8 +377,8 @@ struct OrderEditFeature {
         /// 從 ``PaymentMethodRepository`` 取回最新付款方式主檔 (含 `isCardless` / `isBankTransfer`)
         case availablePaymentMethodsLoaded([PaymentMethodInfo])
 
-        /// 從 ``VerificationStatusRepository`` 取回最新對帳狀態主檔
-        case availableVerificationStatusesLoaded([String])
+        /// 從 ``ReconciliationStatusRepository`` 取回最新對帳狀態主檔
+        case availableReconciliationStatusesLoaded([String])
 
         /// 從 ``CampaignRepository`` 取回最新開團主檔；handler 只取開團中 (``CampaignStatus/ongoing``) 的名稱填入選單
         case availableCampaignsLoaded([Campaign])
@@ -414,7 +414,7 @@ struct OrderEditFeature {
         case paymentMethodPickerTapped
 
         /// 使用者點擊「對帳狀態」列，開啟對帳狀態選擇 sheet
-        case verificationStatusPickerTapped
+        case reconciliationStatusPickerTapped
 
         /// 使用者在 sheet 選定訂單來源
         case orderSourceSelected(String)
@@ -423,7 +423,7 @@ struct OrderEditFeature {
         case paymentMethodSelected(String)
 
         /// 使用者在 sheet 選定對帳狀態
-        case verificationStatusSelected(String)
+        case reconciliationStatusSelected(String)
 
         /// 使用者在 sheet 選定幣別 (以 ISO 4217 code 傳入)
         case currencySelected(String)
@@ -456,7 +456,7 @@ struct OrderEditFeature {
     @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
 
     /// 對帳狀態主檔資料來源；理由同 ``categoryRepository``
-    @Dependency(VerificationStatusRepository.self) private var verificationStatusRepository
+    @Dependency(ReconciliationStatusRepository.self) private var reconciliationStatusRepository
 
     /// 開團主檔資料來源；用於 sheet `.task` 自行載入開團，讓任一入口 (含 Dashboard 直接開新訂單) 的選單都拿得到開團中的開團，不必依賴 caller 傳入
     @Dependency(CampaignRepository.self) private var campaignRepository
@@ -596,27 +596,27 @@ struct OrderEditFeature {
                 state.draftPaymentMethod = trimmed
                 return .none
 
-            case let .addVerificationStatusTapped(rawName):
+            case let .addReconciliationStatusTapped(rawName):
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else {
                     return .none
                 }
 
-                if !state.availableVerificationStatuses.contains(trimmed) {
-                    var updated = state.availableVerificationStatuses
+                if !state.availableReconciliationStatuses.contains(trimmed) {
+                    var updated = state.availableReconciliationStatuses
                     updated.append(trimmed)
-                    state.availableVerificationStatuses = updated.sorted {
+                    state.availableReconciliationStatuses = updated.sorted {
                         $0.localizedStandardCompare($1) == .orderedAscending
                     }
                 }
-                state.draftVerificationStatus = trimmed
+                state.draftReconciliationStatus = trimmed
                 return .none
 
             case .task:
                 let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
-                let verificationStatusRepository = verificationStatusRepository
+                let reconciliationStatusRepository = reconciliationStatusRepository
                 let campaignRepository = campaignRepository
                 let currencyMetadataRepository = currencyMetadataRepository
                 return .run { send in
@@ -635,9 +635,9 @@ struct OrderEditFeature {
                             await send(.availablePaymentMethodsLoaded(infos))
                         }
                     }()
-                    async let verificationStatusesTask: Void = {
-                        if let items = try? await verificationStatusRepository.fetchVerificationStatuses() {
-                            await send(.availableVerificationStatusesLoaded(items))
+                    async let reconciliationStatusesTask: Void = {
+                        if let items = try? await reconciliationStatusRepository.fetchReconciliationStatuses() {
+                            await send(.availableReconciliationStatusesLoaded(items))
                         }
                     }()
                     async let campaignsTask: Void = {
@@ -650,7 +650,7 @@ struct OrderEditFeature {
                             await send(.availableCurrenciesLoaded(codes))
                         }
                     }()
-                    _ = await (orderSourcesTask, categoriesTask, paymentMethodsTask, verificationStatusesTask, campaignsTask, currenciesTask)
+                    _ = await (orderSourcesTask, categoriesTask, paymentMethodsTask, reconciliationStatusesTask, campaignsTask, currenciesTask)
                 }
 
             case let .availableOrderSourcesLoaded(items):
@@ -694,14 +694,14 @@ struct OrderEditFeature {
                     .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
                 return .none
 
-            case let .availableVerificationStatusesLoaded(items):
-                // 合併：把目前 draftVerificationStatus (可能是剛在 sheet 內新增、尚未走完整 add → repo 來回) 保留在清單
+            case let .availableReconciliationStatusesLoaded(items):
+                // 合併：把目前 draftReconciliationStatus (可能是剛在 sheet 內新增、尚未走完整 add → repo 來回) 保留在清單
                 var merged = Set(items)
-                let draftVerificationStatus = state.draftVerificationStatus.trimmingCharacters(in: .whitespacesAndNewlines)
-                if !draftVerificationStatus.isEmpty {
-                    merged.insert(draftVerificationStatus)
+                let draftReconciliationStatus = state.draftReconciliationStatus.trimmingCharacters(in: .whitespacesAndNewlines)
+                if !draftReconciliationStatus.isEmpty {
+                    merged.insert(draftReconciliationStatus)
                 }
-                state.availableVerificationStatuses = merged
+                state.availableReconciliationStatuses = merged
                     .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
                 return .none
 
@@ -768,8 +768,8 @@ struct OrderEditFeature {
                 state.showsPaymentMethodSheet = true
                 return .none
 
-            case .verificationStatusPickerTapped:
-                state.showsVerificationStatusSheet = true
+            case .reconciliationStatusPickerTapped:
+                state.showsReconciliationStatusSheet = true
                 return .none
 
             case let .orderSourceSelected(source):
@@ -780,8 +780,8 @@ struct OrderEditFeature {
                 state.draftPaymentMethod = method
                 return .none
 
-            case let .verificationStatusSelected(status):
-                state.draftVerificationStatus = status
+            case let .reconciliationStatusSelected(status):
+                state.draftReconciliationStatus = status
                 return .none
 
             case let .currencySelected(code):
