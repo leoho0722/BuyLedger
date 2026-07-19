@@ -33,7 +33,7 @@ code:
 ---
 ### Requirement: Data preservation across retained migrations
 
-Opening a store at any retained version SHALL preserve every persisted record and its field values through migration to the target. No retained migration stage SHALL drop or corrupt existing rows.
+Opening a store at any retained version SHALL preserve every persisted record and its field values through migration to the target. No retained migration stage SHALL drop or corrupt existing rows. When a persisted field or master-data entity is renamed, the bridging migration SHALL preserve existing values under the new name rather than dropping them.
 
 #### Scenario: Orders survive floor-to-target migration
 
@@ -42,18 +42,88 @@ Opening a store at any retained version SHALL preserve every persisted record an
 
 ##### Example: three orders survive V7 to V8 migration
 
-- **GIVEN** an on-disk store at the floor version (V7) containing 3 order records with currency, orderSource, notes, and verificationStatus set
+- **GIVEN** an on-disk store at the floor version (V7) containing 3 order records with currency, orderSource, notes, and reconciliation status set
 - **WHEN** the store is reopened with the collapsed migration plan targeting V8
-- **THEN** all 3 order records are present and each preserves its currency, orderSource, notes, and verificationStatus values
+- **THEN** all 3 order records are present and each preserves its currency, orderSource, notes, and reconciliation status values
+
+#### Scenario: Reconciliation-status rename migration preserves values
+
+- **WHEN** a store persisted before the reconciliation-status rename (the order field and master table previously named with the "verification" identifier) is opened with the migration plan
+- **THEN** every order's reconciliation-status value and every reconciliation-status master entry is preserved under the renamed field and table, with no rows dropped
 
 
 <!-- @trace
-source: prune-legacy-schema-versions
-updated: 2026-05-30
+source: rename-verification-to-reconciliation
+updated: 2026-07-19
 code:
-  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
-  - CLAUDE.md
+  - apps/ios/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/LedgerOrder.generated.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupKind.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/LookupItemEditorSheet.swift
+  - apps/ios/BuyLedgerTests/CampaignEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests.swift
+  - shared/data-model/schema/LedgerOrder.yaml
+  - apps/ios/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
+  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/ios/BuyLedger/Core/Persistence/VerificationStatusRecord.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/ios/BuyLedgerTests/OrderMergeTests.swift
+  - apps/ios/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignSummaryTests.swift
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.2.png
+  - apps/ios/BuyLedger/Core/Domain/OrderMerge.swift
+  - apps/ios/BuyLedger/Features/More/MoreView.swift
+  - apps/ios/BuyLedgerTests/CustomersFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/ios/BuyLedger/Core/Persistence/VerificationStatusPersistence.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
+  - apps/ios/BuyLedger/Core/Persistence/ReconciliationStatusPersistence.swift
+  - apps/ios/BuyLedgerTests/InsightsAttributionTests.swift
+  - apps/ios/BuyLedger/Resources/InfoPlist.xcstrings
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryView.swift
+  - apps/ios/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/ios/BuyLedger/Core/Persistence/ReconciliationStatusRecord.swift
+  - apps/ios/BuyLedgerTests/InsightsStatsTests.swift
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
+  - apps/ios/BuyLedger/Core/Dependencies/VerificationStatusRepository.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedgerTests/DashboardStatsTests.swift
+  - apps/ios/BuyLedgerTests/LocalizationCatalogTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
 -->
 
 ---
