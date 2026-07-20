@@ -105,6 +105,7 @@ struct SettingsView: View {
         .rootNavigationTitle("設定", language: store.language)
         .scrollDismissesKeyboard(.interactively)
         .bind($store.isGoalFieldFocused, to: $isGoalFieldFocused)
+        .dismissKeyboardOnBackgroundTap(isFocused: $isGoalFieldFocused)
         .toolbar {
             // 此畫面唯一的輸入為數字鍵盤，沒有 return 鍵可收
             ToolbarItemGroup(placement: .keyboard) {

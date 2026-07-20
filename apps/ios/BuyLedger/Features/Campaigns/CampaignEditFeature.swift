@@ -24,6 +24,11 @@ struct CampaignEditFeature {
         let original: Campaign?
 
         /// 開團名稱草稿
+        /// 目前取得鍵盤焦點的欄位；`nil` 代表無焦點
+        ///
+        /// 焦點屬呈現狀態，依專案慣例下放 Feature.State
+        var focusedField: Field?
+
         var draftName: String
 
         /// 開團日期草稿
@@ -212,5 +217,22 @@ extension CampaignEditFeature.State {
         let notes: String
         let wantsReminder: Bool
         let reminderTimestamp: Date
+    }
+}
+
+// MARK: - Nested Types
+
+extension CampaignEditFeature.State {
+
+    /// 表單中可取得鍵盤焦點的欄位；case 依畫面上的視覺順序宣告
+    enum Field: Hashable {
+
+        // MARK: - Cases
+
+        /// 開團名稱
+        case name
+
+        /// 備註
+        case notes
     }
 }

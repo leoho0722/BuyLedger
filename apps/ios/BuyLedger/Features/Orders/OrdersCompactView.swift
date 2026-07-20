@@ -59,7 +59,7 @@ struct OrdersCompactView: View {
                 .padding(.bottom, BLSpacing.section)
             }
             .background(palette.background)
-            .scrollDismissesKeyboard(.immediately)
+            .scrollDismissesKeyboard(.interactively)
             .rootNavigationTitle(store.navigationTitleKey, language: language)
             .toolbar {
                 if store.isSelecting {

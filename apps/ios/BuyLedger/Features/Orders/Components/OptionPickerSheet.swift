@@ -276,6 +276,7 @@ private extension OptionPickerSheet {
                 }
             }
             .modifier(SearchableModifier(text: $searchText, enabled: searchable))
+            .scrollDismissesKeyboard(.interactively)
             .alert(LocalizedStringKey(addAlertTitle), isPresented: $showsAddAlert) {
                 TextField(LocalizedStringKey(addFieldPlaceholder), text: $draft)
                     .textInputAutocapitalization(.never)

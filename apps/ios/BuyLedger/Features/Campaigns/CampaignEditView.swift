@@ -16,6 +16,9 @@ struct CampaignEditView: View {
     /// 表單 store
     @Bindable var store: StoreOf<CampaignEditFeature>
 
+    /// 鍵盤焦點；實際狀態由 ``CampaignEditFeature/State/focusedField`` 持有
+    @FocusState private var focusedField: CampaignEditFeature.State.Field?
+
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
 
@@ -27,6 +30,8 @@ struct CampaignEditView: View {
             Form {
                 Section("開團資訊") {
                     TextField("開團名稱", text: $store.draftName)
+                        .textContentType(.none)
+                        .focused($focusedField, equals: .name)
 
                     DatePicker(
                         "開團日期",
@@ -63,10 +68,15 @@ struct CampaignEditView: View {
 
                 Section("備註") {
                     TextField("選填", text: $store.draftNotes, axis: .vertical)
+                        .textContentType(.none)
+                        .focused($focusedField, equals: .notes)
                         .lineLimit(2...5)
                 }
             }
             .navigationTitle(Text(LocalizedStringKey(store.original == nil ? "新增開團" : "編輯開團")))
+            .scrollDismissesKeyboard(.interactively)
+            .bind($store.focusedField, to: $focusedField)
+            .dismissKeyboardOnBackgroundTap(focus: $focusedField)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

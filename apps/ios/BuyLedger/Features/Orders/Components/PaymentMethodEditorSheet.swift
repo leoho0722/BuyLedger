@@ -54,6 +54,11 @@ struct PaymentMethodEditorSheet: View {
     /// 是否顯示「捨棄變更／繼續編輯」確認彈窗
     @State private var showsDiscardConfirmation = false
 
+    /// 名稱欄位的鍵盤焦點
+    ///
+    /// 不綁 store、以閉包與 caller 溝通的可重用元件，焦點屬元件內部狀態 (專案既有例外)
+    @FocusState private var isNameFieldFocused: Bool
+
     /// 表單開啟時的初始值快照；供 ``isDirty`` 判斷未儲存變更
     private let initialName: String
     private let initialIsCardless: Bool
@@ -143,6 +148,7 @@ private extension PaymentMethodEditorSheet {
         Form {
             Section {
                 TextField(LocalizedStringKey(namePlaceholder), text: $draftName)
+                    .focused($isNameFieldFocused)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
             } header: {
@@ -186,6 +192,8 @@ private extension PaymentMethodEditorSheet {
             }
         }
         .formStyle(.grouped)
+        .scrollDismissesKeyboard(.interactively)
+        .dismissKeyboardOnBackgroundTap(isFocused: $isNameFieldFocused)
         .navigationTitle(Text(LocalizedStringKey(title)))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
