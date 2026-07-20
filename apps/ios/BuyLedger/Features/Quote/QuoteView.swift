@@ -55,7 +55,6 @@ struct QuoteView: View {
         .navigationTitle(Text("報價試算"))
         .scrollDismissesKeyboard(.interactively)
         .bind($store.isAmountFieldFocused, to: $isAmountFieldFocused)
-        .dismissKeyboardOnBackgroundTap(isFocused: $isAmountFieldFocused)
         .toolbar {
             // 此畫面的輸入皆為數字鍵盤，沒有 return 鍵可收
             ToolbarItemGroup(placement: .keyboard) {

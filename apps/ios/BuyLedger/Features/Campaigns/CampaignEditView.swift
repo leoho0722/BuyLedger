@@ -76,7 +76,6 @@ struct CampaignEditView: View {
             .navigationTitle(Text(LocalizedStringKey(store.original == nil ? "新增開團" : "編輯開團")))
             .scrollDismissesKeyboard(.interactively)
             .bind($store.focusedField, to: $focusedField)
-            .dismissKeyboardOnBackgroundTap(focus: $focusedField)
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {

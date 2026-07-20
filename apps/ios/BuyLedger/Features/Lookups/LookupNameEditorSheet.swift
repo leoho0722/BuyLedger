@@ -124,7 +124,6 @@ private extension LookupNameEditorSheet {
         }
         .formStyle(.grouped)
         .scrollDismissesKeyboard(.interactively)
-        .dismissKeyboardOnBackgroundTap(isFocused: $isNameFieldFocused)
         .navigationTitle(Text(title))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

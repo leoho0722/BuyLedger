@@ -200,7 +200,6 @@ struct OrderEditView: View {
             }
             .scrollDismissesKeyboard(.interactively)
             .bind($store.focusedField, to: $focusedField)
-            .dismissKeyboardOnBackgroundTap(focus: $focusedField)
             .task {
                 await store.send(.task).finish()
             }

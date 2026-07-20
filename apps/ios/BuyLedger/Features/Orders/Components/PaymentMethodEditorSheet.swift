@@ -193,7 +193,6 @@ private extension PaymentMethodEditorSheet {
         }
         .formStyle(.grouped)
         .scrollDismissesKeyboard(.interactively)
-        .dismissKeyboardOnBackgroundTap(isFocused: $isNameFieldFocused)
         .navigationTitle(Text(LocalizedStringKey(title)))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

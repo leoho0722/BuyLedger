@@ -66,44 +66,6 @@ final class KeyboardDismissTests: XCTestCase {
         XCTAssertTrue(keyboard.exists, "點系統文字選單後鍵盤不應收起")
     }
 
-    /// 點擊背景應收起鍵盤
-    @MainActor
-    func testTappingBackgroundDismissesKeyboard() throws {
-        let app = XCUIApplication()
-        app.launch()
-        XCTAssertTrue(app.wait(for: .runningForeground, timeout: 10))
-
-        // 先切到訂單分頁 (啟動分頁會隨上次選擇而異)，再開新訂單表單
-        let ordersTab = app.tabBars.buttons["訂單"]
-        guard ordersTab.waitForExistence(timeout: 5) else {
-            throw XCTSkip("找不到訂單分頁，可能是版面結構已變動")
-        }
-        ordersTab.tap()
-
-        let newOrderButton = app.buttons["新增訂單"].firstMatch
-        guard newOrderButton.waitForExistence(timeout: 5) else {
-            throw XCTSkip("找不到新增訂單按鈕")
-        }
-        newOrderButton.tap()
-
-        let customerField = app.textFields.firstMatch
-        guard customerField.waitForExistence(timeout: 5) else {
-            throw XCTSkip("找不到文字欄位，可能是分頁結構已變動")
-        }
-        customerField.tap()
-
-        let keyboard = app.keyboards.firstMatch
-        XCTAssertTrue(keyboard.waitForExistence(timeout: 5), "聚焦後鍵盤應已呈現")
-
-        // 點在表單背景 (非任何互動元件) 的位置
-        app.otherElements.firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.92)).tap()
-
-        XCTAssertTrue(
-            keyboard.waitForNonExistence(timeout: 5),
-            "點背景後鍵盤應收起"
-        )
-    }
-
     /// 點擊互動控制項不應收起鍵盤——收鍵盤只由背景層承接，互動元件不在背景層上
     @MainActor
     func testTappingInteractiveControlKeepsKeyboardPresented() throws {
