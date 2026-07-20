@@ -40,14 +40,7 @@ struct BLPhotoThumbnail: View {
     /// 縮圖的畫面內容
     var body: some View {
         ZStack(alignment: .topTrailing) {
-            thumbnailContent
-                .frame(width: size, height: size)
-                .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
-                .contentShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
-                .onTapGesture {
-                    onTap?()
-                }
-                .accessibilityAddTraits(onTap != nil ? .isButton : [])
+            tappableThumbnail
 
             // 尺寸與形狀宣告在標籤內部才會擴大命中區；掛在 Button 外層 (原本的 .padding(4))
             // 只增加版面間距、命中區仍只有圖示大小。刪除無確認也無復原，命中區不足會招致誤刪
@@ -71,6 +64,30 @@ struct BLPhotoThumbnail: View {
 
 private extension BLPhotoThumbnail {
 
+    /// 縮圖本體：提供 `onTap` 時以按鈕呈現，否則維持不可互動的靜態內容
+    ///
+    /// 用按鈕而非點擊手勢——手勢沒有按壓態，也不支援 switch control 與外接鍵盤的啟用路徑
+    @ViewBuilder
+    var tappableThumbnail: some View {
+        if let onTap {
+            Button(action: onTap) {
+                shapedThumbnail
+            }
+            .buttonStyle(BLPhotoThumbnailButtonStyle())
+        } else {
+            shapedThumbnail
+        }
+    }
+
+    /// 套用固定尺寸與圓角裁切後的縮圖
+    @ViewBuilder
+    var shapedThumbnail: some View {
+        thumbnailContent
+            .frame(width: size, height: size)
+            .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
+            .contentShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
+    }
+
     /// 縮圖內容：可解碼時顯示影像並填滿裁切，否則顯示 placeholder 圖示
     @ViewBuilder
     var thumbnailContent: some View {
@@ -88,6 +105,24 @@ private extension BLPhotoThumbnail {
                 }
                 .accessibilityLabel("無法顯示的照片")
         }
+    }
+}
+
+// MARK: - ButtonStyle
+
+/// 縮圖按鈕的樣式：不改變影像著色，只在按下時給視覺回饋
+///
+/// 系統的 plain 樣式對影像內容不提供任何按壓表現，borderless 則會為影像上色
+private struct BLPhotoThumbnailButtonStyle: ButtonStyle {
+
+    // MARK: - View Body
+
+    /// 回傳套用樣式後的按鈕內容
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .opacity(configuration.isPressed ? 0.72 : 1)
+            .scaleEffect(configuration.isPressed ? 0.98 : 1)
+            .animation(.snappy(duration: 0.14), value: configuration.isPressed)
     }
 }
 

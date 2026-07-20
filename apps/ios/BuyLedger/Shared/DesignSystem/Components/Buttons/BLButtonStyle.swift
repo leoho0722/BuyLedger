@@ -20,9 +20,6 @@ enum BLButtonVariant {
 
     /// 不帶背景的文字操作
     case plain
-
-    /// 破壞性操作
-    case destructive
 }
 
 /// 使用設計系統色彩與最小觸控高度的按鈕樣式
@@ -32,6 +29,12 @@ struct BLButtonStyle: ButtonStyle {
 
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
+
+    /// 目前按鈕是否可用
+    ///
+    /// 自繪背景的樣式必須自行讀取此值——否則停用的按鈕外觀與可用時完全相同，
+    /// 使用者按下去沒反應卻沒有任何線索
+    @Environment(\.isEnabled) private var isEnabled
 
     /// 按鈕的語意樣式
     let variant: BLButtonVariant
@@ -49,7 +52,7 @@ struct BLButtonStyle: ButtonStyle {
             .padding(.horizontal, variant == .plain ? 0 : 18)
             .background(backgroundColor(palette: palette))
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
-            .opacity(configuration.isPressed ? 0.72 : 1)
+            .opacity(opacity(isPressed: configuration.isPressed))
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(.snappy(duration: 0.14), value: configuration.isPressed)
     }
@@ -60,7 +63,19 @@ struct BLButtonStyle: ButtonStyle {
 private extension BLButtonStyle {
 
     /// 最小按鈕高度
-    var minimumHeight: CGFloat { 44 }
+    var minimumHeight: CGFloat { BLHitTarget.minimum }
+
+    /// 依按壓與啟用狀態決定不透明度
+    ///
+    /// 與系統按鈕樣式一致：停用時整體降低不透明度
+    /// - Parameter isPressed: 按鈕目前是否被按住
+    /// - Returns: 套用於按鈕整體的不透明度
+    func opacity(isPressed: Bool) -> Double {
+        guard isEnabled else {
+            return 0.4
+        }
+        return isPressed ? 0.72 : 1
+    }
 
     /// 回傳按鈕前景色
     /// - Parameter palette: 目前外觀對應的色盤
@@ -71,8 +86,6 @@ private extension BLButtonStyle {
                 .white
         case .secondary, .plain:
             palette.accent
-        case .destructive:
-            palette.red
         }
     }
 
@@ -87,8 +100,6 @@ private extension BLButtonStyle {
             palette.fillTertiary
         case .plain:
                 .clear
-        case .destructive:
-            palette.red.opacity(0.14)
         }
     }
 }
@@ -111,11 +122,6 @@ extension ButtonStyle where Self == BLButtonStyle {
     static var blPlain: BLButtonStyle {
         BLButtonStyle(variant: .plain)
     }
-
-    /// 破壞性操作按鈕
-    static var blDestructive: BLButtonStyle {
-        BLButtonStyle(variant: .destructive)
-    }
 }
 
 // MARK: - Preview
@@ -131,8 +137,13 @@ extension ButtonStyle where Self == BLButtonStyle {
         Button("純文字操作", systemImage: "arrow.clockwise") {}
             .buttonStyle(.blPlain)
 
-        Button("刪除資料", systemImage: "trash") {}
-            .buttonStyle(.blDestructive)
+        // 破壞性語意由 role 表達，樣式端不再提供破壞性變體
+        Button("刪除資料", systemImage: "trash", role: .destructive) {}
+            .buttonStyle(.blPlain)
+
+        Button("停用中", systemImage: "plus") {}
+            .buttonStyle(.blPrimary)
+            .disabled(true)
     }
     .padding()
 }

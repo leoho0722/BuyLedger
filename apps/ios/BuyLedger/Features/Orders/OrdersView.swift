@@ -89,6 +89,11 @@ private extension OrdersView {
                     .background(palette.background)
             }
             .rootNavigationTitle(store.navigationTitleKey, language: language)
+            .searchable(
+                text: $store.searchText.sending(\.searchTextChanged),
+                placement: .navigationBarDrawer(displayMode: .always),
+                prompt: Text("搜尋客戶、單號或商品")
+            )
             .toolbar {
                 if store.isSelecting {
                     ToolbarItem(placement: .topBarLeading) {
@@ -322,11 +327,6 @@ private extension OrdersView {
     @ViewBuilder
     func listHeader(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
-            BLSearchField(
-                placeholder: "搜尋客戶、單號或商品",
-                text: $store.searchText.sending(\.searchTextChanged)
-            )
-
             chipScrollStrip(palette: palette)
             dateChipScrollStrip(palette: palette)
             if !store.availablePaymentMethods.isEmpty {

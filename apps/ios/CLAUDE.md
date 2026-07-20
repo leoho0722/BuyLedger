@@ -33,7 +33,7 @@
 - **點空白處收鍵盤用 `dismissKeyboardOnTap()`** (`Shared/Keyboard/`)：iOS / iPadOS 以 **window 級** `UITapGestureRecognizer` 實作，靠 `blocksKeyboardDismissTap` 沿 superview 逐層過濾互動 (`UIControl` / `UITextInput`)、文字編輯與系統選單 view——**不可改成對所有 touch 都收鍵盤** (會誤觸貼上／選取等系統 action)。
 - **iPhone (compact) 的 NavigationStack 不要用 `.toolbar` 的 `.bottomBar`**：compact 走 `RootTabLayout` 的 `TabView`，底部 tab bar 會蓋掉 `.bottomBar`，工具列項目 (如多選的批次操作) 在實機上看不到。批次／選取類操作改放 `.primaryAction` 等頂部 placement，筆數等資訊可放 `navigationTitle`。iPad (regular) 走 `RootSidebarLayout` 無底部 tab bar，`.bottomBar` 在 iPad 才安全 (`OrdersView.regularSplitContent` 仍用之)。
 - **App 內切換語言後的根分頁 `navigationTitle`**：iOS 18+ 不會可靠地讓 `navigationTitle` 隨 `\.locale` 重新解析 String Catalog。Dashboard、Orders、Campaigns、Insights、More 與 Settings 一律以必填 `language` 參數呼叫 `rootNavigationTitle(_:language:)`，由 `AppLanguage.localized(_:)` 先從對應 `.lproj` bundle 解析再交給原生 `.navigationTitle(_:)`；Orders 的多選三態 key 必須由 `OrdersFeature.State.navigationTitleKey` 計算屬性衍生。RootView 僅保留 `\.locale` 注入給一般 SwiftUI 文案與格式化器；`Tab(LocalizedStringKey)` 不需要此 workaround。
-- **`Text(字串變數)` 不會本地化 (英文模式露中文)**：`Text("字面值")` 與 `Text(LocalizedStringKey(x))` 會走本地化，但 `Text(someString)` (參數型別 `String`) 走 verbatim init。凡把「固定中文詞」經 `String` 變數丟進 `Text` / `Label` / `navigationTitle` 都要包 `LocalizedStringKey(...)`——可重用元件 (`BLBadge` / `BLSegmentedControl`) 內部已比照，`BLStatusPill` / `BLProgressBar` / `BLDonutChart.centerTitle` 本就有包。帶插值的中文 (如 `\(count) 件進行中`) 必須走 `Text(LocalizedStringKey("\(count) …"))`——SwiftUI 的 `Text(LocalizedStringKey)` 才會隨注入的 `\.locale` 解析;**不可用 `String(localized:locale:)`**，它走系統語言 bundle、不吃 App 內語言切換 (Dashboard KPI delta 曾因此在英文模式露中文)。若字串經參數傳遞，把參數型別設為 `LocalizedStringKey` (不是 `String`)、由 `Text` 端解析 (參考 `DashboardView.kpiTile(delta:)`)。**使用者資料 (主檔名稱、`customer.name`)、格式化數字/日期維持 verbatim**、不可包 `LocalizedStringKey`。
+- **`Text(字串變數)` 不會本地化 (英文模式露中文)**：`Text("字面值")` 與 `Text(LocalizedStringKey(x))` 會走本地化，但 `Text(someString)` (參數型別 `String`) 走 verbatim init。凡把「固定中文詞」經 `String` 變數丟進 `Text` / `Label` / `navigationTitle` 都要包 `LocalizedStringKey(...)`——可重用元件 (`BLBadge`) 內部已比照，`BLStatusPill` / `BLProgressBar` / `BLDonutChart.centerTitle` 本就有包。帶插值的中文 (如 `\(count) 件進行中`) 必須走 `Text(LocalizedStringKey("\(count) …"))`——SwiftUI 的 `Text(LocalizedStringKey)` 才會隨注入的 `\.locale` 解析;**不可用 `String(localized:locale:)`**，它走系統語言 bundle、不吃 App 內語言切換 (Dashboard KPI delta 曾因此在英文模式露中文)。若字串經參數傳遞，把參數型別設為 `LocalizedStringKey` (不是 `String`)、由 `Text` 端解析 (參考 `DashboardView.kpiTile(delta:)`)。**使用者資料 (主檔名稱、`customer.name`)、格式化數字/日期維持 verbatim**、不可包 `LocalizedStringKey`。
 - **新增任何 UI 字串都要同步補 `Localizable.xcstrings` 的 `en`**：新寫的中文字面值 (含 TCA `AlertState`／`TextState`、`Button`／`Text`／`accessibilityLabel` 等) 若沒補英文，英文模式會露中文 fallback (F1 捨棄變更 alert 曾漏)。`AlertState`／`TextState` 一樣走 catalog 本地化 (資料來源同 `Text(LocalizedStringKey)`)，補齊 `en` 即修好。手動補 catalog 用**文字插入** (在 `"strings"` 物件內加展開格式的 entry)、**不要全量 `json.dump` re-serialize**——`.xcstrings` 是 Xcode 自訂序列化 (部分 entry 單行、部分展開)，全量重寫會格式不吻合、產生巨量 diff 且 Xcode 下次開檔又重排。`LocalizationCatalogTests.catalogContainsCompleteTraditionalChineseAndEnglishValues` 只驗 catalog 內既有條目完整，**抓不到「code 有用但 catalog 沒收錄」的漏字**，故新增字串要人工確認有進 catalog。
 
 ## 資料層與 Dependency 注入
@@ -143,7 +143,7 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 ## Design System 準則
 
 - Design System 放在 `apps/ios/BuyLedger/Shared/DesignSystem/`，並區分 `Foundations/` 與 `Components/`。`Foundations/` 放跨元件共用的 token、modifier 與語意模型；`Components/` 放可視 UI 元件，並依類別建立子資料夾。
-- 每個主要元件或資料型別原則上各自一個 Swift 檔案，檔名必須對應主要型別名稱 (例如 `BLBarChart.swift`、`BLDonutChart.swift`、`BLSparkline.swift`、`BLSearchField.swift`、`BLAmountField.swift`)。避免建立 `BLCharts.swift`、`BLTextFields.swift` 這類同時涵括多種元件的大檔。若小型 enum 或 extension 只服務單一元件，可以與該元件同檔；若開始跨元件重用或變大，請拆出獨立檔案。
+- 每個主要元件或資料型別原則上各自一個 Swift 檔案，檔名必須對應主要型別名稱 (例如 `BLBarChart.swift`、`BLDonutChart.swift`、`BLSparkline.swift`、`BLAmountField.swift`)。避免建立 `BLCharts.swift`、`BLTextFields.swift` 這類同時涵括多種元件的大檔。若小型 enum 或 extension 只服務單一元件，可以與該元件同檔；若開始跨元件重用或變大，請拆出獨立檔案。
 - 每個可視 Design System 元件都應提供自己的 `#Preview`；需要 binding 時使用 `.constant(...)`，需要圖表或狀態資料時用小型 sample data。
 - 調整 Design System 結構或元件後，請至少執行 iPhone 與 iPad Simulator build，確認 file system synchronized groups 正確拾取新增、搬移或刪除的 Swift 檔案。
 - **語意色分四軌，選軌的唯一判準是「這個色彩最終疊在什麼底色上」**——`BLTone` 提供 `onSurface`／`background`／`indicator`／`onIndicator`，皆為讀取 asset catalog 具名資源的計算屬性 (不收色盤參數，外觀與 Increase Contrast 由系統依 trait 解析)。
@@ -151,6 +151,13 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
   - **色值改在 asset catalog、不在程式碼算**：`Assets.xcassets` 的 `BLTone<Tone><Role>` 每組都定義 Any／Dark 與各自的 High Contrast 變體。程式碼算色表達不了 Increase Contrast 這個維度。
   - **具名色彩資源缺失時 SwiftUI 靜默回退系統預設色**，無編譯或執行期警訊——新增 Color Set 必須與引用它的程式碼同批合入，且驗收要逐一目視確認顏色，不以「畫面沒壞」當通過。
   - 對比門檻由 `BuyLedgerTests/ContrastComplianceTests` 把關 (helper 為 `ColorContrast`，自帶對照案例鎖住計算模型)。**旁有文字標籤的圖形 (如膠囊色點) 屬裝飾**，豁免 3:1 並標 `.accessibilityHidden(true)`；3:1 只約束單獨承載意義的圖形。
+- **系統已提供的能力不得重造**——搜尋、分段選擇、進度、清單列的按壓回饋等一律用系統元件。自製版本的代價不在外觀，而在那些不可見卻會一併失去的行為 (搜尋的 Cancel 鈕／Search return 鍵／聽寫／捲動收合、進度的 progress 語意、列的按壓 highlight)，這些在目視檢查中不會暴露。
+    - 需要自訂外觀時走系統的**樣式擴充點**而非重畫元件：`ProgressViewStyle` (`BLProgressBarStyle`)、`ButtonStyle` (`BLButtonStyle`)。這樣外觀可完全自訂，語意仍由系統提供。
+    - 訂單搜尋走 `.searchable(placement: .navigationBarDrawer(displayMode: .always))`；設定頁的值選擇列走 `NavigationLink` + `LabeledContent` + `OptionPickerSheet(isEmbedded: true)`，取得列 highlight 與原生 disclosure indicator。
+    - **零呼叫點的重造元件一律刪除、不留在 Design System 目錄**——目錄的預設語意是「這裡的元件是本專案的標準作法」，留著等同背書。
+- **破壞性以按鈕 role 表達，不做成視覺樣式變體**——`Button(role: .destructive)` 才是系統語意來源，決定語音播報、系統紅色在各外觀下的自動調整、以及在確認對話框與選單中的一致呈現。`BLButtonStyle` 不提供破壞性變體。
+- **自繪背景的 `ButtonStyle` 必須自己讀 `@Environment(\.isEnabled)`**——樣式不會自動反映停用態，不讀就會讓停用按鈕與可用時長得一模一樣。
+- **可點擊元素用 `Button`、不用 `onTapGesture`**——點擊手勢沒有按壓態，也不支援 switch control 與外接鍵盤的啟用路徑。
 - **命中區的尺寸與形狀宣告要加在按鈕的「標籤內部」**——`Button { Image(...).frame(width: BLHitTarget.minimum, height: BLHitTarget.minimum).contentShape(.rect) }` 才會擴大可點區域；加在 `Button` 外層 (`.padding()`／`.frame()`) 只增加版面間距、命中區仍只有圖示大小。
   - 需要維持原本的貼齊角落外觀時用 `.offset(...)` 把放大後的命中區推回原位——`offset` 不影響 layout，視覺尺寸與版面比例都不變。
 

@@ -48,22 +48,11 @@ struct SettingsView: View {
             Section {
                 Toggle("啟用 AI 總結", isOn: $store.useAiSummary)
 #if DEBUG
-                Button {
-                    store.send(.modelPickerTapped)
+                NavigationLink {
+                    modelPicker
                 } label: {
-                    HStack {
-                        Text("模型")
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        Text(store.aiSummaryModel)
-                            .foregroundStyle(.secondary)
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.tertiary)
-                    }
-                    .contentShape(Rectangle())
+                    LabeledContent("模型", value: store.aiSummaryModel)
                 }
-                .buttonStyle(.plain)
 #endif
             } header: {
                 Text("AI 商品明細總結")
@@ -74,22 +63,11 @@ struct SettingsView: View {
             }
 
             Section("預設幣別") {
-                Button {
-                    store.send(.currencyPickerTapped)
+                NavigationLink {
+                    currencyPicker
                 } label: {
-                    HStack {
-                        Text("新訂單預設")
-                            .foregroundStyle(.primary)
-                        Spacer()
-                        Text(currencyDisplayText(for: store.defaultCurrency))
-                            .foregroundStyle(.secondary)
-                        Image(systemName: "chevron.right")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.tertiary)
-                    }
-                    .contentShape(Rectangle())
+                    LabeledContent("新訂單預設", value: currencyDisplayText(for: store.defaultCurrency))
                 }
-                .buttonStyle(.plain)
             }
 
             Section {
@@ -135,56 +113,71 @@ struct SettingsView: View {
                 .accessibilityLabel(Text("返回"))
             }
         }
-        .sheet(isPresented: $store.showsCurrencySheet) {
-            let locale = locale
-
-            OptionPickerSheet(
-                title: "選擇預設幣別",
-                allowsAdd: false,
-                searchable: true,
-                emptyTitle: "尚無幣別",
-                emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
-                options: store.availableCurrencies.map(\.rawValue),
-                selected: store.defaultCurrency.rawValue,
-                displayName: { code in
-                    let name = locale.localizedString(forCurrencyCode: code) ?? ""
-                    return name.isEmpty ? code : "\(code) · \(name)"
-                },
-                searchKeywords: { code in
-                    locale.localizedString(forCurrencyCode: code) ?? ""
-                },
-                onSelect: { code in
-                    store.send(.defaultCurrencySelected(code))
-                }
-            )
-        }
-#if DEBUG
-        .sheet(isPresented: $store.showsModelSheet) {
-            OptionPickerSheet(
-                title: "選擇 AI 模型",
-                allowsAdd: true,
-                searchable: false,
-                addButtonTitle: "自訂模型",
-                emptyTitle: "尚無模型",
-                emptyDescription: "輸入自訂模型名稱以開始使用。",
-                addAlertTitle: "自訂 AI 模型",
-                addFieldPlaceholder: "模型名稱 (例如 gpt-oss:120b)",
-                addAlertMessage: "輸入 Ollama Cloud 上可用的模型名稱。",
-                options: AISummaryModelCatalog.candidates,
-                selected: store.aiSummaryModel,
-                onSelect: { model in
-                    store.send(.aiSummaryModelSelected(model))
-                },
-                onAdd: { model in
-                    store.send(.aiSummaryModelSelected(model))
-                }
-            )
-        }
-#endif
         .task {
             await store.send(.task).finish()
         }
     }
+}
+
+// MARK: - ViewBuilder
+
+private extension SettingsView {
+
+    /// 預設幣別選擇器
+    ///
+    /// 以 push 呈現 (`isEmbedded`)，由 Settings 所在的導覽堆疊提供標題列與 Back
+    @ViewBuilder
+    var currencyPicker: some View {
+        let locale = locale
+
+        OptionPickerSheet(
+            title: "選擇預設幣別",
+            allowsAdd: false,
+            searchable: true,
+            emptyTitle: "尚無幣別",
+            emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
+            options: store.availableCurrencies.map(\.rawValue),
+            selected: store.defaultCurrency.rawValue,
+            displayName: { code in
+                let name = locale.localizedString(forCurrencyCode: code) ?? ""
+                return name.isEmpty ? code : "\(code) · \(name)"
+            },
+            searchKeywords: { code in
+                locale.localizedString(forCurrencyCode: code) ?? ""
+            },
+            onSelect: { code in
+                store.send(.defaultCurrencySelected(code))
+            },
+            isEmbedded: true
+        )
+    }
+
+#if DEBUG
+    /// AI 總結模型選擇器 (僅 DEBUG 建置提供)
+    @ViewBuilder
+    var modelPicker: some View {
+        OptionPickerSheet(
+            title: "選擇 AI 模型",
+            allowsAdd: true,
+            searchable: false,
+            addButtonTitle: "自訂模型",
+            emptyTitle: "尚無模型",
+            emptyDescription: "輸入自訂模型名稱以開始使用。",
+            addAlertTitle: "自訂 AI 模型",
+            addFieldPlaceholder: "模型名稱 (例如 gpt-oss:120b)",
+            addAlertMessage: "輸入 Ollama Cloud 上可用的模型名稱。",
+            options: AISummaryModelCatalog.candidates,
+            selected: store.aiSummaryModel,
+            onSelect: { model in
+                store.send(.aiSummaryModelSelected(model))
+            },
+            onAdd: { model in
+                store.send(.aiSummaryModelSelected(model))
+            },
+            isEmbedded: true
+        )
+    }
+#endif
 }
 
 // MARK: - Private Method

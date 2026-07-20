@@ -41,11 +41,6 @@ struct SettingsFeature {
         /// AI 總結使用的 Ollama 模型名稱
         var aiSummaryModel: String = AISummaryModelCatalog.defaultModel
 
-        /// 是否顯示幣別選擇 sheet
-        var showsCurrencySheet: Bool = false
-
-        /// 是否顯示 AI 模型選擇 sheet (僅 DEBUG 建置使用)
-        var showsModelSheet: Bool = false
     }
 
     // MARK: - Action
@@ -62,12 +57,6 @@ struct SettingsFeature {
 
         /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔
         case availableCurrenciesLoaded([CurrencyCode])
-
-        /// 點按預設幣別列，開啟幣別選擇 sheet
-        case currencyPickerTapped
-
-        /// 點按 AI 模型列，開啟模型選擇 sheet (僅 DEBUG 建置使用)
-        case modelPickerTapped
 
         /// 使用者選定預設幣別；傳入 ISO code 字串，由 reducer 建構 ``CurrencyCode``
         case defaultCurrencySelected(String)
@@ -116,14 +105,6 @@ struct SettingsFeature {
                 }
                 return .none
 
-            case .currencyPickerTapped:
-                state.showsCurrencySheet = true
-                return .none
-
-            case .modelPickerTapped:
-                state.showsModelSheet = true
-                return .none
-
             case let .defaultCurrencySelected(code):
                 state.defaultCurrency = CurrencyCode(rawValue: code)
                 persist(state)
@@ -132,10 +113,6 @@ struct SettingsFeature {
             case let .aiSummaryModelSelected(model):
                 state.aiSummaryModel = model
                 persist(state)
-                return .none
-
-            case .binding(\.showsCurrencySheet), .binding(\.showsModelSheet):
-                // sheet 呈現屬短暫 UI 狀態，切換時不觸發設定存檔
                 return .none
 
             case .binding:

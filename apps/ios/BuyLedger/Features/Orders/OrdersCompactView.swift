@@ -43,12 +43,6 @@ struct OrdersCompactView: View {
         NavigationStack(path: $store.scope(state: \.detailPath, action: \.detailPath)) {
             ScrollView {
                 VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                    BLSearchField(
-                        placeholder: "搜尋客戶、單號或商品",
-                        text: $store.searchText.sending(\.searchTextChanged)
-                    )
-                    .padding(.horizontal, BLSpacing.large)
-
                     chipStrip(palette: palette)
                     unifiedFilterTrigger(palette: palette)
 
@@ -124,6 +118,11 @@ struct OrdersCompactView: View {
                     }
                 }
             }
+            .searchable(
+                text: $store.searchText.sending(\.searchTextChanged),
+                placement: .navigationBarDrawer(displayMode: .always),
+                prompt: Text("搜尋客戶、單號或商品")
+            )
             .task {
                 await store.send(.task).finish()
             }
@@ -294,7 +293,9 @@ private extension OrdersCompactView {
             if sections.isEmpty {
                 emptyState(palette: palette)
             } else {
-                VStack(alignment: .leading, spacing: BLSpacing.medium) {
+                // 惰性只施加於外層日期區段：卡片內的訂單列容器必須維持非惰性，
+                // 否則卡片背景會因高度漸進確定而包不住當日所有列
+                LazyVStack(alignment: .leading, spacing: BLSpacing.medium) {
                     ForEach(sections) { section in
                         orderDateSection(section, palette: palette)
                     }

@@ -184,20 +184,6 @@ struct SettingsFeatureTests {
         #expect(saved.value?.defaultCurrency == .twd)
     }
 
-    @Test func bindingTogglesCurrencyAndModelSheets() async {
-        // 幣別／AI 模型選擇 sheet 開關已下放 State，走 binding 管理
-        let store = TestStore(initialState: SettingsFeature.State()) {
-            SettingsFeature()
-        }
-
-        await store.send(\.binding.showsCurrencySheet, true) {
-            $0.showsCurrencySheet = true
-        }
-
-        await store.send(\.binding.showsModelSheet, true) {
-            $0.showsModelSheet = true
-        }
-    }
 }
 
 /// 簡易的 `@unchecked Sendable` 容器，避免引入 `ConcurrencyExtras.LockIsolated` 在測試 target 中遭遇連結問題
