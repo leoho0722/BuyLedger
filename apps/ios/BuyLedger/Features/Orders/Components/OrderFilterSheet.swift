@@ -95,7 +95,7 @@ struct OrderFilterSheet: View {
             .searchable(
                 text: $searchText,
                 placement: .navigationBarDrawer(displayMode: .always),
-                prompt: Text("搜尋類別")
+                prompt: Text("搜尋類別或付款方式")
             )
         }
         .presentationDetents([.medium, .large])

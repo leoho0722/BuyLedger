@@ -21,7 +21,7 @@ struct LookupManagementView: View {
     @Bindable var store: StoreOf<LookupManagementFeature>
 
     /// 依主檔類型回傳可由 String Catalog 翻譯的重新命名標題
-    private var renameAlertTitle: LocalizedStringKey {
+    private var renameSheetTitle: LocalizedStringKey {
         switch store.state.kind {
         case .orderSource:
             "重新命名訂單來源"
@@ -54,91 +54,10 @@ struct LookupManagementView: View {
                     .labelStyle(.iconOnly)
                 }
             }
-            .alert(
-                renameAlertTitle,
-                isPresented: Binding(
-                    get: { store.destination?.rename != nil },
-                    set: { if !$0 { store.send(.destination(.dismiss)) } }
-                )
-            ) {
-                TextField(
-                    LocalizedStringKey(store.state.kind.addFieldPlaceholder),
-                    text: Binding(
-                        get: { store.destination?.rename?.draft ?? "" },
-                        set: { store.send(.destination(.presented(.rename(.draftChanged($0))))) }
-                    )
-                )
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-
-                Button("儲存") {
-                    store.send(.destination(.presented(.rename(.saveButtonTapped))))
-                }
-                .disabled(!(store.destination?.rename?.canSave ?? false))
-
-                Button("取消", role: .cancel) {
-                    store.send(.destination(.dismiss))
-                }
-            } message: {
-                if let renameState = store.destination?.rename {
-                    Text("把「\(renameState.originalName)」改成新名稱；引用此名稱的訂單也會一併更新。")
-                } else {
-                    Text("")
-                }
+            .sheet(item: $store.scope(state: \.destination, action: \.destination)) { destinationStore in
+                destinationSheet(store: destinationStore)
             }
-            .alert(LocalizedStringKey(store.state.kind.addAlertTitle), isPresented: $store.showsAddNameOnlyAlert) {
-                TextField(LocalizedStringKey(store.state.kind.addFieldPlaceholder), text: $store.addDraft)
-                    .textInputAutocapitalization(.never)
-                    .autocorrectionDisabled()
-
-                Button("新增") {
-                    let trimmed = store.addDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmed.isEmpty {
-                        store.send(.addConfirmed(name: trimmed, isCardless: false, isBankTransfer: false, isCashOnDelivery: false))
-                    }
-                    store.send(.addDraftCleared)
-                }
-                .disabled(store.addDraft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-
-                Button("取消", role: .cancel) {
-                    store.send(.addDraftCleared)
-                }
-            } message: {
-                Text(LocalizedStringKey(store.state.kind.addAlertMessage))
-            }
-            .sheet(isPresented: $store.showsAddPaymentMethodSheet) {
-                PaymentMethodEditorSheet(
-                    title: store.state.kind.addAlertTitle,
-                    message: store.state.kind.addAlertMessage,
-                    namePlaceholder: store.state.kind.addFieldPlaceholder,
-                    submitTitle: "新增",
-                    onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
-                        store.send(.addConfirmed(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery))
-                    }
-                )
-            }
-            .sheet(item: $store.scope(state: \.destination?.editPaymentMethod, action: \.destination.editPaymentMethod)) { editStore in
-                PaymentMethodEditorSheet(
-                    title: "編輯付款方式",
-                    message: "修改名稱與分類；變更名稱會一併更新引用此付款方式的訂單。",
-                    namePlaceholder: store.state.kind.addFieldPlaceholder,
-                    submitTitle: "儲存",
-                    initialName: editStore.originalName,
-                    initialIsCardless: editStore.isCardless,
-                    initialIsBankTransfer: editStore.isBankTransfer,
-                    initialIsCashOnDelivery: editStore.isCashOnDelivery,
-                    onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
-                        editStore.send(
-                            .saveButtonTapped(
-                                name: name,
-                                isCardless: isCardless,
-                                isBankTransfer: isBankTransfer,
-                                isCashOnDelivery: isCashOnDelivery
-                            )
-                        )
-                    }
-                )
-            }
+            .alert($store.scope(state: \.deletionConfirmation, action: \.deletionConfirmation))
             .task {
                 await store.send(.task).finish()
             }
@@ -148,6 +67,77 @@ struct LookupManagementView: View {
 // MARK: - ViewBuilder
 
 private extension LookupManagementView {
+
+    /// 依 destination 型別分派要呈現的表單
+    ///
+    /// 單一呈現點：任一時刻只會有一張 sheet，互斥由型別系統保證，
+    /// 而非靠多個並列的 sheet 修飾子與各自的布林彼此避讓
+    /// - Parameter store: 已 scope 到 destination 的 store
+    /// - Returns: 對應的表單 view
+    @ViewBuilder
+    func destinationSheet(store destinationStore: StoreOf<LookupManagementFeature.Destination>) -> some View {
+        switch destinationStore.case {
+        case let .rename(renameStore):
+            LookupNameEditorSheet(
+                title: renameSheetTitle,
+                message: "改名後，引用此名稱的訂單也會一併更新。",
+                namePlaceholder: store.state.kind.addFieldPlaceholder,
+                submitTitle: "儲存",
+                initialName: renameStore.originalName
+            ) { name in
+                renameStore.send(.draftChanged(name))
+                renameStore.send(.saveButtonTapped)
+            }
+
+        case let .addNameOnly(addStore):
+            LookupNameEditorSheet(
+                title: LocalizedStringKey(store.state.kind.addAlertTitle),
+                message: store.state.kind.addAlertMessage,
+                namePlaceholder: store.state.kind.addFieldPlaceholder,
+                submitTitle: "新增"
+            ) { name in
+                addStore.send(.saveButtonTapped(name: name))
+            }
+
+        case let .addPaymentMethod(addStore):
+            PaymentMethodEditorSheet(
+                title: store.state.kind.addAlertTitle,
+                message: store.state.kind.addAlertMessage,
+                namePlaceholder: store.state.kind.addFieldPlaceholder,
+                submitTitle: "新增"
+            ) { name, isCardless, isBankTransfer, isCashOnDelivery in
+                addStore.send(
+                    .saveButtonTapped(
+                        name: name,
+                        isCardless: isCardless,
+                        isBankTransfer: isBankTransfer,
+                        isCashOnDelivery: isCashOnDelivery
+                    )
+                )
+            }
+
+        case let .editPaymentMethod(editStore):
+            PaymentMethodEditorSheet(
+                title: "編輯付款方式",
+                message: "修改名稱與分類；變更名稱會一併更新引用此付款方式的訂單。",
+                namePlaceholder: store.state.kind.addFieldPlaceholder,
+                submitTitle: "儲存",
+                initialName: editStore.originalName,
+                initialIsCardless: editStore.isCardless,
+                initialIsBankTransfer: editStore.isBankTransfer,
+                initialIsCashOnDelivery: editStore.isCashOnDelivery
+            ) { name, isCardless, isBankTransfer, isCashOnDelivery in
+                editStore.send(
+                    .saveButtonTapped(
+                        name: name,
+                        isCardless: isCardless,
+                        isBankTransfer: isBankTransfer,
+                        isCashOnDelivery: isCashOnDelivery
+                    )
+                )
+            }
+        }
+    }
 
     /// 列項顯示：訂單來源 / 商品類別 / 對帳狀態 kind 純文字；付款方式 kind 在右側顯示「無卡」「銀行匯款」與「貨到付款」徽章 (僅作標示，不能直接切換；要修改旗標需對該列選「編輯」)
     /// - Parameter item: 要顯示的主檔項目名稱
@@ -239,14 +229,14 @@ private extension LookupManagementView {
                                 renameOrEditButton(for: item)
 
                                 Button(role: .destructive) {
-                                    store.send(.deleteRequested(item))
+                                    store.send(.deleteButtonTapped(item))
                                 } label: {
                                     Label("刪除", systemImage: "trash")
                                 }
                             }
                             .swipeActions(edge: .trailing) {
                                 Button(role: .destructive) {
-                                    store.send(.deleteRequested(item))
+                                    store.send(.deleteButtonTapped(item))
                                 } label: {
                                     Label("刪除", systemImage: "trash")
                                 }

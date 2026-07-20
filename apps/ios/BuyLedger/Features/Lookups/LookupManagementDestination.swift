@@ -25,6 +25,12 @@ extension LookupManagementFeature {
 
         /// 編輯付款方式 (含 `isCardless`／`isBankTransfer`／`isCashOnDelivery` 三個旗標快照)；僅 `kind == .paymentMethod` 使用
         case editPaymentMethod(EditPaymentMethodFeature)
+
+        /// 新增純名稱主檔項目 (訂單來源／商品類別／對帳狀態)
+        case addNameOnly(AddNameOnlyFeature)
+
+        /// 新增付款方式 (需同時決定三個旗標，故走獨立表單)
+        case addPaymentMethod(AddPaymentMethodFeature)
     }
 }
 
@@ -129,6 +135,79 @@ extension LookupManagementFeature.Destination {
         // MARK: - Reducer Body
 
         /// 編輯付款方式表單 reducer；本身不持有可變狀態，實際編輯 domain effect 由父層攔截 `saveButtonTapped` 處理
+        var body: some Reducer<State, Action> {
+            Reduce { _, _ in
+                .none
+            }
+        }
+    }
+}
+
+// MARK: - Add Name Only Feature
+
+extension LookupManagementFeature.Destination {
+
+    /// 新增純名稱主檔項目的表單狀態與事件
+    ///
+    /// 本身不持有可變狀態：名稱草稿留在 ``LookupNameEditorSheet`` 的 view-local `@State`，
+    /// 僅在使用者按下新增時把最終值一次帶出
+    @Reducer
+    struct AddNameOnlyFeature {
+
+        // MARK: - State
+
+        /// 新增表單狀態
+        @ObservableState
+        struct State: Equatable {}
+
+        // MARK: - Action
+
+        /// 新增表單可處理的事件
+        enum Action: Equatable {
+
+            /// 使用者按下「新增」，帶出名稱；由父層 ``LookupManagementFeature`` 攔截並轉送 ``LookupManagementFeature/Action/addConfirmed(name:isCardless:isBankTransfer:isCashOnDelivery:)``
+            case saveButtonTapped(name: String)
+        }
+
+        // MARK: - Reducer Body
+
+        /// 新增表單 reducer；實際寫入 domain effect 由父層攔截 `saveButtonTapped` 處理
+        var body: some Reducer<State, Action> {
+            Reduce { _, _ in
+                .none
+            }
+        }
+    }
+}
+
+// MARK: - Add Payment Method Feature
+
+extension LookupManagementFeature.Destination {
+
+    /// 新增付款方式的表單狀態與事件
+    ///
+    /// 本身不持有可變狀態：表單內的即時編輯留在 ``PaymentMethodEditorSheet`` 的 view-local `@State`
+    @Reducer
+    struct AddPaymentMethodFeature {
+
+        // MARK: - State
+
+        /// 新增付款方式表單狀態
+        @ObservableState
+        struct State: Equatable {}
+
+        // MARK: - Action
+
+        /// 新增付款方式表單可處理的事件
+        enum Action: Equatable {
+
+            /// 使用者按下「新增」，帶出表單最終值
+            case saveButtonTapped(name: String, isCardless: Bool, isBankTransfer: Bool, isCashOnDelivery: Bool)
+        }
+
+        // MARK: - Reducer Body
+
+        /// 新增付款方式表單 reducer；實際寫入 domain effect 由父層攔截 `saveButtonTapped` 處理
         var body: some Reducer<State, Action> {
             Reduce { _, _ in
                 .none

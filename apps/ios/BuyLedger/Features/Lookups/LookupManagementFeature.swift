@@ -51,17 +51,13 @@ struct LookupManagementFeature {
         /// 是否已完成首次載入
         var hasLoaded = false
 
-        /// 是否顯示「新增」alert (訂單來源 / 商品類別 / 對帳狀態等純名稱 kind 使用)
-        var showsAddNameOnlyAlert = false
-
-        /// 是否顯示「新增付款方式」sheet (僅付款方式 kind 使用；alert 在實機驗證會 silently 丟掉 Toggle，所以付款方式入口改走 sheet)
-        var showsAddPaymentMethodSheet = false
-
-        /// 新增 alert / sheet 的名稱輸入草稿
-        var addDraft = ""
-
         /// 目前呈現中的改名或編輯付款方式流程；`nil` 表示未呈現
         @Presents var destination: Destination.State?
+
+        /// 刪除主檔項目的二次確認；`nil` 代表未顯示
+        ///
+        /// 比照訂單與開團既有的破壞性動作，一律以確認擋在寫入之前
+        @Presents var deletionConfirmation: AlertState<Action.Alert>?
     }
 
     // MARK: - Action
@@ -94,11 +90,25 @@ struct LookupManagementFeature {
         /// 使用者透過「新增」流程確認新增一筆主檔項目；對付款方式以外的 kind，`isCardless`、`isBankTransfer` 與 `isCashOnDelivery` 永遠為 `false` 並被忽略
         case addConfirmed(name: String, isCardless: Bool, isBankTransfer: Bool, isCashOnDelivery: Bool)
 
-        /// 新增 alert 的「新增」/「取消」按完後清空名稱輸入草稿
-        case addDraftCleared
+        /// 刪除確認 alert 的選項
+        @CasePathable
+        enum Alert: Equatable {
 
-        /// 使用者要求刪除指定名稱的主檔項目
+            /// 使用者確認刪除指定名稱的主檔項目
+            case confirmDelete(String)
+        }
+
+        /// 使用者點擊刪除；先以 ``State/deletionConfirmation`` 二次確認
+        case deleteButtonTapped(String)
+
+        /// 確認後實際執行刪除
         case deleteRequested(String)
+
+        /// 刪除完成 (資料庫寫入成功後才更新狀態與各處記憶體副本)
+        case deleteSucceeded(String)
+
+        /// 刪除確認 alert 事件
+        case deletionConfirmation(PresentationAction<Alert>)
 
         /// 使用者點擊指定項目的「重新命名」；由 reducer 以該名稱為初值呈現 ``Destination/rename(_:)``，取代 view 端直接組裝表單初值
         case renameButtonTapped(name: String)
@@ -196,12 +206,12 @@ struct LookupManagementFeature {
                 return .none
 
             case .addButtonTapped:
+                // 新增併入 destination：任一時刻只呈現一張 sheet，互斥由型別系統保證
                 switch state.kind {
                 case .orderSource, .category, .reconciliationStatus:
-                    state.addDraft = ""
-                    state.showsAddNameOnlyAlert = true
+                    state.destination = .addNameOnly(Destination.AddNameOnlyFeature.State())
                 case .paymentMethod:
-                    state.showsAddPaymentMethodSheet = true
+                    state.destination = .addPaymentMethod(Destination.AddPaymentMethodFeature.State())
                 }
                 return .none
 
@@ -246,22 +256,36 @@ struct LookupManagementFeature {
                     await send(.loadFailed("新增失敗，請稍後再試。"))
                 }
 
-            case .addDraftCleared:
-                state.addDraft = ""
+            case let .deleteButtonTapped(name):
+                state.deletionConfirmation = AlertState {
+                    TextState("刪除項目")
+                } actions: {
+                    ButtonState(role: .destructive, action: .confirmDelete(name)) {
+                        TextState("刪除")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("取消")
+                    }
+                } message: {
+                    TextState("刪除「\(name)」後，引用它的既有訂單會失去這個欄位值。此操作無法復原。")
+                }
+                return .none
+
+            case let .deletionConfirmation(.presented(.confirmDelete(name))):
+                return .send(.deleteRequested(name))
+
+            case .deletionConfirmation:
                 return .none
 
             case let .deleteRequested(name):
-                state.items.removeAll { $0 == name }
-                state.paymentMethodIsCardless.removeValue(forKey: name)
-                state.paymentMethodIsBankTransfer.removeValue(forKey: name)
-                state.paymentMethodIsCashOnDelivery.removeValue(forKey: name)
-
+                // 先寫後改：刪除不是高頻操作，不需要樂觀更新的即時感，
+                // 而寫入成功才更新狀態從根本消除了狀態與資料庫不一致的可能
                 let kind = state.kind
                 let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
                 let reconciliationStatusRepository = reconciliationStatusRepository
-                return .run { _ in
+                return .run { send in
                     switch kind {
                     case .orderSource:
                         try await orderSourceRepository.removeOrderSource(name)
@@ -272,9 +296,17 @@ struct LookupManagementFeature {
                     case .reconciliationStatus:
                         try await reconciliationStatusRepository.removeReconciliationStatus(name)
                     }
+                    await send(.deleteSucceeded(name))
                 } catch: { _, send in
                     await send(.loadFailed("刪除失敗，請稍後再試。"))
                 }
+
+            case let .deleteSucceeded(name):
+                state.items.removeAll { $0 == name }
+                state.paymentMethodIsCardless.removeValue(forKey: name)
+                state.paymentMethodIsBankTransfer.removeValue(forKey: name)
+                state.paymentMethodIsCashOnDelivery.removeValue(forKey: name)
+                return .none
 
             case let .renameButtonTapped(name):
                 state.destination = .rename(Destination.RenameFeature.State(originalName: name, draft: name))
@@ -397,6 +429,23 @@ struct LookupManagementFeature {
                     await send(.loadFailed("編輯失敗，請稍後再試。"))
                 }
 
+            case let .destination(.presented(.addNameOnly(.saveButtonTapped(name)))):
+                state.destination = nil
+                return .send(
+                    .addConfirmed(name: name, isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
+                )
+
+            case let .destination(.presented(.addPaymentMethod(.saveButtonTapped(name, isCardless, isBankTransfer, isCashOnDelivery)))):
+                state.destination = nil
+                return .send(
+                    .addConfirmed(
+                        name: name,
+                        isCardless: isCardless,
+                        isBankTransfer: isBankTransfer,
+                        isCashOnDelivery: isCashOnDelivery
+                    )
+                )
+
             case .destination(.presented(.rename(.saveButtonTapped))):
                 // ifLet 已先跑過 rename 子 reducer，此刻 destination 仍持有草稿，取出後才 dismiss
                 guard let renameState = state.destination?.rename, renameState.canSave else {
@@ -428,6 +477,7 @@ struct LookupManagementFeature {
             }
         }
         .ifLet(\.$destination, action: \.destination)
+        .ifLet(\.$deletionConfirmation, action: \.deletionConfirmation)
     }
 }
 

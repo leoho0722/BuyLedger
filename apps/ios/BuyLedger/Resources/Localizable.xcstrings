@@ -209,6 +209,86 @@
         }
       }
     },
+    "刪除項目" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Delete Item"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除項目"
+          }
+        }
+      }
+    },
+    "刪除「%@」後，引用它的既有訂單會失去這個欄位值。此操作無法復原。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deleting “%@” clears this field on existing orders that reference it. This cannot be undone."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除「%@」後，引用它的既有訂單會失去這個欄位值。此操作無法復原。"
+          }
+        }
+      }
+    },
+    "搜尋類別或付款方式" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Search categories or payment methods"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "搜尋類別或付款方式"
+          }
+        }
+      }
+    },
+    "改名後，引用此名稱的訂單也會一併更新。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Orders referencing this name are updated along with it."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "改名後，引用此名稱的訂單也會一併更新。"
+          }
+        }
+      }
+    },
+    "這個項目有尚未儲存的變更，離開後將不會保留。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "This item has unsaved changes that will be lost if you leave."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這個項目有尚未儲存的變更，離開後將不會保留。"
+          }
+        }
+      }
+    },
     "捨棄變更" : {
       "localizations" : {
         "en" : {

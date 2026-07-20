@@ -71,14 +71,13 @@ struct RootFeatureTests {
         }
     }
 
-    @Test func smartGroupSelectedResetsDatePeriodAndPreviousStatus() async {
+    /// 智慧分組只切換狀態篩選，不靜默覆寫使用者既有的日期區間與類別篩選
+    @Test func smartGroupSelectedOnlySwitchesTheStatusFilter() async {
         var state = RootFeature.State()
         state.selectedTab = .dashboard
         state.orders.orders = LedgerOrder.sampleOrders
         state.orders.selectedStatus = .status(.delivered)
         state.orders.selectedDatePeriod = .thisMonth
-        // 預先設定殘留的類別篩選，驗證 smart group 跳轉會一併清掉它
-        // 避免「狀態 + 類別」兩條條件夾擊出空列表
         state.orders.selectedCategory = "美妝"
         state.orders.selectedOrderID = "BL-2604-016"
 
@@ -88,14 +87,14 @@ struct RootFeatureTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
+        store.exhaustivity = .off
 
-        await store.send(.smartGroupSelected(.shipping)) {
-            $0.selectedTab = .orders
-            $0.orders.selectedStatus = .status(.shipping)
-            $0.orders.selectedDatePeriod = .all
-            $0.orders.selectedCategory = nil
-            $0.orders.selectedOrderID = "BL-2604-018"
-        }
+        await store.send(.smartGroupSelected(.shipping))
+
+        #expect(store.state.selectedTab == .orders)
+        #expect(store.state.orders.selectedStatus == .status(.shipping))
+        #expect(store.state.orders.selectedDatePeriod == .thisMonth)
+        #expect(store.state.orders.selectedCategory == "美妝")
     }
 
     @Test func smartGroupSelectionFlipsCorrespondingStatusChipPredicate() async {
@@ -364,7 +363,27 @@ struct RootFeatureTests {
         // 點「前往開啟」→ root 攔截並切到「更多」分頁、要求 push 設定頁
         await store.send(.orders(.aiDisabledAlert(.presented(.goToAISettings))))
         #expect(store.state.selectedTab == .more)
-        #expect(store.state.showsSettingsFromDeepLink == true)
+        #expect(store.state.morePath == [.settings])
+    }
+
+    /// 深連結一律先清空路徑再推入，確保設定頁只有一份且掛在根層
+    @Test func aiSettingsDeepLinkReplacesAnyExistingMorePath() async {
+        var initial = RootFeature.State()
+        initial.morePath = [.customers, .settings]
+        let store = TestStore(initialState: initial) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0[SettingsStorage.self] = SettingsStorage(load: { .default }, save: { _ in })
+        }
+        store.exhaustivity = .off
+
+        // 先讓提示 alert 存在，再走深連結；此時路徑已有兩層殘留
+        await store.send(.orders(.aiSummaryTapped))
+        await store.send(.orders(.aiDisabledAlert(.presented(.goToAISettings))))
+
+        #expect(store.state.morePath == [.settings])
     }
 }
 

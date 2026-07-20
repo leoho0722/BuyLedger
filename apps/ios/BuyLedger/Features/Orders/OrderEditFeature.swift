@@ -110,9 +110,6 @@ struct OrderEditFeature {
         /// 取代原本各選擇器的獨立布林，驅動訂單編輯表單 `NavigationStack` 的單一 `navigationDestination`，使選擇器沿宿主堆疊 push (帶 Back) 而非疊出第二層 sheet
         var pickerRoute: PickerRoute?
 
-        /// 照片檢視器目前聚焦的照片；`nil` 代表檢視器未開啟
-        var photoViewerSelection: PhotoViewerSelection?
-
         /// 有未儲存變更時，取消所觸發的「捨棄變更／繼續編輯」確認彈窗；`nil` 代表未顯示
         ///
         /// 採 `AlertState` (centered modal) 而非 `ConfirmationDialogState`：取消是 toolbar 按鈕，iOS 26 起 `.confirmationDialog` 對 toolbar 觸發會位置偏移
@@ -896,11 +893,13 @@ struct OrderEditFeature {
                 return .none
 
             case let .photoTapped(index):
-                state.photoViewerSelection = PhotoViewerSelection(id: index)
+                state.pickerRoute = .photoViewer(index: index)
                 return .none
 
             case .photoViewerDismissed:
-                state.photoViewerSelection = nil
+                if case .photoViewer = state.pickerRoute {
+                    state.pickerRoute = nil
+                }
                 return .none
             }
         }
@@ -912,14 +911,6 @@ struct OrderEditFeature {
 
 extension OrderEditFeature {
 
-    /// 照片檢視器的開啟狀態：以被點擊照片的 index 作為 sheet item 的識別值
-    struct PhotoViewerSelection: Identifiable, Equatable {
-
-        // MARK: - Identifiable Properties
-
-        /// 被點擊照片在 ``OrderEditFeature/State/draftPhotos`` 中的 index，同時作為 item 識別
-        let id: Int
-    }
 }
 
 extension OrderEditFeature.State {
@@ -1001,6 +992,9 @@ extension OrderEditFeature.State {
 
         /// 幣別選擇器
         case currency
+
+        /// 照片檢視器 (以推進呈現，避免在編輯 sheet 上再疊一層 modal)
+        case photoViewer(index: Int)
     }
 
     /// 訂單編輯草稿的指紋：聚合全部可編輯欄位，供 dirty 判斷偵測未儲存變更

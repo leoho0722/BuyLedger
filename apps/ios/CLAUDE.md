@@ -31,7 +31,7 @@
 - **跨頁觸發新訂單**請使用 `RootFeature.Action.startNewOrder`：reducer 會同時把 `selectedTab` 切到 `.orders` 並把 `OrdersFeature.State.editOrder` 設成空白草稿。從非 `.orders` 分頁直接設 sheet state 會發生 view-not-in-hierarchy 的 race——`.sheet(...)` 修飾子掛在 `OrdersView` 上，當下不在 hierarchy 就不會 mount。
 - **`OrdersView` 的 `.sheet(item: $store.scope(state: \.editOrder, action: \.editOrder))`** 一律掛在 `OrdersView` 外層，iPhone / iPad 共用——不可移到平台分流後的子 view 裡。
 - **點空白處收鍵盤用 `dismissKeyboardOnTap()`** (`Shared/Keyboard/`)：iOS / iPadOS 以 **window 級** `UITapGestureRecognizer` 實作，靠 `blocksKeyboardDismissTap` 沿 superview 逐層過濾互動 (`UIControl` / `UITextInput`)、文字編輯與系統選單 view——**不可改成對所有 touch 都收鍵盤** (會誤觸貼上／選取等系統 action)。
-- **iPhone (compact) 的 NavigationStack 不要用 `.toolbar` 的 `.bottomBar`**：compact 走 `RootTabLayout` 的 `TabView`，底部 tab bar 會蓋掉 `.bottomBar`，工具列項目 (如多選的批次操作) 在實機上看不到。批次／選取類操作改放 `.primaryAction` 等頂部 placement，筆數等資訊可放 `navigationTitle`。iPad (regular) 走 `RootSidebarLayout` 無底部 tab bar，`.bottomBar` 在 iPad 才安全 (`OrdersView.regularSplitContent` 仍用之)。
+- **iPhone (compact) 的 NavigationStack 不要用 `.toolbar` 的 `.bottomBar`**：compact 走 `RootTabLayout` 的 `TabView`，底部 tab bar 會蓋掉 `.bottomBar`，工具列項目 (如多選的批次操作) 在實機上看不到。批次／選取類操作改放 `.primaryAction` 等頂部 placement，筆數等資訊可放 `navigationTitle`。iPad (regular) 雖無底部 tab bar，**`.bottomBar` 在 iPad 同樣不可靠**——可拖曳視窗的下緣可能超出螢幕而遮住整條工具列。批次／選取類操作一律放頂部 placement，筆數等資訊由 `navigationTitle` 承載 (compact 與 regular 共用 `OrdersFeature.State.navigationTitleKey`)。
 - **App 內切換語言後的根分頁 `navigationTitle`**：iOS 18+ 不會可靠地讓 `navigationTitle` 隨 `\.locale` 重新解析 String Catalog。Dashboard、Orders、Campaigns、Insights、More 與 Settings 一律以必填 `language` 參數呼叫 `rootNavigationTitle(_:language:)`，由 `AppLanguage.localized(_:)` 先從對應 `.lproj` bundle 解析再交給原生 `.navigationTitle(_:)`；Orders 的多選三態 key 必須由 `OrdersFeature.State.navigationTitleKey` 計算屬性衍生。RootView 僅保留 `\.locale` 注入給一般 SwiftUI 文案與格式化器；`Tab(LocalizedStringKey)` 不需要此 workaround。
 - **`Text(字串變數)` 不會本地化 (英文模式露中文)**：`Text("字面值")` 與 `Text(LocalizedStringKey(x))` 會走本地化，但 `Text(someString)` (參數型別 `String`) 走 verbatim init。凡把「固定中文詞」經 `String` 變數丟進 `Text` / `Label` / `navigationTitle` 都要包 `LocalizedStringKey(...)`——可重用元件 (`BLBadge`) 內部已比照，`BLStatusPill` / `BLProgressBar` / `BLDonutChart.centerTitle` 本就有包。帶插值的中文 (如 `\(count) 件進行中`) 必須走 `Text(LocalizedStringKey("\(count) …"))`——SwiftUI 的 `Text(LocalizedStringKey)` 才會隨注入的 `\.locale` 解析;**不可用 `String(localized:locale:)`**，它走系統語言 bundle、不吃 App 內語言切換 (Dashboard KPI delta 曾因此在英文模式露中文)。若字串經參數傳遞，把參數型別設為 `LocalizedStringKey` (不是 `String`)、由 `Text` 端解析 (參考 `DashboardView.kpiTile(delta:)`)。**使用者資料 (主檔名稱、`customer.name`)、格式化數字/日期維持 verbatim**、不可包 `LocalizedStringKey`。
 - **新增任何 UI 字串都要同步補 `Localizable.xcstrings` 的 `en`**：新寫的中文字面值 (含 TCA `AlertState`／`TextState`、`Button`／`Text`／`accessibilityLabel` 等) 若沒補英文，英文模式會露中文 fallback (F1 捨棄變更 alert 曾漏)。`AlertState`／`TextState` 一樣走 catalog 本地化 (資料來源同 `Text(LocalizedStringKey)`)，補齊 `en` 即修好。手動補 catalog 用**文字插入** (在 `"strings"` 物件內加展開格式的 entry)、**不要全量 `json.dump` re-serialize**——`.xcstrings` 是 Xcode 自訂序列化 (部分 entry 單行、部分展開)，全量重寫會格式不吻合、產生巨量 diff 且 Xcode 下次開檔又重排。`LocalizationCatalogTests.catalogContainsCompleteTraditionalChineseAndEnglishValues` 只驗 catalog 內既有條目完整，**抓不到「code 有用但 catalog 沒收錄」的漏字**，故新增字串要人工確認有進 catalog。
@@ -105,6 +105,17 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
   - **不從 sheet 內再疊 sheet**——已呈現的 sheet 內開選擇器或子表單，用 push 或置中 overlay、不疊第二層 sheet。
     - **選擇器走 push**：`OptionPickerSheet`／`PaymentMethodEditorSheet` 有 `isEmbedded` 參數：預設 `false` = 自帶 `NavigationStack` 的單層 sheet (主介面呼叫點不變)，`true` = 去 `NavigationStack`／sheet 專屬修飾／取消鍵、由宿主 Back 返回。訂單編輯以單一 `OrderEditFeature.State.PickerRoute` enum + `navigationDestination(for:)` 驅動所有選擇器 (避開 `navigationDestination(item:)` 的 test-target 連結踩雷，見下「測試準則」相關 memory)。
     - **開團訂購提醒選擇器走 Form 內 inline `DatePicker`** (最貼 HIG，經 push → 置中自製對話框兩版被使用者否決後定案)：`CampaignEditView` 以 `Toggle("訂購提醒", isOn: $store.wantsReminder)` + 條件顯示的 inline `DatePicker(selection: $store.reminderTimestamp, displayedComponents: [.date, .hourAndMinute])` 呈現，與上方開團／結單日期列同款、點擊跳系統原生月曆／時間浮層。因此無獨立呈現、根本不涉「疊 sheet」；提醒時間戳即表單草稿、隨整張表單儲存/取消落地 (F1 dirty 已涵蓋)。**不要**為此再自製 sheet/push/overlay 對話框。
+
+### 導覽與呈現
+
+- **每個目的地只有一條抵達路徑**——清單點擊與深連結必須寫入同一條路徑。「更多」分頁以 `RootFeature.MoreRoute` 值導向堆疊驅動 (`NavigationStack(path:)` + `navigationDestination(for:)`)，深連結時於同一次狀態更新內先清空再推入。
+    - 用值導向堆疊而非「呈現旗標 + 去重判斷」：後者只是把不合法狀態擋掉，前者讓它根本無法表達。
+- **選取狀態單一來源**——同一個清單裡的不同項目類別要併進同一個選取型別 (參考 `RootSidebarLayout.SidebarSelection`)，系統才只會高亮一列；兩套選取機制並存必定同時高亮。
+- **任一時刻只呈現一層 modal**——同一畫面的多個 sheet 併進單一 `@Presents` destination 列舉，以單一呈現點依型別分派 (參考 `LookupManagementFeature.Destination`)，互斥由型別系統保證，而非多個並列的 `.sheet` 修飾子各自靠布林避讓。
+    - 已在 sheet 內要再開子畫面時走 push、加入既有的路徑列舉即可 (訂單編輯的照片檢視與各選擇器共用 `PickerRoute`)。
+- **alert 不拿來裝表單**——alert 的職責是傳達需要立即決策的關鍵資訊。有輸入框或開關的流程一律用 sheet 內表單 (`LookupNameEditorSheet`／`PaymentMethodEditorSheet`)；alert 的 actions builder 只支援 `Button`／`TextField`，塞 `Toggle` 會被靜默丟棄。
+- **不要 `navigationBarBackButtonHidden(true)` 自繪返回鍵**——會連帶停用邊緣滑動返回。要讓返回鍵只顯示符號而不顯示可能過期的標題，用 `.toolbarRole(.editor)`。
+- **破壞性操作：先確認、再寫入、寫入成功才改狀態**——確認一律用 `AlertState`，文案點明後果與不可復原。狀態更新放在寫入成功的 action 裡，不做樂觀更新加回滾；「先寫後改」從根本消除狀態與資料庫不一致的可能，也不必維護回滾邏輯。
 
 ### 焦點與鍵盤
 

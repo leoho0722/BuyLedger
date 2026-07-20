@@ -206,15 +206,6 @@ struct OrderEditView: View {
             .navigationDestination(for: OrderEditFeature.State.PickerRoute.self) { route in
                 pickerDestination(for: route)
             }
-            .fullScreenCover(item: $store.photoViewerSelection) { selection in
-                // 照片檢視屬 media，依 HIG 以 full-screen modal 呈現 (而非在編輯 sheet 上再疊 sheet)：title 置中顯示計數、右上 toolbar ✕ 關閉
-                BLPhotoViewer(
-                    photos: store.draftPhotos,
-                    initialIndex: selection.id
-                ) {
-                    store.send(.photoViewerDismissed)
-                }
-            }
         }
         // 有未儲存變更時阻擋下滑關閉，避免草稿靜默遺失；取消鍵改以彈窗確認
         .interactiveDismissDisabled(store.isDirty)
@@ -375,6 +366,16 @@ private extension OrderEditView {
                 },
                 isEmbedded: true
             )
+
+        case let .photoViewer(index):
+            // 照片檢視改以推進呈現：編輯表單已有路徑列舉驅動的推進機制，
+            // 加入同一個列舉即可，不需要在 sheet 上再疊一層 modal
+            BLPhotoViewer(
+                photos: store.draftPhotos,
+                initialIndex: index
+            ) {
+                store.send(.photoViewerDismissed)
+            }
         }
     }
 

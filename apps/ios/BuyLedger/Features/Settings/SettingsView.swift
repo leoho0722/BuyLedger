@@ -21,9 +21,6 @@ struct SettingsView: View {
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
 
-    /// 關閉目前設定導覽層級；自訂返回按鈕避免切換語言後系統快取舊 back title
-    @Environment(\.dismiss) private var dismiss
-
     /// 月度目標欄位的鍵盤焦點；實際狀態由 ``SettingsFeature/State/isGoalFieldFocused`` 持有
     @FocusState private var isGoalFieldFocused: Bool
 
@@ -118,17 +115,9 @@ struct SettingsView: View {
                 }
             }
         }
-        .navigationBarBackButtonHidden(true)
-        .toolbar {
-            ToolbarItem(placement: .topBarLeading) {
-                Button {
-                    dismiss()
-                } label: {
-                    Image(systemName: "chevron.left")
-                }
-                .accessibilityLabel(Text("返回"))
-            }
-        }
+        // 交回系統返回鍵：隱藏它會連帶停用邊緣滑動返回。原本的動機是避免切換語言後系統快取舊的
+        // 返回標題，改用 editor 角色即可讓返回鍵只顯示符號、不顯示可能過期的標題
+        .toolbarRole(.editor)
         .task {
             await store.send(.task).finish()
         }

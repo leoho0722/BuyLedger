@@ -97,82 +97,100 @@ struct LookupManagementFeatureTests {
         await store.finish()
     }
 
-    // MARK: - 新增流程 (addButtonTapped / addDraftCleared) Tests
+    // MARK: - 新增流程 (addButtonTapped) Tests
 
-    @Test func addButtonTappedForCategoryResetsDraftAndOpensAlert() async {
-        // 訂單來源 / 商品類別走 alert：reducer 依 kind 清空草稿並開啟 alert (取代 view 端分支寫入)
-        var state = LookupManagementFeature.State(kind: .category)
-        state.addDraft = "殘留草稿"
-
-        let store = TestStore(initialState: state) {
+    /// 純名稱 kind 的新增併入 destination；互斥由型別系統保證，不再有獨立呈現旗標
+    @Test func addButtonTappedForCategoryPresentsTheNameOnlyForm() async {
+        let store = TestStore(initialState: LookupManagementFeature.State(kind: .category)) {
             LookupManagementFeature()
         }
 
         await store.send(.addButtonTapped) {
-            $0.addDraft = ""
-            $0.showsAddNameOnlyAlert = true
+            $0.destination = .addNameOnly(LookupManagementFeature.Destination.AddNameOnlyFeature.State())
         }
     }
 
-    @Test func addButtonTappedForPaymentMethodOpensSheet() async {
-        // 付款方式走 sheet，不重置 addDraft (由 sheet 內元件自持草稿)
+    @Test func addButtonTappedForPaymentMethodPresentsThePaymentMethodForm() async {
         let store = TestStore(initialState: LookupManagementFeature.State(kind: .paymentMethod)) {
             LookupManagementFeature()
         }
 
         await store.send(.addButtonTapped) {
-            $0.showsAddPaymentMethodSheet = true
+            $0.destination = .addPaymentMethod(LookupManagementFeature.Destination.AddPaymentMethodFeature.State())
         }
     }
 
-    @Test func addButtonTappedForReconciliationStatusResetsDraftAndOpensAlert() async {
-        // 對帳狀態比照訂單來源 / 商品類別走 alert：reducer 依 kind 清空草稿並開啟 alert
-        var state = LookupManagementFeature.State(kind: .reconciliationStatus)
-        state.addDraft = "殘留草稿"
-
-        let store = TestStore(initialState: state) {
+    @Test func addButtonTappedForReconciliationStatusPresentsTheNameOnlyForm() async {
+        let store = TestStore(initialState: LookupManagementFeature.State(kind: .reconciliationStatus)) {
             LookupManagementFeature()
         }
 
         await store.send(.addButtonTapped) {
-            $0.addDraft = ""
-            $0.showsAddNameOnlyAlert = true
+            $0.destination = .addNameOnly(LookupManagementFeature.Destination.AddNameOnlyFeature.State())
         }
     }
 
-    @Test func addDraftClearedResetsDraft() async {
-        var state = LookupManagementFeature.State(kind: .category)
-        state.addDraft = "尚未送出的草稿"
+    // MARK: - 刪除流程 Tests
 
+    /// 破壞性刪除一律先確認，確認前不得動到任何狀態
+    @Test func deleteButtonTappedPresentsConfirmationWithoutMutatingState() async {
+        var state = LookupManagementFeature.State(kind: .category)
+        state.items = ["美妝", "零食"]
         let store = TestStore(initialState: state) {
             LookupManagementFeature()
         }
 
-        await store.send(.addDraftCleared) {
-            $0.addDraft = ""
+        await store.send(.deleteButtonTapped("美妝")) {
+            $0.deletionConfirmation = AlertState {
+                TextState("刪除項目")
+            } actions: {
+                ButtonState(role: .destructive, action: .confirmDelete("美妝")) {
+                    TextState("刪除")
+                }
+                ButtonState(role: .cancel) {
+                    TextState("取消")
+                }
+            } message: {
+                TextState("刪除「美妝」後，引用它的既有訂單會失去這個欄位值。此操作無法復原。")
+            }
         }
+
+        #expect(store.state.items == ["美妝", "零食"])
     }
 
-    // MARK: - Binding Tests
-
-    @Test func showsAddNameOnlyAlertBindingUpdatesState() async {
-        let store = TestStore(initialState: LookupManagementFeature.State(kind: .category)) {
+    /// 寫入成功後才更新狀態；寫入失敗時清單維持原狀，不會出現狀態與資料庫不一致
+    @Test func deleteFailureLeavesTheListUnchanged() async {
+        var state = LookupManagementFeature.State(kind: .category)
+        state.items = ["美妝", "零食"]
+        let store = TestStore(initialState: state) {
             LookupManagementFeature()
+        } withDependencies: {
+            $0[CategoryRepository.self].removeCategory = { _ in
+                throw LookupTestFailure.boom
+            }
         }
+        store.exhaustivity = .off
 
-        await store.send(\.binding.showsAddNameOnlyAlert, true) {
-            $0.showsAddNameOnlyAlert = true
-        }
+        await store.send(.deleteRequested("美妝"))
+        await store.receive(\.loadFailed)
+
+        #expect(store.state.items == ["美妝", "零食"])
     }
 
-    @Test func addDraftBindingUpdatesState() async {
-        let store = TestStore(initialState: LookupManagementFeature.State(kind: .category)) {
+    @Test func deleteSuccessRemovesTheItem() async {
+        var state = LookupManagementFeature.State(kind: .category)
+        state.items = ["美妝", "零食"]
+        let store = TestStore(initialState: state) {
             LookupManagementFeature()
+        } withDependencies: {
+            $0[CategoryRepository.self].removeCategory = { _ in }
         }
+        store.exhaustivity = .off
 
-        await store.send(\.binding.addDraft, "新類別") {
-            $0.addDraft = "新類別"
-        }
+        await store.send(.deleteRequested("美妝"))
+        await store.receive(\.deleteSucceeded)
+
+        #expect(store.state.items == ["零食"])
     }
 
     // MARK: - Destination (改名 / 編輯付款方式) Tests
@@ -344,4 +362,13 @@ struct LookupManagementFeatureTests {
 
         await store.finish()
     }
+}
+
+/// 主檔刪除測試用的寫入失敗
+private enum LookupTestFailure: Error {
+
+    // MARK: - Cases
+
+    /// 模擬資料庫寫入拋錯
+    case boom
 }

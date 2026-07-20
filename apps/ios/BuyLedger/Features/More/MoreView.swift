@@ -27,10 +27,10 @@ struct MoreView: View {
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
-        NavigationStack {
+        NavigationStack(path: $store.morePath) {
             phoneContent(palette: palette)
-                .navigationDestination(isPresented: $store.showsSettingsFromDeepLink) {
-                    SettingsView(store: store.scope(state: \.settings, action: \.settings))
+                .navigationDestination(for: RootFeature.MoreRoute.self) { route in
+                    destination(for: route)
                 }
         }
     }
@@ -161,12 +161,12 @@ private extension MoreView {
 
 private extension MoreView {
 
-    /// 將工具項目導向到對應 view
-    /// - Parameter item: 工具項目
+    /// 將目的地導向到對應 view
+    /// - Parameter route: 目的地
     /// - Returns: 對應目的地 view
     @ViewBuilder
-    func destination(for item: ToolItem) -> some View {
-        switch item {
+    func destination(for route: RootFeature.MoreRoute) -> some View {
+        switch route {
         case .fx:
             FxView(store: store.scope(state: \.fx, action: \.fx))
         case .customers:
@@ -189,6 +189,8 @@ private extension MoreView {
             LookupManagementView(
                 store: store.scope(state: \.reconciliationStatusManagement, action: \.reconciliationStatusManagement)
             )
+        case .settings:
+            SettingsView(store: store.scope(state: \.settings, action: \.settings))
         }
     }
 
@@ -199,55 +201,39 @@ private extension MoreView {
     func phoneContent(palette: BLPalette) -> some View {
         List {
             Section("工具") {
-                NavigationLink {
-                    destination(for: .fx)
-                } label: {
+                NavigationLink(value: RootFeature.MoreRoute.fx) {
                     toolRow(.fx, palette: palette)
                 }
             }
 
             Section("管理") {
-                NavigationLink {
-                    destination(for: .customers)
-                } label: {
+                NavigationLink(value: RootFeature.MoreRoute.customers) {
                     toolRow(.customers, palette: palette)
                 }
 
-                NavigationLink {
-                    destination(for: .orderSources)
-                } label: {
+                NavigationLink(value: RootFeature.MoreRoute.orderSources) {
                     toolRow(.orderSources, palette: palette)
                 }
 
-                NavigationLink {
-                    destination(for: .categories)
-                } label: {
+                NavigationLink(value: RootFeature.MoreRoute.categories) {
                     toolRow(.categories, palette: palette)
                 }
 
-                NavigationLink {
-                    destination(for: .paymentMethods)
-                } label: {
+                NavigationLink(value: RootFeature.MoreRoute.paymentMethods) {
                     toolRow(.paymentMethods, palette: palette)
                 }
 
-                NavigationLink {
-                    destination(for: .reconciliationStatuses)
-                } label: {
+                NavigationLink(value: RootFeature.MoreRoute.reconciliationStatuses) {
                     toolRow(.reconciliationStatuses, palette: palette)
                 }
 
-                NavigationLink {
-                    destination(for: .quote)
-                } label: {
+                NavigationLink(value: RootFeature.MoreRoute.quote) {
                     toolRow(.quote, palette: palette)
                 }
             }
 
             Section("App") {
-                NavigationLink {
-                    SettingsView(store: store.scope(state: \.settings, action: \.settings))
-                } label: {
+                NavigationLink(value: RootFeature.MoreRoute.settings) {
                     Label {
                         Text("設定").font(.body.weight(.medium))
                     } icon: {

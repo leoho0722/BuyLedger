@@ -51,8 +51,11 @@ struct RootFeature {
         /// 對帳狀態主檔管理狀態；理由同 ``categoryManagement``
         var reconciliationStatusManagement = LookupManagementFeature.State(kind: .reconciliationStatus)
 
-        /// 設為 `true` 時，「更多」分頁的 NavigationStack 會 push 到設定頁；供 AI 提示 alert 深連結開啟設定用 (iOS/iPadOS)
-        var showsSettingsFromDeepLink = false
+        /// 「更多」分頁的導覽路徑
+        ///
+        /// 清單點擊與深連結寫入同一條路徑，讓每個目的地只有一條抵達路徑——
+        /// 原本清單走推進連結、深連結走呈現旗標，兩者互不知情因而能疊出第二層設定頁
+        var morePath: [MoreRoute] = []
 
         /// 分析頁目前選取的趨勢期間；由 state 擁有以避免 iPad 側邊欄切換分頁重建 View 時被重置
         var insightsDateRange: InsightsDateRange = .twelveMonths
@@ -207,11 +210,10 @@ struct RootFeature {
                     return .none
                     
                 case let .smartGroupSelected(status):
+                    // 只切換狀態篩選；不再靜默覆寫使用者既有的日期區間與類別篩選——
+                    // 覆寫本身不是必要行為而是實作副作用，要套用一組預設篩選應以可見方式呈現
                     state.selectedTab = .orders
                     state.orders.selectedStatus = .status(status)
-                    state.orders.selectedDatePeriod = .all
-                    // 清掉殘留類別篩選，避免使用者帶著前一頁的類別狀態跳到 smart group 後被「狀態 + 類別」夾擊出空列表
-                    state.orders.selectedCategory = nil
                     state.orders.selectedOrderID = state.orders.filteredOrders(
                         referenceDate: date.now,
                         calendar: calendar
@@ -256,7 +258,8 @@ struct RootFeature {
                 case .orders(.aiDisabledAlert(.presented(.goToAISettings))):
                     // 切到「更多」分頁並 push 設定頁
                     state.selectedTab = .more
-                    state.showsSettingsFromDeepLink = true
+                    // 同一次狀態更新內先清空再推入，確保設定頁永遠只有一份且掛在根層
+                    state.morePath = [.settings]
                     return .none
                     
                 case .orders:
@@ -402,6 +405,44 @@ struct RootFeature {
             state.customers.orders = state.orders.orders
             return .none
         }
+    }
+}
+
+// MARK: - Nested Types
+
+extension RootFeature {
+
+    /// 「更多」分頁可抵達的目的地
+    ///
+    /// 值導向堆疊讓「同一個目的地被推兩次」這種不合法狀態根本無法表達，
+    /// 而不是靠去重判斷把它擋掉
+    enum MoreRoute: Hashable, CaseIterable {
+
+        // MARK: - Cases
+
+        /// 匯率工具
+        case fx
+
+        /// 客戶名單
+        case customers
+
+        /// 報價試算
+        case quote
+
+        /// 訂單來源主檔管理
+        case orderSources
+
+        /// 商品類別主檔管理
+        case categories
+
+        /// 付款方式主檔管理
+        case paymentMethods
+
+        /// 對帳狀態主檔管理
+        case reconciliationStatuses
+
+        /// 設定
+        case settings
     }
 }
 

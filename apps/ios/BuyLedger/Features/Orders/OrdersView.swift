@@ -102,20 +102,9 @@ private extension OrdersView {
                         }
                     }
 
-                    ToolbarItem(placement: .primaryAction) {
-                        Button("完成") {
-                            store.send(.selectionModeToggled)
-                        }
-                    }
-
-                    ToolbarItemGroup(placement: .bottomBar) {
-                        Text("已選 \(store.selectedOrderIDs.count) 筆")
-                            .font(.subheadline)
-                            .monospacedDigit()
-                            .foregroundStyle(palette.secondaryLabel)
-
-                        Spacer()
-
+                    // 批次操作放頂部而非 bottomBar：iPadOS 的可拖曳視窗會讓下緣超出螢幕而遮住底部工具列。
+                    // 選取筆數改由導覽標題承載 (`navigationTitleKey`)，與 compact 尺寸共用同一來源
+                    ToolbarItemGroup(placement: .primaryAction) {
                         Menu {
                             // 「已合併」僅能由合併流程寫入，批次目標清單一律排除
                             ForEach(OrderStatus.allCases.filter { $0 != .merged }) { status in
@@ -127,6 +116,10 @@ private extension OrdersView {
                             Text("更改狀態")
                         }
                         .disabled(store.selectedOrderIDs.isEmpty)
+
+                        Button("完成") {
+                            store.send(.selectionModeToggled)
+                        }
                     }
                 } else {
                     ToolbarItemGroup(placement: .primaryAction) {

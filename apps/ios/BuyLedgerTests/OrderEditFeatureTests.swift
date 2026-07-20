@@ -127,16 +127,6 @@ struct OrderEditFeatureTests {
         }
     }
 
-    @Test func bindingUpdatesPhotoViewerSelection() async {
-        let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
-            OrderEditFeature()
-        }
-
-        await store.send(\.binding.photoViewerSelection, OrderEditFeature.PhotoViewerSelection(id: 1)) {
-            $0.photoViewerSelection = OrderEditFeature.PhotoViewerSelection(id: 1)
-        }
-    }
-
     @Test func bindingUpdatesDraftCostFields() async {
         let store = TestStore(initialState: OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)) {
             OrderEditFeature()
@@ -688,14 +678,14 @@ struct OrderEditFeatureTests {
             OrderEditFeature()
         }
 
-        // 點第 2 張縮圖 → 開啟檢視器並指向該 index
+        // 點第 2 張縮圖 → 推進到照片檢視 (走與各選擇器同一條路徑，不疊第二層 modal)
         await store.send(.photoTapped(2)) {
-            $0.photoViewerSelection = OrderEditFeature.PhotoViewerSelection(id: 2)
+            $0.pickerRoute = .photoViewer(index: 2)
         }
 
-        // 關閉檢視器 → 清空選取
+        // 關閉檢視器 → 退出該路徑
         await store.send(.photoViewerDismissed) {
-            $0.photoViewerSelection = nil
+            $0.pickerRoute = nil
         }
     }
 }

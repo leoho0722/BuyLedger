@@ -36,6 +36,21 @@ struct RootSidebarLayout: View {
 
 private extension RootSidebarLayout {
 
+    /// 側邊欄的單一選取型別
+    ///
+    /// 分頁與智慧分組併入同一型別，讓系統清單只認得一個選取值——選取的單一來源由型別保證，
+    /// 而不是靠兩套狀態彼此避讓
+    enum SidebarSelection: Hashable {
+
+        // MARK: - Cases
+
+        /// 主要分頁
+        case tab(RootTab)
+
+        /// 智慧分組 (訂單頁的狀態篩選)
+        case smartGroup(OrderStatus)
+    }
+
     /// 側邊欄「智慧分組」中以狀態 + 顏色呈現的項目
     ///
     /// 涵蓋訂單從報價到交付的整條 pipeline；`cancelled` 不列入，避免使用者誤以為這是常用入口
@@ -149,7 +164,7 @@ private extension RootSidebarLayout {
     var sidebar: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
-        List(selection: tabSelectionBinding) {
+        List(selection: selectionBinding) {
             Section {
                 logoRow(palette: palette)
                     .listRowSeparator(.hidden)
@@ -170,19 +185,11 @@ private extension RootSidebarLayout {
 
             Section("智慧分組") {
                 ForEach(SmartGroup.orderBrowsingCases) { group in
-                    Button {
-                        store.send(.smartGroupSelected(group.status))
-                    } label: {
-                        smartGroupRow(group, palette: palette)
-                            .contentShape(Rectangle())
-                    }
-                    .buttonStyle(.plain)
-                    .listRowBackground(
-                        isSmartGroupHighlighted(group)
-                            ? palette.accent.opacity(0.18)
-                            : Color.clear
-                    )
-                    .listRowSeparator(.hidden)
+                    // 與分頁列共用同一個選取型別並統一標記，系統才只會高亮一列；
+                    // 原本分頁走清單選取、智慧分組走按鈕加手繪背景，兩套並存會同時高亮
+                    smartGroupRow(group, palette: palette)
+                        .tag(SidebarSelection.smartGroup(group.status))
+                        .listRowSeparator(.hidden)
                 }
             }
         }
@@ -243,7 +250,7 @@ private extension RootSidebarLayout {
                     .accessibilityLabel(Text("\(badgeCount) 件進行中"))
             }
         }
-        .tag(tab)
+        .tag(SidebarSelection.tab(tab))
     }
 
     /// 智慧分組單列：色點 + 狀態名稱 + 計數
@@ -300,28 +307,36 @@ private extension RootSidebarLayout {
 
 private extension RootSidebarLayout {
 
-    /// `List` 單選 binding：將 SwiftUI 的 `RootTab?` 選取轉成 TCA action
-    var tabSelectionBinding: Binding<RootTab?> {
+    /// `List` 單選 binding：分頁與智慧分組共用同一個選取型別
+    ///
+    /// 停留在訂單頁且狀態篩選正對應某個智慧分組時，選取態歸該分組列；其餘情形歸分頁列。
+    /// 兩者互斥，因此任一時刻只有一列呈現選取態
+    var selectionBinding: Binding<SidebarSelection?> {
         Binding(
-            get: { store.selectedTab },
-            set: { newTab in
-                guard let newTab, newTab != store.selectedTab else {
+            get: {
+                if store.selectedTab == .orders,
+                   case let .status(status) = store.orders.selectedStatus,
+                   SmartGroup.orderBrowsingCases.contains(where: { $0.status == status }) {
+                    return .smartGroup(status)
+                }
+                return .tab(store.selectedTab)
+            },
+            set: { newSelection in
+                switch newSelection {
+                case let .tab(tab):
+                    guard tab != store.selectedTab else {
+                        return
+                    }
+                    store.send(.tabSelected(tab))
+
+                case let .smartGroup(status):
+                    store.send(.smartGroupSelected(status))
+
+                case .none:
                     return
                 }
-
-                store.send(.tabSelected(newTab))
             }
         )
-    }
-
-    /// 智慧分組列是否應顯示「目前生效」的 highlight
-    ///
-    /// 條件為：使用者當下停留在訂單頁，且訂單頁的狀態篩選正套用到此 group 對應的狀態
-    /// - Parameter group: 要判斷的智慧分組
-    /// - Returns: 是否要套用 accent 背景
-    func isSmartGroupHighlighted(_ group: SmartGroup) -> Bool {
-        store.selectedTab == .orders
-            && store.orders.selectedStatus == .status(group.status)
     }
 }
 
