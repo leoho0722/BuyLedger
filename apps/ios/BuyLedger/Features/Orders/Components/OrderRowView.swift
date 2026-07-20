@@ -27,6 +27,9 @@ struct OrderRowView: View {
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
 
+    /// 目前的動態字級；無障礙字級下改變列的結構
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     // MARK: - View Body
 
     /// 訂單列的畫面內容
@@ -38,10 +41,12 @@ struct OrderRowView: View {
     /// 如此任何長字串都只會往下長高、不會把列撐得比可用寬度寬，避免外層垂直 ScrollView 內容溢出造成整頁左右邊距跑版
     var body: some View {
         HStack(spacing: BLSpacing.medium) {
+            // 姓名就在同一列，頭像屬重複資訊；標為裝飾避免被朗讀兩次
             BLAvatar(
                 name: order.customer.name,
                 initials: order.customer.initials,
-                size: 40
+                size: 40,
+                isDecorative: true
             )
 
             VStack(alignment: .leading, spacing: BLSpacing.small) {
@@ -65,13 +70,22 @@ struct OrderRowView: View {
                 if !categoriesTagText.isEmpty {
                     BLTagPill(categoriesTagText, systemImage: "tag")
                 }
+
+                // 無障礙字級下右欄會被擠到極窄；改置於左欄下方，讓狀態與金額有完整寬度可用
+                if dynamicTypeSize.isAccessibilitySize {
+                    trailingColumn
+                }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
 
             // 右欄與金額同欄、整體垂直置中 (外層 HStack 維持預設 .center)，內容依 trailing 變體切換
-            trailingColumn
+            if !dynamicTypeSize.isAccessibilitySize {
+                trailingColumn
+            }
         }
         .padding(.vertical, BLSpacing.extraSmall)
+        // 複合列合併為單一朗讀單位，否則輔助技術要逐一走過姓名、日期、明細、類別、狀態與兩個金額
+        .accessibilityElement(children: .combine)
     }
 }
 

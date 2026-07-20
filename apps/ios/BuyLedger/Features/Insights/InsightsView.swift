@@ -36,6 +36,14 @@ struct InsightsView: View {
     /// hero 總獲利金額字級，隨 Dynamic Type 縮放 (以 `.title` 為基準)
     @ScaledMetric(relativeTo: .title) private var heroProfitSize: CGFloat = 28
 
+    /// 熱力圖左側星期欄寬，隨字級縮放 (以 `.caption` 為基準)
+    @ScaledMetric(relativeTo: .caption) private var heatmapWeekdayColumnWidth: CGFloat = 28
+
+    /// 熱力圖單一格子的高度，隨字級縮放 (以 `.caption2` 為基準)
+    ///
+    /// 由型別層級常數改為實例屬性——`@ScaledMetric` 需要 view 實例才能讀到環境字級
+    @ScaledMetric(relativeTo: .caption2) private var heatmapCellHeight: CGFloat = 30
+
     // MARK: - View Body
 
     /// 分析頁的畫面內容
@@ -411,14 +419,14 @@ private extension InsightsView {
                     .foregroundStyle(palette.label)
 
                 LazyVGrid(
-                    columns: [GridItem(.fixed(28), spacing: 6)] + Array(
+                    columns: [GridItem(.fixed(heatmapWeekdayColumnWidth), spacing: 6)] + Array(
                         repeating: GridItem(.flexible(), spacing: 6),
                         count: weekCount
                     ),
                     spacing: 6
                 ) {
                     Text(" ")
-                        .frame(width: 28)
+                        .frame(width: heatmapWeekdayColumnWidth)
 
                     ForEach(0..<weekCount, id: \.self) { week in
                         Text("W\(week + 1)")
@@ -437,16 +445,21 @@ private extension InsightsView {
                             Text(weekdayLabel(weekday))
                                 .font(.caption)
                                 .foregroundStyle(palette.secondaryLabel)
-                                .frame(width: 28, alignment: .leading)
+                                .frame(width: heatmapWeekdayColumnWidth, alignment: .leading)
                         } else {
                             heatmapCell(
                                 count: cells[HeatmapKey(week: column - 1, weekday: weekday)] ?? 0,
                                 maxCount: maxCount,
+                                weekday: weekdayLabel(weekday),
+                                week: column,
                                 palette: palette
                             )
                         }
                     }
                 }
+                // 整圖摘要：讓使用者不必逐格走過就能理解這張圖的範圍與規模
+                .accessibilityElement(children: .contain)
+                .accessibilityLabel(Text("下單熱力圖，涵蓋過去 \(weekCount) 週，最高單日 \(maxCount) 單"))
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -459,7 +472,13 @@ private extension InsightsView {
     ///   - palette: 目前外觀使用的色盤
     /// - Returns: cell view
     @ViewBuilder
-    func heatmapCell(count: Int, maxCount: Int, palette: BLPalette) -> some View {
+    func heatmapCell(
+        count: Int,
+        maxCount: Int,
+        weekday: String,
+        week: Int,
+        palette: BLPalette
+    ) -> some View {
         let depth = BLHeatmapDepth.depth(for: count, maxCount: maxCount)
 
         // 用明確高度撐起格子；`RoundedRectangle` 是 Shape 無 intrinsic size，
@@ -467,7 +486,7 @@ private extension InsightsView {
         RoundedRectangle(cornerRadius: 4, style: .continuous)
             .fill(depth?.background ?? palette.fillQuaternary)
             .frame(maxWidth: .infinity)
-            .frame(height: Self.heatmapCellHeight)
+            .frame(height: heatmapCellHeight)
             .overlay {
                 if let depth {
                     Text("\(count)")
@@ -476,7 +495,11 @@ private extension InsightsView {
                         .accessibilityHidden(true)
                 }
             }
-            .accessibilityLabel(count == 0 ? "0 單" : "\(count) 單")
+            // 零值格子排除於無障礙樹外，否則輔助技術要逐一朗讀七十次沒有位置資訊的數字；
+            // 非零格子帶上「星期 + 第幾週」讓數字有座標可依附
+            .accessibilityHidden(count == 0)
+            .accessibilityLabel(Text("\(weekday) 第 \(week) 週"))
+            .accessibilityValue(Text("\(count) 單"))
     }
 }
 
@@ -514,9 +537,6 @@ private extension InsightsView {
     }
 
     // MARK: Heatmap
-
-    /// 熱力圖單一格子的高度 (pt)；格子寬度由 grid 的 flexible 欄位決定，高度需明確指定避免 Shape 被壓扁
-    static let heatmapCellHeight: CGFloat = 30
 
     // MARK: Formatting
 

@@ -25,6 +25,9 @@ struct BLDonutChart: View {
     /// 圈狀圖中央主要顯示值
     let centerValue: String
 
+    /// 圈狀圖直徑，隨字級縮放 (以 `.headline` 為基準)——中央文字放大時圓環也要跟著長大才容得下
+    @ScaledMetric(relativeTo: .headline) private var diameter: CGFloat = 150
+
     // MARK: - View Body
 
     /// 圈狀圖的畫面內容
@@ -49,7 +52,7 @@ struct BLDonutChart: View {
                 range: segments.map(\.color)
             )
             .chartLegend(.hidden)
-            .frame(width: 150, height: 150)
+            .frame(width: diameter, height: diameter)
             .accessibilityLabel(Text(accessibilitySummary))
 
             VStack(spacing: 2) {
@@ -61,6 +64,9 @@ struct BLDonutChart: View {
                     .font(.headline)
                     .foregroundStyle(palette.label)
                     .monospacedDigit()
+                    // 圓環已隨字級長大，單行加縮放係數僅作為極端字級下的次要防線
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.6)
             }
         }
     }

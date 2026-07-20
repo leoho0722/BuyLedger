@@ -427,9 +427,11 @@ private extension OrderDetailView {
     ) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             HStack(spacing: 6) {
+                // 純裝飾色點，語意已由標籤文字承載
                 Circle()
                     .fill(tint)
                     .frame(width: 8, height: 8)
+                    .accessibilityHidden(true)
 
                 Text(LocalizedStringKey(label))
                     .font(.footnote.weight(.medium))
@@ -458,6 +460,8 @@ private extension OrderDetailView {
             RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                 .stroke(palette.separator, lineWidth: 0.5)
         }
+        // 合併為單一朗讀單位；裝飾色點已先排除
+        .accessibilityElement(children: .combine)
     }
 
     /// 寬欄版面：成本拆解條與商品明細並排

@@ -40,6 +40,14 @@ struct DashboardView: View {
     /// hero 淨獲利金額字級，隨 Dynamic Type 縮放 (以 `.largeTitle` 為基準)
     @ScaledMetric(relativeTo: .largeTitle) private var heroProfitSize: CGFloat = 36
 
+    /// 目前的動態字級；用來在無障礙字級下改變版面結構
+    ///
+    /// 以 `isAccessibilitySize` 判斷而非逐級列舉——列舉會在系統新增級距時失效
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// onboarding 圖示尺寸，隨字級縮放 (以 `.largeTitle` 為基準)
+    @ScaledMetric(relativeTo: .largeTitle) private var onboardingIconSize: CGFloat = 56
+
     // MARK: - View Body
 
     /// 總覽頁的畫面內容
@@ -220,7 +228,7 @@ private extension DashboardView {
                     .frame(width: 132, height: 132)
 
                 Image(systemName: "shippingbox.fill")
-                    .font(.system(size: 56, weight: .semibold))
+                    .font(.system(size: onboardingIconSize, weight: .semibold))
                     .foregroundStyle(.white)
             }
 
@@ -336,8 +344,9 @@ private extension DashboardView {
                 Text(profitDisplay(stats.profit))
                     .font(.system(size: heroProfitSize, weight: .bold))
                     .monospacedDigit()
-                    .lineLimit(1)
-                    .minimumScaleFactor(0.7)
+                    // 無障礙字級下允許換行而非以縮放係數把字壓回一行——壓縮等於抵銷使用者的字級設定
+                    .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                    .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
 
                 HStack(spacing: BLSpacing.small) {
                     Text(profitDeltaDisplay(stats.profitDelta))
@@ -466,7 +475,8 @@ private extension DashboardView {
     ) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             HStack(spacing: 6) {
-                Circle().fill(tint).frame(width: 8, height: 8)
+                // 純裝飾色點，語意已由標籤文字承載
+                Circle().fill(tint).frame(width: 8, height: 8).accessibilityHidden(true)
                 Text(LocalizedStringKey(label))
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(palette.secondaryLabel)
@@ -476,8 +486,8 @@ private extension DashboardView {
                 .font(.title3.bold())
                 .monospacedDigit()
                 .foregroundStyle(palette.label)
-                .lineLimit(1)
-                .minimumScaleFactor(0.8)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
 
             Text(delta)
                 .font(.caption.weight(.medium))
@@ -491,6 +501,8 @@ private extension DashboardView {
             RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                 .stroke(palette.separator, lineWidth: 0.5)
         }
+        // 合併為單一朗讀單位；標籤旁的裝飾色點先排除，避免併進朗讀內容
+        .accessibilityElement(children: .combine)
     }
 
     /// 近期訂單區塊 (標題列 + 列表卡)
@@ -551,9 +563,10 @@ private extension DashboardView {
 
     // MARK: Layout
 
-    /// KPI 卡片的欄位設定 (僅 compact 用 2 欄)
+    /// KPI 卡片的欄位設定 (compact 用 2 欄；無障礙字級降為單欄，避免兩欄各自被擠到無法閱讀)
     var kpiColumns: [GridItem] {
-        Array(repeating: GridItem(.flexible(), spacing: BLSpacing.small), count: 2)
+        let count = dynamicTypeSize.isAccessibilitySize ? 1 : 2
+        return Array(repeating: GridItem(.flexible(), spacing: BLSpacing.small), count: count)
     }
 
     /// 是否採用 hero + 3 KPI 並排版面 (iPad)

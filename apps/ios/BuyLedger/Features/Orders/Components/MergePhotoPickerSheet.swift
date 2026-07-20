@@ -71,7 +71,7 @@ private extension MergePhotoPickerSheet {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(.white, isSelected ? Color.accentColor : Color.black.opacity(0.35))
-                    .font(.system(size: 22))
+                    .font(.title3)
                     .padding(6)
             }
             .contentShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))

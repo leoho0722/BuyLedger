@@ -314,6 +314,9 @@ private struct CampaignRow: View {
                 trailingText: CampaignFormatters.twd(summary.receivedAmount, locale: locale)
             )
         }
+        // 開團列由日期、名稱、狀態與多個進度組成；合併為單一朗讀單位，
+        // 否則輔助技術要逐一走過每個子元素
+        .accessibilityElement(children: .combine)
     }
 }
 

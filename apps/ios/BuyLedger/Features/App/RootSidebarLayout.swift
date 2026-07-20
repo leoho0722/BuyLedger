@@ -213,7 +213,7 @@ private extension RootSidebarLayout {
                     .frame(width: 28, height: 28)
 
                 Text("BL")
-                    .font(.system(size: 13, weight: .bold))
+                    .font(.caption.weight(.bold))
                     .foregroundStyle(.white)
             }
 

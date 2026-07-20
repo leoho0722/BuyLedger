@@ -106,6 +106,15 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
     - **選擇器走 push**：`OptionPickerSheet`／`PaymentMethodEditorSheet` 有 `isEmbedded` 參數：預設 `false` = 自帶 `NavigationStack` 的單層 sheet (主介面呼叫點不變)，`true` = 去 `NavigationStack`／sheet 專屬修飾／取消鍵、由宿主 Back 返回。訂單編輯以單一 `OrderEditFeature.State.PickerRoute` enum + `navigationDestination(for:)` 驅動所有選擇器 (避開 `navigationDestination(item:)` 的 test-target 連結踩雷，見下「測試準則」相關 memory)。
     - **開團訂購提醒選擇器走 Form 內 inline `DatePicker`** (最貼 HIG，經 push → 置中自製對話框兩版被使用者否決後定案)：`CampaignEditView` 以 `Toggle("訂購提醒", isOn: $store.wantsReminder)` + 條件顯示的 inline `DatePicker(selection: $store.reminderTimestamp, displayedComponents: [.date, .hourAndMinute])` 呈現，與上方開團／結單日期列同款、點擊跳系統原生月曆／時間浮層。因此無獨立呈現、根本不涉「疊 sheet」；提醒時間戳即表單草稿、隨整張表單儲存/取消落地 (F1 dirty 已涵蓋)。**不要**為此再自製 sheet/push/overlay 對話框。
 
+### Dynamic Type 與無障礙
+
+- **無障礙字級要改版面結構，不是用縮放係數把字壓回去**——`minimumScaleFactor`／`lineLimit(1)` 抵銷了使用者的字級設定。以 `@Environment(\.dynamicTypeSize)` 的 `isAccessibilitySize` 判斷 (不要逐級列舉 case，系統新增級距時會失效)，在無障礙字級下解除單行限制、允許換行，並降維：多欄格降為單欄 (`DashboardView.kpiColumns`)、橫排三欄改為堆疊 (`OrderRowView`)。
+- **固定點數的尺寸一律 `@ScaledMetric`**——圖示、格高、欄寬、圖表直徑都要隨字級長大，否則字放大後被容器截斷。`@ScaledMetric` 需要 view 實例，因此原本的 `static let` 尺寸常數要改成實例屬性。
+- **複合列合併為單一朗讀單位**——由多個子元素組成的列 (訂單列、開團列、KPI 格) 加 `.accessibilityElement(children: .combine)`，否則輔助技術要逐一走過每個子元素。合併前先把純裝飾元素 (色點、與相鄰文字重複的頭像) 標 `.accessibilityHidden(true)`，避免它們被併進朗讀內容。
+    - 可重用元件用參數表達裝飾與否 (`BLAvatar.isDecorative`)，而不是在呼叫端外層硬蓋 `accessibilityHidden`。
+- **格狀資料的每一格要有座標**——熱力圖等格狀元素的 label 須帶「哪一列哪一欄」，否則輔助技術只會朗讀出一連串沒有位置的數字；空值格子直接排除於無障礙樹，整張圖另給一句摘要。
+- **新增動畫一律先過減少動態效果判斷**——`@Environment(\.accessibilityReduceMotion)` 為真時傳 `nil` 給 `.animation(_:value:)`。判斷放在動畫來源處 (`ButtonStyle` 等元件內) 統一處理，不要散在各呼叫端。
+
 ### 導覽與呈現
 
 - **每個目的地只有一條抵達路徑**——清單點擊與深連結必須寫入同一條路徑。「更多」分頁以 `RootFeature.MoreRoute` 值導向堆疊驅動 (`NavigationStack(path:)` + `navigationDestination(for:)`)，深連結時於同一次狀態更新內先清空再推入。

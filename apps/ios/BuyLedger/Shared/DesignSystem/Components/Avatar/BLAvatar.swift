@@ -21,17 +21,24 @@ struct BLAvatar: View {
     /// 頭像寬高
     var size: CGFloat = 36
 
+    /// 是否僅作裝飾
+    ///
+    /// 與姓名同列時傳 `true`：姓名已由相鄰文字朗讀，頭像再朗讀一次只是重複
+    var isDecorative: Bool = false
+
     // MARK: - View Body
 
     /// 頭像的畫面內容
     var body: some View {
         Text(initials)
             .font(.system(size: size * 0.38, weight: .semibold, design: .default))
+            .minimumScaleFactor(0.6)
             .foregroundStyle(.white)
             .frame(width: size, height: size)
             .background(gradient)
             .clipShape(Circle())
             .accessibilityLabel(name)
+            .accessibilityHidden(isDecorative)
     }
 }
 

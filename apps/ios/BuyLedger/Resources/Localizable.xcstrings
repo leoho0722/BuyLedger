@@ -289,6 +289,38 @@
         }
       }
     },
+    "%@ 第 %lld 週" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@, week %lld"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%@ 第 %lld 週"
+          }
+        }
+      }
+    },
+    "下單熱力圖，涵蓋過去 %lld 週，最高單日 %lld 單" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Order heatmap covering the past %lld weeks, peaking at %lld orders in a day"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "下單熱力圖，涵蓋過去 %lld 週，最高單日 %lld 單"
+          }
+        }
+      }
+    },
     "捨棄變更" : {
       "localizations" : {
         "en" : {

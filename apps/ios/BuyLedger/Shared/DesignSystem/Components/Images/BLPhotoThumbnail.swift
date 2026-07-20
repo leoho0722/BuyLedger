@@ -48,7 +48,7 @@ struct BLPhotoThumbnail: View {
                 Image(systemName: "xmark.circle.fill")
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(.white, Color.black.opacity(0.55))
-                    .font(.system(size: 18))
+                    .font(.headline)
                     .frame(width: BLHitTarget.minimum, height: BLHitTarget.minimum)
                     .contentShape(.rect)
             }
@@ -115,6 +115,11 @@ private extension BLPhotoThumbnail {
 /// 系統的 plain 樣式對影像內容不提供任何按壓表現，borderless 則會為影像上色
 private struct BLPhotoThumbnailButtonStyle: ButtonStyle {
 
+    // MARK: - View Properties
+
+    /// 是否已開啟「減少動態效果」
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     // MARK: - View Body
 
     /// 回傳套用樣式後的按鈕內容
@@ -122,7 +127,7 @@ private struct BLPhotoThumbnailButtonStyle: ButtonStyle {
         configuration.label
             .opacity(configuration.isPressed ? 0.72 : 1)
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .animation(.snappy(duration: 0.14), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : .snappy(duration: 0.14), value: configuration.isPressed)
     }
 }
 

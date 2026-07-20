@@ -30,6 +30,11 @@ struct BLButtonStyle: ButtonStyle {
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
+    /// 是否已開啟「減少動態效果」
+    ///
+    /// 動畫在來源處統一處理：新增任何動畫前都要先過這個判斷，而不是在各呼叫端各自關閉
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     /// 目前按鈕是否可用
     ///
     /// 自繪背景的樣式必須自行讀取此值——否則停用的按鈕外觀與可用時完全相同，
@@ -54,7 +59,7 @@ struct BLButtonStyle: ButtonStyle {
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
             .opacity(opacity(isPressed: configuration.isPressed))
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .animation(.snappy(duration: 0.14), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : .snappy(duration: 0.14), value: configuration.isPressed)
     }
 }
 
