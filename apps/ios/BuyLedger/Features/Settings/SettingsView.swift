@@ -10,7 +10,7 @@ import SwiftUI
 
 /// 設定頁畫面
 ///
-/// 對應設計稿 iPhone 設定 / 更多頁的 sections：外觀、通知、預設幣別、關於。資料匯出 / CloudKit 同步 section 暫時以 `#if false` 隱藏，待實作完成後再開啟
+/// 對應設計稿 iPhone 設定 / 更多頁的 sections：外觀、預設幣別、關於。資料匯出 / CloudKit 同步 section 暫時以 `#if false` 隱藏，待實作完成後再開啟
 struct SettingsView: View {
 
     // MARK: - View Properties
@@ -43,10 +43,6 @@ struct SettingsView: View {
                         Text(LocalizedStringKey(mode.title)).tag(mode)
                     }
                 }
-            }
-
-            Section("通知") {
-                Toggle("接收訂單提醒", isOn: $store.notificationsEnabled)
             }
 
             Section {

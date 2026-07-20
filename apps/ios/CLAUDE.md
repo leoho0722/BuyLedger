@@ -101,10 +101,10 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 - **不用 `switch`／`if` 運算式賦值**：避免 `let x = switch … { … }` / `let x = if … { … }` 這種運算式寫法；改用傳統陳述式 (先宣告 `let x: T`，再於各分支賦值)。若該計算寫在 `@ViewBuilder` body 內會與 result builder 衝突，請抽成獨立 helper 回傳該值，view body 只呼叫 helper。
 - **`Label` 放在 `Form`／`List` row 內且後接 `Spacer`**：自動 label style 會把 icon 與 title 撐到 row 兩端 (icon 與文字中間出現大空隙)，須加 `.labelStyle(.titleAndIcon)` 讓兩者貼合 (`RootSidebarLayout` nav row、`CampaignEditView` 訂購提醒按鈕皆然)。
 - **sheet 遵循 Apple HIG「Sheets」兩條硬規則** (依 HIG 合規審視落地)：
-    - **編輯類 sheet 防未儲存變更靜默遺失**——訂單／開團／付款方式編輯 sheet 一律加 dirty 判斷 (feature 用 draft fingerprint 值型別對照初始基準、closure 元件用初始值快照)，sheet 掛 `.interactiveDismissDisabled(<isDirty>)`，取消鍵於 dirty 時改彈「捨棄變更／繼續編輯」確認。確認一律用 `AlertState`／`.alert` (centered modal)，**不用 `.confirmationDialog`**——取消是 toolbar 按鈕，iOS 26 起 `.confirmationDialog` 對 toolbar 觸發會位置偏移。
-    - **不從 sheet 內再疊 sheet**——已呈現的 sheet 內開選擇器或子表單，用 push 或置中 overlay、不疊第二層 sheet。
-        - **選擇器走 push**：`OptionPickerSheet`／`PaymentMethodEditorSheet` 有 `isEmbedded` 參數：預設 `false` = 自帶 `NavigationStack` 的單層 sheet (主介面呼叫點不變)，`true` = 去 `NavigationStack`／sheet 專屬修飾／取消鍵、由宿主 Back 返回。訂單編輯以單一 `OrderEditFeature.State.PickerRoute` enum + `navigationDestination(for:)` 驅動所有選擇器 (避開 `navigationDestination(item:)` 的 test-target 連結踩雷，見下「測試準則」相關 memory)。
-        - **開團訂購提醒選擇器走 Form 內 inline `DatePicker`** (最貼 HIG，經 push → 置中自製對話框兩版被使用者否決後定案)：`CampaignEditView` 以 `Toggle("訂購提醒", isOn: $store.wantsReminder)` + 條件顯示的 inline `DatePicker(selection: $store.reminderTimestamp, displayedComponents: [.date, .hourAndMinute])` 呈現，與上方開團／結單日期列同款、點擊跳系統原生月曆／時間浮層。因此無獨立呈現、根本不涉「疊 sheet」；提醒時間戳即表單草稿、隨整張表單儲存/取消落地 (F1 dirty 已涵蓋)。**不要**為此再自製 sheet/push/overlay 對話框。
+  - **編輯類 sheet 防未儲存變更靜默遺失**——訂單／開團／付款方式編輯 sheet 一律加 dirty 判斷 (feature 用 draft fingerprint 值型別對照初始基準、closure 元件用初始值快照)，sheet 掛 `.interactiveDismissDisabled(<isDirty>)`，取消鍵於 dirty 時改彈「捨棄變更／繼續編輯」確認。確認一律用 `AlertState`／`.alert` (centered modal)，**不用 `.confirmationDialog`**——取消是 toolbar 按鈕，iOS 26 起 `.confirmationDialog` 對 toolbar 觸發會位置偏移。
+  - **不從 sheet 內再疊 sheet**——已呈現的 sheet 內開選擇器或子表單，用 push 或置中 overlay、不疊第二層 sheet。
+    - **選擇器走 push**：`OptionPickerSheet`／`PaymentMethodEditorSheet` 有 `isEmbedded` 參數：預設 `false` = 自帶 `NavigationStack` 的單層 sheet (主介面呼叫點不變)，`true` = 去 `NavigationStack`／sheet 專屬修飾／取消鍵、由宿主 Back 返回。訂單編輯以單一 `OrderEditFeature.State.PickerRoute` enum + `navigationDestination(for:)` 驅動所有選擇器 (避開 `navigationDestination(item:)` 的 test-target 連結踩雷，見下「測試準則」相關 memory)。
+    - **開團訂購提醒選擇器走 Form 內 inline `DatePicker`** (最貼 HIG，經 push → 置中自製對話框兩版被使用者否決後定案)：`CampaignEditView` 以 `Toggle("訂購提醒", isOn: $store.wantsReminder)` + 條件顯示的 inline `DatePicker(selection: $store.reminderTimestamp, displayedComponents: [.date, .hourAndMinute])` 呈現，與上方開團／結單日期列同款、點擊跳系統原生月曆／時間浮層。因此無獨立呈現、根本不涉「疊 sheet」；提醒時間戳即表單草稿、隨整張表單儲存/取消落地 (F1 dirty 已涵蓋)。**不要**為此再自製 sheet/push/overlay 對話框。
 
 ### 註解
 
@@ -115,19 +115,19 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 - `struct` / `enum` / `extension` / `final class` 等型別宣告後第一行要空一行。
 - 所有型別共用同一套「由上到下」的區段順序。View 型別用完整版；非 View 型別沿用**相同順序**，只是把 View 專屬段落換成語意對應段名、或在無內容時直接略過。**沒有對應成員的段落不要寫**——不留空 `// MARK:`、不留空 `extension` (例如沒有任何 `@ViewBuilder` 方法時，不保留 `// MARK: - ViewBuilder`)。
 
-  | # | 位置語意             | View                   | TCA Reducer             | 其他型別 (enum / struct / class)                                                     |
-  |---|----------------------|------------------------|-------------------------|--------------------------------------------------------------------------------------|
-  | 1 | 內容定義 (狀態／屬性) | `View Properties`      | `State`、`Action`        | `Cases` (enum) → `Identifiable Properties` → `Data Properties` → `Static Properties` |
-  | 2 | 初始化               | `Init`                 | (少見)                  | `Init`                                                                               |
-  | 3 | 相依注入             | 併入 `View Properties` | `Dependency Properties` | `Dependency Properties` (若有)                                                       |
-  | 4 | 主體／核心計算        | `View Body`            | `Reducer Body`          | `Computed Properties`／主要對外計算 (可用語意名，如 `Display Properties`)              |
-  | 5 | 巢狀型別             | `Nested Types`         | `Nested Types`          | `Nested Types`                                                                       |
-  | 6 | ViewBuilder          | `ViewBuilder`          | —                       | —                                                                                    |
-  | 7 | 方法                 | `Internal Method` → `Private Method` | `Internal Method` → `Private Method` | `Internal Method` → `Private Method`                        |
-  | 8 | 預覽                 | `Preview`              | —                       | `Preview` (僅 Design System 元件等可預覽型別)                                        |
+  | # | 位置語意             | View                                 | TCA Reducer                          | 其他型別 (enum / struct / class)                                                     |
+  |---|----------------------|--------------------------------------|--------------------------------------|--------------------------------------------------------------------------------------|
+  | 1 | 內容定義 (狀態／屬性) | `View Properties`                    | `State`、`Action`                     | `Cases` (enum) → `Identifiable Properties` → `Data Properties` → `Static Properties` |
+  | 2 | 初始化               | `Init`                               | (少見)                               | `Init`                                                                               |
+  | 3 | 相依注入             | 併入 `View Properties`               | `Dependency Properties`              | `Dependency Properties` (若有)                                                       |
+  | 4 | 主體／核心計算        | `View Body`                          | `Reducer Body`                       | `Computed Properties`／主要對外計算 (可用語意名，如 `Display Properties`)              |
+  | 5 | 巢狀型別             | `Nested Types`                       | `Nested Types`                       | `Nested Types`                                                                       |
+  | 6 | ViewBuilder          | `ViewBuilder`                        | —                                    | —                                                                                    |
+  | 7 | 方法                 | `Internal Method` → `Private Method` | `Internal Method` → `Private Method` | `Internal Method` → `Private Method`                                                 |
+  | 8 | 預覽                 | `Preview`                            | —                                    | `Preview` (僅 Design System 元件等可預覽型別)                                        |
 
 - **第 5～8 區段一律寫在型別主體外**，讓主體專注在「它是什麼」與「主要計算」。其中 Nested Types 視該巢狀型別是否需被外部 (其他檔／測試) 引用，用 `extension` 或 `private extension` 切分 (型別本身的 access level 也據此決定)；ViewBuilder 一律 `private extension`；方法段依 access 分 (見下)；Preview 則是檔尾的 `#Preview`。
-- **段落 MARK 寫在 `extension` 宣告行的「上方」，不是大括號「內」**：`// MARK: - Nested Types`／`ViewBuilder`／`Internal Method`／`Private Method`／`Dependency Values` 等**用來標示一整個 extension 的段名**，一律置於 `extension`／`private extension` 那行的**上方** (中間空一行)，`extension { ` 之後第一行直接是成員 (需再細分時才於 extension 內用**無破折號** `// MARK: 子分類`)。只有寫在**型別主體大括號內**的段名 (如 `View Properties`、`State`、`Action`、`Reducer Body`、`Cases`) 才留在型別內。
+- **段落 MARK 寫在 `extension` 宣告行的「上方」，不是大括號「內」**：`// MARK: - Nested Types`／`ViewBuilder`／`Internal Method`／`Private Method`／`Dependency Values` 等**用來標示一整個 extension 的段名**，一律置於 `extension`／`private extension` 那行的**上方** (中間空一行)，`extension {` 之後第一行直接是成員 (需再細分時才於 extension 內用**無破折號** `// MARK: 子分類`)。只有寫在**型別主體大括號內**的段名 (如 `View Properties`、`State`、`Action`、`Reducer Body`、`Cases`) 才留在型別內。
 - **TCA 結構元素留在 Reducer 主體內**：`State`、`Action`、`CancelID` (effect 取消識別) 等屬 TCA 架構的一部分，寫在 `@Reducer` 型別主體內對應段名下 (`CancelID` 用 `// MARK: - Cancel ID`)，**不歸入 `Nested Types` 也不外移 extension**。
 - **`VersionedSchema` 版本的凍結影子 `@Model` 留在該 version enum 主體內** (`// MARK: - Nested Types`)：影子型別是「那個版本 schema 的一部分」，寫在 `enum BuyLedgerSchemaVxx` 主體、**不外移 extension** (搬位置雖不改指紋，但留主體語意更貼切、也少一層 extension)。
 - **`ViewBuilder` 段的成員 (`func` 或 `var` 回傳 `some View`) 一律標註 `@ViewBuilder`**——即使只回傳單一 view 也要標，全專案統一這一種寫法，不採「不標 `@ViewBuilder`、改用 `return` 回傳單一 view」的另一種。理由：`@ViewBuilder` 對單一 view 同樣合法，且日後加 `if`／`switch` 分支或並列多個 view 時不必改寫。此規定僅適用於「組合 view 內容」的 helper；下列不在此列：協定的 `body`／`makeBody`／`ViewModifier.body(content:)` (已隱含 builder)、以及 `View` 擴充上「套一層 modifier 就回傳」的 API (如 `blCardShadow()`／`blTextStyle()`，歸 `// MARK: - View Method`)。
@@ -146,6 +146,13 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 - 每個主要元件或資料型別原則上各自一個 Swift 檔案，檔名必須對應主要型別名稱 (例如 `BLBarChart.swift`、`BLDonutChart.swift`、`BLSparkline.swift`、`BLSearchField.swift`、`BLAmountField.swift`)。避免建立 `BLCharts.swift`、`BLTextFields.swift` 這類同時涵括多種元件的大檔。若小型 enum 或 extension 只服務單一元件，可以與該元件同檔；若開始跨元件重用或變大，請拆出獨立檔案。
 - 每個可視 Design System 元件都應提供自己的 `#Preview`；需要 binding 時使用 `.constant(...)`，需要圖表或狀態資料時用小型 sample data。
 - 調整 Design System 結構或元件後，請至少執行 iPhone 與 iPad Simulator build，確認 file system synchronized groups 正確拾取新增、搬移或刪除的 Swift 檔案。
+- **語意色分四軌，選軌的唯一判準是「這個色彩最終疊在什麼底色上」**——`BLTone` 提供 `onSurface`／`background`／`indicator`／`onIndicator`，皆為讀取 asset catalog 具名資源的計算屬性 (不收色盤參數，外觀與 Increase Contrast 由系統依 trait 解析)。
+  - 文字疊在卡片、列背景或 `background` 淡底 → `onSurface`；本身就是圖形 (狀態點、進度條填色、實心徽章底色) → `indicator`；文字疊在 `indicator` 實心底上 → `onIndicator`。
+  - **色值改在 asset catalog、不在程式碼算**：`Assets.xcassets` 的 `BLTone<Tone><Role>` 每組都定義 Any／Dark 與各自的 High Contrast 變體。程式碼算色表達不了 Increase Contrast 這個維度。
+  - **具名色彩資源缺失時 SwiftUI 靜默回退系統預設色**，無編譯或執行期警訊——新增 Color Set 必須與引用它的程式碼同批合入，且驗收要逐一目視確認顏色，不以「畫面沒壞」當通過。
+  - 對比門檻由 `BuyLedgerTests/ContrastComplianceTests` 把關 (helper 為 `ColorContrast`，自帶對照案例鎖住計算模型)。**旁有文字標籤的圖形 (如膠囊色點) 屬裝飾**，豁免 3:1 並標 `.accessibilityHidden(true)`；3:1 只約束單獨承載意義的圖形。
+- **命中區的尺寸與形狀宣告要加在按鈕的「標籤內部」**——`Button { Image(...).frame(width: BLHitTarget.minimum, height: BLHitTarget.minimum).contentShape(.rect) }` 才會擴大可點區域；加在 `Button` 外層 (`.padding()`／`.frame()`) 只增加版面間距、命中區仍只有圖示大小。
+  - 需要維持原本的貼齊角落外觀時用 `.offset(...)` 把放大後的命中區推回原位——`offset` 不影響 layout，視覺尺寸與版面比例都不變。
 
 ## 測試準則
 

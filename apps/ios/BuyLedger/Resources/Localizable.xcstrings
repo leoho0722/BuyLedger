@@ -1,6 +1,182 @@
 {
   "sourceLanguage" : "zh-Hant",
   "strings" : {
+    "長條圖，目前沒有資料" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bar chart, no data"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "長條圖，目前沒有資料"
+          }
+        }
+      }
+    },
+    "長條圖，共 %lld 個期間，最高 %@ %@，最低 %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bar chart, %lld periods, highest %@ %@, lowest %@ %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "長條圖，共 %lld 個期間，最高 %@ %@，最低 %@ %@"
+          }
+        }
+      }
+    },
+    "圈狀圖，目前沒有資料" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Donut chart, no data"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圈狀圖，目前沒有資料"
+          }
+        }
+      }
+    },
+    "圈狀圖，共 %lld 個類別，占比最高為 %@ %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Donut chart, %lld categories, largest share %@ %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圈狀圖，共 %lld 個類別，占比最高為 %@ %@"
+          }
+        }
+      }
+    },
+    "月獲利走勢圖，目前沒有資料" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monthly profit trend, no data"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月獲利走勢圖，目前沒有資料"
+          }
+        }
+      }
+    },
+    "月獲利走勢圖，共 %lld 個月，整體上升，最低 %@，最高 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monthly profit trend, %lld months, trending up, low %@, high %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月獲利走勢圖，共 %lld 個月，整體上升，最低 %@，最高 %@"
+          }
+        }
+      }
+    },
+    "月獲利走勢圖，共 %lld 個月，整體下降，最低 %@，最高 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monthly profit trend, %lld months, trending down, low %@, high %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月獲利走勢圖，共 %lld 個月，整體下降，最低 %@，最高 %@"
+          }
+        }
+      }
+    },
+    "月獲利走勢圖，共 %lld 個月，整體持平，最低 %@，最高 %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Monthly profit trend, %lld months, holding steady, low %@, high %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "月獲利走勢圖，共 %lld 個月，整體持平，最低 %@，最高 %@"
+          }
+        }
+      }
+    },
+    "無法載入資料" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to Load"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法載入資料"
+          }
+        }
+      }
+    },
+    "無法建立訂購提醒" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Unable to Create Reminder"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法建立訂購提醒"
+          }
+        }
+      }
+    },
+    "訂購提醒建立失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The reminder could not be created. Please try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂購提醒建立失敗，請稍後再試。"
+          }
+        }
+      }
+    },
     "捨棄變更" : {
       "localizations" : {
         "en" : {
@@ -2709,22 +2885,6 @@
         }
       }
     },
-    "接收訂單提醒" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Receive Order Reminders"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "接收訂單提醒"
-          }
-        }
-      }
-    },
     "提醒時間" : {
       "localizations" : {
         "en" : {
@@ -5037,22 +5197,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "透過上方「新增類別」加入第一個類別；訂單編輯時也能新增。"
-          }
-        }
-      }
-    },
-    "通知" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Notifications"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "通知"
           }
         }
       }

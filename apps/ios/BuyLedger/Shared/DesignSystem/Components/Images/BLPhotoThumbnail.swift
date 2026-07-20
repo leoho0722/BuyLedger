@@ -30,6 +30,11 @@ struct BLPhotoThumbnail: View {
     /// 點擊右上角刪除鈕時的 callback
     let onDelete: () -> Void
 
+    /// 刪除鈕的位移量
+    ///
+    /// 等於命中區半徑減去圖示半徑再減原本的 4pt 間距，使圖示中心維持在距角 13pt 的原位
+    private static let deleteButtonInset: CGFloat = BLHitTarget.minimum / 2 - 18 / 2 - 4
+
     // MARK: - View Body
 
     /// 縮圖的畫面內容
@@ -44,14 +49,19 @@ struct BLPhotoThumbnail: View {
                 }
                 .accessibilityAddTraits(onTap != nil ? .isButton : [])
 
+            // 尺寸與形狀宣告在標籤內部才會擴大命中區；掛在 Button 外層 (原本的 .padding(4))
+            // 只增加版面間距、命中區仍只有圖示大小。刪除無確認也無復原，命中區不足會招致誤刪
             Button(action: onDelete) {
                 Image(systemName: "xmark.circle.fill")
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(.white, Color.black.opacity(0.55))
                     .font(.system(size: 18))
+                    .frame(width: BLHitTarget.minimum, height: BLHitTarget.minimum)
+                    .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .padding(4)
+            // 以位移把放大後的命中區推回原本貼齊角落的視覺位置 (圖示中心距角 13pt 不變)
+            .offset(x: Self.deleteButtonInset, y: -Self.deleteButtonInset)
             .accessibilityLabel("刪除照片")
         }
     }

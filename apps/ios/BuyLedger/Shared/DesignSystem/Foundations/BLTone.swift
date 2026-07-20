@@ -34,40 +34,66 @@ enum BLTone: CaseIterable {
     case informative
 }
 
-// MARK: - Internal Method
+// MARK: - Display Properties
 
 extension BLTone {
 
-    /// 回傳語意狀態的前景色
-    /// - Parameter palette: 目前外觀對應的色盤
-    /// - Returns: 適合文字、圖示或指示點使用的色彩
-    func foreground(in palette: BLPalette) -> Color {
+    /// 疊在卡片或列背景之上的文字色
+    ///
+    /// 選色判準是「這個色彩最終疊在什麼底色上」：文字疊在 ``background`` 或卡片表面時走這一軌
+    var onSurface: Color {
+        namedColor(role: "SurfaceText")
+    }
+
+    /// 搭配 ``onSurface`` 的淡底色
+    ///
+    /// 適合 badge、pill 或輕量狀態容器
+    var background: Color {
+        namedColor(role: "SoftBackground")
+    }
+
+    /// 純圖形元素使用的指示色
+    ///
+    /// 適合狀態點、進度條填色與實心徽章底色；不供文字使用
+    var indicator: Color {
+        namedColor(role: "Indicator")
+    }
+
+    /// 疊在 ``indicator`` 實心底色之上的文字色
+    var onIndicator: Color {
+        namedColor(role: "OnIndicator")
+    }
+}
+
+// MARK: - Private Method
+
+private extension BLTone {
+
+    /// 此語意狀態在 asset catalog 內的資源名稱片段
+    var resourceName: String {
         switch self {
         case .neutral:
-            palette.secondaryLabel
+            "Neutral"
         case .accent:
-            palette.accent
+            "Accent"
         case .success:
-            palette.green
+            "Success"
         case .warning:
-            palette.orange
+            "Warning"
         case .destructive:
-            palette.red
+            "Destructive"
         case .informative:
-            palette.indigo
+            "Informative"
         }
     }
 
-    /// 回傳語意狀態的背景色
-    /// - Parameter palette: 目前外觀對應的色盤
-    /// - Returns: 適合 badge、pill 或輕量狀態容器使用的色彩
-    func background(in palette: BLPalette) -> Color {
-        switch self {
-        case .neutral:
-            palette.fillTertiary
-        case .accent, .success, .warning, .destructive, .informative:
-            foreground(in: palette).opacity(0.14)
-        }
+    /// 回傳指定用途的具名色彩資源
+    ///
+    /// 走 asset catalog 而非程式碼算色，才能同時表達 Any / Dark 外觀與 Increase Contrast 變體
+    /// - Parameter role: 色彩用途的資源名稱片段
+    /// - Returns: 由系統依當前 trait 解析的具名色彩
+    func namedColor(role: String) -> Color {
+        Color("BLTone\(resourceName)\(role)", bundle: .assets)
     }
 }
 

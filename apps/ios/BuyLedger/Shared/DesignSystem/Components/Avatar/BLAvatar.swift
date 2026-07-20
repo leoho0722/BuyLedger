@@ -35,34 +35,48 @@ struct BLAvatar: View {
     }
 }
 
+// MARK: - Internal Method
+
+extension BLAvatar {
+
+    /// 將名稱轉換為穩定色相
+    ///
+    /// 色相推導是頭像識別性的來源，任何配色調整都不得改動這段
+    /// - Parameter name: 用來計算色相的名稱
+    /// - Returns: 介於 `0` 到 `1` 的色相值
+    static func hueValue(for name: String) -> Double {
+        let total = name.unicodeScalars.reduce(0) { $0 + Int($1.value) }
+        return Double(total % 360) / 360
+    }
+
+    /// 回傳指定色相對應的漸層兩端色彩
+    ///
+    /// 明度壓低到讓白色縮寫在任一色相下都達到 4.5:1，色相本身不動
+    /// - Parameter hue: 介於 `0` 到 `1` 的色相值
+    /// - Returns: 由左上到右下的漸層端點色彩
+    static func gradientColors(forHue hue: Double) -> [Color] {
+        [
+            Color(hue: hue, saturation: 0.58, brightness: 0.47),
+            Color(
+                hue: (hue + 0.11).truncatingRemainder(dividingBy: 1),
+                saturation: 0.64,
+                brightness: 0.31
+            ),
+        ]
+    }
+}
+
 // MARK: - Private Method
 
 private extension BLAvatar {
 
     /// 依名稱產生的穩定漸層
     var gradient: LinearGradient {
-        let hue = hueValue(for: name)
-
-        return LinearGradient(
-            colors: [
-                Color(hue: hue, saturation: 0.46, brightness: 0.84),
-                Color(
-                    hue: (hue + 0.11).truncatingRemainder(dividingBy: 1),
-                    saturation: 0.52,
-                    brightness: 0.68
-                ),
-            ],
+        LinearGradient(
+            colors: Self.gradientColors(forHue: Self.hueValue(for: name)),
             startPoint: .topLeading,
             endPoint: .bottomTrailing
         )
-    }
-
-    /// 將名稱轉換為穩定色相
-    /// - Parameter name: 用來計算色相的名稱
-    /// - Returns: 介於 `0` 到 `1` 的色相值
-    func hueValue(for name: String) -> Double {
-        let total = name.unicodeScalars.reduce(0) { $0 + Int($1.value) }
-        return Double(total % 360) / 360
     }
 }
 

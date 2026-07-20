@@ -36,9 +36,6 @@ private extension SettingsStorage {
         /// 外觀偏好的 key
         nonisolated static let appearance = "settings.appearance"
 
-        /// 通知開關的 key
-        nonisolated static let notifications = "settings.notifications"
-
         /// 預設幣別的 key
         nonisolated static let defaultCurrency = "settings.defaultCurrency"
 
@@ -70,7 +67,6 @@ extension SettingsStorage: DependencyKey {
             let appearance = AppearancePreference(
                 rawValue: defaults.string(forKey: SettingsStorageKeys.appearance) ?? ""
             ) ?? .system
-            let notifications = defaults.object(forKey: SettingsStorageKeys.notifications) as? Bool ?? true
             let storedCurrency = defaults.string(forKey: SettingsStorageKeys.defaultCurrency) ?? ""
             let currency: CurrencyCode = storedCurrency.isEmpty ? .twd : CurrencyCode(rawValue: storedCurrency)
             // 從未寫入時 `object(forKey:)` 為 nil，預設帶入 `SettingsSnapshot.default.monthlyProfitGoalTwd`；
@@ -88,7 +84,6 @@ extension SettingsStorage: DependencyKey {
             return SettingsSnapshot(
                 language: language,
                 appearance: appearance,
-                notificationsEnabled: notifications,
                 defaultCurrency: currency,
                 monthlyProfitGoalTwd: goalValue,
                 useAiSummary: useAiSummary,
@@ -99,7 +94,6 @@ extension SettingsStorage: DependencyKey {
             let defaults = UserDefaults.standard
             defaults.set(snapshot.language.rawValue, forKey: SettingsStorageKeys.language)
             defaults.set(snapshot.appearance.rawValue, forKey: SettingsStorageKeys.appearance)
-            defaults.set(snapshot.notificationsEnabled, forKey: SettingsStorageKeys.notifications)
             defaults.set(snapshot.defaultCurrency.rawValue, forKey: SettingsStorageKeys.defaultCurrency)
             defaults.set(NSDecimalNumber(decimal: snapshot.monthlyProfitGoalTwd).doubleValue, forKey: SettingsStorageKeys.monthlyProfitGoalTwd)
             defaults.set(snapshot.useAiSummary, forKey: SettingsStorageKeys.useAiSummary)

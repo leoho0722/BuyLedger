@@ -46,16 +46,25 @@ struct DashboardView: View {
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
+        // 三分支解析：已載入顯示內容、有錯誤顯示失敗與重試、其餘才是載入中。
+        // 只判斷「是否已載入」會讓失敗永遠停在轉圈
         let core = Group {
-            if !store.orders.hasLoaded {
-                loadingPlaceholder(palette: palette)
-            } else {
+            switch store.orders.loadState {
+            case .loaded:
                 ScrollView {
                     content(palette: palette)
                         .padding(.horizontal, BLSpacing.large)
                         .padding(.vertical, BLSpacing.large)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
+
+            case let .failed(message):
+                BLLoadFailureView(message: message) {
+                    store.send(.orders(.task))
+                }
+
+            case .loading:
+                loadingPlaceholder(palette: palette)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -343,8 +352,14 @@ private extension DashboardView {
                 }
             }
 
-            BLSparkline(data: stats.sparkline, tint: .white, height: 36)
-                .opacity(0.6)
+            // 走勢的形狀不在相鄰文字裡 (上方顯示的是本月總額與月增減，非月內走勢)，故給摘要而非隱藏
+            BLSparkline(
+                data: stats.sparkline,
+                tint: .white,
+                height: 36,
+                summary: sparklineSummary(stats: stats)
+            )
+            .opacity(0.6)
 
             goalProgressBar(stats: stats)
         }
@@ -544,6 +559,35 @@ private extension DashboardView {
     /// 是否採用 hero + 3 KPI 並排版面 (iPad)
     var useWideHero: Bool {
         return horizontalSizeClass != .compact
+    }
+
+    // MARK: Accessibility
+
+    /// hero 走勢圖的趨勢摘要
+    ///
+    /// 描述方向與範圍；資料不足以構成走勢時明說無資料，不朗讀零值
+    /// - Parameter stats: 已計算的本月統計
+    /// - Returns: 供輔助技術朗讀的摘要
+    func sparklineSummary(stats: DashboardStats) -> LocalizedStringKey {
+        let points = stats.sparkline
+        guard points.count > 1,
+              let first = points.first,
+              let last = points.last,
+              let lowest = points.min(),
+              let highest = points.max() else {
+            return "月獲利走勢圖，目前沒有資料"
+        }
+
+        // 三個方向各自成句、不拼接片語——拼接的句子無法在其他語言正確重組
+        let low = formatTwd(Decimal(lowest))
+        let high = formatTwd(Decimal(highest))
+        if last > first {
+            return "月獲利走勢圖，共 \(points.count) 個月，整體上升，最低 \(low)，最高 \(high)"
+        }
+        if last < first {
+            return "月獲利走勢圖，共 \(points.count) 個月，整體下降，最低 \(low)，最高 \(high)"
+        }
+        return "月獲利走勢圖，共 \(points.count) 個月，整體持平，最低 \(low)，最高 \(high)"
     }
 
     // MARK: Formatting

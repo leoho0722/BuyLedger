@@ -187,6 +187,9 @@ struct CampaignFeature {
         /// 行事曆權限被拒，彈出提示 alert
         case reminderAccessDenied
 
+        /// 權限已授予但提醒建立失敗，彈出不提及權限的提示 alert
+        case reminderCreationFailed
+
         /// 權限提示 alert 事件
         case reminderAccessAlert(PresentationAction<ReminderAlert>)
 
@@ -512,6 +515,19 @@ struct CampaignFeature {
                 }
                 return .none
 
+            case .reminderCreationFailed:
+                // 權限已授予，訊息不得指向權限設定——照做也無法解決真正發生的失敗
+                state.reminderAccessAlert = AlertState {
+                    TextState("無法建立訂購提醒")
+                } actions: {
+                    ButtonState(role: .cancel) {
+                        TextState("知道了")
+                    }
+                } message: {
+                    TextState("訂購提醒建立失敗，請稍後再試。")
+                }
+                return .none
+
             case .reminderAccessAlert:
                 return .none
             }
@@ -747,7 +763,9 @@ private extension CampaignFeature {
 
     // MARK: 訂購提醒副作用
 
-    /// 請求行事曆權限後建立全天提醒事件、寫入連結並回報；權限被拒或建立失敗時改送 ``Action/reminderAccessDenied``
+    /// 請求行事曆權限後建立全天提醒事件、寫入連結並回報
+    ///
+    /// 權限被拒送 ``Action/reminderAccessDenied``；權限已授予後的失敗送 ``Action/reminderCreationFailed``
     /// - Parameters:
     ///   - campaignID: 建立提醒的開團識別值
     ///   - title: 提醒事件標題
@@ -772,12 +790,14 @@ private extension CampaignFeature {
             return
         }
 
+        // 權限已取得，此後的失敗 (事件儲存、識別碼缺失、連結寫入) 都與權限無關，
+        // 一律走建立失敗路徑；失敗時不寫入連結，不留下部分寫入的狀態
         do {
             let identifier = try await client.addReminder(title, date, alarmOffset)
             try await repository.saveLink(campaignID, identifier, reminderTimestamp)
             await send(.reminderStored(campaignID, CampaignReminderLink(eventIdentifier: identifier, reminderTimestamp: reminderTimestamp)))
         } catch {
-            await send(.reminderAccessDenied)
+            await send(.reminderCreationFailed)
         }
     }
 

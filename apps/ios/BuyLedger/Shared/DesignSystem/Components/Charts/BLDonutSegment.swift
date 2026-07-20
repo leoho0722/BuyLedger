@@ -25,4 +25,10 @@ struct BLDonutSegment: Identifiable {
 
     /// 區段色彩
     let color: Color
+
+    /// 供輔助技術朗讀的數值描述
+    ///
+    /// 由呼叫端以其 locale 格式化後傳入——設計系統不認識金額或單位，
+    /// 自行格式化會朗讀出沒有單位的裸數字
+    let valueDescription: String
 }

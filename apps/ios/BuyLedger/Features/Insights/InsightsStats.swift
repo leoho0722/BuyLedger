@@ -63,7 +63,13 @@ struct InsightsStats {
         palette: BLPalette
     ) {
         let realized = orders.filter { InsightsStats.realizedStatuses.contains($0.status) }
-        let trendBars = InsightsStats.trendBars(realized: realized, range: range, calendar: calendar, now: referenceDate)
+        let trendBars = InsightsStats.trendBars(
+            realized: realized,
+            range: range,
+            calendar: calendar,
+            now: referenceDate,
+            locale: locale
+        )
 
         let totalProfit = trendBars.reduce(Decimal(0)) { $0 + Decimal($1.value) }
         let priorPeriodProfit = InsightsStats.previousPeriodProfit(
@@ -276,12 +282,14 @@ private extension InsightsStats {
     ///   - range: 趨勢期間
     ///   - calendar: 用來分組的曆法
     ///   - now: 基準日
+    ///   - locale: App 選定、用於無障礙數值描述的 locale
     /// - Returns: 對應每段時間的累計獲利
     static func trendBars(
         realized: [LedgerOrder],
         range: InsightsDateRange,
         calendar: Calendar,
-        now: Date
+        now: Date,
+        locale: Locale
     ) -> [BLBarChartValue] {
         switch range {
         case .thirtyDays:
@@ -306,7 +314,8 @@ private extension InsightsStats {
 
                 return BLBarChartValue(
                     label: label,
-                    value: NSDecimalNumber(decimal: dayProfit).doubleValue
+                    value: NSDecimalNumber(decimal: dayProfit).doubleValue,
+                    valueDescription: OrderFormatters.twd(dayProfit, locale: locale)
                 )
             }
 
@@ -333,7 +342,8 @@ private extension InsightsStats {
 
                 return BLBarChartValue(
                     label: label,
-                    value: NSDecimalNumber(decimal: monthProfit).doubleValue
+                    value: NSDecimalNumber(decimal: monthProfit).doubleValue,
+                    valueDescription: OrderFormatters.twd(monthProfit, locale: locale)
                 )
             }
         }

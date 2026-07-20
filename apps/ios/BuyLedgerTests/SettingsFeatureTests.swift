@@ -20,7 +20,6 @@ struct SettingsFeatureTests {
 
         #expect(state.language == .traditionalChinese)
         #expect(state.appearance == .system)
-        #expect(state.notificationsEnabled == true)
         #expect(state.defaultCurrency == .twd)
         #expect(state.useAiSummary == false)
         #expect(state.aiSummaryModel == "gemma4:31b-cloud")
@@ -78,16 +77,6 @@ struct SettingsFeatureTests {
         }
     }
 
-    @Test func bindingUpdatesNotificationsToggle() async {
-        let store = TestStore(initialState: SettingsFeature.State()) {
-            SettingsFeature()
-        }
-
-        await store.send(\.binding.notificationsEnabled, false) {
-            $0.notificationsEnabled = false
-        }
-    }
-
     @Test func bindingUpdatesDefaultCurrency() async {
         let store = TestStore(initialState: SettingsFeature.State()) {
             SettingsFeature()
@@ -108,7 +97,6 @@ struct SettingsFeatureTests {
         let stored = SettingsSnapshot(
             language: .english,
             appearance: .dark,
-            notificationsEnabled: false,
             defaultCurrency: .jpy,
             monthlyProfitGoalTwd: 50_000,
             useAiSummary: true,
@@ -130,7 +118,6 @@ struct SettingsFeatureTests {
         await store.send(.task) {
             $0.language = .english
             $0.appearance = .dark
-            $0.notificationsEnabled = false
             $0.defaultCurrency = .jpy
             $0.monthlyProfitGoalTwd = 50_000
             $0.useAiSummary = true
@@ -194,7 +181,6 @@ struct SettingsFeatureTests {
         }
 
         #expect(saved.value?.appearance == .light)
-        #expect(saved.value?.notificationsEnabled == true)
         #expect(saved.value?.defaultCurrency == .twd)
     }
 

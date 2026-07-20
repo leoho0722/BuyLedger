@@ -85,7 +85,7 @@ private extension CustomersView {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
             Text("Top \(topCount)")
                 .font(.subheadline.weight(.semibold))
-                .foregroundStyle(palette.tertiaryLabel)
+                .foregroundStyle(palette.secondaryLabel)
                 .textCase(.uppercase)
 
             LazyVGrid(columns: topThreeColumns, spacing: BLSpacing.medium) {
@@ -132,7 +132,7 @@ private extension CustomersView {
                                     .foregroundStyle(palette.secondaryLabel)
                             }
 
-                            Text("·").foregroundStyle(palette.tertiaryLabel)
+                            Text("·").foregroundStyle(palette.secondaryLabel)
 
                             Text("\(customer.orderCount) 單")
                                 .font(.caption)
@@ -151,7 +151,7 @@ private extension CustomersView {
                     VStack(alignment: .leading, spacing: 2) {
                         Text("累計消費")
                             .font(.caption)
-                            .foregroundStyle(palette.tertiaryLabel)
+                            .foregroundStyle(palette.secondaryLabel)
                             .textCase(.uppercase)
 
                         Text(formatTwd(customer.totalSpent))
@@ -165,7 +165,7 @@ private extension CustomersView {
                     VStack(alignment: .trailing, spacing: 2) {
                         Text("最近訂單")
                             .font(.caption)
-                            .foregroundStyle(palette.tertiaryLabel)
+                            .foregroundStyle(palette.secondaryLabel)
                             .textCase(.uppercase)
 
                         Text(formatDate(customer.lastOrderDate))
@@ -185,12 +185,14 @@ private extension CustomersView {
     /// - Returns: 名次膠囊 view
     @ViewBuilder
     func rankBadge(rank: Int, palette: BLPalette) -> some View {
+        let style = CustomerRankBadgeStyle.style(forRank: rank)
+
         Text("#\(rank)")
             .font(.caption.weight(.bold))
-            .foregroundStyle(.white)
+            .foregroundStyle(style.numeral(in: palette))
             .padding(.horizontal, 8)
             .padding(.vertical, 2)
-            .background(rankBadgeBackground(rank: rank, palette: palette))
+            .background(style.background(in: palette))
             .clipShape(Capsule())
     }
 
@@ -205,7 +207,7 @@ private extension CustomersView {
             HStack(alignment: .firstTextBaseline) {
                 Text("全部客戶")
                     .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(palette.tertiaryLabel)
+                    .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
 
                 Spacer()
@@ -257,7 +259,7 @@ private extension CustomersView {
                         .font(.caption)
                         .foregroundStyle(customer.tier == .vip ? palette.orange : palette.secondaryLabel)
 
-                    Text("·").foregroundStyle(palette.tertiaryLabel)
+                    Text("·").foregroundStyle(palette.secondaryLabel)
 
                     Text("\(customer.orderCount) 單")
                         .font(.caption)
@@ -275,7 +277,7 @@ private extension CustomersView {
 
                 Text(formatDate(customer.lastOrderDate))
                     .font(.caption)
-                    .foregroundStyle(palette.tertiaryLabel)
+                    .foregroundStyle(palette.secondaryLabel)
             }
         }
         .padding(.horizontal, BLSpacing.large)
@@ -293,24 +295,6 @@ private extension CustomersView {
     /// 強調卡片的欄位設定，依寬度自動 1 / 2 / 3 欄
     var topThreeColumns: [GridItem] {
         [GridItem(.adaptive(minimum: 240, maximum: 360), spacing: BLSpacing.medium)]
-    }
-
-    /// 名次徽章的底色：第一名橙、第二名次要色、其餘填充色
-    /// - Parameters:
-    ///   - rank: 名次 (1 / 2 / 3)
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 對應底色
-    func rankBadgeBackground(rank: Int, palette: BLPalette) -> Color {
-        let background: Color
-        switch rank {
-        case 1:
-            background = palette.orange
-        case 2:
-            background = palette.secondaryLabel
-        default:
-            background = palette.fillTertiary
-        }
-        return background
     }
 
     /// 依 App 選定 locale 將金額格式化為新台幣

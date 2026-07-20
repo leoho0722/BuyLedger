@@ -94,7 +94,7 @@ private extension QuoteView {
         } else if !store.hasUsableRate {
             HStack(spacing: BLSpacing.small) {
                 Image(systemName: "info.circle.fill")
-                    .foregroundStyle(palette.tertiaryLabel)
+                    .foregroundStyle(palette.secondaryLabel)
                 Text("尚無可用匯率資料，建議售價暫顯示為 0。")
                     .font(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
@@ -116,7 +116,7 @@ private extension QuoteView {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("商品資訊")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(palette.tertiaryLabel)
+                    .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
 
                 currencyPicker(palette: palette)
@@ -328,7 +328,7 @@ private extension QuoteView {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("成本拆解")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(palette.tertiaryLabel)
+                    .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
 
                 ForEach(Array(items.enumerated()), id: \.offset) { _, item in

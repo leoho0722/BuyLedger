@@ -26,9 +26,6 @@ struct SettingsFeature {
         /// 介面外觀模式偏好
         var appearance: AppearancePreference = .system
 
-        /// 是否開啟通知
-        var notificationsEnabled: Bool = true
-
         /// 預設訂單幣別
         var defaultCurrency: CurrencyCode = .twd
 
@@ -99,7 +96,6 @@ struct SettingsFeature {
                 let snapshot = storage.load()
                 state.language = snapshot.language
                 state.appearance = snapshot.appearance
-                state.notificationsEnabled = snapshot.notificationsEnabled
                 state.defaultCurrency = snapshot.defaultCurrency
                 state.monthlyProfitGoalTwd = snapshot.monthlyProfitGoalTwd
                 state.useAiSummary = snapshot.useAiSummary
@@ -161,7 +157,6 @@ private extension SettingsFeature {
             SettingsSnapshot(
                 language: state.language,
                 appearance: state.appearance,
-                notificationsEnabled: state.notificationsEnabled,
                 defaultCurrency: state.defaultCurrency,
                 monthlyProfitGoalTwd: state.monthlyProfitGoalTwd,
                 useAiSummary: state.useAiSummary,

@@ -173,7 +173,7 @@ private extension OrderDetailView {
                     .foregroundStyle(palette.secondaryLabel)
 
                 Text("·")
-                    .foregroundStyle(palette.tertiaryLabel)
+                    .foregroundStyle(palette.secondaryLabel)
 
                 Text(currencyDisplayText(for: order.currency))
                     .font(.footnote)
@@ -308,7 +308,8 @@ private extension OrderDetailView {
                             BLDonutSegment(
                                 label: $0.title,
                                 value: NSDecimalNumber(decimal: $0.value).doubleValue,
-                                color: $0.color
+                                color: $0.color,
+                                valueDescription: OrderFormatters.twd($0.value, locale: locale)
                             )
                         },
                         centerTitle: "總成本",

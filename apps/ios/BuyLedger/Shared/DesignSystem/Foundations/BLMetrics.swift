@@ -55,6 +55,18 @@ enum BLSpacing {
     static let section: CGFloat = 32
 }
 
+/// 可點擊控制項的命中區尺寸
+enum BLHitTarget {
+
+    // MARK: - Static Properties
+
+    /// 命中區各方向的最小尺寸
+    ///
+    /// 命中區獨立於視覺尺寸：宣告要加在按鈕的**標籤內部**才會擴大可點區域，
+    /// 加在外層容器上只會增加版面間距
+    static let minimum: CGFloat = 44
+}
+
 // MARK: - Preview
 
 #Preview("尺寸與圓角") {

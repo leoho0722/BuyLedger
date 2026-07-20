@@ -93,21 +93,39 @@ private extension BLBarChart {
             )
             .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
             .foregroundStyle(palette.accent.gradient)
+            .accessibilityLabel(item.label)
+            .accessibilityValue(item.valueDescription)
         }
         .chartYAxis(.hidden)
         .chartXAxis {
             AxisMarks(values: axisLabels) { _ in
                 AxisValueLabel()
-                    .foregroundStyle(palette.tertiaryLabel)
+                    .foregroundStyle(palette.secondaryLabel)
                     .font(.caption2)
             }
         }
+        .accessibilityLabel(Text(accessibilitySummary))
     }
 }
 
 // MARK: - Private Method
 
 private extension BLBarChart {
+
+    /// 圖表層級摘要
+    ///
+    /// 描述資料的形狀而非重述上方既有的可見標題；資料為空時明說無資料，不朗讀零值
+    var accessibilitySummary: LocalizedStringKey {
+        guard let highest = data.max(by: { $0.value < $1.value }),
+              let lowest = data.min(by: { $0.value < $1.value }) else {
+            return "長條圖，目前沒有資料"
+        }
+        return """
+            長條圖，共 \(data.count) 個期間，\
+            最高 \(highest.label) \(highest.valueDescription)，\
+            最低 \(lowest.label) \(lowest.valueDescription)
+            """
+    }
 
     /// 計算一個視窗內可容納的長條數 (用來決定捲動時的內容寬度)
     /// - Parameters:
@@ -153,10 +171,10 @@ private extension BLBarChart {
 #Preview("長條圖") {
     BLBarChart(
         data: [
-            BLBarChartValue(label: "1月", value: 82),
-            BLBarChartValue(label: "2月", value: 126),
-            BLBarChartValue(label: "3月", value: 96),
-            BLBarChartValue(label: "4月", value: 142),
+            BLBarChartValue(label: "1月", value: 82, valueDescription: "NT$82"),
+            BLBarChartValue(label: "2月", value: 126, valueDescription: "NT$126"),
+            BLBarChartValue(label: "3月", value: 96, valueDescription: "NT$96"),
+            BLBarChartValue(label: "4月", value: 142, valueDescription: "NT$142"),
         ]
     )
     .padding()
@@ -177,7 +195,8 @@ private extension BLBarChart {
                     calendar: calendar
                 )
             ),
-            value: Double((offset * 37) % 160 + 20)
+            value: Double((offset * 37) % 160 + 20),
+            valueDescription: "NT$\((offset * 37) % 160 + 20)"
         )
     }
 

@@ -226,7 +226,8 @@ struct SnapshotTests {
                             calendar: calendar
                         )
                     ),
-                    value: Double((offset * 53) % 180 + 20)
+                    value: Double((offset * 53) % 180 + 20),
+                    valueDescription: "NT$\((offset * 53) % 180 + 20)"
                 )
             }
 

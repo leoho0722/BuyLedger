@@ -18,9 +18,6 @@ struct SettingsSnapshot: Equatable, Sendable {
     /// 介面外觀模式偏好
     var appearance: AppearancePreference
 
-    /// 是否開啟通知
-    var notificationsEnabled: Bool
-
     /// 預設訂單幣別
     var defaultCurrency: CurrencyCode
 
@@ -39,7 +36,6 @@ struct SettingsSnapshot: Equatable, Sendable {
     static let `default` = SettingsSnapshot(
         language: .traditionalChinese,
         appearance: .system,
-        notificationsEnabled: true,
         defaultCurrency: .twd,
         monthlyProfitGoalTwd: 80_000,
         useAiSummary: false,
@@ -50,7 +46,6 @@ struct SettingsSnapshot: Equatable, Sendable {
     nonisolated static let testDefault = SettingsSnapshot(
         language: .traditionalChinese,
         appearance: .system,
-        notificationsEnabled: true,
         defaultCurrency: .twd,
         monthlyProfitGoalTwd: 80_000,
         useAiSummary: false,

@@ -24,6 +24,12 @@ struct BLSparkline: View {
     /// 走勢圖高度
     var height: CGFloat = 40
 
+    /// 供輔助技術朗讀的趨勢摘要
+    ///
+    /// 傳 `nil` 表示相鄰文字已完整呈現同一資訊、此圖純屬裝飾，將明確對輔助技術隱藏；
+    /// 兩者擇一，不存在「既無標籤也未隱藏」的第三種狀態
+    var summary: LocalizedStringKey? = nil
+
     // MARK: - View Body
 
     /// 小型走勢圖的畫面內容
@@ -61,6 +67,9 @@ struct BLSparkline: View {
             }
         }
         .frame(height: height)
+        .accessibilityElement()
+        .accessibilityLabel(summary.map { Text($0) } ?? Text(verbatim: ""))
+        .accessibilityHidden(summary == nil)
     }
 }
 

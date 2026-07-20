@@ -12,9 +12,6 @@ struct BLStatusPill: View {
 
     // MARK: - View Properties
 
-    /// 目前系統深淺色外觀
-    @Environment(\.colorScheme) private var colorScheme
-
     /// 狀態膠囊顯示的文字
     let title: String
 
@@ -41,23 +38,22 @@ struct BLStatusPill: View {
 
     /// 狀態膠囊的畫面內容
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
-        let foreground = tone.foreground(in: palette)
-
         HStack(spacing: 4) {
             if showsIndicator {
+                // 色點與文字標籤傳達同一個狀態，屬冗餘裝飾故對輔助技術隱藏
                 Circle()
-                    .fill(foreground)
+                    .fill(tone.indicator)
                     .frame(width: 5, height: 5)
+                    .accessibilityHidden(true)
             }
 
             Text(LocalizedStringKey(title))
                 .font(.caption.weight(.semibold))
         }
-        .foregroundStyle(foreground)
+        .foregroundStyle(tone.onSurface)
         .padding(.vertical, 3)
         .padding(.horizontal, 9)
-        .background(tone.background(in: palette))
+        .background(tone.background)
         .clipShape(Capsule())
     }
 }

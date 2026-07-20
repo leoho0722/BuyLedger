@@ -116,14 +116,14 @@ private extension FxView {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("從")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(palette.tertiaryLabel)
+                    .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
 
                 currencyPicker(palette: palette)
 
                 Text("金額")
                     .font(.caption.weight(.semibold))
-                    .foregroundStyle(palette.tertiaryLabel)
+                    .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
                     .padding(.top, BLSpacing.small)
 

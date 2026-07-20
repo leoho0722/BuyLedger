@@ -46,13 +46,24 @@ struct InsightsView: View {
     var body: some View {
         let palette = BLTheme.palette(for: colorScheme)
 
+        // 三分支解析：已載入顯示內容、有錯誤顯示失敗與重試、其餘才是載入中。
+        // 只判斷「是否已載入」會讓失敗永遠停在轉圈
         let core = Group {
-            if !store.orders.hasLoaded {
+            switch store.orders.loadState {
+            case .loaded:
+                if store.orders.orders.isEmpty {
+                    emptyState(palette: palette)
+                } else {
+                    analyticsContent(palette: palette)
+                }
+
+            case let .failed(message):
+                BLLoadFailureView(message: message) {
+                    store.send(.orders(.task))
+                }
+
+            case .loading:
                 loadingPlaceholder(palette: palette)
-            } else if store.orders.orders.isEmpty {
-                emptyState(palette: palette)
-            } else {
-                analyticsContent(palette: palette)
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -348,7 +359,8 @@ private extension InsightsView {
                             BLDonutSegment(
                                 label: $0.label,
                                 value: NSDecimalNumber(decimal: $0.value).doubleValue,
-                                color: $0.color
+                                color: $0.color,
+                                valueDescription: formatTwd($0.value)
                             )
                         },
                         centerTitle: "總成本",
@@ -411,7 +423,7 @@ private extension InsightsView {
                     ForEach(0..<weekCount, id: \.self) { week in
                         Text("W\(week + 1)")
                             .font(.caption2)
-                            .foregroundStyle(palette.tertiaryLabel)
+                            .foregroundStyle(palette.secondaryLabel)
                             .frame(maxWidth: .infinity)
                     }
 
@@ -448,24 +460,19 @@ private extension InsightsView {
     /// - Returns: cell view
     @ViewBuilder
     func heatmapCell(count: Int, maxCount: Int, palette: BLPalette) -> some View {
-        let opacity: Double = {
-            guard count > 0, maxCount > 0 else {
-                return 0.06
-            }
-            return 0.2 + (Double(count) / Double(maxCount)) * 0.8
-        }()
+        let depth = BLHeatmapDepth.depth(for: count, maxCount: maxCount)
 
         // 用明確高度撐起格子；`RoundedRectangle` 是 Shape 無 intrinsic size，
         // 在 LazyVGrid 中靠 `aspectRatio` 會被旁邊 Text 那列壓成 0 高度而完全不顯示
         RoundedRectangle(cornerRadius: 4, style: .continuous)
-            .fill(palette.accent.opacity(opacity))
+            .fill(depth?.background ?? palette.fillQuaternary)
             .frame(maxWidth: .infinity)
             .frame(height: Self.heatmapCellHeight)
             .overlay {
-                if count > 0 {
+                if let depth {
                     Text("\(count)")
                         .font(.caption2.weight(.semibold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(depth.numeral)
                         .accessibilityHidden(true)
                 }
             }

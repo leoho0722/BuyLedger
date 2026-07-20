@@ -24,9 +24,6 @@ struct BLBadge: View {
 
     // MARK: - View Properties
 
-    /// 目前系統深淺色外觀
-    @Environment(\.colorScheme) private var colorScheme
-
     /// 徽章顯示的文字
     let text: String
 
@@ -53,17 +50,15 @@ struct BLBadge: View {
 
     /// 徽章的畫面內容
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
-
         // label variant 傳固定中文詞時需本地化
         // count variant 的數字字串會 passthrough 不受影響
         Text(LocalizedStringKey(text))
             .font(variant == .count ? .caption.weight(.bold) : .caption2.weight(.bold))
-            .foregroundStyle(foregroundColor(palette: palette))
+            .foregroundStyle(foregroundColor)
             .lineLimit(1)
             .padding(.vertical, variant == .count ? 1 : 2)
             .padding(.horizontal, variant == .count ? 7 : 6)
-            .background(backgroundColor(palette: palette))
+            .background(backgroundColor)
             .clipShape(RoundedRectangle(cornerRadius: variant == .count ? BLRadius.pill : 4))
             .monospacedDigit()
     }
@@ -73,27 +68,25 @@ struct BLBadge: View {
 
 private extension BLBadge {
 
-    /// 回傳徽章前景色
-    /// - Parameter palette: 目前外觀對應的色盤
-    /// - Returns: 徽章文字使用的色彩
-    func foregroundColor(palette: BLPalette) -> Color {
+    /// 徽章文字使用的色彩
+    ///
+    /// count variant 的數字疊在實心指示色上，label variant 的文字疊在淡底上，兩者取不同軌道
+    var foregroundColor: Color {
         switch variant {
         case .count:
-                .white
+            tone.onIndicator
         case .label:
-            tone.foreground(in: palette)
+            tone.onSurface
         }
     }
 
-    /// 回傳徽章背景色
-    /// - Parameter palette: 目前外觀對應的色盤
-    /// - Returns: 徽章背景使用的色彩
-    func backgroundColor(palette: BLPalette) -> Color {
+    /// 徽章背景使用的色彩
+    var backgroundColor: Color {
         switch variant {
         case .count:
-            tone.foreground(in: palette)
+            tone.indicator
         case .label:
-            tone.background(in: palette)
+            tone.background
         }
     }
 }

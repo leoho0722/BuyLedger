@@ -38,10 +38,19 @@ struct BLDonutChart: View {
                     innerRadius: .ratio(0.68),
                     angularInset: 1
                 )
-                .foregroundStyle(segment.color)
+                // 以類別維度驅動配色，Swift Charts 才拿得到區段身分並帶進無障礙樹；
+                // 直接指定色值會讓區段名稱完全不進畫面也不進輔助技術
+                .foregroundStyle(by: .value("類別", segment.label))
+                .accessibilityLabel(segment.label)
+                .accessibilityValue(segment.valueDescription)
             }
+            .chartForegroundStyleScale(
+                domain: segments.map(\.label),
+                range: segments.map(\.color)
+            )
             .chartLegend(.hidden)
             .frame(width: 150, height: 150)
+            .accessibilityLabel(Text(accessibilitySummary))
 
             VStack(spacing: 2) {
                 Text(LocalizedStringKey(centerTitle))
@@ -57,14 +66,29 @@ struct BLDonutChart: View {
     }
 }
 
+// MARK: - Private Method
+
+private extension BLDonutChart {
+
+    /// 圖表層級摘要
+    ///
+    /// 描述資料的形狀而非重述上方既有的可見標題；資料為空時明說無資料，不朗讀零值
+    var accessibilitySummary: LocalizedStringKey {
+        guard let largest = segments.max(by: { $0.value < $1.value }) else {
+            return "圈狀圖，目前沒有資料"
+        }
+        return "圈狀圖，共 \(segments.count) 個類別，占比最高為 \(largest.label) \(largest.valueDescription)"
+    }
+}
+
 // MARK: - Preview
 
 #Preview("圈狀圖") {
     BLDonutChart(
         segments: [
-            BLDonutSegment(label: "餐飲", value: 42, color: .blue),
-            BLDonutSegment(label: "交通", value: 24, color: .green),
-            BLDonutSegment(label: "購物", value: 34, color: .orange),
+            BLDonutSegment(label: "餐飲", value: 42, color: .blue, valueDescription: "NT$42"),
+            BLDonutSegment(label: "交通", value: 24, color: .green, valueDescription: "NT$24"),
+            BLDonutSegment(label: "購物", value: 34, color: .orange, valueDescription: "NT$34"),
         ],
         centerTitle: "總支出",
         centerValue: "$12.4K"

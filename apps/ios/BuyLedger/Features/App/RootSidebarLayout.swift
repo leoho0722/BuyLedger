@@ -269,7 +269,7 @@ private extension RootSidebarLayout {
             Text("\(count)")
                 .font(.footnote.weight(.medium))
                 .monospacedDigit()
-                .foregroundStyle(palette.tertiaryLabel)
+                .foregroundStyle(palette.secondaryLabel)
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel(Text(LocalizedStringKey(group.status.title)))

@@ -162,6 +162,19 @@ struct OrdersFeature {
 
         // MARK: - Computed Properties
 
+        /// 依「已載入 → 有錯誤 → 其餘」的順序解析目前的載入狀態
+        ///
+        /// 依賴此判定的畫面共用同一份解析，避免各自以 ``hasLoaded`` 單旗標推論而把失敗誤判成載入中
+        var loadState: LoadState {
+            if hasLoaded {
+                return .loaded
+            }
+            if let errorMessage {
+                return .failed(errorMessage)
+            }
+            return .loading
+        }
+
         /// 對外提供給編輯表單的「可用訂單來源」清單：合併主檔與既有訂單中使用過的來源，去重後依 locale 排序。合併規則與 ``availableCategories`` 相同
         var availableOrderSources: [String] {
             let fromOrders = orders
@@ -1051,6 +1064,28 @@ struct OrdersFeature {
         .forEach(\.detailPath, action: \.detailPath) {
             OrderDetailPath()
         }
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrdersFeature.State {
+
+    /// 訂單載入的三種解析結果
+    ///
+    /// 明確列出失敗分支，讓「載入中」不再兼職表示「載入失敗」
+    enum LoadState: Equatable {
+
+        // MARK: - Cases
+
+        /// 已完成載入，顯示正常內容
+        case loaded
+
+        /// 載入失敗，附帶失敗原因
+        case failed(String)
+
+        /// 載入中
+        case loading
     }
 }
 
