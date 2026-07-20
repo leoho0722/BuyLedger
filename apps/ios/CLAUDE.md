@@ -124,6 +124,7 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
     - 已在 sheet 內要再開子畫面時走 push、加入既有的路徑列舉即可 (訂單編輯的照片檢視與各選擇器共用 `PickerRoute`)。
 - **alert 不拿來裝表單**——alert 的職責是傳達需要立即決策的關鍵資訊。有輸入框或開關的流程一律用 sheet 內表單 (`LookupNameEditorSheet`／`PaymentMethodEditorSheet`)；alert 的 actions builder 只支援 `Button`／`TextField`，塞 `Toggle` 會被靜默丟棄。
 - **不要 `navigationBarBackButtonHidden(true)` 自繪返回鍵**——會連帶停用邊緣滑動返回。要讓返回鍵只顯示符號而不顯示可能過期的標題，用 `.toolbarRole(.editor)`。
+- **不可逆的狀態轉換比照刪除加確認**——結團等寫入後無法改回的操作，與刪除同級：先以 `AlertState` 確認、文案點明不可復原，確認後才寫入。
 - **破壞性操作：先確認、再寫入、寫入成功才改狀態**——確認一律用 `AlertState`，文案點明後果與不可復原。狀態更新放在寫入成功的 action 裡，不做樂觀更新加回滾；「先寫後改」從根本消除狀態與資料庫不一致的可能，也不必維護回滾邏輯。
 
 ### 焦點與鍵盤
@@ -172,9 +173,10 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 ## Design System 準則
 
 - Design System 放在 `apps/ios/BuyLedger/Shared/DesignSystem/`，並區分 `Foundations/` 與 `Components/`。`Foundations/` 放跨元件共用的 token、modifier 與語意模型；`Components/` 放可視 UI 元件，並依類別建立子資料夾。
-- 每個主要元件或資料型別原則上各自一個 Swift 檔案，檔名必須對應主要型別名稱 (例如 `BLBarChart.swift`、`BLDonutChart.swift`、`BLSparkline.swift`、`BLAmountField.swift`)。避免建立 `BLCharts.swift`、`BLTextFields.swift` 這類同時涵括多種元件的大檔。若小型 enum 或 extension 只服務單一元件，可以與該元件同檔；若開始跨元件重用或變大，請拆出獨立檔案。
+- 每個主要元件或資料型別原則上各自一個 Swift 檔案，檔名必須對應主要型別名稱 (例如 `BLBarChart.swift`、`BLDonutChart.swift`、`BLSparkline.swift`、`BLFilterChip.swift`)。避免建立 `BLCharts.swift`、`BLTextFields.swift` 這類同時涵括多種元件的大檔。若小型 enum 或 extension 只服務單一元件，可以與該元件同檔；若開始跨元件重用或變大，請拆出獨立檔案。
 - 每個可視 Design System 元件都應提供自己的 `#Preview`；需要 binding 時使用 `.constant(...)`，需要圖表或狀態資料時用小型 sample data。
 - 調整 Design System 結構或元件後，請至少執行 iPhone 與 iPad Simulator build，確認 file system synchronized groups 正確拾取新增、搬移或刪除的 Swift 檔案。
+- **跨檔案共用的尺寸由單一來源推導、不各自寫死**——例如分隔線內縮由頭像尺寸推導 (`BLListMetrics.dividerInset` ← `avatarSize`)。兩個本就必須對齊的數值各自寫死，會在其中一方改動時默默錯開。
 - **語意色分四軌，選軌的唯一判準是「這個色彩最終疊在什麼底色上」**——`BLTone` 提供 `onSurface`／`background`／`indicator`／`onIndicator`，皆為讀取 asset catalog 具名資源的計算屬性 (不收色盤參數，外觀與 Increase Contrast 由系統依 trait 解析)。
   - 文字疊在卡片、列背景或 `background` 淡底 → `onSurface`；本身就是圖形 (狀態點、進度條填色、實心徽章底色) → `indicator`；文字疊在 `indicator` 實心底上 → `onIndicator`。
   - **色值改在 asset catalog、不在程式碼算**：`Assets.xcassets` 的 `BLTone<Tone><Role>` 每組都定義 Any／Dark 與各自的 High Contrast 變體。程式碼算色表達不了 Increase Contrast 這個維度。

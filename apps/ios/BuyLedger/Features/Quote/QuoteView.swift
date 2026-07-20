@@ -210,6 +210,7 @@ private extension QuoteView {
                 Image(systemName: "chevron.right")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(palette.tertiaryLabel)
+                    .accessibilityHidden(true)
             }
             .padding(.vertical, BLSpacing.small)
             .padding(.horizontal, BLSpacing.medium)

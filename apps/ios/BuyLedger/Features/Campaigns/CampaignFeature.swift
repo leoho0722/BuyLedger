@@ -123,6 +123,11 @@ struct CampaignFeature {
         /// 刪除開團前的確認 alert 狀態；`nil` 表示未呈現
         @Presents var deletionConfirmation: AlertState<Action.Alert>?
 
+        /// 結團結算的二次確認；`nil` 代表未顯示
+        ///
+        /// 結團寫入結算日期後無法改回進行中，屬不可逆轉換，比照刪除加確認
+        @Presents var settleConfirmation: AlertState<Action.SettleAlert>?
+
         /// 行事曆權限被拒時的提示 alert；`nil` 表示未呈現
         @Presents var reminderAccessAlert: AlertState<Action.ReminderAlert>?
     }
@@ -169,6 +174,12 @@ struct CampaignFeature {
         /// 使用者點擊「結團」(設定結算封存日期)
         case settleTapped(Campaign.ID)
 
+        /// 結團確認 alert 事件
+        case settleConfirmation(PresentationAction<SettleAlert>)
+
+        /// 確認後實際寫入結算日期
+        case settleConfirmed(Campaign.ID)
+
         /// 使用者點擊「刪除」開團；先以 ``deletionConfirmation`` 二次確認
         case deleteCampaignTapped(Campaign.ID)
 
@@ -199,6 +210,14 @@ struct CampaignFeature {
 
             /// 使用者確認刪除指定開團
             case confirmDelete(Campaign.ID)
+        }
+
+        /// 結團確認 alert 的選項
+        @CasePathable
+        enum SettleAlert: Equatable {
+
+            /// 使用者確認結團
+            case confirmSettle(Campaign.ID)
         }
 
         /// 權限提示 alert 的選項；僅「知道了」關閉，無自訂動作
@@ -445,6 +464,32 @@ struct CampaignFeature {
                 }
 
             case let .settleTapped(id):
+                // 結團是不可逆的狀態轉換，比照刪除先確認再寫入
+                guard let campaign = state.campaigns.first(where: { $0.id == id }),
+                      campaign.settledDate == nil else {
+                    return .none
+                }
+                state.settleConfirmation = AlertState {
+                    TextState("結團結算")
+                } actions: {
+                    ButtonState(action: .confirmSettle(id)) {
+                        TextState("結團")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("取消")
+                    }
+                } message: {
+                    TextState("結算「\(campaign.name)」後就無法再改回進行中。確定要結團嗎？")
+                }
+                return .none
+
+            case let .settleConfirmation(.presented(.confirmSettle(id))):
+                return .send(.settleConfirmed(id))
+
+            case .settleConfirmation:
+                return .none
+
+            case let .settleConfirmed(id):
                 guard let index = state.campaigns.firstIndex(where: { $0.id == id }),
                       state.campaigns[index].settledDate == nil else {
                     return .none
@@ -472,7 +517,7 @@ struct CampaignFeature {
                         TextState("取消")
                     }
                 } message: {
-                    TextState("「\(campaign.name)」將被刪除，此操作無法復原。歸屬此開團的訂單不會被刪除，但會變回未歸團。")
+                    TextState("刪除「\(campaign.name)」後無法復原。歸屬此開團的訂單會保留，但會變回未歸團。")
                 }
                 return .none
 
@@ -536,6 +581,7 @@ struct CampaignFeature {
             CampaignEditFeature()
         }
         .ifLet(\.$deletionConfirmation, action: \.deletionConfirmation)
+        .ifLet(\.$settleConfirmation, action: \.settleConfirmation)
         .ifLet(\.$reminderAccessAlert, action: \.reminderAccessAlert)
     }
 }

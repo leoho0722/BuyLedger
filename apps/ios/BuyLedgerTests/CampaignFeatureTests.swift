@@ -101,10 +101,17 @@ struct CampaignFeatureTests {
             $0[CampaignRepository.self].saveCampaign = { _ in }
         }
 
-        await store.send(.settleTapped("C1")) {
-            $0.campaigns[0].settledDate = TestDependencies.fixedNow
-        }
+        store.exhaustivity = .off
 
+        // 結團是不可逆轉換，先確認、確認後才寫入結算日期
+        await store.send(.settleTapped("C1"))
+        #expect(store.state.settleConfirmation != nil)
+        #expect(store.state.campaigns[0].settledDate == nil, "確認前不應寫入結算日期")
+
+        await store.send(.settleConfirmation(.presented(.confirmSettle("C1"))))
+        await store.receive(\.settleConfirmed)
+
+        #expect(store.state.campaigns[0].settledDate == TestDependencies.fixedNow)
         #expect(store.state.campaigns[0].status == .closed, "結團不應改變狀態")
     }
 

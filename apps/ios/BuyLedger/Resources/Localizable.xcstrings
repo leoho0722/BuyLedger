@@ -321,6 +321,86 @@
         }
       }
     },
+    "結團" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settle"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "結團"
+          }
+        }
+      }
+    },
+    "結算「%@」後就無法再改回進行中。確定要結團嗎？" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Settling “%@” cannot be reverted to in-progress. Settle it?"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "結算「%@」後就無法再改回進行中。確定要結團嗎？"
+          }
+        }
+      }
+    },
+    "刪除「%@」後無法復原。歸屬此開團的訂單會保留，但會變回未歸團。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deleting “%@” cannot be undone. Orders in this campaign are kept but become ungrouped."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除「%@」後無法復原。歸屬此開團的訂單會保留，但會變回未歸團。"
+          }
+        }
+      }
+    },
+    "刪除「%@」的這筆訂單後無法復原。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Deleting this order from “%@” cannot be undone."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除「%@」的這筆訂單後無法復原。"
+          }
+        }
+      }
+    },
+    "這些篩選條件尚未套用，離開後將不會保留。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "These filters have not been applied and will be lost if you leave."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這些篩選條件尚未套用，離開後將不會保留。"
+          }
+        }
+      }
+    },
     "捨棄變更" : {
       "localizations" : {
         "en" : {

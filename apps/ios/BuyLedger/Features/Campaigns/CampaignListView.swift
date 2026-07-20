@@ -83,6 +83,9 @@ struct CampaignListView: View {
             $store.scope(state: \.campaigns.deletionConfirmation, action: \.campaigns.deletionConfirmation)
         )
         .alert(
+            $store.scope(state: \.campaigns.settleConfirmation, action: \.campaigns.settleConfirmation)
+        )
+        .alert(
             $store.scope(state: \.campaigns.reminderAccessAlert, action: \.campaigns.reminderAccessAlert)
         )
         .task {

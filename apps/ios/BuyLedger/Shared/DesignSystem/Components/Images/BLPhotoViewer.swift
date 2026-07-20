@@ -70,7 +70,8 @@ struct BLPhotoViewer: View {
                 .navigationTitle(Text(verbatim: counterText))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
+                    // 關閉是離開而非主要動作，放取消位置
+                    ToolbarItem(placement: .cancellationAction) {
                         Button(action: onDismiss) {
                             Image(systemName: "xmark")
                         }

@@ -250,6 +250,19 @@ private extension OptionPickerSheet {
                             dismiss()
                         }
                     }
+
+                    // 獨立呈現時「完成」是唯一出口，等於逼使用者以完成來取消；補上取消動作。
+                    // 嵌入 (push) 時由宿主 Back 承接，不再加重複的取消
+                    if !isEmbedded {
+                        ToolbarItem(placement: .cancellationAction) {
+                            Button {
+                                dismiss()
+                            } label: {
+                                Image(systemName: "xmark")
+                            }
+                            .accessibilityLabel(Text("取消"))
+                        }
+                    }
                 } else if !isEmbedded {
                     // 單層 sheet 才放取消鍵；嵌入 (push) 時由宿主導覽堆疊的 Back 取代
                     ToolbarItem(placement: .cancellationAction) {

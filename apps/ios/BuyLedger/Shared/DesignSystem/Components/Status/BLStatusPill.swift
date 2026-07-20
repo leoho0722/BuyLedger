@@ -12,6 +12,15 @@ struct BLStatusPill: View {
 
     // MARK: - View Properties
 
+    /// 狀態膠囊垂直內距，隨字級縮放
+    @ScaledMetric(relativeTo: .caption) private var verticalPadding: CGFloat = 3
+
+    /// 狀態膠囊水平內距，隨字級縮放
+    @ScaledMetric(relativeTo: .caption) private var horizontalPadding: CGFloat = 9
+
+    /// 狀態點直徑，隨字級縮放
+    @ScaledMetric(relativeTo: .caption) private var indicatorSize: CGFloat = 5
+
     /// 狀態膠囊顯示的文字
     let title: String
 
@@ -43,7 +52,7 @@ struct BLStatusPill: View {
                 // 色點與文字標籤傳達同一個狀態，屬冗餘裝飾故對輔助技術隱藏
                 Circle()
                     .fill(tone.indicator)
-                    .frame(width: 5, height: 5)
+                    .frame(width: indicatorSize, height: indicatorSize)
                     .accessibilityHidden(true)
             }
 
@@ -51,8 +60,8 @@ struct BLStatusPill: View {
                 .font(.caption.weight(.semibold))
         }
         .foregroundStyle(tone.onSurface)
-        .padding(.vertical, 3)
-        .padding(.horizontal, 9)
+        .padding(.vertical, verticalPadding)
+        .padding(.horizontal, horizontalPadding)
         .background(tone.background)
         .clipShape(Capsule())
     }

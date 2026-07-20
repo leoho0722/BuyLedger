@@ -68,8 +68,8 @@ private extension CustomersView {
             systemImage: "person.2",
             description: Text("先建立訂單，這裡會自動依客戶彙總統計。")
         )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .padding(.vertical, BLSpacing.section)
+        .frame(maxWidth: .infinity)
+        .containerRelativeFrame(.vertical)
         .background(palette.background)
     }
 

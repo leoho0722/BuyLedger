@@ -231,6 +231,8 @@ private extension DashboardView {
                     .font(.system(size: onboardingIconSize, weight: .semibold))
                     .foregroundStyle(.white)
             }
+            // 純裝飾插圖：訊息由下方文字承載，朗讀符號名稱只是雜訊
+            .accessibilityHidden(true)
 
             VStack(spacing: BLSpacing.small) {
                 Text("歡迎使用 BuyLedger")
@@ -547,7 +549,7 @@ private extension DashboardView {
 
                             if index < stats.recentOrders.count - 1 {
                                 Divider()
-                                    .padding(.leading, BLSpacing.large + 40 + BLSpacing.medium)
+                                    .padding(.leading, BLListMetrics.dividerInset)
                             }
                         }
                     }

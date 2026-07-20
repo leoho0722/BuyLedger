@@ -114,12 +114,16 @@ extension KeyboardDismissInstaller.Coordinator {
         return !touchedView.blocksKeyboardDismissTap
     }
 
-    /// 允許與其他手勢同時辨識，確保 (在接受觸控的空白處) 不阻擋捲動等既有手勢
+    /// 僅對已知的捲動類手勢同時辨識，確保不阻擋捲動；其餘一律不放行
+    ///
+    /// 原本無條件回傳 `true`，等於對任何未知手勢都放行——包含系統文字選取與編輯選單自己的手勢。
+    /// 收窄為白名單後，新的系統手勢預設不會與收鍵盤同時觸發
     func gestureRecognizer(
         _ gestureRecognizer: UIGestureRecognizer,
         shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer
     ) -> Bool {
-        true
+        otherGestureRecognizer is UIPanGestureRecognizer
+            || otherGestureRecognizer is UISwipeGestureRecognizer
     }
 }
 

@@ -100,7 +100,8 @@ struct SettingsFeatureTests {
             defaultCurrency: .jpy,
             monthlyProfitGoalTwd: 50_000,
             useAiSummary: true,
-            aiSummaryModel: "gpt-oss:120b"
+            aiSummaryModel: "gpt-oss:120b",
+            lastSelectedTab: .dashboard
         )
 
         let store = TestStore(initialState: SettingsFeature.State()) {

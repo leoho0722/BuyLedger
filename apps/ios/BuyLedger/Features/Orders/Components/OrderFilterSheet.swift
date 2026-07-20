@@ -48,6 +48,9 @@ struct OrderFilterSheet: View {
     /// 點 row 只更新此 pending state，不 dispatch；要按右上「套用」才把變動 commit 到 store
     @State private var pendingCategory: String?
 
+    /// 是否顯示「捨棄變更／繼續編輯」確認彈窗
+    @State private var showsDiscardConfirmation = false
+
     /// 使用者在 sheet 內 pending 的付款方式選擇 (`nil` 代表「全部」)
     ///
     /// 點 row 只更新此 pending state，不 dispatch；要按右上「套用」才把變動 commit 到 store
@@ -79,7 +82,11 @@ struct OrderFilterSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
-                        dismiss()
+                        if hasPendingChanges {
+                            showsDiscardConfirmation = true
+                        } else {
+                            dismiss()
+                        }
                     } label: {
                         Image(systemName: "xmark")
                     }
@@ -100,6 +107,17 @@ struct OrderFilterSheet: View {
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
+        // 有未提交的篩選變更時阻擋下滑關閉，避免靜默遺失；取消鍵改以彈窗確認
+        .interactiveDismissDisabled(hasPendingChanges)
+        .alert("捨棄變更", isPresented: $showsDiscardConfirmation) {
+            Button("捨棄變更", role: .destructive) {
+                dismiss()
+            }
+
+            Button("繼續編輯", role: .cancel) {}
+        } message: {
+            Text("這些篩選條件尚未套用，離開後將不會保留。")
+        }
     }
 }
 
@@ -189,13 +207,16 @@ private extension OrderFilterSheet {
                 Spacer()
 
                 if pendingDatePeriod == period {
+                    // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
                         .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
                 }
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(pendingDatePeriod == period ? .isSelected : [])
     }
 
     /// 類別「全部」清除 row：點選只把 ``pendingCategory`` 設為 `nil`，不 dispatch、不 dismiss
@@ -218,13 +239,16 @@ private extension OrderFilterSheet {
                 Spacer()
 
                 if pendingCategory == nil {
+                    // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
                         .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
                 }
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(pendingCategory == nil ? .isSelected : [])
     }
 
     /// 單一類別 row：tag icon + 類別名 + 末端 checkmark (當該類別為目前 pending 選擇時)
@@ -249,13 +273,16 @@ private extension OrderFilterSheet {
                 Spacer()
 
                 if pendingCategory == category {
+                    // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
                         .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
                 }
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(pendingCategory == category ? .isSelected : [])
     }
 
     /// 類別 section 在搜尋無匹配或類別清單本身為空時顯示的空狀態 row
@@ -288,13 +315,16 @@ private extension OrderFilterSheet {
                 Spacer()
 
                 if pendingPaymentMethod == nil {
+                    // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
                         .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
                 }
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(pendingPaymentMethod == nil ? .isSelected : [])
     }
 
     /// 單一付款方式 row：creditcard icon + 付款方式名 + 末端 checkmark (當該付款方式為目前 pending 選擇時)
@@ -319,13 +349,16 @@ private extension OrderFilterSheet {
                 Spacer()
 
                 if pendingPaymentMethod == paymentMethod {
+                    // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
                         .foregroundStyle(.tint)
+                        .accessibilityHidden(true)
                 }
             }
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(pendingPaymentMethod == paymentMethod ? .isSelected : [])
     }
 
     /// 付款方式 section 在搜尋無匹配或付款方式清單本身為空時顯示的空狀態 row
@@ -342,6 +375,15 @@ private extension OrderFilterSheet {
 // MARK: - Private Method
 
 private extension OrderFilterSheet {
+
+    /// 是否有尚未套用的篩選變更
+    ///
+    /// 三個 pending 值與其提交後的現值比對；比照付款方式編輯器的 dirty 判斷
+    var hasPendingChanges: Bool {
+        pendingDatePeriod != store.selectedDatePeriod
+            || pendingCategory != store.selectedCategory
+            || pendingPaymentMethod != store.selectedPaymentMethod
+    }
 
     /// 把 pending 篩選 commit 到 store，然後關 sheet
     ///

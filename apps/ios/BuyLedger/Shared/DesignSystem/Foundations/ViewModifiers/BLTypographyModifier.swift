@@ -23,7 +23,6 @@ struct BLTypographyModifier: ViewModifier {
     func body(content: Content) -> some View {
         content
             .font(style.font)
-            .tracking(0)
     }
 }
 

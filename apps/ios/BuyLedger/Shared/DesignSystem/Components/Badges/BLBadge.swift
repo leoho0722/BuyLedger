@@ -24,6 +24,18 @@ struct BLBadge: View {
 
     // MARK: - View Properties
 
+    /// 徽章垂直內距，隨字級縮放
+    @ScaledMetric(relativeTo: .caption) private var countVerticalPadding: CGFloat = 1
+
+    /// 徽章水平內距，隨字級縮放
+    @ScaledMetric(relativeTo: .caption) private var countHorizontalPadding: CGFloat = 7
+
+    /// label 變體的垂直內距，隨字級縮放
+    @ScaledMetric(relativeTo: .caption2) private var labelVerticalPadding: CGFloat = 2
+
+    /// label 變體的水平內距，隨字級縮放
+    @ScaledMetric(relativeTo: .caption2) private var labelHorizontalPadding: CGFloat = 6
+
     /// 徽章顯示的文字
     let text: String
 
@@ -56,8 +68,8 @@ struct BLBadge: View {
             .font(variant == .count ? .caption.weight(.bold) : .caption2.weight(.bold))
             .foregroundStyle(foregroundColor)
             .lineLimit(1)
-            .padding(.vertical, variant == .count ? 1 : 2)
-            .padding(.horizontal, variant == .count ? 7 : 6)
+            .padding(.vertical, variant == .count ? countVerticalPadding : labelVerticalPadding)
+            .padding(.horizontal, variant == .count ? countHorizontalPadding : labelHorizontalPadding)
             .background(backgroundColor)
             .clipShape(RoundedRectangle(cornerRadius: variant == .count ? BLRadius.pill : 4))
             .monospacedDigit()

@@ -30,6 +30,11 @@ struct SettingsSnapshot: Equatable, Sendable {
     /// AI 總結使用的 Ollama 模型名稱
     var aiSummaryModel: String
 
+    /// 上次選取的分頁；App 重啟後由此恢復
+    ///
+    /// 只恢復分頁選擇，不恢復導覽堆疊與捲動位置——後者恢復後常與使用者的心智模型不符
+    var lastSelectedTab: RootTab
+
     // MARK: - Static Properties
 
     /// 預設設定
@@ -39,7 +44,8 @@ struct SettingsSnapshot: Equatable, Sendable {
         defaultCurrency: .twd,
         monthlyProfitGoalTwd: 80_000,
         useAiSummary: false,
-        aiSummaryModel: AISummaryModelCatalog.defaultModel
+        aiSummaryModel: AISummaryModelCatalog.defaultModel,
+        lastSelectedTab: .dashboard
     )
 
     /// 測試與 preview 用的預設快照 (與 `default` 內容相同，但宣告為 `nonisolated` 方便在 `@Sendable` closure 中安全引用)
@@ -49,6 +55,7 @@ struct SettingsSnapshot: Equatable, Sendable {
         defaultCurrency: .twd,
         monthlyProfitGoalTwd: 80_000,
         useAiSummary: false,
-        aiSummaryModel: AISummaryModelCatalog.defaultModel
+        aiSummaryModel: AISummaryModelCatalog.defaultModel,
+        lastSelectedTab: .dashboard
     )
 }

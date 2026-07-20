@@ -19,7 +19,8 @@ extension OrderStatus {
         case .confirmed:
             .accent
         case .purchased:
-            .warning
+            // 採購完成是正常推進，不是需要注意的狀況；警示色留給真正需要注意的狀態
+            .informative
         case .shipping:
             .informative
         case .partiallyArrived:

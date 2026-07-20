@@ -986,7 +986,7 @@ struct OrdersFeature {
                         TextState("取消")
                     }
                 } message: {
-                    TextState("「\(order.customer.name)」的訂單 \(order.id) 將被刪除，此操作無法復原。")
+                    TextState("刪除「\(order.customer.name)」的這筆訂單後無法復原。")
                 }
                 return .none
 

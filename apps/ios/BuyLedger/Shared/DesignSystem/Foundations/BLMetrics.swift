@@ -55,6 +55,22 @@ enum BLSpacing {
     static let section: CGFloat = 32
 }
 
+/// 列內元素的尺寸 token
+///
+/// 分隔線內縮由頭像尺寸推導：兩者本就必須對齊，各自寫死會在其中一方改動時默默錯開
+enum BLListMetrics {
+
+    // MARK: - Static Properties
+
+    /// 列內頭像的尺寸
+    static let avatarSize: CGFloat = 40
+
+    /// 分隔線的左側內縮量
+    ///
+    /// 等於「列左內距 + 頭像寬 + 頭像與文字的間距」，使分隔線起點對齊文字欄左緣
+    static let dividerInset: CGFloat = BLSpacing.large + avatarSize + BLSpacing.medium
+}
+
 /// 可點擊控制項的命中區尺寸
 enum BLHitTarget {
 

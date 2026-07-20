@@ -308,7 +308,7 @@ private extension OrdersCompactView {
 
                         if index < section.orders.count - 1 {
                             Divider()
-                                .padding(.leading, BLSpacing.large + 40 + BLSpacing.medium)
+                                .padding(.leading, BLListMetrics.dividerInset)
                         }
                     }
                 }
@@ -384,8 +384,10 @@ private extension OrdersCompactView {
             systemImage: "tray",
             description: Text("試著調整搜尋字詞或狀態篩選。")
         )
-        .padding(.top, BLSpacing.extraLarge)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        // 以容器相對高度撐開再置中；只給 maxHeight 在垂直 ScrollView 內不生效，
+        // 空狀態會黏在頂端而非可視區域中央
+        .frame(maxWidth: .infinity)
+        .containerRelativeFrame(.vertical)
         .background(palette.background)
     }
 }

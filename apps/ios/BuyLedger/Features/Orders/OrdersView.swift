@@ -250,7 +250,7 @@ private extension OrdersView {
 
                     if index < orders.count - 1 {
                         Divider()
-                            .padding(.leading, BLSpacing.large + 40 + BLSpacing.medium)
+                            .padding(.leading, BLListMetrics.dividerInset)
                     }
                 }
             }

@@ -333,6 +333,7 @@ private extension InsightsView {
                 Image(systemName: "chevron.right")
                     .font(.footnote)
                     .foregroundStyle(palette.tertiaryLabel)
+                    .accessibilityHidden(true)
             }
 
             GeometryReader { geo in

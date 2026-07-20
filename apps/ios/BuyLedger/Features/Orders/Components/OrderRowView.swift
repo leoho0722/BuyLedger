@@ -45,7 +45,7 @@ struct OrderRowView: View {
             BLAvatar(
                 name: order.customer.name,
                 initials: order.customer.initials,
-                size: 40,
+                size: BLListMetrics.avatarSize,
                 isDecorative: true
             )
 
