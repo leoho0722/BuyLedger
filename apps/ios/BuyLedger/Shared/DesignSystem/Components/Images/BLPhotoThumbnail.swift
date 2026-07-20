@@ -22,9 +22,9 @@ struct BLPhotoThumbnail: View {
     /// 縮圖寬高
     var size: CGFloat = 72
 
-    /// 點擊縮圖內容區時的 callback (例如開啟全螢幕檢視)；`nil` 代表縮圖不可點擊
+    /// 點擊縮圖內容區時的 callback (例如開啟照片檢視)；`nil` 代表縮圖不可點擊
     ///
-    /// tap gesture 僅掛在縮圖內容區——右上角刪除鈕本身是 `Button`，命中優先於 tap gesture，點刪除不會誤觸此 callback
+    /// 縮圖本體與右上角刪除鈕是兩顆獨立的 `Button`，各自承接點擊，點刪除不會誤觸此 callback
     var onTap: (() -> Void)? = nil
 
     /// 點擊右上角刪除鈕時的 callback

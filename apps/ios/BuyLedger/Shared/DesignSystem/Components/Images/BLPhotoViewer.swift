@@ -11,7 +11,7 @@ import UniformTypeIdentifiers
 
 /// 照片檢視器：影像 scaledToFit 帶小圓角，左右滑動切換同一組照片；背景隨系統深淺色模式自適應
 ///
-/// 以 sheet 形式呈現 (由 caller 掛 `.sheet`)：NavigationStack 的置中 title 顯示計數 (x/n)、右上 toolbar ✕ 關閉
+/// 由訂單編輯表單以推進呈現 (加入 `PickerRoute`，避免 sheet 上再疊 modal)：置中 title 顯示計數 (x/n)、取消位置 ✕ 關閉
 ///
 /// 換頁以橫向 paging ScrollView (`scrollTargetBehavior(.paging)` + `scrollPosition`) 實作，iOS / iPadOS 共用；滑到第一張／最後一張即停止
 ///

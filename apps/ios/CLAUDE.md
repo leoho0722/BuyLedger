@@ -30,13 +30,9 @@
 - **啟動時的服務初始化集中在 `AppLaunchConfigurator.configure()`** (Firebase Analytics / Crashlytics / Performance)——iOS / iPadOS 的 `AppDelegate` 在 `didFinishLaunching` 呼叫它，新增啟動設定請加在這裡，不要散落各進入點。Firebase 依賴 pbxproj 的 `OTHER_LDFLAGS = "-ObjC"`，不可移除。
 - **跨頁觸發新訂單**請使用 `RootFeature.Action.startNewOrder`：reducer 會同時把 `selectedTab` 切到 `.orders` 並把 `OrdersFeature.State.editOrder` 設成空白草稿。從非 `.orders` 分頁直接設 sheet state 會發生 view-not-in-hierarchy 的 race——`.sheet(...)` 修飾子掛在 `OrdersView` 上，當下不在 hierarchy 就不會 mount。
 - **`OrdersView` 的 `.sheet(item: $store.scope(state: \.editOrder, action: \.editOrder))`** 一律掛在 `OrdersView` 外層，iPhone / iPad 共用——不可移到平台分流後的子 view 裡。
-- **收鍵盤有三條路徑，且不得以全域攔截加排除清單實作**：一般鍵盤的 return 鍵、數字鍵盤的鍵盤工具列 (`ToolbarItemGroup(placement: .keyboard)`)、以及 `scrollDismissesKeyboard(.interactively)`。每個有輸入的畫面至少要有兩條。
-    - **不要再掛 window 級手勢**：舊實作 (`dismissKeyboardOnTap()`) 對所有觸控先攔一次、再靠黑名單沿 superview 逐層排除互動元件，而黑名單永遠追不上系統新增的 view 型別 (曾誤觸貼上／選取等系統 action)，已移除。
-    - **「點背景收鍵盤」在本專案不可行，不要再嘗試**：以 `.background { Color.clear.contentShape(.rect).onTapGesture { … } }` 承接的作法，在 `Form`／`List` 與 `ScrollView` 版面均**經介面測試證實收不到觸控** (`Form` 即使加 `.scrollContentBackground(.hidden)` 亦然)——這些容器會消耗空白處的觸控且不向下傳遞。
-    - 收鍵盤一律把焦點設為 `nil`／`false`，不呼叫 UIKit 的 `endEditing`——讓收鍵盤與焦點成為同一個狀態的兩面。
-    - 用系統 `.searchable` 的畫面另有 Cancel 鈕與捲動收合，由系統提供。
-    - **UI 測試走獨立的 `BuyLedgerUITests` scheme**——主 scheme 只含單元測試以維持快速回圈；`KeyboardDismissTests` 守住「點系統文字選單不收鍵盤」與「點互動控制項不收鍵盤」兩條行為。
-- **iPhone (compact) 的 NavigationStack 不要用 `.toolbar` 的 `.bottomBar`**：compact 走 `RootTabLayout` 的 `TabView`，底部 tab bar 會蓋掉 `.bottomBar`，工具列項目 (如多選的批次操作) 在實機上看不到。批次／選取類操作改放 `.primaryAction` 等頂部 placement，筆數等資訊可放 `navigationTitle`。iPad (regular) 雖無底部 tab bar，**`.bottomBar` 在 iPad 同樣不可靠**——可拖曳視窗的下緣可能超出螢幕而遮住整條工具列。批次／選取類操作一律放頂部 placement，筆數等資訊由 `navigationTitle` 承載 (compact 與 regular 共用 `OrdersFeature.State.navigationTitleKey`)。
+- **兩種尺寸都不要用 `.toolbar` 的 `.bottomBar`**：批次／選取類操作一律放 `.primaryAction` 等頂部 placement，筆數等資訊由 `navigationTitle` 承載 (compact 與 regular 共用 `OrdersFeature.State.navigationTitleKey`)。
+    - compact：`RootTabLayout` 的底部 tab bar 會蓋掉 `.bottomBar`，工具列項目在實機上看不到。
+    - regular (iPad)：可拖曳視窗的下緣可能超出螢幕而遮住整條工具列。
 - **App 內切換語言後的根分頁 `navigationTitle`**：iOS 18+ 不會可靠地讓 `navigationTitle` 隨 `\.locale` 重新解析 String Catalog。Dashboard、Orders、Campaigns、Insights、More 與 Settings 一律以必填 `language` 參數呼叫 `rootNavigationTitle(_:language:)`，由 `AppLanguage.localized(_:)` 先從對應 `.lproj` bundle 解析再交給原生 `.navigationTitle(_:)`；Orders 的多選三態 key 必須由 `OrdersFeature.State.navigationTitleKey` 計算屬性衍生。RootView 僅保留 `\.locale` 注入給一般 SwiftUI 文案與格式化器；`Tab(LocalizedStringKey)` 不需要此 workaround。
 - **`Text(字串變數)` 不會本地化 (英文模式露中文)**：`Text("字面值")` 與 `Text(LocalizedStringKey(x))` 會走本地化，但 `Text(someString)` (參數型別 `String`) 走 verbatim init。凡把「固定中文詞」經 `String` 變數丟進 `Text` / `Label` / `navigationTitle` 都要包 `LocalizedStringKey(...)`——可重用元件 (`BLBadge`) 內部已比照，`BLStatusPill` / `BLProgressBar` / `BLDonutChart.centerTitle` 本就有包。帶插值的中文 (如 `\(count) 件進行中`) 必須走 `Text(LocalizedStringKey("\(count) …"))`——SwiftUI 的 `Text(LocalizedStringKey)` 才會隨注入的 `\.locale` 解析;**不可用 `String(localized:locale:)`**，它走系統語言 bundle、不吃 App 內語言切換 (Dashboard KPI delta 曾因此在英文模式露中文)。若字串經參數傳遞，把參數型別設為 `LocalizedStringKey` (不是 `String`)、由 `Text` 端解析 (參考 `DashboardView.kpiTile(delta:)`)。**使用者資料 (主檔名稱、`customer.name`)、格式化數字/日期維持 verbatim**、不可包 `LocalizedStringKey`。
 - **新增任何 UI 字串都要同步補 `Localizable.xcstrings` 的 `en`**：新寫的中文字面值 (含 TCA `AlertState`／`TextState`、`Button`／`Text`／`accessibilityLabel` 等) 若沒補英文，英文模式會露中文 fallback (F1 捨棄變更 alert 曾漏)。`AlertState`／`TextState` 一樣走 catalog 本地化 (資料來源同 `Text(LocalizedStringKey)`)，補齊 `en` 即修好。手動補 catalog 用**文字插入** (在 `"strings"` 物件內加展開格式的 entry)、**不要全量 `json.dump` re-serialize**——`.xcstrings` 是 Xcode 自訂序列化 (部分 entry 單行、部分展開)，全量重寫會格式不吻合、產生巨量 diff 且 Xcode 下次開檔又重排。`LocalizationCatalogTests.catalogContainsCompleteTraditionalChineseAndEnglishValues` 只驗 catalog 內既有條目完整，**抓不到「code 有用但 catalog 沒收錄」的漏字**，故新增字串要人工確認有進 catalog。
@@ -100,9 +96,9 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 ### 結構與命名
 
 - **商業邏輯／資料計算** (彙總、分組、排序、格式化) 一律放 reducer 或可測試的 feature helper；SwiftUI View (含 Swift Charts) 只負責呈現，不要把計算 inline 在 view body。
-- **綁 store 的 View 不持有 presentation 狀態**——sheet／picker 呈現開關、編輯草稿、選取焦點、導覽路徑等一律下放對應 `Feature.State`，以 `$store.xxx` binding 綁定，不留 `@State`。Feature 未採 `BindableAction` 時，先讓 `Action` conform `BindableAction` 並在 reducer body 最前加 `BindingReducer()` (與既有 `.ifLet`／`.forEach` 正交、可並存)；導覽堆疊用 `StackState`。若某 `.binding` 帶副作用 (如 `SettingsFeature` 在 `.binding` 存檔)，對純 UI 欄位用 `case .binding(\.showsXxx): return .none` 排除，避免開 sheet 就觸發副作用。**例外**：不綁 store、以 closure 與 caller 溝通的可重用元件 sheet (`OptionPickerSheet`／`PaymentMethodEditorSheet`／`LookupItemEditorSheet` 等) 的本地 `@State` 屬元件內部狀態，不在此列。
+- **綁 store 的 View 不持有 presentation 狀態**——sheet／picker 呈現開關、編輯草稿、選取焦點、導覽路徑等一律下放對應 `Feature.State`，以 `$store.xxx` binding 綁定，不留 `@State`。Feature 未採 `BindableAction` 時，先讓 `Action` conform `BindableAction` 並在 reducer body 最前加 `BindingReducer()` (與既有 `.ifLet`／`.forEach` 正交、可並存)；導覽堆疊用 `StackState`。若某 `.binding` 帶副作用 (如 `SettingsFeature` 在 `.binding` 存檔)，對純 UI 欄位用 `case .binding(\.showsXxx): return .none` 排除，避免開 sheet 就觸發副作用。**例外**：不綁 store、以 closure 與 caller 溝通的可重用元件 sheet (`OptionPickerSheet`／`PaymentMethodEditorSheet`／`LookupNameEditorSheet` 等) 的本地 `@State` 屬元件內部狀態，不在此列。
 - **TCA feature** 內部用 `// MARK: - State / Action / Dependency Properties / Reducer Body` 等清楚切分 (順序見「MARK 區段與排版」一節的對照表)。
-- **Swift/SwiftUI 內建型別的通用 extension 放 `Shared/Extensions/`**，一型一檔，檔名 `<型別>+Extensions.swift` (如 `Image+Extensions.swift`、`Color+Extensions.swift`)。**與特定 DesignSystem 元件或功能耦合的 extension 不搬到這裡、留在該元件檔**：「套一層 modifier 就回傳」的 `View` 方法 (`blCardShadow()`／`blTextStyle()`) 與其 `ViewModifier` 同檔、`ButtonStyle where Self == BLButtonStyle` 的工廠留在 `BLButtonStyle.swift`、`dismissKeyboardOnTap()` 與其 `private UIView` helper 留在 `KeyboardDismissOnTap.swift`。判準：可獨立重用的通用 helper 才進 `Shared/Extensions/`。
+- **Swift/SwiftUI 內建型別的通用 extension 放 `Shared/Extensions/`**，一型一檔，檔名 `<型別>+Extensions.swift` (如 `Image+Extensions.swift`、`Color+Extensions.swift`)。**與特定 DesignSystem 元件或功能耦合的 extension 不搬到這裡、留在該元件檔**：「套一層 modifier 就回傳」的 `View` 方法 (`blCardShadow()`／`blTextStyle()`) 與其 `ViewModifier` 同檔、`ButtonStyle where Self == BLButtonStyle` 的工廠留在 `BLButtonStyle.swift`。判準：可獨立重用的通用 helper 才進 `Shared/Extensions/`。
 - **不用 `switch`／`if` 運算式賦值**：避免 `let x = switch … { … }` / `let x = if … { … }` 這種運算式寫法；改用傳統陳述式 (先宣告 `let x: T`，再於各分支賦值)。若該計算寫在 `@ViewBuilder` body 內會與 result builder 衝突，請抽成獨立 helper 回傳該值，view body 只呼叫 helper。
 - **`Label` 放在 `Form`／`List` row 內且後接 `Spacer`**：自動 label style 會把 icon 與 title 撐到 row 兩端 (icon 與文字中間出現大空隙)，須加 `.labelStyle(.titleAndIcon)` 讓兩者貼合 (`RootSidebarLayout` nav row、`CampaignEditView` 訂購提醒按鈕皆然)。
 - **sheet 遵循 Apple HIG「Sheets」兩條硬規則** (依 HIG 合規審視落地)：
@@ -134,6 +130,12 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 
 ### 焦點與鍵盤
 
+- **收鍵盤有三條路徑，且不得以全域攔截加排除清單實作**：一般鍵盤的 return 鍵、數字鍵盤的鍵盤工具列 (`ToolbarItemGroup(placement: .keyboard)`)、以及 `scrollDismissesKeyboard(.interactively)`。每個有輸入的畫面至少要有兩條。
+    - **不要再掛 window 級手勢**：舊實作 (`dismissKeyboardOnTap()`) 對所有觸控先攔一次、再靠黑名單沿 superview 逐層排除互動元件，而黑名單永遠追不上系統新增的 view 型別 (曾誤觸貼上／選取等系統 action)，已移除。
+    - **「點背景收鍵盤」在本專案不可行，不要再嘗試**：以 `.background { Color.clear.contentShape(.rect).onTapGesture { … } }` 承接的作法，在 `Form`／`List` 與 `ScrollView` 版面均**經介面測試證實收不到觸控** (`Form` 即使加 `.scrollContentBackground(.hidden)` 亦然)——這些容器會消耗空白處的觸控且不向下傳遞。
+    - 收鍵盤一律把焦點設為 `nil`／`false`，不呼叫 UIKit 的 `endEditing`——讓收鍵盤與焦點成為同一個狀態的兩面。
+    - 用系統 `.searchable` 的畫面另有 Cancel 鈕與捲動收合，由系統提供。
+    - **UI 測試走獨立的 `BuyLedgerUITests` scheme**——主 scheme 只含單元測試以維持快速回圈；`KeyboardDismissTests` 守住「點系統文字選單不收鍵盤」與「點互動控制項不收鍵盤」兩條行為。
 - **焦點狀態下放 `Feature.State`、不留在 view**——焦點是呈現狀態，與 sheet 開關同級 (見上方「綁 store 的 View 不持有 presentation 狀態」)。view 只宣告 `@FocusState` 作為鏡像，以 TCA 的 `.bind($store.focusedField, to: $focusedField)` 連結。
   - 這讓「新訂單自動聚焦第一個欄位」「關閉時清除焦點」能在 reducer 表達並被 TestStore 涵蓋，而不是散在 view 的生命週期回呼裡。
   - 焦點欄位的 enum case **依畫面上的視覺順序宣告** (參考 `OrderEditFeature.State.Field`)，讓「下一欄」的語意直接由宣告順序表達。

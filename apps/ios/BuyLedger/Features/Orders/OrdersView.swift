@@ -456,7 +456,7 @@ private extension OrdersView {
 
     /// 詳情欄頂部的訂購人姓名標題列，含「更新狀態」選單與「更多」操作選單 (合併/編輯/刪除)
     ///
-    /// 因 iPad regular 的訂單詳情位於父層 NavigationSplitView 的 detail 中，但本 view 內部已不再使用 NavigationStack，所以以自繪標題列代替系統 navigation title。訂單編號已由 ``OrderDetailView`` 的內容區顯示，此處不再重複
+    /// 本 view 內部不使用 NavigationStack，標題列以 `safeAreaInset` 疊在捲動內容上、底色用系統 bar 材質——內容延伸至其下方，與系統導覽列行為一致。訂單編號已由 ``OrderDetailView`` 的內容區顯示，此處不再重複
     /// - Parameter order: 要顯示的訂單
     /// - Returns: 自繪標題列 view
     @ViewBuilder

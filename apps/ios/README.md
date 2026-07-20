@@ -26,7 +26,7 @@ apps/ios/
 │   ├── Core/
 │   │   ├── Domain/               # LedgerOrder、FxRateSnapshot、CurrencyCode 等 model
 │   │   ├── Persistence/          # OrderPersistence (@ModelActor)、PersistenceContainer、OrderRecord
-│   │   ├── Dependencies/         # OrderRepository 等 5 個 Repository (type-based @Dependency 注入)
+│   │   ├── Dependencies/         # Repository 與 system-call client (type-based @Dependency 注入；不綁定數量)
 │   │   ├── Networking/           # APIError、HTTPClient (send/stream)、HTTPMethod、URLRequestBuilder、AppConfiguration
 │   │   └── Sync/                 # SwiftData 本機 sidecar 的 @Model 定義 (SyncMeta / SyncQueueItem)，供 V12 schema 引用；雲端同步已移除，兩表恆為空
 │   ├── Features/                 # 依功能切分的 TCA feature
@@ -43,6 +43,7 @@ apps/ios/
 │   │   ├── Quote/                # 報價試算
 │   │   └── Settings/             # iOS SettingsView
 │   ├── Shared/
+│   │   ├── Media/                # 照片載入的降採樣與 JPEG 重編碼 (PhotoDataProcessor)
 │   │   ├── DesignSystem/
 │   │   │   ├── Foundations/      # 色盤、字級、間距、圓角等 token
 │   │   │   └── Components/       # BLAvatar、BLBadge、BLCard、BLBarChart 等元件
@@ -152,7 +153,7 @@ bun run unlock
 
 ### 資料層
 
-- **Repository 層** (`Core/Dependencies/`)：`OrderRepository`、`CategoryRepository`、`PaymentMethodRepository`、`OrderSourceRepository`、`CurrencyMetadataRepository`，各自背後接對應的 `@ModelActor` persistence (`Core/Persistence/`) 操作 SwiftData。所有 repo 共用 `PersistenceContainer.shared` 單一 `ModelContainer`，注入一律走 type-based `@Dependency(SomeRepository.self)`。
+- **Repository 層** (`Core/Dependencies/`)：`OrderRepository` 等各主檔與開團的 repository (清單見該目錄，不在此綁定數量)，各自背後接對應的 `@ModelActor` persistence (`Core/Persistence/`) 操作 SwiftData。所有 repo 共用 `PersistenceContainer.shared` 單一 `ModelContainer`，注入一律走 type-based `@Dependency(SomeRepository.self)`。
 - **主檔資料** (訂單來源／商品類別／付款方式) 由 `LookupManagementFeature` (`Features/Lookups/`，以 `LookupKind` 分流) 提供 CRUD；rename 會 cascade 到所有引用該名稱的訂單，cascade 與 in-memory 同步由 `RootFeature` 攔截處理。
 - `liveValue`：純本機 SwiftData，**不自動 seed**——使用者首次啟動會看到真正的空狀態。
 - `previewValue`：in-memory + 自動 seed `LedgerOrder.sampleOrders`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
