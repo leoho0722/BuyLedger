@@ -128,6 +128,25 @@ struct ContrastComplianceTests {
         }
     }
 
+    // MARK: 總覽頁主卡
+
+    /// 主卡文字為純白疊在漸層上；漸層兩端與其中點皆須達標
+    @Test(arguments: ColorContrast.Appearance.allCases)
+    func heroCardWhiteTextMeetsTheFloorOnBothGradientEnds(appearance: ColorContrast.Appearance) {
+        let ends = [
+            Color("BLHeroGradientStart", bundle: .assets),
+            Color("BLHeroGradientEnd", bundle: .assets),
+        ]
+        for end in ends {
+            let ratio = ColorContrast.ratio(.white, on: end, appearance: appearance)
+
+            #expect(
+                ratio >= Self.textFloor,
+                "主卡白字在 \(appearance) 下對漸層端僅 \(ratio)"
+            )
+        }
+    }
+
     // MARK: 具名色彩資源解析
 
     /// 具名色彩資源缺失時 SwiftUI 會靜默回退為系統預設色，不會有編譯或執行期警訊

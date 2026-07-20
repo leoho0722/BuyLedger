@@ -23,9 +23,6 @@ struct SettingsFeature {
         /// App 介面語言偏好
         var language: AppLanguage = .traditionalChinese
 
-        /// 介面外觀模式偏好
-        var appearance: AppearancePreference = .system
-
         /// 預設訂單幣別
         var defaultCurrency: CurrencyCode = .twd
 
@@ -90,7 +87,6 @@ struct SettingsFeature {
             case .task:
                 let snapshot = storage.load()
                 state.language = snapshot.language
-                state.appearance = snapshot.appearance
                 state.defaultCurrency = snapshot.defaultCurrency
                 state.monthlyProfitGoalTwd = snapshot.monthlyProfitGoalTwd
                 state.useAiSummary = snapshot.useAiSummary
@@ -143,7 +139,6 @@ private extension SettingsFeature {
         storage.save(
             SettingsSnapshot(
                 language: state.language,
-                appearance: state.appearance,
                 defaultCurrency: state.defaultCurrency,
                 monthlyProfitGoalTwd: state.monthlyProfitGoalTwd,
                 useAiSummary: state.useAiSummary,

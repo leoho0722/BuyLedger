@@ -37,14 +37,6 @@ struct SettingsView: View {
                 }
             }
 
-            Section("外觀") {
-                Picker("介面模式", selection: $store.appearance) {
-                    ForEach(AppearancePreference.allCases) { mode in
-                        Text(LocalizedStringKey(mode.title)).tag(mode)
-                    }
-                }
-            }
-
             Section {
                 Toggle("啟用 AI 總結", isOn: $store.useAiSummary)
 #if DEBUG

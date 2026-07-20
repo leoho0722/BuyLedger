@@ -30,7 +30,7 @@ struct CustomersView: View {
 
     /// 客戶名單畫面內容
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
         let customers = store.customers.customers
 
         ScrollView {

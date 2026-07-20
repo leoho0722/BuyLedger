@@ -10,160 +10,139 @@ import SwiftUI
 /// BuyLedger 在 SwiftUI 介面中使用的語意色彩
 ///
 /// 色彩以使用情境命名，讓功能畫面不需要直接依賴固定色碼
+///
+/// 一律走系統取色介面而非手抄十六進位值：系統色是動態色，隨系統版本、深淺外觀、
+/// 增強對比與 vibrancy 自動調整，因此取色不需要外觀參數，也不存在亮暗兩套分支
 struct BLPalette {
-
-    // MARK: - Data Properties
-
-    /// 指示目前色盤是否使用深色外觀
-    let isDark: Bool
 
     // MARK: - Display Properties
 
     /// App 主要背景色
     var background: Color {
-        isDark ? .black : Color(blHex: 0xF2F2F7)
+        Color(uiColor: .systemGroupedBackground)
     }
 
     /// 第二層背景色，適合列表或群組內容表面
     var secondaryBackground: Color {
-        isDark ? Color(blHex: 0x1C1C1E) : .white
+        Color(uiColor: .secondarySystemGroupedBackground)
     }
 
     /// 第三層背景色，適合嵌套區塊或輔助背景
     var tertiaryBackground: Color {
-        isDark ? Color(blHex: 0x2C2C2E) : Color(blHex: 0xF2F2F7)
+        Color(uiColor: .tertiarySystemGroupedBackground)
     }
 
     /// 主要內容表面色
     var surface: Color {
-        isDark ? Color(blHex: 0x1C1C1E) : .white
+        Color(uiColor: .secondarySystemGroupedBackground)
     }
 
     /// 帶有較高視覺層級的內容表面色
     var elevatedSurface: Color {
-        isDark ? Color(blHex: 0x2C2C2E) : .white
+        Color(uiColor: .tertiarySystemBackground)
     }
 
     /// 主要文字色
     var label: Color {
-        isDark ? .white : .black
+        Color(uiColor: .label)
     }
 
     /// 次要文字色
+    ///
+    /// 刻意不用系統的 `.secondaryLabel`：其淺色值僅約 3.4:1，低於本專案 4.5:1 的資訊文字地板
+    /// (由 ContrastComplianceTests 把關)。改以主要文字色的 60% 透明度推導——仍是動態色、
+    /// 無外觀分支，且淺深兩種外觀實測皆逾 5.4:1
     var secondaryLabel: Color {
-        isDark ? Color.white.opacity(0.6) : Color.black.opacity(0.6)
+        Color(uiColor: .label).opacity(0.6)
     }
 
-    /// 第三層文字色
+    /// 第三層文字色；僅供停用態與 placeholder，不可用於承載資訊的文字
     var tertiaryLabel: Color {
-        isDark ? Color.white.opacity(0.3) : Color.black.opacity(0.3)
+        Color(uiColor: .tertiaryLabel)
     }
 
     /// 半透明分隔線色
     var separator: Color {
-        isDark ? Color.white.opacity(0.14) : Color.black.opacity(0.16)
+        Color(uiColor: .separator)
     }
 
     /// 不透明分隔線色
     var opaqueSeparator: Color {
-        isDark ? Color(blHex: 0x38383A) : Color(blHex: 0xC6C6C8)
+        Color(uiColor: .opaqueSeparator)
     }
 
     /// 第一層填色，適合可互動元件背景
     var fillPrimary: Color {
-        isDark ? Color(blHex: 0x787880).opacity(0.36) : Color(blHex: 0x787880).opacity(0.20)
+        Color(uiColor: .systemFill)
     }
 
     /// 第二層填色，適合次要可互動元件背景
     var fillSecondary: Color {
-        isDark ? Color(blHex: 0x787880).opacity(0.32) : Color(blHex: 0x787880).opacity(0.16)
+        Color(uiColor: .secondarySystemFill)
     }
 
     /// 第三層填色，適合搜尋框或分段控制背景
     var fillTertiary: Color {
-        isDark ? Color(blHex: 0x767680).opacity(0.24) : Color(blHex: 0x767680).opacity(0.12)
+        Color(uiColor: .tertiarySystemFill)
     }
 
     /// 第四層填色，適合低對比輔助背景
     var fillQuaternary: Color {
-        isDark ? Color(blHex: 0x767680).opacity(0.18) : Color(blHex: 0x747480).opacity(0.08)
+        Color(uiColor: .quaternarySystemFill)
     }
 
     /// App 主要強調色
+    ///
+    /// 引用 asset catalog 的 AccentColor 資源：與系統元件的 accent 收斂為同一來源
     var accent: Color {
-        isDark ? Color(blHex: 0x0A84FF) : Color(blHex: 0x007AFF)
+        Color("AccentColor", bundle: .assets)
     }
 
     /// 成功狀態色
     var green: Color {
-        isDark ? Color(blHex: 0x30D158) : Color(blHex: 0x34C759)
+        Color(uiColor: .systemGreen)
     }
 
     /// 錯誤或破壞性狀態色
     var red: Color {
-        isDark ? Color(blHex: 0xFF453A) : Color(blHex: 0xFF3B30)
+        Color(uiColor: .systemRed)
     }
 
     /// 警示狀態色
     var orange: Color {
-        isDark ? Color(blHex: 0xFF9F0A) : Color(blHex: 0xFF9500)
+        Color(uiColor: .systemOrange)
     }
 
     /// 注意或提示狀態色
     var yellow: Color {
-        isDark ? Color(blHex: 0xFFD60A) : Color(blHex: 0xFFCC00)
+        Color(uiColor: .systemYellow)
     }
 
     /// 輔助強調色
     var purple: Color {
-        isDark ? Color(blHex: 0xBF5AF2) : Color(blHex: 0xAF52DE)
+        Color(uiColor: .systemPurple)
     }
 
     /// 輔助強調色，適合標籤或圖表區段
     var pink: Color {
-        isDark ? Color(blHex: 0xFF375F) : Color(blHex: 0xFF2D55)
+        Color(uiColor: .systemPink)
     }
 
     /// 輔助強調色，適合圖表或平台識別
     var teal: Color {
-        isDark ? Color(blHex: 0x64D2FF) : Color(blHex: 0x5AC8FA)
+        Color(uiColor: .systemTeal)
     }
 
     /// 資訊狀態色
     var indigo: Color {
-        isDark ? Color(blHex: 0x5E5CE6) : Color(blHex: 0x5856D6)
-    }
-
-    /// 半透明材質背景色
-    var glassBackground: Color {
-        isDark ? Color(blHex: 0x1C1C1E).opacity(0.72) : Color.white.opacity(0.72)
-    }
-
-    /// 半透明材質邊框色
-    var glassBorder: Color {
-        isDark ? Color.white.opacity(0.12) : Color.white.opacity(0.7)
-    }
-}
-
-/// 依目前系統外觀產生對應的設計系統色盤
-enum BLTheme {}
-
-// MARK: - Internal Method
-
-extension BLTheme {
-
-    /// 回傳指定系統外觀對應的色盤
-    /// - Parameter colorScheme: 目前環境中的系統深淺色外觀
-    /// - Returns: 可供 SwiftUI view 使用的 `BLPalette`
-    static func palette(for colorScheme: ColorScheme) -> BLPalette {
-        BLPalette(isDark: colorScheme == .dark)
+        Color(uiColor: .systemIndigo)
     }
 }
 
 // MARK: - Preview
 
 #Preview("語意色彩") {
-    let palette = BLPalette(isDark: false)
+    let palette = BLPalette()
     let colors: [(String, Color)] = [
         ("Accent", palette.accent),
         ("Green", palette.green),

@@ -40,7 +40,7 @@ struct ColorContrastTests {
     ///
     /// 前景為系統綠、底色為同一支綠疊 14% 於白色表面上，即變更前 ``BLTone`` 的推導方式
     @Test func successPillReproducesTheAuditedRatioBeforeTheChange() {
-        let palette = BLPalette(isDark: false)
+        let palette = BLPalette()
         let ratio = ColorContrast.ratio(
             palette.green,
             on: [palette.green.opacity(0.14), palette.surface],

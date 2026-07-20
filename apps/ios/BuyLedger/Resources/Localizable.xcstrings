@@ -401,6 +401,118 @@
         }
       }
     },
+    "AI 服務驗證失敗，目前無法使用總結功能。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI service authentication failed; summaries are unavailable right now."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 服務驗證失敗，目前無法使用總結功能。"
+          }
+        }
+      }
+    },
+    "AI 總結尚未完成設定，目前無法使用。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI summaries are not set up yet and cannot be used right now."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "AI 總結尚未完成設定，目前無法使用。"
+          }
+        }
+      }
+    },
+    "前往設定" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Open Settings"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "前往設定"
+          }
+        }
+      }
+    },
+    "尚無可用匯率資料" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Exchange Rate Available"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無可用匯率資料"
+          }
+        }
+      }
+    },
+    "尚無可用匯率資料，暫時無法試算。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No exchange rate available; the quote cannot be calculated yet."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "尚無可用匯率資料，暫時無法試算。"
+          }
+        }
+      }
+    },
+    "載入中" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "載入中"
+          }
+        }
+      }
+    },
+    "需要網路連線載入匯率後才能拆解成本；請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "A network connection is needed to load rates before costs can be broken down; please try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要網路連線載入匯率後才能拆解成本；請稍後再試。"
+          }
+        }
+      }
+    },
     "捨棄變更" : {
       "localizations" : {
         "en" : {
@@ -2449,22 +2561,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "尚無分類資料"
-          }
-        }
-      }
-    },
-    "尚無可用匯率資料，建議售價暫顯示為 0。" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "No exchange-rate data is available. The suggested price is temporarily shown as 0."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "尚無可用匯率資料，建議售價暫顯示為 0。"
           }
         }
       }

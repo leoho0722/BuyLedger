@@ -19,7 +19,6 @@ struct SettingsFeatureTests {
         let state = SettingsFeature.State()
 
         #expect(state.language == .traditionalChinese)
-        #expect(state.appearance == .system)
         #expect(state.defaultCurrency == .twd)
         #expect(state.useAiSummary == false)
         #expect(state.aiSummaryModel == "gemma4:31b-cloud")
@@ -64,17 +63,6 @@ struct SettingsFeatureTests {
         }
 
         #expect(saved.value?.language == .english)
-        #expect(saved.value?.appearance == .system)
-    }
-
-    @Test func bindingUpdatesAppearance() async {
-        let store = TestStore(initialState: SettingsFeature.State()) {
-            SettingsFeature()
-        }
-
-        await store.send(\.binding.appearance, .dark) {
-            $0.appearance = .dark
-        }
     }
 
     @Test func bindingUpdatesDefaultCurrency() async {
@@ -87,16 +75,9 @@ struct SettingsFeatureTests {
         }
     }
 
-    @Test func appearancePreferenceTitleIsLocalized() {
-        #expect(AppearancePreference.system.title == "自動")
-        #expect(AppearancePreference.light.title == "淺色")
-        #expect(AppearancePreference.dark.title == "深色")
-    }
-
     @Test func taskLoadsFromInjectedStorage() async {
         let stored = SettingsSnapshot(
             language: .english,
-            appearance: .dark,
             defaultCurrency: .jpy,
             monthlyProfitGoalTwd: 50_000,
             useAiSummary: true,
@@ -118,7 +99,6 @@ struct SettingsFeatureTests {
 
         await store.send(.task) {
             $0.language = .english
-            $0.appearance = .dark
             $0.defaultCurrency = .jpy
             $0.monthlyProfitGoalTwd = 50_000
             $0.useAiSummary = true
@@ -177,11 +157,11 @@ struct SettingsFeatureTests {
             )
         }
 
-        await store.send(\.binding.appearance, .light) {
-            $0.appearance = .light
+        await store.send(\.binding.useAiSummary, true) {
+            $0.useAiSummary = true
         }
 
-        #expect(saved.value?.appearance == .light)
+        #expect(saved.value?.useAiSummary == true)
         #expect(saved.value?.defaultCurrency == .twd)
     }
 

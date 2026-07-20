@@ -37,7 +37,7 @@ struct OrdersCompactView: View {
 
     /// 訂單瀏覽畫面內容
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
         let filteredIDs = store.state.filteredOrders(referenceDate: date.now, calendar: calendar).map(\.id)
         let allFilteredSelected = !filteredIDs.isEmpty && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
         NavigationStack(path: $store.scope(state: \.detailPath, action: \.detailPath)) {

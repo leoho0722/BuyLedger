@@ -25,7 +25,7 @@ struct MoreView: View {
 
     /// 更多頁的畫面內容
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         NavigationStack(path: $store.morePath) {
             phoneContent(palette: palette)

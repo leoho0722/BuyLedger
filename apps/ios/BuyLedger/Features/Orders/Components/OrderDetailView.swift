@@ -30,7 +30,7 @@ struct OrderDetailView: View {
 
     /// 訂單詳情的畫面內容
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
         let summary = order.summary
 
         GeometryReader { proxy in

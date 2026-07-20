@@ -162,7 +162,7 @@ private extension RootSidebarLayout {
     /// 側邊欄內容
     @ViewBuilder
     var sidebar: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         List(selection: selectionBinding) {
             Section {

@@ -38,7 +38,7 @@ struct QuoteView: View {
 
     /// 報價試算畫面內容
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
@@ -110,7 +110,7 @@ private extension QuoteView {
             HStack(spacing: BLSpacing.small) {
                 Image(systemName: "info.circle.fill")
                     .foregroundStyle(palette.secondaryLabel)
-                Text("尚無可用匯率資料，建議售價暫顯示為 0。")
+                Text("尚無可用匯率資料，暫時無法試算。")
                     .font(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
                 Spacer()
@@ -302,15 +302,22 @@ private extension QuoteView {
                 .opacity(0.95)
                 .textCase(.uppercase)
 
-            Text(formatTwd(store.suggestedTwd))
+            // 無可用匯率時顯示破折號而非零值：零值具備完整版面、看起來像計算結果，比不顯示更糟
+            Text(store.hasUsableRate ? formatTwd(store.suggestedTwd) : "—")
                 .font(.system(size: heroPriceSize, weight: .bold))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
 
-            Text("預估獲利 \(formatTwd(store.estimatedProfitTwd)) · \(formatPercent(store.estimatedMarginPercent))")
-                .font(.footnote)
-                .opacity(0.95)
+            if store.hasUsableRate {
+                Text("預估獲利 \(formatTwd(store.estimatedProfitTwd)) · \(formatPercent(store.estimatedMarginPercent))")
+                    .font(.footnote)
+                    .opacity(0.95)
+            } else {
+                Text("尚無可用匯率資料，暫時無法試算。")
+                    .font(.footnote)
+                    .opacity(0.95)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(BLSpacing.large)
@@ -331,6 +338,26 @@ private extension QuoteView {
     /// - Returns: 拆解卡 view
     @ViewBuilder
     func breakdownCard(palette: BLPalette) -> some View {
+        if store.hasUsableRate {
+            usableBreakdownCard(palette: palette)
+        } else {
+            // 無匯率時整卡改為說明性空狀態，不繪製零值進度條
+            BLCard {
+                ContentUnavailableView {
+                    Label("尚無可用匯率資料", systemImage: "dollarsign.arrow.circlepath")
+                } description: {
+                    Text("需要網路連線載入匯率後才能拆解成本；請稍後再試。")
+                }
+                .frame(maxWidth: .infinity)
+            }
+        }
+    }
+
+    /// 有可用匯率時的成本拆解內容
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 拆解卡 view
+    @ViewBuilder
+    func usableBreakdownCard(palette: BLPalette) -> some View {
         let total = max(store.costTwd, 1)
         let items: [(label: String, value: Double, color: Color)] = [
             ("商品金額", store.itemTwd, palette.accent),

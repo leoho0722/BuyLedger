@@ -71,8 +71,10 @@ extension ColorContrast.Appearance {
     }
 
     /// 對應此情境的設計系統色盤
+    ///
+    /// 色盤已改走系統動態色，深淺解析由 ``traitCollection`` 於量測時處理，色盤本身不再分支
     var palette: BLPalette {
-        BLPalette(isDark: self == .dark || self == .darkIncreasedContrast)
+        BLPalette()
     }
 }
 

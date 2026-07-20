@@ -38,7 +38,7 @@ struct FxView: View {
 
     /// FX 畫面內容
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
@@ -101,6 +101,12 @@ private extension FxView {
                     .font(.footnote)
                     .foregroundStyle(palette.label)
                 Spacer()
+
+                // 失敗時提供畫面內重試；`.task` 的守衛只擋載入中，失敗後可重新觸發
+                Button("重試") {
+                    store.send(.task)
+                }
+                .font(.footnote.weight(.semibold))
             }
             .padding(.horizontal, BLSpacing.medium)
             .padding(.vertical, BLSpacing.small)

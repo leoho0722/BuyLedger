@@ -182,6 +182,11 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 - 每個可視 Design System 元件都應提供自己的 `#Preview`；需要 binding 時使用 `.constant(...)`，需要圖表或狀態資料時用小型 sample data。
 - 調整 Design System 結構或元件後，請至少執行 iPhone 與 iPad Simulator build，確認 file system synchronized groups 正確拾取新增、搬移或刪除的 Swift 檔案。
 - **跨檔案共用的尺寸由單一來源推導、不各自寫死**——例如分隔線內縮由頭像尺寸推導 (`BLListMetrics.dividerInset` ← `avatarSize`)。兩個本就必須對齊的數值各自寫死，會在其中一方改動時默默錯開。
+- **語意色與系統色一律走系統取色介面 (`Color(uiColor: .systemXxx)`)、不手抄十六進位值**——系統色是動態色，隨系統版本、深淺外觀、增強對比與 vibrancy 自動調整；`BLPalette` 無外觀參數也無亮暗分支。
+    - **例外：`secondaryLabel` 刻意不用系統值**——系統 `.secondaryLabel` 淺色僅約 3.4:1，低於本專案 4.5:1 的資訊文字地板，改以 `label.opacity(0.6)` 推導 (仍為動態色，實測兩外觀皆逾 5.4:1)。
+    - **強調色以 `AccentColor` 資源檔為單一來源**——資源檔定義亮暗與增強對比變體，`BLPalette.accent` 引用它、`RootView` 以 `.tint` 於根層統一設定，系統元件與自訂元件取同一個值。
+- **層級不以文字的不透明度降階表達**——降階直接損害對比 (主卡曾落在 2.03–3.24:1)；層級由字重與字級表達，文字不透明度一律為一。彩底上的白字由 `ContrastComplianceTests` 的漸層斷言把關。
+- **不以實色模仿系統 bar、不以半透明色模仿玻璃材質**——需要 bar 底就用系統材質 (`.background(.bar)`) 並讓捲動內容延伸至其下方；層次區隔用系統材質，不自訂半透明色 (原 `glassBackground`／`glassBorder` 已刪除)。
 - **語意色分四軌，選軌的唯一判準是「這個色彩最終疊在什麼底色上」**——`BLTone` 提供 `onSurface`／`background`／`indicator`／`onIndicator`，皆為讀取 asset catalog 具名資源的計算屬性 (不收色盤參數，外觀與 Increase Contrast 由系統依 trait 解析)。
   - 文字疊在卡片、列背景或 `background` 淡底 → `onSurface`；本身就是圖形 (狀態點、進度條填色、實心徽章底色) → `indicator`；文字疊在 `indicator` 實心底上 → `onIndicator`。
   - **色值改在 asset catalog、不在程式碼算**：`Assets.xcassets` 的 `BLTone<Tone><Role>` 每組都定義 Any／Dark 與各自的 High Contrast 變體。程式碼算色表達不了 Increase Contrast 這個維度。

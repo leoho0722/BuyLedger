@@ -89,6 +89,22 @@ struct CampaignReminderFailureTests {
         #expect(store.state.reminderLinks[Self.campaignID] == nil)
     }
 
+    /// 權限提示的「前往設定」以注入的相依開啟系統設定
+    @Test func openSettingsButtonInvokesTheInjectedDependency() async {
+        let opened = OpenedBox()
+        let store = Self.makeStore {
+            $0[CalendarReminderClient.self].requestAccess = { false }
+            $0[OpenSettingsClient.self].open = { opened.value = true }
+        }
+
+        await store.send(.editCampaign(.presented(.saveTapped)))
+        await store.receive(\.reminderAccessDenied)
+        await store.send(.reminderAccessAlert(.presented(.openSettings)))
+        await store.finish()
+
+        #expect(opened.value)
+    }
+
     /// 移除不存在的事件維持「視為無操作、不報錯」，不因錯誤路徑拆分而改變
     @Test func removingAnAbsentEventRemainsANoOp() async {
         var initial = CampaignFeature.State()
@@ -151,4 +167,13 @@ private extension CampaignReminderFailureTests {
         store.exhaustivity = .off
         return store
     }
+}
+
+/// 記錄開啟系統設定是否被呼叫
+private final class OpenedBox: @unchecked Sendable {
+
+    // MARK: - Data Properties
+
+    /// 是否已被呼叫
+    var value = false
 }

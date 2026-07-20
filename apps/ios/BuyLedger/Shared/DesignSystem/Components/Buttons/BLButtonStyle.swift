@@ -48,7 +48,7 @@ struct BLButtonStyle: ButtonStyle {
 
     /// 回傳套用樣式後的按鈕內容
     func makeBody(configuration: Configuration) -> some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         configuration.label
             .font(.headline)

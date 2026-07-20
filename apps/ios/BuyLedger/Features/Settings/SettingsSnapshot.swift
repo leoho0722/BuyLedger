@@ -15,9 +15,6 @@ struct SettingsSnapshot: Equatable, Sendable {
     /// App 介面語言偏好
     var language: AppLanguage
 
-    /// 介面外觀模式偏好
-    var appearance: AppearancePreference
-
     /// 預設訂單幣別
     var defaultCurrency: CurrencyCode
 
@@ -40,7 +37,6 @@ struct SettingsSnapshot: Equatable, Sendable {
     /// 預設設定
     static let `default` = SettingsSnapshot(
         language: .traditionalChinese,
-        appearance: .system,
         defaultCurrency: .twd,
         monthlyProfitGoalTwd: 80_000,
         useAiSummary: false,
@@ -51,7 +47,6 @@ struct SettingsSnapshot: Equatable, Sendable {
     /// 測試與 preview 用的預設快照 (與 `default` 內容相同，但宣告為 `nonisolated` 方便在 `@Sendable` closure 中安全引用)
     nonisolated static let testDefault = SettingsSnapshot(
         language: .traditionalChinese,
-        appearance: .system,
         defaultCurrency: .twd,
         monthlyProfitGoalTwd: 80_000,
         useAiSummary: false,

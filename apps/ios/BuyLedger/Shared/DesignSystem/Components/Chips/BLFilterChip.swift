@@ -46,7 +46,7 @@ struct BLFilterChip: View {
 
     /// 篩選膠囊的畫面內容
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         Button(action: action) {
             label(palette: palette)

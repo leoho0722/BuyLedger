@@ -24,7 +24,7 @@ struct InsightsStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar,
             locale: Locale(identifier: "zh-Hant"),
-            palette: BLPalette(isDark: false)
+            palette: BLPalette()
         )
 
         #expect(stats.trendBars.count == 30)
@@ -43,7 +43,7 @@ struct InsightsStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar,
             locale: Locale(identifier: "zh-Hant"),
-            palette: BLPalette(isDark: false)
+            palette: BLPalette()
         )
 
         #expect(stats.totalProfit == 1_000)
@@ -61,7 +61,7 @@ struct InsightsStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar,
             locale: Locale(identifier: "zh-Hant"),
-            palette: BLPalette(isDark: false)
+            palette: BLPalette()
         )
 
         #expect(stats.trendDelta == "— 無對照")
@@ -79,7 +79,7 @@ struct InsightsStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar,
             locale: Locale(identifier: "zh-Hant"),
-            palette: BLPalette(isDark: false)
+            palette: BLPalette()
         )
 
         #expect(stats.totalCost == 500)

@@ -32,7 +32,7 @@ struct BLDonutChart: View {
 
     /// 圈狀圖的畫面內容
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         ZStack {
             Chart(segments) { segment in

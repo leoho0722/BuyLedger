@@ -23,9 +23,12 @@ struct RootView: View {
     // MARK: - View Body
 
     /// App 根畫面的內容
+    ///
+    /// 外觀一律跟隨系統：外觀是系統層級設定，App 內重複切換會讓使用者困惑系統設定是否生效
     var body: some View {
         layout
-            .preferredColorScheme(preferredScheme)
+            // 於根層統一設定色調，讓系統元件與自訂元件取用同一個強調色資源
+            .tint(Color("AccentColor", bundle: .assets))
             .environment(\.locale, store.settings.language.locale)
             .task {
                 await store.send(.task).finish()
@@ -44,23 +47,6 @@ private extension RootView {
             RootTabLayout(store: store, language: store.settings.language)
         } else {
             RootSidebarLayout(store: store, language: store.settings.language)
-        }
-    }
-}
-
-// MARK: - Private Method
-
-private extension RootView {
-
-    /// 將 ``SettingsFeature`` 的外觀偏好對映到 SwiftUI 的 `ColorScheme`
-    var preferredScheme: ColorScheme? {
-        switch store.settings.appearance {
-        case .system:
-            return nil
-        case .light:
-            return .light
-        case .dark:
-            return .dark
         }
     }
 }

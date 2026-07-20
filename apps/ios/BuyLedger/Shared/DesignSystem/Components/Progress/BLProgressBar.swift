@@ -81,7 +81,7 @@ struct BLProgressBarStyle: ProgressViewStyle {
 
     /// 回傳套用樣式後的進度列內容
     func makeBody(configuration: Configuration) -> some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         VStack(alignment: .leading, spacing: 5) {
             HStack {

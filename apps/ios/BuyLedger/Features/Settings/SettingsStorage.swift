@@ -33,9 +33,6 @@ private extension SettingsStorage {
         /// App 介面語言偏好的 key
         nonisolated static let language = "settings.language"
 
-        /// 外觀偏好的 key
-        nonisolated static let appearance = "settings.appearance"
-
         /// 預設幣別的 key
         nonisolated static let defaultCurrency = "settings.defaultCurrency"
 
@@ -67,9 +64,6 @@ extension SettingsStorage: DependencyKey {
             let language = AppLanguage(
                 storedValue: defaults.string(forKey: SettingsStorageKeys.language)
             )
-            let appearance = AppearancePreference(
-                rawValue: defaults.string(forKey: SettingsStorageKeys.appearance) ?? ""
-            ) ?? .system
             let storedCurrency = defaults.string(forKey: SettingsStorageKeys.defaultCurrency) ?? ""
             let currency: CurrencyCode = storedCurrency.isEmpty ? .twd : CurrencyCode(rawValue: storedCurrency)
             // 從未寫入時 `object(forKey:)` 為 nil，預設帶入 `SettingsSnapshot.default.monthlyProfitGoalTwd`；
@@ -88,7 +82,6 @@ extension SettingsStorage: DependencyKey {
 
             return SettingsSnapshot(
                 language: language,
-                appearance: appearance,
                 defaultCurrency: currency,
                 monthlyProfitGoalTwd: goalValue,
                 useAiSummary: useAiSummary,
@@ -99,7 +92,6 @@ extension SettingsStorage: DependencyKey {
         save: { snapshot in
             let defaults = UserDefaults.standard
             defaults.set(snapshot.language.rawValue, forKey: SettingsStorageKeys.language)
-            defaults.set(snapshot.appearance.rawValue, forKey: SettingsStorageKeys.appearance)
             defaults.set(snapshot.defaultCurrency.rawValue, forKey: SettingsStorageKeys.defaultCurrency)
             defaults.set(NSDecimalNumber(decimal: snapshot.monthlyProfitGoalTwd).doubleValue, forKey: SettingsStorageKeys.monthlyProfitGoalTwd)
             defaults.set(snapshot.useAiSummary, forKey: SettingsStorageKeys.useAiSummary)

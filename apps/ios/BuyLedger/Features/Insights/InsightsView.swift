@@ -52,7 +52,7 @@ struct InsightsView: View {
     /// 首次載入完成前 (``OrdersFeature/State/hasLoaded`` 為 `false`) 顯示中性 ``loadingPlaceholder(palette:)``，
     /// 避免訂單為空時每次切換 tab 因 `isLoading` 暫時翻成 `true` 而落入「有資料」分支造成閃爍
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         // 三分支解析：已載入顯示內容、有錯誤顯示失敗與重試、其餘才是載入中。
         // 只判斷「是否已載入」會讓失敗永遠停在轉圈
@@ -141,15 +141,37 @@ private extension InsightsView {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    /// 首次載入訂單前顯示的中性佔位畫面
+    /// 首次載入訂單前顯示的骨架
+    ///
+    /// 骨架以真實版面結構呈現 (期間選擇器、走勢卡、並列卡) 而非通用方塊，
+    /// 使內容就緒時版面不跳動；轉圈延遲逾一秒後才疊加
     /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 佔位 view
+    /// - Returns: 骨架 view
     @ViewBuilder
     func loadingPlaceholder(palette: BLPalette) -> some View {
-        ProgressView()
-            .controlSize(.regular)
-            .tint(palette.secondaryLabel)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ScrollView {
+            VStack(alignment: .leading, spacing: BLSpacing.large) {
+                RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous)
+                    .fill(palette.fillQuaternary)
+                    .frame(height: 32)
+
+                RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
+                    .fill(palette.fillTertiary)
+                    .frame(height: 280)
+
+                RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
+                    .fill(palette.fillQuaternary)
+                    .frame(height: 220)
+            }
+            .padding(.horizontal, BLSpacing.large)
+            .padding(.vertical, BLSpacing.large)
+        }
+        .scrollDisabled(true)
+        .overlay {
+            DelayedProgressView()
+        }
+        .accessibilityElement()
+        .accessibilityLabel(Text("載入中"))
     }
 
     /// 期間選擇器

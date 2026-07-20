@@ -220,9 +220,13 @@ struct CampaignFeature {
             case confirmSettle(Campaign.ID)
         }
 
-        /// 權限提示 alert 的選項；僅「知道了」關閉，無自訂動作
+        /// 權限提示 alert 的選項
         @CasePathable
-        enum ReminderAlert: Equatable {}
+        enum ReminderAlert: Equatable {
+
+            /// 使用者選擇前往系統設定開啟權限
+            case openSettings
+        }
     }
 
     // MARK: - Dependency Properties
@@ -247,6 +251,9 @@ struct CampaignFeature {
 
     /// 用於新開團的 UUID 產生器，方便在測試中注入固定值
     @Dependency(\.uuid) private var uuid
+
+    /// 開啟本 App 系統設定頁的能力；權限被拒提示的「前往設定」使用
+    @Dependency(OpenSettingsClient.self) private var openSettingsClient
 
     // MARK: - Reducer Body
 
@@ -549,9 +556,13 @@ struct CampaignFeature {
                 return .none
 
             case .reminderAccessDenied:
+                // 要求使用者前往系統設定卻不提供跳轉，等於把導航成本轉嫁給使用者
                 state.reminderAccessAlert = AlertState {
                     TextState("需要行事曆權限")
                 } actions: {
+                    ButtonState(action: .openSettings) {
+                        TextState("前往設定")
+                    }
                     ButtonState(role: .cancel) {
                         TextState("知道了")
                     }
@@ -559,6 +570,13 @@ struct CampaignFeature {
                     TextState("請到「設定」開啟行事曆存取權限，才能新增或移除訂購提醒。")
                 }
                 return .none
+
+            case .reminderAccessAlert(.presented(.openSettings)):
+                let openSettingsClient = openSettingsClient
+                // 無法開啟時靜默結束即可；提示本身已由系統關閉，不阻塞使用者
+                return .run { _ in
+                    await openSettingsClient.open()
+                }
 
             case .reminderCreationFailed:
                 // 權限已授予，訊息不得指向權限設定——照做也無法解決真正發生的失敗

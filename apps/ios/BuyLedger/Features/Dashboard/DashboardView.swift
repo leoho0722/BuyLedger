@@ -52,7 +52,7 @@ struct DashboardView: View {
 
     /// 總覽頁的畫面內容
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         // 三分支解析：已載入顯示內容、有錯誤顯示失敗與重試、其餘才是載入中。
         // 只判斷「是否已載入」會讓失敗永遠停在轉圈
@@ -199,15 +199,41 @@ private extension DashboardView {
         }
     }
 
-    /// 首次載入訂單前顯示的中性佔位畫面，水平垂直置中
+    /// 首次載入訂單前顯示的骨架
+    ///
+    /// 骨架以真實版面結構呈現 (hero 卡、KPI 格、近期訂單卡) 而非通用方塊，
+    /// 使內容就緒時版面不跳動；轉圈延遲逾一秒後才疊加，避免快速載入時閃現
     /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 佔位 view
+    /// - Returns: 骨架 view
     @ViewBuilder
     func loadingPlaceholder(palette: BLPalette) -> some View {
-        ProgressView()
-            .controlSize(.regular)
-            .tint(palette.secondaryLabel)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
+        ScrollView {
+            VStack(alignment: .leading, spacing: BLSpacing.large) {
+                RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
+                    .fill(palette.fillTertiary)
+                    .frame(height: 180)
+
+                LazyVGrid(columns: kpiColumns, spacing: BLSpacing.small) {
+                    ForEach(0..<4, id: \.self) { _ in
+                        RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
+                            .fill(palette.fillQuaternary)
+                            .frame(height: 88)
+                    }
+                }
+
+                RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
+                    .fill(palette.fillQuaternary)
+                    .frame(height: 240)
+            }
+            .padding(.horizontal, BLSpacing.large)
+            .padding(.vertical, BLSpacing.large)
+        }
+        .scrollDisabled(true)
+        .overlay {
+            DelayedProgressView()
+        }
+        .accessibilityElement()
+        .accessibilityLabel(Text("載入中"))
     }
 
     /// 第一次開 App 還沒有任何訂單時的引導畫面
@@ -339,9 +365,9 @@ private extension DashboardView {
     func heroCard(stats: DashboardStats, palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
             VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
+                // 層級由字重與字級表達；不透明度降階會直接損害對比
                 Text("本月 · 淨獲利")
                     .font(.footnote.weight(.medium))
-                    .opacity(0.85)
 
                 Text(profitDisplay(stats.profit))
                     .font(.system(size: heroProfitSize, weight: .bold))
@@ -353,13 +379,11 @@ private extension DashboardView {
                 HStack(spacing: BLSpacing.small) {
                     Text(profitDeltaDisplay(stats.profitDelta))
                         .font(.footnote)
-                        .opacity(0.9)
 
-                    Text("·").opacity(0.5)
+                    Text("·")
 
                     Text("\(stats.orderCount) 單")
                         .font(.footnote)
-                        .opacity(0.9)
                 }
             }
 
@@ -370,7 +394,6 @@ private extension DashboardView {
                 height: 36,
                 summary: sparklineSummary(stats: stats)
             )
-            .opacity(0.6)
 
             goalProgressBar(stats: stats)
         }
@@ -378,8 +401,13 @@ private extension DashboardView {
         .foregroundStyle(.white)
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
+            // 漸層兩端皆壓低亮度使純白文字達 4.5:1 (原 accent 起端僅 4.02:1)；
+            // 色值收在 asset catalog 並由對比測試把關
             LinearGradient(
-                colors: [palette.accent, palette.indigo],
+                colors: [
+                    Color("BLHeroGradientStart", bundle: .assets),
+                    Color("BLHeroGradientEnd", bundle: .assets),
+                ],
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )

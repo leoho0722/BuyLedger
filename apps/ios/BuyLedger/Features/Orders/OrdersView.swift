@@ -73,7 +73,7 @@ private extension OrdersView {
     /// 以 ``NavigationStack`` 包住兩欄並用 `rootNavigationTitle(_:language:)` 提供系統大標題，讓頂端標題與「更多」等其他分頁一致對齊側邊欄 (先前用 HStack + 手動 `.padding(.top)` 會讓內容偏下、與側邊欄錯位)。內層僅用 ``HStack`` 自排「清單 + 詳情」，不再使用巢狀 ``NavigationSplitView``，避免兩層 split 互相搶寬度造成中間欄被擠壓
     @ViewBuilder
     var regularSplitContent: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
         let filteredIDs = store.state.filteredOrders(referenceDate: date.now, calendar: calendar).map(\.id)
         let allFilteredSelected = !filteredIDs.isEmpty && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
         NavigationStack {
@@ -205,7 +205,7 @@ private extension OrdersView {
     /// 選取狀態僅反映在右側詳情欄，列表本身不畫選取高亮；刪除走 row 的 context menu
     @ViewBuilder
     var listPane: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
         let orders = store.state.filteredOrders(referenceDate: date.now, calendar: calendar)
 
         VStack(spacing: 0) {
@@ -237,7 +237,7 @@ private extension OrdersView {
     /// - Returns: 卡片化的訂單列表 view
     @ViewBuilder
     func orderListCard(orders: [LedgerOrder]) -> some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         BLCard(padding: 0) {
             VStack(spacing: 0) {
@@ -438,13 +438,15 @@ private extension OrdersView {
     /// 訂單詳情欄
     @ViewBuilder
     var detailPane: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         if let order = store.state.selectedOrder(referenceDate: date.now, calendar: calendar) {
-            VStack(spacing: 0) {
-                detailTitleBar(order: order)
-                OrderDetailView(order: order, layout: .wide)
-            }
+            // 標題列以 safeAreaInset 疊在捲動內容上：內容延伸至其下方而非在邊緣停住，
+            // 底色用系統 bar 材質而非實色，取得與系統導覽列一致的穿透感
+            OrderDetailView(order: order, layout: .wide)
+                .safeAreaInset(edge: .top, spacing: 0) {
+                    detailTitleBar(order: order)
+                }
         } else {
             ContentUnavailableView("選擇訂單", systemImage: "list.bullet.rectangle")
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
@@ -459,7 +461,7 @@ private extension OrdersView {
     /// - Returns: 自繪標題列 view
     @ViewBuilder
     func detailTitleBar(order: LedgerOrder) -> some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
             Text(order.customer.name)
@@ -476,10 +478,8 @@ private extension OrdersView {
         .padding(.horizontal, BLSpacing.large)
         .padding(.vertical, BLSpacing.medium)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(palette.background)
-        .overlay(alignment: .bottom) {
-            Divider()
-        }
+        // 系統 bar 材質取代實色底與分隔線：材質自帶模糊穿透，實色會擋掉捲動邊緣效果
+        .background(.bar)
     }
 
     /// 詳情頁右上角的「更新狀態」menu，目前狀態加 checkmark；「已合併」只能由合併流程寫入，僅當目前狀態已是已合併時保留該選項

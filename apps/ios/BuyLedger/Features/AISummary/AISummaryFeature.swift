@@ -7,6 +7,7 @@
 
 import ComposableArchitecture
 import Foundation
+import OSLog
 
 /// AI 商品明細總結 sheet 的狀態與串流流程
 ///
@@ -108,7 +109,10 @@ struct AISummaryFeature {
             case .task, .retryTapped:
                 guard let apiKey = appConfiguration.ollamaAPIKey() else {
                     state.phase = .failed
-                    state.errorMessage = "尚未設定 OLLAMA_API_KEY。"
+                    // 使用者語彙描述狀態與下一步；環境變數名稱屬建置期識別碼，只進記錄不進介面
+                    state.errorMessage = "AI 總結尚未完成設定，目前無法使用。"
+                    Logger(subsystem: "BuyLedger", category: "AISummary")
+                        .error("AI 總結無法啟動：OLLAMA_API_KEY 未注入 (xcconfig 未設定)")
                     return .none
                 }
                 state.phase = .streaming
@@ -166,7 +170,7 @@ extension APIError {
     var summaryFailureMessage: LocalizedStringResource {
         switch self {
         case .invalidKey:
-            "API key 無效或未設定，請確認 OLLAMA_API_KEY。"
+            "AI 服務驗證失敗，目前無法使用總結功能。"
         case .quotaExceeded:
             "API 配額已用罄，請稍後再試。"
         case let .http(statusCode):

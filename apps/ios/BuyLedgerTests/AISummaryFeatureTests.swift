@@ -62,7 +62,7 @@ struct AISummaryFeatureTests {
 
         await store.send(.task) {
             $0.phase = .failed
-            $0.errorMessage = "尚未設定 OLLAMA_API_KEY。"
+            $0.errorMessage = "AI 總結尚未完成設定，目前無法使用。"
         }
     }
 
@@ -81,9 +81,9 @@ struct AISummaryFeatureTests {
         await store.send(.task) {
             $0.phase = .streaming
         }
-        await store.receive(\.streamFailed, "API key 無效或未設定，請確認 OLLAMA_API_KEY。") {
+        await store.receive(\.streamFailed, "AI 服務驗證失敗，目前無法使用總結功能。") {
             $0.phase = .failed
-            $0.errorMessage = "API key 無效或未設定，請確認 OLLAMA_API_KEY。"
+            $0.errorMessage = "AI 服務驗證失敗，目前無法使用總結功能。"
         }
     }
 

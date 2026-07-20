@@ -18,7 +18,6 @@ struct RootFeatureTests {
     @Test func taskRestoresSettingsBeforeSettingsScreenIsVisited() async {
         var snapshot = SettingsSnapshot.default
         snapshot.language = .english
-        snapshot.appearance = .dark
         let storedSnapshot = snapshot
         let refresh = RootTaskRefreshBox()
 
@@ -43,12 +42,10 @@ struct RootFeatureTests {
         await store.send(.task)
         await store.receive(.settings(.task)) {
             $0.settings.language = .english
-            $0.settings.appearance = .dark
         }
         await store.finish()
 
         #expect(store.state.settings.language == .english)
-        #expect(store.state.settings.appearance == .dark)
         #expect(refresh.wasCalled)
     }
 

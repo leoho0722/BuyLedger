@@ -40,7 +40,7 @@ struct BLBarChart: View {
 
     /// 長條圖的畫面內容
     var body: some View {
-        let palette = BLTheme.palette(for: colorScheme)
+        let palette = BLPalette()
 
         GeometryReader { proxy in
             chart(palette: palette, viewportWidth: proxy.size.width)
