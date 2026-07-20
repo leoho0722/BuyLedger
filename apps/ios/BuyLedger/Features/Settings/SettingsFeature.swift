@@ -38,6 +38,12 @@ struct SettingsFeature {
         /// 是否啟用 AI 商品明細總結
         var useAiSummary: Bool = false
 
+        /// 月度目標金額欄位是否取得鍵盤焦點
+        ///
+        /// 焦點屬呈現狀態，依專案慣例下放 Feature.State；數字鍵盤沒有 return 鍵，
+        /// 需要由此驅動鍵盤工具列的完成按鈕
+        var isGoalFieldFocused: Bool = false
+
         /// AI 總結使用的 Ollama 模型名稱
         var aiSummaryModel: String = AISummaryModelCatalog.defaultModel
 
@@ -113,6 +119,10 @@ struct SettingsFeature {
             case let .aiSummaryModelSelected(model):
                 state.aiSummaryModel = model
                 persist(state)
+                return .none
+
+            case .binding(\.isGoalFieldFocused):
+                // 焦點屬短暫 UI 狀態，變動不觸發設定存檔
                 return .none
 
             case .binding:

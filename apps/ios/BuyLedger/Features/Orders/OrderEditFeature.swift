@@ -118,6 +118,12 @@ struct OrderEditFeature {
         /// 採 `AlertState` (centered modal) 而非 `ConfirmationDialogState`：取消是 toolbar 按鈕，iOS 26 起 `.confirmationDialog` 對 toolbar 觸發會位置偏移
         @Presents var discardConfirmation: AlertState<Action.DiscardAlert>? = nil
 
+        /// 目前取得鍵盤焦點的欄位；`nil` 代表無焦點
+        ///
+        /// 焦點屬呈現狀態，依專案慣例下放 Feature.State 而非留在 view 本地——
+        /// 這也讓「新訂單自動聚焦第一個欄位」可在 reducer 表達並被測試涵蓋
+        var focusedField: Field?
+
         /// 合併來源訂單編號；非空代表這是「合併訂單」的確認草稿
         ///
         /// 由 ``OrdersFeature`` 在合併流程建立草稿時填入；儲存時父層據此把舊單轉「已合併」並把這組 id 寫入新訂單的 ``LedgerOrder/mergedSourceIDs``。一般編輯／新增流程一律為空陣列
@@ -574,11 +580,13 @@ struct OrderEditFeature {
                 return .none
 
             case .saveTapped:
+                state.focusedField = nil
                 return .run { _ in await dismiss() }
 
             case .cancelTapped:
                 // 有未儲存變更時先以彈窗確認、避免下滑或取消靜默遺失草稿；無變更則直接關閉
                 guard state.isDirty else {
+                    state.focusedField = nil
                     return .run { _ in await dismiss() }
                 }
 
@@ -597,6 +605,7 @@ struct OrderEditFeature {
                 return .none
 
             case .discardConfirmation(.presented(.discard)):
+                state.focusedField = nil
                 return .run { _ in await dismiss() }
 
             case .discardConfirmation:
@@ -707,6 +716,10 @@ struct OrderEditFeature {
                 return .none
 
             case .task:
+                // 新訂單一開啟就聚焦第一個欄位；編輯既有訂單不搶焦點，讓使用者自行選擇要改哪一欄
+                if state.original == nil, state.focusedField == nil {
+                    state.focusedField = .customerName
+                }
                 let orderSourceRepository = orderSourceRepository
                 let categoryRepository = categoryRepository
                 let paymentMethodRepository = paymentMethodRepository
@@ -914,6 +927,59 @@ extension OrderEditFeature.State {
     /// 訂單編輯表單內可 push 呈現的選項選擇器 route
     ///
     /// 驅動表單 `NavigationStack` 的單一 `navigationDestination(for:)`，一次只 push 一個選擇器
+    /// 表單中可取得鍵盤焦點的欄位
+    ///
+    /// case 依畫面上的視覺順序宣告，讓「下一欄」的語意直接由宣告順序表達
+    enum Field: Hashable {
+
+        // MARK: - Cases
+
+        /// 客戶名稱
+        case customerName
+
+        /// 客戶實付
+        case chargedAmount
+
+        /// 無卡折抵金額
+        case cardlessDeduction
+
+        /// 無卡補款金額
+        case cardlessSupplement
+
+        /// 商品成本
+        case itemCost
+
+        /// 外國國內運費
+        case foreignDomesticShipping
+
+        /// 國際運費
+        case internationalShipping
+
+        /// 國內運費
+        case domesticShipping
+
+        /// 刷卡手續費率
+        case cardFeeRate
+
+        /// 平台手續費率
+        case platformFeeRate
+
+        /// 金流手續費率
+        case paymentFeeRate
+
+        /// 指定商品的名稱
+        case itemName(LedgerOrderItem.ID)
+
+        /// 指定商品的數量
+        case itemQuantity(LedgerOrderItem.ID)
+
+        /// 指定商品的單價
+        case itemUnitPrice(LedgerOrderItem.ID)
+
+        /// 備註
+        case notes
+    }
+
     enum PickerRoute: Hashable {
 
         // MARK: - Cases

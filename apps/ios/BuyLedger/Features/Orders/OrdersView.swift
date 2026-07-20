@@ -357,21 +357,12 @@ private extension OrdersView {
         ScrollView(.horizontal) {
             HStack(spacing: BLSpacing.small) {
                 ForEach(OrderStatusFilter.orderBrowsingCases) { filter in
-                    let isSelected = store.selectedStatus == filter
-
-                    Button {
+                    BLFilterChip(
+                        title: LocalizedStringKey(filter.title),
+                        isSelected: store.selectedStatus == filter
+                    ) {
                         store.send(.statusFilterSelected(filter))
-                    } label: {
-                        Text(LocalizedStringKey(filter.title))
-                            .font(.footnote.weight(.semibold))
-                            .lineLimit(1)
-                            .foregroundStyle(isSelected ? palette.background : palette.secondaryLabel)
-                            .padding(.vertical, 7)
-                            .padding(.horizontal, 12)
-                            .background(isSelected ? palette.label : palette.fillTertiary)
-                            .clipShape(Capsule())
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -386,26 +377,14 @@ private extension OrdersView {
         ScrollView(.horizontal) {
             HStack(spacing: BLSpacing.small) {
                 ForEach(OrderDatePeriod.orderBrowsingCases) { period in
-                    let isSelected = store.selectedDatePeriod == period
-
-                    Button {
+                    BLFilterChip(
+                        title: LocalizedStringKey(period.title),
+                        isSelected: store.selectedDatePeriod == period,
+                        style: .accent,
+                        icon: "calendar"
+                    ) {
                         store.send(.datePeriodSelected(period))
-                    } label: {
-                        HStack(spacing: 4) {
-                            Image(systemName: "calendar")
-                                .font(.caption2.weight(.semibold))
-
-                            Text(LocalizedStringKey(period.title))
-                                .font(.footnote.weight(.semibold))
-                                .lineLimit(1)
-                        }
-                        .foregroundStyle(isSelected ? palette.accent : palette.secondaryLabel)
-                        .padding(.vertical, 7)
-                        .padding(.horizontal, 12)
-                        .background(isSelected ? palette.accent.opacity(0.18) : palette.fillTertiary)
-                        .clipShape(Capsule())
                     }
-                    .buttonStyle(.plain)
                 }
             }
         }
@@ -426,29 +405,16 @@ private extension OrdersView {
         let isSelected = store.selectedCategory != nil
         let currentLabel = store.selectedCategory ?? "全部"
 
-        Button {
+        BLFilterChip(
+            title: "類別：\(currentLabel)",
+            isSelected: isSelected,
+            style: .purple,
+            icon: "tag",
+            trailingIcon: "chevron.down",
+            isExpanded: true
+        ) {
             store.send(.categoryPickerTapped)
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Image(systemName: "tag")
-                    .font(.caption2.weight(.semibold))
-
-                Text("類別：\(currentLabel)")
-                    .font(.footnote.weight(.semibold))
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Image(systemName: "chevron.down")
-                    .font(.caption2.weight(.semibold))
-            }
-            .foregroundStyle(isSelected ? palette.purple : palette.secondaryLabel)
-            .padding(.vertical, 7)
-            .padding(.horizontal, 12)
-            .background(isSelected ? palette.purple.opacity(0.18) : palette.fillTertiary)
-            .clipShape(Capsule())
         }
-        .buttonStyle(.plain)
     }
 
     /// iPad regular 中間欄使用的付款方式篩選 trigger button
@@ -464,29 +430,16 @@ private extension OrdersView {
         let isSelected = store.selectedPaymentMethod != nil
         let currentLabel = store.selectedPaymentMethod ?? "全部"
 
-        Button {
+        BLFilterChip(
+            title: "付款方式：\(currentLabel)",
+            isSelected: isSelected,
+            style: .purple,
+            icon: "creditcard",
+            trailingIcon: "chevron.down",
+            isExpanded: true
+        ) {
             store.send(.paymentMethodPickerTapped)
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Image(systemName: "creditcard")
-                    .font(.caption2.weight(.semibold))
-
-                Text("付款方式：\(currentLabel)")
-                    .font(.footnote.weight(.semibold))
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Image(systemName: "chevron.down")
-                    .font(.caption2.weight(.semibold))
-            }
-            .foregroundStyle(isSelected ? palette.purple : palette.secondaryLabel)
-            .padding(.vertical, 7)
-            .padding(.horizontal, 12)
-            .background(isSelected ? palette.purple.opacity(0.18) : palette.fillTertiary)
-            .clipShape(Capsule())
         }
-        .buttonStyle(.plain)
     }
 
     /// 訂單詳情欄

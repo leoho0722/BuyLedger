@@ -67,6 +67,15 @@ struct CampaignDetailView: View {
                             )
                         }
                         .disabled(campaign.isSettled)
+
+                        Divider()
+
+                        // 列表的長按刪除保留，這裡提供不依賴手勢的可見替代入口
+                        Button(role: .destructive) {
+                            store.send(.campaigns(.deleteCampaignTapped(campaign.id)))
+                        } label: {
+                            Label("刪除開團", systemImage: "trash")
+                        }
                     } label: {
                         Label("更多", systemImage: "ellipsis.circle")
                     }
@@ -255,6 +264,9 @@ private extension CampaignDetailView {
                     }
                     .font(.caption)
                     .foregroundStyle(order.paymentReceiptStatus == .received ? Color.green : Color.accentColor)
+                    // 這顆會改資料且無確認，命中區宣告在標籤內部撐到 44pt；視覺尺寸不變
+                    .frame(minHeight: BLHitTarget.minimum)
+                    .contentShape(.rect)
                 }
                 .buttonStyle(.borderless)
             }

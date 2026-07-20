@@ -40,6 +40,12 @@ struct FxFeature {
         /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供
         var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
 
+        /// 金額欄位是否取得鍵盤焦點
+        ///
+        /// 焦點屬呈現狀態，依專案慣例下放 Feature.State；數字鍵盤沒有 return 鍵，
+        /// 需要由此驅動鍵盤工具列的完成按鈕
+        var isAmountFieldFocused: Bool = false
+
         /// 是否顯示幣別選擇 sheet
         var showsCurrencySheet: Bool = false
 

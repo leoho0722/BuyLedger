@@ -29,6 +29,18 @@ struct BLPhotoViewer: View {
     /// 目前聚焦的照片 index；由 paging ScrollView 的 `scrollPosition` 驅動
     @State private var currentIndex: Int?
 
+    /// 目前的縮放倍率；為 1 時由換頁接手手勢，大於 1 時改為平移並停用換頁
+    @State private var zoomScale: CGFloat = 1
+
+    /// 手勢進行中的暫時倍率，手勢結束後併入 ``zoomScale``
+    @State private var gestureScale: CGFloat = 1
+
+    /// 放大後的平移位移
+    @State private var panOffset: CGSize = .zero
+
+    /// 手勢進行中的暫時位移，手勢結束後併入 ``panOffset``
+    @State private var gesturePanOffset: CGSize = .zero
+
     // MARK: - Init
 
     /// 建立檢視器並把初始聚焦照片設為 `initialIndex`
@@ -89,6 +101,11 @@ private extension BLPhotoViewer {
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $currentIndex)
         .scrollIndicators(.hidden)
+        // 倍率為 1 時換頁接手、大於 1 時停用換頁改由平移接手，與系統照片瀏覽的規則一致
+        .scrollDisabled(isZoomedIn)
+        .onChange(of: currentIndex) { _, _ in
+            resetZoom()
+        }
     }
 
     /// 單頁影像：可解碼時 scaledToFit 置中並套用小圓角，否則顯示 placeholder 圖示
@@ -105,6 +122,14 @@ private extension BLPhotoViewer {
                     RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous)
                 }
                 .accessibilityLabel("訂單照片")
+                .scaleEffect(zoomScale * gestureScale)
+                .offset(currentPanOffset)
+                .gesture(magnifyGesture)
+                .simultaneousGesture(panGesture)
+                .onTapGesture(count: 2) {
+                    toggleZoom()
+                }
+                .animation(.snappy(duration: 0.2), value: zoomScale)
         } else {
             Image(systemName: "photo")
                 .font(.largeTitle)
@@ -117,6 +142,82 @@ private extension BLPhotoViewer {
 // MARK: - Private Method
 
 private extension BLPhotoViewer {
+
+    /// 是否已放大 (放大後換頁停用、改為平移)
+    var isZoomedIn: Bool {
+        zoomScale > 1
+    }
+
+    /// 雙點放大時使用的倍率
+    var zoomedInScale: CGFloat { 2 }
+
+    /// 目前套用的總位移 (已提交的位移加上手勢進行中的位移)
+    var currentPanOffset: CGSize {
+        CGSize(
+            width: panOffset.width + gesturePanOffset.width,
+            height: panOffset.height + gesturePanOffset.height
+        )
+    }
+
+    /// 縮放手勢：手勢中即時反映，結束時夾在 1 至 4 倍之間
+    var magnifyGesture: some Gesture {
+        MagnifyGesture()
+            .onChanged { value in
+                gestureScale = value.magnification
+            }
+            .onEnded { value in
+                gestureScale = 1
+                zoomScale = min(max(zoomScale * value.magnification, 1), 4)
+                if !isZoomedIn {
+                    resetPan()
+                }
+            }
+    }
+
+    /// 平移手勢：僅在放大後啟用，未放大時讓換頁取得手勢
+    var panGesture: some Gesture {
+        DragGesture()
+            .onChanged { value in
+                guard isZoomedIn else {
+                    return
+                }
+                gesturePanOffset = value.translation
+            }
+            .onEnded { value in
+                guard isZoomedIn else {
+                    return
+                }
+                gesturePanOffset = .zero
+                panOffset = CGSize(
+                    width: panOffset.width + value.translation.width,
+                    height: panOffset.height + value.translation.height
+                )
+            }
+    }
+
+    /// 雙點在一倍與兩倍之間切換
+    ///
+    /// 不逐級放大——逐級會讓使用者需要多次雙點才能回到原始尺寸
+    func toggleZoom() {
+        if isZoomedIn {
+            resetZoom()
+        } else {
+            zoomScale = zoomedInScale
+        }
+    }
+
+    /// 回到一倍並清除位移
+    func resetZoom() {
+        zoomScale = 1
+        gestureScale = 1
+        resetPan()
+    }
+
+    /// 清除平移位移
+    func resetPan() {
+        panOffset = .zero
+        gesturePanOffset = .zero
+    }
 
     /// 計數文字 (目前第幾張/總張數)；navigation title 使用
     var counterText: String {

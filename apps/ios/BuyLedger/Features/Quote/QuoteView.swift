@@ -28,6 +28,9 @@ struct QuoteView: View {
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
 
+    /// 數值欄位的鍵盤焦點；實際狀態由 ``QuoteFeature/State/isAmountFieldFocused`` 持有
+    @FocusState private var isAmountFieldFocused: Bool
+
     /// hero 建議售價字級，隨 Dynamic Type 縮放 (以 `.largeTitle` 為基準)
     @ScaledMetric(relativeTo: .largeTitle) private var heroPriceSize: CGFloat = 40
 
@@ -50,6 +53,18 @@ struct QuoteView: View {
         }
         .background(palette.background)
         .navigationTitle(Text("報價試算"))
+        .scrollDismissesKeyboard(.interactively)
+        .bind($store.isAmountFieldFocused, to: $isAmountFieldFocused)
+        .toolbar {
+            // 此畫面的輸入皆為數字鍵盤，沒有 return 鍵可收
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+
+                Button("完成") {
+                    store.send(.binding(.set(\.isAmountFieldFocused, false)))
+                }
+            }
+        }
         .task {
             await store.send(.task).finish()
         }
@@ -264,6 +279,7 @@ private extension QuoteView {
             .monospacedDigit()
             .frame(width: 120)
             .keyboardType(allowsDecimalEntry || fractionDigits > 0 ? .decimalPad : .numberPad)
+            .focused($isAmountFieldFocused)
 
             Text(LocalizedStringKey(unit))
                 .font(.footnote)

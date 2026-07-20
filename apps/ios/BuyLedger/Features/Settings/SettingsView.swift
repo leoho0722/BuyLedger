@@ -24,6 +24,9 @@ struct SettingsView: View {
     /// 關閉目前設定導覽層級；自訂返回按鈕避免切換語言後系統快取舊 back title
     @Environment(\.dismiss) private var dismiss
 
+    /// 月度目標欄位的鍵盤焦點；實際狀態由 ``SettingsFeature/State/isGoalFieldFocused`` 持有
+    @FocusState private var isGoalFieldFocused: Bool
+
     // MARK: - View Body
 
     /// 設定頁畫面內容
@@ -77,6 +80,7 @@ struct SettingsView: View {
                     format: .number.precision(.fractionLength(0))
                 )
                 .keyboardType(.numberPad)
+                .focused($isGoalFieldFocused)
             } header: {
                 Text("月度淨獲利目標 (TWD)")
             } footer: {
@@ -102,6 +106,18 @@ struct SettingsView: View {
             }
         }
         .rootNavigationTitle("設定", language: store.language)
+        .scrollDismissesKeyboard(.interactively)
+        .bind($store.isGoalFieldFocused, to: $isGoalFieldFocused)
+        .toolbar {
+            // 此畫面唯一的輸入為數字鍵盤，沒有 return 鍵可收
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+
+                Button("完成") {
+                    store.send(.binding(.set(\.isGoalFieldFocused, false)))
+                }
+            }
+        }
         .navigationBarBackButtonHidden(true)
         .toolbar {
             ToolbarItem(placement: .topBarLeading) {

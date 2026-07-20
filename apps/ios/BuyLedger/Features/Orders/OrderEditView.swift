@@ -22,6 +22,9 @@ struct OrderEditView: View {
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
 
+    /// 鍵盤焦點；實際狀態由 ``OrderEditFeature/State/focusedField`` 持有，此處僅作為 SwiftUI 端的鏡像
+    @FocusState private var focusedField: OrderEditFeature.State.Field?
+
     // MARK: - View Body
 
     /// 編輯表單的畫面內容
@@ -30,6 +33,8 @@ struct OrderEditView: View {
             Form {
                 Section {
                     TextField("客戶名稱", text: $store.draftCustomerName)
+                        .textContentType(.name)
+                        .focused($focusedField, equals: .customerName)
 
                     orderSourcePickerRow
 
@@ -72,18 +77,21 @@ struct OrderEditView: View {
                 Section {
                     decimalField(
                         title: "客戶實付",
-                        value: $store.draftChargedAmount
+                        value: $store.draftChargedAmount,
+                        field: .chargedAmount
                     )
 
                     if store.isSelectedPaymentMethodCardless {
                         decimalField(
                             title: "無卡折抵金額",
-                            value: $store.draftCardlessDeductionAmount
+                            value: $store.draftCardlessDeductionAmount,
+                            field: .cardlessDeduction
                         )
 
                         decimalField(
                             title: "無卡補款金額",
-                            value: $store.draftCardlessSupplementAmount
+                            value: $store.draftCardlessSupplementAmount,
+                            field: .cardlessSupplement
                         )
                     }
                 } header: {
@@ -118,10 +126,10 @@ struct OrderEditView: View {
                 }
 
                 Section {
-                    decimalField(title: "商品成本", value: $store.draftItemCost)
-                    decimalField(title: "外國國內運費", value: $store.draftForeignDomesticShipping)
-                    decimalField(title: "國際運費", value: $store.draftInternationalShipping)
-                    decimalField(title: "國內運費", value: $store.draftDomesticShipping)
+                    decimalField(title: "商品成本", value: $store.draftItemCost, field: .itemCost)
+                    decimalField(title: "外國國內運費", value: $store.draftForeignDomesticShipping, field: .foreignDomesticShipping)
+                    decimalField(title: "國際運費", value: $store.draftInternationalShipping, field: .internationalShipping)
+                    decimalField(title: "國內運費", value: $store.draftDomesticShipping, field: .domesticShipping)
                 } header: {
                     Text("成本 (NT$)")
                 } footer: {
@@ -133,9 +141,9 @@ struct OrderEditView: View {
                 }
 
                 Section {
-                    percentField(title: "刷卡手續費 %", value: $store.draftCardFeeRate)
-                    percentField(title: "平台手續費 %", value: $store.draftPlatformFeeRate)
-                    percentField(title: "金流手續費 %", value: $store.draftPaymentFeeRate)
+                    percentField(title: "刷卡手續費 %", value: $store.draftCardFeeRate, field: .cardFeeRate)
+                    percentField(title: "平台手續費 %", value: $store.draftPlatformFeeRate, field: .platformFeeRate)
+                    percentField(title: "金流手續費 %", value: $store.draftPaymentFeeRate, field: .paymentFeeRate)
                 } header: {
                     Text("手續費 (%)")
                 } footer: {
@@ -177,7 +185,21 @@ struct OrderEditView: View {
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canSave)
                 }
+
+                // 數字鍵盤沒有 return 鍵，沒有這條就無路可收；有 return 鍵的一般鍵盤不顯示，
+                // 避免多一列無意義的工具列
+                if isNumericFieldFocused {
+                    ToolbarItemGroup(placement: .keyboard) {
+                        Spacer()
+
+                        Button("完成") {
+                            store.send(.binding(.set(\.focusedField, nil)))
+                        }
+                    }
+                }
             }
+            .scrollDismissesKeyboard(.interactively)
+            .bind($store.focusedField, to: $focusedField)
             .task {
                 await store.send(.task).finish()
             }
@@ -571,7 +593,19 @@ private extension OrderEditView {
                 Label("新增商品", systemImage: "plus.circle.fill")
             }
         } header: {
-            Text("商品明細 (\(store.draftCurrency.rawValue))")
+            HStack {
+                Text("商品明細 (\(store.draftCurrency.rawValue))")
+
+                Spacer()
+
+                // 左滑刪除保留，這裡以系統清單的編輯模式提供不依賴手勢的刪除入口，
+                // 與下方可見的「新增商品」形成對稱
+                if !store.draftItems.isEmpty {
+                    EditButton()
+                        .font(.footnote)
+                        .textCase(nil)
+                }
+            }
         } footer: {
             if store.draftItems.isEmpty {
                 Text("還沒有任何商品；點擊「新增商品」開始填寫。")
@@ -590,6 +624,8 @@ private extension OrderEditView {
     var notesSection: some View {
         Section {
             TextField("輸入備註 (選填)", text: $store.draftNotes, axis: .vertical)
+                .textContentType(.none)
+                .focused($focusedField, equals: .notes)
                 .lineLimit(3...8)
         } header: {
             Text("備註")
@@ -645,7 +681,10 @@ private extension OrderEditView {
     @ViewBuilder
     func itemEditorRow(item: Binding<LedgerOrderItem>) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
+            // 自由文字須明確宣告不可填入，否則系統會誤判為地址等欄位並給出無關建議
             TextField("商品名稱", text: item.name, axis: .vertical)
+                .textContentType(.none)
+                .focused($focusedField, equals: .itemName(item.id))
                 .font(.body.weight(.medium))
                 .lineLimit(1...3)
 
@@ -673,6 +712,9 @@ private extension OrderEditView {
                     .monospacedDigit()
                     .frame(maxWidth: 120)
                     .keyboardType(.numberPad)
+                    .focused($focusedField, equals: .itemUnitPrice(item.id))
+                    .frame(minHeight: BLHitTarget.minimum)
+                    .contentShape(.rect)
                 }
             }
         }
@@ -686,7 +728,7 @@ private extension OrderEditView {
     ///   - value: 雙向繫結的值
     /// - Returns: `LabeledContent` + `TextField` 組合 view
     @ViewBuilder
-    func decimalField(title: String, value: Binding<Decimal>) -> some View {
+    func decimalField(title: String, value: Binding<Decimal>, field: OrderEditFeature.State.Field) -> some View {
         HStack(alignment: .center, spacing: BLSpacing.small) {
             // 長標籤換行並撐高整列，值在多行標籤中垂直置中
             Text(LocalizedStringKey(title))
@@ -702,7 +744,10 @@ private extension OrderEditView {
             .multilineTextAlignment(.trailing)
             .monospacedDigit()
             .keyboardType(.numberPad)
+            .focused($focusedField, equals: field)
             .frame(maxWidth: 140, alignment: .trailing)
+            .frame(minHeight: BLHitTarget.minimum)
+            .contentShape(.rect)
         }
     }
 
@@ -714,7 +759,7 @@ private extension OrderEditView {
     ///   - value: 雙向繫結的 0–1 比例值
     /// - Returns: `LabeledContent` + `TextField` 組合 view
     @ViewBuilder
-    func percentField(title: String, value: Binding<Decimal>) -> some View {
+    func percentField(title: String, value: Binding<Decimal>, field: OrderEditFeature.State.Field) -> some View {
         let proxy = Binding<Double>(
             get: { NSDecimalNumber(decimal: value.wrappedValue).doubleValue * 100 },
             set: { newValue in
@@ -738,11 +783,14 @@ private extension OrderEditView {
                 .multilineTextAlignment(.trailing)
                 .monospacedDigit()
                 .keyboardType(.decimalPad)
+                .focused($focusedField, equals: field)
 
                 Text("%")
                     .foregroundStyle(.secondary)
             }
             .frame(maxWidth: 140, alignment: .trailing)
+            .frame(minHeight: BLHitTarget.minimum)
+            .contentShape(.rect)
         }
     }
 }
@@ -750,6 +798,21 @@ private extension OrderEditView {
 // MARK: - Private Method
 
 private extension OrderEditView {
+
+    /// 目前聚焦的欄位是否使用數字鍵盤
+    ///
+    /// 數字鍵盤沒有 return 鍵，需要工具列提供收起路徑；一般鍵盤有 return 鍵故不顯示
+    var isNumericFieldFocused: Bool {
+        switch store.focusedField {
+        case .chargedAmount, .cardlessDeduction, .cardlessSupplement, .itemCost,
+             .foreignDomesticShipping, .internationalShipping, .domesticShipping,
+             .cardFeeRate, .platformFeeRate, .paymentFeeRate,
+             .itemQuantity, .itemUnitPrice:
+            return true
+        case .customerName, .itemName, .notes, .none:
+            return false
+        }
+    }
 
     /// 是否允許按下儲存
     ///

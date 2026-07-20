@@ -217,21 +217,13 @@ private extension OrdersCompactView {
     /// - Returns: chip 按鈕 view
     @ViewBuilder
     func chipButton(_ filter: OrderStatusFilter, palette: BLPalette) -> some View {
-        let isSelected = store.selectedStatus == filter
-
-        Button {
+        BLFilterChip(
+            title: LocalizedStringKey(filter.title),
+            isSelected: store.selectedStatus == filter,
+            size: .large
+        ) {
             store.send(.statusFilterSelected(filter))
-        } label: {
-            Text(LocalizedStringKey(filter.title))
-                .font(.subheadline.weight(.semibold))
-                .lineLimit(1)
-                .foregroundStyle(isSelected ? palette.background : palette.secondaryLabel)
-                .padding(.vertical, 7)
-                .padding(.horizontal, 14)
-                .background(isSelected ? palette.label : palette.fillTertiary)
-                .clipShape(Capsule())
         }
-        .buttonStyle(.plain)
     }
 
     /// 整合篩選 trigger button：以單顆 Capsule 呈現「日期 + 類別 + 付款方式」的摘要 (`篩選：<summary>`)，點擊後 present ``OrderFilterSheet``
@@ -253,29 +245,17 @@ private extension OrdersCompactView {
             paymentMethod: store.selectedPaymentMethod
         )
 
-        Button {
+        BLFilterChip(
+            title: "篩選: \(summary)",
+            isSelected: hasActiveFilter,
+            style: .purple,
+            size: .large,
+            icon: "line.3.horizontal.decrease",
+            trailingIcon: "chevron.down",
+            isExpanded: true
+        ) {
             store.send(.filterSheetTapped)
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: 4) {
-                Image(systemName: "line.3.horizontal.decrease")
-                    .font(.caption.weight(.semibold))
-
-                Text("\(Text("篩選")): \(summary)")
-                    .font(.subheadline.weight(.semibold))
-                    .multilineTextAlignment(.leading)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                Image(systemName: "chevron.down")
-                    .font(.caption.weight(.semibold))
-            }
-            .foregroundStyle(hasActiveFilter ? palette.purple : palette.secondaryLabel)
-            .padding(.vertical, 7)
-            .padding(.horizontal, 14)
-            .background(hasActiveFilter ? palette.purple.opacity(0.18) : palette.fillTertiary)
-            .clipShape(Capsule())
         }
-        .buttonStyle(.plain)
         .padding(.horizontal, BLSpacing.large)
     }
 

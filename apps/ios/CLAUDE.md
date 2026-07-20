@@ -106,6 +106,15 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
     - **選擇器走 push**：`OptionPickerSheet`／`PaymentMethodEditorSheet` 有 `isEmbedded` 參數：預設 `false` = 自帶 `NavigationStack` 的單層 sheet (主介面呼叫點不變)，`true` = 去 `NavigationStack`／sheet 專屬修飾／取消鍵、由宿主 Back 返回。訂單編輯以單一 `OrderEditFeature.State.PickerRoute` enum + `navigationDestination(for:)` 驅動所有選擇器 (避開 `navigationDestination(item:)` 的 test-target 連結踩雷，見下「測試準則」相關 memory)。
     - **開團訂購提醒選擇器走 Form 內 inline `DatePicker`** (最貼 HIG，經 push → 置中自製對話框兩版被使用者否決後定案)：`CampaignEditView` 以 `Toggle("訂購提醒", isOn: $store.wantsReminder)` + 條件顯示的 inline `DatePicker(selection: $store.reminderTimestamp, displayedComponents: [.date, .hourAndMinute])` 呈現，與上方開團／結單日期列同款、點擊跳系統原生月曆／時間浮層。因此無獨立呈現、根本不涉「疊 sheet」；提醒時間戳即表單草稿、隨整張表單儲存/取消落地 (F1 dirty 已涵蓋)。**不要**為此再自製 sheet/push/overlay 對話框。
 
+### 焦點與鍵盤
+
+- **焦點狀態下放 `Feature.State`、不留在 view**——焦點是呈現狀態，與 sheet 開關同級 (見上方「綁 store 的 View 不持有 presentation 狀態」)。view 只宣告 `@FocusState` 作為鏡像，以 TCA 的 `.bind($store.focusedField, to: $focusedField)` 連結。
+  - 這讓「新訂單自動聚焦第一個欄位」「關閉時清除焦點」能在 reducer 表達並被 TestStore 涵蓋，而不是散在 view 的生命週期回呼裡。
+  - 焦點欄位的 enum case **依畫面上的視覺順序宣告** (參考 `OrderEditFeature.State.Field`)，讓「下一欄」的語意直接由宣告順序表達。
+- **數字鍵盤必須有收起路徑**——`.numberPad`／`.decimalPad` 沒有 return 鍵。表單加 `ToolbarItemGroup(placement: .keyboard)` 只放一個「完成」，並加 `.scrollDismissesKeyboard(.interactively)`。
+  - 工具列**不要出現在有 return 鍵的一般鍵盤上**：畫面若混有文字與數字欄位，以焦點欄位判斷後再決定是否顯示 (參考 `OrderEditView.isNumericFieldFocused`)；整個畫面只有數字欄位時才可無條件顯示。
+  - 不加上一欄／下一欄箭頭——焦點順序已由焦點管理提供，重複入口只增加工具列負擔。
+
 ### 註解
 
 - 不要為了補註解而新增不必要的顯式 `init`；能使用 Swift 合成 memberwise initializer 時請優先使用。只有在需要 `@ViewBuilder` trailing closure、無標籤參數的語意化 API、驗證、轉換或相依注入時才新增顯式 `init`。
@@ -152,14 +161,16 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
   - **具名色彩資源缺失時 SwiftUI 靜默回退系統預設色**，無編譯或執行期警訊——新增 Color Set 必須與引用它的程式碼同批合入，且驗收要逐一目視確認顏色，不以「畫面沒壞」當通過。
   - 對比門檻由 `BuyLedgerTests/ContrastComplianceTests` 把關 (helper 為 `ColorContrast`，自帶對照案例鎖住計算模型)。**旁有文字標籤的圖形 (如膠囊色點) 屬裝飾**，豁免 3:1 並標 `.accessibilityHidden(true)`；3:1 只約束單獨承載意義的圖形。
 - **系統已提供的能力不得重造**——搜尋、分段選擇、進度、清單列的按壓回饋等一律用系統元件。自製版本的代價不在外觀，而在那些不可見卻會一併失去的行為 (搜尋的 Cancel 鈕／Search return 鍵／聽寫／捲動收合、進度的 progress 語意、列的按壓 highlight)，這些在目視檢查中不會暴露。
-    - 需要自訂外觀時走系統的**樣式擴充點**而非重畫元件：`ProgressViewStyle` (`BLProgressBarStyle`)、`ButtonStyle` (`BLButtonStyle`)。這樣外觀可完全自訂，語意仍由系統提供。
-    - 訂單搜尋走 `.searchable(placement: .navigationBarDrawer(displayMode: .always))`；設定頁的值選擇列走 `NavigationLink` + `LabeledContent` + `OptionPickerSheet(isEmbedded: true)`，取得列 highlight 與原生 disclosure indicator。
-    - **零呼叫點的重造元件一律刪除、不留在 Design System 目錄**——目錄的預設語意是「這裡的元件是本專案的標準作法」，留著等同背書。
+  - 需要自訂外觀時走系統的**樣式擴充點**而非重畫元件：`ProgressViewStyle` (`BLProgressBarStyle`)、`ButtonStyle` (`BLButtonStyle`)。這樣外觀可完全自訂，語意仍由系統提供。
+  - 訂單搜尋走 `.searchable(placement: .navigationBarDrawer(displayMode: .always))`；設定頁的值選擇列走 `NavigationLink` + `LabeledContent` + `OptionPickerSheet(isEmbedded: true)`，取得列 highlight 與原生 disclosure indicator。
+  - **零呼叫點的重造元件一律刪除、不留在 Design System 目錄**——目錄的預設語意是「這裡的元件是本專案的標準作法」，留著等同背書。
 - **破壞性以按鈕 role 表達，不做成視覺樣式變體**——`Button(role: .destructive)` 才是系統語意來源，決定語音播報、系統紅色在各外觀下的自動調整、以及在確認對話框與選單中的一致呈現。`BLButtonStyle` 不提供破壞性變體。
 - **自繪背景的 `ButtonStyle` 必須自己讀 `@Environment(\.isEnabled)`**——樣式不會自動反映停用態，不讀就會讓停用按鈕與可用時長得一模一樣。
 - **可點擊元素用 `Button`、不用 `onTapGesture`**——點擊手勢沒有按壓態，也不支援 switch control 與外接鍵盤的啟用路徑。
 - **命中區的尺寸與形狀宣告要加在按鈕的「標籤內部」**——`Button { Image(...).frame(width: BLHitTarget.minimum, height: BLHitTarget.minimum).contentShape(.rect) }` 才會擴大可點區域；加在 `Button` 外層 (`.padding()`／`.frame()`) 只增加版面間距、命中區仍只有圖示大小。
   - 需要維持原本的貼齊角落外觀時用 `.offset(...)` 把放大後的命中區推回原位——`offset` 不影響 layout，視覺尺寸與版面比例都不變。
+  - **形狀宣告要用元件自身的形狀、不是外接矩形**：膠囊類控制項用 `.contentShape(.capsule)`，用 `.rect` 會讓相鄰膠囊的命中區在圓角處重疊。命中區尺寸統一取 `BLHitTarget.minimum`。
+  - 命中區撐高會讓該列變高、下方內容順勢位移，這是達標的必然代價；元件本身的視覺尺寸不應隨之改變。
 
 ## 測試準則
 

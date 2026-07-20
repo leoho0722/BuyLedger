@@ -28,6 +28,9 @@ struct FxView: View {
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
 
+    /// 金額欄位的鍵盤焦點；實際狀態由 ``FxFeature/State/isAmountFieldFocused`` 持有
+    @FocusState private var isAmountFieldFocused: Bool
+
     /// 金額輸入欄與換算結果的字級，隨 Dynamic Type 縮放 (以 `.title` 為基準)
     @ScaledMetric(relativeTo: .title) private var heroAmountSize: CGFloat = 32
 
@@ -50,6 +53,18 @@ struct FxView: View {
         }
         .background(palette.background)
         .navigationTitle(Text("匯率工具"))
+        .scrollDismissesKeyboard(.interactively)
+        .bind($store.isAmountFieldFocused, to: $isAmountFieldFocused)
+        .toolbar {
+            // 此畫面唯一的輸入為數字鍵盤，沒有 return 鍵可收
+            ToolbarItemGroup(placement: .keyboard) {
+                Spacer()
+
+                Button("完成") {
+                    store.send(.binding(.set(\.isAmountFieldFocused, false)))
+                }
+            }
+        }
         .task {
             await store.send(.task).finish()
         }
@@ -210,6 +225,7 @@ private extension FxView {
         .background(palette.fillQuaternary)
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
         .keyboardType(.decimalPad)
+        .focused($isAmountFieldFocused)
     }
 
     /// 結果區塊 (accent 背景)

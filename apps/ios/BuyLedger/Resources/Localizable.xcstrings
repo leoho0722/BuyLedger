@@ -193,6 +193,22 @@
         }
       }
     },
+    "篩選: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Filter: %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "篩選: %@"
+          }
+        }
+      }
+    },
     "捨棄變更" : {
       "localizations" : {
         "en" : {
