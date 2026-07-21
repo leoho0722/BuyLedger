@@ -370,12 +370,11 @@ private extension OrderEditView {
         case let .photoViewer(index):
             // 照片檢視改以推進呈現：編輯表單已有路徑列舉驅動的推進機制，
             // 加入同一個列舉即可，不需要在 sheet 上再疊一層 modal
+            // 返回與各選擇器一樣由宿主堆疊的 Back 經 pickerPath binding 清空路徑
             BLPhotoViewer(
                 photos: store.draftPhotos,
                 initialIndex: index
-            ) {
-                store.send(.photoViewerDismissed)
-            }
+            )
         }
     }
 

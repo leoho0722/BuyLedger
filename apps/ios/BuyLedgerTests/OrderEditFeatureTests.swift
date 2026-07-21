@@ -683,8 +683,8 @@ struct OrderEditFeatureTests {
             $0.pickerRoute = .photoViewer(index: 2)
         }
 
-        // 關閉檢視器 → 退出該路徑
-        await store.send(.photoViewerDismissed) {
+        // 宿主堆疊 Back 返回 → pickerPath binding 清空路徑
+        await store.send(.binding(.set(\.pickerRoute, nil))) {
             $0.pickerRoute = nil
         }
     }

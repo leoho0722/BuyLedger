@@ -11,7 +11,9 @@ import UniformTypeIdentifiers
 
 /// 照片檢視器：影像 scaledToFit 帶小圓角，左右滑動切換同一組照片；背景隨系統深淺色模式自適應
 ///
-/// 由訂單編輯表單以推進呈現 (加入 `PickerRoute`，避免 sheet 上再疊 modal)：置中 title 顯示計數 (x/n)、取消位置 ✕ 關閉
+/// 由訂單編輯表單以推進呈現 (加入 `PickerRoute`，避免 sheet 上再疊 modal)：置中 title 顯示計數 (x/n)、由宿主導覽堆疊的 Back 返回。
+/// 不自帶 `NavigationStack`：push 目的地內含自己的 stack 是不合法的巢狀，
+/// 會讓推進呈現與 pop 動畫整個壞掉 (嵌入呈現的慣例同 ``OptionPickerSheet`` 的 `isEmbedded`)
 ///
 /// 換頁以橫向 paging ScrollView (`scrollTargetBehavior(.paging)` + `scrollPosition`) 實作，iOS / iPadOS 共用；滑到第一張／最後一張即停止
 ///
@@ -22,9 +24,6 @@ struct BLPhotoViewer: View {
 
     /// 要檢視的照片集合 (依儲存順序)
     let photos: [Data]
-
-    /// 點擊關閉鈕時的 callback
-    let onDismiss: () -> Void
 
     /// 目前聚焦的照片 index；由 paging ScrollView 的 `scrollPosition` 驅動
     @State private var currentIndex: Int?
@@ -49,10 +48,8 @@ struct BLPhotoViewer: View {
     /// - Parameters:
     ///   - photos: 要檢視的照片集合 (依儲存順序)
     ///   - initialIndex: 開啟時聚焦的照片 index
-    ///   - onDismiss: 點擊關閉鈕時的 callback
-    init(photos: [Data], initialIndex: Int, onDismiss: @escaping () -> Void) {
+    init(photos: [Data], initialIndex: Int) {
         self.photos = photos
-        self.onDismiss = onDismiss
         self._currentIndex = State(initialValue: initialIndex)
     }
 
@@ -60,26 +57,14 @@ struct BLPhotoViewer: View {
 
     /// 檢視器的畫面內容
     var body: some View {
-        NavigationStack {
-            // NavigationStack 會把「貼齊 safe area 上緣」的 ScrollView 自動延伸到 navigation bar 底下，
-            // 造成照片與 bar 重疊；四邊各留 BLSpacing.small (10pt) 的間距，既滿足版面需求
-            // (照片頂部距 bar、底部與左右距邊各 10pt)，也讓 pager 不貼齊邊緣、阻斷自動延伸
-            // 背景不另外鋪色，沿用 sheet 的系統背景，隨深淺色模式自適應
-            pager
-                .padding(BLSpacing.small)
-                .navigationTitle(Text(verbatim: counterText))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    // 關閉是離開而非主要動作，放取消位置
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button(action: onDismiss) {
-                            Image(systemName: "xmark")
-                        }
-                        .keyboardShortcut(.cancelAction)
-                        .accessibilityLabel("關閉檢視器")
-                    }
-                }
-        }
+        // 宿主堆疊會把「貼齊 safe area 上緣」的 ScrollView 自動延伸到 navigation bar 底下，
+        // 造成照片與 bar 重疊；四邊各留 BLSpacing.small (10pt) 的間距，既滿足版面需求
+        // (照片頂部距 bar、底部與左右距邊各 10pt)，也讓 pager 不貼齊邊緣、阻斷自動延伸
+        // 背景不另外鋪色，沿用宿主的系統背景，隨深淺色模式自適應
+        pager
+            .padding(BLSpacing.small)
+            .navigationTitle(Text(verbatim: counterText))
+            .navigationBarTitleDisplayMode(.inline)
     }
 }
 
@@ -126,7 +111,9 @@ private extension BLPhotoViewer {
                 .scaleEffect(zoomScale * gestureScale)
                 .offset(currentPanOffset)
                 .gesture(magnifyGesture)
-                .simultaneousGesture(panGesture)
+                // 平移手勢只在放大後掛上
+                // 常駐的 simultaneousGesture(DragGesture) 會搶走 ScrollView 的 pan，讓未放大時的換頁滑動整個失效
+                .simultaneousGesture(panGesture, isEnabled: isZoomedIn)
                 .onTapGesture(count: 2) {
                     toggleZoom()
                 }
@@ -259,12 +246,15 @@ private extension BLPhotoViewer {
         return destination.0 as Data
     }
 
-    return BLPhotoViewer(
-        photos: [
-            sampleJPEGData(red: 0.35, green: 0.6, blue: 0.9),
-            sampleJPEGData(red: 0.9, green: 0.5, blue: 0.4),
-            sampleJPEGData(red: 0.4, green: 0.8, blue: 0.55),
-        ],
-        initialIndex: 1
-    ) {}
+    // 以 NavigationStack 包住模擬實際的推進呈現情境 (檢視器本身不自帶 stack)
+    return NavigationStack {
+        BLPhotoViewer(
+            photos: [
+                sampleJPEGData(red: 0.35, green: 0.6, blue: 0.9),
+                sampleJPEGData(red: 0.9, green: 0.5, blue: 0.4),
+                sampleJPEGData(red: 0.4, green: 0.8, blue: 0.55),
+            ],
+            initialIndex: 1
+        )
+    }
 }

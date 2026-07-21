@@ -491,11 +491,8 @@ struct OrderEditFeature {
         /// 使用者在 sheet 選定幣別 (以 ISO 4217 code 傳入)
         case currencySelected(String)
 
-        /// 使用者點擊縮圖，開啟指定 index 的照片檢視器
+        /// 使用者點擊縮圖，開啟指定 index 的照片檢視器；返回由宿主堆疊的 Back 經 binding 清空 ``State/pickerRoute``
         case photoTapped(Int)
-
-        /// 使用者關閉照片檢視器
-        case photoViewerDismissed
 
         /// 捨棄確認彈窗的選項
         @CasePathable
@@ -894,12 +891,6 @@ struct OrderEditFeature {
 
             case let .photoTapped(index):
                 state.pickerRoute = .photoViewer(index: index)
-                return .none
-
-            case .photoViewerDismissed:
-                if case .photoViewer = state.pickerRoute {
-                    state.pickerRoute = nil
-                }
                 return .none
             }
         }

@@ -123,6 +123,7 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 - **選取狀態單一來源**——同一個清單裡的不同項目類別要併進同一個選取型別 (參考 `RootSidebarLayout.SidebarSelection`)，系統才只會高亮一列；兩套選取機制並存必定同時高亮。
 - **任一時刻只呈現一層 modal**——同一畫面的多個 sheet 併進單一 `@Presents` destination 列舉，以單一呈現點依型別分派 (參考 `LookupManagementFeature.Destination`)，互斥由型別系統保證，而非多個並列的 `.sheet` 修飾子各自靠布林避讓。
     - 已在 sheet 內要再開子畫面時走 push、加入既有的路徑列舉即可 (訂單編輯的照片檢視與各選擇器共用 `PickerRoute`)。
+- **push 目的地不可自帶 `NavigationStack`**，巢狀 stack 會讓推進呈現與 pop 動畫整個壞掉 (照片檢視改 push 時踩過：元件從 modal 改 push 呈現，務必連元件本體的 stack 一起拆)。嵌入元件比照 `OptionPickerSheet` 的 `isEmbedded` 模式：不自帶 stack、不設關閉鈕，標題掛在內容上、由宿主堆疊的 Back 返回。
 - **alert 不拿來裝表單**——alert 的職責是傳達需要立即決策的關鍵資訊。有輸入框或開關的流程一律用 sheet 內表單 (`LookupNameEditorSheet`／`PaymentMethodEditorSheet`)；alert 的 actions builder 只支援 `Button`／`TextField`，塞 `Toggle` 會被靜默丟棄。
 - **不要 `navigationBarBackButtonHidden(true)` 自繪返回鍵**——會連帶停用邊緣滑動返回。要讓返回鍵只顯示符號而不顯示可能過期的標題，用 `.toolbarRole(.editor)`。
 - **不可逆的狀態轉換比照刪除加確認**——結團等寫入後無法改回的操作，與刪除同級：先以 `AlertState` 確認、文案點明不可復原，確認後才寫入。
@@ -201,6 +202,7 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 - **破壞性以按鈕 role 表達，不做成視覺樣式變體**——`Button(role: .destructive)` 才是系統語意來源，決定語音播報、系統紅色在各外觀下的自動調整、以及在確認對話框與選單中的一致呈現。`BLButtonStyle` 不提供破壞性變體。
 - **自繪背景的 `ButtonStyle` 必須自己讀 `@Environment(\.isEnabled)`**——樣式不會自動反映停用態，不讀就會讓停用按鈕與可用時長得一模一樣。
 - **可點擊元素用 `Button`、不用 `onTapGesture`**——點擊手勢沒有按壓態，也不支援 switch control 與外接鍵盤的啟用路徑。
+- **`ScrollView` 內容上不可常駐掛 `simultaneousGesture(DragGesture())`**，會搶走 scroll 的 pan，讓捲動／換頁整個失效 (照片檢視器的縮放平移踩過：手勢的 onChanged 內判斷不做事**擋不住**它吃觸控)。條件性手勢用 `.simultaneousGesture(_:isEnabled:)` 依狀態掛上，如 `BLPhotoViewer` 的平移只在放大後啟用。
 - **命中區的尺寸與形狀宣告要加在按鈕的「標籤內部」**——`Button { Image(...).frame(width: BLHitTarget.minimum, height: BLHitTarget.minimum).contentShape(.rect) }` 才會擴大可點區域；加在 `Button` 外層 (`.padding()`／`.frame()`) 只增加版面間距、命中區仍只有圖示大小。
   - 需要維持原本的貼齊角落外觀時用 `.offset(...)` 把放大後的命中區推回原位——`offset` 不影響 layout，視覺尺寸與版面比例都不變。
   - **形狀宣告要用元件自身的形狀、不是外接矩形**：膠囊類控制項用 `.contentShape(.capsule)`，用 `.rect` 會讓相鄰膠囊的命中區在圓角處重疊。命中區尺寸統一取 `BLHitTarget.minimum`。

@@ -67,9 +67,9 @@ An empty state presented inside a scrollable container SHALL be centered within 
 
 ### Requirement: Dismissal is not placed in the primary action position
 
-A dismissal control SHALL be placed in the cancellation position rather than the trailing primary action position, which is reserved for the screen's principal action.
+A dismissal control SHALL NOT occupy the trailing primary action position, which is reserved for the screen's principal action; a pushed destination relies on the host stack's back control instead of a separate dismissal control.
 
-#### Scenario: Photo viewer close is in the cancellation position
+#### Scenario: Photo viewer leaves via the host stack back control
 
-- **WHEN** the full screen photo viewer is presented
-- **THEN** its close control occupies the cancellation position
+- **WHEN** the photo viewer is pushed from the order edit form
+- **THEN** no separate close control occupies the primary action position, and leaving the viewer is performed by the host navigation stack's back control

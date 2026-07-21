@@ -6003,22 +6003,6 @@
         }
       }
     },
-    "關閉檢視器" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Close Viewer"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "關閉檢視器"
-          }
-        }
-      }
-    },
     "集運中" : {
       "extractionState" : "manual",
       "localizations" : {
