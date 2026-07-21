@@ -110,9 +110,6 @@ struct SettingsView: View {
                 .accessibilityLabel(Text("完成"))
             }
         }
-        // 交回系統返回鍵：隱藏它會連帶停用邊緣滑動返回。原本的動機是避免切換語言後系統快取舊的
-        // 返回標題，改用 editor 角色即可讓返回鍵只顯示符號、不顯示可能過期的標題
-        .toolbarRole(.editor)
         .task {
             await store.send(.task).finish()
         }

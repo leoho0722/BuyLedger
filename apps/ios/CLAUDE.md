@@ -22,6 +22,7 @@
 - 詳細 build error 要加 `xcodebuildmcp --log-level error <subcommand> ...`，否則 CLI 只回 trailing `BUILD FAILED`。
 - simulator 名稱不要寫死，跑 build-and-run 前先 `xcodebuildmcp simulator list-sims` 查當前可用名稱。
 - **跑 snapshot 測試前把模擬器外觀鎖淺色** (`xcodebuildmcp simulator-management set-appearance --mode light`)：模擬 OS 的自動外觀入夜會切深色，淺色 baseline 會整批 false-fail (差異圖整張變色即此因，非程式碼回歸)。
+- **erase 模擬器會重置系統語言/地區，改變 compact `DatePicker` 膠囊的日期格式** (如 `2026/4/12` ↔ `2026年4月12日`)：UIKit 背的 DatePicker 吃系統狀態、不完全跟 SwiftUI 的 `\.locale` 注入，erase 後含日期膠囊的 baseline 會 false-fail，重錄即可 (實機 zh-TW 的正確格式是 `2026年4月12日`)。
 - 模擬器跑 App 用 `build-and-run`，不要先 `build` 再 `build-and-run`。
 
 ## App 進入點與平台導覽
@@ -126,7 +127,7 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
     - 已在 sheet 內要再開子畫面時走 push、加入既有的路徑列舉即可 (訂單編輯的照片檢視與各選擇器共用 `PickerRoute`)。
 - **push 目的地不可自帶 `NavigationStack`**，巢狀 stack 會讓推進呈現與 pop 動畫整個壞掉 (照片檢視改 push 時踩過：元件從 modal 改 push 呈現，務必連元件本體的 stack 一起拆)。嵌入元件比照 `OptionPickerSheet` 的 `isEmbedded` 模式：不自帶 stack、不設關閉鈕，標題掛在內容上、由宿主堆疊的 Back 返回。
 - **alert 不拿來裝表單**——alert 的職責是傳達需要立即決策的關鍵資訊。有輸入框或開關的流程一律用 sheet 內表單 (`LookupNameEditorSheet`／`PaymentMethodEditorSheet`)；alert 的 actions builder 只支援 `Button`／`TextField`，塞 `Toggle` 會被靜默丟棄。
-- **不要 `navigationBarBackButtonHidden(true)` 自繪返回鍵**——會連帶停用邊緣滑動返回。要讓返回鍵只顯示符號而不顯示可能過期的標題，用 `.toolbarRole(.editor)`。
+- **不要 `navigationBarBackButtonHidden(true)` 自繪返回鍵**，會連帶停用邊緣滑動返回。也**不要用 `.toolbarRole(.editor)` 藏返回標題**：該角色會把收合後的 inline 導覽標題 leading 對齊 (設定頁踩過)；iOS 26 返回鍵預設只顯示符號，維持預設角色即可。
 - **不可逆的狀態轉換比照刪除加確認**——結團等寫入後無法改回的操作，與刪除同級：先以 `AlertState` 確認、文案點明不可復原，確認後才寫入。
 - **破壞性操作：先確認、再寫入、寫入成功才改狀態**——確認一律用 `AlertState`，文案點明後果與不可復原。狀態更新放在寫入成功的 action 裡，不做樂觀更新加回滾；「先寫後改」從根本消除狀態與資料庫不一致的可能，也不必維護回滾邏輯。
 
