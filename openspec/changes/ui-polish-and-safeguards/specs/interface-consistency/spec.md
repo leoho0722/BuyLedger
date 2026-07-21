@@ -1,18 +1,13 @@
 ## ADDED Requirements
 
-### Requirement: Detail screens are titled by the entity they show
+### Requirement: The campaign detail keeps a generic title
 
-A detail screen SHALL be titled with the name of the entity it presents rather than a generic category name, so that the title and the back affordance identify which record is open. Where no entity is available, a generic title SHALL be used as a fallback.
+The campaign detail screen SHALL be titled with the generic screen name; the campaign's name is presented by the info section within the content and SHALL NOT be duplicated into the navigation title.
 
-#### Scenario: Campaign detail shows the campaign name
+#### Scenario: Campaign detail keeps the generic title
 
-- **WHEN** the user opens a campaign from the list
-- **THEN** the navigation title displays that campaign's name
-
-#### Scenario: Missing campaign falls back to a generic title
-
-- **WHEN** the campaign detail screen is presented without a resolvable campaign
-- **THEN** a generic title is displayed instead
+- **WHEN** the user opens a campaign from any entry point
+- **THEN** the navigation title displays the generic screen name, and the campaign name appears in the campaign info section
 
 ### Requirement: Status colors match the meaning of the status
 

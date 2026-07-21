@@ -18,7 +18,7 @@
 
 ## 4. 一致性與可用性
 
-- [ ] 4.1 [P] 讓 CampaignDetailView 的導覽標題顯示團名，無可解析開團時回退為通用名稱。滿足 Detail screens are titled by the entity they show。行為：使用者可從標題與返回鍵辨識當前開團。驗證：實機自列表進入不同開團確認標題各自顯示團名。
+- [x] 4.1 [P] 讓 CampaignDetailView 的導覽標題固定為通用的「開團詳情」，團名由開團資訊區段承載。滿足 The campaign detail keeps a generic title (原「標題顯示團名」經實機驗收判定不符實際需求，已修正提案)。行為：標題恆為通用名稱，團名顯示於內容區。驗證：實機進入開團詳情確認標題為「開團詳情」且資訊區段首列為團名。
 - [x] 4.2 [P] 依決策〈採購狀態改用資訊語意色〉，將 OrderStatus+Presentation 中採購完成狀態的語意色由警示改為資訊，其餘映射不變。滿足 Status colors match the meaning of the status。行為：採購完成不再被塗成警示色，真正需要注意的部分到貨狀態維持警示色。驗證：實機檢視兩種狀態的膠囊確認色彩符合語意。
 - [x] 4.3 [P] 將 OrdersFeature 與 CampaignFeature 的刪除確認文案改為主動語態並移除內部識別碼，訂單改以客戶名稱指稱。滿足 Confirmation messages are written for the user。行為：確認訊息不含識別碼且語句自然。驗證：實機觸發訂單與開團刪除確認，確認文案無識別碼。
 - [x] 4.4 [P] 依決策〈分頁選擇的恢復以既有偏好儲存承載〉，讓 RootFeature 於啟動時自偏好儲存還原上次的分頁選擇，切換分頁時寫入；不恢復導覽堆疊與捲動位置。滿足 The app reopens on the tab last used。行為：重啟後回到上次分頁，首次啟動使用預設分頁。驗證：以 TestStore 斷言啟動時讀取與切換時寫入；實機切到訂單分頁後終止並重啟確認回到訂單分頁；並以既有偏好資料啟動確認其他設定未被重置。

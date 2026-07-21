@@ -21,6 +21,7 @@
 - iOS 與 iPadOS simulator build 共用同一份 `DerivedData/.../XCBuildData/build.db`，**不能並行**——請序列化 (`cmd1 && cmd2`)，否則 `database is locked`。
 - 詳細 build error 要加 `xcodebuildmcp --log-level error <subcommand> ...`，否則 CLI 只回 trailing `BUILD FAILED`。
 - simulator 名稱不要寫死，跑 build-and-run 前先 `xcodebuildmcp simulator list-sims` 查當前可用名稱。
+- **跑 snapshot 測試前把模擬器外觀鎖淺色** (`xcodebuildmcp simulator-management set-appearance --mode light`)：模擬 OS 的自動外觀入夜會切深色，淺色 baseline 會整批 false-fail (差異圖整張變色即此因，非程式碼回歸)。
 - 模擬器跑 App 用 `build-and-run`，不要先 `build` 再 `build-and-run`。
 
 ## App 進入點與平台導覽

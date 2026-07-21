@@ -40,8 +40,7 @@ struct CampaignDetailView: View {
                 ContentUnavailableView("開團不存在", systemImage: "shippingbox")
             }
         }
-        // 標題顯示團名，讓使用者從標題與返回鍵就能辨識當前開團；無可解析開團時回退為通用名稱
-        .navigationTitle(campaign.map { Text(verbatim: $0.name) } ?? Text("開團詳情"))
+        .navigationTitle(Text("開團詳情"))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             if let campaign {
