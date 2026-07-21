@@ -93,9 +93,10 @@ struct BLPalette {
 
     /// App 主要強調色
     ///
-    /// 引用 asset catalog 的 AccentColor 資源：與系統元件的 accent 收斂為同一來源
+    /// 自訂元件用系統動態藍；系統元件的 accent 維持系統預設 (AccentColor 資源不填值、
+    /// 不設全域 tint)，避免整個 App 被強制上色
     var accent: Color {
-        Color("AccentColor", bundle: .assets)
+        Color(uiColor: .systemBlue)
     }
 
     /// 成功狀態色

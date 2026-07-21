@@ -14,19 +14,19 @@ Semantic colors and system palette colors SHALL be obtained through the system c
 - **WHEN** the palette implementation is inspected after this change
 - **THEN** it exposes no dark-appearance flag and its color accessors require no appearance parameter
 
-### Requirement: Accent color has a single source
+### Requirement: The app does not force a global tint
 
-The app accent color SHALL be defined once as a color resource carrying light, dark, and increased-contrast variants, and SHALL be applied at the root so that system components and custom components resolve the same value. The palette SHALL reference that resource rather than defining an independent value.
+The app SHALL NOT apply an explicit global tint and SHALL leave the accent color resource without color values, so system components keep the platform's default accent behavior. Custom components that need an accent visual SHALL take it from the palette, which resolves to the system dynamic blue rather than a hand-copied value.
 
-#### Scenario: System and custom components match
+#### Scenario: System components keep the default accent behavior
 
-- **WHEN** a screen presents both a system component and a custom component that use the accent color
-- **THEN** both render the same color
+- **WHEN** any screen presents system components
+- **THEN** their accent rendering follows the platform default, with no app-imposed tint
 
-#### Scenario: Accent resource defines its variants
+#### Scenario: Custom components take accent from the palette
 
-- **WHEN** the accent color resource is inspected
-- **THEN** it defines light and dark appearances and an increased-contrast variant for each
+- **WHEN** a custom component renders an accent visual
+- **THEN** the color comes from the palette's system dynamic blue, which adapts to appearance and increased contrast automatically
 
 ### Requirement: Visual hierarchy is not expressed by reducing opacity of text
 

@@ -27,8 +27,6 @@ struct RootView: View {
     /// 外觀一律跟隨系統：外觀是系統層級設定，App 內重複切換會讓使用者困惑系統設定是否生效
     var body: some View {
         layout
-            // 於根層統一設定色調，讓系統元件與自訂元件取用同一個強調色資源
-            .tint(Color("AccentColor", bundle: .assets))
             .environment(\.locale, store.settings.language.locale)
             .task {
                 await store.send(.task).finish()
