@@ -102,9 +102,12 @@ struct SettingsView: View {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
 
-                Button("完成") {
+                Button {
                     store.send(.binding(.set(\.isGoalFieldFocused, false)))
+                } label: {
+                    Image(systemName: "checkmark")
                 }
+                .accessibilityLabel(Text("完成"))
             }
         }
         // 交回系統返回鍵：隱藏它會連帶停用邊緣滑動返回。原本的動機是避免切換語言後系統快取舊的

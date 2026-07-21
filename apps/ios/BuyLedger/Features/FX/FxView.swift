@@ -60,9 +60,12 @@ struct FxView: View {
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
 
-                Button("完成") {
+                Button {
                     store.send(.binding(.set(\.isAmountFieldFocused, false)))
+                } label: {
+                    Image(systemName: "checkmark")
                 }
+                .accessibilityLabel(Text("完成"))
             }
         }
         .task {

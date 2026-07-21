@@ -192,9 +192,12 @@ struct OrderEditView: View {
                     ToolbarItemGroup(placement: .keyboard) {
                         Spacer()
 
-                        Button("完成") {
+                        Button {
                             store.send(.binding(.set(\.focusedField, nil)))
+                        } label: {
+                            Image(systemName: "checkmark")
                         }
+                        .accessibilityLabel(Text("完成"))
                     }
                 }
             }
