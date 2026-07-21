@@ -29,7 +29,7 @@ extension OpenSettingsClient: DependencyKey {
     /// App 執行時開啟系統設定的本 App 頁面
     nonisolated static let liveValue = OpenSettingsClient(
         open: {
-            guard let url = await URL(string: UIApplication.openSettingsURLString) else {
+            guard let url = URL(string: UIApplication.openSettingsURLString) else {
                 return
             }
             await MainActor.run {
