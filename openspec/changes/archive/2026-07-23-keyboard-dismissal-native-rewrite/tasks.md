@@ -13,7 +13,7 @@
 - [x] 3.2 [P] 為 FxView 在 FxFeature 狀態加入焦點欄位並以綁定連結，套用背景點擊修飾子，離開時清除焦點。滿足 Focus state placement follows the existing project convention。行為：匯率輸入欄可由點背景收鍵盤。驗證：以 TestStore 斷言焦點清除；實機確認收鍵盤行為。
 - [x] 3.3 [P] 為 QuoteView 在 QuoteFeature 狀態加入焦點欄位並以綁定連結，套用背景點擊修飾子，離開時清除焦點。滿足 Focus state placement follows the existing project convention。行為：試算輸入欄可由點背景收鍵盤。驗證：以 TestStore 斷言焦點清除；實機確認收鍵盤行為。
 - [x] 3.4 [P] 為 SettingsView 在 SettingsFeature 狀態加入焦點欄位並以綁定連結，套用背景點擊修飾子；注意該功能的綁定動作帶有存檔副作用，焦點欄位需比照既有作法排除於副作用之外。滿足 Focus state placement follows the existing project convention。行為：設定的數值欄可由點背景收鍵盤，且切換焦點不觸發存檔。驗證：以 TestStore 斷言焦點變更不觸發存檔副作用；實機確認收鍵盤行為。
-- [ ] 3.5 [P] 為 LookupManagementView 在 LookupManagementFeature 狀態加入焦點欄位並以綁定連結，套用背景點擊修飾子。滿足 Focus state placement follows the existing project convention。行為：主檔名稱輸入可由點背景收鍵盤。驗證：以 TestStore 斷言焦點清除；實機確認收鍵盤行為。
+- [x] 3.5 [P] 為 LookupManagementView 在 LookupManagementFeature 狀態加入焦點欄位並以綁定連結，套用背景點擊修飾子。滿足 Focus state placement follows the existing project convention。行為：主檔名稱輸入可由點背景收鍵盤。驗證：以 TestStore 斷言焦點清除；實機確認收鍵盤行為。
 
 ## 4. 不綁 store 的元件導入焦點
 
@@ -27,9 +27,9 @@
 
 ## 6. 測試與驗收
 
-- [ ] 6.1 依決策〈沿用既有回歸測試作為改寫的驗證基準〉，確認 ui-polish-and-safeguards 建立的收鍵盤回歸測試在改寫後未經修改即通過；若失敗則修正新機制而非放寬測試。滿足 Keyboard dismissal does not intercept touches globally。行為：選取文字後點系統選單不收鍵盤的保證在換實作後仍成立。驗證：執行該測試確認通過，且測試檔案未因本 change 而被修改。
+- [x] 6.1 依決策〈沿用既有回歸測試作為改寫的驗證基準〉，確認 ui-polish-and-safeguards 建立的收鍵盤回歸測試在改寫後未經修改即通過；若失敗則修正新機制而非放寬測試。滿足 Keyboard dismissal does not intercept touches globally。行為：選取文字後點系統選單不收鍵盤的保證在換實作後仍成立。驗證：執行該測試確認通過，且測試檔案未因本 change 而被修改。
 - [x] 6.2 新增測試斷言點擊背景收鍵盤、點擊互動控制項不收鍵盤兩種行為。滿足 Keyboard dismissal does not intercept touches globally。行為：新機制的正確性有測試守住。驗證：兩項新測試通過。
-- [ ] 6.3 於實機逐一走過 1.2 清點出的所有輸入畫面，對每個畫面確認四項：點背景收鍵盤、點互動控制項不收鍵盤、選取文字後點系統選單不收鍵盤、該畫面既有的收鍵盤路徑仍可用。行為：改寫前後使用者感受一致。驗證：逐畫面逐項對照 Implementation Contract 的行為清單，不以整體感覺正常作為通過依據。
+- [x] 6.3 於實機逐一走過 1.2 清點出的所有輸入畫面，對每個畫面確認四項：點背景收鍵盤、點互動控制項不收鍵盤、選取文字後點系統選單不收鍵盤、該畫面既有的收鍵盤路徑仍可用。行為：改寫前後使用者感受一致。驗證：逐畫面逐項對照 Implementation Contract 的行為清單，不以整體感覺正常作為通過依據。
 
 ## 7. 收尾
 
