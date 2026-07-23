@@ -13,7 +13,7 @@
 ## 3. Design System 清理
 
 - [x] 3.1 依決策〈分隔線內縮與頭像尺寸抽成同源 token〉，在 BLMetrics 新增頭像尺寸與分隔線內縮兩個 token (後者由前者推導)，並讓 DashboardView、OrdersView、OrdersCompactView、CustomersView 四處分隔線與 BLAvatar 的預設尺寸皆引用之。滿足 Dimensions shared across files derive from a single source。行為：改動頭像尺寸時四處分隔線自動維持對齊。驗證：全專案搜尋確認無殘留的手算式；實機目視確認四處分隔線與頭像右緣對齊；並在 dynamic-type-and-grouping 的頭像任務落地後複驗一次對齊。
-- [ ] 3.2 [P] 讓 BLStatusPill 與 BLBadge 的內距與狀態點尺寸改為隨字級縮放。滿足 Component padding and indicators scale with text size。行為：大字級下膠囊隨內容長大而非壓縮文字，狀態點維持比例。驗證：實機於最大無障礙字級檢視訂單列與開團列的狀態膠囊，確認內距擴大且文字未貼邊。
+- [x] 3.2 [P] 讓 BLStatusPill 與 BLBadge 的內距與狀態點尺寸改為隨字級縮放。滿足 Component padding and indicators scale with text size。行為：大字級下膠囊隨內容長大而非壓縮文字，狀態點維持比例。驗證：實機於最大無障礙字級檢視訂單列與開團列的狀態膠囊，確認內距擴大且文字未貼邊。
 - [x] 3.3 [P] 移除 BLTypographyModifier 中的零寬字距設定，讓系統字型的光學字距生效；並刪除零呼叫點的 BLListRow 與 BLAmountField 兩個元件。滿足 Ineffective and unreferenced code is removed。行為：大字級標題的字距回歸系統光學值；Design System 不再提供這兩個會被誤用的元件。驗證：全專案搜尋確認兩個型別無殘留呼叫；iOS 與 iPadOS 皆建置成功 (build 前先於 apps/ios 執行 agvtool next-version 遞增 build number)。
 
 ## 4. 一致性與可用性
