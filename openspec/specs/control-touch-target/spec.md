@@ -1,157 +1,38 @@
-# campaign-calendar-reminder Specification
+# control-touch-target Specification
 
 ## Purpose
 
-TBD - created by archiving change 'campaign-calendar-reminder'. Update Purpose after archive.
+TBD - created by archiving change 'hig-blocker-remediation'. Update Purpose after archive.
 
 ## Requirements
 
-### Requirement: Order-reminder as an all-day event at a user-chosen date and time
+### Requirement: Tappable controls provide a 44 point minimum hit region
 
-The system SHALL create an order reminder as an all-day calendar event whose date and alert time come from a user-chosen timestamp. The event SHALL be all-day on the start of day of that timestamp, and SHALL carry a single alert that fires at the time-of-day of that timestamp. The event title SHALL be the campaign name wrapped in corner brackets followed by the words "訂購提醒" (for example, a campaign named "四月團" yields the title "「四月團」訂購提醒"). Deriving the event date and alert offset from the timestamp SHALL use an injected calendar and MUST NOT read the process-wide current calendar.
+Every tappable control SHALL provide a hit region measuring at least 44 by 44 points in both dimensions. The hit region SHALL be independent of the control's visible size, so that a control with a smaller icon still satisfies the minimum. The hit region SHALL be established on the control's own label content so that it expands the tappable area, and SHALL NOT be established by padding applied to an enclosing container, which only adds layout spacing without enlarging the control.
 
-#### Scenario: All-day event on the chosen date with alert at the chosen time
+#### Scenario: Photo thumbnail delete control is reachable
 
-- **WHEN** the user's chosen reminder timestamp is 2026-04-20 18:00 and the reminder is created
-- **THEN** the calendar event is all-day on 2026-04-20 and its alert fires at 18:00 that day, titled the campaign name in corner brackets followed by "訂購提醒"
+- **WHEN** the order edit form renders a photo thumbnail with its delete control
+- **THEN** the delete control's hit region measures at least 44 by 44 points while its icon keeps its current visible size
 
+#### Scenario: Search field clear control is reachable
 
-<!-- @trace
-source: campaign-calendar-reminder
-updated: 2026-07-12
-code:
-  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
-  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/README.md
-  - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
-  - apps/ios/BuyLedger/Resources/Info.plist
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
--->
+- **WHEN** a search field renders its clear control because text has been entered
+- **THEN** the clear control's hit region measures at least 44 by 44 points
 
----
-### Requirement: Reminder is configured via a date-and-time popup on the add/edit form
+Note: the current hand-built search field is scheduled for replacement by the system search presentation in a later change, which supplies a compliant clear control. This requirement states the contract that the replacement SHALL satisfy; it SHALL NOT be discharged by enlarging the hit region of the component being removed.
 
-On the campaign add/edit form, the campaign-info section SHALL show a reminder row. When the campaign has no reminder intent, the row's control SHALL be a blue "新增提醒" button; tapping it SHALL present a popup containing a calendar-and-time picker (date plus hour and minute) defaulting to the campaign's close date, or today when there is no close date, at 09:00. Confirming the popup SHALL set the reminder intent and record the chosen timestamp; canceling the popup SHALL leave the intent unchanged. When the reminder intent is set, the row SHALL show the chosen reminder date and time and a red destructive-role "移除提醒" button that clears the intent, and re-opening the popup SHALL allow editing the timestamp.
+#### Scenario: Enlarged hit region does not alter layout
 
-#### Scenario: Add button opens the date-and-time popup
+- **WHEN** a control's hit region is enlarged to meet the minimum
+- **THEN** the surrounding layout, including the control's position relative to its container, matches the layout before the change
 
-- **WHEN** the campaign has no reminder intent and the user taps "新增提醒"
-- **THEN** a popup with a date-and-time picker appears, defaulting to the close date (or today) at 09:00
+##### Example: measured controls
 
-#### Scenario: Confirming the popup sets the intent and timestamp
-
-- **WHEN** the user picks 2026-04-26 18:00 in the popup and confirms
-- **THEN** the reminder intent becomes set, the chosen timestamp is recorded, and the row shows the chosen date and time with a red "移除提醒" button
-
-
-<!-- @trace
-source: campaign-calendar-reminder
-updated: 2026-07-12
-code:
-  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
-  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/README.md
-  - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
-  - apps/ios/BuyLedger/Resources/Info.plist
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
--->
-
----
-### Requirement: Add/edit form defers reminder writes until save
-
-On the campaign add/edit form, choosing or clearing a reminder SHALL only update in-memory intent and timestamp and MUST NOT touch the calendar while editing. For a new campaign the intent SHALL start unset; for an existing campaign the intent SHALL start set to whether that campaign currently has a reminder, and the timestamp SHALL start at the existing reminder's timestamp or the default. When the user saves, the system SHALL reconcile the calendar against the intent: create a reminder when intent is set and none exists, remove the reminder when intent is unset and one exists, and rebuild the reminder (remove then recreate) when intent is set, one exists, and the campaign name or the reminder timestamp changed. When the user cancels, the system MUST NOT make any calendar change.
-
-#### Scenario: New campaign with intent set creates the reminder on save
-
-- **WHEN** the user sets a reminder timestamp for a new campaign and taps save with calendar access granted
-- **THEN** the system creates the all-day event at the chosen timestamp and stores the campaign-to-event link as part of saving the campaign
-
-#### Scenario: Canceling the form makes no calendar change
-
-- **WHEN** the user configures a reminder and then cancels the form
-- **THEN** the system makes no change to the calendar
-
-#### Scenario: Changing name or timestamp rebuilds an existing reminder on save
-
-- **WHEN** an existing campaign already has a reminder, its intent stays set, and the user changes the campaign name or the reminder timestamp and saves
-- **THEN** the system removes the old event and creates a new event reflecting the updated name and timestamp
-
-#### Scenario: Clearing intent removes an existing reminder on save
-
-- **WHEN** an existing campaign has a reminder, the user clears the reminder intent, and saves
-- **THEN** the system deletes the linked event and clears the stored link
-
-
-<!-- @trace
-source: campaign-calendar-reminder
-updated: 2026-07-12
-code:
-  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
-  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/README.md
-  - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
-  - apps/ios/BuyLedger/Resources/Info.plist
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
--->
-
----
-### Requirement: Calendar access is requested lazily and denial is surfaced
-
-The system SHALL request full calendar access only at the moment a reminder is created or removed (during save reconcile), not at app launch. When calendar access is denied, the system MUST NOT create the event, MUST NOT record a link, and SHALL surface an explanatory alert rather than failing silently. Removing an event whose identifier no longer exists in the calendar SHALL be treated as a no-op without error.
-
-The denial path SHALL be entered only when the access request itself reports that access was not granted. Failures that occur after access has been granted — including event save failure, a missing event identifier, and link persistence failure — SHALL NOT be reported through the denial path, because directing a user to change a permission that is already granted cannot resolve the failure.
-
-#### Scenario: Access denied surfaces an alert
-
-- **WHEN** saving would create a reminder but calendar access is denied
-- **THEN** the system creates no event, records no link, and shows an alert explaining that calendar access is required
-
-#### Scenario: Granted access does not route to the denial path
-
-- **WHEN** calendar access has been granted and reminder creation subsequently fails
-- **THEN** the denial alert is not shown
+| Control | Measured before | Required |
+| ------- | --------------- | -------- |
+| Photo thumbnail delete | about 20 by 20 points | at least 44 by 44 points |
+| Search field clear | about 17 by 17 points | at least 44 by 44 points |
 
 
 <!-- @trace
@@ -297,111 +178,14 @@ code:
 -->
 
 ---
-### Requirement: Detail view displays the reminder read-only
+### Requirement: Destructive controls are not undersized
 
-The campaign detail view SHALL be read-only with respect to reminders: it MUST NOT provide add or remove controls. When and only when a reminder exists for the campaign, the campaign-info section SHALL display a row showing the reminder's date and time. Managing the reminder (adding, editing the timestamp, or removing) SHALL be done from the add/edit form.
+A control that performs a destructive action without a confirmation step SHALL meet the minimum hit region, because an accidental activation cannot be undone. The photo delete control removes a photo from the draft with no confirmation and no undo, and therefore SHALL meet the minimum.
 
-#### Scenario: Detail view shows the reminder when one exists
+#### Scenario: Accidental deletion is not invited by an undersized target
 
-- **WHEN** a campaign has an order reminder and its detail view is shown
-- **THEN** the campaign-info section shows a read-only row with the reminder's date and time and no add/remove control
-
-#### Scenario: Detail view shows no reminder row when none exists
-
-- **WHEN** a campaign has no order reminder and its detail view is shown
-- **THEN** the campaign-info section shows no reminder row
-
-
-<!-- @trace
-source: campaign-calendar-reminder
-updated: 2026-07-12
-code:
-  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
-  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/README.md
-  - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
-  - apps/ios/BuyLedger/Resources/Info.plist
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
--->
-
----
-### Requirement: Campaign-to-event link with timestamp is stored in local SwiftData
-
-The system SHALL persist, per campaign, the calendar event identifier together with the user-chosen reminder timestamp in a dedicated local SwiftData record, separate from the cross-platform Campaign data model. The cross-platform Campaign type MUST NOT carry the calendar event identifier or the reminder timestamp.
-
-#### Scenario: Link and timestamp persist across launches in SwiftData
-
-- **WHEN** a reminder is created for a campaign
-- **THEN** the campaign's event identifier and reminder timestamp are stored in their own SwiftData record and are available after relaunch, without adding any field to the cross-platform Campaign type
-
-<!-- @trace
-source: campaign-calendar-reminder
-updated: 2026-07-12
-code:
-  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
-  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/README.md
-  - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
-  - apps/ios/BuyLedger/Resources/Info.plist
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
--->
-
----
-### Requirement: Reminder creation failure is reported distinctly from permission denial
-
-When calendar access has been granted but creating the reminder fails, the system SHALL surface a message describing that the reminder could not be created, and that message SHALL NOT mention permissions or direct the user to system settings. The failure SHALL leave no partially recorded state: no link SHALL be persisted for an event that was not successfully created.
-
-#### Scenario: Event save failure reports a creation failure
-
-- **WHEN** calendar access has been granted and saving the calendar event fails
-- **THEN** the system shows a message stating that the reminder could not be created, without mentioning permissions, and records no link
-
-#### Scenario: Missing event identifier reports a creation failure
-
-- **WHEN** the calendar event is saved but no event identifier can be retrieved
-- **THEN** the system shows the creation failure message and records no link
-
-#### Scenario: Link persistence failure reports a creation failure
-
-- **WHEN** the calendar event is created but persisting the campaign-to-event link fails
-- **THEN** the system shows the creation failure message rather than the permission message
-
-##### Example: failure routing
-
-| Condition | Message shown |
-| --------- | ------------- |
-| Access request reports not granted | permission explanation, directs to settings |
-| Access granted, event save throws | creation failure, no permission mention |
-| Access granted, event identifier missing | creation failure, no permission mention |
-| Access granted, link persistence throws | creation failure, no permission mention |
+- **WHEN** the delete control is overlaid on a photo thumbnail
+- **THEN** its hit region meets the minimum and remains distinguishable from a tap on the thumbnail itself, which opens the photo viewer
 
 <!-- @trace
 source: hig-blocker-remediation

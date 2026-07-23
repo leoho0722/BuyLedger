@@ -38,4 +38,4 @@
 - [x] 7.1 將本次新增的失敗訊息、重試按鈕與圖表無障礙描述等字串補進 Localizable.xcstrings 的中英值，採文字插入方式而非全量重新序列化。行為：英文模式不露出中文 fallback。驗證：LocalizationCatalogTests 通過，並人工確認新增字串確實已收錄進 catalog。
 - [x] 7.2 重錄受配色變更影響的 snapshot baseline，重錄前逐張檢視差異確認變化僅來自配色而非版面。行為：baseline 與新配色一致且未掩蓋非預期的版面變化。驗證：snapshot 測試全綠，且差異檢視結論記錄於 commit 說明。
 - [x] 7.3 依文件同步鐵則檢視本次 diff：將「語意色分軌後該用哪一軌」與「命中區須加在按鈕標籤內部而非外層容器」寫入 apps/ios/CLAUDE.md 的程式風格或 Design System 準則一節。行為：後續實作者不需重新推導這兩條規則。驗證：對照根目錄 CLAUDE.md 的文件同步表逐列確認，結論為「有影響，已同步」或「確認無文件影響」。
-- [ ] 7.4 於實體 iPhone 執行完整驗收：以 Accessibility Inspector 的對比檢查覆核六個 tone 的膠囊、計數徽章、排名徽章三種名次、頭像至少三個代表色相、熱力圖五個級數於 light / dark / increased contrast 下皆通過；以 VoiceOver 逐一確認三個圖表；量測兩個關閉鈕命中區；並確認設定頁無通知區塊、載入失敗有重試、行事曆建立失敗訊息不提權限。行為：12 項 blocker 在真實裝置上均已解除。驗證：逐項對照 design.md 的驗收標準一節，全數通過後方可標記 change 完成。
+- [x] 7.4 於實體 iPhone 執行完整驗收：以 Accessibility Inspector 的對比檢查覆核六個 tone 的膠囊、計數徽章、排名徽章三種名次、頭像至少三個代表色相、熱力圖五個級數於 light / dark / increased contrast 下皆通過；以 VoiceOver 逐一確認三個圖表；量測兩個關閉鈕命中區；並確認設定頁無通知區塊、載入失敗有重試、行事曆建立失敗訊息不提權限。行為：12 項 blocker 在真實裝置上均已解除。驗證：逐項對照 design.md 的驗收標準一節，全數通過後方可標記 change 完成。

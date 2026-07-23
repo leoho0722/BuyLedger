@@ -1,157 +1,24 @@
-# campaign-calendar-reminder Specification
+# chart-accessibility Specification
 
 ## Purpose
 
-TBD - created by archiving change 'campaign-calendar-reminder'. Update Purpose after archive.
+TBD - created by archiving change 'hig-blocker-remediation'. Update Purpose after archive.
 
 ## Requirements
 
-### Requirement: Order-reminder as an all-day event at a user-chosen date and time
+### Requirement: Chart data points are announced with name and value
 
-The system SHALL create an order reminder as an all-day calendar event whose date and alert time come from a user-chosen timestamp. The event SHALL be all-day on the start of day of that timestamp, and SHALL carry a single alert that fires at the time-of-day of that timestamp. The event title SHALL be the campaign name wrapped in corner brackets followed by the words "訂購提醒" (for example, a campaign named "四月團" yields the title "「四月團」訂購提醒"). Deriving the event date and alert offset from the timestamp SHALL use an injected calendar and MUST NOT read the process-wide current calendar.
+Every chart mark that represents a data point SHALL carry an accessibility label naming what the point represents and an accessibility value stating its magnitude, so that assistive technology can announce both. A chart SHALL NOT rely on color alone to convey which segment or bar corresponds to which category.
 
-#### Scenario: All-day event on the chosen date with alert at the chosen time
+#### Scenario: Bar chart announces each bar
 
-- **WHEN** the user's chosen reminder timestamp is 2026-04-20 18:00 and the reminder is created
-- **THEN** the calendar event is all-day on 2026-04-20 and its alert fires at 18:00 that day, titled the campaign name in corner brackets followed by "訂購提醒"
+- **WHEN** VoiceOver focus moves across the bars of the trend chart
+- **THEN** each bar announces the period it represents and its amount
 
+#### Scenario: Donut chart announces each segment
 
-<!-- @trace
-source: campaign-calendar-reminder
-updated: 2026-07-12
-code:
-  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
-  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/README.md
-  - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
-  - apps/ios/BuyLedger/Resources/Info.plist
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
--->
-
----
-### Requirement: Reminder is configured via a date-and-time popup on the add/edit form
-
-On the campaign add/edit form, the campaign-info section SHALL show a reminder row. When the campaign has no reminder intent, the row's control SHALL be a blue "新增提醒" button; tapping it SHALL present a popup containing a calendar-and-time picker (date plus hour and minute) defaulting to the campaign's close date, or today when there is no close date, at 09:00. Confirming the popup SHALL set the reminder intent and record the chosen timestamp; canceling the popup SHALL leave the intent unchanged. When the reminder intent is set, the row SHALL show the chosen reminder date and time and a red destructive-role "移除提醒" button that clears the intent, and re-opening the popup SHALL allow editing the timestamp.
-
-#### Scenario: Add button opens the date-and-time popup
-
-- **WHEN** the campaign has no reminder intent and the user taps "新增提醒"
-- **THEN** a popup with a date-and-time picker appears, defaulting to the close date (or today) at 09:00
-
-#### Scenario: Confirming the popup sets the intent and timestamp
-
-- **WHEN** the user picks 2026-04-26 18:00 in the popup and confirms
-- **THEN** the reminder intent becomes set, the chosen timestamp is recorded, and the row shows the chosen date and time with a red "移除提醒" button
-
-
-<!-- @trace
-source: campaign-calendar-reminder
-updated: 2026-07-12
-code:
-  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
-  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/README.md
-  - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
-  - apps/ios/BuyLedger/Resources/Info.plist
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
--->
-
----
-### Requirement: Add/edit form defers reminder writes until save
-
-On the campaign add/edit form, choosing or clearing a reminder SHALL only update in-memory intent and timestamp and MUST NOT touch the calendar while editing. For a new campaign the intent SHALL start unset; for an existing campaign the intent SHALL start set to whether that campaign currently has a reminder, and the timestamp SHALL start at the existing reminder's timestamp or the default. When the user saves, the system SHALL reconcile the calendar against the intent: create a reminder when intent is set and none exists, remove the reminder when intent is unset and one exists, and rebuild the reminder (remove then recreate) when intent is set, one exists, and the campaign name or the reminder timestamp changed. When the user cancels, the system MUST NOT make any calendar change.
-
-#### Scenario: New campaign with intent set creates the reminder on save
-
-- **WHEN** the user sets a reminder timestamp for a new campaign and taps save with calendar access granted
-- **THEN** the system creates the all-day event at the chosen timestamp and stores the campaign-to-event link as part of saving the campaign
-
-#### Scenario: Canceling the form makes no calendar change
-
-- **WHEN** the user configures a reminder and then cancels the form
-- **THEN** the system makes no change to the calendar
-
-#### Scenario: Changing name or timestamp rebuilds an existing reminder on save
-
-- **WHEN** an existing campaign already has a reminder, its intent stays set, and the user changes the campaign name or the reminder timestamp and saves
-- **THEN** the system removes the old event and creates a new event reflecting the updated name and timestamp
-
-#### Scenario: Clearing intent removes an existing reminder on save
-
-- **WHEN** an existing campaign has a reminder, the user clears the reminder intent, and saves
-- **THEN** the system deletes the linked event and clears the stored link
-
-
-<!-- @trace
-source: campaign-calendar-reminder
-updated: 2026-07-12
-code:
-  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
-  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/README.md
-  - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
-  - apps/ios/BuyLedger/Resources/Info.plist
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
--->
-
----
-### Requirement: Calendar access is requested lazily and denial is surfaced
-
-The system SHALL request full calendar access only at the moment a reminder is created or removed (during save reconcile), not at app launch. When calendar access is denied, the system MUST NOT create the event, MUST NOT record a link, and SHALL surface an explanatory alert rather than failing silently. Removing an event whose identifier no longer exists in the calendar SHALL be treated as a no-op without error.
-
-The denial path SHALL be entered only when the access request itself reports that access was not granted. Failures that occur after access has been granted — including event save failure, a missing event identifier, and link persistence failure — SHALL NOT be reported through the denial path, because directing a user to change a permission that is already granted cannot resolve the failure.
-
-#### Scenario: Access denied surfaces an alert
-
-- **WHEN** saving would create a reminder but calendar access is denied
-- **THEN** the system creates no event, records no link, and shows an alert explaining that calendar access is required
-
-#### Scenario: Granted access does not route to the denial path
-
-- **WHEN** calendar access has been granted and reminder creation subsequently fails
-- **THEN** the denial alert is not shown
+- **WHEN** VoiceOver focus moves across the segments of the cost breakdown chart
+- **THEN** each segment announces its category name and its amount
 
 
 <!-- @trace
@@ -297,111 +164,182 @@ code:
 -->
 
 ---
-### Requirement: Detail view displays the reminder read-only
+### Requirement: Donut segments carry category identity through the chart framework
 
-The campaign detail view SHALL be read-only with respect to reminders: it MUST NOT provide add or remove controls. When and only when a reminder exists for the campaign, the campaign-info section SHALL display a row showing the reminder's date and time. Managing the reminder (adding, editing the timestamp, or removing) SHALL be done from the add/edit form.
+Donut chart segments SHALL be styled by a category dimension derived from the segment name rather than by directly supplying a raw color, so that the charting framework receives the category identity and can surface it to assistive technology. The existing visual palette SHALL be preserved by mapping categories to the current colors through a style scale.
 
-#### Scenario: Detail view shows the reminder when one exists
+#### Scenario: Segment names reach the accessibility tree
 
-- **WHEN** a campaign has an order reminder and its detail view is shown
-- **THEN** the campaign-info section shows a read-only row with the reminder's date and time and no add/remove control
+- **WHEN** the donut chart renders segments whose names are already present in its data model
+- **THEN** those names are available to assistive technology without requiring a separate visible legend
 
-#### Scenario: Detail view shows no reminder row when none exists
+#### Scenario: Existing colors are unchanged
 
-- **WHEN** a campaign has no order reminder and its detail view is shown
-- **THEN** the campaign-info section shows no reminder row
+- **WHEN** the donut chart renders after this change
+- **THEN** each category keeps the same color it had before the change
 
 
 <!-- @trace
-source: campaign-calendar-reminder
-updated: 2026-07-12
+source: hig-blocker-remediation
+updated: 2026-07-23
 code:
-  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
-  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
+  - apps/ios/BuyLedger/Features/App/RootSidebarLayout.swift
+  - apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneSuccessIndicator.colorset/Contents.json
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneDestructiveSurfaceText.colorset/Contents.json
+  - apps/ios/BuyLedger/Features/Settings/SettingsView.swift
+  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Cards/BLCard.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomerRankBadgeStyle.swift
   - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLBarChart.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/ColorContrast.swift
   - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Badges/BLBadge.swift
+  - apps/ios/BuyLedgerUITests/PhotoViewerPagingTests.swift
   - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
-  - apps/ios/BuyLedger/Resources/Info.plist
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.1.png
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneInformativeIndicator.colorset/Contents.json
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneWarningOnIndicator.colorset/Contents.json
+  - apps/ios/BuyLedgerTests/ContrastComplianceTests.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneAccentSoftBackground.colorset/Contents.json
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel5Numeral.colorset/Contents.json
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLDonutSegment.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsSnapshot.swift
+  - apps/ios/BuyLedger/Shared/Keyboard/KeyboardDismissOnTap.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel2Background.colorset/Contents.json
+  - apps/ios/BuyLedger/Shared/Extensions/Bundle+Extensions.swift
+  - apps/ios/BuyLedger/Features/App/RootView.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Lists/BLListRow.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel3Numeral.colorset/Contents.json
+  - apps/ios/BuyLedgerUITests/KeyboardDismissTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementDestination.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneNeutralSurfaceText.colorset/Contents.json
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/SegmentedControls/BLSegmentedControl.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneSuccessOnIndicator.colorset/Contents.json
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneDestructiveIndicator.colorset/Contents.json
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Status/BLStatusPill.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneWarningSurfaceText.colorset/Contents.json
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailView.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneNeutralOnIndicator.colorset/Contents.json
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/TextFields/BLAmountField.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLMetrics.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneDestructiveSoftBackground.colorset/Contents.json
+  - apps/ios/BuyLedger/Features/Lookups/LookupNameEditorSheet.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteFeature.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsStorage.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/ios/BuyLedgerTests/ColorContrastTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFocusTests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLDonutChart.swift
+  - apps/ios/BuyLedgerTests/InsightsStatsTests.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLPalette.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomersView.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneNeutralSoftBackground.colorset/Contents.json
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/States/BLLoadFailureView.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneAccentOnIndicator.colorset/Contents.json
+  - apps/ios/BuyLedger/Features/Orders/Components/PaymentMethodEditorSheet.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderStatus+Presentation.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneSuccessSurfaceText.colorset/Contents.json
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Avatar/BLAvatar.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLTone.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneInformativeSurfaceText.colorset/Contents.json
+  - apps/ios/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel4Numeral.colorset/Contents.json
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Buttons/BLButtonStyle.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsView.swift
+  - apps/ios/BuyLedger/Features/Settings/AppearancePreference.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneInformativeSoftBackground.colorset/Contents.json
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneInformativeOnIndicator.colorset/Contents.json
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeroGradientStart.colorset/Contents.json
+  - apps/ios/BuyLedger.xcodeproj/xcshareddata/xcschemes/BuyLedgerUITests.xcscheme
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardView.swift
+  - apps/ios/BuyLedger/Features/More/MoreView.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneWarningSoftBackground.colorset/Contents.json
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLBarChartValue.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - apps/ios/BuyLedger/Features/FX/FxView.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel3Background.colorset/Contents.json
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel2Numeral.colorset/Contents.json
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneSuccessSoftBackground.colorset/Contents.json
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsStats.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Progress/BLProgressBar.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLHeatmapDepth.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneWarningIndicator.colorset/Contents.json
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLRankBadgeFirstBackground.colorset/Contents.json
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneNeutralIndicator.colorset/Contents.json
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - apps/ios/BuyLedger/Features/Quote/QuoteView.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel4Background.colorset/Contents.json
+  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel1Numeral.colorset/Contents.json
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLSparkline.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneDestructiveOnIndicator.colorset/Contents.json
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeroGradientEnd.colorset/Contents.json
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLTypographyModifier.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OpenSettingsClient.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel1Background.colorset/Contents.json
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLHeatmapLevel5Background.colorset/Contents.json
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/TextFields/BLSearchField.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneAccentIndicator.colorset/Contents.json
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/States/DelayedProgressView.swift
+  - apps/ios/BuyLedger/Resources/Assets.xcassets/BLToneAccentSurfaceText.colorset/Contents.json
+  - apps/ios/BuyLedger.xcodeproj/xcshareddata/xcschemes/BuyLedger.xcscheme
 -->
 
 ---
-### Requirement: Campaign-to-event link with timestamp is stored in local SwiftData
+### Requirement: Every chart provides a summary for assistive technology
 
-The system SHALL persist, per campaign, the calendar event identifier together with the user-chosen reminder timestamp in a dedicated local SwiftData record, separate from the cross-platform Campaign data model. The cross-platform Campaign type MUST NOT carry the calendar event identifier or the reminder timestamp.
+Each of the three chart components SHALL provide a chart-level summary that states what the chart shows, so that a user can understand the chart without traversing every data point. A chart that is purely decorative because the same information already appears as adjacent text SHALL instead be explicitly hidden from assistive technology. A chart SHALL NOT remain in its current state of having neither a label nor an explicit exclusion.
 
-#### Scenario: Link and timestamp persist across launches in SwiftData
+#### Scenario: Sparkline is either described or hidden
 
-- **WHEN** a reminder is created for a campaign
-- **THEN** the campaign's event identifier and reminder timestamp are stored in their own SwiftData record and are available after relaunch, without adding any field to the cross-platform Campaign type
+- **WHEN** the sparkline renders inside the dashboard summary card
+- **THEN** it either announces a trend summary describing its direction and range, or it is explicitly hidden from assistive technology because the same figure appears as adjacent text
 
-<!-- @trace
-source: campaign-calendar-reminder
-updated: 2026-07-12
-code:
-  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
-  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/ios/README.md
-  - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
-  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
-  - apps/ios/BuyLedger/Resources/Info.plist
-  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
--->
+#### Scenario: Empty chart announces absence of data
 
----
-### Requirement: Reminder creation failure is reported distinctly from permission denial
+- **WHEN** a chart has no data to display
+- **THEN** its summary describes that there is no data, rather than announcing zero values
 
-When calendar access has been granted but creating the reminder fails, the system SHALL surface a message describing that the reminder could not be created, and that message SHALL NOT mention permissions or direct the user to system settings. The failure SHALL leave no partially recorded state: no link SHALL be persisted for an event that was not successfully created.
+#### Scenario: Chart summary does not duplicate the visible title
 
-#### Scenario: Event save failure reports a creation failure
-
-- **WHEN** calendar access has been granted and saving the calendar event fails
-- **THEN** the system shows a message stating that the reminder could not be created, without mentioning permissions, and records no link
-
-#### Scenario: Missing event identifier reports a creation failure
-
-- **WHEN** the calendar event is saved but no event identifier can be retrieved
-- **THEN** the system shows the creation failure message and records no link
-
-#### Scenario: Link persistence failure reports a creation failure
-
-- **WHEN** the calendar event is created but persisting the campaign-to-event link fails
-- **THEN** the system shows the creation failure message rather than the permission message
-
-##### Example: failure routing
-
-| Condition | Message shown |
-| --------- | ------------- |
-| Access request reports not granted | permission explanation, directs to settings |
-| Access granted, event save throws | creation failure, no permission mention |
-| Access granted, event identifier missing | creation failure, no permission mention |
-| Access granted, link persistence throws | creation failure, no permission mention |
+- **WHEN** a chart sits beneath a visible heading that already names it
+- **THEN** the chart summary adds the shape of the data rather than repeating the heading text verbatim
 
 <!-- @trace
 source: hig-blocker-remediation
