@@ -87,27 +87,32 @@ struct OrdersCompactView: View {
                         }
                     }
                 } else {
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        Text("\(store.orders.count)")
+                    ToolbarItem(placement: .topBarLeading) {
+                        Text("\(filteredIDs.count)")
                             .font(.subheadline.weight(.medium))
                             .monospacedDigit()
                             .foregroundStyle(palette.secondaryLabel)
+                    }
 
-                        Button {
-                            store.send(.aiSummaryTapped)
-                        } label: {
-                            Image(systemName: "sparkles")
-                        }
-                        .accessibilityLabel("AI 商品明細總結")
-                        .disabled(store.state.filteredOrders(referenceDate: date.now, calendar: calendar).isEmpty)
+                    ToolbarItemGroup(placement: .primaryAction) {
+                        Menu {
+                            Button {
+                                store.send(.aiSummaryTapped)
+                            } label: {
+                                Label("AI 總結", systemImage: "sparkles")
+                            }
+                            .disabled(store.state.filteredOrders(referenceDate: date.now, calendar: calendar).isEmpty)
 
-                        Button {
-                            store.send(.selectionModeToggled)
+                            Button {
+                                store.send(.selectionModeToggled)
+                            } label: {
+                                Label("選取訂單", systemImage: "checklist")
+                            }
+                            .disabled(store.orders.isEmpty)
                         } label: {
-                            Image(systemName: "checklist")
+                            Image(systemName: "ellipsis.circle")
                         }
-                        .accessibilityLabel("選取訂單")
-                        .disabled(store.orders.isEmpty)
+                        .accessibilityLabel("更多操作")
 
                         Button {
                             store.send(.newOrderTapped)
