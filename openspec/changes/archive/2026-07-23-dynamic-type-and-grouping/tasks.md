@@ -4,8 +4,8 @@
 
 ## 2. 版面隨字級調整
 
-- [ ] 2.1 [P] 依決策〈以字級環境值判斷是否為無障礙字級，而非逐級列舉〉與〈移除最小縮放係數與單行限制，改為允許換行〉，讓 DashboardView 的淨獲利與關鍵指標格在無障礙字級下解除單行限制並允許換行，關鍵指標格由兩欄降為單欄。滿足 Layouts change structure at accessibility text sizes 與 Text scaling is not cancelled by shrink-to-fit。行為：最大無障礙字級下兩者皆完整可讀，標準字級下版面結構不變。驗證：實機將字級調至最大無障礙級距檢視總覽頁，確認無截斷且已降為單欄；再切回標準字級確認版面與變更前一致。
-- [ ] 2.2 [P] 讓 OrderRowView 在無障礙字級下把右欄的狀態與金額改置於左欄下方，標準字級維持三欄橫排。滿足 Layouts change structure at accessibility text sizes。行為：大字級下狀態與金額不再被擠壓到極窄寬度。驗證：實機於最大無障礙字級檢視訂單列表確認已改為堆疊，標準字級下確認排列未變。
+- [x] 2.1 [P] 依決策〈以字級環境值判斷是否為無障礙字級，而非逐級列舉〉與〈移除最小縮放係數與單行限制，改為允許換行〉，讓 DashboardView 的淨獲利與關鍵指標格在無障礙字級下解除單行限制並允許換行，關鍵指標格由兩欄降為單欄。滿足 Layouts change structure at accessibility text sizes 與 Text scaling is not cancelled by shrink-to-fit。行為：最大無障礙字級下兩者皆完整可讀，標準字級下版面結構不變。驗證：實機將字級調至最大無障礙級距檢視總覽頁，確認無截斷且已降為單欄；再切回標準字級確認版面與變更前一致。
+- [x] 2.2 [P] 讓 OrderRowView 在無障礙字級下把右欄的狀態與金額改置於左欄下方，標準字級維持三欄橫排。滿足 Layouts change structure at accessibility text sizes。行為：大字級下狀態與金額不再被擠壓到極窄寬度。驗證：實機於最大無障礙字級檢視訂單列表確認已改為堆疊，標準字級下確認排列未變。
 - [x] 2.3 [P] 依決策〈固定點數的尺寸改為隨字級縮放的度量〉，將 InsightsView 熱力圖的星期欄寬與格高改為隨字級縮放 (格高需由型別層級常數改為實例屬性)，並將 BLDonutChart 直徑改為隨字級縮放、中央文字併用單行限制與縮放係數作為次要防線。滿足 Fixed point dimensions scale with text size。行為：大字級下星期標籤與格內數字不被裁切，圈狀圖中央文字不溢出內圈。驗證：實機於最大無障礙字級檢視分析頁熱力圖與圈狀圖確認無裁切與溢出。
 - [x] 2.4 [P] 將 RootSidebarLayout、DashboardView、MergePhotoPickerSheet、BLPhotoThumbnail、BLAvatar 五處寫死的字級點數改為綁定文字樣式或隨字級縮放的度量。滿足 Fixed point dimensions scale with text size。行為：這五處的文字與圖示隨系統字級設定縮放。驗證：實機切換字級前後逐一比對五處確認尺寸有變化。
 
