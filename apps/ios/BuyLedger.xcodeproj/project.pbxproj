@@ -418,7 +418,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				MARKETING_VERSION = 1.6.0;
+				MARKETING_VERSION = 1.7.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedger;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -462,7 +462,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				MARKETING_VERSION = 1.6.0;
+				MARKETING_VERSION = 1.7.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedger;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -612,7 +612,7 @@
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.6.0;
+				MARKETING_VERSION = 1.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedgerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -638,7 +638,7 @@
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.6.0;
+				MARKETING_VERSION = 1.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedgerTests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -663,7 +663,7 @@
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.6.0;
+				MARKETING_VERSION = 1.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedgerUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
@@ -688,7 +688,7 @@
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
 				IPHONEOS_DEPLOYMENT_TARGET = 26.4;
-				MARKETING_VERSION = 1.6.0;
+				MARKETING_VERSION = 1.7.0;
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedgerUITests;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = auto;
