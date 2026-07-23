@@ -2,7 +2,7 @@
 
 - [x] 1.1 抽取前逐處記錄 OrdersView 與 OrdersCompactView 六處篩選膠囊現有的內距、字級與選取態差異，作為元件參數設計與驗收比對的基準。行為：抽取後的視覺差異可被逐項對照而非憑印象判斷。驗證：記錄結果寫入本 change 目錄下的比對筆記，六處各列出其現有數值。
 - [x] 1.2 依決策〈六處篩選膠囊抽成共用元件而非逐處修補〉建立共用篩選膠囊元件，參數涵蓋標題、選取狀態與點擊動作，不提供六處用法以外的彈性，並依決策〈命中區加在標籤內部並以形狀宣告涵蓋整個膠囊〉使命中區達 44pt 且以膠囊形狀宣告。滿足 Filter chips meet the minimum hit region through a shared component。行為：六處膠囊視覺與變更前一致，相鄰膠囊各自可獨立點中。驗證：實機以 Accessibility Inspector 量測六處命中區皆不小於 44×44pt，並於相鄰膠囊邊界處點擊確認命中正確目標；以 1.1 的基準逐處比對視覺結果。
-- [ ] 1.3 將 CampaignDetailView 收款狀態切換鈕的命中區補到 44pt，視覺尺寸不變。滿足 Data-mutating controls meet the minimum hit region。行為：該切換鈕可靠地被點中。驗證：實機以 Accessibility Inspector 量測命中區不小於 44×44pt。
+- [x] 1.3 將 CampaignDetailView 收款狀態切換鈕的命中區補到 44pt，視覺尺寸不變。滿足 Data-mutating controls meet the minimum hit region。行為：該切換鈕可靠地被點中。驗證：實機以 Accessibility Inspector 量測命中區不小於 44×44pt。
 
 ## 2. 手勢的可見替代
 
@@ -18,7 +18,7 @@
 
 ## 4. 照片檢視器手勢
 
-- [ ] 4.1 依決策〈照片縮放以縮放倍率決定換頁是否接手〉，讓 BLPhotoViewer 支援縮放與雙點放大，雙點在一倍與兩倍間切換，倍率為一時換頁接手、大於一時改為平移且換頁停用。滿足 Photo viewer follows the standard gesture vocabulary。行為：照片可放大檢視商品標籤與金額細節，放大後可平移且不誤觸換頁，回到一倍後換頁恢復。驗證：實機分別於倍率為一與大於一兩種狀態測試左右滑動，確認各自為換頁與平移；雙點兩次確認回到原始尺寸。
+- [x] 4.1 依決策〈照片縮放以縮放倍率決定換頁是否接手〉，讓 BLPhotoViewer 支援縮放與雙點放大，雙點在一倍與兩倍間切換，倍率為一時換頁接手、大於一時改為平移且換頁停用。滿足 Photo viewer follows the standard gesture vocabulary。行為：照片可放大檢視商品標籤與金額細節，放大後可平移且不誤觸換頁，回到一倍後換頁恢復。驗證：實機分別於倍率為一與大於一兩種狀態測試左右滑動，確認各自為換頁與平移；雙點兩次確認回到原始尺寸。
 
 ## 5. 收尾與驗收
 
