@@ -23,6 +23,7 @@
 - simulator 名稱不要寫死，跑 build-and-run 前先 `xcodebuildmcp simulator list-sims` 查當前可用名稱。
 - **跑 snapshot 測試前把模擬器外觀鎖淺色** (`xcodebuildmcp simulator-management set-appearance --mode light`)：模擬 OS 的自動外觀入夜會切深色，淺色 baseline 會整批 false-fail (差異圖整張變色即此因，非程式碼回歸)。
 - **erase 模擬器會重置系統語言/地區，改變 compact `DatePicker` 膠囊的日期格式** (如 `2026/4/12` ↔ `2026年4月12日`)：UIKit 背的 DatePicker 吃系統狀態、不完全跟 SwiftUI 的 `\.locale` 注入，erase 後含日期膠囊的 baseline 會 false-fail，重錄即可 (實機 zh-TW 的正確格式是 `2026年4月12日`)。
+- **工具列的 prominent 玻璃按鈕 (`.borderedProminent`) 會讓 snapshot 離屏渲染整張變黑**：實跑正常、只有測試渲染路徑壞。含此類按鈕的畫面其 snapshot 測試要改用 `.image(drawHierarchyInKeyWindow: true)` 於 key window 渲染 (參考訂單編輯的兩個 baseline 測試)。
 - 模擬器跑 App 用 `build-and-run`，不要先 `build` 再 `build-and-run`。
 
 ## App 進入點與平台導覽

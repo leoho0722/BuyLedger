@@ -142,7 +142,8 @@ struct SnapshotTests {
                 .environment(\.locale, AppLanguage.traditionalChinese.locale)
                 .frame(width: 393, height: 852)
 
-            assertSnapshot(of: view, as: .image)
+            // 工具列的 prominent 玻璃按鈕在離屏渲染會整張變黑，改於 key window 渲染
+            assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
         }
     }
 
@@ -159,7 +160,8 @@ struct SnapshotTests {
                 .environment(\.locale, AppLanguage.traditionalChinese.locale)
                 .frame(width: 393, height: 852)
 
-            assertSnapshot(of: view, as: .image)
+            // 工具列的 prominent 玻璃按鈕在離屏渲染會整張變黑，改於 key window 渲染
+            assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
         }
     }
 

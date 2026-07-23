@@ -179,9 +179,13 @@ struct OrderEditView: View {
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("儲存") {
+                    Button {
                         store.send(.saveTapped)
+                    } label: {
+                        Image(systemName: "checkmark")
                     }
+                    .buttonStyle(.borderedProminent)
+                    .accessibilityLabel(Text("儲存"))
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canSave)
                 }

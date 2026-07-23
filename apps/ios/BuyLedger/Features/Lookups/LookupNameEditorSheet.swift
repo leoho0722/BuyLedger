@@ -138,10 +138,14 @@ private extension LookupNameEditorSheet {
             }
 
             ToolbarItem(placement: .confirmationAction) {
-                Button(LocalizedStringKey(submitTitle)) {
+                Button {
                     onSubmit(trimmedName)
                     dismiss()
+                } label: {
+                    Image(systemName: "checkmark")
                 }
+                .buttonStyle(.borderedProminent)
+                .accessibilityLabel(Text(LocalizedStringKey(submitTitle)))
                 .disabled(!canSubmit)
             }
         }

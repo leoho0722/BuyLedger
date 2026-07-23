@@ -213,14 +213,18 @@ private extension PaymentMethodEditorSheet {
             }
 
             ToolbarItem(placement: .confirmationAction) {
-                Button(LocalizedStringKey(submitTitle)) {
+                Button {
                     let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
                     guard !trimmed.isEmpty else {
                         return
                     }
                     onSubmit(trimmed, draftIsCardless, draftIsBankTransfer, draftIsCashOnDelivery)
                     dismiss()
+                } label: {
+                    Image(systemName: "checkmark")
                 }
+                .buttonStyle(.borderedProminent)
+                .accessibilityLabel(Text(LocalizedStringKey(submitTitle)))
                 .keyboardShortcut(.defaultAction)
                 .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
