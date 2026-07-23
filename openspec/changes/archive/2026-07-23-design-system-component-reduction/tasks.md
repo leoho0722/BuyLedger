@@ -2,7 +2,7 @@
 
 - [x] 1.1 [P] 依決策〈分段控制元件直接刪除〉移除零呼叫點的 BLSegmentedControl 原始檔，確認既有的互斥視圖切換皆使用系統分段選擇器。滿足 System-provided capabilities are not reimplemented。行為：Design System 目錄不再提供有缺陷的分段控制供後續採用。驗證：全專案搜尋不到該型別；iOS 與 iPadOS 皆建置成功 (build 前先於 apps/ios 執行 agvtool next-version 遞增 build number)。
 - [x] 1.2 [P] 依決策〈進度條改用系統進度視圖並保留既有版面〉，讓 BLProgressBar 內部改以系統進度視圖實作、對外呼叫形狀不變，並保留既有的進度值範圍限制邏輯。滿足 System-provided capabilities are not reimplemented 與 Replaced components restore the behaviors their hand-built versions lacked。行為：六個呼叫點視覺結果與變更前一致，且輔助技術可播報進度值。驗證：實機以 VoiceOver 聚焦 Dashboard 與 CampaignListView 的進度條確認播報包含進度值；snapshot 差異逐張比對確認僅系統樣式細微差別。
-- [ ] 1.3 [P] 依決策〈設定頁 disclosure row 改用系統元件〉，將 SettingsView 兩處手繪的可點擊列改用系統元件呈現，取回列的按壓 highlight 與原生 disclosure indicator。滿足 Replaced components restore the behaviors their hand-built versions lacked。行為：這兩列按下時有 highlight，指示符號與系統一致。驗證：實機確認按壓回饋存在，且與同頁其他系統元件的列外觀一致。
+- [x] 1.3 [P] 依決策〈設定頁 disclosure row 改用系統元件〉，將 SettingsView 兩處手繪的可點擊列改用系統元件呈現，取回列的按壓 highlight 與原生 disclosure indicator。滿足 Replaced components restore the behaviors their hand-built versions lacked。行為：這兩列按下時有 highlight，指示符號與系統一致。驗證：實機確認按壓回饋存在，且與同頁其他系統元件的列外觀一致。
 
 ## 2. 搜尋欄取代
 
