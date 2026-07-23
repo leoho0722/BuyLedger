@@ -138,9 +138,6 @@ struct RootFeature {
     /// 幣別主檔資料來源；App 啟動時打 ExchangeRate-API `/codes` 並 cache 7 天
     @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
 
-    /// 偏好儲存；用來記住並恢復上次選取的分頁
-    @Dependency(SettingsStorage.self) private var settingsStorage
-
     // MARK: - Reducer Body
 
     /// App 根層級 reducer
@@ -194,8 +191,6 @@ struct RootFeature {
                     return .none
 
                 case .task:
-                    // 重啟後回到上次使用的分頁；只恢復分頁，不恢復導覽堆疊與捲動位置
-                    state.selectedTab = settingsStorage.load().lastSelectedTab
                     let currencyMetadataRepository = currencyMetadataRepository
                     return .merge(
                         .send(.settings(.task)),
@@ -207,9 +202,6 @@ struct RootFeature {
                     
                 case let .tabSelected(tab):
                     state.selectedTab = tab
-                    var snapshot = settingsStorage.load()
-                    snapshot.lastSelectedTab = tab
-                    settingsStorage.save(snapshot)
                     return .none
 
                 case .startNewOrder:

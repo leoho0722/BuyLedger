@@ -32,14 +32,14 @@ A confirmation message SHALL use active voice and SHALL refer to records by name
 - **WHEN** the deletion confirmation for an order is presented
 - **THEN** it identifies the order by its customer name and contains no internal identifier
 
-### Requirement: The app reopens on the tab last used
+### Requirement: The app launches on the overview tab
 
-The app SHALL restore the tab the user last selected when it relaunches, rather than always returning to a fixed default. Restoration SHALL cover the tab selection; navigation stacks and scroll positions are out of scope.
+The app SHALL always launch on the overview tab; the tab selection SHALL NOT be persisted across launches. Navigation stacks and scroll positions are likewise not restored.
 
-#### Scenario: Last tab is restored
+#### Scenario: Relaunch returns to the overview tab
 
-- **WHEN** the user selects the orders tab, terminates the app, and launches it again
-- **THEN** the orders tab is selected on launch
+- **WHEN** the user selects any other tab, terminates the app, and launches it again
+- **THEN** the overview tab is selected on launch
 
 #### Scenario: First launch uses the default tab
 

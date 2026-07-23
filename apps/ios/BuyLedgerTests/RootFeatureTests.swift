@@ -49,6 +49,26 @@ struct RootFeatureTests {
         #expect(refresh.wasCalled)
     }
 
+    /// 分頁選擇不持久化：重啟一律回總覽 (曾為「恢復上次分頁」，經實機驗收判定不符需求)
+    @Test func taskKeepsTheDashboardTabAsTheLaunchTab() async {
+        let store = TestStore(initialState: RootFeature.State()) {
+            RootFeature()
+        } withDependencies: {
+            $0[SettingsStorage.self] = SettingsStorage(load: { .default }, save: { _ in })
+            $0[CurrencyMetadataRepository.self] = CurrencyMetadataRepository(
+                fetchCodes: { CurrencyCode.defaults },
+                refreshIfStale: { _ in false },
+                forceRefresh: { }
+            )
+        }
+        store.exhaustivity = .off
+
+        await store.send(.task)
+        await store.finish()
+
+        #expect(store.state.selectedTab == .dashboard)
+    }
+
     @Test func smartGroupSelectedJumpsToOrdersAndAppliesStatus() async {
         var state = RootFeature.State()
         state.selectedTab = .dashboard

@@ -44,9 +44,6 @@ private extension SettingsStorage {
 
         /// AI 總結模型名稱的 key
         nonisolated static let aiSummaryModel = "settings.aiSummaryModel"
-
-        /// 上次選取分頁的 key
-        nonisolated static let lastSelectedTab = "settings.lastSelectedTab"
     }
 }
 
@@ -77,16 +74,13 @@ extension SettingsStorage: DependencyKey {
             let useAiSummary = defaults.object(forKey: SettingsStorageKeys.useAiSummary) as? Bool ?? false
             let storedModel = defaults.string(forKey: SettingsStorageKeys.aiSummaryModel) ?? ""
             let aiSummaryModel = storedModel.isEmpty ? SettingsSnapshot.default.aiSummaryModel : storedModel
-            let storedTab = defaults.string(forKey: SettingsStorageKeys.lastSelectedTab) ?? ""
-            let lastSelectedTab = RootTab(rawValue: storedTab) ?? SettingsSnapshot.default.lastSelectedTab
 
             return SettingsSnapshot(
                 language: language,
                 defaultCurrency: currency,
                 monthlyProfitGoalTwd: goalValue,
                 useAiSummary: useAiSummary,
-                aiSummaryModel: aiSummaryModel,
-                lastSelectedTab: lastSelectedTab
+                aiSummaryModel: aiSummaryModel
             )
         },
         save: { snapshot in
@@ -96,7 +90,6 @@ extension SettingsStorage: DependencyKey {
             defaults.set(NSDecimalNumber(decimal: snapshot.monthlyProfitGoalTwd).doubleValue, forKey: SettingsStorageKeys.monthlyProfitGoalTwd)
             defaults.set(snapshot.useAiSummary, forKey: SettingsStorageKeys.useAiSummary)
             defaults.set(snapshot.aiSummaryModel, forKey: SettingsStorageKeys.aiSummaryModel)
-            defaults.set(snapshot.lastSelectedTab.rawValue, forKey: SettingsStorageKeys.lastSelectedTab)
         }
     )
 

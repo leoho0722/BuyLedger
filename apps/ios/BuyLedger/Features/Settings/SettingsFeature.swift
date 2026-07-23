@@ -142,9 +142,7 @@ private extension SettingsFeature {
                 defaultCurrency: state.defaultCurrency,
                 monthlyProfitGoalTwd: state.monthlyProfitGoalTwd,
                 useAiSummary: state.useAiSummary,
-                aiSummaryModel: state.aiSummaryModel,
-                // 分頁選擇由 RootFeature 寫入，設定頁存檔時原樣帶回，避免覆蓋
-                lastSelectedTab: storage.load().lastSelectedTab
+                aiSummaryModel: state.aiSummaryModel
             )
         )
     }
