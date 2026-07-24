@@ -80,6 +80,11 @@
 			path = BuyLedgerUITests;
 			sourceTree = "<group>";
 		};
+		D0A11D0001AC1D0001AC1D00 /* BuyLedgerAccessibilityIDs */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = BuyLedgerAccessibilityIDs;
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -144,6 +149,7 @@
 				D0B1FCCF2FA22A9F00B50E07 /* BuyLedger */,
 				D0B1FCE12FA22AA100B50E07 /* BuyLedgerTests */,
 				D0B1FCEB2FA22AA100B50E07 /* BuyLedgerUITests */,
+				D0A11D0001AC1D0001AC1D00 /* BuyLedgerAccessibilityIDs */,
 				D0B1FCCE2FA22A9F00B50E07 /* Products */,
 				D0B108512FA5D0BB00B50E07 /* Recovered References */,
 				D05F1DB42FDEDABE00CDD788 /* Frameworks */,
@@ -178,6 +184,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				D0B1FCCF2FA22A9F00B50E07 /* BuyLedger */,
+				D0A11D0001AC1D0001AC1D00 /* BuyLedgerAccessibilityIDs */,
 			);
 			name = BuyLedger;
 			packageProductDependencies = (
@@ -240,6 +247,7 @@
 			);
 			fileSystemSynchronizedGroups = (
 				D0B1FCEB2FA22AA100B50E07 /* BuyLedgerUITests */,
+				D0A11D0001AC1D0001AC1D00 /* BuyLedgerAccessibilityIDs */,
 			);
 			name = BuyLedgerUITests;
 			packageProductDependencies = (
@@ -399,7 +407,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 150;
+				CURRENT_PROJECT_VERSION = 204;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 23JEQ2524P;
@@ -443,7 +451,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 150;
+				CURRENT_PROJECT_VERSION = 204;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 23JEQ2524P;
@@ -607,7 +615,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 150;
+				CURRENT_PROJECT_VERSION = 204;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -633,7 +641,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 150;
+				CURRENT_PROJECT_VERSION = 204;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -658,7 +666,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 150;
+				CURRENT_PROJECT_VERSION = 204;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -683,7 +691,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 150;
+				CURRENT_PROJECT_VERSION = 204;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;

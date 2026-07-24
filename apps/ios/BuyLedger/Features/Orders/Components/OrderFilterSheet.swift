@@ -91,12 +91,14 @@ struct OrderFilterSheet: View {
                         Image(systemName: "xmark")
                     }
                     .accessibilityLabel(Text("取消"))
+                    .accessibilityIdentifier(BLAccessibilityID.Orders.filterCancelButton)
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("套用") {
                         applyAndDismiss()
                     }
+                    .accessibilityIdentifier(BLAccessibilityID.Orders.filterApplyButton)
                 }
             }
             .searchable(
@@ -104,6 +106,7 @@ struct OrderFilterSheet: View {
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: Text("搜尋類別或付款方式")
             )
+            .accessibilityIdentifier(BLAccessibilityID.Orders.filterSheet)
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
@@ -217,6 +220,7 @@ private extension OrderFilterSheet {
         }
         .buttonStyle(.plain)
         .accessibilityAddTraits(pendingDatePeriod == period ? .isSelected : [])
+        .accessibilityIdentifier(BLAccessibilityID.Orders.filterDatePeriod(period.id))
     }
 
     /// 類別「全部」清除 row：點選只把 ``pendingCategory`` 設為 `nil`，不 dispatch、不 dismiss

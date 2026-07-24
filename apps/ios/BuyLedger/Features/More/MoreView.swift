@@ -204,32 +204,41 @@ private extension MoreView {
                 NavigationLink(value: RootFeature.MoreRoute.fx) {
                     toolRow(.fx, palette: palette)
                 }
+                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.fx.accessibilityKey))
             }
 
             Section("管理") {
                 NavigationLink(value: RootFeature.MoreRoute.customers) {
                     toolRow(.customers, palette: palette)
                 }
+                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.customers.accessibilityKey))
 
                 NavigationLink(value: RootFeature.MoreRoute.orderSources) {
                     toolRow(.orderSources, palette: palette)
                 }
+                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.orderSources.accessibilityKey))
 
                 NavigationLink(value: RootFeature.MoreRoute.categories) {
                     toolRow(.categories, palette: palette)
                 }
+                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.categories.accessibilityKey))
 
                 NavigationLink(value: RootFeature.MoreRoute.paymentMethods) {
                     toolRow(.paymentMethods, palette: palette)
                 }
+                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.paymentMethods.accessibilityKey))
 
                 NavigationLink(value: RootFeature.MoreRoute.reconciliationStatuses) {
                     toolRow(.reconciliationStatuses, palette: palette)
                 }
+                .accessibilityIdentifier(
+                    BLAccessibilityID.More.row(RootFeature.MoreRoute.reconciliationStatuses.accessibilityKey)
+                )
 
                 NavigationLink(value: RootFeature.MoreRoute.quote) {
                     toolRow(.quote, palette: palette)
                 }
+                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.quote.accessibilityKey))
             }
 
             Section("App") {
@@ -241,8 +250,10 @@ private extension MoreView {
                             .foregroundStyle(palette.secondaryLabel)
                     }
                 }
+                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.settings.accessibilityKey))
             }
         }
+        .accessibilityIdentifier(BLAccessibilityID.More.root)
         .rootNavigationTitle("更多", language: store.settings.language)
     }
 
@@ -258,6 +269,38 @@ private extension MoreView {
         } icon: {
             Image(systemName: item.systemImage)
                 .foregroundStyle(item.tint(in: palette))
+        }
+    }
+}
+
+// MARK: - Accessibility Properties
+
+private extension RootFeature.MoreRoute {
+
+    /// 對應到 UI 測試 identifier 的目的地 key
+    ///
+    /// 刻意寫成窮舉 switch 而非字面值：新增目的地時這裡會編不過，逼出 ``BLAccessibilityID/More/Row`` 的同步更新
+    ///
+    /// 提醒：畫面上還有一份 ``MoreView/ToolItem`` 只描述工具列的呈現內容，與這條路徑無編譯期綁定；
+    /// 新增或刪除工具時 `ToolItem` 要人工一起改
+    var accessibilityKey: BLAccessibilityID.More.Row {
+        switch self {
+        case .fx:
+            .fx
+        case .customers:
+            .customers
+        case .quote:
+            .quote
+        case .orderSources:
+            .orderSources
+        case .categories:
+            .categories
+        case .paymentMethods:
+            .paymentMethods
+        case .reconciliationStatuses:
+            .reconciliationStatuses
+        case .settings:
+            .settings
         }
     }
 }

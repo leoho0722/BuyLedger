@@ -32,6 +32,7 @@ struct CampaignEditView: View {
                     TextField("開團名稱", text: $store.draftName)
                         .textContentType(.none)
                         .focused($focusedField, equals: .name)
+                        .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.nameField)
 
                     DatePicker(
                         "開團日期",
@@ -54,6 +55,7 @@ struct CampaignEditView: View {
                     }
 
                     Toggle("訂購提醒", isOn: $store.wantsReminder)
+                        .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.reminderToggle)
 
                     if store.wantsReminder {
                         // 提醒時間以原生 inline DatePicker 編輯 (同上方開團／結單日期列)，點擊跳系統月曆／時間浮層
@@ -73,6 +75,7 @@ struct CampaignEditView: View {
                         .lineLimit(2...5)
                 }
             }
+            .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.root)
             .navigationTitle(Text(LocalizedStringKey(store.original == nil ? "新增開團" : "編輯開團")))
             .scrollDismissesKeyboard(.interactively)
             .bind($store.focusedField, to: $focusedField)
@@ -85,6 +88,7 @@ struct CampaignEditView: View {
                         Image(systemName: "xmark")
                     }
                     .accessibilityLabel(Text("取消"))
+                    .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.cancelButton)
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
@@ -95,6 +99,7 @@ struct CampaignEditView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .accessibilityLabel(Text("儲存"))
+                    .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.saveButton)
                     .disabled(store.draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }

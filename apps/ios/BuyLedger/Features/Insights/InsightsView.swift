@@ -66,9 +66,13 @@ struct InsightsView: View {
                 }
 
             case let .failed(message):
-                BLLoadFailureView(message: message) {
+                BLLoadFailureView(
+                    message: message,
+                    retryIdentifier: BLAccessibilityID.Common.loadFailureRetryButton("insights")
+                ) {
                     store.send(.orders(.task))
                 }
+                .accessibilityIdentifier(BLAccessibilityID.Common.loadFailure("insights"))
 
             case .loading:
                 loadingPlaceholder(palette: palette)
@@ -126,6 +130,7 @@ private extension InsightsView {
             .padding(.vertical, BLSpacing.large)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .accessibilityIdentifier(BLAccessibilityID.Insights.root)
     }
 
     /// 沒有訂單時的空狀態，引導使用者先建立訂單
@@ -139,6 +144,7 @@ private extension InsightsView {
             Text("先到「訂單」分頁新增幾筆訂單，這裡就會出現走勢、類別排行、成本結構與下單熱力圖。")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .accessibilityIdentifier(BLAccessibilityID.Insights.emptyState)
     }
 
     /// 首次載入訂單前顯示的骨架
@@ -172,17 +178,21 @@ private extension InsightsView {
         }
         .accessibilityElement()
         .accessibilityLabel(Text("載入中"))
+        .accessibilityIdentifier(BLAccessibilityID.Common.loading("insights"))
     }
 
     /// 期間選擇器
     @ViewBuilder
     var rangePicker: some View {
+        // segmented Picker 的選項掛不上 identifier (同 tab bar)；測試端以 rangePicker 定位後取 segmentedControls.buttons 依序點選
         Picker("期間", selection: $store.insightsDateRange) {
             ForEach(InsightsDateRange.allCases) { range in
-                Text(LocalizedStringKey(range.title)).tag(range)
+                Text(LocalizedStringKey(range.title))
+                    .tag(range)
             }
         }
         .pickerStyle(.segmented)
+        .accessibilityIdentifier(BLAccessibilityID.Insights.rangePicker)
     }
 
     /// 走勢卡
@@ -216,6 +226,7 @@ private extension InsightsView {
                     height: 200,
                     isScrollEnabled: true
                 )
+                .accessibilityIdentifier(BLAccessibilityID.Insights.trendChart)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -271,6 +282,7 @@ private extension InsightsView {
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint("查看 \(rank.campaignName) 的詳情")
+                        .accessibilityIdentifier(BLAccessibilityID.Insights.campaignRankRow(campaignID: rank.id))
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
@@ -312,6 +324,7 @@ private extension InsightsView {
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint("查看 \(category.name) 類別的訂單")
+                        .accessibilityIdentifier(BLAccessibilityID.Insights.categoryRankRow(category: category.name))
                     }
                 }
             }
@@ -398,6 +411,7 @@ private extension InsightsView {
                         centerValue: formatTwd(stats.totalCost)
                     )
                     .frame(maxWidth: .infinity)
+                    .accessibilityIdentifier(BLAccessibilityID.Insights.costDonut)
 
                     VStack(alignment: .leading, spacing: BLSpacing.small) {
                         ForEach(stats.costSegments) { segment in

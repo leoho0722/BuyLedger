@@ -89,6 +89,7 @@ private extension OrdersView {
                     .background(palette.background)
             }
             .rootNavigationTitle(store.navigationTitleKey, language: language)
+            // 系統 .searchable 搜尋欄掛不上穩定 identifier,UI 測試改以 app.searchFields.firstMatch 定位
             .searchable(
                 text: $store.searchText.sending(\.searchTextChanged),
                 placement: .navigationBarDrawer(displayMode: .always),
@@ -137,6 +138,7 @@ private extension OrdersView {
                                 Label("AI 總結", systemImage: "sparkles")
                             }
                             .disabled(store.state.filteredOrders(referenceDate: date.now, calendar: calendar).isEmpty)
+                            .accessibilityIdentifier(BLAccessibilityID.Orders.aiSummaryButton)
 
                             Button {
                                 store.send(.selectionModeToggled)
@@ -148,6 +150,7 @@ private extension OrdersView {
                             Image(systemName: "ellipsis.circle")
                         }
                         .accessibilityLabel("更多操作")
+                        .accessibilityIdentifier(BLAccessibilityID.Orders.batchMenuButton)
 
                         Button {
                             store.send(.newOrderTapped)
@@ -155,6 +158,7 @@ private extension OrdersView {
                             Image(systemName: "plus")
                         }
                         .accessibilityLabel("新增訂單")
+                        .accessibilityIdentifier(BLAccessibilityID.Orders.addButton)
                     }
                 }
             }
@@ -224,6 +228,7 @@ private extension OrdersView {
                 } else if orders.isEmpty {
                     ContentUnavailableView("沒有符合條件的訂單", systemImage: "tray")
                         .padding(.top, BLSpacing.extraLarge)
+                        .accessibilityIdentifier(BLAccessibilityID.Orders.listEmptyState)
                 } else {
                     orderListCard(orders: orders)
                         .padding(.horizontal, BLSpacing.medium)
@@ -231,6 +236,7 @@ private extension OrdersView {
                 }
             }
             .background(palette.background)
+            .accessibilityIdentifier(BLAccessibilityID.Orders.listRoot)
         }
     }
 
@@ -271,6 +277,7 @@ private extension OrdersView {
             store.send(.orderSelected(order.id))
         } label: {
             OrderRowView(order: order)
+                .accessibilityIdentifier(BLAccessibilityID.Orders.row(orderID: order.id))
                 .padding(.horizontal, BLSpacing.large)
                 .padding(.vertical, BLSpacing.extraSmall)
                 .contentShape(Rectangle())
@@ -311,6 +318,7 @@ private extension OrdersView {
                     .foregroundStyle(isSelected ? palette.accent : palette.tertiaryLabel)
 
                 OrderRowView(order: order)
+                    .accessibilityIdentifier(BLAccessibilityID.Orders.row(orderID: order.id))
             }
             .padding(.horizontal, BLSpacing.large)
             .padding(.vertical, BLSpacing.extraSmall)
@@ -361,6 +369,7 @@ private extension OrdersView {
                     ) {
                         store.send(.statusFilterSelected(filter))
                     }
+                    .accessibilityIdentifier(BLAccessibilityID.Orders.statusChip(filter.id))
                 }
             }
         }
@@ -509,6 +518,7 @@ private extension OrdersView {
         }
         .menuStyle(.borderlessButton)
         .controlSize(.small)
+        .accessibilityIdentifier(BLAccessibilityID.Orders.detailStatusMenuButton)
     }
 
     /// 詳情頁右上角的「更多」操作選單，收納功能性質相近的合併/編輯/刪除，避免操作列擁擠
@@ -525,6 +535,7 @@ private extension OrdersView {
                 } label: {
                     Label("合併訂單", systemImage: "arrow.triangle.merge")
                 }
+                .accessibilityIdentifier(BLAccessibilityID.Orders.detailMergeButton)
             }
 
             Button {
@@ -532,6 +543,7 @@ private extension OrdersView {
             } label: {
                 Label("編輯", systemImage: "pencil")
             }
+            .accessibilityIdentifier(BLAccessibilityID.Orders.detailEditButton)
 
             Divider()
 
@@ -540,6 +552,7 @@ private extension OrdersView {
             } label: {
                 Label("刪除", systemImage: "trash")
             }
+            .accessibilityIdentifier(BLAccessibilityID.Orders.detailDeleteButton)
         } label: {
             Label("更多", systemImage: "ellipsis.circle")
                 .labelStyle(.iconOnly)
@@ -547,6 +560,7 @@ private extension OrdersView {
         .menuStyle(.borderlessButton)
         .controlSize(.small)
         .accessibilityLabel("更多操作")
+        .accessibilityIdentifier(BLAccessibilityID.Orders.detailMoreButton)
     }
 }
 

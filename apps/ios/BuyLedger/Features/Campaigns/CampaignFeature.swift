@@ -120,8 +120,12 @@ struct CampaignFeature {
         /// 目前呈現中的新增／編輯開團表單；`nil` 表示未呈現
         @Presents var editCampaign: CampaignEditFeature.State?
 
-        /// 刪除開團前的確認 alert 狀態；`nil` 表示未呈現
+        /// 刪除開團前的確認 alert 狀態 (由列表列長按選單觸發，掛在列表頁)；`nil` 表示未呈現
         @Presents var deletionConfirmation: AlertState<Action.Alert>?
+
+        /// 詳情頁 toolbar 選單觸發的刪除確認 alert；與 ``deletionConfirmation`` 分開，
+        /// 好讓 alert 掛在詳情頁本身 (iPad 才會疊在 push 出來的詳情上方，而非被詳情蓋住的列表頁)
+        @Presents var detailDeletionConfirmation: AlertState<Action.Alert>?
 
         /// 結團結算的二次確認；`nil` 代表未顯示
         ///
@@ -180,11 +184,17 @@ struct CampaignFeature {
         /// 確認後實際寫入結算日期
         case settleConfirmed(Campaign.ID)
 
-        /// 使用者點擊「刪除」開團；先以 ``deletionConfirmation`` 二次確認
+        /// 使用者由列表列長按選單點「刪除」開團；以 ``deletionConfirmation`` 二次確認
         case deleteCampaignTapped(Campaign.ID)
 
-        /// 刪除確認 alert 事件
+        /// 使用者由詳情頁 toolbar 選單點「刪除」開團；以 ``detailDeletionConfirmation`` 二次確認
+        case detailDeleteCampaignTapped(Campaign.ID)
+
+        /// 列表刪除確認 alert 事件
         case deletionConfirmation(PresentationAction<Alert>)
+
+        /// 詳情刪除確認 alert 事件
+        case detailDeletionConfirmation(PresentationAction<Alert>)
 
         /// 開團改名通知；由 ``RootFeature`` 攔截做訂單表 cascade 與 ``OrdersFeature`` 副本同步
         case campaignRenamed(from: String, to: String)
@@ -543,6 +553,39 @@ struct CampaignFeature {
             case .deletionConfirmation:
                 return .none
 
+            case let .detailDeleteCampaignTapped(id):
+                guard let campaign = state.campaigns.first(where: { $0.id == id }) else {
+                    return .none
+                }
+                state.detailDeletionConfirmation = AlertState {
+                    TextState("刪除開團")
+                } actions: {
+                    ButtonState(role: .destructive, action: .confirmDelete(id)) {
+                        TextState("刪除")
+                    }
+                    ButtonState(role: .cancel) {
+                        TextState("取消")
+                    }
+                } message: {
+                    TextState("刪除「\(campaign.name)」後無法復原。歸屬此開團的訂單會保留，但會變回未歸團。")
+                }
+                return .none
+
+            case let .detailDeletionConfirmation(.presented(.confirmDelete(id))):
+                state.campaigns.removeAll { $0.id == id }
+                if state.selectedCampaignID == id {
+                    state.selectedCampaignID = state.campaigns.first?.id
+                }
+                let campaignRepository = campaignRepository
+                return .run { _ in
+                    try await campaignRepository.removeCampaign(id)
+                } catch: { _, send in
+                    await send(.campaignsFailed("開團刪除失敗，請稍後再試。"))
+                }
+
+            case .detailDeletionConfirmation:
+                return .none
+
             case .campaignRenamed:
                 // 訂單表 cascade 與 OrdersFeature 副本同步由 RootFeature 攔截處理
                 return .none
@@ -599,6 +642,7 @@ struct CampaignFeature {
             CampaignEditFeature()
         }
         .ifLet(\.$deletionConfirmation, action: \.deletionConfirmation)
+        .ifLet(\.$detailDeletionConfirmation, action: \.detailDeletionConfirmation)
         .ifLet(\.$settleConfirmation, action: \.settleConfirmation)
         .ifLet(\.$reminderAccessAlert, action: \.reminderAccessAlert)
     }

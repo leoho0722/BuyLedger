@@ -59,6 +59,7 @@ struct OrdersCompactView: View {
                 .padding(.bottom, BLSpacing.section)
             }
             .background(palette.background)
+            .accessibilityIdentifier(BLAccessibilityID.Orders.listRoot)
             .scrollDismissesKeyboard(.interactively)
             .rootNavigationTitle(store.navigationTitleKey, language: language)
             .toolbar {
@@ -102,6 +103,7 @@ struct OrdersCompactView: View {
                                 Label("AI 總結", systemImage: "sparkles")
                             }
                             .disabled(store.state.filteredOrders(referenceDate: date.now, calendar: calendar).isEmpty)
+                            .accessibilityIdentifier(BLAccessibilityID.Orders.aiSummaryButton)
 
                             Button {
                                 store.send(.selectionModeToggled)
@@ -113,6 +115,7 @@ struct OrdersCompactView: View {
                             Image(systemName: "ellipsis.circle")
                         }
                         .accessibilityLabel("更多操作")
+                        .accessibilityIdentifier(BLAccessibilityID.Orders.batchMenuButton)
 
                         Button {
                             store.send(.newOrderTapped)
@@ -120,9 +123,11 @@ struct OrdersCompactView: View {
                             Image(systemName: "plus")
                         }
                         .accessibilityLabel("新增訂單")
+                        .accessibilityIdentifier(BLAccessibilityID.Orders.addButton)
                     }
                 }
             }
+            // 系統 .searchable 搜尋欄掛不上穩定 identifier,UI 測試改以 app.searchFields.firstMatch 定位
             .searchable(
                 text: $store.searchText.sending(\.searchTextChanged),
                 placement: .navigationBarDrawer(displayMode: .always),
@@ -158,6 +163,7 @@ struct OrdersCompactView: View {
                                 Image(systemName: "arrow.triangle.2.circlepath")
                             }
                             .accessibilityLabel("更新狀態")
+                            .accessibilityIdentifier(BLAccessibilityID.Orders.detailStatusMenuButton)
                         }
 
                         // 合併/編輯/刪除功能性質相近，收進單一「更多」選單，避免 toolbar 四個操作並排擁擠
@@ -169,6 +175,7 @@ struct OrdersCompactView: View {
                                     } label: {
                                         Label("合併訂單", systemImage: "arrow.triangle.merge")
                                     }
+                                    .accessibilityIdentifier(BLAccessibilityID.Orders.detailMergeButton)
                                 }
 
                                 Button {
@@ -176,6 +183,7 @@ struct OrdersCompactView: View {
                                 } label: {
                                     Label("編輯", systemImage: "pencil")
                                 }
+                                .accessibilityIdentifier(BLAccessibilityID.Orders.detailEditButton)
 
                                 Divider()
 
@@ -184,10 +192,12 @@ struct OrdersCompactView: View {
                                 } label: {
                                     Label("刪除", systemImage: "trash")
                                 }
+                                .accessibilityIdentifier(BLAccessibilityID.Orders.detailDeleteButton)
                             } label: {
                                 Image(systemName: "ellipsis.circle")
                             }
                             .accessibilityLabel("更多操作")
+                            .accessibilityIdentifier(BLAccessibilityID.Orders.detailMoreButton)
                         }
                     }
             }
@@ -229,6 +239,7 @@ private extension OrdersCompactView {
         ) {
             store.send(.statusFilterSelected(filter))
         }
+        .accessibilityIdentifier(BLAccessibilityID.Orders.statusChip(filter.id))
     }
 
     /// 整合篩選 trigger button：以單顆 Capsule 呈現「日期 + 類別 + 付款方式」的摘要 (`篩選：<summary>`)，點擊後 present ``OrderFilterSheet``
@@ -261,6 +272,7 @@ private extension OrdersCompactView {
         ) {
             store.send(.filterSheetTapped)
         }
+        .accessibilityIdentifier(BLAccessibilityID.Orders.filterButton)
         .padding(.horizontal, BLSpacing.large)
     }
 
@@ -329,6 +341,7 @@ private extension OrdersCompactView {
     func navigableRow(order: LedgerOrder) -> some View {
         NavigationLink(state: OrderDetailPath.State(orderID: order.id)) {
             OrderRowView(order: order, showsDate: false)
+                .accessibilityIdentifier(BLAccessibilityID.Orders.row(orderID: order.id))
                 .padding(.horizontal, BLSpacing.large)
                 .padding(.vertical, BLSpacing.extraSmall)
                 .contentShape(Rectangle())
@@ -370,6 +383,7 @@ private extension OrdersCompactView {
                     .accessibilityHidden(true)
 
                 OrderRowView(order: order, showsDate: false)
+                    .accessibilityIdentifier(BLAccessibilityID.Orders.row(orderID: order.id))
             }
             .padding(.horizontal, BLSpacing.large)
             .padding(.vertical, BLSpacing.extraSmall)
@@ -389,6 +403,7 @@ private extension OrdersCompactView {
             systemImage: "tray",
             description: Text("試著調整搜尋字詞或狀態篩選。")
         )
+        .accessibilityIdentifier(BLAccessibilityID.Orders.listEmptyState)
         // 以容器相對高度撐開再置中；只給 maxHeight 在垂直 ScrollView 內不生效，
         // 空狀態會黏在頂端而非可視區域中央
         .frame(maxWidth: .infinity)

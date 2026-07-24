@@ -86,6 +86,8 @@ struct OrderRowView: View {
         .padding(.vertical, BLSpacing.extraSmall)
         // 複合列合併為單一朗讀單位，否則輔助技術要逐一走過姓名、日期、明細、類別、狀態與兩個金額
         .accessibilityElement(children: .combine)
+        // 合併列的關鍵數值改由 accessibilityValue 承載，UI 測試以 row identifier 定位後讀 element.value
+        .accessibilityValue(accessibilityValueText)
     }
 }
 
@@ -124,21 +126,26 @@ private extension OrderRowView {
             VStack(alignment: .trailing, spacing: BLSpacing.extraSmall) {
                 BLStatusPill(order.status.title, tone: order.status.tone)
 
+                // 金額已由列的 accessibilityValue 承載，這裡標 hidden 免得合併朗讀重複讀一次數字
                 Text(OrderFormatters.twd(summary.revenue, locale: locale))
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
+                    .accessibilityHidden(true)
 
                 Text("\(summary.profit >= 0 ? "+" : "")\(OrderFormatters.twd(summary.profit, locale: locale))")
                     .font(.caption.weight(.semibold))
                     .foregroundStyle(summary.profit >= 0 ? .green : .red)
                     .monospacedDigit()
+                    .accessibilityHidden(true)
             }
 
         case .chargedAmount:
             VStack(alignment: .trailing, spacing: BLSpacing.extraSmall) {
+                // 金額已由列的 accessibilityValue 承載，這裡標 hidden 免得合併朗讀重複讀一次數字
                 Text(OrderFormatters.twd(order.chargedAmount, locale: locale))
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
+                    .accessibilityHidden(true)
 
                 Text("客戶實付")
                     .font(.caption)
@@ -170,6 +177,21 @@ private extension OrderRowView {
     /// 第三行類別 tag 的顯示文字 (instance 便利存取)
     var categoriesTagText: String {
         Self.categoriesTagText(for: order.categories)
+    }
+
+    /// 合併列朗讀用的關鍵數值，依 ``Trailing`` 變體承載收款＋獲利或客戶實付，供 UI 測試以 element.value 讀取
+    var accessibilityValueText: String {
+        switch trailing {
+        case .statusAndProfit:
+            let summary = order.summary
+            let revenue = OrderFormatters.twd(summary.revenue, locale: locale)
+            let profitSign = summary.profit >= 0 ? "+" : ""
+            let profit = "\(profitSign)\(OrderFormatters.twd(summary.profit, locale: locale))"
+            return "\(revenue) \(profit)"
+
+        case .chargedAmount:
+            return OrderFormatters.twd(order.chargedAmount, locale: locale)
+        }
     }
 }
 

@@ -35,6 +35,7 @@ struct OrderEditView: View {
                     TextField("客戶名稱", text: $store.draftCustomerName)
                         .textContentType(.name)
                         .focused($focusedField, equals: .customerName)
+                        .accessibilityIdentifier(BLAccessibilityID.OrderEdit.customerField)
 
                     orderSourcePickerRow
 
@@ -78,7 +79,8 @@ struct OrderEditView: View {
                     decimalField(
                         title: "客戶實付",
                         value: $store.draftChargedAmount,
-                        field: .chargedAmount
+                        field: .chargedAmount,
+                        identifier: BLAccessibilityID.OrderEdit.chargedAmountField
                     )
 
                     if store.isSelectedPaymentMethodCardless {
@@ -166,6 +168,7 @@ struct OrderEditView: View {
                 }
             }
             .formStyle(.grouped)
+            .accessibilityIdentifier(BLAccessibilityID.OrderEdit.root)
             .navigationTitle(Text(LocalizedStringKey(store.original == nil ? "新訂單" : "編輯訂單")))
             .toolbarTitleDisplayMode(.inline)
             .toolbar {
@@ -176,6 +179,7 @@ struct OrderEditView: View {
                         Image(systemName: "xmark")
                     }
                     .accessibilityLabel(Text("取消"))
+                    .accessibilityIdentifier(BLAccessibilityID.OrderEdit.cancelButton)
                 }
 
                 ToolbarItem(placement: .confirmationAction) {
@@ -186,6 +190,7 @@ struct OrderEditView: View {
                     }
                     .buttonStyle(.borderedProminent)
                     .accessibilityLabel(Text("儲存"))
+                    .accessibilityIdentifier(BLAccessibilityID.OrderEdit.saveButton)
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canSave)
                 }
@@ -201,6 +206,7 @@ struct OrderEditView: View {
                         } label: {
                             Image(systemName: "checkmark")
                         }
+                        .accessibilityIdentifier(BLAccessibilityID.Common.keyboardDoneButton)
                         .accessibilityLabel(Text("完成"))
                     }
                 }
@@ -416,6 +422,7 @@ private extension OrderEditView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(BLAccessibilityID.OrderEdit.sourceRow)
     }
 
     /// 商品類別選擇列：以 `Menu` 列出既有類別並提供「新增類別」入口
@@ -452,6 +459,7 @@ private extension OrderEditView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(BLAccessibilityID.OrderEdit.categoryRow)
     }
 
     /// 開團選擇列 (僅合併情境)：以 trigger row 開啟多選 sheet；顯示文字以「、」串接已選開團、空選取顯示「未歸團」
@@ -484,6 +492,7 @@ private extension OrderEditView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(BLAccessibilityID.OrderEdit.campaignRow)
     }
 
     /// 幣別選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗，但 sheet 不允許新增 (幣別來源僅限 ExchangeRate-API 支援清單)
@@ -511,6 +520,7 @@ private extension OrderEditView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(BLAccessibilityID.OrderEdit.currencyRow)
     }
 
     /// 付款方式選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗
@@ -542,6 +552,7 @@ private extension OrderEditView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(BLAccessibilityID.OrderEdit.paymentRow)
     }
 
     /// 對帳狀態選擇列
@@ -573,6 +584,7 @@ private extension OrderEditView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(BLAccessibilityID.OrderEdit.reconciliationRow)
     }
 
     /// 訂購日期編輯列：以 compact `DatePicker` 編輯日期與時分
@@ -659,7 +671,8 @@ private extension OrderEditView {
                                 imageData: data,
                                 onTap: {
                                     store.send(.photoTapped(index))
-                                }
+                                },
+                                accessibilityID: BLAccessibilityID.OrderEdit.photoThumbnail(index: index)
                             ) {
                                 store.send(.deletePhotoTapped(index))
                             }
@@ -739,9 +752,11 @@ private extension OrderEditView {
     /// - Parameters:
     ///   - title: 欄位標題
     ///   - value: 雙向繫結的值
+    ///   - field: 對應的焦點欄位
+    ///   - identifier: UI 測試定位用的 accessibility identifier；預設 nil 代表不指定，僅特定欄位傳入
     /// - Returns: `LabeledContent` + `TextField` 組合 view
     @ViewBuilder
-    func decimalField(title: String, value: Binding<Decimal>, field: OrderEditFeature.State.Field) -> some View {
+    func decimalField(title: String, value: Binding<Decimal>, field: OrderEditFeature.State.Field, identifier: String? = nil) -> some View {
         HStack(alignment: .center, spacing: BLSpacing.small) {
             // 長標籤換行並撐高整列，值在多行標籤中垂直置中
             Text(LocalizedStringKey(title))
@@ -761,6 +776,8 @@ private extension OrderEditView {
             .frame(maxWidth: 140, alignment: .trailing)
             .frame(minHeight: BLHitTarget.minimum)
             .contentShape(.rect)
+            // 未指定時給空字串等同不掛 (leaf 欄位的預設 identifier 即空字串)，僅特定呼叫點傳入值
+            .accessibilityIdentifier(identifier ?? "")
         }
     }
 

@@ -51,6 +51,7 @@ struct QuoteView: View {
             .padding(.vertical, BLSpacing.large)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .accessibilityIdentifier(BLAccessibilityID.Quote.root)
         .background(palette.background)
         .navigationTitle(Text("報價試算"))
         .scrollDismissesKeyboard(.interactively)
@@ -66,6 +67,7 @@ struct QuoteView: View {
                     Image(systemName: "checkmark")
                 }
                 .accessibilityLabel(Text("完成"))
+                .accessibilityIdentifier(BLAccessibilityID.Common.keyboardDoneButton)
             }
         }
         .task {
@@ -143,7 +145,8 @@ private extension QuoteView {
                     label: "商品定價",
                     value: $store.itemPrice,
                     unit: store.fromCurrency.rawValue,
-                    allowsDecimalEntry: true
+                    allowsDecimalEntry: true,
+                    identifier: BLAccessibilityID.Quote.principalField
                 )
 
                 numberField(
@@ -222,6 +225,7 @@ private extension QuoteView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(BLAccessibilityID.Quote.currencyPickerButton)
         .sheet(isPresented: $store.showsCurrencySheet) {
             let locale = locale
 
@@ -254,6 +258,7 @@ private extension QuoteView {
     ///   - unit: 顯示在輸入框右側的單位字串
     ///   - fractionDigits: 固定顯示的小數位數；大於 0 時鍵盤改用 `decimalPad`，否則 `numberPad`
     ///   - allowsDecimalEntry: 為 `true` 時允許輸入 0 到 2 位小數 (整數不強制補零) 並使用 `decimalPad`，供金額類欄位鍵入小數價格
+    ///   - identifier: 掛在 `TextField` 上的無障礙識別碼；預設 `nil` 代表不指定 (等同系統預設空字串)，不影響其他呼叫點
     /// - Returns: 數值輸入列 view
     @ViewBuilder
     func numberField(
@@ -261,7 +266,8 @@ private extension QuoteView {
         value: Binding<Double>,
         unit: String,
         fractionDigits: Int = 0,
-        allowsDecimalEntry: Bool = false
+        allowsDecimalEntry: Bool = false,
+        identifier: String? = nil
     ) -> some View {
         HStack(spacing: BLSpacing.small) {
             Text(LocalizedStringKey(label))
@@ -284,6 +290,8 @@ private extension QuoteView {
             .frame(width: 120)
             .keyboardType(allowsDecimalEntry || fractionDigits > 0 ? .decimalPad : .numberPad)
             .focused($isAmountFieldFocused)
+            // 未指定時傳空字串，等同系統預設，不改變其他呼叫點的無障礙行為
+            .accessibilityIdentifier(identifier ?? "")
 
             Text(LocalizedStringKey(unit))
                 .font(.footnote)
@@ -334,6 +342,10 @@ private extension QuoteView {
         )
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous))
         .blCardShadow()
+        // 合併為單一朗讀單位，建議售價數值落在 element.value 供測試讀取
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(store.hasUsableRate ? formatTwd(store.suggestedTwd) : "—")
+        .accessibilityIdentifier(BLAccessibilityID.Quote.suggestedPriceValue)
     }
 
     /// 成本拆解卡：每項條 + 總成本

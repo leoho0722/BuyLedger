@@ -87,6 +87,7 @@ struct OrderDetailView: View {
                 .frame(maxWidth: .infinity, alignment: .top)
             }
             .background(palette.background)
+            .accessibilityIdentifier(BLAccessibilityID.Orders.detailRoot)
         }
         .background(palette.background)
     }
@@ -235,6 +236,10 @@ private extension OrderDetailView {
     /// - Returns: 財務摘要 view
     @ViewBuilder
     func profitCard(summary: OrderSummary, palette: BLPalette) -> some View {
+        let profitValue = "\(summary.profit >= 0 ? "+" : "")\(OrderFormatters.twd(summary.profit, locale: locale))"
+        let revenueValue = OrderFormatters.twd(summary.revenue, locale: locale)
+        let costValue = OrderFormatters.twd(summary.totalCost, locale: locale)
+
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 HStack(alignment: .bottom) {
@@ -243,11 +248,15 @@ private extension OrderDetailView {
                             .font(.footnote.weight(.semibold))
                             .foregroundStyle(palette.secondaryLabel)
 
-                        Text("\(summary.profit >= 0 ? "+" : "")\(OrderFormatters.twd(summary.profit, locale: locale))")
+                        Text(profitValue)
                             .font(.largeTitle.bold())
                             .foregroundStyle(summary.profit >= 0 ? palette.green : palette.red)
                             .monospacedDigit()
                     }
+                    // 合併朗讀，主要數值由 accessibilityValue 承載供 UI 測試讀取
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.profit))
+                    .accessibilityValue(profitValue)
 
                     Spacer()
 
@@ -267,15 +276,21 @@ private extension OrderDetailView {
                 HStack {
                     metric(
                         "總收款",
-                        value: OrderFormatters.twd(summary.revenue, locale: locale),
+                        value: revenueValue,
                         palette: palette
                     )
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.revenue))
+                    .accessibilityValue(revenueValue)
                     Spacer()
                     metric(
                         "總成本",
-                        value: OrderFormatters.twd(summary.totalCost, locale: locale),
+                        value: costValue,
                         palette: palette
                     )
+                    .accessibilityElement(children: .combine)
+                    .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.cost))
+                    .accessibilityValue(costValue)
                     Spacer()
                     metric(
                         "手續費",
@@ -383,27 +398,37 @@ private extension OrderDetailView {
     /// - Returns: KPI 列 view
     @ViewBuilder
     func kpiThreeUp(summary: OrderSummary, palette: BLPalette) -> some View {
+        let revenueValue = OrderFormatters.twd(summary.revenue, locale: locale)
+        let costValue = OrderFormatters.twd(summary.totalCost, locale: locale)
+        let profitValue = "\(summary.profit >= 0 ? "+" : "")\(OrderFormatters.twd(summary.profit, locale: locale))"
+
         HStack(alignment: .top, spacing: BLSpacing.medium) {
             kpiTile(
                 label: "總收款",
-                value: OrderFormatters.twd(summary.revenue, locale: locale),
+                value: revenueValue,
                 tint: palette.accent,
                 palette: palette
             )
+            .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.revenue))
+            .accessibilityValue(revenueValue)
             kpiTile(
                 label: "總成本",
-                value: OrderFormatters.twd(summary.totalCost, locale: locale),
+                value: costValue,
                 tint: palette.orange,
                 palette: palette
             )
+            .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.cost))
+            .accessibilityValue(costValue)
             kpiTile(
                 label: "獲利",
-                value: "\(summary.profit >= 0 ? "+" : "")\(OrderFormatters.twd(summary.profit, locale: locale))",
+                value: profitValue,
                 delta: OrderFormatters.percent(summary.margin, locale: locale),
                 deltaUp: summary.profit >= 0,
                 tint: summary.profit >= 0 ? palette.green : palette.red,
                 palette: palette
             )
+            .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.profit))
+            .accessibilityValue(profitValue)
         }
     }
 

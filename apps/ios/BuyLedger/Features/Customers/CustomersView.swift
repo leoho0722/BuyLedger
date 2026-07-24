@@ -51,6 +51,7 @@ struct CustomersView: View {
         .task {
             await store.send(.orders(.task)).finish()
         }
+        .accessibilityIdentifier(BLAccessibilityID.Customers.listRoot)
     }
 }
 
@@ -71,6 +72,7 @@ private extension CustomersView {
         .frame(maxWidth: .infinity)
         .containerRelativeFrame(.vertical)
         .background(palette.background)
+        .accessibilityIdentifier(BLAccessibilityID.Customers.listEmptyState)
     }
 
     /// 強調區塊：累計消費排名前 ``topHighlightCount`` 名的客戶
@@ -98,6 +100,9 @@ private extension CustomersView {
                     }
                     .buttonStyle(.plain)
                     .accessibilityHint("查看 \(customer.name) 的訂單")
+                    .accessibilityIdentifier(BLAccessibilityID.Customers.topCard(customerName: customer.id))
+                    // 合併卡的累計消費改由 accessibilityValue 承載，UI 測試以 topCard identifier 定位後讀 element.value
+                    .accessibilityValue(formatTwd(customer.totalSpent))
                 }
             }
         }
@@ -154,10 +159,12 @@ private extension CustomersView {
                             .foregroundStyle(palette.secondaryLabel)
                             .textCase(.uppercase)
 
+                        // 金額已由卡片的 accessibilityValue 承載，這裡標 hidden 免得合併朗讀重複讀一次數字
                         Text(formatTwd(customer.totalSpent))
                             .font(.title3.bold())
                             .monospacedDigit()
                             .foregroundStyle(palette.label)
+                            .accessibilityHidden(true)
                     }
 
                     Spacer()
@@ -228,6 +235,9 @@ private extension CustomersView {
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint("查看 \(customer.name) 的訂單")
+                        .accessibilityIdentifier(BLAccessibilityID.Customers.row(customerName: customer.id))
+                        // 合併列的累計消費改由 accessibilityValue 承載，UI 測試以 row identifier 定位後讀 element.value
+                        .accessibilityValue(formatTwd(customer.totalSpent))
 
                         if index < customers.count - 1 {
                             Divider()
@@ -270,10 +280,12 @@ private extension CustomersView {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
+                // 金額已由列的 accessibilityValue 承載，這裡標 hidden 免得合併朗讀重複讀一次數字
                 Text(formatTwd(customer.totalSpent))
                     .font(.subheadline.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(palette.label)
+                    .accessibilityHidden(true)
 
                 Text(formatDate(customer.lastOrderDate))
                     .font(.caption)

@@ -27,6 +27,11 @@ struct BLPhotoThumbnail: View {
     /// 縮圖本體與右上角刪除鈕是兩顆獨立的 `Button`，各自承接點擊，點刪除不會誤觸此 callback
     var onTap: (() -> Void)? = nil
 
+    /// 縮圖本體按鈕的 accessibility identifier (UI 測試定位用)；`nil` 代表不指定
+    ///
+    /// 只掛在可點擊的縮圖本體按鈕上，不影響刪除鈕；縮圖不可點擊 (`onTap` 為 `nil`) 時不生效
+    var accessibilityID: String? = nil
+
     /// 點擊右上角刪除鈕時的 callback
     let onDelete: () -> Void
 
@@ -74,6 +79,7 @@ private extension BLPhotoThumbnail {
                 shapedThumbnail
             }
             .buttonStyle(BLPhotoThumbnailButtonStyle())
+            .accessibilityIdentifier(accessibilityID ?? "")
         } else {
             shapedThumbnail
         }

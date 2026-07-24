@@ -1,0 +1,30 @@
+{
+  "configurations" : [
+    {
+      "id" : "A1B2C3D4-0001-0001-0001-000000000001",
+      "name" : "zh-Hant TW",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "language" : "zh-Hant",
+    "region" : "TW",
+    "testExecutionOrdering" : "alphabetical",
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "skippedTests" : [
+        "LaunchPerformanceTests"
+      ],
+      "target" : {
+        "containerPath" : "container:BuyLedger.xcodeproj",
+        "identifier" : "D0B1FCE72FA22AA100B50E07",
+        "name" : "BuyLedgerUITests"
+      }
+    }
+  ],
+  "version" : 1
+}

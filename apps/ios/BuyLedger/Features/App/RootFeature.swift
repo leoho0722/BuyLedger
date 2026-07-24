@@ -221,6 +221,9 @@ struct RootFeature {
                     return .none
                     
                 case let .customerSelected(name):
+                    // 客戶頁掛在「更多」分頁的導覽路徑下 (morePath = [.customers])，深連結切到訂單分頁前先清空該路徑：
+                    // 否則 iPad 的 NavigationSplitView 會在路徑仍非空時切換分欄，於 boundPathChange 觸發 assertion 崩潰
+                    state.morePath.removeAll()
                     state.selectedTab = .orders
                     state.orders.searchText = name
                     state.orders.selectedStatus = .all

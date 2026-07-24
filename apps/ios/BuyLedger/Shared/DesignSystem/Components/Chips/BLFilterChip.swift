@@ -56,6 +56,8 @@ struct BLFilterChip: View {
                 .contentShape(.capsule)
         }
         .buttonStyle(.plain)
+        // 選取態原本只以配色表達，補選取 trait 讓輔助技術與 UI 測試都讀得到、不必目視顏色
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 }
 

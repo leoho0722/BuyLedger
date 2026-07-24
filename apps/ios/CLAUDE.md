@@ -124,6 +124,7 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 
 - **每個目的地只有一條抵達路徑**——清單點擊與深連結必須寫入同一條路徑。「更多」分頁以 `RootFeature.MoreRoute` 值導向堆疊驅動 (`NavigationStack(path:)` + `navigationDestination(for:)`)，深連結時於同一次狀態更新內先清空再推入。
     - 用值導向堆疊而非「呈現旗標 + 去重判斷」：後者只是把不合法狀態擋掉，前者讓它根本無法表達。
+    - **從「更多」分頁下的 pushed 頁深連結去別的根分頁時，切分頁前必須先 `state.morePath.removeAll()`**——客戶頁掛在 `morePath = [.customers]` 下，`customerSelected` 若在路徑仍非空時就改 `selectedTab`，iPad 的 `NavigationSplitView` 會在分欄更新的 `NavigationColumnState.boundPathChange` 觸發 `swift_unexpectedError` assertion 崩潰 (iPhone 不走 split view 故不崩，易漏)。任何新增的「More 下 pushed 頁 → 根分頁」深連結都要比照先清空 `morePath`。
 - **選取狀態單一來源**——同一個清單裡的不同項目類別要併進同一個選取型別 (參考 `RootSidebarLayout.SidebarSelection`)，系統才只會高亮一列；兩套選取機制並存必定同時高亮。
 - **任一時刻只呈現一層 modal**——同一畫面的多個 sheet 併進單一 `@Presents` destination 列舉，以單一呈現點依型別分派 (參考 `LookupManagementFeature.Destination`)，互斥由型別系統保證，而非多個並列的 `.sheet` 修飾子各自靠布林避讓。
     - 已在 sheet 內要再開子畫面時走 push、加入既有的路徑列舉即可 (訂單編輯的照片檢視與各選擇器共用 `PickerRoute`)。
@@ -221,6 +222,30 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 Baseline 在 `BuyLedgerTests/__Snapshots__/`；`SnapshotTests.swift` 以 `#if canImport(SnapshotTesting) && os(iOS)` 包住，目前僅 iOS 393×852 baseline。record / commit 流程與設計大改重建見 [README.md › 執行測試](README.md#3-執行測試) 與本目錄 README 的 Troubleshooting。
 
 **硬規則**：每個 snapshot test 必須用 `TestDependencies.withFixedNow { ... }` (`BuyLedgerTests/TestDependencies.swift`) 包住 view 建構與 `assertSnapshot`，注入固定 `\.date` (2026-04-30 UTC)；不要在測試裡直接 `Date()`。
+
+### UI 自動化測試 (XCUITest)
+
+`BuyLedgerUITests` target 走獨立 scheme，共用 Support 層 (`BuyLedgerUITests/Support/`)、Page Object (`BuyLedgerUITests/Screens/`) 與地基掛鉤。動這層時必守：
+
+- **一律以 `accessibilityIdentifier` 定位、禁止用顯示文字或 `accessibilityLabel`**——App 支援中英切換，文字定位在英文模式整批失效。identifier 常數集中在 `BuyLedgerAccessibilityIDs/BLAccessibilityID.swift` (共用資料夾、同時編入 App 與 UITests 兩個 target)，兩端一律引用常數、不寫字面值。
+- **identifier 只掛在「本身就是無障礙元素」的東西上**——按鈕、輸入欄、捲動容器、`accessibilityElement(children: .combine/.contain)` 後的容器。掛在單純的 `VStack` 這類版面容器上會把子元素全併吞、整塊只剩一個字串 (Dashboard 空狀態與 `BLLoadFailureView` 踩過，改掛 `.accessibilityElement(children: .contain)` 才保住內部按鈕)。
+- **合併朗讀的列以 `accessibilityValue` 承載主要數值**——不要為了測試把 `.combine` 改成拆開的元素 (違反「複合列合併為單一朗讀單位」)；容器掛 identifier、數值放 `accessibilityValue`，測試以 identifier 定位後讀 `element.value`。XCUITest 中這類合併元素歸為 `staticText`，Page Object 查詢用 `app.descendants(matching: .any)[id]`、不要用 `otherElements`。
+- **導覽列不掛 identifier**——SwiftUI 導覽列是 `NavigationStack` 建立的 `UINavigationBar`，identifier 掛不上；畫面就緒改以「畫面根容器 identifier」判定，導覽列由測試端 `app.navigationBars` 定位。
+- **測試前必須以啟動參數指定資料與語言**——模擬器首次啟動是空狀態。以 `LaunchOptions` 指定 seed profile 與語言，經 `BLUITestConfiguration` 注入 in-memory container、固定時間、外部相依 test double；正式路徑不受影響 (整套 harness 以 `#if DEBUG` 圈住)。啟動掛鉤集中在 `AppLaunchConfigurator`。
+- **外部相依一律走 test double**——`PhotoClient` / `CalendarReminderClient` / `ExchangeRateClient` 在 UI 測試模式換成不開系統彈窗、不打網路的替身；不依賴系統照片選擇器或行事曆權限。
+- **不得以 `XCTSkip` 掩蓋 App 自身元素缺失**——找不到 App 元素一律 `failWithDiagnostics` (附截圖與可及性樹)。`XCTSkip` 只留給真正的外部環境差異 (系統文字選單等跨行程 UI)，且須寫明原因。
+- **compact 與 regular 版面差異由 `AppNavigator` 吸收**——iPhone 走底部分頁列、iPad 走側邊欄。系統 tab bar 按鈕掛不上 identifier，分頁列版面依 `RootTab` 宣告順序取按鈕、再等目的地畫面根 identifier 確認 (受控例外)。
+- **`LabeledContent` 的內建 value 在 XCUITest 讀不到**——要顯式加 `.accessibilityElement(children: .combine)` + `.accessibilityValue(...)` 才讀得到 `element.value` (開團詳情應收/已收、成本摘要卡踩過)。
+- **`AlertState` (TCA) 系統 alert 掛不上 identifier**——這是平台限制 (受控例外，同 tab bar)。測試端以 `app.alerts.firstMatch` 判定呈現 (`alertPresented`/`alertDismissed`)、以 `tapAlertButton(label:)` 依按鈕文字點擊 (主回歸計畫已鎖語言故文字為決定值)。能自掛 identifier 的自訂 `.alert` 才用 `tapAlertButton(identifier:)`。
+- **`Menu` 的 identifier 掛在 `Menu` 那層 (`} label: { } ` 之後)、不是 label 內的 `Label`**——掛在 label 內定位不到 (`app.buttons` 找不到)。選單內項目掛在各 `Button` 上，測試以 `tapMenuItem` 先展開再點。
+- **`Picker(.segmented)` 的選項掛不上 identifier**——同 tab bar。identifier 掛在 `Picker` 本身，測試端以 `segmentedControls.buttons` 依列舉宣告順序 (`boundBy`) 取選項。
+- **表單下半的數字欄會被別欄鍵盤蓋住而聚焦失敗**——建單流程在其他文字欄輸入前 (鍵盤未升起時) 先填數字欄；填完文字欄若被捲走，`swipeDown` 捲回頂端再輸入。數字鍵盤完成鍵一律掛 `Common.keyboardDoneButton` (含 OrderEdit/FX/Quote 各自的 keyboard toolbar)。
+- **iPad 置中 sheet 上「僅差數點露於底緣下方」的欄位不可用整頁 `swipeUp` 捲入**——整頁 swipe 帶慣性、一次捲數百點，會把只差幾點的目標整個衝過頭捲離螢幕 (訂單編輯客戶實付欄踩過：iPad 開表單自動聚焦客戶名、該欄剛好落在表單底緣下方 3 點，整頁 swipe 一路衝到備註區使目標離屏)。改用 `Scrolling.scrollToHittableGently`：以固定短距、無慣性的 `press…thenDragTo` 逐步逼近，每步查可點就停。此 helper 要求目標已在樹上 (frame 有效)，離屏未渲染的惰性列仍走 `swipeUp` 查 `exists` 版。
+- **`LazyVStack`/`LazyVGrid` 未渲染的離屏列 frame 無效**——查 `isHittable`/`waitUntilHittable` 會直接報錯 (非回 false)；只需確認存在時用 `swipeUp` 逐次捲動查 `exists`，不要查 hittability。照片縮圖列 (水平 `ScrollView` 內) 亦然：先 `swipeUp` 查 `exists` 把它捲入樹再查可點，否則列渲染未穩時查 hittability 會報「activation point invalid」而偶發 flaky。
+- **push 目的地的返回鍵在 iPad 要 scope 到目的地那條導覽列**——iPad 側邊欄／清單／詳情各有自己的 `navigationBar`，`app.navigationBars.buttons.firstMatch` 會落在側邊欄的鈕、把整個 sheet 誤關 (照片檢視器返回踩過)。作法：先鎖定目的地的導覽列 (照片檢視器以其標題含 `/` 的換頁計數認出)，再點其返回鍵。SwiftUI 系統返回鍵帶穩定且語言無關的 identifier `BackButton` (`Common.backButton`)，可用來定位。
+- **UI 測試僅覆蓋 iOS 26.x 模擬器**——`BuyLedgerUITests` target 部署目標為 26.x，不覆蓋 iOS 18。
+- **測試計畫**：主回歸 `BuyLedgerUITests.xctestplan` (鎖 zh-Hant/TW、關閉隨機順序、排除效能測試)；效能獨立 `BuyLedgerUITests-Performance.xctestplan`。目前主回歸涵蓋全 App 各區域流程 (根導覽、總覽、訂單清單/篩選/詳情/建單/編輯/合併、開團 CRUD/詳情、客戶、分析、匯率、報價、AI 總結、照片檢視)。
+- **跑完整功能回歸別靠 `--extra-args -testPlan`**——xcodebuildmcp CLI 的 `test` 不理會經 `--extra-args` 傳入的 `-testPlan`，會退回 scheme 預設計畫 (效能計畫，只含 `LaunchPerformanceTests`)。要跑全功能回歸改用 `--extra-args -only-testing:BuyLedgerUITests --extra-args -skip-testing:BuyLedgerUITests/LaunchPerformanceTests` (整個 target 減效能)；跑單一類別直接 `-only-testing:BuyLedgerUITests/<類別>`。
 
 ## 環境相依性與依賴注入
 

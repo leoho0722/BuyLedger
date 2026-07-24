@@ -65,4 +65,24 @@ enum RootTab: String, CaseIterable, Identifiable {
             "ellipsis.circle"
         }
     }
+
+    // MARK: - Accessibility Properties
+
+    /// 對應到 UI 測試 identifier 的分頁 key
+    ///
+    /// 刻意寫成窮舉 switch 而非直接取 `rawValue`：新增分頁時這裡會編不過，逼出 ``BLAccessibilityID/Root/Tab`` 的同步更新
+    var accessibilityKey: BLAccessibilityID.Root.Tab {
+        switch self {
+        case .dashboard:
+            .dashboard
+        case .orders:
+            .orders
+        case .campaigns:
+            .campaigns
+        case .insights:
+            .insights
+        case .more:
+            .more
+        }
+    }
 }

@@ -28,7 +28,8 @@ apps/ios/
 │   │   ├── Persistence/          # OrderPersistence (@ModelActor)、PersistenceContainer、OrderRecord
 │   │   ├── Dependencies/         # Repository 與 system-call client (type-based @Dependency 注入；不綁定數量)
 │   │   ├── Networking/           # APIError、HTTPClient (send/stream)、HTTPMethod、URLRequestBuilder、AppConfiguration
-│   │   └── Sync/                 # SwiftData 本機 sidecar 的 @Model 定義 (SyncMeta / SyncQueueItem)，供 V12 schema 引用；雲端同步已移除，兩表恆為空
+│   │   ├── Sync/                 # SwiftData 本機 sidecar 的 @Model 定義 (SyncMeta / SyncQueueItem)，供 V12 schema 引用；雲端同步已移除，兩表恆為空
+│   │   └── Testing/              # UI 測試啟動 harness (BLUITestConfiguration / SeedProfile / SeedData / DependencyOverrides；#if DEBUG)
 │   ├── Features/                 # 依功能切分的 TCA feature
 │   │   ├── AISummary/            # 訂單 AI 商品明細總結 (Ollama Cloud 串流)
 │   │   ├── App/                  # RootFeature + RootView + RootSidebarLayout / RootTabLayout
@@ -49,8 +50,11 @@ apps/ios/
 │   │   │   └── Components/       # BLAvatar、BLBadge、BLCard、BLBarChart 等元件
 │   │   └── Extensions/           # Swift/SwiftUI 內建型別的通用 extension (Image/Color/Locale/Decimal 等，一型一檔)
 │   └── Resources/                # Info.plist、entitlements、Config.example.xcconfig (範本，實際 Config.xcconfig 自填且 gitignored)、assets
+├── BuyLedgerAccessibilityIDs/    # UI 測試 identifier 常數 (共用資料夾，同時編入 App 與 UITests 兩個 target)
 ├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
-└── BuyLedgerUITests/             # UI 與啟動畫面測試
+├── BuyLedgerUITests/             # XCUITest：Support/ (共用互動 helper)、Screens/ (Page Object)、Tests/ (流程與冒煙)
+├── BuyLedgerUITests.xctestplan   # UI 主回歸測試計畫 (鎖 zh-Hant/TW、關閉隨機順序)
+└── BuyLedgerUITests-Performance.xctestplan  # UI 效能測試計畫 (啟動量測，獨立於主回歸)
 ```
 
 ## 開發環境設定
@@ -109,6 +113,8 @@ xcodebuildmcp simulator build-and-run \
 
 ### 3. 執行測試
 
+單元測試與 snapshot 測試 (主 scheme)：
+
 ```bash
 xcodebuildmcp simulator test \
   --project-path apps/ios/BuyLedger.xcodeproj \
@@ -117,6 +123,17 @@ xcodebuildmcp simulator test \
 ```
 
 Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確認視覺正確後 commit baseline；之後變更若與 baseline 不符會 fail。固定時間注入的硬規則 (`TestDependencies.withFixedNow`) 見 [CLAUDE.md › 測試準則](CLAUDE.md#測試準則)。
+
+UI 自動化測試 (XCUITest，獨立 scheme)：
+
+```bash
+xcodebuildmcp simulator test \
+  --project-path apps/ios/BuyLedger.xcodeproj \
+  --scheme BuyLedgerUITests \
+  --simulator-name "iPhone 17"
+```
+
+UI 測試以啟動參數宣告前置條件 (資料、語言、時間、外部相依)，測試端用 `LaunchOptions` 組出、App 端由 `BLUITestConfiguration` 解析；常用旗標：`-BLUITest` (開啟測試模式)、`-BLUITestSeed <profile>` (注入種子資料)、`-BLUITestNow <ISO8601>` (固定時間)、`-BLUITestLanguage <traditionalChinese|english>`、`-BLUITestLoadFailure <orders|...>`。整套 harness 以 `#if DEBUG` 圈住、不進 Release。共用測試工具在 `BuyLedgerUITests/Support/` 與 `BuyLedgerUITests/Screens/`，identifier 常數在 `BuyLedgerAccessibilityIDs/BLAccessibilityID.swift` (同時編入 App 與 UITests 兩個 target)。硬規則 (一律用 identifier 定位、測試前必 seed、不得以 skip 掩蓋、僅覆蓋 iOS 26.x) 見 [CLAUDE.md › 測試準則](CLAUDE.md#測試準則)。
 
 ### 4. 重新產生 data model (codegen)
 

@@ -46,6 +46,7 @@ struct OrderMergeCandidateSheet: View {
                             Image(systemName: "xmark")
                         }
                         .accessibilityLabel(Text("取消"))
+                        .accessibilityIdentifier(BLAccessibilityID.OrderMerge.cancelButton)
                     }
                 }
                 .navigationDestination(for: OrderMergeFeature.Step.self) { _ in
@@ -70,6 +71,7 @@ private extension OrderMergeCandidateSheet {
                     Button("繼續") {
                         store.send(.photoStepConfirmTapped)
                     }
+                    .accessibilityIdentifier(BLAccessibilityID.OrderMerge.photoContinueButton)
                 }
             }
     }
@@ -90,6 +92,7 @@ private extension OrderMergeCandidateSheet {
                     systemImage: "tray",
                     description: Text("僅能與同幣別、同客戶且非「已合併」「已取消」的訂單合併。")
                 )
+                .accessibilityIdentifier(BLAccessibilityID.OrderMerge.candidateListEmptyState)
             } else {
                 List {
                     ForEach(sections) { section in
@@ -108,6 +111,7 @@ private extension OrderMergeCandidateSheet {
                         }
                     }
                 }
+                .accessibilityIdentifier(BLAccessibilityID.OrderMerge.candidateListRoot)
             }
         }
         .searchable(
@@ -133,6 +137,7 @@ private extension OrderMergeCandidateSheet {
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(BLAccessibilityID.OrderMerge.candidateRow(orderID: order.id))
     }
 }
 

@@ -249,6 +249,7 @@ private extension OptionPickerSheet {
                         Button("完成") {
                             dismiss()
                         }
+                        .accessibilityIdentifier(BLAccessibilityID.OptionPicker.doneButton)
                     }
 
                     // 獨立呈現時「完成」是唯一出口，等於逼使用者以完成來取消；補上取消動作。
@@ -279,6 +280,7 @@ private extension OptionPickerSheet {
             .scrollDismissesKeyboard(.interactively)
             .alert(LocalizedStringKey(addAlertTitle), isPresented: $showsAddAlert) {
                 TextField(LocalizedStringKey(addFieldPlaceholder), text: $draft)
+                    .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addAlertNameField)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
 
@@ -290,6 +292,7 @@ private extension OptionPickerSheet {
                         dismiss()
                     }
                 }
+                .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addAlertConfirmButton)
                 .disabled(
                     draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 )
@@ -297,6 +300,7 @@ private extension OptionPickerSheet {
                 Button("取消", role: .cancel) {
                     draft = ""
                 }
+                .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addAlertCancelButton)
             } message: {
                 Text(LocalizedStringKey(addAlertMessage))
             }
@@ -336,6 +340,7 @@ private extension OptionPickerSheet {
                     } label: {
                         Label(LocalizedStringKey(addButtonTitle), systemImage: "plus.circle.fill")
                     }
+                    .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addButton)
                 }
             }
 
@@ -357,6 +362,7 @@ private extension OptionPickerSheet {
                 }
             }
         }
+        .accessibilityIdentifier(BLAccessibilityID.OptionPicker.root)
     }
 
     /// iOS / iPadOS 的 clear row：點擊呼叫 ``ClearOption/onClear`` 並 dismiss；`selected` 為空字串時顯示 checkmark
@@ -413,6 +419,7 @@ private extension OptionPickerSheet {
             }
             .contentShape(Rectangle())
         }
+        .accessibilityIdentifier(BLAccessibilityID.OptionPicker.optionRow(option))
         .buttonStyle(.plain)
     }
 }
@@ -493,6 +500,9 @@ private struct SearchableModifier: ViewModifier {
     let enabled: Bool
 
     /// 依 ``enabled`` 決定是否套上 `.searchable`
+    ///
+    /// 搜尋欄由系統在導覽列建立、掛不上 identifier (掛在 content 上只會污染整個子樹)，
+    /// 畫面上唯一，測試端用 `app.searchFields.firstMatch` 定位
     /// - Parameter content: 原始 view
     /// - Returns: 套用後的 view
     @ViewBuilder

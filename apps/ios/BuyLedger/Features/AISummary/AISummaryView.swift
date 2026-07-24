@@ -25,6 +25,8 @@ struct AISummaryView: View {
     var body: some View {
         NavigationStack {
             content
+                .accessibilityElement(children: .contain)
+                .accessibilityIdentifier(BLAccessibilityID.AISummary.root)
                 .navigationTitle(Text("AI 商品明細總結"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
@@ -35,6 +37,7 @@ struct AISummaryView: View {
                             Image(systemName: "xmark")
                         }
                         .accessibilityLabel(Text("關閉"))
+                        .accessibilityIdentifier(BLAccessibilityID.AISummary.closeButton)
                     }
                 }
                 .task {
@@ -64,6 +67,7 @@ private extension AISummaryView {
                     store.send(.retryTapped)
                 }
                 .buttonStyle(.borderedProminent)
+                .accessibilityIdentifier(BLAccessibilityID.AISummary.retryButton)
             }
 
         case .idle, .streaming, .finished:

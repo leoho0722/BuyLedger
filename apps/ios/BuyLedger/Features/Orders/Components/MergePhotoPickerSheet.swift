@@ -78,6 +78,7 @@ private extension MergePhotoPickerSheet {
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isSelected ? "取消保留這張照片" : "保留這張照片")
+        .accessibilityIdentifier(BLAccessibilityID.OrderMerge.photoCell(index: index))
     }
 
     /// 縮圖內容：可解碼時顯示影像，否則顯示 placeholder (寧可空狀態也不顯示假資料)

@@ -32,19 +32,25 @@ struct SettingsView: View {
             Section("語言") {
                 Picker("App 語言", selection: $store.language) {
                     ForEach(AppLanguage.allCases) { language in
-                        Text(language.title).tag(language)
+                        // Picker 以 menu 呈現時選項由 UIKit 重建，此 identifier 可能傳不到 menu item，待實測確認
+                        Text(language.title)
+                            .accessibilityIdentifier(BLAccessibilityID.Settings.languageOption(language.rawValue))
+                            .tag(language)
                     }
                 }
+                .accessibilityIdentifier(BLAccessibilityID.Settings.languagePicker)
             }
 
             Section {
                 Toggle("啟用 AI 總結", isOn: $store.useAiSummary)
+                    .accessibilityIdentifier(BLAccessibilityID.Settings.aiSummaryToggle)
 #if DEBUG
                 NavigationLink {
                     modelPicker
                 } label: {
                     LabeledContent("模型", value: store.aiSummaryModel)
                 }
+                .accessibilityIdentifier(BLAccessibilityID.Settings.aiSummaryModelRow)
 #endif
             } header: {
                 Text("AI 商品明細總結")
@@ -60,6 +66,7 @@ struct SettingsView: View {
                 } label: {
                     LabeledContent("新訂單預設", value: currencyDisplayText(for: store.defaultCurrency))
                 }
+                .accessibilityIdentifier(BLAccessibilityID.Settings.defaultCurrencyRow)
             }
 
             Section {
@@ -68,6 +75,7 @@ struct SettingsView: View {
                     value: $store.monthlyProfitGoalTwd,
                     format: .number.precision(.fractionLength(0))
                 )
+                .accessibilityIdentifier(BLAccessibilityID.Settings.monthlyGoalField)
                 .keyboardType(.numberPad)
                 .focused($isGoalFieldFocused)
             } header: {
@@ -91,9 +99,11 @@ struct SettingsView: View {
 
             Section("關於") {
                 LabeledContent("版本", value: appVersion)
+                    .accessibilityIdentifier(BLAccessibilityID.Settings.versionRow)
                 LabeledContent("作者", value: "Leo Ho")
             }
         }
+        .accessibilityIdentifier(BLAccessibilityID.Settings.root)
         .rootNavigationTitle("設定", language: store.language)
         .scrollDismissesKeyboard(.interactively)
         .bind($store.isGoalFieldFocused, to: $isGoalFieldFocused)
@@ -107,6 +117,7 @@ struct SettingsView: View {
                 } label: {
                     Image(systemName: "checkmark")
                 }
+                .accessibilityIdentifier(BLAccessibilityID.Common.keyboardDoneButton)
                 .accessibilityLabel(Text("完成"))
             }
         }

@@ -61,6 +61,7 @@ struct CampaignListView: View {
                                     : "line.3.horizontal.decrease.circle.fill"
                             )
                         }
+                        .accessibilityIdentifier(BLAccessibilityID.Campaigns.filterMenuButton)
 
                         Button {
                             store.send(.campaigns(.newCampaignTapped))
@@ -68,6 +69,7 @@ struct CampaignListView: View {
                             Image(systemName: "plus")
                         }
                         .accessibilityLabel(Text("新增開團"))
+                        .accessibilityIdentifier(BLAccessibilityID.Campaigns.addButton)
                     }
                 }
                 .navigationDestination(for: String.self) { id in
@@ -79,11 +81,10 @@ struct CampaignListView: View {
         ) { editStore in
             CampaignEditView(store: editStore)
         }
+        // 刪除確認也在此掛一份:列表列的長按 contextMenu 刪除是在列表層 (未 push 詳情) 觸發,需由列表頁承接 alert;
+        // 詳情頁 toolbar 選單觸發的刪除/結團則由 ``CampaignDetailView`` 自己承接 (iPad 才會疊在 push 出來的詳情上方)
         .alert(
             $store.scope(state: \.campaigns.deletionConfirmation, action: \.campaigns.deletionConfirmation)
-        )
-        .alert(
-            $store.scope(state: \.campaigns.settleConfirmation, action: \.campaigns.settleConfirmation)
         )
         .alert(
             $store.scope(state: \.campaigns.reminderAccessAlert, action: \.campaigns.reminderAccessAlert)
@@ -111,6 +112,7 @@ private extension CampaignListView {
                     systemImage: "shippingbox",
                     description: Text("點右上角「＋」建立第一個開團，把訂單歸到團裡即可追蹤進度。")
                 )
+                .accessibilityIdentifier(BLAccessibilityID.Campaigns.listEmptyState)
             }
         } else {
             let sections = store.campaigns.dateSections(
@@ -134,6 +136,7 @@ private extension CampaignListView {
                     .padding(.top, BLSpacing.small)
                     .padding(.bottom, BLSpacing.large)
                 }
+                .accessibilityIdentifier(BLAccessibilityID.Campaigns.listRoot)
             }
         }
     }
@@ -208,6 +211,7 @@ private extension CampaignListView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(BLAccessibilityID.Campaigns.row(campaignID: campaign.id))
         .contextMenu {
             Button {
                 store.send(.campaigns(.editCampaignTapped(campaign.id)))
@@ -320,6 +324,8 @@ private struct CampaignRow: View {
         // 開團列由日期、名稱、狀態與多個進度組成；合併為單一朗讀單位，
         // 否則輔助技術要逐一走過每個子元素
         .accessibilityElement(children: .combine)
+        // 合併列的應收金額改由 accessibilityValue 承載，UI 測試以 row identifier 定位後讀 element.value
+        .accessibilityValue(CampaignFormatters.twd(summary.receivables, locale: locale))
     }
 }
 

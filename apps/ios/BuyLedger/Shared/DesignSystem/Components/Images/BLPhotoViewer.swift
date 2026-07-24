@@ -63,6 +63,7 @@ struct BLPhotoViewer: View {
         // 背景不另外鋪色，沿用宿主的系統背景，隨深淺色模式自適應
         pager
             .padding(BLSpacing.small)
+            .accessibilityIdentifier(BLAccessibilityID.PhotoViewer.root)
             .navigationTitle(Text(verbatim: counterText))
             .navigationBarTitleDisplayMode(.inline)
     }
@@ -108,6 +109,7 @@ private extension BLPhotoViewer {
                     RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous)
                 }
                 .accessibilityLabel("訂單照片")
+                .accessibilityIdentifier(BLAccessibilityID.PhotoViewer.image)
                 .scaleEffect(zoomScale * gestureScale)
                 .offset(currentPanOffset)
                 .gesture(magnifyGesture)

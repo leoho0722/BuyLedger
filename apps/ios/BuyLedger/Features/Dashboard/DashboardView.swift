@@ -56,6 +56,8 @@ struct DashboardView: View {
 
         // 三分支解析：已載入顯示內容、有錯誤顯示失敗與重試、其餘才是載入中。
         // 只判斷「是否已載入」會讓失敗永遠停在轉圈
+        // 根 identifier 掛在各 loadState 分支自己的容器上，不掛最外層 group：
+        // 掛外層 group 會在失敗與載入態把整個畫面塌成單一元素，內部的重試鈕與內容都查不到
         let core = Group {
             switch store.orders.loadState {
             case .loaded:
@@ -65,11 +67,16 @@ struct DashboardView: View {
                         .padding(.vertical, BLSpacing.large)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
+                .accessibilityIdentifier(BLAccessibilityID.Dashboard.root)
 
             case let .failed(message):
-                BLLoadFailureView(message: message) {
+                BLLoadFailureView(
+                    message: message,
+                    retryIdentifier: BLAccessibilityID.Dashboard.loadFailureRetryButton
+                ) {
                     store.send(.orders(.task))
                 }
+                .accessibilityIdentifier(BLAccessibilityID.Dashboard.loadFailure)
 
             case .loading:
                 loadingPlaceholder(palette: palette)
@@ -84,6 +91,8 @@ struct DashboardView: View {
             // 同時把月度目標等設定載入，避免使用者直接從 Dashboard 啟動時看不到自訂目標
             await store.send(.settings(.task)).finish()
         }
+
+        // 導覽列由 NavigationStack 自行建立，掛不到 View 修飾子上；測試改以畫面根容器判定就緒
         return NavigationStack {
             core
                 .rootNavigationTitle("總覽", language: store.settings.language)
@@ -234,6 +243,7 @@ private extension DashboardView {
         }
         .accessibilityElement()
         .accessibilityLabel(Text("載入中"))
+        .accessibilityIdentifier(BLAccessibilityID.Dashboard.loading)
     }
 
     /// 第一次開 App 還沒有任何訂單時的引導畫面
@@ -278,9 +288,13 @@ private extension DashboardView {
                 Label("建立第一筆訂單", systemImage: "plus")
             }
             .buttonStyle(BLButtonStyle(variant: .primary))
+            .accessibilityIdentifier(BLAccessibilityID.Dashboard.emptyStateActionButton)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, BLSpacing.section * 2)
+        // contain 保留子元素各自的 identifier，否則容器 identifier 會把行動按鈕併吞、測試點不到
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(BLAccessibilityID.Dashboard.emptyState)
     }
 
     /// 日期子標
@@ -331,6 +345,7 @@ private extension DashboardView {
     @ViewBuilder
     func wideKpiTiles(stats: DashboardStats, palette: BLPalette) -> some View {
         kpiTile(
+            kpi: .revenue,
             label: "營業額",
             value: formatTwd(stats.revenue),
             tint: palette.accent,
@@ -339,6 +354,7 @@ private extension DashboardView {
             palette: palette
         )
         kpiTile(
+            kpi: .grossMargin,
             label: "毛利率",
             value: formatPercent(stats.margin),
             tint: palette.green,
@@ -347,6 +363,7 @@ private extension DashboardView {
             palette: palette
         )
         kpiTile(
+            kpi: .activeOrders,
             label: "進行中訂單",
             value: "\(stats.activeCount)",
             tint: palette.purple,
@@ -414,6 +431,11 @@ private extension DashboardView {
         )
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous))
         .blCardShadow()
+        // 走勢圖與目標進度各有自己的朗讀內容，故整卡以容器 (非合併) 呈現；
+        // 淨獲利改由容器的 accessibilityValue 承載，測試以卡片 identifier 定位後讀該元素的 value
+        .accessibilityElement(children: .contain)
+        .accessibilityValue(Text(profitDisplay(stats.profit)))
+        .accessibilityIdentifier(BLAccessibilityID.Dashboard.kpiTile(.netProfit))
     }
 
     /// 月目標進度條；目標為 0 (使用者未設定) 時整列隱藏
@@ -451,6 +473,7 @@ private extension DashboardView {
     func kpiGrid(stats: DashboardStats, palette: BLPalette) -> some View {
         LazyVGrid(columns: kpiColumns, spacing: BLSpacing.small) {
             kpiTile(
+                kpi: .revenue,
                 label: "營業額",
                 value: formatTwd(stats.revenue),
                 tint: palette.accent,
@@ -459,6 +482,7 @@ private extension DashboardView {
                 palette: palette
             )
             kpiTile(
+                kpi: .cost,
                 label: "成本",
                 value: formatTwd(stats.cost),
                 tint: palette.orange,
@@ -467,6 +491,7 @@ private extension DashboardView {
                 palette: palette
             )
             kpiTile(
+                kpi: .grossMargin,
                 label: "毛利率",
                 value: formatPercent(stats.margin),
                 tint: palette.green,
@@ -475,6 +500,7 @@ private extension DashboardView {
                 palette: palette
             )
             kpiTile(
+                kpi: .activeOrders,
                 label: "進行中訂單",
                 value: "\(stats.activeCount)",
                 tint: palette.purple,
@@ -487,6 +513,7 @@ private extension DashboardView {
 
     /// 單一 KPI 卡片：左上 tint 色點 + 標籤、中段大數字、下方變化指標
     /// - Parameters:
+    ///   - kpi: 指標的穩定語意 key，供 accessibility identifier 使用 (不隨顯示文字或排列位置變動)
     ///   - label: 卡片左上方的指標名稱，例如「營業額」、「毛利率」
     ///   - value: 卡片中央顯示的數值字串 (已預先 format)
     ///   - tint: 左上方色點顏色，用來區分指標分類
@@ -496,6 +523,7 @@ private extension DashboardView {
     /// - Returns: KPI 卡片 view
     @ViewBuilder
     func kpiTile(
+        kpi: BLAccessibilityID.Dashboard.KPI,
         label: String,
         value: String,
         tint: Color,
@@ -531,8 +559,11 @@ private extension DashboardView {
             RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                 .stroke(palette.separator, lineWidth: 0.5)
         }
-        // 合併為單一朗讀單位；標籤旁的裝飾色點先排除，避免併進朗讀內容
+        // 合併朗讀保留 (複合列須是單一朗讀單位)，數值改由 accessibilityValue 供測試讀取：
+        // 合併後子元素查不到，測試以卡片 identifier 定位後讀該元素的 value
         .accessibilityElement(children: .combine)
+        .accessibilityValue(Text(value))
+        .accessibilityIdentifier(BLAccessibilityID.Dashboard.kpiTile(kpi))
     }
 
     /// 近期訂單區塊 (標題列 + 列表卡)
@@ -556,6 +587,7 @@ private extension DashboardView {
                 .buttonStyle(.plain)
                 .foregroundStyle(palette.accent)
                 .font(.subheadline.weight(.medium))
+                .accessibilityIdentifier(BLAccessibilityID.Dashboard.recentOrdersSeeAllButton)
             }
 
             if stats.recentOrders.isEmpty {
@@ -574,6 +606,7 @@ private extension DashboardView {
                             OrderRowView(order: order)
                                 .padding(.horizontal, BLSpacing.large)
                                 .padding(.vertical, BLSpacing.extraSmall)
+                                .accessibilityIdentifier(BLAccessibilityID.Dashboard.recentOrderRow(orderID: order.id))
 
                             if index < stats.recentOrders.count - 1 {
                                 Divider()

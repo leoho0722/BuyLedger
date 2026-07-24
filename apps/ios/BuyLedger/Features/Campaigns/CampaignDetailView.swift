@@ -51,6 +51,7 @@ struct CampaignDetailView: View {
                         } label: {
                             Label("編輯開團", systemImage: "pencil")
                         }
+                        .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailEditButton)
 
                         Picker("狀態", selection: statusBinding(for: campaign)) {
                             ForEach(CampaignStatus.allCases) { status in
@@ -67,21 +68,32 @@ struct CampaignDetailView: View {
                             )
                         }
                         .disabled(campaign.isSettled)
+                        .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSettleButton)
 
                         Divider()
 
                         // 列表的長按刪除保留，這裡提供不依賴手勢的可見替代入口
                         Button(role: .destructive) {
-                            store.send(.campaigns(.deleteCampaignTapped(campaign.id)))
+                            store.send(.campaigns(.detailDeleteCampaignTapped(campaign.id)))
                         } label: {
                             Label("刪除開團", systemImage: "trash")
                         }
+                        .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailDeleteButton)
                     } label: {
                         Label("更多", systemImage: "ellipsis.circle")
                     }
+                    .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailMoreButton)
                 }
             }
         }
+        // 結團/刪除由本頁 toolbar 選單觸發，alert 掛在本頁 (堆疊最上層) 才會在 iPad 疊到 push 出來的詳情上方;
+        // 掛在被詳情蓋住的列表頁上時，iPad 不會呈現。刪除用詳情專屬的 detailDeletionConfirmation，避免與列表頁的 deletionConfirmation 重複繫結
+        .alert(
+            $store.scope(state: \.campaigns.settleConfirmation, action: \.campaigns.settleConfirmation)
+        )
+        .alert(
+            $store.scope(state: \.campaigns.detailDeletionConfirmation, action: \.campaigns.detailDeletionConfirmation)
+        )
     }
 }
 
@@ -100,6 +112,7 @@ private extension CampaignDetailView {
             settlementSection(summary)
             distributionSection(summary)
         }
+        .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailRoot)
     }
 
     /// 開團資訊區段
@@ -151,8 +164,15 @@ private extension CampaignDetailView {
     @ViewBuilder
     func settlementSection(_ summary: CampaignSummary) -> some View {
         Section("結團結算") {
+            // combine + accessibilityValue 讓金額落在該元素的 value,UI 測試以 identifier 定位後才讀得到
             LabeledContent("應收", value: CampaignFormatters.twd(summary.receivables, locale: locale))
+                .accessibilityElement(children: .combine)
+                .accessibilityValue(CampaignFormatters.twd(summary.receivables, locale: locale))
+                .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSummary(.receivables))
             LabeledContent("已收", value: CampaignFormatters.twd(summary.receivedAmount, locale: locale))
+                .accessibilityElement(children: .combine)
+                .accessibilityValue(CampaignFormatters.twd(summary.receivedAmount, locale: locale))
+                .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSummary(.received))
             LabeledContent("未收", value: CampaignFormatters.twd(summary.outstandingAmount, locale: locale))
 
             BLProgressBar(
@@ -187,6 +207,7 @@ private extension CampaignDetailView {
 
         Section {
             Toggle("只看未收款", isOn: unpaidOnlyBinding)
+                .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailUnpaidToggle)
 
             if rows.isEmpty {
                 Text(LocalizedStringKey(

@@ -43,6 +43,8 @@ struct FxView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 statusBanner(palette: palette)
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier(BLAccessibilityID.Fx.statusBanner)
                 converterCard(palette: palette)
                 quickAmountRow(palette: palette)
                 ratesList(palette: palette)
@@ -51,6 +53,7 @@ struct FxView: View {
             .padding(.vertical, BLSpacing.large)
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .accessibilityIdentifier(BLAccessibilityID.Fx.root)
         .background(palette.background)
         .navigationTitle(Text("匯率工具"))
         .scrollDismissesKeyboard(.interactively)
@@ -66,6 +69,7 @@ struct FxView: View {
                     Image(systemName: "checkmark")
                 }
                 .accessibilityLabel(Text("完成"))
+                .accessibilityIdentifier(BLAccessibilityID.Common.keyboardDoneButton)
             }
         }
         .task {
@@ -193,6 +197,7 @@ private extension FxView {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(BLAccessibilityID.Fx.currencyPickerButton)
         .sheet(isPresented: $store.showsCurrencySheet) {
             let locale = locale
 
@@ -236,6 +241,7 @@ private extension FxView {
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
         .keyboardType(.decimalPad)
         .focused($isAmountFieldFocused)
+        .accessibilityIdentifier(BLAccessibilityID.Fx.amountField)
     }
 
     /// 結果區塊 (accent 背景)
@@ -261,6 +267,9 @@ private extension FxView {
         .padding(BLSpacing.medium)
         .background(palette.accent.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(formatTwd(store.convertedTwd))
+        .accessibilityIdentifier(BLAccessibilityID.Fx.convertedValue)
     }
 
     /// 快速金額按鈕列
