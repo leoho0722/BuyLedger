@@ -1,26 +1,26 @@
 types:
   - name: OrderStatus
     kind: enum
-    doc: 訂單在代購流程中的目前狀態。
+    doc: 訂單目前狀態
     traits: [case-iterable, serializable, identity]
     cases:
       - name: quoting
-        doc: 正在報價，尚未成立正式訂單。
+        doc: 正在報價
       - name: confirmed
-        doc: 客戶已確認訂單。
+        doc: 客戶已確認
       - name: purchased
-        doc: 已完成海外下單。
+        doc: 已完成下單
       - name: shipping
-        doc: 商品正在集運或國際運送。
+        doc: 運送中
       - name: partiallyArrived
-        doc: 部分商品已到貨，其餘仍在集運或國際運送。
+        doc: 部分到貨
       - name: arrived
-        doc: 商品已到貨 (抵達代購者或取貨點)，但尚未交付客戶。
+        doc: 已到貨但未交付客戶
       - name: delivered
-        doc: 商品已交付客戶。
+        doc: 已交付客戶
       - name: pickedUp
-        doc: 買家已完成取貨，商品已交到買家手中。
+        doc: 客戶已取貨
       - name: cancelled
-        doc: 訂單已取消。
+        doc: 已取消
       - name: merged
-        doc: 訂單已被合併到另一筆新訂單，僅保留作歷史紀錄。
+        doc: 已合併到其他訂單

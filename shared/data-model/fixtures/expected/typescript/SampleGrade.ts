@@ -1,5 +1,5 @@
 //
-//  SampleStatus.ts
+//  SampleGrade.ts
 //  BuyLedger
 //
 //  此檔由 datamodel-gen 自動產生，請勿手動編輯
@@ -7,9 +7,8 @@
 //
 
 /**
- * 範例狀態 (示範 enum + identity + case-iterable)
+ * 範例等級 (示範僅 serializable、不含 case-iterable 與 identity 的 enum trait 組合)
  */
-export type SampleStatus =
-  | "active"
-  | "archived"
-  | "partiallyArrived";
+export type SampleGrade =
+  | "basic"
+  | "premium";

@@ -1,5 +1,5 @@
 //
-//  Money.generated.swift
+//  SampleSequence.generated.swift
 //  BuyLedger
 //
 //  此檔由 datamodel-gen 自動產生，請勿手動編輯
@@ -8,14 +8,11 @@
 
 import Foundation
 
-/// 含幣別的金額
-struct Money: Codable, Equatable, Sendable {
+/// 範例序號 (示範以整數為基底的 wrapper)
+struct SampleSequence: Sendable {
 
     // MARK: - Data Properties
 
-    /// 金額
-    let amount: Decimal
-
-    /// 幣別
-    let currency: CurrencyCode
+    /// 包裝的原始值
+    let rawValue: Int
 }

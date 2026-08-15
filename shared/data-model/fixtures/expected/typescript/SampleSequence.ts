@@ -1,5 +1,5 @@
 //
-//  SampleStatus.ts
+//  SampleSequence.ts
 //  BuyLedger
 //
 //  此檔由 datamodel-gen 自動產生，請勿手動編輯
@@ -7,9 +7,6 @@
 //
 
 /**
- * 範例狀態 (示範 enum + identity + case-iterable)
+ * 範例序號 (示範以整數為基底的 wrapper)
  */
-export type SampleStatus =
-  | "active"
-  | "archived"
-  | "partiallyArrived";
+export type SampleSequence = number;

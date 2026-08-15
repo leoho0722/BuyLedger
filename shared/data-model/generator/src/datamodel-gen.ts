@@ -724,6 +724,12 @@ function kotlinFieldType(field: FieldDecl): string {
   return field.nullable ? `${base}?` : base;
 }
 
+/** schema 的 camelCase case 名稱轉為 Kotlin screaming snake case (例如 partiallyArrived → PARTIALLY_ARRIVED)
+ *  case 宣告與 enum-valued 欄位預設值兩處皆呼叫本函式，避免各自轉一次而失去同步 */
+function kotlinEnumConstant(caseName: string): string {
+  return caseName.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+}
+
 function kotlinDefaultLiteral(field: FieldDecl): string | undefined {
   if (field.default !== undefined) {
     const def = field.default;
@@ -737,7 +743,7 @@ function kotlinDefaultLiteral(field: FieldDecl): string | undefined {
       case "emptyArray":
         return field.type.kind === "map" ? "emptyMap()" : "emptyList()";
       case "enumCase":
-        return `${def.typeName}.${def.caseName.toUpperCase()}`;
+        return `${def.typeName}.${kotlinEnumConstant(def.caseName)}`;
       case "newUUID":
         return "java.util.UUID.randomUUID()";
     }
@@ -760,7 +766,7 @@ function emitKotlin(t: TypeDecl, options: Record<string, unknown>): string {
     t.cases.forEach((c, idx) => {
       parts.push("");
       parts.push(...blockDoc(c.doc, "    "));
-      parts.push(`    ${c.name.toUpperCase()}("${c.name}")${idx < t.cases.length - 1 ? "," : ";"}`);
+      parts.push(`    ${kotlinEnumConstant(c.name)}("${c.name}")${idx < t.cases.length - 1 ? "," : ";"}`);
     });
     parts.push("}");
     return parts.join("\n") + "\n";
