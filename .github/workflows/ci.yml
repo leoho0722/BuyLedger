@@ -1,0 +1,206 @@
+name: CI
+
+# 版本庫層級守門：codegen 與 iOS 單元測試在每次推送、拉取請求與手動觸發時強制執行；
+# UI 回歸僅在手動觸發時執行 (需 macOS runner 與模擬器、單輪約數十分鐘，故不掛 push/PR)
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # 建置流程一律使用專案指定的建置 CLI，版本釘選以確保結果可重現；升級時同步更新此處與平台 CLAUDE.md
+  XCODEBUILDMCP_VERSION: "2.6.2"
+
+jobs:
+  codegen:
+    name: Data Model Codegen
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: shared/data-model/generator
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Set up Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.14"
+
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Check schema/output drift
+        run: bun run check
+
+      - name: Run generator tests (includes production sync assertion)
+        run: bun test
+
+      - name: Type check
+        run: bun run typecheck
+
+  ios-unit-tests:
+    name: iOS Unit Tests
+    runs-on: macos-26
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Restore Firebase configuration from committed template
+        # GoogleService-Info.plist 被 .gitignore 排除；值一律為明顯佔位字串，不含任何真實識別碼
+        run: cp apps/ios/BuyLedger/Resources/GoogleService-Info.example.plist apps/ios/BuyLedger/Resources/GoogleService-Info.plist
+
+      - name: Restore API key configuration from committed template
+        # Config.xcconfig 同樣被 .gitignore 排除；是 app target 兩個 configuration 的 baseConfigurationReference，缺檔會讓建置產生警告
+        run: cp apps/ios/BuyLedger/Resources/Config.example.xcconfig apps/ios/BuyLedger/Resources/Config.xcconfig
+
+      - name: Install pinned xcodebuildmcp CLI
+        run: npm install -g "xcodebuildmcp@${XCODEBUILDMCP_VERSION}"
+
+      - name: Print runner Xcode version
+        # 風險緩解：釘選 CLI 版本外，runner 鏡像的 Xcode 版本也可能不符測試 target 的 26.4 部署目標；
+        # xcodebuildmcp CLI 未提供查詢 Xcode 版本的子命令，改讀 App bundle 的 Info.plist (未使用原生 Xcode 命令列工具)
+        run: |
+          for app in /Applications/Xcode*.app; do
+            [ -d "$app" ] || continue
+            SHORT=$(defaults read "$app/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo "unknown")
+            BUILD=$(defaults read "$app/Contents/Info" CFBundleVersion 2>/dev/null || echo "unknown")
+            echo "$app: $SHORT (build $BUILD)"
+          done
+
+      - name: Resolve simulator by identifier
+        id: sim
+        run: |
+          set -euo pipefail
+          xcodebuildmcp simulator list --output json > "$RUNNER_TEMP/simulators.json"
+          cat "$RUNNER_TEMP/simulators.json"
+          SIM_ID=$(jq -r '
+            [ .data.simulators[]
+              | select(.isAvailable == true)
+              | select(.name | test("^iPhone"))
+              | select((.runtime | capture("iOS (?<major>[0-9]+)").major | tonumber) >= 26)
+            ] | sort_by(.runtime) | last | .simulatorId // empty
+          ' "$RUNNER_TEMP/simulators.json")
+          if [ -z "$SIM_ID" ]; then
+            echo "::error::找不到符合 iOS 26 以上版本的可用 iPhone 模擬器執行環境，拒絕退回舊版執行環境"
+            exit 1
+          fi
+          echo "simulator-id=$SIM_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Run unit tests (main scheme, snapshot 與效能測試首波排除)
+        run: |
+          set +e
+          xcodebuildmcp simulator test \
+            --project-path apps/ios/BuyLedger.xcodeproj \
+            --scheme BuyLedger \
+            --simulator-id "${{ steps.sim.outputs.simulator-id }}" \
+            --extra-args "-only-testing:BuyLedgerTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/OrdersFeaturePerformanceTests" \
+            --extra-args "-parallel-testing-enabled" \
+            --extra-args "NO" \
+            --output json > "$RUNNER_TEMP/unit-test-result.json"
+          TEST_EXIT=$?
+          cat "$RUNNER_TEMP/unit-test-result.json"
+          exit $TEST_EXIT
+
+      - name: Collect test result bundle for upload
+        if: always()
+        run: |
+          XCRESULT=$(jq -r '.data.artifacts.xcresultPath // empty' "$RUNNER_TEMP/unit-test-result.json" 2>/dev/null || true)
+          mkdir -p "$RUNNER_TEMP/test-results"
+          if [ -n "$XCRESULT" ] && [ -e "$XCRESULT" ]; then
+            cp -R "$XCRESULT" "$RUNNER_TEMP/test-results/"
+          fi
+
+      - name: Upload test result bundle
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ios-unit-test-results
+          path: ${{ runner.temp }}/test-results
+          if-no-files-found: warn
+
+  ui-regression:
+    name: UI Regression (manual)
+    runs-on: macos-26
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Restore Firebase configuration from committed template
+        run: cp apps/ios/BuyLedger/Resources/GoogleService-Info.example.plist apps/ios/BuyLedger/Resources/GoogleService-Info.plist
+
+      - name: Restore API key configuration from committed template
+        run: cp apps/ios/BuyLedger/Resources/Config.example.xcconfig apps/ios/BuyLedger/Resources/Config.xcconfig
+
+      - name: Install pinned xcodebuildmcp CLI
+        run: npm install -g "xcodebuildmcp@${XCODEBUILDMCP_VERSION}"
+
+      - name: Print runner Xcode version
+        # xcodebuildmcp CLI 未提供查詢 Xcode 版本的子命令，改讀 App bundle 的 Info.plist (未使用原生 Xcode 命令列工具)
+        run: |
+          for app in /Applications/Xcode*.app; do
+            [ -d "$app" ] || continue
+            SHORT=$(defaults read "$app/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo "unknown")
+            BUILD=$(defaults read "$app/Contents/Info" CFBundleVersion 2>/dev/null || echo "unknown")
+            echo "$app: $SHORT (build $BUILD)"
+          done
+
+      - name: Resolve simulator by identifier
+        id: sim
+        run: |
+          set -euo pipefail
+          xcodebuildmcp simulator list --output json > "$RUNNER_TEMP/simulators.json"
+          cat "$RUNNER_TEMP/simulators.json"
+          SIM_ID=$(jq -r '
+            [ .data.simulators[]
+              | select(.isAvailable == true)
+              | select(.name | test("^iPhone"))
+              | select((.runtime | capture("iOS (?<major>[0-9]+)").major | tonumber) >= 26)
+            ] | sort_by(.runtime) | last | .simulatorId // empty
+          ' "$RUNNER_TEMP/simulators.json")
+          if [ -z "$SIM_ID" ]; then
+            echo "::error::找不到符合 iOS 26 以上版本的可用 iPhone 模擬器執行環境，拒絕退回舊版執行環境"
+            exit 1
+          fi
+          echo "simulator-id=$SIM_ID" >> "$GITHUB_OUTPUT"
+
+      - name: Run UI regression (效能測試排除)
+        run: |
+          set +e
+          xcodebuildmcp simulator test \
+            --project-path apps/ios/BuyLedger.xcodeproj \
+            --scheme BuyLedgerUITests \
+            --simulator-id "${{ steps.sim.outputs.simulator-id }}" \
+            --extra-args "-only-testing:BuyLedgerUITests" \
+            --extra-args "-skip-testing:BuyLedgerUITests/LaunchPerformanceTests" \
+            --extra-args "-parallel-testing-enabled" \
+            --extra-args "NO" \
+            --output json > "$RUNNER_TEMP/ui-test-result.json"
+          TEST_EXIT=$?
+          cat "$RUNNER_TEMP/ui-test-result.json"
+          exit $TEST_EXIT
+
+      - name: Collect test result bundle for upload
+        if: always()
+        run: |
+          XCRESULT=$(jq -r '.data.artifacts.xcresultPath // empty' "$RUNNER_TEMP/ui-test-result.json" 2>/dev/null || true)
+          mkdir -p "$RUNNER_TEMP/test-results"
+          if [ -n "$XCRESULT" ] && [ -e "$XCRESULT" ]; then
+            cp -R "$XCRESULT" "$RUNNER_TEMP/test-results/"
+          fi
+
+      - name: Upload test result bundle
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: ui-regression-test-results
+          path: ${{ runner.temp }}/test-results
+          if-no-files-found: warn
