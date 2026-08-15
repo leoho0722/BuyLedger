@@ -10,102 +10,118 @@ import PhotosUI
 import SwiftUI
 
 /// 編輯或新增訂單的表單畫面
-///
-/// 對應 ``OrderEditFeature``：以 sheet 形式呈現，包含取消與儲存按鈕，以及訂單來源／商品類別／付款方式／對帳狀態的選擇與即時新增入口。儲存時由父層 ``OrdersFeature`` 將草稿寫回資料庫
 struct OrderEditView: View {
-
+    
     // MARK: - View Properties
-
+    
     /// 訂單編輯 store
     @Bindable var store: StoreOf<OrderEditFeature>
-
+    
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
-
-    /// 鍵盤焦點；實際狀態由 ``OrderEditFeature/State/focusedField`` 持有，此處僅作為 SwiftUI 端的鏡像
+    
+    /// 目前的動態字級
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+    
+    /// 鍵盤焦點的 SwiftUI 鏡像
     @FocusState private var focusedField: OrderEditFeature.State.Field?
-
+    
     // MARK: - View Body
-
+    
     /// 編輯表單的畫面內容
     var body: some View {
         NavigationStack(path: pickerPath) {
             Form {
                 Section {
-                    TextField("客戶名稱", text: $store.draftCustomerName)
+                    TextField("客戶名稱", text: $store.draft.customerName)
                         .textContentType(.name)
                         .focused($focusedField, equals: .customerName)
                         .accessibilityIdentifier(BLAccessibilityID.OrderEdit.customerField)
-
+                    
                     orderSourcePickerRow
-
+                    
                     categoryPickerRow
-
+                    
                     orderDateRow
                 } header: {
                     Text("基本資料")
                 } footer: {
                     VStack(alignment: .leading, spacing: BLSpacing.small) {
-                        Text("訂購日期：\(OrderFormatters.fullTimestamp(store.draftDate, locale: locale))")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
-                            .monospacedDigit()
-
+                        Text(
+                            """
+                            訂購日期：\
+                            \(OrderFormatters.fullTimestamp(store.draft.date, locale: locale))
+                            """
+                        )
+                        .blTextStyle(.footnote)
+                        .foregroundStyle(Color.blSecondaryLabel)
+                        .monospacedDigit()
+                        
                         if !canSave {
                             Text("客戶名稱、訂單來源與商品類別皆為必填欄位。")
-                                .font(.footnote)
-                                .foregroundStyle(.secondary)
+                                .blTextStyle(.footnote)
+                                .foregroundStyle(Color.blSecondaryLabel)
                         }
                     }
                 }
-
+                
                 Section("狀態與幣別") {
-                    Picker("狀態", selection: $store.draftStatus) {
+                    Picker("狀態", selection: $store.draft.status) {
                         ForEach(store.availableStatuses) { status in
                             Text(LocalizedStringKey(status.title)).tag(status)
                         }
                     }
-
+                    
                     currencyPickerRow
-
+                    
                     paymentMethodPickerRow
-
+                    
                     if store.showsReconciliationStatusRow {
                         reconciliationStatusPickerRow
                     }
                 }
-
+                
                 Section {
                     decimalField(
                         title: "客戶實付",
-                        value: $store.draftChargedAmount,
+                        value: $store.draft.chargedAmount,
                         field: .chargedAmount,
                         identifier: BLAccessibilityID.OrderEdit.chargedAmountField
                     )
-
+                    
                     if store.isSelectedPaymentMethodCardless {
                         decimalField(
                             title: "無卡折抵金額",
-                            value: $store.draftCardlessDeductionAmount,
+                            value: $store.draft.cardlessDeductionAmount,
                             field: .cardlessDeduction
                         )
-
+                        
                         decimalField(
                             title: "無卡補款金額",
-                            value: $store.draftCardlessSupplementAmount,
+                            value: $store.draft.cardlessSupplementAmount,
                             field: .cardlessSupplement
                         )
                     }
                 } header: {
                     Text("收款金額 (NT$)")
                 } footer: {
-                    if store.isSelectedPaymentMethodCardless {
-                        Text("無卡類付款方式才會啟用「折抵」與「補款」欄位；總收款 = 客戶實付 + 補款 − 折抵。")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                    if store.isSelectedPaymentMethodCardless || store.cardlessDeductionWasCapped {
+                        VStack(alignment: .leading, spacing: BLSpacing.small) {
+                            if store.isSelectedPaymentMethodCardless {
+                                Text("無卡類付款方式才會啟用「折抵」與「補款」欄位；總收款 = 客戶實付 + 補款 − 折抵。")
+                                    .blTextStyle(.footnote)
+                                    .foregroundStyle(Color.blSecondaryLabel)
+                            }
+                            
+                            if store.cardlessDeductionWasCapped {
+                                Text("無卡折抵金額不得超過客戶實付金額，已自動調整為上限。")
+                                    .blTextStyle(.footnote)
+                                    .foregroundStyle(Color.blSecondaryLabel)
+                            }
+                        }
                     }
                 }
-
+                
                 Section("開團與收款") {
                     if store.isMergeContext {
                         // 合併情境：開團改為多選 trigger row + 多選 sheet
@@ -118,51 +134,62 @@ struct OrderEditView: View {
                             }
                         }
                     }
-
-                    Picker("收款狀態", selection: $store.draftPaymentReceiptStatus) {
+                    
+                    Picker("收款狀態", selection: $store.draft.paymentReceiptStatus) {
                         ForEach(PaymentReceiptStatus.allCases) { status in
                             Text(LocalizedStringKey(status.title)).tag(status)
                         }
                     }
                     .pickerStyle(.segmented)
                 }
-
+                
                 Section {
-                    decimalField(title: "商品成本", value: $store.draftItemCost, field: .itemCost)
-                    decimalField(title: "外國國內運費", value: $store.draftForeignDomesticShipping, field: .foreignDomesticShipping)
-                    decimalField(title: "國際運費", value: $store.draftInternationalShipping, field: .internationalShipping)
-                    decimalField(title: "國內運費", value: $store.draftDomesticShipping, field: .domesticShipping)
+                    decimalField(title: "商品成本", value: $store.draft.itemCost, field: .itemCost)
+                    decimalField(
+                        title: "外國國內運費", value: $store.draft.foreignDomesticShipping,
+                        field: .foreignDomesticShipping)
+                    decimalField(
+                        title: "國際運費", value: $store.draft.internationalShipping,
+                        field: .internationalShipping)
+                    decimalField(
+                        title: "國內運費", value: $store.draft.domesticShipping,
+                        field: .domesticShipping)
                 } header: {
                     Text("成本 (NT$)")
                 } footer: {
                     if store.isSelectedPaymentMethodCOD {
                         Text("貨到付款：收款金額已含預估運費，獲利會自動扣除上方三種運費 (國內 + 國際 + 外國國內)。")
-                            .font(.footnote)
-                            .foregroundStyle(.secondary)
+                            .blTextStyle(.footnote)
+                            .foregroundStyle(Color.blSecondaryLabel)
                     }
                 }
-
+                
                 Section {
-                    percentField(title: "刷卡手續費 %", value: $store.draftCardFeeRate, field: .cardFeeRate)
-                    percentField(title: "平台手續費 %", value: $store.draftPlatformFeeRate, field: .platformFeeRate)
-                    percentField(title: "金流手續費 %", value: $store.draftPaymentFeeRate, field: .paymentFeeRate)
+                    percentField(
+                        title: "刷卡手續費 %", value: $store.draft.cardFeeRate, field: .cardFeeRate)
+                    percentField(
+                        title: "平台手續費 %", value: $store.draft.platformFeeRate,
+                        field: .platformFeeRate)
+                    percentField(
+                        title: "金流手續費 %", value: $store.draft.paymentFeeRate, field: .paymentFeeRate
+                    )
                 } header: {
                     Text("手續費 (%)")
                 } footer: {
                     Text("輸入百分比例如 1.5 表示 1.5%；超出 0%–100% 範圍會自動限制。")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .blTextStyle(.footnote)
+                        .foregroundStyle(Color.blSecondaryLabel)
                 }
-
+                
                 itemsSection
-
+                
                 notesSection
-
+                
                 photosSection
-
+                
                 if let original = store.original {
                     Section("原始訂單") {
-                        LabeledContent("單號", value: original.id)
+                        LabeledContent("單號", value: original.displayID)
                             .monospacedDigit()
                     }
                 }
@@ -181,7 +208,7 @@ struct OrderEditView: View {
                     .accessibilityLabel(Text("取消"))
                     .accessibilityIdentifier(BLAccessibilityID.OrderEdit.cancelButton)
                 }
-
+                
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         store.send(.saveTapped)
@@ -194,13 +221,12 @@ struct OrderEditView: View {
                     .keyboardShortcut(.defaultAction)
                     .disabled(!canSave)
                 }
-
-                // 數字鍵盤沒有 return 鍵，沒有這條就無路可收；有 return 鍵的一般鍵盤不顯示，
-                // 避免多一列無意義的工具列
+                
+                // 數字鍵盤沒有 return 鍵，因此提供完成鍵。
                 if isNumericFieldFocused {
                     ToolbarItemGroup(placement: .keyboard) {
                         Spacer()
-
+                        
                         Button {
                             store.send(.binding(.set(\.focusedField, nil)))
                         } label: {
@@ -229,8 +255,8 @@ struct OrderEditView: View {
 // MARK: - ViewBuilder
 
 private extension OrderEditView {
-
-    /// 依 route 建對應的嵌入式選項選擇器 (push 呈現)；內容沿用原設定，僅以 `isEmbedded: true` 去除自帶 `NavigationStack` 與取消鍵，由宿主堆疊的 Back 返回
+    
+    /// 依路徑建立嵌入式選項選擇器
     /// - Parameter route: 目前要 push 的選擇器 route
     /// - Returns: 對應的嵌入式 ``OptionPickerSheet``
     @ViewBuilder
@@ -246,7 +272,7 @@ private extension OrderEditView {
                 addFieldPlaceholder: "來源名稱",
                 addAlertMessage: "輸入新的訂單來源名稱，加入後會立即套用至此訂單。",
                 options: store.availableOrderSources,
-                selected: store.draftOrderSource,
+                selected: store.draft.orderSource,
                 onSelect: { source in
                     store.send(.orderSourceSelected(source))
                 },
@@ -255,10 +281,10 @@ private extension OrderEditView {
                 },
                 isEmbedded: true
             )
-
+            
         case .category:
             if store.isMergeContext {
-                // 合併情境：多選模式，點列 toggle、以「完成」結束選取；新增類別流程沿用
+                // 合併時使用多選模式。
                 OptionPickerSheet(
                     title: "選擇商品類別",
                     addButtonTitle: "新增類別",
@@ -272,7 +298,7 @@ private extension OrderEditView {
                         store.send(.addCategoryTapped(name))
                     },
                     multiSelection: .init(
-                        selections: Set(store.draftCategories),
+                        selections: Set(store.draft.categories),
                         onToggle: { category in
                             store.send(.categoryToggled(category))
                         }
@@ -289,7 +315,7 @@ private extension OrderEditView {
                     addFieldPlaceholder: "類別名稱",
                     addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
                     options: store.availableCategories,
-                    selected: store.draftCategories.first ?? "",
+                    selected: store.draft.categories.first ?? "",
                     onSelect: { category in
                         store.send(.categorySelected(category))
                     },
@@ -299,7 +325,7 @@ private extension OrderEditView {
                     isEmbedded: true
                 )
             }
-
+            
         case .campaign:
             OptionPickerSheet(
                 title: "選擇開團",
@@ -308,14 +334,14 @@ private extension OrderEditView {
                 emptyDescription: "請先在「開團」頁建立開團，再回到此處歸團。",
                 options: store.availableCampaigns,
                 multiSelection: .init(
-                    selections: Set(store.draftCampaignNames),
+                    selections: Set(store.draft.campaignNames),
                     onToggle: { name in
                         store.send(.campaignToggled(name))
                     }
                 ),
                 isEmbedded: true
             )
-
+            
         case .paymentMethod:
             OptionPickerSheet(
                 title: "選擇付款方式",
@@ -326,16 +352,23 @@ private extension OrderEditView {
                 addFieldPlaceholder: "付款方式名稱",
                 addAlertMessage: "輸入新的付款方式名稱，加入後會立即套用至此訂單。",
                 options: store.availablePaymentMethods.map(\.name),
-                selected: store.draftPaymentMethod,
+                selected: store.draft.paymentMethod,
                 onSelect: { method in
                     store.send(.paymentMethodSelected(method))
                 },
-                onAddPaymentMethod: { name, isCardless, isBankTransfer, isCashOnDelivery in
-                    store.send(.addPaymentMethodTapped(name: name, isCardless: isCardless, isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery))
+                onAddPaymentMethod: {
+                    name,
+                    isCardless,
+                    isBankTransfer,
+                    isCashOnDelivery in
+                    store.send(
+                        .addPaymentMethodTapped(
+                            name: name, isCardless: isCardless, isBankTransfer: isBankTransfer,
+                            isCashOnDelivery: isCashOnDelivery))
                 },
                 isEmbedded: true
             )
-
+            
         case .reconciliationStatus:
             OptionPickerSheet(
                 title: "選擇對帳狀態",
@@ -346,7 +379,7 @@ private extension OrderEditView {
                 addFieldPlaceholder: "對帳狀態名稱",
                 addAlertMessage: "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。",
                 options: store.availableReconciliationStatuses,
-                selected: store.draftReconciliationStatus,
+                selected: store.draft.reconciliationStatus,
                 onSelect: { status in
                     store.send(.reconciliationStatusSelected(status))
                 },
@@ -355,10 +388,10 @@ private extension OrderEditView {
                 },
                 isEmbedded: true
             )
-
+            
         case .currency:
             let locale = locale
-
+            
             OptionPickerSheet(
                 title: "選擇幣別",
                 allowsAdd: false,
@@ -366,7 +399,7 @@ private extension OrderEditView {
                 emptyTitle: "尚無幣別",
                 emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
                 options: store.availableCurrencies.map(\.rawValue),
-                selected: store.draftCurrency.rawValue,
+                selected: store.draft.currency.rawValue,
                 displayName: { code in
                     let name = locale.localizedString(forCurrencyCode: code) ?? ""
                     return name.isEmpty ? code : "\(code) (\(name))"
@@ -379,9 +412,9 @@ private extension OrderEditView {
                 },
                 isEmbedded: true
             )
-
+            
         case let .photoViewer(index):
-            // 照片檢視改以推進呈現：編輯表單已有路徑列舉驅動的推進機制，
+            // 照片檢視使用編輯表單既有的路徑列舉推進呈現。
             // 加入同一個列舉即可，不需要在 sheet 上再疊一層 modal
             // 返回與各選擇器一樣由宿主堆疊的 Back 經 pickerPath binding 清空路徑
             BLPhotoViewer(
@@ -390,10 +423,8 @@ private extension OrderEditView {
             )
         }
     }
-
-    /// 訂單來源選擇列：操作邏輯與 ``categoryPickerRow`` 完全一致——以 sheet 列出既有來源並提供「新增來源」入口
-    ///
-    /// 點擊「新增來源」會收集新來源名稱，送出後由 reducer 把名稱加入 ``OrderEditFeature/State/availableOrderSources`` 並設為目前選擇
+    
+    /// 訂單來源選擇列，並提供新增入口
     @ViewBuilder
     var orderSourcePickerRow: some View {
         Button {
@@ -402,20 +433,20 @@ private extension OrderEditView {
             HStack(spacing: BLSpacing.small) {
                 Text("訂單來源")
                     .foregroundStyle(.primary)
-
+                
                 Spacer(minLength: BLSpacing.small)
-
+                
                 Group {
-                    if store.draftOrderSource.isEmpty {
+                    if store.draft.orderSource.isEmpty {
                         Text("選擇來源")
                     } else {
-                        Text(verbatim: store.draftOrderSource)
+                        Text(verbatim: store.draft.orderSource)
                     }
                 }
-                .foregroundStyle(.secondary)
-
+                .foregroundStyle(Color.blSecondaryLabel)
+                
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
@@ -424,35 +455,32 @@ private extension OrderEditView {
         .buttonStyle(.plain)
         .accessibilityIdentifier(BLAccessibilityID.OrderEdit.sourceRow)
     }
-
+    
     /// 商品類別選擇列：以 `Menu` 列出既有類別並提供「新增類別」入口
-    ///
-    /// 點擊「新增類別」會觸發畫面置中的 `.alert` 彈窗收集新類別名稱，送出後由 reducer 把名稱加入 ``OrderEditFeature/State/availableCategories`` 並設為目前選擇
     @ViewBuilder
     var categoryPickerRow: some View {
-        // 改成 Button + `.sheet`：iOS `Menu` 是 `UIMenu` 包裝，Button action 會被排到 menu collapse
-        // 動畫結束才派發，造成可見延遲。sheet 路徑下選擇即時 commit binding，視覺更新與 sheet 收合動畫互不阻擋
+        // 使用 Button + sheet，避免 Menu 收合時阻擋 sheet
         Button {
             store.send(.categoryPickerTapped)
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("商品類別")
                     .foregroundStyle(.primary)
-
+                
                 Spacer(minLength: BLSpacing.small)
-
+                
                 Group {
-                    if store.draftCategories.isEmpty {
+                    if store.draft.categories.isEmpty {
                         Text("選擇類別")
                     } else {
                         Text(verbatim: store.categoriesDisplayText)
                     }
                 }
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.blSecondaryLabel)
                 .multilineTextAlignment(.trailing)
-
+                
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
@@ -461,8 +489,8 @@ private extension OrderEditView {
         .buttonStyle(.plain)
         .accessibilityIdentifier(BLAccessibilityID.OrderEdit.categoryRow)
     }
-
-    /// 開團選擇列 (僅合併情境)：以 trigger row 開啟多選 sheet；顯示文字以「、」串接已選開團、空選取顯示「未歸團」
+    
+    /// 合併時開啟開團多選；空選取顯示「未歸團」
     @ViewBuilder
     var campaignPickerRow: some View {
         Button {
@@ -471,21 +499,21 @@ private extension OrderEditView {
             HStack(spacing: BLSpacing.small) {
                 Text("開團")
                     .foregroundStyle(.primary)
-
+                
                 Spacer(minLength: BLSpacing.small)
-
+                
                 Group {
-                    if store.draftCampaignNames.isEmpty {
+                    if store.draft.campaignNames.isEmpty {
                         Text("未歸團")
                     } else {
                         Text(verbatim: store.campaignsDisplayText)
                     }
                 }
-                .foregroundStyle(.secondary)
+                .foregroundStyle(Color.blSecondaryLabel)
                 .multilineTextAlignment(.trailing)
-
+                
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
@@ -494,8 +522,8 @@ private extension OrderEditView {
         .buttonStyle(.plain)
         .accessibilityIdentifier(BLAccessibilityID.OrderEdit.campaignRow)
     }
-
-    /// 幣別選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗，但 sheet 不允許新增 (幣別來源僅限 ExchangeRate-API 支援清單)
+    
+    /// 幣別選擇列；只顯示支援的幣別
     @ViewBuilder
     var currencyPickerRow: some View {
         Button {
@@ -504,16 +532,16 @@ private extension OrderEditView {
             HStack(spacing: BLSpacing.small) {
                 Text("幣別")
                     .foregroundStyle(.primary)
-
+                
                 Spacer(minLength: BLSpacing.small)
-
+                
                 Text(currencyDisplayText)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(Color.blSecondaryLabel)
                     .lineLimit(1)
                     .truncationMode(.tail)
-
+                
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
@@ -522,7 +550,7 @@ private extension OrderEditView {
         .buttonStyle(.plain)
         .accessibilityIdentifier(BLAccessibilityID.OrderEdit.currencyRow)
     }
-
+    
     /// 付款方式選擇列：與 ``categoryPickerRow`` 相同的 sheet 體驗
     @ViewBuilder
     var paymentMethodPickerRow: some View {
@@ -532,20 +560,20 @@ private extension OrderEditView {
             HStack(spacing: BLSpacing.small) {
                 Text("付款方式")
                     .foregroundStyle(.primary)
-
+                
                 Spacer(minLength: BLSpacing.small)
-
+                
                 Group {
-                    if store.draftPaymentMethod.isEmpty {
+                    if store.draft.paymentMethod.isEmpty {
                         Text("選擇付款方式")
                     } else {
-                        Text(verbatim: store.draftPaymentMethod)
+                        Text(verbatim: store.draft.paymentMethod)
                     }
                 }
-                .foregroundStyle(.secondary)
-
+                .foregroundStyle(Color.blSecondaryLabel)
+                
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
@@ -554,7 +582,7 @@ private extension OrderEditView {
         .buttonStyle(.plain)
         .accessibilityIdentifier(BLAccessibilityID.OrderEdit.paymentRow)
     }
-
+    
     /// 對帳狀態選擇列
     @ViewBuilder
     var reconciliationStatusPickerRow: some View {
@@ -564,20 +592,20 @@ private extension OrderEditView {
             HStack(spacing: BLSpacing.small) {
                 Text("對帳狀態")
                     .foregroundStyle(.primary)
-
+                
                 Spacer(minLength: BLSpacing.small)
-
+                
                 Group {
-                    if store.draftReconciliationStatus.isEmpty {
+                    if store.draft.reconciliationStatus.isEmpty {
                         Text("選擇對帳狀態")
                     } else {
-                        Text(verbatim: store.draftReconciliationStatus)
+                        Text(verbatim: store.draft.reconciliationStatus)
                     }
                 }
-                .foregroundStyle(.secondary)
-
+                .foregroundStyle(Color.blSecondaryLabel)
+                
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(.tertiary)
                     .accessibilityHidden(true)
             }
@@ -586,10 +614,8 @@ private extension OrderEditView {
         .buttonStyle(.plain)
         .accessibilityIdentifier(BLAccessibilityID.OrderEdit.reconciliationRow)
     }
-
+    
     /// 訂購日期編輯列：以 compact `DatePicker` 編輯日期與時分
-    ///
-    /// `DatePicker(.compact)` 寫回時會把秒洗成 0，section footer 又以 `yyyy/MM/dd HH:mm:ss` 完整呈現，會造成視覺上「秒永遠是 :00」。改透過 ``refreshingSecondsBinding`` 攔截寫入：每次 picker 寫回時交給 reducer 以注入時間補上當下秒數，使秒隨每次編輯刷新成真實當下值，footer 看得到變化
     @ViewBuilder
     var orderDateRow: some View {
         DatePicker(
@@ -600,18 +626,18 @@ private extension OrderEditView {
         .datePickerStyle(.compact)
         .environment(\.locale, locale)
     }
-
+    
     /// 商品明細區段：可逐項編輯名稱／數量／單價，亦可新增與刪除
     @ViewBuilder
     var itemsSection: some View {
         Section {
-            ForEach($store.draftItems) { $item in
+            ForEach($store.draft.items) { $item in
                 itemEditorRow(item: $item)
             }
             .onDelete { offsets in
                 store.send(.deleteItems(offsets))
             }
-
+            
             Button {
                 store.send(.addItemTapped)
             } label: {
@@ -619,36 +645,36 @@ private extension OrderEditView {
             }
         } header: {
             HStack {
-                Text("商品明細 (\(store.draftCurrency.rawValue))")
-
+                Text("商品明細 (\(store.draft.currency.rawValue))")
+                
                 Spacer()
-
-                // 左滑刪除保留，這裡以系統清單的編輯模式提供不依賴手勢的刪除入口，
+                
+                // 保留左滑刪除，也提供不依賴手勢的系統清單編輯模式入口。
                 // 與下方可見的「新增商品」形成對稱
-                if !store.draftItems.isEmpty {
+                if !store.draft.items.isEmpty {
                     EditButton()
-                        .font(.footnote)
+                        .blTextStyle(.footnote)
                         .textCase(nil)
                 }
             }
         } footer: {
-            if store.draftItems.isEmpty {
+            if store.draft.items.isEmpty {
                 Text("還沒有任何商品；點擊「新增商品」開始填寫。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .blTextStyle(.footnote)
+                    .foregroundStyle(Color.blSecondaryLabel)
             } else {
                 Text("商品單價以原始幣別記錄，總成本與獲利仍以上方「成本」欄位的 NT$ 數值為準。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
+                    .blTextStyle(.footnote)
+                    .foregroundStyle(Color.blSecondaryLabel)
             }
         }
     }
-
-    /// 備註區段：商品明細下方的多行備註輸入；留空代表無備註，儲存時會 trim 首尾空白
+    
+    /// 商品明細下方的多行備註輸入
     @ViewBuilder
     var notesSection: some View {
         Section {
-            TextField("輸入備註 (選填)", text: $store.draftNotes, axis: .vertical)
+            TextField("輸入備註 (選填)", text: $store.draft.notes, axis: .vertical)
                 .textContentType(.none)
                 .focused($focusedField, equals: .notes)
                 .lineLimit(3...8)
@@ -656,82 +682,98 @@ private extension OrderEditView {
             Text("備註")
         }
     }
-
+    
     /// 訂單照片區段：已加入照片的縮圖橫列 + PhotosPicker 加入按鈕與計數標籤
-    ///
-    /// 加入按鈕僅在尚未達 ``LedgerOrder/maxPhotoCount`` 上限時顯示；picker 的 `maxSelectionCount` 設為剩餘容量，reducer 端另以截斷守門
     @ViewBuilder
     var photosSection: some View {
         Section {
-            if !store.draftPhotos.isEmpty {
-                ScrollView(.horizontal) {
-                    HStack(spacing: BLSpacing.small) {
-                        ForEach(Array(store.draftPhotos.enumerated()), id: \.offset) { index, data in
-                            BLPhotoThumbnail(
-                                imageData: data,
-                                onTap: {
-                                    store.send(.photoTapped(index))
-                                },
-                                accessibilityID: BLAccessibilityID.OrderEdit.photoThumbnail(index: index)
-                            ) {
-                                store.send(.deletePhotoTapped(index))
+            switch store.photoLoadPhase {
+            case .notLoaded, .loading:
+                HStack(spacing: BLSpacing.small) {
+                    ProgressView()
+                    Text("照片載入中…")
+                        .blTextStyle(.subhead)
+                        .foregroundStyle(Color.blSecondaryLabel)
+                }
+                
+            case .failed:
+                Label("照片載入失敗，請稍後再試。", systemImage: "exclamationmark.triangle")
+                    .blTextStyle(.subhead)
+                    .foregroundStyle(Color.blSecondaryLabel)
+                
+            case .loaded:
+                if !store.draftPhotos.isEmpty {
+                    ScrollView(.horizontal) {
+                        HStack(spacing: BLSpacing.small) {
+                            ForEach(Array(store.draftPhotos.enumerated()), id: \.offset) {
+                                index, data in
+                                BLPhotoThumbnail(
+                                    imageData: data,
+                                    onTap: {
+                                        store.send(.photoTapped(index))
+                                    },
+                                    accessibilityID: BLAccessibilityID.OrderEdit.photoThumbnail(
+                                        index: index)
+                                ) {
+                                    store.send(.deletePhotoTapped(index))
+                                }
                             }
                         }
+                        .padding(.vertical, 2)
                     }
-                    .padding(.vertical, 2)
+                    .scrollIndicators(.hidden)
                 }
-                .scrollIndicators(.hidden)
-            }
-
-            if store.canAddMorePhotos {
-                PhotosPicker(
-                    selection: $store.photoPickerSelection,
-                    maxSelectionCount: store.remainingPhotoCapacity,
-                    matching: .images
-                ) {
-                    Label("加入照片", systemImage: "photo.badge.plus")
+                
+                if store.canAddMorePhotos {
+                    PhotosPicker(
+                        selection: $store.photoPickerSelection,
+                        maxSelectionCount: store.remainingPhotoCapacity,
+                        matching: .images
+                    ) {
+                        Label("加入照片", systemImage: "photo.badge.plus")
+                    }
                 }
             }
         } header: {
             Text("訂單照片 (\(store.draftPhotos.count)/\(LedgerOrder.maxPhotoCount))")
         } footer: {
             Text("最多 \(LedgerOrder.maxPhotoCount) 張；照片會縮圖壓縮後隨訂單儲存。")
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .blTextStyle(.footnote)
+                .foregroundStyle(Color.blSecondaryLabel)
         }
     }
-
+    
     /// 單筆商品的編輯列：商品名稱 (多行)+ 數量 Stepper + 單價 TextField
     /// - Parameter item: 雙向繫結的單筆商品
     /// - Returns: 商品列 view
     @ViewBuilder
     func itemEditorRow(item: Binding<LedgerOrderItem>) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
-            // 自由文字須明確宣告不可填入，否則系統會誤判為地址等欄位並給出無關建議
+            // 關閉內容類型，避免系統提供不相關建議。
             TextField("商品名稱", text: item.name, axis: .vertical)
                 .textContentType(.none)
                 .focused($focusedField, equals: .itemName(item.id))
-                .font(.body.weight(.medium))
+                .font(BLTypographyStyle.body.font.weight(.medium))
                 .lineLimit(1...3)
-
+            
             HStack(spacing: BLSpacing.medium) {
                 Stepper(value: item.quantity, in: 1...999) {
                     Text("數量 \(item.quantity.wrappedValue)")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .blTextStyle(.footnote)
+                        .foregroundStyle(Color.blSecondaryLabel)
                 }
-
+                
                 Spacer()
-
+                
                 HStack(spacing: 4) {
                     Text("單價")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-
+                        .blTextStyle(.footnote)
+                        .foregroundStyle(Color.blSecondaryLabel)
+                    
                     TextField(
                         "",
                         value: item.unitPrice,
-                        format: .number.precision(.fractionLength(0))
+                        format: .number.precision(.fractionLength(0)).grouping(.never)
                     )
                     .labelsHidden()
                     .multilineTextAlignment(.trailing)
@@ -745,154 +787,207 @@ private extension OrderEditView {
             }
         }
     }
-
+    
     /// 整數金額輸入欄
-    ///
-    /// 把 `TextField` 的 placeholder 留空，避免 `.formStyle(.grouped)` 下 `LabeledContent` 與 `TextField` 同時顯示標題造成的重複文字
     /// - Parameters:
     ///   - title: 欄位標題
     ///   - value: 雙向繫結的值
     ///   - field: 對應的焦點欄位
-    ///   - identifier: UI 測試定位用的 accessibility identifier；預設 nil 代表不指定，僅特定欄位傳入
-    /// - Returns: `LabeledContent` + `TextField` 組合 view
+    ///   - identifier: UI 測試定位用的識別碼
+    /// - Returns: 標題 `Text` 與 `TextField` 組成的橫排或堆疊 view
     @ViewBuilder
-    func decimalField(title: String, value: Binding<Decimal>, field: OrderEditFeature.State.Field, identifier: String? = nil) -> some View {
-        HStack(alignment: .center, spacing: BLSpacing.small) {
-            // 長標籤換行並撐高整列，值在多行標籤中垂直置中
-            Text(LocalizedStringKey(title))
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            TextField(
-                "",
-                value: value,
-                format: .number.precision(.fractionLength(0))
-            )
-            .labelsHidden()
-            .multilineTextAlignment(.trailing)
-            .monospacedDigit()
-            .keyboardType(.numberPad)
-            .focused($focusedField, equals: field)
-            .frame(maxWidth: 140, alignment: .trailing)
-            .frame(minHeight: BLHitTarget.minimum)
-            .contentShape(.rect)
-            // 未指定時給空字串等同不掛 (leaf 欄位的預設 identifier 即空字串)，僅特定呼叫點傳入值
-            .accessibilityIdentifier(identifier ?? "")
+    func decimalField(
+        title: String,
+        value: Binding<Decimal>,
+        field: OrderEditFeature.State.Field,
+        identifier: String? = nil
+    ) -> some View {
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: BLSpacing.small) {
+                Text(LocalizedStringKey(title))
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                decimalNumberField(
+                    value: value,
+                    field: field,
+                    identifier: identifier
+                )
+            }
+        } else {
+            HStack(alignment: .center, spacing: BLSpacing.small) {
+                // 長標籤換行並撐高整列，值在多行標籤中垂直置中
+                Text(LocalizedStringKey(title))
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                decimalNumberField(
+                    value: value,
+                    field: field,
+                    identifier: identifier
+                )
+            }
         }
     }
-
+    
     /// 百分比輸入欄
-    ///
-    /// 介面顯示 0–100 的百分比數字，內部以 0–1 的 ``Decimal`` 儲存以對應 ``LedgerOrder/cardFeeRate`` 等欄位的單位。`TextField` 的 placeholder 同樣留空，由 `LabeledContent` 提供唯一的標題
     /// - Parameters:
     ///   - title: 欄位標題
     ///   - value: 雙向繫結的 0–1 比例值
-    /// - Returns: `LabeledContent` + `TextField` 組合 view
+    /// - Returns: 標題 `Text` 與百分比輸入欄組成的橫排或堆疊 view
     @ViewBuilder
-    func percentField(title: String, value: Binding<Decimal>, field: OrderEditFeature.State.Field) -> some View {
+    func percentField(
+        title: String,
+        value: Binding<Decimal>,
+        field: OrderEditFeature.State.Field
+    ) -> some View {
         let proxy = Binding<Double>(
             get: { NSDecimalNumber(decimal: value.wrappedValue).doubleValue * 100 },
             set: { newValue in
                 value.wrappedValue = Decimal(newValue / 100)
             }
         )
-
-        HStack(alignment: .center, spacing: BLSpacing.small) {
-            // 長標籤換行並撐高整列，值在多行標籤中垂直置中
-            Text(LocalizedStringKey(title))
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-            HStack(spacing: 4) {
-                TextField(
-                    "",
-                    value: proxy,
-                    format: .number.precision(.fractionLength(2))
-                )
-                .labelsHidden()
-                .multilineTextAlignment(.trailing)
-                .monospacedDigit()
-                .keyboardType(.decimalPad)
-                .focused($focusedField, equals: field)
-
-                Text("%")
-                    .foregroundStyle(.secondary)
+        
+        if dynamicTypeSize.isAccessibilitySize {
+            VStack(alignment: .leading, spacing: BLSpacing.small) {
+                Text(LocalizedStringKey(title))
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                percentNumberField(proxy: proxy, field: field)
             }
-            .frame(maxWidth: 140, alignment: .trailing)
-            .frame(minHeight: BLHitTarget.minimum)
-            .contentShape(.rect)
+        } else {
+            HStack(alignment: .center, spacing: BLSpacing.small) {
+                // 長標籤換行並撐高整列，值在多行標籤中垂直置中
+                Text(LocalizedStringKey(title))
+                    .fixedSize(horizontal: false, vertical: true)
+                
+                percentNumberField(proxy: proxy, field: field)
+            }
         }
+    }
+    
+    /// 整數金額輸入欄，供兩種表單版面共用
+    /// - Parameters:
+    ///   - value: 雙向繫結的值
+    ///   - field: 對應的焦點欄位
+    ///   - identifier: UI 測試定位用的識別碼
+    /// - Returns: `TextField` view
+    @ViewBuilder
+    func decimalNumberField(
+        value: Binding<Decimal>,
+        field: OrderEditFeature.State.Field,
+        identifier: String?
+    ) -> some View {
+        TextField(
+            "",
+            value: value,
+            format: .number.precision(.fractionLength(0)).grouping(.never)
+        )
+        .labelsHidden()
+        .multilineTextAlignment(.trailing)
+        .monospacedDigit()
+        .keyboardType(.numberPad)
+        .focused($focusedField, equals: field)
+        // 橫排時拿剩餘空間、堆疊時佔滿整列，皆 trailing 對齊避免長數字被截斷
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .frame(minHeight: BLHitTarget.minimum)
+        .contentShape(.rect)
+        // 只有指定 identifier 時才掛上識別值。
+        .accessibilityIdentifier(identifier ?? "")
+    }
+    
+    /// 百分比輸入欄，供兩種表單版面共用
+    /// - Parameters:
+    ///   - proxy: 0–100 顯示值的雙向繫結
+    ///   - field: 對應的焦點欄位
+    /// - Returns: 數值與 `%` 組成的 `HStack` view
+    @ViewBuilder
+    func percentNumberField(
+        proxy: Binding<Double>,
+        field: OrderEditFeature.State.Field
+    ) -> some View {
+        HStack(spacing: 4) {
+            TextField(
+                "",
+                value: proxy,
+                format: .number.precision(.fractionLength(2)).grouping(.never)
+            )
+            .labelsHidden()
+            .multilineTextAlignment(.trailing)
+            .monospacedDigit()
+            .keyboardType(.decimalPad)
+            .focused($focusedField, equals: field)
+            
+            Text("%")
+                .foregroundStyle(Color.blSecondaryLabel)
+        }
+        // 橫排時拿剩餘空間、堆疊時佔滿整列，皆 trailing 對齊避免長數字被截斷
+        .frame(maxWidth: .infinity, alignment: .trailing)
+        .frame(minHeight: BLHitTarget.minimum)
+        .contentShape(.rect)
     }
 }
 
 // MARK: - Private Method
 
 private extension OrderEditView {
-
+    
     /// 目前聚焦的欄位是否使用數字鍵盤
-    ///
-    /// 數字鍵盤沒有 return 鍵，需要工具列提供收起路徑；一般鍵盤有 return 鍵故不顯示
     var isNumericFieldFocused: Bool {
         switch store.focusedField {
         case .chargedAmount, .cardlessDeduction, .cardlessSupplement, .itemCost,
-             .foreignDomesticShipping, .internationalShipping, .domesticShipping,
-             .cardFeeRate, .platformFeeRate, .paymentFeeRate,
-             .itemQuantity, .itemUnitPrice:
+                .foreignDomesticShipping, .internationalShipping, .domesticShipping,
+                .cardFeeRate, .platformFeeRate, .paymentFeeRate,
+                .itemQuantity, .itemUnitPrice:
             return true
         case .customerName, .itemName, .notes, .none:
             return false
         }
     }
-
+    
     /// 是否允許按下儲存
-    ///
-    /// 客戶名稱與訂單來源必須含有非空白字元、商品類別至少選一個才視為合法。即使儲存路徑保有 trim+fallback 的防禦邏輯，前端仍以 disable 按鈕的方式給使用者明確回饋
     var canSave: Bool {
         let fields = [
-            store.draftCustomerName,
-            store.draftOrderSource,
+            store.draft.customerName,
+            store.draft.orderSource,
         ]
-        let hasCategory = store.draftCategories.contains {
+        let hasCategory = store.draft.categories.contains {
             !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
         return hasCategory && fields.allSatisfy {
             !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
     }
-
-    /// 訂單編輯表單 `NavigationStack` 的 push 路徑：把單一 optional ``OrderEditFeature/State/PickerRoute`` 映射成 0 或 1 元素的路徑陣列
-    ///
-    /// 使用者點 Back 或選擇器內 `dismiss()` pop 時，SwiftUI 清空路徑、經此 setter 把 route 設回 `nil`
+    
+    /// 訂單編輯表單的選擇器導覽路徑
     var pickerPath: Binding<[OrderEditFeature.State.PickerRoute]> {
         Binding(
             get: { store.pickerRoute.map { [$0] } ?? [] },
             set: { store.pickerRoute = $0.last }
         )
     }
-
-    /// 單選模式下開團 `Picker` 的選取繫結：以陣列首元素對應單選值，寫入時送 ``OrderEditFeature/Action/campaignSelected(_:)`` 正規化回單元素陣列 (空字串 = 未歸團 = 空陣列)
+    
+    /// 單選開團的繫結；空字串代表未歸團
     var campaignSelectionBinding: Binding<String> {
         Binding(
-            get: { store.draftCampaignNames.first ?? "" },
+            get: { store.draft.campaignNames.first ?? "" },
             set: { store.send(.campaignSelected($0)) }
         )
     }
-
-    /// 幣別選擇列 label 顯示文字：依 App 選定 locale——中文顯示名稱 (如「新台幣」)、其他語言顯示 ISO code (如「TWD」)，避免英文全名過長
+    
+    /// 幣別名稱顯示文字；依語言選名稱或 ISO code
     var currencyDisplayText: String {
-        let code = store.draftCurrency.rawValue
+        let code = store.draft.currency.rawValue
         guard locale.language.languageCode?.identifier == "zh" else {
             return code
         }
-
+        
         let name = locale.localizedString(forCurrencyCode: code) ?? ""
         return name.isEmpty ? code : name
     }
-
-    /// 日期選擇器的繫結：寫回時把新值交給 reducer 的 ``OrderEditFeature/Action/dateComponentsChanged(_:)``，由 reducer 以注入時間補上當下秒數後寫入 ``OrderEditFeature/State/draftDate``；View 端不再讀取當下時間做寫入前計算
+    
+    /// 日期選擇器的繫結，寫回時交由 reducer 補上目前時間
     var refreshingSecondsBinding: Binding<Date> {
         Binding(
-            get: { store.draftDate },
+            get: { store.draft.date },
             set: { store.send(.dateComponentsChanged($0)) }
         )
     }

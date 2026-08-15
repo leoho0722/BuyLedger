@@ -8,25 +8,30 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 合併流程的照片挑選步驟：兩筆訂單照片合計超過上限時，以格狀縮圖讓使用者勾選要保留的照片 (至多 ``LedgerOrder/maxPhotoCount`` 張)
-///
-/// 由 ``OrderMergeCandidateSheet`` 在 ``OrderMergeFeature/Step/selectPhotos`` 步驟內嵌呈現；「繼續」按鈕在外層 toolbar，本 view 只負責縮圖格與勾選狀態
+/// 合併照片挑選畫面；最多保留 maxPhotoCount 張
 struct MergePhotoPickerSheet: View {
-
+    
     // MARK: - View Properties
-
+    
     @Bindable var store: StoreOf<OrderMergeFeature>
-
+    
     // MARK: - View Body
-
+    
     /// 照片挑選步驟的內容：說明文字 + 縮圖格
     var body: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                Text("兩筆訂單共有 \(store.combinedPhotos.count) 張照片，超過上限 \(LedgerOrder.maxPhotoCount) 張；請勾選要保留的照片 (已選 \(store.selectedPhotoIndices.count)/\(LedgerOrder.maxPhotoCount))，按「繼續」帶入合併後的新訂單。")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-
+                Text(
+                    """
+                    兩筆訂單共有 \(store.combinedPhotos.count) 張照片，超過上限 \(LedgerOrder.maxPhotoCount) 張；\
+                    請勾選要保留的照片 (已選 \(store.selectedPhotoIndices.count)/\
+                    \(LedgerOrder.maxPhotoCount))，\
+                    按「繼續」帶入合併後的新訂單。
+                    """
+                )
+                .blTextStyle(.footnote)
+                .foregroundStyle(Color.blSecondaryLabel)
+                
                 LazyVGrid(
                     columns: [GridItem(.adaptive(minimum: 96), spacing: BLSpacing.small)],
                     spacing: BLSpacing.small
@@ -44,7 +49,7 @@ struct MergePhotoPickerSheet: View {
 // MARK: - ViewBuilder
 
 private extension MergePhotoPickerSheet {
-
+    
     /// 單格照片縮圖：點擊 toggle 勾選；已勾選顯示外框與右上角 checkmark
     /// - Parameters:
     ///   - index: 照片在 ``OrderMergeFeature/State/combinedPhotos`` 中的 index
@@ -53,7 +58,8 @@ private extension MergePhotoPickerSheet {
     @ViewBuilder
     func photoCell(index: Int, data: Data) -> some View {
         let isSelected = store.selectedPhotoIndices.contains(index)
-
+        let palette = BLPalette()
+        
         Button {
             store.send(.photoToggled(index))
         } label: {
@@ -64,24 +70,31 @@ private extension MergePhotoPickerSheet {
                     .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
                     .overlay {
                         RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous)
-                            .strokeBorder(isSelected ? Color.accentColor : Color.clear, lineWidth: 3)
+                            .strokeBorder(isSelected ? palette.accent : Color.clear, lineWidth: 3)
                     }
                     .opacity(isSelected ? 1 : 0.55)
-
+                
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .symbolRenderingMode(.palette)
-                    .foregroundStyle(.white, isSelected ? Color.accentColor : Color.black.opacity(0.35))
+                    .foregroundStyle(
+                        .white, isSelected ? palette.accent : Color.black.opacity(0.35)
+                    )
+                // 保持圖示為一般字重。
                     .font(.title3)
                     .padding(6)
+                // 外層 accessibilityLabel 已涵蓋語意，勾號不需朗讀
+                    .accessibilityHidden(true)
             }
             .contentShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityLabel(isSelected ? "取消保留這張照片" : "保留這張照片")
+        // 以標準選取特徵表達狀態。
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityIdentifier(BLAccessibilityID.OrderMerge.photoCell(index: index))
     }
-
-    /// 縮圖內容：可解碼時顯示影像，否則顯示 placeholder (寧可空狀態也不顯示假資料)
+    
+    /// 顯示可解碼的照片，否則顯示 placeholder
     /// - Parameter data: 照片 data
     /// - Returns: 縮圖內容 view
     @ViewBuilder
@@ -95,7 +108,7 @@ private extension MergePhotoPickerSheet {
                 .fill(.quaternary)
                 .overlay {
                     Image(systemName: "photo")
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(Color.blSecondaryLabel)
                 }
         }
     }
