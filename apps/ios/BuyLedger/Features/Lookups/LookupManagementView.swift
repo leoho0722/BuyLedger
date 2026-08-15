@@ -9,17 +9,13 @@ import ComposableArchitecture
 import SwiftUI
 
 /// 訂單來源 / 商品類別 / 付款方式主檔的獨立管理畫面
-///
-/// 以 ``LookupManagementFeature`` 驅動：點「新增」彈出 alert (訂單來源 / 商品類別) 或 sheet (付款方式含 `isCardless` / `isBankTransfer` toggle、對帳狀態為 name-only sheet)。
-/// iOS / iPadOS 以系統 `List` 呈現，列可左滑刪除或編輯／重新命名。
-/// 付款方式列操作為「編輯」(開 ``PaymentMethodEditorSheet`` 帶入原資料)，其餘 kind 為「重新命名」alert。文案、空狀態、icon 來自 ``LookupKind``
 struct LookupManagementView: View {
-
+    
     // MARK: - View Properties
-
+    
     /// 主檔管理 store
     @Bindable var store: StoreOf<LookupManagementFeature>
-
+    
     /// 依主檔類型回傳可由 String Catalog 翻譯的重新命名標題
     private var renameSheetTitle: LocalizedStringKey {
         switch store.state.kind {
@@ -33,12 +29,10 @@ struct LookupManagementView: View {
             "重新命名對帳狀態"
         }
     }
-
+    
     // MARK: - View Body
-
+    
     /// 主檔管理畫面內容
-    ///
-    /// 以系統 `List` 呈現主檔項目，toolbar、新增 / 重新命名 alert、付款方式與對帳狀態新增 sheet 與 `task` 載入一併掛在其上
     var body: some View {
         listContent
             .navigationTitle(Text(LocalizedStringKey(store.state.kind.title)))
@@ -49,15 +43,22 @@ struct LookupManagementView: View {
                         store.send(.addButtonTapped)
                     } label: {
                         // icon-only 只留 +，完整標題留作無障礙標籤、新增流程標題仍顯示於 sheet
-                        Label(LocalizedStringKey(store.state.kind.addButtonTitle), systemImage: "plus")
+                        Label(
+                            LocalizedStringKey(store.state.kind.addButtonTitle), systemImage: "plus"
+                        )
                     }
                     .labelStyle(.iconOnly)
                 }
             }
-            .sheet(item: $store.scope(state: \.destination, action: \.destination)) { destinationStore in
+            .sheet(item: $store.scope(state: \.destination, action: \.destination)) {
+                destinationStore in
                 destinationSheet(store: destinationStore)
             }
             .alert($store.scope(state: \.deletionConfirmation, action: \.deletionConfirmation))
+            .alert(
+                $store.scope(state: \.retroactiveConfirmation, action: \.retroactiveConfirmation)
+            )
+            .alert($store.scope(state: \.writeFailureAlert, action: \.writeFailureAlert))
             .task {
                 await store.send(.task).finish()
             }
@@ -67,15 +68,14 @@ struct LookupManagementView: View {
 // MARK: - ViewBuilder
 
 private extension LookupManagementView {
-
+    
     /// 依 destination 型別分派要呈現的表單
-    ///
-    /// 單一呈現點：任一時刻只會有一張 sheet，互斥由型別系統保證，
-    /// 而非靠多個並列的 sheet 修飾子與各自的布林彼此避讓
     /// - Parameter store: 已 scope 到 destination 的 store
     /// - Returns: 對應的表單 view
     @ViewBuilder
-    func destinationSheet(store destinationStore: StoreOf<LookupManagementFeature.Destination>) -> some View {
+    func destinationSheet(
+        store destinationStore: StoreOf<LookupManagementFeature.Destination>
+    ) -> some View {
         switch destinationStore.case {
         case let .rename(renameStore):
             LookupNameEditorSheet(
@@ -88,7 +88,7 @@ private extension LookupManagementView {
                 renameStore.send(.draftChanged(name))
                 renameStore.send(.saveButtonTapped)
             }
-
+            
         case let .addNameOnly(addStore):
             LookupNameEditorSheet(
                 title: LocalizedStringKey(store.state.kind.addAlertTitle),
@@ -98,7 +98,7 @@ private extension LookupManagementView {
             ) { name in
                 addStore.send(.saveButtonTapped(name: name))
             }
-
+            
         case let .addPaymentMethod(addStore):
             PaymentMethodEditorSheet(
                 title: store.state.kind.addAlertTitle,
@@ -115,7 +115,7 @@ private extension LookupManagementView {
                     )
                 )
             }
-
+            
         case let .editPaymentMethod(editStore):
             PaymentMethodEditorSheet(
                 title: "編輯付款方式",
@@ -138,8 +138,8 @@ private extension LookupManagementView {
             }
         }
     }
-
-    /// 列項顯示：訂單來源 / 商品類別 / 對帳狀態 kind 純文字；付款方式 kind 在右側顯示「無卡」「銀行匯款」與「貨到付款」徽章 (僅作標示，不能直接切換；要修改旗標需對該列選「編輯」)
+    
+    /// 顯示主檔項目；付款方式額外顯示分類徽章
     /// - Parameter item: 要顯示的主檔項目名稱
     /// - Returns: 列項 view
     @ViewBuilder
@@ -150,41 +150,41 @@ private extension LookupManagementView {
         case .paymentMethod:
             HStack(spacing: BLSpacing.small) {
                 Text(item)
-
+                
                 Spacer()
-
+                
                 if store.paymentMethodIsCardless[item] == true {
                     classificationBadge("無卡")
                 }
-
+                
                 if store.paymentMethodIsBankTransfer[item] == true {
                     classificationBadge("銀行匯款")
                 }
-
+                
                 if store.paymentMethodIsCashOnDelivery[item] == true {
                     classificationBadge("貨到付款")
                 }
             }
         }
     }
-
-    /// 付款方式分類徽章 (例如「無卡」「銀行匯款」「貨到付款」)，沿用 tint 膠囊樣式
+    
+    /// 付款方式分類徽章
     /// - Parameter title: 徽章文字
     /// - Returns: 膠囊徽章 view
     @ViewBuilder
     func classificationBadge(_ title: String) -> some View {
         Text(LocalizedStringKey(title))
-            .font(.caption.weight(.semibold))
+            .font(BLTypographyStyle.caption.font.weight(.semibold))
             .foregroundStyle(.tint)
             .padding(.horizontal, BLSpacing.small)
             .padding(.vertical, 2)
             .background(
                 Capsule()
-                    .fill(Color.accentColor.opacity(0.12))
+                    .fill(BLPalette().accent.opacity(0.12))
             )
     }
-
-    /// 列項的「編輯／重新命名」操作按鈕，依 kind 分流：付款方式開 ``PaymentMethodEditorSheet`` (帶入原名稱與旗標) 做編輯，其餘 kind 沿用重新命名 alert
+    
+    /// 建立項目的編輯或重新命名按鈕
     /// - Parameter item: 目標項目名稱
     /// - Returns: 對應的操作按鈕
     @ViewBuilder
@@ -203,18 +203,20 @@ private extension LookupManagementView {
             }
         }
     }
-
-    /// section header 顯示計數、列可左滑刪除或重新命名、付款方式顯示 footer 說明
+    
+    /// 主檔 section header 與列表
     @ViewBuilder
     var listContent: some View {
+        let palette = BLPalette()
+        
         List {
             if let errorMessage = store.errorMessage {
                 Section {
                     Text(LocalizedStringKey(errorMessage))
-                        .foregroundStyle(.red)
+                        .foregroundStyle(palette.red)
                 }
             }
-
+            
             Section {
                 if store.items.isEmpty {
                     ContentUnavailableView(
@@ -227,7 +229,7 @@ private extension LookupManagementView {
                         itemRow(for: item)
                             .contextMenu {
                                 renameOrEditButton(for: item)
-
+                                
                                 Button(role: .destructive) {
                                     store.send(.deleteButtonTapped(item))
                                 } label: {
@@ -240,9 +242,9 @@ private extension LookupManagementView {
                                 } label: {
                                     Label("刪除", systemImage: "trash")
                                 }
-
+                                
                                 renameOrEditButton(for: item)
-                                .tint(.orange)
+                                    .tint(palette.orange)
                             }
                     }
                 }
@@ -250,9 +252,15 @@ private extension LookupManagementView {
                 Text("目前已建立 \(store.items.count) 項")
             } footer: {
                 if store.state.kind == .paymentMethod {
-                    Text("「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；「銀行匯款」標籤代表會顯示「對帳狀態」欄位；「貨到付款」標籤代表收款金額已含預估運費，獲利會自動扣除三種運費。需要修改名稱或分類時，對該列選「編輯」即可。")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                    Text(
+                        """
+                        「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；\
+                        「銀行匯款」標籤代表會顯示「對帳狀態」欄位；「貨到付款」標籤代表收款金額已含預估運費，\
+                        獲利會自動扣除三種運費。需要修改名稱或分類時，對該列選「編輯」即可。
+                        """
+                    )
+                    .blTextStyle(.footnote)
+                    .foregroundStyle(Color.blSecondaryLabel)
                 }
             }
         }

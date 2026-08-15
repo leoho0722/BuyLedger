@@ -8,49 +8,42 @@
 import SwiftUI
 
 /// 主檔項目的單欄名稱表單 sheet
-///
-/// 取代原本以 `.alert` 承載輸入框的作法——alert 的職責是傳達需要立即決策的關鍵資訊，
-/// 把輸入框與整段說明塞進去，在小螢幕大字級下會逼近需要捲動
-///
-/// 版面比照同目錄的 ``PaymentMethodEditorSheet``，同樣提供取消與儲存
 struct LookupNameEditorSheet: View {
-
+    
     // MARK: - View Properties
-
+    
     /// Sheet 的標題 (顯示在 navigation bar)
     let title: LocalizedStringKey
-
+    
     /// 表單下方的說明訊息；空字串時不顯示
     let message: String
-
+    
     /// 名稱 TextField 的 placeholder
     let namePlaceholder: String
-
+    
     /// 提交按鈕的文字
     let submitTitle: String
-
+    
     /// 使用者按下提交時的 callback；caller 拿到已 trim 的名稱後負責寫入主檔
     let onSubmit: (_ name: String) -> Void
-
+    
     /// 由 sheet 環境注入的 dismiss action
     @Environment(\.dismiss) private var dismiss
-
+    
     /// 名稱輸入草稿
     @State private var draftName: String
-
+    
     /// 是否顯示「捨棄變更／繼續編輯」確認彈窗
     @State private var showsDiscardConfirmation = false
-
+    
     /// 名稱欄位的鍵盤焦點
-    ///
-    /// 不綁 store、以閉包與 caller 溝通的可重用元件，焦點屬元件內部狀態 (專案既有例外)
     @FocusState private var isNameFieldFocused: Bool
-
+    
     /// 表單開啟時的初始值快照；供 ``isDirty`` 判斷未儲存變更
     private let initialName: String
-
+    
     // MARK: - Init
-
+    
     /// 建立名稱表單 sheet
     /// - Parameters:
     ///   - title: navigation 標題
@@ -75,9 +68,9 @@ struct LookupNameEditorSheet: View {
         self._draftName = State(initialValue: initialName)
         self.initialName = initialName
     }
-
+    
     // MARK: - View Body
-
+    
     /// 名稱表單的畫面內容
     var body: some View {
         NavigationStack {
@@ -92,7 +85,7 @@ struct LookupNameEditorSheet: View {
             Button("捨棄變更", role: .destructive) {
                 dismiss()
             }
-
+            
             Button("繼續編輯", role: .cancel) {}
         } message: {
             Text("這個項目有尚未儲存的變更，離開後將不會保留。")
@@ -103,7 +96,7 @@ struct LookupNameEditorSheet: View {
 // MARK: - ViewBuilder
 
 private extension LookupNameEditorSheet {
-
+    
     /// 表單內容：名稱欄位、說明與取消／儲存工具列
     @ViewBuilder
     var formContent: some View {
@@ -117,8 +110,8 @@ private extension LookupNameEditorSheet {
             } footer: {
                 if !message.isEmpty {
                     Text(LocalizedStringKey(message))
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
+                        .blTextStyle(.footnote)
+                        .foregroundStyle(Color.blSecondaryLabel)
                 }
             }
         }
@@ -136,7 +129,7 @@ private extension LookupNameEditorSheet {
                     }
                 }
             }
-
+            
             ToolbarItem(placement: .confirmationAction) {
                 Button {
                     onSubmit(trimmedName)
@@ -155,17 +148,17 @@ private extension LookupNameEditorSheet {
 // MARK: - Private Method
 
 private extension LookupNameEditorSheet {
-
+    
     /// 去除首尾空白後的名稱
     var trimmedName: String {
         draftName.trimmingCharacters(in: .whitespacesAndNewlines)
     }
-
+    
     /// 是否可提交：名稱非空且與初始值不同
     var canSubmit: Bool {
         !trimmedName.isEmpty && trimmedName != initialName
     }
-
+    
     /// 是否有未儲存的變更
     var isDirty: Bool {
         trimmedName != initialName

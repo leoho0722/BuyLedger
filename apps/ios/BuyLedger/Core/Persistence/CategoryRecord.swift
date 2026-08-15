@@ -9,23 +9,34 @@ import Foundation
 import SwiftData
 
 /// SwiftData 持久化的「商品類別主檔」記錄
-///
-/// 用於使用者在「更多」頁獨立管理類別 (不依賴任何一張訂單存在)，亦作為訂單編輯選單的選項來源
-///
-/// 沿用 ``OrderRecord`` 的設計準則：不使用 `@Attribute(.unique)` (CloudKit 不支援)，由 actor 在 upsert 時自行檢查避免重複
 @Model
 final class CategoryRecord {
-
+    
     // MARK: - Data Properties
-
+    
+    /// 以類別名稱建立索引，供查詢與更新
+    #Index<CategoryRecord>([\.name])
+    
     /// 類別名稱；同時作為 upsert 識別值
     var name: String
-
+    
     // MARK: - Init
-
+    
     /// 建立指定名稱的類別記錄
     /// - Parameter name: 類別名稱
     init(name: String) {
         self.name = name
+    }
+}
+
+// MARK: - NameLookupRecord
+
+extension CategoryRecord: NameLookupRecord {
+    
+    /// 以類別名稱比對的查詢條件
+    /// - Parameter name: 要比對的類別名稱
+    /// - Returns: 供 `FetchDescriptor` 使用的查詢條件
+    static func matchingName(_ name: String) -> Predicate<CategoryRecord> {
+        #Predicate { $0.name == name }
     }
 }

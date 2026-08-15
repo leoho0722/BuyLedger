@@ -9,23 +9,34 @@ import Foundation
 import SwiftData
 
 /// SwiftData 持久化的「訂單來源主檔」記錄
-///
-/// 用於使用者在訂單編輯選單獨立管理訂單來源 (不依賴任何一張訂單存在)，作為訂單編輯選單的選項來源
-///
-/// 沿用 ``CategoryRecord`` 的設計準則：不使用 `@Attribute(.unique)` (CloudKit 不支援)，由 actor 在 upsert 時自行檢查避免重複
 @Model
 final class OrderSourceRecord {
-
+    
     // MARK: - Data Properties
-
+    
+    /// 以訂單來源名稱建立索引，供查詢與更新
+    #Index<OrderSourceRecord>([\.name])
+    
     /// 訂單來源名稱；同時作為 upsert 識別值
     var name: String
-
+    
     // MARK: - Init
-
+    
     /// 建立指定名稱的訂單來源記錄
     /// - Parameter name: 訂單來源名稱
     init(name: String) {
         self.name = name
+    }
+}
+
+// MARK: - NameLookupRecord
+
+extension OrderSourceRecord: NameLookupRecord {
+    
+    /// 以訂單來源名稱比對的查詢條件
+    /// - Parameter name: 要比對的訂單來源名稱
+    /// - Returns: 供 `FetchDescriptor` 使用的查詢條件
+    static func matchingName(_ name: String) -> Predicate<OrderSourceRecord> {
+        #Predicate { $0.name == name }
     }
 }
