@@ -16,6 +16,22 @@
           }
         }
       }
+    },
+    "NSFaceIDUsageDescription" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face ID is used to authenticate you so the app can unlock and show ledger content after you enable ledger protection."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要使用 Face ID 驗證身份，才能在你啟用帳本保護後解鎖並檢視帳本內容。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"
