@@ -11,20 +11,14 @@ import CoreGraphics
 // MARK: - Internal Method
 
 /// 跨畫面共用的語意斷言
-///
-/// 一律以 accessibility identifier 定位；失敗時以 `failWithDiagnostics` 附上截圖與可及性樹，
-/// 讓斷言在測試檔裡讀起來是語意，而非查詢細節
 extension XCTestCase {
 
     /// 確認已停在指定畫面
-    ///
-    /// 導覽列本身不掛 identifier (見專案決議)，改以畫面根容器就緒判定；
-    /// 命名沿用「導覽標題」的語意，實作等的是該畫面根 identifier 出現
     /// - Parameters:
-    ///   - screen: 目標畫面的 Page Object
-    ///   - timeout: 逾時秒數
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - screen: 要確認的 Page Object
+    ///   - timeout: 等待畫面就緒的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     func assertNavigationTitle(
         for screen: Screen,
         timeout: TimeInterval = 10,
@@ -45,9 +39,9 @@ extension XCTestCase {
     /// - Parameters:
     ///   - identifier: 空狀態容器的 identifier
     ///   - app: 受測 App
-    ///   - timeout: 逾時秒數
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - timeout: 等待容器出現的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     func assertEmptyState(
         _ identifier: String,
         in app: XCUIApplication,
@@ -67,14 +61,12 @@ extension XCTestCase {
     }
 
     /// 確認元素命中區至少 44x44 point
-    ///
-    /// Apple HIG 的最小可點尺寸；量的是元素 frame 而非視覺尺寸，命中區靠 `contentShape` 撐開時才驗得準
     /// - Parameters:
-    ///   - element: 待驗元素
-    ///   - minimum: 最小邊長 (point)，預設 44
-    ///   - app: 受測 App，供失敗診斷附件使用
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - element: 要檢查命中區的元素
+    ///   - minimum: 命中區的最小寬高
+    ///   - app: 受測 App
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     func assertMinimumHitTarget(
         _ element: XCUIElement,
         minimum: CGFloat = 44,
@@ -98,16 +90,13 @@ extension XCTestCase {
     }
 
     /// 確認進度列的標題與尾值成對出現
-    ///
-    /// 進度列以前導標題搭配尾端數值呈現，缺一即視為版面缺漏；
-    /// 兩個 identifier 由呼叫端提供，只驗兩者同時存在、不讀顯示文字
     /// - Parameters:
-    ///   - titleIdentifier: 標題元素的 identifier
-    ///   - valueIdentifier: 尾值元素的 identifier
+    ///   - titleIdentifier: 進度列標題的 identifier
+    ///   - valueIdentifier: 進度列尾值的 identifier
     ///   - app: 受測 App
-    ///   - timeout: 逾時秒數
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - timeout: 等待元素出現的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     func assertProgressPairing(
         titleIdentifier: String,
         valueIdentifier: String,

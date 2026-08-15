@@ -8,9 +8,6 @@
 import XCTest
 
 /// UI 測試地基的自我檢查
-///
-/// 驗的不是某個功能，而是 harness 本身：種子注入、無殘留、語言不外洩、固定時間可重現、失敗注入、
-/// 系統權限替身。這幾條不成立時，上層流程測試的綠燈都不可信，故列為最優先的守門測試
 final class HarnessSelfCheckTests: BLUITestCase {
 
     // MARK: - Tests
@@ -37,7 +34,7 @@ final class HarnessSelfCheckTests: BLUITestCase {
         if dashboard.isEmptyStateShown {
             failWithDiagnostics(in: app, "有資料時總覽頁仍顯示引導空狀態")
         }
-        // KPI 卡是合併朗讀元素，主要數值放在 accessibility value；value 為空代表卡片沒渲染出內容
+        // KPI 卡合併朗讀，主要數值在 accessibilityValue。
         if dashboard.kpiValue(.netProfit).isEmpty {
             failWithDiagnostics(in: app, "淨獲利 hero 卡沒有 accessibility value")
         }
@@ -76,7 +73,9 @@ final class HarnessSelfCheckTests: BLUITestCase {
         if !englishDashboard.waitUntilReady() {
             failWithDiagnostics(in: english, "英文啟動後總覽頁未就緒")
         }
-        let englishButton = english.descendants(matching: .any)[BLAccessibilityID.Dashboard.emptyStateActionButton]
+        let englishButton = english.descendants(matching: .any)[
+            BLAccessibilityID.Dashboard.emptyStateActionButton
+        ]
         if !englishButton.waitForExistence(timeout: 10) {
             failWithDiagnostics(in: english, "英文啟動未找到空狀態行動按鈕")
         }
@@ -93,7 +92,9 @@ final class HarnessSelfCheckTests: BLUITestCase {
         if !fallbackDashboard.waitUntilReady() {
             failWithDiagnostics(in: fallback, "預設語言重啟後總覽頁未就緒")
         }
-        let fallbackButton = fallback.descendants(matching: .any)[BLAccessibilityID.Dashboard.emptyStateActionButton]
+        let fallbackButton = fallback.descendants(matching: .any)[
+            BLAccessibilityID.Dashboard.emptyStateActionButton
+        ]
         if !fallbackButton.waitForExistence(timeout: 10) {
             failWithDiagnostics(in: fallback, "預設語言重啟未找到空狀態行動按鈕")
         }
@@ -107,11 +108,10 @@ final class HarnessSelfCheckTests: BLUITestCase {
         }
     }
 
-    /// 固定參考時間讓日期分組可重現：fullOrders 的近期訂單頂列恆為位移最小的那筆
+    /// 固定參考時間，讓日期分組可重現
     @MainActor
     func testFixedNowGivesStableDateGrouping() {
-        // fullOrders 以位移 [4, 6, 8, 9, ...] 天套在 sampleOrders 上，最新 4 筆即位移最小的 4 筆；
-        // 位移 4 天的第一筆 sampleOrder (BL-2604-018) 恆落在近期訂單首位，與實際參考日無關、只要時間固定即穩定
+        // fullOrders 依日期位移建立，最新訂單位移最小
         let referenceDate = Self.utcDate(year: 2026, month: 4, day: 30)
         let app = launch(LaunchOptions(seed: .fullOrders, referenceDate: referenceDate))
         let dashboard = DashboardScreen(app: app)
@@ -127,16 +127,18 @@ final class HarnessSelfCheckTests: BLUITestCase {
     /// 載入失敗注入應呈現可用 identifier 定位的失敗容器與重試鈕
     @MainActor
     func testLoadFailureInjectionShowsFailureView() {
-        // loadFailure = .orders 讓訂單 repository 每次讀取都拋錯。總覽頁消費訂單，是唯一以標準化失敗容器
-        // (掛有 identifier) 呈現該錯誤的畫面；訂單分頁的失敗僅以清單標頭的 inline 文字呈現、無 identifier，
-        // 不符「一律以 identifier 定位」，故於總覽頁驗證注入確實生效
+        // .orders 讓 repository 讀取失敗；總覽頁顯示可定位的失敗容器。
         let app = launch(LaunchOptions(seed: .fullOrders, loadFailure: .orders))
 
-        let failureContainer = app.descendants(matching: .any)[BLAccessibilityID.Dashboard.loadFailure]
+        let failureContainer = app.descendants(matching: .any)[
+            BLAccessibilityID.Dashboard.loadFailure
+        ]
         if !failureContainer.waitForExistence(timeout: 10) {
             failWithDiagnostics(in: app, "注入訂單載入失敗後，總覽頁未出現載入失敗容器")
         }
-        let retryButton = app.descendants(matching: .any)[BLAccessibilityID.Dashboard.loadFailureRetryButton]
+        let retryButton = app.descendants(matching: .any)[
+            BLAccessibilityID.Dashboard.loadFailureRetryButton
+        ]
         if !retryButton.waitForExistence(timeout: 10) {
             failWithDiagnostics(in: app, "載入失敗容器未出現重試按鈕")
         }
@@ -163,9 +165,9 @@ final class HarnessSelfCheckTests: BLUITestCase {
 
 private extension HarnessSelfCheckTests {
 
-    /// 字串是否含 CJK 統一表意文字 (漢字)，供語言指紋以 script 範圍判定、不倚賴特定字面值
-    /// - Parameter text: 待檢字串
-    /// - Returns: 是否含漢字
+    /// 判斷字串是否含 CJK 字元
+    /// - Parameter text: 要檢查的字串
+    /// - Returns: 字串是否包含 CJK 字元
     func containsHan(_ text: String) -> Bool {
         text.unicodeScalars.contains { $0.value >= 0x4E00 && $0.value <= 0x9FFF }
     }
@@ -173,10 +175,14 @@ private extension HarnessSelfCheckTests {
     /// 以格里曆 UTC 組出指定年月日的當日零時，供固定參考時間使用
     /// - Parameters:
     ///   - year: 西元年
-    ///   - month: 月
-    ///   - day: 日
-    /// - Returns: 對應的 `Date`，組建失敗時退回紀元起點
-    static func utcDate(year: Int, month: Int, day: Int) -> Date {
+    ///   - month: 月份
+    ///   - day: 日期
+    /// - Returns: 指定日期 UTC 零時的時間值
+    static func utcDate(
+        year: Int,
+        month: Int,
+        day: Int
+    ) -> Date {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
 

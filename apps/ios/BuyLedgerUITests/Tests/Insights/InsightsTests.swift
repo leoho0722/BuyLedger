@@ -8,9 +8,6 @@
 import XCTest
 
 /// 分析頁的進入、圖表容器與期間切換流程測試
-///
-/// 一律以 accessibility identifier 定位、只做結構性斷言 (容器存在、切換後畫面仍就緒)，不硬編任何數值；找不到 App 元素即附診斷失敗、不 skip。
-/// 期間 id 是 `InsightsDateRange` 的 rawValue (穩定業務鍵)，不隨語言變動，故中英兩語言皆有效
 final class InsightsTests: BLUITestCase {
 
     // MARK: - Static Properties
@@ -81,8 +78,8 @@ private extension InsightsTests {
     /// 切到分析分頁並等內容就緒，回傳分析頁 Page Object
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的分析頁 Page Object
     @MainActor
     func openInsights(

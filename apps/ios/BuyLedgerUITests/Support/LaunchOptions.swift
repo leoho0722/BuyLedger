@@ -8,9 +8,6 @@
 import Foundation
 
 /// 描述一次 App 啟動的前置條件，並序列化成 App 端 harness 認得的啟動參數
-///
-/// 測試只宣告要什麼狀態 (資料、語言、時間、外部相依行為)，序列化細節收在這裡；
-/// 參數名稱必須與 App 端 `BLUITestConfiguration` 的解析逐字對齊，改一邊要同步改另一邊
 struct LaunchOptions {
 
     // MARK: - Data Properties
@@ -39,6 +36,12 @@ struct LaunchOptions {
     /// 是否開啟 AI 商品明細總結，開啟後 AI 走固定輸出的替身
     var useAiSummary: Bool = false
 
+    /// 帳本保護是否於啟動時已開啟，開啟時鎖定相關測試不必先走一遍設定頁
+    var appLockEnabled: Bool = false
+
+    /// 本機驗證替身的結果
+    var biometricOutcome: BiometricOutcome = .success
+
     // MARK: - Static Properties
 
     /// 空資料庫 + 預設語言的最小啟動條件
@@ -47,8 +50,7 @@ struct LaunchOptions {
     // MARK: - Computed Properties
 
     /// 序列化成 `XCUIApplication.launchArguments`
-    ///
-    /// 一律帶 `-BLUITest` 開啟測試模式，其餘旗標只在對應欄位有值時加入
+    /// - Returns: 傳給受測 App 的啟動參數
     var launchArguments: [String] {
         var arguments = ["-BLUITest", "-BLUITestSeed", seed.rawValue]
 
@@ -69,6 +71,10 @@ struct LaunchOptions {
         if useAiSummary {
             arguments.append("-BLUITestAiSummary")
         }
+        if appLockEnabled {
+            arguments.append("-BLUITestAppLockEnabled")
+        }
+        arguments += ["-BLUITestBiometricOutcome", biometricOutcome.rawValue]
 
         return arguments
     }
@@ -129,6 +135,16 @@ extension LaunchOptions {
         case denied
     }
 
+    /// 本機驗證替身的結果，rawValue 對齊 App 端 `BLUITestBiometricOutcome`
+    enum BiometricOutcome: String {
+
+        /// 驗證一律成功
+        case success
+
+        /// 驗證一律失敗
+        case failure
+    }
+
     /// 載入失敗情境，rawValue 對齊 App 端 `BLUITestLoadFailure`
     enum LoadFailure: String {
 
@@ -154,10 +170,8 @@ extension LaunchOptions {
 private extension LaunchOptions {
 
     /// 把參考時間序列化成 App 端解析採用的 ISO8601 字串
-    ///
-    /// `ISO8601DateFormatter` 非 `Sendable`，不能當 static 常數共用，故每次呼叫時建立 (成本低)
-    /// - Parameter date: 參考時間
-    /// - Returns: UTC 的 ISO8601 字串
+    /// - Parameter date: 要序列化的日期
+    /// - Returns: ISO8601 格式的 UTC 字串
     static func iso8601String(from date: Date) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]

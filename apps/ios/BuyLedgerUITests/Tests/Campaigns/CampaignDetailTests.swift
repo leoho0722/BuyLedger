@@ -8,9 +8,6 @@
 import XCTest
 
 /// 開團詳情的進入、結團結算數值與結團流程測試
-///
-/// 一律以 accessibility identifier 定位，數值由合併列的 accessibility value 讀取；找不到 App 元素即附診斷失敗、不 skip。
-/// 結團是不可逆操作，流程走「取消」分支只驗確認 alert 有出現又能收回、開團未被結團，不真的結團
 final class CampaignDetailTests: BLUITestCase {
 
     // MARK: - Static Properties
@@ -19,7 +16,9 @@ final class CampaignDetailTests: BLUITestCase {
     private static let koreaCampaignID = "CMP-SAMPLE-KR-APR"
 
     /// 結團結算的兩個數值列種類
-    private static let summaries: [BLAccessibilityID.Campaigns.DetailSummary] = [.receivables, .received]
+    private static let summaries: [BLAccessibilityID.Campaigns.DetailSummary] = [
+        .receivables, .received,
+    ]
 
     // MARK: - Tests
 
@@ -71,9 +70,9 @@ private extension CampaignDetailTests {
     /// 切到開團分頁、點指定開團進詳情並等就緒，回傳詳情 Page Object
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - campaignID: 要進入詳情的開團 id
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - campaignID: 要開啟的開團識別值
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的開團詳情 Page Object
     @MainActor
     func openCampaignDetail(

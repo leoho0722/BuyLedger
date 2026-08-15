@@ -8,18 +8,17 @@
 import XCTest
 
 /// 訂單詳情的進入、財務摘要與刪除流程測試
-///
-/// 一律以 accessibility identifier 定位，摘要數值由合併列的 accessibility value 讀取；找不到 App 元素即附診斷失敗、不 skip。
-/// 刪除流程走「取消」分支，只驗確認 alert 有出現又能收回、訂單未被刪除，不真的刪除資料
 final class OrderDetailTests: BLUITestCase {
 
     // MARK: - Static Properties
 
-    /// 用來進詳情的種子訂單編號 (fullOrders 中最新的一筆，位於清單頂端易於點擊)
+    /// fullOrders 中用於詳情測試的訂單編號
     private static let sampleOrderID = "BL-2604-018"
 
     /// 詳情財務摘要卡的三個種類
-    private static let summaryTiles: [BLAccessibilityID.Orders.SummaryTile] = [.revenue, .cost, .profit]
+    private static let summaryTiles: [BLAccessibilityID.Orders.SummaryTile] = [
+        .revenue, .cost, .profit,
+    ]
 
     // MARK: - Tests
 
@@ -80,8 +79,8 @@ private extension OrderDetailTests {
     /// 切到訂單分頁、點種子訂單進詳情並等就緒，回傳詳情 Page Object
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的訂單詳情 Page Object
     @MainActor
     func openOrderDetail(

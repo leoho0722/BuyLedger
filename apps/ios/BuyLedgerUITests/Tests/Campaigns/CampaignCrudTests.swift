@@ -8,9 +8,6 @@
 import XCTest
 
 /// 開團的新增與刪除流程測試
-///
-/// 一律以 accessibility identifier 定位；找不到 App 元素即附診斷失敗、不 skip。
-/// 新增以空資料庫驗「新增後列表多一列」，刪除走「取消」分支只驗確認 alert 有出現又能收回、開團未被刪除，不真的刪除資料
 final class CampaignCrudTests: BLUITestCase {
 
     // MARK: - Static Properties
@@ -23,7 +20,7 @@ final class CampaignCrudTests: BLUITestCase {
 
     // MARK: - Tests
 
-    /// 完整新增：點新增 → 表單就緒 → 填名稱 → 儲存 → 回列表且列表多出一列
+    /// 新增開團後，確認列表多出一列
     @MainActor
     func testCreateCampaignAppearsInList() {
         let app = launch(LaunchOptions(seed: .empty))
@@ -86,6 +83,33 @@ final class CampaignCrudTests: BLUITestCase {
             failWithDiagnostics(in: app, "取消刪除後詳情頁應仍停留，根 identifier 卻消失")
         }
     }
+
+    /// 刪除開團後，確認列表移除該列
+    @MainActor
+    func testDeleteConfirmRemovesCampaignFromList() {
+        let app = launch(LaunchOptions(seed: .campaignsWithOrders))
+        let detail = openCampaignDetail(app, campaignID: Self.koreaCampaignID)
+
+        detail.openMoreMenu()
+        if !detail.tapDelete() {
+            failWithDiagnostics(in: app, "更多選單的刪除項目未出現或不可點")
+        }
+
+        if !detail.deleteConfirmExists() {
+            failWithDiagnostics(in: app, "點刪除後，刪除確認 alert 未呈現")
+        }
+
+        detail.confirmDelete()
+
+        // 確認刪除後回到列表且開團消失。
+        let campaigns = CampaignsScreen(app: app)
+        if !campaigns.waitUntilReady() {
+            failWithDiagnostics(in: app, "確認刪除後開團列表根 identifier「\(campaigns.rootIdentifier)」逾時仍未出現")
+        }
+        if campaigns.hasCampaign(campaignID: Self.koreaCampaignID, timeout: 5) {
+            failWithDiagnostics(in: app, "確認刪除後該開團仍留在列表中")
+        }
+    }
 }
 
 // MARK: - Private Method
@@ -95,9 +119,9 @@ private extension CampaignCrudTests {
     /// 切到開團分頁、點指定開團進詳情並等就緒，回傳詳情 Page Object
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - campaignID: 要進入詳情的開團 id
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - campaignID: 要開啟的開團識別值
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的開團詳情 Page Object
     @MainActor
     func openCampaignDetail(

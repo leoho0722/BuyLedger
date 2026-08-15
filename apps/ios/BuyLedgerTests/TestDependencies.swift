@@ -9,18 +9,11 @@ import ComposableArchitecture
 import Foundation
 
 /// 為 snapshot 與 unit test 提供可重現的依賴注入
-///
-/// 任何使用 ``@Dependency(\.date)`` 的 reducer / view，在測試時都應透過此處的固定值或 helper 注入，
-/// 避免「跨日跑出不同結果」「不同機器跑出不同 Locale 字串」這類隱性 flake
 enum TestDependencies {
-
+    
     // MARK: - Static Properties
-
+    
     /// 預設使用的固定「現在」時間 (2026-04-30 00:00:00 UTC)
-    ///
-    /// 落在 ``LedgerOrder/sampleOrders`` 的當月區間內
-    ///
-    /// 方便 Dashboard / Insights / Orders 的「本月」「近 30 天」等統計值有非零內容
     static let fixedNow: Date = {
         var components = DateComponents()
         components.calendar = Calendar(identifier: .gregorian)
@@ -30,13 +23,8 @@ enum TestDependencies {
         components.day = 30
         return components.date!
     }()
-
+    
     /// 預設使用的固定行事曆 (gregorian + UTC)
-    ///
-    /// 與 ``fixedNow`` 同基準，供直接呼叫帶 `calendar:` 參數的 State method
-    /// (如 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)``) 的測試傳入
-    ///
-    /// 確保日期分組與區間判斷不受測試機器的時區與行事曆設定影響
     static let fixedCalendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
@@ -47,13 +35,12 @@ enum TestDependencies {
 // MARK: - Internal Method
 
 extension TestDependencies {
-
+    
     /// 在 ``fixedNow`` 注入 `\.date` 的 scope 中執行 operation
-    ///
-    /// SnapshotTesting 與 SwiftUI render 都是同步流程，可以在單一 closure 內完成 view 建構與 `assertSnapshot` 呼叫
-    /// - Parameter operation: 需要在固定依賴下執行的 closure
-    /// - Returns: closure 的回傳值
-    static func withFixedNow<T>(_ operation: () throws -> T) rethrows -> T {
+    /// - Parameter operation: 要執行的操作
+    /// - Returns: operation 的結果
+    /// - Throws: operation 拋出的錯誤
+    static func withFixedNow<T>(_ operation: () throws(any Error) -> T) rethrows -> T {
         try withDependencies {
             $0.date = .constant(fixedNow)
             $0.calendar = fixedCalendar

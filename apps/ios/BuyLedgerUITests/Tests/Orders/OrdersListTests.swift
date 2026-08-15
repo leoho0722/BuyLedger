@@ -8,14 +8,11 @@
 import XCTest
 
 /// 訂單清單的瀏覽、狀態篩選、搜尋與空狀態流程測試
-///
-/// 一律以 accessibility identifier 定位、以訂單編號這個業務鍵做結構性斷言，不硬編筆數；找不到 App 元素即附診斷失敗、不 skip。
-/// 客戶名等使用者資料可作為搜尋輸入，但斷言仍以訂單列 identifier 為準，故中英兩語言皆有效
 final class OrdersListTests: BLUITestCase {
 
     // MARK: - Static Properties
 
-    /// 已確認狀態的狀態膠囊 filterID (即 `OrderStatus.confirmed` 的 rawValue，不隨語言變動的業務鍵)
+    /// confirmed 狀態的 filterID
     private static let confirmedFilterID = "confirmed"
 
     /// fullOrders 中唯一的「已確認」訂單編號
@@ -106,8 +103,8 @@ private extension OrdersListTests {
     /// 切到訂單分頁並等清單就緒，回傳訂單清單 Page Object
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的訂單清單 Page Object
     @MainActor
     func openOrdersList(

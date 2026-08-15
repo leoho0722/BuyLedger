@@ -8,9 +8,6 @@
 import XCTest
 
 /// 測試失敗時的診斷附件
-///
-/// 找不到元素就 `XCTFail` 是本專案的硬規則，但光有錯誤訊息難以事後歸因；
-/// 這些 helper 把當下的截圖與可及性樹一併附進測試結果，讓失敗離線可查
 
 // MARK: - Internal Method
 
@@ -38,12 +35,12 @@ extension XCTestCase {
         add(attachment)
     }
 
-    /// 附上截圖與可及性樹後讓測試失敗，取代找不到元素就靜默 skip 的舊作法
+    /// 附上截圖與可及性樹，讓找不到元素時直接失敗
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - message: 失敗原因
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - message: 失敗訊息
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     func failWithDiagnostics(
         in app: XCUIApplication,
         _ message: String,
