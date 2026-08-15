@@ -10,98 +10,128 @@ import Foundation
 import OSLog
 
 /// AI 商品明細總結 sheet 的狀態與串流流程
-///
-/// 以 ``OllamaClient`` 串流 Markdown 總結；缺金鑰或服務錯誤時進入 `failed` 並提供重試，關閉時取消串流
 @Reducer
 struct AISummaryFeature {
-
+    
     // MARK: - State
-
+    
     /// 總結 sheet 狀態
     @ObservableState
     struct State: Equatable {
-
+        
         /// 已組好的完整 prompt
         let prompt: String
-
+        
         /// 使用的 Ollama 模型名稱
         let model: String
-
+        
         /// 累加的串流總結文字 (Markdown)
         var summaryText: String = ""
-
+        
         /// 目前的串流階段
         var phase: Phase = .idle
-
+        
         /// 失敗時顯示的友善訊息
         var errorMessage: LocalizedStringResource?
-
+        
+        /// 串流逾時時顯示的截斷說明；逾時不是失敗，不使用 `errorMessage`
+        var truncationMessage: LocalizedStringResource?
+        
         // MARK: - Nested Types
-
+        
         /// 串流階段
         enum Phase: Equatable {
-
+            
             /// 尚未開始
             case idle
-
+            
             /// 串流進行中
             case streaming
-
+            
             /// 已完成
             case finished
-
+            
             /// 失敗
             case failed
         }
     }
-
+    
     // MARK: - Action
-
+    
     /// 總結 sheet 事件
     @CasePathable
     enum Action: Equatable {
-
+        
         /// 畫面出現時開始串流
         case task
-
+        
         /// 收到一段串流增量內容
         case chunkReceived(String)
-
+        
         /// 串流正常結束
         case streamFinished
-
+        
         /// 串流失敗，帶友善訊息
         case streamFailed(LocalizedStringResource)
-
+        
+        /// 串流達到整體時長上限，保留已收到內容
+        case streamTimedOut
+        
         /// 使用者點擊重試
         case retryTapped
-
+        
         /// 使用者點擊完成 (關閉 sheet)
         case closeTapped
     }
-
+    
+    // MARK: - Nested Types
+    
+    /// 串流競速工作的結果
+    private enum StreamOutcome: Sendable {
+        
+        // MARK: - Cases
+        
+        /// 串流正常完成
+        case finished
+        
+        /// 串流達到整體時長上限
+        case timedOut
+        
+        /// 串流被取消
+        case cancelled
+        
+        /// 串流回傳可分類的 API 錯誤
+        case apiFailure(APIError)
+        
+        /// 串流回傳無法分類的錯誤
+        case unknownFailure
+    }
+    
     // MARK: - Dependency Properties
-
+    
     /// Ollama Cloud 串流 client
     @Dependency(OllamaClient.self) private var ollamaClient
-
+    
     /// App 環境設定提供者
     @Dependency(\.appConfiguration) private var appConfiguration
-
+    
     /// 關閉 sheet 用的 dismiss effect
     @Dependency(\.dismiss) private var dismiss
-
+    
+    /// 控制串流整體生命週期的時鐘
+    @Dependency(\.continuousClock) private var clock
+    
     // MARK: - Cancel ID
-
+    
     /// 串流 effect 的取消識別
     private enum CancelID {
-
+        
         /// 串流任務
         case stream
     }
-
+    
     // MARK: - Reducer Body
-
+    
     /// 總結 reducer
     var body: some Reducer<State, Action> {
         Reduce { state, action in
@@ -109,7 +139,7 @@ struct AISummaryFeature {
             case .task, .retryTapped:
                 guard let apiKey = appConfiguration.ollamaAPIKey() else {
                     state.phase = .failed
-                    // 使用者語彙描述狀態與下一步；環境變數名稱屬建置期識別碼，只進記錄不進介面
+                    // 記錄狀態與下一步，不把環境變數名稱顯示給使用者。
                     state.errorMessage = "AI 總結尚未完成設定，目前無法使用。"
                     Logger(subsystem: "BuyLedger", category: "AISummary")
                         .error("AI 總結無法啟動：OLLAMA_API_KEY 未注入 (xcconfig 未設定)")
@@ -118,39 +148,79 @@ struct AISummaryFeature {
                 state.phase = .streaming
                 state.summaryText = ""
                 state.errorMessage = nil
-
+                state.truncationMessage = nil
+                
                 let prompt = state.prompt
                 let model = state.model
                 let client = ollamaClient
+                let clock = clock
                 return .run { send in
-                    do {
-                        for try await chunk in client.streamSummary(prompt, model, apiKey) {
-                            await send(.chunkReceived(chunk))
+                    let outcome = await withTaskGroup(of: StreamOutcome.self) { group in
+                        group.addTask {
+                            do {
+                                for try await chunk in client.streamSummary(prompt, model, apiKey) {
+                                    await send(.chunkReceived(chunk))
+                                }
+                                return .finished
+                            } catch let error as APIError {
+                                return .apiFailure(error)
+                            } catch {
+                                return .unknownFailure
+                            }
                         }
+                        
+                        group.addTask {
+                            do {
+                                try await clock.sleep(for: OllamaClient.overallStreamDuration)
+                                return .timedOut
+                            } catch is CancellationError {
+                                return .cancelled
+                            } catch {
+                                return .cancelled
+                            }
+                        }
+                        
+                        guard let outcome = await group.next() else {
+                            return StreamOutcome.cancelled
+                        }
+                        group.cancelAll()
+                        return outcome
+                    }
+                    
+                    switch outcome {
+                    case .finished:
                         await send(.streamFinished)
-                    } catch is CancellationError {
-                        // sheet 關閉導致取消，靜默結束、不視為錯誤
-                    } catch let error as APIError {
+                    case .timedOut:
+                        await send(.streamTimedOut)
+                    case let .apiFailure(error):
                         await send(.streamFailed(error.summaryFailureMessage))
-                    } catch {
+                    case .unknownFailure:
                         await send(.streamFailed("總結失敗，請稍後再試。"))
+                    case .cancelled:
+                        // sheet 關閉導致取消，靜默結束、不視為錯誤
+                        break
                     }
                 }
                 .cancellable(id: CancelID.stream, cancelInFlight: true)
-
+                
             case let .chunkReceived(text):
                 state.summaryText += text
                 return .none
-
+                
             case .streamFinished:
                 state.phase = .finished
                 return .none
-
+                
             case let .streamFailed(message):
                 state.phase = .failed
                 state.errorMessage = message
                 return .none
-
+                
+            case .streamTimedOut:
+                state.phase = .finished
+                state.truncationMessage = "AI 總結已達時間上限，以下顯示已取得的內容；摘要已截斷。"
+                return .none
+                
             case .closeTapped:
                 let dismiss = dismiss
                 return .merge(
@@ -165,7 +235,7 @@ struct AISummaryFeature {
 // MARK: - APIError Friendly Message
 
 extension APIError {
-
+    
     /// 對應到 AI 總結 sheet 的友善失敗訊息
     var summaryFailureMessage: LocalizedStringResource {
         switch self {

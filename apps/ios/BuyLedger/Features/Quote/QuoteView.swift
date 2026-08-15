@@ -9,42 +9,33 @@ import ComposableArchitecture
 import SwiftUI
 
 /// 報價試算工具畫面
-///
-/// 對應設計稿 iPhone Quote sheet 與 iPad 的 Quote tool：
-/// - 來源幣別 chip
-/// - 多個數值輸入欄 (商品本金 / 當地運費 / 國際運費 / 刷卡手續費 / 金流手續費 / 平台手續費 / 目標毛利)
-/// - 即時建議售價 (綠→青漸層 hero 卡)
-/// - 成本拆解條與總成本
 struct QuoteView: View {
-
+    
     // MARK: - View Properties
-
+    
     /// 報價試算 store
     @Bindable var store: StoreOf<QuoteFeature>
-
-    /// 目前系統深淺色外觀
-    @Environment(\.colorScheme) private var colorScheme
-
+    
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
-
+    
     /// 數值欄位的鍵盤焦點；實際狀態由 ``QuoteFeature/State/isAmountFieldFocused`` 持有
     @FocusState private var isAmountFieldFocused: Bool
-
+    
     /// hero 建議售價字級，隨 Dynamic Type 縮放 (以 `.largeTitle` 為基準)
     @ScaledMetric(relativeTo: .largeTitle) private var heroPriceSize: CGFloat = 40
-
+    
     // MARK: - View Body
-
+    
     /// 報價試算畫面內容
     var body: some View {
         let palette = BLPalette()
-
+        
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 statusBanner(palette: palette)
                 inputsCard(palette: palette)
-                suggestedHero(palette: palette)
+                suggestedHero()
                 breakdownCard(palette: palette)
             }
             .padding(.horizontal, BLSpacing.large)
@@ -60,7 +51,7 @@ struct QuoteView: View {
             // 此畫面的輸入皆為數字鍵盤，沒有 return 鍵可收
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-
+                
                 Button {
                     store.send(.binding(.set(\.isAmountFieldFocused, false)))
                 } label: {
@@ -79,7 +70,7 @@ struct QuoteView: View {
 // MARK: - ViewBuilder
 
 private extension QuoteView {
-
+    
     /// 匯率載入狀態的橫幅；無錯誤且已載入時不顯示
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 狀態 view
@@ -90,7 +81,7 @@ private extension QuoteView {
                 ProgressView()
                     .controlSize(.small)
                 Text("正在載入匯率…")
-                    .font(.footnote)
+                    .blTextStyle(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
                 Spacer()
             }
@@ -98,35 +89,57 @@ private extension QuoteView {
             .padding(.vertical, BLSpacing.small)
             .background(palette.fillTertiary)
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
-        } else if let message = store.errorMessage {
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(BLAccessibilityID.Quote.statusBanner)
+        } else if let reason = store.rateUnavailableReason {
+            // 顯示失敗原因與重試，不只顯示破折號。
             HStack(alignment: .top, spacing: BLSpacing.small) {
                 Image(systemName: "exclamationmark.triangle.fill")
                     .foregroundStyle(palette.orange)
-                Text(message)
-                    .font(.footnote)
+                
+                Text(reason)
+                    .blTextStyle(.footnote)
                     .foregroundStyle(palette.label)
+                
                 Spacer()
+                
+                Button {
+                    store.send(.rateRefreshRequested)
+                } label: {
+                    Text("重試")
+                        .font(BLTypographyStyle.footnote.font.weight(.semibold))
+                        // 命中區宣告在標籤內部撐到 44pt；視覺尺寸不變
+                        .frame(minHeight: BLHitTarget.minimum)
+                        .contentShape(.rect)
+                }
+                .accessibilityIdentifier(BLAccessibilityID.Quote.retryButton)
             }
             .padding(.horizontal, BLSpacing.medium)
             .padding(.vertical, BLSpacing.small)
             .background(palette.orange.opacity(0.12))
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
-        } else if !store.hasUsableRate {
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(BLAccessibilityID.Quote.statusBanner)
+        } else if !store.isTargetMarginBelowOneHundredPercent {
             HStack(spacing: BLSpacing.small) {
                 Image(systemName: "info.circle.fill")
                     .foregroundStyle(palette.secondaryLabel)
-                Text("尚無可用匯率資料，暫時無法試算。")
-                    .font(.footnote)
+                
+                Text("目標毛利需低於 100% 才能計算建議售價。")
+                    .blTextStyle(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
+                
                 Spacer()
             }
             .padding(.horizontal, BLSpacing.medium)
             .padding(.vertical, BLSpacing.small)
             .background(palette.fillQuaternary)
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(BLAccessibilityID.Quote.statusBanner)
         }
     }
-
+    
     /// 輸入卡：客戶/商品 + 幣別 + 各項數值輸入欄
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 輸入卡 view
@@ -135,64 +148,71 @@ private extension QuoteView {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("商品資訊")
-                    .font(.caption.weight(.semibold))
+                    .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
-
+                
                 currencyPicker(palette: palette)
-
+                
                 numberField(
                     label: "商品定價",
                     value: $store.itemPrice,
                     unit: store.fromCurrency.rawValue,
+                    palette: palette,
                     allowsDecimalEntry: true,
                     identifier: BLAccessibilityID.Quote.principalField
                 )
-
+                
                 numberField(
                     label: "當地運費",
                     value: $store.domesticShipping,
                     unit: store.fromCurrency.rawValue,
+                    palette: palette,
                     allowsDecimalEntry: true
                 )
-
+                
                 numberField(
                     label: "國際運費",
                     value: $store.internationalShippingTwd,
-                    unit: "TWD/件"
+                    unit: "TWD/件",
+                    palette: palette
                 )
-
+                
                 numberField(
                     label: "刷卡手續費",
                     value: $store.cardFeePercent,
                     unit: "%",
+                    palette: palette,
                     fractionDigits: 1
                 )
-
+                
                 numberField(
                     label: "金流手續費",
                     value: $store.paymentFeePercent,
                     unit: "%",
+                    palette: palette,
                     fractionDigits: 1
                 )
-
+                
                 numberField(
                     label: "平台手續費",
                     value: $store.platformFeePercent,
                     unit: "%",
+                    palette: palette,
                     fractionDigits: 1
                 )
-
+                
                 numberField(
                     label: "目標毛利",
                     value: $store.targetMarginPercent,
-                    unit: "%"
+                    unit: "%",
+                    palette: palette
                 )
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-
+    
     /// 來源幣別選擇按鈕：點開後以 sheet 列出主檔幣別供搜尋與選擇
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 幣別按鈕 view
@@ -203,18 +223,18 @@ private extension QuoteView {
         } label: {
             HStack(spacing: BLSpacing.small) {
                 Text("來源幣別")
-                    .font(.subheadline.weight(.semibold))
+                    .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
-
+                
                 Spacer()
-
+                
                 Text(currencyDisplayText(for: store.fromCurrency))
-                    .font(.subheadline.weight(.semibold))
+                    .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.label)
                     .lineLimit(1)
-
+                
                 Image(systemName: "chevron.right")
-                    .font(.caption.weight(.semibold))
+                    .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(palette.tertiaryLabel)
                     .accessibilityHidden(true)
             }
@@ -228,7 +248,7 @@ private extension QuoteView {
         .accessibilityIdentifier(BLAccessibilityID.Quote.currencyPickerButton)
         .sheet(isPresented: $store.showsCurrencySheet) {
             let locale = locale
-
+            
             OptionPickerSheet(
                 title: "選擇來源幣別",
                 allowsAdd: false,
@@ -250,39 +270,42 @@ private extension QuoteView {
             )
         }
     }
-
-    /// 單一數值輸入列：label 在左、右側為對齊尾端的 `TextField` 與單位，取代原本的 slider，讓使用者可直接鍵入精確數值
+    
+    /// 數值輸入列，支援直接輸入精確數值
     /// - Parameters:
     ///   - label: 欄位名稱
     ///   - value: 雙向繫結的值；寫入時自動 clamp 成非負數
     ///   - unit: 顯示在輸入框右側的單位字串
-    ///   - fractionDigits: 固定顯示的小數位數；大於 0 時鍵盤改用 `decimalPad`，否則 `numberPad`
-    ///   - allowsDecimalEntry: 為 `true` 時允許輸入 0 到 2 位小數 (整數不強制補零) 並使用 `decimalPad`，供金額類欄位鍵入小數價格
-    ///   - identifier: 掛在 `TextField` 上的無障礙識別碼；預設 `nil` 代表不指定 (等同系統預設空字串)，不影響其他呼叫點
+    ///   - palette: 目前外觀使用的設計系統色盤
+    ///   - fractionDigits: 顯示的小數位數
+    ///   - allowsDecimalEntry: 是否允許輸入小數
+    ///   - identifier: UI 測試定位用的識別碼
     /// - Returns: 數值輸入列 view
     @ViewBuilder
     func numberField(
         label: String,
-        value: Binding<Double>,
+        value: Binding<Decimal>,
         unit: String,
+        palette: BLPalette,
         fractionDigits: Int = 0,
         allowsDecimalEntry: Bool = false,
         identifier: String? = nil
     ) -> some View {
         HStack(spacing: BLSpacing.small) {
             Text(LocalizedStringKey(label))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                // 長標籤 (如 International Shipping) 換行顯示、不截斷
+                .blTextStyle(.subhead)
+                .foregroundStyle(palette.secondaryLabel)
+            // 長標籤 (如 International Shipping) 換行顯示、不截斷
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-
+            
             TextField(
                 "0",
                 value: value,
                 format: .number.precision(
                     allowsDecimalEntry ? .fractionLength(0...2) : .fractionLength(fractionDigits)
                 )
+                .grouping(.never)
             )
             .textFieldStyle(.roundedBorder)
             .multilineTextAlignment(.trailing)
@@ -292,62 +315,64 @@ private extension QuoteView {
             .focused($isAmountFieldFocused)
             // 未指定時傳空字串，等同系統預設，不改變其他呼叫點的無障礙行為
             .accessibilityIdentifier(identifier ?? "")
-
+            
             Text(LocalizedStringKey(unit))
-                .font(.footnote)
-                .foregroundStyle(.secondary)
+                .blTextStyle(.footnote)
+                .foregroundStyle(palette.secondaryLabel)
                 .lineLimit(1)
-                // 短單位對齊 60pt，較長單位 (如 TWD/item) 自適應變寬、不截斷
+            // 短單位對齊 60pt，較長單位 (如 TWD/item) 自適應變寬、不截斷
                 .frame(minWidth: 60, alignment: .leading)
         }
     }
-
-    /// 建議售價 hero 卡 (漸層綠→青)
-    /// - Parameter palette: 目前外觀使用的色盤
+    
+    /// 建議售價 hero 卡 (沿用設計系統主卡漸層)
     /// - Returns: hero 卡 view
     @ViewBuilder
-    func suggestedHero(palette: BLPalette) -> some View {
+    func suggestedHero() -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             Text("建議售價")
-                .font(.caption.weight(.semibold))
-                .opacity(0.95)
+                .font(BLTypographyStyle.caption.font.weight(.semibold))
                 .textCase(.uppercase)
-
-            // 無可用匯率時顯示破折號而非零值：零值具備完整版面、看起來像計算結果，比不顯示更糟
-            Text(store.hasUsableRate ? formatTwd(store.suggestedTwd) : "—")
+            
+            // 無匯率或毛利不可計算時顯示破折號，避免把零誤認為結果。
+            Text(heroPriceText)
                 .font(.system(size: heroPriceSize, weight: .bold))
                 .monospacedDigit()
                 .lineLimit(1)
                 .minimumScaleFactor(0.7)
-
-            if store.hasUsableRate {
-                Text("預估獲利 \(formatTwd(store.estimatedProfitTwd)) · \(formatPercent(store.estimatedMarginPercent))")
-                    .font(.footnote)
-                    .opacity(0.95)
-            } else {
+            
+            if !store.hasUsableRate {
                 Text("尚無可用匯率資料，暫時無法試算。")
-                    .font(.footnote)
-                    .opacity(0.95)
+                    .blTextStyle(.footnote)
+            } else if let profitTwd = store.estimatedProfitTwd,
+                      let marginPercent = store.estimatedMarginPercent
+            {
+                Text(
+                    """
+                    預估獲利 \(BLFormatters.twd(profitTwd, locale: locale)) · \
+                    \(BLFormatters.percent(scaled: marginPercent, locale: locale))
+                    """
+                )
+                .blTextStyle(.footnote)
+            } else {
+                Text("目標毛利需低於 100% 才能計算建議售價。")
+                    .blTextStyle(.footnote)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(BLSpacing.large)
+        // 測試漸層上的固定白字，需保留 .white
         .foregroundStyle(.white)
-        .background(
-            LinearGradient(
-                colors: [palette.green, palette.teal],
-                startPoint: .topLeading,
-                endPoint: .bottomTrailing
-            )
-        )
-        .clipShape(RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous))
+        // 使用低亮度漸層確保白字對比度。
+        // 此配色由 ContrastComplianceTests 驗證
+        .blHeroCardBackground()
         .blCardShadow()
         // 合併為單一朗讀單位，建議售價數值落在 element.value 供測試讀取
         .accessibilityElement(children: .combine)
-        .accessibilityValue(store.hasUsableRate ? formatTwd(store.suggestedTwd) : "—")
+        .accessibilityValue(heroPriceText)
         .accessibilityIdentifier(BLAccessibilityID.Quote.suggestedPriceValue)
     }
-
+    
     /// 成本拆解卡：每項條 + 總成本
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 拆解卡 view
@@ -367,14 +392,14 @@ private extension QuoteView {
             }
         }
     }
-
+    
     /// 有可用匯率時的成本拆解內容
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 拆解卡 view
     @ViewBuilder
     func usableBreakdownCard(palette: BLPalette) -> some View {
         let total = max(store.costTwd, 1)
-        let items: [(label: String, value: Double, color: Color)] = [
+        let items: [(label: String, value: Decimal, color: Color)] = [
             ("商品金額", store.itemTwd, palette.accent),
             ("當地運費", store.domesticTwd, palette.teal),
             ("國際運費", store.internationalShippingTwd, palette.purple),
@@ -382,14 +407,14 @@ private extension QuoteView {
             ("金流手續費", store.paymentFeeTwd, palette.pink),
             ("平台手續費", store.platformFeeTwd, palette.indigo),
         ]
-
+        
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("成本拆解")
-                    .font(.caption.weight(.semibold))
+                    .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
-
+                
                 ForEach(Array(items.enumerated()), id: \.offset) { _, item in
                     breakdownRow(
                         label: item.label,
@@ -399,18 +424,18 @@ private extension QuoteView {
                         palette: palette
                     )
                 }
-
+                
                 Divider()
-
+                
                 HStack {
                     Text("總成本")
-                        .font(.subheadline.weight(.semibold))
+                        .font(BLTypographyStyle.subhead.font.weight(.semibold))
                         .foregroundStyle(palette.label)
-
+                    
                     Spacer()
-
-                    Text(formatTwd(store.costTwd))
-                        .font(.subheadline.bold())
+                    
+                    Text(BLFormatters.twd(store.costTwd, locale: locale))
+                        .font(BLTypographyStyle.subhead.font.bold())
                         .monospacedDigit()
                         .foregroundStyle(palette.label)
                 }
@@ -418,12 +443,8 @@ private extension QuoteView {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-
-    /// 拆解條的單列；以 ``BLProgressBar`` 表現各分類占總成本的比例，trailing 顯示原始 TWD 金額而非百分比
-    ///
-    /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLProgressBar`` 自帶色盤推導、function body 不再讀取 palette
-    ///
-    /// 保留外部 label 與其他 helper (``inputsCard``、``suggestedHero`` 等) 一致，未來若需要客製拆解列的視覺也方便加回來
+    
+    /// 成本拆解的一列，顯示比例與 TWD 金額
     /// - Parameters:
     ///   - label: 拆解項目的名稱 (如「商品金額」)
     ///   - value: 該項目的 TWD 金額
@@ -434,18 +455,20 @@ private extension QuoteView {
     @ViewBuilder
     func breakdownRow(
         label: String,
-        value: Double,
-        total: Double,
+        value: Decimal,
+        total: Decimal,
         color: Color,
         palette _: BLPalette
     ) -> some View {
         let fraction = total > 0 ? value / total : 0
-
+        // Decimal 到繪圖邊界才轉成浮點數
+        let fractionDouble = NSDecimalNumber(decimal: fraction).doubleValue
+        
         BLProgressBar(
             title: label,
-            value: fraction,
+            value: fractionDouble,
             tint: color,
-            trailingText: formatTwd(value)
+            trailingText: BLFormatters.twd(value, locale: locale)
         )
     }
 }
@@ -453,36 +476,25 @@ private extension QuoteView {
 // MARK: - Private Method
 
 private extension QuoteView {
-
+    
+    /// 建議售價顯示文字；無法計算時顯示破折號
+    var heroPriceText: String {
+        guard store.hasUsableRate, let suggestedTwd = store.suggestedTwd else {
+            return "—"
+        }
+        return BLFormatters.twd(suggestedTwd, locale: locale)
+    }
+    
     /// 依 App 選定 locale 產生幣別顯示文字
-    /// 中文顯示名稱 (如「新台幣」)、其他語言顯示 ISO code (如「TWD」)
     /// - Parameter currency: 幣別
     /// - Returns: 顯示字串
     func currencyDisplayText(for currency: CurrencyCode) -> String {
         guard locale.language.languageCode?.identifier == "zh" else {
             return currency.rawValue
         }
-
+        
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
         return name.isEmpty ? currency.rawValue : name
-    }
-
-    /// 依 App 選定 locale 將金額格式化為新台幣 (無小數位)
-    /// - Parameter amount: 金額
-    /// - Returns: 依選定 locale 呈現的金額字串
-    func formatTwd(_ amount: Double) -> String {
-        Decimal(amount).formatted(
-            .currency(code: CurrencyCode.twd.code)
-            .precision(.fractionLength(0))
-            .locale(locale)
-        )
-    }
-
-    /// 依 App 選定 locale 將百分比格式化為含一位小數的字串
-    /// - Parameter value: 百分比數值
-    /// - Returns: 依選定 locale 呈現的百分比字串
-    func formatPercent(_ value: Double) -> String {
-        Decimal(value).formatted(.number.precision(.fractionLength(1)).locale(locale)) + "%"
     }
 }
 

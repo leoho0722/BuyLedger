@@ -9,169 +9,191 @@ import ComposableArchitecture
 import Foundation
 
 /// 報價試算工具狀態
-///
-/// 將商品本金、運費、刷卡手續費與目標毛利等可調項目集中為 state，view 端透過 slider/picker 即時更新並看到建議售價與獲利拆解
-///
-/// 匯率資料透過 ``ExchangeRateClient`` 載入；尚未載入或載入失敗時 `rate` 為 `0`，所有衍生金額一併歸零，view 應顯示載入中或錯誤訊息提醒使用者目前的計算結果不可信任
 @Reducer
 struct QuoteFeature {
-
+    
     // MARK: - State
-
+    
     /// 報價試算狀態
-    ///
-    /// 所有數值欄位預設為 `0`：報價試算頁開啟時不預填任何示範金額或費率，避免使用者誤以為畫面上的「建議售價」是已存在的試算結果。實際數值由使用者拖動 slider / 輸入後即時運算
     @ObservableState
-    struct State: Equatable, @unchecked Sendable {
-
+    struct State: Equatable, Sendable {
+        
         /// 來源幣別
         var fromCurrency: CurrencyCode = .krw
-
+        
         /// 來源幣別下的商品本金
-        var itemPrice: Double = 0
-
+        var itemPrice: Decimal = 0
+        
         /// 來源幣別下的當地運費
-        var domesticShipping: Double = 0
-
+        var domesticShipping: Decimal = 0
+        
         /// 國際運費 (TWD)
-        var internationalShippingTwd: Double = 0
-
+        var internationalShippingTwd: Decimal = 0
+        
         /// 刷卡手續費 %
-        var cardFeePercent: Double = 0
-
+        var cardFeePercent: Decimal = 0
+        
         /// 金流手續費 %
-        var paymentFeePercent: Double = 0
-
+        var paymentFeePercent: Decimal = 0
+        
         /// 平台手續費 %
-        var platformFeePercent: Double = 0
-
+        var platformFeePercent: Decimal = 0
+        
         /// 目標毛利 %
-        var targetMarginPercent: Double = 0
-
+        var targetMarginPercent: Decimal = 0
+        
         /// 已從 API 取得的匯率快照；`nil` 代表尚未拉取或拉取失敗
         var snapshot: FxRateSnapshot?
-
+        
         /// 是否正在載入匯率
         var isLoading: Bool = false
-
+        
         /// 匯率載入失敗時顯示給使用者的訊息
         var errorMessage: LocalizedStringResource?
-
+        
         /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供
         var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
-
+        
         /// 金額欄位是否取得鍵盤焦點
-        ///
-        /// 焦點屬呈現狀態，依專案慣例下放 Feature.State；數字鍵盤沒有 return 鍵，
-        /// 需要由此驅動鍵盤工具列的完成按鈕
         var isAmountFieldFocused: Bool = false
-
+        
         /// 是否顯示幣別選擇 sheet
         var showsCurrencySheet: Bool = false
-
+        
         // MARK: - Computed Properties
-
-        /// 來源幣別的匯率 (1 單位 = X TWD)；無 snapshot 時為 `0`，所有衍生金額會跟著歸零
-        var rate: Double {
+        
+        /// 來源幣別對 TWD 的匯率；無資料時為 `0`
+        var rate: Decimal {
             if fromCurrency == .twd { return 1 }
             guard let snapshot else {
                 return 0
             }
             if snapshot.base == .twd, let inverse = snapshot.rates[fromCurrency], inverse > 0 {
-                return NSDecimalNumber(decimal: Decimal(1) / inverse).doubleValue
+                return Decimal(1) / inverse
             }
             if snapshot.base == fromCurrency, let twd = snapshot.rates[.twd] {
-                return NSDecimalNumber(decimal: twd).doubleValue
+                return twd
             }
             return 0
         }
-
-        /// 是否已具備可用的匯率資料；view 用此值決定是否顯示「正在載入」或「無法計算」提示
+        
+        /// 是否有可用匯率資料
         var hasUsableRate: Bool {
             rate > 0
         }
-
+        
+        /// 匯率不可用時顯示的原因
+        var rateUnavailableReason: LocalizedStringResource? {
+            guard !isLoading, !hasUsableRate else {
+                return nil
+            }
+            return errorMessage ?? "尚無可用匯率資料，暫時無法試算。"
+        }
+        
         /// 商品本金折合 TWD
-        var itemTwd: Double { itemPrice * rate }
-
+        var itemTwd: Decimal { itemPrice * rate }
+        
         /// 當地運費折合 TWD
-        var domesticTwd: Double { domesticShipping * rate }
-
+        var domesticTwd: Decimal { domesticShipping * rate }
+        
         /// 刷卡手續費 TWD
-        var cardFeeTwd: Double { itemTwd * cardFeePercent / 100 }
-
+        var cardFeeTwd: Decimal { itemTwd * cardFeePercent / 100 }
+        
         /// 金流手續費 TWD
-        var paymentFeeTwd: Double { itemTwd * paymentFeePercent / 100 }
-
+        var paymentFeeTwd: Decimal { itemTwd * paymentFeePercent / 100 }
+        
         /// 平台手續費 TWD
-        var platformFeeTwd: Double { itemTwd * platformFeePercent / 100 }
-
+        var platformFeeTwd: Decimal { itemTwd * platformFeePercent / 100 }
+        
         /// 總成本 TWD
-        var costTwd: Double {
-            itemTwd + domesticTwd + internationalShippingTwd + cardFeeTwd + paymentFeeTwd + platformFeeTwd
+        var costTwd: Decimal {
+            itemTwd + domesticTwd + internationalShippingTwd + cardFeeTwd + paymentFeeTwd
+            + platformFeeTwd
         }
-
-        /// 建議售價 (無條件進位到 10 元)
-        var suggestedTwd: Double {
-            let raw = costTwd * (1 + targetMarginPercent / 100)
-            return (raw / 10).rounded(.up) * 10
+        
+        /// 目標毛利是否低於 100%；只有低於 100% 才能計算售價
+        var isTargetMarginBelowOneHundredPercent: Bool {
+            targetMarginPercent < 100
         }
-
-        /// 預估獲利
-        var estimatedProfitTwd: Double { suggestedTwd - costTwd }
-
-        /// 預估毛利率 (profit / suggested)
-        var estimatedMarginPercent: Double {
-            suggestedTwd == 0 ? 0 : estimatedProfitTwd / suggestedTwd * 100
+        
+        /// 建議售價：成本除以 (1 − 目標毛利)，無條件進位到 10 元
+        var suggestedTwd: Decimal? {
+            guard isTargetMarginBelowOneHundredPercent else {
+                return nil
+            }
+            let raw = costTwd / (1 - targetMarginPercent / 100)
+            var rounded = Decimal()
+            var source = raw / 10
+            NSDecimalRound(&rounded, &source, 0, .up)
+            return rounded * 10
+        }
+        
+        /// 預估獲利；``suggestedTwd`` 為 `nil` 時一併為 `nil`
+        var estimatedProfitTwd: Decimal? {
+            guard let suggestedTwd else {
+                return nil
+            }
+            return suggestedTwd - costTwd
+        }
+        
+        /// 預估毛利率；無建議售價時為 nil
+        var estimatedMarginPercent: Decimal? {
+            guard let suggestedTwd, let estimatedProfitTwd, suggestedTwd != 0 else {
+                return nil
+            }
+            return estimatedProfitTwd / suggestedTwd * 100
         }
     }
-
+    
     // MARK: - Action
-
+    
     /// 報價試算事件
     @CasePathable
     enum Action: BindableAction, Equatable {
-
+        
         /// SwiftUI 雙向繫結
         case binding(BindingAction<State>)
-
+        
         /// 畫面 onAppear 觸發載入匯率
         case task
-
+        
+        /// 使用者在匯率載入失敗時要求重新載入
+        case rateRefreshRequested
+        
         /// 匯率載入成功
         case ratesLoaded(FxRateSnapshot)
-
+        
         /// 匯率載入失敗
         case ratesFailed(LocalizedStringResource)
-
+        
         /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔
         case availableCurrenciesLoaded([CurrencyCode])
-
+        
         /// 點擊來源幣別列，開啟幣別選擇 sheet
         case currencyPickerTapped
-
+        
         /// 使用者於幣別選擇 sheet 選定來源幣別
         case fromCurrencySelected(String)
     }
-
+    
     // MARK: - Dependency Properties
-
-    /// 匯率 API client (與 ``FxFeature`` 共用同一個 dependency，方便未來改成共享 snapshot)
+    
+    /// 匯率 API client，與 FxFeature 共用
     @Dependency(ExchangeRateClient.self) private var client
-
+    
     /// 幣別主檔資料來源；用於 task 從 cache 拉最新清單
     @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
-
+    
     // MARK: - Reducer Body
-
+    
     /// 報價 reducer
     var body: some Reducer<State, Action> {
         BindingReducer()
-
+        
         Reduce { state, action in
             switch action {
             case .binding:
-                // 非負把關的唯一入口：BindingReducer 寫入後在此 clamp 所有數值欄，任何寫入路徑 (含測試直接 send) 皆收斂到合法值。
+                // BindingReducer 後統一把數值限制為非負
                 // 目標毛利僅保證非負、不設上限
                 state.itemPrice = max(0, state.itemPrice)
                 state.domesticShipping = max(0, state.domesticShipping)
@@ -181,7 +203,7 @@ struct QuoteFeature {
                 state.platformFeePercent = max(0, state.platformFeePercent)
                 state.targetMarginPercent = max(0, state.targetMarginPercent)
                 return .none
-
+                
             case .task:
                 let currencyMetadataRepository = currencyMetadataRepository
                 let client = client
@@ -190,39 +212,47 @@ struct QuoteFeature {
                     state.isLoading = true
                     state.errorMessage = nil
                 }
-
+                
                 return .run { send in
                     async let currenciesTask: Void = {
-                        if let codes = try? await currencyMetadataRepository.fetchCodes(), !codes.isEmpty {
-                            await send(.availableCurrenciesLoaded(codes))
+                        do {
+                            let codes = try await currencyMetadataRepository.fetchCodes()
+                            if !codes.isEmpty {
+                                await send(.availableCurrenciesLoaded(codes))
+                            }
+                        } catch {
+                            // 幣別主檔是輔助資料，載入失敗時保留目前清單
                         }
                     }()
-
+                    
                     if shouldFetchRates {
-                        do {
-                            let snapshot = try await client.fetchLatest(.twd)
-                            await send(.ratesLoaded(snapshot))
-                        } catch let error as APIError {
-                            await send(.ratesFailed(Self.userMessage(for: error)))
-                        } catch {
-                            await send(.ratesFailed("匯率載入失敗，請稍後再試。"))
-                        }
+                        await Self.loadRates(client: client, send: send)
                     }
-
+                    
                     _ = await currenciesTask
                 }
-
+                
+            case .rateRefreshRequested:
+                guard !state.isLoading else { return .none }
+                state.isLoading = true
+                state.errorMessage = nil
+                let client = client
+                
+                return .run { send in
+                    await Self.loadRates(client: client, send: send)
+                }
+                
             case let .ratesLoaded(snapshot):
                 state.isLoading = false
                 state.snapshot = snapshot
                 state.errorMessage = nil
                 return .none
-
+                
             case let .ratesFailed(message):
                 state.isLoading = false
                 state.errorMessage = message
                 return .none
-
+                
             case let .availableCurrenciesLoaded(codes):
                 var merged = Set(codes)
                 merged.insert(state.fromCurrency)
@@ -230,11 +260,11 @@ struct QuoteFeature {
                     $0.rawValue.localizedStandardCompare($1.rawValue) == .orderedAscending
                 }
                 return .none
-
+                
             case .currencyPickerTapped:
                 state.showsCurrencySheet = true
                 return .none
-
+                
             case let .fromCurrencySelected(code):
                 state.fromCurrency = CurrencyCode(rawValue: code)
                 return .none
@@ -246,7 +276,20 @@ struct QuoteFeature {
 // MARK: - Private Method
 
 private extension QuoteFeature {
-
+    
+    /// 載入匯率並處理成功或失敗結果
+    /// - Parameters:
+    ///   - client: 匯率 API client
+    ///   - send: 目前 effect 的 send，用於派送載入結果
+    static func loadRates(client: ExchangeRateClient, send: Send<Action>) async {
+        do {
+            let snapshot = try await client.fetchLatest(.twd)
+            await send(.ratesLoaded(snapshot))
+        } catch {
+            await send(.ratesFailed(Self.userMessage(for: error)))
+        }
+    }
+    
     /// 把 ``APIError`` 轉成顯示給使用者的訊息
     /// - Parameter error: API 錯誤
     /// - Returns: 中文使用者訊息
