@@ -33,9 +33,12 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 ## Monorepo 佈局
 
-- 可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。目前有 `apps/ios` (iOS / iPadOS) 與 `shared/data-model` (跨平台 data model schema + 產生器)；`apps/android` 為文件化保留位置，動工時才建立目錄。
+- 可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/`、`assets/` 與版本庫層級自動化設定 `.github/` 留在根目錄。目前有 `apps/ios` (iOS / iPadOS) 與 `shared/data-model` (跨平台 data model schema + 產生器)；`apps/android` 為文件化保留位置，動工時才建立目錄。
+- **`.github/` 管轄所有平台、不屬於任一平台目錄**：CI workflow 定義放這裡 (見 `.github/workflows/ci.yml`)，不得依 `apps/` 分拆到各平台目錄下。
 - **每個平台目錄都要有一份自己的 `CLAUDE.md`** (如 `apps/ios/CLAUDE.md`) 記錄該平台的硬規則與 gotcha；新平台動工時第一件事就是建立它。本檔不得參雜平台細節。
 - 文件與設定中的路徑引用必須與實際佈局一致；repo 不保留空的 stub 目錄或占位檔。
+- 規格檔案 (`openspec/specs/**/spec.md`) 尾端的 `<!-- @trace -->` 區塊是工具在歸檔時自動產生並重寫的歷史紀錄，記錄的是該次變更當時觸及的檔案，其列出的路徑未經驗證；判斷程式碼現況一律以搜尋程式碼本身為準，不得以 trace 區塊列出的路徑推論現有結構，該區塊本身也不得手動編輯。
+- 跨領域政策型規格的 Purpose 段落以正體中文說明涵蓋範圍，並指名至少一份不涵蓋的相鄰規格；requirement 與 scenario 正文維持英文。目錄名已界定範圍的功能型規格可刻意保留工具樣板，這是已記錄的留白決定，不是待補缺陷。
 
 ## 跨平台 Data Model (codegen)
 
@@ -45,7 +48,12 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 - **生成檔預設唯讀**——`generate` 會把所有生成檔鎖成唯讀 (`0o444`) 以防手動編輯；要重生成直接再跑 `generate` (會自動解鎖→重寫→重鎖)，只有刻意手動檢視／實驗才跑 `bun run unlock` 解鎖。此唯讀是本機工作副本的防線 (git 不追蹤 write bit，clone 後會回到可寫)，與檔頭警語、`check` 守門三者並行。
 - **不可單平台私加欄位**——任一平台需要的資料形狀變更都要回到 schema、讓所有平台一致產生；平台專屬的行為 (顯示、計算、自訂序列化) 放手寫 extension，不混進生成檔。
 - **schema 註解保持平台中立**——doc 描述資料概念本身，不得出現任一平台的語言／框架用詞或該平台 codebase 的型別名；各平台的慣用法 (如 Swift 的 `Sendable`) 由該平台 emitter 決定，不入 schema。
-- **提交前以 check 守門**——提交涉及 data model 的變更前，於 `shared/data-model/generator` 跑 `bun run check` 確認生成檔與 schema 同步 (exit 0)；生成檔與 schema 一起 commit。
+    - 中立性與「不得使用全形破折號」已由 `shared/data-model/generator` 的 `bun test` 強制，不再只靠人工自律：違反時測試與 CI 皆會變紅。
+    - 用詞黑名單為大小寫不敏感的整詞比對，且含 `interface`／`protocol`／`struct`／`Java`／`Foundation` 等泛用字，寫 schema doc 時要避開；本檔其餘章節既有的全形破折號寫法屬既有內容不受此條約束，但新寫 schema doc 時不要照抄該風格。細節見 `shared/data-model/README.md`。
+- **golden 素材須涵蓋產線實際使用的 emit 路徑**：改 `shared/data-model/schema/` 若用到 fixture 尚未示範過的組合 (例如新的 trait 組合、新的 wrapper 基底型別、新的 default 種類)，須同步在 `shared/data-model/fixtures/` 補上對應型別與三平台期望輸出，否則該路徑的 emitter 回歸不會被任何測試偵測到。
+- **漂移由 CI 強制**：推送後遠端 CI 的 codegen job 會執行 `bun run check` 與 generator 測試 (含對 `apps/ios/BuyLedger/Core/Domain/Generated` 這份產線輸出的同步斷言)，漂移會直接讓 job 變紅；守門的強制力來自 CI 而非人記得手動執行。
+    - 提交前自查為輔：仍建議先於 `shared/data-model/generator` 自行跑 `bun run check` 確認 exit 0，及早發現、避免等 CI 才知道。
+    - 生成檔與 schema 一起 commit。
 
 ## 文件查證準則
 
@@ -101,10 +109,10 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 常用 type：`feat` (新功能)、`fix` (修正)、`refactor` (重構)、`docs` (文件)、`chore` (雜項)、`ci` (CI/CD)、`test` (測試)、`style` (排版)。
 
-由 Claude 建立或 amend 的 commit，commit message 最後須加入 Co-Authored-By trailer，display name 用當次實際使用的模型名 (email 用 Claude Code 預設)：
+由 Claude 建立或 amend 的 commit，commit message 最後須加入 Co-Authored-By trailer，display name 用當次實際使用的模型名 (email 用 Claude Code 預設)。下例以 Claude Sonnet 5 示範格式：模型名不加角括號、直接接在 `Claude` 之後，電子郵件固定為 `noreply@anthropic.com`；此格式僅適用於往後的 commit，不回溯修改既有歷史提交：
 
 ```text
-Co-Authored-By: Claude <當次模型名> <noreply@anthropic.com>
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
 ```
 
 description (body) 使用列點格式，例如：

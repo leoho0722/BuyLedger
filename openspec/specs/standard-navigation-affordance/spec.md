@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'navigation-integrity'. Update Purpose after archive.
+本規格涵蓋控制項擺放與系統導覽慣例，包括不將控制項放在可能被視窗邊緣遮蔽之處、保留系統返回按鈕與手勢、警示框不作為表單容器、搜尋提示如實揭露搜尋範圍。不涵蓋 `interface-consistency` 所訂的狀態顏色語意、確認訊息語氣等介面一致性慣例。
 
 ## Requirements
 

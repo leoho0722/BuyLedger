@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'design-system-component-reduction'. Update Purpose after archive.
+本規格涵蓋介面元件層級是否重造系統既有能力，包括搜尋欄、分段控制項、進度條等手工元件改用系統元件、替換後恢復手工版本缺少的行為、刻意保留的手工結構仍提供其所需行為。不涵蓋 `system-setting-deference` 所訂的系統層級設定 (如外觀、權限) 是否於 App 內重複提供。
 
 ## Requirements
 

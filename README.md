@@ -18,6 +18,8 @@
 
 ```text
 BuyLedger (repo)/
+├── .github/                              # 版本庫層級自動化 (CI workflow)
+│   └── workflows/ci.yml                  # codegen 漂移檢查 + iOS 單元測試 (push / PR / 手動觸發)
 ├── apps/                                 # 可部署單元 (每個平台一個子目錄)
 │   ├── ios/                              # Apple 平台 App (iOS / iPadOS)
 │   │   ├── BuyLedger.xcodeproj/          # Xcode 專案；project.pbxproj 提交、xcuserdata/ 不提交
@@ -34,7 +36,7 @@ BuyLedger (repo)/
 └── assets/                               # README 圖片等共用素材
 ```
 
-**佈局契約**：可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。`apps/ios` 與 `shared/data-model` 均已實際動工；`apps/android` 為文件化保留位置，待動工時才建立 (目前不放 stub)。
+**佈局契約**：可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/`、`assets/` 與版本庫層級自動化 `.github/` 留在根目錄 (管轄所有平台，不屬於任一平台目錄)。`apps/ios` 與 `shared/data-model` 均已實際動工；`apps/android` 為文件化保留位置，待動工時才建立 (目前不放 stub)。
 
 ## 平台導覽
 

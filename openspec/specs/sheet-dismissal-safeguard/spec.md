@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'sheet-hig-compliance'. Update Purpose after archive.
+本規格涵蓋訂單編輯、活動編輯、付款方式編輯三個編輯 sheet 的未儲存變更防護，包括草稿是否變動的判斷 (dirty state)、滑動關閉的攔截、取消時的捨棄確認對話框。不涵蓋 `irreversible-action-safeguard` 所訂的其他暫存變更 sheet (如篩選 sheet) 的防護，以及非刪除類不可逆狀態轉換的確認。
 
 ## Requirements
 

@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'touch-target-and-input'. Update Purpose after archive.
+本規格涵蓋個別元件的熱區落實方式與手勢替代方案，包括篩選晶片與資料異動控制項透過共用元件達到最小熱區、手勢限定功能的可見替代入口、相片檢視器的標準手勢詞彙 (縮放、雙點放大)。不涵蓋 `control-touch-target` 所訂的熱區尺寸一般性門檻定義。
 
 ## Requirements
 
