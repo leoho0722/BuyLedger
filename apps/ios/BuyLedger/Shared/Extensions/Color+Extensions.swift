@@ -7,21 +7,12 @@
 
 import SwiftUI
 
-// MARK: - Init
+// MARK: - Static Properties
 
 extension Color {
-
-    /// 使用 sRGB 十六進位色碼建立 SwiftUI 色彩
-    /// - Parameters:
-    ///   - hex: `0xRRGGBB` 格式的 sRGB 色碼
-    ///   - opacity: 色彩透明度，預設為 `1`
-    init(blHex hex: UInt, opacity: Double = 1) {
-        self.init(
-            .sRGB,
-            red: Double((hex >> 16) & 0xFF) / 255,
-            green: Double((hex >> 8) & 0xFF) / 255,
-            blue: Double(hex & 0xFF) / 255,
-            opacity: opacity
-        )
+    
+    /// 資訊性次要文字的單一入口，代理至色盤的次要標籤色
+    static var blSecondaryLabel: Color {
+        BLPalette().secondaryLabel
     }
 }

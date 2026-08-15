@@ -8,25 +8,22 @@
 import SwiftUI
 
 /// 熱力圖的離散深度級數
-///
-/// 取代連續的透明度階梯：連續透明度在兩端都無法讓固定的數字色達標，
-/// 且相鄰值本來就難以目視區分
 enum BLHeatmapDepth: Int, CaseIterable {
-
+    
     // MARK: - Cases
-
+    
     /// 最淺的密度級數
     case level1 = 1
-
+    
     /// 偏淺的密度級數
     case level2
-
+    
     /// 中間的密度級數
     case level3
-
+    
     /// 偏深的密度級數
     case level4
-
+    
     /// 最深的密度級數
     case level5
 }
@@ -34,12 +31,12 @@ enum BLHeatmapDepth: Int, CaseIterable {
 // MARK: - Display Properties
 
 extension BLHeatmapDepth {
-
+    
     /// 此級數的格子底色
     var background: Color {
         Color("BLHeatmapLevel\(rawValue)Background", bundle: .assets)
     }
-
+    
     /// 與 ``background`` 成對定義、經驗證達標的數字色
     var numeral: Color {
         Color("BLHeatmapLevel\(rawValue)Numeral", bundle: .assets)
@@ -49,7 +46,7 @@ extension BLHeatmapDepth {
 // MARK: - Internal Method
 
 extension BLHeatmapDepth {
-
+    
     /// 依格子的計數與整張圖的最大值決定深度級數
     /// - Parameters:
     ///   - count: 該格子的計數
@@ -62,7 +59,7 @@ extension BLHeatmapDepth {
         guard maxCount > 1 else {
             return .level5
         }
-
+        
         let allCases = BLHeatmapDepth.allCases
         let ratio = Double(count - 1) / Double(maxCount - 1)
         let index = Int((ratio * Double(allCases.count - 1)).rounded())
