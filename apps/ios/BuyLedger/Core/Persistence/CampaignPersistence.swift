@@ -9,56 +9,99 @@ import Foundation
 import SwiftData
 
 /// SwiftData 上對開團 (Campaign) 做 CRUD 的背景 actor
-///
-/// 採用 `@ModelActor`，由 SwiftData 自動把 actor 綁到專屬 context；領域層的 ``Campaign`` 與持久層的 ``CampaignRecord`` 在 actor 內互轉。開團以 ``Campaign/id`` (UUID 字串) 識別，upsert 即可同時涵蓋新增、改名與狀態變更，因此不需另設以名稱為鍵的 rename
 @ModelActor
-actor CampaignPersistence {
-}
+actor CampaignPersistence {}
 
 // MARK: - Internal Method
 
 extension CampaignPersistence {
-
+    
     /// 讀出全部開團，依開團日期由新到舊排序
     /// - Returns: 領域型別陣列
-    func fetchAll() throws -> [Campaign] {
+    /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
+    func fetchAll() throws(PersistenceError) -> [Campaign] {
         let descriptor = FetchDescriptor<CampaignRecord>(
             sortBy: [SortDescriptor(\.openDate, order: .reverse)]
         )
-        let records = try modelContext.fetch(descriptor)
-
+        let records = try PersistenceError.mapFetch {
+            try modelContext.fetch(descriptor)
+        }
+        
         return records.map { $0.toDomain() }
     }
-
+    
     /// 寫入或更新單一開團 (依 id upsert)
     /// - Parameter campaign: 來源領域開團
-    func upsert(_ campaign: Campaign) throws {
+    /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
+    func upsert(_ campaign: Campaign) throws(PersistenceError) {
         let id = campaign.id
         let descriptor = FetchDescriptor<CampaignRecord>(
             predicate: #Predicate { $0.id == id }
         )
-
-        if let existing = try modelContext.fetch(descriptor).first {
+        
+        let existing = try PersistenceError.mapFetch {
+            try modelContext.fetch(descriptor).first
+        }
+        if let existing {
             existing.apply(campaign)
         } else {
             modelContext.insert(CampaignRecord(campaign: campaign))
         }
-
-        try modelContext.save()
+        
+        do {
+            try PersistenceError.mapSave {
+                try modelContext.save()
+            }
+        } catch {
+            modelContext.rollback()
+            throw error
+        }
     }
-
-    /// 刪除指定 id 的開團；若不存在不視為錯誤
-    /// - Parameter id: 要刪除的開團識別值
-    func delete(id: String) throws {
-        let descriptor = FetchDescriptor<CampaignRecord>(
-            predicate: #Predicate { $0.id == id }
+    
+    /// 刪除指定 id 的開團，並在同一交易內連帶清除訂單歸屬與提醒連結
+    /// - Parameters:
+    ///   - id: 要刪除的開團識別值
+    ///   - name: 該開團的名稱，用於剝除訂單歸屬
+    /// - Returns: 被刪除的提醒連結事件識別碼；不存在提醒連結時為 `nil`
+    /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
+    func delete(id: String, name: String) throws(PersistenceError) -> String? {
+        let wantedID = id
+        let campaignDescriptor = FetchDescriptor<CampaignRecord>(
+            predicate: #Predicate { $0.id == wantedID }
         )
-
-        let records = try modelContext.fetch(descriptor)
-        for record in records {
+        let campaignRecords = try PersistenceError.mapFetch {
+            try modelContext.fetch(campaignDescriptor)
+        }
+        for record in campaignRecords {
             modelContext.delete(record)
         }
-
-        try modelContext.save()
+        
+        let orderRecords = try PersistenceError.mapFetch {
+            try modelContext.fetch(FetchDescriptor<OrderRecord>())
+        }
+        for record in orderRecords where record.campaignNames.contains(name) {
+            record.campaignNames.removeAll { $0 == name }
+        }
+        
+        let reminderDescriptor = FetchDescriptor<CampaignReminderRecord>(
+            predicate: #Predicate { $0.campaignID == wantedID }
+        )
+        let reminderRecords = try PersistenceError.mapFetch {
+            try modelContext.fetch(reminderDescriptor)
+        }
+        let eventIdentifier = reminderRecords.first?.eventIdentifier
+        for record in reminderRecords {
+            modelContext.delete(record)
+        }
+        
+        do {
+            try PersistenceError.mapSave {
+                try modelContext.save()
+            }
+        } catch {
+            modelContext.rollback()
+            throw error
+        }
+        return eventIdentifier
     }
 }
