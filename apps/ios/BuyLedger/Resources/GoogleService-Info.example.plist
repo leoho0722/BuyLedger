@@ -7,14 +7,14 @@
   將此檔複製成 `GoogleService-Info.plist` (已加入 .gitignore)，從 Firebase Console
   下載實際專案的設定檔覆蓋
 
-  本檔僅供讓乾淨 clone 在沒有真實 Firebase 專案的情況下也能通過 CI：值一律為明顯的
-  佔位字串，不含任何真實識別碼，App 啟動時 FirebaseApp.configure() 會用它完成初始化，
-  但不會有任何遙測資料實際送達 (因為 Firebase 專案不存在)。CI 於建置前複製此檔為正式
-  檔名；本檔已列入建置設定的成員例外清單，不會被打包進 App bundle
+  本檔僅供讓乾淨 clone 在沒有真實 Firebase 專案的情況下準備 CI 設定：值一律為明顯的
+  佔位字串，不含任何真實識別碼。CI 於建置前複製此檔為正式檔名後，會再將 API_KEY
+  placeholder 改成格式合法的範例 key，避免 FirebaseApp.configure() 因格式驗證中止測試。
+  本檔已列入建置設定的成員例外清單，不會被打包進 App bundle
 -->
 <dict>
 	<key>API_KEY</key>
-	<string>A00000000000000000000000000000000000000</string>
+	<string>REPLACE_WITH_YOUR_FIREBASE_API_KEY</string>
 	<key>BUNDLE_ID</key>
 	<string>com.example.BuyLedgerPlaceholder</string>
 	<key>CLIENT_ID</key>

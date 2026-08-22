@@ -53,7 +53,10 @@ jobs:
 
       - name: Restore Firebase configuration from committed template
         # GoogleService-Info.plist 被 .gitignore 排除；值一律為明顯佔位字串，不含任何真實識別碼
-        run: cp apps/ios/BuyLedger/Resources/GoogleService-Info.example.plist apps/ios/BuyLedger/Resources/GoogleService-Info.plist
+        run: |
+          cp apps/ios/BuyLedger/Resources/GoogleService-Info.example.plist apps/ios/BuyLedger/Resources/GoogleService-Info.plist
+          # 複製後只修改 CI 產生的檔案，將 API_KEY placeholder 換成格式合法的範例 key。
+          plutil -replace API_KEY -string "A00000000000000000000000000000000000000" apps/ios/BuyLedger/Resources/GoogleService-Info.plist
 
       - name: Restore API key configuration from committed template
         # Config.xcconfig 同樣被 .gitignore 排除；是 app target 兩個 configuration 的 baseConfigurationReference，缺檔會讓建置產生警告
@@ -137,7 +140,10 @@ jobs:
         uses: actions/checkout@v7
 
       - name: Restore Firebase configuration from committed template
-        run: cp apps/ios/BuyLedger/Resources/GoogleService-Info.example.plist apps/ios/BuyLedger/Resources/GoogleService-Info.plist
+        run: |
+          cp apps/ios/BuyLedger/Resources/GoogleService-Info.example.plist apps/ios/BuyLedger/Resources/GoogleService-Info.plist
+          # 複製後只修改 CI 產生的檔案，將 API_KEY placeholder 換成格式合法的範例 key。
+          plutil -replace API_KEY -string "A00000000000000000000000000000000000000" apps/ios/BuyLedger/Resources/GoogleService-Info.plist
 
       - name: Restore API key configuration from committed template
         run: cp apps/ios/BuyLedger/Resources/Config.example.xcconfig apps/ios/BuyLedger/Resources/Config.xcconfig
