@@ -1,45 +1,39 @@
-# customer-summary Specification
+# analytics-trend-comparison Specification
 
 ## Purpose
 
-TBD - created by archiving change 'tca-view-store-refactor'. Update Purpose after archive.
+TBD - created by archiving change 'revenue-attribution-single-source'. Update Purpose after archive.
 
 ## Requirements
 
-### Requirement: Customers screen aggregates orders into per-customer summaries
+### Requirement: Trend comparison expresses improvement consistently
 
-The customers screen SHALL derive its rows entirely from the existing orders, grouping orders by customer name. For each customer the screen SHALL report the customer's order count, total spent, and most-recent order date, and SHALL carry that customer's initials and tier. Total spent and order count SHALL use the same revenue-attribution rule as overview totals: only realized orders count, and an order listed as a source by an existing merge result does not count alongside that result. Membership, initials, tier, and most-recent order date SHALL still derive from all orders, so a customer with only cancelled orders remains visible with zero spent and zero counted orders. The list SHALL be sorted by total spent in descending order. The screen SHALL NOT hold any persisted customer state of its own; when the underlying orders change, the summaries SHALL recompute from the current orders.
+The Dashboard KPI deltas and the Insights trend card SHALL derive their percentage magnitude and direction from the same current-versus-previous-period comparison. When the previous period is non-zero, the percentage denominator SHALL be the absolute value of the previous period. This absolute denominator is observable in Dashboard KPI deltas because the signed Decimal delta is presented directly. In the Insights trend card, the displayed magnitude uses `abs(ratio)`, so changing only the denominator's sign does not change its rendered percentage. A higher current profit SHALL be presented as improvement and a lower current profit as deterioration, including when both values are losses. When the previous period is zero or has no orders, Dashboard KPI deltas and the Insights trend card SHALL continue to show no comparison.
 
-#### Scenario: Aggregate orders by customer
+#### Scenario: Loss turns into profit
 
-- **WHEN** the customers screen is shown with existing orders
-- **THEN** each row represents one customer with that customer's order count, total spent, and most-recent order date, and the rows are ordered by total spent descending
+- **WHEN** the previous period profit is -100 and the current period profit is 50
+- **THEN** the trend card presents improvement as `↑ 150.0%`
 
-##### Example: three customers ranked by spend
+#### Scenario: Loss narrows
 
-- **GIVEN** orders: Amy(revenue=300, date=2026-03-01), Amy(revenue=200, date=2026-03-05), Bob(revenue=400, date=2026-03-02), Cara(revenue=100, date=2026-03-03)
-- **WHEN** the customers screen aggregates them
-- **THEN** the rows are: Amy(orderCount=2, totalSpent=500, lastOrderDate=2026-03-05), Bob(orderCount=1, totalSpent=400, lastOrderDate=2026-03-02), Cara(orderCount=1, totalSpent=100, lastOrderDate=2026-03-03), in that order
+- **WHEN** the previous period profit is -100 and the current period profit is -50
+- **THEN** the trend card presents improvement as `↑ 50.0%`
 
-#### Scenario: Empty state when there are no orders
+#### Scenario: Loss grows
 
-- **WHEN** there are no orders
-- **THEN** the customers screen shows its empty state and no customer rows
+- **WHEN** the previous period profit is -100 and the current period profit is -200
+- **THEN** the trend card presents deterioration as `↓ 100.0%`
 
-#### Scenario: Cancelled orders do not count toward spending
+#### Scenario: Dashboard profit delta keeps direction when previous profit is negative
 
-- **WHEN** a customer has one realized order and one cancelled order
-- **THEN** the customer's total spent and order count reflect only the realized order
+- **WHEN** the previous period profit is -100 and the current period profit is -50
+- **THEN** the dashboard profit delta is the signed Decimal `0.5`, indicating improvement because current profit is greater than or equal to previous profit
 
-#### Scenario: A customer with only cancelled orders stays visible
+#### Scenario: No prior comparison
 
-- **WHEN** every order belonging to a customer is cancelled
-- **THEN** the customer still appears in the list with zero total spent and zero counted orders
-
-#### Scenario: Merged orders are not double counted
-
-- **WHEN** a customer's orders include two merge sources and their merge result
-- **THEN** the customer's total spent counts the merge result once and does not additionally count the sources
+- **WHEN** the previous period has zero profit or no orders
+- **THEN** Dashboard KPI deltas and the trend card present no comparison
 
 <!-- @trace
 source: revenue-attribution-single-source
