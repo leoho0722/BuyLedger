@@ -14,7 +14,7 @@
 -->
 <dict>
 	<key>API_KEY</key>
-	<string>REPLACE_WITH_YOUR_FIREBASE_API_KEY</string>
+	<string>A00000000000000000000000000000000000000</string>
 	<key>BUNDLE_ID</key>
 	<string>com.example.BuyLedgerPlaceholder</string>
 	<key>CLIENT_ID</key>
