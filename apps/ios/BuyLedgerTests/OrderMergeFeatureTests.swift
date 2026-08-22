@@ -373,8 +373,7 @@ struct OrderMergeFeatureTests {
         } withDependencies: {
             $0.uuid = .incrementing
             var orderRepository = OrderRepository.testValue
-            orderRepository.fetchOrderPhotos = {
-                (_: LedgerOrder.ID) async throws(PersistenceError) -> [Data] in
+            orderRepository.fetchOrderPhotos = { (_: LedgerOrder.ID) async throws(PersistenceError) -> [Data] in
                 throw .fetchFailed(message: "photo load failed")
             }
             $0[OrderRepository.self] = orderRepository

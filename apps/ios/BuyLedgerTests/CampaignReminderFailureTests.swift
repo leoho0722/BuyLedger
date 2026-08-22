@@ -66,13 +66,7 @@ struct CampaignReminderFailureTests {
     @Test func eventSaveFailureRoutesToTheCreationFailurePath() async {
         let store = Self.makeStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = {
-                (
-                    _: String,
-                    _: Date,
-                    _: TimeInterval
-                ) async throws(CalendarReminderError) -> String
-                in
+            $0[CalendarReminderClient.self].addReminder = { (_: String, _: Date, _: TimeInterval) async throws(CalendarReminderError) -> String in
                 throw CalendarReminderError.system(message: "boom")
             }
         }
@@ -94,13 +88,7 @@ struct CampaignReminderFailureTests {
     @Test func missingEventIdentifierRoutesToTheCreationFailurePath() async {
         let store = Self.makeStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = {
-                (
-                    _: String,
-                    _: Date,
-                    _: TimeInterval
-                ) async throws(CalendarReminderError) -> String
-                in
+            $0[CalendarReminderClient.self].addReminder = { (_: String, _: Date, _: TimeInterval) async throws(CalendarReminderError) -> String in
                 throw CalendarReminderError.eventIdentifierMissing
             }
         }
@@ -123,13 +111,7 @@ struct CampaignReminderFailureTests {
         // 權限已授予但沒有可寫入行事曆，應顯示專用訊息。
         let store = Self.makeStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = {
-                (
-                    _: String,
-                    _: Date,
-                    _: TimeInterval
-                ) async throws(CalendarReminderError) -> String
-                in
+            $0[CalendarReminderClient.self].addReminder = { (_: String, _: Date, _: TimeInterval) async throws(CalendarReminderError) -> String in
                 throw CalendarReminderError.noWritableCalendar
             }
         }
@@ -158,16 +140,8 @@ struct CampaignReminderFailureTests {
     @Test func linkPersistenceFailureRoutesToTheCreationFailurePath() async {
         let store = Self.makeStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = {
-                _,
-                _,
-                _ in "EVT-new" }
-            $0[CampaignReminderRepository.self].saveLink = {
-                (
-                    _: String,
-                    _: String,
-                    _: Date
-                ) async throws(PersistenceError) in
+            $0[CalendarReminderClient.self].addReminder = { _, _, _ in "EVT-new" }
+            $0[CampaignReminderRepository.self].saveLink = { (_: String, _: CampaignReminderLink) async throws(PersistenceError) in
                 throw PersistenceError.saveFailed(message: "boom")
             }
         }
@@ -225,8 +199,7 @@ struct CampaignReminderFailureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[CalendarReminderClient.self].removeReminder = {
-                (_: String) async throws(CalendarReminderError) in
+            $0[CalendarReminderClient.self].removeReminder = { (_: String) async throws(CalendarReminderError) in
                 throw CalendarReminderError.system(message: "boom")
             }
             $0[CampaignReminderRepository.self].removeLink = { _ in }
@@ -246,13 +219,7 @@ struct CampaignReminderFailureTests {
         let removeCallCount = CallCountBox()
         let store = Self.makeRebuildStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = {
-                (
-                    _: String,
-                    _: Date,
-                    _: TimeInterval
-                ) async throws(CalendarReminderError) -> String
-                in
+            $0[CalendarReminderClient.self].addReminder = { (_: String, _: Date, _: TimeInterval) async throws(CalendarReminderError) -> String in
                 throw CalendarReminderError.system(message: "boom")
             }
             $0[CalendarReminderClient.self].removeReminder = { _ in removeCallCount.value += 1 }
@@ -278,9 +245,10 @@ struct CampaignReminderFailureTests {
         
         #expect(removeCallCount.value == 0, "新事件建立失敗時不應呼叫移除舊事件")
         #expect(
-            store.state.reminderLinks[Self.rebuildCampaignID]
-                == CampaignReminderLink(
-                    eventIdentifier: Self.oldEventIdentifier, reminderTimestamp: Self.oldTimestamp),
+            store.state.reminderLinks[Self.rebuildCampaignID] == CampaignReminderLink(
+                eventIdentifier: Self.oldEventIdentifier, 
+                reminderTimestamp: Self.oldTimestamp
+            ),
             "連結應仍指向舊事件，不能變成 nil 或指向不存在的新事件"
         )
     }
@@ -290,14 +258,8 @@ struct CampaignReminderFailureTests {
         let removedIdentifier = CapturedIdentifierBox()
         let store = Self.makeRebuildStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = {
-                _,
-                _,
-                _ in "EVT-new" }
-            $0[CampaignReminderRepository.self].saveLink = {
-                _,
-                _,
-                _ in }
+            $0[CalendarReminderClient.self].addReminder = { _, _, _ in "EVT-new" }
+            $0[CampaignReminderRepository.self].saveLink = { _, _ in }
             $0[CalendarReminderClient.self].removeReminder = { identifier in
                 removeCallCount.value += 1
                 removedIdentifier.value = identifier
@@ -325,16 +287,9 @@ struct CampaignReminderFailureTests {
         // 依行事曆整合規則驗證提醒失敗
         let store = Self.makeRebuildStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = {
-                _,
-                _,
-                _ in "EVT-new" }
-            $0[CampaignReminderRepository.self].saveLink = {
-                _,
-                _,
-                _ in }
-            $0[CalendarReminderClient.self].removeReminder = {
-                (_: String) async throws(CalendarReminderError) in
+            $0[CalendarReminderClient.self].addReminder = { _, _, _ in "EVT-new" }
+            $0[CampaignReminderRepository.self].saveLink = { _, _ in }
+            $0[CalendarReminderClient.self].removeReminder = { (_: String) async throws(CalendarReminderError) in
                 throw CalendarReminderError.system(message: "boom")
             }
         }
@@ -346,7 +301,9 @@ struct CampaignReminderFailureTests {
         }
         await store.receive(\.reminderStored) {
             $0.reminderLinks[Self.rebuildCampaignID] = CampaignReminderLink(
-                eventIdentifier: "EVT-new", reminderTimestamp: Self.newTimestamp)
+                eventIdentifier: "EVT-new", 
+                reminderTimestamp: Self.newTimestamp
+            )
         }
         await store.receive(\.campaignWriteFailed) {
             $0.noticeAlert = AlertState {
@@ -361,9 +318,10 @@ struct CampaignReminderFailureTests {
         }
         
         #expect(
-            store.state.reminderLinks[Self.rebuildCampaignID]
-                == CampaignReminderLink(
-                    eventIdentifier: "EVT-new", reminderTimestamp: Self.newTimestamp),
+            store.state.reminderLinks[Self.rebuildCampaignID] == CampaignReminderLink(
+                eventIdentifier: "EVT-new",
+                reminderTimestamp: Self.newTimestamp
+            ),
             "連結應指向新建立的事件，不因舊事件移除失敗而回滾或變成 nil"
         )
     }
@@ -444,7 +402,9 @@ private extension CampaignReminderFailureTests {
         initial.campaigns = [campaign]
         initial.reminderLinks = [
             rebuildCampaignID: CampaignReminderLink(
-                eventIdentifier: oldEventIdentifier, reminderTimestamp: oldTimestamp)
+                eventIdentifier: oldEventIdentifier, 
+                reminderTimestamp: oldTimestamp
+            )
         ]
         initial.editCampaign = editState
         

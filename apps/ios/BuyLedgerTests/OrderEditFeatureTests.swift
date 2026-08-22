@@ -487,8 +487,7 @@ struct OrderEditFeatureTests {
             $0[OrderRepository.self] = orderRepository
             // 抑制其他主檔載入，讓測試只接收照片完成 action
             var orderSourceRepository = OrderSourceRepository.testValue
-            orderSourceRepository.fetchOrderSources = {
-                () async throws(PersistenceError) -> [String] in
+            orderSourceRepository.fetchOrderSources = { () async throws(PersistenceError) -> [String] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
             $0[OrderSourceRepository.self] = orderSourceRepository
@@ -500,15 +499,13 @@ struct OrderEditFeatureTests {
             $0[CategoryRepository.self] = categoryRepository
             
             var paymentMethodRepository = PaymentMethodRepository.testValue
-            paymentMethodRepository.fetchPaymentMethodInfos = {
-                () async throws(PersistenceError) -> [PaymentMethodInfo] in
+            paymentMethodRepository.fetchPaymentMethodInfos = { () async throws(PersistenceError) -> [PaymentMethodInfo] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
             $0[PaymentMethodRepository.self] = paymentMethodRepository
             
             var reconciliationStatusRepository = ReconciliationStatusRepository.testValue
-            reconciliationStatusRepository.fetchReconciliationStatuses = {
-                () async throws(PersistenceError) -> [String] in
+            reconciliationStatusRepository.fetchReconciliationStatuses = { () async throws(PersistenceError) -> [String] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
             $0[ReconciliationStatusRepository.self] = reconciliationStatusRepository

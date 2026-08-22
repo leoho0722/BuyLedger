@@ -31,9 +31,7 @@ struct HTTPClientTests {
                 await recorder.record(request)
                 return (Data(), response)
             },
-            stream: {
-                (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse)
-                in
+            stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
                 throw APIError.transport(message: "unused stream")
             }
         )
@@ -70,9 +68,7 @@ struct HTTPClientTests {
         )
         let client = HTTPClient(
             data: { _ in (Data("response".utf8), response) },
-            stream: {
-                (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse)
-                in
+            stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
                 throw APIError.transport(message: "unused stream")
             }
         )
@@ -94,9 +90,7 @@ struct HTTPClientTests {
             data: { (_: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
                 throw expected
             },
-            stream: {
-                (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse)
-                in
+            stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
                 throw APIError.transport(message: "unused stream")
             }
         )

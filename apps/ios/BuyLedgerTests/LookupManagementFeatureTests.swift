@@ -239,8 +239,7 @@ struct LookupManagementFeatureTests {
             let store = TestStore(initialState: state) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0[CategoryRepository.self].removeCategory = {
-                    (_: String) async throws(PersistenceError) in
+                $0[CategoryRepository.self].removeCategory = { (_: String) async throws(PersistenceError) in
                     throw PersistenceError.saveFailed(message: "boom")
                 }
             }
@@ -498,13 +497,7 @@ struct LookupManagementFeatureTests {
                 LookupManagementFeature()
             } withDependencies: {
                 $0[OrderRepository.self].fetchOrders = { [box] in box.fetchOrders() }
-                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = {
-                    [box] _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    orders in
+                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { [box] _, _, _, _, _, orders in
                     box.applyCount += 1
                     box.appliedOrders = orders
                 }
@@ -586,16 +579,7 @@ struct LookupManagementFeatureTests {
                 LookupManagementFeature()
             } withDependencies: {
                 $0[OrderRepository.self].fetchOrders = { [box] in box.fetchOrders() }
-                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = {
-                    [box] (
-                        _: String,
-                        _: String,
-                        _: Bool,
-                        _: Bool,
-                        _: Bool,
-                        _: [LedgerOrder]
-                    )
-                        async throws(PaymentMethodPersistenceError) in
+                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { [box] (_: String, _: String, _: Bool, _: Bool, _: Bool, _: [LedgerOrder]) async throws(PaymentMethodPersistenceError) in
                     box.applyCount += 1
                     throw PaymentMethodPersistenceError.storage(.saveFailed(message: "boom"))
                 }
@@ -672,13 +656,7 @@ struct LookupManagementFeatureTests {
                 LookupManagementFeature()
             } withDependencies: {
                 $0[OrderRepository.self].fetchOrders = { [box] in box.fetchOrders() }
-                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = {
-                    [box] _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    orders in
+                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { [box] _, _, _, _, _, orders in
                     box.applyCount += 1
                     box.appliedOrders = orders
                 }
@@ -727,13 +705,7 @@ struct LookupManagementFeatureTests {
                 LookupManagementFeature()
             } withDependencies: {
                 $0[OrderRepository.self].fetchOrders = { [box] in box.fetchOrders() }
-                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = {
-                    [box] _,
-                    _,
-                    _,
-                    _,
-                    _,
-                    orders in
+                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { [box] _, _, _, _, _, orders in
                     box.applyCount += 1
                     box.appliedOrders = orders
                 }
@@ -960,9 +932,7 @@ private extension LookupManagementFeatureTests {
     
     /// 建立付款方式更新確認 alert
     /// - Returns: 補登提示狀態
-    static func retroactiveConfirmationAlert(count: Int) -> AlertState<
-        LookupManagementFeature.Action.Alert
-    > {
+    static func retroactiveConfirmationAlert(count: Int) -> AlertState<LookupManagementFeature.Action.Alert> {
         let message: LocalizedStringKey = "確認後將重算 \(count) 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。"
         return AlertState {
             TextState("更正付款方式")

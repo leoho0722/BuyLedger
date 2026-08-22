@@ -27,10 +27,7 @@ struct ExchangeRateClientTests {
                 data: { (_: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
                     throw APIError.transport(message: "unexpected HTTP call")
                 },
-                stream: {
-                    (_: URLRequest) async throws(APIError) -> (
-                        URLSession.AsyncBytes, HTTPURLResponse
-                    ) in
+                stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
                     throw APIError.transport(message: "unexpected HTTP call")
                 }
             )
@@ -59,10 +56,7 @@ struct ExchangeRateClientTests {
                 data: { (_: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
                     throw APIError.transport(message: "unexpected HTTP call")
                 },
-                stream: {
-                    (_: URLRequest) async throws(APIError) -> (
-                        URLSession.AsyncBytes, HTTPURLResponse
-                    ) in
+                stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
                     throw APIError.transport(message: "unexpected HTTP call")
                 }
             )
@@ -105,10 +99,7 @@ struct ExchangeRateClientTests {
                     capturedRequest.request = request
                     return (body, response)
                 },
-                stream: {
-                    (_: URLRequest) async throws(APIError) -> (
-                        URLSession.AsyncBytes, HTTPURLResponse
-                    ) in
+                stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
                     throw APIError.transport(message: "unused stream")
                 }
             )
@@ -151,10 +142,7 @@ struct ExchangeRateClientTests {
                     capturedRequest.request = request
                     return (body, response)
                 },
-                stream: {
-                    (_: URLRequest) async throws(APIError) -> (
-                        URLSession.AsyncBytes, HTTPURLResponse
-                    ) in
+                stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
                     throw APIError.transport(message: "unused stream")
                 }
             )
@@ -195,10 +183,7 @@ struct ExchangeRateClientTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.httpClient = HTTPClient(
                 data: { _ in (body, response) },
-                stream: {
-                    (_: URLRequest) async throws(APIError) -> (
-                        URLSession.AsyncBytes, HTTPURLResponse
-                    ) in
+                stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
                     throw APIError.transport(message: "unused stream")
                 }
             )
@@ -239,10 +224,7 @@ struct ExchangeRateClientTests {
             )
             $0.httpClient = HTTPClient(
                 data: { _ in (malformedBody, response) },
-                stream: {
-                    (_: URLRequest) async throws(APIError) -> (
-                        URLSession.AsyncBytes, HTTPURLResponse
-                    ) in
+                stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
                     throw APIError.transport(message: "unused stream")
                 }
             )
@@ -277,10 +259,7 @@ struct ExchangeRateClientTests {
             )
             $0.httpClient = HTTPClient(
                 data: { _ in (body, response) },
-                stream: {
-                    (_: URLRequest) async throws(APIError) -> (
-                        URLSession.AsyncBytes, HTTPURLResponse
-                    ) in
+                stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
                     throw APIError.transport(message: "unused stream")
                 }
             )
@@ -315,10 +294,7 @@ struct ExchangeRateClientTests {
             )
             $0.httpClient = HTTPClient(
                 data: { _ in (body, response) },
-                stream: {
-                    (_: URLRequest) async throws(APIError) -> (
-                        URLSession.AsyncBytes, HTTPURLResponse
-                    ) in
+                stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
                     throw APIError.transport(message: "unused stream")
                 }
             )
@@ -353,10 +329,7 @@ struct ExchangeRateClientTests {
             )
             $0.httpClient = HTTPClient(
                 data: { _ in (body, response) },
-                stream: {
-                    (_: URLRequest) async throws(APIError) -> (
-                        URLSession.AsyncBytes, HTTPURLResponse
-                    ) in
+                stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
                     throw APIError.transport(message: "unused stream")
                 }
             )

@@ -74,7 +74,12 @@ struct CampaignPersistenceTests {
         try await orderPersistence.create(makeOrder(id: "O1", campaignNames: ["四月團", "五月團"]))
         let reminderTimestamp = Date(timeIntervalSince1970: 1_700_000_000)
         try await reminderPersistence.upsert(
-            campaignID: "C1", eventIdentifier: "EVT-1", reminderTimestamp: reminderTimestamp)
+            campaignID: "C1",
+            link: CampaignReminderLink(
+                eventIdentifier: "EVT-1",
+                reminderTimestamp: reminderTimestamp
+            )
+        )
         
         let removedIdentifier = try await campaignPersistence.delete(id: "C1", name: "四月團")
         
@@ -260,8 +265,10 @@ private extension CampaignPersistenceTests {
         try await OrderPersistence(modelContainer: writableContainer).create(order)
         try await CampaignReminderPersistence(modelContainer: writableContainer).upsert(
             campaignID: campaign.id,
-            eventIdentifier: "EVT-1",
-            reminderTimestamp: reminderTimestamp
+            link: CampaignReminderLink(
+                eventIdentifier: "EVT-1",
+                reminderTimestamp: reminderTimestamp
+            )
         )
         
         return storeURL

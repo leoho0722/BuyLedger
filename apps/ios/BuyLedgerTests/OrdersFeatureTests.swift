@@ -721,8 +721,7 @@ struct OrdersFeatureTests {
             $0.uuid = .incrementing
             $0.date = .constant(fixedDate)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[OrderRepository.self].createOrder = {
-                (_: LedgerOrder) async throws(OrderPersistenceError) in
+            $0[OrderRepository.self].createOrder = { (_: LedgerOrder) async throws(OrderPersistenceError) in
                 throw OrderPersistenceError.identifierCollision(id: expectedID)
             }
         }
@@ -1676,8 +1675,7 @@ struct OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
-            $0[OrderRepository.self].saveOrder = {
-                (_: LedgerOrder) async throws(PersistenceError) in
+            $0[OrderRepository.self].saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
                 if toggle.shouldFail {
                     throw .saveFailed(message: "boom")
                 }
@@ -1716,8 +1714,7 @@ struct OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
-            $0[OrderRepository.self].saveOrder = {
-                (_: LedgerOrder) async throws(PersistenceError) in
+            $0[OrderRepository.self].saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
                 throw .saveFailed(message: "boom")
             }
         }
@@ -1748,8 +1745,7 @@ struct OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
-            $0[OrderRepository.self].saveOrder = {
-                (_: LedgerOrder) async throws(PersistenceError) in
+            $0[OrderRepository.self].saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
                 throw .saveFailed(message: "boom")
             }
         }
@@ -1787,8 +1783,7 @@ struct OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
-            $0[OrderRepository.self].saveOrders = {
-                (_: [LedgerOrder]) async throws(PersistenceError) in
+            $0[OrderRepository.self].saveOrders = { (_: [LedgerOrder]) async throws(PersistenceError) in
                 throw .saveFailed(message: "boom")
             }
         }
@@ -1823,32 +1818,26 @@ struct OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
-            $0[OrderRepository.self].removeOrder = {
-                (_: LedgerOrder.ID) async throws(PersistenceError) in
+            $0[OrderRepository.self].removeOrder = { (_: LedgerOrder.ID) async throws(PersistenceError) in
                 throw .saveFailed(message: "boom")
             }
             // 由真正的 `.task` 重載讀回，確認儲存層沒有留下半套資料。
             $0[OrderRepository.self].fetchOrders = { [original] }
             // 本測試只驗訂單重載，主檔載入另行失敗。
             // 避免其完成順序不可預測地混入斷言
-            $0[OrderSourceRepository.self].fetchOrderSources = {
-                () async throws(PersistenceError) -> [String] in
+            $0[OrderSourceRepository.self].fetchOrderSources = { () async throws(PersistenceError) -> [String] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
-            $0[CampaignRepository.self].fetchCampaigns = {
-                () async throws(PersistenceError) -> [Campaign] in
+            $0[CampaignRepository.self].fetchCampaigns = { () async throws(PersistenceError) -> [Campaign] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
-            $0[CategoryRepository.self].fetchCategories = {
-                () async throws(PersistenceError) -> [String] in
+            $0[CategoryRepository.self].fetchCategories = { () async throws(PersistenceError) -> [String] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
-            $0[PaymentMethodRepository.self].fetchPaymentMethodInfos = {
-                () async throws(PersistenceError) -> [PaymentMethodInfo] in
+            $0[PaymentMethodRepository.self].fetchPaymentMethodInfos = { () async throws(PersistenceError) -> [PaymentMethodInfo] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
-            $0[ReconciliationStatusRepository.self].fetchReconciliationStatuses = {
-                () async throws(PersistenceError) -> [String] in
+            $0[ReconciliationStatusRepository.self].fetchReconciliationStatuses = { () async throws(PersistenceError) -> [String] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
         }
@@ -1910,8 +1899,7 @@ struct OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
-            $0[OrderRepository.self].saveOrder = {
-                (_: LedgerOrder) async throws(PersistenceError) in
+            $0[OrderRepository.self].saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
                 throw .saveFailed(message: "boom")
             }
         }
@@ -2635,9 +2623,7 @@ private extension OrdersFeatureTests {
     /// 建立寫入失敗 alert，供測試比對
     /// - Parameter message: alert 顯示的錯誤訊息
     /// - Returns: 寫入失敗時顯示的 alert
-    func expectedWriteFailureAlert(_ message: LocalizedStringKey) -> AlertState<
-        OrdersFeature.Action.Alert
-    > {
+    func expectedWriteFailureAlert(_ message: LocalizedStringKey) -> AlertState<OrdersFeature.Action.Alert> {
         AlertState {
             TextState("操作失敗")
         } actions: {

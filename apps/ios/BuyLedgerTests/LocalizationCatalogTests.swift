@@ -737,10 +737,7 @@ private extension String {
         let nsSource = self as NSString
         let fullRange = NSRange(location: 0, length: nsSource.length)
         var starts = Set<Int>()
-        expression.enumerateMatches(in: self, range: fullRange) {
-            match,
-            _,
-            _ in
+        expression.enumerateMatches(in: self, range: fullRange) { match, _, _ in
             guard let match, match.numberOfRanges > 1 else {
                 return
             }

@@ -484,16 +484,7 @@ struct RootFeatureTests {
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0[PaymentMethodRepository.self].applyPaymentMethodEdit = {
-                (
-                    _: String,
-                    _: String,
-                    _: Bool,
-                    _: Bool,
-                    _: Bool,
-                    _: [LedgerOrder]
-                )
-                    async throws(PaymentMethodPersistenceError) in
+            $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { (_: String, _: String, _: Bool, _: Bool, _: Bool, _: [LedgerOrder]) async throws(PaymentMethodPersistenceError) in
                 throw .storage(.saveFailed(message: "boom"))
             }
         }

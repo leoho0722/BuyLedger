@@ -37,32 +37,66 @@ struct CalendarReminderTests {
         let ts2 = Self.day(month: 4, day: 26, hour: 18)
         let ts3 = Self.day(month: 5, day: 1, hour: 9)
         
-        try await repository.saveLink("C1", "EVT-1", ts1)
+        try await repository.saveLink(
+            "C1",
+            CampaignReminderLink(eventIdentifier: "EVT-1", reminderTimestamp: ts1)
+        )
         var links = try await repository.fetchLinks()
         #expect(
-            links == ["C1": CampaignReminderLink(eventIdentifier: "EVT-1", reminderTimestamp: ts1)])
+            links == [
+                "C1": CampaignReminderLink(
+                    eventIdentifier: "EVT-1",
+                    reminderTimestamp: ts1
+                )
+            ]
+        )
         
         // 相同 campaignID 會更新，不同 campaignID 會新增。
-        try await repository.saveLink("C1", "EVT-2", ts2)
-        try await repository.saveLink("C2", "EVT-3", ts3)
+        try await repository.saveLink(
+            "C1",
+            CampaignReminderLink(eventIdentifier: "EVT-2", reminderTimestamp: ts2)
+        )
+        try await repository.saveLink(
+            "C2",
+            CampaignReminderLink(eventIdentifier: "EVT-3", reminderTimestamp: ts3)
+        )
         links = try await repository.fetchLinks()
         #expect(
             links == [
-                "C1": CampaignReminderLink(eventIdentifier: "EVT-2", reminderTimestamp: ts2),
-                "C2": CampaignReminderLink(eventIdentifier: "EVT-3", reminderTimestamp: ts3),
-            ])
+                "C1": CampaignReminderLink(
+                    eventIdentifier: "EVT-2",
+                    reminderTimestamp: ts2
+                ),
+                "C2": CampaignReminderLink(
+                    eventIdentifier: "EVT-3",
+                    reminderTimestamp: ts3
+                )
+            ]
+        )
         
         // 移除單一連結
         try await repository.removeLink("C1")
         links = try await repository.fetchLinks()
         #expect(
-            links == ["C2": CampaignReminderLink(eventIdentifier: "EVT-3", reminderTimestamp: ts3)])
+            links == [
+                "C2": CampaignReminderLink(
+                    eventIdentifier: "EVT-3",
+                    reminderTimestamp: ts3
+                )
+            ]
+        )
         
         // 移除不存在的連結為 no-op
         try await repository.removeLink("C-nonexistent")
         links = try await repository.fetchLinks()
         #expect(
-            links == ["C2": CampaignReminderLink(eventIdentifier: "EVT-3", reminderTimestamp: ts3)])
+            links == [
+                "C2": CampaignReminderLink(
+                    eventIdentifier: "EVT-3",
+                    reminderTimestamp: ts3
+                )
+            ]
+        )
     }
     
     // MARK: - Helper

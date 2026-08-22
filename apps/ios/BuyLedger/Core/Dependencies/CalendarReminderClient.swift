@@ -16,7 +16,7 @@ struct CalendarReminderClient: Sendable {
     
     /// 請求系統行事曆權限
     /// - Returns: 系統行事曆權限授權結果
-    var requestAccess: @Sendable () async -> Access
+    var requestAccess: @Sendable () async -> AccessResult
     
     /// 以標題、日期與提示位移建立全天提醒事件，回傳事件識別碼
     /// - Parameters:
@@ -48,7 +48,7 @@ struct CalendarReminderClient: Sendable {
 extension CalendarReminderClient {
     
     /// 行事曆存取請求的結果
-    enum Access: Equatable, Sendable {
+    enum AccessResult: Equatable, Sendable {
         
         // MARK: - Cases
         
@@ -110,7 +110,7 @@ private extension CalendarReminderClient {
     
     /// 請求完整的行事曆存取權限
     /// - Returns: 系統判定的權限結果
-    static func requestCalendarAccess() async -> CalendarReminderClient.Access {
+    static func requestCalendarAccess() async -> CalendarReminderClient.AccessResult {
         let store = EKEventStore()
         // 受限狀態 (家長監護／MDM) 請求前就能判定，短路避免徒勞請求
         if EKEventStore.authorizationStatus(for: .event) == .restricted {

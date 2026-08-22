@@ -33,10 +33,7 @@ struct AISummaryFeatureTests {
         } withDependencies: {
             $0.appConfiguration = keyedConfiguration("k")
             $0.continuousClock = clock
-            $0[OllamaClient.self] = OllamaClient(streamSummary: {
-                _,
-                _,
-                _ in
+            $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
                 AsyncThrowingStream<String, any Error> { continuation in
                     continuation.yield("# 標題\n")
                     continuation.yield("- 項目 A\n")
@@ -83,10 +80,7 @@ struct AISummaryFeatureTests {
         } withDependencies: {
             $0.appConfiguration = keyedConfiguration("k")
             $0.continuousClock = clock
-            $0[OllamaClient.self] = OllamaClient(streamSummary: {
-                _,
-                _,
-                _ in
+            $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
                 AsyncThrowingStream<String, any Error> { continuation in
                     continuation.finish(throwing: APIError.invalidKey)
                 }
@@ -109,10 +103,7 @@ struct AISummaryFeatureTests {
         } withDependencies: {
             $0.appConfiguration = keyedConfiguration("k")
             $0.continuousClock = clock
-            $0[OllamaClient.self] = OllamaClient(streamSummary: {
-                _,
-                _,
-                _ in
+            $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
                 AsyncThrowingStream<String, any Error> { continuation in
                     continuation.yield("部分內容")
                     continuation.finish(throwing: APIError.transport(message: "boom"))
@@ -145,10 +136,7 @@ struct AISummaryFeatureTests {
                     await cancellation.markDismissed()
                 }
             }
-            $0[OllamaClient.self] = OllamaClient(streamSummary: {
-                _,
-                _,
-                _ in
+            $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
                 AsyncThrowingStream<String, any Error> { continuation in
                     continuation.yield("部分內容")
                     continuation.onTermination = { _ in
@@ -187,10 +175,7 @@ struct AISummaryFeatureTests {
         } withDependencies: {
             $0.appConfiguration = keyedConfiguration("k")
             $0.continuousClock = clock
-            $0[OllamaClient.self] = OllamaClient(streamSummary: {
-                _,
-                _,
-                _ in
+            $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
                 AsyncThrowingStream<String, any Error> { continuation in
                     let task = Task {
                         continuation.yield("第一段\n")

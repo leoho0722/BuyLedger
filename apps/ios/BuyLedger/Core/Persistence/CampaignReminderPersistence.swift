@@ -39,13 +39,11 @@ extension CampaignReminderPersistence {
     /// 寫入或更新單一連結 (依 campaignID upsert)
     /// - Parameters:
     ///   - campaignID: 開團識別值
-    ///   - eventIdentifier: 行事曆事件識別碼
-    ///   - reminderTimestamp: 提醒時間戳 (日期＋提示時間)
+    ///   - link: 行事曆事件識別碼與提醒時間戳
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     func upsert(
         campaignID: String,
-        eventIdentifier: String,
-        reminderTimestamp: Date
+        link: CampaignReminderLink
     )
     throws(PersistenceError)
     {
@@ -58,13 +56,15 @@ extension CampaignReminderPersistence {
             try modelContext.fetch(descriptor).first
         }
         if let existing {
-            existing.eventIdentifier = eventIdentifier
-            existing.reminderTimestamp = reminderTimestamp
+            existing.eventIdentifier = link.eventIdentifier
+            existing.reminderTimestamp = link.reminderTimestamp
         } else {
             modelContext.insert(
                 CampaignReminderRecord(
-                    campaignID: campaignID, eventIdentifier: eventIdentifier,
-                    reminderTimestamp: reminderTimestamp)
+                    campaignID: campaignID,
+                    eventIdentifier: link.eventIdentifier,
+                    reminderTimestamp: link.reminderTimestamp
+                )
             )
         }
         

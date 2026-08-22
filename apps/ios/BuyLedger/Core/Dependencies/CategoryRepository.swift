@@ -64,8 +64,7 @@ extension CategoryRepository {
                     container: container
                 )
             },
-            renameCategory: {
-                (oldName: String, newName: String) async throws(PersistenceError) in
+            renameCategory: { (oldName: String, newName: String) async throws(PersistenceError) in
                 try await NameLookupOperations<CategoryRecord>.rename(
                     oldName: oldName,
                     newName: newName,

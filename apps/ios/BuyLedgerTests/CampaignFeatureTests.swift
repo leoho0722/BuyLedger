@@ -19,7 +19,12 @@ struct CampaignFeatureTests {
     // MARK: - Tests
     
     @Test func taskLoadsCampaignsWithoutTransitionWhenNoCloseDate() async {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         let store = TestStore(initialState: CampaignFeature.State()) {
             CampaignFeature()
         } withDependencies: {
@@ -45,9 +50,17 @@ struct CampaignFeatureTests {
     @Test func loadingAutoTransitionsOngoingPastCloseDateToClosed() async {
         // 4/20 已過期應轉 closed，5/10 未到仍為 ongoing
         let pastDue = makeCampaign(
-            id: "past", name: "過期團", status: .ongoing, closeDate: day(month: 4, day: 20))
+            id: "past", 
+            name: "過期團", 
+            status: .ongoing, 
+            closeDate: day(month: 4, day: 20)
+        )
         let future = makeCampaign(
-            id: "future", name: "未到團", status: .ongoing, closeDate: day(month: 5, day: 10))
+            id: "future", 
+            name: "未到團", 
+            status: .ongoing, 
+            closeDate: day(month: 5, day: 10)
+        )
         
         let store = TestStore(initialState: CampaignFeature.State()) {
             CampaignFeature()
@@ -79,7 +92,11 @@ struct CampaignFeatureTests {
         // 結單日為今天；即使現在時間較晚，仍應保持進行中。
         let closeDate = day(month: 4, day: 30).addingTimeInterval(9 * 3600)
         let campaign = makeCampaign(
-            id: "today", name: "今天團", status: .ongoing, closeDate: closeDate)
+            id: "today", 
+            name: "今天團", 
+            status: .ongoing, 
+            closeDate: closeDate
+        )
         let nowBox = MutableDateBox(value: day(month: 4, day: 30).addingTimeInterval(15 * 3600))
         
         let store = TestStore(initialState: CampaignFeature.State()) {
@@ -133,7 +150,12 @@ struct CampaignFeatureTests {
         let today = calendar.startOfDay(for: TestDependencies.fixedNow)
         let closeDate = calendar.date(byAdding: .hour, value: 9, to: today)!
         let nowBox = MutableDateBox(value: calendar.date(byAdding: .hour, value: 15, to: today)!)
-        let campaign = makeCampaign(id: "tz", name: "跨時區團", status: .ongoing, closeDate: closeDate)
+        let campaign = makeCampaign(
+            id: "tz", 
+            name: "跨時區團", 
+            status: .ongoing, 
+            closeDate: closeDate
+        )
         
         let store = TestStore(initialState: CampaignFeature.State()) {
             CampaignFeature()
@@ -156,7 +178,8 @@ struct CampaignFeatureTests {
         await store.receive(\.reminderLinksLoaded)
         #expect(
             store.state.campaigns.first?.status == .ongoing,
-            "\(timeZone.identifier)：結單日等於當地今天時應維持進行中")
+            "\(timeZone.identifier)：結單日等於當地今天時應維持進行中"
+        )
         
         let nextDay = calendar.date(byAdding: .day, value: 1, to: today)!
         nowBox.value = calendar.date(byAdding: .hour, value: 1, to: nextDay)!
@@ -165,11 +188,17 @@ struct CampaignFeatureTests {
         }
         #expect(
             store.state.campaigns.first?.status == .closed,
-            "\(timeZone.identifier)：隔日 (該時區) 起應轉為已收單")
+            "\(timeZone.identifier)：隔日 (該時區) 起應轉為已收單"
+        )
     }
     
     @Test func statusChangedUpdatesCampaign() async {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         
@@ -189,7 +218,12 @@ struct CampaignFeatureTests {
     }
     
     @Test func settleTappedRecordsSettledDateWithoutChangingStatus() async {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .closed, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .closed, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         
@@ -233,7 +267,12 @@ struct CampaignFeatureTests {
     }
     
     @Test func deleteConfirmationRemovesCampaign() async {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         
@@ -315,7 +354,12 @@ struct CampaignFeatureTests {
     // MARK: - Name Uniqueness Tests
     
     @Test func savingDuplicateNameIsRejectedBeforeAnyWrite() async {
-        let existing = makeCampaign(id: "C1", name: "母親節團", status: .ongoing, closeDate: nil)
+        let existing = makeCampaign(
+            id: "C1",
+            name: "母親節團",
+            status: .ongoing,
+            closeDate: nil
+        )
         var editState = CampaignEditFeature.State(
             id: UUID(0),
             currentDate: TestDependencies.fixedNow,
@@ -356,7 +400,12 @@ struct CampaignFeatureTests {
     }
     
     @Test func editingCampaignKeepingOwnNameSavesSuccessfully() async {
-        let existing = makeCampaign(id: "C1", name: "四月團", status: .ongoing, closeDate: nil)
+        let existing = makeCampaign(
+            id: "C1",
+            name: "四月團",
+            status: .ongoing,
+            closeDate: nil
+        )
         let editState = CampaignEditFeature.State(
             original: existing,
             id: UUID(0),
@@ -396,8 +445,18 @@ struct CampaignFeatureTests {
     
     @Test func preExistingDuplicateNamesRemainSavableWithoutRename() async {
         // 既有同名開團可維持原名，新建或改名時才檢查重複
-        let campaignA = makeCampaign(id: "A", name: "重複團", status: .ongoing, closeDate: nil)
-        let campaignB = makeCampaign(id: "B", name: "重複團", status: .ongoing, closeDate: nil)
+        let campaignA = makeCampaign(
+            id: "A",
+            name: "重複團",
+            status: .ongoing,
+            closeDate: nil
+        )
+        let campaignB = makeCampaign(
+            id: "B",
+            name: "重複團",
+            status: .ongoing,
+            closeDate: nil
+        )
         let editState = CampaignEditFeature.State(
             original: campaignA,
             id: UUID(0),
@@ -545,18 +604,12 @@ struct CampaignFeatureTests {
             $0.uuid = .constant(newID)
             $0[CampaignRepository.self].saveCampaign = { _ in }
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = {
-                _,
-                date,
-                offset in
+            $0[CalendarReminderClient.self].addReminder = { _, date, offset in
                 eventDateBox.value = date
                 offsetBox.value = offset
                 return "EVT-new"
             }
-            $0[CampaignReminderRepository.self].saveLink = {
-                _,
-                _,
-                _ in }
+            $0[CampaignReminderRepository.self].saveLink = { _, _ in }
         }
         // 儲存同時啟動子表單 dismiss、`campaignSaved` 與提醒建立／連結寫入效果。
         // 完成順序不固定，因此關閉窮舉。
@@ -565,15 +618,23 @@ struct CampaignFeatureTests {
         await store.receive(\.reminderStored)
         await store.skipReceivedActions(strict: false)
         #expect(
-            store.state.reminderLinks[newID.uuidString]
-                == CampaignReminderLink(eventIdentifier: "EVT-new", reminderTimestamp: chosen))
+            store.state.reminderLinks[newID.uuidString] == CampaignReminderLink(
+                eventIdentifier: "EVT-new", 
+                reminderTimestamp: chosen
+            )
+        )
         // 全天事件日期＝時間戳當天起始 (4/20 00:00)、提示位移＝18:00
         #expect(eventDateBox.value == day(month: 4, day: 20))
         #expect(offsetBox.value == TimeInterval(18 * 60 * 60))
     }
     
     @Test func saveRemovesReminderWhenIntentClearedOnExistingCampaign() async {
-        let campaign = makeCampaign(id: "C1", name: "四月團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1",
+            name: "四月團",
+            status: .ongoing,
+            closeDate: nil
+        )
         var editState = CampaignEditFeature.State(
             original: campaign,
             id: UUID(0),
@@ -610,7 +671,12 @@ struct CampaignFeatureTests {
     }
     
     @Test func saveRebuildsReminderWhenNameChangedOnExistingCampaign() async {
-        let campaign = makeCampaign(id: "C1", name: "舊團名", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "舊團名", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         let timestamp = day(month: 4, day: 20).addingTimeInterval(9 * 3600)
         var editState = CampaignEditFeature.State(
             original: campaign,
@@ -623,7 +689,10 @@ struct CampaignFeatureTests {
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         initial.reminderLinks = [
-            "C1": CampaignReminderLink(eventIdentifier: "EVT-old", reminderTimestamp: timestamp)
+            "C1": CampaignReminderLink(
+                eventIdentifier: "EVT-old", 
+                reminderTimestamp: timestamp
+            )
         ]
         initial.editCampaign = editState
         
@@ -637,14 +706,8 @@ struct CampaignFeatureTests {
             $0[OrderRepository.self].renameOrderCampaign = { _, _ in }
             $0[CalendarReminderClient.self].removeReminder = { removedOldIdentifier.value = $0 }
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = {
-                _,
-                _,
-                _ in "EVT-new" }
-            $0[CampaignReminderRepository.self].saveLink = {
-                _,
-                _,
-                _ in }
+            $0[CalendarReminderClient.self].addReminder = { _, _, _ in "EVT-new" }
+            $0[CampaignReminderRepository.self].saveLink = { _, _ in }
         }
         // 改名會重建提醒；完成順序不固定，只驗證結果。
         store.exhaustivity = .off
@@ -652,8 +715,11 @@ struct CampaignFeatureTests {
         await store.receive(\.reminderStored)
         await store.skipReceivedActions(strict: false)
         #expect(
-            store.state.reminderLinks["C1"]
-                == CampaignReminderLink(eventIdentifier: "EVT-new", reminderTimestamp: timestamp))
+            store.state.reminderLinks["C1"] == CampaignReminderLink(
+                eventIdentifier: "EVT-new", 
+                reminderTimestamp: timestamp
+            )
+        )
         #expect(removedOldIdentifier.value == "EVT-old")
     }
     
@@ -674,7 +740,10 @@ struct CampaignFeatureTests {
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         initial.reminderLinks = [
-            "C1": CampaignReminderLink(eventIdentifier: "EVT-old", reminderTimestamp: oldTimestamp)
+            "C1": CampaignReminderLink(
+                eventIdentifier: "EVT-old", 
+                reminderTimestamp: oldTimestamp
+            )
         ]
         initial.editCampaign = editState
         
@@ -689,18 +758,12 @@ struct CampaignFeatureTests {
             $0[CampaignRepository.self].saveCampaign = { _ in }
             $0[CalendarReminderClient.self].removeReminder = { removedOldIdentifier.value = $0 }
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = {
-                _,
-                date,
-                offset in
+            $0[CalendarReminderClient.self].addReminder = { _, date, offset in
                 eventDateBox.value = date
                 offsetBox.value = offset
                 return "EVT-new"
             }
-            $0[CampaignReminderRepository.self].saveLink = {
-                _,
-                _,
-                _ in }
+            $0[CampaignReminderRepository.self].saveLink = { _, _ in }
         }
         // 時間戳變更會重建提醒；完成順序不固定，只驗證結果。
         store.exhaustivity = .off
@@ -708,8 +771,10 @@ struct CampaignFeatureTests {
         await store.receive(\.reminderStored)
         await store.skipReceivedActions(strict: false)
         #expect(
-            store.state.reminderLinks["C1"]
-                == CampaignReminderLink(eventIdentifier: "EVT-new", reminderTimestamp: newTimestamp)
+            store.state.reminderLinks["C1"] == CampaignReminderLink(
+                eventIdentifier: "EVT-new",
+                reminderTimestamp: newTimestamp
+            )
         )
         #expect(removedOldIdentifier.value == "EVT-old")
         #expect(eventDateBox.value == day(month: 4, day: 26))
@@ -734,8 +799,7 @@ struct CampaignFeatureTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .incrementing
-            $0[CampaignRepository.self].saveCampaign = {
-                (_: Campaign) async throws(PersistenceError) in
+            $0[CampaignRepository.self].saveCampaign = { (_: Campaign) async throws(PersistenceError) in
                 throw PersistenceError.saveFailed(message: "boom")
             }
         }
@@ -751,7 +815,12 @@ struct CampaignFeatureTests {
     }
     
     @Test func statusChangeFailureKeepsPreviousStatus() async {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         
@@ -760,8 +829,7 @@ struct CampaignFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[CampaignRepository.self].saveCampaign = {
-                (_: Campaign) async throws(PersistenceError) in
+            $0[CampaignRepository.self].saveCampaign = { (_: Campaign) async throws(PersistenceError) in
                 throw PersistenceError.saveFailed(message: "boom")
             }
         }
@@ -775,7 +843,12 @@ struct CampaignFeatureTests {
     }
     
     @Test func settleFailureKeepsCampaignUnsettled() async {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .closed, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .closed, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         
@@ -784,8 +857,7 @@ struct CampaignFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[CampaignRepository.self].saveCampaign = {
-                (_: Campaign) async throws(PersistenceError) in
+            $0[CampaignRepository.self].saveCampaign = { (_: Campaign) async throws(PersistenceError) in
                 throw PersistenceError.saveFailed(message: "boom")
             }
         }
@@ -806,7 +878,12 @@ struct CampaignFeatureTests {
     }
     
     @Test func deleteFailureKeepsCampaignVisible() async {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         
@@ -815,8 +892,7 @@ struct CampaignFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[CampaignRepository.self].removeCampaign = {
-                (_: String, _: String) async throws(PersistenceError) -> String? in
+            $0[CampaignRepository.self].removeCampaign = { (_: String, _: String) async throws(PersistenceError) -> String? in
                 throw PersistenceError.saveFailed(message: "boom")
             }
         }
@@ -834,18 +910,26 @@ struct CampaignFeatureTests {
         
         #expect(
             store.state.campaigns.count == 1,
-            "刪除失敗應保持開團可見 (destructive-action-safeguard 的 Failed deletion leaves the item visible)")
+            "刪除失敗應保持開團可見 (destructive-action-safeguard 的 Failed deletion leaves the item visible)"
+        )
     }
     
     // MARK: - Delete Cascade Tests
     
     @Test func deleteClearsReminderLinkAndRemovesCalendarEvent() async {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         initial.reminderLinks = [
             "C1": CampaignReminderLink(
-                eventIdentifier: "EVT-1", reminderTimestamp: TestDependencies.fixedNow)
+                eventIdentifier: "EVT-1", 
+                reminderTimestamp: TestDependencies.fixedNow
+            )
         ]
         
         let removedIdentifier = CampaignTestCaptureBox()
@@ -877,7 +961,12 @@ struct CampaignFeatureTests {
     
     @Test func calendarRemovalFailureDoesNotResurrectTheDeletedCampaign() async {
         // 行事曆移除失敗不回滾開團，但仍須顯示錯誤。
-        let campaign = makeCampaign(id: "C1", name: "團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         
@@ -887,8 +976,7 @@ struct CampaignFeatureTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
             $0[CampaignRepository.self].removeCampaign = { _, _ in "EVT-1" }
-            $0[CalendarReminderClient.self].removeReminder = {
-                (_: String) async throws(CalendarReminderError) in
+            $0[CalendarReminderClient.self].removeReminder = { (_: String) async throws(CalendarReminderError) in
                 throw CalendarReminderError.system(message: "boom")
             }
         }
@@ -913,7 +1001,12 @@ struct CampaignFeatureTests {
     // MARK: - Notice Alert Slot Tests
     
     @Test func noticeAlertGoesToListSlotWhenNoCampaignIsSelected() async {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         initial.selectedCampaignID = nil
@@ -923,8 +1016,7 @@ struct CampaignFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[CampaignRepository.self].saveCampaign = {
-                (_: Campaign) async throws(PersistenceError) in
+            $0[CampaignRepository.self].saveCampaign = { (_: Campaign) async throws(PersistenceError) in
                 throw PersistenceError.saveFailed(message: "boom")
             }
         }
@@ -936,7 +1028,12 @@ struct CampaignFeatureTests {
     }
     
     @Test func noticeAlertGoesToDetailSlotWhenACampaignIsSelected() async {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         initial.selectedCampaignID = "C1"
@@ -946,8 +1043,7 @@ struct CampaignFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[CampaignRepository.self].saveCampaign = {
-                (_: Campaign) async throws(PersistenceError) in
+            $0[CampaignRepository.self].saveCampaign = { (_: Campaign) async throws(PersistenceError) in
                 throw PersistenceError.saveFailed(message: "boom")
             }
         }
@@ -963,7 +1059,12 @@ struct CampaignFeatureTests {
     /// 儲存失敗後重新載入，確認畫面與資料庫一致
     /// - Throws: 測試資料建立或功能驗證失敗時拋出錯誤
     @Test func presentedCampaignsMatchReloadAfterFailedSave() async throws(any Error) {
-        let existing = makeCampaign(id: "C1", name: "既有團", status: .ongoing, closeDate: nil)
+        let existing = makeCampaign(
+            id: "C1", 
+            name: "既有團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         var editState = CampaignEditFeature.State(
             id: UUID(0),
             currentDate: TestDependencies.fixedNow,
@@ -1007,7 +1108,12 @@ struct CampaignFeatureTests {
     }
     
     @Test func presentedCampaignsMatchReloadAfterFailedStatusChange() async throws(any Error) {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         
@@ -1041,7 +1147,12 @@ struct CampaignFeatureTests {
     }
     
     @Test func presentedCampaignsMatchReloadAfterFailedSettle() async throws(any Error) {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .closed, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .closed, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         
@@ -1081,7 +1192,12 @@ struct CampaignFeatureTests {
     }
     
     @Test func presentedCampaignsMatchReloadAfterFailedListDelete() async throws(any Error) {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         
@@ -1121,7 +1237,12 @@ struct CampaignFeatureTests {
     }
     
     @Test func presentedCampaignsMatchReloadAfterFailedDetailDelete() async throws(any Error) {
-        let campaign = makeCampaign(id: "C1", name: "團", status: .ongoing, closeDate: nil)
+        let campaign = makeCampaign(
+            id: "C1", 
+            name: "團", 
+            status: .ongoing, 
+            closeDate: nil
+        )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         initial.selectedCampaignID = "C1"
@@ -1163,7 +1284,10 @@ struct CampaignFeatureTests {
     
     /// 收款狀態切換只送出 delegate，不直接修改 `State.orders`
     @Test func receiptStatusToggleEmitsDelegateWithoutMutatingState() async {
-        let order = makeCampaignOrder(id: "O1", campaign: "四月團")
+        let order = makeCampaignOrder(
+            id: "O1", 
+            campaign: "四月團"
+        )
         var state = CampaignFeature.State()
         state.orders = [order]
         
@@ -1181,14 +1305,26 @@ struct CampaignFeatureTests {
     /// 開團摘要衍生自 `State.orders` 投影
     @Test func ordersProjectionDrivesCampaignSummary() {
         var state = CampaignFeature.State()
-        state.orders = [makeCampaignOrder(id: "O1", campaign: "四月團", chargedAmount: 500)]
+        state.orders = [
+            makeCampaignOrder(
+                id: "O1", 
+                campaign: "四月團", 
+                chargedAmount: 500
+            )
+        ]
         
         let summaryBeforeSync = CampaignSummary(campaignName: "四月團", orders: state.orders)
         #expect(summaryBeforeSync.orderCount == 1)
         #expect(summaryBeforeSync.receivables == 500)
         
         // 模擬投影更新：新訂單併入同一份 State.orders，而不是另建區域陣列
-        state.orders.append(makeCampaignOrder(id: "O2", campaign: "四月團", chargedAmount: 300))
+        state.orders.append(
+            makeCampaignOrder(
+                id: "O2", 
+                campaign: "四月團", 
+                chargedAmount: 300
+            )
+        )
         
         let summaryAfterSync = CampaignSummary(campaignName: "四月團", orders: state.orders)
         #expect(summaryAfterSync.orderCount == 2)
@@ -1290,7 +1426,10 @@ private extension CampaignFeatureTests {
             .appendingPathComponent("BuyLedgerCampaignReloadTest-\(UUID().uuidString).store")
         let schema = Schema(versionedSchema: BuyLedgerSchemaV16.self)
         let writableConfiguration = ModelConfiguration(
-            schema: schema, url: storeURL, cloudKitDatabase: .none)
+            schema: schema, 
+            url: storeURL, 
+            cloudKitDatabase: .none
+        )
         let writableContainer = try ModelContainer(
             for: schema,
             migrationPlan: BuyLedgerMigrationPlan.self,
@@ -1302,7 +1441,11 @@ private extension CampaignFeatureTests {
         }
         
         let readOnlyConfiguration = ModelConfiguration(
-            schema: schema, url: storeURL, allowsSave: false, cloudKitDatabase: .none)
+            schema: schema, 
+            url: storeURL, 
+            allowsSave: false, 
+            cloudKitDatabase: .none
+        )
         let readOnlyContainer = try ModelContainer(
             for: schema,
             migrationPlan: BuyLedgerMigrationPlan.self,
@@ -1312,10 +1455,9 @@ private extension CampaignFeatureTests {
     }
     
     /// 建立寫入失敗提示
+    /// - Parameter message: 要顯示的錯誤訊息
     /// - Returns: 錯誤提示狀態
-    static func failureAlert(_ message: LocalizedStringKey) -> AlertState<
-        CampaignFeature.Action.NoticeAlert
-    > {
+    static func failureAlert(_ message: LocalizedStringKey) -> AlertState<CampaignFeature.Action.NoticeAlert> {
         AlertState {
             TextState("操作失敗")
         } actions: {
@@ -1328,10 +1470,11 @@ private extension CampaignFeatureTests {
     }
     
     /// 建立刪除確認對話框
+    /// - Parameters:
+    ///   - id: 要刪除的開團識別碼
+    ///   - name: 要刪除的開團名稱
     /// - Returns: 刪除提示狀態
-    static func deletionAlert(id: Campaign.ID, name: String) -> AlertState<
-        CampaignFeature.Action.Alert
-    > {
+    static func deletionAlert(id: Campaign.ID, name: String) -> AlertState<CampaignFeature.Action.Alert> {
         AlertState {
             TextState("刪除開團")
         } actions: {
@@ -1347,10 +1490,11 @@ private extension CampaignFeatureTests {
     }
     
     /// 建立結團確認對話框
+    /// - Parameters:
+    ///   - id: 要結團的開團識別碼
+    ///   - name: 要結團的開團名稱
     /// - Returns: 結團提示狀態
-    static func settleAlert(id: Campaign.ID, name: String) -> AlertState<
-        CampaignFeature.Action.SettleAlert
-    > {
+    static func settleAlert(id: Campaign.ID, name: String) -> AlertState<CampaignFeature.Action.SettleAlert> {
         AlertState {
             TextState("結團結算")
         } actions: {

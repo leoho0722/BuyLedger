@@ -409,10 +409,7 @@ private extension DesignSystemSourceScanTests {
         let range = NSRange(text.startIndex..<text.endIndex, in: text)
         var violates = false
         
-        pattern.enumerateMatches(in: text, range: range) {
-            result,
-            _,
-            stop in
+        pattern.enumerateMatches(in: text, range: range) { result, _, stop in
             guard let result, let matchRange = Range(result.range, in: text) else { return }
             
             if pattern === namedHueTokenPattern, result.range(at: 1).location != NSNotFound {

@@ -318,8 +318,7 @@ struct QuoteFeatureTests {
         let store = TestStore(initialState: QuoteFeature.State()) {
             QuoteFeature()
         } withDependencies: {
-            $0[ExchangeRateClient.self].fetchLatest = {
-                (base: CurrencyCode) async throws(APIError) -> FxRateSnapshot in
+            $0[ExchangeRateClient.self].fetchLatest = { (base: CurrencyCode) async throws(APIError) -> FxRateSnapshot in
                 try await client.fetchLatest(base)
             }
             $0[CurrencyMetadataRepository.self].fetchCodes = { [] }

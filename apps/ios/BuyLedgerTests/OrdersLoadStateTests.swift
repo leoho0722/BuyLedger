@@ -68,24 +68,19 @@ struct OrdersLoadStateTests {
             OrdersFeature()
         } withDependencies: {
             // 只測重試，讓主檔載入明確失敗。
-            $0[OrderSourceRepository.self].fetchOrderSources = {
-                () async throws(PersistenceError) -> [String] in
+            $0[OrderSourceRepository.self].fetchOrderSources = { () async throws(PersistenceError) -> [String] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
-            $0[CampaignRepository.self].fetchCampaigns = {
-                () async throws(PersistenceError) -> [Campaign] in
+            $0[CampaignRepository.self].fetchCampaigns = { () async throws(PersistenceError) -> [Campaign] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
-            $0[CategoryRepository.self].fetchCategories = {
-                () async throws(PersistenceError) -> [String] in
+            $0[CategoryRepository.self].fetchCategories = { () async throws(PersistenceError) -> [String] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
-            $0[PaymentMethodRepository.self].fetchPaymentMethodInfos = {
-                () async throws(PersistenceError) -> [PaymentMethodInfo] in
+            $0[PaymentMethodRepository.self].fetchPaymentMethodInfos = { () async throws(PersistenceError) -> [PaymentMethodInfo] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
-            $0[ReconciliationStatusRepository.self].fetchReconciliationStatuses = {
-                () async throws(PersistenceError) -> [String] in
+            $0[ReconciliationStatusRepository.self].fetchReconciliationStatuses = { () async throws(PersistenceError) -> [String] in
                 throw PersistenceError.fetchFailed(message: "suppressed")
             }
             // 讓 `.task` 真正呼叫 fetchOrders 並回傳空陣列。

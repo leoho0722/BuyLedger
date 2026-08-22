@@ -1170,14 +1170,15 @@ private extension CampaignFeature {
         // 權限已取得；後續失敗不應被當成權限錯誤。
         do {
             let identifier = try await client.addReminder(title, date, alarmOffset)
-            try await repository.saveLink(campaignID, identifier, reminderTimestamp)
+            let link = CampaignReminderLink(
+                eventIdentifier: identifier,
+                reminderTimestamp: reminderTimestamp
+            )
+            try await repository.saveLink(campaignID, link)
             await send(
                 .reminderStored(
                     campaignID,
-                    CampaignReminderLink(
-                        eventIdentifier: identifier,
-                        reminderTimestamp: reminderTimestamp
-                    )
+                    link
                 )
             )
             return identifier

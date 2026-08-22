@@ -367,7 +367,7 @@ private extension BLUITestStubs {
     /// - Returns: 回傳固定結果的行事曆 client
     static func makeCalendarReminderClient(access: BLUITestCalendarAccess) -> CalendarReminderClient {
         // UI 測試只需模擬 granted 與 denied
-        let resolvedAccess: CalendarReminderClient.Access = access == .granted ? .granted : .denied
+        let resolvedAccess: CalendarReminderClient.AccessResult = access == .granted ? .granted : .denied
         
         return CalendarReminderClient(
             requestAccess: { resolvedAccess },

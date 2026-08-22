@@ -34,13 +34,11 @@ struct CampaignReminderRepository: Sendable {
     /// 寫入或更新單一連結 (依 campaignID upsert)
     /// - Parameters:
     ///   - campaignID: 開團編號
-    ///   - eventIdentifier: 對應的系統行事曆事件識別碼
-    ///   - reminderTimestamp: 提醒時間戳 (使用者選定的日期＋提示時間)
+    ///   - link: 對應的行事曆事件識別碼與提醒時間戳
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     var saveLink: @Sendable (
         _ campaignID: String,
-        _ eventIdentifier: String,
-        _ reminderTimestamp: Date
+        _ link: CampaignReminderLink
     ) async throws(PersistenceError) -> Void
     
     /// 刪除指定 campaignID 的連結；不存在視為 no-op
@@ -62,12 +60,11 @@ extension CampaignReminderRepository {
                 let persistence = await Self.makePersistence(container: container)
                 return try await persistence.fetchAll()
             },
-            saveLink: { (campaignID: String, eventIdentifier: String, reminderTimestamp: Date) async throws(PersistenceError) in
+            saveLink: { (campaignID: String, link: CampaignReminderLink) async throws(PersistenceError) in
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.upsert(
                     campaignID: campaignID,
-                    eventIdentifier: eventIdentifier,
-                    reminderTimestamp: reminderTimestamp
+                    link: link
                 )
             },
             removeLink: { (campaignID: String) async throws(PersistenceError) in
@@ -110,7 +107,7 @@ extension CampaignReminderRepository: DependencyKey {
     /// 測試預設回傳空連結；TestStore 可透過 `withDependencies` 覆寫
     nonisolated static let testValue = CampaignReminderRepository(
         fetchLinks: { [:] },
-        saveLink: { _, _, _ in },
+        saveLink: { _, _ in },
         removeLink: { _ in }
     )
 }
