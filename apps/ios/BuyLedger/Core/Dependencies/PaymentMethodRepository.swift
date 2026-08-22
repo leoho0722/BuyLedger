@@ -19,7 +19,7 @@ struct PaymentMethodRepository: Sendable {
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
     var fetchPaymentMethods: @Sendable () async throws(PersistenceError) -> [String]
     
-    /// 讀取目前所有付款方式 (含 `isCardless` 旗標，已依名稱排序)
+    /// 讀取目前所有付款方式 (含分類旗標，已依名稱排序)
     /// - Returns: 已排序的付款方式資料
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
     var fetchPaymentMethodInfos: @Sendable () async throws(PersistenceError) -> [PaymentMethodInfo]
@@ -27,15 +27,11 @@ struct PaymentMethodRepository: Sendable {
     /// 加入新付款方式；trim 後若空字串視為 no-op
     /// - Parameters:
     ///   - name: 付款方式名稱 (未 trim)
-    ///   - isCardless: 是否屬於無卡類
-    ///   - isBankTransfer: 是否為銀行轉帳
-    ///   - isCashOnDelivery: 是否為貨到付款
+    ///   - flags: 付款方式分類旗標
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     var addPaymentMethod: @Sendable (
         _ name: String,
-        _ isCardless: Bool,
-        _ isBankTransfer: Bool,
-        _ isCashOnDelivery: Bool
+        _ flags: PaymentMethodFlags
     ) async throws(PersistenceError) -> Void
     
     /// 刪除指定名稱的付款方式；不存在視為 no-op
@@ -57,17 +53,13 @@ struct PaymentMethodRepository: Sendable {
     /// - Parameters:
     ///   - oldName: 原本的付款方式名稱
     ///   - newName: 新的付款方式名稱
-    ///   - isCardless: 是否屬於無卡類
-    ///   - isBankTransfer: 是否屬於銀行匯款類
-    ///   - isCashOnDelivery: 是否屬於貨到付款類
+    ///   - flags: 付款方式分類旗標
     ///   - orders: 已完成名稱替換與旗標正規化的受影響訂單
     /// - Throws: 主檔或訂單寫入失敗時拋出 ``PaymentMethodPersistenceError``
     var applyPaymentMethodEdit: @Sendable (
         _ oldName: String,
         _ newName: String,
-        _ isCardless: Bool,
-        _ isBankTransfer: Bool,
-        _ isCashOnDelivery: Bool,
+        _ flags: PaymentMethodFlags,
         _ orders: [LedgerOrder]
     ) async throws(PaymentMethodPersistenceError) -> Void
     
@@ -99,7 +91,7 @@ extension PaymentMethodRepository {
                 let persistence = await Self.makePersistence(container: container)
                 return try await persistence.fetchAllInfos()
             },
-            addPaymentMethod: { (rawName: String, isCardless: Bool, isBankTransfer: Bool, isCashOnDelivery: Bool) async throws(PersistenceError) in
+            addPaymentMethod: { (rawName: String, flags: PaymentMethodFlags) async throws(PersistenceError) in
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else {
                     return
@@ -107,9 +99,7 @@ extension PaymentMethodRepository {
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.upsert(
                     name: trimmed,
-                    isCardless: isCardless,
-                    isBankTransfer: isBankTransfer,
-                    isCashOnDelivery: isCashOnDelivery
+                    flags: flags
                 )
             },
             removePaymentMethod: { (name: String) async throws(PersistenceError) in
@@ -124,7 +114,7 @@ extension PaymentMethodRepository {
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.rename(from: oldName, to: trimmedNew)
             },
-            applyPaymentMethodEdit: { (oldName: String, newName: String, isCardless: Bool, isBankTransfer: Bool, isCashOnDelivery: Bool, orders: [LedgerOrder]) async throws(PaymentMethodPersistenceError) in
+            applyPaymentMethodEdit: { (oldName: String, newName: String, flags: PaymentMethodFlags, orders: [LedgerOrder]) async throws(PaymentMethodPersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty else {
                     return
@@ -133,9 +123,7 @@ extension PaymentMethodRepository {
                 try await persistence.applyEdit(
                     from: oldName,
                     to: trimmedNew,
-                    isCardless: isCardless,
-                    isBankTransfer: isBankTransfer,
-                    isCashOnDelivery: isCashOnDelivery,
+                    flags: flags,
                     orders: orders
                 )
             },
@@ -184,10 +172,10 @@ extension PaymentMethodRepository: DependencyKey {
     nonisolated static let testValue = PaymentMethodRepository(
         fetchPaymentMethods: { [] },
         fetchPaymentMethodInfos: { [] },
-        addPaymentMethod: { _, _, _, _ in },
+        addPaymentMethod: { _, _ in },
         removePaymentMethod: { _ in },
         renamePaymentMethod: { _, _ in },
-        applyPaymentMethodEdit: { _, _, _, _, _, _ in },
+        applyPaymentMethodEdit: { _, _, _, _ in },
         setPaymentMethodIsCardless: { _, _ in }
     )
 }

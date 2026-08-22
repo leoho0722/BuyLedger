@@ -321,17 +321,11 @@ struct RootFeatureTests {
         let corrected =
             order
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(
-                isCardless: false,
-                isBankTransfer: false,
-                isCashOnDelivery: false
-            )
+            .applyingPaymentMethodFlags(flags: .none)
         let plan = LookupManagementFeature.PaymentMethodEditPlan(
             originalName: "匯款",
             newName: "銀行匯款",
-            isCardless: false,
-            isBankTransfer: false,
-            isCashOnDelivery: false,
+            flags: .none,
             flagsChanged: true,
             affectedOrders: [corrected]
         )
@@ -398,14 +392,11 @@ struct RootFeatureTests {
         let corrected =
             original
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(
-                isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
+            .applyingPaymentMethodFlags(flags: .none)
         let plan = LookupManagementFeature.PaymentMethodEditPlan(
             originalName: "匯款",
             newName: "銀行匯款",
-            isCardless: false,
-            isBankTransfer: false,
-            isCashOnDelivery: false,
+            flags: .none,
             flagsChanged: true,
             affectedOrders: [corrected]
         )
@@ -463,14 +454,11 @@ struct RootFeatureTests {
         let corrected =
             original
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(
-                isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
+            .applyingPaymentMethodFlags(flags: .none)
         let plan = LookupManagementFeature.PaymentMethodEditPlan(
             originalName: "匯款",
             newName: "銀行匯款",
-            isCardless: false,
-            isBankTransfer: false,
-            isCashOnDelivery: false,
+            flags: .none,
             flagsChanged: true,
             affectedOrders: [corrected]
         )
@@ -484,7 +472,7 @@ struct RootFeatureTests {
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { (_: String, _: String, _: Bool, _: Bool, _: Bool, _: [LedgerOrder]) async throws(PaymentMethodPersistenceError) in
+            $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { (_: String, _: String, _: PaymentMethodFlags, _: [LedgerOrder]) async throws(PaymentMethodPersistenceError) in
                 throw .storage(.saveFailed(message: "boom"))
             }
         }

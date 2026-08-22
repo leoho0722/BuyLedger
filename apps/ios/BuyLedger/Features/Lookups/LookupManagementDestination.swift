@@ -25,7 +25,7 @@ extension LookupManagementFeature {
         /// 新增純名稱主檔項目 (訂單來源／商品類別／對帳狀態)
         case addNameOnly(AddNameOnlyFeature)
         
-        /// 新增付款方式 (需同時決定三個旗標，故走獨立表單)
+        /// 新增付款方式 (需同時決定分類旗標，故走獨立表單)
         case addPaymentMethod(AddPaymentMethodFeature)
     }
 }
@@ -96,27 +96,21 @@ extension LookupManagementFeature.Destination {
 
 extension LookupManagementFeature.Destination {
     
-    /// 付款方式編輯狀態，保存進入時的三個旗標
+    /// 付款方式編輯狀態，保存進入時的分類旗標
     @Reducer
     struct EditPaymentMethodFeature {
         
         // MARK: - State
         
-        /// 付款方式編輯狀態，保存進入時的三個旗標
+        /// 付款方式編輯狀態，保存進入時的分類旗標
         @ObservableState
         struct State: Equatable {
             
             /// 原始付款方式名稱
             let originalName: String
             
-            /// 進入編輯當下的「無卡」旗標快照
-            let isCardless: Bool
-            
-            /// 進入編輯當下的「銀行匯款」旗標快照
-            let isBankTransfer: Bool
-            
-            /// 進入編輯當下的「貨到付款」旗標快照
-            let isCashOnDelivery: Bool
+            /// 進入編輯當下的付款方式分類旗標快照
+            let flags: PaymentMethodFlags
         }
         
         // MARK: - Action
@@ -127,9 +121,7 @@ extension LookupManagementFeature.Destination {
             /// 使用者確認編輯後送出表單結果
             case saveButtonTapped(
                 name: String,
-                isCardless: Bool,
-                isBankTransfer: Bool,
-                isCashOnDelivery: Bool
+                flags: PaymentMethodFlags
             )
         }
         
@@ -200,9 +192,7 @@ extension LookupManagementFeature.Destination {
             /// 使用者確認新增後送出名稱
             case saveButtonTapped(
                 name: String,
-                isCardless: Bool,
-                isBankTransfer: Bool,
-                isCashOnDelivery: Bool
+                flags: PaymentMethodFlags
             )
         }
         

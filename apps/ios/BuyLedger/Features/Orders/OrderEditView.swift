@@ -356,15 +356,8 @@ private extension OrderEditView {
                 onSelect: { method in
                     store.send(.paymentMethodSelected(method))
                 },
-                onAddPaymentMethod: {
-                    name,
-                    isCardless,
-                    isBankTransfer,
-                    isCashOnDelivery in
-                    store.send(
-                        .addPaymentMethodTapped(
-                            name: name, isCardless: isCardless, isBankTransfer: isBankTransfer,
-                            isCashOnDelivery: isCashOnDelivery))
+                onAddPaymentMethod: { name, flags in
+                    store.send(.addPaymentMethodTapped(name: name, flags: flags))
                 },
                 isEmbedded: true
             )

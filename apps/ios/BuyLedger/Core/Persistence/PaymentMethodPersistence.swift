@@ -29,7 +29,7 @@ extension PaymentMethodPersistence {
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
     
-    /// 讀出全部付款方式 (含 `isCardless` 旗標)，依 locale 升冪排序
+    /// 讀出全部付款方式 (含分類旗標)，依 locale 升冪排序
     /// - Returns: 付款方式資訊陣列
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
     func fetchAllInfos() throws(PersistenceError) -> [PaymentMethodInfo] {
@@ -41,9 +41,11 @@ extension PaymentMethodPersistence {
             .map {
                 PaymentMethodInfo(
                     name: $0.name,
-                    isCardless: $0.isCardless,
-                    isBankTransfer: $0.isBankTransfer,
-                    isCashOnDelivery: $0.isCashOnDelivery
+                    flags: PaymentMethodFlags(
+                        isCardless: $0.isCardless,
+                        isBankTransfer: $0.isBankTransfer,
+                        isCashOnDelivery: $0.isCashOnDelivery
+                    )
                 )
             }
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
@@ -52,15 +54,11 @@ extension PaymentMethodPersistence {
     /// 寫入或更新付款方式及其旗標
     /// - Parameters:
     ///   - name: 付款方式名稱 (呼叫前由 caller 完成 trim)
-    ///   - isCardless: 是否屬於無卡類付款方式
-    ///   - isBankTransfer: 是否屬於銀行匯款類付款方式
-    ///   - isCashOnDelivery: 是否屬於貨到付款類付款方式
+    ///   - flags: 付款方式分類旗標
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     func upsert(
         name: String,
-        isCardless: Bool,
-        isBankTransfer: Bool,
-        isCashOnDelivery: Bool
+        flags: PaymentMethodFlags
     ) throws(PersistenceError) {
         let descriptor = FetchDescriptor<PaymentMethodRecord>(
             predicate: #Predicate { $0.name == name }
@@ -70,16 +68,16 @@ extension PaymentMethodPersistence {
             try modelContext.fetch(descriptor).first
         }
         if let existing {
-            existing.isCardless = isCardless
-            existing.isBankTransfer = isBankTransfer
-            existing.isCashOnDelivery = isCashOnDelivery
+            existing.isCardless = flags.isCardless
+            existing.isBankTransfer = flags.isBankTransfer
+            existing.isCashOnDelivery = flags.isCashOnDelivery
         } else {
             modelContext.insert(
                 PaymentMethodRecord(
                     name: name,
-                    isCardless: isCardless,
-                    isBankTransfer: isBankTransfer,
-                    isCashOnDelivery: isCashOnDelivery
+                    isCardless: flags.isCardless,
+                    isBankTransfer: flags.isBankTransfer,
+                    isCashOnDelivery: flags.isCashOnDelivery
                 )
             )
         }
@@ -130,9 +128,11 @@ extension PaymentMethodPersistence {
         let oldRecords = try PersistenceError.mapFetch {
             try modelContext.fetch(oldDescriptor)
         }
-        let preservedIsCardless = oldRecords.contains { $0.isCardless }
-        let preservedIsBankTransfer = oldRecords.contains { $0.isBankTransfer }
-        let preservedIsCashOnDelivery = oldRecords.contains { $0.isCashOnDelivery }
+        let preservedFlags = PaymentMethodFlags(
+            isCardless: oldRecords.contains { $0.isCardless },
+            isBankTransfer: oldRecords.contains { $0.isBankTransfer },
+            isCashOnDelivery: oldRecords.contains { $0.isCashOnDelivery }
+        )
         for record in oldRecords {
             modelContext.delete(record)
         }
@@ -145,21 +145,24 @@ extension PaymentMethodPersistence {
         }
         if let existing {
             // 合併時保留任一邊已有的付款旗標。
-            if preservedIsCardless {
+            if preservedFlags.isCardless {
                 existing.isCardless = true
             }
-            if preservedIsBankTransfer {
+            if preservedFlags.isBankTransfer {
                 existing.isBankTransfer = true
             }
-            if preservedIsCashOnDelivery {
+            if preservedFlags.isCashOnDelivery {
                 existing.isCashOnDelivery = true
             }
         } else {
             modelContext.insert(
                 PaymentMethodRecord(
-                    name: newName, isCardless: preservedIsCardless,
-                    isBankTransfer: preservedIsBankTransfer,
-                    isCashOnDelivery: preservedIsCashOnDelivery))
+                    name: newName,
+                    isCardless: preservedFlags.isCardless,
+                    isBankTransfer: preservedFlags.isBankTransfer,
+                    isCashOnDelivery: preservedFlags.isCashOnDelivery
+                )
+            )
         }
         
         do {
@@ -176,17 +179,13 @@ extension PaymentMethodPersistence {
     /// - Parameters:
     ///   - oldName: 原本的付款方式名稱
     ///   - newName: 新的付款方式名稱
-    ///   - isCardless: 是否屬於無卡類
-    ///   - isBankTransfer: 是否屬於銀行匯款類
-    ///   - isCashOnDelivery: 是否屬於貨到付款類
+    ///   - flags: 付款方式分類旗標
     ///   - orders: 已完成正規化的受影響訂單
     /// - Throws: 主檔或訂單寫入失敗時拋出 ``PaymentMethodPersistenceError``
     func applyEdit(
         from oldName: String,
         to newName: String,
-        isCardless: Bool,
-        isBankTransfer: Bool,
-        isCashOnDelivery: Bool,
+        flags: PaymentMethodFlags,
         orders: [LedgerOrder]
     ) throws(PaymentMethodPersistenceError) {
         do {
@@ -199,16 +198,16 @@ extension PaymentMethodPersistence {
             
             if oldName == newName {
                 if let existing = oldRecords.first {
-                    existing.isCardless = isCardless
-                    existing.isBankTransfer = isBankTransfer
-                    existing.isCashOnDelivery = isCashOnDelivery
+                    existing.isCardless = flags.isCardless
+                    existing.isBankTransfer = flags.isBankTransfer
+                    existing.isCashOnDelivery = flags.isCashOnDelivery
                 } else {
                     modelContext.insert(
                         PaymentMethodRecord(
                             name: newName,
-                            isCardless: isCardless,
-                            isBankTransfer: isBankTransfer,
-                            isCashOnDelivery: isCashOnDelivery
+                            isCardless: flags.isCardless,
+                            isBankTransfer: flags.isBankTransfer,
+                            isCashOnDelivery: flags.isCashOnDelivery
                         )
                     )
                 }
@@ -225,16 +224,16 @@ extension PaymentMethodPersistence {
                 }
                 if let existing {
                     // 編輯設定可取消原有旗標。
-                    existing.isCardless = isCardless
-                    existing.isBankTransfer = isBankTransfer
-                    existing.isCashOnDelivery = isCashOnDelivery
+                    existing.isCardless = flags.isCardless
+                    existing.isBankTransfer = flags.isBankTransfer
+                    existing.isCashOnDelivery = flags.isCashOnDelivery
                 } else {
                     modelContext.insert(
                         PaymentMethodRecord(
                             name: newName,
-                            isCardless: isCardless,
-                            isBankTransfer: isBankTransfer,
-                            isCashOnDelivery: isCashOnDelivery
+                            isCardless: flags.isCardless,
+                            isBankTransfer: flags.isBankTransfer,
+                            isCashOnDelivery: flags.isCashOnDelivery
                         )
                     )
                 }

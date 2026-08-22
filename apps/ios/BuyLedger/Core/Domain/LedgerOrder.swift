@@ -58,24 +58,17 @@ extension LedgerOrder {
 extension LedgerOrder {
 
     /// 依付款方式主檔旗標正規化訂單上會影響損益的欄位
-    /// - Parameters:
-    ///   - isCardless: 付款方式是否屬於無卡類
-    ///   - isBankTransfer: 付款方式是否屬於銀行匯款類
-    ///   - isCashOnDelivery: 付款方式是否屬於貨到付款類
+    /// - Parameter flags: 付款方式分類旗標
     /// - Returns: 套用旗標後的訂單
-    func applyingPaymentMethodFlags(
-        isCardless: Bool,
-        isBankTransfer: Bool,
-        isCashOnDelivery: Bool
-    ) -> LedgerOrder {
+    func applyingPaymentMethodFlags(flags: PaymentMethodFlags) -> LedgerOrder {
         let normalizedChargedAmount = max(0, chargedAmount)
-        let normalizedDeduction = isCardless
+        let normalizedDeduction = flags.isCardless
             ? min(normalizedChargedAmount, max(0, cardlessDeductionAmount))
             : 0
-        let normalizedSupplement = isCardless
+        let normalizedSupplement = flags.isCardless
             ? max(0, cardlessSupplementAmount)
             : 0
-        let normalizedReconciliationStatus = (isCardless || isBankTransfer)
+        let normalizedReconciliationStatus = (flags.isCardless || flags.isBankTransfer)
             ? reconciliationStatus.trimmingCharacters(in: .whitespacesAndNewlines)
             : ""
 
@@ -103,7 +96,7 @@ extension LedgerOrder {
             reconciliationStatus: normalizedReconciliationStatus,
             campaignNames: campaignNames,
             paymentReceiptStatus: paymentReceiptStatus,
-            isCashOnDelivery: isCashOnDelivery,
+            isCashOnDelivery: flags.isCashOnDelivery,
             photos: photos,
             mergedSourceIDs: mergedSourceIDs
         )

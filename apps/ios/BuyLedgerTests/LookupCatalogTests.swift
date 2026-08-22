@@ -56,24 +56,42 @@ struct LookupCatalogTests {
     @Test func addingPaymentMethodStoresFlags() {
         var catalog = LookupCatalog()
         catalog.add(
-            name: "無卡存款", kind: .paymentMethod, isCardless: true, isBankTransfer: false,
-            isCashOnDelivery: false)
+            name: "無卡存款",
+            kind: .paymentMethod,
+            flags: PaymentMethodFlags(
+                isCardless: true,
+                isBankTransfer: false,
+                isCashOnDelivery: false
+            )
+        )
         
         #expect(
             catalog.paymentMethods == [
                 PaymentMethodInfo(
-                    name: "無卡存款", isCardless: true, isBankTransfer: false, isCashOnDelivery: false)
+                    name: "無卡存款",
+                    isCardless: true,
+                    isBankTransfer: false,
+                    isCashOnDelivery: false
+                )
             ])
     }
     
     @Test func addingPaymentMethodSameNameOverwritesFlags() {
         var catalog = LookupCatalog()
         catalog.add(
-            name: "綠界", kind: .paymentMethod, isCardless: false, isBankTransfer: false,
-            isCashOnDelivery: false)
+            name: "綠界",
+            kind: .paymentMethod,
+            flags: .none
+        )
         catalog.add(
-            name: "綠界", kind: .paymentMethod, isCardless: false, isBankTransfer: true,
-            isCashOnDelivery: false)
+            name: "綠界",
+            kind: .paymentMethod,
+            flags: PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: true,
+                isCashOnDelivery: false
+            )
+        )
         
         #expect(catalog.paymentMethods.count == 1)
         #expect(catalog.paymentMethods.first?.isBankTransfer == true)
@@ -82,8 +100,14 @@ struct LookupCatalogTests {
     @Test func removingPaymentMethodDeletesEntry() {
         var catalog = LookupCatalog()
         catalog.add(
-            name: "貨到付款", kind: .paymentMethod, isCardless: false, isBankTransfer: false,
-            isCashOnDelivery: true)
+            name: "貨到付款",
+            kind: .paymentMethod,
+            flags: PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: false,
+                isCashOnDelivery: true
+            )
+        )
         
         catalog.remove(name: "貨到付款", kind: .paymentMethod)
         
@@ -93,8 +117,14 @@ struct LookupCatalogTests {
     @Test func renamingPaymentMethodMergesFlagsWhenEitherSideIsTrue() {
         var catalog = LookupCatalog()
         catalog.add(
-            name: "匯款", kind: .paymentMethod, isCardless: false, isBankTransfer: true,
-            isCashOnDelivery: false)
+            name: "匯款",
+            kind: .paymentMethod,
+            flags: PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: true,
+                isCashOnDelivery: false
+            )
+        )
         
         catalog.rename(from: "匯款", to: "銀行匯款", kind: .paymentMethod)
         

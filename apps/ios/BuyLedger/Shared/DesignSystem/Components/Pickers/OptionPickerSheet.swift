@@ -60,12 +60,7 @@ struct OptionPickerSheet: View {
     let onAdd: (String) -> Void
     
     /// 付款方式新增 callback；提供時改用付款方式表單
-    let onAddPaymentMethod: ((
-        String,
-        Bool,
-        Bool,
-        Bool
-    ) -> Void)?
+    let onAddPaymentMethod: ((String, PaymentMethodFlags) -> Void)?
     
     /// 可選的「清除目前選擇」row 設定
     let clearOption: ClearOption?
@@ -129,7 +124,7 @@ struct OptionPickerSheet: View {
         searchKeywords: (@Sendable (String) -> String)? = nil,
         onSelect: @escaping (String) -> Void = { _ in },
         onAdd: @escaping (String) -> Void = { _ in },
-        onAddPaymentMethod: ((String, Bool, Bool, Bool) -> Void)? = nil,
+        onAddPaymentMethod: ((String, PaymentMethodFlags) -> Void)? = nil,
         clearOption: ClearOption? = nil,
         multiSelection: MultiSelection? = nil,
         isEmbedded: Bool = false
@@ -278,8 +273,8 @@ private extension OptionPickerSheet {
                     namePlaceholder: addFieldPlaceholder,
                     submitTitle: "新增",
                     isEmbedded: true,
-                    onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
-                        onAddPaymentMethod?(name, isCardless, isBankTransfer, isCashOnDelivery)
+                    onSubmit: { name, flags in
+                        onAddPaymentMethod?(name, flags)
                         // 新增後返回訂單表單。
                         dismiss()
                     }

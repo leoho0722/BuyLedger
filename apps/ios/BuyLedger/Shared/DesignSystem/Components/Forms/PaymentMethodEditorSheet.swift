@@ -8,22 +8,18 @@
 import SwiftUI
 
 /// 新增或編輯付款方式時的 sheet 表單
-/// 以三個布林旗標參數化表單，領域語意由呼叫端決定
+/// 以付款方式分類旗標參數化表單，領域語意由呼叫端決定
 struct PaymentMethodEditorSheet: View {
 
     // MARK: - Typealias
 
-    /// 提交付款方式時使用的 closure，接收名稱與三個旗標
+    /// 提交付款方式時使用的 closure，接收名稱與分類旗標
     /// - Parameters:
     ///   - name: 付款方式名稱
-    ///   - isCardless: 是否屬於無卡類付款方式
-    ///   - isBankTransfer: 是否屬於銀行匯款類付款方式
-    ///   - isCashOnDelivery: 是否屬於貨到付款類付款方式
+    ///   - flags: 付款方式分類旗標
     typealias SubmitAction = (
         _ name: String,
-        _ isCardless: Bool,
-        _ isBankTransfer: Bool,
-        _ isCashOnDelivery: Bool
+        _ flags: PaymentMethodFlags
     ) -> Void
     
     // MARK: - View Properties
@@ -43,7 +39,7 @@ struct PaymentMethodEditorSheet: View {
     /// 是否嵌入既有導覽堆疊；預設 false 為獨立 sheet
     let isEmbedded: Bool
     
-    /// 提交付款方式時使用的 closure，接收名稱與三個旗標
+    /// 提交付款方式時使用的 closure，接收名稱與分類旗標
     let onSubmit: SubmitAction
     
     /// 由 sheet 環境注入的 dismiss action
@@ -70,14 +66,8 @@ struct PaymentMethodEditorSheet: View {
     /// 表單初始值，用於判斷 isDirty
     private let initialName: String
 
-    /// 無卡旗標初始值，用於判斷 isDirty
-    private let initialIsCardless: Bool
-
-    /// 銀行匯款旗標初始值，用於判斷 isDirty
-    private let initialIsBankTransfer: Bool
-
-    /// 貨到付款旗標初始值，用於判斷 isDirty
-    private let initialIsCashOnDelivery: Bool
+    /// 付款方式分類旗標初始值，用於判斷 isDirty
+    private let initialFlags: PaymentMethodFlags
     
     // MARK: - Init
     
@@ -88,20 +78,16 @@ struct PaymentMethodEditorSheet: View {
     ///   - namePlaceholder: 名稱 TextField placeholder
     ///   - submitTitle: 提交按鈕文字 (新增用「新增」、編輯用「儲存」)
     ///   - initialName: 名稱初始值；編輯時帶入原名稱，新增時留空
-    ///   - initialIsCardless: 無卡旗標初始值；編輯時帶入原狀態
-    ///   - initialIsBankTransfer: 銀行匯款旗標初始值；編輯時帶入原狀態
-    ///   - initialIsCashOnDelivery: 貨到付款旗標初始值；編輯時帶入原狀態
+    ///   - initialFlags: 付款方式分類旗標初始值；編輯時帶入原狀態
     ///   - isEmbedded: 是否嵌入既有導覽堆疊；預設為 `false` 時以獨立 sheet 呈現
-    ///   - onSubmit: 提交付款方式時使用的 closure，接收名稱與三個旗標
+    ///   - onSubmit: 提交付款方式時使用的 closure，接收名稱與分類旗標
     init(
         title: String,
         message: String,
         namePlaceholder: String,
         submitTitle: String,
         initialName: String = "",
-        initialIsCardless: Bool = false,
-        initialIsBankTransfer: Bool = false,
-        initialIsCashOnDelivery: Bool = false,
+        initialFlags: PaymentMethodFlags = .none,
         isEmbedded: Bool = false,
         onSubmit: @escaping SubmitAction
     ) {
@@ -112,13 +98,11 @@ struct PaymentMethodEditorSheet: View {
         self.isEmbedded = isEmbedded
         self.onSubmit = onSubmit
         self._draftName = State(initialValue: initialName)
-        self._draftIsCardless = State(initialValue: initialIsCardless)
-        self._draftIsBankTransfer = State(initialValue: initialIsBankTransfer)
-        self._draftIsCashOnDelivery = State(initialValue: initialIsCashOnDelivery)
+        self._draftIsCardless = State(initialValue: initialFlags.isCardless)
+        self._draftIsBankTransfer = State(initialValue: initialFlags.isBankTransfer)
+        self._draftIsCashOnDelivery = State(initialValue: initialFlags.isCashOnDelivery)
         self.initialName = initialName
-        self.initialIsCardless = initialIsCardless
-        self.initialIsBankTransfer = initialIsBankTransfer
-        self.initialIsCashOnDelivery = initialIsCashOnDelivery
+        self.initialFlags = initialFlags
     }
     
     // MARK: - View Body
@@ -234,7 +218,14 @@ private extension PaymentMethodEditorSheet {
                     guard !trimmed.isEmpty else {
                         return
                     }
-                    onSubmit(trimmed, draftIsCardless, draftIsBankTransfer, draftIsCashOnDelivery)
+                    onSubmit(
+                        trimmed,
+                        PaymentMethodFlags(
+                            isCardless: draftIsCardless,
+                            isBankTransfer: draftIsBankTransfer,
+                            isCashOnDelivery: draftIsCashOnDelivery
+                        )
+                    )
                     dismiss()
                 } label: {
                     Image(systemName: "checkmark")
@@ -259,14 +250,8 @@ private struct PaymentMethodEditorSnapshot: Equatable {
     /// 付款方式名稱
     let name: String
 
-    /// 是否屬於無卡類付款方式
-    let isCardless: Bool
-
-    /// 是否屬於銀行匯款類付款方式
-    let isBankTransfer: Bool
-
-    /// 是否屬於貨到付款類付款方式
-    let isCashOnDelivery: Bool
+    /// 付款方式分類旗標
+    let flags: PaymentMethodFlags
 }
 
 // MARK: - Private Method
@@ -278,9 +263,11 @@ private extension PaymentMethodEditorSheet {
     var draftSnapshot: PaymentMethodEditorSnapshot {
         PaymentMethodEditorSnapshot(
             name: draftName,
-            isCardless: draftIsCardless,
-            isBankTransfer: draftIsBankTransfer,
-            isCashOnDelivery: draftIsCashOnDelivery
+            flags: PaymentMethodFlags(
+                isCardless: draftIsCardless,
+                isBankTransfer: draftIsBankTransfer,
+                isCashOnDelivery: draftIsCashOnDelivery
+            )
         )
     }
 
@@ -289,9 +276,7 @@ private extension PaymentMethodEditorSheet {
     var initialSnapshot: PaymentMethodEditorSnapshot {
         PaymentMethodEditorSnapshot(
             name: initialName,
-            isCardless: initialIsCardless,
-            isBankTransfer: initialIsBankTransfer,
-            isCashOnDelivery: initialIsCashOnDelivery
+            flags: initialFlags
         )
     }
 
@@ -310,7 +295,7 @@ private extension PaymentMethodEditorSheet {
         message: "輸入新的付款方式名稱，加入後會立即套用至此訂單。",
         namePlaceholder: "付款方式名稱",
         submitTitle: "新增",
-        onSubmit: { _, _, _, _ in }
+        onSubmit: { _, _ in }
     )
 }
 
@@ -321,8 +306,11 @@ private extension PaymentMethodEditorSheet {
         namePlaceholder: "付款方式名稱",
         submitTitle: "儲存",
         initialName: "銀行匯款",
-        initialIsCardless: false,
-        initialIsBankTransfer: true,
-        onSubmit: { _, _, _, _ in }
+        initialFlags: PaymentMethodFlags(
+            isCardless: false,
+            isBankTransfer: true,
+            isCashOnDelivery: false
+        ),
+        onSubmit: { _, _ in }
     )
 }

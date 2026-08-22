@@ -2065,9 +2065,7 @@ struct OrdersFeatureTests {
             original
             .renamingPaymentMethod(to: newPaymentMethod.name)
             .applyingPaymentMethodFlags(
-                isCardless: newPaymentMethod.isCardless,
-                isBankTransfer: newPaymentMethod.isBankTransfer,
-                isCashOnDelivery: newPaymentMethod.isCashOnDelivery
+                flags: newPaymentMethod.currentFlags
             )
         var state = OrdersFeature.State()
         state.orders = [original]

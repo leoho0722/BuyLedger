@@ -20,9 +20,21 @@ struct PaymentMethodPersistenceTests {
         let persistence = try makePersistence()
         
         try await persistence.upsert(
-            name: "銀行匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)
+            name: "銀行匯款",
+            flags: PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: true,
+                isCashOnDelivery: false
+            )
+        )
         try await persistence.upsert(
-            name: "無卡存款", isCardless: true, isBankTransfer: false, isCashOnDelivery: false)
+            name: "無卡存款",
+            flags: PaymentMethodFlags(
+                isCardless: true,
+                isBankTransfer: false,
+                isCashOnDelivery: false
+            )
+        )
         
         let infos = try await persistence.fetchAllInfos()
         let bankTransfer = infos.first { $0.name == "銀行匯款" }
@@ -38,10 +50,18 @@ struct PaymentMethodPersistenceTests {
         let persistence = try makePersistence()
         
         try await persistence.upsert(
-            name: "綠界", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
+            name: "綠界",
+            flags: .none
+        )
         // 二次新增同名：以新旗標覆寫 (使用者上次忘了勾選銀行匯款，這次更正)
         try await persistence.upsert(
-            name: "綠界", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)
+            name: "綠界",
+            flags: PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: true,
+                isCashOnDelivery: false
+            )
+        )
         
         let infos = try await persistence.fetchAllInfos()
         #expect(infos.count == 1)
@@ -51,7 +71,13 @@ struct PaymentMethodPersistenceTests {
     @Test func renamePreservesBankTransferFlag() async throws(any Error) {
         let persistence = try makePersistence()
         try await persistence.upsert(
-            name: "匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)
+            name: "匯款",
+            flags: PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: true,
+                isCashOnDelivery: false
+            )
+        )
         
         try await persistence.rename(from: "匯款", to: "銀行匯款")
         
@@ -65,7 +91,13 @@ struct PaymentMethodPersistenceTests {
         let persistence = try makePersistence()
         
         try await persistence.upsert(
-            name: "貨到付款", isCardless: false, isBankTransfer: false, isCashOnDelivery: true)
+            name: "貨到付款",
+            flags: PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: false,
+                isCashOnDelivery: true
+            )
+        )
         
         let info = try await persistence.fetchAllInfos().first { $0.name == "貨到付款" }
         #expect(info?.isCashOnDelivery == true)
@@ -84,8 +116,7 @@ struct PaymentMethodPersistenceTests {
         let corrected =
             original
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(
-                isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
+            .applyingPaymentMethodFlags(flags: .none)
         
         #expect(original.cardlessDeductionAmount != 0)
         #expect(original.cardlessSupplementAmount != 0)
@@ -104,9 +135,11 @@ struct PaymentMethodPersistenceTests {
             
             try await paymentPersistence.upsert(
                 name: "匯款",
-                isCardless: true,
-                isBankTransfer: true,
-                isCashOnDelivery: true
+                flags: PaymentMethodFlags(
+                    isCardless: true,
+                    isBankTransfer: true,
+                    isCashOnDelivery: true
+                )
             )
             try await orderRepository.createOrder(original)
             
@@ -117,9 +150,7 @@ struct PaymentMethodPersistenceTests {
             try await paymentPersistence.applyEdit(
                 from: "匯款",
                 to: "銀行匯款",
-                isCardless: false,
-                isBankTransfer: false,
-                isCashOnDelivery: false,
+                flags: .none,
                 orders: [corrected]
             )
             
@@ -172,16 +203,13 @@ struct PaymentMethodPersistenceTests {
         let corrected =
             original
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(
-                isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
+            .applyingPaymentMethodFlags(flags: .none)
         #expect(corrected.photos.isEmpty, "本測試前提：affected order 快照的照片欄位須為空，才能驗證 apply(_:) 不依賴它")
         
         try await paymentPersistence.applyEdit(
             from: "匯款",
             to: "銀行匯款",
-            isCardless: false,
-            isBankTransfer: false,
-            isCashOnDelivery: false,
+            flags: .none,
             orders: [corrected]
         )
         
@@ -198,20 +226,16 @@ struct PaymentMethodPersistenceTests {
         let corrected =
             original
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(
-                isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
+            .applyingPaymentMethodFlags(flags: .none)
         let missing = Self.makePaymentOrder(id: "PM-MISSING", paymentMethod: "匯款")
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(
-                isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
+            .applyingPaymentMethodFlags(flags: .none)
         let originalInfo = PaymentMethodInfo(
             name: "匯款", isCardless: true, isBankTransfer: true, isCashOnDelivery: true)
         
         try await paymentPersistence.upsert(
             name: originalInfo.name,
-            isCardless: originalInfo.isCardless,
-            isBankTransfer: originalInfo.isBankTransfer,
-            isCashOnDelivery: originalInfo.isCashOnDelivery
+            flags: originalInfo.currentFlags
         )
         try await orderPersistence.create(original)
         
@@ -219,9 +243,7 @@ struct PaymentMethodPersistenceTests {
             try await paymentPersistence.applyEdit(
                 from: "匯款",
                 to: "銀行匯款",
-                isCardless: false,
-                isBankTransfer: false,
-                isCashOnDelivery: false,
+                flags: .none,
                 orders: [corrected, missing]
             )
         }
@@ -240,8 +262,7 @@ struct PaymentMethodPersistenceTests {
         let corrected =
             original
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(
-                isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
+            .applyingPaymentMethodFlags(flags: .none)
         let originalInfo = PaymentMethodInfo(
             name: "匯款", isCardless: true, isBankTransfer: true, isCashOnDelivery: true)
         
@@ -257,9 +278,7 @@ struct PaymentMethodPersistenceTests {
             let orderPersistence = OrderPersistence(modelContainer: bootstrap.container)
             try await paymentPersistence.upsert(
                 name: originalInfo.name,
-                isCardless: originalInfo.isCardless,
-                isBankTransfer: originalInfo.isBankTransfer,
-                isCashOnDelivery: originalInfo.isCashOnDelivery
+                flags: originalInfo.currentFlags
             )
             try await orderPersistence.create(original)
         }
@@ -272,9 +291,7 @@ struct PaymentMethodPersistenceTests {
                 try await paymentPersistence.applyEdit(
                     from: "匯款",
                     to: "銀行匯款",
-                    isCardless: false,
-                    isBankTransfer: false,
-                    isCashOnDelivery: false,
+                    flags: .none,
                     orders: [corrected]
                 )
             }

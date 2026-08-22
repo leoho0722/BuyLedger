@@ -165,9 +165,11 @@ extension OrderDraft {
             )
             return WriteResult(
                 order: order.applyingPaymentMethodFlags(
-                    isCardless: editState.isSelectedPaymentMethodCardless,
-                    isBankTransfer: editState.isSelectedPaymentMethodBankTransfer,
-                    isCashOnDelivery: editState.isSelectedPaymentMethodCOD
+                    flags: PaymentMethodFlags(
+                        isCardless: editState.isSelectedPaymentMethodCardless,
+                        isBankTransfer: editState.isSelectedPaymentMethodBankTransfer,
+                        isCashOnDelivery: editState.isSelectedPaymentMethodCOD
+                    )
                 ),
                 isNewOrder: false,
                 writesPhotos: writesPhotos
@@ -186,9 +188,11 @@ extension OrderDraft {
             // 新建訂單走插入分支，因此一定寫入照片
             return WriteResult(
                 order: order.applyingPaymentMethodFlags(
-                    isCardless: editState.isSelectedPaymentMethodCardless,
-                    isBankTransfer: editState.isSelectedPaymentMethodBankTransfer,
-                    isCashOnDelivery: editState.isSelectedPaymentMethodCOD
+                    flags: PaymentMethodFlags(
+                        isCardless: editState.isSelectedPaymentMethodCardless,
+                        isBankTransfer: editState.isSelectedPaymentMethodBankTransfer,
+                        isCashOnDelivery: editState.isSelectedPaymentMethodCOD
+                    )
                 ),
                 isNewOrder: true,
                 writesPhotos: true

@@ -208,7 +208,7 @@ struct OrdersFeature {
             return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
         }
         
-        /// 可用付款方式清單；保留 isCardless 旗標
+        /// 可用付款方式清單；保留付款方式分類旗標
         var availablePaymentMethods: [PaymentMethodInfo] {
             var byName: [String: PaymentMethodInfo] = [:]
             for info in paymentMethodMaster {
@@ -841,9 +841,7 @@ struct OrdersFeature {
                     await send(.orderWriteFailed("商品類別新增失敗，請稍後再試。"))
                 }
                 
-            case let .editOrder(
-                .presented(
-                    .addPaymentMethodTapped(name, isCardless, isBankTransfer, isCashOnDelivery))):
+            case let .editOrder(.presented(.addPaymentMethodTapped(name, flags))):
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else {
                     return .none
@@ -851,14 +849,15 @@ struct OrdersFeature {
                 // 同名付款方式以最新旗標覆寫
                 state.$lookupCatalog.withLock {
                     $0.add(
-                        name: trimmed, kind: .paymentMethod, isCardless: isCardless,
-                        isBankTransfer: isBankTransfer, isCashOnDelivery: isCashOnDelivery)
+                        name: trimmed,
+                        kind: .paymentMethod,
+                        flags: flags
+                    )
                 }
                 
                 let paymentMethodRepository = paymentMethodRepository
                 return .run { _ in
-                    try await paymentMethodRepository.addPaymentMethod(
-                        trimmed, isCardless, isBankTransfer, isCashOnDelivery)
+                    try await paymentMethodRepository.addPaymentMethod(trimmed, flags)
                 } catch: { _, send in
                     await send(.orderWriteFailed("付款方式新增失敗，請稍後再試。"))
                 }

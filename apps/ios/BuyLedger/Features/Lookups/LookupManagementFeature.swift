@@ -101,12 +101,10 @@ struct LookupManagementFeature {
         /// 開啟新增主檔流程
         case addButtonTapped
         
-        /// 確認新增主檔項目；付款方式另外保存三個旗標
+        /// 確認新增主檔項目；付款方式另外保存分類旗標
         case addConfirmed(
             name: String,
-            isCardless: Bool,
-            isBankTransfer: Bool,
-            isCashOnDelivery: Bool
+            flags: PaymentMethodFlags
         )
         
         /// 刪除確認 alert 的選項
@@ -141,13 +139,11 @@ struct LookupManagementFeature {
         /// 使用者點擊指定付款方式的「編輯」
         case editButtonTapped(name: String)
         
-        /// 儲存付款方式的名稱與旗標
+        /// 儲存付款方式的名稱與分類旗標
         case editConfirmed(
             originalName: String,
             name: String,
-            isCardless: Bool,
-            isBankTransfer: Bool,
-            isCashOnDelivery: Bool
+            flags: PaymentMethodFlags
         )
         
         /// 已準備好的付款方式更新資料；有受影響訂單時顯示確認
@@ -249,7 +245,7 @@ struct LookupManagementFeature {
                 }
                 return .none
                 
-            case let .addConfirmed(name, isCardless, isBankTransfer, isCashOnDelivery):
+            case let .addConfirmed(name, flags):
                 let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else {
                     return .none
@@ -260,9 +256,7 @@ struct LookupManagementFeature {
                     $0.add(
                         name: trimmed,
                         kind: state.kind,
-                        isCardless: isCardless,
-                        isBankTransfer: isBankTransfer,
-                        isCashOnDelivery: isCashOnDelivery
+                        flags: flags
                     )
                 }
                 
@@ -278,8 +272,7 @@ struct LookupManagementFeature {
                     case .category:
                         try await categoryRepository.addCategory(trimmed)
                     case .paymentMethod:
-                        try await paymentMethodRepository.addPaymentMethod(
-                            trimmed, isCardless, isBankTransfer, isCashOnDelivery)
+                        try await paymentMethodRepository.addPaymentMethod(trimmed, flags)
                     case .reconciliationStatus:
                         try await reconciliationStatusRepository.addReconciliationStatus(trimmed)
                     }
@@ -390,15 +383,12 @@ struct LookupManagementFeature {
                 state.destination = .editPaymentMethod(
                     Destination.EditPaymentMethodFeature.State(
                         originalName: name,
-                        isCardless: state.paymentMethodIsCardless[name] ?? false,
-                        isBankTransfer: state.paymentMethodIsBankTransfer[name] ?? false,
-                        isCashOnDelivery: state.paymentMethodIsCashOnDelivery[name] ?? false
+                        flags: state.paymentMethodFlagSnapshot(for: name)
                     )
                 )
                 return .none
                 
-            case let .editConfirmed(
-                originalName, rawName, isCardless, isBankTransfer, isCashOnDelivery):
+            case let .editConfirmed(originalName, rawName, flags):
                 // 僅付款方式使用編輯流程；其他 kind 不會送此 action
                 guard state.kind == .paymentMethod else {
                     return .none
@@ -410,11 +400,7 @@ struct LookupManagementFeature {
                 }
                 
                 let storedFlags = state.paymentMethodFlagSnapshot(for: trimmedOriginal)
-                let requestedFlags = PaymentMethodFlagSnapshot(
-                    isCardless: isCardless,
-                    isBankTransfer: isBankTransfer,
-                    isCashOnDelivery: isCashOnDelivery
-                )
+                let requestedFlags = flags
                 let flagsChanged = storedFlags != requestedFlags
                 
                 let orderRepository = orderRepository
@@ -428,20 +414,14 @@ struct LookupManagementFeature {
                             .map {
                                 $0
                                     .renamingPaymentMethod(to: trimmedNew)
-                                    .applyingPaymentMethodFlags(
-                                        isCardless: isCardless,
-                                        isBankTransfer: isBankTransfer,
-                                        isCashOnDelivery: isCashOnDelivery
-                                    )
+                                    .applyingPaymentMethodFlags(flags: flags)
                             }
                         await send(
                             .paymentMethodEditPrepared(
                                 PaymentMethodEditPlan(
                                     originalName: trimmedOriginal,
                                     newName: trimmedNew,
-                                    isCardless: isCardless,
-                                    isBankTransfer: isBankTransfer,
-                                    isCashOnDelivery: isCashOnDelivery,
+                                    flags: flags,
                                     flagsChanged: flagsChanged,
                                     affectedOrders: affectedOrders
                                 )
@@ -498,9 +478,7 @@ struct LookupManagementFeature {
                     $0.add(
                         name: plan.newName,
                         kind: .paymentMethod,
-                        isCardless: plan.isCardless,
-                        isBankTransfer: plan.isBankTransfer,
-                        isCashOnDelivery: plan.isCashOnDelivery
+                        flags: plan.flags
                     )
                 }
                 state.pendingPaymentMethodEdit = nil
@@ -522,20 +500,19 @@ struct LookupManagementFeature {
                 state.destination = nil
                 return .send(
                     .addConfirmed(
-                        name: name, isCardless: false, isBankTransfer: false,
-                        isCashOnDelivery: false)
+                        name: name,
+                        flags: .none
+                    )
                 )
                 
             case let .destination(
-                .presented(.addPaymentMethod(.saveButtonTapped(name, isCardless, isBankTransfer, isCashOnDelivery)))
+                .presented(.addPaymentMethod(.saveButtonTapped(name, flags)))
             ):
                 state.destination = nil
                 return .send(
                     .addConfirmed(
                         name: name,
-                        isCardless: isCardless,
-                        isBankTransfer: isBankTransfer,
-                        isCashOnDelivery: isCashOnDelivery
+                        flags: flags
                     )
                 )
                 
@@ -549,7 +526,7 @@ struct LookupManagementFeature {
                 return .send(.renameRequested(from: renameState.originalName, to: renameState.draft))
                 
             case let .destination(
-                .presented(.editPaymentMethod(.saveButtonTapped(name, isCardless, isBankTransfer, isCashOnDelivery)))
+                .presented(.editPaymentMethod(.saveButtonTapped(name, flags)))
             ):
                 guard let editState = state.destination?.editPaymentMethod else {
                     return .none
@@ -558,9 +535,7 @@ struct LookupManagementFeature {
                     .editConfirmed(
                         originalName: editState.originalName,
                         name: name,
-                        isCardless: isCardless,
-                        isBankTransfer: isBankTransfer,
-                        isCashOnDelivery: isCashOnDelivery
+                        flags: flags
                     )
                 )
                 
@@ -580,34 +555,15 @@ struct LookupManagementFeature {
 
 // MARK: - Private Types
 
-/// 付款方式編輯流程使用的三個旗標值快照
-private struct PaymentMethodFlagSnapshot: Equatable, Sendable {
-
-    // MARK: - Data Properties
-
-    /// 是否屬於無卡類付款方式
-    let isCardless: Bool
-
-    /// 是否屬於銀行匯款類付款方式
-    let isBankTransfer: Bool
-
-    /// 是否屬於貨到付款類付款方式
-    let isCashOnDelivery: Bool
-}
-
 // MARK: - Private Method
 
 private extension LookupManagementFeature.State {
 
     /// 讀取指定付款方式的旗標快照；不存在的名稱各旗標皆視為 `false`
     /// - Parameter name: 付款方式名稱
-    /// - Returns: 對應付款方式的三個旗標快照
-    func paymentMethodFlagSnapshot(for name: String) -> PaymentMethodFlagSnapshot {
-        PaymentMethodFlagSnapshot(
-            isCardless: paymentMethodIsCardless[name] ?? false,
-            isBankTransfer: paymentMethodIsBankTransfer[name] ?? false,
-            isCashOnDelivery: paymentMethodIsCashOnDelivery[name] ?? false
-        )
+    /// - Returns: 對應付款方式的分類旗標快照
+    func paymentMethodFlagSnapshot(for name: String) -> PaymentMethodFlags {
+        catalog.paymentMethods.first { $0.name == name }?.currentFlags ?? .none
     }
 }
 
@@ -624,10 +580,8 @@ extension LookupManagementFeature {
         /// 新付款方式名稱
         let newName: String
         
-        /// 使用者確認後要寫入的三個旗標
-        let isCardless: Bool
-        let isBankTransfer: Bool
-        let isCashOnDelivery: Bool
+        /// 使用者確認後要寫入的分類旗標
+        let flags: PaymentMethodFlags
         
         /// 旗標是否變更；只改名時不需確認
         let flagsChanged: Bool
@@ -666,9 +620,7 @@ private extension LookupManagementFeature {
                 try await paymentMethodRepository.applyPaymentMethodEdit(
                     plan.originalName,
                     plan.newName,
-                    plan.isCardless,
-                    plan.isBankTransfer,
-                    plan.isCashOnDelivery,
+                    plan.flags,
                     plan.affectedOrders
                 )
                 await send(.paymentMethodEditSucceeded(plan))

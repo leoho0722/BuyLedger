@@ -379,9 +379,11 @@ struct OrderCalculationTests {
         )
         
         let corrected = order.applyingPaymentMethodFlags(
-            isCardless: false,
-            isBankTransfer: false,
-            isCashOnDelivery: true
+            flags: PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: false,
+                isCashOnDelivery: true
+            )
         )
         
         let before = order.summary
@@ -402,9 +404,7 @@ struct OrderCalculationTests {
         )
         
         let corrected = order.applyingPaymentMethodFlags(
-            isCardless: false,
-            isBankTransfer: false,
-            isCashOnDelivery: false
+            flags: .none
         )
         
         #expect(corrected.cardlessDeductionAmount == 0)
@@ -416,9 +416,11 @@ struct OrderCalculationTests {
         let order = makePaymentFlagOrder(reconciliationStatus: " 待對帳 ")
         
         let corrected = order.applyingPaymentMethodFlags(
-            isCardless: false,
-            isBankTransfer: true,
-            isCashOnDelivery: false
+            flags: PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: true,
+                isCashOnDelivery: false
+            )
         )
         
         #expect(corrected.reconciliationStatus == "待對帳")
@@ -432,9 +434,11 @@ struct OrderCalculationTests {
         )
         
         let corrected = order.applyingPaymentMethodFlags(
-            isCardless: true,
-            isBankTransfer: false,
-            isCashOnDelivery: false
+            flags: PaymentMethodFlags(
+                isCardless: true,
+                isBankTransfer: false,
+                isCashOnDelivery: false
+            )
         )
         
         #expect(corrected.cardlessDeductionAmount == 1_000)

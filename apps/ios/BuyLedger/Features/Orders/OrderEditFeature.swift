@@ -310,9 +310,7 @@ struct OrderEditFeature {
         /// 確認新增付款方式及其旗標
         case addPaymentMethodTapped(
             name: String,
-            isCardless: Bool,
-            isBankTransfer: Bool,
-            isCashOnDelivery: Bool
+            flags: PaymentMethodFlags
         )
         
         /// 使用者透過「新增對帳狀態」sheet 確認新增一筆對帳狀態名稱
@@ -583,7 +581,7 @@ struct OrderEditFeature {
                 }
                 return .none
                 
-            case let .addPaymentMethodTapped(rawName, isCardless, isBankTransfer, isCashOnDelivery):
+            case let .addPaymentMethodTapped(rawName, flags):
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else {
                     return .none
@@ -593,22 +591,10 @@ struct OrderEditFeature {
                     $0.name == trimmed
                 }) {
                     // 同名時更新付款方式旗標。
-                    state.availablePaymentMethods[index] = PaymentMethodInfo(
-                        name: trimmed,
-                        isCardless: isCardless,
-                        isBankTransfer: isBankTransfer,
-                        isCashOnDelivery: isCashOnDelivery
-                    )
+                    state.availablePaymentMethods[index] = PaymentMethodInfo(name: trimmed, flags: flags)
                 } else {
                     var updated = state.availablePaymentMethods
-                    updated.append(
-                        PaymentMethodInfo(
-                            name: trimmed,
-                            isCardless: isCardless,
-                            isBankTransfer: isBankTransfer,
-                            isCashOnDelivery: isCashOnDelivery
-                        )
-                    )
+                    updated.append(PaymentMethodInfo(name: trimmed, flags: flags))
                     state.availablePaymentMethods = updated.sorted {
                         $0.name.localizedStandardCompare($1.name) == .orderedAscending
                     }

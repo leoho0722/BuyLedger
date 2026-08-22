@@ -46,15 +46,11 @@ extension LookupCatalog {
     /// - Parameters:
     ///   - name: 要加入的名稱 (未 trim)
     ///   - kind: 主檔種類
-    ///   - isCardless: 是否屬於無卡類 (僅 `.paymentMethod` 有意義)
-    ///   - isBankTransfer: 是否屬於銀行匯款類 (僅 `.paymentMethod` 有意義)
-    ///   - isCashOnDelivery: 是否屬於貨到付款類 (僅 `.paymentMethod` 有意義)
+    ///   - flags: 付款方式分類旗標 (僅 `.paymentMethod` 有意義)
     mutating func add(
         name: String,
         kind: LookupKind,
-        isCardless: Bool = false,
-        isBankTransfer: Bool = false,
-        isCashOnDelivery: Bool = false
+        flags: PaymentMethodFlags = .none
     ) {
         let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -68,12 +64,7 @@ extension LookupCatalog {
             categories = Self.inserting(trimmed, into: categories)
         case .paymentMethod:
             paymentMethods = Self.upserting(
-                PaymentMethodInfo(
-                    name: trimmed,
-                    isCardless: isCardless,
-                    isBankTransfer: isBankTransfer,
-                    isCashOnDelivery: isCashOnDelivery
-                ),
+                PaymentMethodInfo(name: trimmed, flags: flags),
                 into: paymentMethods
             )
         case .reconciliationStatus:
