@@ -54,16 +54,22 @@ extension OrderSourceRepository {
             },
             addOrderSource: { (rawName: String) async throws(PersistenceError) in
                 try await NameLookupOperations<OrderSourceRecord>.add(
-                    rawName: rawName, container: container)
+                    rawName: rawName,
+                    container: container
+                )
             },
             removeOrderSource: { (name: String) async throws(PersistenceError) in
                 try await NameLookupOperations<OrderSourceRecord>.remove(
-                    name: name, container: container)
+                    name: name,
+                    container: container
+                )
             },
-            renameOrderSource: {
-                (oldName: String, newName: String) async throws(PersistenceError) in
+            renameOrderSource: { (oldName: String, newName: String) async throws(PersistenceError) in
                 try await NameLookupOperations<OrderSourceRecord>.rename(
-                    oldName: oldName, newName: newName, container: container)
+                    oldName: oldName,
+                    newName: newName,
+                    container: container
+                )
             }
         )
     }
