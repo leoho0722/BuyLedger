@@ -22,13 +22,15 @@
 
 ## 4. CI workflow
 
-- [ ] 4.1 讓資料模型漂移在推送當下就被擋下：新增 workflow 與其 codegen job，於 Linux runner 依序執行相依安裝、漂移檢查、generator 測試與型別檢查，並設定同分支取消舊執行。對應 spec requirement「Repository-level checks are enforced by remote automation」，依 design「守門放在遠端 CI，不做本機 git hook」與「分兩段建立信任：codegen job 先成為必過關卡」。驗證：推一個「改 schema 但不重新產生」的 commit 後該 job 變紅，還原後轉綠（.github/workflows/ci.yml）。
+- [x] 4.1 讓資料模型漂移在推送當下就被擋下：新增 workflow 與其 codegen job，於 Linux runner 依序執行相依安裝、漂移檢查、generator 測試與型別檢查，並設定同分支取消舊執行。對應 spec requirement「Repository-level checks are enforced by remote automation」，依 design「守門放在遠端 CI，不做本機 git hook」與「分兩段建立信任：codegen job 先成為必過關卡」。驗證：推一個「改 schema 但不重新產生」的 commit 後該 job 變紅，還原後轉綠（.github/workflows/ci.yml）。
 - [x] 4.2 讓單元測試在 CI 上以專案指定的建置 CLI 執行，且模擬器以識別碼動態解析：新增 iOS 單元測試 job，釘選 CLI 版本、先查詢可用模擬器再以識別碼指定、找不到符合執行環境時明確失敗，並在失敗時上傳測試結果套件。對應 spec requirement「Continuous integration uses the project build CLI and resolves simulators dynamically」，依 design「CI 內一律使用專案指定的建置 CLI，不退回原生工具」。驗證：對 workflow 搜尋原生 Xcode 命令列工具零命中；job 日誌顯示以識別碼而非寫死名稱指定模擬器。GitHub Actions run `32562994733` 的 iOS Unit Tests 通過，並成功上傳 test result bundle。
-- [ ] 4.3 讓首波 CI 不被已知環境敏感的測試干擾，且讓未涵蓋範圍是明示的：以具名略過方式排除 snapshot 與效能兩個套件。對應 spec requirement「Unstable suites are excluded until continuous integration is trusted」。驗證：workflow 內可見兩條具名略過參數，且刻意讓一個非排除的單元測試失敗時該 job 仍變紅。
-- [ ] 4.4 讓需要模擬器的 UI 回歸不拖慢一般推送：UI 回歸 job 僅在手動觸發時執行，且篩選使用僅測試與略過測試旗標而非測試計畫旗標。對應 spec requirement「Simulator-dependent regression stays on manual dispatch」。驗證：對主分支推一次 commit 後，執行清單中不含該 job；手動觸發一次則該 job 執行。
+- [x] 4.3 讓首波 CI 不被已知環境敏感的測試干擾，且讓未涵蓋範圍是明示的：以具名略過方式排除 snapshot 與效能兩個套件。對應 spec requirement「Unstable suites are excluded until continuous integration is trusted」。驗證：workflow 內可見兩條具名略過參數，且刻意讓一個非排除的單元測試失敗時該 job 仍變紅。
+- [x] 4.4 讓需要模擬器的 UI 回歸不拖慢一般推送：UI 回歸 job 僅在手動觸發時執行，且篩選使用僅測試與略過測試旗標而非測試計畫旗標。對應 spec requirement「Simulator-dependent regression stays on manual dispatch」。驗證：對主分支推一次 commit 後，執行清單中不含該 job；手動觸發一次則該 job 執行。
 
-> **目前尚未完成的額外驗收**：4.1 仍需 schema 漂移的紅綠兩態；4.3 仍需非排除單元測試故意失敗；4.4 仍需手動觸發一次 UI 回歸；6.1 仍需完整的兩紅兩綠端到端驗收。這些不是一般成功 CI run 能取代的驗證。
-> `4.2` 已由 GitHub Actions run `32562994733` 完成驗收：iOS Unit Tests job 成功使用動態 simulator UUID 執行，並上傳 test result bundle。
+> **額外驗收紀錄**：4.1 的 schema 漂移 job 於 [run 32564196717](https://github.com/leoho0722/BuyLedger/actions/runs/32564196717) 的 [Data Model Codegen job](https://github.com/leoho0722/BuyLedger/actions/runs/32564196717/job/97010339924) 在 `Check schema/output drift` 變紅，還原後 [run 32564254716](https://github.com/leoho0722/BuyLedger/actions/runs/32564254716) 全綠。
+> 4.3 的非排除單元測試於 [run 32564710125](https://github.com/leoho0722/BuyLedger/actions/runs/32564710125) 的 [iOS Unit Tests job](https://github.com/leoho0722/BuyLedger/actions/runs/32564710125/job/97011545667) 在 `Run unit tests (main scheme, snapshot 與效能測試首波排除)` 變紅，且 test result bundle 上傳成功；還原後 [run 32565281483](https://github.com/leoho0722/BuyLedger/actions/runs/32565281483) 全綠。
+> 4.4 手動 dispatch [run 32565698031](https://github.com/leoho0722/BuyLedger/actions/runs/32565698031) 的第一次執行曾因 `OrderDetailTests/testCashOnDeliveryCorrectionPersistsAfterRelaunch` 的 Toggle hittability 偶發錯誤失敗；以 `xcodebuildmcp simulator test` 隔離重跑同案例後通過，接著重跑該 UI job 的 [attempt 2](https://github.com/leoho0722/BuyLedger/actions/runs/32565698031/attempts/2)，[UI Regression (manual) job](https://github.com/leoho0722/BuyLedger/actions/runs/32565698031/job/97018880412) 以 55 passed、0 failed 完成，並成功上傳 [UI test result bundle](https://github.com/leoho0722/BuyLedger/actions/runs/32565698031/artifacts/9474918244)；4.2 則由 [run 32562994733](https://github.com/leoho0722/BuyLedger/actions/runs/32562994733) 完成動態 simulator UUID 與 test result bundle 驗收。
+> 6.1 已完成兩個失敗 job、兩個還原後綠燈 run，且 workflow 使用 committed template 與範例 key，不依賴 repository secret。
 
 ## 5. 文件同步
 
@@ -39,4 +41,4 @@
 
 ## 6. 整體驗收
 
-- [ ] 6.1 執行端到端守門驗收：於驗證分支各推一次「schema 漂移」與「單元測試故意失敗」的 commit，確認對應 job 分別變紅並在拉取請求上顯示，還原後兩者轉綠；同時確認整條 workflow 在不使用任何 secret 的情況下完成一次綠燈執行。驗證：四次 CI 執行結果（兩紅兩綠）各記錄一次連結與失敗步驟名稱。
+- [x] 6.1 執行端到端守門驗收：於驗證分支各推一次「schema 漂移」與「單元測試故意失敗」的 commit，確認對應 job 分別變紅並在拉取請求上顯示，還原後兩者轉綠；同時確認整條 workflow 在不使用任何 secret 的情況下完成一次綠燈執行。驗證：四次 CI 執行結果（兩紅兩綠）各記錄一次連結與失敗步驟名稱。
