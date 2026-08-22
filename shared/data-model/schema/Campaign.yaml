@@ -1,7 +1,7 @@
 types:
   - name: Campaign
     kind: entity
-    doc: 一次團購批次，包含開團、結單與結團狀態（CI 漂移驗證）
+    doc: 一次團購批次，包含開團、結單與結團狀態
     traits: [value-equality, serializable, identity]
     fields:
       - name: id
