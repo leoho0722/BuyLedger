@@ -59,17 +59,22 @@ extension XCUIApplication {
         startY: CGFloat = 0.7,
         endY: CGFloat = 0.5
     ) -> Bool {
-        guard container.waitForExistence(timeout: 5) else {
+        guard container.waitForExistence(timeout: 5), element.waitForExistence(timeout: 5) else {
             return false
         }
         var drags = 0
-        while element.exists, !element.isHittable, drags < maxDrags {
+        while drags < maxDrags {
+            let elementFrame = element.frame
+            if !elementFrame.isEmpty && container.frame.intersects(elementFrame) {
+                return true
+            }
             let start = container.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: startY))
             let end = container.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: endY))
             start.press(forDuration: 0.1, thenDragTo: end)
             drags += 1
         }
-        return element.exists && element.isHittable
+        let elementFrame = element.frame
+        return !elementFrame.isEmpty && container.frame.intersects(elementFrame)
     }
 }
 

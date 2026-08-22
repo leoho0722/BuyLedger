@@ -42,7 +42,7 @@ enum BLUITestSeedData {
     /// 1×1 灰階 JPEG 的 base64 (141 bytes)，作為 `photos` profile 的照片基底
     private static let minimalJPEGBase64 = """
             /9j/2wBDAFA3PEY8MlBGQUZaVVBfeMiCeG5uePWvuZHI////////////////////\
-            /// /////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAA\
+            ////////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAA\
             AAAAAAAAAAAAA//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Ad//Z
             """
     
@@ -122,6 +122,27 @@ private extension BLUITestSeedData {
             insertOrders(
                 makeFullOrders(
                     referenceDate: referenceDate
+                ),
+                into: context
+            )
+
+        case .paymentMethodCorrection:
+            insertLookups(into: context)
+            insertOrders(
+                makePaymentMethodCorrectionOrders(referenceDate: referenceDate),
+                into: context
+            )
+
+        case .revenueAttribution:
+            insertLookups(into: context)
+            let campaigns = makeRevenueAttributionCampaigns(referenceDate: referenceDate)
+            for campaign in campaigns {
+                context.insert(CampaignRecord(campaign: campaign))
+            }
+            insertOrders(
+                makeRevenueAttributionOrders(
+                    referenceDate: referenceDate,
+                    campaigns: campaigns
                 ),
                 into: context
             )
@@ -273,6 +294,121 @@ private extension BLUITestSeedData {
                 campaignNames: []
             )
         }
+    }
+
+    /// paymentMethodCorrection：一筆尚未標記貨到付款的信用卡訂單
+    /// - Parameter referenceDate: 推導日期的基準時間點
+    /// - Returns: 供回溯重算驗收的單筆訂單
+    static func makePaymentMethodCorrectionOrders(referenceDate: Date) -> [LedgerOrder] {
+        [
+            makeOrder(
+                id: "UITEST-PMC-001",
+                customer: makeCustomer("回溯驗收", "PM", tier: .regular),
+                status: .delivered,
+                date: date(daysBefore: 1, from: referenceDate),
+                items: [
+                    makeItem(seed: 601, name: "貨到付款驗收商品", quantity: 1, unitPrice: 1_000)
+                ],
+                itemCost: 1_000,
+                paymentMethod: "信用卡",
+                chargedAmount: 2_000,
+                domesticShipping: 60,
+                internationalShipping: 280,
+                foreignDomesticShipping: 120
+            )
+        ]
+    }
+
+    /// `revenueAttribution` 的開團資料
+    /// - Parameter referenceDate: 推導日期的基準時間點
+    /// - Returns: 供營收歸屬驗收的兩筆開團
+    static func makeRevenueAttributionCampaigns(referenceDate: Date) -> [Campaign] {
+        [
+            Campaign(
+                id: "UITEST-REV-CAM-001",
+                name: "營收驗收美妝團",
+                openDate: date(daysBefore: 10, from: referenceDate),
+                closeDate: nil,
+                status: .ongoing,
+                settledDate: nil,
+                notes: ""
+            ),
+            Campaign(
+                id: "UITEST-REV-CAM-002",
+                name: "營收驗收服飾團",
+                openDate: date(daysBefore: 10, from: referenceDate),
+                closeDate: nil,
+                status: .ongoing,
+                settledDate: nil,
+                notes: ""
+            ),
+        ]
+    }
+
+    /// `revenueAttribution`：兩筆來源訂單與一筆合併結果
+    /// - Parameters:
+    ///   - referenceDate: 推導日期的基準時間點
+    ///   - campaigns: 已寫入的開團，依序對應兩筆來源訂單
+    /// - Returns: 供總覽、趨勢、類別與開團排行交叉核對的訂單
+    static func makeRevenueAttributionOrders(
+        referenceDate: Date,
+        campaigns: [Campaign]
+    ) -> [LedgerOrder] {
+        guard campaigns.count >= 2 else {
+            return []
+        }
+
+        let firstSourceID = "UITEST-REV-001"
+        let secondSourceID = "UITEST-REV-002"
+
+        let firstSource = makeOrder(
+            id: firstSourceID,
+            customer: makeCustomer("營收驗收甲", "RA"),
+            status: .delivered,
+            date: date(daysBefore: 1, from: referenceDate),
+            items: [
+                makeItem(seed: 701, name: "營收驗收美妝品", quantity: 1, unitPrice: 6_000)
+            ],
+            itemCost: 6_000,
+            categories: ["美妝"],
+            chargedAmount: 10_000,
+            campaignNames: [campaigns[0].name],
+            paymentReceiptStatus: .received
+        )
+
+        let secondSource = makeOrder(
+            id: secondSourceID,
+            customer: makeCustomer("營收驗收乙", "RB"),
+            status: .delivered,
+            date: date(daysBefore: 2, from: referenceDate),
+            items: [
+                makeItem(seed: 702, name: "營收驗收服飾品", quantity: 1, unitPrice: 5_000)
+            ],
+            itemCost: 5_000,
+            categories: ["服飾"],
+            chargedAmount: 8_000,
+            campaignNames: [campaigns[1].name],
+            paymentReceiptStatus: .received
+        )
+
+        let mergeResult = makeOrder(
+            id: "UITEST-REV-RESULT",
+            customer: makeCustomer("營收驗收合併", "RC"),
+            status: .delivered,
+            date: date(daysBefore: 0, from: referenceDate),
+            items: [
+                makeItem(seed: 703, name: "營收驗收合併品", quantity: 1, unitPrice: 11_000)
+            ],
+            itemCost: 11_000,
+            orderSource: "官方網站",
+            categories: [],
+            chargedAmount: 18_000,
+            campaignNames: [],
+            paymentReceiptStatus: .received,
+            mergedSourceIDs: [firstSourceID, secondSourceID]
+        )
+
+        return [firstSource, secondSource, mergeResult]
     }
     
     /// `campaignsWithOrders`：`Campaign.sampleCampaigns` 改寫成相對日期 (共 2 筆)
@@ -512,9 +648,13 @@ private extension BLUITestSeedData {
     ///   - categories: 商品類別，預設「美妝」
     ///   - paymentMethod: 付款方式，預設「信用卡」
     ///   - chargedAmount: 實際收款金額
+    ///   - domesticShipping: 國內運費，預設 60
+    ///   - internationalShipping: 國際運費，預設 280
+    ///   - foreignDomesticShipping: 外國國內運費，預設 0
     ///   - campaignNames: 歸屬開團，預設未歸團
     ///   - paymentReceiptStatus: 收款狀態，預設待收款
     ///   - photos: 訂單照片，預設無照片
+    ///   - mergedSourceIDs: 合併前的來源訂單編號，預設無來源
     /// - Returns: 組出的單筆訂單
     static func makeOrder(
         id: String,
@@ -528,9 +668,13 @@ private extension BLUITestSeedData {
         categories: [String] = ["美妝"],
         paymentMethod: String = "信用卡",
         chargedAmount: Decimal,
+        domesticShipping: Decimal = 60,
+        internationalShipping: Decimal = 280,
+        foreignDomesticShipping: Decimal = 0,
         campaignNames: [String] = [],
         paymentReceiptStatus: PaymentReceiptStatus = .pending,
-        photos: [Data] = []
+        photos: [Data] = [],
+        mergedSourceIDs: [LedgerOrder.ID] = []
     ) -> LedgerOrder {
         LedgerOrder(
             id: id,
@@ -540,9 +684,9 @@ private extension BLUITestSeedData {
             date: date,
             items: items,
             itemCost: itemCost,
-            domesticShipping: 60,
-            internationalShipping: 280,
-            foreignDomesticShipping: 0,
+            domesticShipping: domesticShipping,
+            internationalShipping: internationalShipping,
+            foreignDomesticShipping: foreignDomesticShipping,
             cardFeeRate: decimal("0.015"),
             platformFeeRate: 0,
             paymentFeeRate: 0,
@@ -558,7 +702,7 @@ private extension BLUITestSeedData {
             paymentReceiptStatus: paymentReceiptStatus,
             isCashOnDelivery: false,
             photos: photos,
-            mergedSourceIDs: []
+            mergedSourceIDs: mergedSourceIDs
         )
     }
     

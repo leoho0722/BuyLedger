@@ -211,6 +211,8 @@ private extension InsightsView {
                     .font(.system(size: heroProfitSize, weight: .bold))
                     .monospacedDigit()
                     .foregroundStyle(palette.label)
+                    .accessibilityValue(Text(BLFormatters.twd(stats.totalProfit, locale: locale)))
+                    .accessibilityIdentifier(BLAccessibilityID.Insights.trendTotalProfit)
                 
                 BLBarChart(
                     data: stats.trendBars,
@@ -276,6 +278,7 @@ private extension InsightsView {
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint("查看 \(rank.campaignName) 的詳情")
+                        .accessibilityValue(Text(CampaignFormatters.twd(rank.profit, locale: locale)))
                         .accessibilityIdentifier(
                             BLAccessibilityID.Insights.campaignRankRow(campaignID: rank.id))
                     }
@@ -320,8 +323,10 @@ private extension InsightsView {
                         }
                         .buttonStyle(.plain)
                         .accessibilityHint("查看 \(category.name) 類別的訂單")
+                        .accessibilityValue(Text(BLFormatters.twd(category.profit, locale: locale)))
                         .accessibilityIdentifier(
-                            BLAccessibilityID.Insights.categoryRankRow(category: category.name))
+                            BLAccessibilityID.Insights.categoryRankRow(category: category.name)
+                        )
                     }
                 }
             }
@@ -523,8 +528,8 @@ private extension InsightsView {
                         .accessibilityHidden(true)
                 }
             }
-        // 排除零值格，避免朗讀沒有意義的數字。
-        // 非零格子帶上「星期 + 第幾週」讓數字有座標可依附
+            // 排除零值格，避免朗讀沒有意義的數字。
+            // 非零格子帶上「星期 + 第幾週」讓數字有座標可依附
             .accessibilityHidden(count == 0)
             .accessibilityLabel(Text("\(weekday) 第 \(week) 週"))
             .accessibilityValue(Text("\(count) 單"))
@@ -543,6 +548,8 @@ private extension InsightsView {
     }
     
     /// 類別 bar 的色盤序列
+    /// - Parameter palette: 目前外觀使用的色盤
+    /// - Returns: 依類別排行順序排列的 bar 色彩
     func categoryTints(palette: BLPalette) -> [Color] {
         [
             palette.accent,
@@ -552,6 +559,8 @@ private extension InsightsView {
             palette.pink,
         ]
     }
+
+    // MARK: Heatmap
     
     /// 依 App 選定 locale 顯示在熱力圖左側的星期縮寫
     /// - Parameter index: 0 為週一、6 為週日
@@ -563,9 +572,7 @@ private extension InsightsView {
         let mondayFirstIndex = (index + 1) % symbols.count
         return symbols[mondayFirstIndex]
     }
-    
-    // MARK: Heatmap
-    
+
     // MARK: Formatting
     
     /// 將趨勢方向轉成顯示色

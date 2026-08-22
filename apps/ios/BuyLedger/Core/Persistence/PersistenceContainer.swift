@@ -115,6 +115,14 @@ extension PersistenceContainer {
     nonisolated static func makeBootstrapForTesting(storeURL: URL) -> Bootstrap {
         makeBootstrap(storeURL: storeURL)
     }
+
+    /// 建立 UI 測試可跨 App 重啟使用的本機 container
+    /// - Parameter storeURL: UI 測試用的 persistent store 路徑
+    /// - Returns: 指定路徑的本機 ModelContainer
+    /// - Throws: store 無法建立時拋出 PersistenceError
+    nonisolated static func makePersistentForTesting(storeURL: URL) throws(PersistenceError) -> ModelContainer {
+        try make(inMemoryOnly: false, storeURL: storeURL)
+    }
 #endif
 }
 

@@ -16,8 +16,7 @@ struct OllamaClientTests {
     
     @Test func parseExtractsContentFromStreamingLine() {
         let line =
-            "{\"model\":\"gemma4:31b-cloud\",\"message\":{\"role\":\"assistant\""
-                + ",\"content\":\"Hello\",\"done\":false}"
+            #"{"model":"gemma4:31b-cloud","message":{"role":"assistant","content":"Hello"},"done":false}"#
         let parsed = OllamaClient.parse(line: line)
         #expect(parsed?.content == "Hello")
         #expect(parsed?.done == false)
@@ -25,8 +24,7 @@ struct OllamaClientTests {
     
     @Test func parseMarksDoneOnFinalLine() {
         let line =
-            "{\"model\":\"m\",\"message\":{\"role\":\"assistant\",\"content\":\"\""
-                + ",\"done\":true,\"total_duration\":123456}"
+            #"{"model":"m","message":{"role":"assistant","content":""},"done":true,"total_duration":123456}"#
         let parsed = OllamaClient.parse(line: line)
         #expect(parsed?.content == "")
         #expect(parsed?.done == true)

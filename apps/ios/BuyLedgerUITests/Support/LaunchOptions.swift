@@ -42,6 +42,12 @@ struct LaunchOptions {
     /// 本機驗證替身的結果
     var biometricOutcome: BiometricOutcome = .success
 
+    /// UI 測試資料庫的儲存方式
+    var persistenceMode: PersistenceMode = .inMemory
+
+    /// 是否在啟動時清除 persistent UI test store；僅對 persistent 有效
+    var resetPersistentStore = false
+
     // MARK: - Static Properties
 
     /// 空資料庫 + 預設語言的最小啟動條件
@@ -75,6 +81,12 @@ struct LaunchOptions {
             arguments.append("-BLUITestAppLockEnabled")
         }
         arguments += ["-BLUITestBiometricOutcome", biometricOutcome.rawValue]
+        if persistenceMode != .inMemory {
+            arguments += ["-BLUITestPersistence", persistenceMode.rawValue]
+        }
+        if resetPersistentStore {
+            arguments.append("-BLUITestResetPersistentStore")
+        }
 
         return arguments
     }
@@ -98,6 +110,12 @@ extension LaunchOptions {
 
         /// 主檔加完整訂單集合，涵蓋多種狀態
         case fullOrders
+
+        /// 一筆使用信用卡且尚未標記貨到付款的訂單，供回溯重算驗收
+        case paymentMethodCorrection
+
+        /// 2 筆來源訂單與 1 筆合併結果，供營收歸屬跨畫面一致性驗收
+        case revenueAttribution
 
         /// 完整訂單再加已指派開團的訂單
         case campaignsWithOrders
@@ -143,6 +161,16 @@ extension LaunchOptions {
 
         /// 驗證一律失敗
         case failure
+    }
+
+    /// UI 測試資料庫的儲存方式
+    enum PersistenceMode: String {
+
+        /// 每次啟動建立新的記憶體資料庫
+        case inMemory
+
+        /// 使用可跨 App 重啟讀取的本機資料庫
+        case persistent
     }
 
     /// 載入失敗情境，rawValue 對齊 App 端 `BLUITestLoadFailure`

@@ -35,6 +35,7 @@ struct LookupManagementView: View {
     /// 主檔管理畫面內容
     var body: some View {
         listContent
+            .accessibilityIdentifier(BLAccessibilityID.LookupManagement.root)
             .navigationTitle(Text(LocalizedStringKey(store.state.kind.title)))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -195,12 +196,14 @@ private extension LookupManagementView {
             } label: {
                 Label("編輯", systemImage: "pencil")
             }
+            .accessibilityIdentifier(BLAccessibilityID.LookupManagement.editButton(item))
         } else {
             Button {
                 store.send(.renameButtonTapped(name: item))
             } label: {
                 Label("重新命名", systemImage: "pencil")
             }
+            .accessibilityIdentifier(BLAccessibilityID.LookupManagement.renameButton(item))
         }
     }
     
@@ -227,6 +230,7 @@ private extension LookupManagementView {
                 } else {
                     ForEach(store.items, id: \.self) { item in
                         itemRow(for: item)
+                            .accessibilityIdentifier(BLAccessibilityID.LookupManagement.row(item))
                             .contextMenu {
                                 renameOrEditButton(for: item)
                                 

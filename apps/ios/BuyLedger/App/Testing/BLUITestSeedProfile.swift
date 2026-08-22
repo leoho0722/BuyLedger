@@ -23,6 +23,12 @@ enum BLUITestSeedProfile: String, CaseIterable, Equatable, Sendable {
     
     /// 主檔與 8 筆訂單的測試資料，涵蓋多種狀態與幣別
     case fullOrders
+
+    /// 一筆使用信用卡且尚未標記貨到付款的訂單，供回溯重算驗收
+    case paymentMethodCorrection
+
+    /// 2 筆來源訂單與 1 筆合併結果，供營收歸屬跨畫面一致性驗收
+    case revenueAttribution
     
     /// 主檔 + 開團 2 筆 + 訂單 8 筆 (共 27 筆)
     case campaignsWithOrders

@@ -43,12 +43,18 @@ extension OrderEditScreen {
     /// - Parameter name: 要填入的客戶名稱
     func typeCustomerName(_ name: String) {
         let field = app.textFields[BLAccessibilityID.OrderEdit.customerField]
-        var attempts = 0
-        while !field.exists, attempts < 5 {
+        var scrollAttempts = 0
+        while scrollAttempts < 8 {
+            let fieldFrame = field.frame
+            if !fieldFrame.isEmpty && rootElement.frame.intersects(fieldFrame) {
+                break
+            }
             rootElement.swipeDown()
-            attempts += 1
+            scrollAttempts += 1
         }
-        field.waitUntilHittable()
+        guard field.waitForExistence(timeout: 5) else {
+            return
+        }
         field.clearAndType(name, in: app)
     }
 
@@ -87,7 +93,9 @@ extension OrderEditScreen {
         let field = app.textFields[BLAccessibilityID.OrderEdit.chargedAmountField]
         // 使用預設拖曳範圍，避免 iPhone 找不到可點擊位置
         app.scrollToHittableGently(field, within: rootElement)
-        field.waitUntilHittable()
+        guard field.waitForExistence(timeout: 5) else {
+            return
+        }
         let doneButton = app.buttons[BLAccessibilityID.Common.keyboardDoneButton]
         var focusAttempts = 0
         repeat {

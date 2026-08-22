@@ -48,8 +48,7 @@ extension CustomerRow {
         let grouped = Dictionary(grouping: orders, by: { $0.customer.name })
         let contributingIDs = Set(LedgerOrder.revenueAttributionOrders(from: orders).map(\.id))
         
-        return
-        grouped
+        return grouped
             .compactMap { name, list -> CustomerRow? in
                 guard let first = list.first else {
                     return nil

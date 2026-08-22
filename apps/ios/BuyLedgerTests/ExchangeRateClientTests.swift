@@ -90,11 +90,7 @@ struct ExchangeRateClientTests {
             )
         )
         let body = Data(
-            (
-                #"{"result":"success","time_last_update_unix":1700000000,"#
-                    + #"base_code":"USD","conversion_rates":{"TWD":"#
-                    + #"32.5}}"#
-            ).utf8
+            #"{"result":"success","time_last_update_unix":1700000000,"base_code":"USD","conversion_rates":{"TWD":32.5}}"#.utf8
         )
         let capturedRequest = RequestCaptureBox()
         
@@ -188,11 +184,7 @@ struct ExchangeRateClientTests {
             )
         )
         let body = Data(
-            (
-                #"{"result":"success","time_last_update_unix":1700000000,"#
-                    + #"base_code":"USD","conversion_rates":{"TWD":32.5,"#
-                    + #"JPY":150.0}}"#
-            ).utf8
+            #"{"result":"success","time_last_update_unix":1700000000,"base_code":"USD","conversion_rates":{"TWD":32.5,"JPY":150.0}}"#.utf8
         )
         
         await withDependencies {

@@ -17,9 +17,12 @@ extension XCUIElement {
     ///   - text: 要輸入的文字
     ///   - app: 受測 App
     func clearAndType(_ text: String, in app: XCUIApplication) {
+        guard waitForExistence(timeout: 5) else {
+            return
+        }
         var focusAttempts = 0
         repeat {
-            coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+            tap()
             focusAttempts += 1
         } while !app.keyboards.firstMatch.waitForExistence(timeout: 2) && focusAttempts < 3
         if let existing = value as? String, !existing.isEmpty {

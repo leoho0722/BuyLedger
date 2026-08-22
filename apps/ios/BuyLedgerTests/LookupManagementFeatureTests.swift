@@ -789,7 +789,6 @@ struct LookupManagementFeatureTests {
                     $0[OrderRepository.self].fetchOrders = { [] }
                     $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { _, _, _, _, _, _ in }
                 }
-                store.exhaustivity = .off
                 let expectedPlan = LookupManagementFeature.PaymentMethodEditPlan(
                     originalName: "付款方式",
                     newName: "付款方式",
@@ -809,18 +808,19 @@ struct LookupManagementFeatureTests {
                         isCashOnDelivery: isCashOnDelivery
                     )
                 )
-                await store.receive(.paymentMethodEditPrepared(expectedPlan))
+                await store.receive(.paymentMethodEditPrepared(expectedPlan)) {
+                    $0.$catalog.withLock {
+                        $0.paymentMethods = [
+                            PaymentMethodInfo(
+                                name: "付款方式",
+                                isCardless: isCardless,
+                                isBankTransfer: isBankTransfer,
+                                isCashOnDelivery: isCashOnDelivery
+                            )
+                        ]
+                    }
+                }
                 await store.receive(.paymentMethodEditSucceeded(expectedPlan))
-                #expect(
-                    store.state.catalog.paymentMethods == [
-                        PaymentMethodInfo(
-                            name: "付款方式",
-                            isCardless: isCardless,
-                            isBankTransfer: isBankTransfer,
-                            isCashOnDelivery: isCashOnDelivery
-                        )
-                    ]
-                )
             }
         }
 
@@ -834,7 +834,6 @@ struct LookupManagementFeatureTests {
                 $0[OrderRepository.self].fetchOrders = { [] }
                 $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { _, _, _, _, _, _ in }
             }
-            store.exhaustivity = .off
             let expectedPlan = LookupManagementFeature.PaymentMethodEditPlan(
                 originalName: "缺少旗標",
                 newName: "缺少旗標",
@@ -854,18 +853,19 @@ struct LookupManagementFeatureTests {
                     isCashOnDelivery: false
                 )
             )
-            await store.receive(.paymentMethodEditPrepared(expectedPlan))
+            await store.receive(.paymentMethodEditPrepared(expectedPlan)) {
+                $0.$catalog.withLock {
+                    $0.paymentMethods = [
+                        PaymentMethodInfo(
+                            name: "缺少旗標",
+                            isCardless: false,
+                            isBankTransfer: false,
+                            isCashOnDelivery: false
+                        )
+                    ]
+                }
+            }
             await store.receive(.paymentMethodEditSucceeded(expectedPlan))
-            #expect(
-                store.state.catalog.paymentMethods == [
-                    PaymentMethodInfo(
-                        name: "缺少旗標",
-                        isCardless: false,
-                        isBankTransfer: false,
-                        isCashOnDelivery: false
-                    )
-                ]
-            )
         }
     }
 }

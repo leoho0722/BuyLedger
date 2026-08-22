@@ -46,6 +46,12 @@ struct BLUITestConfiguration: Equatable, Sendable {
     
     /// UI 測試用的生物辨識結果；預設成功
     let biometricOutcome: BLUITestBiometricOutcome
+
+    /// UI 測試資料庫的儲存方式；預設為每次啟動重建的記憶體資料庫
+    let persistenceMode: BLUITestPersistenceMode
+
+    /// 是否清除 persistent UI test store；僅在 persistent 模式有效
+    let resetPersistentStore: Bool
     
     // MARK: - Static Properties
     
@@ -75,14 +81,14 @@ struct BLUITestConfiguration: Equatable, Sendable {
         referenceDate = Self.referenceDate(in: arguments)
         language = Self.option(for: "-BLUITestLanguage", in: arguments)
         calendarAccess = Self.option(for: "-BLUITestCalendarAccess", in: arguments) ?? .granted
-        loadFailure =
-        Self.option(for: "-BLUITestLoadFailure", in: arguments) ?? BLUITestLoadFailure.none
+        loadFailure = Self.option(for: "-BLUITestLoadFailure", in: arguments) ?? BLUITestLoadFailure.none
         defaultCurrencyCode = Self.currencyCode(in: arguments)
         monthlyProfitGoalTwd = Self.monthlyProfitGoal(in: arguments)
         useAiSummary = arguments.contains("-BLUITestAiSummary")
         appLockEnabled = arguments.contains("-BLUITestAppLockEnabled")
-        biometricOutcome =
-        Self.option(for: "-BLUITestBiometricOutcome", in: arguments) ?? .success
+        biometricOutcome = Self.option(for: "-BLUITestBiometricOutcome", in: arguments) ?? .success
+        persistenceMode = Self.option(for: "-BLUITestPersistence", in: arguments) ?? .inMemory
+        resetPersistentStore = arguments.contains("-BLUITestResetPersistentStore")
     }
 }
 
@@ -279,6 +285,18 @@ enum BLUITestLoadFailure: String, Equatable, Sendable {
     
     /// 主檔載入失敗
     case lookups
+}
+
+/// UI 測試資料庫的儲存方式
+enum BLUITestPersistenceMode: String, Equatable, Sendable {
+
+    // MARK: - Cases
+
+    /// 每次啟動建立新的記憶體資料庫
+    case inMemory
+
+    /// 使用可跨 App 重啟讀取的本機資料庫
+    case persistent
 }
 
 #endif

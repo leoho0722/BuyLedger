@@ -8,7 +8,23 @@
 import SwiftUI
 
 /// 新增或編輯付款方式時的 sheet 表單
+/// 以三個布林旗標參數化表單，領域語意由呼叫端決定
 struct PaymentMethodEditorSheet: View {
+
+    // MARK: - Typealias
+
+    /// 提交付款方式時使用的 closure，接收名稱與三個旗標
+    /// - Parameters:
+    ///   - name: 付款方式名稱
+    ///   - isCardless: 是否屬於無卡類付款方式
+    ///   - isBankTransfer: 是否屬於銀行匯款類付款方式
+    ///   - isCashOnDelivery: 是否屬於貨到付款類付款方式
+    typealias SubmitAction = (
+        _ name: String,
+        _ isCardless: Bool,
+        _ isBankTransfer: Bool,
+        _ isCashOnDelivery: Bool
+    ) -> Void
     
     // MARK: - View Properties
     
@@ -27,15 +43,8 @@ struct PaymentMethodEditorSheet: View {
     /// 是否嵌入既有導覽堆疊；預設 false 為獨立 sheet
     let isEmbedded: Bool
     
-    /// 儲存時回傳付款方式名稱與三個旗標
-    let onSubmit:
-    (
-        _ name: String,
-        _ isCardless: Bool,
-        _ isBankTransfer: Bool,
-        _ isCashOnDelivery: Bool
-    ) ->
-    Void
+    /// 提交付款方式時使用的 closure，接收名稱與三個旗標
+    let onSubmit: SubmitAction
     
     /// 由 sheet 環境注入的 dismiss action
     @Environment(\.dismiss) private var dismiss
@@ -60,8 +69,14 @@ struct PaymentMethodEditorSheet: View {
     
     /// 表單初始值，用於判斷 isDirty
     private let initialName: String
+
+    /// 無卡旗標初始值，用於判斷 isDirty
     private let initialIsCardless: Bool
+
+    /// 銀行匯款旗標初始值，用於判斷 isDirty
     private let initialIsBankTransfer: Bool
+
+    /// 貨到付款旗標初始值，用於判斷 isDirty
     private let initialIsCashOnDelivery: Bool
     
     // MARK: - Init
@@ -76,7 +91,8 @@ struct PaymentMethodEditorSheet: View {
     ///   - initialIsCardless: 無卡旗標初始值；編輯時帶入原狀態
     ///   - initialIsBankTransfer: 銀行匯款旗標初始值；編輯時帶入原狀態
     ///   - initialIsCashOnDelivery: 貨到付款旗標初始值；編輯時帶入原狀態
-    ///   - onSubmit: 確認時回傳名稱與付款方式旗標
+    ///   - isEmbedded: 是否嵌入既有導覽堆疊；預設為 `false` 時以獨立 sheet 呈現
+    ///   - onSubmit: 提交付款方式時使用的 closure，接收名稱與三個旗標
     init(
         title: String,
         message: String,
@@ -87,13 +103,7 @@ struct PaymentMethodEditorSheet: View {
         initialIsBankTransfer: Bool = false,
         initialIsCashOnDelivery: Bool = false,
         isEmbedded: Bool = false,
-        onSubmit:
-        @escaping (
-            _ name: String,
-            _ isCardless: Bool,
-            _ isBankTransfer: Bool,
-            _ isCashOnDelivery: Bool
-        ) -> Void
+        onSubmit: @escaping SubmitAction
     ) {
         self.title = title
         self.message = message
@@ -151,6 +161,7 @@ private extension PaymentMethodEditorSheet {
                     .focused($isNameFieldFocused)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
+                    .accessibilityIdentifier(BLAccessibilityID.LookupManagement.paymentMethodNameField)
             } header: {
                 Text("付款方式名稱")
             } footer: {
@@ -182,9 +193,13 @@ private extension PaymentMethodEditorSheet {
             }
             
             Section {
-                Toggle(isOn: $draftIsCashOnDelivery) {
-                    Text("標記為「貨到付款」付款方式")
-                }
+                Toggle(
+                    "標記為「貨到付款」付款方式",
+                    isOn: $draftIsCashOnDelivery
+                )
+                .accessibilityIdentifier(
+                    BLAccessibilityID.LookupManagement.paymentMethodCashOnDeliveryToggle
+                )
             } footer: {
                 Text("啟用後，使用此付款方式的訂單因收款金額已含預估運費，獲利會自動扣除國內、國際與外國國內三種運費。")
                     .blTextStyle(.footnote)
@@ -192,6 +207,7 @@ private extension PaymentMethodEditorSheet {
             }
         }
         .formStyle(.grouped)
+        .accessibilityIdentifier(BLAccessibilityID.LookupManagement.paymentMethodEditorRoot)
         .scrollDismissesKeyboard(.interactively)
         .navigationTitle(Text(LocalizedStringKey(title)))
         .navigationBarTitleDisplayMode(.inline)
@@ -225,6 +241,7 @@ private extension PaymentMethodEditorSheet {
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityLabel(Text(LocalizedStringKey(submitTitle)))
+                .accessibilityIdentifier(BLAccessibilityID.LookupManagement.paymentMethodSaveButton)
                 .keyboardShortcut(.defaultAction)
                 .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
