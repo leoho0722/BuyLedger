@@ -505,7 +505,9 @@ private extension BLUITestSeedData {
                 status: .shipping,
                 currency: currency,
                 date: date(daysBefore: 4, from: referenceDate),
-                items: [makeItem(seed: 203, name: "寬版牛仔褲 (S)", quantity: 1, unitPrice: 79_000)],
+                items: [
+                    makeItem(seed: 203, name: "寬版牛仔褲 (S)", quantity: 1, unitPrice: 79_000)
+                ],
                 itemCost: 1_801,
                 categories: ["服飾"],
                 chargedAmount: 3_100

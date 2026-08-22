@@ -60,8 +60,7 @@ extension BLUITestHarness {
                 container = try PersistenceContainer.makePersistentForTesting(storeURL: storeURL)
             } catch {
                 fatalError(
-                    "Unable to create the persistent UI test container: "
-                    + error.localizedDescription
+                    "Unable to create the persistent UI test container: \(error.localizedDescription)"
                 )
             }
 
@@ -117,8 +116,7 @@ private extension BLUITestHarness {
             )
         } catch {
             fatalError(
-                "Unable to create the persistent UI test directory: "
-                + error.localizedDescription
+                "Unable to create the persistent UI test directory: \(error.localizedDescription)"
             )
         }
 
@@ -141,8 +139,7 @@ private extension BLUITestHarness {
                 try FileManager.default.removeItem(at: candidate)
             } catch {
                 fatalError(
-                    "Unable to reset the persistent UI test store: "
-                    + error.localizedDescription
+                    "Unable to reset the persistent UI test store: \(error.localizedDescription)"
                 )
             }
         }

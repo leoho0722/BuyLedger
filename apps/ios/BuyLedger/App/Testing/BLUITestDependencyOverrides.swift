@@ -467,11 +467,15 @@ private extension BLUITestErrorFactory {
     }
     
     /// 產生持久化讀取失敗
+    /// - Parameter source: 失敗的資料來源
+    /// - Returns: 帶資料來源訊息的持久化讀取錯誤
     static func persistenceLoadFailed(source: BLUITestLoadSource) -> PersistenceError {
         .fetchFailed(message: loadFailureMessage(source: source))
     }
     
     /// 產生幣別 metadata repository 讀取失敗
+    /// - Parameter source: 失敗的資料來源
+    /// - Returns: 帶資料來源訊息的幣別 metadata repository 錯誤
     static func currencyMetadataLoadFailed(source: BLUITestLoadSource) -> CurrencyMetadataRepositoryError {
         .persistence(.storage(persistenceLoadFailed(source: source)))
     }
