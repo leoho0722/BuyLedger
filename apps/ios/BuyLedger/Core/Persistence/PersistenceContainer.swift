@@ -177,11 +177,14 @@ private extension PersistenceContainer {
         let schema = Schema(versionedSchema: BuyLedgerSchemaV17.self)
         
         let configuration: ModelConfiguration
-        if let storeURL {
+        if let persistentStoreURL = try resolvePersistentStoreURL(
+            requestedURL: storeURL,
+            inMemoryOnly: inMemoryOnly
+        ) {
             configuration = ModelConfiguration(
                 "BuyLedger",
                 schema: schema,
-                url: storeURL,
+                url: persistentStoreURL,
                 allowsSave: true,
                 cloudKitDatabase: CloudKitOption.disabled.modelConfigurationValue
             )
@@ -205,5 +208,48 @@ private extension PersistenceContainer {
         }
         
         return container
+    }
+
+    /// 解析磁碟型 store 路徑並建立其父目錄
+    /// - Parameters:
+    ///   - requestedURL: 呼叫端指定的 store 路徑；`nil` 時使用 Application Support
+    ///   - inMemoryOnly: 是否只建立記憶體型 store
+    /// - Returns: 磁碟型 store 路徑；記憶體型 store 回傳 `nil`
+    /// - Throws: Application Support 或 store 父目錄建立失敗時拋出 ``PersistenceError``
+    static func resolvePersistentStoreURL(
+        requestedURL: URL?,
+        inMemoryOnly: Bool
+    ) throws(PersistenceError) -> URL? {
+        guard !inMemoryOnly || requestedURL != nil else {
+            return nil
+        }
+
+        let storeURL: URL
+        if let requestedURL {
+            storeURL = requestedURL
+        } else {
+            do {
+                let applicationSupport = try FileManager.default.url(
+                    for: .applicationSupportDirectory,
+                    in: .userDomainMask,
+                    appropriateFor: nil,
+                    create: true
+                )
+                storeURL = applicationSupport.appendingPathComponent("BuyLedger.store")
+            } catch {
+                throw .containerCreationFailed(message: error.localizedDescription)
+            }
+        }
+
+        do {
+            try FileManager.default.createDirectory(
+                at: storeURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+        } catch {
+            throw .containerCreationFailed(message: error.localizedDescription)
+        }
+
+        return storeURL
     }
 }

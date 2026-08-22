@@ -122,6 +122,24 @@ struct PersistenceRecoveryTests {
     @Test func sharedContainerIsResolvedOnlyOnce() {
         #expect(PersistenceContainer.shared === PersistenceContainer.shared)
     }
+
+    @Test func persistentContainerCreatesMissingStoreDirectory() throws(any Error) {
+        let root = Self.testRoot.appendingPathComponent(
+            "creates-missing-store-directory-\(UUID().uuidString)",
+            isDirectory: true
+        )
+        let storeURL = root
+            .appendingPathComponent("nested", isDirectory: true)
+            .appendingPathComponent("BuyLedger.store")
+        defer {
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        let container = try PersistenceContainer.makePersistentForTesting(storeURL: storeURL)
+
+        #expect(FileManager.default.fileExists(atPath: storeURL.deletingLastPathComponent().path))
+        withExtendedLifetime(container) {}
+    }
 }
 
 /// 建立低於 migration floor 的舊版 schema
