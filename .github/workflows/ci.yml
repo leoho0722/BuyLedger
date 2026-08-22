@@ -66,15 +66,8 @@ jobs:
         run: npm install -g "xcodebuildmcp@${XCODEBUILDMCP_VERSION}"
 
       - name: Print runner Xcode version
-        # 風險緩解：釘選 CLI 版本外，runner 鏡像的 Xcode 版本也可能不符測試 target 的 26.4 部署目標；
-        # xcodebuildmcp CLI 未提供查詢 Xcode 版本的子命令，改讀 App bundle 的 Info.plist (未使用原生 Xcode 命令列工具)
         run: |
-          for app in /Applications/Xcode*.app; do
-            [ -d "$app" ] || continue
-            SHORT=$(defaults read "$app/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo "unknown")
-            BUILD=$(defaults read "$app/Contents/Info" CFBundleVersion 2>/dev/null || echo "unknown")
-            echo "$app: $SHORT (build $BUILD)"
-          done
+          echo "Xcode $(xcodebuild -version | awk 'NR==1 {print $2}')"
 
       - name: Resolve simulator by identifier
         id: sim
@@ -152,14 +145,8 @@ jobs:
         run: npm install -g "xcodebuildmcp@${XCODEBUILDMCP_VERSION}"
 
       - name: Print runner Xcode version
-        # xcodebuildmcp CLI 未提供查詢 Xcode 版本的子命令，改讀 App bundle 的 Info.plist (未使用原生 Xcode 命令列工具)
         run: |
-          for app in /Applications/Xcode*.app; do
-            [ -d "$app" ] || continue
-            SHORT=$(defaults read "$app/Contents/Info" CFBundleShortVersionString 2>/dev/null || echo "unknown")
-            BUILD=$(defaults read "$app/Contents/Info" CFBundleVersion 2>/dev/null || echo "unknown")
-            echo "$app: $SHORT (build $BUILD)"
-          done
+          echo "Xcode $(xcodebuild -version | awk 'NR==1 {print $2}')"
 
       - name: Resolve simulator by identifier
         id: sim
