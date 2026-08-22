@@ -136,37 +136,36 @@ extension OrderRepository {
         init(container: ModelContainer) {
             self.container = container
         }
-    }
-}
 
-// MARK: - Internal Method
+        // MARK: - Computed Properties
 
-extension OrderRepository.PersistenceInstanceProvider {
-    
-    /// 取得長命的 ``OrderPersistence`` 實例
-    /// - Returns: 對應 container 的 ``OrderPersistence`` 實例
-    func instance() async -> OrderPersistence {
-        if let cached {
-            return cached
-        }
-        if let creationTask {
-            let created = await creationTask.value
-            cached = created
-            return created
-        }
-        
-        let container = container
-        let task = Task {
-            await MainActor.run {
-                OrderPersistence(modelContainer: container)
+        /// 取得長命的 ``OrderPersistence`` 實例
+        /// - Returns: 對應 container 的 ``OrderPersistence`` 實例
+        var instance: OrderPersistence {
+            get async {
+                if let cached {
+                    return cached
+                }
+                if let creationTask {
+                    let created = await creationTask.value
+                    cached = created
+                    return created
+                }
+
+                let container = container
+                let task = Task {
+                    await MainActor.run {
+                        OrderPersistence(modelContainer: container)
+                    }
+                }
+                creationTask = task
+
+                let created = await task.value
+                cached = created
+                creationTask = nil
+                return created
             }
         }
-        creationTask = task
-        
-        let created = await task.value
-        cached = created
-        creationTask = nil
-        return created
     }
 }
 
@@ -187,7 +186,7 @@ extension OrderRepository {
         
         return OrderRepository(
             fetchOrders: { () async throws(PersistenceError) -> [LedgerOrder] in
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 let stored = try await persistence.fetchAll()
                 if seedSampleOrdersIfEmpty, stored.isEmpty {
                     _ = try await persistence.seedIfEmpty(with: LedgerOrder.sampleOrders)
@@ -196,31 +195,31 @@ extension OrderRepository {
                 return stored
             },
             createOrder: { (order: LedgerOrder) async throws(OrderPersistenceError) in
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 try await persistence.create(order)
             },
             saveOrder: { (order: LedgerOrder) async throws(PersistenceError) in
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 try await persistence.update(order)
             },
             saveOrders: { (orders: [LedgerOrder]) async throws(PersistenceError) in
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 try await persistence.upsertAll(orders)
             },
             fetchOrderPhotos: { (id: LedgerOrder.ID) async throws(PersistenceError) -> [Data] in
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 return try await persistence.fetchPhotos(id: id)
             },
             saveOrderPersistingPhotos: { (order: LedgerOrder) async throws(PersistenceError) in
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 try await persistence.updatePersistingPhotos(order)
             },
             removeOrder: { (id: LedgerOrder.ID) async throws(PersistenceError) in
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 try await persistence.delete(id: id)
             },
             mergeOrders: { (newOrder: LedgerOrder, consumedIDs: [LedgerOrder.ID]) async throws(OrderPersistenceError) in
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 try await persistence.mergeOrders(newOrder: newOrder, consumedIDs: consumedIDs)
             },
             renameOrderSource: { (oldName: String, newName: String) async throws(PersistenceError) in
@@ -228,7 +227,7 @@ extension OrderRepository {
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
                 }
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 try await persistence.renameOrderSource(from: oldName, to: trimmedNew)
             },
             renameOrderCategory: { (oldName: String, newName: String) async throws(PersistenceError) in
@@ -236,7 +235,7 @@ extension OrderRepository {
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
                 }
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 try await persistence.renameCategory(from: oldName, to: trimmedNew)
             },
             renameOrderPaymentMethod: { (oldName: String, newName: String) async throws(PersistenceError) in
@@ -244,7 +243,7 @@ extension OrderRepository {
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
                 }
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 try await persistence.renamePaymentMethod(from: oldName, to: trimmedNew)
             },
             renameOrderReconciliationStatus: { (oldName: String, newName: String) async throws(PersistenceError) in
@@ -252,7 +251,7 @@ extension OrderRepository {
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
                 }
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 try await persistence.renameReconciliationStatus(from: oldName, to: trimmedNew)
             },
             renameOrderCampaign: { (oldName: String, newName: String) async throws(PersistenceError) in
@@ -260,7 +259,7 @@ extension OrderRepository {
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
                 }
-                let persistence = await provider.instance()
+                let persistence = await provider.instance
                 try await persistence.renameCampaign(from: oldName, to: trimmedNew)
             }
         )

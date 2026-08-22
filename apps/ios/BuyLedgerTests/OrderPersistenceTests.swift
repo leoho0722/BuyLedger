@@ -111,8 +111,9 @@ struct OrderPersistenceTests {
         #expect(stored.count == 1, "撞號失敗後不應新增任何資料列")
         let storedWithPhotos = try await persistence.fetch(id: existing.id)
         #expect(
-            storedWithPhotos.map(Self.normalizingItemIdentifiers)
-                == Self.normalizingItemIdentifiers(existing), "撞號失敗後既有資料列必須逐欄未變 (含照片)")
+            storedWithPhotos.map(Self.normalizingItemIdentifiers) == Self.normalizingItemIdentifiers(existing), 
+            "撞號失敗後既有資料列必須逐欄未變 (含照片)"
+        )
     }
     
     @Test func updateReplacesExistingRowAcrossEveryField() async throws(any Error) {
@@ -130,8 +131,9 @@ struct OrderPersistenceTests {
         let storedWithPhotos = try await persistence.fetch(id: modified.id)
         // Codable round-trip 不含 LedgerOrderItem.id，比對前先移除
         #expect(
-            storedWithPhotos.map(Self.normalizingItemIdentifiers)
-                == Self.normalizingItemIdentifiers(modified), "更新後應與寫入值整體相等 (含照片)；映射漏寫任一欄會在此處被抓到")
+            storedWithPhotos.map(Self.normalizingItemIdentifiers) == Self.normalizingItemIdentifiers(modified), 
+            "更新後應與寫入值整體相等 (含照片)；映射漏寫任一欄會在此處被抓到"
+        )
     }
     
     @Test func updatePersistsReconciliationStatusRoundTrip() async throws(any Error) {
@@ -197,7 +199,8 @@ struct OrderPersistenceTests {
         #expect(!descriptor.propertiesToFetch.isEmpty, "應明確列出欲讀取欄位，而非留給預設的全欄位讀取")
         #expect(
             !descriptor.propertiesToFetch.contains(\OrderRecord.photos),
-            "propertiesToFetch 不得包含 photos，否則照片位元組會被讀入記憶體")
+            "propertiesToFetch 不得包含 photos，否則照片位元組會被讀入記憶體"
+        )
         #expect(descriptor.propertiesToFetch.contains(\OrderRecord.id))
         #expect(descriptor.propertiesToFetch.contains(\OrderRecord.status))
         #expect(descriptor.propertiesToFetch.contains(\OrderRecord.date))
@@ -234,8 +237,12 @@ struct OrderPersistenceTests {
         let photoA = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x01])
         let photoB = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x02])
         let order = Self.withPhotos(
-            Self.makeStatusOrder(id: "BL-INSERT-PHOTOS", status: .confirmed),
-            photos: [photoA, photoB])
+            Self.makeStatusOrder(
+                id: "BL-INSERT-PHOTOS", 
+                status: .confirmed
+            ),
+            photos: [photoA, photoB]
+        )
         
         // 目標不存在時 update(_:) 也應插入並寫入照片。
         try await persistence.update(order)
@@ -251,13 +258,21 @@ struct OrderPersistenceTests {
         let photoA = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x01])
         let photoB = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x02])
         let order = Self.withPhotos(
-            Self.makeStatusOrder(id: "BL-KEEP-PHOTOS", status: .quoting), photos: [photoA, photoB])
+            Self.makeStatusOrder(
+                id: "BL-KEEP-PHOTOS", 
+                status: .quoting
+            ), 
+            photos: [photoA, photoB]
+        )
         try await persistence.create(order)
         
         // 一般更新帶入不同照片時，既有照片仍應保留。
         let photoC = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x03])
         let updated = Self.withPhotos(
-            Self.makeStatusOrder(id: "BL-KEEP-PHOTOS", status: .confirmed),
+            Self.makeStatusOrder(
+                id: "BL-KEEP-PHOTOS", 
+                status: .confirmed
+            ),
             photos: [photoC]
         )
         try await persistence.update(updated)
@@ -273,13 +288,21 @@ struct OrderPersistenceTests {
         let persistence = try makePersistence()
         let photoA = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x01])
         let order = Self.withPhotos(
-            Self.makeStatusOrder(id: "BL-WRITE-PHOTOS", status: .confirmed), photos: [photoA])
+            Self.makeStatusOrder(
+                id: "BL-WRITE-PHOTOS", 
+                status: .confirmed
+            ), 
+            photos: [photoA]
+        )
         try await persistence.create(order)
         
         let photoB = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x02])
         let photoC = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x03])
         let updated = Self.withPhotos(
-            Self.makeStatusOrder(id: "BL-WRITE-PHOTOS", status: .confirmed),
+            Self.makeStatusOrder(
+                id: "BL-WRITE-PHOTOS", 
+                status: .confirmed
+            ),
             photos: [photoB, photoC]
         )
         try await persistence.updatePersistingPhotos(updated)
@@ -308,7 +331,12 @@ struct OrderPersistenceTests {
             makeLargePhoto(tag: 0xA1), makeLargePhoto(tag: 0xB2), makeLargePhoto(tag: 0xC3),
         ]
         let order = Self.withPhotos(
-            Self.makeStatusOrder(id: "BL-LARGE-PHOTOS", status: .confirmed), photos: photos)
+            Self.makeStatusOrder(
+                id: "BL-LARGE-PHOTOS", 
+                status: .confirmed
+            ), 
+            photos: photos
+        )
         
         try await persistence.create(order)
         
@@ -322,14 +350,28 @@ struct OrderPersistenceTests {
         let persistence = try makePersistence()
         let photo = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x10])
         let target = Self.withPhotos(
-            Self.makeStatusOrder(id: "BL-BATCH-PHOTO", status: .quoting), photos: [photo])
-        let other = Self.makeStatusOrder(id: "BL-BATCH-OTHER", status: .quoting)
+            Self.makeStatusOrder(
+                id: "BL-BATCH-PHOTO", 
+                status: .quoting
+            ), 
+            photos: [photo]
+        )
+        let other = Self.makeStatusOrder(
+            id: "BL-BATCH-OTHER", 
+            status: .quoting
+        )
         try await persistence.create(target)
         try await persistence.create(other)
         
         // 批次資料不含照片，只更新狀態。
-        let changedTarget = Self.makeStatusOrder(id: "BL-BATCH-PHOTO", status: .confirmed)
-        let changedOther = Self.makeStatusOrder(id: "BL-BATCH-OTHER", status: .confirmed)
+        let changedTarget = Self.makeStatusOrder(
+            id: "BL-BATCH-PHOTO", 
+            status: .confirmed
+        )
+        let changedOther = Self.makeStatusOrder(
+            id: "BL-BATCH-OTHER", 
+            status: .confirmed
+        )
         try await persistence.upsertAll([changedTarget, changedOther])
         
         let stored = try await persistence.fetch(id: "BL-BATCH-PHOTO")
@@ -345,7 +387,11 @@ struct OrderPersistenceTests {
         
         // 依序更名四種主檔，確認照片不變。
         var order = Self.withPhotos(
-            Self.makeArrayOrder(id: "BL-RENAME-ALL", categories: ["美妝"], campaignNames: ["春團"]),
+            Self.makeArrayOrder(
+                id: "BL-RENAME-ALL", 
+                categories: ["美妝"], 
+                campaignNames: ["春團"]
+            ),
             photos: [photo]
         )
         order = Self.withReconciliationStatus(order, status: "待對帳")
@@ -353,15 +399,21 @@ struct OrderPersistenceTests {
         
         try await persistence.renameOrderSource(from: "蝦皮", to: "蝦皮 (新)")
         #expect(
-            try await persistence.fetch(id: "BL-RENAME-ALL")?.photos == [photo], "訂單來源更名後照片不應變動")
+            try await persistence.fetch(id: "BL-RENAME-ALL")?.photos == [photo], 
+            "訂單來源更名後照片不應變動"
+        )
         
         try await persistence.renameCategory(from: "美妝", to: "彩妝保養")
         #expect(
-            try await persistence.fetch(id: "BL-RENAME-ALL")?.photos == [photo], "商品類別更名後照片不應變動")
+            try await persistence.fetch(id: "BL-RENAME-ALL")?.photos == [photo], 
+            "商品類別更名後照片不應變動"
+        )
         
         try await persistence.renameReconciliationStatus(from: "待對帳", to: "對帳成功")
         #expect(
-            try await persistence.fetch(id: "BL-RENAME-ALL")?.photos == [photo], "對帳狀態更名後照片不應變動")
+            try await persistence.fetch(id: "BL-RENAME-ALL")?.photos == [photo], 
+            "對帳狀態更名後照片不應變動"
+        )
         
         try await persistence.renameCampaign(from: "春團", to: "春團 (補)")
         let stored = try await persistence.fetch(id: "BL-RENAME-ALL")
@@ -552,7 +604,9 @@ struct OrderPersistenceTests {
         
         await #expect(throws: OrderPersistenceError.identifierCollision(id: collidingID)) {
             try await persistence.mergeOrders(
-                newOrder: merged, consumedIDs: [primaryID, secondaryID])
+                newOrder: merged, 
+                consumedIDs: [primaryID, secondaryID]
+            )
         }
         
         let stored = try await persistence.fetchAll()
@@ -560,18 +614,34 @@ struct OrderPersistenceTests {
         // Codable round-trip 不含 LedgerOrderItem.id，比對前先移除
         let collidingStored = stored.first { $0.id == collidingID }
         #expect(
-            collidingStored.map(Self.normalizingItemIdentifiers)
-                == Self.normalizingItemIdentifiers(collidingExisting), "撞號的既有訂單必須逐欄未變")
-        #expect(stored.first { $0.id == primaryID }?.status == primary.status, "來源訂單一狀態不應落地為已合併")
+            collidingStored.map(Self.normalizingItemIdentifiers) == Self.normalizingItemIdentifiers(collidingExisting), 
+            "撞號的既有訂單必須逐欄未變"
+        )
         #expect(
-            stored.first { $0.id == secondaryID }?.status == secondary.status, "來源訂單二狀態不應落地為已合併")
+            stored.first { $0.id == primaryID }?.status == primary.status, 
+            "來源訂單一狀態不應落地為已合併"
+        )
+        #expect(
+            stored.first { $0.id == secondaryID }?.status == secondary.status, 
+            "來源訂單二狀態不應落地為已合併"
+        )
     }
     
     @Test func renameCategoryRewritesElementsInsideArrays() async throws(any Error) {
         // 多類別訂單僅目標元素改名 (保序)；未含目標的訂單不受影響
         let persistence = try makePersistence()
-        try await persistence.update(Self.makeArrayOrder(id: "BL-CAT-1", categories: ["美妝", "服飾"]))
-        try await persistence.update(Self.makeArrayOrder(id: "BL-CAT-2", categories: ["服飾"]))
+        try await persistence.update(
+            Self.makeArrayOrder(
+                id: "BL-CAT-1", 
+                categories: ["美妝", "服飾"]
+            )
+        )
+        try await persistence.update(
+            Self.makeArrayOrder(
+                id: "BL-CAT-2", 
+                categories: ["服飾"]
+            )
+        )
         
         try await persistence.renameCategory(from: "美妝", to: "彩妝保養")
         
@@ -585,9 +655,18 @@ struct OrderPersistenceTests {
         let persistence = try makePersistence()
         try await persistence.update(
             Self.makeArrayOrder(
-                id: "BL-CAMP-1", categories: ["美妝"], campaignNames: ["三月日本團", "四月韓國團"]))
+                id: "BL-CAMP-1", 
+                categories: ["美妝"], 
+                campaignNames: ["三月日本團", "四月韓國團"]
+            )
+        )
         try await persistence.update(
-            Self.makeArrayOrder(id: "BL-CAMP-2", categories: ["美妝"], campaignNames: []))
+            Self.makeArrayOrder(
+                id: "BL-CAMP-2", 
+                categories: ["美妝"], 
+                campaignNames: []
+            )
+        )
         
         try await persistence.renameCampaign(from: "三月日本團", to: "三月日本團 (補)")
         
@@ -679,8 +758,8 @@ struct OrderPersistenceTests {
         let container = PersistenceContainer.makeInMemory(for: .testing)
         let provider = OrderRepository.PersistenceInstanceProvider(container: container)
         
-        let first = await provider.instance()
-        let second = await provider.instance()
+        let first = await provider.instance
+        let second = await provider.instance
         
         #expect(first === second)
     }
@@ -715,7 +794,12 @@ struct OrderPersistenceTests {
     @Test func idMembershipPredicateMatchesOnlyGivenIDs() throws(any Error) {
         let target = OrderRecord(
             order: Self.makeStatusOrder(id: "BL-PRED-TARGET", status: .quoting))
-        let other = OrderRecord(order: Self.makeStatusOrder(id: "BL-PRED-OTHER", status: .quoting))
+        let other = OrderRecord(
+            order: Self.makeStatusOrder(
+                id: "BL-PRED-OTHER", 
+                status: .quoting
+            )
+        )
         
         let predicate = OrderPersistence.idMembershipPredicate(["BL-PRED-TARGET"])
         
@@ -732,7 +816,10 @@ struct OrderPersistenceTests {
         var seeded: [LedgerOrder] = []
         for index in 0..<500 {
             let order = Self.withPhotos(
-                Self.makeStatusOrder(id: String(format: "BL-BULK-%03d", index), status: .quoting),
+                Self.makeStatusOrder(
+                    id: String(format: "BL-BULK-%03d", index), 
+                    status: .quoting
+                ),
                 photos: [photo]
             )
             seeded.append(order)
@@ -741,7 +828,13 @@ struct OrderPersistenceTests {
         
         let targetIDs = ["BL-BULK-010", "BL-BULK-250", "BL-BULK-499"]
         let changed = targetIDs.map { id in
-            Self.withPhotos(Self.makeStatusOrder(id: id, status: .confirmed), photos: [photo])
+            Self.withPhotos(
+                Self.makeStatusOrder(
+                    id: id, 
+                    status: .confirmed
+                ), 
+                photos: [photo]
+            )
         }
         try await persistence.upsertAll(changed)
         
@@ -771,7 +864,9 @@ struct OrderPersistenceTests {
         for index in 0..<50 {
             let order = Self.withPhotos(
                 Self.makeStatusOrder(
-                    id: String(format: "BL-MERGEBULK-%03d", index), status: .quoting),
+                    id: String(format: "BL-MERGEBULK-%03d", index), 
+                    status: .quoting
+                ),
                 photos: [photo]
             )
             seeded.append(order)
@@ -781,7 +876,12 @@ struct OrderPersistenceTests {
         let primaryID = "BL-MERGEBULK-005"
         let secondaryID = "BL-MERGEBULK-010"
         let merged = Self.withPhotos(
-            Self.makeStatusOrder(id: "BL-MERGEBULK-NEW", status: .confirmed), photos: [photo])
+            Self.makeStatusOrder(
+                id: "BL-MERGEBULK-NEW", 
+                status: .confirmed
+            ), 
+            photos: [photo]
+        )
         try await persistence.mergeOrders(newOrder: merged, consumedIDs: [primaryID, secondaryID])
         
         #expect(try await persistence.fetch(id: primaryID)?.status == .merged)
@@ -805,13 +905,18 @@ struct OrderPersistenceTests {
         for index in 0..<300 {
             seeded.append(
                 Self.makeStatusOrder(
-                    id: String(format: "BL-LARGEBATCH-%03d", index), status: .quoting))
+                    id: String(format: "BL-LARGEBATCH-%03d", index), 
+                    status: .quoting
+                )
+            )
         }
         try await persistence.upsertAll(seeded)
         
         let changed = (0..<300).map { index in
             Self.makeStatusOrder(
-                id: String(format: "BL-LARGEBATCH-%03d", index), status: .confirmed)
+                id: String(format: "BL-LARGEBATCH-%03d", index), 
+                status: .confirmed
+            )
         }
         try await persistence.upsertAll(changed)
         
@@ -871,16 +976,27 @@ private extension OrderPersistenceTests {
             .appendingPathComponent("BuyLedgerRollbackTest-\(UUID().uuidString).store")
         
         let writableConfiguration = ModelConfiguration(
-            schema: schema, url: storeURL, cloudKitDatabase: .none)
+            schema: schema, 
+            url: storeURL, 
+            cloudKitDatabase: .none
+        )
         _ = try ModelContainer(
-            for: schema, migrationPlan: BuyLedgerMigrationPlan.self,
-            configurations: writableConfiguration)
+            for: schema, 
+            migrationPlan: BuyLedgerMigrationPlan.self,
+            configurations: writableConfiguration
+        )
         
         let readOnlyConfiguration = ModelConfiguration(
-            schema: schema, url: storeURL, allowsSave: false, cloudKitDatabase: .none)
+            schema: schema, 
+            url: storeURL, 
+            allowsSave: false, 
+            cloudKitDatabase: .none
+        )
         let container = try ModelContainer(
-            for: schema, migrationPlan: BuyLedgerMigrationPlan.self,
-            configurations: readOnlyConfiguration)
+            for: schema, 
+            migrationPlan: BuyLedgerMigrationPlan.self,
+            configurations: readOnlyConfiguration
+        )
         return OrderPersistence(modelContainer: container)
     }
     
@@ -1133,7 +1249,10 @@ private extension OrderPersistenceTests {
             date: order.date,
             items: order.items.map {
                 LedgerOrderItem(
-                    id: placeholderID, name: $0.name, quantity: $0.quantity, unitPrice: $0.unitPrice
+                    id: placeholderID,
+                    name: $0.name, 
+                    quantity: $0.quantity, 
+                    unitPrice: $0.unitPrice
                 )
             },
             itemCost: order.itemCost,
