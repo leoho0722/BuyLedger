@@ -104,7 +104,8 @@ jobs:
             --extra-args "-skip-testing:BuyLedgerTests/OrdersFeaturePerformanceTests" \
             --extra-args "-parallel-testing-enabled" \
             --extra-args "NO" \
-            --json "$(jq -cn --arg profile "$RUNNER_TEMP/buyledger-%p.profraw" '{testRunnerEnv: {LLVM_PROFILE_FILE: $profile}}')" \
+            --extra-args "-enableCodeCoverage" \
+            --extra-args "NO" \
             --output json > "$RUNNER_TEMP/unit-test-result.json"
           TEST_EXIT=$?
           cat "$RUNNER_TEMP/unit-test-result.json"
@@ -184,7 +185,8 @@ jobs:
             --extra-args "-skip-testing:BuyLedgerUITests/LaunchPerformanceTests" \
             --extra-args "-parallel-testing-enabled" \
             --extra-args "NO" \
-            --json "$(jq -cn --arg profile "$RUNNER_TEMP/buyledger-ui-%p.profraw" '{testRunnerEnv: {LLVM_PROFILE_FILE: $profile}}')" \
+            --extra-args "-enableCodeCoverage" \
+            --extra-args "NO" \
             --output json > "$RUNNER_TEMP/ui-test-result.json"
           TEST_EXIT=$?
           cat "$RUNNER_TEMP/ui-test-result.json"
