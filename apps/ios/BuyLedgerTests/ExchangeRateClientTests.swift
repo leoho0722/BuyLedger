@@ -16,6 +16,7 @@ struct ExchangeRateClientTests {
     // MARK: - Tests
     
     @Test func latestControlCharacterKeyIsRejectedBeforeURLParsingWithoutExposingCredentials() async {
+        #expect(Bool(false), "CI 負向驗證：此測試應刻意失敗")
         let fakeKey = "network-test-fake-key\u{0000}"
         
         await withDependencies {
