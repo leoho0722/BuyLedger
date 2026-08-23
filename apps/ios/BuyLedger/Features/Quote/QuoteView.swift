@@ -345,8 +345,7 @@ private extension QuoteView {
                 Text("尚無可用匯率資料，暫時無法試算。")
                     .blTextStyle(.footnote)
             } else if let profitTwd = store.estimatedProfitTwd,
-                      let marginPercent = store.estimatedMarginPercent
-            {
+                      let marginPercent = store.estimatedMarginPercent {
                 Text(
                     """
                     預估獲利 \(BLFormatters.twd(profitTwd, locale: locale)) · \

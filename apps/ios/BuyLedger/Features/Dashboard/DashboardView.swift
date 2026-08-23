@@ -173,9 +173,7 @@ private extension DashboardView {
         campaign: Campaign,
         summary: CampaignSummary,
         palette: BLPalette
-    )
-    -> some View
-    {
+    ) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             HStack(spacing: BLSpacing.small) {
                 Text(campaign.name)
@@ -386,7 +384,7 @@ private extension DashboardView {
                 Text(profitDisplay(stats.profit))
                     .font(.system(size: heroProfitSize, weight: .bold))
                     .monospacedDigit()
-                // 無障礙字級允許換行，保留使用者設定的字級。
+                    // 無障礙字級允許換行，保留使用者設定的字級。
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                     .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
                 
@@ -593,7 +591,8 @@ private extension DashboardView {
                                 .padding(.horizontal, BLSpacing.large)
                                 .padding(.vertical, BLSpacing.extraSmall)
                                 .accessibilityIdentifier(
-                                    BLAccessibilityID.Dashboard.recentOrderRow(orderID: order.id))
+                                    BLAccessibilityID.Dashboard.recentOrderRow(orderID: order.id)
+                                )
                             
                             if index < stats.recentOrders.count - 1 {
                                 Divider()
@@ -635,8 +634,7 @@ private extension DashboardView {
               let first = points.first,
               let last = points.last,
               let lowest = points.min(),
-              let highest = points.max()
-        else {
+              let highest = points.max() else {
             return "月獲利走勢圖，目前沒有資料"
         }
         
