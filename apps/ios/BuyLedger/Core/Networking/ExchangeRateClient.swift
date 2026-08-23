@@ -56,12 +56,7 @@ extension ExchangeRateClient: DependencyKey {
                 timeout: 15
             )
             
-            let decoded: ExchangeRateLatestResponse
-            do {
-                decoded = try JSONDecoder().decode(ExchangeRateLatestResponse.self, from: data)
-            } catch {
-                throw APIError.decoding(message: String(describing: error))
-            }
+            let decoded = try httpClient.decode(ExchangeRateLatestResponse.self, from: data)
             
             guard decoded.result == "success" else {
                 throw ExchangeRateClient.serviceError(
@@ -96,12 +91,7 @@ extension ExchangeRateClient: DependencyKey {
                 timeout: 15
             )
             
-            let decoded: ExchangeRateCodesResponse
-            do {
-                decoded = try JSONDecoder().decode(ExchangeRateCodesResponse.self, from: data)
-            } catch {
-                throw APIError.decoding(message: String(describing: error))
-            }
+            let decoded = try httpClient.decode(ExchangeRateCodesResponse.self, from: data)
             
             guard decoded.result == "success" else {
                 throw ExchangeRateClient.serviceError(

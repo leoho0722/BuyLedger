@@ -61,12 +61,28 @@ extension HTTPClient {
         
         return responseData
     }
+
+    /// 將回應 data 解碼為指定的 `Decodable` 型別
+    /// - Parameters:
+    ///   - type: 目標解碼型別
+    ///   - data: 要解碼的回應 data
+    /// - Returns: 解碼後的值
+    /// - Throws: JSON 解碼失敗時拋出 ``APIError/decoding(message:)``
+    func decode<Value: Decodable>(_ type: Value.Type, from data: Data) throws(APIError) -> Value {
+        do {
+            return try JSONDecoder().decode(type, from: data)
+        } catch {
+            throw APIError.decoding(message: String(describing: error))
+        }
+    }
 }
 
 // MARK: - Dependency Values
 
 extension HTTPClient: DependencyKey {
     
+    /// `liveValue` 共用的設定化 session
+    /// 以 `URLSessionConfiguration.default` 建立，保留 session 設定的控制權
     private nonisolated static let session = URLSession(configuration: .default)
     
     /// App 執行時以 `URLSessionConfiguration.default` 的專屬 session 發送請求
