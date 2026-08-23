@@ -52,13 +52,13 @@ struct AppLockFeature {
         var protectionDescriptionKey: LocalizedStringKey {
             switch biometryType {
             case .faceID:
-                return "開啟後，App 進入背景時會鎖定畫面內容；回到前景或重新開啟時，需要通過 Face ID 或密碼驗證才能檢視內容。"
+                return "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Face ID 或密碼驗證才能檢視內容。"
                 
             case .touchID:
-                return "開啟後，App 進入背景時會鎖定畫面內容；回到前景或重新開啟時，需要通過 Touch ID 或密碼驗證才能檢視內容。"
+                return "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Touch ID 或密碼驗證才能檢視內容。"
                 
             case .unavailable:
-                return "開啟後，App 進入背景時會鎖定畫面內容；回到前景或重新開啟時，需要通過裝置的生物辨識或密碼驗證才能檢視內容。"
+                return "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過裝置密碼驗證才能檢視內容。"
             }
         }
     }

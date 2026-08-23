@@ -209,7 +209,7 @@ struct AppLockFeatureTests {
         // 設定頁與鎖定畫面共用解鎖文案。
         #expect(store.state.unlockButtonTitleKey == "使用 Face ID 解鎖")
         #expect(
-            store.state.protectionDescriptionKey == "開啟後，App 進入背景時會鎖定畫面內容；回到前景或重新開啟時，需要通過 Face ID 或密碼驗證才能檢視內容。"
+            store.state.protectionDescriptionKey == "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Face ID 或密碼驗證才能檢視內容。"
         )
     }
     
@@ -231,7 +231,7 @@ struct AppLockFeatureTests {
         
         #expect(store.state.unlockButtonTitleKey == "使用 Touch ID 解鎖")
         #expect(
-            store.state.protectionDescriptionKey == "開啟後，App 進入背景時會鎖定畫面內容；回到前景或重新開啟時，需要通過 Touch ID 或密碼驗證才能檢視內容。"
+            store.state.protectionDescriptionKey == "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Touch ID 或密碼驗證才能檢視內容。"
         )
     }
     
@@ -255,7 +255,7 @@ struct AppLockFeatureTests {
         
         #expect(store.state.unlockButtonTitleKey == "解鎖")
         #expect(
-            store.state.protectionDescriptionKey == "開啟後，App 進入背景時會鎖定畫面內容；回到前景或重新開啟時，需要通過裝置的生物辨識或密碼驗證才能檢視內容。"
+            store.state.protectionDescriptionKey == "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過裝置密碼驗證才能檢視內容。"
         )
     }
     
