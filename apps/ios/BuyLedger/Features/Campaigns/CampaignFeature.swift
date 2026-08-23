@@ -538,15 +538,8 @@ struct CampaignFeature {
             case .delegate:
                 return .none
                 
-                // 拆分 Reduce 以避免型別檢查逾時
-            case .settleTapped, .settleConfirmation, .settleConfirmed, .campaignSettled,
-                    .deleteCampaignTapped, .detailDeleteCampaignTapped, .deletionConfirmation,
-                    .detailDeletionConfirmation,
-                    .campaignDeleteRequested, .campaignDeleted, .campaignRenamed, .campaignWriteFailed,
-                    .reminderLinksLoaded, .reminderStored, .reminderAccessDenied,
-                    .reminderAccessRestricted,
-                    .reminderCreationFailed, .reminderCalendarUnavailable, .noticeAlert,
-                    .detailNoticeAlert:
+            // 拆分 Reduce 以避免型別檢查逾時
+            default:
                 return .none
             }
         }
@@ -556,24 +549,6 @@ struct CampaignFeature {
         
         Reduce { state, action in
             switch action {
-                // 已由前一個 Reduce 處理，理由與列舉方式同上
-            case .task,
-                    .campaignsLoaded,
-                    .campaignsFailed,
-                    .campaignSelected,
-                    .statusFilterSelected,
-                    .groupingSelected,
-                    .unpaidOnlyToggled,
-                    .newCampaignTapped,
-                    .editCampaignTapped,
-                    .editCampaign,
-                    .campaignSaved,
-                    .statusChanged,
-                    .campaignStatusSaved,
-                    .receiptStatusToggled,
-                    .delegate:
-                return .none
-                
             case let .settleTapped(id):
                 // 結團是不可逆的狀態轉換，比照刪除先確認再寫入
                 guard let campaign = state.campaigns.first(where: { $0.id == id }),
@@ -733,16 +708,18 @@ struct CampaignFeature {
                 )
                 return .none
                 
-            case .noticeAlert(.presented(.openSettings)),
-                    .detailNoticeAlert(.presented(.openSettings)):
+            case .noticeAlert(.presented(.openSettings)), .detailNoticeAlert(.presented(.openSettings)):
                 let openSettingsClient = openSettingsClient
                 // 無法開啟時靜默結束即可；提示本身已由系統關閉，不阻塞使用者
                 return .run { _ in
                     await openSettingsClient.open()
                 }
                 
-            case .noticeAlert,
-                    .detailNoticeAlert:
+            case .noticeAlert, .detailNoticeAlert:
+                return .none
+
+            // 已由前一個 Reduce 或後續 scoped reducer 處理的 action 不在此處改變 state。
+            default:
                 return .none
             }
         }
@@ -837,8 +814,7 @@ private extension CampaignFeature.State {
         guard grouping != .day else {
             return [
                 CampaignSubgroup(
-                    id: topCampaigns.first.map { calendar.startOfDay(for: $0.openDate) }
-                    ?? .distantPast,
+                    id: topCampaigns.first.map { calendar.startOfDay(for: $0.openDate) } ?? .distantPast,
                     title: nil,
                     campaigns: sortedByDate(topCampaigns)
                 )
