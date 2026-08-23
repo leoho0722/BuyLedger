@@ -236,13 +236,13 @@ struct SettingsFeatureTests {
         await store.send(.appLock(.enableToggled(true)))
         await store.receive(\.appLock.enableAuthenticationFinished) {
             $0.appLock.enableFailureAlert = AlertState {
-                TextState("無法啟用帳本保護")
+                TextState("無法啟用 App 鎖定")
             } actions: {
                 ButtonState(role: .cancel) {
                     TextState("關閉")
                 }
             } message: {
-                TextState("身份驗證失敗或已取消，帳本保護未開啟。")
+                TextState("身份驗證失敗或已取消，App 鎖定未啟用。")
             }
         }
         

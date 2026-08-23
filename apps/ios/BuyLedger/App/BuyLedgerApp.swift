@@ -40,7 +40,7 @@ struct BuyLedgerApp: App {
         
         store = Store(
             initialState: RootFeature.State(
-                persistenceOutcome: bootstrap.outcome,
+                persistenceStatus: bootstrap.status,
                 isBiometricUnlockEnabled: isBiometricUnlockEnabled
             )
         ) {

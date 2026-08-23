@@ -33,7 +33,7 @@ struct SettingsFeature {
         /// 是否啟用 AI 商品明細總結
         var useAiSummary: Bool = false
         
-        /// 帳本保護 (進入背景即上鎖並要求驗證) 狀態
+        /// App 鎖定 (離開 App 即上鎖並要求驗證) 狀態
         var appLock = AppLockFeature.State()
         
         /// 月度目標金額欄位是否取得鍵盤焦點
@@ -64,7 +64,7 @@ struct SettingsFeature {
         /// 使用者選定 (或自訂) AI 總結模型
         case aiSummaryModelSelected(String)
         
-        /// 帳本保護事件
+        /// App 鎖定事件
         case appLock(AppLockFeature.Action)
     }
     

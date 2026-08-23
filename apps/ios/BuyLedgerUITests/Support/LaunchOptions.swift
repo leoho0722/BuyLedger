@@ -36,11 +36,11 @@ struct LaunchOptions {
     /// 是否開啟 AI 商品明細總結，開啟後 AI 走固定輸出的替身
     var useAiSummary: Bool = false
 
-    /// 帳本保護是否於啟動時已開啟，開啟時鎖定相關測試不必先走一遍設定頁
+    /// App 鎖定是否於啟動時已開啟，開啟時鎖定相關測試不必先走一遍設定頁
     var appLockEnabled: Bool = false
 
-    /// 本機驗證替身的結果
-    var biometricOutcome: BiometricOutcome = .success
+    /// 本機驗證替身的情境
+    var biometricScenario: BiometricScenario = .success
 
     /// UI 測試資料庫的儲存方式
     var persistenceMode: PersistenceMode = .inMemory
@@ -80,7 +80,7 @@ struct LaunchOptions {
         if appLockEnabled {
             arguments.append("-BLUITestAppLockEnabled")
         }
-        arguments += ["-BLUITestBiometricOutcome", biometricOutcome.rawValue]
+        arguments += ["-BLUITestBiometricScenario", biometricScenario.rawValue]
         if persistenceMode != .inMemory {
             arguments += ["-BLUITestPersistence", persistenceMode.rawValue]
         }
@@ -153,8 +153,8 @@ extension LaunchOptions {
         case denied
     }
 
-    /// 本機驗證替身的結果，rawValue 對齊 App 端 `BLUITestBiometricOutcome`
-    enum BiometricOutcome: String {
+    /// 本機驗證替身的情境，rawValue 對齊 App 端 `BLUITestBiometricScenario`
+    enum BiometricScenario: String {
 
         /// 驗證一律成功
         case success

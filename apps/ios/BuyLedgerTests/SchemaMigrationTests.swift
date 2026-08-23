@@ -106,7 +106,7 @@ struct SchemaMigrationTests {
         // 1. 以真實建構路徑落下 V17 store
         do {
             let bootstrap = PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
-            guard case .healthy = bootstrap.outcome else {
+            guard case .healthy = bootstrap.status else {
                 Issue.record("Expected a healthy disk-backed bootstrap when seeding a V17 store.")
                 return
             }
@@ -121,7 +121,7 @@ struct SchemaMigrationTests {
         
         // 2. 重新開啟同一 store，確認沒有落入 in-memory fallback。
         let reopened = PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
-        guard case .healthy = reopened.outcome else {
+        guard case .healthy = reopened.status else {
             Issue.record(
                 "V17 store reopened in degraded mode."
             )

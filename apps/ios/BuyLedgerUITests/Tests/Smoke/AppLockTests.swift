@@ -7,7 +7,7 @@
 
 import XCTest
 
-/// 帳本保護鎖定畫面的介面測試
+/// App 鎖定畫面的介面測試
 final class AppLockTests: BLUITestCase {
 
     // MARK: - Tests
@@ -16,7 +16,7 @@ final class AppLockTests: BLUITestCase {
     @MainActor
     func testAppLockEnabledStartsLockedAndStaysLockedWhenAuthenticationFails() {
         let app = launch(
-            LaunchOptions(seed: .empty, appLockEnabled: true, biometricOutcome: .failure)
+            LaunchOptions(seed: .empty, appLockEnabled: true, biometricScenario: .failure)
         )
         let lockScreen = AppLockScreen(app: app)
 
@@ -43,7 +43,7 @@ final class AppLockTests: BLUITestCase {
     @MainActor
     func testAppLockEnabledUnlocksAutomaticallyWhenAuthenticationSucceeds() {
         let app = launch(
-            LaunchOptions(seed: .empty, appLockEnabled: true, biometricOutcome: .success)
+            LaunchOptions(seed: .empty, appLockEnabled: true, biometricScenario: .success)
         )
         let dashboard = DashboardScreen(app: app)
 
@@ -61,12 +61,12 @@ final class AppLockTests: BLUITestCase {
         let dashboard = DashboardScreen(app: app)
 
         if !dashboard.waitUntilReady() {
-            failWithDiagnostics(in: app, "未開啟帳本保護時總覽頁未就緒")
+            failWithDiagnostics(in: app, "未開啟 App 鎖定時總覽頁未就緒")
         }
 
         let lockScreen = AppLockScreen(app: app)
         if lockScreen.isDisplayed {
-            failWithDiagnostics(in: app, "未開啟帳本保護卻出現鎖定畫面")
+            failWithDiagnostics(in: app, "未開啟 App 鎖定卻出現鎖定畫面")
         }
     }
 }

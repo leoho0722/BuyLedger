@@ -9,17 +9,17 @@ import ComposableArchitecture
 import Foundation
 import SwiftUI
 
-/// 帳本保護 (應用程式層鎖定) 的啟用與鎖定／解鎖狀態機
+/// App 鎖定功能的啟用與鎖定／解鎖狀態機
 @Reducer
 struct AppLockFeature {
     
     // MARK: - State
     
-    /// 帳本保護狀態
+    /// App 鎖定狀態
     @ObservableState
     struct State: Equatable {
         
-        /// 是否啟用帳本保護
+        /// 是否啟用 App 鎖定
         var isBiometricUnlockEnabled: Bool = false
         
         /// 內容目前是否鎖定
@@ -48,28 +48,28 @@ struct AppLockFeature {
             }
         }
         
-        /// 設定頁的帳本保護說明
+        /// 設定頁的 App 鎖定說明
         var protectionDescriptionKey: LocalizedStringKey {
             switch biometryType {
             case .faceID:
-                return "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Face ID 或密碼驗證才能檢視內容。"
+                return "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Face ID 或密碼驗證才能繼續使用。"
                 
             case .touchID:
-                return "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Touch ID 或密碼驗證才能檢視內容。"
+                return "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Touch ID 或密碼驗證才能繼續使用。"
                 
             case .unavailable:
-                return "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過裝置密碼驗證才能檢視內容。"
+                return "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過裝置密碼驗證才能繼續使用。"
             }
         }
     }
     
     // MARK: - Action
     
-    /// 帳本保護可處理的事件
+    /// App 鎖定可處理的事件
     @CasePathable
     enum Action: Equatable {
         
-        /// 使用者切換設定頁的「帳本保護」開關
+        /// 使用者切換設定頁的「App 鎖定」開關
         case enableToggled(Bool)
         
         /// 啟用流程的驗證請求完成
@@ -102,7 +102,7 @@ struct AppLockFeature {
     
     // MARK: - Reducer Body
     
-    /// 帳本保護 reducer
+    /// App 鎖定 reducer
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
@@ -121,7 +121,7 @@ struct AppLockFeature {
                 let biometricAuthClient = biometricAuthClient
                 return .run { send in
                     let result = await biometricAuthClient.authenticate(
-                        String(localized: "驗證身份以啟用帳本保護")
+                        String(localized: "驗證身份以解鎖 App")
                     )
                     await send(.enableAuthenticationFinished(result))
                 }
@@ -180,26 +180,26 @@ private extension AppLockFeature {
     /// 驗證失敗或取消時的說明對話框
     static var authenticationFailedAlert: AlertState<Action.Alert> {
         AlertState {
-            TextState("無法啟用帳本保護")
+            TextState("無法啟用 App 鎖定")
         } actions: {
             ButtonState(role: .cancel) {
                 TextState("關閉")
             }
         } message: {
-            TextState("身份驗證失敗或已取消，帳本保護未開啟。")
+            TextState("身份驗證失敗或已取消，App 鎖定未啟用。")
         }
     }
     
     /// 裝置不支援本機驗證時的說明對話框
     static var unsupportedDeviceAlert: AlertState<Action.Alert> {
         AlertState {
-            TextState("無法啟用帳本保護")
+            TextState("無法啟用 App 鎖定")
         } actions: {
             ButtonState(role: .cancel) {
                 TextState("關閉")
             }
         } message: {
-            TextState("此裝置目前無法使用本機驗證，帳本保護未開啟。")
+            TextState("此裝置目前無法使用本機驗證，App 鎖定未啟用。")
         }
     }
 }
@@ -214,7 +214,7 @@ private extension AppLockFeature {
     static func attemptUnlock(_ biometricAuthClient: BiometricAuthClient) -> Effect<Action> {
         .run { send in
             let result = await biometricAuthClient.authenticate(
-                String(localized: "驗證身份以檢視帳本內容")
+                String(localized: "驗證身份以解鎖 App")
             )
             await send(.unlockAuthenticationFinished(result))
         }

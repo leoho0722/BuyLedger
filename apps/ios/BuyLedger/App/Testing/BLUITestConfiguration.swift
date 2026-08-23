@@ -41,11 +41,11 @@ struct BLUITestConfiguration: Equatable, Sendable {
     /// 是否使用 AI 商品明細替身
     let useAiSummary: Bool
     
-    /// 是否在啟動時開啟帳本保護 (`-BLUITestAppLockEnabled`)
+    /// 是否在啟動時開啟 App 鎖定 (`-BLUITestAppLockEnabled`)
     let appLockEnabled: Bool
     
-    /// UI 測試用的生物辨識結果；預設成功
-    let biometricOutcome: BLUITestBiometricOutcome
+    /// UI 測試用的生物辨識情境；預設成功
+    let biometricScenario: BLUITestBiometricScenario
 
     /// UI 測試資料庫的儲存方式；預設為每次啟動重建的記憶體資料庫
     let persistenceMode: BLUITestPersistenceMode
@@ -86,7 +86,7 @@ struct BLUITestConfiguration: Equatable, Sendable {
         monthlyProfitGoalTwd = Self.monthlyProfitGoal(in: arguments)
         useAiSummary = arguments.contains("-BLUITestAiSummary")
         appLockEnabled = arguments.contains("-BLUITestAppLockEnabled")
-        biometricOutcome = Self.option(for: "-BLUITestBiometricOutcome", in: arguments) ?? .success
+        biometricScenario = Self.option(for: "-BLUITestBiometricScenario", in: arguments) ?? .success
         persistenceMode = Self.option(for: "-BLUITestPersistence", in: arguments) ?? .inMemory
         resetPersistentStore = arguments.contains("-BLUITestResetPersistentStore")
     }
@@ -254,8 +254,8 @@ enum BLUITestCalendarAccess: String, Equatable, Sendable {
     case denied
 }
 
-/// UI 測試要模擬的本機驗證結果
-enum BLUITestBiometricOutcome: String, Equatable, Sendable {
+/// UI 測試要模擬的本機驗證情境
+enum BLUITestBiometricScenario: String, Equatable, Sendable {
     
     // MARK: - Cases
     

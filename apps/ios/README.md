@@ -217,7 +217,7 @@ bun run unlock
 - `AppLockFeature` (`Features/App/`)：啟用驗證、鎖定／解鎖狀態機，巢狀於 `SettingsFeature.State.appLock`；`SettingsFeature` 攔截其驗證成功與關閉事件寫回 `SettingsStorage`。
 - `AppLockView` (`Features/App/`)：鎖定時取代整個正常介面的阻斷畫面，提供「重新驗證」(不提供跳過)。
 - `AppScenePhaseCoordinator` (`Features/App/`)：由 `BuyLedgerApp` 的 `\.scenePhase` 呼叫，依場景階段 (`.background`／`.active`) 轉送 `AppLockFeature` 的鎖定／解鎖動作；觸發訊號的選擇與該踩過的坑見 `CLAUDE.md` 同節。
-- UI 測試以 `-BLUITestAppLockEnabled` 直接抵達鎖定狀態、`-BLUITestBiometricOutcome` 選擇驗證結果，全程不觸發系統生物辨識提示。
+- UI 測試以 `-BLUITestAppLockEnabled` 直接抵達鎖定狀態、`-BLUITestBiometricScenario` 選擇驗證情境，全程不觸發系統生物辨識提示。
 
 ### 外部 API
 

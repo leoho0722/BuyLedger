@@ -11,7 +11,7 @@ import SwiftUI
 import Testing
 @testable import BuyLedger
 
-/// 驗證啟用帳本保護須先驗證成功
+/// 驗證啟用 App 鎖定須先驗證成功
 @MainActor
 struct AppLockFeatureTests {
     
@@ -156,7 +156,7 @@ struct AppLockFeatureTests {
     }
     
     @Test func failedUnlockCanBeRetriedUntilSuccessful() async {
-        let outcome = AuthenticationOutcomeBox(.failure)
+        let resultBox = AuthenticationResultBox(.failure)
         let store = TestStore(
             initialState: AppLockFeature.State(isBiometricUnlockEnabled: true, isLocked: true)
         ) {
@@ -164,7 +164,7 @@ struct AppLockFeatureTests {
         } withDependencies: {
             $0[BiometricAuthClient.self] = BiometricAuthClient(
                 isAvailable: { true },
-                authenticate: { _ in outcome.value },
+                authenticate: { _ in resultBox.value },
                 biometryType: { .touchID }
             )
         }
@@ -179,7 +179,7 @@ struct AppLockFeatureTests {
         // 鎖定畫面仍在，且失敗只提供再次嘗試，不提供跳過
         #expect(store.state.isLocked)
         
-        outcome.value = .success
+        resultBox.value = .success
         await store.send(.retryUnlockTapped) {
             $0.unlockDidFail = false
         }
@@ -209,7 +209,7 @@ struct AppLockFeatureTests {
         // 設定頁與鎖定畫面共用解鎖文案。
         #expect(store.state.unlockButtonTitleKey == "使用 Face ID 解鎖")
         #expect(
-            store.state.protectionDescriptionKey == "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Face ID 或密碼驗證才能檢視內容。"
+            store.state.protectionDescriptionKey == "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Face ID 或密碼驗證才能繼續使用。"
         )
     }
     
@@ -231,7 +231,7 @@ struct AppLockFeatureTests {
         
         #expect(store.state.unlockButtonTitleKey == "使用 Touch ID 解鎖")
         #expect(
-            store.state.protectionDescriptionKey == "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Touch ID 或密碼驗證才能檢視內容。"
+            store.state.protectionDescriptionKey == "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Touch ID 或密碼驗證才能繼續使用。"
         )
     }
     
@@ -255,7 +255,7 @@ struct AppLockFeatureTests {
         
         #expect(store.state.unlockButtonTitleKey == "解鎖")
         #expect(
-            store.state.protectionDescriptionKey == "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過裝置密碼驗證才能檢視內容。"
+            store.state.protectionDescriptionKey == "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過裝置密碼驗證才能繼續使用。"
         )
     }
     
@@ -291,7 +291,7 @@ struct AppLockFeatureTests {
 }
 
 /// 讓替身在同一次測試內途中改變結果的容器 (先失敗、重試後成功)
-private final class AuthenticationOutcomeBox: @unchecked Sendable {
+private final class AuthenticationResultBox: @unchecked Sendable {
     
     // MARK: - Data Properties
     
@@ -301,6 +301,7 @@ private final class AuthenticationOutcomeBox: @unchecked Sendable {
     // MARK: - Init
     
     /// 以初始結果建立容器
+    /// - Parameter value: 替身目前要回傳的驗證結果
     init(_ value: BiometricAuthClient.AuthenticationResult) {
         self.value = value
     }
@@ -313,26 +314,26 @@ private extension AppLockFeatureTests {
     /// 驗證失敗或取消時的預期說明對話框
     static var expectedFailureAlert: AlertState<AppLockFeature.Action.Alert> {
         AlertState {
-            TextState("無法啟用帳本保護")
+            TextState("無法啟用 App 鎖定")
         } actions: {
             ButtonState(role: .cancel) {
                 TextState("關閉")
             }
         } message: {
-            TextState("身份驗證失敗或已取消，帳本保護未開啟。")
+            TextState("身份驗證失敗或已取消，App 鎖定未啟用。")
         }
     }
     
     /// 裝置不支援時的預期說明對話框
     static var expectedUnsupportedAlert: AlertState<AppLockFeature.Action.Alert> {
         AlertState {
-            TextState("無法啟用帳本保護")
+            TextState("無法啟用 App 鎖定")
         } actions: {
             ButtonState(role: .cancel) {
                 TextState("關閉")
             }
         } message: {
-            TextState("此裝置目前無法使用本機驗證，帳本保護未開啟。")
+            TextState("此裝置目前無法使用本機驗證，App 鎖定未啟用。")
         }
     }
 }

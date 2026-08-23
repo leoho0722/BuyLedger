@@ -61,15 +61,15 @@ struct RootFeature {
         
         // MARK: - Init
         
-        /// 依持久層結果與帳本保護設定初始化畫面
+        /// 依持久層結果與 App 鎖定設定初始化畫面
         /// - Parameters:
-        ///   - persistenceOutcome: 持久層啟動結果
-        ///   - isBiometricUnlockEnabled: 啟動當下讀取到的帳本保護設定，預設 `false`
+        ///   - persistenceStatus: 持久層啟動狀態
+        ///   - isBiometricUnlockEnabled: 啟動當下讀取到的 App 鎖定設定，預設 `false`
         init(
-            persistenceOutcome: PersistenceContainer.Outcome = .healthy,
+            persistenceStatus: PersistenceContainer.Status = .healthy,
             isBiometricUnlockEnabled: Bool = false
         ) {
-            if case .degraded = persistenceOutcome {
+            if case .degraded = persistenceStatus {
                 persistenceFailure = PersistenceFailureFeature.State()
             }
             settings.appLock.isBiometricUnlockEnabled = isBiometricUnlockEnabled
@@ -221,7 +221,9 @@ struct RootFeature {
                 case .startNewOrder:
                     state.selectedTab = .orders
                     state.orders.editOrder = OrderEditFeature.State(
-                        id: uuid(), currentDate: date.now)
+                        id: uuid(),
+                        currentDate: date.now
+                    )
                     return .none
                     
                 case let .smartGroupSelected(status):
@@ -229,7 +231,9 @@ struct RootFeature {
                     state.selectedTab = .orders
                     state.orders.selectedStatus = .status(status)
                     state.orders.selectFirstFilteredOrder(
-                        referenceDate: date.now, calendar: calendar)
+                        referenceDate: date.now,
+                        calendar: calendar
+                    )
                     return .none
                     
                 case let .customerSelected(name):
@@ -242,7 +246,9 @@ struct RootFeature {
                     // 同 smart group：客戶名深連結時清掉殘留類別篩選
                     state.orders.selectedCategory = nil
                     state.orders.selectFirstFilteredOrder(
-                        referenceDate: date.now, calendar: calendar)
+                        referenceDate: date.now,
+                        calendar: calendar
+                    )
                     return .none
                     
                 case let .categorySelected(category):
@@ -253,7 +259,9 @@ struct RootFeature {
                     state.orders.selectedDatePeriod = .all
                     state.orders.selectedCategory = category
                     state.orders.selectFirstFilteredOrder(
-                        referenceDate: date.now, calendar: calendar)
+                        referenceDate: date.now,
+                        calendar: calendar
+                    )
                     return .none
                     
                 case let .campaignSelected(name):
@@ -363,11 +371,17 @@ struct RootFeature {
                     
                     // 共享目錄已由子 reducer 更新，此處只處理訂單 cascade
                 case let .lookupManagements(.element(id: kind, action: .renameRequested(from, to))):
-                    cascadeRename(kind: kind, from: from, to: to, in: &state)
+                    cascadeRename(
+                        kind: kind,
+                        from: from,
+                        to: to,
+                        in: &state
+                    )
                     return .none
                     
                 case let .lookupManagements(
-                    .element(id: .paymentMethod, action: .paymentMethodEditSucceeded(plan))):
+                    .element(id: .paymentMethod, action: .paymentMethodEditSucceeded(plan))
+                ):
                     // 付款方式主檔已由 LookupManagementFeature 寫入目錄。
                     // 此處只把同一份已正規化 payload 轉送給訂單 reducer 套用到既有訂單列
                     return .send(.orders(.paymentMethodFlagsApplied(plan.affectedOrders)))

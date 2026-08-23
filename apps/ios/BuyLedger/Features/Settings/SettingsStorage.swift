@@ -46,7 +46,7 @@ private extension SettingsStorage {
         /// AI 總結模型名稱的 key
         nonisolated static let aiSummaryModel = "settings.aiSummaryModel"
         
-        /// 帳本保護開關的 key
+        /// App 鎖定開關的 key
         nonisolated static let isBiometricUnlockEnabled = "settings.isBiometricUnlockEnabled"
     }
 }

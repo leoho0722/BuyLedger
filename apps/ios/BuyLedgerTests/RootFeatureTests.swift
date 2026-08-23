@@ -17,20 +17,20 @@ struct RootFeatureTests {
     
     // MARK: - Tests
     
-    @Test func degradedPersistenceOutcomeStartsWithBlockingFailureState() {
-        let state = RootFeature.State(persistenceOutcome: .degraded(reason: "Unable to open store"))
+    @Test func degradedPersistenceStatusStartsWithBlockingFailureState() {
+        let state = RootFeature.State(persistenceStatus: .degraded(reason: "Unable to open store"))
         
         #expect(state.persistenceFailure != nil)
         #expect(state.persistenceFailure?.phase == .blocked)
     }
     
-    @Test func healthyPersistenceOutcomeDoesNotBlockNormalLayout() {
+    @Test func healthyPersistenceStatusDoesNotBlockNormalLayout() {
         let state = RootFeature.State()
         
         #expect(state.persistenceFailure == nil)
     }
     
-    /// 帳本保護開啟時，建構 State 即進入鎖定狀態
+    /// App 鎖定開啟時，建構 State 即進入鎖定狀態
     @Test func protectionEnabledAtLaunchStartsLocked() {
         let state = RootFeature.State(isBiometricUnlockEnabled: true)
         
@@ -318,8 +318,7 @@ struct RootFeatureTests {
             mergedSourceIDs: []
         )
         
-        let corrected =
-            order
+        let corrected = order
             .renamingPaymentMethod(to: "銀行匯款")
             .applyingPaymentMethodFlags(flags: .none)
         let plan = LookupManagementFeature.PaymentMethodEditPlan(
@@ -335,7 +334,11 @@ struct RootFeatureTests {
         state.orders.$lookupCatalog.withLock {
             $0.paymentMethods = [
                 PaymentMethodInfo(
-                    name: "匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)
+                    name: "匯款",
+                    isCardless: false,
+                    isBankTransfer: true,
+                    isCashOnDelivery: false
+                )
             ]
         }
         
@@ -345,13 +348,17 @@ struct RootFeatureTests {
         
         await store.send(
             .lookupManagements(
-                .element(id: .paymentMethod, action: .paymentMethodEditSucceeded(plan)))
+                .element(id: .paymentMethod, action: .paymentMethodEditSucceeded(plan))
+            )
         ) {
             $0.orders.$lookupCatalog.withLock {
                 $0.paymentMethods = [
                     PaymentMethodInfo(
-                        name: "銀行匯款", isCardless: false, isBankTransfer: false,
-                        isCashOnDelivery: false)
+                        name: "銀行匯款",
+                        isCardless: false,
+                        isBankTransfer: false,
+                        isCashOnDelivery: false
+                    )
                 ]
             }
         }
@@ -368,7 +375,11 @@ struct RootFeatureTests {
         #expect(
             store.state.orders.paymentMethodMaster == [
                 PaymentMethodInfo(
-                    name: "銀行匯款", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
+                    name: "銀行匯款",
+                    isCardless: false,
+                    isBankTransfer: false,
+                    isCashOnDelivery: false
+                )
             ])
         // 主檔管理清單應同步反映新名稱與旗標。
         #expect(store.state.lookupManagements[id: .paymentMethod]?.items == ["銀行匯款"])
@@ -389,8 +400,7 @@ struct RootFeatureTests {
     @Test func paymentMethodEditCancellationLeavesRootOrdersAndMasterUnchanged() async {
         let original = Self.makeTestOrder(id: "BL-PM-CANCEL", category: "美妝", customerName: "取消測試")
             .renamingPaymentMethod(to: "匯款")
-        let corrected =
-            original
+        let corrected = original
             .renamingPaymentMethod(to: "銀行匯款")
             .applyingPaymentMethodFlags(flags: .none)
         let plan = LookupManagementFeature.PaymentMethodEditPlan(
@@ -401,7 +411,11 @@ struct RootFeatureTests {
             affectedOrders: [corrected]
         )
         let originalMaster = PaymentMethodInfo(
-            name: "匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)
+            name: "匯款",
+            isCardless: false,
+            isBankTransfer: true,
+            isCashOnDelivery: false
+        )
         
         var state = RootFeature.State()
         state.orders.orders = [original]
@@ -765,8 +779,8 @@ struct RootFeatureTests {
         
         await store.send(
             .lookupManagements(
-                .element(
-                    id: .reconciliationStatus, action: .renameRequested(from: "待對帳", to: "已對帳")))
+                .element(id: .reconciliationStatus, action: .renameRequested(from: "待對帳", to: "已對帳"))
+            )
         ) {
             $0.orders.$lookupCatalog.withLock { $0.reconciliationStatuses = ["已對帳"] }
             $0.orders.orders[0] = Self.makeOrder(id: "T-RS", reconciliationStatus: "已對帳")
@@ -791,7 +805,11 @@ struct RootFeatureTests {
         state.orders.$lookupCatalog.withLock {
             $0.paymentMethods = [
                 PaymentMethodInfo(
-                    name: "舊付款", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
+                    name: "舊付款",
+                    isCardless: false,
+                    isBankTransfer: false,
+                    isCashOnDelivery: false
+                )
             ]
         }
         
@@ -804,13 +822,17 @@ struct RootFeatureTests {
         
         await store.send(
             .lookupManagements(
-                .element(id: .paymentMethod, action: .renameRequested(from: "舊付款", to: "新付款")))
+                .element(id: .paymentMethod, action: .renameRequested(from: "舊付款", to: "新付款"))
+            )
         ) {
             $0.orders.$lookupCatalog.withLock {
                 $0.paymentMethods = [
                     PaymentMethodInfo(
-                        name: "新付款", isCardless: false, isBankTransfer: false,
-                        isCashOnDelivery: false)
+                        name: "新付款",
+                        isCardless: false,
+                        isBankTransfer: false,
+                        isCashOnDelivery: false
+                    )
                 ]
             }
             $0.orders.orders[0] = Self.makeOrder(id: "T-PM", paymentMethod: "新付款")
@@ -840,9 +862,12 @@ struct RootFeatureTests {
         #expect(store.state.orders.availableCategories.contains("待刪類別"))
         
         await store.send(
-            .lookupManagements(.element(id: .category, action: .deleteRequested("待刪類別"))))
+            .lookupManagements(.element(id: .category, action: .deleteRequested("待刪類別")))
+        )
         await store.receive(
-            .lookupManagements(.element(id: .category, action: .deleteSucceeded("待刪類別")))
+            .lookupManagements(
+                .element(id: .category, action: .deleteSucceeded("待刪類別"))
+            )
         ) {
             $0.orders.$lookupCatalog.withLock { $0.categories = [] }
         }
@@ -870,7 +895,8 @@ struct RootFeatureTests {
         
         await store.send(
             .lookupManagements(
-                .element(id: .orderSource, action: .renameRequested(from: "舊來源", to: "新來源")))
+                .element(id: .orderSource, action: .renameRequested(from: "舊來源", to: "新來源"))
+            )
         ) {
             $0.orders.$lookupCatalog.withLock { $0.orderSources = ["新來源"] }
             $0.orders.orders[0] = Self.makeOrder(id: "T-SYNC", orderSource: "新來源")
@@ -958,7 +984,9 @@ struct RootFeatureTests {
         await store.receive(\.startNewOrder) {
             $0.selectedTab = .orders
             $0.orders.editOrder = OrderEditFeature.State(
-                id: UUID(0), currentDate: TestDependencies.fixedNow)
+                id: UUID(0),
+                currentDate: TestDependencies.fixedNow
+            )
         }
     }
     
@@ -1163,7 +1191,11 @@ private extension RootFeatureTests {
         category: String,
         customerName: String
     ) -> LedgerOrder {
-        makeTestOrder(id: id, categories: [category], customerName: customerName)
+        makeTestOrder(
+            id: id,
+            categories: [category],
+            customerName: customerName
+        )
     }
     
     /// 建立供跨頁深連結測試使用的最小訂單，支援多類別與多開團歸屬

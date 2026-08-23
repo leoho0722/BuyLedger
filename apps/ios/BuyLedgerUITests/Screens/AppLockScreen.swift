@@ -7,7 +7,7 @@
 
 import XCTest
 
-/// 帳本保護鎖定畫面的 Page Object
+/// App 鎖定畫面的 Page Object
 struct AppLockScreen: Screen {
 
     // MARK: - Data Properties

@@ -27,7 +27,7 @@ struct SettingsSnapshot: Equatable, Sendable {
     /// AI 總結使用的 Ollama 模型名稱
     var aiSummaryModel: String
     
-    /// 是否啟用帳本保護；進入背景後需驗證解鎖
+    /// 是否啟用 App 鎖定；離開 App 後需驗證解鎖
     var isBiometricUnlockEnabled: Bool
     
     // MARK: - Static Properties

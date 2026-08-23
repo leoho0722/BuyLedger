@@ -125,7 +125,7 @@ struct PaymentMethodPersistenceTests {
         
         do {
             let bootstrap = PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
-            guard case .healthy = bootstrap.outcome else {
+            guard case .healthy = bootstrap.status else {
                 Issue.record("Expected a healthy disk-backed bootstrap before applying the edit.")
                 return
             }
@@ -163,7 +163,7 @@ struct PaymentMethodPersistenceTests {
         
         // 丟棄第一個 container 後以同一個 URL 重建，模擬重啟後重新讀取
         let rebooted = PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
-        guard case .healthy = rebooted.outcome else {
+        guard case .healthy = rebooted.status else {
             Issue.record("Expected the corrected store to reopen successfully.")
             return
         }
@@ -268,7 +268,7 @@ struct PaymentMethodPersistenceTests {
         
         do {
             let bootstrap = PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
-            guard case .healthy = bootstrap.outcome else {
+            guard case .healthy = bootstrap.status else {
                 Issue.record(
                     "Expected a healthy disk-backed bootstrap before seeding the save-failure test."
                 )
@@ -299,7 +299,7 @@ struct PaymentMethodPersistenceTests {
         
         // 以新 context 讀取 store，確認失敗後沒有殘留資料
         let restored = PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
-        guard case .healthy = restored.outcome else {
+        guard case .healthy = restored.status else {
             Issue.record("Expected the original store to remain reopenable after a failed save.")
             return
         }

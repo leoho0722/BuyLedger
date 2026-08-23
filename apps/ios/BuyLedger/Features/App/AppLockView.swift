@@ -8,7 +8,7 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 帳本鎖定時顯示的阻斷畫面
+/// App 鎖定時顯示的阻斷畫面
 struct AppLockView: View {
     
     // MARK: - View Properties
@@ -27,10 +27,10 @@ struct AppLockView: View {
                 .font(.system(size: iconSize))
                 .foregroundStyle(Color.blSecondaryLabel)
             
-            Text("帳本已鎖定")
+            Text("App 已鎖定")
                 .blTextStyle(.title2)
             
-            Text("請完成身份驗證以檢視內容。")
+            Text("請完成身份驗證以繼續使用。")
                 .multilineTextAlignment(.center)
             
             if store.unlockDidFail {

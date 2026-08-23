@@ -90,7 +90,7 @@ struct SettingsView: View {
                 Toggle(store.appLock.unlockButtonTitleKey, isOn: appLockToggleBinding)
                     .accessibilityIdentifier(BLAccessibilityID.Settings.appLockToggle)
             } header: {
-                Text("帳本保護")
+                Text("App 鎖定")
             } footer: {
                 Text(store.appLock.protectionDescriptionKey)
                     .blTextStyle(.footnote)
@@ -193,7 +193,7 @@ private extension SettingsView {
 
 private extension SettingsView {
     
-    /// 帳本保護開關的自訂 binding
+    /// App 鎖定開關的自訂 binding
     var appLockToggleBinding: Binding<Bool> {
         Binding(
             get: { store.appLock.isBiometricUnlockEnabled },

@@ -771,19 +771,19 @@ struct OrderPersistenceTests {
         let repository = OrderRepository.live(container: container)
         let order = Self.makeStatusOrder(id: "BL-CONCURRENT-1", status: .quoting)
         
-        let outcomes = await withTaskGroup(of: CreateOutcome.self) { group in
+        let results = await withTaskGroup(of: CreateResult.self) { group in
             for _ in 0..<20 {
                 group.addTask { await Self.attemptCreate(order, via: repository) }
             }
-            var collected: [CreateOutcome] = []
-            for await outcome in group {
-                collected.append(outcome)
+            var collected: [CreateResult] = []
+            for await result in group {
+                collected.append(result)
             }
             return collected
         }
         
-        #expect(outcomes.filter { $0 == .created }.count == 1, "應恰好一筆並發建立成功")
-        #expect(outcomes.filter { $0 == .collided }.count == 19, "其餘應落在建立意圖的撞號路徑而非靜默插入")
+        #expect(results.filter { $0 == .created }.count == 1, "應恰好一筆並發建立成功")
+        #expect(results.filter { $0 == .collided }.count == 19, "其餘應落在建立意圖的撞號路徑而非靜默插入")
         
         let stored = try await repository.fetchOrders()
         #expect(stored.filter { $0.id == order.id }.count == 1, "並發寫入後應只留下一列，不產生同編號重複資料")
@@ -943,7 +943,7 @@ private extension OrderPersistenceTests {
     }
     
     /// 並發建立的結果分類
-    enum CreateOutcome: Equatable {
+    enum CreateResult: Equatable {
         
         // MARK: - Cases
         
@@ -1224,7 +1224,7 @@ private extension OrderPersistenceTests {
     static func attemptCreate(
         _ order: LedgerOrder,
         via repository: OrderRepository
-    ) async -> CreateOutcome {
+    ) async -> CreateResult {
         do {
             try await repository.createOrder(order)
             return .created

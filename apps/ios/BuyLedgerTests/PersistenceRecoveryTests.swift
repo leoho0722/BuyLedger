@@ -104,8 +104,8 @@ struct PersistenceRecoveryTests {
             ])
         let bootstrap = PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
         
-        guard case .degraded = bootstrap.outcome else {
-            Issue.record("Expected an unmigratable store to produce a degraded bootstrap outcome.")
+        guard case .degraded = bootstrap.status else {
+            Issue.record("Expected an unmigratable store to produce a degraded bootstrap status.")
             return
         }
         let preservedFiles = try Self.storeFiles(in: sourceDirectory)

@@ -184,7 +184,7 @@ private extension DependencyValues {
             access: configuration.calendarAccess
         )
         self[BiometricAuthClient.self] = BLUITestStubs.makeBiometricAuthClient(
-            outcome: configuration.biometricOutcome
+            scenario: configuration.biometricScenario
         )
         self[OpenSettingsClient.self] = OpenSettingsClient(open: {})
     }
@@ -351,10 +351,10 @@ private extension BLUITestStubs {
     }
     
     /// 建立不彈出系統生物辨識提示的本機驗證 client
-    /// - Parameter outcome: 要模擬的驗證結果
+    /// - Parameter scenario: 要模擬的驗證情境
     /// - Returns: 固定回傳測試用的生物辨識 client
-    static func makeBiometricAuthClient(outcome: BLUITestBiometricOutcome) -> BiometricAuthClient {
-        let result: BiometricAuthClient.AuthenticationResult = outcome == .success ? .success : .failure
+    static func makeBiometricAuthClient(scenario: BLUITestBiometricScenario) -> BiometricAuthClient {
+        let result: BiometricAuthClient.AuthenticationResult = scenario == .success ? .success : .failure
         return BiometricAuthClient(
             isAvailable: { true },
             authenticate: { _ in result },

@@ -32,11 +32,11 @@ extension PersistenceContainer {
         let container: ModelContainer
         
         /// 是否可安全呈現正常介面
-        let outcome: Outcome
+        let status: Status
     }
     
     /// App 持久層啟動狀態
-    enum Outcome: Equatable, Sendable {
+    enum Status: Equatable, Sendable {
         
         /// on-disk store 正常開啟
         case healthy
@@ -136,7 +136,7 @@ private extension PersistenceContainer {
         do {
             return Bootstrap(
                 container: try make(inMemoryOnly: false, storeURL: storeURL),
-                outcome: .healthy
+                status: .healthy
             )
         } catch {
             let reason = error.localizedDescription
@@ -147,7 +147,7 @@ private extension PersistenceContainer {
             do {
                 return Bootstrap(
                     container: try make(inMemoryOnly: true, storeURL: nil),
-                    outcome: .degraded(reason: reason)
+                    status: .degraded(reason: reason)
                 )
             } catch {
                 let message = error.localizedDescription

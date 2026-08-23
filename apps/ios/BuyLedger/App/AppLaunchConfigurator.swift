@@ -30,7 +30,7 @@ extension AppLaunchConfigurator {
         FirebaseApp.configure()
         TelemetryClient.liveValue.enableCollection()
         
-        if case let .degraded(reason) = PersistenceContainer.bootstrap.outcome {
+        if case let .degraded(reason) = PersistenceContainer.bootstrap.status {
             crashDiagnosticsClient.record("SwiftData store could not open: \(reason)")
         }
     }
@@ -53,7 +53,7 @@ extension AppLaunchConfigurator {
     static var activePersistenceBootstrap: PersistenceContainer.Bootstrap {
 #if DEBUG
         if let container = BLUITestHarness.modelContainer {
-            return PersistenceContainer.Bootstrap(container: container, outcome: .healthy)
+            return PersistenceContainer.Bootstrap(container: container, status: .healthy)
         }
 #endif
         
