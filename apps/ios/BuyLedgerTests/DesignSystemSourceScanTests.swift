@@ -122,10 +122,8 @@ struct DesignSystemSourceScanTests {
         
         print("目前全部有效豁免 (\(markers.count) 筆)：")
         for marker in markers {
-            print(
-                "  \(marker.violation.file):\(marker.violation.line): "
-                    + (marker.reason.isEmpty ? "(無理由)" : marker.reason)
-            )
+            let reason = marker.reason.isEmpty ? "(無理由)" : marker.reason
+            print("  \(marker.violation.file):\(marker.violation.line): \(reason)")
         }
         
         let emptyReasonMarkers = markers.filter { $0.reason.isEmpty }

@@ -157,8 +157,7 @@ extension OrdersFeature.State {
                 let trimmedName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
                 let name = trimmedName.isEmpty ? "未命名商品" : trimmedName
                 lines.append(
-                    "- [\(categoryTag)] \(name) x\(item.quantity) @ "
-                    + "\(item.unitPrice) \(order.currency.rawValue)"
+                    "- [\(categoryTag)] \(name) x\(item.quantity) @ \(item.unitPrice) \(order.currency.rawValue)"
                 )
                 if lines.count >= maxItems { break outer }
             }

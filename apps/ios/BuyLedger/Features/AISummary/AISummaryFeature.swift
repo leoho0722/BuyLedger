@@ -141,8 +141,9 @@ struct AISummaryFeature {
                     state.phase = .failed
                     // 記錄狀態與下一步，不把環境變數名稱顯示給使用者。
                     state.errorMessage = "AI 總結尚未完成設定，目前無法使用。"
-                    Logger(subsystem: "BuyLedger", category: "AISummary")
-                        .error("AI 總結無法啟動：OLLAMA_API_KEY 未注入 (xcconfig 未設定)")
+                    AppLogger.aiSummary.error(
+                        "AI 總結無法啟動：OLLAMA_API_KEY 未注入 (xcconfig 未設定)"
+                    )
                     return .none
                 }
                 state.phase = .streaming

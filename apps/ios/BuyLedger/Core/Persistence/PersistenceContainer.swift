@@ -103,8 +103,7 @@ extension PersistenceContainer {
             return try make(inMemoryOnly: true, storeURL: nil)
         } catch {
             fatalError(
-                "Unable to create the \(context.label) in-memory container: "
-                + error.localizedDescription
+                "Unable to create the \(context.label) in-memory container: \(error.localizedDescription)"
             )
         }
     }
@@ -141,10 +140,9 @@ private extension PersistenceContainer {
             )
         } catch {
             let reason = error.localizedDescription
-            Logger(subsystem: "com.leoho.BuyLedger", category: "Persistence")
-                .fault(
-                    "SwiftData store could not open: \(reason, privacy: .public)"
-                )
+            AppLogger.persistence.fault(
+                "SwiftData store could not open: \(reason, privacy: .public)"
+            )
             
             do {
                 return Bootstrap(
@@ -153,12 +151,11 @@ private extension PersistenceContainer {
                 )
             } catch {
                 let message = error.localizedDescription
-                Logger(subsystem: "com.leoho.BuyLedger", category: "Persistence")
-                    .fault(
-                        "SwiftData in-memory fallback could not open: \(message, privacy: .public)"
-                    )
+                AppLogger.persistence.fault(
+                    "SwiftData in-memory fallback could not open: \(message, privacy: .public)"
+                )
                 fatalError(
-                    "SwiftData schema definition is invalid and cannot create " + "an in-memory container."
+                    "SwiftData schema definition is invalid and cannot create an in-memory container."
                 )
             }
         }

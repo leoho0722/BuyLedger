@@ -24,8 +24,7 @@ extension CurrencyMetadataPersistence {
         let records = try PersistenceError.mapFetch {
             try modelContext.fetch(descriptor)
         }
-        return
-            records
+        return records
             .map { $0.code }
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }

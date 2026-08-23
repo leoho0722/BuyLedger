@@ -329,9 +329,7 @@ extension OrderPersistence {
     ///   - oldName: 原本的對帳狀態名稱
     ///   - newName: 新的對帳狀態名稱
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
-    func renameReconciliationStatus(from oldName: String, to newName: String)
-    throws(PersistenceError)
-    {
+    func renameReconciliationStatus(from oldName: String, to newName: String) throws(PersistenceError) {
         let descriptor = FetchDescriptor<OrderRecord>(
             predicate: #Predicate { $0.reconciliationStatus == oldName }
         )
