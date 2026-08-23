@@ -24,16 +24,12 @@ extension CampaignReminderPersistence {
             try modelContext.fetch(FetchDescriptor<CampaignReminderRecord>())
         }
         
-        return Dictionary(
-            records.map {
-                (
-                    $0.campaignID,
-                    CampaignReminderLink(
-                        eventIdentifier: $0.eventIdentifier, reminderTimestamp: $0.reminderTimestamp
-                    )
-                )
-            }
-        ) { _, latest in latest }
+        return records.reduce(into: [String: CampaignReminderLink]()) { links, record in
+            links[record.campaignID] = CampaignReminderLink(
+                eventIdentifier: record.eventIdentifier,
+                reminderTimestamp: record.reminderTimestamp
+            )
+        }
     }
     
     /// 寫入或更新單一連結 (依 campaignID upsert)
@@ -44,9 +40,7 @@ extension CampaignReminderPersistence {
     func upsert(
         campaignID: String,
         link: CampaignReminderLink
-    )
-    throws(PersistenceError)
-    {
+    ) throws(PersistenceError) {
         let wantedID = campaignID
         let descriptor = FetchDescriptor<CampaignReminderRecord>(
             predicate: #Predicate { $0.campaignID == wantedID }

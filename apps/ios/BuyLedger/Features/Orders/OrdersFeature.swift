@@ -586,7 +586,8 @@ struct OrdersFeature {
                 
             case let .paymentMethodFlagsApplied(updatedOrders):
                 let updatedByID = Dictionary(
-                    uniqueKeysWithValues: updatedOrders.map { ($0.id, $0) })
+                    uniqueKeysWithValues: updatedOrders.map { ($0.id, $0) }
+                )
                 state.orders = state.orders.map { updatedByID[$0.id] ?? $0 }
                 return .none
                 
