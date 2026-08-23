@@ -148,9 +148,10 @@ private extension FxView {
                 
                 amountField(palette: palette)
                 
-                Divider().padding(.vertical, BLSpacing.small)
+                Divider()
+                    .padding(.vertical, BLSpacing.small)
                 
-                resultBlock(palette: palette)
+                conversionResult(palette: palette)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -235,11 +236,11 @@ private extension FxView {
         .accessibilityIdentifier(BLAccessibilityID.Fx.amountField)
     }
     
-    /// 結果區塊 (accent 背景)
+    /// 換算結果區塊 (accent 背景)
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 結果 view
     @ViewBuilder
-    func resultBlock(palette: BLPalette) -> some View {
+    func conversionResult(palette: BLPalette) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             Text("= 新台幣")
                 .font(BLTypographyStyle.caption.font.weight(.semibold))
@@ -380,6 +381,8 @@ private extension FxView {
     }
     
     /// 依 locale 格式化匯率；無資料時顯示「—」
+    /// - Parameter currency: 要顯示匯率的來源幣別
+    /// - Returns: 格式化後的匯率字串；無匯率資料時回傳「—」
     func rateDisplay(for currency: CurrencyCode) -> String {
         guard let rate = store.state.displayRate(for: currency) else {
             return "—"
@@ -424,6 +427,8 @@ private extension FxView {
     }
     
     /// 依 App 選定 locale 格式化的預設金額按鈕文字
+    /// - Parameter value: 預設金額
+    /// - Returns: 依 locale 格式化的金額文字
     func presetLabel(_ value: Decimal) -> String {
         value.formatted(.number.precision(.fractionLength(0)).locale(locale))
     }
