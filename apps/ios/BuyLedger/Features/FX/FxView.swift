@@ -319,7 +319,8 @@ private extension FxView {
                     rateRow(currency: currency, palette: palette)
                     
                     if index < displayed.count - 1 {
-                        Divider().padding(.leading, BLSpacing.large)
+                        Divider()
+                            .padding(.leading, BLSpacing.large)
                     }
                 }
             }
@@ -387,7 +388,11 @@ private extension FxView {
         guard let rate = store.state.displayRate(for: currency) else {
             return "—"
         }
-        return rate.formatted(.number.precision(.fractionLength(4)).locale(locale))
+        return rate.formatted(
+            .number
+                .precision(.fractionLength(4))
+                .locale(locale)
+        )
     }
     
     /// 依 App 選定 locale 產生幣別顯示文字
@@ -430,7 +435,11 @@ private extension FxView {
     /// - Parameter value: 預設金額
     /// - Returns: 依 locale 格式化的金額文字
     func presetLabel(_ value: Decimal) -> String {
-        value.formatted(.number.precision(.fractionLength(0)).locale(locale))
+        value.formatted(
+            .number
+                .precision(.fractionLength(0))
+                .locale(locale)
+        )
     }
 }
 
