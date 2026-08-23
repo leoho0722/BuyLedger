@@ -62,10 +62,9 @@ struct OrderSummary: Equatable {
         // 貨到付款已含運費，計入成本；其他訂單由客人另付。
         let codShippingCost: Decimal
         if order.isCashOnDelivery {
-            codShippingCost =
-            order.domesticShipping
-            + order.internationalShipping
-            + order.foreignDomesticShipping
+            codShippingCost = order.domesticShipping
+                + order.internationalShipping
+                + order.foreignDomesticShipping
         } else {
             codShippingCost = 0
         }
