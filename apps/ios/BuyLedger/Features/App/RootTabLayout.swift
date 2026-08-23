@@ -45,15 +45,24 @@ private extension RootTabLayout {
         switch tab {
         case .dashboard:
             DashboardView(
-                store: store.scope(state: \.dashboard, action: \.dashboard), language: language)
+                store: store.scope(state: \.dashboard, action: \.dashboard),
+                language: language
+            )
         case .orders:
-            OrdersView(store: store.scope(state: \.orders, action: \.orders), language: language)
+            OrdersView(
+                store: store.scope(state: \.orders, action: \.orders),
+                language: language
+            )
         case .campaigns:
             CampaignListView(
-                store: store.scope(state: \.campaigns, action: \.campaigns), language: language)
+                store: store.scope(state: \.campaigns, action: \.campaigns),
+                language: language
+            )
         case .insights:
             InsightsView(
-                store: store.scope(state: \.insights, action: \.insights), language: language)
+                store: store.scope(state: \.insights, action: \.insights),
+                language: language
+            )
         case .more:
             MoreView(store: store)
         }
