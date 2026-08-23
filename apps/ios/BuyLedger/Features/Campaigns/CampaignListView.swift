@@ -161,7 +161,9 @@ private extension CampaignListView {
                         $0.subgroups.flatMap { $0.campaigns.map(\.name) }
                     }
                     let summaries = CampaignSummary.batch(
-                        campaignNames: campaignNames, orders: store.orders)
+                        campaignNames: campaignNames,
+                        orders: store.orders
+                    )
                     ScrollView {
                         LazyVStack(alignment: .leading, spacing: BLSpacing.large) {
                             ForEach(sections) { section in
@@ -204,9 +206,10 @@ private extension CampaignListView {
     ///   - summaries: 已由 ``content`` 批次投影好的開團名稱到彙總字典
     /// - Returns: 子群組 view
     @ViewBuilder
-    func subgroupView(_ subgroup: CampaignSubgroup, summaries: [String: CampaignSummary])
-    -> some View
-    {
+    func subgroupView(
+        _ subgroup: CampaignSubgroup,
+        summaries: [String: CampaignSummary]
+    ) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             if let subTitle = subgroup.title {
                 Text(subTitle)
