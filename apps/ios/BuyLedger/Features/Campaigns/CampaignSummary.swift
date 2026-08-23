@@ -107,8 +107,7 @@ struct CampaignSummary: Equatable, Sendable {
         }
         
         self.receivables = members.reduce(0) { $0 + $1.chargedAmount }
-        self.receivedAmount =
-        members
+        self.receivedAmount = members
             .filter { $0.paymentReceiptStatus == .received }
             .reduce(0) { $0 + $1.chargedAmount }
         self.outstandingAmount = receivables - receivedAmount

@@ -32,11 +32,11 @@ extension CustomerRankBadgeStyle {
     static func style(forRank rank: Int) -> CustomerRankBadgeStyle {
         switch rank {
         case 1:
-                .first
+            .first
         case 2:
-                .second
+            .second
         default:
-                .other
+            .other
         }
     }
     
@@ -60,7 +60,7 @@ extension CustomerRankBadgeStyle {
     func numeral(in palette: BLPalette) -> Color {
         switch self {
         case .first:
-                .white
+            .white
         case .second:
             BLTone.neutral.onIndicator
         case .other:

@@ -84,8 +84,7 @@ private extension CustomersView {
                 .textCase(.uppercase)
             
             LazyVGrid(columns: topThreeColumns, spacing: BLSpacing.medium) {
-                ForEach(Array(customers.prefix(topCount).enumerated()), id: \.element.id) {
-                    index, customer in
+                ForEach(Array(customers.prefix(topCount).enumerated()), id: \.element.id) { index, customer in
                     Button {
                         store.send(.delegate(.customerTapped(customer.name)))
                     } label: {

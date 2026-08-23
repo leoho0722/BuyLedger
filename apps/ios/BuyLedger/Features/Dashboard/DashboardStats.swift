@@ -79,7 +79,10 @@ struct DashboardStats {
     init(orders: [LedgerOrder], monthlyGoal: Decimal, referenceDate: Date, calendar: Calendar) {
         let attributedOrders = LedgerOrder.revenueAttributionOrders(from: orders)
         let current = DashboardStats.monthlyTotals(
-            orders: attributedOrders, calendar: calendar, referenceDate: referenceDate)
+            orders: attributedOrders,
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
         let previous: MonthlyTotals = {
             guard let priorMonth = calendar.date(
                 byAdding: .month,
@@ -107,7 +110,9 @@ struct DashboardStats {
             pct = CGFloat(min(1.0, max(0.0, raw)))
         }
         
-        let recent = orders.sorted { $0.date > $1.date }.prefix(DashboardStats.recentOrdersCount)
+        let recent = orders
+            .sorted { $0.date > $1.date }
+            .prefix(DashboardStats.recentOrdersCount)
         
         self.revenue = current.revenue
         self.cost = current.cost
