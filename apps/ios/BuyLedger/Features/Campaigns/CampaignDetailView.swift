@@ -131,7 +131,9 @@ private extension CampaignDetailView {
             LabeledContent("狀態") {
                 HStack(spacing: BLSpacing.extraSmall) {
                     BLStatusPill(
-                        campaign.status.title, tone: CampaignStatusStyle.tone(for: campaign.status))
+                        campaign.status.title,
+                        tone: CampaignStatusStyle.tone(for: campaign.status)
+                    )
                     if campaign.isSettled {
                         BLStatusPill("已結團", tone: .neutral, showsIndicator: false)
                     }
@@ -316,7 +318,8 @@ private extension CampaignDetailView {
                         .receiptStatusToggled(
                             order.id,
                             order.paymentReceiptStatus == .received ? .pending : .received
-                        ))
+                        )
+                    )
                 } label: {
                     Label {
                         Text(LocalizedStringKey(order.paymentReceiptStatus.title))
