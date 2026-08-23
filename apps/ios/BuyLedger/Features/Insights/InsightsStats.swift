@@ -81,7 +81,10 @@ struct InsightsStats {
         let totalFees = attributedOrders.reduce(Decimal.zero) { $0 + $1.summary.fees }
         
         let trendDelta = InsightsStats.trendDelta(
-            current: totalProfit, previous: priorPeriodProfit, locale: locale)
+            current: totalProfit,
+            previous: priorPeriodProfit,
+            locale: locale
+        )
         
         self.trendBars = trendBuckets.map(\.bar)
         self.totalProfit = totalProfit
@@ -152,8 +155,7 @@ extension InsightsStats {
     ) -> [CampaignProfitRank] {
         // 單次掃描訂單，批次建立各團投影
         let summaries = CampaignSummary.batch(campaignNames: campaigns.map(\.name), orders: orders)
-        let ranked =
-        campaigns
+        let ranked = campaigns
             .map { ($0, summaries[$0.name] ?? CampaignSummary(campaignName: $0.name, orders: [])) }
             .filter { $0.1.orderCount > 0 }
             .sorted { $0.1.profit > $1.1.profit }
@@ -196,8 +198,11 @@ extension InsightsStats {
             guard let orderWeekStart = calendar.dateInterval(of: .weekOfYear, for: order.date)?.start else {
                 continue
             }
-            let daysBetween =
-            calendar.dateComponents([.day], from: orderWeekStart, to: currentWeekStart).day ?? 0
+            let daysBetween = calendar.dateComponents(
+                [.day],
+                from: orderWeekStart,
+                to: currentWeekStart
+            ).day ?? 0
             let weeksAgo = daysBetween / 7
             let weekIndex = (weekCount - 1) - weeksAgo
             
@@ -303,67 +308,69 @@ private extension InsightsStats {
     ) -> [TrendBucket] {
         switch range {
         case .thirtyDays:
-            return (0..<30).reversed().compactMap { offset -> TrendBucket? in
-                guard let dayStart = calendar.date(byAdding: .day, value: -offset, to: now),
-                      let interval = calendar.dateInterval(of: .day, for: dayStart) else {
-                    return nil
-                }
-                
-                let dayProfit =
-                attributedOrders
-                    .filter { (interval.start..<interval.end).contains($0.date) }
-                    .reduce(Decimal.zero) { $0 + $1.summary.profit }
-                
-                // 30 天逐日標籤格式：MM/dd (verbatim，不受 locale 影響)
-                let label = dayStart.formatted(
-                    .verbatim(
-                        "\(month: .twoDigits)/\(day: .twoDigits)",
-                        timeZone: calendar.timeZone,
-                        calendar: calendar
+            return (0..<30)
+                .reversed()
+                .compactMap { offset -> TrendBucket? in
+                    guard let dayStart = calendar.date(byAdding: .day, value: -offset, to: now),
+                          let interval = calendar.dateInterval(of: .day, for: dayStart) else {
+                        return nil
+                    }
+
+                    let dayProfit = attributedOrders
+                        .filter { (interval.start..<interval.end).contains($0.date) }
+                        .reduce(Decimal.zero) { $0 + $1.summary.profit }
+
+                    // 30 天逐日標籤格式：MM/dd (verbatim，不受 locale 影響)
+                    let label = dayStart.formatted(
+                        .verbatim(
+                            "\(month: .twoDigits)/\(day: .twoDigits)",
+                            timeZone: calendar.timeZone,
+                            calendar: calendar
+                        )
                     )
-                )
-                
-                return TrendBucket(
-                    bar: BLBarChartValue(
-                        label: label,
-                        value: NSDecimalNumber(decimal: dayProfit).doubleValue,
-                        valueDescription: BLFormatters.twd(dayProfit, locale: locale)
-                    ),
-                    profit: dayProfit
-                )
-            }
+
+                    return TrendBucket(
+                        bar: BLBarChartValue(
+                            label: label,
+                            value: NSDecimalNumber(decimal: dayProfit).doubleValue,
+                            valueDescription: BLFormatters.twd(dayProfit, locale: locale)
+                        ),
+                        profit: dayProfit
+                    )
+                }
             
         case .sixMonths, .twelveMonths:
             let monthCount = range == .sixMonths ? 6 : 12
             
-            return (0..<monthCount).reversed().compactMap { offset -> TrendBucket? in
-                guard let monthStart = calendar.date(byAdding: .month, value: -offset, to: now),
-                      let interval = calendar.dateInterval(of: .month, for: monthStart) else {
-                    return nil
+            return (0..<monthCount)
+                .reversed()
+                .compactMap { offset -> TrendBucket? in
+                    guard let monthStart = calendar.date(byAdding: .month, value: -offset, to: now),
+                          let interval = calendar.dateInterval(of: .month, for: monthStart) else {
+                        return nil
+                    }
+
+                    let monthProfit = attributedOrders
+                        .filter { (interval.start..<interval.end).contains($0.date) }
+                        .reduce(Decimal.zero) { $0 + $1.summary.profit }
+
+                    // 6 個月用 YYYY/MM；12 個月空間較窄，改用 YY/MM (皆為 verbatim 精確格式)
+                    let sixMonthFormat: Date.FormatString = "\(year: .padded(4))/\(month: .twoDigits)"
+                    let twelveMonthFormat: Date.FormatString = "\(year: .twoDigits)/\(month: .twoDigits)"
+                    let monthFormat: Date.FormatString = range == .sixMonths ? sixMonthFormat : twelveMonthFormat
+                    let label = monthStart.formatted(
+                        .verbatim(monthFormat, timeZone: calendar.timeZone, calendar: calendar)
+                    )
+
+                    return TrendBucket(
+                        bar: BLBarChartValue(
+                            label: label,
+                            value: NSDecimalNumber(decimal: monthProfit).doubleValue,
+                            valueDescription: BLFormatters.twd(monthProfit, locale: locale)
+                        ),
+                        profit: monthProfit
+                    )
                 }
-                
-                let monthProfit =
-                attributedOrders
-                    .filter { (interval.start..<interval.end).contains($0.date) }
-                    .reduce(Decimal.zero) { $0 + $1.summary.profit }
-                
-                // 6 個月用 YYYY/MM；12 個月空間較窄，改用 YY/MM (皆為 verbatim 精確格式)
-                let sixMonthFormat: Date.FormatString = "\(year: .padded(4))/\(month: .twoDigits)"
-                let twelveMonthFormat: Date.FormatString = "\(year: .twoDigits)/\(month: .twoDigits)"
-                let monthFormat: Date.FormatString = range == .sixMonths ? sixMonthFormat : twelveMonthFormat
-                let label = monthStart.formatted(
-                    .verbatim(monthFormat, timeZone: calendar.timeZone, calendar: calendar)
-                )
-                
-                return TrendBucket(
-                    bar: BLBarChartValue(
-                        label: label,
-                        value: NSDecimalNumber(decimal: monthProfit).doubleValue,
-                        valueDescription: BLFormatters.twd(monthProfit, locale: locale)
-                    ),
-                    profit: monthProfit
-                )
-            }
         }
     }
 }
