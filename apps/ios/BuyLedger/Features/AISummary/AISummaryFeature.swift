@@ -86,8 +86,8 @@ struct AISummaryFeature {
     
     // MARK: - Nested Types
     
-    /// 串流競速工作的結果
-    private enum StreamOutcome: Sendable {
+    /// 串流與逾時處理的結果
+    private enum StreamResult: Sendable {
         
         // MARK: - Cases
         
@@ -107,20 +107,6 @@ struct AISummaryFeature {
         case unknownFailure
     }
     
-    // MARK: - Dependency Properties
-    
-    /// Ollama Cloud 串流 client
-    @Dependency(OllamaClient.self) private var ollamaClient
-    
-    /// App 環境設定提供者
-    @Dependency(\.appConfiguration) private var appConfiguration
-    
-    /// 關閉 sheet 用的 dismiss effect
-    @Dependency(\.dismiss) private var dismiss
-    
-    /// 控制串流整體生命週期的時鐘
-    @Dependency(\.continuousClock) private var clock
-    
     // MARK: - Cancel ID
     
     /// 串流 effect 的取消識別
@@ -137,6 +123,10 @@ struct AISummaryFeature {
         Reduce { state, action in
             switch action {
             case .task, .retryTapped:
+                @Dependency(OllamaClient.self) var ollamaClient
+                @Dependency(\.appConfiguration) var appConfiguration
+                @Dependency(\.continuousClock) var clock
+
                 guard let apiKey = appConfiguration.ollamaAPIKey() else {
                     state.phase = .failed
                     // 記錄狀態與下一步，不把環境變數名稱顯示給使用者。
@@ -154,9 +144,9 @@ struct AISummaryFeature {
                 let prompt = state.prompt
                 let model = state.model
                 let client = ollamaClient
-                let clock = clock
+                let streamClock = clock
                 return .run { send in
-                    let outcome = await withTaskGroup(of: StreamOutcome.self) { group in
+                    let result = await withTaskGroup(of: StreamResult.self) { group in
                         group.addTask {
                             do {
                                 for try await chunk in client.streamSummary(prompt, model, apiKey) {
@@ -172,7 +162,7 @@ struct AISummaryFeature {
                         
                         group.addTask {
                             do {
-                                try await clock.sleep(for: OllamaClient.overallStreamDuration)
+                                try await streamClock.sleep(for: OllamaClient.overallStreamDuration)
                                 return .timedOut
                             } catch is CancellationError {
                                 return .cancelled
@@ -181,14 +171,14 @@ struct AISummaryFeature {
                             }
                         }
                         
-                        guard let outcome = await group.next() else {
-                            return StreamOutcome.cancelled
+                        guard let result = await group.next() else {
+                            return StreamResult.cancelled
                         }
                         group.cancelAll()
-                        return outcome
+                        return result
                     }
                     
-                    switch outcome {
+                    switch result {
                     case .finished:
                         await send(.streamFinished)
                     case .timedOut:
@@ -223,10 +213,11 @@ struct AISummaryFeature {
                 return .none
                 
             case .closeTapped:
-                let dismiss = dismiss
+                @Dependency(\.dismiss) var dismiss
+                let dismissAction = dismiss
                 return .merge(
                     .cancel(id: CancelID.stream),
-                    .run { _ in await dismiss() }
+                    .run { _ in await dismissAction() }
                 )
             }
         }
