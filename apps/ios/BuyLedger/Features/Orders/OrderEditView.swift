@@ -166,12 +166,19 @@ struct OrderEditView: View {
                 
                 Section {
                     percentField(
-                        title: "刷卡手續費 %", value: $store.draft.cardFeeRate, field: .cardFeeRate)
+                        title: "刷卡手續費 %",
+                        value: $store.draft.cardFeeRate,
+                        field: .cardFeeRate
+                    )
                     percentField(
-                        title: "平台手續費 %", value: $store.draft.platformFeeRate,
-                        field: .platformFeeRate)
+                        title: "平台手續費 %",
+                        value: $store.draft.platformFeeRate,
+                        field: .platformFeeRate
+                    )
                     percentField(
-                        title: "金流手續費 %", value: $store.draft.paymentFeeRate, field: .paymentFeeRate
+                        title: "金流手續費 %",
+                        value: $store.draft.paymentFeeRate,
+                        field: .paymentFeeRate
                     )
                 } header: {
                     Text("手續費 (%)")
