@@ -55,7 +55,7 @@ extension LookupManagementFeature.Destination {
             
             // MARK: - Computed Properties
             
-            /// 草稿去除前後空白後非空，且名稱已變更
+            /// 是否允許送出重新命名請求
             var canSave: Bool {
                 let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
                 return !trimmed.isEmpty && trimmed != originalName
@@ -119,6 +119,9 @@ extension LookupManagementFeature.Destination {
         enum Action: Equatable {
             
             /// 使用者確認編輯後送出表單結果
+            /// - Parameters:
+            ///   - name: 編輯後的付款方式名稱
+            ///   - flags: 編輯後的付款方式分類旗標
             case saveButtonTapped(
                 name: String,
                 flags: PaymentMethodFlags
