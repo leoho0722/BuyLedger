@@ -280,7 +280,8 @@ private extension InsightsView {
                         .accessibilityHint("查看 \(rank.campaignName) 的詳情")
                         .accessibilityValue(Text(CampaignFormatters.twd(rank.profit, locale: locale)))
                         .accessibilityIdentifier(
-                            BLAccessibilityID.Insights.campaignRankRow(campaignID: rank.id))
+                            BLAccessibilityID.Insights.campaignRankRow(campaignID: rank.id)
+                        )
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)

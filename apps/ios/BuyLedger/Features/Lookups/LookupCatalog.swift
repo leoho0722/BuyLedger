@@ -145,7 +145,9 @@ private extension LookupCatalog {
         guard !list.contains(name) else {
             return list
         }
-        return (list + [name]).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        return (list + [name]).sorted {
+            $0.localizedStandardCompare($1) == .orderedAscending
+        }
     }
     
     /// 把清單中等於 `oldName` 的項目替換成 `newName`，去重後依 locale 排序
@@ -160,7 +162,9 @@ private extension LookupCatalog {
         in list: [String]
     ) -> [String] {
         let replaced = list.map { $0 == oldName ? newName : $0 }
-        return Array(Set(replaced)).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        return Array(Set(replaced)).sorted {
+            $0.localizedStandardCompare($1) == .orderedAscending
+        }
     }
     
     /// 加入或覆寫付款方式 (同名以新旗標覆寫)，依 locale 排序
@@ -178,7 +182,9 @@ private extension LookupCatalog {
         } else {
             updated.append(info)
         }
-        return updated.sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        return updated.sorted {
+            $0.name.localizedStandardCompare($1.name) == .orderedAscending
+        }
     }
     
     /// 改名付款方式；任一邊為真的旗標都保留
