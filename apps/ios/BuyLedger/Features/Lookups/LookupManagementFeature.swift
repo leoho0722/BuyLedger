@@ -235,13 +235,12 @@ struct LookupManagementFeature {
             case .addButtonTapped:
                 // 新增併入 destination：任一時刻只呈現一張 sheet，互斥由型別系統保證
                 switch state.kind {
-                case .orderSource,
-                        .category,
-                        .reconciliationStatus:
+                case .orderSource, .category, .reconciliationStatus:
                     state.destination = .addNameOnly(Destination.AddNameOnlyFeature.State())
                 case .paymentMethod:
                     state.destination = .addPaymentMethod(
-                        Destination.AddPaymentMethodFeature.State())
+                        Destination.AddPaymentMethodFeature.State()
+                    )
                 }
                 return .none
                 
@@ -345,7 +344,11 @@ struct LookupManagementFeature {
                 
                 // 由 catalog.rename 統一合併付款方式旗標。
                 state.$catalog.withLock {
-                    $0.rename(from: trimmedFrom, to: trimmedTo, kind: state.kind)
+                    $0.rename(
+                        from: trimmedFrom,
+                        to: trimmedTo,
+                        kind: state.kind
+                    )
                 }
                 
                 let kind = state.kind
@@ -363,14 +366,11 @@ struct LookupManagementFeature {
                         try await categoryRepository.renameCategory(trimmedFrom, trimmedTo)
                         try await orderRepository.renameOrderCategory(trimmedFrom, trimmedTo)
                     case .paymentMethod:
-                        try await paymentMethodRepository.renamePaymentMethod(
-                            trimmedFrom, trimmedTo)
+                        try await paymentMethodRepository.renamePaymentMethod(trimmedFrom, trimmedTo)
                         try await orderRepository.renameOrderPaymentMethod(trimmedFrom, trimmedTo)
                     case .reconciliationStatus:
-                        try await reconciliationStatusRepository.renameReconciliationStatus(
-                            trimmedFrom, trimmedTo)
-                        try await orderRepository.renameOrderReconciliationStatus(
-                            trimmedFrom, trimmedTo)
+                        try await reconciliationStatusRepository.renameReconciliationStatus(trimmedFrom, trimmedTo)
+                        try await orderRepository.renameOrderReconciliationStatus(trimmedFrom, trimmedTo)
                     }
                 } catch: { _, send in
                     await send(.loadFailed("重新命名失敗，請稍後再試。"))
@@ -408,8 +408,7 @@ struct LookupManagementFeature {
                     do {
                         // 確認文案與寫入資料共用同一個 plan。
                         let orders = try await orderRepository.fetchOrders()
-                        let affectedOrders =
-                        orders
+                        let affectedOrders = orders
                             .filter { $0.paymentMethod == trimmedOriginal }
                             .map {
                                 $0
@@ -440,8 +439,7 @@ struct LookupManagementFeature {
                 
                 state.pendingPaymentMethodEdit = plan
                 let count = plan.affectedOrders.count
-                let message: LocalizedStringKey =
-                "確認後將重算 \(count) 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。"
+                let message: LocalizedStringKey = "確認後將重算 \(count) 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。"
                 state.retroactiveConfirmation = AlertState {
                     TextState("更正付款方式")
                 } actions: {
@@ -553,8 +551,6 @@ struct LookupManagementFeature {
     }
 }
 
-// MARK: - Private Types
-
 // MARK: - Private Method
 
 private extension LookupManagementFeature.State {
@@ -651,8 +647,7 @@ private extension LookupManagementFeature {
                     let infos = try await paymentMethodRepository.fetchPaymentMethodInfos()
                     await send(.paymentMethodInfosLoaded(infos))
                 case .reconciliationStatus:
-                    let items =
-                    try await reconciliationStatusRepository.fetchReconciliationStatuses()
+                    let items = try await reconciliationStatusRepository.fetchReconciliationStatuses()
                     await send(.reconciliationStatusItemsLoaded(items))
                 }
             } catch {
