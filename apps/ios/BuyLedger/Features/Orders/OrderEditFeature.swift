@@ -154,8 +154,7 @@ struct OrderEditFeature {
             }
             
             var reconciliationStatuses = availableReconciliationStatuses
-            let originalReconciliationStatus =
-            original?.reconciliationStatus.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
+            let originalReconciliationStatus = original?.reconciliationStatus.trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
             if !originalReconciliationStatus.isEmpty,
                !reconciliationStatuses.contains(originalReconciliationStatus) {
                 reconciliationStatuses.append(originalReconciliationStatus)
@@ -441,9 +440,7 @@ struct OrderEditFeature {
     var body: some Reducer<State, Action> {
         BindingReducer()
         
-        Reduce {
-            state,
-            action in
+        Reduce { state, action in
             switch action {
             case .binding(\.photoPickerSelection):
                 let items = state.photoPickerSelection
@@ -456,8 +453,7 @@ struct OrderEditFeature {
                     await send(.photosImported(photoClient.importPhotos(items)))
                 }
                 
-            case .binding(\.draft.cardlessDeductionAmount),
-                    .binding(\.draft.chargedAmount):
+            case .binding(\.draft.cardlessDeductionAmount), .binding(\.draft.chargedAmount):
                 // 任一相關欄位變更都重新限制折抵金額。
                 state.reconcileCardlessDeductionCap()
                 return .none
@@ -706,22 +702,23 @@ struct OrderEditFeature {
                             await send(.photosLoadFailed)
                         }
                     }()
-                    _ = await (
-                        orderSourcesTask, categoriesTask, paymentMethodsTask,
-                        reconciliationStatusesTask, campaignsTask, currenciesTask, photosTask
-                    )
+                    await orderSourcesTask
+                    await categoriesTask
+                    await paymentMethodsTask
+                    await reconciliationStatusesTask
+                    await campaignsTask
+                    await currenciesTask
+                    await photosTask
                 }
                 
             case let .availableOrderSourcesLoaded(items):
                 // 保留表單中剛新增的訂單來源
                 var merged = Set(items)
-                let trimmedOrderSource = state.draft.orderSource.trimmingCharacters(
-                    in: .whitespacesAndNewlines)
+                let trimmedOrderSource = state.draft.orderSource.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmedOrderSource.isEmpty {
                     merged.insert(trimmedOrderSource)
                 }
-                state.availableOrderSources =
-                merged
+                state.availableOrderSources = merged
                     .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
                 return .none
                 
@@ -745,8 +742,7 @@ struct OrderEditFeature {
                 for info in infos {
                     merged[info.name] = info
                 }
-                let trimmedPaymentMethod = state.draft.paymentMethod.trimmingCharacters(
-                    in: .whitespacesAndNewlines)
+                let trimmedPaymentMethod = state.draft.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
                 if !trimmedPaymentMethod.isEmpty,
                    merged[trimmedPaymentMethod] == nil {
                     merged[trimmedPaymentMethod] = PaymentMethodInfo(
@@ -768,8 +764,7 @@ struct OrderEditFeature {
                 if !trimmedReconciliationStatus.isEmpty {
                     merged.insert(trimmedReconciliationStatus)
                 }
-                state.availableReconciliationStatuses =
-                merged
+                state.availableReconciliationStatuses = merged
                     .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
                 return .none
                 
@@ -778,8 +773,7 @@ struct OrderEditFeature {
                 var ongoingNames: [String] = []
                 if !campaigns.isEmpty {
                     let now = date.now
-                    ongoingNames =
-                    campaigns
+                    ongoingNames = campaigns
                         .map { $0.evaluatingAutoClose(asOf: now, calendar: calendar) }
                         .filter { $0.status == .ongoing }
                         .map(\.name)
@@ -791,8 +785,7 @@ struct OrderEditFeature {
                 }) where !draftCampaign.isEmpty {
                     merged.insert(draftCampaign)
                 }
-                state.availableCampaigns =
-                merged
+                state.availableCampaigns = merged
                     .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
                 return .none
                 
@@ -800,8 +793,7 @@ struct OrderEditFeature {
                 // 合併時保留目前幣別。
                 var merged = Set(codes)
                 merged.insert(state.draft.currency)
-                state.availableCurrencies =
-                merged
+                state.availableCurrencies = merged
                     .sorted {
                         $0.rawValue.localizedStandardCompare($1.rawValue) == .orderedAscending
                     }
