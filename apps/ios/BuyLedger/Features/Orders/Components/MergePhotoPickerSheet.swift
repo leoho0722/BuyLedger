@@ -79,10 +79,10 @@ private extension MergePhotoPickerSheet {
                     .foregroundStyle(
                         .white, isSelected ? palette.accent : Color.black.opacity(0.35)
                     )
-                // 保持圖示為一般字重。
+                    // 保持圖示為一般字重。
                     .font(.title3)
                     .padding(6)
-                // 外層 accessibilityLabel 已涵蓋語意，勾號不需朗讀
+                    // 外層 accessibilityLabel 已涵蓋語意，勾號不需朗讀
                     .accessibilityHidden(true)
             }
             .contentShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
