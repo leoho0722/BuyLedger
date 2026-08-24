@@ -9,35 +9,68 @@ import Foundation
 import Testing
 @testable import BuyLedger
 
+/// 驗證建置設定的讀取與正規化
 struct AppConfigurationTests {
-
+    
     // MARK: - Tests
-
+    
     @Test func normalizeReturnsTrimmedValue() {
-        #expect(AppConfiguration.normalize("  abc123  ", placeholder: "$(OLLAMA_API_KEY)") == "abc123")
+        #expect(
+            AppConfiguration.normalize(
+                "  abc123  ",
+                placeholder: "$(OLLAMA_API_KEY)"
+            ) == "abc123"
+        )
     }
-
+    
     @Test func normalizeReturnsNilForNil() {
-        #expect(AppConfiguration.normalize(nil, placeholder: "$(OLLAMA_API_KEY)") == nil)
+        #expect(
+            AppConfiguration.normalize(
+                nil,
+                placeholder: "$(OLLAMA_API_KEY)"
+            ) == nil
+        )
     }
-
+    
     @Test func normalizeReturnsNilForEmptyOrWhitespace() {
-        #expect(AppConfiguration.normalize("", placeholder: "$(OLLAMA_API_KEY)") == nil)
-        #expect(AppConfiguration.normalize("   \n ", placeholder: "$(OLLAMA_API_KEY)") == nil)
+        #expect(
+            AppConfiguration.normalize(
+                "",
+                placeholder: "$(OLLAMA_API_KEY)"
+            ) == nil
+        )
+        #expect(
+            AppConfiguration.normalize(
+                "   \n ",
+                placeholder: "$(OLLAMA_API_KEY)"
+            ) == nil
+        )
     }
-
+    
     @Test func normalizeReturnsNilForUnsubstitutedPlaceholder() {
-        #expect(AppConfiguration.normalize("$(OLLAMA_API_KEY)", placeholder: "$(OLLAMA_API_KEY)") == nil)
+        #expect(
+            AppConfiguration.normalize(
+                "$(OLLAMA_API_KEY)",
+                placeholder: "$(OLLAMA_API_KEY)"
+            ) == nil
+        )
     }
-
+    
     @Test func normalizeKeepsValueWhenPlaceholderDiffers() {
-        #expect(AppConfiguration.normalize("$(OLLAMA_API_KEY)", placeholder: "$(EXCHANGE_RATE_API_KEY)") == "$(OLLAMA_API_KEY)")
+        #expect(
+            AppConfiguration.normalize(
+                "$(OLLAMA_API_KEY)",
+                placeholder: "$(EXCHANGE_RATE_API_KEY)"
+            ) == "$(OLLAMA_API_KEY)"
+        )
     }
-
+    
     @Test func normalizeWithoutPlaceholderTrimsLiteral() {
-        #expect(AppConfiguration.normalize("  http://localhost:4000/api  ") == "http://localhost:4000/api")
+        #expect(
+            AppConfiguration.normalize("  http://localhost:4000/api  ") == "http://localhost:4000/api"
+        )
     }
-
+    
     @Test func testValueProvidesNothing() {
         let configuration = AppConfiguration.testValue
         #expect(configuration.exchangeRateAPIKey() == nil)

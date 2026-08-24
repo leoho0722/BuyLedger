@@ -11,4 +11,5 @@
  */
 export type SampleStatus =
   | "active"
-  | "archived";
+  | "archived"
+  | "partiallyArrived";

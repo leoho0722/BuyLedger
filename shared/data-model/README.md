@@ -82,6 +82,11 @@ Swift 的 `Sendable` **不是** schema trait——它是 Swift emitter 的全域
 
 每個型別、欄位、case 都必須帶一段正體中文 `doc`，產生器會將其輸出為生成程式碼的文件註解。
 
+`doc` 的內容必須維持平台中立，且不使用破折號；這兩條規則由 `shared/data-model/generator` 的 `bun test` 強制執行，不再只靠人工自律：
+
+- 不得出現任一目標平台的語言、框架或型別建構用詞 (例如 Swift、Kotlin、TypeScript、struct、data class)，出現時測試失敗並指出違規的型別／欄位。
+- 不得使用全形破折號 `—`，出現時測試同樣失敗。
+
 ### 範例
 
 ```yaml
@@ -124,7 +129,7 @@ bun run check
 # 解鎖：把生成檔改回可寫 (僅供刻意手動檢視／實驗；下次 generate 會重新鎖唯讀)
 bun run unlock
 
-# 測試 (golden file 測試)
+# 測試 (golden file 測試；另含「產線 schema 與已提交產線輸出同步」的斷言，見下)
 bun test
 
 # 型別檢查
@@ -139,3 +144,18 @@ bunx tsc --noEmit
 4. 提交前跑 `bun run check` 確認磁碟產出與 schema 同步。
 
 鐵則：**不可手改生成檔** (`.generated.swift` 等)，這些檔頭都帶有「請勿手動編輯」警語；資料形狀的任何變更一律改 schema。`generate` 會把生成檔鎖成唯讀 (`0o444`) 防手改——重生成會自動解鎖重寫，真要手動檢視才用 `bun run unlock` (本機防線，git 不追蹤 write bit)。
+
+## golden 素材的涵蓋規則
+
+`fixtures/schema/` 的素材必須涵蓋 `schema/` (產線 schema) 實際使用到的每一條 emit 路徑：golden-file 測試只能對素材裡實際存在的內容比對，素材沒涵蓋到的路徑，emitter 壞了也不會有任何測試變紅。新增或修改產線 schema 時，若用到素材尚未涵蓋的組合 (例如新的 trait 組合、新的預設值型別)，應同步補上對應的 fixture 型別與三平台期望輸出。
+
+## 漂移由測試與 CI 強制
+
+`bun test` 除了既有的 golden-file 測試 (鎖 `fixtures/` 的三平台 emitter 輸出) 之外，另含一組專守**產線輸出**的斷言：
+
+- 對 `schema/` 與已提交的 `apps/ios/BuyLedger/Core/Domain/Generated` 執行漂移檢查，兩者不同步時測試失敗，訊息列出每筆漂移的原因與絕對路徑，並附上重新產生的指令。
+- 鎖住 `codegen.yaml` 的 swift target 輸出路徑，避免有人改設定讓輸出指向他處、使上一條斷言失去比對標的而永遠綠燈。
+
+這組斷言守的是「已提交的產線輸出是否與 schema 同步」，不是 generator 自身邏輯的回歸；後者已由 fixtures 的 golden-file 測試覆蓋。若在本機對 `generator/` 做實驗性修改時看到這裡變紅，代表 `apps/ios` 的生成檔與 schema 不同步，依失敗訊息重新產生即可，不代表 generator 本身壞掉。
+
+版本庫層級的 `.github/workflows/ci.yml` 之 codegen job 會在每次推送與拉取請求時執行 `bun run check` 與 `bun test`，讓漂移在推送當下就變紅，而不是等人記得手動執行；提交前仍建議自行跑一次以及早發現。

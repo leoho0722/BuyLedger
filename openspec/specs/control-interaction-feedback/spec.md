@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'design-system-component-reduction'. Update Purpose after archive.
+本規格涵蓋自訂控制項的視覺回饋方式，包括停用狀態的可辨識外觀、按壓時的視覺回饋、破壞性動作以系統按鈕角色而非仿造樣式表達。不涵蓋 `control-touch-target` 所訂的可點擊熱區尺寸門檻，兩者分別關注外觀回饋與幾何尺寸。
 
 ## Requirements
 

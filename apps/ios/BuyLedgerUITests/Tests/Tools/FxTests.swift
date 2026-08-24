@@ -8,14 +8,11 @@
 import XCTest
 
 /// 匯率工具的進入、狀態橫幅與換算流程測試
-///
-/// 一律以 accessibility identifier 定位、對換算結果做非空的結構性斷言，不硬編精確金額 (匯率走固定快照 stub);
-/// 找不到 App 元素即附診斷失敗、不 skip。幣別原始值是業務鍵、不隨語言變動，故中英兩語言皆有效
 final class FxTests: BLUITestCase {
 
     // MARK: - Static Properties
 
-    /// 換算時選用的來源幣別原始值 (``BLAccessibilityID/OptionPicker/optionRow(_:)`` 的 key)
+    /// 換算使用的來源幣別 raw value
     private static let selectedCurrency = "KRW"
 
     // MARK: - Tests
@@ -77,8 +74,8 @@ private extension FxTests {
     /// 從更多分頁導到匯率頁並等就緒，回傳匯率頁 Page Object
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的匯率頁 Page Object
     @MainActor
     func openFx(

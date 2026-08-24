@@ -12,12 +12,18 @@ import Foundation
 extension OrderStatus {
 
     /// 視為「已實現」的訂單狀態集合，為收益統計的單一事實來源
-    /// 「已合併」與「已取消」「報價中」同樣不屬於已實現，避免合併後重複計算收益
     static let realizedStatuses: Set<OrderStatus> = [
         .confirmed,
         .purchased,
         .shipping,
         .partiallyArrived,
+        .arrived,
+        .delivered,
+        .pickedUp,
+    ]
+
+    /// 視為「已到貨」的訂單狀態集合，為開團到貨進度的單一事實來源
+    static let deliveryStatuses: Set<OrderStatus> = [
         .arrived,
         .delivered,
         .pickedUp,

@@ -8,9 +8,6 @@
 import XCTest
 
 /// 開團新增與編輯表單的 Page Object
-///
-/// 以 accessibility identifier 對外暴露開團名稱輸入、訂購提醒開關與儲存／取消的語意操作，元素查詢細節不外洩給測試檔；
-/// 新增與編輯共用同一組 identifier，故 Page Object 不分兩種流程
 struct CampaignEditScreen: Screen {
 
     // MARK: - Data Properties
@@ -26,8 +23,6 @@ struct CampaignEditScreen: Screen {
     }
 
     /// 儲存按鈕目前是否可用
-    ///
-    /// 讀值前先等按鈕存在，避免元素尚未出現時 `isEnabled` 回傳 `false` 被誤判為停用
     @MainActor
     var isSaveEnabled: Bool {
         let button = app.buttons[BLAccessibilityID.CampaignEdit.saveButton]
@@ -43,7 +38,6 @@ struct CampaignEditScreen: Screen {
 extension CampaignEditScreen {
 
     /// 清空並填入開團名稱
-    /// - Parameter name: 要輸入的開團名稱 (使用者資料)
     func typeName(_ name: String) {
         let field = app.textFields[BLAccessibilityID.CampaignEdit.nameField]
         field.waitUntilHittable()

@@ -11,9 +11,7 @@ import Foundation
 
 extension FxRateSnapshot {
 
-    /// 預設快照：使用 ``FxRates/toTwd`` 為基礎組成的範例 snapshot，僅供 SwiftUI Preview (``ExchangeRateClient/previewValue``) 與單元測試使用
-    ///
-    /// **runtime 不應讀取此值**——若 API 失敗，feature 應顯示錯誤訊息、所有匯率欄位顯示「—」，避免讓使用者誤以為看到的是即時匯率
+    /// Preview 與測試使用的預設匯率快照
     static let fallback: FxRateSnapshot = {
         var rates: [CurrencyCode: Decimal] = [:]
         for (currency, rateToTwd) in FxRates.toTwd where currency != CurrencyCode.twd {

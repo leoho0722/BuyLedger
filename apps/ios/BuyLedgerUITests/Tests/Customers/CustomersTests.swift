@@ -8,9 +8,6 @@
 import XCTest
 
 /// 客戶名單的進入、排行與深連結流程測試
-///
-/// 一律以 accessibility identifier 定位、以客戶名這個業務鍵做結構性斷言，不硬編金額或名次；找不到 App 元素即附診斷失敗、不 skip。
-/// 客戶名是 ``CustomerRow`` 的 id (業務鍵)，不隨語言變動，故中英兩語言皆有效
 final class CustomersTests: BLUITestCase {
 
     // MARK: - Static Properties
@@ -83,8 +80,8 @@ private extension CustomersTests {
     /// 從更多分頁導到客戶頁並等名單就緒，回傳客戶頁 Page Object
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的客戶頁 Page Object
     @MainActor
     func openCustomers(

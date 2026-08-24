@@ -1,13 +1,10 @@
 types:
   - name: PaymentReceiptStatus
     kind: enum
-    doc: |-
-      訂單的收款狀態。
-
-      固定二元語意 (待收款／已收款)，作為開團分貨清單與結團結算判定「已收款」的唯一來源；因此固定為內建二元值、不開放自訂，避免新增第三種值後讓「已收款金額」的彙總無法穩定判定。
+    doc: 訂單收款狀態
     traits: [case-iterable, serializable, identity]
     cases:
       - name: pending
-        doc: 待收款 (預設)。
+        doc: 尚未收款
       - name: received
-        doc: 已收款。
+        doc: 已收款

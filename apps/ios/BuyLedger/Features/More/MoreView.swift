@@ -9,24 +9,19 @@ import ComposableArchitecture
 import SwiftUI
 
 /// 更多分頁的入口畫面
-///
-/// 對應設計稿 iPhone 「設定 / 更多」頁與 iPad 工具區塊的入口：以列表形式列出工具與設定子頁面，點擊後 push 到對應子畫面
 struct MoreView: View {
-
+    
     // MARK: - View Properties
-
+    
     /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
-
-    /// 目前系統深淺色外觀
-    @Environment(\.colorScheme) private var colorScheme
-
+    
     // MARK: - View Body
-
+    
     /// 更多頁的畫面內容
     var body: some View {
         let palette = BLPalette()
-
+        
         NavigationStack(path: $store.morePath) {
             phoneContent(palette: palette)
                 .navigationDestination(for: RootFeature.MoreRoute.self) { route in
@@ -39,40 +34,40 @@ struct MoreView: View {
 // MARK: - Nested Types
 
 private extension MoreView {
-
+    
     /// 工具項目的領域定義
     enum ToolItem: String, CaseIterable, Identifiable {
-
+        
         // MARK: - Cases
-
+        
         /// 匯率工具
         case fx
-
+        
         /// 客戶名單
         case customers
-
+        
         /// 報價試算
         case quote
-
+        
         /// 訂單來源主檔管理
         case orderSources
-
+        
         /// 商品類別主檔管理
         case categories
-
+        
         /// 付款方式主檔管理
         case paymentMethods
-
+        
         /// 對帳狀態主檔管理
         case reconciliationStatuses
-
+        
         // MARK: - Identifiable Properties
-
+        
         /// 項目的穩定識別值
         var id: String { rawValue }
-
+        
         // MARK: - Display Properties
-
+        
         /// 顯示在卡片或列表上的標題
         var title: String {
             switch self {
@@ -92,7 +87,7 @@ private extension MoreView {
                 LookupKind.reconciliationStatus.entryTitle
             }
         }
-
+        
         /// 卡片副標題
         var subtitle: String {
             switch self {
@@ -112,7 +107,7 @@ private extension MoreView {
                 LookupKind.reconciliationStatus.entrySubtitle
             }
         }
-
+        
         /// 對應的 SF Symbol
         var systemImage: String {
             switch self {
@@ -132,7 +127,7 @@ private extension MoreView {
                 LookupKind.reconciliationStatus.systemImage
             }
         }
-
+        
         /// 圖示色 (依語意 token)
         /// - Parameter palette: 目前外觀使用的色盤
         /// - Returns: 對應的色彩
@@ -160,7 +155,7 @@ private extension MoreView {
 // MARK: - ViewBuilder
 
 private extension MoreView {
-
+    
     /// 將目的地導向到對應 view
     /// - Parameter route: 目的地
     /// - Returns: 對應目的地 view
@@ -170,30 +165,36 @@ private extension MoreView {
         case .fx:
             FxView(store: store.scope(state: \.fx, action: \.fx))
         case .customers:
-            CustomersView(store: store)
+            CustomersView(store: store.scope(state: \.customers, action: \.customers))
         case .quote:
             QuoteView(store: store.scope(state: \.quote, action: \.quote))
         case .orderSources:
-            LookupManagementView(
-                store: store.scope(state: \.orderSourceManagement, action: \.orderSourceManagement)
-            )
+            lookupManagementDestination(for: .orderSource)
         case .categories:
-            LookupManagementView(
-                store: store.scope(state: \.categoryManagement, action: \.categoryManagement)
-            )
+            lookupManagementDestination(for: .category)
         case .paymentMethods:
-            LookupManagementView(
-                store: store.scope(state: \.paymentMethodManagement, action: \.paymentMethodManagement)
-            )
+            lookupManagementDestination(for: .paymentMethod)
         case .reconciliationStatuses:
-            LookupManagementView(
-                store: store.scope(state: \.reconciliationStatusManagement, action: \.reconciliationStatusManagement)
-            )
+            lookupManagementDestination(for: .reconciliationStatus)
         case .settings:
             SettingsView(store: store.scope(state: \.settings, action: \.settings))
         }
     }
-
+    
+    /// 將根 store scope 到單一主檔管理 store
+    /// - Parameter kind: 要呈現的主檔種類
+    /// - Returns: 對應的主檔管理畫面，或解析失敗時的載入失敗視圖
+    @ViewBuilder
+    func lookupManagementDestination(for kind: LookupKind) -> some View {
+        if let managementStore = store.scope(
+            state: \.lookupManagements[id: kind], action: \.lookupManagements[id: kind]
+        ) {
+            LookupManagementView(store: managementStore)
+        } else {
+            BLLoadFailureView(message: "無法載入主檔管理頁面，請稍後再試。") {}
+        }
+    }
+    
     /// 保持 phone-friendly 的 grouped list 風格
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 列表 view
@@ -204,59 +205,89 @@ private extension MoreView {
                 NavigationLink(value: RootFeature.MoreRoute.fx) {
                     toolRow(.fx, palette: palette)
                 }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.fx.accessibilityKey))
+                .accessibilityIdentifier(
+                    BLAccessibilityID.More.row(
+                        RootFeature.MoreRoute.fx.accessibilityKey
+                    )
+                )
             }
-
+            
             Section("管理") {
                 NavigationLink(value: RootFeature.MoreRoute.customers) {
                     toolRow(.customers, palette: palette)
                 }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.customers.accessibilityKey))
-
+                .accessibilityIdentifier(
+                    BLAccessibilityID.More.row(
+                        RootFeature.MoreRoute.customers.accessibilityKey
+                    )
+                )
+                
                 NavigationLink(value: RootFeature.MoreRoute.orderSources) {
                     toolRow(.orderSources, palette: palette)
                 }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.orderSources.accessibilityKey))
-
+                .accessibilityIdentifier(
+                    BLAccessibilityID.More.row(
+                        RootFeature.MoreRoute.orderSources.accessibilityKey
+                    )
+                )
+                
                 NavigationLink(value: RootFeature.MoreRoute.categories) {
                     toolRow(.categories, palette: palette)
                 }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.categories.accessibilityKey))
-
+                .accessibilityIdentifier(
+                    BLAccessibilityID.More.row(
+                        RootFeature.MoreRoute.categories.accessibilityKey
+                    )
+                )
+                
                 NavigationLink(value: RootFeature.MoreRoute.paymentMethods) {
                     toolRow(.paymentMethods, palette: palette)
                 }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.paymentMethods.accessibilityKey))
-
+                .accessibilityIdentifier(
+                    BLAccessibilityID.More.row(
+                        RootFeature.MoreRoute.paymentMethods.accessibilityKey
+                    )
+                )
+                
                 NavigationLink(value: RootFeature.MoreRoute.reconciliationStatuses) {
                     toolRow(.reconciliationStatuses, palette: palette)
                 }
                 .accessibilityIdentifier(
-                    BLAccessibilityID.More.row(RootFeature.MoreRoute.reconciliationStatuses.accessibilityKey)
+                    BLAccessibilityID.More.row(
+                        RootFeature.MoreRoute.reconciliationStatuses.accessibilityKey
+                    )
                 )
-
+                
                 NavigationLink(value: RootFeature.MoreRoute.quote) {
                     toolRow(.quote, palette: palette)
                 }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.quote.accessibilityKey))
+                .accessibilityIdentifier(
+                    BLAccessibilityID.More.row(
+                        RootFeature.MoreRoute.quote.accessibilityKey
+                    )
+                )
             }
-
+            
             Section("App") {
                 NavigationLink(value: RootFeature.MoreRoute.settings) {
                     Label {
-                        Text("設定").font(.body.weight(.medium))
+                        Text("設定").font(BLTypographyStyle.body.font.weight(.medium))
                     } icon: {
                         Image(systemName: "gear")
                             .foregroundStyle(palette.secondaryLabel)
                     }
                 }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.settings.accessibilityKey))
+                .accessibilityIdentifier(
+                    BLAccessibilityID.More.row(
+                        RootFeature.MoreRoute.settings.accessibilityKey
+                    )
+                )
             }
         }
         .accessibilityIdentifier(BLAccessibilityID.More.root)
         .rootNavigationTitle("更多", language: store.settings.language)
     }
-
+    
     /// iOS 列表的單列
     /// - Parameters:
     ///   - item: 工具項目
@@ -265,7 +296,7 @@ private extension MoreView {
     @ViewBuilder
     func toolRow(_ item: ToolItem, palette: BLPalette) -> some View {
         Label {
-            Text(LocalizedStringKey(item.title)).font(.body.weight(.medium))
+            Text(LocalizedStringKey(item.title)).font(BLTypographyStyle.body.font.weight(.medium))
         } icon: {
             Image(systemName: item.systemImage)
                 .foregroundStyle(item.tint(in: palette))
@@ -276,31 +307,26 @@ private extension MoreView {
 // MARK: - Accessibility Properties
 
 private extension RootFeature.MoreRoute {
-
+    
     /// 對應到 UI 測試 identifier 的目的地 key
-    ///
-    /// 刻意寫成窮舉 switch 而非字面值：新增目的地時這裡會編不過，逼出 ``BLAccessibilityID/More/Row`` 的同步更新
-    ///
-    /// 提醒：畫面上還有一份 ``MoreView/ToolItem`` 只描述工具列的呈現內容，與這條路徑無編譯期綁定；
-    /// 新增或刪除工具時 `ToolItem` 要人工一起改
     var accessibilityKey: BLAccessibilityID.More.Row {
         switch self {
         case .fx:
-            .fx
+                .fx
         case .customers:
-            .customers
+                .customers
         case .quote:
-            .quote
+                .quote
         case .orderSources:
-            .orderSources
+                .orderSources
         case .categories:
-            .categories
+                .categories
         case .paymentMethods:
-            .paymentMethods
+                .paymentMethods
         case .reconciliationStatuses:
-            .reconciliationStatuses
+                .reconciliationStatuses
         case .settings:
-            .settings
+                .settings
         }
     }
 }

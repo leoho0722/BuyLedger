@@ -1,0 +1,38 @@
+{
+  "configurations" : [
+    {
+      "id" : "A1B2C3D4-0003-0003-0003-000000000003",
+      "name" : "zh-Hant TW",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : {
+      "targets" : [
+        {
+          "containerPath" : "container:BuyLedger.xcodeproj",
+          "identifier" : "D0B1FCCC2FA22A9F00B50E07",
+          "name" : "BuyLedger"
+        }
+      ]
+    },
+    "language" : "zh-Hant",
+    "region" : "TW",
+    "testExecutionOrdering" : "alphabetical"
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:BuyLedger.xcodeproj",
+        "identifier" : "D0B1FCDD2FA22AA100B50E07",
+        "name" : "BuyLedgerTests"
+      },
+      "skippedTests" : [
+        "OrdersFeaturePerformanceTests"
+      ]
+    }
+  ],
+  "version" : 1
+}

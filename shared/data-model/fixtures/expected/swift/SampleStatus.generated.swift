@@ -19,6 +19,9 @@ enum SampleStatus: String, CaseIterable, Codable, Identifiable, Sendable {
     /// 已封存
     case archived
 
+    /// 部分到貨 (示範多字駝峰式 case 的平台命名轉換)
+    case partiallyArrived
+
     // MARK: - Identifiable Properties
 
     /// 穩定識別值 (以 rawValue 表示)

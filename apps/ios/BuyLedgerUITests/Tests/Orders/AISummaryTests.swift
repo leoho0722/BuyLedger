@@ -8,15 +8,11 @@
 import XCTest
 
 /// AI 商品明細總結入口的兩條分支測試
-///
-/// 一律以 accessibility identifier 定位、找不到 App 元素即附診斷失敗、不 skip。
-/// 未開啟 AI 時點入口彈 `AlertState` 提示 (掛不上 identifier，按鈕以顯示文字定位，主回歸計畫已鎖 zh-Hant/TW)；
-/// 開啟 AI 時 (`useAiSummary`) AI 走固定輸出替身，點入口推出總結 sheet、就緒後可關閉收回
 final class AISummaryTests: BLUITestCase {
 
     // MARK: - Static Properties
 
-    /// AI 未開啟提示 alert 的關閉按鈕文字 (``OrdersFeature`` aiDisabledAlert 的 cancel 角色按鈕)
+    /// AI 關閉提示 alert 的關閉按鈕文字
     private static let aiDisabledCloseLabel = "關閉"
 
     // MARK: - Tests
@@ -72,8 +68,8 @@ private extension AISummaryTests {
     /// 切到訂單分頁並等清單就緒，回傳訂單清單 Page Object
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的訂單清單 Page Object
     @MainActor
     func openOrdersList(

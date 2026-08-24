@@ -10,10 +10,10 @@ import Foundation
 // MARK: - Sample Data
 
 extension LedgerOrder {
-
-    /// SwiftUI Preview、單元測試以及 ``OrderRepository/previewValue`` 使用的本機訂單範例
-    ///
-    /// **runtime 不會自動 seed**——`OrderRepository.liveValue` 預設不填充 sample 資料，使用者首次啟動會看到空狀態，必須自行新增訂單
+    
+#if DEBUG
+    
+    /// Preview 與測試使用的訂單範例
     nonisolated static let sampleOrders: [LedgerOrder] = [
         LedgerOrder(
             id: "BL-2604-018",
@@ -73,7 +73,7 @@ extension LedgerOrder {
                     name: "Snidel 春季針織外套 (M)",
                     quantity: 1,
                     unitPrice: 18_700
-                ),
+                )
             ],
             itemCost: decimal("18700") * decimal("0.2105"),
             domesticShipping: 0,
@@ -154,7 +154,7 @@ extension LedgerOrder {
                     name: "Polène Numéro Un Nano 米色",
                     quantity: 1,
                     unitPrice: 390
-                ),
+                )
             ],
             itemCost: decimal("390") * decimal("35.2"),
             domesticShipping: 0,
@@ -231,7 +231,7 @@ extension LedgerOrder {
                     name: "Le Labo Santal 33 50ml",
                     quantity: 1,
                     unitPrice: 218
-                ),
+                )
             ],
             itemCost: decimal("218") * decimal("32.45"),
             domesticShipping: 0,
@@ -269,7 +269,7 @@ extension LedgerOrder {
                     name: "Adererror 標準 Logo Tee 黑",
                     quantity: 2,
                     unitPrice: 89_000
-                ),
+                )
             ],
             itemCost: decimal("178000") * decimal("0.0228"),
             domesticShipping: 60,
@@ -336,8 +336,8 @@ extension LedgerOrder {
             mergedSourceIDs: ["BL-2603-905", "BL-2603-906"]
         ),
     ]
-
-    /// 把 ``LedgerOrder/sampleOrders`` 前幾筆指派到 ``Campaign/sampleCampaigns``，供開團相關畫面的 Preview 呈現分貨與進度
+    
+    /// 將範例訂單分配到範例開團，供 Preview 顯示
     nonisolated static let sampleCampaignOrders: [LedgerOrder] = {
         let assignments: [(campaign: String, receipt: PaymentReceiptStatus)] = [
             ("四月韓國團", .received),
@@ -345,7 +345,7 @@ extension LedgerOrder {
             ("三月日本團", .received),
             ("四月韓國團", .received),
         ]
-
+        
         let assigned = zip(LedgerOrder.sampleOrders.prefix(assignments.count), assignments).map { order, assignment in
             LedgerOrder(
                 id: order.id,
@@ -376,32 +376,40 @@ extension LedgerOrder {
                 mergedSourceIDs: order.mergedSourceIDs
             )
         }
-
+        
         return assigned + LedgerOrder.sampleOrders.dropFirst(assignments.count)
     }()
+#else
+    nonisolated static let sampleOrders: [LedgerOrder] = []
+    nonisolated static let sampleCampaignOrders: [LedgerOrder] = []
+#endif
 }
 
 // MARK: - Private Method
 
 private extension LedgerOrder {
-
+    
     /// 建立固定時區的範例日期
     /// - Parameters:
     ///   - year: 年份
     ///   - month: 月份
     ///   - day: 日期
     /// - Returns: 可重現的範例日期
-    nonisolated static func sampleDate(year: Int, month: Int, day: Int) -> Date {
+    nonisolated static func sampleDate(
+        year: Int,
+        month: Int,
+        day: Int
+    ) -> Date {
         var components = DateComponents()
         components.calendar = Calendar(identifier: .gregorian)
         components.timeZone = TimeZone(secondsFromGMT: 0)
         components.year = year
         components.month = month
         components.day = day
-
+        
         return components.date ?? Date(timeIntervalSince1970: 0)
     }
-
+    
     /// 將固定範例資料字串轉為 `Decimal`
     /// - Parameter value: 十進位數字字串
     /// - Returns: 可用於金額計算的十進位數值

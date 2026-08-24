@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'dynamic-type-and-grouping'. Update Purpose after archive.
+本規格涵蓋單一列或格線內多個子元素合併為一個朗讀單位的方式，包括複合列 (如訂單列、關鍵指標卡) 的合併朗讀、重複或純裝飾元素的排除，以及格線儲存格自身位置與整體摘要的朗讀。不涵蓋 `assistive-announcement-hygiene` 所訂的單一元素朗讀內容原則，例如選取狀態以標準特徵而非打勾符號表達。
 
 ## Requirements
 

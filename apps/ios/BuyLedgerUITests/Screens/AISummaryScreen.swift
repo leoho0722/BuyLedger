@@ -8,9 +8,6 @@
 import XCTest
 
 /// AI 商品明細總結 sheet 的 Page Object
-///
-/// 以 accessibility identifier 對外暴露關閉與重試的語意操作，元素查詢細節不外洩給測試檔；
-/// sheet 就緒以內容容器根 identifier 判定，串流內容由固定輸出替身提供
 struct AISummaryScreen: Screen {
 
     // MARK: - Data Properties
@@ -21,6 +18,7 @@ struct AISummaryScreen: Screen {
     // MARK: - Computed Properties
 
     /// 判定總結 sheet 已就緒的根 identifier (內容容器)
+    /// - Returns: 總結 sheet 內容容器的 identifier
     var rootIdentifier: String {
         BLAccessibilityID.AISummary.root
     }

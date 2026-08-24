@@ -1,6 +1,316 @@
 {
   "sourceLanguage" : "zh-Hant",
   "strings" : {
+    "%@ · %@" : {
+      "shouldTranslate" : false
+    },
+    "%@，%@，%@" : {
+      "shouldTranslate" : false
+    },
+    "主檔載入失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The master data could not be loaded. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "主檔載入失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "刪除失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The item could not be deleted. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "刪除失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "新增失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The item could not be added. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "新增失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "重新命名失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The item could not be renamed. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "重新命名失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "試試其他搜尋關鍵字。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try another search term."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "試試其他搜尋關鍵字。"
+          }
+        }
+      }
+    },
+    "無法使用行事曆" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calendar Unavailable"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法使用行事曆"
+          }
+        }
+      }
+    },
+    "這台裝置的行事曆存取受政策限制，暫時無法新增或移除訂購提醒。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Calendar access is restricted by device policy. Order reminders can't be added or removed right now."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "這台裝置的行事曆存取受政策限制，暫時無法新增或移除訂購提醒。"
+          }
+        }
+      }
+    },
+    "找不到可寫入的行事曆" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No Writable Calendar Found"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找不到可寫入的行事曆"
+          }
+        }
+      }
+    },
+    "找不到可寫入的行事曆，請新增或啟用一個可寫入的行事曆後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "No writable calendar was found. Add or enable a writable calendar, then try again."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "找不到可寫入的行事曆，請新增或啟用一個可寫入的行事曆後再試。"
+          }
+        }
+      }
+    },
+    "開團已儲存，但歸屬訂單的開團名稱更新失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The campaign was saved, but updating its name on member orders failed. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團已儲存，但歸屬訂單的開團名稱更新失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "開團已刪除，但行事曆上的提醒事件移除失敗，請自行到行事曆刪除。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The campaign was deleted, but removing its calendar reminder failed. Please remove it manually from Calendar."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團已刪除，但行事曆上的提醒事件移除失敗，請自行到行事曆刪除。"
+          }
+        }
+      }
+    },
+    "提醒連結移除失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Removing the reminder link failed. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提醒連結移除失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "提醒已更新，但舊的行事曆事件移除失敗，請自行到行事曆刪除。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The reminder was updated, but removing the previous calendar event failed. Please remove it manually from Calendar."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "提醒已更新，但舊的行事曆事件移除失敗，請自行到行事曆刪除。"
+          }
+        }
+      }
+    },
+    "開團儲存失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The campaign could not be saved. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團儲存失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "開團狀態更新失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The campaign status could not be updated. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團狀態更新失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "開團狀態自動更新失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Automatically updating the campaign status failed. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團狀態自動更新失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "結團失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The campaign could not be settled. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "結團失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "開團刪除失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The campaign could not be deleted. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團刪除失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "開團載入失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The campaigns could not be loaded. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "開團載入失敗，請稍後再試。"
+          }
+        }
+      }
+    },
     "長條圖，目前沒有資料" : {
       "localizations" : {
         "en" : {
@@ -145,6 +455,22 @@
         }
       }
     },
+    "無法載入主檔管理頁面，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The master data management page could not be loaded. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法載入主檔管理頁面，請稍後再試。"
+          }
+        }
+      }
+    },
     "無法建立訂購提醒" : {
       "localizations" : {
         "en" : {
@@ -161,6 +487,22 @@
         }
       }
     },
+    "無法讀取訂單照片，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The order photos could not be loaded. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無法讀取訂單照片，請稍後再試。"
+          }
+        }
+      }
+    },
     "訂購提醒建立失敗，請稍後再試。" : {
       "localizations" : {
         "en" : {
@@ -173,6 +515,198 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "訂購提醒建立失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "操作失敗" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Operation Failed"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "操作失敗"
+          }
+        }
+      }
+    },
+    "訂單載入失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The orders could not be loaded. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂單載入失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "訂單狀態更新失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The order status could not be updated. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂單狀態更新失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "收款狀態更新失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The receipt status could not be updated. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收款狀態更新失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "批次更新狀態失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The batch status update failed. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "批次更新狀態失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "訂單刪除失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The order could not be deleted. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂單刪除失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "訂單儲存失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The order could not be saved. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂單儲存失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "合併訂單儲存失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The merged order could not be saved. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "合併訂單儲存失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "訂單來源新增失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The order source could not be added. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "訂單來源新增失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "商品類別新增失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The category could not be added. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "商品類別新增失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "付款方式新增失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The payment method could not be added. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "付款方式新增失敗，請稍後再試。"
+          }
+        }
+      }
+    },
+    "對帳狀態新增失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The reconciliation status could not be added. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "對帳狀態新增失敗，請稍後再試。"
           }
         }
       }
@@ -1870,6 +2404,134 @@
         }
       }
     },
+    "數值" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Value"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "數值"
+          }
+        }
+      }
+    },
+    "項目" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Item"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "項目"
+          }
+        }
+      }
+    },
+    "順序" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sequence"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "順序"
+          }
+        }
+      }
+    },
+    "第 %lld 筆" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Point %lld"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "第 %lld 筆"
+          }
+        }
+      }
+    },
+    "類別" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Category"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "類別"
+          }
+        }
+      }
+    },
+    "長條圖" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Bar Chart"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "長條圖"
+          }
+        }
+      }
+    },
+    "圈狀圖" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Donut Chart"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "圈狀圖"
+          }
+        }
+      }
+    },
+    "走勢圖" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Trend Chart"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "走勢圖"
+          }
+        }
+      }
+    },
     "即時匯率 (對 TWD)" : {
       "localizations" : {
         "en" : {
@@ -3368,6 +4030,74 @@
         }
       }
     },
+    "更正付款方式" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Correct Payment Method"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更正付款方式"
+          }
+        }
+      }
+    },
+    "確認更正" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Confirm Correction"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "確認更正"
+          }
+        }
+      }
+    },
+    "確認後將重算 %lld 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "After confirmation, %lld existing orders will be recalculated for payment flags and profit. Deduction, supplement, or reconciliation status may be cleared. This cannot be undone."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "確認後將重算 %lld 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。"
+          }
+        }
+      }
+    },
+    "付款方式編輯失敗，請稍後再試。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Payment method edit failed. Please try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "付款方式編輯失敗，請稍後再試。"
+          }
+        }
+      }
+    },
     "新增來源" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -3431,22 +4161,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "新增對帳狀態"
-          }
-        }
-      }
-    },
-    "新增提醒" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Add Reminder"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "新增提醒"
           }
         }
       }
@@ -4418,6 +5132,22 @@
         }
       }
     },
+    "無卡折抵金額不得超過客戶實付金額，已自動調整為上限。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The cardless deduction cannot exceed the customer payment amount, so it has been adjusted to the limit."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "無卡折抵金額不得超過客戶實付金額，已自動調整為上限。"
+          }
+        }
+      }
+    },
     "無卡類付款方式才會啟用「折抵」與「補款」欄位；總收款 = 客戶實付 + 補款 − 折抵。" : {
       "localizations" : {
         "en" : {
@@ -4606,22 +5336,6 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "知道了"
-          }
-        }
-      }
-    },
-    "移除提醒" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "Remove Reminder"
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "移除提醒"
           }
         }
       }
@@ -5092,6 +5806,38 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "訂單照片 (%1$lld/%2$lld)"
+          }
+        }
+      }
+    },
+    "照片載入中…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading photos…"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "照片載入中…"
+          }
+        }
+      }
+    },
+    "照片載入失敗，請稍後再試。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The photos could not be loaded. Try again later."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "照片載入失敗，請稍後再試。"
           }
         }
       }
@@ -5875,6 +6621,22 @@
         }
       }
     },
+    "已有其他開團使用這個名稱，請改用不同名稱。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Another campaign already uses this name. Please choose a different name."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "已有其他開團使用這個名稱，請改用不同名稱。"
+          }
+        }
+      }
+    },
     "開團名稱" : {
       "localizations" : {
         "en" : {
@@ -6269,6 +7031,22 @@
         }
       }
     },
+    "目標毛利需低於 100% 才能計算建議售價。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "The target margin must be below 100% to calculate a suggested price."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "目標毛利需低於 100% 才能計算建議售價。"
+          }
+        }
+      }
+    },
     "商品金額" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6457,6 +7235,13 @@
         "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "選擇付款方式" } }
       }
     },
+    "目前列表的商品明細 (類別、品名、數量、單價、幣別) 會送往第三方雲端服務；不含客戶姓名。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The current list's product details (category, product name, quantity, unit price, and currency) are sent to a third-party cloud service; customer names are not included." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "目前列表的商品明細 (類別、品名、數量、單價、幣別) 會送往第三方雲端服務；不含客戶姓名。" } }
+      }
+    },
     "選擇預設幣別" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6495,6 +7280,13 @@
     "總收款" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Total Payment" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "總收款" } } } },
     "輸入新的付款方式名稱，加入後會立即套用至此訂單。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a new payment method name. It will be applied to this order immediately." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入新的付款方式名稱，加入後會立即套用至此訂單。" } } } },
     "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a new reconciliation status name. It will be applied to this order immediately." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。" } } } },
+    "AI 總結已達時間上限，以下顯示已取得的內容；摘要已截斷。" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : { "stringUnit" : { "state" : "translated", "value" : "The AI summary reached its time limit. The content received so far is shown; the summary was cut short." } },
+        "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "AI 總結已達時間上限，以下顯示已取得的內容；摘要已截斷。" } }
+      }
+    },
     "透過上方「新增付款方式」加入第一個項目。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add your first payment method using the button above." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "透過上方「新增付款方式」加入第一個項目。" } } } },
     "透過上方「新增來源」加入第一個訂單來源。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add your first order source using the button above." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "透過上方「新增來源」加入第一個訂單來源。" } } } },
     "透過上方「新增對帳狀態」加入第一個項目。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Add your first reconciliation status using the button above." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "透過上方「新增對帳狀態」加入第一個項目。" } } } },
@@ -6506,14 +7298,19 @@
     "需要網路連線載入幣別清單；請稍後再試。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "An internet connection is required to load currencies. Please try again later." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "需要網路連線載入幣別清單；請稍後再試。" } } } },
     "請先在「開團」頁建立開團，再回到此處歸團。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Create a campaign on the Campaigns screen first, then assign it here." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請先在「開團」頁建立開團，再回到此處歸團。" } } } },
     "AI 總結" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "AI Summary" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "AI 總結" } } } },
-    "匯出 CSV" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Export CSV" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "匯出 CSV" } } } },
-    "匯出與雲端同步功能尚未實作。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Export and cloud sync are not available yet." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "匯出與雲端同步功能尚未實作。" } } } },
     "尚無模型" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "No models available" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "尚無模型" } } } },
     "自訂 AI 模型" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom AI Model" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "自訂 AI 模型" } } } },
     "自訂模型" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Custom Model" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "自訂模型" } } } },
     "模型名稱 (例如 gpt-oss:120b)" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Model name (for example, gpt-oss:120b)" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "模型名稱 (例如 gpt-oss:120b)" } } } },
     "輸入自訂模型名稱以開始使用。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a custom model name to start using it." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入自訂模型名稱以開始使用。" } } } },
     "輸入 Ollama Cloud 上可用的模型名稱。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Enter a model name available on Ollama Cloud." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "輸入 Ollama Cloud 上可用的模型名稱。" } } } },
+    "改用空白資料庫繼續" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Continue with a Blank Database" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "改用空白資料庫繼續" } } } },
+    "保留備份並繼續" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Keep Backup and Continue" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "保留備份並繼續" } } } },
+    "這會將目前無法開啟的資料搬到裝置上的備份目錄。資料不會被刪除。完成後請關閉並重新開啟 App。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "This moves the data that cannot be opened to a backup folder on this device. No data will be deleted. Close and reopen the app when it is finished." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "這會將目前無法開啟的資料搬到裝置上的備份目錄。資料不會被刪除。完成後請關閉並重新開啟 App。" } } } },
+    "帳本資料目前無法開啟。原始資料仍完整保留在這台裝置上。請勿新增或修改資料，以免資料只留在暫存記憶體中。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Your ledger data cannot be opened. The original files remain intact on this device. Do not add or change data, because it would exist only in temporary memory." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "帳本資料目前無法開啟。原始資料仍完整保留在這台裝置上。請勿新增或修改資料，以免資料只留在暫存記憶體中。" } } } },
+    "資料無法開啟" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unable to Open Data" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "資料無法開啟" } } } },
+    "備份已保留" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Backup Kept" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "備份已保留" } } } },
+    "請關閉 App 後重新開啟。App 會建立一個空白資料庫供你繼續使用。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Close and reopen the app. It will create a blank database so you can continue." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請關閉 App 後重新開啟。App 會建立一個空白資料庫供你繼續使用。" } } } },
     "請稍後再試。" : {
       "extractionState" : "manual",
       "localizations" : {
@@ -6530,7 +7327,21 @@
           }
         }
       }
-    }
+    },
+    "App 鎖定" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "App Lock" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "App 鎖定" } } } },
+    "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過裝置密碼驗證才能繼續使用。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "When enabled, leaving the app locks its content. Using the app again requires the device passcode to continue." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過裝置密碼驗證才能繼續使用。" } } } },
+    "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Face ID 或密碼驗證才能繼續使用。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "When enabled, leaving the app locks its content. Using the app again requires Face ID or device passcode authentication to continue." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Face ID 或密碼驗證才能繼續使用。" } } } },
+    "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Touch ID 或密碼驗證才能繼續使用。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "When enabled, leaving the app locks its content. Using the app again requires Touch ID or device passcode authentication to continue." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Touch ID 或密碼驗證才能繼續使用。" } } } },
+    "無法啟用 App 鎖定" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unable to Enable App Lock" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "無法啟用 App 鎖定" } } } },
+    "身份驗證失敗或已取消，App 鎖定未啟用。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Authentication failed or was cancelled. App Lock was not enabled." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "身份驗證失敗或已取消，App 鎖定未啟用。" } } } },
+    "此裝置目前無法使用本機驗證，App 鎖定未啟用。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "This device cannot currently use local authentication. App Lock was not enabled." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "此裝置目前無法使用本機驗證，App 鎖定未啟用。" } } } },
+    "驗證身份以解鎖 App" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Authenticate to unlock the app" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "驗證身份以解鎖 App" } } } },
+    "App 已鎖定" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "App Locked" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "App 已鎖定" } } } },
+    "請完成身份驗證以繼續使用。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Complete authentication to continue using the app." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "請完成身份驗證以繼續使用。" } } } },
+    "驗證未完成，請再試一次。" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Authentication was not completed. Please try again." } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "驗證未完成，請再試一次。" } } } },
+    "使用 Face ID 解鎖" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unlock with Face ID" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "使用 Face ID 解鎖" } } } },
+    "使用 Touch ID 解鎖" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unlock with Touch ID" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "使用 Touch ID 解鎖" } } } },
+    "解鎖" : { "localizations" : { "en" : { "stringUnit" : { "state" : "translated", "value" : "Unlock" } }, "zh-Hant" : { "stringUnit" : { "state" : "translated", "value" : "解鎖" } } } }
   },
   "version" : "1.0"
 }

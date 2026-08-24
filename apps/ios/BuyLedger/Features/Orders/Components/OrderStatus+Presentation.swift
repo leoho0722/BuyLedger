@@ -10,7 +10,7 @@ import Foundation
 // MARK: - Presentation Properties
 
 extension OrderStatus {
-
+    
     /// 對應設計系統語意狀態
     var tone: BLTone {
         switch self {
@@ -19,7 +19,7 @@ extension OrderStatus {
         case .confirmed:
             .accent
         case .purchased:
-            // 採購完成是正常推進，不是需要注意的狀況；警示色留給真正需要注意的狀態
+            // 採購完成是正常進度，使用一般資訊色。
             .informative
         case .shipping:
             .informative

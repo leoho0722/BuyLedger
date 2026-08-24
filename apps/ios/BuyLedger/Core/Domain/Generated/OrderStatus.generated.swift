@@ -8,39 +8,39 @@
 
 import Foundation
 
-/// 訂單在代購流程中的目前狀態
+/// 訂單目前狀態
 enum OrderStatus: String, CaseIterable, Codable, Identifiable, Sendable {
 
     // MARK: - Cases
 
-    /// 正在報價，尚未成立正式訂單
+    /// 正在報價
     case quoting
 
-    /// 客戶已確認訂單
+    /// 客戶已確認
     case confirmed
 
-    /// 已完成海外下單
+    /// 已完成下單
     case purchased
 
-    /// 商品正在集運或國際運送
+    /// 運送中
     case shipping
 
-    /// 部分商品已到貨，其餘仍在集運或國際運送
+    /// 部分到貨
     case partiallyArrived
 
-    /// 商品已到貨 (抵達代購者或取貨點)，但尚未交付客戶
+    /// 已到貨但未交付客戶
     case arrived
 
-    /// 商品已交付客戶
+    /// 已交付客戶
     case delivered
 
-    /// 買家已完成取貨，商品已交到買家手中
+    /// 客戶已取貨
     case pickedUp
 
-    /// 訂單已取消
+    /// 已取消
     case cancelled
 
-    /// 訂單已被合併到另一筆新訂單，僅保留作歷史紀錄
+    /// 已合併到其他訂單
     case merged
 
     // MARK: - Identifiable Properties

@@ -10,66 +10,72 @@ import SwiftUI
 
 /// 新增或編輯開團的表單
 struct CampaignEditView: View {
-
+    
     // MARK: - View Properties
-
+    
     /// 表單 store
     @Bindable var store: StoreOf<CampaignEditFeature>
-
+    
     /// 鍵盤焦點；實際狀態由 ``CampaignEditFeature/State/focusedField`` 持有
     @FocusState private var focusedField: CampaignEditFeature.State.Field?
-
+    
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
-
+    
     // MARK: - View Body
-
+    
     /// 表單的畫面內容
     var body: some View {
         NavigationStack {
             Form {
                 Section("開團資訊") {
-                    TextField("開團名稱", text: $store.draftName)
+                    TextField("開團名稱", text: $store.draft.name)
                         .textContentType(.none)
                         .focused($focusedField, equals: .name)
                         .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.nameField)
-
+                    
+                    if let nameConflictMessage = store.nameConflictMessage {
+                        Text(LocalizedStringKey(nameConflictMessage))
+                            .blTextStyle(.footnote)
+                            .foregroundStyle(BLPalette().red)
+                    }
+                    
                     DatePicker(
                         "開團日期",
-                        selection: $store.draftOpenDate,
+                        selection: $store.draft.openDate,
                         displayedComponents: .date
                     )
                     .environment(\.locale, locale)
-
+                    
                     DatePicker(
                         "結單日期",
-                        selection: $store.draftCloseDate,
+                        selection: $store.draft.closeDate,
                         displayedComponents: .date
                     )
                     .environment(\.locale, locale)
-
-                    Picker("狀態", selection: $store.draftStatus) {
+                    
+                    Picker("狀態", selection: $store.draft.status) {
                         ForEach(CampaignStatus.allCases) { status in
                             Text(LocalizedStringKey(status.title)).tag(status)
                         }
                     }
-
-                    Toggle("訂購提醒", isOn: $store.wantsReminder)
+                    
+                    Toggle("訂購提醒", isOn: $store.draft.wantsReminder)
                         .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.reminderToggle)
-
-                    if store.wantsReminder {
-                        // 提醒時間以原生 inline DatePicker 編輯 (同上方開團／結單日期列)，點擊跳系統月曆／時間浮層
+                    
+                    if store.draft.wantsReminder {
+                        // 提醒時間沿用原生 inline DatePicker
                         DatePicker(
                             "提醒時間",
-                            selection: $store.reminderTimestamp,
+                            selection: $store.draft.reminderTimestamp,
                             displayedComponents: [.date, .hourAndMinute]
                         )
                         .environment(\.locale, locale)
                     }
                 }
-
+                
                 Section("備註") {
-                    TextField("選填", text: $store.draftNotes, axis: .vertical)
+                    TextField("選填", text: $store.draft.notes, axis: .vertical)
                         .textContentType(.none)
                         .focused($focusedField, equals: .notes)
                         .lineLimit(2...5)
@@ -90,7 +96,7 @@ struct CampaignEditView: View {
                     .accessibilityLabel(Text("取消"))
                     .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.cancelButton)
                 }
-
+                
                 ToolbarItem(placement: .confirmationAction) {
                     Button {
                         store.send(.saveTapped)
@@ -100,7 +106,9 @@ struct CampaignEditView: View {
                     .buttonStyle(.borderedProminent)
                     .accessibilityLabel(Text("儲存"))
                     .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.saveButton)
-                    .disabled(store.draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(
+                        store.draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    )
                 }
             }
         }

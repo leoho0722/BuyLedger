@@ -10,46 +10,53 @@ import Foundation
 import SwiftData
 
 /// 開團 (Campaign) 主檔的依賴介面
-///
-/// 開團是有狀態的獨立實體，故介面回傳完整 ``Campaign`` (含狀態與日期)，而非僅名稱。
-/// 儲存以 ``Campaign/id`` upsert，同時涵蓋新增、改名與狀態變更
-/// 訂單端的 cascade rename 由 ``OrderRepository/renameOrderCampaign`` 另外處理
 struct CampaignRepository: Sendable {
-
+    
     // MARK: - Dependency Properties
-
+    
     /// 讀取目前所有開團 (依開團日期由新到舊排序)
-    var fetchCampaigns: @Sendable () async throws -> [Campaign]
-
+    /// - Returns: 依日期由新到舊排序的開團
+    /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
+    var fetchCampaigns: @Sendable () async throws(PersistenceError) -> [Campaign]
+    
     /// 寫入或更新單一開團 (依 id upsert)
     /// - Parameter campaign: 要寫入或更新的開團
-    var saveCampaign: @Sendable (_ campaign: Campaign) async throws -> Void
-
-    /// 刪除指定 id 的開團；不存在視為 no-op
-    /// - Parameter id: 開團編號
-    var removeCampaign: @Sendable (_ id: String) async throws -> Void
+    /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
+    var saveCampaign: @Sendable (_ campaign: Campaign) async throws(PersistenceError) -> Void
+    
+    /// 刪除開團及其訂單歸屬與提醒連結
+    /// - Parameters:
+    ///   - id: 開團編號
+    ///   - name: 開團名稱，用於同一交易內剝除訂單歸屬
+    /// - Returns: 被刪除的提醒連結事件識別碼；不存在提醒連結時為 `nil`
+    /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
+    var removeCampaign: @Sendable (
+        _ id: String,
+        _ name: String
+    ) async throws(PersistenceError) -> String?
 }
 
 // MARK: - Internal Method
 
 extension CampaignRepository {
-
+    
     /// 以指定的 SwiftData ``ModelContainer`` 建立 repository
     /// - Parameter container: 用於建立背景 actor 的 SwiftData container
     /// - Returns: 對應的 ``CampaignRepository`` 實例
     nonisolated static func live(container: ModelContainer) -> CampaignRepository {
         CampaignRepository(
-            fetchCampaigns: {
+            fetchCampaigns: { () async throws(PersistenceError) -> [Campaign] in
                 let persistence = await Self.makePersistence(container: container)
                 return try await persistence.fetchAll()
             },
-            saveCampaign: { campaign in
+            saveCampaign: { (campaign: Campaign) async throws(PersistenceError) in
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.upsert(campaign)
             },
-            removeCampaign: { id in
+            removeCampaign: {
+                (id: String, name: String) async throws(PersistenceError) -> String? in
                 let persistence = await Self.makePersistence(container: container)
-                try await persistence.delete(id: id)
+                return try await persistence.delete(id: id, name: name)
             }
         )
     }
@@ -58,8 +65,8 @@ extension CampaignRepository {
 // MARK: - Private Method
 
 private extension CampaignRepository {
-
-    /// 在 main actor 上實例化 ``CampaignPersistence`` (`@ModelActor` 的 init 帶有 main-actor 隔離)
+    
+    /// 建立 CampaignPersistence
     /// - Parameter container: 共用的 ``ModelContainer``
     /// - Returns: 對應 container 的 ``CampaignPersistence`` 實例
     static func makePersistence(container: ModelContainer) async -> CampaignPersistence {
@@ -72,22 +79,22 @@ private extension CampaignRepository {
 // MARK: - Dependency Values
 
 extension CampaignRepository: DependencyKey {
-
+    
     /// App 執行時使用共用 SwiftData container
     nonisolated static let liveValue: CampaignRepository = CampaignRepository.live(
         container: PersistenceContainer.shared
     )
-
-    /// SwiftUI Preview 使用 in-memory container
+    
+    /// Preview 使用記憶體資料庫
     nonisolated static let previewValue: CampaignRepository = {
-        let container = (try? PersistenceContainer.make(inMemoryOnly: true)) ?? PersistenceContainer.shared
+        let container = PersistenceContainer.makeInMemory(for: .preview)
         return CampaignRepository.live(container: container)
     }()
-
+    
     /// 測試預設使用空資料來源；TestStore 可透過 `withDependencies` 覆寫
     nonisolated static let testValue = CampaignRepository(
         fetchCampaigns: { [] },
         saveCampaign: { _ in },
-        removeCampaign: { _ in }
+        removeCampaign: { _, _ in nil }
     )
 }
