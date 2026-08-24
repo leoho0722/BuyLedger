@@ -35,10 +35,12 @@ struct OrdersCompactView: View {
         let palette = BLPalette()
         // 先計算一次 filteredOrders，再傳給各區塊
         let sections = store.state.dateSections(
-            referenceDate: date.now, calendar: calendar, locale: locale)
+            referenceDate: date.now,
+            calendar: calendar,
+            locale: locale
+        )
         let filteredIDs = sections.flatMap(\.orders).map(\.id)
-        let allFilteredSelected =
-        !filteredIDs.isEmpty && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
+        let allFilteredSelected = !filteredIDs.isEmpty && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
         NavigationStack(path: $store.scope(state: \.detailPath, action: \.detailPath)) {
             ScrollView {
                 VStack(alignment: .leading, spacing: BLSpacing.medium) {
