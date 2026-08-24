@@ -36,7 +36,7 @@ struct OrderSelectableRow: View {
         } label: {
             HStack(spacing: BLSpacing.medium) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                // 保持圖示為一般字重。
+                    // 保持圖示為一般字重。
                     .font(.title3)
                     .foregroundStyle(isSelected ? palette.accent : palette.tertiaryLabel)
                     .accessibilityHidden(true)

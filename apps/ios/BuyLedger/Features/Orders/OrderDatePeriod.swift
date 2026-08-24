@@ -103,8 +103,7 @@ extension OrderDatePeriod {
             return nil
             
         case .thisWeek:
-            guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: referenceDate)
-            else {
+            guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: referenceDate) else {
                 return nil
             }
             
