@@ -229,7 +229,9 @@ extension OrderDraft {
         newOrderID: () -> String
     ) -> WriteResult? {
         guard let result = resolveWriteResult(
-                editState, existingOrders: state.orders, newOrderID: newOrderID
+            editState,
+            existingOrders: state.orders,
+            newOrderID: newOrderID
         ) else {
             return nil
         }
