@@ -9,8 +9,6 @@
 /* Begin PBXBuildFile section */
 		6C6581DB23B99C73CFE200F0 /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = 3A2CF5BCD746090BC6A06CBE /* ComposableArchitecture */; };
 		98EBBC14CB1CAE55506771BB /* ComposableArchitecture in Frameworks */ = {isa = PBXBuildFile; productRef = E350A744B5DEDE5F8AA211A4 /* ComposableArchitecture */; };
-		E1A2B3C42FA3000000000018 /* SwiftNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = E1A2B3C42FA300000000001A /* SwiftNavigation */; };
-		E1A2B3C42FA300000000001B /* SwiftNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = E1A2B3C42FA300000000001A /* SwiftNavigation */; };
 		A1D9E4B12FA3000000000001 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = A1D9E4B42FA3000000000004 /* Dependencies */; };
 		A1D9E4B22FA3000000000002 /* Dependencies in Frameworks */ = {isa = PBXBuildFile; productRef = A1D9E4B52FA3000000000005 /* Dependencies */; };
 		A1D9E4B62FA3000000000006 /* CasePaths in Frameworks */ = {isa = PBXBuildFile; productRef = A1D9E4BA2FA300000000000A /* CasePaths */; };
@@ -30,6 +28,8 @@
 		D0D98F29301DC011004EE559 /* IdentifiedCollections in Frameworks */ = {isa = PBXBuildFile; productRef = D0D98F28301DC011004EE559 /* IdentifiedCollections */; };
 		D0D98F2B301DC01E004EE559 /* IdentifiedCollections in Frameworks */ = {isa = PBXBuildFile; productRef = D0D98F2A301DC01E004EE559 /* IdentifiedCollections */; };
 		DEC0DE0000000000000000C1 /* Textual in Frameworks */ = {isa = PBXBuildFile; productRef = DEC0DE0000000000000000B1 /* Textual */; };
+		E1A2B3C42FA3000000000018 /* SwiftNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = E1A2B3C42FA300000000001A /* SwiftNavigation */; };
+		E1A2B3C42FA300000000001B /* SwiftNavigation in Frameworks */ = {isa = PBXBuildFile; productRef = E1A2B3C42FA300000000001A /* SwiftNavigation */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -433,13 +433,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 261;
+				CURRENT_PROJECT_VERSION = 262;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BuyLedger/Resources/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -452,7 +453,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				MARKETING_VERSION = 1.7.0;
+				MARKETING_VERSION = 2.0.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedger;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -477,13 +478,14 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 261;
+				CURRENT_PROJECT_VERSION = 262;
 				DEAD_CODE_STRIPPING = YES;
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = BuyLedger/Resources/Info.plist;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.productivity";
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents[sdk=iphoneos*]" = YES;
@@ -496,7 +498,7 @@
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				IPHONEOS_DEPLOYMENT_TARGET = 18.0;
 				LD_RUNPATH_SEARCH_PATHS = "@executable_path/Frameworks";
-				MARKETING_VERSION = 1.7.0;
+				MARKETING_VERSION = 2.0.0;
 				OTHER_LDFLAGS = "-ObjC";
 				PRODUCT_BUNDLE_IDENTIFIER = com.leoho.BuyLedger;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -641,7 +643,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 261;
+				CURRENT_PROJECT_VERSION = 262;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -667,7 +669,7 @@
 			buildSettings = {
 				BUNDLE_LOADER = "$(TEST_HOST)";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 261;
+				CURRENT_PROJECT_VERSION = 262;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -692,7 +694,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 261;
+				CURRENT_PROJECT_VERSION = 262;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -717,7 +719,7 @@
 			isa = XCBuildConfiguration;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 261;
+				CURRENT_PROJECT_VERSION = 262;
 				DEAD_CODE_STRIPPING = YES;
 				DEVELOPMENT_TEAM = 23JEQ2524P;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -880,11 +882,6 @@
 			package = 5F378FA3EE62B1A19259B6A4 /* XCRemoteSwiftPackageReference "swift-composable-architecture" */;
 			productName = ComposableArchitecture;
 		};
-		E1A2B3C42FA300000000001A /* SwiftNavigation */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = E1A2B3C42FA3000000000019 /* XCRemoteSwiftPackageReference "swift-navigation" */;
-			productName = SwiftNavigation;
-		};
 		A1D9E4B42FA3000000000004 /* Dependencies */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = A1D9E4B32FA3000000000003 /* XCRemoteSwiftPackageReference "swift-dependencies" */;
@@ -979,6 +976,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = DEC0DE0000000000000000A1 /* XCRemoteSwiftPackageReference "textual" */;
 			productName = Textual;
+		};
+		E1A2B3C42FA300000000001A /* SwiftNavigation */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E1A2B3C42FA3000000000019 /* XCRemoteSwiftPackageReference "swift-navigation" */;
+			productName = SwiftNavigation;
 		};
 		E350A744B5DEDE5F8AA211A4 /* ComposableArchitecture */ = {
 			isa = XCSwiftPackageProductDependency;
