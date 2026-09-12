@@ -29,14 +29,20 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 # 儲存庫指引
 
-本檔只記錄 Codex 專屬差異；跨平台通用規範以 [`CLAUDE.md`](CLAUDE.md) 為準，各平台硬規則與隱性 gotcha 見對應平台目錄的 `CLAUDE.md` (如 [`apps/ios/CLAUDE.md`](apps/ios/CLAUDE.md))，專案概覽見 [`README.md`](README.md)，Apple 平台 setup 見 [`apps/ios/README.md`](apps/ios/README.md)。
+本檔只記錄 Codex 專屬差異；跨平台通用規範以 [`CLAUDE.md`](CLAUDE.md) 為準，各平台與 shared 模組的硬規則與隱性 gotcha 見該目錄的 `CLAUDE.md` (如 [`apps/ios/CLAUDE.md`](apps/ios/CLAUDE.md)、[`shared/data-model/CLAUDE.md`](shared/data-model/CLAUDE.md))，專案概覽見 [`README.md`](README.md)，Apple 平台 setup 見 [`apps/ios/README.md`](apps/ios/README.md)。
 
 讀取規格時，`openspec/specs/**/spec.md` 尾端的 `<!-- @trace -->` 區塊是工具生成的歷史紀錄，所列路徑未經驗證；判斷程式碼現況一律以搜尋程式碼本身為準，不得以 trace 區塊推論現有結構。
 
 ## Codex 專屬差異
 
-- **Commit Co-Authored-By trailer**：由 Codex 建立或 amend 的 commit，commit message 最後須加入下列 trailer。下例以歷史提交曾使用的 gpt-5.5 示範格式：模型名放在小括號內、不加角括號，電子郵件固定為 `codex@openai.com`；此格式僅適用於往後的 commit，不回溯修改既有歷史提交：
+- 由 Codex 建立或 amend 的 commit 結尾加 Co-Authored-By trailer：display name 直接寫當次實際使用的模型全名 (如 `GPT-6 Astra`)，不加 `Codex` 前綴、不用括號包住模型名，email 固定 `codex@openai.com`；不回溯修改既有提交。
 
-  ```text
-  Co-Authored-By: Codex (gpt-5.5) <codex@openai.com>
-  ```
+```text
+refactor(time): 時間相依改走 @Dependency(\.date) 注入
+
+- DashboardView / InsightsView / RootFeature 加 @Dependency(\.date)
+- OrdersFeature.State.filteredOrders 改成 func(referenceDate:)
+- 新增 TestDependencies.fixedNow 給 snapshot 與 unit test 共用
+
+Co-Authored-By: GPT-6 Astra <codex@openai.com>
+```
