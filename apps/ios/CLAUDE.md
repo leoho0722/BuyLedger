@@ -280,7 +280,7 @@ Schema 採版本化 `VersionedSchema` + `BuyLedgerMigrationPlan`，設 migration
 - **`ToolbarContent` 型別**同樣比照 View 排序 (內容定義收於 `// MARK: - View Properties`，主體收 `// MARK: - Toolbar Content Body`，協定隱含 `@ToolbarContentBuilder` 故毋須標)。目前唯一案例為 `OrdersToolbarContent.swift`；該型別不含相依注入，均由呼叫端解析後以 init 參數傳入。
 - `#Preview` 放在檔案最後，前方加上 `// MARK: - Preview`。
 
-建立新 Swift 檔案時，invoke `/swift-file-template` 取得檔案 header 格式與 View / 非 View 型別 / TCA Reducer 的具體程式碼範本。
+建立新 Swift 檔案時，invoke `/ios-dev-kit` 對照 `references/file-templates.md` 的樣板選擇表與檔頭規則；TCA Reducer 的分區與導航依 `references/tca-architecture.md`。
 
 ## Design System 準則
 
