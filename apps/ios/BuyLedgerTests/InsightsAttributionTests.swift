@@ -12,9 +12,9 @@ import Testing
 /// 驗證分析歸屬計算
 @MainActor
 struct InsightsAttributionTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func categoryBreakdownAttributesPreMergeAmountsFromLeafOrders() {
         // 只計入被合併的原始訂單，排除新訂單與報價單
         let orders = [
@@ -25,14 +25,14 @@ struct InsightsAttributionTests {
                 mergedSourceIDs: ["A", "B"]),
             Self.makeOrder(id: "D", status: .quoting, categories: ["beauty"], charged: 400),
         ]
-        
+
         let breakdown = InsightsStats.categoryBreakdown(orders: orders)
-        
+
         #expect(breakdown.map(\.name) == ["snacks", "beauty"])
         #expect(breakdown.first { $0.name == "beauty" }?.profit == 1_000)
         #expect(breakdown.first { $0.name == "snacks" }?.profit == 2_000)
     }
-    
+
     @Test func chainedMergeStaysSingleCounted() {
         // 連續合併仍只計一次：beauty = A + C、snacks = B
         let orders = [
@@ -46,13 +46,13 @@ struct InsightsAttributionTests {
                 id: "M2", status: .shipping, categories: ["beauty", "snacks"], charged: 3_500,
                 mergedSourceIDs: ["M1", "C"]),
         ]
-        
+
         let breakdown = InsightsStats.categoryBreakdown(orders: orders)
-        
+
         #expect(breakdown.first { $0.name == "beauty" }?.profit == 1_500)
         #expect(breakdown.first { $0.name == "snacks" }?.profit == 2_000)
     }
-    
+
     @Test func orderRowCategoriesTagJoinsAndOmits() {
         // 多類別以「、」串接單一 capsule，空陣列與空白不顯示
         #expect(OrderRowView.categoriesTagText(for: ["服飾"]) == "服飾")
@@ -60,7 +60,7 @@ struct InsightsAttributionTests {
         #expect(OrderRowView.categoriesTagText(for: []).isEmpty)
         #expect(OrderRowView.categoriesTagText(for: ["   "]).isEmpty)
     }
-    
+
     @Test func multiCategoryLeafCountsFullyInEachCategoryAndEmptyIsExcluded() {
         // 原始訂單的多個類別各自完整計入，無類別時不歸入卡片。
         let orders = [
@@ -68,9 +68,9 @@ struct InsightsAttributionTests {
                 id: "C", status: .delivered, categories: ["beauty", "snacks"], charged: 900),
             Self.makeOrder(id: "E", status: .delivered, categories: [], charged: 700),
         ]
-        
+
         let breakdown = InsightsStats.categoryBreakdown(orders: orders)
-        
+
         #expect(breakdown.map(\.name).sorted() == ["beauty", "snacks"])
         #expect(breakdown.allSatisfy { $0.profit == 900 })
     }
@@ -79,7 +79,7 @@ struct InsightsAttributionTests {
 // MARK: - Helpers
 
 private extension InsightsAttributionTests {
-    
+
     /// 建立統計歸屬測試用的最小訂單；成本與費率皆 0，獲利即為 `charged`
     /// - Parameters:
     ///   - id: 訂單識別值

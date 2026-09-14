@@ -13,84 +13,84 @@ enum OrderMerge {}
 // MARK: - Nested Types
 
 extension OrderMerge {
-    
+
     /// 合併計算的輸出：合併確認表單各欄位的草稿值
     struct Draft: Equatable {
-        
+
         // MARK: - Data Properties
-        
+
         /// 合併後的客戶 (取主訂單；合併限同客戶名稱)
         let customer: LedgerCustomer
-        
+
         /// 訂單來源 (取主訂單)
         let orderSource: String
-        
+
         /// 訂單狀態 (取主訂單)
         let status: OrderStatus
-        
+
         /// 幣別 (取主訂單；合併限同幣別)
         let currency: CurrencyCode
-        
+
         /// 訂購日期 (合併當下時間)
         let date: Date
-        
+
         /// 商品類別 (保序聯集)
         let categories: [String]
-        
+
         /// 開團名稱 (保序聯集)
         let campaignNames: [String]
-        
+
         /// 付款方式 (無卡優先規則)
         let paymentMethod: String
-        
+
         /// 對帳狀態 (隨付款方式來源訂單)
         let reconciliationStatus: String
-        
+
         /// 貨到付款旗標 (隨付款方式來源訂單)
         let isCashOnDelivery: Bool
-        
+
         /// 收款狀態 (取主訂單)
         let paymentReceiptStatus: PaymentReceiptStatus
-        
+
         /// 客戶實付加總
         let chargedAmount: Decimal
-        
+
         /// 無卡折抵金額加總
         let cardlessDeductionAmount: Decimal
-        
+
         /// 無卡補款金額加總
         let cardlessSupplementAmount: Decimal
-        
+
         /// 商品成本加總
         let itemCost: Decimal
-        
+
         /// 外國國內運費加總
         let foreignDomesticShipping: Decimal
-        
+
         /// 國際運費加總
         let internationalShipping: Decimal
-        
+
         /// 國內運費加總
         let domesticShipping: Decimal
-        
+
         /// 刷卡手續費比例 (加權平均)
         let cardFeeRate: Decimal
-        
+
         /// 平台手續費比例 (加權平均)
         let platformFeeRate: Decimal
-        
+
         /// 金流手續費比例 (加權平均)
         let paymentFeeRate: Decimal
-        
+
         /// 商品明細串接 (主前副後)
         let items: [LedgerOrderItem]
-        
+
         /// 合併備註
         let notes: String
-        
+
         /// 照片串接 (主前副後；未截斷)
         let photos: [Data]
-        
+
         /// 合併來源訂單編號 [主, 副]
         let mergeSourceIDs: [String]
     }
@@ -99,7 +99,7 @@ extension OrderMerge {
 // MARK: - Internal Method
 
 extension OrderMerge {
-    
+
     /// 依合併規則整合兩筆訂單，產生合併確認表單的草稿值
     /// - Parameters:
     ///   - primary: 主訂單 (發起合併的那筆)
@@ -118,7 +118,7 @@ extension OrderMerge {
             secondary: secondary,
             isCardless: isCardless
         )
-        
+
         return Draft(
             customer: primary.customer,
             orderSource: primary.orderSource,
@@ -182,10 +182,10 @@ extension OrderMerge {
 // MARK: - Private Method
 
 private extension OrderMerge {
-    
+
     /// 備註分隔線：獨立一行的多個 dash
     static let notesSeparator = "----------"
-    
+
     /// 保序聯集：主訂單元素在前，去除重複
     /// - Parameters:
     ///   - primary: 主訂單的名稱陣列
@@ -195,7 +195,7 @@ private extension OrderMerge {
         var seen = Set<String>()
         return (primary + secondary).filter { seen.insert($0).inserted }
     }
-    
+
     /// 依客戶實付計算加權平均比例；分母為 0 時沿用主訂單
     /// - Parameters:
     ///   - primaryRate: 主訂單比例
@@ -213,13 +213,13 @@ private extension OrderMerge {
         guard totalCharged > 0 else {
             return primaryRate
         }
-        
+
         let weighted =
         (primaryRate * primary.chargedAmount + secondaryRate * secondary.chargedAmount)
         / totalCharged
         return max(0, min(1, weighted))
     }
-    
+
     /// 合併兩筆備註；以分隔線連接非空內容
     /// - Parameters:
     ///   - primaryNotes: 主訂單備註
@@ -228,7 +228,7 @@ private extension OrderMerge {
     static func mergedNotes(_ primaryNotes: String, _ secondaryNotes: String) -> String {
         let trimmedPrimary = primaryNotes.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedSecondary = secondaryNotes.trimmingCharacters(in: .whitespacesAndNewlines)
-        
+
         switch (trimmedPrimary.isEmpty, trimmedSecondary.isEmpty) {
         case (false, false):
             return "\(trimmedPrimary)\n\(notesSeparator)\n\(trimmedSecondary)"
@@ -240,7 +240,7 @@ private extension OrderMerge {
             return ""
         }
     }
-    
+
     /// 選擇合併後的付款方式、對帳狀態與貨到付款旗標
     /// - Parameters:
     ///   - primary: 主訂單
@@ -261,7 +261,7 @@ private extension OrderMerge {
         } else {
             source = primary
         }
-        
+
         return (source.paymentMethod, source.reconciliationStatus, source.isCashOnDelivery)
     }
 }

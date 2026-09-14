@@ -10,12 +10,12 @@ import SwiftData
 
 /// BuyLedger SwiftData schema 的版本化定義
 enum BuyLedgerSchemaV15: VersionedSchema {
-    
+
     // MARK: - Static Properties
-    
+
     /// 版本識別
     static var versionIdentifier: Schema.Version { Schema.Version(15, 0, 0) }
-    
+
     /// 此版本使用的 SwiftData model；改動中的型別使用本版本凍結的影子
     static var models: [any PersistentModel.Type] {
         [
@@ -31,15 +31,15 @@ enum BuyLedgerSchemaV15: VersionedSchema {
             CampaignReminderRecord.self,
         ]
     }
-    
+
     // MARK: - Nested Types
-    
+
     /// V15 的 OrderRecord 影子；保留 verificationStatus 欄位名稱
     @Model
     final class OrderRecord {
-        
+
         // MARK: - Data Properties
-        
+
         var id: String
         var customer: LedgerCustomer
         var status: OrderStatus
@@ -66,9 +66,9 @@ enum BuyLedgerSchemaV15: VersionedSchema {
         var isCashOnDelivery: Bool = false
         var photos: [Data] = []
         var mergedSourceIDs: [String] = []
-        
+
         // MARK: - Init
-        
+
         init(order: LedgerOrder) {
             self.id = order.id
             self.customer = order.customer
@@ -98,28 +98,28 @@ enum BuyLedgerSchemaV15: VersionedSchema {
             self.mergedSourceIDs = order.mergedSourceIDs
         }
     }
-    
+
     /// V15 的對帳狀態主檔影子；V16 改名為 ReconciliationStatusRecord
     @Model
     final class VerificationStatusRecord {
-        
+
         // MARK: - Data Properties
-        
+
         var name: String
-        
+
         // MARK: - Init
-        
+
         init(name: String) {
             self.name = name
         }
     }
-    
+
     /// V15 的 SyncMeta 影子；只供遷移使用，runtime 不讀寫
     @Model
     final class SyncMeta {
-        
+
         // MARK: - Data Properties
-        
+
         var entityID: String
         var collection: String
         var fieldClocksJSON: String
@@ -131,9 +131,9 @@ enum BuyLedgerSchemaV15: VersionedSchema {
         var lastIssuedHLC: String
         var pendingRemoteJSON: String
         var photoRefsJSON: String
-        
+
         // MARK: - Init
-        
+
         init(
             entityID: String,
             collection: String,
@@ -160,13 +160,13 @@ enum BuyLedgerSchemaV15: VersionedSchema {
             self.photoRefsJSON = photoRefsJSON
         }
     }
-    
+
     /// V15 的 SyncQueueItem 影子；只供遷移使用，勿加入 runtime 讀寫
     @Model
     final class SyncQueueItem {
-        
+
         // MARK: - Data Properties
-        
+
         var opID: String
         var entityID: String
         var collection: String
@@ -175,9 +175,9 @@ enum BuyLedgerSchemaV15: VersionedSchema {
         var fieldClocksJSON: String
         var attempts: Int
         var enqueuedAt: Date
-        
+
         // MARK: - Init
-        
+
         init(
             opID: String,
             entityID: String,
@@ -202,12 +202,12 @@ enum BuyLedgerSchemaV15: VersionedSchema {
 
 /// V16 schema：把對帳狀態的程式識別字由 verification 對齊為 reconciliation
 enum BuyLedgerSchemaV16: VersionedSchema {
-    
+
     // MARK: - Static Properties
-    
+
     /// 版本識別
     static var versionIdentifier: Schema.Version { Schema.Version(16, 0, 0) }
-    
+
     /// 此版本使用的 SwiftData model；改動中的型別使用本版本凍結的影子
     static var models: [any PersistentModel.Type] {
         [
@@ -223,15 +223,15 @@ enum BuyLedgerSchemaV16: VersionedSchema {
             CampaignReminderRecord.self,
         ]
     }
-    
+
     // MARK: - Nested Types
-    
+
     /// V16 的 OrderRecord 影子；保留 V17 前的資料形狀
     @Model
     final class OrderRecord {
-        
+
         // MARK: - Data Properties
-        
+
         var id: String
         var customer: LedgerCustomer
         var status: OrderStatus
@@ -252,18 +252,18 @@ enum BuyLedgerSchemaV16: VersionedSchema {
         var categories: [String] = []
         var paymentMethod: String = ""
         var notes: String = ""
-        
+
         @Attribute(originalName: "verificationStatus")
         var reconciliationStatus: String = ""
-        
+
         var campaignNames: [String] = []
         var paymentReceiptStatus: String = PaymentReceiptStatus.pending.rawValue
         var isCashOnDelivery: Bool = false
         var photos: [Data] = []
         var mergedSourceIDs: [String] = []
-        
+
         // MARK: - Init
-        
+
         init(order: LedgerOrder) {
             self.id = order.id
             self.customer = order.customer
@@ -293,13 +293,13 @@ enum BuyLedgerSchemaV16: VersionedSchema {
             self.mergedSourceIDs = order.mergedSourceIDs
         }
     }
-    
+
     /// V16 的 SyncMeta 影子；只供遷移使用，runtime 不讀寫
     @Model
     final class SyncMeta {
-        
+
         // MARK: - Data Properties
-        
+
         var entityID: String
         var collection: String
         var fieldClocksJSON: String
@@ -311,9 +311,9 @@ enum BuyLedgerSchemaV16: VersionedSchema {
         var lastIssuedHLC: String
         var pendingRemoteJSON: String
         var photoRefsJSON: String
-        
+
         // MARK: - Init
-        
+
         init(
             entityID: String,
             collection: String,
@@ -340,13 +340,13 @@ enum BuyLedgerSchemaV16: VersionedSchema {
             self.photoRefsJSON = photoRefsJSON
         }
     }
-    
+
     /// V16 的 SyncQueueItem 影子；只供遷移使用，勿加入 runtime 讀寫
     @Model
     final class SyncQueueItem {
-        
+
         // MARK: - Data Properties
-        
+
         var opID: String
         var entityID: String
         var collection: String
@@ -355,9 +355,9 @@ enum BuyLedgerSchemaV16: VersionedSchema {
         var fieldClocksJSON: String
         var attempts: Int
         var enqueuedAt: Date
-        
+
         // MARK: - Init
-        
+
         init(
             opID: String,
             entityID: String,
@@ -382,12 +382,12 @@ enum BuyLedgerSchemaV16: VersionedSchema {
 
 /// V17 schema：當前最新版本 (target)
 enum BuyLedgerSchemaV17: VersionedSchema {
-    
+
     // MARK: - Static Properties
-    
+
     /// 版本識別
     static var versionIdentifier: Schema.Version { Schema.Version(17, 0, 0) }
-    
+
     /// 此版本使用的 SwiftData model；改動中的型別使用本版本凍結的影子
     static var models: [any PersistentModel.Type] {
         [
@@ -405,18 +405,18 @@ enum BuyLedgerSchemaV17: VersionedSchema {
 
 /// 對帳狀態主檔改名 (V15 → V16) 的跨階段暫存
 enum ReconciliationStatusRenameMigration {
-    
+
     // MARK: - Static Properties
-    
+
     /// `willMigrate` 讀出、`didMigrate` 寫回的對帳狀態主檔名稱清單
     nonisolated(unsafe) static var carriedNames: [String] = []
 }
 
 /// BuyLedger SwiftData migration plan
 enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
-    
+
     // MARK: - Static Properties
-    
+
     /// migration plan 涉及的所有 schema 版本
     static var schemas: [any VersionedSchema.Type] {
         [
@@ -425,7 +425,7 @@ enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
             BuyLedgerSchemaV17.self,
         ]
     }
-    
+
     /// V15→V16 自訂遷移；V16→V17 輕量遷移
     static var stages: [MigrationStage] {
         [

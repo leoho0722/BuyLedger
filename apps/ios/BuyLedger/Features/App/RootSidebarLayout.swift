@@ -10,17 +10,17 @@ import SwiftUI
 
 /// iPadOS 使用的側邊欄導覽
 struct RootSidebarLayout: View {
-    
+
     // MARK: - View Properties
-    
+
     /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
-    
+
     /// App 目前選用的顯示語系
     let language: AppLanguage
-    
+
     // MARK: - View Body
-    
+
     /// 側邊欄導覽的畫面內容
     var body: some View {
         splitView
@@ -30,15 +30,15 @@ struct RootSidebarLayout: View {
 // MARK: - Nested Types
 
 private extension RootSidebarLayout {
-    
+
     /// 側邊欄的單一選取型別
     enum SidebarSelection: Hashable {
-        
+
         // MARK: - Cases
-        
+
         /// 主要分頁
         case tab(RootTab)
-        
+
         /// 智慧分組 (訂單頁的狀態篩選)
         case smartGroup(OrderStatus)
     }
@@ -48,40 +48,40 @@ private extension RootSidebarLayout {
 extension RootSidebarLayout {
     /// 總覽頁可快速查看的訂單群組
     enum SmartGroup: String, Identifiable, CaseIterable {
-        
+
         // MARK: - Cases
-        
+
         /// 報價中的訂單分組
         case quoting
-        
+
         /// 已確認但尚未下單的訂單分組
         case confirmed
-        
+
         /// 已下單但尚未集運的訂單分組
         case purchased
-        
+
         /// 集運中的訂單分組
         case shipping
-        
+
         /// 部分商品已到貨的訂單分組
         case partiallyArrived
-        
+
         /// 已到貨但尚未交付的訂單分組
         case arrived
-        
+
         /// 已交付完成的訂單分組
         case delivered
-        
+
         /// 買家已取貨完成的訂單分組
         case pickedUp
-        
+
         // MARK: - Identifiable Properties
-        
+
         /// 分組的穩定識別值
         var id: String { rawValue }
-        
+
         // MARK: - Data Properties
-        
+
         /// 對應的訂單狀態
         var status: OrderStatus {
             switch self {
@@ -103,14 +103,14 @@ extension RootSidebarLayout {
                     .pickedUp
             }
         }
-        
+
         /// 在側邊欄顯示的色點顏色
         /// - Parameter palette: 目前外觀使用的色盤
         /// - Returns: 色點顏色
         func color(in palette: BLPalette) -> Color {
             BLStatusHue.color(for: status, in: palette)
         }
-        
+
         /// 對應到 UI 測試 identifier 的分組 key
         var accessibilityKey: BLAccessibilityID.Root.SmartGroup {
             switch self {
@@ -132,9 +132,9 @@ extension RootSidebarLayout {
                     .pickedUp
             }
         }
-        
+
         // MARK: - Static Properties
-        
+
         /// 訂單瀏覽 sidebar 中提供的固定順序 (依訂單生命週期由前到後排)
         static let orderBrowsingCases: [SmartGroup] = [
             .quoting,
@@ -152,7 +152,7 @@ extension RootSidebarLayout {
 // MARK: - ViewBuilder
 
 private extension RootSidebarLayout {
-    
+
     /// 根層級分欄導覽
     @ViewBuilder
     var splitView: some View {
@@ -162,13 +162,13 @@ private extension RootSidebarLayout {
             destination(selectedTab: store.selectedTab)
         }
     }
-    
+
     /// 側邊欄內容
     @ViewBuilder
     var sidebar: some View {
         let palette = BLPalette()
         let selection = currentSelection
-        
+
         List(selection: selectionBinding) {
             Section {
                 logoRow(palette: palette)
@@ -176,7 +176,7 @@ private extension RootSidebarLayout {
                     .listRowBackground(Color.clear)
                     .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 14, trailing: 12))
             }
-            
+
             Section("工作區") {
                 navRow(.dashboard, palette: palette, isSelected: selection == .tab(.dashboard))
                 navRow(
@@ -188,11 +188,11 @@ private extension RootSidebarLayout {
                 navRow(.campaigns, palette: palette, isSelected: selection == .tab(.campaigns))
                 navRow(.insights, palette: palette, isSelected: selection == .tab(.insights))
             }
-            
+
             Section("工具") {
                 navRow(.more, palette: palette, isSelected: selection == .tab(.more))
             }
-            
+
             Section("智慧分組") {
                 ForEach(SmartGroup.orderBrowsingCases) { group in
                     // 分頁與智慧分組共用同一個選取型別並統一標記，系統才只會高亮一列
@@ -210,7 +210,7 @@ private extension RootSidebarLayout {
         .accessibilityIdentifier(BLAccessibilityID.Root.sidebar)
         .navigationSplitViewColumnWidth(min: 220, ideal: 240, max: 280)
     }
-    
+
     /// BL gradient logo 與 App 名稱列
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: logo 列 view
@@ -227,22 +227,22 @@ private extension RootSidebarLayout {
                         )
                     )
                     .frame(width: 28, height: 28)
-                
+
                 Text("BL")
                     .font(BLTypographyStyle.caption.font.weight(.bold))
                     .foregroundStyle(.white)
             }
-            
+
             Text("BuyLedger")
                 .font(BLTypographyStyle.headline.font.weight(.bold))
                 .foregroundStyle(palette.label)
-            
+
             Spacer(minLength: 0)
         }
         .padding(.vertical, 2)
         .accessibilityElement(children: .combine)
     }
-    
+
     /// 主要分頁列
     /// - Parameters:
     ///   - tab: 對應的分頁
@@ -260,9 +260,9 @@ private extension RootSidebarLayout {
         HStack(spacing: BLSpacing.small) {
             Label(LocalizedStringKey(tab.title), systemImage: tab.systemImage)
                 .labelStyle(.titleAndIcon)
-            
+
             Spacer(minLength: 0)
-            
+
             if let badgeCount, badgeCount > 0 {
                 BLBadge("\(badgeCount)", tone: .destructive, variant: .count)
             }
@@ -276,7 +276,7 @@ private extension RootSidebarLayout {
         // 選取態由清單 cell 承載，合併後的這個元素讀不到，故顯式標上
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
-    
+
     /// 智慧分組單列：色點 + 狀態名稱 + 計數
     /// - Parameters:
     ///   - group: 智慧分組項目
@@ -290,18 +290,18 @@ private extension RootSidebarLayout {
         isSelected: Bool
     ) -> some View {
         let count = SidebarBadgeCounts.orderCount(for: group.status, orders: store.orders.orders)
-        
+
         HStack(spacing: BLSpacing.small) {
             Circle()
                 .fill(group.color(in: palette))
                 .frame(width: 9, height: 9)
-            
+
             Text(LocalizedStringKey(group.status.title))
                 .blTextStyle(.subhead)
                 .foregroundStyle(palette.label)
-            
+
             Spacer(minLength: 0)
-            
+
             Text("\(count)")
                 .font(BLTypographyStyle.footnote.font.weight(.medium))
                 .monospacedDigit()
@@ -315,7 +315,7 @@ private extension RootSidebarLayout {
         // 選取態由清單 cell 承載，合併後的這個元素讀不到，故顯式標上
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
-    
+
     /// 目前選取分頁的內容
     /// - Parameter selectedTab: 目前選取的主要分頁
     /// - Returns: 分頁對應的 SwiftUI view
@@ -351,7 +351,7 @@ private extension RootSidebarLayout {
 // MARK: - Private Method
 
 private extension RootSidebarLayout {
-    
+
     /// 目前選取的側邊欄項目
     var currentSelection: SidebarSelection {
         if store.selectedTab == .orders,
@@ -361,7 +361,7 @@ private extension RootSidebarLayout {
         }
         return .tab(store.selectedTab)
     }
-    
+
     /// 分頁列合併朗讀後承載徽章筆數的 accessibility value
     /// - Parameter badgeCount: 徽章數字；為 `nil` 或 `0` 時不朗讀筆數
     /// - Returns: 筆數描述
@@ -371,7 +371,7 @@ private extension RootSidebarLayout {
         }
         return Text("\(badgeCount) 件進行中")
     }
-    
+
     /// `List` 單選 binding：分頁與智慧分組共用同一個選取型別
     var selectionBinding: Binding<SidebarSelection?> {
         Binding(
@@ -383,10 +383,10 @@ private extension RootSidebarLayout {
                         return
                     }
                     store.send(.tabSelected(tab))
-                    
+
                 case let .smartGroup(status):
                     store.send(.smartGroupSelected(status))
-                    
+
                 case .none:
                     return
                 }
@@ -404,7 +404,7 @@ private extension RootSidebarLayout {
         state.orders.hasLoaded = true
         return state
     }()
-    
+
     return RootSidebarLayout(
         store: Store(initialState: previewState) {
             RootFeature()

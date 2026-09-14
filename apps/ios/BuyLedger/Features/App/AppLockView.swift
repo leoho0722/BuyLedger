@@ -10,36 +10,36 @@ import SwiftUI
 
 /// App 鎖定時顯示的阻斷畫面
 struct AppLockView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// AppLockFeature 的 Store
     @Bindable var store: StoreOf<AppLockFeature>
-    
+
     /// 依據螢幕尺寸縮放的圖示大小
     @ScaledMetric private var iconSize: CGFloat = 44
-    
+
     // MARK: - View Body
-    
+
     var body: some View {
         VStack(spacing: 20) {
             Image(systemName: "lock.fill")
                 .font(.system(size: iconSize))
                 .foregroundStyle(Color.blSecondaryLabel)
-            
+
             Text("App 已鎖定")
                 .blTextStyle(.title2)
-            
+
             Text("請完成身份驗證以繼續使用。")
                 .multilineTextAlignment(.center)
-            
+
             if store.unlockDidFail {
                 Text("驗證未完成，請再試一次。")
                     .blTextStyle(.footnote)
                     .foregroundStyle(BLTone.destructive.onSurface)
                     .multilineTextAlignment(.center)
             }
-            
+
             Button(store.unlockButtonTitleKey) {
                 store.send(.retryUnlockTapped)
             }

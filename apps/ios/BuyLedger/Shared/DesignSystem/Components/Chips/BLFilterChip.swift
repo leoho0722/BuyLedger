@@ -9,39 +9,39 @@ import SwiftUI
 
 /// 篩選膠囊：訂單列表的狀態、日期、類別與付款方式篩選共用
 struct BLFilterChip: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 膠囊顯示的文字
     let title: LocalizedStringKey
-    
+
     /// 是否為選取狀態
     let isSelected: Bool
-    
+
     /// 選取態的語意配色
     var style: Style = .inverted
-    
+
     /// 字級與水平內距的尺寸
     var size: Size = .standard
-    
+
     /// 選用的前綴 SF Symbol 名稱
     var icon: String? = nil
-    
+
     /// 選用的尾端 SF Symbol 名稱
     var trailingIcon: String? = nil
-    
+
     /// 是否撐滿可用寬度並允許換行 (trigger 類膠囊使用)
     var isExpanded: Bool = false
-    
+
     /// 點擊時的動作
     let action: () -> Void
-    
+
     // MARK: - View Body
-    
+
     /// 篩選膠囊的畫面內容
     var body: some View {
         let palette = BLPalette()
-        
+
         Button(action: action) {
             label(palette: palette)
                 // 命中區放在標籤內部才會擴大可點區域；形狀用 capsule 而非外接矩形。
@@ -58,30 +58,30 @@ struct BLFilterChip: View {
 // MARK: - Nested Types
 
 extension BLFilterChip {
-    
+
     /// 膠囊選取態的語意配色
     enum Style {
-        
+
         // MARK: - Cases
-        
+
         /// 以反白呈現選取 (狀態篩選)
         case inverted
-        
+
         /// 以強調色呈現選取 (日期區間篩選)
         case accent
-        
+
         /// 以輔助強調色呈現選取 (類別、付款方式與整合篩選)
         case purple
     }
-    
+
     /// 膠囊的字級與水平內距
     enum Size {
-        
+
         // MARK: - Cases
-        
+
         /// `.footnote` 加 12pt 水平內距 (regular 版面)
         case standard
-        
+
         /// `.subheadline` 加 14pt 水平內距 (compact 版面)
         case large
     }
@@ -90,7 +90,7 @@ extension BLFilterChip {
 // MARK: - ViewBuilder
 
 private extension BLFilterChip {
-    
+
     /// 膠囊的可見內容：圖示、文字與選取態配色
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 膠囊標籤 view
@@ -101,9 +101,9 @@ private extension BLFilterChip {
                 Image(systemName: icon)
                     .font(size.iconFont)
             }
-            
+
             titleText
-            
+
             if let trailingIcon {
                 Image(systemName: trailingIcon)
                     .font(size.iconFont)
@@ -115,7 +115,7 @@ private extension BLFilterChip {
         .background(style.background(isSelected: isSelected, palette: palette))
         .clipShape(Capsule())
     }
-    
+
     /// 膠囊文字：撐滿型允許換行並靠左，其餘維持單行自然寬度
     @ViewBuilder
     var titleText: some View {
@@ -136,7 +136,7 @@ private extension BLFilterChip {
 // MARK: - Private Method
 
 private extension BLFilterChip.Style {
-    
+
     /// 回傳膠囊前景色
     /// - Parameters:
     ///   - isSelected: 是否為選取狀態
@@ -155,7 +155,7 @@ private extension BLFilterChip.Style {
             return palette.purple
         }
     }
-    
+
     /// 回傳膠囊背景色
     /// - Parameters:
     ///   - isSelected: 是否為選取狀態
@@ -177,7 +177,7 @@ private extension BLFilterChip.Style {
 }
 
 private extension BLFilterChip.Size {
-    
+
     /// 膠囊文字字級
     var titleFont: Font {
         switch self {
@@ -187,7 +187,7 @@ private extension BLFilterChip.Size {
             BLTypographyStyle.subhead.font.weight(.semibold)
         }
     }
-    
+
     /// 膠囊圖示字級
     var iconFont: Font {
         switch self {
@@ -197,7 +197,7 @@ private extension BLFilterChip.Size {
             BLTypographyStyle.caption.font.weight(.semibold)
         }
     }
-    
+
     /// 膠囊水平內距
     var horizontalPadding: CGFloat {
         switch self {
@@ -218,7 +218,7 @@ private extension BLFilterChip.Size {
             BLFilterChip(title: "報價中", isSelected: false) {}
             BLFilterChip(title: "本月", isSelected: true, style: .accent, icon: "calendar") {}
         }
-        
+
         BLFilterChip(
             title: "篩選: 全部",
             isSelected: false,

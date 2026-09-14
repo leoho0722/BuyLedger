@@ -11,45 +11,45 @@ import SwiftData
 
 /// 讀取與寫入訂單資料的依賴介面
 struct OrderRepository: Sendable {
-    
+
     // MARK: - Dependency Properties
-    
+
     /// 讀取目前可顯示的訂單
     /// - Returns: 可顯示的訂單
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
     var fetchOrders: @Sendable () async throws(PersistenceError) -> [LedgerOrder]
-    
+
     /// 建立新訂單；遇到相同編號時整批失敗
     /// - Parameter order: 要建立的新訂單
     /// - Throws: 建立失敗或訂單編號重複時拋出 ``OrderPersistenceError``
     var createOrder: @Sendable (_ order: LedgerOrder) async throws(OrderPersistenceError) -> Void
-    
+
     /// 更新單筆訂單；不覆蓋已存照片
     /// - Parameter order: 要寫入或更新的訂單
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     var saveOrder: @Sendable (_ order: LedgerOrder) async throws(PersistenceError) -> Void
-    
+
     /// 批次寫入訂單；更新時不覆蓋已存照片
     /// - Parameter orders: 要寫入或更新的訂單清單
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     var saveOrders: @Sendable (_ orders: [LedgerOrder]) async throws(PersistenceError) -> Void
-    
+
     /// 依訂單編號讀取照片；找不到訂單時回傳空陣列
     /// - Parameter id: 訂單編號
     /// - Returns: 訂單照片資料；找不到訂單時為空陣列
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
     var fetchOrderPhotos: @Sendable (_ id: LedgerOrder.ID) async throws(PersistenceError) -> [Data]
-    
+
     /// 寫入訂單並以 photos 覆蓋已存照片
     /// - Parameter order: 要寫入或更新的訂單
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     var saveOrderPersistingPhotos: @Sendable (_ order: LedgerOrder) async throws(PersistenceError) -> Void
-    
+
     /// 刪除指定編號的訂單
     /// - Parameter id: 訂單編號
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     var removeOrder: @Sendable (_ id: LedgerOrder.ID) async throws(PersistenceError) -> Void
-    
+
     /// 在一次持久化操作中建立合併訂單並標記來源訂單
     /// - Parameters:
     ///   - newOrder: 合併後的新訂單 (含使用者挑選保留的完整照片集合)
@@ -59,7 +59,7 @@ struct OrderRepository: Sendable {
         _ newOrder: LedgerOrder,
         _ consumedIDs: [LedgerOrder.ID]
     ) async throws(OrderPersistenceError) -> Void
-    
+
     /// 將所有訂單的 orderSource 從 oldName 改為 newName
     /// - Parameters:
     ///   - oldName: 舊名稱
@@ -69,7 +69,7 @@ struct OrderRepository: Sendable {
         _ oldName: String,
         _ newName: String
     ) async throws(PersistenceError) -> Void
-    
+
     /// 將所有訂單的 categories 從 oldName 改為 newName
     /// - Parameters:
     ///   - oldName: 舊名稱
@@ -79,7 +79,7 @@ struct OrderRepository: Sendable {
         _ oldName: String,
         _ newName: String
     ) async throws(PersistenceError) -> Void
-    
+
     /// 將所有訂單的 paymentMethod 從 oldName 改為 newName
     /// - Parameters:
     ///   - oldName: 舊名稱
@@ -89,7 +89,7 @@ struct OrderRepository: Sendable {
         _ oldName: String,
         _ newName: String
     ) async throws(PersistenceError) -> Void
-    
+
     /// 將所有訂單的 reconciliationStatus 從 oldName 改為 newName
     /// - Parameters:
     ///   - oldName: 舊名稱
@@ -99,7 +99,7 @@ struct OrderRepository: Sendable {
         _ oldName: String,
         _ newName: String
     ) async throws(PersistenceError) -> Void
-    
+
     /// 將所有訂單的 campaignNames 從 oldName 改為 newName
     /// - Parameters:
     ///   - oldName: 舊名稱
@@ -114,23 +114,23 @@ struct OrderRepository: Sendable {
 // MARK: - Nested Types
 
 extension OrderRepository {
-    
+
     /// 持有單一 container 對應的 ``OrderPersistence`` 長命實例
     actor PersistenceInstanceProvider {
-        
+
         // MARK: - Data Properties
-        
+
         /// 用於建立背景 actor 的 SwiftData container
         private let container: ModelContainer
-        
+
         /// 目前已建立的長命 ``OrderPersistence`` 實例，供後續操作重用
         private var cached: OrderPersistence?
-        
+
         /// 建立中的 ``OrderPersistence`` 作業，避免重複建立
         private var creationTask: Task<OrderPersistence, Never>?
-        
+
         // MARK: - Init
-        
+
         /// 以指定的 SwiftData container 建立 provider
         /// - Parameter container: 用於建立背景 actor 的 SwiftData container
         init(container: ModelContainer) {
@@ -172,7 +172,7 @@ extension OrderRepository {
 // MARK: - Internal Method
 
 extension OrderRepository {
-    
+
     /// 以指定的 SwiftData ``ModelContainer`` 建立 repository
     /// - Parameters:
     ///   - container: 用於建立背景 actor 的 SwiftData container
@@ -183,7 +183,7 @@ extension OrderRepository {
         seedSampleOrdersIfEmpty: Bool = false
     ) -> OrderRepository {
         let provider = PersistenceInstanceProvider(container: container)
-        
+
         return OrderRepository(
             fetchOrders: { () async throws(PersistenceError) -> [LedgerOrder] in
                 let persistence = await provider.instance
@@ -269,19 +269,19 @@ extension OrderRepository {
 // MARK: - Dependency Values
 
 extension OrderRepository: DependencyKey {
-    
+
     /// App 執行時使用本機 SwiftData 儲存 (共用 ``PersistenceContainer/shared``)
     nonisolated static let liveValue: OrderRepository = OrderRepository.live(
         container: PersistenceContainer.shared
     )
-    
+
     /// Preview 使用記憶體資料庫與範例資料
     nonisolated static let previewValue: OrderRepository = {
         let container = PersistenceContainer.makeInMemory(for: .preview)
-        
+
         return OrderRepository.live(container: container, seedSampleOrdersIfEmpty: true)
     }()
-    
+
     /// 測試預設使用空資料來源；TestStore 可透過 `withDependencies` 覆寫
     nonisolated static let testValue = OrderRepository(
         fetchOrders: { [] },

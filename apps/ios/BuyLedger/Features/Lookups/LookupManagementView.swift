@@ -10,12 +10,12 @@ import SwiftUI
 
 /// 訂單來源 / 商品類別 / 付款方式主檔的獨立管理畫面
 struct LookupManagementView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 主檔管理 store
     @Bindable var store: StoreOf<LookupManagementFeature>
-    
+
     /// 依主檔類型回傳可由 String Catalog 翻譯的重新命名標題
     private var renameSheetTitle: LocalizedStringKey {
         switch store.state.kind {
@@ -29,9 +29,9 @@ struct LookupManagementView: View {
             "重新命名對帳狀態"
         }
     }
-    
+
     // MARK: - View Body
-    
+
     /// 主檔管理畫面內容
     var body: some View {
         listContent
@@ -69,7 +69,7 @@ struct LookupManagementView: View {
 // MARK: - ViewBuilder
 
 private extension LookupManagementView {
-    
+
     /// 依 destination 型別分派要呈現的表單
     /// - Parameter store: 已 scope 到 destination 的 store
     /// - Returns: 對應的表單 view
@@ -89,7 +89,7 @@ private extension LookupManagementView {
                 renameStore.send(.draftChanged(name))
                 renameStore.send(.saveButtonTapped)
             }
-            
+
         case let .addNameOnly(addStore):
             LookupNameEditorSheet(
                 title: LocalizedStringKey(store.state.kind.addAlertTitle),
@@ -99,7 +99,7 @@ private extension LookupManagementView {
             ) { name in
                 addStore.send(.saveButtonTapped(name: name))
             }
-            
+
         case let .addPaymentMethod(addStore):
             PaymentMethodEditorSheet(
                 title: store.state.kind.addAlertTitle,
@@ -109,7 +109,7 @@ private extension LookupManagementView {
             ) { name, flags in
                 addStore.send(.saveButtonTapped(name: name, flags: flags))
             }
-            
+
         case let .editPaymentMethod(editStore):
             PaymentMethodEditorSheet(
                 title: "編輯付款方式",
@@ -123,7 +123,7 @@ private extension LookupManagementView {
             }
         }
     }
-    
+
     /// 顯示主檔項目；付款方式額外顯示分類徽章
     /// - Parameter item: 要顯示的主檔項目名稱
     /// - Returns: 列項 view
@@ -135,24 +135,24 @@ private extension LookupManagementView {
         case .paymentMethod:
             HStack(spacing: BLSpacing.small) {
                 Text(item)
-                
+
                 Spacer()
-                
+
                 if store.paymentMethodIsCardless[item] == true {
                     classificationBadge("無卡")
                 }
-                
+
                 if store.paymentMethodIsBankTransfer[item] == true {
                     classificationBadge("銀行匯款")
                 }
-                
+
                 if store.paymentMethodIsCashOnDelivery[item] == true {
                     classificationBadge("貨到付款")
                 }
             }
         }
     }
-    
+
     /// 付款方式分類徽章
     /// - Parameter title: 徽章文字
     /// - Returns: 膠囊徽章 view
@@ -168,7 +168,7 @@ private extension LookupManagementView {
                     .fill(BLPalette().accent.opacity(0.12))
             )
     }
-    
+
     /// 建立項目的編輯或重新命名按鈕
     /// - Parameter item: 目標項目名稱
     /// - Returns: 對應的操作按鈕
@@ -190,12 +190,12 @@ private extension LookupManagementView {
             .accessibilityIdentifier(BLAccessibilityID.LookupManagement.renameButton(item))
         }
     }
-    
+
     /// 主檔 section header 與列表
     @ViewBuilder
     var listContent: some View {
         let palette = BLPalette()
-        
+
         List {
             if let errorMessage = store.errorMessage {
                 Section {
@@ -203,7 +203,7 @@ private extension LookupManagementView {
                         .foregroundStyle(palette.red)
                 }
             }
-            
+
             Section {
                 if store.items.isEmpty {
                     ContentUnavailableView(
@@ -217,7 +217,7 @@ private extension LookupManagementView {
                             .accessibilityIdentifier(BLAccessibilityID.LookupManagement.row(item))
                             .contextMenu {
                                 renameOrEditButton(for: item)
-                                
+
                                 Button(role: .destructive) {
                                     store.send(.deleteButtonTapped(item))
                                 } label: {
@@ -230,7 +230,7 @@ private extension LookupManagementView {
                                 } label: {
                                     Label("刪除", systemImage: "trash")
                                 }
-                                
+
                                 renameOrEditButton(for: item)
                                     .tint(palette.orange)
                             }

@@ -10,13 +10,13 @@ import Foundation
 
 /// 把設定偏好讀寫到 `UserDefaults` 的依賴介面
 struct SettingsStorage: Sendable {
-    
+
     // MARK: - Dependency Properties
-    
+
     /// 從 `UserDefaults` 讀取一份設定快照
     /// - Returns: 目前的設定快照
     var load: @Sendable () -> SettingsSnapshot
-    
+
     /// 將設定快照寫回 `UserDefaults`
     /// - Parameter snapshot: 欲寫入的設定快照
     var save: @Sendable (_ snapshot: SettingsSnapshot) -> Void
@@ -25,27 +25,27 @@ struct SettingsStorage: Sendable {
 // MARK: - Nested Types
 
 private extension SettingsStorage {
-    
+
     /// UserDefaults 使用的 key 名稱
     enum SettingsStorageKeys {
-        
+
         // MARK: - Static Properties
-        
+
         /// App 介面語言偏好的 key
         nonisolated static let language = "settings.language"
-        
+
         /// 預設幣別的 key
         nonisolated static let defaultCurrency = "settings.defaultCurrency"
-        
+
         /// 月度淨獲利目標的 key
         nonisolated static let monthlyProfitGoalTwd = "settings.monthlyProfitGoalTwd"
-        
+
         /// AI 總結開關的 key
         nonisolated static let useAiSummary = "settings.useAiSummary"
-        
+
         /// AI 總結模型名稱的 key
         nonisolated static let aiSummaryModel = "settings.aiSummaryModel"
-        
+
         /// App 鎖定開關的 key
         nonisolated static let isBiometricUnlockEnabled = "settings.isBiometricUnlockEnabled"
     }
@@ -54,7 +54,7 @@ private extension SettingsStorage {
 // MARK: - Dependency Values
 
 extension SettingsStorage: DependencyKey {
-    
+
     /// App 執行時實際讀寫 `UserDefaults.standard`
     nonisolated static let liveValue: SettingsStorage = SettingsStorage(
         load: {
@@ -75,7 +75,7 @@ extension SettingsStorage: DependencyKey {
             let isBiometricUnlockEnabled = defaults.bool(
                 forKey: SettingsStorageKeys.isBiometricUnlockEnabled
             )
-            
+
             return SettingsSnapshot(
                 language: language,
                 defaultCurrency: currency,
@@ -115,13 +115,13 @@ extension SettingsStorage: DependencyKey {
             )
         }
     )
-    
+
     /// 測試用版本；讀取預設值，寫入不作用
     nonisolated static let testValue: SettingsStorage = SettingsStorage(
         load: { SettingsSnapshot.testDefault },
         save: { _ in }
     )
-    
+
     /// Preview 使用測試值
     nonisolated static let previewValue: SettingsStorage = testValue
 }

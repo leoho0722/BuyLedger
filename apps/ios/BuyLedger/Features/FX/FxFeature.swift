@@ -11,49 +11,49 @@ import Foundation
 /// 匯率工具：選擇來源幣別與輸入金額，即時換算為 TWD
 @Reducer
 struct FxFeature {
-    
+
     // MARK: - State
-    
+
     /// 匯率工具狀態
     @ObservableState
     struct State: Equatable, Sendable {
-        
+
         /// 目前選取的來源幣別
         var fromCurrency: CurrencyCode = .krw
-        
+
         /// 來源幣別的金額
         var amount: Decimal = 150_000
-        
+
         /// 已從 API 取得的最新匯率快照；`nil` 代表尚未拉取或拉取失敗
         var snapshot: FxRateSnapshot?
-        
+
         /// 是否正在發 API 請求
         var isLoading: Bool = false
-        
+
         /// 最新匯率失敗時顯示給使用者的訊息；`nil` 表示沒有錯誤
         var errorMessage: LocalizedStringResource?
-        
+
         /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供
         var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
-        
+
         /// 金額欄位是否取得鍵盤焦點
         var isAmountFieldFocused: Bool = false
-        
+
         /// 是否顯示幣別選擇 sheet
         var showsCurrencySheet: Bool = false
-        
+
         // MARK: - Computed Properties
-        
+
         /// 來源幣別目前的匯率 (1 單位 = X TWD)；無 snapshot 時為 `nil`
         var rate: Decimal? {
             displayRate(for: fromCurrency)
         }
-        
+
         /// 換算後的 TWD 金額；無 snapshot 時為 `nil`
         var convertedTwd: Decimal? {
             rate.map { amount * $0 }
         }
-        
+
         /// 任意幣別目前對 TWD 的匯率 (1 單位 = X TWD)
         /// - Parameter currency: 要查詢的幣別
         /// - Returns: 對應的 TWD 匯率
@@ -71,69 +71,69 @@ struct FxFeature {
             return nil
         }
     }
-    
+
     // MARK: - Action
-    
+
     /// 匯率工具事件
     @CasePathable
     enum Action: BindableAction, Equatable {
-        
+
         /// SwiftUI 雙向繫結
         case binding(BindingAction<State>)
-        
+
         /// 使用者點擊預設金額按鈕
         case quickAmountTapped(Decimal)
-        
+
         /// 使用者點擊來源幣別按鈕，開啟幣別選擇 sheet
         case currencyPickerTapped
-        
+
         /// 使用者在幣別選擇 sheet 選定來源幣別
         case fromCurrencySelected(String)
-        
+
         /// 畫面 onAppear 觸發載入最新匯率
         case task
-        
+
         /// 最新匯率載入成功
         case ratesLoaded(FxRateSnapshot)
-        
+
         /// 最新匯率載入失敗
         case ratesFailed(LocalizedStringResource)
-        
+
         /// 從 ``CurrencyMetadataRepository`` 取回最新幣別主檔
         case availableCurrenciesLoaded([CurrencyCode])
     }
-    
+
     // MARK: - Dependency Properties
-    
+
     /// 匯率 API client
     @Dependency(ExchangeRateClient.self) private var client
-    
+
     /// 幣別主檔資料來源；用於 task 從 cache 拉最新清單
     @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
-    
+
     // MARK: - Reducer Body
-    
+
     /// 匯率工具 reducer
     var body: some Reducer<State, Action> {
         BindingReducer()
-        
+
         Reduce { state, action in
             switch action {
             case .binding:
                 return .none
-                
+
             case let .quickAmountTapped(value):
                 state.amount = value
                 return .none
-                
+
             case .currencyPickerTapped:
                 state.showsCurrencySheet = true
                 return .none
-                
+
             case let .fromCurrencySelected(code):
                 state.fromCurrency = CurrencyCode(rawValue: code)
                 return .none
-                
+
             case .task:
                 let currencyMetadataRepository = currencyMetadataRepository
                 let client = client
@@ -142,7 +142,7 @@ struct FxFeature {
                     state.isLoading = true
                     state.errorMessage = nil
                 }
-                
+
                 return .run { send in
                     async let currenciesTask: Void = {
                         do {
@@ -154,7 +154,7 @@ struct FxFeature {
                             // 幣別主檔是輔助資料，載入失敗時保留目前清單
                         }
                     }()
-                    
+
                     if shouldFetchRates {
                         do {
                             let snapshot = try await client.fetchLatest(.twd)
@@ -165,21 +165,21 @@ struct FxFeature {
                             await send(.ratesFailed("匯率載入失敗，請稍後再試。"))
                         }
                     }
-                    
+
                     _ = await currenciesTask
                 }
-                
+
             case let .ratesLoaded(snapshot):
                 state.isLoading = false
                 state.snapshot = snapshot
                 state.errorMessage = nil
                 return .none
-                
+
             case let .ratesFailed(message):
                 state.isLoading = false
                 state.errorMessage = message
                 return .none
-                
+
             case let .availableCurrenciesLoaded(codes):
                 var merged = Set(codes)
                 merged.insert(state.fromCurrency)
@@ -195,7 +195,7 @@ struct FxFeature {
 // MARK: - Private Method
 
 private extension FxFeature {
-    
+
     /// 把 ``APIError`` 轉成顯示給使用者的訊息
     /// - Parameter error: API 錯誤
     /// - Returns: 中文使用者訊息

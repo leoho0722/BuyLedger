@@ -10,14 +10,14 @@ import Foundation
 
 /// 串接 Ollama Cloud chat streaming 的高階 client
 struct OllamaClient: Sendable {
-    
+
     // MARK: - Static Properties
-    
+
     /// AI 摘要串流的最長時間
     nonisolated static let overallStreamDuration: Duration = .seconds(30)
-    
+
     // MARK: - Dependency Properties
-    
+
     /// 呼叫 Ollama Cloud 串流回傳摘要文字
     /// - Parameters:
     ///   - prompt: 要送給模型的完整 prompt (已組好的商品明細總結指令)
@@ -34,7 +34,7 @@ struct OllamaClient: Sendable {
 // MARK: - Internal Method
 
 extension OllamaClient {
-    
+
     /// 解析單行 NDJSON 串流回應
     /// - Parameter line: 串流的一行文字
     /// - Returns: `(content, done)`；無效行回 `nil`
@@ -56,19 +56,19 @@ extension OllamaClient {
 // MARK: - Dependency Values
 
 extension OllamaClient: DependencyKey {
-    
+
     /// App 執行時透過 ``HTTPClient/stream`` 串流 NDJSON
     nonisolated static let liveValue: OllamaClient = OllamaClient(
         streamSummary: { prompt, model, apiKey in
             @Dependency(\.httpClient) var httpClient
-            
+
             return AsyncThrowingStream<String, any Error> { [httpClient] continuation in
                 let task = Task {
                     do {
                         guard let url = URL(string: "https://ollama.com/api/chat") else {
                             throw APIError.transport(message: "URL 組合失敗。")
                         }
-                        
+
                         let bodyData = try JSONEncoder().encode(
                             ChatRequest(
                                 model: model,
@@ -82,16 +82,16 @@ extension OllamaClient: DependencyKey {
                             .header("Content-Type", "application/json")
                             .body(bodyData)
                             .build()
-                        
+
                         let (bytes, response) = try await httpClient.stream(request)
-                        
+
                         guard 200...299 ~= response.statusCode else {
                             if response.statusCode == 401 || response.statusCode == 403 {
                                 throw APIError.invalidKey
                             }
                             throw APIError.http(statusCode: response.statusCode)
                         }
-                        
+
                         for try await line in bytes.lines {
                             try Task.checkCancellation()
                             guard let parsed = OllamaClient.parse(line: line) else {
@@ -118,14 +118,14 @@ extension OllamaClient: DependencyKey {
                         )
                     }
                 }
-                
+
                 continuation.onTermination = { _ in
                     task.cancel()
                 }
             }
         }
     )
-    
+
     /// 測試預設拋出 transport 錯誤；具體測試以 `withDependencies` 注入 stub stream
     nonisolated static let testValue: OllamaClient = OllamaClient(
         streamSummary: { _, _, _ in
@@ -136,7 +136,7 @@ extension OllamaClient: DependencyKey {
             }
         }
     )
-    
+
     /// Preview 使用固定 Markdown 串流
     nonisolated static let previewValue: OllamaClient = OllamaClient(
         streamSummary: { _, _, _ in

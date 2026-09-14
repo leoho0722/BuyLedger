@@ -10,26 +10,26 @@ import SwiftUI
 
 /// iPhone (compact) 使用的訂單瀏覽畫面
 struct OrdersCompactView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 訂單功能 store
     @Bindable var store: StoreOf<OrdersFeature>
-    
+
     /// App 目前選用的顯示語系
     let language: AppLanguage
-    
+
     /// App 目前選用的顯示語系
     @Environment(\.locale) private var locale
-    
+
     /// 篩選使用的目前時間；測試可注入固定值
     @Dependency(\.date) private var date
-    
+
     /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
-    
+
     // MARK: - View Body
-    
+
     /// 訂單瀏覽畫面內容
     var body: some View {
         let palette = BLPalette()
@@ -46,7 +46,7 @@ struct OrdersCompactView: View {
                 VStack(alignment: .leading, spacing: BLSpacing.medium) {
                     chipStrip(palette: palette)
                     unifiedFilterTrigger(palette: palette)
-                    
+
                     // 持續性載入失敗才走這裡
                     // 一次性操作失敗改以 writeFailureAlert 對話框呈現，兩者不共用欄位
                     if case let .failed(message) = store.loadState {
@@ -55,7 +55,7 @@ struct OrdersCompactView: View {
                             .foregroundStyle(palette.red)
                             .padding(.horizontal, BLSpacing.large)
                     }
-                    
+
                     listSection(palette: palette, sections: sections)
                 }
                 .padding(.top, BLSpacing.small)
@@ -118,7 +118,7 @@ struct OrdersCompactView: View {
                             .accessibilityIdentifier(
                                 BLAccessibilityID.Orders.detailStatusMenuButton)
                         }
-                        
+
                         // 將合併、編輯與刪除收進更多選單。
                         ToolbarItem(placement: .primaryAction) {
                             Menu {
@@ -131,16 +131,16 @@ struct OrdersCompactView: View {
                                     .accessibilityIdentifier(
                                         BLAccessibilityID.Orders.detailMergeButton)
                                 }
-                                
+
                                 Button {
                                     store.send(.editOrderTapped(order.id))
                                 } label: {
                                     Label("編輯", systemImage: "pencil")
                                 }
                                 .accessibilityIdentifier(BLAccessibilityID.Orders.detailEditButton)
-                                
+
                                 Divider()
-                                
+
                                 Button(role: .destructive) {
                                     store.send(.deleteOrderTapped(order.id))
                                 } label: {
@@ -163,7 +163,7 @@ struct OrdersCompactView: View {
 // MARK: - ViewBuilder
 
 private extension OrdersCompactView {
-    
+
     /// 狀態篩選 chip 橫向滾動列
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: chip 列 view
@@ -179,7 +179,7 @@ private extension OrdersCompactView {
         }
         .scrollIndicators(.hidden)
     }
-    
+
     /// 單一狀態篩選 chip
     /// - Parameters:
     ///   - filter: 要顯示的狀態篩選
@@ -196,7 +196,7 @@ private extension OrdersCompactView {
         }
         .accessibilityIdentifier(BLAccessibilityID.Orders.statusChip(filter.id))
     }
-    
+
     /// 顯示日期、類別與付款方式的整合篩選按鈕
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: trigger button view (含左側內距，與其他篩選膠囊水平對齊)
@@ -208,7 +208,7 @@ private extension OrdersCompactView {
             category: store.selectedCategory,
             paymentMethod: store.selectedPaymentMethod
         )
-        
+
         BLFilterChip(
             title: "篩選: \(summary)",
             isSelected: hasActiveFilter,
@@ -223,7 +223,7 @@ private extension OrdersCompactView {
         .accessibilityIdentifier(BLAccessibilityID.Orders.filterButton)
         .padding(.horizontal, BLSpacing.large)
     }
-    
+
     /// 訂單列表區塊，包含載入、空狀態與「以日期分組」的資料區段
     /// - Parameters:
     ///   - palette: 目前外觀使用的色盤
@@ -249,7 +249,7 @@ private extension OrdersCompactView {
             }
         }
     }
-    
+
     /// 單一日期區段，包含日期標題與訂單卡片
     /// - Parameters:
     ///   - section: 要呈現的日期區段
@@ -262,7 +262,7 @@ private extension OrdersCompactView {
                 .font(BLTypographyStyle.footnote.font.weight(.semibold))
                 .foregroundStyle(palette.secondaryLabel)
                 .padding(.horizontal, BLSpacing.large)
-            
+
             BLCard(padding: 0) {
                 VStack(spacing: 0) {
                     ForEach(Array(section.orders.enumerated()), id: \.element.id) { index, order in
@@ -272,7 +272,7 @@ private extension OrdersCompactView {
                         } else {
                             navigableRow(order: order)
                         }
-                        
+
                         if index < section.orders.count - 1 {
                             Divider()
                                 .padding(.leading, BLListMetrics.dividerInset)
@@ -283,7 +283,7 @@ private extension OrdersCompactView {
             .padding(.horizontal, BLSpacing.large)
         }
     }
-    
+
     /// 一般模式的訂單列；點擊開啟詳情，長按顯示操作選單
     /// - Parameter order: 要呈現的訂單
     /// - Returns: 可導覽的訂單列 view
@@ -305,7 +305,7 @@ private extension OrdersCompactView {
                     Label("合併訂單", systemImage: "arrow.triangle.merge")
                 }
             }
-            
+
             Button(role: .destructive) {
                 store.send(.deleteOrderTapped(order.id))
             } label: {
@@ -313,7 +313,7 @@ private extension OrdersCompactView {
             }
         }
     }
-    
+
     /// 沒有符合條件的訂單時顯示的空狀態
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 空狀態 view
@@ -336,7 +336,7 @@ private extension OrdersCompactView {
 // MARK: - Private Method
 
 private extension OrdersCompactView {
-    
+
     /// 計算整合篩選按鈕的摘要文字
     /// - Parameters:
     ///   - date: 目前選中的日期區間
@@ -360,7 +360,7 @@ private extension OrdersCompactView {
         }
         return summary ?? Text("全部")
     }
-    
+
     /// 以原文串接外部資料，避免誤翻譯
     /// - Parameters:
     ///   - value: 要串接的字串
@@ -383,7 +383,7 @@ private extension OrdersCompactView {
         state.hasLoaded = true
         return state
     }()
-    
+
     OrdersCompactView(
         store: Store(initialState: previewState) {
             OrdersFeature()

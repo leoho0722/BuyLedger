@@ -11,12 +11,12 @@ import UniformTypeIdentifiers
 
 /// 將相簿影像降採樣並重編碼為 JPEG
 enum PhotoDataProcessor {
-    
+
     // MARK: - Static Properties
-    
+
     /// 預設的最長邊像素上限
     static let defaultMaxPixelSize: CGFloat = 1_600
-    
+
     /// 預設的 JPEG 壓縮品質 (0–1)
     static let defaultCompressionQuality: CGFloat = 0.75
 }
@@ -24,7 +24,7 @@ enum PhotoDataProcessor {
 // MARK: - Internal Method
 
 extension PhotoDataProcessor {
-    
+
     /// 將影像 data 降採樣至最長邊不超過 `maxPixelSize`，並以 JPEG 重編碼
     /// - Parameters:
     ///   - data: 原始影像 data (任何 ImageIO 支援的格式)
@@ -39,7 +39,7 @@ extension PhotoDataProcessor {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil) else {
             return nil
         }
-        
+
         let thumbnailOptions: [CFString: Any] = [
             kCGImageSourceCreateThumbnailFromImageAlways: true,
             kCGImageSourceCreateThumbnailWithTransform: true,
@@ -50,14 +50,14 @@ extension PhotoDataProcessor {
         ) else {
             return nil
         }
-        
+
         let output = NSMutableData()
         guard let destination = CGImageDestinationCreateWithData(
             output, UTType.jpeg.identifier as CFString, 1, nil
         ) else {
             return nil
         }
-        
+
         let destinationOptions: [CFString: Any] = [
             kCGImageDestinationLossyCompressionQuality: compressionQuality
         ]
@@ -65,7 +65,7 @@ extension PhotoDataProcessor {
         guard CGImageDestinationFinalize(destination) else {
             return nil
         }
-        
+
         return output as Data
     }
 }

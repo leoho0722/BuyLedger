@@ -13,52 +13,52 @@ import Testing
 /// 訂單編輯表單的焦點管理
 @MainActor
 struct OrderEditFocusTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func openingABlankOrderFocusesTheFirstField() async {
         let store = Self.makeStore(original: nil)
-        
+
         await store.send(.task) {
             $0.focusedField = .customerName
         }
     }
-    
+
     /// 編輯既有訂單不搶焦點，讓使用者自行決定要改哪一欄
     @Test func openingAnExistingOrderDoesNotStealFocus() async {
         let store = Self.makeStore(original: Self.existingOrder)
-        
+
         await store.send(.task)
-        
+
         #expect(store.state.focusedField == nil)
     }
-    
+
     @Test func cancellingAnUntouchedFormClearsFocus() async {
         let store = Self.makeStore(original: nil)
         await store.send(.task) {
             $0.focusedField = .customerName
         }
-        
+
         await store.send(.cancelTapped) {
             $0.focusedField = nil
         }
     }
-    
+
     @Test func savingClearsFocus() async {
         let store = Self.makeStore(original: nil)
         await store.send(.task) {
             $0.focusedField = .customerName
         }
-        
+
         await store.send(.saveTapped) {
             $0.focusedField = nil
         }
     }
-    
+
     /// 重開表單不沿用上次焦點——狀態隨草稿一起重建
     @Test func reopeningStartsFromACleanFocusState() {
         let state = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
-        
+
         #expect(state.focusedField == nil)
     }
 }
@@ -66,7 +66,7 @@ struct OrderEditFocusTests {
 // MARK: - Private Method
 
 private extension OrderEditFocusTests {
-    
+
     /// 建立一個注入固定時間的編輯表單 store
     /// - Parameter original: 要編輯的原始訂單；新增訂單時為 `nil`
     /// - Returns: 已建立的 OrderEditFeature 測試 store
@@ -84,7 +84,7 @@ private extension OrderEditFocusTests {
         store.exhaustivity = .off
         return store
     }
-    
+
     /// 供「編輯既有訂單」情境使用的訂單
     static let existingOrder = LedgerOrder(
         id: "EXISTING",

@@ -15,39 +15,39 @@ enum ColorContrast {}
 // MARK: - Nested Types
 
 extension ColorContrast {
-    
+
     /// 解析動態色彩時所處的外觀與對比情境
     enum Appearance: CaseIterable {
-        
+
         // MARK: - Cases
-        
+
         /// 淺色外觀
         case light
-        
+
         /// 深色外觀
         case dark
-        
+
         /// 淺色外觀且開啟提高對比
         case lightIncreasedContrast
-        
+
         /// 深色外觀且開啟提高對比
         case darkIncreasedContrast
     }
-    
+
     /// 已解析為 sRGB 分量的色彩
     struct Components: Equatable {
-        
+
         // MARK: - Data Properties
-        
+
         /// 紅色分量
         let red: Double
-        
+
         /// 綠色分量
         let green: Double
-        
+
         /// 藍色分量
         let blue: Double
-        
+
         /// 不透明度
         let alpha: Double
     }
@@ -56,7 +56,7 @@ extension ColorContrast {
 // MARK: - Internal Method
 
 extension ColorContrast.Appearance {
-    
+
     /// 對應此情境的 trait collection，供動態色彩解析使用
     /// - Returns: 此情境對應的 trait collection
     var traitCollection: UITraitCollection {
@@ -67,7 +67,7 @@ extension ColorContrast.Appearance {
             mutable.accessibilityContrast = isIncreased ? .high : .normal
         }
     }
-    
+
     /// 對應此情境的設計系統色盤
     /// - Returns: 測試使用的設計系統色盤
     var palette: BLPalette {
@@ -78,7 +78,7 @@ extension ColorContrast.Appearance {
 // MARK: - Internal Method
 
 extension ColorContrast {
-    
+
     /// 回傳前景色疊在指定圖層堆疊之上的對比比值
     /// - Parameters:
     ///   - foreground: 前景色
@@ -94,7 +94,7 @@ extension ColorContrast {
         let front = blend(components(of: foreground, appearance: appearance), over: background)
         return ratio(luminance(of: front), luminance(of: background))
     }
-    
+
     /// 回傳前景色疊在單一不透明底色之上的對比比值
     /// - Parameters:
     ///   - foreground: 前景色
@@ -108,7 +108,7 @@ extension ColorContrast {
     ) -> Double {
         ratio(foreground, on: [background], appearance: appearance)
     }
-    
+
     /// 將色彩解析為指定情境下的 sRGB 分量
     /// - Parameters:
     ///   - color: 要解析的色彩
@@ -133,7 +133,7 @@ extension ColorContrast {
 // MARK: - Private Method
 
 private extension ColorContrast {
-    
+
     /// 由下而上合成圖層堆疊，回傳最終可見的底色分量
     /// - Parameters:
     ///   - layers: 由上到下排列的背景圖層
@@ -151,7 +151,7 @@ private extension ColorContrast {
         }
         return result ?? Components(red: 1, green: 1, blue: 1, alpha: 1)
     }
-    
+
     /// 以來源覆蓋 (source-over) 方式將前景合成到不透明底色上
     /// - Parameters:
     ///   - top: 要疊加的前景分量
@@ -165,7 +165,7 @@ private extension ColorContrast {
             alpha: 1
         )
     }
-    
+
     /// 回傳分量對應的 WCAG 相對亮度
     /// - Parameter components: 要計算亮度的色彩分量
     /// - Returns: WCAG 相對亮度
@@ -174,7 +174,7 @@ private extension ColorContrast {
             + 0.7152 * linearized(components.green)
             + 0.0722 * linearized(components.blue)
     }
-    
+
     /// 將 sRGB 分量轉為線性光強度
     /// - Parameter channel: sRGB 色彩分量
     /// - Returns: 線性光強度
@@ -185,7 +185,7 @@ private extension ColorContrast {
         }
         return pow((value + 0.055) / 1.055, 2.4)
     }
-    
+
     /// 回傳兩個相對亮度之間的對比比值
     /// - Parameters:
     ///   - first: 第一個相對亮度
@@ -194,7 +194,7 @@ private extension ColorContrast {
     static func ratio(_ first: Double, _ second: Double) -> Double {
         (max(first, second) + 0.05) / (min(first, second) + 0.05)
     }
-    
+
     /// 將數值限制在 0 至 1 之間，避免 extended sRGB 的超界分量污染計算
     /// - Parameter value: 要限制的數值
     /// - Returns: 限制在 0 至 1 之間的數值

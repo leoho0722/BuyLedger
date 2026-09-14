@@ -10,18 +10,18 @@ import SwiftUI
 
 /// App 根畫面，依平台與水平尺寸切換主要導覽樣式
 struct RootView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
-    
+
     /// 目前水平尺寸分類
     @Environment(\.horizontalSizeClass)
     private var horizontalSizeClass
-    
+
     // MARK: - View Body
-    
+
     /// App 根畫面的內容
     var body: some View {
         Group {
@@ -51,7 +51,7 @@ struct RootView: View {
 // MARK: - ViewBuilder
 
 private extension RootView {
-    
+
     /// 依尺寸分類選擇對應的根層級導覽佈局
     @ViewBuilder
     var layout: some View {

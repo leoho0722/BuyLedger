@@ -10,9 +10,9 @@ import Foundation
 // MARK: - Sample Data
 
 extension LedgerOrder {
-    
+
 #if DEBUG
-    
+
     /// Preview 與測試使用的訂單範例
     nonisolated static let sampleOrders: [LedgerOrder] = [
         LedgerOrder(
@@ -336,7 +336,7 @@ extension LedgerOrder {
             mergedSourceIDs: ["BL-2603-905", "BL-2603-906"]
         ),
     ]
-    
+
     /// 將範例訂單分配到範例開團，供 Preview 顯示
     nonisolated static let sampleCampaignOrders: [LedgerOrder] = {
         let assignments: [(campaign: String, receipt: PaymentReceiptStatus)] = [
@@ -345,7 +345,7 @@ extension LedgerOrder {
             ("三月日本團", .received),
             ("四月韓國團", .received),
         ]
-        
+
         let assigned = zip(LedgerOrder.sampleOrders.prefix(assignments.count), assignments).map { order, assignment in
             LedgerOrder(
                 id: order.id,
@@ -376,7 +376,7 @@ extension LedgerOrder {
                 mergedSourceIDs: order.mergedSourceIDs
             )
         }
-        
+
         return assigned + LedgerOrder.sampleOrders.dropFirst(assignments.count)
     }()
 #else
@@ -388,7 +388,7 @@ extension LedgerOrder {
 // MARK: - Private Method
 
 private extension LedgerOrder {
-    
+
     /// 建立固定時區的範例日期
     /// - Parameters:
     ///   - year: 年份
@@ -406,10 +406,10 @@ private extension LedgerOrder {
         components.year = year
         components.month = month
         components.day = day
-        
+
         return components.date ?? Date(timeIntervalSince1970: 0)
     }
-    
+
     /// 將固定範例資料字串轉為 `Decimal`
     /// - Parameter value: 十進位數字字串
     /// - Returns: 可用於金額計算的十進位數值

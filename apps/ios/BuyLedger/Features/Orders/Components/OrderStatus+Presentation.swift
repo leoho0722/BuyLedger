@@ -10,7 +10,7 @@ import Foundation
 // MARK: - Presentation Properties
 
 extension OrderStatus {
-    
+
     /// 對應設計系統語意狀態
     var tone: BLTone {
         switch self {

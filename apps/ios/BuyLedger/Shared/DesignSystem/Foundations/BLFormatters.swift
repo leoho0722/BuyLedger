@@ -13,7 +13,7 @@ enum BLFormatters {}
 // MARK: - Internal Method
 
 extension BLFormatters {
-    
+
     /// 依指定 locale 將金額格式化為新台幣 (無小數位)
     /// - Parameters:
     ///   - amount: 金額
@@ -26,7 +26,7 @@ extension BLFormatters {
             .locale(locale)
         )
     }
-    
+
     /// 依指定 locale 將金額格式化為新台幣；`nil` 顯示為「—」
     /// - Parameters:
     ///   - amount: 金額，`nil` 代表無可用資料
@@ -38,7 +38,7 @@ extension BLFormatters {
         }
         return twd(amount, locale: locale)
     }
-    
+
     /// 依指定 locale 將比例格式化為百分比
     /// - Parameters:
     ///   - ratio: 0 到 1 的比例，例如 0.654 表示 65.4%
@@ -47,7 +47,7 @@ extension BLFormatters {
     static func percent(_ ratio: Decimal, locale: Locale) -> String {
         ratio.formatted(.percent.precision(.fractionLength(1)).locale(locale))
     }
-    
+
     /// 依指定 locale 將已是百分比尺度的數值格式化為百分比字串
     /// - Parameters:
     ///   - value: 百分比數值，例如 65.4 表示 65.4%

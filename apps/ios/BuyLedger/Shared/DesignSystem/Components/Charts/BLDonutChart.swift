@@ -11,36 +11,36 @@ import SwiftUI
 
 /// 可放置中心文字的圈狀圖
 struct BLDonutChart: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 圈狀圖要呈現的區段
     let segments: [BLDonutSegment]
-    
+
     /// 圈狀圖中央上方的輔助標題
     let centerTitle: String
-    
+
     /// 圈狀圖中央主要顯示值
     let centerValue: String
-    
+
     /// 圈狀圖直徑，隨字級縮放
     @ScaledMetric(relativeTo: .headline) private var diameter: CGFloat = 150
-    
+
     /// 圖表無障礙描述 (`AXChartDescriptor`) 的 X 軸標題；預設正體中文字面值
     var axisXTitle: String = "類別"
-    
+
     /// 圖表無障礙描述的 Y 軸標題；預設正體中文字面值，說明同 ``axisXTitle``
     var axisYTitle: String = "占比"
-    
+
     /// 圖表資料序列名稱
     var seriesName: String = "圈狀圖"
-    
+
     // MARK: - View Body
-    
+
     /// 圈狀圖的畫面內容
     var body: some View {
         let palette = BLPalette()
-        
+
         ZStack {
             Chart(segments) { segment in
                 SectorMark(
@@ -69,12 +69,12 @@ struct BLDonutChart: View {
                     seriesName: seriesName
                 )
             )
-            
+
             VStack(spacing: 2) {
                 Text(LocalizedStringKey(centerTitle))
                     .blTextStyle(.caption2)
                     .foregroundStyle(palette.secondaryLabel)
-                
+
                 Text(centerValue)
                     .blTextStyle(.headline)
                     .foregroundStyle(palette.label)
@@ -90,21 +90,21 @@ struct BLDonutChart: View {
 // MARK: - Nested Types
 
 private extension BLDonutChart {
-    
+
     /// 圈狀圖的輔助技術描述
     struct ChartAccessibilityDescriptor: AXChartDescriptorRepresentable {
-        
+
         // MARK: - Data Properties
-        
+
         /// 對應圖表目前呈現的區段
         let segments: [BLDonutSegment]
-        
+
         /// X 軸標題
         let axisXTitle: String
-        
+
         /// Y 軸標題
         let axisYTitle: String
-        
+
         /// 資料序列名稱
         let seriesName: String
     }
@@ -113,7 +113,7 @@ private extension BLDonutChart {
 // MARK: - AXChartDescriptorRepresentable
 
 private extension BLDonutChart.ChartAccessibilityDescriptor {
-    
+
     func makeChartDescriptor() -> AXChartDescriptor {
         let values = segments.map(\.value)
         let xAxis = AXCategoricalDataAxisDescriptor(
@@ -141,7 +141,7 @@ private extension BLDonutChart.ChartAccessibilityDescriptor {
             series: [series]
         )
     }
-    
+
     func updateChartDescriptor(_ descriptor: AXChartDescriptor) {
         descriptor.series = makeChartDescriptor().series
     }
@@ -150,7 +150,7 @@ private extension BLDonutChart.ChartAccessibilityDescriptor {
 // MARK: - Private Method
 
 private extension BLDonutChart {
-    
+
     /// 圖表層級摘要
     var accessibilitySummary: LocalizedStringKey {
         guard let largest = segments.max(by: { $0.value < $1.value }) else {
@@ -164,7 +164,7 @@ private extension BLDonutChart {
 
 #Preview("圈狀圖") {
     let palette = BLPalette()
-    
+
     BLDonutChart(
         segments: [
             BLDonutSegment(

@@ -10,42 +10,42 @@ import SwiftUI
 
 /// 總覽分頁的主要畫面
 struct DashboardView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 總覽功能 store
     @Bindable var store: StoreOf<DashboardFeature>
-    
+
     /// App 目前選用的顯示語系
     let language: AppLanguage
-    
+
     /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone (compact) 與 iPad (regular)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
-    
+
     /// 用來計算「本月／上月」與日期子標的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
-    
+
     /// 月份分組與日期計算使用的行事曆
     @Dependency(\.calendar) private var calendar
-    
+
     /// hero 淨獲利金額字級，隨 Dynamic Type 縮放 (以 `.largeTitle` 為基準)
     @ScaledMetric(relativeTo: .largeTitle) private var heroProfitSize: CGFloat = 36
-    
+
     /// 目前的動態字級；用來在無障礙字級下改變版面結構
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
-    
+
     /// onboarding 圖示尺寸，隨字級縮放 (以 `.largeTitle` 為基準)
     @ScaledMetric(relativeTo: .largeTitle) private var onboardingIconSize: CGFloat = 56
-    
+
     // MARK: - View Body
-    
+
     /// 總覽頁的畫面內容
     var body: some View {
         let palette = BLPalette()
-        
+
         // 依序處理已載入、錯誤與載入中狀態
         // 只判斷「是否已載入」會讓失敗永遠停在轉圈
         // 根 identifier 掛在各 loadState 分支自己的容器上，不掛最外層 group。
@@ -60,7 +60,7 @@ struct DashboardView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Dashboard.root)
-                
+
             case let .failed(message):
                 BLLoadFailureView(
                     message: message,
@@ -69,7 +69,7 @@ struct DashboardView: View {
                     store.send(.retryTapped)
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Dashboard.loadFailure)
-                
+
             case .loading:
                 loadingPlaceholder(palette: palette)
             }
@@ -81,7 +81,7 @@ struct DashboardView: View {
                 // refresh 只轉發，去重由 OrdersFeature 的載入守衛處理
                 await store.send(.task).finish()
             }
-        
+
         // 導覽列由 NavigationStack 建立，測試以畫面根容器判定就緒。
         return NavigationStack {
             core
@@ -93,7 +93,7 @@ struct DashboardView: View {
 // MARK: - ViewBuilder
 
 private extension DashboardView {
-    
+
     /// 依訂單資料顯示總覽或首次使用畫面
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 內容 view
@@ -108,7 +108,7 @@ private extension DashboardView {
                 referenceDate: date(),
                 calendar: calendar
             )
-            
+
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 titleHeader(palette: palette)
                 heroAndKpiRow(stats: stats, palette: palette)
@@ -117,7 +117,7 @@ private extension DashboardView {
             }
         }
     }
-    
+
     /// 顯示進行中的開團與進度；沒有資料時隱藏
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 進行中的開團卡 view (無進行中團時為 `EmptyView`)
@@ -130,13 +130,13 @@ private extension DashboardView {
         let rows = ongoingCampaigns.map {
             (campaign: $0, summary: summaries[$0.name] ?? CampaignSummary(campaignName: $0.name, orders: []))
         }
-        
+
         if !rows.isEmpty {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("進行中的開團")
                     .blTextStyle(.headline)
                     .foregroundStyle(palette.label)
-                
+
                 BLCard {
                     VStack(spacing: BLSpacing.medium) {
                         ForEach(Array(rows.enumerated()), id: \.element.campaign.id) {
@@ -151,7 +151,7 @@ private extension DashboardView {
                                 .contentShape(.rect)
                             }
                             .buttonStyle(.plain)
-                            
+
                             if index < rows.count - 1 {
                                 Divider()
                             }
@@ -161,7 +161,7 @@ private extension DashboardView {
             }
         }
     }
-    
+
     /// 「進行中的開團」卡的單列：團名、筆數／金額與到貨／收款進度
     /// - Parameters:
     ///   - campaign: 進行中的開團
@@ -180,9 +180,9 @@ private extension DashboardView {
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.label)
                     .lineLimit(1)
-                
+
                 Spacer(minLength: 0)
-                
+
                 Text(
                     """
                     \(summary.orderCount) 筆 · \
@@ -193,13 +193,13 @@ private extension DashboardView {
                 .foregroundStyle(palette.secondaryLabel)
                 .monospacedDigit()
             }
-            
+
             BLProgressBar(
                 title: "到貨",
                 value: summary.deliveryRatio,
                 trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
             )
-            
+
             BLProgressBar(
                 title: "收款",
                 value: summary.receivedRatio,
@@ -208,7 +208,7 @@ private extension DashboardView {
             )
         }
     }
-    
+
     /// 首次載入訂單前顯示的骨架
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 骨架 view
@@ -219,7 +219,7 @@ private extension DashboardView {
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                     .fill(palette.fillTertiary)
                     .frame(height: 180)
-                
+
                 LazyVGrid(columns: kpiColumns, spacing: BLSpacing.small) {
                     ForEach(0..<4, id: \.self) { _ in
                         RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
@@ -227,7 +227,7 @@ private extension DashboardView {
                             .frame(height: 88)
                     }
                 }
-                
+
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                     .fill(palette.fillQuaternary)
                     .frame(height: 240)
@@ -243,7 +243,7 @@ private extension DashboardView {
         .accessibilityLabel(Text("載入中"))
         .accessibilityIdentifier(BLAccessibilityID.Dashboard.loading)
     }
-    
+
     /// 第一次開 App 還沒有任何訂單時的引導畫面
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: onboarding view
@@ -260,26 +260,26 @@ private extension DashboardView {
                         )
                     )
                     .frame(width: 132, height: 132)
-                
+
                 Image(systemName: "shippingbox.fill")
                     .font(.system(size: onboardingIconSize, weight: .semibold))
                     .foregroundStyle(.white)
             }
             // 純裝飾插圖：訊息由下方文字承載，朗讀符號名稱只是雜訊
             .accessibilityHidden(true)
-            
+
             VStack(spacing: BLSpacing.small) {
                 Text("歡迎使用 BuyLedger")
                     .blTextStyle(.title1)
                     .foregroundStyle(palette.label)
-                
+
                 Text("還沒有任何訂單。建立第一筆，馬上開始追蹤代購損益。")
                     .blTextStyle(.subhead)
                     .foregroundStyle(palette.secondaryLabel)
                     .multilineTextAlignment(.center)
             }
             .padding(.horizontal, BLSpacing.large)
-            
+
             Button {
                 store.send(.delegate(.newOrderTapped))
             } label: {
@@ -294,7 +294,7 @@ private extension DashboardView {
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(BLAccessibilityID.Dashboard.emptyState)
     }
-    
+
     /// 日期子標
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 標題列 view
@@ -306,7 +306,7 @@ private extension DashboardView {
                 .foregroundStyle(palette.secondaryLabel)
         }
     }
-    
+
     /// hero P&L 與 KPI 的並排組合
     /// - Parameters:
     ///   - stats: 已計算的本月統計
@@ -318,7 +318,7 @@ private extension DashboardView {
             HStack(alignment: .top, spacing: BLSpacing.medium) {
                 heroCard(stats: stats, palette: palette)
                     .frame(maxWidth: .infinity)
-                
+
                 VStack(spacing: BLSpacing.small) {
                     wideKpiTiles(stats: stats, palette: palette)
                 }
@@ -331,7 +331,7 @@ private extension DashboardView {
             }
         }
     }
-    
+
     /// 寬版面右側的 3 個 KPI 卡片 (直欄排列，與 hero 等高呼應)
     /// - Parameters:
     ///   - stats: 已計算的本月統計
@@ -367,7 +367,7 @@ private extension DashboardView {
             palette: palette
         )
     }
-    
+
     /// 漸層 hero 卡：本月淨獲利、sparkline 與月目標進度
     /// - Parameters:
     ///   - stats: 已計算的本月統計
@@ -380,25 +380,25 @@ private extension DashboardView {
                 // 層級由字重與字級表達；不透明度降階會直接損害對比
                 Text("本月 · 淨獲利")
                     .font(BLTypographyStyle.footnote.font.weight(.medium))
-                
+
                 Text(profitDisplay(stats.profit))
                     .font(.system(size: heroProfitSize, weight: .bold))
                     .monospacedDigit()
                     // 無障礙字級允許換行，保留使用者設定的字級。
                     .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                     .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
-                
+
                 HStack(spacing: BLSpacing.small) {
                     Text(profitDeltaDisplay(stats.profitDelta))
                         .blTextStyle(.footnote)
-                    
+
                     Text("·")
-                    
+
                     Text("\(stats.orderCount) 單")
                         .blTextStyle(.footnote)
                 }
             }
-            
+
             BLSparkline(
                 data: stats.sparkline,
                 tint: .white,
@@ -409,7 +409,7 @@ private extension DashboardView {
                 seriesName: language.localized("走勢圖"),
                 pointOrdinalDescription: { ordinal in language.localized("第 \(ordinal) 筆") }
             )
-            
+
             goalProgressBar(stats: stats)
         }
         .padding(BLSpacing.large)
@@ -425,7 +425,7 @@ private extension DashboardView {
         .accessibilityValue(Text(profitDisplay(stats.profit)))
         .accessibilityIdentifier(BLAccessibilityID.Dashboard.kpiTile(.netProfit))
     }
-    
+
     /// 月目標進度條；目標為 0 (使用者未設定) 時整列隱藏
     /// - Parameter stats: 已計算的本月統計
     /// - Returns: 進度條 view
@@ -433,20 +433,20 @@ private extension DashboardView {
     func goalProgressBar(stats: DashboardStats) -> some View {
         if stats.goal > 0 {
             let pct = stats.goalProgress
-            
+
             HStack(spacing: BLSpacing.small) {
                 // 軌道與文字固定使用白色。
                 ProgressView(value: pct)
                     .progressViewStyle(
                         BLProgressBarStyle(tint: .white, track: .white.opacity(0.25)))
-                
+
                 Text("\(Int(pct * 100))% / \(BLFormatters.twd(stats.goal, locale: locale))")
                     .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .monospacedDigit()
             }
         }
     }
-    
+
     /// KPI 卡片格
     /// - Parameters:
     ///   - stats: 已計算的本月統計
@@ -493,7 +493,7 @@ private extension DashboardView {
             )
         }
     }
-    
+
     /// 單一 KPI 卡片：左上 tint 色點 + 標籤、中段大數字、下方變化指標
     /// - Parameters:
     ///   - kpi: 指標的穩定識別值
@@ -522,14 +522,14 @@ private extension DashboardView {
                     .font(BLTypographyStyle.footnote.font.weight(.medium))
                     .foregroundStyle(palette.secondaryLabel)
             }
-            
+
             Text(value)
                 .blTextStyle(.title3Bold)
                 .monospacedDigit()
                 .foregroundStyle(palette.label)
                 .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
                 .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.8)
-            
+
             Text(delta)
                 .font(BLTypographyStyle.caption.font.weight(.medium))
                 .foregroundStyle(deltaColor(deltaUp, palette: palette))
@@ -548,7 +548,7 @@ private extension DashboardView {
         .accessibilityValue(Text(value))
         .accessibilityIdentifier(BLAccessibilityID.Dashboard.kpiTile(kpi))
     }
-    
+
     /// 近期訂單區塊 (標題列 + 列表卡)
     /// - Parameters:
     ///   - stats: 已計算的本月統計
@@ -561,9 +561,9 @@ private extension DashboardView {
                 Text("近期訂單")
                     .blTextStyle(.title3Bold)
                     .foregroundStyle(palette.label)
-                
+
                 Spacer()
-                
+
                 Button("查看全部") {
                     store.send(.delegate(.viewAllOrdersTapped))
                 }
@@ -572,7 +572,7 @@ private extension DashboardView {
                 .font(BLTypographyStyle.subhead.font.weight(.medium))
                 .accessibilityIdentifier(BLAccessibilityID.Dashboard.recentOrdersSeeAllButton)
             }
-            
+
             if stats.recentOrders.isEmpty {
                 ContentUnavailableView(
                     "尚無訂單",
@@ -593,7 +593,7 @@ private extension DashboardView {
                                 .accessibilityIdentifier(
                                     BLAccessibilityID.Dashboard.recentOrderRow(orderID: order.id)
                                 )
-                            
+
                             if index < stats.recentOrders.count - 1 {
                                 Divider()
                                     .padding(.leading, BLListMetrics.dividerInset)
@@ -609,22 +609,22 @@ private extension DashboardView {
 // MARK: - Private Method
 
 private extension DashboardView {
-    
+
     // MARK: Layout
-    
+
     /// KPI 卡片的欄位設定；無障礙字級改為單欄
     var kpiColumns: [GridItem] {
         let count = dynamicTypeSize.isAccessibilitySize ? 1 : 2
         return Array(repeating: GridItem(.flexible(), spacing: BLSpacing.small), count: count)
     }
-    
+
     /// 是否採用 hero + 3 KPI 並排版面 (iPad)
     var useWideHero: Bool {
         return horizontalSizeClass != .compact
     }
-    
+
     // MARK: Accessibility
-    
+
     /// hero 走勢圖的趨勢摘要
     /// - Parameter stats: 已計算的本月統計
     /// - Returns: 供輔助技術朗讀的摘要
@@ -637,7 +637,7 @@ private extension DashboardView {
               let highest = points.max() else {
             return "月獲利走勢圖，目前沒有資料"
         }
-        
+
         // 三個方向各自成句、不拼接片語——拼接的句子無法在其他語言正確重組
         let low = BLFormatters.twd(Decimal(lowest), locale: locale)
         let high = BLFormatters.twd(Decimal(highest), locale: locale)
@@ -649,18 +649,18 @@ private extension DashboardView {
         }
         return "月獲利走勢圖，共 \(points.count) 個月，整體持平，最低 \(low)，最高 \(high)"
     }
-    
+
     // MARK: Formatting
-    
+
     /// 將獲利金額格式化為含正負號的新台幣字串
     /// - Parameter profit: 獲利金額
     /// - Returns: 顯示在 hero 卡上的金額字串
     func profitDisplay(_ profit: Decimal) -> String {
         let formatted = BLFormatters.twd(profit, locale: locale)
-        
+
         return profit > 0 ? "+\(formatted)" : formatted
     }
-    
+
     /// 顯示在大標題上方、依 App 選定 locale 格式化的日期子標
     /// - Returns: 依選定 locale 呈現的日期字串
     func currentDateSubtitle() -> String {
@@ -672,7 +672,7 @@ private extension DashboardView {
                 .locale(locale)
         )
     }
-    
+
     /// 將 KPI delta 的方向轉成色彩
     /// - Parameters:
     ///   - up: `nil` 視為中性
@@ -688,7 +688,7 @@ private extension DashboardView {
             return palette.tertiaryLabel
         }
     }
-    
+
     /// 將 MoM 變化率格式化；nil 顯示「— MoM」
     /// - Parameter delta: 成長率，例如 `0.182` 表示 +18.2%
     /// - Returns: KPI 卡顯示用字串
@@ -700,7 +700,7 @@ private extension DashboardView {
         let prefix = delta >= 0 ? "+" : ""
         return "\(prefix)\(formatted) MoM"
     }
-    
+
     /// 依 App 選定 locale 把毛利率 delta (百分點) 轉成 `+2.4 pt MoM` 風格字串
     /// - Parameter delta: 百分點差，例如 `0.024` 表示 +2.4pt
     /// - Returns: KPI 卡顯示用字串
@@ -713,7 +713,7 @@ private extension DashboardView {
         let prefix = delta >= 0 ? "+" : ""
         return "\(prefix)\(formatted) pt MoM"
     }
-    
+
     /// 依 App 選定 locale 把獲利 delta 轉成 hero 卡上的 `↑ 24.3% MoM` 風格字串
     /// - Parameter delta: 成長率，例如 `0.243` 表示 +24.3%
     /// - Returns: hero 卡顯示用字串；無資料時顯示「— MoM」
@@ -726,7 +726,7 @@ private extension DashboardView {
         let formatted = BLFormatters.percent(absDelta, locale: locale)
         return "\(arrow) \(formatted) MoM"
     }
-    
+
     /// 將 delta 數值轉成 KPI tile 用的方向旗標 (`true`/`false`/`nil`)
     /// - Parameter delta: 成長率或百分點差
     /// - Returns: `true` 代表上升、`false` 代表下降、`nil` 代表無上月資料可比
@@ -747,7 +747,7 @@ private extension DashboardView {
         state.loadState = .loaded
         return state
     }()
-    
+
     return DashboardView(
         store: Store(initialState: previewState) {
             DashboardFeature()

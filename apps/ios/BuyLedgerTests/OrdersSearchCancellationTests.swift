@@ -13,9 +13,9 @@ import Testing
 /// 系統搜尋列取消後的過濾狀態
 @MainActor
 struct OrdersSearchCancellationTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func cancellingSearchClearsTheQueryAndRestoresTheFullList() async {
         var initial = OrdersFeature.State()
         initial.orders = Self.orders
@@ -25,7 +25,7 @@ struct OrdersSearchCancellationTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        
+
         await store.send(.searchTextChanged("小美")) {
             $0.searchText = "小美"
             $0.selectedOrderID = "A"
@@ -35,13 +35,13 @@ struct OrdersSearchCancellationTests {
             calendar: TestDependencies.fixedCalendar
         )
         #expect(filtered.map(\.id) == ["A"])
-        
+
         // 取消搜尋等同把文字清空
         await store.send(.searchTextChanged("")) {
             $0.searchText = ""
             $0.selectedOrderID = "A"
         }
-        
+
         #expect(store.state.searchText.isEmpty)
         let restored = store.state.filteredOrders(
             referenceDate: TestDependencies.fixedNow,
@@ -49,7 +49,7 @@ struct OrdersSearchCancellationTests {
         )
         #expect(restored.map(\.id) == Self.orders.map(\.id))
     }
-    
+
     /// 取消搜尋只解除查詢，其他篩選條件維持不變
     @Test func cancellingSearchDoesNotClearTheOtherFilters() async {
         var initial = OrdersFeature.State()
@@ -61,7 +61,7 @@ struct OrdersSearchCancellationTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        
+
         await store.send(.searchTextChanged("小美")) {
             $0.searchText = "小美"
             $0.selectedOrderID = "A"
@@ -70,7 +70,7 @@ struct OrdersSearchCancellationTests {
             $0.searchText = ""
             $0.selectedOrderID = "A"
         }
-        
+
         #expect(store.state.selectedCategory == "美妝")
         let restored = store.state.filteredOrders(
             referenceDate: TestDependencies.fixedNow,
@@ -83,14 +83,14 @@ struct OrdersSearchCancellationTests {
 // MARK: - Private Method
 
 private extension OrdersSearchCancellationTests {
-    
+
     /// 測試用訂單：兩筆美妝、一筆零食，客戶名稱各異
     static let orders: [LedgerOrder] = [
         makeOrder(id: "A", customer: "小美", category: "美妝"),
         makeOrder(id: "B", customer: "阿明", category: "美妝"),
         makeOrder(id: "C", customer: "阿華", category: "零食"),
     ]
-    
+
     /// 建立搜尋取消測試用的最小訂單
     /// - Parameters:
     ///   - id: 訂單識別值

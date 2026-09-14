@@ -10,9 +10,9 @@ import Testing
 
 /// 驗證持久化錯誤的分類與資料
 struct PersistenceErrorContractTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func storageErrorsRetainTheirCategoryAndMessage() {
         #expect(
             PersistenceError.fetchFailed(message: "fetch failed")
@@ -27,25 +27,25 @@ struct PersistenceErrorContractTests {
                 == .containerCreationFailed(message: "container failed")
         )
     }
-    
+
     @Test func domainErrorsWrapStorageFailuresWithoutLosingTheMessage() {
         let storageError = PersistenceError.saveFailed(message: "disk is full")
-        
+
         #expect(OrderPersistenceError.storage(storageError) == .storage(storageError))
         #expect(PaymentMethodPersistenceError.storage(storageError) == .storage(storageError))
         #expect(CurrencyMetadataPersistenceError.storage(storageError) == .storage(storageError))
     }
-    
+
     @Test func currencyMetadataRejectsAnEmptyCodeListAsADomainError() {
         #expect(CurrencyMetadataPersistenceError.emptyCodeList == .emptyCodeList)
     }
-    
+
     @Test func recoveryErrorsIdentifyTheFileThatCouldNotMove() {
         let error = PersistenceRecoveryError.fileMoveFailed(
             fileName: "BuyLedger.store",
             message: "permission denied"
         )
-        
+
         #expect(
             error
                 == .fileMoveFailed(

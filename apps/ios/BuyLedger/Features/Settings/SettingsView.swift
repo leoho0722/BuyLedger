@@ -10,20 +10,20 @@ import SwiftUI
 
 /// 設定頁畫面
 struct SettingsView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 設定 store
     @Bindable var store: StoreOf<SettingsFeature>
-    
+
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
-    
+
     /// 月度目標欄位的鍵盤焦點
     @FocusState private var isGoalFieldFocused: Bool
-    
+
     // MARK: - View Body
-    
+
     /// 設定頁畫面內容
     var body: some View {
         Form {
@@ -40,7 +40,7 @@ struct SettingsView: View {
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Settings.languagePicker)
             }
-            
+
             Section {
                 Toggle("啟用 AI 總結", isOn: $store.useAiSummary)
                     .accessibilityIdentifier(BLAccessibilityID.Settings.aiSummaryToggle)
@@ -59,7 +59,7 @@ struct SettingsView: View {
                     .blTextStyle(.footnote)
                     .foregroundStyle(Color.blSecondaryLabel)
             }
-            
+
             Section("預設幣別") {
                 NavigationLink {
                     currencyPicker
@@ -68,7 +68,7 @@ struct SettingsView: View {
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Settings.defaultCurrencyRow)
             }
-            
+
             Section {
                 TextField(
                     "目標金額",
@@ -85,7 +85,7 @@ struct SettingsView: View {
                     .blTextStyle(.footnote)
                     .foregroundStyle(Color.blSecondaryLabel)
             }
-            
+
             Section {
                 Toggle(store.appLock.unlockButtonTitleKey, isOn: appLockToggleBinding)
                     .accessibilityIdentifier(BLAccessibilityID.Settings.appLockToggle)
@@ -96,7 +96,7 @@ struct SettingsView: View {
                     .blTextStyle(.footnote)
                     .foregroundStyle(Color.blSecondaryLabel)
             }
-            
+
             Section("關於") {
                 LabeledContent("版本", value: appVersion)
                     .accessibilityIdentifier(BLAccessibilityID.Settings.versionRow)
@@ -114,7 +114,7 @@ struct SettingsView: View {
             // 此畫面唯一的輸入為數字鍵盤，沒有 return 鍵可收
             ToolbarItemGroup(placement: .keyboard) {
                 Spacer()
-                
+
                 Button {
                     store.send(.binding(.set(\.isGoalFieldFocused, false)))
                 } label: {
@@ -133,12 +133,12 @@ struct SettingsView: View {
 // MARK: - ViewBuilder
 
 private extension SettingsView {
-    
+
     /// 預設幣別選擇器
     @ViewBuilder
     var currencyPicker: some View {
         let locale = locale
-        
+
         OptionPickerSheet(
             title: "選擇預設幣別",
             allowsAdd: false,
@@ -160,7 +160,7 @@ private extension SettingsView {
             isEmbedded: true
         )
     }
-    
+
 #if DEBUG
     /// AI 總結模型選擇器 (僅 DEBUG 建置提供)
     @ViewBuilder
@@ -192,7 +192,7 @@ private extension SettingsView {
 // MARK: - Private Method
 
 private extension SettingsView {
-    
+
     /// App 鎖定開關的自訂 binding
     var appLockToggleBinding: Binding<Bool> {
         Binding(
@@ -200,7 +200,7 @@ private extension SettingsView {
             set: { store.send(.appLock(.enableToggled($0))) }
         )
     }
-    
+
     /// 依 App 選定 locale 產生幣別顯示文字
     /// - Parameter currency: 幣別
     /// - Returns: 顯示字串
@@ -208,17 +208,17 @@ private extension SettingsView {
         guard locale.language.languageCode?.identifier == "zh" else {
             return currency.rawValue
         }
-        
+
         let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
         return name.isEmpty ? currency.rawValue : name
     }
-    
+
     /// 從 bundle info 讀出版本號
     var appVersion: String {
         let dictionary = Bundle.main.infoDictionary
         let short = dictionary?["CFBundleShortVersionString"] as? String ?? "—"
         let build = dictionary?["CFBundleVersion"] as? String ?? "—"
-        
+
         return "\(short) (\(build))"
     }
 }

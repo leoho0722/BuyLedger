@@ -10,9 +10,9 @@ import Foundation
 // MARK: - Sample Data
 
 extension Campaign {
-    
+
 #if DEBUG
-    
+
     /// Preview 與測試使用的開團範例
     nonisolated static let sampleCampaigns: [Campaign] = [
         Campaign(
@@ -42,7 +42,7 @@ extension Campaign {
 // MARK: - Private Method
 
 private extension Campaign {
-    
+
     /// 建立固定時區的範例日期
     /// - Parameters:
     ///   - year: 年份
@@ -60,7 +60,7 @@ private extension Campaign {
         components.year = year
         components.month = month
         components.day = day
-        
+
         return components.date ?? Date(timeIntervalSince1970: 0)
     }
 }

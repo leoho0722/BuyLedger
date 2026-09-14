@@ -12,9 +12,9 @@ import Testing
 /// 驗證分析統計
 @MainActor
 struct InsightsStatsTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func trendBarsForThirtyDaysProduceThirtyDailyBucketsSummingToTotalProfit() {
         let orders = [
             Self.makeOrder(
@@ -29,11 +29,11 @@ struct InsightsStatsTests {
             locale: Locale(identifier: "zh-Hant"),
             palette: BLPalette()
         )
-        
+
         #expect(stats.trendBars.count == 30)
         #expect(stats.totalProfit == 700)
     }
-    
+
     @Test func trendDeltaComparesCurrentAgainstPriorTwelveMonthPeriodWhenBothHaveData() {
         // 本期獲利 1000、上期獲利 400，應顯示成長。
         let orders = [
@@ -51,12 +51,12 @@ struct InsightsStatsTests {
             locale: Locale(identifier: "zh-Hant"),
             palette: BLPalette()
         )
-        
+
         #expect(stats.totalProfit == 1_000)
         #expect(stats.trendDeltaIsPositive == true)
         #expect(stats.trendDelta.hasPrefix("↑"))
     }
-    
+
     @Test func trendDeltaHasNoComparisonWhenPriorPeriodEmpty() {
         let orders = [
             Self.makeOrder(
@@ -70,11 +70,11 @@ struct InsightsStatsTests {
             locale: Locale(identifier: "zh-Hant"),
             palette: BLPalette()
         )
-        
+
         #expect(stats.trendDelta == "— 無對照")
         #expect(stats.trendDeltaIsPositive == nil)
     }
-    
+
     @Test(arguments: [
         (current: Decimal(50), previous: Decimal(-100), text: "↑ 150.0%", isPositive: true),
         (current: Decimal(-50), previous: Decimal(-100), text: "↑ 50.0%", isPositive: true),
@@ -102,11 +102,11 @@ struct InsightsStatsTests {
             locale: Locale(identifier: "zh-Hant"),
             palette: BLPalette()
         )
-        
+
         #expect(stats.trendDelta == text)
         #expect(stats.trendDeltaIsPositive == isPositive)
     }
-    
+
     @Test func totalProfitEqualsDecimalSumOfPeriodBuckets() {
         let orders = [
             Self.makeOrder(
@@ -124,10 +124,10 @@ struct InsightsStatsTests {
             locale: Locale(identifier: "zh-Hant"),
             palette: BLPalette()
         )
-        
+
         #expect(stats.totalProfit == Decimal(string: "301.111111111111111110")!)
     }
-    
+
     @Test func costSegmentsExcludeZeroValueSegmentsAndTotalCostAggregatesAcrossAllRealizedOrders() {
         // 只有商品金額非零：成本結構只應出現「商品金額」一個區塊
         let orders = [
@@ -143,12 +143,12 @@ struct InsightsStatsTests {
             locale: Locale(identifier: "zh-Hant"),
             palette: BLPalette()
         )
-        
+
         #expect(stats.totalCost == 500)
         #expect(stats.costSegments.map(\.label) == ["商品金額"])
         #expect(stats.costSegments.first?.value == 500)
     }
-    
+
     @Test func campaignProfitRankingSortsDescendingAndExcludesCampaignsWithoutOrders() {
         let campaigns = [
             Campaign(
@@ -169,46 +169,46 @@ struct InsightsStatsTests {
                 id: "O2", status: .delivered, date: Date(timeIntervalSince1970: 0), charged: 2_000,
                 campaignNames: ["B團"]),
         ]
-        
+
         let ranks = InsightsStats.campaignProfitRanking(campaigns: campaigns, orders: orders)
-        
+
         #expect(ranks.map(\.campaignName) == ["B團", "A團"])
         #expect(ranks.map(\.rank) == [1, 2])
         #expect(ranks.first?.ratio == 1.0)
     }
-    
+
     @Test func computeHeatmapPlacesTodaysOrderInLastWeekAndCorrectWeekday() {
         // 週四應落在星期索引 3
         let today = TestDependencies.fixedNow
         let orders = [Self.makeOrder(id: "A", status: .quoting, date: today, charged: 1)]
-        
+
         let cells = InsightsStats.computeHeatmap(
             orders: orders,
             referenceDate: today,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         let key = HeatmapKey(week: InsightsStats.heatmapWeekCount - 1, weekday: 3)
         #expect(cells[key] == 1)
         #expect(cells.values.reduce(0, +) == 1)
     }
-    
+
     @Test func computeHeatmapExcludesOrdersOlderThanTheDisplayedWindow() {
         let oldDate = TestDependencies.fixedCalendar.date(
             byAdding: .day, value: -100, to: TestDependencies.fixedNow)!
         let orders = [Self.makeOrder(id: "A", status: .quoting, date: oldDate, charged: 1)]
-        
+
         let cells = InsightsStats.computeHeatmap(
             orders: orders,
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(cells.isEmpty)
     }
-    
+
     // MARK: - Helper
-    
+
     /// 建立指定年月日的 UTC 日期
     /// - Parameters:
     ///   - year: 西元年
@@ -228,7 +228,7 @@ struct InsightsStatsTests {
         components.day = day
         return components.date!
     }
-    
+
     /// 建立只含 InsightsStats 所需欄位的訂單
     /// - Parameters:
     ///   - id: 訂單識別值

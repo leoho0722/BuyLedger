@@ -11,39 +11,39 @@ import SwiftUI
 
 /// 使用設計系統主色的簡潔長條圖
 struct BLBarChart: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 長條圖要呈現的資料
     let data: [BLBarChartValue]
-    
+
     /// 圖表高度
     var height: CGFloat = 180
-    
+
     /// 是否啟用水平捲動；預設關閉
     var isScrollEnabled: Bool = false
-    
+
     /// X 軸標籤的最小間距
     private let minLabelSpacing: CGFloat = 28
-    
+
     /// 啟用捲動時的單一長條最小寬度
     private let minBarSpacing: CGFloat = 44
-    
+
     /// 圖表無障礙描述 (`AXChartDescriptor`) 的 X 軸標題；預設正體中文字面值
     var axisXTitle: String = "項目"
-    
+
     /// 圖表無障礙描述的 Y 軸標題；預設正體中文字面值，說明同 ``axisXTitle``
     var axisYTitle: String = "數值"
-    
+
     /// 圖表資料序列名稱
     var seriesName: String = "長條圖"
-    
+
     // MARK: - View Body
-    
+
     /// 長條圖的畫面內容
     var body: some View {
         let palette = BLPalette()
-        
+
         GeometryReader { proxy in
             chart(palette: palette, viewportWidth: proxy.size.width)
         }
@@ -54,7 +54,7 @@ struct BLBarChart: View {
 // MARK: - ViewBuilder
 
 private extension BLBarChart {
-    
+
     /// 依可用寬度繪製長條圖，必要時允許水平捲動
     /// - Parameters:
     ///   - palette: 目前外觀使用的色盤
@@ -63,11 +63,11 @@ private extension BLBarChart {
     func chart(palette: BLPalette, viewportWidth: CGFloat) -> some View {
         let total = data.count
         let visibleCount = visibleBarCount(total: total, viewportWidth: viewportWidth)
-        
+
         if isScrollEnabled, total > visibleCount, viewportWidth > 0 {
             // 內容過寬時以水平捲動查看，預設顯示最新資料。
             let contentWidth = viewportWidth * CGFloat(total) / CGFloat(visibleCount)
-            
+
             ScrollView(.horizontal, showsIndicators: false) {
                 barChart(palette: palette, renderWidth: contentWidth)
                     .frame(width: contentWidth)
@@ -77,7 +77,7 @@ private extension BLBarChart {
             barChart(palette: palette, renderWidth: viewportWidth)
         }
     }
-    
+
     /// 建構長條圖本體；X 軸標籤依 `renderWidth` 抽稀，只在會重疊時稀疏
     /// - Parameters:
     ///   - palette: 目前外觀使用的色盤
@@ -85,7 +85,7 @@ private extension BLBarChart {
     @ViewBuilder
     func barChart(palette: BLPalette, renderWidth: CGFloat) -> some View {
         let axisLabels = stridedLabels(renderWidth: renderWidth)
-        
+
         Chart(Array(data.enumerated()), id: \.offset) { _, item in
             BarMark(
                 x: .value("日期", item.label),
@@ -120,21 +120,21 @@ private extension BLBarChart {
 // MARK: - Nested Types
 
 private extension BLBarChart {
-    
+
     /// 長條圖的輔助技術描述
     struct ChartAccessibilityDescriptor: AXChartDescriptorRepresentable {
-        
+
         // MARK: - Data Properties
-        
+
         /// 對應圖表目前呈現的資料
         let data: [BLBarChartValue]
-        
+
         /// X 軸標題
         let axisXTitle: String
-        
+
         /// Y 軸標題
         let axisYTitle: String
-        
+
         /// 資料序列名稱
         let seriesName: String
     }
@@ -143,7 +143,7 @@ private extension BLBarChart {
 // MARK: - AXChartDescriptorRepresentable
 
 private extension BLBarChart.ChartAccessibilityDescriptor {
-    
+
     func makeChartDescriptor() -> AXChartDescriptor {
         let values = data.map(\.value)
         let xAxis = AXCategoricalDataAxisDescriptor(
@@ -166,7 +166,7 @@ private extension BLBarChart.ChartAccessibilityDescriptor {
         return AXChartDescriptor(
             title: nil, summary: nil, xAxis: xAxis, yAxis: yAxis, series: [series])
     }
-    
+
     func updateChartDescriptor(_ descriptor: AXChartDescriptor) {
         descriptor.series = makeChartDescriptor().series
     }
@@ -175,7 +175,7 @@ private extension BLBarChart.ChartAccessibilityDescriptor {
 // MARK: - Private Method
 
 private extension BLBarChart {
-    
+
     /// 圖表層級摘要
     var accessibilitySummary: LocalizedStringKey {
         guard let highest = data.max(by: { $0.value < $1.value }),
@@ -189,7 +189,7 @@ private extension BLBarChart {
             最低 \(lowest.label) \(lowest.valueDescription)
             """
     }
-    
+
     /// 計算一個視窗內可容納的長條數 (用來決定捲動時的內容寬度)
     /// - Parameters:
     ///   - total: 資料總筆數
@@ -202,7 +202,7 @@ private extension BLBarChart {
         let capacity = max(1, Int(viewportWidth / minBarSpacing))
         return min(total, capacity)
     }
-    
+
     /// 依繪製寬度計算 X 軸標籤
     /// - Parameter renderWidth: 圖表實際繪製寬度
     /// - Returns: 要繪製標籤的標籤子集；資料為空時回傳空陣列
@@ -211,10 +211,10 @@ private extension BLBarChart {
         guard total > 0 else {
             return []
         }
-        
+
         let capacity = max(1, Int(renderWidth / minLabelSpacing))
         let stride = max(1, Int((Double(total) / Double(capacity)).rounded(.up)))
-        
+
         var indices = Array(Swift.stride(from: 0, to: total, by: stride))
         // 補上最後一筆作為右端錨點，太近時取代前一筆。
         if let last = indices.last, last != total - 1 {
@@ -261,7 +261,7 @@ private extension BLBarChart {
             valueDescription: "NT$\((offset * 37) % 160 + 20)"
         )
     }
-    
+
     BLBarChart(data: data, height: 200, isScrollEnabled: true)
         .padding()
 }

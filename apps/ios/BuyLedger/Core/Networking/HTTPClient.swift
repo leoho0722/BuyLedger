@@ -10,15 +10,15 @@ import Foundation
 
 /// 通用 HTTP 客戶端依賴
 struct HTTPClient: Sendable {
-    
+
     // MARK: - Dependency Properties
-    
+
     /// 對應到 `URLSession.data(for:)` 的可注入封裝 (buffered 回應)
     /// - Parameter request: 欲送出的請求
     /// - Returns: 回應 data 與 HTTP 回應資訊
     /// - Throws: 網路請求或 HTTP 狀態驗證失敗時拋出 ``APIError``
     var data: @Sendable (_ request: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse)
-    
+
     /// 可注入的 URLSession bytes 封裝，支援串流回應
     /// - Parameter request: 欲送出的請求
     /// - Returns: 逐位元組串流與 HTTP 回應資訊
@@ -29,7 +29,7 @@ struct HTTPClient: Sendable {
 // MARK: - Internal Method
 
 extension HTTPClient {
-    
+
     /// 以給定組件組裝 `URLRequest`、執行並驗證 2xx 狀態碼後回傳原始回應 data
     /// - Parameters:
     ///   - url: 目標 URL
@@ -51,14 +51,14 @@ extension HTTPClient {
             .headers(headers)
             .body(body)
             .build()
-        
+
         let result = try await data(request)
         let (responseData, response) = result
-        
+
         guard 200...299 ~= response.statusCode else {
             throw APIError.http(statusCode: response.statusCode)
         }
-        
+
         return responseData
     }
 
@@ -80,11 +80,11 @@ extension HTTPClient {
 // MARK: - Dependency Values
 
 extension HTTPClient: DependencyKey {
-    
+
     /// `liveValue` 共用的設定化 session
     /// 以 `URLSessionConfiguration.default` 建立，保留 session 設定的控制權
     private nonisolated static let session = URLSession(configuration: .default)
-    
+
     /// App 執行時以 `URLSessionConfiguration.default` 的專屬 session 發送請求
     nonisolated static let liveValue: HTTPClient = HTTPClient(
         data: { (request: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
@@ -94,7 +94,7 @@ extension HTTPClient: DependencyKey {
             try await loadHTTPStream(request, using: session)
         }
     )
-    
+
     /// 測試與 Preview 不連線，固定回傳錯誤
     nonisolated static let testValue: HTTPClient = HTTPClient(
         data: { (_: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
@@ -109,14 +109,14 @@ extension HTTPClient: DependencyKey {
             )
         }
     )
-    
+
     nonisolated static let previewValue: HTTPClient = testValue
 }
 
 // MARK: - Private Method
 
 private extension HTTPClient {
-    
+
     /// 使用 URLSession 取得完整 HTTP 回應
     /// - Parameters:
     ///   - request: 要送出的請求
@@ -139,7 +139,7 @@ private extension HTTPClient {
             throw APIError.transport(message: error.localizedDescription)
         }
     }
-    
+
     /// 使用 URLSession 取得串流 HTTP 回應
     /// - Parameters:
     ///   - request: 要送出的請求
@@ -167,7 +167,7 @@ private extension HTTPClient {
 // MARK: - DependencyValues Accessor
 
 extension DependencyValues {
-    
+
     /// 通用 HTTP 客戶端
     var httpClient: HTTPClient {
         get { self[HTTPClient.self] }

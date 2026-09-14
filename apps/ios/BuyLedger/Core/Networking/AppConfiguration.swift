@@ -10,13 +10,13 @@ import Foundation
 
 /// 集中提供 App 的環境設定：兩把外部 API key
 struct AppConfiguration: Sendable {
-    
+
     // MARK: - Dependency Properties
-    
+
     /// 取得 ExchangeRate-API 的 API key；若未設定則回 `nil`
     /// - Returns: API key，未設定時為 `nil`
     var exchangeRateAPIKey: @Sendable () -> String?
-    
+
     /// 取得 Ollama Cloud 的 API key；若未設定則回 `nil`
     /// - Returns: API key，未設定時為 `nil`
     var ollamaAPIKey: @Sendable () -> String?
@@ -25,7 +25,7 @@ struct AppConfiguration: Sendable {
 // MARK: - Internal Method
 
 extension AppConfiguration {
-    
+
     /// 將 `Info.plist` 取回的原始字串正規化。
     /// - Parameters:
     ///   - raw: 從 `Bundle.main.object(forInfoDictionaryKey:)` 取回的原始值
@@ -43,7 +43,7 @@ extension AppConfiguration {
 // MARK: - Dependency Values
 
 extension AppConfiguration: DependencyKey {
-    
+
     /// App 執行時從 `Bundle.main.infoDictionary` 讀取各設定值
     nonisolated static let liveValue = AppConfiguration(
         exchangeRateAPIKey: {
@@ -59,13 +59,13 @@ extension AppConfiguration: DependencyKey {
             )
         }
     )
-    
+
     /// 測試預設不提供任何設定；要驗證 happy path 的測試應自行 inject
     nonisolated static let testValue = AppConfiguration(
         exchangeRateAPIKey: { nil },
         ollamaAPIKey: { nil }
     )
-    
+
     /// Preview 使用固定設定
     nonisolated static let previewValue = AppConfiguration(
         exchangeRateAPIKey: { "preview-stub-key" },
@@ -76,7 +76,7 @@ extension AppConfiguration: DependencyKey {
 // MARK: - DependencyValues Accessor
 
 extension DependencyValues {
-    
+
     /// App 環境設定提供者
     var appConfiguration: AppConfiguration {
         get { self[AppConfiguration.self] }

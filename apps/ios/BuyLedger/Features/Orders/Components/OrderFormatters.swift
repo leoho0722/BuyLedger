@@ -13,7 +13,7 @@ enum OrderFormatters {}
 // MARK: - Internal Method
 
 extension OrderFormatters {
-    
+
     /// 將新台幣金額格式化為無小數位字串
     /// - Parameters:
     ///   - amount: 要格式化的金額
@@ -22,7 +22,7 @@ extension OrderFormatters {
     static func twd(_ amount: Decimal, locale: Locale) -> String {
         BLFormatters.twd(amount, locale: locale)
     }
-    
+
     /// 將原始幣別金額格式化為無小數位字串
     /// - Parameters:
     ///   - amount: 要格式化的金額
@@ -40,7 +40,7 @@ extension OrderFormatters {
             .locale(locale)
         )
     }
-    
+
     /// 將比例格式化為百分比
     /// - Parameters:
     ///   - value: `0` 到 `1` 之間的比例
@@ -49,7 +49,7 @@ extension OrderFormatters {
     static func percent(_ value: Decimal, locale: Locale) -> String {
         BLFormatters.percent(value, locale: locale)
     }
-    
+
     /// 格式化訂單毛利率；收款為零時顯示「—」
     /// - Parameters:
     ///   - summary: 訂單財務摘要
@@ -61,7 +61,7 @@ extension OrderFormatters {
         }
         return percent(summary.margin, locale: locale)
     }
-    
+
     /// 將日期格式化為列表使用的短日期
     /// - Parameters:
     ///   - date: 要格式化的日期
@@ -75,7 +75,7 @@ extension OrderFormatters {
                 .locale(locale)
         )
     }
-    
+
     /// 將某一日格式化為訂單列表日期區段的標題
     /// - Parameters:
     ///   - day: 該區段所屬日期 (通常為當日起始時刻)
@@ -92,12 +92,12 @@ extension OrderFormatters {
         if calendar.isDate(day, inSameDayAs: referenceDate) {
             return "今天"
         }
-        
+
         if let yesterday = calendar.date(byAdding: .day, value: -1, to: referenceDate),
            calendar.isDate(day, inSameDayAs: yesterday) {
             return "昨天"
         }
-        
+
         let sameYear = calendar.component(.year, from: day) == calendar.component(.year, from: referenceDate)
         if sameYear {
             return day.formatted(
@@ -108,7 +108,7 @@ extension OrderFormatters {
                     .locale(locale)
             )
         }
-        
+
         return day.formatted(
             .dateTime
                 .year()
@@ -117,7 +117,7 @@ extension OrderFormatters {
                 .locale(locale)
         )
     }
-    
+
     /// 將日期格式化為 `yyyy/MM/dd HH:mm:ss`
     /// - Parameters:
     ///   - date: 要格式化的日期

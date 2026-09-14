@@ -11,9 +11,9 @@ import Testing
 
 /// 驗證本地化字串目錄
 struct LocalizationCatalogTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func catalogContainsCompleteTraditionalChineseAndEnglishValues() throws(any Error) {
         let catalogURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
@@ -23,10 +23,10 @@ struct LocalizationCatalogTests {
         let root = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let sourceLanguage = try #require(root["sourceLanguage"] as? String)
         let strings = try #require(root["strings"] as? [String: Any])
-        
+
         #expect(sourceLanguage == "zh-Hant")
         #expect(!strings.isEmpty)
-        
+
         let sourceRoot =
             catalogURL
             .deletingLastPathComponent()
@@ -39,7 +39,7 @@ struct LocalizationCatalogTests {
             missingCodeLiterals.isEmpty,
             "程式使用但目錄未收錄的使用者可見字串：\(missingCodeLiterals.map { "\($0.key) [\($0.location)]" })"
         )
-        
+
         // 只驗證已驗收的英文翻譯；完整性由上方掃描檢查。
         let documentedEnglishValues = [
             "總覽": "Overview",
@@ -96,7 +96,7 @@ struct LocalizationCatalogTests {
             let value = try #require(stringUnit["value"] as? String)
             #expect(value == expectedEnglishValue)
         }
-        
+
         let allowedSameSourceAndEnglishValues: Set<String> = ["VIP"]
         let untranslatedChineseKeys = strings.compactMap { key, value -> String? in
             guard key.range(of: "[\\u{3400}-\\u{9FFF}]", options: .regularExpression) != nil,
@@ -119,7 +119,7 @@ struct LocalizationCatalogTests {
         #expect(
             untranslatedChineseKeys.isEmpty,
             "English translation 仍與中文 source 相同：\(untranslatedChineseKeys)")
-        
+
         for (key, value) in strings {
             let entry = try #require(value as? [String: Any], "\(key) 缺少 catalog entry")
             if entry["shouldTranslate"] as? Bool == false {
@@ -129,7 +129,7 @@ struct LocalizationCatalogTests {
                 entry["localizations"] as? [String: Any],
                 "\(key) 缺少 localizations"
             )
-            
+
             for language in ["zh-Hant", "en"] {
                 let localization = try #require(
                     localizations[language] as? [String: Any],
@@ -143,12 +143,12 @@ struct LocalizationCatalogTests {
                     stringUnit["value"] as? String,
                     "\(key) 缺少 \(language) value"
                 )
-                
+
                 #expect(!translatedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
         }
     }
-    
+
     @Test func retiredReminderStringsDoNotReappearInTheCatalog() throws(any Error) {
         let catalogURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
@@ -157,13 +157,13 @@ struct LocalizationCatalogTests {
         let data = try Data(contentsOf: catalogURL)
         let root = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
         let strings = try #require(root["strings"] as? [String: Any])
-        
+
         // 舊 popup 文案未在現行畫面顯示
         let retiredKeys = ["新增提醒", "移除提醒"]
         let revivedKeys = retiredKeys.filter { strings[$0] != nil }
         #expect(revivedKeys.isEmpty, "已退役字串不得復活：\(revivedKeys)")
     }
-    
+
     @Test func calendarPermissionDescriptionIsLocalized() throws(any Error) {
         let catalogURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
@@ -174,7 +174,7 @@ struct LocalizationCatalogTests {
         let strings = try #require(root["strings"] as? [String: Any])
         let entry = try #require(strings["NSCalendarsFullAccessUsageDescription"] as? [String: Any])
         let localizations = try #require(entry["localizations"] as? [String: Any])
-        
+
         for language in ["zh-Hant", "en"] {
             let localization = try #require(localizations[language] as? [String: Any])
             let stringUnit = try #require(localization["stringUnit"] as? [String: Any])
@@ -182,7 +182,7 @@ struct LocalizationCatalogTests {
             #expect(!value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
         }
     }
-    
+
     @Test func presentationBoundariesDoNotBypassSelectedAppLocale() throws(any Error) {
         let sourceRoot = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
@@ -196,22 +196,22 @@ struct LocalizationCatalogTests {
         )
         let swiftFiles = enumerator.compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" }
         var hardCodedTraditionalChineseLocales: [String] = []
-        
+
         for file in swiftFiles {
             let source = try String(contentsOf: file, encoding: .utf8)
             let relativePath = file.path.replacingOccurrences(of: sourceRoot.path + "/", with: "")
-            
+
             if source.contains(".locale(Locale(identifier: \"zh_TW\"))") {
                 hardCodedTraditionalChineseLocales.append(relativePath)
             }
         }
-        
+
         #expect(
             hardCodedTraditionalChineseLocales.isEmpty,
             "Hard-coded locale found: \(hardCodedTraditionalChineseLocales)"
         )
     }
-    
+
     @Test func rootNavigationTitlesResolveUsingTheSelectedAppLanguage() {
         #expect(AppLanguage.english.localized("總覽") == "Overview")
         #expect(AppLanguage.traditionalChinese.localized("總覽") == "總覽")
@@ -224,7 +224,7 @@ struct LocalizationCatalogTests {
         #expect(AppLanguage.english.localized("更多") == "More")
         #expect(AppLanguage.traditionalChinese.localized("更多") == "更多")
     }
-    
+
     /// 圖表的本地化軸標題與資料序列名稱
     @Test func chartAccessibilityDescriptorStringsResolveUsingTheSelectedAppLanguage() {
         #expect(AppLanguage.english.localized("項目") == "Item")
@@ -243,29 +243,29 @@ struct LocalizationCatalogTests {
         #expect(AppLanguage.traditionalChinese.localized("圈狀圖") == "圈狀圖")
         #expect(AppLanguage.english.localized("走勢圖") == "Trend Chart")
         #expect(AppLanguage.traditionalChinese.localized("走勢圖") == "走勢圖")
-        
+
         let ordinal = 3
         #expect(AppLanguage.english.localized("第 \(ordinal) 筆") == "Point 3")
         #expect(AppLanguage.traditionalChinese.localized("第 \(ordinal) 筆") == "第 3 筆")
     }
-    
+
     @Test func ordersNavigationTitleKeysFollowSelectionState() {
         var state = OrdersFeature.State()
-        
+
         #expect(AppLanguage.english.localized(state.navigationTitleKey) == "Orders")
         #expect(AppLanguage.traditionalChinese.localized(state.navigationTitleKey) == "訂單")
-        
+
         state.isSelecting = true
-        
+
         #expect(AppLanguage.english.localized(state.navigationTitleKey) == "Select Orders")
         #expect(AppLanguage.traditionalChinese.localized(state.navigationTitleKey) == "選擇訂單")
-        
+
         state.selectedOrderIDs = ["O1", "O2"]
-        
+
         #expect(AppLanguage.english.localized(state.navigationTitleKey) == "2 Selected")
         #expect(AppLanguage.traditionalChinese.localized(state.navigationTitleKey) == "已選 2 筆")
     }
-    
+
     @Test func rootNavigationTitlesUseTheExplicitLanguageModifier() throws(any Error) {
         for pattern in Self.forbiddenNavigationTitlePatterns {
             #expect(
@@ -293,7 +293,7 @@ struct LocalizationCatalogTests {
             "Features/More/MoreView.swift",
             "Features/Settings/SettingsView.swift",
         ]
-        
+
         for relativePath in rootViews {
             let source = try String(
                 contentsOf: sourceRoot.appending(path: relativePath), encoding: .utf8)
@@ -303,47 +303,47 @@ struct LocalizationCatalogTests {
             )
         }
     }
-    
+
     @Test func campaignDetailReceiptStatusesCrossLocalizationBoundary() throws(any Error) {
         let sourceURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appending(path: "BuyLedger/Features/Campaigns/CampaignDetailView.swift")
         let source = try String(contentsOf: sourceURL, encoding: .utf8)
-        
+
         #expect(
             source.contains("Text(LocalizedStringKey(order.paymentReceiptStatus.title))"),
             "Campaign detail receipt statuses must be resolved through the String Catalog."
         )
     }
-    
+
     @Test func sidebarSmartGroupAccessibilityDoesNotConcatenateLocalizedText() throws(any Error) {
         let sourceURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appending(path: "BuyLedger/Features/App/RootSidebarLayout.swift")
         let source = try String(contentsOf: sourceURL, encoding: .utf8)
-        
+
         #expect(
             !source.contains(
                 "Text(LocalizedStringKey(group.status.title)) + Text(\" \\(count) 件\")"),
             "Accessibility text must not concatenate separately localized Text values."
         )
     }
-    
+
     @Test func compactOrderFilterSummaryDoesNotConcatenateLocalizedText() throws(any Error) {
         let sourceURL = URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
             .appending(path: "BuyLedger/Features/Orders/OrdersCompactView.swift")
         let source = try String(contentsOf: sourceURL, encoding: .utf8)
-        
+
         #expect(
             !source.contains("Text(\"篩選\") + Text(verbatim: \": \") + summary"),
             "Filter summaries must not concatenate separately localized Text values."
         )
     }
-    
+
     @Test func englishLocaleFormatsTheJuly18SpecExampleWithoutChineseDateText() throws(any Error) {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(secondsFromGMT: 0))
@@ -353,14 +353,14 @@ struct LocalizationCatalogTests {
         let referenceDate = try #require(
             calendar.date(from: DateComponents(year: 2026, month: 7, day: 20, hour: 12))
         )
-        
+
         let title = OrderFormatters.daySectionTitle(
             for: reportedDate,
             referenceDate: referenceDate,
             calendar: calendar,
             locale: Locale(identifier: "en")
         )
-        
+
         #expect(title.contains("July"))
         #expect(title.range(of: "[\\u{3400}-\\u{9FFF}]", options: .regularExpression) == nil)
     }
@@ -369,7 +369,7 @@ struct LocalizationCatalogTests {
 // MARK: - Nested Types
 
 private extension LocalizationCatalogTests {
-    
+
     /// 掃描結果中的單一缺漏字串；位置只用於讓失敗訊息能直接回到原始碼
     struct MissingCodeLiteral: Hashable {
         let key: String
@@ -382,7 +382,7 @@ private extension String {
     struct SourceLiteral {
         let raw: String
         let start: Int
-        
+
         /// 解析多行字串內容
         var logicalValue: String {
             guard raw.contains("\n") else {
@@ -401,7 +401,7 @@ private extension String {
                 }
                 return String(line.dropFirst(dedentWidth))
             }
-            
+
             var joined = ""
             for (index, line) in dedented.enumerated() {
                 let isLastLine = index == dedented.count - 1
@@ -415,7 +415,7 @@ private extension String {
             }
             return joined
         }
-        
+
         var localizationKeyVariants: [String] {
             let unescaped =
                 logicalValue
@@ -423,13 +423,13 @@ private extension String {
                 .replacingOccurrences(of: "\\t", with: "\t")
                 .replacingOccurrences(of: "\\\"", with: "\"")
                 .replacingOccurrences(of: "\\\\", with: "\\")
-            
+
             let nsValue = unescaped as NSString
             let interpolations = nsValue.topLevelInterpolationRanges()
             guard !interpolations.isEmpty else {
                 return [unescaped]
             }
-            
+
             // 將字面值中的 `%` 轉為 String Catalog 的 `%%`。
             var variants = [""]
             var cursor = 0
@@ -457,7 +457,7 @@ private extension String {
 // MARK: - Private Method
 
 private extension LocalizationCatalogTests {
-    
+
     // MARK: 使用者可見字面值掃描
 
     /// native `navigationTitle` 不得直接接收的本地化字面值 pattern
@@ -473,13 +473,13 @@ private extension LocalizationCatalogTests {
     static func containsForbiddenNavigationTitlePattern(in source: String) -> Bool {
         forbiddenNavigationTitlePatterns.contains(where: source.contains)
     }
-    
+
     /// modifier 字串引數前的最大比對長度
     static let modifierArgumentLookaheadLimit = 160
-    
+
     /// 往回檢查行事曆標題的行數
     static let calendarTitleLookbackLines = 3
-    
+
     /// 掃描候選使用者可見字串，再套用排除規則
     /// - Parameters:
     ///   - sourceRoot: 原始碼根目錄
@@ -497,16 +497,16 @@ private extension LocalizationCatalogTests {
             )
         )
         var missing = Set<MissingCodeLiteral>()
-        
+
         for case let file as URL in enumerator where file.pathExtension == "swift" {
             let relativePath = file.path.replacingOccurrences(of: sourceRoot.path + "/", with: "")
-            
+
             // 排除規則 1：測試替身與 Preview 資料不進入正式介面。
             guard !relativePath.contains("App/Testing/"), !relativePath.hasSuffix("+Samples.swift")
             else {
                 continue
             }
-            
+
             let source = try String(contentsOf: file, encoding: .utf8)
             let sanitizedSource = source.withPreviewBlocksRemoved()
             let lineRanges = sanitizedSource.lineRanges
@@ -519,7 +519,7 @@ private extension LocalizationCatalogTests {
                 lines: lines
             )
             let tokenExcludedStarts = try Self.tokenAnchoredExclusionStarts(in: sanitizedSource)
-            
+
             for literal in literalMatches where visibleStarts.contains(literal.start) {
                 let lineNumber = lineRanges.lineNumber(containingUTF16Offset: literal.start)
                 guard
@@ -533,19 +533,19 @@ private extension LocalizationCatalogTests {
                 else {
                     continue
                 }
-                
+
                 let variants = literal.localizationKeyVariants
                 let key = variants.first ?? literal.raw
                 let location = "\(relativePath):\(lineNumber + 1)"
                 missing.insert(MissingCodeLiteral(key: key, location: location))
             }
         }
-        
+
         return missing.sorted { lhs, rhs in
             lhs.key == rhs.key ? lhs.location < rhs.location : lhs.key < rhs.key
         }
     }
-    
+
     /// 收錄規則 A／B／C：找出候選使用者可見字串字面值的 start offset
     /// - Parameters:
     ///   - source: 原始碼
@@ -561,14 +561,14 @@ private extension LocalizationCatalogTests {
         lines: [String]
     ) throws(any Error) -> Set<Int> {
         var visibleStarts = Set<Int>()
-        
+
         // 大寫型別呼叫的未標籤字串視為顯示文字
         // 多行字串只處理 regex 可辨識的部分
         let structuralInitializerPattern =
             "\\b[A-Z][A-Za-z0-9]*\\s*\\(\\s*\"((?:\\\\.|[^\"\\\\])*)\""
         visibleStarts.formUnion(
             try source.literalCaptureStarts(matching: structuralInitializerPattern))
-        
+
         // 規則 B：SwiftUI modifier 的字串參數也算可見文字
         let visiblePatterns = [
             "\\bLocalizedStringKey\\s*\\([^\\n)]{0,\(Self.modifierArgumentLookaheadLimit)}?"
@@ -587,7 +587,7 @@ private extension LocalizationCatalogTests {
         for pattern in visiblePatterns {
             visibleStarts.formUnion(try source.literalCaptureStarts(matching: pattern))
         }
-        
+
         // 規則 C：display 與本地化型別的回傳值也算可見文字
         visibleStarts.formUnion(
             source.literalStartsInsideDisplayScopes(
@@ -596,10 +596,10 @@ private extension LocalizationCatalogTests {
                 lines: lines
             )
         )
-        
+
         return visibleStarts
     }
-    
+
     /// 找出排除規則中緊鄰字串開頭的模式
     /// - Parameter source: 原始碼
     /// - Returns: 排除標記的起始位置
@@ -623,7 +623,7 @@ private extension LocalizationCatalogTests {
         }
         return starts
     }
-    
+
     /// 套用無法用單一 pattern 表達的排除規則
     /// - Returns: 字串是否應排除
     static func isExcluded(
@@ -637,25 +637,25 @@ private extension LocalizationCatalogTests {
         guard !lines.isCommentOnly(lineNumber) else {
             return true
         }
-        
+
         if tokenExcludedStarts.contains(literal.start) {
             return true
         }
-        
+
         let sourceLine = lines[lineNumber]
-        
+
         // 排除 Logger 的字串參數，避免把診斷訊息當成文案
         if sourceLine.contains("Logger(") {
             return true
         }
-        
+
         // 排除規則 6：EventKit 標題不需本地化。
         let precedingWindow = lines[
             max(0, lineNumber - Self.calendarTitleLookbackLines)...lineNumber]
         if precedingWindow.contains(where: { $0.contains("reminderTitle") }) {
             return true
         }
-        
+
         // 排除規則 8：單獨空白或標點不是可翻譯文字。
         let variants = literal.localizationKeyVariants
         guard !variants.allSatisfy({ $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty })
@@ -669,15 +669,15 @@ private extension LocalizationCatalogTests {
         guard !variants.contains(where: catalogKeys.contains) else {
             return true
         }
-        
+
         return false
     }
 }
 
 private extension String {
-    
+
     // MARK: 字面值與行號掃描
-    
+
     /// 掃描原始碼中所有頂層字串字面值的起訖位置
     var literalMatches: [SourceLiteral] {
         let nsSource = self as NSString
@@ -710,7 +710,7 @@ private extension String {
         }
         return results
     }
-    
+
     var lineRanges: [SourceLineRange] {
         let nsSource = self as NSString
         var ranges: [SourceLineRange] = []
@@ -727,7 +727,7 @@ private extension String {
         }
         return ranges
     }
-    
+
     /// 找出符合指定正規表示式的字串 literal 起始位置
     /// - Parameter pattern: 要比對的正規表示式
     /// - Returns: 命中 literal 的 UTF-16 起始位置集合
@@ -748,7 +748,7 @@ private extension String {
         }
         return starts
     }
-    
+
     /// 找出顯示範圍內的字串位置
     /// - Returns: 顯示範圍內的字串起始位置
     func literalStartsInsideDisplayScopes(
@@ -763,7 +763,7 @@ private extension String {
         let literalsByLine = Dictionary(grouping: literalMatches) { literal in
             lineRanges.lineNumber(containingUTF16Offset: literal.start)
         }
-        
+
         for (lineNumber, line) in lines.enumerated() {
             let startsDisplayScope = line.isDisplayScopeDeclaration
             let opens = line.reduce(into: 0) { count, character in
@@ -773,25 +773,25 @@ private extension String {
                 if character == "}" { count += 1 }
             }
             let depthAfterLine = braceDepth + opens - closes
-            
+
             if startsDisplayScope && opens > closes {
                 activeScopeMinimumDepths.append(max(depthAfterLine, 1))
             }
-            
+
             if (startsDisplayScope || !activeScopeMinimumDepths.isEmpty),
                 !lines.isCommentOnly(lineNumber) {
                 for literal in literalsByLine[lineNumber] ?? [] {
                     starts.insert(literal.start)
                 }
             }
-            
+
             braceDepth = depthAfterLine
             activeScopeMinimumDepths.removeAll { braceDepth < $0 }
         }
-        
+
         return starts
     }
-    
+
     /// 移除 `#Preview` 區塊內容，保留原始行數供掃描使用
     /// - Returns: 移除 preview 內容後的原始碼
     func withPreviewBlocksRemoved() -> String {
@@ -817,12 +817,12 @@ private extension String {
         }
         return output.joined(separator: "\n")
     }
-    
+
     var isDisplayScopeDeclaration: Bool {
         guard contains("{") else {
             return false
         }
-        
+
         // 依宣告型別判定顯示文字，不逐一列舉屬性名稱。
         // 同時處理計算屬性與函式的本地化型別回傳值
         let typedDeclarationPattern =
@@ -840,7 +840,7 @@ private extension String {
             || contains("String.LocalizationValue") {
             return true
         }
-        
+
         // 依名稱辨識無法從型別判定的使用者可見文案。
         let displayProperties = [
             "title", "entryTitle", "addButtonTitle", "emptyTitle", "addAlertTitle",
@@ -871,7 +871,7 @@ private let starCharacter = UInt16(UnicodeScalar("*").value)
 private let newlineCharacter = UInt16(UnicodeScalar("\n").value)
 
 private extension NSString {
-    
+
     /// 掃描一個字串字面值本體 (開頭引號之後) 直到其配對的結尾引號
     /// - Returns: 字串結束位置
     func scanStringLiteralBody(from start: Int) -> Int? {
@@ -897,7 +897,7 @@ private extension NSString {
         }
         return nil
     }
-    
+
     /// 跳過插值內容，依括號深度處理巢狀字串
     /// - Returns: 插值結束位置
     func skipInterpolation(openParenIndex: Int) -> Int? {
@@ -925,7 +925,7 @@ private extension NSString {
         }
         return nil
     }
-    
+
     /// 找出字串內的頂層插值範圍
     /// - Returns: 頂層插值範圍
     func topLevelInterpolationRanges() -> [NSRange] {
@@ -948,7 +948,7 @@ private extension NSString {
         }
         return ranges
     }
-    
+
     /// 找到指定位置所在行的結尾
     /// - Returns: 行尾位置
     func endOfLineIndex(from start: Int) -> Int {
@@ -958,7 +958,7 @@ private extension NSString {
         }
         return index
     }
-    
+
     /// 跳過一段 `/* ... */` 區塊註解
     /// - Returns: 區塊註解結束位置
     func skipBlockComment(from start: Int) -> Int? {
@@ -976,7 +976,7 @@ private extension NSString {
 // MARK: 行號與註解判定小工具
 
 private extension String.SourceLineRange {
-    
+
     /// 判斷 UTF-16 offset 是否落在此行範圍內
     /// - Parameter utf16Offset: 要檢查的 UTF-16 offset
     /// - Returns: offset 是否位於此行範圍
@@ -986,7 +986,7 @@ private extension String.SourceLineRange {
 }
 
 private extension Array where Element == String {
-    
+
     /// 判斷指定行是否只有註解或空白
     /// - Parameter lineNumber: 要檢查的行號
     /// - Returns: 指定行是否為註解行
@@ -1000,7 +1000,7 @@ private extension Array where Element == String {
 }
 
 private extension Array where Element == String.SourceLineRange {
-    
+
     /// 找出包含指定 UTF-16 offset 的行號
     /// - Parameter offset: 要查詢的 UTF-16 offset
     /// - Returns: 命中的行號

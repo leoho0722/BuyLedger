@@ -10,22 +10,22 @@ import SwiftUI
 
 /// 合併候選與照片挑選的 sheet
 struct OrderMergeCandidateSheet: View {
-    
+
     // MARK: - View Properties
-    
+
     @Bindable var store: StoreOf<OrderMergeFeature>
-    
+
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
-    
+
     /// 候選清單使用的目前時間；測試可注入固定值
     @Dependency(\.date) private var date
-    
+
     /// 候選清單日期分組所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
-    
+
     // MARK: - View Body
-    
+
     /// 合併流程 sheet；候選選擇為根畫面
     var body: some View {
         NavigationStack(path: stepPath) {
@@ -54,7 +54,7 @@ struct OrderMergeCandidateSheet: View {
 // MARK: - ViewBuilder
 
 private extension OrderMergeCandidateSheet {
-    
+
     /// 照片挑選步驟；返回由系統 Back 處理
     @ViewBuilder
     var photoSelectionStep: some View {
@@ -70,7 +70,7 @@ private extension OrderMergeCandidateSheet {
                 }
             }
     }
-    
+
     /// 候選訂單清單，依日期分組並支援搜尋
     @ViewBuilder
     var candidateList: some View {
@@ -79,7 +79,7 @@ private extension OrderMergeCandidateSheet {
             calendar: calendar,
             locale: locale
         )
-        
+
         Group {
             if sections.isEmpty {
                 ContentUnavailableView(
@@ -121,7 +121,7 @@ private extension OrderMergeCandidateSheet {
             prompt: Text("搜尋")
         )
     }
-    
+
     /// 候選訂單 row，顯示客戶實付
     /// - Parameter order: 該列代表的候選訂單
     /// - Returns: 候選列 view
@@ -141,7 +141,7 @@ private extension OrderMergeCandidateSheet {
 // MARK: - Private Method
 
 private extension OrderMergeCandidateSheet {
-    
+
     /// 合併流程的導覽路徑
     var stepPath: Binding<[OrderMergeFeature.Step]> {
         Binding(

@@ -13,7 +13,7 @@ private final class BundleToken {}
 // MARK: - Static Properties
 
 extension Bundle {
-    
+
     /// 存放 asset catalog 的 bundle
     static let assets = Bundle(for: BundleToken.self)
 }

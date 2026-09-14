@@ -10,13 +10,13 @@ import SwiftUI
 
 /// 合併照片挑選畫面；最多保留 maxPhotoCount 張
 struct MergePhotoPickerSheet: View {
-    
+
     // MARK: - View Properties
-    
+
     @Bindable var store: StoreOf<OrderMergeFeature>
-    
+
     // MARK: - View Body
-    
+
     /// 照片挑選步驟的內容：說明文字 + 縮圖格
     var body: some View {
         ScrollView {
@@ -31,7 +31,7 @@ struct MergePhotoPickerSheet: View {
                 )
                 .blTextStyle(.footnote)
                 .foregroundStyle(Color.blSecondaryLabel)
-                
+
                 LazyVGrid(
                     columns: [GridItem(.adaptive(minimum: 96), spacing: BLSpacing.small)],
                     spacing: BLSpacing.small
@@ -49,7 +49,7 @@ struct MergePhotoPickerSheet: View {
 // MARK: - ViewBuilder
 
 private extension MergePhotoPickerSheet {
-    
+
     /// 單格照片縮圖：點擊 toggle 勾選；已勾選顯示外框與右上角 checkmark
     /// - Parameters:
     ///   - index: 照片在 ``OrderMergeFeature/State/combinedPhotos`` 中的 index
@@ -59,7 +59,7 @@ private extension MergePhotoPickerSheet {
     func photoCell(index: Int, data: Data) -> some View {
         let isSelected = store.selectedPhotoIndices.contains(index)
         let palette = BLPalette()
-        
+
         Button {
             store.send(.photoToggled(index))
         } label: {
@@ -73,7 +73,7 @@ private extension MergePhotoPickerSheet {
                             .strokeBorder(isSelected ? palette.accent : Color.clear, lineWidth: 3)
                     }
                     .opacity(isSelected ? 1 : 0.55)
-                
+
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
                     .symbolRenderingMode(.palette)
                     .foregroundStyle(
@@ -93,7 +93,7 @@ private extension MergePhotoPickerSheet {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityIdentifier(BLAccessibilityID.OrderMerge.photoCell(index: index))
     }
-    
+
     /// 顯示可解碼的照片，否則顯示 placeholder
     /// - Parameter data: 照片 data
     /// - Returns: 縮圖內容 view

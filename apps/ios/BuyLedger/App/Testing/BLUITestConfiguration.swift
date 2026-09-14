@@ -11,39 +11,39 @@ import Foundation
 
 /// UI 測試模式的啟動設定，由 App 的啟動參數解析而來
 struct BLUITestConfiguration: Equatable, Sendable {
-    
+
     // MARK: - Data Properties
-    
+
     /// 啟動參數是否帶 `-BLUITest`；為 `false` 時整套 UI 測試掛鉤都不生效
     let isEnabled: Bool
-    
+
     /// 要注入資料庫的種子情境 (`-BLUITestSeed`)，預設 `.empty`
     let seedProfile: BLUITestSeedProfile
-    
+
     /// 覆寫「現在」的參考時間 (`-BLUITestNow`)，預設 ``defaultReferenceDate``
     let referenceDate: Date
-    
+
     /// 覆寫 App 內語言 (`-BLUITestLanguage`)；`nil` 代表不覆寫，沿用預設語言
     let language: BLUITestLanguage?
-    
+
     /// 行事曆權限的模擬結果 (`-BLUITestCalendarAccess`)，預設 `.granted`
     let calendarAccess: BLUITestCalendarAccess
-    
+
     /// 要模擬的載入失敗情境 (`-BLUITestLoadFailure`)，預設 `.none`
     let loadFailure: BLUITestLoadFailure
-    
+
     /// 覆寫預設幣別的三碼代號 (`-BLUITestDefaultCurrency`)；`nil` 代表不覆寫
     let defaultCurrencyCode: String?
-    
+
     /// 覆寫每月利潤目標 (`-BLUITestMonthlyGoal`，單位 TWD)；`nil` 代表不覆寫
     let monthlyProfitGoalTwd: Int?
-    
+
     /// 是否使用 AI 商品明細替身
     let useAiSummary: Bool
-    
+
     /// 是否在啟動時開啟 App 鎖定 (`-BLUITestAppLockEnabled`)
     let appLockEnabled: Bool
-    
+
     /// UI 測試用的生物辨識情境；預設成功
     let biometricScenario: BLUITestBiometricScenario
 
@@ -52,12 +52,12 @@ struct BLUITestConfiguration: Equatable, Sendable {
 
     /// 是否清除 persistent UI test store；僅在 persistent 模式有效
     let resetPersistentStore: Bool
-    
+
     // MARK: - Static Properties
-    
+
     /// 由啟動參數建立的設定
     static let current = BLUITestConfiguration(arguments: ProcessInfo.processInfo.arguments)
-    
+
     /// 未指定 `-BLUITestNow` 時的參考時間：2026-04-30T00:00:00Z
     static let defaultReferenceDate: Date = {
         var calendar = Calendar(identifier: .gregorian)
@@ -70,9 +70,9 @@ struct BLUITestConfiguration: Equatable, Sendable {
         }
         return date
     }()
-    
+
     // MARK: - Init
-    
+
     /// 從啟動參數陣列解析設定
     /// - Parameter arguments: App 啟動參數
     init(arguments: [String]) {
@@ -95,9 +95,9 @@ struct BLUITestConfiguration: Equatable, Sendable {
 // MARK: - Private Method
 
 private extension BLUITestConfiguration {
-    
+
     // MARK: 逐欄位解析
-    
+
     /// 解析 String rawValue 列舉旗標；無效時回傳 `nil`
     /// - Parameters:
     ///   - flag: 要解析的旗標名 (如 `-BLUITestSeed`)
@@ -116,7 +116,7 @@ private extension BLUITestConfiguration {
         }
         return option
     }
-    
+
     /// 解析 `-BLUITestNow`，失敗時退回 ``defaultReferenceDate``
     /// - Parameter arguments: App 啟動參數
     /// - Returns: 解析出的參考時間；缺值或無法解析時回 ``defaultReferenceDate``
@@ -130,7 +130,7 @@ private extension BLUITestConfiguration {
         }
         return date
     }
-    
+
     /// 解析 `-BLUITestDefaultCurrency`；非三碼英文字母一律視為無效
     /// - Parameter arguments: App 啟動參數
     /// - Returns: 大寫的三碼幣別代號；缺值或格式不符時回 `nil`
@@ -146,7 +146,7 @@ private extension BLUITestConfiguration {
         }
         return code
     }
-    
+
     /// 解析月獲利目標；無效或負數時回傳 `nil`
     /// - Parameter arguments: App 啟動參數
     /// - Returns: 每月利潤目標 (TWD)；缺值、非整數或負數時回 `nil`
@@ -164,9 +164,9 @@ private extension BLUITestConfiguration {
         }
         return goal
     }
-    
+
     // MARK: 共用工具
-    
+
     /// 取得旗標後的值；重複旗標採最後一次
     /// - Parameters:
     ///   - flag: 要取值的旗標名
@@ -192,7 +192,7 @@ private extension BLUITestConfiguration {
         }
         return value
     }
-    
+
     /// 判斷字串是否為旗標：以 `-` 開頭且不是數值 (負數要當成合法的值放行)
     /// - Parameter value: 待判斷的字串
     /// - Returns: 是旗標回 `true`；負數等可當值的字串回 `false`
@@ -202,7 +202,7 @@ private extension BLUITestConfiguration {
         }
         return Double(value) == nil
     }
-    
+
     /// 解析 ISO8601 時間或日期
     /// - Parameter raw: 待解析的字串
     /// - Returns: 解析出的 `Date`；三種格式都對不上時回 `nil`
@@ -222,7 +222,7 @@ private extension BLUITestConfiguration {
         fullDate.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
         return fullDate.date(from: raw)
     }
-    
+
     /// 印出統一前綴的警告，方便從測試 log 撈出參數問題
     /// - Parameter message: 警告內容 (不含前綴)
     static func warn(_ message: String) {
@@ -232,57 +232,57 @@ private extension BLUITestConfiguration {
 
 /// UI 測試要覆寫的 App 內語言
 enum BLUITestLanguage: String, Equatable, Sendable {
-    
+
     // MARK: - Cases
-    
+
     /// 正體中文
     case traditionalChinese
-    
+
     /// 英文
     case english
 }
 
 /// UI 測試要模擬的行事曆權限結果
 enum BLUITestCalendarAccess: String, Equatable, Sendable {
-    
+
     // MARK: - Cases
-    
+
     /// 授予完整權限，提醒可正常新增與移除
     case granted
-    
+
     /// 拒絕權限，用於驗證權限被拒的提示路徑
     case denied
 }
 
 /// UI 測試要模擬的本機驗證情境
 enum BLUITestBiometricScenario: String, Equatable, Sendable {
-    
+
     // MARK: - Cases
-    
+
     /// 驗證一律成功
     case success
-    
+
     /// 驗證一律失敗
     case failure
 }
 
 /// UI 測試要模擬的載入失敗情境
 enum BLUITestLoadFailure: String, Equatable, Sendable {
-    
+
     // MARK: - Cases
-    
+
     /// 不模擬失敗
     case none
-    
+
     /// 訂單載入每次都失敗
     case orders
-    
+
     /// 訂單只有第一次讀取失敗，重試即成功
     case ordersFirstReadOnly
-    
+
     /// 開團載入失敗
     case campaigns
-    
+
     /// 主檔載入失敗
     case lookups
 }

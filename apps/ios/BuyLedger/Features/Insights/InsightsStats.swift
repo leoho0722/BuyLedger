@@ -10,37 +10,37 @@ import SwiftUI
 
 /// 分析頁的整體統計
 struct InsightsStats {
-    
+
     // MARK: - Data Properties
-    
+
     /// 走勢圖 (依 range 動態：30 天用「日」、6/12 個月用「月」)
     let trendBars: [BLBarChartValue]
-    
+
     /// 期間內淨獲利總和
     let totalProfit: Decimal
-    
+
     /// 走勢卡顯示的成長率文字
     let trendDelta: String
-    
+
     /// 成長率方向；`nil` 表示沒有比較值
     let trendDeltaIsPositive: Bool?
-    
+
     /// 各分類獲利排行 (由高到低)
     let categories: [InsightsCategory]
-    
+
     /// 成本結構各區塊
     let costSegments: [InsightsCostSegment]
-    
+
     /// 全期成本總和
     let totalCost: Decimal
-    
+
     // MARK: - Static Properties
-    
+
     /// 熱力圖顯示的週數
     static let heatmapWeekCount = 8
-    
+
     // MARK: - Init
-    
+
     /// 依訂單清單、趨勢期間與基準時間計算分析頁統計
     /// - Parameters:
     ///   - orders: 目前訂單清單
@@ -65,7 +65,7 @@ struct InsightsStats {
             now: referenceDate,
             locale: locale
         )
-        
+
         let totalProfit = trendBuckets.reduce(Decimal.zero) { $0 + $1.profit }
         let priorPeriodProfit = InsightsStats.previousPeriodProfit(
             attributedOrders: attributedOrders,
@@ -73,19 +73,19 @@ struct InsightsStats {
             calendar: calendar,
             now: referenceDate
         )
-        
+
         let totalCost = attributedOrders.reduce(Decimal.zero) { $0 + $1.summary.totalCost }
         let totalItem = attributedOrders.reduce(Decimal.zero) { $0 + $1.itemCost }
         let totalDom = attributedOrders.reduce(Decimal.zero) { $0 + $1.domesticShipping }
         let totalIntl = attributedOrders.reduce(Decimal.zero) { $0 + $1.internationalShipping }
         let totalFees = attributedOrders.reduce(Decimal.zero) { $0 + $1.summary.fees }
-        
+
         let trendDelta = InsightsStats.trendDelta(
             current: totalProfit,
             previous: priorPeriodProfit,
             locale: locale
         )
-        
+
         self.trendBars = trendBuckets.map(\.bar)
         self.totalProfit = totalProfit
         self.trendDelta = trendDelta.text
@@ -104,15 +104,15 @@ struct InsightsStats {
 // MARK: - Nested Types
 
 private extension InsightsStats {
-    
+
     /// 走勢圖單一期間的顯示值與精確獲利值
     struct TrendBucket {
-        
+
         // MARK: - Data Properties
-        
+
         /// 提供圖表顯示的值
         let bar: BLBarChartValue
-        
+
         /// 用於精確彙總的 Decimal 獲利
         let profit: Decimal
     }
@@ -121,7 +121,7 @@ private extension InsightsStats {
 // MARK: - Internal Method
 
 extension InsightsStats {
-    
+
     /// 依合併前收益計算各類別獲利
     /// - Parameter orders: 全部訂單
     /// - Returns: 各類別獲利排行
@@ -133,7 +133,7 @@ extension InsightsStats {
                 .filter { !$0.isEmpty }
                 .map { ($0, order) }
         }
-        
+
         return Dictionary(grouping: categoryPairs, by: \.0)
             .map { name, pairs in
                 InsightsCategory(
@@ -143,7 +143,7 @@ extension InsightsStats {
             }
             .sorted { $0.profit > $1.profit }
     }
-    
+
     /// 計算各開團毛利排行與相對比例
     /// - Parameters:
     ///   - campaigns: 目前所有開團
@@ -170,7 +170,7 @@ extension InsightsStats {
             )
         }
     }
-    
+
     /// 計算過去 N 週每天的下單筆數
     /// - Parameters:
     ///   - orders: 目前訂單清單
@@ -190,9 +190,9 @@ extension InsightsStats {
         guard let currentWeekStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start else {
             return [:]
         }
-        
+
         var result: [HeatmapKey: Int] = [:]
-        
+
         for order in orders {
             // 依週起點差距計算欄位，避免跨週誤差
             guard let orderWeekStart = calendar.dateInterval(of: .weekOfYear, for: order.date)?.start else {
@@ -205,19 +205,19 @@ extension InsightsStats {
             ).day ?? 0
             let weeksAgo = daysBetween / 7
             let weekIndex = (weekCount - 1) - weeksAgo
-            
+
             guard weekIndex >= 0, weekIndex < weekCount else {
                 continue
             }
-            
+
             // weekday: 1=週日 ... 7=週六；轉成 0=週一 ... 6=週日
             let raw = calendar.component(.weekday, from: order.date)
             let weekday = (raw + 5) % 7
-            
+
             let key = HeatmapKey(week: weekIndex, weekday: weekday)
             result[key, default: 0] += 1
         }
-        
+
         return result
     }
 }
@@ -225,7 +225,7 @@ extension InsightsStats {
 // MARK: - Private Method
 
 private extension InsightsStats {
-    
+
     /// 計算上一個等長期間的淨獲利
     /// - Parameters:
     ///   - attributedOrders: 依營收歸屬口徑計入的訂單
@@ -241,7 +241,7 @@ private extension InsightsStats {
     ) -> Decimal? {
         let component: Calendar.Component
         let length: Int
-        
+
         switch range {
         case .thirtyDays:
             component = .day
@@ -253,23 +253,23 @@ private extension InsightsStats {
             component = .month
             length = 12
         }
-        
+
         guard let priorEnd = calendar.date(byAdding: component, value: -length, to: now),
               let priorStart = calendar.date(byAdding: component, value: -length, to: priorEnd) else {
             return nil
         }
-        
+
         let total = attributedOrders
             .filter { (priorStart..<priorEnd).contains($0.date) }
             .reduce(Decimal.zero) { $0 + $1.summary.profit }
-        
+
         // 沒有任何訂單落在前一同期 → 視為「無資料可比」
         guard total != 0 else {
             return nil
         }
         return total
     }
-    
+
     /// 根據本期/上期累計獲利產生趨勢文字與方向旗標
     /// - Parameters:
     ///   - current: 本期累計
@@ -290,7 +290,7 @@ private extension InsightsStats {
         let formatted = BLFormatters.percent(abs(ratio), locale: locale)
         return ("\(arrow) \(formatted)", isPositive)
     }
-    
+
     /// 依 range 產生對應的 bar chart 資料：30 天逐日、6/12 個月逐月
     /// - Parameters:
     ///   - attributedOrders: 依營收歸屬口徑計入的訂單
@@ -338,10 +338,10 @@ private extension InsightsStats {
                         profit: dayProfit
                     )
                 }
-            
+
         case .sixMonths, .twelveMonths:
             let monthCount = range == .sixMonths ? 6 : 12
-            
+
             return (0..<monthCount)
                 .reversed()
                 .compactMap { offset -> TrendBucket? in
@@ -377,72 +377,72 @@ private extension InsightsStats {
 
 /// 類別排行資料
 struct InsightsCategory: Identifiable {
-    
+
     // MARK: - Identifiable Properties
-    
+
     /// 用 name 當識別值
     var id: String { name }
-    
+
     // MARK: - Data Properties
-    
+
     /// 類別名稱
     let name: String
-    
+
     /// 該類別累計獲利
     let profit: Decimal
 }
 
 /// 成本結構單一區塊
 struct InsightsCostSegment: Identifiable {
-    
+
     // MARK: - Identifiable Properties
-    
+
     /// 用 label 當識別值
     var id: String { label }
-    
+
     // MARK: - Data Properties
-    
+
     /// 顯示在 legend 的標籤
     let label: String
-    
+
     /// 此區塊金額
     let value: Decimal
-    
+
     /// 顯示色彩
     let color: Color
 }
 
 /// 熱力圖鍵
 struct HeatmapKey: Hashable {
-    
+
     // MARK: - Data Properties
-    
+
     /// 第幾週 (0 為最早、7 為本週)
     let week: Int
-    
+
     /// 第幾天 (0 為週一、6 為週日)
     let weekday: Int
 }
 
 /// 每團毛利排行的單列資料
 struct CampaignProfitRank: Identifiable {
-    
+
     // MARK: - Identifiable Properties
-    
+
     /// 對應開團的識別值
     let id: Campaign.ID
-    
+
     // MARK: - Data Properties
-    
+
     /// 名次 (由 1 起算，依毛利由高到低)
     let rank: Int
-    
+
     /// 開團名稱
     let campaignName: String
-    
+
     /// 該團毛利
     let profit: Decimal
-    
+
     /// 相對於最高毛利團的比例 (0...1)，供進度條呈現
     let ratio: Double
 }

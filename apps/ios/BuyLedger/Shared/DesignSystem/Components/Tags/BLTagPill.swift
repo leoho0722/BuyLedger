@@ -9,17 +9,17 @@ import SwiftUI
 
 /// 以 neutral 灰底膠囊呈現標籤文字，並可在膠囊外側附加前導圖示
 struct BLTagPill: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 膠囊內顯示的標籤文字
     let text: String
-    
+
     /// 膠囊左側 (膠囊外) 的前導 SF Symbol 名稱；為 nil 時不顯示圖示
     let systemImage: String?
-    
+
     // MARK: - Init
-    
+
     /// 建立標籤膠囊
     /// - Parameters:
     ///   - text: 膠囊內顯示的標籤文字
@@ -28,9 +28,9 @@ struct BLTagPill: View {
         self.text = text
         self.systemImage = systemImage
     }
-    
+
     // MARK: - View Body
-    
+
     /// 標籤膠囊的畫面內容
     var body: some View {
         HStack(alignment: .center, spacing: BLSpacing.extraSmall) {
@@ -40,7 +40,7 @@ struct BLTagPill: View {
                     .imageScale(.small)
                     .foregroundStyle(Color.blSecondaryLabel)
             }
-            
+
             // 不可用 `.fixedSize(horizontal:)`——長類別文字會被迫單行、撐爆版面寬度
             // 讓膠囊隨文字換行增高
             BLStatusPill(text, tone: .neutral, showsIndicator: false)

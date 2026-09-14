@@ -11,77 +11,77 @@ import Foundation
 /// 訂單編輯表單的草稿值型別
 @ObservableState
 struct OrderDraft: Equatable, Sendable {
-    
+
     // MARK: - Data Properties
-    
+
     /// 客戶名稱草稿
     var customerName: String
-    
+
     /// 訂單來源草稿
     var orderSource: String
-    
+
     /// 商品類別草稿；一般編輯單選，合併時可多選
     var categories: [String]
-    
+
     /// 訂單狀態草稿
     var status: OrderStatus
-    
+
     /// 商品幣別草稿
     var currency: CurrencyCode
-    
+
     /// 客戶收款金額草稿 (新台幣)
     var chargedAmount: Decimal
-    
+
     /// 無卡折抵金額；不可超過實付金額
     var cardlessDeductionAmount: Decimal
-    
+
     /// 無卡補款金額草稿 (TWD)
     var cardlessSupplementAmount: Decimal
-    
+
     /// 商品折合 TWD 後的成本草稿
     var itemCost: Decimal
-    
+
     /// 國內運費草稿 (TWD)
     var domesticShipping: Decimal
-    
+
     /// 國際運費草稿 (TWD)
     var internationalShipping: Decimal
-    
+
     /// 外國國內運費草稿 (TWD)
     var foreignDomesticShipping: Decimal
-    
+
     /// 刷卡手續費比例草稿 (0–1，例如 0.015 = 1.5%)
     var cardFeeRate: Decimal
-    
+
     /// 平台手續費比例草稿 (0–1，例如 0.03 = 3%)
     var platformFeeRate: Decimal
-    
+
     /// 金流手續費比例草稿 (0–1)
     var paymentFeeRate: Decimal
-    
+
     /// 商品明細草稿；可在編輯表單內新增、刪除、修改
     var items: [LedgerOrderItem]
-    
+
     /// 訂單備註草稿；對應 ``LedgerOrder/notes``，留空代表無備註
     var notes: String
-    
+
     /// 訂購日期草稿
     var date: Date
-    
+
     /// 付款方式草稿
     var paymentMethod: String
-    
+
     /// 對帳狀態草稿；僅在無卡或銀行匯款付款方式下於 UI 顯示與編輯
     var reconciliationStatus: String
-    
+
     /// 歸屬開團名稱草稿；空陣列代表未歸團 (散單)
     var campaignNames: [String]
-    
+
     /// 收款狀態草稿 (待收款／已收款)
     var paymentReceiptStatus: PaymentReceiptStatus
-    
+
     // MARK: - Init
-    
+
     /// 依原始訂單建立草稿；`original` 為 `nil` 時各欄位採新訂單預設值
     /// - Parameters:
     ///   - original: 要編輯的訂單；`nil` 表示新訂單
@@ -119,18 +119,18 @@ struct OrderDraft: Equatable, Sendable {
 // MARK: - Nested Types
 
 extension OrderDraft {
-    
+
     /// ``resolveWriteResult(_:existingOrders:newOrderID:)`` 的計算結果
     struct WriteResult {
-        
+
         // MARK: - Data Properties
-        
+
         /// 套用後的訂單
         let order: LedgerOrder
-        
+
         /// 是否為新建列 (插入分支，一律寫入照片)
         let isNewOrder: Bool
-        
+
         /// 是否應寫入照片；只有既有訂單且照片曾變更時為 true
         let writesPhotos: Bool
     }
@@ -139,7 +139,7 @@ extension OrderDraft {
 // MARK: - Internal Method
 
 extension OrderDraft {
-    
+
     /// 依草稿與訂單清單計算寫入結果
     /// - Parameters:
     ///   - editState: 編輯表單狀態
@@ -199,7 +199,7 @@ extension OrderDraft {
             )
         }
     }
-    
+
     /// 套用寫入結果到 state
     /// - Parameters:
     ///   - result: 寫入結果
@@ -215,7 +215,7 @@ extension OrderDraft {
             state.orders[index] = result.order
         }
     }
-    
+
     /// 將編輯草稿套用到訂單清單
     /// - Parameters:
     ///   - editState: 編輯表單狀態
@@ -243,7 +243,7 @@ extension OrderDraft {
 // MARK: - Private Method
 
 private extension OrderDraft {
-    
+
     /// 依草稿與編輯情境建立訂單
     /// - Parameters:
     ///   - existingOrder: 正在編輯的既有訂單；`nil` 代表新建列
@@ -268,7 +268,7 @@ private extension OrderDraft {
         // 備註只清除首尾空白，保留內部換行
         let trimmedNotes = notes.trimmingCharacters(in: .whitespacesAndNewlines)
         let normalizedCampaignNames = Self.normalizedNames(campaignNames)
-        
+
         let normalizedAmount = max(0, chargedAmount)
         let normalizedItemCost = max(0, itemCost)
         let normalizedDom = max(0, domesticShipping)
@@ -277,14 +277,14 @@ private extension OrderDraft {
         let normalizedCardFee = Self.clampRate(cardFeeRate)
         let normalizedPlatformFee = Self.clampRate(platformFeeRate)
         let normalizedPaymentFee = Self.clampRate(paymentFeeRate)
-        
+
         if let existingOrder {
             let updatedCustomer = LedgerCustomer(
                 name: trimmedName.isEmpty ? existingOrder.customer.name : trimmedName,
                 initials: existingOrder.customer.initials,
                 tier: existingOrder.customer.tier
             )
-            
+
             // 未寫入照片時，in-memory 訂單維持空陣列
             return LedgerOrder(
                 id: existingOrder.id,
@@ -322,13 +322,13 @@ private extension OrderDraft {
             let resolvedOrderSource = trimmedOrderSource.isEmpty ? "未指定" : trimmedOrderSource
             let resolvedCategories = normalizedCategories.isEmpty ? ["未分類"] : normalizedCategories
             let initials = String(resolvedName.prefix(2)).uppercased()
-            
+
             // 合併草稿沿用主訂單客戶，一般新訂單維持 .new。
             let resolvedCustomer =
             mergePrimaryCustomer.map {
                 LedgerCustomer(name: resolvedName, initials: $0.initials, tier: $0.tier)
             } ?? LedgerCustomer(name: resolvedName, initials: initials, tier: .new)
-            
+
             // 使用完整隨機識別碼；顯示短碼由 displayID 產生
             return LedgerOrder(
                 id: "BL-DRAFT-\(newOrderID())",
@@ -360,14 +360,14 @@ private extension OrderDraft {
             )
         }
     }
-    
+
     /// 將手續費比例 clamp 到 `[0, 1]` 區間，避免介面誤輸入造成損益失真
     /// - Parameter value: 待 clamp 的比例
     /// - Returns: clamp 後的比例
     static func clampRate(_ value: Decimal) -> Decimal {
         max(0, min(1, value))
     }
-    
+
     /// 將草稿名稱陣列正規化：逐元素 trim、去除空字串與重複 (保序)
     /// - Parameter names: 草稿陣列 (類別或開團)
     /// - Returns: 正規化後的名稱陣列

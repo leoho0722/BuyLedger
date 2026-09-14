@@ -11,9 +11,9 @@ import Testing
 
 /// 驗證建置設定的讀取與正規化
 struct AppConfigurationTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func normalizeReturnsTrimmedValue() {
         #expect(
             AppConfiguration.normalize(
@@ -22,7 +22,7 @@ struct AppConfigurationTests {
             ) == "abc123"
         )
     }
-    
+
     @Test func normalizeReturnsNilForNil() {
         #expect(
             AppConfiguration.normalize(
@@ -31,7 +31,7 @@ struct AppConfigurationTests {
             ) == nil
         )
     }
-    
+
     @Test func normalizeReturnsNilForEmptyOrWhitespace() {
         #expect(
             AppConfiguration.normalize(
@@ -46,7 +46,7 @@ struct AppConfigurationTests {
             ) == nil
         )
     }
-    
+
     @Test func normalizeReturnsNilForUnsubstitutedPlaceholder() {
         #expect(
             AppConfiguration.normalize(
@@ -55,7 +55,7 @@ struct AppConfigurationTests {
             ) == nil
         )
     }
-    
+
     @Test func normalizeKeepsValueWhenPlaceholderDiffers() {
         #expect(
             AppConfiguration.normalize(
@@ -64,13 +64,13 @@ struct AppConfigurationTests {
             ) == "$(OLLAMA_API_KEY)"
         )
     }
-    
+
     @Test func normalizeWithoutPlaceholderTrimsLiteral() {
         #expect(
             AppConfiguration.normalize("  http://localhost:4000/api  ") == "http://localhost:4000/api"
         )
     }
-    
+
     @Test func testValueProvidesNothing() {
         let configuration = AppConfiguration.testValue
         #expect(configuration.exchangeRateAPIKey() == nil)

@@ -15,7 +15,7 @@ actor PaymentMethodPersistence {}
 // MARK: - Internal Method
 
 extension PaymentMethodPersistence {
-    
+
     /// 讀出全部付款方式名稱，依 locale 升冪排序
     /// - Returns: 付款方式名稱陣列
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
@@ -28,7 +28,7 @@ extension PaymentMethodPersistence {
             .map { $0.name }
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
-    
+
     /// 讀出全部付款方式 (含分類旗標)，依 locale 升冪排序
     /// - Returns: 付款方式資訊陣列
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
@@ -50,7 +50,7 @@ extension PaymentMethodPersistence {
             }
             .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
     }
-    
+
     /// 寫入或更新付款方式及其旗標
     /// - Parameters:
     ///   - name: 付款方式名稱 (呼叫前由 caller 完成 trim)
@@ -63,7 +63,7 @@ extension PaymentMethodPersistence {
         let descriptor = FetchDescriptor<PaymentMethodRecord>(
             predicate: #Predicate { $0.name == name }
         )
-        
+
         let existing = try PersistenceError.mapFetch {
             try modelContext.fetch(descriptor).first
         }
@@ -90,7 +90,7 @@ extension PaymentMethodPersistence {
             throw error
         }
     }
-    
+
     /// 刪除指定名稱的付款方式；不存在時視為 no-op
     /// - Parameter name: 付款方式名稱
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
@@ -98,14 +98,14 @@ extension PaymentMethodPersistence {
         let descriptor = FetchDescriptor<PaymentMethodRecord>(
             predicate: #Predicate { $0.name == name }
         )
-        
+
         let records = try PersistenceError.mapFetch {
             try modelContext.fetch(descriptor)
         }
         for record in records {
             modelContext.delete(record)
         }
-        
+
         do {
             try PersistenceError.mapSave {
                 try modelContext.save()
@@ -115,7 +115,7 @@ extension PaymentMethodPersistence {
             throw error
         }
     }
-    
+
     /// 將付款方式更名；同名時合併，訂單 cascade 由 caller 處理
     /// - Parameters:
     ///   - oldName: 原本的名稱
@@ -136,7 +136,7 @@ extension PaymentMethodPersistence {
         for record in oldRecords {
             modelContext.delete(record)
         }
-        
+
         let newDescriptor = FetchDescriptor<PaymentMethodRecord>(
             predicate: #Predicate { $0.name == newName }
         )
@@ -164,7 +164,7 @@ extension PaymentMethodPersistence {
                 )
             )
         }
-        
+
         do {
             try PersistenceError.mapSave {
                 try modelContext.save()
@@ -174,7 +174,7 @@ extension PaymentMethodPersistence {
             throw error
         }
     }
-    
+
     /// 在一次交易中更新付款方式與受影響訂單
     /// - Parameters:
     ///   - oldName: 原本的付款方式名稱
@@ -195,7 +195,7 @@ extension PaymentMethodPersistence {
             let oldRecords = try mapFetch {
                 try modelContext.fetch(oldDescriptor)
             }
-            
+
             if oldName == newName {
                 if let existing = oldRecords.first {
                     existing.isCardless = flags.isCardless
@@ -215,7 +215,7 @@ extension PaymentMethodPersistence {
                 for record in oldRecords {
                     modelContext.delete(record)
                 }
-                
+
                 let newDescriptor = FetchDescriptor<PaymentMethodRecord>(
                     predicate: #Predicate { $0.name == newName }
                 )
@@ -238,7 +238,7 @@ extension PaymentMethodPersistence {
                     )
                 }
             }
-            
+
             let orderIDs = Set(orders.map(\.id))
             let orderDescriptor = FetchDescriptor<OrderRecord>(
                 predicate: #Predicate { orderIDs.contains($0.id) }
@@ -256,7 +256,7 @@ extension PaymentMethodPersistence {
                 }
                 record.apply(order)
             }
-            
+
             try mapSave {
                 try modelContext.save()
             }
@@ -268,7 +268,7 @@ extension PaymentMethodPersistence {
             throw error
         }
     }
-    
+
     /// 設定指定付款方式的 `isCardless` 旗標；若該名稱不在主檔則先建立記錄
     /// - Parameters:
     ///   - name: 付款方式名稱 (呼叫前由 caller 完成 trim)
@@ -278,7 +278,7 @@ extension PaymentMethodPersistence {
         let descriptor = FetchDescriptor<PaymentMethodRecord>(
             predicate: #Predicate { $0.name == name }
         )
-        
+
         let existing = try PersistenceError.mapFetch {
             try modelContext.fetch(descriptor).first
         }
@@ -287,7 +287,7 @@ extension PaymentMethodPersistence {
         } else {
             modelContext.insert(PaymentMethodRecord(name: name, isCardless: isCardless))
         }
-        
+
         do {
             try PersistenceError.mapSave {
                 try modelContext.save()
@@ -302,7 +302,7 @@ extension PaymentMethodPersistence {
 // MARK: - Private Method
 
 private extension PaymentMethodPersistence {
-    
+
     /// 將付款方式操作中的讀取錯誤包成 domain error
     /// - Parameter operation: 要執行的操作
     /// - Returns: operation 的結果
@@ -316,7 +316,7 @@ private extension PaymentMethodPersistence {
             throw .storage(error)
         }
     }
-    
+
     /// 將付款方式操作中的寫入錯誤包成 domain error
     /// - Parameter operation: 要執行的操作
     /// - Throws: operation 失敗時拋出 ``PaymentMethodPersistenceError``

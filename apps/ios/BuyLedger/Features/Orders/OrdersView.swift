@@ -10,26 +10,26 @@ import SwiftUI
 
 /// 訂單列表與詳情畫面
 struct OrdersView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 訂單功能 store
     @Bindable var store: StoreOf<OrdersFeature>
-    
+
     /// App 目前選用的顯示語系
     let language: AppLanguage
-    
+
     /// 目前水平尺寸分類，用來區分 iPhone 與 iPad 佈局
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+
     /// 篩選使用的目前時間；測試可注入固定值
     @Dependency(\.date) private var date
-    
+
     /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
-    
+
     // MARK: - View Body
-    
+
     /// 訂單功能的畫面內容
     var body: some View {
         platformContent
@@ -51,7 +51,7 @@ struct OrdersView: View {
 // MARK: - ViewBuilder
 
 private extension OrdersView {
-    
+
     /// 依尺寸分類選擇對應的訂單瀏覽 view
     @ViewBuilder
     var platformContent: some View {
@@ -61,7 +61,7 @@ private extension OrdersView {
             regularSplitContent
         }
     }
-    
+
     /// iPad regular 使用的「清單 + 詳情」兩欄佈局
     @ViewBuilder
     var regularSplitContent: some View {
@@ -76,9 +76,9 @@ private extension OrdersView {
                 listPane(orders: filtered)
                     .frame(minWidth: 280, idealWidth: 320, maxWidth: 360)
                     .background(palette.background)
-                
+
                 Divider()
-                
+
                 detailPane(filteredOrders: filtered)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .background(palette.background)
@@ -143,17 +143,17 @@ private extension OrdersView {
             )
         }
     }
-    
+
     /// 訂單列表欄
     /// - Parameter orders: 已由 ``regularSplitContent`` 單次求值好的篩選結果
     /// - Returns: 訂單列表欄 view
     @ViewBuilder
     func listPane(orders: [LedgerOrder]) -> some View {
         let palette = BLPalette()
-        
+
         VStack(spacing: 0) {
             listHeader(palette: palette)
-            
+
             ScrollView {
                 if store.isLoading {
                     ProgressView("載入訂單")
@@ -173,14 +173,14 @@ private extension OrdersView {
             .accessibilityIdentifier(BLAccessibilityID.Orders.listRoot)
         }
     }
-    
+
     /// 卡片化的訂單列表，內含逐列訂單與分隔線
     /// - Parameter orders: 已套用篩選的訂單清單
     /// - Returns: 卡片化的訂單列表 view
     @ViewBuilder
     func orderListCard(orders: [LedgerOrder]) -> some View {
         let palette = BLPalette()
-        
+
         BLCard(padding: 0) {
             VStack(spacing: 0) {
                 ForEach(Array(orders.enumerated()), id: \.element.id) { index, order in
@@ -189,7 +189,7 @@ private extension OrdersView {
                     } else {
                         selectDetailRow(order: order)
                     }
-                    
+
                     if index < orders.count - 1 {
                         Divider()
                             .padding(.leading, BLListMetrics.dividerInset)
@@ -198,7 +198,7 @@ private extension OrdersView {
             }
         }
     }
-    
+
     /// 一般模式的訂單列；點擊開啟詳情，長按顯示操作選單
     /// - Parameter order: 要呈現的訂單
     /// - Returns: 可選取詳情的訂單列 view
@@ -222,7 +222,7 @@ private extension OrdersView {
                     Label("合併訂單", systemImage: "arrow.triangle.merge")
                 }
             }
-            
+
             Button(role: .destructive) {
                 store.send(.deleteOrderTapped(order.id))
             } label: {
@@ -230,7 +230,7 @@ private extension OrdersView {
             }
         }
     }
-    
+
     /// 訂單列表上方的標題、搜尋與狀態篩選
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 列表 header view
@@ -245,7 +245,7 @@ private extension OrdersView {
             if !store.availableCategories.isEmpty {
                 categoryFilterTrigger(palette: palette)
             }
-            
+
             // 持續性載入失敗才走這裡
             // 一次性操作失敗改以 writeFailureAlert 對話框呈現，兩者不共用欄位
             if case let .failed(message) = store.loadState {
@@ -258,7 +258,7 @@ private extension OrdersView {
         .padding(.horizontal, BLSpacing.medium)
         .padding(.bottom, BLSpacing.medium)
     }
-    
+
     /// iPad 中間欄使用的橫向滾動狀態 chip 列
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: chip 列 view
@@ -279,7 +279,7 @@ private extension OrdersView {
         }
         .scrollIndicators(.hidden)
     }
-    
+
     /// iPad 中間欄使用的橫向滾動日期區間 chip 列
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 日期 chip 列 view
@@ -301,7 +301,7 @@ private extension OrdersView {
         }
         .scrollIndicators(.hidden)
     }
-    
+
     /// iPad regular 中間欄使用的商品類別篩選 trigger button
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)
@@ -309,7 +309,7 @@ private extension OrdersView {
     func categoryFilterTrigger(palette: BLPalette) -> some View {
         let isSelected = store.selectedCategory != nil
         let currentLabel = store.selectedCategory ?? "全部"
-        
+
         BLFilterChip(
             title: "類別：\(currentLabel)",
             isSelected: isSelected,
@@ -321,7 +321,7 @@ private extension OrdersView {
             store.send(.categoryPickerTapped)
         }
     }
-    
+
     /// iPad regular 中間欄使用的付款方式篩選 trigger button
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: trigger button view (左對齊，剩餘水平空間由 ``SwiftUI/Spacer`` 推開)
@@ -329,7 +329,7 @@ private extension OrdersView {
     func paymentMethodFilterTrigger(palette: BLPalette) -> some View {
         let isSelected = store.selectedPaymentMethod != nil
         let currentLabel = store.selectedPaymentMethod ?? "全部"
-        
+
         BLFilterChip(
             title: "付款方式：\(currentLabel)",
             isSelected: isSelected,
@@ -341,14 +341,14 @@ private extension OrdersView {
             store.send(.paymentMethodPickerTapped)
         }
     }
-    
+
     /// 訂單詳情欄
     /// - Parameter filteredOrders: 已由 ``regularSplitContent`` 單次求值好的篩選結果
     /// - Returns: 詳情欄 view
     @ViewBuilder
     func detailPane(filteredOrders: [LedgerOrder]) -> some View {
         let palette = BLPalette()
-        
+
         if let order = selectedOrder(in: filteredOrders) {
             // 標題列疊在捲動內容上，底色使用系統 bar 材質。
             OrderDetailView(order: order, layout: .wide)
@@ -361,24 +361,24 @@ private extension OrdersView {
                 .background(palette.background)
         }
     }
-    
+
     /// 詳情欄頂部的姓名列，含狀態與更多操作選單
     /// - Parameter order: 要顯示的訂單
     /// - Returns: 自繪標題列 view
     @ViewBuilder
     func detailTitleBar(order: LedgerOrder) -> some View {
         let palette = BLPalette()
-        
+
         HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
             Text(order.customer.name)
                 .blTextStyle(.title3Bold)
                 .foregroundStyle(palette.label)
                 .accessibilityAddTraits(.isHeader)
-            
+
             Spacer()
-            
+
             statusUpdateMenu(order: order)
-            
+
             moreActionsMenu(order: order)
         }
         .padding(.horizontal, BLSpacing.large)
@@ -387,7 +387,7 @@ private extension OrdersView {
         // 使用系統 bar 材質保留捲動邊緣效果。
         .background(.bar)
     }
-    
+
     /// 詳情頁的狀態更新選單；已合併只能由合併流程寫入
     /// - Parameter order: 對應訂單
     /// - Returns: menu view
@@ -413,7 +413,7 @@ private extension OrdersView {
         .controlSize(.small)
         .accessibilityIdentifier(BLAccessibilityID.Orders.detailStatusMenuButton)
     }
-    
+
     /// 詳情頁右上角的合併、編輯與刪除選單
     /// - Parameter order: 對應訂單
     /// - Returns: menu view
@@ -428,16 +428,16 @@ private extension OrdersView {
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Orders.detailMergeButton)
             }
-            
+
             Button {
                 store.send(.editOrderTapped(order.id))
             } label: {
                 Label("編輯", systemImage: "pencil")
             }
             .accessibilityIdentifier(BLAccessibilityID.Orders.detailEditButton)
-            
+
             Divider()
-            
+
             Button(role: .destructive) {
                 store.send(.deleteOrderTapped(order.id))
             } label: {
@@ -458,7 +458,7 @@ private extension OrdersView {
 // MARK: - Private Method
 
 private extension OrdersView {
-    
+
     /// 目前選取的訂單；不在篩選結果時為 nil
     /// - Parameter filteredOrders: 已單次求值好的篩選結果
     /// - Returns: 對應的訂單；`selectedOrderID` 為 `nil` 時回傳第一筆
@@ -480,7 +480,7 @@ private extension OrdersView {
         state.selectedOrderID = LedgerOrder.sampleOrders.first?.id
         return state
     }()
-    
+
     OrdersView(
         store: Store(initialState: previewState) {
             OrdersFeature()

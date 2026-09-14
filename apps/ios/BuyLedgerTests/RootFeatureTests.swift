@@ -14,43 +14,43 @@ import Testing
 /// 驗證根功能的導覽與跨功能同步
 @MainActor
 struct RootFeatureTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func degradedPersistenceStatusStartsWithBlockingFailureState() {
         let state = RootFeature.State(persistenceStatus: .degraded(reason: "Unable to open store"))
-        
+
         #expect(state.persistenceFailure != nil)
         #expect(state.persistenceFailure?.phase == .blocked)
     }
-    
+
     @Test func healthyPersistenceStatusDoesNotBlockNormalLayout() {
         let state = RootFeature.State()
-        
+
         #expect(state.persistenceFailure == nil)
     }
-    
+
     /// App 鎖定開啟時，建構 State 即進入鎖定狀態
     @Test func protectionEnabledAtLaunchStartsLocked() {
         let state = RootFeature.State(isBiometricUnlockEnabled: true)
-        
+
         #expect(state.settings.appLock.isBiometricUnlockEnabled)
         #expect(state.settings.appLock.isLocked)
     }
-    
+
     @Test func protectionDisabledAtLaunchStartsUnlocked() {
         let state = RootFeature.State()
-        
+
         #expect(state.settings.appLock.isBiometricUnlockEnabled == false)
         #expect(state.settings.appLock.isLocked == false)
     }
-    
+
     @Test func taskRestoresSettingsBeforeSettingsScreenIsVisited() async {
         var snapshot = SettingsSnapshot.default
         snapshot.language = .english
         let storedSnapshot = snapshot
         let refresh = RootTaskRefreshBox()
-        
+
         let store = TestStore(initialState: RootFeature.State()) {
             RootFeature()
         } withDependencies: {
@@ -81,11 +81,11 @@ struct RootFeatureTests {
             $0.settings.appLock.biometryType = .faceID
         }
         await store.finish()
-        
+
         #expect(store.state.settings.language == .english)
         #expect(refresh.wasCalled)
     }
-    
+
     /// 重啟後一律回到總覽分頁
     @Test func taskKeepsTheDashboardTabAsTheLaunchTab() async {
         let store = TestStore(initialState: RootFeature.State()) {
@@ -110,29 +110,29 @@ struct RootFeatureTests {
             $0.settings.appLock.biometryType = .faceID
         }
         await store.finish()
-        
+
         #expect(store.state.selectedTab == .dashboard)
     }
-    
+
     @Test func smartGroupSelectedJumpsToOrdersAndAppliesStatus() async {
         var state = RootFeature.State()
         state.selectedTab = .dashboard
         state.orders.orders = LedgerOrder.sampleOrders
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        
+
         await store.send(.smartGroupSelected(.shipping)) {
             $0.selectedTab = .orders
             $0.orders.selectedStatus = .status(.shipping)
             $0.orders.selectedOrderID = "BL-2604-018"
         }
     }
-    
+
     /// 智慧分組只切換狀態篩選，不靜默覆寫使用者既有的日期區間與類別篩選
     @Test func smartGroupSelectedOnlySwitchesTheStatusFilter() async {
         var state = RootFeature.State()
@@ -142,7 +142,7 @@ struct RootFeatureTests {
         state.orders.selectedDatePeriod = .thisMonth
         state.orders.selectedCategory = "美妝"
         state.orders.selectedOrderID = "BL-2604-016"
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
@@ -162,41 +162,41 @@ struct RootFeatureTests {
             $0.orders.selectedStatus = .status(.shipping)
             $0.orders.selectedOrderID = expectedSelectedOrderID
         }
-        
+
         #expect(store.state.selectedTab == .orders)
         #expect(store.state.orders.selectedStatus == .status(.shipping))
         #expect(store.state.orders.selectedDatePeriod == .thisMonth)
         #expect(store.state.orders.selectedCategory == "美妝")
     }
-    
+
     @Test func smartGroupSelectionFlipsCorrespondingStatusChipPredicate() async {
         var state = RootFeature.State()
         state.orders.orders = LedgerOrder.sampleOrders
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        
+
         await store.send(.smartGroupSelected(.purchased)) {
             $0.selectedTab = .orders
             $0.orders.selectedStatus = .status(.purchased)
             $0.orders.selectedOrderID = "BL-2604-017"
         }
-        
+
         // 驗證選取狀態會同步到對應篩選 chip
         let purchasedFilter = OrderStatusFilter.status(.purchased)
         #expect(store.state.orders.selectedStatus == purchasedFilter)
-        
+
         let otherFilters: [OrderStatusFilter] = OrderStatusFilter.orderBrowsingCases
             .filter { $0 != purchasedFilter }
         for filter in otherFilters {
             #expect(store.state.orders.selectedStatus != filter)
         }
     }
-    
+
     @Test func customerSelectedResetsResidualCategoryFilter() async {
         var state = RootFeature.State()
         state.selectedTab = .dashboard
@@ -204,21 +204,21 @@ struct RootFeatureTests {
         // 預先設定殘留的類別篩選，驗證客戶名深連結會清掉它
         // 避免在另一頁帶著舊類別狀態跳轉後撈不到任何訂單
         state.orders.selectedCategory = "精品"
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        
+
         await store.send(.customerSelected("Alice")) {
             $0.selectedTab = .orders
             $0.orders.searchText = "Alice"
             $0.orders.selectedCategory = nil
         }
     }
-    
+
     @Test func categorySelectedJumpsToOrdersAndAppliesCategoryFilter() async {
         var state = RootFeature.State()
         state.selectedTab = .dashboard
@@ -229,14 +229,14 @@ struct RootFeatureTests {
         state.orders.selectedDatePeriod = .thisMonth
         state.orders.searchText = "stale query"
         state.orders.selectedOrderID = "BL-2604-016"
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        
+
         // 從分析頁點擊類別後，切到訂單頁並套用篩選。
         // 其餘篩選器全部歸零、選取為 filtered 後第一筆
         await store.send(.categorySelected("美妝")) {
@@ -248,7 +248,7 @@ struct RootFeatureTests {
             $0.orders.selectedOrderID = "BL-2604-018"
         }
     }
-    
+
     @Test func categorySelectedFiltersOrdersByExactCategoryFieldNotSearchText() async {
         // category 篩選只比對 category 欄位，不會誤中客戶名稱
         let realBeauty1 = Self.makeTestOrder(
@@ -257,24 +257,24 @@ struct RootFeatureTests {
             id: "TEST-FALSE-1", category: "服飾", customerName: "美妝小編")
         let realBeauty2 = Self.makeTestOrder(
             id: "TEST-BEAUTY-2", category: "美妝", customerName: "Carol")
-        
+
         var state = RootFeature.State()
         state.selectedTab = .dashboard
         state.orders.orders = [realBeauty1, falsePositive, realBeauty2]
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        
+
         await store.send(.categorySelected("美妝")) {
             $0.selectedTab = .orders
             $0.orders.selectedCategory = "美妝"
             $0.orders.selectedOrderID = "TEST-BEAUTY-1"
         }
-        
+
         // 進一步以 filteredOrders 驗證 false-positive 確實被排除
         // 舊的 searchText 路徑會把 "美妝小編" 模糊命中、新的欄位精準比對不會
         let filteredIDs = store.state.orders
@@ -284,7 +284,7 @@ struct RootFeatureTests {
             .map(\.id)
         #expect(filteredIDs == ["TEST-BEAUTY-1", "TEST-BEAUTY-2"])
     }
-    
+
     @Test func paymentMethodEditSuccessForwardsTheSameNormalizedOrdersToOrdersFeature() async {
         // 只有寫入成功後才同步主檔，並轉送同一份資料
         var order = RootFeatureTests.makeTestOrder(
@@ -317,7 +317,7 @@ struct RootFeatureTests {
             photos: order.photos,
             mergedSourceIDs: []
         )
-        
+
         let corrected = order
             .renamingPaymentMethod(to: "銀行匯款")
             .applyingPaymentMethodFlags(flags: .none)
@@ -328,7 +328,7 @@ struct RootFeatureTests {
             flagsChanged: true,
             affectedOrders: [corrected]
         )
-        
+
         var state = RootFeature.State()
         state.orders.orders = [order]
         state.orders.$lookupCatalog.withLock {
@@ -341,11 +341,11 @@ struct RootFeatureTests {
                 )
             ]
         }
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         }
-        
+
         await store.send(
             .lookupManagements(
                 .element(id: .paymentMethod, action: .paymentMethodEditSucceeded(plan))
@@ -362,7 +362,7 @@ struct RootFeatureTests {
                 ]
             }
         }
-        
+
         await store.receive(\.orders.paymentMethodFlagsApplied) {
             $0.orders.orders = [corrected]
             $0.customers.orders = [corrected]
@@ -370,7 +370,7 @@ struct RootFeatureTests {
             $0.dashboard.orders = [corrected]
             $0.insights.orders = [corrected]
         }
-        
+
         #expect(store.state.orders.orders == [corrected])
         #expect(
             store.state.orders.paymentMethodMaster == [
@@ -396,7 +396,7 @@ struct RootFeatureTests {
                 "銀行匯款": false
             ])
     }
-    
+
     @Test func paymentMethodEditCancellationLeavesRootOrdersAndMasterUnchanged() async {
         let original = Self.makeTestOrder(id: "BL-PM-CANCEL", category: "美妝", customerName: "取消測試")
             .renamingPaymentMethod(to: "匯款")
@@ -416,11 +416,11 @@ struct RootFeatureTests {
             isBankTransfer: true,
             isCashOnDelivery: false
         )
-        
+
         var state = RootFeature.State()
         state.orders.orders = [original]
         state.orders.$lookupCatalog.withLock { $0.paymentMethods = [originalMaster] }
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         }
@@ -453,7 +453,7 @@ struct RootFeatureTests {
             $0.lookupManagements[id: .paymentMethod]?.pendingPaymentMethodEdit = nil
             $0.lookupManagements[id: .paymentMethod]?.retroactiveConfirmation = nil
         }
-        
+
         #expect(store.state.orders.orders == [original])
         #expect(store.state.orders.paymentMethodMaster == [originalMaster])
         #expect(store.state.lookupManagements[id: .paymentMethod]?.items == ["匯款"])
@@ -462,7 +462,7 @@ struct RootFeatureTests {
                 "匯款": true
             ])
     }
-    
+
     @Test func paymentMethodEditPersistenceFailureLeavesOrdersAndMasterUnchanged() async {
         let original = Self.makeTestOrder(id: "BL-PM-FAIL", category: "美妝", customerName: "失敗測試")
         let corrected =
@@ -478,11 +478,11 @@ struct RootFeatureTests {
         )
         let originalMaster = PaymentMethodInfo(
             name: "匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)
-        
+
         var state = RootFeature.State()
         state.orders.orders = [original]
         state.orders.$lookupCatalog.withLock { $0.paymentMethods = [originalMaster] }
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
@@ -534,7 +534,7 @@ struct RootFeatureTests {
                 TextState("付款方式編輯失敗，請稍後再試。")
             }
         }
-        
+
         #expect(store.state.orders.orders == [original])
         #expect(store.state.orders.paymentMethodMaster == [originalMaster])
         #expect(store.state.lookupManagements[id: .paymentMethod]?.items == ["匯款"])
@@ -545,16 +545,16 @@ struct RootFeatureTests {
         #expect(store.state.lookupManagements[id: .paymentMethod]?.errorMessage == nil)
         #expect(store.state.lookupManagements[id: .paymentMethod]?.writeFailureAlert != nil)
     }
-    
+
     @Test func categoryRenameCascadesInsideMultiCategoryOrders() async {
         // 只改名目標類別，其他元素與順序不變。
         let multi = Self.makeTestOrder(id: "T-MULTI", categories: ["美妝", "服飾"], customerName: "客")
         let single = Self.makeTestOrder(id: "T-SINGLE", categories: ["服飾"], customerName: "客")
-        
+
         var state = RootFeature.State()
         state.orders.orders = [multi, single]
         state.orders.$lookupCatalog.withLock { $0.categories = ["美妝", "服飾"] }
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
@@ -575,7 +575,7 @@ struct RootFeatureTests {
             $0.insights.orders = $0.orders.orders
         }
         await store.finish()
-        
+
         #expect(
             store.state.orders.orders.first { $0.id == "T-MULTI" }?.categories == ["彩妝保養", "服飾"])
         #expect(store.state.orders.orders.first { $0.id == "T-SINGLE" }?.categories == ["服飾"])
@@ -586,7 +586,7 @@ struct RootFeatureTests {
         #expect(store.state.lookupManagements[id: .category]?.items.contains("美妝") == false)
         #expect(store.state.orders.availableCategories.contains("美妝") == false)
     }
-    
+
     @Test func campaignRenameCascadesInsideMultiCampaignOrders() async {
         // 只更新目標開團名稱，其他元素保持不變
         let multi = Self.makeTestOrder(
@@ -595,10 +595,10 @@ struct RootFeatureTests {
             customerName: "客",
             campaignNames: ["三月日本團", "四月韓國團"]
         )
-        
+
         var state = RootFeature.State()
         state.orders.orders = [multi]
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
@@ -616,17 +616,17 @@ struct RootFeatureTests {
             $0.insights.orders = $0.orders.orders
         }
         await store.finish()
-        
+
         #expect(store.state.orders.orders.first?.campaignNames == ["三月日本團 (補)", "四月韓國團"])
     }
-    
+
     // 分析區間由 InsightsFeature 自己驗證
-    
+
     @Test func goToAISettingsDeepLinksToMoreTabAndSettings() async {
         var state = RootFeature.State()
         state.selectedTab = .dashboard
         state.orders.orders = LedgerOrder.sampleOrders
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
@@ -639,7 +639,7 @@ struct RootFeatureTests {
             $0.orders.aiDisabledAlert = Self.aiDisabledAlert()
         }
         #expect(store.state.orders.aiDisabledAlert != nil)
-        
+
         // 點「前往開啟」→ root 攔截並切到「更多」分頁、要求 push 設定頁
         await store.send(.orders(.aiDisabledAlert(.presented(.goToAISettings)))) {
             $0.orders.aiDisabledAlert = nil
@@ -649,7 +649,7 @@ struct RootFeatureTests {
         #expect(store.state.selectedTab == .more)
         #expect(store.state.morePath == [.settings])
     }
-    
+
     /// 深連結一律先清空路徑再推入，確保設定頁只有一份且掛在根層
     @Test func aiSettingsDeepLinkReplacesAnyExistingMorePath() async {
         var initial = RootFeature.State()
@@ -670,49 +670,49 @@ struct RootFeatureTests {
             $0.selectedTab = .more
             $0.morePath = [.settings]
         }
-        
+
         #expect(store.state.morePath == [.settings])
     }
-    
+
     // MARK: - Tests (Lookup Single Source of Truth)
-    
+
     /// 驗證訂單編輯新增的類別會同步到管理頁
     @Test func addingCategoryInsideOrderEditIsVisibleToLookupManagement() async {
         var state = RootFeature.State()
         state.orders.editOrder = OrderEditFeature.State(
             id: UUID(0), currentDate: TestDependencies.fixedNow)
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0[CategoryRepository.self] = .testValue
         }
-        
+
         await store.send(.orders(.editOrder(.presented(.addCategoryTapped("手工藝品"))))) {
             $0.orders.editOrder?.availableCategories = ["手工藝品"]
             $0.orders.editOrder?.draft.categories = ["手工藝品"]
             $0.orders.$lookupCatalog.withLock { $0.categories = ["手工藝品"] }
         }
-        
+
         // 主檔管理清單從未被載入過，仍立即反映同一份共享目錄的新項目
         #expect(store.state.lookupManagements[id: .category]?.items == ["手工藝品"])
     }
-    
+
     /// 驗證主檔改名後，管理頁、訂單選項與既有訂單同步
     @Test func renamingOrderSourceSyncsManagementOrdersAndAvailableListInOneReducerCall() async {
         let order = Self.makeOrder(id: "T-OS", orderSource: "舊來源")
-        
+
         var state = RootFeature.State()
         state.orders.orders = [order]
         state.orders.$lookupCatalog.withLock { $0.orderSources = ["舊來源"] }
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0[OrderSourceRepository.self] = .testValue
             $0[OrderRepository.self] = .testValue
         }
-        
+
         await store.send(
             .lookupManagements(
                 .element(id: .orderSource, action: .renameRequested(from: "舊來源", to: "新來源")))
@@ -724,27 +724,27 @@ struct RootFeatureTests {
             $0.dashboard.orders = $0.orders.orders
             $0.insights.orders = $0.orders.orders
         }
-        
+
         #expect(store.state.lookupManagements[id: .orderSource]?.items == ["新來源"])
         #expect(store.state.orders.availableOrderSources.contains("新來源"))
         #expect(!store.state.orders.availableOrderSources.contains("舊來源"))
         #expect(store.state.orders.orders.first?.orderSource == "新來源")
     }
-    
+
     @Test func renamingCategorySyncsManagementOrdersAndAvailableListInOneReducerCall() async {
         let order = Self.makeOrder(id: "T-CAT", categories: ["舊類別"])
-        
+
         var state = RootFeature.State()
         state.orders.orders = [order]
         state.orders.$lookupCatalog.withLock { $0.categories = ["舊類別"] }
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0[CategoryRepository.self] = .testValue
             $0[OrderRepository.self] = .testValue
         }
-        
+
         await store.send(
             .lookupManagements(
                 .element(id: .category, action: .renameRequested(from: "舊類別", to: "新類別")))
@@ -756,27 +756,27 @@ struct RootFeatureTests {
             $0.dashboard.orders = $0.orders.orders
             $0.insights.orders = $0.orders.orders
         }
-        
+
         #expect(store.state.lookupManagements[id: .category]?.items == ["新類別"])
         #expect(store.state.orders.availableCategories.contains("新類別"))
         #expect(!store.state.orders.availableCategories.contains("舊類別"))
         #expect(store.state.orders.orders.first?.categories == ["新類別"])
     }
-    
+
     @Test func renamingReconciliationStatusSyncsManagementOrdersAndAvailableListInOneReducerCall() async {
         let order = Self.makeOrder(id: "T-RS", reconciliationStatus: "待對帳")
-        
+
         var state = RootFeature.State()
         state.orders.orders = [order]
         state.orders.$lookupCatalog.withLock { $0.reconciliationStatuses = ["待對帳"] }
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0[ReconciliationStatusRepository.self] = .testValue
             $0[OrderRepository.self] = .testValue
         }
-        
+
         await store.send(
             .lookupManagements(
                 .element(id: .reconciliationStatus, action: .renameRequested(from: "待對帳", to: "已對帳"))
@@ -789,17 +789,17 @@ struct RootFeatureTests {
             $0.dashboard.orders = $0.orders.orders
             $0.insights.orders = $0.orders.orders
         }
-        
+
         #expect(store.state.lookupManagements[id: .reconciliationStatus]?.items == ["已對帳"])
         #expect(store.state.orders.availableReconciliationStatuses.contains("已對帳"))
         #expect(!store.state.orders.availableReconciliationStatuses.contains("待對帳"))
         #expect(store.state.orders.orders.first?.reconciliationStatus == "已對帳")
     }
-    
+
     /// 驗證付款方式改名也走統一 cascade
     @Test func renamingPaymentMethodSyncsManagementOrdersAndAvailableListInOneReducerCall() async {
         let order = Self.makeOrder(id: "T-PM", paymentMethod: "舊付款")
-        
+
         var state = RootFeature.State()
         state.orders.orders = [order]
         state.orders.$lookupCatalog.withLock {
@@ -812,14 +812,14 @@ struct RootFeatureTests {
                 )
             ]
         }
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0[PaymentMethodRepository.self] = .testValue
             $0[OrderRepository.self] = .testValue
         }
-        
+
         await store.send(
             .lookupManagements(
                 .element(id: .paymentMethod, action: .renameRequested(from: "舊付款", to: "新付款"))
@@ -841,26 +841,26 @@ struct RootFeatureTests {
             $0.dashboard.orders = $0.orders.orders
             $0.insights.orders = $0.orders.orders
         }
-        
+
         #expect(store.state.lookupManagements[id: .paymentMethod]?.items == ["新付款"])
         #expect(store.state.orders.availablePaymentMethods.map(\.name).contains("新付款"))
         #expect(!store.state.orders.availablePaymentMethods.map(\.name).contains("舊付款"))
         #expect(store.state.orders.orders.first?.paymentMethod == "新付款")
     }
-    
+
     /// 刪除主檔後，訂單編輯不再提供該值
     @Test func deletingCategoryRemovesItFromOrderEditorAvailableList() async {
         let state = RootFeature.State()
         state.orders.$lookupCatalog.withLock { $0.categories = ["待刪類別"] }
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0[CategoryRepository.self] = .testValue
         }
-        
+
         #expect(store.state.orders.availableCategories.contains("待刪類別"))
-        
+
         await store.send(
             .lookupManagements(.element(id: .category, action: .deleteRequested("待刪類別")))
         )
@@ -871,28 +871,28 @@ struct RootFeatureTests {
         ) {
             $0.orders.$lookupCatalog.withLock { $0.categories = [] }
         }
-        
+
         #expect(store.state.lookupManagements[id: .category]?.items.isEmpty == true)
         #expect(!store.state.orders.availableCategories.contains("待刪類別"))
     }
-    
+
     // MARK: - Tests (Layer Boundary Cleanup)
-    
+
     /// 驗證 RootFeature 的 onChange 監看
     @Test func ordersChangeSyncsAllProjections() async {
         let order = Self.makeOrder(id: "T-SYNC", orderSource: "舊來源")
-        
+
         var state = RootFeature.State()
         state.orders.orders = [order]
         state.orders.$lookupCatalog.withLock { $0.orderSources = ["舊來源"] }
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0[OrderSourceRepository.self] = .testValue
             $0[OrderRepository.self] = .testValue
         }
-        
+
         await store.send(
             .lookupManagements(
                 .element(id: .orderSource, action: .renameRequested(from: "舊來源", to: "新來源"))
@@ -905,13 +905,13 @@ struct RootFeatureTests {
             $0.dashboard.orders = $0.orders.orders
             $0.insights.orders = $0.orders.orders
         }
-        
+
         #expect(store.state.customers.orders == store.state.orders.orders)
         #expect(store.state.campaigns.orders == store.state.orders.orders)
         #expect(store.state.dashboard.orders == store.state.orders.orders)
         #expect(store.state.insights.orders == store.state.orders.orders)
     }
-    
+
     /// 驗證 RootFeature 的 onChange 監看
     @Test func campaignsChangeSyncsDashboardAndInsightsProjections() async {
         let store = TestStore(initialState: RootFeature.State()) {
@@ -920,7 +920,7 @@ struct RootFeatureTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        
+
         let loaded = [
             Campaign(
                 id: "C1",
@@ -939,12 +939,12 @@ struct RootFeatureTests {
             $0.dashboard.campaigns = loaded
             $0.insights.campaigns = loaded
         }
-        
+
         #expect(store.state.orders.campaigns == loaded)
         #expect(store.state.dashboard.campaigns == loaded)
         #expect(store.state.insights.campaigns == loaded)
     }
-    
+
     /// 跨 feature 意圖經 delegate 轉發到既有導覽 action
     @Test func dashboardCampaignTappedDelegateForwardsToCampaignSelected() async {
         var state = RootFeature.State()
@@ -959,18 +959,18 @@ struct RootFeatureTests {
                 notes: ""
             )
         ]
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         }
-        
+
         await store.send(.dashboard(.delegate(.campaignTapped("四月韓國團"))))
         await store.receive(\.campaignSelected) {
             $0.selectedTab = .campaigns
             $0.campaigns.selectedCampaignID = "C1"
         }
     }
-    
+
     /// 總覽的新增訂單 delegate 只轉發到根既有的 startNewOrder
     @Test func dashboardNewOrderTappedDelegateForwardsToStartNewOrder() async {
         let store = TestStore(initialState: RootFeature.State()) {
@@ -979,7 +979,7 @@ struct RootFeatureTests {
             $0.uuid = .incrementing
             $0.date = .constant(TestDependencies.fixedNow)
         }
-        
+
         await store.send(.dashboard(.delegate(.newOrderTapped)))
         await store.receive(\.startNewOrder) {
             $0.selectedTab = .orders
@@ -989,24 +989,24 @@ struct RootFeatureTests {
             )
         }
     }
-    
+
     /// 總覽的「查看全部」delegate 只轉發到根既有的 tabSelected
     @Test func dashboardViewAllOrdersTappedDelegateForwardsToTabSelected() async {
         let store = TestStore(initialState: RootFeature.State()) {
             RootFeature()
         }
-        
+
         await store.send(.dashboard(.delegate(.viewAllOrdersTapped)))
         await store.receive(\.tabSelected) {
             $0.selectedTab = .orders
         }
     }
-    
+
     /// 總覽重新整理會依序載入訂單與設定
     @Test func dashboardRefreshDelegateSendsOrdersAndSettingsLoadEffects() async {
         var state = RootFeature.State()
         state.orders.hasLoaded = true
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
@@ -1021,13 +1021,13 @@ struct RootFeatureTests {
                 forceRefresh: {}
             )
         }
-        
+
         await store.send(.dashboard(.task))
         await store.receive(\.dashboard.delegate.refresh)
         await store.receive(\.orders.task)
         await store.receive(\.settings.task)
     }
-    
+
     /// 分析頁的開團選取會轉發到既有導覽 action
     @Test func insightsCampaignTappedDelegateForwardsToCampaignSelected() async {
         var state = RootFeature.State()
@@ -1042,18 +1042,18 @@ struct RootFeatureTests {
                 notes: ""
             )
         ]
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         }
-        
+
         await store.send(.insights(.delegate(.campaignTapped("四月韓國團"))))
         await store.receive(\.campaignSelected) {
             $0.selectedTab = .campaigns
             $0.campaigns.selectedCampaignID = "C1"
         }
     }
-    
+
     /// 分析的類別排行點選 delegate 只轉發到根既有的 categorySelected
     @Test func insightsCategoryTappedDelegateForwardsToCategorySelected() async {
         let store = TestStore(initialState: RootFeature.State()) {
@@ -1062,26 +1062,26 @@ struct RootFeatureTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        
+
         await store.send(.insights(.delegate(.categoryTapped("美妝"))))
         await store.receive(\.categorySelected) {
             $0.selectedTab = .orders
             $0.orders.selectedCategory = "美妝"
         }
     }
-    
+
     /// 跨 feature 意圖經 delegate 轉發到既有導覽 action
     @Test func campaignReceiptStatusToggledDelegateForwardsToOrdersReceiptStatusChanged() async {
         let order = Self.makeTestOrder(id: "BL-RS-TOGGLE", category: "美妝", customerName: "收款測試")
         var state = RootFeature.State()
         state.orders.orders = [order]
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0[OrderRepository.self].saveOrder = { _ in }
         }
-        
+
         await store.send(.campaigns(.delegate(.receiptStatusToggled(order.id, .received))))
         await store.receive(\.orders.receiptStatusChanged)
         await store.receive(\.orders.receiptStatusChangePersisted) {
@@ -1092,21 +1092,21 @@ struct RootFeatureTests {
             $0.insights.orders = $0.orders.orders
         }
     }
-    
+
     /// 驗證客戶頁的導覽路徑
     @Test func customersCustomerTappedClearsMorePathBeforeTabSwitch() async {
         var state = RootFeature.State()
         state.selectedTab = .more
         state.morePath = [.customers]
         state.orders.orders = LedgerOrder.sampleOrders
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        
+
         await store.send(.customers(.delegate(.customerTapped("Alice"))))
         await store.receive(\.customerSelected) {
             $0.morePath = []
@@ -1116,7 +1116,7 @@ struct RootFeatureTests {
             $0.orders.selectedDatePeriod = .all
             // 沒有符合的客戶訂單，因此不會選取訂單
         }
-        
+
         #expect(store.state.morePath.isEmpty)
         #expect(store.state.selectedTab == .orders)
     }
@@ -1124,9 +1124,9 @@ struct RootFeatureTests {
 
 /// 記錄 Root 啟動 task 是否保留幣別 cache refresh effect
 private final class RootTaskRefreshBox: @unchecked Sendable {
-    
+
     // MARK: - Data Properties
-    
+
     /// 是否呼叫過 refresh
     var wasCalled = false
 }
@@ -1134,7 +1134,7 @@ private final class RootTaskRefreshBox: @unchecked Sendable {
 // MARK: - Private Method
 
 private extension RootFeatureTests {
-    
+
     /// 建立可指定主檔欄位的最小訂單
     /// - Parameters:
     ///   - id: 訂單識別值
@@ -1179,7 +1179,7 @@ private extension RootFeatureTests {
             mergedSourceIDs: []
         )
     }
-    
+
     /// 建立跨頁深連結用的最小訂單
     /// - Parameters:
     ///   - id: 訂單識別值
@@ -1197,7 +1197,7 @@ private extension RootFeatureTests {
             customerName: customerName
         )
     }
-    
+
     /// 建立供跨頁深連結測試使用的最小訂單，支援多類別與多開團歸屬
     /// - Parameters:
     ///   - id: 訂單識別值
@@ -1240,7 +1240,7 @@ private extension RootFeatureTests {
             mergedSourceIDs: []
         )
     }
-    
+
     /// 只替換 cascade 測試關心的欄位，保留訂單其餘狀態作為回歸基準
     /// - Parameters:
     ///   - order: 原始訂單
@@ -1283,7 +1283,7 @@ private extension RootFeatureTests {
             mergedSourceIDs: order.mergedSourceIDs
         )
     }
-    
+
     /// 建立 AI 功能關閉時的完整提示
     /// - Returns: AI 功能關閉時顯示的 alert
     static func aiDisabledAlert() -> AlertState<OrdersFeature.Action.Alert> {

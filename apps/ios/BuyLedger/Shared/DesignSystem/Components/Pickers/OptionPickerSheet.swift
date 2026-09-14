@@ -9,85 +9,85 @@ import SwiftUI
 
 /// 通用的單選字串選項 sheet
 struct OptionPickerSheet: View {
-    
+
     // MARK: - View Properties
-    
+
     /// Sheet 的標題 (顯示在 navigation bar)
     let title: String
-    
+
     /// 是否允許在 sheet 內新增項目 (toolbar 出現「新增」按鈕)
     let allowsAdd: Bool
-    
+
     /// 是否啟用搜尋欄
     let searchable: Bool
-    
+
     /// 「新增」按鈕顯示的標題；`allowsAdd` 為 `false` 時忽略
     let addButtonTitle: String
-    
+
     /// 沒有任何選項時 ``ContentUnavailableView`` 的標題
     let emptyTitle: String
-    
+
     /// 沒有任何選項時 ``ContentUnavailableView`` 的描述
     let emptyDescription: String
-    
+
     /// 「新增」alert 的標題；`allowsAdd` 為 `false` 時忽略
     let addAlertTitle: String
-    
+
     /// 「新增」alert 內 TextField 的 placeholder；`allowsAdd` 為 `false` 時忽略
     let addFieldPlaceholder: String
-    
+
     /// 「新增」alert 的說明訊息；`allowsAdd` 為 `false` 時忽略
     let addAlertMessage: String
-    
+
     /// 目前可選的選項清單
     let options: [String]
-    
+
     /// 目前已選中的選項；用來在列表中顯示勾選
     let selected: String
-    
+
     /// 顯示用名稱轉換；`nil` 時直接顯示 `option`
     /// - Returns: 選項的顯示文字
     let displayName: (@Sendable (String) -> String)?
-    
+
     /// 搜尋時納入比對的補充文字；用於幣別 sheet 把在地化名稱也納入搜尋
     /// - Returns: 選項的搜尋補充文字
     let searchKeywords: (@Sendable (String) -> String)?
-    
+
     /// 使用者選擇既有選項時的 callback
     let onSelect: (String) -> Void
-    
+
     /// 使用者確認新增選項時的 callback
     let onAdd: (String) -> Void
-    
+
     /// 付款方式新增 callback；提供時改用付款方式表單
     let onAddPaymentMethod: ((String, PaymentMethodFlags) -> Void)?
-    
+
     /// 可選的「清除目前選擇」row 設定
     let clearOption: ClearOption?
-    
+
     /// 可選的多選模式設定
     let multiSelection: MultiSelection?
-    
+
     /// 是否嵌入既有導覽堆疊；預設 false 為獨立 sheet
     let isEmbedded: Bool
-    
+
     /// sheet 提供的 dismiss action；嵌入時返回，sheet 時關閉
     @Environment(\.dismiss) private var dismiss
-    
+
     /// 是否顯示「新增」alert (商品類別等沒有 `isCardless` 需求的入口)
     @State private var showsAddAlert = false
-    
+
     /// 是否顯示「新增付款方式」sheet (含 `isCardless` / `isBankTransfer` 切換)
     @State private var showsAddPaymentMethodSheet = false
-    
+
     /// 新增 alert 的名稱輸入草稿
     @State private var draft = ""
-    
+
     /// 搜尋輸入
     @State private var searchText = ""
-    
+
     // MARK: - Init
-    
+
     /// 通用建構式；所有 sheet 參數一次傳齊
     /// - Parameters:
     ///   - title: navigation 標題
@@ -149,9 +149,9 @@ struct OptionPickerSheet: View {
         self.multiSelection = multiSelection
         self.isEmbedded = isEmbedded
     }
-    
+
     // MARK: - View Body
-    
+
     /// 選項選擇的內容
     var body: some View {
         if isEmbedded {
@@ -167,27 +167,27 @@ struct OptionPickerSheet: View {
 // MARK: - Nested Types
 
 extension OptionPickerSheet {
-    
+
     /// 「清除目前選擇」row 的設定
     struct ClearOption {
-        
+
         // MARK: - Data Properties
-        
+
         /// Clear row 的 label 文字 (例如「全部」)
         let title: String
-        
+
         /// 使用者點擊 clear row 時觸發的 callback；執行後 sheet 會自動 dismiss
         let onClear: () -> Void
     }
-    
+
     /// 多選模式的設定
     struct MultiSelection {
-        
+
         // MARK: - Data Properties
-        
+
         /// 目前已選取的選項集合；驅動每一列的勾選指示
         let selections: Set<String>
-        
+
         /// 點擊選項時的 callback
         let onToggle: (String) -> Void
     }
@@ -196,7 +196,7 @@ extension OptionPickerSheet {
 // MARK: - ViewBuilder
 
 private extension OptionPickerSheet {
-    
+
     /// 建立標題、toolbar、搜尋與新增內容
     @ViewBuilder
     var configuredContent: some View {
@@ -212,7 +212,7 @@ private extension OptionPickerSheet {
                         }
                         .accessibilityIdentifier(BLAccessibilityID.OptionPicker.doneButton)
                     }
-                    
+
                     // 獨立 sheet 也要提供取消出口
                     // 嵌入 (push) 時由宿主 Back 承接，不再加重複的取消
                     if !isEmbedded {
@@ -244,7 +244,7 @@ private extension OptionPickerSheet {
                     .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addAlertNameField)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                
+
                 Button("新增") {
                     let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
                     if !trimmed.isEmpty {
@@ -257,7 +257,7 @@ private extension OptionPickerSheet {
                 .disabled(
                     draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                 )
-                
+
                 Button("取消", role: .cancel) {
                     draft = ""
                 }
@@ -281,13 +281,13 @@ private extension OptionPickerSheet {
                 )
             }
     }
-    
+
     /// 選項選擇 sheet 的內容
     @ViewBuilder
     var content: some View {
         listContent
     }
-    
+
     /// 選項清單版面，包含新增、清除、勾選與空狀態
     @ViewBuilder
     var listContent: some View {
@@ -302,12 +302,12 @@ private extension OptionPickerSheet {
                     .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addButton)
                 }
             }
-            
+
             Section {
                 if let clearOption {
                     listClearRow(clearOption)
                 }
-                
+
                 if filteredOptions.isEmpty {
                     ContentUnavailableView(
                         LocalizedStringKey(emptyTitle),
@@ -323,7 +323,7 @@ private extension OptionPickerSheet {
         }
         .accessibilityIdentifier(BLAccessibilityID.OptionPicker.root)
     }
-    
+
     /// 清除選項的 row；空字串時顯示勾選
     /// - Parameter clearOption: 已設定的 clear row 設定
     /// - Returns: clear row view
@@ -338,9 +338,9 @@ private extension OptionPickerSheet {
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                
+
                 Spacer()
-                
+
                 if selected.isEmpty {
                     Image(systemName: "checkmark")
                         .foregroundStyle(.tint)
@@ -352,7 +352,7 @@ private extension OptionPickerSheet {
         .buttonStyle(.plain)
         .accessibilityAddTraits(selected.isEmpty ? .isSelected : [])
     }
-    
+
     /// 選項 row；單選後關閉，多選後保留 sheet
     /// - Parameter option: 該列代表的選項字串
     /// - Returns: 選項列 view
@@ -366,9 +366,9 @@ private extension OptionPickerSheet {
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                
+
                 Spacer()
-                
+
                 if isSelected(option) {
                     Image(systemName: "checkmark")
                         .foregroundStyle(.tint)
@@ -386,14 +386,14 @@ private extension OptionPickerSheet {
 // MARK: - Private Method
 
 private extension OptionPickerSheet {
-    
+
     /// 依當前搜尋字串過濾後的選項清單
     var filteredOptions: [String] {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
             return options
         }
-        
+
         return options.filter { option in
             if displayText(for: option).localizedStandardContains(trimmed) {
                 return true
@@ -404,14 +404,14 @@ private extension OptionPickerSheet {
             return option.localizedStandardContains(trimmed)
         }
     }
-    
+
     /// 取得單筆選項的顯示字串
     /// - Parameter option: 原始選項值
     /// - Returns: 顯示文字
     func displayText(for option: String) -> String {
         displayName?(option) ?? option
     }
-    
+
     /// 判斷選項是否已選取
     /// - Parameter option: 要判斷的選項
     /// - Returns: 是否已選取
@@ -421,7 +421,7 @@ private extension OptionPickerSheet {
         }
         return option == selected
     }
-    
+
     /// 處理選項列點擊
     /// - Parameter option: 被點擊的選項
     func handleOptionTap(_ option: String) {
@@ -432,7 +432,7 @@ private extension OptionPickerSheet {
             dismiss()
         }
     }
-    
+
     /// 新增按鈕行為；付款方式開表單，其餘開 alert
     func triggerAdd() {
         if onAddPaymentMethod != nil {
@@ -449,13 +449,13 @@ private extension OptionPickerSheet {
 
 /// 條件式 searchable modifier，維持 view identity
 private struct SearchableModifier: ViewModifier {
-    
+
     /// 搜尋輸入的雙向繫結
     @Binding var text: String
-    
+
     /// 是否啟用搜尋欄
     let enabled: Bool
-    
+
     /// 依 ``enabled`` 決定是否套上 `.searchable`
     /// - Parameter content: 原始 view
     /// - Returns: 套用後的 view
@@ -538,7 +538,7 @@ private struct SearchableModifier: ViewModifier {
 
 #Preview("商品類別 (多選模式)") {
     @Previewable @State var selections: Set<String> = ["美妝", "服飾"]
-    
+
     OptionPickerSheet(
         title: "選擇商品類別",
         allowsAdd: true,

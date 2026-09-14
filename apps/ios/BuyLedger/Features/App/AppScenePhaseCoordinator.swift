@@ -15,7 +15,7 @@ enum AppScenePhaseCoordinator {}
 
 @MainActor
 extension AppScenePhaseCoordinator {
-    
+
     /// 依新場景階段轉送對應的 ``AppLockFeature/Action``
     /// - Parameters:
     ///   - newPhase: `\.scenePhase` 轉換後的新階段
@@ -27,13 +27,13 @@ extension AppScenePhaseCoordinator {
         switch newPhase {
         case .background:
             send(.appDidResignActive)
-            
+
         case .active:
             send(.appDidBecomeActive)
-            
+
         case .inactive:
             break
-            
+
         @unknown default:
             break
         }

@@ -11,12 +11,12 @@ import SwiftData
 
 /// 建立 BuyLedger 用的 ``ModelContainer`` 的工廠
 enum PersistenceContainer {
-    
+
     // MARK: - Static Properties
-    
+
     /// 整個 process 只解析一次的啟動結果
     nonisolated static let bootstrap = makeBootstrap()
-    
+
     /// 所有 production repository 共用的 container
     nonisolated static var shared: ModelContainer { bootstrap.container }
 }
@@ -24,37 +24,37 @@ enum PersistenceContainer {
 // MARK: - Nested Types
 
 extension PersistenceContainer {
-    
+
     /// App 持久層啟動結果
     struct Bootstrap: Sendable {
-        
+
         /// 可供 SwiftData 使用的 container
         let container: ModelContainer
-        
+
         /// 是否可安全呈現正常介面
         let status: Status
     }
-    
+
     /// App 持久層啟動狀態
     enum Status: Equatable, Sendable {
-        
+
         /// on-disk store 正常開啟
         case healthy
-        
+
         /// on-disk store 無法開啟
         /// - Parameter reason: store 無法開啟的原因，供 Crashlytics 記錄
         case degraded(reason: String)
     }
-    
+
     /// 記憶體資料庫的使用情境
     enum InMemoryContext: Sendable {
-        
+
         /// SwiftUI Preview
         case preview
-        
+
         /// 測試
         case testing
-        
+
         /// 顯示在建立失敗訊息中的用途名稱
         var label: String {
             switch self {
@@ -65,19 +65,19 @@ extension PersistenceContainer {
             }
         }
     }
-    
+
     /// CloudKit 同步策略
     enum CloudKitOption: Equatable, Sendable {
-        
+
         /// 關閉 CloudKit 同步 (純本機儲存)
         case disabled
-        
+
         /// 由 SwiftData 自動從 entitlements 推斷 CloudKit container ID
         case automatic
-        
+
         /// CloudKit 私有資料庫的 container ID
         case privateContainer(String)
-        
+
         /// 對應到 ``ModelConfiguration/CloudKitDatabase`` 的設定值
         nonisolated var modelConfigurationValue: ModelConfiguration.CloudKitDatabase {
             switch self {
@@ -95,7 +95,7 @@ extension PersistenceContainer {
 // MARK: - Internal Method
 
 extension PersistenceContainer {
-    
+
     /// 建立只存在記憶體中的 ModelContainer
     /// - Parameter context: 使用情境
     nonisolated static func makeInMemory(for context: InMemoryContext) -> ModelContainer {
@@ -107,7 +107,7 @@ extension PersistenceContainer {
             )
         }
     }
-    
+
 #if DEBUG
     /// 測試低於 migration floor 的實體 store 時使用，不會影響 production bootstrap
     /// - Parameter storeURL: 測試用的舊版 store 路徑
@@ -128,7 +128,7 @@ extension PersistenceContainer {
 // MARK: - Private Method
 
 private extension PersistenceContainer {
-    
+
     /// 建立 ``Bootstrap``，若 on-disk store 無法開啟則降級為 in-memory fallback
     /// - Parameter storeURL: 指定資料庫位置；未提供時使用系統預設位置
     /// - Returns: ``Bootstrap``，包含 container 與啟動狀態
@@ -143,7 +143,7 @@ private extension PersistenceContainer {
             AppLogger.persistence.fault(
                 "SwiftData store could not open: \(reason, privacy: .public)"
             )
-            
+
             do {
                 return Bootstrap(
                     container: try make(inMemoryOnly: true, storeURL: nil),
@@ -160,7 +160,7 @@ private extension PersistenceContainer {
             }
         }
     }
-    
+
     /// 建立 ModelContainer，可選擇磁碟或記憶體儲存
     /// - Parameters:
     ///   - inMemoryOnly: 是否建立僅存於記憶體的 store
@@ -172,7 +172,7 @@ private extension PersistenceContainer {
         storeURL: URL?
     ) throws(PersistenceError) -> ModelContainer {
         let schema = Schema(versionedSchema: BuyLedgerSchemaV17.self)
-        
+
         let configuration: ModelConfiguration
         if let persistentStoreURL = try resolvePersistentStoreURL(
             requestedURL: storeURL,
@@ -195,7 +195,7 @@ private extension PersistenceContainer {
                 cloudKitDatabase: CloudKitOption.disabled.modelConfigurationValue
             )
         }
-        
+
         let container = try PersistenceError.mapContainerCreation {
             try ModelContainer(
                 for: schema,
@@ -203,7 +203,7 @@ private extension PersistenceContainer {
                 configurations: configuration
             )
         }
-        
+
         return container
     }
 

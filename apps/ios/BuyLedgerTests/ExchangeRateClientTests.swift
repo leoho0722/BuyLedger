@@ -12,12 +12,12 @@ import Testing
 
 /// 驗證匯率 client
 struct ExchangeRateClientTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func latestControlCharacterKeyIsRejectedBeforeURLParsingWithoutExposingCredentials() async {
         let fakeKey = "network-test-fake-key\u{0000}"
-        
+
         await withDependencies {
             $0.appConfiguration = AppConfiguration(
                 exchangeRateAPIKey: { fakeKey },
@@ -42,11 +42,11 @@ struct ExchangeRateClientTests {
             }
         }
     }
-    
+
     @Test
     func supportedCodesControlCharacterKeyIsRejectedBeforeURLParsingWithoutExposingCredentials() async {
         let fakeKey = "network-test-supported-codes-key\u{0000}"
-        
+
         await withDependencies {
             $0.appConfiguration = AppConfiguration(
                 exchangeRateAPIKey: { fakeKey },
@@ -71,7 +71,7 @@ struct ExchangeRateClientTests {
             }
         }
     }
-    
+
     @Test func latestRequestCarriesBearerHeaderAndURLContainsNoCredential() async throws(any Error) {
         let key = "unit-test-live-key"
         let url = try #require(URL(string: "https://example.com/resource"))
@@ -87,7 +87,7 @@ struct ExchangeRateClientTests {
             #"{"result":"success","time_last_update_unix":1700000000,"base_code":"USD","conversion_rates":{"TWD":32.5}}"#.utf8
         )
         let capturedRequest = RequestCaptureBox()
-        
+
         await withDependencies {
             $0.appConfiguration = AppConfiguration(
                 exchangeRateAPIKey: { key },
@@ -110,14 +110,14 @@ struct ExchangeRateClientTests {
                 Issue.record("Expected the latest-rate request to succeed, got \(error)")
             }
         }
-        
+
         let request = try #require(capturedRequest.request)
         let requestURLString = try #require(request.url?.absoluteString)
         #expect(requestURLString == "https://v6.exchangerate-api.com/v6/latest/USD")
         #expect(!requestURLString.contains(key))
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer \(key)")
     }
-    
+
     @Test func supportedCodesRequestCarriesBearerHeaderAndURLContainsNoCredential() async throws(any Error) {
         let key = "unit-test-live-key-codes"
         let url = try #require(URL(string: "https://example.com/resource"))
@@ -131,7 +131,7 @@ struct ExchangeRateClientTests {
         )
         let body = Data(#"{"result":"success","supported_codes":[["USD","US Dollar"]]}"#.utf8)
         let capturedRequest = RequestCaptureBox()
-        
+
         await withDependencies {
             $0.appConfiguration = AppConfiguration(
                 exchangeRateAPIKey: { key },
@@ -153,14 +153,14 @@ struct ExchangeRateClientTests {
                 Issue.record("Expected the supported-codes request to succeed, got \(error)")
             }
         }
-        
+
         let request = try #require(capturedRequest.request)
         let requestURLString = try #require(request.url?.absoluteString)
         #expect(requestURLString == "https://v6.exchangerate-api.com/v6/codes")
         #expect(!requestURLString.contains(key))
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer \(key)")
     }
-    
+
     @Test func successfulLatestResponseDecodesIntoSnapshot() async throws(any Error) {
         let url = try #require(URL(string: "https://example.com/resource"))
         let response = try #require(
@@ -174,7 +174,7 @@ struct ExchangeRateClientTests {
         let body = Data(
             #"{"result":"success","time_last_update_unix":1700000000,"base_code":"USD","conversion_rates":{"TWD":32.5,"JPY":150.0}}"#.utf8
         )
-        
+
         await withDependencies {
             $0.appConfiguration = AppConfiguration(
                 exchangeRateAPIKey: { "network-test-key" },
@@ -202,7 +202,7 @@ struct ExchangeRateClientTests {
             }
         }
     }
-    
+
     @Test func malformedLatestResponseIsClassifiedAsDecodingFailure() async throws(any Error) {
         let url = try #require(URL(string: "https://example.com/resource"))
         let response = try #require(
@@ -216,7 +216,7 @@ struct ExchangeRateClientTests {
         let malformedBody = Data(
             #"{"result":"success","conversion_rates":"not-a-map"}"#.utf8
         )
-        
+
         await withDependencies {
             $0.appConfiguration = AppConfiguration(
                 exchangeRateAPIKey: { "network-test-key" },
@@ -239,7 +239,7 @@ struct ExchangeRateClientTests {
             }
         }
     }
-    
+
     @Test func supportedCodesQuotaResponseUsesSharedServiceErrorMapping() async throws(any Error) {
         let url = try #require(URL(string: "https://example.com/resource"))
         let response = try #require(
@@ -251,7 +251,7 @@ struct ExchangeRateClientTests {
             )
         )
         let body = Data(#"{"result":"error","error-type":"quota-reached"}"#.utf8)
-        
+
         await withDependencies {
             $0.appConfiguration = AppConfiguration(
                 exchangeRateAPIKey: { "network-test-key" },
@@ -274,7 +274,7 @@ struct ExchangeRateClientTests {
             }
         }
     }
-    
+
     @Test func unexpectedLatestResultMapsToGenericServiceError() async throws(any Error) {
         let url = try #require(URL(string: "https://example.com/resource"))
         let response = try #require(
@@ -286,7 +286,7 @@ struct ExchangeRateClientTests {
             )
         )
         let body = Data(#"{"result":"partial"}"#.utf8)
-        
+
         await withDependencies {
             $0.appConfiguration = AppConfiguration(
                 exchangeRateAPIKey: { "network-test-key" },
@@ -309,7 +309,7 @@ struct ExchangeRateClientTests {
             }
         }
     }
-    
+
     @Test func unexpectedSupportedCodesResultMapsToGenericServiceError() async throws(any Error) {
         let url = try #require(URL(string: "https://example.com/resource"))
         let response = try #require(
@@ -321,7 +321,7 @@ struct ExchangeRateClientTests {
             )
         )
         let body = Data(#"{"result":"partial"}"#.utf8)
-        
+
         await withDependencies {
             $0.appConfiguration = AppConfiguration(
                 exchangeRateAPIKey: { "network-test-key" },
@@ -348,9 +348,9 @@ struct ExchangeRateClientTests {
 
 /// 捕捉 httpClient 收到的 URLRequest
 private final class RequestCaptureBox: @unchecked Sendable {
-    
+
     // MARK: - Data Properties
-    
+
     /// 由 `data` closure 寫入、測試讀取的請求
     var request: URLRequest?
 }

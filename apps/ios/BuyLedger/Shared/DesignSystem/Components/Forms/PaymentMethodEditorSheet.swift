@@ -21,56 +21,56 @@ struct PaymentMethodEditorSheet: View {
         _ name: String,
         _ flags: PaymentMethodFlags
     ) -> Void
-    
+
     // MARK: - View Properties
-    
+
     /// Sheet 的標題 (顯示在 navigation bar)
     let title: String
-    
+
     /// 表單上方的說明訊息；空字串時不顯示
     let message: String
-    
+
     /// 名稱 TextField 的 placeholder
     let namePlaceholder: String
-    
+
     /// 提交按鈕的文字
     let submitTitle: String
-    
+
     /// 是否嵌入既有導覽堆疊；預設 false 為獨立 sheet
     let isEmbedded: Bool
-    
+
     /// 提交付款方式時使用的 closure，接收名稱與分類旗標
     let onSubmit: SubmitAction
-    
+
     /// 由 sheet 環境注入的 dismiss action
     @Environment(\.dismiss) private var dismiss
-    
+
     /// 名稱輸入草稿
     @State private var draftName: String
-    
+
     /// 是否標記為無卡類付款方式
     @State private var draftIsCardless: Bool
-    
+
     /// 是否標記為銀行匯款類付款方式
     @State private var draftIsBankTransfer: Bool
-    
+
     /// 是否標記為貨到付款類付款方式
     @State private var draftIsCashOnDelivery: Bool
-    
+
     /// 是否顯示「捨棄變更／繼續編輯」確認彈窗
     @State private var showsDiscardConfirmation = false
-    
+
     /// 名稱欄位的鍵盤焦點
     @FocusState private var isNameFieldFocused: Bool
-    
+
     /// 表單初始值，用於判斷 isDirty
     private let initialName: String
 
     /// 付款方式分類旗標初始值，用於判斷 isDirty
     private let initialFlags: PaymentMethodFlags
-    
+
     // MARK: - Init
-    
+
     /// 建立付款方式 sheet
     /// - Parameters:
     ///   - title: 導覽標題
@@ -104,9 +104,9 @@ struct PaymentMethodEditorSheet: View {
         self.initialName = initialName
         self.initialFlags = initialFlags
     }
-    
+
     // MARK: - View Body
-    
+
     /// 新增／編輯付款方式的內容
     var body: some View {
         if isEmbedded {
@@ -135,7 +135,7 @@ struct PaymentMethodEditorSheet: View {
 // MARK: - ViewBuilder
 
 private extension PaymentMethodEditorSheet {
-    
+
     /// 付款方式表單內容，依 isEmbedded 決定是否包裝導覽
     @ViewBuilder
     var formContent: some View {
@@ -155,7 +155,7 @@ private extension PaymentMethodEditorSheet {
                         .foregroundStyle(Color.blSecondaryLabel)
                 }
             }
-            
+
             Section {
                 Toggle(isOn: $draftIsCardless) {
                     Text("標記為「無卡」付款方式")
@@ -165,7 +165,7 @@ private extension PaymentMethodEditorSheet {
                     .blTextStyle(.footnote)
                     .foregroundStyle(Color.blSecondaryLabel)
             }
-            
+
             Section {
                 Toggle(isOn: $draftIsBankTransfer) {
                     Text("標記為「銀行匯款」付款方式")
@@ -175,7 +175,7 @@ private extension PaymentMethodEditorSheet {
                     .blTextStyle(.footnote)
                     .foregroundStyle(Color.blSecondaryLabel)
             }
-            
+
             Section {
                 Toggle(
                     "標記為「貨到付款」付款方式",
@@ -211,7 +211,7 @@ private extension PaymentMethodEditorSheet {
                     .accessibilityLabel(Text("取消"))
                 }
             }
-            
+
             ToolbarItem(placement: .confirmationAction) {
                 Button {
                     let trimmed = draftName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -257,7 +257,7 @@ private struct PaymentMethodEditorSnapshot: Equatable {
 // MARK: - Private Method
 
 private extension PaymentMethodEditorSheet {
-    
+
     /// 表單目前輸入值的快照
     /// - Returns: 草稿欄位組成的表單快照
     var draftSnapshot: PaymentMethodEditorSnapshot {

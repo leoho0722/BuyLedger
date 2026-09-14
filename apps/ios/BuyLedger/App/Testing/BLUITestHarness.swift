@@ -15,9 +15,9 @@ import Dependencies
 /// - Important: 必須早於第一次解析 `@Dependency`
 @MainActor
 enum BLUITestHarness {
-    
+
     // MARK: - Static Properties
-    
+
     /// UI 測試模式使用的 container；正式執行為 `nil`
     private(set) static var modelContainer: ModelContainer?
 }
@@ -26,7 +26,7 @@ enum BLUITestHarness {
 
 @MainActor
 extension BLUITestHarness {
-    
+
     /// 帶 UI 測試啟動參數時完成全部前置注入，否則直接返回不影響正式路徑
     static func prepareIfNeeded() {
         let configuration = BLUITestConfiguration.current
@@ -85,7 +85,7 @@ extension BLUITestHarness {
 
 @MainActor
 private extension BLUITestHarness {
-    
+
     /// 清除 App 的 UserDefaults 測試資料
     static func resetPersistedState() {
         guard let domain = Bundle.main.bundleIdentifier else {

@@ -9,26 +9,26 @@ import Foundation
 
 /// 訂單列表使用的日期區間篩選
 enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
-    
+
     // MARK: - Cases
-    
+
     /// 顯示全部日期
     case all
-    
+
     /// 僅顯示本週的訂單
     case thisWeek
-    
+
     /// 僅顯示本月的訂單
     case thisMonth
-    
+
     /// 僅顯示上個月的訂單
     case lastMonth
-    
+
     // MARK: - Identifiable Properties
-    
+
     /// 篩選選項的穩定識別值
     var id: String { rawIdentifier }
-    
+
     /// 篩選選項在 UI 與測試中使用的字串識別值
     private var rawIdentifier: String {
         switch self {
@@ -42,9 +42,9 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
             "lastMonth"
         }
     }
-    
+
     // MARK: - Static Properties
-    
+
     /// 訂單瀏覽列表中提供的固定順序
     static let orderBrowsingCases: [OrderDatePeriod] = [
         .all,
@@ -52,9 +52,9 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
         .thisMonth,
         .lastMonth,
     ]
-    
+
     // MARK: - Display Properties
-    
+
     /// 顯示在篩選列中的標題
     var title: String {
         switch self {
@@ -73,7 +73,7 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
 // MARK: - Internal Method
 
 extension OrderDatePeriod {
-    
+
     /// 判斷指定日期是否在此區間內
     /// - Parameters:
     ///   - date: 要判斷的訂單日期
@@ -88,10 +88,10 @@ extension OrderDatePeriod {
         guard let range = dateRange(referenceDate: referenceDate, calendar: calendar) else {
             return true
         }
-        
+
         return range.contains(date)
     }
-    
+
     /// 回傳此區間在指定基準日下的時間範圍
     /// - Parameters:
     ///   - referenceDate: 計算區間的基準日
@@ -101,21 +101,21 @@ extension OrderDatePeriod {
         switch self {
         case .all:
             return nil
-            
+
         case .thisWeek:
             guard let weekInterval = calendar.dateInterval(of: .weekOfYear, for: referenceDate) else {
                 return nil
             }
-            
+
             return weekInterval.start..<weekInterval.end
-            
+
         case .thisMonth:
             guard let monthInterval = calendar.dateInterval(of: .month, for: referenceDate) else {
                 return nil
             }
-            
+
             return monthInterval.start..<monthInterval.end
-            
+
         case .lastMonth:
             guard let thisMonthInterval = calendar.dateInterval(of: .month, for: referenceDate),
                   let lastMonthStart = calendar.date(
@@ -125,7 +125,7 @@ extension OrderDatePeriod {
                   ) else {
                 return nil
             }
-            
+
             return lastMonthStart..<thisMonthInterval.start
         }
     }

@@ -10,14 +10,14 @@ import SwiftUI
 
 /// iPhone Compact 訂單頁的整合篩選 sheet
 struct OrderFilterSheet: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 訂單篩選 sheet 的呈現 store
     @Bindable var store: StoreOf<OrdersFeature>
-    
+
     // MARK: - View Body
-    
+
     /// 整合篩選 sheet 的內容
     var body: some View {
         NavigationStack {
@@ -38,7 +38,7 @@ struct OrderFilterSheet: View {
                     .accessibilityLabel(Text("取消"))
                     .accessibilityIdentifier(BLAccessibilityID.Orders.filterCancelButton)
                 }
-                
+
                 ToolbarItem(placement: .confirmationAction) {
                     Button("套用") {
                         store.send(.filterApplyTapped)
@@ -66,9 +66,9 @@ struct OrderFilterSheet: View {
 // MARK: - ViewBuilder
 
 private extension OrderFilterSheet {
-    
+
     // MARK: Sections
-    
+
     /// 「日期區間」section：固定 4 列，順序為 ``OrderDatePeriod/orderBrowsingCases``
     @ViewBuilder
     var datePeriodSection: some View {
@@ -80,13 +80,13 @@ private extension OrderFilterSheet {
             Text("日期區間")
         }
     }
-    
+
     /// 商品類別 section，包含「全部」與類別選項
     @ViewBuilder
     var categorySection: some View {
         Section {
             categoryClearRow
-            
+
             let filteredCategories = store.filterSheetFilteredCategories
             if filteredCategories.isEmpty {
                 categoryEmptyStateRow
@@ -99,13 +99,13 @@ private extension OrderFilterSheet {
             Text("商品類別")
         }
     }
-    
+
     /// 付款方式 section：第一列清除篩選，其後顯示可選項目
     @ViewBuilder
     var paymentMethodSection: some View {
         Section {
             paymentMethodClearRow
-            
+
             let filteredPaymentMethods = store.filterSheetFilteredPaymentMethods
             if filteredPaymentMethods.isEmpty {
                 paymentMethodEmptyStateRow
@@ -118,9 +118,9 @@ private extension OrderFilterSheet {
             Text("付款方式")
         }
     }
-    
+
     // MARK: Rows
-    
+
     /// 日期區間選項列
     /// - Parameter period: 該列代表的日期區間
     /// - Returns: row view
@@ -132,14 +132,14 @@ private extension OrderFilterSheet {
             HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
                 Image(systemName: "calendar")
                     .foregroundStyle(.tint)
-                
+
                 Text(LocalizedStringKey(period.title))
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                
+
                 Spacer()
-                
+
                 if store.pendingFilterSelection.datePeriod == period {
                     // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
@@ -155,7 +155,7 @@ private extension OrderFilterSheet {
         )
         .accessibilityIdentifier(BLAccessibilityID.Orders.filterDatePeriod(period.id))
     }
-    
+
     /// 清除類別篩選的 row；點選後不關閉 sheet
     @ViewBuilder
     var categoryClearRow: some View {
@@ -165,14 +165,14 @@ private extension OrderFilterSheet {
             HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
                 Image(systemName: "tag")
                     .foregroundStyle(.tint)
-                
+
                 Text("全部")
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                
+
                 Spacer()
-                
+
                 if store.pendingFilterSelection.category == nil {
                     // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
@@ -185,7 +185,7 @@ private extension OrderFilterSheet {
         .buttonStyle(.plain)
         .accessibilityAddTraits(store.pendingFilterSelection.category == nil ? .isSelected : [])
     }
-    
+
     /// 商品類別選項列
     /// - Parameter category: 該列代表的類別名稱
     /// - Returns: row view
@@ -197,14 +197,14 @@ private extension OrderFilterSheet {
             HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
                 Image(systemName: "tag")
                     .foregroundStyle(.tint)
-                
+
                 Text(category)
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                
+
                 Spacer()
-                
+
                 if store.pendingFilterSelection.category == category {
                     // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
@@ -218,7 +218,7 @@ private extension OrderFilterSheet {
         .accessibilityAddTraits(
             store.pendingFilterSelection.category == category ? .isSelected : [])
     }
-    
+
     /// 類別 section 在搜尋無匹配或類別清單本身為空時顯示的空狀態 row
     @ViewBuilder
     var categoryEmptyStateRow: some View {
@@ -228,7 +228,7 @@ private extension OrderFilterSheet {
             description: Text("試試其他搜尋關鍵字，或回到設定頁新增類別。")
         )
     }
-    
+
     /// 付款方式的「全部」列；點選後清除付款方式篩選
     @ViewBuilder
     var paymentMethodClearRow: some View {
@@ -238,14 +238,14 @@ private extension OrderFilterSheet {
             HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
                 Image(systemName: "creditcard")
                     .foregroundStyle(.tint)
-                
+
                 Text("全部")
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                
+
                 Spacer()
-                
+
                 if store.pendingFilterSelection.paymentMethod == nil {
                     // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
@@ -260,7 +260,7 @@ private extension OrderFilterSheet {
             store.pendingFilterSelection.paymentMethod == nil ? .isSelected : []
         )
     }
-    
+
     /// 付款方式 row，顯示名稱與勾選狀態
     /// - Parameter paymentMethod: 該列代表的付款方式名稱
     /// - Returns: row view
@@ -272,14 +272,14 @@ private extension OrderFilterSheet {
             HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
                 Image(systemName: "creditcard")
                     .foregroundStyle(.tint)
-                
+
                 Text(paymentMethod)
                     .foregroundStyle(.primary)
                     .multilineTextAlignment(.leading)
                     .fixedSize(horizontal: false, vertical: true)
-                
+
                 Spacer()
-                
+
                 if store.pendingFilterSelection.paymentMethod == paymentMethod {
                     // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
@@ -294,7 +294,7 @@ private extension OrderFilterSheet {
             store.pendingFilterSelection.paymentMethod == paymentMethod ? .isSelected : []
         )
     }
-    
+
     /// 沒有符合付款方式時的空狀態列
     @ViewBuilder
     var paymentMethodEmptyStateRow: some View {

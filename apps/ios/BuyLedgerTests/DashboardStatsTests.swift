@@ -12,9 +12,9 @@ import Testing
 /// 驗證總覽統計
 @MainActor
 struct DashboardStatsTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func currentMonthAggregatesRevenueCostAndProfitFromRealizedOrders() {
         // 本月兩筆訂單的總收款為 1500、成本為 300、獲利為 1200
         let orders = [
@@ -30,13 +30,13 @@ struct DashboardStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(stats.revenue == 1_500)
         #expect(stats.cost == 300)
         #expect(stats.profit == 1_200)
         #expect(stats.orderCount == 2)
     }
-    
+
     @Test func mergeSourcesAndResultAreNeverCountedTogetherAfterRevertingSources() {
         let orders = [
             Self.makeOrder(id: "A", status: .merged, date: Self.aprilDate(5), charged: 1_000),
@@ -49,7 +49,7 @@ struct DashboardStatsTests {
                 mergedSourceIDs: ["A", "B"]
             ),
         ]
-        
+
         let original = DashboardStats(
             orders: orders,
             monthlyGoal: 0,
@@ -72,12 +72,12 @@ struct DashboardStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(original.revenue == 2_500)
         #expect(sourceAReverted.revenue == 2_500)
         #expect(bothSourcesReverted.revenue == 2_500)
     }
-    
+
     @Test func chainedMergeIsCountedOnlyByFinalDashboardResult() {
         // 連續合併後只計入最終結果。
         let orders = [
@@ -91,18 +91,18 @@ struct DashboardStatsTests {
                 id: "M2", status: .delivered, date: Self.aprilDate(5), charged: 700,
                 mergedSourceIDs: ["M1", "C"]),
         ]
-        
+
         let stats = DashboardStats(
             orders: orders,
             monthlyGoal: 0,
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(stats.revenue == 700)
         #expect(stats.orderCount == 1)
     }
-    
+
     @Test func quotingCancelledAndMergedOrdersAreExcludedFromMonthlyTotals() {
         let orders = [
             Self.makeOrder(id: "A", status: .quoting, date: Self.aprilDate(5), charged: 1_000),
@@ -112,11 +112,11 @@ struct DashboardStatsTests {
         let stats = DashboardStats(
             orders: orders, monthlyGoal: 0, referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar)
-        
+
         #expect(stats.orderCount == 0)
         #expect(stats.revenue == 0)
     }
-    
+
     @Test func deletingMergeResultRestoresItsSourcesToRevenueAttribution() {
         // 來源資格由現存結果推導，刪除結果後不再視為來源
         let sources = [
@@ -126,19 +126,19 @@ struct DashboardStatsTests {
         let result = Self.makeOrder(
             id: "M", status: .delivered, date: Self.aprilDate(5), charged: 2_500,
             mergedSourceIDs: ["A", "B"])
-        
+
         let withResult = DashboardStats(
             orders: sources + [result], monthlyGoal: 0, referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar)
         let afterDeletion = DashboardStats(
             orders: sources, monthlyGoal: 0, referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar)
-        
+
         #expect(withResult.revenue == 2_500)
         #expect(afterDeletion.revenue == 3_000)
         #expect(afterDeletion.orderCount == 2)
     }
-    
+
     @Test func cancellingMergeResultKeepsItsSourcesExcluded() {
         let orders = [
             Self.makeOrder(id: "A", status: .confirmed, date: Self.aprilDate(5), charged: 1_000),
@@ -150,11 +150,11 @@ struct DashboardStatsTests {
         let stats = DashboardStats(
             orders: orders, monthlyGoal: 0, referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar)
-        
+
         #expect(stats.revenue == 0)
         #expect(stats.orderCount == 0)
     }
-    
+
     @Test func previousMonthWithDataProducesRevenueAndProfitDelta() {
         // 本月兩筆訂單的總收款為 1500、成本為 300、獲利為 1200
         let orders = [
@@ -168,12 +168,12 @@ struct DashboardStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(stats.revenue == 2_000)
         #expect(stats.revenueDelta == 1)
         #expect(stats.profitDelta == 1)
     }
-    
+
     @Test func previousMonthWithoutDataYieldsNilDeltas() {
         let orders = [
             Self.makeOrder(id: "cur", status: .delivered, date: Self.aprilDate(15), charged: 2_000)
@@ -184,13 +184,13 @@ struct DashboardStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(stats.revenueDelta == nil)
         #expect(stats.costDelta == nil)
         #expect(stats.profitDelta == nil)
         #expect(stats.marginDelta == nil)
     }
-    
+
     @Test func profitDeltaKeepsDirectionWhenPreviousMonthProfitIsNegative() {
         let orders = [
             Self.makeOrder(
@@ -206,10 +206,10 @@ struct DashboardStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(stats.profitDelta == 0.5)
     }
-    
+
     @Test func goalProgressClampsToOneWhenProfitExceedsGoal() {
         let orders = [
             Self.makeOrder(id: "A", status: .delivered, date: Self.aprilDate(10), charged: 2_000)
@@ -220,11 +220,11 @@ struct DashboardStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(stats.goal == 1_000)
         #expect(stats.goalProgress == 1.0)
     }
-    
+
     @Test func goalProgressIsZeroWhenGoalUnset() {
         let orders = [
             Self.makeOrder(id: "A", status: .delivered, date: Self.aprilDate(10), charged: 2_000)
@@ -235,10 +235,10 @@ struct DashboardStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(stats.goalProgress == 0)
     }
-    
+
     @Test func activeCountCountsOnlyInFlightStatuses() {
         let orders = [
             Self.makeOrder(id: "A", status: .confirmed, date: Self.aprilDate(1), charged: 100),
@@ -252,10 +252,10 @@ struct DashboardStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(stats.activeCount == 2)
     }
-    
+
     @Test func recentOrdersReturnsAtMostFourNewestByDateDescending() {
         let orders = (1...6).map { day in
             Self.makeOrder(
@@ -267,11 +267,11 @@ struct DashboardStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(stats.recentOrders.count == 4)
         #expect(stats.recentOrders.map(\.id) == ["O6", "O5", "O4", "O3"])
     }
-    
+
     @Test func sparklineHasTwelveMonthsZeroFilledWhenNoOrders() {
         let stats = DashboardStats(
             orders: [],
@@ -279,11 +279,11 @@ struct DashboardStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(stats.sparkline.count == 12)
         #expect(stats.sparkline.allSatisfy { $0 == 0 })
     }
-    
+
     @Test func sparklineLastMonthReflectsCurrentMonthProfit() {
         let orders = [
             Self.makeOrder(
@@ -296,12 +296,12 @@ struct DashboardStatsTests {
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        
+
         #expect(stats.sparkline.last == 800)
     }
-    
+
     // MARK: - Helper
-    
+
     /// April 2026 (``TestDependencies/fixedNow`` 所在月份) 指定日期，UTC
     /// - Parameter day: 日期
     /// - Returns: 指定日期 UTC 零時的時間值
@@ -314,7 +314,7 @@ struct DashboardStatsTests {
         components.day = day
         return components.date!
     }
-    
+
     /// March 2026 (``TestDependencies/fixedNow`` 前一個月) 指定日期，UTC
     /// - Parameter day: 日期
     /// - Returns: 指定日期 UTC 零時的時間值
@@ -327,7 +327,7 @@ struct DashboardStatsTests {
         components.day = day
         return components.date!
     }
-    
+
     /// 建立只含 DashboardStats 所需欄位的訂單
     /// - Parameters:
     ///   - id: 訂單識別值
@@ -374,7 +374,7 @@ struct DashboardStatsTests {
             mergedSourceIDs: mergedSourceIDs
         )
     }
-    
+
     /// 建立只替換狀態的訂單複本
     /// - Parameters:
     ///   - order: 原始訂單

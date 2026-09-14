@@ -11,7 +11,7 @@ import SwiftUI
 // MARK: - Computed Properties
 
 extension OrdersFeature.State {
-    
+
     /// 依選取模式產生導覽標題 key
     var navigationTitleKey: String.LocalizationValue {
         guard isSelecting else {
@@ -22,7 +22,7 @@ extension OrdersFeature.State {
         }
         return "已選 \(selectedOrderIDs.count) 筆"
     }
-    
+
     /// 已套用的三欄篩選值
     var committedFilterSelection: PendingFilterSelection {
         PendingFilterSelection(
@@ -31,12 +31,12 @@ extension OrdersFeature.State {
             paymentMethod: selectedPaymentMethod
         )
     }
-    
+
     /// 整合篩選是否有尚未套用的變更
     var hasUnappliedFilterChanges: Bool {
         pendingFilterSelection != committedFilterSelection
     }
-    
+
     /// 整合篩選 sheet 的付款方式清單
     var filterSheetFilteredCategories: [String] {
         let trimmed = filterSheetSearchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -45,7 +45,7 @@ extension OrdersFeature.State {
         }
         return availableCategories.filter { $0.localizedStandardContains(trimmed) }
     }
-    
+
     /// 整合篩選 sheet 的付款方式清單
     var filterSheetFilteredPaymentMethods: [String] {
         let names = availablePaymentMethods.map(\.name)
@@ -60,7 +60,7 @@ extension OrdersFeature.State {
 // MARK: - Internal Method
 
 extension OrdersFeature.State {
-    
+
     /// 套用搜尋、狀態與日期區間篩選後的訂單
     /// - Parameters:
     ///   - referenceDate: 計算「本週／本月／上月」等相對區間的基準時間
@@ -70,7 +70,7 @@ extension OrdersFeature.State {
         let normalizedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
             .lowercased()
         let campaignStatusByName = Self.campaignStatusByName(campaigns)
-        
+
         return orders.filter { order in
             guard selectedStatus.orderStatus.map({ $0 == order.status }) ?? true else {
                 return false
@@ -105,7 +105,7 @@ extension OrdersFeature.State {
             return normalizedQuery.isEmpty || order.searchableText.contains(normalizedQuery)
         }
     }
-    
+
     /// 目前選取的訂單
     /// - Parameters:
     ///   - referenceDate: 篩選使用的基準時間
@@ -118,7 +118,7 @@ extension OrdersFeature.State {
         }
         return filtered.first { $0.id == selectedOrderID }
     }
-    
+
     /// 將訂單依日期分組
     /// - Parameters:
     ///   - referenceDate: 篩選使用的基準時間
@@ -137,7 +137,7 @@ extension OrdersFeature.State {
             locale: locale
         )
     }
-    
+
     /// 把目前篩選後訂單的商品明細整理成給模型的純文字摘要輸入
     /// - Parameters:
     ///   - referenceDate: 篩選使用的基準時間
@@ -147,7 +147,7 @@ extension OrdersFeature.State {
         let maxItems = 200
         let filtered = filteredOrders(referenceDate: referenceDate, calendar: calendar)
         var lines: [String] = []
-        
+
         outer: for order in filtered {
             let categoryNames = order.categories
                 .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -162,11 +162,11 @@ extension OrdersFeature.State {
                 if lines.count >= maxItems { break outer }
             }
         }
-        
+
         guard !lines.isEmpty else {
             return "(目前列表沒有任何商品明細)"
         }
-        
+
         var digest = lines.joined(separator: "\n")
         let totalItems = filtered.reduce(0) { $0 + $1.items.count }
         if totalItems > lines.count {
@@ -174,7 +174,7 @@ extension OrdersFeature.State {
         }
         return digest
     }
-    
+
     /// 組出指示模型以正體中文 Markdown 總結商品明細的完整 prompt
     /// - Parameters:
     ///   - referenceDate: 篩選使用的基準時間
@@ -199,7 +199,7 @@ extension OrdersFeature.State {
 // MARK: - Private Method
 
 private extension OrdersFeature.State {
-    
+
     /// 建立開團狀態字典，供篩選快速查找
     /// - Parameter campaigns: 目前所有開團
     /// - Returns: 開團名稱到狀態的字典

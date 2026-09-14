@@ -10,7 +10,7 @@ import SwiftUI
 // MARK: - Static Properties
 
 extension Color {
-    
+
     /// 資訊性次要文字的單一入口，代理至色盤的次要標籤色
     static var blSecondaryLabel: Color {
         BLPalette().secondaryLabel

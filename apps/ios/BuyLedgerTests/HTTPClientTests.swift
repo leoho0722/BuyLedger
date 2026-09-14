@@ -11,9 +11,9 @@ import Testing
 
 /// 驗證 HTTP client 的請求與錯誤處理
 struct HTTPClientTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func sendBuildsRequestWithMethodHeadersBodyAndTimeout() async throws(any Error) {
         let url = try #require(URL(string: "https://example.com/resource"))
         let response = try #require(
@@ -35,7 +35,7 @@ struct HTTPClientTests {
                 throw APIError.transport(message: "unused stream")
             }
         )
-        
+
         _ = try await client.send(
             url: url,
             method: .post,
@@ -46,7 +46,7 @@ struct HTTPClientTests {
             body: body,
             timeout: 12.5
         )
-        
+
         let request = try #require(await recorder.recordedRequest())
         #expect(request.url == url)
         #expect(request.httpMethod == "POST")
@@ -55,7 +55,7 @@ struct HTTPClientTests {
         #expect(request.httpBody == body)
         #expect(request.timeoutInterval == 12.5)
     }
-    
+
     @Test func statusCodeOutsideSuccessRangeIsClassifiedAsHTTPError() async throws(any Error) {
         let url = try #require(URL(string: "https://example.com/resource"))
         let response = try #require(
@@ -72,7 +72,7 @@ struct HTTPClientTests {
                 throw APIError.transport(message: "unused stream")
             }
         )
-        
+
         do {
             _ = try await client.send(url: url)
             Issue.record("Expected HTTP 300 to be rejected")
@@ -82,7 +82,7 @@ struct HTTPClientTests {
             Issue.record("Expected an APIError, got \(error)")
         }
     }
-    
+
     @Test func transportFailureIsForwardedWithoutReclassification() async throws(any Error) {
         let url = try #require(URL(string: "https://example.com/resource"))
         let expected = APIError.transport(message: "network unavailable")
@@ -94,7 +94,7 @@ struct HTTPClientTests {
                 throw APIError.transport(message: "unused stream")
             }
         )
-        
+
         await #expect(throws: expected) {
             try await client.send(url: url)
         }
@@ -104,13 +104,13 @@ struct HTTPClientTests {
 // MARK: - Test Doubles
 /// 記錄測試收到的 HTTP request
 private actor URLRequestRecorder {
-    
+
     private var request: URLRequest?
-    
+
     func record(_ request: URLRequest) {
         self.request = request
     }
-    
+
     /// 回傳最近一次記錄的請求
     /// - Returns: 最近一次收到的 URL request；尚未記錄時為 `nil`
     func recordedRequest() -> URLRequest? {

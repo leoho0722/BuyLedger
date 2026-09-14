@@ -10,7 +10,7 @@ import Foundation
 // MARK: - Computed Properties
 
 extension LedgerOrder {
-    
+
     /// 供訂單列表搜尋使用的正規化文字
     var searchableText: String {
         ([
@@ -28,14 +28,14 @@ extension LedgerOrder {
 // MARK: - Internal Method
 
 extension LedgerOrder {
-    
+
     /// 回傳只改變訂單狀態的複本
     /// - Parameter newStatus: 新的訂單狀態
     /// - Returns: 重建後的訂單
     func withStatus(_ newStatus: OrderStatus) -> LedgerOrder {
         mutated(status: newStatus)
     }
-    
+
     /// 回傳只改變收款狀態的複本
     /// - Parameter newReceiptStatus: 新的收款狀態
     /// - Returns: 重建後的訂單
@@ -47,7 +47,7 @@ extension LedgerOrder {
 // MARK: - Private Method
 
 private extension LedgerOrder {
-    
+
     /// 建立複本時覆寫指定欄位，其餘維持原值
     /// - Parameters:
     ///   - status: 覆寫的訂單狀態；`nil` 維持現值

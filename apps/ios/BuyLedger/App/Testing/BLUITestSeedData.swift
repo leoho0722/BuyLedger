@@ -12,18 +12,18 @@ import SwiftData
 
 /// 依 ``BLUITestSeedProfile`` 把確定性資料同步寫入 UI 測試用的 in-memory container
 enum BLUITestSeedData {
-    
+
     // MARK: - Static Properties
-    
+
     /// 訂單來源主檔名稱 (4 筆)
     private static let orderSourceNames = ["蝦皮", "Instagram", "官方網站", "代購社團"]
-    
+
     /// 商品類別主檔名稱 (4 筆)
     private static let categoryNames = ["美妝", "服飾", "精品", "生活雜貨"]
-    
+
     /// 對帳狀態主檔名稱 (3 筆)
     private static let reconciliationStatusNames = ["待對帳", "對帳成功", "對帳失敗"]
-    
+
     /// 付款方式主檔 (6 筆)，涵蓋無卡／銀行匯款／貨到付款三種旗標
     private static let paymentMethods: [(
         name: String,
@@ -38,22 +38,22 @@ enum BLUITestSeedData {
         (name: "LINE Pay", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
         (name: "Apple Pay", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
     ]
-    
+
     /// 1×1 灰階 JPEG 的 base64 (141 bytes)，作為 `photos` profile 的照片基底
     private static let minimalJPEGBase64 = """
             /9j/2wBDAFA3PEY8MlBGQUZaVVBfeMiCeG5uePWvuZHI////////////////////\
             ////////////////////////////////wAALCAABAAEBAREA/8QAFAABAAAAAAAA\
             AAAAAAAAAAAAA//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Ad//Z
             """
-    
+
     /// 種子資料使用的 Gregorian／UTC 行事曆
     private static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
-        
+
         return calendar
     }()
-    
+
     /// `makeItem` 解析 seed 失敗時的固定備援 id，避免呼叫 `UUID()` 引入隨機值
     private static let fallbackItemID = UUID(
         uuid: (
@@ -65,7 +65,7 @@ enum BLUITestSeedData {
 // MARK: - Internal Method
 
 extension BLUITestSeedData {
-    
+
     /// 把指定 profile 的種子資料同步寫入 container
     /// - Parameters:
     ///   - profile: 要寫入的資料組合
@@ -78,7 +78,7 @@ extension BLUITestSeedData {
     ) {
         let context = ModelContext(container)
         populate(profile, in: context, referenceDate: referenceDate)
-        
+
         do {
             try context.save()
         } catch {
@@ -90,9 +90,9 @@ extension BLUITestSeedData {
 // MARK: - Private Method
 
 private extension BLUITestSeedData {
-    
+
     // MARK: 分派
-    
+
     /// 依 profile 分派到各自的建構函式並逐筆 insert
     /// - Parameters:
     ///   - profile: 要寫入的資料組合
@@ -106,17 +106,17 @@ private extension BLUITestSeedData {
         switch profile {
         case .empty:
             break
-            
+
         case .lookupsOnly:
             insertLookups(into: context)
-            
+
         case .minimalOrders:
             insertLookups(into: context)
             insertOrders(
                 makeMinimalOrders(referenceDate: referenceDate),
                 into: context
             )
-            
+
         case .fullOrders:
             insertLookups(into: context)
             insertOrders(
@@ -146,7 +146,7 @@ private extension BLUITestSeedData {
                 ),
                 into: context
             )
-            
+
         case .campaignsWithOrders:
             insertLookups(into: context)
             let campaigns = makeCampaigns(referenceDate: referenceDate)
@@ -160,7 +160,7 @@ private extension BLUITestSeedData {
                 ),
                 into: context
             )
-            
+
         case .mergeCandidates:
             insertLookups(into: context)
             insertOrders(
@@ -169,7 +169,7 @@ private extension BLUITestSeedData {
                 ),
                 into: context
             )
-            
+
         case .photos:
             insertLookups(into: context)
             insertOrders(
@@ -178,7 +178,7 @@ private extension BLUITestSeedData {
                 ),
                 into: context
             )
-            
+
         case .customerRanking:
             insertLookups(into: context)
             insertOrders(
@@ -187,7 +187,7 @@ private extension BLUITestSeedData {
                 ),
                 into: context
             )
-            
+
         case .insightsRange:
             insertLookups(into: context)
             insertOrders(
@@ -196,20 +196,20 @@ private extension BLUITestSeedData {
             )
         }
     }
-    
+
     // MARK: 主檔
-    
+
     /// 寫入四種主檔共 17 筆
     /// - Parameter context: 寫入用的 context
     static func insertLookups(into context: ModelContext) {
         for name in orderSourceNames {
             context.insert(OrderSourceRecord(name: name))
         }
-        
+
         for name in categoryNames {
             context.insert(CategoryRecord(name: name))
         }
-        
+
         for method in paymentMethods {
             context.insert(
                 PaymentMethodRecord(
@@ -220,12 +220,12 @@ private extension BLUITestSeedData {
                 )
             )
         }
-        
+
         for name in reconciliationStatusNames {
             context.insert(ReconciliationStatusRecord(name: name))
         }
     }
-    
+
     /// 把領域訂單逐筆轉成持久化記錄寫入
     /// - Parameters:
     ///   - orders: 要寫入的訂單
@@ -235,9 +235,9 @@ private extension BLUITestSeedData {
             context.insert(OrderRecord(order: order))
         }
     }
-    
+
     // MARK: 各 profile 的訂單
-    
+
     /// `minimalOrders`：當天／前一天／7 天前各 1 筆，狀態各異 (共 3 筆)
     /// - Parameter referenceDate: 推導日期的基準時間點
     /// - Returns: 少量訂單種子
@@ -277,13 +277,13 @@ private extension BLUITestSeedData {
             ),
         ]
     }
-    
+
     /// fullOrders：以範例訂單建立的 8 筆相對日期資料
     /// - Parameter referenceDate: 推導日期的基準時間點
     /// - Returns: 涵蓋各狀態的完整訂單種子
     static func makeFullOrders(referenceDate: Date) -> [LedgerOrder] {
         let dayOffsets = [4, 6, 8, 9, 10, 12, 15, 18]
-        
+
         return zip(LedgerOrder.sampleOrders, dayOffsets).map { order, offset in
             rebuild(
                 order,
@@ -410,7 +410,7 @@ private extension BLUITestSeedData {
 
         return [firstSource, secondSource, mergeResult]
     }
-    
+
     /// `campaignsWithOrders`：`Campaign.sampleCampaigns` 改寫成相對日期 (共 2 筆)
     /// - Parameter referenceDate: 推導日期的基準時間點
     /// - Returns: 開團種子
@@ -419,7 +419,7 @@ private extension BLUITestSeedData {
             (open: 20, close: -7, settled: nil),
             (open: 60, close: 45, settled: 25),
         ]
-        
+
         return zip(Campaign.sampleCampaigns, schedules).map { campaign, schedule in
             Campaign(
                 id: campaign.id,
@@ -432,7 +432,7 @@ private extension BLUITestSeedData {
             )
         }
     }
-    
+
     /// `campaignsWithOrders` 的訂單資料
     /// - Parameters:
     ///   - referenceDate: 推導日期的基準時間點
@@ -440,20 +440,20 @@ private extension BLUITestSeedData {
     /// - Returns: 歸屬到指定開團的訂單種子
     static func makeCampaignOrders(referenceDate: Date, campaigns: [Campaign]) -> [LedgerOrder] {
         let orders = makeFullOrders(referenceDate: referenceDate)
-        
+
         guard campaigns.count >= 2 else {
             print("[BuyLedger][UITest] 開團少於 2 筆，campaignsWithOrders 的訂單改為全部未歸團")
-            
+
             return orders
         }
-        
+
         let assignments: [(name: String, receipt: PaymentReceiptStatus, daysBefore: Int)] = [
             (name: campaigns[0].name, receipt: .received, daysBefore: 4),
             (name: campaigns[0].name, receipt: .pending, daysBefore: 6),
             (name: campaigns[1].name, receipt: .received, daysBefore: 50),
             (name: campaigns[0].name, receipt: .received, daysBefore: 9),
         ]
-        
+
         let assigned = zip(orders.prefix(assignments.count), assignments).map { order, assignment in
             rebuild(
                 order,
@@ -462,17 +462,17 @@ private extension BLUITestSeedData {
                 paymentReceiptStatus: assignment.receipt
             )
         }
-        
+
         return assigned + orders.dropFirst(assignments.count)
     }
-    
+
     /// `mergeCandidates` 的 3 筆可合併訂單
     /// - Parameter referenceDate: 推導日期的基準時間點
     /// - Returns: 可合併候選的訂單種子
     static func makeMergeCandidateOrders(referenceDate: Date) -> [LedgerOrder] {
         let customer = makeCustomer("林書宇", "SY", tier: .vip)
         let currency = CurrencyCode(rawValue: "KRW")
-        
+
         return [
             makeOrder(
                 id: "UITEST-MRG-001",
@@ -514,13 +514,13 @@ private extension BLUITestSeedData {
             ),
         ]
     }
-    
+
     /// `photos`：帶 5 張照片 (達張數上限) 的單筆訂單
     /// - Parameter referenceDate: 推導日期的基準時間點
     /// - Returns: 帶照片的訂單種子
     static func makePhotoOrders(referenceDate: Date) -> [LedgerOrder] {
         let photos = (0..<LedgerOrder.maxPhotoCount).map { makePhotoData(index: $0) }
-        
+
         return [
             makeOrder(
                 id: "UITEST-PHT-001",
@@ -535,7 +535,7 @@ private extension BLUITestSeedData {
             )
         ]
     }
-    
+
     /// `customerRanking`：4 位客戶、金額高低差明顯的 5 筆 (第 1 位客戶佔 2 筆)
     /// - Parameter referenceDate: 推導日期的基準時間點
     /// - Returns: 供客戶排行的訂單種子
@@ -595,7 +595,7 @@ private extension BLUITestSeedData {
                 cost: 7_000
             ),
         ]
-        
+
         return entries.enumerated().map { index, entry in
             makeOrder(
                 id: entry.id,
@@ -610,7 +610,7 @@ private extension BLUITestSeedData {
             )
         }
     }
-    
+
     /// `insightsRange`：自參考日往前 12 個月每月各 1 筆 (共 12 筆)，金額逐月遞減
     /// - Parameter referenceDate: 推導日期的基準時間點
     /// - Returns: 供分析區間的訂單種子
@@ -618,7 +618,7 @@ private extension BLUITestSeedData {
         (0..<12).map { offset in
             let charged = Decimal(30_000 - offset * 2_000)
             let cost = Decimal(18_000 - offset * 1_200)
-            
+
             return makeOrder(
                 id: String(format: "UITEST-INS-%03d", offset + 1),
                 customer: makeCustomer("Vivi 王", "VW"),
@@ -634,9 +634,9 @@ private extension BLUITestSeedData {
             )
         }
     }
-    
+
     // MARK: 領域型別建構
-    
+
     /// 建立測試訂單，未指定的欄位一律使用固定值
     /// - Parameters:
     ///   - id: 訂單編號
@@ -707,7 +707,7 @@ private extension BLUITestSeedData {
             mergedSourceIDs: mergedSourceIDs
         )
     }
-    
+
     /// 以既有訂單為基礎建立副本
     /// - Parameters:
     ///   - order: 來源訂單
@@ -750,7 +750,7 @@ private extension BLUITestSeedData {
             mergedSourceIDs: order.mergedSourceIDs
         )
     }
-    
+
     /// 建立測試客戶
     /// - Parameters:
     ///   - name: 客戶顯示名稱
@@ -764,7 +764,7 @@ private extension BLUITestSeedData {
     ) -> LedgerCustomer {
         LedgerCustomer(name: name, initials: initials, tier: tier)
     }
-    
+
     /// 建立商品項目，id 由 seed 推導以避免呼叫 `UUID()`
     /// - Parameters:
     ///   - seed: 決定 id 的固定序號
@@ -779,7 +779,7 @@ private extension BLUITestSeedData {
         unitPrice: Decimal
     ) -> LedgerOrderItem {
         let identifier = UUID(uuidString: String(format: "0000BEEF-0000-4000-8000-%012d", seed))
-        
+
         return LedgerOrderItem(
             id: identifier ?? fallbackItemID,
             name: name,
@@ -787,16 +787,16 @@ private extension BLUITestSeedData {
             unitPrice: unitPrice
         )
     }
-    
+
     /// 把固定字串轉成 `Decimal` (避免浮點字面值的精度誤差)
     /// - Parameter value: 十進位數字字串
     /// - Returns: 解析出的十進位數
     static func decimal(_ value: String) -> Decimal {
         Decimal(string: value, locale: Locale(identifier: "en_US_POSIX")) ?? 0
     }
-    
+
     // MARK: 日期推導
-    
+
     /// 取參考日往前若干天的當日零時 (傳負值即往後推)
     /// - Parameters:
     ///   - daysBefore: 往前推的天數
@@ -804,10 +804,10 @@ private extension BLUITestSeedData {
     /// - Returns: 基準往前指定天數的日期
     static func date(daysBefore: Int, from referenceDate: Date) -> Date {
         let start = calendar.startOfDay(for: referenceDate)
-        
+
         return calendar.date(byAdding: .day, value: -daysBefore, to: start) ?? start
     }
-    
+
     /// 取得參考日前指定月份的當日零時
     /// - Parameters:
     ///   - monthsBefore: 往前推的月數
@@ -815,26 +815,26 @@ private extension BLUITestSeedData {
     /// - Returns: 基準往前指定月數的日期
     static func date(monthsBefore: Int, from referenceDate: Date) -> Date {
         let start = calendar.startOfDay(for: referenceDate)
-        
+
         return calendar.date(byAdding: .month, value: -monthsBefore, to: start) ?? start
     }
-    
+
     // MARK: 照片
-    
+
     /// 產生第 index 張測試照片的 JPEG bytes
     /// - Parameter index: 照片序號
     /// - Returns: 產生的假 JPEG 位元資料
     static func makePhotoData(index: Int) -> Data {
         guard let base = Data(base64Encoded: minimalJPEGBase64), base.count > 2 else {
             print("[BuyLedger][UITest] 內建 JPEG base64 解碼失敗，第 \(index) 張照片改寫入空資料")
-            
+
             return Data()
         }
-        
+
         var data = Data(base.prefix(2))
         data.append(contentsOf: [0xFF, 0xFE, 0x00, 0x03, UInt8(index & 0xFF)])
         data.append(Data(base.dropFirst(2)))
-        
+
         return data
     }
 }

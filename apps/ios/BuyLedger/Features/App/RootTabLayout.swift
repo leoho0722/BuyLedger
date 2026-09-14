@@ -10,17 +10,17 @@ import SwiftUI
 
 /// iPhone 使用的分頁導覽
 struct RootTabLayout: View {
-    
+
     // MARK: - View Properties
-    
+
     /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
-    
+
     /// App 目前選用的顯示語系
     let language: AppLanguage
-    
+
     // MARK: - View Body
-    
+
     /// 分頁導覽的畫面內容
     var body: some View {
         TabView(selection: $store.selectedTab.sending(\.tabSelected)) {
@@ -36,7 +36,7 @@ struct RootTabLayout: View {
 // MARK: - ViewBuilder
 
 private extension RootTabLayout {
-    
+
     /// 回傳指定分頁的主要內容
     /// - Parameter tab: 要顯示的分頁
     /// - Returns: 分頁對應的 SwiftUI view

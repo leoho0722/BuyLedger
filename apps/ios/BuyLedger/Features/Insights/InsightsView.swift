@@ -10,42 +10,42 @@ import SwiftUI
 
 /// 分析分頁的主要畫面
 struct InsightsView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 分析功能 store
     @Bindable var store: StoreOf<InsightsFeature>
-    
+
     /// App 目前選用的顯示語系
     let language: AppLanguage
-    
+
     /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone (compact) 與 iPad (regular)
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    
+
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
-    
+
     /// 用來計算趨勢期間與熱力圖的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
-    
+
     /// 趨勢與熱力圖使用的行事曆
     @Dependency(\.calendar) private var calendar
-    
+
     /// hero 總獲利金額字級，隨 Dynamic Type 縮放 (以 `.title` 為基準)
     @ScaledMetric(relativeTo: .title) private var heroProfitSize: CGFloat = 28
-    
+
     /// 熱力圖左側星期欄寬，隨字級縮放 (以 `.caption` 為基準)
     @ScaledMetric(relativeTo: .caption) private var heatmapWeekdayColumnWidth: CGFloat = 28
-    
+
     /// 熱力圖單一格子的高度，隨字級縮放 (以 `.caption2` 為基準)
     @ScaledMetric(relativeTo: .caption2) private var heatmapCellHeight: CGFloat = 30
-    
+
     // MARK: - View Body
-    
+
     /// 分析頁的畫面內容
     var body: some View {
         let palette = BLPalette()
-        
+
         NavigationStack {
             Group {
                 switch store.loadState {
@@ -55,7 +55,7 @@ struct InsightsView: View {
                     } else {
                         analyticsContent(palette: palette)
                     }
-                    
+
                 case let .failed(message):
                     BLLoadFailureView(
                         message: message,
@@ -64,7 +64,7 @@ struct InsightsView: View {
                         store.send(.retryTapped)
                     }
                     .accessibilityIdentifier(BLAccessibilityID.Common.loadFailure("insights"))
-                    
+
                 case .loading:
                     loadingPlaceholder(palette: palette)
                 }
@@ -82,7 +82,7 @@ struct InsightsView: View {
 // MARK: - ViewBuilder
 
 private extension InsightsView {
-    
+
     /// 有訂單資料時的完整分析內容
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 分析內容 view
@@ -106,7 +106,7 @@ private extension InsightsView {
             referenceDate: date(),
             calendar: calendar
         )
-        
+
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 rangePicker
@@ -121,7 +121,7 @@ private extension InsightsView {
         }
         .accessibilityIdentifier(BLAccessibilityID.Insights.root)
     }
-    
+
     /// 沒有訂單時的空狀態，引導使用者先建立訂單
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 空狀態 view
@@ -135,7 +135,7 @@ private extension InsightsView {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier(BLAccessibilityID.Insights.emptyState)
     }
-    
+
     /// 首次載入訂單前顯示的骨架
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 骨架 view
@@ -146,11 +146,11 @@ private extension InsightsView {
                 RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous)
                     .fill(palette.fillQuaternary)
                     .frame(height: 32)
-                
+
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                     .fill(palette.fillTertiary)
                     .frame(height: 280)
-                
+
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                     .fill(palette.fillQuaternary)
                     .frame(height: 220)
@@ -166,7 +166,7 @@ private extension InsightsView {
         .accessibilityLabel(Text("載入中"))
         .accessibilityIdentifier(BLAccessibilityID.Common.loading("insights"))
     }
-    
+
     /// 期間選擇器
     @ViewBuilder
     var rangePicker: some View {
@@ -180,7 +180,7 @@ private extension InsightsView {
         .pickerStyle(.segmented)
         .accessibilityIdentifier(BLAccessibilityID.Insights.rangePicker)
     }
-    
+
     /// 走勢卡
     /// - Parameters:
     ///   - stats: 已計算的分析資料
@@ -194,9 +194,9 @@ private extension InsightsView {
                     Text(LocalizedStringKey(store.insightsDateRange.trendCardTitle))
                         .font(BLTypographyStyle.subhead.font.weight(.medium))
                         .foregroundStyle(palette.secondaryLabel)
-                    
+
                     Spacer()
-                    
+
                     Text(LocalizedStringKey(stats.trendDelta))
                         .font(BLTypographyStyle.subhead.font.weight(.semibold))
                         .foregroundStyle(
@@ -206,14 +206,14 @@ private extension InsightsView {
                             )
                         )
                 }
-                
+
                 Text(BLFormatters.twd(stats.totalProfit, locale: locale))
                     .font(.system(size: heroProfitSize, weight: .bold))
                     .monospacedDigit()
                     .foregroundStyle(palette.label)
                     .accessibilityValue(Text(BLFormatters.twd(stats.totalProfit, locale: locale)))
                     .accessibilityIdentifier(BLAccessibilityID.Insights.trendTotalProfit)
-                
+
                 BLBarChart(
                     data: stats.trendBars,
                     height: 200,
@@ -227,7 +227,7 @@ private extension InsightsView {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-    
+
     /// 類別排行 + 成本結構並列
     /// - Parameters:
     ///   - stats: 已計算的分析資料
@@ -249,7 +249,7 @@ private extension InsightsView {
             }
         }
     }
-    
+
     /// 顯示各開團的毛利排行；沒有可排行的開團時隱藏
     /// - Parameters:
     ///   - ranks: 由 ``analyticsContent(palette:)`` 一次算好的開團毛利排行
@@ -263,7 +263,7 @@ private extension InsightsView {
                     Text("每團毛利排行")
                         .font(BLTypographyStyle.subhead.font.weight(.semibold))
                         .foregroundStyle(palette.label)
-                    
+
                     ForEach(ranks) { rank in
                         Button {
                             store.send(.delegate(.campaignTapped(rank.campaignName)))
@@ -288,7 +288,7 @@ private extension InsightsView {
             }
         }
     }
-    
+
     /// 類別排行卡
     /// - Parameters:
     ///   - stats: 已計算的分析資料
@@ -301,7 +301,7 @@ private extension InsightsView {
                 Text("類別排行")
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.label)
-                
+
                 if stats.categories.isEmpty {
                     Text("尚無分類資料")
                         .blTextStyle(.footnote)
@@ -334,7 +334,7 @@ private extension InsightsView {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-    
+
     /// 類別排行單列
     /// - Parameters:
     ///   - rank: 名次
@@ -354,31 +354,31 @@ private extension InsightsView {
         let value = NSDecimalNumber(decimal: category.profit).doubleValue
         let total = NSDecimalNumber(decimal: topProfit).doubleValue
         let fraction = total > 0 ? CGFloat(value / total) : 0
-        
+
         VStack(alignment: .leading, spacing: 6) {
             HStack {
                 Text("\(rank). \(category.name)")
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.label)
-                
+
                 Spacer()
-                
+
                 Text(BLFormatters.twd(category.profit, locale: locale))
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .monospacedDigit()
                     .foregroundStyle(palette.label)
-                
+
                 Image(systemName: "chevron.right")
                     .blTextStyle(.footnote)
                     .foregroundStyle(palette.tertiaryLabel)
                     .accessibilityHidden(true)
             }
-            
+
             ProgressView(value: min(max(fraction, 0), 1))
                 .progressViewStyle(BLProgressBarStyle(tint: tint))
         }
     }
-    
+
     /// 成本結構 donut 卡
     /// - Parameters:
     ///   - stats: 已計算的分析資料
@@ -391,7 +391,7 @@ private extension InsightsView {
                 Text("成本結構")
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.label)
-                
+
                 VStack(alignment: .leading, spacing: BLSpacing.large) {
                     BLDonutChart(
                         segments: stats.costSegments.map {
@@ -410,20 +410,20 @@ private extension InsightsView {
                     )
                     .frame(maxWidth: .infinity)
                     .accessibilityIdentifier(BLAccessibilityID.Insights.costDonut)
-                    
+
                     VStack(alignment: .leading, spacing: BLSpacing.small) {
                         ForEach(stats.costSegments) { segment in
                             HStack(spacing: BLSpacing.small) {
                                 RoundedRectangle(cornerRadius: 2, style: .continuous)
                                     .fill(segment.color)
                                     .frame(width: 8, height: 8)
-                                
+
                                 Text(LocalizedStringKey(segment.label))
                                     .blTextStyle(.caption)
                                     .foregroundStyle(palette.secondaryLabel)
-                                
+
                                 Spacer()
-                                
+
                                 Text(BLFormatters.twd(segment.value, locale: locale))
                                     .font(BLTypographyStyle.caption.font.weight(.semibold))
                                     .monospacedDigit()
@@ -436,7 +436,7 @@ private extension InsightsView {
             }
         }
     }
-    
+
     /// 過去 N 週的下單熱力圖；N 由 ``InsightsStats/heatmapWeekCount`` 決定
     /// - Parameters:
     ///   - cells: 由 ``analyticsContent(palette:)`` 一次算好的熱力圖格值
@@ -446,13 +446,13 @@ private extension InsightsView {
     func heatmapCard(cells: [HeatmapKey: Int], palette: BLPalette) -> some View {
         let weekCount = InsightsStats.heatmapWeekCount
         let maxCount = cells.values.max() ?? 1
-        
+
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("下單熱力 · 過去 \(weekCount) 週")
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.label)
-                
+
                 LazyVGrid(
                     columns: [GridItem(.fixed(heatmapWeekdayColumnWidth), spacing: 6)] + Array(
                         repeating: GridItem(.flexible(), spacing: 6),
@@ -462,19 +462,19 @@ private extension InsightsView {
                 ) {
                     Text(" ")
                         .frame(width: heatmapWeekdayColumnWidth)
-                    
+
                     ForEach(0..<weekCount, id: \.self) { week in
                         Text("W\(week + 1)")
                             .blTextStyle(.caption2)
                             .foregroundStyle(palette.secondaryLabel)
                             .frame(maxWidth: .infinity)
                     }
-                    
+
                     // 攤平成單層 ForEach，確保 LazyVGrid 正確建立 cell
                     ForEach(0..<(7 * (weekCount + 1)), id: \.self) { index in
                         let weekday = index / (weekCount + 1)
                         let column = index % (weekCount + 1)
-                        
+
                         if column == 0 {
                             Text(weekdayLabel(weekday))
                                 .blTextStyle(.caption)
@@ -498,7 +498,7 @@ private extension InsightsView {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
-    
+
     /// 熱力圖單一 cell
     /// - Parameters:
     ///   - count: 訂單筆數
@@ -514,7 +514,7 @@ private extension InsightsView {
         palette: BLPalette
     ) -> some View {
         let depth = BLHeatmapDepth.depth(for: count, maxCount: maxCount)
-        
+
         // 明確設定高度撐起格子，因為 `RoundedRectangle` 沒有 intrinsic size。
         // 在 LazyVGrid 中靠 `aspectRatio` 會被旁邊 Text 那列壓成 0 高度而完全不顯示
         RoundedRectangle(cornerRadius: 4, style: .continuous)
@@ -540,14 +540,14 @@ private extension InsightsView {
 // MARK: - Private Method
 
 private extension InsightsView {
-    
+
     // MARK: Layout
-    
+
     /// 是否使用寬版面 (並列兩張卡)
     var useWideLayout: Bool {
         return horizontalSizeClass != .compact
     }
-    
+
     /// 類別 bar 的色盤序列
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 依類別排行順序排列的 bar 色彩
@@ -562,7 +562,7 @@ private extension InsightsView {
     }
 
     // MARK: Heatmap
-    
+
     /// 依 App 選定 locale 顯示在熱力圖左側的星期縮寫
     /// - Parameter index: 0 為週一、6 為週日
     /// - Returns: 依選定 locale 呈現的星期縮寫
@@ -575,7 +575,7 @@ private extension InsightsView {
     }
 
     // MARK: Formatting
-    
+
     /// 將趨勢方向轉成顯示色
     /// - Parameters:
     ///   - isPositive: 方向旗標
@@ -602,7 +602,7 @@ private extension InsightsView {
         state.loadState = .loaded
         return state
     }()
-    
+
     return InsightsView(
         store: Store(initialState: previewState) {
             InsightsFeature()

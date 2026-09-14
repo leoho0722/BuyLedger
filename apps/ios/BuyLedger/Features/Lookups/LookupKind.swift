@@ -9,23 +9,23 @@ import Foundation
 
 /// 表單下拉選單背後的「主檔型別」
 enum LookupKind: String, Equatable, Hashable, Sendable {
-    
+
     // MARK: - Cases
-    
+
     /// 訂單來源主檔
     case orderSource
-    
+
     /// 商品類別主檔
     case category
-    
+
     /// 付款方式主檔
     case paymentMethod
-    
+
     /// 對帳狀態主檔
     case reconciliationStatus
-    
+
     // MARK: - Display Properties
-    
+
     /// 管理頁顯示的標題
     var title: String {
         switch self {
@@ -39,7 +39,7 @@ enum LookupKind: String, Equatable, Hashable, Sendable {
             "對帳狀態管理"
         }
     }
-    
+
     /// 進入點 (MoreView 列表) 顯示的標題
     var entryTitle: String {
         switch self {
@@ -53,7 +53,7 @@ enum LookupKind: String, Equatable, Hashable, Sendable {
             "對帳狀態"
         }
     }
-    
+
     /// 進入點 (MoreView 列表) 顯示的描述
     var entrySubtitle: String {
         switch self {
@@ -67,7 +67,7 @@ enum LookupKind: String, Equatable, Hashable, Sendable {
             "管理訂單可選的對帳狀態清單。"
         }
     }
-    
+
     /// 對應的 SF Symbol
     var systemImage: String {
         switch self {
@@ -81,7 +81,7 @@ enum LookupKind: String, Equatable, Hashable, Sendable {
             "checkmark.seal"
         }
     }
-    
+
     /// 「新增」按鈕標題
     var addButtonTitle: String {
         switch self {
@@ -95,7 +95,7 @@ enum LookupKind: String, Equatable, Hashable, Sendable {
             "新增對帳狀態"
         }
     }
-    
+
     /// 空狀態標題
     var emptyTitle: String {
         switch self {
@@ -109,7 +109,7 @@ enum LookupKind: String, Equatable, Hashable, Sendable {
             "尚無對帳狀態"
         }
     }
-    
+
     /// 空狀態描述
     var emptyDescription: String {
         switch self {
@@ -123,7 +123,7 @@ enum LookupKind: String, Equatable, Hashable, Sendable {
             "透過上方「新增對帳狀態」加入第一個對帳狀態；訂單編輯時也能新增。"
         }
     }
-    
+
     /// 新增 alert 標題
     var addAlertTitle: String {
         switch self {
@@ -137,7 +137,7 @@ enum LookupKind: String, Equatable, Hashable, Sendable {
             "新增對帳狀態"
         }
     }
-    
+
     /// 新增 alert 內 TextField 的 placeholder
     var addFieldPlaceholder: String {
         switch self {
@@ -151,7 +151,7 @@ enum LookupKind: String, Equatable, Hashable, Sendable {
             "對帳狀態名稱"
         }
     }
-    
+
     /// 新增 alert 的提示文字
     var addAlertMessage: String {
         switch self {
@@ -170,7 +170,7 @@ enum LookupKind: String, Equatable, Hashable, Sendable {
 // MARK: - Order Cascade
 
 extension LookupKind {
-    
+
     /// 訂單是否引用此主檔種類的指定值
     /// - Parameters:
     ///   - order: 要檢查的訂單
@@ -188,7 +188,7 @@ extension LookupKind {
             order.reconciliationStatus == name
         }
     }
-    
+
     /// 依此主檔種類的更名規則重建訂單，承載四種主檔的重建差異
     /// - Parameters:
     ///   - order: 要重建的訂單

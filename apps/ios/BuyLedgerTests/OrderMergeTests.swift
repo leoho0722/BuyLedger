@@ -12,9 +12,9 @@ import Testing
 /// 驗證訂單合併資料
 @MainActor
 struct OrderMergeTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func amountFieldsAreSummed() {
         let primary = Self.makeOrder(
             id: "P",
@@ -36,14 +36,14 @@ struct OrderMergeTests {
             cardlessDeductionAmount: 10,
             cardlessSupplementAmount: 5
         )
-        
+
         let draft = OrderMerge.makeDraft(
             primary: primary,
             secondary: secondary,
             now: Self.mergeDate,
             isCardless: { _ in false }
         )
-        
+
         #expect(draft.chargedAmount == 3_000)
         #expect(draft.itemCost == 1_500)
         #expect(draft.domesticShipping == 140)
@@ -52,76 +52,76 @@ struct OrderMergeTests {
         #expect(draft.cardlessDeductionAmount == 60)
         #expect(draft.cardlessSupplementAmount == 25)
     }
-    
+
     @Test func feeRatesUseChargedAmountWeightedAverage() {
         // (1.5% × 1000 + 2% × 2000) ÷ 3000 ≈ 1.83%
         let primary = Self.makeOrder(
             id: "P", chargedAmount: 1_000, cardFeeRate: Self.decimal("0.015"))
         let secondary = Self.makeOrder(
             id: "S", chargedAmount: 2_000, cardFeeRate: Self.decimal("0.02"))
-        
+
         let draft = OrderMerge.makeDraft(
             primary: primary,
             secondary: secondary,
             now: Self.mergeDate,
             isCardless: { _ in false }
         )
-        
+
         let expected = (Self.decimal("0.015") * 1_000 + Self.decimal("0.02") * 2_000) / 3_000
         #expect(draft.cardFeeRate == expected)
     }
-    
+
     @Test func feeRatesFallBackToPrimaryWhenOneSideHasZeroCharge() {
         // 副訂單實付為 0 時，沿用主訂單比例。
         let primary = Self.makeOrder(
             id: "P", chargedAmount: 1_000, cardFeeRate: Self.decimal("0.015"))
         let secondary = Self.makeOrder(id: "S", chargedAmount: 0, cardFeeRate: Self.decimal("0.03"))
-        
+
         let draft = OrderMerge.makeDraft(
             primary: primary,
             secondary: secondary,
             now: Self.mergeDate,
             isCardless: { _ in false }
         )
-        
+
         #expect(draft.cardFeeRate == Self.decimal("0.015"))
     }
-    
+
     @Test func feeRatesUsePrimaryWhenBothChargesAreZero() {
         // 兩筆實付皆 0：分母為 0，沿用主訂單比例、不得產生 NaN
         let primary = Self.makeOrder(
             id: "P", chargedAmount: 0, cardFeeRate: Self.decimal("0.015"),
             platformFeeRate: Self.decimal("0.03"), paymentFeeRate: Self.decimal("0.005"))
         let secondary = Self.makeOrder(id: "S", chargedAmount: 0, cardFeeRate: Self.decimal("0.03"))
-        
+
         let draft = OrderMerge.makeDraft(
             primary: primary,
             secondary: secondary,
             now: Self.mergeDate,
             isCardless: { _ in false }
         )
-        
+
         #expect(draft.cardFeeRate == Self.decimal("0.015"))
         #expect(draft.platformFeeRate == Self.decimal("0.03"))
         #expect(draft.paymentFeeRate == Self.decimal("0.005"))
     }
-    
+
     @Test func categoriesAndCampaignsTakeOrderedUnion() {
         let primary = Self.makeOrder(id: "P", categories: ["beauty"], campaignNames: ["May-JP"])
         let secondary = Self.makeOrder(
             id: "S", categories: ["snacks", "beauty"], campaignNames: ["June-KR"])
-        
+
         let draft = OrderMerge.makeDraft(
             primary: primary,
             secondary: secondary,
             now: Self.mergeDate,
             isCardless: { _ in false }
         )
-        
+
         #expect(draft.categories == ["beauty", "snacks"])
         #expect(draft.campaignNames == ["May-JP", "June-KR"])
     }
-    
+
     @Test func notesJoinWithDashSeparatorLine() {
         // (主, 副) → 合併備註的三種組合
         let cases: [(String, String, String)] = [
@@ -130,7 +130,7 @@ struct OrderMergeTests {
             ("", "含贈品", "含贈品"),
             ("", "", ""),
         ]
-        
+
         for (
             primaryNotes,
             secondaryNotes,
@@ -145,26 +145,26 @@ struct OrderMergeTests {
             #expect(draft.notes == expected)
         }
     }
-    
+
     @Test func cardlessPaymentMethodWinsOnConflict() {
         // 恰有一筆 (副) 屬無卡：付款方式取副訂單，對帳狀態與貨到付款隨之
         let primary = Self.makeOrder(
             id: "P", paymentMethod: "信用卡", reconciliationStatus: "", isCashOnDelivery: false)
         let secondary = Self.makeOrder(
             id: "S", paymentMethod: "全家好開店", reconciliationStatus: "待對帳", isCashOnDelivery: true)
-        
+
         let draft = OrderMerge.makeDraft(
             primary: primary,
             secondary: secondary,
             now: Self.mergeDate,
             isCardless: { $0 == "全家好開店" }
         )
-        
+
         #expect(draft.paymentMethod == "全家好開店")
         #expect(draft.reconciliationStatus == "待對帳")
         #expect(draft.isCashOnDelivery == true)
     }
-    
+
     @Test func primaryPaymentMethodWinsWhenSameOrNoCardlessConflict() {
         // 兩筆相同：取該值、對帳狀態隨主訂單
         let same = OrderMerge.makeDraft(
@@ -175,7 +175,7 @@ struct OrderMergeTests {
         )
         #expect(same.paymentMethod == "信用卡")
         #expect(same.reconciliationStatus == "主對帳")
-        
+
         // 不同且皆非無卡：取主訂單
         let neither = OrderMerge.makeDraft(
             primary: Self.makeOrder(id: "P", paymentMethod: "信用卡"),
@@ -184,7 +184,7 @@ struct OrderMergeTests {
             isCardless: { _ in false }
         )
         #expect(neither.paymentMethod == "信用卡")
-        
+
         // 兩筆皆無卡且不同：仍取主訂單 (「恰有一筆無卡」才換邊)
         let bothCardless = OrderMerge.makeDraft(
             primary: Self.makeOrder(id: "P", paymentMethod: "全家好開店"),
@@ -194,18 +194,18 @@ struct OrderMergeTests {
         )
         #expect(bothCardless.paymentMethod == "全家好開店")
     }
-    
+
     @Test func passthroughFieldsFollowPrimaryAndDateIsMergeTime() {
         let primary = Self.makeOrder(id: "P", status: .shipping, paymentReceiptStatus: .received)
         let secondary = Self.makeOrder(id: "S", status: .purchased, paymentReceiptStatus: .pending)
-        
+
         let draft = OrderMerge.makeDraft(
             primary: primary,
             secondary: secondary,
             now: Self.mergeDate,
             isCardless: { _ in false }
         )
-        
+
         #expect(draft.customer == primary.customer)
         #expect(draft.orderSource == primary.orderSource)
         #expect(draft.status == .shipping)
@@ -214,7 +214,7 @@ struct OrderMergeTests {
         #expect(draft.date == Self.mergeDate)
         #expect(draft.mergeSourceIDs == ["P", "S"])
     }
-    
+
     @Test func itemsAndPhotosConcatenatePrimaryFirst() {
         let photoP = Data([0x01])
         let photoS1 = Data([0x02])
@@ -229,14 +229,14 @@ struct OrderMergeTests {
             items: [LedgerOrderItem(name: "副商品", quantity: 2, unitPrice: 200)],
             photos: [photoS1, photoS2]
         )
-        
+
         let draft = OrderMerge.makeDraft(
             primary: primary,
             secondary: secondary,
             now: Self.mergeDate,
             isCardless: { _ in false }
         )
-        
+
         #expect(draft.items.map(\.name) == ["主商品", "副商品"])
         #expect(draft.photos == [photoP, photoS1, photoS2])
     }
@@ -245,17 +245,17 @@ struct OrderMergeTests {
 // MARK: - Helpers
 
 private extension OrderMergeTests {
-    
+
     /// 固定的合併當下時間
     static let mergeDate = Date(timeIntervalSince1970: 1_777_000_000)
-    
+
     /// 以固定字串建立 `Decimal`，避免浮點誤差
     /// - Parameter value: 要轉換的十進位字串
     /// - Returns: 解析後的 Decimal；無法解析時為 `0`
     static func decimal(_ value: String) -> Decimal {
         Decimal(string: value, locale: Locale(identifier: "en_US_POSIX")) ?? 0
     }
-    
+
     /// 建立測試訂單；未指定的欄位使用中性預設值
     /// - Parameters:
     ///   - id: 訂單識別值

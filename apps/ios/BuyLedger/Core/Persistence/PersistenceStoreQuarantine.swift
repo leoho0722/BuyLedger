@@ -14,7 +14,7 @@ enum PersistenceStoreQuarantine {}
 // MARK: - Internal Method
 
 extension PersistenceStoreQuarantine {
-    
+
     /// 將指定目錄中的 store 與 sidecar 搬移到下一個可用的隔離備份目錄
     /// - Parameters:
     ///   - storeDirectory: 存放 SwiftData store 的來源目錄
@@ -27,11 +27,11 @@ extension PersistenceStoreQuarantine {
     ) throws(PersistenceRecoveryError) -> URL? {
         let fileManager = FileManager.default
         let storeFiles = storeFileURLs(in: storeDirectory, fileManager: fileManager)
-        
+
         guard !storeFiles.isEmpty else {
             return nil
         }
-        
+
         do {
             try fileManager.createDirectory(
                 at: backupDirectory,
@@ -52,7 +52,7 @@ extension PersistenceStoreQuarantine {
         } catch {
             throw .directoryCreationFailed(message: error.localizedDescription)
         }
-        
+
         for storeFile in storeFiles {
             do {
                 try fileManager.moveItem(
@@ -66,7 +66,7 @@ extension PersistenceStoreQuarantine {
                 )
             }
         }
-        
+
         return recoveredDirectory
     }
 }
@@ -74,7 +74,7 @@ extension PersistenceStoreQuarantine {
 // MARK: - Private Method
 
 private extension PersistenceStoreQuarantine {
-    
+
     /// SwiftData store 與 sidecar 檔名清單
     static let storeFileNames = [
         "BuyLedger.store",
@@ -84,7 +84,7 @@ private extension PersistenceStoreQuarantine {
         "default.store-wal",
         "default.store-shm",
     ]
-    
+
     /// 取得指定目錄中存在的 store 與 sidecar 檔案路徑
     /// - Parameters:
     ///   - directory: store 所在目錄
@@ -98,7 +98,7 @@ private extension PersistenceStoreQuarantine {
             .map { directory.appendingPathComponent($0) }
             .filter { fileManager.fileExists(atPath: $0.path) }
     }
-    
+
     /// 依序找出下一個可用的 `Recovered-N` 目錄
     /// - Parameters:
     ///   - backupDirectory: 用於建立 `Recovered-N` 子目錄的目標目錄
@@ -109,7 +109,7 @@ private extension PersistenceStoreQuarantine {
         fileManager: FileManager
     ) -> URL {
         var index = 1
-        
+
         while true {
             let candidate = backupDirectory.appendingPathComponent(
                 "Recovered-\(index)",

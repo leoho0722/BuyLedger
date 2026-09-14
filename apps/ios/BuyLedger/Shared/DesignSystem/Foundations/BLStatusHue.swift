@@ -13,7 +13,7 @@ enum BLStatusHue {}
 // MARK: - Internal Method
 
 extension BLStatusHue {
-    
+
     /// 回傳指定訂單狀態在側邊欄智慧分組色點使用的色相
     /// - Parameters:
     ///   - status: 訂單狀態

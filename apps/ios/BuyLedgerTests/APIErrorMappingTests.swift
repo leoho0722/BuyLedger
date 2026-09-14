@@ -12,30 +12,30 @@ import Testing
 
 /// 驗證 API 錯誤的使用者訊息
 struct APIErrorMappingTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func invalidKeyResponseMapsToInvalidCredential() async throws(any Error) {
         try await assertServiceCode(
             "invalid-key",
             mapsTo: .invalidKey
         )
     }
-    
+
     @Test func inactiveAccountResponseMapsToInvalidCredential() async throws(any Error) {
         try await assertServiceCode(
             "inactive-account",
             mapsTo: .invalidKey
         )
     }
-    
+
     @Test func quotaReachedResponseMapsToQuotaExceeded() async throws(any Error) {
         try await assertServiceCode(
             "quota-reached",
             mapsTo: .quotaExceeded
         )
     }
-    
+
     @Test func otherServiceCodeMapsToGenericServiceError() async throws(any Error) {
         try await assertServiceCode(
             "malformed-request",
@@ -47,7 +47,7 @@ struct APIErrorMappingTests {
 // MARK: - Private Method
 
 private extension APIErrorMappingTests {
-    
+
     /// 以 HTTP 200 搭配服務端錯誤 payload 驅動匯率 client 的業務錯誤分流
     /// - Parameters:
     ///   - code: 服務回應代碼
@@ -64,7 +64,7 @@ private extension APIErrorMappingTests {
             )
         )
         let body = Data(#"{"result":"error","error-type":"\#(code)"}"#.utf8)
-        
+
         await withDependencies {
             $0.appConfiguration = AppConfiguration(
                 exchangeRateAPIKey: { "network-test-key" },

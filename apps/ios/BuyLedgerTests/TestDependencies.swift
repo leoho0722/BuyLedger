@@ -10,9 +10,9 @@ import Foundation
 
 /// 為 snapshot 與 unit test 提供可重現的依賴注入
 enum TestDependencies {
-    
+
     // MARK: - Static Properties
-    
+
     /// 預設使用的固定「現在」時間 (2026-04-30 00:00:00 UTC)
     static let fixedNow: Date = {
         var components = DateComponents()
@@ -23,7 +23,7 @@ enum TestDependencies {
         components.day = 30
         return components.date!
     }()
-    
+
     /// 預設使用的固定行事曆 (gregorian + UTC)
     static let fixedCalendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
@@ -35,7 +35,7 @@ enum TestDependencies {
 // MARK: - Internal Method
 
 extension TestDependencies {
-    
+
     /// 在 ``fixedNow`` 注入 `\.date` 的 scope 中執行 operation
     /// - Parameter operation: 要執行的操作
     /// - Returns: operation 的結果

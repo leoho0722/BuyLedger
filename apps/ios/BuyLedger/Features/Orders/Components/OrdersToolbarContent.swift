@@ -10,23 +10,23 @@ import SwiftUI
 
 /// 訂單清單的多選工具列，供 compact 與 regular 版面共用
 struct OrdersToolbarContent: ToolbarContent {
-    
+
     // MARK: - View Properties
-    
+
     /// 訂單功能 store
     let store: StoreOf<OrdersFeature>
-    
+
     /// 目前外觀使用的色盤
     let palette: BLPalette
-    
+
     /// 套用篩選後的訂單 ID，用於顯示筆數與判斷全選
     let filteredIDs: [LedgerOrder.ID]
-    
+
     /// 目前是否已全選 `filteredIDs`；由呼叫端計算後傳入
     let allFilteredSelected: Bool
-    
+
     // MARK: - Toolbar Content Body
-    
+
     /// 顯示多選或一般模式的工具列
     var body: some ToolbarContent {
         if store.isSelecting {
@@ -35,7 +35,7 @@ struct OrdersToolbarContent: ToolbarContent {
                     store.send(allFilteredSelected ? .clearSelectionTapped : .selectAllTapped)
                 }
             }
-            
+
             // 批次操作放在頂部，避免可拖曳視窗遮住 bottomBar
             // 選取筆數由導覽標題顯示。
             ToolbarItemGroup(placement: .primaryAction) {
@@ -50,7 +50,7 @@ struct OrdersToolbarContent: ToolbarContent {
                     Text("更改狀態")
                 }
                 .disabled(store.selectedOrderIDs.isEmpty)
-                
+
                 Button("完成") {
                     store.send(.selectionModeToggled)
                 }
@@ -62,7 +62,7 @@ struct OrdersToolbarContent: ToolbarContent {
                     .monospacedDigit()
                     .foregroundStyle(palette.secondaryLabel)
             }
-            
+
             ToolbarItemGroup(placement: .primaryAction) {
                 Menu {
                     Button {
@@ -72,7 +72,7 @@ struct OrdersToolbarContent: ToolbarContent {
                     }
                     .disabled(filteredIDs.isEmpty)
                     .accessibilityIdentifier(BLAccessibilityID.Orders.aiSummaryButton)
-                    
+
                     Button {
                         store.send(.selectionModeToggled)
                     } label: {
@@ -84,7 +84,7 @@ struct OrdersToolbarContent: ToolbarContent {
                 }
                 .accessibilityLabel("更多操作")
                 .accessibilityIdentifier(BLAccessibilityID.Orders.batchMenuButton)
-                
+
                 Button {
                     store.send(.newOrderTapped)
                 } label: {

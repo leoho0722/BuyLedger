@@ -15,7 +15,7 @@ actor CampaignPersistence {}
 // MARK: - Internal Method
 
 extension CampaignPersistence {
-    
+
     /// 讀出全部開團，依開團日期由新到舊排序
     /// - Returns: 領域型別陣列
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
@@ -26,10 +26,10 @@ extension CampaignPersistence {
         let records = try PersistenceError.mapFetch {
             try modelContext.fetch(descriptor)
         }
-        
+
         return records.map { $0.toDomain() }
     }
-    
+
     /// 寫入或更新單一開團 (依 id upsert)
     /// - Parameter campaign: 來源領域開團
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
@@ -38,7 +38,7 @@ extension CampaignPersistence {
         let descriptor = FetchDescriptor<CampaignRecord>(
             predicate: #Predicate { $0.id == id }
         )
-        
+
         let existing = try PersistenceError.mapFetch {
             try modelContext.fetch(descriptor).first
         }
@@ -47,7 +47,7 @@ extension CampaignPersistence {
         } else {
             modelContext.insert(CampaignRecord(campaign: campaign))
         }
-        
+
         do {
             try PersistenceError.mapSave {
                 try modelContext.save()
@@ -57,7 +57,7 @@ extension CampaignPersistence {
             throw error
         }
     }
-    
+
     /// 刪除指定 id 的開團，並在同一交易內連帶清除訂單歸屬與提醒連結
     /// - Parameters:
     ///   - id: 要刪除的開團識別值
@@ -75,14 +75,14 @@ extension CampaignPersistence {
         for record in campaignRecords {
             modelContext.delete(record)
         }
-        
+
         let orderRecords = try PersistenceError.mapFetch {
             try modelContext.fetch(FetchDescriptor<OrderRecord>())
         }
         for record in orderRecords where record.campaignNames.contains(name) {
             record.campaignNames.removeAll { $0 == name }
         }
-        
+
         let reminderDescriptor = FetchDescriptor<CampaignReminderRecord>(
             predicate: #Predicate { $0.campaignID == wantedID }
         )
@@ -93,7 +93,7 @@ extension CampaignPersistence {
         for record in reminderRecords {
             modelContext.delete(record)
         }
-        
+
         do {
             try PersistenceError.mapSave {
                 try modelContext.save()

@@ -14,7 +14,7 @@ enum OrdersMergeFlowOperations {}
 // MARK: - Internal Method
 
 extension OrdersMergeFlowOperations {
-    
+
     /// 開始合併訂單；已合併或取消的訂單不可作為主訂單
     static func mergeOrderTapped(_ orderID: LedgerOrder.ID, state: inout OrdersFeature.State) {
         guard let primary = state.orders.first(where: { $0.id == orderID }),
@@ -22,10 +22,10 @@ extension OrdersMergeFlowOperations {
               primary.status != .cancelled else {
             return
         }
-        
+
         state.orderMerge = OrderMergeFeature.State(primary: primary, orders: state.orders)
     }
-    
+
     /// 由候選訂單建立合併草稿，並關閉合併 sheet
     /// - Parameters:
     ///   - primary: 主訂單
@@ -48,12 +48,12 @@ extension OrdersMergeFlowOperations {
             now: now,
             isCardless: { cardlessNames.contains($0) }
         )
-        
+
         // 先關閉合併 sheet，再延遲開啟確認表單
         state.orderMerge = nil
         return (draft, keptPhotos)
     }
-    
+
     /// 合併選取完成後開啟確認表單
     /// - Parameters:
     ///   - draft: 合併草稿
@@ -103,7 +103,7 @@ extension OrdersMergeFlowOperations {
         editState.mergeSourceIDs = draft.mergeSourceIDs
         state.editOrder = editState
     }
-    
+
     /// 合併持久化失敗時，以快照回復訂單
     static func mergePersistenceFailed(
         _ previousOrders: [LedgerOrder],
@@ -113,7 +113,7 @@ extension OrdersMergeFlowOperations {
         state.pruneDetailPath()
         state.writeFailureAlert = OrdersFeature.makeWriteFailureAlert("合併訂單儲存失敗，請稍後再試。")
     }
-    
+
     /// 儲存合併訂單並標記來源訂單
     /// - Parameters:
     ///   - editState: 合併確認表單的草稿狀態
@@ -131,7 +131,7 @@ extension OrdersMergeFlowOperations {
             return nil
         }
         let savedOrder = writeResult.order
-        
+
         let sourceIDs = editState.mergeSourceIDs
         state.orders = state.orders.map { order in
             guard sourceIDs.contains(order.id), order.id != savedOrder.id else {
@@ -139,7 +139,7 @@ extension OrdersMergeFlowOperations {
             }
             return order.withStatus(.merged)
         }
-        
+
         return (savedOrder, sourceIDs, previousOrders)
     }
 }

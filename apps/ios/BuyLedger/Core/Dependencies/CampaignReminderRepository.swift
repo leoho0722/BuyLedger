@@ -11,26 +11,26 @@ import SwiftData
 
 /// 開團訂購提醒的連結資料：行事曆事件識別碼與使用者選定的提醒時間戳
 struct CampaignReminderLink: Equatable, Sendable {
-    
+
     // MARK: - Data Properties
-    
+
     /// 對應的系統行事曆事件識別碼
     let eventIdentifier: String
-    
+
     /// 提醒時間戳 (使用者選定的日期＋提示時間)
     let reminderTimestamp: Date
 }
 
 /// 「開團訂購提醒連結」(campaignID → ``CampaignReminderLink``) 的依賴介面
 struct CampaignReminderRepository: Sendable {
-    
+
     // MARK: - Dependency Properties
-    
+
     /// 讀取全部連結，回傳 campaignID → ``CampaignReminderLink`` 字典
     /// - Returns: campaignID 對應的提醒連結
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
     var fetchLinks: @Sendable () async throws(PersistenceError) -> [String: CampaignReminderLink]
-    
+
     /// 寫入或更新單一連結 (依 campaignID upsert)
     /// - Parameters:
     ///   - campaignID: 開團編號
@@ -40,7 +40,7 @@ struct CampaignReminderRepository: Sendable {
         _ campaignID: String,
         _ link: CampaignReminderLink
     ) async throws(PersistenceError) -> Void
-    
+
     /// 刪除指定 campaignID 的連結；不存在視為 no-op
     /// - Parameter campaignID: 開團編號
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
@@ -50,7 +50,7 @@ struct CampaignReminderRepository: Sendable {
 // MARK: - Internal Method
 
 extension CampaignReminderRepository {
-    
+
     /// 以指定的 SwiftData ``ModelContainer`` 建立 repository
     /// - Parameter container: 用於建立背景 actor 的 SwiftData container
     /// - Returns: 對應的 ``CampaignReminderRepository`` 實例
@@ -78,7 +78,7 @@ extension CampaignReminderRepository {
 // MARK: - Private Method
 
 private extension CampaignReminderRepository {
-    
+
     /// 建立 CampaignReminderPersistence
     /// - Parameter container: 共用的 ``ModelContainer``
     /// - Returns: 對應 container 的 ``CampaignReminderPersistence`` 實例
@@ -92,18 +92,18 @@ private extension CampaignReminderRepository {
 // MARK: - Dependency Values
 
 extension CampaignReminderRepository: DependencyKey {
-    
+
     /// App 執行時使用共用 SwiftData container
     nonisolated static let liveValue: CampaignReminderRepository = CampaignReminderRepository.live(
         container: PersistenceContainer.shared
     )
-    
+
     /// Preview 使用記憶體資料庫
     nonisolated static let previewValue: CampaignReminderRepository = {
         let container = PersistenceContainer.makeInMemory(for: .preview)
         return CampaignReminderRepository.live(container: container)
     }()
-    
+
     /// 測試預設回傳空連結；TestStore 可透過 `withDependencies` 覆寫
     nonisolated static let testValue = CampaignReminderRepository(
         fetchLinks: { [:] },

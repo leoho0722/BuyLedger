@@ -13,13 +13,13 @@ import Testing
 /// 驗證開團與訂單同步
 @MainActor
 struct CampaignIntegrationTests {
-    
+
     // MARK: - RootFeature Tests
-    
+
     @Test func campaignSelectedJumpsToCampaignsTabAndSelectsCampaign() async {
         var state = RootFeature.State()
         state.campaigns.campaigns = [makeCampaign(id: "C1", name: "四月韓國團", status: .ongoing)]
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         }
@@ -27,11 +27,11 @@ struct CampaignIntegrationTests {
             $0.selectedTab = .campaigns
             $0.campaigns.selectedCampaignID = "C1"
         }
-        
+
         #expect(store.state.selectedTab == .campaigns)
         #expect(store.state.campaigns.selectedCampaignID == "C1")
     }
-    
+
     @Test func campaignRenamedCascadesToOrdersInMemoryAndSyncsCopy() async {
         var state = RootFeature.State()
         state.orders.orders = [
@@ -45,7 +45,7 @@ struct CampaignIntegrationTests {
         state.orders.campaigns = [campaign]
         state.dashboard.campaigns = [campaign]
         state.insights.campaigns = [campaign]
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         }
@@ -59,7 +59,7 @@ struct CampaignIntegrationTests {
             $0.dashboard.orders = $0.orders.orders
             $0.insights.orders = $0.orders.orders
         }
-        
+
         #expect(
             store.state.orders.orders.filter { $0.campaignNames == ["新團"] }.map(\.id) == [
                 "O1", "O2",
@@ -68,7 +68,7 @@ struct CampaignIntegrationTests {
         #expect(store.state.orders.orders.first { $0.id == "O3" }?.campaignNames.isEmpty == true)
         #expect(store.state.orders.campaigns.map(\.name) == ["新團"])
     }
-    
+
     @Test func campaignDeletedCascadesToOrdersInMemoryAndSyncsCopy() async {
         // DB 刪除已在同一交易完成，這裡只驗證記憶體副本同步
         let order1 = makeOrder(id: "O1", campaign: "四月團")
@@ -79,11 +79,11 @@ struct CampaignIntegrationTests {
         state.orders.orders = [order1, order2, order3]
         state.campaigns.campaigns = [campaign]
         state.orders.campaigns = [campaign]
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         }
-        
+
         // 刪除開團後，同步訂單名稱與所有畫面投影
         await store.send(.campaigns(.campaignDeleted("C1", name: "四月團"))) {
             $0.campaigns.campaigns = []
@@ -98,11 +98,11 @@ struct CampaignIntegrationTests {
             $0.insights.orders = $0.orders.orders
         }
     }
-    
+
     @Test func anyCampaignActionSyncsOrdersCampaignCopy() async {
         var state = RootFeature.State()
         state.campaigns.campaigns = []
-        
+
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
@@ -117,12 +117,12 @@ struct CampaignIntegrationTests {
             $0.dashboard.campaigns = loaded
             $0.insights.campaigns = loaded
         }
-        
+
         #expect(store.state.orders.campaigns.map(\.name) == ["團"])
     }
-    
+
     // MARK: - OrdersFeature Filter Tests
-    
+
     @Test func ordersFilterBySpecificCampaign() async {
         var state = OrdersFeature.State()
         state.orders = [
@@ -130,7 +130,7 @@ struct CampaignIntegrationTests {
             makeOrder(id: "O2", campaign: "團B"),
             makeOrder(id: "O3", campaign: ""),
         ]
-        
+
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
@@ -141,12 +141,12 @@ struct CampaignIntegrationTests {
             $0.selectedCampaign = "團A"
             $0.selectedOrderID = "O1"
         }
-        
+
         let filtered = store.state.filteredOrders(
             referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
         #expect(filtered.map(\.id) == ["O1"])
     }
-    
+
     @Test func ordersFilterByCampaignStatusResolvesThroughCampaignCopy() async {
         var state = OrdersFeature.State()
         state.orders = [
@@ -158,7 +158,7 @@ struct CampaignIntegrationTests {
             makeCampaign(id: "A", name: "團A", status: .ongoing),
             makeCampaign(id: "B", name: "團B", status: .closed),
         ]
-        
+
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
@@ -173,7 +173,7 @@ struct CampaignIntegrationTests {
             store.state.filteredOrders(
                 referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar
             ).map(\.id) == ["O1"])
-        
+
         await store.send(.campaignStatusFilterSelected(.closed)) {
             $0.selectedCampaignStatus = .closed
             $0.selectedOrderID = "O2"
@@ -188,7 +188,7 @@ struct CampaignIntegrationTests {
 // MARK: - Helper Method
 
 private extension CampaignIntegrationTests {
-    
+
     /// 建立供開團整合測試使用的最小訂單
     /// - Parameters:
     ///   - id: 訂單識別值
@@ -224,7 +224,7 @@ private extension CampaignIntegrationTests {
             mergedSourceIDs: []
         )
     }
-    
+
     /// 建立清空 campaignNames 的訂單副本
     /// - Parameters:
     ///   - order: 原始訂單
@@ -260,7 +260,7 @@ private extension CampaignIntegrationTests {
             mergedSourceIDs: order.mergedSourceIDs
         )
     }
-    
+
     /// 建立供開團整合測試使用的最小開團
     /// - Parameters:
     ///   - id: 開團識別值

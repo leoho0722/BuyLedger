@@ -13,7 +13,7 @@ enum CampaignFormatters {}
 // MARK: - Internal Method
 
 extension CampaignFormatters {
-    
+
     /// 依指定 locale 將金額格式化為新台幣 (無小數位)
     /// - Parameters:
     ///   - amount: 金額
@@ -22,7 +22,7 @@ extension CampaignFormatters {
     static func twd(_ amount: Decimal, locale: Locale) -> String {
         BLFormatters.twd(amount, locale: locale)
     }
-    
+
     /// 依指定 locale 將開團日期格式化為精簡日期
     /// - Parameters:
     ///   - date: 日期
@@ -31,7 +31,7 @@ extension CampaignFormatters {
     static func shortDate(_ date: Date, locale: Locale) -> String {
         date.formatted(.dateTime.month(.abbreviated).day().locale(locale))
     }
-    
+
     /// 依 locale 格式化開團日期與星期
     /// - Parameters:
     ///   - date: 日期
@@ -42,7 +42,7 @@ extension CampaignFormatters {
         let weekday = date.formatted(.dateTime.weekday(.abbreviated).locale(locale))
         return "\(day) \(weekday)"
     }
-    
+
     /// 依指定 locale 將訂購提醒時間戳格式化為日期與提示時間
     /// - Parameters:
     ///   - date: 提醒時間戳
@@ -59,7 +59,7 @@ enum CampaignStatusStyle {}
 // MARK: - Internal Method
 
 extension CampaignStatusStyle {
-    
+
     /// 取得開團狀態對應的 ``BLTone``
     /// - Parameter status: 開團狀態
     /// - Returns: 狀態膠囊使用的語意色調

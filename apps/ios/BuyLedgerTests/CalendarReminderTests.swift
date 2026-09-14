@@ -12,9 +12,9 @@ import Testing
 /// 驗證開團提醒的日期、標題與連結儲存
 @MainActor
 struct CalendarReminderTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func reminderTitleWrapsNameInCornerBrackets() {
         let campaign = Campaign(
             id: "C1",
@@ -25,18 +25,18 @@ struct CalendarReminderTests {
             settledDate: nil,
             notes: ""
         )
-        
+
         #expect(campaign.reminderTitle == "「四月團」訂購提醒")
     }
-    
+
     @Test func repositoryRoundTripsLinks() async throws(any Error) {
         let container = PersistenceContainer.makeInMemory(for: .testing)
         let repository = CampaignReminderRepository.live(container: container)
-        
+
         let ts1 = Self.day(month: 4, day: 20, hour: 9)
         let ts2 = Self.day(month: 4, day: 26, hour: 18)
         let ts3 = Self.day(month: 5, day: 1, hour: 9)
-        
+
         try await repository.saveLink(
             "C1",
             CampaignReminderLink(eventIdentifier: "EVT-1", reminderTimestamp: ts1)
@@ -50,7 +50,7 @@ struct CalendarReminderTests {
                 )
             ]
         )
-        
+
         // 相同 campaignID 會更新，不同 campaignID 會新增。
         try await repository.saveLink(
             "C1",
@@ -73,7 +73,7 @@ struct CalendarReminderTests {
                 )
             ]
         )
-        
+
         // 移除單一連結
         try await repository.removeLink("C1")
         links = try await repository.fetchLinks()
@@ -85,7 +85,7 @@ struct CalendarReminderTests {
                 )
             ]
         )
-        
+
         // 移除不存在的連結為 no-op
         try await repository.removeLink("C-nonexistent")
         links = try await repository.fetchLinks()
@@ -98,16 +98,16 @@ struct CalendarReminderTests {
             ]
         )
     }
-    
+
     // MARK: - Helper
-    
+
     /// 固定使用 Gregorian／UTC 行事曆
     static let utcCalendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
         return calendar
     }()
-    
+
     /// 建立 2026 年指定日期與時間 (UTC)
     /// - Parameters:
     ///   - month: 月份

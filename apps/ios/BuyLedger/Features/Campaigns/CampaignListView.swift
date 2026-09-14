@@ -10,31 +10,31 @@ import SwiftUI
 
 /// 開團列表：顯示每個開團的狀態與彙總進度 (到貨／收款)，點擊進入詳情
 struct CampaignListView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 開團功能 store
     @Bindable var store: StoreOf<CampaignFeature>
-    
+
     /// App 目前選用的顯示語系
     let language: AppLanguage
-    
+
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
-    
+
     /// 日期區段標題使用的現在時間
     @Dependency(\.date) private var date
-    
+
     /// 開團日期分組所用的行事曆 (含時區)；測試可注入固定值
     @Dependency(\.calendar) private var calendar
-    
+
     /// 篩選與分組圖示
     private var iconName: String {
         store.statusFilter == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill"
     }
-    
+
     // MARK: - View Body
-    
+
     /// 開團列表的畫面內容
     var body: some View {
         NavigationStack(path: campaignPath) {
@@ -71,7 +71,7 @@ struct CampaignListView: View {
 // MARK: - ViewBuilder
 
 private extension CampaignListView {
-    
+
     /// 建立狀態篩選選項 View
     /// - Parameter status: 對應的開團狀態
     /// - Returns: 選項 view
@@ -79,7 +79,7 @@ private extension CampaignListView {
     func statusFilterOption(_ status: CampaignStatus) -> some View {
         Text(LocalizedStringKey(status.title)).tag(CampaignStatus?.some(status))
     }
-    
+
     /// 工具列的篩選與分組選單；抽成獨立方法的理由同 ``statusFilterOption(_:)``
     @ViewBuilder
     var filterMenu: some View {
@@ -91,7 +91,7 @@ private extension CampaignListView {
                 }
             }
             .pickerStyle(.inline)
-            
+
             Menu("顯示方式") {
                 Picker("分組方式", selection: groupingBinding) {
                     ForEach(CampaignGrouping.allCases) { grouping in
@@ -105,7 +105,7 @@ private extension CampaignListView {
         }
         .accessibilityIdentifier(BLAccessibilityID.Campaigns.filterMenuButton)
     }
-    
+
     /// 工具列的「新增開團」按鈕；抽成獨立方法的理由同 ``statusFilterOption(_:)``
     @ViewBuilder
     var addCampaignButton: some View {
@@ -117,7 +117,7 @@ private extension CampaignListView {
         .accessibilityLabel(Text("新增開團"))
         .accessibilityIdentifier(BLAccessibilityID.Campaigns.addButton)
     }
-    
+
     /// 依載入與資料狀態切換載入失敗畫面、列表或空狀態
     @ViewBuilder
     var content: some View {
@@ -130,11 +130,11 @@ private extension CampaignListView {
                 store.send(.task)
             }
             .accessibilityIdentifier(BLAccessibilityID.Campaigns.listLoadFailure)
-            
+
         case .loading:
             ProgressView()
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
+
         case .loaded:
             if store.campaigns.isEmpty {
                 ContentUnavailableView(
@@ -178,7 +178,7 @@ private extension CampaignListView {
             }
         }
     }
-    
+
     /// 單一頂層日期區段：頂層標題 (月／年／日) + 其下各子群組
     /// - Parameters:
     ///   - section: 要呈現的頂層區段
@@ -193,13 +193,13 @@ private extension CampaignListView {
             Text(LocalizedStringKey(section.title))
                 .font(BLTypographyStyle.subhead.font.weight(.bold))
                 .padding(.horizontal, BLSpacing.large)
-            
+
             ForEach(section.subgroups) { subgroup in
                 subgroupView(subgroup, summaries: summaries)
             }
         }
     }
-    
+
     /// 單一日期子群組與開團卡片
     /// - Parameters:
     ///   - subgroup: 要呈現的子群組
@@ -218,7 +218,7 @@ private extension CampaignListView {
                     .padding(.horizontal, BLSpacing.large)
                     .padding(.top, BLSpacing.small)
             }
-            
+
             BLCard(padding: 0) {
                 VStack(spacing: 0) {
                     ForEach(Array(subgroup.campaigns.enumerated()), id: \.element.id) {
@@ -227,7 +227,7 @@ private extension CampaignListView {
                             campaign,
                             summary: summaries[campaign.name] ?? CampaignSummary(campaignName: campaign.name, orders: [])
                         )
-                        
+
                         if index < subgroup.campaigns.count - 1 {
                             Divider()
                                 .padding(.horizontal, BLSpacing.large)
@@ -238,7 +238,7 @@ private extension CampaignListView {
             .padding(.horizontal, BLSpacing.large)
         }
     }
-    
+
     /// 單一開團卡片列：點擊進詳情、長按 (contextMenu) 可編輯／刪除
     /// - Parameters:
     ///   - campaign: 對應的開團
@@ -267,7 +267,7 @@ private extension CampaignListView {
             } label: {
                 Label("編輯", systemImage: "pencil")
             }
-            
+
             Button(role: .destructive) {
                 store.send(.deleteCampaignTapped(campaign.id))
             } label: {
@@ -280,7 +280,7 @@ private extension CampaignListView {
 // MARK: - Private Method
 
 private extension CampaignListView {
-    
+
     /// 目前開團詳情的導覽路徑
     var campaignPath: Binding<[String]> {
         Binding(
@@ -288,7 +288,7 @@ private extension CampaignListView {
             set: { store.send(.campaignSelected($0.last)) }
         )
     }
-    
+
     /// 狀態篩選 binding；選取後送出 statusFilterSelected
     var statusFilterBinding: Binding<CampaignStatus?> {
         Binding(
@@ -296,7 +296,7 @@ private extension CampaignListView {
             set: { store.send(.statusFilterSelected($0)) }
         )
     }
-    
+
     /// 分組 binding；選取後送出 groupingSelected
     var groupingBinding: Binding<CampaignGrouping> {
         Binding(
@@ -310,52 +310,52 @@ private extension CampaignListView {
 
 /// 開團列表的單列：團名、狀態、筆數／金額與到貨／收款進度
 private struct CampaignRow: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 對應的開團
     let campaign: Campaign
-    
+
     /// 由訂單投影的彙總
     let summary: CampaignSummary
-    
+
     /// 按月或按年分組時顯示的開團日期；按日分組為 `nil`
     let dateText: String?
-    
+
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
-    
+
     // MARK: - View Body
-    
+
     /// 單列的畫面內容
     var body: some View {
         let palette = BLPalette()
-        
+
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             if let dateText {
                 Text(dateText)
                     .blTextStyle(.caption)
                     .foregroundStyle(Color.blSecondaryLabel)
             }
-            
+
             HStack(alignment: .top, spacing: BLSpacing.small) {
                 Text(campaign.name)
                     .blTextStyle(.headline)
                     .fixedSize(horizontal: false, vertical: true)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                
+
                 VStack(alignment: .trailing, spacing: BLSpacing.extraSmall) {
                     BLStatusPill(
                         campaign.status.title,
                         tone: CampaignStatusStyle.tone(for: campaign.status)
                     )
-                    
+
                     if campaign.isSettled {
                         BLStatusPill("已結團", tone: .neutral, showsIndicator: false)
                     }
                 }
             }
-            
+
             Text(
                 """
                 \(summary.orderCount) 筆 · \
@@ -364,13 +364,13 @@ private struct CampaignRow: View {
             )
             .blTextStyle(.subhead)
             .foregroundStyle(Color.blSecondaryLabel)
-            
+
             BLProgressBar(
                 title: "到貨",
                 value: summary.deliveryRatio,
                 trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
             )
-            
+
             BLProgressBar(
                 title: "收款",
                 value: summary.receivedRatio,
@@ -396,7 +396,7 @@ private struct CampaignRow: View {
         state.hasLoaded = true
         return state
     }()
-    
+
     return CampaignListView(
         store: Store(initialState: previewState) {
             CampaignFeature()

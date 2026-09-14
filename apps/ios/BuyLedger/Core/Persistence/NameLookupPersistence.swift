@@ -15,7 +15,7 @@ actor NameLookupPersistence<Record: NameLookupRecord> {}
 // MARK: - Internal Method
 
 extension NameLookupPersistence {
-    
+
     /// 讀出全部主檔名稱，依 locale 升冪排序
     /// - Returns: 名稱陣列
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
@@ -28,13 +28,13 @@ extension NameLookupPersistence {
             .map(\.name)
             .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
     }
-    
+
     /// 寫入指定名稱的主檔項目；若已存在不重複建立
     /// - Parameter name: 主檔名稱 (呼叫前由 caller 完成 trim)
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     func upsert(name: String) throws(PersistenceError) {
         let descriptor = FetchDescriptor<Record>(predicate: Record.matchingName(name))
-        
+
         let existing = try PersistenceError.mapFetch {
             try modelContext.fetch(descriptor).first
         }
@@ -45,20 +45,20 @@ extension NameLookupPersistence {
             }
         }
     }
-    
+
     /// 刪除指定名稱的主檔項目；不存在時視為 no-op
     /// - Parameter name: 主檔名稱
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     func delete(name: String) throws(PersistenceError) {
         let descriptor = FetchDescriptor<Record>(predicate: Record.matchingName(name))
-        
+
         let records = try PersistenceError.mapFetch {
             try modelContext.fetch(descriptor)
         }
         for record in records {
             modelContext.delete(record)
         }
-        
+
         do {
             try PersistenceError.mapSave {
                 try modelContext.save()
@@ -68,7 +68,7 @@ extension NameLookupPersistence {
             throw error
         }
     }
-    
+
     /// 將主檔項目更名；同名時合併，訂單 cascade 由 caller 處理
     /// - Parameters:
     ///   - oldName: 原本的名稱
@@ -82,7 +82,7 @@ extension NameLookupPersistence {
         for record in oldRecords {
             modelContext.delete(record)
         }
-        
+
         let newDescriptor = FetchDescriptor<Record>(predicate: Record.matchingName(newName))
         let existingNew = try PersistenceError.mapFetch {
             try modelContext.fetch(newDescriptor).first
@@ -90,7 +90,7 @@ extension NameLookupPersistence {
         if existingNew == nil {
             modelContext.insert(Record(name: newName))
         }
-        
+
         do {
             try PersistenceError.mapSave {
                 try modelContext.save()

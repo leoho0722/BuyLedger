@@ -9,38 +9,38 @@ import Foundation
 
 /// 訂單財務試算後的摘要
 struct OrderSummary: Equatable {
-    
+
     // MARK: - Data Properties
-    
+
     /// 實際收款
     let revenue: Decimal
-    
+
     /// 刷卡手續費
     let cardFee: Decimal
-    
+
     /// 平台手續費 (無條件進位到整數)
     let platformFee: Decimal
-    
+
     /// 金流手續費
     let paymentFee: Decimal
-    
+
     /// 刷卡、平台與金流手續費的合計
     let fees: Decimal
-    
+
     /// 總成本
     let totalCost: Decimal
-    
+
     /// 貨到付款時計入總成本的運費合計 (國內 + 國際 + 來源國當地國內運費)
     let codShippingCost: Decimal
-    
+
     /// 稅費與成本後的獲利
     let profit: Decimal
-    
+
     /// 獲利相對收款的比例
     let margin: Decimal
-    
+
     // MARK: - Init
-    
+
     /// 依訂單資料建立財務摘要
     ///
     /// - `revenue` = `chargedAmount` + `cardlessSupplementAmount` - `cardlessDeductionAmount`
@@ -70,7 +70,7 @@ struct OrderSummary: Equatable {
         }
         let totalCost = order.itemCost + fees + codShippingCost
         let profit = revenue - totalCost
-        
+
         self.revenue = revenue
         self.cardFee = cardFee
         self.platformFee = platformFee

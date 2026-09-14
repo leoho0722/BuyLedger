@@ -11,20 +11,20 @@ import Textual
 
 /// AI 商品明細總結 sheet
 struct AISummaryView: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 總結功能的 store
     @Bindable var store: StoreOf<AISummaryFeature>
-    
+
     // MARK: - View Body
-    
+
     /// 總結 sheet 的內容
     var body: some View {
         NavigationStack {
             VStack(alignment: .leading, spacing: 0) {
                 dataTransferDisclosure
-                
+
                 content
                     .accessibilityElement(children: .contain)
                     .accessibilityIdentifier(BLAccessibilityID.AISummary.root)
@@ -54,7 +54,7 @@ struct AISummaryView: View {
 // MARK: - ViewBuilder
 
 private extension AISummaryView {
-    
+
     /// AI 總結開始前即常駐呈現的第三方雲端資料傳送揭露
     @ViewBuilder
     var dataTransferDisclosure: some View {
@@ -68,7 +68,7 @@ private extension AISummaryView {
             .background(.secondary.opacity(0.08))
             .accessibilityIdentifier(BLAccessibilityID.AISummary.dataTransferDisclosure)
     }
-    
+
     /// 依目前串流階段呈現的主內容
     @ViewBuilder
     var content: some View {
@@ -86,7 +86,7 @@ private extension AISummaryView {
                 .accessibilityIdentifier(BLAccessibilityID.AISummary.retryButton)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            
+
         case .idle, .streaming, .finished:
             if store.summaryText.isEmpty {
                 VStack(spacing: BLSpacing.medium) {
@@ -101,7 +101,7 @@ private extension AISummaryView {
                     VStack(alignment: .leading, spacing: BLSpacing.small) {
                         StructuredText(markdown: store.summaryText)
                             .textual.structuredTextStyle(.gitHub)
-                        
+
                         if store.phase == .streaming {
                             HStack(spacing: BLSpacing.extraSmall) {
                                 ProgressView()
@@ -112,7 +112,7 @@ private extension AISummaryView {
                             }
                             .padding(.top, BLSpacing.small)
                         }
-                        
+
                         if let truncationMessage = store.truncationMessage {
                             Text(truncationMessage)
                                 .blTextStyle(.footnote)
@@ -120,7 +120,7 @@ private extension AISummaryView {
                                 .multilineTextAlignment(.leading)
                                 .padding(.top, BLSpacing.small)
                         }
-                        
+
                         if store.phase == .finished {
                             aiDisclaimerCapsule
                                 .padding(.top, BLSpacing.medium)
@@ -132,7 +132,7 @@ private extension AISummaryView {
             }
         }
     }
-    
+
     /// 內容生成完成後附在最末的膠囊提醒：告知此為 AI 生成內容、可能有誤
     @ViewBuilder
     var aiDisclaimerCapsule: some View {
@@ -140,7 +140,7 @@ private extension AISummaryView {
             Image(systemName: "sparkles")
                 .font(BLTypographyStyle.caption2.font.weight(.semibold))
                 .accessibilityHidden(true)
-            
+
             Text("此內容由 AI 生成，可能包含錯誤資訊，請自行核對。")
                 .blTextStyle(.caption)
                 .multilineTextAlignment(.leading)

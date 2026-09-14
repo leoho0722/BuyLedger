@@ -9,23 +9,23 @@ import SwiftUI
 
 /// 以姓名縮寫產生穩定漸層背景的頭像
 struct BLAvatar: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 頭像代表的完整名稱
     let name: String
-    
+
     /// 顯示在頭像中的縮寫文字
     let initials: String
-    
+
     /// 頭像寬高
     var size: CGFloat = 36
-    
+
     /// 是否僅作裝飾
     var isDecorative: Bool = false
-    
+
     // MARK: - View Body
-    
+
     /// 頭像的畫面內容
     var body: some View {
         Text(initials)
@@ -44,7 +44,7 @@ struct BLAvatar: View {
 // MARK: - Internal Method
 
 extension BLAvatar {
-    
+
     /// 將名稱轉換為穩定色相
     /// - Parameter name: 用來計算色相的名稱
     /// - Returns: 介於 `0` 到 `1` 的色相值
@@ -52,7 +52,7 @@ extension BLAvatar {
         let total = name.unicodeScalars.reduce(0) { $0 + Int($1.value) }
         return Double(total % 360) / 360
     }
-    
+
     /// 回傳指定色相對應的漸層兩端色彩
     /// - Parameter hue: 介於 `0` 到 `1` 的色相值
     /// - Returns: 由左上到右下的漸層端點色彩
@@ -71,7 +71,7 @@ extension BLAvatar {
 // MARK: - Private Method
 
 private extension BLAvatar {
-    
+
     /// 依名稱產生的穩定漸層
     var gradient: LinearGradient {
         LinearGradient(

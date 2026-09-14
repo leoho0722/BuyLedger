@@ -10,9 +10,9 @@ import UIKit
 
 /// 開啟本 App 系統設定頁的依賴介面
 struct OpenSettingsClient: Sendable {
-    
+
     // MARK: - Dependency Properties
-    
+
     /// 開啟本 App 的系統設定頁
     var open: @Sendable () async -> Void
 }
@@ -20,7 +20,7 @@ struct OpenSettingsClient: Sendable {
 // MARK: - Dependency Values
 
 extension OpenSettingsClient: DependencyKey {
-    
+
     /// App 執行時開啟系統設定的本 App 頁面
     nonisolated static let liveValue = OpenSettingsClient(
         open: {
@@ -35,7 +35,7 @@ extension OpenSettingsClient: DependencyKey {
             }
         }
     )
-    
+
     /// 測試時的替身：不做任何事，由測試以自訂 closure 覆寫驗證呼叫
     nonisolated static let testValue = OpenSettingsClient(
         open: {}

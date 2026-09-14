@@ -9,29 +9,29 @@ import SwiftUI
 
 /// 以短文字與語意狀態呈現狀態
 struct BLStatusPill: View {
-    
+
     // MARK: - View Properties
-    
+
     /// 狀態膠囊垂直內距，隨字級縮放
     @ScaledMetric(relativeTo: .caption) private var verticalPadding: CGFloat = 3
-    
+
     /// 狀態膠囊水平內距，隨字級縮放
     @ScaledMetric(relativeTo: .caption) private var horizontalPadding: CGFloat = 9
-    
+
     /// 狀態點直徑，隨字級縮放
     @ScaledMetric(relativeTo: .caption) private var indicatorSize: CGFloat = 5
-    
+
     /// 狀態膠囊顯示的文字
     let title: String
-    
+
     /// 狀態膠囊使用的語意狀態
     let tone: BLTone
-    
+
     /// 指示是否顯示左側狀態點
     let showsIndicator: Bool
-    
+
     // MARK: - Init
-    
+
     /// 建立狀態膠囊
     /// - Parameters:
     ///   - title: 狀態膠囊顯示的文字
@@ -46,9 +46,9 @@ struct BLStatusPill: View {
         self.tone = tone
         self.showsIndicator = showsIndicator
     }
-    
+
     // MARK: - View Body
-    
+
     /// 狀態膠囊的畫面內容
     var body: some View {
         HStack(spacing: 4) {
@@ -59,7 +59,7 @@ struct BLStatusPill: View {
                     .frame(width: indicatorSize, height: indicatorSize)
                     .accessibilityHidden(true)
             }
-            
+
             Text(LocalizedStringKey(title))
                 .font(BLTypographyStyle.caption.font.weight(.semibold))
         }
@@ -82,14 +82,14 @@ struct BLStatusPill: View {
         ("錯誤", .destructive),
         ("資訊", .informative),
     ]
-    
+
     VStack(alignment: .leading, spacing: BLSpacing.small) {
         HStack(spacing: BLSpacing.small) {
             ForEach(0..<3, id: \.self) { index in
                 BLStatusPill(samples[index].0, tone: samples[index].1)
             }
         }
-        
+
         HStack(spacing: BLSpacing.small) {
             ForEach(3..<samples.count, id: \.self) { index in
                 BLStatusPill(samples[index].0, tone: samples[index].1)

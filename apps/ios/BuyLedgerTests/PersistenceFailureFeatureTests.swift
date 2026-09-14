@@ -13,9 +13,9 @@ import Testing
 /// 驗證持久層失敗畫面
 @MainActor
 struct PersistenceFailureFeatureTests {
-    
+
     // MARK: - Tests
-    
+
     @Test func recoveryTapOnlyPresentsConfirmation() async {
         let box = QuarantineCallBox()
         let store = TestStore(initialState: PersistenceFailureFeature.State()) {
@@ -27,30 +27,30 @@ struct PersistenceFailureFeatureTests {
                 }
             )
         }
-        
+
         await store.send(.recoveryTapped) {
             $0.confirmation = Self.expectedConfirmationAlert
         }
-        
+
         #expect(store.state.phase == .blocked)
         #expect(box.callCount == 0)
     }
-    
+
     @Test func cancellingConfirmationDismissesWithoutRecovering() async {
         let store = TestStore(initialState: PersistenceFailureFeature.State()) {
             PersistenceFailureFeature()
         }
-        
+
         await store.send(.recoveryTapped) {
             $0.confirmation = Self.expectedConfirmationAlert
         }
         await store.send(.confirmation(.dismiss)) {
             $0.confirmation = nil
         }
-        
+
         #expect(store.state.phase == .blocked)
     }
-    
+
     @Test func confirmedRecoveryMovesFilesThenRequiresRelaunch() async {
         let store = TestStore(initialState: PersistenceFailureFeature.State()) {
             PersistenceFailureFeature()
@@ -58,7 +58,7 @@ struct PersistenceFailureFeatureTests {
             $0[PersistenceStoreQuarantineClient.self] = PersistenceStoreQuarantineClient(
                 quarantine: {})
         }
-        
+
         await store.send(.recoveryTapped) {
             $0.confirmation = Self.expectedConfirmationAlert
         }
@@ -69,7 +69,7 @@ struct PersistenceFailureFeatureTests {
             $0.phase = .relaunchRequired
         }
     }
-    
+
     @Test func failedRecoveryStaysBlockingAndShowsReason() async {
         let store = TestStore(initialState: PersistenceFailureFeature.State()) {
             PersistenceFailureFeature()
@@ -80,7 +80,7 @@ struct PersistenceFailureFeatureTests {
                 }
             )
         }
-        
+
         await store.send(.recoveryTapped) {
             $0.confirmation = Self.expectedConfirmationAlert
         }
@@ -96,7 +96,7 @@ struct PersistenceFailureFeatureTests {
 // MARK: - Private Method
 
 private extension PersistenceFailureFeatureTests {
-    
+
     /// 復原確認 alert 的預期內容，供窮舉斷言比對
     static var expectedConfirmationAlert: AlertState<PersistenceFailureFeature.Action.Confirmation> {
         AlertState {
@@ -116,9 +116,9 @@ private extension PersistenceFailureFeatureTests {
 
 /// 記錄 quarantine client 呼叫次數
 private final class QuarantineCallBox: @unchecked Sendable {
-    
+
     // MARK: - Data Properties
-    
+
     /// 呼叫次數
     var callCount = 0
 }
