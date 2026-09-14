@@ -36,7 +36,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 # 儲存庫指引
 
-本檔只記錄 Codex 專屬差異；跨平台通用規範以 [`CLAUDE.md`](CLAUDE.md) 為準，各平台與 shared 模組的硬規則與隱性 gotcha 見該目錄的 `CLAUDE.md` (如 [`apps/ios/CLAUDE.md`](apps/ios/CLAUDE.md)、[`shared/data-model/CLAUDE.md`](shared/data-model/CLAUDE.md))，專案概覽見 [`README.md`](README.md)，Apple 平台 setup 見 [`apps/ios/README.md`](apps/ios/README.md)。
+本檔只記錄 Codex 專屬差異；跨平台通用規範以 [`CLAUDE.md`](CLAUDE.md) 為準，各平台與 shared 模組的硬規則與隱性 gotcha 見該目錄的 `CLAUDE.md` (如 [`apps/ios/CLAUDE.md`](apps/ios/CLAUDE.md)、[`shared/data-model/CLAUDE.md`](shared/data-model/CLAUDE.md))；只涉特定子目錄的規則在 `.claude/rules/`，各檔 frontmatter 的 `paths` 標明適用範圍，動到相符檔案前先讀對應規則檔，專案概覽見 [`README.md`](README.md)，Apple 平台 setup 見 [`apps/ios/README.md`](apps/ios/README.md)。
 
 讀取規格時，`openspec/specs/**/spec.md` 尾端的 `<!-- @trace -->` 區塊是工具生成的歷史紀錄，所列路徑未經驗證；判斷程式碼現況一律以搜尋程式碼本身為準，不得以 trace 區塊推論現有結構。
 

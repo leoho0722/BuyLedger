@@ -31,7 +31,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 # 儲存庫指引
 
-<!-- 維護提示 (HTML 註解不進 context)：每行自問「刪掉會讓 Claude 出錯嗎」，不會就刪；全檔維持 200 行以內；只在單一目錄適用的規則移到該目錄的 CLAUDE.md；/doctor 可提議修剪 -->
+<!-- 維護提示 (HTML 註解不進 context)：每行自問「刪掉會讓 Claude 出錯嗎」，不會就刪；全檔維持 200 行以內；只在單一目錄適用的規則移到該目錄的 CLAUDE.md 或 .claude/rules/；/doctor 可提議修剪 -->
 
 本檔只放**跨平台通用規範**；各平台與 shared 模組的技術棧硬規則與隱性 gotcha 一律放該目錄的 `CLAUDE.md`，不在本檔重複。
 
@@ -39,7 +39,8 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 - **可部署單元放 `apps/<platform>/`，跨平台共享內容放 `shared/`**；`openspec/`、`assets/` 與管轄所有平台的 `.github/` (CI workflow，見 `.github/workflows/ci.yml`) 留在根目錄，不依平台分拆。
 - **不留 stub**：`apps/android` 動工時才建立目錄；repo 不放空目錄或占位檔，文件與設定中的路徑引用須與實際佈局一致。
-- **每個平台目錄與 shared 模組目錄各有自己的 `CLAUDE.md`** (如 `apps/ios/CLAUDE.md`、`shared/data-model/CLAUDE.md`)，記錄該處硬規則與 gotcha；新平台動工第一件事就是建立它。
+- **每個平台目錄與 shared 模組目錄各有自己的 `CLAUDE.md`** (如 `apps/ios/CLAUDE.md`、`shared/data-model/CLAUDE.md`)，記錄該處隨時適用的硬規則與 gotcha；新平台動工第一件事就是建立它。
+- **只和特定子目錄或檔案類型相關的規則放根目錄 `.claude/rules/<平台>-<主題>.md`**，以 frontmatter `paths` 限定載入範圍 (如 `.claude/rules/ios-ui-tests.md`)；平台 `CLAUDE.md` 開頭列出自己的規則檔。
 
 ## 規格 (openspec)
 
@@ -58,6 +59,14 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 ## 文件查證準則
 
 - 動任何框架或第三方套件前先用 **Context7** 查最新官方文件，不憑記憶或舊範例；平台專屬的額外對照規則 (如 Apple docs MCP) 見各平台 `CLAUDE.md`。
+
+## 協作方式
+
+- **交付使用者要求的範圍**：例行判斷自行決定，不同解讀會導致實質不同的工作時才先確認；認為要求有誤或有更好做法時說一句，並照原要求繼續，不暗自縮小、擴大或改寫任務。
+    - 完成全部工作才回報完成；做不到的部分照做其餘，並明說缺什麼、為什麼。
+- **Claude 撰寫的 Markdown (`CLAUDE.md`、`.claude/rules/`、`openspec/` 文件、README) 長度配合內容所需**，不加填充段落、重複摘要或樣板章節。
+- **`CLAUDE.md` 與 `.claude/rules/` 只寫現行規則與理由**：事件經過、日期、實測數字、「曾經／先前／已推翻」的沿革不寫進來，沿革留在 commit 與 openspec。
+    - 新增條目前先確認刪掉它會讓 Claude 出錯；讀程式碼就能知道的事不寫。
 
 ## 產品政策 (跨平台)
 
@@ -90,7 +99,7 @@ Changes can be parked（暫存）— temporarily moved out of `openspec/changes/
 
 | 本次 diff 若包含                                 | 必須同步的文件                                                                 |
 |--------------------------------------------------|--------------------------------------------------------------------------------|
-| 新的硬規則、gotcha、慣例 (踩到的雷、不可違反的限制) | 對應層級的 `CLAUDE.md` (通用 → root；平台或 shared 模組專屬 → 該目錄)           |
+| 新的硬規則、gotcha、慣例 (踩到的雷、不可違反的限制) | 對應層級的 `CLAUDE.md` 或 `.claude/rules/` (通用 → root；平台或 shared 模組專屬 → 該目錄；只涉特定子目錄 → 規則檔) |
 | 技術棧、外部服務、API key 或環境設定變動           | 平台 `README.md` 的技術棧／開發環境設定 (含 `Config.example.xcconfig` 等範本檔) |
 | 目錄結構、feature 模組、build / test 指令變動      | 平台 `README.md` 的專案結構／Build & Run；跨平台佈局變動另須 root `README.md`    |
 | 讓既有規則或描述失效的行為改變                   | 刪除或改寫過時內容：與現況矛盾的文件比缺文件更糟                                |

@@ -45,7 +45,7 @@ BuyLedger (repo)/
 | Apple (iOS / iPadOS)         | `apps/ios/`   | [apps/ios/README.md](apps/ios/README.md)：技術棧、環境設定、build / test、架構速覽、Troubleshooting |
 | Android                      | `apps/android/` | (未來，尚未建立)                                                                                    |
 
-各平台與 shared 模組的 AI 協作硬規則見該目錄的 `CLAUDE.md` (如 `apps/ios/CLAUDE.md`、`shared/data-model/CLAUDE.md`)；跨平台通用規範見根目錄 [`CLAUDE.md`](CLAUDE.md)。
+各平台與 shared 模組的 AI 協作硬規則見該目錄的 `CLAUDE.md` (如 `apps/ios/CLAUDE.md`、`shared/data-model/CLAUDE.md`)，只涉特定子目錄的規則在 `.claude/rules/`；跨平台通用規範見根目錄 [`CLAUDE.md`](CLAUDE.md)。
 
 ## 產品政策
 

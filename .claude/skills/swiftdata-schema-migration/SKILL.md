@@ -1,9 +1,9 @@
 ---
 name: swiftdata-schema-migration
-description: BuyLedger SwiftData schema 版本升級標準流程。執行 schema 變更前 invoke，取得新增版本的逐步操作指引。決策規則 (lightweight vs custom、floor 限制) 見 CLAUDE.md「SwiftData Schema 與 Migration」一節。
+description: BuyLedger SwiftData schema 版本升級標準流程。執行 schema 變更前 invoke，取得新增版本的逐步操作指引。決策規則 (lightweight vs custom、floor 限制) 見 .claude/rules/ios-data-layer.md「Schema 與遷移」。
 ---
 
-BuyLedger SwiftData schema 升級的逐步操作指引。決策規則 (何時用 lightweight、何時用 custom、移除舊版的前提) 仍在 CLAUDE.md，請先確認已閱讀。
+BuyLedger SwiftData schema 升級的逐步操作指引。決策規則 (何時用 lightweight、何時用 custom、移除舊版的前提) 在 `.claude/rules/ios-data-layer.md` 的「Schema 與遷移」，請先確認已閱讀。
 
 ## 前置確認
 

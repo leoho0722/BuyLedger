@@ -89,7 +89,7 @@ App 使用兩把 API key，皆透過 `Config.xcconfig` 注入 (機密)：
 
 未設 key 時 App 仍可啟動：匯率工具與報價頁顯示「尚未設定 ExchangeRate-API 金鑰」橫幅；AI 總結面板顯示「尚未設定 OLLAMA_API_KEY。」並提供重試。
 
-金鑰內嵌於產物 (而非執行期由使用者提供) 是已評估並接受的風險，其成立前提與前提失效時的作法見 [`CLAUDE.md` › 外部 API 實作](CLAUDE.md#外部-api-實作)。
+金鑰內嵌於產物 (而非執行期由使用者提供) 是已評估並接受的風險，其成立前提與前提失效時的作法見 [`.claude/rules/ios-integrations.md`](../../.claude/rules/ios-integrations.md) 的「外部 API」。
 
 #### 撤換金鑰
 
@@ -137,7 +137,7 @@ xcodebuildmcp simulator test \
   --simulator-name "iPhone 17"
 ```
 
-Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確認視覺正確後 commit baseline；之後變更若與 baseline 不符會 fail。固定時間注入的硬規則 (`TestDependencies.withFixedNow`) 見 [CLAUDE.md › 測試準則](CLAUDE.md#測試準則)。
+Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確認視覺正確後 commit baseline；之後變更若與 baseline 不符會 fail。固定時間注入的硬規則 (`TestDependencies.withFixedNow`) 見 [`.claude/rules/ios-unit-tests.md`](../../.claude/rules/ios-unit-tests.md) 的「Snapshot 測試」。
 
 跑完測試後想查 App target 覆蓋率 (不設門檻，僅供盤點盲區)：
 
@@ -154,7 +154,7 @@ xcodebuildmcp simulator test \
   --simulator-name "iPhone 17"
 ```
 
-UI 測試以啟動參數宣告前置條件 (資料、語言、時間、外部相依)，測試端用 `LaunchOptions` 組出、App 端由 `BLUITestConfiguration` 解析；常用旗標：`-BLUITest` (開啟測試模式)、`-BLUITestSeed <profile>` (注入種子資料)、`-BLUITestNow <ISO8601>` (固定時間)、`-BLUITestLanguage <traditionalChinese|english>`、`-BLUITestLoadFailure <orders|...>`。整套 harness 以 `#if DEBUG` 圈住、不進 Release。共用測試工具在 `BuyLedgerUITests/Support/` 與 `BuyLedgerUITests/Screens/`，identifier 常數在 `BuyLedgerAccessibilityIDs/BLAccessibilityID.swift` (同時編入 App 與 UITests 兩個 target)。硬規則 (一律用 identifier 定位、測試前必 seed、不得以 skip 掩蓋、僅覆蓋 iOS 26.x) 見 [CLAUDE.md › 測試準則](CLAUDE.md#測試準則)。
+UI 測試以啟動參數宣告前置條件 (資料、語言、時間、外部相依)，測試端用 `LaunchOptions` 組出、App 端由 `BLUITestConfiguration` 解析；常用旗標：`-BLUITest` (開啟測試模式)、`-BLUITestSeed <profile>` (注入種子資料)、`-BLUITestNow <ISO8601>` (固定時間)、`-BLUITestLanguage <traditionalChinese|english>`、`-BLUITestLoadFailure <orders|...>`。整套 harness 以 `#if DEBUG` 圈住、不進 Release。共用測試工具在 `BuyLedgerUITests/Support/` 與 `BuyLedgerUITests/Screens/`，identifier 常數在 `BuyLedgerAccessibilityIDs/BLAccessibilityID.swift` (同時編入 App 與 UITests 兩個 target)。硬規則 (一律用 identifier 定位、測試前必 seed、不得以 skip 掩蓋、僅覆蓋 iOS 26.x) 見 [`.claude/rules/ios-ui-tests.md`](../../.claude/rules/ios-ui-tests.md)。
 
 > 💡 CLI 端篩選測試一律用 `-only-testing:`／`-skip-testing:` 旗標，不要用 `-testPlan`：`xcodebuildmcp` 的 `test` 子命令不理會經 `--extra-args` 傳入的 `-testPlan`，會退回 scheme 預設計畫。
 
@@ -204,19 +204,19 @@ bun run unlock
 - `liveValue`：純本機 SwiftData，**不自動 seed**——使用者首次啟動會看到真正的空狀態。
 - `previewValue`：in-memory + 自動 seed `LedgerOrder.sampleOrders`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
 - `LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback` **僅供 Preview / 單元測試 / `previewValue`** 使用，runtime 不讀取。
-- **Schema 版本化**：`Core/Persistence/BuyLedgerSchema.swift` 以 `VersionedSchema` (floor `BuyLedgerSchemaV15` → target `BuyLedgerSchemaV17`) + `BuyLedgerMigrationPlan` 管理遷移。新增欄位／表走 lightweight、改既有欄位型別或 `@Model` 類別名走 custom dump-and-restore；版本移除、shadow 凍結等硬規則見 [`CLAUDE.md › SwiftData Schema 與 Migration`](CLAUDE.md#swiftdata-schema-與-migration)。開團訂購提醒連結表 `CampaignReminderRecord` 是唯一的 iOS-only 表 (記行事曆 `eventIdentifier` 與提醒時間戳，與跨平台 `Campaign` 解耦、不入跨平台 schema)。
+- **Schema 版本化**：`Core/Persistence/BuyLedgerSchema.swift` 以 `VersionedSchema` (floor `BuyLedgerSchemaV15` → target `BuyLedgerSchemaV17`) + `BuyLedgerMigrationPlan` 管理遷移。新增欄位／表走 lightweight、改既有欄位型別或 `@Model` 類別名走 custom dump-and-restore；版本移除、shadow 凍結等硬規則見 [`.claude/rules/ios-data-layer.md`](../../.claude/rules/ios-data-layer.md) 的「Schema 與遷移」。開團訂購提醒連結表 `CampaignReminderRecord` 是唯一的 iOS-only 表 (記行事曆 `eventIdentifier` 與提醒時間戳，與跨平台 `Campaign` 解耦、不入跨平台 schema)。
 
 ### 隱私與遙測
 
-遙測強制開啟，設定頁不提供任何相關開關或說明；本 App 產物不對外散布、僅安裝於開發者自己的裝置，不涉及第三方使用者的同意權議題。產物內含 `PrivacyInfo.xcprivacy` 隱私資訊清單，宣告使用者預設值的具名理由與所連結遙測 SDK 的資料類型，遙測相關揭露僅以此清單呈現；細節與 gotcha 見 `CLAUDE.md` 的「Firebase (遙測底座、無雲端同步)」一節。
+遙測強制開啟，設定頁不提供任何相關開關或說明；本 App 產物不對外散布、僅安裝於開發者自己的裝置，不涉及第三方使用者的同意權議題。產物內含 `PrivacyInfo.xcprivacy` 隱私資訊清單，宣告使用者預設值的具名理由與所連結遙測 SDK 的資料類型，遙測相關揭露僅以此清單呈現；細節與 gotcha 見 [`.claude/rules/ios-firebase-privacy.md`](../../.claude/rules/ios-firebase-privacy.md)。
 
 ### 帳本保護
 
-「更多 → 設定」的「帳本保護」區塊提供單一開關：開啟時同時啟用「App 進入背景即上鎖」與「回到前景或冷啟動需通過驗證才顯示內容」兩項保護，關閉時完全回到現況。啟用路徑本身需先通過一次系統本機驗證 (`BiometricAuthClient`，`LAContext` 的 `.deviceOwnerAuthentication` 政策，涵蓋生物辨識與裝置密碼後備)，成功才寫入偏好；失敗、取消或裝置不支援則開關回到關閉並以對話框說明原因。上鎖只保證回到前景需要驗證，不保證多工切換器縮圖排除內容 (已知取捨，見 `CLAUDE.md › App 進入點與平台導覽`)。
+「更多 → 設定」的「帳本保護」區塊提供單一開關：開啟時同時啟用「App 進入背景即上鎖」與「回到前景或冷啟動需通過驗證才顯示內容」兩項保護，關閉時完全回到現況。啟用路徑本身需先通過一次系統本機驗證 (`BiometricAuthClient`，`LAContext` 的 `.deviceOwnerAuthentication` 政策，涵蓋生物辨識與裝置密碼後備)，成功才寫入偏好；失敗、取消或裝置不支援則開關回到關閉並以對話框說明原因。上鎖只保證回到前景需要驗證，不保證多工切換器縮圖排除內容 (已知取捨，見 [`.claude/rules/ios-navigation.md`](../../.claude/rules/ios-navigation.md) 的「App 鎖定」)。
 
 - `AppLockFeature` (`Features/App/`)：啟用驗證、鎖定／解鎖狀態機，巢狀於 `SettingsFeature.State.appLock`；`SettingsFeature` 攔截其驗證成功與關閉事件寫回 `SettingsStorage`。
 - `AppLockView` (`Features/App/`)：鎖定時取代整個正常介面的阻斷畫面，提供「重新驗證」(不提供跳過)。
-- `AppScenePhaseCoordinator` (`Features/App/`)：由 `BuyLedgerApp` 的 `\.scenePhase` 呼叫，依場景階段 (`.background`／`.active`) 轉送 `AppLockFeature` 的鎖定／解鎖動作；觸發訊號的選擇與該踩過的坑見 `CLAUDE.md` 同節。
+- `AppScenePhaseCoordinator` (`Features/App/`)：由 `BuyLedgerApp` 的 `\.scenePhase` 呼叫，依場景階段 (`.background`／`.active`) 轉送 `AppLockFeature` 的鎖定／解鎖動作；觸發訊號的選擇見 [`.claude/rules/ios-navigation.md`](../../.claude/rules/ios-navigation.md) 的「App 鎖定」。
 - UI 測試以 `-BLUITestAppLockEnabled` 直接抵達鎖定狀態、`-BLUITestBiometricScenario` 選擇驗證情境，全程不觸發系統生物辨識提示。
 
 ### 外部 API
