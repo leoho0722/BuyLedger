@@ -124,7 +124,7 @@ xcodebuildmcp simulator build-and-run \
 >
 > ⚠️ build 失敗時 CLI 預設只回 trailing `BUILD FAILED`；用 `xcodebuildmcp --log-level error <subcommand> ...` 取得實際 diagnostic。
 >
-> 💡 simulator 名稱會隨 Xcode 升級變動，先用 `xcodebuildmcp simulator list-sims` 查當前可用名稱再改上方指令。
+> 💡 simulator 名稱會隨 Xcode 升級變動，先用 `xcodebuildmcp simulator list` 查當前可用名稱再改上方指令。
 
 ### 3. 執行測試
 

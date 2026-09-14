@@ -35,7 +35,7 @@
 - **模擬器跑 App 用 `build-and-run`**，不先 `build` 再 `build-and-run`。
 - **iOS 與 iPadOS simulator build 共用 `build.db`，要序列化 (`cmd1 && cmd2`)**：並行會 `database is locked`。
 - **看詳細 build error 加 `xcodebuildmcp --log-level error <subcommand>`**，否則只回 `BUILD FAILED`。
-- **模擬器以識別碼指定，先 `xcodebuildmcp simulator list-sims` 查可用清單**，不寫死名稱。
+- **模擬器以識別碼指定，先 `xcodebuildmcp simulator list` 查可用清單**，不寫死名稱。
     - CI 找不到符合版本的執行環境時 job 要明確失敗，不退回舊版執行環境。
 - **erase 模擬器是安全的復原手段**，不影響 `DatePicker` 的日期格式。
     - 進系統設定可用 `xcodebuildmcp ui-automation` (`simulator launch-app --bundle-id com.apple.Preferences` 後 `snapshot-ui`／`tap`)，不需要 `computer-use`；但設定頁的開關與滑桿不一定能取得 ref。
