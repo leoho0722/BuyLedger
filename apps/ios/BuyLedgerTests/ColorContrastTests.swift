@@ -55,17 +55,20 @@ struct ColorContrastTests {
     }
 
     @Test func layerStackIsCompositedFromTheBottomUp() {
+        // Given：半透明黑色前景疊在白色背景上
         let stacked = ColorContrast.components(of: .clear, appearance: .light)
 
         #expect(stacked.alpha == 0)
 
+        // When：計算堆疊色彩的對比度
         let ratio = ColorContrast.ratio(
             .black,
-            on: [Color.white.opacity(0), .white],
+            on: [Color.black.opacity(0.5), .white],
             appearance: .light
         )
 
-        #expect(abs(ratio - 21) < 0.01)
+        // Then：結果應符合由下而上的合成值
+        #expect(abs(ratio - 5.28) < 0.01)
     }
 
     // MARK: 情境解析

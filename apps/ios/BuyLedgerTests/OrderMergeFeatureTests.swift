@@ -156,7 +156,14 @@ struct OrderMergeFeatureTests {
 
         await store.send(.candidateTapped("O2"))
         await store.receive(\.candidatePhotosLoaded)
-        await store.receive(\.delegate.completed)
+        await store.receive { action in
+            guard let completed = Self.completedPath.extract(from: action) else {
+                return false
+            }
+            return completed.primary == primary
+                && completed.secondary == secondary
+                && completed.keptPhotos == primaryPhotos + secondaryPhotos
+        }
 
         #expect(store.state.step == .selectCandidate)
     }
@@ -310,13 +317,18 @@ struct OrderMergeFeatureTests {
         }
 
         await store.send(.photoStepConfirmTapped)
-        await store.receive(\.delegate.completed)
-
-        // delegate payload 驗證：以 case path 取出參數
         let combined = primaryPhotos + secondaryPhotos
         let expectedKept = [combined[1], combined[2], combined[6]]
+        await store.receive { action in
+            guard let completed = Self.completedPath.extract(from: action) else {
+                return false
+            }
+            return completed.primary == primary
+                && completed.secondary == secondary
+                && completed.keptPhotos == expectedKept
+        }
+
         #expect(store.state.selectedPhotoIndices.sorted() == [1, 2, 6])
-        #expect(store.state.selectedPhotoIndices.sorted().map { combined[$0] } == expectedKept)
     }
 
     /// 挑選步驟顯示雙方已載入的照片
@@ -400,7 +412,16 @@ struct OrderMergeFeatureTests {
 
 private extension OrderMergeFeatureTests {
 
+    // MARK: - Static Properties
+
+    /// 合併完成 delegate action 的 case path
+    private static let completedPath: AnyCasePath<
+        OrderMergeFeature.Action,
+        (primary: LedgerOrder, secondary: LedgerOrder, keptPhotos: [Data])
+    > = AnyCasePath(\.delegate.completed)
+
     /// 建立測試訂單；未指定的欄位使用中性預設值
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - customer: 客戶名稱

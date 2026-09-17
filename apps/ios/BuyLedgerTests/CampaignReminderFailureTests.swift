@@ -163,10 +163,10 @@ struct CampaignReminderFailureTests {
 
     /// 權限提示的「前往設定」以注入的相依開啟系統設定
     @Test func openSettingsButtonInvokesTheInjectedDependency() async {
-        let opened = OpenedBox()
+        let opened = LockIsolated(false)
         let store = Self.makeStore {
             $0[CalendarReminderClient.self].requestAccess = { .denied }
-            $0[OpenSettingsClient.self].open = { opened.value = true }
+            $0[OpenSettingsClient.self].open = { opened.setValue(true) }
         }
 
         await store.send(.editCampaign(.presented(.saveTapped))) {
@@ -189,25 +189,57 @@ struct CampaignReminderFailureTests {
 
     /// 移除不存在的事件不應報錯
     @Test func removingAnAbsentEventRemainsANoOp() async {
+        // Given：提醒連結指向已不存在的行事曆事件
+        let removeCallCount = LockIsolated(0)
+        let campaign = Campaign(
+            id: Self.campaignID,
+            name: "四月團",
+            openDate: TestDependencies.fixedNow,
+            closeDate: TestDependencies.fixedNow,
+            status: .ongoing,
+            settledDate: nil,
+            notes: ""
+        )
+        var editState = CampaignEditFeature.State(
+            original: campaign,
+            id: UUID(0),
+            currentDate: TestDependencies.fixedNow,
+            wantsReminder: false,
+            reminderTimestamp: TestDependencies.fixedNow
+        )
+        editState.draft.name = campaign.name
         var initial = CampaignFeature.State()
+        initial.campaigns = [campaign]
         initial.reminderLinks[Self.campaignID] = CampaignReminderLink(
             eventIdentifier: "EVT-gone",
             reminderTimestamp: TestDependencies.fixedNow
         )
+        initial.editCampaign = editState
         let store = TestStore(initialState: initial) {
             CampaignFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
+            $0[CampaignRepository.self].saveCampaign = { _ in }
             $0[CalendarReminderClient.self].removeReminder = { (_: String) async throws(CalendarReminderError) in
+                removeCallCount.withValue { $0 += 1 }
                 throw CalendarReminderError.system(message: "boom")
             }
             $0[CampaignReminderRepository.self].removeLink = { _ in }
         }
-        await store.send(.reminderStored(Self.campaignID, nil)) {
+
+        // When：儲存編輯後嘗試移除不存在的事件
+        await store.send(.editCampaign(.presented(.saveTapped))) {
+            $0.editCampaign = nil
+        }
+        await store.receive(\.campaignSaved)
+        await store.receive(\.reminderStored) {
             $0.reminderLinks[Self.campaignID] = nil
         }
+        await store.finish()
 
+        // Then：移除失敗不應污染畫面狀態或顯示錯誤
+        #expect(removeCallCount.value == 1)
         #expect(store.state.reminderLinks[Self.campaignID] == nil)
         #expect(store.state.noticeAlert == nil)
     }
@@ -216,13 +248,15 @@ struct CampaignReminderFailureTests {
 
     @Test func rebuildKeepsTheOldEventWhenTheNewOneFailsToBeCreated() async {
         // 建立新事件失敗時，保留舊連結且不移除舊事件。
-        let removeCallCount = CallCountBox()
+        let removeCallCount = LockIsolated(0)
         let store = Self.makeRebuildStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
             $0[CalendarReminderClient.self].addReminder = { (_: String, _: Date, _: TimeInterval) async throws(CalendarReminderError) -> String in
                 throw CalendarReminderError.system(message: "boom")
             }
-            $0[CalendarReminderClient.self].removeReminder = { _ in removeCallCount.value += 1 }
+            $0[CalendarReminderClient.self].removeReminder = { _ in
+                removeCallCount.withValue { $0 += 1 }
+            }
         }
 
         await store.send(.editCampaign(.presented(.saveTapped))) {
@@ -254,15 +288,15 @@ struct CampaignReminderFailureTests {
     }
 
     @Test func rebuildRemovesTheOldEventOnlyAfterTheNewOneIsCreated() async {
-        let removeCallCount = CallCountBox()
-        let removedIdentifier = CapturedIdentifierBox()
+        let removeCallCount = LockIsolated(0)
+        let removedIdentifier = LockIsolated<String?>(nil)
         let store = Self.makeRebuildStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
             $0[CalendarReminderClient.self].addReminder = { _, _, _ in "EVT-new" }
             $0[CampaignReminderRepository.self].saveLink = { _, _ in }
             $0[CalendarReminderClient.self].removeReminder = { identifier in
-                removeCallCount.value += 1
-                removedIdentifier.value = identifier
+                removeCallCount.withValue { $0 += 1 }
+                removedIdentifier.setValue(identifier)
             }
         }
 
@@ -347,6 +381,7 @@ private extension CampaignReminderFailureTests {
     static let newTimestamp = TestDependencies.fixedNow.addingTimeInterval(18 * 3600)
 
     /// 建立一個「儲存新開團並要求建立提醒」的 store
+    ///
     /// - Parameter dependencies: 要注入的依賴修改
     /// - Returns: 已建立的 CampaignFeature 測試 store
     static func makeStore(
@@ -376,6 +411,7 @@ private extension CampaignReminderFailureTests {
     }
 
     /// 建立含提醒連結與新時間的開團 store
+    ///
     /// - Parameter dependencies: 要注入的依賴修改
     /// - Returns: 已建立的 CampaignFeature 測試 store
     static func makeRebuildStore(
@@ -446,6 +482,7 @@ private extension CampaignReminderFailureTests {
     }
 
     /// 權限被拒時的 alert
+    ///
     /// - Returns: 行事曆存取被拒時顯示的 alert
     static func accessDeniedAlert() -> AlertState<CampaignFeature.Action.NoticeAlert> {
         AlertState {
@@ -463,6 +500,7 @@ private extension CampaignReminderFailureTests {
     }
 
     /// 建立失敗時的 alert
+    ///
     /// - Returns: 訂購提醒建立失敗時使用的 alert
     static func creationFailedAlert() -> AlertState<CampaignFeature.Action.NoticeAlert> {
         AlertState {
@@ -475,31 +513,4 @@ private extension CampaignReminderFailureTests {
             TextState("訂購提醒建立失敗，請稍後再試。")
         }
     }
-}
-
-/// 記錄開啟系統設定是否被呼叫
-private final class OpenedBox: @unchecked Sendable {
-
-    // MARK: - Data Properties
-
-    /// 是否已被呼叫
-    var value = false
-}
-
-/// 記錄 fake closure 被呼叫的次數
-private final class CallCountBox: @unchecked Sendable {
-
-    // MARK: - Data Properties
-
-    /// 呼叫次數
-    var value = 0
-}
-
-/// 捕捉 fake client 收到的事件識別碼參數
-private final class CapturedIdentifierBox: @unchecked Sendable {
-
-    // MARK: - Data Properties
-
-    /// 由 fake closure 寫入、供測試讀取的值
-    var value: String?
 }

@@ -66,6 +66,7 @@ final class AISummaryTests: BLUITestCase {
 private extension AISummaryTests {
 
     /// 切到訂單分頁並等清單就緒，回傳訂單清單 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - file: 失敗時回報的來源檔案
@@ -78,7 +79,7 @@ private extension AISummaryTests {
         line: UInt = #line
     ) -> OrdersScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToOrders() {
+        if !root.goToOrders(file: file, line: line) {
             failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
         }
 

@@ -1057,6 +1057,7 @@ struct CampaignFeatureTests {
     // MARK: - Reload Consistency Tests
 
     /// 儲存失敗後重新載入，確認畫面與資料庫一致
+    ///
     /// - Throws: 測試資料建立或功能驗證失敗時拋出錯誤
     @Test func presentedCampaignsMatchReloadAfterFailedSave() async throws(any Error) {
         let existing = makeCampaign(
@@ -1302,35 +1303,6 @@ struct CampaignFeatureTests {
         #expect(store.state.orders == [order])
     }
 
-    /// 開團摘要衍生自 `State.orders` 投影
-    @Test func ordersProjectionDrivesCampaignSummary() {
-        var state = CampaignFeature.State()
-        state.orders = [
-            makeCampaignOrder(
-                id: "O1",
-                campaign: "四月團",
-                chargedAmount: 500
-            )
-        ]
-
-        let summaryBeforeSync = CampaignSummary(campaignName: "四月團", orders: state.orders)
-        #expect(summaryBeforeSync.orderCount == 1)
-        #expect(summaryBeforeSync.receivables == 500)
-
-        // 模擬投影更新：新訂單併入同一份 State.orders，而不是另建區域陣列
-        state.orders.append(
-            makeCampaignOrder(
-                id: "O2",
-                campaign: "四月團",
-                chargedAmount: 300
-            )
-        )
-
-        let summaryAfterSync = CampaignSummary(campaignName: "四月團", orders: state.orders)
-        #expect(summaryAfterSync.orderCount == 2)
-        #expect(summaryAfterSync.receivables == 800)
-        #expect(summaryBeforeSync != summaryAfterSync)
-    }
 }
 
 // MARK: - Helper Method
@@ -1338,6 +1310,7 @@ struct CampaignFeatureTests {
 private extension CampaignFeatureTests {
 
     /// 建立供 `orders` 投影測試使用的最小訂單
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - campaign: 開團名稱
@@ -1379,6 +1352,7 @@ private extension CampaignFeatureTests {
     }
 
     /// 建立測試用開團
+    ///
     /// - Parameters:
     ///   - id: 開團識別值
     ///   - name: 開團名稱
@@ -1403,6 +1377,7 @@ private extension CampaignFeatureTests {
     }
 
     /// 建立 2026 年指定月日的固定日期 (UTC)
+    ///
     /// - Parameters:
     ///   - month: 月份
     ///   - day: 日期
@@ -1418,6 +1393,7 @@ private extension CampaignFeatureTests {
     }
 
     /// 建立含初始開團的唯讀 ``CampaignRepository``
+    ///
     /// - Parameter initialCampaigns: 初始開團清單
     /// - Returns: CampaignRepository
     /// - Throws: 測試資料庫建立或資料寫入失敗時拋出錯誤
@@ -1455,6 +1431,7 @@ private extension CampaignFeatureTests {
     }
 
     /// 建立寫入失敗提示
+    ///
     /// - Parameter message: 要顯示的錯誤訊息
     /// - Returns: 錯誤提示狀態
     static func failureAlert(_ message: LocalizedStringKey) -> AlertState<CampaignFeature.Action.NoticeAlert> {
@@ -1470,6 +1447,7 @@ private extension CampaignFeatureTests {
     }
 
     /// 建立刪除確認對話框
+    ///
     /// - Parameters:
     ///   - id: 要刪除的開團識別碼
     ///   - name: 要刪除的開團名稱
@@ -1490,6 +1468,7 @@ private extension CampaignFeatureTests {
     }
 
     /// 建立結團確認對話框
+    ///
     /// - Parameters:
     ///   - id: 要結團的開團識別碼
     ///   - name: 要結團的開團名稱

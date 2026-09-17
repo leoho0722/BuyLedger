@@ -13,8 +13,11 @@ final class AppLockTests: BLUITestCase {
     // MARK: - Tests
 
     /// 失敗替身讓自動解鎖停留在鎖定畫面
+    ///
+    /// - Throws: 失敗訊息不存在或重試結果未重新出現時拋出測試錯誤
     @MainActor
-    func testAppLockEnabledStartsLockedAndStaysLockedWhenAuthenticationFails() {
+    func testAppLockEnabledStartsLockedAndStaysLockedWhenAuthenticationFails() throws(any Error) {
+        // Given：App 鎖定已啟用，生物辨識替身會失敗
         let app = launch(
             LaunchOptions(seed: .empty, appLockEnabled: true, biometricScenario: .failure)
         )
@@ -29,9 +32,27 @@ final class AppLockTests: BLUITestCase {
         if !retryButton.waitForExistence(timeout: 10) {
             failWithDiagnostics(in: app, "鎖定畫面未提供重新驗證按鈕")
         }
+        try requireCondition(
+            lockScreen.waitForInitialFailure(),
+            in: app,
+            "冷啟動失敗結果未出現，無法驗證重新驗證流程"
+        )
 
-        lockScreen.tapRetry()
+        // When：點擊重新驗證
+        lockScreen.tapRetry(file: #filePath, line: #line)
 
+        try requireCondition(
+            lockScreen.waitForRetryToBegin(),
+            in: app,
+            "重新驗證未進入執行中狀態"
+        )
+
+        // Then：重試完成後收到新的失敗結果且仍停留在鎖定畫面
+        try requireCondition(
+            lockScreen.waitForFailedRetryResult(),
+            in: app,
+            "重新驗證沒有完成一次新的失敗驗證"
+        )
         if !lockScreen.isDisplayed {
             failWithDiagnostics(in: app, "重新驗證失敗後鎖定畫面不應消失")
         }

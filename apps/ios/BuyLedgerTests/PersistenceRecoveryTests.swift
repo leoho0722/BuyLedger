@@ -8,6 +8,7 @@
 import Foundation
 import SwiftData
 import Testing
+
 @testable import BuyLedger
 
 /// 驗證持久層復原
@@ -90,6 +91,45 @@ struct PersistenceRecoveryTests {
         }
     }
 
+    /// 來源目錄不可寫時，搬檔失敗應指出第一個無法搬移的檔案
+    ///
+    /// - Throws: 測試檔案建立或權限設定失敗時拋出錯誤
+    @Test
+    func quarantine_fileMoveFailure_reportsFileName() throws(any Error) {
+        // Given：來源目錄含 store 檔案但不允許寫入
+        let sourceDirectory = try Self.prepareDirectory(named: "source-path-is-read-only")
+        let backupDirectory = try Self.prepareDirectory(named: "source-path-is-read-only-backups")
+        _ = try Self.writeStoreFiles(in: sourceDirectory)
+        try FileManager.default.setAttributes(
+            [.posixPermissions: 0o555],
+            ofItemAtPath: sourceDirectory.path
+        )
+        defer {
+            // 還原權限失敗不影響測試結果，暫存目錄稍後即刪除
+            try? FileManager.default.setAttributes(
+                [.posixPermissions: 0o755],
+                ofItemAtPath: sourceDirectory.path
+            )
+        }
+
+        // When：隔離搬移 store 檔案
+        do {
+            _ = try PersistenceStoreQuarantine.quarantine(
+                storeDirectory: sourceDirectory,
+                backupDirectory: backupDirectory
+            )
+            Issue.record("隔離搬移應回報檔案搬移失敗")
+        } catch {
+            // Then：錯誤應指出第一個搬移失敗的 store 檔案
+            if case .fileMoveFailed(let fileName, let message) = error {
+                #expect(fileName == "BuyLedger.store")
+                #expect(!message.isEmpty)
+            } else {
+                Issue.record("錯誤應為 fileMoveFailed 復原錯誤")
+            }
+        }
+    }
+
     // MARK: - Bootstrap Preservation
 
     @Test func bootstrapPreservesAnUnmigratableStoreInPlace() throws(any Error) {
@@ -145,7 +185,7 @@ struct PersistenceRecoveryTests {
 /// 建立低於 migration floor 的舊版 schema
 private enum BelowMigrationFloorSchema: VersionedSchema {
 
-    // MARK: - Static Properties
+    // MARK: - Computed Properties
 
     static var versionIdentifier: Schema.Version { Schema.Version(14, 0, 0) }
 
@@ -154,6 +194,7 @@ private enum BelowMigrationFloorSchema: VersionedSchema {
     }
 
     // MARK: - Nested Types
+
     /// 舊版持久化資料模型
     @Model
     final class LegacyRecord {

@@ -105,7 +105,7 @@ struct RootFeatureTests {
         await store.send(.task)
         // 預設設定與 state 相同，因此不會產生變化
         await store.receive(\.settings.task)
-        // 保護關閉時只更新 biometryType。
+        // 保護關閉時只更新 biometryType
         await store.receive(\.settings.appLock.appDidBecomeActive) {
             $0.settings.appLock.biometryType = .faceID
         }
@@ -169,7 +169,9 @@ struct RootFeatureTests {
         #expect(store.state.orders.selectedCategory == "美妝")
     }
 
-    @Test func smartGroupSelectionFlipsCorrespondingStatusChipPredicate() async {
+    /// 智慧群組選取後 reducer 應寫入訂單狀態篩選
+    @Test func smartGroupSelection_updatesReducerStatusFilter() async {
+        // Given：訂單頁載入樣本訂單
         var state = RootFeature.State()
         state.orders.orders = LedgerOrder.sampleOrders
 
@@ -180,21 +182,15 @@ struct RootFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When：選取「已購買」智慧群組
         await store.send(.smartGroupSelected(.purchased)) {
             $0.selectedTab = .orders
             $0.orders.selectedStatus = .status(.purchased)
             $0.orders.selectedOrderID = "BL-2604-017"
         }
 
-        // 驗證選取狀態會同步到對應篩選 chip
-        let purchasedFilter = OrderStatusFilter.status(.purchased)
-        #expect(store.state.orders.selectedStatus == purchasedFilter)
-
-        let otherFilters: [OrderStatusFilter] = OrderStatusFilter.orderBrowsingCases
-            .filter { $0 != purchasedFilter }
-        for filter in otherFilters {
-            #expect(store.state.orders.selectedStatus != filter)
-        }
+        // Then：Root reducer 寫入已購買狀態篩選
+        #expect(store.state.orders.selectedStatus == .status(.purchased))
     }
 
     @Test func customerSelectedResetsResidualCategoryFilter() async {
@@ -1136,6 +1132,7 @@ private final class RootTaskRefreshBox: @unchecked Sendable {
 private extension RootFeatureTests {
 
     /// 建立可指定主檔欄位的最小訂單
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - orderSource: 訂單來源
@@ -1181,6 +1178,7 @@ private extension RootFeatureTests {
     }
 
     /// 建立跨頁深連結用的最小訂單
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - category: 商品類別
@@ -1199,6 +1197,7 @@ private extension RootFeatureTests {
     }
 
     /// 建立供跨頁深連結測試使用的最小訂單，支援多類別與多開團歸屬
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - categories: 商品類別
@@ -1242,6 +1241,7 @@ private extension RootFeatureTests {
     }
 
     /// 只替換 cascade 測試關心的欄位，保留訂單其餘狀態作為回歸基準
+    ///
     /// - Parameters:
     ///   - order: 原始訂單
     ///   - categories: 新的商品類別；未提供時保留原值
@@ -1285,6 +1285,7 @@ private extension RootFeatureTests {
     }
 
     /// 建立 AI 功能關閉時的完整提示
+    ///
     /// - Returns: AI 功能關閉時顯示的 alert
     static func aiDisabledAlert() -> AlertState<OrdersFeature.Action.Alert> {
         AlertState {

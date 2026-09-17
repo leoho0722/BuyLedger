@@ -111,7 +111,8 @@ struct OrderPersistenceTests {
         #expect(stored.count == 1, "撞號失敗後不應新增任何資料列")
         let storedWithPhotos = try await persistence.fetch(id: existing.id)
         #expect(
-            storedWithPhotos.map(Self.normalizingItemIdentifiers) == Self.normalizingItemIdentifiers(existing),
+            storedWithPhotos.map(LedgerOrder.normalizingItemIdentifiers)
+                == LedgerOrder.normalizingItemIdentifiers(existing),
             "撞號失敗後既有資料列必須逐欄未變 (含照片)"
         )
     }
@@ -131,7 +132,8 @@ struct OrderPersistenceTests {
         let storedWithPhotos = try await persistence.fetch(id: modified.id)
         // Codable round-trip 不含 LedgerOrderItem.id，比對前先移除
         #expect(
-            storedWithPhotos.map(Self.normalizingItemIdentifiers) == Self.normalizingItemIdentifiers(modified),
+            storedWithPhotos.map(LedgerOrder.normalizingItemIdentifiers)
+                == LedgerOrder.normalizingItemIdentifiers(modified),
             "更新後應與寫入值整體相等 (含照片)；映射漏寫任一欄會在此處被抓到"
         )
     }
@@ -175,6 +177,7 @@ struct OrderPersistenceTests {
     }
 
     /// `fetchAll()` 回傳的每筆訂單照片欄位皆為空陣列 (不代表該訂單沒有照片)
+    ///
     /// - Throws: 測試容器建立或資料讀取失敗時拋出錯誤
     @Test func fetchAllReturnsOrdersWithoutPhotoBytes() async throws(any Error) {
         let persistence = try makePersistence()
@@ -207,6 +210,7 @@ struct OrderPersistenceTests {
     }
 
     /// 依訂單編號讀取照片，回傳該訂單持久化順序的照片陣列
+    ///
     /// - Throws: 測試容器建立或資料讀取失敗時拋出錯誤
     @Test func fetchPhotosReturnsStoredBytesInOrder() async throws(any Error) {
         let persistence = try makePersistence()
@@ -221,6 +225,7 @@ struct OrderPersistenceTests {
     }
 
     /// 依訂單編號讀取照片時，訂單不存在應回空陣列而非拋錯
+    ///
     /// - Throws: 測試容器建立或資料讀取失敗時拋出錯誤
     @Test func fetchPhotosForUnknownIDReturnsEmpty() async throws(any Error) {
         let persistence = try makePersistence()
@@ -231,6 +236,7 @@ struct OrderPersistenceTests {
     }
 
     /// 新增訂單的插入分支維持寫入呼叫端提供的照片
+    ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func insertingNewOrderPersistsItsPhotos() async throws(any Error) {
         let persistence = try makePersistence()
@@ -252,6 +258,7 @@ struct OrderPersistenceTests {
     }
 
     /// 不帶照片更新時，既有照片維持不變
+    ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func upsertWithoutPhotosLeavesStoredPhotosIntact() async throws(any Error) {
         let persistence = try makePersistence()
@@ -283,6 +290,7 @@ struct OrderPersistenceTests {
     }
 
     /// 帶照片寫入後，讀回照片等於傳入集合
+    ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func writeWithPhotosReplacesStoredSet() async throws(any Error) {
         let persistence = try makePersistence()
@@ -312,11 +320,13 @@ struct OrderPersistenceTests {
     }
 
     /// 寫入三張較大照片後，確認讀回內容相同
+    ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func upsertPersistsMultiplePhotosRoundTrip() async throws(any Error) {
         let persistence = try makePersistence()
 
         /// 建立指定標記且符合 JPEG header 的測試照片
+        ///
         /// - Parameter tag: 填入照片內容的標記 byte
         /// - Returns: 建立的測試照片資料
         func makeLargePhoto(tag: UInt8) -> Data {
@@ -345,6 +355,7 @@ struct OrderPersistenceTests {
     }
 
     /// 批次改狀態後，既有照片維持不變
+    ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func photosSurviveBatchStatusChange() async throws(any Error) {
         let persistence = try makePersistence()
@@ -380,6 +391,7 @@ struct OrderPersistenceTests {
     }
 
     /// 主檔更名後訂單照片不變
+    ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func photosSurviveEveryCascadeRename() async throws(any Error) {
         let persistence = try makePersistence()
@@ -614,7 +626,8 @@ struct OrderPersistenceTests {
         // Codable round-trip 不含 LedgerOrderItem.id，比對前先移除
         let collidingStored = stored.first { $0.id == collidingID }
         #expect(
-            collidingStored.map(Self.normalizingItemIdentifiers) == Self.normalizingItemIdentifiers(collidingExisting),
+            collidingStored.map(LedgerOrder.normalizingItemIdentifiers)
+                == LedgerOrder.normalizingItemIdentifiers(collidingExisting),
             "撞號的既有訂單必須逐欄未變"
         )
         #expect(
@@ -703,54 +716,159 @@ struct OrderPersistenceTests {
         #expect(stored.isEmpty)
     }
 
-    @Test func createRollsBackPendingMutationWhenSaveFailsForNonCollisionReason() async throws(any Error) {
-        // 驗證非撞號的 save 失敗會 rollback，避免 pending 變更留在 context
+    /// 建立訂單儲存失敗時不應留下尚未落盤的資料列
+    ///
+    /// - Throws: 測試容器建立、寫入或讀取失敗時拋出錯誤
+    @Test func create_saveFailure_removesInsertedOrder() async throws(any Error) {
+        // Given：儲存權限已撤回，且待建立的訂單尚不存在
         let persistence = try Self.makeUnsavablePersistence()
         let order = Self.makeStatusOrder(id: "BL-ROLLBACK-CREATE", status: .quoting)
 
+        // When：建立訂單並預期儲存失敗
         await #expect(throws: OrderPersistenceError.self) {
             try await persistence.create(order)
         }
 
+        // Then：save 失敗後只保留儲存前已存在的資料列
         let stored = try await persistence.fetchAll()
-        #expect(stored.count <= 1, "save 失敗後 context 不應殘留 pending 變更造成的重複資料列")
+        #expect(
+            stored.map(\.id) == ["BL-ROLLBACK-SEED"],
+            "save 失敗後 rollback 應只保留 save 前已存在的資料列"
+        )
     }
 
-    @Test func updateRollsBackPendingMutationWhenSaveFails() async throws(any Error) {
-        // save 失敗後應 rollback，允許一筆落盤但不可留下 pending 重複列
+    /// 更新不存在的訂單儲存失敗時不應留下待寫入資料列
+    ///
+    /// - Throws: 測試容器建立、寫入或讀取失敗時拋出錯誤
+    @Test func update_saveFailure_removesInsertedOrder() async throws(any Error) {
+        // Given：儲存權限已撤回，且待更新的訂單尚不存在
         let persistence = try Self.makeUnsavablePersistence()
         let order = Self.makeStatusOrder(id: "BL-ROLLBACK-UPDATE", status: .quoting)
 
+        // When：更新訂單並預期儲存失敗
         await #expect(throws: PersistenceError.self) {
             try await persistence.update(order)
         }
 
+        // Then：save 失敗後只保留儲存前已存在的資料列
         let stored = try await persistence.fetchAll()
-        #expect(stored.count <= 1, "save 失敗後 context 不應殘留 pending 變更造成的重複資料列")
+        #expect(
+            stored.map(\.id) == ["BL-ROLLBACK-SEED"],
+            "save 失敗後 rollback 應只保留 save 前已存在的資料列"
+        )
     }
 
-    @Test func upsertAllRollsBackPendingMutationWhenSaveFails() async throws(any Error) {
+    /// 批次 upsert 儲存失敗時不應留下尚未落盤的資料列
+    ///
+    /// - Throws: 測試容器建立、寫入或讀取失敗時拋出錯誤
+    @Test func upsertAll_saveFailure_removesInsertedOrder() async throws(any Error) {
+        // Given：儲存權限已撤回，且待 upsert 的訂單尚不存在
         let persistence = try Self.makeUnsavablePersistence()
         let order = Self.makeStatusOrder(id: "BL-ROLLBACK-UPSERT", status: .quoting)
 
+        // When：批次 upsert 訂單並預期儲存失敗
         await #expect(throws: PersistenceError.self) {
             try await persistence.upsertAll([order])
         }
 
+        // Then：save 失敗後只保留儲存前已存在的資料列
         let stored = try await persistence.fetchAll()
-        #expect(stored.count <= 1, "save 失敗後 context 不應殘留 pending 變更造成的重複資料列")
+        #expect(
+            stored.map(\.id) == ["BL-ROLLBACK-SEED"],
+            "save 失敗後 rollback 應只保留 save 前已存在的資料列"
+        )
     }
 
-    @Test func mergeOrdersRollsBackPendingMutationWhenSaveFails() async throws(any Error) {
+    /// 合併訂單儲存失敗時不應留下尚未落盤的合併結果
+    ///
+    /// - Throws: 測試容器建立、寫入或讀取失敗時拋出錯誤
+    @Test func mergeOrders_saveFailure_removesInsertedOrder() async throws(any Error) {
+        // Given：儲存權限已撤回，且待合併的新訂單尚不存在
         let persistence = try Self.makeUnsavablePersistence()
         let merged = Self.makeStatusOrder(id: "BL-ROLLBACK-MERGE", status: .quoting)
 
+        // When：合併訂單並預期儲存失敗
         await #expect(throws: OrderPersistenceError.self) {
             try await persistence.mergeOrders(newOrder: merged, consumedIDs: [])
         }
 
+        // Then：save 失敗後只保留儲存前已存在的資料列
         let stored = try await persistence.fetchAll()
-        #expect(stored.count <= 1, "save 失敗後 context 不應殘留 pending 變更造成的重複資料列")
+        #expect(
+            stored.map(\.id) == ["BL-ROLLBACK-SEED"],
+            "save 失敗後 rollback 應只保留 save 前已存在的資料列"
+        )
+    }
+
+    /// 合併來源訂單讀取失敗時不應留下尚未落盤的合併結果
+    ///
+    /// - Throws: 測試容器建立、來源讀取或結果讀取失敗時拋出錯誤
+    @Test
+    func mergeOrders_sourceFetchFailure_removesInsertedOrder() async throws(any Error) {
+        // Given：來源訂單查詢會失敗，且待合併的新訂單尚不存在
+        let persistence = OrderPersistence(
+            modelContainer: PersistenceContainer.makeInMemory(for: .testing),
+            consumedOrderFetcher: { _ in
+                throw PersistenceError.fetchFailed(message: "來源查詢失敗")
+            }
+        )
+        let merged = Self.makeStatusOrder(id: "BL-ROLLBACK-SOURCE", status: .quoting)
+
+        // When：來源訂單讀取失敗
+        await #expect(throws: OrderPersistenceError.self) {
+            try await persistence.mergeOrders(newOrder: merged, consumedIDs: ["BL-SOURCE-1"])
+        }
+
+        // Then：來源讀取失敗後不應留下待寫入的合併結果
+        let stored = try await persistence.fetchAll()
+        #expect(stored.isEmpty, "來源讀取失敗後不應留下尚未落盤的合併結果")
+    }
+
+    /// 儲存含照片訂單失敗時移除尚未落盤的插入記錄
+    ///
+    /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
+    @Test
+    func updatePersistingPhotos_saveFailure_removesInsertedOrder() async throws(any Error) {
+        // Given：儲存權限已撤回，且待寫入訂單含照片
+        let persistence = try Self.makeUnsavablePersistence()
+        let order = Self.withPhotos(
+            Self.makeStatusOrder(id: "BL-ROLLBACK-PHOTOS", status: .quoting),
+            photos: [Data([0x01, 0x02])]
+        )
+
+        // When：儲存含照片的訂單
+        await #expect(throws: PersistenceError.self) {
+            try await persistence.updatePersistingPhotos(order)
+        }
+
+        // Then：save 失敗後只保留儲存前已存在的資料
+        let stored = try await persistence.fetchAll()
+        #expect(
+            stored.map(\.id) == ["BL-ROLLBACK-SEED"],
+            "save 失敗後 rollback 應只保留 save 前已存在的資料列"
+        )
+    }
+
+    /// 初次 seed 儲存失敗時移除所有尚未落盤的插入記錄
+    ///
+    /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
+    @Test
+    func seedIfEmpty_saveFailure_removesInsertedOrders() async throws(any Error) {
+        // Given：空的儲存且儲存權限已撤回
+        let persistence = try Self.makeUnsavablePersistence(shouldSeedExistingOrder: false)
+        let samples = [
+            Self.makeStatusOrder(id: "BL-ROLLBACK-SEED-1", status: .confirmed),
+            Self.makeStatusOrder(id: "BL-ROLLBACK-SEED-2", status: .shipping),
+        ]
+
+        // When：以兩筆樣本執行初次 seed
+        await #expect(throws: PersistenceError.self) {
+            try await persistence.seedIfEmpty(with: samples)
+        }
+
+        // Then：save 失敗後不應留下任何 pending 新訂單
+        let stored = try await persistence.fetchAll()
+        #expect(stored.isEmpty, "seed save 失敗後不應留下任何 pending 新訂單")
     }
 
     @Test func persistenceInstanceProviderReusesTheSameInstance() async throws(any Error) {
@@ -790,6 +908,7 @@ struct OrderPersistenceTests {
     }
 
     /// 只命中集合內訂單編號的 predicate
+    ///
     /// - Throws: predicate 建立或測試資料建立失敗時拋出錯誤
     @Test func idMembershipPredicateMatchesOnlyGivenIDs() throws(any Error) {
         let target = OrderRecord(
@@ -808,6 +927,7 @@ struct OrderPersistenceTests {
     }
 
     /// 批次更新只影響指定訂單
+    ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func upsertAllLeavesUnrelatedOrdersUntouched() async throws(any Error) {
         let persistence = try makePersistence()
@@ -855,6 +975,7 @@ struct OrderPersistenceTests {
     }
 
     /// 合併只更新指定來源訂單
+    ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func mergeOrdersLeavesUnrelatedOrdersUntouched() async throws(any Error) {
         let persistence = try makePersistence()
@@ -897,6 +1018,7 @@ struct OrderPersistenceTests {
     }
 
     /// 大批訂單編號也能完整更新
+    ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func upsertAllHandlesLargeIDBatch() async throws(any Error) {
         let persistence = try makePersistence()
@@ -960,6 +1082,7 @@ private extension OrderPersistenceTests {
 private extension OrderPersistenceTests {
 
     /// 用 in-memory 的 ``ModelContainer`` 建立每個測試獨立的 ``OrderPersistence``
+    ///
     /// - Returns: 建立的 OrderPersistence
     /// - Throws: 測試容器建立失敗時拋出錯誤
     func makePersistence() throws(any Error) -> OrderPersistence {
@@ -967,24 +1090,48 @@ private extension OrderPersistenceTests {
         return OrderPersistence(modelContainer: container)
     }
 
-    /// 建立唯讀磁碟 persistence，驗證 save 失敗可 rollback
-    /// - Returns: 使用唯讀儲存設定的 OrderPersistence
+    /// 建立寫入權限被撤回的磁碟 persistence，驗證 save 失敗可 rollback
+    ///
+    /// - Parameter shouldSeedExistingOrder: 是否先寫入一筆既有訂單
+    /// - Returns: 使用不可寫入儲存的 OrderPersistence
     /// - Throws: 測試容器建立失敗時拋出錯誤
-    static func makeUnsavablePersistence() throws(any Error) -> OrderPersistence {
+    static func makeUnsavablePersistence(
+        shouldSeedExistingOrder: Bool = true
+    ) throws(any Error) -> OrderPersistence {
         let schema = Schema(versionedSchema: BuyLedgerSchemaV17.self)
-        let storeURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent("BuyLedgerRollbackTest-\(UUID().uuidString).store")
+        let directoryURL = FileManager.default.temporaryDirectory
+            .appendingPathComponent("BuyLedgerRollbackTest-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(
+            at: directoryURL,
+            withIntermediateDirectories: true
+        )
+        let storeURL = directoryURL.appendingPathComponent("BuyLedger.store")
 
         let writableConfiguration = ModelConfiguration(
             schema: schema,
             url: storeURL,
             cloudKitDatabase: .none
         )
-        _ = try ModelContainer(
-            for: schema,
-            migrationPlan: BuyLedgerMigrationPlan.self,
-            configurations: writableConfiguration
-        )
+        // 先釋放可寫入容器，讓後續讀取使用同一 store 的唯讀鎖
+        do {
+            let writableContainer = try ModelContainer(
+                for: schema,
+                migrationPlan: BuyLedgerMigrationPlan.self,
+                configurations: writableConfiguration
+            )
+            let seedContext = ModelContext(writableContainer)
+            if shouldSeedExistingOrder {
+                seedContext.insert(
+                    OrderRecord(
+                        order: Self.makeStatusOrder(
+                            id: "BL-ROLLBACK-SEED",
+                            status: .confirmed
+                        )
+                    )
+                )
+                try seedContext.save()
+            }
+        }
 
         let readOnlyConfiguration = ModelConfiguration(
             schema: schema,
@@ -1001,6 +1148,7 @@ private extension OrderPersistenceTests {
     }
 
     /// 建立批次 upsert 測試用、可指定狀態的最小訂單
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - status: 訂單狀態
@@ -1037,6 +1185,7 @@ private extension OrderPersistenceTests {
     }
 
     /// 回傳只改變照片的複本
+    ///
     /// - Parameters:
     ///   - order: 原始訂單
     ///   - photos: 新的照片集合
@@ -1073,6 +1222,7 @@ private extension OrderPersistenceTests {
     }
 
     /// 回傳只改變對帳狀態的複本
+    ///
     /// - Parameters:
     ///   - order: 原始訂單
     ///   - status: 新的對帳狀態
@@ -1109,6 +1259,7 @@ private extension OrderPersistenceTests {
     }
 
     /// 建立陣列 rename 測試用的最小訂單
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - categories: 商品類別
@@ -1150,6 +1301,7 @@ private extension OrderPersistenceTests {
     }
 
     /// 建立所有欄位都有值的整值相等測試樣本
+    ///
     /// - Parameter variant: 測試樣本變體
     /// - Returns: 對應變體的完整訂單
     static func makeFullFieldOrder(variant: FullFieldVariant) -> LedgerOrder {
@@ -1217,6 +1369,7 @@ private extension OrderPersistenceTests {
     }
 
     /// 建立訂單並將撞號轉為可比對結果
+    ///
     /// - Parameters:
     ///   - order: 要建立的訂單
     ///   - repository: 要執行建立操作的 repository
@@ -1234,47 +1387,5 @@ private extension OrderPersistenceTests {
             Issue.record("非預期的錯誤型別：\(error)")
             return .collided
         }
-    }
-
-    /// 抹平 `items` 內 `LedgerOrderItem.id` 後回傳可整值比較的訂單
-    /// - Parameter order: 要正規化的訂單
-    /// - Returns: 將品項識別值正規化後的訂單
-    static func normalizingItemIdentifiers(_ order: LedgerOrder) -> LedgerOrder {
-        let placeholderID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
-        return LedgerOrder(
-            id: order.id,
-            customer: order.customer,
-            status: order.status,
-            currency: order.currency,
-            date: order.date,
-            items: order.items.map {
-                LedgerOrderItem(
-                    id: placeholderID,
-                    name: $0.name,
-                    quantity: $0.quantity,
-                    unitPrice: $0.unitPrice
-                )
-            },
-            itemCost: order.itemCost,
-            domesticShipping: order.domesticShipping,
-            internationalShipping: order.internationalShipping,
-            foreignDomesticShipping: order.foreignDomesticShipping,
-            cardFeeRate: order.cardFeeRate,
-            platformFeeRate: order.platformFeeRate,
-            paymentFeeRate: order.paymentFeeRate,
-            chargedAmount: order.chargedAmount,
-            cardlessDeductionAmount: order.cardlessDeductionAmount,
-            cardlessSupplementAmount: order.cardlessSupplementAmount,
-            orderSource: order.orderSource,
-            categories: order.categories,
-            paymentMethod: order.paymentMethod,
-            notes: order.notes,
-            reconciliationStatus: order.reconciliationStatus,
-            campaignNames: order.campaignNames,
-            paymentReceiptStatus: order.paymentReceiptStatus,
-            isCashOnDelivery: order.isCashOnDelivery,
-            photos: order.photos,
-            mergedSourceIDs: order.mergedSourceIDs
-        )
     }
 }

@@ -18,8 +18,12 @@ struct InsightsStatsTests {
     @Test func trendBarsForThirtyDaysProduceThirtyDailyBucketsSummingToTotalProfit() {
         let orders = [
             Self.makeOrder(
-                id: "A", status: .delivered, date: TestDependencies.fixedNow, charged: 1_000,
-                itemCost: 300)
+                id: "A",
+                status: .delivered,
+                date: TestDependencies.fixedNow,
+                charged: 1_000,
+                itemCost: 300
+            )
         ]
         let stats = InsightsStats(
             orders: orders,
@@ -38,10 +42,17 @@ struct InsightsStatsTests {
         // 本期獲利 1000、上期獲利 400，應顯示成長。
         let orders = [
             Self.makeOrder(
-                id: "cur", status: .delivered, date: TestDependencies.fixedNow, charged: 1_000),
+                id: "cur",
+                status: .delivered,
+                date: TestDependencies.fixedNow,
+                charged: 1_000
+            ),
             Self.makeOrder(
-                id: "prev", status: .delivered, date: Self.date(year: 2025, month: 2, day: 15),
-                charged: 400),
+                id: "prev",
+                status: .delivered,
+                date: Self.date(year: 2025, month: 2, day: 15),
+                charged: 400
+            ),
         ]
         let stats = InsightsStats(
             orders: orders,
@@ -60,7 +71,11 @@ struct InsightsStatsTests {
     @Test func trendDeltaHasNoComparisonWhenPriorPeriodEmpty() {
         let orders = [
             Self.makeOrder(
-                id: "cur", status: .delivered, date: TestDependencies.fixedNow, charged: 1_000)
+                id: "cur",
+                status: .delivered,
+                date: TestDependencies.fixedNow,
+                charged: 1_000
+            )
         ]
         let stats = InsightsStats(
             orders: orders,
@@ -88,11 +103,19 @@ struct InsightsStatsTests {
     ) {
         let orders = [
             Self.makeOrder(
-                id: "current", status: .delivered, date: TestDependencies.fixedNow,
-                charged: current > 0 ? current : 0, itemCost: current < 0 ? -current : 0),
+                id: "current",
+                status: .delivered,
+                date: TestDependencies.fixedNow,
+                charged: current > 0 ? current : 0,
+                itemCost: current < 0 ? -current : 0
+            ),
             Self.makeOrder(
-                id: "previous", status: .delivered, date: Self.date(year: 2025, month: 2, day: 15),
-                charged: previous > 0 ? previous : 0, itemCost: previous < 0 ? -previous : 0),
+                id: "previous",
+                status: .delivered,
+                date: Self.date(year: 2025, month: 2, day: 15),
+                charged: previous > 0 ? previous : 0,
+                itemCost: previous < 0 ? -previous : 0
+            ),
         ]
         let stats = InsightsStats(
             orders: orders,
@@ -110,11 +133,17 @@ struct InsightsStatsTests {
     @Test func totalProfitEqualsDecimalSumOfPeriodBuckets() {
         let orders = [
             Self.makeOrder(
-                id: "first", status: .delivered, date: Self.date(year: 2026, month: 3, day: 1),
-                charged: Decimal(string: "100.123456789123456789")!),
+                id: "first",
+                status: .delivered,
+                date: Self.date(year: 2026, month: 3, day: 1),
+                charged: Decimal(string: "100.123456789123456789") ?? 0
+            ),
             Self.makeOrder(
-                id: "second", status: .delivered, date: TestDependencies.fixedNow,
-                charged: Decimal(string: "200.987654321987654321")!),
+                id: "second",
+                status: .delivered,
+                date: TestDependencies.fixedNow,
+                charged: Decimal(string: "200.987654321987654321") ?? 0
+            ),
         ]
         let stats = InsightsStats(
             orders: orders,
@@ -129,12 +158,31 @@ struct InsightsStatsTests {
     }
 
     @Test func costSegmentsExcludeZeroValueSegmentsAndTotalCostAggregatesAcrossAllRealizedOrders() {
-        // 只有商品金額非零：成本結構只應出現「商品金額」一個區塊
+        // Given：兩筆已實現訂單與一筆未實現訂單
         let orders = [
             Self.makeOrder(
-                id: "A", status: .delivered, date: TestDependencies.fixedNow, charged: 1_000,
-                itemCost: 500)
+                id: "A",
+                status: .delivered,
+                date: TestDependencies.fixedNow,
+                charged: 1_000,
+                itemCost: 500
+            ),
+            Self.makeOrder(
+                id: "B",
+                status: .pickedUp,
+                date: TestDependencies.fixedNow,
+                charged: 600,
+                itemCost: 300
+            ),
+            Self.makeOrder(
+                id: "C",
+                status: .quoting,
+                date: TestDependencies.fixedNow,
+                charged: 2_000,
+                itemCost: 900
+            ),
         ]
+        // When：計算十二個月的成本統計
         let stats = InsightsStats(
             orders: orders,
             range: .twelveMonths,
@@ -144,9 +192,10 @@ struct InsightsStatsTests {
             palette: BLPalette()
         )
 
-        #expect(stats.totalCost == 500)
+        // Then：只累加已實現訂單，且零值區段不應出現
+        #expect(stats.totalCost == 800)
         #expect(stats.costSegments.map(\.label) == ["商品金額"])
-        #expect(stats.costSegments.first?.value == 500)
+        #expect(stats.costSegments.first?.value == 800)
     }
 
     @Test func campaignProfitRankingSortsDescendingAndExcludesCampaignsWithoutOrders() {
@@ -163,11 +212,19 @@ struct InsightsStatsTests {
         ]
         let orders = [
             Self.makeOrder(
-                id: "O1", status: .delivered, date: Date(timeIntervalSince1970: 0), charged: 500,
-                campaignNames: ["A團"]),
+                id: "O1",
+                status: .delivered,
+                date: Date(timeIntervalSince1970: 0),
+                charged: 500,
+                campaignNames: ["A團"]
+            ),
             Self.makeOrder(
-                id: "O2", status: .delivered, date: Date(timeIntervalSince1970: 0), charged: 2_000,
-                campaignNames: ["B團"]),
+                id: "O2",
+                status: .delivered,
+                date: Date(timeIntervalSince1970: 0),
+                charged: 2_000,
+                campaignNames: ["B團"]
+            ),
         ]
 
         let ranks = InsightsStats.campaignProfitRanking(campaigns: campaigns, orders: orders)
@@ -210,6 +267,7 @@ struct InsightsStatsTests {
     // MARK: - Helper
 
     /// 建立指定年月日的 UTC 日期
+    ///
     /// - Parameters:
     ///   - year: 西元年
     ///   - month: 月份
@@ -230,6 +288,7 @@ struct InsightsStatsTests {
     }
 
     /// 建立只含 InsightsStats 所需欄位的訂單
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - status: 訂單狀態

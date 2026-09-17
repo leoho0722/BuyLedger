@@ -32,6 +32,9 @@ extension BLAccessibilityID {
 
         /// 帳本解鎖重試按鈕
         static let retryButton = "appLock.retryButton"
+
+        /// 生物辨識失敗提示文字
+        static let failedMessage = "appLock.failedMessage"
     }
 
     /// 根導覽 (iPhone 分頁列與 iPad 側邊欄)
@@ -41,6 +44,7 @@ extension BLAccessibilityID {
         static let sidebar = "root.sidebar"
 
         /// 分頁項目，目前只有 iPad 側邊欄的分頁列吃得到
+        ///
         /// - Parameter tab: 主導覽分頁
         /// - Returns: 對應分頁的 accessibility identifier
         static func tab(_ tab: Tab) -> String {
@@ -48,6 +52,7 @@ extension BLAccessibilityID {
         }
 
         /// 側邊欄智慧分組列
+        ///
         /// - Parameter group: 側邊欄智慧分組
         /// - Returns: 對應智慧分組列的 accessibility identifier
         static func smartGroup(_ group: SmartGroup) -> String {
@@ -123,7 +128,11 @@ extension BLAccessibilityID {
         /// 總覽頁無資料狀態操作按鈕
         static let emptyStateActionButton = "dashboard.emptyState.actionButton"
 
+        /// 總覽頁標題的日期副標
+        static let currentDateSubtitle = "dashboard.currentDateSubtitle"
+
         /// KPI 卡容器
+        ///
         /// - Parameter kpi: KPI 指標
         /// - Returns: 對應 KPI 卡的 accessibility identifier
         static func kpiTile(_ kpi: KPI) -> String {
@@ -134,6 +143,7 @@ extension BLAccessibilityID {
         static let recentOrdersSeeAllButton = "dashboard.recentOrders.seeAllButton"
 
         /// 近期訂單列，以訂單編號識別
+        ///
         /// - Parameter orderID: 訂單編號
         /// - Returns: 對應近期訂單列的 accessibility identifier
         static func recentOrderRow(orderID: String) -> String {
@@ -182,6 +192,7 @@ extension BLAccessibilityID {
         static let aiSummaryButton = "orders.list.aiSummaryButton"
 
         /// 狀態瀏覽膠囊，key 取 ``OrderStatusFilter`` 的 id (all 或狀態 rawValue)
+        ///
         /// - Parameter filterID: 訂單狀態篩選識別值
         /// - Returns: 對應狀態膠囊的 accessibility identifier
         static func statusChip(_ filterID: String) -> String {
@@ -189,6 +200,7 @@ extension BLAccessibilityID {
         }
 
         /// 訂單列，key 取訂單編號這個業務鍵
+        ///
         /// - Parameter orderID: 訂單編號
         /// - Returns: 對應訂單列的 accessibility identifier
         static func row(orderID: String) -> String {
@@ -199,6 +211,7 @@ extension BLAccessibilityID {
         static let filterSheet = "orders.filterSheet"
 
         /// 篩選 sheet 的日期期間膠囊，key 取 ``OrderDatePeriod`` 的 id
+        ///
         /// - Parameter periodID: 日期期間識別值
         /// - Returns: 對應日期期間膠囊的 accessibility identifier
         static func filterDatePeriod(_ periodID: String) -> String {
@@ -230,6 +243,7 @@ extension BLAccessibilityID {
         static let detailDeleteButton = "orders.detail.deleteButton"
 
         /// 詳情獲利摘要卡，主要數值放各卡的 accessibility value
+        ///
         /// - Parameter kind: 財務摘要卡種類
         /// - Returns: 對應摘要卡的 accessibility identifier
         static func detailSummaryTile(_ kind: SummaryTile) -> String {
@@ -287,6 +301,7 @@ extension BLAccessibilityID {
         static let cancelButton = "orderEdit.cancelButton"
 
         /// 照片縮圖，key 取序位 (0 起算)
+        ///
         /// - Parameter index: 照片序位
         /// - Returns: 對應照片縮圖的 accessibility identifier
         static func photoThumbnail(index: Int) -> String {
@@ -304,6 +319,7 @@ extension BLAccessibilityID {
         static let candidateListEmptyState = "orderMerge.candidateList.emptyState"
 
         /// 候選訂單列，key 取訂單編號這個業務鍵
+        ///
         /// - Parameter orderID: 訂單編號
         /// - Returns: 對應候選訂單列的 accessibility identifier
         static func candidateRow(orderID: String) -> String {
@@ -317,6 +333,7 @@ extension BLAccessibilityID {
         static let photoContinueButton = "orderMerge.photoStep.continueButton"
 
         /// 照片挑選步驟的單格縮圖，key 取序位 (0 起算)
+        ///
         /// - Parameter index: 照片格序位
         /// - Returns: 對應照片格的 accessibility identifier
         static func photoCell(index: Int) -> String {
@@ -372,6 +389,7 @@ extension BLAccessibilityID {
         static let filterMenuButton = "campaigns.list.filterMenuButton"
 
         /// 開團卡片列，key 取開團 id 這個業務鍵
+        ///
         /// - Parameter campaignID: 開團識別值
         /// - Returns: 對應開團卡片列的 accessibility identifier
         static func row(campaignID: String) -> String {
@@ -393,10 +411,14 @@ extension BLAccessibilityID {
         /// 開團詳情刪除按鈕
         static let detailDeleteButton = "campaigns.detail.deleteButton"
 
+        /// 開團詳情已結團狀態標籤
+        static let detailSettledBadge = "campaigns.detail.settledBadge"
+
         /// 開團詳情未付款篩選切換鈕
         static let detailUnpaidToggle = "campaigns.detail.unpaidToggle"
 
         /// 結團結算的數值列，主要數值放各列的 accessibility value
+        ///
         /// - Parameter kind: 結團結算摘要種類
         /// - Returns: 對應結算摘要列的 accessibility identifier
         static func detailSummary(_ kind: DetailSummary) -> String {
@@ -443,6 +465,7 @@ extension BLAccessibilityID {
         static let listEmptyState = "customers.list.emptyState"
 
         /// Top 3 卡片，key 取客戶名這個業務鍵
+        ///
         /// - Parameter customerName: 客戶名稱
         /// - Returns: 對應 Top 卡片的 accessibility identifier
         static func topCard(customerName: String) -> String {
@@ -450,6 +473,7 @@ extension BLAccessibilityID {
         }
 
         /// 全部客戶列，key 取客戶名這個業務鍵
+        ///
         /// - Parameter customerName: 客戶名稱
         /// - Returns: 對應客戶列的 accessibility identifier
         static func row(customerName: String) -> String {
@@ -470,6 +494,7 @@ extension BLAccessibilityID {
         static let rangePicker = "insights.rangePicker"
 
         /// 期間選項，key 取 ``InsightsDateRange`` 的 rawValue
+        ///
         /// - Parameter rangeID: 分析期間識別值
         /// - Returns: 對應期間選項的 accessibility identifier
         static func rangeSegment(_ rangeID: String) -> String {
@@ -486,6 +511,7 @@ extension BLAccessibilityID {
         static let costDonut = "insights.chart.costDonut"
 
         /// 類別排行列，key 取類別名這個業務鍵 (點擊深連結到訂單)
+        ///
         /// - Parameter category: 類別名稱
         /// - Returns: 對應類別排行列的 accessibility identifier
         static func categoryRankRow(category: String) -> String {
@@ -493,6 +519,7 @@ extension BLAccessibilityID {
         }
 
         /// 每團毛利排行列，key 取開團 id 這個業務鍵 (點擊深連結到開團詳情)
+        ///
         /// - Parameter campaignID: 開團識別值
         /// - Returns: 對應開團排行列的 accessibility identifier
         static func campaignRankRow(campaignID: String) -> String {
@@ -551,6 +578,7 @@ extension BLAccessibilityID {
         static let languagePicker = "settings.languagePicker"
 
         /// 語言選項
+        ///
         /// - Parameter key: 語言選項識別值
         /// - Returns: 對應語言選項的 accessibility identifier
         static func languageOption(_ key: String) -> String {
@@ -583,6 +611,7 @@ extension BLAccessibilityID {
         static let root = "more.root"
 
         /// 導向各工具與設定的列 (以目的地 key 指定)
+        ///
         /// - Parameter row: 更多分頁目的地
         /// - Returns: 對應目的地列的 accessibility identifier
         static func row(_ row: Row) -> String {
@@ -625,6 +654,7 @@ extension BLAccessibilityID {
         static let root = "lookupManagement.root"
 
         /// 主檔項目列，以名稱這個業務鍵識別
+        ///
         /// - Parameter name: 主檔項目名稱
         /// - Returns: 主檔項目列的 accessibility identifier
         static func row(_ name: String) -> String {
@@ -632,6 +662,7 @@ extension BLAccessibilityID {
         }
 
         /// 編輯或重新命名操作按鈕，以項目名稱識別
+        ///
         /// - Parameter name: 主檔項目名稱
         /// - Returns: 編輯操作按鈕的 accessibility identifier
         static func editButton(_ name: String) -> String {
@@ -639,6 +670,7 @@ extension BLAccessibilityID {
         }
 
         /// 其他主檔的重新命名操作按鈕，以項目名稱識別
+        ///
         /// - Parameter name: 主檔項目名稱
         /// - Returns: 重新命名操作按鈕的 accessibility identifier
         static func renameButton(_ name: String) -> String {
@@ -680,6 +712,7 @@ extension BLAccessibilityID {
         static let doneButton = "optionPicker.doneButton"
 
         /// 選項列，以原始字串識別
+        ///
         /// - Parameter option: 選項原始字串
         /// - Returns: 對應選項列的 accessibility identifier
         static func optionRow(_ option: String) -> String {
@@ -697,6 +730,7 @@ extension BLAccessibilityID {
         static let backButton = "BackButton"
 
         /// 載入中容器
+        ///
         /// - Parameter feature: 功能名稱
         /// - Returns: 載入中容器的 accessibility identifier
         static func loading(_ feature: String) -> String {
@@ -704,6 +738,7 @@ extension BLAccessibilityID {
         }
 
         /// 載入失敗容器
+        ///
         /// - Parameter feature: 功能名稱
         /// - Returns: 載入失敗容器的 accessibility identifier
         static func loadFailure(_ feature: String) -> String {
@@ -711,6 +746,7 @@ extension BLAccessibilityID {
         }
 
         /// 載入失敗容器的重試
+        ///
         /// - Parameter feature: 功能名稱
         /// - Returns: 載入失敗重試按鈕的 accessibility identifier
         static func loadFailureRetryButton(_ feature: String) -> String {
@@ -724,6 +760,7 @@ extension BLAccessibilityID {
 extension BLAccessibilityID {
 
     /// 組出列舉型集合的 identifier
+    ///
     /// - Parameters:
     ///   - prefix: identifier 前綴
     ///   - key: 集合項目的識別值
@@ -733,6 +770,7 @@ extension BLAccessibilityID {
     }
 
     /// 組出使用者資料列的 identifier
+    ///
     /// - Parameters:
     ///   - prefix: identifier 前綴
     ///   - key: 資料列的識別值
@@ -742,6 +780,7 @@ extension BLAccessibilityID {
     }
 
     /// 組出純序位集合的 identifier
+    ///
     /// - Parameters:
     ///   - prefix: identifier 前綴
     ///   - index: 集合項目的序位

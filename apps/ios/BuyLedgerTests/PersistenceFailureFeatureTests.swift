@@ -17,13 +17,13 @@ struct PersistenceFailureFeatureTests {
     // MARK: - Tests
 
     @Test func recoveryTapOnlyPresentsConfirmation() async {
-        let box = QuarantineCallBox()
+        let callCount = LockIsolated(0)
         let store = TestStore(initialState: PersistenceFailureFeature.State()) {
             PersistenceFailureFeature()
         } withDependencies: {
             $0[PersistenceStoreQuarantineClient.self] = PersistenceStoreQuarantineClient(
                 quarantine: { () throws(PersistenceRecoveryError) in
-                    box.callCount += 1
+                    callCount.withValue { $0 += 1 }
                 }
             )
         }
@@ -33,7 +33,7 @@ struct PersistenceFailureFeatureTests {
         }
 
         #expect(store.state.phase == .blocked)
-        #expect(box.callCount == 0)
+        #expect(callCount.value == 0)
     }
 
     @Test func cancellingConfirmationDismissesWithoutRecovering() async {
@@ -52,11 +52,15 @@ struct PersistenceFailureFeatureTests {
     }
 
     @Test func confirmedRecoveryMovesFilesThenRequiresRelaunch() async {
+        let callCount = LockIsolated(0)
         let store = TestStore(initialState: PersistenceFailureFeature.State()) {
             PersistenceFailureFeature()
         } withDependencies: {
             $0[PersistenceStoreQuarantineClient.self] = PersistenceStoreQuarantineClient(
-                quarantine: {})
+                quarantine: {
+                    callCount.withValue { $0 += 1 }
+                }
+            )
         }
 
         await store.send(.recoveryTapped) {
@@ -68,6 +72,7 @@ struct PersistenceFailureFeatureTests {
         await store.receive(.recoverySucceeded) {
             $0.phase = .relaunchRequired
         }
+        #expect(callCount.value == 1)
     }
 
     @Test func failedRecoveryStaysBlockingAndShowsReason() async {
@@ -112,13 +117,4 @@ private extension PersistenceFailureFeatureTests {
             TextState("這會將目前無法開啟的資料搬到裝置上的備份目錄。資料不會被刪除。完成後請關閉並重新開啟 App。")
         }
     }
-}
-
-/// 記錄 quarantine client 呼叫次數
-private final class QuarantineCallBox: @unchecked Sendable {
-
-    // MARK: - Data Properties
-
-    /// 呼叫次數
-    var callCount = 0
 }

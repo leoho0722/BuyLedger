@@ -79,6 +79,7 @@ final class OrderEditDirtyTests: BLUITestCase {
 private extension OrderEditDirtyTests {
 
     /// 切到訂單分頁、點新增並等編輯表單就緒，回傳編輯表單 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - file: 失敗時回報的來源檔案
@@ -91,7 +92,7 @@ private extension OrderEditDirtyTests {
         line: UInt = #line
     ) -> OrderEditScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToOrders() {
+        if !root.goToOrders(file: file, line: line) {
             failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
         }
 
@@ -105,7 +106,7 @@ private extension OrderEditDirtyTests {
             )
         }
 
-        orders.tapAddOrder()
+        orders.tapAddOrder(file: file, line: line)
 
         let edit = OrderEditScreen(app: app)
         if !edit.waitUntilReady() {

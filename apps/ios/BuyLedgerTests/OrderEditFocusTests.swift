@@ -16,6 +16,7 @@ struct OrderEditFocusTests {
 
     // MARK: - Tests
 
+    /// 開啟空白訂單時將焦點放在第一個欄位
     @Test func openingABlankOrderFocusesTheFirstField() async {
         let store = Self.makeStore(original: nil)
 
@@ -55,10 +56,16 @@ struct OrderEditFocusTests {
         }
     }
 
-    /// 重開表單不沿用上次焦點——狀態隨草稿一起重建
-    @Test func reopeningStartsFromACleanFocusState() {
-        let state = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
+    /// 新建表單的初始狀態沒有焦點；父層重開生命週期由父層測試負責
+    @Test func newFormInitialState_hasNoFocusedField() {
+        // Given：新訂單使用固定識別值與目前時間
+        let id = UUID(0)
+        let currentDate = TestDependencies.fixedNow
 
+        // When：建立新訂單編輯表單的初始狀態
+        let state = OrderEditFeature.State(id: id, currentDate: currentDate)
+
+        // Then：初始狀態不應自動搶焦點
         #expect(state.focusedField == nil)
     }
 }
@@ -68,6 +75,7 @@ struct OrderEditFocusTests {
 private extension OrderEditFocusTests {
 
     /// 建立一個注入固定時間的編輯表單 store
+    ///
     /// - Parameter original: 要編輯的原始訂單；新增訂單時為 `nil`
     /// - Returns: 已建立的 OrderEditFeature 測試 store
     static func makeStore(original: LedgerOrder?) -> TestStoreOf<OrderEditFeature> {

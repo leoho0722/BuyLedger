@@ -33,6 +33,7 @@ struct BLStatusPill: View {
     // MARK: - Init
 
     /// 建立狀態膠囊
+    ///
     /// - Parameters:
     ///   - title: 狀態膠囊顯示的文字
     ///   - tone: 狀態膠囊使用的語意狀態
@@ -68,6 +69,7 @@ struct BLStatusPill: View {
         .padding(.horizontal, horizontalPadding)
         .background(tone.background)
         .clipShape(Capsule())
+        .accessibilityElement(children: .combine)
     }
 }
 

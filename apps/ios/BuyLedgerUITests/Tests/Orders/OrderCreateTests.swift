@@ -42,7 +42,7 @@ final class OrderCreateTests: BLUITestCase {
         let edit = openOrderEdit(app)
 
         // 剛開新表單：客戶名／來源／類別皆未填，儲存應停用
-        if edit.isSaveEnabled {
+        if edit.isSaveEnabled() {
             failWithDiagnostics(in: app, "新表單必填未齊時儲存不應可用")
         }
 
@@ -92,6 +92,7 @@ final class OrderCreateTests: BLUITestCase {
 private extension OrderCreateTests {
 
     /// 切到訂單分頁、點新增並等編輯表單就緒，回傳編輯表單 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - file: 失敗時回報的來源檔案
@@ -104,7 +105,7 @@ private extension OrderCreateTests {
         line: UInt = #line
     ) -> OrderEditScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToOrders() {
+        if !root.goToOrders(file: file, line: line) {
             failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
         }
 
@@ -118,7 +119,7 @@ private extension OrderCreateTests {
             )
         }
 
-        orders.tapAddOrder()
+        orders.tapAddOrder(file: file, line: line)
 
         let edit = OrderEditScreen(app: app)
         if !edit.waitUntilReady() {
@@ -133,6 +134,7 @@ private extension OrderCreateTests {
     }
 
     /// 開啟某個選擇器、等就緒後點選指定值
+    ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - open: 開啟選擇器的操作
@@ -159,6 +161,6 @@ private extension OrderCreateTests {
             )
         }
 
-        picker.selectOption(value)
+        picker.selectOption(value, file: file, line: line)
     }
 }

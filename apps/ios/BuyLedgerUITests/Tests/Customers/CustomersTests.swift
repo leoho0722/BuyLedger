@@ -78,6 +78,7 @@ final class CustomersTests: BLUITestCase {
 private extension CustomersTests {
 
     /// 從更多分頁導到客戶頁並等名單就緒，回傳客戶頁 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - file: 失敗時回報的來源檔案
@@ -89,7 +90,7 @@ private extension CustomersTests {
         file: StaticString = #filePath,
         line: UInt = #line
     ) -> CustomersScreen {
-        let customers = CustomersScreen.open(from: app)
+        let customers = CustomersScreen.open(from: app, file: file, line: line)
         if !customers.waitUntilReady() {
             failWithDiagnostics(
                 in: app,

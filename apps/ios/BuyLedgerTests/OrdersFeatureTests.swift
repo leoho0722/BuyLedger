@@ -5,8 +5,8 @@
 //  Created by Leo Ho on 2026/5/1.
 //
 
+import Clocks
 import ComposableArchitecture
-import Foundation
 import SwiftUI
 import Testing
 @testable import BuyLedger
@@ -1028,44 +1028,108 @@ struct OrdersFeatureTests {
         #expect(store.state.orderMerge == nil)
     }
 
-    @Test func mergeCompletionOpensPrefilledDraft() async {
+    /// 合併完成後開啟帶入固定欄位值的編輯草稿
+    ///
+    /// - Throws: 樣本訂單不存在時拋出測試錯誤
+    @Test func mergeCompletion_opensPrefilledDraft() async throws(any Error) {
+        // Given：兩筆完整訂單已載入，準備從主訂單進入合併流程
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
+        let initialOrders = state.orders
         let primaryID = "BL-2604-018"
         let secondaryID = "BL-2604-012"
+        let primary = try #require(state.orders.first { $0.id == primaryID })
+        let secondary = try #require(state.orders.first { $0.id == secondaryID })
+        try #require(primary.items.count == 2)
+        try #require(secondary.items.count == 1)
+        let expectedItemIDs = primary.items.map(\.id) + secondary.items.map(\.id)
+        let expectedItems = [
+            LedgerOrderItem(
+                id: expectedItemIDs[0],
+                name: "Tamburins 香水 Chamo 50ml",
+                quantity: 1,
+                unitPrice: 95_000
+            ),
+            LedgerOrderItem(
+                id: expectedItemIDs[1],
+                name: "Gentle Monster Her 02",
+                quantity: 1,
+                unitPrice: 295_000
+            ),
+            LedgerOrderItem(
+                id: expectedItemIDs[2],
+                name: "Adererror 標準 Logo Tee 黑",
+                quantity: 2,
+                unitPrice: 89_000
+            ),
+        ]
+        let clock = TestClock()
 
         let store = TestStore(initialState: state) {
             OrdersFeature()
-        } withDependencies: {
-            $0.date = .constant(TestDependencies.fixedNow)
-            $0.calendar = TestDependencies.fixedCalendar
-            $0.uuid = .incrementing
-            // 使用真實 clock，讓延遲效果可被測試
-            $0.continuousClock = ContinuousClock()
+        } withDependencies: { dependencies in
+            dependencies.date = .constant(TestDependencies.fixedNow)
+            dependencies.calendar = TestDependencies.fixedCalendar
+            dependencies.uuid = .constant(UUID(0))
+            dependencies.continuousClock = clock
         }
 
-        // `.candidateTapped` 先產生子層 delegate，再由 `continuousClock.sleep` 延遲送出
-        // 並行效果完成順序不固定，因此保留所有關閉路徑。
-        store.exhaustivity = .off
-
-        await store.send(.mergeOrderTapped(primaryID))
+        // When：選取副訂單並等待合併確認表單呈現
+        await store.send(.mergeOrderTapped(primaryID)) { state in
+            state.orderMerge = OrderMergeFeature.State(primary: primary, orders: initialOrders)
+        }
         await store.send(.orderMerge(.presented(.candidateTapped(secondaryID))))
-        // 依序收到：子 feature 的完成 delegate → 延遲一拍後的確認表單開啟
-        await store.receive(\.orderMerge.presented.delegate)
-        await store.receive(\.mergeConfirmationReady, timeout: .seconds(3))
+        await store.receive(\.orderMerge.presented.candidatePhotosLoaded)
+        await store.receive(\.orderMerge.presented.delegate.completed) { state in
+            state.orderMerge = nil
+        }
+        await clock.advance(by: .milliseconds(500))
+        await store.receive(\.mergeConfirmationReady) { state in
+            var expectedEdit = OrderEditFeature.State(
+                id: UUID(0),
+                availableOrderSources: state.availableOrderSources,
+                availableCategories: state.availableCategories,
+                availablePaymentMethods: state.availablePaymentMethods,
+                availableReconciliationStatuses: state.availableReconciliationStatuses,
+                availableCampaigns: state.availableCampaigns,
+                currentDate: TestDependencies.fixedNow
+            )
+            expectedEdit.draft.customerName = "林書宇"
+            expectedEdit.draft.orderSource = "蝦皮"
+            expectedEdit.draft.categories = ["美妝", "服飾"]
+            expectedEdit.draft.status = .shipping
+            expectedEdit.draft.currency = .krw
+            expectedEdit.draft.chargedAmount = 17_480
+            expectedEdit.draft.cardlessDeductionAmount = 0
+            expectedEdit.draft.cardlessSupplementAmount = 0
+            expectedEdit.draft.itemCost = 12_950.4
+            expectedEdit.draft.domesticShipping = 140
+            expectedEdit.draft.internationalShipping = 600
+            expectedEdit.draft.foreignDomesticShipping = 0
+            expectedEdit.draft.cardFeeRate = 0.015
+            expectedEdit.draft.platformFeeRate = 0
+            expectedEdit.draft.paymentFeeRate = 0
+            expectedEdit.draft.items = expectedItems
+            expectedEdit.draft.notes = "客戶指定到貨後先拍照確認，再安排出貨。"
+            expectedEdit.draft.date = TestDependencies.fixedNow
+            expectedEdit.draft.paymentMethod = "信用卡"
+            expectedEdit.draft.reconciliationStatus = ""
+            expectedEdit.draft.campaignNames = []
+            expectedEdit.draft.paymentReceiptStatus = .pending
+            expectedEdit.draftPhotos = []
+            expectedEdit.mergeSourceIDs = [primaryID, secondaryID]
+            state.editOrder = expectedEdit
+        }
 
-        // 合併 sheet 收合、確認表單以合併草稿預填 (全部欄位可編輯)
+        // Then：合併 sheet 收合，確認表單以固定預期值填入所有欄位
         #expect(store.state.orderMerge == nil)
 
-        let edit = store.state.editOrder
-        #expect(edit?.mergeSourceIDs == [primaryID, secondaryID])
-        // 客戶實付加總：11,800 + 5,680
-        #expect(edit?.draft.chargedAmount == 17_480)
-        // 類別聯集：美妝 (主) + 服飾 (副)
-        #expect(edit?.draft.categories == ["美妝", "服飾"])
-        // 訂購日期為合併當下
-        #expect(edit?.draft.date == TestDependencies.fixedNow)
-        #expect(edit?.isMergeContext == true)
+        let edit = try #require(store.state.editOrder)
+        #expect(edit.mergeSourceIDs == [primaryID, secondaryID])
+        #expect(edit.draft.customerName == "林書宇")
+        #expect(edit.draft.categories == ["美妝", "服飾"])
+        #expect(edit.draft.items == expectedItems)
+        #expect(edit.isMergeContext)
     }
 
     @Test func mergeDraftSaveCommitsNewOrderAndMarksSourcesMerged() async {
@@ -1704,77 +1768,126 @@ struct OrdersFeatureTests {
         await store.finish()
     }
 
-    @Test func statusChangeFailurePreservesPresentedOrderAcrossReload() async {
-        // 寫入失敗時，訂單狀態與重新載入結果都不變
-        // 直接送出 ordersLoaded 模擬重載，避免平行主檔載入造成不確定性
+    /// 狀態寫入失敗後重新載入仍保留原訂單
+    ///
+    /// - Throws: 測試 repository 建立或非同步寫入失敗時拋出錯誤
+    @Test func statusChangeFailure_preservesPresentedOrderAcrossReload() async throws(any Error) {
+        // Given：訂單狀態寫入會失敗，且重新載入受閘門控制
         let original = makeOrder(id: "O1", categories: ["beauty"], status: .shipping)
+        let reloadGate = ReloadGate()
+        let reloadResult = ReloadResultBox()
+        var repository = try await Self.makeLiveOrderRepository(
+            storing: [original],
+            reloadGate: reloadGate,
+            reloadResult: reloadResult
+        )
+        let persistedOriginal = LedgerOrder.normalizingItemIdentifiers(original)
+        repository.saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
+            throw .saveFailed(message: "boom")
+        }
         var state = OrdersFeature.State()
         state.orders = [original]
 
         let store = TestStore(initialState: state) {
             OrdersFeature()
-        } withDependencies: {
-            $0[OrderRepository.self].saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
-                throw .saveFailed(message: "boom")
-            }
+        } withDependencies: { dependencies in
+            dependencies[OrderRepository.self] = repository
+            Self.suppressOrderLookupEffects(&dependencies)
         }
 
+        // When：嘗試更新狀態，再執行實際重新載入
         await store.send(.statusChanged("O1", .arrived))
         await store.receive(\.orderWriteFailed) {
             $0.writeFailureAlert = expectedWriteFailureAlert("訂單狀態更新失敗，請稍後再試。")
         }
 
-        #expect(store.state.orders == [original], "寫入失敗時畫面狀態應與操作前完全相同")
+        await Self.reloadOrders(
+            store: store,
+            gate: reloadGate,
+            result: reloadResult
+        )
 
-        await store.send(.ordersLoaded([original])) {
-            $0.isLoading = false
-            $0.hasLoaded = true
-            $0.orders = [original]
-            $0.selectedOrderID = original.id
-        }
-
-        #expect(store.state.orders == [original], "冷啟動前後畫面呈現的訂單集合應一致")
+        // Then：畫面與儲存層都仍是原本的訂單
+        #expect(
+            store.state.orders.map(LedgerOrder.normalizingItemIdentifiers) == [persistedOriginal],
+            "冷啟動前後畫面呈現的訂單集合應一致"
+        )
+        #expect(store.state.selectedOrderID == original.id)
+        await store.finish()
     }
 
-    @Test func receiptStatusChangeFailurePreservesPresentedOrderAcrossReload() async {
-        // 寫入失敗時，訂單狀態與重新載入結果都不變
+    /// 收款狀態寫入失敗後重新載入仍保留原訂單
+    ///
+    /// - Throws: 測試 repository 建立或非同步寫入失敗時拋出錯誤
+    @Test
+    func receiptStatusChangeFailure_preservesPresentedOrderAcrossReload() async throws(any Error) {
+        // Given：收款狀態寫入會失敗，且重新載入受閘門控制
         let original = makeOrder(id: "O1", categories: ["beauty"])
+        let reloadGate = ReloadGate()
+        let reloadResult = ReloadResultBox()
+        var repository = try await Self.makeLiveOrderRepository(
+            storing: [original],
+            reloadGate: reloadGate,
+            reloadResult: reloadResult
+        )
+        let persistedOriginal = LedgerOrder.normalizingItemIdentifiers(original)
+        repository.saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
+            throw .saveFailed(message: "boom")
+        }
         var state = OrdersFeature.State()
         state.orders = [original]
 
         let store = TestStore(initialState: state) {
             OrdersFeature()
-        } withDependencies: {
-            $0[OrderRepository.self].saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
-                throw .saveFailed(message: "boom")
-            }
+        } withDependencies: { dependencies in
+            dependencies[OrderRepository.self] = repository
+            Self.suppressOrderLookupEffects(&dependencies)
         }
 
+        // When：嘗試更新收款狀態，再執行實際重新載入
         await store.send(.receiptStatusChanged("O1", .received))
         await store.receive(\.orderWriteFailed) {
             $0.writeFailureAlert = expectedWriteFailureAlert("收款狀態更新失敗，請稍後再試。")
         }
 
-        #expect(store.state.orders == [original], "寫入失敗時畫面狀態應與操作前完全相同")
+        await Self.reloadOrders(
+            store: store,
+            gate: reloadGate,
+            result: reloadResult
+        )
 
-        await store.send(.ordersLoaded([original])) {
-            $0.isLoading = false
-            $0.hasLoaded = true
-            $0.orders = [original]
-            $0.selectedOrderID = original.id
-        }
-
-        #expect(store.state.orders == [original], "冷啟動前後畫面呈現的訂單集合應一致")
+        // Then：畫面與儲存層都仍是原本的訂單
+        #expect(
+            store.state.orders.map(LedgerOrder.normalizingItemIdentifiers) == [persistedOriginal],
+            "冷啟動前後畫面呈現的訂單集合應一致"
+        )
+        #expect(store.state.selectedOrderID == original.id)
+        await store.finish()
     }
 
-    @Test func batchStatusChangeFailureLeavesAllSelectedOrdersUnchangedAcrossReload() async {
-        // 寫入失敗時，訂單狀態與重新載入結果都不變
+    /// 批次狀態寫入失敗後重新載入仍保留所有訂單
+    ///
+    /// - Throws: 測試 repository 建立或非同步寫入失敗時拋出錯誤
+    @Test
+    func batchStatusChangeFailure_preservesOrdersAcrossReload() async throws(any Error) {
+        // Given：所有選取訂單的批次狀態寫入會失敗
         let orders = [
             makeOrder(id: "O1", categories: ["beauty"], status: .shipping),
             makeOrder(id: "O2", categories: ["beauty"], status: .shipping),
             makeOrder(id: "O3", categories: ["beauty"], status: .shipping),
             makeOrder(id: "O4", categories: ["beauty"], status: .shipping),
         ]
+        let reloadGate = ReloadGate()
+        let reloadResult = ReloadResultBox()
+        var repository = try await Self.makeLiveOrderRepository(
+            storing: orders,
+            reloadGate: reloadGate,
+            reloadResult: reloadResult
+        )
+        let persistedOrders = orders.map(LedgerOrder.normalizingItemIdentifiers)
+        repository.saveOrders = { (_: [LedgerOrder]) async throws(PersistenceError) in
+            throw .saveFailed(message: "boom")
+        }
         var state = OrdersFeature.State()
         state.orders = orders
         state.isSelecting = true
@@ -1782,13 +1895,12 @@ struct OrdersFeatureTests {
 
         let store = TestStore(initialState: state) {
             OrdersFeature()
-        } withDependencies: {
-            $0[OrderRepository.self].saveOrders = { (_: [LedgerOrder]) async throws(PersistenceError) in
-                throw .saveFailed(message: "boom")
-            }
+        } withDependencies: { dependencies in
+            dependencies[OrderRepository.self] = repository
+            Self.suppressOrderLookupEffects(&dependencies)
         }
 
-        // 多選狀態的退出與寫入結果無關。
+        // When：執行批次狀態更新，再執行實際重新載入
         await store.send(.batchStatusChanged(.arrived)) {
             $0.isSelecting = false
             $0.selectedOrderIDs = []
@@ -1797,51 +1909,54 @@ struct OrdersFeatureTests {
             $0.writeFailureAlert = expectedWriteFailureAlert("批次更新狀態失敗，請稍後再試。")
         }
 
-        #expect(store.state.orders == orders, "批次寫入失敗時，所有被選取訂單的狀態皆應與操作前相同")
+        await Self.reloadOrders(
+            store: store,
+            gate: reloadGate,
+            result: reloadResult
+        )
 
-        await store.send(.ordersLoaded(orders)) {
-            $0.isLoading = false
-            $0.hasLoaded = true
-            $0.orders = orders
-            $0.selectedOrderID = orders.first?.id
-        }
-
-        #expect(store.state.orders == orders, "冷啟動前後畫面呈現的訂單集合應一致")
+        // Then：所有訂單仍與寫入前一致
+        #expect(
+            store.state.orders.map(LedgerOrder.normalizingItemIdentifiers).sorted { left, right in
+                left.id < right.id
+            } == persistedOrders.sorted { left, right in
+                left.id < right.id
+            },
+            "冷啟動前後畫面呈現的訂單集合應一致"
+        )
+        let selectedOrderID = try #require(store.state.selectedOrderID)
+        #expect(Set(orders.map(\.id)).contains(selectedOrderID))
+        await store.finish()
     }
 
-    @Test func deletionFailurePreservesPresentedOrderAcrossReload() async {
-        // 寫入失敗時，訂單狀態與重新載入結果都不變
+    /// 刪除寫入失敗後重新載入仍保留原訂單
+    ///
+    /// - Throws: 測試 repository 建立或非同步寫入失敗時拋出錯誤
+    @Test func deletionFailure_preservesPresentedOrderAcrossReload() async throws(any Error) {
+        // Given：刪除操作會失敗，且重新載入受閘門控制
         let original = makeOrder(id: "O1", categories: ["beauty"])
+        let reloadGate = ReloadGate()
+        let reloadResult = ReloadResultBox()
+        var repository = try await Self.makeLiveOrderRepository(
+            storing: [original],
+            reloadGate: reloadGate,
+            reloadResult: reloadResult
+        )
+        let persistedOriginal = LedgerOrder.normalizingItemIdentifiers(original)
+        repository.removeOrder = { (_: LedgerOrder.ID) async throws(PersistenceError) in
+            throw .saveFailed(message: "boom")
+        }
         var state = OrdersFeature.State()
         state.orders = [original]
 
         let store = TestStore(initialState: state) {
             OrdersFeature()
-        } withDependencies: {
-            $0[OrderRepository.self].removeOrder = { (_: LedgerOrder.ID) async throws(PersistenceError) in
-                throw .saveFailed(message: "boom")
-            }
-            // 由真正的 `.task` 重載讀回，確認儲存層沒有留下半套資料。
-            $0[OrderRepository.self].fetchOrders = { [original] }
-            // 本測試只驗訂單重載，主檔載入另行失敗。
-            // 避免其完成順序不可預測地混入斷言
-            $0[OrderSourceRepository.self].fetchOrderSources = { () async throws(PersistenceError) -> [String] in
-                throw PersistenceError.fetchFailed(message: "suppressed")
-            }
-            $0[CampaignRepository.self].fetchCampaigns = { () async throws(PersistenceError) -> [Campaign] in
-                throw PersistenceError.fetchFailed(message: "suppressed")
-            }
-            $0[CategoryRepository.self].fetchCategories = { () async throws(PersistenceError) -> [String] in
-                throw PersistenceError.fetchFailed(message: "suppressed")
-            }
-            $0[PaymentMethodRepository.self].fetchPaymentMethodInfos = { () async throws(PersistenceError) -> [PaymentMethodInfo] in
-                throw PersistenceError.fetchFailed(message: "suppressed")
-            }
-            $0[ReconciliationStatusRepository.self].fetchReconciliationStatuses = { () async throws(PersistenceError) -> [String] in
-                throw PersistenceError.fetchFailed(message: "suppressed")
-            }
+        } withDependencies: { dependencies in
+            dependencies[OrderRepository.self] = repository
+            Self.suppressOrderLookupEffects(&dependencies)
         }
 
+        // When：確認刪除，再執行實際重新載入
         await store.send(.deleteOrderTapped("O1")) {
             $0.deletionConfirmation = AlertState {
                 TextState("刪除訂單")
@@ -1865,28 +1980,42 @@ struct OrdersFeatureTests {
             $0.writeFailureAlert = expectedWriteFailureAlert("訂單刪除失敗，請稍後再試。")
         }
 
-        #expect(store.state.orders == [original], "刪除失敗時項目應維持可見")
-
         // 冷啟動實際觸發 `.task` 重載，而非直接送出 `ordersLoaded`。
         // 才能證明失敗的寫入沒有在 DB 留下半套資料
-        await store.send(.task) {
-            $0.isLoading = true
-            $0.errorMessage = nil
-        }
-        await store.receive(\.ordersLoaded) {
-            $0.isLoading = false
-            $0.hasLoaded = true
-            $0.orders = [original]
-            $0.selectedOrderID = original.id
-        }
+        await Self.reloadOrders(
+            store: store,
+            gate: reloadGate,
+            result: reloadResult
+        )
 
-        #expect(store.state.orders == [original], "冷啟動前後畫面呈現的訂單集合應一致")
+        // Then：訂單仍存在且選取狀態不變
+        #expect(
+            store.state.orders.map(LedgerOrder.normalizingItemIdentifiers) == [persistedOriginal],
+            "冷啟動前後畫面呈現的訂單集合應一致"
+        )
+        #expect(store.state.selectedOrderID == original.id)
+        await store.finish()
     }
 
-    @Test func editSaveFailurePreservesPresentedOrderAcrossReload() async {
-        // 寫入失敗時，訂單狀態與重新載入結果都不變
+    /// 編輯儲存失敗後重新載入仍保留原訂單
+    ///
+    /// - Throws: 測試 repository 建立或非同步寫入失敗時拋出錯誤
+    @Test func editSaveFailure_preservesPresentedOrderAcrossReload() async throws(any Error) {
+        // Given：編輯儲存會失敗，且重新載入受閘門控制
         let originalID = "BL-2604-018"
-        let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
+        let original = try #require(LedgerOrder.sampleOrders.first { $0.id == originalID })
+
+        let reloadGate = ReloadGate()
+        let reloadResult = ReloadResultBox()
+        var repository = try await Self.makeLiveOrderRepository(
+            storing: LedgerOrder.sampleOrders,
+            reloadGate: reloadGate,
+            reloadResult: reloadResult
+        )
+        let persistedOrders = LedgerOrder.sampleOrders.map(LedgerOrder.normalizingItemIdentifiers)
+        repository.saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
+            throw .saveFailed(message: "boom")
+        }
 
         var draft = OrderEditFeature.State(
             original: original, id: UUID(0), currentDate: TestDependencies.fixedNow)
@@ -1898,12 +2027,12 @@ struct OrdersFeatureTests {
 
         let store = TestStore(initialState: state) {
             OrdersFeature()
-        } withDependencies: {
-            $0[OrderRepository.self].saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
-                throw .saveFailed(message: "boom")
-            }
+        } withDependencies: { dependencies in
+            dependencies[OrderRepository.self] = repository
+            Self.suppressOrderLookupEffects(&dependencies)
         }
 
+        // When：儲存編輯，再執行實際重新載入
         await store.send(.editOrder(.presented(.saveTapped)))
         await store.receive(\.orderWriteFailed) {
             $0.writeFailureAlert = expectedWriteFailureAlert("訂單儲存失敗，請稍後再試。")
@@ -1914,16 +2043,18 @@ struct OrdersFeatureTests {
             $0.editOrder = nil
         }
 
-        #expect(store.state.orders.first { $0.id == originalID } == original, "編輯儲存失敗時訂單應維持原本內容")
+        await Self.reloadOrders(
+            store: store,
+            gate: reloadGate,
+            result: reloadResult
+        )
 
-        await store.send(.ordersLoaded(LedgerOrder.sampleOrders)) {
-            $0.isLoading = false
-            $0.hasLoaded = true
-            $0.orders = LedgerOrder.sampleOrders
-            $0.selectedOrderID = LedgerOrder.sampleOrders.first?.id
-        }
-
-        #expect(store.state.orders == LedgerOrder.sampleOrders, "冷啟動前後畫面呈現的訂單集合應一致")
+        // Then：畫面與儲存層都仍是原本的訂單集合
+        #expect(
+            store.state.orders.map(LedgerOrder.normalizingItemIdentifiers) == persistedOrders,
+            "冷啟動前後畫面呈現的訂單集合應一致"
+        )
+        #expect(store.state.selectedOrderID == LedgerOrder.sampleOrders.first?.id)
         await store.finish()
     }
 
@@ -2459,11 +2590,172 @@ struct OrdersFeatureTests {
     }
 }
 
+// MARK: - Nested Types
+
+private extension OrdersFeatureTests {
+
+    /// 讓 `.task` 的儲存層讀取在 send 的 state 斷言後才繼續
+    actor ReloadGate {
+
+        /// 等待中的讀取 continuation
+        private var continuation: CheckedContinuation<Void, Never>?
+
+        /// 是否已開啟讀取閘門
+        private var isOpen = false
+    }
+
+    /// 暫存 live repository 實際讀回的訂單，供 TestStore 的完整 state 斷言使用
+    struct ReloadResultBox: Sendable {
+
+        /// 儲存最近一次 reload 結果的隔離值
+        private let storage = LockIsolated<[LedgerOrder]>([])
+    }
+}
+
+// MARK: - Private Method
+
+private extension OrdersFeatureTests.ReloadGate {
+
+    /// 等待測試明確開啟讀取閘門
+    func wait() async {
+        guard !isOpen else {
+            return
+        }
+
+        await withCheckedContinuation { continuation in
+            self.continuation = continuation
+        }
+    }
+
+    /// 讓等待中的讀取繼續
+    func open() {
+        isOpen = true
+        continuation?.resume()
+        continuation = nil
+    }
+}
+
+// MARK: - Computed Properties
+
+private extension OrdersFeatureTests.ReloadResultBox {
+
+    /// 讀取最近一次 reload 的完整結果
+    var orders: [LedgerOrder] {
+        storage.value
+    }
+}
+
+// MARK: - Private Method
+
+private extension OrdersFeatureTests.ReloadResultBox {
+
+    /// 記錄 live repository 的讀回結果
+    ///
+    /// - Parameter orders: 儲存層實際回傳的訂單
+    func record(_ orders: [LedgerOrder]) {
+        storage.setValue(orders)
+    }
+}
+
 // MARK: - Private Method
 
 private extension OrdersFeatureTests {
 
+    /// 觸發由閘門控制的實際重新載入並完成 TestStore 斷言
+    ///
+    /// - Parameters:
+    ///   - store: 要驗證的 OrdersFeature 測試 store
+    ///   - gate: 控制 repository 讀取繼續的閘門
+    ///   - result: 保存 repository 實際讀回訂單的結果盒
+    static func reloadOrders(
+        store: TestStoreOf<OrdersFeature>,
+        gate: ReloadGate,
+        result: ReloadResultBox
+    ) async {
+        let reloadTask = await store.send(.task) {
+            $0.isLoading = true
+            $0.errorMessage = nil
+        }
+        await gate.open()
+        await store.receive(\.ordersLoaded) {
+            $0.isLoading = false
+            $0.hasLoaded = true
+            $0.orders = result.orders
+            $0.selectedOrderID = result.orders.first?.id
+        }
+        await reloadTask.finish()
+    }
+
+    /// 建立以 in-memory SwiftData container 為後端且已預先落盤訂單的 repository
+    ///
+    /// - Parameters:
+    ///   - orders: 要先寫入儲存層的訂單
+    ///   - reloadGate: 可選的重新載入閘門
+    ///   - reloadResult: 儲存層讀回結果的觀測盒
+    /// - Returns: 共用同一個 in-memory container 的 repository
+    /// - Throws: 預先寫入失敗時拋出錯誤
+    static func makeLiveOrderRepository(
+        storing orders: [LedgerOrder],
+        reloadGate: ReloadGate? = nil,
+        reloadResult: ReloadResultBox? = nil
+    ) async throws(any Error) -> OrderRepository {
+        var repository = OrderRepository.live(
+            container: PersistenceContainer.makeInMemory(for: .testing)
+        )
+        try await repository.saveOrders(orders)
+
+        if let reloadGate {
+            let fetchOrders = repository.fetchOrders
+            repository.fetchOrders = { () async throws(PersistenceError) -> [LedgerOrder] in
+                await reloadGate.wait()
+                let orders = try await fetchOrders()
+                reloadResult?.record(orders)
+                return orders
+            }
+        }
+
+        return repository
+    }
+
+    /// 關閉 OrdersFeature 測試不關心的主檔載入 effect
+    ///
+    /// - Parameter dependencies: 要注入的依賴集合
+    static func suppressOrderLookupEffects(_ dependencies: inout DependencyValues) {
+        var orderSourceRepository = OrderSourceRepository.testValue
+        orderSourceRepository.fetchOrderSources = { () async throws(PersistenceError) -> [String] in
+            throw PersistenceError.fetchFailed(message: "suppressed")
+        }
+        dependencies[OrderSourceRepository.self] = orderSourceRepository
+
+        var campaignRepository = CampaignRepository.testValue
+        campaignRepository.fetchCampaigns = { () async throws(PersistenceError) -> [Campaign] in
+            throw PersistenceError.fetchFailed(message: "suppressed")
+        }
+        dependencies[CampaignRepository.self] = campaignRepository
+
+        var categoryRepository = CategoryRepository.testValue
+        categoryRepository.fetchCategories = { () async throws(PersistenceError) -> [String] in
+            throw PersistenceError.fetchFailed(message: "suppressed")
+        }
+        dependencies[CategoryRepository.self] = categoryRepository
+
+        var paymentMethodRepository = PaymentMethodRepository.testValue
+        paymentMethodRepository.fetchPaymentMethodInfos = {
+            () async throws(PersistenceError) -> [PaymentMethodInfo] in
+            throw PersistenceError.fetchFailed(message: "suppressed")
+        }
+        dependencies[PaymentMethodRepository.self] = paymentMethodRepository
+
+        var reconciliationStatusRepository = ReconciliationStatusRepository.testValue
+        reconciliationStatusRepository.fetchReconciliationStatuses = {
+            () async throws(PersistenceError) -> [String] in
+            throw PersistenceError.fetchFailed(message: "suppressed")
+        }
+        dependencies[ReconciliationStatusRepository.self] = reconciliationStatusRepository
+    }
+
     /// 重建預期寫入結果，供完整 state 比對
+    ///
     /// - Parameters:
     ///   - draft: 訂單編輯草稿
     ///   - existingOrders: 目前已存在的訂單
@@ -2601,6 +2893,7 @@ private extension OrdersFeatureTests {
     }
 
     /// 正規化類別／開團名稱，保留首次出現順序
+    ///
     /// - Parameter names: 要正規化的名稱清單
     /// - Returns: 去除空白與重複後的名稱清單
     static func normalizedNames(_ names: [String]) -> [String] {
@@ -2612,6 +2905,7 @@ private extension OrdersFeatureTests {
     }
 
     /// 將費率限制在產品規則使用的 `[0, 1]` 範圍
+    ///
     /// - Parameter value: 要限制的費率
     /// - Returns: 限制在 0 至 1 之間的費率
     static func clampRate(_ value: Decimal) -> Decimal {
@@ -2619,6 +2913,7 @@ private extension OrdersFeatureTests {
     }
 
     /// 建立寫入失敗 alert，供測試比對
+    ///
     /// - Parameter message: alert 顯示的錯誤訊息
     /// - Returns: 寫入失敗時顯示的 alert
     func expectedWriteFailureAlert(_ message: LocalizedStringKey) -> AlertState<OrdersFeature.Action.Alert> {
@@ -2634,6 +2929,7 @@ private extension OrdersFeatureTests {
     }
 
     /// 建立僅供篩選測試使用的最小訂單；非相關欄位以零值/佔位填入
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - category: 商品類別
@@ -2650,6 +2946,7 @@ private extension OrdersFeatureTests {
     }
 
     /// 多類別/多開團版本的最小訂單 helper
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - categories: 商品類別
@@ -2734,6 +3031,7 @@ private final class ToggleableFailureBox: @unchecked Sendable {
 private extension LedgerOrder {
 
     /// 回傳僅變更狀態的複本
+    ///
     /// - Parameter newStatus: 要套用的訂單狀態
     /// - Returns: 套用新狀態後的訂單
     func withStatus(_ newStatus: OrderStatus) -> LedgerOrder {
@@ -2768,6 +3066,7 @@ private extension LedgerOrder {
     }
 
     /// 建立折抵上限測試所需的訂單複本
+    ///
     /// - Parameters:
     ///   - chargedAmount: 客戶實付金額
     ///   - cardlessDeductionAmount: 無卡折抵金額

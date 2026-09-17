@@ -60,6 +60,8 @@ struct LookupManagementFeatureTests {
     /// 使用獨立主檔 feature 容器，驗證新增後目錄同步
     @Test func addConfirmedWritesThroughToTheSharedCatalogFromAStandaloneContainer() async {
         await Self.withIsolatedCatalog {
+            @Shared(.lookupCatalog) var sharedCatalog: LookupCatalog
+
             let store = TestStore(initialState: LookupManagementFeature.State(kind: .category)) {
                 LookupManagementFeature()
             } withDependencies: {
@@ -70,8 +72,9 @@ struct LookupManagementFeatureTests {
                 $0.$catalog.withLock { $0.categories = ["手工藝品"] }
             }
 
-            // 直接讀共享目錄，確認跨 feature 共用同一份儲存。
-            #expect(store.state.catalog.categories == ["手工藝品"])
+            // 從同一個 scope 的另一個共享參照讀取
+            // 確認跨 feature 共用同一份儲存
+            #expect(sharedCatalog.categories == ["手工藝品"])
             await store.finish()
         }
     }
@@ -950,6 +953,7 @@ private final class PaymentMethodEditTestBox: @unchecked Sendable {
 private extension PaymentMethodEditTestBox {
 
     /// 回傳下一組 fetch 結果
+    ///
     /// - Returns: 訂單清單
     func fetchOrders() -> [LedgerOrder] {
         defer { fetchCount += 1 }
@@ -962,6 +966,7 @@ private extension PaymentMethodEditTestBox {
 private extension LookupManagementFeatureTests {
 
     /// 為每個測試建立獨立的記憶體儲存
+    ///
     /// - Parameter operation: 要執行的操作
     /// - Returns: operation 的結果
     /// - Throws: operation 拋出的錯誤
@@ -976,6 +981,7 @@ private extension LookupManagementFeatureTests {
     }
 
     /// 建立帶有舊旗標的訂單
+    ///
     /// - Returns: 建立的訂單
     static func makePaymentOrder(id: String, paymentMethod: String) -> LedgerOrder {
         LedgerOrder(
@@ -1009,6 +1015,7 @@ private extension LookupManagementFeatureTests {
     }
 
     /// 建立付款方式更新確認 alert
+    ///
     /// - Returns: 補登提示狀態
     static func retroactiveConfirmationAlert(count: Int) -> AlertState<LookupManagementFeature.Action.Alert> {
         let message: LocalizedStringKey = "確認後將重算 \(count) 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。"

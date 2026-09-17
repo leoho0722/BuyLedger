@@ -21,7 +21,25 @@ struct AppLockView: View {
 
     // MARK: - View Body
 
+    /// App 鎖定畫面的 view body
     var body: some View {
+        content
+            .padding(32)
+            .frame(maxWidth: 520)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background(BLPalette().plainBackground)
+            .accessibilityElement(children: .contain)
+            .accessibilityIdentifier(BLAccessibilityID.AppLock.root)
+    }
+}
+
+// MARK: - Private Views
+
+private extension AppLockView {
+
+    /// App 鎖定畫面的內容
+    @ViewBuilder
+    var content: some View {
         VStack(spacing: 20) {
             Image(systemName: "lock.fill")
                 .font(.system(size: iconSize))
@@ -34,24 +52,30 @@ struct AppLockView: View {
                 .multilineTextAlignment(.center)
 
             if store.unlockDidFail {
-                Text("驗證未完成，請再試一次。")
-                    .blTextStyle(.footnote)
-                    .foregroundStyle(BLTone.destructive.onSurface)
-                    .multilineTextAlignment(.center)
+                failedMessage
             }
 
-            Button(store.unlockButtonTitleKey) {
-                store.send(.retryUnlockTapped)
-            }
-            .buttonStyle(.borderedProminent)
-            .accessibilityIdentifier(BLAccessibilityID.AppLock.retryButton)
+            retryButton
         }
-        .padding(32)
-        .frame(maxWidth: 520)
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(BLPalette().plainBackground)
-        .accessibilityElement(children: .contain)
-        .accessibilityIdentifier(BLAccessibilityID.AppLock.root)
+    }
+
+    /// 驗證失敗時顯示的訊息
+    var failedMessage: some View {
+        Text("驗證未完成，請再試一次。")
+            .blTextStyle(.footnote)
+            .foregroundStyle(BLTone.destructive.onSurface)
+            .multilineTextAlignment(.center)
+            .accessibilityIdentifier(BLAccessibilityID.AppLock.failedMessage)
+    }
+
+    /// 重新驗證按鈕
+    var retryButton: some View {
+        Button(store.unlockButtonTitleKey) {
+            store.send(.retryUnlockTapped)
+        }
+        .buttonStyle(.borderedProminent)
+        .disabled(store.isUnlocking)
+        .accessibilityIdentifier(BLAccessibilityID.AppLock.retryButton)
     }
 }
 

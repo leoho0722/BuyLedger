@@ -153,7 +153,8 @@ extension OrderRepository {
                 }
 
                 let container = container
-                let task = Task {
+                // 額外 init 讓 closure 的 Task 結果無法穩定推斷，明確指定型別
+                let task: Task<OrderPersistence, Never> = Task {
                     await MainActor.run {
                         OrderPersistence(modelContainer: container)
                     }

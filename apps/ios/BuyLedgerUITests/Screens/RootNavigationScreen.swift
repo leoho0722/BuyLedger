@@ -29,6 +29,7 @@ struct RootNavigationScreen: Screen {
     // MARK: - Computed Properties
 
     /// 判定根導覽就緒的根 identifier
+    ///
     /// - Returns: 根導覽使用的 identifier
     var rootIdentifier: String {
         BLAccessibilityID.Dashboard.root
@@ -40,54 +41,117 @@ struct RootNavigationScreen: Screen {
 extension RootNavigationScreen {
 
     /// 切到總覽頁，待其就緒才回傳
-    /// - Parameter timeout: 等待總覽頁就緒的秒數
+    ///
+    /// - Parameters:
+    ///   - timeout: 等待總覽頁就緒的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     /// - Returns: 總覽頁是否在逾時前就緒
     @discardableResult
-    func goToDashboard(timeout: TimeInterval = 10) -> Bool {
-        go(to: .dashboard, timeout: timeout)
+    func goToDashboard(
+        timeout: TimeInterval = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Bool {
+        go(
+            to: .dashboard,
+            timeout: timeout,
+            file: file,
+            line: line
+        )
     }
 
     /// 切到訂單頁，待其就緒才回傳
-    /// - Parameter timeout: 等待訂單頁就緒的秒數
+    ///
+    /// - Parameters:
+    ///   - timeout: 等待訂單頁就緒的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     /// - Returns: 訂單頁是否在逾時前就緒
     @discardableResult
-    func goToOrders(timeout: TimeInterval = 10) -> Bool {
-        go(to: .orders, timeout: timeout)
+    func goToOrders(
+        timeout: TimeInterval = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Bool {
+        go(
+            to: .orders,
+            timeout: timeout,
+            file: file,
+            line: line
+        )
     }
 
     /// 切到開團頁，待其就緒才回傳
-    /// - Parameter timeout: 等待開團頁就緒的秒數
+    ///
+    /// - Parameters:
+    ///   - timeout: 等待開團頁就緒的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     /// - Returns: 開團頁是否在逾時前就緒
     @discardableResult
-    func goToCampaigns(timeout: TimeInterval = 10) -> Bool {
-        go(to: .campaigns, timeout: timeout)
+    func goToCampaigns(
+        timeout: TimeInterval = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Bool {
+        go(
+            to: .campaigns,
+            timeout: timeout,
+            file: file,
+            line: line
+        )
     }
 
     /// 切到分析頁，待其就緒才回傳
-    /// - Parameter timeout: 等待分析頁就緒的秒數
+    ///
+    /// - Parameters:
+    ///   - timeout: 等待分析頁就緒的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     /// - Returns: 分析頁是否在逾時前就緒
     @discardableResult
-    func goToInsights(timeout: TimeInterval = 10) -> Bool {
-        go(to: .insights, timeout: timeout)
+    func goToInsights(
+        timeout: TimeInterval = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Bool {
+        go(
+            to: .insights,
+            timeout: timeout,
+            file: file,
+            line: line
+        )
     }
 
     /// 切到更多與設定頁，待其就緒才回傳
-    /// - Parameter timeout: 等待更多頁就緒的秒數
+    ///
+    /// - Parameters:
+    ///   - timeout: 等待更多頁就緒的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     /// - Returns: 更多頁是否在逾時前就緒
     @discardableResult
-    func goToMore(timeout: TimeInterval = 10) -> Bool {
-        go(to: .more, timeout: timeout)
+    func goToMore(
+        timeout: TimeInterval = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Bool {
+        go(
+            to: .more,
+            timeout: timeout,
+            file: file,
+            line: line
+        )
     }
 
     /// 查詢分頁是否為選取態，供選取態斷言使用
+    ///
     /// - Parameter tab: 要查詢的分頁
     /// - Returns: 分頁是否為選取態
     func isTabSelected(_ tab: AppNavigator.Tab) -> Bool {
         if navigator.isSidebarLayout {
             return sidebarTabElement(for: tab).isSelected
-        }
-        if let identifier = destinationRootIdentifier(for: tab) {
-            return app.descendants(matching: .any)[identifier].exists
         }
         return tabBarButtonElement(for: tab).isSelected
     }
@@ -98,12 +162,18 @@ extension RootNavigationScreen {
 private extension RootNavigationScreen {
 
     /// 切到指定分頁並等待就緒
+    ///
     /// - Parameters:
     ///   - tab: 目標分頁
     ///   - timeout: 等待目標分頁就緒的秒數
     /// - Returns: 目標分頁是否在逾時前就緒
-    func go(to tab: AppNavigator.Tab, timeout: TimeInterval) -> Bool {
-        navigator.selectTab(tab)
+    func go(
+        to tab: AppNavigator.Tab,
+        timeout: TimeInterval,
+        file: StaticString,
+        line: UInt
+    ) -> Bool {
+        navigator.selectTab(tab, file: file, line: line)
         if let identifier = destinationRootIdentifier(for: tab) {
             return app.descendants(matching: .any)[identifier].waitForExistence(timeout: timeout)
         }
@@ -112,6 +182,7 @@ private extension RootNavigationScreen {
     }
 
     /// 目的地畫面的根 identifier
+    ///
     /// - Parameter tab: 目標分頁
     /// - Returns: 目的地根 identifier；底部 tab bar 分頁回傳 `nil`
     func destinationRootIdentifier(for tab: AppNavigator.Tab) -> String? {
@@ -128,6 +199,7 @@ private extension RootNavigationScreen {
     }
 
     /// 依當前版面取承載選取態的元素
+    ///
     /// - Parameter tab: 要查詢的分頁
     /// - Returns: 承載分頁選取態的 UI 元素
     func selectionElement(for tab: AppNavigator.Tab) -> XCUIElement {
@@ -138,6 +210,7 @@ private extension RootNavigationScreen {
     }
 
     /// 側邊欄的分頁列元素
+    ///
     /// - Parameter tab: 要查詢的分頁
     /// - Returns: 側邊欄中的分頁元素
     func sidebarTabElement(for tab: AppNavigator.Tab) -> XCUIElement {
@@ -146,6 +219,7 @@ private extension RootNavigationScreen {
     }
 
     /// 分頁列的系統 tab bar 按鈕
+    ///
     /// - Parameter tab: 要查詢的分頁
     /// - Returns: 底部分頁列中的按鈕
     func tabBarButtonElement(for tab: AppNavigator.Tab) -> XCUIElement {

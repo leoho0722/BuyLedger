@@ -23,18 +23,21 @@ struct InsightsScreen: Screen {
     // MARK: - Computed Properties
 
     /// 判定分析頁已就緒的根 identifier (分析內容捲動容器)
+    ///
     /// - Returns: 分析頁根容器的 identifier
     var rootIdentifier: String {
         BLAccessibilityID.Insights.root
     }
 
     /// 是否正顯示尚無足夠資料的空狀態
+    ///
     /// - Returns: 是否顯示空狀態
     var isEmptyStateShown: Bool {
         app.descendants(matching: .any)[BLAccessibilityID.Insights.emptyState].exists
     }
 
     /// 走勢圖容器是否存在
+    ///
     /// - Returns: 走勢圖容器是否在逾時前出現
     var trendChartExists: Bool {
         app.descendants(matching: .any)[BLAccessibilityID.Insights.trendChart].waitForExistence(
@@ -42,6 +45,7 @@ struct InsightsScreen: Screen {
     }
 
     /// 成本結構 donut 容器是否存在
+    ///
     /// - Returns: 成本結構容器是否存在
     var costDonutExists: Bool {
         let donut = app.descendants(matching: .any)[BLAccessibilityID.Insights.costDonut]
@@ -59,47 +63,81 @@ struct InsightsScreen: Screen {
 extension InsightsScreen {
 
     /// 切換趨勢期間
-    /// - Parameter rangeID: 趨勢期間的 identifier
-    func selectRange(_ rangeID: String) {
+    ///
+    /// - Parameters:
+    ///   - rangeID: 趨勢期間的 identifier
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func selectRange(
+        _ rangeID: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
         let byID = app.segmentedControls.buttons[BLAccessibilityID.Insights.rangeSegment(rangeID)]
         if byID.waitUntilHittable(timeout: 3) {
             byID.tap()
             return
         }
 
-        guard let index = Self.rangeOrder.firstIndex(of: rangeID) else {
+        if let index = Self.rangeOrder.firstIndex(of: rangeID) {
+            let byIndex = app.segmentedControls.buttons.element(boundBy: index)
+            byIndex.tapAfterWaiting(in: app, file: file, line: line)
             return
         }
-        let byIndex = app.segmentedControls.buttons.element(boundBy: index)
-        byIndex.waitUntilHittable()
-        byIndex.tap()
+        let rangeIdentifier = BLAccessibilityID.Insights.rangeSegment(rangeID)
+        let message = "找不到分析期間分段 identifier \(rangeIdentifier)"
+        app.failWithDiagnostics(message, file: file, line: line)
+    }
+
+    /// 判定指定分析期間分段是否為選取態
+    ///
+    /// - Parameter rangeID: 分析期間的 identifier key
+    /// - Returns: 分段是否為選取態
+    func isRangeSelected(_ rangeID: String) -> Bool {
+        let byID = app.segmentedControls.buttons[BLAccessibilityID.Insights.rangeSegment(rangeID)]
+        if byID.exists {
+            return byID.isSelected
+        }
+        guard let index = Self.rangeOrder.firstIndex(of: rangeID) else {
+            return false
+        }
+        return app.segmentedControls.buttons.element(boundBy: index).isSelected
     }
 
     /// 點指定開團 id 的每團毛利排行列，深連結到該開團詳情
-    /// - Parameter campaignID: 開團 id
-    func tapCampaignRank(campaignID: String) {
+    ///
+    /// - Parameters:
+    ///   - campaignID: 開團 id
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapCampaignRank(
+        campaignID: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
         let row = app.descendants(matching: .any)[
             BLAccessibilityID.Insights.campaignRankRow(campaignID: campaignID)
         ]
         app.scrollToHittable(row, within: rootElement)
-        row.waitUntilHittable()
-        row.tap()
+        row.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 讀取趨勢卡總獲利的 accessibility value
-    /// - Returns: 趨勢卡總獲利的 accessibility value；元素不存在時為空字串
-    func totalProfitValue() -> String {
+    ///
+    /// - Returns: 趨勢卡總獲利的 accessibility value；元素不存在時為 `nil`
+    func totalProfitValue() -> String? {
         let element = app.descendants(matching: .any)[BLAccessibilityID.Insights.trendTotalProfit]
         guard element.waitForExistence(timeout: 10) else {
-            return ""
+            return nil
         }
-        return element.value as? String ?? ""
+        return element.value as? String
     }
 
     /// 讀取指定類別排行列的獲利 accessibility value
+    ///
     /// - Parameter category: 類別名稱
-    /// - Returns: 類別獲利的 accessibility value；元素不存在時為空字串
-    func categoryProfit(category: String) -> String {
+    /// - Returns: 類別獲利的 accessibility value；元素不存在時為 `nil`
+    func categoryProfit(category: String) -> String? {
         let element = app.descendants(matching: .any)[
             BLAccessibilityID.Insights.categoryRankRow(category: category)
         ]
@@ -107,9 +145,10 @@ extension InsightsScreen {
     }
 
     /// 讀取指定開團排行列的獲利 accessibility value
+    ///
     /// - Parameter campaignID: 開團識別值
-    /// - Returns: 開團獲利的 accessibility value；元素不存在時為空字串
-    func campaignProfit(campaignID: String) -> String {
+    /// - Returns: 開團獲利的 accessibility value；元素不存在時為 `nil`
+    func campaignProfit(campaignID: String) -> String? {
         let element = app.descendants(matching: .any)[
             BLAccessibilityID.Insights.campaignRankRow(campaignID: campaignID)
         ]
@@ -123,11 +162,12 @@ extension InsightsScreen {
 private extension InsightsScreen {
 
     /// 將元素捲入分析頁可見範圍後讀取 accessibility value；讀值驗證不要求元素可點
+    ///
     /// - Parameter element: 要讀取的元素
-    /// - Returns: 元素的 accessibility value；元素不存在時為空字串
-    func accessibilityValue(of element: XCUIElement) -> String {
+    /// - Returns: 元素的 accessibility value；元素不存在時為 `nil`
+    func accessibilityValue(of element: XCUIElement) -> String? {
         guard element.waitForExistence(timeout: 10) else {
-            return ""
+            return nil
         }
 
         for _ in 0..<8 {
@@ -138,6 +178,6 @@ private extension InsightsScreen {
             rootElement.swipeUp()
         }
 
-        return element.value as? String ?? ""
+        return element.value as? String
     }
 }

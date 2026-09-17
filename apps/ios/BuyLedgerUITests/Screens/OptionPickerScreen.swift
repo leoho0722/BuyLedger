@@ -18,6 +18,7 @@ struct OptionPickerScreen: Screen {
     // MARK: - Computed Properties
 
     /// 判定選擇器已就緒的根 identifier (選項清單容器)
+    ///
     /// - Returns: 選項清單根容器的 identifier
     var rootIdentifier: String {
         BLAccessibilityID.OptionPicker.root
@@ -30,27 +31,40 @@ struct OptionPickerScreen: Screen {
 extension OptionPickerScreen {
 
     /// 點選指定原始值的選項列
-    /// - Parameter value: 選項的原始值
-    func selectOption(_ value: String) {
+    ///
+    /// - Parameters:
+    ///   - value: 選項的原始值
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func selectOption(
+        _ value: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
         let row = app.descendants(matching: .any)[BLAccessibilityID.OptionPicker.optionRow(value)]
         if !row.isHittable {
             app.scrollToHittable(row, within: rootElement)
         }
-        row.waitUntilHittable()
-        row.tap()
+        row.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 點「新增」開啟新增流程
-    func tapAdd() {
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapAdd(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.buttons[BLAccessibilityID.OptionPicker.addButton]
-        button.waitUntilHittable()
-        button.tap()
+        button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 點多選模式的「完成」結束選取
-    func tapDone() {
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapDone(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.buttons[BLAccessibilityID.OptionPicker.doneButton]
-        button.waitUntilHittable()
-        button.tap()
+        button.tapAfterWaiting(in: app, file: file, line: line)
     }
 }

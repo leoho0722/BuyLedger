@@ -323,10 +323,13 @@ struct LocalizationCatalogTests {
             .deletingLastPathComponent()
             .appending(path: "BuyLedger/Features/App/RootSidebarLayout.swift")
         let source = try String(contentsOf: sourceURL, encoding: .utf8)
+        let normalizedSource = Self.normalizedWhitespace(source)
+        let forbiddenPattern = Self.normalizedWhitespace(
+            "Text(LocalizedStringKey(group.status.title)) + Text(\" \\(count) 件\")"
+        )
 
         #expect(
-            !source.contains(
-                "Text(LocalizedStringKey(group.status.title)) + Text(\" \\(count) 件\")"),
+            !normalizedSource.contains(forbiddenPattern),
             "Accessibility text must not concatenate separately localized Text values."
         )
     }
@@ -337,9 +340,13 @@ struct LocalizationCatalogTests {
             .deletingLastPathComponent()
             .appending(path: "BuyLedger/Features/Orders/OrdersCompactView.swift")
         let source = try String(contentsOf: sourceURL, encoding: .utf8)
+        let normalizedSource = Self.normalizedWhitespace(source)
+        let forbiddenPattern = Self.normalizedWhitespace(
+            "Text(\"篩選\") + Text(verbatim: \": \") + summary"
+        )
 
         #expect(
-            !source.contains("Text(\"篩選\") + Text(verbatim: \": \") + summary"),
+            !normalizedSource.contains(forbiddenPattern),
             "Filter summaries must not concatenate separately localized Text values."
         )
     }
@@ -460,6 +467,14 @@ private extension LocalizationCatalogTests {
 
     // MARK: 使用者可見字面值掃描
 
+    /// 將原始碼中的連續空白折疊，讓掃描可涵蓋換行與不同縮排
+    ///
+    /// - Parameter source: 要正規化的原始碼文字
+    /// - Returns: 連續空白被折疊成單一空白的文字
+    static func normalizedWhitespace(_ source: String) -> String {
+        source.replacing(/\s+/, with: " ")
+    }
+
     /// native `navigationTitle` 不得直接接收的本地化字面值 pattern
     static let forbiddenNavigationTitlePatterns = [
         ".navigationTitle(\"",
@@ -468,6 +483,7 @@ private extension LocalizationCatalogTests {
     ]
 
     /// 判斷 source 是否含有任一禁止的 navigationTitle pattern
+    ///
     /// - Parameter source: 要檢查的 Swift 原始碼
     /// - Returns: 命中任一禁止 pattern 時為 `true`
     static func containsForbiddenNavigationTitlePattern(in source: String) -> Bool {
@@ -481,6 +497,7 @@ private extension LocalizationCatalogTests {
     static let calendarTitleLookbackLines = 3
 
     /// 掃描候選使用者可見字串，再套用排除規則
+    ///
     /// - Parameters:
     ///   - sourceRoot: 原始碼根目錄
     ///   - catalogKeys: 已知的本地化 key
@@ -547,6 +564,7 @@ private extension LocalizationCatalogTests {
     }
 
     /// 收錄規則 A／B／C：找出候選使用者可見字串字面值的 start offset
+    ///
     /// - Parameters:
     ///   - source: 原始碼
     ///   - literalMatches: 找到的字串字面值
@@ -601,6 +619,7 @@ private extension LocalizationCatalogTests {
     }
 
     /// 找出排除規則中緊鄰字串開頭的模式
+    ///
     /// - Parameter source: 原始碼
     /// - Returns: 排除標記的起始位置
     /// - Throws: 原始檔解析失敗時拋出錯誤
@@ -625,6 +644,7 @@ private extension LocalizationCatalogTests {
     }
 
     /// 套用無法用單一 pattern 表達的排除規則
+    ///
     /// - Returns: 字串是否應排除
     static func isExcluded(
         literal: String.SourceLiteral,
@@ -729,6 +749,7 @@ private extension String {
     }
 
     /// 找出符合指定正規表示式的字串 literal 起始位置
+    ///
     /// - Parameter pattern: 要比對的正規表示式
     /// - Returns: 命中 literal 的 UTF-16 起始位置集合
     /// - Throws: 正規表示式建立失敗時拋出錯誤
@@ -750,6 +771,7 @@ private extension String {
     }
 
     /// 找出顯示範圍內的字串位置
+    ///
     /// - Returns: 顯示範圍內的字串起始位置
     func literalStartsInsideDisplayScopes(
         literalMatches: [SourceLiteral],
@@ -793,6 +815,7 @@ private extension String {
     }
 
     /// 移除 `#Preview` 區塊內容，保留原始行數供掃描使用
+    ///
     /// - Returns: 移除 preview 內容後的原始碼
     func withPreviewBlocksRemoved() -> String {
         var output: [String] = []
@@ -873,6 +896,7 @@ private let newlineCharacter = UInt16(UnicodeScalar("\n").value)
 private extension NSString {
 
     /// 掃描一個字串字面值本體 (開頭引號之後) 直到其配對的結尾引號
+    ///
     /// - Returns: 字串結束位置
     func scanStringLiteralBody(from start: Int) -> Int? {
         var index = start
@@ -899,6 +923,7 @@ private extension NSString {
     }
 
     /// 跳過插值內容，依括號深度處理巢狀字串
+    ///
     /// - Returns: 插值結束位置
     func skipInterpolation(openParenIndex: Int) -> Int? {
         var depth = 1
@@ -927,6 +952,7 @@ private extension NSString {
     }
 
     /// 找出字串內的頂層插值範圍
+    ///
     /// - Returns: 頂層插值範圍
     func topLevelInterpolationRanges() -> [NSRange] {
         var ranges: [NSRange] = []
@@ -950,6 +976,7 @@ private extension NSString {
     }
 
     /// 找到指定位置所在行的結尾
+    ///
     /// - Returns: 行尾位置
     func endOfLineIndex(from start: Int) -> Int {
         var index = start
@@ -960,6 +987,7 @@ private extension NSString {
     }
 
     /// 跳過一段 `/* ... */` 區塊註解
+    ///
     /// - Returns: 區塊註解結束位置
     func skipBlockComment(from start: Int) -> Int? {
         var index = start
@@ -978,6 +1006,7 @@ private extension NSString {
 private extension String.SourceLineRange {
 
     /// 判斷 UTF-16 offset 是否落在此行範圍內
+    ///
     /// - Parameter utf16Offset: 要檢查的 UTF-16 offset
     /// - Returns: offset 是否位於此行範圍
     func contains(_ utf16Offset: Int) -> Bool {
@@ -988,6 +1017,7 @@ private extension String.SourceLineRange {
 private extension Array where Element == String {
 
     /// 判斷指定行是否只有註解或空白
+    ///
     /// - Parameter lineNumber: 要檢查的行號
     /// - Returns: 指定行是否為註解行
     func isCommentOnly(_ lineNumber: Int) -> Bool {
@@ -1002,6 +1032,7 @@ private extension Array where Element == String {
 private extension Array where Element == String.SourceLineRange {
 
     /// 找出包含指定 UTF-16 offset 的行號
+    ///
     /// - Parameter offset: 要查詢的 UTF-16 offset
     /// - Returns: 命中的行號
     func lineNumber(containingUTF16Offset offset: Int) -> Int {

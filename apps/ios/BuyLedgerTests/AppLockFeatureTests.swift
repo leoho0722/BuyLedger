@@ -119,11 +119,13 @@ struct AppLockFeatureTests {
 
         await store.send(.appDidBecomeActive) {
             $0.biometryType = .faceID
+            $0.isUnlocking = true
         }
         // 以替身注入不同 biometryType 測試裝置差異。
         #expect(store.state.unlockButtonTitleKey == "使用 Face ID 解鎖")
         await store.receive(\.unlockAuthenticationFinished) {
             $0.isLocked = false
+            $0.isUnlocking = false
         }
     }
 
@@ -148,15 +150,17 @@ struct AppLockFeatureTests {
         // 文案須退回中性的「解鎖」，不得顯示殘缺句子 (如「使用  解鎖」)
         await store.send(.appDidBecomeActive) {
             $0.biometryType = .unavailable
+            $0.isUnlocking = true
         }
         #expect(store.state.unlockButtonTitleKey == "解鎖")
         await store.receive(\.unlockAuthenticationFinished) {
             $0.isLocked = false
+            $0.isUnlocking = false
         }
     }
 
     @Test func failedUnlockCanBeRetriedUntilSuccessful() async {
-        let resultBox = AuthenticationResultBox(.failure)
+        let resultBox = LockIsolated<BiometricAuthClient.AuthenticationResult>(.failure)
         let store = TestStore(
             initialState: AppLockFeature.State(isBiometricUnlockEnabled: true, isLocked: true)
         ) {
@@ -171,20 +175,24 @@ struct AppLockFeatureTests {
 
         await store.send(.appDidBecomeActive) {
             $0.biometryType = .touchID
+            $0.isUnlocking = true
         }
         #expect(store.state.unlockButtonTitleKey == "使用 Touch ID 解鎖")
         await store.receive(\.unlockAuthenticationFinished) {
             $0.unlockDidFail = true
+            $0.isUnlocking = false
         }
         // 鎖定畫面仍在，且失敗只提供再次嘗試，不提供跳過
         #expect(store.state.isLocked)
 
-        resultBox.value = .success
+        resultBox.setValue(.success)
         await store.send(.retryUnlockTapped) {
             $0.unlockDidFail = false
+            $0.isUnlocking = true
         }
         await store.receive(\.unlockAuthenticationFinished) {
             $0.isLocked = false
+            $0.isUnlocking = false
         }
     }
 
@@ -273,9 +281,15 @@ struct AppLockFeatureTests {
     @Test func becomingActiveDoesNothingWhenProtectionIsDisabled() async {
         let store = TestStore(initialState: AppLockFeature.State()) {
             AppLockFeature()
+        } withDependencies: {
+            $0[BiometricAuthClient.self] = BiometricAuthClient(
+                isAvailable: { true },
+                authenticate: { _ in .success },
+                biometryType: { .faceID }
+            )
         }
 
-        // 保護關閉時不驗證，但仍更新 biometryType。
+        // 保護關閉時不驗證，但仍以注入的裝置類型更新 biometryType
         await store.send(.appDidBecomeActive) {
             $0.biometryType = .faceID
         }
@@ -290,24 +304,7 @@ struct AppLockFeatureTests {
     }
 }
 
-/// 讓替身在同一次測試內途中改變結果的容器 (先失敗、重試後成功)
-private final class AuthenticationResultBox: @unchecked Sendable {
-
-    // MARK: - Data Properties
-
-    /// 目前替身會回傳的結果
-    var value: BiometricAuthClient.AuthenticationResult
-
-    // MARK: - Init
-
-    /// 以初始結果建立容器
-    /// - Parameter value: 替身目前要回傳的驗證結果
-    init(_ value: BiometricAuthClient.AuthenticationResult) {
-        self.value = value
-    }
-}
-
-// MARK: - Static Properties
+// MARK: - Computed Properties
 
 private extension AppLockFeatureTests {
 

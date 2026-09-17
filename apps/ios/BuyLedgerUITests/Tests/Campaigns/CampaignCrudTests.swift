@@ -26,7 +26,7 @@ final class CampaignCrudTests: BLUITestCase {
         let app = launch(LaunchOptions(seed: .empty))
 
         let root = RootNavigationScreen(app: app)
-        if !root.goToCampaigns() {
+        if !root.goToCampaigns(file: #filePath, line: #line) {
             failWithDiagnostics(in: app, "切到開團分頁後畫面未就緒")
         }
 
@@ -72,6 +72,7 @@ final class CampaignCrudTests: BLUITestCase {
         if !detail.deleteConfirmExists() {
             failWithDiagnostics(in: app, "點刪除後，刪除確認 alert 未呈現")
         }
+        app.assertAlertMessage(contains: "後無法復原", timeout: 5)
 
         detail.cancelDelete()
 
@@ -98,6 +99,7 @@ final class CampaignCrudTests: BLUITestCase {
         if !detail.deleteConfirmExists() {
             failWithDiagnostics(in: app, "點刪除後，刪除確認 alert 未呈現")
         }
+        app.assertAlertMessage(contains: "後無法復原", timeout: 5)
 
         detail.confirmDelete()
 
@@ -117,6 +119,7 @@ final class CampaignCrudTests: BLUITestCase {
 private extension CampaignCrudTests {
 
     /// 切到開團分頁、點指定開團進詳情並等就緒，回傳詳情 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - campaignID: 要開啟的開團識別值
@@ -131,7 +134,7 @@ private extension CampaignCrudTests {
         line: UInt = #line
     ) -> CampaignDetailScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToCampaigns() {
+        if !root.goToCampaigns(file: file, line: line) {
             failWithDiagnostics(in: app, "切到開團分頁後畫面未就緒", file: file, line: line)
         }
 
@@ -145,7 +148,7 @@ private extension CampaignCrudTests {
             )
         }
 
-        campaigns.tapCampaign(campaignID: campaignID)
+        campaigns.tapCampaign(campaignID: campaignID, file: file, line: line)
 
         let detail = CampaignDetailScreen(app: app)
         if !detail.waitUntilReady() {

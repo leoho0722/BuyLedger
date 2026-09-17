@@ -31,6 +31,9 @@ struct DashboardView: View {
     /// 月份分組與日期計算使用的行事曆
     @Dependency(\.calendar) private var calendar
 
+    /// 日期格式化使用的時區；測試可注入固定值
+    @Dependency(\.timeZone) private var timeZone
+
     /// hero 淨獲利金額字級，隨 Dynamic Type 縮放 (以 `.largeTitle` 為基準)
     @ScaledMetric(relativeTo: .largeTitle) private var heroProfitSize: CGFloat = 36
 
@@ -95,6 +98,7 @@ struct DashboardView: View {
 private extension DashboardView {
 
     /// 依訂單資料顯示總覽或首次使用畫面
+    ///
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 內容 view
     @ViewBuilder
@@ -119,6 +123,7 @@ private extension DashboardView {
     }
 
     /// 顯示進行中的開團與進度；沒有資料時隱藏
+    ///
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 進行中的開團卡 view (無進行中團時為 `EmptyView`)
     @ViewBuilder
@@ -163,6 +168,7 @@ private extension DashboardView {
     }
 
     /// 「進行中的開團」卡的單列：團名、筆數／金額與到貨／收款進度
+    ///
     /// - Parameters:
     ///   - campaign: 進行中的開團
     ///   - summary: 由 ``ongoingCampaignsSection(palette:)`` 一次算好的該團彙總
@@ -210,6 +216,7 @@ private extension DashboardView {
     }
 
     /// 首次載入訂單前顯示的骨架
+    ///
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 骨架 view
     @ViewBuilder
@@ -245,6 +252,7 @@ private extension DashboardView {
     }
 
     /// 第一次開 App 還沒有任何訂單時的引導畫面
+    ///
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: onboarding view
     @ViewBuilder
@@ -296,6 +304,7 @@ private extension DashboardView {
     }
 
     /// 日期子標
+    ///
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: 標題列 view
     @ViewBuilder
@@ -304,10 +313,12 @@ private extension DashboardView {
             Text(currentDateSubtitle())
                 .font(BLTypographyStyle.footnote.font.weight(.medium))
                 .foregroundStyle(palette.secondaryLabel)
+                .accessibilityIdentifier(BLAccessibilityID.Dashboard.currentDateSubtitle)
         }
     }
 
     /// hero P&L 與 KPI 的並排組合
+    ///
     /// - Parameters:
     ///   - stats: 已計算的本月統計
     ///   - palette: 目前外觀使用的色盤
@@ -333,6 +344,7 @@ private extension DashboardView {
     }
 
     /// 寬版面右側的 3 個 KPI 卡片 (直欄排列，與 hero 等高呼應)
+    ///
     /// - Parameters:
     ///   - stats: 已計算的本月統計
     ///   - palette: 目前外觀使用的色盤
@@ -369,6 +381,7 @@ private extension DashboardView {
     }
 
     /// 漸層 hero 卡：本月淨獲利、sparkline 與月目標進度
+    ///
     /// - Parameters:
     ///   - stats: 已計算的本月統計
     ///   - palette: 目前外觀使用的色盤
@@ -427,6 +440,7 @@ private extension DashboardView {
     }
 
     /// 月目標進度條；目標為 0 (使用者未設定) 時整列隱藏
+    ///
     /// - Parameter stats: 已計算的本月統計
     /// - Returns: 進度條 view
     @ViewBuilder
@@ -448,6 +462,7 @@ private extension DashboardView {
     }
 
     /// KPI 卡片格
+    ///
     /// - Parameters:
     ///   - stats: 已計算的本月統計
     ///   - palette: 目前外觀使用的色盤
@@ -495,6 +510,7 @@ private extension DashboardView {
     }
 
     /// 單一 KPI 卡片：左上 tint 色點 + 標籤、中段大數字、下方變化指標
+    ///
     /// - Parameters:
     ///   - kpi: 指標的穩定識別值
     ///   - label: 卡片左上方的指標名稱，例如「營業額」、「毛利率」
@@ -550,6 +566,7 @@ private extension DashboardView {
     }
 
     /// 近期訂單區塊 (標題列 + 列表卡)
+    ///
     /// - Parameters:
     ///   - stats: 已計算的本月統計
     ///   - palette: 目前外觀使用的色盤
@@ -626,6 +643,7 @@ private extension DashboardView {
     // MARK: Accessibility
 
     /// hero 走勢圖的趨勢摘要
+    ///
     /// - Parameter stats: 已計算的本月統計
     /// - Returns: 供輔助技術朗讀的摘要
     func sparklineSummary(stats: DashboardStats) -> LocalizedStringKey {
@@ -653,6 +671,7 @@ private extension DashboardView {
     // MARK: Formatting
 
     /// 將獲利金額格式化為含正負號的新台幣字串
+    ///
     /// - Parameter profit: 獲利金額
     /// - Returns: 顯示在 hero 卡上的金額字串
     func profitDisplay(_ profit: Decimal) -> String {
@@ -662,18 +681,21 @@ private extension DashboardView {
     }
 
     /// 顯示在大標題上方、依 App 選定 locale 格式化的日期子標
+    ///
     /// - Returns: 依選定 locale 呈現的日期字串
     func currentDateSubtitle() -> String {
-        date().formatted(
-            .dateTime
-                .month(.wide)
-                .day(.defaultDigits)
-                .weekday(.wide)
-                .locale(locale)
-        )
+        var style = Date.FormatStyle.dateTime
+        style.timeZone = timeZone
+        style.locale = locale
+        style = style
+            .month(.wide)
+            .day(.defaultDigits)
+            .weekday(.wide)
+        return date().formatted(style)
     }
 
     /// 將 KPI delta 的方向轉成色彩
+    ///
     /// - Parameters:
     ///   - up: `nil` 視為中性
     ///   - palette: 目前外觀使用的色盤
@@ -690,6 +712,7 @@ private extension DashboardView {
     }
 
     /// 將 MoM 變化率格式化；nil 顯示「— MoM」
+    ///
     /// - Parameter delta: 成長率，例如 `0.182` 表示 +18.2%
     /// - Returns: KPI 卡顯示用字串
     func percentDeltaDisplay(_ delta: Decimal?) -> String {
@@ -702,6 +725,7 @@ private extension DashboardView {
     }
 
     /// 依 App 選定 locale 把毛利率 delta (百分點) 轉成 `+2.4 pt MoM` 風格字串
+    ///
     /// - Parameter delta: 百分點差，例如 `0.024` 表示 +2.4pt
     /// - Returns: KPI 卡顯示用字串
     func marginDeltaDisplay(_ delta: Decimal?) -> String {
@@ -715,6 +739,7 @@ private extension DashboardView {
     }
 
     /// 依 App 選定 locale 把獲利 delta 轉成 hero 卡上的 `↑ 24.3% MoM` 風格字串
+    ///
     /// - Parameter delta: 成長率，例如 `0.243` 表示 +24.3%
     /// - Returns: hero 卡顯示用字串；無資料時顯示「— MoM」
     func profitDeltaDisplay(_ delta: Decimal?) -> String {
@@ -728,6 +753,7 @@ private extension DashboardView {
     }
 
     /// 將 delta 數值轉成 KPI tile 用的方向旗標 (`true`/`false`/`nil`)
+    ///
     /// - Parameter delta: 成長率或百分點差
     /// - Returns: `true` 代表上升、`false` 代表下降、`nil` 代表無上月資料可比
     func deltaDirection(_ delta: Decimal?) -> Bool? {

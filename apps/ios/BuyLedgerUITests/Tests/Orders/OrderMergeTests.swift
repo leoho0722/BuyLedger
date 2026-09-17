@@ -57,7 +57,9 @@ final class OrderMergeTests: BLUITestCase {
         let editRoot = app.descendants(matching: .any)[edit.rootIdentifier]
         let deadline = Date().addingTimeInterval(10)
         while Date() < deadline, !photoContinue.exists, !editRoot.exists {
-            _ = photoContinue.waitForExistence(timeout: 0.3)
+            if photoContinue.waitForExistence(timeout: 0.3) {
+                break
+            }
         }
         if !photoContinue.exists, !editRoot.exists {
             failWithDiagnostics(in: app, "點候選後照片挑選步驟與合併確認表單皆未出現")
@@ -105,6 +107,7 @@ final class OrderMergeTests: BLUITestCase {
 private extension OrderMergeTests {
 
     /// 開啟合併候選流程並回傳 page object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - file: 失敗時回報的來源檔案
@@ -117,7 +120,7 @@ private extension OrderMergeTests {
         line: UInt = #line
     ) -> MergeFlowScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToOrders() {
+        if !root.goToOrders(file: file, line: line) {
             failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
         }
 
@@ -131,7 +134,7 @@ private extension OrderMergeTests {
             )
         }
 
-        orders.tapOrder(orderID: Self.baseOrderID)
+        orders.tapOrder(orderID: Self.baseOrderID, file: file, line: line)
 
         let detail = OrderDetailScreen(app: app)
         if !detail.waitUntilReady() {
@@ -143,8 +146,8 @@ private extension OrderMergeTests {
             )
         }
 
-        detail.openMoreMenu()
-        if !detail.tapMerge() {
+        detail.openMoreMenu(file: file, line: line)
+        if !detail.tapMerge(file: file, line: line) {
             failWithDiagnostics(in: app, "更多選單的合併項目未出現或不可點", file: file, line: line)
         }
 

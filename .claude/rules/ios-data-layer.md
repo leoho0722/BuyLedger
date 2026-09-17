@@ -18,7 +18,8 @@ paths:
 - **建立與更新分兩個入口**：`OrderPersistence.create(_:)` 遇到同編號資料列拋 `WriteError.identifierCollision` 且不寫入；`update(_:)` 才是 upsert。
     - `saveTapped` 採用 `OrdersFeature.resolveWriteResult` 算出的意圖呼叫 `OrderRepository.createOrder`／`saveOrder`，不自行以 `editState.original == nil` 重算：兩者在並行刪除或詳情堆疊過期時會分歧，撞號會退回靜默覆寫。
 - **訂單持久層只用 `OrderRepository.PersistenceInstanceProvider` 提供的單一長命 `OrderPersistence`**：資料表無唯一性約束 (CloudKit 限制)，多個實例會讓同編號並發寫入各自查無、各自插入。
-    - 長命 `modelContext` 關閉 autosave：`update`／`upsertAll`／`mergeOrders` 的 `save()` 失敗要先 `rollback()` 再 rethrow，否則 pending 變更會被下一次成功的 `save()` 夾帶落盤。
+    - 長命 `modelContext` 關閉 autosave：`create`、`update` (找不到既有列時)、`upsertAll` (找不到既有列時)、`mergeOrders`、`updatePersistingPhotos` (找不到既有列時)、`seedIfEmpty` 的 `save()` 失敗一律經 `performWithRollback(insertedRecords:)`，由 helper 回滾、刪除本次插入實例與同 id 殘留記錄，再 rethrow 原始錯誤；只呼叫 `rollback()` 不足。
+    - `mergeOrders` 在 `save()` 前的來源讀取失敗仍只需 `rollback()`；這與 save 失敗的時序不同，不要混用兩條清理規則。
     - `CampaignRepository.live` 相反：每次操作以 `makePersistence` 新建 `CampaignPersistence`，失敗時 context 隨實例丟棄、不需 `rollback()`；改成長命實例時要補上。
 - **`LedgerOrder.id` 存完整長度的隨機識別碼，不截短**；需要短碼顯示時用 `LedgerOrder.displayID`。
 - **`LedgerOrder` 是 immutable struct**：改欄位用 memberwise init 重建整筆 (參考 `renaming*`／`removingCampaign` 系列擴充方法)。

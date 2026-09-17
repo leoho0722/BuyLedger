@@ -231,17 +231,26 @@ struct OrderEditFeatureTests {
     }
 
     @Test func cancelWithoutChangesDismissesDirectly() async {
+        // Given：未修改的新訂單表單
+        let dismissCallCount = LockIsolated(0)
         let store = TestStore(
             initialState: OrderEditFeature.State(
                 id: UUID(0), currentDate: TestDependencies.fixedNow)
         ) {
             OrderEditFeature()
         } withDependencies: {
-            $0.dismiss = DismissEffect {}
+            $0.dismiss = DismissEffect {
+                dismissCallCount.withValue { $0 += 1 }
+            }
         }
 
+        // When：取消編輯
         await store.send(.cancelTapped)
+        await store.finish()
+
+        // Then：直接關閉且不呈現捨棄確認
         #expect(store.state.discardConfirmation == nil)
+        #expect(dismissCallCount.value == 1)
     }
 
     @Test func bindingUpdatesDraftCategories() async {
@@ -850,37 +859,48 @@ struct OrderEditFeatureTests {
 
     // MARK: 日期補秒
 
-    @Test func dateComponentsChangedMergesInjectedSeconds() async {
-        // 日期選擇器寫回年月日時分，保留注入時間的秒數。
-        let fixedNow = TestDependencies.fixedNow
+    /// 日期選擇器寫回年月日時分時保留注入時間的秒數
+    ///
+    /// - Throws: 固定日期無法建立時拋出測試錯誤
+    @Test func dateComponentsChanged_preservesInjectedSeconds() async throws(any Error) {
+        // Given：日期依賴提供帶有第 42 秒的固定現在時間
+        let injectedNow = TestDependencies.fixedNow.addingTimeInterval(42)
         let store = TestStore(
             initialState: OrderEditFeature.State(
                 id: UUID(0), currentDate: TestDependencies.fixedNow)
         ) {
             OrderEditFeature()
         } withDependencies: {
-            $0.date = .constant(fixedNow)
+            $0.date = .constant(injectedNow)
         }
 
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
 
-        // picker 寫回時秒為 0 的目標日期
-        let picked = calendar.date(
-            from: DateComponents(year: 2026, month: 6, day: 15, hour: 9, minute: 30, second: 0)
-        )!
-
-        // 預期：picked 的年月日時分 + fixedNow 的秒
+        // 日期選擇器選取的時間秒數為 0
+        let pickedComponents = DateComponents(
+            year: 2026,
+            month: 6,
+            day: 15,
+            hour: 9,
+            minute: 30,
+            second: 0
+        )
+        let picked = try #require(calendar.date(from: pickedComponents))
         var expectedComponents = calendar.dateComponents(
             [.year, .month, .day, .hour, .minute],
             from: picked
         )
-        expectedComponents.second = calendar.component(.second, from: fixedNow)
-        let expected = calendar.date(from: expectedComponents)!
+        expectedComponents.second = 42
+        let expected = try #require(calendar.date(from: expectedComponents))
 
+        // When：日期選擇器寫回年月日時分
         await store.send(.dateComponentsChanged(picked)) {
             $0.draft.date = expected
         }
+
+        // Then：草稿日期保留依賴提供的第 42 秒
+        #expect(store.state.draft.date == expected)
     }
 
     // MARK: OrderEditView 新 action (商品明細 / picker / 選取 / 照片)

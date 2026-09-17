@@ -114,7 +114,12 @@ struct LookupCatalogTests {
         #expect(catalog.paymentMethods.isEmpty)
     }
 
-    @Test func renamingPaymentMethodMergesFlagsWhenEitherSideIsTrue() {
+    /// 重新命名付款方式時，任一方為真的旗標都應保留下來
+    ///
+    /// - Throws: 合併後付款方式不存在時拋出測試錯誤
+    @Test
+    func renamingPaymentMethodMergesFlagsWhenEitherSideIsTrue() throws {
+        // Given：同一付款方式的新舊名稱各有不同旗標
         var catalog = LookupCatalog()
         catalog.add(
             name: "匯款",
@@ -125,11 +130,25 @@ struct LookupCatalogTests {
                 isCashOnDelivery: false
             )
         )
+        catalog.add(
+            name: "銀行匯款",
+            kind: .paymentMethod,
+            flags: PaymentMethodFlags(
+                isCardless: true,
+                isBankTransfer: false,
+                isCashOnDelivery: true
+            )
+        )
 
+        // When：將舊付款方式名稱改成已存在的新名稱
         catalog.rename(from: "匯款", to: "銀行匯款", kind: .paymentMethod)
 
+        // Then：合併後保留任一來源曾設定的每個旗標
         #expect(catalog.names(for: .paymentMethod) == ["銀行匯款"])
-        #expect(catalog.paymentMethods.first?.isBankTransfer == true)
+        let renamed = try #require(catalog.paymentMethods.first { $0.name == "銀行匯款" })
+        #expect(renamed.isCardless)
+        #expect(renamed.isBankTransfer)
+        #expect(renamed.isCashOnDelivery)
     }
 
     // MARK: - Tests (Shared Early-Exit Semantics)

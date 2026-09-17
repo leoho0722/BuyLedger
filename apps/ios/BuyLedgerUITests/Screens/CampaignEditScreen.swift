@@ -21,15 +21,6 @@ struct CampaignEditScreen: Screen {
     var rootIdentifier: String {
         BLAccessibilityID.CampaignEdit.root
     }
-
-    /// 儲存按鈕目前是否可用
-    @MainActor
-    var isSaveEnabled: Bool {
-        let button = app.buttons[BLAccessibilityID.CampaignEdit.saveButton]
-        _ = button.waitForExistence(timeout: 10)
-
-        return button.isEnabled
-    }
 }
 
 // MARK: - Internal Method
@@ -37,31 +28,77 @@ struct CampaignEditScreen: Screen {
 @MainActor
 extension CampaignEditScreen {
 
+    /// 儲存按鈕目前是否可用
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 儲存按鈕是否可用
+    func isSaveEnabled(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Bool {
+        let button = app.buttons[BLAccessibilityID.CampaignEdit.saveButton]
+        if !button.waitForExistence(timeout: 10) {
+            let saveButtonID = BLAccessibilityID.CampaignEdit.saveButton
+            app.failWithDiagnostics(
+                "找不到 identifier 為 \(saveButtonID) 的儲存按鈕",
+                file: file,
+                line: line
+            )
+            return false
+        }
+
+        return button.isEnabled
+    }
+
     /// 清空並填入開團名稱
-    func typeName(_ name: String) {
+    ///
+    /// - Parameters:
+    ///   - name: 要填入的開團名稱
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func typeName(
+        _ name: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
         let field = app.textFields[BLAccessibilityID.CampaignEdit.nameField]
-        field.waitUntilHittable()
-        field.clearAndType(name, in: app)
+        field.clearAndType(
+            name,
+            in: app,
+            file: file,
+            line: line
+        )
     }
 
     /// 切換訂購提醒開關
-    func toggleReminder() {
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func toggleReminder(file: StaticString = #filePath, line: UInt = #line) {
         let toggle = app.switches[BLAccessibilityID.CampaignEdit.reminderToggle]
-        toggle.waitUntilHittable()
-        toggle.tap()
+        toggle.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 點工具列的儲存
-    func tapSave() {
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapSave(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.buttons[BLAccessibilityID.CampaignEdit.saveButton]
-        button.waitUntilHittable()
-        button.tap()
+        button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 點工具列的取消
-    func tapCancel() {
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapCancel(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.buttons[BLAccessibilityID.CampaignEdit.cancelButton]
-        button.waitUntilHittable()
-        button.tap()
+        button.tapAfterWaiting(in: app, file: file, line: line)
     }
 }

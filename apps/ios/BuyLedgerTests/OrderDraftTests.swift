@@ -176,7 +176,8 @@ struct OrderDraftTests {
     }
 
     /// 既有訂單且使用者確實增刪過照片、照片已完整載入時，才顯式寫入照片
-    @Test func existingOrderWritesPhotosOnlyWhenLoadedAndEdited() {
+    @Test func existingOrderWritesPhotos_onlyWhenLoadedAndEdited() {
+        // Given：既有訂單的照片已載入且使用者編輯過照片
         let existing = Self.makeOrder(id: "BL-001", customerName: "客戶")
         var editState = OrderEditFeature.State(
             original: existing, id: UUID(0), currentDate: TestDependencies.fixedNow)
@@ -184,16 +185,61 @@ struct OrderDraftTests {
         editState.photoLoadPhase = .loaded
         editState.hasEditedPhotos = true
 
+        // When：解析照片已編輯的寫入結果
         let editedResult = OrderDraft.resolveWriteResult(
             editState, existingOrders: [existing], newOrderID: { "unused" })
+
+        // Then：已編輯情境才寫入照片
         #expect(editedResult?.order.photos == [Data([1, 2, 3])])
         #expect(editedResult?.writesPhotos == true)
+    }
 
+    /// 既有訂單的照片已載入但未編輯時不應顯式寫入照片
+    @Test func existingOrderPreservesPhotos_whenLoadedAndUnedited() {
+        // Given：既有訂單的照片已載入但使用者未編輯照片
+        let existing = Self.makeOrder(id: "BL-001", customerName: "客戶")
+        var editState = OrderEditFeature.State(
+            original: existing, id: UUID(0), currentDate: TestDependencies.fixedNow)
+        editState.draftPhotos = [Data([1, 2, 3])]
+        editState.photoLoadPhase = .loaded
         editState.hasEditedPhotos = false
+
+        // When：解析未編輯照片的寫入結果
         let untouchedResult = OrderDraft.resolveWriteResult(
             editState, existingOrders: [existing], newOrderID: { "unused" })
+
+        // Then：未編輯情境不寫入照片
         #expect(untouchedResult?.order.photos == [])
         #expect(untouchedResult?.writesPhotos == false)
+    }
+
+    /// 既有訂單的照片尚未載入時不應覆寫既有照片
+    ///
+    /// - Throws: 測試資料缺少解析結果時拋出測試錯誤
+    @Test
+    func existingOrder_unloadedPhotos_doesNotWritePhotos() throws(any Error) {
+        // Given：既有訂單的照片尚未載入，但編輯狀態帶有暫存照片
+        let existing = Self.makeOrder(id: "BL-001", customerName: "客戶")
+        var editState = OrderEditFeature.State(
+            original: existing,
+            id: UUID(0),
+            currentDate: TestDependencies.fixedNow
+        )
+        editState.draftPhotos = [Data([4, 5, 6])]
+        editState.photoLoadPhase = .notLoaded
+        editState.hasEditedPhotos = true
+
+        // When：解析既有訂單的寫入結果
+        let notLoadedResult = OrderDraft.resolveWriteResult(
+            editState,
+            existingOrders: [existing],
+            newOrderID: { "unused" }
+        )
+        let result = try #require(notLoadedResult)
+
+        // Then：不應寫入尚未載入的照片
+        #expect(result.order.photos == [])
+        #expect(result.writesPhotos == false)
     }
 
     /// 新建列 (含合併草稿) 一律帶入照片，不受 `hasEditedPhotos` 影響
@@ -242,6 +288,7 @@ struct OrderDraftTests {
 private extension OrderDraftTests {
 
     /// 建立僅供草稿建構測試使用的最小訂單；非相關欄位以零值/佔位填入
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - customerName: 客戶名稱

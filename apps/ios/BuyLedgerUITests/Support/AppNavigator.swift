@@ -18,6 +18,7 @@ struct AppNavigator {
     // MARK: - Computed Properties
 
     /// 目前是否為側邊欄版面 (iPad 全螢幕)
+    ///
     /// - Returns: 目前是否使用側邊欄版面
     var isSidebarLayout: Bool {
         let sidebar = app.descendants(matching: .any)[BLAccessibilityID.Root.sidebar]
@@ -33,15 +34,34 @@ struct AppNavigator {
 extension AppNavigator {
 
     /// 切換到指定分頁
-    /// - Parameter tab: 目標分頁
-    func selectTab(_ tab: Tab) {
+    ///
+    /// - Parameters:
+    ///   - tab: 目標分頁
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func selectTab(
+        _ tab: Tab,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
         if isSidebarLayout {
             // 分頁列是合併朗讀的 staticText，因此以 any 查詢。
-            let row = app.descendants(matching: .any)[BLAccessibilityID.Root.tab(tab.identifierKey)]
-            row.waitUntilHittable()
-            row.tap()
+            let tabIdentifier = BLAccessibilityID.Root.tab(tab.identifierKey)
+            let elementName = "identifier 為 \(tabIdentifier) 的分頁"
+            let row = app.descendants(matching: .any)[tabIdentifier]
+            row.tapAfterWaiting(
+                in: app,
+                elementName: elementName,
+                file: file,
+                line: line
+            )
         } else {
-            tabBarButton(for: tab).tap()
+            tabBarButton(for: tab).tapAfterWaiting(
+                in: app,
+                elementName: "底部分頁索引 \(tab.rawValue)",
+                file: file,
+                line: line
+            )
         }
     }
 }
@@ -73,6 +93,7 @@ extension AppNavigator {
         // MARK: - Computed Properties
 
         /// 對應的 identifier key，與 App 端 `RootTab` 同序
+        ///
         /// - Returns: 對應的 accessibility identifier key
         var identifierKey: BLAccessibilityID.Root.Tab {
             switch self {
@@ -96,6 +117,7 @@ extension AppNavigator {
 private extension AppNavigator {
 
     /// 依宣告順序取底部分頁列的按鈕
+    ///
     /// - Parameter tab: 要查詢的分頁
     /// - Returns: 底部分頁列中的按鈕
     func tabBarButton(for tab: Tab) -> XCUIElement {

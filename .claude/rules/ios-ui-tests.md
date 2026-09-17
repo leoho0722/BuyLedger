@@ -11,6 +11,8 @@ paths:
 
 `BuyLedgerUITests` 共用 `Support/`、Page Object (`Screens/`) 與 `App/Testing/` 的啟動掛鉤；執行方式、測試計畫與雜訊判讀見 `apps/ios/CLAUDE.md` 的「建置與開發指令」。App 端加 identifier 時同樣適用下方「定位與 identifier」。
 
+- **選擇性執行與變異驗證必須確認實際執行數大於 0**：`0 tests executed` 不是通過，不能用成功退出碼判定測試有效。
+
 ## 定位與 identifier
 
 - **一律以 `accessibilityIdentifier` 定位，不用顯示文字或 `accessibilityLabel`**：App 支援中英切換，文字定位在英文模式整批失效。
@@ -40,7 +42,8 @@ paths:
 ## 輸入、捲動與鍵盤
 
 - **表單下半的數字欄在其他文字欄輸入前先填**：別欄鍵盤升起後會蓋住它而聚焦失敗；被捲走時 `swipeDown` 回頂端再輸入。
-    - 數字鍵盤完成鍵一律掛 `Common.keyboardDoneButton`。
+    - 數字鍵盤完成鍵一律掛 `Common.keyboardDoneButton`；共用收鍵盤 helper 與 `OrderEditScreen.tapNumericKeyboardDone` 只點擊這個 App 元素。
+    - 若 XCUITest 回報完成鍵不可互動，改點擊該元素 frame 的中心並等待鍵盤消失；仍未消失就附診斷失敗。共用 helper 不得改按系統收鍵盤鍵、送 return、依平台分支或以 `XCTSkip` 掩蓋；只有專門測試外部限制時才可明確 skip。
 - **只差幾點露出底緣的欄位用 `Scrolling.scrollToHittableGently`，不用整頁 `swipeUp`**：整頁 swipe 帶慣性，會把目標衝出螢幕。
     - 此 helper 要求目標已在可及性樹上；離屏未渲染的惰性列走下一條。
 - **`LazyVStack`／`LazyVGrid` 離屏未渲染的列 frame 無效，查 `isHittable` 會直接報錯**：先 `swipeUp` 逐次捲動查 `exists`，捲入樹後再查可點。

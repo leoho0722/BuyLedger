@@ -38,7 +38,7 @@ final class CampaignListTests: BLUITestCase {
         let app = launch(LaunchOptions(seed: .empty))
 
         let root = RootNavigationScreen(app: app)
-        if !root.goToCampaigns() {
+        if !root.goToCampaigns(file: #filePath, line: #line) {
             failWithDiagnostics(in: app, "切到開團分頁後畫面未就緒")
         }
 
@@ -51,6 +51,7 @@ final class CampaignListTests: BLUITestCase {
 private extension CampaignListTests {
 
     /// 切到開團分頁並等列表就緒，回傳開團列表 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - file: 失敗時回報的來源檔案
@@ -63,7 +64,7 @@ private extension CampaignListTests {
         line: UInt = #line
     ) -> CampaignsScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToCampaigns() {
+        if !root.goToCampaigns(file: file, line: line) {
             failWithDiagnostics(in: app, "切到開團分頁後畫面未就緒", file: file, line: line)
         }
 

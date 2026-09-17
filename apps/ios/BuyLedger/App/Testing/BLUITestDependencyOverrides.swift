@@ -273,6 +273,9 @@ private enum BLUITestStubs {
     /// 行事曆替身建立事件後回傳的固定識別碼
     nonisolated static let stubEventIdentifier = "ui-test-event-identifier"
 
+    /// UI 測試用本機驗證回覆延遲，讓重試中間狀態可被 XCUITest 觀察
+    nonisolated static let biometricResponseDelay = Duration.seconds(3)
+
     /// AI 總結替身的固定輸出，建立串流時一次全部 yield 完 (不模擬串流節奏)
     nonisolated static let aiSummaryChunks = [
         "## 商品明細總結\n\n",
@@ -357,7 +360,13 @@ private extension BLUITestStubs {
         let result: BiometricAuthClient.AuthenticationResult = scenario == .success ? .success : .failure
         return BiometricAuthClient(
             isAvailable: { true },
-            authenticate: { _ in result },
+            authenticate: { _ in
+                if scenario == .failure {
+                    // 延遲取消可忽略，替身仍需回傳固定的失敗結果
+                    try? await Task.sleep(for: biometricResponseDelay)
+                }
+                return result
+            },
             biometryType: { .faceID }
         )
     }

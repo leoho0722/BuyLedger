@@ -6,6 +6,9 @@ paths:
 # iOS 單元測試
 
 - **單元測試放 `apps/ios/BuyLedgerTests/`，檔名對應被測型別或功能** (如 `OrdersFeatureTests.swift`)。
+- **Swift Testing 的方法層 `-only-testing` 必須以 `()` 結尾**：例如
+  `BuyLedgerTests/OrderPersistenceTests/mergeOrders_sourceFetchFailure_removesInsertedOrder()`；省略括號會安靜地選不到方法。
+- **選擇性測試與變異驗證必須確認實際執行數大於 0**：`0 tests executed` 不是通過，不能用成功退出碼判定測試有效。
 
 ## TCA TestStore
 

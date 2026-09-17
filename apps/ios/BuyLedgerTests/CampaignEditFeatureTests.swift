@@ -120,6 +120,7 @@ struct CampaignEditFeatureTests {
         // 逐欄位覆蓋率：7 個草稿欄位各自獨立改動一次即斷言 dirty 為真
         // 其餘欄位沒有獨立覆蓋測試
         /// 建立本測試使用的初始編輯狀態
+        ///
         /// - Returns: 未變更的 CampaignEditFeature 狀態
         func freshState() -> CampaignEditFeature.State {
             CampaignEditFeature.State(
@@ -181,6 +182,8 @@ struct CampaignEditFeatureTests {
     }
 
     @Test func cancelWithoutChangesDismissesDirectly() async {
+        // Given：未修改的開團編輯表單
+        let dismissCallCount = LockIsolated(0)
         let store = TestStore(
             initialState: CampaignEditFeature.State(
                 id: UUID(0),
@@ -190,9 +193,16 @@ struct CampaignEditFeatureTests {
         ) {
             CampaignEditFeature()
         } withDependencies: {
-            $0.dismiss = DismissEffect {}
+            $0.dismiss = DismissEffect {
+                dismissCallCount.withValue { $0 += 1 }
+            }
         }
+        // When：取消編輯
         await store.send(.cancelTapped)
+        await store.finish()
+
+        // Then：直接關閉且不呈現捨棄確認
         #expect(store.state.discardConfirmation == nil)
+        #expect(dismissCallCount.value == 1)
     }
 }

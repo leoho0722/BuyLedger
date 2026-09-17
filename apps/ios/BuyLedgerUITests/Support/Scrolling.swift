@@ -14,6 +14,7 @@ import XCTest
 extension XCUIApplication {
 
     /// 在捲動容器內垂直捲動直到目標可點
+    ///
     /// - Parameters:
     ///   - element: 要捲到可點位置的目標元素
     ///   - container: 可捲動的容器
@@ -29,6 +30,7 @@ extension XCUIApplication {
     }
 
     /// 在捲動容器內水平捲動直到目標可點，供狀態 chip 列與照片縮圖列使用
+    ///
     /// - Parameters:
     ///   - element: 要捲到可點位置的目標元素
     ///   - container: 可捲動的容器
@@ -44,6 +46,7 @@ extension XCUIApplication {
     }
 
     /// 以小幅、無慣性的拖曳把目標捲進可點位置
+    ///
     /// - Parameters:
     ///   - element: 要捲到可點位置的目標元素
     ///   - container: 可捲動的容器
@@ -64,8 +67,7 @@ extension XCUIApplication {
         }
         var drags = 0
         while drags < maxDrags {
-            let elementFrame = element.frame
-            if !elementFrame.isEmpty && container.frame.intersects(elementFrame) {
+            if element.isHittable {
                 return true
             }
             let start = container.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: startY))
@@ -73,8 +75,7 @@ extension XCUIApplication {
             start.press(forDuration: 0.1, thenDragTo: end)
             drags += 1
         }
-        let elementFrame = element.frame
-        return !elementFrame.isEmpty && container.frame.intersects(elementFrame)
+        return element.isHittable
     }
 }
 
@@ -83,6 +84,7 @@ extension XCUIApplication {
 private extension XCUIApplication {
 
     /// 反覆對容器施加捲動手勢，每次後以短輪詢等目標可點
+    ///
     /// - Parameters:
     ///   - element: 要捲到可點位置的目標元素
     ///   - container: 可捲動的容器

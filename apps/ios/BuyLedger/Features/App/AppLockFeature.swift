@@ -28,6 +28,9 @@ struct AppLockFeature {
         /// 解鎖驗證是否失敗或取消過；成功或重新嘗試後清空
         var unlockDidFail: Bool = false
 
+        /// 是否正在等待解鎖驗證結果
+        var isUnlocking: Bool = false
+
         /// 裝置支援的生物辨識類型，供鎖定畫面與設定頁顯示
         var biometryType: BiometricAuthClient.BiometryType = .unavailable
 
@@ -150,6 +153,7 @@ struct AppLockFeature {
                 guard state.isBiometricUnlockEnabled, state.isLocked else {
                     return .none
                 }
+                state.isUnlocking = true
                 return Self.attemptUnlock(biometricAuthClient)
 
             case .retryUnlockTapped:
@@ -157,15 +161,18 @@ struct AppLockFeature {
                     return .none
                 }
                 state.unlockDidFail = false
+                state.isUnlocking = true
                 return Self.attemptUnlock(biometricAuthClient)
 
             case .unlockAuthenticationFinished(.success):
                 state.isLocked = false
                 state.unlockDidFail = false
+                state.isUnlocking = false
                 return .none
 
             case .unlockAuthenticationFinished(.failure), .unlockAuthenticationFinished(.cancelled):
                 state.unlockDidFail = true
+                state.isUnlocking = false
                 return .none
             }
         }
@@ -173,7 +180,7 @@ struct AppLockFeature {
     }
 }
 
-// MARK: - Static Properties
+// MARK: - Computed Properties
 
 private extension AppLockFeature {
 
@@ -209,6 +216,7 @@ private extension AppLockFeature {
 private extension AppLockFeature {
 
     /// 觸發一次解鎖驗證請求
+    ///
     /// - Parameter biometricAuthClient: 系統本機驗證介面
     /// - Returns: 送出解鎖驗證結果的 effect
     static func attemptUnlock(_ biometricAuthClient: BiometricAuthClient) -> Effect<Action> {

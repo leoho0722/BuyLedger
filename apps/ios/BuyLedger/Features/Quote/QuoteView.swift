@@ -246,6 +246,7 @@ private extension QuoteView {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(BLAccessibilityID.Quote.currencyPickerButton)
+        .accessibilityValue(store.fromCurrency.rawValue)
         .sheet(isPresented: $store.showsCurrencySheet) {
             let locale = locale
 

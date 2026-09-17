@@ -46,6 +46,13 @@ final class OrdersListTests: BLUITestCase {
         let app = launch(LaunchOptions(seed: .fullOrders))
         let orders = openOrdersList(app)
 
+        if !orders.hasOrder(orderID: Self.shippingOrderID) {
+            let message = "篩選前置條件未成立：\(Self.shippingOrderID)"
+            failWithDiagnostics(
+                in: app,
+                message
+            )
+        }
         orders.selectStatusChip(filterID: Self.confirmedFilterID)
 
         // 屬「已確認」的訂單應留在清單
@@ -70,6 +77,13 @@ final class OrdersListTests: BLUITestCase {
         let app = launch(LaunchOptions(seed: .fullOrders))
         let orders = openOrdersList(app)
 
+        if !orders.hasOrder(orderID: Self.mikaCustomerOrderID) {
+            let message = "搜尋前置條件未成立：\(Self.mikaCustomerOrderID)"
+            failWithDiagnostics(
+                in: app,
+                message
+            )
+        }
         // 客戶名屬使用者資料、可作為文字輸入；斷言仍走訂單列 identifier
         orders.search("林書宇")
 
@@ -101,6 +115,7 @@ final class OrdersListTests: BLUITestCase {
 private extension OrdersListTests {
 
     /// 切到訂單分頁並等清單就緒，回傳訂單清單 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - file: 失敗時回報的來源檔案
@@ -113,7 +128,7 @@ private extension OrdersListTests {
         line: UInt = #line
     ) -> OrdersScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToOrders() {
+        if !root.goToOrders(file: file, line: line) {
             failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
         }
 

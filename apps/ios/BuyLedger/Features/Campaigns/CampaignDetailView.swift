@@ -104,6 +104,7 @@ struct CampaignDetailView: View {
 private extension CampaignDetailView {
 
     /// 開團詳情主體
+    ///
     /// - Parameter campaign: 目前的開團
     /// - Returns: 詳情 list view
     @ViewBuilder
@@ -118,6 +119,7 @@ private extension CampaignDetailView {
     }
 
     /// 開團資訊區段
+    ///
     /// - Parameter campaign: 目前的開團
     /// - Returns: 資訊區段 view
     @ViewBuilder
@@ -136,6 +138,7 @@ private extension CampaignDetailView {
                     )
                     if campaign.isSettled {
                         BLStatusPill("已結團", tone: .neutral, showsIndicator: false)
+                            .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSettledBadge)
                     }
                 }
             }
@@ -179,6 +182,7 @@ private extension CampaignDetailView {
     }
 
     /// 結團結算區段：收款面與損益面
+    ///
     /// - Parameter summary: 由 ``detail(for:)`` 一次算好的開團彙總
     /// - Returns: 結算區段 view
     @ViewBuilder
@@ -228,6 +232,7 @@ private extension CampaignDetailView {
     }
 
     /// 客戶分貨區段：可切換只看未收款，每列可展開檢視品項與逐筆收款
+    ///
     /// - Parameter summary: 由 ``detail(for:)`` 一次算好的開團彙總
     /// - Returns: 分貨區段 view
     @ViewBuilder
@@ -264,6 +269,7 @@ private extension CampaignDetailView {
     }
 
     /// 分貨列標題：客戶、件數、金額與收款標記
+    ///
     /// - Parameter row: 分貨列
     /// - Returns: 標題 view
     @ViewBuilder
@@ -292,6 +298,7 @@ private extension CampaignDetailView {
     }
 
     /// 分貨列展開後的單筆訂單：品項摘要與收款狀態切換
+    ///
     /// - Parameter order: 該客戶在此開團的訂單
     /// - Returns: 訂單列 view
     @ViewBuilder
@@ -348,6 +355,7 @@ private extension CampaignDetailView {
 private extension CampaignDetailView {
 
     /// 狀態選擇器的 binding；選取後送出 statusChanged
+    ///
     /// - Parameter campaign: 目前的開團
     /// - Returns: 對應的狀態 binding
     func statusBinding(for campaign: Campaign) -> Binding<CampaignStatus> {
@@ -366,6 +374,7 @@ private extension CampaignDetailView {
     }
 
     /// 依 App 選定 locale 將比例格式化為百分比字串
+    ///
     /// - Parameter value: 介於 0 與 1 之間的比例
     /// - Returns: 含整數百分比的字串
     func percentString(_ value: Double) -> String {

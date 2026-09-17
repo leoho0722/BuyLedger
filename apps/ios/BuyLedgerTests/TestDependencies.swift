@@ -8,10 +8,12 @@
 import ComposableArchitecture
 import Foundation
 
+@testable import BuyLedger
+
 /// 為 snapshot 與 unit test 提供可重現的依賴注入
 enum TestDependencies {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 預設使用的固定「現在」時間 (2026-04-30 00:00:00 UTC)
     static let fixedNow: Date = {
@@ -36,7 +38,8 @@ enum TestDependencies {
 
 extension TestDependencies {
 
-    /// 在 ``fixedNow`` 注入 `\.date` 的 scope 中執行 operation
+    /// 在 ``fixedNow`` 注入固定 date、calendar 與 timeZone 的 scope 中執行 operation
+    ///
     /// - Parameter operation: 要執行的操作
     /// - Returns: operation 的結果
     /// - Throws: operation 拋出的錯誤
@@ -44,6 +47,7 @@ extension TestDependencies {
         try withDependencies {
             $0.date = .constant(fixedNow)
             $0.calendar = fixedCalendar
+            $0.timeZone = fixedCalendar.timeZone
         } operation: {
             try operation()
         }

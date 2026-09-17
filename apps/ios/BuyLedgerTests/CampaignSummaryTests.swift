@@ -122,7 +122,7 @@ struct CampaignSummaryTests {
 
         #expect(summary.orderCount == 1)
         #expect(summary.receivables == 100)
-        #expect(summary.distribution.allSatisfy { $0.customerName == "A" })
+        #expect(summary.distribution.map(\.customerName) == ["A"])
     }
 
     @Test func profitAndCostAggregateMemberOrderSummaries() {
@@ -251,6 +251,7 @@ struct CampaignSummaryTests {
     // MARK: - Helper
 
     /// 建立只含 CampaignSummary 所需欄位的訂單
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - customer: 客戶名稱

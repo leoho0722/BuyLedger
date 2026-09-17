@@ -14,6 +14,19 @@ import Testing
 /// 驗證匯率工具的狀態更新與計算
 struct FxFeatureTests {
 
+    // MARK: - Properties
+
+    /// 供匯率計算測試使用的固定快照
+    private static let fixedSnapshot = FxRateSnapshot(
+        date: Date(timeIntervalSince1970: 123),
+        base: .twd,
+        rates: [
+            .twd: 1,
+            .jpy: Decimal(1) / Decimal(200),
+            .krw: Decimal(1) / Decimal(8)
+        ]
+    )
+
     // MARK: - Tests
 
     @Test func defaultStateUsesKrwAt150K() {
@@ -32,20 +45,22 @@ struct FxFeatureTests {
     }
 
     @Test func switchingCurrencyRecomputesRateFromSnapshot() async {
-        // 切換幣別後使用 snapshot 匯率，不使用 fallback
+        // Given：匯率快照提供 JPY 對 TWD 的固定匯率
+        let snapshot = Self.fixedSnapshot
         let store = TestStore(
-            initialState: FxFeature.State(snapshot: FxRateSnapshot.fallback)
+            initialState: FxFeature.State(snapshot: snapshot)
         ) {
             FxFeature()
         }
 
+        // When：將來源幣別切換為 JPY
         await store.send(\.binding.fromCurrency, .jpy) {
             $0.fromCurrency = .jpy
         }
 
-        let expectedRate = FxRateSnapshot.fallback.rates[.jpy].map { Decimal(1) / $0 }
-        #expect(store.state.rate == expectedRate)
-        #expect(store.state.convertedTwd == expectedRate.map { 150_000 * $0 })
+        // Then：匯率與換算結果應取自注入的快照
+        #expect(store.state.rate == Decimal(200))
+        #expect(store.state.convertedTwd == Decimal(30_000_000))
     }
 
     @Test func quickAmountTappedReplacesAmount() async {
@@ -59,18 +74,22 @@ struct FxFeatureTests {
     }
 
     @Test func bindingAmountUpdatesConvertedTwd() async {
+        // Given：匯率快照提供 KRW 對 TWD 的固定匯率
+        let snapshot = Self.fixedSnapshot
         let store = TestStore(
-            initialState: FxFeature.State(snapshot: FxRateSnapshot.fallback)
+            initialState: FxFeature.State(snapshot: snapshot)
         ) {
             FxFeature()
         }
 
+        // When：輸入 100,000 的換算金額
         await store.send(\.binding.amount, 100_000) {
             $0.amount = 100_000
         }
 
-        let expectedRate = FxRateSnapshot.fallback.rates[.krw].map { Decimal(1) / $0 }
-        #expect(store.state.convertedTwd == expectedRate.map { 100_000 * $0 })
+        // Then：匯率與換算結果應取自注入的快照
+        #expect(store.state.rate == Decimal(8))
+        #expect(store.state.convertedTwd == Decimal(800_000))
     }
 
     @Test func displayRateForTwdAlwaysReturnsOneEvenWithoutSnapshot() {

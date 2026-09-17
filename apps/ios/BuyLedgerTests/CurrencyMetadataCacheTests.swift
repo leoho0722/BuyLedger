@@ -104,4 +104,29 @@ struct CurrencyMetadataCacheTests {
         let after = try await persistence.fetchAllCodes()
         #expect(after == before)
     }
+
+    /// 空幣別代碼清單應被拒絕並回報明確錯誤
+    ///
+    /// - Throws: 測試容器建立或錯誤驗證失敗時拋出錯誤
+    @Test
+    func replaceEmptyCodeList_rejectsWithEmptyCodeListError() async throws(any Error) {
+        // Given：建立記憶體中的幣別主檔持久層
+        let persistence = CurrencyMetadataPersistence(
+            modelContainer: PersistenceContainer.makeInMemory(for: .testing)
+        )
+
+        // When：以空清單取代幣別代碼
+        var thrownError: CurrencyMetadataPersistenceError?
+        do {
+            try await persistence.replace(
+                codes: [],
+                at: Date(timeIntervalSince1970: 1_700_000_000)
+            )
+        } catch let error {
+            thrownError = error
+        }
+
+        // Then：持久層回報空清單錯誤
+        #expect(thrownError == .emptyCodeList)
+    }
 }

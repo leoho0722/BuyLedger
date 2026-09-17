@@ -99,7 +99,9 @@ struct CampaignIntegrationTests {
         }
     }
 
-    @Test func anyCampaignActionSyncsOrdersCampaignCopy() async {
+    /// 載入開團後同步訂單投影中的開團副本
+    @Test func campaignsLoaded_syncsOrdersCampaignCopy() async {
+        // Given：RootFeature 尚未載入開團
         var state = RootFeature.State()
         state.campaigns.campaigns = []
 
@@ -110,6 +112,8 @@ struct CampaignIntegrationTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
         let loaded = [makeCampaign(id: "C1", name: "團", status: .ongoing)]
+
+        // When：RootFeature 收到開團已載入
         await store.send(.campaigns(.campaignsLoaded(loaded))) {
             $0.campaigns.campaigns = loaded
             $0.campaigns.hasLoaded = true
@@ -118,7 +122,52 @@ struct CampaignIntegrationTests {
             $0.insights.campaigns = loaded
         }
 
+        // Then：所有訂單相關投影都同步開團副本
         #expect(store.state.orders.campaigns.map(\.name) == ["團"])
+    }
+
+    /// 訂單投影更新後同步開團摘要
+    @Test func ordersProjection_updatesCampaignSummary() async {
+        // Given：RootFeature 目前只投影一筆四月團訂單
+        let firstOrder = makeOrder(id: "O1", campaign: "四月團", chargedAmount: 500)
+        let secondOrder = makeOrder(id: "O2", campaign: "四月團", chargedAmount: 300)
+        var initial = RootFeature.State()
+        initial.orders.orders = [firstOrder]
+        initial.campaigns.orders = [firstOrder]
+
+        let store = TestStore(initialState: initial) {
+            RootFeature()
+        }
+        let summaryBeforeSync = CampaignSummary(
+            campaignName: "四月團",
+            orders: store.state.campaigns.orders
+        )
+
+        // When：RootFeature 收到兩筆訂單已載入
+        let updatedOrders = [firstOrder, secondOrder]
+        await store.send(.orders(.ordersLoaded(updatedOrders))) {
+            $0.orders.orders = updatedOrders
+            $0.orders.hasLoaded = true
+            $0.orders.selectedOrderID = "O1"
+            $0.customers.orders = updatedOrders
+            $0.campaigns.orders = updatedOrders
+            $0.dashboard.orders = updatedOrders
+            $0.dashboard.loadState = .loaded
+            $0.insights.orders = updatedOrders
+            $0.insights.loadState = .loaded
+        }
+
+        // Then：開團摘要由同步後的訂單投影重新計算
+        #expect(summaryBeforeSync.orderCount == 1)
+        #expect(summaryBeforeSync.receivables == 500)
+        #expect(store.state.campaigns.orders == updatedOrders)
+        let summaryAfterSync = CampaignSummary(
+            campaignName: "四月團",
+            orders: store.state.campaigns.orders
+        )
+        #expect(summaryAfterSync.orderCount == 2)
+        #expect(summaryAfterSync.receivables == 800)
+        #expect(summaryBeforeSync != summaryAfterSync)
     }
 
     // MARK: - OrdersFeature Filter Tests
@@ -190,11 +239,17 @@ struct CampaignIntegrationTests {
 private extension CampaignIntegrationTests {
 
     /// 建立供開團整合測試使用的最小訂單
+    ///
     /// - Parameters:
     ///   - id: 訂單識別值
     ///   - campaign: 訂單所屬的開團名稱
+    ///   - chargedAmount: 訂單實付金額
     /// - Returns: 建立的測試訂單
-    func makeOrder(id: String, campaign: String) -> LedgerOrder {
+    func makeOrder(
+        id: String,
+        campaign: String,
+        chargedAmount: Decimal = 100
+    ) -> LedgerOrder {
         LedgerOrder(
             id: id,
             customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
@@ -209,7 +264,7 @@ private extension CampaignIntegrationTests {
             cardFeeRate: 0,
             platformFeeRate: 0,
             paymentFeeRate: 0,
-            chargedAmount: 100,
+            chargedAmount: chargedAmount,
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "",
@@ -226,6 +281,7 @@ private extension CampaignIntegrationTests {
     }
 
     /// 建立清空 campaignNames 的訂單副本
+    ///
     /// - Parameters:
     ///   - order: 原始訂單
     ///   - campaignNames: 要寫入的開團名稱
@@ -262,6 +318,7 @@ private extension CampaignIntegrationTests {
     }
 
     /// 建立供開團整合測試使用的最小開團
+    ///
     /// - Parameters:
     ///   - id: 開團識別值
     ///   - name: 開團名稱

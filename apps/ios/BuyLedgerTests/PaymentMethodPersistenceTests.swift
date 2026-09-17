@@ -157,8 +157,8 @@ struct PaymentMethodPersistenceTests {
             // 同一個長命 OrderPersistence context 也必須讀到另一個 context 的新值
             let storedOrder = try await orderRepository.fetchOrders().first
             #expect(
-                storedOrder.map(Self.normalizingItemIdentifiers)
-                    == Self.normalizingItemIdentifiers(corrected))
+                storedOrder.map(LedgerOrder.normalizingItemIdentifiers)
+                    == LedgerOrder.normalizingItemIdentifiers(corrected))
         }
 
         // 丟棄第一個 container 後以同一個 URL 重建，模擬重啟後重新讀取
@@ -179,8 +179,8 @@ struct PaymentMethodPersistenceTests {
                     name: "銀行匯款", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
             ])
         #expect(
-            storedOrder.map(Self.normalizingItemIdentifiers)
-                == Self.normalizingItemIdentifiers(corrected))
+            storedOrder.map(LedgerOrder.normalizingItemIdentifiers)
+                == LedgerOrder.normalizingItemIdentifiers(corrected))
         #expect(storedOrder?.cardlessDeductionAmount == 0)
         #expect(storedOrder?.cardlessSupplementAmount == 0)
         #expect(storedOrder?.reconciliationStatus == "")
@@ -251,7 +251,8 @@ struct PaymentMethodPersistenceTests {
         #expect(try await paymentPersistence.fetchAllInfos() == [originalInfo])
         let stored = try await orderPersistence.fetch(id: original.id)
         #expect(
-            stored.map(Self.normalizingItemIdentifiers) == Self.normalizingItemIdentifiers(original)
+            stored.map(LedgerOrder.normalizingItemIdentifiers)
+                == LedgerOrder.normalizingItemIdentifiers(original)
         )
         #expect(try await orderPersistence.fetch(id: missing.id) == nil)
     }
@@ -309,7 +310,8 @@ struct PaymentMethodPersistenceTests {
         #expect(try await restoredPaymentPersistence.fetchAllInfos() == [originalInfo])
         let stored = try await restoredOrderPersistence.fetch(id: original.id)
         #expect(
-            stored.map(Self.normalizingItemIdentifiers) == Self.normalizingItemIdentifiers(original)
+            stored.map(LedgerOrder.normalizingItemIdentifiers)
+                == LedgerOrder.normalizingItemIdentifiers(original)
         )
     }
 }
@@ -407,44 +409,6 @@ private extension PaymentMethodPersistenceTests {
             for: schema,
             migrationPlan: BuyLedgerMigrationPlan.self,
             configurations: configuration
-        )
-    }
-
-    /// 忽略 `LedgerOrderItem.id` 後比較整筆訂單
-    /// - Returns: 正規化後的訂單
-    static func normalizingItemIdentifiers(_ order: LedgerOrder) -> LedgerOrder {
-        let placeholderID = UUID(uuidString: "00000000-0000-0000-0000-000000000000")!
-        return LedgerOrder(
-            id: order.id,
-            customer: order.customer,
-            status: order.status,
-            currency: order.currency,
-            date: order.date,
-            items: order.items.map {
-                LedgerOrderItem(
-                    id: placeholderID, name: $0.name, quantity: $0.quantity, unitPrice: $0.unitPrice
-                )
-            },
-            itemCost: order.itemCost,
-            domesticShipping: order.domesticShipping,
-            internationalShipping: order.internationalShipping,
-            foreignDomesticShipping: order.foreignDomesticShipping,
-            cardFeeRate: order.cardFeeRate,
-            platformFeeRate: order.platformFeeRate,
-            paymentFeeRate: order.paymentFeeRate,
-            chargedAmount: order.chargedAmount,
-            cardlessDeductionAmount: order.cardlessDeductionAmount,
-            cardlessSupplementAmount: order.cardlessSupplementAmount,
-            orderSource: order.orderSource,
-            categories: order.categories,
-            paymentMethod: order.paymentMethod,
-            notes: order.notes,
-            reconciliationStatus: order.reconciliationStatus,
-            campaignNames: order.campaignNames,
-            paymentReceiptStatus: order.paymentReceiptStatus,
-            isCashOnDelivery: order.isCashOnDelivery,
-            photos: order.photos,
-            mergedSourceIDs: order.mergedSourceIDs
         )
     }
 

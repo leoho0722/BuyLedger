@@ -14,6 +14,7 @@ import XCTest
 extension XCUIApplication {
 
     /// 長按目標元素叫出 contextMenu
+    ///
     /// - Parameters:
     ///   - element: 要長按的目標元素
     ///   - duration: 長按持續時間
@@ -33,14 +34,27 @@ extension XCUIApplication {
     }
 
     /// 點選單項目
+    ///
     /// - Parameters:
     ///   - identifier: 選單項目的 accessibility identifier
     ///   - timeout: 等待選單項目可互動的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     /// - Returns: 是否成功點選選單項目
-    @discardableResult
-    func tapMenuItem(_ identifier: String, timeout: TimeInterval = 10) -> Bool {
+    func tapMenuItem(
+        _ identifier: String,
+        timeout: TimeInterval = 10,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Bool {
         let item = menuItem(identifier)
-        guard item.waitUntilHittable(timeout: timeout) else {
+        guard item.waitUntilHittableOrFail(
+            in: self,
+            timeout: timeout,
+            elementName: "identifier 為 \(identifier) 的選單項目",
+            file: file,
+            line: line
+        ) else {
             return false
         }
         item.tap()
@@ -53,6 +67,7 @@ extension XCUIApplication {
 private extension XCUIApplication {
 
     /// 以 identifier 找選單項目，找不到時回退全域查詢
+    ///
     /// - Parameter identifier: 選單項目的 accessibility identifier
     /// - Returns: 命中的選單項目
     func menuItem(_ identifier: String) -> XCUIElement {
