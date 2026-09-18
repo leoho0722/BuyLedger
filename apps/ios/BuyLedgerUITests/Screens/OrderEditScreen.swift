@@ -68,12 +68,25 @@ extension OrderEditScreen {
         let field = app.textFields[BLAccessibilityID.OrderEdit.customerField]
         var scrollAttempts = 0
         while scrollAttempts < 8 {
+            if !field.exists {
+                rootElement.swipeDown()
+                scrollAttempts += 1
+                continue
+            }
             let fieldFrame = field.frame
             if !fieldFrame.isEmpty && rootElement.frame.intersects(fieldFrame) {
                 break
             }
             rootElement.swipeDown()
             scrollAttempts += 1
+        }
+        guard field.exists else {
+            app.failWithDiagnostics(
+                "捲動 8 次後仍找不到客戶名稱欄位",
+                file: file,
+                line: line
+            )
+            return
         }
         field.clearAndType(
             name,
@@ -171,31 +184,8 @@ extension OrderEditScreen {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        let button = app.buttons[BLAccessibilityID.Common.keyboardDoneButton]
-        if !button.waitForExistence(timeout: 10) {
-            app.failWithDiagnostics(
-                "數字鍵盤工具列的完成鍵未出現",
-                file: file,
-                line: line
-            )
-            return
-        }
-
-        if button.isHittable {
-            button.tap()
-        } else {
-            button
-                .coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
-                .tap()
-        }
-
-        if !app.keyboards.firstMatch.waitForDisappearance(timeout: 5) {
-            app.failWithDiagnostics(
-                "數字鍵盤工具列的完成鍵未能收起鍵盤",
-                file: file,
-                line: line
-            )
-        }
+        let field = app.textFields[BLAccessibilityID.OrderEdit.chargedAmountField]
+        field.dismissNumericKeyboard(in: app, file: file, line: line)
     }
 
     /// 捲到照片區並點指定序位的照片縮圖，開啟照片檢視器

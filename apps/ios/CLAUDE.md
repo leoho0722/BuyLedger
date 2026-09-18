@@ -46,6 +46,8 @@
 - **UI 測試 (`BuyLedgerUITests`) 走獨立 scheme，只覆蓋 iOS 26.x 模擬器**：
     - `-only-testing` 跑 UI 測試要指定 `BuyLedgerUITests` scheme；該 target 不在 `BuyLedger` scheme 的 test plan 內，指定 `--scheme BuyLedger` 會回「isn't a member of the specified test plan or scheme」。
     - 跑全功能回歸不靠 `--extra-args -testPlan` (CLI 會忽略、退回 scheme 預設的效能計畫)，改用 `--extra-args -only-testing:BuyLedgerUITests --extra-args -skip-testing:BuyLedgerUITests/LaunchPerformanceTests`；單一類別用 `-only-testing:BuyLedgerUITests/<類別>`。
+    - 執行 iPad UI 主回歸前，必須確認模擬器的軟體鍵盤可顯示，也就是硬體鍵盤連線已斷開。實測證明 `xcodebuildmcp simulator-management toggle-connect-hardware-keyboard` 不可靠：它送出 `Cmd+Shift+K`，Simulator 不在前景時會無聲失效；直接寫入 `ConnectHardwareKeyboard` 偏好設定對已 booted 的裝置也無效。目前可靠的處置是在 Simulator 視窗手動按 `Cmd+Shift+K`，或從 I/O 選單取消勾選 Connect Hardware Keyboard。
+    - 若回歸出現「數字鍵盤工具列的完成鍵未能收起鍵盤」，判別方式是看失敗時可及性樹的 `Keyboard` 元素 y 起點是否大於視窗高度；修正環境後，單獨執行 `KeyboardDismissTests` 兩條測試且兩條都綠，才算確認軟體鍵盤前提成立。這類現象不要先改產品端鍵盤工具列。
     - 測試計畫：`BuyLedger.xctestplan` (單元測試，鎖 zh-Hant／TW、字母序執行)、`BuyLedgerUITests.xctestplan` (UI 主回歸，鎖 zh-Hant／TW、關閉隨機順序、排除效能測試)、`BuyLedgerUITests-Performance.xctestplan` (效能)；三份都只統計 App target 覆蓋率、不設門檻。
     - 訂單編輯表單 TextField 偶發「Activation point invalid」的 hittability 失敗屬環境雜訊：失敗的測試與元素在連續重跑間不一致即為雜訊，單獨重跑轉綠即可，不改測試碼或放寬斷言；同一條穩定重現才是真缺陷。
 - **以 `xcodebuildmcp ui-automation` 驅動模擬器時不用 `type-text` 打數字**：它走 Mac 當前輸入法，注音模式會把數字轉成注音符號；`toggle-connect-hardware-keyboard` 需要未必已授權的輔助使用權限。UI 測試碼內的輸入用 `XCUIElement.typeText`。
