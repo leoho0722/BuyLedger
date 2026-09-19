@@ -2,132 +2,99 @@
 //  PersistenceError.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/8/4.
+//  Created by Leo Ho on 2026/08/04.
 //
 
 import Foundation
+import SwiftData
 
 /// 持久化基礎層的錯誤
-enum PersistenceError: Error, Equatable, LocalizedError, Sendable {
-
-    // MARK: - Cases
+enum PersistenceError: Error, Sendable {
 
     /// 讀取資料失敗
-    case fetchFailed(message: String)
+    ///
+    /// - Parameter underlying: 讀取操作原本拋出的錯誤
+    case fetchFailed(underlying: any Error & Sendable)
 
     /// 寫入資料失敗
-    case saveFailed(message: String)
+    ///
+    /// - Parameter underlying: 寫入操作原本拋出的錯誤
+    case saveFailed(underlying: any Error & Sendable)
 
-    /// 建立 ModelContainer 失敗
-    case containerCreationFailed(message: String)
-
-    // MARK: - Computed Properties
-
-    /// 顯示底層錯誤訊息
-    var errorDescription: String? {
-        switch self {
-        case let .fetchFailed(message), let .saveFailed(message),
-            let .containerCreationFailed(message):
-            message
-        }
-    }
+    /// 建立持久化容器失敗
+    ///
+    /// - Parameter underlying: 建立操作原本拋出的錯誤
+    case containerCreationFailed(underlying: any Error & Sendable)
 }
 
 /// 訂單持久化的錯誤
-enum OrderPersistenceError: Error, Equatable, LocalizedError, Sendable {
-
-    // MARK: - Cases
+enum OrderPersistenceError: Error, Sendable {
 
     /// 建立或合併時發現相同訂單編號
+    /// - Parameter id: 發生衝突的訂單編號
     case identifierCollision(id: String)
 
     /// 持久化基礎操作失敗
+    /// - Parameter persistenceError: 持久化基礎層拋出的錯誤
     case storage(PersistenceError)
-
-    // MARK: - Computed Properties
-
-    /// 顯示錯誤訊息
-    var errorDescription: String? {
-        switch self {
-        case let .identifierCollision(id):
-            "訂單編號已存在：\(id)"
-        case let .storage(error):
-            error.localizedDescription
-        }
-    }
 }
 
 /// 付款方式持久化的錯誤
-enum PaymentMethodPersistenceError: Error, Equatable, LocalizedError, Sendable {
-
-    // MARK: - Cases
+enum PaymentMethodPersistenceError: Error, Sendable {
 
     /// 批次更新時找不到指定訂單
+    /// - Parameter id: 找不到的訂單編號
     case orderNotFound(id: LedgerOrder.ID)
 
     /// 持久化基礎操作失敗
+    /// - Parameter persistenceError: 持久化基礎層拋出的錯誤
     case storage(PersistenceError)
-
-    // MARK: - Computed Properties
-
-    /// 顯示錯誤訊息
-    var errorDescription: String? {
-        switch self {
-        case let .orderNotFound(id):
-            "找不到訂單：\(id)"
-        case let .storage(error):
-            error.localizedDescription
-        }
-    }
 }
 
 /// 幣別快取持久化的錯誤
-enum CurrencyMetadataPersistenceError: Error, Equatable, LocalizedError, Sendable {
-
-    // MARK: - Cases
+enum CurrencyMetadataPersistenceError: Error, Sendable {
 
     /// API 沒有回傳任何支援幣別
     case emptyCodeList
 
     /// 持久化基礎操作失敗
+    /// - Parameter persistenceError: 持久化基礎層拋出的錯誤
     case storage(PersistenceError)
-
-    // MARK: - Computed Properties
-
-    /// 顯示錯誤訊息
-    var errorDescription: String? {
-        switch self {
-        case .emptyCodeList:
-            "支援幣別清單為空。"
-        case let .storage(error):
-            error.localizedDescription
-        }
-    }
 }
 
-/// store 復原搬移的錯誤
-enum PersistenceRecoveryError: Error, Equatable, LocalizedError, Sendable {
-
-    // MARK: - Cases
+/// 復原搬移資料庫檔案時發生的錯誤
+enum PersistenceRecoveryError: Error, Sendable {
 
     /// 解析 Application Support 目錄失敗
-    case directoryResolutionFailed(message: String)
+    ///
+    /// - Parameter underlying: 解析目錄時原本拋出的錯誤
+    case directoryResolutionFailed(underlying: any Error & Sendable)
 
     /// 建立復原目錄失敗
-    case directoryCreationFailed(message: String)
+    ///
+    /// - Parameter underlying: 建立目錄時原本拋出的錯誤
+    case directoryCreationFailed(underlying: any Error & Sendable)
 
-    /// 搬移 store 檔案失敗
-    case fileMoveFailed(fileName: String, message: String)
+    /// 搬移資料庫檔案失敗
+    ///
+    /// - Parameters:
+    ///   - fileName: 無法搬移的檔案名稱
+    ///   - underlying: 搬移檔案時原本拋出的錯誤
+    case fileMoveFailed(fileName: String, underlying: any Error & Sendable)
+}
 
-    // MARK: - Computed Properties
+// MARK: - LocalizedError
+
+extension PersistenceRecoveryError: LocalizedError {
 
     /// 顯示底層錯誤訊息
+    /// - Returns: 要顯示給使用者的錯誤訊息
     var errorDescription: String? {
         switch self {
-        case let .directoryResolutionFailed(message), let .directoryCreationFailed(message):
-            message
-        case let .fileMoveFailed(fileName, message):
-            "\(fileName): \(message)"
+        case let .directoryResolutionFailed(underlying), let .directoryCreationFailed(underlying):
+            underlying.localizedDescription
+        case let .fileMoveFailed(fileName, underlying):
+            "\(fileName): \(underlying.localizedDescription)"
         }
     }
 }
@@ -136,40 +103,42 @@ enum PersistenceRecoveryError: Error, Equatable, LocalizedError, Sendable {
 
 extension PersistenceError {
 
-    /// 將 fetch 的原始錯誤轉成持久化錯誤
-    /// - Parameter operation: 可能拋出原始錯誤的 fetch 操作
-    /// - Returns: fetch 操作的結果
-    /// - Throws: operation 失敗時拋出 ``PersistenceError``
-    static func mapFetch<T>(_ operation: () throws(any Error) -> T) throws(PersistenceError) -> T {
+    /// 將讀取操作的原始錯誤轉成持久化錯誤
+    /// - Parameter operation: 可能拋出原始錯誤的讀取操作
+    /// - Returns: 讀取操作的結果
+    /// - Throws: 讀取操作失敗時拋出 ``PersistenceError``
+    static func mapFetch<Value>(
+        _ operation: () throws(any Error) -> Value
+    ) throws(PersistenceError) -> Value {
         do {
             return try operation()
         } catch {
-            throw .fetchFailed(message: error.localizedDescription)
+            throw .fetchFailed(underlying: error as NSError)
         }
     }
 
-    /// 將 save 的原始錯誤轉成持久化錯誤
-    /// - Parameter operation: 可能拋出原始錯誤的 save 操作
-    /// - Throws: operation 失敗時拋出 ``PersistenceError``
+    /// 將寫入操作的原始錯誤轉成持久化錯誤
+    /// - Parameter operation: 可能拋出原始錯誤的寫入操作
+    /// - Throws: 寫入操作失敗時拋出 ``PersistenceError``
     static func mapSave(_ operation: () throws(any Error) -> Void) throws(PersistenceError) {
         do {
             try operation()
         } catch {
-            throw .saveFailed(message: error.localizedDescription)
+            throw .saveFailed(underlying: error as NSError)
         }
     }
 
-    /// 將 ModelContainer 建立錯誤轉成持久化錯誤
-    /// - Parameter operation: 可能拋出原始錯誤的 container 建立操作
-    /// - Returns: 建立完成的 ModelContainer
-    /// - Throws: operation 失敗時拋出 ``PersistenceError``
-    static func mapContainerCreation<T>(
-        _ operation: () throws(any Error) -> T
-    ) throws(PersistenceError) -> T {
+    /// 將建立持久化容器的原始錯誤轉成持久化錯誤
+    /// - Parameter operation: 可能拋出原始錯誤的容器建立操作
+    /// - Returns: 建立完成的持久化容器
+    /// - Throws: 容器建立失敗時拋出 ``PersistenceError``
+    static func mapContainerCreation(
+        _ operation: () throws(any Error) -> ModelContainer
+    ) throws(PersistenceError) -> ModelContainer {
         do {
             return try operation()
         } catch {
-            throw .containerCreationFailed(message: error.localizedDescription)
+            throw .containerCreationFailed(underlying: error as NSError)
         }
     }
 }

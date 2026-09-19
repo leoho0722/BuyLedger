@@ -2,7 +2,7 @@
 //  FxRates.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/1.
+//  Created by Leo Ho on 2026/05/01.
 //
 
 import Foundation
@@ -10,13 +10,13 @@ import Foundation
 /// 內建的匯率對照表 (皆為「1 單位來源幣別 = X TWD」)
 enum FxRates {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// Preview 使用的範例匯率
-    static let toTwd: [CurrencyCode: Decimal] = [
+    static let toTWD: [CurrencyCode: Decimal] = [
         .twd: 1,
-        .krw: Decimal(string: "0.0228") ?? 0,
-        .jpy: Decimal(string: "0.2105") ?? 0,
-        .usd: Decimal(string: "32.45") ?? 0,
+        .krw: Decimal(sign: .plus, exponent: -4, significand: 228),
+        .jpy: Decimal(sign: .plus, exponent: -4, significand: 2105),
+        .usd: Decimal(sign: .plus, exponent: -2, significand: 3245),
     ]
 }

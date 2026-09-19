@@ -9,15 +9,18 @@
 import Foundation
 
 /// 範例標籤 (示範 wrapper + 自訂序列化 + identity)
-struct SampleTag: Hashable, Identifiable, Sendable {
+struct SampleTag: Hashable, Sendable {
 
     // MARK: - Data Properties
 
-    /// 包裝的原始值
+    /// 實際保存的基礎值
     let rawValue: String
+}
 
-    // MARK: - Identifiable Properties
+// MARK: - Identifiable
 
-    /// 穩定識別值 (以 rawValue 表示)
+extension SampleTag: Identifiable {
+
+    /// 以實際保存的值作為穩定識別
     var id: String { rawValue }
 }

@@ -2,7 +2,7 @@
 //  HTTPClient.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/2.
+//  Created by Leo Ho on 2026/05/02.
 //
 
 import ComposableArchitecture
@@ -11,31 +11,35 @@ import Foundation
 /// 通用 HTTP 客戶端依賴
 struct HTTPClient: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
     /// 對應到 `URLSession.data(for:)` 的可注入封裝 (buffered 回應)
     /// - Parameter request: 欲送出的請求
     /// - Returns: 回應 data 與 HTTP 回應資訊
     /// - Throws: 網路請求或 HTTP 狀態驗證失敗時拋出 ``APIError``
-    var data: @Sendable (_ request: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse)
+    var data: @Sendable (
+        _ request: URLRequest
+    ) async throws(APIError) -> (Data, HTTPURLResponse)
 
     /// 可注入的 URLSession bytes 封裝，支援串流回應
     /// - Parameter request: 欲送出的請求
     /// - Returns: 逐位元組串流與 HTTP 回應資訊
     /// - Throws: 網路請求或 HTTP 狀態驗證失敗時拋出 ``APIError``
-    var stream: @Sendable (_ request: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse)
+    var stream: @Sendable (
+        _ request: URLRequest
+    ) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse)
 }
 
 // MARK: - Internal Method
 
 extension HTTPClient {
 
-    /// 以給定組件組裝 `URLRequest`、執行並驗證 2xx 狀態碼後回傳原始回應 data
+    /// 組裝 `URLRequest`、執行請求並驗證 2xx 狀態碼後回傳回應資料
     /// - Parameters:
     ///   - url: 目標 URL
-    ///   - method: HTTP method (預設 `.get`)
-    ///   - headers: 額外的 header 欄位 (預設無)
-    ///   - body: 請求 body (預設無)
+    ///   - method: `HTTPMethod`，預設為 `.get`
+    ///   - headers: 額外的 header 欄位，預設為空
+    ///   - body: 請求內容，預設為空
     ///   - timeout: 逾時秒數 (預設 60)
     /// - Returns: 2xx 回應的原始 data
     /// - Throws: 網路請求或 HTTP 狀態驗證失敗時拋出 ``APIError``
@@ -62,35 +66,39 @@ extension HTTPClient {
         return responseData
     }
 
-    /// 將回應 data 解碼為指定的 `Decodable` 型別
+    /// 將回應資料解碼為指定的 `Decodable` 型別
     /// - Parameters:
     ///   - type: 目標解碼型別
-    ///   - data: 要解碼的回應 data
+    ///   - data: 要解碼的回應資料
     /// - Returns: 解碼後的值
-    /// - Throws: JSON 解碼失敗時拋出 ``APIError/decoding(message:)``
+    /// - Throws: JSON 解碼失敗時拋出 ``APIError/decoding(underlying:)``
     func decode<Value: Decodable>(_ type: Value.Type, from data: Data) throws(APIError) -> Value {
         do {
             return try JSONDecoder().decode(type, from: data)
         } catch {
-            throw APIError.decoding(message: String(describing: error))
+            throw APIError.decoding(underlying: error as NSError)
         }
     }
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension HTTPClient: DependencyKey {
 
-    /// `liveValue` 共用的設定化 session
-    /// 以 `URLSessionConfiguration.default` 建立，保留 session 設定的控制權
+    /// 建立正式環境共用的預設 `URLSession`
     private nonisolated static let session = URLSession(configuration: .default)
 
-    /// App 執行時以 `URLSessionConfiguration.default` 的專屬 session 發送請求
+    /// App 執行時以預設 `URLSession` 發送請求
     nonisolated static let liveValue: HTTPClient = HTTPClient(
-        data: { (request: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
+        data: {
+            (request: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
             try await loadHTTPData(request, using: session)
         },
-        stream: { (request: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
+        stream: {
+            (request: URLRequest) async throws(APIError) -> (
+                URLSession.AsyncBytes,
+                HTTPURLResponse
+            ) in
             try await loadHTTPStream(request, using: session)
         }
     )
@@ -98,18 +106,19 @@ extension HTTPClient: DependencyKey {
     /// 測試與 Preview 不連線，固定回傳錯誤
     nonisolated static let testValue: HTTPClient = HTTPClient(
         data: { (_: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
-            throw APIError.transport(
-                message: "HTTPClient.testValue 被呼叫；請在測試中以 withDependencies 注入。"
+            throw Self.dependencyNotInjectedError(
+                diagnosticMessage: "HTTPClient.testValue 被呼叫；請在測試中以 withDependencies 注入。"
             )
         },
         stream: {
             (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
-            throw APIError.transport(
-                message: "HTTPClient.testValue 被呼叫；請在測試中以 withDependencies 注入。"
+            throw Self.dependencyNotInjectedError(
+                diagnosticMessage: "HTTPClient.testValue 被呼叫；請在測試中以 withDependencies 注入。"
             )
         }
     )
 
+    /// Preview 使用不連線的固定錯誤實作
     nonisolated static let previewValue: HTTPClient = testValue
 }
 
@@ -130,13 +139,13 @@ private extension HTTPClient {
         do {
             let (data, response) = try await session.data(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
-                throw APIError.transport(message: "回應不是 HTTPURLResponse。")
+                throw Self.responseTypeMismatchError()
             }
             return (data, httpResponse)
         } catch let error as APIError {
             throw error
         } catch {
-            throw APIError.transport(message: error.localizedDescription)
+            throw .transport(underlying: error as NSError)
         }
     }
 
@@ -153,18 +162,54 @@ private extension HTTPClient {
         do {
             let (bytes, response) = try await session.bytes(for: request)
             guard let httpResponse = response as? HTTPURLResponse else {
-                throw APIError.transport(message: "回應不是 HTTPURLResponse。")
+                throw Self.responseTypeMismatchError()
             }
             return (bytes, httpResponse)
         } catch let error as APIError {
             throw error
         } catch {
-            throw APIError.transport(message: error.localizedDescription)
+            throw .transport(underlying: error as NSError)
         }
+    }
+
+    /// networking 層自有的診斷錯誤 domain
+    static let networkingErrorDomain = "com.leoho.BuyLedger.networking"
+
+    /// 回應型別不符的診斷錯誤代碼
+    static let responseTypeMismatchCode = 1
+
+    /// 依賴未注入的診斷錯誤代碼
+    static let dependencyNotInjectedCode = 2
+
+    /// 建立回應型別不符的 transport 錯誤
+    ///
+    /// - Returns: 帶 NSError 底層資訊的 transport 錯誤
+    static func responseTypeMismatchError() -> APIError {
+        .transport(
+            underlying: NSError(
+                domain: networkingErrorDomain,
+                code: responseTypeMismatchCode,
+                userInfo: [NSLocalizedDescriptionKey: "回應不是 HTTPURLResponse。"]
+            )
+        )
+    }
+
+    /// 建立依賴未注入的 transport 錯誤
+    ///
+    /// - Parameter diagnosticMessage: 要提供給診斷使用的錯誤描述
+    /// - Returns: 帶原始錯誤資訊的 transport 錯誤
+    static func dependencyNotInjectedError(diagnosticMessage: String) -> APIError {
+        .transport(
+            underlying: NSError(
+                domain: networkingErrorDomain,
+                code: dependencyNotInjectedCode,
+                userInfo: [NSLocalizedDescriptionKey: diagnosticMessage]
+            )
+        )
     }
 }
 
-// MARK: - DependencyValues Accessor
+// MARK: - DependencyValues
 
 extension DependencyValues {
 

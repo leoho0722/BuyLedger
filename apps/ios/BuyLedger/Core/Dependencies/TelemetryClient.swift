@@ -2,7 +2,7 @@
 //  TelemetryClient.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/7/29.
+//  Created by Leo Ho on 2026/07/29.
 //
 
 import ComposableArchitecture
@@ -13,7 +13,7 @@ import FirebasePerformance
 /// 套用遙測資料收集的可替換介面
 struct TelemetryClient: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
     /// 在 Firebase 框架初始化前啟用 Performance 的自動埋點；此時機之後無法變更
     var enablePreInitializationCollection: @Sendable () -> Void
@@ -22,7 +22,7 @@ struct TelemetryClient: Sendable {
     var enableCollection: @Sendable () -> Void
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension TelemetryClient: DependencyKey {
 

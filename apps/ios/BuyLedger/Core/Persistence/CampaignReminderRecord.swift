@@ -2,7 +2,7 @@
 //  CampaignReminderRecord.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/7/11.
+//  Created by Leo Ho on 2026/07/11.
 //
 
 import Foundation
@@ -12,7 +12,7 @@ import SwiftData
 @Model
 final class CampaignReminderRecord {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 開團的穩定識別值 (UUID 字串)；同時作為 upsert 識別值
     var campaignID: String

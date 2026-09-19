@@ -2,7 +2,7 @@
 //  APIErrorMappingTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/7/29.
+//  Created by Leo Ho on 2026/07/29.
 //
 
 import ComposableArchitecture
@@ -15,32 +15,69 @@ struct APIErrorMappingTests {
 
     // MARK: - Tests
 
+    /// 驗證 API 錯誤分類與對應訊息
     @Test func invalidKeyResponseMapsToInvalidCredential() async throws(any Error) {
-        try await assertServiceCode(
-            "invalid-key",
-            mapsTo: .invalidKey
-        )
+        // Given
+
+        // When
+
+        let actual = try await fetchServiceError(for: "invalid-key")
+
+        // Then
+
+        if case .invalidKey = actual {
+            return
+        }
+        Issue.record("服務錯誤分類與預期值不符。")
     }
 
+    /// 驗證 API 錯誤分類與對應訊息
     @Test func inactiveAccountResponseMapsToInvalidCredential() async throws(any Error) {
-        try await assertServiceCode(
-            "inactive-account",
-            mapsTo: .invalidKey
-        )
+        // Given
+
+        // When
+
+        let actual = try await fetchServiceError(for: "inactive-account")
+
+        // Then
+
+        if case .invalidKey = actual {
+            return
+        }
+        Issue.record("服務錯誤分類與預期值不符。")
     }
 
+    /// 驗證 API 錯誤分類與對應訊息
     @Test func quotaReachedResponseMapsToQuotaExceeded() async throws(any Error) {
-        try await assertServiceCode(
-            "quota-reached",
-            mapsTo: .quotaExceeded
-        )
+        // Given
+
+        // When
+
+        let actual = try await fetchServiceError(for: "quota-reached")
+
+        // Then
+
+        if case .quotaExceeded = actual {
+            return
+        }
+        Issue.record("服務錯誤分類與預期值不符。")
     }
 
+    /// 驗證 API 錯誤分類與對應訊息
     @Test func otherServiceCodeMapsToGenericServiceError() async throws(any Error) {
-        try await assertServiceCode(
-            "malformed-request",
-            mapsTo: .apiError(code: "malformed-request")
-        )
+        // Given
+
+        // When
+
+        let actual = try await fetchServiceError(for: "malformed-request")
+
+        // Then
+
+        if case let .apiError(code) = actual {
+            #expect(code == "malformed-request")
+        } else {
+            Issue.record("服務錯誤分類與預期值不符。")
+        }
     }
 }
 
@@ -51,9 +88,9 @@ private extension APIErrorMappingTests {
     /// 以 HTTP 200 搭配服務端錯誤 payload 驅動匯率 client 的業務錯誤分流
     /// - Parameters:
     ///   - code: 服務回應代碼
-    ///   - expected: 預期的錯誤
-    /// - Throws: 測試資料建立或 API 錯誤驗證失敗時拋出錯誤
-    func assertServiceCode(_ code: String, mapsTo expected: APIError) async throws(any Error) {
+    /// - Returns: client 轉換後的 API 錯誤
+    /// - Throws: 測試資料建立或 client 回傳非 API 錯誤時拋出錯誤
+    func fetchServiceError(for code: String) async throws(any Error) -> APIError {
         let url = try #require(URL(string: "https://example.com/resource"))
         let response = try #require(
             HTTPURLResponse(
@@ -65,25 +102,32 @@ private extension APIErrorMappingTests {
         )
         let body = Data(#"{"result":"error","error-type":"\#(code)"}"#.utf8)
 
-        await withDependencies {
+        return try await withDependencies {
             $0.appConfiguration = AppConfiguration(
                 exchangeRateAPIKey: { "network-test-key" },
                 ollamaAPIKey: { nil }
             )
             $0.httpClient = HTTPClient(
                 data: { _ in (body, response) },
-                stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
-                    throw APIError.transport(message: "unused stream")
+                stream: {
+                    (_: URLRequest) async throws(APIError) -> (
+                        URLSession.AsyncBytes,
+                        HTTPURLResponse
+                    ) in
+                    throw APIError.transport(
+                        underlying: TestDependencies.makeUnderlyingError(message: "unused stream")
+                    )
                 }
             )
         } operation: {
             do {
                 _ = try await ExchangeRateClient.liveValue.fetchLatest(.usd)
-                Issue.record("Expected service code \(code) to fail")
+                Issue.record("預期服務代碼 \(code) 會失敗。")
+                return .apiError(code: "unexpected-success")
             } catch let error as APIError {
-                #expect(error == expected)
+                return error
             } catch {
-                Issue.record("Expected an APIError, got \(error)")
+                throw error
             }
         }
     }

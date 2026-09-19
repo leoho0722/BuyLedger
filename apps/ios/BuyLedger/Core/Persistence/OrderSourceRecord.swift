@@ -2,7 +2,7 @@
 //  OrderSourceRecord.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/23.
+//  Created by Leo Ho on 2026/05/23.
 //
 
 import Foundation
@@ -12,7 +12,7 @@ import SwiftData
 @Model
 final class OrderSourceRecord {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 以訂單來源名稱建立索引，供查詢與更新
     #Index<OrderSourceRecord>([\.name])
@@ -29,9 +29,9 @@ final class OrderSourceRecord {
     }
 }
 
-// MARK: - NameLookupRecord
+// MARK: - NameLookupRecordProtocol
 
-extension OrderSourceRecord: NameLookupRecord {
+extension OrderSourceRecord: NameLookupRecordProtocol {
 
     /// 以訂單來源名稱比對的查詢條件
     /// - Parameter name: 要比對的訂單來源名稱

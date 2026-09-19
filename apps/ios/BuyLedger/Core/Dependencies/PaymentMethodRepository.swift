@@ -2,7 +2,7 @@
 //  PaymentMethodRepository.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/23.
+//  Created by Leo Ho on 2026/05/23.
 //
 
 import ComposableArchitecture
@@ -12,9 +12,9 @@ import SwiftData
 /// 付款方式主檔的依賴介面
 struct PaymentMethodRepository: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
-    /// 讀取目前所有付款方式名稱 (已排序)
+    /// 讀取目前所有付款方式名稱並排序
     /// - Returns: 已排序的付款方式名稱
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
     var fetchPaymentMethods: @Sendable () async throws(PersistenceError) -> [String]
@@ -24,9 +24,9 @@ struct PaymentMethodRepository: Sendable {
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
     var fetchPaymentMethodInfos: @Sendable () async throws(PersistenceError) -> [PaymentMethodInfo]
 
-    /// 加入新付款方式；trim 後若空字串視為 no-op
+    /// 加入新付款方式；去除前後空白後若為空字串則不處理
     /// - Parameters:
-    ///   - name: 付款方式名稱 (未 trim)
+    ///   - name: 尚未去除前後空白的付款方式名稱
     ///   - flags: 付款方式分類旗標
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     var addPaymentMethod: @Sendable (
@@ -34,7 +34,7 @@ struct PaymentMethodRepository: Sendable {
         _ flags: PaymentMethodFlags
     ) async throws(PersistenceError) -> Void
 
-    /// 刪除指定名稱的付款方式；不存在視為 no-op
+    /// 刪除指定名稱的付款方式；不存在時不做任何事
     /// - Parameter name: 要刪除的名稱
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     var removePaymentMethod: @Sendable (_ name: String) async throws(PersistenceError) -> Void
@@ -91,7 +91,8 @@ extension PaymentMethodRepository {
                 let persistence = await Self.makePersistence(container: container)
                 return try await persistence.fetchAllInfos()
             },
-            addPaymentMethod: { (rawName: String, flags: PaymentMethodFlags) async throws(PersistenceError) in
+            addPaymentMethod: {
+                (rawName: String, flags: PaymentMethodFlags) async throws(PersistenceError) in
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else {
                     return
@@ -106,7 +107,8 @@ extension PaymentMethodRepository {
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.delete(name: name)
             },
-            renamePaymentMethod: { (oldName: String, newName: String) async throws(PersistenceError) in
+            renamePaymentMethod: {
+                (oldName: String, newName: String) async throws(PersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
@@ -114,7 +116,13 @@ extension PaymentMethodRepository {
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.rename(from: oldName, to: trimmedNew)
             },
-            applyPaymentMethodEdit: { (oldName: String, newName: String, flags: PaymentMethodFlags, orders: [LedgerOrder]) async throws(PaymentMethodPersistenceError) in
+            applyPaymentMethodEdit: {
+                (
+                    oldName: String,
+                    newName: String,
+                    flags: PaymentMethodFlags,
+                    orders: [LedgerOrder]
+                ) async throws(PaymentMethodPersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty else {
                     return
@@ -127,7 +135,8 @@ extension PaymentMethodRepository {
                     orders: orders
                 )
             },
-            setPaymentMethodIsCardless: { (rawName: String, isCardless: Bool) async throws(PersistenceError) in
+            setPaymentMethodIsCardless: {
+                (rawName: String, isCardless: Bool) async throws(PersistenceError) in
                 let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmed.isEmpty else {
                     return
@@ -143,7 +152,7 @@ extension PaymentMethodRepository {
 
 private extension PaymentMethodRepository {
 
-    /// 建立 PaymentMethodPersistence
+    /// 建立 ``PaymentMethodPersistence``
     /// - Parameter container: 共用的 ``ModelContainer``
     /// - Returns: 對應 container 的 ``PaymentMethodPersistence`` 實例
     static func makePersistence(container: ModelContainer) async -> PaymentMethodPersistence {
@@ -153,7 +162,7 @@ private extension PaymentMethodRepository {
     }
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension PaymentMethodRepository: DependencyKey {
 

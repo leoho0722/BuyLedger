@@ -20,6 +20,16 @@ paths:
     - 測試 target 要明確連結 `Clocks` product，只靠 `ComposableArchitecture` 轉出可能在連結階段失敗。
     - 以 `OllamaClient.overallStreamDuration` 驅動上限，不新增 `DependencyValues` keyPath 當測試旋鈕。
 
+## 跨測試共用狀態
+
+- **測試直接改寫 `@Shared(.lookupCatalog)` 會污染同批次的其他測試**：`@Shared` 是 process 內共用，`BuyLedger.xctestplan` 又是字母序執行，外溢的狀態會讓排在後面的 snapshot 測試出現只在完整套件下重現、單獨跑卻通過的失敗。
+    - 需要改寫主檔目錄的測試一律在隔離 storage 內建立 state：參考 `LookupManagementFeatureTests.withIsolatedCatalog` 與 `RootFeatureTests.makeIsolatedRootState` (以 `defaultInMemoryStorage = InMemoryStorage()` 建立)。
+    - 症狀是「完整回歸紅、單獨跑綠」時先查這裡，不要改 snapshot 或重錄基準圖。
+
+## 錯誤斷言
+
+- **錯誤型別不遵循 `Equatable`，斷言一律 `if case` 或 `switch` 比對 case**，不用 `#expect(throws:)` 比對整個值；需要驗證底層錯誤時斷言 `domain`、`code` 與 `localizedDescription`，不斷言物件身分。
+
 ## 守門測試 (`TestSuiteIntegrityTests`)
 
 - **`exhaustivity = .off` 的總數不得超過 `exhaustivityOffUpperBound`**：新增一處關閉窮舉時必須同時移除他處的關閉；上限只檢查總數、不檢查位置。

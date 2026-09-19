@@ -2,7 +2,7 @@
 //  OrderPersistenceTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/5/2.
+//  Created by Leo Ho on 2026/05/02.
 //
 
 import Foundation
@@ -16,18 +16,32 @@ struct OrderPersistenceTests {
 
     // MARK: - Tests
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func fetchAllOnFreshContainerReturnsEmpty() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
 
+        // When
+
         let stored = try await persistence.fetchAll()
+        // Then
+
         #expect(stored.isEmpty)
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func seedIfEmptyInsertsSamplesOnce() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let samples = LedgerOrder.sampleOrders
 
+        // When
+
         let firstSeeded = try await persistence.seedIfEmpty(with: samples)
+        // Then
+
         #expect(firstSeeded == true)
 
         let afterFirst = try await persistence.fetchAll()
@@ -40,19 +54,29 @@ struct OrderPersistenceTests {
         #expect(afterSecond.count == samples.count)
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func fetchAllReturnsOrdersSortedByDateDescending() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let samples = LedgerOrder.sampleOrders
+        // When
+
         try await persistence.seedIfEmpty(with: samples)
 
         let fetched = try await persistence.fetchAll()
 
         let dates = fetched.map(\.date)
         let sorted = dates.sorted(by: >)
+        // Then
+
         #expect(dates == sorted)
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func createInsertsNewOrderWhenIdNotPresent() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
 
         let order = LedgerOrder(
@@ -84,26 +108,46 @@ struct OrderPersistenceTests {
             mergedSourceIDs: []
         )
 
+        // When
+
         try await persistence.create(order)
 
         let stored = try await persistence.fetchAll()
+        // Then
+
         #expect(stored.count == 1)
         #expect(stored.first?.id == "BL-TEST-001")
         #expect(stored.first?.customer.name == "測試客戶")
         #expect(stored.first?.notes == "建立時的備註", "備註應隨訂單一併持久化")
     }
 
-    @Test func createFailsOnIdentifierCollisionAndLeavesExistingRowUnchanged() async throws(any Error) {
+    /// 驗證訂單持久化在此情境下的資料結果
+    @Test
+    func createFailsOnIdentifierCollisionAndLeavesExistingRowUnchanged() async throws(any Error) {
+        // Given
+
         // 編號衝突時整批失敗，既有資料不得變更。
         let persistence = try makePersistence()
         let existing = Self.makeFullFieldOrder(variant: .original)
+        // When
+
         try await persistence.create(existing)
 
         let colliding = Self.makeFullFieldOrder(variant: .updated)
+        // Then
+
         #expect(colliding.id == existing.id, "測試前提：撞號的兩筆訂單必須同 id")
 
-        await #expect(throws: OrderPersistenceError.identifierCollision(id: existing.id)) {
+        do {
             try await persistence.create(colliding)
+            Issue.record("預期為訂單編號衝突錯誤。")
+        } catch {
+            switch error {
+            case let .identifierCollision(id):
+                #expect(id == existing.id)
+            case .storage:
+                Issue.record("預期為訂單編號衝突錯誤，實際為持久化錯誤。")
+            }
         }
 
         // fetchAll 不含照片，完整比對改用 fetch(id:)
@@ -117,10 +161,15 @@ struct OrderPersistenceTests {
         )
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func updateReplacesExistingRowAcrossEveryField() async throws(any Error) {
+        // Given
+
         // 以整筆資料比對，確保所有欄位都被寫入
         let persistence = try makePersistence()
         let original = Self.makeFullFieldOrder(variant: .original)
+        // When
+
         try await persistence.updatePersistingPhotos(original)
 
         let modified = Self.makeFullFieldOrder(variant: .updated)
@@ -128,6 +177,8 @@ struct OrderPersistenceTests {
 
         // fetchAll() 一律回傳空照片，整值比對改用 fetch(id:)
         let stored = try await persistence.fetchAll()
+        // Then
+
         #expect(stored.count == 1, "update 不應因為 id 相同而新增重複資料")
         let storedWithPhotos = try await persistence.fetch(id: modified.id)
         // Codable round-trip 不含 LedgerOrderItem.id，比對前先移除
@@ -138,7 +189,10 @@ struct OrderPersistenceTests {
         )
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func updatePersistsReconciliationStatusRoundTrip() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
 
         let order = LedgerOrder(
@@ -170,9 +224,13 @@ struct OrderPersistenceTests {
             mergedSourceIDs: []
         )
 
+        // When
+
         try await persistence.update(order)
 
         let stored = try await persistence.fetchAll()
+        // Then
+
         #expect(stored.first?.reconciliationStatus == "待對帳", "對帳狀態應隨訂單一併 round-trip")
     }
 
@@ -180,12 +238,18 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立或資料讀取失敗時拋出錯誤
     @Test func fetchAllReturnsOrdersWithoutPhotoBytes() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let photo = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x01])
         let order = Self.makeStatusOrder(id: "BL-NO-PHOTO-BYTES", status: .confirmed)
+        // When
+
         try await persistence.create(Self.withPhotos(order, photos: [photo]))
 
         let stored = try await persistence.fetchAll()
+
+        // Then
 
         #expect(stored.count == 1)
         #expect(stored.first?.photos == [], "fetchAll() 不應帶入照片位元組")
@@ -195,31 +259,44 @@ struct OrderPersistenceTests {
         #expect(single?.photos == [photo], "fetch(id:) 應維持帶照片")
     }
 
-    /// 驗證 fetchAll 排除 photos
-    @Test func fetchAllDescriptorExcludesPhotosFromPropertiesToFetch() {
-        let descriptor = OrderPersistence.fetchAllDescriptor()
+    /// 驗證 fetchAll 回傳的訂單不含照片位元組
+    @Test func fetchAllExcludesPhotoBytes() async throws(any Error) {
+        // Given
 
-        #expect(!descriptor.propertiesToFetch.isEmpty, "應明確列出欲讀取欄位，而非留給預設的全欄位讀取")
-        #expect(
-            !descriptor.propertiesToFetch.contains(\OrderRecord.photos),
-            "propertiesToFetch 不得包含 photos，否則照片位元組會被讀入記憶體"
+        let persistence = try makePersistence()
+        let order = Self.withPhotos(
+            Self.makeStatusOrder(id: "BL-FETCH-ALL-PHOTOS", status: .confirmed),
+            photos: [Data([0x01, 0x02])]
         )
-        #expect(descriptor.propertiesToFetch.contains(\OrderRecord.id))
-        #expect(descriptor.propertiesToFetch.contains(\OrderRecord.status))
-        #expect(descriptor.propertiesToFetch.contains(\OrderRecord.date))
+        // When
+
+        try await persistence.create(order)
+
+        let stored = try await persistence.fetchAll()
+
+        // Then
+
+        #expect(stored.count == 1)
+        #expect(stored.first?.photos.isEmpty == true, "fetchAll() 不應帶入照片位元組")
     }
 
     /// 依訂單編號讀取照片，回傳該訂單持久化順序的照片陣列
     ///
     /// - Throws: 測試容器建立或資料讀取失敗時拋出錯誤
     @Test func fetchPhotosReturnsStoredBytesInOrder() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let photoA = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x01])
         let photoB = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x02])
         let order = Self.makeStatusOrder(id: "BL-FETCH-PHOTOS", status: .confirmed)
+        // When
+
         try await persistence.create(Self.withPhotos(order, photos: [photoA, photoB]))
 
         let photos = try await persistence.fetchPhotos(id: "BL-FETCH-PHOTOS")
+
+        // Then
 
         #expect(photos == [photoA, photoB], "應依持久化順序逐張取回，byte 級不變")
     }
@@ -228,9 +305,15 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立或資料讀取失敗時拋出錯誤
     @Test func fetchPhotosForUnknownIDReturnsEmpty() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
 
+        // When
+
         let photos = try await persistence.fetchPhotos(id: "BL-DOES-NOT-EXIST")
+
+        // Then
 
         #expect(photos == [])
     }
@@ -239,6 +322,8 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func insertingNewOrderPersistsItsPhotos() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let photoA = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x01])
         let photoB = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x02])
@@ -251,9 +336,13 @@ struct OrderPersistenceTests {
         )
 
         // 目標不存在時 update(_:) 也應插入並寫入照片。
+        // When
+
         try await persistence.update(order)
 
         let stored = try await persistence.fetch(id: "BL-INSERT-PHOTOS")
+        // Then
+
         #expect(stored?.photos == [photoA, photoB])
     }
 
@@ -261,6 +350,8 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func upsertWithoutPhotosLeavesStoredPhotosIntact() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let photoA = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x01])
         let photoB = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x02])
@@ -271,6 +362,8 @@ struct OrderPersistenceTests {
             ),
             photos: [photoA, photoB]
         )
+        // When
+
         try await persistence.create(order)
 
         // 一般更新帶入不同照片時，既有照片仍應保留。
@@ -285,6 +378,8 @@ struct OrderPersistenceTests {
         try await persistence.update(updated)
 
         let stored = try await persistence.fetch(id: "BL-KEEP-PHOTOS")
+        // Then
+
         #expect(stored?.status == .confirmed, "非照片欄位仍應正常更新")
         #expect(stored?.photos == [photoA, photoB], "既有照片必須維持不變，不受 order.photos 影響")
     }
@@ -293,6 +388,8 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func writeWithPhotosReplacesStoredSet() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let photoA = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x01])
         let order = Self.withPhotos(
@@ -302,6 +399,8 @@ struct OrderPersistenceTests {
             ),
             photos: [photoA]
         )
+        // When
+
         try await persistence.create(order)
 
         let photoB = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x02])
@@ -316,6 +415,8 @@ struct OrderPersistenceTests {
         try await persistence.updatePersistingPhotos(updated)
 
         let stored = try await persistence.fetch(id: "BL-WRITE-PHOTOS")
+        // Then
+
         #expect(stored?.photos == [photoB, photoC], "顯式帶照片的寫入應覆寫既有照片集合")
     }
 
@@ -323,6 +424,8 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func upsertPersistsMultiplePhotosRoundTrip() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
 
         /// 建立指定標記且符合 JPEG header 的測試照片
@@ -348,9 +451,13 @@ struct OrderPersistenceTests {
             photos: photos
         )
 
+        // When
+
         try await persistence.create(order)
 
         let stored = try await persistence.fetch(id: "BL-LARGE-PHOTOS")
+        // Then
+
         #expect(stored?.photos == photos, "三張較大照片應逐張 byte 級相等")
     }
 
@@ -358,6 +465,8 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func photosSurviveBatchStatusChange() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let photo = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x10])
         let target = Self.withPhotos(
@@ -371,6 +480,8 @@ struct OrderPersistenceTests {
             id: "BL-BATCH-OTHER",
             status: .quoting
         )
+        // When
+
         try await persistence.create(target)
         try await persistence.create(other)
 
@@ -386,6 +497,8 @@ struct OrderPersistenceTests {
         try await persistence.upsertAll([changedTarget, changedOther])
 
         let stored = try await persistence.fetch(id: "BL-BATCH-PHOTO")
+        // Then
+
         #expect(stored?.status == .confirmed, "狀態應正常更新")
         #expect(stored?.photos == [photo], "批次改狀態不應清空照片")
     }
@@ -394,6 +507,8 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func photosSurviveEveryCascadeRename() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let photo = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x20])
 
@@ -407,9 +522,13 @@ struct OrderPersistenceTests {
             photos: [photo]
         )
         order = Self.withReconciliationStatus(order, status: "待對帳")
+        // When
+
         try await persistence.create(order)
 
         try await persistence.renameOrderSource(from: "蝦皮", to: "蝦皮 (新)")
+        // Then
+
         #expect(
             try await persistence.fetch(id: "BL-RENAME-ALL")?.photos == [photo],
             "訂單來源更名後照片不應變動"
@@ -437,7 +556,10 @@ struct OrderPersistenceTests {
         #expect(stored?.campaignNames == ["春團 (補)"])
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func renameReconciliationStatusUpdatesMatchingOrders() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let order = LedgerOrder(
             id: "BL-TEST-VS-RENAME",
@@ -467,41 +589,64 @@ struct OrderPersistenceTests {
             photos: [],
             mergedSourceIDs: []
         )
+        // When
+
         try await persistence.update(order)
 
         try await persistence.renameReconciliationStatus(from: "待對帳", to: "對帳成功")
 
         let stored = try await persistence.fetchAll()
+        // Then
+
         #expect(stored.first?.reconciliationStatus == "對帳成功", "cascade 更名應更新引用該對帳狀態的訂單")
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func deleteRemovesOrderById() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let samples = LedgerOrder.sampleOrders
+        // When
+
         try await persistence.seedIfEmpty(with: samples)
 
         let removeID = samples[0].id
         try await persistence.delete(id: removeID)
 
         let stored = try await persistence.fetchAll()
+        // Then
+
         #expect(stored.count == samples.count - 1)
         #expect(!stored.contains(where: { $0.id == removeID }))
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func deleteUnknownIdIsNoOp() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
+        // When
+
         try await persistence.seedIfEmpty(with: LedgerOrder.sampleOrders)
 
         try await persistence.delete(id: "BL-DOES-NOT-EXIST")
 
         let stored = try await persistence.fetchAll()
+        // Then
+
         #expect(stored.count == LedgerOrder.sampleOrders.count)
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func mergeOrdersInsertsNewAndMarksSourcesMergedInOneOperation() async throws(any Error) {
+        // Given
+
         // 取兩筆同客戶同幣別的樣本作來源 (林書宇, KRW)
         let persistence = try makePersistence()
         let samples = LedgerOrder.sampleOrders
+        // When
+
         try await persistence.seedIfEmpty(with: samples)
 
         let primaryID = "BL-2604-018"
@@ -551,6 +696,8 @@ struct OrderPersistenceTests {
 
         // 新訂單存在且記錄兩筆來源 id
         let storedMerged = stored.first { $0.id == "BL-MERGED-001" }
+        // Then
+
         #expect(storedMerged != nil)
         #expect(storedMerged?.mergedSourceIDs == [primaryID, secondaryID])
         #expect(storedMerged?.categories == ["美妝", "服飾"])
@@ -566,10 +713,17 @@ struct OrderPersistenceTests {
         #expect(untouched.allSatisfy { $0.status != .merged })
     }
 
-    @Test func mergeOrdersFailsOnIdentifierCollisionAndLeavesEverythingUnchanged() async throws(any Error) {
+    /// 驗證訂單持久化在此情境下的資料結果
+    @Test
+    func mergeOrdersFailsOnIdentifierCollisionAndLeavesEverythingUnchanged()
+        async throws(any Error) {
+        // Given
+
         // 撞號時整批不寫入，來源訂單也不變。
         let persistence = try makePersistence()
         let samples = LedgerOrder.sampleOrders
+        // When
+
         try await persistence.seedIfEmpty(with: samples)
 
         let primaryID = "BL-2604-018"
@@ -614,11 +768,21 @@ struct OrderPersistenceTests {
             mergedSourceIDs: draft.mergeSourceIDs
         )
 
-        await #expect(throws: OrderPersistenceError.identifierCollision(id: collidingID)) {
+        do {
             try await persistence.mergeOrders(
                 newOrder: merged,
                 consumedIDs: [primaryID, secondaryID]
             )
+            // Then
+
+            Issue.record("預期為訂單編號衝突錯誤。")
+        } catch {
+            switch error {
+            case let .identifierCollision(id):
+                #expect(id == collidingID)
+            case .storage:
+                Issue.record("預期為訂單編號衝突錯誤，實際為持久化錯誤。")
+            }
         }
 
         let stored = try await persistence.fetchAll()
@@ -640,9 +804,14 @@ struct OrderPersistenceTests {
         )
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func renameCategoryRewritesElementsInsideArrays() async throws(any Error) {
+        // Given
+
         // 多類別訂單僅目標元素改名 (保序)；未含目標的訂單不受影響
         let persistence = try makePersistence()
+        // When
+
         try await persistence.update(
             Self.makeArrayOrder(
                 id: "BL-CAT-1",
@@ -659,13 +828,20 @@ struct OrderPersistenceTests {
         try await persistence.renameCategory(from: "美妝", to: "彩妝保養")
 
         let stored = try await persistence.fetchAll()
+        // Then
+
         #expect(stored.first { $0.id == "BL-CAT-1" }?.categories == ["彩妝保養", "服飾"])
         #expect(stored.first { $0.id == "BL-CAT-2" }?.categories == ["服飾"])
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func renameCampaignRewritesElementsInsideArrays() async throws(any Error) {
+        // Given
+
         // 多開團訂單僅目標元素改名 (保序)
         let persistence = try makePersistence()
+        // When
+
         try await persistence.update(
             Self.makeArrayOrder(
                 id: "BL-CAMP-1",
@@ -684,16 +860,23 @@ struct OrderPersistenceTests {
         try await persistence.renameCampaign(from: "三月日本團", to: "三月日本團 (補)")
 
         let stored = try await persistence.fetchAll()
+        // Then
+
         #expect(stored.first { $0.id == "BL-CAMP-1" }?.campaignNames == ["三月日本團 (補)", "四月韓國團"])
         #expect(stored.first { $0.id == "BL-CAMP-2" }?.campaignNames == [])
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func upsertAllInsertsAndUpdatesInOneBatch() async throws(any Error) {
+        // Given
+
         // 批次同時更新既有與新增訂單時，儲存應保持原子性
         let persistence = try makePersistence()
 
         let existing1 = Self.makeStatusOrder(id: "BL-B-1", status: .shipping)
         let existing2 = Self.makeStatusOrder(id: "BL-B-2", status: .shipping)
+        // When
+
         try await persistence.upsertAll([existing1, existing2])
 
         // 批次：更新兩筆既有狀態 + 插入一筆新訂單，單一操作落盤
@@ -703,33 +886,57 @@ struct OrderPersistenceTests {
         try await persistence.upsertAll([updated1, updated2, inserted])
 
         let stored = try await persistence.fetchAll()
+        // Then
+
         #expect(stored.count == 3)
         #expect(stored.first { $0.id == "BL-B-1" }?.status == .arrived)
         #expect(stored.first { $0.id == "BL-B-2" }?.status == .arrived)
         #expect(stored.first { $0.id == "BL-B-3" }?.status == .arrived)
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func upsertAllWithEmptyArrayIsNoOp() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
+        // When
+
         try await persistence.upsertAll([])
         let stored = try await persistence.fetchAll()
+        // Then
+
         #expect(stored.isEmpty)
     }
 
     /// 建立訂單儲存失敗時不應留下尚未落盤的資料列
     ///
     /// - Throws: 測試容器建立、寫入或讀取失敗時拋出錯誤
-    @Test func create_saveFailure_removesInsertedOrder() async throws(any Error) {
+    @Test func createSaveFailureRemovesInsertedOrder() async throws(any Error) {
         // Given：儲存權限已撤回，且待建立的訂單尚不存在
         let persistence = try Self.makeUnsavablePersistence()
         let order = Self.makeStatusOrder(id: "BL-ROLLBACK-CREATE", status: .quoting)
 
-        // When：建立訂單並預期儲存失敗
-        await #expect(throws: OrderPersistenceError.self) {
+        // When
+        do {
             try await persistence.create(order)
+            // Then
+
+            Issue.record("預期 create 會拋出 storage(.saveFailed)。")
+        } catch {
+            switch error {
+            case let .storage(storageError):
+                switch storageError {
+                case .saveFailed:
+                    break
+                case .fetchFailed, .containerCreationFailed:
+                    Issue.record("預期 storage 內為 saveFailed。")
+                }
+            case .identifierCollision:
+                Issue.record("預期為 storage(.saveFailed)，實際為 identifierCollision。")
+            }
         }
 
-        // Then：save 失敗後只保留儲存前已存在的資料列
+        // Then
         let stored = try await persistence.fetchAll()
         #expect(
             stored.map(\.id) == ["BL-ROLLBACK-SEED"],
@@ -740,17 +947,17 @@ struct OrderPersistenceTests {
     /// 更新不存在的訂單儲存失敗時不應留下待寫入資料列
     ///
     /// - Throws: 測試容器建立、寫入或讀取失敗時拋出錯誤
-    @Test func update_saveFailure_removesInsertedOrder() async throws(any Error) {
+    @Test func updateSaveFailureRemovesInsertedOrder() async throws(any Error) {
         // Given：儲存權限已撤回，且待更新的訂單尚不存在
         let persistence = try Self.makeUnsavablePersistence()
         let order = Self.makeStatusOrder(id: "BL-ROLLBACK-UPDATE", status: .quoting)
 
-        // When：更新訂單並預期儲存失敗
+        // When
         await #expect(throws: PersistenceError.self) {
             try await persistence.update(order)
         }
 
-        // Then：save 失敗後只保留儲存前已存在的資料列
+        // Then
         let stored = try await persistence.fetchAll()
         #expect(
             stored.map(\.id) == ["BL-ROLLBACK-SEED"],
@@ -761,17 +968,17 @@ struct OrderPersistenceTests {
     /// 批次 upsert 儲存失敗時不應留下尚未落盤的資料列
     ///
     /// - Throws: 測試容器建立、寫入或讀取失敗時拋出錯誤
-    @Test func upsertAll_saveFailure_removesInsertedOrder() async throws(any Error) {
+    @Test func upsertAllSaveFailureRemovesInsertedOrder() async throws(any Error) {
         // Given：儲存權限已撤回，且待 upsert 的訂單尚不存在
         let persistence = try Self.makeUnsavablePersistence()
         let order = Self.makeStatusOrder(id: "BL-ROLLBACK-UPSERT", status: .quoting)
 
-        // When：批次 upsert 訂單並預期儲存失敗
+        // When
         await #expect(throws: PersistenceError.self) {
             try await persistence.upsertAll([order])
         }
 
-        // Then：save 失敗後只保留儲存前已存在的資料列
+        // Then
         let stored = try await persistence.fetchAll()
         #expect(
             stored.map(\.id) == ["BL-ROLLBACK-SEED"],
@@ -782,17 +989,17 @@ struct OrderPersistenceTests {
     /// 合併訂單儲存失敗時不應留下尚未落盤的合併結果
     ///
     /// - Throws: 測試容器建立、寫入或讀取失敗時拋出錯誤
-    @Test func mergeOrders_saveFailure_removesInsertedOrder() async throws(any Error) {
+    @Test func mergeOrdersSaveFailureRemovesInsertedOrder() async throws(any Error) {
         // Given：儲存權限已撤回，且待合併的新訂單尚不存在
         let persistence = try Self.makeUnsavablePersistence()
         let merged = Self.makeStatusOrder(id: "BL-ROLLBACK-MERGE", status: .quoting)
 
-        // When：合併訂單並預期儲存失敗
+        // When
         await #expect(throws: OrderPersistenceError.self) {
             try await persistence.mergeOrders(newOrder: merged, consumedIDs: [])
         }
 
-        // Then：save 失敗後只保留儲存前已存在的資料列
+        // Then
         let stored = try await persistence.fetchAll()
         #expect(
             stored.map(\.id) == ["BL-ROLLBACK-SEED"],
@@ -804,22 +1011,24 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立、來源讀取或結果讀取失敗時拋出錯誤
     @Test
-    func mergeOrders_sourceFetchFailure_removesInsertedOrder() async throws(any Error) {
+    func mergeOrdersSourceFetchFailureRemovesInsertedOrder() async throws(any Error) {
         // Given：來源訂單查詢會失敗，且待合併的新訂單尚不存在
         let persistence = OrderPersistence(
             modelContainer: PersistenceContainer.makeInMemory(for: .testing),
             consumedOrderFetcher: { _ in
-                throw PersistenceError.fetchFailed(message: "來源查詢失敗")
+                throw PersistenceError.fetchFailed(
+                    underlying: TestDependencies.makeUnderlyingError(message: "來源查詢失敗")
+                )
             }
         )
         let merged = Self.makeStatusOrder(id: "BL-ROLLBACK-SOURCE", status: .quoting)
 
-        // When：來源訂單讀取失敗
+        // When
         await #expect(throws: OrderPersistenceError.self) {
             try await persistence.mergeOrders(newOrder: merged, consumedIDs: ["BL-SOURCE-1"])
         }
 
-        // Then：來源讀取失敗後不應留下待寫入的合併結果
+        // Then
         let stored = try await persistence.fetchAll()
         #expect(stored.isEmpty, "來源讀取失敗後不應留下尚未落盤的合併結果")
     }
@@ -828,7 +1037,7 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test
-    func updatePersistingPhotos_saveFailure_removesInsertedOrder() async throws(any Error) {
+    func updatePersistingPhotosSaveFailureRemovesInsertedOrder() async throws(any Error) {
         // Given：儲存權限已撤回，且待寫入訂單含照片
         let persistence = try Self.makeUnsavablePersistence()
         let order = Self.withPhotos(
@@ -836,12 +1045,12 @@ struct OrderPersistenceTests {
             photos: [Data([0x01, 0x02])]
         )
 
-        // When：儲存含照片的訂單
+        // When
         await #expect(throws: PersistenceError.self) {
             try await persistence.updatePersistingPhotos(order)
         }
 
-        // Then：save 失敗後只保留儲存前已存在的資料
+        // Then
         let stored = try await persistence.fetchAll()
         #expect(
             stored.map(\.id) == ["BL-ROLLBACK-SEED"],
@@ -853,7 +1062,7 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test
-    func seedIfEmpty_saveFailure_removesInsertedOrders() async throws(any Error) {
+    func seedIfEmptySaveFailureRemovesInsertedOrders() async throws(any Error) {
         // Given：空的儲存且儲存權限已撤回
         let persistence = try Self.makeUnsavablePersistence(shouldSeedExistingOrder: false)
         let samples = [
@@ -861,33 +1070,46 @@ struct OrderPersistenceTests {
             Self.makeStatusOrder(id: "BL-ROLLBACK-SEED-2", status: .shipping),
         ]
 
-        // When：以兩筆樣本執行初次 seed
+        // When
         await #expect(throws: PersistenceError.self) {
             try await persistence.seedIfEmpty(with: samples)
         }
 
-        // Then：save 失敗後不應留下任何 pending 新訂單
+        // Then
         let stored = try await persistence.fetchAll()
         #expect(stored.isEmpty, "seed save 失敗後不應留下任何 pending 新訂單")
     }
 
+    /// 驗證訂單持久化在此情境下的資料結果
     @Test func persistenceInstanceProviderReusesTheSameInstance() async throws(any Error) {
+        // Given
+
         // 重複取用應回傳同一個實例，序列化同一實體的寫入。
         let container = PersistenceContainer.makeInMemory(for: .testing)
         let provider = OrderRepository.PersistenceInstanceProvider(container: container)
 
+        // When
+
         let first = await provider.instance
         let second = await provider.instance
+
+        // Then
 
         #expect(first === second)
     }
 
-    @Test func concurrentCreateAttemptsAllHonorCreateIntentCollisionSemantics() async throws(any Error) {
+    /// 驗證訂單持久化在此情境下的資料結果
+    @Test
+    func concurrentCreateAttemptsAllHonorCreateIntentCollisionSemantics() async throws(any Error) {
+        // Given
+
         // 驗證併發建立同編號訂單時會拒絕撞號
         // 併發呼叫用來重複驗證同編號建立會遵守撞號規則
         let container = PersistenceContainer.makeInMemory(for: .testing)
         let repository = OrderRepository.live(container: container)
         let order = Self.makeStatusOrder(id: "BL-CONCURRENT-1", status: .quoting)
+
+        // When
 
         let results = await withTaskGroup(of: CreateResult.self) { group in
             for _ in 0..<20 {
@@ -900,6 +1122,8 @@ struct OrderPersistenceTests {
             return collected
         }
 
+        // Then
+
         #expect(results.filter { $0 == .created }.count == 1, "應恰好一筆並發建立成功")
         #expect(results.filter { $0 == .collided }.count == 19, "其餘應落在建立意圖的撞號路徑而非靜默插入")
 
@@ -907,29 +1131,35 @@ struct OrderPersistenceTests {
         #expect(stored.filter { $0.id == order.id }.count == 1, "並發寫入後應只留下一列，不產生同編號重複資料")
     }
 
-    /// 只命中集合內訂單編號的 predicate
+    /// 批次更新只影響指定訂單編號
     ///
-    /// - Throws: predicate 建立或測試資料建立失敗時拋出錯誤
-    @Test func idMembershipPredicateMatchesOnlyGivenIDs() throws(any Error) {
-        let target = OrderRecord(
-            order: Self.makeStatusOrder(id: "BL-PRED-TARGET", status: .quoting))
-        let other = OrderRecord(
-            order: Self.makeStatusOrder(
-                id: "BL-PRED-OTHER",
-                status: .quoting
-            )
-        )
+    /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
+    @Test func upsertAllUpdatesOnlyGivenIDs() async throws(any Error) {
+        // Given
 
-        let predicate = OrderPersistence.idMembershipPredicate(["BL-PRED-TARGET"])
+        let persistence = try makePersistence()
+        let target = Self.makeStatusOrder(id: "BL-PRED-TARGET", status: .quoting)
+        let other = Self.makeStatusOrder(id: "BL-PRED-OTHER", status: .quoting)
+        // When
 
-        #expect(try predicate.evaluate(target) == true, "predicate 應命中集合內的訂單編號")
-        #expect(try predicate.evaluate(other) == false, "predicate 不應命中集合外的訂單編號")
+        try await persistence.create(target)
+        try await persistence.create(other)
+
+        let changed = Self.makeStatusOrder(id: target.id, status: .confirmed)
+        try await persistence.upsertAll([changed])
+
+        // Then
+
+        #expect(try await persistence.fetch(id: target.id)?.status == .confirmed)
+        #expect(try await persistence.fetch(id: other.id)?.status == .quoting)
     }
 
     /// 批次更新只影響指定訂單
     ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func upsertAllLeavesUnrelatedOrdersUntouched() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let photo = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x30])
 
@@ -944,6 +1174,8 @@ struct OrderPersistenceTests {
             )
             seeded.append(order)
         }
+        // When
+
         try await persistence.upsertAll(seeded)
 
         let targetIDs = ["BL-BULK-010", "BL-BULK-250", "BL-BULK-499"]
@@ -959,6 +1191,8 @@ struct OrderPersistenceTests {
         try await persistence.upsertAll(changed)
 
         let all = try await persistence.fetchAll()
+        // Then
+
         #expect(all.count == 500)
 
         for id in targetIDs {
@@ -978,6 +1212,8 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func mergeOrdersLeavesUnrelatedOrdersUntouched() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
         let photo = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x31])
 
@@ -992,6 +1228,8 @@ struct OrderPersistenceTests {
             )
             seeded.append(order)
         }
+        // When
+
         try await persistence.upsertAll(seeded)
 
         let primaryID = "BL-MERGEBULK-005"
@@ -1004,6 +1242,8 @@ struct OrderPersistenceTests {
             photos: [photo]
         )
         try await persistence.mergeOrders(newOrder: merged, consumedIDs: [primaryID, secondaryID])
+
+        // Then
 
         #expect(try await persistence.fetch(id: primaryID)?.status == .merged)
         #expect(try await persistence.fetch(id: secondaryID)?.status == .merged)
@@ -1021,6 +1261,8 @@ struct OrderPersistenceTests {
     ///
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func upsertAllHandlesLargeIDBatch() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
 
         var seeded: [LedgerOrder] = []
@@ -1032,6 +1274,8 @@ struct OrderPersistenceTests {
                 )
             )
         }
+        // When
+
         try await persistence.upsertAll(seeded)
 
         let changed = (0..<300).map { index in
@@ -1043,6 +1287,8 @@ struct OrderPersistenceTests {
         try await persistence.upsertAll(changed)
 
         let all = try await persistence.fetchAll()
+        // Then
+
         #expect(all.count == 300)
         #expect(all.allSatisfy { $0.status == .confirmed }, "300 筆訂單編號的批次應全數正確更新")
     }

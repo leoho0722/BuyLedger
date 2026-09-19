@@ -28,7 +28,7 @@ apps/ios/
 │   │   ├── Domain/               # LedgerOrder、FxRateSnapshot、FxRates、CurrencyCode 等 model
 │   │   ├── Persistence/          # OrderPersistence (@ModelActor)、PersistenceContainer、OrderRecord
 │   │   ├── Dependencies/         # Repository 與 system-call client (type-based @Dependency 注入；不綁定數量)，含 BiometricAuthClient (帳本保護的系統本機驗證)
-│   │   ├── Networking/           # APIError、HTTPClient (send/stream)、HTTPMethod、URLRequestBuilder、AppConfiguration、ExchangeRateClient、ExchangeRateDTO
+│   │   ├── Networking/           # APIError、HTTPClient (send/stream)、HTTPMethod、URLRequestBuilder、AppConfiguration、ExchangeRateClient、ExchangeRateLatestResponse、ExchangeRateCodesResponse
 │   │   └── Diagnostics/          # 啟動診斷送往當機診斷服務的可替換介面 (CrashDiagnosticsClient)
 │   ├── Features/                 # 依功能切分的 TCA feature
 │   │   ├── AISummary/            # 訂單 AI 商品明細總結 (Ollama Cloud 串流)

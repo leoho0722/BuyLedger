@@ -1638,3 +1638,160 @@ code:
 tests:
   - shared/data-model/generator/test/datamodel-gen.test.ts
 -->
+
+---
+### Requirement: Networking errors carry the source failure without exposing it to the user
+
+The networking error type SHALL NOT conform to Equatable. Categories that wrap a framework failure, namely transport failure and decoding failure, SHALL carry that failure under an underlying label whose type is constrained to Error and Sendable, instead of a reconstructed message string. A framework error SHALL be bridged to NSError when it is wrapped, so that its domain, code, and user info survive the boundary. Every failure this layer wraps originates in a framework, so this layer has no unbridged case. Categories that carry only classification data, namely status code, service-reported code, quota exhaustion, and invalid credential, SHALL keep their existing payloads. The underlying error SHALL be available for logging and diagnostics only; any text shown to the user SHALL be produced by the feature layer and SHALL remain subject to the existing rule that error text never carries a request URL, a header value, or a configuration value.
+
+#### Scenario: A transport failure keeps the framework error
+
+- **WHEN** a request fails before a response arrives
+- **THEN** the thrown transport failure carries the bridged error the URL loading system reported
+
+##### Example: Request times out
+
+- **GIVEN** the URL loading system reports a timeout in the `NSURLErrorDomain` domain
+- **WHEN** the networking layer maps the failure
+- **THEN** the thrown transport failure carries an underlying error whose domain is `NSURLErrorDomain` and whose code is the reported timeout code
+
+#### Scenario: A decoding failure keeps the decoding error
+
+- **WHEN** a success status returns a payload that does not match the expected shape
+- **THEN** the thrown decoding failure carries the bridged decoding error raised while decoding
+
+##### Example: Missing required field
+
+- **GIVEN** decoding a rates payload fails because a required key is absent
+- **WHEN** the networking layer maps the failure
+- **THEN** the thrown decoding failure carries an underlying error whose localized description is the one the decoder produced
+
+#### Scenario: User-facing text is unaffected by the wrapped error
+
+- **WHEN** a feature presents a networking failure to the user
+- **THEN** the presented text comes from the feature's own message mapping
+- **AND** the text contains no part of the request address, no header value, and no configuration value
+
+#### Scenario: Callers distinguish categories by pattern matching
+
+- **WHEN** a caller or a test needs to tell one failure category from another
+- **THEN** it matches the case rather than comparing two whole error values
+
+<!-- @trace
+source: core-codegen-style-compliance
+updated: 2026-09-19
+code:
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistence.swift
+  - apps/ios/BuyLedgerTests/PersistenceFailureFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceRepository.swift
+  - apps/ios/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/Campaign.generated.swift
+  - apps/ios/BuyLedger/Core/Persistence/NameLookupRecordProtocol.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - shared/data-model/fixtures/expected/swift/SampleSequence.generated.swift
+  - apps/ios/BuyLedger/Core/Networking/AppConfiguration.swift
+  - apps/ios/BuyLedger/Core/Diagnostics/CrashDiagnosticsClient.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodPersistenceTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryRepository.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/OrderStatus.generated.swift
+  - apps/ios/BuyLedgerTests/TestDependencies.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateClient.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryTests.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataCacheTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantine.swift
+  - apps/ios/BuyLedgerTests/RecordDecodingTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/NameLookupOperations.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
+  - apps/ios/BuyLedger/Core/Domain/OrderStatus.swift
+  - apps/ios/BuyLedger/Core/Networking/URLRequestBuilder.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/CurrencyCode.generated.swift
+  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthClient.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateCodesResponse.swift
+  - apps/ios/BuyLedger/Core/Persistence/RecordDecodingError.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/TelemetryClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/NameLookupRecord.swift
+  - shared/data-model/fixtures/expected/swift/SampleOrder.generated.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateLatestResponse.swift
+  - apps/ios/BuyLedger/Core/Domain/FxRateSnapshot.swift
+  - apps/ios/BuyLedger/Core/Domain/OrderMerge.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoImportResult.swift
+  - apps/ios/BuyLedger/Features/AISummary/OllamaClient.swift
+  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedgerTests/APIErrorMappingTests.swift
+  - apps/ios/BuyLedger/Core/Domain/CampaignStatus.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignPersistence.swift
+  - shared/data-model/fixtures/expected/swift/SampleReceipt.generated.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignRecord.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/CategoryRecord.swift
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedger/Core/Domain/Generated/CampaignStatus.generated.swift
+  - apps/ios/BuyLedger/Core/Domain/LedgerOrder.swift
+  - apps/ios/BuyLedger/Core/Persistence/NameLookupPersistence.swift
+  - apps/ios/BuyLedger/Core/Domain/PaymentReceiptStatus.swift
+  - apps/ios/BuyLedger/Core/Diagnostics/AppLogger.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
+  - apps/ios/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPMethod.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - shared/data-model/generator/src/datamodel-gen.ts
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateDTO.swift
+  - apps/ios/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataRecord.swift
+  - apps/ios/BuyLedgerTests/ExchangeRateClientTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OpenSettingsClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignRepository.swift
+  - apps/ios/BuyLedgerTests/FxRatesTests.swift
+  - apps/ios/BuyLedgerTests/HTTPClientTests.swift
+  - apps/ios/BuyLedgerTests/NameLookupPersistenceTests.swift
+  - apps/ios/BuyLedger/Core/Domain/LedgerOrderItem.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
+  - apps/ios/BuyLedger/Core/Domain/PaymentMethodInfo.swift
+  - apps/ios/BuyLedger/Core/Domain/PaymentMethodFlags.swift
+  - apps/ios/BuyLedger/Core/Domain/CurrencyCode.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Domain/FxRates.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/ios/BuyLedger/Core/Persistence/ReconciliationStatusRecord.swift
+  - apps/ios/BuyLedger/Core/Domain/CustomerTier.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataRepository.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/LedgerOrderItem.generated.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderSourceRecord.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Domain/OrderSummary.swift
+  - shared/data-model/fixtures/expected/swift/SampleStatus.generated.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/APIError.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/PaymentReceiptStatus.generated.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceError.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantineClient.swift
+  - apps/ios/BuyLedgerTests/PersistenceErrorTests.swift
+  - shared/data-model/fixtures/expected/swift/SampleTag.generated.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderDraft.swift
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistence.swift
+-->

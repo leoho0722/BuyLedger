@@ -24,7 +24,7 @@ struct SampleReceipt: Equatable, Identifiable, Sendable {
 
     // MARK: - Init
 
-    /// 建立 SampleReceipt
+    /// 以必填欄位建立值，宣告了預設值的欄位可以省略
     init(
         id: String,
         memo: String = "",

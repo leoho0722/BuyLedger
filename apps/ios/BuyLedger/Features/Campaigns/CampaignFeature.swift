@@ -1158,8 +1158,15 @@ private extension CampaignFeature {
                 )
             )
             return identifier
-        } catch CalendarReminderError.noWritableCalendar {
-            await send(.reminderCalendarUnavailable)
+        } catch let error as CalendarReminderError {
+            switch error {
+            case .eventIdentifierMissing:
+                await send(.reminderCreationFailed)
+            case .noWritableCalendar:
+                await send(.reminderCalendarUnavailable)
+            case .system:
+                await send(.reminderCreationFailed)
+            }
             return nil
         } catch {
             await send(.reminderCreationFailed)

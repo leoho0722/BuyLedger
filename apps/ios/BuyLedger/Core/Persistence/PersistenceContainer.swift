@@ -2,17 +2,17 @@
 //  PersistenceContainer.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/2.
+//  Created by Leo Ho on 2026/05/02.
 //
 
 import Foundation
 import OSLog
 import SwiftData
 
-/// 建立 BuyLedger 用的 ``ModelContainer`` 的工廠
+/// 建立 BuyLedger 持久化容器的工廠
 enum PersistenceContainer {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 整個 process 只解析一次的啟動結果
     nonisolated static let bootstrap = makeBootstrap()
@@ -38,11 +38,11 @@ extension PersistenceContainer {
     /// App 持久層啟動狀態
     enum Status: Equatable, Sendable {
 
-        /// on-disk store 正常開啟
+        /// 本機資料庫正常開啟
         case healthy
 
-        /// on-disk store 無法開啟
-        /// - Parameter reason: store 無法開啟的原因，供 Crashlytics 記錄
+        /// 本機資料庫無法開啟
+        /// - Parameter reason: 資料庫無法開啟的原因，供 Crashlytics 記錄
         case degraded(reason: String)
     }
 
@@ -100,10 +100,11 @@ extension PersistenceContainer {
     /// - Parameter context: 使用情境
     nonisolated static func makeInMemory(for context: InMemoryContext) -> ModelContainer {
         do {
-            return try make(inMemoryOnly: true, storeURL: nil)
+            return try make(isInMemoryOnly: true, storeURL: nil)
         } catch {
             fatalError(
-                "Unable to create the \(context.label) in-memory container: \(error.localizedDescription)"
+                "Unable to create the \(context.label) in-memory container: "
+                    + error.localizedDescription
             )
         }
     }
@@ -119,8 +120,10 @@ extension PersistenceContainer {
     /// - Parameter storeURL: UI 測試用的 persistent store 路徑
     /// - Returns: 指定路徑的本機 ModelContainer
     /// - Throws: store 無法建立時拋出 PersistenceError
-    nonisolated static func makePersistentForTesting(storeURL: URL) throws(PersistenceError) -> ModelContainer {
-        try make(inMemoryOnly: false, storeURL: storeURL)
+    nonisolated static func makePersistentForTesting(
+        storeURL: URL
+    ) throws(PersistenceError) -> ModelContainer {
+        try make(isInMemoryOnly: false, storeURL: storeURL)
     }
 #endif
 }
@@ -135,7 +138,7 @@ private extension PersistenceContainer {
     static func makeBootstrap(storeURL: URL? = nil) -> Bootstrap {
         do {
             return Bootstrap(
-                container: try make(inMemoryOnly: false, storeURL: storeURL),
+                container: try make(isInMemoryOnly: false, storeURL: storeURL),
                 status: .healthy
             )
         } catch {
@@ -146,7 +149,7 @@ private extension PersistenceContainer {
 
             do {
                 return Bootstrap(
-                    container: try make(inMemoryOnly: true, storeURL: nil),
+                    container: try make(isInMemoryOnly: true, storeURL: nil),
                     status: .degraded(reason: reason)
                 )
             } catch {
@@ -155,7 +158,8 @@ private extension PersistenceContainer {
                     "SwiftData in-memory fallback could not open: \(message, privacy: .public)"
                 )
                 fatalError(
-                    "SwiftData schema definition is invalid and cannot create an in-memory container."
+                    "SwiftData schema definition is invalid and cannot create "
+                        + "an in-memory container."
                 )
             }
         }
@@ -163,12 +167,12 @@ private extension PersistenceContainer {
 
     /// 建立 ModelContainer，可選擇磁碟或記憶體儲存
     /// - Parameters:
-    ///   - inMemoryOnly: 是否建立僅存於記憶體的 store
+    ///   - isInMemoryOnly: 是否只建立記憶體中的資料庫
     ///   - storeURL: 資料庫路徑；nil 使用系統預設位置
     /// - Returns: 對應的 ``ModelContainer`` 實例
     /// - Throws: ModelContainer 建立失敗時拋出 ``PersistenceError``
     static func make(
-        inMemoryOnly: Bool,
+        isInMemoryOnly: Bool,
         storeURL: URL?
     ) throws(PersistenceError) -> ModelContainer {
         let schema = Schema(versionedSchema: BuyLedgerSchemaV17.self)
@@ -176,7 +180,7 @@ private extension PersistenceContainer {
         let configuration: ModelConfiguration
         if let persistentStoreURL = try resolvePersistentStoreURL(
             requestedURL: storeURL,
-            inMemoryOnly: inMemoryOnly
+            isInMemoryOnly: isInMemoryOnly
         ) {
             configuration = ModelConfiguration(
                 "BuyLedger",
@@ -189,7 +193,7 @@ private extension PersistenceContainer {
             configuration = ModelConfiguration(
                 "BuyLedger",
                 schema: schema,
-                isStoredInMemoryOnly: inMemoryOnly,
+                isStoredInMemoryOnly: isInMemoryOnly,
                 allowsSave: true,
                 groupContainer: .none,
                 cloudKitDatabase: CloudKitOption.disabled.modelConfigurationValue
@@ -210,14 +214,14 @@ private extension PersistenceContainer {
     /// 解析磁碟型 store 路徑並建立其父目錄
     /// - Parameters:
     ///   - requestedURL: 呼叫端指定的 store 路徑；`nil` 時使用 Application Support
-    ///   - inMemoryOnly: 是否只建立記憶體型 store
+    ///   - isInMemoryOnly: 是否只建立記憶體中的資料庫
     /// - Returns: 磁碟型 store 路徑；記憶體型 store 回傳 `nil`
     /// - Throws: Application Support 或 store 父目錄建立失敗時拋出 ``PersistenceError``
     static func resolvePersistentStoreURL(
         requestedURL: URL?,
-        inMemoryOnly: Bool
+        isInMemoryOnly: Bool
     ) throws(PersistenceError) -> URL? {
-        guard !inMemoryOnly || requestedURL != nil else {
+        guard !isInMemoryOnly || requestedURL != nil else {
             return nil
         }
 
@@ -234,7 +238,7 @@ private extension PersistenceContainer {
                 )
                 storeURL = applicationSupport.appendingPathComponent("BuyLedger.store")
             } catch {
-                throw .containerCreationFailed(message: error.localizedDescription)
+                throw .containerCreationFailed(underlying: error as NSError)
             }
         }
 
@@ -244,7 +248,7 @@ private extension PersistenceContainer {
                 withIntermediateDirectories: true
             )
         } catch {
-            throw .containerCreationFailed(message: error.localizedDescription)
+            throw .containerCreationFailed(underlying: error as NSError)
         }
 
         return storeURL

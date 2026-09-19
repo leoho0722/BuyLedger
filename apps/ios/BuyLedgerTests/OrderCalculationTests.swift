@@ -2,7 +2,7 @@
 //  OrderCalculationTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/5/1.
+//  Created by Leo Ho on 2026/05/01.
 //
 
 import Foundation
@@ -15,7 +15,10 @@ struct OrderCalculationTests {
 
     // MARK: - Tests
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func summaryIncludesFeesCostProfitAndMargin() {
+        // Given
+
         let order = LedgerOrder(
             id: "BL-2604-018",
             customer: LedgerCustomer(name: "林書宇", initials: "SY", tier: .vip),
@@ -48,9 +51,13 @@ struct OrderCalculationTests {
             mergedSourceIDs: []
         )
 
+        // 客人支付運費，totalCost 只含商品成本與手續費
+        // When
+
         let summary = OrderSummary(order: order)
 
-        // 客人支付運費，totalCost 只含商品成本與手續費
+        // Then
+
         #expect(summary.revenue == 11_800)
         #expect(summary.cardFee == 177)
         #expect(summary.platformFee == 0)
@@ -61,7 +68,10 @@ struct OrderCalculationTests {
         #expect(summary.margin == Decimal(2_731) / Decimal(11_800))
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func platformFeeRoundsUpToInteger() {
+        // Given
+
         let order = LedgerOrder(
             id: "BL-2605-001",
             customer: LedgerCustomer(name: "測試客戶", initials: "TT", tier: .regular),
@@ -93,9 +103,13 @@ struct OrderCalculationTests {
             mergedSourceIDs: []
         )
 
+        // 1_001 * 0.03 = 30.03，無條件進位 → 31
+        // When
+
         let summary = OrderSummary(order: order)
 
-        // 1_001 * 0.03 = 30.03，無條件進位 → 31
+        // Then
+
         #expect(summary.platformFee == 31)
         #expect(summary.cardFee == 0)
         #expect(summary.paymentFee == 0)
@@ -104,7 +118,10 @@ struct OrderCalculationTests {
         #expect(summary.profit == 170)
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func feesSplitIntoCardPlatformAndPayment() {
+        // Given
+
         // 三種手續費同時存在時，summary 應分別暴露各分項，且加總等於 fees
         let order = LedgerOrder(
             id: "BL-FEE-001",
@@ -137,10 +154,14 @@ struct OrderCalculationTests {
             mergedSourceIDs: []
         )
 
-        let summary = OrderSummary(order: order)
-
         // cardFee = 10_000 * 0.015 = 150；platformFee = 10_000 * 0.02 = 200。
         // paymentFee = 10_000 * 0.005 = 50；fees = 400
+        // When
+
+        let summary = OrderSummary(order: order)
+
+        // Then
+
         #expect(summary.cardFee == 150)
         #expect(summary.platformFee == 200)
         #expect(summary.paymentFee == 50)
@@ -148,7 +169,10 @@ struct OrderCalculationTests {
         #expect(summary.cardFee + summary.platformFee + summary.paymentFee == summary.fees)
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func cardlessSupplementAndDeductionAdjustRevenueAndProfit() {
+        // Given
+
         // 補款 500、折抵 200 後 revenue 應為 10,300，手續費仍按 chargedAmount 計算
         let order = LedgerOrder(
             id: "BL-CARDLESS-001",
@@ -181,7 +205,11 @@ struct OrderCalculationTests {
             mergedSourceIDs: []
         )
 
+        // When
+
         let summary = OrderSummary(order: order)
+
+        // Then
 
         #expect(summary.revenue == 10_300)
         #expect(summary.fees == 0)
@@ -190,7 +218,10 @@ struct OrderCalculationTests {
         #expect(summary.margin == Decimal(4_300) / Decimal(10_300))
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func cardlessAmountsDoNotAffectFeesBaseline() {
+        // Given
+
         // 折抵與補款不應影響手續費的基準 (仍以 chargedAmount 計算)
         let order = LedgerOrder(
             id: "BL-CARDLESS-002",
@@ -223,9 +254,13 @@ struct OrderCalculationTests {
             mergedSourceIDs: []
         )
 
+        // fees = 10_000 * 0.015 = 150 (基於 chargedAmount，不是 revenue)
+        // When
+
         let summary = OrderSummary(order: order)
 
-        // fees = 10_000 * 0.015 = 150 (基於 chargedAmount，不是 revenue)
+        // Then
+
         #expect(summary.fees == 150)
         // revenue 8,000、totalCost 150、profit 7,850
         #expect(summary.revenue == 8_000)
@@ -233,7 +268,10 @@ struct OrderCalculationTests {
         #expect(summary.profit == 7_850)
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func quotingOrderWithoutChargeKeepsZeroMargin() {
+        // Given
+
         let order = LedgerOrder(
             id: "BL-2604-015",
             customer: LedgerCustomer(
@@ -273,10 +311,14 @@ struct OrderCalculationTests {
             mergedSourceIDs: []
         )
 
-        let summary = OrderSummary(order: order)
-
         // 國際運費 850 由客人支付，不計入 totalCost；chargedAmount = 0 故 fees = 0
         // totalCost = itemCost 13_728；profit = 0 - 13_728 = -13_728
+        // When
+
+        let summary = OrderSummary(order: order)
+
+        // Then
+
         #expect(summary.revenue == 0)
         #expect(summary.fees == 0)
         #expect(summary.totalCost == 13_728)
@@ -284,7 +326,10 @@ struct OrderCalculationTests {
         #expect(summary.margin == 0)
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func shippingIsExcludedFromTotalCost() {
+        // Given
+
         // 國內、國際與來源國當地國內運費皆由客人支付，不計入我方成本。
         // totalCost 僅含 itemCost + fees
         let order = LedgerOrder(
@@ -318,15 +363,22 @@ struct OrderCalculationTests {
             mergedSourceIDs: []
         )
 
+        // 運費不計成本，totalCost 3,000、profit 2,000
+        // When
+
         let summary = OrderSummary(order: order)
 
-        // 運費不計成本，totalCost 3,000、profit 2,000
+        // Then
+
         #expect(summary.fees == 0)
         #expect(summary.totalCost == 3_000)
         #expect(summary.profit == 2_000)
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func cashOnDeliveryIncludesShippingInTotalCost() {
+        // Given
+
         // 貨到付款會把三種運費計入 totalCost
         let order = LedgerOrder(
             id: "BL-COD-001",
@@ -359,9 +411,13 @@ struct OrderCalculationTests {
             mergedSourceIDs: []
         )
 
+        // 貨到付款的運費 800 計入成本，profit 為 1,200
+        // When
+
         let summary = OrderSummary(order: order)
 
-        // 貨到付款的運費 800 計入成本，profit 為 1,200
+        // Then
+
         #expect(summary.fees == 0)
         #expect(summary.codShippingCost == 800)
         #expect(summary.totalCost == 3_800)
@@ -369,7 +425,10 @@ struct OrderCalculationTests {
         #expect(summary.margin == Decimal(1_200) / Decimal(5_000))
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func paymentFlagNormalizationIncludesAllThreeShippingCostsForCashOnDelivery() {
+        // Given
+
         // 三種運費都使用非零值，確認成本完整計入。
         let order = makePaymentFlagOrder(
             domesticShipping: 125,
@@ -378,24 +437,30 @@ struct OrderCalculationTests {
             isCashOnDelivery: false
         )
 
+        // When
+
         let corrected = order.applyingPaymentMethodFlags(
-            flags: PaymentMethodFlags(
+            PaymentMethodFlags(
                 isCardless: false,
                 isBankTransfer: false,
                 isCashOnDelivery: true
             )
         )
-
         let before = order.summary
         let after = corrected.summary
         let shippingTotal = Decimal(125 + 275 + 425)
+
+        // Then
 
         #expect(after.codShippingCost == shippingTotal)
         #expect(after.totalCost - before.totalCost == shippingTotal)
         #expect(before.profit - after.profit == shippingTotal)
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func paymentFlagNormalizationClearsCardlessAmountsAndReconciliationStatus() {
+        // Given
+
         let order = makePaymentFlagOrder(
             cardlessDeductionAmount: 750,
             cardlessSupplementAmount: 250,
@@ -403,49 +468,68 @@ struct OrderCalculationTests {
             isCardless: true
         )
 
-        let corrected = order.applyingPaymentMethodFlags(
-            flags: .none
-        )
+        // When
+
+        let corrected = order.applyingPaymentMethodFlags(.none)
+
+        // Then
 
         #expect(corrected.cardlessDeductionAmount == 0)
         #expect(corrected.cardlessSupplementAmount == 0)
         #expect(corrected.reconciliationStatus == "")
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func paymentFlagNormalizationRetainsReconciliationStatusForBankTransfer() {
+        // Given
+
         let order = makePaymentFlagOrder(reconciliationStatus: " 待對帳 ")
 
+        // When
+
         let corrected = order.applyingPaymentMethodFlags(
-            flags: PaymentMethodFlags(
+            PaymentMethodFlags(
                 isCardless: false,
                 isBankTransfer: true,
                 isCashOnDelivery: false
             )
         )
 
+        // Then
+
         #expect(corrected.reconciliationStatus == "待對帳")
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func paymentFlagNormalizationClampsCardlessDeductionToChargedAmount() {
+        // Given
+
         let order = makePaymentFlagOrder(
             chargedAmount: 1_000,
             cardlessDeductionAmount: 1_500,
             isCardless: false
         )
 
+        // When
+
         let corrected = order.applyingPaymentMethodFlags(
-            flags: PaymentMethodFlags(
+            PaymentMethodFlags(
                 isCardless: true,
                 isBankTransfer: false,
                 isCashOnDelivery: false
             )
         )
 
+        // Then
+
         #expect(corrected.cardlessDeductionAmount == 1_000)
         #expect(corrected.summary.revenue >= 0)
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func nonCashOnDeliveryHasZeroCodShippingCost() {
+        // Given
+
         // 非貨到付款時運費不計入總成本。
         let order = LedgerOrder(
             id: "BL-COD-002",
@@ -478,7 +562,11 @@ struct OrderCalculationTests {
             mergedSourceIDs: []
         )
 
+        // When
+
         let summary = OrderSummary(order: order)
+
+        // Then
 
         #expect(summary.codShippingCost == 0)
         #expect(summary.totalCost == 3_000)
@@ -487,17 +575,25 @@ struct OrderCalculationTests {
 
     // MARK: - Margin Empty Value
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func marginPercentIsEmptyWhenRevenueIsZeroAndFormattedWhenPositive() {
+        // Given
+
         let locale = Locale(identifier: "en")
+
+        // When
 
         let zeroRevenueOrder = makeCardlessOrder(chargedAmount: 1_000, deduction: 1_000)
         let zeroRevenueSummary = OrderSummary(order: zeroRevenueOrder)
-        #expect(zeroRevenueSummary.revenue == 0)
-        #expect(OrderFormatters.marginPercent(zeroRevenueSummary, locale: locale) == "—")
-
         let positiveRevenueOrder = makeCardlessOrder(
             chargedAmount: 10_000, deduction: 0, itemCost: 6_000)
         let positiveRevenueSummary = OrderSummary(order: positiveRevenueOrder)
+
+        // Then
+
+        #expect(zeroRevenueSummary.revenue == 0)
+        #expect(OrderFormatters.marginPercent(zeroRevenueSummary, locale: locale) == "—")
+
         #expect(positiveRevenueSummary.revenue > 0)
         #expect(
             OrderFormatters.marginPercent(positiveRevenueSummary, locale: locale)
@@ -505,10 +601,17 @@ struct OrderCalculationTests {
         )
     }
 
+    /// 驗證訂單計算在此情境下的結果
     @Test func marginPercentIsEmptyForLegacyNegativeRevenueData() {
+        // Given
+
         // 舊資料的 revenue 可能為負，這時毛利率應保持空值
         let order = makeCardlessOrder(chargedAmount: 1_000, deduction: 1_500)
+        // When
+
         let summary = OrderSummary(order: order)
+
+        // Then
 
         #expect(summary.revenue == -500)
         #expect(summary.profit == -500)

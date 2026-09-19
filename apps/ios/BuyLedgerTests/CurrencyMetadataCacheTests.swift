@@ -2,7 +2,7 @@
 //  CurrencyMetadataCacheTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/7/29.
+//  Created by Leo Ho on 2026/07/29.
 //
 
 import Foundation
@@ -16,20 +16,37 @@ struct CurrencyMetadataCacheTests {
 
     // MARK: - Tests
 
+    /// 驗證幣別快取在此情境下的資料與錯誤
     @Test func emptyRefreshPreservesExistingCacheAndReportsAnomaly() async throws(any Error) {
+        // Given
+
         let container = PersistenceContainer.makeInMemory(for: .testing)
         let persistence = CurrencyMetadataPersistence(modelContainer: container)
         let cachedAt = Date(timeIntervalSince1970: 1_700_000_000)
+        // When
+
         try await persistence.replace(codes: ["TWD", "USD"], at: cachedAt)
         let before = try await persistence.fetchAllCodes()
 
-        await #expect(throws: CurrencyMetadataPersistenceError.emptyCodeList) {
+        do {
             try await persistence.replace(codes: [], at: cachedAt)
+            // Then
+
+            Issue.record("預期會拋出 emptyCodeList 錯誤。")
+        } catch {
+            switch error {
+            case .emptyCodeList:
+                break
+            case .storage:
+                Issue.record("預期為 emptyCodeList 錯誤。")
+            }
         }
 
         let client = ExchangeRateClient(
             fetchLatest: { (_: CurrencyCode) async throws(APIError) -> FxRateSnapshot in
-                throw APIError.transport(message: "unused latest")
+                throw APIError.transport(
+                    underlying: TestDependencies.makeUnderlyingError(message: "unused latest")
+                )
             },
             fetchSupportedCodes: { [] }
         )
@@ -39,8 +56,21 @@ struct CurrencyMetadataCacheTests {
             now: { Date(timeIntervalSince1970: 1_700_000_100) }
         )
 
-        await #expect(throws: CurrencyMetadataRepositoryError.persistence(.emptyCodeList)) {
+        do {
             _ = try await repository.refreshIfStale(0)
+            Issue.record("預期會拋出空幣別清單錯誤。")
+        } catch {
+            switch error {
+            case let .persistence(persistenceError):
+                switch persistenceError {
+                case .emptyCodeList:
+                    break
+                case .storage:
+                    Issue.record("預期為空清單持久化錯誤，實際為 \(persistenceError)。")
+                }
+            case .api:
+                Issue.record("預期為持久化 repository 錯誤，實際為 API 錯誤。")
+            }
         }
 
         let after = try await persistence.fetchAllCodes()
@@ -48,9 +78,14 @@ struct CurrencyMetadataCacheTests {
         #expect(after == before)
     }
 
+    /// 驗證幣別快取在此情境下的資料與錯誤
     @Test func nonEmptyRefreshReplacesExistingCache() async throws(any Error) {
+        // Given
+
         let container = PersistenceContainer.makeInMemory(for: .testing)
         let persistence = CurrencyMetadataPersistence(modelContainer: container)
+        // When
+
         try await persistence.replace(
             codes: ["TWD", "USD"],
             at: Date(timeIntervalSince1970: 1_700_000_000)
@@ -58,7 +93,9 @@ struct CurrencyMetadataCacheTests {
 
         let client = ExchangeRateClient(
             fetchLatest: { (_: CurrencyCode) async throws(APIError) -> FxRateSnapshot in
-                throw APIError.transport(message: "unused latest")
+                throw APIError.transport(
+                    underlying: TestDependencies.makeUnderlyingError(message: "unused latest")
+                )
             },
             fetchSupportedCodes: { ["JPY", "EUR"] }
         )
@@ -71,23 +108,37 @@ struct CurrencyMetadataCacheTests {
         let didRefresh = try await repository.refreshIfStale(0)
         let after = try await persistence.fetchAllCodes()
 
+        // Then
+
         #expect(didRefresh)
         #expect(after == ["EUR", "JPY"])
     }
 
+    /// 驗證幣別快取在此情境下的資料與錯誤
     @Test func failedRefreshLeavesExistingCacheUnchanged() async throws(any Error) {
+        // Given
+
         let container = PersistenceContainer.makeInMemory(for: .testing)
         let persistence = CurrencyMetadataPersistence(modelContainer: container)
+        // When
+
         try await persistence.replace(
             codes: ["TWD", "USD"],
             at: Date(timeIntervalSince1970: 1_700_000_000)
         )
         let before = try await persistence.fetchAllCodes()
-        let expected = APIError.transport(message: "network unavailable")
+        let expectedUnderlying = NSError(
+            domain: "com.leoho.BuyLedger.currency-metadata-test",
+            code: 502,
+            userInfo: [NSLocalizedDescriptionKey: "network unavailable"]
+        )
+        let expected = APIError.transport(underlying: expectedUnderlying)
 
         let client = ExchangeRateClient(
             fetchLatest: { (_: CurrencyCode) async throws(APIError) -> FxRateSnapshot in
-                throw APIError.transport(message: "unused latest")
+                throw APIError.transport(
+                    underlying: TestDependencies.makeUnderlyingError(message: "unused latest")
+                )
             },
             fetchSupportedCodes: { () async throws(APIError) -> [String] in throw expected }
         )
@@ -97,8 +148,29 @@ struct CurrencyMetadataCacheTests {
             now: { Date(timeIntervalSince1970: 1_700_000_100) }
         )
 
-        await #expect(throws: CurrencyMetadataRepositoryError.api(expected)) {
+        do {
             _ = try await repository.refreshIfStale(0)
+            // Then
+
+            Issue.record("預期會拋出 API repository 錯誤。")
+        } catch {
+            switch error {
+            case let .api(apiError):
+                switch apiError {
+                case let .transport(underlying):
+                    let actualUnderlying = underlying as NSError
+                    #expect(actualUnderlying.domain == expectedUnderlying.domain)
+                    #expect(actualUnderlying.code == expectedUnderlying.code)
+                    #expect(
+                        actualUnderlying.localizedDescription
+                            == expectedUnderlying.localizedDescription
+                    )
+                case .http, .decoding, .apiError, .quotaExceeded, .invalidKey:
+                    Issue.record("預期為帶 NSError 底層錯誤的 API transport 錯誤。")
+                }
+            case .persistence:
+                Issue.record("預期為 API repository 錯誤，實際為持久化錯誤。")
+            }
         }
 
         let after = try await persistence.fetchAllCodes()
@@ -109,13 +181,13 @@ struct CurrencyMetadataCacheTests {
     ///
     /// - Throws: 測試容器建立或錯誤驗證失敗時拋出錯誤
     @Test
-    func replaceEmptyCodeList_rejectsWithEmptyCodeListError() async throws(any Error) {
+    func replaceEmptyCodeListRejectsWithEmptyCodeListError() async throws(any Error) {
         // Given：建立記憶體中的幣別主檔持久層
         let persistence = CurrencyMetadataPersistence(
             modelContainer: PersistenceContainer.makeInMemory(for: .testing)
         )
 
-        // When：以空清單取代幣別代碼
+        // When
         var thrownError: CurrencyMetadataPersistenceError?
         do {
             try await persistence.replace(
@@ -126,7 +198,14 @@ struct CurrencyMetadataCacheTests {
             thrownError = error
         }
 
-        // Then：持久層回報空清單錯誤
-        #expect(thrownError == .emptyCodeList)
+        // Then
+        guard let thrownError else {
+            Issue.record("預期為 emptyCodeList 錯誤。")
+            return
+        }
+        guard case .emptyCodeList = thrownError else {
+            Issue.record("預期為 emptyCodeList 錯誤。")
+            return
+        }
     }
 }

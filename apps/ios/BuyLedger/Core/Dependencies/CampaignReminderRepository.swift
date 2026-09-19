@@ -2,7 +2,7 @@
 //  CampaignReminderRepository.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/7/11.
+//  Created by Leo Ho on 2026/07/11.
 //
 
 import ComposableArchitecture
@@ -12,7 +12,7 @@ import SwiftData
 /// 開團訂購提醒的連結資料：行事曆事件識別碼與使用者選定的提醒時間戳
 struct CampaignReminderLink: Equatable, Sendable {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 對應的系統行事曆事件識別碼
     let eventIdentifier: String
@@ -21,17 +21,17 @@ struct CampaignReminderLink: Equatable, Sendable {
     let reminderTimestamp: Date
 }
 
-/// 「開團訂購提醒連結」(campaignID → ``CampaignReminderLink``) 的依賴介面
+/// 讀寫開團與系統行事曆提醒之間連結的依賴介面
 struct CampaignReminderRepository: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
-    /// 讀取全部連結，回傳 campaignID → ``CampaignReminderLink`` 字典
-    /// - Returns: campaignID 對應的提醒連結
+    /// 讀取全部開團的提醒連結
+    /// - Returns: 以開團編號對應提醒連結的字典
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
     var fetchLinks: @Sendable () async throws(PersistenceError) -> [String: CampaignReminderLink]
 
-    /// 寫入或更新單一連結 (依 campaignID upsert)
+    /// 寫入或更新單一開團的提醒連結
     /// - Parameters:
     ///   - campaignID: 開團編號
     ///   - link: 對應的行事曆事件識別碼與提醒時間戳
@@ -41,7 +41,7 @@ struct CampaignReminderRepository: Sendable {
         _ link: CampaignReminderLink
     ) async throws(PersistenceError) -> Void
 
-    /// 刪除指定 campaignID 的連結；不存在視為 no-op
+    /// 刪除指定開團的連結；不存在時不做任何事
     /// - Parameter campaignID: 開團編號
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     var removeLink: @Sendable (_ campaignID: String) async throws(PersistenceError) -> Void
@@ -60,7 +60,8 @@ extension CampaignReminderRepository {
                 let persistence = await Self.makePersistence(container: container)
                 return try await persistence.fetchAll()
             },
-            saveLink: { (campaignID: String, link: CampaignReminderLink) async throws(PersistenceError) in
+            saveLink: {
+                (campaignID: String, link: CampaignReminderLink) async throws(PersistenceError) in
                 let persistence = await Self.makePersistence(container: container)
                 try await persistence.upsert(
                     campaignID: campaignID,
@@ -89,7 +90,7 @@ private extension CampaignReminderRepository {
     }
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension CampaignReminderRepository: DependencyKey {
 

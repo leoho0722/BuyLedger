@@ -2,7 +2,7 @@
 //  CampaignRecord.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/30.
+//  Created by Leo Ho on 2026/05/30.
 //
 
 import Foundation
@@ -12,7 +12,7 @@ import SwiftData
 @Model
 final class CampaignRecord {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 以開團識別值建立索引，供查詢與更新
     #Index<CampaignRecord>([\.id])
@@ -57,17 +57,30 @@ final class CampaignRecord {
 
 extension CampaignRecord {
 
-    // MARK: Mapping
-
     /// 將 SwiftData 記錄轉回領域型別
     /// - Returns: 對應的 ``Campaign``
-    func toDomain() -> Campaign {
-        Campaign(
+    /// - Throws: 開團狀態 rawValue 無法解析時拋出 ``PersistenceError``
+    func toDomain() throws(PersistenceError) -> Campaign {
+        let resolvedStatus: CampaignStatus
+        if let status = CampaignStatus(rawValue: statusRaw) {
+            resolvedStatus = status
+        } else {
+            throw .fetchFailed(
+                underlying: RecordDecodingError(
+                    entity: "CampaignRecord",
+                    identifier: id,
+                    field: "status",
+                    rawValue: statusRaw
+                )
+            )
+        }
+
+        return Campaign(
             id: id,
             name: name,
             openDate: openDate,
             closeDate: closeDate,
-            status: CampaignStatus(rawValue: statusRaw) ?? .ongoing,
+            status: resolvedStatus,
             settledDate: settledDate,
             notes: notes
         )

@@ -724,6 +724,15 @@ private extension OrderEditView {
                     .scrollIndicators(.hidden)
                 }
 
+                if store.photoImportFailureCount > 0 {
+                    Label(
+                        "有 \(store.photoImportFailureCount) 張照片無法匯入。",
+                        systemImage: "exclamationmark.triangle"
+                    )
+                    .blTextStyle(.subhead)
+                    .foregroundStyle(Color.blSecondaryLabel)
+                }
+
                 if store.canAddMorePhotos {
                     PhotosPicker(
                         selection: $store.photoPickerSelection,

@@ -2,13 +2,13 @@
 //  OrderPersistence.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/2.
+//  Created by Leo Ho on 2026/05/02.
 //
 
 import Foundation
 import SwiftData
 
-/// SwiftData 上對訂單做 CRUD 的背景 actor
+/// 在背景 actor 中讀寫訂單資料
 @ModelActor
 actor OrderPersistence {
 
@@ -38,51 +38,6 @@ actor OrderPersistence {
 
 extension OrderPersistence {
 
-    /// 建立依日期排序且排除 photos 的查詢描述
-    ///
-    /// - Returns: 不含 `photos` 的 `FetchDescriptor`
-    static func fetchAllDescriptor() -> FetchDescriptor<OrderRecord> {
-        var descriptor = FetchDescriptor<OrderRecord>(
-            sortBy: [SortDescriptor(\.date, order: .reverse)]
-        )
-        descriptor.propertiesToFetch = [
-            \.id,
-             \.customer,
-             \.status,
-             \.currency,
-             \.date,
-             \.items,
-             \.itemCost,
-             \.domesticShipping,
-             \.internationalShipping,
-             \.foreignDomesticShipping,
-             \.cardFeeRate,
-             \.platformFeeRate,
-             \.paymentFeeRate,
-             \.chargedAmount,
-             \.cardlessDeductionAmount,
-             \.cardlessSupplementAmount,
-             \.orderSource,
-             \.categories,
-             \.paymentMethod,
-             \.notes,
-             \.reconciliationStatus,
-             \.campaignNames,
-             \.paymentReceiptStatus,
-             \.isCashOnDelivery,
-             \.mergedSourceIDs,
-        ]
-        return descriptor
-    }
-
-    /// 建立依訂單編號篩選資料列的 predicate
-    ///
-    /// - Parameter ids: 目標訂單編號集合
-    /// - Returns: 僅命中 `id` 屬於 `ids` 之資料列的 predicate
-    static func idMembershipPredicate(_ ids: Set<String>) -> Predicate<OrderRecord> {
-        #Predicate<OrderRecord> { ids.contains($0.id) }
-    }
-
     /// 讀出全部訂單，依日期由新到舊排序
     ///
     /// - Returns: 領域型別陣列 (不含照片位元組)
@@ -92,7 +47,12 @@ extension OrderPersistence {
             try modelContext.fetch(Self.fetchAllDescriptor())
         }
 
-        return records.map { $0.toDomain(includingPhotos: false) }
+        var orders: [LedgerOrder] = []
+        orders.reserveCapacity(records.count)
+        for record in records {
+            orders.append(try record.toDomain(includingPhotos: false))
+        }
+        return orders
     }
 
     /// 讀取單筆訂單 (依 id)；不存在回 nil
@@ -104,9 +64,13 @@ extension OrderPersistence {
         let descriptor = FetchDescriptor<OrderRecord>(
             predicate: #Predicate { $0.id == id }
         )
-        return try PersistenceError.mapFetch {
-            try modelContext.fetch(descriptor).first?.toDomain()
+        let record = try PersistenceError.mapFetch {
+            try modelContext.fetch(descriptor).first
         }
+        guard let record else {
+            return nil
+        }
+        return try record.toDomain()
     }
 
     /// 依訂單編號讀取照片，回傳該訂單持久化順序的照片陣列
@@ -354,7 +318,10 @@ extension OrderPersistence {
     ///   - oldName: 原本的對帳狀態名稱
     ///   - newName: 新的對帳狀態名稱
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
-    func renameReconciliationStatus(from oldName: String, to newName: String) throws(PersistenceError) {
+    func renameReconciliationStatus(
+        from oldName: String,
+        to newName: String
+    ) throws(PersistenceError) {
         let descriptor = FetchDescriptor<OrderRecord>(
             predicate: #Predicate { $0.reconciliationStatus == oldName }
         )
@@ -487,6 +454,49 @@ extension OrderPersistence {
 // MARK: - Private Method
 
 private extension OrderPersistence {
+
+    /// 建立依日期排序且排除照片的查詢描述
+    /// - Returns: 不含照片的 `FetchDescriptor`
+    static func fetchAllDescriptor() -> FetchDescriptor<OrderRecord> {
+        var descriptor = FetchDescriptor<OrderRecord>(
+            sortBy: [SortDescriptor(\.date, order: .reverse)]
+        )
+        descriptor.propertiesToFetch = [
+            \.id,
+            \.customer,
+            \.status,
+            \.currency,
+            \.date,
+            \.items,
+            \.itemCost,
+            \.domesticShipping,
+            \.internationalShipping,
+            \.foreignDomesticShipping,
+            \.cardFeeRate,
+            \.platformFeeRate,
+            \.paymentFeeRate,
+            \.chargedAmount,
+            \.cardlessDeductionAmount,
+            \.cardlessSupplementAmount,
+            \.orderSource,
+            \.categories,
+            \.paymentMethod,
+            \.notes,
+            \.reconciliationStatus,
+            \.campaignNames,
+            \.paymentReceiptStatus,
+            \.isCashOnDelivery,
+            \.mergedSourceIDs,
+        ]
+        return descriptor
+    }
+
+    /// 建立依訂單編號篩選資料列的條件
+    /// - Parameter ids: 目標訂單編號集合
+    /// - Returns: 僅命中指定訂單編號的 `Predicate`
+    static func idMembershipPredicate(_ ids: Set<String>) -> Predicate<OrderRecord> {
+        #Predicate<OrderRecord> { ids.contains($0.id) }
+    }
 
     /// 讀取合併來源訂單；預設直接使用 model context
     ///

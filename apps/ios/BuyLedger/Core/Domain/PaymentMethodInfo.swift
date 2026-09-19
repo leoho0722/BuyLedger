@@ -2,7 +2,7 @@
 //  PaymentMethodInfo.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/8/23.
+//  Created by Leo Ho on 2026/08/23.
 //
 
 import Foundation
@@ -25,7 +25,7 @@ extension PaymentMethodInfo {
     }
 }
 
-// MARK: - Internal Method
+// MARK: - Computed Properties
 
 extension PaymentMethodInfo {
 

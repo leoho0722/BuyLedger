@@ -413,7 +413,7 @@ struct LookupManagementFeature {
                             .map {
                                 $0
                                     .renamingPaymentMethod(to: trimmedNew)
-                                    .applyingPaymentMethodFlags(flags: flags)
+                                    .applyingPaymentMethodFlags(flags)
                             }
                         await send(
                             .paymentMethodEditPrepared(

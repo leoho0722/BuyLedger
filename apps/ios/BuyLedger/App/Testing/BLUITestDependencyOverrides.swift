@@ -205,10 +205,22 @@ private extension DependencyValues {
         // 兜底：上面兩個 client 已不經過 HTTP，真的走到這裡代表有漏網的網路路徑
         self.httpClient = HTTPClient(
             data: { (_: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
-                throw APIError.transport(message: "UI 測試模式禁止發出網路請求")
+                throw APIError.transport(
+                    underlying: NSError(
+                        domain: NSURLErrorDomain,
+                        code: NSURLErrorUnknown,
+                        userInfo: [NSLocalizedDescriptionKey: "UI 測試模式禁止發出網路請求"]
+                    )
+                )
             },
             stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
-                throw APIError.transport(message: "UI 測試模式禁止發出網路請求")
+                throw APIError.transport(
+                    underlying: NSError(
+                        domain: NSURLErrorDomain,
+                        code: NSURLErrorUnknown,
+                        userInfo: [NSLocalizedDescriptionKey: "UI 測試模式禁止發出網路請求"]
+                    )
+                )
             }
         )
     }
@@ -335,20 +347,23 @@ private extension BLUITestStubs {
     }
 
     /// 建立不開系統選擇器的照片 client
-    /// - Returns: 依選取數量回傳純色 JPEG、空選取回空陣列的 ``PhotoClient``
+    /// - Returns: 依選取數量回傳純色 JPEG 的 ``PhotoClient``
     static func makePhotoClient() -> PhotoClient {
         let cache = BLUITestPhotoCache()
 
         return PhotoClient(
             importPhotos: { items in
                 guard !items.isEmpty else {
-                    return []
+                    return PhotoImportResult(photos: [], failedCount: 0)
                 }
                 let photos = cache.resolvedPhotos { makePalettePhotos() }
                 guard !photos.isEmpty else {
-                    return []
+                    return PhotoImportResult(photos: [], failedCount: 0)
                 }
-                return items.indices.map { photos[$0 % photos.count] }
+                return PhotoImportResult(
+                    photos: items.indices.map { photos[$0 % photos.count] },
+                    failedCount: 0
+                )
             }
         )
     }
@@ -479,7 +494,15 @@ private extension BLUITestErrorFactory {
     /// - Parameter source: 失敗的資料來源
     /// - Returns: 帶資料來源訊息的持久化讀取錯誤
     static func persistenceLoadFailed(source: BLUITestLoadSource) -> PersistenceError {
-        .fetchFailed(message: loadFailureMessage(source: source))
+        .fetchFailed(
+            underlying: NSError(
+                domain: "com.leoho.BuyLedger.ui-test",
+                code: 1,
+                userInfo: [
+                    NSLocalizedDescriptionKey: loadFailureMessage(source: source),
+                ]
+            )
+        )
     }
 
     /// 產生幣別 metadata repository 讀取失敗

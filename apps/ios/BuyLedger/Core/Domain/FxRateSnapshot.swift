@@ -2,22 +2,22 @@
 //  FxRateSnapshot.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/2.
+//  Created by Leo Ho on 2026/05/02.
 //
 
 import Foundation
 
-// MARK: - Static Properties
+// MARK: - Properties
 
 extension FxRateSnapshot {
 
     /// Preview 與測試使用的預設匯率快照
     static let fallback: FxRateSnapshot = {
         var rates: [CurrencyCode: Decimal] = [:]
-        for (currency, rateToTwd) in FxRates.toTwd where currency != CurrencyCode.twd {
+        for (currency, rateToTWD) in FxRates.toTWD where currency != CurrencyCode.twd {
             // 把「1 currency = X TWD」轉成「1 TWD = (1/X) currency」
-            if rateToTwd > 0 {
-                rates[currency] = Decimal(1) / rateToTwd
+            if rateToTWD > 0 {
+                rates[currency] = Decimal(1) / rateToTWD
             }
         }
         rates[CurrencyCode.twd] = 1

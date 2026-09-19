@@ -9,7 +9,7 @@
 import Foundation
 
 /// 開團是否仍在收單
-enum CampaignStatus: String, CaseIterable, Codable, Identifiable, Sendable {
+enum CampaignStatus: String, CaseIterable, Codable, Sendable {
 
     // MARK: - Cases
 
@@ -18,9 +18,12 @@ enum CampaignStatus: String, CaseIterable, Codable, Identifiable, Sendable {
 
     /// 已停止收單
     case closed
+}
 
-    // MARK: - Identifiable Properties
+// MARK: - Identifiable
 
-    /// 穩定識別值 (以 rawValue 表示)
+extension CampaignStatus: Identifiable {
+
+    /// 以實際保存的值作為穩定識別
     var id: String { rawValue }
 }

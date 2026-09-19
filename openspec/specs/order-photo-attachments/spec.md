@@ -70,50 +70,165 @@ code:
 ---
 ### Requirement: Imported photos are normalized before storage
 
-Each successfully loaded photo SHALL be downscaled so that its longest edge is at most 1600 pixels and re-encoded as JPEG before entering the draft. A picker item whose data fails to load or decode SHALL be skipped without aborting the import of the remaining items and without surfacing an error alert.
+Each successfully loaded photo SHALL be downscaled so that its longest edge is at most 1600 pixels and re-encoded as JPEG before entering the draft. A picker item that cannot be turned into a stored photo SHALL be skipped without aborting the import of the remaining items. Three outcomes SHALL count as skipped: the transferable load throws, the transferable load yields no data, and normalization yields no data.
+
+The import operation SHALL return both the normalized photo data and the number of skipped items, and SHALL NOT throw. The order edit form SHALL show the user that count when it is greater than zero, as supporting text inside the photo section rather than as a modal alert, and SHALL reset it when the next import begins. A skipped item SHALL NOT disappear without any indication.
 
 #### Scenario: Oversized photo is downscaled
 
 - **WHEN** the user picks a 4032x3024 photo
 - **THEN** the stored photo data is a JPEG whose longest edge is at most 1600 pixels
 
-#### Scenario: Failed item is skipped silently
+#### Scenario: Failed items are skipped and reported
 
 - **WHEN** the user picks 3 photos and one of them fails to load
-- **THEN** the 2 successfully loaded photos are appended and no error alert is shown
+- **THEN** the import returns the 2 normalized photos and a skipped count of 1
+- **AND** the 2 photos are appended to the draft
+- **AND** the photo section shows supporting text stating that 1 photo could not be imported
+
+#### Scenario: Normalization failure counts as skipped
+
+- **WHEN** a picked item loads successfully but cannot be downscaled or re-encoded
+- **THEN** that item is counted as skipped
+- **AND** the remaining items still enter the draft
+
+#### Scenario: A fully successful import reports nothing
+
+- **WHEN** every picked item loads and normalizes successfully
+- **THEN** the photos are appended, the skipped count is zero, and no import failure text is shown
+
+#### Scenario: A later import clears the previous report
+
+- **GIVEN** the photo section shows that a previous import skipped items
+- **WHEN** the user starts another import
+- **THEN** the previous skipped count is cleared before the new result is reported
+
+##### Example: import outcome by picked items
+
+| Picked items | Normalized successfully | Draft gains | Skipped count | Supporting text |
+| ------------ | ----------------------- | ----------- | ------------- | --------------- |
+| 3 | 3 | 3 photos | 0 | none |
+| 3 | 2 | 2 photos | 1 | 1 photo could not be imported |
+| 2 | 0 | no photos | 2 | 2 photos could not be imported |
 
 
 <!-- @trace
-source: add-order-photos
-updated: 2026-06-06
+source: core-codegen-style-compliance
+updated: 2026-09-19
 code:
-  - apps/apple/BuyLedger/Core/Dependencies/PhotoClient.swift
-  - apps/apple/BuyLedger/Features/App/RootFeature.swift
-  - apps/apple/BuyLedgerTests/CampaignIntegrationTests.swift
-  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
-  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
-  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
-  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
-  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
-  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
-  - apps/apple/BuyLedgerTests/SchemaMigrationTests.swift
-  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
-  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - apps/apple/BuyLedger/Shared/Media/PhotoDataProcessor.swift
-  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
-  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/apple/BuyLedgerTests/PhotoDataProcessorTests.swift
-  - apps/apple/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
-  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/apple/BuyLedgerTests/CampaignSummaryTests.swift
-  - apps/apple/BuyLedger/Shared/DesignSystem/Foundations/Image+PhotoData.swift
-  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
-  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
-  - apps/apple/BuyLedger/Core/Domain/Campaign+Samples.swift
-  - apps/apple/BuyLedgerTests/SnapshotTests.swift
-  - CLAUDE.md
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistence.swift
+  - apps/ios/BuyLedgerTests/PersistenceFailureFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceRepository.swift
+  - apps/ios/BuyLedger/Core/Domain/Campaign+Samples.swift
+  - apps/ios/BuyLedger/Core/Domain/Campaign.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/Campaign.generated.swift
+  - apps/ios/BuyLedger/Core/Persistence/NameLookupRecordProtocol.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - shared/data-model/fixtures/expected/swift/SampleSequence.generated.swift
+  - apps/ios/BuyLedger/Core/Networking/AppConfiguration.swift
+  - apps/ios/BuyLedger/Core/Diagnostics/CrashDiagnosticsClient.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodPersistenceTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryRepository.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/OrderStatus.generated.swift
+  - apps/ios/BuyLedgerTests/TestDependencies.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateClient.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryTests.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataCacheTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantine.swift
+  - apps/ios/BuyLedgerTests/RecordDecodingTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/NameLookupOperations.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderRecord.swift
+  - apps/ios/BuyLedger/Core/Domain/OrderStatus.swift
+  - apps/ios/BuyLedger/Core/Networking/URLRequestBuilder.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/CurrencyCode.generated.swift
+  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthClient.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateCodesResponse.swift
+  - apps/ios/BuyLedger/Core/Persistence/RecordDecodingError.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/TelemetryClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/NameLookupRecord.swift
+  - shared/data-model/fixtures/expected/swift/SampleOrder.generated.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateLatestResponse.swift
+  - apps/ios/BuyLedger/Core/Domain/FxRateSnapshot.swift
+  - apps/ios/BuyLedger/Core/Domain/OrderMerge.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoImportResult.swift
+  - apps/ios/BuyLedger/Features/AISummary/OllamaClient.swift
+  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedgerTests/APIErrorMappingTests.swift
+  - apps/ios/BuyLedger/Core/Domain/CampaignStatus.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignPersistence.swift
+  - shared/data-model/fixtures/expected/swift/SampleReceipt.generated.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignRecord.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/CategoryRecord.swift
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedger/Core/Domain/Generated/CampaignStatus.generated.swift
+  - apps/ios/BuyLedger/Core/Domain/LedgerOrder.swift
+  - apps/ios/BuyLedger/Core/Persistence/NameLookupPersistence.swift
+  - apps/ios/BuyLedger/Core/Domain/PaymentReceiptStatus.swift
+  - apps/ios/BuyLedger/Core/Diagnostics/AppLogger.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
+  - apps/ios/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPMethod.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - shared/data-model/generator/src/datamodel-gen.ts
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateDTO.swift
+  - apps/ios/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataRecord.swift
+  - apps/ios/BuyLedgerTests/ExchangeRateClientTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OpenSettingsClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignRepository.swift
+  - apps/ios/BuyLedgerTests/FxRatesTests.swift
+  - apps/ios/BuyLedgerTests/HTTPClientTests.swift
+  - apps/ios/BuyLedgerTests/NameLookupPersistenceTests.swift
+  - apps/ios/BuyLedger/Core/Domain/LedgerOrderItem.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodRecord.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
+  - apps/ios/BuyLedger/Core/Domain/PaymentMethodInfo.swift
+  - apps/ios/BuyLedger/Core/Domain/PaymentMethodFlags.swift
+  - apps/ios/BuyLedger/Core/Domain/CurrencyCode.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Domain/FxRates.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/ios/BuyLedger/Core/Persistence/ReconciliationStatusRecord.swift
+  - apps/ios/BuyLedger/Core/Domain/CustomerTier.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataRepository.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/LedgerOrderItem.generated.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderSourceRecord.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Domain/OrderSummary.swift
+  - shared/data-model/fixtures/expected/swift/SampleStatus.generated.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderRecord.swift
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/APIError.swift
+  - apps/ios/BuyLedger/Core/Domain/Generated/PaymentReceiptStatus.generated.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceError.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantineClient.swift
+  - apps/ios/BuyLedgerTests/PersistenceErrorTests.swift
+  - shared/data-model/fixtures/expected/swift/SampleTag.generated.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderDraft.swift
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistence.swift
 -->
 
 ---

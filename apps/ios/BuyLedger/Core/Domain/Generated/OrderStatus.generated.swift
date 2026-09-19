@@ -9,7 +9,7 @@
 import Foundation
 
 /// 訂單目前狀態
-enum OrderStatus: String, CaseIterable, Codable, Identifiable, Sendable {
+enum OrderStatus: String, CaseIterable, Codable, Sendable {
 
     // MARK: - Cases
 
@@ -42,9 +42,12 @@ enum OrderStatus: String, CaseIterable, Codable, Identifiable, Sendable {
 
     /// 已合併到其他訂單
     case merged
+}
 
-    // MARK: - Identifiable Properties
+// MARK: - Identifiable
 
-    /// 穩定識別值 (以 rawValue 表示)
+extension OrderStatus: Identifiable {
+
+    /// 以實際保存的值作為穩定識別
     var id: String { rawValue }
 }

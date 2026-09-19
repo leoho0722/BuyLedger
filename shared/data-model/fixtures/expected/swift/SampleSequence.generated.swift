@@ -13,6 +13,6 @@ struct SampleSequence: Sendable {
 
     // MARK: - Data Properties
 
-    /// 包裝的原始值
+    /// 實際保存的基礎值
     let rawValue: Int
 }

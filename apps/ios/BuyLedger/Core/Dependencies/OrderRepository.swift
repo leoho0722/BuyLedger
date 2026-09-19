@@ -2,7 +2,7 @@
 //  OrderRepository.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/1.
+//  Created by Leo Ho on 2026/05/01.
 //
 
 import ComposableArchitecture
@@ -12,7 +12,7 @@ import SwiftData
 /// 讀取與寫入訂單資料的依賴介面
 struct OrderRepository: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
     /// 讀取目前可顯示的訂單
     /// - Returns: 可顯示的訂單
@@ -40,10 +40,12 @@ struct OrderRepository: Sendable {
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
     var fetchOrderPhotos: @Sendable (_ id: LedgerOrder.ID) async throws(PersistenceError) -> [Data]
 
-    /// 寫入訂單並以 photos 覆蓋已存照片
+    /// 寫入訂單並以 `photos` 覆蓋已存照片
     /// - Parameter order: 要寫入或更新的訂單
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
-    var saveOrderPersistingPhotos: @Sendable (_ order: LedgerOrder) async throws(PersistenceError) -> Void
+    var saveOrderPersistingPhotos: @Sendable (
+        _ order: LedgerOrder
+    ) async throws(PersistenceError) -> Void
 
     /// 刪除指定編號的訂單
     /// - Parameter id: 訂單編號
@@ -60,7 +62,7 @@ struct OrderRepository: Sendable {
         _ consumedIDs: [LedgerOrder.ID]
     ) async throws(OrderPersistenceError) -> Void
 
-    /// 將所有訂單的 orderSource 從 oldName 改為 newName
+    /// 將所有訂單的 `orderSource` 從舊名稱改為新名稱
     /// - Parameters:
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
@@ -70,7 +72,7 @@ struct OrderRepository: Sendable {
         _ newName: String
     ) async throws(PersistenceError) -> Void
 
-    /// 將所有訂單的 categories 從 oldName 改為 newName
+    /// 將所有訂單的 `categories` 從舊名稱改為新名稱
     /// - Parameters:
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
@@ -80,7 +82,7 @@ struct OrderRepository: Sendable {
         _ newName: String
     ) async throws(PersistenceError) -> Void
 
-    /// 將所有訂單的 paymentMethod 從 oldName 改為 newName
+    /// 將所有訂單的 `paymentMethod` 從舊名稱改為新名稱
     /// - Parameters:
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
@@ -90,7 +92,7 @@ struct OrderRepository: Sendable {
         _ newName: String
     ) async throws(PersistenceError) -> Void
 
-    /// 將所有訂單的 reconciliationStatus 從 oldName 改為 newName
+    /// 將所有訂單的 `reconciliationStatus` 從舊名稱改為新名稱
     /// - Parameters:
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
@@ -100,7 +102,7 @@ struct OrderRepository: Sendable {
         _ newName: String
     ) async throws(PersistenceError) -> Void
 
-    /// 將所有訂單的 campaignNames 從 oldName 改為 newName
+    /// 將所有訂單的 `campaignNames` 從舊名稱改為新名稱
     /// - Parameters:
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
@@ -118,7 +120,7 @@ extension OrderRepository {
     /// 持有單一 container 對應的 ``OrderPersistence`` 長命實例
     actor PersistenceInstanceProvider {
 
-        // MARK: - Data Properties
+        // MARK: - Properties
 
         /// 用於建立背景 actor 的 SwiftData container
         private let container: ModelContainer
@@ -177,11 +179,11 @@ extension OrderRepository {
     /// 以指定的 SwiftData ``ModelContainer`` 建立 repository
     /// - Parameters:
     ///   - container: 用於建立背景 actor 的 SwiftData container
-    ///   - seedSampleOrdersIfEmpty: 空資料表時是否建立範例訂單
+    ///   - shouldSeedSampleOrders: 空資料表時是否建立範例訂單
     /// - Returns: 對應的 ``OrderRepository`` 實例
     nonisolated static func live(
         container: ModelContainer,
-        seedSampleOrdersIfEmpty: Bool = false
+        shouldSeedSampleOrders: Bool = false
     ) -> OrderRepository {
         let provider = PersistenceInstanceProvider(container: container)
 
@@ -189,7 +191,7 @@ extension OrderRepository {
             fetchOrders: { () async throws(PersistenceError) -> [LedgerOrder] in
                 let persistence = await provider.instance
                 let stored = try await persistence.fetchAll()
-                if seedSampleOrdersIfEmpty, stored.isEmpty {
+                if shouldSeedSampleOrders, stored.isEmpty {
                     _ = try await persistence.seedIfEmpty(with: LedgerOrder.sampleOrders)
                     return try await persistence.fetchAll()
                 }
@@ -219,11 +221,16 @@ extension OrderRepository {
                 let persistence = await provider.instance
                 try await persistence.delete(id: id)
             },
-            mergeOrders: { (newOrder: LedgerOrder, consumedIDs: [LedgerOrder.ID]) async throws(OrderPersistenceError) in
+            mergeOrders: {
+                (
+                    newOrder: LedgerOrder,
+                    consumedIDs: [LedgerOrder.ID]
+                ) async throws(OrderPersistenceError) in
                 let persistence = await provider.instance
                 try await persistence.mergeOrders(newOrder: newOrder, consumedIDs: consumedIDs)
             },
-            renameOrderSource: { (oldName: String, newName: String) async throws(PersistenceError) in
+            renameOrderSource: {
+                (oldName: String, newName: String) async throws(PersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
@@ -231,7 +238,8 @@ extension OrderRepository {
                 let persistence = await provider.instance
                 try await persistence.renameOrderSource(from: oldName, to: trimmedNew)
             },
-            renameOrderCategory: { (oldName: String, newName: String) async throws(PersistenceError) in
+            renameOrderCategory: {
+                (oldName: String, newName: String) async throws(PersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
@@ -239,7 +247,8 @@ extension OrderRepository {
                 let persistence = await provider.instance
                 try await persistence.renameCategory(from: oldName, to: trimmedNew)
             },
-            renameOrderPaymentMethod: { (oldName: String, newName: String) async throws(PersistenceError) in
+            renameOrderPaymentMethod: {
+                (oldName: String, newName: String) async throws(PersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
@@ -247,7 +256,8 @@ extension OrderRepository {
                 let persistence = await provider.instance
                 try await persistence.renamePaymentMethod(from: oldName, to: trimmedNew)
             },
-            renameOrderReconciliationStatus: { (oldName: String, newName: String) async throws(PersistenceError) in
+            renameOrderReconciliationStatus: {
+                (oldName: String, newName: String) async throws(PersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
@@ -255,7 +265,8 @@ extension OrderRepository {
                 let persistence = await provider.instance
                 try await persistence.renameReconciliationStatus(from: oldName, to: trimmedNew)
             },
-            renameOrderCampaign: { (oldName: String, newName: String) async throws(PersistenceError) in
+            renameOrderCampaign: {
+                (oldName: String, newName: String) async throws(PersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
@@ -267,11 +278,11 @@ extension OrderRepository {
     }
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension OrderRepository: DependencyKey {
 
-    /// App 執行時使用本機 SwiftData 儲存 (共用 ``PersistenceContainer/shared``)
+    /// App 執行時使用本機 `SwiftData` 儲存與共用 `PersistenceContainer.shared`
     nonisolated static let liveValue: OrderRepository = OrderRepository.live(
         container: PersistenceContainer.shared
     )
@@ -280,7 +291,7 @@ extension OrderRepository: DependencyKey {
     nonisolated static let previewValue: OrderRepository = {
         let container = PersistenceContainer.makeInMemory(for: .preview)
 
-        return OrderRepository.live(container: container, seedSampleOrdersIfEmpty: true)
+        return OrderRepository.live(container: container, shouldSeedSampleOrders: true)
     }()
 
     /// 測試預設使用空資料來源；TestStore 可透過 `withDependencies` 覆寫

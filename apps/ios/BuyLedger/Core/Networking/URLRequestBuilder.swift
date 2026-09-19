@@ -2,22 +2,22 @@
 //  URLRequestBuilder.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/6/21.
+//  Created by Leo Ho on 2026/06/21.
 //
 
 import Foundation
 
-/// 以鏈式 API 組裝 `URLRequest`
+/// 以鏈式方式組裝 `URLRequest`
 struct URLRequestBuilder: Sendable {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 累積設定中的請求
     private var request: URLRequest
 
     // MARK: - Init
 
-    /// 以目標 URL 與逾時建立 builder
+    /// 以目標 URL 與逾時建立請求組裝器
     /// - Parameters:
     ///   - url: 目標 URL
     ///   - timeout: 逾時秒數 (預設 60)
@@ -30,8 +30,8 @@ struct URLRequestBuilder: Sendable {
 
 extension URLRequestBuilder {
 
-    /// 設定 HTTP method
-    /// - Parameter method: HTTP method
+    /// 設定 `HTTPMethod`
+    /// - Parameter method: 要使用的 HTTP 方法
     /// - Returns: 套用後的 builder
     func method(_ method: HTTPMethod) -> Self {
         var copy = self

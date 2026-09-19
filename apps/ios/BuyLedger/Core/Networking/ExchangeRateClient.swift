@@ -2,36 +2,39 @@
 //  ExchangeRateClient.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/2.
+//  Created by Leo Ho on 2026/05/02.
 //
 
 import ComposableArchitecture
 import Foundation
 
-/// 提供 BuyLedger 取得最新匯率與支援幣別代碼的 ExchangeRate-API client
+/// 提供 BuyLedger 取得最新匯率與支援幣別代碼的 `ExchangeRate-API` client
 struct ExchangeRateClient: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
     /// 抓取指定基準幣別的最新匯率快照
+    ///
     /// - Parameter base: 基準幣別
     /// - Returns: 指定基準幣別的最新匯率快照
     /// - Throws: API 請求或回應解析失敗時拋出 ``APIError``
     var fetchLatest: @Sendable (_ base: CurrencyCode) async throws(APIError) -> FxRateSnapshot
 
-    /// 抓取 ExchangeRate-API 目前支援的所有 ISO 4217 幣別代碼
+    /// 抓取 `ExchangeRate-API` 目前支援的所有 ISO 4217 幣別代碼
+    ///
     /// - Returns: 支援的 ISO 4217 幣別代碼
     /// - Throws: API 請求或回應解析失敗時拋出 ``APIError``
     var fetchSupportedCodes: @Sendable () async throws(APIError) -> [String]
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension ExchangeRateClient: DependencyKey {
 
     /// App 執行時透過 ``HTTPClient`` 與 ``AppConfiguration`` 真實打 API
     nonisolated static let liveValue: ExchangeRateClient = ExchangeRateClient(
-        fetchLatest: { (base: CurrencyCode) async throws(APIError) -> FxRateSnapshot in
+        fetchLatest: {
+            (base: CurrencyCode) async throws(APIError) -> FxRateSnapshot in
             @Dependency(\.httpClient) var httpClient
             @Dependency(\.appConfiguration) var appConfiguration
             @Dependency(\.date) var date
@@ -41,13 +44,15 @@ extension ExchangeRateClient: DependencyKey {
             }
 
             // 拒絕含控制字元的 header 值。
-            guard !key.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) else {
-                throw APIError.transport(message: "URL 組合失敗。")
+            guard !key.unicodeScalars.contains(
+                where: CharacterSet.controlCharacters.contains
+            ) else {
+                throw Self.invalidRequestError(diagnosticMessage: "URL 組合失敗。")
             }
 
             let urlString = "https://v6.exchangerate-api.com/v6/latest/\(base.rawValue)"
             guard let url = URL(string: urlString) else {
-                throw APIError.transport(message: "URL 組合失敗。")
+                throw Self.invalidRequestError(diagnosticMessage: "URL 組合失敗。")
             }
 
             let data = try await httpClient.send(
@@ -67,7 +72,8 @@ extension ExchangeRateClient: DependencyKey {
 
             return decoded.toSnapshot(base: base, fallbackDate: date.now)
         },
-        fetchSupportedCodes: { () async throws(APIError) -> [String] in
+        fetchSupportedCodes: {
+            () async throws(APIError) -> [String] in
             @Dependency(\.httpClient) var httpClient
             @Dependency(\.appConfiguration) var appConfiguration
 
@@ -76,13 +82,15 @@ extension ExchangeRateClient: DependencyKey {
             }
 
             // 拒絕含控制字元的 header 值。
-            guard !key.unicodeScalars.contains(where: CharacterSet.controlCharacters.contains) else {
-                throw APIError.transport(message: "URL 組合失敗。")
+            guard !key.unicodeScalars.contains(
+                where: CharacterSet.controlCharacters.contains
+            ) else {
+                throw Self.invalidRequestError(diagnosticMessage: "URL 組合失敗。")
             }
 
             let urlString = "https://v6.exchangerate-api.com/v6/codes"
             guard let url = URL(string: urlString) else {
-                throw APIError.transport(message: "URL 組合失敗。")
+                throw Self.invalidRequestError(diagnosticMessage: "URL 組合失敗。")
             }
 
             let data = try await httpClient.send(
@@ -107,13 +115,13 @@ extension ExchangeRateClient: DependencyKey {
     /// 測試預設拋出 transport 錯誤；具體測試以 `withDependencies` 注入 stub
     nonisolated static let testValue: ExchangeRateClient = ExchangeRateClient(
         fetchLatest: { (_: CurrencyCode) async throws(APIError) -> FxRateSnapshot in
-            throw APIError.transport(
-                message: "ExchangeRateClient.testValue.fetchLatest 被呼叫；請於測試中注入。"
+            throw Self.dependencyNotInjectedError(
+                diagnosticMessage: "ExchangeRateClient.testValue.fetchLatest 被呼叫；請於測試中注入。"
             )
         },
         fetchSupportedCodes: { () async throws(APIError) -> [String] in
-            throw APIError.transport(
-                message: "ExchangeRateClient.testValue.fetchSupportedCodes 被呼叫；請於測試中注入。"
+            throw Self.dependencyNotInjectedError(
+                diagnosticMessage: "ExchangeRateClient.testValue.fetchSupportedCodes 被呼叫；請於測試中注入。"
             )
         }
     )
@@ -129,10 +137,47 @@ extension ExchangeRateClient: DependencyKey {
 
 private extension ExchangeRateClient {
 
-    /// 將 ExchangeRate-API 的服務結果映射成單一 ``APIError`` 分類
+    /// networking 層自有的診斷錯誤 domain
+    static let networkingErrorDomain = "com.leoho.BuyLedger.networking"
+
+    /// 請求組合失敗的診斷錯誤代碼
+    static let invalidRequestCode = 1
+
+    /// 依賴未注入的診斷錯誤代碼
+    static let dependencyNotInjectedCode = 2
+
+    /// 建立請求組合失敗的 transport 錯誤
+    ///
+    /// - Parameter diagnosticMessage: 要提供給診斷使用的錯誤描述
+    /// - Returns: 帶 NSError 底層資訊的 transport 錯誤
+    static func invalidRequestError(diagnosticMessage: String) -> APIError {
+        .transport(
+            underlying: NSError(
+                domain: networkingErrorDomain,
+                code: invalidRequestCode,
+                userInfo: [NSLocalizedDescriptionKey: diagnosticMessage]
+            )
+        )
+    }
+
+    /// 建立依賴未注入的 transport 錯誤
+    ///
+    /// - Parameter diagnosticMessage: 要提供給診斷使用的錯誤描述
+    /// - Returns: 帶原始錯誤資訊的 transport 錯誤
+    static func dependencyNotInjectedError(diagnosticMessage: String) -> APIError {
+        .transport(
+            underlying: NSError(
+                domain: networkingErrorDomain,
+                code: dependencyNotInjectedCode,
+                userInfo: [NSLocalizedDescriptionKey: diagnosticMessage]
+            )
+        )
+    }
+
+    /// 將 `ExchangeRate-API` 的服務結果映射成單一 ``APIError`` 分類
     /// - Parameters:
-    ///   - result: ExchangeRate-API 回傳的結果
-    ///   - errorType: ExchangeRate-API 回傳的錯誤代碼
+    ///   - result: `ExchangeRate-API` 回傳的結果
+    ///   - errorType: `ExchangeRate-API` 回傳的錯誤代碼
     /// - Returns: 對應的 ``APIError``
     static func serviceError(result: String, errorType: String?) -> APIError {
         guard result == "error" else {

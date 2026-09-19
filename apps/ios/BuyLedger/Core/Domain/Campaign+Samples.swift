@@ -2,7 +2,7 @@
 //  Campaign+Samples.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/30.
+//  Created by Leo Ho on 2026/05/30.
 //
 
 import Foundation
@@ -35,6 +35,7 @@ extension Campaign {
         ),
     ]
 #else
+    /// 沒有除錯資料時提供的空開團範例
     nonisolated static let sampleCampaigns: [Campaign] = []
 #endif
 }

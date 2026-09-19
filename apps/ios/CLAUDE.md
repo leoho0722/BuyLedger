@@ -67,6 +67,11 @@
     - 輔助型別不宣告 `@Dependency`，也不呼叫 `Date()`／`UUID()`／`Calendar.current`，由 reducer 解析後傳入；被它跨檔呼叫的 State 方法或靜態工廠要是 internal。
     - 主 switch 維持窮舉、零預設分支 (`TestSuiteIntegrityTests` 守門，不得改寫成 `default:` 換行再 `return .none` 等規避形式)；因型別檢查逾時拆成多段 `Reduce` 時，段間以明列的 case 清單交出，不用預設分支。
     - 草稿型別標 `@ObservableState` (只標 `Equatable` 會退化成整張表單重繪)；非同步載入的欄位不參與草稿相等比較，另以旗標追蹤。
+- **自訂錯誤型別以 `underlying` 保留原始錯誤，不遵循 `Equatable`**：帶底層失敗的 case 宣告 `underlying: any Error & Sendable`，純分類 case (如 `APIError.http(statusCode:)`) 維持原形狀。
+    - **框架錯誤 (SwiftData、Foundation、EventKit、URL loading、`DecodingError`) 一律 `error as NSError` 橋接**：typed catch 拿到的是 `any Error`，`as NSError` 是唯一無條件成立且保留 domain、code、userInfo 的轉換。
+    - **App 自己定義的錯誤原樣承載、不橋接** (目前只有 `RecordDecodingError`)：橋接會把結構化欄位壓成字串，呼叫端與測試就無法 pattern-match。
+    - 不要為 App 自己判斷出的狀況偽造 `NSURLErrorDomain` 之類的框架 domain，需要可辨識的診斷碼時用自有 domain (如 `com.leoho.BuyLedger.networking`)。
+    - 只有真的顯示給使用者的錯誤型別才遵循 `LocalizedError` (目前只有 `PersistenceRecoveryError`，經 `PersistenceFailureFeature` 以無型別 catch 取 `localizedDescription`)。
 - **使用者可見訊息與診斷輸出不內插完整 URL 或 `URLRequest`** (含 `absoluteString`／`description` 等攤平存取)：避免憑證外洩；`TestSuiteIntegrityTests` 以子字串比對守門，改名後再內插等迂迴寫法仍要人工複核。
 - **Reducer body 內呼叫 State 上的 instance method 走 `store.state.method(...)`**，不透過 `@dynamicMemberLookup` 的 `store.method(...)`。
 - **不用 `switch`／`if` 運算式賦值** (`let x = switch …`)：先宣告 `let x: T` 再於各分支賦值；在 `@ViewBuilder` 內與 result builder 衝突時抽成 helper。
@@ -76,7 +81,7 @@
 
 - **Repository 以 type-based `@Dependency(SomeRepository.self)` 注入**，不新增 `DependencyValues` keyPath。
 - **所有 repository 的 `liveValue` 共用 `PersistenceContainer.shared`，不各自建立 container**：同一 process 內多個 container (即使 SQLite 同名) 會讓 SwiftData 內部狀態錯亂；建立 container 的工廠函式維持 `private`。
-- **`liveValue` 不 seed sample 資料**：首次啟動是真正的空狀態；`previewValue` 用 in-memory container 並傳 `seedSampleOrdersIfEmpty: true`，讓 Preview 與 snapshot 有內容。
+- **`liveValue` 不 seed sample 資料**：首次啟動是真正的空狀態；`previewValue` 用 in-memory container 並傳 `shouldSeedSampleOrders: true`，讓 Preview 與 snapshot 有內容。
     - `LedgerOrder.sampleOrders`、`FxRateSnapshot.fallback`、`FxRates` 只給 Preview、單元測試與 `previewValue`，runtime path 不讀。
 - **production code 走 `@Dependency`，不直接呼叫 `Date()`／`UUID()`／`Locale.current`／`TimeZone.current`／`Calendar.current`** (dependency 註冊處除外)。
     - Reducer 在 `// MARK: - Dependencies` 宣告 `@Dependency(\.date) private var date`，以 `date.now`、`uuid()` 取值；SwiftUI View 也可以同樣宣告。

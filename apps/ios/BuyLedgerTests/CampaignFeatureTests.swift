@@ -2,7 +2,7 @@
 //  CampaignFeatureTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/5/30.
+//  Created by Leo Ho on 2026/05/30.
 //
 
 import ComposableArchitecture
@@ -18,7 +18,10 @@ struct CampaignFeatureTests {
 
     // MARK: - Tests
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func taskLoadsCampaignsWithoutTransitionWhenNoCloseDate() async {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -33,10 +36,14 @@ struct CampaignFeatureTests {
             $0[CampaignRepository.self].fetchCampaigns = { [campaign] }
         }
 
+        // When
+
         await store.send(.task) {
             $0.isLoading = true
             $0.errorMessage = nil
         }
+
+        // Then
 
         await store.receive(\.campaignsLoaded) {
             $0.isLoading = false
@@ -47,7 +54,10 @@ struct CampaignFeatureTests {
         await store.receive(\.reminderLinksLoaded)
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func loadingAutoTransitionsOngoingPastCloseDateToClosed() async {
+        // Given
+
         // 4/20 已過期應轉 closed，5/10 未到仍為 ongoing
         let pastDue = makeCampaign(
             id: "past",
@@ -74,10 +84,14 @@ struct CampaignFeatureTests {
         var transitioned = pastDue
         transitioned.status = .closed
 
+        // When
+
         await store.send(.task) {
             $0.isLoading = true
             $0.errorMessage = nil
         }
+
+        // Then
 
         await store.receive(\.campaignsLoaded) {
             $0.isLoading = false
@@ -88,7 +102,10 @@ struct CampaignFeatureTests {
         await store.receive(\.reminderLinksLoaded)
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func closeDateTodayStaysOngoingUntilTheFollowingDay() async {
+        // Given
+
         // 結單日為今天；即使現在時間較晚，仍應保持進行中。
         let closeDate = day(month: 4, day: 30).addingTimeInterval(9 * 3600)
         let campaign = makeCampaign(
@@ -107,10 +124,14 @@ struct CampaignFeatureTests {
             $0[CampaignRepository.self].fetchCampaigns = { [campaign] }
             $0[CampaignRepository.self].saveCampaign = { _ in }
         }
+        // When
+
         await store.send(.task) {
             $0.isLoading = true
             $0.errorMessage = nil
         }
+        // Then
+
         await store.receive(\.campaignsLoaded) {
             $0.isLoading = false
             $0.hasLoaded = true
@@ -136,6 +157,8 @@ struct CampaignFeatureTests {
         #expect(store.state.campaigns.first?.status == .closed, "隔日起結單日已過的開團應轉為已收單")
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
+    /// - Parameter timeZone: 測試用輸入值
     @Test(
         arguments: [
             TimeZone(identifier: "UTC")!,
@@ -144,6 +167,8 @@ struct CampaignFeatureTests {
         ]
     )
     func closeDateTodayStaysOngoingRegardlessOfInjectedTimeZone(timeZone: TimeZone) async {
+        // Given
+
         // 使用注入的時區判定日期，不讀系統時區；三個時區都應得到相同結果。
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = timeZone
@@ -165,10 +190,14 @@ struct CampaignFeatureTests {
             $0[CampaignRepository.self].fetchCampaigns = { [campaign] }
             $0[CampaignRepository.self].saveCampaign = { _ in }
         }
+        // When
+
         await store.send(.task) {
             $0.isLoading = true
             $0.errorMessage = nil
         }
+        // Then
+
         await store.receive(\.campaignsLoaded) {
             $0.isLoading = false
             $0.hasLoaded = true
@@ -192,7 +221,10 @@ struct CampaignFeatureTests {
         )
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func statusChangedUpdatesCampaign() async {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -211,13 +243,20 @@ struct CampaignFeatureTests {
         }
 
         // 寫入成功後才套用新的開團狀態。
+        // When
+
         await store.send(.statusChanged("C1", .closed))
+        // Then
+
         await store.receive(\.campaignStatusSaved) {
             $0.campaigns[0].status = .closed
         }
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func settleTappedRecordsSettledDateWithoutChangingStatus() async {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -236,6 +275,8 @@ struct CampaignFeatureTests {
         }
 
         // 結團是不可逆轉換，先確認、確認後才寫入結算日期
+        // When
+
         await store.send(.settleTapped("C1")) {
             $0.settleConfirmation = AlertState {
                 TextState("結團結算")
@@ -250,6 +291,8 @@ struct CampaignFeatureTests {
                 TextState("結算「團」後就無法再改回進行中。確定要結團嗎？")
             }
         }
+        // Then
+
         #expect(store.state.settleConfirmation != nil)
         #expect(store.state.campaigns[0].settledDate == nil, "確認前不應寫入結算日期")
 
@@ -266,7 +309,10 @@ struct CampaignFeatureTests {
         #expect(store.state.campaigns[0].status == .closed, "結團不應改變狀態")
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func deleteConfirmationRemovesCampaign() async {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -283,6 +329,8 @@ struct CampaignFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
             $0[CampaignRepository.self].removeCampaign = { _, _ in nil }
         }
+        // When
+
         await store.send(.deleteCampaignTapped("C1")) {
             $0.deletionConfirmation = AlertState {
                 TextState("刪除開團")
@@ -297,6 +345,8 @@ struct CampaignFeatureTests {
                 TextState("刪除「團」後無法復原。歸屬此開團的訂單會保留，但會變回未歸團。")
             }
         }
+        // Then
+
         #expect(store.state.deletionConfirmation != nil)
 
         await store.send(.deletionConfirmation(.presented(.confirmDelete("C1")))) {
@@ -311,21 +361,33 @@ struct CampaignFeatureTests {
         #expect(store.state.campaigns.isEmpty)
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func unpaidOnlyToggledUpdatesState() async {
+        // Given
+
         let store = TestStore(initialState: CampaignFeature.State()) {
             CampaignFeature()
         }
 
+        // When
+
         await store.send(.unpaidOnlyToggled(true)) {
+            // Then
+
             $0.showsUnpaidOnly = true
         }
 
         await store.send(.unpaidOnlyToggled(false)) {
+            // Then
+
             $0.showsUnpaidOnly = false
         }
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func newCampaignTappedPresentsEmptyEditForm() async {
+        // Given
+
         let store = TestStore(initialState: CampaignFeature.State()) {
             CampaignFeature()
         } withDependencies: {
@@ -334,6 +396,8 @@ struct CampaignFeatureTests {
             $0.uuid = .incrementing
         }
         // 以完整狀態比較驗證表單已呈現且為新開團
+        // When
+
         await store.send(.newCampaignTapped) {
             $0.editCampaign = CampaignEditFeature.State(
                 id: UUID(0),
@@ -346,6 +410,8 @@ struct CampaignFeatureTests {
                 ) ?? TestDependencies.fixedNow
             )
         }
+        // Then
+
         #expect(store.state.editCampaign != nil)
         #expect(store.state.editCampaign?.original == nil)
         #expect(store.state.editCampaign?.draft.status == .ongoing)
@@ -353,7 +419,10 @@ struct CampaignFeatureTests {
 
     // MARK: - Name Uniqueness Tests
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func savingDuplicateNameIsRejectedBeforeAnyWrite() async {
+        // Given
+
         let existing = makeCampaign(
             id: "C1",
             name: "母親節團",
@@ -387,10 +456,14 @@ struct CampaignFeatureTests {
                 return .granted
             }
         }
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign?.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
         }
         await store.finish()
+
+        // Then
 
         #expect(store.state.campaigns.count == 1, "重複名稱應被拒絕，不應新增第二筆")
         #expect(store.state.editCampaign != nil, "拒絕儲存時表單應維持呈現，而非被關閉")
@@ -399,7 +472,10 @@ struct CampaignFeatureTests {
         #expect(requestAccessCount.value == 0, "拒絕時不應進入任何行事曆相依呼叫")
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func editingCampaignKeepingOwnNameSavesSuccessfully() async {
+        // Given
+
         let existing = makeCampaign(
             id: "C1",
             name: "四月團",
@@ -423,10 +499,14 @@ struct CampaignFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
             $0[CampaignRepository.self].saveCampaign = { _ in }
         }
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
         // 沒有結單日的舊開團，草稿會以目前日期填入
+        // Then
+
         await store.receive(\.campaignSaved) {
             $0.campaigns[0] = Campaign(
                 id: "C1",
@@ -443,7 +523,10 @@ struct CampaignFeatureTests {
         #expect(store.state.campaigns.first?.name == "四月團")
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func preExistingDuplicateNamesRemainSavableWithoutRename() async {
+        // Given
+
         // 既有同名開團可維持原名，新建或改名時才檢查重複
         let campaignA = makeCampaign(
             id: "A",
@@ -474,10 +557,14 @@ struct CampaignFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
             $0[CampaignRepository.self].saveCampaign = { _ in }
         }
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
         // 沒有結單日的舊開團，草稿會以目前日期填入
+        // Then
+
         await store.receive(\.campaignSaved) {
             $0.campaigns[0] = Campaign(
                 id: "A",
@@ -497,7 +584,10 @@ struct CampaignFeatureTests {
 
     // MARK: - Reminder Tests
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func reminderIntentToggledViaBinding() async {
+        // Given
+
         let store = TestStore(
             initialState: CampaignEditFeature.State(
                 id: UUID(0),
@@ -508,15 +598,24 @@ struct CampaignFeatureTests {
             CampaignEditFeature()
         }
 
+        // When
+
         await store.send(.binding(.set(\.draft.wantsReminder, true))) {
+            // Then
+
             $0.draft.wantsReminder = true
         }
         await store.send(.binding(.set(\.draft.wantsReminder, false))) {
+            // Then
+
             $0.draft.wantsReminder = false
         }
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func reminderTimestampEditedViaBinding() async {
+        // Given
+
         let committed = day(month: 4, day: 20).addingTimeInterval(9 * 3600)
         let picked = day(month: 4, day: 26).addingTimeInterval(18 * 3600)
         let store = TestStore(
@@ -530,12 +629,19 @@ struct CampaignFeatureTests {
             CampaignEditFeature()
         }
 
+        // When
+
         await store.send(.binding(.set(\.draft.reminderTimestamp, picked))) {
+            // Then
+
             $0.draft.reminderTimestamp = picked
         }
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func reminderLinksLoadedStoresLinks() async {
+        // Given
+
         let link = CampaignReminderLink(
             eventIdentifier: "EVT-1",
             reminderTimestamp: day(month: 4, day: 20).addingTimeInterval(9 * 3600)
@@ -544,12 +650,19 @@ struct CampaignFeatureTests {
             CampaignFeature()
         }
 
+        // When
+
         await store.send(.reminderLinksLoaded(["C1": link])) {
+            // Then
+
             $0.reminderLinks = ["C1": link]
         }
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func saveWithDeniedAccessShowsAlertAndStoresNoLink() async {
+        // Given
+
         let newID = UUID(uuidString: "22222222-2222-2222-2222-222222222222")!
         var editState = CampaignEditFeature.State(
             id: UUID(0),
@@ -572,7 +685,11 @@ struct CampaignFeatureTests {
         }
         // 儲存後依序收到 campaignSaved 與 reminderAccessDenied
         store.exhaustivity = .off
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.campaignSaved)
         await store.receive(\.reminderAccessDenied)
         // 新開團尚無 selectedCampaignID (未進入詳情)，通知掛列表插槽
@@ -580,7 +697,10 @@ struct CampaignFeatureTests {
         #expect(store.state.reminderLinks[newID.uuidString] == nil)
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func saveCreatesReminderWithChosenTimestampOnNewCampaign() async {
+        // Given
+
         let newID = UUID(uuidString: "11111111-1111-1111-1111-111111111111")!
         // 使用者在 popup 選 4/20 18:00
         let chosen = day(month: 4, day: 20).addingTimeInterval(18 * 3600)
@@ -614,7 +734,11 @@ struct CampaignFeatureTests {
         // 儲存同時啟動子表單 dismiss、`campaignSaved` 與提醒建立／連結寫入效果。
         // 完成順序不固定，因此關閉窮舉。
         store.exhaustivity = .off
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.reminderStored)
         await store.skipReceivedActions(strict: false)
         #expect(
@@ -628,7 +752,10 @@ struct CampaignFeatureTests {
         #expect(offsetBox.value == TimeInterval(18 * 60 * 60))
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func saveRemovesReminderWhenIntentClearedOnExistingCampaign() async {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "四月團",
@@ -664,13 +791,20 @@ struct CampaignFeatureTests {
         }
         // 儲存與提醒移除同時進行，完成順序不固定。
         store.exhaustivity = .off
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.reminderStored)
         await store.skipReceivedActions(strict: false)
         #expect(store.state.reminderLinks["C1"] == nil)
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func saveRebuildsReminderWhenNameChangedOnExistingCampaign() async {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "舊團名",
@@ -711,7 +845,11 @@ struct CampaignFeatureTests {
         }
         // 改名會重建提醒；完成順序不固定，只驗證結果。
         store.exhaustivity = .off
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.reminderStored)
         await store.skipReceivedActions(strict: false)
         #expect(
@@ -723,7 +861,10 @@ struct CampaignFeatureTests {
         #expect(removedOldIdentifier.value == "EVT-old")
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func saveRebuildsReminderWhenTimestampChanged() async {
+        // Given
+
         // 提醒時間變更後應重建提醒。
         let campaign = makeCampaign(
             id: "C1", name: "四月團", status: .ongoing, closeDate: day(month: 4, day: 20))
@@ -767,7 +908,11 @@ struct CampaignFeatureTests {
         }
         // 時間戳變更會重建提醒；完成順序不固定，只驗證結果。
         store.exhaustivity = .off
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.reminderStored)
         await store.skipReceivedActions(strict: false)
         #expect(
@@ -783,7 +928,10 @@ struct CampaignFeatureTests {
 
     // MARK: - Write Failure Visibility Tests
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func saveFailureDoesNotInsertCampaign() async {
+        // Given
+
         var editState = CampaignEditFeature.State(
             id: UUID(0),
             currentDate: TestDependencies.fixedNow,
@@ -799,14 +947,21 @@ struct CampaignFeatureTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .incrementing
-            $0[CampaignRepository.self].saveCampaign = { (_: Campaign) async throws(PersistenceError) in
-                throw PersistenceError.saveFailed(message: "boom")
+            $0[CampaignRepository.self].saveCampaign = {
+                (_: Campaign) async throws(PersistenceError) in
+                throw PersistenceError.saveFailed(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
             }
         }
+
+        // When
 
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
+        // Then
+
         await store.receive(\.campaignWriteFailed) {
             $0.noticeAlert = Self.failureAlert("開團儲存失敗，請稍後再試。")
         }
@@ -814,7 +969,10 @@ struct CampaignFeatureTests {
         #expect(store.state.campaigns.isEmpty, "寫入失敗不應插入開團")
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func statusChangeFailureKeepsPreviousStatus() async {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -829,12 +987,19 @@ struct CampaignFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[CampaignRepository.self].saveCampaign = { (_: Campaign) async throws(PersistenceError) in
-                throw PersistenceError.saveFailed(message: "boom")
+            $0[CampaignRepository.self].saveCampaign = {
+                (_: Campaign) async throws(PersistenceError) in
+                throw PersistenceError.saveFailed(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
             }
         }
 
+        // When
+
         await store.send(.statusChanged("C1", .closed))
+        // Then
+
         await store.receive(\.campaignWriteFailed) {
             $0.noticeAlert = Self.failureAlert("開團狀態更新失敗，請稍後再試。")
         }
@@ -842,7 +1007,10 @@ struct CampaignFeatureTests {
         #expect(store.state.campaigns[0].status == .ongoing, "寫入失敗應維持先前狀態")
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func settleFailureKeepsCampaignUnsettled() async {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -857,10 +1025,15 @@ struct CampaignFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[CampaignRepository.self].saveCampaign = { (_: Campaign) async throws(PersistenceError) in
-                throw PersistenceError.saveFailed(message: "boom")
+            $0[CampaignRepository.self].saveCampaign = {
+                (_: Campaign) async throws(PersistenceError) in
+                throw PersistenceError.saveFailed(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
             }
         }
+
+        // When
 
         await store.send(.settleTapped("C1")) {
             $0.settleConfirmation = Self.settleAlert(id: "C1", name: "團")
@@ -868,6 +1041,8 @@ struct CampaignFeatureTests {
         await store.send(.settleConfirmation(.presented(.confirmSettle("C1")))) {
             $0.settleConfirmation = nil
         }
+        // Then
+
         await store.receive(\.settleConfirmed)
         await store.receive(\.campaignWriteFailed) {
             $0.noticeAlert = Self.failureAlert("結團失敗，請稍後再試。")
@@ -877,7 +1052,10 @@ struct CampaignFeatureTests {
         #expect(store.state.campaigns[0].status == .closed)
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func deleteFailureKeepsCampaignVisible() async {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -892,10 +1070,15 @@ struct CampaignFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[CampaignRepository.self].removeCampaign = { (_: String, _: String) async throws(PersistenceError) -> String? in
-                throw PersistenceError.saveFailed(message: "boom")
+            $0[CampaignRepository.self].removeCampaign = {
+                (_: String, _: String) async throws(PersistenceError) -> String? in
+                throw PersistenceError.saveFailed(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
             }
         }
+
+        // When
 
         await store.send(.deleteCampaignTapped("C1")) {
             $0.deletionConfirmation = Self.deletionAlert(id: "C1", name: "團")
@@ -903,6 +1086,8 @@ struct CampaignFeatureTests {
         await store.send(.deletionConfirmation(.presented(.confirmDelete("C1")))) {
             $0.deletionConfirmation = nil
         }
+        // Then
+
         await store.receive(\.campaignDeleteRequested)
         await store.receive(\.campaignWriteFailed) {
             $0.noticeAlert = Self.failureAlert("開團刪除失敗，請稍後再試。")
@@ -916,7 +1101,10 @@ struct CampaignFeatureTests {
 
     // MARK: - Delete Cascade Tests
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func deleteClearsReminderLinkAndRemovesCalendarEvent() async {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -944,12 +1132,16 @@ struct CampaignFeatureTests {
             }
         }
 
+        // When
+
         await store.send(.deleteCampaignTapped("C1")) {
             $0.deletionConfirmation = Self.deletionAlert(id: "C1", name: "團")
         }
         await store.send(.deletionConfirmation(.presented(.confirmDelete("C1")))) {
             $0.deletionConfirmation = nil
         }
+        // Then
+
         await store.receive(\.campaignDeleteRequested)
         await store.receive(\.campaignDeleted) {
             $0.campaigns = []
@@ -959,7 +1151,10 @@ struct CampaignFeatureTests {
         #expect(removedIdentifier.value == "EVT-1", "刪除應以連結記錄的事件識別碼呼叫一次 removeReminder")
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func calendarRemovalFailureDoesNotResurrectTheDeletedCampaign() async {
+        // Given
+
         // 行事曆移除失敗不回滾開團，但仍須顯示錯誤。
         let campaign = makeCampaign(
             id: "C1",
@@ -976,10 +1171,15 @@ struct CampaignFeatureTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
             $0[CampaignRepository.self].removeCampaign = { _, _ in "EVT-1" }
-            $0[CalendarReminderClient.self].removeReminder = { (_: String) async throws(CalendarReminderError) in
-                throw CalendarReminderError.system(message: "boom")
+            $0[CalendarReminderClient.self].removeReminder = {
+                (_: String) async throws(CalendarReminderError) in
+                throw CalendarReminderError.system(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
             }
         }
+
+        // When
 
         await store.send(.deleteCampaignTapped("C1")) {
             $0.deletionConfirmation = Self.deletionAlert(id: "C1", name: "團")
@@ -987,6 +1187,8 @@ struct CampaignFeatureTests {
         await store.send(.deletionConfirmation(.presented(.confirmDelete("C1")))) {
             $0.deletionConfirmation = nil
         }
+        // Then
+
         await store.receive(\.campaignDeleteRequested)
         await store.receive(\.campaignDeleted) {
             $0.campaigns = []
@@ -1000,7 +1202,10 @@ struct CampaignFeatureTests {
 
     // MARK: - Notice Alert Slot Tests
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func noticeAlertGoesToListSlotWhenNoCampaignIsSelected() async {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -1016,18 +1221,28 @@ struct CampaignFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[CampaignRepository.self].saveCampaign = { (_: Campaign) async throws(PersistenceError) in
-                throw PersistenceError.saveFailed(message: "boom")
+            $0[CampaignRepository.self].saveCampaign = {
+                (_: Campaign) async throws(PersistenceError) in
+                throw PersistenceError.saveFailed(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
             }
         }
 
+        // When
+
         await store.send(.statusChanged("C1", .closed))
+        // Then
+
         await store.receive(\.campaignWriteFailed) {
             $0.noticeAlert = Self.failureAlert("開團狀態更新失敗，請稍後再試。")
         }
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func noticeAlertGoesToDetailSlotWhenACampaignIsSelected() async {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -1043,12 +1258,19 @@ struct CampaignFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[CampaignRepository.self].saveCampaign = { (_: Campaign) async throws(PersistenceError) in
-                throw PersistenceError.saveFailed(message: "boom")
+            $0[CampaignRepository.self].saveCampaign = {
+                (_: Campaign) async throws(PersistenceError) in
+                throw PersistenceError.saveFailed(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
             }
         }
 
+        // When
+
         await store.send(.statusChanged("C1", .closed))
+        // Then
+
         await store.receive(\.campaignWriteFailed) {
             $0.detailNoticeAlert = Self.failureAlert("開團狀態更新失敗，請稍後再試。")
         }
@@ -1060,6 +1282,8 @@ struct CampaignFeatureTests {
     ///
     /// - Throws: 測試資料建立或功能驗證失敗時拋出錯誤
     @Test func presentedCampaignsMatchReloadAfterFailedSave() async throws(any Error) {
+        // Given
+
         let existing = makeCampaign(
             id: "C1",
             name: "既有團",
@@ -1076,6 +1300,8 @@ struct CampaignFeatureTests {
         initial.campaigns = [existing]
         initial.editCampaign = editState
 
+        // When
+
         let repository = try await Self.makeReloadConsistencyRepository(seeding: [existing])
         let store = TestStore(initialState: initial) {
             CampaignFeature()
@@ -1089,6 +1315,8 @@ struct CampaignFeatureTests {
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
+        // Then
+
         await store.receive(\.campaignWriteFailed) {
             $0.noticeAlert = Self.failureAlert("開團儲存失敗，請稍後再試。")
         }
@@ -1108,7 +1336,10 @@ struct CampaignFeatureTests {
         #expect(store.state.campaigns == presented, "重新從唯讀 store 載入的結果應與失敗當下呈現的一致")
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func presentedCampaignsMatchReloadAfterFailedStatusChange() async throws(any Error) {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -1117,6 +1348,8 @@ struct CampaignFeatureTests {
         )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
+
+        // When
 
         let repository = try await Self.makeReloadConsistencyRepository(seeding: [campaign])
         let store = TestStore(initialState: initial) {
@@ -1128,6 +1361,8 @@ struct CampaignFeatureTests {
         }
 
         await store.send(.statusChanged("C1", .closed))
+        // Then
+
         await store.receive(\.campaignWriteFailed) {
             $0.noticeAlert = Self.failureAlert("開團狀態更新失敗，請稍後再試。")
         }
@@ -1147,7 +1382,10 @@ struct CampaignFeatureTests {
         #expect(store.state.campaigns == presented)
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func presentedCampaignsMatchReloadAfterFailedSettle() async throws(any Error) {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -1156,6 +1394,8 @@ struct CampaignFeatureTests {
         )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
+
+        // When
 
         let repository = try await Self.makeReloadConsistencyRepository(seeding: [campaign])
         let store = TestStore(initialState: initial) {
@@ -1172,6 +1412,8 @@ struct CampaignFeatureTests {
         await store.send(.settleConfirmation(.presented(.confirmSettle("C1")))) {
             $0.settleConfirmation = nil
         }
+        // Then
+
         await store.receive(\.settleConfirmed)
         await store.receive(\.campaignWriteFailed) {
             $0.noticeAlert = Self.failureAlert("結團失敗，請稍後再試。")
@@ -1192,7 +1434,10 @@ struct CampaignFeatureTests {
         #expect(store.state.campaigns == presented)
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func presentedCampaignsMatchReloadAfterFailedListDelete() async throws(any Error) {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -1201,6 +1446,8 @@ struct CampaignFeatureTests {
         )
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
+
+        // When
 
         let repository = try await Self.makeReloadConsistencyRepository(seeding: [campaign])
         let store = TestStore(initialState: initial) {
@@ -1217,6 +1464,8 @@ struct CampaignFeatureTests {
         await store.send(.deletionConfirmation(.presented(.confirmDelete("C1")))) {
             $0.deletionConfirmation = nil
         }
+        // Then
+
         await store.receive(\.campaignDeleteRequested)
         await store.receive(\.campaignWriteFailed) {
             $0.noticeAlert = Self.failureAlert("開團刪除失敗，請稍後再試。")
@@ -1237,7 +1486,10 @@ struct CampaignFeatureTests {
         #expect(store.state.campaigns == presented)
     }
 
+    /// 驗證開團功能在此情境下的狀態與效果
     @Test func presentedCampaignsMatchReloadAfterFailedDetailDelete() async throws(any Error) {
+        // Given
+
         let campaign = makeCampaign(
             id: "C1",
             name: "團",
@@ -1247,6 +1499,8 @@ struct CampaignFeatureTests {
         var initial = CampaignFeature.State()
         initial.campaigns = [campaign]
         initial.selectedCampaignID = "C1"
+
+        // When
 
         let repository = try await Self.makeReloadConsistencyRepository(seeding: [campaign])
         let store = TestStore(initialState: initial) {
@@ -1263,6 +1517,8 @@ struct CampaignFeatureTests {
         await store.send(.detailDeletionConfirmation(.presented(.confirmDelete("C1")))) {
             $0.detailDeletionConfirmation = nil
         }
+        // Then
+
         await store.receive(\.campaignDeleteRequested)
         await store.receive(\.campaignWriteFailed) {
             $0.detailNoticeAlert = Self.failureAlert("開團刪除失敗，請稍後再試。")
@@ -1285,6 +1541,8 @@ struct CampaignFeatureTests {
 
     /// 收款狀態切換只送出 delegate，不直接修改 `State.orders`
     @Test func receiptStatusToggleEmitsDelegateWithoutMutatingState() async {
+        // Given
+
         let order = makeCampaignOrder(
             id: "O1",
             campaign: "四月團"
@@ -1296,7 +1554,11 @@ struct CampaignFeatureTests {
             CampaignFeature()
         }
 
+        // When
+
         await store.send(.receiptStatusToggled("O1", .received))
+        // Then
+
         await store.receive(\.delegate.receiptStatusToggled)
 
         // 測試期間不直接改寫 `State.orders`，由 RootFeature 同步投影。
@@ -1397,7 +1659,8 @@ private extension CampaignFeatureTests {
     /// - Parameter initialCampaigns: 初始開團清單
     /// - Returns: CampaignRepository
     /// - Throws: 測試資料庫建立或資料寫入失敗時拋出錯誤
-    static func makeReloadConsistencyRepository(seeding initialCampaigns: [Campaign]) async throws(any Error) -> CampaignRepository {
+    static func makeReloadConsistencyRepository(seeding initialCampaigns: [Campaign])
+        async throws(any Error) -> CampaignRepository {
         let storeURL = FileManager.default.temporaryDirectory
             .appendingPathComponent("BuyLedgerCampaignReloadTest-\(UUID().uuidString).store")
         let schema = Schema(versionedSchema: BuyLedgerSchemaV16.self)
@@ -1434,7 +1697,9 @@ private extension CampaignFeatureTests {
     ///
     /// - Parameter message: 要顯示的錯誤訊息
     /// - Returns: 錯誤提示狀態
-    static func failureAlert(_ message: LocalizedStringKey) -> AlertState<CampaignFeature.Action.NoticeAlert> {
+    static func failureAlert(
+        _ message: LocalizedStringKey
+    ) -> AlertState<CampaignFeature.Action.NoticeAlert> {
         AlertState {
             TextState("操作失敗")
         } actions: {
@@ -1452,7 +1717,10 @@ private extension CampaignFeatureTests {
     ///   - id: 要刪除的開團識別碼
     ///   - name: 要刪除的開團名稱
     /// - Returns: 刪除提示狀態
-    static func deletionAlert(id: Campaign.ID, name: String) -> AlertState<CampaignFeature.Action.Alert> {
+    static func deletionAlert(
+        id: Campaign.ID,
+        name: String
+    ) -> AlertState<CampaignFeature.Action.Alert> {
         AlertState {
             TextState("刪除開團")
         } actions: {
@@ -1473,7 +1741,10 @@ private extension CampaignFeatureTests {
     ///   - id: 要結團的開團識別碼
     ///   - name: 要結團的開團名稱
     /// - Returns: 結團提示狀態
-    static func settleAlert(id: Campaign.ID, name: String) -> AlertState<CampaignFeature.Action.SettleAlert> {
+    static func settleAlert(
+        id: Campaign.ID,
+        name: String
+    ) -> AlertState<CampaignFeature.Action.SettleAlert> {
         AlertState {
             TextState("結團結算")
         } actions: {

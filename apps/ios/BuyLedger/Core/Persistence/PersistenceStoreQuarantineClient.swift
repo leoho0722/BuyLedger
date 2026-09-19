@@ -2,7 +2,7 @@
 //  PersistenceStoreQuarantineClient.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/7/26.
+//  Created by Leo Ho on 2026/07/26.
 //
 
 import ComposableArchitecture
@@ -11,14 +11,14 @@ import Foundation
 /// 將無法開啟的 store 移至隔離備份目錄的可注入介面
 struct PersistenceStoreQuarantineClient: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
     /// 搬移目前 Application Support 目錄中的 store 檔
     /// - Throws: store 路徑解析或檔案搬移失敗時拋出 ``PersistenceRecoveryError``
     var quarantine: @Sendable () throws(PersistenceRecoveryError) -> Void
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension PersistenceStoreQuarantineClient: DependencyKey {
 
@@ -36,7 +36,7 @@ extension PersistenceStoreQuarantineClient: DependencyKey {
                 )
             } catch {
                 throw PersistenceRecoveryError.directoryResolutionFailed(
-                    message: error.localizedDescription
+                    underlying: error as NSError
                 )
             }
             _ = try PersistenceStoreQuarantine.quarantine(

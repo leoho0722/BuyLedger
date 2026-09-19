@@ -2,7 +2,7 @@
 //  CalendarReminderClient.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/7/11.
+//  Created by Leo Ho on 2026/07/11.
 //
 
 import ComposableArchitecture
@@ -12,13 +12,15 @@ import Foundation
 /// 將開團訂購提醒寫入／移除系統行事曆的依賴介面
 struct CalendarReminderClient: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
     /// 請求系統行事曆權限
+    ///
     /// - Returns: 系統行事曆權限授權結果
     var requestAccess: @Sendable () async -> AccessResult
 
-    /// 以標題、日期與提示位移建立全天提醒事件，回傳事件識別碼
+    /// 以標題、日期與提示位移建立全天提醒事件
+    ///
     /// - Parameters:
     ///   - title: 提醒事件標題
     ///   - date: 事件日期 (全天事件)
@@ -31,13 +33,16 @@ struct CalendarReminderClient: Sendable {
         _ alarmOffset: TimeInterval
     ) async throws(CalendarReminderError) -> String
 
-    /// 依識別碼移除事件；找不到視為 no-op
+    /// 依識別碼移除事件；找不到時不做任何事
+    ///
     /// - Parameter eventIdentifier: 要移除的事件識別碼
-    /// - Returns: 無回傳值，找不到事件視為 no-op
     /// - Throws: 行事曆移除失敗時拋出 ``CalendarReminderError``
-    var removeReminder: @Sendable (_ eventIdentifier: String) async throws(CalendarReminderError) -> Void
+    var removeReminder: @Sendable (
+        _ eventIdentifier: String
+    ) async throws(CalendarReminderError) -> Void
 
     /// 依識別碼查詢事件是否仍存在
+    ///
     /// - Parameter eventIdentifier: 要查詢的事件識別碼
     /// - Returns: 事件是否仍存在
     var reminderExists: @Sendable (_ eventIdentifier: String) async -> Bool
@@ -49,8 +54,6 @@ extension CalendarReminderClient {
 
     /// 行事曆存取請求的結果
     enum AccessResult: Equatable, Sendable {
-
-        // MARK: - Cases
 
         /// 已授予完整存取
         case granted
@@ -64,9 +67,7 @@ extension CalendarReminderClient {
 }
 
 /// 建立或移除提醒事件時可能拋出的錯誤
-enum CalendarReminderError: Error, Equatable, Sendable {
-
-    // MARK: - Cases
+enum CalendarReminderError: Error, Sendable {
 
     /// 事件已存檔但取不到識別碼 (理論上不應發生)
     case eventIdentifierMissing
@@ -75,7 +76,8 @@ enum CalendarReminderError: Error, Equatable, Sendable {
     case noWritableCalendar
 
     /// 系統行事曆 API 回傳其他錯誤
-    case system(message: String)
+    /// - Parameter underlying: 系統行事曆 API 原本拋出的錯誤
+    case system(underlying: any Error & Sendable)
 }
 
 // MARK: - Private Method
@@ -83,32 +85,41 @@ enum CalendarReminderError: Error, Equatable, Sendable {
 private extension CalendarReminderClient {
 
     /// 將事件儲存到系統行事曆
+    ///
     /// - Parameters:
     ///   - event: 要儲存的事件
     ///   - store: EventKit 行事曆資料庫
-    /// - Throws: EventKit 儲存失敗時轉成 ``CalendarReminderError/system(message:)``
-    static func saveCalendarEvent(_ event: EKEvent, using store: EKEventStore) throws(CalendarReminderError) {
+    /// - Throws: `EventKit` 儲存失敗時轉成 ``CalendarReminderError/system(underlying:)``
+    static func saveCalendarEvent(
+        _ event: EKEvent,
+        using store: EKEventStore
+    ) throws(CalendarReminderError) {
         do {
             try store.save(event, span: .thisEvent, commit: true)
         } catch {
-            throw CalendarReminderError.system(message: error.localizedDescription)
+            throw CalendarReminderError.system(underlying: error as NSError)
         }
     }
 
     /// 從系統行事曆移除事件
+    ///
     /// - Parameters:
     ///   - event: 要移除的事件
     ///   - store: EventKit 行事曆資料庫
-    /// - Throws: EventKit 移除失敗時轉成 ``CalendarReminderError/system(message:)``
-    static func removeCalendarEvent(_ event: EKEvent, using store: EKEventStore) throws(CalendarReminderError) {
+    /// - Throws: `EventKit` 移除失敗時轉成 ``CalendarReminderError/system(underlying:)``
+    static func removeCalendarEvent(
+        _ event: EKEvent,
+        using store: EKEventStore
+    ) throws(CalendarReminderError) {
         do {
             try store.remove(event, span: .thisEvent, commit: true)
         } catch {
-            throw CalendarReminderError.system(message: error.localizedDescription)
+            throw CalendarReminderError.system(underlying: error as NSError)
         }
     }
 
     /// 請求完整的行事曆存取權限
+    ///
     /// - Returns: 系統判定的權限結果
     static func requestCalendarAccess() async -> CalendarReminderClient.AccessResult {
         let store = EKEventStore()
@@ -120,16 +131,23 @@ private extension CalendarReminderClient {
         do {
             granted = try await store.requestFullAccessToEvents()
         } catch {
-            return EKEventStore.authorizationStatus(for: .event) == .restricted ? .restricted : .denied
+            if EKEventStore.authorizationStatus(for: .event) == .restricted {
+                return .restricted
+            }
+            return .denied
         }
         if granted {
             return .granted
         }
         // 請求後再次確認授權狀態
-        return EKEventStore.authorizationStatus(for: .event) == .restricted ? .restricted : .denied
+        if EKEventStore.authorizationStatus(for: .event) == .restricted {
+            return .restricted
+        }
+        return .denied
     }
 
     /// 建立全天提醒事件
+    ///
     /// - Parameters:
     ///   - title: 提醒事件標題
     ///   - date: 事件日期
@@ -162,8 +180,9 @@ private extension CalendarReminderClient {
     }
 
     /// 依識別碼移除行事曆事件
+    ///
     /// - Parameter identifier: 事件識別碼
-    /// - Throws: EventKit 移除失敗時轉成 ``CalendarReminderError/system(message:)``
+    /// - Throws: EventKit 移除失敗時轉成 ``CalendarReminderError/system(underlying:)``
     static func removeCalendarReminder(_ identifier: String) async throws(CalendarReminderError) {
         let store = EKEventStore()
         guard let event = store.event(withIdentifier: identifier) else {
@@ -173,6 +192,7 @@ private extension CalendarReminderClient {
     }
 
     /// 依識別碼確認行事曆事件是否存在
+    ///
     /// - Parameter identifier: 事件識別碼
     /// - Returns: 事件是否存在
     static func calendarReminderExists(_ identifier: String) -> Bool {
@@ -181,7 +201,7 @@ private extension CalendarReminderClient {
     }
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension CalendarReminderClient: DependencyKey {
 

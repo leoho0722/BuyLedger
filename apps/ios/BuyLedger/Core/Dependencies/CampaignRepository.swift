@@ -2,24 +2,24 @@
 //  CampaignRepository.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/30.
+//  Created by Leo Ho on 2026/05/30.
 //
 
 import ComposableArchitecture
 import Foundation
 import SwiftData
 
-/// 開團 (Campaign) 主檔的依賴介面
+/// 讀寫開團主檔的依賴介面
 struct CampaignRepository: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
-    /// 讀取目前所有開團 (依開團日期由新到舊排序)
+    /// 讀取目前所有開團，依開團日期由新到舊排序
     /// - Returns: 依日期由新到舊排序的開團
     /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
     var fetchCampaigns: @Sendable () async throws(PersistenceError) -> [Campaign]
 
-    /// 寫入或更新單一開團 (依 id upsert)
+    /// 寫入或更新單一開團
     /// - Parameter campaign: 要寫入或更新的開團
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     var saveCampaign: @Sendable (_ campaign: Campaign) async throws(PersistenceError) -> Void
@@ -76,7 +76,7 @@ private extension CampaignRepository {
     }
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension CampaignRepository: DependencyKey {
 

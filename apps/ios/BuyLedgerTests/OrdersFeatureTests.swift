@@ -2,7 +2,7 @@
 //  OrdersFeatureTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/5/1.
+//  Created by Leo Ho on 2026/05/01.
 //
 
 import Clocks
@@ -17,7 +17,10 @@ struct OrdersFeatureTests {
 
     // MARK: - Tests
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func taskLoadsOrdersAndSelectsFirstOrder() async {
+        // Given
+
         let orders = LedgerOrder.sampleOrders
         let store = TestStore(initialState: OrdersFeature.State()) {
             OrdersFeature()
@@ -27,10 +30,14 @@ struct OrdersFeatureTests {
         // 主檔效果並行且順序不固定，本測試只驗證訂單載入
         store.exhaustivity = .off
 
+        // When
+
         await store.send(.task) {
             $0.isLoading = true
             $0.errorMessage = nil
         }
+
+        // Then
 
         await store.receive(\.ordersLoaded) {
             $0.isLoading = false
@@ -42,7 +49,10 @@ struct OrdersFeatureTests {
 
     // MARK: - Campaign Auto-Close Evaluation
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func campaignsLoadedKeepsCloseDateTodayOngoing() async {
+        // Given
+
         // 結單日當天仍算 ongoing，驗證使用日期而非時間戳判斷
         let campaign = Campaign(
             id: "C1",
@@ -60,12 +70,19 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.campaignsLoaded([campaign])) {
+            // Then
+
             $0.campaigns = [campaign]
         }
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func searchTextFiltersOrdersByCustomerIdAndItemName() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         let store = TestStore(initialState: state) {
@@ -75,12 +92,16 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.searchTextChanged("mika")) {
             $0.searchText = "mika"
             $0.selectedOrderID = "BL-2604-017"
         }
 
         // "Mika 周" 有兩筆樣本訂單，依日期由新到舊排序。
+        // Then
+
         #expect(
             store.state.filteredOrders(
                 referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar
@@ -97,7 +118,10 @@ struct OrdersFeatureTests {
             ).map(\.id) == ["BL-2604-016"])
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func statusFilterShowsMatchingOrdersOnly() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         let store = TestStore(initialState: state) {
@@ -107,6 +131,8 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.statusFilterSelected(.shipping)) {
             $0.selectedStatus = .shipping
             $0.selectedOrderID = "BL-2604-018"
@@ -114,12 +140,17 @@ struct OrdersFeatureTests {
 
         let filtered = store.state.filteredOrders(
             referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
+        // Then
+
         #expect(filtered.allSatisfy { $0.status == .shipping })
         // 樣本中集運中的訂單有兩筆 (BL-2604-018 與合併樣本 BL-2604-011)
         #expect(filtered.map(\.id) == ["BL-2604-018", "BL-2604-011"])
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editFlowPersistsCustomerNameAfterSave() async {
+        // Given
+
         // 直接預塞 `editOrder` 草稿，測試 `applyEditDraft` 的寫回邏輯。
         // 直接預塞草稿，避開 Swift 6 的 BindingAction Sendable 限制
         let originalID = "BL-2604-018"
@@ -140,7 +171,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -153,7 +188,10 @@ struct OrdersFeatureTests {
         #expect(updated?.customer.name == newName)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editFlowPersistsNotes() async {
+        // Given
+
         // 驗證備註欄位經 save 後寫回 orders，且首尾空白會被 trim
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -172,7 +210,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -184,7 +226,10 @@ struct OrdersFeatureTests {
         #expect(updated?.notes == "到貨後請先聯絡客戶確認尺寸")
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editFlowPersistsPhotosAfterSave() async {
+        // Given
+
         // 驗證照片只有在已載入且被編輯過時才會寫回
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -206,7 +251,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -218,7 +267,10 @@ struct OrdersFeatureTests {
         #expect(updated?.photos == photos)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editFlowPersistsPhotosForNewOrder() async {
+        // Given
+
         // 驗證新增訂單分支 (original == nil) 也會把照片草稿寫進新訂單
         let photos = [Data([0xA1])]
 
@@ -237,7 +289,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -249,7 +305,10 @@ struct OrdersFeatureTests {
         #expect(created?.photos == photos)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editFlowKeepsReconciliationStatusForBankTransfer() async {
+        // Given
+
         // 付款方式屬於銀行匯款 → 對帳狀態有意義，save 後應保留
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -276,7 +335,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -288,7 +351,10 @@ struct OrdersFeatureTests {
         #expect(updated?.reconciliationStatus == "待對帳")
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editFlowClearsReconciliationStatusForNonReconcilingMethod() async {
+        // Given
+
         // 非無卡或銀行匯款時，儲存後清空對帳狀態。
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -308,8 +374,12 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
         // 對帳狀態清空後與原值相同，因此 state 不變。
+        // Then
+
         #expect(expected.order == original, "本測試前提：清空對帳狀態後應與原訂單完全相同，才會是沒有可觀察變化的寫回")
         await store.receive(\.orderSavePersisted)
         await store.receive(\.editOrder.dismiss) {
@@ -320,7 +390,10 @@ struct OrdersFeatureTests {
         #expect(updated?.reconciliationStatus == "")
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editFlowSavingEmptyNameKeepsOriginalName() async {
+        // Given
+
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
@@ -338,8 +411,12 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
         // 空白客戶名回退後與原訂單相同。
+        // Then
+
         #expect(expected.order == original, "本測試前提：回退空白名稱後應與原訂單完全相同，才會是沒有可觀察變化的寫回")
         await store.receive(\.orderSavePersisted)
         await store.receive(\.editOrder.dismiss) {
@@ -350,7 +427,10 @@ struct OrdersFeatureTests {
         #expect(updated?.customer.name == original.customer.name)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func cancellingEditDoesNotMutateOrders() async {
+        // Given
+
         // 預塞草稿驗證取消不會套用變更
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -366,6 +446,8 @@ struct OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         }
+
+        // When
 
         await store.send(.editOrder(.presented(.cancelTapped))) {
             $0.editOrder?.discardConfirmation = AlertState {
@@ -384,10 +466,15 @@ struct OrdersFeatureTests {
         await store.finish()
 
         let unchanged = store.state.orders.first { $0.id == originalID }
+        // Then
+
         #expect(unchanged?.customer.name == original.customer.name)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editOrderTappedSetsEditState() async {
+        // Given
+
         // 驗證 .editOrderTapped 走 @Presents 把 editOrder 設成對應草稿
         // dismiss lifecycle 的 sheet 關閉行為由實機 UI 與 OrderEditFeature 標準
         // BindingReducer + DismissEffect 保證，這裡不重複驗證
@@ -416,17 +503,24 @@ struct OrdersFeatureTests {
             currentDate: TestDependencies.fixedNow
         )
 
+        // When
+
         await store.send(.editOrderTapped(originalID)) {
             $0.editOrder = expectedEditState
         }
 
         let editState = store.state.editOrder
+        // Then
+
         #expect(editState?.original?.id == originalID)
         #expect(editState?.draft.customerName == original.customer.name)
         #expect(editState?.draft.categories == original.categories)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func newOrderTappedSetsEmptyEditState() async {
+        // Given
+
         let store = TestStore(initialState: OrdersFeature.State()) {
             OrdersFeature()
         } withDependencies: {
@@ -438,17 +532,24 @@ struct OrdersFeatureTests {
         let expectedEditState = OrderEditFeature.State(
             id: UUID(0), currentDate: TestDependencies.fixedNow)
 
+        // When
+
         await store.send(.newOrderTapped) {
             $0.editOrder = expectedEditState
         }
 
         let editState = store.state.editOrder
+        // Then
+
         #expect(editState?.original == nil)
         #expect(editState?.draft.customerName.isEmpty == true)
         #expect(editState?.draft.categories.isEmpty == true)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editingExistingOrderKeepsSelection() async {
+        // Given
+
         // 編輯既有訂單 save 後不該改變 selectedOrderID (即使原本選的是別張)
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -469,7 +570,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -481,7 +586,10 @@ struct OrdersFeatureTests {
         #expect(store.state.orders.first { $0.id == originalID }?.customer.name == "改過的客戶")
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editFlowPersistsStatusCurrencyAndAmount() async {
+        // Given
+
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
@@ -501,7 +609,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -517,7 +629,10 @@ struct OrdersFeatureTests {
         #expect(updated?.customer.name == original.customer.name)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editFlowPersistsCostBreakdownFields() async {
+        // Given
+
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
@@ -539,7 +654,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -555,7 +674,10 @@ struct OrdersFeatureTests {
         #expect(updated?.platformFeeRate == 0.04)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editFlowClampsFeeRatesIntoZeroToOneRange() async {
+        // Given
+
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
@@ -574,7 +696,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -587,7 +713,10 @@ struct OrdersFeatureTests {
         #expect(updated?.platformFeeRate == 1)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editFlowClampsNegativeChargedAmountToZero() async {
+        // Given
+
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
 
@@ -605,7 +734,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -617,7 +750,10 @@ struct OrdersFeatureTests {
         #expect(updated?.chargedAmount == 0)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func newOrderSaveInsertsAndSelectsTheNewOrder() async {
+        // Given
+
         let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
 
         // 顯式把 fixedDate 帶進 `currentDate`，讓新訂單的 `draft.date` 為固定值、
@@ -642,7 +778,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -665,7 +805,10 @@ struct OrdersFeatureTests {
         #expect(inserted?.date == fixedDate)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func newOrderSaveUsesCreateIntentNotUpdateIntent() async {
+        // Given
+
         // 新訂單必須使用 createOrder，避免撞號時覆寫既有資料
         let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
         var draft = OrderEditFeature.State(id: UUID(0), currentDate: fixedDate)
@@ -688,7 +831,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -700,7 +847,10 @@ struct OrdersFeatureTests {
         #expect(box.savedOrders.isEmpty, "新建訂單不可誤用 saveOrder (更新意圖)")
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func newOrderSaveDoesNotInsertWhenCreateFails() async {
+        // Given
+
         // 寫入失敗時，訂單狀態與重新載入結果都不變
         // 建立失敗不會樂觀插入訂單，只顯示寫入失敗對話框。
         let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
@@ -721,14 +871,19 @@ struct OrdersFeatureTests {
             $0.uuid = .incrementing
             $0.date = .constant(fixedDate)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[OrderRepository.self].createOrder = { (_: LedgerOrder) async throws(OrderPersistenceError) in
+            $0[OrderRepository.self].createOrder = {
+                (_: LedgerOrder) async throws(OrderPersistenceError) in
                 throw OrderPersistenceError.identifierCollision(id: expectedID)
             }
         }
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
         // 先接收失敗 action，再斷言 state。
         // (比照 CampaignReminderFailureTests 的既有慣例；exhaustivity 全程未關閉)
+        // Then
+
         await store.receive(\.orderWriteFailed) {
             $0.writeFailureAlert = expectedWriteFailureAlert("訂單儲存失敗，請稍後再試。")
         }
@@ -744,7 +899,10 @@ struct OrdersFeatureTests {
         await store.finish()
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func editExistingOrderSaveUsesUpdateIntentNotCreateIntent() async {
+        // Given
+
         // 既有訂單必須使用 saveOrder，避免誤走建立流程
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -767,7 +925,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -781,7 +943,10 @@ struct OrdersFeatureTests {
 
     // MARK: - Photo Write Gating
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func savingBeforePhotoLoadCompletesKeepsStoredPhotos() async {
+        // Given
+
         // 照片載入中一律走不帶照片的儲存路徑。
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -808,7 +973,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -820,7 +989,10 @@ struct OrdersFeatureTests {
         #expect(box.photoPersistedOrders.isEmpty, "載入中儲存不可誤用 saveOrderPersistingPhotos")
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func savingAfterPhotoLoadFailureKeepsStoredPhotos() async {
+        // Given
+
         // 照片載入失敗時也走不帶照片的儲存路徑。
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -846,7 +1018,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -858,7 +1034,10 @@ struct OrdersFeatureTests {
         #expect(box.photoPersistedOrders.isEmpty, "載入失敗後儲存不可誤用 saveOrderPersistingPhotos")
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func savingWithEditedPhotosWritesEditedSet() async {
+        // Given
+
         // 照片已載入且有變更時，使用帶照片的寫入路徑。
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -886,7 +1065,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -899,7 +1082,10 @@ struct OrdersFeatureTests {
         #expect(box.savedOrders.isEmpty, "已編輯照片時不可誤用不帶照片的 saveOrder")
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func savingWithEditedFlagBeforePhotoLoadCompletesKeepsStoredPhotos() async {
+        // Given
+
         // photoLoadPhase 未完成時，即使 hasEditedPhotos 為 true 也不能寫入照片
         let originalID = "BL-2604-018"
         let original = LedgerOrder.sampleOrders.first { $0.id == originalID }!
@@ -927,7 +1113,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -941,7 +1131,10 @@ struct OrdersFeatureTests {
             "尚未 .loaded 時不可誤用 saveOrderPersistingPhotos，即使 hasEditedPhotos 已為真")
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func saveNormalizesCategoryAndCampaignArrays() async {
+        // Given
+
         // 儲存時逐元素 trim、去除空字串與重複 (保序)
         var draft = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         draft.draft.customerName = "新客戶"
@@ -961,7 +1154,11 @@ struct OrdersFeatureTests {
 
         let expected = Self.expectedWriteResult(draft, existingOrders: state.orders)
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) { state in
             Self.applyExpectedWriteResult(expected, to: &state)
         }
@@ -977,7 +1174,10 @@ struct OrdersFeatureTests {
 
     // MARK: - Merge Entry
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func mergeOrderTappedOpensCandidateSheet() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         let primaryID = "BL-2604-018"
@@ -998,16 +1198,23 @@ struct OrdersFeatureTests {
                 orders: state.orders)
         }
 
+        // When
+
         await store.send(.mergeOrderTapped(primaryID)) {
             $0.orderMerge = expectedOrderMerge
         }
 
         // 主訂單為林書宇的 KRW 訂單，候選需同客戶與幣別且未合併或取消。
+        // Then
+
         #expect(store.state.orderMerge?.primary.id == primaryID)
         #expect(store.state.orderMerge?.candidates.map(\.id) == ["BL-2604-012"])
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func mergeOrderTappedRejectsMergedAndCancelledPrimary() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = [
             makeOrder(id: "M1", category: "美妝", status: .merged),
@@ -1021,7 +1228,11 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.mergeOrderTapped("M1"))
+        // Then
+
         #expect(store.state.orderMerge == nil)
 
         await store.send(.mergeOrderTapped("C1"))
@@ -1031,7 +1242,7 @@ struct OrdersFeatureTests {
     /// 合併完成後開啟帶入固定欄位值的編輯草稿
     ///
     /// - Throws: 樣本訂單不存在時拋出測試錯誤
-    @Test func mergeCompletion_opensPrefilledDraft() async throws(any Error) {
+    @Test func mergeCompletionOpensPrefilledDraft() async throws(any Error) {
         // Given：兩筆完整訂單已載入，準備從主訂單進入合併流程
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
@@ -1074,7 +1285,7 @@ struct OrdersFeatureTests {
             dependencies.continuousClock = clock
         }
 
-        // When：選取副訂單並等待合併確認表單呈現
+        // When
         await store.send(.mergeOrderTapped(primaryID)) { state in
             state.orderMerge = OrderMergeFeature.State(primary: primary, orders: initialOrders)
         }
@@ -1121,7 +1332,7 @@ struct OrdersFeatureTests {
             state.editOrder = expectedEdit
         }
 
-        // Then：合併 sheet 收合，確認表單以固定預期值填入所有欄位
+        // Then
         #expect(store.state.orderMerge == nil)
 
         let edit = try #require(store.state.editOrder)
@@ -1132,7 +1343,10 @@ struct OrdersFeatureTests {
         #expect(edit.isMergeContext)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func mergeDraftSaveCommitsNewOrderAndMarksSourcesMerged() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         let primaryID = "BL-2604-018"
@@ -1165,10 +1379,14 @@ struct OrdersFeatureTests {
                 : order
         }
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped))) {
             $0.orders = expectedOrders
             $0.selectedOrderID = expected.order.id
         }
+        // Then
+
         await store.receive(\.editOrder.dismiss) {
             $0.editOrder = nil
         }
@@ -1190,6 +1408,8 @@ struct OrdersFeatureTests {
 
     /// 合併確認會以保留的照片建立新訂單
     @Test func mergeWritesKeptPhotosExplicitly() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         let primaryID = "BL-2604-018"
@@ -1226,10 +1446,14 @@ struct OrdersFeatureTests {
                 : order
         }
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped))) {
             $0.orders = expectedOrders
             $0.selectedOrderID = expected.order.id
         }
+        // Then
+
         await store.receive(\.editOrder.dismiss) {
             $0.editOrder = nil
         }
@@ -1239,7 +1463,10 @@ struct OrdersFeatureTests {
         #expect(mergedOrdersBox.createdOrders.first?.photos == keptPhotos, "傳入的照片必須等於使用者勾選保留的集合")
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func mergeDraftCancelLeavesOrdersUntouched() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
 
@@ -1258,6 +1485,8 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.editOrder(.presented(.cancelTapped))) {
             $0.editOrder?.discardConfirmation = AlertState {
                 TextState("捨棄變更")
@@ -1275,12 +1504,17 @@ struct OrdersFeatureTests {
         await store.finish()
 
         // 取消不留任何變更：筆數與每筆內容皆不變
+        // Then
+
         #expect(store.state.orders == snapshot)
     }
 
     // MARK: - Category Filter
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func categoryFilterShowsMatchingCategoryOnly() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         guard let firstSample = LedgerOrder.sampleOrders.first else {
@@ -1296,6 +1530,8 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         let expectedFirstID =
             state
             .filteredOrders(
@@ -1305,9 +1541,13 @@ struct OrdersFeatureTests {
             .id
 
         await store.send(.categoryFilterSelected(targetCategory)) {
+            // Then
+
             $0.selectedCategory = targetCategory
             $0.selectedOrderID = expectedFirstID
         }
+
+        // Then
 
         let filtered = store.state.filteredOrders(
             referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
@@ -1324,7 +1564,10 @@ struct OrdersFeatureTests {
         }
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func categoryFilterCombinesWithStatusFilter() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = [
             makeOrder(id: "O1", category: "beauty", status: .shipping),
@@ -1338,6 +1581,8 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.statusFilterSelected(.shipping)) {
             $0.selectedStatus = .shipping
             $0.selectedOrderID = "O1"
@@ -1349,12 +1594,17 @@ struct OrdersFeatureTests {
 
         let filtered = store.state.filteredOrders(
             referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
+        // Then
+
         #expect(filtered.map(\.id) == ["O1"])
     }
 
     // MARK: - Payment Method Filter
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func paymentMethodFilterShowsMatchingPaymentMethodOnly() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         guard let firstSample = LedgerOrder.sampleOrders.first else {
@@ -1370,6 +1620,8 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         let expectedFirstID =
             state
             .filteredOrders(
@@ -1379,9 +1631,13 @@ struct OrdersFeatureTests {
             .id
 
         await store.send(.paymentMethodFilterSelected(targetPaymentMethod)) {
+            // Then
+
             $0.selectedPaymentMethod = targetPaymentMethod
             $0.selectedOrderID = expectedFirstID
         }
+
+        // Then
 
         let filtered = store.state.filteredOrders(
             referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
@@ -1398,7 +1654,10 @@ struct OrdersFeatureTests {
         }
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func paymentMethodFilterCombinesWithCategoryFilter() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = [
             makeOrder(id: "P1", category: "beauty", paymentMethod: "信用卡"),
@@ -1412,6 +1671,8 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.categoryFilterSelected("beauty")) {
             $0.selectedCategory = "beauty"
             $0.selectedOrderID = "P1"
@@ -1423,12 +1684,17 @@ struct OrdersFeatureTests {
 
         let filtered = store.state.filteredOrders(
             referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
+        // Then
+
         #expect(filtered.map(\.id) == ["P1"])
     }
 
     // MARK: - AI Summary Entry
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func aiSummaryTappedWithSettingEnabledPresentsSheet() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
 
@@ -1448,6 +1714,8 @@ struct OrdersFeatureTests {
             )
         }
 
+        // When
+
         await store.send(.aiSummaryTapped) {
             $0.aiSummary = AISummaryFeature.State(
                 prompt: state.aiSummaryPrompt(
@@ -1457,11 +1725,16 @@ struct OrdersFeatureTests {
             )
         }
 
+        // Then
+
         #expect(store.state.aiSummary?.prompt.isEmpty == false)
         #expect(store.state.aiDisabledAlert == nil)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func aiSummaryTappedWithSettingDisabledPresentsAlert() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
 
@@ -1475,6 +1748,8 @@ struct OrdersFeatureTests {
                 save: { _ in }
             )
         }
+
+        // When
 
         await store.send(.aiSummaryTapped) {
             $0.aiDisabledAlert = AlertState {
@@ -1491,13 +1766,18 @@ struct OrdersFeatureTests {
             }
         }
 
+        // Then
+
         #expect(store.state.aiDisabledAlert != nil)
         #expect(store.state.aiSummary == nil)
     }
 
     // MARK: - Multi-Value Filter (contains)
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func categoryFilterMatchesAnyAssignedCategory() async {
+        // Given
+
         // 多類別訂單：類別陣列「包含」所選類別即命中
         var state = OrdersFeature.State()
         state.orders = [
@@ -1515,6 +1795,8 @@ struct OrdersFeatureTests {
         }
 
         // 類別與狀態篩選應同時套用
+        // When
+
         await store.send(.statusFilterSelected(.status(.purchased))) {
             $0.selectedStatus = .status(.purchased)
             $0.selectedOrderID = "O1"
@@ -1526,10 +1808,15 @@ struct OrdersFeatureTests {
 
         let filtered = store.state.filteredOrders(
             referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
+        // Then
+
         #expect(filtered.map(\.id) == ["O1", "O4"])
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func specificCampaignFilterMatchesAnyAssignedCampaign() async {
+        // Given
+
         // 任一所屬開團符合條件時，訂單應命中
         var state = OrdersFeature.State()
         state.orders = [
@@ -1546,6 +1833,8 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.campaignFilterSelected("May-JP")) {
             $0.selectedCampaign = "May-JP"
             $0.selectedOrderID = "O1"
@@ -1553,10 +1842,15 @@ struct OrdersFeatureTests {
 
         let filtered = store.state.filteredOrders(
             referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
+        // Then
+
         #expect(filtered.map(\.id) == ["O1", "O2"])
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func campaignStatusFilterMatchesWhenAnyAssignedCampaignHasStatus() async {
+        // Given
+
         // 任一所屬開團符合狀態時，訂單應被篩選命中
         var state = OrdersFeature.State()
         state.campaigns = [
@@ -1593,12 +1887,16 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.campaignStatusFilterSelected(.ongoing)) {
             $0.selectedCampaignStatus = .ongoing
             $0.selectedOrderID = "O1"
         }
         var filtered = store.state.filteredOrders(
             referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
+        // Then
+
         #expect(filtered.map(\.id) == ["O1", "O3"])
 
         await store.send(.campaignStatusFilterSelected(.closed)) {
@@ -1612,7 +1910,10 @@ struct OrdersFeatureTests {
 
     // MARK: - Batch Status Tests
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func selectionModeToggleEntersSelectsAndClearsOnExit() async {
+        // Given
+
         // 寫入失敗時，訂單狀態與重新載入結果都不變
         let orders = [makeOrder(id: "O1", categories: ["beauty"], status: .shipping)]
         var state = OrdersFeature.State()
@@ -1621,17 +1922,24 @@ struct OrdersFeatureTests {
             OrdersFeature()
         }
 
+        // When
+
         await store.send(.selectionModeToggled) { $0.isSelecting = true }
         await store.send(.orderSelectionToggled("O1")) { $0.selectedOrderIDs = ["O1"] }
         await store.send(.orderSelectionToggled("O1")) { $0.selectedOrderIDs = [] }
         await store.send(.orderSelectionToggled("O1")) { $0.selectedOrderIDs = ["O1"] }
         await store.send(.selectionModeToggled) {
+            // Then
+
             $0.isSelecting = false
             $0.selectedOrderIDs = []
         }
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func selectAllSelectsFilteredThenClear() async {
+        // Given
+
         // 寫入失敗時，訂單狀態與重新載入結果都不變
         let orders = [
             makeOrder(id: "O1", categories: ["beauty"], status: .shipping),
@@ -1647,11 +1955,24 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
-        await store.send(.selectAllTapped) { $0.selectedOrderIDs = ["O1", "O2"] }
-        await store.send(.clearSelectionTapped) { $0.selectedOrderIDs = [] }
+        // When
+
+        await store.send(.selectAllTapped) {
+            // Then
+
+            $0.selectedOrderIDs = ["O1", "O2"]
+        }
+        await store.send(.clearSelectionTapped) {
+            // Then
+
+            $0.selectedOrderIDs = []
+        }
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func batchStatusChangedAppliesToSelectedSkipsAlreadyTargetAndExits() async {
+        // Given
+
         // 寫入失敗時，訂單狀態與重新載入結果都不變
         // 只重建狀態不同的 O1、O3，O2 維持原狀
         let orders = [
@@ -1671,10 +1992,14 @@ struct OrdersFeatureTests {
             $0[OrderRepository.self].saveOrders = { box.saved = $0 }
         }
 
+        // When
+
         await store.send(.batchStatusChanged(.arrived)) {
             $0.isSelecting = false
             $0.selectedOrderIDs = []
         }
+        // Then
+
         await store.receive(\.batchStatusChangePersisted) { state in
             state.orders = state.orders.map { order in
                 ["O1", "O3"].contains(order.id) ? order.withStatus(.arrived) : order
@@ -1690,7 +2015,10 @@ struct OrdersFeatureTests {
         #expect(Set((box.saved ?? []).map(\.id)) == ["O1", "O3"])
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func batchStatusChangedRejectsMerged() async {
+        // Given
+
         // 寫入失敗時，訂單狀態與重新載入結果都不變
         let orders = [makeOrder(id: "O1", categories: ["beauty"], status: .shipping)]
         var state = OrdersFeature.State()
@@ -1701,11 +2029,22 @@ struct OrdersFeatureTests {
             OrdersFeature()
         }
 
+        // When
+
         await store.send(.batchStatusChanged(.merged))
         await store.finish()
+
+        // Then
+
+        #expect(store.state.orders == orders)
+        #expect(store.state.isSelecting)
+        #expect(store.state.selectedOrderIDs == ["O1"])
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func revertingMergeSourceStatusPersistsSuccessfully() async {
+        // Given
+
         let source = makeOrder(id: "source", categories: ["beauty"], status: .merged)
         var state = OrdersFeature.State()
         state.orders = [source]
@@ -1716,7 +2055,11 @@ struct OrdersFeatureTests {
             $0[OrderRepository.self].saveOrder = { box.savedOrders.append($0) }
         }
 
+        // When
+
         await store.send(.statusChanged("source", .confirmed))
+        // Then
+
         await store.receive(\.statusChangePersisted) {
             $0.orders[0] = source.withStatus(.confirmed)
         }
@@ -1727,7 +2070,10 @@ struct OrdersFeatureTests {
 
     // MARK: - Write-Then-Update Failure Handling
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func writeFailureAlertLeavesNoResidueAndDoesNotShadowLaterSuccess() async {
+        // Given
+
         // 寫入失敗時，訂單狀態與重新載入結果都不變
         // 關閉錯誤提示後，下一次成功寫入不應再顯示錯誤
         // 保持完整窮舉，逐一驗證每個 action 的 state 變更
@@ -1739,14 +2085,21 @@ struct OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
-            $0[OrderRepository.self].saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
+            $0[OrderRepository.self].saveOrder = {
+                (_: LedgerOrder) async throws(PersistenceError) in
                 if toggle.shouldFail {
-                    throw .saveFailed(message: "boom")
+                    throw .saveFailed(
+                        underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                    )
                 }
             }
         }
 
+        // When
+
         await store.send(.statusChanged("O1", .arrived))
+        // Then
+
         await store.receive(\.orderWriteFailed) {
             $0.writeFailureAlert = expectedWriteFailureAlert("訂單狀態更新失敗，請稍後再試。")
         }
@@ -1771,7 +2124,7 @@ struct OrdersFeatureTests {
     /// 狀態寫入失敗後重新載入仍保留原訂單
     ///
     /// - Throws: 測試 repository 建立或非同步寫入失敗時拋出錯誤
-    @Test func statusChangeFailure_preservesPresentedOrderAcrossReload() async throws(any Error) {
+    @Test func statusChangeFailurePreservesPresentedOrderAcrossReload() async throws(any Error) {
         // Given：訂單狀態寫入會失敗，且重新載入受閘門控制
         let original = makeOrder(id: "O1", categories: ["beauty"], status: .shipping)
         let reloadGate = ReloadGate()
@@ -1783,7 +2136,9 @@ struct OrdersFeatureTests {
         )
         let persistedOriginal = LedgerOrder.normalizingItemIdentifiers(original)
         repository.saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
-            throw .saveFailed(message: "boom")
+            throw .saveFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "boom")
+            )
         }
         var state = OrdersFeature.State()
         state.orders = [original]
@@ -1795,7 +2150,7 @@ struct OrdersFeatureTests {
             Self.suppressOrderLookupEffects(&dependencies)
         }
 
-        // When：嘗試更新狀態，再執行實際重新載入
+        // When
         await store.send(.statusChanged("O1", .arrived))
         await store.receive(\.orderWriteFailed) {
             $0.writeFailureAlert = expectedWriteFailureAlert("訂單狀態更新失敗，請稍後再試。")
@@ -1807,7 +2162,7 @@ struct OrdersFeatureTests {
             result: reloadResult
         )
 
-        // Then：畫面與儲存層都仍是原本的訂單
+        // Then
         #expect(
             store.state.orders.map(LedgerOrder.normalizingItemIdentifiers) == [persistedOriginal],
             "冷啟動前後畫面呈現的訂單集合應一致"
@@ -1820,7 +2175,7 @@ struct OrdersFeatureTests {
     ///
     /// - Throws: 測試 repository 建立或非同步寫入失敗時拋出錯誤
     @Test
-    func receiptStatusChangeFailure_preservesPresentedOrderAcrossReload() async throws(any Error) {
+    func receiptStatusChangeFailurePreservesPresentedOrderAcrossReload() async throws(any Error) {
         // Given：收款狀態寫入會失敗，且重新載入受閘門控制
         let original = makeOrder(id: "O1", categories: ["beauty"])
         let reloadGate = ReloadGate()
@@ -1832,7 +2187,9 @@ struct OrdersFeatureTests {
         )
         let persistedOriginal = LedgerOrder.normalizingItemIdentifiers(original)
         repository.saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
-            throw .saveFailed(message: "boom")
+            throw .saveFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "boom")
+            )
         }
         var state = OrdersFeature.State()
         state.orders = [original]
@@ -1844,7 +2201,7 @@ struct OrdersFeatureTests {
             Self.suppressOrderLookupEffects(&dependencies)
         }
 
-        // When：嘗試更新收款狀態，再執行實際重新載入
+        // When
         await store.send(.receiptStatusChanged("O1", .received))
         await store.receive(\.orderWriteFailed) {
             $0.writeFailureAlert = expectedWriteFailureAlert("收款狀態更新失敗，請稍後再試。")
@@ -1856,7 +2213,7 @@ struct OrdersFeatureTests {
             result: reloadResult
         )
 
-        // Then：畫面與儲存層都仍是原本的訂單
+        // Then
         #expect(
             store.state.orders.map(LedgerOrder.normalizingItemIdentifiers) == [persistedOriginal],
             "冷啟動前後畫面呈現的訂單集合應一致"
@@ -1869,7 +2226,7 @@ struct OrdersFeatureTests {
     ///
     /// - Throws: 測試 repository 建立或非同步寫入失敗時拋出錯誤
     @Test
-    func batchStatusChangeFailure_preservesOrdersAcrossReload() async throws(any Error) {
+    func batchStatusChangeFailurePreservesOrdersAcrossReload() async throws(any Error) {
         // Given：所有選取訂單的批次狀態寫入會失敗
         let orders = [
             makeOrder(id: "O1", categories: ["beauty"], status: .shipping),
@@ -1886,7 +2243,9 @@ struct OrdersFeatureTests {
         )
         let persistedOrders = orders.map(LedgerOrder.normalizingItemIdentifiers)
         repository.saveOrders = { (_: [LedgerOrder]) async throws(PersistenceError) in
-            throw .saveFailed(message: "boom")
+            throw .saveFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "boom")
+            )
         }
         var state = OrdersFeature.State()
         state.orders = orders
@@ -1900,7 +2259,7 @@ struct OrdersFeatureTests {
             Self.suppressOrderLookupEffects(&dependencies)
         }
 
-        // When：執行批次狀態更新，再執行實際重新載入
+        // When
         await store.send(.batchStatusChanged(.arrived)) {
             $0.isSelecting = false
             $0.selectedOrderIDs = []
@@ -1915,7 +2274,7 @@ struct OrdersFeatureTests {
             result: reloadResult
         )
 
-        // Then：所有訂單仍與寫入前一致
+        // Then
         #expect(
             store.state.orders.map(LedgerOrder.normalizingItemIdentifiers).sorted { left, right in
                 left.id < right.id
@@ -1932,7 +2291,7 @@ struct OrdersFeatureTests {
     /// 刪除寫入失敗後重新載入仍保留原訂單
     ///
     /// - Throws: 測試 repository 建立或非同步寫入失敗時拋出錯誤
-    @Test func deletionFailure_preservesPresentedOrderAcrossReload() async throws(any Error) {
+    @Test func deletionFailurePreservesPresentedOrderAcrossReload() async throws(any Error) {
         // Given：刪除操作會失敗，且重新載入受閘門控制
         let original = makeOrder(id: "O1", categories: ["beauty"])
         let reloadGate = ReloadGate()
@@ -1944,7 +2303,9 @@ struct OrdersFeatureTests {
         )
         let persistedOriginal = LedgerOrder.normalizingItemIdentifiers(original)
         repository.removeOrder = { (_: LedgerOrder.ID) async throws(PersistenceError) in
-            throw .saveFailed(message: "boom")
+            throw .saveFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "boom")
+            )
         }
         var state = OrdersFeature.State()
         state.orders = [original]
@@ -1956,7 +2317,7 @@ struct OrdersFeatureTests {
             Self.suppressOrderLookupEffects(&dependencies)
         }
 
-        // When：確認刪除，再執行實際重新載入
+        // When
         await store.send(.deleteOrderTapped("O1")) {
             $0.deletionConfirmation = AlertState {
                 TextState("刪除訂單")
@@ -1988,7 +2349,7 @@ struct OrdersFeatureTests {
             result: reloadResult
         )
 
-        // Then：訂單仍存在且選取狀態不變
+        // Then
         #expect(
             store.state.orders.map(LedgerOrder.normalizingItemIdentifiers) == [persistedOriginal],
             "冷啟動前後畫面呈現的訂單集合應一致"
@@ -2000,7 +2361,7 @@ struct OrdersFeatureTests {
     /// 編輯儲存失敗後重新載入仍保留原訂單
     ///
     /// - Throws: 測試 repository 建立或非同步寫入失敗時拋出錯誤
-    @Test func editSaveFailure_preservesPresentedOrderAcrossReload() async throws(any Error) {
+    @Test func editSaveFailurePreservesPresentedOrderAcrossReload() async throws(any Error) {
         // Given：編輯儲存會失敗，且重新載入受閘門控制
         let originalID = "BL-2604-018"
         let original = try #require(LedgerOrder.sampleOrders.first { $0.id == originalID })
@@ -2014,7 +2375,9 @@ struct OrdersFeatureTests {
         )
         let persistedOrders = LedgerOrder.sampleOrders.map(LedgerOrder.normalizingItemIdentifiers)
         repository.saveOrder = { (_: LedgerOrder) async throws(PersistenceError) in
-            throw .saveFailed(message: "boom")
+            throw .saveFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "boom")
+            )
         }
 
         var draft = OrderEditFeature.State(
@@ -2032,7 +2395,7 @@ struct OrdersFeatureTests {
             Self.suppressOrderLookupEffects(&dependencies)
         }
 
-        // When：儲存編輯，再執行實際重新載入
+        // When
         await store.send(.editOrder(.presented(.saveTapped)))
         await store.receive(\.orderWriteFailed) {
             $0.writeFailureAlert = expectedWriteFailureAlert("訂單儲存失敗，請稍後再試。")
@@ -2049,7 +2412,7 @@ struct OrdersFeatureTests {
             result: reloadResult
         )
 
-        // Then：畫面與儲存層都仍是原本的訂單集合
+        // Then
         #expect(
             store.state.orders.map(LedgerOrder.normalizingItemIdentifiers) == persistedOrders,
             "冷啟動前後畫面呈現的訂單集合應一致"
@@ -2060,7 +2423,10 @@ struct OrdersFeatureTests {
 
     // MARK: - Cardless Deduction Cap
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func saveClampsExcessiveCardlessDeductionToChargedAmount() async {
+        // Given
+
         // 折抵上限為實付金額，避免 revenue 變成負數
         let original = makeOrder(
             id: "O-CAP-1", categories: ["測試"], status: .shipping, paymentMethod: "信用卡")
@@ -2086,7 +2452,11 @@ struct OrdersFeatureTests {
             OrdersFeature()
         }
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) {
             $0.orders[0] = original.withCardlessAmounts(
                 chargedAmount: 1_000,
@@ -2104,7 +2474,10 @@ struct OrdersFeatureTests {
         await store.finish()
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func existingOverCapDeductionIsCorrectedOnNextSave() async {
+        // Given
+
         // 既有超額資料在開啟表單時收斂，儲存後保留上限。
         let legacyOverCap = makeOrder(
             id: "O-CAP-2", categories: ["測試"], status: .shipping, paymentMethod: "無卡存款"
@@ -2122,7 +2495,13 @@ struct OrdersFeatureTests {
             currentDate: TestDependencies.fixedNow
         )
         // 表單載入時已在使用者眼前收斂，草稿值不再是規則生效前的 1_500
-        #expect(draft.draft.cardlessDeductionAmount == 1_000)
+        // When
+
+        let normalizedDeduction = draft.draft.cardlessDeductionAmount
+
+        // Then
+
+        #expect(normalizedDeduction == 1_000)
 
         var state = OrdersFeature.State()
         state.orders = [legacyOverCap]
@@ -2148,7 +2527,12 @@ struct OrdersFeatureTests {
         await store.finish()
     }
 
-    @Test func manualPaymentMethodEditAndRetroactiveCorrectionProduceIdenticalOrderFields() async throws(any Error) {
+    /// 驗證訂單功能在此情境下的狀態與效果
+    @Test
+    func manualPaymentMethodEditAndRetroactiveCorrectionProduceIdenticalOrderFields()
+        async throws(any Error) {
+        // Given
+
         let original = LedgerOrder(
             id: "O-PARITY",
             customer: LedgerCustomer(name: "對照測試", initials: "PT", tier: .regular),
@@ -2196,7 +2580,7 @@ struct OrdersFeatureTests {
             original
             .renamingPaymentMethod(to: newPaymentMethod.name)
             .applyingPaymentMethodFlags(
-                flags: newPaymentMethod.currentFlags
+                newPaymentMethod.currentFlags
             )
         var state = OrdersFeature.State()
         state.orders = [original]
@@ -2208,7 +2592,11 @@ struct OrdersFeatureTests {
             $0[OrderRepository.self].saveOrder = { box.savedOrders.append($0) }
         }
 
+        // When
+
         await store.send(.editOrder(.presented(.saveTapped)))
+        // Then
+
         await store.receive(\.orderSavePersisted) {
             $0.orders = [retroactive]
         }
@@ -2227,7 +2615,10 @@ struct OrdersFeatureTests {
 
     // MARK: - Compact Detail Navigation Stack
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func detailPathPushAddsStackElement() async {
+        // Given
+
         // 推入訂單詳情後，StackState 應新增對應項目
         let orderID = "BL-2604-018"
         var state = OrdersFeature.State()
@@ -2237,15 +2628,24 @@ struct OrdersFeatureTests {
             OrdersFeature()
         }
 
-        await store.send(.detailPath(.push(id: 0, state: OrderDetailPath.State(orderID: orderID)))) {
+        // When
+
+        await store.send(
+            .detailPath(.push(id: 0, state: OrderDetailPath.State(orderID: orderID)))
+        ) {
             $0.detailPath = StackState([OrderDetailPath.State(orderID: orderID)])
         }
+
+        // Then
 
         #expect(store.state.detailPath.count == 1)
         #expect(store.state.detailPath[id: 0]?.orderID == orderID)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func detailPathPrunesRemovedOrderAfterDelete() async {
+        // Given
+
         // 堆疊中的訂單詳情被刪除後，對應的 detailPath 元素也應移除。
         // 等價於原本 View 端 onChange(of: store.orders) 的收斂邏輯 (現已收進 reducer)
         let originalID = "BL-2604-018"
@@ -2257,6 +2657,8 @@ struct OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         }
+
+        // When
 
         await store.send(.deleteOrderTapped(originalID)) {
             $0.deletionConfirmation = AlertState {
@@ -2272,6 +2674,8 @@ struct OrdersFeatureTests {
                 TextState("刪除「\(original.customer.name)」的這筆訂單後無法復原。")
             }
         }
+        // Then
+
         #expect(store.state.deletionConfirmation != nil)
 
         await store.send(.deletionConfirmation(.presented(.confirmDelete(originalID)))) {
@@ -2287,34 +2691,53 @@ struct OrdersFeatureTests {
 
     // MARK: - Filter Sheet Binding
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func bindingTogglesShowsFilterSheet() async {
+        // Given
+
         let store = TestStore(initialState: OrdersFeature.State()) {
             OrdersFeature()
         }
 
+        // When
+
         await store.send(\.binding.showsFilterSheet, true) {
+            // Then
+
             $0.showsFilterSheet = true
         }
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func bindingTogglesRegularPickerSheets() async {
+        // Given
+
         // iPad regular 的類別／付款方式篩選 picker 開關已下放 State，走 binding 管理
         let store = TestStore(initialState: OrdersFeature.State()) {
             OrdersFeature()
         }
 
+        // When
+
         await store.send(\.binding.showsCategoryPicker, true) {
+            // Then
+
             $0.showsCategoryPicker = true
         }
 
         await store.send(\.binding.showsPaymentMethodPicker, true) {
+            // Then
+
             $0.showsPaymentMethodPicker = true
         }
     }
 
     // MARK: - Filter Sheet Unapplied Flow
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func filterSheetTappedSeedsPendingFilterFromCommittedValues() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.selectedDatePeriod = .thisMonth
@@ -2335,7 +2758,11 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.filterSheetTapped) {
+            // Then
+
             $0.pendingFilterSelection = OrdersFeature.State.PendingFilterSelection(
                 datePeriod: .thisMonth,
                 category: "beauty",
@@ -2346,7 +2773,10 @@ struct OrdersFeatureTests {
         }
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func pendingSelectionsDoNotTouchCommittedFilters() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.selectedDatePeriod = .all
@@ -2362,6 +2792,8 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.filterPendingDatePeriodSelected(.thisMonth)) {
             $0.pendingFilterSelection.datePeriod = .thisMonth
         }
@@ -2372,54 +2804,78 @@ struct OrdersFeatureTests {
             $0.pendingFilterSelection.paymentMethod = "信用卡"
         }
 
+        // Then
+
         #expect(store.state.hasUnappliedFilterChanges)
         #expect(store.state.selectedDatePeriod == .all)
         #expect(store.state.selectedCategory == nil)
         #expect(store.state.selectedPaymentMethod == nil)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func filterSheetSearchTextFiltersCategoriesAndPaymentMethods() async {
-        let state = OrdersFeature.State()
-        state.$lookupCatalog.withLock {
-            $0.categories = ["beauty", "snacks", "books"]
-            $0.paymentMethods = [
-                PaymentMethodInfo(
-                    name: "轉帳", isCardless: false, isBankTransfer: true, isCashOnDelivery: false),
-                PaymentMethodInfo(
-                    name: "貨到付款", isCardless: false, isBankTransfer: false, isCashOnDelivery: true),
-            ]
-        }
+        await withDependencies {
+            $0.defaultInMemoryStorage = InMemoryStorage()
+        } operation: {
+            // Given
 
-        let store = TestStore(initialState: state) {
-            OrdersFeature()
-        }
+            let state = OrdersFeature.State()
+            state.$lookupCatalog.withLock {
+                $0.categories = ["beauty", "snacks", "books"]
+                $0.paymentMethods = [
+                    PaymentMethodInfo(
+                        name: "轉帳",
+                        isCardless: false,
+                        isBankTransfer: true,
+                        isCashOnDelivery: false
+                    ),
+                    PaymentMethodInfo(
+                        name: "貨到付款",
+                        isCardless: false,
+                        isBankTransfer: false,
+                        isCashOnDelivery: true
+                    ),
+                ]
+            }
 
-        await store.send(\.binding.filterSheetSearchText, "boo") {
-            $0.filterSheetSearchText = "boo"
-        }
-        #expect(store.state.filterSheetFilteredCategories == ["books"])
-        #expect(store.state.filterSheetFilteredPaymentMethods.isEmpty)
+            let store = TestStore(initialState: state) {
+                OrdersFeature()
+            }
 
-        // 中綴文字也應命中，不能只比對開頭
-        await store.send(\.binding.filterSheetSearchText, "ook") {
-            $0.filterSheetSearchText = "ook"
-        }
-        #expect(store.state.filterSheetFilteredCategories == ["books"])
+            // When
 
-        // 比對不分大小寫，"BOO" 應命中 "books"。
-        await store.send(\.binding.filterSheetSearchText, "BOO") {
-            $0.filterSheetSearchText = "BOO"
-        }
-        #expect(store.state.filterSheetFilteredCategories == ["books"])
+            await store.send(\.binding.filterSheetSearchText, "boo") {
+                $0.filterSheetSearchText = "boo"
+            }
+            // Then
 
-        await store.send(\.binding.filterSheetSearchText, "轉帳") {
-            $0.filterSheetSearchText = "轉帳"
+            #expect(store.state.filterSheetFilteredCategories == ["books"])
+            #expect(store.state.filterSheetFilteredPaymentMethods.isEmpty)
+
+            // 中綴文字也應命中，不能只比對開頭
+            await store.send(\.binding.filterSheetSearchText, "ook") {
+                $0.filterSheetSearchText = "ook"
+            }
+            #expect(store.state.filterSheetFilteredCategories == ["books"])
+
+            // 比對不分大小寫，"BOO" 應命中 "books"。
+            await store.send(\.binding.filterSheetSearchText, "BOO") {
+                $0.filterSheetSearchText = "BOO"
+            }
+            #expect(store.state.filterSheetFilteredCategories == ["books"])
+
+            await store.send(\.binding.filterSheetSearchText, "轉帳") {
+                $0.filterSheetSearchText = "轉帳"
+            }
+            #expect(store.state.filterSheetFilteredCategories.isEmpty)
+            #expect(store.state.filterSheetFilteredPaymentMethods == ["轉帳"])
         }
-        #expect(store.state.filterSheetFilteredCategories.isEmpty)
-        #expect(store.state.filterSheetFilteredPaymentMethods == ["轉帳"])
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func filterApplyCommitsChangedPendingValuesAndClosesSheet() async {
+        // Given
+
         var state = OrdersFeature.State()
         // 只有 N2 符合新篩選，期望值直接寫死，不重用被測邏輯。
         // 避免期望值與實作共用同一份邏輯 (實作算錯時期望值也會跟著算錯)
@@ -2446,14 +2902,21 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.filterApplyTapped) {
+            // Then
+
             $0.selectedCategory = "beauty"
             $0.selectedOrderID = "N2"
             $0.showsFilterSheet = false
         }
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func filterApplyWithNoPendingChangesClosesSheetAndChangesNothing() async {
+        // Given
+
         var state = OrdersFeature.State()
         // 兩筆都命中篩選；選取 N2 用來確認不會重算。
         state.orders = [
@@ -2474,12 +2937,19 @@ struct OrdersFeatureTests {
             $0.calendar = TestDependencies.fixedCalendar
         }
 
+        // When
+
         await store.send(.filterApplyTapped) {
+            // Then
+
             $0.showsFilterSheet = false
         }
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func filterCancelWithPendingChangesPresentsDiscardConfirmation() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.selectedDatePeriod = .all
         state.selectedCategory = nil
@@ -2495,6 +2965,8 @@ struct OrdersFeatureTests {
             OrdersFeature()
         }
 
+        // When
+
         await store.send(.filterCancelTapped) {
             $0.filterDiscardConfirmation = AlertState {
                 TextState("捨棄變更")
@@ -2509,10 +2981,15 @@ struct OrdersFeatureTests {
                 TextState("這些篩選條件尚未套用，離開後將不會保留。")
             }
         }
+        // Then
+
         #expect(store.state.showsFilterSheet)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func filterDiscardConfirmedRevertsPendingFilterAndClosesSheet() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.selectedDatePeriod = .all
@@ -2527,6 +3004,8 @@ struct OrdersFeatureTests {
         }
 
         // 開啟、修改、取消並確認捨棄後，已套用篩選不變。
+        // When
+
         await store.send(.filterSheetTapped) {
             $0.pendingFilterSelection = OrdersFeature.State.PendingFilterSelection(
                 datePeriod: .all, category: nil, paymentMethod: nil)
@@ -2567,12 +3046,17 @@ struct OrdersFeatureTests {
             $0.showsFilterSheet = false
         }
 
+        // Then
+
         #expect(store.state.selectedDatePeriod == .all)
         #expect(store.state.selectedCategory == nil)
         #expect(store.state.selectedPaymentMethod == nil)
     }
 
+    /// 驗證訂單功能在此情境下的狀態與效果
     @Test func filterCancelWithoutPendingChangesClosesSheetDirectly() async {
+        // Given
+
         var state = OrdersFeature.State()
         state.selectedDatePeriod = .thisMonth
         state.selectedCategory = "beauty"
@@ -2584,7 +3068,11 @@ struct OrdersFeatureTests {
             OrdersFeature()
         }
 
+        // When
+
         await store.send(.filterCancelTapped) {
+            // Then
+
             $0.showsFilterSheet = false
         }
     }
@@ -2723,33 +3211,43 @@ private extension OrdersFeatureTests {
     static func suppressOrderLookupEffects(_ dependencies: inout DependencyValues) {
         var orderSourceRepository = OrderSourceRepository.testValue
         orderSourceRepository.fetchOrderSources = { () async throws(PersistenceError) -> [String] in
-            throw PersistenceError.fetchFailed(message: "suppressed")
+            throw PersistenceError.fetchFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
+            )
         }
         dependencies[OrderSourceRepository.self] = orderSourceRepository
 
         var campaignRepository = CampaignRepository.testValue
         campaignRepository.fetchCampaigns = { () async throws(PersistenceError) -> [Campaign] in
-            throw PersistenceError.fetchFailed(message: "suppressed")
+            throw PersistenceError.fetchFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
+            )
         }
         dependencies[CampaignRepository.self] = campaignRepository
 
         var categoryRepository = CategoryRepository.testValue
         categoryRepository.fetchCategories = { () async throws(PersistenceError) -> [String] in
-            throw PersistenceError.fetchFailed(message: "suppressed")
+            throw PersistenceError.fetchFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
+            )
         }
         dependencies[CategoryRepository.self] = categoryRepository
 
         var paymentMethodRepository = PaymentMethodRepository.testValue
         paymentMethodRepository.fetchPaymentMethodInfos = {
             () async throws(PersistenceError) -> [PaymentMethodInfo] in
-            throw PersistenceError.fetchFailed(message: "suppressed")
+            throw PersistenceError.fetchFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
+            )
         }
         dependencies[PaymentMethodRepository.self] = paymentMethodRepository
 
         var reconciliationStatusRepository = ReconciliationStatusRepository.testValue
         reconciliationStatusRepository.fetchReconciliationStatuses = {
             () async throws(PersistenceError) -> [String] in
-            throw PersistenceError.fetchFailed(message: "suppressed")
+            throw PersistenceError.fetchFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
+            )
         }
         dependencies[ReconciliationStatusRepository.self] = reconciliationStatusRepository
     }
@@ -2880,6 +3378,10 @@ private extension OrdersFeatureTests {
     }
 
     /// 將預期的持久化結果套用到 TestStore 狀態
+    ///
+    /// - Parameters:
+    ///   - result: 預期寫入的訂單與是否為新訂單
+    ///   - state: 要套用結果的訂單功能狀態
     static func applyExpectedWriteResult(
         _ result: (order: LedgerOrder, isNewOrder: Bool),
         to state: inout OrdersFeature.State
@@ -2916,7 +3418,9 @@ private extension OrdersFeatureTests {
     ///
     /// - Parameter message: alert 顯示的錯誤訊息
     /// - Returns: 寫入失敗時顯示的 alert
-    func expectedWriteFailureAlert(_ message: LocalizedStringKey) -> AlertState<OrdersFeature.Action.Alert> {
+    func expectedWriteFailureAlert(
+        _ message: LocalizedStringKey
+    ) -> AlertState<OrdersFeature.Action.Alert> {
         AlertState {
             TextState("操作失敗")
         } actions: {

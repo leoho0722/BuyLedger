@@ -9,7 +9,7 @@
 import Foundation
 
 /// 訂單收款狀態
-enum PaymentReceiptStatus: String, CaseIterable, Codable, Identifiable, Sendable {
+enum PaymentReceiptStatus: String, CaseIterable, Codable, Sendable {
 
     // MARK: - Cases
 
@@ -18,9 +18,12 @@ enum PaymentReceiptStatus: String, CaseIterable, Codable, Identifiable, Sendable
 
     /// 已收款
     case received
+}
 
-    // MARK: - Identifiable Properties
+// MARK: - Identifiable
 
-    /// 穩定識別值 (以 rawValue 表示)
+extension PaymentReceiptStatus: Identifiable {
+
+    /// 以實際保存的值作為穩定識別
     var id: String { rawValue }
 }

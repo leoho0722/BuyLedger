@@ -2,7 +2,7 @@
 //  PersistenceRecoveryTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/7/26.
+//  Created by Leo Ho on 2026/07/26.
 //
 
 import Foundation
@@ -17,15 +17,22 @@ struct PersistenceRecoveryTests {
 
     // MARK: - Quarantine
 
+    /// 驗證持久化復原在此情境下的結果
     @Test func quarantineMovesStoreFilesWithoutChangingTheirContents() throws(any Error) {
+        // Given
+
         let sourceDirectory = try Self.prepareDirectory(named: "move-preserves-contents")
         let backupDirectory = try Self.prepareDirectory(named: "move-preserves-contents-backups")
         let expectedFiles = try Self.writeStoreFiles(in: sourceDirectory)
+
+        // When
 
         let recoveredDirectory = try PersistenceStoreQuarantine.quarantine(
             storeDirectory: sourceDirectory,
             backupDirectory: backupDirectory
         )
+
+        // Then
 
         let recovered = try #require(recoveredDirectory)
         for (name, contents) in expectedFiles {
@@ -37,7 +44,10 @@ struct PersistenceRecoveryTests {
         }
     }
 
+    /// 驗證持久化復原在此情境下的結果
     @Test func quarantineUsesNextAvailableRecoveryIndex() throws(any Error) {
+        // Given
+
         let sourceDirectory = try Self.prepareDirectory(named: "increments-index")
         let backupDirectory = try Self.prepareDirectory(named: "increments-index-backups")
         try FileManager.default.createDirectory(
@@ -46,56 +56,98 @@ struct PersistenceRecoveryTests {
         )
         _ = try Self.writeStoreFiles(in: sourceDirectory)
 
+        // When
+
         let recoveredDirectory = try PersistenceStoreQuarantine.quarantine(
             storeDirectory: sourceDirectory,
             backupDirectory: backupDirectory
         )
 
+        // Then
+
         #expect(recoveredDirectory?.lastPathComponent == "Recovered-2")
     }
 
+    /// 驗證持久化復原在此情境下的結果
     @Test func quarantineWithoutAStoreReturnsNilAndDoesNotCreateDirectory() throws(any Error) {
+        // Given
+
         let sourceDirectory = try Self.prepareDirectory(named: "nothing-to-quarantine")
         let backupDirectory = Self.testRoot.appendingPathComponent(
             "nothing-to-quarantine-backups",
             isDirectory: true
         )
 
+        // When
+
         let recoveredDirectory = try PersistenceStoreQuarantine.quarantine(
             storeDirectory: sourceDirectory,
             backupDirectory: backupDirectory
         )
 
+        // Then
+
         #expect(recoveredDirectory == nil)
         #expect(!FileManager.default.fileExists(atPath: backupDirectory.path))
     }
 
+    /// 驗證持久化復原在此情境下的結果
     @Test func quarantineMapsBackupDirectoryFailureToARecoveryError() throws(any Error) {
+        // Given
+
         let sourceDirectory = try Self.prepareDirectory(named: "backup-path-is-file")
         let backupPath = sourceDirectory.appendingPathComponent("backup-target", isDirectory: true)
         try Data([0x01]).write(to: backupPath)
         _ = try Self.writeStoreFiles(in: sourceDirectory)
+
+        // When
 
         do {
             _ = try PersistenceStoreQuarantine.quarantine(
                 storeDirectory: sourceDirectory,
                 backupDirectory: backupPath
             )
-            Issue.record("Expected quarantine to reject a backup path occupied by a file.")
+
+            // Then
+
+            Issue.record("預期隔離流程會拒絕被檔案佔用的備份路徑。")
         } catch let error {
-            guard case let .directoryCreationFailed(message) = error else {
-                Issue.record("Expected a directoryCreationFailed recovery error.")
+            // Then
+
+            guard case let .directoryCreationFailed(underlying) = error else {
+                Issue.record("預期會得到 directoryCreationFailed 復原錯誤。")
                 return
             }
-            #expect(!message.isEmpty)
+            #expect(!underlying.localizedDescription.isEmpty)
         }
+    }
+
+    /// recovery error 的顯示文字應沿用來源錯誤描述
+    @Test
+    func recoveryErrorDescriptionUsesUnderlyingLocalizedDescription() {
+        // Given
+
+        let sourceError = NSError(
+            domain: "com.leoho.BuyLedger.recovery-test",
+            code: 2,
+            userInfo: [NSLocalizedDescriptionKey: "Recovery directory is unavailable."]
+        )
+        let error = PersistenceRecoveryError.directoryCreationFailed(underlying: sourceError)
+
+        // When
+
+        let actualDescription = error.errorDescription
+
+        // Then
+
+        #expect(actualDescription == sourceError.localizedDescription)
     }
 
     /// 來源目錄不可寫時，搬檔失敗應指出第一個無法搬移的檔案
     ///
     /// - Throws: 測試檔案建立或權限設定失敗時拋出錯誤
     @Test
-    func quarantine_fileMoveFailure_reportsFileName() throws(any Error) {
+    func quarantineFileMoveFailureReportsFileName() throws(any Error) {
         // Given：來源目錄含 store 檔案但不允許寫入
         let sourceDirectory = try Self.prepareDirectory(named: "source-path-is-read-only")
         let backupDirectory = try Self.prepareDirectory(named: "source-path-is-read-only-backups")
@@ -112,7 +164,7 @@ struct PersistenceRecoveryTests {
             )
         }
 
-        // When：隔離搬移 store 檔案
+        // When
         do {
             _ = try PersistenceStoreQuarantine.quarantine(
                 storeDirectory: sourceDirectory,
@@ -120,10 +172,10 @@ struct PersistenceRecoveryTests {
             )
             Issue.record("隔離搬移應回報檔案搬移失敗")
         } catch {
-            // Then：錯誤應指出第一個搬移失敗的 store 檔案
-            if case .fileMoveFailed(let fileName, let message) = error {
+            // Then
+            if case .fileMoveFailed(let fileName, let underlying) = error {
                 #expect(fileName == "BuyLedger.store")
-                #expect(!message.isEmpty)
+                #expect(!underlying.localizedDescription.isEmpty)
             } else {
                 Issue.record("錯誤應為 fileMoveFailed 復原錯誤")
             }
@@ -132,7 +184,10 @@ struct PersistenceRecoveryTests {
 
     // MARK: - Bootstrap Preservation
 
+    /// 驗證持久化復原在此情境下的結果
     @Test func bootstrapPreservesAnUnmigratableStoreInPlace() throws(any Error) {
+        // Given
+
         let sourceDirectory = try Self.prepareDirectory(named: "below-migration-floor")
         let storeURL = sourceDirectory.appendingPathComponent("BuyLedger.store")
         let sourceContainer = try Self.createBelowFloorStore(at: storeURL)
@@ -142,10 +197,15 @@ struct PersistenceRecoveryTests {
             Set(originalFiles.keys) == [
                 "BuyLedger.store", "BuyLedger.store-wal", "BuyLedger.store-shm",
             ])
+
+        // When
+
         let bootstrap = PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
 
+        // Then
+
         guard case .degraded = bootstrap.status else {
-            Issue.record("Expected an unmigratable store to produce a degraded bootstrap status.")
+            Issue.record("預期無法遷移的資料庫會產生 degraded 啟動狀態。")
             return
         }
         let preservedFiles = try Self.storeFiles(in: sourceDirectory)
@@ -159,11 +219,24 @@ struct PersistenceRecoveryTests {
         withExtendedLifetime(sourceContainer) {}
     }
 
+    /// 驗證持久化復原在此情境下的結果
     @Test func sharedContainerIsResolvedOnlyOnce() {
-        #expect(PersistenceContainer.shared === PersistenceContainer.shared)
+        // Given
+
+        // When
+
+        let first = PersistenceContainer.shared
+        let second = PersistenceContainer.shared
+
+        // Then
+
+        #expect(first === second)
     }
 
+    /// 驗證持久化復原在此情境下的結果
     @Test func persistentContainerCreatesMissingStoreDirectory() throws(any Error) {
+        // Given
+
         let root = Self.testRoot.appendingPathComponent(
             "creates-missing-store-directory-\(UUID().uuidString)",
             isDirectory: true
@@ -175,10 +248,44 @@ struct PersistenceRecoveryTests {
             try? FileManager.default.removeItem(at: root)
         }
 
+        // When
+
         let container = try PersistenceContainer.makePersistentForTesting(storeURL: storeURL)
+
+        // Then
 
         #expect(FileManager.default.fileExists(atPath: storeURL.deletingLastPathComponent().path))
         withExtendedLifetime(container) {}
+    }
+
+    /// 建立持久化容器時無法建立父目錄應分類為容器建立失敗
+    @Test func persistentContainerMapsDirectoryFailureToContainerCreationError()
+        throws(any Error) {
+        // Given
+
+        let root = try Self.prepareDirectory(named: "container-parent-is-file")
+        let blockedParent = root.appendingPathComponent("blocked-parent")
+        try Data([0x01]).write(to: blockedParent)
+        let storeURL = blockedParent.appendingPathComponent("BuyLedger.store")
+        defer {
+            try? FileManager.default.removeItem(at: root)
+        }
+
+        // When
+
+        do {
+            _ = try PersistenceContainer.makePersistentForTesting(storeURL: storeURL)
+            // Then
+
+            Issue.record("預期父目錄無法建立時會拋出 containerCreationFailed。")
+        } catch {
+            switch error {
+            case let .containerCreationFailed(underlying):
+                #expect(!underlying.localizedDescription.isEmpty)
+            case .fetchFailed, .saveFailed:
+                Issue.record("預期為 containerCreationFailed PersistenceError。")
+            }
+        }
     }
 }
 

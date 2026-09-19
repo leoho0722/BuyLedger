@@ -2,13 +2,13 @@
 //  CampaignPersistence.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/30.
+//  Created by Leo Ho on 2026/05/30.
 //
 
 import Foundation
 import SwiftData
 
-/// SwiftData 上對開團 (Campaign) 做 CRUD 的背景 actor
+/// 在背景 actor 中讀寫開團資料
 @ModelActor
 actor CampaignPersistence {}
 
@@ -27,7 +27,12 @@ extension CampaignPersistence {
             try modelContext.fetch(descriptor)
         }
 
-        return records.map { $0.toDomain() }
+        var campaigns: [Campaign] = []
+        campaigns.reserveCapacity(records.count)
+        for record in records {
+            campaigns.append(try record.toDomain())
+        }
+        return campaigns
     }
 
     /// 寫入或更新單一開團 (依 id upsert)

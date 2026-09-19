@@ -2,7 +2,7 @@
 //  CategoryRecord.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/23.
+//  Created by Leo Ho on 2026/05/23.
 //
 
 import Foundation
@@ -12,7 +12,7 @@ import SwiftData
 @Model
 final class CategoryRecord {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 以類別名稱建立索引，供查詢與更新
     #Index<CategoryRecord>([\.name])
@@ -29,9 +29,9 @@ final class CategoryRecord {
     }
 }
 
-// MARK: - NameLookupRecord
+// MARK: - NameLookupRecordProtocol
 
-extension CategoryRecord: NameLookupRecord {
+extension CategoryRecord: NameLookupRecordProtocol {
 
     /// 以類別名稱比對的查詢條件
     /// - Parameter name: 要比對的類別名稱

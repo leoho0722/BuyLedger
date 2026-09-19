@@ -2,12 +2,12 @@
 //  LedgerOrder.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/1.
+//  Created by Leo Ho on 2026/05/01.
 //
 
 import Foundation
 
-// MARK: - Static Properties
+// MARK: - Properties
 
 extension LedgerOrder {
 
@@ -60,7 +60,7 @@ extension LedgerOrder {
     /// 依付款方式主檔旗標正規化訂單上會影響損益的欄位
     /// - Parameter flags: 付款方式分類旗標
     /// - Returns: 套用旗標後的訂單
-    func applyingPaymentMethodFlags(flags: PaymentMethodFlags) -> LedgerOrder {
+    func applyingPaymentMethodFlags(_ flags: PaymentMethodFlags) -> LedgerOrder {
         let normalizedChargedAmount = max(0, chargedAmount)
         let normalizedDeduction = flags.isCardless
             ? min(normalizedChargedAmount, max(0, cardlessDeductionAmount))

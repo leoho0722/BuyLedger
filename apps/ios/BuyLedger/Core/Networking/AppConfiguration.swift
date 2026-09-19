@@ -2,7 +2,7 @@
 //  AppConfiguration.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/6/21.
+//  Created by Leo Ho on 2026/06/21.
 //
 
 import ComposableArchitecture
@@ -11,7 +11,7 @@ import Foundation
 /// 集中提供 App 的環境設定：兩把外部 API key
 struct AppConfiguration: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
     /// 取得 ExchangeRate-API 的 API key；若未設定則回 `nil`
     /// - Returns: API key，未設定時為 `nil`
@@ -26,7 +26,8 @@ struct AppConfiguration: Sendable {
 
 extension AppConfiguration {
 
-    /// 將 `Info.plist` 取回的原始字串正規化。
+    /// 將 `Info.plist` 取回的原始字串正規化
+    ///
     /// - Parameters:
     ///   - raw: 從 `Bundle.main.object(forInfoDictionaryKey:)` 取回的原始值
     ///   - placeholder: build setting 的佔位字串；原值等於它表示未注入
@@ -40,7 +41,7 @@ extension AppConfiguration {
     }
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension AppConfiguration: DependencyKey {
 
@@ -73,7 +74,7 @@ extension AppConfiguration: DependencyKey {
     )
 }
 
-// MARK: - DependencyValues Accessor
+// MARK: - DependencyValues
 
 extension DependencyValues {
 

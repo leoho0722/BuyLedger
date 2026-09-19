@@ -2,7 +2,7 @@
 //  OrderSummary.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/1.
+//  Created by Leo Ho on 2026/05/01.
 //
 
 import Foundation
@@ -10,7 +10,7 @@ import Foundation
 /// 訂單財務試算後的摘要
 struct OrderSummary: Equatable {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 實際收款
     let revenue: Decimal
@@ -43,22 +43,21 @@ struct OrderSummary: Equatable {
 
     /// 依訂單資料建立財務摘要
     ///
-    /// - `revenue` = `chargedAmount` + `cardlessSupplementAmount` - `cardlessDeductionAmount`
-    ///   非無卡訂單兩欄皆為 `0`
-    ///   寫入層限制折抵不超過收款；舊資料仍可能為負
-    /// - 手續費以原始收款 `chargedAmount` 計算，不受無卡補款或折抵影響
-    /// - `totalCost` = `itemCost` + `fees` + `codShippingCost`
-    ///   只有貨到付款會計入國內、國際與來源國當地運費；一般訂單為 `0`
-    /// - `profit` = `revenue` - `totalCost`
-    /// - `margin` = `profit / revenue`
-    ///   `revenue == 0` 時為 `0`；呈現層對 `revenue <= 0` 顯示空值
+    /// - Note: `revenue` 等於 `chargedAmount` 加上無卡補款再扣除無卡折抵；非無卡訂單的兩欄皆為 `0`
+    /// - Note: 寫入層限制折抵不超過收款，但舊資料仍可能為負
+    /// - Note: 手續費以原始收款 `chargedAmount` 計算，不受無卡補款或折抵影響
+    /// - Note: `totalCost` 等於 `itemCost`、`fees` 與 `codShippingCost` 的總和；只有貨到付款會計入三種運費
+    /// - Note: `profit` 等於 `revenue` 減去 `totalCost`
+    /// - Note: `margin` 等於 `profit / revenue`；`revenue == 0` 時為 `0`，呈現層對 `revenue <= 0` 顯示空值
     /// - Parameter order: 要計算的訂單
     init(order: LedgerOrder) {
         let cardFee = order.chargedAmount * order.cardFeeRate
         let platformFee = (order.chargedAmount * order.platformFeeRate).roundedUpToInteger()
         let paymentFee = order.chargedAmount * order.paymentFeeRate
         let fees = cardFee + platformFee + paymentFee
-        let revenue = order.chargedAmount + order.cardlessSupplementAmount - order.cardlessDeductionAmount
+        let revenue = order.chargedAmount
+            + order.cardlessSupplementAmount
+            - order.cardlessDeductionAmount
         // 貨到付款已含運費，計入成本；其他訂單由客人另付。
         let codShippingCost: Decimal
         if order.isCashOnDelivery {

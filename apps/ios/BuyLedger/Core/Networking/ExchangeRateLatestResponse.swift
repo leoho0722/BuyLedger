@@ -1,26 +1,24 @@
 //
-//  ExchangeRateDTO.swift
+//  ExchangeRateLatestResponse.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/2.
+//  Created by Leo Ho on 2026/09/19.
 //
 
 import Foundation
 
-// MARK: - Latest Response DTO
-
 /// 最新匯率 API 的回應資料
 struct ExchangeRateLatestResponse: Decodable, Sendable {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
-    /// API 回應狀態 ("success" / "error")
+    /// `API` 回應狀態 (`success` 或 `error`)
     let result: String
 
-    /// 錯誤類別 (僅 result == "error" 時才存在)
+    /// 錯誤類別，只有 `result == "error"` 時存在
     let errorType: String?
 
-    /// 報價時間 UNIX timestamp
+    /// 報價時間的 UNIX timestamp
     let timeLastUpdateUnix: TimeInterval?
 
     /// 基準幣別
@@ -28,20 +26,28 @@ struct ExchangeRateLatestResponse: Decodable, Sendable {
 
     /// 各目標幣別的匯率
     let conversionRates: [String: Double]?
+}
 
-    // MARK: - CodingKeys
+// MARK: - Nested Types
 
-    /// 把 API 的 snake_case 欄位映射成 camelCase 屬性
+extension ExchangeRateLatestResponse {
+
+    /// 將回應的 `snake_case` 欄位對應到 Swift 屬性
     enum CodingKeys: String, CodingKey {
 
+        /// 回應處理結果
         case result
 
+        /// 服務錯誤類別
         case errorType = "error-type"
 
+        /// 最後更新時間
         case timeLastUpdateUnix = "time_last_update_unix"
 
+        /// 基準幣別
         case baseCode = "base_code"
 
+        /// 各目標幣別匯率
         case conversionRates = "conversion_rates"
     }
 }
@@ -62,39 +68,10 @@ extension ExchangeRateLatestResponse {
             converted[CurrencyCode(rawValue: key)] = Decimal(value)
         }
 
-        let date =
-        timeLastUpdateUnix
-            .map { Date(timeIntervalSince1970: $0) } ?? fallbackDate
+        let date = timeLastUpdateUnix.map { timestamp in
+            Date(timeIntervalSince1970: timestamp)
+        } ?? fallbackDate
 
         return FxRateSnapshot(date: date, base: base, rates: converted)
-    }
-}
-
-// MARK: - Codes Response DTO
-
-/// 支援幣別 API 的回應資料
-struct ExchangeRateCodesResponse: Decodable, Sendable {
-
-    // MARK: - Data Properties
-
-    /// API 回應狀態 ("success" / "error")
-    let result: String
-
-    /// 錯誤類別 (僅 result == "error" 時才存在)
-    let errorType: String?
-
-    /// `[[code, name], …]` 形式的支援幣別清單
-    let supportedCodes: [[String]]?
-
-    // MARK: - CodingKeys
-
-    /// 把 API 的 snake_case 欄位映射成 camelCase 屬性
-    enum CodingKeys: String, CodingKey {
-
-        case result
-
-        case errorType = "error-type"
-
-        case supportedCodes = "supported_codes"
     }
 }

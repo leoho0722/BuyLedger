@@ -2,7 +2,7 @@
 //  PaymentMethodRecord.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/23.
+//  Created by Leo Ho on 2026/05/23.
 //
 
 import Foundation
@@ -12,7 +12,7 @@ import SwiftData
 @Model
 final class PaymentMethodRecord {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 以付款方式名稱建立索引，供查詢與更新
     #Index<PaymentMethodRecord>([\.name])

@@ -2,12 +2,12 @@
 //  OrderStatus.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/1.
+//  Created by Leo Ho on 2026/05/01.
 //
 
 import Foundation
 
-// MARK: - Static Properties
+// MARK: - Properties
 
 extension OrderStatus {
 
@@ -30,7 +30,7 @@ extension OrderStatus {
     ]
 }
 
-// MARK: - Display Properties
+// MARK: - Computed Properties
 
 extension OrderStatus {
 

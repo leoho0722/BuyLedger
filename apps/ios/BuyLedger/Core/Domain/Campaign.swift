@@ -2,7 +2,7 @@
 //  Campaign.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/30.
+//  Created by Leo Ho on 2026/05/30.
 //
 
 import Foundation
@@ -15,8 +15,6 @@ extension Campaign {
     var isSettled: Bool {
         settledDate != nil
     }
-
-    // MARK: 訂購提醒
 
     /// 訂購提醒行事曆事件的標題
     var reminderTitle: String {

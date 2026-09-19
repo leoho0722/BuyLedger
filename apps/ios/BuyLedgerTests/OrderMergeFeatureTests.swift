@@ -2,7 +2,7 @@
 //  OrderMergeFeatureTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/6/6.
+//  Created by Leo Ho on 2026/06/06.
 //
 
 import ComposableArchitecture
@@ -16,7 +16,10 @@ struct OrderMergeFeatureTests {
 
     // MARK: - Tests
 
+    /// 驗證訂單合併功能在此情境下的狀態與效果
     @Test func eligibleCandidatesFilterMatrix() {
+        // Given
+
         // 資格矩陣：同幣別 + 同客戶 + 非已合併/已取消，且排除主訂單自身
         let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
         let orders = [
@@ -29,12 +32,19 @@ struct OrderMergeFeatureTests {
             Self.makeOrder(id: "O7", customer: "Alice", currency: .jpy, status: .delivered),
         ]
 
+        // When
+
         let eligible = OrderMergeFeature.State.eligibleCandidates(for: primary, in: orders)
+
+        // Then
 
         #expect(eligible.map(\.id) == ["O2", "O7"])
     }
 
+    /// 驗證訂單合併功能在此情境下的狀態與效果
     @Test func searchFiltersCandidatesInRealTime() async {
+        // Given
+
         let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
         let orders = [
             primary,
@@ -52,14 +62,21 @@ struct OrderMergeFeatureTests {
             $0.uuid = .incrementing
         }
 
+        // When
+
         await store.send(\.binding.searchText, "香水") {
             $0.searchText = "香水"
         }
 
+        // Then
+
         #expect(store.state.filteredCandidates.map(\.id) == ["O2"])
     }
 
+    /// 驗證訂單合併功能在此情境下的狀態與效果
     @Test func candidateSectionsGroupByDayNewestFirst() {
+        // Given
+
         // 候選依日期分組，並由新到舊排序。
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
@@ -87,17 +104,24 @@ struct OrderMergeFeatureTests {
         } operation: {
             OrderMergeFeature.State(primary: primary, orders: orders)
         }
+        // When
+
         let sections = state.candidateSections(
             referenceDate: reference,
             calendar: calendar,
             locale: Locale(identifier: "zh-Hant")
         )
 
+        // Then
+
         #expect(sections.map(\.title) == ["今天", "昨天"])
         #expect(sections.map { $0.orders.map(\.id) } == [["O3", "O2"], ["O4"]])
     }
 
+    /// 驗證訂單合併功能在此情境下的狀態與效果
     @Test func candidateSectionsApplySearchFilter() {
+        // Given
+
         // 搜尋過濾先於分組生效：無符合候選的日子不產生區段
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0)!
@@ -122,17 +146,24 @@ struct OrderMergeFeatureTests {
             OrderMergeFeature.State(primary: primary, orders: orders)
         }
         state.searchText = "香水"
+        // When
+
         let sections = state.candidateSections(
             referenceDate: reference,
             calendar: calendar,
             locale: Locale(identifier: "zh-Hant")
         )
 
+        // Then
+
         #expect(sections.map(\.title) == ["今天"])
         #expect(sections.flatMap { $0.orders.map(\.id) } == ["O2"])
     }
 
+    /// 驗證訂單合併功能在此情境下的狀態與效果
     @Test func candidateTappedWithinPhotoLimitCompletesDirectly() async {
+        // Given
+
         // 照片合計 ≤ 上限：跳過挑選步驟直接 delegate，照片主前副後串接
         // 清單不帶照片，詳情才依訂單編號載入
         let primaryPhotos = [Data([0x01]), Data([0x02])]
@@ -154,7 +185,11 @@ struct OrderMergeFeatureTests {
             $0[OrderRepository.self] = orderRepository
         }
 
+        // When
+
         await store.send(.candidateTapped("O2"))
+        // Then
+
         await store.receive(\.candidatePhotosLoaded)
         await store.receive { action in
             guard let completed = Self.completedPath.extract(from: action) else {
@@ -168,7 +203,10 @@ struct OrderMergeFeatureTests {
         #expect(store.state.step == .selectCandidate)
     }
 
+    /// 驗證訂單合併功能在此情境下的狀態與效果
     @Test func candidateTappedOverPhotoLimitEntersPhotoStep() async {
+        // Given
+
         // 4 + 3 = 7 張 > 5：進入照片挑選步驟並預選前 5 張 (主訂單照片在前)
         let primaryPhotos = (1...4).map { Data([UInt8($0)]) }
         let secondaryPhotos = (5...7).map { Data([UInt8($0)]) }
@@ -189,7 +227,11 @@ struct OrderMergeFeatureTests {
             $0[OrderRepository.self] = orderRepository
         }
 
+        // When
+
         await store.send(.candidateTapped("O2"))
+        // Then
+
         await store.receive(\.candidatePhotosLoaded) {
             $0.selectedSecondary = secondary
             $0.combinedPhotos = primaryPhotos + secondaryPhotos
@@ -198,7 +240,10 @@ struct OrderMergeFeatureTests {
         }
     }
 
+    /// 驗證訂單合併功能在此情境下的狀態與效果
     @Test func backToCandidatesTappedReturnsToCandidateStepAndClearsPhotoState() async {
+        // Given
+
         let primaryPhotos = (1...4).map { Data([UInt8($0)]) }
         let secondaryPhotos = (5...7).map { Data([UInt8($0)]) }
         let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
@@ -218,7 +263,11 @@ struct OrderMergeFeatureTests {
             $0[OrderRepository.self] = orderRepository
         }
 
+        // When
+
         await store.send(.candidateTapped("O2"))
+        // Then
+
         await store.receive(\.candidatePhotosLoaded) {
             $0.selectedSecondary = secondary
             $0.combinedPhotos = primaryPhotos + secondaryPhotos
@@ -235,7 +284,10 @@ struct OrderMergeFeatureTests {
         }
     }
 
+    /// 驗證訂單合併功能在此情境下的狀態與效果
     @Test func photoToggleGuardsTheKeepLimit() async {
+        // Given
+
         let primaryPhotos = (1...4).map { Data([UInt8($0)]) }
         let secondaryPhotos = (5...7).map { Data([UInt8($0)]) }
         let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
@@ -254,7 +306,11 @@ struct OrderMergeFeatureTests {
             }
             $0[OrderRepository.self] = orderRepository
         }
+        // When
+
         await store.send(.candidateTapped("O2"))
+        // Then
+
         await store.receive(\.candidatePhotosLoaded) {
             $0.selectedSecondary = secondary
             $0.combinedPhotos = primaryPhotos + secondaryPhotos
@@ -276,7 +332,10 @@ struct OrderMergeFeatureTests {
         #expect(store.state.selectedPhotoIndices == Set([1, 2, 3, 4, 6]))
     }
 
+    /// 驗證訂單合併功能在此情境下的狀態與效果
     @Test func photoStepConfirmDeliversKeptPhotosInOrder() async {
+        // Given
+
         let primaryPhotos = (1...4).map { Data([UInt8($0)]) }
         let secondaryPhotos = (5...7).map { Data([UInt8($0)]) }
         let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
@@ -295,7 +354,11 @@ struct OrderMergeFeatureTests {
             }
             $0[OrderRepository.self] = orderRepository
         }
+        // When
+
         await store.send(.candidateTapped("O2"))
+        // Then
+
         await store.receive(\.candidatePhotosLoaded) {
             $0.selectedSecondary = secondary
             $0.combinedPhotos = primaryPhotos + secondaryPhotos
@@ -333,6 +396,8 @@ struct OrderMergeFeatureTests {
 
     /// 挑選步驟顯示雙方已載入的照片
     @Test func mergeLoadsBothSourcePhotosBeforeSelectionStep() async {
+        // Given
+
         let primaryPhotos = (1...3).map { Data([UInt8($0)]) }
         let secondaryPhotos = (4...7).map { Data([UInt8($0)]) }
         let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
@@ -356,8 +421,12 @@ struct OrderMergeFeatureTests {
         #expect(primary.photos.isEmpty)
         #expect(secondary.photos.isEmpty)
 
+        // When
+
         await store.send(.candidateTapped("O2"))
         // 載入完成前，步驟維持在候選選擇 (尚未進入挑選步驟)
+        // Then
+
         #expect(store.state.step == .selectCandidate)
 
         await store.receive(\.candidatePhotosLoaded) {
@@ -374,6 +443,8 @@ struct OrderMergeFeatureTests {
 
     /// 雙方照片載入失敗時應顯示錯誤
     @Test func candidateTappedPhotoLoadFailureShowsAlertAndStaysOnCandidateStep() async {
+        // Given
+
         let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
         let secondary = Self.makeOrder(
             id: "O2", customer: "Alice", currency: .jpy, status: .purchased)
@@ -385,13 +456,20 @@ struct OrderMergeFeatureTests {
         } withDependencies: {
             $0.uuid = .incrementing
             var orderRepository = OrderRepository.testValue
-            orderRepository.fetchOrderPhotos = { (_: LedgerOrder.ID) async throws(PersistenceError) -> [Data] in
-                throw .fetchFailed(message: "photo load failed")
+            orderRepository.fetchOrderPhotos = {
+                (_: LedgerOrder.ID) async throws(PersistenceError) -> [Data] in
+                throw .fetchFailed(
+                    underlying: TestDependencies.makeUnderlyingError(message: "photo load failed")
+                )
             }
             $0[OrderRepository.self] = orderRepository
         }
 
+        // When
+
         await store.send(.candidateTapped("O2"))
+        // Then
+
         await store.receive(\.candidatePhotosLoadFailed) {
             $0.photoLoadFailureAlert = AlertState {
                 TextState("操作失敗")

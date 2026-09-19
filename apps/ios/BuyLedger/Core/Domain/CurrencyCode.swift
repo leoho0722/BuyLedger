@@ -2,29 +2,17 @@
 //  CurrencyCode.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/1.
+//  Created by Leo Ho on 2026/05/01.
 //
 
 import Foundation
 
-// MARK: - Display Properties
+// MARK: - Computed Properties
 
 extension CurrencyCode {
 
     /// ISO 4217 三位幣別代碼
     var code: String { rawValue }
-}
-
-// MARK: - Internal Method
-
-extension CurrencyCode {
-
-    /// 取得依指定 locale 的在地化幣別名稱
-    /// - Parameter locale: 顯示名稱所用的地區設定
-    /// - Returns: 當地語言的幣別名稱；無翻譯時回傳代碼
-    func localizedName(in locale: Locale = .current) -> String {
-        locale.localizedString(forCurrencyCode: rawValue) ?? rawValue
-    }
 }
 
 // MARK: - Codable
@@ -48,7 +36,7 @@ extension CurrencyCode: Codable {
     }
 }
 
-// MARK: - Static Properties
+// MARK: - Properties
 
 extension CurrencyCode {
 

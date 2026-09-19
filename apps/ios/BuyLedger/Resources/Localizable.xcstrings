@@ -4408,6 +4408,22 @@
         }
       }
     },
+    "有 %lld 張照片無法匯入。" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "%lld photos could not be imported."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "有 %1$lld 張照片無法匯入。"
+          }
+        }
+      }
+    },
     "最近訂單" : {
       "localizations" : {
         "en" : {

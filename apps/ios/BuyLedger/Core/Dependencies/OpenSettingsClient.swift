@@ -2,7 +2,7 @@
 //  OpenSettingsClient.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/7/21.
+//  Created by Leo Ho on 2026/07/21.
 //
 
 import ComposableArchitecture
@@ -11,13 +11,13 @@ import UIKit
 /// 開啟本 App 系統設定頁的依賴介面
 struct OpenSettingsClient: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
-    /// 開啟本 App 的系統設定頁
+    /// 開啟 BuyLedger 的系統設定頁
     var open: @Sendable () async -> Void
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension OpenSettingsClient: DependencyKey {
 

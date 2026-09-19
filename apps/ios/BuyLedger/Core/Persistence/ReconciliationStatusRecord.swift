@@ -2,7 +2,7 @@
 //  ReconciliationStatusRecord.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/29.
+//  Created by Leo Ho on 2026/05/29.
 //
 
 import Foundation
@@ -12,7 +12,7 @@ import SwiftData
 @Model
 final class ReconciliationStatusRecord {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 以對帳狀態名稱建立索引，供查詢與更新
     #Index<ReconciliationStatusRecord>([\.name])
@@ -29,9 +29,9 @@ final class ReconciliationStatusRecord {
     }
 }
 
-// MARK: - NameLookupRecord
+// MARK: - NameLookupRecordProtocol
 
-extension ReconciliationStatusRecord: NameLookupRecord {
+extension ReconciliationStatusRecord: NameLookupRecordProtocol {
 
     /// 以對帳狀態名稱比對的查詢條件
     /// - Parameter name: 要比對的對帳狀態名稱

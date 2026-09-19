@@ -2,12 +2,12 @@
 //  OrderMerge.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/6/6.
+//  Created by Leo Ho on 2026/06/06.
 //
 
 import Foundation
 
-/// 兩筆訂單合併為一筆新訂單的純函式計算
+/// 計算兩筆訂單合併後的新訂單內容
 enum OrderMerge {}
 
 // MARK: - Nested Types
@@ -17,7 +17,7 @@ extension OrderMerge {
     /// 合併計算的輸出：合併確認表單各欄位的草稿值
     struct Draft: Equatable {
 
-        // MARK: - Data Properties
+        // MARK: - Properties
 
         /// 合併後的客戶 (取主訂單；合併限同客戶名稱)
         let customer: LedgerCustomer
@@ -94,6 +94,19 @@ extension OrderMerge {
         /// 合併來源訂單編號 [主, 副]
         let mergeSourceIDs: [String]
     }
+
+    /// 合併後付款方式相關欄位的來源資料
+    private struct PaymentMethodSource {
+
+        /// 合併後的付款方式名稱
+        let paymentMethod: String
+
+        /// 合併後的對帳狀態
+        let reconciliationStatus: String
+
+        /// 合併後是否為貨到付款
+        let isCashOnDelivery: Bool
+    }
 }
 
 // MARK: - Internal Method
@@ -101,10 +114,11 @@ extension OrderMerge {
 extension OrderMerge {
 
     /// 依合併規則整合兩筆訂單，產生合併確認表單的草稿值
+    ///
     /// - Parameters:
     ///   - primary: 主訂單 (發起合併的那筆)
-    ///   - secondary: 副訂單 (候選 sheet 選定的那筆)
-    ///   - now: 合併當下時間；caller 應從 `@Dependency(\.date)` 取得
+    ///   - secondary: 副訂單 (使用者選定的那筆)
+    ///   - now: 合併當下時間；呼叫端應從 `@Dependency(\.date)` 取得
     ///   - isCardless: 由付款方式旗標判定是否為無卡付款
     /// - Returns: 合併後的草稿值
     static func makeDraft(
@@ -245,13 +259,13 @@ private extension OrderMerge {
     /// - Parameters:
     ///   - primary: 主訂單
     ///   - secondary: 副訂單
-    ///   - isCardless: 無卡判定 predicate
-    /// - Returns: 付款方式來源欄位組
-    static func paymentMethodSource(
+    ///   - isCardless: 判斷付款方式是否為無卡付款的 closure
+    /// - Returns: 合併後的付款方式、對帳狀態與貨到付款旗標
+    private static func paymentMethodSource(
         primary: LedgerOrder,
         secondary: LedgerOrder,
         isCardless: (String) -> Bool
-    ) -> (paymentMethod: String, reconciliationStatus: String, isCashOnDelivery: Bool) {
+    ) -> PaymentMethodSource {
         let source: LedgerOrder
         if primary.paymentMethod == secondary.paymentMethod {
             source = primary
@@ -262,6 +276,10 @@ private extension OrderMerge {
             source = primary
         }
 
-        return (source.paymentMethod, source.reconciliationStatus, source.isCashOnDelivery)
+        return PaymentMethodSource(
+            paymentMethod: source.paymentMethod,
+            reconciliationStatus: source.reconciliationStatus,
+            isCashOnDelivery: source.isCashOnDelivery
+        )
     }
 }

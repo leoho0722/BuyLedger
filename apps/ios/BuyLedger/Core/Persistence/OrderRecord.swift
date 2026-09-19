@@ -2,7 +2,7 @@
 //  OrderRecord.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/2.
+//  Created by Leo Ho on 2026/05/02.
 //
 
 import Foundation
@@ -12,7 +12,7 @@ import SwiftData
 @Model
 final class OrderRecord {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 以訂單編號查詢，以日期排序
     #Index<OrderRecord>([\.id], [\.date])
@@ -134,13 +134,26 @@ final class OrderRecord {
 
 extension OrderRecord {
 
-    // MARK: Mapping
-
     /// 將 SwiftData 記錄轉回領域型別
     /// - Parameter includingPhotos: 是否包含照片；清單傳 false，單筆傳 true
     /// - Returns: 對應的 ``LedgerOrder``
-    func toDomain(includingPhotos: Bool = true) -> LedgerOrder {
-        LedgerOrder(
+    /// - Throws: 收款狀態 rawValue 無法解析時拋出 ``PersistenceError``
+    func toDomain(includingPhotos: Bool = true) throws(PersistenceError) -> LedgerOrder {
+        let resolvedPaymentReceiptStatus: PaymentReceiptStatus
+        if let resolvedStatus = PaymentReceiptStatus(rawValue: paymentReceiptStatus) {
+            resolvedPaymentReceiptStatus = resolvedStatus
+        } else {
+            throw .fetchFailed(
+                underlying: RecordDecodingError(
+                    entity: "OrderRecord",
+                    identifier: id,
+                    field: "paymentReceiptStatus",
+                    rawValue: paymentReceiptStatus
+                )
+            )
+        }
+
+        return LedgerOrder(
             id: id,
             customer: customer,
             status: status,
@@ -163,7 +176,7 @@ extension OrderRecord {
             notes: notes,
             reconciliationStatus: reconciliationStatus,
             campaignNames: campaignNames,
-            paymentReceiptStatus: PaymentReceiptStatus(rawValue: paymentReceiptStatus) ?? .pending,
+            paymentReceiptStatus: resolvedPaymentReceiptStatus,
             isCashOnDelivery: isCashOnDelivery,
             photos: includingPhotos ? photos : [],
             mergedSourceIDs: mergedSourceIDs

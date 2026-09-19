@@ -66,7 +66,13 @@ extension OllamaClient: DependencyKey {
                 let task = Task {
                     do {
                         guard let url = URL(string: "https://ollama.com/api/chat") else {
-                            throw APIError.transport(message: "URL 組合失敗。")
+                            throw APIError.transport(
+                                underlying: NSError(
+                                    domain: NSURLErrorDomain,
+                                    code: NSURLErrorBadURL,
+                                    userInfo: [NSLocalizedDescriptionKey: "URL 組合失敗。"]
+                                )
+                            )
                         }
 
                         let bodyData = try JSONEncoder().encode(
@@ -112,9 +118,8 @@ extension OllamaClient: DependencyKey {
                     } catch let error as APIError {
                         continuation.finish(throwing: error)
                     } catch {
-                        let errorCode = (error as NSError).code
                         continuation.finish(
-                            throwing: APIError.transport(message: "網路請求失敗 (錯誤代碼：\(errorCode))。")
+                            throwing: APIError.transport(underlying: error as NSError)
                         )
                     }
                 }
@@ -131,7 +136,16 @@ extension OllamaClient: DependencyKey {
         streamSummary: { _, _, _ in
             AsyncThrowingStream<String, any Error> { continuation in
                 continuation.finish(
-                    throwing: APIError.transport(message: "OllamaClient.testValue 被呼叫；請於測試中注入。")
+                    throwing: APIError.transport(
+                        underlying: NSError(
+                            domain: NSURLErrorDomain,
+                            code: NSURLErrorUnknown,
+                            userInfo: [
+                                NSLocalizedDescriptionKey:
+                                    "OllamaClient.testValue 被呼叫；請於測試中注入。",
+                            ]
+                        )
+                    )
                 )
             }
         }

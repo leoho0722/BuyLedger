@@ -2,7 +2,7 @@
 //  PaymentMethodPersistenceTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/5/29.
+//  Created by Leo Ho on 2026/05/29.
 //
 
 import Foundation
@@ -16,8 +16,13 @@ struct PaymentMethodPersistenceTests {
 
     // MARK: - Tests
 
+    /// 驗證付款方式持久化在此情境下的資料結果
     @Test func upsertPersistsBothFlagsRoundTrip() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
+
+        // When
 
         try await persistence.upsert(
             name: "銀行匯款",
@@ -40,14 +45,21 @@ struct PaymentMethodPersistenceTests {
         let bankTransfer = infos.first { $0.name == "銀行匯款" }
         let cardless = infos.first { $0.name == "無卡存款" }
 
+        // Then
+
         #expect(bankTransfer?.isBankTransfer == true)
         #expect(bankTransfer?.isCardless == false)
         #expect(cardless?.isCardless == true)
         #expect(cardless?.isBankTransfer == false)
     }
 
+    /// 驗證付款方式持久化在此情境下的資料結果
     @Test func upsertSameNameOverwritesFlags() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
+
+        // When
 
         try await persistence.upsert(
             name: "綠界",
@@ -64,12 +76,19 @@ struct PaymentMethodPersistenceTests {
         )
 
         let infos = try await persistence.fetchAllInfos()
+        // Then
+
         #expect(infos.count == 1)
         #expect(infos.first?.isBankTransfer == true)
     }
 
+    /// 驗證付款方式持久化在此情境下的資料結果
     @Test func renamePreservesBankTransferFlag() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
+        // When
+
         try await persistence.upsert(
             name: "匯款",
             flags: PaymentMethodFlags(
@@ -83,12 +102,19 @@ struct PaymentMethodPersistenceTests {
 
         let infos = try await persistence.fetchAllInfos()
         let renamed = infos.first { $0.name == "銀行匯款" }
+        // Then
+
         #expect(infos.contains { $0.name == "匯款" } == false)
         #expect(renamed?.isBankTransfer == true, "更名應保留 isBankTransfer 旗標")
     }
 
+    /// 驗證付款方式持久化在此情境下的資料結果
     @Test func upsertAndRenamePreserveCashOnDeliveryFlag() async throws(any Error) {
+        // Given
+
         let persistence = try makePersistence()
+
+        // When
 
         try await persistence.upsert(
             name: "貨到付款",
@@ -100,6 +126,8 @@ struct PaymentMethodPersistenceTests {
         )
 
         let info = try await persistence.fetchAllInfos().first { $0.name == "貨到付款" }
+        // Then
+
         #expect(info?.isCashOnDelivery == true)
         #expect(info?.isCardless == false)
         #expect(info?.isBankTransfer == false)
@@ -110,13 +138,16 @@ struct PaymentMethodPersistenceTests {
         #expect(renamed?.isCashOnDelivery == true, "更名應保留 isCashOnDelivery 旗標")
     }
 
+    /// 驗證付款方式持久化在此情境下的資料結果
     @Test func applyEditPersistsMasterAndNormalizedOrdersTogether() async throws(any Error) {
+        // Given
+
         let storeURL = Self.makeStoreURL()
         let original = Self.makePaymentOrder(id: "PM-PERSIST", paymentMethod: "匯款")
         let corrected =
             original
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(flags: .none)
+            .applyingPaymentMethodFlags(.none)
 
         #expect(original.cardlessDeductionAmount != 0)
         #expect(original.cardlessSupplementAmount != 0)
@@ -126,7 +157,7 @@ struct PaymentMethodPersistenceTests {
         do {
             let bootstrap = PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
             guard case .healthy = bootstrap.status else {
-                Issue.record("Expected a healthy disk-backed bootstrap before applying the edit.")
+                Issue.record("預期磁碟持久化啟動應在套用編輯前成功。")
                 return
             }
 
@@ -147,6 +178,8 @@ struct PaymentMethodPersistenceTests {
             let warmedOrders = try await orderRepository.fetchOrders()
             #expect(warmedOrders.first?.id == original.id)
 
+            // When
+
             try await paymentPersistence.applyEdit(
                 from: "匯款",
                 to: "銀行匯款",
@@ -155,6 +188,8 @@ struct PaymentMethodPersistenceTests {
             )
 
             // 同一個長命 OrderPersistence context 也必須讀到另一個 context 的新值
+            // Then
+
             let storedOrder = try await orderRepository.fetchOrders().first
             #expect(
                 storedOrder.map(LedgerOrder.normalizingItemIdentifiers)
@@ -162,9 +197,11 @@ struct PaymentMethodPersistenceTests {
         }
 
         // 丟棄第一個 container 後以同一個 URL 重建，模擬重啟後重新讀取
+        // Then
+
         let rebooted = PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
         guard case .healthy = rebooted.status else {
-            Issue.record("Expected the corrected store to reopen successfully.")
+            Issue.record("預期修正後的資料庫應能重新開啟。")
             return
         }
         let rebootedPaymentPersistence = PaymentMethodPersistence(
@@ -191,19 +228,25 @@ struct PaymentMethodPersistenceTests {
     /// 驗證付款方式改名時保留照片
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func applyEditPreservesExistingOrderPhotos() async throws(any Error) {
+        // Given
+
         let container = PersistenceContainer.makeInMemory(for: .testing)
         let orderPersistence = OrderPersistence(modelContainer: container)
         let paymentPersistence = PaymentMethodPersistence(modelContainer: container)
 
         let photo = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x40])
         let original = Self.makePaymentOrder(id: "PM-PHOTO", paymentMethod: "匯款")
+        // When
+
         try await orderPersistence.create(Self.withPhotos(original, photos: [photo]))
 
         // 清單讀取不含照片，因此更正時應保持空照片
         let corrected =
             original
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(flags: .none)
+            .applyingPaymentMethodFlags(.none)
+        // Then
+
         #expect(corrected.photos.isEmpty, "本測試前提：affected order 快照的照片欄位須為空，才能驗證 apply(_:) 不依賴它")
 
         try await paymentPersistence.applyEdit(
@@ -218,7 +261,10 @@ struct PaymentMethodPersistenceTests {
         #expect(stored?.photos == [photo], "已存照片不應被回溯更正清空")
     }
 
+    /// 驗證付款方式持久化在此情境下的資料結果
     @Test func applyEditRollsBackWhenOrderSnapshotContainsMissingID() async throws(any Error) {
+        // Given
+
         let container = PersistenceContainer.makeInMemory(for: .testing)
         let paymentPersistence = PaymentMethodPersistence(modelContainer: container)
         let orderPersistence = OrderPersistence(modelContainer: container)
@@ -226,12 +272,14 @@ struct PaymentMethodPersistenceTests {
         let corrected =
             original
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(flags: .none)
+            .applyingPaymentMethodFlags(.none)
         let missing = Self.makePaymentOrder(id: "PM-MISSING", paymentMethod: "匯款")
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(flags: .none)
+            .applyingPaymentMethodFlags(.none)
         let originalInfo = PaymentMethodInfo(
             name: "匯款", isCardless: true, isBankTransfer: true, isCashOnDelivery: true)
+
+        // When
 
         try await paymentPersistence.upsert(
             name: originalInfo.name,
@@ -239,13 +287,23 @@ struct PaymentMethodPersistenceTests {
         )
         try await orderPersistence.create(original)
 
-        await #expect(throws: PaymentMethodPersistenceError.orderNotFound(id: missing.id)) {
+        do {
             try await paymentPersistence.applyEdit(
                 from: "匯款",
                 to: "銀行匯款",
                 flags: .none,
                 orders: [corrected, missing]
             )
+            // Then
+
+            Issue.record("預期為找不到訂單錯誤。")
+        } catch {
+            switch error {
+            case let .orderNotFound(id):
+                #expect(id == missing.id)
+            case .storage:
+                Issue.record("預期為找不到訂單錯誤，實際為持久化錯誤。")
+            }
         }
 
         #expect(try await paymentPersistence.fetchAllInfos() == [originalInfo])
@@ -257,13 +315,16 @@ struct PaymentMethodPersistenceTests {
         #expect(try await orderPersistence.fetch(id: missing.id) == nil)
     }
 
+    /// 驗證付款方式持久化在此情境下的資料結果
     @Test func applyEditRollsBackMasterAndOrdersWhenSaveFails() async throws(any Error) {
+        // Given
+
         let storeURL = Self.makeStoreURL()
         let original = Self.makePaymentOrder(id: "PM-SAVE-FAIL", paymentMethod: "匯款")
         let corrected =
             original
             .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(flags: .none)
+            .applyingPaymentMethodFlags(.none)
         let originalInfo = PaymentMethodInfo(
             name: "匯款", isCardless: true, isBankTransfer: true, isCashOnDelivery: true)
 
@@ -271,7 +332,7 @@ struct PaymentMethodPersistenceTests {
             let bootstrap = PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
             guard case .healthy = bootstrap.status else {
                 Issue.record(
-                    "Expected a healthy disk-backed bootstrap before seeding the save-failure test."
+                    "建立儲存失敗測試資料前，預期磁碟型 bootstrap 為 healthy。"
                 )
                 return
             }
@@ -284,24 +345,44 @@ struct PaymentMethodPersistenceTests {
             try await orderPersistence.create(original)
         }
 
+        // When
+
         do {
             let readOnlyContainer = try Self.makeReadOnlyContainer(at: storeURL)
             let paymentPersistence = PaymentMethodPersistence(modelContainer: readOnlyContainer)
 
-            await #expect(throws: PaymentMethodPersistenceError.self) {
+            do {
                 try await paymentPersistence.applyEdit(
                     from: "匯款",
                     to: "銀行匯款",
                     flags: .none,
                     orders: [corrected]
                 )
+
+                // Then
+
+                Issue.record("預期 applyEdit 會拋出 storage(.saveFailed)。")
+            } catch {
+                // Then
+
+                switch error {
+                case let .storage(storageError):
+                    switch storageError {
+                    case .saveFailed:
+                        break
+                    case .fetchFailed, .containerCreationFailed:
+                        Issue.record("預期 storage 內為 saveFailed。")
+                    }
+                case .orderNotFound:
+                    Issue.record("預期為 storage(.saveFailed)，實際為 orderNotFound。")
+                }
             }
         }
 
         // 以新 context 讀取 store，確認失敗後沒有殘留資料
         let restored = PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
         guard case .healthy = restored.status else {
-            Issue.record("Expected the original store to remain reopenable after a failed save.")
+            Issue.record("預期儲存失敗後原始資料庫仍可重新開啟。")
             return
         }
         let restoredPaymentPersistence = PaymentMethodPersistence(
@@ -321,6 +402,10 @@ struct PaymentMethodPersistenceTests {
 private extension PaymentMethodPersistenceTests {
 
     /// 建立帶有四個非預設付款旗標受管欄位的訂單
+    ///
+    /// - Parameters:
+    ///   - id: 訂單識別值
+    ///   - paymentMethod: 付款方式名稱
     /// - Returns: 建立的訂單
     static func makePaymentOrder(id: String, paymentMethod: String) -> LedgerOrder {
         LedgerOrder(
@@ -354,6 +439,10 @@ private extension PaymentMethodPersistenceTests {
     }
 
     /// 回傳只改變照片的複本
+    ///
+    /// - Parameters:
+    ///   - order: 原始訂單
+    ///   - photos: 要寫入的照片
     /// - Returns: 加入照片後的訂單
     static func withPhotos(_ order: LedgerOrder, photos: [Data]) -> LedgerOrder {
         LedgerOrder(

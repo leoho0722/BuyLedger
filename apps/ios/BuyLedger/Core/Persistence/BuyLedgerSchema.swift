@@ -2,7 +2,7 @@
 //  BuyLedgerSchema.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/23.
+//  Created by Leo Ho on 2026/05/23.
 //
 
 import Foundation
@@ -11,7 +11,7 @@ import SwiftData
 /// BuyLedger SwiftData schema 的版本化定義
 enum BuyLedgerSchemaV15: VersionedSchema {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 版本識別
     static var versionIdentifier: Schema.Version { Schema.Version(15, 0, 0) }
@@ -38,37 +38,90 @@ enum BuyLedgerSchemaV15: VersionedSchema {
     @Model
     final class OrderRecord {
 
-        // MARK: - Data Properties
+        // MARK: - Properties
 
+        /// 訂單識別碼
         var id: String
+
+        /// 客戶資料
         var customer: LedgerCustomer
+
+        /// 訂單狀態
         var status: OrderStatus
+
+        /// 商品原始幣別
         var currency: String
+
+        /// 訂單建立或更新日期
         var date: Date
+
+        /// 商品項目
         var items: [LedgerOrderItem]
+
+        /// 商品成本
         var itemCost: Decimal
+
+        /// 國內運費成本
         var domesticShipping: Decimal
+
+        /// 國際運費成本
         var internationalShipping: Decimal
+
+        /// 商品來源國當地國內運費成本
         var foreignDomesticShipping: Decimal = 0
+
+        /// 刷卡手續費比例
         var cardFeeRate: Decimal
+
+        /// 平台手續費比例
         var platformFeeRate: Decimal
+
+        /// 金流手續費比例
         var paymentFeeRate: Decimal = 0
+
+        /// 實際收款金額
         var chargedAmount: Decimal
+
+        /// 無卡付款折抵金額
         var cardlessDeductionAmount: Decimal = 0
+
+        /// 無卡付款補款金額
         var cardlessSupplementAmount: Decimal = 0
+
+        /// 訂單來源
         var orderSource: String = ""
+
+        /// 商品類別清單
         var categories: [String] = []
+
+        /// 付款方式
         var paymentMethod: String = ""
+
+        /// 訂單備註
         var notes: String = ""
+
+        /// V15 的對帳狀態欄位
         var verificationStatus: String = ""
+
+        /// 歸屬的開團名稱清單
         var campaignNames: [String] = []
+
+        /// 收款狀態的原始值
         var paymentReceiptStatus: String = PaymentReceiptStatus.pending.rawValue
+
+        /// 是否以貨到付款方式成立
         var isCashOnDelivery: Bool = false
+
+        /// 訂單照片
         var photos: [Data] = []
+
+        /// 合併來源訂單編號
         var mergedSourceIDs: [String] = []
 
         // MARK: - Init
 
+        /// 依領域訂單建立 V15 的影子記錄
+        /// - Parameter order: 對應的領域訂單
         init(order: LedgerOrder) {
             self.id = order.id
             self.customer = order.customer
@@ -103,12 +156,15 @@ enum BuyLedgerSchemaV15: VersionedSchema {
     @Model
     final class VerificationStatusRecord {
 
-        // MARK: - Data Properties
+        // MARK: - Properties
 
+        /// 主檔名稱
         var name: String
 
         // MARK: - Init
 
+        /// 依名稱建立 V15 的影子記錄
+        /// - Parameter name: 主檔名稱
         init(name: String) {
             self.name = name
         }
@@ -118,22 +174,56 @@ enum BuyLedgerSchemaV15: VersionedSchema {
     @Model
     final class SyncMeta {
 
-        // MARK: - Data Properties
+        // MARK: - Properties
 
+        /// 被同步的資料識別碼
         var entityID: String
+
+        /// 資料集合名稱
         var collection: String
+
+        /// 欄位時鐘的 JSON 文字
         var fieldClocksJSON: String
+
+        /// 有異動的欄位名稱
         var dirtyFields: [String]
+
+        /// 是否標記為刪除
         var deleteTombstone: Bool
+
+        /// 刪除操作的時鐘
         var deleteClock: String
+
+        /// 待處理狀態的原始值
         var pendingStateRaw: String
+
+        /// 重試次數
         var retryCount: Int
+
+        /// 最近發出的 HLC
         var lastIssuedHLC: String
+
+        /// 待送出的遠端資料 JSON
         var pendingRemoteJSON: String
+
+        /// 照片參照的 JSON 文字
         var photoRefsJSON: String
 
         // MARK: - Init
 
+        /// 依同步狀態建立 V15 的影子記錄
+        /// - Parameters:
+        ///   - entityID: 被同步的資料識別碼
+        ///   - collection: 資料集合名稱
+        ///   - fieldClocksJSON: 欄位時鐘的 JSON 文字
+        ///   - dirtyFields: 有異動的欄位名稱
+        ///   - deleteTombstone: 是否標記為刪除
+        ///   - deleteClock: 刪除操作的時鐘
+        ///   - pendingStateRaw: 待處理狀態的原始值
+        ///   - retryCount: 重試次數
+        ///   - lastIssuedHLC: 最近發出的 HLC
+        ///   - pendingRemoteJSON: 待送出的遠端資料 JSON
+        ///   - photoRefsJSON: 照片參照的 JSON 文字
         init(
             entityID: String,
             collection: String,
@@ -165,19 +255,44 @@ enum BuyLedgerSchemaV15: VersionedSchema {
     @Model
     final class SyncQueueItem {
 
-        // MARK: - Data Properties
+        // MARK: - Properties
 
+        /// 操作識別碼
         var opID: String
+
+        /// 被同步的資料識別碼
         var entityID: String
+
+        /// 資料集合名稱
         var collection: String
+
+        /// 操作類型的原始值
         var opRaw: String
+
+        /// 異動欄位的 JSON 文字
         var changedFieldsJSON: String
+
+        /// 欄位時鐘的 JSON 文字
         var fieldClocksJSON: String
+
+        /// 已嘗試次數
         var attempts: Int
+
+        /// 加入佇列的時間
         var enqueuedAt: Date
 
         // MARK: - Init
 
+        /// 依同步操作建立 V15 的影子記錄
+        /// - Parameters:
+        ///   - opID: 操作識別碼
+        ///   - entityID: 被同步的資料識別碼
+        ///   - collection: 資料集合名稱
+        ///   - opRaw: 操作類型的原始值
+        ///   - changedFieldsJSON: 異動欄位的 JSON 文字
+        ///   - fieldClocksJSON: 欄位時鐘的 JSON 文字
+        ///   - attempts: 已嘗試次數
+        ///   - enqueuedAt: 加入佇列的時間
         init(
             opID: String,
             entityID: String,
@@ -203,7 +318,7 @@ enum BuyLedgerSchemaV15: VersionedSchema {
 /// V16 schema：把對帳狀態的程式識別字由 verification 對齊為 reconciliation
 enum BuyLedgerSchemaV16: VersionedSchema {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 版本識別
     static var versionIdentifier: Schema.Version { Schema.Version(16, 0, 0) }
@@ -230,40 +345,91 @@ enum BuyLedgerSchemaV16: VersionedSchema {
     @Model
     final class OrderRecord {
 
-        // MARK: - Data Properties
+        // MARK: - Properties
 
+        /// 訂單識別碼
         var id: String
+
+        /// 客戶資料
         var customer: LedgerCustomer
+
+        /// 訂單狀態
         var status: OrderStatus
+
+        /// 商品原始幣別
         var currency: String
+
+        /// 訂單建立或更新日期
         var date: Date
+
+        /// 商品項目
         var items: [LedgerOrderItem]
+
+        /// 商品成本
         var itemCost: Decimal
+
+        /// 國內運費成本
         var domesticShipping: Decimal
+
+        /// 國際運費成本
         var internationalShipping: Decimal
+
+        /// 商品來源國當地國內運費成本
         var foreignDomesticShipping: Decimal = 0
+
+        /// 刷卡手續費比例
         var cardFeeRate: Decimal
+
+        /// 平台手續費比例
         var platformFeeRate: Decimal
+
+        /// 金流手續費比例
         var paymentFeeRate: Decimal = 0
+
+        /// 實際收款金額
         var chargedAmount: Decimal
+
+        /// 無卡付款折抵金額
         var cardlessDeductionAmount: Decimal = 0
+
+        /// 無卡付款補款金額
         var cardlessSupplementAmount: Decimal = 0
+
+        /// 訂單來源
         var orderSource: String = ""
+
+        /// 商品類別清單
         var categories: [String] = []
+
+        /// 付款方式
         var paymentMethod: String = ""
+
+        /// 訂單備註
         var notes: String = ""
 
+        /// V16 的對帳狀態欄位
         @Attribute(originalName: "verificationStatus")
         var reconciliationStatus: String = ""
 
+        /// 歸屬的開團名稱清單
         var campaignNames: [String] = []
+
+        /// 收款狀態的原始值
         var paymentReceiptStatus: String = PaymentReceiptStatus.pending.rawValue
+
+        /// 是否以貨到付款方式成立
         var isCashOnDelivery: Bool = false
+
+        /// 訂單照片
         var photos: [Data] = []
+
+        /// 合併來源訂單編號
         var mergedSourceIDs: [String] = []
 
         // MARK: - Init
 
+        /// 依領域訂單建立 V16 的影子記錄
+        /// - Parameter order: 對應的領域訂單
         init(order: LedgerOrder) {
             self.id = order.id
             self.customer = order.customer
@@ -298,22 +464,56 @@ enum BuyLedgerSchemaV16: VersionedSchema {
     @Model
     final class SyncMeta {
 
-        // MARK: - Data Properties
+        // MARK: - Properties
 
+        /// 被同步的資料識別碼
         var entityID: String
+
+        /// 資料集合名稱
         var collection: String
+
+        /// 欄位時鐘的 JSON 文字
         var fieldClocksJSON: String
+
+        /// 有異動的欄位名稱
         var dirtyFields: [String]
+
+        /// 是否標記為刪除
         var deleteTombstone: Bool
+
+        /// 刪除操作的時鐘
         var deleteClock: String
+
+        /// 待處理狀態的原始值
         var pendingStateRaw: String
+
+        /// 重試次數
         var retryCount: Int
+
+        /// 最近發出的 HLC
         var lastIssuedHLC: String
+
+        /// 待送出的遠端資料 JSON
         var pendingRemoteJSON: String
+
+        /// 照片參照的 JSON 文字
         var photoRefsJSON: String
 
         // MARK: - Init
 
+        /// 依同步狀態建立 V16 的影子記錄
+        /// - Parameters:
+        ///   - entityID: 被同步的資料識別碼
+        ///   - collection: 資料集合名稱
+        ///   - fieldClocksJSON: 欄位時鐘的 JSON 文字
+        ///   - dirtyFields: 有異動的欄位名稱
+        ///   - deleteTombstone: 是否標記為刪除
+        ///   - deleteClock: 刪除操作的時鐘
+        ///   - pendingStateRaw: 待處理狀態的原始值
+        ///   - retryCount: 重試次數
+        ///   - lastIssuedHLC: 最近發出的 HLC
+        ///   - pendingRemoteJSON: 待送出的遠端資料 JSON
+        ///   - photoRefsJSON: 照片參照的 JSON 文字
         init(
             entityID: String,
             collection: String,
@@ -345,19 +545,44 @@ enum BuyLedgerSchemaV16: VersionedSchema {
     @Model
     final class SyncQueueItem {
 
-        // MARK: - Data Properties
+        // MARK: - Properties
 
+        /// 操作識別碼
         var opID: String
+
+        /// 被同步的資料識別碼
         var entityID: String
+
+        /// 資料集合名稱
         var collection: String
+
+        /// 操作類型的原始值
         var opRaw: String
+
+        /// 異動欄位的 JSON 文字
         var changedFieldsJSON: String
+
+        /// 欄位時鐘的 JSON 文字
         var fieldClocksJSON: String
+
+        /// 已嘗試次數
         var attempts: Int
+
+        /// 加入佇列的時間
         var enqueuedAt: Date
 
         // MARK: - Init
 
+        /// 依同步操作建立 V16 的影子記錄
+        /// - Parameters:
+        ///   - opID: 操作識別碼
+        ///   - entityID: 被同步的資料識別碼
+        ///   - collection: 資料集合名稱
+        ///   - opRaw: 操作類型的原始值
+        ///   - changedFieldsJSON: 異動欄位的 JSON 文字
+        ///   - fieldClocksJSON: 欄位時鐘的 JSON 文字
+        ///   - attempts: 已嘗試次數
+        ///   - enqueuedAt: 加入佇列的時間
         init(
             opID: String,
             entityID: String,
@@ -383,7 +608,7 @@ enum BuyLedgerSchemaV16: VersionedSchema {
 /// V17 schema：當前最新版本 (target)
 enum BuyLedgerSchemaV17: VersionedSchema {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 版本識別
     static var versionIdentifier: Schema.Version { Schema.Version(17, 0, 0) }
@@ -406,7 +631,7 @@ enum BuyLedgerSchemaV17: VersionedSchema {
 /// 對帳狀態主檔改名 (V15 → V16) 的跨階段暫存
 enum ReconciliationStatusRenameMigration {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// `willMigrate` 讀出、`didMigrate` 寫回的對帳狀態主檔名稱清單
     nonisolated(unsafe) static var carriedNames: [String] = []
@@ -415,7 +640,7 @@ enum ReconciliationStatusRenameMigration {
 /// BuyLedger SwiftData migration plan
 enum BuyLedgerMigrationPlan: SchemaMigrationPlan {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// migration plan 涉及的所有 schema 版本
     static var schemas: [any VersionedSchema.Type] {

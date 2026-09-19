@@ -1,17 +1,17 @@
 //
-//  NameLookupRecord.swift
+//  NameLookupRecordProtocol.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/8/1.
+//  Created by Leo Ho on 2026/08/01.
 //
 
 import Foundation
 import SwiftData
 
-/// 只有名稱欄位主檔的共用協定
-protocol NameLookupRecord: PersistentModel {
+/// 以名稱讀寫主檔的共用契約
+protocol NameLookupRecordProtocol: PersistentModel {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 主檔名稱；同時作為 upsert 識別值
     var name: String { get set }

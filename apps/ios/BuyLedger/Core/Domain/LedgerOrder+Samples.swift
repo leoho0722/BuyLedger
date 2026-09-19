@@ -2,7 +2,7 @@
 //  LedgerOrder+Samples.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/1.
+//  Created by Leo Ho on 2026/05/01.
 //
 
 import Foundation
@@ -37,11 +37,11 @@ extension LedgerOrder {
                     unitPrice: 295_000
                 ),
             ],
-            itemCost: decimal("390000") * decimal("0.0228"),
+            itemCost: decimal(significand: 390_000) * decimal(significand: 228, exponent: -4),
             domesticShipping: 80,
             internationalShipping: 320,
             foreignDomesticShipping: 0,
-            cardFeeRate: decimal("0.015"),
+            cardFeeRate: decimal(significand: 15, exponent: -3),
             platformFeeRate: 0,
             paymentFeeRate: 0,
             chargedAmount: 11_800,
@@ -75,11 +75,11 @@ extension LedgerOrder {
                     unitPrice: 18_700
                 )
             ],
-            itemCost: decimal("18700") * decimal("0.2105"),
+            itemCost: decimal(significand: 18_700) * decimal(significand: 2_105, exponent: -4),
             domesticShipping: 0,
             internationalShipping: 380,
             foreignDomesticShipping: 0,
-            cardFeeRate: decimal("0.015"),
+            cardFeeRate: decimal(significand: 15, exponent: -3),
             platformFeeRate: 0,
             paymentFeeRate: 0,
             chargedAmount: 4_980,
@@ -118,12 +118,12 @@ extension LedgerOrder {
                     unitPrice: 68_000
                 ),
             ],
-            itemCost: decimal("356000") * decimal("0.0228"),
+            itemCost: decimal(significand: 356_000) * decimal(significand: 228, exponent: -4),
             domesticShipping: 0,
             internationalShipping: 290,
             foreignDomesticShipping: 0,
-            cardFeeRate: decimal("0.015"),
-            platformFeeRate: decimal("0.03"),
+            cardFeeRate: decimal(significand: 15, exponent: -3),
+            platformFeeRate: decimal(significand: 3, exponent: -2),
             paymentFeeRate: 0,
             chargedAmount: 9_890,
             cardlessDeductionAmount: 0,
@@ -156,11 +156,11 @@ extension LedgerOrder {
                     unitPrice: 390
                 )
             ],
-            itemCost: decimal("390") * decimal("35.2"),
+            itemCost: decimal(significand: 390) * decimal(significand: 352, exponent: -1),
             domesticShipping: 0,
             internationalShipping: 850,
             foreignDomesticShipping: 0,
-            cardFeeRate: decimal("0.015"),
+            cardFeeRate: decimal(significand: 15, exponent: -3),
             platformFeeRate: 0,
             paymentFeeRate: 0,
             chargedAmount: 0,
@@ -199,11 +199,11 @@ extension LedgerOrder {
                     unitPrice: 4_500
                 ),
             ],
-            itemCost: decimal("31500") * decimal("0.2105"),
+            itemCost: decimal(significand: 31_500) * decimal(significand: 2_105, exponent: -4),
             domesticShipping: 250,
             internationalShipping: 320,
             foreignDomesticShipping: 0,
-            cardFeeRate: decimal("0.015"),
+            cardFeeRate: decimal(significand: 15, exponent: -3),
             platformFeeRate: 0,
             paymentFeeRate: 0,
             chargedAmount: 8_650,
@@ -233,12 +233,12 @@ extension LedgerOrder {
                     unitPrice: 218
                 )
             ],
-            itemCost: decimal("218") * decimal("32.45"),
+            itemCost: decimal(significand: 218) * decimal(significand: 3_245, exponent: -2),
             domesticShipping: 0,
             internationalShipping: 380,
             foreignDomesticShipping: 0,
-            cardFeeRate: decimal("0.015"),
-            platformFeeRate: decimal("0.03"),
+            cardFeeRate: decimal(significand: 15, exponent: -3),
+            platformFeeRate: decimal(significand: 3, exponent: -2),
             paymentFeeRate: 0,
             chargedAmount: 8_420,
             cardlessDeductionAmount: 0,
@@ -271,11 +271,11 @@ extension LedgerOrder {
                     unitPrice: 89_000
                 )
             ],
-            itemCost: decimal("178000") * decimal("0.0228"),
+            itemCost: decimal(significand: 178_000) * decimal(significand: 228, exponent: -4),
             domesticShipping: 60,
             internationalShipping: 280,
             foreignDomesticShipping: 0,
-            cardFeeRate: decimal("0.015"),
+            cardFeeRate: decimal(significand: 15, exponent: -3),
             platformFeeRate: 0,
             paymentFeeRate: 0,
             chargedAmount: 5_680,
@@ -314,11 +314,11 @@ extension LedgerOrder {
                     unitPrice: 79_000
                 ),
             ],
-            itemCost: decimal("101000") * decimal("0.0228"),
+            itemCost: decimal(significand: 101_000) * decimal(significand: 228, exponent: -4),
             domesticShipping: 60,
             internationalShipping: 300,
             foreignDomesticShipping: 0,
-            cardFeeRate: decimal("0.015"),
+            cardFeeRate: decimal(significand: 15, exponent: -3),
             platformFeeRate: 0,
             paymentFeeRate: 0,
             chargedAmount: 4_360,
@@ -346,7 +346,10 @@ extension LedgerOrder {
             ("四月韓國團", .received),
         ]
 
-        let assigned = zip(LedgerOrder.sampleOrders.prefix(assignments.count), assignments).map { order, assignment in
+        let assigned = zip(
+            LedgerOrder.sampleOrders.prefix(assignments.count),
+            assignments
+        ).map { order, assignment in
             LedgerOrder(
                 id: order.id,
                 customer: order.customer,
@@ -380,7 +383,10 @@ extension LedgerOrder {
         return assigned + LedgerOrder.sampleOrders.dropFirst(assignments.count)
     }()
 #else
+    /// 沒有除錯資料時提供的空訂單範例
     nonisolated static let sampleOrders: [LedgerOrder] = []
+
+    /// 沒有除錯資料時提供的空開團訂單範例
     nonisolated static let sampleCampaignOrders: [LedgerOrder] = []
 #endif
 }
@@ -410,10 +416,12 @@ private extension LedgerOrder {
         return components.date ?? Date(timeIntervalSince1970: 0)
     }
 
-    /// 將固定範例資料字串轉為 `Decimal`
-    /// - Parameter value: 十進位數字字串
+    /// 以精確的有效數字與十次方建立 `Decimal`
+    /// - Parameters:
+    ///   - significand: 有效數字
+    ///   - exponent: 十次方次數
     /// - Returns: 可用於金額計算的十進位數值
-    nonisolated static func decimal(_ value: String) -> Decimal {
-        Decimal(string: value, locale: Locale(identifier: "en_US_POSIX")) ?? 0
+    nonisolated static func decimal(significand: Decimal, exponent: Int = 0) -> Decimal {
+        Decimal(sign: .plus, exponent: exponent, significand: significand)
     }
 }

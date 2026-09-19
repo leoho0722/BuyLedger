@@ -2,7 +2,7 @@
 //  CampaignReminderFailureTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/7/20.
+//  Created by Leo Ho on 2026/07/20.
 //
 
 import ComposableArchitecture
@@ -16,14 +16,21 @@ struct CampaignReminderFailureTests {
 
     // MARK: - Tests
 
+    /// 驗證行事曆提醒失敗在此情境下的狀態與訊息
     @Test func accessNotGrantedRoutesToThePermissionPath() async {
+        // Given
+
         let store = Self.makeStore {
             $0[CalendarReminderClient.self].requestAccess = { .denied }
         }
 
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
+        // Then
+
         await store.receive(\.campaignSaved) {
             $0.campaigns = [Self.newCampaign]
         }
@@ -35,16 +42,23 @@ struct CampaignReminderFailureTests {
         #expect(store.state.reminderLinks[Self.campaignID] == nil)
     }
 
+    /// 驗證行事曆提醒失敗在此情境下的狀態與訊息
     @Test func restrictedAccessRoutesToItsOwnMessageWithoutASettingsButton() async {
+        // Given
+
         // 裝置政策限制與使用者拒絕不同；前者無法由使用者自行開啟。
         // 訊息與按鈕都不得指向設定，故與 denied 情境走不同 action、不同文案
         let store = Self.makeStore {
             $0[CalendarReminderClient.self].requestAccess = { .restricted }
         }
 
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
+        // Then
+
         await store.receive(\.campaignSaved) {
             $0.campaigns = [Self.newCampaign]
         }
@@ -63,17 +77,28 @@ struct CampaignReminderFailureTests {
         #expect(store.state.reminderLinks[Self.campaignID] == nil)
     }
 
+    /// 驗證行事曆提醒失敗在此情境下的狀態與訊息
     @Test func eventSaveFailureRoutesToTheCreationFailurePath() async {
+        // Given
+
         let store = Self.makeStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = { (_: String, _: Date, _: TimeInterval) async throws(CalendarReminderError) -> String in
-                throw CalendarReminderError.system(message: "boom")
+            $0[CalendarReminderClient.self].addReminder = {
+                (_: String, _: Date, _: TimeInterval)
+                    async throws(CalendarReminderError) -> String in
+                throw CalendarReminderError.system(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
             }
         }
+
+        // When
 
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
+        // Then
+
         await store.receive(\.campaignSaved) {
             $0.campaigns = [Self.newCampaign]
         }
@@ -85,17 +110,26 @@ struct CampaignReminderFailureTests {
         #expect(store.state.reminderLinks[Self.campaignID] == nil)
     }
 
+    /// 驗證行事曆提醒失敗在此情境下的狀態與訊息
     @Test func missingEventIdentifierRoutesToTheCreationFailurePath() async {
+        // Given
+
         let store = Self.makeStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = { (_: String, _: Date, _: TimeInterval) async throws(CalendarReminderError) -> String in
+            $0[CalendarReminderClient.self].addReminder = {
+                (_: String, _: Date, _: TimeInterval)
+                    async throws(CalendarReminderError) -> String in
                 throw CalendarReminderError.eventIdentifierMissing
             }
         }
 
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
+        // Then
+
         await store.receive(\.campaignSaved) {
             $0.campaigns = [Self.newCampaign]
         }
@@ -107,18 +141,27 @@ struct CampaignReminderFailureTests {
         #expect(store.state.reminderLinks[Self.campaignID] == nil)
     }
 
+    /// 驗證行事曆提醒失敗在此情境下的狀態與訊息
     @Test func missingWritableCalendarRoutesToItsOwnMessage() async {
+        // Given
+
         // 權限已授予但沒有可寫入行事曆，應顯示專用訊息。
         let store = Self.makeStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = { (_: String, _: Date, _: TimeInterval) async throws(CalendarReminderError) -> String in
+            $0[CalendarReminderClient.self].addReminder = {
+                (_: String, _: Date, _: TimeInterval)
+                    async throws(CalendarReminderError) -> String in
                 throw CalendarReminderError.noWritableCalendar
             }
         }
 
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
+        // Then
+
         await store.receive(\.campaignSaved) {
             $0.campaigns = [Self.newCampaign]
         }
@@ -137,18 +180,28 @@ struct CampaignReminderFailureTests {
         #expect(store.state.reminderLinks[Self.campaignID] == nil)
     }
 
+    /// 驗證行事曆提醒失敗在此情境下的狀態與訊息
     @Test func linkPersistenceFailureRoutesToTheCreationFailurePath() async {
+        // Given
+
         let store = Self.makeStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
             $0[CalendarReminderClient.self].addReminder = { _, _, _ in "EVT-new" }
-            $0[CampaignReminderRepository.self].saveLink = { (_: String, _: CampaignReminderLink) async throws(PersistenceError) in
-                throw PersistenceError.saveFailed(message: "boom")
+            $0[CampaignReminderRepository.self].saveLink = {
+                (_: String, _: CampaignReminderLink) async throws(PersistenceError) in
+                throw PersistenceError.saveFailed(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
             }
         }
+
+        // When
 
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
+        // Then
+
         await store.receive(\.campaignSaved) {
             $0.campaigns = [Self.newCampaign]
         }
@@ -163,15 +216,21 @@ struct CampaignReminderFailureTests {
 
     /// 權限提示的「前往設定」以注入的相依開啟系統設定
     @Test func openSettingsButtonInvokesTheInjectedDependency() async {
+        // Given
+
         let opened = LockIsolated(false)
         let store = Self.makeStore {
             $0[CalendarReminderClient.self].requestAccess = { .denied }
             $0[OpenSettingsClient.self].open = { opened.setValue(true) }
         }
 
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
+        // Then
+
         await store.receive(\.campaignSaved) {
             $0.campaigns = [Self.newCampaign]
         }
@@ -221,14 +280,17 @@ struct CampaignReminderFailureTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
             $0[CampaignRepository.self].saveCampaign = { _ in }
-            $0[CalendarReminderClient.self].removeReminder = { (_: String) async throws(CalendarReminderError) in
+            $0[CalendarReminderClient.self].removeReminder = {
+                (_: String) async throws(CalendarReminderError) in
                 removeCallCount.withValue { $0 += 1 }
-                throw CalendarReminderError.system(message: "boom")
+                throw CalendarReminderError.system(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
             }
             $0[CampaignReminderRepository.self].removeLink = { _ in }
         }
 
-        // When：儲存編輯後嘗試移除不存在的事件
+        // When
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
@@ -238,7 +300,7 @@ struct CampaignReminderFailureTests {
         }
         await store.finish()
 
-        // Then：移除失敗不應污染畫面狀態或顯示錯誤
+        // Then
         #expect(removeCallCount.value == 1)
         #expect(store.state.reminderLinks[Self.campaignID] == nil)
         #expect(store.state.noticeAlert == nil)
@@ -246,22 +308,33 @@ struct CampaignReminderFailureTests {
 
     // MARK: - Rebuild Tests
 
+    /// 驗證行事曆提醒失敗在此情境下的狀態與訊息
     @Test func rebuildKeepsTheOldEventWhenTheNewOneFailsToBeCreated() async {
+        // Given
+
         // 建立新事件失敗時，保留舊連結且不移除舊事件。
         let removeCallCount = LockIsolated(0)
         let store = Self.makeRebuildStore {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
-            $0[CalendarReminderClient.self].addReminder = { (_: String, _: Date, _: TimeInterval) async throws(CalendarReminderError) -> String in
-                throw CalendarReminderError.system(message: "boom")
+            $0[CalendarReminderClient.self].addReminder = {
+                (_: String, _: Date, _: TimeInterval)
+                    async throws(CalendarReminderError) -> String in
+                throw CalendarReminderError.system(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
             }
             $0[CalendarReminderClient.self].removeReminder = { _ in
                 removeCallCount.withValue { $0 += 1 }
             }
         }
 
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
+        // Then
+
         await store.receive(\.campaignSaved) {
             $0.campaigns = [Self.rebuildCampaign]
         }
@@ -287,7 +360,10 @@ struct CampaignReminderFailureTests {
         )
     }
 
+    /// 驗證行事曆提醒失敗在此情境下的狀態與訊息
     @Test func rebuildRemovesTheOldEventOnlyAfterTheNewOneIsCreated() async {
+        // Given
+
         let removeCallCount = LockIsolated(0)
         let removedIdentifier = LockIsolated<String?>(nil)
         let store = Self.makeRebuildStore {
@@ -300,9 +376,13 @@ struct CampaignReminderFailureTests {
             }
         }
 
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
+        // Then
+
         await store.receive(\.campaignSaved) {
             $0.campaigns = [Self.rebuildCampaign]
         }
@@ -315,7 +395,10 @@ struct CampaignReminderFailureTests {
         #expect(removedIdentifier.value == Self.oldEventIdentifier, "移除的必須是舊事件識別碼")
     }
 
+    /// 驗證行事曆提醒失敗在此情境下的狀態與訊息
     @Test func rebuildReportsFailureWhenTheOldEventCannotBeRemoved() async {
+        // Given
+
         // 新事件建立後才移除舊事件；移除失敗要回報。
         // 移除失敗不回滾新連結，仍須顯示錯誤。
         // 依行事曆整合規則驗證提醒失敗
@@ -323,13 +406,20 @@ struct CampaignReminderFailureTests {
             $0[CalendarReminderClient.self].requestAccess = { .granted }
             $0[CalendarReminderClient.self].addReminder = { _, _, _ in "EVT-new" }
             $0[CampaignReminderRepository.self].saveLink = { _, _ in }
-            $0[CalendarReminderClient.self].removeReminder = { (_: String) async throws(CalendarReminderError) in
-                throw CalendarReminderError.system(message: "boom")
+            $0[CalendarReminderClient.self].removeReminder = {
+                (_: String) async throws(CalendarReminderError) in
+                throw CalendarReminderError.system(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
             }
         }
+        // When
+
         await store.send(.editCampaign(.presented(.saveTapped))) {
             $0.editCampaign = nil
         }
+        // Then
+
         await store.receive(\.campaignSaved) {
             $0.campaigns = [Self.rebuildCampaign]
         }

@@ -38,6 +38,9 @@ struct OrderEditFeature {
         /// 是否曾增刪照片；只有照片已載入且為 true 才會寫入照片
         var hasEditedPhotos: Bool = false
 
+        /// 最近一批照片匯入失敗的張數
+        var photoImportFailureCount: Int = 0
+
         /// PhotosPicker 的選取項目；匯入後清空
         var photoPickerSelection: [PhotosPickerItem] = []
 
@@ -337,7 +340,7 @@ struct OrderEditFeature {
         case availableCurrenciesLoaded([CurrencyCode])
 
         /// PhotosPicker 選取項目經 ``PhotoClient`` 載入與正規化完成
-        case photosImported([Data])
+        case photosImported(PhotoImportResult)
 
         /// 點擊縮圖時開啟照片檢視器
         case deletePhotoTapped(Int)
@@ -448,6 +451,7 @@ struct OrderEditFeature {
                     return .none
                 }
 
+                state.photoImportFailureCount = 0
                 let photoClient = photoClient
                 return .run { send in
                     await send(.photosImported(photoClient.importPhotos(items)))
@@ -799,10 +803,11 @@ struct OrderEditFeature {
                     }
                 return .none
 
-            case let .photosImported(imported):
+            case let .photosImported(importResult):
                 // 依剩餘容量截斷照片，匯入後清空選取。
-                let appended = imported.prefix(state.remainingPhotoCapacity)
+                let appended = importResult.photos.prefix(state.remainingPhotoCapacity)
                 state.draftPhotos.append(contentsOf: appended)
+                state.photoImportFailureCount = importResult.failedCount
                 state.photoPickerSelection = []
                 if !appended.isEmpty {
                     // 使用者確實增刪過照片，儲存時才會走帶照片的專用寫入路徑

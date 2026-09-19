@@ -36,7 +36,7 @@ struct Campaign: Codable, Equatable, Identifiable, Sendable {
 
     // MARK: - Init
 
-    /// 建立 Campaign
+    /// 以必填欄位建立值，宣告了預設值的欄位可以省略
     init(
         id: String,
         name: String,

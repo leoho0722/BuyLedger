@@ -2,7 +2,7 @@
 //  TestDependencies.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/5/3.
+//  Created by Leo Ho on 2026/05/03.
 //
 
 import ComposableArchitecture
@@ -37,6 +37,18 @@ enum TestDependencies {
 // MARK: - Internal Method
 
 extension TestDependencies {
+
+    /// 建立帶固定 domain 與 code 的底層錯誤替身
+    ///
+    /// - Parameter message: 要放入錯誤描述的文字
+    /// - Returns: 可供持久化與網路測試使用的底層錯誤
+    static func makeUnderlyingError(message: String) -> NSError {
+        NSError(
+            domain: "com.leoho.BuyLedger.tests",
+            code: 1,
+            userInfo: [NSLocalizedDescriptionKey: message]
+        )
+    }
 
     /// 在 ``fixedNow`` 注入固定 date、calendar 與 timeZone 的 scope 中執行 operation
     ///

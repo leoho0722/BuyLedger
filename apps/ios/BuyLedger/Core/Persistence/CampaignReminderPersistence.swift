@@ -2,13 +2,13 @@
 //  CampaignReminderPersistence.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/7/11.
+//  Created by Leo Ho on 2026/07/11.
 //
 
 import Foundation
 import SwiftData
 
-/// SwiftData 上對「開團訂購提醒連結」做 CRUD 的背景 actor
+/// 在背景 actor 中讀寫開團提醒連結
 @ModelActor
 actor CampaignReminderPersistence {}
 

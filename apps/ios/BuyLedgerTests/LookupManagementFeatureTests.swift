@@ -2,7 +2,7 @@
 //  LookupManagementFeatureTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/5/29.
+//  Created by Leo Ho on 2026/05/29.
 //
 
 import ComposableArchitecture
@@ -17,7 +17,10 @@ struct LookupManagementFeatureTests {
 
     // MARK: - Tests
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func reconciliationStatusKindLoadsFromRepository() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             let store = TestStore(
                 initialState: LookupManagementFeature.State(kind: .reconciliationStatus)
@@ -32,7 +35,11 @@ struct LookupManagementFeatureTests {
                 )
             }
 
+            // When
+
             await store.send(.task)
+            // Then
+
             await store.receive(\.reconciliationStatusItemsLoaded) {
                 $0.$catalog.withLock { $0.reconciliationStatuses = ["待對帳", "對帳成功"] }
                 $0.hasLoaded = true
@@ -40,7 +47,10 @@ struct LookupManagementFeatureTests {
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func reconciliationStatusAddConfirmedAppendsItem() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             let store = TestStore(
                 initialState: LookupManagementFeature.State(kind: .reconciliationStatus)
@@ -50,7 +60,11 @@ struct LookupManagementFeatureTests {
                 $0[ReconciliationStatusRepository.self] = .testValue
             }
             // 對帳狀態無 isCardless / isBankTransfer 概念，旗標被忽略；僅把名稱加入 items
+            // When
+
             await store.send(.addConfirmed(name: "待對帳", flags: .none)) {
+                // Then
+
                 $0.$catalog.withLock { $0.reconciliationStatuses = ["待對帳"] }
             }
             await store.finish()
@@ -59,6 +73,8 @@ struct LookupManagementFeatureTests {
 
     /// 使用獨立主檔 feature 容器，驗證新增後目錄同步
     @Test func addConfirmedWritesThroughToTheSharedCatalogFromAStandaloneContainer() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             @Shared(.lookupCatalog) var sharedCatalog: LookupCatalog
 
@@ -68,18 +84,25 @@ struct LookupManagementFeatureTests {
                 $0[CategoryRepository.self] = .testValue
             }
 
+            // When
+
             await store.send(.addConfirmed(name: "手工藝品", flags: .none)) {
                 $0.$catalog.withLock { $0.categories = ["手工藝品"] }
             }
 
             // 從同一個 scope 的另一個共享參照讀取
             // 確認跨 feature 共用同一份儲存
+            // Then
+
             #expect(sharedCatalog.categories == ["手工藝品"])
             await store.finish()
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func editConfirmedRenamesPaymentMethodAndClearsFlag() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             // 改名同時取消銀行匯款旗標。
             var state = LookupManagementFeature.State(kind: .paymentMethod)
@@ -102,6 +125,8 @@ struct LookupManagementFeatureTests {
                 $0[OrderRepository.self] = .testValue
             }
 
+            // When
+
             await store.send(
                 .editConfirmed(
                     originalName: "匯款",
@@ -109,6 +134,8 @@ struct LookupManagementFeatureTests {
                     flags: .none
                 )
             )
+            // Then
+
             await store.receive(\.paymentMethodEditPrepared) {
                 $0.$catalog.withLock {
                     $0.paymentMethods = [
@@ -125,7 +152,10 @@ struct LookupManagementFeatureTests {
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func editConfirmedKeepsNameAndUpdatesFlags() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             var state = LookupManagementFeature.State(kind: .paymentMethod)
             state.$catalog.withLock {
@@ -148,6 +178,8 @@ struct LookupManagementFeatureTests {
             }
 
             // 名稱不變、把銀行匯款旗標打開
+            // When
+
             await store.send(
                 .editConfirmed(
                     originalName: "銀行匯款",
@@ -160,6 +192,8 @@ struct LookupManagementFeatureTests {
                 )
             )
             // 目錄變更會在此接收點反映。
+            // Then
+
             await store.receive(\.paymentMethodEditPrepared) {
                 $0.$catalog.withLock {
                     $0.paymentMethods = [
@@ -180,12 +214,18 @@ struct LookupManagementFeatureTests {
 
     /// 名稱主檔新增表單併入 destination
     @Test func addButtonTappedForCategoryPresentsTheNameOnlyForm() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             let store = TestStore(initialState: LookupManagementFeature.State(kind: .category)) {
                 LookupManagementFeature()
             }
 
+            // When
+
             await store.send(.addButtonTapped) {
+                // Then
+
                 $0.destination = .addNameOnly(
                     LookupManagementFeature.Destination.AddNameOnlyFeature.State()
                 )
@@ -193,13 +233,22 @@ struct LookupManagementFeatureTests {
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func addButtonTappedForPaymentMethodPresentsThePaymentMethodForm() async {
+        // Given
+
         await Self.withIsolatedCatalog {
-            let store = TestStore(initialState: LookupManagementFeature.State(kind: .paymentMethod)) {
+            let store = TestStore(
+                initialState: LookupManagementFeature.State(kind: .paymentMethod)
+            ) {
                 LookupManagementFeature()
             }
 
+            // When
+
             await store.send(.addButtonTapped) {
+                // Then
+
                 $0.destination = .addPaymentMethod(
                     LookupManagementFeature.Destination.AddPaymentMethodFeature.State()
                 )
@@ -207,7 +256,10 @@ struct LookupManagementFeatureTests {
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func addButtonTappedForReconciliationStatusPresentsTheNameOnlyForm() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             let store = TestStore(
                 initialState: LookupManagementFeature.State(kind: .reconciliationStatus)
@@ -215,7 +267,11 @@ struct LookupManagementFeatureTests {
                 LookupManagementFeature()
             }
 
+            // When
+
             await store.send(.addButtonTapped) {
+                // Then
+
                 $0.destination = .addNameOnly(
                     LookupManagementFeature.Destination.AddNameOnlyFeature.State()
                 )
@@ -227,12 +283,16 @@ struct LookupManagementFeatureTests {
 
     /// 破壞性刪除一律先確認，確認前不得動到任何狀態
     @Test func deleteButtonTappedPresentsConfirmationWithoutMutatingState() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             let state = LookupManagementFeature.State(kind: .category)
             state.$catalog.withLock { $0.categories = ["美妝", "零食"] }
             let store = TestStore(initialState: state) {
                 LookupManagementFeature()
             }
+
+            // When
 
             await store.send(.deleteButtonTapped("美妝")) {
                 $0.deletionConfirmation = AlertState {
@@ -249,23 +309,34 @@ struct LookupManagementFeatureTests {
                 }
             }
 
+            // Then
+
             #expect(store.state.items == ["美妝", "零食"])
         }
     }
 
     /// 寫入成功後才更新狀態
     @Test func deleteFailureLeavesTheListUnchanged() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             let state = LookupManagementFeature.State(kind: .category)
             state.$catalog.withLock { $0.categories = ["美妝", "零食"] }
             let store = TestStore(initialState: state) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0[CategoryRepository.self].removeCategory = { (_: String) async throws(PersistenceError) in
-                    throw PersistenceError.saveFailed(message: "boom")
+                $0[CategoryRepository.self].removeCategory = {
+                    (_: String) async throws(PersistenceError) in
+                    throw PersistenceError.saveFailed(
+                        underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                    )
                 }
             }
+            // When
+
             await store.send(.deleteRequested("美妝"))
+            // Then
+
             await store.receive(\.loadFailed) {
                 $0.errorMessage = "刪除失敗，請稍後再試。"
             }
@@ -274,7 +345,10 @@ struct LookupManagementFeatureTests {
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func deleteSuccessRemovesTheItem() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             let state = LookupManagementFeature.State(kind: .category)
             state.$catalog.withLock { $0.categories = ["美妝", "零食"] }
@@ -283,7 +357,11 @@ struct LookupManagementFeatureTests {
             } withDependencies: {
                 $0[CategoryRepository.self].removeCategory = { _ in }
             }
+            // When
+
             await store.send(.deleteRequested("美妝"))
+            // Then
+
             await store.receive(\.deleteSucceeded) {
                 $0.$catalog.withLock { $0.categories = ["零食"] }
             }
@@ -294,27 +372,39 @@ struct LookupManagementFeatureTests {
 
     // MARK: - Destination (改名 / 編輯付款方式) Tests
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func renameCanSaveIsFalseWhenDraftEmptyOrUnchanged() {
+        // Given
+
         let unchanged = LookupManagementFeature.Destination.RenameFeature.State(
             originalName: "類別",
             draft: "類別"
         )
-        #expect(unchanged.canSave == false)
+        // When
 
+        let unchangedCanSave = unchanged.canSave
         let blank = LookupManagementFeature.Destination.RenameFeature.State(
             originalName: "類別",
             draft: "   "
         )
-        #expect(blank.canSave == false)
-
+        let blankCanSave = blank.canSave
         let changed = LookupManagementFeature.Destination.RenameFeature.State(
             originalName: "類別",
             draft: "新類別"
         )
-        #expect(changed.canSave == true)
+        let changedCanSave = changed.canSave
+
+        // Then
+
+        #expect(unchangedCanSave == false)
+        #expect(blankCanSave == false)
+        #expect(changedCanSave == true)
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func renameButtonTappedPresentsRenameDestinationWithOriginalNameSnapshot() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             var state = LookupManagementFeature.State(kind: .category)
             state.$catalog.withLock { $0.categories = ["舊類別"] }
@@ -325,7 +415,11 @@ struct LookupManagementFeatureTests {
             }
 
             // reducer 會用點擊當下的名稱初始化表單
+            // When
+
             await store.send(.renameButtonTapped(name: "舊類別")) {
+                // Then
+
                 $0.destination = .rename(
                     LookupManagementFeature.Destination.RenameFeature.State(
                         originalName: "舊類別",
@@ -336,7 +430,10 @@ struct LookupManagementFeatureTests {
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func renameDestinationLifecycleUpdatesDraftSavesAndDismisses() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             var state = LookupManagementFeature.State(kind: .category)
             state.$catalog.withLock { $0.categories = ["舊類別"] }
@@ -348,6 +445,8 @@ struct LookupManagementFeatureTests {
                 $0[CategoryRepository.self] = .testValue
                 $0[OrderRepository.self] = .testValue
             }
+
+            // When
 
             await store.send(.renameButtonTapped(name: "舊類別")) {
                 $0.destination = .rename(
@@ -367,6 +466,8 @@ struct LookupManagementFeatureTests {
                 )
             }
 
+            // Then
+
             #expect(store.state.destination?.rename?.canSave == true)
 
             // 儲存時送出既有的重新命名 action，並關閉表單
@@ -381,7 +482,10 @@ struct LookupManagementFeatureTests {
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func renameSaveButtonTappedNoOpsWhenCannotSave() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             var state = LookupManagementFeature.State(kind: .category)
             state.$catalog.withLock { $0.categories = ["類別"] }
@@ -391,7 +495,11 @@ struct LookupManagementFeatureTests {
                 LookupManagementFeature()
             }
 
+            // When
+
             await store.send(.renameButtonTapped(name: "類別")) {
+                // Then
+
                 $0.destination = .rename(
                     LookupManagementFeature.Destination.RenameFeature.State(
                         originalName: "類別",
@@ -402,10 +510,16 @@ struct LookupManagementFeatureTests {
 
             // 名稱未變時儲存為 no-op，表單仍保持開啟
             await store.send(.destination(.presented(.rename(.saveButtonTapped))))
+            // Then
+
+            #expect(store.state.destination?.rename?.draft == "類別")
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func editButtonTappedPresentsEditPaymentMethodDestinationWithFlagSnapshot() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             var state = LookupManagementFeature.State(kind: .paymentMethod)
             state.$catalog.withLock {
@@ -426,7 +540,11 @@ struct LookupManagementFeatureTests {
 
             // 由 reducer 讀取付款方式的三個旗標
             // 表單初值由 reducer 統一建立
+            // When
+
             await store.send(.editButtonTapped(name: "匯款")) {
+                // Then
+
                 $0.destination = .editPaymentMethod(
                     LookupManagementFeature.Destination.EditPaymentMethodFeature.State(
                         originalName: "匯款",
@@ -441,7 +559,10 @@ struct LookupManagementFeatureTests {
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func editButtonTappedNoOpsForNonPaymentMethodKind() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             var state = LookupManagementFeature.State(kind: .category)
             state.$catalog.withLock { $0.categories = ["類別"] }
@@ -451,11 +572,19 @@ struct LookupManagementFeatureTests {
                 LookupManagementFeature()
             }
 
+            // When
+
             await store.send(.editButtonTapped(name: "類別"))
+            // Then
+
+            #expect(store.state.destination == nil)
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func editPaymentMethodDestinationSaveTriggersEditConfirmedAndDismisses() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             var state = LookupManagementFeature.State(kind: .paymentMethod)
             state.$catalog.withLock {
@@ -476,6 +605,8 @@ struct LookupManagementFeatureTests {
                 $0[PaymentMethodRepository.self] = .testValue
                 $0[OrderRepository.self] = .testValue
             }
+
+            // When
 
             await store.send(.editButtonTapped(name: "匯款")) {
                 $0.destination = .editPaymentMethod(
@@ -505,6 +636,8 @@ struct LookupManagementFeatureTests {
             )
 
             // 先收到 editConfirmed，再驗證 @Shared 目錄已更新
+            // Then
+
             await store.receive(\.editConfirmed) {
                 $0.$catalog.withLock {
                     $0.paymentMethods = [
@@ -526,7 +659,10 @@ struct LookupManagementFeatureTests {
 
     // MARK: - 付款旗標更新 Tests
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func editConfirmedUsesOneFilteredSnapshotForCountAndPayloadAndConfirmation() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             let first = Self.makePaymentOrder(id: "PM-1", paymentMethod: "匯款")
             let second = Self.makePaymentOrder(id: "PM-2", paymentMethod: "匯款")
@@ -559,10 +695,10 @@ struct LookupManagementFeatureTests {
             let expectedOrders = [
                 first
                     .renamingPaymentMethod(to: "銀行匯款")
-                    .applyingPaymentMethodFlags(flags: .none),
+                    .applyingPaymentMethodFlags(.none),
                 second
                     .renamingPaymentMethod(to: "銀行匯款")
-                    .applyingPaymentMethodFlags(flags: .none),
+                    .applyingPaymentMethodFlags(.none),
             ]
             let expectedPlan = LookupManagementFeature.PaymentMethodEditPlan(
                 originalName: "匯款",
@@ -572,6 +708,8 @@ struct LookupManagementFeatureTests {
                 affectedOrders: expectedOrders
             )
 
+            // When
+
             await store.send(
                 .editConfirmed(
                     originalName: "匯款",
@@ -579,6 +717,8 @@ struct LookupManagementFeatureTests {
                     flags: .none
                 )
             )
+            // Then
+
             await store.receive(.paymentMethodEditPrepared(expectedPlan)) {
                 $0.pendingPaymentMethodEdit = expectedPlan
                 $0.retroactiveConfirmation = Self.retroactiveConfirmationAlert(count: 2)
@@ -616,7 +756,10 @@ struct LookupManagementFeatureTests {
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func editConfirmationFailureLeavesLookupStateUntouched() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             let original = Self.makePaymentOrder(id: "PM-FAIL", paymentMethod: "匯款")
             let box = PaymentMethodEditTestBox(fetchResults: [[original]])
@@ -638,9 +781,15 @@ struct LookupManagementFeatureTests {
                 LookupManagementFeature()
             } withDependencies: {
                 $0[OrderRepository.self].fetchOrders = { [box] in box.fetchOrders() }
-                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { [box] (_: String, _: String, _: PaymentMethodFlags, _: [LedgerOrder]) async throws(PaymentMethodPersistenceError) in
+                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { [box]
+                    (_: String, _: String, _: PaymentMethodFlags, _: [LedgerOrder])
+                        async throws(PaymentMethodPersistenceError) in
                     box.applyCount += 1
-                    throw PaymentMethodPersistenceError.storage(.saveFailed(message: "boom"))
+                    throw PaymentMethodPersistenceError.storage(
+                        .saveFailed(
+                            underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                        )
+                    )
                 }
             }
 
@@ -652,9 +801,11 @@ struct LookupManagementFeatureTests {
                 affectedOrders: [
                     original
                         .renamingPaymentMethod(to: "銀行匯款")
-                        .applyingPaymentMethodFlags(flags: .none)
+                        .applyingPaymentMethodFlags(.none)
                 ]
             )
+
+            // When
 
             await store.send(
                 .editConfirmed(
@@ -663,6 +814,8 @@ struct LookupManagementFeatureTests {
                     flags: .none
                 )
             )
+            // Then
+
             await store.receive(.paymentMethodEditPrepared(expectedPlan)) {
                 $0.pendingPaymentMethodEdit = expectedPlan
                 $0.retroactiveConfirmation = Self.retroactiveConfirmationAlert(count: 1)
@@ -696,7 +849,10 @@ struct LookupManagementFeatureTests {
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func editWithNoAffectedOrdersAppliesFlagsWithoutConfirmation() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             let unrelated = Self.makePaymentOrder(id: "PM-ZERO", paymentMethod: "信用卡")
             let box = PaymentMethodEditTestBox(fetchResults: [[unrelated]])
@@ -725,6 +881,8 @@ struct LookupManagementFeatureTests {
             }
 
             // 沒有受影響訂單時直接套用，不顯示確認
+            // When
+
             await store.send(
                 .editConfirmed(
                     originalName: "匯款",
@@ -732,6 +890,8 @@ struct LookupManagementFeatureTests {
                     flags: .none
                 )
             )
+            // Then
+
             await store.receive(\.paymentMethodEditPrepared) {
                 $0.$catalog.withLock {
                     $0.paymentMethods = [
@@ -754,7 +914,10 @@ struct LookupManagementFeatureTests {
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func editWithUnchangedFlagsRenamesWithoutRetroactiveConfirmation() async {
+        // Given
+
         await Self.withIsolatedCatalog {
             let original = Self.makePaymentOrder(id: "PM-RENAME", paymentMethod: "信用卡")
             let box = PaymentMethodEditTestBox(fetchResults: [[original]])
@@ -782,6 +945,8 @@ struct LookupManagementFeatureTests {
                 }
             }
             // 只有改名且旗標未變更時，不顯示確認。
+            // When
+
             await store.send(
                 .editConfirmed(
                     originalName: "信用卡",
@@ -793,6 +958,8 @@ struct LookupManagementFeatureTests {
                     )
                 )
             )
+            // Then
+
             await store.receive(\.paymentMethodEditPrepared) {
                 $0.$catalog.withLock {
                     $0.paymentMethods = [
@@ -814,7 +981,10 @@ struct LookupManagementFeatureTests {
         }
     }
 
+    /// 驗證主檔管理功能在此情境下的狀態與效果
     @Test func editFlagsChangedCoversEachFlagAndMissingStoredEntry() async {
+        // Given
+
         let changedFlagCases: [(Bool, Bool, Bool)] = [
             (true, false, false),
             (false, true, false),
@@ -854,6 +1024,8 @@ struct LookupManagementFeatureTests {
                     affectedOrders: []
                 )
 
+                // When
+
                 await store.send(
                     .editConfirmed(
                         originalName: "付款方式",
@@ -865,6 +1037,8 @@ struct LookupManagementFeatureTests {
                         )
                     )
                 )
+                // Then
+
                 await store.receive(.paymentMethodEditPrepared(expectedPlan)) {
                     $0.$catalog.withLock {
                         $0.paymentMethods = [
@@ -982,6 +1156,9 @@ private extension LookupManagementFeatureTests {
 
     /// 建立帶有舊旗標的訂單
     ///
+    /// - Parameters:
+    ///   - id: 訂單識別值
+    ///   - paymentMethod: 付款方式名稱
     /// - Returns: 建立的訂單
     static func makePaymentOrder(id: String, paymentMethod: String) -> LedgerOrder {
         LedgerOrder(
@@ -1016,8 +1193,11 @@ private extension LookupManagementFeatureTests {
 
     /// 建立付款方式更新確認 alert
     ///
+    /// - Parameter count: 需要重新計算的訂單數量
     /// - Returns: 補登提示狀態
-    static func retroactiveConfirmationAlert(count: Int) -> AlertState<LookupManagementFeature.Action.Alert> {
+    static func retroactiveConfirmationAlert(
+        count: Int
+    ) -> AlertState<LookupManagementFeature.Action.Alert> {
         let message: LocalizedStringKey = "確認後將重算 \(count) 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。"
         return AlertState {
             TextState("更正付款方式")

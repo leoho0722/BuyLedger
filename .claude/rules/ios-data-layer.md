@@ -33,7 +33,7 @@ paths:
     - 更名時的訂單 cascade 由 `RootFeature` 攔截 `renameRequested`，經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 分派。
     - 新增第五種主檔時編譯器會標出待補的 switch，但 `RootFeature.State.lookupManagements` 的初始陣列與 `MoreRoute` 是手寫字面值，漏補會靜默缺少管理畫面與入口。
     - `@Shared` 只用在主檔目錄；其他跨 feature 狀態 (客戶彙總、開團列表) 由 `RootFeature` 攔截子 feature action 同步副本，擴用前先確認真的有多個 feature 讀寫同一份資料。
-    - `NameLookupRecord` 協定遵循放各記錄檔尾端的 extension，不碰型別主體：主體變動會改變 SwiftData 指紋、破壞 migration。
+    - `NameLookupRecordProtocol` 協定遵循放各記錄檔尾端的 extension，不碰型別主體：主體變動會改變 SwiftData 指紋、破壞 migration。
 - **付款方式旗標正規化只有 `LedgerOrder.applyingPaymentMethodFlags(...)` 一處**：折抵上限、對帳狀態清空、貨到付款運費三條規則都在這裡，手動編輯與回溯更正共用。
 - **付款方式編輯是一次原子操作**：`PaymentMethodPersistence.applyEdit` 以單一 context、單次 `save()` 更新主檔與重算訂單，失敗整批 rollback；`PaymentMethodRepository.applyPaymentMethodEdit` 只轉呼叫。
     - 確認筆數與重算對象取自同一個 `PaymentMethodEditPlan` 的一次 fetch。

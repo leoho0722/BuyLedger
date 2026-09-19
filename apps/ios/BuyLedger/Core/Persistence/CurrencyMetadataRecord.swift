@@ -2,7 +2,7 @@
 //  CurrencyMetadataRecord.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/5/23.
+//  Created by Leo Ho on 2026/05/23.
 //
 
 import Foundation
@@ -12,7 +12,7 @@ import SwiftData
 @Model
 final class CurrencyMetadataRecord {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 以幣別代碼建立索引，供查詢與更新
     #Index<CurrencyMetadataRecord>([\.code])
@@ -20,7 +20,7 @@ final class CurrencyMetadataRecord {
     /// ISO 4217 幣別代碼，例如 `"TWD"`、`"USD"`
     var code: String
 
-    /// 該筆 cache 的寫入時間
+    /// 該筆快取的寫入時間
     var lastUpdated: Date
 
     // MARK: - Init

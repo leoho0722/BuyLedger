@@ -2,7 +2,7 @@
 //  AISummaryFeatureTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/5/27.
+//  Created by Leo Ho on 2026/05/27.
 //
 
 import Clocks
@@ -26,7 +26,10 @@ struct AISummaryFeatureTests {
 
     // MARK: - Tests
 
+    /// 驗證 AI 摘要功能在此情境下的狀態與效果
     @Test func streamingAccumulatesChunksThenFinishes() async {
+        // Given
+
         let clock = TestClock()
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
@@ -43,9 +46,13 @@ struct AISummaryFeatureTests {
             })
         }
 
+        // When
+
         await store.send(.task) {
             $0.phase = .streaming
         }
+        // Then
+
         await store.receive(\.chunkReceived, "# 標題\n") {
             $0.summaryText = "# 標題\n"
         }
@@ -60,20 +67,30 @@ struct AISummaryFeatureTests {
         }
     }
 
+    /// 驗證 AI 摘要功能在此情境下的狀態與效果
     @Test func missingKeyFailsImmediately() async {
+        // Given
+
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
         } withDependencies: {
             $0.appConfiguration = keyedConfiguration(nil)
         }
 
+        // When
+
         await store.send(.task) {
+            // Then
+
             $0.phase = .failed
             $0.errorMessage = "AI 總結尚未完成設定，目前無法使用。"
         }
     }
 
+    /// 驗證 AI 摘要功能在此情境下的狀態與效果
     @Test func apiErrorEntersFailedState() async {
+        // Given
+
         let clock = TestClock()
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
@@ -87,16 +104,23 @@ struct AISummaryFeatureTests {
             })
         }
 
+        // When
+
         await store.send(.task) {
             $0.phase = .streaming
         }
+        // Then
+
         await store.receive(\.streamFailed, "AI 服務驗證失敗，目前無法使用總結功能。") {
             $0.phase = .failed
             $0.errorMessage = "AI 服務驗證失敗，目前無法使用總結功能。"
         }
     }
 
+    /// 驗證 AI 摘要功能在此情境下的狀態與效果
     @Test func transportErrorMapsToFriendlyMessage() async {
+        // Given
+
         let clock = TestClock()
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
@@ -106,14 +130,22 @@ struct AISummaryFeatureTests {
             $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
                 AsyncThrowingStream<String, any Error> { continuation in
                     continuation.yield("部分內容")
-                    continuation.finish(throwing: APIError.transport(message: "boom"))
+                    continuation.finish(
+                        throwing: APIError.transport(
+                            underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                        )
+                    )
                 }
             })
         }
 
+        // When
+
         await store.send(.task) {
             $0.phase = .streaming
         }
+        // Then
+
         await store.receive(\.chunkReceived, "部分內容") {
             $0.summaryText = "部分內容"
         }
@@ -123,7 +155,10 @@ struct AISummaryFeatureTests {
         }
     }
 
+    /// 驗證 AI 摘要功能在此情境下的狀態與效果
     @Test func closingSheetCancelsStreamingWithoutFailure() async {
+        // Given
+
         let clock = TestClock()
         let cancellation = CancellationRecorder()
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
@@ -148,9 +183,13 @@ struct AISummaryFeatureTests {
             })
         }
 
+        // When
+
         await store.send(.task) {
             $0.phase = .streaming
         }
+        // Then
+
         await store.receive(\.chunkReceived, "部分內容") {
             $0.summaryText = "部分內容"
         }
@@ -168,7 +207,10 @@ struct AISummaryFeatureTests {
         #expect(wasDismissed)
     }
 
+    /// 驗證 AI 摘要功能在此情境下的狀態與效果
     @Test func slowStreamStopsAtOverallDurationLimitAndKeepsPartialContent() async {
+        // Given
+
         let clock = TestClock()
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
@@ -180,6 +222,8 @@ struct AISummaryFeatureTests {
                     let task = Task {
                         continuation.yield("第一段\n")
                         do {
+                            // When
+
                             try await clock.sleep(for: .milliseconds(150))
                             guard !Task.isCancelled else { return }
                             continuation.yield("慢速段\n")
@@ -200,6 +244,8 @@ struct AISummaryFeatureTests {
         await store.send(.task) {
             $0.phase = .streaming
         }
+        // Then
+
         await store.receive(
             \.chunkReceived,
              "第一段\n"
@@ -231,13 +277,18 @@ struct AISummaryFeatureTests {
 /// 記錄取消訊號
 private actor CancellationRecorder {
 
+    /// 是否已收到取消訊號
     private var cancelled = false
+
+    /// 是否已收到關閉訊號
     private var dismissed = false
 
+    /// 記錄已收到取消訊號
     func markCancelled() {
         cancelled = true
     }
 
+    /// 記錄已收到關閉訊號
     func markDismissed() {
         dismissed = true
     }
