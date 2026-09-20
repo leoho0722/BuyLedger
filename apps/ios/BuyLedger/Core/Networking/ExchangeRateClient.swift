@@ -2,7 +2,7 @@
 //  ExchangeRateClient.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/05/02.
+//  Created by Leo Ho on 2026/5/2.
 //
 
 import ComposableArchitecture

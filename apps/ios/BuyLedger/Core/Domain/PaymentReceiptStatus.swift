@@ -2,7 +2,7 @@
 //  PaymentReceiptStatus.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/05/30.
+//  Created by Leo Ho on 2026/5/30.
 //
 
 import Foundation

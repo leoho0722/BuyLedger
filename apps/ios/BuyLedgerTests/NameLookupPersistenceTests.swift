@@ -2,7 +2,7 @@
 //  NameLookupPersistenceTests.swift
 //  BuyLedgerTests
 //
-//  Created by Leo Ho on 2026/08/01.
+//  Created by Leo Ho on 2026/8/1.
 //
 
 import Foundation

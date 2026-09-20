@@ -2,7 +2,7 @@
 //  PaymentMethodInfo.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/08/23.
+//  Created by Leo Ho on 2026/8/23.
 //
 
 import Foundation

@@ -2,7 +2,7 @@
 //  ExchangeRateLatestResponse.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/09/19.
+//  Created by Leo Ho on 2026/9/19.
 //
 
 import Foundation

@@ -2,7 +2,7 @@
 //  PhotoClient.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/06/06.
+//  Created by Leo Ho on 2026/6/6.
 //
 
 import ComposableArchitecture

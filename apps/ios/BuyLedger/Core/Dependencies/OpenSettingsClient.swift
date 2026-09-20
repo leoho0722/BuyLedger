@@ -2,7 +2,7 @@
 //  OpenSettingsClient.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/07/21.
+//  Created by Leo Ho on 2026/7/21.
 //
 
 import ComposableArchitecture

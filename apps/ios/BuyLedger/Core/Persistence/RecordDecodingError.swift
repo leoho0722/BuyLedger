@@ -2,7 +2,7 @@
 //  RecordDecodingError.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/09/19.
+//  Created by Leo Ho on 2026/9/19.
 //
 
 /// 持久化記錄的 raw value 無法轉回領域型別時的錯誤

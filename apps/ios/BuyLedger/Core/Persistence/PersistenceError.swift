@@ -2,7 +2,7 @@
 //  PersistenceError.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/08/04.
+//  Created by Leo Ho on 2026/8/4.
 //
 
 import Foundation

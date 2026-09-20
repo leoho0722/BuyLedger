@@ -2,7 +2,7 @@
 //  CampaignReminderPersistence.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/07/11.
+//  Created by Leo Ho on 2026/7/11.
 //
 
 import Foundation

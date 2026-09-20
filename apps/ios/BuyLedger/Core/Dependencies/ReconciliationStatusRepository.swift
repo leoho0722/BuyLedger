@@ -2,7 +2,7 @@
 //  ReconciliationStatusRepository.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/05/29.
+//  Created by Leo Ho on 2026/5/29.
 //
 
 import ComposableArchitecture
