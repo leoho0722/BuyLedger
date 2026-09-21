@@ -8,14 +8,9 @@
 import SwiftUI
 
 /// 圈狀圖使用的單一區段
-struct BLDonutSegment: Identifiable {
+struct BLDonutSegment {
 
-    // MARK: - Identifiable Properties
-
-    /// 區段的穩定識別值
-    var id: String { label }
-
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 區段名稱
     let label: String
@@ -28,4 +23,12 @@ struct BLDonutSegment: Identifiable {
 
     /// 供輔助技術朗讀的數值描述
     let valueDescription: String
+}
+
+// MARK: - Identifiable
+
+extension BLDonutSegment: Identifiable {
+
+    /// 區段的穩定識別值
+    var id: String { label }
 }

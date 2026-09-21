@@ -27,7 +27,7 @@ paths:
     - 掃描守門只涵蓋 `.animation(`；新增 `withAnimation`／`.transition`／`.symbolEffect` 時要人工確認。
 - **圖表元件呼叫 `.accessibilityChartDescriptor(_:)` 提供原生圖表導覽**，新增圖表元件比照。
     - `AXChartDescriptor` 的標題與序列名是 `String`，不隨 App 內語言切換翻譯；`BLBarChart`／`BLDonutChart`／`BLSparkline` 因此開放為建構參數，由呼叫端以 `AppLanguage.localized(_:)` 傳入已本地化字串。
-    - Design System 元件不持有 `AppLanguage` 是既有慣例 (不是分層限制)；不持有語言狀態的 view (如 `OrderDetailView`) 由 `@Environment(\.locale)` 換算出 `language`，並與 `currencyDisplayText(for:)` 共用同一入口。
+    - Design System 元件不持有 `AppLanguage` 是既有慣例 (不是分層限制)；不持有語言狀態的 view (如 `OrderDetailView`) 由 `@Environment(\.locale)` 換算出 `language`，並與 `CurrencyDisplayName.text(code:language:)` 共用同一入口；picker 搜尋補充文字走 `CurrencyDisplayName.searchKeywords(code:locale:)`。
     - 這些字面值同樣要進 `Localizable.xcstrings`。
 
 ## 本地化

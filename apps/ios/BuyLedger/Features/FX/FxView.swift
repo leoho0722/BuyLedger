@@ -172,7 +172,12 @@ private extension FxView {
 
                 Spacer()
 
-                Text(currencyDisplayText(for: store.fromCurrency))
+                Text(
+                    CurrencyDisplayName.text(
+                        code: store.fromCurrency.rawValue,
+                        language: AppLanguage(locale: locale)
+                    )
+                )
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.label)
                     .lineLimit(1)
@@ -192,6 +197,7 @@ private extension FxView {
         .accessibilityIdentifier(BLAccessibilityID.Fx.currencyPickerButton)
         .sheet(isPresented: $store.showsCurrencySheet) {
             let locale = locale
+            let language = AppLanguage(locale: locale)
 
             OptionPickerSheet(
                 title: "選擇來源幣別",
@@ -202,11 +208,10 @@ private extension FxView {
                 options: store.availableCurrencies.map(\.rawValue),
                 selected: store.fromCurrency.rawValue,
                 displayName: { code in
-                    let name = locale.localizedString(forCurrencyCode: code) ?? ""
-                    return name.isEmpty ? code : "\(code) · \(name)"
+                    CurrencyDisplayName.text(code: code, language: language)
                 },
                 searchKeywords: { code in
-                    locale.localizedString(forCurrencyCode: code) ?? ""
+                    CurrencyDisplayName.searchKeywords(code: code, locale: locale)
                 },
                 onSelect: { code in
                     store.send(.fromCurrencySelected(code))
@@ -393,18 +398,6 @@ private extension FxView {
                 .precision(.fractionLength(4))
                 .locale(locale)
         )
-    }
-
-    /// 依 App 選定 locale 產生幣別顯示文字
-    /// - Parameter currency: 幣別
-    /// - Returns: 顯示字串
-    func currencyDisplayText(for currency: CurrencyCode) -> String {
-        guard locale.language.languageCode?.identifier == "zh" else {
-            return currency.rawValue
-        }
-
-        let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
-        return name.isEmpty ? currency.rawValue : name
     }
 
     /// 「即時匯率列表」顯示的幣別清單

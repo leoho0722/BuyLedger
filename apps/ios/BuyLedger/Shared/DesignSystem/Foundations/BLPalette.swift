@@ -8,9 +8,11 @@
 import SwiftUI
 
 /// BuyLedger 在 SwiftUI 介面中使用的語意色彩
-struct BLPalette {
+struct BLPalette {}
 
-    // MARK: - Static Properties
+// MARK: - Computed Properties
+
+extension BLPalette {
 
     /// 彩底 hero 卡的漸層端點 (由淺至深)，總覽頁與報價頁主卡共用同一組資源
     static var heroGradient: [Color] {
@@ -19,8 +21,6 @@ struct BLPalette {
             Color("BLHeroGradientEnd", bundle: .assets),
         ]
     }
-
-    // MARK: - Display Properties
 
     /// App 主要背景色
     var background: Color {

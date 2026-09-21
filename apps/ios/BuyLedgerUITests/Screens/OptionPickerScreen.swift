@@ -10,7 +10,7 @@ import XCTest
 /// 選項選擇器 (``OptionPickerSheet``) 的 Page Object
 struct OptionPickerScreen: Screen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
@@ -46,6 +46,57 @@ extension OptionPickerScreen {
             app.scrollToHittable(row, within: rootElement)
         }
         row.tapAfterWaiting(in: app, file: file, line: line)
+    }
+
+    /// 以搜尋欄輸入關鍵字
+    ///
+    /// - Parameters:
+    ///   - text: 要搜尋的關鍵字
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func search(
+        _ text: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        guard let field = app.searchFields.allElementsBoundByIndex.first(where: \.isHittable) else {
+            app.failWithDiagnostics(
+                "找不到可互動的選項搜尋欄",
+                file: file,
+                line: line
+            )
+            return
+        }
+        field.clearAndType(
+            text,
+            in: app,
+            file: file,
+            line: line
+        )
+    }
+
+    /// 讀取指定選項列的 accessibility label
+    ///
+    /// - Parameters:
+    ///   - value: 選項的原始值
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 選項列的 accessibility label；列不存在時為 `nil`
+    func optionLabel(
+        for value: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> String? {
+        let row = app.descendants(matching: .any)[BLAccessibilityID.OptionPicker.optionRow(value)]
+        guard row.waitForExistence(timeout: 10) else {
+            app.failWithDiagnostics(
+                "選項列「\(value)」逾時仍未出現",
+                file: file,
+                line: line
+            )
+            return nil
+        }
+        return row.label
     }
 
     /// 點「新增」開啟新增流程

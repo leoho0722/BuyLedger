@@ -10,8 +10,6 @@ import SwiftUI
 /// 熱力圖的離散深度級數
 enum BLHeatmapDepth: Int, CaseIterable {
 
-    // MARK: - Cases
-
     /// 最淺的密度級數
     case level1 = 1
 
@@ -28,7 +26,7 @@ enum BLHeatmapDepth: Int, CaseIterable {
     case level5
 }
 
-// MARK: - Display Properties
+// MARK: - Computed Properties
 
 extension BLHeatmapDepth {
 

@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 /// 將相簿影像降採樣並重編碼為 JPEG
 enum PhotoDataProcessor {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 預設的最長邊像素上限
     static let defaultMaxPixelSize: CGFloat = 1_600

@@ -209,14 +209,14 @@ private extension CampaignDetailView {
                 )
             )
 
-            BLProgressBar(
+            BLProgressView(
                 title: "收款進度",
                 value: summary.receivedRatio,
                 tint: palette.green,
                 trailingText: percentString(summary.receivedRatio)
             )
 
-            BLProgressBar(
+            BLProgressView(
                 title: "到貨進度",
                 value: summary.deliveryRatio,
                 trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"

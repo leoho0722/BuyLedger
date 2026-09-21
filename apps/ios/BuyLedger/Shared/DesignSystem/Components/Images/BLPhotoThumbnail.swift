@@ -12,7 +12,7 @@ import UniformTypeIdentifiers
 /// 可刪除、可點擊開啟檢視的照片縮圖：固定尺寸圓角影像 + 右上角刪除鈕
 struct BLPhotoThumbnail: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// 縮圖要顯示的影像 data
     let imageData: Data
@@ -20,7 +20,8 @@ struct BLPhotoThumbnail: View {
     /// 縮圖寬高
     var size: CGFloat = 72
 
-    /// 點擊縮圖內容區時的 callback (例如開啟照片檢視)；`nil` 代表縮圖不可點擊
+    /// 點擊縮圖內容區時的 callback (例如開啟照片檢視)；`nil` 代表
+    /// 縮圖不可點擊
     var onTap: (() -> Void)? = nil
 
     /// 縮圖本體按鈕的 accessibility identifier (UI 測試定位用)；`nil` 代表不指定
@@ -29,53 +30,57 @@ struct BLPhotoThumbnail: View {
     /// 點擊右上角刪除鈕時的 callback
     let onDelete: () -> Void
 
-    /// 刪除鈕的位移量
-    private static let deleteButtonInset: CGFloat = BLHitTarget.minimum / 2 - 18 / 2 - 4
-
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 縮圖的畫面內容
     var body: some View {
         ZStack(alignment: .topTrailing) {
             tappableThumbnail
 
-            // 將尺寸與形狀放在標籤內，確保刪除按鈕有足夠命中區。
-            Button(action: onDelete) {
-                Image(systemName: "xmark.circle.fill")
-                    .symbolRenderingMode(.palette)
-                    .foregroundStyle(.white, Color.black.opacity(0.55))
-                    .blTextStyle(.headline)
-                    .frame(width: BLHitTarget.minimum, height: BLHitTarget.minimum)
-                    .contentShape(.rect)
-            }
-            .buttonStyle(.plain)
-            // 以位移維持圖示原本的視覺位置。
-            .offset(x: Self.deleteButtonInset, y: -Self.deleteButtonInset)
-            .accessibilityLabel("刪除照片")
+            deleteButton
         }
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension BLPhotoThumbnail {
+
+    /// 右上角刪除按鈕
+    var deleteButton: some View {
+        Button(action: onDelete) {
+            Image(systemName: "xmark.circle.fill")
+                .frame(width: BLHitTarget.minimum, height: BLHitTarget.minimum)
+                .symbolRenderingMode(.palette)
+                .blTextStyle(.headline)
+                .foregroundStyle(.white, Color.black.opacity(0.55))
+                .contentShape(.rect)
+        }
+        .buttonStyle(.plain)
+        .offset(x: Layout.deleteButtonInset, y: -Layout.deleteButtonInset)
+        .accessibilityLabel("刪除照片")
+    }
 
     /// 縮圖本體：提供 `onTap` 時以按鈕呈現，否則維持不可互動的靜態內容
     @ViewBuilder
     var tappableThumbnail: some View {
         if let onTap {
-            Button(action: onTap) {
+            let button = Button(action: onTap) {
                 shapedThumbnail
             }
             .buttonStyle(BLPhotoThumbnailButtonStyle())
-            .accessibilityIdentifier(accessibilityID ?? "")
+
+            if let accessibilityID {
+                button.accessibilityIdentifier(accessibilityID)
+            } else {
+                button
+            }
         } else {
             shapedThumbnail
         }
     }
 
     /// 套用固定尺寸與圓角裁切後的縮圖
-    @ViewBuilder
     var shapedThumbnail: some View {
         thumbnailContent
             .frame(width: size, height: size)
@@ -103,24 +108,23 @@ private extension BLPhotoThumbnail {
     }
 }
 
-// MARK: - ButtonStyle
+// MARK: - Nested Types
 
-/// 縮圖按鈕的樣式：不改變影像著色，只在按下時給視覺回饋
-private struct BLPhotoThumbnailButtonStyle: ButtonStyle {
+extension BLPhotoThumbnail {
 
-    // MARK: - View Properties
+    /// 縮圖的版面常數
+    private enum Layout {
 
-    /// 是否已開啟「減少動態效果」
-    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+        // MARK: - Properties
 
-    // MARK: - View Body
+        /// 刪除圖示的視覺尺寸
+        static let deleteIconSize: CGFloat = 18
 
-    /// 回傳套用樣式後的按鈕內容
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .opacity(configuration.isPressed ? 0.72 : 1)
-            .scaleEffect(configuration.isPressed ? 0.98 : 1)
-            .animation(reduceMotion ? nil : .snappy(duration: 0.14), value: configuration.isPressed)
+        /// 刪除按鈕與縮圖邊緣之間的視覺間距
+        static let deleteButtonGap = BLSpacing.extraSmall
+
+        /// 刪除按鈕為置中圖示保留的位移量
+        static let deleteButtonInset = (BLHitTarget.minimum - deleteIconSize) / 2 - deleteButtonGap
     }
 }
 
@@ -134,6 +138,7 @@ private struct BLPhotoThumbnailButtonStyle: ButtonStyle {
         blue: CGFloat
     ) -> Data {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let output = NSMutableData()
         guard let context = CGContext(
             data: nil,
             width: 240,
@@ -143,25 +148,28 @@ private struct BLPhotoThumbnailButtonStyle: ButtonStyle {
             space: colorSpace,
             bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
         ),
-              let destination = {
-                  let output = NSMutableData()
-                  return CGImageDestinationCreateWithData(
-                    output, UTType.jpeg.identifier as CFString, 1, nil
-                  )
-                  .map { (output, $0) }
-              }() else {
-                  return Data()
-              }
+              let destination = CGImageDestinationCreateWithData(
+                  output,
+                  UTType.jpeg.identifier as CFString,
+                  1,
+                  nil
+              ) else {
+            return Data()
+        }
 
-        context.setFillColor(CGColor(red: red, green: green, blue: blue, alpha: 1))
-        context.fill(CGRect(x: 0, y: 0, width: 240, height: 240))
+        context.setFillColor(
+            CGColor(red: red, green: green, blue: blue, alpha: 1)
+        )
+        context.fill(
+            CGRect(x: 0, y: 0, width: 240, height: 240)
+        )
         guard let image = context.makeImage() else {
             return Data()
         }
 
-        CGImageDestinationAddImage(destination.1, image, nil)
-        CGImageDestinationFinalize(destination.1)
-        return destination.0 as Data
+        CGImageDestinationAddImage(destination, image, nil)
+        CGImageDestinationFinalize(destination)
+        return output as Data
     }
 
     return HStack(spacing: BLSpacing.medium) {

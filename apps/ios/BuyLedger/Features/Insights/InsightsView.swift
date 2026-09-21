@@ -268,7 +268,7 @@ private extension InsightsView {
                         Button {
                             store.send(.delegate(.campaignTapped(rank.campaignName)))
                         } label: {
-                            BLProgressBar(
+                            BLProgressView(
                                 title: "\(rank.rank). \(rank.campaignName)",
                                 value: rank.ratio,
                                 tint: palette.accent,
@@ -375,7 +375,7 @@ private extension InsightsView {
             }
 
             ProgressView(value: min(max(fraction, 0), 1))
-                .progressViewStyle(BLProgressBarStyle(tint: tint))
+                .progressViewStyle(BLProgressViewStyle(tint: tint))
         }
     }
 

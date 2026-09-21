@@ -59,6 +59,8 @@
     - 組裝根例外：`App/Testing/` 的 `BLUITest*` 認得所有 feature，與 `App/AppLaunchConfigurator` 同層，不放 Core。
     - 文件註解內以反引號引用 Feature 符號不算違規，只有程式碼依賴才算。
     - `LayerBoundaryTests` 動態掃描 `Core/` 與 `Shared/` 守門；`App/` 刻意不在掃描範圍。
+- **`Shared/DesignSystem/` 不得引用 `Core/Domain/` 的領域型別，也不得 import `ComposableArchitecture`**：可重用元件以 primitive 或 Design System 自有型別接收資料，架構相依由 Feature 端保留。
+    - `LayerBoundaryTests` 會納入 `Core/Domain/Generated/` 的宣告名稱，並以變異驗證確認兩條守門真的會轉紅。
 - **綁 store 的畫面只吃自己 feature 的 scoped store**：跨 feature 資料走根 feature 單向同步的唯讀投影，跨 feature 意圖以 delegate action 轉發到根 feature 既有的導覽 case，不新增平行的根 case；純顯示值 (如目前的 App 語言) 走建構參數。
     - 可宣告根 store 的只有四個導覽宿主 `RootView`／`RootTabLayout`／`RootSidebarLayout`／`MoreView`，由 `LayerBoundaryTests.rootStoreDeclarationsMatchTheNavigationHostWhitelist` 鎖住。
     - 投影的變更監看集中在 `RootFeature.body` 尾端的連續 `onChange(of:)`；漏掛一條會讓畫面顯示舊資料而不易察覺。
@@ -91,7 +93,10 @@
 ## ios-dev-kit 規範與既有差異
 
 - **程式風格、排版、MARK 分區與新檔樣板一律依 `/ios-dev-kit`**：分區見 `references/formatting.md`，TCA Feature 型別見 `references/tca-architecture.md`，新檔從 `assets/templates/` 複製 (樣板選擇表見 `references/file-templates.md`)。
-    - codebase 仍有 `View Properties`／`Dependency Properties`／`ViewBuilder`／`Reducer Body` 等舊段名，新檔與新增分區不延續。
+    - 新增或修改的 Swift 檔依 `/ios-dev-kit` 的固定 MARK 分區；尚未納入本 change 的既有 Feature 檔，留待各自的後續 change 處理。
+- **SwiftUI View 不以跨檔 `extension` 作為超過 300 行的第一選擇**：跨檔 extension 無法存取同一 View 的 `private @State`／`private @Environment`；為了編譯而降為 `internal` 會破壞狀態封裝。超過 300 行時優先抽成獨立 View 型別並傳入必要值與 closure；確實抽不動時才在 `findings.md` 登記行數例外，寫明原因與使用者裁決。
+- **檔頭日期一律不補零 `YYYY/M/D`** (如 `2026/9/20`)，不是 `file-templates.md` 的 `YYYY/MM/DD`：Xcode 新檔樣板產生的就是不補零格式，補零等於每個新檔都要手動改一次。
+    - 檔頭其餘規則仍依 `file-templates.md`：四行結構、不加版權宣告與修改紀錄、建立後不再更新日期。
 - **下列是本專案既有架構與 skill 的差異，新程式碼沿用現有寫法，直到另開 change 重構**：
     - Reducer body 型別用 `some Reducer<State, Action>` (見技術棧 gotcha)，不用樣板的 `some ReducerOf<Self>`。
     - `Core/Dependencies/` 以 Repository 包裝 SwiftData persistence；系統與網路能力以 struct-of-closures Client 註冊並宣告 `testValue` (如 `Core/Dependencies/` 的 `PhotoClient`、`CalendarReminderClient`，`Core/Networking/` 的 `ExchangeRateClient`)。skill 的 protocol Service、「不補 Repository」、「不宣告 `testValue`」不適用。

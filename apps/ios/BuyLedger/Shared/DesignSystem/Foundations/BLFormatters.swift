@@ -21,7 +21,7 @@ extension BLFormatters {
     /// - Returns: 含 NT$ 前綴的字串
     static func twd(_ amount: Decimal, locale: Locale) -> String {
         amount.formatted(
-            .currency(code: CurrencyCode.twd.code)
+            .currency(code: "TWD")
             .precision(.fractionLength(0))
             .locale(locale)
         )
@@ -43,9 +43,14 @@ extension BLFormatters {
     /// - Parameters:
     ///   - ratio: 0 到 1 的比例，例如 0.654 表示 65.4%
     ///   - locale: 用於呈現的 locale
-    /// - Returns: 含一位小數的百分比字串
-    static func percent(_ ratio: Decimal, locale: Locale) -> String {
-        ratio.formatted(.percent.precision(.fractionLength(1)).locale(locale))
+    ///   - fractionLength: 小數位數，預設為 1
+    /// - Returns: 依指定小數位數呈現的百分比字串
+    static func percent(
+        _ ratio: Decimal,
+        locale: Locale,
+        fractionLength: Int = 1
+    ) -> String {
+        ratio.formatted(.percent.precision(.fractionLength(fractionLength)).locale(locale))
     }
 
     /// 依指定 locale 將已是百分比尺度的數值格式化為百分比字串
@@ -54,6 +59,6 @@ extension BLFormatters {
     ///   - locale: 用於呈現的 locale
     /// - Returns: 含一位小數的百分比字串
     static func percent(scaled value: Decimal, locale: Locale) -> String {
-        value.formatted(.number.precision(.fractionLength(1)).locale(locale)) + "%"
+        (value / 100).formatted(.percent.precision(.fractionLength(1)).locale(locale))
     }
 }

@@ -7,25 +7,10 @@
 
 import SwiftUI
 
-/// BuyLedger 支援的按鈕語意
-enum BLButtonVariant {
-
-    // MARK: - Cases
-
-    /// 主要操作
-    case primary
-
-    /// 次要操作
-    case secondary
-
-    /// 不帶背景的文字操作
-    case plain
-}
-
 /// 使用設計系統色彩與最小觸控高度的按鈕樣式
-struct BLButtonStyle: ButtonStyle {
+struct BLButtonStyle {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// 是否已開啟「減少動態效果」
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
@@ -34,19 +19,50 @@ struct BLButtonStyle: ButtonStyle {
     @Environment(\.isEnabled) private var isEnabled
 
     /// 按鈕的語意樣式
-    let variant: BLButtonVariant
+    let variant: Variant
+}
 
-    // MARK: - View Body
+// MARK: - Nested Types
+
+extension BLButtonStyle {
+
+    /// BuyLedger 支援的按鈕語意
+    enum Variant {
+
+        /// 主要操作
+        case primary
+
+        /// 次要操作
+        case secondary
+
+        /// 不帶背景的文字操作
+        case plain
+    }
+}
+
+// MARK: - Computed Properties
+
+private extension BLButtonStyle {
+
+    /// 目前外觀對應的色盤
+    var palette: BLPalette {
+        BLPalette()
+    }
+}
+
+// MARK: - ButtonStyle
+
+extension BLButtonStyle: ButtonStyle {
 
     /// 回傳套用樣式後的按鈕內容
+    /// - Parameter configuration: 按鈕目前的互動狀態
+    /// - Returns: 套用樣式後的按鈕內容
     func makeBody(configuration: Configuration) -> some View {
-        let palette = BLPalette()
-
         configuration.label
+            .padding(.horizontal, variant == .plain ? 0 : 18)
+            .frame(minHeight: BLHitTarget.minimum)
             .blTextStyle(.headline)
             .foregroundStyle(foregroundColor(palette: palette))
-            .frame(minHeight: minimumHeight)
-            .padding(.horizontal, variant == .plain ? 0 : 18)
             .background(backgroundColor(palette: palette))
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
             .opacity(opacity(isPressed: configuration.isPressed))
@@ -55,12 +71,29 @@ struct BLButtonStyle: ButtonStyle {
     }
 }
 
+// MARK: - BuyLedger Button Styles
+
+extension ButtonStyle where Self == BLButtonStyle {
+
+    /// 主要操作按鈕
+    static var blPrimary: BLButtonStyle {
+        BLButtonStyle(variant: .primary)
+    }
+
+    /// 次要操作按鈕
+    static var blSecondary: BLButtonStyle {
+        BLButtonStyle(variant: .secondary)
+    }
+
+    /// 純文字操作按鈕
+    static var blPlain: BLButtonStyle {
+        BLButtonStyle(variant: .plain)
+    }
+}
+
 // MARK: - Private Method
 
 private extension BLButtonStyle {
-
-    /// 最小按鈕高度
-    var minimumHeight: CGFloat { BLHitTarget.minimum }
 
     /// 依按壓與啟用狀態決定不透明度
     /// - Parameter isPressed: 按鈕目前是否被按住
@@ -78,7 +111,7 @@ private extension BLButtonStyle {
     func foregroundColor(palette: BLPalette) -> Color {
         switch variant {
         case .primary:
-                .white
+            .white
         case .secondary, .plain:
             palette.accent
         }
@@ -94,28 +127,8 @@ private extension BLButtonStyle {
         case .secondary:
             palette.fillTertiary
         case .plain:
-                .clear
+            .clear
         }
-    }
-}
-
-// MARK: - Static Properties
-
-extension ButtonStyle where Self == BLButtonStyle {
-
-    /// 主要操作按鈕
-    static var blPrimary: BLButtonStyle {
-        BLButtonStyle(variant: .primary)
-    }
-
-    /// 次要操作按鈕
-    static var blSecondary: BLButtonStyle {
-        BLButtonStyle(variant: .secondary)
-    }
-
-    /// 純文字操作按鈕
-    static var blPlain: BLButtonStyle {
-        BLButtonStyle(variant: .plain)
     }
 }
 

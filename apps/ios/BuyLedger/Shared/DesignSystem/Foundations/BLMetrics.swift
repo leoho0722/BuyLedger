@@ -10,7 +10,7 @@ import SwiftUI
 /// 設計系統共用圓角
 enum BLRadius {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 最小圓角，適合工具列按鈕
     static let extraSmall: CGFloat = 6
@@ -34,7 +34,7 @@ enum BLRadius {
 /// 設計系統共用間距
 enum BLSpacing {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 最小間距
     static let extraSmall: CGFloat = 4
@@ -58,7 +58,7 @@ enum BLSpacing {
 /// 列內元素的尺寸 token
 enum BLListMetrics {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 列內頭像的尺寸
     static let avatarSize: CGFloat = 40
@@ -70,7 +70,7 @@ enum BLListMetrics {
 /// 可點擊控制項的命中區尺寸
 enum BLHitTarget {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 命中區各方向的最小尺寸
     static let minimum: CGFloat = 44

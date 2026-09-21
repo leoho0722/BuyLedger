@@ -108,7 +108,7 @@ extension RootSidebarLayout {
         /// - Parameter palette: 目前外觀使用的色盤
         /// - Returns: 色點顏色
         func color(in palette: BLPalette) -> Color {
-            BLStatusHue.color(for: status, in: palette)
+            status.sidebarHue(in: palette)
         }
 
         /// 對應到 UI 測試 identifier 的分組 key

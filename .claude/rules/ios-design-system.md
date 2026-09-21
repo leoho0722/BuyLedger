@@ -52,12 +52,16 @@ paths:
     - 色值定義在 asset catalog 的 `BLTone<Tone><Role>` (Any／Dark 各含 High Contrast 變體)，不在程式碼計算：程式碼表達不了 Increase Contrast。
     - 具名色彩資源缺失時 SwiftUI 會靜默回退系統預設色：新增 Color Set 與引用它的程式碼同批合入，並逐一目視確認顏色。
     - 旁有文字標籤的圖形 (如膠囊色點) 屬裝飾，豁免 3:1 並標 `.accessibilityHidden(true)`；3:1 只約束單獨承載意義的圖形。
-- **訂單狀態色分兩軌、各有唯一來源**：帶文字標籤的狀態介面走 `BLTone`；側邊欄智慧分組色點走 `BLStatusHue` (八個分組經 `BLTone` 只剩四色，相鄰列會撞色)。
+- **訂單狀態色分兩軌、各有唯一來源**：帶文字標籤的狀態介面走 `BLTone`；側邊欄智慧分組色點走 `OrderStatus.sidebarHue(in:)` (八個分組經 `BLTone` 只剩四色，相鄰列會撞色)。
     - 呼叫端不內嵌狀態到顏色的映射；新增訂單狀態時兩邊的窮舉 switch 會逼出色彩指派。
+- **`Shared/DesignSystem/` 不得引用 `Core/Domain/` 的領域型別，也不得 import `ComposableArchitecture`**：領域值由呼叫端轉成 primitive 或 Design System 自有型別，架構框架的依賴容器只留在 Feature 層。
+    - `LayerBoundaryTests` 掃描 `Shared/DesignSystem/` 與包含 `Generated/` 的 `Core/Domain/` 宣告清單，並以 mutation test 驗證兩條分層規則會轉紅；TCA import 比對必須涵蓋前置 attribute、限定 import 與子符號。
+- **幣別顯示名稱只能由 `CurrencyDisplayName` 提供**：`DesignSystemSourceScanTests` 掃描完整 production root，allowlist 僅為 `Shared/Localization/CurrencyDisplayName.swift`，避免任何 Feature 或其他 Shared 模組重新建立 Foundation 查表。
+- **語言判斷只能由 `AppLanguage(locale:)` 提供**：`DesignSystemSourceScanTests` 同樣掃描完整 production root，allowlist 僅為 `Shared/Localization/AppLanguage.swift`；畫面不得自行以 `languageCode?.identifier` 比對 locale，否則兩個畫面的語言判斷不一致時沒有任何測試會偵測到。
 - **彩底 hero 卡一律用 `.blHeroCardBackground()`**，不以系統色自組漸層，也不直接呼叫 `BLPalette.heroGradient`。
     - hero 卡文字固定 `.foregroundStyle(.white)` 是刻意例外 (疊在受測漸層上取得最高對比)。
     - `BLHeroGradientStart`／`End` 沒有 High Contrast 變體，新增依賴此漸層的畫面時留意。
-- **層級用字重與字級表達，文字不透明度一律為 1**：降低不透明度會直接損害對比。
+- **層級用字重與字級表達，呼叫端不得用不透明度自訂降階**：色盤內為達到本專案 4.5:1 文字對比地板而定義的單一次要文字色是例外；實測顯示系統 `secondaryLabel` 在淺色外觀下未達該門檻，因此 `BLPalette.secondaryLabel` 保留 `.opacity(0.6)`。
 - **不以實色模仿系統 bar、不以半透明色模仿玻璃材質**：需要 bar 底用 `.background(.bar)` 並讓捲動內容延伸到下方。
 - **`DesignSystemSourceScanTests` 以掃描守門上述色彩入口**：需要例外時在違規那一行加 `// design-system-scan-exempt: <理由>` (理由不可空)。
     - 色相名稱清單 `namedHueTokenPattern` 是封閉集合，SwiftUI 新增具名系統色時要同步補進它的兩個交替。
@@ -66,8 +70,8 @@ paths:
 ## 系統元件與互動
 
 - **系統已提供的能力不自己重造** (搜尋、分段選擇、進度、列按壓回饋)：自製版會失去 Cancel 鈕、聽寫、進度語意、列 highlight 等目視檢查看不出的行為。
-    - 自訂外觀走樣式擴充點：`ProgressViewStyle` (`BLProgressBarStyle`)、`ButtonStyle` (`BLButtonStyle`)。
-    - 進度一律 `ProgressView` + `BLProgressBarStyle`，不用 `GeometryReader` 疊形狀模擬；彩底上以 `track` 參數指定軌道色。
+    - 自訂外觀走樣式擴充點：`ProgressViewStyle` (`BLProgressViewStyle`)、`ButtonStyle` (`BLButtonStyle`)。
+    - 進度一律 `ProgressView` + `BLProgressViewStyle`，不用 `GeometryReader` 疊形狀模擬；彩底上以 `track` 參數指定軌道色。
     - 訂單搜尋用 `.searchable(placement: .navigationBarDrawer(displayMode: .always))`；設定頁值選擇列用 `NavigationLink` + `LabeledContent` + `OptionPickerSheet(isEmbedded: true)`。
 - **含工具列 `.borderedProminent` 按鈕的畫面，snapshot 測試改用 `.image(drawHierarchyInKeyWindow: true)`**：離屏渲染會整張變黑，實際執行正常 (參考訂單編輯的 baseline 測試)。
 - **破壞性用 `Button(role: .destructive)` 表達**，`BLButtonStyle` 不提供破壞性變體。

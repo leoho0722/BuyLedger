@@ -228,7 +228,12 @@ private extension QuoteView {
 
                 Spacer()
 
-                Text(currencyDisplayText(for: store.fromCurrency))
+                Text(
+                    CurrencyDisplayName.text(
+                        code: store.fromCurrency.rawValue,
+                        language: AppLanguage(locale: locale)
+                    )
+                )
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.label)
                     .lineLimit(1)
@@ -249,6 +254,7 @@ private extension QuoteView {
         .accessibilityValue(store.fromCurrency.rawValue)
         .sheet(isPresented: $store.showsCurrencySheet) {
             let locale = locale
+            let language = AppLanguage(locale: locale)
 
             OptionPickerSheet(
                 title: "選擇來源幣別",
@@ -259,11 +265,10 @@ private extension QuoteView {
                 options: store.availableCurrencies.map(\.rawValue),
                 selected: store.fromCurrency.rawValue,
                 displayName: { code in
-                    let name = locale.localizedString(forCurrencyCode: code) ?? ""
-                    return name.isEmpty ? code : "\(code) · \(name)"
+                    CurrencyDisplayName.text(code: code, language: language)
                 },
                 searchKeywords: { code in
-                    locale.localizedString(forCurrencyCode: code) ?? ""
+                    CurrencyDisplayName.searchKeywords(code: code, locale: locale)
                 },
                 onSelect: { code in
                     store.send(.fromCurrencySelected(code))
@@ -464,7 +469,7 @@ private extension QuoteView {
         // Decimal 到繪圖邊界才轉成浮點數
         let fractionDouble = NSDecimalNumber(decimal: fraction).doubleValue
 
-        BLProgressBar(
+        BLProgressView(
             title: label,
             value: fractionDouble,
             tint: color,
@@ -485,17 +490,6 @@ private extension QuoteView {
         return BLFormatters.twd(suggestedTwd, locale: locale)
     }
 
-    /// 依 App 選定 locale 產生幣別顯示文字
-    /// - Parameter currency: 幣別
-    /// - Returns: 顯示字串
-    func currencyDisplayText(for currency: CurrencyCode) -> String {
-        guard locale.language.languageCode?.identifier == "zh" else {
-            return currency.rawValue
-        }
-
-        let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
-        return name.isEmpty ? currency.rawValue : name
-    }
 }
 
 // MARK: - Preview

@@ -365,13 +365,13 @@ private struct CampaignRow: View {
             .blTextStyle(.subhead)
             .foregroundStyle(Color.blSecondaryLabel)
 
-            BLProgressBar(
+            BLProgressView(
                 title: "到貨",
                 value: summary.deliveryRatio,
                 trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
             )
 
-            BLProgressBar(
+            BLProgressView(
                 title: "收款",
                 value: summary.receivedRatio,
                 tint: palette.green,

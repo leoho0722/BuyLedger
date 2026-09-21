@@ -10,8 +10,6 @@ import SwiftUI
 /// 表示元件在介面中的語意強度與狀態
 enum BLTone: CaseIterable {
 
-    // MARK: - Cases
-
     /// 中性狀態
     case neutral
 
@@ -31,37 +29,53 @@ enum BLTone: CaseIterable {
     case informative
 }
 
-// MARK: - Display Properties
+// MARK: - Nested Types
+
+private extension BLTone {
+
+    /// 色彩資源的用途名稱
+    enum Role: String {
+
+        /// 疊在表面上的文字色
+        case surfaceText = "SurfaceText"
+
+        /// 搭配表面文字的淡底色
+        case softBackground = "SoftBackground"
+
+        /// 純圖形元素的指示色
+        case indicator = "Indicator"
+
+        /// 疊在指示色上的文字色
+        case onIndicator = "OnIndicator"
+    }
+}
+
+// MARK: - Computed Properties
 
 extension BLTone {
 
     /// 疊在卡片或列背景之上的文字色
     var onSurface: Color {
-        namedColor(role: "SurfaceText")
+        namedColor(role: .surfaceText)
     }
 
     /// 搭配 ``onSurface`` 的淡底色
     var background: Color {
-        namedColor(role: "SoftBackground")
+        namedColor(role: .softBackground)
     }
 
     /// 純圖形元素使用的指示色
     var indicator: Color {
-        namedColor(role: "Indicator")
+        namedColor(role: .indicator)
     }
 
     /// 疊在 ``indicator`` 實心底色之上的文字色
     var onIndicator: Color {
-        namedColor(role: "OnIndicator")
+        namedColor(role: .onIndicator)
     }
-}
-
-// MARK: - Private Method
-
-private extension BLTone {
 
     /// 此語意狀態在 asset catalog 內的資源名稱片段
-    var resourceName: String {
+    private var resourceName: String {
         switch self {
         case .neutral:
             "Neutral"
@@ -77,12 +91,17 @@ private extension BLTone {
             "Informative"
         }
     }
+}
+
+// MARK: - Private Method
+
+private extension BLTone {
 
     /// 回傳指定用途的具名色彩資源
     /// - Parameter role: 色彩用途的資源名稱片段
     /// - Returns: 由系統依當前 trait 解析的具名色彩
-    func namedColor(role: String) -> Color {
-        Color("BLTone\(resourceName)\(role)", bundle: .assets)
+    func namedColor(role: Role) -> Color {
+        Color("BLTone\(resourceName)\(role.rawValue)", bundle: .assets)
     }
 }
 

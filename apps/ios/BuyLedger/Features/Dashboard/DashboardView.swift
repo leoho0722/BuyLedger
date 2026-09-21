@@ -200,13 +200,13 @@ private extension DashboardView {
                 .monospacedDigit()
             }
 
-            BLProgressBar(
+            BLProgressView(
                 title: "到貨",
                 value: summary.deliveryRatio,
                 trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
             )
 
-            BLProgressBar(
+            BLProgressView(
                 title: "收款",
                 value: summary.receivedRatio,
                 tint: palette.green,
@@ -452,7 +452,7 @@ private extension DashboardView {
                 // 軌道與文字固定使用白色。
                 ProgressView(value: pct)
                     .progressViewStyle(
-                        BLProgressBarStyle(tint: .white, track: .white.opacity(0.25)))
+                        BLProgressViewStyle(tint: .white, track: .white.opacity(0.25)))
 
                 Text("\(Int(pct * 100))% / \(BLFormatters.twd(stats.goal, locale: locale))")
                     .font(BLTypographyStyle.caption.font.weight(.semibold))

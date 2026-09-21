@@ -47,3 +47,7 @@ paths:
 - **每個 snapshot 測試用 `TestDependencies.withFixedNow { ... }` 包住 view 建構與 `assertSnapshot`**，注入固定 `\.date`；測試內不直接呼叫 `Date()`。
     - baseline 在 `BuyLedgerTests/__Snapshots__/`，目前只有 iOS 393×852；record 流程見 `apps/ios/README.md`。
 - **執行前的模擬器外觀設定見 `apps/ios/CLAUDE.md`；含 `.borderedProminent` 工具列按鈕的畫面的渲染方式見 `ios-design-system.md`**。
+- **完整回歸偶發的 snapshot mismatch 先按已知雜訊處理**：目前已知測試為 `quoteViewBaseline`、`orderEditViewLongIdentifierBaseline`、`ordersCompactViewMultiSelectBaseline`、`orderEditViewMergeContextBaseline`、`orderEditViewBaseline`。
+    - 兩種徵狀：**內容型**是整個文字標籤沒渲染出來 (如 `quoteViewBaseline` 的成本拆解，缺的標籤組合每次不同)；**像素型**是肉眼完全相同、差異只在導覽列區域且最大單通道差值個位數 (如 `orderEditViewBaseline`，實測 0.41% 像素、最大差值 2)。判斷像素型可用 PIL 比對 `ImageChops.difference` 的 bbox 與最大差值。
+    - 逐條重跑時 Swift Testing 的方法層 `-only-testing` 必須帶 `()`，並從 xcresult 確認 `totalTestCount` ≥ 1；單獨重跑轉綠才可判定為渲染雜訊。
+    - 已知清單外的失敗，或單獨重跑仍失敗，視為真回歸；不得重錄 baseline、放寬斷言或刪除測試。

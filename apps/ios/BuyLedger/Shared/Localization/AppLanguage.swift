@@ -8,20 +8,13 @@
 import SwiftUI
 
 /// App 介面語言偏好
-enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
-
-    // MARK: - Cases
+enum AppLanguage: String, CaseIterable, Sendable {
 
     /// 正體中文
     case traditionalChinese
 
     /// 英文
     case english
-
-    // MARK: - Identifiable Properties
-
-    /// 偏好的穩定識別值
-    var id: String { rawValue }
 
     // MARK: - Init
 
@@ -36,8 +29,11 @@ enum AppLanguage: String, CaseIterable, Identifiable, Sendable {
     init(locale: Locale) {
         self = locale.language.languageCode?.identifier == "zh" ? .traditionalChinese : .english
     }
+}
 
-    // MARK: - Computed Properties
+// MARK: - Computed Properties
+
+extension AppLanguage {
 
     /// 顯示在介面中的名稱
     var title: LocalizedStringResource {
@@ -77,7 +73,15 @@ extension AppLanguage {
     }
 }
 
-// MARK: - View Method
+// MARK: - Identifiable
+
+extension AppLanguage: Identifiable {
+
+    /// 偏好的穩定識別值
+    var id: String { rawValue }
+}
+
+// MARK: - rootNavigationTitle
 
 extension View {
 
@@ -100,12 +104,13 @@ private extension AppLanguage {
 
     /// 對應語言的 String Catalog bundle
     var localizedBundle: Bundle {
-        guard let url = Bundle.main.url(forResource: localeIdentifier, withExtension: "lproj"),
-              let bundle = Bundle(url: url) else {
-            assertionFailure("Missing \(localeIdentifier).lproj for AppLanguage")
-            return .main
+        if let url = Bundle.main.url(forResource: localeIdentifier, withExtension: "lproj") {
+            if let bundle = Bundle(url: url) {
+                return bundle
+            }
         }
 
-        return bundle
+        assertionFailure("Missing \(localeIdentifier).lproj for AppLanguage")
+        return .main
     }
 }

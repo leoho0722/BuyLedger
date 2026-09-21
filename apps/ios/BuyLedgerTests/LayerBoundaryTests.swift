@@ -53,6 +53,60 @@ struct LayerBoundaryTests {
         )
     }
 
+    /// 確認領域型別名稱掃描包含生成檔
+    /// - Throws: 原始檔掃描失敗時拋出錯誤
+    @Test func coreDomainDeclarationNamesIncludeGeneratedTypes() throws(any Error) {
+        // Given: Core/Domain 的領域型別可能分散在手寫檔與 Generated 檔
+        let requiredNames: Set<String> = [
+            "OrderStatus",
+            "CurrencyCode",
+            "PaymentMethodFlags",
+        ]
+
+        // When: 建立領域型別名稱清單
+        let names = try Self.coreDomainTopLevelDeclarationNames()
+        let missingNames = requiredNames.subtracting(names)
+
+        // Then: 生成與手寫的三個守門目標都必須進入清單
+        #expect(
+            missingNames.isEmpty,
+            "Core/Domain 掃描遺漏領域型別：\(missingNames.sorted().joined(separator: "、"))"
+        )
+    }
+
+    /// 確認 Design System 不引用 Core 領域型別
+    /// - Throws: 原始檔掃描失敗時拋出錯誤
+    @Test func designSystemDoesNotReferenceCoreDomainTypes() throws(any Error) {
+        // Given: Design System 只能接收原始值或自身宣告的型別
+        let domainNames = try Self.coreDomainTopLevelDeclarationNames()
+
+        // When: 掃描 Design System 是否命中 Core/Domain 宣告名
+        let violations = try Self.findViolations(
+            featureNames: domainNames,
+            under: [Self.designSystemRoot]
+        )
+
+        // Then: 現況不得有任何領域型別引用
+        #expect(
+            violations.isEmpty,
+            "Design System 不得引用 Core 領域型別：\(Self.describe(violations))"
+        )
+    }
+
+    /// 確認 Design System 不匯入 TCA
+    /// - Throws: 原始檔掃描失敗時拋出錯誤
+    @Test func designSystemDoesNotImportComposableArchitecture() throws(any Error) {
+        // Given: Design System 不應取得 Feature 的相依注入容器
+        // When: 掃描所有 Design System Swift 檔的 import
+        let violations = try Self.composableArchitectureImportViolations()
+
+        // Then: 不得出現 ComposableArchitecture import
+        #expect(
+            violations.isEmpty,
+            "Design System 不得 import ComposableArchitecture：\(Self.describe(violations))"
+        )
+    }
+
     /// 根 store 只能出現在根導覽宿主白名單
     /// - Throws: 原始檔掃描失敗時拋出錯誤
     @Test func rootStoreDeclarationsMatchTheNavigationHostWhitelist() throws(any Error) {
@@ -65,7 +119,7 @@ struct LayerBoundaryTests {
     }
 }
 
-// MARK: - Static Properties
+// MARK: - Computed Properties
 
 private extension LayerBoundaryTests {
 
@@ -91,6 +145,16 @@ private extension LayerBoundaryTests {
         productionRoot.appending(path: "Core")
     }
 
+    /// 領域型別名稱掃描的根目錄
+    static var coreDomainRoot: URL {
+        productionRoot.appending(path: "Core/Domain")
+    }
+
+    /// Design System 的分層守門掃描根目錄
+    static var designSystemRoot: URL {
+        productionRoot.appending(path: "Shared/DesignSystem")
+    }
+
     /// 受掃描目錄之一
     static var sharedRoot: URL {
         productionRoot.appending(path: "Shared")
@@ -109,6 +173,12 @@ private extension LayerBoundaryTests {
     static let modifierPrefix =
         #"^(?:@\w+(?:\([^)]*\))?\s+|"#
         + #"(?:public|internal|package|private|fileprivate|open|final)\s+)*"#
+
+    /// 可命中前置 attribute、限定 import 與子符號的 TCA import
+    static let composableArchitectureImportPattern = try! NSRegularExpression(
+        pattern: #"^(?:@[_A-Za-z*][\w().,_ ]*\s+)*"#
+            + #"import\s+(?:\w+\s+)?ComposableArchitecture\b"#
+    )
 
     /// 可接受的頂層型別宣告
     static let typeDeclarationPattern = try! NSRegularExpression(
@@ -159,7 +229,7 @@ private extension LayerBoundaryTests {
     /// 掃描命中的違規位置
     struct Violation {
 
-        // MARK: - Data Properties
+        // MARK: - Properties
 
         /// 相對於 App source root 的檔案路徑
         let file: String
@@ -167,14 +237,12 @@ private extension LayerBoundaryTests {
         /// 命中所在的行號 (1-based)
         let line: Int
 
-        /// 命中的 Features 頂層宣告名
+        /// 命中的識別字或規則文字
         let typeName: String
     }
 
     /// 掃描模式使用的括號堆疊
     enum StripMode {
-
-        // MARK: - Cases
 
         /// 一般程式碼
         case normal
@@ -188,8 +256,6 @@ private extension LayerBoundaryTests {
 
     /// 掃描模式使用的括號堆疊
     enum ScanFrame {
-
-        // MARK: - Cases
 
         /// 一般程式碼 (含插值 `\(...)` 內的運算式)
         case code
@@ -213,6 +279,26 @@ private extension LayerBoundaryTests {
 private extension LayerBoundaryTests {
 
     // MARK: 候選名稱擷取
+
+    /// 掃描 Core/Domain 下每支檔，擷取所有頂層宣告名
+    /// - Returns: Core/Domain 頂層宣告名稱
+    /// - Throws: 原始檔讀取失敗時拋出錯誤
+    static func coreDomainTopLevelDeclarationNames() throws(any Error) -> Set<String> {
+        var names = Set<String>()
+
+        for file in try swiftFiles(under: coreDomainRoot, includingGenerated: true) {
+            let rawLines = try String(contentsOf: file, encoding: .utf8).components(
+                separatedBy: "\n")
+            var stripMode = StripMode.normal
+
+            for rawLine in rawLines {
+                let stripped = stripCommentsAndStrings(from: rawLine, mode: &stripMode)
+                names.formUnion(topLevelDeclarationNames(in: stripped))
+            }
+        }
+
+        return names
+    }
 
     /// 掃描 Features 下每支檔，擷取所有縮排為零的頂層宣告名
     /// - Returns: Features 頂層宣告名稱
@@ -329,6 +415,42 @@ private extension LayerBoundaryTests {
                             typeName: matchedName
                         ))
                 }
+            }
+        }
+
+        return violations.sorted { ($0.file, $0.line) < ($1.file, $1.line) }
+    }
+
+    /// 掃描 Design System 下的 TCA import
+    /// - Returns: 命中 ComposableArchitecture import 的位置
+    /// - Throws: 原始檔讀取失敗時拋出錯誤
+    static func composableArchitectureImportViolations() throws(any Error) -> [Violation] {
+        var violations: [Violation] = []
+
+        for file in try swiftFiles(under: designSystemRoot) {
+            let rawLines = try String(contentsOf: file, encoding: .utf8).components(
+                separatedBy: "\n")
+            var stripMode = StripMode.normal
+
+            for (index, rawLine) in rawLines.enumerated() {
+                let stripped = stripCommentsAndStrings(from: rawLine, mode: &stripMode)
+                let trimmed = stripped.trimmingCharacters(in: .whitespaces)
+                let range = NSRange(trimmed.startIndex..<trimmed.endIndex, in: trimmed)
+                let matches = composableArchitectureImportPattern.firstMatch(
+                    in: trimmed,
+                    range: range
+                )
+                guard matches != nil else {
+                    continue
+                }
+
+                violations.append(
+                    Violation(
+                        file: relativePath(of: file, under: productionRoot),
+                        line: index + 1,
+                        typeName: "ComposableArchitecture"
+                    )
+                )
             }
         }
 
@@ -486,17 +608,22 @@ private extension LayerBoundaryTests {
     // MARK: 檔案列舉
 
     /// 列出根目錄下所有 Swift 原始檔，排除生成檔目錄
-    /// - Parameter root: 掃描根目錄
+    /// - Parameters:
+    ///   - root: 掃描根目錄
+    ///   - includingGenerated: 是否納入 Generated 目錄
     /// - Returns: Swift 檔案清單
     /// - Throws: 目錄讀取失敗時拋出錯誤
-    static func swiftFiles(under root: URL) throws(any Error) -> [URL] {
+    static func swiftFiles(
+        under root: URL,
+        includingGenerated: Bool = false
+    ) throws(any Error) -> [URL] {
         let enumerator = try #require(
             FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
         )
 
         var files: [URL] = []
         for case let file as URL in enumerator {
-            if file.pathComponents.contains(excludedDirectoryName) {
+            if !includingGenerated && file.pathComponents.contains(excludedDirectoryName) {
                 continue
             }
             if file.pathExtension == "swift" {

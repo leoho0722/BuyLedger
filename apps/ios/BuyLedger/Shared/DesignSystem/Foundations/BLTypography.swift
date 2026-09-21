@@ -8,9 +8,7 @@
 import SwiftUI
 
 /// BuyLedger 支援的文字層級
-enum BLTypographyStyle: String, CaseIterable, Identifiable {
-
-    // MARK: - Cases
+enum BLTypographyStyle: String, CaseIterable {
 
     /// 頁面最主要標題
     case largeTitle = "Large Title"
@@ -44,13 +42,11 @@ enum BLTypographyStyle: String, CaseIterable, Identifiable {
 
     /// 最小文字層級
     case caption2 = "Caption 2"
+}
 
-    // MARK: - Identifiable Properties
+// MARK: - Computed Properties
 
-    /// 文字層級的穩定識別值
-    var id: String { rawValue }
-
-    // MARK: - Display Properties
+extension BLTypographyStyle {
 
     /// 對應到 SwiftUI 動態字級的字型
     var font: Font {
@@ -79,4 +75,12 @@ enum BLTypographyStyle: String, CaseIterable, Identifiable {
                 .caption2
         }
     }
+}
+
+// MARK: - Identifiable
+
+extension BLTypographyStyle: Identifiable {
+
+    /// 文字層級的穩定識別值
+    var id: String { rawValue }
 }

@@ -10,7 +10,7 @@ import SwiftUI
 /// 以姓名縮寫產生穩定漸層背景的頭像
 struct BLAvatar: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// 頭像代表的完整名稱
     let name: String
@@ -24,20 +24,44 @@ struct BLAvatar: View {
     /// 是否僅作裝飾
     var isDecorative: Bool = false
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 頭像的畫面內容
     var body: some View {
+        avatarContent
+    }
+}
+
+// MARK: - Private Views
+
+private extension BLAvatar {
+
+    /// 頭像的文字、漸層與無障礙呈現
+    var avatarContent: some View {
         Text(initials)
-        // 字級隨頭像自身尺寸等比縮放，非固定字級層級，不適用 BLTypography token
+            .frame(width: size, height: size)
+            // 字級隨頭像自身尺寸等比縮放，非固定字級層級，不適用 BLTypography token
             .font(.system(size: size * 0.38, weight: .semibold, design: .default))
             .minimumScaleFactor(0.6)
             .foregroundStyle(.white)
-            .frame(width: size, height: size)
             .background(gradient)
             .clipShape(Circle())
             .accessibilityLabel(name)
             .accessibilityHidden(isDecorative)
+    }
+}
+
+// MARK: - Computed Properties
+
+private extension BLAvatar {
+
+    /// 依名稱產生的穩定漸層
+    var gradient: LinearGradient {
+        LinearGradient(
+            colors: Self.gradientColors(forHue: Self.hueValue(for: name)),
+            startPoint: .topLeading,
+            endPoint: .bottomTrailing
+        )
     }
 }
 
@@ -49,7 +73,9 @@ extension BLAvatar {
     /// - Parameter name: 用來計算色相的名稱
     /// - Returns: 介於 `0` 到 `1` 的色相值
     static func hueValue(for name: String) -> Double {
-        let total = name.unicodeScalars.reduce(0) { $0 + Int($1.value) }
+        let total = name.unicodeScalars.reduce(0) { total, scalar in
+            total + Int(scalar.value)
+        }
         return Double(total % 360) / 360
     }
 
@@ -65,20 +91,6 @@ extension BLAvatar {
                 brightness: 0.31
             ),
         ]
-    }
-}
-
-// MARK: - Private Method
-
-private extension BLAvatar {
-
-    /// 依名稱產生的穩定漸層
-    var gradient: LinearGradient {
-        LinearGradient(
-            colors: Self.gradientColors(forHue: Self.hueValue(for: name)),
-            startPoint: .topLeading,
-            endPoint: .bottomTrailing
-        )
     }
 }
 

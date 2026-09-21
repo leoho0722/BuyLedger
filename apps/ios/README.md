@@ -44,7 +44,7 @@ apps/ios/
 │   │   ├── Quote/                # 報價試算
 │   │   └── Settings/             # iOS SettingsView
 │   ├── Shared/
-│   │   ├── Localization/         # 跨 feature 共用的語言型別 (AppLanguage 與 rootNavigationTitle 修飾子)
+│   │   ├── Localization/         # 跨 feature 共用的語言型別 (AppLanguage 與 rootNavigationTitle 修飾子)、幣別顯示名稱單一入口 (CurrencyDisplayName)
 │   │   ├── Media/                # 照片載入的降採樣與 JPEG 重編碼 (PhotoDataProcessor)
 │   │   ├── DesignSystem/
 │   │   │   ├── Foundations/      # 色盤、字級、間距、圓角等 token

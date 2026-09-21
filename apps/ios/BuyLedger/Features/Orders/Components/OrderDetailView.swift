@@ -167,7 +167,12 @@ private extension OrderDetailView {
                 Text("·")
                     .foregroundStyle(palette.secondaryLabel)
 
-                Text(currencyDisplayText(for: order.currency))
+                Text(
+                    CurrencyDisplayName.text(
+                        code: order.currency.rawValue,
+                        language: language
+                    )
+                )
                     .blTextStyle(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
             }
@@ -601,9 +606,9 @@ private extension OrderDetailView {
                     .foregroundStyle(palette.label)
             }
 
-            // 軌道高度 (6pt) 由共用樣式 BLProgressBarStyle 決定，非本檔控制
+            // 軌道高度 (6pt) 由共用樣式 BLProgressViewStyle 決定，非本檔控制
             ProgressView(value: fraction)
-                .progressViewStyle(BLProgressBarStyle(tint: component.color))
+                .progressViewStyle(BLProgressViewStyle(tint: component.color))
         }
     }
 
@@ -800,18 +805,6 @@ private extension OrderDetailView {
     /// 由 `\.locale` 換算對應的 App 語言
     var language: AppLanguage {
         AppLanguage(locale: locale)
-    }
-
-    /// 依 App 語言偏好產生幣別顯示文字
-    /// - Parameter currency: 訂單幣別
-    /// - Returns: 顯示字串
-    func currencyDisplayText(for currency: CurrencyCode) -> String {
-        guard language == .traditionalChinese else {
-            return currency.rawValue
-        }
-
-        let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
-        return name.isEmpty ? currency.rawValue : name
     }
 
     /// 回傳成本拆解使用的資料

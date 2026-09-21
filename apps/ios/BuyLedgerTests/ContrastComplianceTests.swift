@@ -13,7 +13,7 @@ import Testing
 @MainActor
 struct ContrastComplianceTests {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 承載資訊的文字對比下限
     static let textFloor = 4.5
@@ -230,7 +230,7 @@ struct ContrastComplianceTests {
         let statuses = RootSidebarLayout.SmartGroup.orderBrowsingCases.map(\.status)
         let components = statuses.map {
             ColorContrast.components(
-                of: BLStatusHue.color(for: $0, in: palette), appearance: appearance)
+                of: $0.sidebarHue(in: palette), appearance: appearance)
         }
 
         for i in components.indices {

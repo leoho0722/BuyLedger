@@ -10,22 +10,32 @@ import SwiftUI
 /// 資料載入失敗時的狀態畫面：失敗原因加上重試控制項
 struct BLLoadFailureView: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// 描述失敗原因的訊息
     let message: String
 
     /// 重試鍵的 accessibility identifier
-    /// `nil` 表示呼叫端不需單獨定位這顆按鈕
+    /// - Note: 未指定時不掛 identifier
     var retryIdentifier: String? = nil
 
     /// 點擊重試時的 callback
     let onRetry: () -> Void
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 失敗狀態的畫面內容
     var body: some View {
+        failureContent
+    }
+}
+
+// MARK: - Private Views
+
+private extension BLLoadFailureView {
+
+    /// 失敗訊息與重試按鈕的呈現
+    var failureContent: some View {
         ContentUnavailableView {
             Label("無法載入資料", systemImage: "exclamationmark.triangle")
         } description: {
@@ -35,14 +45,9 @@ struct BLLoadFailureView: View {
             retryButton
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        // 保留重試鍵的 identifier，避免被外層容器合併。
+        // 保留重試鍵的 identifier，避免被外層容器合併
         .accessibilityElement(children: .contain)
     }
-}
-
-// MARK: - ViewBuilder
-
-private extension BLLoadFailureView {
 
     /// 重試按鈕；未指定時不掛 identifier
     @ViewBuilder

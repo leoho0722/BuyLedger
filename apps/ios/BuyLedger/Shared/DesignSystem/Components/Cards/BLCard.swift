@@ -10,7 +10,7 @@ import SwiftUI
 /// 使用設計系統表面色、圓角與分隔線的卡片容器
 struct BLCard<Content: View>: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// 內容與卡片邊界之間的距離
     let padding: CGFloat
@@ -38,12 +38,10 @@ struct BLCard<Content: View>: View {
         self.content = content()
     }
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 卡片的畫面內容
     var body: some View {
-        let palette = BLPalette()
-
         content
             .padding(padding)
             .background(palette.surface)
@@ -53,6 +51,16 @@ struct BLCard<Content: View>: View {
                     .stroke(palette.separator, lineWidth: 0.5)
             }
             .blCardShadow()
+    }
+}
+
+// MARK: - Computed Properties
+
+private extension BLCard {
+
+    /// 目前外觀對應的色盤
+    var palette: BLPalette {
+        BLPalette()
     }
 }
 

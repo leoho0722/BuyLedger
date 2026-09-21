@@ -19,6 +19,9 @@ struct CustomersView: View {
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
 
+    /// 客戶列頭像尺寸，隨 Dynamic Type 縮放
+    @ScaledMetric(relativeTo: .body) private var customerAvatarSize: CGFloat = 36
+
     // MARK: - View Body
 
     /// 客戶名單畫面內容
@@ -242,7 +245,10 @@ private extension CustomersView {
 
                         if index < customers.count - 1 {
                             Divider()
-                                .padding(.leading, BLSpacing.large + 36 + BLSpacing.small)
+                                .padding(
+                                    .leading,
+                                    BLSpacing.large + customerAvatarSize + BLSpacing.small
+                                )
                         }
                     }
                 }
@@ -258,7 +264,11 @@ private extension CustomersView {
     @ViewBuilder
     func customerRow(customer: CustomerRow, palette: BLPalette) -> some View {
         HStack(spacing: BLSpacing.small) {
-            BLAvatar(name: customer.name, initials: customer.initials, size: 36)
+            BLAvatar(
+                name: customer.name,
+                initials: customer.initials,
+                size: customerAvatarSize
+            )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(customer.name)

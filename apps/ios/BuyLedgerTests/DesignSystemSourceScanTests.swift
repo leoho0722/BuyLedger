@@ -22,6 +22,34 @@ struct DesignSystemSourceScanTests {
             !files.isEmpty, "掃描到 0 個 Swift 檔案，productionRoot 疑似解析錯誤：\(Self.productionRoot.path)")
     }
 
+    /// 確認 production code 只透過 `CurrencyDisplayName` 查找幣別名稱
+    /// - Throws: 原始檔掃描失敗時拋出錯誤
+    @Test func productionCodeUsesSingleCurrencyDisplayNameEntry() throws(any Error) {
+        // Given: 幣別名稱查表只能由 Shared/Localization/CurrencyDisplayName.swift 提供
+        // When: 掃描 production root 內所有 Swift 檔的 Foundation 查表呼叫
+        let violations = try Self.currencyLookupViolations()
+
+        // Then: 不得在唯一入口以外再次直接呼叫 localizedString(forCurrencyCode:)
+        #expect(
+            violations.isEmpty,
+            "production code 不得建立第二份幣別名稱查表：\(Self.describe(violations))"
+        )
+    }
+
+    /// 確認 production code 只透過 `AppLanguage` 判斷語言
+    /// - Throws: 原始檔掃描失敗時拋出錯誤
+    @Test func productionCodeUsesSingleAppLanguageEntry() throws(any Error) {
+        // Given: 語言判斷只能由 Shared/Localization/AppLanguage.swift 提供
+        // When: 掃描 production root 內所有 Swift 檔的 locale 語言推導
+        let violations = try Self.languageDerivationViolations()
+
+        // Then: 不得在唯一入口以外再次以 locale 條件推導語言
+        #expect(
+            violations.isEmpty,
+            "production code 不得自行以 locale 推導語言：\(Self.describe(violations))"
+        )
+    }
+
     /// 規則一：資訊性文字使用 `Color.blSecondaryLabel`
     /// - Throws: 原始檔掃描失敗時拋出錯誤
     @Test func systemSecondaryColorIsNotUsedForText() throws(any Error) {
@@ -134,21 +162,9 @@ struct DesignSystemSourceScanTests {
     }
 }
 
-// MARK: - Static Properties
+// MARK: - Properties
 
 private extension DesignSystemSourceScanTests {
-
-    /// 測試 target 所在的 iOS 平台目錄
-    static var iosRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-    }
-
-    /// 受掃描的產品程式碼目錄；只含 App target 本身，排除生成檔目錄
-    static var productionRoot: URL {
-        iosRoot.appending(path: "BuyLedger")
-    }
 
     /// 生成檔目錄不納入設計系統規則掃描
     static let excludedDirectoryName = "Generated"
@@ -183,6 +199,16 @@ private extension DesignSystemSourceScanTests {
         pattern: #"(?<!\w)Color\(uiColor:|\bUIColor(?:\(|\.)"#
     )
 
+    /// 規則九：幣別名稱查表只准在唯一入口
+    static let currencyLookupPattern = try! NSRegularExpression(
+        pattern: #"\blocalizedString\s*\(\s*forCurrencyCode\b"#
+    )
+
+    /// 規則十：語言判斷只准在 `AppLanguage`
+    static let languageDerivationPattern = try! NSRegularExpression(
+        pattern: #"\blanguageCode\s*\?\s*\.\s*identifier"#
+    )
+
     /// 規則五：從原始分量建構色彩，僅色盤檔與頭像元件可用
     static let rawConstructionPattern = try! NSRegularExpression(
         pattern:
@@ -200,6 +226,25 @@ private extension DesignSystemSourceScanTests {
     static let hexInitializerPattern = try! NSRegularExpression(
         pattern: #"init\(blHex|Color\(blHex"#
     )
+
+}
+
+// MARK: - Computed Properties
+
+private extension DesignSystemSourceScanTests {
+
+    /// 測試 target 所在的 iOS 平台目錄
+    static var iosRoot: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
+    /// 受掃描的產品程式碼目錄；只含 App target 本身，排除生成檔目錄
+    static var productionRoot: URL {
+        iosRoot.appending(path: "BuyLedger")
+    }
+
 }
 
 // MARK: - Nested Types
@@ -209,7 +254,7 @@ private extension DesignSystemSourceScanTests {
     /// 掃描命中的違規位置
     struct Violation {
 
-        // MARK: - Data Properties
+        // MARK: - Properties
 
         /// 相對於掃描根目錄的檔案路徑
         let file: String
@@ -221,7 +266,7 @@ private extension DesignSystemSourceScanTests {
     /// 具名豁免標記的命中，含其理由文字
     struct ExemptionMarker {
 
-        // MARK: - Data Properties
+        // MARK: - Properties
 
         /// 標記所在位置
         let violation: Violation
@@ -232,8 +277,6 @@ private extension DesignSystemSourceScanTests {
 
     /// `stripCommentsAndStrings` 的逐行掃描狀態
     enum StripMode {
-
-        // MARK: - Cases
 
         /// 一般程式碼
         case normal
@@ -255,12 +298,19 @@ private extension DesignSystemSourceScanTests {
     static func findViolations(
         under root: URL,
         matching pattern: NSRegularExpression,
-        excludingFilesNamed excludedFileNames: Set<String> = []
+        excludingFilesNamed excludedFileNames: Set<String> = [],
+        excludingRelativePaths excludedRelativePaths: Set<String> = []
     ) throws(any Error) -> [Violation] {
         var violations: [Violation] = []
 
-        for file in try swiftFiles(under: root)
-        where !excludedFileNames.contains(file.lastPathComponent) {
+        for file in try swiftFiles(under: root) {
+            let relativeFile = relativePath(of: file, under: root)
+            guard !excludedFileNames.contains(file.lastPathComponent),
+                !excludedRelativePaths.contains(relativeFile)
+            else {
+                continue
+            }
+
             let rawLines = try String(contentsOf: file, encoding: .utf8).components(
                 separatedBy: "\n")
             var stripMode = StripMode.normal
@@ -271,11 +321,33 @@ private extension DesignSystemSourceScanTests {
                 guard exemptionReason(onRawLine: rawLine) == nil else { continue }
 
                 violations.append(
-                    Violation(file: relativePath(of: file, under: root), line: index + 1))
+                    Violation(file: relativeFile, line: index + 1))
             }
         }
 
         return violations.sorted { ($0.file, $0.line) < ($1.file, $1.line) }
+    }
+
+    /// 掃描 production code 的幣別名稱查表呼叫
+    /// - Returns: 唯一入口以外命中 `localizedString(forCurrencyCode:)` 的位置
+    /// - Throws: 原始檔讀取失敗時拋出錯誤
+    static func currencyLookupViolations() throws(any Error) -> [Violation] {
+        try findViolations(
+            under: productionRoot,
+            matching: currencyLookupPattern,
+            excludingRelativePaths: ["Shared/Localization/CurrencyDisplayName.swift"]
+        )
+    }
+
+    /// 掃描 production code 由 locale 自行推導語言的寫法
+    /// - Returns: 唯一入口以外命中 `languageCode?.identifier` 的位置
+    /// - Throws: 原始檔讀取失敗時拋出錯誤
+    static func languageDerivationViolations() throws(any Error) -> [Violation] {
+        try findViolations(
+            under: productionRoot,
+            matching: languageDerivationPattern,
+            excludingRelativePaths: ["Shared/Localization/AppLanguage.swift"]
+        )
     }
 
     /// 掃描根目錄下所有具名豁免標記

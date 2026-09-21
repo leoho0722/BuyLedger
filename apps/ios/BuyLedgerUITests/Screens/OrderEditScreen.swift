@@ -10,7 +10,7 @@ import XCTest
 /// 訂單編輯表單的 Page Object
 struct OrderEditScreen: Screen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
@@ -132,6 +132,39 @@ extension OrderEditScreen {
     ///   - line: 失敗時回報的行號
     func openPaymentPicker(file: StaticString = #filePath, line: UInt = #line) {
         tapPickerRow(BLAccessibilityID.OrderEdit.paymentRow, file: file, line: line)
+    }
+
+    /// 開啟幣別選擇器
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func openCurrencyPicker(file: StaticString = #filePath, line: UInt = #line) {
+        let customerField = app.textFields[BLAccessibilityID.OrderEdit.customerField]
+        let keyboard = app.keyboards.firstMatch
+        if keyboard.exists {
+            customerField.typeText(XCUIKeyboardKey.return.rawValue)
+            guard keyboard.waitForDisappearance(timeout: 5) else {
+                app.failWithDiagnostics(
+                    "訂單編輯的文字鍵盤未能收起",
+                    file: file,
+                    line: line
+                )
+                return
+            }
+        }
+
+        let row = app.descendants(matching: .any)[BLAccessibilityID.OrderEdit.currencyRow]
+        guard row.waitForExistence(timeout: 10) else {
+            app.failWithDiagnostics(
+                "找不到幣別選擇列",
+                file: file,
+                line: line
+            )
+            return
+        }
+
+        tapPickerRow(BLAccessibilityID.OrderEdit.currencyRow, file: file, line: line)
     }
 
     /// 填入客戶實付金額

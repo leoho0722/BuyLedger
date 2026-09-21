@@ -363,8 +363,17 @@ private extension OrderEditView {
                 onSelect: { method in
                     store.send(.paymentMethodSelected(method))
                 },
-                onAddPaymentMethod: { name, flags in
-                    store.send(.addPaymentMethodTapped(name: name, flags: flags))
+                onAddPaymentMethod: { name, isCardless, isBankTransfer, isCashOnDelivery in
+                    store.send(
+                        .addPaymentMethodTapped(
+                            name: name,
+                            flags: PaymentMethodFlags(
+                                isCardless: isCardless,
+                                isBankTransfer: isBankTransfer,
+                                isCashOnDelivery: isCashOnDelivery
+                            )
+                        )
+                    )
                 },
                 isEmbedded: true
             )
@@ -391,6 +400,7 @@ private extension OrderEditView {
 
         case .currency:
             let locale = locale
+            let language = AppLanguage(locale: locale)
 
             OptionPickerSheet(
                 title: "選擇幣別",
@@ -401,11 +411,10 @@ private extension OrderEditView {
                 options: store.availableCurrencies.map(\.rawValue),
                 selected: store.draft.currency.rawValue,
                 displayName: { code in
-                    let name = locale.localizedString(forCurrencyCode: code) ?? ""
-                    return name.isEmpty ? code : "\(code) (\(name))"
+                    CurrencyDisplayName.text(code: code, language: language)
                 },
                 searchKeywords: { code in
-                    locale.localizedString(forCurrencyCode: code) ?? ""
+                    CurrencyDisplayName.searchKeywords(code: code, locale: locale)
                 },
                 onSelect: { code in
                     store.send(.currencySelected(code))
@@ -535,7 +544,12 @@ private extension OrderEditView {
 
                 Spacer(minLength: BLSpacing.small)
 
-                Text(currencyDisplayText)
+                Text(
+                    CurrencyDisplayName.text(
+                        code: store.draft.currency.rawValue,
+                        language: AppLanguage(locale: locale)
+                    )
+                )
                     .foregroundStyle(Color.blSecondaryLabel)
                     .lineLimit(1)
                     .truncationMode(.tail)
@@ -980,17 +994,6 @@ private extension OrderEditView {
             get: { store.draft.campaignNames.first ?? "" },
             set: { store.send(.campaignSelected($0)) }
         )
-    }
-
-    /// 幣別名稱顯示文字；依語言選名稱或 ISO code
-    var currencyDisplayText: String {
-        let code = store.draft.currency.rawValue
-        guard locale.language.languageCode?.identifier == "zh" else {
-            return code
-        }
-
-        let name = locale.localizedString(forCurrencyCode: code) ?? ""
-        return name.isEmpty ? code : name
     }
 
     /// 日期選擇器的繫結，寫回時交由 reducer 補上目前時間

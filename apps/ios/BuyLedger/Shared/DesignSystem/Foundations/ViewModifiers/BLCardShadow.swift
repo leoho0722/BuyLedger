@@ -7,22 +7,25 @@
 
 import SwiftUI
 
-// MARK: - ViewModifier
-
 /// 套用卡片陰影，並在深色模式改以分隔線表達層級
-struct BLCardShadow: ViewModifier {
+struct BLCardShadow {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// 目前系統深淺色外觀
     @Environment(\.colorScheme) private var colorScheme
 
     /// 指示是否使用浮層陰影
     let floating: Bool
+}
 
-    // MARK: - View Body
+// MARK: - ViewModifier
+
+extension BLCardShadow: ViewModifier {
 
     /// 回傳套用陰影後的內容
+    /// - Parameter content: 要套用陰影的內容
+    /// - Returns: 套用陰影後的 view
     func body(content: Content) -> some View {
         if colorScheme == .dark {
             content
@@ -44,7 +47,7 @@ struct BLCardShadow: ViewModifier {
     }
 }
 
-// MARK: - View Method
+// MARK: - blCardShadow
 
 extension View {
 

@@ -106,8 +106,17 @@ private extension LookupManagementView {
                 message: store.state.kind.addAlertMessage,
                 namePlaceholder: store.state.kind.addFieldPlaceholder,
                 submitTitle: "新增"
-            ) { name, flags in
-                addStore.send(.saveButtonTapped(name: name, flags: flags))
+            ) { name, isCardless, isBankTransfer, isCashOnDelivery in
+                addStore.send(
+                    .saveButtonTapped(
+                        name: name,
+                        flags: PaymentMethodFlags(
+                            isCardless: isCardless,
+                            isBankTransfer: isBankTransfer,
+                            isCashOnDelivery: isCashOnDelivery
+                        )
+                    )
+                )
             }
 
         case let .editPaymentMethod(editStore):
@@ -117,9 +126,20 @@ private extension LookupManagementView {
                 namePlaceholder: store.state.kind.addFieldPlaceholder,
                 submitTitle: "儲存",
                 initialName: editStore.originalName,
-                initialFlags: editStore.flags
-            ) { name, flags in
-                editStore.send(.saveButtonTapped(name: name, flags: flags))
+                initialIsCardless: editStore.flags.isCardless,
+                initialIsBankTransfer: editStore.flags.isBankTransfer,
+                initialIsCashOnDelivery: editStore.flags.isCashOnDelivery
+            ) { name, isCardless, isBankTransfer, isCashOnDelivery in
+                editStore.send(
+                    .saveButtonTapped(
+                        name: name,
+                        flags: PaymentMethodFlags(
+                            isCardless: isCardless,
+                            isBankTransfer: isBankTransfer,
+                            isCashOnDelivery: isCashOnDelivery
+                        )
+                    )
+                )
             }
         }
     }

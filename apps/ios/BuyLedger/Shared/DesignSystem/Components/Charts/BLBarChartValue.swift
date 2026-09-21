@@ -8,14 +8,9 @@
 import Foundation
 
 /// 長條圖使用的單筆資料
-struct BLBarChartValue: Identifiable {
+struct BLBarChartValue {
 
-    // MARK: - Identifiable Properties
-
-    /// 資料的穩定識別值
-    var id: String { label }
-
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// X 軸顯示的標籤
     let label: String
@@ -25,4 +20,12 @@ struct BLBarChartValue: Identifiable {
 
     /// 供輔助技術朗讀的數值描述
     let valueDescription: String
+}
+
+// MARK: - Identifiable
+
+extension BLBarChartValue: Identifiable {
+
+    /// 資料的穩定識別值
+    var id: String { label }
 }

@@ -7,7 +7,7 @@
 
 import SwiftUI
 
-// MARK: - Static Properties
+// MARK: - Properties
 
 extension Color {
 

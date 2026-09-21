@@ -64,7 +64,13 @@ struct SettingsView: View {
                 NavigationLink {
                     currencyPicker
                 } label: {
-                    LabeledContent("新訂單預設", value: currencyDisplayText(for: store.defaultCurrency))
+                    LabeledContent(
+                        "新訂單預設",
+                        value: CurrencyDisplayName.text(
+                            code: store.defaultCurrency.rawValue,
+                            language: AppLanguage(locale: locale)
+                        )
+                    )
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Settings.defaultCurrencyRow)
             }
@@ -138,6 +144,7 @@ private extension SettingsView {
     @ViewBuilder
     var currencyPicker: some View {
         let locale = locale
+        let language = AppLanguage(locale: locale)
 
         OptionPickerSheet(
             title: "選擇預設幣別",
@@ -148,11 +155,10 @@ private extension SettingsView {
             options: store.availableCurrencies.map(\.rawValue),
             selected: store.defaultCurrency.rawValue,
             displayName: { code in
-                let name = locale.localizedString(forCurrencyCode: code) ?? ""
-                return name.isEmpty ? code : "\(code) · \(name)"
+                CurrencyDisplayName.text(code: code, language: language)
             },
             searchKeywords: { code in
-                locale.localizedString(forCurrencyCode: code) ?? ""
+                CurrencyDisplayName.searchKeywords(code: code, locale: locale)
             },
             onSelect: { code in
                 store.send(.defaultCurrencySelected(code))
@@ -199,18 +205,6 @@ private extension SettingsView {
             get: { store.appLock.isBiometricUnlockEnabled },
             set: { store.send(.appLock(.enableToggled($0))) }
         )
-    }
-
-    /// 依 App 選定 locale 產生幣別顯示文字
-    /// - Parameter currency: 幣別
-    /// - Returns: 顯示字串
-    func currencyDisplayText(for currency: CurrencyCode) -> String {
-        guard locale.language.languageCode?.identifier == "zh" else {
-            return currency.rawValue
-        }
-
-        let name = locale.localizedString(forCurrencyCode: currency.rawValue) ?? ""
-        return name.isEmpty ? currency.rawValue : name
     }
 
     /// 從 bundle info 讀出版本號
