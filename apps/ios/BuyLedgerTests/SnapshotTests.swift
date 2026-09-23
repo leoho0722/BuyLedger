@@ -362,15 +362,17 @@
             // 帶非零本金與目標毛利讓 hero 顯示真實數字而非破折號
             TestDependencies.withFixedNow {
                 let state = QuoteFeature.State(
-                    fromCurrency: .krw,
+                    rateSource: QuoteRateFeature.State(
+                        fromCurrency: .krw,
+                        snapshot: FxRateSnapshot.fallback
+                    ),
                     itemPrice: 100_000,
                     domesticShipping: 5_000,
-                    internationalShippingTwd: 180,
+                    internationalShippingTWD: 180,
                     cardFeePercent: 2.5,
                     paymentFeePercent: 1,
                     platformFeePercent: 1,
-                    targetMarginPercent: 25,
-                    snapshot: FxRateSnapshot.fallback
+                    targetMarginPercent: 25
                 )
 
                 let view = QuoteView(
@@ -392,8 +394,10 @@
                     rates: [.twd: 1]
                 )
                 let state = QuoteFeature.State(
-                    fromCurrency: .krw,
-                    snapshot: unavailableSnapshot
+                    rateSource: QuoteRateFeature.State(
+                        fromCurrency: .krw,
+                        snapshot: unavailableSnapshot
+                    )
                 )
 
                 let view = QuoteView(
@@ -402,6 +406,46 @@
                 .environment(\.locale, AppLanguage.traditionalChinese.locale)
                 .frame(width: 393, height: 852)
 
+                assertSnapshot(of: view, as: .image)
+            }
+        }
+
+        /// 匯率工具在固定快照下顯示已連線狀態
+        @Test func fxViewBaseline() {
+            // Given
+            TestDependencies.withFixedNow {
+                let state = FxFeature.State(snapshot: FxRateSnapshot.fallback)
+                let store = Store<FxFeature.State, FxFeature.Action>(initialState: state) {
+                    EmptyReducer()
+                }
+
+                // When
+                let view = FxView(store: store)
+                    .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                    .frame(width: 393, height: 852)
+
+                // Then
+                assertSnapshot(of: view, as: .image)
+            }
+        }
+
+        /// 匯率工具在載入失敗時顯示錯誤橫幅與重試鍵
+        @Test func fxViewRateFailureBaseline() {
+            // Given
+            TestDependencies.withFixedNow {
+                let state = FxFeature.State(
+                    errorMessage: "網路連線異常；無法顯示即時匯率，請稍後再試。"
+                )
+                let store = Store<FxFeature.State, FxFeature.Action>(initialState: state) {
+                    EmptyReducer()
+                }
+
+                // When
+                let view = FxView(store: store)
+                    .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                    .frame(width: 393, height: 852)
+
+                // Then
                 assertSnapshot(of: view, as: .image)
             }
         }

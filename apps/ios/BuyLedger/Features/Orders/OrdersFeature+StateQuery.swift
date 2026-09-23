@@ -8,6 +8,42 @@
 import Foundation
 import SwiftUI
 
+// MARK: - Nested Types
+
+extension OrdersFeature.State {
+
+    /// 訂單載入的三種解析結果
+    enum LoadState: Equatable {
+
+        /// 已完成載入，顯示正常內容
+        case loaded
+
+        /// 載入失敗，附帶失敗原因
+        case failed(String)
+
+        /// 載入中
+        case loading
+    }
+
+    /// 整合篩選 sheet 尚未套用的三欄選擇
+    struct PendingFilterSelection: Equatable {
+
+        /// 尚未套用的日期區間選擇
+        var datePeriod: OrderDatePeriod = .all
+
+        /// 尚未套用的商品類別選擇；`nil` 代表全部類別
+        var category: String?
+
+        /// 尚未套用的付款方式選擇；`nil` 代表全部付款方式
+        var paymentMethod: String?
+
+        /// 是否至少有一項非預設的整合篩選條件
+        var isActive: Bool {
+            datePeriod != .all || category != nil || paymentMethod != nil
+        }
+    }
+}
+
 // MARK: - Computed Properties
 
 extension OrdersFeature.State {
@@ -61,6 +97,21 @@ extension OrdersFeature.State {
 
 extension OrdersFeature.State {
 
+    /// 將選取重設為篩選結果的第一筆
+    ///
+    /// - Parameters:
+    ///   - referenceDate: 篩選使用的基準時間
+    ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
+    mutating func selectFirstFilteredOrder(referenceDate: Date, calendar: Calendar) {
+        selectedOrderID = filteredOrders(referenceDate: referenceDate, calendar: calendar).first?.id
+    }
+
+    /// 修剪 iPhone 詳情導覽中已不存在的訂單
+    mutating func pruneDetailPath() {
+        let availableIDs = Set(orders.map(\.id))
+        detailPath.removeAll { !availableIDs.contains($0.orderID) }
+    }
+
     /// 套用搜尋、狀態與日期區間篩選後的訂單
     /// - Parameters:
     ///   - referenceDate: 計算「本週／本月／上月」等相對區間的基準時間
@@ -75,10 +126,11 @@ extension OrdersFeature.State {
             guard selectedStatus.orderStatus.map({ $0 == order.status }) ?? true else {
                 return false
             }
-            guard
-                selectedDatePeriod.includes(
-                    order.date, referenceDate: referenceDate, calendar: calendar)
-            else {
+            guard selectedDatePeriod.includes(
+                order.date,
+                referenceDate: referenceDate,
+                calendar: calendar
+            ) else {
                 return false
             }
             guard selectedCategory.map({ order.categories.contains($0) }) ?? true else {
@@ -184,13 +236,13 @@ extension OrdersFeature.State {
         let categoryScope = selectedCategory.map { "(已篩選類別：\($0))" } ?? "(涵蓋目前列表所有類別)"
         return """
             你是個人代購 App 的分析助理。以下是目前訂單列表的商品明細\(categoryScope)，每行格式為「- [類別] 商品名稱 x數量 @ 單價 幣別」：
-            
+
             \(aiItemsDigest(referenceDate: referenceDate, calendar: calendar))
-            
+
             請用正體中文、以 Markdown 格式總結這些商品明細，內容包含：
             - 一個 `##` 層級的標題
             - 各品項的品名以及購買的總數量 (如果品名有編號的話，請照編號排序；如果沒有編號的話，請照字母順序排序)
-            
+
             請以條列與粗體強調重點，全文控制在約 200–300 字。只根據上面提供的資料作答，不要杜撰未出現的商品、數字或結論。
             """
     }

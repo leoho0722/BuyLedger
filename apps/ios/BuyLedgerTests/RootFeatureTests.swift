@@ -53,7 +53,9 @@ struct RootFeatureTests {
     @Test func protectionEnabledAtLaunchStartsLocked() {
         // Given
 
-        let state = RootFeature.State(isBiometricUnlockEnabled: true)
+        var snapshot = SettingsSnapshot.default
+        snapshot.isBiometricUnlockEnabled = true
+        let state = RootFeature.State(settings: SettingsFeature.State(snapshot: snapshot))
 
         // When
 
@@ -83,22 +85,34 @@ struct RootFeatureTests {
         #expect(isLocked == false)
     }
 
-    /// 驗證根功能在此情境下的導覽與狀態同步
-    @Test func taskRestoresSettingsBeforeSettingsScreenIsVisited() async {
+    /// 驗證根 State 建立時即帶齊設定，讓第一幀直接使用持久化值
+    @Test func stateStartsWithInjectedSettings() {
         // Given
 
         var snapshot = SettingsSnapshot.default
         snapshot.language = .english
-        let storedSnapshot = snapshot
-        let refresh = RootTaskRefreshBox()
+        snapshot.defaultCurrency = .usd
+        snapshot.monthlyProfitGoalTWD = 120_000
+        let settings = SettingsFeature.State(snapshot: snapshot, appVersion: "1.7.0 (312)")
 
+        // When
+        let state = RootFeature.State(settings: settings)
+
+        // Then
+        #expect(state.settings.language == .english)
+        #expect(state.settings.defaultCurrency == .usd)
+        #expect(state.settings.monthlyProfitGoalTWD == 120_000)
+        #expect(state.settings.appVersion == "1.7.0 (312)")
+    }
+
+    /// 重啟後一律回到總覽分頁
+    @Test func taskKeepsTheDashboardTabAsTheLaunchTab() async {
+        // Given
+
+        let refreshTTLs = LockIsolated<[TimeInterval]>([])
         let store = TestStore(initialState: RootFeature.State()) {
             RootFeature()
         } withDependencies: {
-            $0[SettingsStorage.self] = SettingsStorage(
-                load: { storedSnapshot },
-                save: { _ in }
-            )
             $0[CurrencyMetadataRepository.self] = CurrencyMetadataRepository(
                 fetchCodes: { () async throws(CurrencyMetadataRepositoryError) -> [CurrencyCode] in
                     throw CurrencyMetadataRepositoryError.persistence(
@@ -111,8 +125,8 @@ struct RootFeatureTests {
                         )
                     )
                 },
-                refreshIfStale: { _ in
-                    refresh.wasCalled = true
+                refreshIfStale: { ttl in
+                    refreshTTLs.withValue { $0.append(ttl) }
                     return false
                 },
                 forceRefresh: {}
@@ -122,58 +136,13 @@ struct RootFeatureTests {
 
         await store.send(.task)
         // Then
-
-        await store.receive(.settings(.task)) {
-            $0.settings.language = .english
-        }
-        // `appDidBecomeActive` 一律查詢 `biometryType`。
-        // 保護關閉時僅此欄位變化，不觸發驗證流程
-        await store.receive(\.settings.appLock.appDidBecomeActive) {
-            $0.settings.appLock.biometryType = .faceID
-        }
-        await store.finish()
-
-        #expect(store.state.settings.language == .english)
-        #expect(refresh.wasCalled)
-    }
-
-    /// 重啟後一律回到總覽分頁
-    @Test func taskKeepsTheDashboardTabAsTheLaunchTab() async {
-        // Given
-
-        let store = TestStore(initialState: RootFeature.State()) {
-            RootFeature()
-        } withDependencies: {
-            $0[SettingsStorage.self] = SettingsStorage(load: { .default }, save: { _ in })
-            $0[CurrencyMetadataRepository.self] = CurrencyMetadataRepository(
-                fetchCodes: { () async throws(CurrencyMetadataRepositoryError) -> [CurrencyCode] in
-                    throw CurrencyMetadataRepositoryError.persistence(
-                        .storage(
-                            .fetchFailed(
-                                underlying: TestDependencies.makeUnderlyingError(
-                                    message: "suppressed"
-                                )
-                            )
-                        )
-                    )
-                },
-                refreshIfStale: { _ in false },
-                forceRefresh: {}
-            )
-        }
-        // When
-
-        await store.send(.task)
-        // 預設設定與 state 相同，因此不會產生變化
-        // Then
-
-        await store.receive(\.settings.task)
         // 保護關閉時只更新 biometryType
         await store.receive(\.settings.appLock.appDidBecomeActive) {
             $0.settings.appLock.biometryType = .faceID
         }
         await store.finish()
 
+        #expect(refreshTTLs.value == [604_800])
         #expect(store.state.selectedTab == .dashboard)
     }
 
@@ -641,8 +610,8 @@ struct RootFeatureTests {
             $0.lookupManagements[id: .paymentMethod]?.retroactiveConfirmation = nil
         }
         await store.receive(
-            .lookupManagements(
-                .element(id: .paymentMethod, action: .paymentMethodEditFailed("付款方式編輯失敗，請稍後再試。")))
+            \.lookupManagements[id: .paymentMethod].paymentMethodEditFailed,
+            "付款方式編輯失敗，請稍後再試。"
         ) {
             $0.lookupManagements[id: .paymentMethod]?.writeFailureAlert = AlertState {
                 TextState("操作失敗")
@@ -769,7 +738,7 @@ struct RootFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[SettingsStorage.self] = SettingsStorage(load: { .default }, save: { _ in })
+            $0[SettingsStore.self] = SettingsStore(load: { .default }, save: { _ in })
         }
         // 設定關閉時點「AI 總結」→ 出現提示 alert
         // When
@@ -802,7 +771,7 @@ struct RootFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[SettingsStorage.self] = SettingsStorage(load: { .default }, save: { _ in })
+            $0[SettingsStore.self] = SettingsStore(load: { .default }, save: { _ in })
         }
         // 先讓提示 alert 存在，再走深連結；此時路徑已有兩層殘留
         // When
@@ -1058,9 +1027,8 @@ struct RootFeatureTests {
         // Then
 
         await store.receive(
-            .lookupManagements(
-                .element(id: .category, action: .deleteSucceeded("待刪類別"))
-            )
+            \.lookupManagements[id: .category].deleteSucceeded,
+            "待刪類別"
         ) {
             $0.orders.$lookupCatalog.withLock { $0.categories = [] }
         }
@@ -1225,17 +1193,24 @@ struct RootFeatureTests {
         }
     }
 
-    /// 總覽重新整理會依序載入訂單與設定
-    @Test func dashboardRefreshDelegateSendsOrdersAndSettingsLoadEffects() async {
+    /// 總覽重新整理只重新載入訂單，不重讀設定
+    @Test func dashboardRefreshDelegateSendsOrdersOnly() async {
         // Given
 
         var state = RootFeature.State()
         state.orders.hasLoaded = true
+        let loadCount = LockIsolated(0)
 
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0[SettingsStorage.self] = SettingsStorage(load: { .default }, save: { _ in })
+            $0[SettingsStore.self] = SettingsStore(
+                load: {
+                    loadCount.withValue { $0 += 1 }
+                    return .default
+                },
+                save: { _ in }
+            )
             $0[CurrencyMetadataRepository.self] = CurrencyMetadataRepository(
                 fetchCodes: { () async throws(CurrencyMetadataRepositoryError) -> [CurrencyCode] in
                     throw CurrencyMetadataRepositoryError.persistence(
@@ -1260,7 +1235,9 @@ struct RootFeatureTests {
 
         await store.receive(\.dashboard.delegate.refresh)
         await store.receive(\.orders.task)
-        await store.receive(\.settings.task)
+        await store.finish()
+
+        #expect(loadCount.value == 0)
     }
 
     /// 分析頁的開團選取會轉發到既有導覽 action
@@ -1346,6 +1323,23 @@ struct RootFeatureTests {
         }
     }
 
+    /// 驗證客戶頁出現時委派既有的訂單載入 action
+    @Test func customersLoadDelegateSendsOrdersTask() async {
+        // Given
+        var state = RootFeature.State()
+        state.orders.hasLoaded = true
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        }
+
+        // When
+        await store.send(.customers(.delegate(.ordersLoadRequested)))
+
+        // Then
+        await store.receive(\.orders.task)
+    }
+
     /// 驗證客戶頁的導覽路徑
     @Test func customersCustomerTappedClearsMorePathBeforeTabSwitch() async {
         // Given
@@ -1364,7 +1358,8 @@ struct RootFeatureTests {
 
         // When
 
-        await store.send(.customers(.delegate(.customerTapped("Alice"))))
+        await store.send(.customers(.view(.customerTapped("Alice"))))
+        await store.receive(\.customers.delegate.customerSelected, "Alice")
         // Then
 
         await store.receive(\.customerSelected) {
@@ -1381,14 +1376,6 @@ struct RootFeatureTests {
     }
 }
 
-/// 記錄 Root 啟動 task 是否保留幣別 cache refresh effect
-private final class RootTaskRefreshBox: @unchecked Sendable {
-
-    // MARK: - Data Properties
-
-    /// 是否呼叫過 refresh
-    var wasCalled = false
-}
 
 // MARK: - Private Method
 

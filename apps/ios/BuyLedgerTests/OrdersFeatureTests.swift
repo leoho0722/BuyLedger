@@ -1703,10 +1703,10 @@ struct OrdersFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[SettingsStorage.self] = SettingsStorage(
+            $0[SettingsStore.self] = SettingsStore(
                 load: {
                     var snapshot = SettingsSnapshot.default
-                    snapshot.useAiSummary = true
+                    snapshot.isAISummaryEnabled = true
                     snapshot.aiSummaryModel = "gpt-oss:120b"
                     return snapshot
                 },
@@ -1743,7 +1743,7 @@ struct OrdersFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0[SettingsStorage.self] = SettingsStorage(
+            $0[SettingsStore.self] = SettingsStore(
                 load: { .default },
                 save: { _ in }
             )

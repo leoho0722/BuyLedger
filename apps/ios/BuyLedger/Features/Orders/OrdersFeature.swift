@@ -9,60 +9,6 @@ import ComposableArchitecture
 import Foundation
 import SwiftUI
 
-/// 訂單列表以「日」為單位分組後的單一日期區段
-struct OrderDateSection: Equatable, Identifiable, Sendable {
-
-    // MARK: - Identifiable Properties
-
-    /// 區段識別值，使用該日的起始時刻 (start of day)
-    let id: Date
-
-    // MARK: - Data Properties
-
-    /// 區段標題 (例如「今天」「昨天」「5月26日 週一」)
-    let title: String
-
-    /// 該日的訂單，依時間由新到舊排序
-    let orders: [LedgerOrder]
-}
-
-// MARK: - Internal Method
-
-extension OrderDateSection {
-
-    /// 把訂單依「日」分組為日期區段，供訂單列表與合併候選清單共用
-    /// - Parameters:
-    ///   - orders: 要分組的訂單
-    ///   - referenceDate: 判斷「今天／昨天」的基準時間
-    ///   - calendar: 分組與標題使用的曆法
-    ///   - locale: App 選定、用於日期區段標題的 locale
-    /// - Returns: 依日期由新到舊排序的區段
-    static func group(
-        _ orders: [LedgerOrder],
-        referenceDate: Date,
-        calendar: Calendar,
-        locale: Locale
-    ) -> [OrderDateSection] {
-        let grouped = Dictionary(grouping: orders) {
-            calendar.startOfDay(for: $0.date)
-        }
-        return grouped.keys
-            .sorted(by: >)
-            .map { day in
-                OrderDateSection(
-                    id: day,
-                    title: OrderFormatters.daySectionTitle(
-                        for: day,
-                        referenceDate: referenceDate,
-                        calendar: calendar,
-                        locale: locale
-                    ),
-                    orders: (grouped[day] ?? []).sorted { $0.date > $1.date }
-                )
-            }
-    }
-}
-
 /// 訂單列表與詳情選取流程
 @Reducer
 struct OrdersFeature {
@@ -171,8 +117,6 @@ struct OrdersFeature {
 
         /// iPad (regular) 付款方式篩選 picker sheet 是否呈現
         var showsPaymentMethodPicker: Bool = false
-
-        // MARK: - Computed Properties
 
         /// 依「已載入 → 有錯誤 → 其餘」的順序解析目前的載入狀態
         var loadState: LoadState {
@@ -453,7 +397,7 @@ struct OrdersFeature {
         }
     }
 
-    // MARK: - Dependency Properties
+    // MARK: - Dependencies
 
     /// 訂單資料來源
     @Dependency(OrderRepository.self) private var orderRepository
@@ -485,10 +429,10 @@ struct OrdersFeature {
     /// 合併流程兩段 sheet 序列化呈現的延遲時脈；測試可注入 immediate clock
     @Dependency(\.continuousClock) private var clock
 
-    /// 設定持久化來源；用於讀取 `useAiSummary` 與 `aiSummaryModel`
-    @Dependency(SettingsStorage.self) private var settingsStorage
+    /// 設定持久化來源；用於讀取 `isAISummaryEnabled` 與 `aiSummaryModel`
+    @Dependency(SettingsStore.self) private var settingsStore
 
-    // MARK: - Reducer Body
+    // MARK: - Body
 
     /// 訂單功能 reducer
     var body: some Reducer<State, Action> {
@@ -550,8 +494,7 @@ struct OrdersFeature {
                     }()
                     async let reconciliationStatusesTask: Void = {
                         do {
-                            let items =
-                            try await reconciliationStatusRepository
+                            let items = try await reconciliationStatusRepository
                                 .fetchReconciliationStatuses()
                             await send(.reconciliationStatusMasterLoaded(items))
                         } catch {
@@ -643,22 +586,26 @@ struct OrdersFeature {
 
             case let .statusFilterSelected(filter):
                 OrdersFilterOperations.statusFilterSelected(
-                    filter, state: &state, referenceDate: date.now, calendar: calendar)
+                    filter, state: &state, referenceDate: date.now, calendar: calendar
+                )
                 return .none
 
             case let .datePeriodSelected(period):
                 OrdersFilterOperations.datePeriodSelected(
-                    period, state: &state, referenceDate: date.now, calendar: calendar)
+                    period, state: &state, referenceDate: date.now, calendar: calendar
+                )
                 return .none
 
             case let .categoryFilterSelected(category):
                 OrdersFilterOperations.categoryFilterSelected(
-                    category, state: &state, referenceDate: date.now, calendar: calendar)
+                    category, state: &state, referenceDate: date.now, calendar: calendar
+                )
                 return .none
 
             case let .paymentMethodFilterSelected(paymentMethod):
                 OrdersFilterOperations.paymentMethodFilterSelected(
-                    paymentMethod, state: &state, referenceDate: date.now, calendar: calendar)
+                    paymentMethod, state: &state, referenceDate: date.now, calendar: calendar
+                )
                 return .none
 
             case let .campaignFilterSelected(campaign):
@@ -668,7 +615,8 @@ struct OrdersFeature {
 
             case let .campaignStatusFilterSelected(campaignStatus):
                 OrdersFilterOperations.campaignStatusFilterSelected(
-                    campaignStatus, state: &state, referenceDate: date.now, calendar: calendar)
+                    campaignStatus, state: &state, referenceDate: date.now, calendar: calendar
+                )
                 return .none
 
             case .categoryPickerTapped:
@@ -683,7 +631,7 @@ struct OrdersFeature {
                 OrdersFilterOperations.filterSheetTapped(state: &state)
                 return .none
 
-                // MARK: 篩選 sheet 未套用流程
+            // MARK: 篩選 sheet 未套用流程
 
             case let .filterPendingDatePeriodSelected(period):
                 OrdersFilterOperations.filterPendingDatePeriodSelected(period, state: &state)
@@ -695,12 +643,14 @@ struct OrdersFeature {
 
             case let .filterPendingPaymentMethodSelected(paymentMethod):
                 OrdersFilterOperations.filterPendingPaymentMethodSelected(
-                    paymentMethod, state: &state)
+                    paymentMethod, state: &state
+                )
                 return .none
 
             case .filterApplyTapped:
                 OrdersFilterOperations.filterApplyTapped(
-                    state: &state, referenceDate: date.now, calendar: calendar)
+                    state: &state, referenceDate: date.now, calendar: calendar
+                )
                 return .none
 
             case .filterCancelTapped:
@@ -752,7 +702,7 @@ struct OrdersFeature {
                 )
                 return .none
 
-                // 拆分 Reduce 以避免型別檢查逾時
+            // 拆分 Reduce 以避免型別檢查逾時
             case .editOrder, .mergeOrderTapped, .orderMerge, .mergeConfirmationReady,
                     .mergePersistenceFailed,
                     .orderSavePersisted, .statusChanged, .statusChangePersisted, .selectionModeToggled,
@@ -901,7 +851,8 @@ struct OrdersFeature {
                         return
                     }
                     await send(
-                        .mergeConfirmationReady(completed.draft, keptPhotos: completed.keptPhotos))
+                        .mergeConfirmationReady(completed.draft, keptPhotos: completed.keptPhotos)
+                    )
                 }
 
             case .orderMerge:
@@ -921,8 +872,8 @@ struct OrdersFeature {
                 OrdersMergeFlowOperations.mergePersistenceFailed(previousOrders, state: &state)
                 return .none
 
-                // 其餘 action 由下一段 Reduce 處理
-                // 逐一列舉以保留編譯期窮舉檢查
+            // 其餘 action 由下一段 Reduce 處理
+            // 逐一列舉以保留編譯期窮舉檢查
             case .binding, .task, .orderSourceMasterLoaded, .categoryMasterLoaded,
                     .paymentMethodMasterLoaded, .paymentMethodFlagsApplied,
                     .reconciliationStatusMasterLoaded, .campaignsLoaded, .ordersLoaded, .ordersFailed,
@@ -956,8 +907,7 @@ struct OrdersFeature {
             switch action {
             case let .statusChanged(orderID, newStatus):
                 guard let existing = state.orders.first(where: { $0.id == orderID }),
-                      existing.status != newStatus
-                else {
+                      existing.status != newStatus else {
                     return .none
                 }
 
@@ -981,7 +931,8 @@ struct OrdersFeature {
 
             case .selectAllTapped:
                 OrdersBatchOperations.selectAllTapped(
-                    state: &state, referenceDate: date.now, calendar: calendar)
+                    state: &state, referenceDate: date.now, calendar: calendar
+                )
                 return .none
 
             case .clearSelectionTapped:
@@ -1009,7 +960,8 @@ struct OrdersFeature {
 
                 // 先寫後改：畫面狀態於落盤成功後才套用
                 return receiptStatusChangeEffect(
-                    existing.withPaymentReceiptStatus(newReceiptStatus))
+                    existing.withPaymentReceiptStatus(newReceiptStatus)
+                )
 
             case let .receiptStatusChangePersisted(updated):
                 guard let index = state.orders.firstIndex(where: { $0.id == updated.id }) else {
@@ -1077,8 +1029,8 @@ struct OrdersFeature {
                 return .none
 
             case .aiSummaryTapped:
-                let snapshot = settingsStorage.load()
-                guard snapshot.useAiSummary else {
+                let snapshot = settingsStore.load()
+                guard snapshot.isAISummaryEnabled else {
                     state.aiDisabledAlert = AlertState {
                         TextState("AI 商品明細總結")
                     } actions: {
@@ -1106,8 +1058,8 @@ struct OrdersFeature {
             case .aiSummary:
                 return .none
 
-                // 這段 Reduce 處理前兩段未涵蓋的 action
-                // 逐一列舉以保留編譯期窮舉檢查
+            // 這段 Reduce 處理前兩段未涵蓋的 action
+            // 逐一列舉以保留編譯期窮舉檢查
             case .binding, .task, .orderSourceMasterLoaded, .categoryMasterLoaded,
                     .paymentMethodMasterLoaded, .paymentMethodFlagsApplied,
                     .reconciliationStatusMasterLoaded, .campaignsLoaded, .ordersLoaded, .ordersFailed,
@@ -1132,65 +1084,6 @@ struct OrdersFeature {
         .forEach(\.detailPath, action: \.detailPath) {
             OrderDetailPath()
         }
-    }
-}
-
-// MARK: - Nested Types
-
-extension OrdersFeature.State {
-
-    /// 訂單載入的三種解析結果
-    enum LoadState: Equatable {
-
-        // MARK: - Cases
-
-        /// 已完成載入，顯示正常內容
-        case loaded
-
-        /// 載入失敗，附帶失敗原因
-        case failed(String)
-
-        /// 載入中
-        case loading
-    }
-
-    /// 整合篩選 sheet 尚未套用的三欄選擇
-    struct PendingFilterSelection: Equatable {
-
-        // MARK: - Data Properties
-
-        /// 尚未套用的日期區間選擇
-        var datePeriod: OrderDatePeriod = .all
-
-        /// 尚未套用的商品類別選擇；`nil` 代表全部類別
-        var category: String?
-
-        /// 尚未套用的付款方式選擇；`nil` 代表全部付款方式
-        var paymentMethod: String?
-
-        /// 是否至少有一項非預設的整合篩選條件
-        var isActive: Bool {
-            datePeriod != .all || category != nil || paymentMethod != nil
-        }
-    }
-}
-
-// MARK: - Internal Method
-
-extension OrdersFeature.State {
-
-    /// 將選取重設為篩選結果的第一筆
-    /// - Parameters:
-    ///   - referenceDate: 篩選使用的基準時間
-    ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
-    mutating func selectFirstFilteredOrder(referenceDate: Date, calendar: Calendar) {
-        selectedOrderID = filteredOrders(referenceDate: referenceDate, calendar: calendar).first?.id
-    }
-
-    /// 修剪 iPhone 詳情導覽中已不存在的訂單
-    mutating func pruneDetailPath() {
-        let availableIDs = Set(orders.map(\.id))
-        detailPath.removeAll { !availableIDs.contains($0.orderID) }
     }
 }
 

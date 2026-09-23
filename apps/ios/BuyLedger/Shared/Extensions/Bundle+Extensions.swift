@@ -17,3 +17,19 @@ extension Bundle {
     /// 存放 asset catalog 的 bundle
     static let assets = Bundle(for: Token.self)
 }
+
+// MARK: - Computed Properties
+
+extension Bundle {
+
+    /// App 的短版號與建置號文字，格式為「短版號 (建置號)」；讀不到時以破折號替代
+    static var appVersion: String {
+        let infoDictionary = Bundle.main.infoDictionary
+        let shortVersion = infoDictionary?["CFBundleShortVersionString"] as? String
+        let buildVersion = infoDictionary?["CFBundleVersion"] as? String
+        guard let shortVersion, let buildVersion else {
+            return "—"
+        }
+        return "\(shortVersion) (\(buildVersion))"
+    }
+}

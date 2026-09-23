@@ -35,13 +35,16 @@ apps/ios/
 │   │   ├── App/                  # RootFeature + RootView + RootSidebarLayout / RootTabLayout；AppLockFeature + AppLockView (帳本保護鎖定畫面) + AppScenePhaseCoordinator (場景階段接線)
 │   │   ├── Campaigns/            # 開團管理
 │   │   ├── Customers/            # 客戶名單
+│   │   │   └── Components/       # CustomerTopCard、CustomerListRow
 │   │   ├── Dashboard/            # 總覽頁
 │   │   ├── FX/                   # 匯率工具 (FxFeature + FxView)
+│   │   │   └── Components/       # FxStatusBanner、FxRatesList
 │   │   ├── Insights/             # 趨勢分析
 │   │   ├── Lookups/              # 主檔管理 (訂單來源／商品類別／付款方式)
 │   │   ├── More/                 # iOS「更多」入口
-│   │   ├── Orders/               # 訂單瀏覽與編輯 (含 iPhone/iPad view 分流)；OrdersFeature 三個子域的分支主體外移至 OrdersFilterOperations／OrdersBatchOperations／OrdersMergeFlowOperations (同域輔助型別，非子 reducer)，State 查詢擴充外移至 OrdersFeature+StateQuery，訂單建構收成單一路徑於 OrderDraft，LedgerOrder 的變更擴充收於 LedgerOrder+OrderMutation
-│   │   ├── Quote/                # 報價試算
+│   │   ├── Orders/               # 訂單瀏覽與編輯 (含 iPhone/iPad view 分流)；OrdersFeature 三個子域的分支主體外移至 OrdersFilterOperations／OrdersBatchOperations／OrdersMergeFlowOperations (同域輔助型別，非子 reducer)，State 查詢擴充與其巢狀型別外移至 OrdersFeature+StateQuery，日期區段型別獨立為 OrderDateSection，訂單建構收成單一路徑於 OrderDraft，LedgerOrder 的變更擴充收於 LedgerOrder+OrderMutation
+│   │   ├── Quote/                # 報價試算 (QuoteFeature + QuoteRateFeature 子 reducer + QuoteView)
+│   │   │   └── Components/       # QuoteStatusBanner、QuoteBreakdownCard、QuoteInputsCard
 │   │   └── Settings/             # iOS SettingsView
 │   ├── Shared/
 │   │   ├── Localization/         # 跨 feature 共用的語言型別 (AppLanguage 與 rootNavigationTitle 修飾子)、幣別顯示名稱單一入口 (CurrencyDisplayName)
@@ -214,7 +217,7 @@ bun run unlock
 
 「更多 → 設定」的「帳本保護」區塊提供單一開關：開啟時同時啟用「App 進入背景即上鎖」與「回到前景或冷啟動需通過驗證才顯示內容」兩項保護，關閉時完全回到現況。啟用路徑本身需先通過一次系統本機驗證 (`BiometricAuthClient`，`LAContext` 的 `.deviceOwnerAuthentication` 政策，涵蓋生物辨識與裝置密碼後備)，成功才寫入偏好；失敗、取消或裝置不支援則開關回到關閉並以對話框說明原因。上鎖只保證回到前景需要驗證，不保證多工切換器縮圖排除內容 (已知取捨，見 [`.claude/rules/ios-navigation.md`](../../.claude/rules/ios-navigation.md) 的「App 鎖定」)。
 
-- `AppLockFeature` (`Features/App/`)：啟用驗證、鎖定／解鎖狀態機，巢狀於 `SettingsFeature.State.appLock`；`SettingsFeature` 攔截其驗證成功與關閉事件寫回 `SettingsStorage`。
+- `AppLockFeature` (`Features/App/`)：啟用驗證、鎖定／解鎖狀態機，巢狀於 `SettingsFeature.State.appLock`；`SettingsFeature` 攔截其驗證成功與關閉事件寫回 `SettingsStore`。
 - `AppLockView` (`Features/App/`)：鎖定時取代整個正常介面的阻斷畫面，提供「重新驗證」(不提供跳過)。
 - `AppScenePhaseCoordinator` (`Features/App/`)：由 `BuyLedgerApp` 的 `\.scenePhase` 呼叫，依場景階段 (`.background`／`.active`) 轉送 `AppLockFeature` 的鎖定／解鎖動作；觸發訊號的選擇見 [`.claude/rules/ios-navigation.md`](../../.claude/rules/ios-navigation.md) 的「App 鎖定」。
 - UI 測試以 `-BLUITestAppLockEnabled` 直接抵達鎖定狀態、`-BLUITestBiometricScenario` 選擇驗證情境，全程不觸發系統生物辨識提示。
@@ -223,7 +226,7 @@ bun run unlock
 
 `ExchangeRateClient` (`Core/Networking/`) 封裝 ExchangeRate-API v6 的兩個 endpoint：`latest/{base}` (匯率) 與 `codes` (幣別清單)。runtime 有兩個 call——`fetchLatest(.twd)` 取最新匯率；App 啟動時經 `CurrencyMetadataRepository.refreshIfStale` 打 `/codes` 載入幣別主檔並 cache 7 天 (幣別清單不再 hardcode)。
 
-`OllamaClient` (`Features/AISummary/`) 串接 Ollama Cloud chat streaming (`POST https://ollama.com/api/chat`)，在訂單詳情串流產生 Markdown 商品明細總結；缺金鑰或服務錯誤時進入 failed 狀態並提供重試，面板關閉時取消串流。逐位元組串流走 `HTTPClient.stream`。
+`OllamaClient` (`Core/Networking/`) 串接 Ollama Cloud chat streaming (`POST https://ollama.com/api/chat`)，在訂單詳情串流產生 Markdown 商品明細總結；缺金鑰或服務錯誤時進入 failed 狀態並提供重試，面板關閉時取消串流。逐位元組串流走 `HTTPClient.stream`。
 
 **Fallback 原則**：遵循 root [README.md › 產品政策](../../README.md#產品政策)——匯率與分析 UI 顯示「—」、「尚無可用匯率資料」、「尚未有足夠可用於分析的資料」等空狀態，避免使用者誤信過期或內建匯率。
 

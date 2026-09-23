@@ -68,12 +68,7 @@ extension OrderFormatters {
     ///   - locale: App 選定、用於日期呈現的 locale
     /// - Returns: 月日格式字串
     static func shortDate(_ date: Date, locale: Locale) -> String {
-        date.formatted(
-            .dateTime
-                .month(.defaultDigits)
-                .day(.defaultDigits)
-                .locale(locale)
-        )
+        BLFormatters.shortDate(date, locale: locale)
     }
 
     /// 將某一日格式化為訂單列表日期區段的標題

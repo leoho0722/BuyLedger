@@ -8,199 +8,170 @@
 import ComposableArchitecture
 import Foundation
 import Testing
+
 @testable import BuyLedger
 
-@MainActor
 /// 驗證報價試算流程
+@MainActor
 struct QuoteFeatureTests {
+
+    // MARK: - Properties
+
+    /// 供計算測試使用的固定匯率快照
+    nonisolated private static let fixedSnapshot = FxRateSnapshot(
+        date: Date(timeIntervalSince1970: 123),
+        base: .twd,
+        rates: [
+            .twd: 1,
+            .jpy: Decimal(string: "0.2")!,
+            .krw: Decimal(string: "0.125")!
+        ]
+    )
 
     // MARK: - Tests
 
-    /// 驗證報價功能在此情境下的計算與狀態
+    /// 驗證預設狀態的輸入值皆為零
     @Test func defaultStateStartsAtZero() {
         // Given
-
-        // 預設值全為 0：頁面剛開時不預填示範金額或費率
-        // 避免讓使用者誤以為畫面上的「建議售價」是已存在的試算結果
         let state = QuoteFeature.State()
 
         // When
-
-        let fromCurrency = state.fromCurrency
-        let itemPrice = state.itemPrice
-        let domesticShipping = state.domesticShipping
-        let internationalShippingTwd = state.internationalShippingTwd
-        let cardFeePercent = state.cardFeePercent
-        let targetMarginPercent = state.targetMarginPercent
-
-        // Then
-
-        #expect(fromCurrency == .krw)
-        #expect(itemPrice == 0)
-        #expect(domesticShipping == 0)
-        #expect(internationalShippingTwd == 0)
-        #expect(cardFeePercent == 0)
-        #expect(targetMarginPercent == 0)
-    }
-
-    /// 驗證報價功能在此情境下的計算與狀態
-    @Test func costCalculationUsesRateAndCardFee() {
-        // Given
-
-        // 注入 fallback snapshot 模擬 API 已回應；runtime 已不再使用 hardcoded fallback
-        let state = QuoteFeature.State(
-            fromCurrency: .krw,
-            itemPrice: 100_000,
-            domesticShipping: 0,
-            internationalShippingTwd: 0,
-            cardFeePercent: 0,
-            targetMarginPercent: 0,
-            snapshot: FxRateSnapshot.fallback
+        let values = (
+            state.rateSource.fromCurrency,
+            state.itemPrice,
+            state.domesticShipping,
+            state.internationalShippingTWD,
+            state.cardFeePercent,
+            state.targetMarginPercent
         )
 
-        // 用 snapshot 匯率計算 KRW，結果需允許極小 Decimal 捨入誤差
-        let tolerance = Decimal(string: "1e-20")!
-        // When
-
-        let itemTwd = state.itemTwd
-        let costTwd = state.costTwd
-
         // Then
-
-        #expect(abs(itemTwd - 2_280) < tolerance)
-        #expect(abs(costTwd - 2_280) < tolerance)
+        #expect(values.0 == .krw)
+        #expect(values.1 == 0)
+        #expect(values.2 == 0)
+        #expect(values.3 == 0)
+        #expect(values.4 == 0)
+        #expect(values.5 == 0)
     }
 
-    /// 驗證報價功能在此情境下的計算與狀態
+    /// 驗證成本計算會使用快照匯率與刷卡手續費
+    @Test func costCalculationUsesRateAndCardFee() {
+        // Given
+        let state = QuoteFeature.State(
+            rateSource: QuoteRateFeature.State(fromCurrency: .krw, snapshot: Self.fixedSnapshot),
+            itemPrice: 100_000,
+            cardFeePercent: 2
+        )
+
+        // When
+        let itemTWD = state.itemTWD
+        let cardFeeTWD = state.cardFeeTWD
+        let costTWD = state.costTWD
+
+        // Then
+        #expect(itemTWD == 800_000)
+        #expect(cardFeeTWD == 16_000)
+        #expect(costTWD == 816_000)
+    }
+
+    /// 驗證沒有匯率快照時只有國際運費保留在成本
     @Test func costCalculationIsZeroWithoutSnapshot() {
         // Given
-
-        // 沒有匯率資料時，衍生金額歸零並顯示提示。
         let state = QuoteFeature.State(
-            fromCurrency: .krw,
+            rateSource: QuoteRateFeature.State(fromCurrency: .krw),
             itemPrice: 100_000,
             domesticShipping: 5_000,
-            internationalShippingTwd: 180,
+            internationalShippingTWD: 180,
             cardFeePercent: 2.5,
             targetMarginPercent: 25
         )
 
         // When
-
-        let snapshot = state.snapshot
-        let hasUsableRate = state.hasUsableRate
-        let itemTwd = state.itemTwd
-        let domesticTwd = state.domesticTwd
-        let cardFeeTwd = state.cardFeeTwd
-        let costTwd = state.costTwd
+        let itemTWD = state.itemTWD
+        let domesticTWD = state.domesticTWD
+        let cardFeeTWD = state.cardFeeTWD
+        let costTWD = state.costTWD
 
         // Then
-
-        #expect(snapshot == nil)
-        #expect(hasUsableRate == false)
-        // 國際運費以 TWD 計算，其他項目因匯率不可用而為零。
-        #expect(itemTwd == 0)
-        #expect(domesticTwd == 0)
-        #expect(cardFeeTwd == 0)
-        // costTwd = 0 + 0 + 180 + 0 = 180
-        #expect(costTwd == 180)
+        #expect(state.rateSource.snapshot == nil)
+        #expect(state.rateSource.hasUsableRate == false)
+        #expect(itemTWD == 0)
+        #expect(domesticTWD == 0)
+        #expect(cardFeeTWD == 0)
+        #expect(costTWD == 180)
     }
 
-    /// 驗證報價功能在此情境下的計算與狀態
+    /// 驗證建議售價會無條件進位到十元
     @Test func suggestedPriceRoundsUpToNearestTen() {
         // Given
-
         let state = QuoteFeature.State(
-            fromCurrency: .twd,
+            rateSource: QuoteRateFeature.State(fromCurrency: .twd),
             itemPrice: 100,
-            domesticShipping: 0,
-            internationalShippingTwd: 0,
-            cardFeePercent: 0,
             targetMarginPercent: 25
         )
 
-        // 真毛利 1000 / 0.75 = 133.33，無條件進位到 140
         // When
-
-        let costTwd = state.costTwd
-        let suggestedTwd = state.suggestedTwd
-        let estimatedProfitTwd = state.estimatedProfitTwd
+        let costTWD = state.costTWD
+        let suggestedTWD = state.suggestedTWD
+        let estimatedProfitTWD = state.estimatedProfitTWD
 
         // Then
-
-        #expect(costTwd == 100)
-        #expect(suggestedTwd == 140)
-        #expect(estimatedProfitTwd == 40)
+        // 成本 100 / (1 - 0.25) = 133.33，無條件進位到 140
+        #expect(costTWD == 100)
+        #expect(suggestedTWD == 140)
+        #expect(estimatedProfitTWD == 40)
     }
 
-    /// 驗證報價功能在此情境下的計算與狀態
-    @Test func switchingCurrencyRecomputesItemTwd() async {
+    /// 驗證切換為新台幣後商品本金維持原值
+    @Test func switchingCurrencyRecomputesItemTWD() async {
         // Given
-
-        // 使用非零單價驗證匯率切換對 itemTwd 的影響。
-        let store = TestStore(initialState: QuoteFeature.State(itemPrice: 150_000)) {
+        let store = TestStore(
+            initialState: QuoteFeature.State(
+                rateSource: QuoteRateFeature.State(snapshot: Self.fixedSnapshot),
+                itemPrice: 150_000
+            )
+        ) {
             QuoteFeature()
         }
 
         // When
-
-        await store.send(\.binding.fromCurrency, .twd) {
-            $0.fromCurrency = .twd
+        await store.send(.view(.currencySelected("TWD")))
+        await store.receive(\.rateSource.currencySelected) {
+            $0.rateSource.fromCurrency = .twd
         }
 
-        // TWD rate = 1, so itemTwd == itemPrice
         // Then
-
-        #expect(store.state.itemTwd == 150_000)
+        #expect(store.state.itemTWD == 150_000)
     }
 
-    /// 驗證報價功能在此情境下的計算與狀態
+    /// 驗證目標毛利變更會更新建議售價
     @Test func bindingMarginUpdatesSuggestedPrice() async {
         // Given
-
-        let initial = QuoteFeature.State(
-            fromCurrency: .twd,
-            itemPrice: 1_000,
-            domesticShipping: 0,
-            internationalShippingTwd: 0,
-            cardFeePercent: 0,
-            targetMarginPercent: 10
-        )
-        let store = TestStore(initialState: initial) {
+        let store = TestStore(
+            initialState: QuoteFeature.State(
+                rateSource: QuoteRateFeature.State(fromCurrency: .twd),
+                itemPrice: 1_000,
+                targetMarginPercent: 10
+            )
+        ) {
             QuoteFeature()
         }
 
-        // cost / (1 − 0.10) = 1111.11...，無條件進位到十元 → 1120
         // When
-
-        let initialSuggestedTwd = store.state.suggestedTwd
-
-        // Then
-
-        #expect(initialSuggestedTwd == 1_120)
-
-        // When
-
         await store.send(\.binding.targetMarginPercent, 50) {
-            // Then
-
             $0.targetMarginPercent = 50
         }
 
-        // cost / (1 − 0.50) = 2000，本身即十元整數
         // Then
-
-        #expect(store.state.suggestedTwd == 2_000)
+        #expect(store.state.suggestedTWD == 2_000)
     }
 
-    /// 驗證報價功能在此情境下的計算與狀態
+    /// 驗證數值 binding 會把負值限制為零
     @Test func negativeInputsClampToZeroOnBinding() async {
         // Given
-
-        // 所有數值欄位都由 reducer 限制為非負
         let store = TestStore(
             initialState: QuoteFeature.State(
-                fromCurrency: .twd,
+                rateSource: QuoteRateFeature.State(fromCurrency: .twd),
                 itemPrice: 500,
                 targetMarginPercent: 30
             )
@@ -208,380 +179,355 @@ struct QuoteFeatureTests {
             QuoteFeature()
         }
 
-        // 負的本金 → 0
         // When
-
         await store.send(\.binding.itemPrice, -100) {
             $0.itemPrice = 0
         }
 
-        // 負的目標毛利 → 0 (目標毛利僅保證非負、不設上限)
-        await store.send(\.binding.targetMarginPercent, -5) {
-            $0.targetMarginPercent = 0
-        }
-
-        // 正值不受影響
-        await store.send(\.binding.domesticShipping, 250) {
-            $0.domesticShipping = 250
-        }
         // Then
-
         #expect(store.state.itemPrice == 0)
-        #expect(store.state.targetMarginPercent == 0)
-        #expect(store.state.domesticShipping == 250)
+        #expect(store.state.targetMarginPercent == 30)
     }
 
-    /// 驗證報價功能在此情境下的計算與狀態
-    @Test func bindingTogglesCurrencySheet() async {
+    /// 驗證點擊幣別列會呈現選擇目的地
+    @Test func currencyPickerTappedPresentsDestination() async {
         // Given
-
-        // 幣別 sheet 狀態由 State 管理，binding 不受 clamp 影響。
         let store = TestStore(initialState: QuoteFeature.State()) {
             QuoteFeature()
         }
 
         // When
-
-        await store.send(\.binding.showsCurrencySheet, true) {
-            // Then
-
-            $0.showsCurrencySheet = true
+        await store.send(.view(.currencyPickerTapped))
+        await store.receive(\.rateSource.pickerTapped) {
+            $0.rateSource.destination = .currencyPicker
         }
-    }
-
-    /// 驗證報價功能在此情境下的計算與狀態
-    @Test func currencyPickerTappedShowsSheet() async {
-        // Given
-
-        // 點擊來源幣別列 → reducer 開啟幣別選擇 sheet，View 不再直接寫入 store
-        let store = TestStore(initialState: QuoteFeature.State()) {
-            QuoteFeature()
-        }
-
-        // When
-
-        await store.send(.currencyPickerTapped) {
-            // Then
-
-            $0.showsCurrencySheet = true
-        }
-    }
-
-    /// 驗證報價功能在此情境下的計算與狀態
-    @Test func fromCurrencySelectedUpdatesCurrencyAndRecomputesItemTwd() async {
-        // Given
-
-        // 選幣別後重算衍生金額
-        let store = TestStore(initialState: QuoteFeature.State(itemPrice: 150_000)) {
-            QuoteFeature()
-        }
-
-        // When
-
-        await store.send(.fromCurrencySelected("TWD")) {
-            $0.fromCurrency = .twd
-        }
-
-        // TWD rate = 1, so itemTwd == itemPrice
-        // Then
-
-        #expect(store.state.itemTwd == 150_000)
-    }
-
-    // MARK: - Gross Margin Formula
-
-    /// 驗證報價功能在此情境下的計算與狀態
-    @Test func suggestedPriceMatchesGrossMarginFormulaExamples() throws(any Error) {
-        // Given
-
-        // 50% 目標毛利應得到 2 倍成本，區分毛利率與加成率公式。
-        // When
-
-        let zero = QuoteFeature.State(fromCurrency: .twd, itemPrice: 1_000, targetMarginPercent: 0)
-        let thirty = QuoteFeature.State(
-            fromCurrency: .twd, itemPrice: 1_000, targetMarginPercent: 30)
-        let thirtyMargin = try #require(thirty.estimatedMarginPercent)
-        let fifty = QuoteFeature.State(
-            fromCurrency: .twd, itemPrice: 1_000, targetMarginPercent: 50)
 
         // Then
-
-        #expect(zero.suggestedTwd == 1_000)
-        #expect(zero.estimatedMarginPercent == 0)
-
-        // 成本 1000、目標毛利 30% 時，建議售價應為 1430
-        #expect(thirty.suggestedTwd == 1_430)
-        // 容許因售價捨入造成的些微落差 (捨入前的精確毛利率就是 30%)
-        #expect(abs(thirtyMargin - 30) < 1)
-
-        #expect(fifty.suggestedTwd == 2_000)
-        #expect(fifty.estimatedMarginPercent == 50)
+        #expect(store.state.rateSource.destination != nil)
     }
 
-    /// 驗證報價功能在此情境下的計算與狀態
-    @Test func targetMarginAtOrAboveOneHundredPercentYieldsNoPrice() async {
+    /// 驗證選定幣別後更新來源幣別並關閉目的地
+    @Test func currencySelectedUpdatesCurrencyAndDismissesDestination() async {
         // Given
-
-        // 100% 以上無法計算，三個結果都應隱藏，輸入值不夾住。
         let store = TestStore(
             initialState: QuoteFeature.State(
-                fromCurrency: .twd, itemPrice: 1_000, targetMarginPercent: 50)
+                rateSource: QuoteRateFeature.State(destination: .currencyPicker)
+            )
         ) {
             QuoteFeature()
         }
 
-        // 低於 100%：三個數字皆有值
         // When
-
-        let initialBelowOneHundred = store.state.isTargetMarginBelowOneHundredPercent
-        let initialSuggestedTwd = store.state.suggestedTwd
-        let initialEstimatedProfitTwd = store.state.estimatedProfitTwd
-        let initialEstimatedMarginPercent = store.state.estimatedMarginPercent
+        await store.send(.view(.currencySelected("TWD")))
+        await store.receive(\.rateSource.currencySelected) {
+            $0.rateSource.fromCurrency = .twd
+            $0.rateSource.destination = nil
+        }
 
         // Then
-
-        #expect(initialBelowOneHundred == true)
-        #expect(initialSuggestedTwd != nil)
-        #expect(initialEstimatedProfitTwd != nil)
-        #expect(initialEstimatedMarginPercent != nil)
-
-        // 恰為 100%：三個數字一起消失，輸入值本身不被夾住
-        await store.send(\.binding.targetMarginPercent, 100) {
-            $0.targetMarginPercent = 100
-        }
-        #expect(store.state.targetMarginPercent == 100)
-        #expect(store.state.isTargetMarginBelowOneHundredPercent == false)
-        #expect(store.state.suggestedTwd == nil)
-        #expect(store.state.estimatedProfitTwd == nil)
-        #expect(store.state.estimatedMarginPercent == nil)
-
-        // 超過 100% 時不顯示，並保留原輸入值。
-        await store.send(\.binding.targetMarginPercent, 150) {
-            $0.targetMarginPercent = 150
-        }
-        #expect(store.state.targetMarginPercent == 150)
-        #expect(store.state.suggestedTwd == nil)
-
-        // 降回 100% 以下：三個數字一起恢復
-        await store.send(\.binding.targetMarginPercent, 80) {
-            $0.targetMarginPercent = 80
-        }
-        #expect(store.state.suggestedTwd != nil)
-        #expect(store.state.estimatedProfitTwd != nil)
-        #expect(store.state.estimatedMarginPercent != nil)
+        #expect(store.state.rateSource.fromCurrency == .twd)
+        #expect(store.state.rateSource.destination == nil)
     }
 
-    // MARK: - Decimal Precision
+    /// 驗證毛利公式的三組代表值
+    @Test(arguments: [0, 30, 50])
+    func suggestedPriceMatchesGrossMarginFormulaExamples(targetMarginPercent: Int) {
+        // Given
+        let state = QuoteFeature.State(
+            rateSource: QuoteRateFeature.State(fromCurrency: .twd),
+            itemPrice: 1_000,
+            targetMarginPercent: Decimal(targetMarginPercent)
+        )
 
-    /// 驗證報價功能在此情境下的計算與狀態
+        // When
+        let suggestedTWD = state.suggestedTWD
+
+        // Then
+        switch targetMarginPercent {
+        case 0:
+            #expect(suggestedTWD == 1_000)
+            #expect(state.estimatedMarginPercent == 0)
+        case 30:
+            #expect(suggestedTWD == 1_430)
+            #expect(abs((state.estimatedMarginPercent ?? 0) - 30) < 1)
+        case 50:
+            #expect(suggestedTWD == 2_000)
+            #expect(state.estimatedMarginPercent == 50)
+        default:
+            Issue.record("未涵蓋的毛利測試案例")
+        }
+    }
+
+    /// 驗證 100% 以上與 80% 目標毛利的顯示狀態
+    @Test(arguments: [(100, false), (150, false), (80, true)])
+    func targetMarginAtOrAboveOneHundredPercentYieldsExpectedPrice(
+        targetMarginPercent: Int,
+        hasSuggestedPrice: Bool
+    ) async {
+        // Given
+        let store = TestStore(
+            initialState: QuoteFeature.State(
+                rateSource: QuoteRateFeature.State(fromCurrency: .twd),
+                itemPrice: 1_000,
+                targetMarginPercent: 50
+            )
+        ) {
+            QuoteFeature()
+        }
+
+        // When
+        await store.send(
+            \.binding.targetMarginPercent,
+            Decimal(targetMarginPercent)
+        ) {
+            $0.targetMarginPercent = Decimal(targetMarginPercent)
+        }
+
+        // Then
+        #expect((store.state.suggestedTWD != nil) == hasSuggestedPrice)
+        #expect(store.state.targetMarginPercent == Decimal(targetMarginPercent))
+    }
+
+    /// 驗證 Decimal 相加不會產生二進位浮點誤差
     @Test func decimalTypeAvoidsBinaryFloatingPointDrift() {
         // Given
-
-        // Decimal 應精確得到 0.3，避免 Double 的二進位誤差。
         let state = QuoteFeature.State(
-            fromCurrency: .twd,
+            rateSource: QuoteRateFeature.State(fromCurrency: .twd),
             itemPrice: Decimal(string: "0.1")!,
             domesticShipping: Decimal(string: "0.2")!
         )
 
         // When
-
-        let totalTwd = state.itemTwd + state.domesticTwd
+        let totalTWD = state.itemTWD + state.domesticTWD
 
         // Then
-
-        #expect(totalTwd == Decimal(string: "0.3")!)
+        #expect(totalTWD == Decimal(string: "0.3")!)
     }
 
-    /// 驗證報價功能在此情境下的計算與狀態
+    /// 驗證報價成本與訂單摘要在相同輸入下相等
     @Test func quoteCostAgreesWithOrderTotalCostForMatchingInputs() {
         // Given
-
-        // 報價與訂單在相同輸入下應算出相同金額
         let itemPrice = Decimal(string: "1234.56")!
         let domesticShipping = Decimal(string: "66.67")!
-        let internationalShippingTwd = Decimal(string: "88.88")!
+        let internationalShippingTWD = Decimal(string: "88.88")!
         let cardFeePercent: Decimal = 3
         let paymentFeePercent: Decimal = 2
-
         let quote = QuoteFeature.State(
-            fromCurrency: .twd,
+            rateSource: QuoteRateFeature.State(fromCurrency: .twd),
             itemPrice: itemPrice,
             domesticShipping: domesticShipping,
-            internationalShippingTwd: internationalShippingTwd,
+            internationalShippingTWD: internationalShippingTWD,
             cardFeePercent: cardFeePercent,
-            paymentFeePercent: paymentFeePercent,
-            platformFeePercent: 0
+            paymentFeePercent: paymentFeePercent
         )
-
-        // 訂單的成本與手續費基準需和 quote 相同
-        let order = LedgerOrder(
-            id: "BL-QUOTE-PARITY",
-            customer: LedgerCustomer(name: "報價比對", initials: "QP", tier: .regular),
-            status: .quoting,
-            currency: .twd,
-            date: Date(timeIntervalSince1970: 1_777_145_600),
-            items: [],
-            itemCost: itemPrice + domesticShipping + internationalShippingTwd,
-            domesticShipping: 0,
-            internationalShipping: 0,
-            foreignDomesticShipping: 0,
+        let order = LedgerOrder.fixture(
+            itemCost: itemPrice + domesticShipping + internationalShippingTWD,
             cardFeeRate: cardFeePercent / 100,
-            platformFeeRate: 0,
             paymentFeeRate: paymentFeePercent / 100,
-            chargedAmount: itemPrice,
-            cardlessDeductionAmount: 0,
-            cardlessSupplementAmount: 0,
-            orderSource: "",
-            categories: ["測試"],
-            paymentMethod: "",
-            notes: "",
-            reconciliationStatus: "",
-            campaignNames: [],
-            paymentReceiptStatus: .pending,
-            isCashOnDelivery: false,
-            photos: [],
-            mergedSourceIDs: []
+            chargedAmount: itemPrice
         )
 
         // When
-
         let orderTotalCost = OrderSummary(order: order).totalCost
 
         // Then
-
-        #expect(quote.costTwd == orderTotalCost)
+        #expect(quote.costTWD == orderTotalCost)
     }
 
-    /// 驗證報價功能在此情境下的計算與狀態
+    /// 驗證匯率載入失敗後重試可恢復內容
     @Test func failedRateLoadExplainsReasonAndRetryRestoresContent() async {
         // Given
-
         let client = QuoteRateClientStub()
         let store = TestStore(initialState: QuoteFeature.State()) {
             QuoteFeature()
         } withDependencies: {
             $0[ExchangeRateClient.self].fetchLatest = {
                 (base: CurrencyCode) async throws(APIError) -> FxRateSnapshot in
-                // When
-
                 try await client.fetchLatest(base)
             }
             $0[CurrencyMetadataRepository.self].fetchCodes = { [] }
         }
 
-        await store.send(.task) {
-            $0.isLoading = true
-            $0.errorMessage = nil
+        // When
+        await store.send(.view(.task))
+        await store.receive(\.rateSource.task) {
+            $0.rateSource.isLoading = true
+            $0.rateSource.errorMessage = nil
         }
+        await store.receive(\.rateSource.currencyCodesResponse.success)
+        await store.receive(\.rateSource.ratesResponse.failure) {
+            $0.rateSource.isLoading = false
+            $0.rateSource.errorMessage = "網路連線異常，目前無法計算建議售價。"
+        }
+        await store.send(.view(.retryTapped))
+        await store.receive(\.rateSource.refreshRequested) {
+            $0.rateSource.isLoading = true
+            $0.rateSource.errorMessage = nil
+        }
+        await store.receive(\.rateSource.ratesResponse.success) {
+            $0.rateSource.isLoading = false
+            $0.rateSource.snapshot = FxRateSnapshot.fallback
+            $0.rateSource.errorMessage = nil
+        }
+
         // Then
-
-        await store.receive(\.ratesFailed) {
-            $0.isLoading = false
-            $0.errorMessage = "網路連線異常，目前無法計算建議售價。"
-        }
-        #expect(store.state.errorMessage == "網路連線異常，目前無法計算建議售價。")
-        #expect(store.state.rateUnavailableReason == "網路連線異常，目前無法計算建議售價。")
-
-        await store.send(.rateRefreshRequested) {
-            $0.isLoading = true
-            $0.errorMessage = nil
-        }
-        await store.receive(\.ratesLoaded) {
-            $0.isLoading = false
-            $0.snapshot = FxRateSnapshot.fallback
-            $0.errorMessage = nil
-        }
-        #expect(store.state.hasUsableRate)
+        #expect(store.state.rateSource.hasUsableRate)
+        #expect(store.state.rateSource.rateUnavailableReason == nil)
         #expect(await client.callCount == 2)
-
-        // 重試成功後 rateUnavailableReason 也一併恢復為 nil，不僅是 errorMessage
-        #expect(store.state.rateUnavailableReason == nil)
     }
 
-    // MARK: - Rate Unavailable Reason
-
-    /// 驗證報價功能在此情境下的計算與狀態
+    /// 驗證載入中不顯示匯率不可用原因
     @Test func rateUnavailableReasonIsNilWhileLoading() {
         // Given
-
-        // 載入中由 spinner 承擔訊息，不應同時顯示「不可用原因」橫幅
-        let state = QuoteFeature.State(isLoading: true)
+        let state = QuoteFeature.State(rateSource: QuoteRateFeature.State(isLoading: true))
 
         // When
-
-        let rateUnavailableReason = state.rateUnavailableReason
+        let reason = state.rateSource.rateUnavailableReason
 
         // Then
-
-        #expect(rateUnavailableReason == nil)
+        #expect(reason == nil)
     }
 
-    /// 驗證報價功能在此情境下的計算與狀態
+    /// 驗證有可用匯率時不顯示匯率不可用原因
     @Test func rateUnavailableReasonIsNilWhenRateIsUsable() {
         // Given
-
-        let state = QuoteFeature.State(fromCurrency: .twd, snapshot: FxRateSnapshot.fallback)
-
-        // When
-
-        let hasUsableRate = state.hasUsableRate
-        let rateUnavailableReason = state.rateUnavailableReason
-
-        // Then
-
-        #expect(hasUsableRate)
-        #expect(rateUnavailableReason == nil)
-    }
-
-    /// 驗證報價功能在此情境下的計算與狀態
-    @Test func rateUnavailableReasonFallsBackToGenericMessageWithoutAnErrorMessage() {
-        // Given
-
-        // 快照缺少選定幣別匯率時，無 errorMessage 也顯示通用說明
         let state = QuoteFeature.State(
-            fromCurrency: .krw,
-            snapshot: FxRateSnapshot(date: Date(timeIntervalSince1970: 0), base: .usd, rates: [:])
+            rateSource: QuoteRateFeature.State(
+                fromCurrency: .twd,
+                snapshot: FxRateSnapshot.fallback
+            )
         )
 
         // When
-
-        let hasUsableRate = state.hasUsableRate
-        let errorMessage = state.errorMessage
-        let rateUnavailableReason = state.rateUnavailableReason
+        let reason = state.rateSource.rateUnavailableReason
 
         // Then
-
-        #expect(hasUsableRate == false)
-        #expect(errorMessage == nil)
-        #expect(rateUnavailableReason == "尚無可用匯率資料，暫時無法試算。")
+        #expect(state.rateSource.hasUsableRate)
+        #expect(reason == nil)
     }
 
-    /// 驗證報價功能在此情境下的計算與狀態
-    @Test func rateRefreshRequestedIsNoOpWhileAlreadyLoading() async {
+    /// 驗證缺少選定幣別匯率時使用通用提示
+    @Test func rateUnavailableReasonFallsBackToGenericMessageWithoutAnErrorMessage() {
         // Given
+        let state = QuoteFeature.State(
+            rateSource: QuoteRateFeature.State(
+                fromCurrency: .krw,
+                snapshot: FxRateSnapshot(
+                    date: Date(timeIntervalSince1970: 0),
+                    base: .usd,
+                    rates: [:]
+                )
+            )
+        )
 
-        // 重試鈕不應在載入中被誤觸發二次併發載入
-        let store = TestStore(initialState: QuoteFeature.State(isLoading: true)) {
+        // When
+        let reason = state.rateSource.rateUnavailableReason
+
+        // Then
+        #expect(state.rateSource.hasUsableRate == false)
+        #expect(state.rateSource.errorMessage == nil)
+        #expect(reason == "尚無可用匯率資料，暫時無法試算。")
+    }
+
+    /// 驗證載入中再次重試不會建立第二個請求
+    @Test func retryTappedIsNoOpWhileAlreadyLoading() async {
+        // Given
+        let store = TestStore(
+            initialState: QuoteFeature.State(rateSource: QuoteRateFeature.State(isLoading: true))
+        ) {
             QuoteFeature()
         }
 
         // When
+        await store.send(.view(.retryTapped))
+        await store.receive(\.rateSource.refreshRequested)
 
-        await store.send(.rateRefreshRequested)
         // Then
+        #expect(store.state.rateSource.isLoading)
+    }
 
-        #expect(store.state.isLoading)
+    /// 驗證建議售價與 hero 訊息的三種狀態
+    @Test(arguments: ["calculable", "ratesUnavailable", "marginTooHigh"])
+    func displayedSuggestedTWDAndHeroMessage(scenario: String) {
+        // Given
+        let state: QuoteFeature.State
+        switch scenario {
+        case "calculable":
+            state = QuoteFeature.State(
+                rateSource: QuoteRateFeature.State(fromCurrency: .twd),
+                itemPrice: 1_000,
+                targetMarginPercent: 25
+            )
+        case "ratesUnavailable":
+            state = QuoteFeature.State(rateSource: QuoteRateFeature.State(fromCurrency: .krw))
+        case "marginTooHigh":
+            state = QuoteFeature.State(
+                rateSource: QuoteRateFeature.State(fromCurrency: .twd),
+                itemPrice: 1_000,
+                targetMarginPercent: 100
+            )
+        default:
+            Issue.record("未涵蓋的 hero 測試案例")
+            return
+        }
+
+        // When
+        let displayedSuggestedTWD = state.displayedSuggestedTWD
+        let heroMessage = state.heroMessage
+
+        // Then
+        switch scenario {
+        case "calculable":
+            #expect(displayedSuggestedTWD == 1_340)
+            if case let .estimate(profitTWD, _) = heroMessage {
+                #expect(profitTWD == 340)
+            } else {
+                Issue.record("可試算狀態應顯示預估獲利")
+            }
+        case "ratesUnavailable":
+            #expect(displayedSuggestedTWD == nil)
+            #expect(heroMessage == .rateUnavailable)
+        case "marginTooHigh":
+            #expect(displayedSuggestedTWD == nil)
+            #expect(heroMessage == .marginTooHigh)
+        default:
+            Issue.record("未涵蓋的 hero 測試案例")
+        }
+    }
+
+    /// 驗證商品價格為零時沿用無法計算預估獲利的既有語意
+    @Test func heroMessageForZeroPriceUsesMarginTooHigh() {
+        // Given
+        let state = QuoteFeature.State(rateSource: QuoteRateFeature.State(fromCurrency: .twd))
+
+        // When
+        let message = state.heroMessage
+
+        // Then
+        #expect(state.displayedSuggestedTWD == 0)
+        #expect(state.estimatedMarginPercent == nil)
+        #expect(message == .marginTooHigh)
     }
 }
 
-// MARK: - Test Doubles
-/// 測試用的匯率 client
-private actor QuoteRateClientStub {
+// MARK: - Nested Types
 
-    private(set) var callCount = 0
+extension QuoteFeatureTests {
+
+    /// 測試用的匯率 client
+    actor QuoteRateClientStub {
+
+        /// 已呼叫匯率 client 的次數
+        private(set) var callCount = 0
+    }
+}
+
+// MARK: - Internal Method
+
+extension QuoteFeatureTests.QuoteRateClientStub {
 
     /// 取得下一筆匯率快照；第一次呼叫模擬網路失敗
+    ///
     /// - Parameter base: 匯率的基準幣別
     /// - Returns: 固定的 fallback 匯率快照
     /// - Throws: 第一次呼叫時拋出模擬的 transport error

@@ -64,10 +64,13 @@
 - **綁 store 的畫面只吃自己 feature 的 scoped store**：跨 feature 資料走根 feature 單向同步的唯讀投影，跨 feature 意圖以 delegate action 轉發到根 feature 既有的導覽 case，不新增平行的根 case；純顯示值 (如目前的 App 語言) 走建構參數。
     - 可宣告根 store 的只有四個導覽宿主 `RootView`／`RootTabLayout`／`RootSidebarLayout`／`MoreView`，由 `LayerBoundaryTests.rootStoreDeclarationsMatchTheNavigationHostWhitelist` 鎖住。
     - 投影的變更監看集中在 `RootFeature.body` 尾端的連續 `onChange(of:)`；漏掛一條會讓畫面顯示舊資料而不易察覺。
+    - **父層不送出也不攔截子層的 `.view(...)` action**：子層畫面事件只由自己的 Feature 處理，父層不得以 `.send` 或 reducer case 包裝子層 `view` action。
+    - **子層啟動所需資料在建立 State 時帶齊**：`BuyLedgerApp` 讀出的設定快照與 App 版本直接傳入 `SettingsFeature.State`，首幀不依賴額外的載入 action。
+    - **跨 feature 意圖由子層以 delegate 請父層做事**：父層只把 delegate 轉發到既有 action，不新增平行的根 action。
 - **商業邏輯與資料計算 (彙總、分組、排序、格式化) 放 reducer 或可測試的 helper**，View (含 Swift Charts) 只負責呈現。
 - **大型 reducer 以同域輔助型別拆分，不拆成子 reducer**：無 case 的 enum (如 `OrdersFilterOperations`) 只放 `static func`，以 `inout State` 與明確參數溝通。
     - 輔助型別不宣告 `@Dependency`，也不呼叫 `Date()`／`UUID()`／`Calendar.current`，由 reducer 解析後傳入；被它跨檔呼叫的 State 方法或靜態工廠要是 internal。
-    - 主 switch 維持窮舉、零預設分支 (`TestSuiteIntegrityTests` 守門，不得改寫成 `default:` 換行再 `return .none` 等規避形式)；因型別檢查逾時拆成多段 `Reduce` 時，段間以明列的 case 清單交出，不用預設分支。
+    - 主 switch 維持窮舉、零預設分支 (`TestSuiteIntegrityTests` 守門，不得改寫成 `default:` 換行再 `return .none` 等規避形式)；因型別檢查逾時拆成多段 `Reduce` 時，段間以明列的 case 清單交出，不用預設分支，且每段一樣抽成具名方法 (見「ios-dev-kit 規範與既有差異」的 `Reduce(core)` 規則)。
     - 草稿型別標 `@ObservableState` (只標 `Equatable` 會退化成整張表單重繪)；非同步載入的欄位不參與草稿相等比較，另以旗標追蹤。
 - **自訂錯誤型別以 `underlying` 保留原始錯誤，不遵循 `Equatable`**：帶底層失敗的 case 宣告 `underlying: any Error & Sendable`，純分類 case (如 `APIError.http(statusCode:)`) 維持原形狀。
     - **框架錯誤 (SwiftData、Foundation、EventKit、URL loading、`DecodingError`) 一律 `error as NSError` 橋接**：typed catch 拿到的是 `any Error`，`as NSError` 是唯一無條件成立且保留 domain、code、userInfo 的轉換。
@@ -97,6 +100,15 @@
 - **SwiftUI View 不以跨檔 `extension` 作為超過 300 行的第一選擇**：跨檔 extension 無法存取同一 View 的 `private @State`／`private @Environment`；為了編譯而降為 `internal` 會破壞狀態封裝。超過 300 行時優先抽成獨立 View 型別並傳入必要值與 closure；確實抽不動時才在 `findings.md` 登記行數例外，寫明原因與使用者裁決。
 - **檔頭日期一律不補零 `YYYY/M/D`** (如 `2026/9/20`)，不是 `file-templates.md` 的 `YYYY/MM/DD`：Xcode 新檔樣板產生的就是不補零格式，補零等於每個新檔都要手動改一次。
     - 檔頭其餘規則仍依 `file-templates.md`：四行結構、不加版權宣告與修改紀錄、建立後不再更新日期。
+- **宣告的大括號本體一律換行，不壓成單行**：`guard ... else { return x }`、`var x: T { expr }`、`func f() -> T { expr }` 都要把本體與結尾大括號各自獨立一行。`formatting.md` 的 `guard let self else { return }` 與單行 closure 範例不適用於宣告本體；作為引數傳入的 inline closure (`map { $0.id }`) 不在此限。
+- **屬性包裝器與宣告同行**：`@Dependency(X.self) private var x`，不拆成兩行；整行超過 100 字元時才換行。
+- **由外部注入的 State 值用 `let` 且不給宣告處預設值**，只從 `init` 參數帶入 (如 `SettingsFeature.State.appVersion`)；宣告處放佔位值再於 `init` 覆寫會讓「未注入」與「注入了佔位值」無法區分。
+- **不為了單一呼叫點抽出 helper method**：只被上方一個 computed property 使用的格式化邏輯直接寫在該 property 內 (如 `Bundle.appVersion`)。
+- **closure 的具名參數列與 `{` 同行**：寫 `sorted { lhs, rhs in`、`ForEach(...) { index, item in`，不把 `lhs, rhs in` 放到下一行；參數列獨行會被讀成本體的第一行。`formatting.md` 未明文，屬本專案補充。
+- **View 沒有 `Computed Properties` 分區**：`tca-architecture.md` 與 `file-templates.md` 的 View 分區固定為 Properties → (Init) → Body → Private Views → Nested Types → Private Method → Preview，純 UI 計算 (色盤、格線欄位、預設金額) 一律放 `Private Method`，不另立區名。只有非 View 型別才用 `formatting.md` 的通用六區。
+- **reducer 的 `body` 只組合，不寫 `Reduce { state, action in }` 閉包**：分支主體抽成 `Private Method` 的第一個方法 `core(state:action:)`，`body` 寫 `Reduce(core)`。
+    - 因型別檢查逾時而必須分段時 (見「架構分層」的多段 `Reduce` 規則)，每段各自抽成具名方法再以 `Reduce(段名)` 組合，不保留 inline closure。
+- **一個檔只放一個頂層型別**：同檔多個型別會讓檔案層級的 `// MARK: - Internal Method` 等固定區名重複出現，Xcode jump bar 分不出歸屬。巢狀型別的 extension 放 `<Owner>+<Domain>.swift` (如 `OrdersFeature.State` 的擴充放 `OrdersFeature+StateQuery.swift`)，獨立 model 型別各自一檔。
 - **下列是本專案既有架構與 skill 的差異，新程式碼沿用現有寫法，直到另開 change 重構**：
     - Reducer body 型別用 `some Reducer<State, Action>` (見技術棧 gotcha)，不用樣板的 `some ReducerOf<Self>`。
     - `Core/Dependencies/` 以 Repository 包裝 SwiftData persistence；系統與網路能力以 struct-of-closures Client 註冊並宣告 `testValue` (如 `Core/Dependencies/` 的 `PhotoClient`、`CalendarReminderClient`，`Core/Networking/` 的 `ExchangeRateClient`)。skill 的 protocol Service、「不補 Repository」、「不宣告 `testValue`」不適用。
@@ -104,6 +116,8 @@
     - `exhaustivity = .off` 有既有數處，由 `TestSuiteIntegrityTests` 限制總數不增加：新增一處必須同時移除他處。
     - 通用 extension 放 `Shared/Extensions/`，不是 `Core/Extensions/`。
     - 金額、百分比、日期格式化用 `BLFormatters`／`OrderFormatters`／`CampaignFormatters` 的靜態函式，不是 `FormatStyle`。
+    - 測試方法名稱維持單段 lowerCamel，方法層 selector 以 `()` 精準選取，避免以底線拆成多段命名。
+    - 設定寫入維持 reducer 內同步呼叫，讓連續輸入依序保存，避免非同步效果重排快照。
     - `OrdersFeaturePerformanceTests` 維持 XCTest，其餘單元測試用 Swift Testing。
 
 ## 已裁定的產品決策

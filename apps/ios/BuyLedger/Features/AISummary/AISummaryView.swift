@@ -12,12 +12,12 @@ import Textual
 /// AI 商品明細總結 sheet
 struct AISummaryView: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// 總結功能的 store
     @Bindable var store: StoreOf<AISummaryFeature>
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 總結 sheet 的內容
     var body: some View {
@@ -29,21 +29,13 @@ struct AISummaryView: View {
                     .accessibilityElement(children: .contain)
                     .accessibilityIdentifier(BLAccessibilityID.AISummary.root)
             }
+            .task {
+                await store.send(.view(.task)).finish()
+            }
             .navigationTitle(Text("AI 商品明細總結"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        store.send(.closeTapped)
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                    .accessibilityLabel(Text("關閉"))
-                    .accessibilityIdentifier(BLAccessibilityID.AISummary.closeButton)
-                }
-            }
-            .task {
-                await store.send(.task).finish()
+                closeToolbarItem
             }
         }
         .presentationDetents([.medium, .large])
@@ -51,7 +43,7 @@ struct AISummaryView: View {
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension AISummaryView {
 
@@ -60,13 +52,27 @@ private extension AISummaryView {
     var dataTransferDisclosure: some View {
         Text("目前列表的商品明細 (類別、品名、數量、單價、幣別) 會送往第三方雲端服務；不含客戶姓名。")
             .blTextStyle(.footnote)
-            .foregroundStyle(Color.blSecondaryLabel)
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal)
             .padding(.vertical, BLSpacing.small)
+            .foregroundStyle(Color.blSecondaryLabel)
             .background(.secondary.opacity(0.08))
             .accessibilityIdentifier(BLAccessibilityID.AISummary.dataTransferDisclosure)
+    }
+
+    /// 總結 sheet 的關閉按鈕
+    @ToolbarContentBuilder
+    var closeToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button {
+                store.send(.view(.closeTapped))
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .accessibilityLabel(Text("關閉"))
+            .accessibilityIdentifier(BLAccessibilityID.AISummary.closeButton)
+        }
     }
 
     /// 依目前串流階段呈現的主內容
@@ -80,13 +86,12 @@ private extension AISummaryView {
                 Text(store.errorMessage ?? "請稍後再試。")
             } actions: {
                 Button("重試") {
-                    store.send(.retryTapped)
+                    store.send(.view(.retryTapped))
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier(BLAccessibilityID.AISummary.retryButton)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-
         case .idle, .streaming, .finished:
             if store.summaryText.isEmpty {
                 VStack(spacing: BLSpacing.medium) {
@@ -116,9 +121,9 @@ private extension AISummaryView {
                         if let truncationMessage = store.truncationMessage {
                             Text(truncationMessage)
                                 .blTextStyle(.footnote)
-                                .foregroundStyle(Color.blSecondaryLabel)
                                 .multilineTextAlignment(.leading)
                                 .padding(.top, BLSpacing.small)
+                                .foregroundStyle(Color.blSecondaryLabel)
                         }
 
                         if store.phase == .finished {
@@ -145,25 +150,50 @@ private extension AISummaryView {
                 .blTextStyle(.caption)
                 .multilineTextAlignment(.leading)
         }
-        .foregroundStyle(Color.blSecondaryLabel)
         .padding(.vertical, 7)
         .padding(.horizontal, 14)
+        .foregroundStyle(Color.blSecondaryLabel)
         .background(.secondary.opacity(0.12), in: Capsule())
+        // frame 保持在 background 外層，避免膠囊背景撐滿整列
         .frame(maxWidth: .infinity, alignment: .center)
     }
 }
 
 // MARK: - Preview
 
-#Preview("AI 總結") {
-    AISummaryView(
-        store: Store(
-            initialState: AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
-        ) {
+#Preview("AI 總結串流中") {
+    var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+    state.phase = .streaming
+    state.summaryText = "# 商品摘要\n\nAI 正在產生內容"
+
+    return AISummaryView(
+        store: Store(initialState: state) {
             AISummaryFeature()
-        } withDependencies: {
-            $0[OllamaClient.self] = .previewValue
-            $0.appConfiguration = .previewValue
+        }
+    )
+}
+
+#Preview("AI 總結失敗") {
+    var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+    state.phase = .failed
+    state.errorMessage = "總結失敗，請稍後再試。"
+
+    return AISummaryView(
+        store: Store(initialState: state) {
+            AISummaryFeature()
+        }
+    )
+}
+
+#Preview("AI 總結逾時截斷") {
+    var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+    state.phase = .finished
+    state.summaryText = "# 商品摘要\n\n已取得的部分內容"
+    state.truncationMessage = "AI 總結已達時間上限，以下顯示已取得的內容；摘要已截斷。"
+
+    return AISummaryView(
+        store: Store(initialState: state) {
+            AISummaryFeature()
         }
     )
 }

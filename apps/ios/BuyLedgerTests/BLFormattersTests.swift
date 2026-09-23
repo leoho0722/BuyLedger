@@ -78,6 +78,27 @@ struct BLFormattersTests {
         #expect(BLFormatters.percent(scaled: value, locale: Self.locale) == "999.9%")
     }
 
+    /// 驗證月日短日期依 locale 呈現
+    ///
+    /// - Parameters:
+    ///   - localeIdentifier: 用於呈現的 locale 識別字
+    ///   - expected: 預期的月日格式字串
+    @Test(arguments: [
+        (localeIdentifier: "zh_TW", expected: "4/30"),
+        (localeIdentifier: "en", expected: "4/30"),
+    ])
+    func shortDateFormatsByLocale(localeIdentifier: String, expected: String) {
+        // Given
+        let date = Self.shortDateReferenceDate
+        let locale = Locale(identifier: localeIdentifier)
+
+        // When
+        let formatted = BLFormatters.shortDate(date, locale: locale)
+
+        // Then
+        #expect(formatted == expected)
+    }
+
     /// 驗證畫面格式化器委派共用金額格式化器
     @Test func orderAndCampaignFormattersTwdDelegateToBLFormatters() {
         #expect(OrderFormatters.twd(Decimal(1_234), locale: Self.locale) == "NT$1,234")
@@ -94,6 +115,19 @@ struct BLFormattersTests {
 // MARK: - Static Properties
 
 private extension BLFormattersTests {
+
+    /// 固定在 UTC 中午，避免裝置時區讓日期跨日
+    private static let shortDateReferenceDate: Date = {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+        let components = DateComponents(
+            year: 2026,
+            month: 4,
+            day: 30,
+            hour: 12
+        )
+        return calendar.date(from: components) ?? Date(timeIntervalSince1970: 0)
+    }()
 
     /// 測試固定使用的呈現 locale，與 ``OrderCalculationTests`` 既有慣例一致
     static let locale = Locale(identifier: "en")

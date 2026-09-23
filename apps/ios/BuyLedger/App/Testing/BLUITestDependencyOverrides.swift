@@ -36,7 +36,7 @@ extension DependencyValues {
         applyLookupOverrides(configuration, container: container)
         applySystemAccessOverrides(configuration)
         applyNetworkOverrides(configuration)
-        applySettingsStorageOverride(configuration)
+        applySettingsStoreOverride(configuration)
     }
 }
 
@@ -229,7 +229,7 @@ private extension DependencyValues {
 
     /// 將設定改存於記憶體
     /// - Parameter configuration: UI 測試設定
-    mutating func applySettingsStorageOverride(_ configuration: BLUITestConfiguration) {
+    mutating func applySettingsStoreOverride(_ configuration: BLUITestConfiguration) {
         var snapshot = SettingsSnapshot.default
 
         // language 為 nil 代表不覆寫，沿用 SettingsSnapshot 的預設語言
@@ -242,11 +242,11 @@ private extension DependencyValues {
         }
 
         if let goal = configuration.monthlyProfitGoalTwd {
-            snapshot.monthlyProfitGoalTwd = Decimal(goal)
+            snapshot.monthlyProfitGoalTWD = Decimal(goal)
         }
 
         if configuration.useAiSummary {
-            snapshot.useAiSummary = true
+            snapshot.isAISummaryEnabled = true
         }
 
         if configuration.appLockEnabled {
@@ -254,7 +254,7 @@ private extension DependencyValues {
         }
 
         let store = BLUITestSettingsStore(initial: snapshot)
-        self[SettingsStorage.self] = SettingsStorage(
+        self[SettingsStore.self] = SettingsStore(
             load: { store.load() },
             save: { store.save($0) }
         )
@@ -553,7 +553,7 @@ private final class BLUITestSettingsStore: Sendable {
 
     /// 目前的設定快照
     ///
-    /// ``SettingsStorage/load`` 是同步介面，因此以 `Mutex` 保護快照
+    /// ``SettingsStore/load`` 是同步介面，因此以 `Mutex` 保護快照
     let snapshot: Mutex<SettingsSnapshot>
 
     // MARK: - Init

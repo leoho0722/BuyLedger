@@ -10,7 +10,7 @@ import Foundation
 /// 設定持久化的最小快照，方便一次寫入或讀出全部欄位
 struct SettingsSnapshot: Equatable, Sendable {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// App 介面語言偏好
     var language: AppLanguage
@@ -19,10 +19,10 @@ struct SettingsSnapshot: Equatable, Sendable {
     var defaultCurrency: CurrencyCode
 
     /// 每月淨獲利目標 (TWD)
-    var monthlyProfitGoalTwd: Decimal
+    var monthlyProfitGoalTWD: Decimal
 
     /// 是否啟用 AI 商品明細總結
-    var useAiSummary: Bool
+    var isAISummaryEnabled: Bool
 
     /// AI 總結使用的 Ollama 模型名稱
     var aiSummaryModel: String
@@ -30,24 +30,12 @@ struct SettingsSnapshot: Equatable, Sendable {
     /// 是否啟用 App 鎖定；離開 App 後需驗證解鎖
     var isBiometricUnlockEnabled: Bool
 
-    // MARK: - Static Properties
-
-    /// 預設設定
+    /// 使用者尚未改過任何設定時套用的值
     static let `default` = SettingsSnapshot(
         language: .traditionalChinese,
         defaultCurrency: .twd,
-        monthlyProfitGoalTwd: 80_000,
-        useAiSummary: false,
-        aiSummaryModel: AISummaryModelCatalog.defaultModel,
-        isBiometricUnlockEnabled: false
-    )
-
-    /// 測試與 Preview 使用的預設設定快照
-    nonisolated static let testDefault = SettingsSnapshot(
-        language: .traditionalChinese,
-        defaultCurrency: .twd,
-        monthlyProfitGoalTwd: 80_000,
-        useAiSummary: false,
+        monthlyProfitGoalTWD: 80_000,
+        isAISummaryEnabled: false,
         aiSummaryModel: AISummaryModelCatalog.defaultModel,
         isBiometricUnlockEnabled: false
     )

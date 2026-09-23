@@ -11,19 +11,17 @@ import SwiftUI
 /// 更多分頁的入口畫面
 struct MoreView: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
-    /// App 根層級 store
+    /// 更多頁導覽與子畫面共用的根 store
     @Bindable var store: StoreOf<RootFeature>
 
-    // MARK: - View Body
+    // MARK: - Body
 
-    /// 更多頁的畫面內容
+    /// 包含更多頁清單與推送目的地的導覽容器
     var body: some View {
-        let palette = BLPalette()
-
         NavigationStack(path: $store.morePath) {
-            phoneContent(palette: palette)
+            phoneContent
                 .navigationDestination(for: RootFeature.MoreRoute.self) { route in
                     destination(for: route)
                 }
@@ -31,303 +29,235 @@ struct MoreView: View {
     }
 }
 
-// MARK: - Nested Types
+// MARK: - Private Views
 
 private extension MoreView {
 
-    /// 工具項目的領域定義
-    enum ToolItem: String, CaseIterable, Identifiable {
-
-        // MARK: - Cases
-
-        /// 匯率工具
-        case fx
-
-        /// 客戶名單
-        case customers
-
-        /// 報價試算
-        case quote
-
-        /// 訂單來源主檔管理
-        case orderSources
-
-        /// 商品類別主檔管理
-        case categories
-
-        /// 付款方式主檔管理
-        case paymentMethods
-
-        /// 對帳狀態主檔管理
-        case reconciliationStatuses
-
-        // MARK: - Identifiable Properties
-
-        /// 項目的穩定識別值
-        var id: String { rawValue }
-
-        // MARK: - Display Properties
-
-        /// 顯示在卡片或列表上的標題
-        var title: String {
-            switch self {
-            case .fx:
-                "匯率工具"
-            case .customers:
-                "客戶名單"
-            case .quote:
-                "報價試算"
-            case .orderSources:
-                LookupKind.orderSource.entryTitle
-            case .categories:
-                LookupKind.category.entryTitle
-            case .paymentMethods:
-                LookupKind.paymentMethod.entryTitle
-            case .reconciliationStatuses:
-                LookupKind.reconciliationStatus.entryTitle
-            }
-        }
-
-        /// 卡片副標題
-        var subtitle: String {
-            switch self {
-            case .fx:
-                "即時連線 ExchangeRate-API，將外幣換算為 TWD。"
-            case .customers:
-                "依名稱整理客戶活躍度，快速跳轉到對應訂單。"
-            case .quote:
-                "輸入成本與費率，即時看到建議售價與毛利。"
-            case .orderSources:
-                LookupKind.orderSource.entrySubtitle
-            case .categories:
-                LookupKind.category.entrySubtitle
-            case .paymentMethods:
-                LookupKind.paymentMethod.entrySubtitle
-            case .reconciliationStatuses:
-                LookupKind.reconciliationStatus.entrySubtitle
-            }
-        }
-
-        /// 對應的 SF Symbol
-        var systemImage: String {
-            switch self {
-            case .fx:
-                "dollarsign.arrow.circlepath"
-            case .customers:
-                "person.2"
-            case .quote:
-                "function"
-            case .orderSources:
-                LookupKind.orderSource.systemImage
-            case .categories:
-                LookupKind.category.systemImage
-            case .paymentMethods:
-                LookupKind.paymentMethod.systemImage
-            case .reconciliationStatuses:
-                LookupKind.reconciliationStatus.systemImage
-            }
-        }
-
-        /// 圖示色 (依語意 token)
-        /// - Parameter palette: 目前外觀使用的色盤
-        /// - Returns: 對應的色彩
-        func tint(in palette: BLPalette) -> Color {
-            switch self {
-            case .fx:
-                palette.accent
-            case .customers:
-                palette.purple
-            case .quote:
-                palette.green
-            case .orderSources:
-                palette.teal
-            case .categories:
-                palette.orange
-            case .paymentMethods:
-                palette.red
-            case .reconciliationStatuses:
-                palette.indigo
-            }
-        }
-    }
-}
-
-// MARK: - ViewBuilder
-
-private extension MoreView {
-
-    /// 將目的地導向到對應 view
-    /// - Parameter route: 目的地
-    /// - Returns: 對應目的地 view
+    /// 依目的地顯示對應的子畫面
+    ///
+    /// - Parameter route: 更多頁目的地
+    /// - Returns: 對應目的地的子畫面
     @ViewBuilder
     func destination(for route: RootFeature.MoreRoute) -> some View {
         switch route {
         case .fx:
             FxView(store: store.scope(state: \.fx, action: \.fx))
+
         case .customers:
             CustomersView(store: store.scope(state: \.customers, action: \.customers))
+
         case .quote:
             QuoteView(store: store.scope(state: \.quote, action: \.quote))
+
         case .orderSources:
             lookupManagementDestination(for: .orderSource)
+
         case .categories:
             lookupManagementDestination(for: .category)
+
         case .paymentMethods:
             lookupManagementDestination(for: .paymentMethod)
+
         case .reconciliationStatuses:
             lookupManagementDestination(for: .reconciliationStatus)
+
         case .settings:
             SettingsView(store: store.scope(state: \.settings, action: \.settings))
         }
     }
 
     /// 將根 store scope 到單一主檔管理 store
+    ///
     /// - Parameter kind: 要呈現的主檔種類
-    /// - Returns: 對應的主檔管理畫面，或解析失敗時的載入失敗視圖
+    /// - Returns: 對應的主檔管理畫面或無法載入的狀態畫面
     @ViewBuilder
     func lookupManagementDestination(for kind: LookupKind) -> some View {
         if let managementStore = store.scope(
-            state: \.lookupManagements[id: kind], action: \.lookupManagements[id: kind]
+            state: \.lookupManagements[id: kind],
+            action: \.lookupManagements[id: kind]
         ) {
             LookupManagementView(store: managementStore)
         } else {
-            BLLoadFailureView(message: "無法載入主檔管理頁面，請稍後再試。") {}
+            ContentUnavailableView(
+                "無法載入主檔管理頁面，請稍後再試。",
+                systemImage: "exclamationmark.triangle"
+            )
         }
     }
 
-    /// 保持 phone-friendly 的 grouped list 風格
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 列表 view
+    /// 顯示工具、管理項目與設定的列表內容
     @ViewBuilder
-    func phoneContent(palette: BLPalette) -> some View {
+    var phoneContent: some View {
         List {
             Section("工具") {
-                NavigationLink(value: RootFeature.MoreRoute.fx) {
-                    toolRow(.fx, palette: palette)
-                }
-                .accessibilityIdentifier(
-                    BLAccessibilityID.More.row(
-                        RootFeature.MoreRoute.fx.accessibilityKey
-                    )
-                )
+                routeLink(.fx)
             }
 
             Section("管理") {
-                NavigationLink(value: RootFeature.MoreRoute.customers) {
-                    toolRow(.customers, palette: palette)
-                }
-                .accessibilityIdentifier(
-                    BLAccessibilityID.More.row(
-                        RootFeature.MoreRoute.customers.accessibilityKey
-                    )
-                )
-
-                NavigationLink(value: RootFeature.MoreRoute.orderSources) {
-                    toolRow(.orderSources, palette: palette)
-                }
-                .accessibilityIdentifier(
-                    BLAccessibilityID.More.row(
-                        RootFeature.MoreRoute.orderSources.accessibilityKey
-                    )
-                )
-
-                NavigationLink(value: RootFeature.MoreRoute.categories) {
-                    toolRow(.categories, palette: palette)
-                }
-                .accessibilityIdentifier(
-                    BLAccessibilityID.More.row(
-                        RootFeature.MoreRoute.categories.accessibilityKey
-                    )
-                )
-
-                NavigationLink(value: RootFeature.MoreRoute.paymentMethods) {
-                    toolRow(.paymentMethods, palette: palette)
-                }
-                .accessibilityIdentifier(
-                    BLAccessibilityID.More.row(
-                        RootFeature.MoreRoute.paymentMethods.accessibilityKey
-                    )
-                )
-
-                NavigationLink(value: RootFeature.MoreRoute.reconciliationStatuses) {
-                    toolRow(.reconciliationStatuses, palette: palette)
-                }
-                .accessibilityIdentifier(
-                    BLAccessibilityID.More.row(
-                        RootFeature.MoreRoute.reconciliationStatuses.accessibilityKey
-                    )
-                )
-
-                NavigationLink(value: RootFeature.MoreRoute.quote) {
-                    toolRow(.quote, palette: palette)
-                }
-                .accessibilityIdentifier(
-                    BLAccessibilityID.More.row(
-                        RootFeature.MoreRoute.quote.accessibilityKey
-                    )
-                )
+                routeLink(.customers)
+                routeLink(.orderSources)
+                routeLink(.categories)
+                routeLink(.paymentMethods)
+                routeLink(.reconciliationStatuses)
+                routeLink(.quote)
             }
 
             Section("App") {
-                NavigationLink(value: RootFeature.MoreRoute.settings) {
-                    Label {
-                        Text("設定").font(BLTypographyStyle.body.font.weight(.medium))
-                    } icon: {
-                        Image(systemName: "gear")
-                            .foregroundStyle(palette.secondaryLabel)
-                    }
-                }
-                .accessibilityIdentifier(
-                    BLAccessibilityID.More.row(
-                        RootFeature.MoreRoute.settings.accessibilityKey
-                    )
-                )
+                routeLink(.settings)
             }
         }
         .accessibilityIdentifier(BLAccessibilityID.More.root)
         .rootNavigationTitle("更多", language: store.settings.language)
     }
 
-    /// iOS 列表的單列
-    /// - Parameters:
-    ///   - item: 工具項目
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 工具列 view
-    @ViewBuilder
-    func toolRow(_ item: ToolItem, palette: BLPalette) -> some View {
-        Label {
-            Text(LocalizedStringKey(item.title)).font(BLTypographyStyle.body.font.weight(.medium))
-        } icon: {
-            Image(systemName: item.systemImage)
-                .foregroundStyle(item.tint(in: palette))
+    /// 建立一個目的地列並設定導覽值與 accessibility identifier
+    ///
+    /// - Parameter route: 更多頁目的地
+    /// - Returns: 對應目的地的導覽列
+    func routeLink(_ route: RootFeature.MoreRoute) -> some View {
+        NavigationLink(value: route) {
+            Label {
+                Text(LocalizedStringKey(routeTitle(for: route)))
+                    .font(BLTypographyStyle.body.font.weight(.medium))
+            } icon: {
+                Image(systemName: routeSystemImage(for: route))
+                    .foregroundStyle(routeTint(for: route))
+            }
         }
+        .accessibilityIdentifier(accessibilityRow(for: route))
     }
 }
 
-// MARK: - Accessibility Properties
+// MARK: - Private Method
 
-private extension RootFeature.MoreRoute {
+private extension MoreView {
 
-    /// 對應到 UI 測試 identifier 的目的地 key
-    var accessibilityKey: BLAccessibilityID.More.Row {
-        switch self {
+    /// 目前外觀使用的色盤
+    var palette: BLPalette {
+        BLPalette()
+    }
+
+    /// 回傳更多頁目的地的標題
+    ///
+    /// - Parameter route: 更多頁目的地
+    /// - Returns: 目的地標題
+    func routeTitle(for route: RootFeature.MoreRoute) -> String {
+        switch route {
         case .fx:
-                .fx
+            "匯率工具"
         case .customers:
-                .customers
+            "客戶名單"
         case .quote:
-                .quote
+            "報價試算"
         case .orderSources:
-                .orderSources
+            LookupKind.orderSource.entryTitle
         case .categories:
-                .categories
+            LookupKind.category.entryTitle
         case .paymentMethods:
-                .paymentMethods
+            LookupKind.paymentMethod.entryTitle
         case .reconciliationStatuses:
-                .reconciliationStatuses
+            LookupKind.reconciliationStatus.entryTitle
         case .settings:
-                .settings
+            "設定"
         }
+    }
+
+    /// 回傳更多頁目的地的 SF Symbol
+    ///
+    /// - Parameter route: 更多頁目的地
+    /// - Returns: 對應的 SF Symbol 名稱
+    func routeSystemImage(for route: RootFeature.MoreRoute) -> String {
+        switch route {
+        case .fx:
+            "dollarsign.arrow.circlepath"
+
+        case .customers:
+            "person.2"
+
+        case .quote:
+            "function"
+
+        case .orderSources:
+            LookupKind.orderSource.systemImage
+
+        case .categories:
+            LookupKind.category.systemImage
+
+        case .paymentMethods:
+            LookupKind.paymentMethod.systemImage
+
+        case .reconciliationStatuses:
+            LookupKind.reconciliationStatus.systemImage
+
+        case .settings:
+            "gear"
+        }
+    }
+
+    /// 回傳更多頁目的地的圖示色彩
+    ///
+    /// - Parameter route: 更多頁目的地
+    /// - Returns: 對應的圖示色彩
+    func routeTint(for route: RootFeature.MoreRoute) -> Color {
+        switch route {
+        case .fx:
+            palette.accent
+
+        case .customers:
+            palette.purple
+
+        case .quote:
+            palette.green
+
+        case .orderSources:
+            palette.teal
+
+        case .categories:
+            palette.orange
+
+        case .paymentMethods:
+            palette.red
+
+        case .reconciliationStatuses:
+            palette.indigo
+
+        case .settings:
+            palette.secondaryLabel
+        }
+    }
+
+    /// 回傳更多頁目的地列的 accessibility identifier
+    ///
+    /// - Parameter route: 更多頁目的地
+    /// - Returns: 對應目的地列的 accessibility identifier
+    func accessibilityRow(for route: RootFeature.MoreRoute) -> String {
+        let row: BLAccessibilityID.More.Row
+        switch route {
+        case .fx:
+            row = .fx
+
+        case .customers:
+            row = .customers
+
+        case .quote:
+            row = .quote
+
+        case .orderSources:
+            row = .orderSources
+
+        case .categories:
+            row = .categories
+
+        case .paymentMethods:
+            row = .paymentMethods
+
+        case .reconciliationStatuses:
+            row = .reconciliationStatuses
+
+        case .settings:
+            row = .settings
+        }
+        return BLAccessibilityID.More.row(row)
     }
 }
 

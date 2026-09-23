@@ -35,13 +35,16 @@ struct BuyLedgerApp: App {
         AppLaunchConfigurator.prepareUITestHarnessIfNeeded()
         let bootstrap = AppLaunchConfigurator.activePersistenceBootstrap
 
-        @Dependency(SettingsStorage.self) var settingsStorage
-        let isBiometricUnlockEnabled = settingsStorage.load().isBiometricUnlockEnabled
+        @Dependency(SettingsStore.self) var settingsStore
+        let settings = SettingsFeature.State(
+            snapshot: settingsStore.load(),
+            appVersion: Bundle.appVersion
+        )
 
         store = Store(
             initialState: RootFeature.State(
                 persistenceStatus: bootstrap.status,
-                isBiometricUnlockEnabled: isBiometricUnlockEnabled
+                settings: settings
             )
         ) {
             RootFeature()

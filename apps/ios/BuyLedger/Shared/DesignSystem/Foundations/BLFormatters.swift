@@ -7,12 +7,27 @@
 
 import Foundation
 
-/// 金額與百分比呈現規則的唯一入口
+/// 金額、百分比與日期呈現規則的唯一入口
 enum BLFormatters {}
 
 // MARK: - Internal Method
 
 extension BLFormatters {
+
+    /// 依指定 locale 將日期格式化為列表使用的月日短日期
+    ///
+    /// - Parameters:
+    ///   - date: 要格式化的日期
+    ///   - locale: 用於呈現的 locale
+    /// - Returns: 月日格式字串
+    static func shortDate(_ date: Date, locale: Locale) -> String {
+        date.formatted(
+            .dateTime
+                .month(.defaultDigits)
+                .day(.defaultDigits)
+                .locale(locale)
+        )
+    }
 
     /// 依指定 locale 將金額格式化為新台幣 (無小數位)
     /// - Parameters:

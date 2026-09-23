@@ -474,7 +474,9 @@ When AI summary is disabled, the prompt alert SHALL present two actions: a left 
 ---
 ### Requirement: AI summary setting and model configuration
 
-The settings page SHALL provide a toggle that persists `useAiSummary`. The system SHALL persist an `aiSummaryModel` with a default model value used for summaries. In Debug builds the settings page SHALL provide a control to change the model at runtime from a candidate list with a custom-value option; in Release builds no model-switching control SHALL be presented and the default model SHALL be used.
+The settings page SHALL provide a toggle that persists whether AI summary is enabled. The system SHALL persist an AI summary model name with a default model value used for summaries. In Debug builds the settings page SHALL provide a control to change the model at runtime from a candidate list with a custom-value option; in Release builds no model-switching control SHALL be presented and the default model SHALL be used.
+
+Renaming the code identifiers that hold these two settings SHALL NOT change the keys under which they are stored, so that a value persisted by an earlier version is still read after an update.
 
 #### Scenario: Toggle persists across launches
 
@@ -490,6 +492,82 @@ The settings page SHALL provide a toggle that persists `useAiSummary`. The syste
 
 - **WHEN** the build is a Release build
 - **THEN** the settings page presents no model-switching control and the persisted default model is used
+
+#### Scenario: A toggle saved before an identifier rename is still read
+
+- **WHEN** the AI summary toggle was turned on by a version that used a different code identifier for it, and the app is updated
+- **THEN** the toggle is still on after the update, because the stored key did not change
+
+
+<!-- @trace
+source: small-features-style-compliance
+updated: 2026-09-24
+code:
+  - apps/ios/BuyLedgerTests/BLFormattersTests.swift
+  - apps/ios/BuyLedger/Features/Quote/Components/QuoteInputsCard.swift
+  - apps/ios/BuyLedger/Features/FX/Components/FxStatusBanner.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderDateSection.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteView.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewBaseline.1.png
+  - apps/ios/BuyLedger/Features/FX/Components/FxRatesList.swift
+  - apps/ios/BuyLedger/Features/AISummary/OllamaDTO.swift
+  - apps/ios/BuyLedgerTests/ActionGroupingScanTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/ActionGroupingScanTests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLFormatters.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsSnapshot.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsStore.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatRequest.swift
+  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomersView.swift
+  - apps/ios/BuyLedger/App/BuyLedgerApp.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteRateFeature.swift
+  - apps/ios/BuyLedgerTests/FxFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewRateFailureBaseline.1.png
+  - apps/ios/BuyLedger/Shared/Extensions/Bundle+Extensions.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomerRankBadgeStyle.swift
+  - apps/ios/BuyLedgerTests/ActionGroupingScanTests+Scenarios.swift
+  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaClient.swift
+  - apps/ios/BuyLedger/Features/Customers/Components/CustomerTopCard.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
+  - apps/ios/BuyLedgerTests/LedgerOrder+Fixture.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomerRow.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedger/Features/Settings/AISummaryModelCatalog.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsView.swift
+  - apps/ios/BuyLedger/Features/FX/FxView.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomersFeature.swift
+  - apps/ios/BuyLedgerTests/SettingsStoreTests.swift
+  - apps/ios/BuyLedger/Features/FX/FxFormatters.swift
+  - apps/ios/BuyLedger/Features/Quote/Components/QuoteBreakdownCard.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryView.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
+  - apps/ios/BuyLedgerTests/FxRateSnapshotTests.swift
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Features/More/MoreView.swift
+  - apps/ios/BuyLedgerTests/CustomersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OllamaClientTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedgerTests/AppLanguageTests.swift
+  - apps/ios/BuyLedger/Features/Quote/Components/QuoteStatusBanner.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/CustomerRowTests.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatResponse.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteFeature.swift
+  - apps/ios/BuyLedger/Core/Domain/FxRateSnapshot.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature+StateQuery.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFormatters.swift
+  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsStorage.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift
+  - apps/ios/BuyLedger/Features/Customers/Components/CustomerListRow.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/OllamaClient.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+-->
 
 ---
 ### Requirement: Failure handling shows empty/error state without fake data

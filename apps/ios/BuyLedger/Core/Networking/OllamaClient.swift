@@ -11,14 +11,22 @@ import Foundation
 /// 串接 Ollama Cloud chat streaming 的高階 client
 struct OllamaClient: Sendable {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// AI 摘要串流的最長時間
-    nonisolated static let overallStreamDuration: Duration = .seconds(30)
+    static let overallStreamDuration: Duration = .seconds(30)
 
-    // MARK: - Dependency Properties
+    /// Ollama Cloud chat API 的固定網址；字面值常數初始化必定成功
+    private static let chatURL = URL(string: "https://ollama.com/api/chat")!
 
-    /// 呼叫 Ollama Cloud 串流回傳摘要文字
+    /// networking 層自有的診斷錯誤 domain
+    private static let networkingErrorDomain = "com.leoho.BuyLedger.networking"
+
+    /// 依賴未注入的診斷錯誤代碼
+    private static let dependencyNotInjectedCode = 2
+
+    /// 呼叫 Ollama Cloud 串流回傳摘要文字；每次收到一段文字就回傳一次
+    ///
     /// - Parameters:
     ///   - prompt: 要送給模型的完整 prompt (已組好的商品明細總結指令)
     ///   - model: 使用的 Ollama 模型名稱
@@ -36,16 +44,17 @@ struct OllamaClient: Sendable {
 extension OllamaClient {
 
     /// 解析單行 NDJSON 串流回應
+    ///
     /// - Parameter line: 串流的一行文字
     /// - Returns: `(content, done)`；無效行回 `nil`
-    nonisolated static func parse(line: String) -> (content: String, done: Bool)? {
+    static func parse(line: String) -> (content: String, done: Bool)? {
         let trimmed = line.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty, let data = trimmed.data(using: .utf8) else {
             return nil
         }
-        let decoded: ChatResponse
+        let decoded: OllamaChatResponse
         do {
-            decoded = try JSONDecoder().decode(ChatResponse.self, from: data)
+            decoded = try JSONDecoder().decode(OllamaChatResponse.self, from: data)
         } catch {
             return nil
         }
@@ -53,36 +62,28 @@ extension OllamaClient {
     }
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension OllamaClient: DependencyKey {
 
     /// App 執行時透過 ``HTTPClient/stream`` 串流 NDJSON
-    nonisolated static let liveValue: OllamaClient = OllamaClient(
+    static let liveValue: OllamaClient = OllamaClient(
         streamSummary: { prompt, model, apiKey in
             @Dependency(\.httpClient) var httpClient
 
             return AsyncThrowingStream<String, any Error> { [httpClient] continuation in
                 let task = Task {
                     do {
-                        guard let url = URL(string: "https://ollama.com/api/chat") else {
-                            throw APIError.transport(
-                                underlying: NSError(
-                                    domain: NSURLErrorDomain,
-                                    code: NSURLErrorBadURL,
-                                    userInfo: [NSLocalizedDescriptionKey: "URL 組合失敗。"]
-                                )
-                            )
-                        }
-
                         let bodyData = try JSONEncoder().encode(
-                            ChatRequest(
+                            OllamaChatRequest(
                                 model: model,
-                                messages: [ChatRequest.Message(role: "user", content: prompt)],
+                                messages: [
+                                    OllamaChatRequest.Message(role: "user", content: prompt)
+                                ],
                                 stream: true
                             )
                         )
-                        let request = URLRequestBuilder(url: url)
+                        let request = URLRequestBuilder(url: Self.chatURL)
                             .method(.post)
                             .header("Authorization", "Bearer \(apiKey)")
                             .header("Content-Type", "application/json")
@@ -112,15 +113,17 @@ extension OllamaClient: DependencyKey {
                             }
                         }
                         continuation.finish()
-                    } catch is CancellationError {
-                        // sheet 關閉導致取消，視為正常結束
-                        continuation.finish()
-                    } catch let error as APIError {
-                        continuation.finish(throwing: error)
                     } catch {
-                        continuation.finish(
-                            throwing: APIError.transport(underlying: error as NSError)
-                        )
+                        if error is CancellationError {
+                            // sheet 關閉導致取消，視為正常結束
+                            continuation.finish()
+                        } else if let apiError = error as? APIError {
+                            continuation.finish(throwing: apiError)
+                        } else {
+                            continuation.finish(
+                                throwing: APIError.transport(underlying: error as NSError)
+                            )
+                        }
                     }
                 }
 
@@ -132,27 +135,16 @@ extension OllamaClient: DependencyKey {
     )
 
     /// 測試預設拋出 transport 錯誤；具體測試以 `withDependencies` 注入 stub stream
-    nonisolated static let testValue: OllamaClient = OllamaClient(
+    static let testValue: OllamaClient = OllamaClient(
         streamSummary: { _, _, _ in
             AsyncThrowingStream<String, any Error> { continuation in
-                continuation.finish(
-                    throwing: APIError.transport(
-                        underlying: NSError(
-                            domain: NSURLErrorDomain,
-                            code: NSURLErrorUnknown,
-                            userInfo: [
-                                NSLocalizedDescriptionKey:
-                                    "OllamaClient.testValue 被呼叫；請於測試中注入。",
-                            ]
-                        )
-                    )
-                )
+                continuation.finish(throwing: Self.dependencyNotInjectedError())
             }
         }
     )
 
     /// Preview 使用固定 Markdown 串流
-    nonisolated static let previewValue: OllamaClient = OllamaClient(
+    static let previewValue: OllamaClient = OllamaClient(
         streamSummary: { _, _, _ in
             AsyncThrowingStream<String, any Error> { continuation in
                 let chunks = [
@@ -169,4 +161,24 @@ extension OllamaClient: DependencyKey {
             }
         }
     )
+}
+
+// MARK: - Private Method
+
+private extension OllamaClient {
+
+    /// 建立依賴未注入的 transport 錯誤
+    ///
+    /// - Returns: 帶自有 domain 與診斷代碼的 transport 錯誤
+    static func dependencyNotInjectedError() -> APIError {
+        .transport(
+            underlying: NSError(
+                domain: networkingErrorDomain,
+                code: dependencyNotInjectedCode,
+                userInfo: [
+                    NSLocalizedDescriptionKey: "OllamaClient.testValue 被呼叫；請於測試中注入。",
+                ]
+            )
+        )
+    }
 }

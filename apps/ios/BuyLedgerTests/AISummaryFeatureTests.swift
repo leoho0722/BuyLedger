@@ -9,24 +9,16 @@ import Clocks
 import ComposableArchitecture
 import Foundation
 import Testing
+
 @testable import BuyLedger
 
-@MainActor
 /// 驗證 AI 商品摘要流程
+@MainActor
 struct AISummaryFeatureTests {
-
-    // MARK: - Helpers
-
-    /// 建立測試用 AppConfiguration
-    /// - Parameter key: Ollama API key；`nil` 表示未設定
-    /// - Returns: 注入指定 key 的 AppConfiguration
-    private func keyedConfiguration(_ key: String?) -> AppConfiguration {
-        AppConfiguration(exchangeRateAPIKey: { nil }, ollamaAPIKey: { key })
-    }
 
     // MARK: - Tests
 
-    /// 驗證 AI 摘要功能在此情境下的狀態與效果
+    /// 驗證串流片段依序累積到摘要內容，完成後 phase 轉為 finished
     @Test func streamingAccumulatesChunksThenFinishes() async {
         // Given
 
@@ -48,7 +40,7 @@ struct AISummaryFeatureTests {
 
         // When
 
-        await store.send(.task) {
+        await store.send(.view(.task)) {
             $0.phase = .streaming
         }
         // Then
@@ -67,7 +59,7 @@ struct AISummaryFeatureTests {
         }
     }
 
-    /// 驗證 AI 摘要功能在此情境下的狀態與效果
+    /// 驗證缺少 API 金鑰時先進入串流再轉為失敗並顯示設定未完成訊息
     @Test func missingKeyFailsImmediately() async {
         // Given
 
@@ -79,15 +71,21 @@ struct AISummaryFeatureTests {
 
         // When
 
-        await store.send(.task) {
-            // Then
+        await store.send(.view(.task)) {
+            $0.phase = .streaming
+        }
+        // Then
 
+        await store.receive(
+            \.streamFailed,
+            "AI 總結尚未完成設定，目前無法使用。"
+        ) {
             $0.phase = .failed
             $0.errorMessage = "AI 總結尚未完成設定，目前無法使用。"
         }
     }
 
-    /// 驗證 AI 摘要功能在此情境下的狀態與效果
+    /// 驗證 API 金鑰錯誤時進入 failed 並顯示驗證失敗訊息
     @Test func apiErrorEntersFailedState() async {
         // Given
 
@@ -106,7 +104,7 @@ struct AISummaryFeatureTests {
 
         // When
 
-        await store.send(.task) {
+        await store.send(.view(.task)) {
             $0.phase = .streaming
         }
         // Then
@@ -117,7 +115,7 @@ struct AISummaryFeatureTests {
         }
     }
 
-    /// 驗證 AI 摘要功能在此情境下的狀態與效果
+    /// 驗證傳輸錯誤在已收到部分內容後保留內容並顯示友善連線錯誤訊息
     @Test func transportErrorMapsToFriendlyMessage() async {
         // Given
 
@@ -141,7 +139,7 @@ struct AISummaryFeatureTests {
 
         // When
 
-        await store.send(.task) {
+        await store.send(.view(.task)) {
             $0.phase = .streaming
         }
         // Then
@@ -155,29 +153,26 @@ struct AISummaryFeatureTests {
         }
     }
 
-    /// 驗證 AI 摘要功能在此情境下的狀態與效果
+    /// 驗證關閉摘要面板會取消串流並執行 dismiss，不轉為失敗
     @Test func closingSheetCancelsStreamingWithoutFailure() async {
         // Given
 
         let clock = TestClock()
-        let cancellation = CancellationRecorder()
+        let cancellation = LockIsolated(false)
+        let dismissCallCount = LockIsolated(0)
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
         } withDependencies: {
             $0.appConfiguration = keyedConfiguration("k")
             $0.continuousClock = clock
             $0.dismiss = DismissEffect {
-                Task {
-                    await cancellation.markDismissed()
-                }
+                dismissCallCount.withValue { $0 += 1 }
             }
             $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
                 AsyncThrowingStream<String, any Error> { continuation in
                     continuation.yield("部分內容")
                     continuation.onTermination = { _ in
-                        Task {
-                            await cancellation.markCancelled()
-                        }
+                        cancellation.setValue(true)
                     }
                 }
             })
@@ -185,7 +180,7 @@ struct AISummaryFeatureTests {
 
         // When
 
-        await store.send(.task) {
+        await store.send(.view(.task)) {
             $0.phase = .streaming
         }
         // Then
@@ -193,21 +188,14 @@ struct AISummaryFeatureTests {
         await store.receive(\.chunkReceived, "部分內容") {
             $0.summaryText = "部分內容"
         }
-        await store.send(.closeTapped)
+        await store.send(.view(.closeTapped))
+        await store.finish()
 
-        // 給取消與 dismiss effect 最多 20 次 cooperative scheduling 機會
-        let maxCancellationPollingAttempts = 20
-        for _ in 0..<maxCancellationPollingAttempts where !(await cancellation.wasCancelled()) {
-            await Task.yield()
-        }
-
-        let wasCancelled = await cancellation.wasCancelled()
-        let wasDismissed = await cancellation.wasDismissed()
-        #expect(wasCancelled)
-        #expect(wasDismissed)
+        #expect(cancellation.value)
+        #expect(dismissCallCount.value == 1)
     }
 
-    /// 驗證 AI 摘要功能在此情境下的狀態與效果
+    /// 驗證串流超過總時限時保留部分內容並以 finished phase 顯示截斷訊息
     @Test func slowStreamStopsAtOverallDurationLimitAndKeepsPartialContent() async {
         // Given
 
@@ -222,16 +210,12 @@ struct AISummaryFeatureTests {
                     let task = Task {
                         continuation.yield("第一段\n")
                         do {
-                            // When
-
                             try await clock.sleep(for: .milliseconds(150))
                             guard !Task.isCancelled else { return }
                             continuation.yield("慢速段\n")
                             try await clock.sleep(for: .seconds(3600))
-                        } catch is CancellationError {
-                            // 測試替身被取消時停止產出
                         } catch {
-                            // 測試替身不模擬其他錯誤
+                            // 測試替身被取消時停止產出
                         }
                     }
                     continuation.onTermination = { _ in
@@ -241,7 +225,9 @@ struct AISummaryFeatureTests {
             })
         }
 
-        await store.send(.task) {
+        // When
+
+        await store.send(.view(.task)) {
             $0.phase = .streaming
         }
         // Then
@@ -268,40 +254,18 @@ struct AISummaryFeatureTests {
             $0.truncationMessage = "AI 總結已達時間上限，以下顯示已取得的內容；摘要已截斷。"
         }
 
-        #expect(store.state.summaryText == "第一段\n慢速段\n")
-        #expect(store.state.errorMessage == nil)
     }
 }
 
-// MARK: - Test Doubles
-/// 記錄取消訊號
-private actor CancellationRecorder {
+// MARK: - Private Method
 
-    /// 是否已收到取消訊號
-    private var cancelled = false
+private extension AISummaryFeatureTests {
 
-    /// 是否已收到關閉訊號
-    private var dismissed = false
-
-    /// 記錄已收到取消訊號
-    func markCancelled() {
-        cancelled = true
-    }
-
-    /// 記錄已收到關閉訊號
-    func markDismissed() {
-        dismissed = true
-    }
-
-    /// 回傳是否已收到取消訊號
-    /// - Returns: 是否已標記為取消
-    func wasCancelled() -> Bool {
-        cancelled
-    }
-
-    /// 回傳是否已收到 dismiss 訊號
-    /// - Returns: 是否已標記為 dismiss
-    func wasDismissed() -> Bool {
-        dismissed
+    /// 建立測試用 AppConfiguration
+    ///
+    /// - Parameter key: Ollama API key；`nil` 表示未設定
+    /// - Returns: 注入指定 key 的 AppConfiguration
+    func keyedConfiguration(_ key: String?) -> AppConfiguration {
+        AppConfiguration(exchangeRateAPIKey: { nil }, ollamaAPIKey: { key })
     }
 }

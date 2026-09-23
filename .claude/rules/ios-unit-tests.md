@@ -9,6 +9,8 @@ paths:
 - **Swift Testing 的方法層 `-only-testing` 必須以 `()` 結尾**：例如
   `BuyLedgerTests/OrderPersistenceTests/mergeOrders_sourceFetchFailure_removesInsertedOrder()`；省略括號會安靜地選不到方法。
 - **選擇性測試與變異驗證必須確認實際執行數大於 0**：`0 tests executed` 不是通過，不能用成功退出碼判定測試有效。
+- **測試替身的共享可變狀態使用 `LockIsolated`**：同步記錄呼叫與取消訊號，避免自訂 actor 或 class box 帶來不必要的隔離與排程問題。
+- **非同步結果不得以 `Task.yield` 輪詢**：用 `TestStore.receive`、`finish` 或注入的 clock 等待明確事件，避免排程快慢造成偶發假失敗。
 
 ## TCA TestStore
 
@@ -25,6 +27,7 @@ paths:
 - **測試直接改寫 `@Shared(.lookupCatalog)` 會污染同批次的其他測試**：`@Shared` 是 process 內共用，`BuyLedger.xctestplan` 又是字母序執行，外溢的狀態會讓排在後面的 snapshot 測試出現只在完整套件下重現、單獨跑卻通過的失敗。
     - 需要改寫主檔目錄的測試一律在隔離 storage 內建立 state：參考 `LookupManagementFeatureTests.withIsolatedCatalog` 與 `RootFeatureTests.makeIsolatedRootState` (以 `defaultInMemoryStorage = InMemoryStorage()` 建立)。
     - 症狀是「完整回歸紅、單獨跑綠」時先查這裡，不要改 snapshot 或重錄基準圖。
+    - 測試 UserDefaults dependency (例如 `SettingsStore`) 時使用獨立 suite，測試前後清除 persistent domain，避免偏好值跨測試外溢。
 
 ## 錯誤斷言
 
