@@ -511,7 +511,19 @@ function stripDocPeriod(line: string): string {
 }
 
 function docLines(doc: string, prefix: string): string[] {
-  return doc.split("\n").map((line) => (line.length === 0 ? prefix.trimEnd() : `${prefix}${stripDocPeriod(line)}`));
+  const [summary = "", ...supplementary] = doc.split("\n").map(stripDocPeriod);
+  const lines = [summary.length === 0 ? prefix.trimEnd() : `${prefix}${summary}`];
+  const noteLines = supplementary.filter((line) => line.length > 0);
+  if (noteLines.length > 0) {
+    lines.push(prefix.trimEnd());
+    lines.push(
+      ...noteLines.map((line) => {
+        const note = line.startsWith("- Note:") ? line : `- Note: ${line}`;
+        return `${prefix}${note}`;
+      }),
+    );
+  }
+  return lines;
 }
 
 // Kotlin KDoc / TypeScript JSDoc 區塊註解：開頭 /** 、每行前綴 " * "、結尾收斂行
@@ -608,6 +620,14 @@ function swiftConformances(t: TypeDecl): string[] {
   return out;
 }
 
+function swiftPrimaryConformances(t: TypeDecl): string[] {
+  const conformances = swiftConformances(t);
+  if (t.kind === "enum" || t.kind === "wrapper") {
+    return conformances.filter((conformance) => conformance !== "Identifiable");
+  }
+  return conformances;
+}
+
 /** entity 需要顯式 init 的條件：任一欄位 nullable 或帶 default (spec：generated owns the data shape) */
 function needsExplicitInit(fields: FieldDecl[]): boolean {
   return fields.some((f) => f.nullable || f.default !== undefined);
@@ -618,7 +638,7 @@ function emitSwift(t: TypeDecl): string {
   const parts: string[] = [header, "", "import Foundation", "", ...docLines(t.doc, "/// ")];
 
   if (t.kind === "enum") {
-    parts.push(`enum ${t.name}: ${swiftConformances(t).join(", ")} {`);
+    parts.push(`enum ${t.name}: ${swiftPrimaryConformances(t).join(", ")} {`);
     parts.push("");
     parts.push("    // MARK: - Cases");
     for (const c of t.cases) {
@@ -626,37 +646,43 @@ function emitSwift(t: TypeDecl): string {
       parts.push(...docLines(c.doc, "    /// "));
       parts.push(`    case ${c.name}`);
     } // swift cases use line-comment docs
+    parts.push("}");
     if (t.traits.has("identity")) {
       parts.push("");
-      parts.push("    // MARK: - Identifiable Properties");
+      parts.push("// MARK: - Identifiable");
       parts.push("");
-      parts.push("    /// 穩定識別值 (以 rawValue 表示)");
+      parts.push(`extension ${t.name}: Identifiable {`);
+      parts.push("");
+      parts.push("    /// 以實際保存的值作為穩定識別");
       parts.push("    var id: String { rawValue }");
+      parts.push("}");
     }
-    parts.push("}");
     return parts.join("\n") + "\n";
   }
 
   if (t.kind === "wrapper") {
-    parts.push(`struct ${t.name}: ${swiftConformances(t).join(", ")} {`);
+    parts.push(`struct ${t.name}: ${swiftPrimaryConformances(t).join(", ")} {`);
     parts.push("");
     parts.push("    // MARK: - Data Properties");
     parts.push("");
-    parts.push("    /// 包裝的原始值");
+    parts.push("    /// 實際保存的基礎值");
     parts.push(`    let rawValue: ${swiftType(t.base)}`);
+    parts.push("}");
     if (t.traits.has("identity")) {
       parts.push("");
-      parts.push("    // MARK: - Identifiable Properties");
+      parts.push("// MARK: - Identifiable");
       parts.push("");
-      parts.push("    /// 穩定識別值 (以 rawValue 表示)");
+      parts.push(`extension ${t.name}: Identifiable {`);
+      parts.push("");
+      parts.push("    /// 以實際保存的值作為穩定識別");
       parts.push(`    var id: ${swiftType(t.base)} { rawValue }`);
+      parts.push("}");
     }
-    parts.push("}");
     return parts.join("\n") + "\n";
   }
 
   // entity
-  parts.push(`struct ${t.name}: ${swiftConformances(t).join(", ")} {`);
+  parts.push(`struct ${t.name}: ${swiftPrimaryConformances(t).join(", ")} {`);
   parts.push("");
   parts.push("    // MARK: - Data Properties");
   for (const f of t.fields) {
@@ -670,7 +696,7 @@ function emitSwift(t: TypeDecl): string {
     parts.push("");
     parts.push("    // MARK: - Init");
     parts.push("");
-    parts.push(`    /// 建立 ${t.name}`);
+    parts.push("    /// 以必填欄位建立值，宣告了預設值的欄位可以省略");
     const params = t.fields.map((f) => {
       let p = `${f.name}: ${swiftFieldType(f)}`;
       if (f.default !== undefined) p += ` = ${swiftDefaultLiteral(f.default)}`;
@@ -724,6 +750,12 @@ function kotlinFieldType(field: FieldDecl): string {
   return field.nullable ? `${base}?` : base;
 }
 
+/** schema 的 camelCase case 名稱轉為 Kotlin screaming snake case (例如 partiallyArrived → PARTIALLY_ARRIVED)
+ *  case 宣告與 enum-valued 欄位預設值兩處皆呼叫本函式，避免各自轉一次而失去同步 */
+function kotlinEnumConstant(caseName: string): string {
+  return caseName.replace(/([a-z0-9])([A-Z])/g, "$1_$2").toUpperCase();
+}
+
 function kotlinDefaultLiteral(field: FieldDecl): string | undefined {
   if (field.default !== undefined) {
     const def = field.default;
@@ -737,7 +769,7 @@ function kotlinDefaultLiteral(field: FieldDecl): string | undefined {
       case "emptyArray":
         return field.type.kind === "map" ? "emptyMap()" : "emptyList()";
       case "enumCase":
-        return `${def.typeName}.${def.caseName.toUpperCase()}`;
+        return `${def.typeName}.${kotlinEnumConstant(def.caseName)}`;
       case "newUUID":
         return "java.util.UUID.randomUUID()";
     }
@@ -760,7 +792,7 @@ function emitKotlin(t: TypeDecl, options: Record<string, unknown>): string {
     t.cases.forEach((c, idx) => {
       parts.push("");
       parts.push(...blockDoc(c.doc, "    "));
-      parts.push(`    ${c.name.toUpperCase()}("${c.name}")${idx < t.cases.length - 1 ? "," : ";"}`);
+      parts.push(`    ${kotlinEnumConstant(c.name)}("${c.name}")${idx < t.cases.length - 1 ? "," : ";"}`);
     });
     parts.push("}");
     return parts.join("\n") + "\n";

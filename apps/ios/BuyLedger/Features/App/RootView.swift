@@ -23,14 +23,28 @@ struct RootView: View {
     // MARK: - View Body
 
     /// App 根畫面的內容
-    ///
-    /// 外觀一律跟隨系統：外觀是系統層級設定，App 內重複切換會讓使用者困惑系統設定是否生效
     var body: some View {
-        layout
-            .environment(\.locale, store.settings.language.locale)
-            .task {
-                await store.send(.task).finish()
+        Group {
+            if let failureStore = store.scope(
+                state: \.persistenceFailure,
+                action: \.persistenceFailure.presented
+            ) {
+                PersistenceFailureView(store: failureStore)
+            } else if store.settings.appLock.isLocked {
+                AppLockView(
+                    store: store.scope(state: \.settings.appLock, action: \.settings.appLock)
+                )
+            } else {
+                layout
             }
+        }
+        .environment(\.locale, store.settings.language.locale)
+        .task {
+            guard store.persistenceFailure == nil else {
+                return
+            }
+            await store.send(.task).finish()
+        }
     }
 }
 

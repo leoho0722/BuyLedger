@@ -21,5 +21,10 @@ enum class SampleStatus(val rawValue: String) {
     /**
      * 已封存
      */
-    ARCHIVED("archived");
+    ARCHIVED("archived"),
+
+    /**
+     * 部分到貨 (示範多字駝峰式 case 的平台命名轉換)
+     */
+    PARTIALLY_ARRIVED("partiallyArrived");
 }

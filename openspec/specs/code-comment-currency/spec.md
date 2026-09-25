@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'documentation-consistency-audit'. Update Purpose after archive.
+本規格涵蓋程式碼註解時效性的稽核範圍，包括描述的機制或理由不再成立時的改寫或移除、產生檔註解僅回報不編輯、稽核範圍限於內容時效而非風格。不涵蓋 `documentation-currency` 所訂的專案文件 (README、CLAUDE.md 等) 時效性稽核，兩者稽核對象不同。
 
 ## Requirements
 

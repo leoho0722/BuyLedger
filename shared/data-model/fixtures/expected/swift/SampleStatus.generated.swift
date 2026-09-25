@@ -9,7 +9,7 @@
 import Foundation
 
 /// 範例狀態 (示範 enum + identity + case-iterable)
-enum SampleStatus: String, CaseIterable, Codable, Identifiable, Sendable {
+enum SampleStatus: String, CaseIterable, Codable, Sendable {
 
     // MARK: - Cases
 
@@ -19,8 +19,14 @@ enum SampleStatus: String, CaseIterable, Codable, Identifiable, Sendable {
     /// 已封存
     case archived
 
-    // MARK: - Identifiable Properties
+    /// 部分到貨 (示範多字駝峰式 case 的平台命名轉換)
+    case partiallyArrived
+}
 
-    /// 穩定識別值 (以 rawValue 表示)
+// MARK: - Identifiable
+
+extension SampleStatus: Identifiable {
+
+    /// 以實際保存的值作為穩定識別
     var id: String { rawValue }
 }

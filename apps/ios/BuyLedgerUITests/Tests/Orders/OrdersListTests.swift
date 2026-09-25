@@ -8,14 +8,11 @@
 import XCTest
 
 /// 訂單清單的瀏覽、狀態篩選、搜尋與空狀態流程測試
-///
-/// 一律以 accessibility identifier 定位、以訂單編號這個業務鍵做結構性斷言，不硬編筆數；找不到 App 元素即附診斷失敗、不 skip。
-/// 客戶名等使用者資料可作為搜尋輸入，但斷言仍以訂單列 identifier 為準，故中英兩語言皆有效
 final class OrdersListTests: BLUITestCase {
 
     // MARK: - Static Properties
 
-    /// 已確認狀態的狀態膠囊 filterID (即 `OrderStatus.confirmed` 的 rawValue，不隨語言變動的業務鍵)
+    /// confirmed 狀態的 filterID
     private static let confirmedFilterID = "confirmed"
 
     /// fullOrders 中唯一的「已確認」訂單編號
@@ -49,6 +46,13 @@ final class OrdersListTests: BLUITestCase {
         let app = launch(LaunchOptions(seed: .fullOrders))
         let orders = openOrdersList(app)
 
+        if !orders.hasOrder(orderID: Self.shippingOrderID) {
+            let message = "篩選前置條件未成立：\(Self.shippingOrderID)"
+            failWithDiagnostics(
+                in: app,
+                message
+            )
+        }
         orders.selectStatusChip(filterID: Self.confirmedFilterID)
 
         // 屬「已確認」的訂單應留在清單
@@ -73,6 +77,13 @@ final class OrdersListTests: BLUITestCase {
         let app = launch(LaunchOptions(seed: .fullOrders))
         let orders = openOrdersList(app)
 
+        if !orders.hasOrder(orderID: Self.mikaCustomerOrderID) {
+            let message = "搜尋前置條件未成立：\(Self.mikaCustomerOrderID)"
+            failWithDiagnostics(
+                in: app,
+                message
+            )
+        }
         // 客戶名屬使用者資料、可作為文字輸入；斷言仍走訂單列 identifier
         orders.search("林書宇")
 
@@ -104,10 +115,11 @@ final class OrdersListTests: BLUITestCase {
 private extension OrdersListTests {
 
     /// 切到訂單分頁並等清單就緒，回傳訂單清單 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的訂單清單 Page Object
     @MainActor
     func openOrdersList(
@@ -116,7 +128,7 @@ private extension OrdersListTests {
         line: UInt = #line
     ) -> OrdersScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToOrders() {
+        if !root.goToOrders(file: file, line: line) {
             failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
         }
 

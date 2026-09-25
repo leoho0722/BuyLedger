@@ -33,8 +33,6 @@ enum OrderStatusFilter: Hashable, Identifiable {
     // MARK: - Static Properties
 
     /// 第一階段訂單列表使用的篩選選項
-    ///
-    /// 包含「已合併」讓使用者能找回被合併的舊訂單；「已取消」維持既有設計不列入快速篩選 (以「全部」瀏覽)
     static let orderBrowsingCases: [OrderStatusFilter] = [
         .all,
         .status(.quoting),

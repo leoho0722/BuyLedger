@@ -12,12 +12,14 @@ import Testing
 import UniformTypeIdentifiers
 @testable import BuyLedger
 
+/// 驗證照片資料處理
 struct PhotoDataProcessorTests {
 
     // MARK: - Tests
 
-    /// 長邊超過 1600 px 的影像應等比例降採樣至最長邊不超過 1600，並重編碼為 JPEG
-    @Test func oversizedImageIsDownscaledToMaxPixelSizeJPEG() throws {
+    /// 驗證影像降採樣與 JPEG 重編碼
+    /// - Throws: 測試影像建立或處理失敗時拋出錯誤
+    @Test func oversizedImageIsDownscaledToMaxPixelSizeJPEG() throws(any Error) {
         let source = try #require(Self.makePNGData(width: 2_400, height: 1_200))
 
         let processed = try #require(PhotoDataProcessor.downscaledJPEGData(from: source))
@@ -31,7 +33,8 @@ struct PhotoDataProcessorTests {
     }
 
     /// 尺寸已在上限內的影像不應被放大，僅重編碼為 JPEG
-    @Test func smallImageKeepsSizeWithoutUpscaling() throws {
+    /// - Throws: 測試影像建立或處理失敗時拋出錯誤
+    @Test func smallImageKeepsSizeWithoutUpscaling() throws(any Error) {
         let source = try #require(Self.makePNGData(width: 800, height: 400))
 
         let processed = try #require(PhotoDataProcessor.downscaledJPEGData(from: source))
@@ -56,20 +59,22 @@ private extension PhotoDataProcessorTests {
 
     /// 以 CoreGraphics 合成指定尺寸的純色影像並編碼為 PNG data
     /// - Parameters:
-    ///   - width: 影像寬度 (px)
-    ///   - height: 影像高度 (px)
-    /// - Returns: PNG data；建立失敗時回傳 `nil`
+    ///   - width: 影像寬度
+    ///   - height: 影像高度
+    /// - Returns: PNG 影像資料；無法建立影像時為 `nil`
     static func makePNGData(width: Int, height: Int) -> Data? {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
-        guard let context = CGContext(
-            data: nil,
-            width: width,
-            height: height,
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
-        ) else {
+        guard
+            let context = CGContext(
+                data: nil,
+                width: width,
+                height: height,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+            )
+        else {
             return nil
         }
 
@@ -80,12 +85,14 @@ private extension PhotoDataProcessorTests {
         }
 
         let output = NSMutableData()
-        guard let destination = CGImageDestinationCreateWithData(
-            output,
-            UTType.png.identifier as CFString,
-            1,
-            nil
-        ) else {
+        guard
+            let destination = CGImageDestinationCreateWithData(
+                output,
+                UTType.png.identifier as CFString,
+                1,
+                nil
+            )
+        else {
             return nil
         }
         CGImageDestinationAddImage(destination, image, nil)
@@ -97,14 +104,15 @@ private extension PhotoDataProcessorTests {
     }
 
     /// 解析影像 data 的尺寸與容器格式
-    /// - Parameter data: 待解析的影像 data
-    /// - Returns: 寬、高與 UTType identifier；無法解析時回傳 `nil`
+    /// - Parameter data: 要解析的影像資料
+    /// - Returns: 影像寬度、高度與容器格式；無法解析時為 `nil`
     static func imageInfo(from data: Data) -> (width: Int, height: Int, type: String)? {
         guard let source = CGImageSourceCreateWithData(data as CFData, nil),
-              let type = CGImageSourceGetType(source),
-              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
-              let width = properties[kCGImagePropertyPixelWidth] as? Int,
-              let height = properties[kCGImagePropertyPixelHeight] as? Int else {
+            let type = CGImageSourceGetType(source),
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+            let width = properties[kCGImagePropertyPixelWidth] as? Int,
+            let height = properties[kCGImagePropertyPixelHeight] as? Int
+        else {
             return nil
         }
 

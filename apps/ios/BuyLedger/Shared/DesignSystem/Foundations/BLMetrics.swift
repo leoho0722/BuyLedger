@@ -10,7 +10,7 @@ import SwiftUI
 /// 設計系統共用圓角
 enum BLRadius {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 最小圓角，適合工具列按鈕
     static let extraSmall: CGFloat = 6
@@ -34,7 +34,7 @@ enum BLRadius {
 /// 設計系統共用間距
 enum BLSpacing {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 最小間距
     static let extraSmall: CGFloat = 4
@@ -56,48 +56,43 @@ enum BLSpacing {
 }
 
 /// 列內元素的尺寸 token
-///
-/// 分隔線內縮由頭像尺寸推導：兩者本就必須對齊，各自寫死會在其中一方改動時默默錯開
 enum BLListMetrics {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 列內頭像的尺寸
     static let avatarSize: CGFloat = 40
 
     /// 分隔線的左側內縮量
-    ///
-    /// 等於「列左內距 + 頭像寬 + 頭像與文字的間距」，使分隔線起點對齊文字欄左緣
     static let dividerInset: CGFloat = BLSpacing.large + avatarSize + BLSpacing.medium
 }
 
 /// 可點擊控制項的命中區尺寸
 enum BLHitTarget {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 命中區各方向的最小尺寸
-    ///
-    /// 命中區獨立於視覺尺寸：宣告要加在按鈕的**標籤內部**才會擴大可點區域，
-    /// 加在外層容器上只會增加版面間距
     static let minimum: CGFloat = 44
 }
 
 // MARK: - Preview
 
 #Preview("尺寸與圓角") {
+    let palette = BLPalette()
+
     VStack(alignment: .leading, spacing: BLSpacing.large) {
         HStack(spacing: BLSpacing.medium) {
             RoundedRectangle(cornerRadius: BLRadius.extraSmall)
-                .fill(.blue)
+                .fill(palette.accent)
                 .frame(width: 44, height: 44)
 
             RoundedRectangle(cornerRadius: BLRadius.medium)
-                .fill(.green)
+                .fill(palette.green)
                 .frame(width: 44, height: 44)
 
             RoundedRectangle(cornerRadius: BLRadius.extraLarge)
-                .fill(.orange)
+                .fill(palette.orange)
                 .frame(width: 44, height: 44)
         }
     }

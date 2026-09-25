@@ -9,26 +9,18 @@ import ImageIO
 import SwiftUI
 import UniformTypeIdentifiers
 
-/// 照片檢視器：影像 scaledToFit 帶小圓角，左右滑動切換同一組照片；背景隨系統深淺色模式自適應
-///
-/// 由訂單編輯表單以推進呈現 (加入 `PickerRoute`，避免 sheet 上再疊 modal)：置中 title 顯示計數 (x/n)、由宿主導覽堆疊的 Back 返回。
-/// 不自帶 `NavigationStack`：push 目的地內含自己的 stack 是不合法的巢狀，
-/// 會讓推進呈現與 pop 動畫整個壞掉 (嵌入呈現的慣例同 ``OptionPickerSheet`` 的 `isEmbedded`)
-///
-/// 換頁以橫向 paging ScrollView (`scrollTargetBehavior(.paging)` + `scrollPosition`) 實作，iOS / iPadOS 共用；滑到第一張／最後一張即停止
-///
-/// 單張影像無法解碼時顯示 placeholder 圖示
+/// 可左右滑動切換照片的檢視器
 struct BLPhotoViewer: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
-    /// 要檢視的照片集合 (依儲存順序)
-    let photos: [Data]
+    /// 是否已開啟「減少動態效果」
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// 目前聚焦的照片 index；由 paging ScrollView 的 `scrollPosition` 驅動
     @State private var currentIndex: Int?
 
-    /// 目前的縮放倍率；為 1 時由換頁接手手勢，大於 1 時改為平移並停用換頁
+    /// 目前縮放倍率；大於 1 時停用換頁並改用平移
     @State private var zoomScale: CGFloat = 1
 
     /// 手勢進行中的暫時倍率，手勢結束後併入 ``zoomScale``
@@ -40,11 +32,12 @@ struct BLPhotoViewer: View {
     /// 手勢進行中的暫時位移，手勢結束後併入 ``panOffset``
     @State private var gesturePanOffset: CGSize = .zero
 
+    /// 要檢視的照片集合 (依儲存順序)
+    let photos: [Data]
+
     // MARK: - Init
 
     /// 建立檢視器並把初始聚焦照片設為 `initialIndex`
-    ///
-    /// 顯式 init 是為了把 `initialIndex` 注入 `@State` 的初始值，讓檢視器一開啟就停在被點擊的那張照片，而非從第一張動畫捲動過去
     /// - Parameters:
     ///   - photos: 要檢視的照片集合 (依儲存順序)
     ///   - initialIndex: 開啟時聚焦的照片 index
@@ -53,14 +46,11 @@ struct BLPhotoViewer: View {
         self._currentIndex = State(initialValue: initialIndex)
     }
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 檢視器的畫面內容
     var body: some View {
-        // 宿主堆疊會把「貼齊 safe area 上緣」的 ScrollView 自動延伸到 navigation bar 底下，
-        // 造成照片與 bar 重疊；四邊各留 BLSpacing.small (10pt) 的間距，既滿足版面需求
-        // (照片頂部距 bar、底部與左右距邊各 10pt)，也讓 pager 不貼齊邊緣、阻斷自動延伸
-        // 背景不另外鋪色，沿用宿主的系統背景，隨深淺色模式自適應
+        // ScrollView 需留邊距，避免延伸到 navigation bar 下方
         pager
             .padding(BLSpacing.small)
             .accessibilityIdentifier(BLAccessibilityID.PhotoViewer.root)
@@ -69,7 +59,7 @@ struct BLPhotoViewer: View {
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension BLPhotoViewer {
 
@@ -88,58 +78,75 @@ private extension BLPhotoViewer {
         .scrollTargetBehavior(.paging)
         .scrollPosition(id: $currentIndex)
         .scrollIndicators(.hidden)
-        // 倍率為 1 時換頁接手、大於 1 時停用換頁改由平移接手，與系統照片瀏覽的規則一致
+        // 只有倍率為 1 時允許換頁
         .scrollDisabled(isZoomedIn)
         .onChange(of: currentIndex) { _, _ in
             resetZoom()
         }
     }
 
-    /// 單頁影像：可解碼時 scaledToFit 置中並套用小圓角，否則顯示 placeholder 圖示
+    /// 顯示單頁影像或 placeholder
     /// - Parameter data: 該頁的影像 data
+    /// - Returns: 對應照片或 placeholder 的畫面內容
     @ViewBuilder
     func photoPage(data: Data) -> some View {
         if let image = Image(photoData: data) {
             image
                 .resizable()
                 .scaledToFit()
-                // 照片四角套小圓角；用 mask 而非 clipShape——直接套在 image-backed layer 上的
-                // clipShape 在部分渲染路徑 (snapshot 光柵化) 不生效，mask 兩者皆穩定
+                // 照片四角套小圓角；用 mask 而非 clipShape
+                // 直接套在 image-backed layer 上；snapshot 光柵化時，
+                // clipShape 在部分渲染路徑不生效，mask 兩者皆穩定
                 .mask {
                     RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous)
                 }
-                .accessibilityLabel("訂單照片")
-                .accessibilityIdentifier(BLAccessibilityID.PhotoViewer.image)
                 .scaleEffect(zoomScale * gestureScale)
                 .offset(currentPanOffset)
                 .gesture(magnifyGesture)
                 // 平移手勢只在放大後掛上
-                // 常駐的 simultaneousGesture(DragGesture) 會搶走 ScrollView 的 pan，讓未放大時的換頁滑動整個失效
+                // 不常駐 simultaneousGesture，避免未放大時攔截 ScrollView 捲動
                 .simultaneousGesture(panGesture, isEnabled: isZoomedIn)
                 .onTapGesture(count: 2) {
                     toggleZoom()
                 }
-                .animation(.snappy(duration: 0.2), value: zoomScale)
+                .animation(Self.zoomAnimation(reduceMotion: reduceMotion), value: zoomScale)
+                .accessibilityLabel("訂單照片")
+                .accessibilityIdentifier(BLAccessibilityID.PhotoViewer.image)
         } else {
             Image(systemName: "photo")
-                .font(.largeTitle)
-                .foregroundStyle(.secondary)
+                // 保持一般字重，避免 placeholder 圖示過粗
+                .font(BLTypographyStyle.largeTitle.font)
+                .foregroundStyle(Color.blSecondaryLabel)
                 .accessibilityLabel("無法顯示的照片")
         }
     }
 }
 
-// MARK: - Private Method
+// MARK: - Nested Types
 
 private extension BLPhotoViewer {
 
-    /// 是否已放大 (放大後換頁停用、改為平移)
+    /// 照片檢視器的縮放版面常數
+    private enum Layout {
+
+        // MARK: - Properties
+
+        /// 雙點放大時使用的倍率
+        static let zoomedInScale: CGFloat = 2
+
+        /// 手勢可達的最大縮放倍率
+        static let maximumZoomScale: CGFloat = 4
+    }
+}
+
+// MARK: - Computed Properties
+
+private extension BLPhotoViewer {
+
+    /// 是否已放大
     var isZoomedIn: Bool {
         zoomScale > 1
     }
-
-    /// 雙點放大時使用的倍率
-    var zoomedInScale: CGFloat { 2 }
 
     /// 目前套用的總位移 (已提交的位移加上手勢進行中的位移)
     var currentPanOffset: CGSize {
@@ -157,7 +164,10 @@ private extension BLPhotoViewer {
             }
             .onEnded { value in
                 gestureScale = 1
-                zoomScale = min(max(zoomScale * value.magnification, 1), 4)
+                zoomScale = min(
+                    max(zoomScale * value.magnification, 1),
+                    Layout.maximumZoomScale
+                )
                 if !isZoomedIn {
                     resetPan()
                 }
@@ -185,14 +195,35 @@ private extension BLPhotoViewer {
             }
     }
 
+    /// 計數文字 (目前第幾張/總張數)；navigation title 使用
+    var counterText: String {
+        "\((currentIndex ?? 0) + 1)/\(photos.count)"
+    }
+}
+
+// MARK: - Internal Method
+
+extension BLPhotoViewer {
+
+    /// 依系統偏好決定縮放動畫
+    /// - Parameter reduceMotion: 是否已開啟「減少動態效果」
+    /// - Returns: 減少動態效果時為 `nil`，否則為快速動畫
+    /// - Note: 此方法只依賴傳入值，不需讀取 View 的隔離狀態
+    nonisolated static func zoomAnimation(reduceMotion: Bool) -> Animation? {
+        reduceMotion ? nil : .snappy(duration: 0.2)
+    }
+}
+
+// MARK: - Private Method
+
+private extension BLPhotoViewer {
+
     /// 雙點在一倍與兩倍之間切換
-    ///
-    /// 不逐級放大——逐級會讓使用者需要多次雙點才能回到原始尺寸
     func toggleZoom() {
         if isZoomedIn {
             resetZoom()
         } else {
-            zoomScale = zoomedInScale
+            zoomScale = Layout.zoomedInScale
         }
     }
 
@@ -209,43 +240,52 @@ private extension BLPhotoViewer {
         gesturePanOffset = .zero
     }
 
-    /// 計數文字 (目前第幾張/總張數)；navigation title 使用
-    var counterText: String {
-        "\((currentIndex ?? 0) + 1)/\(photos.count)"
-    }
 }
 
 // MARK: - Preview
 
 #Preview("照片檢視器") {
-    /// 以 CoreGraphics 合成的純色 JPEG sample，讓 Preview 不依賴外部資源
-    func sampleJPEGData(red: CGFloat, green: CGFloat, blue: CGFloat) -> Data {
+    /// Preview 使用的純色 JPEG sample
+    func sampleJPEGData(
+        red: CGFloat,
+        green: CGFloat,
+        blue: CGFloat
+    ) -> Data {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
-        guard let context = CGContext(
-            data: nil,
-            width: 480,
-            height: 320,
-            bitsPerComponent: 8,
-            bytesPerRow: 0,
-            space: colorSpace,
-            bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
-        ), let destination = {
-            let output = NSMutableData()
-            return CGImageDestinationCreateWithData(output, UTType.jpeg.identifier as CFString, 1, nil)
-                .map { (output, $0) }
-        }() else {
+        let output = NSMutableData()
+        guard
+            let context = CGContext(
+                data: nil,
+                width: 480,
+                height: 320,
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: colorSpace,
+                bitmapInfo: CGImageAlphaInfo.noneSkipLast.rawValue
+            ),
+            let destination = CGImageDestinationCreateWithData(
+                output,
+                UTType.jpeg.identifier as CFString,
+                1,
+                nil
+            )
+        else {
             return Data()
         }
 
-        context.setFillColor(CGColor(red: red, green: green, blue: blue, alpha: 1))
-        context.fill(CGRect(x: 0, y: 0, width: 480, height: 320))
+        context.setFillColor(
+            CGColor(red: red, green: green, blue: blue, alpha: 1)
+        )
+        context.fill(
+            CGRect(x: 0, y: 0, width: 480, height: 320)
+        )
         guard let image = context.makeImage() else {
             return Data()
         }
 
-        CGImageDestinationAddImage(destination.1, image, nil)
-        CGImageDestinationFinalize(destination.1)
-        return destination.0 as Data
+        CGImageDestinationAddImage(destination, image, nil)
+        CGImageDestinationFinalize(destination)
+        return output as Data
     }
 
     // 以 NavigationStack 包住模擬實際的推進呈現情境 (檢視器本身不自帶 stack)

@@ -9,20 +9,15 @@ import ComposableArchitecture
 import UIKit
 
 /// 開啟本 App 系統設定頁的依賴介面
-///
-/// 以依賴反轉隔離 `UIApplication.open` 的系統呼叫，讓「權限被拒 → 前往設定」的流程
-/// 可在 TestStore 中以替身驗證其被呼叫
 struct OpenSettingsClient: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
-    /// 開啟本 App 的系統設定頁
-    ///
-    /// 無法開啟時靜默結束 (例如 URL 無法解析)；提示 alert 已由系統關閉，不阻塞使用者
+    /// 開啟 BuyLedger 的系統設定頁
     var open: @Sendable () async -> Void
 }
 
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension OpenSettingsClient: DependencyKey {
 
@@ -33,6 +28,9 @@ extension OpenSettingsClient: DependencyKey {
                 return
             }
             await MainActor.run {
+                guard UIApplication.shared.canOpenURL(url) else {
+                    return
+                }
                 UIApplication.shared.open(url)
             }
         }

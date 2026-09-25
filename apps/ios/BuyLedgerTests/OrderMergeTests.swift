@@ -9,6 +9,7 @@ import Foundation
 import Testing
 @testable import BuyLedger
 
+/// 驗證訂單合併資料
 @MainActor
 struct OrderMergeTests {
 
@@ -54,8 +55,10 @@ struct OrderMergeTests {
 
     @Test func feeRatesUseChargedAmountWeightedAverage() {
         // (1.5% × 1000 + 2% × 2000) ÷ 3000 ≈ 1.83%
-        let primary = Self.makeOrder(id: "P", chargedAmount: 1_000, cardFeeRate: Self.decimal("0.015"))
-        let secondary = Self.makeOrder(id: "S", chargedAmount: 2_000, cardFeeRate: Self.decimal("0.02"))
+        let primary = Self.makeOrder(
+            id: "P", chargedAmount: 1_000, cardFeeRate: Self.decimal("0.015"))
+        let secondary = Self.makeOrder(
+            id: "S", chargedAmount: 2_000, cardFeeRate: Self.decimal("0.02"))
 
         let draft = OrderMerge.makeDraft(
             primary: primary,
@@ -69,8 +72,9 @@ struct OrderMergeTests {
     }
 
     @Test func feeRatesFallBackToPrimaryWhenOneSideHasZeroCharge() {
-        // 副訂單實付 0：加權平均退化為主訂單值仍正確 ((1.5%×1000 + 3%×0) ÷ 1000 = 1.5%)
-        let primary = Self.makeOrder(id: "P", chargedAmount: 1_000, cardFeeRate: Self.decimal("0.015"))
+        // 副訂單實付為 0 時，沿用主訂單比例。
+        let primary = Self.makeOrder(
+            id: "P", chargedAmount: 1_000, cardFeeRate: Self.decimal("0.015"))
         let secondary = Self.makeOrder(id: "S", chargedAmount: 0, cardFeeRate: Self.decimal("0.03"))
 
         let draft = OrderMerge.makeDraft(
@@ -85,7 +89,9 @@ struct OrderMergeTests {
 
     @Test func feeRatesUsePrimaryWhenBothChargesAreZero() {
         // 兩筆實付皆 0：分母為 0，沿用主訂單比例、不得產生 NaN
-        let primary = Self.makeOrder(id: "P", chargedAmount: 0, cardFeeRate: Self.decimal("0.015"), platformFeeRate: Self.decimal("0.03"), paymentFeeRate: Self.decimal("0.005"))
+        let primary = Self.makeOrder(
+            id: "P", chargedAmount: 0, cardFeeRate: Self.decimal("0.015"),
+            platformFeeRate: Self.decimal("0.03"), paymentFeeRate: Self.decimal("0.005"))
         let secondary = Self.makeOrder(id: "S", chargedAmount: 0, cardFeeRate: Self.decimal("0.03"))
 
         let draft = OrderMerge.makeDraft(
@@ -102,7 +108,8 @@ struct OrderMergeTests {
 
     @Test func categoriesAndCampaignsTakeOrderedUnion() {
         let primary = Self.makeOrder(id: "P", categories: ["beauty"], campaignNames: ["May-JP"])
-        let secondary = Self.makeOrder(id: "S", categories: ["snacks", "beauty"], campaignNames: ["June-KR"])
+        let secondary = Self.makeOrder(
+            id: "S", categories: ["snacks", "beauty"], campaignNames: ["June-KR"])
 
         let draft = OrderMerge.makeDraft(
             primary: primary,
@@ -124,7 +131,11 @@ struct OrderMergeTests {
             ("", "", ""),
         ]
 
-        for (primaryNotes, secondaryNotes, expected) in cases {
+        for (
+            primaryNotes,
+            secondaryNotes,
+            expected
+        ) in cases {
             let draft = OrderMerge.makeDraft(
                 primary: Self.makeOrder(id: "P", notes: primaryNotes),
                 secondary: Self.makeOrder(id: "S", notes: secondaryNotes),
@@ -137,8 +148,10 @@ struct OrderMergeTests {
 
     @Test func cardlessPaymentMethodWinsOnConflict() {
         // 恰有一筆 (副) 屬無卡：付款方式取副訂單，對帳狀態與貨到付款隨之
-        let primary = Self.makeOrder(id: "P", paymentMethod: "信用卡", reconciliationStatus: "", isCashOnDelivery: false)
-        let secondary = Self.makeOrder(id: "S", paymentMethod: "全家好開店", reconciliationStatus: "待對帳", isCashOnDelivery: true)
+        let primary = Self.makeOrder(
+            id: "P", paymentMethod: "信用卡", reconciliationStatus: "", isCashOnDelivery: false)
+        let secondary = Self.makeOrder(
+            id: "S", paymentMethod: "全家好開店", reconciliationStatus: "待對帳", isCashOnDelivery: true)
 
         let draft = OrderMerge.makeDraft(
             primary: primary,
@@ -237,11 +250,36 @@ private extension OrderMergeTests {
     static let mergeDate = Date(timeIntervalSince1970: 1_777_000_000)
 
     /// 以固定字串建立 `Decimal`，避免浮點誤差
+    /// - Parameter value: 要轉換的十進位字串
+    /// - Returns: 解析後的 Decimal；無法解析時為 `0`
     static func decimal(_ value: String) -> Decimal {
         Decimal(string: value, locale: Locale(identifier: "en_US_POSIX")) ?? 0
     }
 
     /// 建立測試訂單；未指定的欄位使用中性預設值
+    /// - Parameters:
+    ///   - id: 訂單識別值
+    ///   - status: 訂單狀態
+    ///   - chargedAmount: 客戶實付金額
+    ///   - itemCost: 商品成本
+    ///   - domesticShipping: 國內運費
+    ///   - internationalShipping: 國際運費
+    ///   - foreignDomesticShipping: 國外境內運費
+    ///   - cardFeeRate: 刷卡費率
+    ///   - platformFeeRate: 平台費率
+    ///   - paymentFeeRate: 付款費率
+    ///   - cardlessDeductionAmount: 無卡折抵金額
+    ///   - cardlessSupplementAmount: 無卡補收金額
+    ///   - categories: 商品類別
+    ///   - campaignNames: 開團名稱
+    ///   - paymentMethod: 付款方式
+    ///   - reconciliationStatus: 對帳狀態
+    ///   - notes: 備註
+    ///   - paymentReceiptStatus: 付款收據狀態
+    ///   - isCashOnDelivery: 是否為貨到付款
+    ///   - items: 訂單品項
+    ///   - photos: 訂單照片
+    /// - Returns: 建立的測試訂單
     static func makeOrder(
         id: String,
         status: OrderStatus = .purchased,

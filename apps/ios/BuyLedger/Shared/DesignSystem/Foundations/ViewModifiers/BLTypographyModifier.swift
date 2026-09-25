@@ -7,26 +7,29 @@
 
 import SwiftUI
 
-// MARK: - ViewModifier
-
 /// 套用 BuyLedger 文字層級的 view modifier
-struct BLTypographyModifier: ViewModifier {
+struct BLTypographyModifier {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// 要套用的文字層級
     let style: BLTypographyStyle
+}
 
-    // MARK: - View Body
+// MARK: - ViewModifier
 
-    /// 回傳套用字型與字距後的內容
+extension BLTypographyModifier: ViewModifier {
+
+    /// 回傳套用字型後的內容
+    /// - Parameter content: 要套用文字樣式的內容
+    /// - Returns: 套用字型後的 view
     func body(content: Content) -> some View {
         content
             .font(style.font)
     }
 }
 
-// MARK: - View Method
+// MARK: - blTextStyle
 
 extension View {
 

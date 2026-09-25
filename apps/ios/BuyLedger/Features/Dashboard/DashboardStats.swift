@@ -8,15 +8,11 @@
 import Foundation
 
 /// 總覽頁使用的本月與走勢統計
-///
-/// 完全 derive 自訂單清單，不依賴「現在」時間內部讀取：由呼叫端 (View 或測試) 以 `referenceDate` 與 `calendar` 注入基準時間
-///
-/// MoM (month-over-month) 相關欄位在「上月無資料」時為 `nil`，UI 應顯示「—」並停用方向色
 struct DashboardStats {
 
     // MARK: - Data Properties
 
-    /// 本月已實現的營業額
+    /// 本月依營收歸屬口徑計入的營業額
     let revenue: Decimal
 
     /// 本月成本
@@ -31,10 +27,10 @@ struct DashboardStats {
     /// 進行中 (confirmed / purchased / shipping) 的訂單數
     let activeCount: Int
 
-    /// 本月已實現的訂單筆數
+    /// 本月依營收歸屬口徑計入的訂單筆數
     let orderCount: Int
 
-    /// 月目標金額 (來自 `SettingsFeature.State.monthlyProfitGoalTwd`)。`0` 代表使用者未設定，UI 應隱藏進度條
+    /// 月目標金額；0 表示未設定
     let goal: Decimal
 
     /// 已達月目標的比例 (0 ~ 1)
@@ -46,7 +42,7 @@ struct DashboardStats {
     /// 近期訂單 (依日期由新到舊取前 4 筆)
     let recentOrders: [LedgerOrder]
 
-    /// 營業額相對上月的成長率 (小數形式，0.18 即 +18%)；上月為 0 或無資料時為 `nil`
+    /// 相對上月的營業額成長率；無法比較時為 `nil`
     let revenueDelta: Decimal?
 
     /// 成本相對上月的成長率 (小數形式)；上月為 0 或無資料時為 `nil`
@@ -66,13 +62,10 @@ struct DashboardStats {
         .purchased,
         .shipping,
         .partiallyArrived,
-        .arrived
+        .arrived,
     ]
 
-    /// 視為「已實現」的訂單狀態集合 (用於本月損益)，引用 domain 層的單一事實來源
-    static let realizedStatuses = OrderStatus.realizedStatuses
-
-    /// 「近期訂單」列表顯示的筆數；同時控制 ``init(orders:monthlyGoal:referenceDate:calendar:)`` 的 prefix 取數
+    /// 近期訂單顯示筆數
     static let recentOrdersCount = 4
 
     // MARK: - Init
@@ -81,16 +74,25 @@ struct DashboardStats {
     /// - Parameters:
     ///   - orders: 目前的訂單清單
     ///   - monthlyGoal: 月度淨獲利目標 (來自 SettingsFeature；`0` 代表未設定)
-    ///   - referenceDate: 基準「現在」時間，決定「本月／上月」與 12 個月 sparkline 範圍
+    ///   - referenceDate: 決定月份與走勢圖範圍的基準時間
     ///   - calendar: 用來算月份區間的曆法
     init(orders: [LedgerOrder], monthlyGoal: Decimal, referenceDate: Date, calendar: Calendar) {
-        let current = DashboardStats.monthlyTotals(orders: orders, calendar: calendar, referenceDate: referenceDate)
+        let attributedOrders = LedgerOrder.revenueAttributionOrders(from: orders)
+        let current = DashboardStats.monthlyTotals(
+            orders: attributedOrders,
+            calendar: calendar,
+            referenceDate: referenceDate
+        )
         let previous: MonthlyTotals = {
-            guard let priorMonth = calendar.date(byAdding: .month, value: -1, to: referenceDate) else {
+            guard let priorMonth = calendar.date(
+                byAdding: .month,
+                value: -1,
+                to: referenceDate
+            ) else {
                 return .empty
             }
             return DashboardStats.monthlyTotals(
-                orders: orders,
+                orders: attributedOrders,
                 calendar: calendar,
                 referenceDate: priorMonth
             )
@@ -108,7 +110,9 @@ struct DashboardStats {
             pct = CGFloat(min(1.0, max(0.0, raw)))
         }
 
-        let recent = orders.sorted { $0.date > $1.date }.prefix(DashboardStats.recentOrdersCount)
+        let recent = orders
+            .sorted { $0.date > $1.date }
+            .prefix(DashboardStats.recentOrdersCount)
 
         self.revenue = current.revenue
         self.cost = current.cost
@@ -119,14 +123,23 @@ struct DashboardStats {
         self.goal = monthlyGoal
         self.goalProgress = pct
         self.sparkline = DashboardStats.monthlyProfitSparkline(
-            orders: orders,
+            orders: attributedOrders,
             calendar: calendar,
             referenceDate: referenceDate
         )
         self.recentOrders = Array(recent)
-        self.revenueDelta = DashboardStats.ratio(current: current.revenue, previous: previous.revenue)
-        self.costDelta = DashboardStats.ratio(current: current.cost, previous: previous.cost)
-        self.profitDelta = DashboardStats.ratio(current: current.profit, previous: previous.profit)
+        self.revenueDelta = DashboardStats.ratio(
+            current: current.revenue,
+            previous: previous.revenue
+        )
+        self.costDelta = DashboardStats.ratio(
+            current: current.cost,
+            previous: previous.cost
+        )
+        self.profitDelta = DashboardStats.ratio(
+            current: current.profit,
+            previous: previous.profit
+        )
         self.marginDelta = previous.orderCount == 0 ? nil : current.margin - previous.margin
     }
 }
@@ -140,19 +153,19 @@ extension DashboardStats {
 
         // MARK: - Data Properties
 
-        /// 該月已實現訂單的營業額總和
+        /// 該月依營收歸屬口徑計入的訂單營業額總和
         let revenue: Decimal
 
-        /// 該月已實現訂單的成本總和 (含商品、運費與手續費)
+        /// 該月依營收歸屬口徑計入的訂單成本總和 (含商品、運費與手續費)
         let cost: Decimal
 
-        /// 該月已實現訂單的淨獲利總和 (`revenue - cost`)
+        /// 該月依營收歸屬口徑計入的訂單淨獲利總和 (`revenue - cost`)
         let profit: Decimal
 
-        /// 該月毛利率 (`profit / revenue`)；`revenue` 為 0 時為 0
+        /// 該月的訂單毛利率；營收為 0 時為 0
         let margin: Decimal
 
-        /// 該月已實現的訂單筆數，作為「上月有無資料可比」的判斷依據
+        /// 該月的訂單筆數，用於判斷是否有資料可比較
         let orderCount: Int
 
         // MARK: - Static Properties
@@ -172,20 +185,23 @@ extension DashboardStats {
 
 private extension DashboardStats {
 
-    /// 計算指定月份的營收／成本／獲利／毛利率／訂單筆數
+    /// 計算成長率；上期為負數時以絕對值為分母
     /// - Parameters:
-    ///   - orders: 全部訂單清單
+    ///   - orders: 已依營收歸屬口徑篩出的訂單清單
     ///   - calendar: 用來算月份區間的曆法
     ///   - referenceDate: 基準日期，會以此日的所在月份為查詢範圍
     /// - Returns: 月度彙總值；找不到月份區間時回傳 `.empty`
-    static func monthlyTotals(orders: [LedgerOrder], calendar: Calendar, referenceDate: Date) -> MonthlyTotals {
+    static func monthlyTotals(
+        orders: [LedgerOrder],
+        calendar: Calendar,
+        referenceDate: Date
+    ) -> MonthlyTotals {
         guard let interval = calendar.dateInterval(of: .month, for: referenceDate) else {
             return .empty
         }
 
         let monthOrders = orders.filter { order in
-            DashboardStats.realizedStatuses.contains(order.status)
-                && (interval.start..<interval.end).contains(order.date)
+            (interval.start..<interval.end).contains(order.date)
         }
 
         var revenue: Decimal = 0
@@ -208,7 +224,7 @@ private extension DashboardStats {
         )
     }
 
-    /// 計算 `(current - previous) / previous` 的成長率；`previous == 0` 時回 `nil` 表「無基準可比」
+    /// 計算成長率；上期為負數時以絕對值為分母
     /// - Parameters:
     ///   - current: 本期值
     ///   - previous: 上期值
@@ -217,12 +233,12 @@ private extension DashboardStats {
         guard previous != 0 else {
             return nil
         }
-        return (current - previous) / previous
+        return (current - previous) / abs(previous)
     }
 
     /// 產生最近 12 個月的淨獲利走勢資料
     /// - Parameters:
-    ///   - orders: 目前訂單清單
+    ///   - orders: 已依營收歸屬口徑篩出的訂單清單
     ///   - calendar: 用來計算月份的曆法
     ///   - referenceDate: 基準日期 (即「最後一個月」的所在日期)
     /// - Returns: 共 12 個 `Double` 的走勢值
@@ -231,10 +247,6 @@ private extension DashboardStats {
         calendar: Calendar,
         referenceDate: Date
     ) -> [Double] {
-        let realized = orders.filter {
-            DashboardStats.realizedStatuses.contains($0.status)
-        }
-
         return (0..<12).reversed().map { offset in
             guard let monthStart = calendar.date(
                 byAdding: .month,
@@ -245,7 +257,7 @@ private extension DashboardStats {
                 return 0
             }
 
-            let total = realized
+            let total = orders
                 .filter { (interval.start..<interval.end).contains($0.date) }
                 .reduce(Decimal.zero) { $0 + $1.summary.profit }
 

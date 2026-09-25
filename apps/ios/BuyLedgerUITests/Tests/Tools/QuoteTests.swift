@@ -8,40 +8,51 @@
 import XCTest
 
 /// 報價試算的進入、建議售價與幣別選擇流程測試
-///
-/// 一律以 accessibility identifier 定位、對建議售價做非空的結構性斷言，不硬編精確金額 (匯率走固定快照 stub);
-/// 找不到 App 元素即附診斷失敗、不 skip。幣別原始值是業務鍵、不隨語言變動，故中英兩語言皆有效
 final class QuoteTests: BLUITestCase {
 
     // MARK: - Static Properties
 
-    /// 選用的來源幣別原始值 (``BLAccessibilityID/OptionPicker/optionRow(_:)`` 的 key)
-    private static let selectedCurrency = "KRW"
+    /// 試算使用的非預設來源幣別 raw value
+    private static let selectedCurrency = "USD"
 
     // MARK: - Tests
 
     /// 從更多分頁進報價頁後就緒，輸入商品本金後建議售價有值
+    ///
+    /// - Throws: 建議售價元素不存在或沒有值時拋出測試錯誤
     @MainActor
-    func testQuoteSuggestsPriceAfterPrincipal() {
+    func testQuoteSuggestsPriceAfterPrincipal() throws(any Error) {
+        // Given：報價頁已就緒
         let app = launch(LaunchOptions(seed: .empty))
         let quote = openQuote(app)
 
+        // When：輸入商品本金 1000
         quote.typePrincipal("1000", in: app)
 
-        if quote.suggestedPriceValue.isEmpty {
-            failWithDiagnostics(
-                in: app,
-                "輸入本金後建議售價「\(BLAccessibilityID.Quote.suggestedPriceValue)」的 value 仍為空"
-            )
-        }
+        // Then：建議售價應是固定匯率下的 $230
+        let missingValueMessage = "輸入本金後建議售價元素不存在"
+        let value = try requireValue(
+            quote.suggestedPriceValue,
+            in: app,
+            missingValueMessage
+        )
+        XCTAssertEqual(
+            value,
+            "$230",
+            "1000 KRW 的固定匯率與預設成本應得到 $230 建議售價"
+        )
     }
 
-    /// 開幣別選擇器選 KRW 後回報價頁仍就緒
+    /// 開幣別選擇器選 USD 後回報價頁仍就緒且已套用來源幣別
+    ///
+    /// - Throws: 來源幣別元素不存在或未套用選取值時拋出測試錯誤
     @MainActor
-    func testQuoteReadyAfterSelectingCurrency() {
+    func testQuoteReadyAfterSelectingCurrency() throws(any Error) {
+        // Given：報價頁已就緒，準備選取非預設來源幣別
         let app = launch(LaunchOptions(seed: .empty))
         let quote = openQuote(app)
 
+        // When：開啟選擇器並選取 USD
         quote.openCurrencyPicker()
 
         let picker = OptionPickerScreen(app: app)
@@ -60,6 +71,19 @@ final class QuoteTests: BLUITestCase {
                 "選幣別後報價頁根 identifier「\(quote.rootIdentifier)」逾時仍未回到前景"
             )
         }
+
+        // Then：報價頁來源幣別應已套用 USD
+        let sourceCurrencyCode = try requireValue(
+            quote.sourceCurrencyCode,
+            in: app,
+            "報價頁來源幣別元素不存在"
+        )
+        XCTAssertEqual(
+            sourceCurrencyCode,
+            Self.selectedCurrency,
+            "報價頁來源幣別應為 \(Self.selectedCurrency)，"
+                + "實際為：\(sourceCurrencyCode)"
+        )
     }
 }
 
@@ -68,10 +92,11 @@ final class QuoteTests: BLUITestCase {
 private extension QuoteTests {
 
     /// 從更多分頁導到報價頁並等就緒，回傳報價頁 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的報價頁 Page Object
     @MainActor
     func openQuote(
@@ -79,7 +104,7 @@ private extension QuoteTests {
         file: StaticString = #filePath,
         line: UInt = #line
     ) -> QuoteScreen {
-        let quote = QuoteScreen.open(from: app)
+        let quote = QuoteScreen.open(from: app, file: file, line: line)
         if !quote.waitUntilReady() {
             failWithDiagnostics(
                 in: app,

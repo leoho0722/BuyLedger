@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'sheet-hig-compliance'. Update Purpose after archive.
+本規格涵蓋 sheet 疊層情境下的具體呈現方式，包括 sheet 內揀選器改以推入導覽呈現、新增子編輯器避免第三層 sheet、頂層單一 sheet 揀選器的保留、媒體檢視器以全螢幕模態呈現、多步驟 sheet 後續步驟使用返回鍵。不涵蓋 `navigation-path-integrity` 所訂的同一時間僅一層模態、單一目的地單一路徑等一般性導覽規則。
 
 ## Requirements
 

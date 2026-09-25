@@ -12,78 +12,70 @@ import SwiftData
 /// 商品類別主檔的依賴介面
 struct CategoryRepository: Sendable {
 
-    // MARK: - Dependency Properties
+    // MARK: - Properties
 
-    /// 讀取目前所有類別名稱 (已排序)
-    var fetchCategories: @Sendable () async throws -> [String]
+    /// 讀取目前所有類別名稱並排序
+    /// - Returns: 已排序的類別名稱
+    /// - Throws: 讀取持久化資料失敗時拋出 ``PersistenceError``
+    var fetchCategories: @Sendable () async throws(PersistenceError) -> [String]
 
-    /// 加入新類別；trim 後若空字串視為 no-op；已存在不重複建立
-    /// - Parameter rawName: 要加入的名稱 (未 trim)
-    var addCategory: @Sendable (_ rawName: String) async throws -> Void
+    /// 加入新類別；去除前後空白後若為空字串則不處理
+    /// - Parameter rawName: 尚未去除前後空白的名稱
+    /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
+    var addCategory: @Sendable (_ rawName: String) async throws(PersistenceError) -> Void
 
-    /// 刪除指定名稱的類別；不存在視為 no-op
+    /// 刪除指定名稱的類別；不存在時不做任何事
     /// - Parameter name: 要刪除的名稱
-    var removeCategory: @Sendable (_ name: String) async throws -> Void
+    /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
+    var removeCategory: @Sendable (_ name: String) async throws(PersistenceError) -> Void
 
-    /// 把指定類別更名 (舊名 → 新名)。caller 負責把訂單表的 cascade 一併處理；本方法只更新主檔
+    /// 更名類別；只更新主檔
     /// - Parameters:
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
-    var renameCategory: @Sendable (_ oldName: String, _ newName: String) async throws -> Void
+    /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
+    var renameCategory: @Sendable (
+        _ oldName: String,
+        _ newName: String
+    ) async throws(PersistenceError) -> Void
 }
 
 // MARK: - Internal Method
 
 extension CategoryRepository {
 
-    /// 以指定的 SwiftData ``ModelContainer`` 建立 repository
-    /// - Parameter container: 用於建立背景 actor 的 SwiftData container
+    /// 以指定的 `ModelContainer` 建立資料來源
+    /// - Parameter container: 用於建立背景 actor 的 `SwiftData` container
     /// - Returns: 對應的 ``CategoryRepository`` 實例
     nonisolated static func live(container: ModelContainer) -> CategoryRepository {
         CategoryRepository(
-            fetchCategories: {
-                let persistence = await Self.makePersistence(container: container)
-                return try await persistence.fetchAll()
+            fetchCategories: { () async throws(PersistenceError) -> [String] in
+                try await NameLookupOperations<CategoryRecord>.fetchAll(container: container)
             },
-            addCategory: { rawName in
-                let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else {
-                    return
-                }
-                let persistence = await Self.makePersistence(container: container)
-                try await persistence.upsert(name: trimmed)
+            addCategory: { (rawName: String) async throws(PersistenceError) in
+                try await NameLookupOperations<CategoryRecord>.add(
+                    rawName: rawName,
+                    container: container
+                )
             },
-            removeCategory: { name in
-                let persistence = await Self.makePersistence(container: container)
-                try await persistence.delete(name: name)
+            removeCategory: { (name: String) async throws(PersistenceError) in
+                try await NameLookupOperations<CategoryRecord>.remove(
+                    name: name,
+                    container: container
+                )
             },
-            renameCategory: { oldName, newName in
-                let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmedNew.isEmpty, trimmedNew != oldName else {
-                    return
-                }
-                let persistence = await Self.makePersistence(container: container)
-                try await persistence.rename(from: oldName, to: trimmedNew)
+            renameCategory: { (oldName: String, newName: String) async throws(PersistenceError) in
+                try await NameLookupOperations<CategoryRecord>.rename(
+                    oldName: oldName,
+                    newName: newName,
+                    container: container
+                )
             }
         )
     }
 }
 
-// MARK: - Private Method
-
-private extension CategoryRepository {
-
-    /// 在 main actor 上實例化 ``CategoryPersistence`` (`@ModelActor` 的 init 帶有 main-actor 隔離)
-    /// - Parameter container: 共用的 ``ModelContainer``
-    /// - Returns: 對應 container 的 ``CategoryPersistence`` 實例
-    static func makePersistence(container: ModelContainer) async -> CategoryPersistence {
-        await MainActor.run {
-            CategoryPersistence(modelContainer: container)
-        }
-    }
-}
-
-// MARK: - Dependency Values
+// MARK: - DependencyKey
 
 extension CategoryRepository: DependencyKey {
 
@@ -92,9 +84,9 @@ extension CategoryRepository: DependencyKey {
         container: PersistenceContainer.shared
     )
 
-    /// SwiftUI Preview 使用 in-memory container
+    /// Preview 使用記憶體資料庫
     nonisolated static let previewValue: CategoryRepository = {
-        let container = (try? PersistenceContainer.make(inMemoryOnly: true)) ?? PersistenceContainer.shared
+        let container = PersistenceContainer.makeInMemory(for: .preview)
         return CategoryRepository.live(container: container)
     }()
 

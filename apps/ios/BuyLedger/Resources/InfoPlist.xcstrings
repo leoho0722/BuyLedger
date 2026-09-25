@@ -16,6 +16,22 @@
           }
         }
       }
+    },
+    "NSFaceIDUsageDescription" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face ID is used to authenticate you so the app can unlock and continue after you enable App Lock."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要使用 Face ID 驗證身份，才能在你啟用 App 鎖定後解鎖並繼續使用。"
+          }
+        }
+      }
     }
   },
   "version" : "1.0"

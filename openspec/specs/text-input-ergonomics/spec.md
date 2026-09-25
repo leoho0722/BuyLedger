@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'touch-target-and-input'. Update Purpose after archive.
+本規格涵蓋表單欄位的個別人因規則，包括可填寫欄位宣告內容類型以啟用自動填寫、表單值欄位符合最小熱區、長表單管理焦點順序。不涵蓋 `keyboard-dismissal-paths` 所訂的各種鍵盤收合路徑與其操作機制。
 
 ## Requirements
 

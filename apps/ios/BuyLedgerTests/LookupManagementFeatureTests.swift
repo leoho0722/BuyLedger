@@ -8,367 +8,252 @@
 import ComposableArchitecture
 import Foundation
 import Testing
+
 @testable import BuyLedger
 
+/// 驗證主檔管理的載入、新增與刪除流程
 @MainActor
 struct LookupManagementFeatureTests {
 
     // MARK: - Tests
 
-    @Test func reconciliationStatusKindLoadsFromRepository() async {
-        let store = TestStore(initialState: LookupManagementFeature.State(kind: .reconciliationStatus)) {
-            LookupManagementFeature()
-        } withDependencies: {
-            $0[ReconciliationStatusRepository.self] = ReconciliationStatusRepository(
-                fetchReconciliationStatuses: { ["待對帳", "對帳成功"] },
-                addReconciliationStatus: { _ in },
-                removeReconciliationStatus: { _ in },
-                renameReconciliationStatus: { _, _ in }
-            )
-        }
-
-        await store.send(.task)
-        await store.receive(\.reconciliationStatusItemsLoaded) {
-            $0.items = ["待對帳", "對帳成功"]
-            $0.hasLoaded = true
-        }
-    }
-
-    @Test func reconciliationStatusAddConfirmedAppendsItem() async {
-        let store = TestStore(initialState: LookupManagementFeature.State(kind: .reconciliationStatus)) {
-            LookupManagementFeature()
-        } withDependencies: {
-            $0[ReconciliationStatusRepository.self] = .testValue
-        }
-        store.exhaustivity = .off
-
-        // 對帳狀態無 isCardless / isBankTransfer 概念，旗標被忽略；僅把名稱加入 items
-        await store.send(.addConfirmed(name: "待對帳", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)) {
-            $0.items = ["待對帳"]
-        }
-        await store.finish()
-    }
-
-    @Test func editConfirmedRenamesPaymentMethodAndClearsFlag() async {
-        // 關鍵 edge case：改名同時「取消勾選」銀行匯款
-        // rename 的合併規則會保留舊旗標，但編輯為權威設定，最終必須以使用者實際勾選 (false) 為準
-        var state = LookupManagementFeature.State(kind: .paymentMethod)
-        state.items = ["匯款"]
-        state.paymentMethodIsBankTransfer = ["匯款": true]
-        state.paymentMethodIsCardless = ["匯款": false]
-        state.hasLoaded = true
-
-        let store = TestStore(initialState: state) {
-            LookupManagementFeature()
-        } withDependencies: {
-            $0[PaymentMethodRepository.self] = .testValue
-            $0[OrderRepository.self] = .testValue
-        }
-        store.exhaustivity = .off
-
-        await store.send(.editConfirmed(originalName: "匯款", name: "銀行匯款", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)) {
-            $0.items = ["銀行匯款"]
-            $0.paymentMethodIsBankTransfer = ["銀行匯款": false]
-            $0.paymentMethodIsCardless = ["銀行匯款": false]
-        }
-        await store.finish()
-    }
-
-    @Test func editConfirmedKeepsNameAndUpdatesFlags() async {
-        var state = LookupManagementFeature.State(kind: .paymentMethod)
-        state.items = ["銀行匯款"]
-        state.paymentMethodIsBankTransfer = ["銀行匯款": false]
-        state.paymentMethodIsCardless = ["銀行匯款": false]
-        state.hasLoaded = true
-
-        let store = TestStore(initialState: state) {
-            LookupManagementFeature()
-        } withDependencies: {
-            $0[PaymentMethodRepository.self] = .testValue
-            $0[OrderRepository.self] = .testValue
-        }
-        store.exhaustivity = .off
-
-        // 名稱不變、把銀行匯款旗標打開
-        await store.send(.editConfirmed(originalName: "銀行匯款", name: "銀行匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)) {
-            $0.items = ["銀行匯款"]
-            $0.paymentMethodIsBankTransfer = ["銀行匯款": true]
-        }
-        await store.finish()
-    }
-
-    // MARK: - 新增流程 (addButtonTapped) Tests
-
-    /// 純名稱 kind 的新增併入 destination；互斥由型別系統保證，不再有獨立呈現旗標
-    @Test func addButtonTappedForCategoryPresentsTheNameOnlyForm() async {
-        let store = TestStore(initialState: LookupManagementFeature.State(kind: .category)) {
-            LookupManagementFeature()
-        }
-
-        await store.send(.addButtonTapped) {
-            $0.destination = .addNameOnly(LookupManagementFeature.Destination.AddNameOnlyFeature.State())
-        }
-    }
-
-    @Test func addButtonTappedForPaymentMethodPresentsThePaymentMethodForm() async {
-        let store = TestStore(initialState: LookupManagementFeature.State(kind: .paymentMethod)) {
-            LookupManagementFeature()
-        }
-
-        await store.send(.addButtonTapped) {
-            $0.destination = .addPaymentMethod(LookupManagementFeature.Destination.AddPaymentMethodFeature.State())
-        }
-    }
-
-    @Test func addButtonTappedForReconciliationStatusPresentsTheNameOnlyForm() async {
-        let store = TestStore(initialState: LookupManagementFeature.State(kind: .reconciliationStatus)) {
-            LookupManagementFeature()
-        }
-
-        await store.send(.addButtonTapped) {
-            $0.destination = .addNameOnly(LookupManagementFeature.Destination.AddNameOnlyFeature.State())
-        }
-    }
-
-    // MARK: - 刪除流程 Tests
-
-    /// 破壞性刪除一律先確認，確認前不得動到任何狀態
-    @Test func deleteButtonTappedPresentsConfirmationWithoutMutatingState() async {
-        var state = LookupManagementFeature.State(kind: .category)
-        state.items = ["美妝", "零食"]
-        let store = TestStore(initialState: state) {
-            LookupManagementFeature()
-        }
-
-        await store.send(.deleteButtonTapped("美妝")) {
-            $0.deletionConfirmation = AlertState {
-                TextState("刪除項目")
-            } actions: {
-                ButtonState(role: .destructive, action: .confirmDelete("美妝")) {
-                    TextState("刪除")
-                }
-                ButtonState(role: .cancel) {
-                    TextState("取消")
-                }
-            } message: {
-                TextState("刪除「美妝」後，引用它的既有訂單會失去這個欄位值。此操作無法復原。")
+    /// 載入指定種類時只替換該目錄清單，並清除載入錯誤
+    ///
+    /// - Parameter kind: 要載入的主檔種類
+    @Test(arguments: LookupKind.allCases)
+    func taskLoadsTheRequestedLookupKind(kind: LookupKind) async {
+        // Given
+        await LookupCatalog.withIsolatedStorage {
+            var state = LookupManagementFeature.State(kind: kind)
+            state.hasLoadFailed = true
+            state.$catalog.withLock { catalog in
+                catalog.orderSources = ["舊來源"]
+                catalog.categories = ["舊類別"]
+                catalog.paymentMethods = [
+                    PaymentMethodInfo(
+                        name: "舊付款",
+                        isCardless: false,
+                        isBankTransfer: false,
+                        isCashOnDelivery: false
+                    )
+                ]
+                catalog.reconciliationStatuses = ["舊狀態"]
             }
-        }
+            let store = TestStore(initialState: state) {
+                LookupManagementFeature()
+            } withDependencies: {
+                switch kind {
+                case .orderSource:
+                    $0[OrderSourceRepository.self].fetchOrderSources = { ["新來源"] }
 
-        #expect(store.state.items == ["美妝", "零食"])
-    }
+                case .category:
+                    $0[CategoryRepository.self].fetchCategories = { ["新類別"] }
 
-    /// 寫入成功後才更新狀態；寫入失敗時清單維持原狀，不會出現狀態與資料庫不一致
-    @Test func deleteFailureLeavesTheListUnchanged() async {
-        var state = LookupManagementFeature.State(kind: .category)
-        state.items = ["美妝", "零食"]
-        let store = TestStore(initialState: state) {
-            LookupManagementFeature()
-        } withDependencies: {
-            $0[CategoryRepository.self].removeCategory = { _ in
-                throw LookupTestFailure.boom
+                case .paymentMethod:
+                    $0[PaymentMethodRepository.self].fetchPaymentMethodInfos = {
+                        [
+                            PaymentMethodInfo(
+                                name: "新付款",
+                                isCardless: true,
+                                isBankTransfer: false,
+                                isCashOnDelivery: false
+                            )
+                        ]
+                    }
+
+                case .reconciliationStatus:
+                    $0[ReconciliationStatusRepository.self].fetchReconciliationStatuses = {
+                        ["新狀態"]
+                    }
+                }
             }
+
+            // When
+            await store.send(.view(.task))
+
+            // Then
+            await store.receive(\.itemsResponse.success) {
+                $0.hasLoaded = true
+                $0.hasLoadFailed = false
+                switch kind {
+                case .orderSource:
+                    $0.$catalog.withLock { catalog in catalog.orderSources = ["新來源"] }
+
+                case .category:
+                    $0.$catalog.withLock { catalog in catalog.categories = ["新類別"] }
+
+                case .paymentMethod:
+                    $0.$catalog.withLock { catalog in
+                        catalog.paymentMethods = [
+                            PaymentMethodInfo(
+                                name: "新付款",
+                                isCardless: true,
+                                isBankTransfer: false,
+                                isCashOnDelivery: false
+                            )
+                        ]
+                    }
+
+                case .reconciliationStatus:
+                    $0.$catalog.withLock { catalog in
+                        catalog.reconciliationStatuses = ["新狀態"]
+                    }
+                }
+            }
+            #expect(store.state.catalog.names(for: kind) == [Self.loadedName(for: kind)])
+            await store.finish()
         }
-        store.exhaustivity = .off
-
-        await store.send(.deleteRequested("美妝"))
-        await store.receive(\.loadFailed)
-
-        #expect(store.state.items == ["美妝", "零食"])
     }
 
-    @Test func deleteSuccessRemovesTheItem() async {
-        var state = LookupManagementFeature.State(kind: .category)
-        state.items = ["美妝", "零食"]
-        let store = TestStore(initialState: state) {
-            LookupManagementFeature()
-        } withDependencies: {
-            $0[CategoryRepository.self].removeCategory = { _ in }
-        }
-        store.exhaustivity = .off
-
-        await store.send(.deleteRequested("美妝"))
-        await store.receive(\.deleteSucceeded)
-
-        #expect(store.state.items == ["零食"])
-    }
-
-    // MARK: - Destination (改名 / 編輯付款方式) Tests
-
-    @Test func renameCanSaveIsFalseWhenDraftEmptyOrUnchanged() {
-        let unchanged = LookupManagementFeature.Destination.RenameFeature.State(originalName: "類別", draft: "類別")
-        #expect(unchanged.canSave == false)
-
-        let blank = LookupManagementFeature.Destination.RenameFeature.State(originalName: "類別", draft: "   ")
-        #expect(blank.canSave == false)
-
-        let changed = LookupManagementFeature.Destination.RenameFeature.State(originalName: "類別", draft: "新類別")
-        #expect(changed.canSave == true)
-    }
-
-    @Test func renameButtonTappedPresentsRenameDestinationWithOriginalNameSnapshot() async {
-        var state = LookupManagementFeature.State(kind: .category)
-        state.items = ["舊類別"]
-        state.hasLoaded = true
-
-        let store = TestStore(initialState: state) {
-            LookupManagementFeature()
-        }
-
-        // 由 reducer 以點擊當下的名稱同時初始化 originalName 與 draft，取代 view 端直接組裝表單初值
-        await store.send(.renameButtonTapped(name: "舊類別")) {
-            $0.destination = .rename(
-                LookupManagementFeature.Destination.RenameFeature.State(originalName: "舊類別", draft: "舊類別")
+    /// 新增四種主檔時先寫入 repository，再更新共用目錄
+    ///
+    /// - Parameter kind: 要新增項目的主檔種類
+    /// - Note: 寫入失敗時目錄維持原值，由 `addWriteFailureIsDismissedAndDoesNotReturnAfterSuccess()` 覆蓋
+    @Test(arguments: LookupKind.allCases)
+    func addFormWritesTheTrimmedName(kind: LookupKind) async {
+        // Given
+        await LookupCatalog.withIsolatedStorage {
+            @Shared(.lookupCatalog) var sharedCatalog: LookupCatalog
+            let writes = LockIsolated<[LookupItemAddition]>([])
+            let flags = PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: true,
+                isCashOnDelivery: false
             )
-        }
-    }
-
-    @Test func renameDestinationLifecycleUpdatesDraftSavesAndDismisses() async {
-        var state = LookupManagementFeature.State(kind: .category)
-        state.items = ["舊類別"]
-        state.hasLoaded = true
-
-        let store = TestStore(initialState: state) {
-            LookupManagementFeature()
-        } withDependencies: {
-            $0[CategoryRepository.self] = .testValue
-            $0[OrderRepository.self] = .testValue
-        }
-
-        await store.send(.renameButtonTapped(name: "舊類別")) {
-            $0.destination = .rename(
-                LookupManagementFeature.Destination.RenameFeature.State(originalName: "舊類別", draft: "舊類別")
+            let expectedAddition = LookupItemAddition(
+                name: "手作小物",
+                flags: kind == .paymentMethod ? flags : .none
             )
-        }
+            let store = TestStore(
+                initialState: LookupManagementFeature.State(kind: kind)
+            ) {
+                LookupManagementFeature()
+            } withDependencies: {
+                switch kind {
+                case .orderSource:
+                    $0[OrderSourceRepository.self].addOrderSource = { name in
+                        writes.withValue { additions in
+                            additions.append(LookupItemAddition(name: name, flags: .none))
+                        }
+                    }
 
-        await store.send(.destination(.presented(.rename(.draftChanged("新類別"))))) {
-            $0.destination = .rename(
-                LookupManagementFeature.Destination.RenameFeature.State(originalName: "舊類別", draft: "新類別")
-            )
-        }
+                case .category:
+                    $0[CategoryRepository.self].addCategory = { name in
+                        writes.withValue { additions in
+                            additions.append(LookupItemAddition(name: name, flags: .none))
+                        }
+                    }
 
-        #expect(store.state.destination?.rename?.canSave == true)
+                case .paymentMethod:
+                    $0[PaymentMethodRepository.self].addPaymentMethod = { name, flags in
+                        writes.withValue { additions in
+                            additions.append(LookupItemAddition(name: name, flags: flags))
+                        }
+                    }
 
-        // 儲存：destination 攜帶的草稿轉送既有 renameRequested domain effect，並在同一步 dismiss
-        await store.send(.destination(.presented(.rename(.saveButtonTapped)))) {
-            $0.destination = nil
-        }
+                case .reconciliationStatus:
+                    $0[ReconciliationStatusRepository.self].addReconciliationStatus = { name in
+                        writes.withValue { additions in
+                            additions.append(LookupItemAddition(name: name, flags: .none))
+                        }
+                    }
+                }
+            }
 
-        await store.receive(\.renameRequested) {
-            $0.items = ["新類別"]
-        }
-
-        await store.finish()
-    }
-
-    @Test func renameSaveButtonTappedNoOpsWhenCannotSave() async {
-        var state = LookupManagementFeature.State(kind: .category)
-        state.items = ["類別"]
-        state.hasLoaded = true
-
-        let store = TestStore(initialState: state) {
-            LookupManagementFeature()
-        }
-
-        await store.send(.renameButtonTapped(name: "類別")) {
-            $0.destination = .rename(
-                LookupManagementFeature.Destination.RenameFeature.State(originalName: "類別", draft: "類別")
-            )
-        }
-
-        // 草稿與原名相同，canSave 為 false；儲存為 no-op，destination 維持呈現、不觸發 renameRequested
-        await store.send(.destination(.presented(.rename(.saveButtonTapped))))
-    }
-
-    @Test func editButtonTappedPresentsEditPaymentMethodDestinationWithFlagSnapshot() async {
-        var state = LookupManagementFeature.State(kind: .paymentMethod)
-        state.items = ["匯款"]
-        state.paymentMethodIsBankTransfer = ["匯款": true]
-        state.hasLoaded = true
-
-        let store = TestStore(initialState: state) {
-            LookupManagementFeature()
-        }
-
-        // 由 reducer 自 paymentMethodIsCardless / paymentMethodIsBankTransfer / paymentMethodIsCashOnDelivery 快照三個旗標
-        // 取代 view 端直接索引字典組裝表單初值
-        await store.send(.editButtonTapped(name: "匯款")) {
-            $0.destination = .editPaymentMethod(
-                LookupManagementFeature.Destination.EditPaymentMethodFeature.State(
-                    originalName: "匯款",
-                    isCardless: false,
-                    isBankTransfer: true,
-                    isCashOnDelivery: false
+            // When
+            await store.send(.view(.addButtonTapped)) {
+                $0.destination = .add(
+                    LookupAddFormFeature.State(hasClassification: kind == .paymentMethod)
                 )
-            )
-        }
-    }
-
-    @Test func editButtonTappedNoOpsForNonPaymentMethodKind() async {
-        var state = LookupManagementFeature.State(kind: .category)
-        state.items = ["類別"]
-        state.hasLoaded = true
-
-        let store = TestStore(initialState: state) {
-            LookupManagementFeature()
-        }
-
-        await store.send(.editButtonTapped(name: "類別"))
-    }
-
-    @Test func editPaymentMethodDestinationSaveTriggersEditConfirmedAndDismisses() async {
-        var state = LookupManagementFeature.State(kind: .paymentMethod)
-        state.items = ["匯款"]
-        state.paymentMethodIsBankTransfer = ["匯款": true]
-        state.hasLoaded = true
-
-        let store = TestStore(initialState: state) {
-            LookupManagementFeature()
-        } withDependencies: {
-            $0[PaymentMethodRepository.self] = .testValue
-            $0[OrderRepository.self] = .testValue
-        }
-
-        await store.send(.editButtonTapped(name: "匯款")) {
-            $0.destination = .editPaymentMethod(
-                LookupManagementFeature.Destination.EditPaymentMethodFeature.State(
-                    originalName: "匯款",
-                    isCardless: false,
-                    isBankTransfer: true,
-                    isCashOnDelivery: false
-                )
-            )
-        }
-
-        // 儲存：destination 快照的 originalName 與表單最終值轉送既有 editConfirmed domain effect，並在同一步 dismiss
-        await store.send(
-            .destination(
-                .presented(
-                    .editPaymentMethod(
-                        .saveButtonTapped(name: "銀行匯款", isCardless: false, isBankTransfer: false, isCashOnDelivery: false)
+            }
+            await store.send(
+                .destination(
+                    .presented(
+                        .add(.view(.saveButtonTapped(name: " 手作小物 ", flags: flags)))
                     )
                 )
             )
-        ) {
-            $0.destination = nil
-        }
+            await store.receive(\.destination.presented.add.delegate.saved) {
+                $0.destination = nil
+                $0.isFormSheetDismissing = true
+                switch kind {
+                case .orderSource:
+                    $0.$catalog.withLock { catalog in
+                        catalog.orderSources = ["手作小物"]
+                    }
 
-        await store.receive(\.editConfirmed) {
-            $0.items = ["銀行匯款"]
-            $0.paymentMethodIsBankTransfer = ["銀行匯款": false]
-            $0.paymentMethodIsCardless = ["銀行匯款": false]
-            $0.paymentMethodIsCashOnDelivery = ["銀行匯款": false]
-        }
+                case .category:
+                    $0.$catalog.withLock { catalog in
+                        catalog.categories = ["手作小物"]
+                    }
 
-        await store.finish()
+                case .paymentMethod:
+                    $0.$catalog.withLock { catalog in
+                        catalog.paymentMethods = [
+                            PaymentMethodInfo(
+                                name: "手作小物",
+                                isCardless: false,
+                                isBankTransfer: true,
+                                isCashOnDelivery: false
+                            )
+                        ]
+                    }
+
+                case .reconciliationStatus:
+                    $0.$catalog.withLock { catalog in
+                        catalog.reconciliationStatuses = ["手作小物"]
+                    }
+                }
+            }
+
+            await store.receive(\.addResponse.success, expectedAddition)
+            await store.send(.view(.formSheetDismissed)) {
+                $0.isFormSheetDismissing = false
+            }
+
+            // Then
+            #expect(writes.value == [expectedAddition])
+            #expect(store.state.items == [expectedAddition.name])
+            #expect(sharedCatalog.names(for: kind) == ["手作小物"])
+            await store.finish()
+        }
     }
-}
 
-/// 主檔刪除測試用的寫入失敗
-private enum LookupTestFailure: Error {
+    /// 刪除前要求確認，確認後寫入並從共用目錄移除
+    ///
+    /// - Note: 先寫後改由 `deleteWriteFailureLeavesTheItemAndPresentsNotice` 保證：寫入失敗時項目保留
+    @Test
+    func deleteConfirmationWritesAndRemovesTheItem() async {
+        // Given
+        await LookupCatalog.withIsolatedStorage {
+            let state = LookupManagementFeature.State(kind: .category)
+            state.$catalog.withLock { $0.categories = ["服飾"] }
+            let removeCalls = LockIsolated<[String]>([])
+            let store = TestStore(initialState: state) {
+                LookupManagementFeature()
+            } withDependencies: {
+                $0[CategoryRepository.self].removeCategory = { name in
+                    removeCalls.withValue { $0.append(name) }
+                }
+            }
 
-    // MARK: - Cases
+            // When
+            await store.send(.view(.deleteButtonTapped(name: "服飾"))) {
+                $0.destination = Self.deleteConfirmationAlert(name: "服飾")
+            }
+            await store.send(
+                .destination(.presented(.alert(.confirmDelete(name: "服飾"))))
+            ) {
+                $0.destination = nil
+            }
 
-    /// 模擬資料庫寫入拋錯
-    case boom
+            // Then
+            await store.receive(\.deleteResponse.success, "服飾") {
+                $0.$catalog.withLock { $0.categories = [] }
+            }
+            #expect(removeCalls.value == ["服飾"])
+            #expect(store.state.items.isEmpty)
+            await store.finish()
+        }
+    }
 }

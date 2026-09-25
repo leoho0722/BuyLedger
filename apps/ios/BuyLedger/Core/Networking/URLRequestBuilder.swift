@@ -7,19 +7,17 @@
 
 import Foundation
 
-/// 以鏈式 API 組裝 `URLRequest`，集中各 client 重複的「設 method / header / body」樣板
-///
-/// 值型別：每個設定方法回傳套用後的新 builder，最後以 ``build()`` 取出組裝完成的 `URLRequest`
+/// 以鏈式方式組裝 `URLRequest`
 struct URLRequestBuilder: Sendable {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 累積設定中的請求
     private var request: URLRequest
 
     // MARK: - Init
 
-    /// 以目標 URL 與逾時建立 builder
+    /// 以目標 URL 與逾時建立請求組裝器
     /// - Parameters:
     ///   - url: 目標 URL
     ///   - timeout: 逾時秒數 (預設 60)
@@ -32,8 +30,8 @@ struct URLRequestBuilder: Sendable {
 
 extension URLRequestBuilder {
 
-    /// 設定 HTTP method
-    /// - Parameter method: HTTP method
+    /// 設定 `HTTPMethod`
+    /// - Parameter method: 要使用的 HTTP 方法
     /// - Returns: 套用後的 builder
     func method(_ method: HTTPMethod) -> Self {
         var copy = self

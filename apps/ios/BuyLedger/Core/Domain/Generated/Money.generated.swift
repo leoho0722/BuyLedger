@@ -8,14 +8,14 @@
 
 import Foundation
 
-/// 帶有幣別的金額值
+/// 含幣別的金額
 struct Money: Codable, Equatable, Sendable {
 
     // MARK: - Data Properties
 
-    /// 金額數值
+    /// 金額
     let amount: Decimal
 
-    /// 金額所屬幣別
+    /// 幣別
     let currency: CurrencyCode
 }

@@ -11,9 +11,6 @@ import Testing
 @testable import BuyLedger
 
 /// 系統搜尋列取消後的過濾狀態
-///
-/// 系統搜尋呈現在取消時會把文字清空，功能狀態必須跟著回到未過濾，
-/// 否則使用者會停留在已過濾結果卻看不到搜尋列
 @MainActor
 struct OrdersSearchCancellationTests {
 
@@ -28,9 +25,11 @@ struct OrdersSearchCancellationTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        store.exhaustivity = .off
 
-        await store.send(.searchTextChanged("小美"))
+        await store.send(.searchTextChanged("小美")) {
+            $0.searchText = "小美"
+            $0.selectedOrderID = "A"
+        }
         let filtered = store.state.filteredOrders(
             referenceDate: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
@@ -38,7 +37,10 @@ struct OrdersSearchCancellationTests {
         #expect(filtered.map(\.id) == ["A"])
 
         // 取消搜尋等同把文字清空
-        await store.send(.searchTextChanged(""))
+        await store.send(.searchTextChanged("")) {
+            $0.searchText = ""
+            $0.selectedOrderID = "A"
+        }
 
         #expect(store.state.searchText.isEmpty)
         let restored = store.state.filteredOrders(
@@ -59,10 +61,15 @@ struct OrdersSearchCancellationTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        store.exhaustivity = .off
 
-        await store.send(.searchTextChanged("小美"))
-        await store.send(.searchTextChanged(""))
+        await store.send(.searchTextChanged("小美")) {
+            $0.searchText = "小美"
+            $0.selectedOrderID = "A"
+        }
+        await store.send(.searchTextChanged("")) {
+            $0.searchText = ""
+            $0.selectedOrderID = "A"
+        }
 
         #expect(store.state.selectedCategory == "美妝")
         let restored = store.state.filteredOrders(
@@ -84,7 +91,17 @@ private extension OrdersSearchCancellationTests {
         makeOrder(id: "C", customer: "阿華", category: "零食"),
     ]
 
-    static func makeOrder(id: String, customer: String, category: String) -> LedgerOrder {
+    /// 建立搜尋取消測試用的最小訂單
+    /// - Parameters:
+    ///   - id: 訂單識別值
+    ///   - customer: 客戶名稱
+    ///   - category: 商品類別
+    /// - Returns: 建立的測試訂單
+    static func makeOrder(
+        id: String,
+        customer: String,
+        category: String
+    ) -> LedgerOrder {
         LedgerOrder(
             id: id,
             customer: LedgerCustomer(name: customer, initials: "XX", tier: .regular),

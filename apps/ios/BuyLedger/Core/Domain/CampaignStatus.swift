@@ -7,7 +7,7 @@
 
 import Foundation
 
-// MARK: - Display Properties
+// MARK: - Computed Properties
 
 extension CampaignStatus {
 

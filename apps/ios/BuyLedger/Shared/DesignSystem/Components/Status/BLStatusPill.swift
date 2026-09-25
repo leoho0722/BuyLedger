@@ -10,7 +10,7 @@ import SwiftUI
 /// 以短文字與語意狀態呈現狀態
 struct BLStatusPill: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// 狀態膠囊垂直內距，隨字級縮放
     @ScaledMetric(relativeTo: .caption) private var verticalPadding: CGFloat = 3
@@ -27,29 +27,43 @@ struct BLStatusPill: View {
     /// 狀態膠囊使用的語意狀態
     let tone: BLTone
 
-    /// 指示是否顯示左側狀態點
-    let showsIndicator: Bool
+    /// 是否顯示左側狀態點
+    let isIndicatorVisible: Bool
 
     // MARK: - Init
 
     /// 建立狀態膠囊
+    ///
     /// - Parameters:
     ///   - title: 狀態膠囊顯示的文字
     ///   - tone: 狀態膠囊使用的語意狀態
-    ///   - showsIndicator: 指示是否顯示左側狀態點
-    init(_ title: String, tone: BLTone = .neutral, showsIndicator: Bool = true) {
+    ///   - isIndicatorVisible: 是否顯示左側狀態點
+    init(
+        _ title: String,
+        tone: BLTone = .neutral,
+        showsIndicator isIndicatorVisible: Bool = true
+    ) {
         self.title = title
         self.tone = tone
-        self.showsIndicator = showsIndicator
+        self.isIndicatorVisible = isIndicatorVisible
     }
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 狀態膠囊的畫面內容
     var body: some View {
-        HStack(spacing: 4) {
-            if showsIndicator {
-                // 色點與文字標籤傳達同一個狀態，屬冗餘裝飾故對輔助技術隱藏
+        statusContent
+    }
+}
+
+// MARK: - Private Views
+
+private extension BLStatusPill {
+
+    /// 狀態膠囊的狀態點與文字內容
+    var statusContent: some View {
+        HStack(spacing: BLSpacing.extraSmall) {
+            if isIndicatorVisible {
                 Circle()
                     .fill(tone.indicator)
                     .frame(width: indicatorSize, height: indicatorSize)
@@ -57,13 +71,14 @@ struct BLStatusPill: View {
             }
 
             Text(LocalizedStringKey(title))
-                .font(.caption.weight(.semibold))
+                .font(BLTypographyStyle.caption.font.weight(.semibold))
         }
-        .foregroundStyle(tone.onSurface)
         .padding(.vertical, verticalPadding)
         .padding(.horizontal, horizontalPadding)
+        .foregroundStyle(tone.onSurface)
         .background(tone.background)
         .clipShape(Capsule())
+        .accessibilityElement(children: .combine)
     }
 }
 

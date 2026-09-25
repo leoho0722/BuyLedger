@@ -8,9 +8,6 @@
 import XCTest
 
 /// 設定頁的 Page Object
-///
-/// 對外只暴露語意操作 (開語言選擇器、填每月目標、切 AI 總結開關等)，元素查詢細節不外洩給測試檔；
-/// 進到本頁的路徑是「更多」分頁的設定列，由 ``navigate(in:)`` 以 ``AppNavigator`` 直接驅動
 struct SettingsScreen: Screen {
 
     // MARK: - Data Properties
@@ -21,11 +18,15 @@ struct SettingsScreen: Screen {
     // MARK: - Computed Properties
 
     /// 設定頁的畫面根 identifier
+    ///
+    /// - Returns: 設定頁的根 identifier
     var rootIdentifier: String {
         BLAccessibilityID.Settings.root
     }
 
     /// 版本資訊列承載的文字 (label 串接 value)，列不存在時回 nil
+    ///
+    /// - Returns: 版本資訊列的合併文字；列不存在時為 `nil`
     var versionText: String? {
         let row = element(BLAccessibilityID.Settings.versionRow)
         guard row.exists else {
@@ -41,50 +42,90 @@ extension SettingsScreen {
 
     /// 從「更多」分頁導航到設定頁並回傳就緒的 Page Object
     ///
-    /// 呼叫端若已自行導航到位，可略過本方法、直接建 ``SettingsScreen`` 後 `waitUntilReady()`
-    /// - Parameter app: 受測 App
-    /// - Returns: 已等待就緒的設定頁 Page Object
-    static func navigate(in app: XCUIApplication) -> SettingsScreen {
-        AppNavigator(app: app).selectTab(.more)
-        _ = app.descendants(matching: .any)[BLAccessibilityID.More.root].waitForExistence(timeout: 10)
+    /// - Parameters:
+    ///   - app: 受測 App
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 已就緒的設定頁 Page Object
+    static func navigate(
+        in app: XCUIApplication,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> SettingsScreen {
+        AppNavigator(app: app).selectTab(.more, file: file, line: line)
+        let moreRoot = app.descendants(matching: .any)[BLAccessibilityID.More.root]
+        guard moreRoot.waitUntilHittableOrFail(
+            in: app,
+            timeout: 10,
+            file: file,
+            line: line
+        ) else {
+            return SettingsScreen(app: app)
+        }
 
         let settingsRow = app.descendants(matching: .any)[BLAccessibilityID.More.row(.settings)]
-        settingsRow.waitUntilHittable()
-        settingsRow.tap()
+        settingsRow.tapAfterWaiting(in: app, file: file, line: line)
 
         let screen = SettingsScreen(app: app)
-        screen.waitUntilReady()
+        if !screen.waitUntilReady() {
+            app.failWithDiagnostics(
+                "設定頁根 identifier「\(screen.rootIdentifier)」逾時仍未出現",
+                file: file,
+                line: line
+            )
+        }
         return screen
     }
 
     /// 點語言選擇列開啟語言選擇器
-    func openLanguagePicker() {
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func openLanguagePicker(file: StaticString = #filePath, line: UInt = #line) {
         let picker = element(BLAccessibilityID.Settings.languagePicker)
-        picker.waitUntilHittable()
-        picker.tap()
+        picker.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 填入每月目標金額 (清空舊值後輸入再收數字鍵盤)
-    /// - Parameter value: 目標金額 (TWD)
-    func setMonthlyGoal(_ value: Int) {
+    ///
+    /// - Parameters:
+    ///   - value: 每月目標金額
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func setMonthlyGoal(
+        _ value: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
         let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
-        field.waitUntilHittable()
-        field.clearAndType(String(value), in: app)
-        field.dismissNumericKeyboard(in: app)
+        field.clearAndType(
+            String(value),
+            in: app,
+            file: file,
+            line: line
+        )
+        field.dismissNumericKeyboard(in: app, file: file, line: line)
     }
 
     /// 切換 AI 總結開關
-    func toggleAiSummary() {
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func toggleAiSummary(file: StaticString = #filePath, line: UInt = #line) {
         let toggle = app.switches[BLAccessibilityID.Settings.aiSummaryToggle]
-        toggle.waitUntilHittable()
-        toggle.tap()
+        toggle.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 點預設幣別列推進到幣別選擇器
-    func openDefaultCurrency() {
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func openDefaultCurrency(file: StaticString = #filePath, line: UInt = #line) {
         let row = element(BLAccessibilityID.Settings.defaultCurrencyRow)
-        row.waitUntilHittable()
-        row.tap()
+        row.tapAfterWaiting(in: app, file: file, line: line)
     }
 }
 
@@ -93,8 +134,9 @@ extension SettingsScreen {
 private extension SettingsScreen {
 
     /// 以 identifier 命中畫面上的元素 (不限型別)
+    ///
     /// - Parameter identifier: 目標元素的 accessibility identifier
-    /// - Returns: 對應的元素查詢
+    /// - Returns: 命中的畫面元素
     func element(_ identifier: String) -> XCUIElement {
         app.descendants(matching: .any)[identifier]
     }

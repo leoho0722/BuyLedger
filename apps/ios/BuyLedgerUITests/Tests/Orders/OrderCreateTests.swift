@@ -8,9 +8,6 @@
 import XCTest
 
 /// 新增訂單的表單就緒、必填驗證與完整建單流程測試
-///
-/// 一律以 accessibility identifier 定位、以主檔既有選項這個業務鍵做選取；找不到 App 元素即附診斷失敗、不 skip。
-/// 客戶名屬使用者資料可作為文字輸入，來源與類別皆取自 lookupsOnly 主檔既有項目 (有主檔可選、無既有訂單)
 final class OrderCreateTests: BLUITestCase {
 
     // MARK: - Static Properties
@@ -38,14 +35,14 @@ final class OrderCreateTests: BLUITestCase {
         _ = edit
     }
 
-    /// 必填驗證：剛開新表單時儲存停用，填完客戶名 + 來源 + 類別後儲存轉為可用
+    /// 填完必填欄位後，儲存按鈕應可用
     @MainActor
     func testSaveEnablesAfterRequiredFieldsFilled() {
         let app = launch(LaunchOptions(seed: .lookupsOnly))
         let edit = openOrderEdit(app)
 
         // 剛開新表單：客戶名／來源／類別皆未填，儲存應停用
-        if edit.isSaveEnabled {
+        if edit.isSaveEnabled() {
             failWithDiagnostics(in: app, "新表單必填未齊時儲存不應可用")
         }
 
@@ -60,13 +57,13 @@ final class OrderCreateTests: BLUITestCase {
         }
     }
 
-    /// 完整建單：填客戶名、選來源、選類別、填客戶實付金額後儲存，回訂單清單且新訂單出現
+    /// 建立訂單後，確認新訂單出現在清單
     @MainActor
     func testCreateOrderAppearsInList() {
         let app = launch(LaunchOptions(seed: .lookupsOnly))
         let edit = openOrderEdit(app)
 
-        // 先填客戶實付 (表單下半的數字欄)：此時尚無鍵盤升起，聚焦才穩；文字欄與選擇器都在表單上半、之後填不受影響
+        // 先填數字欄，避免鍵盤影響後續欄位。
         edit.typeChargedAmount(Self.chargedAmount, in: app)
         edit.typeCustomerName(Self.customerName)
         selectFromPicker(app, open: { edit.openSourcePicker() }, value: Self.orderSource)
@@ -95,11 +92,12 @@ final class OrderCreateTests: BLUITestCase {
 private extension OrderCreateTests {
 
     /// 切到訂單分頁、點新增並等編輯表單就緒，回傳編輯表單 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
-    /// - Returns: 已就緒的訂單編輯 Page Object
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
+    /// - Returns: 已就緒的訂單編輯表單 Page Object
     @MainActor
     func openOrderEdit(
         _ app: XCUIApplication,
@@ -107,7 +105,7 @@ private extension OrderCreateTests {
         line: UInt = #line
     ) -> OrderEditScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToOrders() {
+        if !root.goToOrders(file: file, line: line) {
             failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
         }
 
@@ -121,7 +119,7 @@ private extension OrderCreateTests {
             )
         }
 
-        orders.tapAddOrder()
+        orders.tapAddOrder(file: file, line: line)
 
         let edit = OrderEditScreen(app: app)
         if !edit.waitUntilReady() {
@@ -136,12 +134,13 @@ private extension OrderCreateTests {
     }
 
     /// 開啟某個選擇器、等就緒後點選指定值
+    ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - open: 觸發開啟選擇器的操作 (點對應入口列)
-    ///   - value: 要選取的選項原始值
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - open: 開啟選擇器的操作
+    ///   - value: 要選取的值
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     @MainActor
     func selectFromPicker(
         _ app: XCUIApplication,
@@ -162,6 +161,6 @@ private extension OrderCreateTests {
             )
         }
 
-        picker.selectOption(value)
+        picker.selectOption(value, file: file, line: line)
     }
 }

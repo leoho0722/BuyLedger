@@ -9,8 +9,6 @@ import ComposableArchitecture
 import SwiftUI
 
 /// iPadOS 使用的側邊欄導覽
-///
-/// 對應設計稿的左側欄：BL gradient logo、依語意分段的分頁清單 (工作區 / 工具 / 智慧分組)，以及進行中訂單數量的紅色徽章
 struct RootSidebarLayout: View {
 
     // MARK: - View Properties
@@ -20,9 +18,6 @@ struct RootSidebarLayout: View {
 
     /// App 目前選用的顯示語系
     let language: AppLanguage
-
-    /// 目前系統深淺色外觀
-    @Environment(\.colorScheme) private var colorScheme
 
     // MARK: - View Body
 
@@ -37,9 +32,6 @@ struct RootSidebarLayout: View {
 private extension RootSidebarLayout {
 
     /// 側邊欄的單一選取型別
-    ///
-    /// 分頁與智慧分組併入同一型別，讓系統清單只認得一個選取值：選取的單一來源由型別保證，
-    /// 而不是靠兩套狀態彼此避讓
     enum SidebarSelection: Hashable {
 
         // MARK: - Cases
@@ -50,10 +42,11 @@ private extension RootSidebarLayout {
         /// 智慧分組 (訂單頁的狀態篩選)
         case smartGroup(OrderStatus)
     }
+}
 
-    /// 側邊欄「智慧分組」中以狀態 + 顏色呈現的項目
-    ///
-    /// 涵蓋訂單從報價到交付的整條 pipeline；`cancelled` 不列入，避免使用者誤以為這是常用入口
+/// 側邊欄「智慧分組」中以狀態 + 顏色呈現的項目
+extension RootSidebarLayout {
+    /// 總覽頁可快速查看的訂單群組
     enum SmartGroup: String, Identifiable, CaseIterable {
 
         // MARK: - Cases
@@ -93,21 +86,21 @@ private extension RootSidebarLayout {
         var status: OrderStatus {
             switch self {
             case .quoting:
-                .quoting
+                    .quoting
             case .confirmed:
-                .confirmed
+                    .confirmed
             case .purchased:
-                .purchased
+                    .purchased
             case .shipping:
-                .shipping
+                    .shipping
             case .partiallyArrived:
-                .partiallyArrived
+                    .partiallyArrived
             case .arrived:
-                .arrived
+                    .arrived
             case .delivered:
-                .delivered
+                    .delivered
             case .pickedUp:
-                .pickedUp
+                    .pickedUp
             }
         }
 
@@ -115,47 +108,28 @@ private extension RootSidebarLayout {
         /// - Parameter palette: 目前外觀使用的色盤
         /// - Returns: 色點顏色
         func color(in palette: BLPalette) -> Color {
-            switch self {
-            case .quoting:
-                palette.teal
-            case .confirmed:
-                palette.accent
-            case .purchased:
-                palette.indigo
-            case .shipping:
-                palette.orange
-            case .partiallyArrived:
-                palette.purple
-            case .arrived:
-                palette.yellow
-            case .delivered:
-                palette.green
-            case .pickedUp:
-                palette.pink
-            }
+            status.sidebarHue(in: palette)
         }
 
         /// 對應到 UI 測試 identifier 的分組 key
-        ///
-        /// 刻意寫成窮舉 switch 而非直接取 `rawValue`：新增分組時這裡會編不過，逼出 ``BLAccessibilityID/Root/SmartGroup`` 的同步更新
         var accessibilityKey: BLAccessibilityID.Root.SmartGroup {
             switch self {
             case .quoting:
-                .quoting
+                    .quoting
             case .confirmed:
-                .confirmed
+                    .confirmed
             case .purchased:
-                .purchased
+                    .purchased
             case .shipping:
-                .shipping
+                    .shipping
             case .partiallyArrived:
-                .partiallyArrived
+                    .partiallyArrived
             case .arrived:
-                .arrived
+                    .arrived
             case .delivered:
-                .delivered
+                    .delivered
             case .pickedUp:
-                .pickedUp
+                    .pickedUp
             }
         }
 
@@ -163,7 +137,13 @@ private extension RootSidebarLayout {
 
         /// 訂單瀏覽 sidebar 中提供的固定順序 (依訂單生命週期由前到後排)
         static let orderBrowsingCases: [SmartGroup] = [
-            .quoting, .confirmed, .purchased, .shipping, .partiallyArrived, .arrived, .delivered,
+            .quoting,
+            .confirmed,
+            .purchased,
+            .shipping,
+            .partiallyArrived,
+            .arrived,
+            .delivered,
             .pickedUp,
         ]
     }
@@ -239,20 +219,22 @@ private extension RootSidebarLayout {
         HStack(spacing: BLSpacing.small) {
             ZStack {
                 RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(LinearGradient(
-                        colors: [palette.accent, palette.purple],
-                        startPoint: .topLeading,
-                        endPoint: .bottomTrailing
-                    ))
+                    .fill(
+                        LinearGradient(
+                            colors: [palette.accent, palette.purple],
+                            startPoint: .topLeading,
+                            endPoint: .bottomTrailing
+                        )
+                    )
                     .frame(width: 28, height: 28)
 
                 Text("BL")
-                    .font(.caption.weight(.bold))
+                    .font(BLTypographyStyle.caption.font.weight(.bold))
                     .foregroundStyle(.white)
             }
 
             Text("BuyLedger")
-                .font(.headline.weight(.bold))
+                .font(BLTypographyStyle.headline.font.weight(.bold))
                 .foregroundStyle(palette.label)
 
             Spacer(minLength: 0)
@@ -262,18 +244,19 @@ private extension RootSidebarLayout {
     }
 
     /// 主要分頁列
-    ///
-    /// `palette _:` 採用「外部 label `palette` + 內部名稱 `_`」的寫法：``BLBadge`` 自帶 tone-based 色彩、
-    /// body 已不讀 palette；保留外部 label 是為了與其他 row helper (``smartGroupRow``、``logoRow`` 等)
-    /// 呼叫風格一致，未來 nav 列要套色也不必動呼叫端
     /// - Parameters:
     ///   - tab: 對應的分頁
-    ///   - palette: 目前外觀使用的色盤；目前未使用，預留給未來不同 tab 套不同色等需求
+    ///   - palette: 目前外觀使用的色盤
     ///   - isSelected: 該列是否為目前選取項
     ///   - badgeCount: 顯示在右側的紅色徽章數字；為 `nil` 或 `0` 時不顯示
     /// - Returns: 分頁列 view
     @ViewBuilder
-    func navRow(_ tab: RootTab, palette _: BLPalette, isSelected: Bool, badgeCount: Int? = nil) -> some View {
+    func navRow(
+        _ tab: RootTab,
+        palette _: BLPalette,
+        isSelected: Bool,
+        badgeCount: Int? = nil
+    ) -> some View {
         HStack(spacing: BLSpacing.small) {
             Label(LocalizedStringKey(tab.title), systemImage: tab.systemImage)
                 .labelStyle(.titleAndIcon)
@@ -301,7 +284,11 @@ private extension RootSidebarLayout {
     ///   - isSelected: 該列是否為目前選取項
     /// - Returns: 智慧分組列 view
     @ViewBuilder
-    func smartGroupRow(_ group: SmartGroup, palette: BLPalette, isSelected: Bool) -> some View {
+    func smartGroupRow(
+        _ group: SmartGroup,
+        palette: BLPalette,
+        isSelected: Bool
+    ) -> some View {
         let count = SidebarBadgeCounts.orderCount(for: group.status, orders: store.orders.orders)
 
         HStack(spacing: BLSpacing.small) {
@@ -310,13 +297,13 @@ private extension RootSidebarLayout {
                 .frame(width: 9, height: 9)
 
             Text(LocalizedStringKey(group.status.title))
-                .font(.subheadline)
+                .blTextStyle(.subhead)
                 .foregroundStyle(palette.label)
 
             Spacer(minLength: 0)
 
             Text("\(count)")
-                .font(.footnote.weight(.medium))
+                .font(BLTypographyStyle.footnote.font.weight(.medium))
                 .monospacedDigit()
                 .foregroundStyle(palette.secondaryLabel)
         }
@@ -336,13 +323,25 @@ private extension RootSidebarLayout {
     func destination(selectedTab: RootTab) -> some View {
         switch selectedTab {
         case .dashboard:
-            DashboardView(store: store)
+            DashboardView(
+                store: store.scope(state: \.dashboard, action: \.dashboard),
+                language: language
+            )
         case .orders:
-            OrdersView(store: store.scope(state: \.orders, action: \.orders), language: language)
+            OrdersView(
+                store: store.scope(state: \.orders, action: \.orders),
+                language: language
+            )
         case .campaigns:
-            CampaignListView(store: store)
+            CampaignListView(
+                store: store.scope(state: \.campaigns, action: \.campaigns),
+                language: language
+            )
         case .insights:
-            InsightsView(store: store)
+            InsightsView(
+                store: store.scope(state: \.insights, action: \.insights),
+                language: language
+            )
         case .more:
             MoreView(store: store)
         }
@@ -354,9 +353,6 @@ private extension RootSidebarLayout {
 private extension RootSidebarLayout {
 
     /// 目前選取的側邊欄項目
-    ///
-    /// 停留在訂單頁且狀態篩選正對應某個智慧分組時，選取態歸該分組列；其餘情形歸分頁列。
-    /// 兩者互斥，因此任一時刻只有一列呈現選取態
     var currentSelection: SidebarSelection {
         if store.selectedTab == .orders,
            case let .status(status) = store.orders.selectedStatus,
@@ -379,16 +375,14 @@ private extension RootSidebarLayout {
     /// `List` 單選 binding：分頁與智慧分組共用同一個選取型別
     var selectionBinding: Binding<SidebarSelection?> {
         Binding(
-            get: {
-                currentSelection
-            },
+            get: { currentSelection },
             set: { newSelection in
                 switch newSelection {
                 case let .tab(tab):
                     guard tab != store.selectedTab else {
                         return
                     }
-                    store.send(.tabSelected(tab))
+                    store.send(.sidebarTabSelected(tab))
 
                 case let .smartGroup(status):
                     store.send(.smartGroupSelected(status))

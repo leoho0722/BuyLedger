@@ -8,17 +8,17 @@
 
 import Foundation
 
-/// 客戶在代購流程中的分級
+/// 客戶分級
 enum CustomerTier: String, Codable, Sendable {
 
     // MARK: - Cases
 
-    /// 第一次或近期新增的客戶
+    /// 新客戶
     case new
 
-    /// 一般常客
+    /// 一般客戶
     case regular
 
-    /// 高價值或高頻率客戶
+    /// 高價值或高頻客戶
     case vip
 }
