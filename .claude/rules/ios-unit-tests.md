@@ -16,6 +16,7 @@ paths:
 
 - **斷言由效果派送的 action 造成的變更前，先 `await store.receive(\.actionName)`**：`exhaustivity = .off` 搭 `store.finish()` 不保證 `.orderWriteFailed`、`.statusChangePersisted` 這類 action 已處理完。
     - 省略這步的斷言可能只是還沒跑到就通過，屬假測試；寫法參考 `CampaignReminderFailureTests`。
+- **effect 鏈改變 `@Shared` 時，在 TestStore 第一次觀察到變更的斷言點核對共享狀態**：通常是觸發 effect 的 action 或其後第一個 `receive`，不要等到實際更新它的 `xxxResponse`；TestStore 會在斷言前處理 effect 派送的後續 action，若把預期延後，兩個斷言點都會出現 state mismatch (參考 TCA `SharingState.md` 的 Tests 節)。
 - **純 `AlertState` 的 `.ifLet` 收到 `.presented` 動作後會自動清空該呈現**：清空發生在 `base._reduce` 之後，父層 reducer 仍讀得到該次呈現的值；窮舉測試依實際行為核對 `$0.xxx = nil`，不憑直覺增減。
 - **`AISummaryFeature` 串流測試一律注入同一個 `TestClock`**：測試環境的 `\.continuousClock` 可能是 `ImmediateClock`，逾時計時器會搶在串流前結束。
     - `$0.continuousClock` 與串流替身共用該 clock 的 `sleep(for:)`，以 `advance(by:)` 推進；替身內不用 `ContinuousClock` 或 `Task.sleep`。
@@ -25,7 +26,7 @@ paths:
 ## 跨測試共用狀態
 
 - **測試直接改寫 `@Shared(.lookupCatalog)` 會污染同批次的其他測試**：`@Shared` 是 process 內共用，`BuyLedger.xctestplan` 又是字母序執行，外溢的狀態會讓排在後面的 snapshot 測試出現只在完整套件下重現、單獨跑卻通過的失敗。
-    - 需要改寫主檔目錄的測試一律在隔離 storage 內建立 state：參考 `LookupManagementFeatureTests.withIsolatedCatalog` 與 `RootFeatureTests.makeIsolatedRootState` (以 `defaultInMemoryStorage = InMemoryStorage()` 建立)。
+    - 需要改寫主檔目錄的測試一律在隔離 storage 內建立 state：使用 `LookupCatalog.withIsolatedStorage`，根狀態測試另參考 `RootFeatureTests.makeIsolatedRootState` (以 `defaultInMemoryStorage = InMemoryStorage()` 建立)。
     - 症狀是「完整回歸紅、單獨跑綠」時先查這裡，不要改 snapshot 或重錄基準圖。
     - 測試 UserDefaults dependency (例如 `SettingsStore`) 時使用獨立 suite，測試前後清除 persistent domain，避免偏好值跨測試外溢。
 

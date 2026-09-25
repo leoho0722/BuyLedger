@@ -32,6 +32,9 @@ struct BLUITestConfiguration: Equatable, Sendable {
     /// 要模擬的載入失敗情境 (`-BLUITestLoadFailure`)，預設 `.none`
     let loadFailure: BLUITestLoadFailure
 
+    /// 是否讓四種主檔的新增、刪除與改名寫入失敗
+    let shouldFailLookupWrites: Bool
+
     /// 覆寫預設幣別的三碼代號 (`-BLUITestDefaultCurrency`)；`nil` 代表不覆寫
     let defaultCurrencyCode: String?
 
@@ -82,6 +85,7 @@ struct BLUITestConfiguration: Equatable, Sendable {
         language = Self.option(for: "-BLUITestLanguage", in: arguments)
         calendarAccess = Self.option(for: "-BLUITestCalendarAccess", in: arguments) ?? .granted
         loadFailure = Self.option(for: "-BLUITestLoadFailure", in: arguments) ?? BLUITestLoadFailure.none
+        shouldFailLookupWrites = arguments.contains("-BLUITestLookupWriteFailure")
         defaultCurrencyCode = Self.currencyCode(in: arguments)
         monthlyProfitGoalTwd = Self.monthlyProfitGoal(in: arguments)
         useAiSummary = arguments.contains("-BLUITestAiSummary")

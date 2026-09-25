@@ -508,7 +508,6 @@ struct OrderPersistenceTests {
     /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
     @Test func photosSurviveEveryCascadeRename() async throws(any Error) {
         // Given
-
         let persistence = try makePersistence()
         let photo = Data([0xFF, 0xD8, 0xFF, 0xE0, 0x20])
 
@@ -522,25 +521,25 @@ struct OrderPersistenceTests {
             photos: [photo]
         )
         order = Self.withReconciliationStatus(order, status: "待對帳")
-        // When
 
+        // When
         try await persistence.create(order)
 
-        try await persistence.renameOrderSource(from: "蝦皮", to: "蝦皮 (新)")
-        // Then
+        try await persistence.applyOrderSourceRename(from: "蝦皮", to: "蝦皮 (新)")
 
+        // Then
         #expect(
             try await persistence.fetch(id: "BL-RENAME-ALL")?.photos == [photo],
             "訂單來源更名後照片不應變動"
         )
 
-        try await persistence.renameCategory(from: "美妝", to: "彩妝保養")
+        try await persistence.applyCategoryRename(from: "美妝", to: "彩妝保養")
         #expect(
             try await persistence.fetch(id: "BL-RENAME-ALL")?.photos == [photo],
             "商品類別更名後照片不應變動"
         )
 
-        try await persistence.renameReconciliationStatus(from: "待對帳", to: "對帳成功")
+        try await persistence.applyReconciliationStatusRename(from: "待對帳", to: "對帳成功")
         #expect(
             try await persistence.fetch(id: "BL-RENAME-ALL")?.photos == [photo],
             "對帳狀態更名後照片不應變動"
@@ -593,7 +592,7 @@ struct OrderPersistenceTests {
 
         try await persistence.update(order)
 
-        try await persistence.renameReconciliationStatus(from: "待對帳", to: "對帳成功")
+        try await persistence.applyReconciliationStatusRename(from: "待對帳", to: "對帳成功")
 
         let stored = try await persistence.fetchAll()
         // Then
@@ -825,7 +824,7 @@ struct OrderPersistenceTests {
             )
         )
 
-        try await persistence.renameCategory(from: "美妝", to: "彩妝保養")
+        try await persistence.applyCategoryRename(from: "美妝", to: "彩妝保養")
 
         let stored = try await persistence.fetchAll()
         // Then
@@ -1296,6 +1295,25 @@ struct OrderPersistenceTests {
 
 // MARK: - Nested Types
 
+extension OrderPersistenceTests {
+
+    /// 商品類別改名失敗時的主檔與訂單狀態範例
+    struct LookupRenameFailureExample: Sendable {
+
+        /// 查驗一般改名與撞名合併的兩種寫入前狀態
+        nonisolated static let examples = [
+            Self(categoryNames: ["服飾"], orderCategories: [["服飾"]]),
+            Self(categoryNames: ["服飾", "衣著"], orderCategories: [["服飾"], ["衣著"]]),
+        ]
+
+        /// 寫入前的主檔名稱
+        let categoryNames: [String]
+
+        /// 寫入前各訂單的類別
+        let orderCategories: [[String]]
+    }
+}
+
 private extension OrderPersistenceTests {
 
     /// 全欄位樣本的兩種變體：更新前／更新後，每一欄皆非預設值且逐欄相異
@@ -1323,26 +1341,22 @@ private extension OrderPersistenceTests {
     }
 }
 
-// MARK: - Private Method
+// MARK: - Internal Method
 
-private extension OrderPersistenceTests {
-
-    /// 用 in-memory 的 ``ModelContainer`` 建立每個測試獨立的 ``OrderPersistence``
-    ///
-    /// - Returns: 建立的 OrderPersistence
-    /// - Throws: 測試容器建立失敗時拋出錯誤
-    func makePersistence() throws(any Error) -> OrderPersistence {
-        let container = PersistenceContainer.makeInMemory(for: .testing)
-        return OrderPersistence(modelContainer: container)
-    }
+extension OrderPersistenceTests {
 
     /// 建立寫入權限被撤回的磁碟 persistence，驗證 save 失敗可 rollback
     ///
-    /// - Parameter shouldSeedExistingOrder: 是否先寫入一筆既有訂單
+    /// - Parameters:
+    ///   - shouldSeedExistingOrder: 是否先寫入一筆既有訂單
+    ///   - categoryNames: 要預先寫入的商品類別
+    ///   - orders: 要預先寫入的訂單
     /// - Returns: 使用不可寫入儲存的 OrderPersistence
     /// - Throws: 測試容器建立失敗時拋出錯誤
     static func makeUnsavablePersistence(
-        shouldSeedExistingOrder: Bool = true
+        shouldSeedExistingOrder: Bool = true,
+        categoryNames: [String] = [],
+        orders: [LedgerOrder] = []
     ) throws(any Error) -> OrderPersistence {
         let schema = Schema(versionedSchema: BuyLedgerSchemaV17.self)
         let directoryURL = FileManager.default.temporaryDirectory
@@ -1375,6 +1389,14 @@ private extension OrderPersistenceTests {
                         )
                     )
                 )
+            }
+            for name in categoryNames {
+                seedContext.insert(CategoryRecord(name: name))
+            }
+            for order in orders {
+                seedContext.insert(OrderRecord(order: order))
+            }
+            if shouldSeedExistingOrder || !categoryNames.isEmpty || !orders.isEmpty {
                 try seedContext.save()
             }
         }
@@ -1390,6 +1412,39 @@ private extension OrderPersistenceTests {
             migrationPlan: BuyLedgerMigrationPlan.self,
             configurations: readOnlyConfiguration
         )
+        return OrderPersistence(modelContainer: container)
+    }
+
+    /// 建立只包含主檔名稱的持久化測試訂單
+    ///
+    /// - Parameters:
+    ///   - id: 訂單識別值
+    ///   - categories: 訂單類別
+    ///   - paymentMethod: 訂單付款方式
+    /// - Returns: 對應主檔測試使用的訂單
+    static func makeLookupRenameOrder(
+        id: String,
+        categories: [String] = [],
+        paymentMethod: String = "信用卡"
+    ) -> LedgerOrder {
+        LedgerOrder.fixture(
+            id: id,
+            categories: categories,
+            paymentMethod: paymentMethod
+        )
+    }
+}
+
+// MARK: - Private Method
+
+private extension OrderPersistenceTests {
+
+    /// 用 in-memory 的 ``ModelContainer`` 建立每個測試獨立的 ``OrderPersistence``
+    ///
+    /// - Returns: 建立的 OrderPersistence
+    /// - Throws: 測試容器建立失敗時拋出錯誤
+    func makePersistence() throws(any Error) -> OrderPersistence {
+        let container = PersistenceContainer.makeInMemory(for: .testing)
         return OrderPersistence(modelContainer: container)
     }
 
@@ -1473,7 +1528,10 @@ private extension OrderPersistenceTests {
     ///   - order: 原始訂單
     ///   - status: 新的對帳狀態
     /// - Returns: 套用新對帳狀態後的訂單
-    static func withReconciliationStatus(_ order: LedgerOrder, status: String) -> LedgerOrder {
+    static func withReconciliationStatus(
+        _ order: LedgerOrder,
+        status: String
+    ) -> LedgerOrder {
         LedgerOrder(
             id: order.id,
             customer: order.customer,

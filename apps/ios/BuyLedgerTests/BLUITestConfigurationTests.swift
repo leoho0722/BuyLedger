@@ -25,6 +25,7 @@ import Testing
             #expect(configuration.language == nil)
             #expect(configuration.calendarAccess == .granted)
             #expect(configuration.loadFailure == BLUITestLoadFailure.none)
+            #expect(configuration.shouldFailLookupWrites == false)
             #expect(configuration.defaultCurrencyCode == nil)
             #expect(configuration.monthlyProfitGoalTwd == nil)
         }
@@ -54,6 +55,7 @@ import Testing
                 "-BLUITestLanguage", "english",
                 "-BLUITestCalendarAccess", "denied",
                 "-BLUITestLoadFailure", "ordersFirstReadOnly",
+                "-BLUITestLookupWriteFailure",
                 "-BLUITestDefaultCurrency", "JPY",
                 "-BLUITestMonthlyGoal", "80000",
             ])
@@ -64,6 +66,7 @@ import Testing
             #expect(configuration.language == .english)
             #expect(configuration.calendarAccess == .denied)
             #expect(configuration.loadFailure == .ordersFirstReadOnly)
+            #expect(configuration.shouldFailLookupWrites)
             #expect(configuration.defaultCurrencyCode == "JPY")
             #expect(configuration.monthlyProfitGoalTwd == 80_000)
         }
@@ -189,6 +192,19 @@ import Testing
             ])
 
             #expect(configuration.seedProfile == .empty)
+        }
+
+        /// 主檔寫入失敗旗標可開啟四種主檔的寫入替身
+        @Test
+        func lookupWriteFailureFlagEnablesWriteFailures() {
+            // Given
+            let arguments = ["-BLUITestLookupWriteFailure"]
+
+            // When
+            let configuration = BLUITestConfiguration(arguments: arguments)
+
+            // Then
+            #expect(configuration.shouldFailLookupWrites)
         }
     }
 

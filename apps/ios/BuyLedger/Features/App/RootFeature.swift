@@ -90,6 +90,11 @@ struct RootFeature {
         /// 使用者切換主要分頁
         case tabSelected(RootTab)
 
+        /// 只由 iPad 側邊欄送出，切換分頁前先清空「更多」路徑
+        ///
+        /// - Parameter tab: 要切換到的主要分頁
+        case sidebarTabSelected(RootTab)
+
         /// 從非訂單分頁 (如 Dashboard 的 onboarding) 發起「新訂單」流程
         case startNewOrder
 
@@ -291,6 +296,11 @@ private extension RootFeature {
             state.selectedTab = tab
             return .none
 
+        case let .sidebarTabSelected(tab):
+            state.morePath.removeAll()
+            state.selectedTab = tab
+            return .none
+
         case .startNewOrder:
             state.selectedTab = .orders
             state.orders.editOrder = OrderEditFeature.State(
@@ -300,6 +310,8 @@ private extension RootFeature {
             return .none
 
         case let .smartGroupSelected(status):
+            // 「更多」路徑非空時切分頁會讓 iPad 的 NavigationSplitView 崩潰，先清空
+            state.morePath.removeAll()
             // 只切換狀態篩選，不覆寫其他篩選條件
             state.selectedTab = .orders
             state.orders.selectedStatus = .status(status)
@@ -439,17 +451,19 @@ private extension RootFeature {
             return .none
 
             // 共享目錄已由子 reducer 更新，此處只處理訂單 cascade
-        case let .lookupManagements(.element(id: kind, action: .renameRequested(from, to))):
+        case let .lookupManagements(
+            .element(id: kind, action: .delegate(.itemRenamed(rename)))
+        ):
             cascadeRename(
                 kind: kind,
-                from: from,
-                to: to,
+                from: rename.oldName,
+                to: rename.newName,
                 in: &state
             )
             return .none
 
         case let .lookupManagements(
-            .element(id: .paymentMethod, action: .paymentMethodEditSucceeded(plan))
+            .element(id: .paymentMethod, action: .delegate(.paymentMethodEdited(plan)))
         ):
             // 付款方式主檔已由 LookupManagementFeature 寫入目錄
             // 此處只把同一份已正規化 payload 轉送給訂單 reducer 套用到既有訂單列

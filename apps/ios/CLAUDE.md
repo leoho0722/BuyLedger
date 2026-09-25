@@ -26,9 +26,10 @@
 
 ## 建置與開發指令
 
-- **不退回原生 `xcodebuild`／`xcrun`／`simctl`**，明文例外只有兩個：
+- **不退回原生 `xcodebuild`／`xcrun`／`simctl`**，明文例外有三項：
     - `agvtool` (版本管理不在 XcodeBuildMCP 能力範圍)。
     - CI (`.github/workflows/ci.yml`) 以 `npm install -g xcodebuildmcp@<釘選版本>` 安裝 CLI，之後所有 build 與 test 仍經它執行；升級 CLI 時同步更新 workflow 的釘選版本。
+    - `xcrun xcresulttool get test-results summary --path <bundle>` 僅用於唯讀讀取 result bundle 摘要 (XcodeBuildMCP 沒有等價指令)。
 - **每次 build 或 build-and-run 前先 `cd apps/ios && agvtool next-version -all` 把 build number +1**，跑 test 不遞增 (test binary 不會安裝或散佈，遞增只製造 pbxproj 雜訊)。
     - 同一輪以 `&&` 串接的多平台 build 只遞增一次；遞增產生的 pbxproj 變更隨當次工作 commit，不丟棄。
 - **改 marketing version 直接編輯 pbxproj 的 `MARKETING_VERSION`**：`agvtool new-marketing-version` 會報 Cannot find YES 且不更新 pbxproj (版號在 build settings，Info.plist 沒有版號 key)。
@@ -68,9 +69,10 @@
     - **子層啟動所需資料在建立 State 時帶齊**：`BuyLedgerApp` 讀出的設定快照與 App 版本直接傳入 `SettingsFeature.State`，首幀不依賴額外的載入 action。
     - **跨 feature 意圖由子層以 delegate 請父層做事**：父層只把 delegate 轉發到既有 action，不新增平行的根 action。
 - **商業邏輯與資料計算 (彙總、分組、排序、格式化) 放 reducer 或可測試的 helper**，View (含 Swift Charts) 只負責呈現。
-- **大型 reducer 以同域輔助型別拆分，不拆成子 reducer**：無 case 的 enum (如 `OrdersFilterOperations`) 只放 `static func`，以 `inout State` 與明確參數溝通。
+- **Feature 超過 300 行依 `tca-architecture.md` 的拆分順序**：`Destination` 移到 `<Name>+Destination.swift` → 可獨立的流程抽成子 Feature 以 `Scope` 組合 (沒有自己 View 的子 Feature 不設 `view` 分組，由父層轉送，如 `QuoteRateFeature`、`PaymentMethodCorrectionFeature`)。重複的計算或讀寫分派收進同域輔助型別：純計算放無 case 的 enum，只放 `static func`，以 `inout State` 與明確參數溝通 (如 `OrdersFilterOperations`)；需要依賴的讀寫分派放持有依賴值的 struct，由 reducer 以自己的 `@Dependency` 建立 (如 `LookupItemOperations`)。
     - 輔助型別不宣告 `@Dependency`，也不呼叫 `Date()`／`UUID()`／`Calendar.current`，由 reducer 解析後傳入；被它跨檔呼叫的 State 方法或靜態工廠要是 internal。
-    - 主 switch 維持窮舉、零預設分支 (`TestSuiteIntegrityTests` 守門，不得改寫成 `default:` 換行再 `return .none` 等規避形式)；因型別檢查逾時拆成多段 `Reduce` 時，段間以明列的 case 清單交出，不用預設分支，且每段一樣抽成具名方法 (見「ios-dev-kit 規範與既有差異」的 `Reduce(core)` 規則)。
+    - 主 switch 維持窮舉、零預設分支 (`TestSuiteIntegrityTests` 守門，不得改寫成 `default:` 換行再 `return .none` 等規避形式)。
+    - 因型別檢查逾時拆成多段 `Reduce` 時，段間以明列的 case 清單交出，不用預設分支，且每段一樣抽成具名方法 (見「ios-dev-kit 規範與既有差異」的 `Reduce(core)` 規則)。
     - 草稿型別標 `@ObservableState` (只標 `Equatable` 會退化成整張表單重繪)；非同步載入的欄位不參與草稿相等比較，另以旗標追蹤。
 - **自訂錯誤型別以 `underlying` 保留原始錯誤，不遵循 `Equatable`**：帶底層失敗的 case 宣告 `underlying: any Error & Sendable`，純分類 case (如 `APIError.http(statusCode:)`) 維持原形狀。
     - **框架錯誤 (SwiftData、Foundation、EventKit、URL loading、`DecodingError`) 一律 `error as NSError` 橋接**：typed catch 拿到的是 `any Error`，`as NSError` 是唯一無條件成立且保留 domain、code、userInfo 的轉換。
@@ -97,6 +99,7 @@
 
 - **程式風格、排版、MARK 分區與新檔樣板一律依 `/ios-dev-kit`**：分區見 `references/formatting.md`，TCA Feature 型別見 `references/tca-architecture.md`，新檔從 `assets/templates/` 複製 (樣板選擇表見 `references/file-templates.md`)。
     - 新增或修改的 Swift 檔依 `/ios-dev-kit` 的固定 MARK 分區；尚未納入本 change 的既有 Feature 檔，留待各自的後續 change 處理。
+    - `switch` 的 `case` 之間空一行 (`formatting.md`)；既有檔案多數仍是不空行，改到某個 `switch` 時整個 `switch` 一起改，同一個 `switch` 不混用兩種寫法。
 - **SwiftUI View 不以跨檔 `extension` 作為超過 300 行的第一選擇**：跨檔 extension 無法存取同一 View 的 `private @State`／`private @Environment`；為了編譯而降為 `internal` 會破壞狀態封裝。超過 300 行時優先抽成獨立 View 型別並傳入必要值與 closure；確實抽不動時才在 `findings.md` 登記行數例外，寫明原因與使用者裁決。
 - **檔頭日期一律不補零 `YYYY/M/D`** (如 `2026/9/20`)，不是 `file-templates.md` 的 `YYYY/MM/DD`：Xcode 新檔樣板產生的就是不補零格式，補零等於每個新檔都要手動改一次。
     - 檔頭其餘規則仍依 `file-templates.md`：四行結構、不加版權宣告與修改紀錄、建立後不再更新日期。
@@ -104,14 +107,14 @@
 - **屬性包裝器與宣告同行**：`@Dependency(X.self) private var x`，不拆成兩行；整行超過 100 字元時才換行。
 - **由外部注入的 State 值用 `let` 且不給宣告處預設值**，只從 `init` 參數帶入 (如 `SettingsFeature.State.appVersion`)；宣告處放佔位值再於 `init` 覆寫會讓「未注入」與「注入了佔位值」無法區分。
 - **不為了單一呼叫點抽出 helper method**：只被上方一個 computed property 使用的格式化邏輯直接寫在該 property 內 (如 `Bundle.appVersion`)。
-- **closure 的具名參數列與 `{` 同行**：寫 `sorted { lhs, rhs in`、`ForEach(...) { index, item in`，不把 `lhs, rhs in` 放到下一行；參數列獨行會被讀成本體的第一行。`formatting.md` 未明文，屬本專案補充。
-- **View 沒有 `Computed Properties` 分區**：`tca-architecture.md` 與 `file-templates.md` 的 View 分區固定為 Properties → (Init) → Body → Private Views → Nested Types → Private Method → Preview，純 UI 計算 (色盤、格線欄位、預設金額) 一律放 `Private Method`，不另立區名。只有非 View 型別才用 `formatting.md` 的通用六區。
 - **reducer 的 `body` 只組合，不寫 `Reduce { state, action in }` 閉包**：分支主體抽成 `Private Method` 的第一個方法 `core(state:action:)`，`body` 寫 `Reduce(core)`。
     - 因型別檢查逾時而必須分段時 (見「架構分層」的多段 `Reduce` 規則)，每段各自抽成具名方法再以 `Reduce(段名)` 組合，不保留 inline closure。
-- **一個檔只放一個頂層型別**：同檔多個型別會讓檔案層級的 `// MARK: - Internal Method` 等固定區名重複出現，Xcode jump bar 分不出歸屬。巢狀型別的 extension 放 `<Owner>+<Domain>.swift` (如 `OrdersFeature.State` 的擴充放 `OrdersFeature+StateQuery.swift`)，獨立 model 型別各自一檔。
+- **一個檔只放一個頂層型別**：同檔多個型別會讓檔案層級的 `// MARK: - Internal Method` 等固定區名重複出現，Xcode jump bar 分不出歸屬。獨立 model 型別各自一檔；巢狀型別 (含 TCA 的 `State`／`Action`) 依 `formatting.md` 把成員就地寫在本體，不另開 extension。
+    - 例外：`@Reducer enum` 的 `Destination.State` 由巨集產生，本體無法加成員，alert 建構方法與 `Equatable` 遵循寫在 `extension <Feature>.Destination.State` (如 `LookupManagementFeature+Destination.swift`)。
 - **下列是本專案既有架構與 skill 的差異，新程式碼沿用現有寫法，直到另開 change 重構**：
     - Reducer body 型別用 `some Reducer<State, Action>` (見技術棧 gotcha)，不用樣板的 `some ReducerOf<Self>`。
-    - `Core/Dependencies/` 以 Repository 包裝 SwiftData persistence；系統與網路能力以 struct-of-closures Client 註冊並宣告 `testValue` (如 `Core/Dependencies/` 的 `PhotoClient`、`CalendarReminderClient`，`Core/Networking/` 的 `ExchangeRateClient`)。skill 的 protocol Service、「不補 Repository」、「不宣告 `testValue`」不適用。
+    - `Core/Dependencies/` 的 Repository 與 Client 已是 struct 裝 closure，但尚未對齊 `tca-architecture.md` 的 Service 規則：命名 (`XxxRepository`／`XxxClient`，不是 `<Feature>Service`)、沒有每個 closure 的 typealias、`testValue` 不是全部 `unimplemented`、以型別下標取用 (`@Dependency(CategoryRepository.self)`、`$0[CategoryRepository.self]`) 而非 `DependencyValues` 屬性。整批改造另開 change，在此之前新程式碼沿用型別下標，不局部混用兩種寫法。
+    - 既有的 `extension <Feature>.State` (如 `OrdersFeature+StateQuery.swift`) 尚未把成員移回 `State` 本體，於各 Feature 的修正步驟處理。
     - `@Shared` 用於主檔目錄 `@Shared(.lookupCatalog)` 的記憶體內共享 (規則見 `ios-data-layer.md`)。
     - `exhaustivity = .off` 有既有數處，由 `TestSuiteIntegrityTests` 限制總數不增加：新增一處必須同時移除他處。
     - 通用 extension 放 `Shared/Extensions/`，不是 `Core/Extensions/`。

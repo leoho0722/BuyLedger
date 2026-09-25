@@ -77,21 +77,12 @@ extension NameLookupPersistence {
     ///   - newName: 新的名稱 (由呼叫端完成去除前後空白)
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     func rename(from oldName: String, to newName: String) throws(PersistenceError) {
-        let oldDescriptor = FetchDescriptor<Record>(predicate: Record.matchingName(oldName))
-        let oldRecords = try PersistenceError.mapFetch {
-            try modelContext.fetch(oldDescriptor)
-        }
-        for record in oldRecords {
-            modelContext.delete(record)
-        }
-
-        let newDescriptor = FetchDescriptor<Record>(predicate: Record.matchingName(newName))
-        let existingNew = try PersistenceError.mapFetch {
-            try modelContext.fetch(newDescriptor).first
-        }
-        if existingNew == nil {
-            modelContext.insert(Record(name: newName))
-        }
+        try LookupRecordRenamer.rename(
+            Record.self,
+            from: oldName,
+            to: newName,
+            in: modelContext
+        )
 
         do {
             try PersistenceError.mapSave {

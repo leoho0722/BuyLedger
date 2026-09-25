@@ -51,6 +51,27 @@ extension ActionGroupingScanTests {
                 shouldPass: true
             ),
             ScanScenario(
+                name: "子層 store 送 view action",
+                source: #"addStore.send(.view(.task))"#,
+                rule: .viewStoreSend,
+                shouldPass: true
+            ),
+            ScanScenario(
+                name: "子層 store 送非 view action",
+                source: #"renameStore.send(.draftChanged("名稱"))"#,
+                rule: .viewStoreSend,
+                shouldPass: false
+            ),
+            ScanScenario(
+                name: "相似 store 名稱不誤判",
+                source: #"""
+                restoreSend(.draftChanged("名稱"))
+                restore.send(.draftChanged("名稱"))
+                """#,
+                rule: .viewStoreSend,
+                shouldPass: true
+            ),
+            ScanScenario(
                 name: "View 送 binding action",
                 source: #"store.send(.binding(.set(\.isFocused, false)))"#,
                 rule: .viewStoreSend,

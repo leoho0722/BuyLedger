@@ -23,16 +23,18 @@ struct ActionGroupingScanTests {
         "Features/Settings/SettingsView.swift",
         "Features/AISummary/AISummaryView.swift",
         "Features/Customers/CustomersView.swift",
+        "Features/Lookups/LookupManagementView.swift",
     ]
 
     /// 已遷移 View 的元件目錄
     static let migratedComponentDirectories = [
         "Features/FX/Components",
         "Features/Quote/Components",
+        "Features/Lookups/Components",
     ]
 
     /// View 送出 action 的掃描模式
-    static let storeSendPattern = /store\s*\.\s*send\s*\(\s*/
+    static let storeSendPattern = /\b(?:store|\w+Store)\s*\.\s*send\s*\(\s*/
 
     /// View action 必須以 `.view(` 開頭的掃描模式
     static let viewActionPrefixPattern = /^\.\s*view\s*\(/

@@ -31,9 +31,14 @@ extension DependencyValues {
         }
 
         applyEnvironmentOverrides(configuration)
-        applyOrderOverrides(configuration, container: container)
+        let orderRepository = makeOrderRepository(configuration, container: container)
+        self[OrderRepository.self] = orderRepository
         applyCampaignOverrides(configuration, container: container)
-        applyLookupOverrides(configuration, container: container)
+        applyLookupOverrides(
+            configuration,
+            container: container,
+            orderRepository: orderRepository
+        )
         applySystemAccessOverrides(configuration)
         applyNetworkOverrides(configuration)
         applySettingsStoreOverride(configuration)
@@ -66,22 +71,23 @@ private extension DependencyValues {
     /// - Parameters:
     ///   - configuration: UI 測試設定
     ///   - container: in-memory ``ModelContainer``
-    mutating func applyOrderOverrides(
+    /// - Returns: 已套用載入失敗設定的訂單 repository
+    func makeOrderRepository(
         _ configuration: BLUITestConfiguration,
         container: ModelContainer
-    ) {
+    ) -> OrderRepository {
         var repository = OrderRepository.live(container: container)
         let baseFetch = repository.fetchOrders
 
         switch configuration.loadFailure {
         case .orders:
-            repository.fetchOrders = { () async throws(PersistenceError) -> [LedgerOrder] in
+            repository.fetchOrders = { () throws(PersistenceError) in
                 throw BLUITestErrorFactory.persistenceLoadFailed(source: .orders)
             }
 
         case .ordersFirstReadOnly:
             let gate = BLUITestFirstReadGate()
-            repository.fetchOrders = { () async throws(PersistenceError) -> [LedgerOrder] in
+            repository.fetchOrders = { () throws(PersistenceError) in
                 if gate.consumeFailure() {
                     throw BLUITestErrorFactory.persistenceLoadFailed(source: .orders)
                 }
@@ -92,7 +98,7 @@ private extension DependencyValues {
             break
         }
 
-        self[OrderRepository.self] = repository
+        return repository
     }
 
     /// 開團主檔與提醒連結指向 in-memory container，並依設定包裝讀取失敗
@@ -106,7 +112,7 @@ private extension DependencyValues {
         var repository = CampaignRepository.live(container: container)
 
         if configuration.loadFailure == .campaigns {
-            repository.fetchCampaigns = { () async throws(PersistenceError) -> [Campaign] in
+            repository.fetchCampaigns = { () throws(PersistenceError) in
                 throw BLUITestErrorFactory.persistenceLoadFailed(source: .campaigns)
             }
         }
@@ -120,16 +126,20 @@ private extension DependencyValues {
     /// - Parameters:
     ///   - configuration: UI 測試設定
     ///   - container: in-memory ``ModelContainer``
+    ///   - orderRepository: 已套用 UI 測試設定的訂單 repository
     mutating func applyLookupOverrides(
         _ configuration: BLUITestConfiguration,
-        container: ModelContainer
+        container: ModelContainer,
+        orderRepository: OrderRepository
     ) {
         let shouldFail = configuration.loadFailure == .lookups
+        let shouldFailWrites = configuration.shouldFailLookupWrites
 
         var orderSourceRepository = OrderSourceRepository.live(container: container)
         var categoryRepository = CategoryRepository.live(container: container)
         var paymentMethodRepository = PaymentMethodRepository.live(container: container)
         var reconciliationStatusRepository = ReconciliationStatusRepository.live(container: container)
+        var orderRepository = orderRepository
         var currencyMetadataRepository = CurrencyMetadataRepository.live(
             container: container,
             client: BLUITestStubs.makeExchangeRateClient(
@@ -139,34 +149,79 @@ private extension DependencyValues {
         )
 
         if shouldFail {
-            orderSourceRepository.fetchOrderSources = { () async throws(PersistenceError) -> [String] in
+            orderSourceRepository.fetchOrderSources = { () throws(PersistenceError) in
                 throw BLUITestErrorFactory.persistenceLoadFailed(source: .orderSources)
             }
-            categoryRepository.fetchCategories = { () async throws(PersistenceError) -> [String] in
+            categoryRepository.fetchCategories = { () throws(PersistenceError) in
                 throw BLUITestErrorFactory.persistenceLoadFailed(source: .categories)
             }
-            paymentMethodRepository.fetchPaymentMethods = { () async throws(PersistenceError) -> [String] in
+            paymentMethodRepository.fetchPaymentMethods = { () throws(PersistenceError) in
                 throw BLUITestErrorFactory.persistenceLoadFailed(source: .paymentMethods)
             }
-            paymentMethodRepository.fetchPaymentMethodInfos = { () async throws(PersistenceError) -> [PaymentMethodInfo] in
+            paymentMethodRepository.fetchPaymentMethodInfos = { () throws(PersistenceError) in
                 throw BLUITestErrorFactory.persistenceLoadFailed(source: .paymentMethodInfos)
             }
-            reconciliationStatusRepository.fetchReconciliationStatuses = { () async throws(PersistenceError) -> [String] in
+            reconciliationStatusRepository.fetchReconciliationStatuses = { () throws(PersistenceError) in
                 throw BLUITestErrorFactory.persistenceLoadFailed(
                     source: .reconciliationStatuses)
             }
-            currencyMetadataRepository.fetchCodes = { () async throws(CurrencyMetadataRepositoryError) -> [CurrencyCode] in
+            currencyMetadataRepository.fetchCodes = { () throws(CurrencyMetadataRepositoryError) in
                 throw BLUITestErrorFactory.currencyMetadataLoadFailed(source: .currencyCodes)
             }
             // 刷新也失敗，避免載入失敗時寫入資料。
-            currencyMetadataRepository.refreshIfStale = { (_: TimeInterval) async throws(CurrencyMetadataRepositoryError) -> Bool in
+            currencyMetadataRepository.refreshIfStale = { _ throws(CurrencyMetadataRepositoryError) in
                 throw BLUITestErrorFactory.currencyMetadataLoadFailed(source: .currencyCodes)
             }
-            currencyMetadataRepository.forceRefresh = { () async throws(CurrencyMetadataRepositoryError) in
+            currencyMetadataRepository.forceRefresh = { () throws(CurrencyMetadataRepositoryError) in
                 throw BLUITestErrorFactory.currencyMetadataLoadFailed(source: .currencyCodes)
             }
         }
 
+        if shouldFailWrites {
+            orderSourceRepository.addOrderSource = { _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
+            orderSourceRepository.removeOrderSource = { _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
+            categoryRepository.addCategory = { _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
+            categoryRepository.removeCategory = { _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
+            paymentMethodRepository.addPaymentMethod = { _, _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
+            paymentMethodRepository.removePaymentMethod = { _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
+            paymentMethodRepository.applyPaymentMethodEdit = { _, _, _, _ throws(PaymentMethodPersistenceError) in
+                throw PaymentMethodPersistenceError.storage(
+                    BLUITestErrorFactory.persistenceSaveFailed()
+                )
+            }
+            reconciliationStatusRepository.addReconciliationStatus = { _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
+            reconciliationStatusRepository.removeReconciliationStatus = { _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
+            orderRepository.applyOrderSourceRename = { _, _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
+            orderRepository.applyCategoryRename = { _, _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
+            orderRepository.applyPaymentMethodRename = { _, _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
+            orderRepository.applyReconciliationStatusRename = { _, _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
+        }
+
+        self[OrderRepository.self] = orderRepository
         self[OrderSourceRepository.self] = orderSourceRepository
         self[CategoryRepository.self] = categoryRepository
         self[PaymentMethodRepository.self] = paymentMethodRepository
@@ -204,7 +259,7 @@ private extension DependencyValues {
         )
         // 兜底：上面兩個 client 已不經過 HTTP，真的走到這裡代表有漏網的網路路徑
         self.httpClient = HTTPClient(
-            data: { (_: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
+            data: { _ throws(APIError) in
                 throw APIError.transport(
                     underlying: NSError(
                         domain: NSURLErrorDomain,
@@ -213,7 +268,7 @@ private extension DependencyValues {
                     )
                 )
             },
-            stream: { (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
+            stream: { _ throws(APIError) in
                 throw APIError.transport(
                     underlying: NSError(
                         domain: NSURLErrorDomain,
@@ -316,7 +371,7 @@ private extension BLUITestStubs {
     /// - Returns: 回傳固定匯率與幣別清單的 client
     static func makeExchangeRateClient(referenceDate: Date) -> ExchangeRateClient {
         ExchangeRateClient(
-            fetchLatest: { (base: CurrencyCode) async throws(APIError) -> FxRateSnapshot in
+            fetchLatest: { base throws(APIError) in
                 // 固定表以 TWD 為基準，改用其他基準時整表除以該幣別的 TWD 匯率
                 guard let baseRate = twdBasedRates[base], baseRate > 0 else {
                     throw BLUITestErrorFactory.unsupportedBase(base.rawValue)
@@ -435,7 +490,7 @@ private extension BLUITestPhotoCache {
     /// - Parameter make: 實際繪圖的工廠
     /// - Returns: 快取中的假影像
     func resolvedPhotos(make: () -> [Data]) -> [Data] {
-        photos.withLock { (stored: inout [Data]?) -> [Data] in
+        photos.withLock { stored in
             if let existing = stored {
                 return existing
             }
@@ -500,6 +555,21 @@ private extension BLUITestErrorFactory {
                 code: 1,
                 userInfo: [
                     NSLocalizedDescriptionKey: loadFailureMessage(source: source),
+                ]
+            )
+        )
+    }
+
+    /// 產生 UI 測試注入的持久化寫入失敗
+    ///
+    /// - Returns: 帶有測試用原因的持久化寫入錯誤
+    static func persistenceSaveFailed() -> PersistenceError {
+        .saveFailed(
+            underlying: NSError(
+                domain: "com.leoho.BuyLedger.ui-test",
+                code: 2,
+                userInfo: [
+                    NSLocalizedDescriptionKey: "UI 測試注入的主檔寫入失敗",
                 ]
             )
         )

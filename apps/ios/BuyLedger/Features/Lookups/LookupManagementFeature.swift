@@ -7,9 +7,8 @@
 
 import ComposableArchitecture
 import Foundation
-import SwiftUI
 
-/// 商品類別 / 付款方式主檔的獨立管理功能
+/// 管理單一種類的主檔項目
 @Reducer
 struct LookupManagementFeature {
 
@@ -19,571 +18,173 @@ struct LookupManagementFeature {
     @ObservableState
     struct State: Equatable, Identifiable {
 
-        /// 此狀態管理的主檔型別
+        /// 此狀態管理的主檔種類
         let kind: LookupKind
 
         /// 四種主檔共用的目錄
         @Shared(.lookupCatalog) var catalog: LookupCatalog
 
-        /// 以主檔種類作為識別值，供根 feature 的 `IdentifiedArrayOf` 使用
-        var id: LookupKind { kind }
-
-        /// 目前的主檔項目 (已排序)，衍生自 ``catalog``
-        var items: [String] { catalog.names(for: kind) }
-
-        /// 付款方式的 isCardless 對應表
-        var paymentMethodIsCardless: [String: Bool] {
-            Dictionary(
-                uniqueKeysWithValues: catalog.paymentMethods.map { ($0.name, $0.isCardless) }
-            )
-        }
-
-        /// 付款方式的 isBankTransfer 對應表
-        var paymentMethodIsBankTransfer: [String: Bool] {
-            Dictionary(
-                uniqueKeysWithValues: catalog.paymentMethods.map { ($0.name, $0.isBankTransfer) }
-            )
-        }
-
-        /// 付款方式的 isCashOnDelivery 對應表
-        var paymentMethodIsCashOnDelivery: [String: Bool] {
-            Dictionary(
-                uniqueKeysWithValues: catalog.paymentMethods.map { ($0.name, $0.isCashOnDelivery) }
-            )
-        }
-
-        /// 載入失敗訊息
-        var errorMessage: String?
+        /// 是否已發生首次載入失敗
+        var hasLoadFailed = false
 
         /// 是否已完成首次載入
         var hasLoaded = false
 
-        /// 目前呈現中的改名或編輯付款方式流程；`nil` 表示未呈現
+        /// 表單已送出並正在關閉
+        var isFormSheetDismissing = false
+
+        /// 表單關閉期間等待呈現的 alert
+        var pendingAlert: Destination.State?
+
+        /// 目前呈現中的表單或 alert
         @Presents var destination: Destination.State?
 
-        /// 刪除主檔項目的二次確認；`nil` 代表未顯示
-        @Presents var deletionConfirmation: AlertState<Action.Alert>?
+        /// 付款方式更正流程的狀態
+        var correction = PaymentMethodCorrectionFeature.State()
 
-        /// 待確認的付款方式更新；確認前不改動資料
-        var pendingPaymentMethodEdit: PaymentMethodEditPlan?
+        /// 以主檔種類作為根畫面的識別值
+        var id: LookupKind {
+            kind
+        }
 
-        /// 付款方式更新的確認提示；沒有受影響訂單時不顯示
-        @Presents var retroactiveConfirmation: AlertState<Action.Alert>?
+        /// 目前已排序的主檔項目
+        var items: [String] {
+            catalog.names(for: kind)
+        }
 
-        /// 一次性付款方式寫入失敗提示；關閉後即結束，不混入持續性的載入錯誤
-        @Presents var writeFailureAlert: AlertState<Action.Alert>?
+        /// 此主檔是否包含付款方式分類
+        var hasClassification: Bool {
+            kind == .paymentMethod
+        }
+
+        /// 取得指定名稱的付款方式分類
+        ///
+        /// - Parameter name: 要查詢的主檔名稱
+        /// - Returns: 付款方式旗標；非付款方式主檔回傳 `nil`
+        func classification(for name: String) -> PaymentMethodFlags? {
+            guard hasClassification else {
+                return nil
+            }
+            return catalog.paymentMethodFlags(named: name)
+        }
     }
 
     // MARK: - Action
 
     /// 主檔管理可處理的事件
-    @CasePathable
-    enum Action: BindableAction, Equatable {
+    enum Action {
 
-        /// 畫面出現時觸發載入
-        case task
+        /// 使用者可直接操作的事件
+        ///
+        /// - Parameter action: 主檔管理畫面上的操作
+        case view(View)
 
-        /// 訂單來源主檔載入成功
-        case orderSourceItemsLoaded([String])
+        /// 交給根畫面處理的結果
+        ///
+        /// - Parameter action: 要轉送給根畫面的結果
+        case delegate(Delegate)
 
-        /// 商品類別主檔載入成功
-        case categoryItemsLoaded([String])
+        /// 付款方式更正子 Feature 的事件
+        ///
+        /// - Parameter action: 付款方式更正流程的事件
+        case correction(PaymentMethodCorrectionFeature.Action)
 
-        /// 付款方式主檔載入成功 (含 `isCardless` 與 `isBankTransfer`)
-        case paymentMethodInfosLoaded([PaymentMethodInfo])
-
-        /// 對帳狀態主檔載入成功
-        case reconciliationStatusItemsLoaded([String])
-
-        /// 主檔載入失敗
-        case loadFailed(String)
-
-        /// 開啟新增主檔流程
-        case addButtonTapped
-
-        /// 確認新增主檔項目；付款方式另外保存分類旗標
-        case addConfirmed(
-            name: String,
-            flags: PaymentMethodFlags
-        )
-
-        /// 刪除確認 alert 的選項
-        @CasePathable
-        enum Alert: Equatable {
-
-            /// 使用者確認刪除指定名稱的主檔項目
-            case confirmDelete(String)
-
-            /// 使用者確認重新計算付款方式旗標
-            case confirmPaymentMethodEdit
-        }
-
-        /// 使用者點擊刪除；先以 ``State/deletionConfirmation`` 二次確認
-        case deleteButtonTapped(String)
-
-        /// 確認後實際執行刪除
-        case deleteRequested(String)
-
-        /// 刪除完成 (資料庫寫入成功後才更新狀態與各處記憶體副本)
-        case deleteSucceeded(String)
-
-        /// 刪除確認 alert 事件
-        case deletionConfirmation(PresentationAction<Alert>)
-
-        /// 開啟重新命名表單並帶入目前名稱
-        case renameButtonTapped(name: String)
-
-        /// 使用者要求把指定名稱改成新名稱；同時 cascade 到所有引用該名稱的訂單
-        case renameRequested(from: String, to: String)
-
-        /// 使用者點擊指定付款方式的「編輯」
-        case editButtonTapped(name: String)
-
-        /// 儲存付款方式的名稱與分類旗標
-        case editConfirmed(
-            originalName: String,
-            name: String,
-            flags: PaymentMethodFlags
-        )
-
-        /// 已準備好的付款方式更新資料；有受影響訂單時顯示確認
-        case paymentMethodEditPrepared(PaymentMethodEditPlan)
-
-        /// 付款方式主檔與受影響訂單已在同一次持久化操作成功寫入
-        case paymentMethodEditSucceeded(PaymentMethodEditPlan)
-
-        /// 付款方式更新失敗；不改動主檔與訂單
-        case paymentMethodEditFailed(String)
-
-        /// 一次性付款方式寫入失敗提示事件
-        case writeFailureAlert(PresentationAction<Alert>)
-
-        /// 付款方式更新確認提示
-        case retroactiveConfirmation(PresentationAction<Alert>)
-
-        /// 改名 / 編輯付款方式呈現目的地事件
+        /// 表單與 alert 目的地事件
+        ///
+        /// - Parameter action: 目前目的地的呈現事件
         case destination(PresentationAction<Destination.Action>)
 
-        /// SwiftUI binding 更新 (新增流程的 alert / sheet 呈現狀態與草稿文字)
-        case binding(BindingAction<State>)
+        /// 新增寫入結果
+        ///
+        /// - Parameter result: 新增項目或持久化錯誤
+        case addResponse(Result<LookupItemAddition, PersistenceError>)
+
+        /// 刪除寫入結果
+        ///
+        /// - Parameter result: 刪除名稱或持久化錯誤
+        case deleteResponse(Result<String, PersistenceError>)
+
+        /// 主檔載入結果
+        ///
+        /// - Parameter result: 載入目錄或持久化錯誤
+        case itemsResponse(Result<LookupCatalog, PersistenceError>)
+
+        /// 改名寫入結果
+        ///
+        /// - Parameter result: 改名資料或持久化錯誤
+        case renameResponse(Result<LookupItemRename, PersistenceError>)
+
+        /// 主檔管理畫面的使用者操作
+        @CasePathable
+        enum View {
+
+            /// 畫面出現時觸發載入
+            case task
+
+            /// 使用者點擊新增按鈕
+            case addButtonTapped
+
+            /// 使用者要求刪除項目
+            ///
+            /// - Parameter name: 要刪除的主檔名稱
+            case deleteButtonTapped(name: String)
+
+            /// 使用者要求編輯付款方式
+            ///
+            /// - Parameter name: 要編輯的付款方式名稱
+            case editButtonTapped(name: String)
+
+            /// 表單關閉動畫已完成
+            case formSheetDismissed
+
+            /// 使用者要求重新命名項目
+            ///
+            /// - Parameter name: 要重新命名的主檔名稱
+            case renameButtonTapped(name: String)
+        }
+
+        /// 主檔管理交給根畫面的結果
+        @CasePathable
+        enum Delegate: Equatable {
+
+            /// 主檔項目已成功改名
+            ///
+            /// - Parameter rename: 已寫入的新舊名稱
+            case itemRenamed(LookupItemRename)
+
+            /// 付款方式與訂單已一起更正
+            ///
+            /// - Parameter plan: 寫入完成的更正資料
+            case paymentMethodEdited(PaymentMethodEditPlan)
+        }
     }
 
-    // MARK: - Dependency Properties
+    // MARK: - Dependencies
 
-    /// 訂單來源資料來源
-    @Dependency(OrderSourceRepository.self) private var orderSourceRepository
-
-    /// 商品類別資料來源
+    /// 商品類別主檔資料來源
     @Dependency(CategoryRepository.self) private var categoryRepository
 
-    /// 付款方式資料來源
-    @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
-
-    /// 對帳狀態資料來源
-    @Dependency(ReconciliationStatusRepository.self) private var reconciliationStatusRepository
-
-    /// 訂單資料來源；rename 時把 cascade 寫入訂單表
+    /// 訂單資料來源
     @Dependency(OrderRepository.self) private var orderRepository
 
-    // MARK: - Reducer Body
+    /// 訂單來源主檔資料來源
+    @Dependency(OrderSourceRepository.self) private var orderSourceRepository
 
-    /// 主檔管理 reducer
+    /// 付款方式主檔資料來源
+    @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
+
+    /// 對帳狀態主檔資料來源
+    @Dependency(ReconciliationStatusRepository.self) private var reconciliationStatusRepository
+
+    // MARK: - Body
+
+    /// 組合付款方式更正、核心邏輯與目的地 reducer
     var body: some Reducer<State, Action> {
-        BindingReducer()
-        Reduce {
-            state,
-            action in
-            switch action {
-            case .task:
-                guard !state.hasLoaded else {
-                    return .none
-                }
-                return load(kind: state.kind)
-
-            case let .orderSourceItemsLoaded(items):
-                state.$catalog.withLock { $0.orderSources = items }
-                state.hasLoaded = true
-                state.errorMessage = nil
-                return .none
-
-            case let .categoryItemsLoaded(items):
-                state.$catalog.withLock { $0.categories = items }
-                state.hasLoaded = true
-                state.errorMessage = nil
-                return .none
-
-            case let .paymentMethodInfosLoaded(infos):
-                state.$catalog.withLock {
-                    $0.paymentMethods = infos.sorted {
-                        $0.name.localizedStandardCompare($1.name) == .orderedAscending
-                    }
-                }
-                state.hasLoaded = true
-                state.errorMessage = nil
-                return .none
-
-            case let .reconciliationStatusItemsLoaded(items):
-                state.$catalog.withLock { $0.reconciliationStatuses = items }
-                state.hasLoaded = true
-                state.errorMessage = nil
-                return .none
-
-            case let .loadFailed(message):
-                state.errorMessage = message
-                return .none
-
-            case .addButtonTapped:
-                // 新增併入 destination：任一時刻只呈現一張 sheet，互斥由型別系統保證
-                switch state.kind {
-                case .orderSource, .category, .reconciliationStatus:
-                    state.destination = .addNameOnly(Destination.AddNameOnlyFeature.State())
-                case .paymentMethod:
-                    state.destination = .addPaymentMethod(
-                        Destination.AddPaymentMethodFeature.State()
-                    )
-                }
-                return .none
-
-            case let .addConfirmed(name, flags):
-                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else {
-                    return .none
-                }
-
-                // 名稱型主檔不重複建立，付款方式則更新旗標
-                state.$catalog.withLock {
-                    $0.add(
-                        name: trimmed,
-                        kind: state.kind,
-                        flags: flags
-                    )
-                }
-
-                let kind = state.kind
-                let orderSourceRepository = orderSourceRepository
-                let categoryRepository = categoryRepository
-                let paymentMethodRepository = paymentMethodRepository
-                let reconciliationStatusRepository = reconciliationStatusRepository
-                return .run { _ in
-                    switch kind {
-                    case .orderSource:
-                        try await orderSourceRepository.addOrderSource(trimmed)
-                    case .category:
-                        try await categoryRepository.addCategory(trimmed)
-                    case .paymentMethod:
-                        try await paymentMethodRepository.addPaymentMethod(trimmed, flags)
-                    case .reconciliationStatus:
-                        try await reconciliationStatusRepository.addReconciliationStatus(trimmed)
-                    }
-                } catch: { _, send in
-                    await send(.loadFailed("新增失敗，請稍後再試。"))
-                }
-
-            case let .deleteButtonTapped(name):
-                state.deletionConfirmation = AlertState {
-                    TextState("刪除項目")
-                } actions: {
-                    ButtonState(role: .destructive, action: .confirmDelete(name)) {
-                        TextState("刪除")
-                    }
-                    ButtonState(role: .cancel) {
-                        TextState("取消")
-                    }
-                } message: {
-                    TextState("刪除「\(name)」後，引用它的既有訂單會失去這個欄位值。此操作無法復原。")
-                }
-                return .none
-
-            case let .deletionConfirmation(.presented(.confirmDelete(name))):
-                return .send(.deleteRequested(name))
-
-            case .deletionConfirmation:
-                return .none
-
-            case let .deleteRequested(name):
-                // 先寫後改；刪除不是高頻操作，不需要樂觀更新。
-                // 而寫入成功才更新狀態從根本消除了狀態與資料庫不一致的可能
-                let kind = state.kind
-                let orderSourceRepository = orderSourceRepository
-                let categoryRepository = categoryRepository
-                let paymentMethodRepository = paymentMethodRepository
-                let reconciliationStatusRepository = reconciliationStatusRepository
-                return .run { send in
-                    switch kind {
-                    case .orderSource:
-                        try await orderSourceRepository.removeOrderSource(name)
-                    case .category:
-                        try await categoryRepository.removeCategory(name)
-                    case .paymentMethod:
-                        try await paymentMethodRepository.removePaymentMethod(name)
-                    case .reconciliationStatus:
-                        try await reconciliationStatusRepository.removeReconciliationStatus(name)
-                    }
-                    await send(.deleteSucceeded(name))
-                } catch: { _, send in
-                    await send(.loadFailed("刪除失敗，請稍後再試。"))
-                }
-
-            case let .deleteSucceeded(name):
-                state.$catalog.withLock { $0.remove(name: name, kind: state.kind) }
-                return .none
-
-            case let .renameButtonTapped(name):
-                state.destination = .rename(
-                    Destination.RenameFeature.State(originalName: name, draft: name))
-                return .none
-
-            case let .renameRequested(from, to):
-                let trimmedFrom = from.trimmingCharacters(in: .whitespacesAndNewlines)
-                let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmedFrom.isEmpty,
-                      !trimmedTo.isEmpty,
-                      trimmedFrom != trimmedTo else {
-                    return .none
-                }
-
-                // 由 catalog.rename 統一合併付款方式旗標。
-                state.$catalog.withLock {
-                    $0.rename(
-                        from: trimmedFrom,
-                        to: trimmedTo,
-                        kind: state.kind
-                    )
-                }
-
-                let kind = state.kind
-                let orderSourceRepository = orderSourceRepository
-                let categoryRepository = categoryRepository
-                let paymentMethodRepository = paymentMethodRepository
-                let reconciliationStatusRepository = reconciliationStatusRepository
-                let orderRepository = orderRepository
-                return .run { _ in
-                    switch kind {
-                    case .orderSource:
-                        try await orderSourceRepository.renameOrderSource(trimmedFrom, trimmedTo)
-                        try await orderRepository.renameOrderSource(trimmedFrom, trimmedTo)
-                    case .category:
-                        try await categoryRepository.renameCategory(trimmedFrom, trimmedTo)
-                        try await orderRepository.renameOrderCategory(trimmedFrom, trimmedTo)
-                    case .paymentMethod:
-                        try await paymentMethodRepository.renamePaymentMethod(trimmedFrom, trimmedTo)
-                        try await orderRepository.renameOrderPaymentMethod(trimmedFrom, trimmedTo)
-                    case .reconciliationStatus:
-                        try await reconciliationStatusRepository.renameReconciliationStatus(trimmedFrom, trimmedTo)
-                        try await orderRepository.renameOrderReconciliationStatus(trimmedFrom, trimmedTo)
-                    }
-                } catch: { _, send in
-                    await send(.loadFailed("重新命名失敗，請稍後再試。"))
-                }
-
-            case let .editButtonTapped(name):
-                guard state.kind == .paymentMethod else {
-                    return .none
-                }
-                state.destination = .editPaymentMethod(
-                    Destination.EditPaymentMethodFeature.State(
-                        originalName: name,
-                        flags: state.paymentMethodFlagSnapshot(for: name)
-                    )
-                )
-                return .none
-
-            case let .editConfirmed(originalName, rawName, flags):
-                // 僅付款方式使用編輯流程；其他 kind 不會送此 action
-                guard state.kind == .paymentMethod else {
-                    return .none
-                }
-                let trimmedOriginal = originalName.trimmingCharacters(in: .whitespacesAndNewlines)
-                let trimmedNew = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmedNew.isEmpty else {
-                    return .none
-                }
-
-                let storedFlags = state.paymentMethodFlagSnapshot(for: trimmedOriginal)
-                let requestedFlags = flags
-                let flagsChanged = storedFlags != requestedFlags
-
-                let orderRepository = orderRepository
-                return .run { send in
-                    do {
-                        // 確認文案與寫入資料共用同一個 plan。
-                        let orders = try await orderRepository.fetchOrders()
-                        let affectedOrders = orders
-                            .filter { $0.paymentMethod == trimmedOriginal }
-                            .map {
-                                $0
-                                    .renamingPaymentMethod(to: trimmedNew)
-                                    .applyingPaymentMethodFlags(flags)
-                            }
-                        await send(
-                            .paymentMethodEditPrepared(
-                                PaymentMethodEditPlan(
-                                    originalName: trimmedOriginal,
-                                    newName: trimmedNew,
-                                    flags: flags,
-                                    flagsChanged: flagsChanged,
-                                    affectedOrders: affectedOrders
-                                )
-                            )
-                        )
-                    } catch {
-                        await send(.paymentMethodEditFailed("付款方式編輯失敗，請稍後再試。"))
-                    }
-                }
-
-            case let .paymentMethodEditPrepared(plan):
-                if plan.affectedOrders.isEmpty || !plan.flagsChanged {
-                    // 沒有受影響訂單或只改名時，直接套用主檔旗標
-                    return persistPaymentMethodEdit(plan)
-                }
-
-                state.pendingPaymentMethodEdit = plan
-                let count = plan.affectedOrders.count
-                let message: LocalizedStringKey = "確認後將重算 \(count) 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。"
-                state.retroactiveConfirmation = AlertState {
-                    TextState("更正付款方式")
-                } actions: {
-                    ButtonState(role: .destructive, action: .confirmPaymentMethodEdit) {
-                        TextState("確認更正")
-                    }
-                    ButtonState(role: .cancel) {
-                        TextState("取消")
-                    }
-                } message: {
-                    TextState(message)
-                }
-                return .none
-
-            case .retroactiveConfirmation(.presented(.confirmPaymentMethodEdit)):
-                guard let plan = state.pendingPaymentMethodEdit else {
-                    return .none
-                }
-                state.pendingPaymentMethodEdit = nil
-                return persistPaymentMethodEdit(plan)
-
-            case .retroactiveConfirmation(.dismiss):
-                state.pendingPaymentMethodEdit = nil
-                state.retroactiveConfirmation = nil
-                return .none
-
-            case .retroactiveConfirmation:
-                return .none
-
-            case let .paymentMethodEditSucceeded(plan):
-                // 移除舊項目，再依新名稱與旗標寫入
-                state.$catalog.withLock {
-                    $0.remove(name: plan.originalName, kind: .paymentMethod)
-                    $0.add(
-                        name: plan.newName,
-                        kind: .paymentMethod,
-                        flags: plan.flags
-                    )
-                }
-                state.pendingPaymentMethodEdit = nil
-                state.retroactiveConfirmation = nil
-                state.destination = nil
-                state.errorMessage = nil
-                return .none
-
-            case let .paymentMethodEditFailed(message):
-                state.pendingPaymentMethodEdit = nil
-                state.retroactiveConfirmation = nil
-                state.writeFailureAlert = makeWriteFailureAlert(LocalizedStringKey(message))
-                return .none
-
-            case .writeFailureAlert:
-                return .none
-
-            case let .destination(.presented(.addNameOnly(.saveButtonTapped(name)))):
-                state.destination = nil
-                return .send(
-                    .addConfirmed(
-                        name: name,
-                        flags: .none
-                    )
-                )
-
-            case let .destination(
-                .presented(.addPaymentMethod(.saveButtonTapped(name, flags)))
-            ):
-                state.destination = nil
-                return .send(
-                    .addConfirmed(
-                        name: name,
-                        flags: flags
-                    )
-                )
-
-            case .destination(.presented(.rename(.saveButtonTapped))):
-                // 取出 rename 草稿後再關閉 destination
-                guard let renameState = state.destination?.rename,
-                      renameState.canSave else {
-                    return .none
-                }
-                state.destination = nil
-                return .send(.renameRequested(from: renameState.originalName, to: renameState.draft))
-
-            case let .destination(
-                .presented(.editPaymentMethod(.saveButtonTapped(name, flags)))
-            ):
-                guard let editState = state.destination?.editPaymentMethod else {
-                    return .none
-                }
-                return .send(
-                    .editConfirmed(
-                        originalName: editState.originalName,
-                        name: name,
-                        flags: flags
-                    )
-                )
-
-            case .destination:
-                return .none
-
-            case .binding:
-                return .none
-            }
+        Scope(state: \.correction, action: \.correction) {
+            PaymentMethodCorrectionFeature()
         }
-        .ifLet(\.$destination, action: \.destination)
-        .ifLet(\.$deletionConfirmation, action: \.deletionConfirmation)
-        .ifLet(\.$retroactiveConfirmation, action: \.retroactiveConfirmation)
-        .ifLet(\.$writeFailureAlert, action: \.writeFailureAlert)
-    }
-}
-
-// MARK: - Private Method
-
-private extension LookupManagementFeature.State {
-
-    /// 讀取指定付款方式的旗標快照；不存在的名稱各旗標皆視為 `false`
-    /// - Parameter name: 付款方式名稱
-    /// - Returns: 對應付款方式的分類旗標快照
-    func paymentMethodFlagSnapshot(for name: String) -> PaymentMethodFlags {
-        catalog.paymentMethods.first { $0.name == name }?.currentFlags ?? .none
-    }
-}
-
-// MARK: - Nested Types
-
-extension LookupManagementFeature {
-
-    /// 付款方式編輯操作的固定快照
-    struct PaymentMethodEditPlan: Equatable, Sendable {
-
-        /// 原付款方式名稱
-        let originalName: String
-
-        /// 新付款方式名稱
-        let newName: String
-
-        /// 使用者確認後要寫入的分類旗標
-        let flags: PaymentMethodFlags
-
-        /// 旗標是否變更；只改名時不需確認
-        let flagsChanged: Bool
-
-        /// 已改名並依共用規則正規化的受影響訂單
-        let affectedOrders: [LedgerOrder]
+        Reduce(core)
+            .ifLet(\.$destination, action: \.destination)
     }
 }
 
@@ -591,68 +192,185 @@ extension LookupManagementFeature {
 
 private extension LookupManagementFeature {
 
-    /// 建立一次性付款方式寫入失敗提示
-    /// - Parameter message: 要顯示的錯誤訊息
-    /// - Returns: 一次性寫入失敗提示
-    func makeWriteFailureAlert(_ message: LocalizedStringKey) -> AlertState<Action.Alert> {
-        AlertState {
-            TextState("操作失敗")
-        } actions: {
-            ButtonState(role: .cancel) {
-                TextState("知道了")
+    /// 依收到的事件更新主檔狀態並回傳後續效果
+    ///
+    /// - Parameters:
+    ///   - state: 目前的主檔管理狀態
+    ///   - action: 這次收到的主檔事件
+    /// - Returns: 接下來要執行的效果，沒有就回傳 `.none`
+    func core(state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case .view(.task):
+            guard !state.hasLoaded else {
+                return .none
             }
-        } message: {
-            TextState(message)
-        }
-    }
+            return itemOperations().load(kind: state.kind)
 
-    /// 在確認完成後執行主檔與訂單的單一原子寫入
-    /// - Parameter plan: 已準備好的付款方式更新資料
-    /// - Returns: 成功或失敗 action 的 effect
-    func persistPaymentMethodEdit(_ plan: PaymentMethodEditPlan) -> Effect<Action> {
-        let paymentMethodRepository = paymentMethodRepository
-        return .run { send in
-            do {
-                try await paymentMethodRepository.applyPaymentMethodEdit(
-                    plan.originalName,
-                    plan.newName,
-                    plan.flags,
-                    plan.affectedOrders
+        case .view(.addButtonTapped):
+            state.destination = .add(
+                LookupAddFormFeature.State(hasClassification: state.hasClassification)
+            )
+            return .none
+
+        case let .view(.deleteButtonTapped(name: name)):
+            state.destination = .deleteConfirmation(name: name)
+            return .none
+
+        case let .view(.editButtonTapped(name: name)):
+            guard state.hasClassification else {
+                return .none
+            }
+            state.destination = .editPaymentMethod(
+                PaymentMethodEditFormFeature.State(
+                    originalName: name,
+                    flags: state.catalog.paymentMethodFlags(named: name)
                 )
-                await send(.paymentMethodEditSucceeded(plan))
-            } catch {
-                await send(.paymentMethodEditFailed("付款方式編輯失敗，請稍後再試。"))
+            )
+            return .none
+
+        case .view(.formSheetDismissed):
+            state.isFormSheetDismissing = false
+            if let pendingAlert = state.pendingAlert {
+                state.destination = pendingAlert
+                state.pendingAlert = nil
             }
+            return .none
+
+        case let .view(.renameButtonTapped(name: name)):
+            state.destination = .rename(
+                LookupRenameFormFeature.State(originalName: name)
+            )
+            return .none
+
+        case .delegate:
+            return .none
+
+        case let .correction(.delegate(.confirmationRequired(count))):
+            presentAlertAfterFormSheetDismissal(
+                .retroactiveConfirmation(affectedOrderCount: count),
+                state: &state
+            )
+            return .none
+
+        case let .correction(.delegate(.edited(plan))):
+            state.$catalog.withLock { catalog in
+                catalog.remove(name: plan.originalName, kind: .paymentMethod)
+                catalog.add(name: plan.newName, kind: .paymentMethod, flags: plan.flags)
+            }
+            return .send(.delegate(.paymentMethodEdited(plan)))
+
+        case .correction(.delegate(.failed)):
+            presentAlertAfterFormSheetDismissal(.writeFailure(.paymentMethodEdit), state: &state)
+            return .none
+
+        case .correction:
+            return .none
+
+        case let .destination(.presented(.add(.delegate(.saved(name, flags))))):
+            state.destination = nil
+            state.isFormSheetDismissing = true
+            return itemOperations().add(
+                LookupItemAddition(name: name, flags: flags),
+                kind: state.kind
+            )
+
+        case let .destination(.presented(.alert(.confirmDelete(name: name)))):
+            return itemOperations().delete(name: name, kind: state.kind)
+
+        case .destination(.presented(.alert(.confirmPaymentMethodEdit))):
+            return .send(.correction(.confirmed))
+
+        case .destination(.presented(.alert(.cancelPaymentMethodEdit))):
+            return .send(.correction(.cancelled))
+
+        case let .destination(
+            .presented(.editPaymentMethod(.delegate(.saved(originalName, newName, flags))))
+        ):
+            state.destination = nil
+            state.isFormSheetDismissing = true
+            return .send(
+                .correction(
+                    .requested(originalName: originalName, newName: newName, flags: flags)
+                )
+            )
+
+        case let .destination(.presented(.rename(.delegate(.saved(oldName, newName))))):
+            state.destination = nil
+            state.isFormSheetDismissing = true
+            return itemOperations().rename(
+                LookupItemRename(oldName: oldName, newName: newName),
+                kind: state.kind
+            )
+
+        case .destination:
+            return .none
+
+        case let .addResponse(.success(addition)):
+            state.$catalog.withLock { catalog in
+                catalog.add(name: addition.name, kind: state.kind, flags: addition.flags)
+            }
+            return .none
+
+        case .addResponse(.failure):
+            presentAlertAfterFormSheetDismissal(.writeFailure(.add), state: &state)
+            return .none
+
+        case let .deleteResponse(.success(name)):
+            state.$catalog.withLock { $0.remove(name: name, kind: state.kind) }
+            return .none
+
+        case .deleteResponse(.failure):
+            state.destination = .writeFailure(.delete)
+            return .none
+
+        case let .itemsResponse(.success(catalog)):
+            state.$catalog.withLock { $0.replaceItems(of: state.kind, from: catalog) }
+            state.hasLoaded = true
+            state.hasLoadFailed = false
+            return .none
+
+        case .itemsResponse(.failure):
+            state.hasLoadFailed = true
+            return .none
+
+        case let .renameResponse(.success(rename)):
+            state.$catalog.withLock { catalog in
+                catalog.rename(from: rename.oldName, to: rename.newName, kind: state.kind)
+            }
+            return .send(.delegate(.itemRenamed(rename)))
+
+        case .renameResponse(.failure):
+            presentAlertAfterFormSheetDismissal(.writeFailure(.rename), state: &state)
+            return .none
         }
     }
 
-    /// 依 ``LookupKind`` 選擇對應 repository 觸發 fetch
-    /// - Parameter kind: 要載入的主檔型別
-    /// - Returns: 對應 effect
-    func load(kind: LookupKind) -> Effect<Action> {
-        let orderSourceRepository = orderSourceRepository
-        let categoryRepository = categoryRepository
-        let paymentMethodRepository = paymentMethodRepository
-        let reconciliationStatusRepository = reconciliationStatusRepository
-        return .run { send in
-            do {
-                switch kind {
-                case .orderSource:
-                    let items = try await orderSourceRepository.fetchOrderSources()
-                    await send(.orderSourceItemsLoaded(items))
-                case .category:
-                    let items = try await categoryRepository.fetchCategories()
-                    await send(.categoryItemsLoaded(items))
-                case .paymentMethod:
-                    let infos = try await paymentMethodRepository.fetchPaymentMethodInfos()
-                    await send(.paymentMethodInfosLoaded(infos))
-                case .reconciliationStatus:
-                    let items = try await reconciliationStatusRepository.fetchReconciliationStatuses()
-                    await send(.reconciliationStatusItemsLoaded(items))
-                }
-            } catch {
-                await send(.loadFailed("主檔載入失敗，請稍後再試。"))
-            }
+    /// 建立目前 reducer 使用的主檔操作分派器
+    ///
+    /// - Returns: 持有五個主檔 repository 的操作型別
+    func itemOperations() -> LookupItemOperations {
+        LookupItemOperations(
+            categoryRepository: categoryRepository,
+            orderRepository: orderRepository,
+            orderSourceRepository: orderSourceRepository,
+            paymentMethodRepository: paymentMethodRepository,
+            reconciliationStatusRepository: reconciliationStatusRepository
+        )
+    }
+
+    /// 表單關閉期間暫存提示，否則直接呈現
+    ///
+    /// - Parameters:
+    ///   - alert: 要呈現的目的地狀態
+    ///   - state: 要更新的主檔管理狀態
+    func presentAlertAfterFormSheetDismissal(
+        _ alert: Destination.State,
+        state: inout State
+    ) {
+        if state.isFormSheetDismissing {
+            state.pendingAlert = alert
+        } else {
+            state.destination = alert
         }
     }
 }

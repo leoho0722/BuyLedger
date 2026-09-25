@@ -13,11 +13,20 @@ import SwiftData
 actor OrderPersistence {
 
     /// 來源訂單查詢的可注入實作；未提供時使用目前的 model context
-    typealias ConsumedOrderFetcher =
-        @Sendable (FetchDescriptor<OrderRecord>) throws(any Error) -> [OrderRecord]
+    typealias ConsumedOrderFetcher = @Sendable (
+        FetchDescriptor<OrderRecord>
+    ) throws(any Error) -> [OrderRecord]
+
+    /// 改名交易中可替代訂單記錄查詢的實作
+    typealias LookupRenameOrderFetcher = @Sendable (
+        FetchDescriptor<OrderRecord>
+    ) throws(any Error) -> [OrderRecord]
 
     /// 測試或替代儲存實作使用的來源訂單查詢
     private var consumedOrderFetcher: ConsumedOrderFetcher?
+
+    /// 測試改名交易查詢失敗時使用的替代實作
+    private var lookupRenameOrderFetcher: LookupRenameOrderFetcher?
 
     /// 建立可注入來源訂單查詢的 persistence
     ///
@@ -31,6 +40,22 @@ actor OrderPersistence {
         self.modelContainer = modelContainer
         self.modelExecutor = DefaultSerialModelExecutor(modelContext: ModelContext(modelContainer))
         self.consumedOrderFetcher = consumedOrderFetcher
+        self.lookupRenameOrderFetcher = nil
+    }
+
+    /// 建立可注入改名交易訂單查詢的 persistence
+    ///
+    /// - Parameters:
+    ///   - modelContainer: persistence 使用的 model container
+    ///   - lookupRenameOrderFetcher: 改名交易中訂單記錄查詢的替代實作
+    init(
+        modelContainer: ModelContainer,
+        lookupRenameOrderFetcher: @escaping LookupRenameOrderFetcher
+    ) {
+        self.modelContainer = modelContainer
+        self.modelExecutor = DefaultSerialModelExecutor(modelContext: ModelContext(modelContainer))
+        self.consumedOrderFetcher = nil
+        self.lookupRenameOrderFetcher = lookupRenameOrderFetcher
     }
 }
 
@@ -246,96 +271,107 @@ extension OrderPersistence {
         }
     }
 
-    /// 把所有以 `oldName` 為訂單來源的訂單，更名為 `newName`
+    /// 在同一交易內改名訂單來源主檔與引用它的訂單
     ///
     /// - Parameters:
     ///   - oldName: 原本的訂單來源名稱
     ///   - newName: 新的訂單來源名稱
-    /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
-    func renameOrderSource(from oldName: String, to newName: String) throws(PersistenceError) {
-        let descriptor = FetchDescriptor<OrderRecord>(
-            predicate: #Predicate { $0.orderSource == oldName }
-        )
-        let records = try PersistenceError.mapFetch {
-            try modelContext.fetch(descriptor)
-        }
-        for record in records {
-            record.orderSource = newName
-        }
-        try performWithRollback(insertedRecords: []) { () throws(PersistenceError) in
-            try PersistenceError.mapSave {
-                try modelContext.save()
+    /// - Throws: 查詢主檔或訂單失敗時拋出 `PersistenceError.fetchFailed`；
+    ///   儲存失敗時拋出 `PersistenceError.saveFailed`
+    func applyOrderSourceRename(
+        from oldName: String,
+        to newName: String
+    ) throws(PersistenceError) {
+        try performLookupRenameTransaction(
+            updateLookup: { context throws(PersistenceError) in
+                try LookupRecordRenamer.rename(
+                    OrderSourceRecord.self,
+                    from: oldName,
+                    to: newName,
+                    in: context
+                )
+            },
+            updateOrders: { context throws(PersistenceError) in
+                try renameOrderSourceRecords(from: oldName, to: newName, in: context)
             }
-        }
+        )
     }
 
-    /// 把所有類別清單包含 `oldName` 的訂單，於陣列內逐元素更名為 `newName`
+    /// 在同一交易內改名商品類別主檔與引用它的訂單
     ///
     /// - Parameters:
     ///   - oldName: 原本的類別名稱
     ///   - newName: 新的類別名稱
-    /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
-    func renameCategory(from oldName: String, to newName: String) throws(PersistenceError) {
-        let records = try PersistenceError.mapFetch {
-            try modelContext.fetch(FetchDescriptor<OrderRecord>())
-        }
-        for record in records where record.categories.contains(oldName) {
-            record.categories = record.categories.map { $0 == oldName ? newName : $0 }
-        }
-        try performWithRollback(insertedRecords: []) { () throws(PersistenceError) in
-            try PersistenceError.mapSave {
-                try modelContext.save()
+    /// - Throws: 查詢主檔或訂單失敗時拋出 `PersistenceError.fetchFailed`；
+    ///   儲存失敗時拋出 `PersistenceError.saveFailed`
+    func applyCategoryRename(
+        from oldName: String,
+        to newName: String
+    ) throws(PersistenceError) {
+        try performLookupRenameTransaction(
+            updateLookup: { context throws(PersistenceError) in
+                try LookupRecordRenamer.rename(
+                    CategoryRecord.self,
+                    from: oldName,
+                    to: newName,
+                    in: context
+                )
+            },
+            updateOrders: { context throws(PersistenceError) in
+                try renameCategoryOrderRecords(from: oldName, to: newName, in: context)
             }
-        }
+        )
     }
 
-    /// 把所有以 `oldName` 為付款方式的訂單，更名為 `newName`
+    /// 在同一交易內改名付款方式主檔與引用它的訂單
     ///
     /// - Parameters:
     ///   - oldName: 原本的名稱
     ///   - newName: 新的名稱
-    /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
-    func renamePaymentMethod(from oldName: String, to newName: String) throws(PersistenceError) {
-        let descriptor = FetchDescriptor<OrderRecord>(
-            predicate: #Predicate { $0.paymentMethod == oldName }
-        )
-        let records = try PersistenceError.mapFetch {
-            try modelContext.fetch(descriptor)
-        }
-        for record in records {
-            record.paymentMethod = newName
-        }
-        try performWithRollback(insertedRecords: []) { () throws(PersistenceError) in
-            try PersistenceError.mapSave {
-                try modelContext.save()
+    /// - Throws: 查詢主檔或訂單失敗時拋出 `PersistenceError.fetchFailed`；
+    ///   儲存失敗時拋出 `PersistenceError.saveFailed`
+    func applyPaymentMethodRename(
+        from oldName: String,
+        to newName: String
+    ) throws(PersistenceError) {
+        try performLookupRenameTransaction(
+            updateLookup: { context throws(PersistenceError) in
+                try LookupRecordRenamer.renamePaymentMethod(
+                    from: oldName,
+                    to: newName,
+                    in: context
+                )
+            },
+            updateOrders: { context throws(PersistenceError) in
+                try renamePaymentMethodOrderRecords(from: oldName, to: newName, in: context)
             }
-        }
+        )
     }
 
-    /// 把所有以 `oldName` 為對帳狀態的訂單，更名為 `newName`
+    /// 在同一交易內改名對帳狀態主檔與引用它的訂單
     ///
     /// - Parameters:
     ///   - oldName: 原本的對帳狀態名稱
     ///   - newName: 新的對帳狀態名稱
-    /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
-    func renameReconciliationStatus(
+    /// - Throws: 查詢主檔或訂單失敗時拋出 `PersistenceError.fetchFailed`；
+    ///   儲存失敗時拋出 `PersistenceError.saveFailed`
+    func applyReconciliationStatusRename(
         from oldName: String,
         to newName: String
     ) throws(PersistenceError) {
-        let descriptor = FetchDescriptor<OrderRecord>(
-            predicate: #Predicate { $0.reconciliationStatus == oldName }
-        )
-        let records = try PersistenceError.mapFetch {
-            try modelContext.fetch(descriptor)
-        }
-        for record in records {
-            record.reconciliationStatus = newName
-        }
-        try performWithRollback(insertedRecords: []) { () throws(PersistenceError) in
-            try PersistenceError.mapSave {
-                try modelContext.save()
+        try performLookupRenameTransaction(
+            updateLookup: { context throws(PersistenceError) in
+                try LookupRecordRenamer.rename(
+                    ReconciliationStatusRecord.self,
+                    from: oldName,
+                    to: newName,
+                    in: context
+                )
+            },
+            updateOrders: { context throws(PersistenceError) in
+                try renameReconciliationStatusOrderRecords(from: oldName, to: newName, in: context)
             }
-        }
+        )
     }
 
     /// 將訂單中的 `oldName` 改為 `newName`
@@ -512,6 +548,127 @@ private extension OrderPersistence {
         return try modelContext.fetch(descriptor)
     }
 
+    /// 改名主檔與訂單並只儲存一次
+    ///
+    /// - Parameters:
+    ///   - updateLookup: 在指定 context 改名主檔
+    ///   - updateOrders: 改寫引用舊名稱的訂單
+    /// - Throws: 查詢失敗時拋出 `PersistenceError.fetchFailed`；儲存失敗時拋出 `PersistenceError.saveFailed`
+    func performLookupRenameTransaction(
+        updateLookup: (ModelContext) throws(PersistenceError) -> Void,
+        updateOrders: (ModelContext) throws(PersistenceError) -> Void
+    ) throws(PersistenceError) {
+        let context = ModelContext(modelContainer)
+        try updateLookup(context)
+        try updateOrders(context)
+        try PersistenceError.mapSave {
+            try context.save()
+        }
+    }
+
+    /// 只改訂單來源記錄，不儲存
+    ///
+    /// - Parameters:
+    ///   - oldName: 原本的訂單來源名稱
+    ///   - newName: 新的訂單來源名稱
+    ///   - context: 執行改名的持久化 context
+    /// - Throws: 查詢訂單失敗時拋出 `PersistenceError.fetchFailed`
+    func renameOrderSourceRecords(
+        from oldName: String,
+        to newName: String,
+        in context: ModelContext
+    ) throws(PersistenceError) {
+        let descriptor = FetchDescriptor<OrderRecord>(
+            predicate: #Predicate { $0.orderSource == oldName }
+        )
+        let records = try fetchLookupRenameOrderRecords(descriptor, in: context)
+        for record in records {
+            record.orderSource = newName
+        }
+    }
+
+    /// 只改商品類別引用，不儲存
+    ///
+    /// - Parameters:
+    ///   - oldName: 原本的類別名稱
+    ///   - newName: 新的類別名稱
+    ///   - context: 執行改名的持久化 context
+    /// - Throws: 查詢訂單失敗時拋出 `PersistenceError.fetchFailed`
+    func renameCategoryOrderRecords(
+        from oldName: String,
+        to newName: String,
+        in context: ModelContext
+    ) throws(PersistenceError) {
+        let records = try fetchLookupRenameOrderRecords(
+            FetchDescriptor<OrderRecord>(),
+            in: context
+        )
+        for record in records where record.categories.contains(oldName) {
+            record.categories = record.categories.map { $0 == oldName ? newName : $0 }
+        }
+    }
+
+    /// 只改付款方式記錄，不儲存
+    ///
+    /// - Parameters:
+    ///   - oldName: 原本的付款方式名稱
+    ///   - newName: 新的付款方式名稱
+    ///   - context: 執行改名的持久化 context
+    /// - Throws: 查詢訂單失敗時拋出 `PersistenceError.fetchFailed`
+    func renamePaymentMethodOrderRecords(
+        from oldName: String,
+        to newName: String,
+        in context: ModelContext
+    ) throws(PersistenceError) {
+        let descriptor = FetchDescriptor<OrderRecord>(
+            predicate: #Predicate { $0.paymentMethod == oldName }
+        )
+        let records = try fetchLookupRenameOrderRecords(descriptor, in: context)
+        for record in records {
+            record.paymentMethod = newName
+        }
+    }
+
+    /// 只改對帳狀態記錄，不儲存
+    ///
+    /// - Parameters:
+    ///   - oldName: 原本的對帳狀態名稱
+    ///   - newName: 新的對帳狀態名稱
+    ///   - context: 執行改名的持久化 context
+    /// - Throws: 查詢訂單失敗時拋出 `PersistenceError.fetchFailed`
+    func renameReconciliationStatusOrderRecords(
+        from oldName: String,
+        to newName: String,
+        in context: ModelContext
+    ) throws(PersistenceError) {
+        let descriptor = FetchDescriptor<OrderRecord>(
+            predicate: #Predicate { $0.reconciliationStatus == oldName }
+        )
+        let records = try fetchLookupRenameOrderRecords(descriptor, in: context)
+        for record in records {
+            record.reconciliationStatus = newName
+        }
+    }
+
+    /// 以改名交易的查詢替身或指定 context 讀取訂單記錄
+    ///
+    /// - Parameters:
+    ///   - descriptor: 訂單記錄的查詢條件
+    ///   - context: 執行查詢的持久化 context
+    /// - Returns: 符合條件的訂單記錄
+    /// - Throws: 查詢失敗時拋出 `PersistenceError.fetchFailed`
+    func fetchLookupRenameOrderRecords(
+        _ descriptor: FetchDescriptor<OrderRecord>,
+        in context: ModelContext
+    ) throws(PersistenceError) -> [OrderRecord] {
+        try PersistenceError.mapFetch {
+            if let lookupRenameOrderFetcher {
+                return try lookupRenameOrderFetcher(descriptor)
+            }
+            return try context.fetch(descriptor)
+        }
+    }
+
     /// 執行寫入；失敗時清理本次插入的記錄並保留原始錯誤
     ///
     /// - Parameters:
@@ -534,7 +691,7 @@ private extension OrderPersistence {
 
     /// 清除 save 失敗後仍留在長命 context 的新訂單記錄
     ///
-    /// - Parameter insertedRecords: 這次操作剛插入、尚未成功落盤的記錄
+    /// - Parameter insertedRecords: 這次操作剛插入、尚未成功落盤的訂單記錄
     /// - Throws: 清除殘留記錄時讀取持久化資料失敗
     /// - Note: 先保留本次插入的 id，回滾後直接刪除記錄實例
     ///   再查詢同 id 的殘留記錄並移除

@@ -382,7 +382,7 @@ private extension RootSidebarLayout {
                     guard tab != store.selectedTab else {
                         return
                     }
-                    store.send(.tabSelected(tab))
+                    store.send(.sidebarTabSelected(tab))
 
                 case let .smartGroup(status):
                     store.send(.smartGroupSelected(status))

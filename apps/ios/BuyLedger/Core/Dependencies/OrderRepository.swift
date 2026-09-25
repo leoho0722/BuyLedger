@@ -62,42 +62,42 @@ struct OrderRepository: Sendable {
         _ consumedIDs: [LedgerOrder.ID]
     ) async throws(OrderPersistenceError) -> Void
 
-    /// 將所有訂單的 `orderSource` 從舊名稱改為新名稱
+    /// 在單一交易內將訂單來源主檔與訂單欄位改為新名稱
     /// - Parameters:
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
-    var renameOrderSource: @Sendable (
+    var applyOrderSourceRename: @Sendable (
         _ oldName: String,
         _ newName: String
     ) async throws(PersistenceError) -> Void
 
-    /// 將所有訂單的 `categories` 從舊名稱改為新名稱
+    /// 在單一交易內將商品類別主檔與訂單欄位改為新名稱
     /// - Parameters:
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
-    var renameOrderCategory: @Sendable (
+    var applyCategoryRename: @Sendable (
         _ oldName: String,
         _ newName: String
     ) async throws(PersistenceError) -> Void
 
-    /// 將所有訂單的 `paymentMethod` 從舊名稱改為新名稱
+    /// 在單一交易內將付款方式主檔與訂單欄位改為新名稱
     /// - Parameters:
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
-    var renameOrderPaymentMethod: @Sendable (
+    var applyPaymentMethodRename: @Sendable (
         _ oldName: String,
         _ newName: String
     ) async throws(PersistenceError) -> Void
 
-    /// 將所有訂單的 `reconciliationStatus` 從舊名稱改為新名稱
+    /// 在單一交易內將對帳狀態主檔與訂單欄位改為新名稱
     /// - Parameters:
     ///   - oldName: 舊名稱
     ///   - newName: 新名稱
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
-    var renameOrderReconciliationStatus: @Sendable (
+    var applyReconciliationStatusRename: @Sendable (
         _ oldName: String,
         _ newName: String
     ) async throws(PersistenceError) -> Void
@@ -177,6 +177,7 @@ extension OrderRepository {
 extension OrderRepository {
 
     /// 以指定的 SwiftData ``ModelContainer`` 建立 repository
+    ///
     /// - Parameters:
     ///   - container: 用於建立背景 actor 的 SwiftData container
     ///   - shouldSeedSampleOrders: 空資料表時是否建立範例訂單
@@ -188,7 +189,7 @@ extension OrderRepository {
         let provider = PersistenceInstanceProvider(container: container)
 
         return OrderRepository(
-            fetchOrders: { () async throws(PersistenceError) -> [LedgerOrder] in
+            fetchOrders: { () throws(PersistenceError) in
                 let persistence = await provider.instance
                 let stored = try await persistence.fetchAll()
                 if shouldSeedSampleOrders, stored.isEmpty {
@@ -197,76 +198,67 @@ extension OrderRepository {
                 }
                 return stored
             },
-            createOrder: { (order: LedgerOrder) async throws(OrderPersistenceError) in
+            createOrder: { order throws(OrderPersistenceError) in
                 let persistence = await provider.instance
                 try await persistence.create(order)
             },
-            saveOrder: { (order: LedgerOrder) async throws(PersistenceError) in
+            saveOrder: { order throws(PersistenceError) in
                 let persistence = await provider.instance
                 try await persistence.update(order)
             },
-            saveOrders: { (orders: [LedgerOrder]) async throws(PersistenceError) in
+            saveOrders: { orders throws(PersistenceError) in
                 let persistence = await provider.instance
                 try await persistence.upsertAll(orders)
             },
-            fetchOrderPhotos: { (id: LedgerOrder.ID) async throws(PersistenceError) -> [Data] in
+            fetchOrderPhotos: { id throws(PersistenceError) in
                 let persistence = await provider.instance
                 return try await persistence.fetchPhotos(id: id)
             },
-            saveOrderPersistingPhotos: { (order: LedgerOrder) async throws(PersistenceError) in
+            saveOrderPersistingPhotos: { order throws(PersistenceError) in
                 let persistence = await provider.instance
                 try await persistence.updatePersistingPhotos(order)
             },
-            removeOrder: { (id: LedgerOrder.ID) async throws(PersistenceError) in
+            removeOrder: { id throws(PersistenceError) in
                 let persistence = await provider.instance
                 try await persistence.delete(id: id)
             },
-            mergeOrders: {
-                (
-                    newOrder: LedgerOrder,
-                    consumedIDs: [LedgerOrder.ID]
-                ) async throws(OrderPersistenceError) in
+            mergeOrders: { newOrder, consumedIDs throws(OrderPersistenceError) in
                 let persistence = await provider.instance
                 try await persistence.mergeOrders(newOrder: newOrder, consumedIDs: consumedIDs)
             },
-            renameOrderSource: {
-                (oldName: String, newName: String) async throws(PersistenceError) in
+            applyOrderSourceRename: { oldName, newName throws(PersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
                 }
                 let persistence = await provider.instance
-                try await persistence.renameOrderSource(from: oldName, to: trimmedNew)
+                try await persistence.applyOrderSourceRename(from: oldName, to: trimmedNew)
             },
-            renameOrderCategory: {
-                (oldName: String, newName: String) async throws(PersistenceError) in
+            applyCategoryRename: { oldName, newName throws(PersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
                 }
                 let persistence = await provider.instance
-                try await persistence.renameCategory(from: oldName, to: trimmedNew)
+                try await persistence.applyCategoryRename(from: oldName, to: trimmedNew)
             },
-            renameOrderPaymentMethod: {
-                (oldName: String, newName: String) async throws(PersistenceError) in
+            applyPaymentMethodRename: { oldName, newName throws(PersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
                 }
                 let persistence = await provider.instance
-                try await persistence.renamePaymentMethod(from: oldName, to: trimmedNew)
+                try await persistence.applyPaymentMethodRename(from: oldName, to: trimmedNew)
             },
-            renameOrderReconciliationStatus: {
-                (oldName: String, newName: String) async throws(PersistenceError) in
+            applyReconciliationStatusRename: { oldName, newName throws(PersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
                 }
                 let persistence = await provider.instance
-                try await persistence.renameReconciliationStatus(from: oldName, to: trimmedNew)
+                try await persistence.applyReconciliationStatusRename(from: oldName, to: trimmedNew)
             },
-            renameOrderCampaign: {
-                (oldName: String, newName: String) async throws(PersistenceError) in
+            renameOrderCampaign: { oldName, newName throws(PersistenceError) in
                 let trimmedNew = newName.trimmingCharacters(in: .whitespacesAndNewlines)
                 guard !trimmedNew.isEmpty, trimmedNew != oldName else {
                     return
@@ -304,10 +296,10 @@ extension OrderRepository: DependencyKey {
         saveOrderPersistingPhotos: { _ in },
         removeOrder: { _ in },
         mergeOrders: { _, _ in },
-        renameOrderSource: { _, _ in },
-        renameOrderCategory: { _, _ in },
-        renameOrderPaymentMethod: { _, _ in },
-        renameOrderReconciliationStatus: { _, _ in },
+        applyOrderSourceRename: { _, _ in },
+        applyCategoryRename: { _, _ in },
+        applyPaymentMethodRename: { _, _ in },
+        applyReconciliationStatusRename: { _, _ in },
         renameOrderCampaign: { _, _ in }
     )
 }

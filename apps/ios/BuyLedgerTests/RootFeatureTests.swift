@@ -114,7 +114,7 @@ struct RootFeatureTests {
             RootFeature()
         } withDependencies: {
             $0[CurrencyMetadataRepository.self] = CurrencyMetadataRepository(
-                fetchCodes: { () async throws(CurrencyMetadataRepositoryError) -> [CurrencyCode] in
+                fetchCodes: { () throws(CurrencyMetadataRepositoryError) in
                     throw CurrencyMetadataRepositoryError.persistence(
                         .storage(
                             .fetchFailed(
@@ -170,6 +170,77 @@ struct RootFeatureTests {
             $0.orders.selectedStatus = .status(.shipping)
             $0.orders.selectedOrderID = "BL-2604-018"
         }
+    }
+
+    /// iPad 側邊欄切換分頁前清空「更多」路徑
+    @Test func sidebarTabSelectedClearsMorePathAndChangesTab() async {
+        // Given
+
+        var state = RootFeature.State()
+        state.selectedTab = .more
+        state.morePath = [.categories]
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        }
+
+        // When
+
+        await store.send(.sidebarTabSelected(.orders)) {
+            // Then
+
+            $0.morePath = []
+            $0.selectedTab = .orders
+        }
+    }
+
+    /// iPad 側邊欄的智慧分組切到訂單頁前清空「更多」路徑
+    @Test func smartGroupSelectedClearsMorePath() async {
+        // Given
+
+        var state = RootFeature.State()
+        state.selectedTab = .more
+        state.morePath = [.categories]
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+
+        await store.send(.smartGroupSelected(.shipping)) {
+            // Then
+
+            $0.morePath = []
+            $0.selectedTab = .orders
+            $0.orders.selectedStatus = .status(.shipping)
+        }
+    }
+
+    /// iPhone 切換主要分頁時保留「更多」路徑
+    @Test func tabSelectedKeepsMorePath() async {
+        // Given
+
+        var state = RootFeature.State()
+        state.selectedTab = .more
+        state.morePath = [.categories]
+
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        }
+
+        // When
+
+        await store.send(.tabSelected(.orders)) {
+            // Then
+
+            $0.selectedTab = .orders
+        }
+
+        #expect(store.state.morePath == [.categories])
     }
 
     /// 智慧分組只切換狀態篩選，不靜默覆寫使用者既有的日期區間與類別篩選
@@ -347,340 +418,542 @@ struct RootFeatureTests {
         #expect(filteredIDs == ["TEST-BEAUTY-1", "TEST-BEAUTY-2"])
     }
 
-    /// 驗證根功能在此情境下的導覽與狀態同步
-    @Test func paymentMethodEditSuccessForwardsTheSameNormalizedOrdersToOrdersFeature() async {
+    /// 付款方式表單找出引用原付款方式的訂單並完成確認後，將正規化訂單轉送至訂單功能
+    @Test
+    func paymentMethodEditSuccessForwardsTheSameNormalizedOrdersToOrdersFeature() async {
         // Given
-
-        // 只有寫入成功後才同步主檔，並轉送同一份資料
-        var order = RootFeatureTests.makeTestOrder(
-            id: "BL-PM-EDIT", category: "美妝", customerName: "編輯測試")
-        order = LedgerOrder(
-            id: order.id,
-            customer: order.customer,
-            status: order.status,
-            currency: order.currency,
-            date: order.date,
-            items: order.items,
-            itemCost: order.itemCost,
-            domesticShipping: order.domesticShipping,
-            internationalShipping: order.internationalShipping,
-            foreignDomesticShipping: order.foreignDomesticShipping,
-            cardFeeRate: order.cardFeeRate,
-            platformFeeRate: order.platformFeeRate,
-            paymentFeeRate: order.paymentFeeRate,
+        let original = LedgerOrder.fixture(
+            id: "BL-PM-EDIT",
             chargedAmount: 5_000,
             cardlessDeductionAmount: 750,
             cardlessSupplementAmount: 250,
-            orderSource: order.orderSource,
-            categories: order.categories,
             paymentMethod: "匯款",
-            notes: order.notes,
             reconciliationStatus: "待對帳",
-            campaignNames: order.campaignNames,
-            paymentReceiptStatus: order.paymentReceiptStatus,
-            isCashOnDelivery: true,
-            photos: order.photos,
-            mergedSourceIDs: []
+            isCashOnDelivery: true
         )
-
-        let corrected = order
-            .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(.none)
-        let plan = LookupManagementFeature.PaymentMethodEditPlan(
+        let normalized = LedgerOrder.fixture(
+            id: "BL-PM-EDIT",
+            chargedAmount: 5_000,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            paymentMethod: "銀行匯款",
+            reconciliationStatus: "",
+            isCashOnDelivery: false
+        )
+        let plan = PaymentMethodEditPlan(
             originalName: "匯款",
             newName: "銀行匯款",
             flags: .none,
-            flagsChanged: true,
-            affectedOrders: [corrected]
+            hasChangedFlags: true,
+            affectedOrders: [normalized]
         )
-
-        var state = Self.makeIsolatedRootState()
-        state.orders.orders = [order]
-        state.orders.$lookupCatalog.withLock {
-            $0.paymentMethods = [
-                PaymentMethodInfo(
-                    name: "匯款",
-                    isCardless: false,
-                    isBankTransfer: true,
-                    isCashOnDelivery: false
-                )
-            ]
-        }
-
-        let store = TestStore(initialState: state) {
-            RootFeature()
-        }
-
-        // When
-
-        await store.send(
-            .lookupManagements(
-                .element(id: .paymentMethod, action: .paymentMethodEditSucceeded(plan))
-            )
-        ) {
-            $0.orders.$lookupCatalog.withLock {
-                $0.paymentMethods = [
-                    PaymentMethodInfo(
-                        name: "銀行匯款",
-                        isCardless: false,
-                        isBankTransfer: false,
-                        isCashOnDelivery: false
-                    )
-                ]
-            }
-        }
-
-        // Then
-
-        await store.receive(\.orders.paymentMethodFlagsApplied) {
-            $0.orders.orders = [corrected]
-            $0.customers.orders = [corrected]
-            $0.campaigns.orders = [corrected]
-            $0.dashboard.orders = [corrected]
-            $0.insights.orders = [corrected]
-        }
-
-        #expect(store.state.orders.orders == [corrected])
-        #expect(
-            store.state.orders.paymentMethodMaster == [
-                PaymentMethodInfo(
-                    name: "銀行匯款",
-                    isCardless: false,
-                    isBankTransfer: false,
-                    isCashOnDelivery: false
-                )
-            ])
-        // 主檔管理清單應同步反映新名稱與旗標。
-        #expect(store.state.lookupManagements[id: .paymentMethod]?.items == ["銀行匯款"])
-        #expect(
-            store.state.lookupManagements[id: .paymentMethod]?.paymentMethodIsBankTransfer == [
-                "銀行匯款": false
-            ])
-        #expect(
-            store.state.lookupManagements[id: .paymentMethod]?.paymentMethodIsCardless == [
-                "銀行匯款": false
-            ])
-        #expect(
-            store.state.lookupManagements[id: .paymentMethod]?.paymentMethodIsCashOnDelivery == [
-                "銀行匯款": false
-            ])
-    }
-
-    /// 驗證根功能在此情境下的導覽與狀態同步
-    @Test func paymentMethodEditCancellationLeavesRootOrdersAndMasterUnchanged() async {
-        // Given
-
-        let original = Self.makeTestOrder(id: "BL-PM-CANCEL", category: "美妝", customerName: "取消測試")
-            .renamingPaymentMethod(to: "匯款")
-        let corrected = original
-            .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(.none)
-        let plan = LookupManagementFeature.PaymentMethodEditPlan(
-            originalName: "匯款",
-            newName: "銀行匯款",
-            flags: .none,
-            flagsChanged: true,
-            affectedOrders: [corrected]
-        )
-        let originalMaster = PaymentMethodInfo(
-            name: "匯款",
+        let updatedMaster = PaymentMethodInfo(name: "銀行匯款", flags: .none)
+        let originalFlags = PaymentMethodFlags(
             isCardless: false,
             isBankTransfer: true,
             isCashOnDelivery: false
         )
-
         var state = Self.makeIsolatedRootState()
         state.orders.orders = [original]
-        state.orders.$lookupCatalog.withLock { $0.paymentMethods = [originalMaster] }
-
-        let store = TestStore(initialState: state) {
-            RootFeature()
+        state.orders.$lookupCatalog.withLock { catalog in
+            catalog.paymentMethods = [PaymentMethodInfo(name: "匯款", flags: originalFlags)]
         }
-        // When
-
-        await store.send(
-            .lookupManagements(
-                .element(id: .paymentMethod, action: .paymentMethodEditPrepared(plan)))
-        ) {
-            $0.lookupManagements[id: .paymentMethod]?.pendingPaymentMethodEdit = plan
-            $0.lookupManagements[id: .paymentMethod]?.retroactiveConfirmation = AlertState {
-                TextState("更正付款方式")
-            } actions: {
-                ButtonState(role: .destructive, action: .confirmPaymentMethodEdit) {
-                    TextState("確認更正")
-                }
-                ButtonState(role: .cancel) {
-                    TextState("取消")
-                }
-            } message: {
-                TextState("確認後將重算 1 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。")
-            }
-        }
-        // Then
-
-        #expect(store.state.lookupManagements[id: .paymentMethod]?.pendingPaymentMethodEdit == plan)
-        #expect(store.state.lookupManagements[id: .paymentMethod]?.retroactiveConfirmation != nil)
-        // 純 `AlertState` 的 `.ifLet` 收到呈現動作 (含 `.dismiss`) 會自動清空呈現狀態。
-        // LookupManagementFeature 的取消分支另外清 pendingPaymentMethodEdit
-        await store.send(
-            .lookupManagements(
-                .element(id: .paymentMethod, action: .retroactiveConfirmation(.dismiss)))
-        ) {
-            $0.lookupManagements[id: .paymentMethod]?.pendingPaymentMethodEdit = nil
-            $0.lookupManagements[id: .paymentMethod]?.retroactiveConfirmation = nil
-        }
-
-        #expect(store.state.orders.orders == [original])
-        #expect(store.state.orders.paymentMethodMaster == [originalMaster])
-        #expect(store.state.lookupManagements[id: .paymentMethod]?.items == ["匯款"])
-        #expect(
-            store.state.lookupManagements[id: .paymentMethod]?.paymentMethodIsBankTransfer == [
-                "匯款": true
-            ])
-    }
-
-    /// 驗證根功能在此情境下的導覽與狀態同步
-    @Test func paymentMethodEditPersistenceFailureLeavesOrdersAndMasterUnchanged() async {
-        // Given
-
-        let original = Self.makeTestOrder(id: "BL-PM-FAIL", category: "美妝", customerName: "失敗測試")
-        let corrected =
-            original
-            .renamingPaymentMethod(to: "銀行匯款")
-            .applyingPaymentMethodFlags(.none)
-        let plan = LookupManagementFeature.PaymentMethodEditPlan(
-            originalName: "匯款",
-            newName: "銀行匯款",
-            flags: .none,
-            flagsChanged: true,
-            affectedOrders: [corrected]
-        )
-        let originalMaster = PaymentMethodInfo(
-            name: "匯款", isCardless: false, isBankTransfer: true, isCashOnDelivery: false)
-
-        var state = Self.makeIsolatedRootState()
-        state.orders.orders = [original]
-        state.orders.$lookupCatalog.withLock { $0.paymentMethods = [originalMaster] }
-
+        let writes = LockIsolated<[PaymentMethodEditPlan]>([])
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0[PaymentMethodRepository.self].applyPaymentMethodEdit = {
-                (_: String, _: String, _: PaymentMethodFlags, _: [LedgerOrder])
-                    async throws(PaymentMethodPersistenceError) in
+            $0[OrderRepository.self].fetchOrders = { [original] }
+            $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { originalName, newName, flags, affectedOrders in
+                writes.withValue { plans in
+                    plans.append(
+                        PaymentMethodEditPlan(
+                            originalName: originalName,
+                            newName: newName,
+                            flags: flags,
+                            hasChangedFlags: true,
+                            affectedOrders: affectedOrders
+                        )
+                    )
+                }
+            }
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .paymentMethod,
+                    action: .view(.editButtonTapped(name: "匯款"))
+                )
+            )
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.destination = .editPaymentMethod(
+                PaymentMethodEditFormFeature.State(
+                    originalName: "匯款",
+                    flags: originalFlags
+                )
+            )
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .paymentMethod,
+                    action: .destination(
+                        .presented(
+                            .editPaymentMethod(
+                                .view(.saveButtonTapped(name: "銀行匯款", flags: .none))
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod]
+                .destination.presented.editPaymentMethod.delegate.saved
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.destination = nil
+            $0.lookupManagements[id: .paymentMethod]?.isFormSheetDismissing = true
+        }
+        await store.receive(\.lookupManagements[id: .paymentMethod].correction.requested)
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod].correction.planResponse.success,
+            plan
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.correction.pendingPlan = plan
+        }
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod].correction.delegate.confirmationRequired,
+            1
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.destination =
+                nil
+            $0.lookupManagements[id: .paymentMethod]?.pendingAlert =
+                LookupManagementFeature.Destination.State.retroactiveConfirmation(
+                    affectedOrderCount: 1
+                )
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .paymentMethod,
+                    action: .view(.formSheetDismissed)
+                )
+            )
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.isFormSheetDismissing = false
+            $0.lookupManagements[id: .paymentMethod]?.pendingAlert = nil
+            $0.lookupManagements[id: .paymentMethod]?.destination =
+                LookupManagementFeature.Destination.State.retroactiveConfirmation(
+                    affectedOrderCount: 1
+                )
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .paymentMethod,
+                    action: .destination(
+                        .presented(.alert(.confirmPaymentMethodEdit))
+                    )
+                )
+            )
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.destination = nil
+        }
+        await store.receive(\.lookupManagements[id: .paymentMethod].correction.confirmed) {
+            $0.lookupManagements[id: .paymentMethod]?.correction.pendingPlan = nil
+            $0.orders.$lookupCatalog.withLock { catalog in
+                catalog.paymentMethods = [updatedMaster]
+            }
+        }
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod].correction.editResponse.success,
+            plan
+        )
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod].correction.delegate.edited,
+            plan
+        )
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod].delegate.paymentMethodEdited,
+            plan
+        )
+        await store.receive(\.orders.paymentMethodFlagsApplied) {
+            Self.setOrdersAndProjections([normalized], state: &$0)
+        }
+
+        // Then
+        #expect(store.state.orders.orders == [normalized])
+        #expect(store.state.orders.paymentMethodMaster == [updatedMaster])
+        #expect(store.state.lookupManagements[id: .paymentMethod]?.items == ["銀行匯款"])
+        #expect(writes.value == [plan])
+        await store.finish()
+    }
+
+    /// 付款方式確認 alert 取消時不寫入訂單或主檔
+    @Test
+    func paymentMethodEditCancellationLeavesRootOrdersAndMasterUnchanged() async {
+        // Given
+        let original = LedgerOrder.fixture(id: "BL-PM-CANCEL", paymentMethod: "匯款")
+        let expectedOrder = LedgerOrder.fixture(
+            id: "BL-PM-CANCEL",
+            paymentMethod: "銀行匯款"
+        )
+        let plan = PaymentMethodEditPlan(
+            originalName: "匯款",
+            newName: "銀行匯款",
+            flags: .none,
+            hasChangedFlags: true,
+            affectedOrders: [expectedOrder]
+        )
+        let originalFlags = PaymentMethodFlags(
+            isCardless: false,
+            isBankTransfer: true,
+            isCashOnDelivery: false
+        )
+        let originalMaster = PaymentMethodInfo(name: "匯款", flags: originalFlags)
+        var state = Self.makeIsolatedRootState()
+        state.orders.orders = [original]
+        state.orders.$lookupCatalog.withLock { $0.paymentMethods = [originalMaster] }
+        let writeCount = LockIsolated(0)
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0[OrderRepository.self].fetchOrders = { [original] }
+            $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { _, _, _, _ in
+                writeCount.withValue { $0 += 1 }
+            }
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .paymentMethod,
+                    action: .view(.editButtonTapped(name: "匯款"))
+                )
+            )
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.destination = .editPaymentMethod(
+                PaymentMethodEditFormFeature.State(
+                    originalName: "匯款",
+                    flags: originalFlags
+                )
+            )
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .paymentMethod,
+                    action: .destination(
+                        .presented(
+                            .editPaymentMethod(
+                                .view(.saveButtonTapped(name: "銀行匯款", flags: .none))
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod]
+                .destination.presented.editPaymentMethod.delegate.saved
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.destination = nil
+            $0.lookupManagements[id: .paymentMethod]?.isFormSheetDismissing = true
+        }
+        await store.receive(\.lookupManagements[id: .paymentMethod].correction.requested)
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod].correction.planResponse.success,
+            plan
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.correction.pendingPlan = plan
+        }
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod].correction.delegate.confirmationRequired,
+            1
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.destination = nil
+            $0.lookupManagements[id: .paymentMethod]?.pendingAlert =
+                LookupManagementFeature.Destination.State.retroactiveConfirmation(
+                    affectedOrderCount: 1
+                )
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .paymentMethod,
+                    action: .view(.formSheetDismissed)
+                )
+            )
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.isFormSheetDismissing = false
+            $0.lookupManagements[id: .paymentMethod]?.pendingAlert = nil
+            $0.lookupManagements[id: .paymentMethod]?.destination =
+                LookupManagementFeature.Destination.State.retroactiveConfirmation(
+                    affectedOrderCount: 1
+                )
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .paymentMethod,
+                    action: .destination(
+                        .presented(.alert(.cancelPaymentMethodEdit))
+                    )
+                )
+            )
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.destination = nil
+        }
+        await store.receive(\.lookupManagements[id: .paymentMethod].correction.cancelled) {
+            $0.lookupManagements[id: .paymentMethod]?.correction.pendingPlan = nil
+        }
+
+        // Then
+        #expect(store.state.orders.orders == [original])
+        #expect(store.state.orders.paymentMethodMaster == [originalMaster])
+        #expect(store.state.lookupManagements[id: .paymentMethod]?.items == ["匯款"])
+        #expect(writeCount.value == 0)
+        await store.finish()
+    }
+
+    /// 一起寫入付款方式與訂單失敗時保留原訂單與主檔
+    @Test
+    func paymentMethodEditPersistenceFailureLeavesOrdersAndMasterUnchanged() async {
+        // Given
+        let original = LedgerOrder.fixture(id: "BL-PM-FAIL", paymentMethod: "匯款")
+        let expectedOrder = LedgerOrder.fixture(
+            id: "BL-PM-FAIL",
+            paymentMethod: "銀行匯款"
+        )
+        let plan = PaymentMethodEditPlan(
+            originalName: "匯款",
+            newName: "銀行匯款",
+            flags: .none,
+            hasChangedFlags: true,
+            affectedOrders: [expectedOrder]
+        )
+        let originalFlags = PaymentMethodFlags(
+            isCardless: false,
+            isBankTransfer: true,
+            isCashOnDelivery: false
+        )
+        let originalMaster = PaymentMethodInfo(name: "匯款", flags: originalFlags)
+        var state = Self.makeIsolatedRootState()
+        state.orders.orders = [original]
+        state.orders.$lookupCatalog.withLock { $0.paymentMethods = [originalMaster] }
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0[OrderRepository.self].fetchOrders = { [original] }
+            $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { _, _, _, _ throws(PaymentMethodPersistenceError) in
                 throw .storage(
                     .saveFailed(
                         underlying: TestDependencies.makeUnderlyingError(message: "boom")
                     )
                 )
             }
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
+
         // When
-
-        await store.send(
-            .lookupManagements(
-                .element(id: .paymentMethod, action: .paymentMethodEditPrepared(plan)))
-        ) {
-            $0.lookupManagements[id: .paymentMethod]?.pendingPaymentMethodEdit = plan
-            $0.lookupManagements[id: .paymentMethod]?.retroactiveConfirmation = AlertState {
-                TextState("更正付款方式")
-            } actions: {
-                ButtonState(role: .destructive, action: .confirmPaymentMethodEdit) {
-                    TextState("確認更正")
-                }
-                ButtonState(role: .cancel) {
-                    TextState("取消")
-                }
-            } message: {
-                TextState("確認後將重算 1 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。")
-            }
-        }
-        // Then
-
-        #expect(store.state.lookupManagements[id: .paymentMethod]?.pendingPaymentMethodEdit == plan)
-        #expect(store.state.lookupManagements[id: .paymentMethod]?.retroactiveConfirmation != nil)
-        // 確認更正後清除待處理資料與提示
         await store.send(
             .lookupManagements(
                 .element(
                     id: .paymentMethod,
-                    action: .retroactiveConfirmation(.presented(.confirmPaymentMethodEdit))))
+                    action: .view(.editButtonTapped(name: "匯款"))
+                )
+            )
         ) {
-            $0.lookupManagements[id: .paymentMethod]?.pendingPaymentMethodEdit = nil
-            $0.lookupManagements[id: .paymentMethod]?.retroactiveConfirmation = nil
+            $0.lookupManagements[id: .paymentMethod]?.destination = .editPaymentMethod(
+                PaymentMethodEditFormFeature.State(
+                    originalName: "匯款",
+                    flags: originalFlags
+                )
+            )
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .paymentMethod,
+                    action: .destination(
+                        .presented(
+                            .editPaymentMethod(
+                                .view(.saveButtonTapped(name: "銀行匯款", flags: .none))
+                            )
+                        )
+                    )
+                )
+            )
+        )
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod]
+                .destination.presented.editPaymentMethod.delegate.saved
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.destination = nil
+            $0.lookupManagements[id: .paymentMethod]?.isFormSheetDismissing = true
+        }
+        await store.receive(\.lookupManagements[id: .paymentMethod].correction.requested)
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod].correction.planResponse.success,
+            plan
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.correction.pendingPlan = plan
         }
         await store.receive(
-            \.lookupManagements[id: .paymentMethod].paymentMethodEditFailed,
-            "付款方式編輯失敗，請稍後再試。"
+            \.lookupManagements[id: .paymentMethod].correction.delegate.confirmationRequired,
+            1
         ) {
-            $0.lookupManagements[id: .paymentMethod]?.writeFailureAlert = AlertState {
-                TextState("操作失敗")
-            } actions: {
-                ButtonState(role: .cancel) {
-                    TextState("知道了")
-                }
-            } message: {
-                TextState("付款方式編輯失敗，請稍後再試。")
-            }
+            $0.lookupManagements[id: .paymentMethod]?.destination = nil
+            $0.lookupManagements[id: .paymentMethod]?.pendingAlert =
+                LookupManagementFeature.Destination.State.retroactiveConfirmation(
+                    affectedOrderCount: 1
+                )
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .paymentMethod,
+                    action: .view(.formSheetDismissed)
+                )
+            )
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.isFormSheetDismissing = false
+            $0.lookupManagements[id: .paymentMethod]?.pendingAlert = nil
+            $0.lookupManagements[id: .paymentMethod]?.destination =
+                LookupManagementFeature.Destination.State.retroactiveConfirmation(
+                    affectedOrderCount: 1
+                )
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .paymentMethod,
+                    action: .destination(
+                        .presented(.alert(.confirmPaymentMethodEdit))
+                    )
+                )
+            )
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.destination = nil
+        }
+        await store.receive(\.lookupManagements[id: .paymentMethod].correction.confirmed) {
+            $0.lookupManagements[id: .paymentMethod]?.correction.pendingPlan = nil
+        }
+        await store.receive(\.lookupManagements[id: .paymentMethod].correction.editResponse.failure)
+        await store.receive(\.lookupManagements[id: .paymentMethod].correction.delegate.failed) {
+            $0.lookupManagements[id: .paymentMethod]?.destination =
+                LookupManagementFeature.Destination.State.writeFailure(.paymentMethodEdit)
         }
 
+        // Then
         #expect(store.state.orders.orders == [original])
         #expect(store.state.orders.paymentMethodMaster == [originalMaster])
         #expect(store.state.lookupManagements[id: .paymentMethod]?.items == ["匯款"])
-        #expect(
-            store.state.lookupManagements[id: .paymentMethod]?.paymentMethodIsBankTransfer == [
-                "匯款": true
-            ])
-        #expect(store.state.lookupManagements[id: .paymentMethod]?.errorMessage == nil)
-        #expect(store.state.lookupManagements[id: .paymentMethod]?.writeFailureAlert != nil)
+        #expect(store.state.lookupManagements[id: .paymentMethod]?.hasLoadFailed == false)
+        await store.finish()
     }
 
-    /// 驗證根功能在此情境下的導覽與狀態同步
-    @Test func categoryRenameCascadesInsideMultiCategoryOrders() async {
+    /// 類別改名完成後只替換多類別訂單中的目標名稱
+    @Test
+    func categoryRenameCascadesInsideMultiCategoryOrders() async {
         // Given
-
-        // 只改名目標類別，其他元素與順序不變。
-        let multi = Self.makeTestOrder(id: "T-MULTI", categories: ["美妝", "服飾"], customerName: "客")
-        let single = Self.makeTestOrder(id: "T-SINGLE", categories: ["服飾"], customerName: "客")
-
+        let multi = Self.makeTestOrder(
+            id: "T-MULTI",
+            categories: ["美妝", "服飾"],
+            customerName: "客"
+        )
+        let single = Self.makeTestOrder(
+            id: "T-SINGLE",
+            categories: ["服飾"],
+            customerName: "客"
+        )
+        let cosmeticsOnly = Self.makeTestOrder(
+            id: "T-COSMETICS",
+            categories: ["美妝"],
+            customerName: "客"
+        )
+        let renamedMulti = Self.rebuildOrder(multi, categories: ["彩妝保養", "服飾"])
+        let renamedSingle = Self.rebuildOrder(single, categories: ["服飾"])
+        let renamedCosmeticsOnly = Self.rebuildOrder(cosmeticsOnly, categories: ["彩妝保養"])
         var state = Self.makeIsolatedRootState()
-        state.orders.orders = [multi, single]
+        state.orders.orders = [multi, single, cosmeticsOnly]
         state.orders.$lookupCatalog.withLock { $0.categories = ["美妝", "服飾"] }
-
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
+            $0[OrderRepository.self].applyCategoryRename = { _, _ in }
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
         }
-        // `LookupCatalog` 會重新排序整份主檔清單。
-        // 「服飾」在 zh-Hant 語系排序下排在「彩妝保養」之前
-        // When
+        let rename = LookupItemRename(oldName: "美妝", newName: "彩妝保養")
 
+        // When
         await store.send(
             .lookupManagements(
-                .element(id: .category, action: .renameRequested(from: "美妝", to: "彩妝保養")))
+                .element(
+                    id: .category,
+                    action: .view(.renameButtonTapped(name: "美妝"))
+                )
+            )
         ) {
-            $0.orders.$lookupCatalog.withLock { $0.categories = ["服飾", "彩妝保養"] }
-            $0.orders.orders[0] = Self.rebuildOrder(multi, categories: ["彩妝保養", "服飾"])
-            $0.customers.orders = $0.orders.orders
-            $0.campaigns.orders = $0.orders.orders
-            $0.dashboard.orders = $0.orders.orders
-            $0.insights.orders = $0.orders.orders
+            $0.lookupManagements[id: .category]?.destination =
+                .rename(LookupRenameFormFeature.State(originalName: "美妝"))
         }
-        await store.finish()
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .category,
+                    action: .destination(
+                        .presented(.rename(.view(.saveButtonTapped(name: "彩妝保養"))))
+                    )
+                )
+            )
+        )
+        await store.receive(
+            \.lookupManagements[id: .category]
+                .destination.presented.rename.delegate.saved
+        ) {
+            $0.lookupManagements[id: .category]?.destination = nil
+            $0.lookupManagements[id: .category]?.isFormSheetDismissing = true
+            $0.orders.$lookupCatalog.withLock { $0.categories = ["服飾", "彩妝保養"] }
+        }
+        await store.receive(\.lookupManagements[id: .category].renameResponse.success, rename)
+
+        #expect(store.state.orders.orders == [multi, single, cosmeticsOnly])
+        await store.receive(
+            \.lookupManagements[id: .category].delegate.itemRenamed,
+            rename
+        ) {
+            Self.setOrdersAndProjections(
+                [renamedMulti, renamedSingle, renamedCosmeticsOnly],
+                state: &$0
+            )
+        }
+        await store.send(
+            .lookupManagements(
+                .element(id: .category, action: .view(.formSheetDismissed))
+            )
+        ) {
+            $0.lookupManagements[id: .category]?.isFormSheetDismissing = false
+        }
 
         // Then
-
+        #expect(store.state.lookupManagements[id: .category]?.items == ["服飾", "彩妝保養"])
+        #expect(store.state.orders.availableCategories.contains("彩妝保養"))
+        #expect(!store.state.orders.availableCategories.contains("美妝"))
+        #expect(store.state.orders.orders == [renamedMulti, renamedSingle, renamedCosmeticsOnly])
         #expect(
-            store.state.orders.orders.first { $0.id == "T-MULTI" }?.categories == ["彩妝保養", "服飾"])
-        #expect(store.state.orders.orders.first { $0.id == "T-SINGLE" }?.categories == ["服飾"])
-        #expect(store.state.orders.categoryMaster.contains("彩妝保養"))
-        #expect(!store.state.orders.categoryMaster.contains("美妝"))
-        // 主檔管理與訂單選項應在同次 reducer 呼叫後同步。
-        #expect(store.state.lookupManagements[id: .category]?.items.contains("彩妝保養") == true)
-        #expect(store.state.lookupManagements[id: .category]?.items.contains("美妝") == false)
-        #expect(store.state.orders.availableCategories.contains("美妝") == false)
+            store.state.orders.orders.first { $0.id == "T-COSMETICS" }?.categories
+                == ["彩妝保養"]
+        )
+        await store.finish()
     }
 
     /// 驗證根功能在此情境下的導覽與狀態同步
@@ -823,260 +1096,499 @@ struct RootFeatureTests {
         #expect(store.state.lookupManagements[id: .category]?.items == ["手工藝品"])
     }
 
-    /// 驗證主檔改名後，管理頁、訂單選項與既有訂單同步
-    @Test func renamingOrderSourceSyncsManagementOrdersAndAvailableListInOneReducerCall() async {
+    /// 訂單來源改名成功後由 delegate 更新目錄與訂單引用
+    @Test
+    func renamingOrderSourceRewritesOrdersThroughDelegate() async {
         // Given
-
         let order = Self.makeOrder(id: "T-OS", orderSource: "舊來源")
-
+        let renamedOrder = Self.makeOrder(id: "T-OS", orderSource: "新來源")
         var state = Self.makeIsolatedRootState()
         state.orders.orders = [order]
         state.orders.$lookupCatalog.withLock { $0.orderSources = ["舊來源"] }
-
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0[OrderSourceRepository.self] = .testValue
-            $0[OrderRepository.self] = .testValue
+            $0[OrderRepository.self].applyOrderSourceRename = { _, _ in }
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
+        let rename = LookupItemRename(oldName: "舊來源", newName: "新來源")
 
         // When
-
         await store.send(
             .lookupManagements(
-                .element(id: .orderSource, action: .renameRequested(from: "舊來源", to: "新來源")))
+                .element(
+                    id: .orderSource,
+                    action: .view(.renameButtonTapped(name: "舊來源"))
+                )
+            )
         ) {
-            $0.orders.$lookupCatalog.withLock { $0.orderSources = ["新來源"] }
-            $0.orders.orders[0] = Self.makeOrder(id: "T-OS", orderSource: "新來源")
-            $0.customers.orders = $0.orders.orders
-            $0.campaigns.orders = $0.orders.orders
-            $0.dashboard.orders = $0.orders.orders
-            $0.insights.orders = $0.orders.orders
+            $0.lookupManagements[id: .orderSource]?.destination =
+                .rename(LookupRenameFormFeature.State(originalName: "舊來源"))
         }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .orderSource,
+                    action: .destination(
+                        .presented(.rename(.view(.saveButtonTapped(name: "新來源"))))
+                    )
+                )
+            )
+        )
+        await store.receive(
+            \.lookupManagements[id: .orderSource]
+                .destination.presented.rename.delegate.saved
+        ) {
+            $0.lookupManagements[id: .orderSource]?.destination = nil
+            $0.lookupManagements[id: .orderSource]?.isFormSheetDismissing = true
+            $0.orders.$lookupCatalog.withLock { $0.orderSources = ["新來源"] }
+        }
+        await store.receive(\.lookupManagements[id: .orderSource].renameResponse.success, rename)
 
+        #expect(store.state.orders.orders == [order])
+        await store.receive(
+            \.lookupManagements[id: .orderSource].delegate.itemRenamed,
+            rename
+        ) {
+            Self.setOrdersAndProjections([renamedOrder], state: &$0)
+        }
+        await store.send(
+            .lookupManagements(
+                .element(id: .orderSource, action: .view(.formSheetDismissed))
+            )
+        ) {
+            $0.lookupManagements[id: .orderSource]?.isFormSheetDismissing = false
+        }
         // Then
-
         #expect(store.state.lookupManagements[id: .orderSource]?.items == ["新來源"])
         #expect(store.state.orders.availableOrderSources.contains("新來源"))
         #expect(!store.state.orders.availableOrderSources.contains("舊來源"))
         #expect(store.state.orders.orders.first?.orderSource == "新來源")
+        await store.finish()
     }
 
-    /// 驗證根功能在此情境下的導覽與狀態同步
-    @Test func renamingCategorySyncsManagementOrdersAndAvailableListInOneReducerCall() async {
+    /// 商品類別改名成功後由 delegate 更新目錄與訂單引用
+    @Test
+    func renamingCategoryRewritesOrdersThroughDelegate() async {
         // Given
-
         let order = Self.makeOrder(id: "T-CAT", categories: ["舊類別"])
-
+        let renamedOrder = Self.makeOrder(id: "T-CAT", categories: ["新類別"])
         var state = Self.makeIsolatedRootState()
         state.orders.orders = [order]
         state.orders.$lookupCatalog.withLock { $0.categories = ["舊類別"] }
-
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0[CategoryRepository.self] = .testValue
-            $0[OrderRepository.self] = .testValue
+            $0[OrderRepository.self].applyCategoryRename = { _, _ in }
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
+        let rename = LookupItemRename(oldName: "舊類別", newName: "新類別")
 
         // When
-
         await store.send(
             .lookupManagements(
-                .element(id: .category, action: .renameRequested(from: "舊類別", to: "新類別")))
+                .element(
+                    id: .category,
+                    action: .view(.renameButtonTapped(name: "舊類別"))
+                )
+            )
         ) {
-            $0.orders.$lookupCatalog.withLock { $0.categories = ["新類別"] }
-            $0.orders.orders[0] = Self.makeOrder(id: "T-CAT", categories: ["新類別"])
-            $0.customers.orders = $0.orders.orders
-            $0.campaigns.orders = $0.orders.orders
-            $0.dashboard.orders = $0.orders.orders
-            $0.insights.orders = $0.orders.orders
+            $0.lookupManagements[id: .category]?.destination =
+                .rename(LookupRenameFormFeature.State(originalName: "舊類別"))
         }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .category,
+                    action: .destination(
+                        .presented(.rename(.view(.saveButtonTapped(name: "新類別"))))
+                    )
+                )
+            )
+        )
+        await store.receive(
+            \.lookupManagements[id: .category]
+                .destination.presented.rename.delegate.saved
+        ) {
+            $0.lookupManagements[id: .category]?.destination = nil
+            $0.lookupManagements[id: .category]?.isFormSheetDismissing = true
+            $0.orders.$lookupCatalog.withLock { $0.categories = ["新類別"] }
+        }
+        await store.receive(\.lookupManagements[id: .category].renameResponse.success, rename)
 
+        #expect(store.state.orders.orders == [order])
+        await store.receive(
+            \.lookupManagements[id: .category].delegate.itemRenamed,
+            rename
+        ) {
+            Self.setOrdersAndProjections([renamedOrder], state: &$0)
+        }
+        await store.send(
+            .lookupManagements(
+                .element(id: .category, action: .view(.formSheetDismissed))
+            )
+        ) {
+            $0.lookupManagements[id: .category]?.isFormSheetDismissing = false
+        }
         // Then
-
         #expect(store.state.lookupManagements[id: .category]?.items == ["新類別"])
         #expect(store.state.orders.availableCategories.contains("新類別"))
         #expect(!store.state.orders.availableCategories.contains("舊類別"))
         #expect(store.state.orders.orders.first?.categories == ["新類別"])
+        await store.finish()
     }
 
-    /// 驗證根功能在此情境下的導覽與狀態同步
+    /// 對帳狀態改名成功後由 delegate 更新目錄與訂單引用
     @Test
-    func renamingReconciliationStatusSyncsManagementOrdersAndAvailableListInOneReducerCall() async {
+    func renamingReconciliationStatusRewritesOrdersThroughDelegate() async {
         // Given
-
         let order = Self.makeOrder(id: "T-RS", reconciliationStatus: "待對帳")
-
+        let renamedOrder = Self.makeOrder(id: "T-RS", reconciliationStatus: "已對帳")
         var state = Self.makeIsolatedRootState()
         state.orders.orders = [order]
         state.orders.$lookupCatalog.withLock { $0.reconciliationStatuses = ["待對帳"] }
-
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0[ReconciliationStatusRepository.self] = .testValue
-            $0[OrderRepository.self] = .testValue
+            $0[OrderRepository.self].applyReconciliationStatusRename = { _, _ in }
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
+        let rename = LookupItemRename(oldName: "待對帳", newName: "已對帳")
 
         // When
-
         await store.send(
             .lookupManagements(
                 .element(
                     id: .reconciliationStatus,
-                    action: .renameRequested(from: "待對帳", to: "已對帳")
+                    action: .view(.renameButtonTapped(name: "待對帳"))
                 )
             )
         ) {
-            $0.orders.$lookupCatalog.withLock { $0.reconciliationStatuses = ["已對帳"] }
-            $0.orders.orders[0] = Self.makeOrder(id: "T-RS", reconciliationStatus: "已對帳")
-            $0.customers.orders = $0.orders.orders
-            $0.campaigns.orders = $0.orders.orders
-            $0.dashboard.orders = $0.orders.orders
-            $0.insights.orders = $0.orders.orders
+            $0.lookupManagements[id: .reconciliationStatus]?.destination =
+                .rename(LookupRenameFormFeature.State(originalName: "待對帳"))
         }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .reconciliationStatus,
+                    action: .destination(
+                        .presented(.rename(.view(.saveButtonTapped(name: "已對帳"))))
+                    )
+                )
+            )
+        )
+        await store.receive(
+            \.lookupManagements[id: .reconciliationStatus]
+                .destination.presented.rename.delegate.saved
+        ) {
+            $0.lookupManagements[id: .reconciliationStatus]?.destination = nil
+            $0.lookupManagements[id: .reconciliationStatus]?.isFormSheetDismissing = true
+            $0.orders.$lookupCatalog.withLock { $0.reconciliationStatuses = ["已對帳"] }
+        }
+        await store.receive(
+            \.lookupManagements[id: .reconciliationStatus].renameResponse.success,
+            rename
+        )
 
+        #expect(store.state.orders.orders == [order])
+        await store.receive(
+            \.lookupManagements[id: .reconciliationStatus].delegate.itemRenamed,
+            rename
+        ) {
+            Self.setOrdersAndProjections([renamedOrder], state: &$0)
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .reconciliationStatus,
+                    action: .view(.formSheetDismissed)
+                )
+            )
+        ) {
+            $0.lookupManagements[id: .reconciliationStatus]?.isFormSheetDismissing = false
+        }
         // Then
-
         #expect(store.state.lookupManagements[id: .reconciliationStatus]?.items == ["已對帳"])
         #expect(store.state.orders.availableReconciliationStatuses.contains("已對帳"))
         #expect(!store.state.orders.availableReconciliationStatuses.contains("待對帳"))
         #expect(store.state.orders.orders.first?.reconciliationStatus == "已對帳")
+        await store.finish()
     }
 
-    /// 驗證付款方式改名也走統一 cascade
-    @Test func renamingPaymentMethodSyncsManagementOrdersAndAvailableListInOneReducerCall() async {
+    /// 付款方式主檔改名成功後由 delegate 更新目錄與訂單引用
+    @Test
+    func renamingPaymentMethodRewritesOrdersThroughDelegate() async {
         // Given
-
         let order = Self.makeOrder(id: "T-PM", paymentMethod: "舊付款")
-
+        let renamedOrder = Self.makeOrder(id: "T-PM", paymentMethod: "新付款")
         var state = Self.makeIsolatedRootState()
         state.orders.orders = [order]
-        state.orders.$lookupCatalog.withLock {
-            $0.paymentMethods = [
-                PaymentMethodInfo(
-                    name: "舊付款",
-                    isCardless: false,
-                    isBankTransfer: false,
-                    isCashOnDelivery: false
-                )
-            ]
+        state.orders.$lookupCatalog.withLock { catalog in
+            catalog.paymentMethods = [PaymentMethodInfo(name: "舊付款", flags: .none)]
         }
-
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0[PaymentMethodRepository.self] = .testValue
-            $0[OrderRepository.self] = .testValue
+            $0[OrderRepository.self].applyPaymentMethodRename = { _, _ in }
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
+        let rename = LookupItemRename(oldName: "舊付款", newName: "新付款")
 
         // When
-
         await store.send(
             .lookupManagements(
-                .element(id: .paymentMethod, action: .renameRequested(from: "舊付款", to: "新付款"))
+                .element(
+                    id: .paymentMethod,
+                    action: .view(.renameButtonTapped(name: "舊付款"))
+                )
             )
         ) {
-            $0.orders.$lookupCatalog.withLock {
-                $0.paymentMethods = [
-                    PaymentMethodInfo(
-                        name: "新付款",
-                        isCardless: false,
-                        isBankTransfer: false,
-                        isCashOnDelivery: false
-                    )
-                ]
-            }
-            $0.orders.orders[0] = Self.makeOrder(id: "T-PM", paymentMethod: "新付款")
-            $0.customers.orders = $0.orders.orders
-            $0.campaigns.orders = $0.orders.orders
-            $0.dashboard.orders = $0.orders.orders
-            $0.insights.orders = $0.orders.orders
+            $0.lookupManagements[id: .paymentMethod]?.destination =
+                .rename(LookupRenameFormFeature.State(originalName: "舊付款"))
         }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .paymentMethod,
+                    action: .destination(
+                        .presented(.rename(.view(.saveButtonTapped(name: "新付款"))))
+                    )
+                )
+            )
+        )
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod]
+                .destination.presented.rename.delegate.saved
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.destination = nil
+            $0.lookupManagements[id: .paymentMethod]?.isFormSheetDismissing = true
+            $0.orders.$lookupCatalog.withLock { catalog in
+                catalog.paymentMethods = [PaymentMethodInfo(name: "新付款", flags: .none)]
+            }
+        }
+        await store.receive(\.lookupManagements[id: .paymentMethod].renameResponse.success, rename)
 
+        #expect(store.state.orders.orders == [order])
+        await store.receive(
+            \.lookupManagements[id: .paymentMethod].delegate.itemRenamed,
+            rename
+        ) {
+            Self.setOrdersAndProjections([renamedOrder], state: &$0)
+        }
+        await store.send(
+            .lookupManagements(
+                .element(id: .paymentMethod, action: .view(.formSheetDismissed))
+            )
+        ) {
+            $0.lookupManagements[id: .paymentMethod]?.isFormSheetDismissing = false
+        }
         // Then
-
         #expect(store.state.lookupManagements[id: .paymentMethod]?.items == ["新付款"])
         #expect(store.state.orders.availablePaymentMethods.map(\.name).contains("新付款"))
         #expect(!store.state.orders.availablePaymentMethods.map(\.name).contains("舊付款"))
         #expect(store.state.orders.orders.first?.paymentMethod == "新付款")
+        await store.finish()
     }
 
-    /// 刪除主檔後，訂單編輯不再提供該值
-    @Test func deletingCategoryRemovesItFromOrderEditorAvailableList() async {
+    /// 刪除主檔成功後，訂單編輯選單不再提供該類別
+    @Test
+    func deletingCategoryRemovesItFromOrderEditorAvailableList() async {
         // Given
-
         let state = Self.makeIsolatedRootState()
         state.orders.$lookupCatalog.withLock { $0.categories = ["待刪類別"] }
-
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0[CategoryRepository.self] = .testValue
+            $0[CategoryRepository.self].removeCategory = { _ in }
         }
 
-        #expect(store.state.orders.availableCategories.contains("待刪類別"))
-
         // When
-
+        #expect(store.state.orders.availableCategories.contains("待刪類別"))
         await store.send(
-            .lookupManagements(.element(id: .category, action: .deleteRequested("待刪類別")))
-        )
+            .lookupManagements(
+                .element(
+                    id: .category,
+                    action: .view(.deleteButtonTapped(name: "待刪類別"))
+                )
+            )
+        ) {
+            $0.lookupManagements[id: .category]?.destination =
+                LookupManagementFeature.Destination.State.deleteConfirmation(name: "待刪類別")
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .category,
+                    action: .destination(
+                        .presented(.alert(.confirmDelete(name: "待刪類別")))
+                    )
+                )
+            )
+        ) {
+            $0.lookupManagements[id: .category]?.destination = nil
+        }
 
         // Then
-
         await store.receive(
-            \.lookupManagements[id: .category].deleteSucceeded,
+            \.lookupManagements[id: .category].deleteResponse.success,
             "待刪類別"
         ) {
             $0.orders.$lookupCatalog.withLock { $0.categories = [] }
         }
-
         #expect(store.state.lookupManagements[id: .category]?.items.isEmpty == true)
         #expect(!store.state.orders.availableCategories.contains("待刪類別"))
+        await store.finish()
+    }
+
+    /// 商品類別主檔改名失敗時不送 delegate 且不改寫記憶體訂單
+    @Test
+    func renamingCategoryWriteFailureLeavesOrdersUnchanged() async {
+        // Given
+        let order = Self.makeOrder(id: "T-CAT-FAIL", categories: ["服飾"])
+        var state = Self.makeIsolatedRootState()
+        state.orders.orders = [order]
+        state.orders.$lookupCatalog.withLock { $0.categories = ["服飾"] }
+        let renameCalls = LockIsolated<[LookupItemRename]>([])
+        let store = TestStore(initialState: state) {
+            RootFeature()
+        } withDependencies: {
+            $0[OrderRepository.self].applyCategoryRename = { oldName, newName throws(PersistenceError) in
+                renameCalls.withValue { calls in
+                    calls.append(LookupItemRename(oldName: oldName, newName: newName))
+                }
+                throw PersistenceError.saveFailed(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
+            }
+        }
+
+        // When
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .category,
+                    action: .view(.renameButtonTapped(name: "服飾"))
+                )
+            )
+        ) {
+            $0.lookupManagements[id: .category]?.destination =
+                .rename(LookupRenameFormFeature.State(originalName: "服飾"))
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .category,
+                    action: .destination(
+                        .presented(.rename(.view(.saveButtonTapped(name: "衣著"))))
+                    )
+                )
+            )
+        )
+        await store.receive(
+            \.lookupManagements[id: .category]
+                .destination.presented.rename.delegate.saved
+        ) {
+            $0.lookupManagements[id: .category]?.destination = nil
+            $0.lookupManagements[id: .category]?.isFormSheetDismissing = true
+        }
+        await store.receive(\.lookupManagements[id: .category].renameResponse.failure) {
+            $0.lookupManagements[id: .category]?.pendingAlert =
+                LookupManagementFeature.Destination.State.writeFailure(.rename)
+        }
+        await store.send(
+            .lookupManagements(
+                .element(id: .category, action: .view(.formSheetDismissed))
+            )
+        ) {
+            $0.lookupManagements[id: .category]?.isFormSheetDismissing = false
+            $0.lookupManagements[id: .category]?.pendingAlert = nil
+            $0.lookupManagements[id: .category]?.destination =
+                LookupManagementFeature.Destination.State.writeFailure(.rename)
+        }
+
+        // Then
+        #expect(store.state.lookupManagements[id: .category]?.items == ["服飾"])
+        #expect(store.state.orders.orders == [order])
+        #expect(store.state.orders.availableCategories.contains("服飾"))
+        #expect(renameCalls.value == [LookupItemRename(oldName: "服飾", newName: "衣著")])
+        await store.finish()
     }
 
     // MARK: - Tests (Layer Boundary Cleanup)
 
-    /// 驗證 RootFeature 的 onChange 監看
-    @Test func ordersChangeSyncsAllProjections() async {
+    /// 主檔改名經 delegate 更新訂單後同步所有訂單投影
+    @Test
+    func ordersChangeSyncsAllProjections() async {
         // Given
-
         let order = Self.makeOrder(id: "T-SYNC", orderSource: "舊來源")
-
+        let renamedOrder = Self.makeOrder(id: "T-SYNC", orderSource: "新來源")
         var state = Self.makeIsolatedRootState()
         state.orders.orders = [order]
         state.orders.$lookupCatalog.withLock { $0.orderSources = ["舊來源"] }
-
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0[OrderSourceRepository.self] = .testValue
-            $0[OrderRepository.self] = .testValue
+            $0[OrderRepository.self].applyOrderSourceRename = { _, _ in }
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
+        let rename = LookupItemRename(oldName: "舊來源", newName: "新來源")
 
         // When
-
         await store.send(
             .lookupManagements(
-                .element(id: .orderSource, action: .renameRequested(from: "舊來源", to: "新來源"))
+                .element(
+                    id: .orderSource,
+                    action: .view(.renameButtonTapped(name: "舊來源"))
+                )
             )
         ) {
+            $0.lookupManagements[id: .orderSource]?.destination =
+                .rename(LookupRenameFormFeature.State(originalName: "舊來源"))
+        }
+        await store.send(
+            .lookupManagements(
+                .element(
+                    id: .orderSource,
+                    action: .destination(
+                        .presented(.rename(.view(.saveButtonTapped(name: "新來源"))))
+                    )
+                )
+            )
+        )
+        await store.receive(
+            \.lookupManagements[id: .orderSource]
+                .destination.presented.rename.delegate.saved
+        ) {
+            $0.lookupManagements[id: .orderSource]?.destination = nil
+            $0.lookupManagements[id: .orderSource]?.isFormSheetDismissing = true
             $0.orders.$lookupCatalog.withLock { $0.orderSources = ["新來源"] }
-            $0.orders.orders[0] = Self.makeOrder(id: "T-SYNC", orderSource: "新來源")
-            $0.customers.orders = $0.orders.orders
-            $0.campaigns.orders = $0.orders.orders
-            $0.dashboard.orders = $0.orders.orders
-            $0.insights.orders = $0.orders.orders
+        }
+        await store.receive(\.lookupManagements[id: .orderSource].renameResponse.success, rename)
+        await store.receive(
+            \.lookupManagements[id: .orderSource].delegate.itemRenamed,
+            rename
+        ) {
+            Self.setOrdersAndProjections([renamedOrder], state: &$0)
+        }
+        await store.send(
+            .lookupManagements(
+                .element(id: .orderSource, action: .view(.formSheetDismissed))
+            )
+        ) {
+            $0.lookupManagements[id: .orderSource]?.isFormSheetDismissing = false
         }
 
         // Then
-
         #expect(store.state.customers.orders == store.state.orders.orders)
         #expect(store.state.campaigns.orders == store.state.orders.orders)
         #expect(store.state.dashboard.orders == store.state.orders.orders)
         #expect(store.state.insights.orders == store.state.orders.orders)
+        await store.finish()
     }
 
     /// 驗證 RootFeature 的 onChange 監看
@@ -1212,7 +1724,7 @@ struct RootFeatureTests {
                 save: { _ in }
             )
             $0[CurrencyMetadataRepository.self] = CurrencyMetadataRepository(
-                fetchCodes: { () async throws(CurrencyMetadataRepositoryError) -> [CurrencyCode] in
+                fetchCodes: { () throws(CurrencyMetadataRepositoryError) in
                     throw CurrencyMetadataRepositoryError.persistence(
                         .storage(
                             .fetchFailed(
@@ -1375,7 +1887,6 @@ struct RootFeatureTests {
         #expect(store.state.selectedTab == .orders)
     }
 }
-
 
 // MARK: - Private Method
 
@@ -1565,4 +2076,18 @@ private extension RootFeatureTests {
             TextState("此功能需要先在「更多 → 設定」開啟 AI 商品明細總結。")
         }
     }
+    /// 同步根畫面持有的訂單與所有訂單投影
+    ///
+    /// - Parameters:
+    ///   - orders: 更新後的訂單
+    ///   - state: 要更新的根畫面狀態
+    static func setOrdersAndProjections(_ orders: [LedgerOrder], state: inout RootFeature.State) {
+        state.orders.orders = orders
+        state.customers.orders = orders
+        state.campaigns.orders = orders
+        state.dashboard.orders = orders
+        state.insights.orders = orders
+    }
+
+
 }

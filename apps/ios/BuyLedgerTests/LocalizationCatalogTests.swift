@@ -402,7 +402,7 @@ private extension String {
             }
             let dedentWidth = rawLines.removeLast().count
             rawLines.removeFirst()
-            let dedented = rawLines.map { line -> String in
+            let dedented = rawLines.map { line in
                 guard line.count >= dedentWidth else {
                     return line
                 }
@@ -866,7 +866,7 @@ private extension String {
 
         // 依名稱辨識無法從型別判定的使用者可見文案。
         let displayProperties = [
-            "title", "entryTitle", "addButtonTitle", "emptyTitle", "addAlertTitle",
+            "title", "entryTitle", "addButtonTitle", "emptyTitle", "addFormTitle",
             "renameSheetTitle", "navigationTitleKey", "daySectionTitle", "sparklineSummary",
             "summaryFailureMessage", "reminderTitle",
         ]

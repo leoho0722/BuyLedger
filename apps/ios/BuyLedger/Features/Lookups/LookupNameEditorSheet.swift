@@ -10,48 +10,46 @@ import SwiftUI
 /// 主檔項目的單欄名稱表單 sheet
 struct LookupNameEditorSheet: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
-    /// Sheet 的標題 (顯示在 navigation bar)
-    let title: LocalizedStringKey
-
-    /// 表單下方的說明訊息；空字串時不顯示
-    let message: String
-
-    /// 名稱 TextField 的 placeholder
-    let namePlaceholder: String
-
-    /// 提交按鈕的文字
-    let submitTitle: String
-
-    /// 使用者按下提交時的 callback；caller 拿到已 trim 的名稱後負責寫入主檔
-    let onSubmit: (_ name: String) -> Void
-
-    /// 由 sheet 環境注入的 dismiss action
+    /// 關閉目前的表單
     @Environment(\.dismiss) private var dismiss
 
     /// 名稱輸入草稿
     @State private var draftName: String
 
     /// 是否顯示「捨棄變更／繼續編輯」確認彈窗
-    @State private var showsDiscardConfirmation = false
+    @State private var isDiscardConfirmationPresented = false
 
-    /// 名稱欄位的鍵盤焦點
-    @FocusState private var isNameFieldFocused: Bool
-
-    /// 表單開啟時的初始值快照；供 ``isDirty`` 判斷未儲存變更
+    /// 表單開啟時的名稱，用來判斷輸入內容是否已變更
     private let initialName: String
+
+    /// 表單下方顯示的說明；空字串時不顯示
+    let message: String
+
+    /// 名稱欄位尚未輸入時顯示的提示
+    let namePlaceholder: String
+
+    /// 使用者提交有效名稱後執行的處理
+    let onSubmit: (_ name: String) -> Void
+
+    /// 提交按鈕顯示的文字
+    let submitTitle: String
+
+    /// 導覽列顯示的表單標題
+    let title: LocalizedStringKey
 
     // MARK: - Init
 
-    /// 建立名稱表單 sheet
+    /// 建立名稱輸入表單
+    ///
     /// - Parameters:
-    ///   - title: navigation 標題
-    ///   - message: 表單下方說明；空字串時不顯示
-    ///   - namePlaceholder: 名稱 TextField placeholder
-    ///   - submitTitle: 提交按鈕文字
+    ///   - title: 導覽列顯示的表單標題
+    ///   - message: 表單下方顯示的說明；空字串時不顯示
+    ///   - namePlaceholder: 名稱欄位尚未輸入時顯示的提示
+    ///   - submitTitle: 提交按鈕顯示的文字
     ///   - initialName: 名稱初始值；重新命名時帶入目前名稱，新增時留空
-    ///   - onSubmit: 確認時的 callback，帶出已 trim 的名稱
+    ///   - onSubmit: 使用者提交時收到去除首尾空白的名稱
     init(
         title: LocalizedStringKey,
         message: String,
@@ -69,7 +67,7 @@ struct LookupNameEditorSheet: View {
         self.initialName = initialName
     }
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 名稱表單的畫面內容
     var body: some View {
@@ -81,21 +79,35 @@ struct LookupNameEditorSheet: View {
         .presentationDragIndicator(.visible)
         // 有未儲存變更時阻擋下滑關閉，避免草稿靜默遺失；取消鍵改以彈窗確認
         .interactiveDismissDisabled(isDirty)
-        .alert("捨棄變更", isPresented: $showsDiscardConfirmation) {
-            Button("捨棄變更", role: .destructive) {
-                dismiss()
-            }
-
-            Button("繼續編輯", role: .cancel) {}
+        .alert("捨棄變更", isPresented: $isDiscardConfirmationPresented) {
+            discardChangesButton
+            continueEditingButton
         } message: {
-            Text("這個項目有尚未儲存的變更，離開後將不會保留。")
+            discardConfirmationMessage
         }
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension LookupNameEditorSheet {
+
+    /// 確認捨棄目前尚未儲存的內容
+    var discardChangesButton: some View {
+        Button("捨棄變更", role: .destructive) {
+            dismiss()
+        }
+    }
+
+    /// 保留內容並繼續編輯
+    var continueEditingButton: some View {
+        Button("繼續編輯", role: .cancel) {}
+    }
+
+    /// 說明離開表單後尚未儲存的內容會被清除
+    var discardConfirmationMessage: some View {
+        Text("這個項目有尚未儲存的變更，離開後將不會保留。")
+    }
 
     /// 表單內容：名稱欄位、說明與取消／儲存工具列
     @ViewBuilder
@@ -103,10 +115,10 @@ private extension LookupNameEditorSheet {
         Form {
             Section {
                 TextField(LocalizedStringKey(namePlaceholder), text: $draftName)
-                    .focused($isNameFieldFocused)
                     .textInputAutocapitalization(.never)
                     .autocorrectionDisabled()
-                    .textContentType(.none)
+                    .textContentType(nil)
+                    .accessibilityIdentifier(BLAccessibilityID.LookupManagement.nameField)
             } footer: {
                 if !message.isEmpty {
                     Text(LocalizedStringKey(message))
@@ -123,7 +135,7 @@ private extension LookupNameEditorSheet {
             ToolbarItem(placement: .cancellationAction) {
                 Button("取消") {
                     if isDirty {
-                        showsDiscardConfirmation = true
+                        isDiscardConfirmationPresented = true
                     } else {
                         dismiss()
                     }
@@ -139,6 +151,7 @@ private extension LookupNameEditorSheet {
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityLabel(Text(LocalizedStringKey(submitTitle)))
+                .accessibilityIdentifier(BLAccessibilityID.LookupManagement.nameSubmitButton)
                 .disabled(!canSubmit)
             }
         }

@@ -653,6 +653,26 @@ extension BLAccessibilityID {
         /// 主檔管理頁面的根 accessibility identifier
         static let root = "lookupManagement.root"
 
+        /// 新增主檔項目的按鈕
+        static let addButton = "lookupManagement.addButton"
+
+        /// 刪除主檔項目的按鈕，以名稱這個業務鍵識別
+        ///
+        /// - Parameter name: 主檔項目名稱
+        /// - Returns: 對應刪除按鈕的 accessibility identifier
+        static func deleteButton(_ name: String) -> String {
+            BLAccessibilityID.row("lookupManagement.deleteButton", key: name)
+        }
+
+        /// 單欄名稱表單的輸入欄位
+        static let nameField = "lookupManagement.nameField"
+
+        /// 單欄名稱表單的送出按鈕
+        static let nameSubmitButton = "lookupManagement.nameSubmitButton"
+
+        /// 主檔管理頁的載入失敗文字
+        static let loadFailureMessage = "lookupManagement.loadFailureMessage"
+
         /// 主檔項目列，以名稱這個業務鍵識別
         ///
         /// - Parameter name: 主檔項目名稱

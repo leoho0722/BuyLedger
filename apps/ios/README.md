@@ -40,7 +40,8 @@ apps/ios/
 │   │   ├── FX/                   # 匯率工具 (FxFeature + FxView)
 │   │   │   └── Components/       # FxStatusBanner、FxRatesList
 │   │   ├── Insights/             # 趨勢分析
-│   │   ├── Lookups/              # 主檔管理 (訂單來源／商品類別／付款方式)
+│   │   ├── Lookups/              # 主檔管理 (訂單來源／商品類別／付款方式／對帳狀態)
+│   │   │   └── Components/       # LookupItemRow、LookupItemList
 │   │   ├── More/                 # iOS「更多」入口
 │   │   ├── Orders/               # 訂單瀏覽與編輯 (含 iPhone/iPad view 分流)；OrdersFeature 三個子域的分支主體外移至 OrdersFilterOperations／OrdersBatchOperations／OrdersMergeFlowOperations (同域輔助型別，非子 reducer)，State 查詢擴充與其巢狀型別外移至 OrdersFeature+StateQuery，日期區段型別獨立為 OrderDateSection，訂單建構收成單一路徑於 OrderDraft，LedgerOrder 的變更擴充收於 LedgerOrder+OrderMutation
 │   │   ├── Quote/                # 報價試算 (QuoteFeature + QuoteRateFeature 子 reducer + QuoteView)
@@ -56,7 +57,11 @@ apps/ios/
 │   └── Resources/                # Info.plist、entitlements、PrivacyInfo.xcprivacy (隱私資訊清單)、Config.example.xcconfig (範本，實際 Config.xcconfig 自填且 gitignored)、assets
 ├── BuyLedgerAccessibilityIDs/    # UI 測試 identifier 常數 (共用資料夾，同時編入 App 與 UITests 兩個 target)
 ├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
-├── BuyLedgerUITests/             # XCUITest：Support/ (共用互動 helper)、Screens/ (Page Object)、Tests/ (流程與冒煙)
+├── BuyLedgerUITests/             # XCUITest
+│   ├── Support/                  # 共用互動 helper
+│   ├── Screens/                  # Page Object
+│   └── Tests/                    # 流程與冒煙測試，依功能分組
+│       └── More/                 # 「更多」入口的主檔管理流程
 ├── BuyLedger.xctestplan          # 主 scheme 測試計畫 (鎖 zh-Hant/TW、字母序執行、覆蓋率僅統計 App target)
 ├── BuyLedgerUITests.xctestplan   # UI 主回歸測試計畫 (鎖 zh-Hant/TW、關閉隨機順序)
 └── BuyLedgerUITests-Performance.xctestplan  # UI 效能測試計畫 (啟動量測，獨立於主回歸)
@@ -203,7 +208,7 @@ bun run unlock
 ### 資料層
 
 - **Repository 層** (`Core/Dependencies/`)：`OrderRepository` 等各主檔與開團的 repository (清單見該目錄，不在此綁定數量)，各自背後接對應的 `@ModelActor` persistence (`Core/Persistence/`) 操作 SwiftData。所有 repo 共用 `PersistenceContainer.shared` 單一 `ModelContainer`，注入一律走 type-based `@Dependency(SomeRepository.self)`。
-- **主檔資料** (訂單來源／商品類別／付款方式／對帳狀態) 由 `LookupManagementFeature` (`Features/Lookups/`，以 `LookupKind` 分流) 提供 CRUD，並與 `OrdersFeature` 以共享的記憶體儲存 `LookupCatalog` 作為單一來源；rename 會 cascade 到所有引用該名稱的訂單，此段落由 `RootFeature` 攔截處理 (`LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 分派)。
+- **主檔資料** (訂單來源／商品類別／付款方式／對帳狀態) 由 `LookupManagementFeature` (`Features/Lookups/`，以 `LookupKind` 分流) 提供 CRUD，並與 `OrdersFeature` 以共享的記憶體儲存 `LookupCatalog` 作為單一來源；改名後由 `RootFeature` 收到 `LookupManagementFeature` 的 `.delegate(.itemRenamed)` 時改寫引用該名稱的訂單，分派經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 處理。
 - `liveValue`：純本機 SwiftData，**不自動 seed**——使用者首次啟動會看到真正的空狀態。
 - `previewValue`：in-memory + 自動 seed `LedgerOrder.sampleOrders`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
 - `LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback` **僅供 Preview / 單元測試 / `previewValue`** 使用，runtime 不讀取。

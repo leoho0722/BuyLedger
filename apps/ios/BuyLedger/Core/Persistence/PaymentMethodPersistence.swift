@@ -126,48 +126,11 @@ extension PaymentMethodPersistence {
     ///   - newName: 新的名稱 (由呼叫端完成去除前後空白)
     /// - Throws: 寫入持久化資料失敗時拋出 ``PersistenceError``
     func rename(from oldName: String, to newName: String) throws(PersistenceError) {
-        let oldDescriptor = FetchDescriptor<PaymentMethodRecord>(
-            predicate: #Predicate { $0.name == oldName }
+        try LookupRecordRenamer.renamePaymentMethod(
+            from: oldName,
+            to: newName,
+            in: modelContext
         )
-        let oldRecords = try PersistenceError.mapFetch {
-            try modelContext.fetch(oldDescriptor)
-        }
-        let preservedFlags = PaymentMethodFlags(
-            isCardless: oldRecords.contains { $0.isCardless },
-            isBankTransfer: oldRecords.contains { $0.isBankTransfer },
-            isCashOnDelivery: oldRecords.contains { $0.isCashOnDelivery }
-        )
-        for record in oldRecords {
-            modelContext.delete(record)
-        }
-
-        let newDescriptor = FetchDescriptor<PaymentMethodRecord>(
-            predicate: #Predicate { $0.name == newName }
-        )
-        let existing = try PersistenceError.mapFetch {
-            try modelContext.fetch(newDescriptor).first
-        }
-        if let existing {
-            // 合併時保留任一邊已有的付款旗標。
-            if preservedFlags.isCardless {
-                existing.isCardless = true
-            }
-            if preservedFlags.isBankTransfer {
-                existing.isBankTransfer = true
-            }
-            if preservedFlags.isCashOnDelivery {
-                existing.isCashOnDelivery = true
-            }
-        } else {
-            modelContext.insert(
-                PaymentMethodRecord(
-                    name: newName,
-                    isCardless: preservedFlags.isCardless,
-                    isBankTransfer: preservedFlags.isBankTransfer,
-                    isCashOnDelivery: preservedFlags.isCashOnDelivery
-                )
-            )
-        }
 
         do {
             try PersistenceError.mapSave {

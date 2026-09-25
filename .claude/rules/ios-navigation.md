@@ -17,7 +17,7 @@ paths:
 - **訂單多選工具列與可勾選列只有一份定義** (`Features/Orders/Components/` 的 `OrdersToolbarContent`／`OrderSelectableRow`)，compact 與 regular 共用，不各自維護等價實作。
 - **每個目的地只有一條抵達路徑**：清單點擊與深連結寫入同一條路徑；「更多」分頁以 `RootFeature.MoreRoute` 值導向堆疊驅動，深連結在同一次狀態更新內先清空再推入。
     - 用值導向堆疊而非「呈現旗標加去重判斷」，讓不合法狀態無法表達。
-    - **從「更多」下的 pushed 頁深連結到其他根分頁，切分頁前先 `state.morePath.removeAll()`**：路徑非空時改 `selectedTab` 會讓 iPad 的 `NavigationSplitView` 觸發 assertion 崩潰 (iPhone 不會，容易漏測)。
+    - **從「更多」下的 pushed 頁深連結到其他根分頁，切分頁前先 `state.morePath.removeAll()`**：路徑非空時改 `selectedTab` 會讓 iPad 的 `NavigationSplitView` 觸發 assertion 崩潰 (iPhone 不會，容易漏測)。iPad 側邊欄分頁 (`sidebarTabSelected`) 與智慧分組 (`smartGroupSelected`) 同樣先清路徑；iPhone `TabView` 走 `tabSelected` 並保留「更多」堆疊。
 - **選取狀態單一來源**：同一清單的不同項目類別併進同一個選取型別 (參考 `RootSidebarLayout.SidebarSelection`)，兩套選取機制並存會同時高亮兩列。
 
 ## App 鎖定
@@ -36,6 +36,7 @@ paths:
     - `.binding` 帶副作用時 (如 `SettingsFeature` 存檔)，純 UI 欄位用 `case .binding(\.showsXxx): return .none` 排除。
     - 不綁 store、以 closure 溝通的可重用 sheet 元件 (`OptionPickerSheet`／`PaymentMethodEditorSheet`／`LookupNameEditorSheet`) 的本地 `@State` 屬元件內部狀態，不在此限。
 - **任一時刻只呈現一層 modal**：同一畫面的多個 sheet 併進單一 `@Presents` destination 列舉 (參考 `LookupManagementFeature.Destination`)，不靠多個 `.sheet` 各自以布林避讓。
+    - 同一個 `destination` 的表單送出後若要接續呈現寫入失敗或回溯確認 alert，等 `.sheet(item:onDismiss:)` 回報關閉後才把 alert 設進 `destination`；關閉期間到達的 alert 先暫存，再由關閉回呼呈現 (參考 `LookupManagementFeature.State.isFormSheetDismissing`、`pendingAlert` 與 `formSheetDismissed`)。sheet 關閉動畫中設入 alert 會讓 SwiftUI 丟棄呈現，但狀態仍停在 alert；alert 關閉後接續另一個 alert 不需套用這個延後流程。
     - 已在 sheet 內要開子畫面或選擇器時走 push，不疊第二層 sheet；訂單編輯以 `OrderEditFeature.State.PickerRoute` + `navigationDestination(for:)` 驅動 (不用 `navigationDestination(item:)`，它會造成 test target 連結失敗)。
     - `OptionPickerSheet`／`PaymentMethodEditorSheet` 以 `isEmbedded: true` 嵌入宿主堆疊，預設 `false` 為自帶 `NavigationStack` 的單層 sheet。
 - **push 目的地不自帶 `NavigationStack`**：巢狀 stack 會弄壞推進與 pop 動畫；嵌入元件不自帶 stack、不設關閉鈕，標題掛在內容上，由宿主 Back 返回。
@@ -49,7 +50,7 @@ paths:
 - **寫入先落盤、成功才改畫面狀態，不做樂觀更新加回滾**：狀態更新放在寫入成功的 action (`statusChangePersisted`／`batchStatusChangePersisted`／`orderSavePersisted`／`orderDeleted`)。
     - 訂單合併 (`mergeSourceIDs` 非空) 是保留的樂觀更新加快照回滾例外。
     - 一次性操作失敗與持續性載入失敗不共用狀態欄位：`OrdersFeature.errorMessage` 只給 `.task` 的載入失敗，寫入失敗經 `orderWriteFailed(String)` 呈現為 `writeFailureAlert`，隨使用者關閉而結束。共用欄位時唯一的清空點常被「已載入」旗標擋住，錯誤訊息會在後續操作成功後仍殘留。
-- **表單儲存前的同步驗證由父層決定是否關閉**：子層 `saveTapped` 只回 `.none`，父層驗證通過才設 `state.xxx = nil`；拒絕時保留呈現，並把原因寫回子層 State 顯示在表單上 (如 `CampaignEditFeature.State.nameConflictMessage`)。
+- **表單先自行處理能由子層判斷的驗證**：驗證通過才送出 delegate；需要父層資料的驗證 (如 `CampaignEditFeature` 的名稱衝突) 才由父層決定是否關閉表單，拒絕時把原因寫回子層 State 顯示在表單上。
 
 ## 焦點與鍵盤
 

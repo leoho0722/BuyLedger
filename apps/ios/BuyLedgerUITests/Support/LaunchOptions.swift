@@ -27,6 +27,9 @@ struct LaunchOptions {
     /// 要模擬的載入失敗情境
     var loadFailure: LoadFailure = .none
 
+    /// 是否讓四種主檔的新增、刪除與改名寫入失敗
+    var shouldFailLookupWrites = false
+
     /// 覆寫的預設幣別三碼代號，`nil` 代表沿用預設
     var defaultCurrencyCode: String?
 
@@ -68,6 +71,9 @@ struct LaunchOptions {
         }
         arguments += ["-BLUITestCalendarAccess", calendarAccess.rawValue]
         arguments += ["-BLUITestLoadFailure", loadFailure.rawValue]
+        if shouldFailLookupWrites {
+            arguments.append("-BLUITestLookupWriteFailure")
+        }
         if let defaultCurrencyCode {
             arguments += ["-BLUITestDefaultCurrency", defaultCurrencyCode]
         }

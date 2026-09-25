@@ -20,6 +20,7 @@ paths:
 - **訂單持久層只用 `OrderRepository.PersistenceInstanceProvider` 提供的單一長命 `OrderPersistence`**：資料表無唯一性約束 (CloudKit 限制)，多個實例會讓同編號並發寫入各自查無、各自插入。
     - 長命 `modelContext` 關閉 autosave：`create`、`update` (找不到既有列時)、`upsertAll` (找不到既有列時)、`mergeOrders`、`updatePersistingPhotos` (找不到既有列時)、`seedIfEmpty` 的 `save()` 失敗一律經 `performWithRollback(insertedRecords:)`，由 helper 回滾、刪除本次插入實例與同 id 殘留記錄，再 rethrow 原始錯誤；只呼叫 `rollback()` 不足。
     - `mergeOrders` 在 `save()` 前的來源讀取失敗仍只需 `rollback()`；這與 save 失敗的時序不同，不要混用兩條清理規則。
+    - 長命 context 在 save 失敗後呼叫 `rollback()` 無法還原本次插入與刪除；需要失敗不留殘留的多表交易時，以一次性 `ModelContext` 寫入，成功只呼叫一次 `save()`，失敗就丟棄該 context。
     - `CampaignRepository.live` 相反：每次操作以 `makePersistence` 新建 `CampaignPersistence`，失敗時 context 隨實例丟棄、不需 `rollback()`；改成長命實例時要補上。
 - **`LedgerOrder.id` 存完整長度的隨機識別碼，不截短**；需要短碼顯示時用 `LedgerOrder.displayID`。
 - **`LedgerOrder` 是 immutable struct**：改欄位用 memberwise init 重建整筆 (參考 `renaming*`／`removingCampaign` 系列擴充方法)。
@@ -30,17 +31,18 @@ paths:
 ## 跨檔不變式
 
 - **四種主檔 (訂單來源、商品類別、付款方式、對帳狀態) 以 `@Shared(.lookupCatalog)` 的 `LookupCatalog` 為單一來源**，CRUD 走 `LookupManagementFeature` (以 `LookupKind` 分流共用 reducer 與 view)。
-    - 更名時的訂單 cascade 由 `RootFeature` 攔截 `renameRequested`，經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 分派。
+    - 持久層改名成功後，`RootFeature` 收到 `LookupManagementFeature` 的 `.delegate(.itemRenamed)`，再更新記憶體內訂單，並經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 分派。
     - 新增第五種主檔時編譯器會標出待補的 switch，但 `RootFeature.State.lookupManagements` 的初始陣列與 `MoreRoute` 是手寫字面值，漏補會靜默缺少管理畫面與入口。
     - `@Shared` 只用在主檔目錄；其他跨 feature 狀態 (客戶彙總、開團列表) 由 `RootFeature` 攔截子 feature action 同步副本，擴用前先確認真的有多個 feature 讀寫同一份資料。
     - `NameLookupRecordProtocol` 協定遵循放各記錄檔尾端的 extension，不碰型別主體：主體變動會改變 SwiftData 指紋、破壞 migration。
 - **付款方式旗標正規化只有 `LedgerOrder.applyingPaymentMethodFlags(...)` 一處**：折抵上限、對帳狀態清空、貨到付款運費三條規則都在這裡，手動編輯與回溯更正共用。
+- **主檔改名是一次原子操作**：`OrderPersistence.applyOrderSourceRename`、`applyCategoryRename`、`applyPaymentMethodRename`、`applyReconciliationStatusRename` 在 actor 內建立一次性 `ModelContext(modelContainer)`，於其中改主檔與引用訂單並只呼叫一次 `save()`；失敗時拋出原始錯誤並丟棄該 context，不能讓主檔與訂單只改一邊。名稱撞到既有項目時依主檔規則合併，付款方式同時合併旗標。
 - **付款方式編輯是一次原子操作**：`PaymentMethodPersistence.applyEdit` 以單一 context、單次 `save()` 更新主檔與重算訂單，失敗整批 rollback；`PaymentMethodRepository.applyPaymentMethodEdit` 只轉呼叫。
-    - 確認筆數與重算對象取自同一個 `PaymentMethodEditPlan` 的一次 fetch。
+    - `PaymentMethodCorrectionFeature` 以一次 fetch 建立 `PaymentMethodEditPlan`，確認筆數與重算對象都取自該快照。
     - 取消確認時主檔旗標也不套用；零筆受影響或旗標未變的純改名不出現確認。
-    - 資料流：`LookupManagementFeature` 取樣與確認 → `PaymentMethodPersistence` 落盤 → `RootFeature` 攔截 `paymentMethodEditSucceeded` 並純轉送同一份已正規化 payload (不再正規化) → `OrdersFeature` 以 `paymentMethodFlagsApplied` 套到記憶體內訂單且不再落盤；改動時四檔一起看。
-    - 付款方式編輯成功不走 `renameRequested`：旗標是權威覆寫，語意與更名 cascade 不同。
-    - `applyEdit` 與 `CampaignPersistence.delete` 是僅有的兩個從非 `OrderPersistence` context 寫 `OrderRecord` 的例外，前提是只更新既有列、不插入、找不到 id 整批拋錯；前提改變時重跑 `PaymentMethodPersistenceTests` 並重新評估長命 context 的 stale read 風險。
+    - 資料流：`PaymentMethodCorrectionFeature` 取樣並要求必要確認 → `PaymentMethodPersistence` 原子寫入 → `LookupManagementFeature` 送出 `paymentMethodEdited` delegate → `RootFeature` 攔截並純轉送同一份已正規化 payload (不再正規化) → `OrdersFeature` 以 `paymentMethodFlagsApplied` 套到記憶體內訂單且不再落盤；改動時一併檢查這些型別。
+    - 付款方式編輯成功不走 `.delegate(.itemRenamed)`：旗標是權威覆寫，語意與更名 cascade 不同。
+    - `PaymentMethodPersistence.applyEdit`、四個 `OrderPersistence.apply…Rename` 與 `CampaignPersistence.delete` 是使用 `OrderPersistence` 長命 context 以外的 context 寫入 `OrderRecord` 的例外。四個改名操作仍由 `OrderPersistence` actor 執行，但使用一次性 context；這些路徑只更新既有列、不插入訂單，找不到目標 id 時整批拋錯。前提改變時重跑 `PaymentMethodPersistenceTests` 並重新評估長命 context 的 stale read 風險。
 - **開團刪除在單一 `modelContext` 交易內完成**：`CampaignPersistence.delete(id:name:)` 移除 `CampaignRecord`、剝除所有訂單 `campaignNames` 中的該名稱、移除 `CampaignReminderRecord`，最後單次 `save()`；`CampaignRepository.removeCampaign` 只轉呼叫。
     - 行事曆事件在本機刪除成功後才移除，失敗不回滾，但要以 `campaignWriteFailed` 告知。
     - `CampaignFeature` 收到刪除結果才更新狀態，`RootFeature` 再攔截 `campaignDeleted` 同步 `OrdersFeature.State` 的訂單與 `campaigns` 副本；改動時四檔一起看。
