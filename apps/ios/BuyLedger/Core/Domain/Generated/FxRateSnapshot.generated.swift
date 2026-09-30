@@ -8,19 +8,17 @@
 
 import Foundation
 
-/// 單一基準幣別在某個時間點的所有匯率快照
-///
-/// rates 以「1 單位 base = X 單位 target」表示；多筆快照可串成匯率歷史走勢
+/// 某個時間點的匯率快照
 struct FxRateSnapshot: Equatable, Sendable {
 
     // MARK: - Data Properties
 
-    /// 報價時間
+    /// 匯率時間
     let date: Date
 
-    /// 基準幣別
+    /// 計算匯率的基準幣別
     let base: CurrencyCode
 
-    /// 對其他幣別的匯率 (key 為目標幣別，value 為「1 base = value target」)
+    /// 各目標幣別的匯率，表示 1 單位基準幣別可換多少目標幣別
     let rates: [CurrencyCode: Decimal]
 }

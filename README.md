@@ -18,6 +18,8 @@
 
 ```text
 BuyLedger (repo)/
+├── .github/                              # 版本庫層級自動化 (CI workflow)
+│   └── workflows/ci.yml                  # codegen 漂移檢查 + iOS 單元測試 (push / PR / 手動觸發)
 ├── apps/                                 # 可部署單元 (每個平台一個子目錄)
 │   ├── ios/                              # Apple 平台 App (iOS / iPadOS)
 │   │   ├── BuyLedger.xcodeproj/          # Xcode 專案；project.pbxproj 提交、xcuserdata/ 不提交
@@ -34,7 +36,7 @@ BuyLedger (repo)/
 └── assets/                               # README 圖片等共用素材
 ```
 
-**佈局契約**：可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/` 與 `assets/` 留在根目錄。`apps/ios` 與 `shared/data-model` 均已實際動工；`apps/android` 為文件化保留位置，待動工時才建立 (目前不放 stub)。
+**佈局契約**：可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/`、`assets/` 與版本庫層級自動化 `.github/` 留在根目錄 (管轄所有平台，不屬於任一平台目錄)。`apps/ios` 與 `shared/data-model` 均已實際動工；`apps/android` 為文件化保留位置，待動工時才建立 (目前不放 stub)。
 
 ## 平台導覽
 
@@ -43,7 +45,7 @@ BuyLedger (repo)/
 | Apple (iOS / iPadOS)         | `apps/ios/`   | [apps/ios/README.md](apps/ios/README.md)：技術棧、環境設定、build / test、架構速覽、Troubleshooting |
 | Android                      | `apps/android/` | (未來，尚未建立)                                                                                    |
 
-各平台的 AI 協作硬規則見該平台目錄的 `CLAUDE.md`；跨平台通用規範見根目錄 [`CLAUDE.md`](CLAUDE.md)。
+各平台與 shared 模組的 AI 協作硬規則見該目錄的 `CLAUDE.md` (如 `apps/ios/CLAUDE.md`、`shared/data-model/CLAUDE.md`)，只涉特定子目錄的規則在 `.claude/rules/`；跨平台通用規範見根目錄 [`CLAUDE.md`](CLAUDE.md)。
 
 ## 產品政策
 

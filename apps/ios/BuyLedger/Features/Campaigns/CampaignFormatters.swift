@@ -20,11 +20,7 @@ extension CampaignFormatters {
     ///   - locale: App 選定、用於金額呈現的 locale
     /// - Returns: 依選定 locale 呈現的新台幣金額字串
     static func twd(_ amount: Decimal, locale: Locale) -> String {
-        amount.formatted(
-            .currency(code: CurrencyCode.twd.code)
-            .precision(.fractionLength(0))
-            .locale(locale)
-        )
+        BLFormatters.twd(amount, locale: locale)
     }
 
     /// 依指定 locale 將開團日期格式化為精簡日期
@@ -36,7 +32,7 @@ extension CampaignFormatters {
         date.formatted(.dateTime.month(.abbreviated).day().locale(locale))
     }
 
-    /// 依指定 locale 將開團日期格式化為「月日 星期」風格，供分組粗於「日」時於列上顯示開團日期
+    /// 依 locale 格式化開團日期與星期
     /// - Parameters:
     ///   - date: 日期
     ///   - locale: App 選定、用於日期呈現的 locale
@@ -70,9 +66,9 @@ extension CampaignStatusStyle {
     static func tone(for status: CampaignStatus) -> BLTone {
         switch status {
         case .ongoing:
-            .accent
+                .accent
         case .closed:
-            .neutral
+                .neutral
         }
     }
 }

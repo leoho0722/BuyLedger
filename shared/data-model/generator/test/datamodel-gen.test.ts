@@ -52,12 +52,18 @@ function swiftOf(model: Model, name: string): string {
 describe("目錄合併載入", () => {
   test("fixture 目錄依檔名排序串接，跨檔引用解析正確", () => {
     const model = buildModelFromRaw(loadSchemaDir(FIX_SCHEMA));
-    // sample-enums.yaml 先於 sample-orders.yaml (檔名排序)
+    // 檔名排序：sample-enums.yaml → sample-orders.yaml → sample-trait-matrix.yaml
     expect(model.types.map((t) => t.name)).toEqual([
       "SampleStatus",
       "SampleTag",
       "SampleOrder",
       "SampleMetadata",
+      "SampleReceipt",
+      "SampleSequence",
+      "SampleGrade",
+      "SampleQuote",
+      "SampleProfile",
+      "SamplePreference",
     ]);
     // SampleOrder 跨檔引用 SampleStatus / SampleTag 應解析成功 (buildModel 不拋錯即代表通過)
     const order = findType(model, "SampleOrder");
@@ -238,6 +244,42 @@ describe("中立 trait 對應三平台", () => {
   });
 });
 
+// MARK: - Kotlin 列舉常數命名轉換 (task 2.1 / spec「Enum constants follow each target platform's naming convention」)
+
+describe("Kotlin 列舉常數命名轉換", () => {
+  const namingModel = buildModelFromRaw([
+    {
+      name: "NamingSampleEnum",
+      kind: "enum",
+      doc: "d",
+      cases: [
+        { name: "arrived", doc: "d" },
+        { name: "partiallyArrived", doc: "d" },
+        { name: "confirmedByAgent", doc: "d" },
+      ],
+    },
+    entity({
+      name: "NamingSampleEntity",
+      fields: [
+        { name: "id", type: "string", doc: "d" },
+        { name: "state", type: "NamingSampleEnum", doc: "d", default: "NamingSampleEnum.partiallyArrived" },
+      ],
+    }),
+  ]);
+
+  test("單字、雙字、三字 case 依序轉為底線分隔的全大寫常數，並保留原始 case 名作為 raw value", () => {
+    const kt = emitType("kotlin", findType(namingModel, "NamingSampleEnum"), {});
+    expect(kt).toContain('ARRIVED("arrived")');
+    expect(kt).toContain('PARTIALLY_ARRIVED("partiallyArrived")');
+    expect(kt).toContain('CONFIRMED_BY_AGENT("confirmedByAgent")');
+  });
+
+  test("enum-valued 欄位預設值與宣告使用同一個常數名，不會各自轉一次而失去同步", () => {
+    const kt = emitType("kotlin", findType(namingModel, "NamingSampleEntity"), {});
+    expect(kt).toContain("NamingSampleEnum.PARTIALLY_ARRIVED");
+  });
+});
+
 // MARK: - Swift 全域 Sendable 注入 (task 3.4)
 
 describe("Swift 全域 Sendable 注入", () => {
@@ -344,13 +386,13 @@ describe("golden 鎖定", () => {
     expect(result.inSync).toBe(true);
   });
 
-  test("fixture 涵蓋三種語言各 4 檔", () => {
+  test("fixture 涵蓋三種語言各 10 檔", () => {
     const { files } = planGeneration({ schemaDir: FIX_SCHEMA, configPath: FIX_CONFIG });
     const byLang = files.reduce<Record<string, number>>((acc, f) => {
       acc[f.language] = (acc[f.language] ?? 0) + 1;
       return acc;
     }, {});
-    expect(byLang).toEqual({ swift: 4, kotlin: 4, typescript: 4 });
+    expect(byLang).toEqual({ swift: 10, kotlin: 10, typescript: 10 });
   });
 });
 
@@ -447,5 +489,134 @@ describe("codegen 設定驗證", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  });
+});
+
+// MARK: - schema 註解平台中立與標點規範 (spec「Schema vocabulary is platform-neutral」)
+//
+// 只掃描 shared/data-model/schema (資料形狀的唯一事實來源)；fixtures/schema 是 golden file 測試
+// 素材，本身可能刻意示範各種邊界情境，不受此規範約束
+
+/** 平台語言、框架與型別建構用詞清單，對應三個 emitter 實際會產出的宣告關鍵字與 conformance 名稱 */
+const PLATFORM_VOCABULARY = [
+  "Swift",
+  "Kotlin",
+  "TypeScript",
+  "Java",
+  "Foundation",
+  "SwiftUI",
+  "SwiftData",
+  "Android",
+  "Node.js",
+  "struct",
+  "protocol",
+  "interface",
+  "data class",
+  "value class",
+  "enum class",
+  "Codable",
+  "Sendable",
+  "Equatable",
+  "Hashable",
+  "CaseIterable",
+  "Identifiable",
+  "JvmInline",
+];
+
+interface SchemaDocEntry {
+  context: string;
+  doc: string;
+}
+
+/** 收集一批 raw type 底下所有 doc 說明文字 (型別本身、entity 欄位、enum case) */
+function collectSchemaDocs(rawTypes: ReturnType<typeof loadSchemaDir>): SchemaDocEntry[] {
+  const docs: SchemaDocEntry[] = [];
+  for (const r of rawTypes) {
+    docs.push({ context: r.name, doc: r.doc });
+    if (r.kind === "entity") {
+      for (const f of r.fields ?? []) docs.push({ context: `${r.name}.${f.name}`, doc: f.doc });
+    }
+    if (r.kind === "enum") {
+      for (const c of r.cases ?? []) docs.push({ context: `${r.name}.${c.name}`, doc: c.doc });
+    }
+  }
+  return docs;
+}
+
+describe("schema 註解平台中立與標點規範", () => {
+  const docs = collectSchemaDocs(loadSchemaDir(PROD_SCHEMA));
+
+  test("說明文字不出現任一平台專屬的語言、框架或型別建構用詞", () => {
+    const offenders: string[] = [];
+    for (const { context, doc } of docs) {
+      for (const term of PLATFORM_VOCABULARY) {
+        const escaped = term.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+        if (new RegExp(`\\b${escaped}\\b`, "i").test(doc)) {
+          offenders.push(`${context} 含平台專屬詞 "${term}"`);
+        }
+      }
+    }
+    expect(offenders).toEqual([]);
+  });
+
+  test("說明文字不含全形破折號", () => {
+    const offenders = docs.filter((d) => d.doc.includes("—")).map((d) => d.context);
+    expect(offenders).toEqual([]);
+  });
+});
+
+// MARK: - 產線 trait 組合鏡射守門 (spec「Production path missing from the fixture is a coverage defect」)
+//
+// 掃描 schema/ 每個型別的 (kind, traits, serialization) 組合，斷言 fixtures/schema 至少有一個型別
+// 帶相同組合；組合沒有鏡射時，該組合專屬的 emit 分支壞掉不會有任何 golden-file 測試變紅
+
+/** 型別的 trait 組合鍵：(kind, 排序後的 traits, serialization 標記) 三者決定 emitter 實際採哪條分支 */
+function traitComboKey(t: { kind: string; traits: readonly string[]; serialization?: string }): string {
+  return `${t.kind}:${[...t.traits].sort().join(",")}:${t.serialization ?? "none"}`;
+}
+
+describe("產線 trait 組合鏡射守門", () => {
+  test("schema/ 每一種 (kind, traits, serialization) 組合，fixtures/schema 都至少有一個型別鏡射", () => {
+    const prodTypes = loadSchemaDir(PROD_SCHEMA);
+    const fixCombos = new Set(loadSchemaDir(FIX_SCHEMA).map(traitComboKey));
+
+    const missingByCombo = new Map<string, string[]>();
+    for (const t of prodTypes) {
+      const combo = traitComboKey(t);
+      if (!fixCombos.has(combo)) {
+        missingByCombo.set(combo, [...(missingByCombo.get(combo) ?? []), t.name]);
+      }
+    }
+
+    const offenders = [...missingByCombo.entries()].map(
+      ([combo, names]) => `組合 [${combo}] 無 fixture 鏡射 (產線型別：${names.join("、")})`,
+    );
+    expect(offenders).toEqual([]);
+  });
+});
+
+// MARK: - 產線同步守門 (task 1.1 / spec「Production output drift fails the test suite」與「Comparison target is pinned」)
+//
+// 這兩條斷言守的是「已提交的產線輸出」，不是 generator 自身邏輯回歸；上方其餘測試已用
+// fixtures 涵蓋 generator 行為。若在 shared/data-model/generator 本機實驗時看到這裡變紅，
+// 代表 apps/ios/BuyLedger/Core/Domain/Generated 與 schema 不同步，請依失敗訊息的指令重新產生
+
+describe("產線生成檔與 schema 同步", () => {
+  test("正式 schema 與已提交的產線生成檔完全同步；漂移時列出每筆漂移原因、絕對路徑與修復指令", () => {
+    const result = check({ schemaDir: PROD_SCHEMA, configPath: PROD_CONFIG });
+    if (!result.inSync) {
+      const detail = result.drifted.map((d) => `  [${d.reason}] ${d.absPath}`).join("\n");
+      throw new Error(
+        `產線生成檔與 schema 不同步：\n${detail}\n` +
+          `請於 shared/data-model/generator 執行 \`bun run generate\` 重新產生後一併提交。`,
+      );
+    }
+    expect(result.inSync).toBe(true);
+  });
+
+  test("正式 codegen 設定的輸出路徑鎖定為已提交的產線生成目錄，比對標的不可被靜默改掉", () => {
+    const config = loadConfig(PROD_CONFIG);
+    const swiftTarget = config.targets.find((t) => t.language === "swift");
+    expect(swiftTarget?.output).toBe("../../apps/ios/BuyLedger/Core/Domain/Generated");
   });
 });

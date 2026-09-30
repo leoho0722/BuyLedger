@@ -8,12 +8,7 @@
 import SwiftUI
 
 /// 熱力圖的離散深度級數
-///
-/// 取代連續的透明度階梯：連續透明度在兩端都無法讓固定的數字色達標，
-/// 且相鄰值本來就難以目視區分
 enum BLHeatmapDepth: Int, CaseIterable {
-
-    // MARK: - Cases
 
     /// 最淺的密度級數
     case level1 = 1
@@ -31,7 +26,7 @@ enum BLHeatmapDepth: Int, CaseIterable {
     case level5
 }
 
-// MARK: - Display Properties
+// MARK: - Computed Properties
 
 extension BLHeatmapDepth {
 

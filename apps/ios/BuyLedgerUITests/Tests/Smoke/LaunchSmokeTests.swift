@@ -8,9 +8,6 @@
 import XCTest
 
 /// 啟動與分頁切換的冒煙測試
-///
-/// 只驗最基本的「能起來、停在對的頁、五個分頁都切得動」，用來守住地基本身；
-/// 一律以畫面根 identifier 判定就緒，找不到 App 元素即附診斷失敗、不 skip
 final class LaunchSmokeTests: BLUITestCase {
 
     // MARK: - Tests
@@ -43,7 +40,7 @@ final class LaunchSmokeTests: BLUITestCase {
             failWithDiagnostics(in: app, "根導覽未就緒，總覽頁根 identifier 逾時仍未出現")
         }
 
-        // RootNavigationScreen 的 go* 已內建就緒等待 (有根 identifier 者等根、其餘等分頁選取)，逐一驗回傳值
+        // go* 已內建等待，這裡只驗證回傳值
         expectTabReady(root.goToDashboard(), "總覽", in: app)
         expectTabReady(root.goToOrders(), "訂單", in: app)
         expectTabReady(root.goToCampaigns(), "開團", in: app)
@@ -52,8 +49,6 @@ final class LaunchSmokeTests: BLUITestCase {
     }
 
     /// 切到某分頁後，該分頁應回報選取態、其他分頁不應
-    ///
-    /// 側邊欄版面讀 `isSelected` trait (選取原本只以配色表達)，分頁列版面以目的地畫面是否呈現間接判定
     @MainActor
     func testSelectedTabReportsSelectionState() {
         let app = launch(LaunchOptions(seed: .fullOrders))
@@ -75,11 +70,11 @@ private extension LaunchSmokeTests {
 
     /// 切換分頁後驗目的地是否就緒，未就緒即附診斷失敗
     /// - Parameters:
-    ///   - isReady: 切換方法回傳的就緒結果
-    ///   - tabName: 分頁名稱，僅供失敗訊息辨識
+    ///   - isReady: 目的地畫面是否已就緒
+    ///   - tabName: 分頁顯示名稱
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     func expectTabReady(
         _ isReady: Bool,
         _ tabName: String,

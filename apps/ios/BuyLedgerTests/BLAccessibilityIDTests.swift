@@ -10,23 +10,26 @@ import Testing
 @testable import BuyLedger
 
 /// 驗證 identifier 常數的組成規則
-///
-/// identifier 是 UI 測試唯一的定位依據，字串形狀一旦漂移，兩端就會對不上；
-/// 這裡把三種集合的組法與「不含非 ASCII」這條底線釘住
 struct BLAccessibilityIDTests {
 
     // MARK: - Tests
 
     @Test func optionJoinsPrefixAndRawValueWithDot() {
-        #expect(BLAccessibilityID.option("orders.list.statusChip", key: "shipping") == "orders.list.statusChip.shipping")
+        #expect(
+            BLAccessibilityID.option("orders.list.statusChip", key: "shipping")
+                == "orders.list.statusChip.shipping")
     }
 
     @Test func rowSeparatesBusinessKeyWithColon() {
-        #expect(BLAccessibilityID.row("orders.list.row", key: "ORD-2026-0007") == "orders.list.row:ORD-2026-0007")
+        #expect(
+            BLAccessibilityID.row("orders.list.row", key: "ORD-2026-0007")
+                == "orders.list.row:ORD-2026-0007")
     }
 
     @Test func indexedAppendsZeroBasedPosition() {
-        #expect(BLAccessibilityID.indexed("orderEdit.photo.thumbnail", index: 2) == "orderEdit.photo.thumbnail.index.2")
+        #expect(
+            BLAccessibilityID.indexed("orderEdit.photo.thumbnail", index: 2)
+                == "orderEdit.photo.thumbnail.index.2")
     }
 
     @Test func tabIdentifierUsesTabKeyRawValue() {
@@ -40,13 +43,17 @@ struct BLAccessibilityIDTests {
 
     @Test func loadFailureRetryButtonDerivesFromItsContainer() {
         #expect(BLAccessibilityID.Common.loadFailure("orders") == "orders.loadFailure")
-        #expect(BLAccessibilityID.Common.loadFailureRetryButton("orders") == "orders.loadFailure.retryButton")
+        #expect(
+            BLAccessibilityID.Common.loadFailureRetryButton("orders")
+                == "orders.loadFailure.retryButton")
     }
 
     @Test func dashboardStateIdentifiersReuseTheCommonFeaturePrefix() {
         #expect(BLAccessibilityID.Dashboard.loading == "dashboard.loading")
         #expect(BLAccessibilityID.Dashboard.loadFailure == "dashboard.loadFailure")
-        #expect(BLAccessibilityID.Dashboard.loadFailureRetryButton == "dashboard.loadFailure.retryButton")
+        #expect(
+            BLAccessibilityID.Dashboard.loadFailureRetryButton
+                == "dashboard.loadFailure.retryButton")
     }
 
     @Test(arguments: [

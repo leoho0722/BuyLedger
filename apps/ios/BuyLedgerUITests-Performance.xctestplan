@@ -9,6 +9,15 @@
     }
   ],
   "defaultOptions" : {
+    "codeCoverage" : {
+      "targets" : [
+        {
+          "containerPath" : "container:BuyLedger.xcodeproj",
+          "identifier" : "D0B1FCCC2FA22A9F00B50E07",
+          "name" : "BuyLedger"
+        }
+      ]
+    },
     "language" : "zh-Hant",
     "region" : "TW"
   },

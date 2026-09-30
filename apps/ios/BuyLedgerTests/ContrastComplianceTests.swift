@@ -10,13 +10,10 @@ import Testing
 @testable import BuyLedger
 
 /// 承載資訊的文字在四種外觀情境下的對比下限
-///
-/// 涵蓋狀態膠囊、徽章、客戶排名徽章、熱力圖與頭像；圖形元素若旁有文字標籤則屬裝飾、
-/// 不在此列 (詳見 design-system-color-contrast spec)
 @MainActor
 struct ContrastComplianceTests {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 承載資訊的文字對比下限
     static let textFloor = 4.5
@@ -40,7 +37,8 @@ struct ContrastComplianceTests {
 
     @Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)
     func countBadgeNumeralMeetsTheTextFloor(tone: BLTone, appearance: ColorContrast.Appearance) {
-        let ratio = ColorContrast.ratio(tone.onIndicator, on: tone.indicator, appearance: appearance)
+        let ratio = ColorContrast.ratio(
+            tone.onIndicator, on: tone.indicator, appearance: appearance)
 
         #expect(
             ratio >= Self.textFloor,
@@ -102,7 +100,8 @@ struct ContrastComplianceTests {
     func adjacentHeatmapDepthsAreVisiblyDistinct(appearance: ColorContrast.Appearance) {
         let levels = BLHeatmapDepth.allCases
         for (lower, upper) in zip(levels, levels.dropFirst()) {
-            let ratio = ColorContrast.ratio(lower.background, on: upper.background, appearance: appearance)
+            let ratio = ColorContrast.ratio(
+                lower.background, on: upper.background, appearance: appearance)
 
             #expect(
                 ratio >= 1.2,
@@ -128,16 +127,12 @@ struct ContrastComplianceTests {
         }
     }
 
-    // MARK: 總覽頁主卡
+    // MARK: 彩底 hero 卡
 
-    /// 主卡文字為純白疊在漸層上；漸層兩端與其中點皆須達標
+    /// 驗證 hero 卡白字與漸層的對比度
     @Test(arguments: ColorContrast.Appearance.allCases)
     func heroCardWhiteTextMeetsTheFloorOnBothGradientEnds(appearance: ColorContrast.Appearance) {
-        let ends = [
-            Color("BLHeroGradientStart", bundle: .assets),
-            Color("BLHeroGradientEnd", bundle: .assets),
-        ]
-        for end in ends {
+        for end in BLHeroCardBackground.gradientColors {
             let ratio = ColorContrast.ratio(.white, on: end, appearance: appearance)
 
             #expect(
@@ -149,10 +144,7 @@ struct ContrastComplianceTests {
 
     // MARK: 具名色彩資源解析
 
-    /// 具名色彩資源缺失時 SwiftUI 會靜默回退為系統預設色，不會有編譯或執行期警訊
-    ///
-    /// 對比斷言本身抓不到這種情形 (回退色之間仍可能達標)，故逐一比對「一定不存在的名稱」
-    /// 所回退到的色值，確認每支資源都真的解析到了
+    /// 驗證具名色彩資源存在
     @Test(arguments: ColorContrast.Appearance.allCases)
     func everyNamedColorResourceActuallyResolves(appearance: ColorContrast.Appearance) {
         let fallback = ColorContrast.components(
@@ -161,7 +153,12 @@ struct ContrastComplianceTests {
         )
 
         var resources: [(String, Color)] = [
-            ("BLRankBadgeFirstBackground", CustomerRankBadgeStyle.first.background(in: appearance.palette)),
+            (
+                "BLRankBadgeFirstBackground",
+                CustomerRankBadgeStyle.first.background(in: appearance.palette)
+            ),
+            ("BLHeroGradientStart", BLHeroCardBackground.gradientColors[0]),
+            ("BLHeroGradientEnd", BLHeroCardBackground.gradientColors[1]),
         ]
         for tone in BLTone.allCases {
             resources.append(("\(tone) onSurface", tone.onSurface))
@@ -185,8 +182,6 @@ struct ContrastComplianceTests {
     // MARK: 次要標籤色
 
     /// 涵蓋改走次要標籤色的圖表軸標籤與區段標題
-    ///
-    /// 這些文字原先誤用第三層標籤色，在淺色外觀下僅約 2.1:1
     @Test(arguments: ColorContrast.Appearance.allCases)
     func secondaryLabelTextMeetsTheTextFloor(appearance: ColorContrast.Appearance) {
         let palette = appearance.palette
@@ -210,4 +205,42 @@ struct ContrastComplianceTests {
 
         #expect(first != second)
     }
+
+    // MARK: 次要標籤色縮寫
+
+    /// 驗證次要標籤色的對比度
+    @Test(arguments: ColorContrast.Appearance.allCases)
+    func blSecondaryLabelShorthandResolvesToThePaletteColor(appearance: ColorContrast.Appearance) {
+        let shorthand = ColorContrast.components(of: .blSecondaryLabel, appearance: appearance)
+        let paletteValue = ColorContrast.components(
+            of: appearance.palette.secondaryLabel, appearance: appearance)
+
+        #expect(
+            shorthand == paletteValue,
+            "Color.blSecondaryLabel 在 \(appearance) 下與色盤次要標籤色分量不同：\(shorthand) vs \(paletteValue)"
+        )
+    }
+
+    // MARK: 分組色相
+
+    /// 驗證側邊欄各分組在不同外觀下使用不同色相
+    @Test(arguments: ColorContrast.Appearance.allCases)
+    func statusHueValuesStayMutuallyDistinguishable(appearance: ColorContrast.Appearance) {
+        let palette = appearance.palette
+        let statuses = RootSidebarLayout.SmartGroup.orderBrowsingCases.map(\.status)
+        let components = statuses.map {
+            ColorContrast.components(
+                of: $0.sidebarHue(in: palette), appearance: appearance)
+        }
+
+        for i in components.indices {
+            for j in components.indices where j > i {
+                #expect(
+                    components[i] != components[j],
+                    "\(statuses[i]) 與 \(statuses[j]) 在 \(appearance) 下的分組色相相同"
+                )
+            }
+        }
+    }
+
 }

@@ -1,12 +1,12 @@
 types:
   - name: CustomerTier
     kind: enum
-    doc: 客戶在代購流程中的分級。
+    doc: 客戶分級
     traits: [serializable]
     cases:
       - name: new
-        doc: 第一次或近期新增的客戶。
+        doc: 新客戶
       - name: regular
-        doc: 一般常客。
+        doc: 一般客戶
       - name: vip
-        doc: 高價值或高頻率客戶。
+        doc: 高價值或高頻客戶

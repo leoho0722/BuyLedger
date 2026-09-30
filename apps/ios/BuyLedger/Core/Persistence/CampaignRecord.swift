@@ -9,16 +9,13 @@ import Foundation
 import SwiftData
 
 /// SwiftData 持久化的「開團 (Campaign)」記錄
-///
-/// 與領域型別 ``Campaign`` 一一對應
-///
-/// 沿用 ``OrderSourceRecord`` 的設計準則：不使用 `@Attribute(.unique)` (CloudKit 不支援)，由 ``CampaignPersistence`` 在 upsert／rename 時自行檢查避免重複
-///
-/// 狀態以 ``statusRaw`` (String rawValue) 儲存，避免日後改動 ``CampaignStatus`` 時破壞 schema 指紋
 @Model
 final class CampaignRecord {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
+
+    /// 以開團識別值建立索引，供查詢與更新
+    #Index<CampaignRecord>([\.id])
 
     /// 開團的穩定識別值 (UUID 字串)；同時作為 upsert 識別值
     var id: String
@@ -60,17 +57,30 @@ final class CampaignRecord {
 
 extension CampaignRecord {
 
-    // MARK: Mapping
-
     /// 將 SwiftData 記錄轉回領域型別
     /// - Returns: 對應的 ``Campaign``
-    func toDomain() -> Campaign {
-        Campaign(
+    /// - Throws: 開團狀態 rawValue 無法解析時拋出 ``PersistenceError``
+    func toDomain() throws(PersistenceError) -> Campaign {
+        let resolvedStatus: CampaignStatus
+        if let status = CampaignStatus(rawValue: statusRaw) {
+            resolvedStatus = status
+        } else {
+            throw .fetchFailed(
+                underlying: RecordDecodingError(
+                    entity: "CampaignRecord",
+                    identifier: id,
+                    field: "status",
+                    rawValue: statusRaw
+                )
+            )
+        }
+
+        return Campaign(
             id: id,
             name: name,
             openDate: openDate,
             closeDate: closeDate,
-            status: CampaignStatus(rawValue: statusRaw) ?? .ongoing,
+            status: resolvedStatus,
             settledDate: settledDate,
             notes: notes
         )

@@ -1,4 +1,6 @@
-# fixture：entity，涵蓋型別映射表全列、nullable/default 解析表，以及全域 Sendable 注入。
+# fixture：entity 與 wrapper，涵蓋型別映射表全列、nullable/default 解析表、全域 Sendable 注入，
+# 以及自訂序列化實體 (對應產線既有形狀，例如 LedgerOrderItem)。字串／布林欄位預設值與整數基底
+# wrapper 則純為補齊 emitter 分支覆蓋，產線目前未使用這兩種形狀。
 types:
   - name: SampleOrder
     kind: entity
@@ -60,3 +62,26 @@ types:
       - name: value
         type: string
         doc: 值。
+
+  - name: SampleReceipt
+    kind: entity
+    doc: 範例收據 (示範自訂序列化的實體，以及字串與布林欄位預設值)。
+    traits: [value-equality, identity]
+    serialization: custom
+    fields:
+      - name: id
+        type: string
+        doc: 穩定識別值。
+      - name: memo
+        type: string
+        doc: 備註；預設空字串。
+        default: ""
+      - name: isVoided
+        type: bool
+        doc: 是否已作廢；預設 false。
+        default: false
+
+  - name: SampleSequence
+    kind: wrapper
+    doc: 範例序號 (示範以整數為基底的 wrapper)。
+    base: int

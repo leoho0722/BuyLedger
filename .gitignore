@@ -83,11 +83,14 @@ fastlane/test_output/
 .spectra/
 openspec/.vector-search.db*
 
-# Local API keys / build configurations（範本見 Config.example.xcconfig）
+# Local API keys / build configurations (範本見 Config.example.xcconfig)
 apps/ios/BuyLedger/Resources/Config.xcconfig
 
-# Firebase 設定（從 Firebase Console 下載 GoogleService-Info.plist 放入 Resources/）
+# Firebase 設定 (從 Firebase Console 下載 GoogleService-Info.plist 放入 Resources/)
 apps/ios/BuyLedger/Resources/GoogleService-Info.plist
 
 # CodeGen node modules
 shared/data-model/generator/node_modules
+
+# xcodebuildmcp 本機 session defaults (含機器專屬絕對路徑與模擬器 UDID，不入庫)
+.xcodebuildmcp/

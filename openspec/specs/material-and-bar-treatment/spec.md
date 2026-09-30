@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'ux-honesty-and-visual-foundation'. Update Purpose after archive.
+本規格涵蓋列與材質的視覺呈現方式，包括不以不透明背景搭配分隔線仿造系統列、不以半透明色值仿造系統材質。不涵蓋 `color-system-foundation` 所訂的語意色與系統色一般性取得管道，本規格只處理列與材質這兩種特定視覺元素。
 
 ## Requirements
 

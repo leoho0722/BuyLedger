@@ -8,10 +8,6 @@
 import XCTest
 
 /// 訂單合併的進入、候選推進與取消流程測試
-///
-/// 一律以 accessibility identifier 定位，找不到 App 元素即附診斷失敗、不 skip；
-/// mergeCandidates 三筆同客戶訂單皆無照片，合計不超上限，故推進候選後直接到合併確認表單、不經照片挑選步驟。
-/// 推進斷言以條件式相容兩種路徑：先等合併確認表單根或照片繼續鈕其一出現再分支
 final class OrderMergeTests: BLUITestCase {
 
     // MARK: - Static Properties
@@ -27,7 +23,7 @@ final class OrderMergeTests: BLUITestCase {
 
     // MARK: - Tests
 
-    /// 進入合併：訂單詳情 → 更多 → 合併訂單 → 候選 sheet 就緒，候選含另兩筆、不含自己
+    /// 開啟合併流程並確認候選訂單
     @MainActor
     func testEnterMergeShowsCandidatesExcludingSelf() {
         let app = launch(LaunchOptions(seed: .mergeCandidates))
@@ -55,14 +51,15 @@ final class OrderMergeTests: BLUITestCase {
 
         merge.tapCandidate(orderID: Self.candidateOrderID)
 
-        // 點候選後可能先進照片挑選步驟 (合計照片超上限)、也可能直接到合併確認表單；
-        // 輪詢等兩者其一出現再分支，不預設走哪條路徑 (兩者為 OR 關係，故手動輪詢而非等單一述詞)
+        // 點候選後可能進入照片挑選或合併表單，輪詢等待其中一個出現。
         let edit = OrderEditScreen(app: app)
         let photoContinue = app.buttons[BLAccessibilityID.OrderMerge.photoContinueButton]
         let editRoot = app.descendants(matching: .any)[edit.rootIdentifier]
         let deadline = Date().addingTimeInterval(10)
         while Date() < deadline, !photoContinue.exists, !editRoot.exists {
-            _ = photoContinue.waitForExistence(timeout: 0.3)
+            if photoContinue.waitForExistence(timeout: 0.3) {
+                break
+            }
         }
         if !photoContinue.exists, !editRoot.exists {
             failWithDiagnostics(in: app, "點候選後照片挑選步驟與合併確認表單皆未出現")
@@ -90,7 +87,7 @@ final class OrderMergeTests: BLUITestCase {
 
         merge.tapCancel()
 
-        // 取消後候選 sheet 應收回，畫面回到發起合併的那筆訂單詳情 (合併由詳情頁的更多選單發起)
+        // 取消後候選 sheet 應收回並回到訂單詳情。
         if !merge.rootElement.waitForDisappearance() {
             failWithDiagnostics(in: app, "點取消後,合併候選 sheet 未收回")
         }
@@ -109,12 +106,13 @@ final class OrderMergeTests: BLUITestCase {
 
 private extension OrderMergeTests {
 
-    /// 切到訂單分頁、點種子訂單進詳情、開更多選單點合併，回傳已就緒的合併流程 Page Object
+    /// 開啟合併候選流程並回傳 page object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
-    /// - Returns: 已就緒的合併流程 Page Object
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
+    /// - Returns: 已就緒的合併候選流程 Page Object
     @MainActor
     func openMergeCandidates(
         _ app: XCUIApplication,
@@ -122,7 +120,7 @@ private extension OrderMergeTests {
         line: UInt = #line
     ) -> MergeFlowScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToOrders() {
+        if !root.goToOrders(file: file, line: line) {
             failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
         }
 
@@ -136,7 +134,7 @@ private extension OrderMergeTests {
             )
         }
 
-        orders.tapOrder(orderID: Self.baseOrderID)
+        orders.tapOrder(orderID: Self.baseOrderID, file: file, line: line)
 
         let detail = OrderDetailScreen(app: app)
         if !detail.waitUntilReady() {
@@ -148,8 +146,8 @@ private extension OrderMergeTests {
             )
         }
 
-        detail.openMoreMenu()
-        if !detail.tapMerge() {
+        detail.openMoreMenu(file: file, line: line)
+        if !detail.tapMerge(file: file, line: line) {
             failWithDiagnostics(in: app, "更多選單的合併項目未出現或不可點", file: file, line: line)
         }
 

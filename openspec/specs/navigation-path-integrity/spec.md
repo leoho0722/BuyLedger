@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'navigation-integrity'. Update Purpose after archive.
+本規格涵蓋導覽路徑與呈現層級的一般性規則，包括每個目的地僅有一條可達路徑、選取狀態單一真相來源、同一時間僅呈現一層模態。不涵蓋 `sheet-nested-presentation` 所訂的 sheet 疊層情境下推入導覽、全螢幕媒體檢視器等具體呈現方式。
 
 ## Requirements
 

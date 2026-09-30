@@ -8,12 +8,9 @@
 import XCTest
 
 /// 訂單編輯表單的 Page Object
-///
-/// 以 accessibility identifier 對外暴露客戶名輸入、各選擇器入口、收款金額輸入與儲存／取消的語意操作，元素查詢細節不外洩給測試檔；
-/// 新增與編輯共用同一組 identifier，故 Page Object 不分兩種流程
 struct OrderEditScreen: Screen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
@@ -21,19 +18,10 @@ struct OrderEditScreen: Screen {
     // MARK: - Computed Properties
 
     /// 判定編輯表單已就緒的根 identifier (表單捲動容器)
+    ///
+    /// - Returns: 編輯表單的根 identifier
     var rootIdentifier: String {
         BLAccessibilityID.OrderEdit.root
-    }
-
-    /// 儲存按鈕目前是否可用
-    ///
-    /// 讀值前先等按鈕存在，避免元素尚未出現時 `isEnabled` 回傳 `false` 被誤判為停用
-    @MainActor
-    var isSaveEnabled: Bool {
-        let button = app.buttons[BLAccessibilityID.OrderEdit.saveButton]
-        _ = button.waitForExistence(timeout: 10)
-
-        return button.isEnabled
     }
 }
 
@@ -42,87 +30,238 @@ struct OrderEditScreen: Screen {
 @MainActor
 extension OrderEditScreen {
 
+    /// 儲存按鈕目前是否可用
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Returns: 儲存按鈕是否可用
+    func isSaveEnabled(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) -> Bool {
+        let button = app.buttons[BLAccessibilityID.OrderEdit.saveButton]
+        if !button.waitForExistence(timeout: 10) {
+            let saveButtonID = BLAccessibilityID.OrderEdit.saveButton
+            app.failWithDiagnostics(
+                "找不到 identifier 為 \(saveButtonID) 的儲存按鈕",
+                file: file,
+                line: line
+            )
+            return false
+        }
+
+        return button.isEnabled
+    }
+
     /// 清空並填入客戶名稱
     ///
-    /// 客戶名欄在表單最上方，若先前操作把表單捲下去了，先向下滑回頂端把它帶回畫面再輸入
-    /// - Parameter name: 要輸入的客戶名稱 (使用者資料)
-    func typeCustomerName(_ name: String) {
+    /// - Parameters:
+    ///   - name: 要填入的客戶名稱
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func typeCustomerName(
+        _ name: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
         let field = app.textFields[BLAccessibilityID.OrderEdit.customerField]
-        var attempts = 0
-        while !field.exists, attempts < 5 {
+        var scrollAttempts = 0
+        while scrollAttempts < 8 {
+            if !field.exists {
+                rootElement.swipeDown()
+                scrollAttempts += 1
+                continue
+            }
+            let fieldFrame = field.frame
+            if !fieldFrame.isEmpty && rootElement.frame.intersects(fieldFrame) {
+                break
+            }
             rootElement.swipeDown()
-            attempts += 1
+            scrollAttempts += 1
         }
-        field.waitUntilHittable()
-        field.clearAndType(name, in: app)
+        guard field.exists else {
+            app.failWithDiagnostics(
+                "捲動 8 次後仍找不到客戶名稱欄位",
+                file: file,
+                line: line
+            )
+            return
+        }
+        field.clearAndType(
+            name,
+            in: app,
+            file: file,
+            line: line
+        )
+    }
+
+    /// 送出文字欄位的 return，驗證一般鍵盤的收起路徑
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func submitCustomerName(file: StaticString = #filePath, line: UInt = #line) {
+        let field = app.textFields[BLAccessibilityID.OrderEdit.customerField]
+        field.tapAfterWaiting(in: app, file: file, line: line)
+        field.typeText(XCUIKeyboardKey.return.rawValue)
     }
 
     /// 開啟訂單來源選擇器
-    func openSourcePicker() {
-        tapPickerRow(BLAccessibilityID.OrderEdit.sourceRow)
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func openSourcePicker(file: StaticString = #filePath, line: UInt = #line) {
+        tapPickerRow(BLAccessibilityID.OrderEdit.sourceRow, file: file, line: line)
     }
 
     /// 開啟商品類別選擇器
-    func openCategoryPicker() {
-        tapPickerRow(BLAccessibilityID.OrderEdit.categoryRow)
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func openCategoryPicker(file: StaticString = #filePath, line: UInt = #line) {
+        tapPickerRow(BLAccessibilityID.OrderEdit.categoryRow, file: file, line: line)
     }
 
     /// 開啟付款方式選擇器
-    func openPaymentPicker() {
-        tapPickerRow(BLAccessibilityID.OrderEdit.paymentRow)
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func openPaymentPicker(file: StaticString = #filePath, line: UInt = #line) {
+        tapPickerRow(BLAccessibilityID.OrderEdit.paymentRow, file: file, line: line)
     }
 
-    /// 填入客戶實付金額後收起數字鍵盤
+    /// 開啟幣別選擇器
     ///
-    /// 此欄在 iPad 置中 sheet 上僅差數點露出於表單底緣下方，整頁 swipe 的慣性會一口氣衝過它、把它捲離螢幕，
-    /// 故改以小幅拖曳逐步逼近;此欄始終在樹上、frame 有效，可直接查可點
     /// - Parameters:
-    ///   - amount: 要輸入的金額字串
-    ///   - app: 受測 App，供收數字鍵盤時定位鍵盤工具列
-    func typeChargedAmount(_ amount: String, in app: XCUIApplication) {
-        let field = app.textFields[BLAccessibilityID.OrderEdit.chargedAmountField]
-        app.scrollToHittableGently(field, within: rootElement)
-        field.waitUntilHittable()
-        // decimalPad 出現後 SwiftUI 會自動把此欄捲到鍵盤上方，聚焦與輸入才成立
-        field.tap()
-        if let existing = field.value as? String, existing != amount {
-            let deletes = String(repeating: XCUIKeyboardKey.delete.rawValue, count: existing.count)
-            field.typeText(deletes)
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func openCurrencyPicker(file: StaticString = #filePath, line: UInt = #line) {
+        let customerField = app.textFields[BLAccessibilityID.OrderEdit.customerField]
+        let keyboard = app.keyboards.firstMatch
+        if keyboard.exists {
+            customerField.typeText(XCUIKeyboardKey.return.rawValue)
+            guard keyboard.waitForDisappearance(timeout: 5) else {
+                app.failWithDiagnostics(
+                    "訂單編輯的文字鍵盤未能收起",
+                    file: file,
+                    line: line
+                )
+                return
+            }
         }
-        field.typeText(amount)
-        field.dismissNumericKeyboard(in: app)
+
+        let row = app.descendants(matching: .any)[BLAccessibilityID.OrderEdit.currencyRow]
+        guard row.waitForExistence(timeout: 10) else {
+            app.failWithDiagnostics(
+                "找不到幣別選擇列",
+                file: file,
+                line: line
+            )
+            return
+        }
+
+        tapPickerRow(BLAccessibilityID.OrderEdit.currencyRow, file: file, line: line)
+    }
+
+    /// 填入客戶實付金額
+    ///
+    /// - Parameters:
+    ///   - amount: 要填入的金額文字
+    ///   - app: 受測 App
+    ///   - dismissKeyboard: 是否在輸入後收起數字鍵盤
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func typeChargedAmount(
+        _ amount: String,
+        in app: XCUIApplication,
+        dismissKeyboard: Bool = true,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let field = app.textFields[BLAccessibilityID.OrderEdit.chargedAmountField]
+        // 使用預設拖曳範圍，避免 iPhone 找不到可點擊位置
+        if !app.scrollToHittableGently(field, within: rootElement) {
+            // XCTest 的第一次點擊會觸發原生 scroll-to-focus
+            // 之後再交給共用輸入 helper
+            field.tap()
+        }
+        guard field.waitUntilHittableOrFail(
+            in: app,
+            timeout: 10,
+            file: file,
+            line: line
+        ) else {
+            return
+        }
+        field.clearAndType(
+            amount,
+            in: app,
+            file: file,
+            line: line
+        )
+        if dismissKeyboard {
+            field.dismissNumericKeyboard(in: app, file: file, line: line)
+        }
+    }
+
+    /// 點數字鍵盤工具列的完成鍵
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapNumericKeyboardDone(
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let field = app.textFields[BLAccessibilityID.OrderEdit.chargedAmountField]
+        field.dismissNumericKeyboard(in: app, file: file, line: line)
     }
 
     /// 捲到照片區並點指定序位的照片縮圖，開啟照片檢視器
     ///
-    /// 縮圖是水平列內的 `Button`，XCUITest 可能歸為 button 或其他型別，故以 any 查詢。照片列在表單下半、屬離屏惰性列，
-    /// 先以「查存在」逐次上滑把它捲入樹 (對尚未渲染的惰性列直接查 hittability 會因 frame 無效而報錯，非回 false)，
-    /// 進樹 frame 穩定後再捲到可點才點
-    /// - Parameter index: 縮圖序位 (0 起算)
-    func tapPhotoThumbnail(index: Int) {
-        let thumbnail = app.descendants(matching: .any)[BLAccessibilityID.OrderEdit.photoThumbnail(index: index)]
+    /// - Parameters:
+    ///   - index: 照片縮圖的序位
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapPhotoThumbnail(
+        index: Int,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        let thumbnail = app.descendants(matching: .any)[
+            BLAccessibilityID.OrderEdit.photoThumbnail(index: index)
+        ]
         var attempts = 0
         while !thumbnail.exists, attempts < 8 {
             rootElement.swipeUp()
             attempts += 1
         }
         app.scrollToHittable(thumbnail, within: rootElement)
-        thumbnail.waitUntilHittable()
-        thumbnail.tap()
+        thumbnail.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 點工具列的儲存
-    func tapSave() {
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapSave(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.buttons[BLAccessibilityID.OrderEdit.saveButton]
-        button.waitUntilHittable()
-        button.tap()
+        button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
     /// 點工具列的取消
-    func tapCancel() {
+    ///
+    /// - Parameters:
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapCancel(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.buttons[BLAccessibilityID.OrderEdit.cancelButton]
-        button.waitUntilHittable()
-        button.tap()
+        button.tapAfterWaiting(in: app, file: file, line: line)
     }
 }
 
@@ -133,14 +272,19 @@ private extension OrderEditScreen {
 
     /// 點某個選擇器入口列開啟選擇器
     ///
-    /// 選擇器入口是 `Form` row 內的 Button，XCUITest 可能歸為 button 或 staticText，故以 any 查詢；離屏時先捲入可點位置
-    /// - Parameter identifier: 該入口列的 accessibility identifier
-    func tapPickerRow(_ identifier: String) {
+    /// - Parameters:
+    ///   - identifier: 選擇器入口列的 accessibility identifier
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func tapPickerRow(
+        _ identifier: String,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
         let row = app.descendants(matching: .any)[identifier]
         if !row.isHittable {
             app.scrollToHittable(row, within: rootElement)
         }
-        row.waitUntilHittable()
-        row.tap()
+        row.tapAfterWaiting(in: app, file: file, line: line)
     }
 }

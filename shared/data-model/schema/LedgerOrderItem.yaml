@@ -1,26 +1,23 @@
 types:
   - name: LedgerOrderItem
     kind: entity
-    doc: |-
-      訂單中的單一商品項目。
-
-      id 為穩定識別值，與 name / quantity / unitPrice 等內容欄位解耦，使內容變動時識別保持不變 (支援清單／表單內的逐項編輯)。
+    doc: 訂單中的商品項目
     traits: [value-equality, identity]
     serialization: custom
     fields:
       - name: id
         type: uuid
-        doc: 商品項目的穩定識別值，與內容無關。
+        doc: 商品項目的穩定識別值
         default: $newUUID
       - name: name
         type: string
-        doc: 商品名稱。
+        doc: 商品名稱
         mutable: true
       - name: quantity
         type: int
-        doc: 商品數量。
+        doc: 商品數量
         mutable: true
       - name: unitPrice
         type: decimal
-        doc: 商品在原始幣別中的單價。
+        doc: 商品單價
         mutable: true

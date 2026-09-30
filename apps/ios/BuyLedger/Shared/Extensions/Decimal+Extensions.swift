@@ -12,6 +12,7 @@ import Foundation
 extension Decimal {
 
     /// 對 `Decimal` 套用無條件進位到整數
+    /// - Returns: 無條件進位後的整數 Decimal
     func roundedUpToInteger() -> Decimal {
         var source = self
         var result = Decimal()

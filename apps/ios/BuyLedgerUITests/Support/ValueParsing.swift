@@ -7,10 +7,7 @@
 
 import XCTest
 
-/// 以當次 locale 產生金額／百分比／日期的預期字串，並比對合併朗讀元素的文字
-///
-/// 中英模式的千分位、小數點與日期格式不同，一律用 `NumberFormatter`／`DateFormatter` 產生預期值，
-/// 不在測試裡寫死字面值；locale 由呼叫端傳入 (預設 `.current`)、與啟動的 App 語言對齊
+/// 依 locale 產生預期文字並比對朗讀元素
 enum ValueParsing {}
 
 // MARK: - Internal Method
@@ -20,10 +17,14 @@ extension ValueParsing {
     /// 依幣別格式化金額 (含貨幣符號與千分位)
     /// - Parameters:
     ///   - amount: 金額
-    ///   - currencyCode: 幣別三碼代號 (如 `TWD`)
-    ///   - locale: 格式化 locale
-    /// - Returns: 格式化後字串
-    static func formatCurrency(_ amount: Decimal, currencyCode: String, locale: Locale = .current) -> String {
+    ///   - currencyCode: 幣別三碼代號
+    ///   - locale: 格式化使用的 locale
+    /// - Returns: 格式化後的金額字串
+    static func formatCurrency(
+        _ amount: Decimal,
+        currencyCode: String,
+        locale: Locale = .current
+    ) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .currency
         formatter.currencyCode = currencyCode
@@ -36,9 +37,13 @@ extension ValueParsing {
     /// - Parameters:
     ///   - value: 數值
     ///   - fractionDigits: 固定小數位數
-    ///   - locale: 格式化 locale
-    /// - Returns: 格式化後字串
-    static func formatDecimal(_ value: Decimal, fractionDigits: Int = 0, locale: Locale = .current) -> String {
+    ///   - locale: 格式化使用的 locale
+    /// - Returns: 格式化後的十進位數字串
+    static func formatDecimal(
+        _ value: Decimal,
+        fractionDigits: Int = 0,
+        locale: Locale = .current
+    ) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .decimal
         formatter.locale = locale
@@ -52,9 +57,13 @@ extension ValueParsing {
     /// - Parameters:
     ///   - fraction: 0...1 的比例值
     ///   - fractionDigits: 固定小數位數
-    ///   - locale: 格式化 locale
-    /// - Returns: 格式化後字串
-    static func formatPercent(_ fraction: Double, fractionDigits: Int = 0, locale: Locale = .current) -> String {
+    ///   - locale: 格式化使用的 locale
+    /// - Returns: 格式化後的百分比字串
+    static func formatPercent(
+        _ fraction: Double,
+        fractionDigits: Int = 0,
+        locale: Locale = .current
+    ) -> String {
         let formatter = NumberFormatter()
         formatter.numberStyle = .percent
         formatter.locale = locale
@@ -67,9 +76,9 @@ extension ValueParsing {
     /// - Parameters:
     ///   - date: 日期
     ///   - dateStyle: 日期樣式
-    ///   - locale: 格式化 locale
-    ///   - timeZone: 時區，固定傳入避免跨機器差異
-    /// - Returns: 格式化後字串
+    ///   - locale: 格式化使用的 locale
+    ///   - timeZone: 格式化使用的時區
+    /// - Returns: 格式化後的日期字串
     static func formatShortDate(
         _ date: Date,
         dateStyle: DateFormatter.Style = .medium,
@@ -90,9 +99,7 @@ extension ValueParsing {
 extension XCUIElement {
 
     /// 合併朗讀後承載的完整文字 (label 串接 value)
-    ///
-    /// `accessibilityElement(children: .combine)` 的列會把子元素文字併進 `label`，
-    /// 主要數值有時另放在 `value`，兩者一起串成長字串才不漏比對
+    /// - Returns: 元素 label 與 value 合併後的文字
     var combinedText: String {
         let valueText = (value as? String) ?? ""
         return [label, valueText]
@@ -107,7 +114,7 @@ extension XCUIElement {
 
     /// 合併文字是否含指定字串
     /// - Parameter text: 預期包含的文字
-    /// - Returns: 是否包含
+    /// - Returns: 是否包含指定文字
     func combinedTextContains(_ text: String) -> Bool {
         combinedText.contains(text)
     }
@@ -116,39 +123,54 @@ extension XCUIElement {
     /// - Parameters:
     ///   - amount: 金額
     ///   - code: 幣別三碼代號
-    ///   - locale: 格式化 locale
-    /// - Returns: 是否包含
-    func combinedTextContains(currency amount: Decimal, code: String, locale: Locale = .current) -> Bool {
-        combinedTextContains(ValueParsing.formatCurrency(amount, currencyCode: code, locale: locale))
+    ///   - locale: 格式化使用的 locale
+    /// - Returns: 是否包含格式化後的金額
+    func combinedTextContains(
+        currency amount: Decimal,
+        code: String,
+        locale: Locale = .current
+    ) -> Bool {
+        combinedTextContains(
+            ValueParsing.formatCurrency(amount, currencyCode: code, locale: locale))
     }
 
     /// 合併文字是否含指定十進位數
     /// - Parameters:
     ///   - value: 數值
     ///   - fractionDigits: 固定小數位數
-    ///   - locale: 格式化 locale
-    /// - Returns: 是否包含
-    func combinedTextContains(decimal value: Decimal, fractionDigits: Int = 0, locale: Locale = .current) -> Bool {
-        combinedTextContains(ValueParsing.formatDecimal(value, fractionDigits: fractionDigits, locale: locale))
+    ///   - locale: 格式化使用的 locale
+    /// - Returns: 是否包含格式化後的十進位數值
+    func combinedTextContains(
+        decimal value: Decimal,
+        fractionDigits: Int = 0,
+        locale: Locale = .current
+    ) -> Bool {
+        combinedTextContains(
+            ValueParsing.formatDecimal(value, fractionDigits: fractionDigits, locale: locale))
     }
 
     /// 合併文字是否含指定百分比
     /// - Parameters:
     ///   - fraction: 0...1 的比例值
     ///   - fractionDigits: 固定小數位數
-    ///   - locale: 格式化 locale
-    /// - Returns: 是否包含
-    func combinedTextContains(percent fraction: Double, fractionDigits: Int = 0, locale: Locale = .current) -> Bool {
-        combinedTextContains(ValueParsing.formatPercent(fraction, fractionDigits: fractionDigits, locale: locale))
+    ///   - locale: 格式化使用的 locale
+    /// - Returns: 是否包含格式化後的百分比
+    func combinedTextContains(
+        percent fraction: Double,
+        fractionDigits: Int = 0,
+        locale: Locale = .current
+    ) -> Bool {
+        combinedTextContains(
+            ValueParsing.formatPercent(fraction, fractionDigits: fractionDigits, locale: locale))
     }
 
     /// 合併文字是否含指定日期
     /// - Parameters:
     ///   - date: 日期
     ///   - dateStyle: 日期樣式
-    ///   - locale: 格式化 locale
-    ///   - timeZone: 時區
-    /// - Returns: 是否包含
+    ///   - locale: 格式化使用的 locale
+    ///   - timeZone: 格式化使用的時區
+    /// - Returns: 是否包含格式化後的日期
     func combinedTextContains(
         date: Date,
         dateStyle: DateFormatter.Style = .medium,
@@ -156,7 +178,8 @@ extension XCUIElement {
         timeZone: TimeZone = .current
     ) -> Bool {
         combinedTextContains(
-            ValueParsing.formatShortDate(date, dateStyle: dateStyle, locale: locale, timeZone: timeZone)
+            ValueParsing.formatShortDate(
+                date, dateStyle: dateStyle, locale: locale, timeZone: timeZone)
         )
     }
 }

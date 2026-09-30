@@ -5,60 +5,64 @@
 //  Created by Leo Ho on 2026/5/25.
 //
 
+import ComposableArchitecture
 import FirebaseCore
-import SwiftData
 
 /// 集中管理 App 啟動時的各項服務初始化
-///
-/// App 的 ``AppDelegate`` 在 `didFinishLaunching` 時呼叫 ``configure()``，
-/// ``BuyLedgerApp`` 則在建立根 store 之前呼叫 ``prepareUITestHarnessIfNeeded()``，
-/// 讓「啟動要做哪些設定」只存在一處；日後新增 Crashlytics、Analytics、Performance
-/// 等啟動設定也都集中在此
 enum AppLaunchConfigurator {}
-
-// MARK: - Internal Method
-
-extension AppLaunchConfigurator {
-
-    /// 初始化 Firebase
-    ///
-    /// UI 測試模式略過遙測：避免測試流量混進分析，也讓冷啟動量測不含 Firebase 初始化成本
-    static func configure() {
-        #if DEBUG
-        guard !BLUITestConfiguration.current.isEnabled else {
-            return
-        }
-        #endif
-
-        FirebaseApp.configure()
-    }
-
-    /// 帶 UI 測試啟動參數時完成資料與依賴的前置注入
-    ///
-    /// 必須早於根 store 建立，否則依賴已定型、注入不生效
-    @MainActor
-    static func prepareUITestHarnessIfNeeded() {
-        #if DEBUG
-        BLUITestHarness.prepareIfNeeded()
-        #endif
-    }
-}
 
 // MARK: - Computed Properties
 
 extension AppLaunchConfigurator {
 
-    /// 本次啟動實際使用的 ``ModelContainer``
-    ///
-    /// UI 測試模式取 harness 的 in-memory container，其餘一律取 ``PersistenceContainer/shared``
+    /// 啟動時使用的持久層狀態；UI 測試已備妥測試資料庫時一律視為正常
     @MainActor
-    static var activeModelContainer: ModelContainer {
-        #if DEBUG
-        if let container = BLUITestHarness.modelContainer {
-            return container
+    static var activePersistenceStatus: PersistenceContainer.Status {
+#if DEBUG
+        if BLUITestHarness.modelContainer != nil {
+            return .healthy
         }
-        #endif
+#endif
 
-        return PersistenceContainer.shared
+        return PersistenceContainer.bootstrap.status
+    }
+}
+
+// MARK: - Internal Method
+
+extension AppLaunchConfigurator {
+
+    /// 帶 UI 測試啟動參數時完成資料與依賴的前置注入
+    @MainActor
+    static func prepareUITestHarnessIfNeeded() {
+#if DEBUG
+        BLUITestHarness.prepareIfNeeded()
+#endif
+    }
+
+    /// 初始化 Firebase 並強制開啟遙測，不讀取任何使用者偏好；資料庫開不起來時另外回報給崩潰診斷
+    ///
+    /// - Parameter crashDiagnosticsClient: 崩潰診斷服務；預設使用正式服務
+    /// - Note: 單元測試與 UI 測試模式下直接略過
+    static func configure(crashDiagnosticsClient: CrashDiagnosticsClient = .live) {
+        guard !RuntimeEnvironment.isUnitTesting else {
+            return
+        }
+
+#if DEBUG
+        guard !BLUITestConfiguration.current.isEnabled else {
+            return
+        }
+#endif
+
+        @Dependency(\.telemetryService) var telemetryService
+        telemetryService.enablePreInitializationCollection()
+
+        FirebaseApp.configure()
+        telemetryService.enableCollection()
+
+        if case .degraded(let reason) = PersistenceContainer.bootstrap.status {
+            crashDiagnosticsClient.record("SwiftData store could not open: \(reason)")
+        }
     }
 }

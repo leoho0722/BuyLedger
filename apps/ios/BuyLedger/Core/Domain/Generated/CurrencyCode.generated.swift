@@ -8,18 +8,19 @@
 
 import Foundation
 
-/// 交易幣別
-///
-/// rawValue 為 ISO 4217 三位代碼 (例如 "USD"、"TWD")。實際可用的幣別清單於執行期由匯率服務動態取得、不寫死；在地化顯示名稱依使用者地區動態解析，不硬編於資料模型
-struct CurrencyCode: Hashable, Identifiable, Sendable {
+/// 交易幣別的 ISO 4217 三位代碼
+struct CurrencyCode: Hashable, Sendable {
 
     // MARK: - Data Properties
 
-    /// 包裝的原始值
+    /// 實際保存的基礎值
     let rawValue: String
+}
 
-    // MARK: - Identifiable Properties
+// MARK: - Identifiable
 
-    /// 穩定識別值 (以 rawValue 表示)
+extension CurrencyCode: Identifiable {
+
+    /// 以實際保存的值作為穩定識別
     var id: String { rawValue }
 }

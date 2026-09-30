@@ -1,0 +1,49 @@
+# fixture：補上產線 schema 中，尚未被其他素材鏡射到的 (kind, traits, serialization) 組合。
+# 對應 datamodel-gen.test.ts「產線 trait 組合鏡射守門」：該守門掃描 schema/ 每個型別的組合，
+# 斷言 fixtures/schema 皆有型別鏡射；本檔即為讓該守門第一天就成立所需的鏡射型別
+types:
+  - name: SampleGrade
+    kind: enum
+    doc: 範例等級 (示範僅 serializable、不含 case-iterable 與 identity 的 enum trait 組合)。
+    traits: [serializable]
+    cases:
+      - name: basic
+        doc: 基本等級。
+      - name: premium
+        doc: 進階等級。
+
+  - name: SampleQuote
+    kind: entity
+    doc: 範例報價 (示範僅 value-equality、不含其他 trait 的 entity trait 組合)。
+    traits: [value-equality]
+    fields:
+      - name: label
+        type: string
+        doc: 報價標籤。
+      - name: amount
+        type: decimal
+        doc: 報價金額。
+
+  - name: SampleProfile
+    kind: entity
+    doc: 範例側寫 (示範 value-equality 與 serializable 併用、不含 identity 的 entity trait 組合)。
+    traits: [value-equality, serializable]
+    fields:
+      - name: name
+        type: string
+        doc: 顯示名稱。
+      - name: note
+        type: string
+        doc: 備註。
+
+  - name: SamplePreference
+    kind: entity
+    doc: 範例偏好設定 (示範 value-equality、hashable 與 serializable 併用的 entity trait 組合)。
+    traits: [value-equality, hashable, serializable]
+    fields:
+      - name: label
+        type: string
+        doc: 偏好標籤。
+      - name: isEnabled
+        type: bool
+        doc: 是否啟用。

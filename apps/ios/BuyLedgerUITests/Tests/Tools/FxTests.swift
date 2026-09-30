@@ -8,15 +8,18 @@
 import XCTest
 
 /// 匯率工具的進入、狀態橫幅與換算流程測試
-///
-/// 一律以 accessibility identifier 定位、對換算結果做非空的結構性斷言，不硬編精確金額 (匯率走固定快照 stub);
-/// 找不到 App 元素即附診斷失敗、不 skip。幣別原始值是業務鍵、不隨語言變動，故中英兩語言皆有效
 final class FxTests: BLUITestCase {
 
     // MARK: - Static Properties
 
-    /// 換算時選用的來源幣別原始值 (``BLAccessibilityID/OptionPicker/optionRow(_:)`` 的 key)
-    private static let selectedCurrency = "KRW"
+    /// 換算使用的非預設來源幣別 raw value
+    private static let selectedCurrency = "USD"
+
+    /// 匯率測試輸入的來源幣別金額
+    private static let inputAmount = "1000"
+
+    /// UI 測試固定匯率下的預期 TWD 顯示值
+    private static let expectedConvertedValue = "$32,468"
 
     // MARK: - Tests
 
@@ -34,12 +37,16 @@ final class FxTests: BLUITestCase {
         }
     }
 
-    /// 開幣別選擇器選 KRW 後回匯率頁，輸入金額後換算結果有值
+    /// 開幣別選擇器選 USD 後回匯率頁，輸入金額後換算結果正確
+    ///
+    /// - Throws: 換算結果元素不存在或沒有值時拋出測試錯誤
     @MainActor
-    func testFxConvertsAfterSelectingCurrencyAndAmount() {
+    func testFxConvertsAfterSelectingCurrencyAndAmount() throws(any Error) {
+        // Given：匯率頁已就緒，準備選取 USD
         let app = launch(LaunchOptions(seed: .empty))
         let fx = openFx(app)
 
+        // When：選取 USD 並輸入 1000
         fx.openCurrencyPicker()
 
         let picker = OptionPickerScreen(app: app)
@@ -59,14 +66,53 @@ final class FxTests: BLUITestCase {
             )
         }
 
+        fx.typeAmount(Self.inputAmount, in: app)
+
+        // Then：來源幣別與換算結果都應符合固定匯率
+        let summary = try requireValue(
+            fx.conversionSummary,
+            in: app,
+            "換算結果卡片沒有來源幣別資訊"
+        )
+        XCTAssertTrue(
+            summary.contains("1 \(Self.selectedCurrency)"),
+            "匯率頁來源幣別應為 \(Self.selectedCurrency)，實際為：\(summary)"
+        )
+
+        let missingValueMessage = "輸入金額後換算結果元素不存在"
+        let value = try requireValue(
+            fx.convertedValue,
+            in: app,
+            missingValueMessage
+        )
+        XCTAssertEqual(
+            value,
+            Self.expectedConvertedValue,
+            "1000 USD 依 UI 測試固定匯率應換算為 $32,468"
+        )
+    }
+
+    /// 連續輸入相同金額後，換算結果仍應只計入一次輸入值
+    ///
+    /// - Throws: 換算結果元素不存在或沒有值時拋出測試錯誤
+    @MainActor
+    func testRetypingSameAmountKeepsTheExpectedConversion() throws(any Error) {
+        // Given：匯率頁已就緒
+        let app = launch(LaunchOptions(seed: .empty))
+        let fx = openFx(app)
+
+        // When：連續兩次輸入相同金額
+        fx.typeAmount("1000", in: app)
         fx.typeAmount("1000", in: app)
 
-        if fx.convertedValue.isEmpty {
-            failWithDiagnostics(
-                in: app,
-                "輸入金額後換算結果「\(BLAccessibilityID.Fx.convertedValue)」的 value 仍為空"
-            )
-        }
+        // Then：換算結果應是單次輸入的固定結果
+        let missingValueMessage = "重複輸入後換算結果元素不存在"
+        let value = try requireValue(
+            fx.convertedValue,
+            in: app,
+            missingValueMessage
+        )
+        XCTAssertEqual(value, "$23")
     }
 }
 
@@ -75,10 +121,11 @@ final class FxTests: BLUITestCase {
 private extension FxTests {
 
     /// 從更多分頁導到匯率頁並等就緒，回傳匯率頁 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的匯率頁 Page Object
     @MainActor
     func openFx(
@@ -86,7 +133,7 @@ private extension FxTests {
         file: StaticString = #filePath,
         line: UInt = #line
     ) -> FxScreen {
-        let fx = FxScreen.open(from: app)
+        let fx = FxScreen.open(from: app, file: file, line: line)
         if !fx.waitUntilReady() {
             failWithDiagnostics(
                 in: app,

@@ -7,22 +7,10 @@
 
 import SwiftUI
 
-/// 決定徽章的尺寸與填色方式
-enum BLBadgeVariant {
-
-    // MARK: - Cases
-
-    /// 數量徽章
-    case count
-
-    /// 短文字標籤
-    case label
-}
-
 /// 顯示短文字或數量的徽章
 struct BLBadge: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// 徽章垂直內距，隨字級縮放
     @ScaledMetric(relativeTo: .caption) private var countVerticalPadding: CGFloat = 1
@@ -43,7 +31,7 @@ struct BLBadge: View {
     let tone: BLTone
 
     /// 徽章的尺寸與填色樣式
-    let variant: BLBadgeVariant
+    let variant: Variant
 
     // MARK: - Init
 
@@ -52,37 +40,71 @@ struct BLBadge: View {
     ///   - text: 徽章顯示的文字
     ///   - tone: 徽章使用的語意狀態
     ///   - variant: 徽章的尺寸與填色樣式
-    init(_ text: String, tone: BLTone = .accent, variant: BLBadgeVariant = .label) {
+    init(
+        _ text: String,
+        tone: BLTone = .accent,
+        variant: Variant = .label
+    ) {
         self.text = text
         self.tone = tone
         self.variant = variant
     }
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 徽章的畫面內容
     var body: some View {
-        // label variant 傳固定中文詞時需本地化
-        // count variant 的數字字串會 passthrough 不受影響
-        Text(LocalizedStringKey(text))
-            .font(variant == .count ? .caption.weight(.bold) : .caption2.weight(.bold))
-            .foregroundStyle(foregroundColor)
-            .lineLimit(1)
-            .padding(.vertical, variant == .count ? countVerticalPadding : labelVerticalPadding)
-            .padding(.horizontal, variant == .count ? countHorizontalPadding : labelHorizontalPadding)
-            .background(backgroundColor)
-            .clipShape(RoundedRectangle(cornerRadius: variant == .count ? BLRadius.pill : 4))
-            .monospacedDigit()
+        badgeContent
     }
 }
 
-// MARK: - Private Method
+// MARK: - Private Views
 
 private extension BLBadge {
 
+    /// 徽章的文字、間距與背景呈現
+    var badgeContent: some View {
+        // label variant 傳固定中文詞時需本地化
+        // count variant 的數字字串會 passthrough 不受影響
+        Text(LocalizedStringKey(text))
+            .padding(.vertical, variant == .count ? countVerticalPadding : labelVerticalPadding)
+            .padding(
+                .horizontal, variant == .count ? countHorizontalPadding : labelHorizontalPadding
+            )
+            .font(font.weight(.bold))
+            .monospacedDigit()
+            .foregroundStyle(foregroundColor)
+            .lineLimit(1)
+            .background(backgroundColor)
+            .clipShape(RoundedRectangle(cornerRadius: variant == .count ? BLRadius.pill : 4))
+    }
+}
+
+// MARK: - Nested Types
+
+extension BLBadge {
+
+    /// 決定徽章的尺寸與填色方式
+    enum Variant {
+
+        /// 數量徽章
+        case count
+
+        /// 短文字標籤
+        case label
+    }
+}
+
+// MARK: - Computed Properties
+
+private extension BLBadge {
+
+    /// 根據尺寸與填色樣式決定顯示字體類型
+    var font: Font {
+        (variant == .count ? BLTypographyStyle.caption : BLTypographyStyle.caption2).font
+    }
+
     /// 徽章文字使用的色彩
-    ///
-    /// count variant 的數字疊在實心指示色上，label variant 的文字疊在淡底上，兩者取不同軌道
     var foregroundColor: Color {
         switch variant {
         case .count:

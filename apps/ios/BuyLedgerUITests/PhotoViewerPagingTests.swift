@@ -8,14 +8,6 @@
 import XCTest
 
 /// 照片檢視器推進呈現與換頁的回歸測試
-///
-/// 檢視器由編輯表單以 push 呈現後，「推進是否成功」與「橫向換頁手勢是否仍可用」
-/// 都取決於宿主導覽堆疊的手勢環境，unit test 與 snapshot test 皆無法覆蓋，
-/// 只能以介面測試把「推進後可左右換頁、Back 可返回表單」釘住
-///
-/// 照片以 `photos` 種子直接注入 (帶滿張照片的訂單)，不再走系統照片選擇器；
-/// 全程以 accessibility identifier 定位：訂單清單列 → 詳情 → 更多 → 編輯 → 照片縮圖 → 檢視器，
-/// 找不到 App 元素即附診斷失敗、不 skip
 final class PhotoViewerPagingTests: BLUITestCase {
 
     // MARK: - Static Properties
@@ -25,7 +17,7 @@ final class PhotoViewerPagingTests: BLUITestCase {
 
     // MARK: - Tests
 
-    /// 開啟帶照片訂單的編輯表單、點縮圖：檢視器應推進呈現、可換頁、Back 返回表單
+    /// 驗證照片檢視器可換頁並返回編輯表單
     @MainActor
     func testPushedViewerPagesBetweenPhotosAndPopsBack() {
         let app = launch(LaunchOptions(seed: .photos))
@@ -70,9 +62,9 @@ private extension PhotoViewerPagingTests {
     /// 切到訂單分頁、點帶照片訂單進詳情、再從更多選單進編輯表單並等就緒
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
-    /// - Returns: 已就緒的訂單編輯 Page Object
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
+    /// - Returns: 已就緒的訂單編輯表單 Page Object
     @MainActor
     func openEditFormOfPhotoOrder(
         _ app: XCUIApplication,

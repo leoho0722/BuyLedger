@@ -8,28 +8,20 @@
 
 import Foundation
 
-/// 付款方式的領域型別
-///
-/// 除名稱外一併攜帶「是否為無卡類／銀行匯款／貨到付款」三個旗標，讓使用端不必只憑名稱字串另行查表判定該付款方式的類別
-struct PaymentMethodInfo: Equatable, Hashable, Sendable {
+/// 付款方式與無卡、銀行匯款、貨到付款三個旗標，避免只憑名稱判斷類型
+struct PaymentMethodInfo: Codable, Equatable, Hashable, Sendable {
 
     // MARK: - Data Properties
 
-    /// 付款方式名稱；同時作為主檔的識別值
+    /// 付款方式名稱，也是主檔識別值
     let name: String
 
-    /// 是否屬於「無卡」類付款方式 (例如「無卡」「無卡存款」)
-    ///
-    /// 選用此類付款方式時會啟用「無卡折抵金額」與「無卡補款金額」兩個欄位，並把這兩個值計入收益彙總
+    /// 是否為無卡付款
     let isCardless: Bool
 
-    /// 是否屬於「銀行匯款」類付款方式
-    ///
-    /// 與 isCardless 平行的獨立旗標；選用無卡或銀行匯款類付款方式時，會額外提供「對帳狀態」供事後人工標記對帳結果
+    /// 是否為銀行匯款
     let isBankTransfer: Bool
 
-    /// 是否屬於「貨到付款」類付款方式
-    ///
-    /// 與 isCardless、isBankTransfer 平行的獨立旗標；選用此類付款方式時會把訂單標記為貨到付款。由於貨到付款收取的金額已含預估的三種運費，收益計算會額外扣除國內／國際／來源國當地的國內運費
+    /// 是否為貨到付款
     let isCashOnDelivery: Bool
 }

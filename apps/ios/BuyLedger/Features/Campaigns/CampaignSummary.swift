@@ -8,8 +8,6 @@
 import Foundation
 
 /// 開團分貨清單中的單一客戶列
-///
-/// 由歸屬某開團的訂單依客戶名稱 (去頭尾空白) 分組彙總而來；本型別不保存任何持久化資料
 struct CampaignDistributionRow: Equatable, Identifiable, Sendable {
 
     // MARK: - Identifiable Properties
@@ -28,7 +26,7 @@ struct CampaignDistributionRow: Equatable, Identifiable, Sendable {
     /// 該客戶在此開團所有訂單的實收金額 (chargedAmount) 加總
     let totalAmount: Decimal
 
-    /// 是否全部已收款：該客戶在此開團的所有訂單收款狀態皆為 ``PaymentReceiptStatus/received`` 時為 `true`
+    /// 是否全部已收款
     let isFullyReceived: Bool
 
     /// 該客戶在此開團的訂單；供詳情頁展開檢視品項與逐筆收款
@@ -36,14 +34,6 @@ struct CampaignDistributionRow: Equatable, Identifiable, Sendable {
 }
 
 /// 開團 (Campaign) 的分貨與結算彙總
-///
-/// 完全 derive 自歸屬該開團的訂單 (單一真實來源，零雙重輸入)：依客戶名稱分組產生分貨清單
-///
-/// 以 ``LedgerOrder/chargedAmount`` 為基準算收款面 (應收／已收／未收)；重用 ``OrderSummary`` 加總算損益面 (成本／毛利／利潤率)
-///
-/// 到貨進度以已到貨比例 (分子為 ``OrderStatus/arrived`` 與 ``OrderStatus/delivered``；``OrderStatus/partiallyArrived`` 不計入分子但仍列入分母，分母僅排除 ``OrderStatus/cancelled`` 與 ``OrderStatus/merged``)
-///
-/// 所有彙總皆不依賴「現在」時間
 struct CampaignSummary: Equatable, Sendable {
 
     // MARK: - Data Properties
@@ -96,17 +86,19 @@ struct CampaignSummary: Equatable, Sendable {
     // MARK: - Init
 
     /// 依開團名稱與全部訂單建立彙總
-    ///
-    /// 成員規則 (統計採「合併前」的原始訂單)：僅「原始訂單」(非合併產生的) 且 ``LedgerOrder/campaignNames`` 包含該名稱者
-    ///
-    /// 由合併產生的新訂單不是成員，其收益由合併前舊單以原始金額與收款狀態入帳，避免重複計算
-    ///
-    /// 除此之外不加新的狀態過濾——分貨清單本來就需要報價中／已確認訂單
     /// - Parameters:
     ///   - campaignName: 開團名稱 (作為歸屬鍵)
     ///   - allOrders: 全部訂單
     init(campaignName: String, orders allOrders: [LedgerOrder]) {
-        let members = allOrders.filter { !$0.isMergeResult && $0.campaignNames.contains(campaignName) }
+        let members = allOrders.filter {
+            !$0.isMergeResult && $0.campaignNames.contains(campaignName)
+        }
+        self.init(members: members)
+    }
+
+    /// 由已篩選的訂單建立彙總
+    /// - Parameter members: 已排除合併來源、僅含歸屬此開團的訂單
+    private init(members: [LedgerOrder]) {
         self.memberOrders = members
         self.orderCount = members.count
 
@@ -127,15 +119,11 @@ struct CampaignSummary: Equatable, Sendable {
         self.profit = summaries.reduce(0) { $0 + $1.profit }
         self.margin = totalRevenue == 0 ? 0 : profit / totalRevenue
 
-        // 到貨進度分子計入已到貨、已交付與已取貨——已交付與已取貨必然已先到貨，三者皆算「已到貨」
-        self.arrivedCount = members.count {
-            $0.status == .arrived || $0.status == .delivered || $0.status == .pickedUp
-        }
+        // 已到貨、已交付與已取貨都算入到貨進度。
+        self.arrivedCount = members.count { OrderStatus.deliveryStatuses.contains($0.status) }
         // 到貨進度分母排除已取消與已合併——被合併的舊單已不再各自等待到貨
         self.activeCount = members.count { $0.status != .cancelled && $0.status != .merged }
-        self.deliveryRatio = activeCount == 0
-            ? 0
-            : Double(arrivedCount) / Double(activeCount)
+        self.deliveryRatio = activeCount == 0 ? 0 : Double(arrivedCount) / Double(activeCount)
 
         self.distribution = CampaignSummary.makeDistribution(from: members)
     }
@@ -145,6 +133,35 @@ struct CampaignSummary: Equatable, Sendable {
     /// 尚未全部收款的分貨列 (未付款名單)
     var unpaidDistribution: [CampaignDistributionRow] {
         distribution.filter { !$0.isFullyReceived }
+    }
+}
+
+// MARK: - Internal Method
+
+extension CampaignSummary {
+
+    /// 批次建立各開團彙總，單次掃描訂單
+    /// - Parameters:
+    ///   - campaignNames: 要投影的開團名稱清單
+    ///   - allOrders: 全部訂單
+    /// - Returns: 開團名稱到彙總的字典
+    static func batch(
+        campaignNames: [String],
+        orders allOrders: [LedgerOrder]
+    ) -> [String: CampaignSummary] {
+        let requestedNames = Set(campaignNames)
+        var membersByCampaignName: [String: [LedgerOrder]] = [:]
+        for order in allOrders where !order.isMergeResult {
+            for name in order.campaignNames where requestedNames.contains(name) {
+                membersByCampaignName[name, default: []].append(order)
+            }
+        }
+
+        var result: [String: CampaignSummary] = [:]
+        for name in campaignNames where result[name] == nil {
+            result[name] = CampaignSummary(members: membersByCampaignName[name] ?? [])
+        }
+        return result
     }
 }
 
@@ -175,7 +192,9 @@ private extension CampaignSummary {
                     orders: orders.sorted { $0.date > $1.date }
                 )
             }
-            .sorted { $0.customerName.localizedStandardCompare($1.customerName) == .orderedAscending }
+            .sorted {
+                $0.customerName.localizedStandardCompare($1.customerName) == .orderedAscending
+            }
     }
 
     /// 安全比例計算：分母為 0 時回傳 0，避免除以零

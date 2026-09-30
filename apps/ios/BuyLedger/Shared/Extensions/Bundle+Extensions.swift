@@ -7,18 +7,29 @@
 
 import Foundation
 
-/// 用來定位 App bundle 的識別型別
-///
-/// 只作為 ``Bundle/assets`` 的查找依據，本身不持有任何行為
-private final class BundleToken {}
-
-// MARK: - Static Properties
+// MARK: - Properties
 
 extension Bundle {
 
+    /// 用來定位 App bundle 的識別型別
+    private final class Token {}
+
     /// 存放 asset catalog 的 bundle
-    ///
-    /// 不直接用 ``Bundle/main``：單元測試在測試執行器的行程中載入時，`main` 會指向執行器而非 App，
-    /// 使具名色彩靜默回退為系統預設色
-    static let assets = Bundle(for: BundleToken.self)
+    static let assets = Bundle(for: Token.self)
+}
+
+// MARK: - Computed Properties
+
+extension Bundle {
+
+    /// App 的短版號與建置號文字，格式為「短版號 (建置號)」；讀不到時以破折號替代
+    static var appVersion: String {
+        let infoDictionary = Bundle.main.infoDictionary
+        let shortVersion = infoDictionary?["CFBundleShortVersionString"] as? String
+        let buildVersion = infoDictionary?["CFBundleVersion"] as? String
+        guard let shortVersion, let buildVersion else {
+            return "—"
+        }
+        return "\(shortVersion) (\(buildVersion))"
+    }
 }

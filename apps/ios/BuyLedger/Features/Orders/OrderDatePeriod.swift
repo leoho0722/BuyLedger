@@ -50,7 +50,7 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
         .all,
         .thisWeek,
         .thisMonth,
-        .lastMonth
+        .lastMonth,
     ]
 
     // MARK: - Display Properties
@@ -80,7 +80,11 @@ extension OrderDatePeriod {
     ///   - referenceDate: 計算「本週/本月」等相對區間的基準日，通常為現在時間
     ///   - calendar: 用來計算區間的曆法
     /// - Returns: 若 `.all` 永遠回傳 `true`，否則只在 `date` 落於區間內時回傳 `true`
-    func includes(_ date: Date, referenceDate: Date, calendar: Calendar) -> Bool {
+    func includes(
+        _ date: Date,
+        referenceDate: Date,
+        calendar: Calendar
+    ) -> Bool {
         guard let range = dateRange(referenceDate: referenceDate, calendar: calendar) else {
             return true
         }
@@ -92,7 +96,7 @@ extension OrderDatePeriod {
     /// - Parameters:
     ///   - referenceDate: 計算區間的基準日
     ///   - calendar: 用來計算區間的曆法
-    /// - Returns: `.all` 回傳 `nil`，其他狀態回傳半開區間 `[start, end)`；若曆法無法解析則回傳 `nil`
+    /// - Returns: `.all` 回傳 `nil`，其他值回傳日期區間
     func dateRange(referenceDate: Date, calendar: Calendar) -> Range<Date>? {
         switch self {
         case .all:
@@ -114,7 +118,11 @@ extension OrderDatePeriod {
 
         case .lastMonth:
             guard let thisMonthInterval = calendar.dateInterval(of: .month, for: referenceDate),
-                  let lastMonthStart = calendar.date(byAdding: .month, value: -1, to: thisMonthInterval.start) else {
+                  let lastMonthStart = calendar.date(
+                    byAdding: .month,
+                    value: -1,
+                    to: thisMonthInterval.start
+                  ) else {
                 return nil
             }
 

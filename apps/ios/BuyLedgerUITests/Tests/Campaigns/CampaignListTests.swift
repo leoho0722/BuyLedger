@@ -8,9 +8,6 @@
 import XCTest
 
 /// 開團列表的瀏覽與空狀態流程測試
-///
-/// 一律以 accessibility identifier 定位、以開團 id 這個業務鍵做結構性斷言，不硬編筆數；找不到 App 元素即附診斷失敗、不 skip。
-/// 兩個既知種子開團的 id 不隨語言變動，故中英兩語言皆有效
 final class CampaignListTests: BLUITestCase {
 
     // MARK: - Static Properties
@@ -41,7 +38,7 @@ final class CampaignListTests: BLUITestCase {
         let app = launch(LaunchOptions(seed: .empty))
 
         let root = RootNavigationScreen(app: app)
-        if !root.goToCampaigns() {
+        if !root.goToCampaigns(file: #filePath, line: #line) {
             failWithDiagnostics(in: app, "切到開團分頁後畫面未就緒")
         }
 
@@ -54,10 +51,11 @@ final class CampaignListTests: BLUITestCase {
 private extension CampaignListTests {
 
     /// 切到開團分頁並等列表就緒，回傳開團列表 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的開團列表 Page Object
     @MainActor
     func openCampaignsList(
@@ -66,7 +64,7 @@ private extension CampaignListTests {
         line: UInt = #line
     ) -> CampaignsScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToCampaigns() {
+        if !root.goToCampaigns(file: file, line: line) {
             failWithDiagnostics(in: app, "切到開團分頁後畫面未就緒", file: file, line: line)
         }
 

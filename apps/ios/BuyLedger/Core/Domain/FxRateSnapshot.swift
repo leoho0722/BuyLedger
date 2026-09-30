@@ -7,19 +7,17 @@
 
 import Foundation
 
-// MARK: - Static Properties
+// MARK: - Properties
 
 extension FxRateSnapshot {
 
-    /// 預設快照：使用 ``FxRates/toTwd`` 為基礎組成的範例 snapshot，僅供 SwiftUI Preview (``ExchangeRateClient/previewValue``) 與單元測試使用
-    ///
-    /// **runtime 不應讀取此值**——若 API 失敗，feature 應顯示錯誤訊息、所有匯率欄位顯示「—」，避免讓使用者誤以為看到的是即時匯率
+    /// Preview 與測試使用的預設匯率快照
     static let fallback: FxRateSnapshot = {
         var rates: [CurrencyCode: Decimal] = [:]
-        for (currency, rateToTwd) in FxRates.toTwd where currency != CurrencyCode.twd {
+        for (currency, rateToTWD) in FxRates.toTWD where currency != CurrencyCode.twd {
             // 把「1 currency = X TWD」轉成「1 TWD = (1/X) currency」
-            if rateToTwd > 0 {
-                rates[currency] = Decimal(1) / rateToTwd
+            if rateToTWD > 0 {
+                rates[currency] = Decimal(1) / rateToTWD
             }
         }
         rates[CurrencyCode.twd] = 1
@@ -30,4 +28,29 @@ extension FxRateSnapshot {
             rates: rates
         )
     }()
+}
+
+// MARK: - Internal Method
+
+extension FxRateSnapshot {
+
+    /// 將快照中的匯率換算成一單位指定幣別對應的新台幣金額
+    ///
+    /// - Parameter currency: 要換算的幣別
+    /// - Returns: 一單位指定幣別的新台幣匯率，無法換算時為 `nil`
+    func twdRate(for currency: CurrencyCode) -> Decimal? {
+        if currency == .twd {
+            return 1
+        }
+
+        if base == .twd, let rate = rates[currency], rate > 0 {
+            return 1 / rate
+        }
+
+        if base == currency {
+            return rates[.twd]
+        }
+
+        return nil
+    }
 }

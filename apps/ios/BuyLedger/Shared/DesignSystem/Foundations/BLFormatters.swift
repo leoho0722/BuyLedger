@@ -1,0 +1,79 @@
+//
+//  BLFormatters.swift
+//  BuyLedger
+//
+//  Created by Leo Ho on 2026/7/30.
+//
+
+import Foundation
+
+/// 金額、百分比與日期呈現規則的唯一入口
+enum BLFormatters {}
+
+// MARK: - Internal Method
+
+extension BLFormatters {
+
+    /// 依指定 locale 將日期格式化為列表使用的月日短日期
+    ///
+    /// - Parameters:
+    ///   - date: 要格式化的日期
+    ///   - locale: 用於呈現的 locale
+    /// - Returns: 月日格式字串
+    static func shortDate(_ date: Date, locale: Locale) -> String {
+        date.formatted(
+            .dateTime
+                .month(.defaultDigits)
+                .day(.defaultDigits)
+                .locale(locale)
+        )
+    }
+
+    /// 依指定 locale 將金額格式化為新台幣 (無小數位)
+    /// - Parameters:
+    ///   - amount: 金額
+    ///   - locale: 用於呈現的 locale
+    /// - Returns: 含 NT$ 前綴的字串
+    static func twd(_ amount: Decimal, locale: Locale) -> String {
+        amount.formatted(
+            .currency(code: "TWD")
+            .precision(.fractionLength(0))
+            .locale(locale)
+        )
+    }
+
+    /// 依指定 locale 將金額格式化為新台幣；`nil` 顯示為「—」
+    /// - Parameters:
+    ///   - amount: 金額，`nil` 代表無可用資料
+    ///   - locale: 用於呈現的 locale
+    /// - Returns: 含 NT$ 前綴的字串，或無資料時的「—」佔位符
+    static func twd(_ amount: Decimal?, locale: Locale) -> String {
+        guard let amount else {
+            return "—"
+        }
+        return twd(amount, locale: locale)
+    }
+
+    /// 依指定 locale 將比例格式化為百分比
+    /// - Parameters:
+    ///   - ratio: 0 到 1 的比例，例如 0.654 表示 65.4%
+    ///   - locale: 用於呈現的 locale
+    ///   - fractionLength: 小數位數，預設為 1
+    /// - Returns: 依指定小數位數呈現的百分比字串
+    static func percent(
+        _ ratio: Decimal,
+        locale: Locale,
+        fractionLength: Int = 1
+    ) -> String {
+        ratio.formatted(.percent.precision(.fractionLength(fractionLength)).locale(locale))
+    }
+
+    /// 依指定 locale 將已是百分比尺度的數值格式化為百分比字串
+    /// - Parameters:
+    ///   - value: 百分比數值，例如 65.4 表示 65.4%
+    ///   - locale: 用於呈現的 locale
+    /// - Returns: 含一位小數的百分比字串
+    static func percent(scaled value: Decimal, locale: Locale) -> String {
+        (value / 100).formatted(.percent.precision(.fractionLength(1)).locale(locale))
+    }
+}

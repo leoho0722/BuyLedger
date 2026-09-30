@@ -23,7 +23,7 @@ enum InsightsDateRange: String, CaseIterable, Identifiable, Sendable {
 
     // MARK: - Identifiable Properties
 
-    /// 區間穩定識別
+    /// 穩定識別值
     var id: String { rawValue }
 
     // MARK: - Display Properties
@@ -40,7 +40,7 @@ enum InsightsDateRange: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// 顯示在 trend card 上的子標題
+    /// 趨勢卡片標題
     var trendCardTitle: String {
         switch self {
         case .thirtyDays:

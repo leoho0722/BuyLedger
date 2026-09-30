@@ -29,39 +29,45 @@ struct CampaignEditView: View {
         NavigationStack {
             Form {
                 Section("開團資訊") {
-                    TextField("開團名稱", text: $store.draftName)
+                    TextField("開團名稱", text: $store.draft.name)
                         .textContentType(.none)
                         .focused($focusedField, equals: .name)
                         .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.nameField)
 
+                    if let nameConflictMessage = store.nameConflictMessage {
+                        Text(LocalizedStringKey(nameConflictMessage))
+                            .blTextStyle(.footnote)
+                            .foregroundStyle(BLPalette().red)
+                    }
+
                     DatePicker(
                         "開團日期",
-                        selection: $store.draftOpenDate,
+                        selection: $store.draft.openDate,
                         displayedComponents: .date
                     )
                     .environment(\.locale, locale)
 
                     DatePicker(
                         "結單日期",
-                        selection: $store.draftCloseDate,
+                        selection: $store.draft.closeDate,
                         displayedComponents: .date
                     )
                     .environment(\.locale, locale)
 
-                    Picker("狀態", selection: $store.draftStatus) {
+                    Picker("狀態", selection: $store.draft.status) {
                         ForEach(CampaignStatus.allCases) { status in
                             Text(LocalizedStringKey(status.title)).tag(status)
                         }
                     }
 
-                    Toggle("訂購提醒", isOn: $store.wantsReminder)
+                    Toggle("訂購提醒", isOn: $store.draft.wantsReminder)
                         .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.reminderToggle)
 
-                    if store.wantsReminder {
-                        // 提醒時間以原生 inline DatePicker 編輯 (同上方開團／結單日期列)，點擊跳系統月曆／時間浮層
+                    if store.draft.wantsReminder {
+                        // 提醒時間沿用原生 inline DatePicker
                         DatePicker(
                             "提醒時間",
-                            selection: $store.reminderTimestamp,
+                            selection: $store.draft.reminderTimestamp,
                             displayedComponents: [.date, .hourAndMinute]
                         )
                         .environment(\.locale, locale)
@@ -69,7 +75,7 @@ struct CampaignEditView: View {
                 }
 
                 Section("備註") {
-                    TextField("選填", text: $store.draftNotes, axis: .vertical)
+                    TextField("選填", text: $store.draft.notes, axis: .vertical)
                         .textContentType(.none)
                         .focused($focusedField, equals: .notes)
                         .lineLimit(2...5)
@@ -100,7 +106,9 @@ struct CampaignEditView: View {
                     .buttonStyle(.borderedProminent)
                     .accessibilityLabel(Text("儲存"))
                     .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.saveButton)
-                    .disabled(store.draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                    .disabled(
+                        store.draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+                    )
                 }
             }
         }

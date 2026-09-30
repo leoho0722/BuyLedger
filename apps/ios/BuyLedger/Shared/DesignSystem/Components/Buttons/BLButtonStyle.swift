@@ -7,54 +7,62 @@
 
 import SwiftUI
 
-/// BuyLedger 支援的按鈕語意
-enum BLButtonVariant {
-
-    // MARK: - Cases
-
-    /// 主要操作
-    case primary
-
-    /// 次要操作
-    case secondary
-
-    /// 不帶背景的文字操作
-    case plain
-}
-
 /// 使用設計系統色彩與最小觸控高度的按鈕樣式
-struct BLButtonStyle: ButtonStyle {
+struct BLButtonStyle {
 
-    // MARK: - View Properties
-
-    /// 目前系統深淺色外觀
-    @Environment(\.colorScheme) private var colorScheme
+    // MARK: - Properties
 
     /// 是否已開啟「減少動態效果」
-    ///
-    /// 動畫在來源處統一處理：新增任何動畫前都要先過這個判斷，而不是在各呼叫端各自關閉
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     /// 目前按鈕是否可用
-    ///
-    /// 自繪背景的樣式必須自行讀取此值——否則停用的按鈕外觀與可用時完全相同，
-    /// 使用者按下去沒反應卻沒有任何線索
     @Environment(\.isEnabled) private var isEnabled
 
     /// 按鈕的語意樣式
-    let variant: BLButtonVariant
+    let variant: Variant
+}
 
-    // MARK: - View Body
+// MARK: - Nested Types
+
+extension BLButtonStyle {
+
+    /// BuyLedger 支援的按鈕語意
+    enum Variant {
+
+        /// 主要操作
+        case primary
+
+        /// 次要操作
+        case secondary
+
+        /// 不帶背景的文字操作
+        case plain
+    }
+}
+
+// MARK: - Computed Properties
+
+private extension BLButtonStyle {
+
+    /// 目前外觀對應的色盤
+    var palette: BLPalette {
+        BLPalette()
+    }
+}
+
+// MARK: - ButtonStyle
+
+extension BLButtonStyle: ButtonStyle {
 
     /// 回傳套用樣式後的按鈕內容
+    /// - Parameter configuration: 按鈕目前的互動狀態
+    /// - Returns: 套用樣式後的按鈕內容
     func makeBody(configuration: Configuration) -> some View {
-        let palette = BLPalette()
-
         configuration.label
-            .font(.headline)
-            .foregroundStyle(foregroundColor(palette: palette))
-            .frame(minHeight: minimumHeight)
             .padding(.horizontal, variant == .plain ? 0 : 18)
+            .frame(minHeight: BLHitTarget.minimum)
+            .blTextStyle(.headline)
+            .foregroundStyle(foregroundColor(palette: palette))
             .background(backgroundColor(palette: palette))
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
             .opacity(opacity(isPressed: configuration.isPressed))
@@ -63,53 +71,7 @@ struct BLButtonStyle: ButtonStyle {
     }
 }
 
-// MARK: - Private Method
-
-private extension BLButtonStyle {
-
-    /// 最小按鈕高度
-    var minimumHeight: CGFloat { BLHitTarget.minimum }
-
-    /// 依按壓與啟用狀態決定不透明度
-    ///
-    /// 與系統按鈕樣式一致：停用時整體降低不透明度
-    /// - Parameter isPressed: 按鈕目前是否被按住
-    /// - Returns: 套用於按鈕整體的不透明度
-    func opacity(isPressed: Bool) -> Double {
-        guard isEnabled else {
-            return 0.4
-        }
-        return isPressed ? 0.72 : 1
-    }
-
-    /// 回傳按鈕前景色
-    /// - Parameter palette: 目前外觀對應的色盤
-    /// - Returns: 按鈕文字與圖示使用的色彩
-    func foregroundColor(palette: BLPalette) -> Color {
-        switch variant {
-        case .primary:
-                .white
-        case .secondary, .plain:
-            palette.accent
-        }
-    }
-
-    /// 回傳按鈕背景色
-    /// - Parameter palette: 目前外觀對應的色盤
-    /// - Returns: 按鈕背景使用的色彩
-    func backgroundColor(palette: BLPalette) -> Color {
-        switch variant {
-        case .primary:
-            palette.accent
-        case .secondary:
-            palette.fillTertiary
-        case .plain:
-                .clear
-        }
-    }
-}
-
-// MARK: - Static Properties
+// MARK: - BuyLedger Button Styles
 
 extension ButtonStyle where Self == BLButtonStyle {
 
@@ -126,6 +88,47 @@ extension ButtonStyle where Self == BLButtonStyle {
     /// 純文字操作按鈕
     static var blPlain: BLButtonStyle {
         BLButtonStyle(variant: .plain)
+    }
+}
+
+// MARK: - Private Method
+
+private extension BLButtonStyle {
+
+    /// 依按壓與啟用狀態決定不透明度
+    /// - Parameter isPressed: 按鈕目前是否被按住
+    /// - Returns: 套用於按鈕整體的不透明度
+    func opacity(isPressed: Bool) -> Double {
+        guard isEnabled else {
+            return 0.4
+        }
+        return isPressed ? 0.72 : 1
+    }
+
+    /// 回傳按鈕前景色
+    /// - Parameter palette: 目前外觀對應的色盤
+    /// - Returns: 按鈕文字與圖示使用的色彩
+    func foregroundColor(palette: BLPalette) -> Color {
+        switch variant {
+        case .primary:
+            .white
+        case .secondary, .plain:
+            palette.accent
+        }
+    }
+
+    /// 回傳按鈕背景色
+    /// - Parameter palette: 目前外觀對應的色盤
+    /// - Returns: 按鈕背景使用的色彩
+    func backgroundColor(palette: BLPalette) -> Color {
+        switch variant {
+        case .primary:
+            palette.accent
+        case .secondary:
+            palette.fillTertiary
+        case .plain:
+            .clear
+        }
     }
 }
 

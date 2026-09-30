@@ -5,29 +5,64 @@
 //  Created by Leo Ho on 2026/5/2.
 //
 
-import Foundation
+import OSLog
 import SwiftData
 
-/// 建立 BuyLedger 用的 ``ModelContainer`` 的工廠
-///
-/// App 預設以純本機方式運行 (``CloudKitOption/disabled``)
-///
-/// 要切換成 CloudKit 同步時，把 `BuyLedgerApp` 中 ``makeForApp()`` 換成 ``make(cloudKit:inMemoryOnly:)``、傳入 `.privateContainer("iCloud.com.leoho.BuyLedger")`，並補上 iCloud 與 Background Modes capabilities 即可
+/// 建立 BuyLedger 的 `ModelContainer`，並記錄啟動時本機資料庫是否開得起來
 enum PersistenceContainer {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
-    /// 整個 App 共用的 production container
-    ///
-    /// 多個 repository (``OrderRepository`` / ``CategoryRepository`` / ``PaymentMethodRepository``) 若各自呼叫 ``makeForApp()`` 會各自建立 `ModelContainer` 物件；雖然底層 SQLite 檔同名，但兩個 container 在同一個 process 內並存可能造成 SwiftData 內部狀態錯亂
-    ///
-    /// 透過共享同一個 container 讓所有 repo 走同一條資料管線
-    nonisolated static let shared: ModelContainer = makeForApp()
+    /// App 執行期間只建立一次的啟動結果；正式環境的 `ModelContainer` 只由這裡取得
+    static let bootstrap = makeBootstrap()
 }
 
 // MARK: - Nested Types
 
 extension PersistenceContainer {
+
+    /// App 持久層啟動結果
+    struct Bootstrap: Sendable {
+
+        /// 可供 SwiftData 使用的 `ModelContainer`；啟動狀態為 `degraded` 時是空的記憶體資料庫
+        let container: ModelContainer
+
+        /// 本機資料庫的開啟結果，決定能否呈現正常介面
+        let status: Status
+    }
+
+    /// App 持久層啟動狀態
+    enum Status: Equatable, Sendable {
+
+        /// 本機資料庫正常開啟
+        case healthy
+
+        /// 本機資料庫無法開啟
+        ///
+        /// - Parameter reason: 資料庫無法開啟的原因，供 Crashlytics 記錄
+        case degraded(reason: String)
+    }
+
+    /// 記憶體資料庫的使用情境
+    enum InMemoryContext: Sendable {
+
+        /// SwiftUI Preview
+        case preview
+
+        /// 單元測試與 UI 測試
+        case testing
+
+        /// 顯示在建立失敗訊息中的用途名稱
+        var label: String {
+            switch self {
+            case .preview:
+                "Preview"
+
+            case .testing:
+                "Test"
+            }
+        }
+    }
 
     /// CloudKit 同步策略
     enum CloudKitOption: Equatable, Sendable {
@@ -38,17 +73,21 @@ extension PersistenceContainer {
         /// 由 SwiftData 自動從 entitlements 推斷 CloudKit container ID
         case automatic
 
-        /// 指定特定 CloudKit container ID 的私人資料庫 (例如 `"iCloud.com.leoho.BuyLedger"`)
+        /// 同步到自訂 container 的 CloudKit 私有資料庫
+        ///
+        /// - Parameter identifier: CloudKit container 的 ID
         case privateContainer(String)
 
         /// 對應到 ``ModelConfiguration/CloudKitDatabase`` 的設定值
-        nonisolated var modelConfigurationValue: ModelConfiguration.CloudKitDatabase {
+        var modelConfigurationValue: ModelConfiguration.CloudKitDatabase {
             switch self {
             case .disabled:
                 return .none
+
             case .automatic:
                 return .automatic
-            case let .privateContainer(identifier):
+
+            case .privateContainer(let identifier):
                 return .private(identifier)
             }
         }
@@ -59,88 +98,168 @@ extension PersistenceContainer {
 
 extension PersistenceContainer {
 
-    /// 為 App 執行時建立 ``ModelContainer``
+    /// 建立只存在記憶體中的 `ModelContainer`
     ///
-    /// 為了能夠從 nonisolated 的 dependency container (如 `OrderRepository.liveValue`) 中安全呼叫，整個函式採 `nonisolated`
-    ///
-    /// 並且明確帶入所有 `ModelConfiguration` 參數，避免 SDK 預設值 (例如 `groupContainer: .automatic`) 的 main-actor 隔離影響
-    /// - Parameters:
-    ///   - cloudKit: CloudKit 同步策略，預設 ``CloudKitOption/disabled``
-    ///   - inMemoryOnly: 是否僅存於記憶體 (測試與 preview 用途)，預設 `false`
-    /// - Returns: 已套用設定的 ``ModelContainer``
-    nonisolated static func make(
-        cloudKit: CloudKitOption = .disabled,
-        inMemoryOnly: Bool = false
-    ) throws -> ModelContainer {
-        let schema = Schema(versionedSchema: BuyLedgerSchemaV16.self)
-
-        let configuration = ModelConfiguration(
-            "BuyLedger",
-            schema: schema,
-            isStoredInMemoryOnly: inMemoryOnly,
-            allowsSave: true,
-            groupContainer: .none,
-            cloudKitDatabase: cloudKit.modelConfigurationValue
-        )
-
-        return try ModelContainer(
-            for: schema,
-            migrationPlan: BuyLedgerMigrationPlan.self,
-            configurations: configuration
-        )
-    }
-
-    /// 建立純本機、no-CloudKit 的 production container；當 ``ModelContainer`` 初始化失敗時 fall back 為 in-memory，避免 App 直接 crash
-    /// - Returns: production 用的 ``ModelContainer``
-    nonisolated static func makeForApp() -> ModelContainer {
+    /// - Parameter context: 使用情境，建立失敗時用來標示訊息中的用途
+    /// - Returns: 沒有任何資料的記憶體資料庫容器
+    /// - Note: 建立失敗代表資料庫定義有誤，會直接中止 App
+    static func makeInMemory(for context: InMemoryContext) -> ModelContainer {
         do {
-            return try make(cloudKit: .disabled)
+            return try make(isInMemoryOnly: true, storeURL: nil)
         } catch {
-            // SwiftData 初始化失敗 — 通常是 schema 改動但缺自訂 migration plan
-            // 開發階段 App 尚未上架，把舊 store 整批清除後重建是最穩定的恢復策略；
-            // 真的需要保留資料時應改寫 `SchemaMigrationPlan` 取代這段 fallback
-            print("[BuyLedger] SwiftData 初始化失敗，將清除舊 store 後重建：\(error)")
-
-            resetStoreFiles()
-
-            do {
-                return try make(cloudKit: .disabled)
-            } catch {
-                print("[BuyLedger] 重建仍失敗，退回 in-memory：\(error)")
-                // swiftlint:disable:next force_try
-                return try! make(cloudKit: .disabled, inMemoryOnly: true)
-            }
+            fatalError(
+                "Unable to create the \(context.label) in-memory container: \(error.localizedDescription)"
+            )
         }
     }
+
+#if DEBUG
+    /// 以指定路徑的資料庫檔建立啟動結果，讓測試檢查資料庫開得起來與開不起來時的結果；不影響正式的 `bootstrap`
+    ///
+    /// - Parameter storeURL: 測試用的資料庫檔案路徑
+    /// - Returns: 資料庫打得開時狀態為 `.healthy`，打不開時改用記憶體資料庫且狀態為 `.degraded`
+    static func makeBootstrapForTesting(storeURL: URL) -> Bootstrap {
+        makeBootstrap(storeURL: storeURL)
+    }
+
+    /// 建立 UI 測試可跨 App 重啟使用的本機 `ModelContainer`
+    ///
+    /// - Parameter storeURL: UI 測試用的資料庫檔案路徑
+    /// - Returns: 存在指定路徑的本機 `ModelContainer`
+    /// - Throws: 資料庫所在資料夾或資料庫建立失敗時拋出 `.containerCreationFailed(underlying:)`
+    static func makePersistentForTesting(storeURL: URL) throws(PersistenceError) -> ModelContainer {
+        try make(isInMemoryOnly: false, storeURL: storeURL)
+    }
+#endif
 }
 
 // MARK: - Private Method
 
 private extension PersistenceContainer {
 
-    /// 嘗試刪除 `Application Support` 內的 SwiftData store 與相關 sidecar 檔 (`-wal` / `-shm`)
-    nonisolated static func resetStoreFiles() {
-        let fileManager = FileManager.default
-        guard let support = try? fileManager.url(
-            for: .applicationSupportDirectory,
-            in: .userDomainMask,
-            appropriateFor: nil,
-            create: false
-        ) else {
-            return
+    /// 建立 `Bootstrap`；磁碟上的資料庫打不開時，改用暫存在記憶體的空資料庫
+    ///
+    /// - Parameter storeURL: 指定資料庫位置；未提供時使用系統預設位置
+    /// - Returns: 含 `ModelContainer` 的啟動結果，改用記憶體資料庫時狀態會帶著失敗原因
+    static func makeBootstrap(storeURL: URL? = nil) -> Bootstrap {
+        do {
+            return Bootstrap(
+                container: try make(isInMemoryOnly: false, storeURL: storeURL),
+                status: .healthy
+            )
+        } catch {
+            let reason = error.localizedDescription
+            AppLogger.persistence.fault(
+                "SwiftData store could not open: \(reason, privacy: .public)"
+            )
+
+            do {
+                return Bootstrap(
+                    container: try make(isInMemoryOnly: true, storeURL: nil),
+                    status: .degraded(reason: reason)
+                )
+            } catch {
+                let message = error.localizedDescription
+                AppLogger.persistence.fault(
+                    "SwiftData in-memory fallback could not open: \(message, privacy: .public)"
+                )
+                fatalError(
+                    "SwiftData schema definition is invalid and cannot create an in-memory container."
+                )
+            }
+        }
+    }
+
+    /// 建立 `ModelContainer`，可選擇存在磁碟或記憶體
+    ///
+    /// - Parameters:
+    ///   - isInMemoryOnly: 是否只建立記憶體中的資料庫；有指定 `storeURL` 時以路徑為準
+    ///   - storeURL: 資料庫路徑；`nil` 時，磁碟資料庫使用系統預設位置
+    /// - Returns: 對應的 `ModelContainer`
+    /// - Throws: 取得 Application Support、建立資料庫所在資料夾或建立 `ModelContainer` 失敗時拋出
+    ///   `.containerCreationFailed(underlying:)`
+    static func make(
+        isInMemoryOnly: Bool,
+        storeURL: URL?
+    ) throws(PersistenceError) -> ModelContainer {
+        let schema = Schema(versionedSchema: BuyLedgerSchemaV17.self)
+
+        let configuration: ModelConfiguration
+        if let persistentStoreURL = try resolvePersistentStoreURL(
+            requestedURL: storeURL,
+            isInMemoryOnly: isInMemoryOnly
+        ) {
+            configuration = ModelConfiguration(
+                "BuyLedger",
+                schema: schema,
+                url: persistentStoreURL,
+                allowsSave: true,
+                cloudKitDatabase: CloudKitOption.disabled.modelConfigurationValue
+            )
+        } else {
+            configuration = ModelConfiguration(
+                "BuyLedger",
+                schema: schema,
+                isStoredInMemoryOnly: isInMemoryOnly,
+                allowsSave: true,
+                groupContainer: .none,
+                cloudKitDatabase: CloudKitOption.disabled.modelConfigurationValue
+            )
         }
 
-        let candidates = [
-            "BuyLedger.store",
-            "BuyLedger.store-wal",
-            "BuyLedger.store-shm",
-            "default.store",
-            "default.store-wal",
-            "default.store-shm",
-        ].map { support.appendingPathComponent($0) }
-
-        for url in candidates where fileManager.fileExists(atPath: url.path) {
-            try? fileManager.removeItem(at: url)
+        let container = try PersistenceError.mapContainerCreation {
+            try ModelContainer(
+                for: schema,
+                migrationPlan: BuyLedgerMigrationPlan.self,
+                configurations: configuration
+            )
         }
+
+        return container
+    }
+
+    /// 決定磁碟資料庫的檔案路徑並建立其所在資料夾
+    ///
+    /// - Parameters:
+    ///   - requestedURL: 呼叫端指定的資料庫路徑；`nil` 時使用 Application Support 資料夾
+    ///   - isInMemoryOnly: 是否只建立記憶體中的資料庫
+    /// - Returns: 磁碟資料庫的檔案路徑；不需要磁碟資料庫時為 `nil`
+    /// - Throws: 取得 Application Support 或建立資料庫所在資料夾失敗時拋出
+    ///   `.containerCreationFailed(underlying:)`
+    static func resolvePersistentStoreURL(
+        requestedURL: URL?,
+        isInMemoryOnly: Bool
+    ) throws(PersistenceError) -> URL? {
+        guard !isInMemoryOnly || requestedURL != nil else {
+            return nil
+        }
+
+        let storeURL: URL
+        if let requestedURL {
+            storeURL = requestedURL
+        } else {
+            do {
+                let applicationSupport = try FileManager.default.url(
+                    for: .applicationSupportDirectory,
+                    in: .userDomainMask,
+                    appropriateFor: nil,
+                    create: true
+                )
+                storeURL = applicationSupport.appendingPathComponent("BuyLedger.store")
+            } catch {
+                throw .containerCreationFailed(underlying: error as NSError)
+            }
+        }
+
+        do {
+            try FileManager.default.createDirectory(
+                at: storeURL.deletingLastPathComponent(),
+                withIntermediateDirectories: true
+            )
+        } catch {
+            throw .containerCreationFailed(underlying: error as NSError)
+        }
+
+        return storeURL
     }
 }

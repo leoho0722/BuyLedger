@@ -10,7 +10,7 @@ import Foundation
 
 /// 範例訂單 (示範型別映射、nullable 與 default 規則)
 ///
-/// 涵蓋基礎型別、容器、跨檔引用，以及顯式 init 為 nullable 欄位補 nil 的路徑
+/// - Note: 涵蓋基礎型別、容器、跨檔引用，以及顯式 init 為 nullable 欄位補 nil 的路徑
 struct SampleOrder: Codable, Equatable, Identifiable, Sendable {
 
     // MARK: - Data Properties
@@ -50,7 +50,7 @@ struct SampleOrder: Codable, Equatable, Identifiable, Sendable {
 
     // MARK: - Init
 
-    /// 建立 SampleOrder
+    /// 以必填欄位建立值，宣告了預設值的欄位可以省略
     init(
         id: String,
         title: String,
