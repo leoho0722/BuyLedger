@@ -6,10 +6,9 @@
 //
 
 import ComposableArchitecture
-import Foundation
 import SwiftUI
 
-/// App 鎖定功能的啟用與鎖定／解鎖狀態機
+/// App 鎖定的啟用流程，以及離開前景後上鎖、回來時解鎖的流程
 @Reducer
 struct AppLockFeature {
 
@@ -19,10 +18,10 @@ struct AppLockFeature {
     @ObservableState
     struct State: Equatable {
 
-        /// 是否啟用 App 鎖定
+        /// 是否已啟用 App 鎖定，開啟時須先通過一次驗證
         var isBiometricUnlockEnabled: Bool = false
 
-        /// 內容目前是否鎖定
+        /// 內容目前是否鎖住；已啟用鎖定時，冷啟動與離開前景會鎖住，驗證成功或關閉鎖定後解除
         var isLocked: Bool = false
 
         /// 解鎖驗證是否失敗或取消過；成功或重新嘗試後清空
@@ -32,7 +31,7 @@ struct AppLockFeature {
         var isUnlocking: Bool = false
 
         /// 裝置支援的生物辨識類型，供鎖定畫面與設定頁顯示
-        var biometryType: BiometricAuthClient.BiometryType = .unavailable
+        var biometryType: BiometricAuthService.BiometryKind = .unavailable
 
         /// 啟用失敗、取消或裝置不支援時顯示的說明對話框
         @Presents var enableFailureAlert: AlertState<Action.Alert>?
@@ -73,39 +72,47 @@ struct AppLockFeature {
     enum Action: Equatable {
 
         /// 使用者切換設定頁的「App 鎖定」開關
+        ///
+        /// - Parameter isEnabled: 切換後的開關狀態，`true` 代表要啟用
         case enableToggled(Bool)
 
         /// 啟用流程的驗證請求完成
-        case enableAuthenticationFinished(BiometricAuthClient.AuthenticationResult)
+        ///
+        /// - Parameter authenticationResult: 這次驗證的結果 (成功、失敗或取消)
+        case enableAuthenticationFinished(BiometricAuthService.AuthenticationResult)
 
-        /// 啟用失敗說明對話框的呈現狀態
+        /// 啟用失敗說明對話框送回的事件
+        ///
+        /// - Parameter action: 對話框被關閉；`Alert` 沒有其他選項
         case enableFailureAlert(PresentationAction<Alert>)
 
-        /// App 離開前景 (由 scenePhase 轉為 background 觸發)
+        /// App 離開前景 (由 `scenePhase` 轉為 `background` 觸發)
         case appDidResignActive
 
-        /// App 回到前景或冷啟動後已就緒 (由 scenePhase 轉為 active 觸發)
+        /// App 回到前景或冷啟動後已就緒 (由 `scenePhase` 轉為 `active` 觸發)
         case appDidBecomeActive
 
         /// 使用者於鎖定畫面點擊重新驗證
         case retryUnlockTapped
 
         /// 解鎖流程的驗證請求完成
-        case unlockAuthenticationFinished(BiometricAuthClient.AuthenticationResult)
+        ///
+        /// - Parameter authenticationResult: 這次驗證的結果 (成功、失敗或取消)
+        case unlockAuthenticationFinished(BiometricAuthService.AuthenticationResult)
 
         /// 啟用失敗說明對話框的選項 (僅關閉，無其他動作)
         @CasePathable
         enum Alert: Equatable {}
     }
 
-    // MARK: - Dependency Properties
+    // MARK: - Dependencies
 
-    /// 系統本機驗證介面
-    @Dependency(BiometricAuthClient.self) private var biometricAuthClient
+    /// 檢查裝置是否支援本機驗證、讀取生物辨識類型，並在啟用與解鎖時請求驗證的 Service
+    @Dependency(\.biometricAuthService) private var biometricAuthService
 
-    // MARK: - Reducer Body
+    // MARK: - Body
 
-    /// App 鎖定 reducer
+    /// 依事件更新鎖定狀態：切換開關時先驗證才啟用，離開前景時上鎖，回到前景或重試時嘗試解鎖
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
@@ -117,13 +124,13 @@ struct AppLockFeature {
                 return .none
 
             case .enableToggled(true):
-                guard biometricAuthClient.isAvailable() else {
+                if !biometricAuthService.isAvailable() {
                     state.enableFailureAlert = Self.unsupportedDeviceAlert
                     return .none
                 }
-                let biometricAuthClient = biometricAuthClient
+                let biometricAuthService = biometricAuthService
                 return .run { send in
-                    let result = await biometricAuthClient.authenticate(
+                    let result = await biometricAuthService.authenticate(
                         String(localized: "驗證身份以解鎖 App")
                     )
                     await send(.enableAuthenticationFinished(result))
@@ -148,13 +155,12 @@ struct AppLockFeature {
                 return .none
 
             case .appDidBecomeActive:
-                // 回到前景時更新生物辨識類型
-                state.biometryType = biometricAuthClient.biometryType()
+                state.biometryType = biometricAuthService.biometryType()
                 guard state.isBiometricUnlockEnabled, state.isLocked else {
                     return .none
                 }
                 state.isUnlocking = true
-                return Self.attemptUnlock(biometricAuthClient)
+                return Self.attemptUnlock(biometricAuthService)
 
             case .retryUnlockTapped:
                 guard state.isBiometricUnlockEnabled, state.isLocked else {
@@ -162,7 +168,7 @@ struct AppLockFeature {
                 }
                 state.unlockDidFail = false
                 state.isUnlocking = true
-                return Self.attemptUnlock(biometricAuthClient)
+                return Self.attemptUnlock(biometricAuthService)
 
             case .unlockAuthenticationFinished(.success):
                 state.isLocked = false
@@ -180,7 +186,7 @@ struct AppLockFeature {
     }
 }
 
-// MARK: - Computed Properties
+// MARK: - Private Method
 
 private extension AppLockFeature {
 
@@ -209,21 +215,14 @@ private extension AppLockFeature {
             TextState("此裝置目前無法使用本機驗證，App 鎖定未啟用。")
         }
     }
-}
-
-// MARK: - Private Method
-
-private extension AppLockFeature {
 
     /// 觸發一次解鎖驗證請求
     ///
-    /// - Parameter biometricAuthClient: 系統本機驗證介面
-    /// - Returns: 送出解鎖驗證結果的 effect
-    static func attemptUnlock(_ biometricAuthClient: BiometricAuthClient) -> Effect<Action> {
+    /// - Parameter biometricAuthService: 用來請求驗證的 Service
+    /// - Returns: 送出解鎖驗證結果的 `Effect`
+    static func attemptUnlock(_ biometricAuthService: BiometricAuthService) -> Effect<Action> {
         .run { send in
-            let result = await biometricAuthClient.authenticate(
-                String(localized: "驗證身份以解鎖 App")
-            )
+            let result = await biometricAuthService.authenticate(String(localized: "驗證身份以解鎖 App"))
             await send(.unlockAuthenticationFinished(result))
         }
     }

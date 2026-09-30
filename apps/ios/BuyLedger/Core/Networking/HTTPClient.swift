@@ -5,217 +5,89 @@
 //  Created by Leo Ho on 2026/5/2.
 //
 
-import ComposableArchitecture
 import Foundation
 
-/// 通用 HTTP 客戶端依賴
-struct HTTPClient: Sendable {
+/// 使用注入的 `URLSession` 送出網路請求，並把傳輸失敗轉成 `APIError`
+struct HTTPClient {
 
     // MARK: - Properties
 
-    /// 對應到 `URLSession.data(for:)` 的可注入封裝 (buffered 回應)
-    /// - Parameter request: 欲送出的請求
-    /// - Returns: 回應 data 與 HTTP 回應資訊
-    /// - Throws: 網路請求或 HTTP 狀態驗證失敗時拋出 ``APIError``
-    var data: @Sendable (
-        _ request: URLRequest
-    ) async throws(APIError) -> (Data, HTTPURLResponse)
+    /// 實際送出網路請求的 `URLSession`，由 `init` 注入
+    private let session: URLSession
 
-    /// 可注入的 URLSession bytes 封裝，支援串流回應
-    /// - Parameter request: 欲送出的請求
-    /// - Returns: 逐位元組串流與 HTTP 回應資訊
-    /// - Throws: 網路請求或 HTTP 狀態驗證失敗時拋出 ``APIError``
-    var stream: @Sendable (
-        _ request: URLRequest
-    ) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse)
+    // MARK: - Init
+
+    /// 建立使用指定 `URLSession` 的 `HTTPClient`
+    ///
+    /// - Parameter session: 執行網路請求的 `URLSession`
+    init(session: URLSession) {
+        self.session = session
+    }
 }
 
-// MARK: - Internal Method
+// MARK: - HTTPClientProtocol
 
-extension HTTPClient {
+extension HTTPClient: HTTPClientProtocol {
 
-    /// 組裝 `URLRequest`、執行請求並驗證 2xx 狀態碼後回傳回應資料
-    /// - Parameters:
-    ///   - url: 目標 URL
-    ///   - method: `HTTPMethod`，預設為 `.get`
-    ///   - headers: 額外的 header 欄位，預設為空
-    ///   - body: 請求內容，預設為空
-    ///   - timeout: 逾時秒數 (預設 60)
-    /// - Returns: 2xx 回應的原始 data
-    /// - Throws: 網路請求或 HTTP 狀態驗證失敗時拋出 ``APIError``
-    func send(
-        url: URL,
-        method: HTTPMethod = .get,
-        headers: [String: String] = [:],
-        body: Data? = nil,
-        timeout: TimeInterval = 60
-    ) async throws(APIError) -> Data {
-        let request = URLRequestBuilder(url: url, timeout: timeout)
-            .method(method)
-            .headers(headers)
-            .body(body)
-            .build()
-
-        let result = try await data(request)
-        let (responseData, response) = result
-
-        guard 200...299 ~= response.statusCode else {
-            throw APIError.http(statusCode: response.statusCode)
-        }
-
-        return responseData
-    }
-
-    /// 將回應資料解碼為指定的 `Decodable` 型別
-    /// - Parameters:
-    ///   - type: 目標解碼型別
-    ///   - data: 要解碼的回應資料
-    /// - Returns: 解碼後的值
-    /// - Throws: JSON 解碼失敗時拋出 ``APIError/decoding(underlying:)``
-    func decode<Value: Decodable>(_ type: Value.Type, from data: Data) throws(APIError) -> Value {
+    /// 以注入的 `URLSession` 取得回應並轉換傳輸錯誤
+    ///
+    /// - Parameter request: 要送出的 `URLRequest`
+    /// - Returns: 回應 `Data` 與 `HTTPURLResponse`
+    /// - Throws: `URLSession` 傳輸失敗時以 `NSError` 包裝為 `.transport(underlying:)`；
+    ///   非 `HTTPURLResponse` 回應以診斷碼 1 的 `NSError` 包裝為 `.transport(underlying:)`
+    func data(for request: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) {
+        let result: (Data, URLResponse)
         do {
-            return try JSONDecoder().decode(type, from: data)
+            result = try await session.data(for: request)
         } catch {
-            throw APIError.decoding(underlying: error as NSError)
+            throw .transport(underlying: error as NSError)
         }
+
+        let (data, response) = result
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw Self.responseTypeMismatchError()
+        }
+        return (data, httpResponse)
     }
-}
 
-// MARK: - DependencyKey
-
-extension HTTPClient: DependencyKey {
-
-    /// 建立正式環境共用的預設 `URLSession`
-    private nonisolated static let session = URLSession(configuration: .default)
-
-    /// App 執行時以預設 `URLSession` 發送請求
-    nonisolated static let liveValue: HTTPClient = HTTPClient(
-        data: {
-            (request: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
-            try await loadHTTPData(request, using: session)
-        },
-        stream: {
-            (request: URLRequest) async throws(APIError) -> (
-                URLSession.AsyncBytes,
-                HTTPURLResponse
-            ) in
-            try await loadHTTPStream(request, using: session)
+    /// 以注入的 `URLSession` 取得串流並轉換傳輸錯誤
+    ///
+    /// - Parameter request: 要送出的 `URLRequest`
+    /// - Returns: 逐位元組的 `URLSession.AsyncBytes` 與 `HTTPURLResponse`
+    /// - Throws: `URLSession` 傳輸失敗時以 `NSError` 包裝為 `.transport(underlying:)`；
+    ///   非 `HTTPURLResponse` 回應以診斷碼 1 的 `NSError` 包裝為 `.transport(underlying:)`
+    func bytes(
+        for request: URLRequest
+    ) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) {
+        let result: (URLSession.AsyncBytes, URLResponse)
+        do {
+            result = try await session.bytes(for: request)
+        } catch {
+            throw .transport(underlying: error as NSError)
         }
-    )
 
-    /// 測試與 Preview 不連線，固定回傳錯誤
-    nonisolated static let testValue: HTTPClient = HTTPClient(
-        data: { (_: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
-            throw Self.dependencyNotInjectedError(
-                diagnosticMessage: "HTTPClient.testValue 被呼叫；請在測試中以 withDependencies 注入。"
-            )
-        },
-        stream: {
-            (_: URLRequest) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) in
-            throw Self.dependencyNotInjectedError(
-                diagnosticMessage: "HTTPClient.testValue 被呼叫；請在測試中以 withDependencies 注入。"
-            )
+        let (bytes, response) = result
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw Self.responseTypeMismatchError()
         }
-    )
-
-    /// Preview 使用不連線的固定錯誤實作
-    nonisolated static let previewValue: HTTPClient = testValue
+        return (bytes, httpResponse)
+    }
 }
 
 // MARK: - Private Method
 
 private extension HTTPClient {
 
-    /// 使用 URLSession 取得完整 HTTP 回應
-    /// - Parameters:
-    ///   - request: 要送出的請求
-    ///   - session: 用來執行請求的 URLSession
-    /// - Returns: 回應資料與 HTTP 回應資訊
-    /// - Throws: 網路請求失敗或回應不是 HTTP 時拋出 ``APIError``
-    static func loadHTTPData(
-        _ request: URLRequest,
-        using session: URLSession
-    ) async throws(APIError) -> (Data, HTTPURLResponse) {
-        do {
-            let (data, response) = try await session.data(for: request)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw Self.responseTypeMismatchError()
-            }
-            return (data, httpResponse)
-        } catch let error as APIError {
-            throw error
-        } catch {
-            throw .transport(underlying: error as NSError)
-        }
-    }
-
-    /// 使用 URLSession 取得串流 HTTP 回應
-    /// - Parameters:
-    ///   - request: 要送出的請求
-    ///   - session: 用來執行請求的 URLSession
-    /// - Returns: 串流資料與 HTTP 回應資訊
-    /// - Throws: 網路請求失敗或回應不是 HTTP 時拋出 ``APIError``
-    static func loadHTTPStream(
-        _ request: URLRequest,
-        using session: URLSession
-    ) async throws(APIError) -> (URLSession.AsyncBytes, HTTPURLResponse) {
-        do {
-            let (bytes, response) = try await session.bytes(for: request)
-            guard let httpResponse = response as? HTTPURLResponse else {
-                throw Self.responseTypeMismatchError()
-            }
-            return (bytes, httpResponse)
-        } catch let error as APIError {
-            throw error
-        } catch {
-            throw .transport(underlying: error as NSError)
-        }
-    }
-
-    /// networking 層自有的診斷錯誤 domain
-    static let networkingErrorDomain = "com.leoho.BuyLedger.networking"
-
-    /// 回應型別不符的診斷錯誤代碼
-    static let responseTypeMismatchCode = 1
-
-    /// 依賴未注入的診斷錯誤代碼
-    static let dependencyNotInjectedCode = 2
-
-    /// 建立回應型別不符的 transport 錯誤
+    /// 建立回應不是 `HTTPURLResponse` 時要丟出的錯誤
     ///
-    /// - Returns: 帶 NSError 底層資訊的 transport 錯誤
+    /// - Returns: 底層為診斷碼 1 的 `NSError` 的 `.transport(underlying:)`
     static func responseTypeMismatchError() -> APIError {
         .transport(
             underlying: NSError(
-                domain: networkingErrorDomain,
-                code: responseTypeMismatchCode,
+                domain: "com.leoho.BuyLedger.networking",
+                code: 1,
                 userInfo: [NSLocalizedDescriptionKey: "回應不是 HTTPURLResponse。"]
             )
         )
-    }
-
-    /// 建立依賴未注入的 transport 錯誤
-    ///
-    /// - Parameter diagnosticMessage: 要提供給診斷使用的錯誤描述
-    /// - Returns: 帶原始錯誤資訊的 transport 錯誤
-    static func dependencyNotInjectedError(diagnosticMessage: String) -> APIError {
-        .transport(
-            underlying: NSError(
-                domain: networkingErrorDomain,
-                code: dependencyNotInjectedCode,
-                userInfo: [NSLocalizedDescriptionKey: diagnosticMessage]
-            )
-        )
-    }
-}
-
-// MARK: - DependencyValues
-
-extension DependencyValues {
-
-    /// 通用 HTTP 客戶端
-    var httpClient: HTTPClient {
-        get { self[HTTPClient.self] }
-        set { self[HTTPClient.self] = newValue }
     }
 }

@@ -7,185 +7,175 @@
 
 import ComposableArchitecture
 import Testing
+
 @testable import BuyLedger
 
-/// 訂單載入的三種狀態解析
-@MainActor
+/// 驗證訂單清單的載入狀態與重試結果
 struct OrdersLoadStateTests {
 
     // MARK: - Tests
 
-    // MARK: 狀態解析
-
-    /// 驗證訂單載入狀態在此情境下的結果
-    @Test func loadedStateResolvesToContent() {
+    /// 已完成首次載入時，狀態解析為已載入內容
+    @Test
+    func loadState_訂單已載入_解析為內容狀態() {
         // Given
-
         var state = OrdersFeature.State()
         state.hasLoaded = true
 
         // When
-
         let loadState = state.loadState
 
         // Then
-
         #expect(loadState == .loaded)
     }
 
-    /// 驗證已載入狀態優先於錯誤訊息
-    @Test func loadedStateWinsOverALingeringErrorMessage() {
+    /// 已載入狀態優先於殘留的錯誤訊息
+    @Test
+    func loadState_已載入但殘留錯誤訊息_仍解析為內容狀態() {
         // Given
-
         var state = OrdersFeature.State()
         state.hasLoaded = true
         state.errorMessage = "訂單載入失敗，請稍後再試。"
 
         // When
-
         let loadState = state.loadState
 
         // Then
-
         #expect(loadState == .loaded)
     }
 
-    /// 驗證訂單載入狀態在此情境下的結果
-    @Test func errorWithoutLoadResolvesToFailure() {
+    /// 尚未載入且有錯誤訊息時，狀態包含該失敗原因
+    @Test
+    func loadState_尚未載入且有錯誤_解析為失敗狀態() {
         // Given
-
         var state = OrdersFeature.State()
         state.errorMessage = "訂單載入失敗，請稍後再試。"
 
         // When
-
         let loadState = state.loadState
 
         // Then
-
         #expect(loadState == .failed("訂單載入失敗，請稍後再試。"))
     }
 
-    /// 驗證訂單載入狀態在此情境下的結果
-    @Test func neitherLoadedNorFailedResolvesToLoading() {
+    /// 尚未載入且沒有錯誤訊息時，狀態解析為載入中
+    @Test
+    func loadState_尚未載入且沒有錯誤_解析為載入狀態() {
         // Given
-
         let state = OrdersFeature.State()
 
         // When
-
         let loadState = state.loadState
 
         // Then
-
         #expect(loadState == .loading)
     }
 
-    // MARK: 失敗與重試
-
-    /// 驗證訂單載入狀態在此情境下的結果
-    @Test func failedLoadSurfacesTheReasonInsteadOfSpinningForever() async {
+    /// 訂單請求失敗時停止載入並顯示失敗原因
+    @Test
+    @MainActor
+    func ordersFailed_訂單載入失敗_顯示失敗原因() async {
         // Given
-
-        let store = TestStore(initialState: OrdersFeature.State()) {
+        var initialState = OrdersFeature.State()
+        initialState.isLoading = true
+        let store = TestStore(initialState: initialState) {
             OrdersFeature()
         }
 
         // When
-
         await store.send(.ordersFailed("訂單載入失敗，請稍後再試。")) {
             $0.isLoading = false
             $0.errorMessage = "訂單載入失敗，請稍後再試。"
         }
 
         // Then
-
         #expect(store.state.loadState == .failed("訂單載入失敗，請稍後再試。"))
     }
 
-    /// 驗證訂單載入狀態在此情境下的結果
-    @Test func retryAfterFailureRestoresNormalContent() async {
+    /// 重試成功時載入回傳訂單並清除錯誤狀態
+    @Test
+    @MainActor
+    func task_重新載入成功_恢復訂單內容() async {
         // Given
-
         var initial = OrdersFeature.State()
         initial.errorMessage = "訂單載入失敗，請稍後再試。"
+        let order = LedgerOrder.fixture(id: "RETRY-1")
+        // 主檔全部失敗，避免載入時送出順序不固定的主檔 action
+        let failingOrderSources: OrderSourceService.FetchOrderSources = {
+            throw .fetchFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
+            )
+        }
+        let failingCampaigns: CampaignService.FetchCampaigns = {
+            throw .fetchFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
+            )
+        }
+        let failingCategories: CategoryService.FetchCategories = {
+            throw .fetchFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
+            )
+        }
+        let failingPaymentMethods: PaymentMethodService.FetchPaymentMethodInfos = {
+            throw .fetchFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
+            )
+        }
+        let failingReconciliationStatuses: ReconciliationStatusService.FetchReconciliationStatuses = {
+            throw .fetchFailed(
+                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
+            )
+        }
         let store = TestStore(initialState: initial) {
             OrdersFeature()
         } withDependencies: {
-            // 只測重試，讓主檔載入明確失敗。
-            $0[OrderSourceRepository.self].fetchOrderSources = {
-                () async throws(PersistenceError) -> [String] in
-                throw PersistenceError.fetchFailed(
-                    underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-                )
+            $0.orderSourceService.fetchOrderSources = failingOrderSources
+            $0.campaignService.fetchCampaigns = failingCampaigns
+            $0.categoryService.fetchCategories = failingCategories
+            $0.paymentMethodService.fetchPaymentMethodInfos = failingPaymentMethods
+            $0
+                .reconciliationStatusService
+                .fetchReconciliationStatuses = failingReconciliationStatuses
+            $0.orderService.fetchOrders = {
+                [order]
             }
-            $0[CampaignRepository.self].fetchCampaigns = {
-                () async throws(PersistenceError) -> [Campaign] in
-                throw PersistenceError.fetchFailed(
-                    underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-                )
-            }
-            $0[CategoryRepository.self].fetchCategories = {
-                () async throws(PersistenceError) -> [String] in
-                throw PersistenceError.fetchFailed(
-                    underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-                )
-            }
-            $0[PaymentMethodRepository.self].fetchPaymentMethodInfos = {
-                () async throws(PersistenceError) -> [PaymentMethodInfo] in
-                throw PersistenceError.fetchFailed(
-                    underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-                )
-            }
-            $0[ReconciliationStatusRepository.self].fetchReconciliationStatuses = {
-                () async throws(PersistenceError) -> [String] in
-                throw PersistenceError.fetchFailed(
-                    underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-                )
-            }
-            // 讓 `.task` 真正呼叫 fetchOrders 並回傳空陣列。
-            $0[OrderRepository.self].fetchOrders = { [] }
         }
 
-        // 重試沿用既有載入動作。
         // When
-
         await store.send(.task) {
             $0.isLoading = true
             $0.errorMessage = nil
         }
-        // Then
 
+        // Then
         await store.receive(\.ordersLoaded) {
             $0.isLoading = false
             $0.hasLoaded = true
-            $0.orders = []
-            $0.selectedOrderID = nil
+            $0.orders = [order]
+            $0.selectedOrderID = order.id
         }
-
+        #expect(store.state.orders == [order])
+        #expect(store.state.selectedOrderID == order.id)
         #expect(store.state.loadState == .loaded)
     }
 
-    /// 重試再次失敗時維持失敗狀態，且不清空錯誤訊息、不進入自動重試迴圈
-    @Test func repeatedFailureKeepsTheFailureStateWithoutLooping() async {
+    /// 已在失敗狀態時再收到相同失敗，保留錯誤且不自動重試
+    ///
+    /// - Note: 窮舉的 `TestStore` 會在未處理自動重試 action 時使測試失敗
+    @Test
+    @MainActor
+    func ordersFailed_重複載入失敗_維持失敗狀態() async {
         // Given
-
-        let store = TestStore(initialState: OrdersFeature.State()) {
+        var initialState = OrdersFeature.State()
+        initialState.errorMessage = "訂單載入失敗，請稍後再試。"
+        let store = TestStore(initialState: initialState) {
             OrdersFeature()
         }
 
         // When
-
-        await store.send(.ordersFailed("訂單載入失敗，請稍後再試。")) {
-            $0.isLoading = false
-            $0.errorMessage = "訂單載入失敗，請稍後再試。"
-        }
-        // 重複失敗時狀態不變。
-        // 這正是本測試要鎖住的「不進入自動重試迴圈」行為
         await store.send(.ordersFailed("訂單載入失敗，請稍後再試。"))
 
         // Then
-
         #expect(store.state.loadState == .failed("訂單載入失敗，請稍後再試。"))
         #expect(store.state.hasLoaded == false)
     }

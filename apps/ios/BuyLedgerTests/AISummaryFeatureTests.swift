@@ -18,33 +18,34 @@ struct AISummaryFeatureTests {
 
     // MARK: - Tests
 
-    /// 驗證串流片段依序累積到摘要內容，完成後 phase 轉為 finished
-    @Test func streamingAccumulatesChunksThenFinishes() async {
+    /// 驗證串流片段依序累積到摘要內容，完成後 `phase` 轉為 `.finished`
+    @Test
+    func task_收到多段摘要_依序累積並標記完成() async {
         // Given
-
         let clock = TestClock()
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
         } withDependencies: {
-            $0.appConfiguration = keyedConfiguration("k")
-            $0.continuousClock = clock
-            $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
+            $0.aiSummaryService.apiKey = {
+                "k"
+            }
+            $0.aiSummaryService.streamSummary = { _, _, _ in
                 AsyncThrowingStream<String, any Error> { continuation in
                     continuation.yield("# 標題\n")
                     continuation.yield("- 項目 A\n")
                     continuation.yield("- 項目 B")
                     continuation.finish()
                 }
-            })
+            }
+            $0.continuousClock = clock
         }
 
         // When
-
         await store.send(.view(.task)) {
             $0.phase = .streaming
         }
-        // Then
 
+        // Then
         await store.receive(\.chunkReceived, "# 標題\n") {
             $0.summaryText = "# 標題\n"
         }
@@ -59,73 +60,73 @@ struct AISummaryFeatureTests {
         }
     }
 
-    /// 驗證缺少 API 金鑰時先進入串流再轉為失敗並顯示設定未完成訊息
-    @Test func missingKeyFailsImmediately() async {
+    /// 驗證缺少 API 金鑰時轉為失敗並顯示設定未完成訊息
+    @Test
+    func task_缺少API金鑰_顯示設定未完成訊息() async {
         // Given
-
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
         } withDependencies: {
-            $0.appConfiguration = keyedConfiguration(nil)
+            $0.aiSummaryService.apiKey = {
+                nil
+            }
         }
 
         // When
-
         await store.send(.view(.task)) {
             $0.phase = .streaming
         }
-        // Then
 
-        await store.receive(
-            \.streamFailed,
-            "AI 總結尚未完成設定，目前無法使用。"
-        ) {
+        // Then
+        await store.receive(\.streamFailed, "AI 總結尚未完成設定，目前無法使用。") {
             $0.phase = .failed
             $0.errorMessage = "AI 總結尚未完成設定，目前無法使用。"
         }
     }
 
-    /// 驗證 API 金鑰錯誤時進入 failed 並顯示驗證失敗訊息
-    @Test func apiErrorEntersFailedState() async {
+    /// 驗證 API 金鑰錯誤時顯示驗證失敗訊息
+    @Test
+    func task_服務回報金鑰無效_顯示驗證失敗訊息() async {
         // Given
-
         let clock = TestClock()
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
         } withDependencies: {
-            $0.appConfiguration = keyedConfiguration("k")
-            $0.continuousClock = clock
-            $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
-                AsyncThrowingStream<String, any Error> { continuation in
-                    continuation.finish(throwing: APIError.invalidKey)
+            $0.aiSummaryService.apiKey = {
+                "k"
+            }
+            $0.aiSummaryService.streamSummary = { _, _, _ in
+                AsyncThrowingStream<String, any Error> {
+                    $0.finish(throwing: APIError.invalidKey)
                 }
-            })
+            }
+            $0.continuousClock = clock
         }
 
         // When
-
         await store.send(.view(.task)) {
             $0.phase = .streaming
         }
-        // Then
 
+        // Then
         await store.receive(\.streamFailed, "AI 服務驗證失敗，目前無法使用總結功能。") {
             $0.phase = .failed
             $0.errorMessage = "AI 服務驗證失敗，目前無法使用總結功能。"
         }
     }
 
-    /// 驗證傳輸錯誤在已收到部分內容後保留內容並顯示友善連線錯誤訊息
-    @Test func transportErrorMapsToFriendlyMessage() async {
+    /// 驗證傳輸失敗時保留部分內容並顯示友善連線錯誤訊息
+    @Test
+    func task_收到部分內容後傳輸失敗_保留內容並顯示連線錯誤() async {
         // Given
-
         let clock = TestClock()
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
         } withDependencies: {
-            $0.appConfiguration = keyedConfiguration("k")
-            $0.continuousClock = clock
-            $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
+            $0.aiSummaryService.apiKey = {
+                "k"
+            }
+            $0.aiSummaryService.streamSummary = { _, _, _ in
                 AsyncThrowingStream<String, any Error> { continuation in
                     continuation.yield("部分內容")
                     continuation.finish(
@@ -134,16 +135,16 @@ struct AISummaryFeatureTests {
                         )
                     )
                 }
-            })
+            }
+            $0.continuousClock = clock
         }
 
         // When
-
         await store.send(.view(.task)) {
             $0.phase = .streaming
         }
-        // Then
 
+        // Then
         await store.receive(\.chunkReceived, "部分內容") {
             $0.summaryText = "部分內容"
         }
@@ -153,119 +154,98 @@ struct AISummaryFeatureTests {
         }
     }
 
-    /// 驗證關閉摘要面板會取消串流並執行 dismiss，不轉為失敗
-    @Test func closingSheetCancelsStreamingWithoutFailure() async {
+    /// 驗證關閉摘要面板會取消串流並執行 `dismiss`，`phase` 維持 `.streaming`、不轉為失敗
+    @Test
+    func closeTapped_串流進行中_取消串流並關閉摘要() async {
         // Given
-
         let clock = TestClock()
-        let cancellation = LockIsolated(false)
+        let isStreamTerminated = LockIsolated(false)
         let dismissCallCount = LockIsolated(0)
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
         } withDependencies: {
-            $0.appConfiguration = keyedConfiguration("k")
-            $0.continuousClock = clock
-            $0.dismiss = DismissEffect {
-                dismissCallCount.withValue { $0 += 1 }
+            $0.aiSummaryService.apiKey = {
+                "k"
             }
-            $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
+            $0.aiSummaryService.streamSummary = { _, _, _ in
                 AsyncThrowingStream<String, any Error> { continuation in
                     continuation.yield("部分內容")
                     continuation.onTermination = { _ in
-                        cancellation.setValue(true)
+                        isStreamTerminated.setValue(true)
                     }
                 }
-            })
+            }
+            $0.continuousClock = clock
+            $0.dismiss = DismissEffect {
+                dismissCallCount.withValue {
+                    $0 += 1
+                }
+            }
         }
-
-        // When
-
         await store.send(.view(.task)) {
             $0.phase = .streaming
         }
-        // Then
-
         await store.receive(\.chunkReceived, "部分內容") {
             $0.summaryText = "部分內容"
         }
-        await store.send(.view(.closeTapped))
-        await store.finish()
 
-        #expect(cancellation.value)
+        // When
+        await store.send(.view(.closeTapped))
+
+        // Then
+        await store.finish()
+        #expect(store.state.phase == .streaming)
+        #expect(isStreamTerminated.value)
         #expect(dismissCallCount.value == 1)
     }
 
-    /// 驗證串流超過總時限時保留部分內容並以 finished phase 顯示截斷訊息
-    @Test func slowStreamStopsAtOverallDurationLimitAndKeepsPartialContent() async {
+    /// 驗證串流逾時時保留部分內容並顯示截斷訊息
+    @Test
+    func task_串流超過總時限_保留部分內容並標記截斷() async {
         // Given
-
         let clock = TestClock()
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
             AISummaryFeature()
         } withDependencies: {
-            $0.appConfiguration = keyedConfiguration("k")
-            $0.continuousClock = clock
-            $0[OllamaClient.self] = OllamaClient(streamSummary: { _, _, _ in
+            $0.aiSummaryService.apiKey = {
+                "k"
+            }
+            $0.aiSummaryService.streamSummary = { _, _, _ in
                 AsyncThrowingStream<String, any Error> { continuation in
                     let task = Task {
                         continuation.yield("第一段\n")
-                        do {
-                            try await clock.sleep(for: .milliseconds(150))
-                            guard !Task.isCancelled else { return }
-                            continuation.yield("慢速段\n")
-                            try await clock.sleep(for: .seconds(3600))
-                        } catch {
-                            // 測試替身被取消時停止產出
+                        try? await clock.sleep(for: .milliseconds(150)) // 失敗可忽略，因為只在替身被取消時丟出
+                        guard !Task.isCancelled else {
+                            return
                         }
+                        continuation.yield("慢速段\n")
+                        try? await clock.sleep(for: .seconds(3600)) // 失敗可忽略，因為只在替身被取消時丟出
                     }
                     continuation.onTermination = { _ in
                         task.cancel()
                     }
                 }
-            })
+            }
+            $0.continuousClock = clock
         }
 
         // When
-
         await store.send(.view(.task)) {
             $0.phase = .streaming
         }
-        // Then
 
-        await store.receive(
-            \.chunkReceived,
-             "第一段\n"
-        ) {
+        // Then
+        await store.receive(\.chunkReceived, "第一段\n") {
             $0.summaryText = "第一段\n"
         }
         await clock.advance(by: .milliseconds(150))
-        await store.receive(
-            \.chunkReceived,
-             "慢速段\n"
-        ) {
+        await store.receive(\.chunkReceived, "慢速段\n") {
             $0.summaryText = "第一段\n慢速段\n"
         }
-        await clock.advance(by: OllamaClient.overallStreamDuration)
-        await store.receive(
-            \.streamTimedOut,
-             timeout: .seconds(2)
-        ) {
+        await clock.advance(by: AISummaryService.overallStreamDuration)
+        await store.receive(\.streamTimedOut, timeout: .seconds(2)) {
             $0.phase = .finished
             $0.truncationMessage = "AI 總結已達時間上限，以下顯示已取得的內容；摘要已截斷。"
         }
-
-    }
-}
-
-// MARK: - Private Method
-
-private extension AISummaryFeatureTests {
-
-    /// 建立測試用 AppConfiguration
-    ///
-    /// - Parameter key: Ollama API key；`nil` 表示未設定
-    /// - Returns: 注入指定 key 的 AppConfiguration
-    func keyedConfiguration(_ key: String?) -> AppConfiguration {
-        AppConfiguration(exchangeRateAPIKey: { nil }, ollamaAPIKey: { key })
     }
 }

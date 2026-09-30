@@ -6,7 +6,6 @@
 //
 
 import ComposableArchitecture
-import Foundation
 
 /// 管理單一種類的主檔項目
 @Reducer
@@ -161,20 +160,20 @@ struct LookupManagementFeature {
 
     // MARK: - Dependencies
 
-    /// 商品類別主檔資料來源
-    @Dependency(CategoryRepository.self) private var categoryRepository
+    /// 商品類別主檔操作入口
+    @Dependency(\.categoryService) private var categoryService
 
-    /// 訂單資料來源
-    @Dependency(OrderRepository.self) private var orderRepository
+    /// 主檔改名時同步更新引用訂單資料
+    @Dependency(\.orderService) private var orderService
 
-    /// 訂單來源主檔資料來源
-    @Dependency(OrderSourceRepository.self) private var orderSourceRepository
+    /// 訂單來源主檔操作入口
+    @Dependency(\.orderSourceService) private var orderSourceService
 
-    /// 付款方式主檔資料來源
-    @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
+    /// 付款方式主檔操作入口
+    @Dependency(\.paymentMethodService) private var paymentMethodService
 
-    /// 對帳狀態主檔資料來源
-    @Dependency(ReconciliationStatusRepository.self) private var reconciliationStatusRepository
+    /// 對帳狀態主檔操作入口
+    @Dependency(\.reconciliationStatusService) private var reconciliationStatusService
 
     // MARK: - Body
 
@@ -192,12 +191,12 @@ struct LookupManagementFeature {
 
 private extension LookupManagementFeature {
 
-    /// 依收到的事件更新主檔狀態並回傳後續效果
+    /// 處理主檔畫面事件，更新狀態並啟動後續操作
     ///
     /// - Parameters:
     ///   - state: 目前的主檔管理狀態
     ///   - action: 這次收到的主檔事件
-    /// - Returns: 接下來要執行的效果，沒有就回傳 `.none`
+    /// - Returns: 接下來要執行的操作，沒有就回 `.none`
     func core(state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .view(.task):
@@ -212,11 +211,11 @@ private extension LookupManagementFeature {
             )
             return .none
 
-        case let .view(.deleteButtonTapped(name: name)):
+        case .view(.deleteButtonTapped(name: let name)):
             state.destination = .deleteConfirmation(name: name)
             return .none
 
-        case let .view(.editButtonTapped(name: name)):
+        case .view(.editButtonTapped(name: let name)):
             guard state.hasClassification else {
                 return .none
             }
@@ -236,26 +235,24 @@ private extension LookupManagementFeature {
             }
             return .none
 
-        case let .view(.renameButtonTapped(name: name)):
-            state.destination = .rename(
-                LookupRenameFormFeature.State(originalName: name)
-            )
+        case .view(.renameButtonTapped(name: let name)):
+            state.destination = .rename(LookupRenameFormFeature.State(originalName: name))
             return .none
 
         case .delegate:
             return .none
 
-        case let .correction(.delegate(.confirmationRequired(count))):
+        case .correction(.delegate(.confirmationRequired(let count))):
             presentAlertAfterFormSheetDismissal(
                 .retroactiveConfirmation(affectedOrderCount: count),
                 state: &state
             )
             return .none
 
-        case let .correction(.delegate(.edited(plan))):
-            state.$catalog.withLock { catalog in
-                catalog.remove(name: plan.originalName, kind: .paymentMethod)
-                catalog.add(name: plan.newName, kind: .paymentMethod, flags: plan.flags)
+        case .correction(.delegate(.edited(let plan))):
+            state.$catalog.withLock {
+                $0.remove(name: plan.originalName, kind: .paymentMethod)
+                $0.add(name: plan.newName, kind: .paymentMethod, flags: plan.flags)
             }
             return .send(.delegate(.paymentMethodEdited(plan)))
 
@@ -266,7 +263,7 @@ private extension LookupManagementFeature {
         case .correction:
             return .none
 
-        case let .destination(.presented(.add(.delegate(.saved(name, flags))))):
+        case .destination(.presented(.add(.delegate(.saved(let name, let flags))))):
             state.destination = nil
             state.isFormSheetDismissing = true
             return itemOperations().add(
@@ -274,7 +271,7 @@ private extension LookupManagementFeature {
                 kind: state.kind
             )
 
-        case let .destination(.presented(.alert(.confirmDelete(name: name)))):
+        case .destination(.presented(.alert(.confirmDelete(name: let name)))):
             return itemOperations().delete(name: name, kind: state.kind)
 
         case .destination(.presented(.alert(.confirmPaymentMethodEdit))):
@@ -283,18 +280,18 @@ private extension LookupManagementFeature {
         case .destination(.presented(.alert(.cancelPaymentMethodEdit))):
             return .send(.correction(.cancelled))
 
-        case let .destination(
-            .presented(.editPaymentMethod(.delegate(.saved(originalName, newName, flags))))
+        case .destination(
+            .presented(
+                .editPaymentMethod(.delegate(.saved(let originalName, let newName, let flags)))
+            )
         ):
             state.destination = nil
             state.isFormSheetDismissing = true
             return .send(
-                .correction(
-                    .requested(originalName: originalName, newName: newName, flags: flags)
-                )
+                .correction(.requested(originalName: originalName, newName: newName, flags: flags))
             )
 
-        case let .destination(.presented(.rename(.delegate(.saved(oldName, newName))))):
+        case .destination(.presented(.rename(.delegate(.saved(let oldName, let newName))))):
             state.destination = nil
             state.isFormSheetDismissing = true
             return itemOperations().rename(
@@ -305,9 +302,9 @@ private extension LookupManagementFeature {
         case .destination:
             return .none
 
-        case let .addResponse(.success(addition)):
-            state.$catalog.withLock { catalog in
-                catalog.add(name: addition.name, kind: state.kind, flags: addition.flags)
+        case .addResponse(.success(let addition)):
+            state.$catalog.withLock {
+                $0.add(name: addition.name, kind: state.kind, flags: addition.flags)
             }
             return .none
 
@@ -315,7 +312,7 @@ private extension LookupManagementFeature {
             presentAlertAfterFormSheetDismissal(.writeFailure(.add), state: &state)
             return .none
 
-        case let .deleteResponse(.success(name)):
+        case .deleteResponse(.success(let name)):
             state.$catalog.withLock { $0.remove(name: name, kind: state.kind) }
             return .none
 
@@ -323,7 +320,7 @@ private extension LookupManagementFeature {
             state.destination = .writeFailure(.delete)
             return .none
 
-        case let .itemsResponse(.success(catalog)):
+        case .itemsResponse(.success(let catalog)):
             state.$catalog.withLock { $0.replaceItems(of: state.kind, from: catalog) }
             state.hasLoaded = true
             state.hasLoadFailed = false
@@ -333,9 +330,9 @@ private extension LookupManagementFeature {
             state.hasLoadFailed = true
             return .none
 
-        case let .renameResponse(.success(rename)):
-            state.$catalog.withLock { catalog in
-                catalog.rename(from: rename.oldName, to: rename.newName, kind: state.kind)
+        case .renameResponse(.success(let rename)):
+            state.$catalog.withLock {
+                $0.rename(from: rename.oldName, to: rename.newName, kind: state.kind)
             }
             return .send(.delegate(.itemRenamed(rename)))
 
@@ -345,28 +342,25 @@ private extension LookupManagementFeature {
         }
     }
 
-    /// 建立目前 reducer 使用的主檔操作分派器
+    /// 用本畫面取得的五個 Service 組出主檔操作物件
     ///
-    /// - Returns: 持有五個主檔 repository 的操作型別
+    /// - Returns: 可載入、變更主檔並在改名時更新訂單的操作物件
     func itemOperations() -> LookupItemOperations {
         LookupItemOperations(
-            categoryRepository: categoryRepository,
-            orderRepository: orderRepository,
-            orderSourceRepository: orderSourceRepository,
-            paymentMethodRepository: paymentMethodRepository,
-            reconciliationStatusRepository: reconciliationStatusRepository
+            categoryService: categoryService,
+            orderService: orderService,
+            orderSourceService: orderSourceService,
+            paymentMethodService: paymentMethodService,
+            reconciliationStatusService: reconciliationStatusService
         )
     }
 
-    /// 表單關閉期間暫存提示，否則直接呈現
+    /// 表單正在關閉時先暫存提示，等 `formSheetDismissed` 再呈現；沒有表單在關閉就直接呈現
     ///
     /// - Parameters:
     ///   - alert: 要呈現的目的地狀態
     ///   - state: 要更新的主檔管理狀態
-    func presentAlertAfterFormSheetDismissal(
-        _ alert: Destination.State,
-        state: inout State
-    ) {
+    func presentAlertAfterFormSheetDismissal(_ alert: Destination.State, state: inout State) {
         if state.isFormSheetDismissing {
             state.pendingAlert = alert
         } else {

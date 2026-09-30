@@ -8,177 +8,153 @@
 import ComposableArchitecture
 import Foundation
 import Testing
+
 @testable import BuyLedger
 
-/// 驗證持久層失敗畫面
+/// 驗證持久層失敗畫面的復原確認與結果
 @MainActor
 struct PersistenceFailureFeatureTests {
 
     // MARK: - Tests
 
-    /// 驗證持久化失敗畫面的狀態與復原流程
-    @Test func recoveryTapOnlyPresentsConfirmation() async {
+    /// 未確認復原時只顯示確認視窗
+    ///
+    /// - Note: `testValue` 的 `quarantineStore` 為 `unimplemented`，非預期呼叫會使測試失敗
+    @Test
+    func recoveryTapped_尚未確認復原_只呈現確認視窗() async {
         // Given
-
-        let callCount = LockIsolated(0)
         let store = TestStore(initialState: PersistenceFailureFeature.State()) {
             PersistenceFailureFeature()
-        } withDependencies: {
-            $0[PersistenceStoreQuarantineClient.self] = PersistenceStoreQuarantineClient(
-                quarantine: { () throws(PersistenceRecoveryError) in
-                    callCount.withValue { $0 += 1 }
-                }
-            )
         }
 
         // When
-
         await store.send(.recoveryTapped) {
             $0.confirmation = Self.expectedConfirmationAlert
         }
 
         // Then
-
         #expect(store.state.phase == .blocked)
-        #expect(callCount.value == 0)
     }
 
-    /// 驗證持久化失敗畫面的狀態與復原流程
-    @Test func cancellingConfirmationDismissesWithoutRecovering() async {
+    /// 取消確認時關閉視窗且不執行復原
+    ///
+    /// - Note: `testValue` 的 `quarantineStore` 為 `unimplemented`，非預期呼叫會使測試失敗
+    @Test
+    func confirmation_取消確認視窗_維持阻斷且不搬移檔案() async {
         // Given
-
-        let store = TestStore(initialState: PersistenceFailureFeature.State()) {
+        var initial = PersistenceFailureFeature.State()
+        initial.confirmation = Self.expectedConfirmationAlert
+        let store = TestStore(initialState: initial) {
             PersistenceFailureFeature()
         }
 
         // When
-
-        await store.send(.recoveryTapped) {
-            $0.confirmation = Self.expectedConfirmationAlert
-        }
         await store.send(.confirmation(.dismiss)) {
             $0.confirmation = nil
         }
 
         // Then
-
         #expect(store.state.phase == .blocked)
     }
 
-    /// 驗證持久化失敗畫面的狀態與復原流程
-    @Test func confirmedRecoveryMovesFilesThenRequiresRelaunch() async {
+    /// 確認復原後把資料庫檔案搬到隔離備份一次，搬移成功就切到要求重新啟動的階段
+    @Test
+    func confirmation_確認復原且隔離完成_要求重新啟動() async {
         // Given
-
         let callCount = LockIsolated(0)
-        let store = TestStore(initialState: PersistenceFailureFeature.State()) {
+        var initial = PersistenceFailureFeature.State()
+        initial.confirmation = Self.expectedConfirmationAlert
+        let store = TestStore(initialState: initial) {
             PersistenceFailureFeature()
         } withDependencies: {
-            $0[PersistenceStoreQuarantineClient.self] = PersistenceStoreQuarantineClient(
-                quarantine: {
-                    callCount.withValue { $0 += 1 }
+            $0.persistenceRecoveryService.quarantineStore = {
+                callCount.withValue {
+                    $0 += 1
                 }
-            )
+            }
         }
 
         // When
-
-        await store.send(.recoveryTapped) {
-            $0.confirmation = Self.expectedConfirmationAlert
-        }
         await store.send(.confirmation(.presented(.confirmRecovery))) {
             $0.confirmation = nil
         }
-        // Then
 
-        await store.receive(.recoverySucceeded) {
+        // Then
+        await store.receive(\.recoverySucceeded) {
             $0.phase = .relaunchRequired
         }
         #expect(callCount.value == 1)
     }
 
-    /// 驗證持久化失敗畫面的狀態與復原流程
-    @Test func failedRecoveryStaysBlockingAndShowsReason() async {
+    /// 確認復原後隔離目錄建立或解析失敗時，畫面顯示底層錯誤原因，並維持阻斷不切到重新啟動
+    ///
+    /// - Parameters:
+    ///   - error: 隔離失敗的分類與底層錯誤
+    ///   - expectedReason: 預期顯示的底層錯誤訊息
+    @Test(arguments: [
+        (
+            PersistenceRecoveryError.directoryCreationFailed(
+                underlying: NSError(
+                    domain: "com.leoho.BuyLedger.recovery-test",
+                    code: 1,
+                    userInfo: [NSLocalizedDescriptionKey: "Backup could not be created."]
+                )
+            ),
+            "Backup could not be created."
+        ),
+        (
+            .directoryResolutionFailed(
+                underlying: NSError(
+                    domain: "com.leoho.BuyLedger.recovery-test",
+                    code: 2,
+                    userInfo: [NSLocalizedDescriptionKey: "Application Support 無法解析。"]
+                )
+            ),
+            "Application Support 無法解析。"
+        ),
+    ])
+    func confirmation_確認復原但隔離目錄建立或解析失敗_顯示原因並維持阻斷(
+        error: PersistenceRecoveryError,
+        expectedReason: String
+    ) async {
         // Given
-
-        let store = TestStore(initialState: PersistenceFailureFeature.State()) {
+        let failingQuarantineStore: PersistenceRecoveryService.QuarantineStore = {
+            throw error
+        }
+        var initial = PersistenceFailureFeature.State()
+        initial.confirmation = Self.expectedConfirmationAlert
+        let store = TestStore(initialState: initial) {
             PersistenceFailureFeature()
         } withDependencies: {
-            $0[PersistenceStoreQuarantineClient.self] = PersistenceStoreQuarantineClient(
-                quarantine: { () throws(PersistenceRecoveryError) in
-                    throw .directoryCreationFailed(
-                        underlying: NSError(
-                            domain: "com.leoho.BuyLedger.recovery-test",
-                            code: 1,
-                            userInfo: [
-                                NSLocalizedDescriptionKey: "Backup could not be created.",
-                            ]
-                        )
-                    )
-                }
-            )
+            $0.persistenceRecoveryService.quarantineStore = failingQuarantineStore
         }
 
         // When
-
-        await store.send(.recoveryTapped) {
-            $0.confirmation = Self.expectedConfirmationAlert
-        }
-        await store.send(.confirmation(.presented(.confirmRecovery))) {
-            $0.confirmation = nil
-        }
-        // Then
-
-        await store.receive(.recoveryFailed("Backup could not be created.")) {
-            $0.recoveryFailureReason = "Backup could not be created."
-        }
-    }
-
-    /// Application Support 解析失敗時應保留復原錯誤的顯示文字
-    @Test func failedRecoveryWithDirectoryResolutionErrorShowsReason() async {
-        // Given
-
-        let store = TestStore(initialState: PersistenceFailureFeature.State()) {
-            PersistenceFailureFeature()
-        } withDependencies: {
-            $0[PersistenceStoreQuarantineClient.self] = PersistenceStoreQuarantineClient(
-                quarantine: { () throws(PersistenceRecoveryError) in
-                    throw .directoryResolutionFailed(
-                        underlying: NSError(
-                            domain: "com.leoho.BuyLedger.recovery-test",
-                            code: 2,
-                            userInfo: [
-                                NSLocalizedDescriptionKey: "Application Support 無法解析。",
-                            ]
-                        )
-                    )
-                }
-            )
-        }
-
-        // When
-
-        await store.send(.recoveryTapped) {
-            $0.confirmation = Self.expectedConfirmationAlert
-        }
         await store.send(.confirmation(.presented(.confirmRecovery))) {
             $0.confirmation = nil
         }
 
         // Then
-
-        await store.receive(.recoveryFailed("Application Support 無法解析。")) {
-            $0.recoveryFailureReason = "Application Support 無法解析。"
+        await store.receive(\.recoveryFailed, expectedReason) {
+            $0.recoveryFailureReason = expectedReason
         }
     }
+}
+
+// MARK: - Nested Types
+
+private extension PersistenceFailureFeatureTests {
+
+    /// 復原確認視窗的型別
+    typealias ConfirmationAlert = AlertState<PersistenceFailureFeature.Action.Confirmation>
 }
 
 // MARK: - Private Method
 
 private extension PersistenceFailureFeatureTests {
 
-    /// 復原確認 alert 的預期內容，供窮舉斷言比對
-    static var expectedConfirmationAlert:
-        AlertState<PersistenceFailureFeature.Action.Confirmation> {
+    /// 復原確認視窗的預期內容
+    static var expectedConfirmationAlert: ConfirmationAlert {
         AlertState {
             TextState("改用空白資料庫繼續")
         } actions: {

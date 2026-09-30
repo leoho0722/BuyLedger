@@ -5,18 +5,19 @@
 //  Created by Leo Ho on 2026/7/24.
 //
 
+import Dependencies
 import Foundation
 import SwiftData
-import Dependencies
 
 #if DEBUG
 
 /// UI 測試模式的啟動 harness
-/// - Important: 必須早於第一次解析 `@Dependency`
+///
+/// - Note: 必須早於第一次解析 `@Dependency`
 @MainActor
 enum BLUITestHarness {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// UI 測試模式使用的 container；正式執行為 `nil`
     private(set) static var modelContainer: ModelContainer?
@@ -36,11 +37,13 @@ extension BLUITestHarness {
         }
 
         let container: ModelContainer
+        let storeLocation: BuyLedgerDatabase.StoreLocation
 
         switch configuration.persistenceMode {
         case .inMemory:
             resetPersistedState()
             container = PersistenceContainer.makeInMemory(for: .testing)
+            storeLocation = .inMemory
             BLUITestSeedData.seed(
                 configuration.seedProfile,
                 into: container,
@@ -48,8 +51,9 @@ extension BLUITestHarness {
             )
 
         case .persistent:
-            let storeURL = persistentStoreURL(for: configuration)
-            let storeExists = FileManager.default.fileExists(atPath: storeURL.path)
+            let storeURL = preparePersistentStoreURL(for: configuration)
+            storeLocation = .directory(storeURL.deletingLastPathComponent())
+            let hasExistingStore = FileManager.default.fileExists(atPath: storeURL.path)
 
             if configuration.resetPersistentStore {
                 resetPersistedState()
@@ -59,12 +63,13 @@ extension BLUITestHarness {
             do {
                 container = try PersistenceContainer.makePersistentForTesting(storeURL: storeURL)
             } catch {
+                // UI 測試環境建不起來就無法進行測試，直接中止讓失敗立即浮現
                 fatalError(
                     "Unable to create the persistent UI test container: \(error.localizedDescription)"
                 )
             }
 
-            if configuration.resetPersistentStore || !storeExists {
+            if configuration.resetPersistentStore || !hasExistingStore {
                 BLUITestSeedData.seed(
                     configuration.seedProfile,
                     into: container,
@@ -76,7 +81,11 @@ extension BLUITestHarness {
         modelContainer = container
 
         prepareDependencies {
-            $0.applyUITestOverrides(configuration, container: container)
+            $0.applyUITestOverrides(
+                configuration,
+                container: container,
+                storeLocation: storeLocation
+            )
         }
     }
 }
@@ -86,20 +95,20 @@ extension BLUITestHarness {
 @MainActor
 private extension BLUITestHarness {
 
-    /// 清除 App 的 UserDefaults 測試資料
+    /// 清除 App 的 `UserDefaults` 測試資料
     static func resetPersistedState() {
-        guard let domain = Bundle.main.bundleIdentifier else {
+        if let domain = Bundle.main.bundleIdentifier {
+            UserDefaults.standard.removePersistentDomain(forName: domain)
+        } else {
             print("[BuyLedger][UITest] 取不到 bundle identifier，跳過設定重置")
-            return
         }
-
-        UserDefaults.standard.removePersistentDomain(forName: domain)
     }
 
-    /// 取得 UI 測試使用的穩定 store 路徑
+    /// 取得 UI 測試使用的穩定 store 路徑，必要時建立資料夾
+    ///
     /// - Parameter configuration: UI 測試啟動設定
     /// - Returns: 依種子 profile 分隔的 persistent store 路徑
-    static func persistentStoreURL(for configuration: BLUITestConfiguration) -> URL {
+    static func preparePersistentStoreURL(for configuration: BLUITestConfiguration) -> URL {
         let applicationSupport = FileManager.default.urls(
             for: .applicationSupportDirectory,
             in: .userDomainMask
@@ -115,17 +124,17 @@ private extension BLUITestHarness {
                 withIntermediateDirectories: true
             )
         } catch {
+            // UI 測試環境建不起來就無法進行測試，直接中止讓失敗立即浮現
             fatalError(
                 "Unable to create the persistent UI test directory: \(error.localizedDescription)"
             )
         }
 
-        return directory.appendingPathComponent(
-            "\(configuration.seedProfile.rawValue).store"
-        )
+        return directory.appendingPathComponent("\(configuration.seedProfile.rawValue).store")
     }
 
     /// 清除指定 persistent store 及 SQLite sidecar 檔案
+    ///
     /// - Parameter storeURL: 要清除的 store 路徑
     static func removePersistentStore(at storeURL: URL) {
         let candidates = [
@@ -138,6 +147,7 @@ private extension BLUITestHarness {
             do {
                 try FileManager.default.removeItem(at: candidate)
             } catch {
+                // UI 測試環境建不起來就無法進行測試，直接中止讓失敗立即浮現
                 fatalError(
                     "Unable to reset the persistent UI test store: \(error.localizedDescription)"
                 )

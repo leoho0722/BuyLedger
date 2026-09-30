@@ -24,6 +24,7 @@
   },
   "testTargets" : [
     {
+      "parallelizable" : false,
       "target" : {
         "containerPath" : "container:BuyLedger.xcodeproj",
         "identifier" : "D0B1FCDD2FA22AA100B50E07",

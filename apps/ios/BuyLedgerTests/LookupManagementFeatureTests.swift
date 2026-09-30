@@ -6,12 +6,11 @@
 //
 
 import ComposableArchitecture
-import Foundation
 import Testing
 
 @testable import BuyLedger
 
-/// 驗證主檔管理的載入、新增與刪除流程
+/// 驗證主檔目錄載入、表單操作與付款方式更正
 @MainActor
 struct LookupManagementFeatureTests {
 
@@ -21,48 +20,47 @@ struct LookupManagementFeatureTests {
     ///
     /// - Parameter kind: 要載入的主檔種類
     @Test(arguments: LookupKind.allCases)
-    func taskLoadsTheRequestedLookupKind(kind: LookupKind) async {
-        // Given
+    func task_指定查詢種類_載入對應項目(kind: LookupKind) async {
         await LookupCatalog.withIsolatedStorage {
+            // Given
             var state = LookupManagementFeature.State(kind: kind)
             state.hasLoadFailed = true
-            state.$catalog.withLock { catalog in
-                catalog.orderSources = ["舊來源"]
-                catalog.categories = ["舊類別"]
-                catalog.paymentMethods = [
-                    PaymentMethodInfo(
-                        name: "舊付款",
-                        isCardless: false,
-                        isBankTransfer: false,
-                        isCashOnDelivery: false
-                    )
-                ]
-                catalog.reconciliationStatuses = ["舊狀態"]
+            state.$catalog.withLock {
+                $0.orderSources = ["舊來源"]
+                $0.categories = ["舊類別"]
+                $0.paymentMethods = [PaymentMethodInfo(name: "舊付款", flags: .none)]
+                $0.reconciliationStatuses = ["舊狀態"]
             }
             let store = TestStore(initialState: state) {
                 LookupManagementFeature()
             } withDependencies: {
                 switch kind {
                 case .orderSource:
-                    $0[OrderSourceRepository.self].fetchOrderSources = { ["新來源"] }
+                    $0.orderSourceService.fetchOrderSources = {
+                        ["新來源"]
+                    }
 
                 case .category:
-                    $0[CategoryRepository.self].fetchCategories = { ["新類別"] }
+                    $0.categoryService.fetchCategories = {
+                        ["新類別"]
+                    }
 
                 case .paymentMethod:
-                    $0[PaymentMethodRepository.self].fetchPaymentMethodInfos = {
+                    $0.paymentMethodService.fetchPaymentMethodInfos = {
                         [
                             PaymentMethodInfo(
                                 name: "新付款",
-                                isCardless: true,
-                                isBankTransfer: false,
-                                isCashOnDelivery: false
-                            )
+                                flags: PaymentMethodFlags(
+                                    isCardless: true,
+                                    isBankTransfer: false,
+                                    isCashOnDelivery: false
+                                )
+                            ),
                         ]
                     }
 
                 case .reconciliationStatus:
-                    $0[ReconciliationStatusRepository.self].fetchReconciliationStatuses = {
+                    $0.reconciliationStatusService.fetchReconciliationStatuses = {
                         ["新狀態"]
                     }
                 }
@@ -77,179 +75,222 @@ struct LookupManagementFeatureTests {
                 $0.hasLoadFailed = false
                 switch kind {
                 case .orderSource:
-                    $0.$catalog.withLock { catalog in catalog.orderSources = ["新來源"] }
+                    $0.$catalog.withLock {
+                        $0.orderSources = ["新來源"]
+                    }
 
                 case .category:
-                    $0.$catalog.withLock { catalog in catalog.categories = ["新類別"] }
+                    $0.$catalog.withLock {
+                        $0.categories = ["新類別"]
+                    }
 
                 case .paymentMethod:
-                    $0.$catalog.withLock { catalog in
-                        catalog.paymentMethods = [
+                    $0.$catalog.withLock {
+                        $0.paymentMethods = [
                             PaymentMethodInfo(
                                 name: "新付款",
-                                isCardless: true,
-                                isBankTransfer: false,
-                                isCashOnDelivery: false
-                            )
+                                flags: PaymentMethodFlags(
+                                    isCardless: true,
+                                    isBankTransfer: false,
+                                    isCashOnDelivery: false
+                                )
+                            ),
                         ]
                     }
 
                 case .reconciliationStatus:
-                    $0.$catalog.withLock { catalog in
-                        catalog.reconciliationStatuses = ["新狀態"]
+                    $0.$catalog.withLock {
+                        $0.reconciliationStatuses = ["新狀態"]
                     }
                 }
             }
-            #expect(store.state.catalog.names(for: kind) == [Self.loadedName(for: kind)])
             await store.finish()
         }
     }
 
-    /// 新增四種主檔時先寫入 repository，再更新共用目錄
+    /// 點擊新增時呈現符合目前主檔種類的表單
     ///
-    /// - Parameter kind: 要新增項目的主檔種類
-    /// - Note: 寫入失敗時目錄維持原值，由 `addWriteFailureIsDismissedAndDoesNotReturnAfterSuccess()` 覆蓋
-    @Test(arguments: LookupKind.allCases)
-    func addFormWritesTheTrimmedName(kind: LookupKind) async {
-        // Given
+    /// - Parameter example: 主檔種類與表單分類狀態
+    @Test(arguments: LookupAdditionExample.examples)
+    func addButtonTapped_點擊新增_呈現對應表單(example: LookupAdditionExample) async {
         await LookupCatalog.withIsolatedStorage {
+            // Given
+            let store = TestStore(initialState: LookupManagementFeature.State(kind: example.kind)) {
+                LookupManagementFeature()
+            }
+
+            // When
+            await store.send(.view(.addButtonTapped)) {
+                $0.destination = .add(
+                    LookupAddFormFeature.State(hasClassification: example.hasClassification)
+                )
+            }
+
+            // Then
+            #expect(
+                store.state.destination == .add(
+                    LookupAddFormFeature.State(hasClassification: example.hasClassification)
+                )
+            )
+            await store.finish()
+        }
+    }
+
+    /// 新增表單修剪前後空白後將預期名稱與旗標寫入 service 和目錄
+    ///
+    /// - Parameter example: 主檔種類及該種類應寫入的付款方式旗標
+    @Test(arguments: LookupAdditionExample.examples)
+    func destination_新增名稱含前後空白_寫入修剪後名稱(example: LookupAdditionExample) async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
             @Shared(.lookupCatalog) var sharedCatalog: LookupCatalog
             let writes = LockIsolated<[LookupItemAddition]>([])
-            let flags = PaymentMethodFlags(
+            let submittedFlags = PaymentMethodFlags(
                 isCardless: false,
                 isBankTransfer: true,
                 isCashOnDelivery: false
             )
-            let expectedAddition = LookupItemAddition(
-                name: "手作小物",
-                flags: kind == .paymentMethod ? flags : .none
+            let expectedAddition = LookupItemAddition(name: "手作小物", flags: example.expectedFlags)
+            var initialState = LookupManagementFeature.State(kind: example.kind)
+            initialState.destination = .add(
+                LookupAddFormFeature.State(hasClassification: example.hasClassification)
             )
-            let store = TestStore(
-                initialState: LookupManagementFeature.State(kind: kind)
-            ) {
+            let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             } withDependencies: {
-                switch kind {
+                switch example.kind {
                 case .orderSource:
-                    $0[OrderSourceRepository.self].addOrderSource = { name in
-                        writes.withValue { additions in
-                            additions.append(LookupItemAddition(name: name, flags: .none))
+                    $0.orderSourceService.addOrderSource = { name in
+                        writes.withValue {
+                            $0.append(LookupItemAddition(name: name, flags: .none))
                         }
                     }
 
                 case .category:
-                    $0[CategoryRepository.self].addCategory = { name in
-                        writes.withValue { additions in
-                            additions.append(LookupItemAddition(name: name, flags: .none))
+                    $0.categoryService.addCategory = { name in
+                        writes.withValue {
+                            $0.append(LookupItemAddition(name: name, flags: .none))
                         }
                     }
 
                 case .paymentMethod:
-                    $0[PaymentMethodRepository.self].addPaymentMethod = { name, flags in
-                        writes.withValue { additions in
-                            additions.append(LookupItemAddition(name: name, flags: flags))
+                    $0.paymentMethodService.addPaymentMethod = { name, flags in
+                        writes.withValue {
+                            $0.append(LookupItemAddition(name: name, flags: flags))
                         }
                     }
 
                 case .reconciliationStatus:
-                    $0[ReconciliationStatusRepository.self].addReconciliationStatus = { name in
-                        writes.withValue { additions in
-                            additions.append(LookupItemAddition(name: name, flags: .none))
+                    $0.reconciliationStatusService.addReconciliationStatus = { name in
+                        writes.withValue {
+                            $0.append(LookupItemAddition(name: name, flags: .none))
                         }
                     }
                 }
             }
 
             // When
-            await store.send(.view(.addButtonTapped)) {
-                $0.destination = .add(
-                    LookupAddFormFeature.State(hasClassification: kind == .paymentMethod)
-                )
-            }
             await store.send(
                 .destination(
                     .presented(
-                        .add(.view(.saveButtonTapped(name: " 手作小物 ", flags: flags)))
+                        .add(.view(.saveButtonTapped(name: " 手作小物 ", flags: submittedFlags)))
                     )
                 )
             )
+
+            // Then
             await store.receive(\.destination.presented.add.delegate.saved) {
                 $0.destination = nil
                 $0.isFormSheetDismissing = true
-                switch kind {
+                switch example.kind {
                 case .orderSource:
-                    $0.$catalog.withLock { catalog in
-                        catalog.orderSources = ["手作小物"]
+                    $0.$catalog.withLock {
+                        $0.orderSources = ["手作小物"]
                     }
 
                 case .category:
-                    $0.$catalog.withLock { catalog in
-                        catalog.categories = ["手作小物"]
+                    $0.$catalog.withLock {
+                        $0.categories = ["手作小物"]
                     }
 
                 case .paymentMethod:
-                    $0.$catalog.withLock { catalog in
-                        catalog.paymentMethods = [
-                            PaymentMethodInfo(
-                                name: "手作小物",
-                                isCardless: false,
-                                isBankTransfer: true,
-                                isCashOnDelivery: false
-                            )
+                    $0.$catalog.withLock {
+                        $0.paymentMethods = [
+                            PaymentMethodInfo(name: "手作小物", flags: example.expectedFlags),
                         ]
                     }
 
                 case .reconciliationStatus:
-                    $0.$catalog.withLock { catalog in
-                        catalog.reconciliationStatuses = ["手作小物"]
+                    $0.$catalog.withLock {
+                        $0.reconciliationStatuses = ["手作小物"]
                     }
                 }
             }
-
             await store.receive(\.addResponse.success, expectedAddition)
-            await store.send(.view(.formSheetDismissed)) {
-                $0.isFormSheetDismissing = false
-            }
-
-            // Then
             #expect(writes.value == [expectedAddition])
             #expect(store.state.items == [expectedAddition.name])
-            #expect(sharedCatalog.names(for: kind) == ["手作小物"])
+            #expect(sharedCatalog.names(for: example.kind) == ["手作小物"])
             await store.finish()
         }
     }
 
-    /// 刪除前要求確認，確認後寫入並從共用目錄移除
-    ///
-    /// - Note: 先寫後改由 `deleteWriteFailureLeavesTheItemAndPresentsNotice` 保證：寫入失敗時項目保留
+    /// 點擊刪除時顯示對應主檔名稱的確認 alert
     @Test
-    func deleteConfirmationWritesAndRemovesTheItem() async {
-        // Given
+    func deleteButtonTapped_點擊刪除_呈現刪除確認() async {
         await LookupCatalog.withIsolatedStorage {
+            // Given
             let state = LookupManagementFeature.State(kind: .category)
-            state.$catalog.withLock { $0.categories = ["服飾"] }
-            let removeCalls = LockIsolated<[String]>([])
+            state.$catalog.withLock {
+                $0.categories = ["服飾"]
+            }
             let store = TestStore(initialState: state) {
                 LookupManagementFeature()
-            } withDependencies: {
-                $0[CategoryRepository.self].removeCategory = { name in
-                    removeCalls.withValue { $0.append(name) }
-                }
             }
 
             // When
             await store.send(.view(.deleteButtonTapped(name: "服飾"))) {
                 $0.destination = Self.deleteConfirmationAlert(name: "服飾")
             }
-            await store.send(
-                .destination(.presented(.alert(.confirmDelete(name: "服飾"))))
-            ) {
+
+            // Then
+            #expect(store.state.destination == Self.deleteConfirmationAlert(name: "服飾"))
+            await store.finish()
+        }
+    }
+
+    /// 確認刪除後呼叫 service 並從共用目錄移除項目
+    ///
+    /// - Note: 寫入失敗保留項目由 `destination_刪除寫入失敗_保留項目並呈現通知()` 覆蓋
+    @Test
+    func destination_確認刪除項目_寫入並移除項目() async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
+            var state = LookupManagementFeature.State(kind: .category)
+            state.$catalog.withLock {
+                $0.categories = ["服飾"]
+            }
+            state.destination = Self.deleteConfirmationAlert(name: "服飾")
+            let removeCalls = LockIsolated<[String]>([])
+            let store = TestStore(initialState: state) {
+                LookupManagementFeature()
+            } withDependencies: {
+                $0.categoryService.removeCategory = { name in
+                    removeCalls.withValue {
+                        $0.append(name)
+                    }
+                }
+            }
+
+            // When
+            await store.send(.destination(.presented(.alert(.confirmDelete(name: "服飾"))))) {
                 $0.destination = nil
             }
 
             // Then
             await store.receive(\.deleteResponse.success, "服飾") {
-                $0.$catalog.withLock { $0.categories = [] }
+                $0.$catalog.withLock {
+                    $0.categories = []
+                }
             }
             #expect(removeCalls.value == ["服飾"])
             #expect(store.state.items.isEmpty)

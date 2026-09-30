@@ -13,6 +13,7 @@ import Foundation
 struct PersistenceFailureFeature {
 
     // MARK: - State
+
     /// 持久層失敗畫面的狀態
     @ObservableState
     struct State: Equatable {
@@ -28,6 +29,7 @@ struct PersistenceFailureFeature {
     }
 
     // MARK: - Action
+
     /// 持久層失敗畫面的事件
     @CasePathable
     enum Action: Equatable {
@@ -35,13 +37,17 @@ struct PersistenceFailureFeature {
         /// 使用者點擊「改用空白資料庫繼續」，開啟二次確認 alert
         case recoveryTapped
 
-        /// 二次確認 alert 的呈現狀態與使用者選擇
+        /// 二次確認 alert 送回的事件
+        ///
+        /// - Parameter action: alert 被關閉，或使用者點選「保留備份並繼續」(`confirmRecovery`)
         case confirmation(PresentationAction<Confirmation>)
 
         /// 隔離備份搬移完成，切到待重啟階段
         case recoverySucceeded
 
         /// 隔離備份搬移失敗，附上可讀原因
+        ///
+        /// - Parameter reason: 錯誤的 `localizedDescription`，直接顯示在畫面上
         case recoveryFailed(String)
 
         /// 二次確認 alert 的選項
@@ -53,14 +59,14 @@ struct PersistenceFailureFeature {
         }
     }
 
-    // MARK: - Dependency Properties
+    // MARK: - Dependencies
 
-    /// SwiftData store 與 sidecar 檔案搬移到隔離備份的依賴介面
-    @Dependency(PersistenceStoreQuarantineClient.self)
-    private var persistenceStoreQuarantine
+    /// 搬移 SwiftData store 與附屬檔 (`-wal`、`-shm`) 到隔離備份的 Service
+    @Dependency(\.persistenceRecoveryService) private var persistenceRecoveryService
 
-    // MARK: - Reducer Body
+    // MARK: - Body
 
+    /// 依事件更新復原流程：點擊後先跳出二次確認，確認後搬移隔離備份，成功切到待重啟，失敗記下原因
     var body: some Reducer<State, Action> {
         Reduce { state, action in
             switch action {
@@ -80,10 +86,10 @@ struct PersistenceFailureFeature {
                 return .none
 
             case .confirmation(.presented(.confirmRecovery)):
-                let persistenceStoreQuarantine = persistenceStoreQuarantine
+                let persistenceRecoveryService = persistenceRecoveryService
                 return .run { send in
                     do {
-                        try persistenceStoreQuarantine.quarantine()
+                        try await persistenceRecoveryService.quarantineStore()
                         await send(.recoverySucceeded)
                     } catch {
                         await send(.recoveryFailed(error.localizedDescription))
@@ -97,7 +103,7 @@ struct PersistenceFailureFeature {
                 state.phase = .relaunchRequired
                 return .none
 
-            case let .recoveryFailed(reason):
+            case .recoveryFailed(let reason):
                 state.recoveryFailureReason = reason
                 return .none
             }

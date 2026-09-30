@@ -86,40 +86,64 @@
 
 ## 環境相依性與依賴注入
 
-- **Repository 以 type-based `@Dependency(SomeRepository.self)` 注入**，不新增 `DependencyValues` keyPath。
-- **所有 repository 的 `liveValue` 共用 `PersistenceContainer.shared`，不各自建立 container**：同一 process 內多個 container (即使 SQLite 同名) 會讓 SwiftData 內部狀態錯亂；建立 container 的工廠函式維持 `private`。
-- **`liveValue` 不 seed sample 資料**：首次啟動是真正的空狀態；`previewValue` 用 in-memory container 並傳 `shouldSeedSampleOrders: true`，讓 Preview 與 snapshot 有內容。
-    - `LedgerOrder.sampleOrders`、`FxRateSnapshot.fallback`、`FxRates` 只給 Preview、單元測試與 `previewValue`，runtime path 不讀。
+- **TCA 相依一律透過 `DependencyValues` 的 key path 取用**：例如 `\.orderService`、`\.buyLedgerDatabase`。
+    - Feature 與 App 組合根取用 Service；Service 的 `liveValue` 以相同方式取得 Database、Client、Store 等技術相依。
+- **Production 的 SwiftData 容器只由 `BuyLedgerDatabaseKey.liveValue` 從 `PersistenceContainer.bootstrap` 建立**：Service 透過 `@Dependency(\.buyLedgerDatabase)` 共用該 Database，不另建容器或存取全域單例；多個 SwiftData 容器會造成同一 process 的資料狀態不一致 (即使 SQLite 同名)；建立 production container 的工廠函式 (`make`、`makeBootstrap`) 維持 `private`。
+    - Production `liveValue` 不載入範例資料，首次啟動是真正的空狀態；不以 Database 為下層的 Service 由各自的 `previewValue` 提供固定假資料。以 Database 為下層的 Service 共用一個記憶體 Database，只 seed 一次 `LedgerOrder.sampleOrders`；其 `previewValue` 通過環境 assert 後回傳 `liveValue`。
+    - `LedgerOrder.sampleOrders`、`FxRateSnapshot.fallback`、`FxRates` 只用於 Preview 與測試，不進 production 路徑。
+- **Feature 的業務操作由 `Sendable` Service struct 提供**：每個操作是一個 closure，`liveValue` 必須是 computed property，並以 key path 注入所需相依；不要用 `static let` 固定第一次解析到的依賴。
+    - Client 與 Store 提供技術操作介面。`HTTPClient` 負責 HTTP 傳輸，`UserDefaultsStore` 只讀寫偏好值，`AppConfigurationStore` 只讀取並正規化 Info.plist 設定；設定 key 與快照組裝留在 `SettingsService`，API key 名稱留在使用端 (`ExchangeRateEndpoint`、`AISummaryService`)。
+    - 操作本身不會失敗時不宣告 `throws`；只有會失敗的 Client、Store、Service 操作才使用 typed throws。`UserDefaultsStore`、`AppConfigurationStore` 與 `SettingsService.load`／`save` 不為符合型別樣板而加上 `throws`。
+- **測試的相依預設值必須讓漏接設定立即失敗**：Service 的 `testValue` 每個 closure 都使用 `unimplemented(...)`；有回傳值時提供中性 `placeholder`，回傳 stream 時提供立即結束的 stream。
+    - Feature 測試只覆寫該測試會呼叫的 Service closure。直接測 Service 的 `liveValue` 時，明確注入所需 Client、Store 與 Database。
+    - Client、Store、Database 不宣告 `testValue`；測試使用它們時要以 `withDependencies` 注入替身，避免誤連正式網路或資料庫。
 - **production code 走 `@Dependency`，不直接呼叫 `Date()`／`UUID()`／`Locale.current`／`TimeZone.current`／`Calendar.current`** (dependency 註冊處除外)。
     - Reducer 在 `// MARK: - Dependencies` 宣告 `@Dependency(\.date) private var date`，以 `date.now`、`uuid()` 取值；SwiftUI View 也可以同樣宣告。
     - State 的 computed property 不呼叫 `Date()`，改成 `func foo(referenceDate: Date)` 由 reducer 或 view 傳入注入後的值。
     - 測試：`TestStore` 用 `withDependencies: { $0.date = .constant(TestDependencies.fixedNow) }`；Calendar 相關測試固定 `TimeZone(secondsFromGMT: 0)` 與 `Calendar(identifier: .gregorian)`。
 
-## ios-dev-kit 規範與既有差異
+## ios-dev-kit 規範與專案差異
 
 - **程式風格、排版、MARK 分區與新檔樣板一律依 `/ios-dev-kit`**：分區見 `references/formatting.md`，TCA Feature 型別見 `references/tca-architecture.md`，新檔從 `assets/templates/` 複製 (樣板選擇表見 `references/file-templates.md`)。
-    - 新增或修改的 Swift 檔依 `/ios-dev-kit` 的固定 MARK 分區；尚未納入本 change 的既有 Feature 檔，留待各自的後續 change 處理。
-    - `switch` 的 `case` 之間空一行 (`formatting.md`)；既有檔案多數仍是不空行，改到某個 `switch` 時整個 `switch` 一起改，同一個 `switch` 不混用兩種寫法。
+    - 新增與修改的 Swift 檔依 `/ios-dev-kit` 的固定 MARK 分區；未修改的既有 Feature 檔留到第 5 至 8 步，不要順手重排。
+    - 修改 `switch` 時整理該 switch 的全部 case，避免同一個 switch 混用排版。
+    - `switch` 的 `case` 之間空一行 (`formatting.md`)。
+- **`if case` 與 `guard case` 的關聯值 pattern 一律用 `case .x(let v)`**：`file-templates.md` 已規定 switch case 使用此寫法，本專案也讓 `if case` 與 `guard case` 維持一致。
 - **SwiftUI View 不以跨檔 `extension` 作為超過 300 行的第一選擇**：跨檔 extension 無法存取同一 View 的 `private @State`／`private @Environment`；為了編譯而降為 `internal` 會破壞狀態封裝。超過 300 行時優先抽成獨立 View 型別並傳入必要值與 closure；確實抽不動時才在 `findings.md` 登記行數例外，寫明原因與使用者裁決。
 - **檔頭日期一律不補零 `YYYY/M/D`** (如 `2026/9/20`)，不是 `file-templates.md` 的 `YYYY/MM/DD`：Xcode 新檔樣板產生的就是不補零格式，補零等於每個新檔都要手動改一次。
     - 檔頭其餘規則仍依 `file-templates.md`：四行結構、不加版權宣告與修改紀錄、建立後不再更新日期。
 - **宣告的大括號本體一律換行，不壓成單行**：`guard ... else { return x }`、`var x: T { expr }`、`func f() -> T { expr }` 都要把本體與結尾大括號各自獨立一行。`formatting.md` 的 `guard let self else { return }` 與單行 closure 範例不適用於宣告本體；作為引數傳入的 inline closure (`map { $0.id }`) 不在此限。
-- **屬性包裝器與宣告同行**：`@Dependency(X.self) private var x`，不拆成兩行；整行超過 100 字元時才換行。
+- **`@Dependency` 屬性包裝器與宣告同行**：例如 `@Dependency(\.orderService) private var orderService`；不同於 `tca-architecture.md` 的分行寫法，本專案不拆成兩行；整行超過 100 字元時才換行。
+- **帶參數的函式型別 `typealias` 超過 100 字元時依參數斷行**：參數各占一行，`)` 與 effects、回傳型別同行；無參數的函式型別維持一行。
+- **無參數函式宣告即使超過 100 字元也維持一行**：沒有參數可供斷行，不在 `)` 後拆行。
 - **由外部注入的 State 值用 `let` 且不給宣告處預設值**，只從 `init` 參數帶入 (如 `SettingsFeature.State.appVersion`)；宣告處放佔位值再於 `init` 覆寫會讓「未注入」與「注入了佔位值」無法區分。
-- **不為了單一呼叫點抽出 helper method**：只被上方一個 computed property 使用的格式化邏輯直接寫在該 property 內 (如 `Bundle.appVersion`)。
+- **小段邏輯不為單一呼叫點抽 helper**：只被一個 computed property 使用的格式化直接寫在該 property 內 (如 `Bundle.appVersion`)。有自己輸入與輸出、超過約 15 行的獨立演算法可抽成函式或 local function；一兩行可直接寫在呼叫端的邏輯仍留在原處。
 - **reducer 的 `body` 只組合，不寫 `Reduce { state, action in }` 閉包**：分支主體抽成 `Private Method` 的第一個方法 `core(state:action:)`，`body` 寫 `Reduce(core)`。
     - 因型別檢查逾時而必須分段時 (見「架構分層」的多段 `Reduce` 規則)，每段各自抽成具名方法再以 `Reduce(段名)` 組合，不保留 inline closure。
 - **一個檔只放一個頂層型別**：同檔多個型別會讓檔案層級的 `// MARK: - Internal Method` 等固定區名重複出現，Xcode jump bar 分不出歸屬。獨立 model 型別各自一檔；巢狀型別 (含 TCA 的 `State`／`Action`) 依 `formatting.md` 把成員就地寫在本體，不另開 extension。
     - 例外：`@Reducer enum` 的 `Destination.State` 由巨集產生，本體無法加成員，alert 建構方法與 `Equatable` 遵循寫在 `extension <Feature>.Destination.State` (如 `LookupManagementFeature+Destination.swift`)。
-- **下列是本專案既有架構與 skill 的差異，新程式碼沿用現有寫法，直到另開 change 重構**：
+- **保留 `extension <Feature>.State` 時，State 與 Feature 的 extension 可共用同一個 MARK**：這是保留 State extension 結構時的必要結果。
+- **`MockBuyLedgerDatabase` 的注入錯誤無法轉成 closure 的 typed throws 型別時保留 `preconditionFailure`**：在型別文件以 `- Note` 說明注入錯誤與 `Failure` 型別不符代表測試設定錯誤，視為程式錯誤。
+- **錯誤可忽略且 catch 只有註解時，改用同一行附理由的 `try?`**：只有註解的 catch 視為空 catch；`catch { return }` 含實際敘述，不屬此例。
+- **Preview seed 或 UI 測試環境無法建立時保留 `fatalError`**：在呼叫前以 `//` 說明無法繼續的原因，讓資料庫定義或測試環境問題立即失敗。
+- **建構裝 closure 的相依 struct 時一律多行**：型別名稱與左括號 (例如 `Self(`) 同行，右括號 `)` 單獨一行；每個引數各占一行。即使只有一個 closure 且呼叫不超過 100 字元也照此，涵蓋 Service、Client、Store 的 dependency、preview、測試替身與覆寫。
+- **錯誤對應 helper 的 trailing closure 一律多行**：`{` 接在呼叫後，closure 本體縮排 4 格，`}` 單獨一行；包括 `PersistenceError.mapFetch`、`mapSave` 與 `wrapStorage`。
+- **依賴配置的過渡例外依排程處理**：局部改動沿用各列的現行位置與取用方式，避免混用架構。
+    - `Core/Dependencies/` 的跨 Feature Service (Order、Campaign、Category、OrderSource、ReconciliationStatus、PaymentMethod) 依第 5 至 8 步搬遷。
+    - `Core/Dependencies/` 的 ExchangeRate 與 CurrencyMetadata Service 依第 10 步決定位置。
+    - `SettingsService` 由 `OrdersFeature` 跨 Feature 取用，依第 6 步處理。
+    - 錯誤型別目前沿用 `XxxPersistenceError` 命名；跨 Feature Service 搬進各 Feature 時改為 `<Feature>Error`。
+    - Service 直接呼叫系統 framework (例如 EventKit、PhotosUI、LocalAuthentication、UIApplication)，依第 10 步處理。
+    - `AppLaunchConfigurator` 以參數預設值注入 `CrashDiagnosticsClient`，預設正式實作並可由呼叫端替換，依第 10 步決定配置方式。
+    - Service 的 `+Preview` 檔與 Service 放在一起，依第 10 步處理，不移至 `Preview Content`。
+    - Feature 專屬 Service 放在該 Feature 的 `Data/`；Feature 其他檔案維持扁平結構，依第 10 步決定目錄調整。
+- **本專案既有架構與 `/ios-dev-kit` 的差異，新程式碼沿用現行寫法**：
     - Reducer body 型別用 `some Reducer<State, Action>` (見技術棧 gotcha)，不用樣板的 `some ReducerOf<Self>`。
-    - `Core/Dependencies/` 的 Repository 與 Client 已是 struct 裝 closure，但尚未對齊 `tca-architecture.md` 的 Service 規則：命名 (`XxxRepository`／`XxxClient`，不是 `<Feature>Service`)、沒有每個 closure 的 typealias、`testValue` 不是全部 `unimplemented`、以型別下標取用 (`@Dependency(CategoryRepository.self)`、`$0[CategoryRepository.self]`) 而非 `DependencyValues` 屬性。整批改造另開 change，在此之前新程式碼沿用型別下標，不局部混用兩種寫法。
-    - 既有的 `extension <Feature>.State` (如 `OrdersFeature+StateQuery.swift`) 尚未把成員移回 `State` 本體，於各 Feature 的修正步驟處理。
+    - 既有的 `extension <Feature>.State` (如 `OrdersFeature+StateQuery.swift`) 尚未把成員移回 `State` 本體，留到第 5 至 8 步處理。
     - `@Shared` 用於主檔目錄 `@Shared(.lookupCatalog)` 的記憶體內共享 (規則見 `ios-data-layer.md`)。
-    - `exhaustivity = .off` 有既有數處，由 `TestSuiteIntegrityTests` 限制總數不增加：新增一處必須同時移除他處。
+    - `TestStore` 不設定 `exhaustivity = .off`；`TestSuiteIntegrityTests` 要求使用數量維持 0，保持未接收 action 與未預期狀態變更都能讓測試失敗。
     - 通用 extension 放 `Shared/Extensions/`，不是 `Core/Extensions/`。
     - 金額、百分比、日期格式化用 `BLFormatters`／`OrderFormatters`／`CampaignFormatters` 的靜態函式，不是 `FormatStyle`。
-    - 測試方法名稱維持單段 lowerCamel，方法層 selector 以 `()` 精準選取，避免以底線拆成多段命名。
     - 設定寫入維持 reducer 內同步呼叫，讓連續輸入依序保存，避免非同步效果重排快照。
     - `OrdersFeaturePerformanceTests` 維持 XCTest，其餘單元測試用 Swift Testing。
 

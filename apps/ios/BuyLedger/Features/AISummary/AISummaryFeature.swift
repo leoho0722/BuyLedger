@@ -19,7 +19,7 @@ struct AISummaryFeature {
     @ObservableState
     struct State: Equatable {
 
-        /// 已組好的完整 prompt
+        /// 已組好、要送給 AI 的完整指令 (prompt)
         let prompt: String
 
         /// 使用的 Ollama 模型名稱
@@ -54,7 +54,7 @@ struct AISummaryFeature {
         /// - Parameter text: 新收到的總結文字
         case chunkReceived(String)
 
-        /// 串流失敗，帶友善訊息
+        /// 串流失敗，畫面改顯示失敗狀態
         ///
         /// - Parameter message: 顯示給使用者的失敗訊息
         case streamFailed(LocalizedStringResource)
@@ -75,28 +75,25 @@ struct AISummaryFeature {
             /// 使用者點擊重試
             case retryTapped
 
-            /// 使用者點擊完成並關閉 sheet
+            /// 使用者點擊關閉按鈕，取消進行中的串流並關閉 sheet
             case closeTapped
         }
     }
 
     // MARK: - Dependencies
 
-    /// Ollama Cloud AI 摘要串流 client
-    @Dependency(OllamaClient.self) private var ollamaClient
-
-    /// App 執行環境的設定來源
-    @Dependency(\.appConfiguration) private var appConfiguration
+    /// AI 摘要串流與 API 金鑰讀取
+    @Dependency(\.aiSummaryService) private var aiSummaryService
 
     /// 用於串流整體逾時競速的時鐘
     @Dependency(\.continuousClock) private var continuousClock
 
-    /// 關閉總結 sheet 的呈現依賴
+    /// 關閉總結 sheet 的動作
     @Dependency(\.dismiss) private var dismiss
 
     // MARK: - Body
 
-    /// 總結 reducer
+    /// 只負責組合 reducer，總結自己的邏輯在 `core(state:action:)`
     var body: some Reducer<State, Action> {
         Reduce(core)
     }
@@ -105,6 +102,13 @@ struct AISummaryFeature {
 // MARK: - Nested Types
 
 extension AISummaryFeature {
+
+    /// 串流 effect 的取消識別
+    private enum CancelID {
+
+        /// 串流任務
+        case stream
+    }
 
     /// AI 摘要的串流階段
     enum Phase: Equatable {
@@ -134,20 +138,13 @@ extension AISummaryFeature {
         /// 串流被取消
         case cancelled
 
-        /// 串流回傳可分類的 API 錯誤
+        /// 串流因可辨識的原因失敗
         ///
-        /// - Parameter error: API 層回傳的錯誤
+        /// - Parameter error: 失敗原因 (金鑰無效、額度用完、連線失敗、伺服器回應錯誤或資料格式不符)
         case apiFailure(APIError)
 
         /// 串流回傳無法分類的錯誤
         case unknownFailure
-    }
-
-    /// 串流 effect 的取消識別
-    private enum CancelID {
-
-        /// 串流任務
-        case stream
     }
 }
 
@@ -173,7 +170,7 @@ private extension AISummaryFeature {
                 .run { _ in await dismissAction() }
             )
 
-        case let .chunkReceived(text):
+        case .chunkReceived(let text):
             state.summaryText += text
             return .none
 
@@ -181,7 +178,7 @@ private extension AISummaryFeature {
             state.phase = .finished
             return .none
 
-        case let .streamFailed(message):
+        case .streamFailed(let message):
             state.phase = .failed
             state.errorMessage = message
             return .none
@@ -190,6 +187,32 @@ private extension AISummaryFeature {
             state.phase = .finished
             state.truncationMessage = "AI 總結已達時間上限，以下顯示已取得的內容；摘要已截斷。"
             return .none
+        }
+    }
+
+    /// 對應到 AI 總結 sheet 的友善失敗訊息
+    ///
+    /// - Parameter error: AI 服務回傳的失敗原因
+    /// - Returns: 顯示給使用者的失敗訊息
+    static func summaryFailureMessage(for error: APIError) -> LocalizedStringResource {
+        switch error {
+        case .invalidKey:
+            "AI 服務驗證失敗，目前無法使用總結功能。"
+
+        case .quotaExceeded:
+            "API 配額已用罄，請稍後再試。"
+
+        case .http(let statusCode):
+            "伺服器回應錯誤 (\(statusCode))，目前無法完成總結。"
+
+        case .transport:
+            "連線發生問題，請檢查網路後再試。"
+
+        case .decoding:
+            "回應格式無法解析，請稍後再試。"
+
+        case .apiError(let code):
+            "服務發生錯誤 (\(code))，請稍後再試。"
         }
     }
 
@@ -205,95 +228,65 @@ private extension AISummaryFeature {
 
         let prompt = state.prompt
         let model = state.model
-        let client = ollamaClient
-        let configuration = appConfiguration
+        let service = aiSummaryService
         let streamClock = continuousClock
         return .run { send in
-            guard let apiKey = configuration.ollamaAPIKey() else {
-                AppLogger.inference.error(
-                    "AI 總結無法啟動：OLLAMA_API_KEY 未注入 (xcconfig 未設定)"
-                )
-                await send(.streamFailed("AI 總結尚未完成設定，目前無法使用。"))
-                return
-            }
-
-            let result = await withTaskGroup(of: StreamResult.self) { group in
-                group.addTask {
-                    do {
-                        for try await chunk in client.streamSummary(prompt, model, apiKey) {
-                            await send(.chunkReceived(chunk))
+            if let apiKey = service.apiKey() {
+                let result = await withTaskGroup(of: StreamResult.self) { group in
+                    group.addTask {
+                        do {
+                            for try await chunk in service.streamSummary(prompt, model, apiKey) {
+                                await send(.chunkReceived(chunk))
+                            }
+                            return .finished
+                        } catch {
+                            if Task.isCancelled {
+                                return .cancelled
+                            }
+                            if let apiError = error as? APIError {
+                                return .apiFailure(apiError)
+                            }
+                            return .unknownFailure
                         }
-                        return .finished
-                    } catch {
-                        if Task.isCancelled {
+                    }
+
+                    group.addTask {
+                        do {
+                            try await streamClock.sleep(for: AISummaryService.overallStreamDuration)
+                            return .timedOut
+                        } catch {
                             return .cancelled
                         }
-                        if let apiError = error as? APIError {
-                            return .apiFailure(apiError)
-                        }
-                        return .unknownFailure
                     }
-                }
 
-                group.addTask {
-                    do {
-                        try await streamClock.sleep(for: OllamaClient.overallStreamDuration)
-                        return .timedOut
-                    } catch {
-                        return .cancelled
+                    guard let result = await group.next() else {
+                        return StreamResult.cancelled
                     }
+                    group.cancelAll()
+                    return result
                 }
 
-                guard let result = await group.next() else {
-                    return StreamResult.cancelled
+                switch result {
+                case .finished:
+                    await send(.streamFinished)
+
+                case .timedOut:
+                    await send(.streamTimedOut)
+
+                case .apiFailure(let error):
+                    await send(.streamFailed(Self.summaryFailureMessage(for: error)))
+
+                case .unknownFailure:
+                    await send(.streamFailed("總結失敗，請稍後再試。"))
+
+                case .cancelled:
+                    break
                 }
-                group.cancelAll()
-                return result
-            }
-
-            switch result {
-            case .finished:
-                await send(.streamFinished)
-
-            case .timedOut:
-                await send(.streamTimedOut)
-
-            case let .apiFailure(error):
-                await send(.streamFailed(Self.summaryFailureMessage(for: error)))
-
-            case .unknownFailure:
-                await send(.streamFailed("總結失敗，請稍後再試。"))
-
-            case .cancelled:
-                break
+            } else {
+                AppLogger.inference.error("AI 總結無法啟動：OLLAMA_API_KEY 未注入 (xcconfig 未設定)")
+                await send(.streamFailed("AI 總結尚未完成設定，目前無法使用。"))
             }
         }
         .cancellable(id: CancelID.stream, cancelInFlight: true)
-    }
-
-    /// 對應到 AI 總結 sheet 的友善失敗訊息
-    ///
-    /// - Parameter error: AI 服務回傳的 API 錯誤
-    /// - Returns: 顯示給使用者的失敗訊息
-    static func summaryFailureMessage(for error: APIError) -> LocalizedStringResource {
-        switch error {
-        case .invalidKey:
-            "AI 服務驗證失敗，目前無法使用總結功能。"
-
-        case .quotaExceeded:
-            "API 配額已用罄，請稍後再試。"
-
-        case let .http(statusCode):
-            "伺服器回應錯誤 (\(statusCode))，目前無法完成總結。"
-
-        case .transport:
-            "連線發生問題，請檢查網路後再試。"
-
-        case .decoding:
-            "回應格式無法解析，請稍後再試。"
-
-        case let .apiError(code):
-            "服務發生錯誤 (\(code))，請稍後再試。"
-        }
     }
 }

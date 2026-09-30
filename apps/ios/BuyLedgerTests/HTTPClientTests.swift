@@ -7,6 +7,7 @@
 
 import Foundation
 import Testing
+
 @testable import BuyLedger
 
 /// 驗證 HTTP client 的請求與錯誤處理
@@ -14,10 +15,13 @@ struct HTTPClientTests {
 
     // MARK: - Tests
 
-    /// 驗證 HTTP client 在此情境下的請求與錯誤
-    @Test func sendBuildsRequestWithMethodHeadersBodyAndTimeout() async throws(any Error) {
+    /// 驗證 HTTP client 保留請求 `URL`、方法、標頭、內容與逾時
+    ///
+    /// - Throws: 測試前置條件或請求檢查未通過時，由 `#require` 丟出測試失敗；
+    ///   傳輸失敗時丟出 `.transport(underlying:)`，狀態碼不在 200 至 299 時丟出 `.http(statusCode:)`
+    @Test
+    func send_自訂方法標頭本文與逾時_完整建立請求() async throws {
         // Given
-
         let url = try #require(URL(string: "https://example.com/resource"))
         let response = try #require(
             HTTPURLResponse(
@@ -28,25 +32,10 @@ struct HTTPClientTests {
             )
         )
         let body = Data("request-body".utf8)
-        let recorder = URLRequestRecorder()
-        let client = HTTPClient(
-            data: { request in
-                await recorder.record(request)
-                return (Data(), response)
-            },
-            stream: {
-                (_: URLRequest) async throws(APIError) -> (
-                    URLSession.AsyncBytes,
-                    HTTPURLResponse
-                ) in
-                throw APIError.transport(
-                    underlying: TestDependencies.makeUnderlyingError(message: "unused stream")
-                )
-            }
-        )
+        let client = MockHTTPClient()
+        client.dataResult = .success((Data(), response))
 
         // When
-
         _ = try await client.send(
             url: url,
             method: .post,
@@ -58,9 +47,8 @@ struct HTTPClientTests {
             timeout: 12.5
         )
 
-        let request = try #require(await recorder.recordedRequest())
         // Then
-
+        let request = try #require(client.dataReceivedArguments.first)
         #expect(request.url == url)
         #expect(request.httpMethod == "POST")
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer test-token")
@@ -69,10 +57,13 @@ struct HTTPClientTests {
         #expect(request.timeoutInterval == 12.5)
     }
 
-    /// 驗證 HTTP client 在此情境下的請求與錯誤
-    @Test func statusCodeOutsideSuccessRangeIsClassifiedAsHTTPError() async throws(any Error) {
+    /// 驗證非 2xx 狀態碼會分類為 `APIError.http`
+    ///
+    /// - Throws: 測試 URL、`HTTPURLResponse` 建立失敗，或預期的 HTTP 錯誤 case 未出現時，
+    ///   由 `#require` 丟出測試失敗
+    @Test
+    func send_回應狀態非二百至二九九_分類為狀態碼錯誤() async throws {
         // Given
-
         let url = try #require(URL(string: "https://example.com/resource"))
         let response = try #require(
             HTTPURLResponse(
@@ -82,126 +73,155 @@ struct HTTPClientTests {
                 headerFields: nil
             )
         )
-        let client = HTTPClient(
-            data: { _ in (Data("response".utf8), response) },
-            stream: {
-                (_: URLRequest) async throws(APIError) -> (
-                    URLSession.AsyncBytes,
-                    HTTPURLResponse
-                ) in
-                throw APIError.transport(
-                    underlying: TestDependencies.makeUnderlyingError(message: "unused stream")
-                )
-            }
-        )
+        let client = MockHTTPClient()
+        client.dataResult = .success((Data("response".utf8), response))
+        var actualError: APIError?
 
-        do {
-            // When
-
+        // When
+        do throws(APIError) {
             _ = try await client.send(url: url)
-            // Then
-
-            Issue.record("預期 HTTP 300 會被拒絕。")
         } catch {
-            switch error {
-            case let .http(statusCode):
-                #expect(statusCode == 300)
-            case .transport, .decoding, .apiError, .quotaExceeded, .invalidKey:
-                Issue.record("預期為 HTTP 狀態錯誤，實際為其他 API 錯誤。")
-            }
+            actualError = error
         }
+
+        // Then
+        let error = try #require(actualError)
+        let receivedStatusCode: Int?
+        switch error {
+        case .http(let statusCode):
+            receivedStatusCode = statusCode
+
+        case .transport, .decoding, .apiError, .quotaExceeded, .invalidKey:
+            receivedStatusCode = nil
+        }
+        let statusCode = try #require(receivedStatusCode)
+        #expect(statusCode == 300)
     }
 
-    /// 驗證 HTTP client 在此情境下的請求與錯誤
-    @Test func transportFailureIsForwardedWithoutReclassification() async throws(any Error) {
+    /// `data(for:)` 丟出的 `.transport(underlying:)` 經 `send` 原樣轉送，底層錯誤的 `domain`、`code` 與說明都不變
+    ///
+    /// - Throws: 測試 URL 建立失敗，或預期的錯誤 case／底層資訊未出現時，
+    ///   由 `#require` 丟出測試失敗
+    @Test
+    func send_傳輸發生錯誤_原樣轉送錯誤() async throws {
         // Given
-
         let url = try #require(URL(string: "https://example.com/resource"))
         let expectedUnderlying = NSError(
             domain: "com.leoho.BuyLedger.http-client-test",
             code: 503,
             userInfo: [NSLocalizedDescriptionKey: "network unavailable"]
         )
-        let client = HTTPClient(
-            data: { (_: URLRequest) async throws(APIError) -> (Data, HTTPURLResponse) in
-                throw APIError.transport(underlying: expectedUnderlying)
-            },
-            stream: {
-                (_: URLRequest) async throws(APIError) -> (
-                    URLSession.AsyncBytes,
-                    HTTPURLResponse
-                ) in
-                throw APIError.transport(
-                    underlying: TestDependencies.makeUnderlyingError(message: "unused stream")
-                )
-            }
-        )
-
-        do {
-            // When
-
-            _ = try await client.send(url: url)
-            // Then
-
-            Issue.record("預期會拋出 transport 錯誤。")
-        } catch {
-            switch error {
-            case let .transport(underlying):
-                let actualUnderlying = underlying as NSError
-                #expect(actualUnderlying.domain == expectedUnderlying.domain)
-                #expect(actualUnderlying.code == expectedUnderlying.code)
-                #expect(
-                    actualUnderlying.localizedDescription == expectedUnderlying.localizedDescription
-                )
-            case .http, .decoding, .apiError, .quotaExceeded, .invalidKey:
-                Issue.record("預期為帶 NSError 底層錯誤的 API transport 錯誤。")
-            }
-        }
-    }
-
-    /// 未注入 HTTP client 依賴時應使用自有診斷分類
-    @Test func unconfiguredHTTPClientUsesDependencyDiagnostic() async throws(any Error) {
-        // Given
-
-        let url = try #require(URL(string: "https://example.com/resource"))
-        let request = URLRequest(url: url)
+        let client = MockHTTPClient()
+        client.dataResult = .failure(.transport(underlying: expectedUnderlying))
+        var actualError: APIError?
 
         // When
-
-        do {
-            _ = try await HTTPClient.testValue.data(request)
-            // Then
-
-            Issue.record("未注入的 HTTP client 應拋出 transport 錯誤。")
+        do throws(APIError) {
+            _ = try await client.send(url: url)
         } catch {
-            switch error {
-            case let .transport(underlying):
-                let diagnosticError = underlying as NSError
-                #expect(diagnosticError.domain == "com.leoho.BuyLedger.networking")
-                #expect(diagnosticError.code == 2)
-            case .http, .decoding, .apiError, .quotaExceeded, .invalidKey:
-                Issue.record("預期為未注入依賴的 transport 錯誤。")
-            }
+            actualError = error
         }
+
+        // Then
+        let error = try #require(actualError)
+        let receivedUnderlying: (any Error & Sendable)?
+        switch error {
+        case .transport(let underlying):
+            receivedUnderlying = underlying
+
+        case .http, .decoding, .apiError, .quotaExceeded, .invalidKey:
+            receivedUnderlying = nil
+        }
+        let underlying = try #require(receivedUnderlying)
+        let actualUnderlying = underlying as NSError
+        #expect(actualUnderlying.domain == expectedUnderlying.domain)
+        #expect(actualUnderlying.code == expectedUnderlying.code)
+        #expect(actualUnderlying.localizedDescription == expectedUnderlying.localizedDescription)
     }
-}
 
-// MARK: - Test Doubles
-/// 記錄測試收到的 HTTP request
-private actor URLRequestRecorder {
+    /// 驗證串流請求保留方法、標頭、本文與逾時
+    ///
+    /// - Throws: 建立測試 URL 失敗、串流沒有丟出任何錯誤，或 `bytes(for:)` 沒有收到請求時，由 `#require` 丟出
+    @Test
+    func stream_自訂方法標頭本文與逾時_完整建立請求() async throws {
+        // Given
+        let url = try #require(URL(string: "https://example.com/stream"))
+        let body = Data("stream-request-body".utf8)
+        let client = MockHTTPClient()
+        var actualError: APIError?
 
-    /// 最近一次收到的 HTTP request
-    private var request: URLRequest?
+        // When
+        do throws(APIError) {
+            _ = try await client.stream(
+                url: url,
+                method: .post,
+                headers: [
+                    "Authorization": "Bearer stream-test-token",
+                    "Content-Type": "application/x-ndjson",
+                ],
+                body: body,
+                timeout: 12.5
+            )
+        } catch {
+            actualError = error
+        }
 
-    /// 記錄收到的 HTTP request
-    /// - Parameter request: 收到的 HTTP request
-    func record(_ request: URLRequest) {
-        self.request = request
+        // Then
+        let error = try #require(actualError)
+        let receivedUnderlying: (any Error & Sendable)?
+        switch error {
+        case .transport(let underlying):
+            receivedUnderlying = underlying
+
+        case .http, .decoding, .apiError, .quotaExceeded, .invalidKey:
+            receivedUnderlying = nil
+        }
+        #expect(receivedUnderlying != nil)
+        #expect(client.bytesCallCount == 1)
+        let request = try #require(client.bytesReceivedArguments.first)
+        #expect(request.url == url)
+        #expect(request.httpMethod == "POST")
+        #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer stream-test-token")
+        #expect(request.value(forHTTPHeaderField: "Content-Type") == "application/x-ndjson")
+        #expect(request.httpBody == body)
+        #expect(request.timeoutInterval == 12.5)
     }
 
-    /// 回傳最近一次記錄的請求
-    /// - Returns: 最近一次收到的 URL request；尚未記錄時為 `nil`
-    func recordedRequest() -> URLRequest? {
-        request
+    /// 驗證串流回應非 2xx 時分類為 `APIError.http`
+    ///
+    /// - Throws: 建立測試 URL 失敗或串流沒有丟出任何錯誤時，由 `#require` 丟出
+    @Test
+    func stream_回應狀態非二百至二九九_分類為狀態碼錯誤() async throws {
+        // Given
+        let url = try #require(URL(string: "https://example.com/non-success-stream"))
+        let authorization = "Bearer http-client-status-test"
+        MockURLProtocol.setStub(
+            authorization: authorization,
+            statusCode: 503,
+            body: Data("unavailable".utf8)
+        )
+        let configuration = URLSessionConfiguration.ephemeral
+        configuration.protocolClasses = [MockURLProtocol.self]
+        let client = HTTPClient(session: URLSession(configuration: configuration))
+        var actualError: APIError?
+
+        // When
+        do throws(APIError) {
+            _ = try await client.stream(url: url, headers: ["Authorization": authorization])
+        } catch {
+            actualError = error
+        }
+
+        // Then
+        let error = try #require(actualError)
+        let receivedStatusCode: Int?
+        switch error {
+        case .http(let statusCode):
+            receivedStatusCode = statusCode
+
+        case .transport, .decoding, .apiError, .quotaExceeded, .invalidKey:
+            receivedStatusCode = nil
+        }
+        #expect(receivedStatusCode == 503)
     }
 }

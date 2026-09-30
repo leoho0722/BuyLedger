@@ -24,16 +24,16 @@ struct FxFeature {
         /// 來源幣別的金額
         var amount: Decimal = 150_000
 
-        /// 已從 API 取得的最新匯率快照；`nil` 代表尚未拉取或拉取失敗
+        /// 已從網路取得的最新匯率快照；`nil` 代表尚未取得或取得失敗
         var snapshot: FxRateSnapshot?
 
-        /// 是否正在發 API 請求
+        /// 是否正在載入最新匯率
         var isLoading: Bool = false
 
         /// 最新匯率失敗時顯示給使用者的訊息；`nil` 表示沒有錯誤
         var errorMessage: LocalizedStringResource?
 
-        /// 可供選擇的幣別清單；由 ``CurrencyMetadataRepository`` 提供
+        /// 可供選擇的幣別清單；由 ``CurrencyMetadataService`` 提供
         var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
 
         /// 金額欄位是否取得鍵盤焦點
@@ -42,12 +42,12 @@ struct FxFeature {
         /// 目前呈現中的幣別選擇流程；`nil` 表示未呈現
         @Presents var destination: Destination.State?
 
-        /// 來源幣別目前的匯率 (1 單位 = X TWD)；無 snapshot 時為 `nil`
+        /// 來源幣別目前的匯率 (1 單位 = X TWD)；無 `snapshot` 時為 `nil`
         var rate: Decimal? {
             displayRate(for: fromCurrency)
         }
 
-        /// 換算後的 TWD 金額；無 snapshot 時為 `nil`
+        /// 換算後的 TWD 金額；無 `snapshot` 時為 `nil`
         var convertedTWD: Decimal? {
             rate.map { amount * $0 }
         }
@@ -60,7 +60,7 @@ struct FxFeature {
         /// 任意幣別目前對 TWD 的匯率 (1 單位 = X TWD)
         ///
         /// - Parameter currency: 要查詢的幣別
-        /// - Returns: 對應的 TWD 匯率
+        /// - Returns: 對應的 TWD 匯率；查無匯率時為 `nil`
         func displayRate(for currency: CurrencyCode) -> Decimal? {
             if currency == .twd {
                 return 1
@@ -92,12 +92,12 @@ struct FxFeature {
 
         /// 幣別主檔載入結果
         ///
-        /// - Parameter result: 幣別主檔載入成功或失敗的結果
-        case currencyCodesResponse(Result<[CurrencyCode], CurrencyMetadataRepositoryError>)
+        /// - Parameter result: 成功帶回幣別清單，失敗帶回錯誤
+        case currencyCodesResponse(Result<[CurrencyCode], CurrencyMetadataServiceError>)
 
         /// 匯率載入結果
         ///
-        /// - Parameter result: 匯率載入成功或失敗的結果
+        /// - Parameter result: 成功帶回匯率快照，失敗帶回錯誤
         case ratesResponse(Result<FxRateSnapshot, APIError>)
 
         /// 匯率工具畫面事件
@@ -127,15 +127,15 @@ struct FxFeature {
 
     // MARK: - Dependencies
 
-    /// 匯率 API client
-    @Dependency(ExchangeRateClient.self) private var client
+    /// 取得以新台幣計價的最新匯率；畫面出現與重新載入時使用
+    @Dependency(\.exchangeRateService) private var exchangeRateService
 
-    /// 幣別主檔資料來源；用於畫面出現時載入最新清單
-    @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
+    /// 幣別主檔資料來源；用於畫面出現與重新載入時取得最新清單
+    @Dependency(\.currencyMetadataService) private var currencyMetadataService
 
     // MARK: - Body
 
-    /// 匯率工具 reducer
+    /// 組合雙向繫結、匯率工具自己的邏輯 (`core(state:action:)`) 與幣別選擇流程
     var body: some Reducer<State, Action> {
         BindingReducer()
         Reduce(core)
@@ -187,7 +187,7 @@ private extension FxFeature {
             state.errorMessage = nil
             return loadRatesAndCurrencies()
 
-        case let .view(.quickAmountTapped(amount)):
+        case .view(.quickAmountTapped(let amount)):
             state.amount = amount
             return .none
 
@@ -195,7 +195,7 @@ private extension FxFeature {
             state.destination = .currencyPicker
             return .none
 
-        case let .view(.currencySelected(code)):
+        case .view(.currencySelected(let code)):
             state.fromCurrency = CurrencyCode(rawValue: code)
             state.destination = nil
             return .none
@@ -203,7 +203,7 @@ private extension FxFeature {
         case .destination:
             return .none
 
-        case let .currencyCodesResponse(.success(codes)):
+        case .currencyCodesResponse(.success(let codes)):
             guard !codes.isEmpty else {
                 return .none
             }
@@ -217,51 +217,23 @@ private extension FxFeature {
         case .currencyCodesResponse(.failure):
             return .none
 
-        case let .ratesResponse(.success(snapshot)):
+        case .ratesResponse(.success(let snapshot)):
             state.isLoading = false
             state.snapshot = snapshot
             state.errorMessage = nil
             return .none
-        case let .ratesResponse(.failure(error)):
+
+        case .ratesResponse(.failure(let error)):
             state.isLoading = false
             state.errorMessage = Self.userMessage(for: error)
             return .none
         }
     }
 
-    /// 載入最新匯率與幣別主檔
-    ///
-    /// - Returns: 匯率與幣別主檔載入 effect
-    func loadRatesAndCurrencies() -> Effect<Action> {
-        let client = client
-        let currencyMetadataRepository = currencyMetadataRepository
-        return .run { send in
-            do {
-                let codes = try await currencyMetadataRepository.fetchCodes()
-                await send(.currencyCodesResponse(.success(codes)))
-            } catch {
-                if let error = error as? CurrencyMetadataRepositoryError {
-                    await send(.currencyCodesResponse(.failure(error)))
-                }
-            }
-
-            do {
-                let snapshot = try await client.fetchLatest(.twd)
-                await send(.ratesResponse(.success(snapshot)))
-            } catch {
-                guard let error = error as? APIError else {
-                    return
-                }
-                await send(.ratesResponse(.failure(error)))
-            }
-
-        }
-    }
-
     /// 把 ``APIError`` 轉成顯示給使用者的訊息
     ///
-    /// - Parameter error: API 錯誤
-    /// - Returns: 中文使用者訊息
+    /// - Parameter error: 載入匯率時的失敗原因
+    /// - Returns: 依 App 語言顯示給使用者的錯誤訊息
     static func userMessage(for error: APIError) -> LocalizedStringResource {
         switch error {
         case .invalidKey:
@@ -273,14 +245,42 @@ private extension FxFeature {
         case .transport:
             return "網路連線異常；無法顯示即時匯率，請稍後再試。"
 
-        case let .http(statusCode):
+        case .http(let statusCode):
             return "匯率 API 回應 HTTP \(statusCode)；無法顯示即時匯率。"
 
         case .decoding:
             return "匯率資料格式異常；無法顯示即時匯率。"
 
-        case let .apiError(code):
+        case .apiError(let code):
             return "匯率 API 回應錯誤 (\(code))；無法顯示即時匯率。"
+        }
+    }
+
+    /// 載入最新匯率與幣別主檔
+    ///
+    /// - Returns: 匯率與幣別主檔載入 effect
+    func loadRatesAndCurrencies() -> Effect<Action> {
+        let exchangeRateService = exchangeRateService
+        let currencyMetadataService = currencyMetadataService
+        return .run { send in
+            do {
+                let codes = try await currencyMetadataService.fetchCodes()
+                await send(.currencyCodesResponse(.success(codes)))
+            } catch {
+                if let error = error as? CurrencyMetadataServiceError {
+                    await send(.currencyCodesResponse(.failure(error)))
+                }
+            }
+
+            do {
+                let snapshot = try await exchangeRateService.fetchLatest(.twd)
+                await send(.ratesResponse(.success(snapshot)))
+            } catch {
+                guard let error = error as? APIError else {
+                    return
+                }
+                await send(.ratesResponse(.failure(error)))
+            }
         }
     }
 }

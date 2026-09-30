@@ -26,7 +26,7 @@ paths:
     - `BuyLedgerApp.body` 的 `onChange(of: scenePhase)` 經 `AppScenePhaseCoordinator.handle(newPhase:send:)` 轉送 `AppLockFeature` 的 `appDidResignActive`／`appDidBecomeActive`；抽成獨立型別是為了能單元測試。
     - 任何「畫面或系統事件到動作」的接線都要有對應測試 (比照 `AppScenePhaseCoordinatorTests`)，不能只靠程式碼看起來合理。
     - 背景上鎖不保證多工切換器縮圖不含內容；需要這項保證時要另以獨立 `UIWindow` 遮蔽層處理。
-- **啟用帳本保護前先通過一次驗證**：`AppLockFeature.enableToggled(true)` 先呼叫 `BiometricAuthClient`，成功才設 `isProtectionEnabled` 並持久化，失敗、取消或裝置不支援時開關維持關閉並顯示對話框；未驗證就開啟可能讓使用者無法進入 App，只能重裝並失去資料。
+- **啟用帳本保護前先通過一次驗證**：`AppLockFeature.enableToggled(true)` 先呼叫 `BiometricAuthService`，成功才設 `isProtectionEnabled` 並持久化，失敗、取消或裝置不支援時開關維持關閉並顯示對話框；未驗證就開啟可能讓使用者無法進入 App，只能重裝並失去資料。
     - 設定頁 Toggle 用自訂 `Binding` (`get` 讀已生效的值、`set` 只送出意圖)，不用 `$store.xxx`，讓驗證失敗時開關自動彈回。
 
 ## 呈現

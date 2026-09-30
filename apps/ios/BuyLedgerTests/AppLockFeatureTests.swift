@@ -6,309 +6,315 @@
 //
 
 import ComposableArchitecture
-import Foundation
 import SwiftUI
 import Testing
+
 @testable import BuyLedger
 
-/// 驗證啟用 App 鎖定須先驗證成功
+/// 驗證 App 鎖定的啟用、鎖定與解鎖流程
 @MainActor
 struct AppLockFeatureTests {
 
     // MARK: - Tests
 
-    @Test func enablingProtectionWritesTheSettingOnlyAfterAuthenticationSucceeds() async {
+    /// 切換時先要求驗證，成功後才啟用 App 鎖定
+    @Test
+    func enableToggled_驗證成功_啟用App鎖定() async {
+        // Given
         let store = TestStore(initialState: AppLockFeature.State()) {
             AppLockFeature()
         } withDependencies: {
-            $0[BiometricAuthClient.self] = BiometricAuthClient(
-                isAvailable: { true },
-                authenticate: { _ in .success },
-                biometryType: { .faceID }
-            )
+            $0.biometricAuthService.isAvailable = {
+                true
+            }
+            $0.biometricAuthService.authenticate = { _ in
+                .success
+            }
         }
 
-        // 切換開關不會在驗證完成前寫入設定。
+        // When
         await store.send(.enableToggled(true))
+
+        // Then
         await store.receive(\.enableAuthenticationFinished) {
             $0.isBiometricUnlockEnabled = true
         }
     }
 
-    @Test func enablingProtectionStaysOffWhenAuthenticationFails() async {
+    /// 驗證失敗與取消都顯示相同的啟用失敗說明
+    ///
+    /// - Parameter result: 本次驗證結果
+    @Test(arguments: [BiometricAuthService.AuthenticationResult.failure, .cancelled])
+    func enableToggled_驗證失敗或使用者取消_維持關閉並顯示警告(
+        result: BiometricAuthService.AuthenticationResult
+    ) async {
+        // Given
         let store = TestStore(initialState: AppLockFeature.State()) {
             AppLockFeature()
         } withDependencies: {
-            $0[BiometricAuthClient.self] = BiometricAuthClient(
-                isAvailable: { true },
-                authenticate: { _ in .failure },
-                biometryType: { .faceID }
-            )
+            $0.biometricAuthService.isAvailable = {
+                true
+            }
+            $0.biometricAuthService.authenticate = { _ in
+                result
+            }
         }
 
+        // When
         await store.send(.enableToggled(true))
+
+        // Then
         await store.receive(\.enableAuthenticationFinished) {
             $0.enableFailureAlert = Self.expectedFailureAlert
         }
-
-        #expect(store.state.isBiometricUnlockEnabled == false)
     }
 
-    @Test func enablingProtectionStaysOffWhenAuthenticationIsCancelled() async {
+    /// 裝置不支援時不發出驗證請求，直接顯示不支援說明
+    ///
+    /// - Note: `testValue` 的 `authenticate` 為 `unimplemented`，非預期驗證會使測試失敗
+    @Test
+    func enableToggled_裝置不支援驗證_維持關閉並顯示警告() async {
+        // Given
         let store = TestStore(initialState: AppLockFeature.State()) {
             AppLockFeature()
         } withDependencies: {
-            $0[BiometricAuthClient.self] = BiometricAuthClient(
-                isAvailable: { true },
-                authenticate: { _ in .cancelled },
-                biometryType: { .faceID }
-            )
+            $0.biometricAuthService.isAvailable = {
+                false
+            }
         }
 
-        await store.send(.enableToggled(true))
-        await store.receive(\.enableAuthenticationFinished) {
-            $0.enableFailureAlert = Self.expectedFailureAlert
-        }
-
-        #expect(store.state.isBiometricUnlockEnabled == false)
-    }
-
-    @Test func enablingProtectionStaysOffWhenDeviceIsUnsupported() async {
-        let store = TestStore(initialState: AppLockFeature.State()) {
-            AppLockFeature()
-        } withDependencies: {
-            $0[BiometricAuthClient.self] = BiometricAuthClient(
-                isAvailable: { false },
-                authenticate: { _ in .success },
-                biometryType: { .unavailable }
-            )
-        }
-
-        // 裝置不支援時不驗證，直接關閉並顯示對應說明。
+        // When
         await store.send(.enableToggled(true)) {
             $0.enableFailureAlert = Self.expectedUnsupportedAlert
         }
 
-        #expect(store.state.isBiometricUnlockEnabled == false)
+        // Then
+        #expect(!store.state.isBiometricUnlockEnabled)
     }
 
-    // MARK: 鎖定與解鎖
-
-    @Test func resigningActiveLocksContentWhenProtectionIsEnabled() async {
+    /// App 鎖定保護已啟用時切至背景會鎖定內容
+    @Test
+    func appDidResignActive_保護已啟用_鎖定內容() async {
+        // Given
         let store = TestStore(initialState: AppLockFeature.State(isBiometricUnlockEnabled: true)) {
             AppLockFeature()
         }
 
+        // When
         await store.send(.appDidResignActive) {
             $0.isLocked = true
         }
+
+        // Then
+        #expect(store.state.isLocked)
     }
 
-    @Test func becomingActiveUnlocksAfterSuccessfulAuthentication() async {
-        let store = TestStore(
-            initialState: AppLockFeature.State(isBiometricUnlockEnabled: true, isLocked: true)
-        ) {
+    /// App 鎖定保護未啟用時切至背景維持未鎖定
+    @Test
+    func appDidResignActive_保護未啟用_維持未鎖定() async {
+        // Given
+        let store = TestStore(initialState: AppLockFeature.State()) {
             AppLockFeature()
-        } withDependencies: {
-            $0[BiometricAuthClient.self] = BiometricAuthClient(
-                isAvailable: { true },
-                authenticate: { _ in .success },
-                biometryType: { .faceID }
-            )
         }
 
-        await store.send(.appDidBecomeActive) {
-            $0.biometryType = .faceID
-            $0.isUnlocking = true
-        }
-        // 以替身注入不同 biometryType 測試裝置差異。
-        #expect(store.state.unlockButtonTitleKey == "使用 Face ID 解鎖")
-        await store.receive(\.unlockAuthenticationFinished) {
-            $0.isLocked = false
-            $0.isUnlocking = false
-        }
+        // When
+        await store.send(.appDidResignActive)
+
+        // Then
+        #expect(!store.state.isLocked)
     }
 
-    @Test func unlockButtonFallsBackToNeutralLabelWhenBiometricsAreUnavailable() async {
+    /// 鎖定中完成驗證後解除鎖定，並依裝置類型顯示解鎖文案
+    ///
+    /// - Parameters:
+    ///   - previousBiometryType: 更新前的生物辨識類型
+    ///   - biometryType: 裝置回報的生物辨識類型
+    ///   - expectedUnlockButtonTitle: 預期的解鎖按鈕文案
+    @Test(arguments: [
+        (
+            BiometricAuthService.BiometryKind.unavailable,
+            BiometricAuthService.BiometryKind.faceID,
+            "使用 Face ID 解鎖"
+        ),
+        (.faceID, .unavailable, "解鎖"),
+    ])
+    func appDidBecomeActive_鎖定中驗證成功_解除鎖定並依辨識類型顯示文案(
+        previousBiometryType: BiometricAuthService.BiometryKind,
+        biometryType: BiometricAuthService.BiometryKind,
+        expectedUnlockButtonTitle: String
+    ) async {
+        // Given
         let store = TestStore(
             initialState: AppLockFeature.State(
                 isBiometricUnlockEnabled: true,
                 isLocked: true,
-                biometryType: .faceID
+                biometryType: previousBiometryType
             )
         ) {
             AppLockFeature()
         } withDependencies: {
-            $0[BiometricAuthClient.self] = BiometricAuthClient(
-                isAvailable: { true },
-                authenticate: { _ in .success },
-                biometryType: { .unavailable }
-            )
+            $0.biometricAuthService.biometryType = {
+                biometryType
+            }
+            $0.biometricAuthService.authenticate = { _ in
+                .success
+            }
         }
 
-        // 裝置僅靠裝置密碼即可通過 isAvailable，仍可能沒有生物辨識硬體。
-        // 文案須退回中性的「解鎖」，不得顯示殘缺句子 (如「使用  解鎖」)
+        // When
         await store.send(.appDidBecomeActive) {
-            $0.biometryType = .unavailable
+            $0.biometryType = biometryType
             $0.isUnlocking = true
         }
-        #expect(store.state.unlockButtonTitleKey == "解鎖")
+
+        // Then
+        #expect(store.state.unlockButtonTitleKey == LocalizedStringKey(expectedUnlockButtonTitle))
         await store.receive(\.unlockAuthenticationFinished) {
             $0.isLocked = false
             $0.isUnlocking = false
         }
     }
 
-    @Test func failedUnlockCanBeRetriedUntilSuccessful() async {
-        let resultBox = LockIsolated<BiometricAuthClient.AuthenticationResult>(.failure)
+    /// 解鎖驗證失敗時鎖定畫面維持，並標示失敗讓使用者重新嘗試
+    @Test
+    func appDidBecomeActive_鎖定中驗證失敗_維持鎖定並標示失敗() async {
+        // Given
         let store = TestStore(
             initialState: AppLockFeature.State(isBiometricUnlockEnabled: true, isLocked: true)
         ) {
             AppLockFeature()
         } withDependencies: {
-            $0[BiometricAuthClient.self] = BiometricAuthClient(
-                isAvailable: { true },
-                authenticate: { _ in resultBox.value },
-                biometryType: { .touchID }
-            )
+            $0.biometricAuthService.biometryType = {
+                .touchID
+            }
+            $0.biometricAuthService.authenticate = { _ in
+                .failure
+            }
         }
 
+        // When
         await store.send(.appDidBecomeActive) {
             $0.biometryType = .touchID
             $0.isUnlocking = true
         }
-        #expect(store.state.unlockButtonTitleKey == "使用 Touch ID 解鎖")
+
+        // Then
         await store.receive(\.unlockAuthenticationFinished) {
             $0.unlockDidFail = true
             $0.isUnlocking = false
         }
-        // 鎖定畫面仍在，且失敗只提供再次嘗試，不提供跳過
-        #expect(store.state.isLocked)
+    }
 
-        resultBox.setValue(.success)
+    /// 上次驗證失敗後重新嘗試可解除鎖定
+    @Test
+    func retryUnlockTapped_先前驗證失敗_解除鎖定() async {
+        // Given
+        let initialState = AppLockFeature.State(
+            isBiometricUnlockEnabled: true,
+            isLocked: true,
+            unlockDidFail: true,
+            biometryType: .touchID
+        )
+        let store = TestStore(initialState: initialState) {
+            AppLockFeature()
+        } withDependencies: {
+            $0.biometricAuthService.authenticate = { _ in
+                .success
+            }
+        }
+
+        // When
         await store.send(.retryUnlockTapped) {
             $0.unlockDidFail = false
             $0.isUnlocking = true
         }
+
+        // Then
         await store.receive(\.unlockAuthenticationFinished) {
             $0.isLocked = false
             $0.isUnlocking = false
         }
     }
 
-    // MARK: 設定頁文案依機型顯示
-
-    @Test func settingsCopyNamesFaceIDWhenAvailable() async {
-        let store = TestStore(initialState: AppLockFeature.State()) {
+    /// 依裝置生物辨識類型顯示對應的設定說明
+    ///
+    /// - Parameters:
+    ///   - previousBiometryType: 更新前的生物辨識類型
+    ///   - biometryType: 裝置回報的生物辨識類型
+    ///   - expectedUnlockButtonTitle: 預期的解鎖按鈕文案
+    ///   - expectedProtectionDescription: 預期的設定頁說明
+    /// - Note: 三組都在保護未啟用下執行，也守住只更新生物辨識類型、不進入解鎖
+    @Test(arguments: [
+        (
+            BiometricAuthService.BiometryKind.unavailable,
+            BiometricAuthService.BiometryKind.faceID,
+            "使用 Face ID 解鎖",
+            "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Face ID 或密碼驗證才能繼續使用。"
+        ),
+        (
+            .unavailable,
+            .touchID,
+            "使用 Touch ID 解鎖",
+            "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Touch ID 或密碼驗證才能繼續使用。"
+        ),
+        (
+            .faceID,
+            .unavailable,
+            "解鎖",
+            "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過裝置密碼驗證才能繼續使用。"
+        ),
+    ])
+    func appDidBecomeActive_裝置生物辨識類型_顯示對應設定說明(
+        previousBiometryType: BiometricAuthService.BiometryKind,
+        biometryType: BiometricAuthService.BiometryKind,
+        expectedUnlockButtonTitle: String,
+        expectedProtectionDescription: String
+    ) async {
+        // Given
+        let store = TestStore(
+            initialState: AppLockFeature.State(biometryType: previousBiometryType)
+        ) {
             AppLockFeature()
         } withDependencies: {
-            $0[BiometricAuthClient.self] = BiometricAuthClient(
-                isAvailable: { true },
-                authenticate: { _ in .success },
-                biometryType: { .faceID }
-            )
+            $0.biometricAuthService.biometryType = {
+                biometryType
+            }
         }
 
-        // 尚未開啟保護時也要先取得生物辨識類型。
+        // When
         await store.send(.appDidBecomeActive) {
-            $0.biometryType = .faceID
+            $0.biometryType = biometryType
         }
 
-        // 設定頁與鎖定畫面共用解鎖文案。
-        #expect(store.state.unlockButtonTitleKey == "使用 Face ID 解鎖")
+        // Then
+        #expect(store.state.unlockButtonTitleKey == LocalizedStringKey(expectedUnlockButtonTitle))
         #expect(
-            store.state.protectionDescriptionKey == "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Face ID 或密碼驗證才能繼續使用。"
+            store.state.protectionDescriptionKey
+                == LocalizedStringKey(expectedProtectionDescription)
         )
     }
 
-    @Test func settingsCopyNamesTouchIDWhenAvailable() async {
-        let store = TestStore(initialState: AppLockFeature.State()) {
-            AppLockFeature()
-        } withDependencies: {
-            $0[BiometricAuthClient.self] = BiometricAuthClient(
-                isAvailable: { true },
-                authenticate: { _ in .success },
-                biometryType: { .touchID }
-            )
-        }
-
-        // 以替身注入 Touch ID，測試不同裝置類型。
-        await store.send(.appDidBecomeActive) {
-            $0.biometryType = .touchID
-        }
-
-        #expect(store.state.unlockButtonTitleKey == "使用 Touch ID 解鎖")
-        #expect(
-            store.state.protectionDescriptionKey == "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Touch ID 或密碼驗證才能繼續使用。"
-        )
-    }
-
-    @Test func settingsCopyFallsBackToNeutralWordingWhenBiometricsAreUnavailable() async {
-        // 初始值設為 faceID，確認查詢後會改為 unavailable。
-        let store = TestStore(initialState: AppLockFeature.State(biometryType: .faceID)) {
-            AppLockFeature()
-        } withDependencies: {
-            $0[BiometricAuthClient.self] = BiometricAuthClient(
-                isAvailable: { true },
-                authenticate: { _ in .success },
-                biometryType: { .unavailable }
-            )
-        }
-
-        // 裝置僅靠裝置密碼即可通過 isAvailable，仍可能沒有生物辨識硬體。
-        // 文案須退回中性敘述，不得顯示殘缺句子 (如「需要通過  或密碼驗證」)
-        await store.send(.appDidBecomeActive) {
-            $0.biometryType = .unavailable
-        }
-
-        #expect(store.state.unlockButtonTitleKey == "解鎖")
-        #expect(
-            store.state.protectionDescriptionKey == "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過裝置密碼驗證才能繼續使用。"
-        )
-    }
-
-    // MARK: 保護關閉時逐項不動作
-
-    @Test func resigningActiveDoesNothingWhenProtectionIsDisabled() async {
+    /// 保護關閉時點擊重新驗證不會改變狀態
+    @Test
+    func retryUnlockTapped_保護未啟用_維持原狀() async {
+        // Given
         let store = TestStore(initialState: AppLockFeature.State()) {
             AppLockFeature()
         }
 
-        // 無 trailing closure：斷言完全沒有狀態變化
-        await store.send(.appDidResignActive)
-    }
-
-    @Test func becomingActiveDoesNothingWhenProtectionIsDisabled() async {
-        let store = TestStore(initialState: AppLockFeature.State()) {
-            AppLockFeature()
-        } withDependencies: {
-            $0[BiometricAuthClient.self] = BiometricAuthClient(
-                isAvailable: { true },
-                authenticate: { _ in .success },
-                biometryType: { .faceID }
-            )
-        }
-
-        // 保護關閉時不驗證，但仍以注入的裝置類型更新 biometryType
-        await store.send(.appDidBecomeActive) {
-            $0.biometryType = .faceID
-        }
-    }
-
-    @Test func retryUnlockDoesNothingWhenProtectionIsDisabled() async {
-        let store = TestStore(initialState: AppLockFeature.State()) {
-            AppLockFeature()
-        }
-
+        // When
         await store.send(.retryUnlockTapped)
+
+        // Then
+        #expect(!store.state.isUnlocking)
     }
 }
 
-// MARK: - Computed Properties
+// MARK: - Private Method
 
 private extension AppLockFeatureTests {
 
-    /// 驗證失敗或取消時的預期說明對話框
+    /// 驗證失敗或取消時預期顯示的說明
     static var expectedFailureAlert: AlertState<AppLockFeature.Action.Alert> {
         AlertState {
             TextState("無法啟用 App 鎖定")
@@ -321,7 +327,7 @@ private extension AppLockFeatureTests {
         }
     }
 
-    /// 裝置不支援時的預期說明對話框
+    /// 裝置不支援本機驗證時預期顯示的說明
     static var expectedUnsupportedAlert: AlertState<AppLockFeature.Action.Alert> {
         AlertState {
             TextState("無法啟用 App 鎖定")

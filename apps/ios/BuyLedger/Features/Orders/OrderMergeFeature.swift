@@ -42,14 +42,11 @@ struct OrderMergeFeature {
         /// 載入雙方照片失敗時顯示一次性說明對話框
         @Presents var photoLoadFailureAlert: AlertState<Action.Alert>?
 
-        // MARK: - Identifiable Properties
-
         /// sheet item 的穩定識別值
         let id: UUID
 
-        // MARK: - Init
-
         /// 依主訂單與全部訂單建立合併流程狀態；候選清單在此一次過濾完成
+        ///
         /// - Parameters:
         ///   - primary: 主訂單
         ///   - orders: 全部訂單 (通常為 ``OrdersFeature/State/orders``)
@@ -60,8 +57,6 @@ struct OrderMergeFeature {
             self.id = uuid()
         }
 
-        // MARK: - Computed Properties
-
         /// 依搜尋字串過濾後的候選清單；比對客戶名稱、單號、類別與商品名稱
         var filteredCandidates: [LedgerOrder] {
             let query = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -69,8 +64,8 @@ struct OrderMergeFeature {
                 return candidates
             }
 
-            return candidates.filter { order in
-                ([order.id, order.customer.name] + order.categories + order.items.map(\.name))
+            return candidates.filter {
+                ([$0.id, $0.customer.name] + $0.categories + $0.items.map(\.name))
                     .joined(separator: " ")
                     .localizedStandardContains(query)
             }
@@ -84,25 +79,32 @@ struct OrderMergeFeature {
     enum Action: BindableAction, Equatable {
 
         /// SwiftUI 雙向繫結事件 (搜尋輸入)
+        ///
+        /// - Parameter action: 被修改的繫結欄位與新值
         case binding(BindingAction<State>)
 
         /// 使用者按下取消，整個合併流程不留任何變更
         case cancelTapped
 
         /// 使用者點選一筆候選訂單作為副訂單
+        ///
+        /// - Parameter id: 被點選的候選訂單編號
         case candidateTapped(LedgerOrder.ID)
 
         /// 雙方照片載入完成後，判斷是否進入照片挑選
-        case candidatePhotosLoaded(
-            secondary: LedgerOrder,
-            primaryPhotos: [Data],
-            secondaryPhotos: [Data]
-        )
+        ///
+        /// - Parameters:
+        ///   - secondary: 被選為副訂單的候選訂單
+        ///   - primaryPhotos: 主訂單的照片
+        ///   - secondaryPhotos: 副訂單的照片
+        case candidatePhotosLoaded(secondary: LedgerOrder, primaryPhotos: [Data], secondaryPhotos: [Data])
 
         /// 載入雙方照片失敗；顯示錯誤而非視為沒有照片
         case candidatePhotosLoadFailed
 
         /// 照片挑選步驟中 toggle 指定 index 照片的保留狀態
+        ///
+        /// - Parameter index: 被點選照片在串接照片中的位置
         case photoToggled(Int)
 
         /// 照片挑選步驟按下「繼續」，以目前勾選集合完成流程
@@ -112,9 +114,13 @@ struct OrderMergeFeature {
         case backToCandidatesTapped
 
         /// 照片載入失敗對話框的呈現／關閉
+        ///
+        /// - Parameter action: 對話框的呈現或操作事件
         case photoLoadFailureAlert(PresentationAction<Alert>)
 
         /// 對父層的回報事件
+        ///
+        /// - Parameter action: 要回報給父層的結果
         case delegate(Delegate)
 
         /// 父層攔截的完成事件
@@ -122,56 +128,62 @@ struct OrderMergeFeature {
         enum Delegate: Equatable {
 
             /// 合併資料選定完成：父層據此計算合併草稿並開啟預填的確認表單
-            case completed(
-                primary: LedgerOrder,
-                secondary: LedgerOrder,
-                keptPhotos: [Data]
-            )
+            ///
+            /// - Parameters:
+            ///   - primary: 主訂單
+            ///   - secondary: 副訂單
+            ///   - keptPhotos: 合併後保留的照片
+            case completed(primary: LedgerOrder, secondary: LedgerOrder, keptPhotos: [Data])
         }
 
         /// 照片載入失敗提示的操作
         enum Alert: Equatable {}
     }
 
-    // MARK: - Dependency Properties
+    // MARK: - Dependencies
 
     /// 由父層注入的 dismiss effect
     @Dependency(\.dismiss) private var dismiss
 
     /// 依訂單編號載入合併雙方照片
-    @Dependency(OrderRepository.self) private var orderRepository
+    @Dependency(\.orderService) private var orderService
 
-    // MARK: - Reducer Body
+    // MARK: - Body
 
     /// 合併流程 reducer
     var body: some Reducer<State, Action> {
         BindingReducer()
 
-        Reduce {
-            state,
-            action in
+        Reduce { state, action in
             switch action {
             case .binding:
                 return .none
 
             case .cancelTapped:
-                return .run { _ in await dismiss() }
+                return .run { _ in
+                    await dismiss()
+                }
 
-            case let .candidateTapped(id):
-                guard let secondary = state.candidates.first(where: { $0.id == id }) else {
+            case .candidateTapped(let id):
+                guard let secondary = state.candidates.first(
+                    where: {
+                        $0.id == id
+                    }
+                ) else {
                     return .none
                 }
 
-                // 清單不載入照片，進入挑選前先依編號讀取。
+                // 清單不載入照片，進入挑選前先依編號讀取
                 let primaryID = state.primary.id
                 let secondaryID = secondary.id
-                let orderRepository = orderRepository
+                let orderService = orderService
                 return .run { send in
                     do {
-                        async let primaryPhotosTask = orderRepository.fetchOrderPhotos(primaryID)
-                        async let secondaryPhotosTask = orderRepository.fetchOrderPhotos(secondaryID)
+                        async let primaryPhotosTask = orderService.fetchOrderPhotos(primaryID)
+                        async let secondaryPhotosTask = orderService.fetchOrderPhotos(secondaryID)
                         let (primaryPhotos, secondaryPhotos) = try await (
-                            primaryPhotosTask, secondaryPhotosTask
+                            primaryPhotosTask,
+                            secondaryPhotosTask
                         )
                         await send(
                             .candidatePhotosLoaded(
@@ -181,13 +193,13 @@ struct OrderMergeFeature {
                             )
                         )
                     } catch {
-                        // 任一方載入失敗都停止流程，避免遺漏照片。
+                        // 任一方載入失敗都停止流程，避免遺漏照片
                         await send(.candidatePhotosLoadFailed)
                     }
                 }
 
             case .candidatePhotosLoadFailed:
-                // 停留在候選步驟，使用者可重新選取候選訂單。
+                // 停留在候選步驟，使用者可重新選取候選訂單
                 state.photoLoadFailureAlert = AlertState {
                     TextState("操作失敗")
                 } actions: {
@@ -202,7 +214,7 @@ struct OrderMergeFeature {
             case .photoLoadFailureAlert:
                 return .none
 
-            case let .candidatePhotosLoaded(secondary, primaryPhotos, secondaryPhotos):
+            case .candidatePhotosLoaded(let secondary, let primaryPhotos, let secondaryPhotos):
                 let combined = primaryPhotos + secondaryPhotos
                 guard combined.count > LedgerOrder.maxPhotoCount else {
                     // 照片合計未超限：跳過挑選步驟，直接完成
@@ -224,7 +236,7 @@ struct OrderMergeFeature {
                 state.step = .selectPhotos
                 return .none
 
-            case let .photoToggled(index):
+            case .photoToggled(let index):
                 guard state.combinedPhotos.indices.contains(index) else {
                     return .none
                 }
@@ -242,14 +254,12 @@ struct OrderMergeFeature {
                     return .none
                 }
 
-                let kept = state.selectedPhotoIndices.sorted().map { state.combinedPhotos[$0] }
+                let kept = state.selectedPhotoIndices.sorted().map {
+                    state.combinedPhotos[$0]
+                }
                 return .send(
                     .delegate(
-                        .completed(
-                            primary: state.primary,
-                            secondary: secondary,
-                            keptPhotos: kept
-                        )
+                        .completed(primary: state.primary, secondary: secondary, keptPhotos: kept)
                     )
                 )
 
@@ -288,7 +298,21 @@ extension OrderMergeFeature {
 
 extension OrderMergeFeature.State {
 
+    /// 依資格規則過濾可合併的候選訂單
+    ///
+    /// - Parameters:
+    ///   - primary: 主訂單
+    ///   - orders: 全部訂單
+    /// - Returns: 符合資格的候選清單 (維持輸入順序)
+    static func eligibleCandidates(
+        for primary: LedgerOrder,
+        in orders: [LedgerOrder]
+    ) -> [LedgerOrder] {
+        orders.filter { isEligibleCandidate($0, for: primary) }
+    }
+
     /// 依搜尋過濾後的候選清單，比照訂單列表以「日」分組為日期區段
+    ///
     /// - Parameters:
     ///   - referenceDate: 判斷「今天／昨天」的基準時間
     ///   - calendar: 分組與標題使用的曆法
@@ -307,19 +331,8 @@ extension OrderMergeFeature.State {
         )
     }
 
-    /// 依資格規則過濾可合併的候選訂單
-    /// - Parameters:
-    ///   - primary: 主訂單
-    ///   - orders: 全部訂單
-    /// - Returns: 符合資格的候選清單 (維持輸入順序)
-    static func eligibleCandidates(
-        for primary: LedgerOrder,
-        in orders: [LedgerOrder]
-    ) -> [LedgerOrder] {
-        orders.filter { isEligibleCandidate($0, for: primary) }
-    }
-
     /// 判斷單筆訂單是否符合合併候選資格
+    ///
     /// - Parameters:
     ///   - candidate: 待檢查的候選訂單
     ///   - primary: 發起合併的主訂單

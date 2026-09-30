@@ -17,21 +17,24 @@ struct FxFeatureTests {
 
     // MARK: - Properties
 
-    /// 供匯率計算測試使用的固定快照
+    /// 換算結果為 JPY 5、KRW 8 的固定匯率快照
+    ///
+    /// - Note: 標 `nonisolated` 讓依賴覆寫的 `@Sendable` closure 能讀取
     nonisolated private static let fixedSnapshot = FxRateSnapshot(
         date: Date(timeIntervalSince1970: 123),
         base: .twd,
         rates: [
             .twd: 1,
-            .jpy: Decimal(string: "0.2")!,
-            .krw: Decimal(string: "0.125")!
+            .jpy: Decimal(sign: .plus, exponent: -1, significand: 2),
+            .krw: Decimal(sign: .plus, exponent: -3, significand: 125),
         ]
     )
 
     // MARK: - Tests
 
-    /// 驗證預設狀態使用韓圓與十五萬元
-    @Test func defaultStateUsesKrwAt150K() {
+    /// 驗證預設狀態使用韓元與十五萬元
+    @Test
+    func init_預設兌換狀態_以韓元與十五萬元開始() {
         // Given
 
         // When
@@ -43,7 +46,8 @@ struct FxFeatureTests {
     }
 
     /// 驗證預設狀態尚未有快照與換算結果
-    @Test func defaultStateHasNoSnapshotAndNilRate() {
+    @Test
+    func init_預設兌換狀態_沒有快照與匯率() {
         // Given
 
         // When
@@ -56,11 +60,10 @@ struct FxFeatureTests {
     }
 
     /// 驗證切換幣別後依自訂快照重算匯率
-    @Test func switchingCurrencyRecomputesRateFromSnapshot() async {
+    @Test
+    func binding_切換來源幣別_依快照重算匯率() async {
         // Given
-        let store = TestStore(
-            initialState: FxFeature.State(snapshot: Self.fixedSnapshot)
-        ) {
+        let store = TestStore(initialState: FxFeature.State(snapshot: Self.fixedSnapshot)) {
             FxFeature()
         }
 
@@ -75,7 +78,8 @@ struct FxFeatureTests {
     }
 
     /// 驗證快速金額按鈕會取代目前金額
-    @Test func quickAmountTappedReplacesAmount() async {
+    @Test
+    func quickAmountTapped_選取快捷金額_取代目前金額() async {
         // Given
         let store = TestStore(initialState: FxFeature.State()) {
             FxFeature()
@@ -91,11 +95,10 @@ struct FxFeatureTests {
     }
 
     /// 驗證金額繫結會更新 TWD 換算結果
-    @Test func bindingAmountUpdatesConvertedTWD() async {
+    @Test
+    func binding_金額改變_更新新台幣換算金額() async {
         // Given
-        let store = TestStore(
-            initialState: FxFeature.State(snapshot: Self.fixedSnapshot)
-        ) {
+        let store = TestStore(initialState: FxFeature.State(snapshot: Self.fixedSnapshot)) {
             FxFeature()
         }
 
@@ -110,7 +113,8 @@ struct FxFeatureTests {
     }
 
     /// 驗證新台幣在沒有快照時仍以一比一計算
-    @Test func displayRateForTwdAlwaysReturnsOneEvenWithoutSnapshot() {
+    @Test
+    func displayRate_查詢新台幣且沒有快照_回傳一() {
         // Given
         let state = FxFeature.State()
 
@@ -122,7 +126,8 @@ struct FxFeatureTests {
     }
 
     /// 驗證匯率列表會排除新台幣
-    @Test func ratesListCurrenciesExcludesTwd() {
+    @Test
+    func ratesListCurrencies_可用幣別包含新台幣_排除新台幣() {
         // Given
         let state = FxFeature.State(availableCurrencies: [.twd, .krw, .jpy])
 
@@ -134,7 +139,8 @@ struct FxFeatureTests {
     }
 
     /// 驗證點擊幣別列會呈現選擇目的地
-    @Test func currencyPickerTappedPresentsDestination() async {
+    @Test
+    func currencyPickerTapped_點選幣別按鈕_呈現幣別選擇畫面() async {
         // Given
         let store = TestStore(initialState: FxFeature.State()) {
             FxFeature()
@@ -146,15 +152,14 @@ struct FxFeatureTests {
         }
 
         // Then
-        #expect(store.state.destination != nil)
+        #expect(store.state.destination == .currencyPicker)
     }
 
     /// 驗證選定幣別後更新來源幣別並關閉目的地
-    @Test func currencySelectedUpdatesCurrencyAndDismissesDestination() async {
+    @Test
+    func currencySelected_選取可用幣別_更新幣別並關閉選擇畫面() async {
         // Given
-        let store = TestStore(
-            initialState: FxFeature.State(destination: .currencyPicker)
-        ) {
+        let store = TestStore(initialState: FxFeature.State(destination: .currencyPicker)) {
             FxFeature()
         }
 
@@ -170,38 +175,33 @@ struct FxFeatureTests {
     }
 
     /// 驗證幣別清單失敗時保留原有清單
-    @Test func currencyCodesFailureKeepsExistingCurrencies() async {
+    @Test
+    func currencyCodesResponse_載入幣別失敗_保留目前幣別清單() async {
         // Given
-        let existingCurrencies: [CurrencyCode] = [.jpy, .krw, .twd]
-        let store = TestStore(
-            initialState: FxFeature.State(availableCurrencies: existingCurrencies)
-        ) {
+        let initialState = FxFeature.State(availableCurrencies: [.jpy, .krw, .twd])
+        let store = TestStore(initialState: initialState) {
             FxFeature()
         }
 
         // When
-        await store.send(
-            .currencyCodesResponse(.failure(.api(.invalidKey)))
-        )
+        await store.send(.currencyCodesResponse(.failure(.api(.invalidKey))))
 
         // Then
-        #expect(store.state.availableCurrencies == existingCurrencies)
+        #expect(store.state.availableCurrencies == [.jpy, .krw, .twd])
     }
 
     /// 驗證重試會重新載入匯率與幣別清單
-    @Test func retryTappedReloadsRatesAndCurrencies() async {
+    @Test
+    func retryTapped_重新載入_再次取得匯率與幣別() async {
         // Given
-        let store = TestStore(
-            initialState: FxFeature.State(
-                errorMessage: "網路連線異常；無法顯示即時匯率，請稍後再試。"
-            )
-        ) {
+        let initialState = FxFeature.State(errorMessage: "網路連線異常；無法顯示即時匯率，請稍後再試。")
+        let store = TestStore(initialState: initialState) {
             FxFeature()
         } withDependencies: {
-            $0[ExchangeRateClient.self].fetchLatest = { _ in
+            $0.exchangeRateService.fetchLatest = { _ in
                 Self.fixedSnapshot
             }
-            $0[CurrencyMetadataRepository.self].fetchCodes = {
+            $0.currencyMetadataService.fetchCodes = {
                 [.twd, .jpy, .krw]
             }
         }
@@ -211,6 +211,8 @@ struct FxFeatureTests {
             $0.isLoading = true
             $0.errorMessage = nil
         }
+
+        // Then
         await store.receive(\.currencyCodesResponse.success) {
             $0.availableCurrencies = [.jpy, .krw, .twd]
         }
@@ -218,10 +220,5 @@ struct FxFeatureTests {
             $0.isLoading = false
             $0.snapshot = Self.fixedSnapshot
         }
-
-        // Then
-        #expect(store.state.isLoading == false)
-        #expect(store.state.snapshot == Self.fixedSnapshot)
-        #expect(store.state.availableCurrencies == [.jpy, .krw, .twd])
     }
 }

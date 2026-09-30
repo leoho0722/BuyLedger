@@ -5,20 +5,16 @@
 //  Created by Leo Ho on 2026/5/2.
 //
 
-import Foundation
 import OSLog
 import SwiftData
 
-/// 建立 BuyLedger 持久化容器的工廠
+/// 建立 BuyLedger 的 `ModelContainer`，並記錄啟動時本機資料庫是否開得起來
 enum PersistenceContainer {
 
     // MARK: - Properties
 
-    /// 整個 process 只解析一次的啟動結果
-    nonisolated static let bootstrap = makeBootstrap()
-
-    /// 所有 production repository 共用的 container
-    nonisolated static var shared: ModelContainer { bootstrap.container }
+    /// App 執行期間只建立一次的啟動結果；正式環境的 `ModelContainer` 只由這裡取得
+    static let bootstrap = makeBootstrap()
 }
 
 // MARK: - Nested Types
@@ -28,10 +24,10 @@ extension PersistenceContainer {
     /// App 持久層啟動結果
     struct Bootstrap: Sendable {
 
-        /// 可供 SwiftData 使用的 container
+        /// 可供 SwiftData 使用的 `ModelContainer`；啟動狀態為 `degraded` 時是空的記憶體資料庫
         let container: ModelContainer
 
-        /// 是否可安全呈現正常介面
+        /// 本機資料庫的開啟結果，決定能否呈現正常介面
         let status: Status
     }
 
@@ -42,6 +38,7 @@ extension PersistenceContainer {
         case healthy
 
         /// 本機資料庫無法開啟
+        ///
         /// - Parameter reason: 資料庫無法開啟的原因，供 Crashlytics 記錄
         case degraded(reason: String)
     }
@@ -52,7 +49,7 @@ extension PersistenceContainer {
         /// SwiftUI Preview
         case preview
 
-        /// 測試
+        /// 單元測試與 UI 測試
         case testing
 
         /// 顯示在建立失敗訊息中的用途名稱
@@ -60,6 +57,7 @@ extension PersistenceContainer {
             switch self {
             case .preview:
                 "Preview"
+
             case .testing:
                 "Test"
             }
@@ -75,17 +73,21 @@ extension PersistenceContainer {
         /// 由 SwiftData 自動從 entitlements 推斷 CloudKit container ID
         case automatic
 
-        /// CloudKit 私有資料庫的 container ID
+        /// 同步到自訂 container 的 CloudKit 私有資料庫
+        ///
+        /// - Parameter identifier: CloudKit container 的 ID
         case privateContainer(String)
 
         /// 對應到 ``ModelConfiguration/CloudKitDatabase`` 的設定值
-        nonisolated var modelConfigurationValue: ModelConfiguration.CloudKitDatabase {
+        var modelConfigurationValue: ModelConfiguration.CloudKitDatabase {
             switch self {
             case .disabled:
                 return .none
+
             case .automatic:
                 return .automatic
-            case let .privateContainer(identifier):
+
+            case .privateContainer(let identifier):
                 return .private(identifier)
             }
         }
@@ -96,33 +98,36 @@ extension PersistenceContainer {
 
 extension PersistenceContainer {
 
-    /// 建立只存在記憶體中的 ModelContainer
-    /// - Parameter context: 使用情境
-    nonisolated static func makeInMemory(for context: InMemoryContext) -> ModelContainer {
+    /// 建立只存在記憶體中的 `ModelContainer`
+    ///
+    /// - Parameter context: 使用情境，建立失敗時用來標示訊息中的用途
+    /// - Returns: 沒有任何資料的記憶體資料庫容器
+    /// - Note: 建立失敗代表資料庫定義有誤，會直接中止 App
+    static func makeInMemory(for context: InMemoryContext) -> ModelContainer {
         do {
             return try make(isInMemoryOnly: true, storeURL: nil)
         } catch {
             fatalError(
-                "Unable to create the \(context.label) in-memory container: "
-                    + error.localizedDescription
+                "Unable to create the \(context.label) in-memory container: \(error.localizedDescription)"
             )
         }
     }
 
 #if DEBUG
-    /// 測試低於 migration floor 的實體 store 時使用，不會影響 production bootstrap
-    /// - Parameter storeURL: 測試用的舊版 store 路徑
-    nonisolated static func makeBootstrapForTesting(storeURL: URL) -> Bootstrap {
+    /// 以指定路徑的資料庫檔建立啟動結果，讓測試檢查資料庫開得起來與開不起來時的結果；不影響正式的 `bootstrap`
+    ///
+    /// - Parameter storeURL: 測試用的資料庫檔案路徑
+    /// - Returns: 資料庫打得開時狀態為 `.healthy`，打不開時改用記憶體資料庫且狀態為 `.degraded`
+    static func makeBootstrapForTesting(storeURL: URL) -> Bootstrap {
         makeBootstrap(storeURL: storeURL)
     }
 
-    /// 建立 UI 測試可跨 App 重啟使用的本機 container
-    /// - Parameter storeURL: UI 測試用的 persistent store 路徑
-    /// - Returns: 指定路徑的本機 ModelContainer
-    /// - Throws: store 無法建立時拋出 PersistenceError
-    nonisolated static func makePersistentForTesting(
-        storeURL: URL
-    ) throws(PersistenceError) -> ModelContainer {
+    /// 建立 UI 測試可跨 App 重啟使用的本機 `ModelContainer`
+    ///
+    /// - Parameter storeURL: UI 測試用的資料庫檔案路徑
+    /// - Returns: 存在指定路徑的本機 `ModelContainer`
+    /// - Throws: 資料庫所在資料夾或資料庫建立失敗時拋出 `.containerCreationFailed(underlying:)`
+    static func makePersistentForTesting(storeURL: URL) throws(PersistenceError) -> ModelContainer {
         try make(isInMemoryOnly: false, storeURL: storeURL)
     }
 #endif
@@ -132,9 +137,10 @@ extension PersistenceContainer {
 
 private extension PersistenceContainer {
 
-    /// 建立 ``Bootstrap``，若 on-disk store 無法開啟則降級為 in-memory fallback
+    /// 建立 `Bootstrap`；磁碟上的資料庫打不開時，改用暫存在記憶體的空資料庫
+    ///
     /// - Parameter storeURL: 指定資料庫位置；未提供時使用系統預設位置
-    /// - Returns: ``Bootstrap``，包含 container 與啟動狀態
+    /// - Returns: 含 `ModelContainer` 的啟動結果，改用記憶體資料庫時狀態會帶著失敗原因
     static func makeBootstrap(storeURL: URL? = nil) -> Bootstrap {
         do {
             return Bootstrap(
@@ -158,19 +164,20 @@ private extension PersistenceContainer {
                     "SwiftData in-memory fallback could not open: \(message, privacy: .public)"
                 )
                 fatalError(
-                    "SwiftData schema definition is invalid and cannot create "
-                        + "an in-memory container."
+                    "SwiftData schema definition is invalid and cannot create an in-memory container."
                 )
             }
         }
     }
 
-    /// 建立 ModelContainer，可選擇磁碟或記憶體儲存
+    /// 建立 `ModelContainer`，可選擇存在磁碟或記憶體
+    ///
     /// - Parameters:
-    ///   - isInMemoryOnly: 是否只建立記憶體中的資料庫
-    ///   - storeURL: 資料庫路徑；nil 使用系統預設位置
-    /// - Returns: 對應的 ``ModelContainer`` 實例
-    /// - Throws: ModelContainer 建立失敗時拋出 ``PersistenceError``
+    ///   - isInMemoryOnly: 是否只建立記憶體中的資料庫；有指定 `storeURL` 時以路徑為準
+    ///   - storeURL: 資料庫路徑；`nil` 時，磁碟資料庫使用系統預設位置
+    /// - Returns: 對應的 `ModelContainer`
+    /// - Throws: 取得 Application Support、建立資料庫所在資料夾或建立 `ModelContainer` 失敗時拋出
+    ///   `.containerCreationFailed(underlying:)`
     static func make(
         isInMemoryOnly: Bool,
         storeURL: URL?
@@ -211,12 +218,14 @@ private extension PersistenceContainer {
         return container
     }
 
-    /// 解析磁碟型 store 路徑並建立其父目錄
+    /// 決定磁碟資料庫的檔案路徑並建立其所在資料夾
+    ///
     /// - Parameters:
-    ///   - requestedURL: 呼叫端指定的 store 路徑；`nil` 時使用 Application Support
+    ///   - requestedURL: 呼叫端指定的資料庫路徑；`nil` 時使用 Application Support 資料夾
     ///   - isInMemoryOnly: 是否只建立記憶體中的資料庫
-    /// - Returns: 磁碟型 store 路徑；記憶體型 store 回傳 `nil`
-    /// - Throws: Application Support 或 store 父目錄建立失敗時拋出 ``PersistenceError``
+    /// - Returns: 磁碟資料庫的檔案路徑；不需要磁碟資料庫時為 `nil`
+    /// - Throws: 取得 Application Support 或建立資料庫所在資料夾失敗時拋出
+    ///   `.containerCreationFailed(underlying:)`
     static func resolvePersistentStoreURL(
         requestedURL: URL?,
         isInMemoryOnly: Bool

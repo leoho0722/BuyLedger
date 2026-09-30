@@ -11,14 +11,16 @@ import Testing
 
 @testable import BuyLedger
 
-/// 付款方式更正流程的單元測試
+/// 驗證付款方式更正的規劃、確認與交易結果
 @MainActor
 struct PaymentMethodCorrectionFeatureTests {
 
     // MARK: - Properties
 
-    /// 驗證付款方式更正時使用的三種旗標
-    nonisolated private static let changedFlags = [ // @Test 引數在 actor 隔離外求值
+    /// 各只開一種分類的三組旗標，都和目錄裡的 `.none` 不同
+    ///
+    /// - Note: `nonisolated` 讓 `@Test(arguments:)` 在隔離測試方法前讀取案例
+    nonisolated private static let changedFlags = [
         PaymentMethodFlags(isCardless: true, isBankTransfer: false, isCashOnDelivery: false),
         PaymentMethodFlags(isCardless: false, isBankTransfer: true, isCashOnDelivery: false),
         PaymentMethodFlags(isCardless: false, isBankTransfer: false, isCashOnDelivery: true),
@@ -26,41 +28,42 @@ struct PaymentMethodCorrectionFeatureTests {
 
     // MARK: - Tests
 
-    /// 驗證只找出引用原付款方式的訂單並依旗標正規化後要求確認
+    /// 規劃更正時只處理引用原付款方式的訂單並要求確認
     @Test
-    func requestedFiltersAndNormalizesOrdersBeforeConfirmation() async {
-        // Given
-        let flags = Self.changedFlags[0]
-        let matchingOrder = LedgerOrder.fixture(
-            id: "PM-MATCH",
-            chargedAmount: 40,
-            cardlessDeductionAmount: 90,
-            cardlessSupplementAmount: -5,
-            paymentMethod: "現金",
-            reconciliationStatus: "  待對帳  "
-        )
-        let unrelatedOrder = LedgerOrder.fixture(id: "PM-OTHER", paymentMethod: "信用卡")
-        let expectedOrder = LedgerOrder.fixture(
-            id: "PM-MATCH",
-            chargedAmount: 40,
-            cardlessDeductionAmount: 40,
-            cardlessSupplementAmount: 0,
-            paymentMethod: "新名稱",
-            reconciliationStatus: "待對帳"
-        )
-        let plan = PaymentMethodEditPlan(
-            originalName: "現金",
-            newName: "新名稱",
-            flags: flags,
-            hasChangedFlags: true,
-            affectedOrders: [expectedOrder]
-        )
+    func requested_付款方式旗標已變更_正規化訂單並要求確認() async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
+            let flags = Self.changedFlags[0]
+            let matchingOrder = LedgerOrder.fixture(
+                id: "PM-MATCH",
+                chargedAmount: 40,
+                cardlessDeductionAmount: 90,
+                cardlessSupplementAmount: -5,
+                paymentMethod: "現金",
+                reconciliationStatus: "  待對帳  "
+            )
+            let unrelatedOrder = LedgerOrder.fixture(id: "PM-OTHER", paymentMethod: "信用卡")
+            let expectedOrder = LedgerOrder.fixture(
+                id: "PM-MATCH",
+                chargedAmount: 40,
+                cardlessDeductionAmount: 40,
+                cardlessSupplementAmount: 0,
+                paymentMethod: "新名稱",
+                reconciliationStatus: "待對帳"
+            )
+            let plan = PaymentMethodEditPlan(
+                originalName: "現金",
+                newName: "新名稱",
+                flags: flags,
+                hasChangedFlags: true,
+                affectedOrders: [expectedOrder]
+            )
+            let store = Self.makeStore(
+                catalog: Self.makeCatalog(name: "現金"),
+                sourceOrders: [matchingOrder, unrelatedOrder]
+            )
 
-        // When
-        await withStore(
-            catalog: makeCatalog(name: "現金", flags: .none),
-            orders: [matchingOrder, unrelatedOrder]
-        ) { store, writeCount in
+            // When
             await store.send(.requested(originalName: "現金", newName: "新名稱", flags: flags))
 
             // Then
@@ -68,35 +71,41 @@ struct PaymentMethodCorrectionFeatureTests {
                 $0.pendingPlan = plan
             }
             await store.receive(\.delegate.confirmationRequired, 1)
-            #expect(writeCount.withValue { $0 } == 0)
+            await store.finish()
         }
     }
 
-    /// 驗證三種付款方式旗標變更都會要求確認
+    /// 三種旗標變更各自產生正確的貨到付款訂單值並要求確認
     ///
-    /// - Parameter flags: 這次選取的付款方式旗標
-    @Test(arguments: Self.changedFlags)
-    func requestedWithChangedFlagsRequiresConfirmation(_ flags: PaymentMethodFlags) async {
-        // Given
-        let sourceOrder = LedgerOrder.fixture(id: "PM-FLAG", paymentMethod: "原付款方式")
-        let expectedOrder = LedgerOrder.fixture(
-            id: "PM-FLAG",
-            paymentMethod: "新付款方式",
-            isCashOnDelivery: flags.isCashOnDelivery
-        )
-        let plan = PaymentMethodEditPlan(
-            originalName: "原付款方式",
-            newName: "新付款方式",
-            flags: flags,
-            hasChangedFlags: true,
-            affectedOrders: [expectedOrder]
-        )
+    /// - Parameters:
+    ///   - flags: 此案例送入更正流程的付款方式旗標
+    ///   - expectedIsCashOnDelivery: 預期套用至訂單的貨到付款值
+    @Test(arguments: zip(Self.changedFlags, [false, false, true]))
+    func requested_三種旗標各自變更_要求使用者確認(
+        flags: PaymentMethodFlags,
+        expectedIsCashOnDelivery: Bool
+    ) async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
+            let sourceOrder = LedgerOrder.fixture(id: "PM-FLAG", paymentMethod: "原付款方式")
+            let expectedOrder = LedgerOrder.fixture(
+                id: "PM-FLAG",
+                paymentMethod: "新付款方式",
+                isCashOnDelivery: expectedIsCashOnDelivery
+            )
+            let plan = PaymentMethodEditPlan(
+                originalName: "原付款方式",
+                newName: "新付款方式",
+                flags: flags,
+                hasChangedFlags: true,
+                affectedOrders: [expectedOrder]
+            )
+            let store = Self.makeStore(
+                catalog: Self.makeCatalog(name: "原付款方式"),
+                sourceOrders: [sourceOrder]
+            )
 
-        // When
-        await withStore(
-            catalog: makeCatalog(name: "原付款方式", flags: .none),
-            orders: [sourceOrder]
-        ) { store, writeCount in
+            // When
             await store.send(.requested(originalName: "原付款方式", newName: "新付款方式", flags: flags))
 
             // Then
@@ -104,62 +113,62 @@ struct PaymentMethodCorrectionFeatureTests {
                 $0.pendingPlan = plan
             }
             await store.receive(\.delegate.confirmationRequired, 1)
-            #expect(writeCount.withValue { $0 } == 0)
+            await store.finish()
         }
     }
 
-    /// 驗證零筆訂單、旗標未變與目錄缺項都直接寫入
+    /// 零筆訂單、旗標未變或目錄缺項時不要求確認，直接寫入並通知父層
     ///
-    /// - Parameter scenario: 這次要驗證的直接寫入情境
+    /// - Parameter scenario: 直接寫入的資料案例
     @Test(arguments: DirectScenario.allCases)
-    func requestedDirectScenariosWriteWithoutConfirmation(_ scenario: DirectScenario) async {
-        // Given
-        let isCatalogEntryMissing = scenario == .missingCatalogEntry
-        let hasNoAffectedOrders = scenario == .zeroAffectedOrders
-        let originalName = isCatalogEntryMissing ? "目錄缺項" : "原付款方式"
-        let flags: PaymentMethodFlags = hasNoAffectedOrders ? Self.changedFlags[0] : .none
-        let sourceOrder = LedgerOrder.fixture(id: "PM-DIRECT", paymentMethod: originalName)
-        let expectedOrders = hasNoAffectedOrders
-            ? []
-            : [LedgerOrder.fixture(id: "PM-DIRECT", paymentMethod: "新付款方式")]
-        let catalog = isCatalogEntryMissing
-            ? LookupCatalog()
-            : makeCatalog(name: originalName, flags: .none)
-        let plan = PaymentMethodEditPlan(
-            originalName: originalName,
-            newName: "新付款方式",
-            flags: flags,
-            hasChangedFlags: hasNoAffectedOrders,
-            affectedOrders: expectedOrders
-        )
+    func requested_不需確認的更正情境_直接寫入並通知(_ scenario: DirectScenario) async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
+            let expectedPlan = scenario.expectedPlan
+            let writes = LockIsolated<[PaymentMethodEditArguments]>([])
+            let store = Self.makeStore(
+                catalog: scenario.catalog,
+                sourceOrders: scenario.sourceOrders,
+                writes: writes
+            )
 
-        // When
-        await withStore(
-            catalog: catalog,
-            orders: hasNoAffectedOrders ? [] : [sourceOrder]
-        ) { store, writeCount in
-            await store.send(.requested(originalName: originalName, newName: "新付款方式", flags: flags))
+            // When
+            await store.send(
+                .requested(
+                    originalName: scenario.originalName,
+                    newName: "新付款方式",
+                    flags: scenario.flags
+                )
+            )
 
             // Then
-            await store.receive(\.planResponse.success, plan)
-            await store.receive(\.editResponse.success, plan)
-            await store.receive(\.delegate.edited, plan)
-            #expect(writeCount.withValue { $0 } == 1)
+            await store.receive(\.planResponse.success, expectedPlan)
+            await store.receive(\.editResponse.success, expectedPlan)
+            await store.receive(\.delegate.edited, expectedPlan)
+            #expect(writes.value == [scenario.expectedWrite])
+            await store.finish()
         }
     }
 
-    /// 確認付款方式更正後寫入並通知完成
+    /// 已有待確認方案通過確認後寫入精確參數並通知父層
     @Test
-    func confirmedPaymentMethodEditWritesAndNotifiesDelegate() async {
-        // Given
-        let order = LedgerOrder.fixture(id: "PM-CONFIRM", paymentMethod: "新付款方式")
-        let plan = makeDefaultPlan(orders: [order])
+    func confirmed_有待確認方案_寫入並通知父層() async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
+            let order = LedgerOrder.fixture(
+                id: "PM-CONFIRM",
+                paymentMethod: "新付款方式",
+                isCashOnDelivery: true
+            )
+            let plan = Self.makeDefaultPlan(orders: [order])
+            let writes = LockIsolated<[PaymentMethodEditArguments]>([])
+            let store = Self.makeStore(
+                catalog: Self.makeCatalog(name: "原付款方式"),
+                pendingPlan: plan,
+                writes: writes
+            )
 
-        // When
-        await withStore(
-            catalog: makeCatalog(name: "原付款方式", flags: .none),
-            pendingPlan: plan
-        ) { store, writeCount in
+            // When
             await store.send(.confirmed) {
                 $0.pendingPlan = nil
             }
@@ -167,23 +176,39 @@ struct PaymentMethodCorrectionFeatureTests {
             // Then
             await store.receive(\.editResponse.success, plan)
             await store.receive(\.delegate.edited, plan)
-            #expect(writeCount.withValue { $0 } == 1)
+            #expect(
+                writes.value == [
+                    PaymentMethodEditArguments(
+                        oldName: "原付款方式",
+                        newName: "新付款方式",
+                        flags: PaymentMethodFlags(
+                            isCardless: false,
+                            isBankTransfer: false,
+                            isCashOnDelivery: true
+                        ),
+                        orders: [order]
+                    ),
+                ]
+            )
+            await store.finish()
         }
     }
 
-    /// 取消付款方式更正後清除待確認資料且不寫入
+    /// 取消待確認方案時清除方案且不觸發持久化
     @Test
-    func cancelledPaymentMethodEditClearsPendingPlanWithoutWriting() async {
-        // Given
-        let catalog = makeCatalog(name: "原付款方式", flags: .none)
-        let order = LedgerOrder.fixture(id: "PM-FAIL", paymentMethod: "新付款方式")
-        let plan = makeDefaultPlan(orders: [order])
+    func cancelled_取消待處理更正_清除方案且不寫入() async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
+            let catalog = Self.makeCatalog(name: "原付款方式")
+            let order = LedgerOrder.fixture(
+                id: "PM-CANCEL",
+                paymentMethod: "新付款方式",
+                isCashOnDelivery: true
+            )
+            let plan = Self.makeDefaultPlan(orders: [order])
+            let store = Self.makeStore(catalog: catalog, pendingPlan: plan)
 
-        // When
-        await withStore(
-            catalog: catalog,
-            pendingPlan: plan
-        ) { store, writeCount in
+            // When
             await store.send(.cancelled) {
                 $0.pendingPlan = nil
             }
@@ -191,42 +216,67 @@ struct PaymentMethodCorrectionFeatureTests {
             // Then
             #expect(store.state.pendingPlan == nil)
             #expect(store.state.catalog == catalog)
-            #expect(writeCount.withValue { $0 } == 0)
         }
     }
 
-    /// 找出引用原付款方式的訂單失敗時通知父層且不改目錄
+    /// 讀取相關訂單失敗時回報失敗且保留付款方式目錄
     @Test
-    func fetchingOrdersFailureNotifiesFailureAndKeepsCatalog() async {
-        // Given
-        let catalog = makeCatalog(name: "原付款方式", flags: .none)
+    func requested_取得相關訂單失敗_通知失敗且不寫入() async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
+            let catalog = Self.makeCatalog(name: "原付款方式")
+            let failingFetchOrders: OrderService.FetchOrders = { () throws(PersistenceError) in
+                throw .fetchFailed(
+                    underlying: TestDependencies.makeUnderlyingError(message: "boom")
+                )
+            }
+            let store = Self.makeStore(catalog: catalog, failingFetchOrders: failingFetchOrders)
 
-        // When
-        await withStore(catalog: catalog, shouldFailFetch: true) { store, writeCount in
+            // When
             await store.send(.requested(originalName: "原付款方式", newName: "新付款方式", flags: .none))
 
             // Then
             await store.receive(\.planResponse.failure)
             await store.receive(\.delegate.failed)
             #expect(store.state.catalog == catalog)
-            #expect(writeCount.withValue { $0 } == 0)
+            await store.finish()
         }
     }
 
-    /// 一起寫入付款方式與訂單失敗時通知父層且不改目錄
+    /// 寫入付款方式與訂單失敗時回報失敗且保留原目錄
     @Test
-    func writingPaymentMethodEditFailureNotifiesFailureAndKeepsCatalog() async {
-        // Given
-        let catalog = makeCatalog(name: "原付款方式", flags: .none)
-        let order = LedgerOrder.fixture(id: "PM-FAIL", paymentMethod: "新付款方式")
-        let plan = makeDefaultPlan(orders: [order])
+    func confirmed_付款方式更正寫入失敗_通知失敗並保留目錄() async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
+            let catalog = Self.makeCatalog(name: "原付款方式")
+            let order = LedgerOrder.fixture(
+                id: "PM-WRITE-FAIL",
+                paymentMethod: "新付款方式",
+                isCashOnDelivery: true
+            )
+            let plan = Self.makeDefaultPlan(orders: [order])
+            let attemptedWrites = LockIsolated<[PaymentMethodEditArguments]>([])
+            let underlyingError = TestDependencies.makeUnderlyingError(message: "boom")
+            let failingApplyEdit: PaymentMethodService.ApplyPaymentMethodEdit = { oldName, newName, flags, orders throws(PaymentMethodPersistenceError) in
+                attemptedWrites.withValue {
+                    $0.append(
+                        PaymentMethodEditArguments(
+                            oldName: oldName,
+                            newName: newName,
+                            flags: flags,
+                            orders: orders
+                        )
+                    )
+                }
+                throw .storage(.saveFailed(underlying: underlyingError))
+            }
+            let store = Self.makeStore(
+                catalog: catalog,
+                pendingPlan: plan,
+                failingApplyEdit: failingApplyEdit
+            )
 
-        // When
-        await withStore(
-            catalog: catalog,
-            pendingPlan: plan,
-            shouldFailWrite: true
-        ) { store, writeCount in
+            // When
             await store.send(.confirmed) {
                 $0.pendingPlan = nil
             }
@@ -235,7 +285,21 @@ struct PaymentMethodCorrectionFeatureTests {
             await store.receive(\.editResponse.failure)
             await store.receive(\.delegate.failed)
             #expect(store.state.catalog == catalog)
-            #expect(writeCount.withValue { $0 } == 1)
+            #expect(
+                attemptedWrites.value == [
+                    PaymentMethodEditArguments(
+                        oldName: "原付款方式",
+                        newName: "新付款方式",
+                        flags: PaymentMethodFlags(
+                            isCardless: false,
+                            isBankTransfer: false,
+                            isCashOnDelivery: true
+                        ),
+                        orders: [order]
+                    ),
+                ]
+            )
+            await store.finish()
         }
     }
 }
@@ -244,17 +308,140 @@ struct PaymentMethodCorrectionFeatureTests {
 
 extension PaymentMethodCorrectionFeatureTests {
 
-    /// 無需確認即可寫入的情境
+    /// 持久化 Service 實際收到的一組付款方式更正參數
+    struct PaymentMethodEditArguments: Equatable, Sendable {
+
+        /// 原付款方式名稱
+        let oldName: String
+
+        /// 新付款方式名稱
+        let newName: String
+
+        /// 寫入的分類旗標
+        let flags: PaymentMethodFlags
+
+        /// 寫入的正規化訂單
+        let orders: [LedgerOrder]
+    }
+
+    /// 不需使用者確認即可直接寫入的案例
     enum DirectScenario: CaseIterable, Equatable, Sendable {
 
         /// 沒有訂單引用原付款方式
         case zeroAffectedOrders
 
-        /// 付款方式旗標沒有變更
+        /// 付款方式旗標沒有改變
         case unchangedFlags
 
         /// 目錄中沒有原付款方式
         case missingCatalogEntry
+
+        /// 此案例的原付款方式名稱
+        var originalName: String {
+            switch self {
+            case .zeroAffectedOrders, .unchangedFlags:
+                "原付款方式"
+
+            case .missingCatalogEntry:
+                "目錄缺項"
+            }
+        }
+
+        /// 此案例送入更正的旗標
+        var flags: PaymentMethodFlags {
+            switch self {
+            case .zeroAffectedOrders:
+                PaymentMethodFlags(isCardless: true, isBankTransfer: false, isCashOnDelivery: false)
+
+            case .unchangedFlags, .missingCatalogEntry:
+                .none
+            }
+        }
+
+        /// 此案例讀取訂單時回傳的訂單
+        var sourceOrders: [LedgerOrder] {
+            switch self {
+            case .zeroAffectedOrders:
+                []
+
+            case .unchangedFlags, .missingCatalogEntry:
+                [LedgerOrder.fixture(id: "PM-DIRECT", paymentMethod: originalName)]
+            }
+        }
+
+        /// 此案例的初始付款方式目錄
+        var catalog: LookupCatalog {
+            switch self {
+            case .zeroAffectedOrders, .unchangedFlags:
+                LookupCatalog(paymentMethods: [PaymentMethodInfo(name: originalName, flags: .none)])
+
+            case .missingCatalogEntry:
+                LookupCatalog()
+            }
+        }
+
+        /// 此案例送入計畫的旗標是否和主檔不同
+        var hasChangedFlags: Bool {
+            switch self {
+            case .zeroAffectedOrders:
+                true
+
+            case .unchangedFlags, .missingCatalogEntry:
+                false
+            }
+        }
+
+        /// 此案例的預期編輯計畫
+        var expectedPlan: PaymentMethodEditPlan {
+            let affectedOrders: [LedgerOrder]
+            switch self {
+            case .zeroAffectedOrders:
+                affectedOrders = []
+
+            case .unchangedFlags, .missingCatalogEntry:
+                affectedOrders = [LedgerOrder.fixture(id: "PM-DIRECT", paymentMethod: "新付款方式")]
+            }
+            return PaymentMethodEditPlan(
+                originalName: originalName,
+                newName: "新付款方式",
+                flags: flags,
+                hasChangedFlags: hasChangedFlags,
+                affectedOrders: affectedOrders
+            )
+        }
+
+        /// 此案例預期的持久化參數
+        var expectedWrite: PaymentMethodEditArguments {
+            switch self {
+            case .zeroAffectedOrders:
+                PaymentMethodEditArguments(
+                    oldName: "原付款方式",
+                    newName: "新付款方式",
+                    flags: PaymentMethodFlags(
+                        isCardless: true,
+                        isBankTransfer: false,
+                        isCashOnDelivery: false
+                    ),
+                    orders: []
+                )
+
+            case .unchangedFlags:
+                PaymentMethodEditArguments(
+                    oldName: "原付款方式",
+                    newName: "新付款方式",
+                    flags: .none,
+                    orders: [LedgerOrder.fixture(id: "PM-DIRECT", paymentMethod: "新付款方式")]
+                )
+
+            case .missingCatalogEntry:
+                PaymentMethodEditArguments(
+                    oldName: "目錄缺項",
+                    newName: "新付款方式",
+                    flags: .none,
+                    orders: [LedgerOrder.fixture(id: "PM-DIRECT", paymentMethod: "新付款方式")]
+                )
+            }
+        }
     }
 }
 
@@ -262,80 +449,82 @@ extension PaymentMethodCorrectionFeatureTests {
 
 private extension PaymentMethodCorrectionFeatureTests {
 
-    /// 建立隔離目錄與測試 store 後執行操作
+    /// 建立更正流程的 `TestStore`；沒傳入的替身維持 `testValue` 的 `unimplemented`，被呼叫就讓測試失敗
     ///
     /// - Parameters:
-    ///   - catalog: 測試使用的付款方式目錄
-    ///   - pendingPlan: 等待確認的付款方式更正資料
-    ///   - orders: 要回傳的相關訂單
-    ///   - shouldFailFetch: 是否讓訂單讀取失敗
-    ///   - shouldFailWrite: 是否讓付款方式與訂單一起寫入失敗
-    ///   - operation: 要在測試 store 上執行的步驟與寫入計數器
-    func withStore(
+    ///   - catalog: 初始付款方式目錄
+    ///   - pendingPlan: 初始待確認更正計畫
+    ///   - sourceOrders: 訂單讀取成功時回傳的訂單
+    ///   - failingFetchOrders: 訂單讀取失敗時使用的替身
+    ///   - writes: 傳入時付款方式寫入一律成功，並記錄每次收到的參數
+    ///   - failingApplyEdit: 付款方式交易失敗時使用的替身
+    /// - Returns: 已設定初始目錄與待確認計畫 (未傳入時為 `nil`) 的 `TestStore`
+    static func makeStore(
         catalog: LookupCatalog,
         pendingPlan: PaymentMethodEditPlan? = nil,
-        orders: [LedgerOrder] = [],
-        shouldFailFetch: Bool = false,
-        shouldFailWrite: Bool = false,
-        operation: @MainActor (
-            TestStoreOf<PaymentMethodCorrectionFeature>,
-            LockIsolated<Int>
-        ) async -> Void
-    ) async {
-        await LookupCatalog.withIsolatedStorage {
-            var state = PaymentMethodCorrectionFeature.State()
-            state.$catalog.withLock { $0 = catalog }
-            state.pendingPlan = pendingPlan
-            let writeCount = LockIsolated(0)
-            let store = TestStore(initialState: state) {
-                PaymentMethodCorrectionFeature()
-            } withDependencies: {
-                $0[OrderRepository.self].fetchOrders = { () throws(PersistenceError) in
-                    if shouldFailFetch {
-                        throw PersistenceError.fetchFailed(
-                            underlying: TestDependencies.makeUnderlyingError(message: "boom")
-                        )
-                    }
-                    return orders
+        sourceOrders: [LedgerOrder]? = nil,
+        failingFetchOrders: OrderService.FetchOrders? = nil,
+        writes: LockIsolated<[PaymentMethodEditArguments]>? = nil,
+        failingApplyEdit: PaymentMethodService.ApplyPaymentMethodEdit? = nil
+    ) -> TestStoreOf<PaymentMethodCorrectionFeature> {
+        var initialState = PaymentMethodCorrectionFeature.State()
+        initialState.$catalog.withLock {
+            $0 = catalog
+        }
+        initialState.pendingPlan = pendingPlan
+
+        return TestStore(initialState: initialState) {
+            PaymentMethodCorrectionFeature()
+        } withDependencies: {
+            if let sourceOrders {
+                $0.orderService.fetchOrders = {
+                    sourceOrders
                 }
-                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { _, _, _, _ throws(PaymentMethodPersistenceError) in
-                    writeCount.withValue { $0 += 1 }
-                    if shouldFailWrite {
-                        throw PaymentMethodPersistenceError.storage(
-                            .saveFailed(
-                                underlying: TestDependencies.makeUnderlyingError(
-                                    message: "boom"
-                                )
+            }
+            if let failingFetchOrders {
+                $0.orderService.fetchOrders = failingFetchOrders
+            }
+            if let writes {
+                $0.paymentMethodService.applyPaymentMethodEdit = { oldName, newName, flags, orders in
+                    writes.withValue {
+                        $0.append(
+                            PaymentMethodEditArguments(
+                                oldName: oldName,
+                                newName: newName,
+                                flags: flags,
+                                orders: orders
                             )
                         )
                     }
                 }
             }
-            await operation(store, writeCount)
+            if let failingApplyEdit {
+                $0.paymentMethodService.applyPaymentMethodEdit = failingApplyEdit
+            }
         }
     }
 
-    /// 建立含指定付款方式的隔離目錄
+    /// 建立含指定原付款方式的目錄
     ///
-    /// - Parameters:
-    ///   - name: 付款方式名稱
-    ///   - flags: 付款方式分類旗標
-    /// - Returns: 含指定付款方式的目錄
-    func makeCatalog(name: String, flags: PaymentMethodFlags) -> LookupCatalog {
-        var catalog = LookupCatalog()
-        catalog.paymentMethods = [PaymentMethodInfo(name: name, flags: flags)]
-        return catalog
+    /// - Parameter name: 原付款方式名稱
+    /// - Returns: 含一筆無分類旗標付款方式的目錄
+    static func makeCatalog(name: String) -> LookupCatalog {
+        LookupCatalog(paymentMethods: [PaymentMethodInfo(name: name, flags: .none)])
     }
 
-    /// 建立使用預設名稱與旗標的付款方式編輯計畫
+    /// 建立使用固定名稱與已變更旗標的待確認計畫
     ///
     /// - Parameter orders: 更正後的受影響訂單
-    /// - Returns: 固定的付款方式編輯計畫
-    func makeDefaultPlan(orders: [LedgerOrder]) -> PaymentMethodEditPlan {
+    /// - Returns: 固定付款方式名稱並啟用貨到付款的計畫
+    static func makeDefaultPlan(orders: [LedgerOrder]) -> PaymentMethodEditPlan {
         PaymentMethodEditPlan(
             originalName: "原付款方式",
             newName: "新付款方式",
-            flags: .none,
+            flags: PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: false,
+                isCashOnDelivery: true
+            ),
             hasChangedFlags: true,
             affectedOrders: orders
         )

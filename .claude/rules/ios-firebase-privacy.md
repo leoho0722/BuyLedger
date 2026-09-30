@@ -1,7 +1,7 @@
 ---
 paths:
   - "apps/ios/BuyLedger/App/AppLaunchConfigurator.swift"
-  - "apps/ios/BuyLedger/Core/Dependencies/TelemetryClient.swift"
+  - "apps/ios/BuyLedger/App/TelemetryService*.swift"
   - "apps/ios/BuyLedger/Resources/**"
   - "apps/ios/BuyLedger.xcodeproj/project.pbxproj"
   - "apps/ios/BuyLedgerTests/PrivacyManifestTests.swift"
@@ -18,14 +18,14 @@ paths:
 - **遙測強制開啟，設定頁不提供任何遙測 UI**：產物不對外散布，揭露只放在 `PrivacyInfo.xcprivacy`。
     - 分析收集初始值在 App `Info.plist` 的 `FIREBASE_ANALYTICS_COLLECTION_ENABLED`。
     - `GoogleService-Info.plist` 的 `IS_ANALYTICS_ENABLED` 在 iOS 無效，重新下載設定檔帶回時要移除，避免暗示它能關閉 Analytics。
-- **`TelemetryClient` 的兩個方法不帶參數**：`enablePreInitializationCollection()`／`enableCollection()` 呼叫即啟用。
+- **`TelemetryService` 的兩個方法不帶參數**：`enablePreInitializationCollection()`／`enableCollection()` 呼叫即啟用。
     - `enableCollection()` 每次啟動初始化後都呼叫：Analytics／Crashlytics 的執行期開關會持久化，要覆寫裝置上殘留的停用狀態。
-- **Performance 自動埋點的初始狀態必須在 `FirebaseApp.configure()` 之前設定**：`AppLaunchConfigurator.configure()` 依序為 UI 測試 guard、`TelemetryClient.liveValue.enablePreInitializationCollection()`、`FirebaseApp.configure()`、`TelemetryClient.liveValue.enableCollection()`。
-    - 初始化前相依注入容器尚未建立，所以直接呼叫 `TelemetryClient.liveValue`，不改成 `@Dependency`。
+- **Performance 自動埋點的初始狀態必須在 `FirebaseApp.configure()` 之前設定**：`AppLaunchConfigurator.configure()` (以 `@Dependency(\.telemetryService)` 取得 Service) 依序為測試 guard (單元測試與 UI 測試)、`enablePreInitializationCollection()`、`FirebaseApp.configure()`、`enableCollection()`。
     - 值是常數也不能把第一步移到初始化之後。
-    - `Performance.sharedInstance()` 只在 `TelemetryClient` 內呼叫，`AppLaunchConfigurator` 不直接呼叫 Performance API。
+    - `Performance.sharedInstance()` 只在 `TelemetryService` 內呼叫，`AppLaunchConfigurator` 不直接呼叫 Performance API。
 - **`OTHER_LDFLAGS = "-ObjC"` (Firebase 所需) 與「Run Script: Crashlytics Symbol Upload」build phase 不可移除**：移除 Crashlytics 產品時要一併刪掉該 build phase，否則腳本路徑消失、build 失敗。
-- **`GoogleService-Info.example.plist` 只給 CI 用**：CI 建置前複製成正式檔名；乾淨 clone 缺少設定檔時，以 App 為宿主的單元測試會在 `FirebaseApp.configure()` 崩潰。
+- **`GoogleService-Info.example.plist` 只給 CI 用**：CI 建置前複製成正式檔名，因為缺少設定檔時「Run Script: Crashlytics Symbol Upload」build phase 的同步驗證會讓 build 失敗 (`Could not get GOOGLE_APP_ID in Google Services file from build environment`)。
+    - 乾淨 clone 缺少設定檔時，一般啟動也會在 `FirebaseApp.configure()` 崩潰 (單元測試與 UI 測試模式略過 Firebase 初始化，不受影響)。
     - 本機開發用真實的 `GoogleService-Info.plist`，不拿範本覆蓋。
     - 範本值一律是明顯的假字串，且列在 membership 排除清單內、不進 bundle。
 - **目前沒有 entitlements 檔**：加 App Groups／CloudKit／Push 時新增 `BuyLedger/Resources/BuyLedger.entitlements` 並在 pbxproj 設 `CODE_SIGN_ENTITLEMENTS`，否則 runtime 讀不到設定的 entitlements。

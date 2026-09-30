@@ -8,76 +8,100 @@
 import ComposableArchitecture
 import Foundation
 import Testing
+
 @testable import BuyLedger
 
-/// 驗證 API 錯誤的使用者訊息
+/// 驗證匯率 Service 把服務端錯誤代碼轉成 `APIError`
 struct APIErrorMappingTests {
 
     // MARK: - Tests
 
-    /// 驗證 API 錯誤分類與對應訊息
-    @Test func invalidKeyResponseMapsToInvalidCredential() async throws(any Error) {
+    /// 無效金鑰或停用帳號代碼都轉換為無效金鑰錯誤
+    ///
+    /// - Parameter errorCode: 服務回應中的錯誤代碼
+    /// - Throws: `fetchLatest` 沒有丟出任何錯誤，或建立測試 HTTP 回應失敗時由 `#require` 丟出
+    @Test(arguments: ["invalid-key", "inactive-account"])
+    func fetchLatest_無效憑證或帳號停用_丟出無效金鑰錯誤(errorCode: String) async throws {
         // Given
+        let service = try Self.makeService(errorCode: errorCode)
+        var actualError: APIError?
 
         // When
-
-        let actual = try await fetchServiceError(for: "invalid-key")
+        do throws(APIError) {
+            _ = try await service.fetchLatest(.usd)
+        } catch {
+            actualError = error
+        }
 
         // Then
+        let error = try #require(actualError)
+        let isInvalidKey: Bool
+        switch error {
+        case .invalidKey:
+            isInvalidKey = true
 
-        if case .invalidKey = actual {
-            return
+        case .transport, .http, .decoding, .apiError, .quotaExceeded:
+            isInvalidKey = false
         }
-        Issue.record("服務錯誤分類與預期值不符。")
+        #expect(isInvalidKey)
     }
 
-    /// 驗證 API 錯誤分類與對應訊息
-    @Test func inactiveAccountResponseMapsToInvalidCredential() async throws(any Error) {
+    /// 配額用盡代碼轉換為配額錯誤
+    ///
+    /// - Throws: `fetchLatest` 沒有丟出任何錯誤，或建立測試 HTTP 回應失敗時由 `#require` 丟出
+    @Test
+    func fetchLatest_配額用盡回應_丟出配額錯誤() async throws {
         // Given
+        let service = try Self.makeService(errorCode: "quota-reached")
+        var actualError: APIError?
 
         // When
-
-        let actual = try await fetchServiceError(for: "inactive-account")
+        do throws(APIError) {
+            _ = try await service.fetchLatest(.usd)
+        } catch {
+            actualError = error
+        }
 
         // Then
+        let error = try #require(actualError)
+        let isQuotaExceeded: Bool
+        switch error {
+        case .quotaExceeded:
+            isQuotaExceeded = true
 
-        if case .invalidKey = actual {
-            return
+        case .transport, .http, .decoding, .apiError, .invalidKey:
+            isQuotaExceeded = false
         }
-        Issue.record("服務錯誤分類與預期值不符。")
+        #expect(isQuotaExceeded)
     }
 
-    /// 驗證 API 錯誤分類與對應訊息
-    @Test func quotaReachedResponseMapsToQuotaExceeded() async throws(any Error) {
+    /// 未知服務錯誤代碼保留原始代碼供上層處理
+    ///
+    /// - Throws: `fetchLatest` 沒有丟出任何錯誤，或建立測試 HTTP 回應失敗時由 `#require` 丟出
+    @Test
+    func fetchLatest_其他服務錯誤代碼_保留原始代碼() async throws {
         // Given
+        let service = try Self.makeService(errorCode: "malformed-request")
+        var actualError: APIError?
 
         // When
-
-        let actual = try await fetchServiceError(for: "quota-reached")
+        do throws(APIError) {
+            _ = try await service.fetchLatest(.usd)
+        } catch {
+            actualError = error
+        }
 
         // Then
+        let error = try #require(actualError)
+        let actualCode: String?
+        switch error {
+        case .apiError(let code):
+            actualCode = code
 
-        if case .quotaExceeded = actual {
-            return
+        case .transport, .http, .decoding, .quotaExceeded, .invalidKey:
+            actualCode = nil
         }
-        Issue.record("服務錯誤分類與預期值不符。")
-    }
-
-    /// 驗證 API 錯誤分類與對應訊息
-    @Test func otherServiceCodeMapsToGenericServiceError() async throws(any Error) {
-        // Given
-
-        // When
-
-        let actual = try await fetchServiceError(for: "malformed-request")
-
-        // Then
-
-        if case let .apiError(code) = actual {
-            #expect(code == "malformed-request")
-        } else {
-            Issue.record("服務錯誤分類與預期值不符。")
-        }
+        #expect(actualCode == "malformed-request")
     }
 }
 
@@ -85,50 +109,25 @@ struct APIErrorMappingTests {
 
 private extension APIErrorMappingTests {
 
-    /// 以 HTTP 200 搭配服務端錯誤 payload 驅動匯率 client 的業務錯誤分流
-    /// - Parameters:
-    ///   - code: 服務回應代碼
-    /// - Returns: client 轉換後的 API 錯誤
-    /// - Throws: 測試資料建立或 client 回傳非 API 錯誤時拋出錯誤
-    func fetchServiceError(for code: String) async throws(any Error) -> APIError {
-        let url = try #require(URL(string: "https://example.com/resource"))
-        let response = try #require(
-            HTTPURLResponse(
-                url: url,
-                statusCode: 200,
-                httpVersion: nil,
-                headerFields: nil
-            )
+    /// 建立注入 HTTP 200 服務錯誤回應的 `ExchangeRateService`
+    ///
+    /// - Parameter errorCode: 服務回應中的錯誤代碼
+    /// - Returns: 使用測試 HTTP 回應與 API 金鑰的正式 Service
+    /// - Throws: 建立測試 HTTP 回應失敗時拋出錯誤
+    static func makeService(errorCode: String) throws -> ExchangeRateService {
+        let responseBody = Data(#"{"result":"error","error-type":"\#(errorCode)"}"#.utf8)
+        let httpClient = MockHTTPClient()
+        httpClient.dataResult = .success(
+            try CurrencyMetadataServiceTests.makeHTTPResponse(body: responseBody)
         )
-        let body = Data(#"{"result":"error","error-type":"\#(code)"}"#.utf8)
-
-        return try await withDependencies {
-            $0.appConfiguration = AppConfiguration(
-                exchangeRateAPIKey: { "network-test-key" },
-                ollamaAPIKey: { nil }
-            )
-            $0.httpClient = HTTPClient(
-                data: { _ in (body, response) },
-                stream: {
-                    (_: URLRequest) async throws(APIError) -> (
-                        URLSession.AsyncBytes,
-                        HTTPURLResponse
-                    ) in
-                    throw APIError.transport(
-                        underlying: TestDependencies.makeUnderlyingError(message: "unused stream")
-                    )
-                }
-            )
+        let configurationStore = CurrencyMetadataServiceTests.makeConfigurationStore(
+            apiKey: "network-test-key"
+        )
+        return withDependencies {
+            $0.httpClient = httpClient
+            $0.appConfigurationStore = configurationStore
         } operation: {
-            do {
-                _ = try await ExchangeRateClient.liveValue.fetchLatest(.usd)
-                Issue.record("預期服務代碼 \(code) 會失敗。")
-                return .apiError(code: "unexpected-success")
-            } catch let error as APIError {
-                return error
-            } catch {
-                throw error
-            }
+            ExchangeRateService.liveValue
         }
     }
 }

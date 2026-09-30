@@ -1,7 +1,8 @@
 ---
 paths:
   - "apps/ios/BuyLedger/Core/Networking/**"
-  - "apps/ios/BuyLedger/Core/Dependencies/{CalendarReminderClient,CurrencyMetadataRepository}*.swift"
+  - "apps/ios/BuyLedger/Core/Storage/AppConfigurationStore*.swift"
+  - "apps/ios/BuyLedger/Core/Dependencies/{CurrencyMetadata,ExchangeRate}Service*.swift"
   - "apps/ios/BuyLedger/Core/Persistence/*{CurrencyMetadata,CampaignReminder}*.swift"
   - "apps/ios/BuyLedger/Features/AISummary/**"
   - "apps/ios/BuyLedger/Features/Campaigns/**"
@@ -18,18 +19,18 @@ paths:
     - 未記錄的內嵌不得僅因無人反對就視為已接受，本條即是該項記錄。
 - **金鑰一律放 Authorization header (`Bearer <key>`)，端點網址不帶金鑰**：連結的 `FirebasePerformance` 會自動上傳 `URLSession` 請求網址 (不收 header)。
 - **網路層錯誤訊息不內插網址、header 或設定值**，避免金鑰進入使用者可見訊息。
-- **`ExchangeRateClient` 送出前獨立拒絕含控制字元的金鑰** (避免注入 Authorization header 值)，不以 `URL(string:)` 的失敗 guard 取代；該 guard 仍要保留。
-- **`ExchangeRateClient.serviceError` 是唯一的服務錯誤映射**，`fetchLatest` 與 `fetchSupportedCodes` 共用，不在 endpoint 內複製。
-- **幣別清單經 `CurrencyMetadataRepository.refreshIfStale(604_800)` 打 `/codes` 並 cache 7 天**：只有非空結果才替換 cache，空結果保留舊 cache 並回報。
-    - `CurrencyMetadataPersistence.replace` 保留防禦性 guard，直接呼叫時也不讓空結果進入先刪後寫。
+- **`ExchangeRateEndpoint.fetch` 送出前獨立拒絕含控制字元的金鑰** (避免注入 Authorization header 值)，不以 `URL(string:)` 的失敗 guard 取代；該 guard 仍要保留。
+- **`ExchangeRateEndpoint.serviceError` 是唯一的服務錯誤映射**，`ExchangeRateService.fetchLatest` 與 `CurrencyMetadataService.refreshIfStale` (取 `/codes`) 共用，不在各 Service 內複製；請求組裝與解碼同樣收在 `ExchangeRateEndpoint`。
+- **幣別清單經 `CurrencyMetadataService.refreshIfStale(604_800)` 打 `/codes` 並 cache 7 天**：只有非空結果才替換 cache，空結果保留舊 cache 並回報。
+    - 寫入 closure 開頭先檢查空清單並拋 `.persistence(.emptyCodeList)`，該次 `write` 不 `save()`，舊 cache 原樣保留。
 - **AI 摘要串流整體上限 30 秒**：逾時保留已收到的內容、`phase` 設 `.finished` 並使用 `truncationMessage`，不走 `errorMessage`。
 
 ## 行事曆 (EventKit)
 
-- **開團訂購提醒經 `CalendarReminderClient` 寫入與移除系統行事曆，請求 full access (`requestFullAccessToEvents()`)**：移除前要先 `event(withIdentifier:)` 讀回事件，write-only 讀不到。
+- **開團訂購提醒經 `CalendarReminderService` 寫入與移除系統行事曆，請求 full access (`requestFullAccessToEvents()`)**：移除前要先 `event(withIdentifier:)` 讀回事件，write-only 讀不到。
     - Info.plist 帶 `NSCalendarsFullAccessUsageDescription`；權限在實際新增或移除時才請求，不在啟動時請求。
 - **提醒連結存 iOS 專屬的 `CampaignReminderRecord`，不進跨平台 `Campaign` schema**：`eventIdentifier` 是裝置本機資料，寫進生成型別會違反平台中立。
-    - 連結以 `CampaignReminderLink` 值型別在 repository 與 reducer 間傳遞。
+    - 連結以 `CampaignReminderLink` 值型別在 `CampaignReminderService` 與 reducer 間傳遞。
 - **提醒是全天事件 (`isAllDay`)，時間由使用者自選並存成 `reminderTimestamp`**：事件日期取 `calendar.startOfDay(for:)`，`EKAlarm(relativeOffset:)` 以該時間戳當天的分鐘數換算秒數，標題取 `Campaign.reminderTitle`。
     - 預設值為結單日 (沒有則今天) 上午 09:00。
     - 儲存時名稱或時間戳變更即重建事件；開團詳情頁只顯示提醒時間，新增與移除走編輯頁。

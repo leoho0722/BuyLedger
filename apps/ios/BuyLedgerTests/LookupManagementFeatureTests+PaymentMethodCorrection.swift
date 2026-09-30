@@ -15,11 +15,11 @@ import Testing
 
 extension LookupManagementFeatureTests {
 
-    /// 付款方式更正成功不會清除首次載入失敗狀態
+    /// 收到付款方式更正結果後更新目錄且保留既有載入錯誤
     @Test
-    func correctionSuccessKeepsTheInitialLoadFailureState() async {
-        // Given
+    func correction_付款方式更正成功_保留初始載入失敗狀態() async {
         await LookupCatalog.withIsolatedStorage {
+            // Given
             let originalFlags = PaymentMethodFlags(
                 isCardless: false,
                 isBankTransfer: true,
@@ -30,10 +30,10 @@ extension LookupManagementFeatureTests {
                 isBankTransfer: false,
                 isCashOnDelivery: false
             )
-            var state = LookupManagementFeature.State(kind: .paymentMethod)
-            state.hasLoadFailed = true
-            state.$catalog.withLock { catalog in
-                catalog.paymentMethods = [PaymentMethodInfo(name: "匯款", flags: originalFlags)]
+            var initialState = LookupManagementFeature.State(kind: .paymentMethod)
+            initialState.hasLoadFailed = true
+            initialState.$catalog.withLock {
+                $0.paymentMethods = [PaymentMethodInfo(name: "匯款", flags: originalFlags)]
             }
             let plan = PaymentMethodEditPlan(
                 originalName: "匯款",
@@ -43,38 +43,114 @@ extension LookupManagementFeatureTests {
                 affectedOrders: []
             )
             let expectedPaymentMethod = PaymentMethodInfo(name: "銀行匯款", flags: newFlags)
-            let store = TestStore(initialState: state) {
+            let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             }
 
             // When
             await store.send(.correction(.delegate(.edited(plan)))) {
-                $0.$catalog.withLock { $0.paymentMethods = [expectedPaymentMethod] }
+                $0.$catalog.withLock {
+                    $0.paymentMethods = [expectedPaymentMethod]
+                }
             }
-            await store.receive(\.delegate.paymentMethodEdited, plan)
 
             // Then
+            await store.receive(\.delegate.paymentMethodEdited, plan)
             #expect(store.state.hasLoadFailed)
             await store.finish()
         }
     }
 
-    /// 付款方式表單找出相關訂單、確認並一起寫入後更新主檔
+    /// 編輯付款方式表單後找出受影響訂單並暫存更正確認
     @Test
-    func paymentMethodCorrectionFlowsFromFormThroughConfirmation() async {
-        // Given
+    func destination_編輯付款方式且影響訂單_暫存更正確認() async {
         await LookupCatalog.withIsolatedStorage {
-            let state = LookupManagementFeature.State(kind: .paymentMethod)
+            // Given
             let originalFlags = PaymentMethodFlags(
                 isCardless: false,
                 isBankTransfer: true,
                 isCashOnDelivery: false
             )
-            state.$catalog.withLock { catalog in
-                catalog.paymentMethods = [PaymentMethodInfo(name: "現金", flags: originalFlags)]
+            let newFlags = PaymentMethodFlags(
+                isCardless: true,
+                isBankTransfer: false,
+                isCashOnDelivery: false
+            )
+            var initialState = LookupManagementFeature.State(kind: .paymentMethod)
+            initialState.$catalog.withLock {
+                $0.paymentMethods = [PaymentMethodInfo(name: "現金", flags: originalFlags)]
             }
-            @Shared(.lookupCatalog) var sharedCatalog: LookupCatalog
-            let originalOrder = Self.makePaymentOrder(id: "PM-PARENT", paymentMethod: "現金")
+            initialState.destination = .editPaymentMethod(
+                PaymentMethodEditFormFeature.State(originalName: "現金", flags: originalFlags)
+            )
+            let sourceOrder = LedgerOrder.fixture(
+                id: "PM-PARENT",
+                chargedAmount: 40,
+                cardlessDeductionAmount: 90,
+                cardlessSupplementAmount: -5,
+                paymentMethod: "現金",
+                reconciliationStatus: "  待對帳  "
+            )
+            let expectedOrder = LedgerOrder.fixture(
+                id: "PM-PARENT",
+                chargedAmount: 40,
+                cardlessDeductionAmount: 40,
+                cardlessSupplementAmount: 0,
+                paymentMethod: "新名稱",
+                reconciliationStatus: "待對帳"
+            )
+            let plan = PaymentMethodEditPlan(
+                originalName: "現金",
+                newName: "新名稱",
+                flags: newFlags,
+                hasChangedFlags: true,
+                affectedOrders: [expectedOrder]
+            )
+            let store = TestStore(initialState: initialState) {
+                LookupManagementFeature()
+            } withDependencies: {
+                $0.orderService.fetchOrders = {
+                    [sourceOrder]
+                }
+            }
+
+            // When
+            await store.send(
+                .destination(
+                    .presented(
+                        .editPaymentMethod(.view(.saveButtonTapped(name: "新名稱", flags: newFlags)))
+                    )
+                )
+            )
+
+            // Then
+            await store.receive(\.destination.presented.editPaymentMethod.delegate.saved) {
+                $0.destination = nil
+                $0.isFormSheetDismissing = true
+            }
+            await store.receive(\.correction.requested)
+            await store.receive(\.correction.planResponse.success, plan) {
+                $0.correction.pendingPlan = plan
+            }
+            await store.receive(\.correction.delegate.confirmationRequired, 1) {
+                $0.pendingAlert = Self.paymentMethodConfirmationAlert(count: 1)
+            }
+            #expect(store.state.correction.pendingPlan == plan)
+            #expect(store.state.pendingAlert == Self.paymentMethodConfirmationAlert(count: 1))
+            await store.finish()
+        }
+    }
+
+    /// 待確認付款方式更正通過後一起寫入訂單並更新共用目錄
+    @Test
+    func destination_確認更正付款方式_一起寫入並更新主檔() async {
+        await LookupCatalog.withIsolatedStorage {
+            // Given
+            let originalFlags = PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: true,
+                isCashOnDelivery: false
+            )
             let newFlags = PaymentMethodFlags(
                 isCardless: true,
                 isBankTransfer: false,
@@ -88,7 +164,6 @@ extension LookupManagementFeatureTests {
                 paymentMethod: "新名稱",
                 reconciliationStatus: "待對帳"
             )
-            let expectedPaymentMethod = PaymentMethodInfo(name: "新名稱", flags: newFlags)
             let plan = PaymentMethodEditPlan(
                 originalName: "現金",
                 newName: "新名稱",
@@ -96,20 +171,34 @@ extension LookupManagementFeatureTests {
                 hasChangedFlags: true,
                 affectedOrders: [expectedOrder]
             )
-            let writes = LockIsolated<[PaymentMethodEditPlan]>([])
-            let store = TestStore(initialState: state) {
+            var initialState = LookupManagementFeature.State(kind: .paymentMethod)
+            initialState.$catalog.withLock {
+                $0.paymentMethods = [PaymentMethodInfo(name: "現金", flags: originalFlags)]
+            }
+            initialState.correction.pendingPlan = plan
+            initialState.destination = Self.paymentMethodConfirmationAlert(count: 1)
+            @Shared(.lookupCatalog) var sharedCatalog: LookupCatalog
+            let expectedWrite = PaymentMethodCorrectionFeatureTests.PaymentMethodEditArguments(
+                oldName: "現金",
+                newName: "新名稱",
+                flags: newFlags,
+                orders: [expectedOrder]
+            )
+            let expectedPaymentMethod = PaymentMethodInfo(name: "新名稱", flags: newFlags)
+            let writes = LockIsolated(
+                [PaymentMethodCorrectionFeatureTests.PaymentMethodEditArguments]()
+            )
+            let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0[OrderRepository.self].fetchOrders = { [originalOrder] }
-                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { originalName, newName, flags, affectedOrders in
-                    writes.withValue { plans in
-                        plans.append(
-                            PaymentMethodEditPlan(
-                                originalName: originalName,
+                $0.paymentMethodService.applyPaymentMethodEdit = { oldName, newName, flags, orders in
+                    writes.withValue {
+                        $0.append(
+                            PaymentMethodCorrectionFeatureTests.PaymentMethodEditArguments(
+                                oldName: oldName,
                                 newName: newName,
                                 flags: flags,
-                                hasChangedFlags: true,
-                                affectedOrders: affectedOrders
+                                orders: orders
                             )
                         )
                     }
@@ -117,128 +206,80 @@ extension LookupManagementFeatureTests {
             }
 
             // When
-            await store.send(.view(.editButtonTapped(name: "現金"))) {
-                $0.destination = .editPaymentMethod(
-                    PaymentMethodEditFormFeature.State(
-                        originalName: "現金",
-                        flags: originalFlags
-                    )
-                )
-            }
-            await store.send(
-                .destination(
-                    .presented(
-                        .editPaymentMethod(
-                            .view(.saveButtonTapped(name: "新名稱", flags: newFlags))
-                        )
-                    )
-                )
-            )
-            await store.receive(\.destination.presented.editPaymentMethod.delegate.saved) {
+            await store.send(.destination(.presented(.alert(.confirmPaymentMethodEdit)))) {
                 $0.destination = nil
-                $0.isFormSheetDismissing = true
             }
-            await store.receive(\.correction.requested)
 
-            await store.receive(\.correction.planResponse.success, plan) {
-                $0.correction.pendingPlan = plan
-            }
-            await store.receive(\.correction.delegate.confirmationRequired, 1) {
-                $0.pendingAlert = Self.confirmationAlert(count: 1)
-            }
-            await store.send(.view(.formSheetDismissed)) {
-                $0.isFormSheetDismissing = false
-                $0.pendingAlert = nil
-                $0.destination = Self.confirmationAlert(count: 1)
-            }
-            await store.send(
-                .destination(.presented(.alert(.confirmPaymentMethodEdit)))
-            ) {
-                $0.destination = nil
-            }
+            // Then
             await store.receive(\.correction.confirmed) {
                 $0.correction.pendingPlan = nil
-                $0.$catalog.withLock { $0.paymentMethods = [expectedPaymentMethod] }
+                $0.$catalog.withLock {
+                    $0.paymentMethods = [expectedPaymentMethod]
+                }
             }
             await store.receive(\.correction.editResponse.success, plan)
             await store.receive(\.correction.delegate.edited, plan)
             await store.receive(\.delegate.paymentMethodEdited, plan)
-
-            // Then
-            #expect(writes.value == [plan])
-            #expect(sharedCatalog.paymentMethods == [expectedPaymentMethod])
             #expect(store.state.destination == nil)
+            #expect(writes.value == [expectedWrite])
+            #expect(sharedCatalog.paymentMethods == [expectedPaymentMethod])
             await store.finish()
         }
     }
 
-    /// 找出引用付款方式的訂單失敗時顯示可關閉的一次性提示
+    /// 查詢付款方式相關訂單失敗時暫存通知並保留主檔
     @Test
-    func correctionOrderFetchFailureShowsNoticeAndKeepsCatalog() async {
-        // Given
+    func correction_取得相關訂單失敗_暫存通知並保留主檔() async {
         await LookupCatalog.withIsolatedStorage {
-            var state = LookupManagementFeature.State(kind: .paymentMethod)
-            let catalog = LookupCatalog(
-                paymentMethods: [PaymentMethodInfo(name: "信用卡", flags: .none)]
-            )
-            state.$catalog.withLock { $0 = catalog }
-            state.isFormSheetDismissing = true
-            let store = TestStore(initialState: state) {
+            // Given
+            let paymentMethod = PaymentMethodInfo(name: "信用卡", flags: .none)
+            let catalog = LookupCatalog(paymentMethods: [paymentMethod])
+            var initialState = LookupManagementFeature.State(kind: .paymentMethod)
+            initialState.$catalog.withLock {
+                $0 = catalog
+            }
+            initialState.isFormSheetDismissing = true
+            let failingFetchOrders: OrderService.FetchOrders = { () throws(PersistenceError) in
+                throw .fetchFailed(
+                    underlying: TestDependencies.makeUnderlyingError(message: "fetch")
+                )
+            }
+            let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0[OrderRepository.self].fetchOrders = { () throws(PersistenceError) in
-                    throw PersistenceError.fetchFailed(
-                        underlying: TestDependencies.makeUnderlyingError(message: "fetch")
-                    )
-                }
+                $0.orderService.fetchOrders = failingFetchOrders
             }
 
             // When
             await store.send(
-                .correction(
-                    .requested(
-                        originalName: "信用卡",
-                        newName: "信用卡",
-                        flags: .none
-                    )
-                )
+                .correction(.requested(originalName: "信用卡", newName: "信用卡", flags: .none))
             )
-            await store.receive(\.correction.planResponse.failure)
-            await store.receive(\.correction.delegate.failed) {
-                $0.pendingAlert = Self.failureNotice(
-                    message: "付款方式編輯失敗，請稍後再試。"
-                )
-            }
-            await store.send(.view(.formSheetDismissed)) {
-                $0.isFormSheetDismissing = false
-                $0.pendingAlert = nil
-                $0.destination = Self.failureNotice(
-                    message: "付款方式編輯失敗，請稍後再試。"
-                )
-            }
-            await store.send(.destination(.dismiss)) {
-                $0.destination = nil
-            }
 
             // Then
+            await store.receive(\.correction.planResponse.failure)
+            await store.receive(\.correction.delegate.failed) {
+                $0.pendingAlert = Self.writeFailureAlert(message: "付款方式編輯失敗，請稍後再試。")
+            }
             #expect(store.state.catalog == catalog)
             #expect(store.state.hasLoadFailed == false)
+            #expect(store.state.pendingAlert == Self.writeFailureAlert(message: "付款方式編輯失敗，請稍後再試。"))
             #expect(store.state.destination == nil)
             await store.finish()
         }
     }
 
-    /// 一起寫入付款方式與訂單失敗時顯示可關閉的一次性提示
+    /// 寫入付款方式與訂單失敗時通知失敗且保留主檔
     @Test
-    func correctionWriteFailureShowsNoticeAndKeepsCatalog() async {
-        // Given
+    func correction_更正寫入失敗_顯示通知並保留主檔() async {
         await LookupCatalog.withIsolatedStorage {
-            var state = LookupManagementFeature.State(kind: .paymentMethod)
-            let catalog = LookupCatalog(
-                paymentMethods: [PaymentMethodInfo(name: "信用卡", flags: .none)]
+            // Given
+            let paymentMethod = PaymentMethodInfo(name: "信用卡", flags: .none)
+            let catalog = LookupCatalog(paymentMethods: [paymentMethod])
+            let affectedOrder = LedgerOrder.fixture(
+                id: "PM-FAIL",
+                paymentMethod: "信用卡",
+                isCashOnDelivery: true
             )
-            state.$catalog.withLock { $0 = catalog }
-            state.isFormSheetDismissing = true
             let plan = PaymentMethodEditPlan(
                 originalName: "信用卡",
                 newName: "信用卡",
@@ -248,52 +289,36 @@ extension LookupManagementFeatureTests {
                     isCashOnDelivery: true
                 ),
                 hasChangedFlags: true,
-                affectedOrders: [
-                    LedgerOrder.fixture(
-                        id: "PM-FAIL",
-                        paymentMethod: "信用卡",
-                        isCashOnDelivery: true
-                    )
-                ]
+                affectedOrders: [affectedOrder]
             )
-            state.correction.pendingPlan = plan
-            let store = TestStore(initialState: state) {
+            var initialState = LookupManagementFeature.State(kind: .paymentMethod)
+            initialState.$catalog.withLock {
+                $0 = catalog
+            }
+            initialState.correction.pendingPlan = plan
+            let underlyingError = TestDependencies.makeUnderlyingError(message: "write")
+            let failingApplyEdit: PaymentMethodService.ApplyPaymentMethodEdit = { _, _, _, _ throws(PaymentMethodPersistenceError) in
+                throw .storage(.saveFailed(underlying: underlyingError))
+            }
+            let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0[PaymentMethodRepository.self].applyPaymentMethodEdit = { _, _, _, _ throws(PaymentMethodPersistenceError) in
-                    throw .storage(
-                        .saveFailed(
-                            underlying: TestDependencies.makeUnderlyingError(message: "write")
-                        )
-                    )
-                }
+                $0.paymentMethodService.applyPaymentMethodEdit = failingApplyEdit
             }
 
             // When
             await store.send(.correction(.confirmed)) {
                 $0.correction.pendingPlan = nil
             }
-            await store.receive(\.correction.editResponse.failure)
-            await store.receive(\.correction.delegate.failed) {
-                $0.pendingAlert = Self.failureNotice(
-                    message: "付款方式編輯失敗，請稍後再試。"
-                )
-            }
-            await store.send(.view(.formSheetDismissed)) {
-                $0.isFormSheetDismissing = false
-                $0.pendingAlert = nil
-                $0.destination = Self.failureNotice(
-                    message: "付款方式編輯失敗，請稍後再試。"
-                )
-            }
-            await store.send(.destination(.dismiss)) {
-                $0.destination = nil
-            }
 
             // Then
+            await store.receive(\.correction.editResponse.failure)
+            await store.receive(\.correction.delegate.failed) {
+                $0.destination = Self.writeFailureAlert(message: "付款方式編輯失敗，請稍後再試。")
+            }
             #expect(store.state.catalog == catalog)
             #expect(store.state.hasLoadFailed == false)
-            #expect(store.state.destination == nil)
+            #expect(store.state.destination == Self.writeFailureAlert(message: "付款方式編輯失敗，請稍後再試。"))
             await store.finish()
         }
     }

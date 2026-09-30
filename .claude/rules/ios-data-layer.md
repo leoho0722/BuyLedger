@@ -3,30 +3,32 @@ paths:
   - "apps/ios/BuyLedger/Core/**"
   - "apps/ios/BuyLedger/Features/{Orders,Campaigns,Lookups,Customers,Dashboard,Insights}/**"
   - "apps/ios/BuyLedger/Features/App/RootFeature.swift"
-  - "apps/ios/BuyLedgerTests/*{Persistence,Migration,Repository}*.swift"
+  - "apps/ios/BuyLedgerTests/*{Persistence,Migration,Database,Residue}*.swift"
+  - "apps/ios/BuyLedgerTests/{Order,Campaign,Category,OrderSource,ReconciliationStatus,PaymentMethod}Service*.swift"
 ---
 
 # iOS 資料層與 SwiftData
 
 ## 容器與注入
 
-- **容器共用、repository 注入與 `liveValue` 不 seed 的規則在 `apps/ios/CLAUDE.md` 的「環境相依性與依賴注入」**。
-- **`@ModelActor` 的 init 帶 main actor 隔離，只能在 `async` context 建立**：參考 `OrderRepository.PersistenceInstanceProvider.instance()` 以 `MainActor.run { ... }` 取得。
+- **容器共用、Service 注入與 `liveValue` 不 seed 的規則在 `apps/ios/CLAUDE.md` 的「環境相依性與依賴注入」**。
+- **持久層是普通 `actor` 的 `BuyLedgerDatabase`，不用 `@ModelActor`**：macro 綁定單一長命 `modelContext`，正是 save 失敗後殘留的成因 (見「訂單寫入」)；`@ModelActor` 的 init 還帶 main actor 隔離，只能在 `async` context 建立，同步的 computed `liveValue` 無法建立它。
 
 ## 訂單寫入
 
-- **建立與更新分兩個入口**：`OrderPersistence.create(_:)` 遇到同編號資料列拋 `WriteError.identifierCollision` 且不寫入；`update(_:)` 才是 upsert。
-    - `saveTapped` 採用 `OrdersFeature.resolveWriteResult` 算出的意圖呼叫 `OrderRepository.createOrder`／`saveOrder`，不自行以 `editState.original == nil` 重算：兩者在並行刪除或詳情堆疊過期時會分歧，撞號會退回靜默覆寫。
-- **訂單持久層只用 `OrderRepository.PersistenceInstanceProvider` 提供的單一長命 `OrderPersistence`**：資料表無唯一性約束 (CloudKit 限制)，多個實例會讓同編號並發寫入各自查無、各自插入。
-    - 長命 `modelContext` 關閉 autosave：`create`、`update` (找不到既有列時)、`upsertAll` (找不到既有列時)、`mergeOrders`、`updatePersistingPhotos` (找不到既有列時)、`seedIfEmpty` 的 `save()` 失敗一律經 `performWithRollback(insertedRecords:)`，由 helper 回滾、刪除本次插入實例與同 id 殘留記錄，再 rethrow 原始錯誤；只呼叫 `rollback()` 不足。
-    - `mergeOrders` 在 `save()` 前的來源讀取失敗仍只需 `rollback()`；這與 save 失敗的時序不同，不要混用兩條清理規則。
-    - 長命 context 在 save 失敗後呼叫 `rollback()` 無法還原本次插入與刪除；需要失敗不留殘留的多表交易時，以一次性 `ModelContext` 寫入，成功只呼叫一次 `save()`，失敗就丟棄該 context。
-    - `CampaignRepository.live` 相反：每次操作以 `makePersistence` 新建 `CampaignPersistence`，失敗時 context 隨實例丟棄、不需 `rollback()`；改成長命實例時要補上。
+- **建立與更新分兩個入口**：`OrderService.createOrder` 遇到同編號資料列拋 `OrderPersistenceError.identifierCollision` 且不寫入；`saveOrder` 才是 upsert。
+    - `saveTapped` 採用 `OrderDraft.resolveWriteResult` 算出的意圖呼叫 `createOrder`／`saveOrder`，不自行以 `editState.original == nil` 重算：兩者在並行刪除或詳情堆疊過期時會分歧，撞號會退回靜默覆寫。
+- **每次讀寫都經 `BuyLedgerDatabase.read`／`write` 取得一次性 `ModelContext`；`write` 成功只呼叫一次 `save()`，closure 拋錯或 `save()` 失敗就丟棄該 context，不呼叫 `rollback()`**：長命 context 在 save 失敗後，即使 `rollback()` 讓 `hasChanges` 變回 `false`，model 實例仍留著改過的值或刪除標記，之後對同一筆資料的寫入會把殘留帶進 store。
+    - Service 不持有跨呼叫的 `ModelContext`／`ModelContainer`，closure 內只回傳 `Sendable` 的 domain 值，不回傳 `@Model`。
+    - closure 是同步的，網路、行事曆、使用者確認等 `await` 步驟留在 Service 或 Feature，分成多次 `read`／`write`：`refreshIfStale`、付款方式更正、開團儲存後改名與行事曆都不是單一交易。
+    - 改動 `BuyLedgerDatabase` 的 context 生命週期或錯誤處理後跑 `OrderServiceResidueTests` (刪除失敗後再刪、同 id 建立、同 id 更新、編輯失敗後改開團名稱四個情境)。
+- **資料表無唯一性約束 (CloudKit 限制)，「查撞號再插入」必須在同一個 `write` closure 內完成**：`BuyLedgerDatabase` 是 actor 且 closure 同步執行，其他寫入插不進查詢與插入之間；拆成兩次呼叫會讓同編號並發寫入各自查無、各自插入。
+    - live 只有一個 `BuyLedgerDatabase` 實例 (依賴快取只求值一次 `BuyLedgerDatabaseKey.liveValue`)，Service 內不另建；`OrderServiceTests.liveValue_連續解析兩次_取得同一資料庫實例()` 與 `createOrder_並行建立相同識別值_只成功一筆其餘明確撞號()` 守門。
 - **`LedgerOrder.id` 存完整長度的隨機識別碼，不截短**；需要短碼顯示時用 `LedgerOrder.displayID`。
 - **`LedgerOrder` 是 immutable struct**：改欄位用 memberwise init 重建整筆 (參考 `renaming*`／`removingCampaign` 系列擴充方法)。
-- **照片位元組不隨訂單列常駐**：`OrderPersistence.fetchAll()` 以 `propertiesToFetch` 排除 `photos` (回傳空陣列不代表沒有照片)，需要時用 `fetchPhotos(id:)`；高頻的整表或多筆讀取路徑不得碰 `photos`。
+- **照片位元組不隨訂單列常駐**：`OrderService.fetchOrders` 以 `propertiesToFetch` 排除 `photos` (回傳空陣列不代表沒有照片)，需要時用 `fetchOrderPhotos`；高頻的整表或多筆讀取路徑不得碰 `photos`。
     - `@Attribute(.externalStorage)` 對 `[Data]` 陣列不生效，不要依賴它。
-- **`OrderRecord.apply(_:)` 永不寫照片**：照片只在插入 (`OrderRecord.init(order:)`) 與 `updatePersistingPhotos(_:)` 的顯式覆寫時落地；不要把 `photos` 併進 `apply(_:)`，否則漏改的路徑會讓照片消失。
+- **`OrderRecord.apply(_:)` 永不寫照片**：照片只在插入 (`OrderRecord.init(order:)`) 與 `saveOrderPersistingPhotos` 的顯式覆寫時落地；不要把 `photos` 併進 `apply(_:)`，否則漏改的路徑會讓照片消失。
 
 ## 跨檔不變式
 
@@ -36,14 +38,15 @@ paths:
     - `@Shared` 只用在主檔目錄；其他跨 feature 狀態 (客戶彙總、開團列表) 由 `RootFeature` 攔截子 feature action 同步副本，擴用前先確認真的有多個 feature 讀寫同一份資料。
     - `NameLookupRecordProtocol` 協定遵循放各記錄檔尾端的 extension，不碰型別主體：主體變動會改變 SwiftData 指紋、破壞 migration。
 - **付款方式旗標正規化只有 `LedgerOrder.applyingPaymentMethodFlags(...)` 一處**：折抵上限、對帳狀態清空、貨到付款運費三條規則都在這裡，手動編輯與回溯更正共用。
-- **主檔改名是一次原子操作**：`OrderPersistence.applyOrderSourceRename`、`applyCategoryRename`、`applyPaymentMethodRename`、`applyReconciliationStatusRename` 在 actor 內建立一次性 `ModelContext(modelContainer)`，於其中改主檔與引用訂單並只呼叫一次 `save()`；失敗時拋出原始錯誤並丟棄該 context，不能讓主檔與訂單只改一邊。名稱撞到既有項目時依主檔規則合併，付款方式同時合併旗標。
-- **付款方式編輯是一次原子操作**：`PaymentMethodPersistence.applyEdit` 以單一 context、單次 `save()` 更新主檔與重算訂單，失敗整批 rollback；`PaymentMethodRepository.applyPaymentMethodEdit` 只轉呼叫。
+- **主檔改名是一次原子操作**：`OrderService.applyOrderSourceRename`、`applyCategoryRename`、`applyPaymentMethodRename`、`applyReconciliationStatusRename` 各在一次 `database.write` 內改主檔與引用訂單，成功只 `save()` 一次；失敗時拋出原始錯誤並丟棄該 context，不能讓主檔與訂單只改一邊。名稱撞到既有項目時依主檔規則合併，付款方式同時合併旗標。
+    - 改名只有 `OrderService` 這四個入口，各主檔 Service (`CategoryService`、`OrderSourceService` 等) 不提供改名 closure：只改主檔不改訂單會留下孤兒引用。
+- **付款方式編輯是一次原子操作**：`PaymentMethodService.applyPaymentMethodEdit` 在單一 `database.write` 內更新主檔與重算訂單，失敗整批丟棄。
+    - 只更新既有訂單、不插入；找不到目標 id 時整批拋 `PaymentMethodPersistenceError.orderNotFound`。
     - `PaymentMethodCorrectionFeature` 以一次 fetch 建立 `PaymentMethodEditPlan`，確認筆數與重算對象都取自該快照。
     - 取消確認時主檔旗標也不套用；零筆受影響或旗標未變的純改名不出現確認。
-    - 資料流：`PaymentMethodCorrectionFeature` 取樣並要求必要確認 → `PaymentMethodPersistence` 原子寫入 → `LookupManagementFeature` 送出 `paymentMethodEdited` delegate → `RootFeature` 攔截並純轉送同一份已正規化 payload (不再正規化) → `OrdersFeature` 以 `paymentMethodFlagsApplied` 套到記憶體內訂單且不再落盤；改動時一併檢查這些型別。
+    - 資料流：`PaymentMethodCorrectionFeature` 取樣並要求必要確認 → `PaymentMethodService` 原子寫入 → `LookupManagementFeature` 送出 `paymentMethodEdited` delegate → `RootFeature` 攔截並純轉送同一份已正規化 payload (不再正規化) → `OrdersFeature` 以 `paymentMethodFlagsApplied` 套到記憶體內訂單且不再落盤；改動時一併檢查這些型別。
     - 付款方式編輯成功不走 `.delegate(.itemRenamed)`：旗標是權威覆寫，語意與更名 cascade 不同。
-    - `PaymentMethodPersistence.applyEdit`、四個 `OrderPersistence.apply…Rename` 與 `CampaignPersistence.delete` 是使用 `OrderPersistence` 長命 context 以外的 context 寫入 `OrderRecord` 的例外。四個改名操作仍由 `OrderPersistence` actor 執行，但使用一次性 context；這些路徑只更新既有列、不插入訂單，找不到目標 id 時整批拋錯。前提改變時重跑 `PaymentMethodPersistenceTests` 並重新評估長命 context 的 stale read 風險。
-- **開團刪除在單一 `modelContext` 交易內完成**：`CampaignPersistence.delete(id:name:)` 移除 `CampaignRecord`、剝除所有訂單 `campaignNames` 中的該名稱、移除 `CampaignReminderRecord`，最後單次 `save()`；`CampaignRepository.removeCampaign` 只轉呼叫。
+- **開團刪除在單一 `database.write` 交易內完成**：`CampaignService.removeCampaign` 移除 `CampaignRecord`、剝除所有訂單 `campaignNames` 中的該名稱、移除 `CampaignReminderRecord`，最後單次 `save()`，並回傳被移除提醒連結的行事曆事件 id。
     - 行事曆事件在本機刪除成功後才移除，失敗不回滾，但要以 `campaignWriteFailed` 告知。
     - `CampaignFeature` 收到刪除結果才更新狀態，`RootFeature` 再攔截 `campaignDeleted` 同步 `OrdersFeature.State` 的訂單與 `campaigns` 副本；改動時四檔一起看。
 - **開團是否已收單一律呼叫 `Campaign.evaluatingAutoClose(asOf:calendar:)`** (`CampaignFeature`／`OrdersFeature`／`OrderEditFeature` 共用)，不各寫日期比對。
@@ -74,10 +77,11 @@ paths:
     - 改欄位名 → `@Attribute(originalName:)` (lightweight，底層欄位名不變)。
     - 改 `@Model` 類別名 → `.custom`：SwiftData 沒有 entity 級 originalName；凍結舊 shadow 後在 `willMigrate` 讀舊 entity 暫存 (`nonisolated(unsafe) static`)、`didMigrate` 寫新 entity。
     - stage 種類拿不準時，用 `SchemaMigrationTests` 的落地 store 遷移測試判定，不憑文件推測。
-- **加索引不需凍結 shadow，但證據只涵蓋「單一 `String` 欄位的單欄 `#Index`、不拉新版本」** (`SchemaMigrationTests.addingIndexDoesNotRequireFrozenShadow()`)：複合索引、非 `String` 欄位、伴隨拉新版本的索引調整要另補落地 store 測試。
+- **加索引不需凍結 shadow，但證據只涵蓋「單一 `String` 欄位的單欄 `#Index`、不拉新版本」** (`SchemaMigrationTests.init_同版本schema加單欄索引_直接開啟並保留資料()`)：複合索引、非 `String` 欄位、伴隨拉新版本的索引調整要另補落地 store 測試。
     - 「store 開得起來」不能證明指紋沒變：SwiftData 會為未登記的改動自動推導輕量遷移。
     - `OrderRecord` 現有的 `Date` 欄位索引超出上述證據，由 `SchemaMigrationTests` 的兩條落地 store 遷移測試守住。
 - **移除舊版本會抬高 floor，單向不可逆**：停在低於新 floor 的 store 會失去遷移路徑 (啟動時保留原始檔案並顯示阻斷式復原畫面)。
     - 只在確定沒有 store 停在被移除版本時才可移除；上架後這個前提幾乎不成立，要保留完整版本鏈。
     - 「已在 target 就安全」是單一裝置的結論，建立在 CloudKit `.disabled` 上；啟用同步前要重新評估。
 - **store 開不起來時保留檔案、退到 in-memory 並阻斷正常介面**：恢復資料要補正確的 migration stage，或經使用者確認後搬移 store 改用空白資料庫 (`PersistenceFailureFeature`)。
+    - 搬移走 `PersistenceRecoveryService.quarantineStore`，由 `BuyLedgerDatabase.quarantineStore()` 依建立時給定的 `StoreLocation` 處理 (production 為 `.applicationSupport`)，不從 container 推斷：降級後 container 是 in-memory，仍要能隔離磁碟上的 store。

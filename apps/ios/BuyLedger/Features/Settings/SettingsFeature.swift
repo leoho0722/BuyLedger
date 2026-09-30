@@ -8,7 +8,7 @@
 import ComposableArchitecture
 import Foundation
 
-/// 決定設定頁的語言、預設幣別、月度目標、AI 總結與 App 鎖定設定的讀取與儲存
+/// 設定頁的語言、預設幣別、月度目標、AI 總結與 App 鎖定：使用者一改就存回，畫面出現時載入可選幣別
 @Reducer
 struct SettingsFeature {
 
@@ -24,7 +24,7 @@ struct SettingsFeature {
         /// 預設訂單幣別
         var defaultCurrency: CurrencyCode = .twd
 
-        /// 可供選擇的幣別清單；由 CurrencyMetadataRepository 提供
+        /// 可供選擇的幣別清單；由 `CurrencyMetadataService` 提供
         var availableCurrencies: [CurrencyCode] = CurrencyCode.defaults
 
         /// 每月淨獲利目標 (TWD)；0 代表未設定
@@ -74,18 +74,18 @@ struct SettingsFeature {
 
         /// 使用者可直接操作的設定頁事件
         ///
-        /// - Parameter action: 使用者在設定頁執行的操作
+        /// - Parameter action: 畫面出現、選定預設幣別或選定 AI 總結模型
         case view(View)
 
         /// App 鎖定事件
         ///
-        /// - Parameter action: App 鎖定功能收到的事件
+        /// - Parameter action: 由 `AppLockFeature` 處理的啟用、驗證與上鎖事件
         case appLock(AppLockFeature.Action)
 
         /// 幣別主檔載入結果
         ///
-        /// - Parameter result: 幣別主檔載入成功或失敗的結果
-        case currencyCodesResponse(Result<[CurrencyCode], CurrencyMetadataRepositoryError>)
+        /// - Parameter result: 成功帶回幣別清單，失敗帶回錯誤
+        case currencyCodesResponse(Result<[CurrencyCode], CurrencyMetadataServiceError>)
 
         /// 設定頁畫面事件
         @CasePathable
@@ -94,7 +94,7 @@ struct SettingsFeature {
             /// 畫面出現時載入幣別主檔
             case task
 
-            /// 使用者選定預設幣別；傳入 ISO code 字串
+            /// 使用者選定預設幣別
             ///
             /// - Parameter code: 使用者選定的 ISO code 字串
             case defaultCurrencySelected(String)
@@ -108,15 +108,15 @@ struct SettingsFeature {
 
     // MARK: - Dependencies
 
-    /// 偏好的讀寫介面
-    @Dependency(SettingsStore.self) private var settingsStore
+    /// 把設定快照寫回儲存的 Service
+    @Dependency(\.settingsService) private var settingsService
 
     /// 幣別主檔資料來源；用於畫面出現時載入最新清單
-    @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
+    @Dependency(\.currencyMetadataService) private var currencyMetadataService
 
     // MARK: - Body
 
-    /// 設定 reducer
+    /// 只負責組合 reducer，設定頁自己的邏輯在 `core(state:action:)`
     var body: some Reducer<State, Action> {
         BindingReducer()
 
@@ -151,12 +151,12 @@ private extension SettingsFeature {
         case .view(.task):
             return loadCurrencyCodes()
 
-        case let .view(.defaultCurrencySelected(code)):
+        case .view(.defaultCurrencySelected(let code)):
             state.defaultCurrency = CurrencyCode(rawValue: code)
             persist(state)
             return .none
 
-        case let .view(.aiSummaryModelSelected(model)):
+        case .view(.aiSummaryModelSelected(let model)):
             state.aiSummaryModel = model
             persist(state)
             return .none
@@ -168,7 +168,7 @@ private extension SettingsFeature {
         case .appLock:
             return .none
 
-        case let .currencyCodesResponse(.success(codes)):
+        case .currencyCodesResponse(.success(let codes)):
             guard !codes.isEmpty else {
                 return .none
             }
@@ -184,29 +184,11 @@ private extension SettingsFeature {
         }
     }
 
-    /// 載入幣別主檔並把成功或失敗合併成單一回應
-    ///
-    /// - Returns: 幣別主檔載入 effect
-    func loadCurrencyCodes() -> Effect<Action> {
-        let currencyMetadataRepository = currencyMetadataRepository
-        return .run { send in
-            do {
-                let codes = try await currencyMetadataRepository.fetchCodes()
-                await send(.currencyCodesResponse(.success(codes)))
-            } catch {
-                guard let error = error as? CurrencyMetadataRepositoryError else {
-                    return
-                }
-                await send(.currencyCodesResponse(.failure(error)))
-            }
-        }
-    }
-
     /// 將目前設定寫回持久化來源
     ///
     /// - Parameter state: 目前設定狀態
     func persist(_ state: State) {
-        settingsStore.save(
+        settingsService.save(
             SettingsSnapshot(
                 language: state.language,
                 defaultCurrency: state.defaultCurrency,
@@ -216,5 +198,23 @@ private extension SettingsFeature {
                 isBiometricUnlockEnabled: state.appLock.isBiometricUnlockEnabled
             )
         )
+    }
+
+    /// 載入幣別主檔並把成功或失敗合併成單一回應
+    ///
+    /// - Returns: 載入幣別主檔的 `Effect`
+    func loadCurrencyCodes() -> Effect<Action> {
+        let currencyMetadataService = currencyMetadataService
+        return .run { send in
+            do {
+                let codes = try await currencyMetadataService.fetchCodes()
+                await send(.currencyCodesResponse(.success(codes)))
+            } catch {
+                guard let error = error as? CurrencyMetadataServiceError else {
+                    return
+                }
+                await send(.currencyCodesResponse(.failure(error)))
+            }
+        }
     }
 }
