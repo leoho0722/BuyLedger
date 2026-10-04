@@ -14,8 +14,6 @@ import Testing
 /// 驗證 AI 摘要 Service 的請求、金鑰與串流處理
 struct AISummaryServiceTests {
 
-    // MARK: - Tests
-
     /// 驗證合法串流行能取出文字內容，並標記尚未完成 (`done` 為 `false`)
     ///
     /// - Throws: 預期的解析結果不存在時由 `#require` 丟出測試失敗

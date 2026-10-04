@@ -11,11 +11,9 @@ import Testing
 
 @testable import BuyLedger
 
-/// 以 TestStore 驗證設定狀態、持久化與系統服務互動
+/// 以 `TestStore` 驗證設定狀態、持久化與系統服務互動
 @MainActor
 struct SettingsFeatureTests {
-
-    // MARK: - Tests
 
     /// 初始設定狀態採用產品指定的語言、幣別與功能預設值
     @Test
@@ -32,7 +30,7 @@ struct SettingsFeatureTests {
         #expect(state.appVersion == "—")
         #expect(state.monthlyProfitGoalTWD == 80_000)
         #expect(state.aiSummaryModel == "gemma4:31b-cloud")
-        #expect(state.appLock.isBiometricUnlockEnabled == false)
+        #expect(state.isBiometricUnlockEnabled == false)
     }
 
     /// 每個持久化 binding 更新狀態並寫入對應的完整設定快照
@@ -56,6 +54,7 @@ struct SettingsFeatureTests {
         }
 
         // Then
+        await store.receive(\.delegate.preferencesChanged, binding.expectedSnapshot)
         #expect(saved.value == binding.expectedSnapshot)
     }
 
@@ -76,9 +75,11 @@ struct SettingsFeatureTests {
         await store.send(\.binding.monthlyProfitGoalTWD, 1) {
             $0.monthlyProfitGoalTWD = 1
         }
+        await store.receive(\.delegate.preferencesChanged)
         await store.send(\.binding.monthlyProfitGoalTWD, 12) {
             $0.monthlyProfitGoalTWD = 12
         }
+        await store.receive(\.delegate.preferencesChanged)
 
         // When
         await store.send(\.binding.monthlyProfitGoalTWD, 120) {
@@ -86,6 +87,7 @@ struct SettingsFeatureTests {
         }
 
         // Then
+        await store.receive(\.delegate.preferencesChanged)
         #expect(saved.value.map(\.monthlyProfitGoalTWD) == [1, 12, 120])
     }
 
@@ -112,7 +114,7 @@ struct SettingsFeatureTests {
     ///
     /// - Throws: 設定快照未被保存時拋出錯誤
     @Test
-    func defaultCurrencySelected_選擇日圓_儲存所選幣別() async throws {
+    func defaultCurrencySelected_選擇日圓_儲存所選幣別() async throws(any Error) {
         // Given
         let saved = LockIsolated<SettingsSnapshot?>(nil)
         let store = TestStore(initialState: SettingsFeature.State()) {
@@ -129,6 +131,7 @@ struct SettingsFeatureTests {
         }
 
         // Then
+        await store.receive(\.delegate.preferencesChanged)
         let snapshot = try #require(saved.value)
         #expect(snapshot.defaultCurrency == .jpy)
     }
@@ -137,7 +140,7 @@ struct SettingsFeatureTests {
     ///
     /// - Throws: 設定快照未被保存時拋出錯誤
     @Test
-    func aiSummaryModelSelected_選擇摘要模型_儲存選取值() async throws {
+    func aiSummaryModelSelected_選擇摘要模型_儲存選取值() async throws(any Error) {
         // Given
         let saved = LockIsolated<SettingsSnapshot?>(nil)
         let store = TestStore(initialState: SettingsFeature.State()) {
@@ -154,6 +157,7 @@ struct SettingsFeatureTests {
         }
 
         // Then
+        await store.receive(\.delegate.preferencesChanged)
         let snapshot = try #require(saved.value)
         #expect(snapshot.aiSummaryModel == "deepseek-v3.1:671b")
     }
@@ -231,97 +235,6 @@ struct SettingsFeatureTests {
         // Then
         await store.receive(\.currencyCodesResponse.success)
         #expect(store.state.availableCurrencies == [.twd, .jpy])
-    }
-
-    /// 本機驗證成功後才儲存 App 鎖定設定
-    @Test
-    func appLock_啟用生物辨識且驗證成功_儲存設定() async {
-        // Given
-        let saved = LockIsolated<[SettingsSnapshot]>([])
-        let store = TestStore(initialState: SettingsFeature.State()) {
-            SettingsFeature()
-        } withDependencies: {
-            $0.settingsService.save = { snapshot in
-                saved.withValue {
-                    $0.append(snapshot)
-                }
-            }
-            $0.biometricAuthService.isAvailable = {
-                true
-            }
-            $0.biometricAuthService.authenticate = { _ in
-                .success
-            }
-        }
-
-        // When
-        await store.send(.appLock(.enableToggled(true)))
-
-        // Then
-        await store.receive(\.appLock.enableAuthenticationFinished) {
-            $0.appLock.isBiometricUnlockEnabled = true
-        }
-        #expect(saved.value.map(\.isBiometricUnlockEnabled) == [true])
-    }
-
-    /// 關閉 App 鎖定時立即儲存設定
-    @Test
-    func appLock_停用生物辨識_立即儲存設定() async {
-        // Given
-        let saved = LockIsolated<[SettingsSnapshot]>([])
-        var state = SettingsFeature.State()
-        state.appLock.isBiometricUnlockEnabled = true
-        let store = TestStore(initialState: state) {
-            SettingsFeature()
-        } withDependencies: {
-            $0.settingsService.save = { snapshot in
-                saved.withValue {
-                    $0.append(snapshot)
-                }
-            }
-        }
-
-        // When
-        await store.send(.appLock(.enableToggled(false))) {
-            $0.appLock.isBiometricUnlockEnabled = false
-        }
-
-        // Then
-        #expect(saved.value.map(\.isBiometricUnlockEnabled) == [false])
-    }
-
-    /// 本機驗證失敗時不儲存 App 鎖定設定
-    ///
-    /// - Note: `testValue` 的 `save` 為 `unimplemented`，非預期儲存會使測試失敗
-    @Test
-    func appLock_啟用生物辨識但驗證失敗_不儲存設定() async {
-        // Given
-        let store = TestStore(initialState: SettingsFeature.State()) {
-            SettingsFeature()
-        } withDependencies: {
-            $0.biometricAuthService.isAvailable = {
-                true
-            }
-            $0.biometricAuthService.authenticate = { _ in
-                .failure
-            }
-        }
-
-        // When
-        await store.send(.appLock(.enableToggled(true)))
-
-        // Then
-        await store.receive(\.appLock.enableAuthenticationFinished) {
-            $0.appLock.enableFailureAlert = AlertState {
-                TextState("無法啟用 App 鎖定")
-            } actions: {
-                ButtonState(role: .cancel) {
-                    TextState("關閉")
-                }
-            } message: {
-                TextState("身份驗證失敗或已取消，App 鎖定未啟用。")
-            }
-        }
     }
 }
 

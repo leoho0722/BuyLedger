@@ -13,18 +13,35 @@ struct MoreView: View {
 
     // MARK: - Properties
 
-    /// 更多頁導覽與子畫面共用的根 store
-    @Bindable var store: StoreOf<RootFeature>
+    /// 更多頁自己的導覽與子畫面 store
+    @Bindable var store: StoreOf<MoreFeature>
+
+    /// 根殼層傳入的顯示語系
+    let language: AppLanguage
 
     // MARK: - Body
 
-    /// 包含更多頁清單與推送目的地的導覽容器
+    /// 包含更多頁清單與堆疊目的地的導覽容器
     var body: some View {
-        NavigationStack(path: $store.morePath) {
-            phoneContent
-                .navigationDestination(for: RootFeature.MoreRoute.self) { route in
-                    destination(for: route)
-                }
+        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
+            entryList
+        } destination: { destinationStore in
+            switch destinationStore.case {
+            case .customers(let customersStore):
+                CustomersView(store: customersStore)
+
+            case .fx(let fxStore):
+                FxView(store: fxStore)
+
+            case .lookupManagement(let managementStore):
+                LookupManagementView(store: managementStore)
+
+            case .quote(let quoteStore):
+                QuoteView(store: quoteStore)
+
+            case .settings(let settingsStore):
+                SettingsView(store: settingsStore)
+            }
         }
     }
 }
@@ -33,98 +50,63 @@ struct MoreView: View {
 
 private extension MoreView {
 
-    /// 依目的地顯示對應的子畫面
-    ///
-    /// - Parameter route: 更多頁目的地
-    /// - Returns: 對應目的地的子畫面
-    @ViewBuilder
-    func destination(for route: RootFeature.MoreRoute) -> some View {
-        switch route {
-        case .fx:
-            FxView(store: store.scope(state: \.fx, action: \.fx))
-
-        case .customers:
-            CustomersView(store: store.scope(state: \.customers, action: \.customers))
-
-        case .quote:
-            QuoteView(store: store.scope(state: \.quote, action: \.quote))
-
-        case .orderSources:
-            lookupManagementDestination(for: .orderSource)
-
-        case .categories:
-            lookupManagementDestination(for: .category)
-
-        case .paymentMethods:
-            lookupManagementDestination(for: .paymentMethod)
-
-        case .reconciliationStatuses:
-            lookupManagementDestination(for: .reconciliationStatus)
-
-        case .settings:
-            SettingsView(store: store.scope(state: \.settings, action: \.settings))
-        }
-    }
-
-    /// 將根 store scope 到單一主檔管理 store
-    ///
-    /// - Parameter kind: 要呈現的主檔種類
-    /// - Returns: 對應的主檔管理畫面或無法載入的狀態畫面
-    @ViewBuilder
-    func lookupManagementDestination(for kind: LookupKind) -> some View {
-        if let managementStore = store.scope(
-            state: \.lookupManagements[id: kind],
-            action: \.lookupManagements[id: kind]
-        ) {
-            LookupManagementView(store: managementStore)
-        } else {
-            ContentUnavailableView(
-                "無法載入主檔管理頁面，請稍後再試。",
-                systemImage: "exclamationmark.triangle"
-            )
-        }
-    }
-
     /// 顯示工具、管理項目與設定的列表內容
     @ViewBuilder
-    var phoneContent: some View {
+    var entryList: some View {
         List {
             Section("工具") {
-                routeLink(.fx)
+                entryButton(.fx)
             }
 
             Section("管理") {
-                routeLink(.customers)
-                routeLink(.orderSources)
-                routeLink(.categories)
-                routeLink(.paymentMethods)
-                routeLink(.reconciliationStatuses)
-                routeLink(.quote)
+                entryButton(.customers)
+
+                entryButton(.orderSources)
+
+                entryButton(.categories)
+
+                entryButton(.paymentMethods)
+
+                entryButton(.reconciliationStatuses)
+
+                entryButton(.quote)
             }
 
             Section("App") {
-                routeLink(.settings)
+                entryButton(.settings)
             }
         }
         .accessibilityIdentifier(BLAccessibilityID.More.root)
-        .rootNavigationTitle("更多", language: store.settings.language)
+        .rootNavigationTitle("更多", language: language)
     }
 
-    /// 建立一個目的地列並設定導覽值與 accessibility identifier
+    /// 建立保留系統按壓高亮的入口列與 accessibility identifier
     ///
-    /// - Parameter route: 更多頁目的地
+    /// - Parameter entry: 更多頁目的地
     /// - Returns: 對應目的地的導覽列
-    func routeLink(_ route: RootFeature.MoreRoute) -> some View {
-        NavigationLink(value: route) {
-            Label {
-                Text(LocalizedStringKey(routeTitle(for: route)))
-                    .font(BLTypographyStyle.body.font.weight(.medium))
-            } icon: {
-                Image(systemName: routeSystemImage(for: route))
-                    .foregroundStyle(routeTint(for: route))
+    func entryButton(_ entry: MoreFeature.Entry) -> some View {
+        Button {
+            store.send(.view(.entryTapped(entry)))
+        } label: {
+            HStack {
+                Label {
+                    Text(LocalizedStringKey(entryTitle(for: entry)))
+                        .font(BLTypographyStyle.body.font.weight(.medium))
+                        .foregroundStyle(palette.label)
+                } icon: {
+                    Image(systemName: entrySystemImage(for: entry))
+                        .foregroundStyle(entryTint(for: entry))
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(BLTypographyStyle.footnote.font.weight(.semibold))
+                    .foregroundStyle(palette.secondaryLabel)
+                    .accessibilityHidden(true)
             }
         }
-        .accessibilityIdentifier(accessibilityRow(for: route))
+        .accessibilityIdentifier(accessibilityRow(for: entry))
     }
 }
 
@@ -139,24 +121,31 @@ private extension MoreView {
 
     /// 回傳更多頁目的地的標題
     ///
-    /// - Parameter route: 更多頁目的地
+    /// - Parameter entry: 更多頁目的地
     /// - Returns: 目的地標題
-    func routeTitle(for route: RootFeature.MoreRoute) -> String {
-        switch route {
+    func entryTitle(for entry: MoreFeature.Entry) -> String {
+        switch entry {
         case .fx:
             "匯率工具"
+
         case .customers:
             "客戶名單"
+
         case .quote:
             "報價試算"
+
         case .orderSources:
             LookupKind.orderSource.entryTitle
+
         case .categories:
             LookupKind.category.entryTitle
+
         case .paymentMethods:
             LookupKind.paymentMethod.entryTitle
+
         case .reconciliationStatuses:
             LookupKind.reconciliationStatus.entryTitle
+
         case .settings:
             "設定"
         }
@@ -164,10 +153,10 @@ private extension MoreView {
 
     /// 回傳更多頁目的地的 SF Symbol
     ///
-    /// - Parameter route: 更多頁目的地
+    /// - Parameter entry: 更多頁目的地
     /// - Returns: 對應的 SF Symbol 名稱
-    func routeSystemImage(for route: RootFeature.MoreRoute) -> String {
-        switch route {
+    func entrySystemImage(for entry: MoreFeature.Entry) -> String {
+        switch entry {
         case .fx:
             "dollarsign.arrow.circlepath"
 
@@ -196,10 +185,10 @@ private extension MoreView {
 
     /// 回傳更多頁目的地的圖示色彩
     ///
-    /// - Parameter route: 更多頁目的地
+    /// - Parameter entry: 更多頁目的地
     /// - Returns: 對應的圖示色彩
-    func routeTint(for route: RootFeature.MoreRoute) -> Color {
-        switch route {
+    func entryTint(for entry: MoreFeature.Entry) -> Color {
+        switch entry {
         case .fx:
             palette.accent
 
@@ -228,11 +217,11 @@ private extension MoreView {
 
     /// 回傳更多頁目的地列的 accessibility identifier
     ///
-    /// - Parameter route: 更多頁目的地
+    /// - Parameter entry: 更多頁目的地
     /// - Returns: 對應目的地列的 accessibility identifier
-    func accessibilityRow(for route: RootFeature.MoreRoute) -> String {
+    func accessibilityRow(for entry: MoreFeature.Entry) -> String {
         let row: BLAccessibilityID.More.Row
-        switch route {
+        switch entry {
         case .fx:
             row = .fx
 
@@ -265,8 +254,9 @@ private extension MoreView {
 
 #Preview("更多") {
     MoreView(
-        store: Store(initialState: RootFeature.State()) {
-            RootFeature()
-        }
+        store: Store(initialState: MoreFeature.State(appVersion: "1.0")) {
+            MoreFeature()
+        },
+        language: .traditionalChinese
     )
 }

@@ -13,6 +13,9 @@ struct CustomersView: View {
 
     // MARK: - Properties
 
+    /// 強調區塊顯示的客戶數量
+    private static let topHighlightCount = 3
+
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
 
@@ -21,10 +24,7 @@ struct CustomersView: View {
     private var customerAvatarSize: CGFloat = CustomerListRow.avatarSize
 
     /// 訂單投影後的客戶資料來源
-    let store: StoreOf<CustomersFeature>
-
-    /// 強調區塊顯示的客戶數量
-    private static let topHighlightCount = 3
+    @Bindable var store: StoreOf<CustomersFeature>
 
     // MARK: - Body
 
@@ -56,6 +56,7 @@ private extension CustomersView {
                 emptyState
             } else {
                 topThree(customers: store.customers)
+
                 customerList(customers: store.customers)
             }
         }
@@ -77,8 +78,7 @@ private extension CustomersView {
 
     /// 強調區塊：累計消費排名前 ``Self.topHighlightCount`` 名的客戶
     ///
-    /// - Parameters:
-    ///   - customers: 已聚合的客戶清單 (依累計消費排序)
+    /// - Parameter customers: 已聚合的客戶清單 (依累計消費排序)
     /// - Returns: 強調卡片區塊
     @ViewBuilder
     func topThree(customers: [CustomerRow]) -> some View {
@@ -111,11 +111,9 @@ private extension CustomersView {
         }
     }
 
-    /// 單一 Top 客戶卡片
     /// 顯示全部客戶與各列的訂單摘要
     ///
-    /// - Parameters:
-    ///   - customers: 已聚合的客戶清單
+    /// - Parameter customers: 已聚合的客戶清單
     /// - Returns: 客戶列表
     @ViewBuilder
     func customerList(customers: [CustomerRow]) -> some View {
@@ -182,11 +180,7 @@ private extension CustomersView {
 // MARK: - Preview
 
 #Preview("客戶名單") {
-    let previewState: CustomersFeature.State = {
-        var state = CustomersFeature.State()
-        state.orders = LedgerOrder.sampleOrders
-        return state
-    }()
+    let previewState = CustomersFeature.State(orders: SharedReader(value: LedgerOrder.sampleOrders))
 
     return NavigationStack {
         CustomersView(
@@ -200,7 +194,7 @@ private extension CustomersView {
 #Preview("客戶名單空狀態") {
     NavigationStack {
         CustomersView(
-            store: Store(initialState: CustomersFeature.State()) {
+            store: Store(initialState: CustomersFeature.State(orders: SharedReader(value: []))) {
                 CustomersFeature()
             }
         )

@@ -15,8 +15,6 @@ import Testing
 @MainActor
 struct ServiceTestValueStrictnessTests {
 
-    // MARK: - Tests
-
     /// 訂單載入未覆寫 `fetchOrders` 時，測試會回報該 closure 的未實作問題
     @Test
     func task_未覆寫訂單讀取_回報未實作問題() async {

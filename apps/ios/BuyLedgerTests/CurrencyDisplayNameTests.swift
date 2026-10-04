@@ -12,8 +12,6 @@ import Testing
 /// 驗證 ``CurrencyDisplayName`` 的幣別名稱與搜尋關鍵字
 struct CurrencyDisplayNameTests {
 
-    // MARK: - Tests
-
     /// 正體中文顯示已知幣別時回傳本地化名稱
     @Test func textUsesLocalizedNameInTraditionalChinese() {
         // Given

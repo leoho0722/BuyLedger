@@ -11,8 +11,6 @@ import Testing
 /// 掃描式守門：把設計系統的色彩單一入口不變式轉為機器強制
 struct DesignSystemSourceScanTests {
 
-    // MARK: - Tests
-
     /// 確認掃描根目錄可取得檔案
     /// - Throws: 掃描檔案失敗時拋出錯誤
     @Test func productionRootYieldsScannableFiles() throws(any Error) {

@@ -10,8 +10,6 @@ import XCTest
 /// 訂單編輯表單收鍵盤路徑的回歸測試
 final class KeyboardDismissTests: BLUITestCase {
 
-    // MARK: - Tests
-
     /// 一般文字鍵盤的 return 應收起鍵盤
     @MainActor
     func testReturnKeyDismissesTextKeyboard() {

@@ -11,8 +11,6 @@ import Testing
 /// 掃描式守門：數值輸入欄一律停用千分位分隔符
 struct NumericInputGroupingScanTests {
 
-    // MARK: - Tests
-
     /// 確認掃描能找到 `format: .number` 用法
     /// - Throws: 原始檔掃描失敗時拋出錯誤
     @Test func productionRootContainsNumberFormatFields() throws(any Error) {

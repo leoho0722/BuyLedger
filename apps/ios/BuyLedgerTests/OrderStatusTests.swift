@@ -13,8 +13,6 @@ import Testing
 /// 驗證訂單狀態的顯示與分組
 struct OrderStatusTests {
 
-    // MARK: - Tests
-
     @Test func mergedCaseHasExpectedRawValueAndTitle() {
         #expect(OrderStatus.merged.rawValue == "merged")
         #expect(OrderStatus.merged.title == "已合併")

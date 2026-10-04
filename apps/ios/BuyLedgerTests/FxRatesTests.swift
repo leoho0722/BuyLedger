@@ -12,8 +12,6 @@ import Testing
 /// 驗證 Preview 匯率
 struct FxRatesTests {
 
-    // MARK: - Tests
-
     /// Preview 匯率應精確對應預設的四個幣別數值
     @Test func previewRatesMatchExpectedValues() {
         // Given

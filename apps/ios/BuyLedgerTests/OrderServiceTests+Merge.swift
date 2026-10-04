@@ -10,8 +10,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension OrderServiceTests {
 
     /// 合併新增訂單並標記來源且保留其他樣本

@@ -8,139 +8,96 @@
 import Foundation
 import Testing
 
-/// 確認投影只有 ``RootFeature`` 可以寫入
+/// 確認投影只有 `RootFeature` 可以寫入
 struct ProjectionWriteBoundaryTests {
 
-    // MARK: - Tests
+    // MARK: - Properties
 
-    /// 確認投影持有者檔案都存在
-    ///
-    /// - Throws: 原始檔讀取失敗時拋出錯誤
-    @Test func projectionOwnerHomeFilesResolveToExistingSwiftFiles() throws(any Error) {
-        for owner in Self.projectionOwners {
-            let url = Self.productionRoot.appending(path: owner.homeFileRelativePath)
-            #expect(
-                FileManager.default.fileExists(atPath: url.path),
-                "找不到 \(owner.name) 的主檔 \(owner.homeFileRelativePath)，投影清單已過時：\(url.path)"
-            )
-        }
-    }
-
-    /// 驗證掃描涵蓋足夠的 App 檔案
-    ///
-    /// - Throws: 原始檔讀取失敗時拋出錯誤
-    @Test func projectionOwnerDeclarationsAreDiscoverable() throws(any Error) {
-        let files = try Self.swiftFiles(under: Self.productionRoot)
-        #expect(
-            files.count >= Self.minimumProductionFileCount,
-            "App target Swift 檔案數量不足，productionRoot：\(Self.productionRoot.path)"
-        )
-
-        for owner in Self.projectionOwners {
-            let found = try Self.ownerStructDeclarationIsDiscoverable(owner: owner, in: files)
-            #expect(found, "掃描不到 `struct \(owner.name)` 的宣告，掃描機制或 projectionOwners.name 疑似與現況脫節")
-        }
-    }
-
-    /// 驗證投影屬性只能由 RootFeature.swift 寫入
-    ///
-    /// - Throws: 原始檔掃描失敗時拋出錯誤
-    @Test func projectionsAreOnlyWrittenByRootFeature() throws(any Error) {
-        let violations = try Self.findViolations()
-
-        #expect(
-            violations.isEmpty,
-            "以下位置寫入了唯讀投影，投影一律只能由 RootFeature 寫入：\(Self.describe(violations))"
-        )
-    }
-}
-
-// MARK: - Nested Types
-
-private extension ProjectionWriteBoundaryTests {
-
-    /// 一個投影持有 feature 與它持有的唯讀投影屬性名
-    struct ProjectionOwner {
-
-        // MARK: - Data Properties
-
-        /// feature 型別名稱
-        let name: String
-
-        /// feature 主檔相對路徑
-        let homeFileRelativePath: String
-
-        /// 該 feature `State` 內、由 `RootFeature` 單向同步的唯讀投影屬性名
-        let properties: [String]
-    }
-
-    /// 掃描命中的違規位置
-    struct Violation {
-
-        // MARK: - Data Properties
-
-        /// 相對於 App source root 的檔案路徑
-        let file: String
-
-        /// 命中所在的行號 (1-based)
-        let line: Int
-
-        /// 被寫入的投影屬性名，或 `inout` 命中時的描述文字
-        let property: String
-    }
-
-    /// 掃描模式使用的括號堆疊
-    enum StripMode {
-
-        // MARK: - Cases
-
-        /// 一般程式碼
-        case normal
-
-        /// 位於 `/* ... */` 區塊註解內
-        case blockComment
-
-        /// 位於 `"""..."""` 多行字串字面值內
-        case tripleQuotedString
-    }
-
-    /// 掃描模式使用的括號堆疊
-    enum ScanFrame {
-
-        // MARK: - Cases
-
-        /// 一般程式碼 (含插值 `\(...)` 內的運算式)
-        case code
-
-        /// 位於 `/* ... */` 區塊註解內；可巢狀
-        case blockComment
-
-        /// 位於 `"""..."""` 多行字串字面值內
-        case tripleQuotedString
-
-        /// 判斷是否位於單行字串內
-        case singleLineString(escaped: Bool)
-
-        /// 判斷是否位於字串插值內
-        case interpolation(parenDepth: Int)
-    }
-}
-
-// MARK: - Static Properties
-
-private extension ProjectionWriteBoundaryTests {
-
-    /// 測試 target 所在的 iOS 平台目錄
-    static var iosRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-    }
-
-    /// App target 的掃描根目錄
-    static var productionRoot: URL {
-        iosRoot.appending(path: "BuyLedger")
-    }
+    /// 涵蓋完整路徑、值參數、唯讀轉換，以及註解與字串的守門案例
+    private static let sharedOrderScenarios: [SharedOrderScenario] = [
+        SharedOrderScenario(
+            relativePath: "Features/App/RootCascadeOperations.swift",
+            source: "state.$orders.withLock { $0 = [] }",
+            expectedCount: 1
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/Other/Helper.swift",
+            source: """
+            /// 以值接收開團狀態的外部 helper
+            ///
+            /// - Parameter state: 不能寫入訂單投影的開團狀態
+            func update(state: CampaignFeature.State) {
+                state.$orders.withLock { $0 = [] }
+            }
+            """,
+            expectedCount: 1
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            source: "state.campaigns.$orders.withLock { $0 = [] }",
+            expectedCount: 2
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            source: "CampaignListFeature.State(orders: state.$orders)",
+            expectedCount: 1
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            source: "SharedReader(state.$orders)",
+            expectedCount: 0
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/App/RootFeature.swift",
+            source: "state.campaigns.$orders.withLock { $0 = orders }",
+            expectedCount: 0
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            source: "let orders = state.$orders",
+            expectedCount: 1
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            source: "SharedReader(\n    state.campaigns.$orders\n)",
+            expectedCount: 0
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            source: "// state.$orders.withLock { $0 = [] }\n/* let orders = state.$orders */",
+            expectedCount: 0
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            source: "let example = \"state.$orders.withLock { $0 = [] }\"",
+            expectedCount: 0
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/More/MoreFeature.swift",
+            source: "state.$orders.withLock { $0 = [] }",
+            expectedCount: 2
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/More/MoreFeature.swift",
+            source: "CustomersFeature.State(orders: state.$orders)",
+            expectedCount: 1
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/More/MoreFeature.swift",
+            source: "let leakedOrders = state.$orders",
+            expectedCount: 1
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/More/MoreFeature.swift",
+            source: "CustomersFeature.State(orders: SharedReader(\n    state.more.$orders\n))",
+            expectedCount: 0
+        ),
+        SharedOrderScenario(
+            relativePath: "Features/App/RootFeature.swift",
+            source: "state.more.$orders.withLock { $0 = orders }",
+            expectedCount: 0
+        ),
+    ]
 
     /// RootFeature.swift 的相對路徑；掃描時排除唯一合法寫入者
     static let rootFeatureRelativePath = "Features/App/RootFeature.swift"
@@ -149,27 +106,43 @@ private extension ProjectionWriteBoundaryTests {
     static let excludedDirectoryName = "Generated"
 
     /// App target 檔案數量下限
-    static let minimumProductionFileCount = 100
+    private static let minimumProductionFileCount = 100
 
     /// 各 feature 持有的投影屬性
     static let projectionOwners: [ProjectionOwner] = [
         ProjectionOwner(
+            name: "MoreFeature",
+            rootStateKey: "more",
+            homeFileRelativePath: "Features/More/MoreFeature.swift",
+            properties: ["preferences", "biometryType"]
+        ),
+        ProjectionOwner(
+            name: "AppLockFeature",
+            rootStateKey: "appLock",
+            homeFileRelativePath: "Features/App/AppLockFeature.swift",
+            properties: ["isBiometricUnlockEnabled"]
+        ),
+        ProjectionOwner(
             name: "CampaignFeature",
+            rootStateKey: "campaigns",
             homeFileRelativePath: "Features/Campaigns/CampaignFeature.swift",
             properties: ["orders"]
         ),
         ProjectionOwner(
             name: "CustomersFeature",
+            rootStateKey: "customers",
             homeFileRelativePath: "Features/Customers/CustomersFeature.swift",
             properties: ["orders"]
         ),
         ProjectionOwner(
             name: "DashboardFeature",
+            rootStateKey: "dashboard",
             homeFileRelativePath: "Features/Dashboard/DashboardFeature.swift",
             properties: ["orders", "campaigns", "monthlyProfitGoalTwd", "loadState"]
         ),
         ProjectionOwner(
             name: "InsightsFeature",
+            rootStateKey: "insights",
             homeFileRelativePath: "Features/Insights/InsightsFeature.swift",
             properties: ["orders", "campaigns", "loadState"]
         ),
@@ -177,422 +150,137 @@ private extension ProjectionWriteBoundaryTests {
 
     /// 可能改變陣列或字典內容的 mutating 方法
     static let mutatingMethodNames = [
-        "append", "removeAll", "remove", "insert", "sort", "swapAt",
-        "removeFirst", "removeLast", "removeSubrange", "replaceSubrange",
-        "reserveCapacity", "shuffle", "reverse",
+        "append",
+        "removeAll",
+        "remove",
+        "insert",
+        "sort",
+        "swapAt",
+        "removeFirst",
+        "removeLast",
+        "removeSubrange",
+        "replaceSubrange",
+        "reserveCapacity",
+        "shuffle",
+        "reverse",
     ]
+
+    /// 確認投影持有者檔案都存在
+    @Test
+    func projectionOwners_檢查主檔路徑_全部存在() {
+        // Given
+        let owners = Self.projectionOwners
+
+        // When
+        let missingOwners = owners.filter {
+            !FileManager.default.fileExists(
+                atPath: Self.productionRoot.appending(path: $0.homeFileRelativePath).path
+            )
+        }
+
+        // Then
+        #expect(missingOwners.isEmpty, "找不到主檔，投影清單已過時：\(missingOwners.map(\.homeFileRelativePath))")
+    }
+
+    /// 驗證掃描涵蓋足夠的 App 檔案並找到投影擁有者宣告
+    ///
+    /// - Throws: 原始檔讀取或規則建立失敗時拋出錯誤
+    @Test
+    func hasStructDeclaration_正式原始碼_找到所有擁有者() throws(any Error) {
+        // Given
+        let files = try Self.swiftFiles(under: Self.productionRoot)
+        let owners = Self.projectionOwners
+
+        // When
+        let declarations = try owners.map {
+            try Self.hasStructDeclaration(owner: $0, in: files)
+        }
+
+        // Then
+        #expect(
+            files.count >= Self.minimumProductionFileCount,
+            "App target Swift 檔案數量不足，productionRoot：\(Self.productionRoot.path)"
+        )
+        for (owner, isFound) in zip(owners, declarations) {
+            #expect(isFound, "掃描不到 `struct \(owner.name)` 的宣告，掃描機制或 projectionOwners.name 疑似與現況脫節")
+        }
+    }
+
+    /// 驗證投影屬性只能由 RootFeature.swift 寫入
+    ///
+    /// - Throws: 原始檔讀取或規則建立失敗時拋出錯誤
+    @Test
+    func findViolations_掃描正式原始碼_只有根功能寫入投影() throws(any Error) {
+        // Given
+        let expectedViolationCount = 0
+
+        // When
+        let violations = try Self.findViolations()
+
+        // Then
+        #expect(
+            violations.count == expectedViolationCount,
+            "以下位置寫入了唯讀投影，投影一律只能由 RootFeature 寫入：\(Self.describe(violations))"
+        )
+    }
+
+    /// 共享訂單投影只允許根功能寫入，開團與更多功能只能轉成唯讀參考
+    ///
+    /// - Throws: 原始檔讀取或規則建立失敗時拋出錯誤
+    @Test
+    func sharedOrderViolations_掃描正式原始碼_沒有投影寫入或可寫參考外傳() throws(any Error) {
+        // Given
+        let files = try Self.swiftFiles(under: Self.productionRoot)
+        var violations: [Violation] = []
+
+        // When
+        for file in files {
+            let relativePath = Self.relativePath(of: file, under: Self.productionRoot)
+            let source = try String(contentsOf: file, encoding: .utf8)
+            violations += try Self.sharedOrderViolations(relativePath: relativePath, source: source)
+        }
+
+        // Then
+        #expect(files.count >= Self.minimumProductionFileCount)
+        #expect(violations.isEmpty, "共享訂單投影違規：\(Self.describe(violations))")
+    }
+
+    /// 以原始碼片段驗證共享訂單的寫入邊界與唯讀轉換規則
+    ///
+    /// - Parameter scenario: 檔案路徑、原始碼與預期違規筆數
+    /// - Throws: 規則建立失敗時拋出錯誤
+    @Test(arguments: Self.sharedOrderScenarios)
+    func sharedOrderViolations_套用路徑與原始碼_符合預期違規筆數(scenario: SharedOrderScenario) throws(any Error) {
+        // Given
+        let relativePath = scenario.relativePath
+        let source = scenario.source
+
+        // When
+        let violations = try Self.sharedOrderViolations(relativePath: relativePath, source: source)
+
+        // Then
+        #expect(violations.count == scenario.expectedCount)
+    }
+}
+
+// MARK: - Computed Properties
+
+extension ProjectionWriteBoundaryTests {
+
+    /// App target 的掃描根目錄
+    static var productionRoot: URL {
+        iosRoot.appending(path: "BuyLedger")
+    }
 }
 
 // MARK: - Private Method
 
 private extension ProjectionWriteBoundaryTests {
 
-    // MARK: 違規掃描：主流程
-
-    /// 掃描各 feature 的寫入位置
-    ///
-    /// - Returns: 違規清單
-    /// - Throws: 原始檔讀取失敗時拋出錯誤
-    static func findViolations() throws(any Error) -> [Violation] {
-        var violations: [Violation] = []
-        let files = try swiftFiles(under: productionRoot).filter {
-            relativePath(of: $0, under: productionRoot) != rootFeatureRelativePath
-        }
-
-        for owner in projectionOwners {
-            for file in files {
-                let relative = relativePath(of: file, under: productionRoot)
-                violations += try findBlockContextViolations(
-                    in: file, relativePath: relative, owner: owner)
-                violations += try findInoutParameterViolations(
-                    in: file, relativePath: relative, owner: owner)
-            }
-        }
-
-        return violations.sorted { ($0.file, $0.line) < ($1.file, $1.line) }
-    }
-
-    // MARK: 違規掃描：區塊上下文 (prong 1)
-
-    /// 掃描單一檔案中的 owner 區塊
-    ///
-    /// - Parameters:
-    ///   - file: 要掃描的檔案
-    ///   - relativePath: 檔案相對路徑
-    ///   - owner: 投影擁有者
-    /// - Returns: 區塊上下文違規清單
-    /// - Throws: 原始檔解析失敗時拋出錯誤
-    static func findBlockContextViolations(
-        in file: URL,
-        relativePath: String,
-        owner: ProjectionOwner
-    ) throws(any Error) -> [Violation] {
-        let content = try String(contentsOf: file, encoding: .utf8)
-        let rawLines = content.components(separatedBy: "\n")
-        var stripMode = StripMode.normal
-        var depth = 0
-        var ownerBlockStartDepths: [Int] = []
-        var violations: [Violation] = []
-
-        for (index, rawLine) in rawLines.enumerated() {
-            let stripped = stripCommentsAndStrings(from: rawLine, mode: &stripMode)
-
-            if stripped.contains("{"), opensOwnerContext(stripped, ownerName: owner.name) {
-                ownerBlockStartDepths.append(depth + 1)
-            }
-
-            depth += stripped.count { $0 == "{" }
-            depth -= stripped.count { $0 == "}" }
-
-            while let top = ownerBlockStartDepths.last, depth < top {
-                ownerBlockStartDepths.removeLast()
-            }
-
-            guard !ownerBlockStartDepths.isEmpty else { continue }
-
-            for property in owner.properties where isWritten(property, in: stripped) {
-                violations.append(
-                    Violation(file: relativePath, line: index + 1, property: property))
-            }
-        }
-
-        return violations
-    }
-
-    /// 判斷是否為 owner 區塊標頭
-    ///
-    /// - Returns: 是否開啟 owner context
-    static func opensOwnerContext(_ strippedLine: String, ownerName: String) -> Bool {
-        let escapedOwner = NSRegularExpression.escapedPattern(for: ownerName)
-        let pattern = try! NSRegularExpression(
-            pattern: #"\b(?:struct|extension)\s+"# + escapedOwner + #"\b"#)
-        return pattern.firstMatch(in: strippedLine, range: fullRange(of: strippedLine)) != nil
-    }
-
-    // MARK: 違規掃描：inout 整份 state 取得寫入權 (prong 2)
-
-    /// 掃描單一檔案中的 owner 區塊
-    ///
-    /// - Parameters:
-    ///   - file: 要掃描的檔案
-    ///   - relativePath: 檔案相對路徑
-    ///   - owner: 投影擁有者
-    /// - Returns: inout 參數違規清單
-    /// - Throws: 原始檔解析失敗時拋出錯誤
-    static func findInoutParameterViolations(
-        in file: URL,
-        relativePath: String,
-        owner: ProjectionOwner
-    ) throws(any Error) -> [Violation] {
-        guard relativePath != owner.homeFileRelativePath else { return [] }
-
-        let content = try String(contentsOf: file, encoding: .utf8)
-        let rawLines = content.components(separatedBy: "\n")
-        var stripMode = StripMode.normal
-        var violations: [Violation] = []
-        let escapedOwner = NSRegularExpression.escapedPattern(for: owner.name)
-        let pattern = try! NSRegularExpression(
-            pattern: #"\binout\s+"# + escapedOwner + #"\.State\b"#)
-
-        for (index, rawLine) in rawLines.enumerated() {
-            let stripped = stripCommentsAndStrings(from: rawLine, mode: &stripMode)
-            if pattern.firstMatch(in: stripped, range: fullRange(of: stripped)) != nil {
-                violations.append(
-                    Violation(
-                        file: relativePath, line: index + 1,
-                        property: "inout \(owner.name).State 參數"))
-            }
-        }
-
-        return violations
-    }
-
-    // MARK: 寫入樣式判定
-
-    /// 判斷單行是否修改指定 property
-    ///
-    /// - Returns: 是否有寫入
-    static func isWritten(_ property: String, in line: String) -> Bool {
-        for prefix in ["state", "self"] {
-            if assignmentPattern(prefix: prefix, property: property).firstMatch(
-                in: line, range: fullRange(of: line)) != nil {
-                return true
-            }
-            if mutatingCallPattern(prefix: prefix, property: property).firstMatch(
-                in: line, range: fullRange(of: line)) != nil {
-                return true
-            }
-        }
-        if bareAssignmentPattern(property: property).firstMatch(
-            in: line, range: fullRange(of: line)) != nil {
-            return true
-        }
-        if bareMutatingCallPattern(property: property).firstMatch(
-            in: line, range: fullRange(of: line)) != nil {
-            return true
-        }
-        return false
-    }
-
-    /// 建立有前綴的賦值樣式
-    ///
-    /// - Returns: 指派比對規則
-    static func assignmentPattern(prefix: String, property: String) -> NSRegularExpression {
-        let escapedProperty = NSRegularExpression.escapedPattern(for: property)
-        let escapedPrefix = NSRegularExpression.escapedPattern(for: prefix)
-        return try! NSRegularExpression(
-            pattern: #"\b"# + escapedPrefix + #"\."# + escapedProperty
-                + #"\b\s*(?:\[[^\]]*\]\s*)?(?:=(?!=)|\+=|-=|\*=|/=)"#
-        )
-    }
-
-    /// 建立裸賦值樣式
-    ///
-    /// - Returns: 不含前綴的指派比對規則
-    static func bareAssignmentPattern(property: String) -> NSRegularExpression {
-        let escaped = NSRegularExpression.escapedPattern(for: property)
-        return try! NSRegularExpression(
-            pattern: #"(?<![\w.])"# + escaped + #"\b\s*(?:\[[^\]]*\]\s*)?(?:=(?!=)|\+=|-=|\*=|/=)"#
-        )
-    }
-
-    /// 建立「有前綴 mutating 方法呼叫」樣式：`<prefix>.<property>.<方法名>(`
-    ///
-    /// - Returns: 變更呼叫比對規則
-    static func mutatingCallPattern(prefix: String, property: String) -> NSRegularExpression {
-        let escapedProperty = NSRegularExpression.escapedPattern(for: property)
-        let escapedPrefix = NSRegularExpression.escapedPattern(for: prefix)
-        let alternation = mutatingMethodNames.map(NSRegularExpression.escapedPattern(for:)).joined(
-            separator: "|")
-        return try! NSRegularExpression(
-            pattern: #"\b"# + escapedPrefix + #"\."# + escapedProperty + #"\.(?:"# + alternation
-                + #")\s*\("#
-        )
-    }
-
-    /// 建立裸 mutating 方法呼叫樣式
-    ///
-    /// - Returns: 不含前綴的變更呼叫比對規則
-    static func bareMutatingCallPattern(property: String) -> NSRegularExpression {
-        let escaped = NSRegularExpression.escapedPattern(for: property)
-        let alternation = mutatingMethodNames.map(NSRegularExpression.escapedPattern(for:)).joined(
-            separator: "|")
-        return try! NSRegularExpression(
-            pattern: #"(?<![\w.])"# + escaped + #"\.(?:"# + alternation + #")\s*\("#
-        )
-    }
-
-    // MARK: 輔助
-
-    /// 判斷是否有零縮排的 owner struct 宣告
-    ///
-    /// - Parameters:
-    ///   - owner: 要尋找的投影擁有者
-    ///   - files: 要搜尋的檔案清單
-    /// - Returns: 是否找到 owner struct 宣告
-    /// - Throws: 原始檔解析失敗時拋出錯誤
-    static func ownerStructDeclarationIsDiscoverable(owner: ProjectionOwner, in files: [URL]) throws(any Error) -> Bool {
-        let escapedOwner = NSRegularExpression.escapedPattern(for: owner.name)
-        let pattern = try! NSRegularExpression(pattern: #"\bstruct\s+"# + escapedOwner + #"\b"#)
-
-        for file in files {
-            let content = try String(contentsOf: file, encoding: .utf8)
-            var stripMode = StripMode.normal
-            for rawLine in content.components(separatedBy: "\n") {
-                let stripped = stripCommentsAndStrings(from: rawLine, mode: &stripMode)
-                if pattern.firstMatch(in: stripped, range: fullRange(of: stripped)) != nil {
-                    return true
-                }
-            }
-        }
-        return false
-    }
-
-    /// 整個字串的 `NSRange`
-    ///
-    /// - Returns: 完整字串範圍
-    static func fullRange(of text: String) -> NSRange {
-        NSRange(text.startIndex..<text.endIndex, in: text)
-    }
-
-    /// 把違規清單格式化為人可讀的條列訊息
-    ///
-    /// - Returns: 人可讀的違規說明
-    static func describe(_ violations: [Violation]) -> String {
-        violations.map { "\($0.file):\($0.line) (\($0.property))" }.joined(separator: "、")
-    }
-
-    // MARK: 檔案列舉
-
-    /// 列出根目錄下所有 Swift 原始檔，排除生成檔目錄
-    ///
-    /// - Parameter root: 掃描根目錄
-    /// - Returns: Swift 檔案清單
-    /// - Throws: 目錄讀取失敗時拋出錯誤
-    static func swiftFiles(under root: URL) throws(any Error) -> [URL] {
-        let enumerator = try #require(
-            FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)
-        )
-
-        var files: [URL] = []
-        for case let file as URL in enumerator {
-            if file.pathComponents.contains(excludedDirectoryName) {
-                continue
-            }
-            if file.pathExtension == "swift" {
-                files.append(file)
-            }
-        }
-        return files
-    }
-
-    /// 把檔案絕對路徑轉為相對於掃描根目錄的路徑
-    ///
-    /// - Returns: 檔案相對路徑
-    static func relativePath(of file: URL, under root: URL) -> String {
-        let filePath = file.standardizedFileURL.path
-        let rootPath = root.standardizedFileURL.path
-        guard filePath.hasPrefix(rootPath) else {
-            return filePath
-        }
-        return String(filePath.dropFirst(rootPath.count + 1))
-    }
-
-    // MARK: 註解與字串剝除
-
-    /// 移除行註解、區塊註解與字串內容
-    ///
-    /// - Returns: 移除註解與字串後的內容
-    static func stripCommentsAndStrings(from line: String, mode: inout StripMode) -> String {
-        let characters = Array(line)
-        var result: [Character] = []
-        var index = 0
-        var stack: [ScanFrame]
-
-        switch mode {
-        case .normal:
-            stack = [.code]
-        case .blockComment:
-            stack = [.blockComment]
-        case .tripleQuotedString:
-            stack = [.tripleQuotedString]
-        }
-
-        while index < characters.count {
-            switch stack[stack.count - 1] {
-            case .blockComment:
-                if hasPrefix(characters, at: index, marker: ["/", "*"]) {
-                    stack.append(.blockComment)
-                    index += 2
-                } else if hasPrefix(characters, at: index, marker: ["*", "/"]) {
-                    stack.removeLast()
-                    if stack.isEmpty { stack = [.code] }
-                    index += 2
-                } else {
-                    index += 1
-                }
-
-            case .tripleQuotedString:
-                if hasPrefix(characters, at: index, marker: ["\"", "\"", "\""]) {
-                    stack.removeLast()
-                    if stack.isEmpty { stack = [.code] }
-                    index += 3
-                } else if hasPrefix(characters, at: index, marker: ["\\", "("]) {
-                    stack.append(.interpolation(parenDepth: 0))
-                    index += 2
-                } else {
-                    index += 1
-                }
-
-            case .singleLineString(let escaped):
-                let character = characters[index]
-                if escaped {
-                    stack[stack.count - 1] = .singleLineString(escaped: false)
-                    index += 1
-                } else if hasPrefix(characters, at: index, marker: ["\\", "("]) {
-                    stack.append(.interpolation(parenDepth: 0))
-                    index += 2
-                } else if character == "\\" {
-                    stack[stack.count - 1] = .singleLineString(escaped: true)
-                    index += 1
-                } else if character == "\"" {
-                    stack.removeLast()
-                    index += 1
-                } else {
-                    index += 1
-                }
-
-            case .interpolation(let parenDepth):
-                let character = characters[index]
-                if character == "(" {
-                    stack[stack.count - 1] = .interpolation(parenDepth: parenDepth + 1)
-                    result.append(character)
-                    index += 1
-                } else if character == ")" {
-                    if parenDepth == 0 {
-                        stack.removeLast()
-                    } else {
-                        stack[stack.count - 1] = .interpolation(parenDepth: parenDepth - 1)
-                        result.append(character)
-                    }
-                    index += 1
-                } else if hasPrefix(characters, at: index, marker: ["\"", "\"", "\""]) {
-                    stack.append(.tripleQuotedString)
-                    index += 3
-                } else if character == "\"" {
-                    stack.append(.singleLineString(escaped: false))
-                    index += 1
-                } else if hasPrefix(characters, at: index, marker: ["/", "*"]) {
-                    stack.append(.blockComment)
-                    index += 2
-                } else {
-                    result.append(character)
-                    index += 1
-                }
-
-            case .code:
-                if hasPrefix(characters, at: index, marker: ["\"", "\"", "\""]) {
-                    stack.append(.tripleQuotedString)
-                    index += 3
-                } else if characters[index] == "\"" {
-                    stack.append(.singleLineString(escaped: false))
-                    index += 1
-                } else if hasPrefix(characters, at: index, marker: ["/", "*"]) {
-                    stack.append(.blockComment)
-                    index += 2
-                } else if hasPrefix(characters, at: index, marker: ["/", "/"]) {
-                    index = characters.count
-                } else {
-                    result.append(characters[index])
-                    index += 1
-                }
-            }
-        }
-
-        switch stack.last {
-        case .blockComment:
-            mode = .blockComment
-        case .tripleQuotedString:
-            mode = .tripleQuotedString
-        default:
-            mode = .normal
-        }
-
-        return String(result)
-    }
-
-    /// 判斷字元陣列在指定索引處是否以給定樣式開頭
-    ///
-    /// - Returns: 是否符合指定前綴
-    static func hasPrefix(
-        _ characters: [Character],
-        at index: Int,
-        marker: [Character]
-    ) -> Bool {
-        guard index + marker.count <= characters.count else { return false }
-        for offset in 0..<marker.count where characters[index + offset] != marker[offset] {
-            return false
-        }
-        return true
+    /// 測試 target 所在的 iOS 平台目錄
+    static var iosRoot: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
     }
 }

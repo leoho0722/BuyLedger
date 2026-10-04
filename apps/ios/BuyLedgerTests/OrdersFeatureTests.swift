@@ -16,8 +16,6 @@ import Testing
 @MainActor
 struct OrdersFeatureTests {
 
-    // MARK: - Tests
-
     /// 畫面第一次出現時載入訂單清單，並自動選取第一筆訂單
     @Test
     func task_載入訂單清單_選取第一筆訂單() async {

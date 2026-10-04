@@ -10,8 +10,6 @@ import XCTest
 /// UI 測試地基的自我檢查
 final class HarnessSelfCheckTests: BLUITestCase {
 
-    // MARK: - Tests
-
     /// 空 profile 啟動應顯示引導空狀態
     @MainActor
     func testEmptyProfileShowsEmptyState() {

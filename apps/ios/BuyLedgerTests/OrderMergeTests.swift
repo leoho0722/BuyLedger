@@ -13,8 +13,6 @@ import Testing
 @MainActor
 struct OrderMergeTests {
 
-    // MARK: - Tests
-
     @Test func amountFieldsAreSummed() {
         let primary = Self.makeOrder(
             id: "P",

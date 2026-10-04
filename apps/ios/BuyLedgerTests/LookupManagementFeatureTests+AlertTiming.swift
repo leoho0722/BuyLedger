@@ -11,8 +11,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension LookupManagementFeatureTests {
 
     /// 關閉表單後才呈現先前暫存的新增失敗提示

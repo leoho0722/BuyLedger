@@ -10,8 +10,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension BuyLedgerDatabaseTests {
 
     /// Preview 資料庫首次讀取的訂單識別值，與 `LedgerOrder.sampleOrders` 的識別值逐一相同 (不多不少)

@@ -13,8 +13,6 @@ import Testing
 /// 驗證 `Info.plist` 設定的讀取與正規化
 struct AppConfigurationStoreTests {
 
-    // MARK: - Tests
-
     /// 驗證 `Info.plist` 字串正規化：去除前後空白，缺少、空白或未展開的同名佔位值回傳 `nil`，
     /// 其他佔位字串原樣保留
     ///

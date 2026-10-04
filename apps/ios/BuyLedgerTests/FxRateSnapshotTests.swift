@@ -13,8 +13,6 @@ import Testing
 /// 驗證匯率快照轉換成新台幣匯率的規則
 struct FxRateSnapshotTests {
 
-    // MARK: - Tests
-
     /// 驗證查詢新台幣時固定回傳一
     @Test func twdRateReturnsOneForTwd() {
         // Given

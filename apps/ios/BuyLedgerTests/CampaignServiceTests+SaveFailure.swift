@@ -6,11 +6,10 @@
 //
 
 import CoreData
+import Foundation
 import Testing
 
 @testable import BuyLedger
-
-// MARK: - Tests
 
 extension CampaignServiceTests {
 
@@ -29,7 +28,12 @@ extension CampaignServiceTests {
         }
         let database = BuyLedgerDatabaseTests.makeDatabase(with: fixture)
         let campaignService = Self.makeService(database: database)
-        let originalCampaign = Self.makeCampaign(id: "C1", name: "四月團", status: .ongoing)
+        let originalCampaign = Campaign.fixture(
+            id: "C1",
+            name: "四月團",
+            openDate: Date(timeIntervalSince1970: 1_775_779_200),
+            status: .ongoing
+        )
         try await campaignService.saveCampaign(originalCampaign)
         let mock = MockBuyLedgerDatabase(database: database)
         mock.mode = .saveFailureAfterBody

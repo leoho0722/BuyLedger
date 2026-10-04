@@ -10,8 +10,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension OrderServiceTests {
 
     /// 建立意圖會新增尚不存在的完整訂單

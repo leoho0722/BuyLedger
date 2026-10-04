@@ -12,8 +12,6 @@ import XCTest
 /// 衡量 filteredOrders 的大量資料效能
 final class OrdersFeaturePerformanceTests: XCTestCase {
 
-    // MARK: - Tests
-
     /// 1,000 筆訂單下，搜尋字串為空 (最寬鬆的 filter 路徑) 的執行成本
     func testFilteredOrdersBaselineWithThousandOrders() {
         var state = OrdersFeature.State()

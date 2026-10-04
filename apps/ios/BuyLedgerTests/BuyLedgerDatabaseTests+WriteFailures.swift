@@ -11,8 +11,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension BuyLedgerDatabaseTests {
 
     /// `write` 主體失敗時不保存已插入的訂單

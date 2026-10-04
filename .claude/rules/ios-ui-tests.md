@@ -16,7 +16,7 @@ paths:
 ## 定位與 identifier
 
 - **一律以 `accessibilityIdentifier` 定位，不用顯示文字或 `accessibilityLabel`**：App 支援中英切換，文字定位在英文模式整批失效。
-    - 常數集中在 `BuyLedgerAccessibilityIDs/BLAccessibilityID.swift` (同時編入 App 與 UITests)，兩端引用常數、不寫字面值。
+    - 常數集中在 `BuyLedgerAccessibilityIDs/` (同時編入 App 與 UITests)，`BLAccessibilityID` 依區域分檔為 `BLAccessibilityID+<區域>.swift`，兩端引用常數、不寫字面值。
 - **identifier 只掛在本身就是無障礙元素的東西上**：按鈕、輸入欄、捲動容器、`accessibilityElement(children: .combine/.contain)` 後的容器。
     - 掛在純 `VStack` 等版面容器會把子元素併吞成單一字串；容器需要 identifier 時先加 `.accessibilityElement(children: .contain)`。
 - **合併朗讀的列以 `accessibilityValue` 承載主要數值**，不為了測試把 `.combine` 拆開。
@@ -35,9 +35,9 @@ paths:
 ## 資料與相依
 
 - **測試前以 `LaunchOptions` 指定 seed profile 與語言**：模擬器首次啟動是空狀態。
-    - `BLUITestHarness` 依 `BLUITestConfiguration` 建立測試 container (in-memory 或 persistent)，`BLUITestDependencyOverrides` 注入固定時間、`buyLedgerDatabase` 與外部相依替身；整套 harness 以 `#if DEBUG` 圈住，啟動掛鉤集中在 `AppLaunchConfigurator`。
+    - `BLUITestHarness` 依 `BLUITestConfiguration` 建立測試 container (in-memory 或 persistent)，`DependencyValues+BLUITestOverrides.swift` 注入固定時間、`buyLedgerDatabase` 與外部相依替身；整套 harness 以 `#if DEBUG` 圈住，啟動掛鉤集中在 `AppLaunchConfigurator`。
 - **外部相依一律走 test double**：`PhotoService`／`CalendarReminderService`／`ExchangeRateService` 在 UI 測試模式換成不開系統彈窗、不打網路的替身。
-- **`BLUITestDependencyOverrides` 以注入的 `BuyLedgerDatabase` 組出 Service，不得在 `prepareDependencies` 的 closure 內讀 `$0.xxxService` 當底座**：`@Dependency` 在 `liveValue` 建立時擷取當下的 `_current`，不是正在準備的 `$0`，會拿到正式 store。
+- **`DependencyValues+BLUITestOverrides.swift` 以注入的 `BuyLedgerDatabase` 組出 Service，不得在 `prepareDependencies` 的 closure 內讀 `$0.xxxService` 當底座**：`@Dependency` 在 `liveValue` 建立時擷取當下的 `_current`，不是正在準備的 `$0`，會拿到正式 store。
     - 需要包上失敗 closure 的 Service，以 `withDependencies { $0.buyLedgerDatabase = database } operation: { XxxService.liveValue }` 建立，改寫 closure 後再指派給 `$0.xxxService`。
     - `BuyLedgerDatabase` 的 `storeLocation` 如實傳入：in-memory 用 `.inMemory`，persistent 用 `.directory(<store 所在目錄>)`，不一律標成 in-memory。
 - **找不到 App 元素一律 `failWithDiagnostics` (附截圖與可及性樹)，不用 `XCTSkip` 掩蓋**：`XCTSkip` 只留給真正的外部環境差異 (如系統文字選單)，並寫明原因。

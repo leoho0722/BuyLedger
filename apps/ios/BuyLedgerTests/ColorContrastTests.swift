@@ -13,8 +13,6 @@ import UIKit
 /// ``ColorContrast`` 自身的對照案例
 struct ColorContrastTests {
 
-    // MARK: - Tests
-
     @Test func blackOnWhiteReachesTheMaximumRatio() {
         let ratio = ColorContrast.ratio(.black, on: .white, appearance: .light)
 

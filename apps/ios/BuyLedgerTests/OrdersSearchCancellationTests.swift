@@ -14,8 +14,6 @@ import Testing
 @MainActor
 struct OrdersSearchCancellationTests {
 
-    // MARK: - Tests
-
     @Test func cancellingSearchClearsTheQueryAndRestoresTheFullList() async {
         var initial = OrdersFeature.State()
         initial.orders = Self.orders

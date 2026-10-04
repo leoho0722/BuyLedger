@@ -11,8 +11,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension LookupManagementFeatureTests {
 
     /// 收到付款方式更正結果後更新目錄且保留既有載入錯誤

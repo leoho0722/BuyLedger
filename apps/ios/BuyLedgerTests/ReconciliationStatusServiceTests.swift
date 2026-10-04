@@ -13,8 +13,6 @@ import Testing
 /// 驗證對帳狀態 Service 的持久化行為
 struct ReconciliationStatusServiceTests {
 
-    // MARK: - Tests
-
     /// 讀取對帳狀態時依自然語言順序排序
     ///
     /// - Throws: 查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；

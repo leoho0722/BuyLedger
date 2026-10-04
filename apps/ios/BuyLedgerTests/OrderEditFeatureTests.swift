@@ -100,8 +100,6 @@ struct OrderEditFeatureTests {
         mergedSourceIDs: []
     )
 
-    // MARK: - Tests
-
     /// 在表單輸入顧客名稱時，草稿的顧客名稱跟著更新
     ///
     /// - Note: 此測試守住 `BindingReducer()` 的 binding 接線

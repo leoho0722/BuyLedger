@@ -14,8 +14,6 @@ import Testing
 /// 驗證設定預設值、月度目標讀取與既有偏好 key
 struct SettingsServiceTests {
 
-    // MARK: - Tests
-
     /// 缺少字串偏好時使用語言、幣別與模型預設值，月度目標依儲存狀態讀取並沿用既有 key
     ///
     /// - Parameter scenario: 月度目標的儲存情境

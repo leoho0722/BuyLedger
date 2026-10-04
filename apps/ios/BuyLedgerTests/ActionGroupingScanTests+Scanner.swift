@@ -15,7 +15,7 @@ extension ActionGroupingScanTests {
     /// Action 分組守門的掃描規則
     enum ScanRule: Sendable {
 
-        /// View 的 store.send 只能送 view action
+        /// View 的 `store.send` 只能送 view action
         case viewStoreSend
 
         /// reducer 不得包裝子層 view action
@@ -62,24 +62,11 @@ extension ActionGroupingScanTests {
         /// 命中的程式碼或 allowlist 說明
         let detail: String
     }
-
 }
 
 // MARK: - Computed Properties
 
 extension ActionGroupingScanTests {
-
-    /// 測試 target 所在的 iOS 平台目錄
-    static var iosRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-    }
-
-    /// App production source root
-    static var productionRoot: URL {
-        iosRoot.appending(path: "BuyLedger")
-    }
 
     /// 所有 Feature production source 的根目錄
     static var featuresRoot: URL {
@@ -87,11 +74,11 @@ extension ActionGroupingScanTests {
     }
 }
 
-// MARK: - Private Method
+// MARK: - Internal Method
 
 extension ActionGroupingScanTests {
 
-    /// 掃描所有已遷移 View 的 store.send 呼叫
+    /// 掃描所有已遷移 View 的 `store.send` 呼叫
     ///
     /// - Parameter allowlist: 暫時性 action 豁免清單
     /// - Returns: 送出點與 allowlist 使用狀態
@@ -99,14 +86,15 @@ extension ActionGroupingScanTests {
     static func scanMigratedViewFiles(allowlist: [AllowlistEntry]) throws(any Error) -> ScanResult {
         var files = migratedViewPaths.map { productionRoot.appending(path: $0) }
         for directory in migratedComponentDirectories {
-            files.append(contentsOf: try swiftFiles(
-                under: productionRoot.appending(path: directory)
-            ))
+            files.append(
+                contentsOf: try swiftFiles(under: productionRoot.appending(path: directory))
+            )
         }
 
         var violations: [Violation] = []
         var usedAllowlistKeys = Set<String>()
-        for file in files.sorted(by: { $0.path < $1.path }) {
+        let sortedFiles = files.sorted { lhs, rhs in lhs.path < rhs.path }
+        for file in sortedFiles {
             let source = try String(contentsOf: file, encoding: .utf8)
             let result = scanStoreSendContents(
                 source,
@@ -117,14 +105,13 @@ extension ActionGroupingScanTests {
             usedAllowlistKeys.formUnion(result.usedAllowlistKeys)
         }
 
-        violations.append(contentsOf: unusedAllowlistViolations(
-            allowlist: allowlist,
-            usedKeys: usedAllowlistKeys
-        ))
+        violations.append(
+            contentsOf: unusedAllowlistViolations(allowlist: allowlist, usedKeys: usedAllowlistKeys)
+        )
         return ScanResult(violations: violations, usedAllowlistKeys: usedAllowlistKeys)
     }
 
-    /// 掃描單一檔案或片段中的 View store.send 呼叫
+    /// 掃描單一檔案或片段中的 View `store.send` 呼叫
     ///
     /// - Parameters:
     ///   - source: 要掃描的原始碼
@@ -142,9 +129,10 @@ extension ActionGroupingScanTests {
 
         for match in stripped.matches(of: storeSendPattern) {
             let suffix = String(stripped[match.range.upperBound...])
-            if let entry = allowlist.first(where: {
+            let entry = allowlist.first {
                 $0.relativePath == relativePath && suffix.hasPrefix($0.prefix)
-            }) {
+            }
+            if let entry {
                 usedAllowlistKeys.insert(entry.key)
                 continue
             }
@@ -153,10 +141,7 @@ extension ActionGroupingScanTests {
                 continue
             }
             violations.append(
-                Violation(
-                    file: relativePath,
-                    detail: "View store.send 違規：\(snippet(suffix))"
-                )
+                Violation(file: relativePath, detail: "View store.send 違規：\(snippet(suffix))")
             )
         }
 
@@ -172,10 +157,12 @@ extension ActionGroupingScanTests {
         var violations: [Violation] = []
         for file in files {
             let source = try String(contentsOf: file, encoding: .utf8)
-            violations.append(contentsOf: reducerChildViewViolations(
-                in: source,
-                relativePath: relativePath(of: file, under: productionRoot)
-            ))
+            violations.append(
+                contentsOf: reducerChildViewViolations(
+                    in: source,
+                    relativePath: relativePath(of: file, under: productionRoot)
+                )
+            )
         }
         return violations
     }
@@ -186,17 +173,11 @@ extension ActionGroupingScanTests {
     ///   - source: 要掃描的原始碼
     ///   - relativePath: 相對於 App source root 的路徑
     /// - Returns: 子層 view action 違規清單
-    static func reducerChildViewViolations(
-        in source: String,
-        relativePath: String
-    ) -> [Violation] {
+    static func reducerChildViewViolations(in source: String, relativePath: String) -> [Violation] {
         let stripped = stripCommentsAndStrings(from: source)
         return stripped.matches(of: reducerChildViewPattern).map { match in
             let detail = "reducer 子層 view action 違規：\(snippet(String(stripped[match.range])))"
-            return Violation(
-                file: relativePath,
-                detail: detail
-            )
+            return Violation(file: relativePath, detail: detail)
         }
     }
 
@@ -219,29 +200,6 @@ extension ActionGroupingScanTests {
                 detail: "未使用 allowlist：\(entry.prefix)，理由：\(entry.reason)，移除：\(entry.removalStep)"
             )
         }
-    }
-
-    /// 移除註解與字串字面值，保留程式碼空白與換行
-    ///
-    /// - Parameter source: 原始碼文字
-    /// - Returns: 移除註解與字串後的程式碼文字
-    static func stripCommentsAndStrings(from source: String) -> String {
-        let stringPattern = #/"""[\s\S]*?"""|"([^"\\]|\\.)*"/#
-        let commentPattern = #/\/\/[^\r\n]*|\/\*[\s\S]*?\*\//#
-        return source
-            .replacing(stringPattern, with: "")
-            .replacing(commentPattern, with: "")
-    }
-
-    /// 把命中內容壓成適合錯誤訊息的一行
-    ///
-    /// - Parameter text: 命中後的原始文字
-    /// - Returns: 可讀的短片段
-    static func snippet(_ text: String) -> String {
-        let normalized = text
-            .replacingOccurrences(of: "\n", with: "\\n")
-            .replacingOccurrences(of: "\r", with: "\\r")
-        return String(normalized.prefix(96))
     }
 
     /// 把掃描違規格式化為人可讀的條列訊息
@@ -271,6 +229,23 @@ extension ActionGroupingScanTests {
             return file
         }
     }
+}
+
+// MARK: - Private Method
+
+private extension ActionGroupingScanTests {
+
+    /// 測試 target 所在的 iOS 平台目錄
+    static var iosRoot: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+
+    /// App 正式程式碼的根目錄
+    static var productionRoot: URL {
+        iosRoot.appending(path: "BuyLedger")
+    }
 
     /// 把檔案絕對路徑轉成相對於 source root 的路徑
     ///
@@ -285,5 +260,28 @@ extension ActionGroupingScanTests {
             return filePath
         }
         return String(filePath.dropFirst(rootPath.count + 1))
+    }
+
+    /// 移除註解與字串字面值，保留程式碼空白與換行
+    ///
+    /// - Parameter source: 原始碼文字
+    /// - Returns: 移除註解與字串後的程式碼文字
+    static func stripCommentsAndStrings(from source: String) -> String {
+        let stringPattern = #/"""[\s\S]*?"""|"([^"\\]|\\.)*"/#
+        let commentPattern = #/\/\/[^\r\n]*|\/\*[\s\S]*?\*\//#
+        return source
+            .replacing(stringPattern, with: "")
+            .replacing(commentPattern, with: "")
+    }
+
+    /// 把命中內容壓成適合錯誤訊息的一行
+    ///
+    /// - Parameter text: 命中後的原始文字
+    /// - Returns: 可讀的短片段
+    static func snippet(_ text: String) -> String {
+        let normalized = text
+            .replacingOccurrences(of: "\n", with: "\\n")
+            .replacingOccurrences(of: "\r", with: "\\r")
+        return String(normalized.prefix(96))
     }
 }

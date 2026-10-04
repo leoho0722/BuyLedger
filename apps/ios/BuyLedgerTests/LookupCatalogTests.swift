@@ -50,8 +50,6 @@ struct LookupCatalogTests {
         ),
     ]
 
-    // MARK: - Tests
-
     /// 新增名稱只有主檔的項目後依本地排序呈現
     ///
     /// - Parameter kind: 要測試的主檔種類

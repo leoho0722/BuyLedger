@@ -1058,7 +1058,9 @@ code:
 ---
 ### Requirement: Campaign list groups campaigns by open date with selectable granularity
 
-The campaign list SHALL group campaigns into sections by their open date, and SHALL let the user switch the grouping granularity among day, month, and year. When grouping by month, each month section SHALL be sub-grouped by day; when grouping by year, each year section SHALL be sub-grouped by month and each campaign row SHALL additionally display its open date. Within any group, campaigns SHALL be ordered by open date from newest to oldest.
+The campaign list SHALL group campaigns into sections by their open date, and SHALL let the user switch the grouping granularity among day, month, and year. When grouping by month, each month section SHALL be sub-grouped by day; when grouping by year, each year section SHALL be sub-grouped by month and each campaign row SHALL additionally display its open date. Within any group, campaigns SHALL be ordered by open date from newest to oldest, and campaigns with exactly the same open date SHALL be ordered by name.
+
+The sections SHALL be derived from the campaign list feature's state rather than computed by the list view. Relative day titles ("今天", "昨天") SHALL be computed against the current date and calendar recorded in the campaign list feature's state from the injected date and calendar dependencies; the list view SHALL NOT read the current date itself. The recorded date SHALL be refreshed each time the list screen's appearance task runs, each time the app returns to the foreground, and each time the system reports a significant time change, such as the day changing while the app stays in the foreground, so that the titles follow the new day without the user leaving the list. Between these events the titles SHALL NOT change. Returning to the list from a campaign's detail is not guaranteed to run the appearance task.
 
 #### Scenario: Switch grouping to month
 
@@ -1070,60 +1072,381 @@ The campaign list SHALL group campaigns into sections by their open date, and SH
 - **WHEN** the user selects year grouping
 - **THEN** the list shows year sections sub-grouped by month AND each campaign row still shows its open date
 
+#### Scenario: Relative day titles follow the recorded date
+
+- **WHEN** the campaign list feature has recorded the current date
+- **THEN** day sections whose date equals the recorded date are titled "今天", the previous day is titled "昨天", and older days in the same year show the month, day, and abbreviated weekday
+
+##### Example: titles against a recorded date
+
+- **GIVEN** day grouping, a recorded date of 2026-05-12 10:00 in a calendar fixed to UTC, the zh-Hant locale, and campaigns opened on 2026-05-12, 2026-05-11, and 2026-05-08 (a Friday)
+- **WHEN** the list renders its sections
+- **THEN** the section titles are "今天", "昨天", and the zh-Hant month-day-weekday form of 2026-05-08 (for example "5月8日週五") in that order
+
+#### Scenario: Titles refresh when the app returns to the foreground
+
+- **WHEN** the list has recorded a date, the app moves to the background, the day changes, and the app returns to the foreground
+- **THEN** the recorded date is replaced with the current date when the app becomes active, without the list's appearance task running again
+
+##### Example: returning after midnight
+
+- **GIVEN** day grouping in a calendar fixed to UTC, a recorded date of 2026-05-12 10:00, and campaigns opened on 2026-05-12 and 2026-05-11
+- **WHEN** the app goes to the background and returns to the foreground at 2026-05-13 00:30
+- **THEN** the section for 2026-05-12 is titled "昨天" and the section for 2026-05-11 shows its zh-Hant month-day-weekday form (2026-05-11 is a Monday)
+
+#### Scenario: Titles refresh when the day changes while the app stays in the foreground
+
+- **WHEN** the list screen stays on screen in the foreground and the system reports a significant time change, such as passing midnight
+- **THEN** the recorded date is replaced with the current date without the list's appearance task running again and without the app leaving the foreground
+
+##### Example: midnight passes with the list on screen
+
+- **GIVEN** day grouping in a calendar fixed to UTC, a recorded date of 2026-05-12 23:50, and a campaign opened on 2026-05-12
+- **WHEN** the system reports a significant time change at 2026-05-13 00:00 while the list is on screen
+- **THEN** the section for 2026-05-12 is titled "昨天"
+
 
 <!-- @trace
-source: add-campaign-management
-updated: 2026-05-30
+source: campaigns-style-compliance
+updated: 2026-10-04
 code:
-  - apps/apple/BuyLedgerTests/OrdersFeatureTests.swift
-  - apps/apple/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
-  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.2.png
-  - apps/apple/BuyLedger/Features/Insights/InsightsView.swift
-  - apps/apple/BuyLedgerTests/SnapshotTests.swift
-  - apps/apple/BuyLedger/Features/App/RootFeature.swift
-  - apps/apple/BuyLedger/Core/Persistence/CampaignPersistence.swift
-  - apps/apple/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/apple/BuyLedger/Features/Campaigns/CampaignFormatters.swift
-  - apps/apple/BuyLedger/Features/Dashboard/DashboardView.swift
-  - apps/apple/BuyLedger/Core/Domain/LedgerOrder+Samples.swift
-  - apps/apple/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
-  - apps/apple/BuyLedgerTests/CampaignFeatureTests.swift
-  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.2.png
-  - apps/apple/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
-  - apps/apple/BuyLedger/Core/Dependencies/CampaignRepository.swift
-  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.2.png
-  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.2.png
-  - apps/apple/BuyLedgerTests/OrderCalculationTests.swift
-  - apps/apple/BuyLedgerTests/OrderPersistenceTests.swift
-  - apps/apple/BuyLedger/Features/Orders/OrderEditFeature.swift
-  - apps/apple/BuyLedger/Features/Orders/OrderEditView.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
-  - apps/apple/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/apple/BuyLedger/Features/Campaigns/CampaignSummary.swift
-  - apps/apple/BuyLedger/Features/App/RootTab.swift
-  - apps/apple/BuyLedger/Core/Domain/LedgerOrder.swift
-  - apps/apple/BuyLedgerTests/CampaignIntegrationTests.swift
-  - apps/apple/BuyLedger/Core/Persistence/OrderRecord.swift
-  - apps/apple/BuyLedger/Core/Domain/Campaign+Samples.swift
-  - apps/apple/BuyLedgerTests/CampaignSummaryTests.swift
-  - apps/apple/BuyLedgerTests/OrderEditFeatureTests.swift
-  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.2.png
-  - apps/apple/BuyLedger/Core/Domain/PaymentReceiptStatus.swift
-  - apps/apple/BuyLedger/Core/Persistence/OrderPersistence.swift
-  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.2.png
-  - apps/apple/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.2.png
-  - apps/apple/BuyLedger/Core/Persistence/PersistenceContainer.swift
-  - apps/apple/BuyLedger/Core/Domain/CampaignStatus.swift
-  - apps/apple/BuyLedgerTests/CampaignPersistenceTests.swift
-  - apps/apple/BuyLedger/Core/Persistence/BuyLedgerSchema.swift
-  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
-  - apps/apple/BuyLedger/Core/Dependencies/OrderRepository.swift
-  - apps/apple/BuyLedger/Features/App/RootSidebarLayout.swift
-  - apps/apple/BuyLedger/Core/Persistence/CampaignRecord.swift
-  - apps/apple/BuyLedger/Features/App/RootTabLayout.swift
-  - apps/apple/BuyLedger/Core/Domain/Campaign.swift
-  - apps/apple/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift
+  - apps/ios/BuyLedger/Features/App/Data/SignificantTimeChangeService.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+CampaignDetail/campaignDetailView_只看未收款_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/BLUITestConfigurationTests+InvalidValues.swift
+  - apps/ios/BuyLedgerTests/HTTPClientTests.swift
+  - apps/ios/BuyLedger/Features/App/SidebarBadgeCounts.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Dashboard.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/CampaignDetailScreen+Toolbar.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderMergeTests.swift
+  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedgerTests/CampaignPresentationQueueTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DeepLinks.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/FxTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderEditDirtyTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Lookups/moreViewMissingLookupManagementShowsUnavailableBaseline.1.png
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Patterns.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignWritesFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Rebuild.swift
+  - apps/ios/BuyLedgerTests/CampaignSavePlanTests+Conflicts.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupSync.swift
+  - apps/ios/BuyLedgerTests/FxRateSnapshotTests.swift
+  - apps/ios/BuyLedgerTests/LocalizationCatalogTests.swift
+  - apps/ios/BuyLedgerUITests/PhotoViewerPagingTests.swift
+  - apps/ios/BuyLedgerTests/LocalizationCatalogTests+SourceGuards.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestLanguage.swift
+  - apps/ios/BuyLedgerTests/BLAccessibilityIDTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Removal.swift
+  - apps/ios/BuyLedgerTests/LayerBoundaryTests+SourceStripping.swift
+  - apps/ios/BuyLedgerTests/LocalizationCatalogTests+LiteralScan.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests+ApplyEdit.swift
+  - apps/ios/BuyLedgerTests/PersistenceFailureFeatureTests.swift
+  - apps/ios/BuyLedgerTests/TestSuiteIntegrityTests.swift
+  - apps/ios/BuyLedgerTests/OrderSourceServiceTests.swift
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests+Transport.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignStatusStyle.swift
+  - apps/ios/BuyLedgerTests/OrdersBatchOperationsTests.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+RootProjections.swift
+  - apps/ios/BuyLedger/Core/Domain/CampaignDistributionRow.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+ReminderRename.swift
+  - apps/ios/BuyLedgerTests/DashboardStatsTests.swift
+  - apps/ios/BuyLedger/Features/App/RootNavigationOperations.swift
+  - apps/ios/BuyLedgerTests/AppScenePhaseCoordinatorTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Components/CampaignDetailSettlementSection.swift
+  - apps/ios/BuyLedgerTests/BLUITestConfigurationTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignPresentationQueue.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+ReloadDelete.swift
+  - apps/ios/BuyLedgerTests/InsightsAttributionTests.swift
+  - apps/ios/BuyLedgerTests/CampaignEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/InsightsStatsTests.swift
+  - apps/ios/BuyLedgerTests/MoreFeatureTests.swift
+  - apps/ios/BuyLedgerTests/MoreFeatureTests+Relays.swift
+  - apps/ios/BuyLedgerTests/CampaignListFeatureTests+AutoClose.swift
+  - apps/ios/BuyLedgerTests/CampaignWritesFeatureTests+Rename.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature+Destination.swift
+  - apps/ios/BuyLedgerTests/PrivacyManifestTests.swift
+  - AGENTS.md
+  - apps/ios/BuyLedger/Features/Campaigns/Components/CampaignDetailInfoSection.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+AppShell.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignCrudTests.swift
+  - apps/ios/BuyLedgerTests/PhotoDataProcessorTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Common.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+PaymentMethodCorrection.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Quarantine.swift
+  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedgerTests/CampaignListFeatureTests+Loading.swift
+  - apps/ios/BuyLedgerTests/FxRatesTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+MergeFailureMapping.swift
+  - apps/ios/BuyLedgerTests/FxFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Navigation.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Editing.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+CampaignDetail.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestHarness.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+ReloadFixtures.swift
+  - apps/ios/BuyLedgerTests/CampaignEditFeatureTests+Binding.swift
+  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignListFeatureTests+Interactions.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+DeleteFailure.swift
+  - apps/ios/BuyLedgerTests/OrderMergeTests.swift
+  - apps/ios/BuyLedger/Features/App/PersistenceFailureView.swift
+  - apps/ios/BuyLedgerTests/SignificantTimeChangeServiceTests.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Dependency.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/QuoteTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignView.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignReminderFeature.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignService+Dependency.swift
+  - apps/ios/BuyLedgerTests/CampaignWritesFeatureTests+Save.swift
+  - apps/ios/BuyLedgerTests/CurrencyDisplayNameTests.swift
+  - apps/ios/BuyLedgerTests/ReconciliationStatusServiceTests.swift
+  - apps/ios/BuyLedgerTests/OrderStatusTests.swift
+  - apps/ios/BuyLedgerTests/CampaignDetailContentTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignReminderRequest.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests.swift
+  - apps/ios/BuyLedgerTests/LookupCatalogTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignListFeature.swift
+  - apps/ios/BuyLedgerTests/PersistenceErrorTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestLoadFailure.swift
+  - apps/ios/BuyLedgerTests/AccessibilityConventionScanTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Failures.swift
+  - apps/ios/BuyLedgerTests/CampaignWritesFeatureTests+Status.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+CampaignFixtures.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsView.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+BatchWrites.swift
+  - apps/ios/BuyLedger/Features/More/MoreFeature.swift
+  - apps/ios/BuyLedger/Features/App/SidebarSmartGroup.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+AlertTiming.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Components/CampaignSectionList.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignService+Preview.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Reads.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+NameConflict.swift
+  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthService+Dependency.swift
+  - apps/ios/BuyLedgerTests/BLPhotoViewerTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/AppLockTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderServiceTests.swift
+  - apps/ios/BuyLedgerTests/LayerBoundaryTests+FileScan.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+UnchangedName.swift
+  - apps/ios/BuyLedger/Features/App/RootTab.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SourceStripping.swift
+  - apps/ios/BuyLedgerUITests/Screens/CampaignDetailScreen.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsFeature+Destination.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignListTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignSectionTitle.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Renames.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Campaigns/campaignListView_載入失敗_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/ActionGroupingScanTests.swift
+  - apps/ios/BuyLedger/App/Testing/DependencyValues+BLUITestOverrides.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodCorrectionFeatureTests.swift
+  - apps/ios/BuyLedger/Features/App/AppScenePhaseCoordinator.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Campaigns/campaignListView_英文月分組_符合基準圖.1.png
+  - apps/ios/BuyLedger/App/Testing/BLUITestConfiguration.swift
+  - apps/ios/BuyLedger/Features/App/AppScenePhase.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailFeature.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationStoreTests.swift
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/CampaignDetailScreen+Content.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCreateTests.swift
+  - apps/ios/BuyLedgerTests/CampaignSummaryTests.swift
+  - apps/ios/BuyLedgerTests/DashboardFeatureTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestPersistenceMode.swift
+  - apps/ios/BuyLedgerTests/CampaignDateSectionBuilderTests+Ordering.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+WriteFailures.swift
+  - apps/ios/BuyLedgerTests/CategoryServiceTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/ActionGroupingScanTests+Scanner.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignSubgroup.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignService.swift
+  - apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+Campaigns.swift
+  - apps/ios/BuyLedgerTests/ActionGroupingScanTests+Scenarios.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Delete.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID.swift
+  - apps/ios/BuyLedgerTests/ContrastComplianceTests.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+Lookups.swift
+  - apps/ios/BuyLedger/Features/App/RootSidebarLayout.swift
+  - apps/ios/BuyLedgerTests/SourceTextScannerTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Orders.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/AISummaryTests.swift
+  - apps/ios/BuyLedgerTests/BLFormattersTests.swift
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/HarnessSelfCheckTests.swift
+  - apps/ios/BuyLedgerTests/TestDependencies+Calendar.swift
+  - apps/ios/BuyLedgerTests/StorageFailureWrappingTests.swift
+  - apps/ios/BuyLedgerTests/Campaign+Fixture.swift
+  - apps/ios/BuyLedgerTests/CampaignDetailFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderRequestTests.swift
+  - apps/ios/BuyLedgerTests/RuntimeEnvironmentTests.swift
+  - apps/ios/BuyLedgerTests/CampaignEditFeatureTests+Init.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Failures.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/SnapshotTests.swift
+  - apps/ios/BuyLedger/Features/App/AppLockFeature.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignReminderReconcile.swift
+  - apps/ios/BuyLedgerTests/CampaignDateSectionBuilderTests.swift
+  - apps/ios/BuyLedgerTests/CustomersFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDraft.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignSummaryTests+Delivery.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Writes.swift
+  - apps/ios/BuyLedgerUITests/KeyboardDismissTests.swift
+  - apps/ios/BuyLedger/Features/App/RootTabLayout.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+App.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+AIDisabledAlert.swift
+  - apps/ios/BuyLedger/Features/More/MoreView.swift
+  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersTests.swift
+  - apps/ios/BuyLedgerTests/LayerBoundaryTests.swift
+  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
+  - apps/ios/BuyLedger/Features/App/PersistenceFailureFeature.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDateContext.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Concurrency.swift
+  - apps/ios/BuyLedgerTests/APIErrorMappingTests.swift
+  - .github/workflows/ci.yml
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+PaymentMethodCorrection.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Writes.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Dependency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestBiometricScenario.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDateSection.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests.swift
+  - apps/ios/BuyLedgerTests/String+SourceLiteralScan.swift
+  - apps/ios/BuyLedgerUITests/Tests/Smoke/LaunchSmokeTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthService.swift
+  - apps/ios/BuyLedger/Core/Domain/CampaignSummary.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Forms.swift
+  - apps/ios/BuyLedgerTests/OrderEditFocusTests.swift
+  - apps/ios/BuyLedgerTests/ColorContrastTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
+  - apps/ios/BuyLedger/Features/App/AppLockFormatters.swift
+  - apps/ios/BuyLedgerTests/AppLockFeatureTests+Formatters.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Preview.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDateSectionBuilder.swift
+  - apps/ios/BuyLedger/Features/App/RootCascadeOperations.swift
+  - apps/ios/BuyLedger/Features/App/Data/SignificantTimeChangeService+Dependency.swift
+  - apps/ios/BuyLedgerTests/CampaignSummaryTests+Membership.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+OrderFilters.swift
+  - apps/ios/BuyLedgerTests/BiometricAuthServiceTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Sidebar.swift
+  - apps/ios/BuyLedger/Features/App/RootView.swift
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests.swift
+  - apps/ios/BuyLedgerTests/SourceTextScanner.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Preview.swift
+  - apps/ios/BuyLedgerTests/CampaignListFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+Refresh.swift
+  - apps/ios/BuyLedgerTests/CustomerRowTests.swift
+  - apps/ios/BuyLedger/App/BuyLedgerApp.swift
+  - apps/ios/BuyLedgerTests/AppLockFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedgerTests/NumericInputGroupingScanTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Campaigns/campaignListView_依月分組_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignRequest.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+DeletionReminder.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryServiceTests.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Navigation.swift
+  - apps/ios/BuyLedgerTests/OrderCalculationTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+ReminderIntegration.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Receipt.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests.swift
+  - apps/ios/BuyLedgerTests/UserDefaultsStoreTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignDetailTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersListTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Decoding.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/App/Data/SignificantTimeChangeService+Preview.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomersFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Filters.swift
+  - apps/ios/BuyLedgerTests/DesignSystemSourceScanTests.swift
+  - apps/ios/BuyLedgerTests/CampaignWritesFeatureTests+Settle.swift
+  - apps/ios/BuyLedger/Features/App/AppLockView.swift
+  - apps/ios/BuyLedgerTests/ExchangeRateServiceTests.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomersView.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Rename.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Decoding.swift
+  - apps/ios/BuyLedgerTests/LocalizationCatalogTests+AppLanguage.swift
+  - apps/ios/BuyLedgerTests/InsightsFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Presentation.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameNoOps.swift
+  - apps/ios/BuyLedgerUITests/Screens/CampaignsScreen.swift
+  - apps/ios/BuyLedgerTests/CampaignSavePlanTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Performance/LaunchPerformanceTests.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Reload.swift
+  - apps/ios/BuyLedgerTests/AppScenePhaseTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthService+Preview.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Components/CampaignRow.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+ReminderCancellation.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+More.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Insights.swift
+  - apps/ios/BuyLedgerTests/LayerBoundaryTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameFailures.swift
+  - apps/ios/BuyLedgerTests/CampaignWritesFeatureTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupRename.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+CampaignDetail/campaignDetailView_一般開團含提醒_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature+Path.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+ReminderFixtures.swift
+  - apps/ios/BuyLedgerTests/LayerBoundaryTests+Patterns.swift
+  - apps/ios/BuyLedgerTests/CampaignListFeatureTests+DateContext.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/ios/BuyLedgerTests/ServiceTestValueStrictnessTests.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+FailureTiming.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Scanner.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Components/CampaignDetailDistributionSection.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailContent.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderReconcileTests.swift
+  - apps/ios/BuyLedgerTests/SettingsServiceTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderDetailTests.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+WriteFailures.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Campaigns/campaignListView_依日分組含今天與昨天_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignSavePlan.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Create.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/CampaignEditScreen.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Delete.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignSummary.swift
+  - apps/ios/BuyLedgerUITests/Tests/More/LookupManagementTests.swift
+  - apps/ios/BuyLedgerTests/OrderDraftTests.swift
+  - apps/ios/BuyLedgerTests/SettingsFeatureTests+AppLock.swift
+  - apps/ios/BuyLedgerTests/AppLanguageTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Tools/CurrencyPickerTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCalendarAccess.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Campaigns.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Merge.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignFlowTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Campaigns/campaignListView_依年分組_符合基準圖.1.png
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/CampaignDateSectionBuilderTests+SectionTitle.swift
+  - apps/ios/BuyLedgerTests/CampaignWritesFeatureTests+Delete.swift
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsTests.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+WriteFailures.swift
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Preview.swift
 -->
 
 ---

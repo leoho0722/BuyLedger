@@ -8,19 +8,12 @@
 import XCTest
 
 /// 開團新增與編輯表單的 Page Object
-struct CampaignEditScreen: Screen {
+struct CampaignEditScreen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
-
-    // MARK: - Computed Properties
-
-    /// 判定編輯表單已就緒的根 identifier (表單捲動容器)
-    var rootIdentifier: String {
-        BLAccessibilityID.CampaignEdit.root
-    }
 }
 
 // MARK: - Internal Method
@@ -34,10 +27,7 @@ extension CampaignEditScreen {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Returns: 儲存按鈕是否可用
-    func isSaveEnabled(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) -> Bool {
+    func isSaveEnabled(file: StaticString = #filePath, line: UInt = #line) -> Bool {
         let button = app.buttons[BLAccessibilityID.CampaignEdit.saveButton]
         if !button.waitForExistence(timeout: 10) {
             let saveButtonID = BLAccessibilityID.CampaignEdit.saveButton
@@ -58,11 +48,7 @@ extension CampaignEditScreen {
     ///   - name: 要填入的開團名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func typeName(
-        _ name: String,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
+    func typeName(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
         let field = app.textFields[BLAccessibilityID.CampaignEdit.nameField]
         field.clearAndType(
             name,
@@ -100,5 +86,15 @@ extension CampaignEditScreen {
     func tapCancel(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.buttons[BLAccessibilityID.CampaignEdit.cancelButton]
         button.tapAfterWaiting(in: app, file: file, line: line)
+    }
+}
+
+// MARK: - Screen
+
+extension CampaignEditScreen: Screen {
+
+    /// 判定編輯表單已就緒的根 identifier (表單捲動容器)
+    var rootIdentifier: String {
+        BLAccessibilityID.CampaignEdit.root
     }
 }

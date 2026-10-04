@@ -10,8 +10,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension LookupManagementFeatureTests {
 
     /// 先前新增失敗提示關閉後，後續成功操作不會再次呈現該提示

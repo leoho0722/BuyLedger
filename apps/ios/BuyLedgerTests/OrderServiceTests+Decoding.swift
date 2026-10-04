@@ -10,8 +10,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension OrderServiceTests {
 
     /// 無法解析的收款狀態 raw value 會保留診斷欄位並使讀取失敗

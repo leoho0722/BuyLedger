@@ -12,8 +12,6 @@ import Testing
 /// 驗證 zoomAnimation 的兩種結果
 struct BLPhotoViewerTests {
 
-    // MARK: - Tests
-
     /// 減少動態效果時不使用縮放動畫
     @Test func zoomAnimation_isNilWhenReduceMotionIsEnabled() {
         // Given：裝置啟用減少動態效果

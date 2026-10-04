@@ -15,8 +15,6 @@ import Testing
 /// 驗證資料庫交易的 context 隔離、寫入與復原邊界
 struct BuyLedgerDatabaseTests {
 
-    // MARK: - Tests
-
     /// 每次讀取使用新 `ModelContext` 且不保留前次未儲存的模型
     ///
     /// - Throws: store 讀取失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；fixture 建立失敗時丟出底層錯誤

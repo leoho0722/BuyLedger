@@ -16,8 +16,6 @@ import Testing
 @MainActor
 struct SnapshotTests {
 
-    // MARK: - Tests
-
     /// iPhone 寬度的訂單清單載入全部範例訂單後的畫面
     @Test
     func ordersCompactView_一般訂單清單_符合基準圖() {

@@ -11,8 +11,6 @@ import Testing
 /// 掃描式守門：把兩條原已明訂但只能靠人記得的無障礙規則轉為機器強制
 struct AccessibilityConventionScanTests {
 
-    // MARK: - Tests
-
     /// 驗證選取狀態使用標準 accessibility trait
     /// - Throws: 掃描檔案或規則驗證失敗時拋出錯誤
     @Test func selectionCheckmarksCarryTheStandardSelectedTrait() throws(any Error) {

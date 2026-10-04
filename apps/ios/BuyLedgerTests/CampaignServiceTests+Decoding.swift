@@ -5,12 +5,11 @@
 //  Created by Leo Ho on 2026/9/26.
 //
 
+import Foundation
 import SwiftData
 import Testing
 
 @testable import BuyLedger
-
-// MARK: - Tests
 
 extension CampaignServiceTests {
 
@@ -26,7 +25,11 @@ extension CampaignServiceTests {
         let database = BuyLedgerDatabaseTests.makeInMemoryDatabase()
         try await database.write { context throws(PersistenceError) in
             let record = CampaignRecord(
-                campaign: Self.makeCampaign(id: "campaign-001", name: "測試開團")
+                campaign: Campaign.fixture(
+                    id: "campaign-001",
+                    name: "測試開團",
+                    openDate: Date(timeIntervalSince1970: 1_775_779_200)
+                )
             )
             record.statusRaw = "legacy-status"
             context.insert(record)
@@ -69,11 +72,20 @@ extension CampaignServiceTests {
         let database = BuyLedgerDatabaseTests.makeInMemoryDatabase()
         try await database.write { context throws(PersistenceError) in
             let ongoingCampaign = CampaignRecord(
-                campaign: Self.makeCampaign(id: "campaign-ongoing", name: "測試開團")
+                campaign: Campaign.fixture(
+                    id: "campaign-ongoing",
+                    name: "測試開團",
+                    openDate: Date(timeIntervalSince1970: 1_775_779_200)
+                )
             )
             ongoingCampaign.statusRaw = CampaignStatus.ongoing.rawValue
             let closedCampaign = CampaignRecord(
-                campaign: Self.makeCampaign(id: "campaign-closed", name: "測試開團", status: .closed)
+                campaign: Campaign.fixture(
+                    id: "campaign-closed",
+                    name: "測試開團",
+                    openDate: Date(timeIntervalSince1970: 1_775_779_200),
+                    status: .closed
+                )
             )
             closedCampaign.statusRaw = CampaignStatus.closed.rawValue
             context.insert(ongoingCampaign)

@@ -13,8 +13,6 @@ import Testing
 /// 驗證客戶彙總列的營收歸屬與保留規則
 struct CustomerRowTests {
 
-    // MARK: - Tests
-
     /// 驗證合併訂單與取消訂單不重複計入營收
     @Test func totalSpentAndOrderCountExcludeCancelledAndMergeResultOrders() {
         // Given

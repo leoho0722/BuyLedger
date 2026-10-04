@@ -21,8 +21,6 @@ final class OrderEditDirtyTests: BLUITestCase {
     /// 捨棄確認 alert 的捨棄變更按鈕文字
     private static let discardLabel = "捨棄變更"
 
-    // MARK: - Tests
-
     /// 選擇繼續編輯後，alert 消失且仍在表單
     @MainActor
     func testCancelWithChangesThenContinueEditingStaysOnForm() {

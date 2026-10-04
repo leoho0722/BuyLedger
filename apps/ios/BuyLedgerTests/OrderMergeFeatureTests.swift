@@ -14,8 +14,6 @@ import Testing
 /// 驗證訂單合併流程
 struct OrderMergeFeatureTests {
 
-    // MARK: - Tests
-
     /// 只有同客戶、同幣別、尚未合併或取消，且不是主訂單本身的訂單會列為合併候選
     @Test
     func eligibleCandidates_各種資格組合_只回傳符合資格訂單() {

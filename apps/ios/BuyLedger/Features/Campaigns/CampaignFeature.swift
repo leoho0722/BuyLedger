@@ -6,320 +6,185 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 
-/// 開團 (`Campaign`) 列表、狀態切換與新增、編輯、刪除流程
+/// 開團分頁的容器：持有共用資料，轉送列表與詳情的請求，統一呈現編輯表單與通知
 @Reducer
 struct CampaignFeature {
 
     // MARK: - State
 
-    /// 管理開團列表的載入、篩選、分組、選取，以及編輯表單、確認與通知 alert 的呈現
+    /// 容器狀態：共用資料的來源、子 Feature 狀態、詳情導覽堆疊與唯一的呈現目的地
     @ObservableState
     struct State: Equatable {
 
         /// 目前載入的開團，依開團日期由新到舊排序
-        var campaigns: [Campaign] = []
+        @Shared var campaigns: [Campaign]
 
-        /// 訂單投影，供 ``CampaignSummary`` 計算分貨與結算使用，由 ``RootFeature`` 單向同步
-        var orders: [LedgerOrder] = []
-
-        /// 目前選取的開團識別值 (供 iPad detail 選取)
-        var selectedCampaignID: Campaign.ID?
-
-        /// 目前套用的開團狀態篩選；`nil` 代表全部狀態
-        var statusFilter: CampaignStatus?
-
-        /// 目前列表的日期分組粒度
-        var grouping: CampaignGrouping = .day
+        /// 訂單投影，由 ``RootFeature`` 單向同步，列表與詳情只讀
+        @Shared var orders: [LedgerOrder]
 
         /// 詳情頁「只看未收款」篩選，跨導覽保留
-        var showsUnpaidOnly = false
+        @Shared var showsUnpaidOnly: Bool
 
-        /// 開團清單是否正在載入
-        var isLoading = false
+        /// 各開團的提醒連結，只有提醒子 Feature 寫入
+        @Shared var reminderLinks: [Campaign.ID: CampaignReminderLink]
 
-        /// 是否已完成首次載入；完成後略過重複載入
-        var hasLoaded = false
+        /// 列表子 Feature 的狀態
+        var list: CampaignListFeature.State
 
-        /// 載入失敗訊息；只在載入失敗時設定
-        var errorMessage: String?
+        /// 提醒連結載入與行事曆提醒子 Feature 的狀態
+        var reminder: CampaignReminderFeature.State
 
-        /// 各開團的提醒連結
-        var reminderLinks: [Campaign.ID: CampaignReminderLink] = [:]
+        /// 開團寫入子 Feature 的狀態
+        var writes: CampaignWritesFeature.State
 
-        /// 目前呈現中的新增／編輯開團表單；`nil` 表示未呈現
-        @Presents var editCampaign: CampaignEditFeature.State?
+        /// 已推入的詳情堆疊，同一時間最多一個
+        var path = StackState<Path.State>()
 
-        /// 刪除開團前的確認 alert
-        @Presents var deletionConfirmation: AlertState<Action.Alert>?
+        /// 目前呈現中的編輯表單或 alert；`nil` 表示沒有呈現
+        @Presents var destination: Destination.State?
 
-        /// 詳情頁 toolbar 的刪除確認 alert
-        @Presents var detailDeletionConfirmation: AlertState<Action.Alert>?
+        /// 表單開啟與關閉期間到達的通知暫存，表單關好後才呈現
+        var presentationQueue = CampaignPresentationQueue()
 
-        /// 結團結算的二次確認；`nil` 代表未顯示
-        @Presents var settleConfirmation: AlertState<Action.SettleAlert>?
+        /// 建立容器與各子層，共享資料的引用同時指派給自己與子層
+        init() {
+            let sharedCampaigns = Shared<[Campaign]>(value: [])
+            let sharedOrders = Shared<[LedgerOrder]>(value: [])
+            let sharedReminderLinks = Shared<[Campaign.ID: CampaignReminderLink]>(value: [:])
+            self._campaigns = sharedCampaigns
+            self._orders = sharedOrders
+            self._showsUnpaidOnly = Shared(value: false)
+            self._reminderLinks = sharedReminderLinks
+            self.list = CampaignListFeature.State(
+                campaigns: sharedCampaigns,
+                orders: SharedReader(sharedOrders)
+            )
+            self.reminder = CampaignReminderFeature.State(links: sharedReminderLinks)
+            self.writes = CampaignWritesFeature.State(campaigns: sharedCampaigns)
+        }
 
-        /// 列表頁的一次性通知
-        @Presents var noticeAlert: AlertState<Action.NoticeAlert>?
-
-        /// 詳情頁的一次性通知
-        @Presents var detailNoticeAlert: AlertState<Action.NoticeAlert>?
-
-        /// 依載入結果解析畫面狀態
-        var loadState: LoadState {
-            if hasLoaded {
-                return .loaded
+        /// 以指定開團取代堆疊成為唯一的詳情；找不到開團時不動
+        ///
+        /// - Parameter campaignID: 要顯示詳情的開團識別值
+        mutating func showDetail(campaignID: Campaign.ID) {
+            guard campaigns.contains(where: { $0.id == campaignID }) else {
+                return
             }
-            if let errorMessage {
-                return .failed(errorMessage)
-            }
-            return .loading
+            path.removeAll()
+            path.append(
+                .detail(
+                    CampaignDetailFeature.State(
+                        campaignID: campaignID,
+                        campaigns: SharedReader($campaigns),
+                        orders: SharedReader($orders),
+                        reminderLinks: SharedReader($reminderLinks),
+                        showsUnpaidOnly: $showsUnpaidOnly
+                    )
+                )
+            )
+        }
+
+        /// 更新列表的日期脈絡，不重新載入或評估結單狀態
+        ///
+        /// - Parameter context: 殼層解析後的目前日期與行事曆
+        mutating func refreshDateContext(_ context: CampaignDateContext) {
+            list.dateContext = context
+        }
+
+        /// 呈現一則通知；表單開啟或關閉中先暫存，否則直接顯示
+        ///
+        /// - Parameter notice: 要呈現的通知
+        mutating func present(_ notice: Destination.State) {
+            var current = destination
+            presentationQueue.present(notice, in: &current)
+            destination = current
         }
     }
 
     // MARK: - Action
 
-    /// 開團功能可處理的事件
-    @CasePathable
-    enum Action: Equatable {
+    /// 容器的使用者操作、對根功能的委派，以及各子 Feature 與導覽的事件
+    enum Action {
 
-        /// 畫面出現時觸發載入
-        case task
-
-        /// 開團載入成功 (載入後會套用結單日自動轉狀態)
+        /// 使用者在容器畫面上的操作
         ///
-        /// - Parameter campaigns: 載入到的開團
-        case campaignsLoaded([Campaign])
-
-        /// 開團載入失敗
-        ///
-        /// - Parameter message: 要顯示的失敗訊息
-        case campaignsFailed(String)
-
-        /// 使用者選取開團
-        ///
-        /// - Parameter id: 被選取的開團識別值，`nil` 代表取消選取
-        case campaignSelected(Campaign.ID?)
-
-        /// 使用者切換開團狀態篩選
-        ///
-        /// - Parameter status: 選定的開團狀態，`nil` 代表全部狀態
-        case statusFilterSelected(CampaignStatus?)
-
-        /// 使用者切換列表日期分組粒度 (日／月／年)
-        ///
-        /// - Parameter grouping: 選定的分組粒度
-        case groupingSelected(CampaignGrouping)
-
-        /// 使用者切換開團詳情「只看未收款」篩選
-        ///
-        /// - Parameter showsUnpaidOnly: 是否只顯示未收款的訂單
-        case unpaidOnlyToggled(Bool)
-
-        /// 使用者點擊「新增開團」
-        case newCampaignTapped
-
-        /// 使用者點擊「編輯」指定開團
-        ///
-        /// - Parameter id: 要編輯的開團識別值
-        case editCampaignTapped(Campaign.ID)
-
-        /// 新增／編輯開團表單事件
-        ///
-        /// - Parameter action: 表單的呈現、關閉或內部事件
-        case editCampaign(PresentationAction<CampaignEditFeature.Action>)
-
-        /// 使用者切換開團狀態；成功後更新畫面
-        ///
-        /// - Parameters:
-        ///   - id: 要切換狀態的開團識別值
-        ///   - status: 要切換成的新狀態
-        case statusChanged(Campaign.ID, CampaignStatus)
-
-        /// 狀態變更寫入成功
-        ///
-        /// - Parameters:
-        ///   - id: 已寫入的開團識別值
-        ///   - status: 已寫入的新狀態
-        case campaignStatusSaved(Campaign.ID, CampaignStatus)
-
-        /// 使用者點擊「結團」(設定結算封存日期)
-        ///
-        /// - Parameter id: 要結團的開團識別值
-        case settleTapped(Campaign.ID)
-
-        /// 結團確認 alert 事件
-        ///
-        /// - Parameter action: 確認 alert 的呈現、關閉或選項事件
-        case settleConfirmation(PresentationAction<SettleAlert>)
-
-        /// 確認後寫入結算日期；成功後更新畫面
-        ///
-        /// - Parameter id: 已確認結團的開團識別值
-        case settleConfirmed(Campaign.ID)
-
-        /// 結團寫入成功
-        ///
-        /// - Parameters:
-        ///   - id: 已結團的開團識別值
-        ///   - settledDate: 送出寫入時的結算時間
-        case campaignSettled(Campaign.ID, Date)
-
-        /// 列表列長按後要求刪除開團；先二次確認
-        ///
-        /// - Parameter id: 要刪除的開團識別值
-        case deleteCampaignTapped(Campaign.ID)
-
-        /// 詳情頁選單後要求刪除開團；先二次確認
-        ///
-        /// - Parameter id: 要刪除的開團識別值
-        case detailDeleteCampaignTapped(Campaign.ID)
-
-        /// 列表刪除確認 alert 事件
-        ///
-        /// - Parameter action: 確認 alert 的呈現、關閉或選項事件
-        case deletionConfirmation(PresentationAction<Alert>)
-
-        /// 詳情刪除確認 alert 事件
-        ///
-        /// - Parameter action: 確認 alert 的呈現、關閉或選項事件
-        case detailDeletionConfirmation(PresentationAction<Alert>)
-
-        /// 兩條刪除路徑共用的刪除處理
-        ///
-        /// - Parameter id: 要刪除的開團識別值
-        case campaignDeleteRequested(Campaign.ID)
-
-        /// 刪除成功；`name` 供 `RootFeature` 同步訂單副本
-        ///
-        /// - Parameters:
-        ///   - id: 已刪除的開團識別值
-        ///   - name: 已刪除的開團名稱
-        case campaignDeleted(Campaign.ID, name: String)
-
-        /// 開團儲存成功
-        ///
-        /// - Parameter campaign: 已寫入的開團
-        case campaignSaved(Campaign)
-
-        /// 開團改名通知；由 ``RootFeature`` 處理訂單 cascade
-        ///
-        /// - Parameters:
-        ///   - from: 改名前的名稱
-        ///   - to: 改名後的名稱
-        case campaignRenamed(from: String, to: String)
-
-        /// 開團寫入失敗時顯示的一次性通知
-        ///
-        /// - Parameter message: 要顯示的失敗訊息
-        case campaignWriteFailed(String)
-
-        /// 提醒連結載入完成
-        ///
-        /// - Parameter links: 各開團的提醒連結，以開團識別值對應連結資料
-        case reminderLinksLoaded([Campaign.ID: CampaignReminderLink])
-
-        /// 提醒建立或移除後更新記憶體連結
-        ///
-        /// - Parameters:
-        ///   - id: 提醒所屬的開團識別值
-        ///   - link: 新的提醒連結，`nil` 代表已移除
-        case reminderStored(Campaign.ID, CampaignReminderLink?)
-
-        /// 行事曆存取被使用者拒絕，彈出可到設定開啟的提示 alert
-        case reminderAccessDenied
-
-        /// 裝置限制導致無法使用行事曆時顯示提示
-        case reminderAccessRestricted
-
-        /// 權限已授予但提醒建立失敗，彈出不提及權限的提示 alert
-        case reminderCreationFailed
-
-        /// 沒有可寫入行事曆時顯示專用提示
-        case reminderCalendarUnavailable
-
-        /// 列表頁一次性通知 alert 事件
-        ///
-        /// - Parameter action: 通知 alert 的呈現、關閉或選項事件
-        case noticeAlert(PresentationAction<NoticeAlert>)
-
-        /// 詳情頁一次性通知 alert 事件
-        ///
-        /// - Parameter action: 通知 alert 的呈現、關閉或選項事件
-        case detailNoticeAlert(PresentationAction<NoticeAlert>)
-
-        /// 詳情頁切換訂單收款狀態；不直接修改訂單投影
-        ///
-        /// - Parameters:
-        ///   - orderID: 要切換收款狀態的訂單識別值
-        ///   - status: 要切換成的收款狀態
-        case receiptStatusToggled(LedgerOrder.ID, PaymentReceiptStatus)
+        /// - Parameter action: 實際的操作
+        case view(View)
 
         /// 跨 feature 意圖，由 ``RootFeature`` 轉發
         ///
         /// - Parameter action: 要交給根畫面的意圖
         case delegate(Delegate)
 
+        /// 編輯表單或 alert 的事件
+        ///
+        /// - Parameter action: 目的地的呈現、關閉或內部事件
+        case destination(PresentationAction<Destination.Action>)
+
+        /// 詳情導覽堆疊的事件
+        ///
+        /// - Parameter action: 堆疊元素的操作與返回
+        case path(StackActionOf<Path>)
+
+        /// 列表子 Feature 的事件
+        ///
+        /// - Parameter action: 列表操作、載入結果與委派請求
+        case list(CampaignListFeature.Action)
+
+        /// 提醒子 Feature 的事件
+        ///
+        /// - Parameter action: 連結載入、提醒調解與其失敗結果
+        case reminder(CampaignReminderFeature.Action)
+
+        /// 寫入子 Feature 的事件
+        ///
+        /// - Parameter action: 開團寫入請求與結果
+        case writes(CampaignWritesFeature.Action)
+
+        /// 容器畫面送出的操作
+        @CasePathable
+        enum View {
+
+            /// 容器出現，轉送提醒連結載入請求
+            case task
+
+            /// 編輯表單的 sheet 關閉動畫結束，讓暫存的通知接著呈現
+            case formSheetDismissed
+        }
+
         /// 開團功能可能發出的跨 feature 意圖
         @CasePathable
         enum Delegate: Equatable {
+
+            /// 開團已刪除，由根功能同步訂單副本
+            ///
+            /// - Parameter name: 已刪除的開團名稱
+            case campaignDeleted(name: String)
+
+            /// 開團已改名，由根功能同步訂單副本
+            ///
+            /// - Parameters:
+            ///   - from: 原開團名稱
+            ///   - to: 儲存後的開團名稱
+            case campaignRenamed(from: String, to: String)
 
             /// 訂單收款狀態變更，轉發到 ``OrdersFeature/Action/receiptStatusChanged(_:_:)``
             ///
             /// - Parameters:
             ///   - orderID: 收款狀態變更的訂單識別值
             ///   - status: 變更後的收款狀態
-            case receiptStatusToggled(LedgerOrder.ID, PaymentReceiptStatus)
-        }
-
-        /// 刪除確認 alert 的選項
-        @CasePathable
-        enum Alert: Equatable {
-
-            /// 使用者確認刪除指定開團
-            ///
-            /// - Parameter id: 要刪除的開團識別值
-            case confirmDelete(Campaign.ID)
-        }
-
-        /// 結團確認 alert 的選項
-        @CasePathable
-        enum SettleAlert: Equatable {
-
-            /// 使用者確認結團
-            ///
-            /// - Parameter id: 要結團的開團識別值
-            case confirmSettle(Campaign.ID)
-        }
-
-        /// 一次性通知 alert 的選項
-        @CasePathable
-        enum NoticeAlert: Equatable {
-
-            /// 使用者選擇前往系統設定開啟權限
-            case openSettings
+            case receiptStatusToggled(orderID: LedgerOrder.ID, status: PaymentReceiptStatus)
         }
     }
 
     // MARK: - Dependencies
 
-    /// 開團主檔資料來源
-    @Dependency(\.campaignService) private var campaignService
-
-    /// 開團改名時更新訂單歸屬
-    @Dependency(\.orderService) private var orderService
-
-    /// 開團訂購提醒寫入系統行事曆的 Service
-    @Dependency(\.calendarReminderService) private var calendarReminderService
-
-    /// 開團訂購提醒連結 (`campaignID` → 行事曆事件的 `eventIdentifier`) 的資料來源
-    @Dependency(\.campaignReminderService) private var campaignReminderService
-
-    /// 日期來源，供新開團、結單日自動轉狀態、編輯表單、結團日期與提醒預設時間使用，方便在測試中注入固定值
+    /// 日期來源，供新開團、編輯表單與提醒預設時間使用，方便在測試中注入固定值
     @Dependency(\.date) private var date
 
-    /// 行事曆，供提醒時間換算與結單日判定使用，可由測試注入
+    /// 行事曆，供提醒時間換算使用，可由測試注入
     @Dependency(\.calendar) private var calendar
 
     /// `UUID` 產生器，供新開團與編輯表單的識別值使用，方便在測試中注入固定值
@@ -330,1021 +195,182 @@ struct CampaignFeature {
 
     // MARK: - Body
 
-    /// 開團功能 reducer，拆成兩段 `Reduce` 以避免型別檢查逾時
+    /// 組合各子 Feature，容器自己的轉送與呈現邏輯在 `core(state:action:)`
     var body: some Reducer<State, Action> {
-        Reduce { state, action in
-            switch action {
-            case .task:
-                guard !state.hasLoaded, !state.isLoading else {
-                    return .none
-                }
-                let campaignService = campaignService
-                let campaignReminderService = campaignReminderService
-                state.isLoading = true
-                state.errorMessage = nil
-                return .run { send in
-                    do {
-                        let campaigns = try await campaignService.fetchCampaigns()
-                        await send(.campaignsLoaded(campaigns))
-                    } catch {
-                        await send(.campaignsFailed("開團載入失敗，請稍後再試。"))
-                    }
+        Scope(state: \.list, action: \.list) { CampaignListFeature() }
 
-                    do {
-                        let links = try await campaignReminderService.fetchLinks()
-                        await send(.reminderLinksLoaded(links))
-                    } catch {
-                        return
-                    }
-                }
+        Scope(state: \.reminder, action: \.reminder) { CampaignReminderFeature() }
 
-            case .campaignsLoaded(let loaded):
-                state.isLoading = false
-                state.hasLoaded = true
+        Scope(state: \.writes, action: \.writes) { CampaignWritesFeature() }
 
-                // 與其他功能共用結單日狀態判定
-                let now = date.now
-                var transitioned: [Campaign] = []
-                let updated = loaded.map { campaign in
-                    let evaluated = campaign.evaluatingAutoClose(asOf: now, calendar: calendar)
-                    if evaluated.status != campaign.status {
-                        transitioned.append(evaluated)
-                    }
-                    return evaluated
-                }
-                state.campaigns = updated
-
-                guard !transitioned.isEmpty else {
-                    return .none
-                }
-                let campaignService = campaignService
-                let transitionedToSave = transitioned
-                return .run { send in
-                    for campaign in transitionedToSave {
-                        do {
-                            try await campaignService.saveCampaign(campaign)
-                        } catch {
-                            await send(.campaignWriteFailed("開團狀態自動更新失敗，請稍後再試。"))
-                            break
-                        }
-                    }
-                }
-
-            case .campaignsFailed(let message):
-                state.isLoading = false
-                state.errorMessage = message
-                return .none
-
-            case .campaignSelected(let id):
-                state.selectedCampaignID = id
-                return .none
-
-            case .statusFilterSelected(let status):
-                state.statusFilter = status
-                return .none
-
-            case .groupingSelected(let grouping):
-                state.grouping = grouping
-                return .none
-
-            case .unpaidOnlyToggled(let showsUnpaidOnly):
-                state.showsUnpaidOnly = showsUnpaidOnly
-                return .none
-
-            case .newCampaignTapped:
-                state.editCampaign = CampaignEditFeature.State(
-                    id: uuid(),
-                    currentDate: date.now,
-                    reminderTimestamp: defaultReminderTimestamp(closeDate: nil)
-                )
-                return .none
-
-            case .editCampaignTapped(let id):
-                guard let campaign = state.campaigns.first(
-                    where: {
-                        $0.id == id
-                    }
-                ) else {
-                    return .none
-                }
-                let link = state.reminderLinks[id]
-                state.editCampaign = CampaignEditFeature.State(
-                    original: campaign,
-                    id: uuid(),
-                    currentDate: date.now,
-                    wantsReminder: link != nil,
-                    reminderTimestamp: link?.reminderTimestamp
-                        ?? defaultReminderTimestamp(closeDate: campaign.closeDate)
-                )
-                return .none
-
-            case .editCampaign(.presented(.saveTapped)):
-                guard let editState = state.editCampaign else {
-                    return .none
-                }
-                let trimmedName = editState.draft.name.trimmingCharacters(
-                    in: .whitespacesAndNewlines
-                )
-                guard !trimmedName.isEmpty else {
-                    return .none
-                }
-
-                // 名稱變更時才檢查唯一性，原名儲存直接放行
-                let editingID = editState.original?.id
-                let originalName = editState.original?.name
-                if trimmedName != originalName {
-                    let isDuplicateName = state.campaigns.contains {
-                        $0.id != editingID
-                            && $0.name.trimmingCharacters(
-                                in: .whitespacesAndNewlines
-                            ) == trimmedName
-                    }
-                    if isDuplicateName {
-                        state.editCampaign?.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
-                        return .none
-                    }
-                }
-
-                // 驗證通過後才關閉表單，且寫入前沒有副作用
-                // 表單可先關閉，清單只在儲存成功後更新
-                state.editCampaign = nil
-
-                let id = editingID ?? uuid().uuidString
-                let oldName = originalName
-                let campaign = Campaign(
-                    id: id,
-                    name: trimmedName,
-                    openDate: editState.draft.openDate,
-                    closeDate: editState.draft.closeDate,
-                    status: editState.draft.status,
-                    settledDate: editState.original?.settledDate,
-                    notes: editState.draft.notes.trimmingCharacters(in: .whitespacesAndNewlines)
-                )
-
-                // 依「是否要提醒」意圖與現有事件差異，決定儲存時對行事曆的調解
-                let reminderTitle = campaign.reminderTitle
-                let chosenTimestamp = editState.draft.reminderTimestamp
-                let reminderEventDate = calendar.startOfDay(for: chosenTimestamp)
-                let reminderAlarmOffset = TimeInterval(minuteOfDay(from: chosenTimestamp) * 60)
-                let existingLink = state.reminderLinks[id]
-                let hasNameChanged = existingLink != nil && editState.original.map {
-                    $0.reminderTitle != reminderTitle
-                } ?? false
-                let hasTimestampChanged = existingLink.map {
-                    $0.reminderTimestamp != chosenTimestamp
-                } ?? false
-                let hasReminderContentChanged = hasNameChanged || hasTimestampChanged
-
-                let reconcile: CampaignReminderReconcile
-                if editState.draft.wantsReminder {
-                    if let existingLink {
-                        reconcile = hasReminderContentChanged
-                            ? .rebuild(existingLink.eventIdentifier)
-                            : .none
-                    } else {
-                        reconcile = .create
-                    }
-                } else if let existingLink {
-                    reconcile = .remove(existingLink.eventIdentifier)
-                } else {
-                    reconcile = .none
-                }
-
-                let isRenamed = oldName != nil && oldName != trimmedName
-                return saveEffect(
-                    campaign: campaign,
-                    oldName: oldName,
-                    trimmedName: trimmedName,
-                    isRenamed: isRenamed,
-                    reconcile: reconcile,
-                    reminderTitle: reminderTitle,
-                    reminderEventDate: reminderEventDate,
-                    reminderAlarmOffset: reminderAlarmOffset,
-                    chosenTimestamp: chosenTimestamp
-                )
-
-            case .editCampaign:
-                return .none
-
-            case .campaignSaved(let campaign):
-                upsert(campaign, into: &state)
-                return .none
-
-            case .statusChanged(let id, let newStatus):
-                guard let campaign = state.campaigns.first(
-                    where: {
-                        $0.id == id
-                    }
-                ) else {
-                    return .none
-                }
-                guard campaign.status != newStatus else {
-                    return .none
-                }
-                var updatedValue = campaign
-                updatedValue.status = newStatus
-                let updated = updatedValue
-                let campaignService = campaignService
-                return .run { send in
-                    try await campaignService.saveCampaign(updated)
-                    await send(.campaignStatusSaved(id, newStatus))
-                } catch: { _, send in
-                    await send(.campaignWriteFailed("開團狀態更新失敗，請稍後再試。"))
-                }
-
-            case .campaignStatusSaved(let id, let newStatus):
-                guard let index = state.campaigns.firstIndex(
-                    where: {
-                        $0.id == id
-                    }
-                ) else {
-                    return .none
-                }
-                state.campaigns[index].status = newStatus
-                return .none
-
-            case .receiptStatusToggled(let id, let newStatus):
-                // 訂單投影由 RootFeature 轉發給 OrdersFeature
-                // 該投影會在訂單變更後由 RootFeature 的變更監看單向同步回來
-                return .send(.delegate(.receiptStatusToggled(id, newStatus)))
-
-            case .delegate:
-                return .none
-
-            // 其餘 action 由第二段 Reduce 處理，逐一列舉以保留編譯期窮舉檢查
-            case .settleTapped, .settleConfirmation, .settleConfirmed, .campaignSettled,
-                    .deleteCampaignTapped, .detailDeleteCampaignTapped, .deletionConfirmation,
-                    .detailDeletionConfirmation, .campaignDeleteRequested, .campaignDeleted,
-                    .campaignRenamed, .campaignWriteFailed, .reminderLinksLoaded, .reminderStored,
-                    .reminderAccessDenied, .reminderAccessRestricted, .reminderCreationFailed,
-                    .reminderCalendarUnavailable, .noticeAlert, .detailNoticeAlert:
-                return .none
-            }
-        }
-        .ifLet(\.$editCampaign, action: \.editCampaign) {
-            CampaignEditFeature()
-        }
-
-        Reduce { state, action in
-            switch action {
-            case .settleTapped(let id):
-                // 結團是不可逆的狀態轉換，比照刪除先確認再寫入
-                guard let campaign = state.campaigns.first(
-                    where: {
-                        $0.id == id
-                    }
-                ) else {
-                    return .none
-                }
-                guard campaign.settledDate == nil else {
-                    return .none
-                }
-                state.settleConfirmation = AlertState {
-                    TextState("結團結算")
-                } actions: {
-                    ButtonState(action: .confirmSettle(id)) {
-                        TextState("結團")
-                    }
-                    ButtonState(role: .cancel) {
-                        TextState("取消")
-                    }
-                } message: {
-                    TextState("結算「\(campaign.name)」後就無法再改回進行中。確定要結團嗎？")
-                }
-                return .none
-
-            case .settleConfirmation(.presented(.confirmSettle(let id))):
-                return .send(.settleConfirmed(id))
-
-            case .settleConfirmation:
-                return .none
-
-            case .settleConfirmed(let id):
-                guard let campaign = state.campaigns.first(
-                    where: {
-                        $0.id == id
-                    }
-                ) else {
-                    return .none
-                }
-                guard campaign.settledDate == nil else {
-                    return .none
-                }
-                var updatedValue = campaign
-                let settledDate = date.now
-                updatedValue.settledDate = settledDate
-                let updated = updatedValue
-                let campaignService = campaignService
-                return .run { send in
-                    try await campaignService.saveCampaign(updated)
-                    await send(.campaignSettled(id, settledDate))
-                } catch: { _, send in
-                    await send(.campaignWriteFailed("結團失敗，請稍後再試。"))
-                }
-
-            case .campaignSettled(let id, let settledDate):
-                guard let index = state.campaigns.firstIndex(
-                    where: {
-                        $0.id == id
-                    }
-                ) else {
-                    return .none
-                }
-                state.campaigns[index].settledDate = settledDate
-                return .none
-
-            case .deleteCampaignTapped(let id):
-                guard let campaign = state.campaigns.first(
-                    where: {
-                        $0.id == id
-                    }
-                ) else {
-                    return .none
-                }
-                state.deletionConfirmation = deletionAlert(for: campaign)
-                return .none
-
-            case .deletionConfirmation(.presented(.confirmDelete(let id))):
-                return .send(.campaignDeleteRequested(id))
-
-            case .deletionConfirmation:
-                return .none
-
-            case .detailDeleteCampaignTapped(let id):
-                guard let campaign = state.campaigns.first(
-                    where: {
-                        $0.id == id
-                    }
-                ) else {
-                    return .none
-                }
-                state.detailDeletionConfirmation = deletionAlert(for: campaign)
-                return .none
-
-            case .detailDeletionConfirmation(.presented(.confirmDelete(let id))):
-                return .send(.campaignDeleteRequested(id))
-
-            case .detailDeletionConfirmation:
-                return .none
-
-            case .campaignDeleteRequested(let id):
-                // 找不到目標 id 時直接 no-op
-                guard let campaign = state.campaigns.first(
-                    where: {
-                        $0.id == id
-                    }
-                ) else {
-                    return .none
-                }
-                return deleteEffect(id: id, name: campaign.name)
-
-            case .campaignDeleted(let id, name: _):
-                state.campaigns.removeAll {
-                    $0.id == id
-                }
-                state.reminderLinks[id] = nil
-                if state.selectedCampaignID == id {
-                    // 不 fallback 到 first?.id：那等於刪完把使用者帶進另一個不相干的開團
-                    state.selectedCampaignID = nil
-                }
-                return .none
-
-            case .campaignRenamed:
-                // 訂單表 cascade 與 OrdersFeature 副本同步由 RootFeature 攔截處理
-                return .none
-
-            case .campaignWriteFailed(let message):
-                presentNotice(failureNotice(LocalizedStringKey(message)), in: &state)
-                return .none
-
-            case .reminderLinksLoaded(let links):
-                state.reminderLinks = links
-                return .none
-
-            case .reminderStored(let id, let link):
-                state.reminderLinks[id] = link
-                return .none
-
-            case .reminderAccessDenied:
-                // 要求使用者前往系統設定卻不提供跳轉，等於把導航成本轉嫁給使用者
-                presentNotice(
-                    AlertState {
-                        TextState("需要行事曆權限")
-                    } actions: {
-                        ButtonState(action: .openSettings) {
-                            TextState("前往設定")
-                        }
-                        ButtonState(role: .cancel) {
-                            TextState("知道了")
-                        }
-                    } message: {
-                        TextState("請到「設定」開啟行事曆存取權限，才能新增或移除訂購提醒。")
-                    },
-                    in: &state
-                )
-                return .none
-
-            case .reminderAccessRestricted:
-                // 裝置政策限制下無法前往設定
-                presentNotice(
-                    notice(title: "無法使用行事曆", message: "這台裝置的行事曆存取受政策限制，暫時無法新增或移除訂購提醒。"),
-                    in: &state
-                )
-                return .none
-
-            case .reminderCreationFailed:
-                // 權限已授予，訊息不得指向權限設定，照做也無法解決真正發生的失敗
-                presentNotice(notice(title: "無法建立訂購提醒", message: "訂購提醒建立失敗，請稍後再試。"), in: &state)
-                return .none
-
-            case .reminderCalendarUnavailable:
-                // 找不到可寫入的行事曆不是權限問題，訊息不得指向設定
-                presentNotice(
-                    notice(title: "找不到可寫入的行事曆", message: "找不到可寫入的行事曆，請新增或啟用一個可寫入的行事曆後再試。"),
-                    in: &state
-                )
-                return .none
-
-            case .noticeAlert(.presented(.openSettings)),
-                    .detailNoticeAlert(.presented(.openSettings)):
-                let openSettingsService = openSettingsService
-                // 無法開啟時靜默結束即可；提示本身已由系統關閉，不阻塞使用者
-                return .run { _ in
-                    await openSettingsService.open()
-                }
-
-            case .noticeAlert, .detailNoticeAlert:
-                return .none
-
-            // 其餘 action 由第一段 Reduce 處理，逐一列舉以保留編譯期窮舉檢查
-            case .task, .campaignsLoaded, .campaignsFailed, .campaignSelected,
-                    .statusFilterSelected, .groupingSelected, .unpaidOnlyToggled,
-                    .newCampaignTapped, .editCampaignTapped, .editCampaign, .statusChanged,
-                    .campaignStatusSaved, .campaignSaved, .receiptStatusToggled, .delegate:
-                return .none
-            }
-        }
-        .ifLet(\.$deletionConfirmation, action: \.deletionConfirmation)
-        .ifLet(\.$detailDeletionConfirmation, action: \.detailDeletionConfirmation)
-        .ifLet(\.$settleConfirmation, action: \.settleConfirmation)
-        .ifLet(\.$noticeAlert, action: \.noticeAlert)
-        .ifLet(\.$detailNoticeAlert, action: \.detailNoticeAlert)
-    }
-}
-
-// MARK: - Nested Types
-
-extension CampaignFeature.State {
-
-    /// 開團載入的三種解析結果
-    enum LoadState: Equatable {
-
-        /// 已完成載入，顯示正常內容
-        case loaded
-
-        /// 載入失敗
-        ///
-        /// - Parameter message: 載入失敗的原因
-        case failed(String)
-
-        /// 載入中
-        case loading
-    }
-}
-
-private extension CampaignFeature {
-
-    /// 儲存開團時對訂購提醒行事曆事件的調解結果
-    enum CampaignReminderReconcile: Equatable {
-
-        /// 不需變更行事曆
-        case none
-
-        /// 建立新的提醒事件
-        case create
-
-        /// 移除既有事件
-        ///
-        /// - Parameter eventIdentifier: 要移除的行事曆事件識別碼
-        case remove(String)
-
-        /// 以新內容建立新事件，成功後再移除舊事件
-        ///
-        /// - Parameter oldEventIdentifier: 要移除的舊行事曆事件識別碼
-        case rebuild(String)
-    }
-}
-
-// MARK: - Internal Method
-
-extension CampaignFeature.State {
-
-    /// 依分組粒度建立開團區段與次級群組
-    ///
-    /// - Parameters:
-    ///   - referenceDate: 計算「今天／昨天」等相對標題的「現在」時間
-    ///   - calendar: 分組與標題用的行事曆
-    ///   - locale: App 選定、用於日期區段標題的 locale
-    /// - Returns: 依日期排序的區段與子群組
-    func dateSections(
-        referenceDate: Date,
-        calendar: Calendar,
-        locale: Locale
-    ) -> [CampaignDateSection] {
-        let filtered = statusFilter.map { status in
-            campaigns.filter {
-                $0.status == status
-            }
-        } ?? campaigns
-        let topGrouped = Dictionary(grouping: filtered) {
-            topBucketStart(for: $0.openDate, calendar: calendar)
-        }
-        return topGrouped.keys
-            .sorted(by: >)
-            .map {
-                CampaignDateSection(
-                    id: $0,
-                    title: topTitle(
-                        for: $0,
-                        referenceDate: referenceDate,
-                        calendar: calendar,
-                        locale: locale
-                    ),
-                    subgroups: subgroups(
-                        of: topGrouped[$0] ?? [],
-                        referenceDate: referenceDate,
-                        calendar: calendar,
-                        locale: locale
-                    )
-                )
-            }
+        Reduce(core)
+            .forEach(\.path, action: \.path)
+            .ifLet(\.$destination, action: \.destination)
     }
 }
 
 // MARK: - Private Method
 
-private extension CampaignFeature.State {
-
-    /// 頂層分組鍵：按日取當日起始、按月取當月起始、按年取當年起始
-    ///
-    /// - Parameters:
-    ///   - date: 要轉換的開團日期
-    ///   - calendar: 分組使用的行事曆
-    /// - Returns: 對應頂層區段的起始日期
-    func topBucketStart(for date: Date, calendar: Calendar) -> Date {
-        switch grouping {
-        case .day:
-            calendar.startOfDay(for: date)
-
-        case .month:
-            calendar.dateInterval(of: .month, for: date)?.start ?? calendar.startOfDay(for: date)
-
-        case .year:
-            calendar.dateInterval(of: .year, for: date)?.start ?? calendar.startOfDay(for: date)
-        }
-    }
-
-    /// 頂層標題：日 → 今天／昨天／日期；月 → `yyyy年M月`；年 → `yyyy年`
-    ///
-    /// - Parameters:
-    ///   - bucket: 頂層區段的起始日期
-    ///   - referenceDate: 計算相對日期標題的「現在」時間
-    ///   - calendar: 用於日區段標題的行事曆
-    ///   - locale: App 選定、用於日期標題的 locale
-    /// - Returns: 頂層區段的標題
-    func topTitle(
-        for bucket: Date,
-        referenceDate: Date,
-        calendar: Calendar,
-        locale: Locale
-    ) -> String {
-        switch grouping {
-        case .day:
-            OrderFormatters.daySectionTitle(
-                for: bucket,
-                referenceDate: referenceDate,
-                calendar: calendar,
-                locale: locale
-            )
-
-        case .month:
-            bucket.formatted(.dateTime.year().month().locale(locale))
-
-        case .year:
-            bucket.formatted(.dateTime.year().locale(locale))
-        }
-    }
-
-    /// 將頂層區段切成次級群組；按日分組時只回傳一組
-    ///
-    /// - Parameters:
-    ///   - topCampaigns: 頂層區段內的開團
-    ///   - referenceDate: 計算相對日期標題的「現在」時間
-    ///   - calendar: 分組與標題所用的行事曆
-    ///   - locale: App 選定、用於子區段標題的 locale
-    /// - Returns: 依日期由新到舊排序的次級群組
-    func subgroups(
-        of topCampaigns: [Campaign],
-        referenceDate: Date,
-        calendar: Calendar,
-        locale: Locale
-    ) -> [CampaignSubgroup] {
-        guard grouping != .day else {
-            return [
-                CampaignSubgroup(
-                    id: topCampaigns.first.map { calendar.startOfDay(for: $0.openDate) }
-                        ?? .distantPast,
-                    title: nil,
-                    campaigns: sortedByDate(topCampaigns)
-                ),
-            ]
-        }
-        let subGrouped = Dictionary(grouping: topCampaigns) {
-            subBucketStart(for: $0.openDate, calendar: calendar)
-        }
-        return subGrouped.keys
-            .sorted(by: >)
-            .map {
-                CampaignSubgroup(
-                    id: $0,
-                    title: subTitle(
-                        for: $0,
-                        referenceDate: referenceDate,
-                        calendar: calendar,
-                        locale: locale
-                    ),
-                    campaigns: sortedByDate(subGrouped[$0] ?? [])
-                )
-            }
-    }
-
-    /// 將開團依開團日期由新到舊排序 (同日再依名稱)
-    ///
-    /// - Parameter campaigns: 要排序的開團
-    /// - Returns: 排序後的開團
-    func sortedByDate(_ campaigns: [Campaign]) -> [Campaign] {
-        campaigns.sorted { lhs, rhs in
-            if lhs.openDate != rhs.openDate {
-                return lhs.openDate > rhs.openDate
-            }
-            return lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
-        }
-    }
-
-    /// 取得次級群組的日期鍵
-    ///
-    /// - Parameters:
-    ///   - date: 要轉換的開團日期
-    ///   - calendar: 分組使用的行事曆
-    /// - Returns: 對應次級群組的起始日期
-    func subBucketStart(for date: Date, calendar: Calendar) -> Date {
-        switch grouping {
-        case .day, .month:
-            calendar.startOfDay(for: date)
-
-        case .year:
-            calendar.dateInterval(of: .month, for: date)?.start ?? calendar.startOfDay(for: date)
-        }
-    }
-
-    /// 子標題：按月 → 日 (相對日期或格式化日期)；按年 → 月
-    ///
-    /// - Parameters:
-    ///   - bucket: 子區段的起始日期
-    ///   - referenceDate: 計算相對日期標題的「現在」時間
-    ///   - calendar: 用於日區段標題的行事曆
-    ///   - locale: App 選定、用於日期標題的 locale
-    /// - Returns: 次級群組的標題
-    func subTitle(
-        for bucket: Date,
-        referenceDate: Date,
-        calendar: Calendar,
-        locale: Locale
-    ) -> String {
-        switch grouping {
-        case .day, .month:
-            OrderFormatters.daySectionTitle(
-                for: bucket,
-                referenceDate: referenceDate,
-                calendar: calendar,
-                locale: locale
-            )
-
-        case .year:
-            bucket.formatted(.dateTime.month(.wide).locale(locale))
-        }
-    }
-}
-
 private extension CampaignFeature {
 
-    /// 請求行事曆權限後建立全天提醒事件、寫入連結並回報
+    /// 處理列表與詳情的請求、確認結果與子 Feature 的委派，統一呈現通知
     ///
     /// - Parameters:
-    ///   - campaignID: 建立提醒的開團識別值
-    ///   - title: 提醒事件標題
-    ///   - date: 全天事件的日期 (提醒時間戳當天起始)
-    ///   - alarmOffset: 提示自當天 00:00 起算的秒數
-    ///   - reminderTimestamp: 要保存的提醒時間戳 (日期＋提示時間)
-    ///   - calendarReminderService: 行事曆整合操作入口
-    ///   - service: 提醒連結操作入口
-    ///   - send: 送出後續 action 的通道
-    /// - Returns: 建立成功的事件識別碼；任一失敗分支皆回傳 `nil`
-    @discardableResult
-    static func addReminder(
-        campaignID: Campaign.ID,
-        title: String,
-        date: Date,
-        alarmOffset: TimeInterval,
-        reminderTimestamp: Date,
-        calendarReminderService: CalendarReminderService,
-        service: CampaignReminderService,
-        send: Send<Action>
-    ) async -> String? {
-        switch await calendarReminderService.requestAccess() {
-        case .granted:
-            break
+    ///   - state: 開團容器狀態
+    ///   - action: 使用者操作、子 Feature 委派或導覽事件
+    /// - Returns: 子 Feature 的請求或根功能同步意圖
+    func core(state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case .view(.task):
+            return .send(.reminder(.linksRequested))
 
-        case .denied:
-            await send(.reminderAccessDenied)
-            return nil
+        case .view(.formSheetDismissed):
+            var current = state.destination
+            state.presentationQueue.finishFormClosing(into: &current)
+            state.destination = current
+            return .none
 
-        case .restricted:
-            await send(.reminderAccessRestricted)
-            return nil
-        }
+        case .destination(.presented(.edit(.delegate(.saveRequested(let request))))):
+            return save(request, state: &state)
 
-        // 權限已取得；後續失敗不應被當成權限錯誤
-        do {
-            let identifier = try await calendarReminderService.addReminder(title, date, alarmOffset)
-            let link = CampaignReminderLink(
-                eventIdentifier: identifier,
-                reminderTimestamp: reminderTimestamp
+        case .destination(.presented(.alert(.confirmDelete(let id)))):
+            guard let campaign = state.campaigns.first(where: { $0.id == id }) else {
+                return .none
+            }
+            return .send(.writes(.deleteRequested(id: id, name: campaign.name)))
+
+        case .destination(.presented(.alert(.confirmSettle(let id)))):
+            return .send(.writes(.settleRequested(id)))
+
+        case .destination(.presented(.alert(.openSettings))):
+            let openSettingsService = openSettingsService
+            return .run { _ in await openSettingsService.open() }
+
+        case .destination(.dismiss):
+            state.presentationQueue.markFormClosing(dismissing: state.destination)
+            return .none
+
+        case .path(.element(id: _, action: .detail(.delegate(.requested(let request))))):
+            return fulfill(request, state: &state)
+
+        case .list(.delegate(.requested(let request))):
+            return fulfill(request, state: &state)
+
+        case .list(.delegate(.autoCloseFailed)):
+            state.present(.autoCloseFailure)
+            return .none
+
+        case .reminder(.delegate(.failed(let failure))):
+            state.present(.reminderFailure(failure))
+            return .none
+
+        case .writes(.delegate(.saved(let request?))):
+            return .send(.reminder(.reconcileRequested(request)))
+
+        case .writes(.delegate(.renamed(let from, let to))):
+            return .send(.delegate(.campaignRenamed(from: from, to: to)))
+
+        case .writes(.delegate(.deleted(let deletion))):
+            let id = deletion.id
+            let eventIdentifier = deletion.eventIdentifier
+            state.path.popDetail(campaignID: id)
+            return .concatenate(
+                .send(.delegate(.campaignDeleted(name: deletion.name))),
+                .send(.reminder(.campaignRemoved(campaignID: id, eventIdentifier: eventIdentifier)))
             )
-            try await service.saveLink(campaignID, link)
-            await send(.reminderStored(campaignID, link))
-            return identifier
-        } catch let error as CalendarReminderError {
-            switch error {
-            case .eventIdentifierMissing:
-                await send(.reminderCreationFailed)
 
-            case .noWritableCalendar:
-                await send(.reminderCalendarUnavailable)
+        case .writes(.delegate(.failed(let failure))):
+            state.present(.writeFailure(failure))
+            return .none
 
-            case .system:
-                await send(.reminderCreationFailed)
-            }
-            return nil
-        } catch {
-            await send(.reminderCreationFailed)
-            return nil
+        case .delegate, .destination, .path, .list, .reminder, .writes:
+            return .none
         }
     }
 
-    /// 移除提醒事件並清除連結；移除失敗也清除連結
+    /// 以最新開團清單驗證重名，通過才關閉表單並轉送儲存計畫
     ///
     /// - Parameters:
-    ///   - campaignID: 移除提醒的開團識別值
-    ///   - eventIdentifier: 要移除的行事曆事件識別碼
-    ///   - calendarReminderService: 行事曆整合操作入口
-    ///   - service: 提醒連結操作入口
-    ///   - send: 送出後續 action 的通道
-    static func removeReminder(
-        campaignID: Campaign.ID,
-        eventIdentifier: String,
-        calendarReminderService: CalendarReminderService,
-        service: CampaignReminderService,
-        send: Send<Action>
-    ) async {
-        // 事件移除失敗時仍依使用者意圖清除本機連結
-        _ = try? await calendarReminderService.removeReminder(eventIdentifier)  // 失敗可忽略：事件可能已不存在
-
-        do {
-            try await service.removeLink(campaignID)
-            await send(.reminderStored(campaignID, nil))
-        } catch {
-            await send(.campaignWriteFailed("提醒連結移除失敗，請稍後再試。"))
-        }
-    }
-
-    /// 每團訂購提醒的預設時間戳：結單日 (無則今天) 當天 09:00
-    ///
-    /// - Parameter closeDate: 該開團的結單日；`nil` 表示無結單日或新開團
-    /// - Returns: 預設提醒時間戳
-    func defaultReminderTimestamp(closeDate: Date?) -> Date {
-        let baseDay = calendar.startOfDay(for: closeDate ?? date.now)
-        return calendar.date(
-            bySettingHour: 9,
-            minute: 0,
-            second: 0,
-            of: baseDay
-        ) ?? baseDay
-    }
-
-    /// 從提醒時間戳取出「當天第幾分鐘」，供換算全天事件的提示位移
-    ///
-    /// - Parameter time: 提醒時間戳
-    /// - Returns: 當天第幾分鐘
-    func minuteOfDay(from time: Date) -> Int {
-        calendar.component(.hour, from: time) * 60 + calendar.component(.minute, from: time)
-    }
-
-    /// 建立「儲存開團」的先寫後改 effect
-    ///
-    /// - Parameters:
-    ///   - campaign: 要寫入的開團
-    ///   - oldName: 編輯前的名稱；新開團為 `nil`
-    ///   - trimmedName: 已 trim 的新名稱
-    ///   - isRenamed: 是否實際發生改名 (需 cascade 到訂單表)
-    ///   - reconcile: 儲存時對行事曆的調解方式
-    ///   - reminderTitle: 提醒事件標題
-    ///   - reminderEventDate: 全天事件的日期
-    ///   - reminderAlarmOffset: 提示自當天 00:00 起算的秒數
-    ///   - chosenTimestamp: 使用者選定的提醒時間戳
-    /// - Returns: 對應的 effect
-    func saveEffect(
-        campaign: Campaign,
-        oldName: String?,
-        trimmedName: String,
-        isRenamed: Bool,
-        reconcile: CampaignReminderReconcile,
-        reminderTitle: String,
-        reminderEventDate: Date,
-        reminderAlarmOffset: TimeInterval,
-        chosenTimestamp: Date
-    ) -> Effect<Action> {
-        let campaignService = campaignService
-        let orderService = orderService
-        let calendarReminderService = calendarReminderService
-        let campaignReminderService = campaignReminderService
-        let id = campaign.id
-        return .run { send in
-            try await campaignService.saveCampaign(campaign)
-            await send(.campaignSaved(campaign))
-
-            if isRenamed, let oldName {
-                // DB cascade 更新所屬訂單；RootFeature 同步記憶體副本
-                do {
-                    try await orderService.renameOrderCampaign(oldName, trimmedName)
-                    await send(.campaignRenamed(from: oldName, to: trimmedName))
-                } catch {
-                    await send(.campaignWriteFailed("開團已儲存，但歸屬訂單的開團名稱更新失敗，請稍後再試。"))
-                }
+    ///   - request: 表單送出的儲存意圖
+    ///   - state: 容器狀態
+    /// - Returns: 重名時只寫回原因；通過時轉送給寫入子 Feature
+    func save(_ request: CampaignEditFeature.SaveRequest, state: inout State) -> Effect<Action> {
+        if CampaignSavePlan.conflicts(
+            name: request.name,
+            originalName: request.original?.name,
+            editingID: request.original?.id,
+            campaigns: state.campaigns
+        ) {
+            state.destination?.modify(\.edit) {
+                $0.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
             }
+            return .none
+        }
+        state.destination = nil
+        state.presentationQueue.beginFormClosing()
+        let id = request.original?.id ?? uuid().uuidString
+        let plan = CampaignSavePlan.make(
+            request: request,
+            existingLink: state.reminderLinks[id],
+            newID: id,
+            calendar: calendar
+        )
+        return .send(.writes(.saveRequested(plan)))
+    }
 
-            switch reconcile {
-            case .none:
-                break
+    /// 處理列表與詳情共用的開團操作請求
+    ///
+    /// - Parameters:
+    ///   - request: 要執行的開團操作
+    ///   - state: 容器狀態
+    /// - Returns: 後續寫入或根功能同步事件
+    func fulfill(_ request: CampaignRequest, state: inout State) -> Effect<Action> {
+        switch request {
+        case .showDetail(let id):
+            state.showDetail(campaignID: id)
+            return .none
 
-            case .create:
-                await Self.addReminder(
-                    campaignID: id,
-                    title: reminderTitle,
-                    date: reminderEventDate,
-                    alarmOffset: reminderAlarmOffset,
-                    reminderTimestamp: chosenTimestamp,
-                    calendarReminderService: calendarReminderService,
-                    service: campaignReminderService,
-                    send: send
+        case .create:
+            state.destination = .edit(
+                CampaignEditFeature.State(id: uuid(), now: date.now, calendar: calendar)
+            )
+            return .none
+
+        case .edit(let id):
+            guard let campaign = state.campaigns.first(where: { $0.id == id }) else {
+                return .none
+            }
+            state.destination = .edit(
+                CampaignEditFeature.State(
+                    original: campaign,
+                    link: state.reminderLinks[id],
+                    id: uuid(),
+                    now: date.now,
+                    calendar: calendar
                 )
+            )
+            return .none
 
-            case .remove(let identifier):
-                await Self.removeReminder(
-                    campaignID: id,
-                    eventIdentifier: identifier,
-                    calendarReminderService: calendarReminderService,
-                    service: campaignReminderService,
-                    send: send
-                )
-
-            case .rebuild(let identifier):
-                // 先建新事件，再刪舊事件，避免留下失效連結
-                let newIdentifier = await Self.addReminder(
-                    campaignID: id,
-                    title: reminderTitle,
-                    date: reminderEventDate,
-                    alarmOffset: reminderAlarmOffset,
-                    reminderTimestamp: chosenTimestamp,
-                    calendarReminderService: calendarReminderService,
-                    service: campaignReminderService,
-                    send: send
-                )
-                if newIdentifier != nil {
-                    do {
-                        try await calendarReminderService.removeReminder(identifier)
-                    } catch {
-                        // 新連結不回滾，但要告知舊事件移除失敗
-                        await send(.campaignWriteFailed("提醒已更新，但舊的行事曆事件移除失敗，請自行到行事曆刪除。"))
-                    }
-                }
+        case .delete(let id):
+            guard let campaign = state.campaigns.first(where: { $0.id == id }) else {
+                return .none
             }
-        } catch: { _, send in
-            await send(.campaignWriteFailed("開團儲存失敗，請稍後再試。"))
-        }
-    }
+            state.destination = .deleteConfirmation(for: campaign)
+            return .none
 
-    /// 更新或新增開團，並依日期排序
-    ///
-    /// - Parameters:
-    ///   - campaign: 要寫入的開團
-    ///   - state: 將被修改的 ``State``
-    func upsert(_ campaign: Campaign, into state: inout State) {
-        if let index = state.campaigns.firstIndex(where: { $0.id == campaign.id }) {
-            state.campaigns[index] = campaign
-        } else {
-            state.campaigns.append(campaign)
-        }
-        state.campaigns.sort { lhs, rhs in
-            lhs.openDate > rhs.openDate
-        }
-    }
-
-    /// 建立刪除開團前的確認 alert；供列表與詳情兩個呈現入口共用同一份內容
-    ///
-    /// - Parameter campaign: 要刪除的開團
-    /// - Returns: 確認對話框
-    func deletionAlert(for campaign: Campaign) -> AlertState<Action.Alert> {
-        AlertState {
-            TextState("刪除開團")
-        } actions: {
-            ButtonState(role: .destructive, action: .confirmDelete(campaign.id)) {
-                TextState("刪除")
+        case .settle(let id):
+            guard let campaign = state.campaigns.first(where: { $0.id == id }),
+                  campaign.settledDate == nil else {
+                return .none
             }
-            ButtonState(role: .cancel) {
-                TextState("取消")
-            }
-        } message: {
-            TextState("刪除「\(campaign.name)」後無法復原。歸屬此開團的訂單會保留，但會變回未歸團。")
-        }
-    }
+            state.destination = .settlementConfirmation(for: campaign)
+            return .none
 
-    /// 刪除開團並同步訂單與提醒
-    ///
-    /// - Parameters:
-    ///   - id: 要刪除的開團識別值
-    ///   - name: 該開團的名稱
-    /// - Returns: 對應的 effect
-    func deleteEffect(id: Campaign.ID, name: String) -> Effect<Action> {
-        let campaignService = campaignService
-        let calendarReminderService = calendarReminderService
-        return .run { send in
-            let eventIdentifier = try await campaignService.removeCampaign(id, name)
-            await send(.campaignDeleted(id, name: name))
+        case .changeStatus(let id, let status):
+            return .send(.writes(.statusChangeRequested(id: id, status: status)))
 
-            guard let eventIdentifier else {
-                return
-            }
-            do {
-                try await calendarReminderService.removeReminder(eventIdentifier)
-            } catch {
-                // 本機刪除已生效不回滾，但此失敗仍須告知，不可靜默吞掉
-                await send(.campaignWriteFailed("開團已刪除，但行事曆上的提醒事件移除失敗，請自行到行事曆刪除。"))
-            }
-        } catch: { _, send in
-            await send(.campaignWriteFailed("開團刪除失敗，請稍後再試。"))
-        }
-    }
-
-    /// 將一次性通知掛到列表或詳情層級
-    ///
-    /// - Parameters:
-    ///   - alert: 要呈現的通知內容
-    ///   - state: 將被修改的 ``State``
-    func presentNotice(_ alert: AlertState<Action.NoticeAlert>, in state: inout State) {
-        if state.selectedCampaignID == nil {
-            state.noticeAlert = alert
-        } else {
-            state.detailNoticeAlert = alert
-        }
-    }
-
-    /// 建立僅含「知道了」關閉鈕的一次性寫入失敗說明對話框
-    ///
-    /// - Parameter message: 呈現給使用者的失敗原因
-    /// - Returns: 對話框
-    func failureNotice(_ message: LocalizedStringKey) -> AlertState<Action.NoticeAlert> {
-        notice(title: "操作失敗", message: message)
-    }
-
-    /// 建立只有「知道了」按鈕的一次性通知對話框
-    ///
-    /// - Parameters:
-    ///   - title: 對話框標題
-    ///   - message: 對話框訊息，型別為 `LocalizedStringKey` 而非 `String`
-    /// - Returns: 對話框
-    func notice(
-        title: LocalizedStringKey,
-        message: LocalizedStringKey
-    ) -> AlertState<Action.NoticeAlert> {
-        AlertState {
-            TextState(title)
-        } actions: {
-            ButtonState(role: .cancel) {
-                TextState("知道了")
-            }
-        } message: {
-            TextState(message)
+        case .toggleReceipt(let orderID, let status):
+            return .send(.delegate(.receiptStatusToggled(orderID: orderID, status: status)))
         }
     }
 }

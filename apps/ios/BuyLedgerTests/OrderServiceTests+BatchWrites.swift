@@ -10,8 +10,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension OrderServiceTests {
 
     /// 更新會寫入每個訂單欄位但保留既有照片

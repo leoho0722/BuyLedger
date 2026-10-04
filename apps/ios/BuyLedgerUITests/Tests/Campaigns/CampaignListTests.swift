@@ -10,7 +10,7 @@ import XCTest
 /// 開團列表的瀏覽與空狀態流程測試
 final class CampaignListTests: BLUITestCase {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// campaignsWithOrders 的四月韓國團開團 id (進行中)
     private static let koreaCampaignID = "CMP-SAMPLE-KR-APR"
@@ -18,14 +18,16 @@ final class CampaignListTests: BLUITestCase {
     /// campaignsWithOrders 的三月日本團開團 id (已結團)
     private static let japanCampaignID = "CMP-SAMPLE-JP-MAR"
 
-    // MARK: - Tests
-
     /// 切到開團分頁後列表就緒，且看得到既知的兩個種子開團
     @MainActor
     func testCampaignsListReadyWithSeed() {
+        // Given
         let app = launch(LaunchOptions(seed: .campaignsWithOrders))
+
+        // When
         let campaigns = openCampaignsList(app)
 
+        // Then
         for campaignID in [Self.koreaCampaignID, Self.japanCampaignID]
         where !campaigns.hasCampaign(campaignID: campaignID) {
             failWithDiagnostics(in: app, "campaignsWithOrders 列表未見既知開團「\(campaignID)」")
@@ -35,13 +37,16 @@ final class CampaignListTests: BLUITestCase {
     /// 空資料庫時，開團列表顯示尚無開團的空狀態
     @MainActor
     func testEmptySeedShowsEmptyState() {
+        // Given
         let app = launch(LaunchOptions(seed: .empty))
 
+        // When
         let root = RootNavigationScreen(app: app)
         if !root.goToCampaigns(file: #filePath, line: #line) {
             failWithDiagnostics(in: app, "切到開團分頁後畫面未就緒")
         }
 
+        // Then
         assertEmptyState(BLAccessibilityID.Campaigns.listEmptyState, in: app)
     }
 }
@@ -65,7 +70,12 @@ private extension CampaignListTests {
     ) -> CampaignsScreen {
         let root = RootNavigationScreen(app: app)
         if !root.goToCampaigns(file: file, line: line) {
-            failWithDiagnostics(in: app, "切到開團分頁後畫面未就緒", file: file, line: line)
+            failWithDiagnostics(
+                in: app,
+                "切到開團分頁後畫面未就緒",
+                file: file,
+                line: line
+            )
         }
 
         let campaigns = CampaignsScreen(app: app)

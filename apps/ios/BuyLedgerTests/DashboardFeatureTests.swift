@@ -14,8 +14,6 @@ import Testing
 @MainActor
 struct DashboardFeatureTests {
 
-    // MARK: - Tests
-
     /// 驗證畫面出現時轉發 refresh
     @Test func taskEmitsRefreshDelegate() async {
         let store = TestStore(initialState: DashboardFeature.State()) {

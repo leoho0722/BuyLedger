@@ -19,8 +19,6 @@ struct OrderEditFocusTests {
     /// 供「編輯既有訂單」情境使用的訂單
     private static let existingOrder = LedgerOrder.fixture(id: "EXISTING")
 
-    // MARK: - Tests
-
     /// 開啟空白訂單時將焦點放在第一個欄位
     @Test
     @MainActor

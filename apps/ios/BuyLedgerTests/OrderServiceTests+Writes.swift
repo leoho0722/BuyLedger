@@ -10,8 +10,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension OrderServiceTests {
 
     /// 一般更新以非空新照片輸入時仍保留既有照片

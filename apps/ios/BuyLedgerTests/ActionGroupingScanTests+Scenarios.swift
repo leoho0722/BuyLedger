@@ -5,26 +5,12 @@
 //  Created by Leo Ho on 2026/9/23.
 //
 
-import Foundation
-
 // MARK: - Nested Types
 
 extension ActionGroupingScanTests {
 
     /// 一筆掃描器自我測試案例
     struct ScanScenario: Sendable {
-
-        /// 案例名稱
-        let name: String
-
-        /// 要餵給掃描器的原始碼片段
-        let source: String
-
-        /// 要執行的掃描規則
-        let rule: ScanRule
-
-        /// 是否預期通過掃描
-        let shouldPass: Bool
 
         /// design 指定的全部掃描器自我測試案例
         static let allCases = [
@@ -114,5 +100,17 @@ extension ActionGroupingScanTests {
                 shouldPass: false
             ),
         ]
+
+        /// 供測試失敗訊息辨識此案例的描述
+        let name: String
+
+        /// 要餵給掃描器的原始碼片段
+        let source: String
+
+        /// 要執行的掃描規則
+        let rule: ScanRule
+
+        /// 是否預期通過掃描
+        let shouldPass: Bool
     }
 }

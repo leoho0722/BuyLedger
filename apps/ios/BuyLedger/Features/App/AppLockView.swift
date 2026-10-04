@@ -11,17 +11,17 @@ import SwiftUI
 /// App 鎖定時顯示的阻斷畫面
 struct AppLockView: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
-    /// AppLockFeature 的 Store
+    /// 提供辨識類型與驗證狀態，並接收重新驗證操作的 Store
     @Bindable var store: StoreOf<AppLockFeature>
 
-    /// 依據螢幕尺寸縮放的圖示大小
+    /// 隨 Dynamic Type 文字大小縮放的鎖頭圖示大小
     @ScaledMetric private var iconSize: CGFloat = 44
 
-    // MARK: - View Body
+    // MARK: - Body
 
-    /// App 鎖定畫面的 view body
+    /// 鎖定畫面的骨架：內容置中並限寬 520，背景鋪滿整個畫面
     var body: some View {
         content
             .padding(32)
@@ -70,8 +70,8 @@ private extension AppLockView {
 
     /// 重新驗證按鈕
     var retryButton: some View {
-        Button(store.unlockButtonTitleKey) {
-            store.send(.retryUnlockTapped)
+        Button(AppLockFormatters.unlockTitle(for: store.biometryType)) {
+            store.send(.view(.retryUnlockTapped))
         }
         .buttonStyle(.borderedProminent)
         .disabled(store.isUnlocking)
@@ -81,12 +81,55 @@ private extension AppLockView {
 
 // MARK: - Preview
 
-#Preview {
+#Preview("Face ID 鎖定") {
     AppLockView(
         store: Store(
             initialState: AppLockFeature.State(
                 isBiometricUnlockEnabled: true,
                 isLocked: true,
+                biometryType: .faceID
+            )
+        ) {
+            AppLockFeature()
+        }
+    )
+}
+
+#Preview("Touch ID 鎖定") {
+    AppLockView(
+        store: Store(
+            initialState: AppLockFeature.State(
+                isBiometricUnlockEnabled: true,
+                isLocked: true,
+                biometryType: .touchID
+            )
+        ) {
+            AppLockFeature()
+        }
+    )
+}
+
+#Preview("裝置密碼鎖定") {
+    AppLockView(
+        store: Store(
+            initialState: AppLockFeature.State(
+                isBiometricUnlockEnabled: true,
+                isLocked: true,
+                biometryType: .unavailable
+            )
+        ) {
+            AppLockFeature()
+        }
+    )
+}
+
+#Preview("驗證失敗") {
+    AppLockView(
+        store: Store(
+            initialState: AppLockFeature.State(
+                isBiometricUnlockEnabled: true,
+                isLocked: true,
+                unlockDidFail: true,
                 biometryType: .faceID
             )
         ) {

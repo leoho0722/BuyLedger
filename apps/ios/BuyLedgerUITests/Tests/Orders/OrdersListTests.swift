@@ -27,8 +27,6 @@ final class OrdersListTests: BLUITestCase {
     /// fullOrders 中客戶為「Mika 周」的訂單編號 (供搜尋排除斷言)
     private static let mikaCustomerOrderID = "BL-2604-017"
 
-    // MARK: - Tests
-
     /// 切到訂單分頁後清單就緒，且看得到既知的種子訂單
     @MainActor
     func testOrdersListReadyWithFullSeed() {

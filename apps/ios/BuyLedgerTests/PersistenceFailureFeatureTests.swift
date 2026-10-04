@@ -15,8 +15,6 @@ import Testing
 @MainActor
 struct PersistenceFailureFeatureTests {
 
-    // MARK: - Tests
-
     /// 未確認復原時只顯示確認視窗
     ///
     /// - Note: `testValue` 的 `quarantineStore` 為 `unimplemented`，非預期呼叫會使測試失敗
@@ -28,8 +26,8 @@ struct PersistenceFailureFeatureTests {
         }
 
         // When
-        await store.send(.recoveryTapped) {
-            $0.confirmation = Self.expectedConfirmationAlert
+        await store.send(.view(.recoveryTapped)) {
+            $0.destination = .alert(Self.expectedConfirmationAlert)
         }
 
         // Then
@@ -40,17 +38,17 @@ struct PersistenceFailureFeatureTests {
     ///
     /// - Note: `testValue` 的 `quarantineStore` 為 `unimplemented`，非預期呼叫會使測試失敗
     @Test
-    func confirmation_取消確認視窗_維持阻斷且不搬移檔案() async {
+    func destination_取消確認視窗_維持阻斷且不搬移檔案() async {
         // Given
         var initial = PersistenceFailureFeature.State()
-        initial.confirmation = Self.expectedConfirmationAlert
+        initial.destination = .alert(Self.expectedConfirmationAlert)
         let store = TestStore(initialState: initial) {
             PersistenceFailureFeature()
         }
 
         // When
-        await store.send(.confirmation(.dismiss)) {
-            $0.confirmation = nil
+        await store.send(.destination(.dismiss)) {
+            $0.destination = nil
         }
 
         // Then
@@ -59,11 +57,11 @@ struct PersistenceFailureFeatureTests {
 
     /// 確認復原後把資料庫檔案搬到隔離備份一次，搬移成功就切到要求重新啟動的階段
     @Test
-    func confirmation_確認復原且隔離完成_要求重新啟動() async {
+    func destination_確認復原且隔離完成_要求重新啟動() async {
         // Given
         let callCount = LockIsolated(0)
         var initial = PersistenceFailureFeature.State()
-        initial.confirmation = Self.expectedConfirmationAlert
+        initial.destination = .alert(Self.expectedConfirmationAlert)
         let store = TestStore(initialState: initial) {
             PersistenceFailureFeature()
         } withDependencies: {
@@ -75,14 +73,15 @@ struct PersistenceFailureFeatureTests {
         }
 
         // When
-        await store.send(.confirmation(.presented(.confirmRecovery))) {
-            $0.confirmation = nil
+        await store.send(.destination(.presented(.alert(.confirmRecovery)))) {
+            $0.destination = nil
         }
 
         // Then
-        await store.receive(\.recoverySucceeded) {
+        await store.receive(\.recoveryResponse) {
             $0.phase = .relaunchRequired
         }
+        await store.finish()
         #expect(callCount.value == 1)
     }
 
@@ -113,7 +112,7 @@ struct PersistenceFailureFeatureTests {
             "Application Support 無法解析。"
         ),
     ])
-    func confirmation_確認復原但隔離目錄建立或解析失敗_顯示原因並維持阻斷(
+    func destination_確認復原但隔離目錄建立或解析失敗_顯示原因並維持阻斷(
         error: PersistenceRecoveryError,
         expectedReason: String
     ) async {
@@ -122,7 +121,7 @@ struct PersistenceFailureFeatureTests {
             throw error
         }
         var initial = PersistenceFailureFeature.State()
-        initial.confirmation = Self.expectedConfirmationAlert
+        initial.destination = .alert(Self.expectedConfirmationAlert)
         let store = TestStore(initialState: initial) {
             PersistenceFailureFeature()
         } withDependencies: {
@@ -130,14 +129,15 @@ struct PersistenceFailureFeatureTests {
         }
 
         // When
-        await store.send(.confirmation(.presented(.confirmRecovery))) {
-            $0.confirmation = nil
+        await store.send(.destination(.presented(.alert(.confirmRecovery)))) {
+            $0.destination = nil
         }
 
         // Then
-        await store.receive(\.recoveryFailed, expectedReason) {
+        await store.receive(\.recoveryResponse) {
             $0.recoveryFailureReason = expectedReason
         }
+        await store.finish()
     }
 }
 
@@ -146,7 +146,7 @@ struct PersistenceFailureFeatureTests {
 private extension PersistenceFailureFeatureTests {
 
     /// 復原確認視窗的型別
-    typealias ConfirmationAlert = AlertState<PersistenceFailureFeature.Action.Confirmation>
+    typealias ConfirmationAlert = AlertState<PersistenceFailureFeature.Destination.Alert>
 }
 
 // MARK: - Private Method

@@ -10,7 +10,7 @@ import XCTest
 /// 訂單詳情的進入、財務摘要與刪除流程測試
 final class OrderDetailTests: BLUITestCase {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// fullOrders 中用於詳情測試的訂單編號
     private static let sampleOrderID = "BL-2604-018"
@@ -23,33 +23,38 @@ final class OrderDetailTests: BLUITestCase {
 
     /// 詳情財務摘要卡的三個種類
     private static let summaryTiles: [BLAccessibilityID.Orders.SummaryTile] = [
-        .revenue, .cost, .profit,
+        .revenue,
+        .cost,
+        .profit,
     ]
 
     /// fullOrders 種子資料的營收、成本與獲利顯示值
     private static let expectedSummaryValues = ["$11,800", "$9,069", "+$2,731"]
 
-    // MARK: - Tests
-
     /// 從清單點一筆訂單進詳情，詳情根就緒
     @MainActor
     func testTapOrderOpensDetail() {
+        // Given
         let app = launch(LaunchOptions(seed: .fullOrders))
+
+        // When
         let detail = openOrderDetail(app)
 
+        // Then
         _ = detail
     }
 
     /// 詳情財務摘要卡顯示 fullOrders 種子資料的實際財務摘要
     ///
     /// - Throws: 財務摘要卡值不存在時拋出測試錯誤
+    /// - Note: 開啟含完整資料的訂單詳情後讀取三張財務摘要卡，三張卡應顯示 `fullOrders` 種子資料的實際財務摘要
     @MainActor
     func testDetailSummaryTilesHaveValues() throws(any Error) {
-        // Given：開啟含完整資料的訂單詳情
+        // Given
         let app = launch(LaunchOptions(seed: .fullOrders))
         let detail = openOrderDetail(app)
 
-        // When：讀取三張財務摘要卡
+        // When
         var values: [String] = []
         for tile in Self.summaryTiles {
             let value = try requireValue(
@@ -60,19 +65,20 @@ final class OrderDetailTests: BLUITestCase {
             values.append(value)
         }
 
-        // Then：三張卡顯示 fullOrders 種子資料的實際財務摘要
+        // Then
         XCTAssertEqual(values, Self.expectedSummaryValues)
     }
 
     /// 補勾貨到付款後獲利改變，重啟 App 後仍保留新的獲利數字
     ///
     /// - Throws: 任何必要的獲利或付款方式元素不存在時拋出測試錯誤
+    /// - Note: 以可持久化模式啟動付款方式回溯資料，補勾貨到付款並重啟 App 後重新讀取同一筆訂單的獲利，回溯後的獲利應與原值不同且已持久化
     @MainActor
     func testCashOnDeliveryCorrectionPersistsAfterRelaunch() throws(any Error) {
-        // Given：以可持久化模式啟動付款方式回溯資料
+        // Given
         var initialOptions = LaunchOptions(seed: .paymentMethodCorrection)
         initialOptions.persistenceMode = .persistent
-        initialOptions.resetPersistentStore = true
+        initialOptions.shouldResetPersistentStore = true
 
         let app = launch(initialOptions)
         let before = try requireValue(
@@ -80,11 +86,7 @@ final class OrderDetailTests: BLUITestCase {
             in: app,
             "回溯前獲利卡的元素不存在"
         )
-        try requireCondition(
-            !before.isEmpty,
-            in: app,
-            "回溯前獲利卡的 accessibility value 為空"
-        )
+        try requireCondition(!before.isEmpty, in: app, "回溯前獲利卡的 accessibility value 為空")
 
         let root = RootNavigationScreen(app: app)
         if !root.goToMore() {
@@ -106,11 +108,7 @@ final class OrderDetailTests: BLUITestCase {
         let paymentMethodRow = app.descendants(matching: .any)[
             BLAccessibilityID.LookupManagement.row(Self.paymentMethodCorrectionName)
         ]
-        try requireCondition(
-            paymentMethodRow.waitUntilHittable(),
-            in: app,
-            "信用卡付款方式列未出現"
-        )
+        try requireCondition(paymentMethodRow.waitUntilHittable(), in: app, "信用卡付款方式列未出現")
         paymentMethodRow.swipeLeft()
 
         let editButton = app.buttons[
@@ -131,20 +129,14 @@ final class OrderDetailTests: BLUITestCase {
                 "貨到付款旗標未出現或仍在畫面外"
             )
         }
-        XCTAssertNotEqual(
-            cashOnDeliveryToggle.value as? String,
-            "1",
-            "回溯驗收的初始付款方式不應已標記為貨到付款"
-        )
+        XCTAssertNotEqual(cashOnDeliveryToggle.value as? String, "1", "回溯驗收的初始付款方式不應已標記為貨到付款")
         let cashOnDeliveryLabel = app.staticTexts["標記為「貨到付款」付款方式"]
         let cashOnDeliveryCell = app.cells.containing(
             .switch,
             identifier: BLAccessibilityID.LookupManagement.paymentMethodCashOnDeliveryToggle
         ).firstMatch
         if cashOnDeliveryCell.waitUntilHittable(timeout: 2) {
-            cashOnDeliveryCell.coordinate(
-                withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)
-            ).tap()
+            cashOnDeliveryCell.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
         } else if cashOnDeliveryLabel.waitUntilHittable(timeout: 2) {
             cashOnDeliveryLabel.tap()
         } else {
@@ -170,8 +162,9 @@ final class OrderDetailTests: BLUITestCase {
         app.terminate()
 
         var relaunchOptions = initialOptions
-        relaunchOptions.resetPersistentStore = false
-        // When：重啟 App 並重新讀取同一筆訂單的獲利
+        relaunchOptions.shouldResetPersistentStore = false
+
+        // When
         let relaunchedApp = launch(relaunchOptions)
         let persisted = try requireValue(
             profitValue(for: Self.paymentMethodCorrectionOrderID, in: relaunchedApp),
@@ -184,16 +177,20 @@ final class OrderDetailTests: BLUITestCase {
             "重啟後獲利卡的 accessibility value 為空"
         )
 
-        // Then：回溯後的獲利與原值不同且已持久化
+        // Then
         XCTAssertNotEqual(before, persisted, "補勾貨到付款後獲利應該改變並持久化")
     }
 
     /// 刪除流程：更多 → 刪除 → 確認 alert → 取消；alert 收回且訂單未被刪除
+    ///
+    /// - Note: 取消後 alert 應收回，且訂單未被刪除、詳情仍停留
     @MainActor
     func testDeleteFlowCancelKeepsOrder() {
+        // Given
         let app = launch(LaunchOptions(seed: .fullOrders))
         let detail = openOrderDetail(app)
 
+        // When
         detail.openMoreMenu()
         if !detail.tapDelete() {
             failWithDiagnostics(in: app, "更多選單的刪除項目未出現或不可點")
@@ -206,7 +203,7 @@ final class OrderDetailTests: BLUITestCase {
 
         detail.cancelDelete()
 
-        // 取消後 alert 應收回，且訂單未被刪除、詳情仍停留
+        // Then
         if !detail.deleteConfirmationDismissed() {
             failWithDiagnostics(in: app, "點取消後，刪除確認 alert 未收回")
         }
@@ -237,7 +234,12 @@ private extension OrderDetailTests {
         let targetOrderID = orderID ?? Self.sampleOrderID
         let root = RootNavigationScreen(app: app)
         if !root.goToOrders(file: file, line: line) {
-            failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
+            failWithDiagnostics(
+                in: app,
+                "切到訂單分頁後畫面未就緒",
+                file: file,
+                line: line
+            )
         }
 
         let orders = OrdersScreen(app: app)

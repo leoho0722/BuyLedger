@@ -14,8 +14,6 @@ import Testing
 /// 驗證開團提醒連結 Service 的持久化行為
 struct CampaignReminderServiceTests {
 
-    // MARK: - Tests
-
     /// 新增提醒連結後讀回相同內容
     ///
     /// - Throws: 查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
@@ -25,7 +23,7 @@ struct CampaignReminderServiceTests {
         // Given
         let database = BuyLedgerDatabaseTests.makeInMemoryDatabase()
         let service = Self.makeService(database: database)
-        let firstReminderTimestamp = Self.day(month: 4, day: 20, hour: 9)
+        let firstReminderTimestamp = Date(timeIntervalSince1970: 1_776_675_600)
         let firstLink = CampaignReminderLink(
             eventIdentifier: "EVT-1",
             reminderTimestamp: firstReminderTimestamp
@@ -49,8 +47,8 @@ struct CampaignReminderServiceTests {
         // Given
         let database = BuyLedgerDatabaseTests.makeInMemoryDatabase()
         let service = Self.makeService(database: database)
-        let firstReminderTimestamp = Self.day(month: 4, day: 20, hour: 9)
-        let updatedReminderTimestamp = Self.day(month: 4, day: 26, hour: 18)
+        let firstReminderTimestamp = Date(timeIntervalSince1970: 1_776_675_600)
+        let updatedReminderTimestamp = Date(timeIntervalSince1970: 1_777_226_400)
         let firstLink = CampaignReminderLink(
             eventIdentifier: "EVT-1",
             reminderTimestamp: firstReminderTimestamp
@@ -81,8 +79,8 @@ struct CampaignReminderServiceTests {
         // Given
         let database = BuyLedgerDatabaseTests.makeInMemoryDatabase()
         let service = Self.makeService(database: database)
-        let firstReminderTimestamp = Self.day(month: 4, day: 20, hour: 9)
-        let secondReminderTimestamp = Self.day(month: 5, day: 1, hour: 9)
+        let firstReminderTimestamp = Date(timeIntervalSince1970: 1_776_675_600)
+        let secondReminderTimestamp = Date(timeIntervalSince1970: 1_777_626_000)
         let firstLink = CampaignReminderLink(
             eventIdentifier: "EVT-1",
             reminderTimestamp: firstReminderTimestamp
@@ -113,8 +111,8 @@ struct CampaignReminderServiceTests {
         // Given
         let database = BuyLedgerDatabaseTests.makeInMemoryDatabase()
         let service = Self.makeService(database: database)
-        let firstReminderTimestamp = Self.day(month: 4, day: 20, hour: 9)
-        let secondReminderTimestamp = Self.day(month: 5, day: 1, hour: 9)
+        let firstReminderTimestamp = Date(timeIntervalSince1970: 1_776_675_600)
+        let secondReminderTimestamp = Date(timeIntervalSince1970: 1_777_626_000)
         let firstLink = CampaignReminderLink(
             eventIdentifier: "EVT-1",
             reminderTimestamp: firstReminderTimestamp
@@ -146,7 +144,7 @@ struct CampaignReminderServiceTests {
         // Given
         let database = BuyLedgerDatabaseTests.makeInMemoryDatabase()
         let service = Self.makeService(database: database)
-        let firstReminderTimestamp = Self.day(month: 4, day: 20, hour: 9)
+        let firstReminderTimestamp = Date(timeIntervalSince1970: 1_776_675_600)
         let firstLink = CampaignReminderLink(
             eventIdentifier: "EVT-1",
             reminderTimestamp: firstReminderTimestamp
@@ -178,28 +176,5 @@ extension CampaignReminderServiceTests {
         } operation: {
             CampaignReminderService.liveValue
         }
-    }
-}
-
-// MARK: - Private Method
-
-private extension CampaignReminderServiceTests {
-
-    /// 建立 2026 年指定日期與時間 (UTC)
-    ///
-    /// - Parameters:
-    ///   - month: 月份
-    ///   - day: 日期
-    ///   - hour: 小時
-    /// - Returns: 指定日期與時間的 UTC 時間值；組不出日期時回退為 1970-01-01 (Unix epoch)
-    static func day(month: Int, day: Int, hour: Int) -> Date {
-        var components = DateComponents()
-        components.calendar = Calendar(identifier: .gregorian)
-        components.timeZone = TimeZone(secondsFromGMT: 0)
-        components.year = 2026
-        components.month = month
-        components.day = day
-        components.hour = hour
-        return components.date ?? Date(timeIntervalSince1970: 0)
     }
 }

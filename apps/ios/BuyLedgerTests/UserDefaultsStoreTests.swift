@@ -13,8 +13,6 @@ import Testing
 /// 驗證偏好儲存的技術讀寫介面
 struct UserDefaultsStoreTests {
 
-    // MARK: - Tests
-
     /// 驗證字串、浮點數與布林值可透過 `UserDefaults` 往返
     ///
     /// - Parameter scenario: 要驗證的儲存型別與固定值

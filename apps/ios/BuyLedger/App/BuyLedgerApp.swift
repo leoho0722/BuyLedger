@@ -14,14 +14,14 @@ struct BuyLedgerApp: App {
 
     // MARK: - Properties
 
+    /// 目前 App 場景狀態，交給 `AppLockFeature` 處理
+    @Environment(\.scenePhase) private var scenePhase
+
     /// `AppDelegate`，負責 App 啟動設定
     @UIApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     /// App 根層級的 `Store`；單元測試執行時不建立，為 `nil`
     private let store: StoreOf<RootFeature>?
-
-    /// 目前 App 場景狀態，交給 `AppLockFeature` 處理
-    @Environment(\.scenePhase) private var scenePhase
 
     // MARK: - Init
 
@@ -37,15 +37,13 @@ struct BuyLedgerApp: App {
         let persistenceStatus = AppLaunchConfigurator.activePersistenceStatus
 
         @Dependency(\.settingsService) var settingsService
-        let settings = SettingsFeature.State(
-            snapshot: settingsService.load(),
-            appVersion: Bundle.appVersion
-        )
+        let preferences = settingsService.load()
 
         store = Store(
             initialState: RootFeature.State(
                 persistenceStatus: persistenceStatus,
-                settings: settings
+                preferences: preferences,
+                appVersion: Bundle.appVersion
             )
         ) {
             RootFeature()
@@ -61,14 +59,13 @@ struct BuyLedgerApp: App {
                 RootView(store: store)
             }
         }
-        .onChange(of: scenePhase) { _, newPhase in
+        .onChange(of: scenePhase, initial: true) { _, newPhase in
             guard let store else {
                 return
             }
 
-            AppScenePhaseCoordinator.handle(newPhase: newPhase) {
-                store.send(.settings(.appLock($0)))
-            }
+            store.scope(state: \.appLock, action: \.appLock)
+                .send(.view(.scenePhaseChanged(AppScenePhase(newPhase))))
         }
     }
 }

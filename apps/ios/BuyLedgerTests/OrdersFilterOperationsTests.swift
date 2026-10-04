@@ -13,8 +13,6 @@ import Testing
 /// 驗證 OrdersFilterOperations 的狀態變化
 struct OrdersFilterOperationsTests {
 
-    // MARK: - Tests
-
     @Test func statusFilterSelectedUpdatesSelectionAndSelectsFirstFilteredOrder() {
         var state = OrdersFeature.State()
         state.orders = [

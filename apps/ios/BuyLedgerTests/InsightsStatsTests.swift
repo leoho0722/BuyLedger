@@ -13,8 +13,6 @@ import Testing
 @MainActor
 struct InsightsStatsTests {
 
-    // MARK: - Tests
-
     @Test func trendBarsForThirtyDaysProduceThirtyDailyBucketsSummingToTotalProfit() {
         let orders = [
             Self.makeOrder(

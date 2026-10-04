@@ -11,8 +11,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension CurrencyMetadataServiceTests {
 
     /// 快取過期後寫入失敗會丟出持久化儲存錯誤而不是 API 錯誤，底層錯誤網域與代碼與 SwiftData 一致，舊快取原樣保留

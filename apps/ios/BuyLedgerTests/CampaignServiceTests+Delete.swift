@@ -10,8 +10,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension CampaignServiceTests {
 
     /// 刪除開團時一併移除訂單名稱與提醒連結並回傳事件識別值
@@ -28,7 +26,11 @@ extension CampaignServiceTests {
         let campaignService = Self.makeService(database: database)
         let orderService = OrderServiceTests.makeService(database: database)
         let reminderService = CampaignReminderServiceTests.makeService(database: database)
-        try await campaignService.saveCampaign(Self.makeCampaign(id: "C1", name: "四月團"))
+        try await campaignService.saveCampaign(Campaign.fixture(
+            id: "C1",
+            name: "四月團",
+            openDate: Date(timeIntervalSince1970: 1_775_779_200)
+        ))
         try await orderService.createOrder(
             LedgerOrder.fixture(id: "O1", campaignNames: ["四月團", "五月團"])
         )
@@ -60,7 +62,11 @@ extension CampaignServiceTests {
     func removeCampaign_沒有提醒連結_回傳空值() async throws {
         // Given
         let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
-        try await service.saveCampaign(Self.makeCampaign(id: "C1", name: "無提醒團"))
+        try await service.saveCampaign(Campaign.fixture(
+            id: "C1",
+            name: "無提醒團",
+            openDate: Date(timeIntervalSince1970: 1_775_779_200)
+        ))
 
         // When
         let removedIdentifier = try await service.removeCampaign("C1", "無提醒團")

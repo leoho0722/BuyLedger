@@ -15,8 +15,6 @@ final class InsightsTests: BLUITestCase {
     /// 三個期間的 rawValue，依 App 端 `InsightsDateRange` 宣告順序排列
     private static let rangeIDs = ["thirtyDays", "sixMonths", "twelveMonths"]
 
-    // MARK: - Tests
-
     /// 切到分析分頁後畫面就緒 (insightsRange 有跨月資料)
     @MainActor
     func testInsightsReadyWithSeed() {

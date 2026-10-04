@@ -33,8 +33,11 @@ struct SettingsFeature {
         /// 是否啟用 AI 商品明細總結
         var isAISummaryEnabled: Bool = false
 
-        /// App 鎖定 (離開 App 即上鎖並要求驗證) 狀態
-        var appLock = AppLockFeature.State()
+        /// 是否已通過驗證並啟用 App 鎖定
+        var isBiometricUnlockEnabled: Bool = false
+
+        /// 啟用驗證失敗或裝置不支援時的呈現
+        @Presents var destination: Destination.State?
 
         /// 月度目標金額欄位是否取得鍵盤焦點
         var isGoalFieldFocused: Bool = false
@@ -45,26 +48,46 @@ struct SettingsFeature {
         /// App 版本與建置號顯示文字
         let appVersion: String
 
-        /// 以持久化快照與版本文字建立設定狀態
+        /// 建構時帶入的裝置辨識類型，設定頁首幀即可顯示對應文案
+        let biometryType: BiometricAuthService.BiometryKind
+
+        /// 目前可持久化並回報給根功能的完整偏好
+        var snapshot: SettingsSnapshot {
+            SettingsSnapshot(
+                language: language,
+                defaultCurrency: defaultCurrency,
+                monthlyProfitGoalTWD: monthlyProfitGoalTWD,
+                isAISummaryEnabled: isAISummaryEnabled,
+                aiSummaryModel: aiSummaryModel,
+                isBiometricUnlockEnabled: isBiometricUnlockEnabled
+            )
+        }
+
+        /// 以持久化快照、版本文字與辨識類型建立設定狀態
         ///
         /// - Parameters:
         ///   - snapshot: 已載入的設定快照
         ///   - appVersion: App 版本與建置號顯示文字
-        init(snapshot: SettingsSnapshot = .default, appVersion: String = "—") {
+        ///   - biometryType: 根功能帶入的裝置辨識類型
+        init(
+            snapshot: SettingsSnapshot = .default,
+            appVersion: String = "—",
+            biometryType: BiometricAuthService.BiometryKind = .unavailable
+        ) {
             language = snapshot.language
             defaultCurrency = snapshot.defaultCurrency
             monthlyProfitGoalTWD = snapshot.monthlyProfitGoalTWD
             isAISummaryEnabled = snapshot.isAISummaryEnabled
             aiSummaryModel = snapshot.aiSummaryModel
             self.appVersion = appVersion
-            appLock.isBiometricUnlockEnabled = snapshot.isBiometricUnlockEnabled
+            isBiometricUnlockEnabled = snapshot.isBiometricUnlockEnabled
+            self.biometryType = biometryType
         }
     }
 
     // MARK: - Action
 
     /// 設定頁事件
-    @CasePathable
     enum Action: BindableAction {
 
         /// SwiftUI 雙向繫結
@@ -74,13 +97,23 @@ struct SettingsFeature {
 
         /// 使用者可直接操作的設定頁事件
         ///
-        /// - Parameter action: 畫面出現、選定預設幣別或選定 AI 總結模型
+        /// - Parameter action: 畫面出現、選定預設幣別、選定 AI 總結模型或切換 App 鎖定
         case view(View)
 
-        /// App 鎖定事件
+        /// 設定寫入完成後交給根功能的偏好
         ///
-        /// - Parameter action: 由 `AppLockFeature` 處理的啟用、驗證與上鎖事件
-        case appLock(AppLockFeature.Action)
+        /// - Parameter action: 已保存的完整偏好
+        case delegate(Delegate)
+
+        /// 啟用 App 鎖定失敗說明的呈現事件
+        ///
+        /// - Parameter action: 呈現的 alert 事件
+        case destination(PresentationAction<Destination.Action>)
+
+        /// 啟用 App 鎖定前的驗證結果
+        ///
+        /// - Parameter result: 成功、失敗或取消的驗證結果
+        case appLockAuthenticationResponse(BiometricAuthService.AuthenticationResult)
 
         /// 幣別主檔載入結果
         ///
@@ -103,6 +136,21 @@ struct SettingsFeature {
             ///
             /// - Parameter model: 使用者選定或輸入的模型名稱
             case aiSummaryModelSelected(String)
+
+            /// 使用者要求啟用或關閉 App 鎖定
+            ///
+            /// - Parameter isEnabled: 使用者希望設定的啟用值
+            case appLockToggled(Bool)
+        }
+
+        /// 設定頁交給根功能的已保存資料
+        @CasePathable
+        enum Delegate: Equatable {
+
+            /// 完整偏好已寫入持久層
+            ///
+            /// - Parameter snapshot: 此次實際保存的快照
+            case preferencesChanged(SettingsSnapshot)
         }
     }
 
@@ -114,17 +162,17 @@ struct SettingsFeature {
     /// 幣別主檔資料來源；用於畫面出現時載入最新清單
     @Dependency(\.currencyMetadataService) private var currencyMetadataService
 
+    /// 啟用 App 鎖定前檢查裝置支援與要求本機驗證的 Service
+    @Dependency(\.biometricAuthService) private var biometricAuthService
+
     // MARK: - Body
 
     /// 只負責組合 reducer，設定頁自己的邏輯在 `core(state:action:)`
     var body: some Reducer<State, Action> {
         BindingReducer()
 
-        Scope(state: \.appLock, action: \.appLock) {
-            AppLockFeature()
-        }
-
         Reduce(core)
+            .ifLet(\.$destination, action: \.destination)
     }
 }
 
@@ -145,27 +193,35 @@ private extension SettingsFeature {
             return .none
 
         case .binding:
-            persist(state)
-            return .none
+            return persist(state)
 
         case .view(.task):
             return loadCurrencyCodes()
 
         case .view(.defaultCurrencySelected(let code)):
             state.defaultCurrency = CurrencyCode(rawValue: code)
-            persist(state)
-            return .none
+            return persist(state)
 
         case .view(.aiSummaryModelSelected(let model)):
             state.aiSummaryModel = model
-            persist(state)
+            return persist(state)
+
+        case .view(.appLockToggled(false)):
+            state.isBiometricUnlockEnabled = false
+            return persist(state)
+
+        case .view(.appLockToggled(true)):
+            return enableAppLock(state: &state)
+
+        case .delegate, .destination:
             return .none
 
-        case .appLock(.enableAuthenticationFinished(.success)), .appLock(.enableToggled(false)):
-            persist(state)
-            return .none
+        case .appLockAuthenticationResponse(.success):
+            state.isBiometricUnlockEnabled = true
+            return persist(state)
 
-        case .appLock:
+        case .appLockAuthenticationResponse(.failure), .appLockAuthenticationResponse(.cancelled):
+            state.destination = .authenticationFailedAlert
             return .none
 
         case .currencyCodesResponse(.success(let codes)):
@@ -184,20 +240,14 @@ private extension SettingsFeature {
         }
     }
 
-    /// 將目前設定寫回持久化來源
+    /// 保存目前偏好並回報同一份快照
     ///
     /// - Parameter state: 目前設定狀態
-    func persist(_ state: State) {
-        settingsService.save(
-            SettingsSnapshot(
-                language: state.language,
-                defaultCurrency: state.defaultCurrency,
-                monthlyProfitGoalTWD: state.monthlyProfitGoalTWD,
-                isAISummaryEnabled: state.isAISummaryEnabled,
-                aiSummaryModel: state.aiSummaryModel,
-                isBiometricUnlockEnabled: state.appLock.isBiometricUnlockEnabled
-            )
-        )
+    /// - Returns: 送出已保存偏好的委派
+    func persist(_ state: State) -> Effect<Action> {
+        let snapshot = state.snapshot
+        settingsService.save(snapshot)
+        return .send(.delegate(.preferencesChanged(snapshot)))
     }
 
     /// 載入幣別主檔並把成功或失敗合併成單一回應
@@ -206,15 +256,28 @@ private extension SettingsFeature {
     func loadCurrencyCodes() -> Effect<Action> {
         let currencyMetadataService = currencyMetadataService
         return .run { send in
-            do {
+            do throws(CurrencyMetadataServiceError) {
                 let codes = try await currencyMetadataService.fetchCodes()
                 await send(.currencyCodesResponse(.success(codes)))
             } catch {
-                guard let error = error as? CurrencyMetadataServiceError else {
-                    return
-                }
                 await send(.currencyCodesResponse(.failure(error)))
             }
+        }
+    }
+
+    /// 啟用 App 鎖定前先確認裝置支援，支援時才要求本機驗證
+    ///
+    /// - Parameter state: 目前設定狀態，裝置不支援時就地改為呈現不支援說明
+    /// - Returns: 要求本機驗證並以 `appLockAuthenticationResponse` 送回結果的 Effect，裝置不支援時為 `.none`
+    func enableAppLock(state: inout State) -> Effect<Action> {
+        if !biometricAuthService.isAvailable() {
+            state.destination = .unsupportedDeviceAlert
+            return .none
+        }
+        let biometricAuthService = biometricAuthService
+        return .run { send in
+            let result = await biometricAuthService.authenticate(String(localized: "驗證身份以解鎖 App"))
+            await send(.appLockAuthenticationResponse(result))
         }
     }
 }

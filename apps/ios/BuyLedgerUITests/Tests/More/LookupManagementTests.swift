@@ -10,8 +10,6 @@ import XCTest
 /// 主檔管理頁的新增、改名、刪除與失敗流程 UI 測試
 final class LookupManagementTests: BLUITestCase {
 
-    // MARK: - Tests
-
     /// 新增商品類別後清單出現新名稱
     @MainActor
     func testAddCategoryAddsNewName() {

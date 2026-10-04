@@ -28,10 +28,15 @@ struct SettingsView: View {
     var body: some View {
         Form {
             languageSection
+
             aiSummarySection
+
             defaultCurrencySection
+
             monthlyGoalSection
+
             appLockSection
+
             aboutSection
         }
         .accessibilityIdentifier(BLAccessibilityID.Settings.root)
@@ -44,9 +49,7 @@ struct SettingsView: View {
         .toolbar {
             keyboardToolbar
         }
-        .alert(
-            $store.scope(state: \.appLock.enableFailureAlert, action: \.appLock.enableFailureAlert)
-        )
+        .alert($store.scope(state: \.destination?.alert, action: \.destination.alert))
     }
 }
 
@@ -58,13 +61,13 @@ private extension SettingsView {
     var languageSection: some View {
         Section("語言") {
             Picker("App 語言", selection: $store.language) {
-                ForEach(AppLanguage.allCases) { language in
+                ForEach(AppLanguage.allCases) {
                     // menu 會重建選項，identifier 可能無法傳到 item
-                    Text(language.title)
+                    Text($0.title)
                         .accessibilityIdentifier(
-                            BLAccessibilityID.Settings.languageOption(language.rawValue)
+                            BLAccessibilityID.Settings.languageOption($0.rawValue)
                         )
-                        .tag(language)
+                        .tag($0)
                 }
             }
             .accessibilityIdentifier(BLAccessibilityID.Settings.languagePicker)
@@ -76,6 +79,7 @@ private extension SettingsView {
         Section {
             Toggle("啟用 AI 總結", isOn: $store.isAISummaryEnabled)
                 .accessibilityIdentifier(BLAccessibilityID.Settings.aiSummaryToggle)
+
 #if DEBUG
             NavigationLink {
                 modelPicker
@@ -134,12 +138,15 @@ private extension SettingsView {
     /// App 鎖定設定區段
     var appLockSection: some View {
         Section {
-            Toggle(store.appLock.unlockButtonTitleKey, isOn: appLockToggleBinding)
-                .accessibilityIdentifier(BLAccessibilityID.Settings.appLockToggle)
+            Toggle(
+                AppLockFormatters.unlockTitle(for: store.biometryType),
+                isOn: appLockToggleBinding
+            )
+            .accessibilityIdentifier(BLAccessibilityID.Settings.appLockToggle)
         } header: {
             Text("App 鎖定")
         } footer: {
-            Text(store.appLock.protectionDescriptionKey)
+            Text(AppLockFormatters.protectionDescription(for: store.biometryType))
                 .blTextStyle(.footnote)
                 .foregroundStyle(Color.blSecondaryLabel)
         }
@@ -150,6 +157,7 @@ private extension SettingsView {
         Section("關於") {
             LabeledContent("版本", value: store.appVersion)
                 .accessibilityIdentifier(BLAccessibilityID.Settings.versionRow)
+
             LabeledContent("作者", value: "Leo Ho")
         }
     }
@@ -168,14 +176,14 @@ private extension SettingsView {
             emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
             options: store.availableCurrencies.map(\.rawValue),
             selected: store.defaultCurrency.rawValue,
-            displayName: { code in
-                CurrencyDisplayName.text(code: code, language: language)
+            displayName: {
+                CurrencyDisplayName.text(code: $0, language: language)
             },
-            searchKeywords: { code in
-                CurrencyDisplayName.searchKeywords(code: code, locale: locale)
+            searchKeywords: {
+                CurrencyDisplayName.searchKeywords(code: $0, locale: locale)
             },
-            onSelect: { code in
-                store.send(.view(.defaultCurrencySelected(code)))
+            onSelect: {
+                store.send(.view(.defaultCurrencySelected($0)))
             },
             isEmbedded: true
         )
@@ -197,11 +205,11 @@ private extension SettingsView {
             addAlertMessage: "輸入 Ollama Cloud 上可用的模型名稱。",
             options: AISummaryModelCatalog.candidates,
             selected: store.aiSummaryModel,
-            onSelect: { model in
-                store.send(.view(.aiSummaryModelSelected(model)))
+            onSelect: {
+                store.send(.view(.aiSummaryModelSelected($0)))
             },
-            onAdd: { model in
-                store.send(.view(.aiSummaryModelSelected(model)))
+            onAdd: {
+                store.send(.view(.aiSummaryModelSelected($0)))
             },
             isEmbedded: true
         )
@@ -231,10 +239,11 @@ private extension SettingsView {
 
     /// App 鎖定開關的自訂 binding
     var appLockToggleBinding: Binding<Bool> {
-        Binding(
-            get: { store.appLock.isBiometricUnlockEnabled },
-            set: { store.send(.appLock(.enableToggled($0))) }
-        )
+        Binding {
+            store.isBiometricUnlockEnabled
+        } set: {
+            store.send(.view(.appLockToggled($0)))
+        }
     }
 }
 

@@ -13,8 +13,6 @@ import Testing
 /// 確認系統回報的驗證結果與辨識類型都轉成正確的 App 值
 struct BiometricAuthServiceTests {
 
-    // MARK: - Tests
-
     /// 系統回報驗證成功時，即使提供錯誤仍回報成功
     ///
     /// - Parameter error: 模擬系統同時提供的底層錯誤

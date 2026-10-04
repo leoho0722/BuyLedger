@@ -11,8 +11,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension OrderServiceTests {
 
     /// 建立操作存檔失敗時丟出保留 SwiftData 底層錯誤網域與代碼的儲存錯誤，且不留下新訂單

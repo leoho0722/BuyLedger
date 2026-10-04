@@ -14,8 +14,6 @@ import Testing
 @MainActor
 struct InsightsFeatureTests {
 
-    // MARK: - Tests
-
     /// 分析區間切換後會保留在 feature state
     @Test func insightsDateRangeBindingPersistsSelection() async {
         let store = TestStore(initialState: InsightsFeature.State()) {

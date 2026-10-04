@@ -14,8 +14,6 @@ import Testing
 /// 驗證匯率 Service 的請求與回應處理
 struct ExchangeRateServiceTests {
 
-    // MARK: - Tests
-
     /// 金鑰含控制字元時不送出請求，並保留不含憑證的診斷錯誤
     ///
     /// - Throws: 沒有取得預期的 `.transport(underlying:)` 時由 `#require` 丟出測試斷言錯誤

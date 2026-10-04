@@ -15,9 +15,9 @@ struct CampaignSubgroup: Equatable, Identifiable, Sendable {
     /// 子群組識別值，使用該子群組的起始時刻
     let id: Date
 
-    /// 依 locale 格式化的子標題；最細粒度時為 `nil`
-    let title: String?
+    /// 尚未格式化的子標題內容；最細粒度時為 `nil`
+    let title: CampaignSectionTitle?
 
-    /// 該子群組內的開團，依開團日期由新到舊排序 (同日再依名稱)
+    /// 該子群組內的開團，依開團日期由新到舊排序 (同一時刻再依名稱)
     let campaigns: [Campaign]
 }

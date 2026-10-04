@@ -13,8 +13,6 @@ import Testing
 @MainActor
 struct OrderCalculationTests {
 
-    // MARK: - Tests
-
     /// 驗證訂單計算在此情境下的結果
     @Test func summaryIncludesFeesCostProfitAndMargin() {
         // Given

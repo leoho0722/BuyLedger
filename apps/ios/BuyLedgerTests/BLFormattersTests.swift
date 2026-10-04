@@ -12,8 +12,6 @@ import Testing
 /// 驗證 ``BLFormatters`` 的既有呈現結果
 struct BLFormattersTests {
 
-    // MARK: - Tests
-
     @Test func twdFormatsPositiveAmountAsTwdCurrency() {
         #expect(BLFormatters.twd(Decimal(1_234), locale: Self.locale) == "NT$1,234")
     }

@@ -1,0 +1,3484 @@
+# 第 5 步範圍逐檔待修明細
+
+來源：2026-10-01 以 `reference/style_checks.py` (2026-10-02 起開團三檔不再列為既有超長例外，三筆 L1 由 `LENX` 改記 `LEN`；沿用第 4.5 步 `service-database-layer-alignment` 的檢查腳本，對應 ios-dev-kit 3.8.0) 對本步範圍內現有的 Swift 檔整檔重掃。2026-09-14 全庫審查的資料不再使用：第 4.5 步第 6 組已整檔修過這些檔的寫法與排版，舊行號與舊筆數都已失效。
+
+總計 **377 筆**，涵蓋 13 個檔案。判讀級的結構問題 (Feature 超過 300 行、Action 未分組、父層攔截子層 action、View 內計算、一檔多型別等) 不在腳本範圍，列在 design「判讀級問題的處置」表，由對應 task 處理。
+
+行號為 2026-10-01 重掃時的位置，實作時以檔案內容為準。本步會拆檔、搬檔與改名的檔案 (`CampaignFeature.swift`、`CampaignListView.swift`、`CampaignDetailView.swift`、`CampaignEditFeature.swift`、`CampaignSummary.swift`、`CampaignFormatters.swift`、`CampaignFeatureTests.swift`、`CampaignReminderFailureTests.swift` 等) 的項目，結論寫明落在哪個新檔與哪個 task。
+
+每筆在實作完成後補上結論：`已修正 (task X.Y)` / `腳本誤報 (理由)` / `登記例外 (理由與使用者裁決)` / `依 design 不修 (理由)`。`待填` 代表尚未處理，驗收時不得殘留。
+
+## 代碼筆數
+
+| 代碼 | 筆數 |
+| --- | --- |
+| `GWT` | 210 |
+| `TSTL` | 69 |
+| `TNAMEL` | 81 |
+| `D1` | 76 |
+| `TD` | 60 |
+| `MK1` | 54 |
+| `ARG4` | 23 |
+| `PARTW` | 30 |
+| `RPAR` | 38 |
+| `DOCBL` | 32 |
+| `CALL1` | 35 |
+| `NESTSL` | 10 |
+| `DOLLAR2` | 11 |
+| `NAMED1` | 18 |
+| `D6` | 22 |
+| `MKC` | 34 |
+| `MKN` | 14 |
+| `MKNX` | 5 |
+| `TOP` | 9 |
+| `DUP` | 4 |
+| `W` | 6 |
+| `LEN` | 14 |
+| `MK5` | 12 |
+| `MOD` | 3 |
+| `TIMP` | 6 |
+| `D9` | 6 |
+| `TNAME` | 2 |
+| `TRAILC` | 3 |
+| `FUNWRAP` | 8 |
+| `SWC` | 39 |
+| `CASELET` | 5 |
+| `CLP` | 1 |
+| `CLSIG` | 1 |
+| `BRACE` | 8 |
+| `DASH` | 1 |
+| `MK4` | 5 |
+| `WSIG` | 1 |
+| `GWTF` | 1 |
+| `CASECONT` | 44 |
+| `CLA` | 1 |
+| `CLB` | 1 |
+| `CLBX` | 1 |
+| `CT` | 3 |
+| `D2` | 24 |
+| `D4` | 2 |
+| `GRD` | 20 |
+| `MBL` | 1 |
+| `MK2` | 1 |
+| `MKIN` | 3 |
+| `OPEOL` | 5 |
+| `WCL` | 2 |
+| `WSTR` | 1 |
+
+代碼筆數表合計 **1066 筆**：原 2026-10-01 基準 **377 筆**，加上 2026-10-03 擴大範圍基準 **689 筆**。兩次基準的個別項目與結論分別列於下方。
+
+## `apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift` (18 筆)
+
+- L1 `LEN`：不含檔頭與空行 348 行
+    - 現況：`//`
+    - 結論：已修正 (task 4.2，拆成 `CampaignDetailView.swift` 128 行與 `Components/CampaignDetailInfoSection.swift`、`CampaignDetailSettlementSection.swift`、`CampaignDetailDistributionSection.swift`)
+- L14 `MK1`：MARK 段名：View Properties
+    - 現況：`// MARK: - View Properties`
+    - 結論：已修正 (task 4.2)
+- L26 `MK5`：型別本體內的 computed property (應放 extension)：private var campaign: Campaign? {
+    - 現況：`private var campaign: Campaign? {`
+    - 結論：已修正 (task 3.3，詳情內容改由 `CampaignDetailFeature.State.content` 提供)
+- L30 `MK1`：MARK 段名：View Body
+    - 現況：`// MARK: - View Body`
+    - 結論：已修正 (task 4.2)
+- L55 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 status
+    - 現況：`ForEach(CampaignStatus.allCases) { status in`
+    - 結論：已修正 (task 4.2)
+- L88 `CALL1`：未達斷行條件卻拆成多行 (1 個，接成一行 87 字元)：.alert(
+    - 現況：`.alert(`
+    - 結論：已修正 (task 3.1，詳情的 alert 移到容器 `CampaignView`)
+- L95 `CALL1`：未達斷行條件卻拆成多行 (1 個，接成一行 85 字元)：.alert(
+    - 現況：`.alert(`
+    - 結論：已修正 (task 3.1，詳情的 alert 移到容器 `CampaignView`)
+- L102 `MK1`：MARK 段名：ViewBuilder
+    - 現況：`// MARK: - ViewBuilder`
+    - 結論：已修正 (task 4.2)
+- L130 `MOD`：.fixedSize (第 1 組) 排在 .font (第 2 組) 之後
+    - 現況：`.fixedSize(horizontal: false, vertical: true)`
+    - 結論：已修正 (task 4.2，落在 `Components/CampaignDetailInfoSection.swift`)
+- L166 `D6`：註解結尾句號
+    - 現況：`// 有提醒時顯示日期與時間。`
+    - 結論：已修正 (task 4.2，落在 `Components/CampaignDetailSettlementSection.swift`)
+- L198 `PARTW`：斷行後多個參數或引數擠在同一行："已收", value: CampaignFormatters.twd(summary.receiv
+    - 現況：`LabeledContent(`
+    - 結論：已修正 (task 4.2，落在 `Components/CampaignDetailSettlementSection.swift`)
+- L206 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 88 字元)：value: CampaignFormatters.twd(
+    - 現況：`value: CampaignFormatters.twd(`
+    - 結論：已修正 (task 4.2，落在 `Components/CampaignDetailSettlementSection.swift`)
+- L227 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 94 字元)：LabeledContent(
+    - 現況：`LabeledContent(`
+    - 結論：已修正 (task 4.2，落在 `Components/CampaignDetailSettlementSection.swift`)
+- L249 `CALL1`：未達斷行條件卻拆成多行 (1 個，接成一行 82 字元)：LocalizedStringKey(
+    - 現況：`LocalizedStringKey(`
+    - 結論：已修正 (task 4.2，落在 `Components/CampaignDetailDistributionSection.swift`)
+- L258 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 order
+    - 現況：`ForEach(row.orders) { order in`
+    - 結論：已修正 (task 4.2，落在 `Components/CampaignDetailDistributionSection.swift`)
+- L336 `RPAR`：斷行呼叫的右括號沒有單獨一行：? "" : "")
+    - 現況：`? "checkmark.circle.fill" : "circle")`
+    - 結論：已修正 (task 4.2，落在 `Components/CampaignDetailDistributionSection.swift`)
+- L362 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 95 字元)：Binding(
+    - 現況：`Binding(`
+    - 結論：已修正 (task 4.2)
+- L370 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 92 字元)：Binding(
+    - 現況：`Binding(`
+    - 結論：已修正 (task 4.2，落在 `Components/CampaignDetailDistributionSection.swift`)
+
+## `apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift` (18 筆)
+
+- L36 `MK1`：MARK 段名：Identifiable Properties
+    - 現況：`// MARK: - Identifiable Properties`
+    - 結論：已修正 (task 2.1)
+- L36 `MKN`：巢狀型別內的 MARK：Identifiable Properties
+    - 現況：`// MARK: - Identifiable Properties`
+    - 結論：已修正 (task 2.1)
+- L44 `MKN`：巢狀型別內的 MARK：Init
+    - 現況：`// MARK: - Init`
+    - 結論：已修正 (task 2.1)
+- L47 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 2.1)
+- L73 `MKN`：巢狀型別內的 MARK：Computed Properties
+    - 現況：`// MARK: - Computed Properties`
+    - 結論：已修正 (task 2.1)
+- L88 `D9`：associated value 缺 - Parameter：case binding(BindingAction<State>)
+    - 現況：`case binding(BindingAction<State>)`
+    - 結論：已修正 (task 2.1)
+- L97 `D9`：associated value 缺 - Parameter：case discardConfirmation(PresentationAction<DiscardAlert>)
+    - 現況：`case discardConfirmation(PresentationAction<DiscardAlert>)`
+    - 結論：已修正 (task 2.1)
+- L108 `MK1`：MARK 段名：Dependency Properties
+    - 現況：`// MARK: - Dependency Properties`
+    - 結論：已修正 (task 2.1)
+- L113 `MK1`：MARK 段名：Reducer Body
+    - 現況：`// MARK: - Reducer Body`
+    - 結論：已修正 (task 2.1)
+- L135 `D6`：註解結尾句號
+    - 現況：`// 有未儲存變更時先確認捨棄。`
+    - 結論：已修正 (task 2.1)
+- L137 `NESTSL`：寫在另一個 closure 內的 closure 要寫成多行：return .run { _ in await dismiss() }
+    - 現況：`return .run { _ in await dismiss() }`
+    - 結論：已修正 (task 2.1)
+- L155 `NESTSL`：寫在另一個 closure 內的 closure 要寫成多行：return .run { _ in await dismiss() }
+    - 現況：`return .run { _ in await dismiss() }`
+    - 結論：已修正 (task 2.1)
+- L167 `MKNX`：為巢狀型別另開 extension：extension CampaignEditFeature.State {
+    - 現況：`extension CampaignEditFeature.State {`
+    - 結論：已修正 (task 2.1)
+- L172 `MK1`：MARK 段名：Cases
+    - 現況：`// MARK: - Cases`
+    - 結論：已修正 (task 2.1)
+- L172 `MKN`：巢狀型別內的 MARK：Cases
+    - 現況：`// MARK: - Cases`
+    - 結論：已修正 (task 2.1)
+- L184 `TOP`：第二個頂層型別：struct CampaignDraft: Equatable, Sendable {
+    - 現況：`struct CampaignDraft: Equatable, Sendable {`
+    - 結論：已修正 (task 1.2，`CampaignDraft` 拆到 `Features/Campaigns/CampaignDraft.swift`)
+- L186 `MK1`：MARK 段名：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 1.2，`CampaignDraft` 拆到 `Features/Campaigns/CampaignDraft.swift`)
+- L212 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 1.2，`CampaignDraft` 拆到 `Features/Campaigns/CampaignDraft.swift`)
+
+## `apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift` (5 筆)
+
+- L14 `MK1`：MARK 段名：View Properties
+    - 現況：`// MARK: - View Properties`
+    - 結論：已修正 (task 2.1)
+- L25 `MK1`：MARK 段名：View Body
+    - 現況：`// MARK: - View Body`
+    - 結論：已修正 (task 2.1)
+- L43 `CALL1`：未達斷行條件卻拆成多行 (3 個，接成一行 100 字元)：DatePicker(
+    - 現況：`DatePicker(`
+    - 結論：已修正 (task 2.1)
+- L58 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 status
+    - 現況：`ForEach(CampaignStatus.allCases) { status in`
+    - 結論：已修正 (task 2.1)
+- L127 `FUNWRAP`：強制解包 (鐵則 3)：id: UUID(uuidString: "")!,
+    - 現況：`id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,`
+    - 結論：已修正 (task 2.1)
+
+## `apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift` (4 筆)
+
+- L1 `LEN`：不含檔頭與空行 1165 行
+    - 現況：`//`
+    - 結論：已修正 (task 3.3，整檔改寫；`CampaignFeature.swift` 不含檔頭與空行 298 行)
+- L797 `MKNX`：為巢狀型別另開 extension：extension CampaignFeature.State {
+    - 現況：`extension CampaignFeature.State {`
+    - 結論：已修正 (task 3.3，整檔改寫；`CampaignFeature.swift` 不含檔頭與空行 298 行)
+- L840 `MKNX`：為巢狀型別另開 extension：extension CampaignFeature.State {
+    - 現況：`extension CampaignFeature.State {`
+    - 結論：已修正 (task 3.3，整檔改寫；`CampaignFeature.swift` 不含檔頭與空行 298 行)
+- L886 `MKNX`：為巢狀型別另開 extension：private extension CampaignFeature.State {
+    - 現況：`private extension CampaignFeature.State {`
+    - 結論：已修正 (task 3.3，整檔改寫；`CampaignFeature.swift` 不含檔頭與空行 298 行)
+
+## `apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift` (8 筆)
+
+- L18 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 1.2)
+- L27 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 1.2)
+- L36 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 1.2)
+- L47 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 1.2)
+- L57 `TOP`：第二個頂層型別：enum CampaignStatusStyle {}
+    - 現況：`enum CampaignStatusStyle {}`
+    - 結論：已修正 (task 1.2，`CampaignStatusStyle` 拆到 `Features/Campaigns/CampaignStatusStyle.swift`)
+- L59 `DUP`：分區重複：Internal Method 於 [13, 59]
+    - 現況：`// MARK: - Internal Method`
+    - 結論：已修正 (task 1.2，`CampaignStatusStyle` 拆到 `Features/Campaigns/CampaignStatusStyle.swift`)
+- L64 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter status: 開團狀態`
+    - 結論：已修正 (task 1.2，`CampaignStatusStyle` 拆到 `Features/Campaigns/CampaignStatusStyle.swift`)
+- L70 `SWC`：switch case 之間缺空行：case .closed:
+    - 現況：`case .closed:`
+    - 結論：已修正 (task 1.2，`CampaignStatusStyle` 拆到 `Features/Campaigns/CampaignStatusStyle.swift`)
+
+## `apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift` (36 筆)
+
+- L1 `LEN`：不含檔頭與空行 349 行
+    - 現況：`//`
+    - 結論：已修正 (task 4.1，拆成 `CampaignListView.swift` 180 行、`Components/CampaignSectionList.swift` 200 行、`Components/CampaignRow.swift` 123 行)
+- L14 `MK1`：MARK 段名：View Properties
+    - 現況：`// MARK: - View Properties`
+    - 結論：已修正 (task 4.1)
+- L32 `MK5`：型別本體內的 computed property (應放 extension)：private var iconName: String {
+    - 現況：`private var iconName: String {`
+    - 結論：已修正 (task 4.1)
+- L33 `W`：行寬 114
+    - 現況：`store.statusFilter == nil ? "line.3.horizontal.decrease.circle" : "line.3.horizontal.decrease.circle.fill"`
+    - 結論：已修正 (task 4.1)
+- L36 `MK1`：MARK 段名：View Body
+    - 現況：`// MARK: - View Body`
+    - 結論：已修正 (task 4.1)
+- L49 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 id
+    - 現況：`.navigationDestination(for: String.self) { id in`
+    - 結論：已修正 (task 3.3，詳情目的地搬到 `CampaignView`)
+- L53 `CALL1`：未達斷行條件卻拆成多行 (1 個，接成一行 96 字元)：.sheet(
+    - 現況：`.sheet(`
+    - 結論：已修正 (task 3.1，表單 sheet 與唯一 alert 搬到 `CampaignView`)
+- L55 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 editStore
+    - 現況：`) { editStore in`
+    - 結論：已修正 (task 3.1，表單 sheet 與唯一 alert 搬到 `CampaignView`)
+- L59 `CALL1`：未達斷行條件卻拆成多行 (1 個，接成一行 91 字元)：.alert(
+    - 現況：`.alert(`
+    - 結論：已修正 (task 3.1，表單 sheet 與唯一 alert 搬到 `CampaignView`)
+- L62 `CALL1`：未達斷行條件卻拆成多行 (1 個，接成一行 73 字元)：.alert(
+    - 現況：`.alert(`
+    - 結論：已修正 (task 3.1，表單 sheet 與唯一 alert 搬到 `CampaignView`)
+- L71 `MK1`：MARK 段名：ViewBuilder
+    - 現況：`// MARK: - ViewBuilder`
+    - 結論：已修正 (task 4.1)
+- L76 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter status: 對應的開團狀態`
+    - 結論：已修正 (task 4.1)
+- L89 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 status
+    - 現況：`ForEach(CampaignStatus.allCases) { status in`
+    - 結論：已修正 (task 4.1)
+- L97 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 grouping
+    - 現況：`ForEach(CampaignGrouping.allCases) { grouping in`
+    - 結論：已修正 (task 4.1)
+- L125 `CASELET`：改寫成 `case .x(let v)`，不用 `case let .x(v)`
+    - 現況：`case let .failed(message):`
+    - 結論：已修正 (task 4.1)
+- L161 `NESTSL`：寫在另一個 closure 內的 closure 要寫成多行：$0.subgroups.flatMap { $0.campaigns.map(\.name) }
+    - 現況：`$0.subgroups.flatMap { $0.campaigns.map(\.name) }`
+    - 結論：已修正 (task 3.2，列彙總改由 `CampaignListFeature.State.rowSummaries` 提供)
+- L169 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 section
+    - 現況：`ForEach(sections) { section in`
+    - 結論：已修正 (task 4.1，落在 `Components/CampaignSectionList.swift`)
+- L183 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 4.1，落在 `Components/CampaignSectionList.swift`)
+- L195 `MOD`：.padding (第 1 組) 排在 .font (第 2 組) 之後
+    - 現況：`.padding(.horizontal, BLSpacing.large)`
+    - 結論：已修正 (task 4.1，落在 `Components/CampaignSectionList.swift`)
+- L197 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 subgroup
+    - 現況：`ForEach(section.subgroups) { subgroup in`
+    - 結論：已修正 (task 4.1，落在 `Components/CampaignSectionList.swift`)
+- L204 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 4.1，落在 `Components/CampaignSectionList.swift`)
+- L218 `MOD`：.padding (第 1 組) 排在 .foregroundStyle (第 2 組) 之後
+    - 現況：`.padding(.horizontal, BLSpacing.large)`
+    - 結論：已修正 (task 4.1，落在 `Components/CampaignSectionList.swift`)
+- L225 `CLP`：closure 參數列獨佔一行：index, campaign in
+    - 現況：`index, campaign in`
+    - 結論：已修正 (task 4.1，落在 `Components/CampaignSectionList.swift`)
+- L225 `CLSIG`：closure 簽章跨行，參數列與 in 寫在 { 同一行
+    - 現況：`index, campaign in`
+    - 結論：已修正 (task 4.1，落在 `Components/CampaignSectionList.swift`)
+- L228 `W`：行寬 121
+    - 現況：`summary: summaries[campaign.name] ?? CampaignSummary(campaignName: campaign.name, orders: [])`
+    - 結論：已修正 (task 4.1，落在 `Components/CampaignSectionList.swift`)
+- L243 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 4.1，落在 `Components/CampaignSectionList.swift`)
+- L255 `W`：行寬 126
+    - 現況：`dateText: store.grouping == .year ? CampaignFormatters.dayWithWeekday(campaign.openDate, locale: locale) : nil`
+    - 結論：已修正 (task 4.1，落在 `Components/CampaignSectionList.swift`)
+- L294 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 92 字元)：Binding(
+    - 現況：`Binding(`
+    - 結論：已修正 (task 4.1)
+- L302 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 84 字元)：Binding(
+    - 現況：`Binding(`
+    - 結論：已修正 (task 4.1)
+- L309 `MK1`：MARK 段名：Campaign Row
+    - 現況：`// MARK: - Campaign Row`
+    - 結論：已修正 (task 4.1，`CampaignRow` 獨立為 `Components/CampaignRow.swift`)
+- L312 `TOP`：第二個頂層型別：private struct CampaignRow: View {
+    - 現況：`private struct CampaignRow: View {`
+    - 結論：已修正 (task 4.1，`CampaignRow` 獨立為 `Components/CampaignRow.swift`)
+- L314 `DUP`：分區重複：View Properties 於 [14, 314]
+    - 現況：`// MARK: - View Properties`
+    - 結論：已修正 (task 4.1，`CampaignRow` 獨立為 `Components/CampaignRow.swift`)
+- L314 `MK1`：MARK 段名：View Properties
+    - 現況：`// MARK: - View Properties`
+    - 結論：已修正 (task 4.1，`CampaignRow` 獨立為 `Components/CampaignRow.swift`)
+- L328 `DUP`：分區重複：View Body 於 [36, 328]
+    - 現況：`// MARK: - View Body`
+    - 結論：已修正 (task 4.1，`CampaignRow` 獨立為 `Components/CampaignRow.swift`)
+- L328 `MK1`：MARK 段名：View Body
+    - 現況：`// MARK: - View Body`
+    - 結論：已修正 (task 4.1，`CampaignRow` 獨立為 `Components/CampaignRow.swift`)
+- L381 `D6`：註解結尾句號
+    - 現況：`// 開團列合併成單一朗讀單位，VoiceOver 一次讀出主要資訊。`
+    - 結論：已修正 (task 4.1，`CampaignRow` 獨立為 `Components/CampaignRow.swift`)
+
+## `apps/ios/BuyLedger/Features/Campaigns/CampaignSummary.swift` (31 筆)
+
+- L13 `MK1`：MARK 段名：Identifiable Properties
+    - 現況：`// MARK: - Identifiable Properties`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L16 `BRACE`：宣告或 guard 的大括號本體壓成單行：var id: String { customerName }
+    - 現況：`var id: String { customerName }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L18 `MK1`：MARK 段名：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L37 `TOP`：第二個頂層型別：struct CampaignSummary: Equatable, Sendable {
+    - 現況：`struct CampaignSummary: Equatable, Sendable {`
+    - 結論：已修正 (task 1.1，`CampaignDistributionRow` 拆到 `Core/Domain/CampaignDistributionRow.swift`)
+- L39 `DUP`：分區重複：Data Properties 於 [18, 39]
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L39 `MK1`：MARK 段名：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L89 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L100 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter members: 已排除合併來源、僅含歸屬此開團的訂單`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L106 `DOLLAR2`：兩個以上參數的 closure 要具名，不用 $1 簡寫
+    - 現況：`partial + order.items.reduce(0) { $0 + $1.quantity }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L106 `NESTSL`：寫在另一個 closure 內的 closure 要寫成多行：partial + order.items.reduce(0) { $0 + $1.quantity }
+    - 現況：`partial + order.items.reduce(0) { $0 + $1.quantity }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L109 `DOLLAR2`：兩個以上參數的 closure 要具名，不用 $1 簡寫
+    - 現況：`self.receivables = members.reduce(0) { $0 + $1.chargedAmount }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L112 `DOLLAR2`：兩個以上參數的 closure 要具名，不用 $1 簡寫
+    - 現況：`.reduce(0) { $0 + $1.chargedAmount }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L117 `DOLLAR2`：兩個以上參數的 closure 要具名，不用 $1 簡寫
+    - 現況：`self.totalCost = summaries.reduce(0) { $0 + $1.totalCost }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L118 `DOLLAR2`：兩個以上參數的 closure 要具名，不用 $1 簡寫
+    - 現況：`self.totalRevenue = summaries.reduce(0) { $0 + $1.revenue }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L119 `DOLLAR2`：兩個以上參數的 closure 要具名，不用 $1 簡寫
+    - 現況：`self.profit = summaries.reduce(0) { $0 + $1.profit }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L122 `D6`：註解結尾句號
+    - 現況：`// 已到貨、已交付與已取貨都算入到貨進度。`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L124 `DASH`：註解破折號
+    - 現況：`// 到貨進度分母排除已取消與已合併——被合併的舊單已不再各自等待到貨`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L131 `MK4`：extension 專屬分區寫在型別本體內：Computed Properties
+    - 現況：`// MARK: - Computed Properties`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L134 `MK5`：型別本體內的 computed property (應放 extension)：var unpaidDistribution: [CampaignDistributionRow] {
+    - 現況：`var unpaidDistribution: [CampaignDistributionRow] {`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L144 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L173 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter members: 歸屬此開團的訂單`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L183 `DOLLAR2`：兩個以上參數的 closure 要具名，不用 $1 簡寫
+    - 現況：`partial + order.items.reduce(0) { $0 + $1.quantity }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L183 `NESTSL`：寫在另一個 closure 內的 closure 要寫成多行：partial + order.items.reduce(0) { $0 + $1.quantity }
+    - 現況：`partial + order.items.reduce(0) { $0 + $1.quantity }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L185 `DOLLAR2`：兩個以上參數的 closure 要具名，不用 $1 簡寫
+    - 現況：`let amount = orders.reduce(0) { $0 + $1.chargedAmount }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L185 `NESTSL`：寫在另一個 closure 內的 closure 要寫成多行：let amount = orders.reduce(0) { $0 + $1.chargedAmount }
+    - 現況：`let amount = orders.reduce(0) { $0 + $1.chargedAmount }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L186 `NESTSL`：寫在另一個 closure 內的 closure 要寫成多行：let fullyReceived = orders.allSatisfy { $0.paymentReceiptSta
+    - 現況：`let fullyReceived = orders.allSatisfy { $0.paymentReceiptStatus == .received }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L192 `DOLLAR2`：兩個以上參數的 closure 要具名，不用 $1 簡寫
+    - 現況：`orders: orders.sorted { $0.date > $1.date }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L192 `NESTSL`：寫在另一個 closure 內的 closure 要寫成多行：orders: orders.sorted { $0.date > $1.date }
+    - 現況：`orders: orders.sorted { $0.date > $1.date }`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L196 `DOLLAR2`：兩個以上參數的 closure 要具名，不用 $1 簡寫
+    - 現況：`$0.customerName.localizedStandardCompare($1.customerName) == .orderedAscending`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L201 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+- L209 `W`：行寬 104
+    - 現況：`return NSDecimalNumber(decimal: value).doubleValue / NSDecimalNumber(decimal: total).doubleValue`
+    - 結論：已修正 (task 1.1，檔案搬到 `Core/Domain/CampaignSummary.swift`)
+
+## `apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService.swift` (1 筆)
+
+- L45 `WSIG`：無參數 typealias 行寬 104 (使用者裁決維持一行，不計入失敗)
+    - 現況：`typealias FetchLinks = @Sendable () async throws(PersistenceError) -> [String: CampaignReminderLink]`
+    - 結論：登記例外 (無參數 typealias 維持一行，使用者行寬 100 裁決；task 1.3 確認不改)
+
+## `apps/ios/BuyLedgerTests/CampaignEditFeatureTests.swift` (60 筆)
+
+- L11 `TIMP`：@testable import 前缺空行
+    - 現況：`@testable import BuyLedger`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L19 `MKC`：MARK 不是規範區名：// MARK: Dirty State
+    - 現況：`// MARK: Dirty State`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L21 `D1`：缺 ///：@Test func newCampaignIsNotDirtyUntilEdited() async {
+    - 現況：`@Test func newCampaignIsNotDirtyUntilEdited() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L21 `GWT`：缺 // Given
+    - 現況：`@Test func newCampaignIsNotDirtyUntilEdited() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L21 `GWT`：缺 // Then
+    - 現況：`@Test func newCampaignIsNotDirtyUntilEdited() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L21 `GWT`：缺 // When
+    - 現況：`@Test func newCampaignIsNotDirtyUntilEdited() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L21 `TD`：@Test 缺 ///
+    - 現況：`@Test func newCampaignIsNotDirtyUntilEdited() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L21 `TNAMEL`：舊式單段 lowerCamel 測試名稱：newCampaignIsNotDirtyUntilEdited
+    - 現況：`@Test func newCampaignIsNotDirtyUntilEdited() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L21 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func newCampaignIsNotDirtyUntilEdited() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L33 `D1`：缺 ///：@Test func existingCampaignIsDirtyThenCleanWhenRestored() async {
+    - 現況：`@Test func existingCampaignIsDirtyThenCleanWhenRestored() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L33 `GWT`：缺 // Given
+    - 現況：`@Test func existingCampaignIsDirtyThenCleanWhenRestored() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L33 `GWT`：缺 // Then
+    - 現況：`@Test func existingCampaignIsDirtyThenCleanWhenRestored() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L33 `GWT`：缺 // When
+    - 現況：`@Test func existingCampaignIsDirtyThenCleanWhenRestored() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L33 `TD`：@Test 缺 ///
+    - 現況：`@Test func existingCampaignIsDirtyThenCleanWhenRestored() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L33 `TNAMEL`：舊式單段 lowerCamel 測試名稱：existingCampaignIsDirtyThenCleanWhenRestored
+    - 現況：`@Test func existingCampaignIsDirtyThenCleanWhenRestored() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L33 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func existingCampaignIsDirtyThenCleanWhenRestored() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L58 `D1`：缺 ///：@Test func reminderIntentChangeMarksDirty() async {
+    - 現況：`@Test func reminderIntentChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L58 `GWT`：缺 // Given
+    - 現況：`@Test func reminderIntentChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L58 `GWT`：缺 // Then
+    - 現況：`@Test func reminderIntentChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L58 `GWT`：缺 // When
+    - 現況：`@Test func reminderIntentChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L58 `TD`：@Test 缺 ///
+    - 現況：`@Test func reminderIntentChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L58 `TNAMEL`：舊式單段 lowerCamel 測試名稱：reminderIntentChangeMarksDirty
+    - 現況：`@Test func reminderIntentChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L58 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func reminderIntentChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L71 `D1`：缺 ///：@Test func reminderTimestampChangeMarksDirty() async {
+    - 現況：`@Test func reminderTimestampChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L71 `GWT`：缺 // Given
+    - 現況：`@Test func reminderTimestampChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L71 `GWT`：缺 // Then
+    - 現況：`@Test func reminderTimestampChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L71 `GWT`：缺 // When
+    - 現況：`@Test func reminderTimestampChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L71 `TD`：@Test 缺 ///
+    - 現況：`@Test func reminderTimestampChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L71 `TNAMEL`：舊式單段 lowerCamel 測試名稱：reminderTimestampChangeMarksDirty
+    - 現況：`@Test func reminderTimestampChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L71 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func reminderTimestampChangeMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L85 `D1`：缺 ///：@Test func cancelWithChangesPresentsDiscardConfirmation() async {
+    - 現況：`@Test func cancelWithChangesPresentsDiscardConfirmation() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L85 `GWT`：缺 // Given
+    - 現況：`@Test func cancelWithChangesPresentsDiscardConfirmation() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L85 `GWT`：缺 // Then
+    - 現況：`@Test func cancelWithChangesPresentsDiscardConfirmation() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L85 `GWT`：缺 // When
+    - 現況：`@Test func cancelWithChangesPresentsDiscardConfirmation() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L85 `TD`：@Test 缺 ///
+    - 現況：`@Test func cancelWithChangesPresentsDiscardConfirmation() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L85 `TNAMEL`：舊式單段 lowerCamel 測試名稱：cancelWithChangesPresentsDiscardConfirmation
+    - 現況：`@Test func cancelWithChangesPresentsDiscardConfirmation() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L85 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func cancelWithChangesPresentsDiscardConfirmation() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L95 `NESTSL`：寫在另一個 closure 內的 closure 要寫成多行：$0.dismiss = DismissEffect {}
+    - 現況：`$0.dismiss = DismissEffect {}`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L119 `D1`：缺 ///：@Test func everyDraftFieldIndividuallyMarksDirty() async {
+    - 現況：`@Test func everyDraftFieldIndividuallyMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L119 `GWT`：缺 // Given
+    - 現況：`@Test func everyDraftFieldIndividuallyMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L119 `GWT`：缺 // Then
+    - 現況：`@Test func everyDraftFieldIndividuallyMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L119 `GWT`：缺 // When
+    - 現況：`@Test func everyDraftFieldIndividuallyMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L119 `TD`：@Test 缺 ///
+    - 現況：`@Test func everyDraftFieldIndividuallyMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L119 `TNAMEL`：舊式單段 lowerCamel 測試名稱：everyDraftFieldIndividuallyMarksDirty
+    - 現況：`@Test func everyDraftFieldIndividuallyMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L119 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func everyDraftFieldIndividuallyMarksDirty() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L163 `MKC`：MARK 不是規範區名：// MARK: Name Conflict
+    - 現況：`// MARK: Name Conflict`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L165 `D1`：缺 ///：@Test func editingDraftNameClearsStaleNameConflictMessage() async {
+    - 現況：`@Test func editingDraftNameClearsStaleNameConflictMessage() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L165 `GWT`：缺 // Given
+    - 現況：`@Test func editingDraftNameClearsStaleNameConflictMessage() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L165 `GWT`：缺 // Then
+    - 現況：`@Test func editingDraftNameClearsStaleNameConflictMessage() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L165 `GWT`：缺 // When
+    - 現況：`@Test func editingDraftNameClearsStaleNameConflictMessage() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L165 `TD`：@Test 缺 ///
+    - 現況：`@Test func editingDraftNameClearsStaleNameConflictMessage() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L165 `TNAMEL`：舊式單段 lowerCamel 測試名稱：editingDraftNameClearsStaleNameConflictMessage
+    - 現況：`@Test func editingDraftNameClearsStaleNameConflictMessage() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L165 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func editingDraftNameClearsStaleNameConflictMessage() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L166 `D6`：註解結尾句號
+    - 現況：`// 父層拒絕儲存後顯示錯誤，重新編輯名稱時應清空。`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L184 `D1`：缺 ///：@Test func cancelWithoutChangesDismissesDirectly() async {
+    - 現況：`@Test func cancelWithoutChangesDismissesDirectly() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L184 `TD`：@Test 缺 ///
+    - 現況：`@Test func cancelWithoutChangesDismissesDirectly() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L184 `TNAMEL`：舊式單段 lowerCamel 測試名稱：cancelWithoutChangesDismissesDirectly
+    - 現況：`@Test func cancelWithoutChangesDismissesDirectly() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L184 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func cancelWithoutChangesDismissesDirectly() async {`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L197 `NESTSL`：寫在另一個 closure 內的 closure 要寫成多行：dismissCallCount.withValue { $0 += 1 }
+    - 現況：`dismissCallCount.withValue { $0 += 1 }`
+    - 結論：已修正 (task 2.1，整檔改寫)
+- L202 `GWTF`：store.finish() 寫在 When，應放 Then
+    - 現況：`await store.finish()`
+    - 結論：已修正 (task 2.1，整檔改寫)
+
+## `apps/ios/BuyLedgerTests/CampaignFeatureTests.swift` (1 筆)
+
+- L1 `LEN`：不含檔頭與空行 1885 行
+    - 現況：`//`
+    - 結論：已修正 (task 3.4，依職責拆成主檔與 `+<職責>.swift`)
+
+## `apps/ios/BuyLedgerTests/CampaignIntegrationTests.swift` (59 筆)
+
+- L1 `LEN`：不含檔頭與空行 304 行
+    - 現況：`//`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L11 `TIMP`：@testable import 前缺空行
+    - 現況：`@testable import BuyLedger`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L17 `MK1`：MARK 段名：RootFeature Tests
+    - 現況：`// MARK: - RootFeature Tests`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L17 `MKC`：MARK 不是規範區名：// MARK: - RootFeature Tests
+    - 現況：`// MARK: - RootFeature Tests`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L19 `D1`：缺 ///：@Test func campaignSelectedJumpsToCampaignsTabAndSelectsCampaign() asy
+    - 現況：`@Test func campaignSelectedJumpsToCampaignsTabAndSelectsCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L19 `GWT`：缺 // Given
+    - 現況：`@Test func campaignSelectedJumpsToCampaignsTabAndSelectsCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L19 `GWT`：缺 // Then
+    - 現況：`@Test func campaignSelectedJumpsToCampaignsTabAndSelectsCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L19 `GWT`：缺 // When
+    - 現況：`@Test func campaignSelectedJumpsToCampaignsTabAndSelectsCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L19 `TD`：@Test 缺 ///
+    - 現況：`@Test func campaignSelectedJumpsToCampaignsTabAndSelectsCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L19 `TNAMEL`：舊式單段 lowerCamel 測試名稱：campaignSelectedJumpsToCampaignsTabAndSelectsCampa
+    - 現況：`@Test func campaignSelectedJumpsToCampaignsTabAndSelectsCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L19 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func campaignSelectedJumpsToCampaignsTabAndSelectsCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L35 `D1`：缺 ///：@Test func campaignRenamedCascadesToOrdersInMemoryAndSyncsCopy() async
+    - 現況：`@Test func campaignRenamedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L35 `GWT`：缺 // Given
+    - 現況：`@Test func campaignRenamedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L35 `GWT`：缺 // Then
+    - 現況：`@Test func campaignRenamedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L35 `GWT`：缺 // When
+    - 現況：`@Test func campaignRenamedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L35 `TD`：@Test 缺 ///
+    - 現況：`@Test func campaignRenamedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L35 `TNAMEL`：舊式單段 lowerCamel 測試名稱：campaignRenamedCascadesToOrdersInMemoryAndSyncsCop
+    - 現況：`@Test func campaignRenamedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L35 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func campaignRenamedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L53 `PARTW`：斷行後多個參數或引數擠在同一行：state.orders.orders[0], campaignNames: ["新團"])
+    - 現況：`$0.orders.orders[0] = self.withoutCampaigns(`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L54 `RPAR`：斷行呼叫的右括號沒有單獨一行：state.orders.orders[0], campaignNames: [""])
+    - 現況：`state.orders.orders[0], campaignNames: ["新團"])`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L55 `PARTW`：斷行後多個參數或引數擠在同一行：state.orders.orders[1], campaignNames: ["新團"])
+    - 現況：`$0.orders.orders[1] = self.withoutCampaigns(`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L56 `RPAR`：斷行呼叫的右括號沒有單獨一行：state.orders.orders[1], campaignNames: [""])
+    - 現況：`state.orders.orders[1], campaignNames: ["新團"])`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L72 `D1`：缺 ///：@Test func campaignDeletedCascadesToOrdersInMemoryAndSyncsCopy() async
+    - 現況：`@Test func campaignDeletedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L72 `GWT`：缺 // Given
+    - 現況：`@Test func campaignDeletedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L72 `GWT`：缺 // Then
+    - 現況：`@Test func campaignDeletedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L72 `GWT`：缺 // When
+    - 現況：`@Test func campaignDeletedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L72 `TD`：@Test 缺 ///
+    - 現況：`@Test func campaignDeletedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L72 `TNAMEL`：舊式單段 lowerCamel 測試名稱：campaignDeletedCascadesToOrdersInMemoryAndSyncsCop
+    - 現況：`@Test func campaignDeletedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L72 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func campaignDeletedCascadesToOrdersInMemoryAndSyncsCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L103 `TNAME`：測試名稱不符 `<方法>_<情境>_<預期>` (後兩段用正體中文)：campaignsLoaded_syncsOrdersCampaignCopy
+    - 現況：`@Test func campaignsLoaded_syncsOrdersCampaignCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L103 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func campaignsLoaded_syncsOrdersCampaignCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L130 `TNAME`：測試名稱不符 `<方法>_<情境>_<預期>` (後兩段用正體中文)：ordersProjection_updatesCampaignSummary
+    - 現況：`@Test func ordersProjection_updatesCampaignSummary() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L130 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func ordersProjection_updatesCampaignSummary() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L173 `MK1`：MARK 段名：OrdersFeature Filter Tests
+    - 現況：`// MARK: - OrdersFeature Filter Tests`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L173 `MKC`：MARK 不是規範區名：// MARK: - OrdersFeature Filter Tests
+    - 現況：`// MARK: - OrdersFeature Filter Tests`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L175 `D1`：缺 ///：@Test func ordersFilterBySpecificCampaign() async {
+    - 現況：`@Test func ordersFilterBySpecificCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L175 `GWT`：缺 // Given
+    - 現況：`@Test func ordersFilterBySpecificCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L175 `GWT`：缺 // Then
+    - 現況：`@Test func ordersFilterBySpecificCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L175 `GWT`：缺 // When
+    - 現況：`@Test func ordersFilterBySpecificCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L175 `TD`：@Test 缺 ///
+    - 現況：`@Test func ordersFilterBySpecificCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L175 `TNAMEL`：舊式單段 lowerCamel 測試名稱：ordersFilterBySpecificCampaign
+    - 現況：`@Test func ordersFilterBySpecificCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L175 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func ordersFilterBySpecificCampaign() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L194 `PARTW`：斷行後多個參數或引數擠在同一行：referenceDate: TestDependencies.fixedNow, calendar
+    - 現況：`let filtered = store.state.filteredOrders(`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L195 `RPAR`：斷行呼叫的右括號沒有單獨一行：referenceDate: TestDependencies.fixedNow, calendar
+    - 現況：`referenceDate: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L199 `D1`：缺 ///：@Test func ordersFilterByCampaignStatusResolvesThroughCampaignCopy() a
+    - 現況：`@Test func ordersFilterByCampaignStatusResolvesThroughCampaignCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L199 `GWT`：缺 // Given
+    - 現況：`@Test func ordersFilterByCampaignStatusResolvesThroughCampaignCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L199 `GWT`：缺 // Then
+    - 現況：`@Test func ordersFilterByCampaignStatusResolvesThroughCampaignCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L199 `GWT`：缺 // When
+    - 現況：`@Test func ordersFilterByCampaignStatusResolvesThroughCampaignCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L199 `TD`：@Test 缺 ///
+    - 現況：`@Test func ordersFilterByCampaignStatusResolvesThroughCampaignCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L199 `TNAMEL`：舊式單段 lowerCamel 測試名稱：ordersFilterByCampaignStatusResolvesThroughCampaig
+    - 現況：`@Test func ordersFilterByCampaignStatusResolvesThroughCampaignCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L199 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func ordersFilterByCampaignStatusResolvesThroughCampaignCopy() async {`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L222 `PARTW`：斷行後多個參數或引數擠在同一行：referenceDate: TestDependencies.fixedNow, calendar
+    - 現況：`store.state.filteredOrders(`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L224 `RPAR`：斷行呼叫的右括號沒有單獨一行：).map(\.id) == [""])
+    - 現況：`).map(\.id) == ["O1"])`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L231 `PARTW`：斷行後多個參數或引數擠在同一行：referenceDate: TestDependencies.fixedNow, calendar
+    - 現況：`store.state.filteredOrders(`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L233 `RPAR`：斷行呼叫的右括號沒有單獨一行：).map(\.id) == [""])
+    - 現況：`).map(\.id) == ["O2"])`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L237 `MK1`：MARK 段名：Helper Method
+    - 現況：`// MARK: - Helper Method`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L237 `MKC`：MARK 不是規範區名：// MARK: - Helper Method
+    - 現況：`// MARK: - Helper Method`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L248 `CALL1`：未達斷行條件卻拆成多行 (3 個，接成一行 95 字元)：func makeOrder(
+    - 現況：`func makeOrder(`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+- L327 `CALL1`：未達斷行條件卻拆成多行 (3 個，接成一行 85 字元)：func makeCampaign(
+    - 現況：`func makeCampaign(`
+    - 結論：已修正 (task 3.4，整檔改寫並拆成主檔與 `+Rename`、`+Delete`、`+Receipt`、`+Navigation`、`+Filters`、`+Fixtures`)
+
+## `apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift` (1 筆)
+
+- L1 `LEN`：不含檔頭與空行 595 行
+    - 現況：`//`
+    - 結論：已修正 (task 2.4，檔案刪除；提醒流程測試移到 `CampaignReminderFeatureTests`，開啟設定測試移到 `CampaignFeatureTests`)
+
+## `apps/ios/BuyLedgerTests/CampaignSummaryTests.swift` (135 筆)
+
+- L10 `TIMP`：@testable import 前缺空行
+    - 現況：`@testable import BuyLedger`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L18 `D1`：缺 ///：@Test func distributionGroupsByCustomerWithSummedQuantityAndReceiptMar
+    - 現況：`@Test func distributionGroupsByCustomerWithSummedQuantityAndReceiptMarker() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L18 `GWT`：缺 // Given
+    - 現況：`@Test func distributionGroupsByCustomerWithSummedQuantityAndReceiptMarker() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L18 `GWT`：缺 // Then
+    - 現況：`@Test func distributionGroupsByCustomerWithSummedQuantityAndReceiptMarker() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L18 `GWT`：缺 // When
+    - 現況：`@Test func distributionGroupsByCustomerWithSummedQuantityAndReceiptMarker() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L18 `TD`：@Test 缺 ///
+    - 現況：`@Test func distributionGroupsByCustomerWithSummedQuantityAndReceiptMarker() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L18 `TNAMEL`：舊式單段 lowerCamel 測試名稱：distributionGroupsByCustomerWithSummedQuantityAndR
+    - 現況：`@Test func distributionGroupsByCustomerWithSummedQuantityAndReceiptMarker() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L18 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func distributionGroupsByCustomerWithSummedQuantityAndReceiptMarker() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L21 `PARTW`：斷行後多個參數或引數擠在同一行：id: "A", customer: "小明", campaign: "團", charged: 6
+    - 現況：`makeOrder(`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L23 `RPAR`：斷行呼叫的右括號沒有單獨一行：receipt: .received),
+    - 現況：`receipt: .received),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L24 `PARTW`：斷行後多個參數或引數擠在同一行：id: "B", customer: "小明", campaign: "團", charged: 3
+    - 現況：`makeOrder(`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L27 `PARTW`：斷行後多個參數或引數擠在同一行：id: "C", customer: "小華", campaign: "團", charged: 4
+    - 現況：`makeOrder(`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L29 `RPAR`：斷行呼叫的右括號沒有單獨一行：receipt: .received),
+    - 現況：`receipt: .received),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L46 `D1`：缺 ///：@Test func settlementTotalsFromMemberOrders() {
+    - 現況：`@Test func settlementTotalsFromMemberOrders() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L46 `GWT`：缺 // Given
+    - 現況：`@Test func settlementTotalsFromMemberOrders() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L46 `GWT`：缺 // Then
+    - 現況：`@Test func settlementTotalsFromMemberOrders() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L46 `GWT`：缺 // When
+    - 現況：`@Test func settlementTotalsFromMemberOrders() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L46 `TD`：@Test 缺 ///
+    - 現況：`@Test func settlementTotalsFromMemberOrders() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L46 `TNAMEL`：舊式單段 lowerCamel 測試名稱：settlementTotalsFromMemberOrders
+    - 現況：`@Test func settlementTotalsFromMemberOrders() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L46 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func settlementTotalsFromMemberOrders() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L49 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O1", customer: "A", campaign: "團", charged: 1000, receipt: .received),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L50 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O2", customer: "B", campaign: "團", charged: 500, receipt: .pending),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L60 `D1`：缺 ///：@Test func zeroReceivablesYieldsZeroRatioWithoutDividingByZero() {
+    - 現況：`@Test func zeroReceivablesYieldsZeroRatioWithoutDividingByZero() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L60 `GWT`：缺 // Given
+    - 現況：`@Test func zeroReceivablesYieldsZeroRatioWithoutDividingByZero() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L60 `GWT`：缺 // Then
+    - 現況：`@Test func zeroReceivablesYieldsZeroRatioWithoutDividingByZero() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L60 `GWT`：缺 // When
+    - 現況：`@Test func zeroReceivablesYieldsZeroRatioWithoutDividingByZero() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L60 `TD`：@Test 缺 ///
+    - 現況：`@Test func zeroReceivablesYieldsZeroRatioWithoutDividingByZero() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L60 `TNAMEL`：舊式單段 lowerCamel 測試名稱：zeroReceivablesYieldsZeroRatioWithoutDividingByZer
+    - 現況：`@Test func zeroReceivablesYieldsZeroRatioWithoutDividingByZero() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L60 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func zeroReceivablesYieldsZeroRatioWithoutDividingByZero() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L62 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O1", customer: "A", campaign: "團", charged: 0, receipt: .pending)`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L62 `TRAILC`：多行字面值的最後一個元素後面要加逗號：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O1", customer: "A", campaign: "團", charged: 0, receipt: .pending)`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L71 `D1`：缺 ///：@Test func deliveryRatioExcludesCancelledFromDenominator() {
+    - 現況：`@Test func deliveryRatioExcludesCancelledFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L71 `GWT`：缺 // Given
+    - 現況：`@Test func deliveryRatioExcludesCancelledFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L71 `GWT`：缺 // Then
+    - 現況：`@Test func deliveryRatioExcludesCancelledFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L71 `GWT`：缺 // When
+    - 現況：`@Test func deliveryRatioExcludesCancelledFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L71 `TD`：@Test 缺 ///
+    - 現況：`@Test func deliveryRatioExcludesCancelledFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L71 `TNAMEL`：舊式單段 lowerCamel 測試名稱：deliveryRatioExcludesCancelledFromDenominator
+    - 現況：`@Test func deliveryRatioExcludesCancelledFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L71 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func deliveryRatioExcludesCancelledFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L73 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, status: .delivered),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L74 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O2", customer: "B", campaign: "團", charged: 100, status: .delivered),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L75 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O3", customer: "C", campaign: "團", charged: 100, status: .cancelled),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L76 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O4", customer: "D", campaign: "團", charged: 100, status: .confirmed),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L85 `D1`：缺 ///：@Test func arrivedCountsTowardDeliveryProgress() {
+    - 現況：`@Test func arrivedCountsTowardDeliveryProgress() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L85 `GWT`：缺 // Given
+    - 現況：`@Test func arrivedCountsTowardDeliveryProgress() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L85 `GWT`：缺 // Then
+    - 現況：`@Test func arrivedCountsTowardDeliveryProgress() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L85 `GWT`：缺 // When
+    - 現況：`@Test func arrivedCountsTowardDeliveryProgress() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L85 `TD`：@Test 缺 ///
+    - 現況：`@Test func arrivedCountsTowardDeliveryProgress() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L85 `TNAMEL`：舊式單段 lowerCamel 測試名稱：arrivedCountsTowardDeliveryProgress
+    - 現況：`@Test func arrivedCountsTowardDeliveryProgress() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L85 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func arrivedCountsTowardDeliveryProgress() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L88 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, status: .arrived),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L89 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O2", customer: "B", campaign: "團", charged: 100, status: .delivered),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L90 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O3", customer: "C", campaign: "團", charged: 100, status: .pickedUp),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L91 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O4", customer: "D", campaign: "團", charged: 100, status: .shipping),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L92 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O5", customer: "E", campaign: "團", charged: 100, status: .cancelled),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L101 `D1`：缺 ///：@Test func partiallyArrivedCountsInDenominatorButNotNumerator() {
+    - 現況：`@Test func partiallyArrivedCountsInDenominatorButNotNumerator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L101 `GWT`：缺 // Given
+    - 現況：`@Test func partiallyArrivedCountsInDenominatorButNotNumerator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L101 `GWT`：缺 // Then
+    - 現況：`@Test func partiallyArrivedCountsInDenominatorButNotNumerator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L101 `GWT`：缺 // When
+    - 現況：`@Test func partiallyArrivedCountsInDenominatorButNotNumerator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L101 `TD`：@Test 缺 ///
+    - 現況：`@Test func partiallyArrivedCountsInDenominatorButNotNumerator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L101 `TNAMEL`：舊式單段 lowerCamel 測試名稱：partiallyArrivedCountsInDenominatorButNotNumerator
+    - 現況：`@Test func partiallyArrivedCountsInDenominatorButNotNumerator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L101 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func partiallyArrivedCountsInDenominatorButNotNumerator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L102 `D6`：註解結尾句號
+    - 現況：`// 部分到貨不計入已到貨數，但仍計入進行中訂單。`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L104 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, status: .arrived),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L105 `PARTW`：斷行後多個參數或引數擠在同一行：id: "O2", customer: "B", campaign: "團", charged: 1
+    - 現況：`makeOrder(`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L106 `RPAR`：斷行呼叫的右括號沒有單獨一行：id: "", customer: "", campaign: "", charged: 100,
+    - 現況：`id: "O2", customer: "B", campaign: "團", charged: 100, status: .partiallyArrived),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L107 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O3", customer: "C", campaign: "團", charged: 100, status: .shipping),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L116 `D1`：缺 ///：@Test func unassignedOrdersAreExcluded() {
+    - 現況：`@Test func unassignedOrdersAreExcluded() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L116 `GWT`：缺 // Given
+    - 現況：`@Test func unassignedOrdersAreExcluded() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L116 `GWT`：缺 // Then
+    - 現況：`@Test func unassignedOrdersAreExcluded() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L116 `GWT`：缺 // When
+    - 現況：`@Test func unassignedOrdersAreExcluded() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L116 `TD`：@Test 缺 ///
+    - 現況：`@Test func unassignedOrdersAreExcluded() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L116 `TNAMEL`：舊式單段 lowerCamel 測試名稱：unassignedOrdersAreExcluded
+    - 現況：`@Test func unassignedOrdersAreExcluded() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L116 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func unassignedOrdersAreExcluded() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L118 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, receipt: .received),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L119 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O2", customer: "B", campaign: "", charged: 999, receipt: .received),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L128 `D1`：缺 ///：@Test func profitAndCostAggregateMemberOrderSummaries() {
+    - 現況：`@Test func profitAndCostAggregateMemberOrderSummaries() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L128 `GWT`：缺 // Given
+    - 現況：`@Test func profitAndCostAggregateMemberOrderSummaries() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L128 `GWT`：缺 // Then
+    - 現況：`@Test func profitAndCostAggregateMemberOrderSummaries() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L128 `GWT`：缺 // When
+    - 現況：`@Test func profitAndCostAggregateMemberOrderSummaries() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L128 `TD`：@Test 缺 ///
+    - 現況：`@Test func profitAndCostAggregateMemberOrderSummaries() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L128 `TNAMEL`：舊式單段 lowerCamel 測試名稱：profitAndCostAggregateMemberOrderSummaries
+    - 現況：`@Test func profitAndCostAggregateMemberOrderSummaries() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L128 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func profitAndCostAggregateMemberOrderSummaries() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L131 `PARTW`：斷行後多個參數或引數擠在同一行：id: "O1", customer: "A", campaign: "團", charged: 1
+    - 現況：`makeOrder(`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L133 `RPAR`：斷行呼叫的右括號沒有單獨一行：itemCost: 200),
+    - 現況：`itemCost: 200),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L134 `PARTW`：斷行後多個參數或引數擠在同一行：id: "O2", customer: "B", campaign: "團", charged: 5
+    - 現況：`makeOrder(`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L136 `RPAR`：斷行呼叫的右括號沒有單獨一行：itemCost: 100),
+    - 現況：`itemCost: 100),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L145 `D1`：缺 ///：@Test func emptyCampaignHasZeroAggregatesAndNoDistribution() {
+    - 現況：`@Test func emptyCampaignHasZeroAggregatesAndNoDistribution() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L145 `GWT`：缺 // Given
+    - 現況：`@Test func emptyCampaignHasZeroAggregatesAndNoDistribution() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L145 `GWT`：缺 // Then
+    - 現況：`@Test func emptyCampaignHasZeroAggregatesAndNoDistribution() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L145 `GWT`：缺 // When
+    - 現況：`@Test func emptyCampaignHasZeroAggregatesAndNoDistribution() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L145 `TD`：@Test 缺 ///
+    - 現況：`@Test func emptyCampaignHasZeroAggregatesAndNoDistribution() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L145 `TNAMEL`：舊式單段 lowerCamel 測試名稱：emptyCampaignHasZeroAggregatesAndNoDistribution
+    - 現況：`@Test func emptyCampaignHasZeroAggregatesAndNoDistribution() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L145 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func emptyCampaignHasZeroAggregatesAndNoDistribution() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L155 `D1`：缺 ///：@Test func mergeResultOrdersAreNotMembers() {
+    - 現況：`@Test func mergeResultOrdersAreNotMembers() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L155 `GWT`：缺 // Given
+    - 現況：`@Test func mergeResultOrdersAreNotMembers() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L155 `GWT`：缺 // Then
+    - 現況：`@Test func mergeResultOrdersAreNotMembers() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L155 `GWT`：缺 // When
+    - 現況：`@Test func mergeResultOrdersAreNotMembers() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L155 `TD`：@Test 缺 ///
+    - 現況：`@Test func mergeResultOrdersAreNotMembers() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L155 `TNAMEL`：舊式單段 lowerCamel 測試名稱：mergeResultOrdersAreNotMembers
+    - 現況：`@Test func mergeResultOrdersAreNotMembers() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L155 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func mergeResultOrdersAreNotMembers() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L156 `D6`：註解結尾句號
+    - 現況：`// 只統計合併前的原始訂單。`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L158 `PARTW`：斷行後多個參數或引數擠在同一行：id: "A", customer: "客", campaign: "May-JP", charge
+    - 現況：`makeOrder(`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L160 `RPAR`：斷行呼叫的右括號沒有單獨一行：itemCost: 200),
+    - 現況：`itemCost: 200),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L161 `PARTW`：斷行後多個參數或引數擠在同一行：id: "B", customer: "客", campaign: "June-KR", charg
+    - 現況：`makeOrder(`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L163 `RPAR`：斷行呼叫的右括號沒有單獨一行：itemCost: 300),
+    - 現況：`itemCost: 300),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L186 `D1`：缺 ///：@Test func multiCampaignLeafCountsFullyInEachCampaign() {
+    - 現況：`@Test func multiCampaignLeafCountsFullyInEachCampaign() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L186 `GWT`：缺 // Given
+    - 現況：`@Test func multiCampaignLeafCountsFullyInEachCampaign() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L186 `GWT`：缺 // Then
+    - 現況：`@Test func multiCampaignLeafCountsFullyInEachCampaign() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L186 `GWT`：缺 // When
+    - 現況：`@Test func multiCampaignLeafCountsFullyInEachCampaign() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L186 `TD`：@Test 缺 ///
+    - 現況：`@Test func multiCampaignLeafCountsFullyInEachCampaign() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L186 `TNAMEL`：舊式單段 lowerCamel 測試名稱：multiCampaignLeafCountsFullyInEachCampaign
+    - 現況：`@Test func multiCampaignLeafCountsFullyInEachCampaign() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L186 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func multiCampaignLeafCountsFullyInEachCampaign() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L189 `PARTW`：斷行後多個參數或引數擠在同一行：id: "O1", customer: "客", campaign: "", charged: 90
+    - 現況：`makeOrder(`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L191 `RPAR`：斷行呼叫的右括號沒有單獨一行：campaignNames: ["", ""])
+    - 現況：`campaignNames: ["May-JP", "June-KR"])`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L191 `TRAILC`：多行字面值的最後一個元素後面要加逗號：campaignNames: ["", ""])
+    - 現況：`campaignNames: ["May-JP", "June-KR"])`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L198 `D1`：缺 ///：@Test func deliveryRatioExcludesMergedFromDenominator() {
+    - 現況：`@Test func deliveryRatioExcludesMergedFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L198 `GWT`：缺 // Given
+    - 現況：`@Test func deliveryRatioExcludesMergedFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L198 `GWT`：缺 // Then
+    - 現況：`@Test func deliveryRatioExcludesMergedFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L198 `GWT`：缺 // When
+    - 現況：`@Test func deliveryRatioExcludesMergedFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L198 `TD`：@Test 缺 ///
+    - 現況：`@Test func deliveryRatioExcludesMergedFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L198 `TNAMEL`：舊式單段 lowerCamel 測試名稱：deliveryRatioExcludesMergedFromDenominator
+    - 現況：`@Test func deliveryRatioExcludesMergedFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L198 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func deliveryRatioExcludesMergedFromDenominator() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L201 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, status: .delivered),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L202 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O2", customer: "B", campaign: "團", charged: 100, status: .merged),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L203 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O3", customer: "C", campaign: "團", charged: 100, status: .shipping),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L213 `GWT`：缺 // Given
+    - 現況：`@Test func batchMatchesPerCampaignConstructionIncludingEmptyDuplicateAndMultiCampaignOrders() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L213 `GWT`：缺 // Then
+    - 現況：`@Test func batchMatchesPerCampaignConstructionIncludingEmptyDuplicateAndMultiCampaignOrders() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L213 `GWT`：缺 // When
+    - 現況：`@Test func batchMatchesPerCampaignConstructionIncludingEmptyDuplicateAndMultiCampaignOrders() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L213 `TNAMEL`：舊式單段 lowerCamel 測試名稱：batchMatchesPerCampaignConstructionIncludingEmptyD
+    - 現況：`@Test func batchMatchesPerCampaignConstructionIncludingEmptyDuplicateAndMultiCampaignOrders() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L213 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func batchMatchesPerCampaignConstructionIncludingEmptyDuplicateAndMultiCampaignOrders() {`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L215 `PARTW`：斷行後多個參數或引數擠在同一行：id: "O1", customer: "小明", campaign: "五月團", charged
+    - 現況：`makeOrder(`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L216 `RPAR`：斷行呼叫的右括號沒有單獨一行：id: "", customer: "", campaign: "", charged: 1_000
+    - 現況：`id: "O1", customer: "小明", campaign: "五月團", charged: 1_000, receipt: .received),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L224 `ARG4`：一行內有 5 個引數或參數，超過三個要斷行：makeOrder(id: "", customer: "", campaign: "", char
+    - 現況：`makeOrder(id: "O3", customer: "小美", campaign: "六月團", charged: 300, status: .cancelled),`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L237 `RPAR`：斷行呼叫的右括號沒有單獨一行："")
+    - 現況：`"\(name) 的成員清單應與逐團建構相同")`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+- L251 `MK1`：MARK 段名：Helper
+    - 現況：`// MARK: - Helper`
+    - 結論：已修正 (task 1.1，測試拆成 `CampaignSummaryTests.swift`、`+Delivery`、`+Membership` 三檔)
+
+## 2026-10-03 擴大範圍基準
+
+基準為 2026-10-03 工作樹狀態，包含本 change 已完成的修改。依 design「B 組整檔合規」與 Implementation Contract「檢查分組」，以絕對路徑呼叫更新後的 `reference/style_checks.py`，對原 B 組 15 檔、`ContrastComplianceTests.swift` 與 9.x 殼層既有 17 檔套用 A 組整檔標準。
+
+共 **33 個檔案、689 筆**，所有指定檔案均存在。行號與現況取自本次掃描，後續修改以程式碼為準；新項目結論一律待填，原基準項目與結論維持原樣。掃描只記錄而不計失敗的 `WCL` 2 筆與 `WSTR` 1 筆也逐筆列入，確保與 `TOTAL` 加總一致。
+
+## `apps/ios/BuyLedger/App/Testing/BLUITestConfiguration.swift` (16 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L24 `PARTW`：斷行後多個參數或引數擠在同一行：year: 2026, month: 4, day: 30, hour: 0, minute: 0,
+    - 現況：`let components = DateComponents(`
+    - 結論：已修正 (task 8.2，`DateComponents` 六個引數各自獨立一行)
+- L25 `RPAR`：斷行呼叫的右括號沒有單獨一行：year: 2026, month: 4, day: 30, hour: 0, minute: 0,
+    - 現況：`year: 2026, month: 4, day: 30, hour: 0, minute: 0, second: 0)`
+    - 結論：已修正 (task 8.2，斷行呼叫的右括號獨立一行)
+- L27 `D6`：註解結尾句號
+    - 現況：`// 固定日期無法建立表示程式前提已失效。`
+    - 結論：已修正 (task 8.2，移除註解結尾中文句號)
+- L109 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 8.2，`option(for:in:)` 摘要與參數標記間補空的 `///`)
+- L128 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 8.2，`value(for:in:)` 摘要與參數標記間補空的 `///`)
+- L154 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter message: 警告內容 (不含前綴)`
+    - 結論：已修正 (task 8.2，`warn(_:)` 摘要與參數標記間補空的 `///`)
+- L160 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter value: 待判斷的字串`
+    - 結論：已修正 (task 8.2，`isFlagLike(_:)` 摘要與參數標記間補空的 `///`)
+- L170 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter arguments: App 啟動參數`
+    - 結論：已修正 (task 8.2，`referenceDate(in:)` 摘要與參數標記間補空的 `///`)
+- L184 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter raw: 待解析的字串`
+    - 結論：已修正 (task 8.2，`iso8601Date(from:)` 摘要與參數標記間補空的 `///`)
+- L204 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter arguments: App 啟動參數`
+    - 結論：已修正 (task 8.2，`currencyCode(in:)` 摘要與參數標記間補空的 `///`)
+- L220 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter arguments: App 啟動參數`
+    - 結論：已修正 (task 8.2，`monthlyProfitGoal(in:)` 摘要與參數標記間補空的 `///`)
+- L239 `TOP`：第二個頂層型別：enum BLUITestLanguage: String, Equatable, Sendable {
+    - 現況：`enum BLUITestLanguage: String, Equatable, Sendable {`
+    - 結論：已修正 (task 8.2，移至 `BLUITestLanguage.swift`，型別與 case 不變)
+- L249 `TOP`：第二個頂層型別：enum BLUITestCalendarAccess: String, Equatable, Sendable {
+    - 現況：`enum BLUITestCalendarAccess: String, Equatable, Sendable {`
+    - 結論：已修正 (task 8.2，移至 `BLUITestCalendarAccess.swift`，型別與 case 不變)
+- L259 `TOP`：第二個頂層型別：enum BLUITestBiometricScenario: String, Equatable, Sendable
+    - 現況：`enum BLUITestBiometricScenario: String, Equatable, Sendable {`
+    - 結論：已修正 (task 8.2，移至 `BLUITestBiometricScenario.swift`，型別與 case 不變)
+- L269 `TOP`：第二個頂層型別：enum BLUITestLoadFailure: String, Equatable, Sendable {
+    - 現況：`enum BLUITestLoadFailure: String, Equatable, Sendable {`
+    - 結論：已修正 (task 8.2，移至 `BLUITestLoadFailure.swift`，型別與 case 不變)
+- L288 `TOP`：第二個頂層型別：enum BLUITestPersistenceMode: String, Equatable, Sendable {
+    - 現況：`enum BLUITestPersistenceMode: String, Equatable, Sendable {`
+    - 結論：已修正 (task 8.2，移至 `BLUITestPersistenceMode.swift`，型別與 case 不變)
+
+## `apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift` (2 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L197 `WCL`：closure 簽章行寬 102 (formatting 允許，不計入失敗)
+    - 現況：`reconciliationStatusService.fetchReconciliationStatuses = { () throws(PersistenceError) in`
+    - 結論：依規範保留 (不計失敗：賦值 closure 簽章行寬 102，formatting 明允許超寬；檔案已依 4.10 改名為 `DependencyValues+BLUITestOverrides.swift`)
+- L228 `WCL`：closure 簽章行寬 111 (formatting 允許，不計入失敗)
+    - 現況：`paymentMethodService.applyPaymentMethodEdit = { _, _, _, _ throws(PaymentMethodPersistenceError) in`
+    - 結論：依規範保留 (不計失敗：賦值 closure 簽章行寬 111，formatting 明允許超寬；檔案已依 4.10 改名為 `DependencyValues+BLUITestOverrides.swift`)
+
+## `apps/ios/BuyLedger/Features/App/RootFeature.swift` (1 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L1 `LEN`：不含檔頭與空行 413 行
+    - 現況：`//`
+    - 結論：已修正 (task 9.1 拆出 `RootNavigationOperations`／`RootCascadeOperations`，task 9.3 移除常駐目的地與 `morePath`、改持有 `MoreFeature`，非空行 413 → 276)
+
+## `apps/ios/BuyLedger/Features/App/RootSidebarLayout.swift` (86 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L1 `LEN`：不含檔頭與空行 344 行
+    - 現況：`//`
+    - 結論：已修正 (task 8.4，`SmartGroup` 抽到 `SidebarSmartGroup.swift` 後本檔 263 行、新檔 93 行)
+- L14 `MK1`：MARK 段名：View Properties
+    - 現況：`// MARK: - View Properties`
+    - 結論：已修正 (task 8.4，改 `// MARK: - Properties`，並依 View 樣板排序)
+- L22 `MK1`：MARK 段名：View Body
+    - 現況：`// MARK: - View Body`
+    - 結論：已修正 (task 8.4，改 `// MARK: - Body`，並依 View 樣板排序)
+- L37 `MK1`：MARK 段名：Cases
+    - 現況：`// MARK: - Cases`
+    - 結論：已修正 (task 8.4，`SidebarSelection` 內的 Cases MARK 移除，巢狀型別內不加 MARK)
+- L37 `MKN`：巢狀型別內的 MARK：Cases
+    - 現況：`// MARK: - Cases`
+    - 結論：已修正 (task 8.4，`SidebarSelection` 內的 Cases MARK 移除，巢狀型別內不加 MARK)
+- L40 `D9`：associated value 缺 - Parameter：case tab(RootTab)
+    - 現況：`case tab(RootTab)`
+    - 結論：已修正 (task 8.4，`tab` case 補 `- Parameter`)
+- L43 `D9`：associated value 缺 - Parameter：case smartGroup(OrderStatus)
+    - 現況：`case smartGroup(OrderStatus)`
+    - 結論：已修正 (task 8.4，`smartGroup` case 補 `- Parameter`)
+- L52 `MK1`：MARK 段名：Cases
+    - 現況：`// MARK: - Cases`
+    - 結論：已修正 (task 8.4，`SmartGroup` 移出為頂層 `SidebarSmartGroup`，以 Computed Properties／Internal Method／Identifiable 規範分區，本體不加 MARK)
+- L52 `MKN`：巢狀型別內的 MARK：Cases
+    - 現況：`// MARK: - Cases`
+    - 結論：已修正 (task 8.4，`SmartGroup` 移出為頂層 `SidebarSmartGroup`，以 Computed Properties／Internal Method／Identifiable 規範分區，本體不加 MARK)
+- L78 `MK1`：MARK 段名：Identifiable Properties
+    - 現況：`// MARK: - Identifiable Properties`
+    - 結論：已修正 (task 8.4，`SmartGroup` 移出為頂層 `SidebarSmartGroup`，以 Computed Properties／Internal Method／Identifiable 規範分區，本體不加 MARK)
+- L78 `MKN`：巢狀型別內的 MARK：Identifiable Properties
+    - 現況：`// MARK: - Identifiable Properties`
+    - 結論：已修正 (task 8.4，`SmartGroup` 移出為頂層 `SidebarSmartGroup`，以 Computed Properties／Internal Method／Identifiable 規範分區，本體不加 MARK)
+- L81 `BRACE`：宣告或 guard 的大括號本體壓成單行：var id: String { rawValue }
+    - 現況：`var id: String { rawValue }`
+    - 結論：已修正 (task 8.4，`id` 移到 `// MARK: - Identifiable` extension 並換行)
+- L83 `MK1`：MARK 段名：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.4，`SmartGroup` 移出為頂層 `SidebarSmartGroup`，以 Computed Properties／Internal Method／Identifiable 規範分區，本體不加 MARK)
+- L83 `MKN`：巢狀型別內的 MARK：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.4，`SmartGroup` 移出為頂層 `SidebarSmartGroup`，以 Computed Properties／Internal Method／Identifiable 規範分區，本體不加 MARK)
+- L90 `SWC`：switch case 之間缺空行：case .confirmed:
+    - 現況：`case .confirmed:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L92 `SWC`：switch case 之間缺空行：case .purchased:
+    - 現況：`case .purchased:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L94 `SWC`：switch case 之間缺空行：case .shipping:
+    - 現況：`case .shipping:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L96 `SWC`：switch case 之間缺空行：case .partiallyArrived:
+    - 現況：`case .partiallyArrived:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L98 `SWC`：switch case 之間缺空行：case .arrived:
+    - 現況：`case .arrived:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L100 `SWC`：switch case 之間缺空行：case .delivered:
+    - 現況：`case .delivered:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L102 `SWC`：switch case 之間缺空行：case .pickedUp:
+    - 現況：`case .pickedUp:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L108 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter palette: 目前外觀使用的色盤`
+    - 結論：已修正 (task 8.4，摘要與 `- Parameter(s)` 之間補空 `///`)
+- L119 `SWC`：switch case 之間缺空行：case .confirmed:
+    - 現況：`case .confirmed:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L121 `SWC`：switch case 之間缺空行：case .purchased:
+    - 現況：`case .purchased:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L123 `SWC`：switch case 之間缺空行：case .shipping:
+    - 現況：`case .shipping:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L125 `SWC`：switch case 之間缺空行：case .partiallyArrived:
+    - 現況：`case .partiallyArrived:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L127 `SWC`：switch case 之間缺空行：case .arrived:
+    - 現況：`case .arrived:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L129 `SWC`：switch case 之間缺空行：case .delivered:
+    - 現況：`case .delivered:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L131 `SWC`：switch case 之間缺空行：case .pickedUp:
+    - 現況：`case .pickedUp:`
+    - 結論：已修正 (task 8.4，case 之間補空行 (switch 隨 `SmartGroup` 移到 `SidebarSmartGroup.swift`))
+- L136 `MK1`：MARK 段名：Static Properties
+    - 現況：`// MARK: - Static Properties`
+    - 結論：已修正 (task 8.4，`SmartGroup` 移出為頂層 `SidebarSmartGroup`，以 Computed Properties／Internal Method／Identifiable 規範分區，本體不加 MARK)
+- L136 `MKN`：巢狀型別內的 MARK：Static Properties
+    - 現況：`// MARK: - Static Properties`
+    - 結論：已修正 (task 8.4，`SmartGroup` 移出為頂層 `SidebarSmartGroup`，以 Computed Properties／Internal Method／Identifiable 規範分區，本體不加 MARK)
+- L152 `MK1`：MARK 段名：ViewBuilder
+    - 現況：`// MARK: - ViewBuilder`
+    - 結論：已修正 (task 8.4，改 `// MARK: - Private Views`，並依 View 樣板排序)
+- L177 `ARG4`：一行內有 4 個引數或參數，超過三個要斷行：.listRowInsets(EdgeInsets(top: 6, leading: 12, bot
+    - 現況：`.listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 14, trailing: 12))`
+    - 結論：已修正 (task 8.4，`EdgeInsets` 四個引數各一行，右括號單獨一行)
+- L197 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 group
+    - 現況：`ForEach(SmartGroup.orderBrowsingCases) { group in`
+    - 結論：已修正 (task 8.4，`ForEach` 的單一表達式 closure 改 `$0`)
+- L215 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter palette: 目前外觀使用的色盤`
+    - 結論：已修正 (task 8.4，摘要與 `- Parameter(s)` 之間補空 `///`)
+- L247 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 8.4，摘要與 `- Parameter(s)` 之間補空 `///`)
+- L281 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 8.4，摘要與 `- Parameter(s)` 之間補空 `///`)
+- L287 `CALL1`：未達斷行條件卻拆成多行 (3 個，接成一行 96 字元)：func smartGroupRow(
+    - 現況：`func smartGroupRow(`
+    - 結論：已修正 (task 8.4，`smartGroupRow(` 簽章改用型別名後接成一行為 103 字元超過 100，斷行合規)
+- L360 `CASELET`：改寫成 `case .x(let v)`，不用 `case let .x(v)`
+    - 現況：`case let .status(status) = store.orders.selectedStatus,`
+    - 結論：已修正 (task 8.4，改 `if case .status(let status) = …`)
+- L361 `CASECONT`：多 pattern case 的續行縮排 0 格，應比 case 多 8 格
+    - 現況：`SmartGroup.orderBrowsingCases.contains(where: { $0.status == status }) {`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L362 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `}` 仍放得下)
+    - 現況：`return .smartGroup(status)`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L362 `CASECONT`：多 pattern case 的續行縮排 1 格，應比 case 多 8 格
+    - 現況：`return .smartGroup(status)`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L363 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `return .tab(store.selectedTab)` 仍放得下)
+    - 現況：`}`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L363 `CASECONT`：多 pattern case 的續行縮排 -3 格，應比 case 多 8 格
+    - 現況：`}`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L364 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `}` 仍放得下)
+    - 現況：`return .tab(store.selectedTab)`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L364 `CASECONT`：多 pattern case 的續行縮排 -3 格，應比 case 多 8 格
+    - 現況：`return .tab(store.selectedTab)`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L365 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `` 仍放得下)
+    - 現況：`}`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L365 `CASECONT`：多 pattern case 的續行縮排 -7 格，應比 case 多 8 格
+    - 現況：`}`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L366 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `/// 分頁列合併朗讀後承載徽章筆數的 accessibil` 仍放得下)
+    - 現況：``
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L366 `CASECONT`：多 pattern case 的續行縮排 -11 格，應比 case 多 8 格
+    - 現況：``
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L367 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `/// - Parameter badgeCount:` 仍放得下)
+    - 現況：`/// 分頁列合併朗讀後承載徽章筆數的 accessibility value`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L367 `CASECONT`：多 pattern case 的續行縮排 -7 格，應比 case 多 8 格
+    - 現況：`/// 分頁列合併朗讀後承載徽章筆數的 accessibility value`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L368 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `/// - Returns:` 仍放得下)
+    - 現況：``/// - Parameter badgeCount: 徽章數字；為 `nil` 或 `0` 時不朗讀筆數``
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L368 `CASECONT`：多 pattern case 的續行縮排 -7 格，應比 case 多 8 格
+    - 現況：``/// - Parameter badgeCount: 徽章數字；為 `nil` 或 `0` 時不朗讀筆數``
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L368 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：``/// - Parameter badgeCount: 徽章數字；為 `nil` 或 `0` 時不朗讀筆數``
+    - 結論：已修正 (task 8.4，摘要與 `- Parameter(s)` 之間補空 `///`)
+- L369 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `func badgeAccessibilityValue(_` 仍放得下)
+    - 現況：`/// - Returns: 筆數描述`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L369 `CASECONT`：多 pattern case 的續行縮排 -7 格，應比 case 多 8 格
+    - 現況：`/// - Returns: 筆數描述`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L370 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `guard let badgeCount,` 仍放得下)
+    - 現況：`func badgeAccessibilityValue(_ badgeCount: Int?) -> Text {`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L370 `CASECONT`：多 pattern case 的續行縮排 -7 格，應比 case 多 8 格
+    - 現況：`func badgeAccessibilityValue(_ badgeCount: Int?) -> Text {`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L371 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `return Text(verbatim: "")` 仍放得下)
+    - 現況：`guard let badgeCount, badgeCount > 0 else {`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L371 `CASECONT`：多 pattern case 的續行縮排 -3 格，應比 case 多 8 格
+    - 現況：`guard let badgeCount, badgeCount > 0 else {`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L372 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `}` 仍放得下)
+    - 現況：`return Text(verbatim: "")`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L372 `CASECONT`：多 pattern case 的續行縮排 1 格，應比 case 多 8 格
+    - 現況：`return Text(verbatim: "")`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L373 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `return Text("\(badgeCount) 件進行` 仍放得下)
+    - 現況：`}`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L373 `CASECONT`：多 pattern case 的續行縮排 -3 格，應比 case 多 8 格
+    - 現況：`}`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L374 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `}` 仍放得下)
+    - 現況：`return Text("\(badgeCount) 件進行中")`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L374 `CASECONT`：多 pattern case 的續行縮排 -3 格，應比 case 多 8 格
+    - 現況：`return Text("\(badgeCount) 件進行中")`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L375 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `` 仍放得下)
+    - 現況：`}`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L375 `CASECONT`：多 pattern case 的續行縮排 -7 格，應比 case 多 8 格
+    - 現況：`}`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L376 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `/// `List` 單選 binding：分頁與智慧分組共` 仍放得下)
+    - 現況：``
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L376 `CASECONT`：多 pattern case 的續行縮排 -11 格，應比 case 多 8 格
+    - 現況：``
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L377 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `var selectionBinding:` 仍放得下)
+    - 現況：``/// `List` 單選 binding：分頁與智慧分組共用同一個選取型別``
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L377 `CASECONT`：多 pattern case 的續行縮排 -7 格，應比 case 多 8 格
+    - 現況：``/// `List` 單選 binding：分頁與智慧分組共用同一個選取型別``
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L378 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `Binding(` 仍放得下)
+    - 現況：`var selectionBinding: Binding<SidebarSelection?> {`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L378 `CASECONT`：多 pattern case 的續行縮排 -7 格，應比 case 多 8 格
+    - 現況：`var selectionBinding: Binding<SidebarSelection?> {`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L379 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `get:` 仍放得下)
+    - 現況：`Binding(`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L379 `CASECONT`：多 pattern case 的續行縮排 -3 格，應比 case 多 8 格
+    - 現況：`Binding(`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L380 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `set:` 仍放得下)
+    - 現況：`get: { currentSelection },`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L380 `CASECONT`：多 pattern case 的續行縮排 1 格，應比 case 多 8 格
+    - 現況：`get: { currentSelection },`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L381 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `switch newSelection {` 仍放得下)
+    - 現況：`set: { newSelection in`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L381 `CASECONT`：多 pattern case 的續行縮排 1 格，應比 case 多 8 格
+    - 現況：`set: { newSelection in`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L382 `CASECONT`：多 pattern case 未排滿 100 就斷行 (下一項 `case let .tab(tab):` 仍放得下)
+    - 現況：`switch newSelection {`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L382 `CASECONT`：多 pattern case 的續行縮排 5 格，應比 case 多 8 格
+    - 現況：`switch newSelection {`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L383 `CASECONT`：多 pattern case 的續行縮排 5 格，應比 case 多 8 格
+    - 現況：`case let .tab(tab):`
+    - 結論：已修正 (task 8.4，由條件順序調整消除：腳本把 `if` 條件中以 `case let …,` 開頭的行誤判為 switch 多 pattern case，`if case .status(let status) = …` 移到第一個條件後不再命中)
+- L383 `CASELET`：改寫成 `case .x(let v)`，不用 `case let .x(v)`
+    - 現況：`case let .tab(tab):`
+    - 結論：已修正 (task 8.4，改 `case .tab(let tab)`)
+- L389 `CASELET`：改寫成 `case .x(let v)`，不用 `case let .x(v)`
+    - 現況：`case let .smartGroup(status):`
+    - 結論：已修正 (task 8.4，改 `case .smartGroup(let status)`)
+
+## `apps/ios/BuyLedger/Features/App/RootTabLayout.swift` (0 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+整檔掃描 0 筆，無待填項目
+
+## `apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID.swift` (2 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L1 `LEN`：不含檔頭與空行 612 行
+    - 現況：`//`
+    - 結論：已修正 (task 8.1，依 `<Name>+<Domain>.swift` 拆成主檔 (33 行) 加 `+Common`／`+App`／`+Dashboard`／`+Orders`／`+Campaigns`／`+Insights`／`+More`，最長 `+More` 158 行，8 檔整檔 `LEN` 0 筆)
+- L723 `WSTR`：單一字串字面值行寬 114 (列出說明，不計入失敗)
+    - 現況：`static let paymentMethodCashOnDeliveryToggle = "lookupManagement.paymentMethodEditor.cashOnDeliveryToggle"`
+    - 結論：依裁決保留 (不計失敗：identifier 值斷行或改值會改變 UI 測試定位字串；現位於 `BLAccessibilityID+More.swift`；task 8.1)
+
+## `apps/ios/BuyLedgerTests/ActionGroupingScanTests.swift` (15 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L63 `D4`：會拋錯缺 - Throws：@Test func migratedViewsSendOnlyViewActions() throws(any Err
+    - 現況：`@Test func migratedViewsSendOnlyViewActions() throws(any Error) {`
+    - 結論：已修正 (task 8.5，補 `/// - Throws:`)
+- L63 `TNAMEL`：舊式單段 lowerCamel 測試名稱：migratedViewsSendOnlyViewActions
+    - 現況：`@Test func migratedViewsSendOnlyViewActions() throws(any Error) {`
+    - 結論：已修正 (task 8.5，改名 `scanMigratedViewFiles_已遷移View_只送出ViewAction`)
+- L63 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func migratedViewsSendOnlyViewActions() throws(any Error) {`
+    - 結論：已修正 (task 8.5，`@Test` 單獨一行，`func` 另起一行)
+- L71 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 98 字元)：#expect(
+    - 現況：`#expect(`
+    - 結論：已修正 (task 8.5，`#expect(` 接成一行，未超過 100)
+- L82 `D4`：會拋錯缺 - Throws：@Test func reducersDoNotSendOrInterceptChildViewActions() th
+    - 現況：`@Test func reducersDoNotSendOrInterceptChildViewActions() throws(any Error) {`
+    - 結論：已修正 (task 8.5，補 `/// - Throws:`)
+- L82 `TNAMEL`：舊式單段 lowerCamel 測試名稱：reducersDoNotSendOrInterceptChildViewActions
+    - 現況：`@Test func reducersDoNotSendOrInterceptChildViewActions() throws(any Error) {`
+    - 結論：已修正 (task 8.5，改名 `reducerChildViewViolations_Features原始碼_不包裝子層ViewAction`)
+- L82 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func reducersDoNotSendOrInterceptChildViewActions() throws(any Error) {`
+    - 結論：已修正 (task 8.5，`@Test` 單獨一行，`func` 另起一行)
+- L90 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 94 字元)：#expect(
+    - 現況：`#expect(`
+    - 結論：已修正 (task 8.5，`#expect(` 接成一行，未超過 100)
+- L98 `D2`：有參數缺 - Parameter：func scannerClassifiesSourceFragments(scenario: ScanScenario
+    - 現況：`func scannerClassifiesSourceFragments(scenario: ScanScenario) {`
+    - 結論：已修正 (task 8.5，參數化測試補 `/// - Parameter scenario:`)
+- L98 `TNAMEL`：舊式單段 lowerCamel 測試名稱：scannerClassifiesSourceFragments
+    - 現況：`func scannerClassifiesSourceFragments(scenario: ScanScenario) {`
+    - 結論：已修正 (task 8.5，改名 `scanScenario_兩條規則的片段_判斷與預期一致`)
+- L108 `SWC`：switch case 之間缺空行：case .reducerChildView:
+    - 現況：`case .reducerChildView:`
+    - 結論：已修正 (task 8.5，switch 的 case 之間補空行)
+- L129 `TNAMEL`：舊式單段 lowerCamel 測試名稱：matchingAllowlistEntryIsUsed
+    - 現況：`@Test func matchingAllowlistEntryIsUsed() {`
+    - 結論：已修正 (task 8.5，改名 `scanStoreSendContents_符合allowlist的送出點_標記為已使用`)
+- L129 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func matchingAllowlistEntryIsUsed() {`
+    - 結論：已修正 (task 8.5，`@Test` 單獨一行，`func` 另起一行)
+- L151 `TNAMEL`：舊式單段 lowerCamel 測試名稱：unusedAllowlistEntryFailsTheScan
+    - 現況：`@Test func unusedAllowlistEntryFailsTheScan() {`
+    - 結論：已修正 (task 8.5，改名 `unusedAllowlistViolations_allowlist沒有對應送出點_回報未使用條目`)
+- L151 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func unusedAllowlistEntryFailsTheScan() {`
+    - 結論：已修正 (task 8.5，`@Test` 單獨一行，`func` 另起一行)
+
+## `apps/ios/BuyLedgerTests/BLUITestConfigurationTests.swift` (132 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L10 `TIMP`：@testable import 前缺空行
+    - 現況：`@testable import BuyLedger`
+    - 結論：已修正 (task 8.2，一般 import 與 `@testable import` 間補空行)
+- L17 `MKN`：巢狀型別內的 MARK：Tests
+    - 現況：`// MARK: - Tests`
+    - 結論：已修正 (task 8.2，移除整檔 DEBUG 區塊縮排，Tests MARK 回到正確層級)
+- L45 `D1`：缺 ///：@Test func emptyArgumentsProduceDisabledConfigurationWithDefaults() {
+    - 現況：`@Test func emptyArgumentsProduceDisabledConfigurationWithDefaults() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L45 `GWT`：缺 // Given
+    - 現況：`@Test func emptyArgumentsProduceDisabledConfigurationWithDefaults() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備空參數與固定預期值)
+- L45 `GWT`：缺 // Then
+    - 現況：`@Test func emptyArgumentsProduceDisabledConfigurationWithDefaults() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言全部預設值)
+- L45 `GWT`：缺 // When
+    - 現況：`@Test func emptyArgumentsProduceDisabledConfigurationWithDefaults() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L45 `TD`：@Test 缺 ///
+    - 現況：`@Test func emptyArgumentsProduceDisabledConfigurationWithDefaults() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L45 `TNAMEL`：舊式單段 lowerCamel 測試名稱：emptyArgumentsProduceDisabledConfigurationWithDefa
+    - 現況：`@Test func emptyArgumentsProduceDisabledConfigurationWithDefaults() {`
+    - 結論：已修正 (task 8.2，改三段式中文名)
+- L45 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func emptyArgumentsProduceDisabledConfigurationWithDefaults() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L59 `D1`：缺 ///：@Test func uiTestFlagEnablesConfiguration() {
+    - 現況：`@Test func uiTestFlagEnablesConfiguration() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L59 `GWT`：缺 // Given
+    - 現況：`@Test func uiTestFlagEnablesConfiguration() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備測試旗標)
+- L59 `GWT`：缺 // Then
+    - 現況：`@Test func uiTestFlagEnablesConfiguration() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言啟用狀態)
+- L59 `GWT`：缺 // When
+    - 現況：`@Test func uiTestFlagEnablesConfiguration() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L59 `TD`：@Test 缺 ///
+    - 現況：`@Test func uiTestFlagEnablesConfiguration() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L59 `TNAMEL`：舊式單段 lowerCamel 測試名稱：uiTestFlagEnablesConfiguration
+    - 現況：`@Test func uiTestFlagEnablesConfiguration() {`
+    - 結論：已修正 (task 8.2，改三段式中文名)
+- L59 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func uiTestFlagEnablesConfiguration() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L65 `D1`：缺 ///：@Test func defaultReferenceDateIsEndOfApril2026InUTC() {
+    - 現況：`@Test func defaultReferenceDateIsEndOfApril2026InUTC() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L65 `GWT`：缺 // Given
+    - 現況：`@Test func defaultReferenceDateIsEndOfApril2026InUTC() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備固定日期預期值)
+- L65 `GWT`：缺 // Then
+    - 現況：`@Test func defaultReferenceDateIsEndOfApril2026InUTC() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，比較日期)
+- L65 `GWT`：缺 // When
+    - 現況：`@Test func defaultReferenceDateIsEndOfApril2026InUTC() {`
+    - 結論：已修正 (task 8.2，補 `// When`，讀取預設日期)
+- L65 `TD`：@Test 缺 ///
+    - 現況：`@Test func defaultReferenceDateIsEndOfApril2026InUTC() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L65 `TNAMEL`：舊式單段 lowerCamel 測試名稱：defaultReferenceDateIsEndOfApril2026InUTC
+    - 現況：`@Test func defaultReferenceDateIsEndOfApril2026InUTC() {`
+    - 結論：已修正 (task 8.2，改三段式中文名)
+- L65 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func defaultReferenceDateIsEndOfApril2026InUTC() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L69 `PARTW`：斷行後多個參數或引數擠在同一行："-BLUITestSeed", "campaignsWithOrders",
+    - 現況：`#expect(`
+    - 結論：已修正 (task 8.2，日期斷言改用獨立固定值，移除原部分斷行；多行參數陣列每個元素獨立一行)
+- L71 `RPAR`：斷行呼叫的右括號沒有單獨一行：== formatter.date(from: ""))
+    - 現況：`== formatter.date(from: "2026-04-30T00:00:00Z"))`
+    - 結論：已修正 (task 8.2，日期比較改為未超寬的單行 `#expect`)
+- L74 `D1`：缺 ///：@Test func allFlagsAreParsedFromWellFormedArguments() {
+    - 現況：`@Test func allFlagsAreParsedFromWellFormedArguments() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L74 `GWT`：缺 // Given
+    - 現況：`@Test func allFlagsAreParsedFromWellFormedArguments() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備有效旗標與固定日期)
+- L74 `GWT`：缺 // Then
+    - 現況：`@Test func allFlagsAreParsedFromWellFormedArguments() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言解析值)
+- L74 `GWT`：缺 // When
+    - 現況：`@Test func allFlagsAreParsedFromWellFormedArguments() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L74 `TD`：@Test 缺 ///
+    - 現況：`@Test func allFlagsAreParsedFromWellFormedArguments() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L74 `TNAMEL`：舊式單段 lowerCamel 測試名稱：allFlagsAreParsedFromWellFormedArguments
+    - 現況：`@Test func allFlagsAreParsedFromWellFormedArguments() {`
+    - 結論：已修正 (task 8.2，改三段式中文名)
+- L74 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func allFlagsAreParsedFromWellFormedArguments() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L100 `D1`：缺 ///：@Test func referenceDateAcceptsFractionalSeconds() {
+    - 現況：`@Test func referenceDateAcceptsFractionalSeconds() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L100 `GWT`：缺 // Given
+    - 現況：`@Test func referenceDateAcceptsFractionalSeconds() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備小數秒參數與預期值)
+- L100 `GWT`：缺 // Then
+    - 現況：`@Test func referenceDateAcceptsFractionalSeconds() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，比較日期)
+- L100 `GWT`：缺 // When
+    - 現況：`@Test func referenceDateAcceptsFractionalSeconds() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L100 `TD`：@Test 缺 ///
+    - 現況：`@Test func referenceDateAcceptsFractionalSeconds() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L100 `TNAMEL`：舊式單段 lowerCamel 測試名稱：referenceDateAcceptsFractionalSeconds
+    - 現況：`@Test func referenceDateAcceptsFractionalSeconds() {`
+    - 結論：已修正 (task 8.2，改三段式中文名)
+- L100 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func referenceDateAcceptsFractionalSeconds() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L110 `D1`：缺 ///：@Test func unknownSeedProfileFallsBackToEmpty() {
+    - 現況：`@Test func unknownSeedProfileFallsBackToEmpty() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L110 `GWT`：缺 // Given
+    - 現況：`@Test func unknownSeedProfileFallsBackToEmpty() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備無效種子)
+- L110 `GWT`：缺 // Then
+    - 現況：`@Test func unknownSeedProfileFallsBackToEmpty() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言空種子與啟用狀態)
+- L110 `GWT`：缺 // When
+    - 現況：`@Test func unknownSeedProfileFallsBackToEmpty() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L110 `TD`：@Test 缺 ///
+    - 現況：`@Test func unknownSeedProfileFallsBackToEmpty() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L110 `TNAMEL`：舊式單段 lowerCamel 測試名稱：unknownSeedProfileFallsBackToEmpty
+    - 現況：`@Test func unknownSeedProfileFallsBackToEmpty() {`
+    - 結論：已修正 (task 8.2，改三段式中文名並移入 InvalidValues)
+- L110 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func unknownSeedProfileFallsBackToEmpty() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L119 `D1`：缺 ///：@Test func unparsableReferenceDateFallsBackToDefault() {
+    - 現況：`@Test func unparsableReferenceDateFallsBackToDefault() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L119 `GWT`：缺 // Given
+    - 現況：`@Test func unparsableReferenceDateFallsBackToDefault() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備無效時間及固定預期值)
+- L119 `GWT`：缺 // Then
+    - 現況：`@Test func unparsableReferenceDateFallsBackToDefault() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，比較回退日期)
+- L119 `GWT`：缺 // When
+    - 現況：`@Test func unparsableReferenceDateFallsBackToDefault() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L119 `TD`：@Test 缺 ///
+    - 現況：`@Test func unparsableReferenceDateFallsBackToDefault() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L119 `TNAMEL`：舊式單段 lowerCamel 測試名稱：unparsableReferenceDateFallsBackToDefault
+    - 現況：`@Test func unparsableReferenceDateFallsBackToDefault() {`
+    - 結論：已修正 (task 8.2，改三段式中文名並移入 InvalidValues)
+- L119 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func unparsableReferenceDateFallsBackToDefault() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L125 `D1`：缺 ///：@Test func unknownLanguageAndCalendarAccessFallBackToDefaults() {
+    - 現況：`@Test func unknownLanguageAndCalendarAccessFallBackToDefaults() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L125 `GWT`：缺 // Given
+    - 現況：`@Test func unknownLanguageAndCalendarAccessFallBackToDefaults() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備無效列舉參數)
+- L125 `GWT`：缺 // Then
+    - 現況：`@Test func unknownLanguageAndCalendarAccessFallBackToDefaults() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言三項預設值)
+- L125 `GWT`：缺 // When
+    - 現況：`@Test func unknownLanguageAndCalendarAccessFallBackToDefaults() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L125 `TD`：@Test 缺 ///
+    - 現況：`@Test func unknownLanguageAndCalendarAccessFallBackToDefaults() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L125 `TNAMEL`：舊式單段 lowerCamel 測試名稱：unknownLanguageAndCalendarAccessFallBackToDefaults
+    - 現況：`@Test func unknownLanguageAndCalendarAccessFallBackToDefaults() {`
+    - 結論：已修正 (task 8.2，改三段式中文名並移入 InvalidValues)
+- L125 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func unknownLanguageAndCalendarAccessFallBackToDefaults() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L137 `D1`：缺 ///：@Test func explicitNoneLoadFailureIsParsed() {
+    - 現況：`@Test func explicitNoneLoadFailureIsParsed() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L137 `GWT`：缺 // Given
+    - 現況：`@Test func explicitNoneLoadFailureIsParsed() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備明確 none 值)
+- L137 `GWT`：缺 // Then
+    - 現況：`@Test func explicitNoneLoadFailureIsParsed() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言載入失敗 none)
+- L137 `GWT`：缺 // When
+    - 現況：`@Test func explicitNoneLoadFailureIsParsed() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L137 `TD`：@Test 缺 ///
+    - 現況：`@Test func explicitNoneLoadFailureIsParsed() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L137 `TNAMEL`：舊式單段 lowerCamel 測試名稱：explicitNoneLoadFailureIsParsed
+    - 現況：`@Test func explicitNoneLoadFailureIsParsed() {`
+    - 結論：已修正 (task 8.2，改三段式中文名)
+- L137 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func explicitNoneLoadFailureIsParsed() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L138 `D6`：註解結尾句號
+    - 現況：``// 確認 `none` 不會被當成未提供值。``
+    - 結論：已修正 (task 8.2，原說明移入測試 doc，無結尾中文句號)
+- L144 `D1`：缺 ///：@Test func referenceDateAcceptsDateOnlyValueAsMidnightUTC() {
+    - 現況：`@Test func referenceDateAcceptsDateOnlyValueAsMidnightUTC() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L144 `GWT`：缺 // Given
+    - 現況：`@Test func referenceDateAcceptsDateOnlyValueAsMidnightUTC() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備日期及固定午夜預期值)
+- L144 `GWT`：缺 // Then
+    - 現況：`@Test func referenceDateAcceptsDateOnlyValueAsMidnightUTC() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，比較日期)
+- L144 `GWT`：缺 // When
+    - 現況：`@Test func referenceDateAcceptsDateOnlyValueAsMidnightUTC() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L144 `TD`：@Test 缺 ///
+    - 現況：`@Test func referenceDateAcceptsDateOnlyValueAsMidnightUTC() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L144 `TNAMEL`：舊式單段 lowerCamel 測試名稱：referenceDateAcceptsDateOnlyValueAsMidnightUTC
+    - 現況：`@Test func referenceDateAcceptsDateOnlyValueAsMidnightUTC() {`
+    - 結論：已修正 (task 8.2，改三段式中文名)
+- L144 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func referenceDateAcceptsDateOnlyValueAsMidnightUTC() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L152 `D1`：缺 ///：@Test func duplicatedFlagUsesLastValue() {
+    - 現況：`@Test func duplicatedFlagUsesLastValue() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L152 `GWT`：缺 // Given
+    - 現況：`@Test func duplicatedFlagUsesLastValue() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備重複旗標)
+- L152 `GWT`：缺 // Then
+    - 現況：`@Test func duplicatedFlagUsesLastValue() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言最後值)
+- L152 `GWT`：缺 // When
+    - 現況：`@Test func duplicatedFlagUsesLastValue() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L152 `TD`：@Test 缺 ///
+    - 現況：`@Test func duplicatedFlagUsesLastValue() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L152 `TNAMEL`：舊式單段 lowerCamel 測試名稱：duplicatedFlagUsesLastValue
+    - 現況：`@Test func duplicatedFlagUsesLastValue() {`
+    - 結論：已修正 (task 8.2，改三段式中文名並移入 InvalidValues)
+- L152 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func duplicatedFlagUsesLastValue() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L161 `D1`：缺 ///：@Test func nonIntegerMonthlyGoalFallsBackToNil() {
+    - 現況：`@Test func nonIntegerMonthlyGoalFallsBackToNil() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L161 `GWT`：缺 // Given
+    - 現況：`@Test func nonIntegerMonthlyGoalFallsBackToNil() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備非整數月目標)
+- L161 `GWT`：缺 // Then
+    - 現況：`@Test func nonIntegerMonthlyGoalFallsBackToNil() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言 nil)
+- L161 `GWT`：缺 // When
+    - 現況：`@Test func nonIntegerMonthlyGoalFallsBackToNil() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L161 `TD`：@Test 缺 ///
+    - 現況：`@Test func nonIntegerMonthlyGoalFallsBackToNil() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L161 `TNAMEL`：舊式單段 lowerCamel 測試名稱：nonIntegerMonthlyGoalFallsBackToNil
+    - 現況：`@Test func nonIntegerMonthlyGoalFallsBackToNil() {`
+    - 結論：已修正 (task 8.2，改三段式中文名並移入 InvalidValues)
+- L161 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func nonIntegerMonthlyGoalFallsBackToNil() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L167 `D1`：缺 ///：@Test func negativeMonthlyGoalIsRejectedButZeroIsKept() {
+    - 現況：`@Test func negativeMonthlyGoalIsRejectedButZeroIsKept() {`
+    - 結論：已修正 (task 8.2，補 `///` 與參數 doc)
+- L167 `GWT`：缺 // Given
+    - 現況：`@Test func negativeMonthlyGoalIsRejectedButZeroIsKept() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備單一參數化案例)
+- L167 `GWT`：缺 // Then
+    - 現況：`@Test func negativeMonthlyGoalIsRejectedButZeroIsKept() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，比較獨立預期值)
+- L167 `GWT`：缺 // When
+    - 現況：`@Test func negativeMonthlyGoalIsRejectedButZeroIsKept() {`
+    - 結論：已修正 (task 8.2，補 `// When`，每案建立一次設定)
+- L167 `TD`：@Test 缺 ///
+    - 現況：`@Test func negativeMonthlyGoalIsRejectedButZeroIsKept() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L167 `TNAMEL`：舊式單段 lowerCamel 測試名稱：negativeMonthlyGoalIsRejectedButZeroIsKept
+    - 現況：`@Test func negativeMonthlyGoalIsRejectedButZeroIsKept() {`
+    - 結論：已修正 (task 8.2，改三段式中文名並移入 InvalidValues)
+- L167 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func negativeMonthlyGoalIsRejectedButZeroIsKept() {`
+    - 結論：已修正 (task 8.2，參數化 `@Test` 獨立一行)
+- L175 `D1`：缺 ///：@Test func currencyCodeIsUppercasedAndTrimmed() {
+    - 現況：`@Test func currencyCodeIsUppercasedAndTrimmed() {`
+    - 結論：已修正 (task 8.2，補 `///` 與參數 doc)
+- L175 `GWT`：缺 // Given
+    - 現況：`@Test func currencyCodeIsUppercasedAndTrimmed() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備單一幣別案例)
+- L175 `GWT`：缺 // Then
+    - 現況：`@Test func currencyCodeIsUppercasedAndTrimmed() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言 TWD)
+- L175 `GWT`：缺 // When
+    - 現況：`@Test func currencyCodeIsUppercasedAndTrimmed() {`
+    - 結論：已修正 (task 8.2，補 `// When`，每案建立一次設定)
+- L175 `TD`：@Test 缺 ///
+    - 現況：`@Test func currencyCodeIsUppercasedAndTrimmed() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L175 `TNAMEL`：舊式單段 lowerCamel 測試名稱：currencyCodeIsUppercasedAndTrimmed
+    - 現況：`@Test func currencyCodeIsUppercasedAndTrimmed() {`
+    - 結論：已修正 (task 8.2，改三段式中文名)
+- L175 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func currencyCodeIsUppercasedAndTrimmed() {`
+    - 結論：已修正 (task 8.2，參數化 `@Test` 獨立一行)
+- L183 `D1`：缺 ///：@Test func currencyCodeIsRejectedWhenNotThreeAsciiLetters() {
+    - 現況：`@Test func currencyCodeIsRejectedWhenNotThreeAsciiLetters() {`
+    - 結論：已修正 (task 8.2，補 `///` 與參數 doc)
+- L183 `GWT`：缺 // Given
+    - 現況：`@Test func currencyCodeIsRejectedWhenNotThreeAsciiLetters() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備單一無效幣別案例)
+- L183 `GWT`：缺 // Then
+    - 現況：`@Test func currencyCodeIsRejectedWhenNotThreeAsciiLetters() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言 nil)
+- L183 `GWT`：缺 // When
+    - 現況：`@Test func currencyCodeIsRejectedWhenNotThreeAsciiLetters() {`
+    - 結論：已修正 (task 8.2，補 `// When`，每案建立一次設定)
+- L183 `TD`：@Test 缺 ///
+    - 現況：`@Test func currencyCodeIsRejectedWhenNotThreeAsciiLetters() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L183 `TNAMEL`：舊式單段 lowerCamel 測試名稱：currencyCodeIsRejectedWhenNotThreeAsciiLetters
+    - 現況：`@Test func currencyCodeIsRejectedWhenNotThreeAsciiLetters() {`
+    - 結論：已修正 (task 8.2，改三段式中文名並移入 InvalidValues)
+- L183 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func currencyCodeIsRejectedWhenNotThreeAsciiLetters() {`
+    - 結論：已修正 (task 8.2，參數化 `@Test` 獨立一行)
+- L195 `D1`：缺 ///：@Test func trailingFlagWithoutValueDoesNotCrash() {
+    - 現況：`@Test func trailingFlagWithoutValueDoesNotCrash() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L195 `GWT`：缺 // Given
+    - 現況：`@Test func trailingFlagWithoutValueDoesNotCrash() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備尾端缺值旗標)
+- L195 `GWT`：缺 // Then
+    - 現況：`@Test func trailingFlagWithoutValueDoesNotCrash() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言空種子與啟用狀態)
+- L195 `GWT`：缺 // When
+    - 現況：`@Test func trailingFlagWithoutValueDoesNotCrash() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L195 `TD`：@Test 缺 ///
+    - 現況：`@Test func trailingFlagWithoutValueDoesNotCrash() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L195 `TNAMEL`：舊式單段 lowerCamel 測試名稱：trailingFlagWithoutValueDoesNotCrash
+    - 現況：`@Test func trailingFlagWithoutValueDoesNotCrash() {`
+    - 結論：已修正 (task 8.2，改三段式中文名並移入 InvalidValues)
+- L195 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func trailingFlagWithoutValueDoesNotCrash() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L203 `D1`：缺 ///：@Test func flagFollowedByAnotherFlagIsTreatedAsMissingValue() {
+    - 現況：`@Test func flagFollowedByAnotherFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L203 `GWT`：缺 // Given
+    - 現況：`@Test func flagFollowedByAnotherFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備相鄰測試旗標)
+- L203 `GWT`：缺 // Then
+    - 現況：`@Test func flagFollowedByAnotherFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言空種子與英文語言)
+- L203 `GWT`：缺 // When
+    - 現況：`@Test func flagFollowedByAnotherFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L203 `TD`：@Test 缺 ///
+    - 現況：`@Test func flagFollowedByAnotherFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L203 `TNAMEL`：舊式單段 lowerCamel 測試名稱：flagFollowedByAnotherFlagIsTreatedAsMissingValue
+    - 現況：`@Test func flagFollowedByAnotherFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，改三段式中文名並移入 InvalidValues)
+- L203 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func flagFollowedByAnotherFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L213 `D1`：缺 ///：@Test func flagFollowedByForeignFlagIsTreatedAsMissingValue() {
+    - 現況：`@Test func flagFollowedByForeignFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，補 `///`)
+- L213 `GWT`：缺 // Given
+    - 現況：`@Test func flagFollowedByForeignFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，補 `// Given`，準備相鄰外部旗標)
+- L213 `GWT`：缺 // Then
+    - 現況：`@Test func flagFollowedByForeignFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，補 `// Then`，斷言空種子)
+- L213 `GWT`：缺 // When
+    - 現況：`@Test func flagFollowedByForeignFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，補 `// When`，建立設定)
+- L213 `TD`：@Test 缺 ///
+    - 現況：`@Test func flagFollowedByForeignFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，`@Test` 前有 doc)
+- L213 `TNAMEL`：舊式單段 lowerCamel 測試名稱：flagFollowedByForeignFlagIsTreatedAsMissingValue
+    - 現況：`@Test func flagFollowedByForeignFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，改三段式中文名並移入 InvalidValues)
+- L213 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func flagFollowedByForeignFlagIsTreatedAsMissingValue() {`
+    - 結論：已修正 (task 8.2，`@Test` 獨立一行)
+- L225 `TNAMEL`：舊式單段 lowerCamel 測試名稱：lookupWriteFailureFlagEnablesWriteFailures
+    - 現況：`func lookupWriteFailureFlagEnablesWriteFailures() {`
+    - 結論：已修正 (task 8.2，改名為 `init_帶主檔寫入失敗旗標_啟用寫入失敗()`)
+
+## `apps/ios/BuyLedgerTests/LocalizationCatalogTests.swift` (161 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L1 `LEN`：不含檔頭與空行 940 行
+    - 現況：`//`
+    - 結論：已修正 (task 8.8，拆成主檔加 `+AppLanguage`、`+SourceGuards`、`+LiteralScan` 與 `String`／`NSString`／`Array` 的 `+SourceLiteralScan` 共 7 檔，最大 289 行)
+- L10 `TIMP`：@testable import 前缺空行
+    - 現況：`@testable import BuyLedger`
+    - 結論：已修正 (task 8.8，未用到 BuyLedger 符號的檔不再 import，`+AppLanguage` 的 `@testable import` 前有空行)
+- L17 `D1`：缺 ///：@Test func catalogContainsCompleteTraditionalChineseAndEnglishValues()
+    - 現況：`@Test func catalogContainsCompleteTraditionalChineseAndEnglishValues() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L17 `GWT`：缺 // Given
+    - 現況：`@Test func catalogContainsCompleteTraditionalChineseAndEnglishValues() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Given`)
+- L17 `GWT`：缺 // Then
+    - 現況：`@Test func catalogContainsCompleteTraditionalChineseAndEnglishValues() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Then`)
+- L17 `GWT`：缺 // When
+    - 現況：`@Test func catalogContainsCompleteTraditionalChineseAndEnglishValues() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// When`)
+- L17 `TD`：@Test 缺 ///
+    - 現況：`@Test func catalogContainsCompleteTraditionalChineseAndEnglishValues() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 前補 `///`)
+- L17 `TNAMEL`：舊式單段 lowerCamel 測試名稱：catalogContainsCompleteTraditionalChineseAndEnglis
+    - 現況：`@Test func catalogContainsCompleteTraditionalChineseAndEnglishValues() throws(any Error) {`
+    - 結論：已修正 (task 8.8，改三段式中文名稱；第一條測試拆成 5 條 (程式字面值都已收錄、已驗收英文值參數化 35 案例、中文來源不得與英文相同、每個需翻譯條目中英文非空、`sourceLanguage` 為 `zh-Hant`))
+- L17 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func catalogContainsCompleteTraditionalChineseAndEnglishValues() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 單獨一行)
+- L30 `OPEOL`：運算子放在行尾就斷行：let sourceRoot =
+    - 現況：`let sourceRoot =`
+    - 結論：已修正 (task 8.8，改 `Self.iosRootURL.appending(path: "BuyLedger")`)
+- L43 `D6`：註解結尾句號
+    - 現況：`// 只驗證已驗收的英文翻譯；完整性由上方掃描檢查。`
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+- L101 `CLA`：closure 簽章多標了參數型別、async 或回傳型別：key, value -> String? in
+    - 現況：`let untranslatedChineseKeys = strings.compactMap { key, value -> String? in`
+    - 結論：已修正 (task 8.8，改 `filter { … }.keys.sorted()`)
+- L103 `GRD`：條件續行要對齊第一個條件：應縮排 18 格，目前 16 格
+    - 現況：`let entry = value as? [String: Any],`
+    - 結論：已修正 (task 8.8，12 個條件的 guard 抽成 private `hasUntranslatedEnglishValue(key:value:) -> Bool`)
+- L104 `GRD`：條件續行要對齊第一個條件：應縮排 18 格，目前 16 格
+    - 現況：`entry["shouldTranslate"] as? Bool != false,`
+    - 結論：已修正 (task 8.8，12 個條件的 guard 抽成 private `hasUntranslatedEnglishValue(key:value:) -> Bool`)
+- L105 `GRD`：條件續行要對齊第一個條件：應縮排 18 格，目前 16 格
+    - 現況：`let localizations = entry["localizations"] as? [String: Any],`
+    - 結論：已修正 (task 8.8，12 個條件的 guard 抽成 private `hasUntranslatedEnglishValue(key:value:) -> Bool`)
+- L106 `GRD`：條件續行要對齊第一個條件：應縮排 18 格，目前 16 格
+    - 現況：`let traditionalChinese = localizations["zh-Hant"] as? [String: Any],`
+    - 結論：已修正 (task 8.8，12 個條件的 guard 抽成 private `hasUntranslatedEnglishValue(key:value:) -> Bool`)
+- L107 `GRD`：條件續行要對齊第一個條件：應縮排 18 格，目前 16 格
+    - 現況：`let traditionalChineseUnit = traditionalChinese["stringUnit"] as? [String: Any],`
+    - 結論：已修正 (task 8.8，12 個條件的 guard 抽成 private `hasUntranslatedEnglishValue(key:value:) -> Bool`)
+- L108 `GRD`：條件續行要對齊第一個條件：應縮排 18 格，目前 16 格
+    - 現況：`let traditionalChineseValue = traditionalChineseUnit["value"] as? String,`
+    - 結論：已修正 (task 8.8，12 個條件的 guard 抽成 private `hasUntranslatedEnglishValue(key:value:) -> Bool`)
+- L109 `GRD`：條件續行要對齊第一個條件：應縮排 18 格，目前 16 格
+    - 現況：`let english = localizations["en"] as? [String: Any],`
+    - 結論：已修正 (task 8.8，12 個條件的 guard 抽成 private `hasUntranslatedEnglishValue(key:value:) -> Bool`)
+- L110 `GRD`：條件續行要對齊第一個條件：應縮排 18 格，目前 16 格
+    - 現況：`let englishUnit = english["stringUnit"] as? [String: Any],`
+    - 結論：已修正 (task 8.8，12 個條件的 guard 抽成 private `hasUntranslatedEnglishValue(key:value:) -> Bool`)
+- L111 `GRD`：條件續行要對齊第一個條件：應縮排 18 格，目前 16 格
+    - 現況：`let englishValue = englishUnit["value"] as? String,`
+    - 結論：已修正 (task 8.8，12 個條件的 guard 抽成 private `hasUntranslatedEnglishValue(key:value:) -> Bool`)
+- L112 `GRD`：條件續行要對齊第一個條件：應縮排 18 格，目前 16 格
+    - 現況：`traditionalChineseValue == englishValue,`
+    - 結論：已修正 (task 8.8，12 個條件的 guard 抽成 private `hasUntranslatedEnglishValue(key:value:) -> Bool`)
+- L113 `GRD`：條件續行要對齊第一個條件：應縮排 18 格，目前 16 格
+    - 現況：`!allowedSameSourceAndEnglishValues.contains(key)`
+    - 結論：已修正 (task 8.8，12 個條件的 guard 抽成 private `hasUntranslatedEnglishValue(key:value:) -> Bool`)
+- L114 `GRD`：`else {` 要接在最後一個條件同行，不單獨成行
+    - 現況：`else {`
+    - 結論：已修正 (task 8.8，12 個條件的 guard 抽成 private `hasUntranslatedEnglishValue(key:value:) -> Bool`)
+- L121 `RPAR`：斷行呼叫的右括號沒有單獨一行："")
+    - 現況：`"English translation 仍與中文 source 相同：\(untranslatedChineseKeys)")`
+    - 結論：已修正 (task 8.8)
+- L152 `D1`：缺 ///：@Test func retiredReminderStringsDoNotReappearInTheCatalog() throws(an
+    - 現況：`@Test func retiredReminderStringsDoNotReappearInTheCatalog() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L152 `GWT`：缺 // Given
+    - 現況：`@Test func retiredReminderStringsDoNotReappearInTheCatalog() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Given`)
+- L152 `GWT`：缺 // Then
+    - 現況：`@Test func retiredReminderStringsDoNotReappearInTheCatalog() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Then`)
+- L152 `GWT`：缺 // When
+    - 現況：`@Test func retiredReminderStringsDoNotReappearInTheCatalog() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// When`)
+- L152 `TD`：@Test 缺 ///
+    - 現況：`@Test func retiredReminderStringsDoNotReappearInTheCatalog() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 前補 `///`)
+- L152 `TNAMEL`：舊式單段 lowerCamel 測試名稱：retiredReminderStringsDoNotReappearInTheCatalog
+    - 現況：`@Test func retiredReminderStringsDoNotReappearInTheCatalog() throws(any Error) {`
+    - 結論：已修正 (task 8.8，改三段式中文名稱)
+- L152 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func retiredReminderStringsDoNotReappearInTheCatalog() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 單獨一行)
+- L167 `D1`：缺 ///：@Test func calendarPermissionDescriptionIsLocalized() throws(any Error
+    - 現況：`@Test func calendarPermissionDescriptionIsLocalized() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L167 `GWT`：缺 // Given
+    - 現況：`@Test func calendarPermissionDescriptionIsLocalized() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Given`)
+- L167 `GWT`：缺 // Then
+    - 現況：`@Test func calendarPermissionDescriptionIsLocalized() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Then`)
+- L167 `GWT`：缺 // When
+    - 現況：`@Test func calendarPermissionDescriptionIsLocalized() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// When`)
+- L167 `TD`：@Test 缺 ///
+    - 現況：`@Test func calendarPermissionDescriptionIsLocalized() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 前補 `///`)
+- L167 `TNAMEL`：舊式單段 lowerCamel 測試名稱：calendarPermissionDescriptionIsLocalized
+    - 現況：`@Test func calendarPermissionDescriptionIsLocalized() throws(any Error) {`
+    - 結論：已修正 (task 8.8，改三段式中文名稱)
+- L167 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func calendarPermissionDescriptionIsLocalized() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 單獨一行)
+- L186 `D1`：缺 ///：@Test func presentationBoundariesDoNotBypassSelectedAppLocale() throws
+    - 現況：`@Test func presentationBoundariesDoNotBypassSelectedAppLocale() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L186 `GWT`：缺 // Given
+    - 現況：`@Test func presentationBoundariesDoNotBypassSelectedAppLocale() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Given`)
+- L186 `GWT`：缺 // Then
+    - 現況：`@Test func presentationBoundariesDoNotBypassSelectedAppLocale() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Then`)
+- L186 `GWT`：缺 // When
+    - 現況：`@Test func presentationBoundariesDoNotBypassSelectedAppLocale() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// When`)
+- L186 `TD`：@Test 缺 ///
+    - 現況：`@Test func presentationBoundariesDoNotBypassSelectedAppLocale() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 前補 `///`)
+- L186 `TNAMEL`：舊式單段 lowerCamel 測試名稱：presentationBoundariesDoNotBypassSelectedAppLocale
+    - 現況：`@Test func presentationBoundariesDoNotBypassSelectedAppLocale() throws(any Error) {`
+    - 結論：已修正 (task 8.8，改三段式中文名稱)
+- L186 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func presentationBoundariesDoNotBypassSelectedAppLocale() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 單獨一行)
+- L192 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 91 字元)：FileManager.default.enumerator(
+    - 現況：`FileManager.default.enumerator(`
+    - 結論：已修正 (task 8.8，`FileManager.default.enumerator(` 呼叫接成一行)
+- L215 `D1`：缺 ///：@Test func rootNavigationTitlesResolveUsingTheSelectedAppLanguage() {
+    - 現況：`@Test func rootNavigationTitlesResolveUsingTheSelectedAppLanguage() {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L215 `GWT`：缺 // Given
+    - 現況：`@Test func rootNavigationTitlesResolveUsingTheSelectedAppLanguage() {`
+    - 結論：已修正 (task 8.8，補 `// Given`)
+- L215 `GWT`：缺 // Then
+    - 現況：`@Test func rootNavigationTitlesResolveUsingTheSelectedAppLanguage() {`
+    - 結論：已修正 (task 8.8，補 `// Then`)
+- L215 `GWT`：缺 // When
+    - 現況：`@Test func rootNavigationTitlesResolveUsingTheSelectedAppLanguage() {`
+    - 結論：已修正 (task 8.8，補 `// When`)
+- L215 `TD`：@Test 缺 ///
+    - 現況：`@Test func rootNavigationTitlesResolveUsingTheSelectedAppLanguage() {`
+    - 結論：已修正 (task 8.8，`@Test` 前補 `///`)
+- L215 `TNAMEL`：舊式單段 lowerCamel 測試名稱：rootNavigationTitlesResolveUsingTheSelectedAppLang
+    - 現況：`@Test func rootNavigationTitlesResolveUsingTheSelectedAppLanguage() {`
+    - 結論：已修正 (task 8.8，改三段式中文名稱)
+- L215 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func rootNavigationTitlesResolveUsingTheSelectedAppLanguage() {`
+    - 結論：已修正 (task 8.8，`@Test` 單獨一行)
+- L229 `GWT`：缺 // Given
+    - 現況：`@Test func chartAccessibilityDescriptorStringsResolveUsingTheSelectedAppLanguage() {`
+    - 結論：已修正 (task 8.8，補 `// Given`)
+- L229 `GWT`：缺 // Then
+    - 現況：`@Test func chartAccessibilityDescriptorStringsResolveUsingTheSelectedAppLanguage() {`
+    - 結論：已修正 (task 8.8，補 `// Then`)
+- L229 `GWT`：缺 // When
+    - 現況：`@Test func chartAccessibilityDescriptorStringsResolveUsingTheSelectedAppLanguage() {`
+    - 結論：已修正 (task 8.8，補 `// When`)
+- L229 `TNAMEL`：舊式單段 lowerCamel 測試名稱：chartAccessibilityDescriptorStringsResolveUsingThe
+    - 現況：`@Test func chartAccessibilityDescriptorStringsResolveUsingTheSelectedAppLanguage() {`
+    - 結論：已修正 (task 8.8，改三段式中文名稱)
+- L229 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func chartAccessibilityDescriptorStringsResolveUsingTheSelectedAppLanguage() {`
+    - 結論：已修正 (task 8.8，`@Test` 單獨一行)
+- L252 `D1`：缺 ///：@Test func ordersNavigationTitleKeysFollowSelectionState() {
+    - 現況：`@Test func ordersNavigationTitleKeysFollowSelectionState() {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L252 `GWT`：缺 // Given
+    - 現況：`@Test func ordersNavigationTitleKeysFollowSelectionState() {`
+    - 結論：已修正 (task 8.8，補 `// Given`)
+- L252 `GWT`：缺 // Then
+    - 現況：`@Test func ordersNavigationTitleKeysFollowSelectionState() {`
+    - 結論：已修正 (task 8.8，補 `// Then`)
+- L252 `GWT`：缺 // When
+    - 現況：`@Test func ordersNavigationTitleKeysFollowSelectionState() {`
+    - 結論：已修正 (task 8.8，補 `// When`)
+- L252 `TD`：@Test 缺 ///
+    - 現況：`@Test func ordersNavigationTitleKeysFollowSelectionState() {`
+    - 結論：已修正 (task 8.8，`@Test` 前補 `///`)
+- L252 `TNAMEL`：舊式單段 lowerCamel 測試名稱：ordersNavigationTitleKeysFollowSelectionState
+    - 現況：`@Test func ordersNavigationTitleKeysFollowSelectionState() {`
+    - 結論：已修正 (task 8.8，改三段式中文名稱；訂單標題改參數化 3 案例)
+- L252 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func ordersNavigationTitleKeysFollowSelectionState() {`
+    - 結論：已修正 (task 8.8，`@Test` 單獨一行)
+- L269 `D1`：缺 ///：@Test func rootNavigationTitlesUseTheExplicitLanguageModifier() throws
+    - 現況：`@Test func rootNavigationTitlesUseTheExplicitLanguageModifier() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L269 `GWT`：缺 // Given
+    - 現況：`@Test func rootNavigationTitlesUseTheExplicitLanguageModifier() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Given`)
+- L269 `GWT`：缺 // Then
+    - 現況：`@Test func rootNavigationTitlesUseTheExplicitLanguageModifier() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Then`)
+- L269 `GWT`：缺 // When
+    - 現況：`@Test func rootNavigationTitlesUseTheExplicitLanguageModifier() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// When`)
+- L269 `TD`：@Test 缺 ///
+    - 現況：`@Test func rootNavigationTitlesUseTheExplicitLanguageModifier() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 前補 `///`)
+- L269 `TNAMEL`：舊式單段 lowerCamel 測試名稱：rootNavigationTitlesUseTheExplicitLanguageModifier
+    - 現況：`@Test func rootNavigationTitlesUseTheExplicitLanguageModifier() throws(any Error) {`
+    - 結論：已修正 (task 8.8，改三段式中文名稱；拆成掃描器自我測試與七個根畫面掃描兩條)
+- L269 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func rootNavigationTitlesUseTheExplicitLanguageModifier() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 單獨一行)
+- L298 `PARTW`：斷行後多個參數或引數擠在同一行：contentsOf: sourceRoot.appending(path: relativePat
+    - 現況：`let source = try String(`
+    - 結論：已修正 (task 8.8)
+- L299 `RPAR`：斷行呼叫的右括號沒有單獨一行：contentsOf: sourceRoot.appending(path: relativePat
+    - 現況：`contentsOf: sourceRoot.appending(path: relativePath), encoding: .utf8)`
+    - 結論：已修正 (task 8.8)
+- L329 `D1`：缺 ///：@Test func sidebarSmartGroupAccessibilityDoesNotConcatenateLocalizedTe
+    - 現況：`@Test func sidebarSmartGroupAccessibilityDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L329 `GWT`：缺 // Given
+    - 現況：`@Test func sidebarSmartGroupAccessibilityDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Given`)
+- L329 `GWT`：缺 // Then
+    - 現況：`@Test func sidebarSmartGroupAccessibilityDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Then`)
+- L329 `GWT`：缺 // When
+    - 現況：`@Test func sidebarSmartGroupAccessibilityDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// When`)
+- L329 `TD`：@Test 缺 ///
+    - 現況：`@Test func sidebarSmartGroupAccessibilityDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 前補 `///`)
+- L329 `TNAMEL`：舊式單段 lowerCamel 測試名稱：sidebarSmartGroupAccessibilityDoesNotConcatenateLo
+    - 現況：`@Test func sidebarSmartGroupAccessibilityDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，改三段式中文名稱)
+- L329 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func sidebarSmartGroupAccessibilityDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 單獨一行)
+- L346 `D1`：缺 ///：@Test func compactOrderFilterSummaryDoesNotConcatenateLocalizedText()
+    - 現況：`@Test func compactOrderFilterSummaryDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L346 `GWT`：缺 // Given
+    - 現況：`@Test func compactOrderFilterSummaryDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Given`)
+- L346 `GWT`：缺 // Then
+    - 現況：`@Test func compactOrderFilterSummaryDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Then`)
+- L346 `GWT`：缺 // When
+    - 現況：`@Test func compactOrderFilterSummaryDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// When`)
+- L346 `TD`：@Test 缺 ///
+    - 現況：`@Test func compactOrderFilterSummaryDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 前補 `///`)
+- L346 `TNAMEL`：舊式單段 lowerCamel 測試名稱：compactOrderFilterSummaryDoesNotConcatenateLocaliz
+    - 現況：`@Test func compactOrderFilterSummaryDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，改三段式中文名稱)
+- L346 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func compactOrderFilterSummaryDoesNotConcatenateLocalizedText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 單獨一行)
+- L363 `D1`：缺 ///：@Test func englishLocaleFormatsTheJuly18SpecExampleWithoutChineseDateT
+    - 現況：`@Test func englishLocaleFormatsTheJuly18SpecExampleWithoutChineseDateText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L363 `GWT`：缺 // Given
+    - 現況：`@Test func englishLocaleFormatsTheJuly18SpecExampleWithoutChineseDateText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Given`)
+- L363 `GWT`：缺 // Then
+    - 現況：`@Test func englishLocaleFormatsTheJuly18SpecExampleWithoutChineseDateText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// Then`)
+- L363 `GWT`：缺 // When
+    - 現況：`@Test func englishLocaleFormatsTheJuly18SpecExampleWithoutChineseDateText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，補 `// When`)
+- L363 `TD`：@Test 缺 ///
+    - 現況：`@Test func englishLocaleFormatsTheJuly18SpecExampleWithoutChineseDateText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 前補 `///`)
+- L363 `TNAMEL`：舊式單段 lowerCamel 測試名稱：englishLocaleFormatsTheJuly18SpecExampleWithoutChi
+    - 現況：`@Test func englishLocaleFormatsTheJuly18SpecExampleWithoutChineseDateText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，改三段式中文名稱)
+- L363 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func englishLocaleFormatsTheJuly18SpecExampleWithoutChineseDateText() throws(any Error) {`
+    - 結論：已修正 (task 8.8，`@Test` 單獨一行)
+- L367 `ARG4`：一行內有 4 個引數或參數，超過三個要斷行：calendar.date(from: DateComponents(year: 2026, mon
+    - 現況：`calendar.date(from: DateComponents(year: 2026, month: 7, day: 18, hour: 12))`
+    - 結論：已修正 (task 8.8，`DateComponents` 四個引數各一行)
+- L370 `ARG4`：一行內有 4 個引數或參數，超過三個要斷行：calendar.date(from: DateComponents(year: 2026, mon
+    - 現況：`calendar.date(from: DateComponents(year: 2026, month: 7, day: 20, hour: 12))`
+    - 結論：已修正 (task 8.8，`DateComponents` 四個引數各一行)
+- L391 `D1`：缺 ///：let key: String
+    - 現況：`let key: String`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L392 `D1`：缺 ///：let location: String
+    - 現況：`let location: String`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L399 `D1`：缺 ///：let raw: String
+    - 現況：`let raw: String`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L400 `D1`：缺 ///：let start: Int
+    - 現況：`let start: Int`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L408 `D6`：註解結尾句號
+    - 現況：`// 移除三引號前後不屬於內容的空白行。`
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+- L435 `D1`：缺 ///：var localizationKeyVariants: [String] {
+    - 現況：`var localizationKeyVariants: [String] {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L436 `OPEOL`：運算子放在行尾就斷行：let unescaped =
+    - 現況：`let unescaped =`
+    - 結論：已修正 (task 8.8)
+- L449 `D6`：註解結尾句號
+    - 現況：``// 將字面值中的 `%` 轉為 String Catalog 的 `%%`。``
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+- L453 `OPEOL`：運算子放在行尾就斷行：let prefix =
+    - 現況：`let prefix =`
+    - 結論：已修正 (task 8.8)
+- L457 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 partial
+    - 現況：`variants = variants.flatMap { partial in`
+    - 結論：已修正 (task 8.8，單一表達式 closure 改 `$0`)
+- L466 `MBL`：方法之間缺空行
+    - 現況：`/// 原始碼的行範圍`
+    - 結論：已修正 (task 8.8，方法之間補空行)
+- L468 `D1`：缺 ///：let range: NSRange
+    - 現況：`let range: NSRange`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L469 `D1`：缺 ///：let lineNumber: Int
+    - 現況：`let lineNumber: Int`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L477 `MKC`：MARK 不是規範區名：// MARK: 使用者可見字面值掃描
+    - 現況：`// MARK: 使用者可見字面值掃描`
+    - 結論：已修正 (task 8.8，小分類 MARK 移除；外部型別擴充檔依 4.8 用功能段名)
+- L477 `MKIN`：MARK 寫在 extension 大括號內：// MARK: 使用者可見字面值掃描
+    - 現況：`// MARK: 使用者可見字面值掃描`
+    - 結論：已修正 (task 8.8，小分類 MARK 移除；外部型別擴充檔依 4.8 用功能段名)
+- L488 `CT`：「Private Method」區塊放了 stored property：static let forbiddenNavigationTitlePatterns = [
+    - 現況：`static let forbiddenNavigationTitlePatterns = [`
+    - 結論：已修正 (task 8.8，stored property 搬到主檔 `// MARK: - Properties`)
+- L503 `CT`：「Private Method」區塊放了 stored property：static let modifierArgumentLookaheadLimit = 160
+    - 現況：`static let modifierArgumentLookaheadLimit = 160`
+    - 結論：已修正 (task 8.8，stored property 搬到主檔 `// MARK: - Properties`)
+- L506 `CT`：「Private Method」區塊放了 stored property：static let calendarTitleLookbackLines = 3
+    - 現況：`static let calendarTitleLookbackLines = 3`
+    - 結論：已修正 (task 8.8，stored property 搬到主檔 `// MARK: - Properties`)
+- L520 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 91 字元)：FileManager.default.enumerator(
+    - 現況：`FileManager.default.enumerator(`
+    - 結論：已修正 (task 8.8，`FileManager.default.enumerator(` 呼叫接成一行)
+- L530 `D6`：註解結尾句號
+    - 現況：`// 排除規則 1：測試替身與 Preview 資料不進入正式介面。`
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+- L532 `GRD`：`else {` 要接在最後一個條件同行，不單獨成行
+    - 現況：`else {`
+    - 結論：已修正 (task 8.8，`else {` 接在最後一個條件同行)
+- L551 `GRD`：第一個條件要與關鍵字同行
+    - 現況：`guard`
+    - 結論：已修正 (task 8.8，第一個條件與關鍵字同行)
+- L559 `GRD`：`else {` 要接在最後一個條件同行，不單獨成行
+    - 現況：`else {`
+    - 結論：已修正 (task 8.8，`else {` 接在最後一個條件同行)
+- L594 `OPEOL`：運算子放在行尾就斷行：let structuralInitializerPattern =
+    - 現況：`let structuralInitializerPattern =`
+    - 結論：已修正 (task 8.8)
+- L597 `RPAR`：斷行呼叫的右括號沒有單獨一行：try source.literalCaptureStarts(matching: structur
+    - 現況：`try source.literalCaptureStarts(matching: structuralInitializerPattern))`
+    - 結論：已修正 (task 8.8)
+- L637 `D6`：註解結尾句號
+    - 現況：`// 排除規則 3：Text(verbatim:) 不需本地化。`
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+- L641 `D6`：註解結尾句號
+    - 現況：`// 排除規則 5a：錯誤與 log 格式字串只供診斷。`
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+- L658 `D2`：有參數缺 - Parameter：static func isExcluded(
+    - 現況：`static func isExcluded(`
+    - 結論：已修正 (task 8.8，補 `- Parameter`)
+- L665 `D6`：註解結尾句號
+    - 現況：`// 排除規則 2：註解不是使用者介面。`
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+- L681 `D6`：註解結尾句號
+    - 現況：`// 排除規則 6：EventKit 標題不需本地化。`
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+- L688 `D6`：註解結尾句號
+    - 現況：`// 排除規則 8：單獨空白或標點不是可翻譯文字。`
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+- L691 `GRD`：`else {` 要接在最後一個條件同行，不單獨成行
+    - 現況：`else {`
+    - 結論：已修正 (task 8.8，`else {` 接在最後一個條件同行)
+- L695 `GRD`：`else {` 要接在最後一個條件同行，不單獨成行
+    - 現況：`else {`
+    - 結論：已修正 (task 8.8，`else {` 接在最後一個條件同行)
+- L708 `MKC`：MARK 不是規範區名：// MARK: 字面值與行號掃描
+    - 現況：`// MARK: 字面值與行號掃描`
+    - 結論：已修正 (task 8.8，小分類 MARK 移除；外部型別擴充檔依 4.8 用功能段名)
+- L708 `MKIN`：MARK 寫在 extension 大括號內：// MARK: 字面值與行號掃描
+    - 現況：`// MARK: 字面值與行號掃描`
+    - 結論：已修正 (task 8.8，小分類 MARK 移除；外部型別擴充檔依 4.8 用功能段名)
+- L723 `RPAR`：斷行呼叫的右括號沒有單獨一行：SourceLiteral(raw: nsSource.substring(with: range)
+    - 現況：`SourceLiteral(raw: nsSource.substring(with: range), start: contentStart))`
+    - 結論：已修正 (task 8.8)
+- L743 `D1`：缺 ///：var lineRanges: [SourceLineRange] {
+    - 現況：`var lineRanges: [SourceLineRange] {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L785 `D2`：有參數缺 - Parameter：func literalStartsInsideDisplayScopes(
+    - 現況：`func literalStartsInsideDisplayScopes(`
+    - 結論：已修正 (task 8.8，補 `- Parameter`)
+- L792 `D6`：註解結尾句號
+    - 現況：`// 每個 scope 記錄結束門檻，依 braceDepth 判斷是否結束。`
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+- L794 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 literal
+    - 現況：`let literalsByLine = Dictionary(grouping: literalMatches) { literal in`
+    - 結論：已修正 (task 8.8，單一表達式 closure 改 `$0`)
+- L813 `GRD`：條件續行要對齊第一個條件：應縮排 15 格，目前 16 格
+    - 現況：`!lines.isCommentOnly(lineNumber) {`
+    - 結論：已修正 (task 8.8，條件續行對齊第一個條件)
+- L853 `D1`：缺 ///：var isDisplayScopeDeclaration: Bool {
+    - 現況：`var isDisplayScopeDeclaration: Bool {`
+    - 結論：已修正 (task 8.8，補 `///`)
+- L858 `D6`：註解結尾句號
+    - 現況：`// 依宣告型別判定顯示文字，不逐一列舉屬性名稱。`
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+- L860 `OPEOL`：運算子放在行尾就斷行：let typedDeclarationPattern =
+    - 現況：`let typedDeclarationPattern =`
+    - 結論：已修正 (task 8.8)
+- L876 `D6`：註解結尾句號
+    - 現況：`// 依名稱辨識無法從型別判定的使用者可見文案。`
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+- L894 `MKC`：MARK 不是規範區名：// MARK: 括號／巢狀引號感知的字面值掃描
+    - 現況：`// MARK: 括號／巢狀引號感知的字面值掃描`
+    - 結論：已修正 (task 8.8，小分類 MARK 移除；外部型別擴充檔依 4.8 用功能段名)
+- L898 `D1`：缺 ///：private let backslashCharacter = UInt16(UnicodeScalar("\\").value)
+    - 現況：`private let backslashCharacter = UInt16(UnicodeScalar("\\").value)`
+    - 結論：已修正 (task 8.8，補 `///` (六個字元常數改為 `NSString` extension 的 `static let`))
+- L899 `D1`：缺 ///：private let openParenCharacter = UInt16(UnicodeScalar("(").value)
+    - 現況：`private let openParenCharacter = UInt16(UnicodeScalar("(").value)`
+    - 結論：已修正 (task 8.8，補 `///` (六個字元常數改為 `NSString` extension 的 `static let`))
+- L900 `D1`：缺 ///：private let closeParenCharacter = UInt16(UnicodeScalar(")").value)
+    - 現況：`private let closeParenCharacter = UInt16(UnicodeScalar(")").value)`
+    - 結論：已修正 (task 8.8，補 `///` (六個字元常數改為 `NSString` extension 的 `static let`))
+- L901 `D1`：缺 ///：private let slashCharacter = UInt16(UnicodeScalar("/").value)
+    - 現況：`private let slashCharacter = UInt16(UnicodeScalar("/").value)`
+    - 結論：已修正 (task 8.8，補 `///` (六個字元常數改為 `NSString` extension 的 `static let`))
+- L902 `D1`：缺 ///：private let starCharacter = UInt16(UnicodeScalar("*").value)
+    - 現況：`private let starCharacter = UInt16(UnicodeScalar("*").value)`
+    - 結論：已修正 (task 8.8，補 `///` (六個字元常數改為 `NSString` extension 的 `static let`))
+- L903 `D1`：缺 ///：private let newlineCharacter = UInt16(UnicodeScalar("\n").value)
+    - 現況：`private let newlineCharacter = UInt16(UnicodeScalar("\n").value)`
+    - 結論：已修正 (task 8.8，補 `///` (六個字元常數改為 `NSString` extension 的 `static let`))
+- L910 `D2`：有參數缺 - Parameter：func scanStringLiteralBody(from start: Int) -> Int? {
+    - 現況：`func scanStringLiteralBody(from start: Int) -> Int? {`
+    - 結論：已修正 (task 8.8，補 `- Parameter`)
+- L915 `BRACE`：宣告或 guard 的大括號本體壓成單行：guard index + 1 < length else { return nil }
+    - 現況：`guard index + 1 < length else { return nil }`
+    - 結論：已修正 (task 8.8，guard 的大括號本體改多行)
+- L918 `GRD`：`else {` 要接在最後一個條件同行，不單獨成行
+    - 現況：`else {`
+    - 結論：已修正 (task 8.8，`else {` 接在最後一個條件同行)
+- L937 `D2`：有參數缺 - Parameter：func skipInterpolation(openParenIndex: Int) -> Int? {
+    - 現況：`func skipInterpolation(openParenIndex: Int) -> Int? {`
+    - 結論：已修正 (task 8.8，補 `- Parameter`)
+- L943 `BRACE`：宣告或 guard 的大括號本體壓成單行：guard let bodyEnd = scanStringLiteralBody(from: index + 1) e
+    - 現況：`guard let bodyEnd = scanStringLiteralBody(from: index + 1) else { return nil }`
+    - 結論：已修正 (task 8.8，guard 的大括號本體改多行)
+- L972 `GRD`：條件續行要對齊第一個條件：應縮排 15 格，目前 16 格
+    - 現況：`self.character(at: index + 1) == openParenCharacter {`
+    - 結論：已修正 (task 8.8，條件續行對齊第一個條件)
+- L990 `D2`：有參數缺 - Parameter：func endOfLineIndex(from start: Int) -> Int {
+    - 現況：`func endOfLineIndex(from start: Int) -> Int {`
+    - 結論：已修正 (task 8.8，補 `- Parameter`)
+- L1001 `D2`：有參數缺 - Parameter：func skipBlockComment(from start: Int) -> Int? {
+    - 現況：`func skipBlockComment(from start: Int) -> Int? {`
+    - 結論：已修正 (task 8.8，補 `- Parameter`)
+- L1013 `MKC`：MARK 不是規範區名：// MARK: 行號與註解判定小工具
+    - 現況：`// MARK: 行號與註解判定小工具`
+    - 結論：已修正 (task 8.8，小分類 MARK 移除；外部型別擴充檔依 4.8 用功能段名)
+- L1015 `MKNX`：為巢狀型別另開 extension：private extension String.SourceLineRange {
+    - 現況：`private extension String.SourceLineRange {`
+    - 結論：已修正 (task 8.8，`contains` 移回 `SourceLineRange` 本體)
+- L1051 `D6`：註解結尾句號
+    - 現況：`// 多行字串起點可能落在換行，回到三引號所在行。`
+    - 結論：已修正 (task 8.8，移除註解結尾中文句號)
+
+## `apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests.swift` (85 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L1 `LEN`：不含檔頭與空行 656 行
+    - 現況：`//`
+    - 結論：已修正 (task 8.7，拆成四檔，各檔均不超過 300 行)
+- L77 `GWT`：缺 // Given
+    - 現況：`@Test func projectionOwnerHomeFilesResolveToExistingSwiftFiles() throws(any Error) {`
+    - 結論：已修正 (task 8.7，補 `// Given` 並準備投影擁有者清單)
+- L77 `GWT`：缺 // Then
+    - 現況：`@Test func projectionOwnerHomeFilesResolveToExistingSwiftFiles() throws(any Error) {`
+    - 結論：已修正 (task 8.7，補 `// Then` 並集中主檔存在斷言)
+- L77 `GWT`：缺 // When
+    - 現況：`@Test func projectionOwnerHomeFilesResolveToExistingSwiftFiles() throws(any Error) {`
+    - 結論：已修正 (task 8.7，補 `// When` 並收集主檔存在結果)
+- L77 `TNAMEL`：舊式單段 lowerCamel 測試名稱：projectionOwnerHomeFilesResolveToExistingSwiftFile
+    - 現況：`@Test func projectionOwnerHomeFilesResolveToExistingSwiftFiles() throws(any Error) {`
+    - 結論：已修正 (task 8.7，改名 `projectionOwners_檢查主檔路徑_全部存在`)
+- L77 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func projectionOwnerHomeFilesResolveToExistingSwiftFiles() throws(any Error) {`
+    - 結論：已修正 (task 8.7，`@Test` 獨立一行)
+- L90 `GWT`：缺 // Given
+    - 現況：`@Test func projectionOwnerDeclarationsAreDiscoverable() throws(any Error) {`
+    - 結論：已修正 (task 8.7，補 `// Given` 並準備檔案與擁有者清單)
+- L90 `GWT`：缺 // Then
+    - 現況：`@Test func projectionOwnerDeclarationsAreDiscoverable() throws(any Error) {`
+    - 結論：已修正 (task 8.7，補 `// Then` 並集中檔案數與宣告斷言)
+- L90 `GWT`：缺 // When
+    - 現況：`@Test func projectionOwnerDeclarationsAreDiscoverable() throws(any Error) {`
+    - 結論：已修正 (task 8.7，補 `// When` 並收集宣告搜尋結果)
+- L90 `TNAMEL`：舊式單段 lowerCamel 測試名稱：projectionOwnerDeclarationsAreDiscoverable
+    - 現況：`@Test func projectionOwnerDeclarationsAreDiscoverable() throws(any Error) {`
+    - 結論：已修正 (task 8.7，改名 `ownerStructDeclarationIsDiscoverable_正式原始碼_找到所有擁有者`)
+- L90 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func projectionOwnerDeclarationsAreDiscoverable() throws(any Error) {`
+    - 結論：已修正 (task 8.7，`@Test` 獨立一行)
+- L106 `GWT`：缺 // Given
+    - 現況：`@Test func projectionsAreOnlyWrittenByRootFeature() throws(any Error) {`
+    - 結論：已修正 (task 8.7，補 `// Given` 並以字面值準備預期違規數)
+- L106 `GWT`：缺 // Then
+    - 現況：`@Test func projectionsAreOnlyWrittenByRootFeature() throws(any Error) {`
+    - 結論：已修正 (task 8.7，補 `// Then` 並斷言違規數為 0)
+- L106 `GWT`：缺 // When
+    - 現況：`@Test func projectionsAreOnlyWrittenByRootFeature() throws(any Error) {`
+    - 結論：已修正 (task 8.7，補 `// When` 並執行違規掃描)
+- L106 `TNAMEL`：舊式單段 lowerCamel 測試名稱：projectionsAreOnlyWrittenByRootFeature
+    - 現況：`@Test func projectionsAreOnlyWrittenByRootFeature() throws(any Error) {`
+    - 結論：已修正 (task 8.7，改名 `findViolations_掃描正式原始碼_只有根功能寫入投影`)
+- L106 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func projectionsAreOnlyWrittenByRootFeature() throws(any Error) {`
+    - 結論：已修正 (task 8.7，`@Test` 獨立一行)
+- L176 `MK1`：MARK 段名：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.7，移除 `ProjectionOwner` 內的 `Data Properties` MARK)
+- L176 `MKC`：MARK 不是規範區名：// MARK: - Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.7，移除非規範分類 MARK)
+- L176 `MKN`：巢狀型別內的 MARK：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.7，巢狀型別成員就地排列，不加 MARK)
+- L191 `MK1`：MARK 段名：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.7，移除 `Violation` 內的 `Data Properties` MARK)
+- L191 `MKC`：MARK 不是規範區名：// MARK: - Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.7，移除非規範分類 MARK)
+- L191 `MKN`：巢狀型別內的 MARK：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.7，巢狀型別成員就地排列，不加 MARK)
+- L206 `MK1`：MARK 段名：Cases
+    - 現況：`// MARK: - Cases`
+    - 結論：已修正 (task 8.7，移除 `StripMode` 內的 `Cases` MARK)
+- L206 `MKN`：巢狀型別內的 MARK：Cases
+    - 現況：`// MARK: - Cases`
+    - 結論：已修正 (task 8.7，巢狀列舉不加 MARK)
+- L221 `MK1`：MARK 段名：Cases
+    - 現況：`// MARK: - Cases`
+    - 結論：已修正 (task 8.7，移除 `ScanFrame` 內的 `Cases` MARK)
+- L221 `MKN`：巢狀型別內的 MARK：Cases
+    - 現況：`// MARK: - Cases`
+    - 結論：已修正 (task 8.7，巢狀列舉不加 MARK)
+- L233 `D9`：associated value 缺 - Parameter：case singleLineString(escaped: Bool)
+    - 現況：`case singleLineString(escaped: Bool)`
+    - 結論：已修正 (task 8.7，補 `escaped` associated value 的 Parameter 文件)
+- L236 `D9`：associated value 缺 - Parameter：case interpolation(parenDepth: Int)
+    - 現況：`case interpolation(parenDepth: Int)`
+    - 結論：已修正 (task 8.7，補 `parenDepth` associated value 的 Parameter 文件)
+- L240 `MK1`：MARK 段名：Static Properties
+    - 現況：`// MARK: - Static Properties`
+    - 結論：已修正 (task 8.7，stored properties 移入主檔 `Properties`，computed properties 依存取層級分區)
+- L240 `MKC`：MARK 不是規範區名：// MARK: - Static Properties
+    - 現況：`// MARK: - Static Properties`
+    - 結論：已修正 (task 8.7，移除 `Static Properties` 非規範段名)
+- L301 `MKC`：MARK 不是規範區名：// MARK: 違規掃描：主流程
+    - 現況：`// MARK: 違規掃描：主流程`
+    - 結論：已修正 (task 8.7，移除「違規掃描：主流程」分類 MARK)
+- L301 `MKIN`：MARK 寫在 extension 大括號內：// MARK: 違規掃描：主流程
+    - 現況：`// MARK: 違規掃描：主流程`
+    - 結論：已修正 (task 8.7，extension 內不留分類 MARK)
+- L316 `PARTW`：斷行後多個參數或引數擠在同一行：in: file, relativePath: relative, owner: owner)
+    - 現況：`violations += try findBlockContextViolations(`
+    - 結論：已修正 (task 8.7，`findBlockContextViolations` 呼叫引數各占一行)
+- L317 `RPAR`：斷行呼叫的右括號沒有單獨一行：in: file, relativePath: relative, owner: owner)
+    - 現況：`in: file, relativePath: relative, owner: owner)`
+    - 結論：已修正 (task 8.7，呼叫右括號獨立一行)
+- L318 `PARTW`：斷行後多個參數或引數擠在同一行：in: file, relativePath: relative, owner: owner)
+    - 現況：`violations += try findInoutParameterViolations(`
+    - 結論：已修正 (task 8.7，`findInoutParameterViolations` 呼叫引數各占一行)
+- L319 `RPAR`：斷行呼叫的右括號沒有單獨一行：in: file, relativePath: relative, owner: owner)
+    - 現況：`in: file, relativePath: relative, owner: owner)`
+    - 結論：已修正 (task 8.7，呼叫右括號獨立一行)
+- L323 `DOLLAR2`：兩個以上參數的 closure 要具名，不用 $1 簡寫
+    - 現況：`return violations.sorted { ($0.file, $0.line) < ($1.file, $1.line) }`
+    - 結論：已修正 (task 8.7，排序 closure 改用 `lhs`、`rhs`，排序判定不變)
+- L326 `MKC`：MARK 不是規範區名：// MARK: 違規掃描：區塊上下文 (prong 1)
+    - 現況：`// MARK: 違規掃描：區塊上下文 (prong 1)`
+    - 結論：已修正 (task 8.7，移除區塊上下文分類 MARK)
+- L362 `BRACE`：宣告或 guard 的大括號本體壓成單行：guard !ownerBlockStartDepths.isEmpty else { continue }
+    - 現況：`guard !ownerBlockStartDepths.isEmpty else { continue }`
+    - 結論：已修正 (task 8.7，guard 的 `continue` 與結尾大括號各自換行)
+- L366 `RPAR`：斷行呼叫的右括號沒有單獨一行：Violation(file: relativePath, line: index + 1, pro
+    - 現況：`Violation(file: relativePath, line: index + 1, property: property))`
+    - 結論：已修正 (task 8.7，外層 `append` 的右括號獨立一行)
+- L376 `D2`：有參數缺 - Parameter：static func opensOwnerContext(_ strippedLine: String, ownerN
+    - 現況：`static func opensOwnerContext(_ strippedLine: String, ownerName: String) -> Bool {`
+    - 結論：已修正 (task 8.7，補 `strippedLine` 與 `ownerName` 參數文件)
+- L378 `FUNWRAP`：強制解包 (鐵則 3)：let pattern = try! NSRegularExpression(
+    - 現況：`let pattern = try! NSRegularExpression(`
+    - 結論：已修正 (task 8.7，改用 `try`，`opensOwnerContext` 以 typed throws 傳遞錯誤)
+- L379 `RPAR`：斷行呼叫的右括號沒有單獨一行：pattern: #""# + escapedOwner + #""#)
+    - 現況：`pattern: #"\b(?:struct|extension)\s+"# + escapedOwner + #"\b"#)`
+    - 結論：已修正 (task 8.7，正規式建構右括號獨立一行)
+- L383 `MKC`：MARK 不是規範區名：// MARK: 違規掃描：inout 整份 state 取得寫入權 (prong 2)
+    - 現況：`// MARK: 違規掃描：inout 整份 state 取得寫入權 (prong 2)`
+    - 結論：已修正 (task 8.7，移除 inout 掃描分類 MARK)
+- L398 `BRACE`：宣告或 guard 的大括號本體壓成單行：guard relativePath != owner.homeFileRelativePath else { retu
+    - 現況：`guard relativePath != owner.homeFileRelativePath else { return [] }`
+    - 結論：已修正 (task 8.7，guard 的 `return []` 與結尾大括號各自換行)
+- L405 `FUNWRAP`：強制解包 (鐵則 3)：let pattern = try! NSRegularExpression(
+    - 現況：`let pattern = try! NSRegularExpression(`
+    - 結論：已修正 (task 8.7，正規式建構改用 `try`，錯誤沿掃描呼叫鏈傳遞)
+- L406 `RPAR`：斷行呼叫的右括號沒有單獨一行：pattern: #""# + escapedOwner + #""#)
+    - 現況：`pattern: #"\binout\s+"# + escapedOwner + #"\.State\b"#)`
+    - 結論：已修正 (task 8.7，正規式建構右括號獨立一行)
+- L412 `PARTW`：斷行後多個參數或引數擠在同一行：file: relativePath, line: index + 1,
+    - 現況：`Violation(`
+    - 結論：已修正 (task 8.7，`Violation` 建構引數各占一行)
+- L414 `RPAR`：斷行呼叫的右括號沒有單獨一行：property: ""))
+    - 現況：`property: "inout \(owner.name).State 參數"))`
+    - 結論：已修正 (task 8.7，`Violation` 與外層 `append` 右括號分別獨立一行)
+- L421 `MKC`：MARK 不是規範區名：// MARK: 寫入樣式判定
+    - 現況：`// MARK: 寫入樣式判定`
+    - 結論：已修正 (task 8.7，移除寫入樣式判定分類 MARK)
+- L426 `D2`：有參數缺 - Parameter：static func isWritten(_ property: String, in line: String) -
+    - 現況：`static func isWritten(_ property: String, in line: String) -> Bool {`
+    - 結論：已修正 (task 8.7，補 `property` 與 `line` 參數文件)
+- L428 `PARTW`：斷行後多個參數或引數擠在同一行：in: line, range: fullRange(of: line)) != nil {
+    - 現況：`if assignmentPattern(prefix: prefix, property: property).firstMatch(`
+    - 結論：已修正 (task 8.7，賦值規則的 `firstMatch` 引數各占一行)
+- L429 `RPAR`：斷行呼叫的右括號沒有單獨一行：in: line, range: fullRange(of: line)) != nil {
+    - 現況：`in: line, range: fullRange(of: line)) != nil {`
+    - 結論：已修正 (task 8.7，`firstMatch` 右括號獨立一行)
+- L432 `PARTW`：斷行後多個參數或引數擠在同一行：in: line, range: fullRange(of: line)) != nil {
+    - 現況：`if mutatingCallPattern(prefix: prefix, property: property).firstMatch(`
+    - 結論：已修正 (task 8.7，變更呼叫規則的 `firstMatch` 引數各占一行)
+- L433 `RPAR`：斷行呼叫的右括號沒有單獨一行：in: line, range: fullRange(of: line)) != nil {
+    - 現況：`in: line, range: fullRange(of: line)) != nil {`
+    - 結論：已修正 (task 8.7，`firstMatch` 右括號獨立一行)
+- L437 `PARTW`：斷行後多個參數或引數擠在同一行：in: line, range: fullRange(of: line)) != nil {
+    - 現況：`if bareAssignmentPattern(property: property).firstMatch(`
+    - 結論：已修正 (task 8.7，裸賦值規則的 `firstMatch` 引數各占一行)
+- L438 `RPAR`：斷行呼叫的右括號沒有單獨一行：in: line, range: fullRange(of: line)) != nil {
+    - 現況：`in: line, range: fullRange(of: line)) != nil {`
+    - 結論：已修正 (task 8.7，`firstMatch` 右括號獨立一行)
+- L441 `PARTW`：斷行後多個參數或引數擠在同一行：in: line, range: fullRange(of: line)) != nil {
+    - 現況：`if bareMutatingCallPattern(property: property).firstMatch(`
+    - 結論：已修正 (task 8.7，裸變更呼叫規則的 `firstMatch` 引數各占一行)
+- L442 `RPAR`：斷行呼叫的右括號沒有單獨一行：in: line, range: fullRange(of: line)) != nil {
+    - 現況：`in: line, range: fullRange(of: line)) != nil {`
+    - 結論：已修正 (task 8.7，`firstMatch` 右括號獨立一行)
+- L451 `D2`：有參數缺 - Parameter：static func assignmentPattern(prefix: String, property: Stri
+    - 現況：`static func assignmentPattern(prefix: String, property: String) -> NSRegularExpression {`
+    - 結論：已修正 (task 8.7，補 `prefix` 與 `property` 參數文件)
+- L454 `FUNWRAP`：強制解包 (鐵則 3)：return try! NSRegularExpression(
+    - 現況：`return try! NSRegularExpression(`
+    - 結論：已修正 (task 8.7，`assignmentPattern` 改用 `try` 與 `throws(any Error)`)
+- L463 `D2`：有參數缺 - Parameter：static func bareAssignmentPattern(property: String) -> NSReg
+    - 現況：`static func bareAssignmentPattern(property: String) -> NSRegularExpression {`
+    - 結論：已修正 (task 8.7，補 `property` 參數文件)
+- L465 `FUNWRAP`：強制解包 (鐵則 3)：return try! NSRegularExpression(
+    - 現況：`return try! NSRegularExpression(`
+    - 結論：已修正 (task 8.7，`bareAssignmentPattern` 改用 `try` 與 `throws(any Error)`)
+- L473 `D2`：有參數缺 - Parameter：static func mutatingCallPattern(prefix: String, property: St
+    - 現況：`static func mutatingCallPattern(prefix: String, property: String) -> NSRegularExpression {`
+    - 結論：已修正 (task 8.7，補 `prefix` 與 `property` 參數文件)
+- L477 `RPAR`：斷行呼叫的右括號沒有單獨一行：separator: "")
+    - 現況：`separator: "|")`
+    - 結論：已修正 (task 8.7，`joined` 呼叫右括號獨立一行)
+- L478 `FUNWRAP`：強制解包 (鐵則 3)：return try! NSRegularExpression(
+    - 現況：`return try! NSRegularExpression(`
+    - 結論：已修正 (task 8.7，`mutatingCallPattern` 改用 `try` 與 `throws(any Error)`)
+- L487 `D2`：有參數缺 - Parameter：static func bareMutatingCallPattern(property: String) -> NSR
+    - 現況：`static func bareMutatingCallPattern(property: String) -> NSRegularExpression {`
+    - 結論：已修正 (task 8.7，補 `property` 參數文件)
+- L490 `RPAR`：斷行呼叫的右括號沒有單獨一行：separator: "")
+    - 現況：`separator: "|")`
+    - 結論：已修正 (task 8.7，`joined` 呼叫右括號獨立一行)
+- L491 `FUNWRAP`：強制解包 (鐵則 3)：return try! NSRegularExpression(
+    - 現況：`return try! NSRegularExpression(`
+    - 結論：已修正 (task 8.7，`bareMutatingCallPattern` 改用 `try` 與 `throws(any Error)`)
+- L553 `MKC`：MARK 不是規範區名：// MARK: 輔助
+    - 現況：`// MARK: 輔助`
+    - 結論：已修正 (task 8.7，移除輔助分類 MARK)
+- L562 `W`：行寬 121
+    - 現況：`static func ownerStructDeclarationIsDiscoverable(owner: ProjectionOwner, in files: [URL]) throws(any Error) -> Bool {`
+    - 結論：已修正 (task 8.7，`ownerStructDeclarationIsDiscoverable` 簽章依參數斷行)
+- L564 `FUNWRAP`：強制解包 (鐵則 3)：let pattern = try! NSRegularExpression(pattern: #""# + escap
+    - 現況：`let pattern = try! NSRegularExpression(pattern: #"\bstruct\s+"# + escapedOwner + #"\b"#)`
+    - 結論：已修正 (task 8.7，正規式建構改用 `try`，錯誤傳至測試端)
+- L582 `D2`：有參數缺 - Parameter：static func fullRange(of text: String) -> NSRange {
+    - 現況：`static func fullRange(of text: String) -> NSRange {`
+    - 結論：已修正 (task 8.7，補 `text` 參數文件)
+- L589 `D2`：有參數缺 - Parameter：static func describe(_ violations: [Violation]) -> String {
+    - 現況：`static func describe(_ violations: [Violation]) -> String {`
+    - 結論：已修正 (task 8.7，補 `violations` 參數文件)
+- L593 `MKC`：MARK 不是規範區名：// MARK: 檔案列舉
+    - 現況：`// MARK: 檔案列舉`
+    - 結論：已修正 (task 8.7，移除檔案列舉分類 MARK)
+- L620 `D2`：有參數缺 - Parameter：static func relativePath(of file: URL, under root: URL) -> S
+    - 現況：`static func relativePath(of file: URL, under root: URL) -> String {`
+    - 結論：已修正 (task 8.7，補 `file` 與 `root` 參數文件)
+- L629 `MKC`：MARK 不是規範區名：// MARK: 註解與字串剝除
+    - 現況：`// MARK: 註解與字串剝除`
+    - 結論：已修正 (task 8.7，移除註解與字串剝除分類 MARK)
+- L634 `D2`：有參數缺 - Parameter：static func stripCommentsAndStrings(from line: String, mode:
+    - 現況：`static func stripCommentsAndStrings(from line: String, mode: inout StripMode) -> String {`
+    - 結論：已修正 (task 8.7，補 `line` 與 `mode` 參數文件)
+- L643 `SWC`：switch case 之間缺空行：case .blockComment:
+    - 現況：`case .blockComment:`
+    - 結論：已修正 (task 8.7，初始模式 switch 的 case 之間補空行)
+- L645 `SWC`：switch case 之間缺空行：case .tripleQuotedString:
+    - 現況：`case .tripleQuotedString:`
+    - 結論：已修正 (task 8.7，初始模式 switch 的 case 之間補空行)
+- L743 `SWC`：switch case 之間缺空行：case .tripleQuotedString:
+    - 現況：`case .tripleQuotedString:`
+    - 結論：已修正 (task 8.7，結尾模式 switch 的 case 之間補空行)
+- L745 `SWC`：switch case 之間缺空行：default:
+    - 現況：`default:`
+    - 結論：已修正 (task 8.7，`default` 前補空行)
+- L755 `CALL1`：未達斷行條件卻拆成多行 (3 個，接成一行 98 字元)：static func hasPrefix(
+    - 現況：`static func hasPrefix(`
+    - 結論：已修正 (task 8.7，`hasPrefix` 三參數簽章合為一行)
+- L755 `D2`：有參數缺 - Parameter：static func hasPrefix(
+    - 現況：`static func hasPrefix(`
+    - 結論：已修正 (task 8.7，補 `characters`、`index` 與 `marker` 參數文件)
+- L760 `BRACE`：宣告或 guard 的大括號本體壓成單行：guard index + marker.count <= characters.count else { return
+    - 現況：`guard index + marker.count <= characters.count else { return false }`
+    - 結論：已修正 (task 8.7，guard 的 `return false` 與結尾大括號各自換行)
+
+## `apps/ios/BuyLedgerTests/RootFeatureTests.swift` (1 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L1 `LEN`：不含檔頭與空行 1603 行
+    - 現況：`//`
+    - 結論：已修正 (task 8.6，純搬移為主檔與七個主題 extension 檔 (`+OrderFilters`／`+PaymentMethodCorrection`／`+LookupRename`／`+LookupSync`／`+Campaigns`／`+DeepLinks`／`+Fixtures`)，八檔非空行 260／148／249／237／186／244／177／160，整檔 `TOTAL {} files 8 PASS`；37 個測試的名稱與本體不變)
+
+## `apps/ios/BuyLedgerUITests/Screens/CampaignDetailScreen.swift` (7 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L1 `LEN`：不含檔頭與空行 378 行
+    - 現況：`//`
+    - 結論：已修正 (task 8.3，拆成主檔 (16 行) 加 `CampaignDetailScreen+Content.swift` (255 行) 與 `CampaignDetailScreen+Toolbar.swift` (112 行))
+- L13 `MK1`：MARK 段名：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.3，改 `// MARK: - Properties`)
+- L13 `MKC`：MARK 不是規範區名：// MARK: - Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.3，改 `// MARK: - Properties`)
+- L18 `MK4`：extension 專屬分區寫在型別本體內：Computed Properties
+    - 現況：`// MARK: - Computed Properties`
+    - 結論：已修正 (task 8.3，`rootIdentifier` 移到主檔 `// MARK: - Screen` extension，本體只剩 `app`)
+- L23 `MK5`：型別本體內的 computed property (應放 extension)：var rootIdentifier: String {
+    - 現況：`var rootIdentifier: String {`
+    - 結論：已修正 (task 8.3，`rootIdentifier` 移到主檔 `// MARK: - Screen` extension，本體只剩 `app`)
+- L28 `MK1`：MARK 段名：Status Queries
+    - 現況：`// MARK: - Status Queries`
+    - 結論：已修正 (task 8.3，`hasSettledBadge` 併入 `+Content` 的 `// MARK: - Internal Method`)
+- L28 `MKC`：MARK 不是規範區名：// MARK: - Status Queries
+    - 現況：`// MARK: - Status Queries`
+    - 結論：已修正 (task 8.3，`hasSettledBadge` 併入 `+Content` 的 `// MARK: - Internal Method`)
+
+## `apps/ios/BuyLedgerUITests/Screens/CampaignEditScreen.swift` (6 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L13 `MK1`：MARK 段名：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.3，改 `// MARK: - Properties`)
+- L13 `MKC`：MARK 不是規範區名：// MARK: - Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.3，改 `// MARK: - Properties`)
+- L18 `MK4`：extension 專屬分區寫在型別本體內：Computed Properties
+    - 現況：`// MARK: - Computed Properties`
+    - 結論：已修正 (task 8.3，`rootIdentifier` 移到 `// MARK: - Screen` extension)
+- L21 `MK5`：型別本體內的 computed property (應放 extension)：var rootIdentifier: String {
+    - 現況：`var rootIdentifier: String {`
+    - 結論：已修正 (task 8.3，`rootIdentifier` 移到 `// MARK: - Screen` extension)
+- L37 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 84 字元)：func isSaveEnabled(
+    - 現況：`func isSaveEnabled(`
+    - 結論：已修正 (task 8.3，`isSaveEnabled` 簽章改單行)
+- L61 `CALL1`：未達斷行條件卻拆成多行 (3 個，接成一行 87 字元)：func typeName(
+    - 現況：`func typeName(`
+    - 結論：已修正 (task 8.3，`typeName` 簽章改單行)
+
+## `apps/ios/BuyLedgerUITests/Screens/CampaignsScreen.swift` (6 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L13 `MK1`：MARK 段名：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.3，改 `// MARK: - Properties`)
+- L13 `MKC`：MARK 不是規範區名：// MARK: - Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.3，改 `// MARK: - Properties`)
+- L18 `MK4`：extension 專屬分區寫在型別本體內：Computed Properties
+    - 現況：`// MARK: - Computed Properties`
+    - 結論：已修正 (task 8.3，`rootIdentifier` 移到 `// MARK: - Screen` extension)
+- L23 `MK5`：型別本體內的 computed property (應放 extension)：var rootIdentifier: String {
+    - 現況：`var rootIdentifier: String {`
+    - 結論：已修正 (task 8.3，`rootIdentifier` 移到 `// MARK: - Screen` extension)
+- L30 `MK5`：型別本體內的 computed property (應放 extension)：var isEmptyStateShown: Bool {
+    - 現況：`var isEmptyStateShown: Bool {`
+    - 結論：已修正 (task 8.3，`isEmptyStateShown` 移到 `// MARK: - Computed Properties` extension)
+- L64 `CALL1`：未達斷行條件卻拆成多行 (3 個，接成一行 94 字元)：func tapCampaign(
+    - 現況：`func tapCampaign(`
+    - 結論：已修正 (task 8.3，`tapCampaign` 簽章改單行)
+
+## `apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift` (8 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L13 `MK1`：MARK 段名：Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.3，改 `// MARK: - Properties`，`static let default` 放最前)
+- L13 `MKC`：MARK 不是規範區名：// MARK: - Data Properties
+    - 現況：`// MARK: - Data Properties`
+    - 結論：已修正 (task 8.3，改 `// MARK: - Properties`，`static let default` 放最前)
+- L57 `MK1`：MARK 段名：Static Properties
+    - 現況：`// MARK: - Static Properties`
+    - 結論：已修正 (task 8.3，Static Properties 併入 `// MARK: - Properties`)
+- L57 `MKC`：MARK 不是規範區名：// MARK: - Static Properties
+    - 現況：`// MARK: - Static Properties`
+    - 結論：已修正 (task 8.3，Static Properties 併入 `// MARK: - Properties`)
+- L62 `MK4`：extension 專屬分區寫在型別本體內：Computed Properties
+    - 現況：`// MARK: - Computed Properties`
+    - 結論：已修正 (task 8.3，`launchArguments` 移到 Nested Types 之後的 `// MARK: - Computed Properties` extension)
+- L65 `MK5`：型別本體內的 computed property (應放 extension)：var launchArguments: [String] {
+    - 現況：`var launchArguments: [String] {`
+    - 結論：已修正 (task 8.3，`launchArguments` 移到 Nested Types 之後的 `// MARK: - Computed Properties` extension)
+- L106 `MK2`：分區順序：Nested Types 排在 Computed Properties 之後
+    - 現況：`// MARK: - Nested Types`
+    - 結論：已修正 (task 8.3，順序改 Properties、Nested Types、Computed Properties、Private Method)
+- L212 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter date: 要序列化的日期`
+    - 結論：已修正 (task 8.3，`iso8601String(from:)` 補空 `///`)
+
+## `apps/ios/BuyLedgerTests/ContrastComplianceTests.swift` (101 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L10 `TIMP`：@testable import 前缺空行
+    - 現況：`@testable import BuyLedger`
+    - 結論：已修正 (task 8.9，`@testable import` 前補空行)
+- L26 `MKC`：MARK 不是規範區名：// MARK: 狀態膠囊與徽章
+    - 現況：`// MARK: 狀態膠囊與徽章`
+    - 結論：已修正 (task 8.9，小分類 MARK 移除，只留 `// MARK: - Properties` 與 `// MARK: - Tests`)
+- L28 `GWT`：缺 // Given
+    - 現況：`@Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L28 `GWT`：缺 // Then
+    - 現況：`@Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Then`)
+- L28 `GWT`：缺 // When
+    - 現況：`@Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L28 `TD`：@Test 缺 ///
+    - 現況：`@Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，`@Test` 前補 `///`)
+- L29 `D1`：缺 ///：func statusPillLabelMeetsTheTextFloor(tone: BLTone, appearance: ColorC
+    - 現況：`func statusPillLabelMeetsTheTextFloor(tone: BLTone, appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，補 `///`)
+- L29 `TNAMEL`：舊式單段 lowerCamel 測試名稱：statusPillLabelMeetsTheTextFloor
+    - 現況：`func statusPillLabelMeetsTheTextFloor(tone: BLTone, appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，改名 `onSurface_膠囊文字疊在膠囊底色_對比達文字下限`，參數化引數與案例數不變)
+- L32 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 83 字元)：#expect(
+    - 現況：`#expect(`
+    - 結論：已修正 (task 8.9，`#expect(` 接回一行)
+- L38 `GWT`：缺 // Given
+    - 現況：`@Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L38 `GWT`：缺 // Then
+    - 現況：`@Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Then`)
+- L38 `GWT`：缺 // When
+    - 現況：`@Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L38 `TD`：@Test 缺 ///
+    - 現況：`@Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，`@Test` 前補 `///`)
+- L39 `D1`：缺 ///：func countBadgeNumeralMeetsTheTextFloor(tone: BLTone, appearance: Colo
+    - 現況：`func countBadgeNumeralMeetsTheTextFloor(tone: BLTone, appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，補 `///`)
+- L39 `TNAMEL`：舊式單段 lowerCamel 測試名稱：countBadgeNumeralMeetsTheTextFloor
+    - 現況：`func countBadgeNumeralMeetsTheTextFloor(tone: BLTone, appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，改名 `onIndicator_計數徽章數字疊在實心底_對比達文字下限`，參數化引數與案例數不變)
+- L40 `PARTW`：斷行後多個參數或引數擠在同一行：tone.onIndicator, on: tone.indicator, appearance:
+    - 現況：`let ratio = ColorContrast.ratio(`
+    - 結論：已修正 (task 8.9，呼叫改為未超過 100 的單行，不再有斷行後擠在同一行的引數)
+- L41 `RPAR`：斷行呼叫的右括號沒有單獨一行：tone.onIndicator, on: tone.indicator, appearance:
+    - 現況：`tone.onIndicator, on: tone.indicator, appearance: appearance)`
+    - 結論：已修正 (task 8.9，呼叫改為未超過 100 的單行，不再有斷行呼叫的右括號問題)
+- L43 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 85 字元)：#expect(
+    - 現況：`#expect(`
+    - 結論：已修正 (task 8.9，`#expect(` 接回一行)
+- L49 `GWT`：缺 // Given
+    - 現況：`@Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L49 `GWT`：缺 // Then
+    - 現況：`@Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Then`)
+- L49 `GWT`：缺 // When
+    - 現況：`@Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L49 `TD`：@Test 缺 ///
+    - 現況：`@Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，`@Test` 前補 `///`)
+- L50 `D1`：缺 ///：func surfaceTextRemainsLegibleOnTheCardSurface(
+    - 現況：`func surfaceTextRemainsLegibleOnTheCardSurface(`
+    - 結論：已修正 (task 8.9，補 `///`)
+- L50 `TNAMEL`：舊式單段 lowerCamel 測試名稱：surfaceTextRemainsLegibleOnTheCardSurface
+    - 現況：`func surfaceTextRemainsLegibleOnTheCardSurface(`
+    - 結論：已修正 (task 8.9，改名 `onSurface_文字疊在卡片表面_對比達文字下限`，參數化引數與案例數不變)
+- L60 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 88 字元)：#expect(
+    - 現況：`#expect(`
+    - 結論：已修正 (task 8.9，`#expect(` 接回一行)
+- L66 `MKC`：MARK 不是規範區名：// MARK: 客戶排名徽章
+    - 現況：`// MARK: 客戶排名徽章`
+    - 結論：已修正 (task 8.9，小分類 MARK 移除，只留 `// MARK: - Properties` 與 `// MARK: - Tests`)
+- L68 `GWT`：缺 // Given
+    - 現況：`@Test(arguments: [1, 2, 3], ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L68 `GWT`：缺 // Then
+    - 現況：`@Test(arguments: [1, 2, 3], ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Then`)
+- L68 `GWT`：缺 // When
+    - 現況：`@Test(arguments: [1, 2, 3], ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L68 `TD`：@Test 缺 ///
+    - 現況：`@Test(arguments: [1, 2, 3], ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，`@Test` 前補 `///`)
+- L69 `D1`：缺 ///：func rankBadgeNumeralMeetsTheTextFloor(rank: Int, appearance: ColorCon
+    - 現況：`func rankBadgeNumeralMeetsTheTextFloor(rank: Int, appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，補 `///`)
+- L69 `TNAMEL`：舊式單段 lowerCamel 測試名稱：rankBadgeNumeralMeetsTheTextFloor
+    - 現況：`func rankBadgeNumeralMeetsTheTextFloor(rank: Int, appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，改名 `numeral_排名徽章數字疊在底色_對比達文字下限`，參數化引數與案例數不變)
+- L78 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 86 字元)：#expect(
+    - 現況：`#expect(`
+    - 結論：已修正 (task 8.9，`#expect(` 接回一行)
+- L84 `MKC`：MARK 不是規範區名：// MARK: 熱力圖
+    - 現況：`// MARK: 熱力圖`
+    - 結論：已修正 (task 8.9，小分類 MARK 移除，只留 `// MARK: - Properties` 與 `// MARK: - Tests`)
+- L86 `GWT`：缺 // Given
+    - 現況：`@Test(arguments: BLHeatmapDepth.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L86 `GWT`：缺 // Then
+    - 現況：`@Test(arguments: BLHeatmapDepth.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Then`)
+- L86 `GWT`：缺 // When
+    - 現況：`@Test(arguments: BLHeatmapDepth.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L86 `TD`：@Test 缺 ///
+    - 現況：`@Test(arguments: BLHeatmapDepth.allCases, ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，`@Test` 前補 `///`)
+- L87 `D1`：缺 ///：func heatmapNumeralMeetsTheTextFloor(
+    - 現況：`func heatmapNumeralMeetsTheTextFloor(`
+    - 結論：已修正 (task 8.9，補 `///`)
+- L87 `TNAMEL`：舊式單段 lowerCamel 測試名稱：heatmapNumeralMeetsTheTextFloor
+    - 現況：`func heatmapNumeralMeetsTheTextFloor(`
+    - 結論：已修正 (task 8.9，改名 `numeral_熱力圖數字疊在底色_對比達文字下限`，參數化引數與案例數不變)
+- L93 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 97 字元)：#expect(
+    - 現況：`#expect(`
+    - 結論：已修正 (task 8.9，`#expect(` 接回一行)
+- L99 `GWT`：缺 // Given
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L99 `GWT`：缺 // Then
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Then`，比值改在 When 先算、Then 迴圈斷言，門檻與診斷訊息不變)
+- L99 `GWT`：缺 // When
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L99 `TD`：@Test 缺 ///
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，`@Test` 前補 `///`)
+- L100 `D1`：缺 ///：func adjacentHeatmapDepthsAreVisiblyDistinct(appearance: ColorContrast
+    - 現況：`func adjacentHeatmapDepthsAreVisiblyDistinct(appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，補 `///`)
+- L100 `TNAMEL`：舊式單段 lowerCamel 測試名稱：adjacentHeatmapDepthsAreVisiblyDistinct
+    - 現況：`func adjacentHeatmapDepthsAreVisiblyDistinct(appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，改名 `background_相鄰熱力圖級數_底色可目視區分`，參數化引數與案例數不變)
+- L103 `PARTW`：斷行後多個參數或引數擠在同一行：lower.background, on: upper.background, appearance
+    - 現況：`let ratio = ColorContrast.ratio(`
+    - 結論：已修正 (task 8.9，呼叫改為未超過 100 的單行，不再有斷行後擠在同一行的引數)
+- L104 `RPAR`：斷行呼叫的右括號沒有單獨一行：lower.background, on: upper.background, appearance
+    - 現況：`lower.background, on: upper.background, appearance: appearance)`
+    - 結論：已修正 (task 8.9，呼叫改為未超過 100 的單行，不再有斷行呼叫的右括號問題)
+- L113 `MKC`：MARK 不是規範區名：// MARK: 頭像
+    - 現況：`// MARK: 頭像`
+    - 結論：已修正 (task 8.9，小分類 MARK 移除，只留 `// MARK: - Properties` 與 `// MARK: - Tests`)
+- L116 `GWT`：缺 // Given
+    - 現況：`@Test(arguments: [0.0, 0.125, 0.166, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875])`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L116 `GWT`：缺 // Then
+    - 現況：`@Test(arguments: [0.0, 0.125, 0.166, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875])`
+    - 結論：已修正 (task 8.9，補 `// Then`，比值改在 When 先算、Then 迴圈斷言，門檻與診斷訊息不變)
+- L116 `GWT`：缺 // When
+    - 現況：`@Test(arguments: [0.0, 0.125, 0.166, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875])`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L117 `D2`：有參數缺 - Parameter：func avatarInitialsMeetTheTextFloorAcrossHues(hue: Double) {
+    - 現況：`func avatarInitialsMeetTheTextFloorAcrossHues(hue: Double) {`
+    - 結論：已修正 (task 8.9，補 `- Parameter`)
+- L117 `TNAMEL`：舊式單段 lowerCamel 測試名稱：avatarInitialsMeetTheTextFloorAcrossHues
+    - 現況：`func avatarInitialsMeetTheTextFloorAcrossHues(hue: Double) {`
+    - 結論：已修正 (task 8.9，改名 `gradientColors_代表色相的頭像漸層_白色縮寫達文字對比下限`，參數化引數與案例數不變)
+- L122 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 94 字元)：#expect(
+    - 現況：`#expect(`
+    - 結論：已修正 (task 8.9，`#expect(` 接回一行)
+- L130 `MKC`：MARK 不是規範區名：// MARK: 彩底 hero 卡
+    - 現況：`// MARK: 彩底 hero 卡`
+    - 結論：已修正 (task 8.9，小分類 MARK 移除，只留 `// MARK: - Properties` 與 `// MARK: - Tests`)
+- L133 `GWT`：缺 // Given
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L133 `GWT`：缺 // Then
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Then`，比值改在 When 先算、Then 迴圈斷言，門檻與診斷訊息不變)
+- L133 `GWT`：缺 // When
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L134 `D2`：有參數缺 - Parameter：func heroCardWhiteTextMeetsTheFloorOnBothGradientEnds(appear
+    - 現況：`func heroCardWhiteTextMeetsTheFloorOnBothGradientEnds(appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，補 `- Parameter`)
+- L134 `TNAMEL`：舊式單段 lowerCamel 測試名稱：heroCardWhiteTextMeetsTheFloorOnBothGradientEnds
+    - 現況：`func heroCardWhiteTextMeetsTheFloorOnBothGradientEnds(appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，改名 `gradientColors_彩底主卡漸層兩端_白字達文字對比下限`，參數化引數與案例數不變)
+- L138 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 83 字元)：#expect(
+    - 現況：`#expect(`
+    - 結論：已修正 (task 8.9，`#expect(` 接回一行)
+- L145 `MKC`：MARK 不是規範區名：// MARK: 具名色彩資源解析
+    - 現況：`// MARK: 具名色彩資源解析`
+    - 結論：已修正 (task 8.9，小分類 MARK 移除，只留 `// MARK: - Properties` 與 `// MARK: - Tests`)
+- L148 `GWT`：缺 // Given
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L148 `GWT`：缺 // Then
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Then`，比值改在 When 先算、Then 迴圈斷言，門檻與診斷訊息不變)
+- L148 `GWT`：缺 // When
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L149 `D2`：有參數缺 - Parameter：func everyNamedColorResourceActuallyResolves(appearance: Col
+    - 現況：`func everyNamedColorResourceActuallyResolves(appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，補 `- Parameter`)
+- L149 `TNAMEL`：舊式單段 lowerCamel 測試名稱：everyNamedColorResourceActuallyResolves
+    - 現況：`func everyNamedColorResourceActuallyResolves(appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，改名 `components_所有具名色彩資源_皆解析到資源而非系統預設色`，參數化引數與案例數不變)
+- L182 `MKC`：MARK 不是規範區名：// MARK: 次要標籤色
+    - 現況：`// MARK: 次要標籤色`
+    - 結論：已修正 (task 8.9，小分類 MARK 移除，只留 `// MARK: - Properties` 與 `// MARK: - Tests`)
+- L185 `GWT`：缺 // Given
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L185 `GWT`：缺 // Then
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Then`，比值改在 When 先算、Then 迴圈斷言，門檻與診斷訊息不變)
+- L185 `GWT`：缺 // When
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L186 `D2`：有參數缺 - Parameter：func secondaryLabelTextMeetsTheTextFloor(appearance: ColorCo
+    - 現況：`func secondaryLabelTextMeetsTheTextFloor(appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，補 `- Parameter`)
+- L186 `TNAMEL`：舊式單段 lowerCamel 測試名稱：secondaryLabelTextMeetsTheTextFloor
+    - 現況：`func secondaryLabelTextMeetsTheTextFloor(appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，改名 `secondaryLabel_疊在三種背景_對比達文字下限`，參數化引數與案例數不變)
+- L195 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 80 字元)：#expect(
+    - 現況：`#expect(`
+    - 結論：已修正 (task 8.9，`#expect(` 接回一行)
+- L202 `D1`：缺 ///：@Test func distinctNamesKeepDistinctAvatarHues() {
+    - 現況：`@Test func distinctNamesKeepDistinctAvatarHues() {`
+    - 結論：已修正 (task 8.9，補 `///`)
+- L202 `GWT`：缺 // Given
+    - 現況：`@Test func distinctNamesKeepDistinctAvatarHues() {`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L202 `GWT`：缺 // Then
+    - 現況：`@Test func distinctNamesKeepDistinctAvatarHues() {`
+    - 結論：已修正 (task 8.9，補 `// Then`)
+- L202 `GWT`：缺 // When
+    - 現況：`@Test func distinctNamesKeepDistinctAvatarHues() {`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L202 `TD`：@Test 缺 ///
+    - 現況：`@Test func distinctNamesKeepDistinctAvatarHues() {`
+    - 結論：已修正 (task 8.9，`@Test` 前補 `///`)
+- L202 `TNAMEL`：舊式單段 lowerCamel 測試名稱：distinctNamesKeepDistinctAvatarHues
+    - 現況：`@Test func distinctNamesKeepDistinctAvatarHues() {`
+    - 結論：已修正 (task 8.9，改名 `hueValue_兩個不同姓名_色相不同`，參數化引數與案例數不變)
+- L202 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func distinctNamesKeepDistinctAvatarHues() {`
+    - 結論：已修正 (task 8.9，`@Test` 與 `func` 分兩行)
+- L209 `MKC`：MARK 不是規範區名：// MARK: 次要標籤色縮寫
+    - 現況：`// MARK: 次要標籤色縮寫`
+    - 結論：已修正 (task 8.9，小分類 MARK 移除，只留 `// MARK: - Properties` 與 `// MARK: - Tests`)
+- L212 `GWT`：缺 // Given
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L212 `GWT`：缺 // Then
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Then`)
+- L212 `GWT`：缺 // When
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L213 `D2`：有參數缺 - Parameter：func blSecondaryLabelShorthandResolvesToThePaletteColor(appe
+    - 現況：`func blSecondaryLabelShorthandResolvesToThePaletteColor(appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，補 `- Parameter`)
+- L213 `TNAMEL`：舊式單段 lowerCamel 測試名稱：blSecondaryLabelShorthandResolvesToThePaletteColor
+    - 現況：`func blSecondaryLabelShorthandResolvesToThePaletteColor(appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，改名 `blSecondaryLabel_各外觀情境_與色盤次要標籤色分量相同`，參數化引數與案例數不變)
+- L215 `PARTW`：斷行後多個參數或引數擠在同一行：of: appearance.palette.secondaryLabel, appearance:
+    - 現況：`let paletteValue = ColorContrast.components(`
+    - 結論：已修正 (task 8.9，呼叫改為未超過 100 的單行，不再有斷行後擠在同一行的引數)
+- L216 `RPAR`：斷行呼叫的右括號沒有單獨一行：of: appearance.palette.secondaryLabel, appearance:
+    - 現況：`of: appearance.palette.secondaryLabel, appearance: appearance)`
+    - 結論：已修正 (task 8.9，呼叫改為未超過 100 的單行，不再有斷行呼叫的右括號問題)
+- L224 `MKC`：MARK 不是規範區名：// MARK: 分組色相
+    - 現況：`// MARK: 分組色相`
+    - 結論：已修正 (task 8.9，小分類 MARK 移除，只留 `// MARK: - Properties` 與 `// MARK: - Tests`)
+- L227 `GWT`：缺 // Given
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Given`)
+- L227 `GWT`：缺 // Then
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// Then`，比值改在 When 先算、Then 迴圈斷言，門檻與診斷訊息不變)
+- L227 `GWT`：缺 // When
+    - 現況：`@Test(arguments: ColorContrast.Appearance.allCases)`
+    - 結論：已修正 (task 8.9，補 `// When`)
+- L228 `D2`：有參數缺 - Parameter：func statusHueValuesStayMutuallyDistinguishable(appearance:
+    - 現況：`func statusHueValuesStayMutuallyDistinguishable(appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，補 `- Parameter`)
+- L228 `TNAMEL`：舊式單段 lowerCamel 測試名稱：statusHueValuesStayMutuallyDistinguishable
+    - 現況：`func statusHueValuesStayMutuallyDistinguishable(appearance: ColorContrast.Appearance) {`
+    - 結論：已修正 (task 8.9，改名 `sidebarHue_各分組狀態_色相互不相同`，參數化引數與案例數不變)
+- L232 `PARTW`：斷行後多個參數或引數擠在同一行：of: $0.sidebarHue(in: palette), appearance: appear
+    - 現況：`ColorContrast.components(`
+    - 結論：已修正 (task 8.9，呼叫改為未超過 100 的單行，不再有斷行後擠在同一行的引數)
+- L233 `RPAR`：斷行呼叫的右括號沒有單獨一行：of: $0.sidebarHue(in: palette), appearance: appear
+    - 現況：`of: $0.sidebarHue(in: palette), appearance: appearance)`
+    - 結論：已修正 (task 8.9，呼叫改為未超過 100 的單行，不再有斷行呼叫的右括號問題)
+- L246 `CLB`：型別或 extension 的閉括號前有空行
+    - 現況：`}`
+    - 結論：已修正 (task 8.9，閉括號前空行刪除)
+- L246 `CLBX`：閉括號前有空行
+    - 現況：`}`
+    - 結論：已修正 (task 8.9，閉括號前空行刪除)
+
+## `apps/ios/BuyLedger/Features/App/RootView.swift` (3 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L14 `MK1`：MARK 段名：View Properties
+    - 現況：`// MARK: - View Properties`
+    - 結論：已修正 (task 9.1，改為 `// MARK: - Properties`)
+- L23 `MK1`：MARK 段名：View Body
+    - 現況：`// MARK: - View Body`
+    - 結論：已修正 (task 9.1，改為 `// MARK: - Body`)
+- L51 `MK1`：MARK 段名：ViewBuilder
+    - 現況：`// MARK: - ViewBuilder`
+    - 結論：已修正 (task 9.1，改為 `// MARK: - Private Views`)
+
+## `apps/ios/BuyLedger/Features/App/AppLockFeature.swift` (0 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+整檔掃描 0 筆，無待填項目
+
+## `apps/ios/BuyLedger/Features/App/AppLockView.swift` (2 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L14 `MK1`：MARK 段名：View Properties
+    - 現況：`// MARK: - View Properties`
+    - 結論：已修正 (task 9.2，改為 `// MARK: - Properties`)
+- L22 `MK1`：MARK 段名：View Body
+    - 現況：`// MARK: - View Body`
+    - 結論：已修正 (task 9.2，改為 `// MARK: - Body`)
+
+## `apps/ios/BuyLedger/Features/App/PersistenceFailureFeature.swift` (0 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+整檔掃描 0 筆，無待填項目
+
+## `apps/ios/BuyLedger/Features/App/PersistenceFailureView.swift` (5 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L14 `MK1`：MARK 段名：View Properties
+    - 現況：`// MARK: - View Properties`
+    - 結論：已修正 (task 9.5，改為 `// MARK: - Properties`)
+- L23 `MK5`：型別本體內的 computed property (應放 extension)：private var iconName: String {
+    - 現況：`private var iconName: String {`
+    - 結論：已修正 (task 9.5，`iconName` 移到 Private Method extension)
+- L24 `W`：行寬 105
+    - 現況：`store.phase == .blocked ? "externaldrive.badge.exclamationmark" : "externaldrive.badge.checkmark"`
+    - 結論：已修正 (task 9.5，改為分行 `if`／`return`)
+- L27 `MK1`：MARK 段名：View Body
+    - 現況：`// MARK: - View Body`
+    - 結論：已修正 (task 9.5，改為 `// MARK: - Body`)
+- L29 `D1`：缺 ///：var body: some View {
+    - 現況：`var body: some View {`
+    - 結論：已修正 (task 9.5，補 `body` 的 `///`)
+
+## `apps/ios/BuyLedger/Features/App/RootTab.swift` (20 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L13 `MK1`：MARK 段名：Cases
+    - 現況：`// MARK: - Cases`
+    - 結論：已修正 (task 9.5，移除 enum 內 `Cases` MARK)
+- L30 `MK1`：MARK 段名：Identifiable Properties
+    - 現況：`// MARK: - Identifiable Properties`
+    - 結論：已修正 (task 9.5，改為 `// MARK: - Identifiable` extension)
+- L33 `BRACE`：宣告或 guard 的大括號本體壓成單行：var id: String { rawValue }
+    - 現況：`var id: String { rawValue }`
+    - 結論：已修正 (task 9.5，`id` 大括號本體換行)
+- L35 `MK1`：MARK 段名：Display Properties
+    - 現況：`// MARK: - Display Properties`
+    - 結論：已修正 (task 9.5，改為 `// MARK: - Computed Properties`)
+- L38 `MK5`：型別本體內的 computed property (應放 extension)：var title: String {
+    - 現況：`var title: String {`
+    - 結論：已修正 (task 9.5，computed property 移到 extension)
+- L42 `SWC`：switch case 之間缺空行：case .orders:
+    - 現況：`case .orders:`
+    - 結論：已修正 (task 9.5，switch case 之間補空行)
+- L44 `SWC`：switch case 之間缺空行：case .campaigns:
+    - 現況：`case .campaigns:`
+    - 結論：已修正 (task 9.5，switch case 之間補空行)
+- L46 `SWC`：switch case 之間缺空行：case .insights:
+    - 現況：`case .insights:`
+    - 結論：已修正 (task 9.5，switch case 之間補空行)
+- L48 `SWC`：switch case 之間缺空行：case .more:
+    - 現況：`case .more:`
+    - 結論：已修正 (task 9.5，switch case 之間補空行)
+- L54 `MK5`：型別本體內的 computed property (應放 extension)：var systemImage: String {
+    - 現況：`var systemImage: String {`
+    - 結論：已修正 (task 9.5，computed property 移到 extension)
+- L58 `SWC`：switch case 之間缺空行：case .orders:
+    - 現況：`case .orders:`
+    - 結論：已修正 (task 9.5，switch case 之間補空行)
+- L60 `SWC`：switch case 之間缺空行：case .campaigns:
+    - 現況：`case .campaigns:`
+    - 結論：已修正 (task 9.5，switch case 之間補空行)
+- L62 `SWC`：switch case 之間缺空行：case .insights:
+    - 現況：`case .insights:`
+    - 結論：已修正 (task 9.5，switch case 之間補空行)
+- L64 `SWC`：switch case 之間缺空行：case .more:
+    - 現況：`case .more:`
+    - 結論：已修正 (task 9.5，switch case 之間補空行)
+- L69 `MK1`：MARK 段名：Accessibility Properties
+    - 現況：`// MARK: - Accessibility Properties`
+    - 結論：已修正 (task 9.5，併入 `// MARK: - Computed Properties`)
+- L72 `MK5`：型別本體內的 computed property (應放 extension)：var accessibilityKey: BLAccessibilityID.Root.Tab {
+    - 現況：`var accessibilityKey: BLAccessibilityID.Root.Tab {`
+    - 結論：已修正 (task 9.5，computed property 移到 extension)
+- L76 `SWC`：switch case 之間缺空行：case .orders:
+    - 現況：`case .orders:`
+    - 結論：已修正 (task 9.5，switch case 之間補空行)
+- L78 `SWC`：switch case 之間缺空行：case .campaigns:
+    - 現況：`case .campaigns:`
+    - 結論：已修正 (task 9.5，switch case 之間補空行)
+- L80 `SWC`：switch case 之間缺空行：case .insights:
+    - 現況：`case .insights:`
+    - 結論：已修正 (task 9.5，switch case 之間補空行)
+- L82 `SWC`：switch case 之間缺空行：case .more:
+    - 現況：`case .more:`
+    - 結論：已修正 (task 9.5，switch case 之間補空行)
+
+## `apps/ios/BuyLedger/Features/App/SidebarBadgeCounts.swift` (3 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L13 `MK1`：MARK 段名：Static Properties
+    - 現況：`// MARK: - Static Properties`
+    - 結論：已修正 (task 9.5，改為 `// MARK: - Properties`)
+- L26 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameter orders: 目前的訂單清單`
+    - 結論：已修正 (task 9.5，摘要與參數段之間補空 `///`)
+- L33 `DOCBL`：摘要與參數標記之間缺空的 ///
+    - 現況：`/// - Parameters:`
+    - 結論：已修正 (task 9.5，摘要與參數段之間補空 `///`)
+
+## `apps/ios/BuyLedger/Features/More/MoreView.swift` (8 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L81 `CALL1`：未達斷行條件卻拆成多行 (2 個，接成一行 96 字元)：ContentUnavailableView(
+    - 現況：`ContentUnavailableView(`
+    - 結論：已修正 (task 9.3，Path 自帶子層 State，移除 `ContentUnavailableView` 備援)
+- L148 `SWC`：switch case 之間缺空行：case .customers:
+    - 現況：`case .customers:`
+    - 結論：已修正 (task 9.3，入口標題 switch 的 case 之間補空行)
+- L150 `SWC`：switch case 之間缺空行：case .quote:
+    - 現況：`case .quote:`
+    - 結論：已修正 (task 9.3，入口標題 switch 的 case 之間補空行)
+- L152 `SWC`：switch case 之間缺空行：case .orderSources:
+    - 現況：`case .orderSources:`
+    - 結論：已修正 (task 9.3，入口標題 switch 的 case 之間補空行)
+- L154 `SWC`：switch case 之間缺空行：case .categories:
+    - 現況：`case .categories:`
+    - 結論：已修正 (task 9.3，入口標題 switch 的 case 之間補空行)
+- L156 `SWC`：switch case 之間缺空行：case .paymentMethods:
+    - 現況：`case .paymentMethods:`
+    - 結論：已修正 (task 9.3，入口標題 switch 的 case 之間補空行)
+- L158 `SWC`：switch case 之間缺空行：case .reconciliationStatuses:
+    - 現況：`case .reconciliationStatuses:`
+    - 結論：已修正 (task 9.3，入口標題 switch 的 case 之間補空行)
+- L160 `SWC`：switch case 之間缺空行：case .settings:
+    - 現況：`case .settings:`
+    - 結論：已修正 (task 9.3，入口標題 switch 的 case 之間補空行)
+
+## `apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift` (0 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+整檔掃描 0 筆，無待填項目
+
+## `apps/ios/BuyLedger/Features/Settings/SettingsView.swift` (6 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L61 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 language
+    - 現況：`ForEach(AppLanguage.allCases) { language in`
+    - 結論：已修正 (task 9.2，`ForEach` 單一表達式改用 `$0`)
+- L171 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 code
+    - 現況：`displayName: { code in`
+    - 結論：已修正 (task 9.2，`displayName` closure 改用 `$0`)
+- L174 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 code
+    - 現況：`searchKeywords: { code in`
+    - 結論：已修正 (task 9.2，`searchKeywords` closure 改用 `$0`)
+- L177 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 code
+    - 現況：`onSelect: { code in`
+    - 結論：已修正 (task 9.2，幣別 `onSelect` 改用 `$0`)
+- L200 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 model
+    - 現況：`onSelect: { model in`
+    - 結論：已修正 (task 9.2，模型 `onSelect` 改用 `$0`)
+- L203 `NAMED1`：單一表達式的 closure 用 $0，不用具名的 model
+    - 現況：`onAdd: { model in`
+    - 結論：已修正 (task 9.2，模型 `onAdd` 改用 `$0`)
+
+## `apps/ios/BuyLedger/Features/Customers/CustomersFeature.swift` (1 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L96 `CASELET`：改寫成 `case .x(let v)`，不用 `case let .x(v)`
+    - 現況：`case let .view(.customerTapped(name)):`
+    - 結論：已修正 (task 9.3，改為 `case .view(.customerTapped(let name))`)
+
+## `apps/ios/BuyLedger/Features/Customers/CustomersView.swift` (0 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+整檔掃描 0 筆，無待填項目
+
+## `apps/ios/BuyLedger/App/BuyLedgerApp.swift` (0 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+整檔掃描 0 筆，無待填項目
+
+## `apps/ios/BuyLedgerTests/AppLockFeatureTests.swift` (0 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+整檔掃描 0 筆，無待填項目
+
+## `apps/ios/BuyLedgerTests/SettingsFeatureTests.swift` (1 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L1 `LEN`：不含檔頭與空行 348 行
+    - 現況：`//`
+    - 結論：已修正 (task 9.2，拆為主檔與 `SettingsFeatureTests+AppLock.swift`，非空行 272／153)
+
+## `apps/ios/BuyLedgerTests/CustomersFeatureTests.swift` (11 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+- L21 `TNAMEL`：舊式單段 lowerCamel 測試名稱：aggregatesOrdersByCustomerRankedBySpendDescending
+    - 現況：`@Test func aggregatesOrdersByCustomerRankedBySpendDescending() {`
+    - 結論：已修正 (task 9.3，改三段式中文名稱)
+- L21 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func aggregatesOrdersByCustomerRankedBySpendDescending() {`
+    - 結論：已修正 (task 9.3，`@Test` 獨立一行)
+- L47 `TRAILC`：多行字面值的最後一個元素後面要加逗號：)
+    - 現況：`)`
+    - 結論：已修正 (task 9.3，最後一筆訂單補尾逗號)
+- L74 `TNAMEL`：舊式單段 lowerCamel 測試名稱：emptyOrdersYieldsEmptyCustomerList
+    - 現況：`@Test func emptyOrdersYieldsEmptyCustomerList() {`
+    - 結論：已修正 (task 9.3，改三段式中文名稱)
+- L74 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func emptyOrdersYieldsEmptyCustomerList() {`
+    - 結論：已修正 (task 9.3，`@Test` 獨立一行)
+- L86 `TNAMEL`：舊式單段 lowerCamel 測試名稱：taskDelegatesOrdersLoadRequest
+    - 現況：`@Test func taskDelegatesOrdersLoadRequest() async {`
+    - 結論：已修正 (task 9.3，改三段式中文名稱)
+- L86 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func taskDelegatesOrdersLoadRequest() async {`
+    - 結論：已修正 (task 9.3，`@Test` 獨立一行)
+- L100 `TNAMEL`：舊式單段 lowerCamel 測試名稱：customerTappedSendsSelectedDelegate
+    - 現況：`@Test func customerTappedSendsSelectedDelegate() async {`
+    - 結論：已修正 (task 9.3，改三段式中文名稱)
+- L100 `TSTL`：`@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+    - 現況：`@Test func customerTappedSendsSelectedDelegate() async {`
+    - 結論：已修正 (task 9.3，`@Test` 獨立一行)
+- L125 `CALL1`：未達斷行條件卻拆成多行 (3 個，接成一行 62 字元)：func date(
+    - 現況：`func date(`
+    - 結論：已修正 (task 9.3，移除 optional 日期 helper，改用相同 UTC 日期的固定 epoch 值)
+- L133 `CALL1`：未達斷行條件卻拆成多行 (3 個，接成一行 68 字元)：from: DateComponents(
+    - 現況：`from: DateComponents(`
+    - 結論：已修正 (task 9.3，移除 optional 日期 helper，改用相同 UTC 日期的固定 epoch 值)
+
+## `apps/ios/BuyLedgerTests/PersistenceFailureFeatureTests.swift` (0 筆)
+
+基準為 2026-10-03 工作樹狀態
+
+整檔掃描 0 筆，無待填項目

@@ -15,8 +15,6 @@ final class CurrencyPickerTests: BLUITestCase {
     /// 測試的幣別原始值
     private static let currencyCode = "TWD"
 
-    // MARK: - Tests
-
     /// 設定頁的幣別列在正體中文顯示本地化名稱，且可用兩種關鍵字搜尋
     @MainActor
     func testSettingsPickerUsesTraditionalChineseNameAndSearches() {

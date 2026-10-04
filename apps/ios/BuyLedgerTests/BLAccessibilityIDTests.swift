@@ -12,8 +12,6 @@ import Testing
 /// 驗證 identifier 常數的組成規則
 struct BLAccessibilityIDTests {
 
-    // MARK: - Tests
-
     @Test func optionJoinsPrefixAndRawValueWithDot() {
         #expect(
             BLAccessibilityID.option("orders.list.statusChip", key: "shipping")

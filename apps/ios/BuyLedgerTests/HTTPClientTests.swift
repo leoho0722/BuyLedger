@@ -13,8 +13,6 @@ import Testing
 /// 驗證 HTTP client 的請求與錯誤處理
 struct HTTPClientTests {
 
-    // MARK: - Tests
-
     /// 驗證 HTTP client 保留請求 `URL`、方法、標頭、內容與逾時
     ///
     /// - Throws: 測試前置條件或請求檢查未通過時，由 `#require` 丟出測試失敗；

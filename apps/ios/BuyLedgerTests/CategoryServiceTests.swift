@@ -13,8 +13,6 @@ import Testing
 /// 驗證商品類別 Service 的持久化行為
 struct CategoryServiceTests {
 
-    // MARK: - Tests
-
     /// 讀取商品類別時依自然語言順序排序，數字依大小比較 (`Record 2` 排在 `Record 10` 前)
     ///
     /// - Throws: 查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；

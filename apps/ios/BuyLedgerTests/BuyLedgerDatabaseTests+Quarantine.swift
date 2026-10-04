@@ -10,8 +10,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension BuyLedgerDatabaseTests {
 
     /// 記憶體資料庫沒有實體 store 檔可搬移，`quarantineStore()` 回傳 `nil`

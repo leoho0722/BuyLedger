@@ -9,8 +9,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension OrderServiceTests {
 
     /// 二十個並發建立同編號只成功一筆且其餘十九筆明確撞號

@@ -27,8 +27,18 @@ paths:
 ## TCA TestStore
 
 - **斷言由效果派送的 action 造成的變更前，先 `await store.receive(\.actionName)`**：`exhaustivity = .off` 搭 `store.finish()` 不保證 `.orderWriteFailed`、`.statusChangePersisted` 這類 action 已處理完。
-    - 省略這步的斷言可能只是還沒跑到就通過，屬假測試；寫法參考 `CampaignReminderFailureTests`。
-- **effect 鏈改變 `@Shared` 時，在 TestStore 第一次觀察到變更的斷言點核對共享狀態**：通常是觸發 effect 的 action 或其後第一個 `receive`，不要等到實際更新它的 `xxxResponse`；TestStore 會在斷言前處理 effect 派送的後續 action，若把預期延後，兩個斷言點都會出現 state mismatch (參考 TCA `SharingState.md` 的 Tests 節)。
+    - 省略這步的斷言可能只是還沒跑到就通過，屬假測試；寫法參考 `CampaignReminderFeatureTests`。
+- **effect 鏈裡 reducer 以 `withLock` 寫入的共享變更，寫在觸發該鏈的 `send` 之後的第一個 `receive`**：`send` 自己的 closure 看不到 (effect 尚未執行)，鏈中實際寫入的那個 `receive` 又太晚，TestStore 會在斷言前先處理完整條鏈；預期放錯位置時，兩個斷言點都會出現 state mismatch (參考 TCA `SharingState.md` 的 Tests 節)。
+    - reducer 在 `send` 的同一步同步寫入 (沒有經過 effect) 的共享變更，照一般 State 寫在該 `send` 的 closure。
+    - 非共享欄位維持在各自的步驟斷言。
+- **`StackState` 的 id 由測試用的 `StackElementID` 產生器從 0 起依序配發**：`send` 的預期 closure 可直接 `append`；`receive` 的預期 closure 取號時 reducer 已配過號，`append` 會多算一號，要以 `path[id: N] = …` 明指 id。
+    - 初始 State 裡先 `showDetail` 或 `append` 的元素也佔號，N 要把它們算進去。
+    - 參數化測試 (`@Test(arguments:)`) 的各案例共用同一個產生器 (依賴 `testValue` 以測試為單位快取)，後面案例的 id 不從 0 起；會推入堆疊的測試拆成多個測試方法並共用 helper，不要參數化。
+- **Swift 6.4 的 IRGen 會在 `Result<Void, PersistenceError>` 的 `.success`／`.failure` case key path 崩潰** (如 `receive(\.autoCloseResponse.failure)`)：這類回應只比對到 case (`receive(\.autoCloseResponse)`)，成敗以後續 action 或替身紀錄斷言。
+- **`@Reducer enum` 的 case 不能以 `destination?.edit?.x = …` 設值** (setter unavailable)：production 與 TestStore 的斷言 closure 都用 `destination?.modify(\.edit) { $0.x = … }`；讀取可以用 `?.edit?.x`。
+- **binding 行為測試要走畫面實際的綁定路徑**：以 `Store` 建立、`@Bindable var bindable = store`，對 `$bindable.<屬性>.wrappedValue` 指派；`TestStore` 送 `.set(\.draft.name, …)` 守不住畫面實際送出的 action。
+    - `$store.draft.name` 這類巢狀欄位綁定送出的是整個 `draft` 的 `.set(\.draft, …)`，`BindingAction` 要 key path 完全相等才比對得上 (見 `apps/ios/CLAUDE.md`)。
+    - 同時寫一條「改其他欄位不觸發該反應」的測試，才分得出正確與錯誤實作 (參考 `CampaignEditFeatureTests+Binding`)。
 - **純 `AlertState` 的 `.ifLet` 收到 `.presented` 動作後會自動清空該呈現**：清空發生在 `base._reduce` 之後，父層 reducer 仍讀得到該次呈現的值；窮舉測試依實際行為核對 `$0.xxx = nil`，不憑直覺增減。
 - **`AISummaryFeature` 串流測試一律注入同一個 `TestClock`**：測試環境的 `\.continuousClock` 可能是 `ImmediateClock`，逾時計時器會搶在串流前結束。
     - `$0.continuousClock` 與串流替身共用該 clock 的 `sleep(for:)`，以 `advance(by:)` 推進；替身內不用 `ContinuousClock` 或 `Task.sleep`。
@@ -68,9 +78,10 @@ paths:
 ## Snapshot 測試
 
 - **每個 snapshot 測試用 `TestDependencies.withFixedNow { ... }` 包住 view 建構與 `assertSnapshot`**，注入固定 `\.date`；測試內不直接呼叫 `Date()`。
+    - 畫面不讀時間時 (如開團列表)，改在建構 State 時帶入固定的 `dateContext`，不靠 `withFixedNow` 提供「現在」。
     - baseline 在 `BuyLedgerTests/__Snapshots__/`，目前只有 iOS 393×852；record 流程見 `apps/ios/README.md`。
 - **執行前的模擬器外觀設定見 `apps/ios/CLAUDE.md`；含 `.borderedProminent` 工具列按鈕的畫面的渲染方式見 `ios-design-system.md`**。
-- **完整回歸偶發的 snapshot mismatch 先按已知雜訊處理**：目前已知測試為 `quoteView_非零試算輸入_顯示成本與建議售價`、`orderEditView_長訂單識別碼_顯示短識別碼`、`ordersCompactView_多選模式_顯示勾選與工具列`、`orderEditView_合併訂單情境_符合基準圖`、`orderEditView_一般既有訂單_符合基準圖`。
-    - 兩種徵狀：**內容型**是整個文字標籤沒渲染出來 (如 `quoteView_非零試算輸入_顯示成本與建議售價` 的成本拆解，缺的標籤組合每次不同)；**像素型**是肉眼完全相同、差異只在導覽列區域且最大單通道差值個位數 (如 `orderEditView_一般既有訂單_符合基準圖`，實測 0.41% 像素、最大差值 2)。判斷像素型可用 PIL 比對 `ImageChops.difference` 的 bbox 與最大差值。
+- **完整回歸偶發的 snapshot mismatch 先按已知雜訊處理**：目前已知測試為 `quoteView_非零試算輸入_顯示成本與建議售價`、`orderEditView_長訂單識別碼_顯示短識別碼`、`ordersCompactView_多選模式_顯示勾選與工具列`、`orderEditView_合併訂單情境_符合基準圖`、`orderEditView_一般既有訂單_符合基準圖`、`campaignListView_依日分組含今天與昨天_符合基準圖`、`campaignListView_依月分組_符合基準圖`。
+    - 兩種徵狀：**內容型**是整個文字標籤沒渲染出來 (如 `quoteView_非零試算輸入_顯示成本與建議售價` 的成本拆解，缺的標籤組合每次不同，開團列表兩條缺的是進度標題)，共同來源是 `BLProgressView` 經 `BLProgressViewStyle` 的 `configuration.label` 繪出的標題；**像素型**是肉眼完全相同、差異只在導覽列區域且最大單通道差值個位數 (如 `orderEditView_一般既有訂單_符合基準圖`，實測 0.41% 像素、最大差值 2)。判斷像素型可用 PIL 比對 `ImageChops.difference` 的 bbox 與最大差值。
     - 逐條重跑時 Swift Testing 的方法層 `-only-testing` 必須帶 `()`，並從 xcresult 確認 `totalTestCount` ≥ 1；單獨重跑轉綠才可判定為渲染雜訊。
     - 已知清單外的失敗，或單獨重跑仍失敗，視為真回歸；不得重錄 baseline、放寬斷言或刪除測試。

@@ -15,8 +15,6 @@ import UniformTypeIdentifiers
 /// 驗證照片資料處理
 struct PhotoDataProcessorTests {
 
-    // MARK: - Tests
-
     /// 驗證影像降採樣與 JPEG 重編碼
     /// - Throws: 測試影像建立或處理失敗時拋出錯誤
     @Test func oversizedImageIsDownscaledToMaxPixelSizeJPEG() throws(any Error) {

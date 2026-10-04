@@ -13,8 +13,6 @@ import Testing
 /// 驗證持久化基礎錯誤保留來源錯誤資訊
 struct PersistenceErrorTests {
 
-    // MARK: - Tests
-
     /// fetch 失敗時保留來源錯誤的 NSError 資訊
     @Test func mapFetchWhenOperationFailsPreservesUnderlyingMetadata() {
         // Given

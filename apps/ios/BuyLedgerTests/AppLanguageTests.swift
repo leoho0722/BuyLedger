@@ -14,8 +14,6 @@ import Testing
 @MainActor
 struct AppLanguageTests {
 
-    // MARK: - Tests
-
     /// 驗證支援語言使用穩定的 locale identifier
     @Test(arguments: AppLanguage.allCases)
     func languageUsesSupportedLocaleIdentifiers(language: AppLanguage) {

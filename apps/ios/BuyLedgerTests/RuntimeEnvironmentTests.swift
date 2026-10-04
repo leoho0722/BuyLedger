@@ -12,8 +12,6 @@ import Testing
 /// 驗證執行環境能辨識單元測試程序
 struct RuntimeEnvironmentTests {
 
-    // MARK: - Tests
-
     /// 單元測試 host 允許 Preview stub 且不視為 UI 測試
     @Test
     func isUnitTesting_單元測試程序_只識別為單元測試() {

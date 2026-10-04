@@ -11,8 +11,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension AISummaryServiceTests {
 
     /// 驗證串流傳輸失敗會包成 `.transport` 錯誤，底層 `NSError` 的網域與代碼與注入的失敗一致

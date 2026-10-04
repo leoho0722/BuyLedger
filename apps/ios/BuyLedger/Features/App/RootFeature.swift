@@ -24,11 +24,14 @@ struct RootFeature {
         /// 目前選取的主要分頁
         var selectedTab: RootTab = .dashboard
 
+        /// 啟動時載入、由設定委派更新的完整偏好
+        var preferences: SettingsSnapshot
+
+        /// 常駐殼層的鎖定與解鎖狀態
+        var appLock: AppLockFeature.State
+
         /// 訂單功能狀態
         var orders = OrdersFeature.State()
-
-        /// 客戶彙總狀態，隨 `orders` 同步
-        var customers = CustomersFeature.State()
 
         /// 開團功能狀態；``CampaignFeature/State/orders`` 投影經 reducer 的 `onChange(of:)` 與訂單保持同步
         var campaigns = CampaignFeature.State()
@@ -39,99 +42,53 @@ struct RootFeature {
         /// 分析功能狀態與選取的趨勢期間
         var insights = InsightsFeature.State()
 
-        /// 匯率工具狀態
-        var fx = FxFeature.State()
-
-        /// 報價試算狀態
-        var quote = QuoteFeature.State()
-
-        /// 設定頁狀態
-        var settings: SettingsFeature.State
-
-        /// 四種主檔管理狀態，依主檔種類分組
-        var lookupManagements: IdentifiedArrayOf<LookupManagementFeature.State> = [
-            LookupManagementFeature.State(kind: .orderSource),
-            LookupManagementFeature.State(kind: .category),
-            LookupManagementFeature.State(kind: .paymentMethod),
-            LookupManagementFeature.State(kind: .reconciliationStatus),
-        ]
-
-        /// 「更多」分頁的導覽路徑
-        var morePath: [MoreRoute] = []
+        /// 更多頁的堆疊導覽與子畫面投影
+        var more: MoreFeature.State
 
         /// 依持久層結果與設定狀態初始化畫面
         ///
         /// - Parameters:
         ///   - persistenceStatus: 持久層啟動狀態
-        ///   - settings: 啟動時已載入的設定狀態
+        ///   - preferences: 啟動時已載入的完整偏好
+        ///   - appVersion: App 版本與建置號顯示文字
         init(
             persistenceStatus: PersistenceContainer.Status = .healthy,
-            settings: SettingsFeature.State = SettingsFeature.State()
+            preferences: SettingsSnapshot = .default,
+            appVersion: String = "—"
         ) {
             if case .degraded = persistenceStatus {
                 persistenceFailure = PersistenceFailureFeature.State()
             }
-            self.settings = settings
-            self.settings.appLock.isLocked = settings.appLock.isBiometricUnlockEnabled
+            self.preferences = preferences
+            appLock = AppLockFeature.State(
+                isBiometricUnlockEnabled: preferences.isBiometricUnlockEnabled,
+                isLocked: preferences.isBiometricUnlockEnabled
+            )
+            more = MoreFeature.State(appVersion: appVersion)
+            more.preferences = preferences
+            dashboard.monthlyProfitGoalTwd = preferences.monthlyProfitGoalTWD
         }
     }
 
     // MARK: - Action
 
-    /// App 根層級可處理的事件
-    @CasePathable
-    enum Action: BindableAction {
+    /// App 根層級可處理的事件，依送出者與子層分組
+    enum Action {
 
-        /// SwiftUI 雙向繫結事件 (目前只有「更多」分頁的導覽路徑)
+        /// 根導覽宿主送出的畫面事件
         ///
-        /// - Parameter action: 繫結變更的事件
-        case binding(BindingAction<State>)
+        /// - Parameter action: 啟動或切換導覽的操作
+        case view(View)
 
-        /// App 啟動時觸發：通知 App 鎖定已回到前景，並在幣別清單超過 7 天未更新時向 ExchangeRate-API 的 `/codes` 重新下載
-        case task
-
-        /// 使用者切換主要分頁
+        /// 持久層失敗時的復原流程
         ///
-        /// - Parameter tab: 要切換到的主要分頁
-        case tabSelected(RootTab)
+        /// - Parameter action: 阻斷畫面的呈現或復原事件
+        case persistenceFailure(PresentationAction<PersistenceFailureFeature.Action>)
 
-        /// 只由 iPad 側邊欄送出，切換分頁前先清空「更多」路徑
+        /// 殼層鎖定與場景生命週期事件
         ///
-        /// - Parameter tab: 要切換到的主要分頁
-        case sidebarTabSelected(RootTab)
-
-        /// 從非訂單分頁 (如 Dashboard 的 onboarding) 發起「新訂單」流程
-        case startNewOrder
-
-        /// 使用者從側邊欄智慧分組點擊狀態，跳到訂單頁並套用篩選
-        ///
-        /// - Parameter status: 智慧分組對應的訂單狀態
-        case smartGroupSelected(OrderStatus)
-
-        /// 使用者從客戶名單點擊客戶，跳到訂單頁並把搜尋字串設為客戶名
-        ///
-        /// - Parameter name: 客戶名稱
-        case customerSelected(String)
-
-        /// 使用者從分析頁點擊類別長條，跳到訂單頁並只以該類別篩選 (清空搜尋字串)
-        ///
-        /// - Parameter category: 類別名稱
-        case categorySelected(String)
-
-        /// 從總覽或分析頁開啟指定開團詳情
-        ///
-        /// - Parameter name: 開團名稱
-        case campaignSelected(String)
-
-        /// 訂單功能事件
-        ///
-        /// - Parameter action: 訂單功能送出的事件
-        case orders(OrdersFeature.Action)
-
-        /// 客戶彙總功能事件
-        ///
-        /// - Parameter action: 客戶彙總功能送出的事件
-        case customers(CustomersFeature.Action)
+        /// - Parameter action: 鎖定功能送出的事件
+        case appLock(AppLockFeature.Action)
 
         /// 開團功能事件
         ///
@@ -148,30 +105,41 @@ struct RootFeature {
         /// - Parameter action: 分析功能送出的事件
         case insights(InsightsFeature.Action)
 
-        /// 匯率工具事件
+        /// 更多頁堆疊與子畫面委派
         ///
-        /// - Parameter action: 匯率工具送出的事件
-        case fx(FxFeature.Action)
+        /// - Parameter action: 更多頁功能送出的事件
+        case more(MoreFeature.Action)
 
-        /// 報價試算事件
+        /// 訂單功能事件
         ///
-        /// - Parameter action: 報價試算送出的事件
-        case quote(QuoteFeature.Action)
+        /// - Parameter action: 訂單功能送出的事件
+        case orders(OrdersFeature.Action)
 
-        /// 設定頁事件
-        ///
-        /// - Parameter action: 設定頁送出的事件
-        case settings(SettingsFeature.Action)
+        /// 系統監聽回報重大時間變更
+        case significantTimeChanged
 
-        /// 四種主檔管理事件，以主檔種類識別是哪一個畫面送出
-        ///
-        /// - Parameter action: 主檔種類與該畫面送出的事件
-        case lookupManagements(IdentifiedActionOf<LookupManagementFeature>)
+        /// 根導覽宿主的使用者操作
+        @CasePathable
+        enum View: Equatable {
 
-        /// 持久層失敗時的復原流程
-        ///
-        /// - Parameter action: 阻斷畫面的呈現或復原事件
-        case persistenceFailure(PresentationAction<PersistenceFailureFeature.Action>)
+            /// 啟動幣別清單的七天期限刷新與重大時間變更監聽
+            case task
+
+            /// iPhone 分頁列切換主要分頁，保留「更多」堆疊
+            ///
+            /// - Parameter tab: 要切換到的主要分頁
+            case tabSelected(RootTab)
+
+            /// iPad 側邊欄切換分頁前先清空「更多」堆疊；選取目前分頁時不處理
+            ///
+            /// - Parameter tab: 要切換到的主要分頁
+            case sidebarTabSelected(RootTab)
+
+            /// 側邊欄智慧分組切到訂單頁並套用狀態篩選
+            ///
+            /// - Parameter status: 智慧分組對應的訂單狀態
+            case smartGroupSelected(OrderStatus)
+        }
     }
 
     // MARK: - Dependencies
@@ -188,19 +156,20 @@ struct RootFeature {
     /// 幣別清單的來源；App 啟動時向 ExchangeRate-API 的 `/codes` 下載，保存 7 天
     @Dependency(\.currencyMetadataService) private var currencyMetadataService
 
+    /// 監聽系統重大時間變更，以刷新開團日期標題
+    @Dependency(\.significantTimeChangeService) private var significantTimeChangeService
+
     // MARK: - Body
 
-    /// App 根層級 reducer
+    /// 組合子層與根邏輯；保留 `CombineReducers`，讓尾端 `onChange` 看到子層變更後再同步投影
     var body: some Reducer<State, Action> {
-        BindingReducer()
-
         CombineReducers {
-            Scope(state: \.orders, action: \.orders) {
-                OrdersFeature()
+            Scope(state: \.appLock, action: \.appLock) {
+                AppLockFeature()
             }
 
-            Scope(state: \.customers, action: \.customers) {
-                CustomersFeature()
+            Scope(state: \.orders, action: \.orders) {
+                OrdersFeature()
             }
 
             Scope(state: \.campaigns, action: \.campaigns) {
@@ -215,29 +184,23 @@ struct RootFeature {
                 InsightsFeature()
             }
 
-            Scope(state: \.fx, action: \.fx) {
-                FxFeature()
-            }
-
-            Scope(state: \.quote, action: \.quote) {
-                QuoteFeature()
-            }
-
-            Scope(state: \.settings, action: \.settings) {
-                SettingsFeature()
+            Scope(state: \.more, action: \.more) {
+                MoreFeature()
             }
 
             Reduce(core)
-        }
-        .ifLet(\.$persistenceFailure, action: \.persistenceFailure) {
-            PersistenceFailureFeature()
-        }
-        .forEach(\.lookupManagements, action: \.lookupManagements) {
-            LookupManagementFeature()
+                .ifLet(\.$persistenceFailure, action: \.persistenceFailure) {
+                    PersistenceFailureFeature()
+                }
         }
         .onChange(of: \.orders.orders) { _, state in
-            state.customers.orders = state.orders.orders
-            state.campaigns.orders = state.orders.orders
+            let orders = state.orders.orders
+            state.campaigns.$orders.withLock {
+                $0 = orders
+            }
+            state.more.$orders.withLock {
+                $0 = orders
+            }
             state.dashboard.orders = state.orders.orders
             state.insights.orders = state.orders.orders
             return .none
@@ -253,49 +216,27 @@ struct RootFeature {
             state.insights.loadState = state.orders.loadState
             return .none
         }
-        .onChange(of: \.settings.monthlyProfitGoalTWD) { _, state in
-            state.dashboard.monthlyProfitGoalTwd = state.settings.monthlyProfitGoalTWD
+        .onChange(of: \.preferences) { _, state in
+            state.appLock.isBiometricUnlockEnabled = state.preferences.isBiometricUnlockEnabled
+            state.more.preferences = state.preferences
+            state.dashboard.monthlyProfitGoalTwd = state.preferences.monthlyProfitGoalTWD
             return .none
         }
-    }
-}
-
-// MARK: - Nested Types
-
-extension RootFeature {
-
-    /// 「更多」分頁可抵達的目的地
-    enum MoreRoute: Hashable, CaseIterable {
-
-        /// 匯率工具
-        case fx
-
-        /// 客戶名單
-        case customers
-
-        /// 報價試算
-        case quote
-
-        /// 訂單來源主檔管理
-        case orderSources
-
-        /// 商品類別主檔管理
-        case categories
-
-        /// 付款方式主檔管理
-        case paymentMethods
-
-        /// 對帳狀態主檔管理
-        case reconciliationStatuses
-
-        /// 設定
-        case settings
+        .onChange(of: \.appLock.biometryType) { _, state in
+            state.more.biometryType = state.appLock.biometryType
+            return .none
+        }
     }
 }
 
 // MARK: - Private Method
 
 private extension RootFeature {
+
+    /// 以根功能解析後的時間與行事曆建立共用導覽操作
+    var navigation: RootNavigationOperations {
+        RootNavigationOperations(referenceDate: date.now, calendar: calendar)
+    }
 
     /// 依收到的事件更新 App 根層狀態，並回傳要執行的 Effect
     ///
@@ -305,123 +246,62 @@ private extension RootFeature {
     /// - Returns: 接下來要執行的 Effect，沒有就回 `.none`
     func core(state: inout State, action: Action) -> Effect<Action> {
         switch action {
-        case .binding:
-            return .none
-
-        case .task:
-            let currencyMetadataService = currencyMetadataService
+        case .view(.task):
             return .merge(
-                .send(.settings(.appLock(.appDidBecomeActive))),
-                .run { _ in
+                .run { [currencyMetadataService] _ in
                     // TTL 7 天：7 * 24 * 3600 = 604_800 秒
                     _ = try? await currencyMetadataService.refreshIfStale(604_800)  // 失敗可忽略，本機資料仍可用
+                },
+                .run { [significantTimeChangeService] send in
+                    for await _ in significantTimeChangeService.changes() {
+                        await send(.significantTimeChanged)
+                    }
                 }
             )
 
-        case .tabSelected(let tab):
+        case .view(.tabSelected(let tab)):
             state.selectedTab = tab
             return .none
 
-        case .sidebarTabSelected(let tab):
-            state.morePath.removeAll()
+        case .view(.sidebarTabSelected(let tab)):
+            guard tab != state.selectedTab else {
+                return .none
+            }
+            state.more.popToRoot()
             state.selectedTab = tab
             return .none
 
-        case .startNewOrder:
-            state.selectedTab = .orders
-            state.orders.editOrder = OrderEditFeature.State(id: uuid(), currentDate: date.now)
-            return .none
-
-        case .smartGroupSelected(let status):
+        case .view(.smartGroupSelected(let status)):
             // 「更多」路徑非空時切分頁會讓 iPad 的 NavigationSplitView 崩潰，先清空
-            state.morePath.removeAll()
-            // 只切換狀態篩選，不覆寫其他篩選條件
-            state.selectedTab = .orders
-            state.orders.selectedStatus = .status(status)
-            state.orders.selectFirstFilteredOrder(referenceDate: date.now, calendar: calendar)
+            state.more.popToRoot()
+            navigation.showOrders(status: status, state: &state)
             return .none
 
-        case .customerSelected(let name):
-            state.morePath.removeAll()
-            state.selectedTab = .orders
-            state.orders.searchText = name
-            state.orders.selectedStatus = .all
-            state.orders.selectedDatePeriod = .all
-            // 同 smart group：客戶名深連結時清掉殘留類別篩選
-            state.orders.selectedCategory = nil
-            state.orders.selectFirstFilteredOrder(referenceDate: date.now, calendar: calendar)
+        case .persistenceFailure:
             return .none
 
-        case .categorySelected(let category):
-            // 類別 deep link 使用精準 category 篩選，避免 searchText 誤中
-            state.selectedTab = .orders
-            state.orders.searchText = ""
-            state.orders.selectedStatus = .all
-            state.orders.selectedDatePeriod = .all
-            state.orders.selectedCategory = category
-            state.orders.selectFirstFilteredOrder(referenceDate: date.now, calendar: calendar)
+        case .appLock(.delegate(.didBecomeActive)):
+            state.campaigns.refreshDateContext(
+                CampaignDateContext(now: date.now, calendar: calendar)
+            )
             return .none
 
-        case .campaignSelected(let name):
-            // 從 Dashboard 開團卡或 Insights 開團排行深連結：切到開團頁並選取該團
-            // (CampaignListView 觀察 selectedCampaignID 後 push 詳情)
-            state.selectedTab = .campaigns
-            state.campaigns.selectedCampaignID = state.campaigns.campaigns
-                .first { $0.name == name }?.id
+        case .appLock:
             return .none
 
-        // AI 未開啟提示 alert 的「前往開啟」：導覽由 root 負責
-        case .orders(.aiDisabledAlert(.presented(.goToAISettings))):
-            state.selectedTab = .more
-            // 同一次狀態更新內先清空再推入，確保設定頁永遠只有一份且掛在根層
-            state.morePath = [.settings]
+        case .campaigns(.delegate(.campaignDeleted(let name))):
+            // DB cascade 已完成，此處同步訂單副本；投影由 onChange 集中同步
+            RootCascadeOperations.campaignDeleted(name, in: &state.orders.orders)
             return .none
 
-        case .orders:
+        case .campaigns(.delegate(.campaignRenamed(let from, let to))):
+            RootCascadeOperations.campaignRenamed(from: from, to: to, in: &state.orders.orders)
             return .none
 
-        case .customers(.delegate(.ordersLoadRequested)):
-            return .send(.orders(.task))
-
-        case .customers(.delegate(.customerSelected(let name))):
-            return .send(.customerSelected(name))
-
-        case .customers:
-            return .none
-
-        case .campaigns(.delegate(.receiptStatusToggled(let id, let status))):
-            return .send(.orders(.receiptStatusChanged(id, status)))
-
-        case .campaigns(.campaignRenamed(let from, let to)):
-            // DB cascade 已完成，此處同步訂單副本；開團投影由 onChange 集中同步
-            let trimmedFrom = from.trimmingCharacters(in: .whitespacesAndNewlines)
-            let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmedFrom.isEmpty, !trimmedTo.isEmpty, trimmedFrom != trimmedTo {
-                state.orders.orders = state.orders.orders.map { order in
-                    guard order.campaignNames.contains(trimmedFrom) else {
-                        return order
-                    }
-                    return order.renamingCampaign(from: trimmedFrom, to: trimmedTo)
-                }
-            }
-            return .none
-
-        case .campaigns(.campaignDeleted(_, let name)):
-            // DB cascade 已完成，此處同步記憶體副本；開團投影由 onChange 集中同步
-            let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmedName.isEmpty {
-                state.orders.orders = state.orders.orders.map { order in
-                    guard order.campaignNames.contains(trimmedName) else {
-                        return order
-                    }
-                    return order.removingCampaign(trimmedName)
-                }
-            }
-            return .none
+        case .campaigns(.delegate(.receiptStatusToggled(let orderID, let status))):
+            return .send(.orders(.receiptStatusChanged(orderID, status)))
 
         case .campaigns:
-            // 開團投影改由
-            // onChange(of: \.campaigns.campaigns) 集中同步，此分支不再需要手動觸發
             return .none
 
         case .dashboard(.delegate(.refresh)):
@@ -429,13 +309,18 @@ private extension RootFeature {
             return .send(.orders(.task))
 
         case .dashboard(.delegate(.campaignTapped(let name))):
-            return .send(.campaignSelected(name))
+            navigation.showCampaign(named: name, state: &state)
+            return .none
 
         case .dashboard(.delegate(.newOrderTapped)):
-            return .send(.startNewOrder)
+            // OrdersView 必須先進入畫面階層，才能掛上它持有的新訂單 sheet
+            state.selectedTab = .orders
+            state.orders.editOrder = OrderEditFeature.State(id: uuid(), currentDate: date.now)
+            return .none
 
         case .dashboard(.delegate(.viewAllOrdersTapped)):
-            return .send(.tabSelected(.orders))
+            state.selectedTab = .orders
+            return .none
 
         case .dashboard:
             return .none
@@ -444,76 +329,52 @@ private extension RootFeature {
             return .send(.orders(.task))
 
         case .insights(.delegate(.campaignTapped(let name))):
-            return .send(.campaignSelected(name))
+            navigation.showCampaign(named: name, state: &state)
+            return .none
 
         case .insights(.delegate(.categoryTapped(let name))):
-            return .send(.categorySelected(name))
+            navigation.showOrders(category: name, state: &state)
+            return .none
 
         case .insights:
             return .none
 
-        case .fx:
+        case .more(.delegate(.ordersLoadRequested)):
+            return .send(.orders(.task))
+
+        case .more(.delegate(.customerSelected(let name))):
+            navigation.showOrders(customer: name, state: &state)
             return .none
 
-        case .quote:
+        case .more(.delegate(.lookupItemRenamed(let kind, let rename))):
+            RootCascadeOperations.lookupItemRenamed(rename, kind: kind, in: &state.orders.orders)
             return .none
 
-        case .settings:
-            return .none
-
-        // 共享目錄已由子 reducer 更新，此處只處理訂單 cascade
-        case .lookupManagements(
-            .element(id: let kind, action: .delegate(.itemRenamed(let rename)))
-        ):
-            cascadeRename(
-                kind: kind,
-                from: rename.oldName,
-                to: rename.newName,
-                in: &state
-            )
-            return .none
-
-        case .lookupManagements(
-            .element(id: .paymentMethod, action: .delegate(.paymentMethodEdited(let plan)))
-        ):
-            // 付款方式主檔已由 LookupManagementFeature 寫入目錄
-            // 此處只把同一份已正規化 payload 轉送給訂單 reducer 套用到既有訂單列
+        case .more(.delegate(.paymentMethodEdited(let plan))):
+            // 轉送已正規化的訂單，不重算付款方式旗標，也不重複落盤
             return .send(.orders(.paymentMethodFlagsApplied(plan.affectedOrders)))
 
-        case .lookupManagements:
+        case .more(.delegate(.preferencesChanged(let snapshot))):
+            state.preferences = snapshot
             return .none
 
-        case .persistenceFailure:
+        case .more:
             return .none
-        }
-    }
 
-    /// 在 root 端把主檔更名 cascade 到訂單表，讓引用該值的訂單同步更新
-    ///
-    /// - Parameters:
-    ///   - kind: 要 cascade 的主檔型別
-    ///   - from: 舊名稱
-    ///   - to: 新名稱
-    ///   - state: 要修改的 ``RootFeature/State``
-    func cascadeRename(
-        kind: LookupKind,
-        from: String,
-        to: String,
-        in state: inout State
-    ) {
-        let trimmedFrom = from.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedFrom.isEmpty,
-              !trimmedTo.isEmpty,
-              trimmedFrom != trimmedTo else {
-            return
-        }
+        case .orders(.delegate(.aiSettingsRequested)):
+            state.selectedTab = .more
+            // 同一次狀態更新內先清空再推入，確保設定頁永遠只有一份且掛在根層
+            state.more.showSettings()
+            return .none
 
-        state.orders.orders = state.orders.orders.map { order in
-            guard kind.isReferenced(by: order, name: trimmedFrom) else {
-                return order
-            }
-            return kind.renamingReference(in: order, from: trimmedFrom, to: trimmedTo)
+        case .orders:
+            return .none
+
+        case .significantTimeChanged:
+            state.campaigns.refreshDateContext(
+                CampaignDateContext(now: date.now, calendar: calendar)
+            )
+            return .none
         }
     }
 }

@@ -55,7 +55,7 @@ extension BLUITestHarness {
             storeLocation = .directory(storeURL.deletingLastPathComponent())
             let hasExistingStore = FileManager.default.fileExists(atPath: storeURL.path)
 
-            if configuration.resetPersistentStore {
+            if configuration.shouldResetPersistentStore {
                 resetPersistedState()
                 removePersistentStore(at: storeURL)
             }
@@ -69,7 +69,7 @@ extension BLUITestHarness {
                 )
             }
 
-            if configuration.resetPersistentStore || !hasExistingStore {
+            if configuration.shouldResetPersistentStore || !hasExistingStore {
                 BLUITestSeedData.seed(
                     configuration.seedProfile,
                     into: container,

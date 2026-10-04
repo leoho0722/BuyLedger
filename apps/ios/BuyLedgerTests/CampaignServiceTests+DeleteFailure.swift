@@ -10,8 +10,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension CampaignServiceTests {
 
     /// 刪除交易儲存失敗時保留開團、訂單歸屬與提醒連結
@@ -33,7 +31,11 @@ extension CampaignServiceTests {
         let campaignService = Self.makeService(database: database)
         let orderService = OrderServiceTests.makeService(database: database)
         let reminderService = CampaignReminderServiceTests.makeService(database: database)
-        try await campaignService.saveCampaign(Self.makeCampaign(id: "C1", name: "四月團"))
+        try await campaignService.saveCampaign(Campaign.fixture(
+            id: "C1",
+            name: "四月團",
+            openDate: Date(timeIntervalSince1970: 1_775_779_200)
+        ))
         let reminderTimestamp = Date(timeIntervalSince1970: 1_700_000_000)
         try await reminderService.saveLink(
             "C1",

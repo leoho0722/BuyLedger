@@ -14,38 +14,55 @@ struct CampaignEditFeature {
 
     // MARK: - State
 
-    /// 編輯／新增開團表單的狀態
+    /// 編輯與新增開團表單的狀態
     @ObservableState
     struct State: Equatable, Identifiable, Sendable {
 
-        /// 原始開團；`nil` 代表「新開團」流程
+        /// 原始開團；`nil` 代表新增流程
         let original: Campaign?
 
         /// 目前取得鍵盤焦點的欄位；`nil` 代表無焦點
         var focusedField: Field?
 
-        /// 表單草稿：收斂 7 個納入未儲存變更判斷的欄位 (見 ``CampaignDraft``)
+        /// 納入未儲存變更判斷的七個草稿欄位
         var draft: CampaignDraft
 
-        /// 儲存被拒絕的原因；`nil` 表示沒有錯誤
+        /// 父層拒絕儲存的原因；`nil` 表示沒有錯誤
         var nameConflictMessage: String?
 
         /// 捨棄未儲存變更的確認彈窗
         @Presents var discardConfirmation: AlertState<Action.DiscardAlert>? = nil
 
-        // MARK: - Identifiable Properties
-
-        /// 表單 instance 的穩定識別值，供 SwiftUI sheet item 使用
+        /// 表單的穩定識別值，供 SwiftUI sheet item 使用
         let id: UUID
 
         /// 開啟表單時的初始草稿，用於判斷是否變更
         let initialDraft: CampaignDraft
 
-        // MARK: - Init
+        /// 名稱欄位綁定的草稿名稱；畫面綁這個屬性，改名時才能清除過期的重名訊息
+        var draftName: String {
+            get {
+                draft.name
+            }
+            set {
+                draft.name = newValue
+            }
+        }
+
+        /// 草稿是否有未儲存變更
+        var isDirty: Bool {
+            draft != initialDraft
+        }
+
+        /// 名稱去掉頭尾空白後是否可送出，重名由父層驗證
+        var canSave: Bool {
+            !draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        }
 
         /// 依原始開團建立草稿狀態
+        ///
         /// - Parameters:
-        ///   - original: 要編輯的開團；`nil` 表示新開團
+        ///   - original: 要編輯的開團；`nil` 表示新增
         ///   - id: 表單識別值
         ///   - currentDate: 新開團日期與表單預設值使用的時間
         ///   - wantsReminder: 是否建立訂購提醒
@@ -58,7 +75,6 @@ struct CampaignEditFeature {
             reminderTimestamp: Date
         ) {
             self.original = original
-            // 初始草稿同時作為目前草稿與比較基準
             let draft = CampaignDraft(
                 original: original,
                 currentDate: currentDate,
@@ -70,162 +86,200 @@ struct CampaignEditFeature {
             self.id = id
         }
 
-        // MARK: - Computed Properties
+        /// 依原始開團與提醒連結建立草稿狀態，並決定提醒開關與提醒時間
+        ///
+        /// - Parameters:
+        ///   - original: 要編輯的開團；`nil` 表示新增
+        ///   - link: 原始開團目前的提醒連結；`nil` 表示沒有提醒
+        ///   - id: 表單識別值
+        ///   - now: 新開團日期、表單預設值與預設提醒時間使用的現在時間
+        ///   - calendar: 換算預設提醒時間的曆法與時區
+        /// - Note: 有連結時開啟提醒並沿用連結的時間，否則取結單日 (新開團取今天) 的上午九點
+        init(
+            original: Campaign? = nil,
+            link: CampaignReminderLink? = nil,
+            id: UUID,
+            now: Date,
+            calendar: Calendar
+        ) {
+            self.init(
+                original: original,
+                id: id,
+                currentDate: now,
+                wantsReminder: link != nil,
+                reminderTimestamp: link?.reminderTimestamp
+                    ?? CampaignReminderRequest.defaultTimestamp(
+                        closeDate: original?.closeDate,
+                        now: now,
+                        calendar: calendar
+                    )
+            )
+        }
 
-        /// 草稿是否有未儲存變更
-        var isDirty: Bool {
-            draft != initialDraft
+        /// 表單可取得焦點的欄位，依畫面的視覺順序宣告
+        enum Field: Hashable {
+
+            /// 開團名稱
+            case name
+
+            /// 備註
+            case notes
         }
     }
 
     // MARK: - Action
 
     /// 表單可處理的事件
-    @CasePathable
     enum Action: BindableAction, Equatable {
 
         /// SwiftUI 雙向繫結事件
+        ///
+        /// - Parameter action: 要更新的欄位與值
         case binding(BindingAction<State>)
 
-        /// 使用者按下取消
-        case cancelTapped
+        /// 使用者在表單上的操作
+        ///
+        /// - Parameter action: 儲存或取消的操作
+        case view(View)
 
-        /// 使用者按下儲存
-        case saveTapped
+        /// 交給父層驗證與處理的儲存意圖
+        ///
+        /// - Parameter action: 要交給父層的請求
+        case delegate(Delegate)
 
-        /// 有未儲存變更時、取消所觸發的捨棄確認彈窗事件
+        /// 有未儲存變更時的捨棄確認事件
+        ///
+        /// - Parameter action: 捨棄確認的呈現或選項事件
         case discardConfirmation(PresentationAction<DiscardAlert>)
+
+        /// 使用者在表單上的操作
+        @CasePathable
+        enum View: Equatable {
+
+            /// 使用者按下儲存
+            case saveButtonTapped
+
+            /// 使用者按下取消
+            case cancelButtonTapped
+        }
+
+        /// 要交給父層處理的請求
+        @CasePathable
+        enum Delegate: Equatable {
+
+            /// 名稱有效，請父層驗證重名後儲存
+            ///
+            /// - Parameter request: 原開團、去空白名稱與完整草稿
+            case saveRequested(SaveRequest)
+        }
 
         /// 捨棄確認彈窗的選項
         @CasePathable
         enum DiscardAlert: Equatable {
 
-            /// 使用者確認捨棄未儲存的變更並關閉表單
+            /// 確認捨棄未儲存變更並關閉表單
             case discard
         }
     }
 
-    // MARK: - Dependency Properties
+    // MARK: - Dependencies
 
-    /// 由父層注入的 dismiss effect
+    /// 由父層注入的關閉效果
     @Dependency(\.dismiss) private var dismiss
 
-    // MARK: - Reducer Body
+    // MARK: - Body
 
-    /// 表單 reducer
+    /// 組合繫結、表單邏輯與捨棄確認
     var body: some Reducer<State, Action> {
         BindingReducer()
-
-        Reduce { state, action in
-            switch action {
-            case .binding(\.draft.name):
-                // 重新編輯名稱時清掉舊的重複名稱錯誤，避免修正後仍殘留過期訊息
-                state.nameConflictMessage = nil
-                return .none
-
-            case .binding:
-                return .none
-
-            case .saveTapped:
-                // 唯一性檢查與儲存由父層處理
-                // 驗證通過後父層才關閉表單，本地不再自行 dismiss
-                return .none
-
-            case .cancelTapped:
-                // 有未儲存變更時先確認捨棄。
-                guard state.isDirty else {
-                    return .run { _ in await dismiss() }
-                }
-
-                state.discardConfirmation = AlertState {
-                    TextState("捨棄變更")
-                } actions: {
-                    ButtonState(role: .destructive, action: .discard) {
-                        TextState("捨棄變更")
-                    }
-                    ButtonState(role: .cancel) {
-                        TextState("繼續編輯")
-                    }
-                } message: {
-                    TextState("這個開團有尚未儲存的變更，離開後將不會保留。")
-                }
-                return .none
-
-            case .discardConfirmation(.presented(.discard)):
-                return .run { _ in await dismiss() }
-
-            case .discardConfirmation:
-                return .none
-            }
-        }
-        .ifLet(\.$discardConfirmation, action: \.discardConfirmation)
+        Reduce(core)
+            .ifLet(\.$discardConfirmation, action: \.discardConfirmation)
     }
 }
 
 // MARK: - Nested Types
 
-extension CampaignEditFeature.State {
+extension CampaignEditFeature {
 
-    /// 表單中可取得鍵盤焦點的欄位；case 依畫面上的視覺順序宣告
-    enum Field: Hashable {
+    /// 子層名稱驗證通過後交給父層的完整儲存意圖
+    struct SaveRequest: Equatable, Sendable {
 
-        // MARK: - Cases
+        /// 原開團；`nil` 表示新增
+        let original: Campaign?
 
-        /// 開團名稱
-        case name
+        /// 已去掉頭尾空白的開團名稱
+        let name: String
 
-        /// 備註
-        case notes
+        /// 完整草稿，保留表單輸入與提醒意圖
+        let draft: CampaignDraft
     }
 }
 
-/// 開團編輯表單的草稿值型別，收斂納入未儲存變更判斷的 7 個欄位
-@ObservableState
-struct CampaignDraft: Equatable, Sendable {
+// MARK: - Private Method
 
-    // MARK: - Data Properties
+private extension CampaignEditFeature {
 
-    /// 開團名稱草稿
-    var name: String
-
-    /// 開團日期草稿
-    var openDate: Date
-
-    /// 結單日期；過期時狀態改為 closed
-    var closeDate: Date
-
-    /// 開團狀態草稿
-    var status: CampaignStatus
-
-    /// 開團備註草稿
-    var notes: String
-
-    /// 是否建立訂購提醒；儲存時由 CampaignFeature 處理
-    var wantsReminder: Bool
-
-    /// 訂購提醒時間；儲存時轉成行事曆事件
-    var reminderTimestamp: Date
-
-    // MARK: - Init
-
-    /// 依原始開團建立草稿；`original` 為 `nil` 時各欄位採新開團預設值
+    /// 處理表單驗證、送出與取消，重名判定留給父層
+    ///
     /// - Parameters:
-    ///   - original: 要編輯的開團；`nil` 表示新開團
-    ///   - currentDate: 新開團日期與表單預設值使用的時間
-    ///   - wantsReminder: 是否建立訂購提醒
-    ///   - reminderTimestamp: 訂購提醒時間
-    init(
-        original: Campaign?,
-        currentDate: Date,
-        wantsReminder: Bool,
-        reminderTimestamp: Date
-    ) {
-        self.name = original?.name ?? ""
-        self.openDate = original?.openDate ?? currentDate
-        self.closeDate = original?.closeDate ?? currentDate
-        self.status = original?.status ?? .ongoing
-        self.notes = original?.notes ?? ""
-        self.wantsReminder = wantsReminder
-        self.reminderTimestamp = reminderTimestamp
+    ///   - state: 要更新的表單狀態
+    ///   - action: 要處理的表單事件
+    /// - Returns: 儲存請求或關閉表單的效果
+    func core(state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case .binding(\.draftName):
+            state.nameConflictMessage = nil
+            return .none
+
+        case .binding:
+            return .none
+
+        case .view(.saveButtonTapped):
+            let name = state.draft.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !name.isEmpty else {
+                return .none
+            }
+            let request = SaveRequest(original: state.original, name: name, draft: state.draft)
+            return .send(.delegate(.saveRequested(request)))
+
+        case .view(.cancelButtonTapped):
+            return closeForm(state: &state)
+
+        case .delegate:
+            return .none
+
+        case .discardConfirmation(.presented(.discard)):
+            return .run { _ in
+                await dismiss()
+            }
+
+        case .discardConfirmation:
+            return .none
+        }
+    }
+
+    /// 關閉表單；有未儲存變更時先要求使用者確認捨棄
+    ///
+    /// - Parameter state: 要更新的表單狀態
+    /// - Returns: 沒有變更時為關閉表單的效果，有變更時不執行任何效果
+    func closeForm(state: inout State) -> Effect<Action> {
+        guard state.isDirty else {
+            return .run { _ in
+                await dismiss()
+            }
+        }
+        state.discardConfirmation = AlertState {
+            TextState("捨棄變更")
+        } actions: {
+            ButtonState(role: .destructive, action: .discard) {
+                TextState("捨棄變更")
+            }
+            ButtonState(role: .cancel) {
+                TextState("繼續編輯")
+            }
+        } message: {
+            TextState("這個開團有尚未儲存的變更，離開後將不會保留。")
+        }
+        return .none
     }
 }

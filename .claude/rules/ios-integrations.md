@@ -30,12 +30,13 @@ paths:
 - **開團訂購提醒經 `CalendarReminderService` 寫入與移除系統行事曆，請求 full access (`requestFullAccessToEvents()`)**：移除前要先 `event(withIdentifier:)` 讀回事件，write-only 讀不到。
     - Info.plist 帶 `NSCalendarsFullAccessUsageDescription`；權限在實際新增或移除時才請求，不在啟動時請求。
 - **提醒連結存 iOS 專屬的 `CampaignReminderRecord`，不進跨平台 `Campaign` schema**：`eventIdentifier` 是裝置本機資料，寫進生成型別會違反平台中立。
-    - 連結以 `CampaignReminderLink` 值型別在 `CampaignReminderService` 與 reducer 間傳遞。
+    - 連結以 `CampaignReminderLink` 值型別在 `CampaignReminderService` 與 `CampaignReminderFeature` 間傳遞，連結的唯一寫入者是 `CampaignReminderFeature`。
 - **提醒是全天事件 (`isAllDay`)，時間由使用者自選並存成 `reminderTimestamp`**：事件日期取 `calendar.startOfDay(for:)`，`EKAlarm(relativeOffset:)` 以該時間戳當天的分鐘數換算秒數，標題取 `Campaign.reminderTitle`。
     - 預設值為結單日 (沒有則今天) 上午 09:00。
     - 儲存時名稱或時間戳變更即重建事件；開團詳情頁只顯示提醒時間，新增與移除走編輯頁。
-- **重建提醒先建新事件、成功後才刪舊事件**：`CampaignFeature` 處理 `.rebuild(oldEventIdentifier)` 時先 `addReminder` 並以 `reminderStored` 更新連結，之後才 `removeReminder`。
+- **重建提醒先建新事件、成功後才刪舊事件**：`CampaignReminderFeature` 處理 `.rebuild(oldEventIdentifier)` 時先 `addReminder`，成功並寫入新連結 (`createResponse`) 後才 `removeReminder`。
     - 新事件建立失敗時連結維持指向舊事件，不呼叫 `removeReminder`；先刪後建在中途失敗會留下無法解析的連結。
-    - 刪舊事件失敗時連結已指向新事件 (不回滾)，但要以 `campaignWriteFailed` 告知，不用 `try?` 吞掉。
+    - 刪舊事件失敗時連結已指向新事件 (不回滾)，但要以 `delegate(.failed(.oldEventRemovalFailed))` 告知，不用 `try?` 吞掉。
+    - 提醒流程的所有失敗只經 `CampaignReminderFeature` 的 `delegate(.failed)` 交給 `CampaignFeature`，由容器統一呈現提示，提醒 Feature 與詳情都不自己呈現。
 - **`requestAccess` 回 `granted`／`denied`／`restricted` 三態，寫入另可能拋 `noWritableCalendar`**：四種情境各自呈現對應訊息，不合併成單一「需要權限」。
     - `restricted` (家長監護或 MDM) 使用者無法自行開啟，`noWritableCalendar` 是找不到可寫入的行事曆而非權限問題；兩者的訊息都不得引導前往設定。

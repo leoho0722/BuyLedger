@@ -14,8 +14,6 @@ import Testing
 @MainActor
 struct LookupManagementFeatureTests {
 
-    // MARK: - Tests
-
     /// 載入指定種類時只替換該目錄清單，並清除載入錯誤
     ///
     /// - Parameter kind: 要載入的主檔種類

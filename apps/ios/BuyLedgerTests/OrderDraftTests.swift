@@ -13,8 +13,6 @@ import Testing
 /// 驗證 OrderDraft 的訂單建構邏輯
 struct OrderDraftTests {
 
-    // MARK: - Tests
-
     /// 編輯時空白主檔欄位回退既有值
     @Test func editingExistingOrderFallsBackToExistingValuesWhenDraftFieldsAreEmpty() {
         let existing = Self.makeOrder(

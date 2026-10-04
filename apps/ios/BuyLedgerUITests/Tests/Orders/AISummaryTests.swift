@@ -10,21 +10,22 @@ import XCTest
 /// AI 商品明細總結入口的兩條分支測試
 final class AISummaryTests: BLUITestCase {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// AI 關閉提示 alert 的關閉按鈕文字
     private static let aiDisabledCloseLabel = "關閉"
 
-    // MARK: - Tests
-
     /// 未開啟 AI 時點「AI 總結」入口，彈出未開啟提示 alert；點「關閉」收回
     @MainActor
     func testAiSummaryDisabledShowsAlertThenCloses() {
+        // Given
         let app = launch(LaunchOptions(seed: .fullOrders))
         let orders = openOrdersList(app)
 
+        // When
         orders.tapAiSummary()
 
+        // Then
         if !app.alertPresented() {
             failWithDiagnostics(in: app, "未開啟 AI 時點「AI 總結」，未開啟提示 alert 未呈現")
         }
@@ -39,11 +40,14 @@ final class AISummaryTests: BLUITestCase {
     /// 開啟 AI 時點「AI 總結」入口，推出總結 sheet；就緒後點關閉收回
     @MainActor
     func testAiSummaryEnabledOpensSheetThenCloses() {
-        let app = launch(LaunchOptions(seed: .fullOrders, useAiSummary: true))
+        // Given
+        let app = launch(LaunchOptions(seed: .fullOrders, shouldUseAISummary: true))
         let orders = openOrdersList(app)
 
+        // When
         orders.tapAiSummary()
 
+        // Then
         let summary = AISummaryScreen(app: app)
         if !summary.waitUntilReady() {
             failWithDiagnostics(
@@ -80,7 +84,12 @@ private extension AISummaryTests {
     ) -> OrdersScreen {
         let root = RootNavigationScreen(app: app)
         if !root.goToOrders(file: file, line: line) {
-            failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
+            failWithDiagnostics(
+                in: app,
+                "切到訂單分頁後畫面未就緒",
+                file: file,
+                line: line
+            )
         }
 
         let orders = OrdersScreen(app: app)

@@ -13,8 +13,6 @@ import Testing
 /// 驗證資料庫寫入失敗能保留來源錯誤資訊
 struct StorageFailureWrappingTests {
 
-    // MARK: - Tests
-
     /// 寫入失敗時保留來源錯誤的 domain 與 code
     ///
     /// - Parameter scenario: 要驗證的錯誤型別

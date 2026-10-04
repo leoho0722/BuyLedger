@@ -11,8 +11,6 @@ import Testing
 /// 守住 App 與單元測試中依賴注入邊界的掃描規則
 struct DependencyConventionScanTests {
 
-    // MARK: - Tests
-
     /// App 與單元測試現行程式碼不得違反任何依賴規範；違規時逐筆列出檔案、行號與原因
     ///
     /// - Parameter rule: 要掃描的依賴規則

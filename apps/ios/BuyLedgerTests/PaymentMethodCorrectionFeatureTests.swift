@@ -26,8 +26,6 @@ struct PaymentMethodCorrectionFeatureTests {
         PaymentMethodFlags(isCardless: false, isBankTransfer: false, isCashOnDelivery: true),
     ]
 
-    // MARK: - Tests
-
     /// 規劃更正時只處理引用原付款方式的訂單並要求確認
     @Test
     func requested_付款方式旗標已變更_正規化訂單並要求確認() async {

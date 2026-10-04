@@ -10,24 +10,28 @@ paths:
 ## 根導覽與啟動
 
 - **啟動時的服務初始化集中在 `AppLaunchConfigurator.configure()`**，`AppDelegate` 只在 `didFinishLaunching` 呼叫它；新增啟動設定加在這裡。
-- **跨頁觸發新訂單用 `RootFeature.Action.startNewOrder`**：它同時切到 `.orders` 並設空白草稿；從其他分頁直接設 sheet state 時 `OrdersView` 不在畫面階層，sheet 不會掛上。
+- **跨頁觸發新訂單由 `RootFeature` 在總覽 `delegate(.newOrderTapped)` 的同一次更新內切到 `.orders` 並設空白草稿**：從其他分頁直接設 sheet state 時 `OrdersView` 不在畫面階層，sheet 不會掛上。
 - **`OrdersView` 的 `.sheet(item: $store.scope(state: \.editOrder, action: \.editOrder))` 掛在 `OrdersView` 外層**，iPhone／iPad 共用，不移到平台分流後的子 view。
 - **不用 `.toolbar` 的 `.bottomBar`**：批次與選取操作放 `.primaryAction` 等頂部 placement，筆數由 `navigationTitle` 承載 (`OrdersFeature.State.navigationTitleKey`)。
     - compact 的底部 tab bar 會蓋住 `.bottomBar`；iPad 可拖曳視窗的下緣可能超出螢幕。
 - **訂單多選工具列與可勾選列只有一份定義** (`Features/Orders/Components/` 的 `OrdersToolbarContent`／`OrderSelectableRow`)，compact 與 regular 共用，不各自維護等價實作。
-- **每個目的地只有一條抵達路徑**：清單點擊與深連結寫入同一條路徑；「更多」分頁以 `RootFeature.MoreRoute` 值導向堆疊驅動，深連結在同一次狀態更新內先清空再推入。
-    - 用值導向堆疊而非「呈現旗標加去重判斷」，讓不合法狀態無法表達。
-    - **從「更多」下的 pushed 頁深連結到其他根分頁，切分頁前先 `state.morePath.removeAll()`**：路徑非空時改 `selectedTab` 會讓 iPad 的 `NavigationSplitView` 觸發 assertion 崩潰 (iPhone 不會，容易漏測)。iPad 側邊欄分頁 (`sidebarTabSelected`) 與智慧分組 (`smartGroupSelected`) 同樣先清路徑；iPhone `TabView` 走 `tabSelected` 並保留「更多」堆疊。
+- **每個目的地只有一條抵達路徑**：清單點擊與深連結寫入同一條路徑；「更多」分頁以 `MoreFeature.State.path` 的 `StackState<Path.State>` 驅動，列點擊與深連結只呼叫 `showSettings()` 這類 State 方法，在同一次狀態更新內先清空再推入。
+    - 用堆疊狀態而非「呈現旗標加去重判斷」，讓不合法狀態無法表達。
+    - **切離「更多」前先清空堆疊**：路徑非空時改 `selectedTab` 會讓 iPad 的 `NavigationSplitView` 觸發 assertion 崩潰 (iPhone 不會，容易漏測)。Root 主動切離的 `sidebarTabSelected` 與 `smartGroupSelected` 先 `state.more.popToRoot()`；從「更多」堆疊交出跨分頁意圖的子畫面 (目前只有客戶頁) 由 `MoreFeature` 先清空 path 再送 delegate；iPhone `TabView` 走 `tabSelected` 並保留「更多」堆疊。新增會切離「更多」的推入點都走這兩條之一。
+- **開團詳情以 `CampaignFeature.State.path` 的 `StackState<Path.State>` 推入，列表點擊與深連結都只呼叫 `CampaignFeature.State.showDetail(campaignID:)`**：同一次更新內先 `removeAll()` 再 `append`，找不到開團時不動。
+    - production 移除堆疊內的單一元素用 `pop(from:)`，不用 `StackState.removeAll(where:)`：它走 `RangeReplaceableCollection` 預設實作，會重配所有元素的 id，畫面可能 pop 再 push；開團以 `popDetail(campaignID:)` 移除已刪除開團的詳情。
 - **選取狀態單一來源**：同一清單的不同項目類別併進同一個選取型別 (參考 `RootSidebarLayout.SidebarSelection`)，兩套選取機制並存會同時高亮兩列。
 
 ## App 鎖定
 
 - **背景上鎖的觸發訊號是 `\.scenePhase` 的 `.background`／`.active`**：採場景生命週期的 App 不會呼叫 `AppDelegate` 的 `applicationWillResignActive`／`applicationDidBecomeActive` (且已 deprecated)，掛在那裡完全不生效。
-    - `BuyLedgerApp.body` 的 `onChange(of: scenePhase)` 經 `AppScenePhaseCoordinator.handle(newPhase:send:)` 轉送 `AppLockFeature` 的 `appDidResignActive`／`appDidBecomeActive`；抽成獨立型別是為了能單元測試。
-    - 任何「畫面或系統事件到動作」的接線都要有對應測試 (比照 `AppScenePhaseCoordinatorTests`)，不能只靠程式碼看起來合理。
+    - `BuyLedgerApp.body` 的 `onChange(of: scenePhase, initial: true)` 經 `AppScenePhase(_:)` 轉成殼層列舉，送 `AppLockFeature` 的 `.view(.scenePhaseChanged)`；上鎖、解鎖與是否通知殼層一律由 reducer 決定，App 入口不做判斷。回到前景時 `AppLockFeature` 送 `delegate(.didBecomeActive)`，由 Root 更新開團的現在時間。
+    - 任何「畫面或系統事件到動作」的接線都要有對應測試 (`AppScenePhaseTests` 守場景階段對應，`AppLockFeatureTests` 守各階段的狀態變化)，不能只靠程式碼看起來合理。
+    - **冷啟動解鎖靠 `initial: true`，這一行沒有 UI 測試守門**：拿掉後現有 `AppLockTests` 的冷啟動測試仍會通過 (啟動時 scenePhase 的後續變更也會觸發)，改動時要另外確認。
     - 背景上鎖不保證多工切換器縮圖不含內容；需要這項保證時要另以獨立 `UIWindow` 遮蔽層處理。
-- **啟用帳本保護前先通過一次驗證**：`AppLockFeature.enableToggled(true)` 先呼叫 `BiometricAuthService`，成功才設 `isProtectionEnabled` 並持久化，失敗、取消或裝置不支援時開關維持關閉並顯示對話框；未驗證就開啟可能讓使用者無法進入 App，只能重裝並失去資料。
+- **啟用帳本保護前先通過一次驗證**：`SettingsFeature` 收到 `view(.appLockToggled(true))` 先呼叫 `BiometricAuthService`，成功才設 `isBiometricUnlockEnabled`、寫入並送 `delegate(.preferencesChanged)`，失敗、取消或裝置不支援時開關維持關閉並顯示對話框；未驗證就開啟可能讓使用者無法進入 App，只能重裝並失去資料。
     - 設定頁 Toggle 用自訂 `Binding` (`get` 讀已生效的值、`set` 只送出意圖)，不用 `$store.xxx`，讓驗證失敗時開關自動彈回。
+    - `AppLockFeature` 常駐於 Root，只管上鎖與解鎖；啟用驗證與失敗說明留在設定頁，因為 alert 要掛在推入的設定頁之上。
 
 ## 呈現
 
@@ -36,9 +40,12 @@ paths:
     - `.binding` 帶副作用時 (如 `SettingsFeature` 存檔)，純 UI 欄位用 `case .binding(\.showsXxx): return .none` 排除。
     - 不綁 store、以 closure 溝通的可重用 sheet 元件 (`OptionPickerSheet`／`PaymentMethodEditorSheet`／`LookupNameEditorSheet`) 的本地 `@State` 屬元件內部狀態，不在此限。
 - **任一時刻只呈現一層 modal**：同一畫面的多個 sheet 併進單一 `@Presents` destination 列舉 (參考 `LookupManagementFeature.Destination`)，不靠多個 `.sheet` 各自以布林避讓。
-    - 同一個 `destination` 的表單送出後若要接續呈現寫入失敗或回溯確認 alert，等 `.sheet(item:onDismiss:)` 回報關閉後才把 alert 設進 `destination`；關閉期間到達的 alert 先暫存，再由關閉回呼呈現 (參考 `LookupManagementFeature.State.isFormSheetDismissing`、`pendingAlert` 與 `formSheetDismissed`)。sheet 關閉動畫中設入 alert 會讓 SwiftUI 丟棄呈現，但狀態仍停在 alert；alert 關閉後接續另一個 alert 不需套用這個延後流程。
+    - 同一個 `destination` 的表單送出後若要接續呈現寫入失敗或回溯確認 alert，等 `.sheet(item:onDismiss:)` 回報關閉後才把 alert 設進 `destination`；關閉期間到達的 alert 先暫存，再由關閉回呼呈現 (參考 `LookupManagementFeature.State.isFormSheetDismissing`、`pendingAlert` 與 `formSheetDismissed`)；開團的對應實作是 `CampaignPresentationQueue`，另涵蓋表單與其捨棄確認存在期間到達的提示 (只留最新一則)。sheet 關閉動畫中設入 alert 會讓 SwiftUI 丟棄呈現，但狀態仍停在 alert；alert 關閉後接續另一個 alert 不需套用這個延後流程。
     - 已在 sheet 內要開子畫面或選擇器時走 push，不疊第二層 sheet；訂單編輯以 `OrderEditFeature.State.PickerRoute` + `navigationDestination(for:)` 驅動 (不用 `navigationDestination(item:)`，它會造成 test target 連結失敗)。
     - `OptionPickerSheet`／`PaymentMethodEditorSheet` 以 `isEmbedded: true` 嵌入宿主堆疊，預設 `false` 為自帶 `NavigationStack` 的單層 sheet。
+    - 開團的容器 `CampaignFeature` 是操作確認 (刪除、結團) 與寫入、提醒失敗提示的唯一呈現者：詳情沒有 `destination`，只以 `delegate(.requested)` 請容器處理；表單自身的捨棄確認 (`CampaignEditFeature.discardConfirmation`) 保留在表單內。
+- **`NavigationStack` 外層的 `.alert` 在 iPad 的 `NavigationSplitView` 中無法顯示在推入的頁面之上 (`.sheet` 可以)**：容器統一呈現 alert 時，把 alert 綁定掛在目前最上層的畫面，堆疊為空時掛根內容、有推入時掛最上層目的地，另一處給 `.constant(nil)` (參考 `CampaignView.alertBinding(isDetail:)`)。
+    - 同一個綁定同時掛兩處會破壞 iPhone：兩層各自呈現同一個 alert。
 - **push 目的地不自帶 `NavigationStack`**：巢狀 stack 會弄壞推進與 pop 動畫；嵌入元件不自帶 stack、不設關閉鈕，標題掛在內容上，由宿主 Back 返回。
 - **編輯類 sheet (訂單、開團、付款方式) 防未儲存變更遺失**：以單一草稿值型別對照開啟時的初始草稿判斷 dirty (closure 元件用初始值快照)，sheet 掛 `.interactiveDismissDisabled(<isDirty>)`，取消鍵於 dirty 時彈「捨棄變更／繼續編輯」確認。
     - 確認用 `AlertState`／`.alert`，不用 `.confirmationDialog`：取消鍵在 toolbar，iOS 26 起從 toolbar 觸發的 `.confirmationDialog` 會位置偏移。

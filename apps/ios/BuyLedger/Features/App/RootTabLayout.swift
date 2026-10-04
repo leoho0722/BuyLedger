@@ -11,7 +11,7 @@ import SwiftUI
 /// iPhone 使用的分頁導覽
 struct RootTabLayout: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
@@ -19,11 +19,11 @@ struct RootTabLayout: View {
     /// App 目前選用的顯示語系
     let language: AppLanguage
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 分頁導覽的畫面內容
     var body: some View {
-        TabView(selection: $store.selectedTab.sending(\.tabSelected)) {
+        TabView(selection: $store.selectedTab.sending(\.view.tabSelected)) {
             ForEach(RootTab.allCases) { tab in
                 Tab(LocalizedStringKey(tab.title), systemImage: tab.systemImage, value: tab) {
                     destination(for: tab)
@@ -33,11 +33,12 @@ struct RootTabLayout: View {
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension RootTabLayout {
 
     /// 回傳指定分頁的主要內容
+    ///
     /// - Parameter tab: 要顯示的分頁
     /// - Returns: 分頁對應的 SwiftUI view
     @ViewBuilder
@@ -48,23 +49,24 @@ private extension RootTabLayout {
                 store: store.scope(state: \.dashboard, action: \.dashboard),
                 language: language
             )
+
         case .orders:
-            OrdersView(
-                store: store.scope(state: \.orders, action: \.orders),
-                language: language
-            )
+            OrdersView(store: store.scope(state: \.orders, action: \.orders), language: language)
+
         case .campaigns:
-            CampaignListView(
+            CampaignView(
                 store: store.scope(state: \.campaigns, action: \.campaigns),
                 language: language
             )
+
         case .insights:
             InsightsView(
                 store: store.scope(state: \.insights, action: \.insights),
                 language: language
             )
+
         case .more:
-            MoreView(store: store)
+            MoreView(store: store.scope(state: \.more, action: \.more), language: language)
         }
     }
 }

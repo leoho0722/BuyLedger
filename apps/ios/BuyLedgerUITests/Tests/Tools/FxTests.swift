@@ -21,8 +21,6 @@ final class FxTests: BLUITestCase {
     /// UI 測試固定匯率下的預期 TWD 顯示值
     private static let expectedConvertedValue = "$32,468"
 
-    // MARK: - Tests
-
     /// 從更多分頁進匯率頁後就緒，且載入狀態橫幅存在 (固定快照)
     @MainActor
     func testFxReadyWithStatusBanner() {

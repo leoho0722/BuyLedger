@@ -232,6 +232,11 @@ struct OrdersFeature {
         /// - Parameter action: 由 `State` 的雙向繫結產生的事件
         case binding(BindingAction<State>)
 
+        /// 交由父層處理的跨功能意圖
+        ///
+        /// - Parameter action: 訂單功能送出的委派
+        case delegate(Delegate)
+
         /// 畫面出現時觸發載入
         case task
 
@@ -483,6 +488,14 @@ struct OrdersFeature {
         /// - Parameter action: 詳情導覽堆疊收到的事件
         case detailPath(StackActionOf<OrderDetailPath>)
 
+        /// 訂單功能交給父層的導覽意圖
+        @CasePathable
+        enum Delegate: Equatable {
+
+            /// 要求開啟設定頁以啟用 AI 商品明細總結
+            case aiSettingsRequested
+        }
+
         /// 刪除確認、寫入失敗與 AI 未開啟三種 alert 共用的選項
         @CasePathable
         enum Alert: Equatable {
@@ -492,7 +505,7 @@ struct OrdersFeature {
             /// - Parameter id: 要刪除的訂單編號
             case confirmDelete(LedgerOrder.ID)
 
-            /// 使用者選擇前往設定開啟 AI 總結 (導覽由 ``RootFeature`` 攔截處理)
+            /// 使用者選擇前往設定開啟 AI 總結，由訂單功能轉為導覽委派
             case goToAISettings
         }
 
@@ -861,7 +874,7 @@ struct OrdersFeature {
                     .batchStatusChangePersisted, .receiptStatusChanged,
                     .receiptStatusChangePersisted, .deleteOrderTapped, .deletionConfirmation,
                     .orderDeleted, .orderWriteFailed, .writeFailureAlert, .aiSummaryTapped,
-                    .aiSummary, .aiDisabledAlert, .detailPath:
+                    .aiSummary, .aiDisabledAlert, .detailPath, .delegate:
                 return .none
             }
         }
@@ -1047,7 +1060,7 @@ struct OrdersFeature {
                     .clearSelectionTapped, .batchStatusChanged, .batchStatusChangePersisted,
                     .receiptStatusChanged, .receiptStatusChangePersisted, .deleteOrderTapped,
                     .deletionConfirmation, .orderDeleted, .orderWriteFailed, .writeFailureAlert,
-                    .aiSummaryTapped, .aiSummary, .aiDisabledAlert, .detailPath:
+                    .aiSummaryTapped, .aiSummary, .aiDisabledAlert, .detailPath, .delegate:
                 return .none
             }
         }
@@ -1236,11 +1249,16 @@ struct OrdersFeature {
                 )
                 return .none
 
-            // `RootFeature` 負責導覽，這裡只呈現 alert
+            case .aiDisabledAlert(.presented(.goToAISettings)):
+                return .send(.delegate(.aiSettingsRequested))
+
             case .aiDisabledAlert:
                 return .none
 
             case .aiSummary:
+                return .none
+
+            case .delegate:
                 return .none
 
             // 這段 `Reduce` 處理前兩段未涵蓋的事件

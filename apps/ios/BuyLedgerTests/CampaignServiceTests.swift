@@ -14,8 +14,6 @@ import Testing
 /// 驗證開團 Service 的讀取、寫入與刪除行為
 struct CampaignServiceTests {
 
-    // MARK: - Tests
-
     /// 全新資料庫不預先帶入任何開團，讀取回傳空陣列
     ///
     /// - Throws: 讀取失敗時丟出 `PersistenceError.fetchFailed(underlying:)`
@@ -39,7 +37,12 @@ struct CampaignServiceTests {
     func saveCampaign_開團識別值相同_更新既有開團() async throws {
         // Given
         let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
-        let campaign = Self.makeCampaign(id: "C1", name: "四月韓國團", status: .ongoing)
+        let campaign = Campaign.fixture(
+            id: "C1",
+            name: "四月韓國團",
+            openDate: Date(timeIntervalSince1970: 1_775_779_200),
+            status: .ongoing
+        )
         try await service.saveCampaign(campaign)
         let insertedCampaigns = try await service.fetchCampaigns()
         try #require(insertedCampaigns.count == 1)
@@ -68,8 +71,16 @@ struct CampaignServiceTests {
     func fetchCampaigns_多筆開團_依開團日期由新到舊排序() async throws {
         // Given
         let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
-        try await service.saveCampaign(Self.makeCampaign(id: "old", name: "三月團", openDay: 1))
-        try await service.saveCampaign(Self.makeCampaign(id: "new", name: "四月團", openDay: 30))
+        try await service.saveCampaign(Campaign.fixture(
+            id: "old",
+            name: "三月團",
+            openDate: Date(timeIntervalSince1970: 1_775_001_600)
+        ))
+        try await service.saveCampaign(Campaign.fixture(
+            id: "new",
+            name: "四月團",
+            openDate: Date(timeIntervalSince1970: 1_777_507_200)
+        ))
 
         // When
         let campaigns = try await service.fetchCampaigns()
@@ -86,8 +97,16 @@ struct CampaignServiceTests {
     func removeCampaign_識別值相符_刪除開團() async throws {
         // Given
         let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
-        try await service.saveCampaign(Self.makeCampaign(id: "C1", name: "團一"))
-        try await service.saveCampaign(Self.makeCampaign(id: "C2", name: "團二"))
+        try await service.saveCampaign(Campaign.fixture(
+            id: "C1",
+            name: "團一",
+            openDate: Date(timeIntervalSince1970: 1_775_779_200)
+        ))
+        try await service.saveCampaign(Campaign.fixture(
+            id: "C2",
+            name: "團二",
+            openDate: Date(timeIntervalSince1970: 1_775_779_200)
+        ))
 
         // When
         _ = try await service.removeCampaign("C1", "團一")
@@ -107,7 +126,12 @@ struct CampaignServiceTests {
         let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
         let close = Date(timeIntervalSince1970: 1_700_000_000)
         let settled = Date(timeIntervalSince1970: 1_800_000_000)
-        var campaign = Self.makeCampaign(id: "C1", name: "團", status: .closed)
+        var campaign = Campaign.fixture(
+            id: "C1",
+            name: "團",
+            openDate: Date(timeIntervalSince1970: 1_775_779_200),
+            status: .closed
+        )
         campaign.closeDate = close
         campaign.settledDate = settled
 
@@ -138,37 +162,5 @@ extension CampaignServiceTests {
         } operation: {
             CampaignService.liveValue
         }
-    }
-
-    /// 建立測試用開團；日期固定在 2026 年 4 月
-    ///
-    /// - Parameters:
-    ///   - id: 開團識別值
-    ///   - name: 開團名稱
-    ///   - status: 開團狀態
-    ///   - openDay: 開團日
-    /// - Returns: 對應測試輸入的開團
-    static func makeCampaign(
-        id: String,
-        name: String,
-        status: CampaignStatus = .ongoing,
-        openDay: Int = 10
-    ) -> Campaign {
-        var components = DateComponents()
-        components.calendar = Calendar(identifier: .gregorian)
-        components.timeZone = TimeZone(secondsFromGMT: 0)
-        components.year = 2026
-        components.month = 4
-        components.day = openDay
-
-        return Campaign(
-            id: id,
-            name: name,
-            openDate: components.date ?? Date(timeIntervalSince1970: 0),
-            closeDate: nil,
-            status: status,
-            settledDate: nil,
-            notes: ""
-        )
     }
 }

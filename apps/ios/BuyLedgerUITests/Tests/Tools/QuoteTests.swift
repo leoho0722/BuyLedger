@@ -15,8 +15,6 @@ final class QuoteTests: BLUITestCase {
     /// 試算使用的非預設來源幣別 raw value
     private static let selectedCurrency = "USD"
 
-    // MARK: - Tests
-
     /// 從更多分頁進報價頁後就緒，輸入商品本金後建議售價有值
     ///
     /// - Throws: 建議售價元素不存在或沒有值時拋出測試錯誤

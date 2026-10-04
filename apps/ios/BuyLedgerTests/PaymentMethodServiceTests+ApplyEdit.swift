@@ -11,8 +11,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension PaymentMethodServiceTests {
 
     /// 編輯付款方式後讀回更新的主檔與正規化訂單

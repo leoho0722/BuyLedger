@@ -15,8 +15,6 @@ import Testing
 /// 驗證幣別主檔 Service 的 API 分類與快取行為
 struct CurrencyMetadataServiceTests {
 
-    // MARK: - Tests
-
     /// 金鑰含控制字元時不送出支援幣別請求，並回報原有診斷錯誤
     ///
     /// - Throws: 沒有取得預期的 `.api(.transport(underlying:))` 時由 `#require` 丟出測試斷言錯誤

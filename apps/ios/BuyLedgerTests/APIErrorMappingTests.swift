@@ -14,8 +14,6 @@ import Testing
 /// 驗證匯率 Service 把服務端錯誤代碼轉成 `APIError`
 struct APIErrorMappingTests {
 
-    // MARK: - Tests
-
     /// 無效金鑰或停用帳號代碼都轉換為無效金鑰錯誤
     ///
     /// - Parameter errorCode: 服務回應中的錯誤代碼

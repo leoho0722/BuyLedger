@@ -13,8 +13,6 @@ import Testing
 /// 驗證訂單來源 Service 的持久化行為
 struct OrderSourceServiceTests {
 
-    // MARK: - Tests
-
     /// 讀取訂單來源時依自然語言順序排序
     ///
     /// - Throws: 查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；

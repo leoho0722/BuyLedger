@@ -15,8 +15,6 @@ final class PhotoViewerPagingTests: BLUITestCase {
     /// 帶滿張照片的種子訂單編號 (`photos` profile 的唯一訂單)
     private static let photoOrderID = "UITEST-PHT-001"
 
-    // MARK: - Tests
-
     /// 驗證照片檢視器可換頁並返回編輯表單
     @MainActor
     func testPushedViewerPagesBetweenPhotosAndPopsBack() {

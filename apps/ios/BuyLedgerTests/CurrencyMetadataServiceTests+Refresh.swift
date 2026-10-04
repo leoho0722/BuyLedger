@@ -10,8 +10,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension CurrencyMetadataServiceTests {
 
     /// 空清單回應回報明確錯誤，且不清除既有快取

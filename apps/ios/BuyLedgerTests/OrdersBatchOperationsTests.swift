@@ -12,8 +12,6 @@ import Testing
 /// 直接測試批次狀態操作
 struct OrdersBatchOperationsTests {
 
-    // MARK: - Tests
-
     @Test func selectionModeToggledEntersSelectionMode() {
         var state = OrdersFeature.State()
         OrdersBatchOperations.selectionModeToggled(state: &state)

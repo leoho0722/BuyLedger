@@ -27,8 +27,6 @@ struct QuoteFeatureTests {
         ]
     )
 
-    // MARK: - Tests
-
     /// 未帶參數建立時，來源幣別為韓元，所有金額與費率輸入為零
     @Test
     func init_未帶參數_來源幣別為韓元且輸入皆為零() {

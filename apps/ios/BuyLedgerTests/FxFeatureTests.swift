@@ -30,8 +30,6 @@ struct FxFeatureTests {
         ]
     )
 
-    // MARK: - Tests
-
     /// 驗證預設狀態使用韓元與十五萬元
     @Test
     func init_預設兌換狀態_以韓元與十五萬元開始() {
@@ -188,6 +186,39 @@ struct FxFeatureTests {
 
         // Then
         #expect(store.state.availableCurrencies == [.jpy, .krw, .twd])
+    }
+
+    /// 驗證畫面出現時匯率請求遇到傳輸層錯誤，結束載入並顯示網路連線異常訊息
+    @Test
+    func task_匯率請求傳輸層失敗_結束載入並顯示網路連線異常訊息() async {
+        // Given
+        let failingFetchLatest: ExchangeRateService.FetchLatest = { _ in
+            throw .transport(
+                underlying: TestDependencies.makeUnderlyingError(message: "network unavailable")
+            )
+        }
+        let store = TestStore(initialState: FxFeature.State()) {
+            FxFeature()
+        } withDependencies: {
+            $0.exchangeRateService.fetchLatest = failingFetchLatest
+            $0.currencyMetadataService.fetchCodes = {
+                [.twd, .jpy, .krw]
+            }
+        }
+
+        // When
+        await store.send(.view(.task)) {
+            $0.isLoading = true
+        }
+
+        // Then
+        await store.receive(\.currencyCodesResponse.success) {
+            $0.availableCurrencies = [.jpy, .krw, .twd]
+        }
+        await store.receive(\.ratesResponse) {
+            $0.isLoading = false
+            $0.errorMessage = "網路連線異常；無法顯示即時匯率，請稍後再試。"
+        }
     }
 
     /// 驗證重試會重新載入匯率與幣別清單

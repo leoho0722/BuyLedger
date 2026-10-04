@@ -13,8 +13,6 @@ import Testing
 /// 驗證訂單清單的載入狀態與重試結果
 struct OrdersLoadStateTests {
 
-    // MARK: - Tests
-
     /// 已完成首次載入時，狀態解析為已載入內容
     @Test
     func loadState_訂單已載入_解析為內容狀態() {

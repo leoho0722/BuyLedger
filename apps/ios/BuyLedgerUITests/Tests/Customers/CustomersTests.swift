@@ -18,8 +18,6 @@ final class CustomersTests: BLUITestCase {
     /// customerRanking 中累計消費最高、必落在 Top 3 卡的客戶名
     private static let topCustomerName = "林書宇"
 
-    // MARK: - Tests
-
     /// 從更多分頁進客戶頁後名單就緒，且四位既知客戶列都在
     @MainActor
     func testCustomerListReadyWithSeed() {

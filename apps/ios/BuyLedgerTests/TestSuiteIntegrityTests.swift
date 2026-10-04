@@ -23,8 +23,6 @@ struct TestSuiteIntegrityTests {
     /// 比對內插運算式中名稱含 `url`／`request` (不分大小寫) 的識別字或成員名稱
     private static let credentialPattern = #"(?i)\\\([^\n)]*\b\w*(?:url|request)\w*\b[^\n)]*\)"#
 
-    // MARK: - Tests
-
     /// 掃描移除整行註解後的測試目錄全文，關閉 `TestStore` 窮舉檢查的總處數不得超過 `exhaustivityOffUpperBound`
     ///
     /// - Throws: 建立正規表示式失敗、目錄無法列舉 (`#require` 失敗) 或原始碼讀取失敗時丟出

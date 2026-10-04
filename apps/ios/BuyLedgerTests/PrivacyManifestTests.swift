@@ -10,8 +10,6 @@ import Testing
 /// 驗證隱私宣告
 struct PrivacyManifestTests {
 
-    // MARK: - Tests
-
     @Test func privacyManifestDeclaresRequiredReasonAndLinkedTelemetryData() throws(any Error) {
         let manifest = try Self.propertyList(at: "BuyLedger/Resources/PrivacyInfo.xcprivacy")
 

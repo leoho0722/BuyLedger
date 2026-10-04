@@ -455,22 +455,6 @@
         }
       }
     },
-    "無法載入主檔管理頁面，請稍後再試。" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The master data management page could not be loaded. Try again later."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "無法載入主檔管理頁面，請稍後再試。"
-          }
-        }
-      }
-    },
     "無法建立訂購提醒" : {
       "localizations" : {
         "en" : {

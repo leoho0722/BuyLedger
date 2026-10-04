@@ -18,19 +18,25 @@ struct CustomersFeature {
     @ObservableState
     struct State: Equatable {
 
-        /// 來源訂單；由 ``RootFeature`` 與 ``OrdersFeature/State/orders`` 保持同步
-        var orders: [LedgerOrder] = []
+        /// 唯讀訂單投影；由根功能同步更多頁來源，推入後持續共享更新
+        @SharedReader var orders: [LedgerOrder]
 
         /// 依累計消費由高到低排序的客戶彙總列
         var customers: [CustomerRow] {
             CustomerRow.aggregate(orders: orders)
+        }
+
+        /// 以宿主提供的唯讀來源建立客戶頁
+        ///
+        /// - Parameter orders: 根功能同步的訂單投影
+        init(orders: SharedReader<[LedgerOrder]>) {
+            _orders = orders
         }
     }
 
     // MARK: - Action
 
     /// 客戶彙總功能可處理的事件
-    @CasePathable
     enum Action: Equatable {
 
         /// 使用者可直接操作的客戶名單事件
@@ -38,9 +44,9 @@ struct CustomersFeature {
         /// - Parameter action: 使用者在客戶名單畫面執行的操作
         case view(View)
 
-        /// 由根功能轉發的跨功能意圖
+        /// 交給更多頁 (`MoreFeature`) 轉送的跨功能意圖
         ///
-        /// - Parameter action: 要交給根功能處理的結果
+        /// - Parameter action: 要交給更多頁處理的結果
         case delegate(Delegate)
 
         /// 客戶名單畫面事件
@@ -72,7 +78,7 @@ struct CustomersFeature {
 
     // MARK: - Body
 
-    /// 客戶彙總功能 reducer
+    /// 只負責組合 reducer，客戶頁自己的邏輯在 `core(state:action:)`
     var body: some Reducer<State, Action> {
         Reduce(core)
     }
@@ -93,7 +99,7 @@ private extension CustomersFeature {
         case .view(.task):
             return .send(.delegate(.ordersLoadRequested))
 
-        case let .view(.customerTapped(name)):
+        case .view(.customerTapped(let name)):
             return .send(.delegate(.customerSelected(name)))
 
         case .delegate:

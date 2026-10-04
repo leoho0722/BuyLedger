@@ -15,8 +15,6 @@ import Testing
 /// 驗證付款方式 Service 的主檔操作
 struct PaymentMethodServiceTests {
 
-    // MARK: - Tests
-
     /// 讀取付款方式時依自然語言順序排序
     ///
     /// - Throws: 查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；

@@ -23,11 +23,11 @@ apps/ios/
 ├── BuyLedger.xcodeproj/          # Xcode 專案；project.pbxproj 提交、xcuserdata/ 不提交
 ├── BuyLedger/                    # App source root
 │   ├── App/                      # 進入點：BuyLedgerApp、WindowGroup、AppLaunchConfigurator、TelemetryService (Firebase 遙測收集)
-│   │   └── Testing/              # UI 測試啟動 harness (BLUITestConfiguration / SeedProfile / SeedData / DependencyOverrides；#if DEBUG)，組裝根與呼叫它的啟動設定同層
+│   │   └── Testing/              # UI 測試啟動 harness (BLUITestConfiguration、SeedProfile、SeedData、五個啟動參數列舉 Language／LoadFailure／CalendarAccess／BiometricScenario／PersistenceMode、DependencyValues+BLUITestOverrides；#if DEBUG)，組裝根與呼叫它的啟動設定同層
 │   ├── Core/
 │   │   ├── Domain/               # LedgerOrder、FxRateSnapshot、FxRates、CurrencyCode 等 model
 │   │   ├── Persistence/          # BuyLedgerDatabase (actor，每次讀寫一次性 ModelContext)、PersistenceContainer、各 Record 與 schema
-│   │   ├── Dependencies/         # 跨 Feature 共用的 Service (`@Dependency(\.xxxService)` 注入)：訂單、開團、四種主檔、幣別與匯率
+│   │   ├── Dependencies/         # 跨 Feature 共用的 Service (`@Dependency(\.xxxService)` 注入)：訂單、四種主檔、幣別與匯率、BiometricAuthService (App 鎖定與設定頁共用的系統本機驗證)
 │   │   ├── Storage/              # UserDefaultsStore、AppConfigurationStore (讀 Info.plist 設定) 的 protocol、實作與 Preview 替身
 │   │   ├── Networking/           # APIError、HTTPClient (send/stream)、HTTPMethod、URLRequestBuilder、ExchangeRateEndpoint (ExchangeRate-API 請求與錯誤分類)、ExchangeRateLatestResponse、ExchangeRateCodesResponse
 │   │   ├── Environment/          # RuntimeEnvironment (Preview／UI 測試／單元測試的執行環境判斷)
@@ -35,10 +35,11 @@ apps/ios/
 │   ├── Features/                 # 依功能切分的 TCA feature
 │   │   ├── AISummary/            # 訂單 AI 商品明細總結 (Ollama Cloud 串流)
 │   │   │   └── Data/             # AISummaryService、OllamaChatRequest、OllamaChatResponse
-│   │   ├── App/                  # RootFeature + RootView + RootSidebarLayout / RootTabLayout；AppLockFeature + AppLockView (帳本保護鎖定畫面) + AppScenePhaseCoordinator (場景階段接線)
-│   │   │   └── Data/             # BiometricAuthService (帳本保護的系統本機驗證)、PersistenceRecoveryService (store 隔離)
-│   │   ├── Campaigns/            # 開團管理
-│   │   │   └── Data/             # CampaignReminderService (提醒連結)、CalendarReminderService (系統行事曆)、OpenSettingsService
+│   │   ├── App/                  # RootFeature (殼層) + RootView + RootSidebarLayout / RootTabLayout / SidebarSmartGroup；RootNavigationOperations／RootCascadeOperations (同域輔助型別)；AppLockFeature + AppLockView (帳本保護鎖定畫面) + AppScenePhase (場景階段) + AppLockFormatters
+│   │   │   └── Data/             # SignificantTimeChangeService (系統重大時間變更監聽)、PersistenceRecoveryService (store 隔離)
+│   │   ├── Campaigns/            # 開團管理：CampaignFeature (容器) 與 CampaignListFeature、CampaignDetailFeature、CampaignEditFeature 及無畫面的 CampaignWritesFeature、CampaignReminderFeature
+│   │   │   ├── Components/       # CampaignSectionList、CampaignRow、CampaignDetailInfoSection、CampaignDetailSettlementSection、CampaignDetailDistributionSection
+│   │   │   └── Data/             # CampaignService (開團讀寫)、CampaignReminderService (提醒連結)、CalendarReminderService (系統行事曆)、OpenSettingsService
 │   │   ├── Customers/            # 客戶名單
 │   │   │   └── Components/       # CustomerTopCard、CustomerListRow
 │   │   ├── Dashboard/            # 總覽頁
@@ -47,12 +48,12 @@ apps/ios/
 │   │   ├── Insights/             # 趨勢分析
 │   │   ├── Lookups/              # 主檔管理 (訂單來源／商品類別／付款方式／對帳狀態)
 │   │   │   └── Components/       # LookupItemRow、LookupItemList
-│   │   ├── More/                 # iOS「更多」入口
+│   │   ├── More/                 # iOS「更多」入口：MoreFeature 以 StackState 推入匯率、客戶、報價、主檔管理、設定
 │   │   ├── Orders/               # 訂單瀏覽與編輯 (含 iPhone/iPad view 分流)；OrdersFeature 三個子域的分支主體外移至 OrdersFilterOperations／OrdersBatchOperations／OrdersMergeFlowOperations (同域輔助型別，非子 reducer)，State 查詢擴充與其巢狀型別外移至 OrdersFeature+StateQuery，日期區段型別獨立為 OrderDateSection，訂單建構收成單一路徑於 OrderDraft，LedgerOrder 的變更擴充收於 LedgerOrder+OrderMutation
 │   │   │   └── Data/             # PhotoService (相簿選取照片的匯入)
 │   │   ├── Quote/                # 報價試算 (QuoteFeature + QuoteRateFeature 子 reducer + QuoteView)
 │   │   │   └── Components/       # QuoteStatusBanner、QuoteBreakdownCard、QuoteInputsCard
-│   │   └── Settings/             # iOS SettingsView
+│   │   └── Settings/             # SettingsFeature + SettingsView；App 鎖定的啟用驗證與失敗說明也在這裡
 │   │       └── Data/             # SettingsService (使用者偏好的讀寫)
 │   ├── Shared/
 │   │   ├── Localization/         # 跨 feature 共用的語言型別 (AppLanguage 與 rootNavigationTitle 修飾子)、幣別顯示名稱單一入口 (CurrencyDisplayName)
@@ -62,7 +63,7 @@ apps/ios/
 │   │   │   └── Components/       # BLAvatar、BLBadge、BLCard、BLBarChart、Pickers (OptionPickerSheet)、Forms (PaymentMethodEditorSheet) 等元件
 │   │   └── Extensions/           # Swift/SwiftUI 內建型別的通用 extension (Image/Color/Locale/Decimal 等，一型一檔)
 │   └── Resources/                # Info.plist、entitlements、PrivacyInfo.xcprivacy (隱私資訊清單)、Config.example.xcconfig (範本，實際 Config.xcconfig 自填且 gitignored)、assets
-├── BuyLedgerAccessibilityIDs/    # UI 測試 identifier 常數 (共用資料夾，同時編入 App 與 UITests 兩個 target)
+├── BuyLedgerAccessibilityIDs/    # UI 測試 identifier 常數，BLAccessibilityID 依區域分檔為 +<區域>.swift (共用資料夾，同時編入 App 與 UITests 兩個 target)
 ├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
 │   └── Mocks/                    # BuyLedgerDatabase、HTTPClient、UserDefaultsStore、AppConfigurationStore 的 Mock 與 MockURLProtocol
 ├── BuyLedgerUITests/             # XCUITest
@@ -170,7 +171,7 @@ mobilebuildmcp simulator test \
   --simulator-name "iPhone 17"
 ```
 
-UI 測試以啟動參數宣告前置條件 (資料、語言、時間、外部相依)，測試端用 `LaunchOptions` 組出、App 端由 `BLUITestConfiguration` 解析；常用旗標：`-BLUITest` (開啟測試模式)、`-BLUITestSeed <profile>` (注入種子資料)、`-BLUITestNow <ISO8601>` (固定時間)、`-BLUITestLanguage <traditionalChinese|english>`、`-BLUITestLoadFailure <orders|...>`。整套 harness 以 `#if DEBUG` 圈住、不進 Release。共用測試工具在 `BuyLedgerUITests/Support/` 與 `BuyLedgerUITests/Screens/`，identifier 常數在 `BuyLedgerAccessibilityIDs/BLAccessibilityID.swift` (同時編入 App 與 UITests 兩個 target)。硬規則 (一律用 identifier 定位、測試前必 seed、不得以 skip 掩蓋、僅覆蓋 iOS 26.x) 見 [`.claude/rules/ios-ui-tests.md`](../../.claude/rules/ios-ui-tests.md)。
+UI 測試以啟動參數宣告前置條件 (資料、語言、時間、外部相依)，測試端用 `LaunchOptions` 組出、App 端由 `BLUITestConfiguration` 解析；常用旗標：`-BLUITest` (開啟測試模式)、`-BLUITestSeed <profile>` (注入種子資料)、`-BLUITestNow <ISO8601>` (固定時間)、`-BLUITestLanguage <traditionalChinese|english>`、`-BLUITestLoadFailure <orders|...>`。整套 harness 以 `#if DEBUG` 圈住、不進 Release。共用測試工具在 `BuyLedgerUITests/Support/` 與 `BuyLedgerUITests/Screens/`，identifier 常數在 `BuyLedgerAccessibilityIDs/` 的 `BLAccessibilityID+<區域>.swift` (同時編入 App 與 UITests 兩個 target)。硬規則 (一律用 identifier 定位、測試前必 seed、不得以 skip 掩蓋、僅覆蓋 iOS 26.x) 見 [`.claude/rules/ios-ui-tests.md`](../../.claude/rules/ios-ui-tests.md)。
 
 > 💡 CLI 端篩選測試一律用 `-only-testing:`／`-skip-testing:` 旗標，不要用 `-testPlan`：`mobilebuildmcp` 的 `test` 子命令不理會經 `--extra-args` 傳入的 `-testPlan`，會退回 scheme 預設計畫。
 
@@ -204,7 +205,7 @@ bun run unlock
 
 ### App 進入點與平台導覽
 
-`BuyLedgerApp.swift` 以單一 `RootFeature` store 驅動：`WindowGroup` 掛上 `RootView`；SwiftData container 不經 SwiftUI environment 注入，統一由 `BuyLedgerDatabase` 持有。單元測試 host 不建立根畫面，`BuyLedgerApp.init` 在 `RuntimeEnvironment.isUnitTesting` 時直接略過。`RootFeature.State.selectedTab` 驅動兩種 layout：
+`BuyLedgerApp.swift` 以單一 `RootFeature` store 驅動：`WindowGroup` 掛上 `RootView`；啟動時讀出一次設定快照直接傳入 `RootFeature.State`，首幀即使用已保存的語言、月目標與鎖定狀態；SwiftData container 不經 SwiftUI environment 注入，統一由 `BuyLedgerDatabase` 持有。單元測試 host 不建立根畫面，`BuyLedgerApp.init` 在 `RuntimeEnvironment.isUnitTesting` 時直接略過。`RootFeature.State.selectedTab` 驅動兩種 layout：
 
 | 平台                      | Layout              | 說明                                          |
 |---------------------------|---------------------|-----------------------------------------------|
@@ -213,10 +214,12 @@ bun run unlock
 
 `OrdersView` 是平台分流入口：iPhone (compact) → `OrdersCompactView` (`NavigationStack`)；iPad (regular) → `NavigationStack` 內以 `HStack` 自排「清單 + 詳情」兩欄 (不用巢狀 `NavigationSplitView`，避免兩層 split 互搶寬度)。`.sheet(...)` 編輯表單一律掛在 `OrdersView` 外層，iPhone / iPad 共用。
 
+「更多」分頁由 `MoreFeature` 以 `StackState` 推入匯率工具、客戶名單、報價試算、四種主檔管理與設定，返回即釋放子畫面狀態；iPhone 切換分頁時保留堆疊，iPad 側邊欄切換前先清空 (`NavigationSplitView` 在路徑非空時切分頁會崩潰)。
+
 ### 資料層
 
 - **Service 層** (`Core/Dependencies/` 與各 Feature 的 `Data/`)：`OrderService` 等 Service 透過 `BuyLedgerDatabase` (`Core/Persistence/`) 操作 SwiftData，每次讀寫使用一次性 context；production 唯一的 `ModelContainer` 由 `BuyLedgerDatabaseKey.liveValue` 從 `PersistenceContainer.bootstrap` 取得，Feature 以 `@Dependency(\.xxxService)` 取用 Service。
-- **主檔資料** (訂單來源／商品類別／付款方式／對帳狀態) 由 `LookupManagementFeature` (`Features/Lookups/`，以 `LookupKind` 分流) 提供 CRUD，並與 `OrdersFeature` 以共享的記憶體儲存 `LookupCatalog` 作為單一來源；改名後由 `RootFeature` 收到 `LookupManagementFeature` 的 `.delegate(.itemRenamed)` 時改寫引用該名稱的訂單，分派經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 處理。
+- **主檔資料** (訂單來源／商品類別／付款方式／對帳狀態) 由 `LookupManagementFeature` (`Features/Lookups/`，以 `LookupKind` 分流) 提供 CRUD，並與 `OrdersFeature` 以共享的記憶體儲存 `LookupCatalog` 作為單一來源；改名後 `LookupManagementFeature` 送出的 `.delegate(.itemRenamed)` 經 `MoreFeature` 帶上主檔種類轉送，`RootFeature` 以 `RootCascadeOperations.lookupItemRenamed` 改寫引用該名稱的訂單，分派經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 處理。
 - `liveValue`：純本機 SwiftData，**不自動 seed**——使用者首次啟動會看到真正的空狀態。
 - `previewValue`：in-memory + 自動 seed `LedgerOrder.sampleOrders`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
 - `LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback` **僅供 Preview / 單元測試 / `previewValue`** 使用，runtime 不讀取。
@@ -230,9 +233,10 @@ bun run unlock
 
 「更多 → 設定」的「帳本保護」區塊提供單一開關：開啟時同時啟用「App 進入背景即上鎖」與「回到前景或冷啟動需通過驗證才顯示內容」兩項保護，關閉時完全回到現況。啟用路徑本身需先通過一次系統本機驗證 (`BiometricAuthService`，`LAContext` 的 `.deviceOwnerAuthentication` 政策，涵蓋生物辨識與裝置密碼後備)，成功才寫入偏好；失敗、取消或裝置不支援則開關回到關閉並以對話框說明原因。上鎖只保證回到前景需要驗證，不保證多工切換器縮圖排除內容 (已知取捨，見 [`.claude/rules/ios-navigation.md`](../../.claude/rules/ios-navigation.md) 的「App 鎖定」)。
 
-- `AppLockFeature` (`Features/App/`)：啟用驗證、鎖定／解鎖狀態機，巢狀於 `SettingsFeature.State.appLock`；`SettingsFeature` 攔截其驗證成功與關閉事件寫回 `SettingsService`。
+- `AppLockFeature` (`Features/App/`)：鎖定／解鎖狀態機，常駐於 `RootFeature.State.appLock`，啟用狀態由 Root 依偏好同步。
+- `SettingsFeature` (`Features/Settings/`)：負責啟用前的驗證與失敗說明，成功才寫回 `SettingsService`，並以 `delegate(.preferencesChanged)` 回報給 Root。
 - `AppLockView` (`Features/App/`)：鎖定時取代整個正常介面的阻斷畫面，提供「重新驗證」(不提供跳過)。
-- `AppScenePhaseCoordinator` (`Features/App/`)：由 `BuyLedgerApp` 的 `\.scenePhase` 呼叫，依場景階段 (`.background`／`.active`) 轉送 `AppLockFeature` 的鎖定／解鎖動作；觸發訊號的選擇見 [`.claude/rules/ios-navigation.md`](../../.claude/rules/ios-navigation.md) 的「App 鎖定」。
+- `AppScenePhase` (`Features/App/`)：`BuyLedgerApp` 把 `\.scenePhase` 轉成這個殼層列舉，送 `AppLockFeature` 的 `.view(.scenePhaseChanged)`，進入背景上鎖、回到前景或冷啟動驗證解鎖由 reducer 決定；觸發訊號的選擇見 [`.claude/rules/ios-navigation.md`](../../.claude/rules/ios-navigation.md) 的「App 鎖定」。
 - UI 測試以 `-BLUITestAppLockEnabled` 直接抵達鎖定狀態、`-BLUITestBiometricScenario` 選擇驗證情境，全程不觸發系統生物辨識提示。
 
 ### 外部 API
@@ -247,4 +251,4 @@ ExchangeRate-API v6 有兩個 endpoint：`latest/{base}` (匯率) 與 `codes` (�
 
 ### Snapshot baseline 漂移
 
-設計大改時請刪掉對應 baseline (`BuyLedgerTests/__Snapshots__/SnapshotTests/*.png`) 讓下一次跑測試自動重建。Baseline 失準若不是來自設計變動，先確認測試是否走 `TestDependencies.withFixedNow { ... }` 注入固定 `Date`、`TimeZone`、`Calendar`。
+設計大改時請刪掉對應 baseline (`BuyLedgerTests/__Snapshots__/SnapshotTests*/*.png`，依測試檔分資料夾) 讓下一次跑測試自動重建。Baseline 失準若不是來自設計變動，先確認測試是否走 `TestDependencies.withFixedNow { ... }` 注入固定 `Date`、`TimeZone`、`Calendar`。

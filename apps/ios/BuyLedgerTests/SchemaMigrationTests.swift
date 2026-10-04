@@ -14,8 +14,6 @@ import Testing
 /// 驗證 V15 至 V17 遷移與同版本資料庫開啟
 struct SchemaMigrationTests {
 
-    // MARK: - Tests
-
     /// V15 升至 V16 後保留對帳狀態與主檔
     ///
     /// - Throws: 暫存 store 建立、遷移或資料讀取失敗時拋出錯誤；遷移後筆數不是 2 時由 `#require` 拋出

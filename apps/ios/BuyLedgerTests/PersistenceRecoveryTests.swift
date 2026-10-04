@@ -20,8 +20,6 @@ struct PersistenceRecoveryTests {
     private static let testRoot = FileManager.default.temporaryDirectory
         .appendingPathComponent("BuyLedgerPersistenceRecoveryTests", isDirectory: true)
 
-    // MARK: - Tests
-
     /// 隔離指定資料目錄時移動 store 與 sidecar 檔案並保留位元內容
     ///
     /// - Throws: 測試目錄建立或檔案寫入、讀取失敗時拋出底層檔案錯誤；隔離失敗時拋出 `PersistenceRecoveryError`；

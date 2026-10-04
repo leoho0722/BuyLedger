@@ -14,8 +14,6 @@ import Testing
 /// 驗證訂單寫入失敗後不會污染後續交易
 struct OrderServiceResidueTests {
 
-    // MARK: - Tests
-
     /// 刪除存檔失敗後再次刪除會移除原訂單
     ///
     /// - Throws: 建立 fixture 或獨立容器失敗時丟出 SwiftData 底層錯誤；

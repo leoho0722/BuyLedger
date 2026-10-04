@@ -16,8 +16,6 @@ import Testing
 @MainActor
 struct AISummaryFeatureTests {
 
-    // MARK: - Tests
-
     /// 驗證串流片段依序累積到摘要內容，完成後 `phase` 轉為 `.finished`
     @Test
     func task_收到多段摘要_依序累積並標記完成() async {

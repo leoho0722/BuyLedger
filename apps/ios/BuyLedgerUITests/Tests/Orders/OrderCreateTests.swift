@@ -24,8 +24,6 @@ final class OrderCreateTests: BLUITestCase {
     /// 填入的客戶實付金額
     private static let chargedAmount = "4200"
 
-    // MARK: - Tests
-
     /// 從訂單分頁點新增後，編輯表單就緒
     @MainActor
     func testTapAddOpensOrderEditForm() {

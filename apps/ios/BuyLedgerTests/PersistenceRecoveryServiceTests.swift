@@ -14,8 +14,6 @@ import Testing
 /// 驗證 `PersistenceRecoveryService` 把 store 隔離交給 Database
 struct PersistenceRecoveryServiceTests {
 
-    // MARK: - Tests
-
     /// 確認復原 Service 將 store 隔離工作交給 Database
     ///
     /// - Throws: 暫存資料庫建立失敗時丟出底層錯誤；store 檔不存在時 `#require` 會使測試失敗；

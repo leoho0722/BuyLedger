@@ -11,7 +11,7 @@ import SwiftUI
 /// iPadOS 使用的側邊欄導覽
 struct RootSidebarLayout: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
@@ -19,7 +19,7 @@ struct RootSidebarLayout: View {
     /// App 目前選用的顯示語系
     let language: AppLanguage
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 側邊欄導覽的畫面內容
     var body: some View {
@@ -27,129 +27,7 @@ struct RootSidebarLayout: View {
     }
 }
 
-// MARK: - Nested Types
-
-private extension RootSidebarLayout {
-
-    /// 側邊欄的單一選取型別
-    enum SidebarSelection: Hashable {
-
-        // MARK: - Cases
-
-        /// 主要分頁
-        case tab(RootTab)
-
-        /// 智慧分組 (訂單頁的狀態篩選)
-        case smartGroup(OrderStatus)
-    }
-}
-
-/// 側邊欄「智慧分組」中以狀態 + 顏色呈現的項目
-extension RootSidebarLayout {
-    /// 總覽頁可快速查看的訂單群組
-    enum SmartGroup: String, Identifiable, CaseIterable {
-
-        // MARK: - Cases
-
-        /// 報價中的訂單分組
-        case quoting
-
-        /// 已確認但尚未下單的訂單分組
-        case confirmed
-
-        /// 已下單但尚未集運的訂單分組
-        case purchased
-
-        /// 集運中的訂單分組
-        case shipping
-
-        /// 部分商品已到貨的訂單分組
-        case partiallyArrived
-
-        /// 已到貨但尚未交付的訂單分組
-        case arrived
-
-        /// 已交付完成的訂單分組
-        case delivered
-
-        /// 買家已取貨完成的訂單分組
-        case pickedUp
-
-        // MARK: - Identifiable Properties
-
-        /// 分組的穩定識別值
-        var id: String { rawValue }
-
-        // MARK: - Data Properties
-
-        /// 對應的訂單狀態
-        var status: OrderStatus {
-            switch self {
-            case .quoting:
-                    .quoting
-            case .confirmed:
-                    .confirmed
-            case .purchased:
-                    .purchased
-            case .shipping:
-                    .shipping
-            case .partiallyArrived:
-                    .partiallyArrived
-            case .arrived:
-                    .arrived
-            case .delivered:
-                    .delivered
-            case .pickedUp:
-                    .pickedUp
-            }
-        }
-
-        /// 在側邊欄顯示的色點顏色
-        /// - Parameter palette: 目前外觀使用的色盤
-        /// - Returns: 色點顏色
-        func color(in palette: BLPalette) -> Color {
-            status.sidebarHue(in: palette)
-        }
-
-        /// 對應到 UI 測試 identifier 的分組 key
-        var accessibilityKey: BLAccessibilityID.Root.SmartGroup {
-            switch self {
-            case .quoting:
-                    .quoting
-            case .confirmed:
-                    .confirmed
-            case .purchased:
-                    .purchased
-            case .shipping:
-                    .shipping
-            case .partiallyArrived:
-                    .partiallyArrived
-            case .arrived:
-                    .arrived
-            case .delivered:
-                    .delivered
-            case .pickedUp:
-                    .pickedUp
-            }
-        }
-
-        // MARK: - Static Properties
-
-        /// 訂單瀏覽 sidebar 中提供的固定順序 (依訂單生命週期由前到後排)
-        static let orderBrowsingCases: [SmartGroup] = [
-            .quoting,
-            .confirmed,
-            .purchased,
-            .shipping,
-            .partiallyArrived,
-            .arrived,
-            .delivered,
-            .pickedUp,
-        ]
-    }
-}
-
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension RootSidebarLayout {
 
@@ -174,34 +52,43 @@ private extension RootSidebarLayout {
                 logoRow(palette: palette)
                     .listRowSeparator(.hidden)
                     .listRowBackground(Color.clear)
-                    .listRowInsets(EdgeInsets(top: 6, leading: 12, bottom: 14, trailing: 12))
+                    .listRowInsets(
+                        EdgeInsets(
+                            top: 6,
+                            leading: 12,
+                            bottom: 14,
+                            trailing: 12
+                        )
+                    )
             }
 
             Section("工作區") {
-                navRow(.dashboard, palette: palette, isSelected: selection == .tab(.dashboard))
+                navRow(.dashboard, isSelected: selection == .tab(.dashboard))
+
                 navRow(
                     .orders,
-                    palette: palette,
                     isSelected: selection == .tab(.orders),
                     badgeCount: SidebarBadgeCounts.activeOrderCount(orders: store.orders.orders)
                 )
-                navRow(.campaigns, palette: palette, isSelected: selection == .tab(.campaigns))
-                navRow(.insights, palette: palette, isSelected: selection == .tab(.insights))
+
+                navRow(.campaigns, isSelected: selection == .tab(.campaigns))
+
+                navRow(.insights, isSelected: selection == .tab(.insights))
             }
 
             Section("工具") {
-                navRow(.more, palette: palette, isSelected: selection == .tab(.more))
+                navRow(.more, isSelected: selection == .tab(.more))
             }
 
             Section("智慧分組") {
-                ForEach(SmartGroup.orderBrowsingCases) { group in
+                ForEach(SidebarSmartGroup.orderBrowsingCases) {
                     // 分頁與智慧分組共用同一個選取型別並統一標記，系統才只會高亮一列
                     smartGroupRow(
-                        group,
+                        $0,
                         palette: palette,
-                        isSelected: selection == .smartGroup(group.status)
+                        isSelected: selection == .smartGroup($0.status)
                     )
-                    .tag(SidebarSelection.smartGroup(group.status))
+                    .tag(SidebarSelection.smartGroup($0.status))
                     .listRowSeparator(.hidden)
                 }
             }
@@ -212,6 +99,7 @@ private extension RootSidebarLayout {
     }
 
     /// BL gradient logo 與 App 名稱列
+    ///
     /// - Parameter palette: 目前外觀使用的色盤
     /// - Returns: logo 列 view
     @ViewBuilder
@@ -244,19 +132,14 @@ private extension RootSidebarLayout {
     }
 
     /// 主要分頁列
+    ///
     /// - Parameters:
     ///   - tab: 對應的分頁
-    ///   - palette: 目前外觀使用的色盤
     ///   - isSelected: 該列是否為目前選取項
     ///   - badgeCount: 顯示在右側的紅色徽章數字；為 `nil` 或 `0` 時不顯示
     /// - Returns: 分頁列 view
     @ViewBuilder
-    func navRow(
-        _ tab: RootTab,
-        palette _: BLPalette,
-        isSelected: Bool,
-        badgeCount: Int? = nil
-    ) -> some View {
+    func navRow(_ tab: RootTab, isSelected: Bool, badgeCount: Int? = nil) -> some View {
         HStack(spacing: BLSpacing.small) {
             Label(LocalizedStringKey(tab.title), systemImage: tab.systemImage)
                 .labelStyle(.titleAndIcon)
@@ -278,6 +161,7 @@ private extension RootSidebarLayout {
     }
 
     /// 智慧分組單列：色點 + 狀態名稱 + 計數
+    ///
     /// - Parameters:
     ///   - group: 智慧分組項目
     ///   - palette: 目前外觀使用的色盤
@@ -285,7 +169,7 @@ private extension RootSidebarLayout {
     /// - Returns: 智慧分組列 view
     @ViewBuilder
     func smartGroupRow(
-        _ group: SmartGroup,
+        _ group: SidebarSmartGroup,
         palette: BLPalette,
         isSelected: Bool
     ) -> some View {
@@ -295,6 +179,7 @@ private extension RootSidebarLayout {
             Circle()
                 .fill(group.color(in: palette))
                 .frame(width: 9, height: 9)
+                .accessibilityHidden(true)
 
             Text(LocalizedStringKey(group.status.title))
                 .blTextStyle(.subhead)
@@ -317,6 +202,7 @@ private extension RootSidebarLayout {
     }
 
     /// 目前選取分頁的內容
+    ///
     /// - Parameter selectedTab: 目前選取的主要分頁
     /// - Returns: 分頁對應的 SwiftUI view
     @ViewBuilder
@@ -327,24 +213,44 @@ private extension RootSidebarLayout {
                 store: store.scope(state: \.dashboard, action: \.dashboard),
                 language: language
             )
+
         case .orders:
-            OrdersView(
-                store: store.scope(state: \.orders, action: \.orders),
-                language: language
-            )
+            OrdersView(store: store.scope(state: \.orders, action: \.orders), language: language)
+
         case .campaigns:
-            CampaignListView(
+            CampaignView(
                 store: store.scope(state: \.campaigns, action: \.campaigns),
                 language: language
             )
+
         case .insights:
             InsightsView(
                 store: store.scope(state: \.insights, action: \.insights),
                 language: language
             )
+
         case .more:
-            MoreView(store: store)
+            MoreView(store: store.scope(state: \.more, action: \.more), language: language)
         }
+    }
+}
+
+// MARK: - Nested Types
+
+private extension RootSidebarLayout {
+
+    /// 側邊欄的單一選取型別
+    enum SidebarSelection: Hashable {
+
+        /// 主要分頁
+        ///
+        /// - Parameter tab: 對應的主要分頁
+        case tab(RootTab)
+
+        /// 智慧分組 (訂單頁的狀態篩選)
+        ///
+        /// - Parameter status: 對應的訂單狀態
+        case smartGroup(OrderStatus)
     }
 }
 
@@ -354,15 +260,34 @@ private extension RootSidebarLayout {
 
     /// 目前選取的側邊欄項目
     var currentSelection: SidebarSelection {
-        if store.selectedTab == .orders,
-           case let .status(status) = store.orders.selectedStatus,
-           SmartGroup.orderBrowsingCases.contains(where: { $0.status == status }) {
+        if case .status(let status) = store.orders.selectedStatus,
+           store.selectedTab == .orders,
+           SidebarSmartGroup.orderBrowsingCases.contains(where: { $0.status == status }) {
             return .smartGroup(status)
         }
         return .tab(store.selectedTab)
     }
 
+    /// `List` 單選 binding：分頁與智慧分組共用同一個選取型別
+    var selectionBinding: Binding<SidebarSelection?> {
+        Binding {
+            currentSelection
+        } set: { newSelection in
+            switch newSelection {
+            case .tab(let tab):
+                store.send(.view(.sidebarTabSelected(tab)))
+
+            case .smartGroup(let status):
+                store.send(.view(.smartGroupSelected(status)))
+
+            case nil:
+                return
+            }
+        }
+    }
+
     /// 分頁列合併朗讀後承載徽章筆數的 accessibility value
+    ///
     /// - Parameter badgeCount: 徽章數字；為 `nil` 或 `0` 時不朗讀筆數
     /// - Returns: 筆數描述
     func badgeAccessibilityValue(_ badgeCount: Int?) -> Text {
@@ -370,28 +295,6 @@ private extension RootSidebarLayout {
             return Text(verbatim: "")
         }
         return Text("\(badgeCount) 件進行中")
-    }
-
-    /// `List` 單選 binding：分頁與智慧分組共用同一個選取型別
-    var selectionBinding: Binding<SidebarSelection?> {
-        Binding(
-            get: { currentSelection },
-            set: { newSelection in
-                switch newSelection {
-                case let .tab(tab):
-                    guard tab != store.selectedTab else {
-                        return
-                    }
-                    store.send(.sidebarTabSelected(tab))
-
-                case let .smartGroup(status):
-                    store.send(.smartGroupSelected(status))
-
-                case .none:
-                    return
-                }
-            }
-        )
     }
 }
 

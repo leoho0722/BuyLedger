@@ -21,8 +21,6 @@ final class OrderMergeTests: BLUITestCase {
     /// 另一筆可合併的候選訂單編號
     private static let otherCandidateOrderID = "UITEST-MRG-003"
 
-    // MARK: - Tests
-
     /// 開啟合併流程並確認候選訂單
     @MainActor
     func testEnterMergeShowsCandidatesExcludingSelf() {

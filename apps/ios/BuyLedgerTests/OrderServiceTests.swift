@@ -15,8 +15,6 @@ import Testing
 /// 驗證訂單 Service 與共用資料庫依賴
 struct OrderServiceTests {
 
-    // MARK: - Tests
-
     /// 正式依賴連續解析兩次會取得同一資料庫 actor
     @Test
     func liveValue_連續解析兩次_取得同一資料庫實例() {

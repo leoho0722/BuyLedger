@@ -10,7 +10,10 @@ import Foundation
 /// 描述一次 App 啟動的前置條件，並序列化成 App 端 harness 認得的啟動參數
 struct LaunchOptions {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
+
+    /// 空資料庫 + 預設語言的最小啟動條件
+    static let `default` = LaunchOptions()
 
     /// 要注入的種子資料組合
     var seed: SeedProfile = .empty
@@ -30,17 +33,20 @@ struct LaunchOptions {
     /// 是否讓四種主檔的新增、刪除與改名寫入失敗
     var shouldFailLookupWrites = false
 
+    /// 是否讓開團的儲存與刪除寫入失敗
+    var shouldFailCampaignWrites = false
+
     /// 覆寫的預設幣別三碼代號，`nil` 代表沿用預設
     var defaultCurrencyCode: String?
 
     /// 覆寫的每月利潤目標 (TWD)，`nil` 代表沿用預設
-    var monthlyProfitGoalTwd: Int?
+    var monthlyProfitGoalTWD: Int?
 
     /// 是否開啟 AI 商品明細總結，開啟後 AI 走固定輸出的替身
-    var useAiSummary: Bool = false
+    var shouldUseAISummary: Bool = false
 
     /// App 鎖定是否於啟動時已開啟，開啟時鎖定相關測試不必先走一遍設定頁
-    var appLockEnabled: Bool = false
+    var isAppLockEnabled: Bool = false
 
     /// 本機驗證替身的情境
     var biometricScenario: BiometricScenario = .success
@@ -48,61 +54,15 @@ struct LaunchOptions {
     /// UI 測試資料庫的儲存方式
     var persistenceMode: PersistenceMode = .inMemory
 
-    /// 是否在啟動時清除 persistent UI test store；僅對 persistent 有效
-    var resetPersistentStore = false
-
-    // MARK: - Static Properties
-
-    /// 空資料庫 + 預設語言的最小啟動條件
-    static let `default` = LaunchOptions()
-
-    // MARK: - Computed Properties
-
-    /// 序列化成 `XCUIApplication.launchArguments`
-    /// - Returns: 傳給受測 App 的啟動參數
-    var launchArguments: [String] {
-        var arguments = ["-BLUITest", "-BLUITestSeed", seed.rawValue]
-
-        if let referenceDate {
-            arguments += ["-BLUITestNow", Self.iso8601String(from: referenceDate)]
-        }
-        if let language {
-            arguments += ["-BLUITestLanguage", language.rawValue]
-        }
-        arguments += ["-BLUITestCalendarAccess", calendarAccess.rawValue]
-        arguments += ["-BLUITestLoadFailure", loadFailure.rawValue]
-        if shouldFailLookupWrites {
-            arguments.append("-BLUITestLookupWriteFailure")
-        }
-        if let defaultCurrencyCode {
-            arguments += ["-BLUITestDefaultCurrency", defaultCurrencyCode]
-        }
-        if let monthlyProfitGoalTwd {
-            arguments += ["-BLUITestMonthlyGoal", String(monthlyProfitGoalTwd)]
-        }
-        if useAiSummary {
-            arguments.append("-BLUITestAiSummary")
-        }
-        if appLockEnabled {
-            arguments.append("-BLUITestAppLockEnabled")
-        }
-        arguments += ["-BLUITestBiometricScenario", biometricScenario.rawValue]
-        if persistenceMode != .inMemory {
-            arguments += ["-BLUITestPersistence", persistenceMode.rawValue]
-        }
-        if resetPersistentStore {
-            arguments.append("-BLUITestResetPersistentStore")
-        }
-
-        return arguments
-    }
+    /// 是否清除本機測試資料庫 (`-BLUITestResetPersistentStore`)；僅在 `.persistent` 模式有效
+    var shouldResetPersistentStore = false
 }
 
 // MARK: - Nested Types
 
 extension LaunchOptions {
 
-    /// 種子資料組合，rawValue 對齊 App 端 `BLUITestSeedProfile`
+    /// 種子資料組合，`rawValue` 對齊 App 端 `BLUITestSeedProfile`
     enum SeedProfile: String {
 
         /// 完全空的資料庫
@@ -139,7 +99,7 @@ extension LaunchOptions {
         case insightsRange
     }
 
-    /// App 內語言，rawValue 對齊 App 端 `BLUITestLanguage`
+    /// App 內語言，`rawValue` 對齊 App 端 `BLUITestLanguage`
     enum Language: String {
 
         /// 正體中文
@@ -149,7 +109,7 @@ extension LaunchOptions {
         case english
     }
 
-    /// 行事曆權限的模擬結果，rawValue 對齊 App 端 `BLUITestCalendarAccess`
+    /// 行事曆權限的模擬結果，`rawValue` 對齊 App 端 `BLUITestCalendarAccess`
     enum CalendarAccess: String {
 
         /// 授予完整權限
@@ -159,7 +119,7 @@ extension LaunchOptions {
         case denied
     }
 
-    /// 本機驗證替身的情境，rawValue 對齊 App 端 `BLUITestBiometricScenario`
+    /// 本機驗證替身的情境，`rawValue` 對齊 App 端 `BLUITestBiometricScenario`
     enum BiometricScenario: String {
 
         /// 驗證一律成功
@@ -179,7 +139,7 @@ extension LaunchOptions {
         case persistent
     }
 
-    /// 載入失敗情境，rawValue 對齊 App 端 `BLUITestLoadFailure`
+    /// 載入失敗情境，`rawValue` 對齊 App 端 `BLUITestLoadFailure`
     enum LoadFailure: String {
 
         /// 不模擬失敗
@@ -199,17 +159,64 @@ extension LaunchOptions {
     }
 }
 
+// MARK: - Computed Properties
+
+extension LaunchOptions {
+
+    /// 序列化成 `XCUIApplication.launchArguments`，即傳給受測 App 的啟動參數
+    var launchArguments: [String] {
+        var arguments = ["-BLUITest", "-BLUITestSeed", seed.rawValue]
+
+        if let referenceDate {
+            arguments += ["-BLUITestNow", Self.iso8601String(from: referenceDate)]
+        }
+        if let language {
+            arguments += ["-BLUITestLanguage", language.rawValue]
+        }
+        arguments += ["-BLUITestCalendarAccess", calendarAccess.rawValue]
+        arguments += ["-BLUITestLoadFailure", loadFailure.rawValue]
+        if shouldFailLookupWrites {
+            arguments.append("-BLUITestLookupWriteFailure")
+        }
+        if shouldFailCampaignWrites {
+            arguments.append("-BLUITestCampaignWriteFailure")
+        }
+        if let defaultCurrencyCode {
+            arguments += ["-BLUITestDefaultCurrency", defaultCurrencyCode]
+        }
+        if let monthlyProfitGoalTWD {
+            arguments += ["-BLUITestMonthlyGoal", String(monthlyProfitGoalTWD)]
+        }
+        if shouldUseAISummary {
+            arguments.append("-BLUITestAiSummary")
+        }
+        if isAppLockEnabled {
+            arguments.append("-BLUITestAppLockEnabled")
+        }
+        arguments += ["-BLUITestBiometricScenario", biometricScenario.rawValue]
+        if persistenceMode != .inMemory {
+            arguments += ["-BLUITestPersistence", persistenceMode.rawValue]
+        }
+        if shouldResetPersistentStore {
+            arguments.append("-BLUITestResetPersistentStore")
+        }
+
+        return arguments
+    }
+}
+
 // MARK: - Private Method
 
 private extension LaunchOptions {
 
     /// 把參考時間序列化成 App 端解析採用的 ISO8601 字串
+    ///
     /// - Parameter date: 要序列化的日期
     /// - Returns: ISO8601 格式的 UTC 字串
     static func iso8601String(from date: Date) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
-        formatter.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+        formatter.timeZone = .gmt
         return formatter.string(from: date)
     }
 }

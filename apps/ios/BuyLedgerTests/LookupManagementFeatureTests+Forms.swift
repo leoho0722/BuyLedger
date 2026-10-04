@@ -10,8 +10,6 @@ import Testing
 
 @testable import BuyLedger
 
-// MARK: - Tests
-
 extension LookupManagementFeatureTests {
 
     /// 新增表單送出空白名稱時保持開啟且不新增項目

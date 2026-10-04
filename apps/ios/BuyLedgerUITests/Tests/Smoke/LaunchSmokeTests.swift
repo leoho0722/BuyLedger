@@ -10,8 +10,6 @@ import XCTest
 /// 啟動與分頁切換的冒煙測試
 final class LaunchSmokeTests: BLUITestCase {
 
-    // MARK: - Tests
-
     /// 冷啟動應能進入前景
     @MainActor
     func testColdLaunchReachesForeground() {

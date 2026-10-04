@@ -13,8 +13,6 @@ import Testing
 @MainActor
 struct InsightsAttributionTests {
 
-    // MARK: - Tests
-
     @Test func categoryBreakdownAttributesPreMergeAmountsFromLeafOrders() {
         // 只計入被合併的原始訂單，排除新訂單與報價單
         let orders = [

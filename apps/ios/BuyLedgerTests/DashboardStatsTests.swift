@@ -13,8 +13,6 @@ import Testing
 @MainActor
 struct DashboardStatsTests {
 
-    // MARK: - Tests
-
     @Test func currentMonthAggregatesRevenueCostAndProfitFromRealizedOrders() {
         // 本月兩筆訂單的總收款為 1500、成本為 300、獲利為 1200
         let orders = [
