@@ -53,3 +53,5 @@ refactor(time): 時間相依改走 @Dependency(\.date) 注入
 
 Co-Authored-By: GPT-6 Astra <codex@openai.com>
 ```
+
+- If using MobileBuildMCP, use the installed MobileBuildMCP skill before calling MobileBuildMCP tools.

@@ -14,7 +14,7 @@ concurrency:
 
 env:
   # 建置流程一律使用專案指定的建置 CLI，版本釘選以確保結果可重現；升級時同步更新此處與平台 CLAUDE.md
-  XCODEBUILDMCP_VERSION: "2.6.2"
+  MOBILEBUILDMCP_VERSION: "2.7.1"
 
 jobs:
   codegen:
@@ -62,8 +62,8 @@ jobs:
         # Config.xcconfig 同樣被 .gitignore 排除；是 app target 兩個 configuration 的 baseConfigurationReference，缺檔會讓建置產生警告
         run: cp apps/ios/BuyLedger/Resources/Config.example.xcconfig apps/ios/BuyLedger/Resources/Config.xcconfig
 
-      - name: Install pinned xcodebuildmcp CLI
-        run: npm install -g "xcodebuildmcp@${XCODEBUILDMCP_VERSION}"
+      - name: Install pinned mobilebuildmcp CLI
+        run: npm install -g "mobilebuildmcp@${MOBILEBUILDMCP_VERSION}"
 
       - name: Print runner Xcode version
         run: |
@@ -73,7 +73,7 @@ jobs:
         id: sim
         run: |
           set -euo pipefail
-          xcodebuildmcp simulator list --output json > "$RUNNER_TEMP/simulators.json"
+          mobilebuildmcp simulator list --output json > "$RUNNER_TEMP/simulators.json"
           cat "$RUNNER_TEMP/simulators.json"
           SIM_ID=$(jq -r '
             [ .data.simulators[]
@@ -91,7 +91,7 @@ jobs:
       - name: Run unit tests (main scheme, snapshot 與效能測試首波排除)
         run: |
           set +e
-          xcodebuildmcp simulator test \
+          mobilebuildmcp simulator test \
             --project-path apps/ios/BuyLedger.xcodeproj \
             --scheme BuyLedger \
             --simulator-id "${{ steps.sim.outputs.simulator-id }}" \
@@ -141,8 +141,8 @@ jobs:
       - name: Restore API key configuration from committed template
         run: cp apps/ios/BuyLedger/Resources/Config.example.xcconfig apps/ios/BuyLedger/Resources/Config.xcconfig
 
-      - name: Install pinned xcodebuildmcp CLI
-        run: npm install -g "xcodebuildmcp@${XCODEBUILDMCP_VERSION}"
+      - name: Install pinned mobilebuildmcp CLI
+        run: npm install -g "mobilebuildmcp@${MOBILEBUILDMCP_VERSION}"
 
       - name: Print runner Xcode version
         run: |
@@ -152,7 +152,7 @@ jobs:
         id: sim
         run: |
           set -euo pipefail
-          xcodebuildmcp simulator list --output json > "$RUNNER_TEMP/simulators.json"
+          mobilebuildmcp simulator list --output json > "$RUNNER_TEMP/simulators.json"
           cat "$RUNNER_TEMP/simulators.json"
           SIM_ID=$(jq -r '
             [ .data.simulators[]
@@ -170,7 +170,7 @@ jobs:
       - name: Run UI regression (效能測試排除)
         run: |
           set +e
-          xcodebuildmcp simulator test \
+          mobilebuildmcp simulator test \
             --project-path apps/ios/BuyLedger.xcodeproj \
             --scheme BuyLedgerUITests \
             --simulator-id "${{ steps.sim.outputs.simulator-id }}" \

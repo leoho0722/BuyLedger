@@ -61,7 +61,7 @@ paths:
 
 ## 效能測試 (`OrdersFeaturePerformanceTests`)
 
-- **用 `ContinuousClock` 計時加顯式上限斷言，不用 `measure { }`**：XcodeBuildMCP 拆成 `build-for-testing` + `test-without-building` 執行，`.xctestrun` 讀不到 baseline，`measure` 恆為通過。
+- **用 `ContinuousClock` 計時加顯式上限斷言，不用 `measure { }`**：MobileBuildMCP 拆成 `build-for-testing` + `test-without-building` 執行，`.xctestrun` 讀不到 baseline，`measure` 恆為通過。
     - 門檻抓數量級退化 (約正常耗時的 6 倍)，不沿用舊 baseline 的 10 倍餘裕 (在此工具鏈下等同恆真)。
     - 已從 `BuyLedger.xctestplan` 排除，單獨跑用 `-only-testing:BuyLedgerTests/OrdersFeaturePerformanceTests`。
 

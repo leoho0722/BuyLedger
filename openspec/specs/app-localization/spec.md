@@ -690,12 +690,12 @@ code:
 ---
 ### Requirement: Device acceptance
 
-The iOS App SHALL build, install, and launch on the user's connected iPhone 15 Plus through XcodeBuildMCP CLI.
+The iOS App SHALL build, install, and launch on the user's connected iPhone 15 Plus through MobileBuildMCP CLI.
 
 #### Scenario: Build and run on iPhone 15 Plus
 
 - **WHEN** the implementation is accepted
-- **THEN** XcodeBuildMCP CLI reports a successful device build-and-run for the connected iPhone 15 Plus and the App is visible running on that device
+- **THEN** MobileBuildMCP CLI reports a successful device build-and-run for the connected iPhone 15 Plus and the App is visible running on that device
 
 <!-- @trace
 source: add-app-language-switching

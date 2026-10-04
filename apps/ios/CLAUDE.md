@@ -27,31 +27,31 @@
 ## 建置與開發指令
 
 - **不退回原生 `xcodebuild`／`xcrun`／`simctl`**，明文例外有三項：
-    - `agvtool` (版本管理不在 XcodeBuildMCP 能力範圍)。
-    - CI (`.github/workflows/ci.yml`) 以 `npm install -g xcodebuildmcp@<釘選版本>` 安裝 CLI，之後所有 build 與 test 仍經它執行；升級 CLI 時同步更新 workflow 的釘選版本。
-    - `xcrun xcresulttool get test-results summary --path <bundle>` 僅用於唯讀讀取 result bundle 摘要 (XcodeBuildMCP 沒有等價指令)。
+    - `agvtool` (版本管理不在 MobileBuildMCP 能力範圍)。
+    - CI (`.github/workflows/ci.yml`) 以 `npm install -g mobilebuildmcp@<釘選版本>` 安裝 CLI，之後所有 build 與 test 仍經它執行；升級 CLI 時同步更新 workflow 的釘選版本。
+    - `xcrun xcresulttool get test-results summary --path <bundle>` 僅用於唯讀讀取 result bundle 摘要 (MobileBuildMCP 沒有等價指令)。
 - **每次 build 或 build-and-run 前先 `cd apps/ios && agvtool next-version -all` 把 build number +1**，跑 test 不遞增 (test binary 不會安裝或散佈，遞增只製造 pbxproj 雜訊)。
     - 同一輪以 `&&` 串接的多平台 build 只遞增一次；遞增產生的 pbxproj 變更隨當次工作 commit，不丟棄。
 - **改 marketing version 直接編輯 pbxproj 的 `MARKETING_VERSION`**：`agvtool new-marketing-version` 會報 Cannot find YES 且不更新 pbxproj (版號在 build settings，Info.plist 沒有版號 key)。
 - **模擬器跑 App 用 `build-and-run`**，不先 `build` 再 `build-and-run`。
 - **iOS 與 iPadOS simulator build 共用 `build.db`，要序列化 (`cmd1 && cmd2`)**：並行會 `database is locked`。
-- **看詳細 build error 加 `xcodebuildmcp --log-level error <subcommand>`**，否則只回 `BUILD FAILED`。
-- **模擬器以識別碼指定，先 `xcodebuildmcp simulator list` 查可用清單**，不寫死名稱。
+- **看詳細 build error 加 `mobilebuildmcp --log-level error <subcommand>`**，否則只回 `BUILD FAILED`。
+- **模擬器以識別碼指定，先 `mobilebuildmcp simulator list` 查可用清單**，不寫死名稱。
     - CI 找不到符合版本的執行環境時 job 要明確失敗，不退回舊版執行環境。
 - **erase 模擬器是安全的復原手段**，不影響 `DatePicker` 的日期格式。
-    - 進系統設定可用 `xcodebuildmcp ui-automation` (`simulator launch-app --bundle-id com.apple.Preferences` 後 `snapshot-ui`／`tap`)，不需要 `computer-use`；但設定頁的開關與滑桿不一定能取得 ref。
+    - 進系統設定可用 `mobilebuildmcp ui-automation` (`simulator launch-app --bundle-id com.apple.Preferences` 後 `snapshot-ui`／`tap`)，不需要 `computer-use`；但設定頁的開關與滑桿不一定能取得 ref。
 - **加 SPM 產品一律在 Xcode 操作，不手改 pbxproj**。
     - 原始碼直接具名使用 TCA 傳遞相依的 API (如 `@Shared`／`SharedKey`) 時，要把該套件產品加入 `BuyLedger` 與 `BuyLedgerTests` 的連結清單：只靠 `@_exported import` 會編譯通過、連結失敗 (`Undefined symbols ... nominal type descriptor`)。
     - 加入沒有宣告 traits 的套件 (如 `swift-sharing`) 後，Xcode 可能在其 `XCRemoteSwiftPackageReference` 插入空的 `traits = ( );`，使依賴解析失敗 (`Disabled default traits ... declares no traits`)；移除該套件的這個區塊即可 (`swift-composable-architecture` 本身有宣告 traits，同樣的空區塊合法、不要動)。
-- **跑 snapshot 測試前把模擬器外觀鎖淺色** (`xcodebuildmcp simulator-management set-appearance --mode light`)：自動外觀入夜切深色會讓整批 baseline 誤判失敗。
+- **跑 snapshot 測試前把模擬器外觀鎖淺色** (`mobilebuildmcp simulator-management set-appearance --mode light`)：自動外觀入夜切深色會讓整批 baseline 誤判失敗。
 - **UI 測試 (`BuyLedgerUITests`) 走獨立 scheme，只覆蓋 iOS 26.x 模擬器**：
     - `-only-testing` 跑 UI 測試要指定 `BuyLedgerUITests` scheme；該 target 不在 `BuyLedger` scheme 的 test plan 內，指定 `--scheme BuyLedger` 會回「isn't a member of the specified test plan or scheme」。
     - 跑全功能回歸不靠 `--extra-args -testPlan` (CLI 會忽略、退回 scheme 預設的效能計畫)，改用 `--extra-args -only-testing:BuyLedgerUITests --extra-args -skip-testing:BuyLedgerUITests/LaunchPerformanceTests`；單一類別用 `-only-testing:BuyLedgerUITests/<類別>`。
-    - 執行 iPad UI 主回歸前，必須確認模擬器的軟體鍵盤可顯示，也就是硬體鍵盤連線已斷開。實測證明 `xcodebuildmcp simulator-management toggle-connect-hardware-keyboard` 不可靠：它送出 `Cmd+Shift+K`，Simulator 不在前景時會無聲失效；直接寫入 `ConnectHardwareKeyboard` 偏好設定對已 booted 的裝置也無效。目前可靠的處置是在 Simulator 視窗手動按 `Cmd+Shift+K`，或從 I/O 選單取消勾選 Connect Hardware Keyboard。
+    - 執行 iPad UI 主回歸前，必須確認模擬器的軟體鍵盤可顯示，也就是硬體鍵盤連線已斷開。實測證明 `mobilebuildmcp simulator-management toggle-connect-hardware-keyboard` 不可靠：它送出 `Cmd+Shift+K`，Simulator 不在前景時會無聲失效；直接寫入 `ConnectHardwareKeyboard` 偏好設定對已 booted 的裝置也無效。目前可靠的處置是在 Simulator 視窗手動按 `Cmd+Shift+K`，或從 I/O 選單取消勾選 Connect Hardware Keyboard。
     - 若回歸出現「數字鍵盤工具列的完成鍵未能收起鍵盤」，判別方式是看失敗時可及性樹的 `Keyboard` 元素 y 起點是否大於視窗高度；修正環境後，單獨執行 `KeyboardDismissTests` 兩條測試且兩條都綠，才算確認軟體鍵盤前提成立。這類現象不要先改產品端鍵盤工具列。
     - 測試計畫：`BuyLedger.xctestplan` (單元測試，鎖 zh-Hant／TW、字母序執行)、`BuyLedgerUITests.xctestplan` (UI 主回歸，鎖 zh-Hant／TW、關閉隨機順序、排除效能測試)、`BuyLedgerUITests-Performance.xctestplan` (效能)；三份都只統計 App target 覆蓋率、不設門檻。
     - 訂單編輯表單 TextField 偶發「Activation point invalid」的 hittability 失敗屬環境雜訊：失敗的測試與元素在連續重跑間不一致即為雜訊，單獨重跑轉綠即可，不改測試碼或放寬斷言；同一條穩定重現才是真缺陷。
-- **以 `xcodebuildmcp ui-automation` 驅動模擬器時不用 `type-text` 打數字**：它走 Mac 當前輸入法，注音模式會把數字轉成注音符號；`toggle-connect-hardware-keyboard` 需要未必已授權的輔助使用權限。UI 測試碼內的輸入用 `XCUIElement.typeText`。
+- **以 `mobilebuildmcp ui-automation` 驅動模擬器時不用 `type-text` 打數字**：它走 Mac 當前輸入法，注音模式會把數字轉成注音符號；`toggle-connect-hardware-keyboard` 需要未必已授權的輔助使用權限。UI 測試碼內的輸入用 `XCUIElement.typeText`。
 - **macOS BSD `sed -E` 清尾隨空白用 `[[:space:]]+$`，不用 `[ \t]`**：`[ \t]` 會匹配字面的反斜線與 `t`，把行尾的 t 一起吃掉，落在註解或字串內時編譯器不會發現。
 
 ## 架構分層

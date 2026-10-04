@@ -120,17 +120,17 @@ App 使用兩把 API key，皆透過 `Config.xcconfig` 注入 (機密)：
 
 ### 2. Build & Run
 
-本專案預設用 `xcodebuildmcp` CLI 跑 build / run / test (MCP server `mcp__XcodeBuildMCP__*` 留給 UI 自動化、結構化測試結果與長時間操作可控中斷的情境)。下列指令一律從 repo 根目錄執行：
+本專案預設用 `mobilebuildmcp` CLI 跑 build / run / test (MCP server `mobilebuildmcp mcp` 留給 UI 自動化、結構化測試結果與長時間操作可控中斷的情境)。下列指令一律從 repo 根目錄執行：
 
 ```bash
 # iOS Simulator
-xcodebuildmcp simulator build-and-run \
+mobilebuildmcp simulator build-and-run \
   --project-path apps/ios/BuyLedger.xcodeproj \
   --scheme BuyLedger \
   --simulator-name "iPhone 17"
 
 # iPadOS Simulator
-xcodebuildmcp simulator build-and-run \
+mobilebuildmcp simulator build-and-run \
   --project-path apps/ios/BuyLedger.xcodeproj \
   --scheme BuyLedger \
   --simulator-name "iPad Pro 13-inch (M5)"
@@ -138,16 +138,16 @@ xcodebuildmcp simulator build-and-run \
 
 > ⚠️ iOS 與 iPadOS 兩個 simulator build 共用同一份 `DerivedData/.../XCBuildData/build.db`，**不可並行 build**——請序列化 (`cmd1 && cmd2`) 以避免 `database is locked` 失敗。
 >
-> ⚠️ build 失敗時 CLI 預設只回 trailing `BUILD FAILED`；用 `xcodebuildmcp --log-level error <subcommand> ...` 取得實際 diagnostic。
+> ⚠️ build 失敗時 CLI 預設只回 trailing `BUILD FAILED`；用 `mobilebuildmcp --log-level error <subcommand> ...` 取得實際 diagnostic。
 >
-> 💡 simulator 名稱會隨 Xcode 升級變動，先用 `xcodebuildmcp simulator list` 查當前可用名稱再改上方指令。
+> 💡 simulator 名稱會隨 Xcode 升級變動，先用 `mobilebuildmcp simulator list` 查當前可用名稱再改上方指令。
 
 ### 3. 執行測試
 
 單元測試與 snapshot 測試 (主 scheme，掛 `BuyLedger.xctestplan`，語言／地區鎖 zh-Hant/TW、不隨模擬器系統狀態變動，覆蓋率僅統計 App target)：
 
 ```bash
-xcodebuildmcp simulator test \
+mobilebuildmcp simulator test \
   --project-path apps/ios/BuyLedger.xcodeproj \
   --scheme BuyLedger \
   --simulator-name "iPhone 17"
@@ -158,13 +158,13 @@ Snapshot baseline 第一次跑會自動 record 並回報 fail (屬正常)，確�
 跑完測試後想查 App target 覆蓋率 (不設門檻，僅供盤點盲區)：
 
 ```bash
-xcodebuildmcp simulator get-coverage-report --xcresult-path <測試輸出的 .xcresult 路徑> --target BuyLedger
+mobilebuildmcp simulator get-coverage-report --xcresult-path <測試輸出的 .xcresult 路徑> --target BuyLedger
 ```
 
 UI 自動化測試 (XCUITest，獨立 scheme)：
 
 ```bash
-xcodebuildmcp simulator test \
+mobilebuildmcp simulator test \
   --project-path apps/ios/BuyLedger.xcodeproj \
   --scheme BuyLedgerUITests \
   --simulator-name "iPhone 17"
@@ -172,11 +172,11 @@ xcodebuildmcp simulator test \
 
 UI 測試以啟動參數宣告前置條件 (資料、語言、時間、外部相依)，測試端用 `LaunchOptions` 組出、App 端由 `BLUITestConfiguration` 解析；常用旗標：`-BLUITest` (開啟測試模式)、`-BLUITestSeed <profile>` (注入種子資料)、`-BLUITestNow <ISO8601>` (固定時間)、`-BLUITestLanguage <traditionalChinese|english>`、`-BLUITestLoadFailure <orders|...>`。整套 harness 以 `#if DEBUG` 圈住、不進 Release。共用測試工具在 `BuyLedgerUITests/Support/` 與 `BuyLedgerUITests/Screens/`，identifier 常數在 `BuyLedgerAccessibilityIDs/BLAccessibilityID.swift` (同時編入 App 與 UITests 兩個 target)。硬規則 (一律用 identifier 定位、測試前必 seed、不得以 skip 掩蓋、僅覆蓋 iOS 26.x) 見 [`.claude/rules/ios-ui-tests.md`](../../.claude/rules/ios-ui-tests.md)。
 
-> 💡 CLI 端篩選測試一律用 `-only-testing:`／`-skip-testing:` 旗標，不要用 `-testPlan`：`xcodebuildmcp` 的 `test` 子命令不理會經 `--extra-args` 傳入的 `-testPlan`，會退回 scheme 預設計畫。
+> 💡 CLI 端篩選測試一律用 `-only-testing:`／`-skip-testing:` 旗標，不要用 `-testPlan`：`mobilebuildmcp` 的 `test` 子命令不理會經 `--extra-args` 傳入的 `-testPlan`，會退回 scheme 預設計畫。
 
 ### 4. 持續整合 (CI)
 
-`.github/workflows/ci.yml` 定義兩個自動執行的 job：`codegen` (Linux runner，相依安裝 → 漂移檢查 → generator 測試 → 型別檢查) 與 `ios-unit-tests` (macOS runner，以釘選版本的 `xcodebuildmcp` CLI 執行主 scheme 測試，首波排除 snapshot 與效能測試)；UI 回歸僅在手動觸發時執行。repo 為公開專案，macOS runner 不計費。
+`.github/workflows/ci.yml` 定義兩個自動執行的 job：`codegen` (Linux runner，相依安裝 → 漂移檢查 → generator 測試 → 型別檢查) 與 `ios-unit-tests` (macOS runner，以釘選版本的 `mobilebuildmcp` CLI 執行主 scheme 測試，首波排除 snapshot 與效能測試)；UI 回歸僅在手動觸發時執行。repo 為公開專案，macOS runner 不計費。
 
 CI 不使用任何 repository secret：`apps/ios/BuyLedger/Resources/GoogleService-Info.example.plist` 是入庫的佔位範本 (值皆為明顯假字串)，CI 建置前會複製成正式檔名，因為 Crashlytics 的 build phase 缺少這個檔會讓 build 失敗 (錯誤訊息為 `Could not get GOOGLE_APP_ID in Google Services file from build environment`)；此檔僅供 CI 使用，**本機開發請勿拿它覆蓋真實的 `GoogleService-Info.plist`**。
 
