@@ -34,7 +34,7 @@ paths:
 
 ## 本地化
 
-- **`Text(someString)` (型別 `String`) 走 verbatim、不會本地化**：固定詞經 `String` 變數傳進 `Text`／`Label`／`navigationTitle` 時包 `LocalizedStringKey(...)`，或把參數型別宣告為 `LocalizedStringKey` (參考 `DashboardView.kpiTile(delta:)`)。
+- **`Text(someString)` (型別 `String`) 走 verbatim、不會本地化**：固定詞經 `String` 變數傳進 `Text`／`Label`／`navigationTitle` 時包 `LocalizedStringKey(...)`，或把參數型別宣告為 `LocalizedStringKey` (參考 `DashboardKPITile` 的 `delta` 參數)。
     - 帶插值的文案用 `Text(LocalizedStringKey("\(count) …"))`；不用 `String(localized:locale:)`，它走系統語言 bundle、不吃 App 內語言切換。
     - 使用者資料 (主檔名稱、`customer.name`) 與格式化後的數字、日期維持 verbatim。
 - **根分頁標題用 `rootNavigationTitle(_:language:)`**：`navigationTitle` 不會隨 `\.locale` 可靠地重新解析 String Catalog，改由 `AppLanguage.localized(_:)` 先解析。

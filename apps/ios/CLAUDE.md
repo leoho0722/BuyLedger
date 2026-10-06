@@ -52,7 +52,7 @@
 - **UI 測試 (`BuyLedgerUITests`) 走獨立 scheme，只覆蓋 iOS 26.x 模擬器**：
     - `-only-testing` 跑 UI 測試要指定 `BuyLedgerUITests` scheme；該 target 不在 `BuyLedger` scheme 的 test plan 內，指定 `--scheme BuyLedger` 會回「isn't a member of the specified test plan or scheme」。
     - 跑全功能回歸不靠 `--extra-args -testPlan` (CLI 會忽略、退回 scheme 預設的效能計畫)，改用 `--extra-args -only-testing:BuyLedgerUITests --extra-args -skip-testing:BuyLedgerUITests/LaunchPerformanceTests`；單一類別用 `-only-testing:BuyLedgerUITests/<類別>`。
-    - 執行 iPad UI 主回歸前，必須確認模擬器的軟體鍵盤可顯示，也就是硬體鍵盤連線已斷開。實測證明 `mobilebuildmcp simulator-management toggle-connect-hardware-keyboard` 不可靠：它送出 `Cmd+Shift+K`，Simulator 不在前景時會無聲失效；直接寫入 `ConnectHardwareKeyboard` 偏好設定對已 booted 的裝置也無效。目前可靠的處置是在 Simulator 視窗手動按 `Cmd+Shift+K`，或從 I/O 選單取消勾選 Connect Hardware Keyboard。
+    - 執行 iPad UI 主回歸前，必須確認模擬器的軟體鍵盤可顯示，也就是硬體鍵盤連線已斷開。`mobilebuildmcp simulator-management toggle-connect-hardware-keyboard` 不可靠：它送出 `Cmd+Shift+K`，Simulator 不在前景時會無聲失效；直接寫入 `ConnectHardwareKeyboard` 偏好設定對已 booted 的裝置也無效。可靠的處置是在模擬器前端 Device Hub 的選單取消勾選 Device › Keyboard › Simulate Hardware Keyboard；模擬器重開機後該選項會恢復成勾選，每次重開機都要重新取消勾選，並先單獨跑 `KeyboardDismissTests` 確認 (判讀見下一條)。
     - 若回歸出現「數字鍵盤工具列的完成鍵未能收起鍵盤」，判別方式是看失敗時可及性樹的 `Keyboard` 元素 y 起點是否大於視窗高度；修正環境後，單獨執行 `KeyboardDismissTests` 兩條測試且兩條都綠，才算確認軟體鍵盤前提成立。這類現象不要先改產品端鍵盤工具列。
     - 測試計畫：`BuyLedger.xctestplan` (單元測試，鎖 zh-Hant／TW、字母序執行)、`BuyLedgerUITests.xctestplan` (UI 主回歸，鎖 zh-Hant／TW、關閉隨機順序、排除效能測試)、`BuyLedgerUITests-Performance.xctestplan` (效能)；三份都只統計 App target 覆蓋率、不設門檻。
     - 訂單編輯表單 TextField 偶發「Activation point invalid」的 hittability 失敗屬環境雜訊：失敗的測試與元素在連續重跑間不一致即為雜訊，單獨重跑轉綠即可，不改測試碼或放寬斷言；同一條穩定重現才是真缺陷。
@@ -61,6 +61,7 @@
     - `simulator launch-app` 會結束並重開 App，不會把背景中的 App 帶回前景；驗證背景與前景改按 `ui-automation button --button-type lock`，再按兩次 `home` 喚醒並解鎖裝置。畫面一閃即過時 (如自動解鎖) 用 `simulator record-video` 錄影逐格確認。
     - `--launch-args` 的純數字值會被當成數字而驗證失敗，改用 `--json '{"launchArgs":[...]}'`；`-BLUITest` 模式的設定存在記憶體，驗證「重開後仍保留設定」要以正式模式啟動。
     - 列位於分頁列範圍下方時 `touch` 會點到分頁列，先捲動讓目標露出再點。
+    - iPad 模擬器的多工模式要維持「全螢幕 App」：「視窗 App」模式下 `snapshot-ui` 會失敗 (無法取得可及性樹)。
 - **macOS BSD `sed -E` 清尾隨空白用 `[[:space:]]+$`，不用 `[ \t]`**：`[ \t]` 會匹配字面的反斜線與 `t`，把行尾的 t 一起吃掉，落在註解或字串內時編譯器不會發現。
 
 ## 架構分層
@@ -112,6 +113,7 @@
     - 需要現在時間的衍生資料由 reducer 把注入值寫進 State，State 的 computed property 與畫面據此推導，不呼叫 `Date()`：開團列表的 `CampaignListFeature.State.dateContext` 在 `view(.task)` 與 `view(.retryTapped)` 寫入 (寫在「已載入就略過」的判斷之前)，畫面以它格式化日期標題。
     - App 回到前景 (`AppLockFeature` 的 `delegate(.didBecomeActive)`) 與系統回報重大時間變更 (`SignificantTimeChangeService`，Root 於 `view(.task)` 起監聽並送 `significantTimeChanged`) 時，Root 以注入的 `date.now`、`calendar` 呼叫 `CampaignFeature.State.refreshDateContext(_:)` 重寫。
     - 過渡例外：`OrdersView`、`OrdersCompactView`、`OrderMergeCandidateSheet`、`DashboardView`、`InsightsView` 仍宣告 `@Dependency` 並以 `func foo(referenceDate:)` 傳入注入值，依第 6、7 步照開團做法遷移；遷移時在上述兩個 Root case 各加一行刷新。
+    - 過渡例外：`InsightsView` 的熱力圖星期標籤 (`weekdayLabels`) 以 `Calendar.current` 加 App locale 取得星期縮寫，是 production 唯一直接呼叫 `Calendar.current` 之處，依第 7 步改為注入。
     - 測試：`TestStore` 用 `withDependencies: { $0.date = .constant(TestDependencies.fixedNow) }`；Calendar 相關測試固定 `TimeZone(secondsFromGMT: 0)` 與 `Calendar(identifier: .gregorian)`。
 
 ## ios-dev-kit 規範與專案差異

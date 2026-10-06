@@ -3,7 +3,7 @@ paths:
   - "apps/ios/BuyLedgerUITests/**"
   - "apps/ios/BuyLedgerAccessibilityIDs/**"
   - "apps/ios/BuyLedger/App/Testing/**"
-  - "apps/ios/BuyLedger/Features/**/*{View,Sheet,Layout,Row,Content}.swift"
+  - "apps/ios/BuyLedger/Features/**/*{View,Sheet,Layout,Row,Content,Column,Card,Section,Tile,Tiles}.swift"
   - "apps/ios/BuyLedger/Shared/DesignSystem/Components/**"
 ---
 
@@ -41,7 +41,7 @@ paths:
     - 需要包上失敗 closure 的 Service，以 `withDependencies { $0.buyLedgerDatabase = database } operation: { XxxService.liveValue }` 建立，改寫 closure 後再指派給 `$0.xxxService`。
     - `BuyLedgerDatabase` 的 `storeLocation` 如實傳入：in-memory 用 `.inMemory`，persistent 用 `.directory(<store 所在目錄>)`，不一律標成 in-memory。
 - **找不到 App 元素一律 `failWithDiagnostics` (附截圖與可及性樹)，不用 `XCTSkip` 掩蓋**：`XCTSkip` 只留給真正的外部環境差異 (如系統文字選單)，並寫明原因。
-- **compact 與 regular 版面差異由 `AppNavigator` 吸收** (iPhone 底部分頁列、iPad 側邊欄)。
+- **compact 與 regular 版面差異由 `AppNavigator` 吸收** (compact 版面是底部分頁列，含 iPhone 任何方向與 iPad 窄視窗；regular 版面是 iPad 全螢幕的側邊欄)。
 
 ## 輸入、捲動與鍵盤
 
@@ -53,3 +53,13 @@ paths:
 - **`LazyVStack`／`LazyVGrid` 離屏未渲染的列 frame 無效，查 `isHittable` 會直接報錯**：先 `swipeUp` 逐次捲動查 `exists`，捲入樹後再查可點。
     - 水平 `ScrollView` 內的照片縮圖列相同。
 - **`scrollDismissesKeyboard(.interactively)` 無法以 XCUITest 合成手勢觸發，不寫 UI 測試守它 (產品端仍保留)**：`KeyboardDismissTests` 只覆蓋 return 鍵與數字鍵盤完成鍵兩條路徑。
+
+## 轉向測試
+
+- **轉向測試 (`XCUIDevice.shared.orientation`) 執行時，模擬器前端的 Device Hub 不可開著**：開著時裝置方向會改變但介面不轉，App 視窗維持直向，測試在等「視窗寬大於高」時逾時；關閉 Device Hub 後即恢復。
+    - Device Hub 的旋轉鈕只轉外框，Orientation 選單也不一定讓介面轉向 (iPad 會轉、iPhone 17 Pro Max 不會)，兩者都不能用來驗證橫向版面。
+    - 轉向後等到 `app.windows.firstMatch` 寬大於高才斷言或截圖 (參考 `OrientationLayoutTests`)：setter 只設定裝置方向，沒等就斷言會在直向取得 compact 版面而誤判通過。
+- **轉向測試失敗且 App 視窗維持直向時，先重開模擬器再重跑，重開後仍失敗才是真問題**：模擬器長時間連續跑 UI 測試後，`XCUIDevice.shared.orientation` 可能只改變裝置方向、介面不轉，屬環境狀態，不是產品或測試缺陷。
+    - 判別：`OrientationLayoutTests` 在「轉向後 App 視窗寬仍未大於高」失敗，且單獨重跑同樣失敗；沒有特定測試類別會穩定觸發，不必逐類排查，也不改測試碼或放寬等待。
+    - 重開機：`mobilebuildmcp` 沒有關機指令，先開啟 Device Hub 再結束它 (結束時會把模擬器全部關機)，再以 `mobilebuildmcp simulator-management boot` 開機。
+- **橫向時 `XCTAttachment(screenshot:)` 的截圖只擷取到部分畫面**：判讀版面以可見部分為準，不因看不到右側元素就判定版面錯誤；需要完整畫面時另以 `mobilebuildmcp ui-automation screenshot` 取得。

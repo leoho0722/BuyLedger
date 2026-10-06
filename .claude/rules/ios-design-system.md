@@ -2,10 +2,11 @@
 paths:
   - "apps/ios/BuyLedger/Shared/DesignSystem/**"
   - "apps/ios/BuyLedger/Shared/Extensions/**"
-  - "apps/ios/BuyLedger/Features/**/*{View,Sheet,Layout,Row,Content}.swift"
+  - "apps/ios/BuyLedger/Features/**/*{View,Sheet,Layout,Row,Content,Column,Card,Section,Tile,Tiles}.swift"
   - "apps/ios/BuyLedger/Features/**/Components/**"
   - "apps/ios/BuyLedger/Resources/Assets.xcassets/**"
   - "apps/ios/BuyLedgerTests/{DesignSystemSourceScanTests,ContrastComplianceTests}.swift"
+  - "apps/ios/BuyLedgerTests/DesignSystemSourceScanTests+*.swift"
 ---
 
 # iOS Design System 與視覺
@@ -35,6 +36,10 @@ paths:
     - 只有代表獨立具名層級的字重才新增 case (如 `title3Bold`)；純強調用的組合 (`subheadline` 搭 `.semibold` 等) 不論出現幾次都留在呼叫端。
     - `.bold()` 與 `.weight(.bold)` 的 snapshot 光柵化結果不同，收斂時沿用原寫法，兩者不可互換。
     - 隨元件尺寸等比縮放的字級 (`BLAvatar` 縮寫、`@ScaledMetric` 驅動的數字) 維持 `.font(.system(size:))`。
+- **版面判斷只經 `BLLayoutClass`／`blLayoutClass`**：畫面宣告 `@Environment(\.blLayoutClass) private var layoutClass` 後比對 `.compact`／`.regular`；production 程式在 `Shared/DesignSystem/Foundations/BLLayoutClass.swift` 以外不引用 `horizontalSizeClass`／`verticalSizeClass` (讀取、寫入 environment、成員存取都算)。
+    - regular 版面要水平與垂直尺寸分類都是 regular (iPad 全螢幕)：只看水平會把大尺寸 iPhone 橫向誤判成 iPad，窄視窗的 iPad 與 iPhone 任何方向都是 compact 版面。
+    - 由 `DesignSystemSourceScanTests` 的 `sizeClassViolations_引用尺寸分類_僅出現在版面判斷入口` (規則十一) 守住，不接受 `design-system-scan-exempt` 豁免標記。
+    - 掃描保證只涵蓋剝除器建模的詞法形式：`//` 行註解、非巢狀的 `/* … */` 區塊註解、單行與多行一般字串。字串內插、原始字串與擴充分隔符號 (`#"…"#`)、正規表示式字面值、巢狀區塊註解在保證範圍外，該處與其後幾行的引用都可能漏判或誤判，寫這些形式時人工複核。
 
 ## 色彩
 
@@ -63,7 +68,7 @@ paths:
     - `BLHeroGradientStart`／`End` 沒有 High Contrast 變體，新增依賴此漸層的畫面時留意。
 - **層級用字重與字級表達，呼叫端不得用不透明度自訂降階**：色盤內為達到本專案 4.5:1 文字對比地板而定義的單一次要文字色是例外；實測顯示系統 `secondaryLabel` 在淺色外觀下未達該門檻，因此 `BLPalette.secondaryLabel` 保留 `.opacity(0.6)`。
 - **不以實色模仿系統 bar、不以半透明色模仿玻璃材質**：需要 bar 底用 `.background(.bar)` 並讓捲動內容延伸到下方。
-- **`DesignSystemSourceScanTests` 以掃描守門上述色彩入口**：需要例外時在違規那一行加 `// design-system-scan-exempt: <理由>` (理由不可空)。
+- **`DesignSystemSourceScanTests` 以掃描守門色彩、幣別名稱、語言判斷與版面判斷各入口**：色彩、幣別與語言規則需要例外時，在違規那一行加 `// design-system-scan-exempt: <理由>` (理由不可空)；版面規則不接受豁免標記，帶理由的標記也一樣失敗。
     - 色相名稱清單 `namedHueTokenPattern` 是封閉集合，SwiftUI 新增具名系統色時要同步補進它的兩個交替。
 - **對比門檻由 `ContrastComplianceTests` 把關** (helper 為 `ColorContrast`)。
 

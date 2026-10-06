@@ -49,7 +49,7 @@ apps/ios/
 │   │   ├── Lookups/              # 主檔管理 (訂單來源／商品類別／付款方式／對帳狀態)
 │   │   │   └── Components/       # LookupItemRow、LookupItemList
 │   │   ├── More/                 # iOS「更多」入口：MoreFeature 以 StackState 推入匯率、客戶、報價、主檔管理、設定
-│   │   ├── Orders/               # 訂單瀏覽與編輯 (含 iPhone/iPad view 分流)；OrdersFeature 三個子域的分支主體外移至 OrdersFilterOperations／OrdersBatchOperations／OrdersMergeFlowOperations (同域輔助型別，非子 reducer)，State 查詢擴充與其巢狀型別外移至 OrdersFeature+StateQuery，日期區段型別獨立為 OrderDateSection，訂單建構收成單一路徑於 OrderDraft，LedgerOrder 的變更擴充收於 LedgerOrder+OrderMutation
+│   │   ├── Orders/               # 訂單瀏覽與編輯 (含 compact／regular 版面分流，regular 兩欄抽成 OrdersRegularListColumn／OrdersRegularDetailColumn)；OrdersFeature 三個子域的分支主體外移至 OrdersFilterOperations／OrdersBatchOperations／OrdersMergeFlowOperations (同域輔助型別，非子 reducer)，State 查詢擴充與其巢狀型別外移至 OrdersFeature+StateQuery，日期區段型別獨立為 OrderDateSection，訂單建構收成單一路徑於 OrderDraft，LedgerOrder 的變更擴充收於 LedgerOrder+OrderMutation
 │   │   │   └── Data/             # PhotoService (相簿選取照片的匯入)
 │   │   ├── Quote/                # 報價試算 (QuoteFeature + QuoteRateFeature 子 reducer + QuoteView)
 │   │   │   └── Components/       # QuoteStatusBanner、QuoteBreakdownCard、QuoteInputsCard
@@ -59,7 +59,7 @@ apps/ios/
 │   │   ├── Localization/         # 跨 feature 共用的語言型別 (AppLanguage 與 rootNavigationTitle 修飾子)、幣別顯示名稱單一入口 (CurrencyDisplayName)
 │   │   ├── Media/                # 照片載入的降採樣與 JPEG 重編碼 (PhotoDataProcessor)
 │   │   ├── DesignSystem/
-│   │   │   ├── Foundations/      # 色盤、字級、間距、圓角等 token
+│   │   │   ├── Foundations/      # 色盤、字級、間距、圓角等 token，以及版面分類單一入口 (BLLayoutClass)
 │   │   │   └── Components/       # BLAvatar、BLBadge、BLCard、BLBarChart、Pickers (OptionPickerSheet)、Forms (PaymentMethodEditorSheet) 等元件
 │   │   └── Extensions/           # Swift/SwiftUI 內建型別的通用 extension (Image/Color/Locale/Decimal 等，一型一檔)
 │   └── Resources/                # Info.plist、entitlements、PrivacyInfo.xcprivacy (隱私資訊清單)、Config.example.xcconfig (範本，實際 Config.xcconfig 自填且 gitignored)、assets
@@ -205,14 +205,16 @@ bun run unlock
 
 ### App 進入點與平台導覽
 
-`BuyLedgerApp.swift` 以單一 `RootFeature` store 驅動：`WindowGroup` 掛上 `RootView`；啟動時讀出一次設定快照直接傳入 `RootFeature.State`，首幀即使用已保存的語言、月目標與鎖定狀態；SwiftData container 不經 SwiftUI environment 注入，統一由 `BuyLedgerDatabase` 持有。單元測試 host 不建立根畫面，`BuyLedgerApp.init` 在 `RuntimeEnvironment.isUnitTesting` 時直接略過。`RootFeature.State.selectedTab` 驅動兩種 layout：
+`BuyLedgerApp.swift` 以單一 `RootFeature` store 驅動：`WindowGroup` 掛上 `RootView`；啟動時讀出一次設定快照直接傳入 `RootFeature.State`，首幀即使用已保存的語言、月目標與鎖定狀態；SwiftData container 不經 SwiftUI environment 注入，統一由 `BuyLedgerDatabase` 持有。單元測試 host 不建立根畫面，`BuyLedgerApp.init` 在 `RuntimeEnvironment.isUnitTesting` 時直接略過。`RootFeature.State.selectedTab` 驅動兩種 layout，由 `RootView` 依版面分類選擇：
 
-| 平台                      | Layout              | 說明                                          |
-|---------------------------|---------------------|-----------------------------------------------|
-| iPad (regular size class) | `RootSidebarLayout` | `NavigationSplitView` + sidebar，無 inspector |
-| iPhone (compact)          | `RootTabLayout`     | `TabView`                                     |
+| 版面分類 | Layout | 說明 |
+|---|---|---|
+| regular 版面 (水平與垂直尺寸分類都是 regular，例如 iPad 全螢幕) | `RootSidebarLayout` | `NavigationSplitView` + sidebar，無 inspector |
+| compact 版面 (其餘組合，含 iPhone 任何機型橫向與 iPad 窄視窗) | `RootTabLayout` | `TabView` |
 
-`OrdersView` 是平台分流入口：iPhone (compact) → `OrdersCompactView` (`NavigationStack`)；iPad (regular) → `NavigationStack` 內以 `HStack` 自排「清單 + 詳情」兩欄 (不用巢狀 `NavigationSplitView`，避免兩層 split 互搶寬度)。`.sheet(...)` 編輯表單一律掛在 `OrdersView` 外層，iPhone / iPad 共用。
+版面分類只由 `BLLayoutClass` (`Shared/DesignSystem/Foundations/`) 判斷，畫面以 `@Environment(\.blLayoutClass)` 讀取，不直接讀 `horizontalSizeClass`／`verticalSizeClass`。大尺寸 iPhone 橫向的水平尺寸分類是 regular，但垂直是 compact，所以仍走 compact 版面。
+
+`OrdersView` 依版面分類分流：compact 版面 → `OrdersCompactView` (`NavigationStack`)；regular 版面 → `NavigationStack` 內以 `HStack` 自排「清單 + 詳情」兩欄，欄內容抽成 `OrdersRegularListColumn` 與 `OrdersRegularDetailColumn` (不用巢狀 `NavigationSplitView`，避免兩層 split 互搶寬度)。`.sheet(...)` 編輯表單一律掛在 `OrdersView` 外層，兩種版面共用。總覽頁 (hero 與 KPI 卡) 與分析頁 (卡片) 同樣依版面分類排列：regular 版面並排，compact 版面上下堆疊。
 
 「更多」分頁由 `MoreFeature` 以 `StackState` 推入匯率工具、客戶名單、報價試算、四種主檔管理與設定，返回即釋放子畫面狀態；iPhone 切換分頁時保留堆疊，iPad 側邊欄切換前先清空 (`NavigationSplitView` 在路徑非空時切分頁會崩潰)。
 

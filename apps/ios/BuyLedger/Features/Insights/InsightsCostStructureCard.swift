@@ -1,0 +1,139 @@
+//
+//  InsightsCostStructureCard.swift
+//  BuyLedger
+//
+//  Created by Leo Ho on 2026/10/5.
+//
+
+import SwiftUI
+
+/// 分析頁的成本結構卡，以圈狀圖與圖例呈現各項成本占總成本的比例
+struct InsightsCostStructureCard: View {
+
+    // MARK: - Properties
+
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
+    /// App 目前選用的顯示語系，用於圖表的無障礙標題
+    let language: AppLanguage
+
+    /// 成本結構的各個區塊
+    let segments: [InsightsCostSegment]
+
+    /// 全期成本總和，顯示在圈狀圖中央
+    let totalCost: Decimal
+
+    // MARK: - Body
+
+    /// 卡片骨架，由上而下是標題，其下為圈狀圖與圖例
+    var body: some View {
+        BLCard {
+            VStack(alignment: .leading, spacing: BLSpacing.medium) {
+                title
+
+                breakdown
+            }
+        }
+    }
+}
+
+// MARK: - Private Views
+
+private extension InsightsCostStructureCard {
+
+    /// 固定顯示「成本結構」的卡片標題
+    var title: some View {
+        Text("成本結構")
+            .font(BLTypographyStyle.subhead.font.weight(.semibold))
+            .foregroundStyle(palette.label)
+    }
+
+    /// 成本結構圈狀圖，中央顯示總成本，圖表標題隨 App 內選用的語言翻譯
+    var donut: some View {
+        BLDonutChart(
+            segments: segments.map {
+                BLDonutSegment(
+                    label: $0.label,
+                    value: NSDecimalNumber(decimal: $0.value).doubleValue,
+                    color: $0.color,
+                    valueDescription: BLFormatters.twd($0.value, locale: locale)
+                )
+            },
+            centerTitle: "總成本",
+            centerValue: BLFormatters.twd(totalCost, locale: locale),
+            axisXTitle: language.localized("類別"),
+            axisYTitle: language.localized("占比"),
+            seriesName: language.localized("圈狀圖")
+        )
+        .frame(maxWidth: .infinity)
+        .accessibilityIdentifier(BLAccessibilityID.Insights.costDonut)
+    }
+
+    /// 圖例，每個成本區塊一列
+    var legend: some View {
+        VStack(alignment: .leading, spacing: BLSpacing.small) {
+            ForEach(segments) {
+                legendRow($0)
+            }
+        }
+    }
+
+    /// 圈狀圖與圖例上下排列
+    var breakdown: some View {
+        VStack(alignment: .leading, spacing: BLSpacing.large) {
+            donut
+
+            legend
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+    }
+
+    /// 圖例單列：色塊、區塊名稱與金額
+    ///
+    /// - Parameter segment: 成本區塊
+    /// - Returns: 圖例列
+    func legendRow(_ segment: InsightsCostSegment) -> some View {
+        HStack(spacing: BLSpacing.small) {
+            RoundedRectangle(cornerRadius: 2, style: .continuous)
+                .fill(segment.color)
+                .frame(width: 8, height: 8)
+
+            Text(LocalizedStringKey(segment.label))
+                .blTextStyle(.caption)
+                .foregroundStyle(palette.secondaryLabel)
+
+            Spacer()
+
+            Text(BLFormatters.twd(segment.value, locale: locale))
+                .font(BLTypographyStyle.caption.font.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(palette.label)
+        }
+    }
+}
+
+// MARK: - Private Method
+
+private extension InsightsCostStructureCard {
+
+    /// 目前外觀使用的色盤
+    var palette: BLPalette {
+        BLPalette()
+    }
+}
+
+// MARK: - Preview
+
+#Preview("成本結構") {
+    InsightsCostStructureCard(
+        language: .traditionalChinese,
+        segments: [
+            InsightsCostSegment(label: "商品金額", value: 12_000, color: BLPalette().accent),
+            InsightsCostSegment(label: "國內運費", value: 1_500, color: BLPalette().teal),
+            InsightsCostSegment(label: "手續費", value: 900, color: BLPalette().orange),
+        ],
+        totalCost: 14_400
+    )
+    .padding()
+}
