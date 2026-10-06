@@ -7,7 +7,10 @@
 
 import SwiftUI
 
-/// 顯示標題、百分比與水平進度的元件
+/// 顯示標題、目前值與水平進度條的進度列，整列一起朗讀
+///
+/// - Note: 標題與目前值由本元件繪製，進度條與進度值由系統 `ProgressView` (進度元件)
+///   搭配 `BLProgressViewStyle` (進度條外觀樣式) 提供
 struct BLProgressView: View {
 
     // MARK: - Properties
@@ -29,16 +32,15 @@ struct BLProgressView: View {
 
     // MARK: - Body
 
-    /// 進度列的畫面內容
+    /// 上方顯示標題與目前值，下方顯示進度條，整個元件合併成一個朗讀單位
     var body: some View {
-        // 先將數值限制在 0 到 1，避免超出進度範圍
-        // 右側顯示的百分比取自同一個值，不夾會讓文字與進度條對不上
-        ProgressView(value: clampedValue) {
-            Text(LocalizedStringKey(title))
-        } currentValueLabel: {
-            currentValueLabel(clampedValue: clampedValue)
+        VStack(alignment: .leading, spacing: 5) {
+            header
+
+            progressBar
         }
-        .progressViewStyle(BLProgressViewStyle(tint: tint))
+        // 讓父層合併朗讀與單獨聚焦都能讀到「標題、目前值」
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -46,28 +48,50 @@ struct BLProgressView: View {
 
 private extension BLProgressView {
 
+    /// 左側顯示標題，右側顯示目前值
+    var header: some View {
+        HStack {
+            Text(LocalizedStringKey(title))
+                .font(BLTypographyStyle.caption.font.weight(.semibold))
+                .foregroundStyle(palette.label)
+
+            Spacer()
+
+            currentValueLabel(clampedValue: clampedValue)
+                .blTextStyle(.caption)
+                .foregroundStyle(palette.secondaryLabel)
+                .monospacedDigit()
+        }
+    }
+
+    /// 以水平進度條顯示完成比例
+    var progressBar: some View {
+        ProgressView(value: clampedValue)
+            .progressViewStyle(BLProgressViewStyle(tint: tint))
+    }
+
     /// 右側的當前值標籤：有自訂文字時優先，否則顯示百分比
+    ///
     /// - Parameter clampedValue: 已夾在 `0...1` 的進度值
-    /// - Returns: 當前值標籤 view
+    /// - Returns: 右側顯示的目前值
     @ViewBuilder
     func currentValueLabel(clampedValue: Double) -> some View {
         if let trailingText {
             Text(trailingText)
         } else {
-            Text(
-                BLFormatters.percent(
-                    Decimal(clampedValue),
-                    locale: locale,
-                    fractionLength: 0
-                )
-            )
+            Text(BLFormatters.percent(Decimal(clampedValue), locale: locale, fractionLength: 0))
         }
     }
 }
 
-// MARK: - Computed Properties
+// MARK: - Private Method
 
 private extension BLProgressView {
+
+    /// 目前外觀對應的色盤
+    var palette: BLPalette {
+        BLPalette()
+    }
 
     /// 將進度限制在 `0...1`，讓進度條與右側文字使用同一數值
     var clampedValue: Double {
@@ -82,7 +106,9 @@ private extension BLProgressView {
 
     VStack(spacing: BLSpacing.large) {
         BLProgressView(title: "月預算", value: 0.42)
+
         BLProgressView(title: "固定支出", value: 0.68, tint: palette.green)
+
         BLProgressView(title: "超支警示", value: 0.91, tint: palette.orange)
     }
     .padding()

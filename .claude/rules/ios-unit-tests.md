@@ -83,7 +83,8 @@ paths:
     - 尺寸以各測試的 `.frame` 為準：iPhone 直向 393×852 (長頁面用 393×1800)、iPad 全螢幕寬版 1024×768、大尺寸 iPhone 橫向 956×440 (要露出下方卡片時只加高，如分析頁 956×1000)。
     - 依版面分類分流的畫面 (`OrdersView`、`DashboardView`、`InsightsView`) 連窄版 snapshot 也要同時注入 `.environment(\.horizontalSizeClass, …)` 與 `.environment(\.verticalSizeClass, …)`：iPhone 直向是水平 `.compact`、垂直 `.regular`，寬版是兩者都 `.regular`，iPhone 橫向是水平 `.regular`、垂直 `.compact`；只注入水平會落到 snapshot host 預設的垂直尺寸分類。
 - **執行前的模擬器外觀設定見 `apps/ios/CLAUDE.md`；含 `.borderedProminent` 工具列按鈕的畫面的渲染方式見 `ios-design-system.md`**。
-- **完整回歸偶發的 snapshot mismatch 先按已知雜訊處理**：目前已知測試為 `quoteView_非零試算輸入_顯示成本與建議售價`、`orderEditView_長訂單識別碼_顯示短識別碼`、`ordersCompactView_多選模式_顯示勾選與工具列`、`orderEditView_合併訂單情境_符合基準圖`、`orderEditView_一般既有訂單_符合基準圖`、`campaignListView_依日分組含今天與昨天_符合基準圖`、`campaignListView_依月分組_符合基準圖`、`dashboardView_含進行中開團_顯示進行中的開團區段`。
-    - 兩種徵狀：**內容型**是整個文字標籤沒渲染出來 (如 `quoteView_非零試算輸入_顯示成本與建議售價` 的成本拆解，缺的標籤組合每次不同，開團列表兩條缺的是進度標題，首頁 `dashboardView_含進行中開團_顯示進行中的開團區段` 缺的是進行中開團列的「收款」進度標題，整個 `SnapshotTests` 類別批次執行時才出現、單獨重跑轉綠)，共同來源是 `BLProgressView` 經 `BLProgressViewStyle` 的 `configuration.label` 繪出的標題；**像素型**是肉眼完全相同、差異只在導覽列區域且最大單通道差值個位數 (如 `orderEditView_一般既有訂單_符合基準圖`，實測 0.41% 像素、最大差值 2)。判斷像素型可用 PIL 比對 `ImageChops.difference` 的 bbox 與最大差值。
+- **完整回歸偶發的 snapshot mismatch 先按已知雜訊處理**：目前已知測試為 `orderEditView_長訂單識別碼_顯示短識別碼`、`ordersCompactView_多選模式_顯示勾選與工具列`、`orderEditView_合併訂單情境_符合基準圖`、`orderEditView_一般既有訂單_符合基準圖`。
+    - **像素型**徵狀是肉眼完全相同、差異只在導覽列區域且最大單通道差值個位數 (如 `orderEditView_一般既有訂單_符合基準圖`)；判斷方式是用 PIL 比對 `ImageChops.difference` 的 bbox 與最大差值。
+    - 「整個文字標籤沒畫出來」的失敗不按雜訊處理：先查是否有 `ProgressViewStyle` 或其他 style 以 `configuration` 轉交的標籤畫文字 (見 `ios-design-system.md` 的進度規則)。
     - 逐條重跑時 Swift Testing 的方法層 `-only-testing` 必須帶 `()`，並從 xcresult 確認 `totalTestCount` ≥ 1；單獨重跑轉綠才可判定為渲染雜訊。
     - 已知清單外的失敗，或單獨重跑仍失敗，視為真回歸；不得重錄 baseline、放寬斷言或刪除測試。

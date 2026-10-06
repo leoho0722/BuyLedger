@@ -74,7 +74,7 @@ extension SnapshotTests {
 
     /// 寬版 (iPad 的 regular 寬度) 的儀表板，hero 卡與 KPI 卡左右並排
     ///
-    /// - Note: State 與一般儀表板資料相同且不帶開團，避開 `BLProgressViewStyle` 已知的標題漏畫雜訊
+    /// - Note: State 與一般儀表板資料相同且不帶開團
     @Test
     func dashboardView_寬版_並排顯示hero與KPI() {
         TestDependencies.withFixedNow {

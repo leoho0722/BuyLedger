@@ -7,7 +7,10 @@
 
 import SwiftUI
 
-/// ``BLProgressView`` 的外觀：標題在左、當前值在右，進度軌道在下
+/// 繪製水平進度條的軌道與填色
+///
+/// - Note: 經 `configuration.label` 轉交的標籤在整批 snapshot (畫面比對) 測試中偶爾漏畫，
+///   因此標籤由 `BLProgressView` 自行繪製
 struct BLProgressViewStyle {
 
     // MARK: - Properties
@@ -19,55 +22,35 @@ struct BLProgressViewStyle {
     var track: Color? = nil
 }
 
-// MARK: - Computed Properties
+// MARK: - ProgressViewStyle
+
+extension BLProgressViewStyle: ProgressViewStyle {
+
+    /// 繪製固定高度的進度軌道，依完成比例填入色彩
+    ///
+    /// - Parameter configuration: 進度列目前的呈現狀態
+    /// - Returns: 高度為 6pt 的進度條
+    func makeBody(configuration: Configuration) -> some View {
+        GeometryReader { proxy in
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(track ?? palette.fillQuaternary)
+
+                Capsule()
+                    .fill(tint ?? palette.accent)
+                    .frame(width: proxy.size.width * (configuration.fractionCompleted ?? 0))
+            }
+        }
+        .frame(height: 6)
+    }
+}
+
+// MARK: - Private Method
 
 private extension BLProgressViewStyle {
 
     /// 目前外觀對應的色盤
     var palette: BLPalette {
         BLPalette()
-    }
-}
-
-// MARK: - ProgressViewStyle
-
-extension BLProgressViewStyle: ProgressViewStyle {
-
-    /// 回傳套用樣式後的進度列內容
-    ///
-    /// - Parameter configuration: 進度列目前的呈現狀態
-    /// - Returns: 套用樣式後的進度列內容
-    func makeBody(configuration: Configuration) -> some View {
-        VStack(alignment: .leading, spacing: 5) {
-            // 只有呼叫端提供標題或目前值標籤時才顯示這一列
-            // 純量測的 `ProgressView(value:)` 沒有標籤，省略以避免多出一段
-            // 空列間距
-            if configuration.label != nil || configuration.currentValueLabel != nil {
-                HStack {
-                    configuration.label
-                        .font(BLTypographyStyle.caption.font.weight(.semibold))
-                        .foregroundStyle(palette.label)
-
-                    Spacer()
-
-                    configuration.currentValueLabel
-                        .blTextStyle(.caption)
-                        .foregroundStyle(palette.secondaryLabel)
-                        .monospacedDigit()
-                }
-            }
-
-            GeometryReader { proxy in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(track ?? palette.fillQuaternary)
-
-                    Capsule()
-                        .fill(tint ?? palette.accent)
-                        .frame(width: proxy.size.width * (configuration.fractionCompleted ?? 0))
-                }
-            }
-            .frame(height: 6)
-        }
     }
 }
