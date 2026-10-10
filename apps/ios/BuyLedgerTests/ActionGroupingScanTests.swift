@@ -28,12 +28,54 @@ struct ActionGroupingScanTests {
         "Features/Campaigns/CampaignListView.swift",
         "Features/Campaigns/CampaignDetailView.swift",
         "Features/Campaigns/CampaignEditView.swift",
+        "Features/Orders/OrderEditView.swift",
+        "Features/Orders/OrderEditPhotosSection.swift",
+        "Features/Orders/Components/OrderEditSelectionRow.swift",
+        "Features/Orders/Components/OrderEditBasicSection.swift",
+        "Features/Orders/Components/OrderEditStatusSection.swift",
+        "Features/Orders/Components/OrderEditDecimalField.swift",
+        "Features/Orders/Components/OrderEditPercentField.swift",
+        "Features/Orders/Components/OrderEditPaymentSection.swift",
+        "Features/Orders/Components/OrderEditCostSection.swift",
+        "Features/Orders/Components/OrderEditFeesSection.swift",
+        "Features/Orders/Components/OrderEditCampaignSection.swift",
+        "Features/Orders/Components/OrderEditItemsSection.swift",
+        "Features/Orders/Components/OrderEditNotesSection.swift",
+        "Features/Orders/Components/OrderEditOriginalSection.swift",
+        "Features/Orders/Components/OrderEditPickerDestination.swift",
+        "Features/Orders/OrdersView.swift",
+        "Features/Orders/OrdersCompactView.swift",
+        "Features/Orders/OrdersRegularListColumn.swift",
+        "Features/Orders/OrdersRegularDetailColumn.swift",
+        "Features/Orders/Components/OrderDetailView.swift",
+        "Features/Orders/Components/OrderCompactDetailView.swift",
+        "Features/Orders/Components/OrderDetailContentView.swift",
+        "Features/Orders/Components/OrderDetailCostView.swift",
+        "Features/Orders/Components/OrderDetailItemsView.swift",
+        "Features/Orders/Components/OrderDetailMenu.swift",
+        "Features/Orders/Components/OrderDetailNotesView.swift",
+        "Features/Orders/Components/OrderDetailSummaryView.swift",
+        "Features/Orders/Components/OrderMergeCandidateSheet.swift",
+        "Features/Orders/Components/MergePhotoPickerSheet.swift",
+        "Features/Orders/Components/OrdersToolbarContent.swift",
+        "Features/Orders/Components/OrderSelectableRow.swift",
+        "Features/Orders/Components/OrderRowView.swift",
+        "Features/Orders/Components/OrderDetailRowMenu.swift",
+        "Features/Orders/Components/OrderFilterSheet.swift",
+        "Features/Orders/Components/OrdersCompactListView.swift",
+        "Features/Orders/Components/OrderFilterDateSection.swift",
+        "Features/Orders/Components/OrderFilterPaymentMethodSection.swift",
+        "Features/Orders/Components/OrderFilterCategorySection.swift",
         "Features/App/RootView.swift",
         "Features/App/RootTabLayout.swift",
         "Features/App/RootSidebarLayout.swift",
         "Features/App/AppLockView.swift",
         "Features/App/PersistenceFailureView.swift",
         "Features/More/MoreView.swift",
+        "Features/Dashboard/DashboardView.swift",
+        "Features/Dashboard/DashboardOngoingCampaignsSection.swift",
+        "Features/Dashboard/DashboardRecentOrdersSection.swift",
+        "Features/Insights/InsightsView.swift",
     ]
 
     /// 已遷移 View 的元件目錄
@@ -42,16 +84,17 @@ struct ActionGroupingScanTests {
         "Features/Quote/Components",
         "Features/Lookups/Components",
         "Features/Campaigns/Components",
+        "Features/Orders/Components",
     ]
 
     /// View 送出 action 的掃描模式
-    static let storeSendPattern = /\b(?:store|\w+Store)\s*\.\s*send\s*\(\s*/
+    static let storeSendPattern = #/\b(?:store|\w+Store)\s*\.\s*send\s*\(\s*/#
 
     /// View action 必須以 `.view(` 開頭的掃描模式
-    static let viewActionPrefixPattern = /^\.\s*view\s*\(/
+    static let viewActionPrefixPattern = #/^\.\s*view\s*\(/#
 
     /// reducer 不得包裝子層 `.view(` 的掃描模式
-    static let reducerChildViewPattern = /\.\s*(?!send\b|view\b)[a-z]\w*\s*\(\s*\.\s*view\s*\(/
+    static let reducerChildViewPattern = #/\.\s*(?!send\b|view\b)[a-z]\w*\s*\(\s*\.\s*view\s*\(/#
 
     /// 已遷移畫面的暫時性豁免清單，目前沒有任何例外
     private static let actionAllowlist: [AllowlistEntry] = []
@@ -59,8 +102,8 @@ struct ActionGroupingScanTests {
     /// 確認已遷移 Feature 的 View 只送出 view action
     ///
     /// - Throws: 讀取已遷移 View 的原始碼失敗時丟出
-    /// - Note: 以已遷移的 View 清單與具名 allowlist 掃描所有 `store.send` 呼叫，
-    ///   所有送出點符合規則，且每筆 allowlist 都確實被使用
+    /// - Note: 以已遷移的 View 清單與具名 allowlist 掃描所有 `store.send` 呼叫，所有送出點符合規則
+    /// - Note: 每筆 allowlist 都確實被使用
     @Test
     func scanMigratedViewFiles_已遷移View_只送出ViewAction() throws(any Error) {
         // Given
@@ -94,40 +137,48 @@ struct ActionGroupingScanTests {
         #expect(violations.isEmpty, "reducer 不得包裝子層 view action：\(Self.describe(violations))")
     }
 
-    /// 驗證掃描器自我測試表中的兩條規則判斷正確
+    /// 驗證 View 送出點的掃描器自我測試片段判斷正確
     ///
     /// - Parameter scenario: 一筆掃描器自我測試案例，含原始碼片段、掃描規則與預期結果
-    /// - Note: design 列出的每個原始碼片段，掃描器的判斷結果都與預期一致
-    @Test(arguments: ScanScenario.allCases)
-    func scanScenario_兩條規則的片段_判斷與預期一致(scenario: ScanScenario) {
+    /// - Note: design 列出的每個 View 送出點片段，掃描器的判斷結果都與預期一致
+    @Test(arguments: ScanScenario.viewStoreSendCases)
+    func scanStoreSendContents_送出點片段_判斷與預期一致(scenario: ScanScenario) {
         // Given
         let source = scenario.source
-        let rule = scenario.rule
 
         // When
-        let result: ScanResult
-        switch rule {
-        case .viewStoreSend:
-            result = Self.scanStoreSendContents(
-                source,
-                relativePath: "Synthetic/View.swift",
-                allowlist: []
-            )
-
-        case .reducerChildView:
-            result = ScanResult(
-                violations: Self.reducerChildViewViolations(
-                    in: source,
-                    relativePath: "Synthetic/Reducer.swift"
-                ),
-                usedAllowlistKeys: []
-            )
-        }
+        let result = Self.scanStoreSendContents(
+            source,
+            relativePath: "Synthetic/View.swift",
+            allowlist: []
+        )
 
         // Then
         #expect(
             result.violations.isEmpty == scenario.shouldPass,
             "\(scenario.name) 掃描結果不符：\(Self.describe(result.violations))"
+        )
+    }
+
+    /// 驗證 reducer 子層 view action 的掃描器自我測試片段判斷正確
+    ///
+    /// - Parameter scenario: 一筆掃描器自我測試案例，含原始碼片段、掃描規則與預期結果
+    /// - Note: design 列出的每個 reducer 子層片段，掃描器的判斷結果都與預期一致
+    @Test(arguments: ScanScenario.reducerChildViewCases)
+    func reducerChildViewViolations_子層片段_判斷與預期一致(scenario: ScanScenario) {
+        // Given
+        let source = scenario.source
+
+        // When
+        let violations = Self.reducerChildViewViolations(
+            in: source,
+            relativePath: "Synthetic/Reducer.swift"
+        )
+
+        // Then
+        #expect(
+            violations.isEmpty == scenario.shouldPass,
+            "\(scenario.name) 掃描結果不符：\(Self.describe(violations))"
         )
     }
 

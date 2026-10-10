@@ -49,7 +49,7 @@ private extension DashboardRecentOrdersSection {
             Spacer()
 
             Button("查看全部") {
-                store.send(.delegate(.viewAllOrdersTapped))
+                store.send(.view(.viewAllOrdersTapped))
             }
             .buttonStyle(.plain)
             .foregroundStyle(palette.accent)

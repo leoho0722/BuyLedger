@@ -133,7 +133,7 @@ extension ProjectionWriteBoundaryTests {
                 ),
                 Self(
                     relativePath: "Features/App/RootNavigationOperations.swift",
-                    source: "state.dashboard.monthlyProfitGoalTwd += 1",
+                    source: "state.dashboard.monthlyProfitGoalTWD += 1",
                     expectedCount: 1
                 ),
                 Self(

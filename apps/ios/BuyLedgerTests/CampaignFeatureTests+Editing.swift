@@ -30,7 +30,7 @@ extension CampaignFeatureTests {
 
         // Then
         await store.receive(\.list.delegate.requested) {
-            $0.destination = .edit(
+            $0.presentation.destination = .edit(
                 CampaignEditFeature.State(
                     id: UUID(0),
                     currentDate: TestDependencies.fixedNow,
@@ -39,7 +39,7 @@ extension CampaignFeatureTests {
             )
         }
         #expect(
-            store.state.destination?.edit?.draft.reminderTimestamp
+            store.state.presentation.destination?.edit?.draft.reminderTimestamp
                 == Date(timeIntervalSince1970: 1_777_539_600)
         )
     }
@@ -92,9 +92,9 @@ extension CampaignFeatureTests {
 
         // Then
         await store.receive(\.list.delegate.requested) {
-            $0.destination = .edit(expected)
+            $0.presentation.destination = .edit(expected)
         }
-        #expect(store.state.destination == .edit(expected))
+        #expect(store.state.presentation.destination == .edit(expected))
     }
 
     /// 列表要求編輯不存在的開團時不開啟表單
@@ -110,6 +110,6 @@ extension CampaignFeatureTests {
 
         // Then
         await store.receive(\.list.delegate.requested)
-        #expect(store.state.destination == nil)
+        #expect(store.state.presentation.destination == nil)
     }
 }

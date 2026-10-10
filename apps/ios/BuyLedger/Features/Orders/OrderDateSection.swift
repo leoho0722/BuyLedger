@@ -45,16 +45,18 @@ extension OrderDateSection {
         }
         return grouped.keys
             .sorted(by: >)
-            .map { day in
+            .map {
                 OrderDateSection(
-                    id: day,
+                    id: $0,
                     title: OrderFormatters.daySectionTitle(
-                        for: day,
+                        for: $0,
                         referenceDate: referenceDate,
                         calendar: calendar,
                         locale: locale
                     ),
-                    orders: (grouped[day] ?? []).sorted { $0.date > $1.date }
+                    orders: (grouped[$0] ?? []).sorted { first, second in
+                        first.date > second.date
+                    }
                 )
             }
     }

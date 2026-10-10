@@ -1,0 +1,514 @@
+== [A] apps/ios/BuyLedger/Features/Orders/OrderDateSection.swift (2)
+   L57 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L57 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：orders: (grouped[day] ?? []).sorted { $0.date > $1.date }
+== [A] apps/ios/BuyLedger/Features/Orders/OrderDetailPath.swift (1)
+   L30 MK1 MARK 段名：Reducer Body
+== [A] apps/ios/BuyLedger/Features/Orders/OrderMergeFeature.swift (2)
+   L100 WSIG enum case 宣告行寬 106 (formatting.md:39 維持一行，不計入失敗)
+   L299 MKNX 為巢狀型別另開 extension：extension OrderMergeFeature.State {
+== [A] apps/ios/BuyLedger/Features/Orders/OrdersBatchOperations.swift (7)
+   L18 DOCBL 摘要與參數標記之間缺空的 ///
+   L27 DOCBL 摘要與參數標記之間缺空的 ///
+   L39 DOCBL 摘要與參數標記之間缺空的 ///
+   L53 DOCBL 摘要與參數標記之間缺空的 ///
+   L59 DOCBL 摘要與參數標記之間缺空的 ///
+   L72 D6 註解結尾句號
+   L89 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift (29)
+   L1 LEN 不含檔頭與空行 351 行
+   L14 MK1 MARK 段名：View Properties
+   L31 MK1 MARK 段名：View Body
+   L43 W 行寬 120
+   L52 CASELET 改寫成 `case .x(let v)`，不用 `case let .x(v)`
+   L56 MOD .padding (第 1 組) 排在 .foregroundStyle (第 2 組) 之後
+   L108 RPAR 斷行呼叫的右括號沒有單獨一行：systemImage: "")
+   L118 PARTW 斷行後多個參數或引數擠在同一行：if order.status != .merged, order.status != .cance
+   L119 RPAR 斷行呼叫的右括號沒有單獨一行：BLAccessibilityID.Orders.detailStatusMenuButton)
+   L122 D6 註解結尾句號
+   L132 RPAR 斷行呼叫的右括號沒有單獨一行：BLAccessibilityID.Orders.detailMergeButton)
+   L150 RPAR 斷行呼叫的右括號沒有單獨一行：BLAccessibilityID.Orders.detailDeleteButton)
+   L163 MK1 MARK 段名：ViewBuilder
+   L168 DOCBL 摘要與參數標記之間缺空的 ///
+   L174 NAMED1 單一表達式的 closure 用 $0，不用具名的 filter
+   L184 DOCBL 摘要與參數標記之間缺空的 ///
+   L201 DOCBL 摘要與參數標記之間缺空的 ///
+   L228 DOCBL 摘要與參數標記之間缺空的 ///
+   L242 D6 註解結尾句號
+   L245 NAMED1 單一表達式的 closure 用 $0，不用具名的 section
+   L254 DOCBL 摘要與參數標記之間缺空的 ///
+   L264 MOD .padding (第 1 組) 排在 .foregroundStyle (第 2 組) 之後
+   L270 PARTW 斷行後多個參數或引數擠在同一行：order: order, showsDate: false, palette: palette, 
+   L271 RPAR 斷行呼叫的右括號沒有單獨一行：order: order, showsDate: false, palette: palette, 
+   L288 DOCBL 摘要與參數標記之間缺空的 ///
+   L318 DOCBL 摘要與參數標記之間缺空的 ///
+   L328 D6 註解結尾句號
+   L341 DOCBL 摘要與參數標記之間缺空的 ///
+   L365 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedger/Features/Orders/OrdersFilterOperations.swift (18)
+   L19 DOCBL 摘要與參數標記之間缺空的 ///
+   L35 DOCBL 摘要與參數標記之間缺空的 ///
+   L51 DOCBL 摘要與參數標記之間缺空的 ///
+   L67 DOCBL 摘要與參數標記之間缺空的 ///
+   L83 DOCBL 摘要與參數標記之間缺空的 ///
+   L99 DOCBL 摘要與參數標記之間缺空的 ///
+   L115 DOCBL 摘要與參數標記之間缺空的 ///
+   L121 DOCBL 摘要與參數標記之間缺空的 ///
+   L127 DOCBL 摘要與參數標記之間缺空的 ///
+   L135 DOCBL 摘要與參數標記之間缺空的 ///
+   L146 DOCBL 摘要與參數標記之間缺空的 ///
+   L157 DOCBL 摘要與參數標記之間缺空的 ///
+   L168 DOCBL 摘要與參數標記之間缺空的 ///
+   L197 DOCBL 摘要與參數標記之間缺空的 ///
+   L199 GUARDX guard 的 else 只允許單一退出敘述，或一個警告／log 呼叫後接 return／throw
+   L219 DOCBL 摘要與參數標記之間缺空的 ///
+   L226 DOCBL 摘要與參數標記之間缺空的 ///
+   L242 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift (10)
+   L14 MK1 MARK 段名：View Properties
+   L16 D1 缺 ///：@Bindable var store: StoreOf<OrderMergeFeature>
+   L18 MK1 MARK 段名：View Body
+   L49 MK1 MARK 段名：ViewBuilder
+   L54 DOCBL 摘要與參數標記之間缺空的 ///
+   L79 PARTW 斷行後多個參數或引數擠在同一行：.white, isSelected ? palette.accent : Color.black.
+   L82 D6 註解結尾句號
+   L84 MOD .padding (第 1 組) 排在 .font (第 2 組) 之後
+   L92 D6 註解結尾句號
+   L98 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedger/Features/Orders/Components/OrderDetailView.swift (53)
+   L1 LEN 不含檔頭與空行 770 行
+   L13 MK1 MARK 段名：View Properties
+   L24 MK1 MARK 段名：View Body
+   L98 MK1 MARK 段名：Cases
+   L98 MKN 巢狀型別內的 MARK：Cases
+   L110 MK1 MARK 段名：Static Properties
+   L110 MKN 巢狀型別內的 MARK：Static Properties
+   L115 MKN 巢狀型別內的 MARK：Private Method
+   L118 DOCBL 摘要與參數標記之間缺空的 ///
+   L128 MK1 MARK 段名：Identifiable Properties
+   L128 MKN 巢狀型別內的 MARK：Identifiable Properties
+   L131 BRACE 宣告或 guard 的大括號本體壓成單行：var id: String { title }
+   L133 MK1 MARK 段名：Data Properties
+   L133 MKN 巢狀型別內的 MARK：Data Properties
+   L146 MK1 MARK 段名：ViewBuilder
+   L151 DOCBL 摘要與參數標記之間缺空的 ///
+   L171 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 95 字元)：CurrencyDisplayName.text(
+   L184 DOCBL 摘要與參數標記之間缺空的 ///
+   L190 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 88 字元)：infoPair(
+   L196 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 87 字元)：infoPair(
+   L202 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 84 字元)：infoPair(
+   L213 DOCBL 摘要與參數標記之間缺空的 ///
+   L219 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 82 字元)：func infoPair(
+   L233 MOD .frame (第 1 組) 排在 .foregroundStyle (第 2 組) 之後
+   L243 DOCBL 摘要與參數標記之間缺空的 ///
+   L290 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 72 字元)：metric(
+   L301 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 69 字元)：metric(
+   L324 DOCBL 摘要與參數標記之間缺空的 ///
+   L415 DOCBL 摘要與參數標記之間缺空的 ///
+   L461 DOCBL 摘要與參數標記之間缺空的 ///
+   L518 DOCBL 摘要與參數標記之間缺空的 ///
+   L536 DOCBL 摘要與參數標記之間缺空的 ///
+   L553 NAMED1 單一表達式的 closure 用 $0，不用具名的 component
+   L577 DOCBL 摘要與參數標記之間缺空的 ///
+   L624 MOD .padding (第 1 組) 排在 .foregroundStyle (第 2 組) 之後
+   L635 DOCBL 摘要與參數標記之間缺空的 ///
+   L649 MOD .frame (第 1 組) 排在 .foregroundStyle (第 2 組) 之後
+   L703 DOCBL 摘要與參數標記之間缺空的 ///
+   L741 DOCBL 摘要與參數標記之間缺空的 ///
+   L747 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 82 字元)：func metric(
+   L811 DOCBL 摘要與參數標記之間缺空的 ///
+   L817 D6 註解結尾句號
+   L822 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 92 字元)：OrderCostComponent(
+   L827 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 94 字元)：OrderCostComponent(
+   L832 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 96 字元)：OrderCostComponent(
+   L837 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 97 字元)：OrderCostComponent(
+   L842 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 97 字元)：OrderCostComponent(
+   L847 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 100 字元)：OrderCostComponent(
+   L862 DOCBL 摘要與參數標記之間缺空的 ///
+   L870 SWC switch case 之間缺空行：case .some(false):
+   L872 SWC switch case 之間缺空行：case .none:
+   L882 CALL1 未達斷行條件卻拆成多行 (1 個，接成一行 59 字元)：OrderDetailView(
+   L889 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 70 字元)：OrderDetailView(
+== [A] apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift (23)
+   L1 LEN 不含檔頭與空行 349 行
+   L14 MK1 MARK 段名：View Properties
+   L19 MK1 MARK 段名：View Body
+   L58 D6 註解結尾句號
+   L66 MK1 MARK 段名：ViewBuilder
+   L70 MKIN MARK 寫在 extension 大括號內：// MARK: Sections
+   L76 NAMED1 單一表達式的 closure 用 $0，不用具名的 period
+   L94 NAMED1 單一表達式的 closure 用 $0，不用具名的 category
+   L113 NAMED1 單一表達式的 closure 用 $0，不用具名的 paymentMethod
+   L125 DOCBL 摘要與參數標記之間缺空的 ///
+   L139 MOD .fixedSize (第 1 組) 排在 .foregroundStyle (第 2 組) 之後
+   L172 MOD .fixedSize (第 1 組) 排在 .foregroundStyle (第 2 組) 之後
+   L190 DOCBL 摘要與參數標記之間缺空的 ///
+   L204 MOD .fixedSize (第 1 組) 排在 .foregroundStyle (第 2 組) 之後
+   L219 RPAR 斷行呼叫的右括號沒有單獨一行：store.pendingFilterSelection.category == category 
+   L245 MOD .fixedSize (第 1 組) 排在 .foregroundStyle (第 2 組) 之後
+   L265 DOCBL 摘要與參數標記之間缺空的 ///
+   L279 MOD .fixedSize (第 1 組) 排在 .foregroundStyle (第 2 組) 之後
+   L313 CALL1 未達斷行條件卻拆成多行 (1 個，接成一行 77 字元)：store: Store(
+   L323 CALL1 未達斷行條件卻拆成多行 (1 個，接成一行 84 字元)：store: Store(
+   L333 CALL1 未達斷行條件卻拆成多行 (1 個，接成一行 100 字元)：store: Store(
+   L342 DOCBL 摘要與參數標記之間缺空的 ///
+   L395 D6 註解結尾句號
+== [A] apps/ios/BuyLedger/Features/Orders/Components/OrderFormatters.swift (9)
+   L18 DOCBL 摘要與參數標記之間缺空的 ///
+   L27 DOCBL 摘要與參數標記之間缺空的 ///
+   L32 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 95 字元)：static func currency(
+   L45 DOCBL 摘要與參數標記之間缺空的 ///
+   L54 DOCBL 摘要與參數標記之間缺空的 ///
+   L66 DOCBL 摘要與參數標記之間缺空的 ///
+   L75 DOCBL 摘要與參數標記之間缺空的 ///
+   L96 W 行寬 109
+   L117 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift (6)
+   L14 MK1 MARK 段名：View Properties
+   L16 D1 缺 ///：@Bindable var store: StoreOf<OrderMergeFeature>
+   L27 MK1 MARK 段名：View Body
+   L54 MK1 MARK 段名：ViewBuilder
+   L95 NAMED1 單一表達式的 closure 用 $0，不用具名的 order
+   L126 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedger/Features/Orders/Components/OrderRowView.swift (13)
+   L13 MK1 MARK 段名：View Properties
+   L30 MK1 MARK 段名：View Body
+   L48 MOD .fixedSize (第 1 組) 排在 .font (第 2 組) 之後
+   L59 MOD .fixedSize (第 1 組) 排在 .foregroundStyle (第 2 組) 之後
+   L65 D6 註解結尾句號
+   L72 D6 註解結尾句號
+   L78 D6 註解結尾句號
+   L92 MK1 MARK 段名：Cases
+   L92 MKN 巢狀型別內的 MARK：Cases
+   L102 MK1 MARK 段名：ViewBuilder
+   L118 D6 註解結尾句號
+   L138 D6 註解結尾句號
+   L157 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedger/Features/Orders/Components/OrderSelectableRow.swift (3)
+   L14 MK1 MARK 段名：View Properties
+   L28 MK1 MARK 段名：View Body
+   L39 D6 註解結尾句號
+== [A] apps/ios/BuyLedger/Features/Orders/Components/OrdersToolbarContent.swift (4)
+   L14 MK1 MARK 段名：View Properties
+   L28 MK1 MARK 段名：Toolbar Content Body
+   L40 D6 註解結尾句號
+   L44 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：ForEach(OrderStatus.allCases.filter { $0 != .merged }) { sta
+== [A] apps/ios/BuyLedger/Features/Dashboard/DashboardFeature.swift (3)
+   L47 D9 associated value 缺 - Parameter：case delegate(Delegate)
+   L57 D9 associated value 缺 - Parameter：case campaignTapped(String)
+   L67 MK1 MARK 段名：Reducer Body
+== [A] apps/ios/BuyLedger/Features/Insights/InsightsFeature.swift (5)
+   L41 D9 associated value 缺 - Parameter：case binding(BindingAction<State>)
+   L50 D9 associated value 缺 - Parameter：case delegate(Delegate)
+   L60 D9 associated value 缺 - Parameter：case campaignTapped(String)
+   L63 D9 associated value 缺 - Parameter：case categoryTapped(String)
+   L67 MK1 MARK 段名：Reducer Body
+== [A] apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift (1)
+   L1 LEN 不含檔頭與空行 460 行
+== [A] apps/ios/BuyLedgerTests/OrdersBatchOperationsTests.swift (65)
+   L10 TIMP @testable import 前缺空行
+   L15 D1 缺 ///：@Test func selectionModeToggledEntersSelectionMode() {
+   L15 GWT 缺 // Given
+   L15 GWT 缺 // Then
+   L15 GWT 缺 // When
+   L15 TD @Test 缺 ///
+   L15 TNAMEL 舊式單段 lowerCamel 測試名稱：selectionModeToggledEntersSelectionMode
+   L15 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L21 D1 缺 ///：@Test func selectionModeToggledExitingClearsSelection() {
+   L21 GWT 缺 // Given
+   L21 GWT 缺 // Then
+   L21 GWT 缺 // When
+   L21 TD @Test 缺 ///
+   L21 TNAMEL 舊式單段 lowerCamel 測試名稱：selectionModeToggledExitingClearsSelection
+   L21 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L32 D1 缺 ///：@Test func orderSelectionToggledAddsThenRemoves() {
+   L32 GWT 缺 // Given
+   L32 GWT 缺 // Then
+   L32 GWT 缺 // When
+   L32 TD @Test 缺 ///
+   L32 TNAMEL 舊式單段 lowerCamel 測試名稱：orderSelectionToggledAddsThenRemoves
+   L32 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L42 D1 缺 ///：@Test func selectAllTappedSelectsAllFilteredOrders() {
+   L42 GWT 缺 // Given
+   L42 GWT 缺 // Then
+   L42 GWT 缺 // When
+   L42 TD @Test 缺 ///
+   L42 TNAMEL 舊式單段 lowerCamel 測試名稱：selectAllTappedSelectsAllFilteredOrders
+   L42 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L49 PARTW 斷行後多個參數或引數擠在同一行：state: &state, referenceDate: TestDependencies.fix
+   L51 RPAR 斷行呼叫的右括號沒有單獨一行：calendar: TestDependencies.fixedCalendar)
+   L56 D1 缺 ///：@Test func clearSelectionTappedEmptiesSelection() {
+   L56 GWT 缺 // Given
+   L56 GWT 缺 // Then
+   L56 GWT 缺 // When
+   L56 TD @Test 缺 ///
+   L56 TNAMEL 舊式單段 lowerCamel 測試名稱：clearSelectionTappedEmptiesSelection
+   L56 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L66 GWT 缺 // Given
+   L66 GWT 缺 // Then
+   L66 GWT 缺 // When
+   L66 TNAMEL 舊式單段 lowerCamel 測試名稱：batchStatusChangedToMergedMakesNoChange
+   L66 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L81 GWT 缺 // Given
+   L81 GWT 缺 // Then
+   L81 GWT 缺 // When
+   L81 TNAMEL 舊式單段 lowerCamel 測試名稱：batchStatusChangedSkipsOrdersAlreadyAtTargetStatus
+   L81 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L88 D6 註解結尾句號
+   L97 GWT 缺 // Given
+   L97 GWT 缺 // Then
+   L97 GWT 缺 // When
+   L97 TNAMEL 舊式單段 lowerCamel 測試名稱：batchStatusChangedAlwaysExitsSelectionModeRegardle
+   L97 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L111 D1 缺 ///：@Test func batchStatusChangePersistedAppliesChangedOrdersByID() {
+   L111 GWT 缺 // Given
+   L111 GWT 缺 // Then
+   L111 GWT 缺 // When
+   L111 TD @Test 缺 ///
+   L111 TNAMEL 舊式單段 lowerCamel 測試名稱：batchStatusChangePersistedAppliesChangedOrdersByID
+   L111 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L115 PARTW 斷行後多個參數或引數擠在同一行：[makeOrder(id: "A", status: .delivered)], state: &
+   L116 RPAR 斷行呼叫的右括號沒有單獨一行：[makeOrder(id: "", status: .delivered)], state: &s
+   L128 DOCBL 摘要與參數標記之間缺空的 ///
+   L139 ARG4 一行內有 4 個引數或參數，超過三個要斷行：items: [LedgerOrderItem(id: UUID(), name: "", quan
+== [A] apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests.swift (18)
+   L10 TIMP @testable import 前缺空行
+   L24 RPAR 斷行呼叫的右括號沒有單獨一行：calendar: TestDependencies.fixedCalendar)
+   L41 RPAR 斷行呼叫的右括號沒有單獨一行：calendar: TestDependencies.fixedCalendar)
+   L60 RPAR 斷行呼叫的右括號沒有單獨一行：calendar: TestDependencies.fixedCalendar)
+   L79 RPAR 斷行呼叫的右括號沒有單獨一行：calendar: TestDependencies.fixedCalendar)
+   L105 PARTW 斷行後多個參數或引數擠在同一行：elapsed, label: "testDashboardStatsRevenueAttribut
+   L106 RPAR 斷行呼叫的右括號沒有單獨一行：elapsed, label: "")
+   L110 MK1 MARK 段名：Static Properties
+   L110 MKC MARK 不是規範區名：// MARK: - Static Properties
+   L129 D2 有參數缺 - Parameter：static func assertNoRegression(
+   L134 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 91 字元)：XCTAssertLessThan(
+   L142 DOCBL 摘要與參數標記之間缺空的 ///
+   L157 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：let campaignNames = campaigns.map { [$0[index % $0.count].na
+   L170 PARTW 斷行後多個參數或引數擠在同一行：name: "perf item \(index)", quantity: 1, unitPrice
+   L171 RPAR 斷行呼叫的右括號沒有單獨一行：name: "", quantity: 1, unitPrice: Decimal(100 + in
+   L171 TRAILC 多行字面值的最後一個元素後面要加逗號：name: "", quantity: 1, unitPrice: Decimal(100 + in
+   L198 DOCBL 摘要與參數標記之間缺空的 ///
+   L201 NAMED1 單一表達式的 closure 用 $0，不用具名的 index
+== [A] apps/ios/BuyLedgerTests/OrdersFilterOperationsTests.swift (151)
+   L1 LEN 不含檔頭與空行 363 行
+   L11 TIMP @testable import 前缺空行
+   L16 D1 缺 ///：@Test func statusFilterSelectedUpdatesSelectionAndSelectsFirstFiltered
+   L16 GWT 缺 // Given
+   L16 GWT 缺 // Then
+   L16 GWT 缺 // When
+   L16 TD @Test 缺 ///
+   L16 TNAMEL 舊式單段 lowerCamel 測試名稱：statusFilterSelectedUpdatesSelectionAndSelectsFirs
+   L16 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L33 D1 缺 ///：@Test func datePeriodSelectedUpdatesSelectionAndSelectsFirstFilteredOr
+   L33 GWT 缺 // Given
+   L33 GWT 缺 // Then
+   L33 GWT 缺 // When
+   L33 TD @Test 缺 ///
+   L33 TNAMEL 舊式單段 lowerCamel 測試名稱：datePeriodSelectedUpdatesSelectionAndSelectsFirstF
+   L33 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L51 D1 缺 ///：@Test func categoryFilterSelectedUpdatesSelectionAndSelectsFirstFilter
+   L51 GWT 缺 // Given
+   L51 GWT 缺 // Then
+   L51 GWT 缺 // When
+   L51 TD @Test 缺 ///
+   L51 TNAMEL 舊式單段 lowerCamel 測試名稱：categoryFilterSelectedUpdatesSelectionAndSelectsFi
+   L51 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L66 D1 缺 ///：@Test func paymentMethodFilterSelectedUpdatesSelectionAndSelectsFirstF
+   L66 GWT 缺 // Given
+   L66 GWT 缺 // Then
+   L66 GWT 缺 // When
+   L66 TD @Test 缺 ///
+   L66 TNAMEL 舊式單段 lowerCamel 測試名稱：paymentMethodFilterSelectedUpdatesSelectionAndSele
+   L66 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L83 D1 缺 ///：@Test func campaignFilterSelectedUpdatesSelectionAndSelectsFirstFilter
+   L83 GWT 缺 // Given
+   L83 GWT 缺 // Then
+   L83 GWT 缺 // When
+   L83 TD @Test 缺 ///
+   L83 TNAMEL 舊式單段 lowerCamel 測試名稱：campaignFilterSelectedUpdatesSelectionAndSelectsFi
+   L83 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L100 D1 缺 ///：@Test func campaignStatusFilterSelectedUpdatesSelectionAndSelectsFirst
+   L100 GWT 缺 // Given
+   L100 GWT 缺 // Then
+   L100 GWT 缺 // When
+   L100 TD @Test 缺 ///
+   L100 TNAMEL 舊式單段 lowerCamel 測試名稱：campaignStatusFilterSelectedUpdatesSelectionAndSel
+   L100 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L137 D1 缺 ///：@Test func categoryPickerTappedShowsPicker() {
+   L137 GWT 缺 // Given
+   L137 GWT 缺 // Then
+   L137 GWT 缺 // When
+   L137 TD @Test 缺 ///
+   L137 TNAMEL 舊式單段 lowerCamel 測試名稱：categoryPickerTappedShowsPicker
+   L137 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L143 D1 缺 ///：@Test func paymentMethodPickerTappedShowsPicker() {
+   L143 GWT 缺 // Given
+   L143 GWT 缺 // Then
+   L143 GWT 缺 // When
+   L143 TD @Test 缺 ///
+   L143 TNAMEL 舊式單段 lowerCamel 測試名稱：paymentMethodPickerTappedShowsPicker
+   L143 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L149 D1 缺 ///：@Test func filterSheetTappedSeedsPendingSelectionAndClearsSearch() {
+   L149 GWT 缺 // Given
+   L149 GWT 缺 // Then
+   L149 GWT 缺 // When
+   L149 TD @Test 缺 ///
+   L149 TNAMEL 舊式單段 lowerCamel 測試名稱：filterSheetTappedSeedsPendingSelectionAndClearsSea
+   L149 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L164 D1 缺 ///：@Test func pendingFilterSelectionIsActiveMatchesEachNonDefaultValue() 
+   L164 GWT 缺 // Given
+   L164 GWT 缺 // Then
+   L164 GWT 缺 // When
+   L164 TD @Test 缺 ///
+   L164 TNAMEL 舊式單段 lowerCamel 測試名稱：pendingFilterSelectionIsActiveMatchesEachNonDefaul
+   L164 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L177 D1 缺 ///：@Test func filterPendingSelectionsOnlyUpdatePendingNotCommitted() {
+   L177 GWT 缺 // Given
+   L177 GWT 缺 // Then
+   L177 GWT 缺 // When
+   L177 TD @Test 缺 ///
+   L177 TNAMEL 舊式單段 lowerCamel 測試名稱：filterPendingSelectionsOnlyUpdatePendingNotCommitt
+   L177 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L193 D1 缺 ///：@Test func filterApplyTappedCommitsChangesAndRecomputesSelection() {
+   L193 GWT 缺 // Given
+   L193 GWT 缺 // Then
+   L193 GWT 缺 // When
+   L193 TD @Test 缺 ///
+   L193 TNAMEL 舊式單段 lowerCamel 測試名稱：filterApplyTappedCommitsChangesAndRecomputesSelect
+   L193 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L210 D1 缺 ///：@Test func filterApplyTappedWithoutChangesStillClosesSheet() {
+   L210 GWT 缺 // Given
+   L210 GWT 缺 // Then
+   L210 GWT 缺 // When
+   L210 TD @Test 缺 ///
+   L210 TNAMEL 舊式單段 lowerCamel 測試名稱：filterApplyTappedWithoutChangesStillClosesSheet
+   L210 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L227 D1 缺 ///：@Test func filterCancelTappedWithoutUnappliedChangesClosesDirectly() {
+   L227 GWT 缺 // Given
+   L227 GWT 缺 // Then
+   L227 GWT 缺 // When
+   L227 TD @Test 缺 ///
+   L227 TNAMEL 舊式單段 lowerCamel 測試名稱：filterCancelTappedWithoutUnappliedChangesClosesDir
+   L227 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L238 D1 缺 ///：@Test func filterCancelTappedWithUnappliedChangesPresentsDiscardConfir
+   L238 GWT 缺 // Given
+   L238 GWT 缺 // Then
+   L238 GWT 缺 // When
+   L238 TD @Test 缺 ///
+   L238 TNAMEL 舊式單段 lowerCamel 測試名稱：filterCancelTappedWithUnappliedChangesPresentsDisc
+   L238 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L249 D1 缺 ///：@Test func filterDiscardConfirmedRevertsPendingSelectionAndClosesSheet
+   L249 GWT 缺 // Given
+   L249 GWT 缺 // Then
+   L249 GWT 缺 // When
+   L249 TD @Test 缺 ///
+   L249 TNAMEL 舊式單段 lowerCamel 測試名稱：filterDiscardConfirmedRevertsPendingSelectionAndCl
+   L249 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L260 D1 缺 ///：@Test func searchTextChangedUpdatesSelectionAndSelectsFirstFilteredOrd
+   L260 GWT 缺 // Given
+   L260 GWT 缺 // Then
+   L260 GWT 缺 // When
+   L260 TD @Test 缺 ///
+   L260 TNAMEL 舊式單段 lowerCamel 測試名稱：searchTextChangedUpdatesSelectionAndSelectsFirstFi
+   L260 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L275 D1 缺 ///：@Test func orderSelectedUpdatesSelectedOrderID() {
+   L275 GWT 缺 // Given
+   L275 GWT 缺 // Then
+   L275 GWT 缺 // When
+   L275 TD @Test 缺 ///
+   L275 TNAMEL 舊式單段 lowerCamel 測試名稱：orderSelectedUpdatesSelectedOrderID
+   L275 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L284 MKC MARK 不是規範區名：// MARK: Filter Equivalence
+   L287 GWT 缺 // Given
+   L287 GWT 缺 // Then
+   L287 GWT 缺 // When
+   L287 TNAMEL 舊式單段 lowerCamel 測試名稱：filteredOrdersMatchesHardcodedSequenceForEachFilte
+   L287 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L290 PARTW 斷行後多個參數或引數擠在同一行：id: "O1", status: .quoting, date: TestDependencies
+   L292 RPAR 斷行呼叫的右括號沒有單獨一行：paymentMethod: "", campaignNames: [""]),
+   L293 PARTW 斷行後多個參數或引數擠在同一行：id: "O2", status: .confirmed, date: Self.date(year
+   L295 RPAR 斷行呼叫的右括號沒有單獨一行：category: "", paymentMethod: "", campaignNames: []
+   L296 PARTW 斷行後多個參數或引數擠在同一行：id: "O3", status: .quoting, date: TestDependencies
+   L298 RPAR 斷行呼叫的右括號沒有單獨一行：paymentMethod: "", campaignNames: [""]),
+   L299 PARTW 斷行後多個參數或引數擠在同一行：id: "O4", status: .delivered, date: TestDependenci
+   L301 RPAR 斷行呼叫的右括號沒有單獨一行：paymentMethod: "", campaignNames: [""]),
+   L323 PARTW 斷行後多個參數或引數擠在同一行：id: "B-1", name: "B", openDate: TestDependencies.f
+   L325 RPAR 斷行呼叫的右括號沒有單獨一行：closeDate: TestDependencies.fixedNow, status: .clo
+   L329 DOCBL 摘要與參數標記之間缺空的 ///
+   L331 PARTW 斷行後多個參數或引數擠在同一行：referenceDate: TestDependencies.fixedNow, calendar
+   L368 DOCBL 摘要與參數標記之間缺空的 ///
+   L390 ARG4 一行內有 4 個引數或參數，超過三個要斷行：items: [LedgerOrderItem(id: UUID(), name: "", quan
+   L415 DOCBL 摘要與參數標記之間缺空的 ///
+   L420 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 63 字元)：static func date(
+   L431 FUNWRAP 強制解包 (鐵則 3)：return components.date!
+== [A] apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift (1)
+   L122 WCL closure 簽章行寬 102 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift (16)
+   L11 TIMP @testable import 前缺空行
+   L17 D1 缺 ///：@Test func cancellingSearchClearsTheQueryAndRestoresTheFullList() asyn
+   L17 GWT 缺 // Given
+   L17 GWT 缺 // Then
+   L17 GWT 缺 // When
+   L17 TD @Test 缺 ///
+   L17 TNAMEL 舊式單段 lowerCamel 測試名稱：cancellingSearchClearsTheQueryAndRestoresTheFullLi
+   L17 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L52 GWT 缺 // Given
+   L52 GWT 缺 // Then
+   L52 GWT 缺 // When
+   L52 TNAMEL 舊式單段 lowerCamel 測試名稱：cancellingSearchDoesNotClearTheOtherFilters
+   L52 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L86 CT 「Private Method」區塊放了 stored property：static let orders: [LedgerOrder] = [
+   L93 DOCBL 摘要與參數標記之間缺空的 ///
+   L98 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 90 字元)：static func makeOrder(
+== [A] apps/ios/BuyLedgerTests/String+SourceLiteralScan.swift (1)
+   L300 WSTR 單一字串字面值行寬 172 (列出說明，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/DashboardFeatureTests.swift (26)
+   L11 TIMP @testable import 前缺空行
+   L18 GWT 缺 // Given
+   L18 GWT 缺 // Then
+   L18 GWT 缺 // When
+   L18 TNAMEL 舊式單段 lowerCamel 測試名稱：taskEmitsRefreshDelegate
+   L18 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L28 GWT 缺 // Given
+   L28 GWT 缺 // Then
+   L28 GWT 缺 // When
+   L28 TNAMEL 舊式單段 lowerCamel 測試名稱：retryTappedEmitsRefreshDelegate
+   L28 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L38 GWT 缺 // Given
+   L38 GWT 缺 // Then
+   L38 GWT 缺 // When
+   L38 TNAMEL 舊式單段 lowerCamel 測試名稱：campaignTappedDelegateMutatesNoState
+   L38 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L47 GWT 缺 // Given
+   L47 GWT 缺 // Then
+   L47 GWT 缺 // When
+   L47 TNAMEL 舊式單段 lowerCamel 測試名稱：newOrderTappedDelegateMutatesNoState
+   L47 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L56 GWT 缺 // Given
+   L56 GWT 缺 // Then
+   L56 GWT 缺 // When
+   L56 TNAMEL 舊式單段 lowerCamel 測試名稱：viewAllOrdersTappedDelegateMutatesNoState
+   L56 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+== [A] apps/ios/BuyLedgerTests/InsightsFeatureTests.swift (21)
+   L11 TIMP @testable import 前缺空行
+   L18 GWT 缺 // Given
+   L18 GWT 缺 // Then
+   L18 GWT 缺 // When
+   L18 TNAMEL 舊式單段 lowerCamel 測試名稱：insightsDateRangeBindingPersistsSelection
+   L18 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L31 GWT 缺 // Given
+   L31 GWT 缺 // Then
+   L31 GWT 缺 // When
+   L31 TNAMEL 舊式單段 lowerCamel 測試名稱：taskEmitsRefreshDelegate
+   L31 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L41 GWT 缺 // Given
+   L41 GWT 缺 // Then
+   L41 GWT 缺 // When
+   L41 TNAMEL 舊式單段 lowerCamel 測試名稱：campaignTappedDelegateMutatesNoState
+   L41 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L50 GWT 缺 // Given
+   L50 GWT 缺 // Then
+   L50 GWT 缺 // When
+   L50 TNAMEL 舊式單段 lowerCamel 測試名稱：categoryTappedDelegateMutatesNoState
+   L50 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+TOTAL {'DOLLAR2': 1, 'NESTSL': 3, 'MK1': 31, 'WSIG': 1, 'MKNX': 1, 'DOCBL': 70, 'D6': 17, 'LEN': 5, 'W': 2, 'CASELET': 1, 'MOD': 13, 'RPAR': 19, 'PARTW': 13, 'NAMED1': 8, 'GUARDX': 1, 'D1': 27, 'MKN': 6, 'BRACE': 1, 'CALL1': 23, 'SWC': 2, 'MKIN': 1, 'D9': 6, 'TIMP': 6, 'GWT': 117, 'TD': 25, 'TNAMEL': 39, 'TSTL': 39, 'ARG4': 2, 'MKC': 2, 'D2': 1, 'TRAILC': 1, 'FUNWRAP': 1, 'WCL': 1, 'CT': 1, 'WSTR': 1} files 57 FAIL

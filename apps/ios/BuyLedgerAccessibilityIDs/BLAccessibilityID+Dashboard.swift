@@ -70,5 +70,13 @@ extension BLAccessibilityID {
         static func recentOrderRow(orderID: String) -> String {
             row("dashboard.recentOrders.row", key: orderID)
         }
+
+        /// 首頁開團卡的進行中開團列，以開團編號識別
+        ///
+        /// - Parameter campaignID: 開團編號
+        /// - Returns: 對應首頁開團列的 accessibility identifier
+        static func ongoingCampaignRow(campaignID: String) -> String {
+            row("dashboard.ongoingCampaigns.row", key: campaignID)
+        }
     }
 }

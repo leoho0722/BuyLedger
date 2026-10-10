@@ -57,8 +57,8 @@ paths:
     - 色值定義在 asset catalog 的 `BLTone<Tone><Role>` (Any／Dark 各含 High Contrast 變體)，不在程式碼計算：程式碼表達不了 Increase Contrast。
     - 具名色彩資源缺失時 SwiftUI 會靜默回退系統預設色：新增 Color Set 與引用它的程式碼同批合入，並逐一目視確認顏色。
     - 旁有文字標籤的圖形 (如膠囊色點) 屬裝飾，豁免 3:1 並標 `.accessibilityHidden(true)`；3:1 只約束單獨承載意義的圖形。
-- **訂單狀態色分兩軌、各有唯一來源**：帶文字標籤的狀態介面走 `BLTone`；側邊欄智慧分組色點走 `OrderStatus.sidebarHue(in:)` (八個分組經 `BLTone` 只剩四色，相鄰列會撞色)。
-    - 呼叫端不內嵌狀態到顏色的映射；新增訂單狀態時兩邊的窮舉 switch 會逼出色彩指派。
+- **訂單狀態色由 `OrderStatus.tone` 統一映射到 `BLTone`**：依狀態的語意選色，畫面再依背景取對應色彩軌道。
+    - 呼叫端不內嵌狀態到顏色的映射；新增訂單狀態時窮舉 switch 會逼出色調指派。
 - **`Shared/DesignSystem/` 不得引用 `Core/Domain/` 的領域型別，也不得 import `ComposableArchitecture`**：領域值由呼叫端轉成 primitive 或 Design System 自有型別，架構框架的依賴容器只留在 Feature 層。
     - `LayerBoundaryTests` 掃描 `Shared/DesignSystem/` 與包含 `Generated/` 的 `Core/Domain/` 宣告清單，並以 mutation test 驗證兩條分層規則會轉紅；TCA import 比對必須涵蓋前置 attribute、限定 import 與子符號。
 - **幣別顯示名稱只能由 `CurrencyDisplayName` 提供**：`DesignSystemSourceScanTests` 掃描完整 production root，allowlist 僅為 `Shared/Localization/CurrencyDisplayName.swift`，避免任何 Feature 或其他 Shared 模組重新建立 Foundation 查表。

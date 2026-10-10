@@ -30,8 +30,11 @@ struct RootFeature {
         /// 常駐殼層的鎖定與解鎖狀態
         var appLock: AppLockFeature.State
 
+        /// 啟動載入與幣別快取的子功能狀態
+        var launch = RootLaunchFeature.State()
+
         /// 訂單功能狀態
-        var orders = OrdersFeature.State()
+        var orders: OrdersFeature.State
 
         /// 開團功能狀態；``CampaignFeature/State/orders`` 投影經 reducer 的 `onChange(of:)` 與訂單保持同步
         var campaigns = CampaignFeature.State()
@@ -51,22 +54,30 @@ struct RootFeature {
         ///   - persistenceStatus: 持久層啟動狀態
         ///   - preferences: 啟動時已載入的完整偏好
         ///   - appVersion: App 版本與建置號顯示文字
+        ///   - orders: 建立容器時帶入的訂單功能狀態
         init(
             persistenceStatus: PersistenceContainer.Status = .healthy,
             preferences: SettingsSnapshot = .default,
-            appVersion: String = "—"
+            appVersion: String = "—",
+            orders: OrdersFeature.State = OrdersFeature.State()
         ) {
             if case .degraded = persistenceStatus {
                 persistenceFailure = PersistenceFailureFeature.State()
             }
             self.preferences = preferences
+            self.orders = orders
             appLock = AppLockFeature.State(
                 isBiometricUnlockEnabled: preferences.isBiometricUnlockEnabled,
                 isLocked: preferences.isBiometricUnlockEnabled
             )
             more = MoreFeature.State(appVersion: appVersion)
             more.preferences = preferences
-            dashboard.monthlyProfitGoalTwd = preferences.monthlyProfitGoalTWD
+            dashboard.monthlyProfitGoalTWD = preferences.monthlyProfitGoalTWD
+            self.orders.defaultCurrency = preferences.defaultCurrency
+            self.orders.aiSummarySettings = OrderAISummarySettings(
+                isEnabled: preferences.isAISummaryEnabled,
+                model: preferences.aiSummaryModel
+            )
         }
     }
 
@@ -105,6 +116,11 @@ struct RootFeature {
         /// - Parameter action: 分析功能送出的事件
         case insights(InsightsFeature.Action)
 
+        /// 啟動載入功能事件
+        ///
+        /// - Parameter action: 啟動載入功能送出的事件
+        case launch(RootLaunchFeature.Action)
+
         /// 更多頁堆疊與子畫面委派
         ///
         /// - Parameter action: 更多頁功能送出的事件
@@ -115,14 +131,11 @@ struct RootFeature {
         /// - Parameter action: 訂單功能送出的事件
         case orders(OrdersFeature.Action)
 
-        /// 系統監聽回報重大時間變更
-        case significantTimeChanged
-
         /// 根導覽宿主的使用者操作
         @CasePathable
         enum View: Equatable {
 
-            /// 啟動幣別清單的七天期限刷新與重大時間變更監聽
+            /// 請開團、訂單與啟動載入子層載入資料，並刷新共用幣別清單、監聽重大時間變更
             case task
 
             /// iPhone 分頁列切換主要分頁，保留「更多」堆疊
@@ -134,11 +147,6 @@ struct RootFeature {
             ///
             /// - Parameter tab: 要切換到的主要分頁
             case sidebarTabSelected(RootTab)
-
-            /// 側邊欄智慧分組切到訂單頁並套用狀態篩選
-            ///
-            /// - Parameter status: 智慧分組對應的訂單狀態
-            case smartGroupSelected(OrderStatus)
         }
     }
 
@@ -153,12 +161,6 @@ struct RootFeature {
     /// 跨頁篩選訂單時使用的行事曆
     @Dependency(\.calendar) private var calendar
 
-    /// 幣別清單的來源；App 啟動時向 ExchangeRate-API 的 `/codes` 下載，保存 7 天
-    @Dependency(\.currencyMetadataService) private var currencyMetadataService
-
-    /// 監聽系統重大時間變更，以刷新開團日期標題
-    @Dependency(\.significantTimeChangeService) private var significantTimeChangeService
-
     // MARK: - Body
 
     /// 組合子層與根邏輯；保留 `CombineReducers`，讓尾端 `onChange` 看到子層變更後再同步投影
@@ -166,6 +168,10 @@ struct RootFeature {
         CombineReducers {
             Scope(state: \.appLock, action: \.appLock) {
                 AppLockFeature()
+            }
+
+            Scope(state: \.launch, action: \.launch) {
+                RootLaunchFeature()
             }
 
             Scope(state: \.orders, action: \.orders) {
@@ -219,7 +225,12 @@ struct RootFeature {
         .onChange(of: \.preferences) { _, state in
             state.appLock.isBiometricUnlockEnabled = state.preferences.isBiometricUnlockEnabled
             state.more.preferences = state.preferences
-            state.dashboard.monthlyProfitGoalTwd = state.preferences.monthlyProfitGoalTWD
+            state.dashboard.monthlyProfitGoalTWD = state.preferences.monthlyProfitGoalTWD
+            state.orders.defaultCurrency = state.preferences.defaultCurrency
+            state.orders.aiSummarySettings = OrderAISummarySettings(
+                isEnabled: state.preferences.isAISummaryEnabled,
+                model: state.preferences.aiSummaryModel
+            )
             return .none
         }
         .onChange(of: \.appLock.biometryType) { _, state in
@@ -248,15 +259,9 @@ private extension RootFeature {
         switch action {
         case .view(.task):
             return .merge(
-                .run { [currencyMetadataService] _ in
-                    // TTL 7 天：7 * 24 * 3600 = 604_800 秒
-                    _ = try? await currencyMetadataService.refreshIfStale(604_800)  // 失敗可忽略，本機資料仍可用
-                },
-                .run { [significantTimeChangeService] send in
-                    for await _ in significantTimeChangeService.changes() {
-                        await send(.significantTimeChanged)
-                    }
-                }
+                .send(.campaigns(.loadRequested)),
+                .send(.orders(.loadRequested)),
+                .send(.launch(.loadRequested))
             )
 
         case .view(.tabSelected(let tab)):
@@ -267,55 +272,45 @@ private extension RootFeature {
             guard tab != state.selectedTab else {
                 return .none
             }
+            // 「更多」路徑非空時切分頁會讓 iPad 的 `NavigationSplitView` 崩潰，先清空
             state.more.popToRoot()
             state.selectedTab = tab
-            return .none
-
-        case .view(.smartGroupSelected(let status)):
-            // 「更多」路徑非空時切分頁會讓 iPad 的 NavigationSplitView 崩潰，先清空
-            state.more.popToRoot()
-            navigation.showOrders(status: status, state: &state)
             return .none
 
         case .persistenceFailure:
             return .none
 
         case .appLock(.delegate(.didBecomeActive)):
-            state.campaigns.refreshDateContext(
-                CampaignDateContext(now: date.now, calendar: calendar)
-            )
+            refreshDateContexts(state: &state)
             return .none
 
         case .appLock:
             return .none
 
         case .campaigns(.delegate(.campaignDeleted(let name))):
-            // DB cascade 已完成，此處同步訂單副本；投影由 onChange 集中同步
-            RootCascadeOperations.campaignDeleted(name, in: &state.orders.orders)
-            return .none
+            return .send(.orders(.cascadeRequested(.campaignDeleted(name))))
 
         case .campaigns(.delegate(.campaignRenamed(let from, let to))):
-            RootCascadeOperations.campaignRenamed(from: from, to: to, in: &state.orders.orders)
-            return .none
+            return .send(.orders(.cascadeRequested(.campaignRenamed(from: from, to: to))))
 
         case .campaigns(.delegate(.receiptStatusToggled(let orderID, let status))):
-            return .send(.orders(.receiptStatusChanged(orderID, status)))
+            return .send(.orders(.receiptStatusChangeRequested(id: orderID, status: status)))
 
         case .campaigns:
             return .none
 
-        case .dashboard(.delegate(.refresh)):
-            // 只做轉發、不自帶守衛：去重仍由 OrdersFeature 既有的載入守衛負責
-            return .send(.orders(.task))
+        case .dashboard(.delegate(.refresh)), .insights(.delegate(.refresh)),
+                .more(.delegate(.ordersLoadRequested)):
+            return .send(.orders(.loadRequested))
 
         case .dashboard(.delegate(.campaignTapped(let name))):
             navigation.showCampaign(named: name, state: &state)
             return .none
 
         case .dashboard(.delegate(.newOrderTapped)):
-            // OrdersView 必須先進入畫面階層，才能掛上它持有的新訂單 sheet
+            // `OrdersView` 必須先進入畫面階層，才能掛上它持有的新訂單 sheet
             state.selectedTab = .orders
-            state.orders.editOrder = OrderEditFeature.State(id: uuid(), currentDate: date.now)
+            state.orders.presentNewOrder(id: uuid(), now: date.now, calendar: calendar)
             return .none
 
         case .dashboard(.delegate(.viewAllOrdersTapped)):
@@ -324,9 +319,6 @@ private extension RootFeature {
 
         case .dashboard:
             return .none
-
-        case .insights(.delegate(.refresh)):
-            return .send(.orders(.task))
 
         case .insights(.delegate(.campaignTapped(let name))):
             navigation.showCampaign(named: name, state: &state)
@@ -339,20 +331,23 @@ private extension RootFeature {
         case .insights:
             return .none
 
-        case .more(.delegate(.ordersLoadRequested)):
-            return .send(.orders(.task))
+        case .launch(.delegate(.significantTimeChanged)):
+            refreshDateContexts(state: &state)
+            return .none
+
+        case .launch:
+            return .none
 
         case .more(.delegate(.customerSelected(let name))):
             navigation.showOrders(customer: name, state: &state)
             return .none
 
         case .more(.delegate(.lookupItemRenamed(let kind, let rename))):
-            RootCascadeOperations.lookupItemRenamed(rename, kind: kind, in: &state.orders.orders)
-            return .none
+            return .send(.orders(.cascadeRequested(.lookupItemRenamed(kind: kind, rename: rename))))
 
         case .more(.delegate(.paymentMethodEdited(let plan))):
             // 轉送已正規化的訂單，不重算付款方式旗標，也不重複落盤
-            return .send(.orders(.paymentMethodFlagsApplied(plan.affectedOrders)))
+            return .send(.orders(.paymentMethodFlagsApplyRequested(plan.affectedOrders)))
 
         case .more(.delegate(.preferencesChanged(let snapshot))):
             state.preferences = snapshot
@@ -363,18 +358,20 @@ private extension RootFeature {
 
         case .orders(.delegate(.aiSettingsRequested)):
             state.selectedTab = .more
-            // 同一次狀態更新內先清空再推入，確保設定頁永遠只有一份且掛在根層
             state.more.showSettings()
             return .none
 
         case .orders:
             return .none
-
-        case .significantTimeChanged:
-            state.campaigns.refreshDateContext(
-                CampaignDateContext(now: date.now, calendar: calendar)
-            )
-            return .none
         }
+    }
+
+    /// 以注入的現在時間與行事曆重寫開團與訂單的日期脈絡
+    ///
+    /// - Parameter state: 目前的根層狀態，直接就地修改
+    func refreshDateContexts(state: inout State) {
+        let context = CampaignDateContext(now: date.now, calendar: calendar)
+        state.campaigns.refreshDateContext(context)
+        state.orders.refreshDateContext(now: context.now, calendar: context.calendar)
     }
 }

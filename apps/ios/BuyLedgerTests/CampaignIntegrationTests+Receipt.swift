@@ -6,19 +6,20 @@
 //
 
 import ComposableArchitecture
+import Foundation
 import Testing
 
 @testable import BuyLedger
 
 extension CampaignIntegrationTests {
 
-    /// 未收款訂單從詳情改為已收款，經 Service 寫入後同步全部投影且保留其他訂單
+    /// 未收款訂單從詳情改為已收款，同步全部投影並由 Service 寫入該訂單，其他訂單保持不變
     ///
     /// - Throws: 找不到詳情堆疊元素時由 `try #require` 丟出
     @Test
-    func campaigns_未收款改為已收款_同步全部投影且只寫目標訂單() async throws(any Error) {
+    func campaigns_未收款改為已收款_同步全部投影且只寫目標訂單() async throws {
         // Given
-        let context = try await makeReceiptToggleContext(wasReceived: false)
+        let context = try makeReceiptToggleContext(isReceivedBeforeToggle: false)
         let store = context.store
         let detailID = context.detailID
 
@@ -30,13 +31,13 @@ extension CampaignIntegrationTests {
         #expect(context.saved.value.map(\.paymentReceiptStatus) == [.received])
     }
 
-    /// 已收款訂單從詳情改回未收款，經 Service 寫入後同步全部投影且保留其他訂單
+    /// 已收款訂單從詳情改回未收款，同步全部投影並由 Service 寫入該訂單，其他訂單保持不變
     ///
     /// - Throws: 找不到詳情堆疊元素時由 `try #require` 丟出
     @Test
-    func campaigns_已收款改回未收款_同步全部投影且只寫目標訂單() async throws(any Error) {
+    func campaigns_已收款改回未收款_同步全部投影且只寫目標訂單() async throws {
         // Given
-        let context = try await makeReceiptToggleContext(wasReceived: true)
+        let context = try makeReceiptToggleContext(isReceivedBeforeToggle: true)
         let store = context.store
         let detailID = context.detailID
 
@@ -53,10 +54,10 @@ extension CampaignIntegrationTests {
 
 private extension CampaignIntegrationTests {
 
-    /// 收款測試準備好的根 store、詳情 id 與獨立預期值
+    /// 收款測試準備好的根功能 `TestStore`、詳情的 `detailID` 與獨立預期值
     struct ReceiptToggleContext {
 
-        /// 已推入詳情且覆寫訂單寫入的根 store
+        /// 已推入詳情且覆寫訂單寫入的根功能 `TestStore`
         let store: TestStoreOf<RootFeature>
 
         /// 目前詳情的堆疊識別值
@@ -80,14 +81,12 @@ private extension CampaignIntegrationTests {
 
 private extension CampaignIntegrationTests {
 
-    /// 準備列表推入詳情的根 store 與收款切換的獨立預期值
+    /// 準備已推入詳情的根功能 `TestStore` 與收款切換的獨立預期值
     ///
-    /// - Parameter wasReceived: 切換前是否已收款
-    /// - Returns: 尚未切換收款的 store、詳情 id、紀錄器與預期訂單
+    /// - Parameter isReceivedBeforeToggle: 切換前是否已收款
+    /// - Returns: 尚未切換收款的 `TestStore`、詳情的 `detailID`、紀錄器與預期訂單
     /// - Throws: 找不到詳情堆疊元素時由 `try #require` 丟出
-    func makeReceiptToggleContext(
-        wasReceived: Bool
-    ) async throws(any Error) -> ReceiptToggleContext {
+    func makeReceiptToggleContext(isReceivedBeforeToggle: Bool) throws -> ReceiptToggleContext {
         let campaign = Campaign.fixture(
             id: "C1",
             name: "四月團",
@@ -97,17 +96,83 @@ private extension CampaignIntegrationTests {
         let original = Self.rebuilt(
             Self.makeOrder(id: "O1", campaign: "四月團"),
             campaignNames: ["四月團"],
-            receiptStatus: wasReceived ? .received : .pending
+            receiptStatus: isReceivedBeforeToggle ? .received : .pending
         )
-        let other = Self.makeOrder(id: "O2", campaign: "其他團")
-        let expected = Self.rebuilt(
-            original,
+        let other = LedgerOrder(
+            id: "O2",
+            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
+            status: .confirmed,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_777_507_200),
+            items: [
+                LedgerOrderItem(
+                    id: UUID(0),
+                    name: "item",
+                    quantity: 1,
+                    unitPrice: 0
+                ),
+            ],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 100,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "",
+            categories: [],
+            paymentMethod: "",
+            notes: "",
+            reconciliationStatus: "",
+            campaignNames: ["其他團"],
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false,
+            photos: [],
+            mergedSourceIDs: []
+        )
+        let expected = LedgerOrder(
+            id: "O1",
+            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
+            status: .confirmed,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_777_507_200),
+            items: [
+                LedgerOrderItem(
+                    id: UUID(0),
+                    name: "item",
+                    quantity: 1,
+                    unitPrice: 0
+                ),
+            ],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 100,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "",
+            categories: [],
+            paymentMethod: "",
+            notes: "",
+            reconciliationStatus: "",
             campaignNames: ["四月團"],
-            receiptStatus: wasReceived ? .pending : .received
+            paymentReceiptStatus: isReceivedBeforeToggle ? .pending : .received,
+            isCashOnDelivery: false,
+            photos: [],
+            mergedSourceIDs: []
         )
         let expectedOrders = [expected, other]
         let saved = LockIsolated<[LedgerOrder]>([])
-        let initial = Self.makeRootState(campaigns: [campaign], orders: [original, other])
+        var initial = Self.makeRootState(campaigns: [campaign], orders: [original, other])
+        initial.campaigns.showDetail(campaignID: "C1")
+        let detailID = try #require(initial.campaigns.path.ids.first)
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
@@ -117,11 +182,6 @@ private extension CampaignIntegrationTests {
                 }
             }
         }
-        await store.send(.campaigns(.list(.view(.campaignTapped("C1")))))
-        await store.receive(\.campaigns.list.delegate.requested) {
-            $0.campaigns.path[id: 0] = CampaignFeatureTests.detailPath("C1", in: $0.campaigns)
-        }
-        let detailID = try #require(store.state.campaigns.path.ids.first)
 
         return ReceiptToggleContext(
             store: store,
@@ -133,13 +193,16 @@ private extension CampaignIntegrationTests {
         )
     }
 
-    /// 接收收款切換的完整委派與寫入序列，核對目標訂單、其他訂單及全部投影
+    /// 接收收款切換從詳情到寫入訂單的完整序列，核對目標訂單、其他訂單及全部投影
     ///
-    /// - Parameter context: 準備階段建立的 store 與獨立預期值
+    /// - Parameter context: 準備階段建立的 `TestStore` 與獨立預期值
     func assertReceiptToggleSynced(_ context: ReceiptToggleContext) async {
         let store = context.store
         let detailID = context.detailID
         await store.receive(\.campaigns.path[id: detailID].detail.delegate.requested) {
+            $0.orders.$orders.withLock {
+                $0 = context.expectedOrders
+            }
             $0.campaigns.$orders.withLock {
                 $0 = context.expectedOrders
             }
@@ -148,9 +211,9 @@ private extension CampaignIntegrationTests {
             }
         }
         await store.receive(\.campaigns.delegate.receiptStatusToggled)
-        await store.receive(\.orders.receiptStatusChanged)
-        await store.receive(\.orders.receiptStatusChangePersisted) {
-            $0.orders.orders = context.expectedOrders
+        await store.receive(\.orders.receiptStatusChangeRequested)
+        await store.receive(\.orders.writes.receiptToggleRequested)
+        await store.receive(\.orders.writes.receiptResponse) {
             $0.dashboard.orders = context.expectedOrders
             $0.insights.orders = context.expectedOrders
         }

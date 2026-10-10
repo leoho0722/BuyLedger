@@ -64,35 +64,50 @@ extension ProjectionWriteBoundaryTests {
     /// - Throws: 原始檔讀取或規則建立失敗時拋出錯誤
     static func findViolations() throws(any Error) -> [Violation] {
         var violations: [Violation] = []
-        let files = try swiftFiles(under: productionRoot).filter {
-            relativePath(of: $0, under: productionRoot) != rootFeatureRelativePath
-        }
-
+        let files = try swiftFiles(under: productionRoot)
         for file in files {
             let relative = relativePath(of: file, under: productionRoot)
             let source = try String(contentsOf: file, encoding: .utf8)
-            violations += try rootProjectionViolations(relativePath: relative, source: source)
+            violations += try projectionViolations(relativePath: relative, source: source)
         }
-
-        for owner in projectionOwners {
-            for file in files {
-                let relative = relativePath(of: file, under: productionRoot)
-                violations += try findBlockContextViolations(
-                    in: file,
-                    relativePath: relative,
-                    owner: owner
-                )
-                violations += try findInoutParameterViolations(
-                    in: file,
-                    relativePath: relative,
-                    owner: owner
-                )
-            }
-        }
-
         return violations.sorted { lhs, rhs in
             (lhs.file, lhs.line) < (rhs.file, rhs.line)
         }
+    }
+
+    /// 以正式掃描同一入口驗證根路徑、擁有者區塊與外部子 `State` 參數
+    ///
+    /// - Parameters:
+    ///   - relativePath: 相對於 App 原始碼根目錄的路徑
+    ///   - source: 待掃描的原始碼內容
+    /// - Returns: 投影寫入與外部可寫子狀態的違規位置
+    /// - Throws: 正規表示式建立失敗時拋出錯誤
+    static func projectionViolations(
+        relativePath: String,
+        source: String
+    ) throws(any Error) -> [Violation] {
+        guard relativePath != rootFeatureRelativePath else {
+            return []
+        }
+        var violations = try rootProjectionViolations(relativePath: relativePath, source: source)
+        for owner in projectionOwners {
+            violations += try findBlockContextViolations(
+                in: source,
+                relativePath: relativePath,
+                owner: owner
+            )
+            violations += try stateValueParameterViolations(
+                relativePath: relativePath,
+                source: source,
+                owner: owner
+            )
+            violations += try findInoutParameterViolations(
+                in: source,
+                relativePath: relativePath,
+                owner: owner
+            )
+        }
+        return violations
     }
 
     /// 依檔案路徑與原始碼判定共享訂單投影的兩條守門規則
@@ -100,7 +115,7 @@ extension ProjectionWriteBoundaryTests {
     /// - Parameters:
     ///   - relativePath: 相對於 App 原始碼根目錄的路徑
     ///   - source: 原始碼內容
-    /// - Returns: 非根功能寫入與開團或更多功能可寫參考外傳的違規位置
+    /// - Returns: 非擁有者寫入與開團或更多功能可寫參考外傳的違規位置
     /// - Throws: 正規表示式建立失敗時拋出錯誤
     static func sharedOrderViolations(
         relativePath: String,
@@ -115,7 +130,12 @@ extension ProjectionWriteBoundaryTests {
         let text = stripped as NSString
         var violations: [Violation] = []
 
-        if relativePath != rootFeatureRelativePath {
+        let writerPaths = [
+            rootFeatureRelativePath,
+            "Features/Orders/OrdersLoadFeature.swift",
+            "Features/Orders/OrderWritesFeature.swift",
+        ]
+        if !writerPaths.contains(relativePath) {
             let writes = try NSRegularExpression(pattern: #"\$orders\b\s*\.\s*withLock\b"#)
             for match in writes.matches(in: stripped, range: fullRange(of: stripped)) {
                 let prefix = text.substring(to: match.range.location)
@@ -199,21 +219,20 @@ extension ProjectionWriteBoundaryTests {
 
 private extension ProjectionWriteBoundaryTests {
 
-    /// 掃描單一檔案中的 owner 區塊
+    /// 掃描單一檔案中的 `owner` 區塊
     ///
     /// - Parameters:
-    ///   - file: 要掃描的檔案
+    ///   - source: 待掃描的原始碼內容
     ///   - relativePath: 檔案相對路徑
     ///   - owner: 投影擁有者
     /// - Returns: 區塊上下文違規清單
     /// - Throws: 原始檔讀取或規則建立失敗時拋出錯誤
     static func findBlockContextViolations(
-        in file: URL,
+        in source: String,
         relativePath: String,
         owner: ProjectionOwner
     ) throws(any Error) -> [Violation] {
-        let content = try String(contentsOf: file, encoding: .utf8)
-        let rawLines = content.components(separatedBy: "\n")
+        let rawLines = source.components(separatedBy: "\n")
         var stripMode = StripMode.normal
         var depth = 0
         var ownerBlockStartDepths: [Int] = []
@@ -247,7 +266,7 @@ private extension ProjectionWriteBoundaryTests {
         return violations
     }
 
-    /// 判斷是否為 owner 區塊標頭
+    /// 判斷是否為 `owner` 區塊標頭
     ///
     /// - Parameters:
     ///   - strippedLine: 已移除註解與字串內容的程式碼
@@ -268,13 +287,13 @@ private extension ProjectionWriteBoundaryTests {
     /// 掃描外部檔案取得投影擁有者狀態寫入權的參數
     ///
     /// - Parameters:
-    ///   - file: 要掃描的檔案
+    ///   - source: 待掃描的原始碼內容
     ///   - relativePath: 檔案相對路徑
     ///   - owner: 投影擁有者
-    /// - Returns: inout 參數違規清單
+    /// - Returns: `inout` 參數違規清單
     /// - Throws: 原始檔讀取或規則建立失敗時拋出錯誤
     static func findInoutParameterViolations(
-        in file: URL,
+        in source: String,
         relativePath: String,
         owner: ProjectionOwner
     ) throws(any Error) -> [Violation] {
@@ -282,8 +301,7 @@ private extension ProjectionWriteBoundaryTests {
             return []
         }
 
-        let content = try String(contentsOf: file, encoding: .utf8)
-        let rawLines = content.components(separatedBy: "\n")
+        let rawLines = source.components(separatedBy: "\n")
         var stripMode = StripMode.normal
         var violations: [Violation] = []
         let escapedOwner = NSRegularExpression.escapedPattern(for: owner.name)

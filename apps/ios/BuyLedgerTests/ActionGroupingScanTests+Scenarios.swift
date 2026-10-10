@@ -99,6 +99,18 @@ extension ActionGroupingScanTests {
                 rule: .reducerChildView,
                 shouldPass: false
             ),
+            ScanScenario(
+                name: "Root 送訂單載入請求",
+                source: ".send(.orders(.loadRequested))",
+                rule: .reducerChildView,
+                shouldPass: true
+            ),
+            ScanScenario(
+                name: "Root 送訂單畫面出現 action",
+                source: ".send(.orders(.view(.task)))",
+                rule: .reducerChildView,
+                shouldPass: false
+            ),
         ]
 
         /// 供測試失敗訊息辨識此案例的描述
@@ -112,5 +124,15 @@ extension ActionGroupingScanTests {
 
         /// 是否預期通過掃描
         let shouldPass: Bool
+
+        /// 掃描規則為 View 送出點的案例
+        static var viewStoreSendCases: [ScanScenario] {
+            allCases.filter { $0.rule == .viewStoreSend }
+        }
+
+        /// 掃描規則為 reducer 子層 view action 的案例
+        static var reducerChildViewCases: [ScanScenario] {
+            allCases.filter { $0.rule == .reducerChildView }
+        }
     }
 }

@@ -15,9 +15,9 @@ import SwiftUI
 extension CampaignFeatureTests {
 
     /// 使用者拒絕行事曆權限時可前往系統設定的提示
-    static var accessDeniedAlert: CampaignFeature.Destination.State {
+    static var accessDeniedAlert: CampaignPresentationFeature.Destination.State {
         .alert(
-            AlertState<CampaignFeature.Destination.Alert> {
+            AlertState<CampaignPresentationFeature.Destination.Alert> {
                 TextState("需要行事曆權限")
             } actions: {
                 ButtonState(action: .openSettings) {
@@ -81,7 +81,7 @@ extension CampaignFeatureTests {
                 campaigns: SharedReader(state.$campaigns),
                 orders: SharedReader(state.$orders),
                 reminderLinks: SharedReader(state.$reminderLinks),
-                showsUnpaidOnly: state.$showsUnpaidOnly
+                isShowingUnpaidOnly: state.$isShowingUnpaidOnly
             )
         )
     }
@@ -92,9 +92,12 @@ extension CampaignFeatureTests {
     ///   - id: 要結團的開團識別碼
     ///   - name: 要結團的開團名稱
     /// - Returns: 結團提示狀態
-    static func settleAlert(id: Campaign.ID, name: String) -> CampaignFeature.Destination.State {
+    static func settleAlert(
+        id: Campaign.ID,
+        name: String
+    ) -> CampaignPresentationFeature.Destination.State {
         .alert(
-            AlertState<CampaignFeature.Destination.Alert> {
+            AlertState<CampaignPresentationFeature.Destination.Alert> {
                 TextState("結團結算")
             } actions: {
                 ButtonState(action: .confirmSettle(id)) {
@@ -115,9 +118,12 @@ extension CampaignFeatureTests {
     ///   - id: 要刪除的開團識別碼
     ///   - name: 要刪除的開團名稱
     /// - Returns: 刪除提示狀態
-    static func deletionAlert(id: Campaign.ID, name: String) -> CampaignFeature.Destination.State {
+    static func deletionAlert(
+        id: Campaign.ID,
+        name: String
+    ) -> CampaignPresentationFeature.Destination.State {
         .alert(
-            AlertState<CampaignFeature.Destination.Alert> {
+            AlertState<CampaignPresentationFeature.Destination.Alert> {
                 TextState("刪除開團")
             } actions: {
                 ButtonState(role: .destructive, action: .confirmDelete(id)) {
@@ -138,7 +144,7 @@ extension CampaignFeatureTests {
     /// - Returns: 對應文案的通知狀態
     static func reminderFailureAlert(
         for failure: CampaignReminderFeature.Failure
-    ) -> CampaignFeature.Destination.State {
+    ) -> CampaignPresentationFeature.Destination.State {
         switch failure {
         case .accessDenied:
             return accessDeniedAlert
@@ -167,7 +173,9 @@ extension CampaignFeatureTests {
     ///
     /// - Parameter message: 要顯示的錯誤訊息
     /// - Returns: 錯誤提示狀態
-    static func failureAlert(_ message: LocalizedStringKey) -> CampaignFeature.Destination.State {
+    static func failureAlert(
+        _ message: LocalizedStringKey
+    ) -> CampaignPresentationFeature.Destination.State {
         titledAlert("操作失敗", message: message)
     }
 }
@@ -185,9 +193,9 @@ private extension CampaignFeatureTests {
     static func titledAlert(
         _ title: LocalizedStringKey,
         message: LocalizedStringKey
-    ) -> CampaignFeature.Destination.State {
+    ) -> CampaignPresentationFeature.Destination.State {
         .alert(
-            AlertState<CampaignFeature.Destination.Alert> {
+            AlertState<CampaignPresentationFeature.Destination.Alert> {
                 TextState(title)
             } actions: {
                 ButtonState(role: .cancel) {

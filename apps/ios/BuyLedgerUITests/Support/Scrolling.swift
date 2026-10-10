@@ -7,10 +7,9 @@
 
 import XCTest
 
-/// 把離屏元素捲進可點位置的捲動 helper
-
 // MARK: - Internal Method
 
+/// 把離屏元素捲進可點位置的捲動 helper
 extension XCUIApplication {
 
     /// 在捲動容器內垂直捲動直到目標可點
@@ -67,7 +66,7 @@ extension XCUIApplication {
         }
         var drags = 0
         while drags < maxDrags {
-            if element.isHittable {
+            if element.isHittableOnScreen {
                 return true
             }
             let start = container.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: startY))
@@ -75,7 +74,7 @@ extension XCUIApplication {
             start.press(forDuration: 0.1, thenDragTo: end)
             drags += 1
         }
-        return element.isHittable
+        return element.isHittableOnScreen
     }
 }
 
@@ -100,7 +99,7 @@ private extension XCUIApplication {
         guard container.waitForExistence(timeout: 5) else {
             return false
         }
-        if element.isHittable {
+        if element.isHittableOnScreen {
             return true
         }
         for _ in 0..<max(maxSwipes, 0) {
@@ -109,6 +108,6 @@ private extension XCUIApplication {
                 return true
             }
         }
-        return element.isHittable
+        return element.isHittableOnScreen
     }
 }

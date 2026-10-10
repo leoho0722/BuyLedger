@@ -161,6 +161,52 @@ struct CampaignSummaryTests {
         #expect(summary.deliveryRatio == 0)
         #expect(summary.distribution.isEmpty)
     }
+
+    /// 全部已收款的分貨列，朗讀的收款狀態為已收款
+    ///
+    /// - Throws: 英文資源目錄不存在時由 `#require` 丟出
+    @Test
+    func receiptAccessibilityLabel_全部已收款_朗讀已收款() throws {
+        // Given
+        let row = CampaignDistributionRow(
+            customerName: "小明",
+            totalQuantity: 1,
+            totalAmount: 400,
+            isFullyReceived: true,
+            orders: []
+        )
+
+        // When
+        let label = row.receiptAccessibilityLabel
+        let text = try Self.localizedText(label, language: .english)
+
+        // Then
+        #expect(label.key == "已收款")
+        #expect(text == "Received")
+    }
+
+    /// 仍有未收款訂單的分貨列，朗讀的收款狀態為待收款
+    ///
+    /// - Throws: 英文資源目錄不存在時由 `#require` 丟出
+    @Test
+    func receiptAccessibilityLabel_仍有未收款_朗讀待收款() throws {
+        // Given
+        let row = CampaignDistributionRow(
+            customerName: "小華",
+            totalQuantity: 2,
+            totalAmount: 900,
+            isFullyReceived: false,
+            orders: []
+        )
+
+        // When
+        let label = row.receiptAccessibilityLabel
+        let text = try Self.localizedText(label, language: .english)
+
+        // Then
+        #expect(label.key == "待收款")
+        #expect(text == "Pending")
+    }
 }
 
 // MARK: - Internal Method
@@ -203,6 +249,34 @@ extension CampaignSummaryTests {
             campaignNames: campaignNames ?? (campaign.isEmpty ? [] : [campaign]),
             paymentReceiptStatus: receipt,
             mergedSourceIDs: mergedSourceIDs
+        )
+    }
+}
+
+// MARK: - Private Method
+
+private extension CampaignSummaryTests {
+
+    /// 以指定語言的資源目錄解析本地化值，不受測試程序預設語言影響
+    ///
+    /// - Parameters:
+    ///   - resource: 分貨列提供的本地化值
+    ///   - language: 測試指定的 App 語言
+    /// - Returns: 以指定語言解析後的文字
+    /// - Throws: 指定語言的資源目錄不存在時由 `#require` 丟出
+    static func localizedText(
+        _ resource: LocalizedStringResource,
+        language: AppLanguage
+    ) throws -> String {
+        let bundleURL = try #require(
+            Bundle.main.url(forResource: language.localeIdentifier, withExtension: "lproj")
+        )
+        let bundle = try #require(Bundle(url: bundleURL))
+        return String(
+            localized: resource.defaultValue,
+            table: resource.table,
+            bundle: bundle,
+            locale: language.locale
         )
     }
 }

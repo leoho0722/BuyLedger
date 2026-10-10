@@ -29,7 +29,7 @@ paths:
     - `Picker(.segmented)` 的選項：identifier 掛在 `Picker`，以 `segmentedControls.buttons` 依宣告順序 `boundBy` 取。
 - **`Menu` 的 identifier 掛在 `Menu` 本身，不是 label 內的 `Label`**：選單項目掛在各 `Button`，測試以 `tapMenuItem` 先展開再點。
 - **push 目的地的返回鍵在 iPad 要 scope 到目的地那條導覽列**：`app.navigationBars.buttons.firstMatch` 可能點到側邊欄的鈕而關掉整個 sheet。
-- **sheet 疊在有搜尋欄的畫面上時，`app.searchFields.firstMatch` 會取到底層那一個**：iPad 的側邊欄版面讓底層 Orders 搜尋欄排在前面，iPhone 恰好順序相反所以不會中；改用 `app.searchFields.allElementsBoundByIndex.first(where: \.isHittable)` 取第一個可互動的，取不到就 `failWithDiagnostics`。同型陷阱也適用於其他在 sheet 內重複出現的系統元件。
+- **sheet 疊在有搜尋欄的畫面上時，`app.searchFields.firstMatch` 會取到底層那一個**：iPad 的側邊欄版面讓底層 Orders 搜尋欄排在前面，iPhone 恰好順序相反所以不會中；改用 `app.searchFields.allElementsBoundByIndex.first(where: \.isHittableOnScreen)` 取第一個可互動的，取不到就 `failWithDiagnostics`。同型陷阱也適用於其他在 sheet 內重複出現的系統元件。
     - 系統返回鍵帶語言無關的 identifier `BackButton` (`Common.backButton`)。
 
 ## 資料與相依
@@ -50,7 +50,9 @@ paths:
     - 若 XCUITest 回報完成鍵不可互動，改點擊該元素 frame 的中心並等待鍵盤消失；仍未消失就附診斷失敗。共用 helper 不得改按系統收鍵盤鍵、送 return、依平台分支或以 `XCTSkip` 掩蓋；只有專門測試外部限制時才可明確 skip。
 - **只差幾點露出底緣的欄位用 `Scrolling.scrollToHittableGently`，不用整頁 `swipeUp`**：整頁 swipe 帶慣性，會把目標衝出螢幕。
     - 此 helper 要求目標已在可及性樹上；離屏未渲染的惰性列走下一條。
-- **`LazyVStack`／`LazyVGrid` 離屏未渲染的列 frame 無效，查 `isHittable` 會直接報錯**：先 `swipeUp` 逐次捲動查 `exists`，捲入樹後再查可點。
+- **惰性容器與 Form 的離屏 cell 可能存在但 frame 無效，直接查 `isHittable` 會讓 XCTest 記錄失敗**：透過 `Support/Waiting.swift` 的 `isHittableOnScreen` 先排除不存在、座標非有限值或空 frame 的元素，再查可點性；等待用 `waitUntilHittable`，不能只以 `exists` 判斷已完成排版。
+    - 查詢對到多個元素時 (如 identifier 擴散到圖表內的文字) 讀 `frame` 也會記錄失敗，`isHittableOnScreen` 以 `firstMatch` 判斷；新增讀 `frame` 的 helper 比照處理。
+    - 目標不可點時由 `Scrolling` helper 捲動後再等，不用 `isHittable` 述詞輪詢，避免 XCTest 先記錄失敗而走不到捲動備援。
     - 水平 `ScrollView` 內的照片縮圖列相同。
 - **`scrollDismissesKeyboard(.interactively)` 無法以 XCUITest 合成手勢觸發，不寫 UI 測試守它 (產品端仍保留)**：`KeyboardDismissTests` 只覆蓋 return 鍵與數字鍵盤完成鍵兩條路徑。
 

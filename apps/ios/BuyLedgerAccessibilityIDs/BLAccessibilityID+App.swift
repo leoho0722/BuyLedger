@@ -57,48 +57,12 @@ extension BLAccessibilityID {
             case more
         }
 
-        /// 側邊欄智慧分組的 key
-        enum SmartGroup: String {
-
-            /// 報價中的訂單
-            case quoting
-
-            /// 已確認的訂單
-            case confirmed
-
-            /// 已購買的訂單
-            case purchased
-
-            /// 配送中的訂單
-            case shipping
-
-            /// 部分到貨的訂單
-            case partiallyArrived
-
-            /// 已到貨的訂單
-            case arrived
-
-            /// 已交付的訂單
-            case delivered
-
-            /// 已取貨的訂單
-            case pickedUp
-        }
-
         /// 分頁項目，目前只有 iPad 側邊欄的分頁列吃得到
         ///
         /// - Parameter tab: 主導覽分頁
         /// - Returns: 對應分頁的 accessibility identifier
         static func tab(_ tab: Tab) -> String {
             option("root.tab", key: tab.rawValue)
-        }
-
-        /// 側邊欄智慧分組列
-        ///
-        /// - Parameter group: 側邊欄智慧分組
-        /// - Returns: 對應智慧分組列的 accessibility identifier
-        static func smartGroup(_ group: SmartGroup) -> String {
-            option("root.sidebar.smartGroup", key: group.rawValue)
         }
     }
 }

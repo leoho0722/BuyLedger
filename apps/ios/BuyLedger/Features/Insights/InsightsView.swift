@@ -25,6 +25,15 @@ struct InsightsView: View {
     /// 用來計算趨勢期間與熱力圖的「現在」時間；測試可注入固定值
     @Dependency(\.date) private var date
 
+    /// 骨架中期間選擇器的高度，隨字級縮放
+    @ScaledMetric private var rangePlaceholderHeight: CGFloat = 32
+
+    /// 骨架中排行卡的高度，隨字級縮放
+    @ScaledMetric private var rankingPlaceholderHeight: CGFloat = 220
+
+    /// 骨架中走勢卡的高度，隨字級縮放
+    @ScaledMetric private var trendPlaceholderHeight: CGFloat = 280
+
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<InsightsFeature>
 
@@ -40,7 +49,7 @@ struct InsightsView: View {
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(palette.background)
                 .task {
-                    await store.send(.task).finish()
+                    await store.send(.view(.task)).finish()
                 }
                 .rootNavigationTitle("分析", language: language)
         }
@@ -53,7 +62,7 @@ private extension InsightsView {
 
     /// 期間選擇器，切換走勢卡統計的期間
     var rangePicker: some View {
-        // segmented picker 無法掛 identifier，測試端依序點選其按鈕
+        // segmented picker 的選項無法個別掛 identifier，identifier 掛在 `Picker` 本體，測試端依宣告順序點選選項
         Picker("期間", selection: $store.insightsDateRange) {
             ForEach(InsightsDateRange.allCases) {
                 Text(LocalizedStringKey($0.title))
@@ -121,16 +130,16 @@ private extension InsightsView {
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous)
-                    .fill(palette.fillQuaternary)
-                    .frame(height: 32)
+                    .frame(height: rangePlaceholderHeight)
+                    .foregroundStyle(palette.fillQuaternary)
 
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
-                    .fill(palette.fillTertiary)
-                    .frame(height: 280)
+                    .frame(height: trendPlaceholderHeight)
+                    .foregroundStyle(palette.fillTertiary)
 
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
-                    .fill(palette.fillQuaternary)
-                    .frame(height: 220)
+                    .frame(height: rankingPlaceholderHeight)
+                    .foregroundStyle(palette.fillQuaternary)
             }
             .padding(.horizontal, BLSpacing.large)
             .padding(.vertical, BLSpacing.large)
@@ -160,7 +169,7 @@ private extension InsightsView {
                     message: message,
                     retryIdentifier: BLAccessibilityID.Common.loadFailureRetryButton("insights")
                 ) {
-                    store.send(.retryTapped)
+                    store.send(.view(.retryTapped))
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Common.loadFailure("insights"))
 
@@ -214,7 +223,7 @@ private extension InsightsView {
     /// - Returns: 類別排行卡
     func categoryCard(stats: InsightsStats) -> some View {
         InsightsCategoryCard(categories: stats.categories) {
-            store.send(.delegate(.categoryTapped($0)))
+            store.send(.view(.categoryTapped($0)))
         }
     }
 
@@ -239,7 +248,7 @@ private extension InsightsView {
         if !ranks.isEmpty {
             InsightsCampaignProfitCard(
                 onCampaignTapped: {
-                    store.send(.delegate(.campaignTapped($0)))
+                    store.send(.view(.campaignTapped($0)))
                 },
                 ranks: ranks
             )
@@ -256,7 +265,7 @@ private extension InsightsView {
         BLPalette()
     }
 
-    /// 是否使用寬版面 (並列兩張卡，版面分類為 regular)
+    /// 是否使用寬版面 (並列兩張卡，版面分類為 `regular`)
     var shouldUseWideLayout: Bool {
         layoutClass == .regular
     }

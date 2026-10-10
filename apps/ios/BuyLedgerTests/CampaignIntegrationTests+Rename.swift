@@ -13,30 +13,178 @@ import Testing
 
 extension CampaignIntegrationTests {
 
-    /// 列表開啟編輯並儲存新名稱，先完成持久化改名，再由 Root 委派同步目標訂單與全部投影
+    /// 列表開啟編輯並儲存新名稱，先存好新名稱，再改寫目標訂單的歸屬，並由根功能同步全部投影
     @Test
     func campaigns_列表編輯開團改名_同步目標訂單並保留其他歸屬() async {
         // Given
-        let campaign = Campaign.fixture(
+        let campaign = Campaign(
             id: "C1",
             name: "舊團",
-            openDate: TestDependencies.fixedNow,
-            status: .ongoing
+            openDate: Date(timeIntervalSince1970: 1_777_507_200),
+            closeDate: nil,
+            status: .ongoing,
+            settledDate: nil,
+            notes: ""
         )
         let order1 = Self.makeOrder(id: "O1", campaign: "舊團")
         let order2 = Self.makeOrder(id: "O2", campaign: "舊團")
-        let other = Self.makeOrder(id: "O3", campaign: "其他團")
-        let unassigned = Self.makeOrder(id: "O4", campaign: "")
+        let other = LedgerOrder(
+            id: "O3",
+            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
+            status: .confirmed,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_777_507_200),
+            items: [
+                LedgerOrderItem(
+                    id: UUID(0),
+                    name: "item",
+                    quantity: 1,
+                    unitPrice: 0
+                ),
+            ],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 100,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "",
+            categories: [],
+            paymentMethod: "",
+            notes: "",
+            reconciliationStatus: "",
+            campaignNames: ["其他團"],
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false,
+            photos: [],
+            mergedSourceIDs: []
+        )
+        let unassigned = LedgerOrder(
+            id: "O4",
+            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
+            status: .confirmed,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_777_507_200),
+            items: [
+                LedgerOrderItem(
+                    id: UUID(0),
+                    name: "item",
+                    quantity: 1,
+                    unitPrice: 0
+                ),
+            ],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 100,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "",
+            categories: [],
+            paymentMethod: "",
+            notes: "",
+            reconciliationStatus: "",
+            campaignNames: [],
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false,
+            photos: [],
+            mergedSourceIDs: []
+        )
         let initialOrders = [order1, order2, other, unassigned]
+        let expectedOrder1 = LedgerOrder(
+            id: "O1",
+            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
+            status: .confirmed,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_777_507_200),
+            items: [
+                LedgerOrderItem(
+                    id: UUID(0),
+                    name: "item",
+                    quantity: 1,
+                    unitPrice: 0
+                ),
+            ],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 100,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "",
+            categories: [],
+            paymentMethod: "",
+            notes: "",
+            reconciliationStatus: "",
+            campaignNames: ["新團"],
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false,
+            photos: [],
+            mergedSourceIDs: []
+        )
+        let expectedOrder2 = LedgerOrder(
+            id: "O2",
+            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
+            status: .confirmed,
+            currency: .twd,
+            date: Date(timeIntervalSince1970: 1_777_507_200),
+            items: [
+                LedgerOrderItem(
+                    id: UUID(0),
+                    name: "item",
+                    quantity: 1,
+                    unitPrice: 0
+                ),
+            ],
+            itemCost: 0,
+            domesticShipping: 0,
+            internationalShipping: 0,
+            foreignDomesticShipping: 0,
+            cardFeeRate: 0,
+            platformFeeRate: 0,
+            paymentFeeRate: 0,
+            chargedAmount: 100,
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
+            orderSource: "",
+            categories: [],
+            paymentMethod: "",
+            notes: "",
+            reconciliationStatus: "",
+            campaignNames: ["新團"],
+            paymentReceiptStatus: .pending,
+            isCashOnDelivery: false,
+            photos: [],
+            mergedSourceIDs: []
+        )
         let expectedOrders = [
-            Self.rebuilt(order1, campaignNames: ["新團"]),
-            Self.rebuilt(order2, campaignNames: ["新團"]),
+            expectedOrder1,
+            expectedOrder2,
             other,
             unassigned,
         ]
-        var expectedCampaign = campaign
-        expectedCampaign.name = "新團"
-        expectedCampaign.closeDate = TestDependencies.fixedNow
+        let expectedCampaign = Campaign(
+            id: "C1",
+            name: "新團",
+            openDate: Date(timeIntervalSince1970: 1_777_507_200),
+            closeDate: Date(timeIntervalSince1970: 1_777_507_200),
+            status: .ongoing,
+            settledDate: nil,
+            notes: ""
+        )
+        let cascade = OrdersCascadeOperations.Request.campaignRenamed(from: "舊團", to: "新團")
         let calls = LockIsolated<[String]>([])
         let saved = LockIsolated<[Campaign]>([])
         let initial = Self.makeRootState(campaigns: [campaign], orders: initialOrders)
@@ -62,31 +210,35 @@ extension CampaignIntegrationTests {
         }
         await store.send(.campaigns(.list(.view(.editCampaignTapped("C1")))))
         await store.receive(\.campaigns.list.delegate.requested) {
-            $0.campaigns.destination = .edit(
+            $0.campaigns.presentation.destination = .edit(
                 CampaignEditFeature.State(
                     original: campaign,
                     link: nil,
                     id: UUID(0),
-                    now: TestDependencies.fixedNow,
+                    now: Date(timeIntervalSince1970: 1_777_507_200),
                     calendar: TestDependencies.fixedCalendar
                 )
             )
         }
         await store.send(
-            .campaigns(.destination(.presented(.edit(.binding(.set(\.draft.name, "新團"))))))
+            .campaigns(
+                .presentation(.destination(.presented(.edit(.binding(.set(\.draftName, "新團"))))))
+            )
         ) {
-            $0.campaigns.destination?.modify(\.edit) {
+            $0.campaigns.presentation.destination?.modify(\.edit) {
                 $0.draft.name = "新團"
             }
         }
 
         // When
-        await store.send(.campaigns(.destination(.presented(.edit(.view(.saveButtonTapped))))))
+        await store.send(
+            .campaigns(.presentation(.destination(.presented(.edit(.view(.saveButtonTapped))))))
+        )
 
         // Then
-        await store.receive(\.campaigns.destination.presented.edit.delegate.saveRequested) {
-            $0.campaigns.destination = nil
-            $0.campaigns.presentationQueue.isFormClosing = true
+        await store.receive(
+            \.campaigns.presentation.destination.presented.edit.delegate.saveRequested
+        ) {
             $0.campaigns.$campaigns.withLock {
                 $0 = [expectedCampaign]
             }
@@ -96,6 +248,13 @@ extension CampaignIntegrationTests {
             $0.more.$orders.withLock {
                 $0 = expectedOrders
             }
+            $0.orders.$orders.withLock {
+                $0 = expectedOrders
+            }
+        }
+        await store.receive(\.campaigns.presentation.delegate.saveRequested) {
+            $0.campaigns.presentation.destination = nil
+            $0.campaigns.presentation.queue.isFormClosing = true
         }
         await store.receive(\.campaigns.writes.saveRequested)
         await store.receive(\.campaigns.writes.saveResponse.success) {
@@ -106,8 +265,9 @@ extension CampaignIntegrationTests {
         await store.receive(\.campaigns.writes.renameResponse)
         await store.receive(\.campaigns.writes.delegate.renamed)
         await store.receive(\.campaigns.writes.delegate.saved)
-        await store.receive(\.campaigns.delegate.campaignRenamed) {
-            $0.orders.orders = expectedOrders
+        await store.receive(\.campaigns.delegate.campaignRenamed)
+        await store.receive(\.orders.cascadeRequested, cascade)
+        await store.receive(\.orders.writes.cascadeRequested, cascade) {
             $0.dashboard.orders = expectedOrders
             $0.insights.orders = expectedOrders
         }

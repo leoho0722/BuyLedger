@@ -115,7 +115,7 @@ extension String {
         ///
         /// - Parameter utf16Offset: 要檢查的 UTF-16 offset
         /// - Returns: offset 是否位於此行範圍
-        func contains(_ utf16Offset: Int) -> Bool {
+        private func contains(_ utf16Offset: Int) -> Bool {
             NSLocationInRange(utf16Offset, range)
         }
     }
@@ -251,23 +251,23 @@ extension String {
     ) throws(any Error) -> Set<Int> {
         var starts = Set<Int>()
         var braceDepth = 0
-        // 每個 scope 記錄結束門檻，依 braceDepth 判斷是否結束
+        // 每個 scope 記錄結束門檻，依 `braceDepth` 判斷是否結束
         var activeScopeMinimumDepths: [Int] = []
         let literalsByLine = Dictionary(grouping: literalMatches) {
             SourceLineRange.lineNumber(containingUTF16Offset: $0.start, in: lineRanges)
         }
 
         for (lineNumber, line) in lines.enumerated() {
-            let startsDisplayScope = try line.isDisplayScopeDeclaration
+            let isDisplayScopeLine = try line.isDisplayScopeDeclaration
             let opens = line.filter { $0 == "{" }.count
             let closes = line.filter { $0 == "}" }.count
             let depthAfterLine = braceDepth + opens - closes
 
-            if startsDisplayScope && opens > closes {
+            if isDisplayScopeLine && opens > closes {
                 activeScopeMinimumDepths.append(max(depthAfterLine, 1))
             }
 
-            if (startsDisplayScope || !activeScopeMinimumDepths.isEmpty),
+            if (isDisplayScopeLine || !activeScopeMinimumDepths.isEmpty),
                !Self.isCommentOnly(lineNumber: lineNumber, in: lines) {
                 for literal in literalsByLine[lineNumber] ?? [] {
                     starts.insert(literal.start)
@@ -317,6 +317,9 @@ private extension String {
                 "renameSheetTitle",
                 "navigationTitleKey",
                 "daySectionTitle",
+                "yearMonthSectionTitle",
+                "yearSectionTitle",
+                "monthSectionTitle",
                 "sparklineSummary",
                 "summaryFailureMessage",
                 "reminderTitle",

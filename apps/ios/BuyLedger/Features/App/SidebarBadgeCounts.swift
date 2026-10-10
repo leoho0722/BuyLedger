@@ -5,7 +5,9 @@
 //  Created by Leo Ho on 2026/7/12.
 //
 
-/// iPad 側邊欄「訂單」分頁與智慧分組的徽章計數
+import Foundation
+
+/// iPad 側邊欄「訂單」分頁的徽章計數與朗讀文字
 enum SidebarBadgeCounts {
 
     // MARK: - Properties
@@ -32,13 +34,16 @@ extension SidebarBadgeCounts {
         orders.count { activeStatuses.contains($0.status) }
     }
 
-    /// 計算指定狀態的訂單數量，顯示在側邊欄「智慧分組」各列
+    /// 提供分頁列合併朗讀後的徽章筆數文字
     ///
     /// - Parameters:
-    ///   - status: 要計算的狀態
-    ///   - orders: 目前的訂單清單
-    /// - Returns: 該狀態的訂單數量
-    static func orderCount(for status: OrderStatus, orders: [LedgerOrder]) -> Int {
-        orders.count { $0.status == status }
+    ///   - badgeCount: 徽章數量；缺值或非正數時不朗讀
+    ///   - language: 畫面使用的語言
+    /// - Returns: 本地化筆數描述，沒有徽章時為空字串
+    static func accessibilityValue(_ badgeCount: Int?, language: AppLanguage) -> String {
+        guard let badgeCount, badgeCount > 0 else {
+            return ""
+        }
+        return language.localized("\(badgeCount) 件進行中")
     }
 }

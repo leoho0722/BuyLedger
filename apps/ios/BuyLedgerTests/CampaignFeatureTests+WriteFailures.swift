@@ -15,7 +15,7 @@ extension CampaignFeatureTests {
 
     /// 新增開團儲存失敗時表單照樣關閉、清單不新增，儲存失敗提示先暫存等表單關好
     @Test
-    func destination_儲存開團失敗_不加入清單() async {
+    func presentation_儲存開團失敗_不加入清單() async {
         // Given
         let newID = UUID(1)
         var editState = CampaignEditFeature.State(
@@ -25,7 +25,7 @@ extension CampaignFeatureTests {
         )
         editState.draft.name = "新團"
         var initial = CampaignFeature.State()
-        initial.destination = .edit(editState)
+        initial.presentation.destination = .edit(editState)
 
         let expectedCampaign = Campaign(
             id: newID.uuidString,
@@ -52,17 +52,19 @@ extension CampaignFeatureTests {
         }
 
         // When
-        await store.send(.destination(.presented(.edit(.view(.saveButtonTapped)))))
+        await store.send(.presentation(.destination(.presented(.edit(.view(.saveButtonTapped))))))
 
         // Then
-        await store.receive(\.destination.presented.edit.delegate.saveRequested) {
-            $0.destination = nil
-            $0.presentationQueue.isFormClosing = true
+        await store.receive(\.presentation.destination.presented.edit.delegate.saveRequested)
+        await store.receive(\.presentation.delegate.saveRequested) {
+            $0.presentation.destination = nil
+            $0.presentation.queue.isFormClosing = true
         }
         await store.receive(\.writes.saveRequested)
         await store.receive(\.writes.saveResponse.failure)
-        await store.receive(\.writes.delegate.failed) {
-            $0.presentationQueue.pendingNotice = Self.failureAlert("開團儲存失敗，請稍後再試。")
+        await store.receive(\.writes.delegate.failed)
+        await store.receive(\.presentation.noticeRequested, .writeFailure(.save)) {
+            $0.presentation.queue.pendingNotice = Self.failureAlert("開團儲存失敗，請稍後再試。")
         }
         #expect(store.state.campaigns.isEmpty, "寫入失敗不應插入開團")
         #expect(savedCampaigns.value == [expectedCampaign])
@@ -104,8 +106,9 @@ extension CampaignFeatureTests {
         // Then
         await store.receive(\.writes.statusChangeRequested)
         await store.receive(\.writes.statusResponse.failure)
-        await store.receive(\.writes.delegate.failed) {
-            $0.destination = Self.failureAlert("開團狀態更新失敗，請稍後再試。")
+        await store.receive(\.writes.delegate.failed)
+        await store.receive(\.presentation.noticeRequested, .writeFailure(.status)) {
+            $0.presentation.destination = Self.failureAlert("開團狀態更新失敗，請稍後再試。")
         }
         #expect(store.state.campaigns == [campaign], "寫入失敗應維持先前開團資料")
         #expect(savedCampaigns.value == [expectedCampaign])
@@ -113,7 +116,7 @@ extension CampaignFeatureTests {
 
     /// 確認結團後寫入失敗，開團不記錄結算日期，並跳出結團失敗提示
     @Test
-    func destination_確認結團且寫入失敗_維持未結算狀態() async {
+    func presentation_確認結團且寫入失敗_維持未結算狀態() async {
         // Given
         let campaign = Campaign.fixture(
             id: "C1",
@@ -125,7 +128,7 @@ extension CampaignFeatureTests {
         initial.$campaigns.withLock {
             $0 = [campaign]
         }
-        initial.destination = Self.settleAlert(id: "C1", name: "團")
+        initial.presentation.destination = Self.settleAlert(id: "C1", name: "團")
 
         var expectedCampaign = campaign
         expectedCampaign.settledDate = TestDependencies.fixedNow
@@ -144,15 +147,17 @@ extension CampaignFeatureTests {
         }
 
         // When
-        await store.send(.destination(.presented(.alert(.confirmSettle("C1"))))) {
-            $0.destination = nil
+        await store.send(.presentation(.destination(.presented(.alert(.confirmSettle("C1")))))) {
+            $0.presentation.destination = nil
         }
 
         // Then
+        await store.receive(\.presentation.delegate.settleConfirmed, "C1")
         await store.receive(\.writes.settleRequested)
         await store.receive(\.writes.settleResponse.failure)
-        await store.receive(\.writes.delegate.failed) {
-            $0.destination = Self.failureAlert("結團失敗，請稍後再試。")
+        await store.receive(\.writes.delegate.failed)
+        await store.receive(\.presentation.noticeRequested, .writeFailure(.settle)) {
+            $0.presentation.destination = Self.failureAlert("結團失敗，請稍後再試。")
         }
         #expect(store.state.campaigns == [campaign], "寫入失敗不應套用結算資料")
         #expect(savedCampaigns.value == [expectedCampaign])
@@ -160,7 +165,7 @@ extension CampaignFeatureTests {
 
     /// 確認刪除後寫入失敗，開團仍留在清單，並跳出刪除失敗提示
     @Test
-    func destination_刪除寫入失敗_保留清單項目() async {
+    func presentation_刪除寫入失敗_保留清單項目() async {
         // Given
         let campaign = Campaign.fixture(
             id: "C1",
@@ -172,7 +177,7 @@ extension CampaignFeatureTests {
         initial.$campaigns.withLock {
             $0 = [campaign]
         }
-        initial.destination = Self.deletionAlert(id: "C1", name: "團")
+        initial.presentation.destination = Self.deletionAlert(id: "C1", name: "團")
 
         let removedCampaignIDs = LockIsolated<[String]>([])
         let removedCampaignNames = LockIsolated<[String]>([])
@@ -192,15 +197,17 @@ extension CampaignFeatureTests {
         }
 
         // When
-        await store.send(.destination(.presented(.alert(.confirmDelete("C1"))))) {
-            $0.destination = nil
+        await store.send(.presentation(.destination(.presented(.alert(.confirmDelete("C1")))))) {
+            $0.presentation.destination = nil
         }
 
         // Then
+        await store.receive(\.presentation.delegate.deleteConfirmed, "C1")
         await store.receive(\.writes.deleteRequested)
         await store.receive(\.writes.deleteResponse.failure)
-        await store.receive(\.writes.delegate.failed) {
-            $0.destination = Self.failureAlert("開團刪除失敗，請稍後再試。")
+        await store.receive(\.writes.delegate.failed)
+        await store.receive(\.presentation.noticeRequested, .writeFailure(.delete)) {
+            $0.presentation.destination = Self.failureAlert("開團刪除失敗，請稍後再試。")
         }
         #expect(store.state.campaigns == [campaign])
         #expect(removedCampaignIDs.value == ["C1"])

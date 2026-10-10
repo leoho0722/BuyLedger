@@ -43,7 +43,7 @@ extension SnapshotTests {
         TestDependencies.withFixedNow {
             // Given
             let state = Self.makeDetailState()
-            state.$showsUnpaidOnly.withLock {
+            state.$isShowingUnpaidOnly.withLock {
                 $0 = true
             }
 
@@ -146,7 +146,7 @@ private extension SnapshotTests {
                     reminderTimestamp: makeDetailReminderTimestamp()
                 ),
             ]),
-            showsUnpaidOnly: Shared(value: false)
+            isShowingUnpaidOnly: Shared(value: false)
         )
     }
 

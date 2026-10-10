@@ -11,11 +11,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// `RootFeature` 的單元測試：分頁導覽、深連結與跨功能同步
+/// `RootFeature` 的單元測試：分頁切換、跨頁跳轉與跨功能資料同步
 @MainActor
 struct RootFeatureTests {
 
-    /// 持久層開啟失敗時，根畫面一建立就呈現阻擋畫面
+    /// 資料庫無法開啟時，根畫面一建立就顯示阻擋畫面
     @Test
     func init_持久化狀態降級_呈現阻擋畫面() {
         // Given
@@ -27,7 +27,7 @@ struct RootFeatureTests {
         #expect(state.persistenceFailure?.phase == .blocked)
     }
 
-    /// 持久層正常時，根畫面不呈現阻擋畫面
+    /// 資料庫正常開啟時，根畫面不顯示阻擋畫面
     @Test
     func init_持久化狀態正常_不呈現阻擋畫面() {
         // Given
@@ -39,13 +39,13 @@ struct RootFeatureTests {
         #expect(state.persistenceFailure == nil)
     }
 
-    /// 根 `State` 建立時，鎖定狀態與已保存的生物辨識設定一致
+    /// 建立根狀態時，App 鎖定狀態要與已保存的生物辨識解鎖設定一致
     ///
     /// - Parameters:
     ///   - isBiometricUnlockEnabled: 是否啟用生物辨識解鎖
-    ///   - expectedIsLocked: 預期的初始鎖定狀態
+    ///   - isExpectedLocked: 預期的初始鎖定狀態
     @Test(arguments: [(true, true), (false, false)])
-    func init_生物辨識解鎖設定_鎖定狀態與設定一致(isBiometricUnlockEnabled: Bool, expectedIsLocked: Bool) {
+    func init_生物辨識解鎖設定_鎖定狀態與設定一致(isBiometricUnlockEnabled: Bool, isExpectedLocked: Bool) {
         // Given
         var snapshot = SettingsSnapshot.default
         snapshot.isBiometricUnlockEnabled = isBiometricUnlockEnabled
@@ -54,11 +54,11 @@ struct RootFeatureTests {
         let state = RootFeature.State(preferences: snapshot)
 
         // Then
-        #expect(state.appLock.isLocked == expectedIsLocked)
+        #expect(state.appLock.isLocked == isExpectedLocked)
         #expect(state.appLock.isBiometricUnlockEnabled == isBiometricUnlockEnabled)
     }
 
-    /// 根偏好與更多頁投影一建立就帶齊已保存值與版本
+    /// 根畫面與更多頁一建立就帶入已保存的設定與 App 版本
     @Test
     func init_注入已保存設定_殼層與更多頁持有偏好與版本() {
         // Given
@@ -78,7 +78,7 @@ struct RootFeatureTests {
         #expect(state.more.appVersion == "1.7.0 (312)")
     }
 
-    /// 首頁第一幀就使用已儲存的 50,000 目標，不必等設定頁改值
+    /// 總覽頁一開始就使用已保存的月目標 (50,000 元)，不必等設定頁改值
     @Test
     func init_已保存月目標_總覽首幀使用該目標() {
         // Given
@@ -90,7 +90,7 @@ struct RootFeatureTests {
 
         // Then
         #expect(state.preferences.monthlyProfitGoalTWD == 50_000)
-        #expect(state.dashboard.monthlyProfitGoalTwd == 50_000)
+        #expect(state.dashboard.monthlyProfitGoalTWD == 50_000)
     }
 
     /// App 重新啟動時，根畫面一律從總覽分頁開始
@@ -110,14 +110,27 @@ struct RootFeatureTests {
     func task_啟動根功能_以七天期限刷新幣別快取() async {
         // Given
         let refreshTTLs = LockIsolated<[TimeInterval]>([])
-        let store = TestStore(initialState: RootFeature.State()) {
+        let initial = Self.makeIsolatedRootState()
+        initial.campaigns.load.$hasLoaded.withLock {
+            $0 = true
+        }
+        initial.orders.load.$hasLoaded.withLock {
+            $0 = true
+        }
+        let currencyRelease = AsyncStream<Void>.makeStream()
+        let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
             $0.currencyMetadataService.refreshIfStale = { ttl in
+                var iterator = currencyRelease.stream.makeAsyncIterator()
+                _ = await iterator.next()
                 refreshTTLs.withValue {
                     $0.append(ttl)
                 }
                 return false
+            }
+            $0.currencyMetadataService.fetchCodes = {
+                []
             }
             $0.significantTimeChangeService.changes = {
                 AsyncStream {
@@ -130,6 +143,9 @@ struct RootFeatureTests {
         await store.send(.view(.task))
 
         // Then
+        await Self.receiveLaunchLoadRequests(in: store)
+        currencyRelease.continuation.finish()
+        await store.receive(\.launch.currencyCodesResponse.success, [])
         await store.finish()
         #expect(refreshTTLs.value == [604_800])
     }

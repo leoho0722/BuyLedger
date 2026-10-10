@@ -13,7 +13,16 @@ struct RootSidebarLayout: View {
 
     // MARK: - Properties
 
-    /// App 根層級 store
+    /// 徽章朗讀使用的顯示語系
+    @Environment(\.locale) private var locale
+
+    /// logo 磚的圓角，隨動態字級等比放大
+    @ScaledMetric private var logoTileCornerRadius: CGFloat = 7
+
+    /// logo 磚的邊長，隨動態字級等比放大
+    @ScaledMetric private var logoTileSize: CGFloat = 28
+
+    /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<RootFeature>
 
     /// App 目前選用的顯示語系
@@ -50,8 +59,6 @@ private extension RootSidebarLayout {
         List(selection: selectionBinding) {
             Section {
                 logoRow(palette: palette)
-                    .listRowSeparator(.hidden)
-                    .listRowBackground(Color.clear)
                     .listRowInsets(
                         EdgeInsets(
                             top: 6,
@@ -60,6 +67,8 @@ private extension RootSidebarLayout {
                             trailing: 12
                         )
                     )
+                    .listRowSeparator(.hidden)
+                    .listRowBackground(Color.clear)
             }
 
             Section("工作區") {
@@ -79,23 +88,10 @@ private extension RootSidebarLayout {
             Section("工具") {
                 navRow(.more, isSelected: selection == .tab(.more))
             }
-
-            Section("智慧分組") {
-                ForEach(SidebarSmartGroup.orderBrowsingCases) {
-                    // 分頁與智慧分組共用同一個選取型別並統一標記，系統才只會高亮一列
-                    smartGroupRow(
-                        $0,
-                        palette: palette,
-                        isSelected: selection == .smartGroup($0.status)
-                    )
-                    .tag(SidebarSelection.smartGroup($0.status))
-                    .listRowSeparator(.hidden)
-                }
-            }
         }
+        .navigationSplitViewColumnWidth(min: 220, ideal: 240, max: 280)
         .listStyle(.sidebar)
         .accessibilityIdentifier(BLAccessibilityID.Root.sidebar)
-        .navigationSplitViewColumnWidth(min: 220, ideal: 240, max: 280)
     }
 
     /// BL gradient logo 與 App 名稱列
@@ -106,15 +102,15 @@ private extension RootSidebarLayout {
     func logoRow(palette: BLPalette) -> some View {
         HStack(spacing: BLSpacing.small) {
             ZStack {
-                RoundedRectangle(cornerRadius: 7, style: .continuous)
-                    .fill(
+                RoundedRectangle(cornerRadius: logoTileCornerRadius, style: .continuous)
+                    .frame(width: logoTileSize, height: logoTileSize)
+                    .foregroundStyle(
                         LinearGradient(
                             colors: [palette.accent, palette.purple],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 28, height: 28)
 
                 Text("BL")
                     .font(BLTypographyStyle.caption.font.weight(.bold))
@@ -155,48 +151,14 @@ private extension RootSidebarLayout {
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier(BLAccessibilityID.Root.tab(tab.accessibilityKey))
         .accessibilityLabel(Text(LocalizedStringKey(tab.title)))
-        .accessibilityValue(badgeAccessibilityValue(badgeCount))
-        // 選取態由清單 cell 承載，合併後的這個元素讀不到，故顯式標上
-        .accessibilityAddTraits(isSelected ? .isSelected : [])
-    }
-
-    /// 智慧分組單列：色點 + 狀態名稱 + 計數
-    ///
-    /// - Parameters:
-    ///   - group: 智慧分組項目
-    ///   - palette: 目前外觀使用的色盤
-    ///   - isSelected: 該列是否為目前選取項
-    /// - Returns: 智慧分組列 view
-    @ViewBuilder
-    func smartGroupRow(
-        _ group: SidebarSmartGroup,
-        palette: BLPalette,
-        isSelected: Bool
-    ) -> some View {
-        let count = SidebarBadgeCounts.orderCount(for: group.status, orders: store.orders.orders)
-
-        HStack(spacing: BLSpacing.small) {
-            Circle()
-                .fill(group.color(in: palette))
-                .frame(width: 9, height: 9)
-                .accessibilityHidden(true)
-
-            Text(LocalizedStringKey(group.status.title))
-                .blTextStyle(.subhead)
-                .foregroundStyle(palette.label)
-
-            Spacer(minLength: 0)
-
-            Text("\(count)")
-                .font(BLTypographyStyle.footnote.font.weight(.medium))
-                .monospacedDigit()
-                .foregroundStyle(palette.secondaryLabel)
-        }
-        // 整列合併為單一朗讀單位，筆數改由這一層的 accessibility value 承載
-        .accessibilityElement(children: .combine)
-        .accessibilityIdentifier(BLAccessibilityID.Root.smartGroup(group.accessibilityKey))
-        .accessibilityLabel(Text(LocalizedStringKey(group.status.title)))
-        .accessibilityValue(Text(" \(count) 件"))
+        .accessibilityValue(
+            Text(
+                verbatim: SidebarBadgeCounts.accessibilityValue(
+                    badgeCount,
+                    language: AppLanguage(locale: locale)
+                )
+            )
+        )
         // 選取態由清單 cell 承載，合併後的這個元素讀不到，故顯式標上
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
@@ -204,7 +166,7 @@ private extension RootSidebarLayout {
     /// 目前選取分頁的內容
     ///
     /// - Parameter selectedTab: 目前選取的主要分頁
-    /// - Returns: 分頁對應的 SwiftUI view
+    /// - Returns: 分頁對應的 `SwiftUI` view
     @ViewBuilder
     func destination(selectedTab: RootTab) -> some View {
         switch selectedTab {
@@ -246,11 +208,6 @@ private extension RootSidebarLayout {
         ///
         /// - Parameter tab: 對應的主要分頁
         case tab(RootTab)
-
-        /// 智慧分組 (訂單頁的狀態篩選)
-        ///
-        /// - Parameter status: 對應的訂單狀態
-        case smartGroup(OrderStatus)
     }
 }
 
@@ -260,15 +217,10 @@ private extension RootSidebarLayout {
 
     /// 目前選取的側邊欄項目
     var currentSelection: SidebarSelection {
-        if case .status(let status) = store.orders.selectedStatus,
-           store.selectedTab == .orders,
-           SidebarSmartGroup.orderBrowsingCases.contains(where: { $0.status == status }) {
-            return .smartGroup(status)
-        }
-        return .tab(store.selectedTab)
+        .tab(store.selectedTab)
     }
 
-    /// `List` 單選 binding：分頁與智慧分組共用同一個選取型別
+    /// `List` 單選 binding：選取分頁列時切換分頁
     var selectionBinding: Binding<SidebarSelection?> {
         Binding {
             currentSelection
@@ -277,24 +229,10 @@ private extension RootSidebarLayout {
             case .tab(let tab):
                 store.send(.view(.sidebarTabSelected(tab)))
 
-            case .smartGroup(let status):
-                store.send(.view(.smartGroupSelected(status)))
-
             case nil:
                 return
             }
         }
-    }
-
-    /// 分頁列合併朗讀後承載徽章筆數的 accessibility value
-    ///
-    /// - Parameter badgeCount: 徽章數字；為 `nil` 或 `0` 時不朗讀筆數
-    /// - Returns: 筆數描述
-    func badgeAccessibilityValue(_ badgeCount: Int?) -> Text {
-        guard let badgeCount, badgeCount > 0 else {
-            return Text(verbatim: "")
-        }
-        return Text("\(badgeCount) 件進行中")
     }
 }
 
@@ -302,9 +240,10 @@ private extension RootSidebarLayout {
 
 #Preview("Sidebar") {
     let previewState: RootFeature.State = {
-        var state = RootFeature.State()
-        state.orders.orders = LedgerOrder.sampleOrders
-        state.orders.hasLoaded = true
+        let state = RootFeature.State(orders: OrdersFeature.State(orders: LedgerOrder.sampleOrders))
+        state.orders.load.$hasLoaded.withLock {
+            $0 = true
+        }
         return state
     }()
 

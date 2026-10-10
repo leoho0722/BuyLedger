@@ -6,140 +6,94 @@
 //
 
 import Foundation
-import SwiftUI
 
-/// OrdersFeature 的合併流程
-enum OrdersMergeFlowOperations {}
+/// 依來源訂單與表單選項計算合併草稿，交給容器呈現
+enum OrdersMergeFlowOperations {
+
+}
 
 // MARK: - Internal Method
 
 extension OrdersMergeFlowOperations {
 
-    /// 開始合併訂單；已合併或取消的訂單不可作為主訂單
-    static func mergeOrderTapped(_ orderID: LedgerOrder.ID, state: inout OrdersFeature.State) {
-        guard let primary = state.orders.first(where: { $0.id == orderID }),
-              primary.status != .merged,
-              primary.status != .cancelled else {
-            return
-        }
-
-        state.orderMerge = OrderMergeFeature.State(primary: primary, orders: state.orders)
-    }
-
-    /// 由候選訂單建立合併草稿，並關閉合併 sheet
+    /// 由選定的來源訂單與付款方式建立合併草稿
+    ///
     /// - Parameters:
     ///   - primary: 主訂單
     ///   - secondary: 副訂單
-    ///   - keptPhotos: 使用者保留的照片
-    ///   - state: 將被修改的 ``OrdersFeature/State``
+    ///   - paymentMethods: 目前可用的付款方式與無卡旗標
     ///   - now: 「現在」時間，供計算合併草稿使用
-    /// - Returns: 合併草稿與使用者保留的照片
+    /// - Returns: 供確認表單預填的合併草稿
     static func mergeCandidateCompleted(
         primary: LedgerOrder,
         secondary: LedgerOrder,
-        keptPhotos: [Data],
-        state: inout OrdersFeature.State,
+        paymentMethods: [PaymentMethodInfo],
         now: Date
-    ) -> (draft: OrderMerge.Draft, keptPhotos: [Data]) {
-        let cardlessNames = Set(state.availablePaymentMethods.filter(\.isCardless).map(\.name))
-        let draft = OrderMerge.makeDraft(
+    ) -> OrderMerge.Draft {
+        let cardlessNames = Set(paymentMethods.filter(\.isCardless).map(\.name))
+        return OrderMerge.makeDraft(
             primary: primary,
             secondary: secondary,
             now: now,
             isCardless: { cardlessNames.contains($0) }
         )
-
-        // 先關閉合併 sheet，再延遲開啟確認表單
-        state.orderMerge = nil
-        return (draft, keptPhotos)
     }
 
-    /// 合併選取完成後開啟確認表單
+    /// 以合併草稿、保留照片與現有選項建立確認表單
+    ///
     /// - Parameters:
     ///   - draft: 合併草稿
     ///   - keptPhotos: 使用者保留的照片
-    ///   - state: 將被修改的 ``OrdersFeature/State``
+    ///   - options: 容器依現有主檔與注入行事曆建立的表單選項
     ///   - newFormID: 確認表單 instance 的穩定識別值
     ///   - currentDate: 「現在」時間，供表單初始化使用
+    ///   - defaultCurrency: 容器提供的新訂單預設幣別
+    /// - Returns: 尚未修改、含合併來源與保留照片的確認表單
     static func mergeConfirmationReady(
         draft: OrderMerge.Draft,
         keptPhotos: [Data],
-        state: inout OrdersFeature.State,
+        options: OrderEditOptions,
         newFormID: UUID,
-        currentDate: Date
-    ) {
-        var editState = OrderEditFeature.State(
-            id: newFormID,
-            availableOrderSources: state.availableOrderSources,
-            availableCategories: state.availableCategories,
-            availablePaymentMethods: state.availablePaymentMethods,
-            availableReconciliationStatuses: state.availableReconciliationStatuses,
-            availableCampaigns: state.availableCampaigns,
-            currentDate: currentDate
+        currentDate: Date,
+        defaultCurrency: CurrencyCode
+    ) -> OrderEditFeature.State {
+        var editDraft = OrderDraft(
+            original: nil,
+            currentDate: currentDate,
+            defaultCurrency: draft.currency
         )
-        editState.draft.customerName = draft.customer.name
-        editState.draft.orderSource = draft.orderSource
-        editState.draft.categories = draft.categories
-        editState.draft.status = draft.status
-        editState.draft.currency = draft.currency
-        editState.draft.chargedAmount = draft.chargedAmount
-        editState.draft.cardlessDeductionAmount = draft.cardlessDeductionAmount
-        editState.draft.cardlessSupplementAmount = draft.cardlessSupplementAmount
-        editState.draft.itemCost = draft.itemCost
-        editState.draft.domesticShipping = draft.domesticShipping
-        editState.draft.internationalShipping = draft.internationalShipping
-        editState.draft.foreignDomesticShipping = draft.foreignDomesticShipping
-        editState.draft.cardFeeRate = draft.cardFeeRate
-        editState.draft.platformFeeRate = draft.platformFeeRate
-        editState.draft.paymentFeeRate = draft.paymentFeeRate
-        editState.draft.items = draft.items
-        editState.draft.notes = draft.notes
-        editState.draft.date = draft.date
-        editState.draft.paymentMethod = draft.paymentMethod
-        editState.draft.reconciliationStatus = draft.reconciliationStatus
-        editState.draft.campaignNames = draft.campaignNames
-        editState.draft.paymentReceiptStatus = draft.paymentReceiptStatus
-        editState.draftPhotos = keptPhotos
-        editState.mergeSourceIDs = draft.mergeSourceIDs
-        state.editOrder = editState
-    }
-
-    /// 合併持久化失敗時，以快照回復訂單
-    static func mergePersistenceFailed(
-        _ previousOrders: [LedgerOrder],
-        state: inout OrdersFeature.State
-    ) {
-        state.orders = previousOrders
-        state.pruneDetailPath()
-        state.writeFailureAlert = OrdersFeature.makeWriteFailureAlert("合併訂單儲存失敗，請稍後再試。")
-    }
-
-    /// 儲存合併訂單並標記來源訂單
-    /// - Parameters:
-    ///   - editState: 合併確認表單的草稿狀態
-    ///   - state: 將被修改的 ``OrdersFeature/State``
-    ///   - newOrderID: 新訂單的編號產生器
-    /// - Returns: 合併訂單與回滾快照；找不到目標時為 `nil`
-    static func mergeSaveTapped(
-        _ editState: OrderEditFeature.State,
-        state: inout OrdersFeature.State,
-        newOrderID: () -> String
-    ) -> (savedOrder: LedgerOrder, sourceIDs: [LedgerOrder.ID], previousOrders: [LedgerOrder])? {
-        let previousOrders = state.orders
-        guard let writeResult = OrderDraft.applyEditDraft(
-                editState, to: &state, newOrderID: newOrderID) else {
-            return nil
-        }
-        let savedOrder = writeResult.order
-
-        let sourceIDs = editState.mergeSourceIDs
-        state.orders = state.orders.map { order in
-            guard sourceIDs.contains(order.id), order.id != savedOrder.id else {
-                return order
-            }
-            return order.withStatus(.merged)
-        }
-
-        return (savedOrder, sourceIDs, previousOrders)
+        editDraft.customerName = draft.customer.name
+        editDraft.orderSource = draft.orderSource
+        editDraft.categories = draft.categories
+        editDraft.status = draft.status
+        editDraft.currency = draft.currency
+        editDraft.chargedAmount = draft.chargedAmount
+        editDraft.cardlessDeductionAmount = draft.cardlessDeductionAmount
+        editDraft.cardlessSupplementAmount = draft.cardlessSupplementAmount
+        editDraft.itemCost = draft.itemCost
+        editDraft.domesticShipping = draft.domesticShipping
+        editDraft.internationalShipping = draft.internationalShipping
+        editDraft.foreignDomesticShipping = draft.foreignDomesticShipping
+        editDraft.cardFeeRate = draft.cardFeeRate
+        editDraft.platformFeeRate = draft.platformFeeRate
+        editDraft.paymentFeeRate = draft.paymentFeeRate
+        editDraft.items = draft.items
+        editDraft.notes = draft.notes
+        editDraft.date = draft.date
+        editDraft.paymentMethod = draft.paymentMethod
+        editDraft.reconciliationStatus = draft.reconciliationStatus
+        editDraft.campaignNames = draft.campaignNames
+        editDraft.paymentReceiptStatus = draft.paymentReceiptStatus
+        return OrderEditFeature.State(
+            id: newFormID,
+            options: options,
+            currentDate: currentDate,
+            defaultCurrency: defaultCurrency,
+            prefill: OrderEditFeature.State.Prefill(
+                draft: editDraft,
+                mergeSourceIDs: draft.mergeSourceIDs,
+                keptPhotos: keptPhotos
+            )
+        )
     }
 }

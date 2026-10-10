@@ -6,8 +6,7 @@
 //
 
 import ComposableArchitecture
-import PhotosUI
-import SwiftUI
+import Foundation
 
 /// 編輯或新增訂單表單的功能
 @Reducer
@@ -15,7 +14,7 @@ struct OrderEditFeature {
 
     // MARK: - State
 
-    /// 編輯/新增訂單表單的狀態
+    /// 新增或編輯訂單時的草稿、焦點與子功能狀態
     @ObservableState
     struct State: Equatable, Identifiable, Sendable {
 
@@ -26,25 +25,10 @@ struct OrderEditFeature {
         var draft: OrderDraft
 
         /// 是否剛將無卡折抵金額調整到上限
-        var cardlessDeductionWasCapped: Bool = false
+        var isCardlessDeductionCapped: Bool = false
 
-        /// 訂單照片草稿，最多 `LedgerOrder.maxPhotoCount` 張
-        var draftPhotos: [Data]
-
-        /// 照片載入階段；新訂單直接完成，既有訂單由 `.task` 載入
-        var photoLoadPhase: PhotoLoadPhase
-
-        /// 是否曾增刪照片；只有照片已載入且為 true 才會寫入照片
-        var hasEditedPhotos: Bool = false
-
-        /// 最近一批照片匯入失敗的張數
-        var photoImportFailureCount: Int = 0
-
-        /// `PhotosPicker` 的選取項目；匯入後清空
-        var photoPickerSelection: [PhotosPickerItem] = []
-
-        /// 目前以 push 呈現的選項選擇器 route；`nil` 代表未開啟
-        var pickerRoute: PickerRoute?
+        /// 照片草稿與編輯狀態；既有訂單的照片在區段出現時讀取
+        var photos: OrderEditPhotosFeature.State
 
         /// 捨棄未儲存變更的確認彈窗
         @Presents var discardConfirmation: AlertState<Action.DiscardAlert>? = nil
@@ -55,181 +39,75 @@ struct OrderEditFeature {
         /// 合併來源訂單編號；非空代表這是「合併訂單」的確認草稿
         var mergeSourceIDs: [LedgerOrder.ID] = []
 
-        /// 可供選擇的訂單來源
-        var availableOrderSources: [String]
+        /// 六種選項清單與選擇器的推入路由
+        var pickers: OrderEditPickersFeature.State
 
-        /// 可供選擇的商品類別
-        var availableCategories: [String]
-
-        /// 可選付款方式清單，含分類旗標
-        var availablePaymentMethods: [PaymentMethodInfo]
-
-        /// 可供選擇的對帳狀態
-        var availableReconciliationStatuses: [String]
-
-        /// 可供選擇的開團名稱
-        var availableCampaigns: [String]
-
-        /// 可選幣別清單；無網路時使用預設幣別
-        var availableCurrencies: [CurrencyCode]
-
-        /// 表單 instance 的穩定識別值，供 SwiftUI sheet item 使用
+        /// 本次開啟表單的識別值，與訂單編號無關
         let id: UUID
 
-        /// 表單開啟時的初始草稿，用於判斷未儲存變更
+        /// 表單開啟時夾限後的草稿，供判斷未儲存變更
         let initialDraft: OrderDraft
 
-        /// 依原始訂單建立草稿狀態
-        ///
-        /// - Parameters:
-        ///   - original: 要編輯的訂單；`nil` 表示新訂單
-        ///   - id: 表單識別值
-        ///   - availableOrderSources: 可選的訂單來源
-        ///   - availableCategories: 可選的商品類別
-        ///   - availablePaymentMethods: 表單可選的付款方式；必要時包含原付款方式
-        ///   - availableReconciliationStatuses: 可選的對帳狀態
-        ///   - availableCampaigns: 可選的開團名稱
-        ///   - availableCurrencies: 可選的幣別
-        ///   - currentDate: 新訂單的預設日期
-        init(
-            original: LedgerOrder? = nil,
-            id: UUID,
-            availableOrderSources: [String] = [],
-            availableCategories: [String] = [],
-            availablePaymentMethods: [PaymentMethodInfo] = [],
-            availableReconciliationStatuses: [String] = [],
-            availableCampaigns: [String] = [],
-            availableCurrencies: [CurrencyCode] = CurrencyCode.defaults,
-            currentDate: Date
-        ) {
-            self.original = original
-            // 以初始化後的草稿作為 dirty 比對基準
-            let draft = OrderDraft(original: original, currentDate: currentDate)
-            self.draft = draft
-            self.initialDraft = draft
-            self.cardlessDeductionWasCapped = (original?.cardlessDeductionAmount ?? 0)
-                > draft.cardlessDeductionAmount
-            // 既有照片由 task 載入，不從 original 讀取
-            self.draftPhotos = []
-            self.photoLoadPhase = original == nil ? .loaded : .notLoaded
+        /// 表單建立時的行事曆，供完整時間格式化使用
+        let calendar: Calendar
 
-            var orderSources = availableOrderSources
-            let originalOrderSource = original?.orderSource
-                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            if !originalOrderSource.isEmpty, !orderSources.contains(originalOrderSource) {
-                orderSources.append(originalOrderSource)
-            }
-            self.availableOrderSources = orderSources.sorted { lhs, rhs in
-                lhs.localizedStandardCompare(rhs) == .orderedAscending
-            }
+        /// 依原始訂單是否存在提供標題的本地化鍵
+        var navigationTitleKey: String {
+            original == nil ? "新訂單" : "編輯訂單"
+        }
 
-            var categories = availableCategories
-            let originalCategories = (original?.categories ?? []).map {
-                $0.trimmingCharacters(in: .whitespacesAndNewlines)
+        /// 客戶實付金額的繫結入口，修改時重新檢查折抵上限
+        var chargedAmount: Decimal {
+            get {
+                draft.chargedAmount
             }
-            for originalCategory in originalCategories {
-                if !originalCategory.isEmpty, !categories.contains(originalCategory) {
-                    categories.append(originalCategory)
-                }
+            set {
+                draft.chargedAmount = newValue
             }
-            self.availableCategories = categories.sorted { lhs, rhs in
-                lhs.localizedStandardCompare(rhs) == .orderedAscending
-            }
+        }
 
-            var paymentMethods = availablePaymentMethods
-            let originalPaymentMethod = original?.paymentMethod
-                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            if !originalPaymentMethod.isEmpty,
-               !paymentMethods.contains(where: { $0.name == originalPaymentMethod }) {
-                // 舊訂單的付款方式可能尚未存在於主檔
-                paymentMethods.append(
-                    PaymentMethodInfo(
-                        name: originalPaymentMethod,
-                        isCardless: false,
-                        isBankTransfer: false,
-                        isCashOnDelivery: false
-                    )
-                )
+        /// 無卡折抵金額的繫結入口，修改時重新檢查上限
+        var cardlessDeductionAmount: Decimal {
+            get {
+                draft.cardlessDeductionAmount
             }
-            self.availablePaymentMethods = paymentMethods.sorted { lhs, rhs in
-                lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
+            set {
+                draft.cardlessDeductionAmount = newValue
             }
+        }
 
-            var reconciliationStatuses = availableReconciliationStatuses
-            let originalReconciliationStatus = original?.reconciliationStatus
-                .trimmingCharacters(in: .whitespacesAndNewlines) ?? ""
-            if !originalReconciliationStatus.isEmpty,
-               !reconciliationStatuses.contains(originalReconciliationStatus) {
-                reconciliationStatuses.append(originalReconciliationStatus)
-            }
-            self.availableReconciliationStatuses = reconciliationStatuses.sorted { lhs, rhs in
-                lhs.localizedStandardCompare(rhs) == .orderedAscending
-            }
+        /// 目前聚焦的欄位是否使用數字鍵盤
+        var isNumericFieldFocused: Bool {
+            OrderEditDraftOperations.isNumericFieldFocused(focusedField)
+        }
 
-            var campaigns = availableCampaigns
-            let originalCampaigns = (original?.campaignNames ?? []).map {
-                $0.trimmingCharacters(in: .whitespacesAndNewlines)
-            }
-            for originalCampaign in originalCampaigns {
-                if !originalCampaign.isEmpty, !campaigns.contains(originalCampaign) {
-                    campaigns.append(originalCampaign)
-                }
-            }
-            self.availableCampaigns = campaigns.sorted { lhs, rhs in
-                lhs.localizedStandardCompare(rhs) == .orderedAscending
-            }
-
-            var currencies = availableCurrencies
-            let originalCurrency = original?.currency ?? .twd
-            if !currencies.contains(originalCurrency) {
-                currencies.append(originalCurrency)
-            }
-            self.availableCurrencies = currencies.sorted { lhs, rhs in
-                lhs.rawValue.localizedStandardCompare(rhs.rawValue) == .orderedAscending
-            }
-
-            self.id = id
+        /// 顧客名稱、訂單來源與至少一個商品類別是否皆已填寫
+        var canSave: Bool {
+            OrderEditDraftOperations.canSave(draft: draft)
         }
 
         /// 草稿或照片有未儲存變更
         var isDirty: Bool {
-            draft != initialDraft || hasEditedPhotos
-        }
-
-        /// 無卡折抵金額的上限，即目前草稿的客戶實付金額
-        var maxCardlessDeductionAmount: Decimal {
-            max(0, draft.chargedAmount)
+            draft != initialDraft || photos.hasEditedPhotos
         }
 
         /// 目前付款方式是否為無卡類
         var isSelectedPaymentMethodCardless: Bool {
-            let trimmed = draft.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else {
-                return false
-            }
-            return availablePaymentMethods.first { $0.name == trimmed }?.isCardless ?? false
+            OrderEditDraftOperations.selectedPaymentMethod(state: self)?.isCardless ?? false
         }
 
         /// 目前付款方式是否為銀行匯款
         var isSelectedPaymentMethodBankTransfer: Bool {
-            let trimmed = draft.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else {
-                return false
-            }
-            return availablePaymentMethods.first { $0.name == trimmed }?.isBankTransfer ?? false
+            OrderEditDraftOperations.selectedPaymentMethod(state: self)?.isBankTransfer ?? false
         }
 
         /// 目前付款方式是否為貨到付款
         var isSelectedPaymentMethodCOD: Bool {
-            let trimmed = draft.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
-            guard !trimmed.isEmpty else {
-                return false
-            }
-            return availablePaymentMethods.first { $0.name == trimmed }?.isCashOnDelivery ?? false
+            OrderEditDraftOperations.selectedPaymentMethod(state: self)?.isCashOnDelivery ?? false
         }
 
-        /// 是否顯示對帳狀態 row
-        var showsReconciliationStatusRow: Bool {
+        /// 是否顯示對帳狀態列
+        var shouldShowReconciliationStatusRow: Bool {
             isSelectedPaymentMethodCardless || isSelectedPaymentMethodBankTransfer
         }
 
@@ -238,207 +116,198 @@ struct OrderEditFeature {
             !mergeSourceIDs.isEmpty || !(original?.mergedSourceIDs.isEmpty ?? true)
         }
 
-        /// 狀態 Picker 的可選清單
+        /// 表單可選的訂單狀態；草稿為合併狀態時才包含該選項
         var availableStatuses: [OrderStatus] {
-            OrderStatus.allCases.filter { $0 != .merged || draft.status == .merged }
+            OrderStatusRules.selectableStatuses(for: draft.status)
         }
 
-        /// 已選類別的顯示文字
-        var categoriesDisplayText: String {
-            draft.categories.joined(separator: "、")
+        /// 開團選擇列的本地化值；未選時使用「未歸團」的既有本地化鍵
+        var campaignsDisplayText: LocalizedStringResource {
+            OrderFormatters.campaignsDisplayText(draft.campaignNames)
         }
 
-        /// 開團選擇列的顯示文字；未選時顯示「未歸團」
-        var campaignsDisplayText: String {
-            draft.campaignNames.isEmpty ? "未歸團" : draft.campaignNames.joined(separator: "、")
+        /// 依原始訂單與父層帶入的選項建立草稿狀態
+        ///
+        /// - Parameters:
+        ///   - original: 要編輯的訂單；`nil` 表示新訂單
+        ///   - id: 表單識別值
+        ///   - options: 父層已建立的選項與注入行事曆
+        ///   - currentDate: 新訂單的預設日期
+        ///   - defaultCurrency: 新訂單的預設幣別；既有訂單與合併預填沿用原幣別
+        ///   - prefill: 合併確認開啟時帶入的草稿、來源編號與保留照片
+        init(
+            original: LedgerOrder? = nil,
+            id: UUID,
+            options: OrderEditOptions = .empty,
+            currentDate: Date,
+            defaultCurrency: CurrencyCode = .twd,
+            prefill: Prefill? = nil
+        ) {
+            self.original = original
+            let prepared = OrderEditDraftOperations.prepareDraft(
+                original: original,
+                currentDate: currentDate,
+                defaultCurrency: defaultCurrency,
+                prefill: prefill
+            )
+            self.draft = prepared.draft
+            self.initialDraft = prepared.draft
+            self.isCardlessDeductionCapped = prepared.isCardlessDeductionCapped
+            self.photos = OrderEditDraftOperations.photos(original: original, prefill: prefill)
+            self.mergeSourceIDs = prefill?.mergeSourceIDs ?? []
+            self.calendar = options.calendar
+            self.pickers = OrderEditPickersFeature.State(options: options, draft: prepared.draft)
+            self.id = id
         }
 
-        /// 還可加入的照片張數；供 `PhotosPicker` 的 `maxSelectionCount` 與計數標籤使用
-        var remainingPhotoCapacity: Int {
-            max(0, LedgerOrder.maxPhotoCount - draftPhotos.count)
+        /// 合併確認表單開啟時的初始資料
+        struct Prefill: Equatable, Sendable {
+
+            /// 合併後的表單草稿
+            let draft: OrderDraft
+
+            /// 合併來源訂單編號，主訂單在前
+            let mergeSourceIDs: [LedgerOrder.ID]
+
+            /// 使用者選擇保留的照片
+            let keptPhotos: [Data]
         }
 
-        /// 是否還能加入照片
-        var canAddMorePhotos: Bool {
-            photoLoadPhase == .loaded && remainingPhotoCapacity > 0
+        /// 表單中可取得鍵盤焦點的欄位
+        enum Field: Hashable {
+
+            /// 客戶名稱
+            case customerName
+
+            /// 客戶實付
+            case chargedAmount
+
+            /// 無卡折抵金額
+            case cardlessDeduction
+
+            /// 無卡補款金額
+            case cardlessSupplement
+
+            /// 商品成本
+            case itemCost
+
+            /// 外國國內運費
+            case foreignDomesticShipping
+
+            /// 國際運費
+            case internationalShipping
+
+            /// 國內運費
+            case domesticShipping
+
+            /// 刷卡手續費率
+            case cardFeeRate
+
+            /// 平台手續費率
+            case platformFeeRate
+
+            /// 金流手續費率
+            case paymentFeeRate
+
+            /// 指定商品的名稱
+            ///
+            /// - Parameter id: 商品明細的識別碼
+            case itemName(LedgerOrderItem.ID)
+
+            /// 指定商品的單價
+            ///
+            /// - Parameter id: 商品明細的識別碼
+            case itemUnitPrice(LedgerOrderItem.ID)
+
+            /// 備註
+            case notes
         }
 
-        /// 是否可刪除既有照片
-        var canRemovePhotos: Bool {
-            photoLoadPhase == .loaded
+        /// 將已落盤的主檔項目加入清單並選取
+        ///
+        /// - Parameter plan: 已成功寫入的名稱與付款方式旗標
+        mutating func applyAddedOption(_ plan: OrderOptionWritePlan) {
+            OrderEditDraftOperations.applyAddition(plan, state: &self)
         }
     }
 
     // MARK: - Action
 
     /// 表單可處理的事件
-    @CasePathable
-    enum Action: BindableAction, Equatable {
+    enum Action: BindableAction {
 
-        /// SwiftUI 雙向繫結事件
+        /// `SwiftUI` 雙向繫結事件
         ///
         /// - Parameter action: 被修改的繫結欄位與新值
         case binding(BindingAction<State>)
 
-        /// 日期選擇器寫回新日期
+        /// 使用者在表單上的操作
         ///
-        /// - Parameter date: 選擇器寫回的日期
-        case dateComponentsChanged(Date)
+        /// - Parameter action: 畫面送出的表單事件
+        case view(View)
 
-        /// 使用者按下取消
-        case cancelTapped
+        /// 交給父層處理的表單請求
+        ///
+        /// - Parameter action: 通過驗證後交給父層的請求
+        case delegate(Delegate)
 
-        /// 使用者按下儲存
-        case saveTapped
-
-        /// 有未儲存變更時、取消所觸發的捨棄確認彈窗事件
+        /// 取消編輯時的捨棄確認彈窗事件
         ///
         /// - Parameter action: 彈窗的呈現或操作事件
         case discardConfirmation(PresentationAction<DiscardAlert>)
 
-        /// 使用者透過「新增來源」彈窗確認新增一筆訂單來源名稱
+        /// 照片區段送出的事件與載入結果
         ///
-        /// - Parameter name: 尚未去除前後空白的來源名稱
-        case addOrderSourceTapped(String)
+        /// - Parameter action: 照片子功能要處理的事件
+        case photos(OrderEditPhotosFeature.Action)
 
-        /// 使用者透過「新增類別」彈窗確認新增一筆類別名稱
+        /// 選項選擇器的繫結、畫面操作與選取請求
         ///
-        /// - Parameter name: 尚未去除前後空白的類別名稱
-        case addCategoryTapped(String)
+        /// - Parameter action: 選項子功能要處理的事件
+        case pickers(OrderEditPickersFeature.Action)
 
-        /// 單選模式下選擇一個商品類別 (覆寫為單元素陣列)
-        ///
-        /// - Parameter name: 被選擇的類別名稱
-        case categorySelected(String)
+        /// 使用者在表單上的操作
+        @CasePathable
+        enum View: Equatable {
 
-        /// 多選模式 (合併情境) 下 toggle 一個商品類別的選取狀態
-        ///
-        /// - Parameter name: 被切換的類別名稱
-        case categoryToggled(String)
+            /// 日期選擇器寫回新日期
+            ///
+            /// - Parameter date: 選擇器寫回的日期
+            case dateComponentsChanged(Date)
 
-        /// 單選模式下選擇一個開團；空字串代表未歸團
-        ///
-        /// - Parameter name: 被選擇的開團名稱
-        case campaignSelected(String)
+            /// 使用者按下取消
+            case cancelTapped
 
-        /// 多選模式 (合併情境) 下 toggle 一個開團的選取狀態
-        ///
-        /// - Parameter name: 被切換的開團名稱
-        case campaignToggled(String)
+            /// 使用者按下儲存
+            case saveTapped
 
-        /// 確認新增付款方式及其旗標
-        ///
-        /// - Parameters:
-        ///   - name: 尚未去除前後空白的付款方式名稱
-        ///   - flags: 付款方式的分類旗標
-        case addPaymentMethodTapped(name: String, flags: PaymentMethodFlags)
+            /// 表單出現時，新訂單自動聚焦第一個欄位
+            case task
 
-        /// 使用者透過「新增對帳狀態」彈窗確認新增一筆對帳狀態名稱
-        ///
-        /// - Parameter name: 尚未去除前後空白的對帳狀態名稱
-        case addReconciliationStatusTapped(String)
+            /// 使用者點擊「新增商品」，附加一筆空白商品明細
+            case addItemTapped
 
-        /// 表單 `.task` 重新載入主檔資料；新訂單自動聚焦第一個欄位，既有訂單尚未載入過時另載入照片
-        case task
+            /// 使用者滑動刪除指定位置的商品明細
+            ///
+            /// - Parameter offsets: 要刪除的商品明細位置
+            case itemsDeleted(IndexSet)
+        }
 
-        /// 從 ``OrderSourceService`` 取回最新訂單來源主檔
-        ///
-        /// - Parameter items: 最新的訂單來源名稱
-        case availableOrderSourcesLoaded([String])
+        /// 交給父層處理的表單請求
+        @CasePathable
+        enum Delegate: Equatable {
 
-        /// 從 ``CategoryService`` 取回最新類別主檔
-        ///
-        /// - Parameter items: 最新的類別名稱
-        case availableCategoriesLoaded([String])
+            /// 必填完整，請父層儲存目前的草稿
+            case saveRequested
 
-        /// 載入付款方式主檔
-        ///
-        /// - Parameter infos: 最新的付款方式與分類旗標
-        case availablePaymentMethodsLoaded([PaymentMethodInfo])
-
-        /// 從 ``ReconciliationStatusService`` 取回最新對帳狀態主檔
-        ///
-        /// - Parameter items: 最新的對帳狀態名稱
-        case availableReconciliationStatusesLoaded([String])
-
-        /// 載入仍在收單的開團名稱
-        ///
-        /// - Parameter campaigns: 目前所有的開團
-        case availableCampaignsLoaded([Campaign])
-
-        /// 從 ``CurrencyMetadataService`` 取回最新幣別主檔
-        ///
-        /// - Parameter codes: 最新的幣別代碼
-        case availableCurrenciesLoaded([CurrencyCode])
-
-        /// `PhotosPicker` 選取項目經 ``PhotoService`` 載入與正規化完成
-        ///
-        /// - Parameter result: 成功匯入的照片與失敗張數
-        case photosImported(PhotoImportResult)
-
-        /// 使用者刪除指定位置的照片
-        ///
-        /// - Parameter index: 要刪除的照片位置
-        case deletePhotoTapped(Int)
-
-        /// 既有訂單照片載入完成後更新 state
-        ///
-        /// - Parameter photos: 該訂單的照片資料
-        case photosLoaded([Data])
-
-        /// 既有訂單照片載入失敗後更新 state
-        case photosLoadFailed
-
-        /// 使用者點擊「新增商品」，附加一筆空白商品明細
-        case addItemTapped
-
-        /// 使用者滑動刪除指定位置的商品明細
-        ///
-        /// - Parameter offsets: 要刪除的商品明細位置
-        case deleteItems(IndexSet)
-
-        /// 使用者點擊「訂單來源」列，開啟來源選擇頁
-        case orderSourcePickerTapped
-
-        /// 使用者點擊「商品類別」列，開啟類別選擇頁
-        case categoryPickerTapped
-
-        /// 使用者點擊「開團」列 (合併情境)，開啟開團多選頁
-        case campaignPickerTapped
-
-        /// 使用者點擊「幣別」列，開啟幣別選擇頁
-        case currencyPickerTapped
-
-        /// 使用者點擊「付款方式」列，開啟付款方式選擇頁
-        case paymentMethodPickerTapped
-
-        /// 使用者點擊「對帳狀態」列，開啟對帳狀態選擇頁
-        case reconciliationStatusPickerTapped
-
-        /// 使用者在來源選擇頁選定訂單來源
-        ///
-        /// - Parameter source: 被選定的訂單來源名稱
-        case orderSourceSelected(String)
-
-        /// 使用者在付款方式選擇頁選定付款方式
-        ///
-        /// - Parameter method: 被選定的付款方式名稱
-        case paymentMethodSelected(String)
-
-        /// 使用者在對帳狀態選擇頁選定對帳狀態
-        ///
-        /// - Parameter status: 被選定的對帳狀態名稱
-        case reconciliationStatusSelected(String)
-
-        /// 使用者在幣別選擇頁選定幣別 (以 ISO 4217 代碼傳入)
-        ///
-        /// - Parameter code: 被選定的幣別代碼
-        case currencySelected(String)
-
-        /// 點擊縮圖時開啟照片檢視器
-        ///
-        /// - Parameter index: 被點擊的照片位置
-        case photoTapped(Int)
+            /// 請父層先寫入主檔，成功後才加入清單與選取
+            ///
+            /// - Parameters:
+            ///   - kind: 要新增的主檔種類
+            ///   - name: 已去除前後空白的名稱
+            ///   - flags: 付款方式分類旗標；其他主檔使用 `.none`
+            case addOptionRequested(kind: LookupKind, name: String, flags: PaymentMethodFlags)
+        }
 
         /// 捨棄確認彈窗的選項
         @CasePathable
@@ -451,636 +320,74 @@ struct OrderEditFeature {
 
     // MARK: - Dependencies
 
-    /// 由父層注入的 dismiss effect
+    /// 關閉目前呈現的表單
     @Dependency(\.dismiss) private var dismiss
 
-    /// 「現在」時間；日期選擇器寫回時用來補上當下秒數，測試可注入固定值
+    /// 日期選擇器改選分鐘時補入的現在時間，測試可注入固定值
     @Dependency(\.date) private var date
 
-    /// 評估開團結單日自動轉狀態的行事曆
-    @Dependency(\.calendar) private var calendar
-
-    /// 產生新商品明細列的 id；測試可注入固定值以維持可測試性
+    /// 產生新商品明細的識別碼，測試可注入固定值
     @Dependency(\.uuid) private var uuid
-
-    /// 訂單來源資料；表單開啟時重新載入
-    @Dependency(\.orderSourceService) private var orderSourceService
-
-    /// 商品類別資料；表單開啟時重新載入
-    @Dependency(\.categoryService) private var categoryService
-
-    /// 付款方式主檔資料來源；理由同 ``categoryService``
-    @Dependency(\.paymentMethodService) private var paymentMethodService
-
-    /// 對帳狀態主檔資料來源；理由同 ``categoryService``
-    @Dependency(\.reconciliationStatusService) private var reconciliationStatusService
-
-    /// 開團資料來源；sheet 自行載入
-    @Dependency(\.campaignService) private var campaignService
-
-    /// 幣別資料來源；sheet 從 cache 載入
-    @Dependency(\.currencyMetadataService) private var currencyMetadataService
-
-    /// 照片匯入管線；把 `PhotosPicker` 選取項目載入並正規化為可持久化的 JPEG data
-    @Dependency(\.photoService) private var photoService
-
-    /// 訂單資料來源；載入既有訂單照片
-    @Dependency(\.orderService) private var orderService
 
     // MARK: - Body
 
-    /// 表單 reducer
+    /// 組合草稿繫結、照片、選項選擇與表單事件處理
     var body: some Reducer<State, Action> {
         BindingReducer()
 
-        Reduce { state, action in
-            switch action {
-            case .binding(\.photoPickerSelection):
-                let items = state.photoPickerSelection
-                guard !items.isEmpty else {
-                    return .none
-                }
-
-                state.photoImportFailureCount = 0
-                let photoService = photoService
-                return .run {
-                    await $0(.photosImported(photoService.importPhotos(items)))
-                }
-
-            case .binding(\.draft.cardlessDeductionAmount), .binding(\.draft.chargedAmount):
-                // 任一相關欄位變更都重新限制折抵金額
-                state.reconcileCardlessDeductionCap()
-                return .none
-
-            case .binding:
-                return .none
-
-            case .dateComponentsChanged(let newValue):
-                // 把 picker 寫回的年月日時分，與「當下這一刻」的秒合併寫入 draft.date
-                // 使用固定的 Gregorian／UTC 曆法，讓日期計算可重現
-                var calendar = Calendar(identifier: .gregorian)
-                calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
-
-                let currentSeconds = calendar.component(.second, from: date.now)
-                var components = calendar.dateComponents(
-                    [.year, .month, .day, .hour, .minute],
-                    from: newValue
-                )
-                components.second = currentSeconds
-                state.draft.date = calendar.date(from: components) ?? newValue
-                return .none
-
-            case .saveTapped:
-                state.focusedField = nil
-                return .run { _ in
-                    await dismiss()
-                }
-
-            case .cancelTapped:
-                if state.isDirty {
-                    state.discardConfirmation = AlertState {
-                        TextState("捨棄變更")
-                    } actions: {
-                        ButtonState(role: .destructive, action: .discard) {
-                            TextState("捨棄變更")
-                        }
-                        ButtonState(role: .cancel) {
-                            TextState("繼續編輯")
-                        }
-                    } message: {
-                        TextState("這張訂單有尚未儲存的變更，離開後將不會保留。")
-                    }
-                    return .none
-                }
-
-                state.focusedField = nil
-                return .run { _ in
-                    await dismiss()
-                }
-
-            case .discardConfirmation(.presented(.discard)):
-                state.focusedField = nil
-                return .run { _ in
-                    await dismiss()
-                }
-
-            case .discardConfirmation:
-                return .none
-
-            case .addOrderSourceTapped(let rawName):
-                let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else {
-                    return .none
-                }
-
-                if !state.availableOrderSources.contains(trimmed) {
-                    var updated = state.availableOrderSources
-                    updated.append(trimmed)
-                    state.availableOrderSources = updated.sorted { lhs, rhs in
-                        lhs.localizedStandardCompare(rhs) == .orderedAscending
-                    }
-                }
-                state.draft.orderSource = trimmed
-                return .none
-
-            case .addCategoryTapped(let rawName):
-                let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else {
-                    return .none
-                }
-
-                if !state.availableCategories.contains(trimmed) {
-                    var updated = state.availableCategories
-                    updated.append(trimmed)
-                    state.availableCategories = updated.sorted { lhs, rhs in
-                        lhs.localizedStandardCompare(rhs) == .orderedAscending
-                    }
-                }
-                if state.isMergeContext {
-                    // 多選情境：新增的類別直接加入選取，不覆蓋既有選取
-                    if !state.draft.categories.contains(trimmed) {
-                        state.draft.categories.append(trimmed)
-                    }
-                } else {
-                    state.draft.categories = [trimmed]
-                }
-                return .none
-
-            case .categorySelected(let name):
-                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else {
-                    return .none
-                }
-
-                state.draft.categories = [trimmed]
-                return .none
-
-            case .categoryToggled(let name):
-                if let index = state.draft.categories.firstIndex(of: name) {
-                    state.draft.categories.remove(at: index)
-                } else {
-                    state.draft.categories.append(name)
-                }
-                return .none
-
-            case .campaignSelected(let name):
-                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                state.draft.campaignNames = trimmed.isEmpty ? [] : [trimmed]
-                return .none
-
-            case .campaignToggled(let name):
-                if let index = state.draft.campaignNames.firstIndex(of: name) {
-                    state.draft.campaignNames.remove(at: index)
-                } else {
-                    state.draft.campaignNames.append(name)
-                }
-                return .none
-
-            case .addPaymentMethodTapped(let rawName, let flags):
-                let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else {
-                    return .none
-                }
-
-                if let index = state.availablePaymentMethods.firstIndex(
-                    where: {
-                        $0.name == trimmed
-                    }
-                ) {
-                    state.availablePaymentMethods[index] = PaymentMethodInfo(
-                        name: trimmed,
-                        flags: flags
-                    )
-                } else {
-                    var updated = state.availablePaymentMethods
-                    updated.append(PaymentMethodInfo(name: trimmed, flags: flags))
-                    state.availablePaymentMethods = updated.sorted { lhs, rhs in
-                        lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
-                    }
-                }
-                state.draft.paymentMethod = trimmed
-                return .none
-
-            case .addReconciliationStatusTapped(let rawName):
-                let trimmed = rawName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else {
-                    return .none
-                }
-
-                if !state.availableReconciliationStatuses.contains(trimmed) {
-                    var updated = state.availableReconciliationStatuses
-                    updated.append(trimmed)
-                    state.availableReconciliationStatuses = updated.sorted { lhs, rhs in
-                        lhs.localizedStandardCompare(rhs) == .orderedAscending
-                    }
-                }
-                state.draft.reconciliationStatus = trimmed
-                return .none
-
-            case .task:
-                // 新訂單自動聚焦第一個欄位，既有訂單不搶焦點
-                if state.original == nil,
-                   state.focusedField == nil {
-                    state.focusedField = .customerName
-                }
-
-                var pendingPhotoOrderID: LedgerOrder.ID?
-                if let original = state.original,
-                   state.photoLoadPhase == .notLoaded {
-                    state.photoLoadPhase = .loading
-                    pendingPhotoOrderID = original.id
-                }
-                let photoOrderID = pendingPhotoOrderID
-
-                let orderSourceService = orderSourceService
-                let categoryService = categoryService
-                let paymentMethodService = paymentMethodService
-                let reconciliationStatusService = reconciliationStatusService
-                let campaignService = campaignService
-                let currencyMetadataService = currencyMetadataService
-                let orderService = orderService
-
-                return .run { send in
-                    async let orderSourcesTask: Void = {
-                        do {
-                            let items = try await orderSourceService.fetchOrderSources()
-                            await send(.availableOrderSourcesLoaded(items))
-                        } catch {
-                            return
-                        }
-                    }()
-                    async let categoriesTask: Void = {
-                        do {
-                            let items = try await categoryService.fetchCategories()
-                            await send(.availableCategoriesLoaded(items))
-                        } catch {
-                            return
-                        }
-                    }()
-                    async let paymentMethodsTask: Void = {
-                        do {
-                            let infos = try await paymentMethodService.fetchPaymentMethodInfos()
-                            await send(.availablePaymentMethodsLoaded(infos))
-                        } catch {
-                            return
-                        }
-                    }()
-                    async let reconciliationStatusesTask: Void = {
-                        do {
-                            let items = try await reconciliationStatusService
-                                .fetchReconciliationStatuses()
-                            await send(.availableReconciliationStatusesLoaded(items))
-                        } catch {
-                            return
-                        }
-                    }()
-                    async let campaignsTask: Void = {
-                        do {
-                            let items = try await campaignService.fetchCampaigns()
-                            await send(.availableCampaignsLoaded(items))
-                        } catch {
-                            return
-                        }
-                    }()
-                    async let currenciesTask: Void = {
-                        do {
-                            let codes = try await currencyMetadataService.fetchCodes()
-                            if !codes.isEmpty {
-                                await send(.availableCurrenciesLoaded(codes))
-                            }
-                        } catch {
-                            return
-                        }
-                    }()
-                    async let photosTask: Void = {
-                        guard let photoOrderID else {
-                            return
-                        }
-                        do {
-                            let photos = try await orderService.fetchOrderPhotos(photoOrderID)
-                            await send(.photosLoaded(photos))
-                        } catch {
-                            await send(.photosLoadFailed)
-                        }
-                    }()
-                    await orderSourcesTask
-                    await categoriesTask
-                    await paymentMethodsTask
-                    await reconciliationStatusesTask
-                    await campaignsTask
-                    await currenciesTask
-                    await photosTask
-                }
-
-            case .availableOrderSourcesLoaded(let items):
-                // 保留表單中剛新增的訂單來源
-                var merged = Set(items)
-                let trimmedOrderSource = state.draft.orderSource
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmedOrderSource.isEmpty {
-                    merged.insert(trimmedOrderSource)
-                }
-                state.availableOrderSources = merged.sorted { lhs, rhs in
-                    lhs.localizedStandardCompare(rhs) == .orderedAscending
-                }
-                return .none
-
-            case .availableCategoriesLoaded(let items):
-                // 保留表單中剛新增的商品類別
-                var merged = Set(items)
-                let draftCategories = state.draft.categories.map {
-                    $0.trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-                for draftCategory in draftCategories where !draftCategory.isEmpty {
-                    merged.insert(draftCategory)
-                }
-                state.availableCategories = merged.sorted { lhs, rhs in
-                    lhs.localizedStandardCompare(rhs) == .orderedAscending
-                }
-                return .none
-
-            case .availablePaymentMethodsLoaded(let infos):
-                // 依名稱去重，並以主檔的 isCardless 為準
-                // 草稿中的新名稱仍補上 isCardless = false
-                var merged: [String: PaymentMethodInfo] = [:]
-                for info in infos {
-                    merged[info.name] = info
-                }
-                let trimmedPaymentMethod = state.draft.paymentMethod
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmedPaymentMethod.isEmpty,
-                   merged[trimmedPaymentMethod] == nil {
-                    merged[trimmedPaymentMethod] = PaymentMethodInfo(
-                        name: trimmedPaymentMethod,
-                        isCardless: false,
-                        isBankTransfer: false,
-                        isCashOnDelivery: false
-                    )
-                }
-                state.availablePaymentMethods = merged.values.sorted { lhs, rhs in
-                    lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
-                }
-                return .none
-
-            case .availableReconciliationStatusesLoaded(let items):
-                // 保留表單中剛新增的對帳狀態
-                var merged = Set(items)
-                let trimmedReconciliationStatus = state.draft.reconciliationStatus
-                    .trimmingCharacters(in: .whitespacesAndNewlines)
-                if !trimmedReconciliationStatus.isEmpty {
-                    merged.insert(trimmedReconciliationStatus)
-                }
-                state.availableReconciliationStatuses = merged.sorted { lhs, rhs in
-                    lhs.localizedStandardCompare(rhs) == .orderedAscending
-                }
-                return .none
-
-            case .availableCampaignsLoaded(let campaigns):
-                // 評估結單日狀態後，只顯示仍在收單的開團
-                var ongoingNames: [String] = []
-                if !campaigns.isEmpty {
-                    let now = date.now
-                    ongoingNames = campaigns
-                        .map {
-                            $0.evaluatingAutoClose(asOf: now, calendar: calendar)
-                        }
-                        .filter {
-                            $0.status == .ongoing
-                        }
-                        .map(\.name)
-                }
-                var merged = Set(ongoingNames)
-                // 合併時保留目前已選的開團
-                let draftCampaigns = state.draft.campaignNames.map {
-                    $0.trimmingCharacters(in: .whitespacesAndNewlines)
-                }
-                for draftCampaign in draftCampaigns where !draftCampaign.isEmpty {
-                    merged.insert(draftCampaign)
-                }
-                state.availableCampaigns = merged.sorted { lhs, rhs in
-                    lhs.localizedStandardCompare(rhs) == .orderedAscending
-                }
-                return .none
-
-            case .availableCurrenciesLoaded(let codes):
-                // 合併時保留目前幣別
-                var merged = Set(codes)
-                merged.insert(state.draft.currency)
-                state.availableCurrencies = merged.sorted { lhs, rhs in
-                    lhs.rawValue.localizedStandardCompare(rhs.rawValue) == .orderedAscending
-                }
-                return .none
-
-            case .photosImported(let importResult):
-                let appended = importResult.photos.prefix(state.remainingPhotoCapacity)
-                state.draftPhotos.append(contentsOf: appended)
-                state.photoImportFailureCount = importResult.failedCount
-                state.photoPickerSelection = []
-                if !appended.isEmpty {
-                    // 使用者確實增刪過照片，儲存時才會走帶照片的專用寫入路徑
-                    state.hasEditedPhotos = true
-                }
-                return .none
-
-            case .deletePhotoTapped(let index):
-                guard state.draftPhotos.indices.contains(index) else {
-                    return .none
-                }
-
-                state.draftPhotos.remove(at: index)
-                state.hasEditedPhotos = true
-                return .none
-
-            case .photosLoaded(let photos):
-                state.draftPhotos = photos
-                state.photoLoadPhase = .loaded
-                return .none
-
-            case .photosLoadFailed:
-                state.photoLoadPhase = .failed
-                return .none
-
-            case .addItemTapped:
-                state.draft.items.append(
-                    LedgerOrderItem(
-                        id: uuid(),
-                        name: "",
-                        quantity: 1,
-                        unitPrice: 0
-                    )
-                )
-                return .none
-
-            case .deleteItems(let offsets):
-                state.draft.items.remove(atOffsets: offsets)
-                return .none
-
-            case .orderSourcePickerTapped:
-                state.pickerRoute = .orderSource
-                return .none
-
-            case .categoryPickerTapped:
-                state.pickerRoute = .category
-                return .none
-
-            case .campaignPickerTapped:
-                state.pickerRoute = .campaign
-                return .none
-
-            case .currencyPickerTapped:
-                state.pickerRoute = .currency
-                return .none
-
-            case .paymentMethodPickerTapped:
-                state.pickerRoute = .paymentMethod
-                return .none
-
-            case .reconciliationStatusPickerTapped:
-                state.pickerRoute = .reconciliationStatus
-                return .none
-
-            case .orderSourceSelected(let source):
-                state.draft.orderSource = source
-                return .none
-
-            case .paymentMethodSelected(let method):
-                state.draft.paymentMethod = method
-                return .none
-
-            case .reconciliationStatusSelected(let status):
-                state.draft.reconciliationStatus = status
-                return .none
-
-            case .currencySelected(let code):
-                state.draft.currency = CurrencyCode(rawValue: code)
-                return .none
-
-            case .photoTapped(let index):
-                state.pickerRoute = .photoViewer(index: index)
-                return .none
-            }
+        Scope(state: \.photos, action: \.photos) {
+            OrderEditPhotosFeature()
         }
-        .ifLet(\.$discardConfirmation, action: \.discardConfirmation)
+
+        Scope(state: \.pickers, action: \.pickers) {
+            OrderEditPickersFeature()
+        }
+
+        Reduce(core)
+            .ifLet(\.$discardConfirmation, action: \.discardConfirmation)
     }
 }
 
-// MARK: - Nested Types
+// MARK: - Private Method
 
-extension OrderEditFeature.State {
+private extension OrderEditFeature {
 
-    /// 照片載入階段
-    enum PhotoLoadPhase: Equatable {
+    /// 更新表單草稿，並套用子功能的選取或新增選項請求
+    ///
+    /// - Parameters:
+    ///   - state: 要更新的父層表單狀態
+    ///   - action: 父層或子功能送出的事件
+    /// - Returns: 存檔、主檔新增或關閉表單的效果
+    func core(state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case .binding(let bindingAction):
+            return OrderEditDraftOperations.applyBinding(bindingAction, state: &state)
 
-        /// 尚未觸發載入 (表單開啟瞬間、`.task` 尚未執行)
-        case notLoaded
+        case .view(let view):
+            return OrderEditOperations(dismiss: dismiss) {
+                date.now
+            } makeItemID: {
+                uuid()
+            }
+            .apply(view, state: &state)
 
-        /// 載入中
-        case loading
+        case .delegate:
+            return .none
 
-        /// 已載入完成
-        ///
-        /// - Note: ``OrderEditFeature/State/draftPhotos`` 即為該訂單的實際照片
-        case loaded
+        case .discardConfirmation(.presented(.discard)):
+            state.focusedField = nil
+            return .run { _ in
+                await dismiss()
+            }
 
-        /// 載入失敗
-        case failed
-    }
+        case .discardConfirmation:
+            return .none
 
-    /// 表單中可取得鍵盤焦點的欄位
-    enum Field: Hashable {
+        case .photos(let photosAction):
+            return OrderEditDraftOperations.applyPhotos(photosAction, state: &state)
 
-        /// 客戶名稱
-        case customerName
-
-        /// 客戶實付
-        case chargedAmount
-
-        /// 無卡折抵金額
-        case cardlessDeduction
-
-        /// 無卡補款金額
-        case cardlessSupplement
-
-        /// 商品成本
-        case itemCost
-
-        /// 外國國內運費
-        case foreignDomesticShipping
-
-        /// 國際運費
-        case internationalShipping
-
-        /// 國內運費
-        case domesticShipping
-
-        /// 刷卡手續費率
-        case cardFeeRate
-
-        /// 平台手續費率
-        case platformFeeRate
-
-        /// 金流手續費率
-        case paymentFeeRate
-
-        /// 指定商品的名稱
-        ///
-        /// - Parameter id: 商品明細的識別碼
-        case itemName(LedgerOrderItem.ID)
-
-        /// 指定商品的數量
-        ///
-        /// - Parameter id: 商品明細的識別碼
-        case itemQuantity(LedgerOrderItem.ID)
-
-        /// 指定商品的單價
-        ///
-        /// - Parameter id: 商品明細的識別碼
-        case itemUnitPrice(LedgerOrderItem.ID)
-
-        /// 備註
-        case notes
-    }
-
-    /// 訂單編輯表單內可 push 呈現的選項選擇器 route
-    enum PickerRoute: Hashable {
-
-        /// 訂單來源選擇器
-        case orderSource
-
-        /// 商品類別選擇器
-        case category
-
-        /// 開團選擇器 (合併情境多選)
-        case campaign
-
-        /// 付款方式選擇器
-        case paymentMethod
-
-        /// 對帳狀態選擇器
-        case reconciliationStatus
-
-        /// 幣別選擇器
-        case currency
-
-        /// 照片檢視器 (以推進呈現，避免在編輯 sheet 上再疊一層 modal)
-        ///
-        /// - Parameter index: 要檢視的照片位置
-        case photoViewer(index: Int)
-    }
-}
-
-// MARK: - Internal Method
-
-extension OrderEditFeature.State {
-
-    /// 依「無卡折抵金額不得超過客戶實付金額」的不變量收斂目前草稿
-    mutating func reconcileCardlessDeductionCap() {
-        let cap = maxCardlessDeductionAmount
-        if draft.cardlessDeductionAmount > cap {
-            draft.cardlessDeductionAmount = cap
-            cardlessDeductionWasCapped = true
-        } else {
-            cardlessDeductionWasCapped = false
+        case .pickers(let pickersAction):
+            return OrderEditDraftOperations.applyPickers(pickersAction, state: &state)
         }
     }
 }

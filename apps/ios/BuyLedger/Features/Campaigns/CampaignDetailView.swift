@@ -13,7 +13,7 @@ struct CampaignDetailView: View {
 
     // MARK: - Properties
 
-    /// 開團詳情的狀態與事件來源，由開團容器推入詳情時建立
+    /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<CampaignDetailFeature>
 
     // MARK: - Body
@@ -30,7 +30,7 @@ struct CampaignDetailView: View {
         .navigationTitle(Text("開團詳情"))
         .navigationBarTitleDisplayMode(.inline)
         // 結團與刪除確認、寫入與提醒錯誤都由開團容器的 alert 呈現
-        // 收款錯誤由 OrdersView 的 alert 呈現
+        // 收款錯誤由 `OrdersView` 的 alert 呈現
     }
 }
 
@@ -57,28 +57,29 @@ private extension CampaignDetailView {
             CampaignDetailSettlementSection(summary: content.summary)
 
             CampaignDetailDistributionSection(
+                emptyMessage: store.distributionEmptyMessage,
+                isShowingUnpaidOnly: store.isShowingUnpaidOnly,
                 onReceiptToggle: {
                     store.send(.view(.receiptToggleTapped($0)))
                 },
                 onUnpaidOnlyChange: {
                     store.send(.view(.unpaidOnlyToggled($0)))
                 },
-                rows: content.distribution,
-                showsUnpaidOnly: store.showsUnpaidOnly
+                rows: content.distribution
             )
         }
         .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailRoot)
         .toolbar {
-            actionsToolbar(for: content.campaign)
+            actionsToolbar(for: content)
         }
     }
 
     /// 工具列的更多選單：編輯、改狀態、結團與刪除
     ///
-    /// - Parameter campaign: 目前的開團
+    /// - Parameter content: 目前的詳情內容
     /// - Returns: 工具列內容
     @ToolbarContentBuilder
-    func actionsToolbar(for campaign: Campaign) -> some ToolbarContent {
+    func actionsToolbar(for content: CampaignDetailContent) -> some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             Menu {
                 Button {
@@ -88,7 +89,7 @@ private extension CampaignDetailView {
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailEditButton)
 
-                Picker("狀態", selection: statusBinding(for: campaign)) {
+                Picker("狀態", selection: statusBinding(for: content.campaign)) {
                     ForEach(CampaignStatus.allCases) {
                         Text(LocalizedStringKey($0.title))
                             .tag($0)
@@ -98,12 +99,13 @@ private extension CampaignDetailView {
                 Button {
                     store.send(.view(.settleTapped))
                 } label: {
-                    Label(
-                        LocalizedStringKey(campaign.isSettled ? "已結團" : "結團結算"),
-                        systemImage: "checkmark.seal"
-                    )
+                    Label {
+                        Text(content.settleActionTitle)
+                    } icon: {
+                        Image(systemName: "checkmark.seal")
+                    }
                 }
-                .disabled(campaign.isSettled)
+                .disabled(content.campaign.isSettled)
                 .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSettleButton)
 
                 Divider()
@@ -148,7 +150,7 @@ private extension CampaignDetailView {
         campaigns: SharedReader(value: Campaign.sampleCampaigns),
         orders: SharedReader(value: LedgerOrder.sampleCampaignOrders),
         reminderLinks: SharedReader(value: [:]),
-        showsUnpaidOnly: Shared(value: false)
+        isShowingUnpaidOnly: Shared(value: false)
     )
 
     return NavigationStack {
@@ -166,7 +168,7 @@ private extension CampaignDetailView {
         campaigns: SharedReader(value: Campaign.sampleCampaigns),
         orders: SharedReader(value: LedgerOrder.sampleCampaignOrders),
         reminderLinks: SharedReader(value: [:]),
-        showsUnpaidOnly: Shared(value: false)
+        isShowingUnpaidOnly: Shared(value: false)
     )
 
     return NavigationStack {

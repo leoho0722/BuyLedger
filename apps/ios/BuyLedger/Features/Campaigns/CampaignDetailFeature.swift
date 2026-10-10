@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 
 /// 開團詳情：提供畫面內容與「只看未收款」，其餘操作都以請求交給開團容器處理 (沒有非同步 effect)
 @Reducer
@@ -30,7 +31,7 @@ struct CampaignDetailFeature {
         @SharedReader var reminderLinks: [Campaign.ID: CampaignReminderLink]
 
         /// 「只看未收款」篩選，跨導覽保留，只有本 Feature 寫入
-        @Shared var showsUnpaidOnly: Bool
+        @Shared var isShowingUnpaidOnly: Bool
 
         /// 詳情畫面要呈現的內容；開團不存在時為 `nil`
         var content: CampaignDetailContent? {
@@ -39,8 +40,13 @@ struct CampaignDetailFeature {
                 campaigns: campaigns,
                 orders: orders,
                 links: reminderLinks,
-                showsUnpaidOnly: showsUnpaidOnly
+                isShowingUnpaidOnly: isShowingUnpaidOnly
             )
+        }
+
+        /// 分貨區沒有可見客戶時的空狀態文案；只看未收款時表示客戶都已收款
+        var distributionEmptyMessage: LocalizedStringResource {
+            isShowingUnpaidOnly ? "全部已收款。" : "尚無歸屬此開團的訂單。"
         }
 
         /// 以容器共用的資料建立詳情狀態
@@ -50,19 +56,19 @@ struct CampaignDetailFeature {
         ///   - campaigns: 唯讀的開團清單
         ///   - orders: 唯讀的訂單投影
         ///   - reminderLinks: 唯讀的提醒連結
-        ///   - showsUnpaidOnly: 可寫的「只看未收款」篩選
+        ///   - isShowingUnpaidOnly: 可寫的「只看未收款」篩選
         init(
             campaignID: Campaign.ID,
             campaigns: SharedReader<[Campaign]>,
             orders: SharedReader<[LedgerOrder]>,
             reminderLinks: SharedReader<[Campaign.ID: CampaignReminderLink]>,
-            showsUnpaidOnly: Shared<Bool>
+            isShowingUnpaidOnly: Shared<Bool>
         ) {
             self.campaignID = campaignID
             self._campaigns = campaigns
             self._orders = orders
             self._reminderLinks = reminderLinks
-            self._showsUnpaidOnly = showsUnpaidOnly
+            self._isShowingUnpaidOnly = isShowingUnpaidOnly
         }
     }
 
@@ -165,7 +171,7 @@ private extension CampaignDetailFeature {
             )
 
         case .view(.unpaidOnlyToggled(let isOn)):
-            state.$showsUnpaidOnly.withLock { $0 = isOn }
+            state.$isShowingUnpaidOnly.withLock { $0 = isOn }
             return .none
 
         case .delegate:

@@ -30,10 +30,10 @@ struct CampaignDetailFeatureTests {
         await store.send(.view(.receiptToggleTapped("O1")))
 
         // Then
-        await store.receive(\.delegate.requested, .toggleReceipt(
-            orderID: "O1",
-            status: example.expected
-        ))
+        await store.receive(
+            \.delegate.requested,
+            .toggleReceipt(orderID: "O1", status: example.expected)
+        )
     }
 
     /// 收款鍵指向不存在的訂單時不送出任何請求，也不改變共用資料
@@ -48,7 +48,7 @@ struct CampaignDetailFeatureTests {
         // Then
         await store.finish()
         #expect(store.state.orders.map(\.id) == ["O1"])
-        #expect(store.state.showsUnpaidOnly == false)
+        #expect(store.state.isShowingUnpaidOnly == false)
     }
 
     /// 切換只看未收款時寫入共用值，不送出任何請求
@@ -57,17 +57,17 @@ struct CampaignDetailFeatureTests {
     @Test(arguments: [true, false])
     func unpaidOnlyToggled_切換篩選_寫入共用值(isOn: Bool) async {
         // Given
-        let store = Self.makeStore(showsUnpaidOnly: !isOn)
+        let store = Self.makeStore(isShowingUnpaidOnly: !isOn)
 
         // When
         await store.send(.view(.unpaidOnlyToggled(isOn))) {
-            $0.$showsUnpaidOnly.withLock {
+            $0.$isShowingUnpaidOnly.withLock {
                 $0 = isOn
             }
         }
 
         // Then
-        #expect(store.state.showsUnpaidOnly == isOn)
+        #expect(store.state.isShowingUnpaidOnly == isOn)
     }
 
     /// 點擊編輯時請求容器開啟該團的編輯表單
@@ -158,7 +158,7 @@ struct CampaignDetailFeatureTests {
             campaigns: SharedReader(campaigns),
             orders: SharedReader(value: []),
             reminderLinks: SharedReader(value: [:]),
-            showsUnpaidOnly: Shared(value: false)
+            isShowingUnpaidOnly: Shared(value: false)
         )
 
         // When
@@ -180,13 +180,47 @@ struct CampaignDetailFeatureTests {
         ])
 
         // When
-        state.$showsUnpaidOnly.withLock {
+        state.$isShowingUnpaidOnly.withLock {
             $0 = true
         }
 
         // Then
         #expect(state.content?.distribution.map(\.customerName) == ["乙"])
         #expect(state.content?.summary.distribution.count == 2)
+    }
+
+    /// 只看未收款時，分貨區空狀態表示客戶都已收款
+    ///
+    /// - Throws: 英文資源目錄不存在時由 `#require` 丟出
+    @Test
+    func distributionEmptyMessage_只看未收款_顯示全部已收款() throws {
+        // Given
+        let state = Self.makeState(isShowingUnpaidOnly: true)
+
+        // When
+        let message = state.distributionEmptyMessage
+        let text = try Self.localizedText(message, language: .english)
+
+        // Then
+        #expect(message.key == "全部已收款。")
+        #expect(text == "All orders are paid.")
+    }
+
+    /// 未開啟只看未收款時，分貨區空狀態表示開團尚無歸屬訂單
+    ///
+    /// - Throws: 英文資源目錄不存在時由 `#require` 丟出
+    @Test
+    func distributionEmptyMessage_未只看未收款_顯示尚無歸屬訂單() throws {
+        // Given
+        let state = Self.makeState()
+
+        // When
+        let message = state.distributionEmptyMessage
+        let text = try Self.localizedText(message, language: .english)
+
+        // Then
+        #expect(message.key == "尚無歸屬此開團的訂單。")
+        #expect(text == "No orders are assigned to this campaign.")
     }
 }
 
@@ -213,13 +247,15 @@ private extension CampaignDetailFeatureTests {
     ///
     /// - Parameters:
     ///   - orders: 唯讀的訂單投影
-    ///   - showsUnpaidOnly: 「只看未收款」的初始值
+    ///   - isShowingUnpaidOnly: 「只看未收款」的初始值
     /// - Returns: 顯示開團 `C1` 詳情的 store
     static func makeStore(
         orders: [LedgerOrder] = [],
-        showsUnpaidOnly: Bool = false
+        isShowingUnpaidOnly: Bool = false
     ) -> TestStoreOf<CampaignDetailFeature> {
-        TestStore(initialState: makeState(orders: orders, showsUnpaidOnly: showsUnpaidOnly)) {
+        TestStore(
+            initialState: makeState(orders: orders, isShowingUnpaidOnly: isShowingUnpaidOnly)
+        ) {
             CampaignDetailFeature()
         }
     }
@@ -229,19 +265,19 @@ private extension CampaignDetailFeatureTests {
     /// - Parameters:
     ///   - orders: 唯讀的訂單投影
     ///   - links: 唯讀的提醒連結
-    ///   - showsUnpaidOnly: 「只看未收款」的初始值
+    ///   - isShowingUnpaidOnly: 「只看未收款」的初始值
     /// - Returns: 以獨立共用引用建立的詳情狀態
     static func makeState(
         orders: [LedgerOrder] = [],
         links: [Campaign.ID: CampaignReminderLink] = [:],
-        showsUnpaidOnly: Bool = false
+        isShowingUnpaidOnly: Bool = false
     ) -> CampaignDetailFeature.State {
         CampaignDetailFeature.State(
             campaignID: "C1",
             campaigns: SharedReader(value: [Campaign.fixture(id: "C1", name: "四月團")]),
             orders: SharedReader(value: orders),
             reminderLinks: SharedReader(value: links),
-            showsUnpaidOnly: Shared(value: showsUnpaidOnly)
+            isShowingUnpaidOnly: Shared(value: isShowingUnpaidOnly)
         )
     }
 
@@ -263,6 +299,29 @@ private extension CampaignDetailFeatureTests {
             chargedAmount: 100,
             campaignNames: ["四月團"],
             paymentReceiptStatus: receipt
+        )
+    }
+
+    /// 以指定語言的資源目錄解析本地化值，不受測試程序預設語言影響
+    ///
+    /// - Parameters:
+    ///   - resource: 畫面狀態或內容提供的本地化值
+    ///   - language: 測試指定的 App 語言
+    /// - Returns: 以指定語言解析後的文字
+    /// - Throws: 指定語言的資源目錄不存在時由 `#require` 丟出
+    static func localizedText(
+        _ resource: LocalizedStringResource,
+        language: AppLanguage
+    ) throws -> String {
+        let bundleURL = try #require(
+            Bundle.main.url(forResource: language.localeIdentifier, withExtension: "lproj")
+        )
+        let bundle = try #require(Bundle(url: bundleURL))
+        return String(
+            localized: resource.defaultValue,
+            table: resource.table,
+            bundle: bundle,
+            locale: language.locale
         )
     }
 }

@@ -16,11 +16,14 @@ struct CampaignDetailContentTests {
     /// 切換只看未收款時只篩選可見客戶，彙總與客戶所屬訂單維持完整
     ///
     /// - Parameters:
-    ///   - showsUnpaidOnly: 是否只顯示尚未全部收款的客戶
+    ///   - isShowingUnpaidOnly: 是否只顯示尚未全部收款的客戶
     ///   - expectedNames: 預期可見的客戶名稱
     /// - Throws: 詳情內容或未收款客戶不存在時拋出測試錯誤
     @Test(arguments: [(false, ["Alice", "Bob"]), (true, ["Bob"])])
-    func make_切換只看未收款_保留對應客戶分貨列(showsUnpaidOnly: Bool, expectedNames: [String]) throws(any Error) {
+    func make_切換只看未收款_保留對應客戶分貨列(
+        isShowingUnpaidOnly: Bool,
+        expectedNames: [String]
+    ) throws(any Error) {
         // Given
         let campaign = Campaign.fixture(
             id: "C2",
@@ -70,7 +73,7 @@ struct CampaignDetailContentTests {
             campaigns: [otherCampaign, campaign],
             orders: orders,
             links: [:],
-            showsUnpaidOnly: showsUnpaidOnly
+            isShowingUnpaidOnly: isShowingUnpaidOnly
         )
 
         // Then
@@ -96,11 +99,9 @@ struct CampaignDetailContentTests {
     @Test
     func make_指定開團不存在_回傳空內容() {
         // Given
-        let campaigns = [Campaign.fixture(
-            id: "C1",
-            name: "其他團",
-            openDate: Date(timeIntervalSince1970: 0)
-        )]
+        let campaigns = [
+            Campaign.fixture(id: "C1", name: "其他團", openDate: Date(timeIntervalSince1970: 0)),
+        ]
         let orders = [
             Self.makeOrder(
                 id: "A",
@@ -117,7 +118,7 @@ struct CampaignDetailContentTests {
             campaigns: campaigns,
             orders: orders,
             links: [:],
-            showsUnpaidOnly: false
+            isShowingUnpaidOnly: false
         )
 
         // Then
@@ -156,7 +157,7 @@ struct CampaignDetailContentTests {
             campaigns: [campaign],
             orders: [],
             links: links,
-            showsUnpaidOnly: false
+            isShowingUnpaidOnly: false
         )
 
         // Then
@@ -164,6 +165,67 @@ struct CampaignDetailContentTests {
         #expect(content.reminderLink == (hasMatchingLink ? matchingLink : nil))
         #expect(content.summary.orderCount == 0)
         #expect(content.distribution.isEmpty)
+    }
+
+    /// 已結團的開團，結團選單顯示已結團
+    ///
+    /// - Throws: 詳情內容不存在或英文資源目錄不存在時由 `#require` 丟出
+    @Test
+    func settleActionTitle_已結團_顯示已結團() throws {
+        // Given
+        let campaign = Campaign.fixture(
+            id: "C2",
+            name: "四月團",
+            openDate: Date(timeIntervalSince1970: 0),
+            settledDate: Date(timeIntervalSince1970: 3_600)
+        )
+        let content = try #require(
+            CampaignDetailContent.make(
+                campaignID: "C2",
+                campaigns: [campaign],
+                orders: [],
+                links: [:],
+                isShowingUnpaidOnly: false
+            )
+        )
+
+        // When
+        let title = content.settleActionTitle
+        let text = try Self.localizedText(title, language: .english)
+
+        // Then
+        #expect(title.key == "已結團")
+        #expect(text == "Settled")
+    }
+
+    /// 進行中的開團，結團選單顯示結團結算
+    ///
+    /// - Throws: 詳情內容不存在或英文資源目錄不存在時由 `#require` 丟出
+    @Test
+    func settleActionTitle_進行中_顯示結團結算() throws {
+        // Given
+        let campaign = Campaign.fixture(
+            id: "C2",
+            name: "四月團",
+            openDate: Date(timeIntervalSince1970: 0)
+        )
+        let content = try #require(
+            CampaignDetailContent.make(
+                campaignID: "C2",
+                campaigns: [campaign],
+                orders: [],
+                links: [:],
+                isShowingUnpaidOnly: false
+            )
+        )
+
+        // When
+        let title = content.settleActionTitle
+        let text = try Self.localizedText(title, language: .english)
+
+        // Then
+        #expect(title.key == "結團結算")
+        #expect(text == "Campaign Settlement")
     }
 }
 
@@ -203,6 +265,29 @@ private extension CampaignDetailContentTests {
             chargedAmount: amount,
             campaignNames: [campaignName],
             paymentReceiptStatus: receipt
+        )
+    }
+
+    /// 以指定語言的資源目錄解析本地化值，不受測試程序預設語言影響
+    ///
+    /// - Parameters:
+    ///   - resource: 詳情內容提供的本地化值
+    ///   - language: 測試指定的 App 語言
+    /// - Returns: 以指定語言解析後的文字
+    /// - Throws: 指定語言的資源目錄不存在時由 `#require` 丟出
+    static func localizedText(
+        _ resource: LocalizedStringResource,
+        language: AppLanguage
+    ) throws -> String {
+        let bundleURL = try #require(
+            Bundle.main.url(forResource: language.localeIdentifier, withExtension: "lproj")
+        )
+        let bundle = try #require(Bundle(url: bundleURL))
+        return String(
+            localized: resource.defaultValue,
+            table: resource.table,
+            bundle: bundle,
+            locale: language.locale
         )
     }
 }

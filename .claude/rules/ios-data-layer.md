@@ -2,7 +2,7 @@
 paths:
   - "apps/ios/BuyLedger/Core/**"
   - "apps/ios/BuyLedger/Features/{Orders,Campaigns,Lookups,Customers,Dashboard,Insights,More}/**"
-  - "apps/ios/BuyLedger/Features/App/Root{Feature,CascadeOperations,NavigationOperations}.swift"
+  - "apps/ios/BuyLedger/Features/App/Root{Feature,NavigationOperations,LaunchFeature,LaunchOperations}.swift"
   - "apps/ios/BuyLedgerTests/*{Persistence,Migration,Database,Residue}*.swift"
   - "apps/ios/BuyLedgerTests/{Order,Campaign,Category,OrderSource,ReconciliationStatus,PaymentMethod}Service*.swift"
 ---
@@ -17,7 +17,7 @@ paths:
 ## 訂單寫入
 
 - **建立與更新分兩個入口**：`OrderService.createOrder` 遇到同編號資料列拋 `OrderPersistenceError.identifierCollision` 且不寫入；`saveOrder` 才是 upsert。
-    - `saveTapped` 採用 `OrderDraft.resolveWriteResult` 算出的意圖呼叫 `createOrder`／`saveOrder`，不自行以 `editState.original == nil` 重算：兩者在並行刪除或詳情堆疊過期時會分歧，撞號會退回靜默覆寫。
+    - 表單驗證通過後送 `delegate(.saveRequested)`，容器轉給 `OrderWritesFeature`，採用 `OrderDraft.resolveWriteResult` 算出的意圖呼叫 `createOrder`／`saveOrder`，不自行以 `editState.original == nil` 重算：兩者在並行刪除或詳情堆疊過期時會分歧，撞號會退回靜默覆寫。
 - **每次讀寫都經 `BuyLedgerDatabase.read`／`write` 取得一次性 `ModelContext`；`write` 成功只呼叫一次 `save()`，closure 拋錯或 `save()` 失敗就丟棄該 context，不呼叫 `rollback()`**：長命 context 在 save 失敗後，即使 `rollback()` 讓 `hasChanges` 變回 `false`，model 實例仍留著改過的值或刪除標記，之後對同一筆資料的寫入會把殘留帶進 store。
     - Service 不持有跨呼叫的 `ModelContext`／`ModelContainer`，closure 內只回傳 `Sendable` 的 domain 值，不回傳 `@Model`。
     - closure 是同步的，網路、行事曆、使用者確認等 `await` 步驟留在 Service 或 Feature，分成多次 `read`／`write`：`refreshIfStale`、付款方式更正、開團儲存後改名與行事曆都不是單一交易。
@@ -32,16 +32,23 @@ paths:
 
 ## 跨檔不變式
 
-- **四種主檔 (訂單來源、商品類別、付款方式、對帳狀態) 以 `@Shared(.lookupCatalog)` 的 `LookupCatalog` 為單一來源**，CRUD 走 `LookupManagementFeature` (以 `LookupKind` 分流共用 reducer 與 view)。
-    - 持久層改名成功後，`LookupManagementFeature` 送出 `.delegate(.itemRenamed)`，`MoreFeature` 帶上主檔種類轉成 `.delegate(.lookupItemRenamed(kind:rename:))`，`RootFeature` 再以 `RootCascadeOperations.lookupItemRenamed` 更新記憶體內訂單，並經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 分派。
+- **四種主檔 (訂單來源、商品類別、付款方式、對帳狀態) 以 `@Shared(.lookupCatalog)` 的 `LookupCatalog` 為單一來源**，管理頁 CRUD 走 `LookupManagementFeature` (以 `LookupKind` 分流共用 reducer 與 view)。
+    - 訂單端依主檔 Service 過渡分工讀寫：`OrdersLoadFeature` 載入目錄，`OrderWritesFeature` 處理表單新增選項、成功落盤才更新目錄與目前表單；完整例外範圍見 `apps/ios/CLAUDE.md`。
+    - 持久層改名成功後，`LookupManagementFeature` 送出 `.delegate(.itemRenamed)`，`MoreFeature` 帶上主檔種類轉成 `.delegate(.lookupItemRenamed(kind:rename:))`，Root 送 `.orders(.cascadeRequested(.lookupItemRenamed(kind:rename:)))`；容器轉給 `OrderWritesFeature`，由 reducer 以 `Features/Orders/OrdersCascadeOperations` 更新共用訂單，分派經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 處理。
     - 新增第五種主檔時編譯器會標出待補的 switch，但 `MoreFeature.Entry` 的 case 與其推入對照、`BLAccessibilityID.More.Row` 是手寫列舉，漏補會靜默缺少管理畫面與入口。
-    - `@Shared` 只用在主檔目錄 (`.lookupCatalog` 鍵)、開團與 `MoreFeature.State.orders` (客戶頁讀取的訂單投影，見下一條)；其他跨 feature 狀態 (客戶彙總等) 由 `RootFeature` 以 `onChange` 把來源資料投影成各 feature 的副本，跨 feature 的意圖由子 feature 以 delegate 交給 `RootFeature`，擴用前先確認真的有多個 feature 讀寫同一份資料。
+    - 共享範圍為主檔目錄 (`.lookupCatalog`)、幣別清單 (`.currencyCodes`)、訂單與開團容器的無鍵資料及載入狀態、`MoreFeature.State.orders` 投影；其他跨 feature 狀態 (客戶彙總等) 由 Root 以 `onChange` 投影成副本，跨 feature 意圖以 delegate 交給 Root，擴用前先確認需要共用引用。
     - `NameLookupRecordProtocol` 協定遵循放各記錄檔尾端的 extension，不碰型別主體：主體變動會改變 SwiftData 指紋、破壞 migration。
-- **開團資料以 `CampaignFeature.State` 的無鍵 `@Shared` 為來源**：`campaigns`、`orders` (訂單投影)、`reminderLinks`、`showsUnpaidOnly` 四份，建立容器時同時指派給自己與各子 Feature 的 State，父子共用同一份引用。
+- **開團資料以 `CampaignFeature.State` 的無鍵 `@Shared` 為來源**：`campaigns`、`orders` (訂單投影)、`reminderLinks`、`isShowingUnpaidOnly` 四份，建立容器時同時指派給自己與各子 Feature 的 State，父子共用同一份引用。
     - 子 Feature 的 `init` 對唯讀資料只接 `SharedReader`，由父層以 `SharedReader(_:)` 轉換後傳入：`SharedReader` 沒有 setter 與 `withLock`，列表與詳情在編譯期就無法寫入投影與連結。
-    - 訂單投影只有 `RootFeature` 以 `state.campaigns.$orders.withLock` 與 `state.more.$orders.withLock` 寫入，`ProjectionWriteBoundaryTests` 守門；`Features/Campaigns/` 與 `Features/More/` 內投影的 `$orders` 只能作為 `SharedReader(` 的引數。
+    - 開團與「更多」的訂單投影僅由 Root 以 `state.campaigns.$orders.withLock` 與 `state.more.$orders.withLock` 寫入，不能當成訂單資料來源；`Features/Campaigns/` 與 `Features/More/` 內投影的 `$orders` 只能作為 `SharedReader(` 的引數，`ProjectionWriteBoundaryTests` 守門。
     - `MoreFeature.State.orders` 是同型的投影，推入客戶頁時以 `SharedReader(state.$orders)` 傳入。
     - 共享寫入在 reducer 內同步完成，不移到 effect 裡再回送：`RootFeature` 的 `onChange(of: \.campaigns.campaigns)` 只觀察得到 reducer 內的 `withLock`。
+- **訂單資料以 `OrdersFeature.State.orders` 的無鍵 `@Shared` 為來源**：容器建立同一份引用交給子層，清單與詳情只接 `SharedReader`，容器本身不寫。
+    - 只有 `OrdersLoadFeature` (套用讀取結果) 與 `OrderWritesFeature` (寫入結果、cascade、付款方式旗標套用) 在 reducer 內以 `withLock` 更新來源；不在 `.run` effect 內寫，也不外傳可寫引用，`ProjectionWriteBoundaryTests` 分別守住來源與 Root 的投影寫入。
+    - Root 的 `onChange(of: \.orders.orders)` 在實際修改來源的那一次 action 同步開團、「更多」、總覽與分析；這一次是載入回應、寫入回應或 `writes` 套用 cascade 的 action，不能以最初請求或 delegate 的時點代替。
+    - `campaigns`、`defaultCurrency`、`aiSummarySettings` 是 Root 寫入 Orders 的投影，Orders 內部與 helper 只讀；Root 透過容器的 State 方法處理新訂單、日期刷新與篩選導覽，不直接改清單子 State。
+- **幣別清單以 `@Shared(.currencyCodes)` 在記憶體內共用**：Root 的 `RootLaunchFeature` 在 `refreshIfStale` 後讀一次 `fetchCodes`，刷新失敗也讀快取，成功且非空才更新；Orders 只以 `@SharedReader(.currencyCodes)` 建立選項。
+    - 讀取失敗或空結果保留原值；只有共用清單為空時，表單選項才使用 `CurrencyCode.defaults`。
 - **付款方式旗標正規化只有 `LedgerOrder.applyingPaymentMethodFlags(...)` 一處**：折抵上限、對帳狀態清空、貨到付款運費三條規則都在這裡，手動編輯與回溯更正共用。
 - **主檔改名是一次原子操作**：`OrderService.applyOrderSourceRename`、`applyCategoryRename`、`applyPaymentMethodRename`、`applyReconciliationStatusRename` 各在一次 `database.write` 內改主檔與引用訂單，成功只 `save()` 一次；失敗時拋出原始錯誤並丟棄該 context，不能讓主檔與訂單只改一邊。名稱撞到既有項目時依主檔規則合併，付款方式同時合併旗標。
     - 改名只有 `OrderService` 這四個入口，各主檔 Service (`CategoryService`、`OrderSourceService` 等) 不提供改名 closure：只改主檔不改訂單會留下孤兒引用。
@@ -49,14 +56,15 @@ paths:
     - 只更新既有訂單、不插入；找不到目標 id 時整批拋 `PaymentMethodPersistenceError.orderNotFound`。
     - `PaymentMethodCorrectionFeature` 以一次 fetch 建立 `PaymentMethodEditPlan`，確認筆數與重算對象都取自該快照。
     - 取消確認時主檔旗標也不套用；零筆受影響或旗標未變的純改名不出現確認。
-    - 資料流：`PaymentMethodCorrectionFeature` 取樣並要求必要確認 → `PaymentMethodService` 原子寫入 → `LookupManagementFeature` 送出 `paymentMethodEdited` delegate → `MoreFeature` 原樣轉送 → `RootFeature` 攔截並純轉送同一份已正規化 payload (不再正規化) → `OrdersFeature` 以 `paymentMethodFlagsApplied` 套到記憶體內訂單且不再落盤；改動時一併檢查這些型別。
+    - 資料流：`PaymentMethodCorrectionFeature` 取樣並要求必要確認 → `PaymentMethodService` 原子寫入 → `LookupManagementFeature` 送出 `paymentMethodEdited` delegate → `MoreFeature` 原樣轉送 → Root 送 `.orders(.paymentMethodFlagsApplyRequested(plan.affectedOrders))` → 容器轉給 `OrderWritesFeature` 在 reducer 內套用同一份已正規化資料，不重算旗標、不重複落盤；改動時一併檢查這些型別。
     - 付款方式編輯成功不走 `.delegate(.itemRenamed)`：旗標是權威覆寫，語意與更名 cascade 不同。
 - **開團刪除在單一 `database.write` 交易內完成**：`CampaignService.removeCampaign` 移除 `CampaignRecord`、剝除所有訂單 `campaignNames` 中的該名稱、移除 `CampaignReminderRecord`，最後單次 `save()`，並回傳被移除提醒連結的行事曆事件 id。
     - 行事曆事件在本機刪除成功後才移除，失敗不回滾，但要以 `CampaignReminderFeature` 的 `delegate(.failed(.eventRemovalAfterDeleteFailed))` 告知。
-    - 資料流：`CampaignWritesFeature` 收到刪除結果才更新共用開團並送 `delegate(.deleted)` → `CampaignFeature` 移除該開團的詳情，再送 `delegate(.campaignDeleted)` 與 `.reminder(.campaignRemoved)` → `RootFeature` 依 `campaignDeleted` 同步 `OrdersFeature.State` 的訂單副本；改動時一併檢查這些型別。
-- **開團是否已收單一律呼叫 `Campaign.evaluatingAutoClose(asOf:calendar:)`** (`CampaignListFeature`／`OrdersFeature`／`OrderEditFeature` 共用)，不各寫日期比對。
+    - 資料流：`CampaignWritesFeature` 收到刪除結果才更新共用開團並送 `delegate(.deleted)` → `CampaignFeature` 移除該開團的詳情，再送 `delegate(.campaignDeleted)` 與 `.reminder(.campaignRemoved)` → Root 送 `.orders(.cascadeRequested(.campaignDeleted(name)))` → 容器轉給 `OrderWritesFeature` 在 reducer 內調整共用訂單；改動時一併檢查這些型別。開團改名同樣由 Root 送 `cascadeRequested`，不就地修改訂單。
+- **開團是否已收單一律呼叫 `Campaign.evaluatingAutoClose(asOf:calendar:)`** (`CampaignLoadFeature` 載入與 `OrdersEditorOptions` 建構表單選項共用)，不各寫日期比對。
     - 結單日當天仍進行中，隔天 00:00 才轉已收單。
     - `asOf`／`calendar` 吃 reducer 注入的 `date.now`／`calendar`。
+    - 自動結單的更新與存檔只由 `CampaignLoadFeature` 負責；Orders 的開團來自 Root 投影，選項建構只評估、不寫回。
 - **營收歸屬一律呼叫 `LedgerOrder.revenueAttributionOrders(from:)`** (總覽本月損益、分析走勢與成本結構、客戶累計消費)，不各寫 predicate。
     - 類別與開團彙總用另一口徑 `contributesToCategoryBreakdown`，兩者刻意並存、不可互換。
     - 被現存合併結果列為來源的訂單不計入營收；合併結果刪除後來源恢復計入。不在來源訂單上寫永久標記。

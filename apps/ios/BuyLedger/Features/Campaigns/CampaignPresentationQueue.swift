@@ -17,7 +17,7 @@ struct CampaignPresentationQueue: Equatable {
     var isFormClosing = false
 
     /// 表單開啟或關閉中到達的最新一則通知；沒有時為 `nil`
-    var pendingNotice: CampaignFeature.Destination.State?
+    var pendingNotice: CampaignPresentationFeature.Destination.State?
 }
 
 // MARK: - Internal Method
@@ -30,8 +30,8 @@ extension CampaignPresentationQueue {
     ///   - notice: 要呈現的通知
     ///   - destination: 目前的目的地；表單已關閉時會被通知取代
     mutating func present(
-        _ notice: CampaignFeature.Destination.State,
-        in destination: inout CampaignFeature.Destination.State?
+        _ notice: CampaignPresentationFeature.Destination.State,
+        in destination: inout CampaignPresentationFeature.Destination.State?
     ) {
         if isFormClosing || isFormOpen(destination) {
             pendingNotice = notice
@@ -48,7 +48,9 @@ extension CampaignPresentationQueue {
     /// 收到目的地被關閉的事件時，若關閉前仍是表單 (取消無變更、確認捨棄、下滑關閉) 就標記表單開始關閉
     ///
     /// - Parameter destination: 事件送達時、尚未清空的目的地
-    mutating func markFormClosing(dismissing destination: CampaignFeature.Destination.State?) {
+    mutating func markFormClosing(
+        dismissing destination: CampaignPresentationFeature.Destination.State?
+    ) {
         if isFormOpen(destination) {
             isFormClosing = true
         }
@@ -57,7 +59,9 @@ extension CampaignPresentationQueue {
     /// 在 sheet 關閉動畫結束後清除關閉旗標，並把暫存的通知移進目的地
     ///
     /// - Parameter destination: 目前的目的地；若又開了新的表單，暫存的通知繼續等到它關閉
-    mutating func finishFormClosing(into destination: inout CampaignFeature.Destination.State?) {
+    mutating func finishFormClosing(
+        into destination: inout CampaignPresentationFeature.Destination.State?
+    ) {
         isFormClosing = false
         guard !isFormOpen(destination), let pendingNotice else {
             return
@@ -75,7 +79,7 @@ private extension CampaignPresentationQueue {
     ///
     /// - Parameter destination: 要檢查的目的地
     /// - Returns: 是編輯表單時為 `true`
-    func isFormOpen(_ destination: CampaignFeature.Destination.State?) -> Bool {
+    func isFormOpen(_ destination: CampaignPresentationFeature.Destination.State?) -> Bool {
         if case .edit? = destination {
             return true
         }

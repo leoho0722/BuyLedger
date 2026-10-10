@@ -93,7 +93,7 @@ extension ActionGroupingScanTests {
 
         var violations: [Violation] = []
         var usedAllowlistKeys = Set<String>()
-        let sortedFiles = files.sorted { lhs, rhs in lhs.path < rhs.path }
+        let sortedFiles = Set(files).sorted { lhs, rhs in lhs.path < rhs.path }
         for file in sortedFiles {
             let source = try String(contentsOf: file, encoding: .utf8)
             let result = scanStoreSendContents(

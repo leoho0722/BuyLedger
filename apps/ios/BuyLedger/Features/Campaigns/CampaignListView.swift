@@ -25,7 +25,8 @@ struct CampaignListView: View {
     var body: some View {
         content
             .task {
-                await store.send(.view(.task)).finish()
+                // 載入結果由多個分頁共用，不隨列表消失而取消
+                store.send(.view(.task))
             }
             .rootNavigationTitle("開團", language: language)
             .toolbar {
@@ -217,10 +218,10 @@ private extension CampaignListView {
 
 #Preview("開團列表") {
     var state = CampaignListFeature.State(
-        campaigns: Shared(value: Campaign.sampleCampaigns),
+        campaigns: SharedReader(value: Campaign.sampleCampaigns),
         orders: SharedReader(value: LedgerOrder.sampleCampaignOrders)
     )
-    state.hasLoaded = true
+    state.$hasLoaded = SharedReader(value: true)
     state.dateContext = CampaignDateContext(
         now: Campaign.sampleCampaigns.first?.openDate ?? .distantPast,
         calendar: Calendar(identifier: .gregorian)
@@ -238,7 +239,7 @@ private extension CampaignListView {
 
 #Preview("開團列表載入中") {
     let state = CampaignListFeature.State(
-        campaigns: Shared(value: []),
+        campaigns: SharedReader(value: []),
         orders: SharedReader(value: [])
     )
 
@@ -253,11 +254,11 @@ private extension CampaignListView {
 }
 
 #Preview("開團列表空狀態") {
-    var state = CampaignListFeature.State(
-        campaigns: Shared(value: []),
+    let state = CampaignListFeature.State(
+        campaigns: SharedReader(value: []),
         orders: SharedReader(value: [])
     )
-    state.hasLoaded = true
+    state.$hasLoaded = SharedReader(value: true)
 
     return NavigationStack {
         CampaignListView(
@@ -270,11 +271,11 @@ private extension CampaignListView {
 }
 
 #Preview("開團列表載入失敗") {
-    var state = CampaignListFeature.State(
-        campaigns: Shared(value: []),
+    let state = CampaignListFeature.State(
+        campaigns: SharedReader(value: []),
         orders: SharedReader(value: [])
     )
-    state.errorMessage = "開團載入失敗，請稍後再試。"
+    state.$errorMessage = SharedReader(value: "開團載入失敗，請稍後再試。")
 
     return NavigationStack {
         CampaignListView(

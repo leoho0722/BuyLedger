@@ -14,7 +14,7 @@ extension CampaignFeatureTests {
 
     /// 確認結團後先寫入結算日期，寫入成功才套用到清單，開團狀態維持不變
     @Test
-    func destination_確認結算開團_記錄結算日期且不改狀態() async {
+    func presentation_確認結算開團_記錄結算日期且不改狀態() async {
         // Given
         let campaign = Campaign.fixture(
             id: "C1",
@@ -26,7 +26,7 @@ extension CampaignFeatureTests {
         initial.$campaigns.withLock {
             $0 = [campaign]
         }
-        initial.destination = Self.settleAlert(id: "C1", name: "團")
+        initial.presentation.destination = Self.settleAlert(id: "C1", name: "團")
 
         let savedCampaigns = LockIsolated<[Campaign]>([])
         let store = TestStore(initialState: initial) {
@@ -41,16 +41,17 @@ extension CampaignFeatureTests {
         }
 
         // When
-        await store.send(.destination(.presented(.alert(.confirmSettle("C1"))))) {
-            $0.destination = nil
+        await store.send(.presentation(.destination(.presented(.alert(.confirmSettle("C1")))))) {
+            $0.presentation.destination = nil
         }
 
         // Then
-        await store.receive(\.writes.settleRequested) {
+        await store.receive(\.presentation.delegate.settleConfirmed, "C1") {
             $0.$campaigns.withLock {
                 $0[0].settledDate = TestDependencies.fixedNow
             }
         }
+        await store.receive(\.writes.settleRequested)
         await store.receive(\.writes.settleResponse.success)
         #expect(store.state.campaigns[0].status == .closed, "結團不應改變狀態")
         await store.finish()
@@ -61,7 +62,7 @@ extension CampaignFeatureTests {
 
     /// 確認刪除後刪除開團並從清單移除
     @Test
-    func destination_確認刪除開團_從清單移除() async {
+    func presentation_確認刪除開團_從清單移除() async {
         // Given
         let campaign = Campaign.fixture(
             id: "C1",
@@ -73,7 +74,7 @@ extension CampaignFeatureTests {
         initial.$campaigns.withLock {
             $0 = [campaign]
         }
-        initial.destination = Self.deletionAlert(id: "C1", name: "團")
+        initial.presentation.destination = Self.deletionAlert(id: "C1", name: "團")
 
         let removedCampaignIDs = LockIsolated<[String]>([])
         let removedCampaignNames = LockIsolated<[String]>([])
@@ -92,16 +93,17 @@ extension CampaignFeatureTests {
         }
 
         // When
-        await store.send(.destination(.presented(.alert(.confirmDelete("C1"))))) {
-            $0.destination = nil
+        await store.send(.presentation(.destination(.presented(.alert(.confirmDelete("C1")))))) {
+            $0.presentation.destination = nil
         }
 
         // Then
-        await store.receive(\.writes.deleteRequested) {
+        await store.receive(\.presentation.delegate.deleteConfirmed, "C1") {
             $0.$campaigns.withLock {
                 $0 = []
             }
         }
+        await store.receive(\.writes.deleteRequested)
         await store.receive(\.writes.deleteResponse.success)
         await store.receive(\.writes.delegate.deleted)
         await store.receive(\.delegate.campaignDeleted)

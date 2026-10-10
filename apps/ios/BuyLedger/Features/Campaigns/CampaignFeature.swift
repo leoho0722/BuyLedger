@@ -8,13 +8,13 @@
 import ComposableArchitecture
 import Foundation
 
-/// 開團分頁的容器：持有共用資料，轉送列表與詳情的請求，統一呈現編輯表單與通知
+/// 開團分頁的容器：持有共用資料，轉送列表與詳情的請求，並把寫入與呈現結果交給對應的子 Feature
 @Reducer
 struct CampaignFeature {
 
     // MARK: - State
 
-    /// 容器狀態：共用資料的來源、子 Feature 狀態、詳情導覽堆疊與唯一的呈現目的地
+    /// 容器狀態：共用資料的來源、子 Feature 狀態與詳情導覽堆疊
     @ObservableState
     struct State: Equatable {
 
@@ -25,10 +25,13 @@ struct CampaignFeature {
         @Shared var orders: [LedgerOrder]
 
         /// 詳情頁「只看未收款」篩選，跨導覽保留
-        @Shared var showsUnpaidOnly: Bool
+        @Shared(value: false) var isShowingUnpaidOnly: Bool
 
         /// 各開團的提醒連結，只有提醒子 Feature 寫入
         @Shared var reminderLinks: [Campaign.ID: CampaignReminderLink]
+
+        /// 開團載入與自動結單子 Feature 的狀態
+        var load: CampaignLoadFeature.State
 
         /// 列表子 Feature 的狀態
         var list: CampaignListFeature.State
@@ -39,14 +42,11 @@ struct CampaignFeature {
         /// 開團寫入子 Feature 的狀態
         var writes: CampaignWritesFeature.State
 
+        /// 呈現子 Feature 的狀態：編輯表單、alert 與一次性通知的佇列
+        var presentation = CampaignPresentationFeature.State()
+
         /// 已推入的詳情堆疊，同一時間最多一個
         var path = StackState<Path.State>()
-
-        /// 目前呈現中的編輯表單或 alert；`nil` 表示沒有呈現
-        @Presents var destination: Destination.State?
-
-        /// 表單開啟與關閉期間到達的通知暫存，表單關好後才呈現
-        var presentationQueue = CampaignPresentationQueue()
 
         /// 建立容器與各子層，共享資料的引用同時指派給自己與子層
         init() {
@@ -55,11 +55,15 @@ struct CampaignFeature {
             let sharedReminderLinks = Shared<[Campaign.ID: CampaignReminderLink]>(value: [:])
             self._campaigns = sharedCampaigns
             self._orders = sharedOrders
-            self._showsUnpaidOnly = Shared(value: false)
             self._reminderLinks = sharedReminderLinks
+            let load = CampaignLoadFeature.State(campaigns: sharedCampaigns)
+            self.load = load
             self.list = CampaignListFeature.State(
-                campaigns: sharedCampaigns,
-                orders: SharedReader(sharedOrders)
+                campaigns: SharedReader(sharedCampaigns),
+                orders: SharedReader(sharedOrders),
+                isLoading: SharedReader(load.$isLoading),
+                hasLoaded: SharedReader(load.$hasLoaded),
+                errorMessage: SharedReader(load.$errorMessage)
             )
             self.reminder = CampaignReminderFeature.State(links: sharedReminderLinks)
             self.writes = CampaignWritesFeature.State(campaigns: sharedCampaigns)
@@ -80,7 +84,7 @@ struct CampaignFeature {
                         campaigns: SharedReader($campaigns),
                         orders: SharedReader($orders),
                         reminderLinks: SharedReader($reminderLinks),
-                        showsUnpaidOnly: $showsUnpaidOnly
+                        isShowingUnpaidOnly: $isShowingUnpaidOnly
                     )
                 )
             )
@@ -91,15 +95,6 @@ struct CampaignFeature {
         /// - Parameter context: 殼層解析後的目前日期與行事曆
         mutating func refreshDateContext(_ context: CampaignDateContext) {
             list.dateContext = context
-        }
-
-        /// 呈現一則通知；表單開啟或關閉中先暫存，否則直接顯示
-        ///
-        /// - Parameter notice: 要呈現的通知
-        mutating func present(_ notice: Destination.State) {
-            var current = destination
-            presentationQueue.present(notice, in: &current)
-            destination = current
         }
     }
 
@@ -118,20 +113,28 @@ struct CampaignFeature {
         /// - Parameter action: 要交給根畫面的意圖
         case delegate(Delegate)
 
-        /// 編輯表單或 alert 的事件
-        ///
-        /// - Parameter action: 目的地的呈現、關閉或內部事件
-        case destination(PresentationAction<Destination.Action>)
-
         /// 詳情導覽堆疊的事件
         ///
         /// - Parameter action: 堆疊元素的操作與返回
         case path(StackActionOf<Path>)
 
+        /// 呈現子 Feature 的事件
+        ///
+        /// - Parameter action: 編輯表單與 alert 的事件、一次性通知與子層委派
+        case presentation(CampaignPresentationFeature.Action)
+
         /// 列表子 Feature 的事件
         ///
-        /// - Parameter action: 列表操作、載入結果與委派請求
+        /// - Parameter action: 列表操作與委派請求
         case list(CampaignListFeature.Action)
+
+        /// 開團載入子 Feature 的事件
+        ///
+        /// - Parameter action: 讀取結果、自動結單結果或失敗委派
+        case load(CampaignLoadFeature.Action)
+
+        /// 父層要求載入開團，由載入子層處理去重
+        case loadRequested
 
         /// 提醒子 Feature 的事件
         ///
@@ -170,7 +173,7 @@ struct CampaignFeature {
             ///   - to: 儲存後的開團名稱
             case campaignRenamed(from: String, to: String)
 
-            /// 訂單收款狀態變更，轉發到 ``OrdersFeature/Action/receiptStatusChanged(_:_:)``
+            /// 訂單收款狀態變更，轉發到 ``OrdersFeature/Action/receiptStatusChangeRequested(id:status:)``
             ///
             /// - Parameters:
             ///   - orderID: 收款狀態變更的訂單識別值
@@ -190,22 +193,32 @@ struct CampaignFeature {
     /// `UUID` 產生器，供新開團與編輯表單的識別值使用，方便在測試中注入固定值
     @Dependency(\.uuid) private var uuid
 
-    /// 開啟本 App 系統設定頁的能力；權限被拒提示的「前往設定」使用
-    @Dependency(\.openSettingsService) private var openSettingsService
-
     // MARK: - Body
 
-    /// 組合各子 Feature，容器自己的轉送與呈現邏輯在 `core(state:action:)`
+    /// 組合各子 Feature，容器自己的轉送與分派邏輯在 `core(state:action:)`
     var body: some Reducer<State, Action> {
-        Scope(state: \.list, action: \.list) { CampaignListFeature() }
+        Scope(state: \.load, action: \.load) {
+            CampaignLoadFeature()
+        }
 
-        Scope(state: \.reminder, action: \.reminder) { CampaignReminderFeature() }
+        Scope(state: \.list, action: \.list) {
+            CampaignListFeature()
+        }
 
-        Scope(state: \.writes, action: \.writes) { CampaignWritesFeature() }
+        Scope(state: \.reminder, action: \.reminder) {
+            CampaignReminderFeature()
+        }
+
+        Scope(state: \.writes, action: \.writes) {
+            CampaignWritesFeature()
+        }
+
+        Scope(state: \.presentation, action: \.presentation) {
+            CampaignPresentationFeature()
+        }
 
         Reduce(core)
             .forEach(\.path, action: \.path)
-            .ifLet(\.$destination, action: \.destination)
     }
 }
 
@@ -213,7 +226,7 @@ struct CampaignFeature {
 
 private extension CampaignFeature {
 
-    /// 處理列表與詳情的請求、確認結果與子 Feature 的委派，統一呈現通知
+    /// 處理列表與詳情的請求、子 Feature 的委派與寫入結果，呈現相關的事件交給呈現子 Feature
     ///
     /// - Parameters:
     ///   - state: 開團容器狀態
@@ -225,43 +238,55 @@ private extension CampaignFeature {
             return .send(.reminder(.linksRequested))
 
         case .view(.formSheetDismissed):
-            var current = state.destination
-            state.presentationQueue.finishFormClosing(into: &current)
-            state.destination = current
+            state.presentation.finishFormClosing()
             return .none
 
-        case .destination(.presented(.edit(.delegate(.saveRequested(let request))))):
-            return save(request, state: &state)
-
-        case .destination(.presented(.alert(.confirmDelete(let id)))):
-            guard let campaign = state.campaigns.first(where: { $0.id == id }) else {
-                return .none
-            }
-            return .send(.writes(.deleteRequested(id: id, name: campaign.name)))
-
-        case .destination(.presented(.alert(.confirmSettle(let id)))):
-            return .send(.writes(.settleRequested(id)))
-
-        case .destination(.presented(.alert(.openSettings))):
-            let openSettingsService = openSettingsService
-            return .run { _ in await openSettingsService.open() }
-
-        case .destination(.dismiss):
-            state.presentationQueue.markFormClosing(dismissing: state.destination)
+        case .delegate:
             return .none
 
         case .path(.element(id: _, action: .detail(.delegate(.requested(let request))))):
             return fulfill(request, state: &state)
 
+        case .path:
+            return .none
+
+        case .presentation(.delegate(.saveRequested(let request))):
+            return save(request, state: &state)
+
+        case .presentation(.delegate(.deleteConfirmed(let id))):
+            guard let campaign = state.campaigns.first(where: { $0.id == id }) else {
+                return .none
+            }
+            return .send(.writes(.deleteRequested(id: id, name: campaign.name)))
+
+        case .presentation(.delegate(.settleConfirmed(let id))):
+            return .send(.writes(.settleRequested(id)))
+
+        case .presentation:
+            return .none
+
         case .list(.delegate(.requested(let request))):
             return fulfill(request, state: &state)
 
-        case .list(.delegate(.autoCloseFailed)):
-            state.present(.autoCloseFailure)
+        case .list(.delegate(.loadRequested)):
+            return .send(.load(.loadRequested))
+
+        case .list:
             return .none
 
+        case .load(.delegate(.autoCloseFailed)):
+            return .send(.presentation(.noticeRequested(.autoCloseFailure)))
+
+        case .load:
+            return .none
+
+        case .loadRequested:
+            return .send(.load(.loadRequested))
+
         case .reminder(.delegate(.failed(let failure))):
-            state.present(.reminderFailure(failure))
+            return .send(.presentation(.noticeRequested(.reminderFailure(failure))))
+
+        case .reminder:
             return .none
 
         case .writes(.delegate(.saved(let request?))):
@@ -280,11 +305,49 @@ private extension CampaignFeature {
             )
 
         case .writes(.delegate(.failed(let failure))):
-            state.present(.writeFailure(failure))
+            return .send(.presentation(.noticeRequested(.writeFailure(failure))))
+
+        case .writes:
+            return .none
+        }
+    }
+
+    /// 依列表或詳情送出的請求解析操作，並交由容器或呈現子 Feature 套用
+    ///
+    /// - Parameters:
+    ///   - request: 列表或詳情送出的請求
+    ///   - state: 開團容器狀態，直接就地修改
+    /// - Returns: 容器接續執行的 Effect，沒有就回 `.none`
+    func fulfill(_ request: CampaignRequest, state: inout State) -> Effect<Action> {
+        switch CampaignRequestPlan.fulfill(
+            request,
+            campaigns: state.campaigns,
+            reminderLinks: state.reminderLinks
+        ) {
+        case .none:
             return .none
 
-        case .delegate, .destination, .path, .list, .reminder, .writes:
+        case .showDetail(let id):
+            state.showDetail(campaignID: id)
             return .none
+
+        case .edit(let original, let link):
+            let form = CampaignEditFeature.State(
+                original: original,
+                link: link,
+                id: uuid(),
+                now: date.now,
+                calendar: calendar
+            )
+            state.presentation.present(.edit(form))
+            return .none
+
+        case .present(let destination):
+            state.presentation.present(destination)
+            return .none
+
+        case .send(let action):
+            return .send(action)
         }
     }
 
@@ -293,7 +356,7 @@ private extension CampaignFeature {
     /// - Parameters:
     ///   - request: 表單送出的儲存意圖
     ///   - state: 容器狀態
-    /// - Returns: 重名時只寫回原因；通過時轉送給寫入子 Feature
+    /// - Returns: 重名時只把原因寫回表單；通過時轉送給寫入子 Feature
     func save(_ request: CampaignEditFeature.SaveRequest, state: inout State) -> Effect<Action> {
         if CampaignSavePlan.conflicts(
             name: request.name,
@@ -301,13 +364,10 @@ private extension CampaignFeature {
             editingID: request.original?.id,
             campaigns: state.campaigns
         ) {
-            state.destination?.modify(\.edit) {
-                $0.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
-            }
+            state.presentation.showNameConflict()
             return .none
         }
-        state.destination = nil
-        state.presentationQueue.beginFormClosing()
+        state.presentation.closeFormForSave()
         let id = request.original?.id ?? uuid().uuidString
         let plan = CampaignSavePlan.make(
             request: request,
@@ -316,61 +376,5 @@ private extension CampaignFeature {
             calendar: calendar
         )
         return .send(.writes(.saveRequested(plan)))
-    }
-
-    /// 處理列表與詳情共用的開團操作請求
-    ///
-    /// - Parameters:
-    ///   - request: 要執行的開團操作
-    ///   - state: 容器狀態
-    /// - Returns: 後續寫入或根功能同步事件
-    func fulfill(_ request: CampaignRequest, state: inout State) -> Effect<Action> {
-        switch request {
-        case .showDetail(let id):
-            state.showDetail(campaignID: id)
-            return .none
-
-        case .create:
-            state.destination = .edit(
-                CampaignEditFeature.State(id: uuid(), now: date.now, calendar: calendar)
-            )
-            return .none
-
-        case .edit(let id):
-            guard let campaign = state.campaigns.first(where: { $0.id == id }) else {
-                return .none
-            }
-            state.destination = .edit(
-                CampaignEditFeature.State(
-                    original: campaign,
-                    link: state.reminderLinks[id],
-                    id: uuid(),
-                    now: date.now,
-                    calendar: calendar
-                )
-            )
-            return .none
-
-        case .delete(let id):
-            guard let campaign = state.campaigns.first(where: { $0.id == id }) else {
-                return .none
-            }
-            state.destination = .deleteConfirmation(for: campaign)
-            return .none
-
-        case .settle(let id):
-            guard let campaign = state.campaigns.first(where: { $0.id == id }),
-                  campaign.settledDate == nil else {
-                return .none
-            }
-            state.destination = .settlementConfirmation(for: campaign)
-            return .none
-
-        case .changeStatus(let id, let status):
-            return .send(.writes(.statusChangeRequested(id: id, status: status)))
-
-        case .toggleReceipt(let orderID, let status):
-            return .send(.delegate(.receiptStatusToggled(orderID: orderID, status: status)))
-        }
     }
 }

@@ -21,9 +21,9 @@ struct DashboardOngoingCampaignsSection: View {
 
     // MARK: - Body
 
-    /// 區段骨架，單次求值各團彙總後交給卡片呈現
+    /// 區段骨架，把 State 算好的各團列交給卡片呈現
     var body: some View {
-        campaignsCard(rows: rows)
+        campaignsCard(rows: store.ongoingCampaignRows)
     }
 }
 
@@ -36,7 +36,7 @@ private extension DashboardOngoingCampaignsSection {
     /// - Parameter rows: 進行中的開團與各自的訂單彙總
     /// - Returns: 區段 view；沒有進行中的開團時為空
     @ViewBuilder
-    func campaignsCard(rows: [Row]) -> some View {
+    func campaignsCard(rows: [DashboardFeature.State.OngoingCampaignRow]) -> some View {
         if !rows.isEmpty {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("進行中的開團")
@@ -54,16 +54,19 @@ private extension DashboardOngoingCampaignsSection {
     ///
     /// - Parameter rows: 進行中的開團與各自的訂單彙總
     /// - Returns: 開團列 view
-    func rowList(rows: [Row]) -> some View {
+    func rowList(rows: [DashboardFeature.State.OngoingCampaignRow]) -> some View {
         VStack(spacing: BLSpacing.medium) {
             ForEach(Array(rows.enumerated()), id: \.element.campaign.id) { index, entry in
                 Button {
-                    store.send(.delegate(.campaignTapped(entry.campaign.name)))
+                    store.send(.view(.campaignTapped(entry.campaign.name)))
                 } label: {
                     campaignRow(campaign: entry.campaign, summary: entry.summary)
                         .contentShape(.rect)
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier(
+                    BLAccessibilityID.Dashboard.ongoingCampaignRow(campaignID: entry.campaign.id)
+                )
 
                 if index < rows.count - 1 {
                     Divider()
@@ -76,15 +79,15 @@ private extension DashboardOngoingCampaignsSection {
     ///
     /// - Parameters:
     ///   - campaign: 進行中的開團
-    ///   - summary: 由 `rows` 一次算好的該團彙總
+    ///   - summary: 由 `DashboardFeature.State.ongoingCampaignRows` 算好的該團彙總
     /// - Returns: 單列 view
     func campaignRow(campaign: Campaign, summary: CampaignSummary) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             HStack(spacing: BLSpacing.small) {
                 Text(campaign.name)
+                    .lineLimit(1)
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.label)
-                    .lineLimit(1)
 
                 Spacer(minLength: 0)
 
@@ -115,21 +118,6 @@ private extension DashboardOngoingCampaignsSection {
     }
 }
 
-// MARK: - Nested Types
-
-extension DashboardOngoingCampaignsSection {
-
-    /// 區段內的一列資料：進行中的開團與它的訂單彙總
-    struct Row {
-
-        /// 進行中的開團
-        let campaign: Campaign
-
-        /// 該團的訂單彙總
-        let summary: CampaignSummary
-    }
-}
-
 // MARK: - Private Method
 
 private extension DashboardOngoingCampaignsSection {
@@ -137,23 +125,6 @@ private extension DashboardOngoingCampaignsSection {
     /// 目前外觀使用的色盤
     var palette: BLPalette {
         BLPalette()
-    }
-
-    /// 進行中的開團與各自的訂單彙總
-    var rows: [Row] {
-        // 單次掃描訂單，批次建立各團的畫面投影
-        let ongoingCampaigns = store.campaigns.filter { $0.status == .ongoing }
-        let summaries = CampaignSummary.batch(
-            campaignNames: ongoingCampaigns.map(\.name),
-            orders: store.orders
-        )
-
-        return ongoingCampaigns.map {
-            Row(
-                campaign: $0,
-                summary: summaries[$0.name] ?? CampaignSummary(campaignName: $0.name, orders: [])
-            )
-        }
     }
 }
 

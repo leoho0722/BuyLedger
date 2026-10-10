@@ -29,7 +29,7 @@ paths:
     - 掃描守門只涵蓋 `.animation(`；新增 `withAnimation`／`.transition`／`.symbolEffect` 時要人工確認。
 - **圖表元件呼叫 `.accessibilityChartDescriptor(_:)` 提供原生圖表導覽**，新增圖表元件比照。
     - `AXChartDescriptor` 的標題與序列名是 `String`，不隨 App 內語言切換翻譯；`BLBarChart`／`BLDonutChart`／`BLSparkline` 因此開放為建構參數，由呼叫端以 `AppLanguage.localized(_:)` 傳入已本地化字串。
-    - Design System 元件不持有 `AppLanguage` 是既有慣例 (不是分層限制)；不持有語言狀態的 view (如 `OrderDetailView`) 由 `@Environment(\.locale)` 換算出 `language`，並與 `CurrencyDisplayName.text(code:language:)` 共用同一入口；picker 搜尋補充文字走 `CurrencyDisplayName.searchKeywords(code:locale:)`。
+    - Design System 元件不持有 `AppLanguage` 是既有慣例 (不是分層限制)；不持有語言狀態的 view (如 `OrderDetailContentView`) 由 `@Environment(\.locale)` 換算出 `language`，並與 `CurrencyDisplayName.text(code:language:)` 共用同一入口；picker 搜尋補充文字走 `CurrencyDisplayName.searchKeywords(code:locale:)`。
     - 這些字面值同樣要進 `Localizable.xcstrings`。
 
 ## 本地化
@@ -38,7 +38,7 @@ paths:
     - 帶插值的文案用 `Text(LocalizedStringKey("\(count) …"))`；不用 `String(localized:locale:)`，它走系統語言 bundle、不吃 App 內語言切換。
     - 使用者資料 (主檔名稱、`customer.name`) 與格式化後的數字、日期維持 verbatim。
 - **根分頁標題用 `rootNavigationTitle(_:language:)`**：`navigationTitle` 不會隨 `\.locale` 可靠地重新解析 String Catalog，改由 `AppLanguage.localized(_:)` 先解析。
-    - Orders 的多選三態標題由 `OrdersFeature.State.navigationTitleKey` 衍生；`Tab(LocalizedStringKey)` 不需要此處理。
+    - Orders 的多選三態標題由 `OrderListFeature.State.navigationTitleKey` 衍生；`Tab(LocalizedStringKey)` 不需要此處理。
 - **新增任何 UI 字串 (含 `AlertState`／`TextState`、`accessibilityLabel`) 都補 `Localizable.xcstrings` 的 `en`**，否則英文模式露出中文。
     - 手動補 catalog 用文字插入展開格式的 entry，不整檔 `json.dump` 重寫：`.xcstrings` 是 Xcode 自訂序列化，重寫會產生巨量 diff。
     - `LocalizationCatalogTests` 會掃描程式碼中的使用者可見字面值；型別呼叫自動涵蓋，但文字類 modifier (如 `.help`) 與 display property 是列舉清單，新增這兩類時同步補 `LocalizationCatalogTests+LiteralScan.swift` `visibleLiteralStarts` 內的 `visiblePatterns`，以及 `String+SourceLiteralScan.swift` `isDisplayScopeDeclaration` 內的 `displayProperties`。

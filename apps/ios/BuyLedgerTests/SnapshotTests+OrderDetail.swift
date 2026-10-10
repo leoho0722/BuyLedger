@@ -5,6 +5,7 @@
 //  Created by Leo Ho on 2026/10/5.
 //
 
+import ComposableArchitecture
 import SnapshotTesting
 import SwiftUI
 import Testing
@@ -53,11 +54,19 @@ extension SnapshotTests {
                 photos: [],
                 mergedSourceIDs: []
             )
+            let state = OrderDetailFeature.State(
+                orderID: order.id,
+                orders: SharedReader(value: [order])
+            )
 
             // When
-            let view = OrderDetailView(order: order)
-                .environment(\.locale, AppLanguage.traditionalChinese.locale)
-                .frame(width: 393, height: 852)
+            let view = OrderDetailView(
+                store: Store(initialState: state) {
+                    OrderDetailFeature()
+                }
+            )
+            .environment(\.locale, AppLanguage.traditionalChinese.locale)
+            .frame(width: 393, height: 852)
 
             // Then
             assertSnapshot(of: view, as: .image)

@@ -5,6 +5,8 @@
 //  Created by Leo Ho on 2026/10/2.
 //
 
+import Foundation
+
 /// 組合詳情頁需要的開團、彙總、可見分貨列與提醒連結
 struct CampaignDetailContent: Equatable, Sendable {
 
@@ -23,6 +25,16 @@ struct CampaignDetailContent: Equatable, Sendable {
     let reminderLink: CampaignReminderLink?
 }
 
+// MARK: - Computed Properties
+
+extension CampaignDetailContent {
+
+    /// 結團選單項目的標題；已結團的開團顯示已結團
+    var settleActionTitle: LocalizedStringResource {
+        campaign.isSettled ? "已結團" : "結團結算"
+    }
+}
+
 // MARK: - Internal Method
 
 extension CampaignDetailContent {
@@ -34,14 +46,14 @@ extension CampaignDetailContent {
     ///   - campaigns: 目前的開團清單
     ///   - orders: 用來建立開團彙總的全部訂單
     ///   - links: 各開團對應的提醒連結
-    ///   - showsUnpaidOnly: 是否只顯示尚未全部收款的客戶
+    ///   - isShowingUnpaidOnly: 是否只顯示尚未全部收款的客戶
     /// - Returns: 開團詳情內容；找不到開團時為 `nil`
     static func make(
         campaignID: Campaign.ID,
         campaigns: [Campaign],
         orders: [LedgerOrder],
         links: [Campaign.ID: CampaignReminderLink],
-        showsUnpaidOnly: Bool
+        isShowingUnpaidOnly: Bool
     ) -> Self? {
         guard let campaign = campaigns.first(where: { $0.id == campaignID }) else {
             return nil
@@ -50,7 +62,7 @@ extension CampaignDetailContent {
         return Self(
             campaign: campaign,
             summary: summary,
-            distribution: showsUnpaidOnly ? summary.unpaidDistribution : summary.distribution,
+            distribution: isShowingUnpaidOnly ? summary.unpaidDistribution : summary.distribution,
             reminderLink: links[campaignID]
         )
     }

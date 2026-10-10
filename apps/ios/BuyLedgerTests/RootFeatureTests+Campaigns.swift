@@ -13,7 +13,7 @@ import Testing
 
 extension RootFeatureTests {
 
-    /// 列表開啟編輯並儲存改名，只替換目標團名，同筆訂單的其他歸屬與其他訂單維持不變
+    /// 在開團列表開啟編輯並儲存改名，只換掉目標開團的名稱；同一筆訂單的其他開團與其他訂單維持不變
     @Test
     func campaigns_開團改名_同步更新多開團訂單() async {
         // Given
@@ -39,10 +39,26 @@ extension RootFeatureTests {
         var renamedCampaign = campaign
         renamedCampaign.name = "三月日本團 (補)"
         renamedCampaign.closeDate = TestDependencies.fixedNow
-        let initial = CampaignIntegrationTests.makeRootState(
+        let cascade = OrdersCascadeOperations.Request.campaignRenamed(
+            from: " \n三月日本團 \t",
+            to: "三月日本團 (補)"
+        )
+        var initial = CampaignIntegrationTests.makeRootState(
             campaigns: [campaign],
             orders: [multi, other]
         )
+        initial.campaigns.presentation.destination = .edit(
+            CampaignEditFeature.State(
+                original: campaign,
+                link: nil,
+                id: UUID(0),
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+        )
+        initial.campaigns.presentation.destination?.modify(\.edit) {
+            $0.draft.name = "三月日本團 (補)"
+        }
         let calls = LockIsolated<[String]>([])
         let saved = LockIsolated<[Campaign]>([])
         let store = TestStore(initialState: initial) {
@@ -65,33 +81,16 @@ extension RootFeatureTests {
                 }
             }
         }
-        await store.send(.campaigns(.list(.view(.editCampaignTapped("C1")))))
-        await store.receive(\.campaigns.list.delegate.requested) {
-            $0.campaigns.destination = .edit(
-                CampaignEditFeature.State(
-                    original: campaign,
-                    link: nil,
-                    id: UUID(0),
-                    now: TestDependencies.fixedNow,
-                    calendar: TestDependencies.fixedCalendar
-                )
-            )
-        }
-        await store.send(
-            .campaigns(.destination(.presented(.edit(.binding(.set(\.draft.name, "三月日本團 (補)"))))))
-        ) {
-            $0.campaigns.destination?.modify(\.edit) {
-                $0.draft.name = "三月日本團 (補)"
-            }
-        }
 
         // When
-        await store.send(.campaigns(.destination(.presented(.edit(.view(.saveButtonTapped))))))
+        await store.send(
+            .campaigns(.presentation(.destination(.presented(.edit(.view(.saveButtonTapped))))))
+        )
 
         // Then
-        await store.receive(\.campaigns.destination.presented.edit.delegate.saveRequested) {
-            $0.campaigns.destination = nil
-            $0.campaigns.presentationQueue.isFormClosing = true
+        await store.receive(
+            \.campaigns.presentation.destination.presented.edit.delegate.saveRequested
+        ) {
             $0.campaigns.$campaigns.withLock {
                 $0 = [renamedCampaign]
             }
@@ -101,6 +100,13 @@ extension RootFeatureTests {
             $0.more.$orders.withLock {
                 $0 = expectedOrders
             }
+            $0.orders.$orders.withLock {
+                $0 = expectedOrders
+            }
+        }
+        await store.receive(\.campaigns.presentation.delegate.saveRequested) {
+            $0.campaigns.presentation.destination = nil
+            $0.campaigns.presentation.queue.isFormClosing = true
         }
         await store.receive(\.campaigns.writes.saveRequested)
         await store.receive(\.campaigns.writes.saveResponse.success) {
@@ -111,8 +117,9 @@ extension RootFeatureTests {
         await store.receive(\.campaigns.writes.renameResponse)
         await store.receive(\.campaigns.writes.delegate.renamed)
         await store.receive(\.campaigns.writes.delegate.saved)
-        await store.receive(\.campaigns.delegate.campaignRenamed) {
-            $0.orders.orders = expectedOrders
+        await store.receive(\.campaigns.delegate.campaignRenamed)
+        await store.receive(\.orders.cascadeRequested, cascade)
+        await store.receive(\.orders.writes.cascadeRequested, cascade) {
             $0.dashboard.orders = expectedOrders
             $0.insights.orders = expectedOrders
         }
@@ -128,7 +135,7 @@ extension RootFeatureTests {
         #expect(store.state.orders.orders[1] == other)
     }
 
-    /// 列表畫面觸發 Service 載入後，訂單、總覽與分析頁拿到同一份清單
+    /// 開團列表開始載入後，訂單、總覽與分析頁都拿到同一份開團清單
     @Test
     func campaigns_載入開團清單_同步訂單總覽與分析投影() async {
         // Given
@@ -150,21 +157,31 @@ extension RootFeatureTests {
         }
 
         // When
-        await store.send(.campaigns(.list(.view(.task)))) {
-            $0.campaigns.list.isLoading = true
+        let loading = await store.send(.campaigns(.list(.view(.task)))) {
             $0.campaigns.list.dateContext = CampaignDateContext(
                 now: TestDependencies.fixedNow,
                 calendar: TestDependencies.fixedCalendar
             )
+            $0.campaigns.load.$isLoading.withLock {
+                $0 = true
+            }
         }
 
         // Then
-        await store.receive(\.campaigns.list.campaignsResponse.success) {
+        await loading.finish()
+        await store.receive(\.campaigns.list.delegate.loadRequested) {
             $0.campaigns.$campaigns.withLock {
                 $0 = loaded
             }
-            $0.campaigns.list.isLoading = false
-            $0.campaigns.list.hasLoaded = true
+            $0.campaigns.load.$isLoading.withLock {
+                $0 = false
+            }
+            $0.campaigns.load.$hasLoaded.withLock {
+                $0 = true
+            }
+        }
+        await store.receive(\.campaigns.load.loadRequested)
+        await store.receive(\.campaigns.load.campaignsResponse.success) {
             $0.orders.campaigns = loaded
             $0.dashboard.campaigns = loaded
             $0.insights.campaigns = loaded
@@ -176,11 +193,11 @@ extension RootFeatureTests {
         #expect(store.state.insights.campaigns == loaded)
     }
 
-    /// 詳情按下收款鍵後經委派寫入訂單，成功才同步所有頁面的訂單，其他訂單維持不變
+    /// 在開團詳情按下收款切換後寫入訂單；寫入成功才同步所有頁面的訂單，其他訂單維持不變
     ///
-    /// - Throws: 找不到已推入的詳情時由 `try #require` 丟出
+    /// - Throws: 詳情堆疊沒有元素時由 `try #require` 丟出
     @Test
-    func campaigns_切換開團收款狀態_更新所有頁面的訂單() async throws(any Error) {
+    func campaigns_切換開團收款狀態_更新所有頁面的訂單() async throws {
         // Given
         let campaign = Campaign.fixture(
             id: "C1",
@@ -197,10 +214,12 @@ extension RootFeatureTests {
         let receivedOrder = Self.rebuiltOrder(order, paymentReceiptStatus: .received)
         let expectedOrders = [receivedOrder, other]
         let saved = LockIsolated<[LedgerOrder]>([])
-        let initial = CampaignIntegrationTests.makeRootState(
+        var initial = CampaignIntegrationTests.makeRootState(
             campaigns: [campaign],
             orders: [order, other]
         )
+        initial.campaigns.showDetail(campaignID: "C1")
+        let detailID = try #require(initial.campaigns.path.ids.first)
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
@@ -210,11 +229,6 @@ extension RootFeatureTests {
                 }
             }
         }
-        await store.send(.campaigns(.list(.view(.campaignTapped("C1")))))
-        await store.receive(\.campaigns.list.delegate.requested) {
-            $0.campaigns.path[id: 0] = CampaignFeatureTests.detailPath("C1", in: $0.campaigns)
-        }
-        let detailID = try #require(store.state.campaigns.path.ids.first)
 
         // When
         await store.send(\.campaigns.path[id: detailID].detail.view.receiptToggleTapped, order.id)
@@ -227,11 +241,14 @@ extension RootFeatureTests {
             $0.more.$orders.withLock {
                 $0 = expectedOrders
             }
+            $0.orders.$orders.withLock {
+                $0 = expectedOrders
+            }
         }
         await store.receive(\.campaigns.delegate.receiptStatusToggled)
-        await store.receive(\.orders.receiptStatusChanged)
-        await store.receive(\.orders.receiptStatusChangePersisted) {
-            $0.orders.orders = expectedOrders
+        await store.receive(\.orders.receiptStatusChangeRequested)
+        await store.receive(\.orders.writes.receiptToggleRequested)
+        await store.receive(\.orders.writes.receiptResponse) {
             $0.dashboard.orders = expectedOrders
             $0.insights.orders = expectedOrders
         }

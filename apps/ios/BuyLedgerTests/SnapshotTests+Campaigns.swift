@@ -83,11 +83,11 @@ extension SnapshotTests {
     func campaignListView_載入失敗_符合基準圖() {
         TestDependencies.withFixedNow {
             // Given
-            var state = CampaignListFeature.State(
-                campaigns: Shared(value: []),
-                orders: SharedReader(value: [])
+            let state = CampaignListFeature.State(
+                campaigns: SharedReader(value: []),
+                orders: SharedReader(value: []),
+                errorMessage: SharedReader(value: "開團載入失敗，請稍後再試。")
             )
-            state.errorMessage = "開團載入失敗，請稍後再試。"
 
             // When
             let view = Self.makeListView(state: state, language: .traditionalChinese)
@@ -183,14 +183,14 @@ private extension SnapshotTests {
         )
 
         var state = CampaignListFeature.State(
-            campaigns: Shared(value: [today, yesterday, earlier]),
-            orders: SharedReader(value: todayOrders + yesterdayOrders + earlierOrders)
+            campaigns: SharedReader(value: [today, yesterday, earlier]),
+            orders: SharedReader(value: todayOrders + yesterdayOrders + earlierOrders),
+            hasLoaded: SharedReader(value: true)
         )
         state.dateContext = CampaignDateContext(
             now: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        state.hasLoaded = true
         return state
     }
 
@@ -283,14 +283,14 @@ private extension SnapshotTests {
         )
 
         var state = CampaignListFeature.State(
-            campaigns: Shared(value: [april, march, january]),
-            orders: SharedReader(value: aprilOrders + marchOrders + januaryOrders)
+            campaigns: SharedReader(value: [april, march, january]),
+            orders: SharedReader(value: aprilOrders + marchOrders + januaryOrders),
+            hasLoaded: SharedReader(value: true)
         )
         state.dateContext = CampaignDateContext(
             now: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        state.hasLoaded = true
         return state
     }
 }

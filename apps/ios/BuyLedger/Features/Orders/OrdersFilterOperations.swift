@@ -8,197 +8,179 @@
 import ComposableArchitecture
 import Foundation
 
-/// ``OrdersFeature`` 篩選與選取子域的分支主體
-enum OrdersFilterOperations {}
+/// 清單已套用篩選與篩選子層暫存選擇的狀態更新
+enum OrdersFilterOperations {
+
+}
 
 // MARK: - Internal Method
 
 extension OrdersFilterOperations {
 
-    /// 使用者切換狀態篩選
+    /// 套用跨功能篩選並重選第一筆，保留付款方式條件
+    ///
+    /// - Parameters:
+    ///   - searchText: 客戶名稱搜尋
+    ///   - category: 精準類別篩選
+    ///   - state: 清單狀態
+    static func applyNavigation(
+        _ searchText: String,
+        category: String?,
+        state: inout OrderListFeature.State
+    ) {
+        state.searchText = searchText
+        state.selectedStatus = .all
+        state.selectedDatePeriod = .all
+        state.selectedCategory = category
+        state.selectFirstFilteredOrder()
+        let committedFilterSelection = state.committedFilterSelection
+        state.filterSheet?.committedFilterSelection = committedFilterSelection
+    }
+
+    /// 切換狀態篩選並重選第一筆
+    ///
     /// - Parameters:
     ///   - filter: 要套用的狀態篩選
     ///   - state: 要更新的訂單功能狀態
-    ///   - referenceDate: 用於計算日期篩選的基準時間
-    ///   - calendar: 日期篩選使用的行事曆
     static func statusFilterSelected(
         _ filter: OrderStatusFilter,
-        state: inout OrdersFeature.State,
-        referenceDate: Date,
-        calendar: Calendar
+        state: inout OrderListFeature.State
     ) {
         state.selectedStatus = filter
-        state.selectFirstFilteredOrder(referenceDate: referenceDate, calendar: calendar)
+        state.selectFirstFilteredOrder()
     }
 
-    /// 使用者切換日期區間篩選
+    /// 切換日期區間篩選並重選第一筆
+    ///
     /// - Parameters:
     ///   - period: 要套用的日期區間
     ///   - state: 要更新的訂單功能狀態
-    ///   - referenceDate: 用於計算日期篩選的基準時間
-    ///   - calendar: 日期篩選使用的行事曆
-    static func datePeriodSelected(
-        _ period: OrderDatePeriod,
-        state: inout OrdersFeature.State,
-        referenceDate: Date,
-        calendar: Calendar
-    ) {
+    static func datePeriodSelected(_ period: OrderDatePeriod, state: inout OrderListFeature.State) {
         state.selectedDatePeriod = period
-        state.selectFirstFilteredOrder(referenceDate: referenceDate, calendar: calendar)
+        state.selectFirstFilteredOrder()
     }
 
-    /// 使用者切換商品類別篩選 (`nil` = 全部類別)
+    /// 切換商品類別篩選並重選第一筆 (`nil` = 全部類別)
+    ///
     /// - Parameters:
     ///   - category: 要套用的商品類別；`nil` 代表全部類別
     ///   - state: 要更新的訂單功能狀態
-    ///   - referenceDate: 用於計算日期篩選的基準時間
-    ///   - calendar: 日期篩選使用的行事曆
-    static func categoryFilterSelected(
-        _ category: String?,
-        state: inout OrdersFeature.State,
-        referenceDate: Date,
-        calendar: Calendar
-    ) {
+    static func categoryFilterSelected(_ category: String?, state: inout OrderListFeature.State) {
         state.selectedCategory = category
-        state.selectFirstFilteredOrder(referenceDate: referenceDate, calendar: calendar)
+        state.selectFirstFilteredOrder()
     }
 
-    /// 使用者切換付款方式篩選 (`nil` = 全部付款方式)
+    /// 切換付款方式篩選並重選第一筆 (`nil` = 全部付款方式)
+    ///
     /// - Parameters:
     ///   - paymentMethod: 要套用的付款方式；`nil` 代表全部付款方式
     ///   - state: 要更新的訂單功能狀態
-    ///   - referenceDate: 用於計算日期篩選的基準時間
-    ///   - calendar: 日期篩選使用的行事曆
     static func paymentMethodFilterSelected(
         _ paymentMethod: String?,
-        state: inout OrdersFeature.State,
-        referenceDate: Date,
-        calendar: Calendar
+        state: inout OrderListFeature.State
     ) {
         state.selectedPaymentMethod = paymentMethod
-        state.selectFirstFilteredOrder(referenceDate: referenceDate, calendar: calendar)
+        state.selectFirstFilteredOrder()
     }
 
-    /// 使用者切換指定開團篩選 (`nil` = 全部開團)
-    /// - Parameters:
-    ///   - campaign: 要套用的開團；`nil` 代表全部開團
-    ///   - state: 要更新的訂單功能狀態
-    ///   - referenceDate: 用於計算日期篩選的基準時間
-    ///   - calendar: 日期篩選使用的行事曆
-    static func campaignFilterSelected(
-        _ campaign: String?,
-        state: inout OrdersFeature.State,
-        referenceDate: Date,
-        calendar: Calendar
-    ) {
-        state.selectedCampaign = campaign
-        state.selectFirstFilteredOrder(referenceDate: referenceDate, calendar: calendar)
-    }
-
-    /// 使用者切換開團狀態篩選 (`nil` = 全部狀態)
-    /// - Parameters:
-    ///   - campaignStatus: 要套用的開團狀態；`nil` 代表全部狀態
-    ///   - state: 要更新的訂單功能狀態
-    ///   - referenceDate: 用於計算日期篩選的基準時間
-    ///   - calendar: 日期篩選使用的行事曆
-    static func campaignStatusFilterSelected(
-        _ campaignStatus: CampaignStatus?,
-        state: inout OrdersFeature.State,
-        referenceDate: Date,
-        calendar: Calendar
-    ) {
-        state.selectedCampaignStatus = campaignStatus
-        state.selectFirstFilteredOrder(referenceDate: referenceDate, calendar: calendar)
-    }
-
-    /// 使用者點擊 iPad (regular) 商品類別篩選 trigger，開啟類別 picker sheet
+    /// 點擊 iPad (regular) 商品類別篩選 trigger，開啟類別 picker sheet
+    ///
     /// - Parameter state: 要更新的訂單功能狀態
-    static func categoryPickerTapped(state: inout OrdersFeature.State) {
-        state.showsCategoryPicker = true
+    static func categoryPickerTapped(state: inout OrderListFeature.State) {
+        state.isCategoryPickerPresented = true
     }
 
-    /// 使用者點擊 iPad (regular) 付款方式篩選 trigger，開啟付款方式 picker sheet
+    /// 點擊 iPad (regular) 付款方式篩選 trigger，開啟付款方式 picker sheet
+    ///
     /// - Parameter state: 要更新的訂單功能狀態
-    static func paymentMethodPickerTapped(state: inout OrdersFeature.State) {
-        state.showsPaymentMethodPicker = true
+    static func paymentMethodPickerTapped(state: inout OrderListFeature.State) {
+        state.isPaymentMethodPickerPresented = true
     }
 
     /// 開啟篩選 sheet，並以已套用值重設暫存選擇
+    ///
     /// - Parameter state: 要更新的訂單功能狀態
-    static func filterSheetTapped(state: inout OrdersFeature.State) {
-        state.pendingFilterSelection = state.committedFilterSelection
-        state.filterSheetSearchText = ""
-        state.showsFilterSheet = true
+    static func filterSheetTapped(state: inout OrderListFeature.State) {
+        state.filterSheet = OrderFilterFeature.State(
+            orders: state.$orders,
+            lookupCatalog: SharedReader(state.$lookupCatalog),
+            committedFilterSelection: state.committedFilterSelection
+        )
     }
 
-    /// 使用者在整合篩選 sheet 選擇日期區間；僅更新未套用選擇，不 commit
+    /// 選擇整合篩選 sheet 的日期區間；僅更新未套用選擇，不 commit
+    ///
     /// - Parameters:
     ///   - period: 暫存的日期區間
     ///   - state: 要更新的訂單功能狀態
     static func filterPendingDatePeriodSelected(
         _ period: OrderDatePeriod,
-        state: inout OrdersFeature.State
+        state: inout OrderFilterFeature.State
     ) {
         state.pendingFilterSelection.datePeriod = period
     }
 
     /// 選擇商品類別；只更新暫存選擇
+    ///
     /// - Parameters:
     ///   - category: 暫存的商品類別；`nil` 代表全部類別
     ///   - state: 要更新的訂單功能狀態
     static func filterPendingCategorySelected(
         _ category: String?,
-        state: inout OrdersFeature.State
+        state: inout OrderFilterFeature.State
     ) {
         state.pendingFilterSelection.category = category
     }
 
     /// 選擇付款方式；只更新暫存選擇
+    ///
     /// - Parameters:
     ///   - paymentMethod: 暫存的付款方式；`nil` 代表全部付款方式
     ///   - state: 要更新的訂單功能狀態
     static func filterPendingPaymentMethodSelected(
         _ paymentMethod: String?,
-        state: inout OrdersFeature.State
+        state: inout OrderFilterFeature.State
     ) {
         state.pendingFilterSelection.paymentMethod = paymentMethod
     }
 
     /// 套用暫存篩選並關閉 sheet
+    ///
     /// - Parameters:
-    ///   - state: 要更新的訂單功能狀態
-    ///   - referenceDate: 用於計算日期篩選的基準時間
-    ///   - calendar: 日期篩選使用的行事曆
-    static func filterApplyTapped(
-        state: inout OrdersFeature.State,
-        referenceDate: Date,
-        calendar: Calendar
+    ///   - selection: 子層委派的日期、類別與付款方式
+    ///   - state: 要更新的清單狀態
+    static func filterApplied(
+        _ selection: OrderFilterSelection,
+        state: inout OrderListFeature.State
     ) {
-        var didChangeFilter = false
-        if state.pendingFilterSelection.datePeriod != state.selectedDatePeriod {
-            state.selectedDatePeriod = state.pendingFilterSelection.datePeriod
-            didChangeFilter = true
+        var hasFilterChanged = false
+        if selection.datePeriod != state.selectedDatePeriod {
+            state.selectedDatePeriod = selection.datePeriod
+            hasFilterChanged = true
         }
-        if state.pendingFilterSelection.category != state.selectedCategory {
-            state.selectedCategory = state.pendingFilterSelection.category
-            didChangeFilter = true
+        if selection.category != state.selectedCategory {
+            state.selectedCategory = selection.category
+            hasFilterChanged = true
         }
-        if state.pendingFilterSelection.paymentMethod != state.selectedPaymentMethod {
-            state.selectedPaymentMethod = state.pendingFilterSelection.paymentMethod
-            didChangeFilter = true
+        if selection.paymentMethod != state.selectedPaymentMethod {
+            state.selectedPaymentMethod = selection.paymentMethod
+            hasFilterChanged = true
         }
-        if didChangeFilter {
-            state.selectFirstFilteredOrder(referenceDate: referenceDate, calendar: calendar)
+        if hasFilterChanged {
+            state.selectFirstFilteredOrder()
         }
-        state.showsFilterSheet = false
+        state.filterSheet = nil
     }
 
     /// 取消篩選；有變更時先確認捨棄
+    ///
     /// - Parameter state: 要更新的訂單功能狀態
-    static func filterCancelTapped(state: inout OrdersFeature.State) {
-        guard state.hasUnappliedFilterChanges else {
-            state.showsFilterSheet = false
-            return
+    /// - Returns: 無變更時委派取消；有變更時呈現確認並回傳 `nil`
+    static func filterCancelTapped(
+        state: inout OrderFilterFeature.State
+    ) -> OrderFilterFeature.Action.Delegate? {
+        if !state.hasUnappliedFilterChanges {
+            return .cancelled
         }
 
         state.filterDiscardConfirmation = AlertState {
@@ -213,36 +195,32 @@ extension OrdersFilterOperations {
         } message: {
             TextState("這些篩選條件尚未套用，離開後將不會保留。")
         }
+        return nil
     }
 
-    /// 使用者確認捨棄整合篩選 sheet 尚未套用的變更
+    /// 確認捨棄整合篩選 sheet 尚未套用的變更
+    ///
     /// - Parameter state: 要更新的訂單功能狀態
-    static func filterDiscardConfirmed(state: inout OrdersFeature.State) {
+    static func filterDiscardConfirmed(state: inout OrderFilterFeature.State) {
         state.pendingFilterSelection = state.committedFilterSelection
-        state.showsFilterSheet = false
     }
 
-    /// 使用者輸入搜尋文字
+    /// 更新搜尋文字並重選第一筆
+    ///
     /// - Parameters:
     ///   - text: 使用者輸入的搜尋文字
     ///   - state: 要更新的訂單功能狀態
-    ///   - referenceDate: 用於計算日期篩選的基準時間
-    ///   - calendar: 日期篩選使用的行事曆
-    static func searchTextChanged(
-        _ text: String,
-        state: inout OrdersFeature.State,
-        referenceDate: Date,
-        calendar: Calendar
-    ) {
+    static func searchTextChanged(_ text: String, state: inout OrderListFeature.State) {
         state.searchText = text
-        state.selectFirstFilteredOrder(referenceDate: referenceDate, calendar: calendar)
+        state.selectFirstFilteredOrder()
     }
 
-    /// 使用者選取訂單
+    /// 選取訂單
+    ///
     /// - Parameters:
     ///   - id: 被選取的訂單編號；`nil` 代表清除選取
     ///   - state: 要更新的訂單功能狀態
-    static func orderSelected(_ id: LedgerOrder.ID?, state: inout OrdersFeature.State) {
+    static func orderSelected(_ id: LedgerOrder.ID?, state: inout OrderListFeature.State) {
         state.selectedOrderID = id
     }
 }

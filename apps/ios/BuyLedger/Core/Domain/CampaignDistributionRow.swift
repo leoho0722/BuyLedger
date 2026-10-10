@@ -28,6 +28,16 @@ struct CampaignDistributionRow: Equatable, Sendable {
     let orders: [LedgerOrder]
 }
 
+// MARK: - Computed Properties
+
+extension CampaignDistributionRow {
+
+    /// 朗讀用的收款狀態文字；全部已收款為已收款，否則為待收款
+    var receiptAccessibilityLabel: LocalizedStringResource {
+        isFullyReceived ? "已收款" : "待收款"
+    }
+}
+
 // MARK: - Identifiable
 
 extension CampaignDistributionRow: Identifiable {

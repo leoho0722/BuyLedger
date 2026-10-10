@@ -19,7 +19,7 @@ struct CampaignPresentationQueueTests {
     func present_表單已關閉_直接設進目的地() {
         // Given
         var queue = CampaignPresentationQueue()
-        var destination: CampaignFeature.Destination.State?
+        var destination: CampaignPresentationFeature.Destination.State?
 
         // When
         queue.present(Self.firstNotice, in: &destination)
@@ -35,7 +35,7 @@ struct CampaignPresentationQueueTests {
     func present_表單已關閉且提示顯示中_直接取代原提示() {
         // Given
         var queue = CampaignPresentationQueue()
-        var destination: CampaignFeature.Destination.State? = Self.firstNotice
+        var destination: CampaignPresentationFeature.Destination.State? = Self.firstNotice
 
         // When
         queue.present(Self.secondNotice, in: &destination)
@@ -50,7 +50,7 @@ struct CampaignPresentationQueueTests {
     func present_表單開啟中_暫存通知且表單維持開啟() {
         // Given
         var queue = CampaignPresentationQueue()
-        var destination: CampaignFeature.Destination.State? = Self.openForm
+        var destination: CampaignPresentationFeature.Destination.State? = Self.openForm
 
         // When
         queue.present(Self.firstNotice, in: &destination)
@@ -67,7 +67,7 @@ struct CampaignPresentationQueueTests {
         // Given
         var queue = CampaignPresentationQueue()
         queue.isFormClosing = true
-        var destination: CampaignFeature.Destination.State?
+        var destination: CampaignPresentationFeature.Destination.State?
 
         // When
         queue.present(Self.firstNotice, in: &destination)
@@ -84,7 +84,7 @@ struct CampaignPresentationQueueTests {
         // Given
         var queue = CampaignPresentationQueue()
         queue.isFormClosing = true
-        var destination: CampaignFeature.Destination.State?
+        var destination: CampaignPresentationFeature.Destination.State?
         queue.pendingNotice = Self.firstNotice
 
         // When
@@ -155,7 +155,7 @@ struct CampaignPresentationQueueTests {
         var queue = CampaignPresentationQueue()
         queue.isFormClosing = true
         queue.pendingNotice = Self.firstNotice
-        var destination: CampaignFeature.Destination.State?
+        var destination: CampaignPresentationFeature.Destination.State?
 
         // When
         queue.finishFormClosing(into: &destination)
@@ -172,7 +172,7 @@ struct CampaignPresentationQueueTests {
         // Given
         var queue = CampaignPresentationQueue()
         queue.isFormClosing = true
-        var destination: CampaignFeature.Destination.State?
+        var destination: CampaignPresentationFeature.Destination.State?
 
         // When
         queue.finishFormClosing(into: &destination)
@@ -188,7 +188,7 @@ struct CampaignPresentationQueueTests {
     func finishFormClosing_通知已移出後再次呼叫_目的地維持清空() {
         // Given
         var queue = CampaignPresentationQueue()
-        var destination: CampaignFeature.Destination.State?
+        var destination: CampaignPresentationFeature.Destination.State?
 
         // When
         queue.finishFormClosing(into: &destination)
@@ -205,7 +205,7 @@ struct CampaignPresentationQueueTests {
         var queue = CampaignPresentationQueue()
         queue.isFormClosing = true
         queue.pendingNotice = Self.firstNotice
-        var destination: CampaignFeature.Destination.State? = Self.openForm
+        var destination: CampaignPresentationFeature.Destination.State? = Self.openForm
 
         // When
         queue.finishFormClosing(into: &destination)
@@ -221,10 +221,10 @@ struct CampaignPresentationQueueTests {
 
 private extension CampaignPresentationQueueTests {
 
-    /// 第一則測試通知
-    static var firstNotice: CampaignFeature.Destination.State {
+    /// 提示「操作失敗」的 alert，內文為開團儲存失敗
+    static var firstNotice: CampaignPresentationFeature.Destination.State {
         .alert(
-            AlertState<CampaignFeature.Destination.Alert> {
+            AlertState<CampaignPresentationFeature.Destination.Alert> {
                 TextState("操作失敗")
             } actions: {
                 ButtonState(role: .cancel) {
@@ -237,9 +237,9 @@ private extension CampaignPresentationQueueTests {
     }
 
     /// 第二則測試通知，內容與第一則不同
-    static var secondNotice: CampaignFeature.Destination.State {
+    static var secondNotice: CampaignPresentationFeature.Destination.State {
         .alert(
-            AlertState<CampaignFeature.Destination.Alert> {
+            AlertState<CampaignPresentationFeature.Destination.Alert> {
                 TextState("操作失敗")
             } actions: {
                 ButtonState(role: .cancel) {
@@ -252,7 +252,7 @@ private extension CampaignPresentationQueueTests {
     }
 
     /// 開啟中的新增表單
-    static var openForm: CampaignFeature.Destination.State {
+    static var openForm: CampaignPresentationFeature.Destination.State {
         .edit(
             CampaignEditFeature.State(
                 id: UUID(0),

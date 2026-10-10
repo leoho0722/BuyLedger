@@ -101,7 +101,7 @@ extension LocalizationCatalogTests {
         source.replacing(/\s+/, with: " ")
     }
 
-    /// 判斷 source 是否含有任一禁止的 navigationTitle pattern
+    /// 判斷 `source` 是否含有任一禁止的 `navigationTitle` pattern
     ///
     /// - Parameter source: 要檢查的 Swift 原始碼
     /// - Returns: 命中任一禁止 pattern 時為 `true`

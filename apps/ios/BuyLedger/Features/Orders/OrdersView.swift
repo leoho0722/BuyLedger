@@ -16,11 +16,14 @@ struct OrdersView: View {
     /// 目前版面分類，用來區分窄版 (含 iPhone 橫向) 與寬版 (iPad 全螢幕) 佈局
     @Environment(\.blLayoutClass) private var layoutClass
 
-    /// 訂單篩選所用的行事曆 (含時區)；測試可注入固定值
-    @Dependency(\.calendar) private var calendar
+    /// 寬版清單偏好的欄寬，隨文字大小調整
+    @ScaledMetric(relativeTo: .body) private var idealListWidth: CGFloat = 320
 
-    /// 篩選使用的目前時間；測試可注入固定值
-    @Dependency(\.date) private var date
+    /// 寬版清單的欄寬上限，隨文字大小調整
+    @ScaledMetric(relativeTo: .body) private var maximumListWidth: CGFloat = 360
+
+    /// 寬版清單的欄寬下限，隨文字大小調整
+    @ScaledMetric(relativeTo: .body) private var minimumListWidth: CGFloat = 280
 
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrdersFeature>
@@ -30,21 +33,29 @@ struct OrdersView: View {
 
     // MARK: - Body
 
-    /// 依版面分類顯示訂單瀏覽，並掛上編輯、AI 總結、合併的 sheet 與各項 alert
+    /// 依版面分類顯示訂單瀏覽，並共用編輯、AI 總結與合併表單的呈現
     var body: some View {
+        @Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)
+
         platformContent
-            .sheet(item: $store.scope(state: \.editOrder, action: \.editOrder)) {
+            .sheet(
+                item: $presentation.scope(state: \.$destination, action: \.destination).edit,
+                onDismiss: sendFormSheetDismissed
+            ) {
                 OrderEditView(store: $0)
             }
-            .sheet(item: $store.scope(state: \.aiSummary, action: \.aiSummary)) {
+            .sheet(
+                item: $presentation.scope(state: \.$destination, action: \.destination).aiSummary,
+                onDismiss: sendFormSheetDismissed
+            ) {
                 AISummaryView(store: $0)
             }
-            .sheet(item: $store.scope(state: \.orderMerge, action: \.orderMerge)) {
+            .sheet(
+                item: $presentation.scope(state: \.$destination, action: \.destination).merge,
+                onDismiss: sendFormSheetDismissed
+            ) {
                 OrderMergeCandidateSheet(store: $0)
             }
-            .alert($store.scope(state: \.deletionConfirmation, action: \.deletionConfirmation))
-            .alert($store.scope(state: \.writeFailureAlert, action: \.writeFailureAlert))
-            .alert($store.scope(state: \.aiDisabledAlert, action: \.aiDisabledAlert))
     }
 }
 
@@ -52,7 +63,7 @@ struct OrdersView: View {
 
 private extension OrdersView {
 
-    /// 商品類別的選擇 sheet，選取後送出類別篩選，「全部」清除篩選
+    /// 商品類別選擇器，選取後套用篩選，「全部」清除篩選
     var categoryPickerSheet: some View {
         OptionPickerSheet(
             title: "選擇商品類別",
@@ -60,18 +71,18 @@ private extension OrdersView {
             searchable: true,
             emptyTitle: "沒有符合的類別",
             emptyDescription: "試試其他搜尋關鍵字。",
-            options: store.availableCategories,
-            selected: store.selectedCategory ?? "",
+            options: listStore.availableCategories,
+            selected: listStore.selectedCategory ?? "",
             onSelect: {
-                store.send(.categoryFilterSelected($0))
+                listStore.send(.view(.categoryFilterSelected($0)))
             },
             clearOption: OptionPickerSheet.ClearOption(title: "全部") {
-                store.send(.categoryFilterSelected(nil))
+                listStore.send(.view(.categoryFilterSelected(nil)))
             }
         )
     }
 
-    /// 付款方式的選擇 sheet，選取後送出付款方式篩選，「全部」清除篩選
+    /// 付款方式選擇器，選取後套用篩選，「全部」清除篩選
     var paymentMethodPickerSheet: some View {
         OptionPickerSheet(
             title: "選擇付款方式",
@@ -79,66 +90,73 @@ private extension OrdersView {
             searchable: true,
             emptyTitle: "沒有符合的付款方式",
             emptyDescription: "試試其他搜尋關鍵字。",
-            options: store.availablePaymentMethods.map(\.name),
-            selected: store.selectedPaymentMethod ?? "",
+            options: listStore.availablePaymentMethodNames,
+            selected: listStore.selectedPaymentMethod ?? "",
             onSelect: {
-                store.send(.paymentMethodFilterSelected($0))
+                listStore.send(.view(.paymentMethodFilterSelected($0)))
             },
             clearOption: OptionPickerSheet.ClearOption(title: "全部") {
-                store.send(.paymentMethodFilterSelected(nil))
+                listStore.send(.view(.paymentMethodFilterSelected(nil)))
             }
         )
     }
 
-    /// 寬版使用的「清單 + 詳情」兩欄佈局，並掛上搜尋、工具列與兩個篩選選擇 sheet
+    /// 寬版的清單與詳情兩欄佈局，共用搜尋、工具列與篩選選擇器
     @ViewBuilder
     var regularSplitContent: some View {
-        // 先計算一次 filteredOrders，再傳給各區塊
-        let filteredOrders = store.state.filteredOrders(referenceDate: date.now, calendar: calendar)
-        let filteredIDs = filteredOrders.map(\.id)
-        let isAllFilteredSelected = !filteredIDs.isEmpty
-            && filteredIDs.allSatisfy { store.selectedOrderIDs.contains($0) }
+        @Bindable var listStore = store.scope(state: \.list, action: \.list)
+        let filteredOrders = listStore.filteredOrders
 
         NavigationStack {
             HStack(spacing: 0) {
-                OrdersRegularListColumn(orders: filteredOrders, store: store)
-                    .frame(minWidth: 280, idealWidth: 320, maxWidth: 360)
+                OrdersRegularListColumn(orders: filteredOrders, store: listStore)
+                    .frame(
+                        minWidth: minimumListWidth,
+                        idealWidth: idealListWidth,
+                        maxWidth: maximumListWidth
+                    )
                     .background(palette.background)
+                    .alert(regularAlertBinding(isDetail: false))
 
                 Divider()
 
-                OrdersRegularDetailColumn(orders: filteredOrders, store: store)
+                OrdersRegularDetailColumn(store: store)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                     .background(palette.background)
+                    .alert(regularAlertBinding(isDetail: true))
             }
-            .rootNavigationTitle(store.navigationTitleKey, language: language)
-            // searchable 無穩定 identifier，UI 測試改查 searchFields
+            // 搜尋欄無穩定識別值，UI 測試改查 `searchFields`
             .searchable(
-                text: $store.searchText.sending(\.searchTextChanged),
+                text: $listStore.searchText.sending(\.view.searchTextChanged),
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: Text("搜尋客戶、單號或商品")
             )
+            .rootNavigationTitle(listStore.navigationTitleKey, language: language)
             .toolbar {
                 OrdersToolbarContent(
-                    store: store,
+                    isAllFilteredSelected: listStore.isAllFilteredSelected,
+                    filteredIDs: listStore.filteredIDs,
                     palette: palette,
-                    filteredIDs: filteredIDs,
-                    allFilteredSelected: isAllFilteredSelected
+                    store: listStore
                 )
             }
         }
+        // 載入結果由多個分頁共用，不隨畫面消失而取消
         .task {
-            await store.send(.task).finish()
+            listStore.send(.view(.task))
         }
-        .sheet(isPresented: $store.showsCategoryPicker) {
+        .sheet(item: $listStore.scope(state: \.$filterSheet, action: \.filterSheet)) {
+            OrderFilterSheet(store: $0)
+        }
+        .sheet(isPresented: $listStore.isCategoryPickerPresented) {
             categoryPickerSheet
         }
-        .sheet(isPresented: $store.showsPaymentMethodPicker) {
+        .sheet(isPresented: $listStore.isPaymentMethodPickerPresented) {
             paymentMethodPickerSheet
         }
     }
 
-    /// 依版面分類選擇對應的訂單瀏覽 view
+    /// 依版面分類選擇對應的訂單瀏覽內容
     @ViewBuilder
     var platformContent: some View {
         switch layoutClass {
@@ -151,13 +169,49 @@ private extension OrdersView {
     }
 }
 
+// MARK: - Nested Types
+
+private extension OrdersView {
+
+    /// 最上層畫面持有的唯一對話框綁定
+    typealias AlertBinding = Binding<
+        Store<
+            AlertState<OrdersPresentationFeature.Destination.Alert>,
+            OrdersPresentationFeature.Destination.Alert
+        >?
+    >
+}
+
 // MARK: - Private Method
 
 private extension OrdersView {
 
+    /// 清單子 Feature 的狀態與互動入口
+    var listStore: StoreOf<OrderListFeature> {
+        store.scope(state: \.list, action: \.list)
+    }
+
     /// 兩欄背景與工具列使用的色盤，隨目前外觀取得對應的顏色
     var palette: BLPalette {
         BLPalette()
+    }
+
+    /// 寬版雙欄只在有詳情時由詳情呈現對話框，空清單則交由清單呈現
+    ///
+    /// - Parameter isDetail: 是否為右側詳情欄
+    /// - Returns: 最上層欄位的對話框綁定，其餘為常數 `nil`
+    func regularAlertBinding(isDetail: Bool) -> AlertBinding {
+        let hasDetail = store.detail.regularDetail?.order != nil
+        guard isDetail == hasDetail else {
+            return .constant(nil)
+        }
+        @Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)
+        return $presentation.scope(state: \.$destination, action: \.destination).alert
+    }
+
+    /// 表單的關閉動畫完成後通知容器取出暫存通知
+    func sendFormSheetDismissed() {
+        store.send(.view(.formSheetDismissed))
     }
 }
 
@@ -165,10 +219,12 @@ private extension OrdersView {
 
 #Preview("訂單瀏覽") {
     let previewState: OrdersFeature.State = {
-        var state = OrdersFeature.State()
-        state.orders = LedgerOrder.sampleOrders
-        state.hasLoaded = true
-        state.selectedOrderID = LedgerOrder.sampleOrders.first?.id
+        var state = OrdersFeature.State(orders: LedgerOrder.sampleOrders)
+        state.load.$hasLoaded.withLock {
+            $0 = true
+        }
+        state.list.selectedOrderID = LedgerOrder.sampleOrders.first?.id
+        state.detail.syncRegularDetail(selectedOrderID: state.list.selectedOrderID)
         return state
     }()
 

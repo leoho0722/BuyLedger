@@ -669,3 +669,388 @@ code:
 tests:
   - shared/data-model/generator/test/datamodel-gen.test.ts
 -->
+
+---
+### Requirement: Order and campaign data are loaded when the app launches
+
+The app SHALL request the orders and the campaigns as soon as the main interface appears after launch, without waiting for the user to visit the orders or campaigns tab, so that the overview's ongoing campaigns card and the insights per-campaign profit ranking show their content on a cold launch. A retry from the overview, the insights or the customers screen SHALL request the orders again. Automatic closing of campaigns past their closing date SHALL be evaluated and stored once per campaign load, by the campaigns side only.
+
+#### Scenario: The overview shows ongoing campaigns on a cold launch
+
+- **GIVEN** the stored data contains the ongoing campaign 四月韓國團 with orders
+- **WHEN** the app is launched and the user stays on the overview without opening the campaigns tab
+- **THEN** the overview shows the ongoing campaigns card listing 四月韓國團
+
+#### Scenario: Insights shows the per-campaign ranking on a cold launch
+
+- **GIVEN** the stored data contains campaigns with attributed orders
+- **WHEN** the app is launched and the user opens the insights tab first
+- **THEN** the per-campaign profit ranking lists those campaigns without the user visiting the campaigns tab
+
+#### Scenario: Retrying after a failed first load shows the data
+
+- **GIVEN** the first read of the orders fails and the overview shows the load failure with a retry button
+- **WHEN** the user taps retry and the second read succeeds
+- **THEN** the overview shows the order data
+
+#### Scenario: Opening the orders tab after a failed first load requests the orders again
+
+- **GIVEN** the first read of the orders at launch fails
+- **WHEN** the user opens the orders tab and the next read succeeds
+- **THEN** the orders list shows the orders without any other screen having retried
+
+#### Scenario: A campaign past its closing date is closed once
+
+- **GIVEN** the ongoing campaign 三月日本團 has a closing date before the injected current time
+- **WHEN** the campaigns are loaded at launch
+- **THEN** 三月日本團 is stored as closed exactly once, and the orders side performs no campaign write
+
+<!-- @trace
+source: order-edit-style-compliance
+updated: 2026-10-10
+code:
+  - apps/ios/BuyLedgerTests/OrderStatusRulesTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature+Destination.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature+StateQuery.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests+BatchDelete.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/ordersCompactView_推入含成本明細訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderEditFocusTests.swift
+  - apps/ios/BuyLedgerTests/ActionGroupingScanTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Discard.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Dates.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditDecimalField.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DeepLinks.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+App.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailView.swift
+  - apps/ios/BuyLedgerTests/DashboardFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+SaveFailureTiming.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSheet.swift
+  - apps/ios/BuyLedgerUITests/Support/Waiting.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+MergeCandidates.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRequestOutcome.swift
+  - apps/ios/BuyLedgerTests/CampaignSummaryTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+AISummaryProjection.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterCategorySection.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+MergeSave.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterFeature.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+RootProjections.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditPickersFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersLoadState.swift
+  - apps/ios/BuyLedgerTests/OrderEditPhotosFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Deduction.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignView.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Create.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditBasicSection.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+PaymentMethodRename.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderOptionWritePlan.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailSourceView.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPreviewFixtures.swift
+  - apps/ios/BuyLedgerTests/OrderSaveGuardTests.swift
+  - apps/ios/BuyLedgerUITests/Screens/InsightsScreen+LaunchLoading.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+PaymentMethodCorrection.swift
+  - apps/ios/BuyLedger/Features/App/SidebarSmartGroup.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+PaymentMethod.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersListQuery.swift
+  - apps/ios/BuyLedgerTests/OrderFormattersTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+MergePrefill.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+MergeWrites.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+ReminderRename.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailRowMenu.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditOriginalSection.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignPresentationQueue.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditNotesSection.swift
+  - apps/ios/BuyLedger/Features/App/SidebarBadgeCounts.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFormatters.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignPresentationFeature+Destination.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderWritesFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignDetailFeatureTests.swift
+  - apps/ios/BuyLedgerTests/LocalizationCatalogTests+LiteralScan.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Filters.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Writes.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Merge.swift
+  - apps/ios/BuyLedgerTests/OrderPercentConversionTests.swift
+  - apps/ios/BuyLedger/Features/App/RootLaunchFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+ListRequests.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Delete.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+FailureTiming.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+OptionWriteFailures.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilteredOrders.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Requests.swift
+  - apps/ios/BuyLedgerTests/OrderDetailFeatureTests+Display.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderAISummarySettings.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Dates.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+StatusWrites.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Loading.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLFormatters.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+ReminderCancellation.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailSummaryView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditPickerOperations.swift
+  - apps/ios/BuyLedgerTests/CampaignListFeatureTests.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Guards.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DetailNavigation.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderStatus+Presentation.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardFeature.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderDetail.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Items.swift
+  - apps/ios/BuyLedgerTests/LocalizationCatalogTests.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardView.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Presentation.swift
+  - apps/ios/BuyLedgerTests/OrdersPresentationFeatureTests+Transition.swift
+  - apps/ios/BuyLedgerTests/OrderDetailFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCompactDetailView.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedgerTests/OrderEditCampaignOptionsTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+OrderSourceAndCurrency.swift
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+RequestPresentation.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersPresentationQueue.swift
+  - apps/ios/BuyLedgerTests/OrdersDetailNavigationFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailCardlessView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderWriteOperations.swift
+  - apps/ios/BuyLedgerTests/ActionGroupingScanTests+Scanner.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderEditPickersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+EditFields.swift
+  - apps/ios/BuyLedgerTests/OrdersPresentationFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+ReloadDelete.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+WriteFailures.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+PaymentMethodParity.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditPaymentSection.swift
+  - apps/ios/BuyLedgerTests/CampaignPresentationQueueTests.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Queries.swift
+  - apps/ios/BuyLedgerUITests/Support/Scrolling.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderPercentConversion.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+UnchangedName.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan+Writes.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrdersToolbarContent.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/ActionGroupingScanTests+Scenarios.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderEdit.swift
+  - apps/ios/BuyLedgerTests/LocalizationCatalogTests+AppLanguage.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+EditDeduction.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Dashboard.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupSync.swift
+  - apps/ios/BuyLedgerTests/ServiceTestValueStrictnessTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSummary.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersPresentationFeature+Destination.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailCostView.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailMenu.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderSelectableRow.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFilterOperations.swift
+  - apps/ios/BuyLedgerTests/OrderStatusPresentationTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignListFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderMergeCandidates.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderDetailFeature.swift
+  - apps/ios/BuyLedgerTests/LocalizationCatalogTests+SourceGuards.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterDateSection.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests.swift
+  - apps/ios/BuyLedgerTests/OrderDateSectionTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+CurrencyCodes.swift
+  - apps/ios/BuyLedger/Core/Domain/CampaignDistributionRow.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Rename.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditFeesSection.swift
+  - apps/ios/BuyLedgerTests/ContrastComplianceTests.swift
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterSelection.swift
+  - apps/ios/BuyLedger/Core/Dependencies/SharedKey+CurrencyCodes.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsView.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Orders.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Initialization.swift
+  - apps/ios/BuyLedger/Features/App/RootCascadeOperations.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignRequestPlan.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailContentView.swift
+  - apps/ios/BuyLedger/Features/App/RootSidebarLayout.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadFeatureTests+Requests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature+Path.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+Deletion.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+AISummaryProjection.swift
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedgerTests/RootLaunchFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Receipt.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+AIDisabledAlert.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersBatchOperations.swift
+  - apps/ios/BuyLedgerTests/CampaignLoadFeatureTests+Requests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderMergeSavePlan.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Receipt.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/MergePhotoTile.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+Detail.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Photos.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderDraft+WriteResult.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersDetailNavigationFeature+Path.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+AppShell.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderDateContext.swift
+  - apps/ios/BuyLedgerUITests/Screens/DashboardScreen.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPaymentMethodSection.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Save.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignLoadFeatureTests+Dates.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRegularListColumn.swift
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests+PhotoSelection.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Status.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderRequestPlan.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrdersCompactListView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderDetailPath.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Reload.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditCostSection.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+OptionWrites.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditOptionNormalizer.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+SharedOrders.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/ordersView_寬版選取含成本明細訂單_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditStatusSection.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Cascade.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsFeature.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailContent.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Binding.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+EditPayment.swift
+  - apps/ios/BuyLedgerTests/OrderEditOptionsTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsLaunchLoadingTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignPresentationFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+FailureTiming.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+StatusFailures.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditPickerDestination.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+DeletionReminder.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditPercentField.swift
+  - apps/ios/BuyLedgerTests/OrderDraftTests+Customer.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Options.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRegularDetailColumn.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+SearchAndSelection.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Foreground.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardRecentOrdersSection.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersQuery.swift
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan+Presentation.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditPhotosFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+ListEntry.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+CampaignLoading.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Navigation.swift
+  - apps/ios/BuyLedgerTests/OrderDraftTests+DefaultCurrency.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersPresentationFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/ios/BuyLedgerTests/DateSectionFormattingTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCascadeOperations.swift
+  - apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+EditAmounts.swift
+  - apps/ios/BuyLedger/Features/App/RootNavigationOperations.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderSummaryPrompt.swift
+  - apps/ios/BuyLedgerTests/CampaignLoadFeatureTests.swift
+  - apps/ios/BuyLedgerTests/SidebarBadgeCountsTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+CampaignDetail.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Reconciliation.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已選日期類別付款方式_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderCostBreakdownTests.swift
+  - apps/ios/BuyLedgerTests/OrderSummaryPromptTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCostBreakdown.swift
+  - apps/ios/BuyLedgerTests/InsightsFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests+CandidateSelection.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+DirtyState.swift
+  - apps/ios/BuyLedgerTests/OrdersPresentationFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedgerTests/CampaignLoadFeatureTests+AutoClose.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+OrderFilters.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailItemsView.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditSelectionRow.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+NameConflict.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DefaultCurrency.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+FailureTimingFollowUp.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+Campaigns.swift
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Presentation.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderDateSection.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Components/CampaignDetailDistributionSection.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersMergeFlowOperations.swift
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Writes.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersDetailNavigationFeature.swift
+  - apps/ios/BuyLedger/Features/App/RootLaunchOperations.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+DeleteEditFailures.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+LoadAndSummary.swift
+  - apps/ios/BuyLedgerTests/InsightsAttributionTests.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedgerTests/OrdersSharedStateTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupRename.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Sidebar.swift
+  - apps/ios/BuyLedgerTests/String+SourceLiteralScan.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCreateTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderDraft.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Editing.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Filters.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+Orders.swift
+  - apps/ios/BuyLedgerUITests/Tests/Dashboard/DashboardLaunchLoadingTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderDetailMenuTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrdersBaseline.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderMergeTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditPhotosSection.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardOngoingCampaignsSection.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditCampaignSection.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditItemsSection.swift
+  - apps/ios/BuyLedgerTests/OrderDraftTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderStatusRules.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterDelegates.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+Refresh.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+NewOrderOptions.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListInteraction.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersLoadFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+ReminderIntegration.swift
+  - apps/ios/BuyLedgerTests/CampaignListFeatureTests+DateContext.swift
+  - apps/ios/BuyLedgerTests/CampaignPresentationFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Presentation.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Patterns.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditOptions.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterPending.swift
+  - apps/ios/BuyLedgerTests/CampaignDetailContentTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Cascade.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterLabels.swift
+  - apps/ios/BuyLedgerTests/OrdersBatchOperationsTests.swift
+  - apps/ios/BuyLedgerTests/CampaignListFeatureTests+Loading.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditOperations.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersEditorOptions.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+MergeTiming.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Merge.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignLoadFeature.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LoadRequests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersWriteOutcome.swift
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Requests.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailNotesView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersDetailSelection.swift
+  - apps/ios/BuyLedgerTests/OrderDraftTests+Photos.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+Create.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderRequest.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditDraftOperations.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+Photos.swift
+  - apps/ios/BuyLedgerTests/OrdersPresentationFeatureTests+Delegate.swift
+  - apps/ios/BuyLedgerTests/CampaignListFeatureTests+AutoClose.swift
+-->

@@ -12,13 +12,15 @@ import Testing
 
 extension RootFeatureTests {
 
-    /// 客戶深連結清除殘留類別篩選，避免舊條件讓訂單消失
+    /// 從客戶頁點選客戶時，清除殘留的類別篩選，避免舊條件讓訂單消失
     @Test
     func more_客戶頁點選客戶_清空堆疊並清除殘留類別篩選() async {
         // Given
         var state = RootFeature.State()
-        state.orders.orders = LedgerOrder.sampleOrders
-        state.orders.selectedCategory = "精品"
+        state.orders.$orders.withLock {
+            $0 = LedgerOrder.sampleOrders
+        }
+        state.orders.list.selectedCategory = "精品"
         state.more.path.append(
             .customers(CustomersFeature.State(orders: SharedReader(state.more.$orders)))
         )
@@ -41,24 +43,30 @@ extension RootFeatureTests {
         }
         await store.receive(\.more.delegate.customerSelected, "Alice") {
             $0.selectedTab = .orders
-            $0.orders.searchText = "Alice"
-            $0.orders.selectedCategory = nil
+            $0.orders.list.dateContext = OrderDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+            $0.orders.list.searchText = "Alice"
+            $0.orders.list.selectedCategory = nil
         }
         #expect(store.state.selectedTab == .orders)
-        #expect(store.state.orders.searchText == "Alice")
-        #expect(store.state.orders.selectedCategory == nil)
+        #expect(store.state.orders.list.searchText == "Alice")
+        #expect(store.state.orders.list.selectedCategory == nil)
     }
 
-    /// 從分析頁點類別時，切到訂單頁、重設狀態日期與搜尋篩選，只套用該類別
+    /// 從分析頁點選類別時，切到訂單頁並清除狀態、日期區間與搜尋文字，只套用該類別
     @Test
     func insights_點選分類且有殘留其他篩選_重設篩選並套用分類() async {
         // Given
         var state = RootFeature.State()
-        state.orders.orders = LedgerOrder.sampleOrders
-        state.orders.selectedStatus = .status(.delivered)
-        state.orders.selectedDatePeriod = .thisMonth
-        state.orders.searchText = "stale query"
-        state.orders.selectedOrderID = "BL-2604-016"
+        state.orders.$orders.withLock {
+            $0 = LedgerOrder.sampleOrders
+        }
+        state.orders.list.selectedStatus = .status(.delivered)
+        state.orders.list.selectedDatePeriod = .thisMonth
+        state.orders.list.searchText = "stale query"
+        state.orders.list.selectedOrderID = "BL-2604-016"
 
         let store = TestStore(initialState: state) {
             RootFeature()
@@ -70,23 +78,31 @@ extension RootFeatureTests {
         // When
         await store.send(.insights(.delegate(.categoryTapped("美妝")))) {
             $0.selectedTab = .orders
-            $0.orders.selectedStatus = .all
-            $0.orders.selectedDatePeriod = .all
-            $0.orders.searchText = ""
-            $0.orders.selectedCategory = "美妝"
-            $0.orders.selectedOrderID = "BL-2604-018"
+            $0.orders.list.selectedStatus = .all
+            $0.orders.list.selectedDatePeriod = .all
+            $0.orders.list.dateContext = OrderDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+            $0.orders.list.searchText = ""
+            $0.orders.list.selectedCategory = "美妝"
+            $0.orders.list.selectedOrderID = "BL-2604-018"
+            $0.orders.detail.regularDetail = OrderDetailFeature.State(
+                orderID: "BL-2604-018",
+                orders: SharedReader($0.orders.$orders)
+            )
         }
 
         // Then
         #expect(store.state.selectedTab == .orders)
-        #expect(store.state.orders.selectedStatus == .all)
-        #expect(store.state.orders.selectedDatePeriod == .all)
-        #expect(store.state.orders.searchText == "")
-        #expect(store.state.orders.selectedCategory == "美妝")
-        #expect(store.state.orders.selectedOrderID == "BL-2604-018")
+        #expect(store.state.orders.list.selectedStatus == .all)
+        #expect(store.state.orders.list.selectedDatePeriod == .all)
+        #expect(store.state.orders.list.searchText == "")
+        #expect(store.state.orders.list.selectedCategory == "美妝")
+        #expect(store.state.orders.list.selectedOrderID == "BL-2604-018")
     }
 
-    /// 類別深連結只比對訂單的類別欄位，不把客戶名稱中的字眼當成類別
+    /// 從分析頁點選類別時只比對訂單的類別欄位，客戶名稱含有同樣的字不會被算進來
     @Test
     func insights_點選分類_依分類欄位而非搜尋文字篩選() async {
         // Given
@@ -105,8 +121,10 @@ extension RootFeatureTests {
             category: "美妝",
             customerName: "Carol"
         )
-        var state = RootFeature.State()
-        state.orders.orders = [realBeauty1, falsePositive, realBeauty2]
+        let state = RootFeature.State()
+        state.orders.$orders.withLock {
+            $0 = [realBeauty1, falsePositive, realBeauty2]
+        }
 
         let store = TestStore(initialState: state) {
             RootFeature()
@@ -118,27 +136,32 @@ extension RootFeatureTests {
         // When
         await store.send(.insights(.delegate(.categoryTapped("美妝")))) {
             $0.selectedTab = .orders
-            $0.orders.selectedCategory = "美妝"
-            $0.orders.selectedOrderID = "TEST-BEAUTY-1"
+            $0.orders.list.dateContext = OrderDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+            $0.orders.list.selectedCategory = "美妝"
+            $0.orders.list.selectedOrderID = "TEST-BEAUTY-1"
+            $0.orders.detail.regularDetail = OrderDetailFeature.State(
+                orderID: "TEST-BEAUTY-1",
+                orders: SharedReader($0.orders.$orders)
+            )
         }
 
         // Then
-        let filteredIDs = store.state.orders
-            .filteredOrders(
-                referenceDate: TestDependencies.fixedNow,
-                calendar: TestDependencies.fixedCalendar
-            )
-            .map(\.id)
+        let filteredIDs = store.state.orders.list.filteredOrders.map(\.id)
         #expect(filteredIDs == ["TEST-BEAUTY-1", "TEST-BEAUTY-2"])
     }
 
-    /// 客戶頁載入時，要求訂單功能檢查是否需要載入資料
+    /// 客戶頁開始載入時，要求訂單功能檢查是否需要重新讀取資料
     @Test
     func more_客戶頁要求載入訂單_送出訂單載入() async {
         // Given
         var state = RootFeature.State()
-        // 已載入時 `orders.task` 不再讀資料，本測試只驗轉送
-        state.orders.hasLoaded = true
+        // 已載入時 `orders.loadRequested` 不再讀資料，本測試只驗轉送
+        state.orders.load.$hasLoaded.withLock {
+            $0 = true
+        }
         state.more.path.append(
             .customers(CustomersFeature.State(orders: SharedReader(state.more.$orders)))
         )
@@ -153,10 +176,11 @@ extension RootFeatureTests {
         // Then
         await store.receive(\.more.path[id: 0].customers.delegate.ordersLoadRequested)
         await store.receive(\.more.delegate.ordersLoadRequested)
-        await store.receive(\.orders.task)
+        await store.receive(\.orders.loadRequested)
+        await store.receive(\.orders.load.loadRequested)
     }
 
-    /// 從「更多」裡的客戶頁點選客戶，先清空更多路徑再切到訂單分頁並以客戶名搜尋
+    /// 在「更多」的客戶頁點選客戶，先清空「更多」的頁面，再切到訂單分頁並以客戶名稱搜尋
     @Test
     func more_客戶頁點選客戶_切換分頁前清空堆疊() async {
         // Given
@@ -184,9 +208,13 @@ extension RootFeatureTests {
         }
         await store.receive(\.more.delegate.customerSelected, "Alice") {
             $0.selectedTab = .orders
-            $0.orders.searchText = "Alice"
-            $0.orders.selectedStatus = .all
-            $0.orders.selectedDatePeriod = .all
+            $0.orders.list.dateContext = OrderDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+            $0.orders.list.searchText = "Alice"
+            $0.orders.list.selectedStatus = .all
+            $0.orders.list.selectedDatePeriod = .all
         }
         #expect(store.state.more.path.isEmpty)
         #expect(store.state.selectedTab == .orders)

@@ -42,4 +42,6 @@ extension StackState where Element == CampaignFeature.Path.State {
 
 // MARK: - Equatable
 
-extension CampaignFeature.Path.State: Equatable {}
+extension CampaignFeature.Path.State: Equatable {
+
+}

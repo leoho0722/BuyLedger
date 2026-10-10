@@ -83,7 +83,7 @@ extension LocalizationCatalogTests {
     @Test(arguments: OrdersNavigationTitleExample.examples)
     func navigationTitleKey_各選取狀態_依所選語言解析(example: OrdersNavigationTitleExample) {
         // Given
-        var state = OrdersFeature.State()
+        var state = OrderListFeatureTests.makeState()
         state.isSelecting = example.isSelecting
         state.selectedOrderIDs = example.selectedOrderIDs
 

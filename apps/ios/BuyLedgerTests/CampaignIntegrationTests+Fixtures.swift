@@ -32,7 +32,14 @@ extension CampaignIntegrationTests {
             status: .confirmed,
             currency: .twd,
             date: TestDependencies.fixedNow,
-            items: [LedgerOrderItem(name: "item", quantity: 1, unitPrice: 0)],
+            items: [
+                LedgerOrderItem(
+                    id: UUID(0),
+                    name: "item",
+                    quantity: 1,
+                    unitPrice: 0
+                ),
+            ],
             itemCost: 0,
             domesticShipping: 0,
             internationalShipping: 0,
@@ -56,13 +63,13 @@ extension CampaignIntegrationTests {
         )
     }
 
-    /// 獨立組出變更開團名稱或收款狀態的預期訂單副本
+    /// 組出指定開團名稱與收款狀態的訂單副本，供 Given 建立前置狀態
     ///
     /// - Parameters:
     ///   - order: 原始訂單
     ///   - campaignNames: 要寫入的開團名稱
     ///   - receiptStatus: 要寫入的收款狀態，未指定時保留原值
-    /// - Returns: 清除或替換開團名稱後的訂單
+    /// - Returns: 開團名稱換成指定內容，收款狀態有指定時一併替換的訂單
     static func rebuilt(
         _ order: LedgerOrder,
         campaignNames: [String],
@@ -115,7 +122,9 @@ extension CampaignIntegrationTests {
         state.more.$orders.withLock {
             $0 = orders
         }
-        state.orders.orders = orders
+        state.orders.$orders.withLock {
+            $0 = orders
+        }
         state.dashboard.orders = orders
         state.insights.orders = orders
         state.orders.campaigns = campaigns
@@ -124,25 +133,35 @@ extension CampaignIntegrationTests {
         return state
     }
 
-    /// 由列表畫面觸發 Service 載入，逐步核對列表旗標與 Root 開團副本
+    /// 由列表畫面觸發 Service 載入，逐步核對列表旗標與根功能的開團副本
     ///
     /// - Parameters:
     ///   - campaigns: Service 應回傳的開團
-    ///   - store: 已覆寫開團讀取能力的根測試 store
+    ///   - store: 已覆寫開團讀取能力的根功能 `TestStore`
     static func loadCampaigns(_ campaigns: [Campaign], into store: TestStoreOf<RootFeature>) async {
-        await store.send(.campaigns(.list(.view(.task)))) {
-            $0.campaigns.list.isLoading = true
+        let loading = await store.send(.campaigns(.list(.view(.task)))) {
             $0.campaigns.list.dateContext = CampaignDateContext(
-                now: TestDependencies.fixedNow,
+                now: Date(timeIntervalSince1970: 1_777_507_200),
                 calendar: TestDependencies.fixedCalendar
             )
+            $0.campaigns.load.$isLoading.withLock {
+                $0 = true
+            }
         }
-        await store.receive(\.campaigns.list.campaignsResponse.success) {
+        await loading.finish()
+        await store.receive(\.campaigns.list.delegate.loadRequested) {
             $0.campaigns.$campaigns.withLock {
                 $0 = campaigns
             }
-            $0.campaigns.list.isLoading = false
-            $0.campaigns.list.hasLoaded = true
+            $0.campaigns.load.$isLoading.withLock {
+                $0 = false
+            }
+            $0.campaigns.load.$hasLoaded.withLock {
+                $0 = true
+            }
+        }
+        await store.receive(\.campaigns.load.loadRequested)
+        await store.receive(\.campaigns.load.campaignsResponse.success) {
             $0.orders.campaigns = campaigns
             $0.dashboard.campaigns = campaigns
             $0.insights.campaigns = campaigns

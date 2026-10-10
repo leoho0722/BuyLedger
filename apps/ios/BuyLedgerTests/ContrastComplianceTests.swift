@@ -136,7 +136,7 @@ struct ContrastComplianceTests {
         }
     }
 
-    /// 涵蓋色輪上八個代表色相與審查報告點名的黃綠區段，確認頭像的白色縮寫達到文字對比下限
+    /// 涵蓋色輪上八個代表色相與黃綠區段，確認頭像的白色縮寫達到文字對比下限
     ///
     /// - Parameter hue: 要驗證的色相
     @Test(arguments: [0.0, 0.125, 0.166, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875])
@@ -270,30 +270,5 @@ struct ContrastComplianceTests {
             shorthand == paletteValue,
             "Color.blSecondaryLabel 在 \(appearance) 下與色盤次要標籤色分量不同：\(shorthand) vs \(paletteValue)"
         )
-    }
-
-    /// 確認側邊欄各訂單分組在每種外觀情境下使用互不相同的色相
-    ///
-    /// - Parameter appearance: 要驗證的外觀情境
-    @Test(arguments: ColorContrast.Appearance.allCases)
-    func sidebarHue_各分組狀態_色相互不相同(appearance: ColorContrast.Appearance) {
-        // Given
-        let palette = appearance.palette
-        let statuses = SidebarSmartGroup.orderBrowsingCases.map(\.status)
-
-        // When
-        let components = statuses.map {
-            ColorContrast.components(of: $0.sidebarHue(in: palette), appearance: appearance)
-        }
-
-        // Then
-        for firstIndex in components.indices {
-            for secondIndex in components.indices where secondIndex > firstIndex {
-                #expect(
-                    components[firstIndex] != components[secondIndex],
-                    "\(statuses[firstIndex]) 與 \(statuses[secondIndex]) 在 \(appearance) 下的分組色相相同"
-                )
-            }
-        }
     }
 }

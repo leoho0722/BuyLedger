@@ -17,7 +17,7 @@ extension CampaignFeatureTests {
     ///
     /// - Note: 本機交易已刪除持久化連結，提醒子 Feature 只清共用連結，不呼叫 `removeLink`
     @Test
-    func destination_刪除含提醒開團_轉送移除提醒並清除共用連結() async {
+    func presentation_刪除含提醒開團_轉送移除提醒並清除共用連結() async {
         // Given
         let campaign = Campaign.fixture(
             id: "C1",
@@ -29,7 +29,7 @@ extension CampaignFeatureTests {
         initial.$campaigns.withLock {
             $0 = [campaign]
         }
-        initial.destination = Self.deletionAlert(id: "C1", name: "團")
+        initial.presentation.destination = Self.deletionAlert(id: "C1", name: "團")
         initial.$reminderLinks.withLock {
             $0 = [
                 "C1": CampaignReminderLink(
@@ -68,12 +68,12 @@ extension CampaignFeatureTests {
         }
 
         // When
-        await store.send(.destination(.presented(.alert(.confirmDelete("C1"))))) {
-            $0.destination = nil
+        await store.send(.presentation(.destination(.presented(.alert(.confirmDelete("C1")))))) {
+            $0.presentation.destination = nil
         }
 
         // Then
-        await store.receive(\.writes.deleteRequested) {
+        await store.receive(\.presentation.delegate.deleteConfirmed, "C1") {
             $0.$campaigns.withLock {
                 $0 = []
             }
@@ -81,6 +81,7 @@ extension CampaignFeatureTests {
                 $0["C1"] = nil
             }
         }
+        await store.receive(\.writes.deleteRequested)
         await store.receive(\.writes.deleteResponse.success)
         await store.receive(\.writes.delegate.deleted)
         await store.receive(\.delegate.campaignDeleted)
@@ -94,7 +95,7 @@ extension CampaignFeatureTests {
 
     /// 提醒連結尚未載入時刪除開團，仍以刪除結果帶回的事件識別碼移除行事曆事件
     @Test
-    func destination_連結尚未載入_仍以刪除結果的事件識別碼移除事件() async {
+    func presentation_連結尚未載入_仍以刪除結果的事件識別碼移除事件() async {
         // Given
         let campaign = Campaign.fixture(
             id: "C1",
@@ -106,7 +107,7 @@ extension CampaignFeatureTests {
         initial.$campaigns.withLock {
             $0 = [campaign]
         }
-        initial.destination = Self.deletionAlert(id: "C1", name: "團")
+        initial.presentation.destination = Self.deletionAlert(id: "C1", name: "團")
 
         let removedEventIdentifiers = LockIsolated<[String]>([])
         let store = TestStore(initialState: initial) {
@@ -123,16 +124,17 @@ extension CampaignFeatureTests {
         }
 
         // When
-        await store.send(.destination(.presented(.alert(.confirmDelete("C1"))))) {
-            $0.destination = nil
+        await store.send(.presentation(.destination(.presented(.alert(.confirmDelete("C1")))))) {
+            $0.presentation.destination = nil
         }
 
         // Then
-        await store.receive(\.writes.deleteRequested) {
+        await store.receive(\.presentation.delegate.deleteConfirmed, "C1") {
             $0.$campaigns.withLock {
                 $0 = []
             }
         }
+        await store.receive(\.writes.deleteRequested)
         await store.receive(\.writes.deleteResponse.success)
         await store.receive(\.writes.delegate.deleted)
         await store.receive(\.delegate.campaignDeleted)
@@ -144,7 +146,7 @@ extension CampaignFeatureTests {
 
     /// 開團已刪除但行事曆事件移除失敗時，開團不回到清單，並提示使用者自行到行事曆刪除
     @Test
-    func destination_移除行事曆事件失敗_不還原已刪開團() async {
+    func presentation_移除行事曆事件失敗_不還原已刪開團() async {
         // Given
         let campaign = Campaign.fixture(
             id: "C1",
@@ -156,7 +158,7 @@ extension CampaignFeatureTests {
         initial.$campaigns.withLock {
             $0 = [campaign]
         }
-        initial.destination = Self.deletionAlert(id: "C1", name: "團")
+        initial.presentation.destination = Self.deletionAlert(id: "C1", name: "團")
         initial.$reminderLinks.withLock {
             $0 = [
                 "C1": CampaignReminderLink(
@@ -191,12 +193,12 @@ extension CampaignFeatureTests {
         }
 
         // When
-        await store.send(.destination(.presented(.alert(.confirmDelete("C1"))))) {
-            $0.destination = nil
+        await store.send(.presentation(.destination(.presented(.alert(.confirmDelete("C1")))))) {
+            $0.presentation.destination = nil
         }
 
         // Then
-        await store.receive(\.writes.deleteRequested) {
+        await store.receive(\.presentation.delegate.deleteConfirmed, "C1") {
             $0.$campaigns.withLock {
                 $0 = []
             }
@@ -204,13 +206,18 @@ extension CampaignFeatureTests {
                 $0["C1"] = nil
             }
         }
+        await store.receive(\.writes.deleteRequested)
         await store.receive(\.writes.deleteResponse.success)
         await store.receive(\.writes.delegate.deleted)
         await store.receive(\.delegate.campaignDeleted)
         await store.receive(\.reminder.campaignRemoved)
         await store.receive(\.reminder.eventRemovalResponse)
-        await store.receive(\.reminder.delegate.failed, .eventRemovalAfterDeleteFailed) {
-            $0.destination = Self.failureAlert("開團已刪除，但行事曆上的提醒事件移除失敗，請自行到行事曆刪除。")
+        await store.receive(\.reminder.delegate.failed, .eventRemovalAfterDeleteFailed)
+        await store.receive(
+            \.presentation.noticeRequested,
+            Self.failureAlert("開團已刪除，但行事曆上的提醒事件移除失敗，請自行到行事曆刪除。")
+        ) {
+            $0.presentation.destination = Self.failureAlert("開團已刪除，但行事曆上的提醒事件移除失敗，請自行到行事曆刪除。")
         }
         #expect(removedCampaignIDs.value == ["C1"])
         #expect(removedCampaignNames.value == ["團"])

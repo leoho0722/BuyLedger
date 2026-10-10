@@ -70,21 +70,21 @@ extension CampaignFormatters {
     ) -> String {
         switch title {
         case .day(let date):
-            OrderFormatters.daySectionTitle(
+            BLFormatters.daySectionTitle(
                 for: date,
-                referenceDate: context.now,
+                now: context.now,
                 calendar: context.calendar,
                 locale: locale
             )
 
         case .yearMonth(let date):
-            date.formatted(.dateTime.year().month().locale(locale))
+            BLFormatters.yearMonthSectionTitle(date, calendar: context.calendar, locale: locale)
 
         case .year(let date):
-            date.formatted(.dateTime.year().locale(locale))
+            BLFormatters.yearSectionTitle(date, calendar: context.calendar, locale: locale)
 
         case .month(let date):
-            date.formatted(.dateTime.month(.wide).locale(locale))
+            BLFormatters.monthSectionTitle(date, calendar: context.calendar, locale: locale)
         }
     }
 }

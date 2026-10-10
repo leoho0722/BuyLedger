@@ -56,7 +56,7 @@ extension CurrencyMetadataServiceTests {
         }
         #expect(isEmptyCodeList)
         let after = try await service.fetchCodes()
-        #expect(after == before)
+        #expect(after == [CurrencyCode(rawValue: "TWD"), .usd])
     }
 
     /// 非空遠端清單取代既有快取並依自然語言順序回傳
@@ -89,11 +89,11 @@ extension CurrencyMetadataServiceTests {
         )
 
         // When
-        let didRefresh = try await service.refreshIfStale(0)
+        let isRefreshed = try await service.refreshIfStale(0)
 
         // Then
         let codes = try await service.fetchCodes()
-        #expect(didRefresh)
+        #expect(isRefreshed)
         #expect(codes == [CurrencyCode(rawValue: "EUR"), .jpy])
     }
 
@@ -154,14 +154,14 @@ extension CurrencyMetadataServiceTests {
                 == expectedUnderlying.localizedDescription
         )
         let after = try await service.fetchCodes()
-        #expect(after == before)
+        #expect(after == [CurrencyCode(rawValue: "TWD"), .usd])
     }
 
     /// 快取未滿七天 (604,799 秒) 不發請求也不寫入，滿七天 (604,800 秒) 才重新請求並寫入
     ///
     /// - Parameters:
     ///   - ageInSeconds: 快取自上次更新後經過的秒數
-    ///   - expectedRefresh: 是否預期重新請求並寫入快取
+    ///   - shouldRefresh: 是否預期重新請求並寫入快取
     /// - Throws: seed 失敗時丟出 `.storage(.saveFailed(underlying:))`；刷新時 API 失敗丟出
     ///   `.api(.invalidKey)`、`.api(.transport(underlying:))`、`.api(.http(statusCode:))`、
     ///   `.api(.decoding(underlying:))`、`.api(.quotaExceeded)` 或 `.api(.apiError(code:))`；
@@ -171,7 +171,7 @@ extension CurrencyMetadataServiceTests {
     @Test(arguments: [(TimeInterval(604_799), false), (TimeInterval(604_800), true)])
     func refreshIfStale_快取年齡在七天門檻前後_依門檻決定是否刷新(
         ageInSeconds: TimeInterval,
-        expectedRefresh: Bool
+        shouldRefresh: Bool
     ) async throws {
         // Given
         let now = Date(timeIntervalSince1970: 1_700_000_000)
@@ -195,14 +195,14 @@ extension CurrencyMetadataServiceTests {
         )
 
         // When
-        let didRefresh = try await service.refreshIfStale(604_800)
+        let isRefreshed = try await service.refreshIfStale(604_800)
 
         // Then
-        #expect(didRefresh == expectedRefresh)
-        #expect(httpClient.dataCallCount == (expectedRefresh ? 1 : 0))
-        #expect(configurationStore.stringCallCount == (expectedRefresh ? 1 : 0))
-        #expect(database.writeCallCount == (expectedRefresh ? 1 : 0))
+        #expect(isRefreshed == shouldRefresh)
+        #expect(httpClient.dataCallCount == (shouldRefresh ? 1 : 0))
+        #expect(configurationStore.stringCallCount == (shouldRefresh ? 1 : 0))
+        #expect(database.writeCallCount == (shouldRefresh ? 1 : 0))
         let codes = try await service.fetchCodes()
-        #expect(codes == (expectedRefresh ? [.jpy] : [.twd]))
+        #expect(codes == (shouldRefresh ? [.jpy] : [.twd]))
     }
 }

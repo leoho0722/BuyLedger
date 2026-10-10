@@ -27,7 +27,7 @@ struct OrderEditFocusTests {
         let store = Self.makeStore(original: nil)
 
         // When
-        await store.send(.task) {
+        await store.send(.view(.task)) {
             $0.focusedField = .customerName
         }
 
@@ -44,14 +44,9 @@ struct OrderEditFocusTests {
         let store = Self.makeStore(original: Self.existingOrder)
 
         // When
-        await store.send(.task) {
-            $0.photoLoadPhase = .loading
-        }
+        await store.send(.view(.task))
 
         // Then
-        await store.receive(\.photosLoaded) {
-            $0.photoLoadPhase = .loaded
-        }
         await store.finish()
         #expect(store.state.focusedField == nil)
     }
@@ -68,7 +63,7 @@ struct OrderEditFocusTests {
         }
 
         // When
-        await store.send(.cancelTapped) {
+        await store.send(.view(.cancelTapped)) {
             $0.focusedField = nil
         }
 
@@ -83,17 +78,24 @@ struct OrderEditFocusTests {
     func saveTapped_欄位有焦點_清除焦點() async {
         // Given
         var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
+        initial.draft.customerName = "林書宇"
+        initial.draft.orderSource = "IG"
+        initial.draft.categories = ["美妝"]
         initial.focusedField = .customerName
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.dismiss = DismissEffect {
+            }
         }
 
         // When
-        await store.send(.saveTapped) {
+        await store.send(.view(.saveTapped)) {
             $0.focusedField = nil
         }
 
         // Then
+        await store.receive(\.delegate.saveRequested)
         await store.finish()
         #expect(store.state.focusedField == nil)
     }
@@ -119,7 +121,7 @@ struct OrderEditFocusTests {
 
 private extension OrderEditFocusTests {
 
-    /// 建立覆寫失敗主檔服務的編輯表單 store
+    /// 建立只驗證初始焦點、不讀取服務的編輯表單 store
     ///
     /// - Parameter original: 要編輯的原始訂單；新增訂單時為 `nil`
     /// - Returns: 已建立的 `OrderEditFeature` 測試 store
@@ -131,50 +133,8 @@ private extension OrderEditFocusTests {
             currentDate: TestDependencies.fixedNow
         )
 
-        let failingOrderSources: OrderSourceService.FetchOrderSources = {
-            throw .fetchFailed(
-                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-            )
-        }
-        let failingCategories: CategoryService.FetchCategories = {
-            throw .fetchFailed(
-                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-            )
-        }
-        let failingPaymentMethods: PaymentMethodService.FetchPaymentMethodInfos = {
-            throw .fetchFailed(
-                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-            )
-        }
-        let failingReconciliationStatuses: ReconciliationStatusService.FetchReconciliationStatuses = {
-            throw .fetchFailed(
-                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-            )
-        }
-        let failingCampaigns: CampaignService.FetchCampaigns = {
-            throw .fetchFailed(
-                underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-            )
-        }
-
         return TestStore(initialState: initialState) {
             OrderEditFeature()
-        } withDependencies: {
-            $0.currencyMetadataService.fetchCodes = {
-                []
-            }
-            if original != nil {
-                $0.orderService.fetchOrderPhotos = { _ in
-                    []
-                }
-            }
-            $0.orderSourceService.fetchOrderSources = failingOrderSources
-            $0.categoryService.fetchCategories = failingCategories
-            $0.paymentMethodService.fetchPaymentMethodInfos = failingPaymentMethods
-            $0
-                .reconciliationStatusService
-                .fetchReconciliationStatuses = failingReconciliationStatuses
-            $0.campaignService.fetchCampaigns = failingCampaigns
         }
     }
 }

@@ -19,7 +19,7 @@ extension CampaignFeatureTests {
     ///   `calendarReminderService.requestAccess` 都是 `unimplemented`；重名時誤寫入或要求
     ///   行事曆權限會使測試失敗
     @Test
-    func destination_新增名稱與既有開團重複_拒絕寫入() async {
+    func presentation_新增名稱與既有開團重複_拒絕寫入() async {
         // Given
         let existing = Campaign.fixture(
             id: "C1",
@@ -40,27 +40,31 @@ extension CampaignFeatureTests {
         initial.$campaigns.withLock {
             $0 = [existing]
         }
-        initial.destination = .edit(editState)
+        initial.presentation.destination = .edit(editState)
 
         let store = TestStore(initialState: initial) {
             CampaignFeature()
         }
 
         // When
-        await store.send(.destination(.presented(.edit(.view(.saveButtonTapped)))))
+        await store.send(.presentation(.destination(.presented(.edit(.view(.saveButtonTapped))))))
 
         // Then
-        await store.receive(\.destination.presented.edit.delegate.saveRequested) {
-            $0.destination?.modify(\.edit) {
+        await store.receive(\.presentation.destination.presented.edit.delegate.saveRequested)
+        await store.receive(\.presentation.delegate.saveRequested) {
+            $0.presentation.destination?.modify(\.edit) {
                 $0.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
             }
         }
-        #expect(store.state.destination?.edit?.nameConflictMessage == "已有其他開團使用這個名稱，請改用不同名稱。")
+        #expect(
+            store.state.presentation.destination?.edit?.nameConflictMessage
+                == "已有其他開團使用這個名稱，請改用不同名稱。"
+        )
     }
 
     /// 表單開啟後才載入同名開團，送出時以最新清單拒絕且不寫入或操作行事曆
     @Test
-    func destination_表單開啟後載入同名開團_維持表單並拒絕寫入() async {
+    func presentation_表單開啟後載入同名開團_維持表單並拒絕寫入() async {
         // Given
         var editState = CampaignEditFeature.State(
             id: UUID(0),
@@ -69,15 +73,20 @@ extension CampaignFeatureTests {
             reminderTimestamp: TestDependencies.fixedNow
         )
         editState.draft.name = "  母親節團  "
-        let loaded = Campaign.fixture(
+        let loaded = Campaign(
             id: "C1",
             name: " 母親節團 ",
+            openDate: Date(timeIntervalSince1970: 1_775_001_600),
             closeDate: nil,
-            status: .ongoing
+            status: .ongoing,
+            settledDate: nil,
+            notes: ""
         )
         var initial = CampaignFeature.State()
-        initial.list.isLoading = true
-        initial.destination = .edit(editState)
+        initial.load.$isLoading.withLock {
+            $0 = true
+        }
+        initial.presentation.destination = .edit(editState)
         let saveCalls = LockIsolated(0)
         let calendarCalls = LockIsolated<[String]>([])
         let store = TestStore(initialState: initial) {
@@ -108,27 +117,38 @@ extension CampaignFeatureTests {
                 }
             }
         }
-        await store.send(.list(.campaignsResponse(.success([loaded])))) {
-            $0.list.isLoading = false
-            $0.list.hasLoaded = true
+        await store.send(.load(.campaignsResponse(.success([loaded])))) {
+            $0.load.$isLoading.withLock {
+                $0 = false
+            }
+            $0.load.$hasLoaded.withLock {
+                $0 = true
+            }
             $0.$campaigns.withLock {
                 $0 = [loaded]
             }
         }
 
         // When
-        await store.send(.destination(.presented(.edit(.view(.saveButtonTapped)))))
+        await store.send(.presentation(.destination(.presented(.edit(.view(.saveButtonTapped))))))
 
         // Then
-        await store.receive(\.destination.presented.edit.delegate.saveRequested) {
-            $0.destination?.modify(\.edit) {
+        await store.receive(\.presentation.destination.presented.edit.delegate.saveRequested)
+        await store.receive(\.presentation.delegate.saveRequested) {
+            $0.presentation.destination?.modify(\.edit) {
                 $0.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
             }
         }
         await store.finish()
-        var expectedEdit = editState
+        var expectedEdit = CampaignEditFeature.State(
+            id: UUID(0),
+            currentDate: Date(timeIntervalSince1970: 1_777_507_200),
+            wantsReminder: true,
+            reminderTimestamp: Date(timeIntervalSince1970: 1_777_507_200)
+        )
+        expectedEdit.draft.name = "  母親節團  "
         expectedEdit.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
-        #expect(store.state.destination == .edit(expectedEdit))
+        #expect(store.state.presentation.destination == .edit(expectedEdit))
         #expect(store.state.campaigns == [loaded])
         #expect(saveCalls.value == 0)
         #expect(calendarCalls.value == [])

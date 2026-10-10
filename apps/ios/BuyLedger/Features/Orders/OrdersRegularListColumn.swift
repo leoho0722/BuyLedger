@@ -16,8 +16,8 @@ struct OrdersRegularListColumn: View {
     /// 已套用篩選的訂單，由父層單次求值後傳入
     let orders: [LedgerOrder]
 
-    /// 畫面的狀態與事件來源，由父層傳入
-    let store: StoreOf<OrdersFeature>
+    /// 畫面的狀態與事件來源，由父層建立後傳入
+    let store: StoreOf<OrderListFeature>
 
     // MARK: - Body
 
@@ -39,80 +39,88 @@ struct OrdersRegularListColumn: View {
 
 private extension OrdersRegularListColumn {
 
-    /// 橫向滾動的訂單狀態 chip 列
+    /// 可橫向捲動的訂單狀態篩選列
     var statusChipStrip: some View {
         ScrollView(.horizontal) {
             HStack(spacing: BLSpacing.small) {
-                ForEach(OrderStatusFilter.orderBrowsingCases) { filter in
-                    BLFilterChip(
-                        title: LocalizedStringKey(filter.title),
-                        isSelected: store.selectedStatus == filter
-                    ) {
-                        store.send(.statusFilterSelected(filter))
-                    }
-                    .accessibilityIdentifier(BLAccessibilityID.Orders.statusChip(filter.id))
+                ForEach(OrderStatusFilter.orderBrowsingCases) {
+                    statusChip($0)
                 }
             }
         }
         .scrollIndicators(.hidden)
     }
 
-    /// 橫向滾動的日期區間 chip 列
+    /// 可橫向捲動的日期區間篩選列
     var dateChipStrip: some View {
         ScrollView(.horizontal) {
             HStack(spacing: BLSpacing.small) {
-                ForEach(OrderDatePeriod.orderBrowsingCases) { period in
-                    BLFilterChip(
-                        title: LocalizedStringKey(period.title),
-                        isSelected: store.selectedDatePeriod == period,
-                        style: .accent,
-                        icon: "calendar"
-                    ) {
-                        store.send(.datePeriodSelected(period))
-                    }
+                ForEach(OrderDatePeriod.orderBrowsingCases) {
+                    dateChip($0)
                 }
             }
         }
         .scrollIndicators(.hidden)
     }
 
-    /// 付款方式篩選的觸發鈕，顯示目前選取的付款方式，沒有選取時顯示「全部」
-    @ViewBuilder
-    var paymentMethodFilterTrigger: some View {
-        let isSelected = store.selectedPaymentMethod != nil
-        let currentLabel = store.selectedPaymentMethod ?? "全部"
-
+    /// 顯示並切換單一訂單狀態篩選
+    ///
+    /// - Parameter filter: 要呈現的狀態篩選
+    /// - Returns: 狀態篩選按鈕
+    func statusChip(_ filter: OrderStatusFilter) -> some View {
         BLFilterChip(
-            title: "付款方式：\(currentLabel)",
-            isSelected: isSelected,
+            title: LocalizedStringKey(filter.title),
+            isSelected: store.selectedStatus == filter
+        ) {
+            store.send(.view(.statusFilterSelected(filter)))
+        }
+        .accessibilityIdentifier(BLAccessibilityID.Orders.statusChip(filter.id))
+    }
+
+    /// 顯示並切換單一日期區間篩選
+    ///
+    /// - Parameter period: 要呈現的日期區間
+    /// - Returns: 日期區間篩選按鈕
+    func dateChip(_ period: OrderDatePeriod) -> some View {
+        BLFilterChip(
+            title: LocalizedStringKey(period.title),
+            isSelected: store.selectedDatePeriod == period,
+            style: .accent,
+            icon: "calendar"
+        ) {
+            store.send(.view(.datePeriodSelected(period)))
+        }
+    }
+
+    /// 付款方式篩選的觸發鈕，顯示目前選取的付款方式，沒有選取時顯示「全部」
+    var paymentMethodFilterTrigger: some View {
+        BLFilterChip(
+            title: OrderFormatters.paymentMethodFilterTitle(store.selectedPaymentMethod),
+            isSelected: store.hasPaymentMethodFilter,
             style: .purple,
             icon: "creditcard",
             trailingIcon: "chevron.down",
             isExpanded: true
         ) {
-            store.send(.paymentMethodPickerTapped)
+            store.send(.view(.paymentMethodPickerTapped))
         }
     }
 
     /// 商品類別篩選的觸發鈕，顯示目前選取的類別，沒有選取時顯示「全部」
-    @ViewBuilder
     var categoryFilterTrigger: some View {
-        let isSelected = store.selectedCategory != nil
-        let currentLabel = store.selectedCategory ?? "全部"
-
         BLFilterChip(
-            title: "類別：\(currentLabel)",
-            isSelected: isSelected,
+            title: OrderFormatters.categoryFilterTitle(store.selectedCategory),
+            isSelected: store.hasCategoryFilter,
             style: .purple,
             icon: "tag",
             trailingIcon: "chevron.down",
             isExpanded: true
         ) {
-            store.send(.categoryPickerTapped)
+            store.send(.view(.categoryPickerTapped))
         }
     }
 
-    /// 清單上方的篩選區：狀態與日期 chip、付款方式與類別觸發鈕，以及持續性載入失敗訊息
+    /// 清單上方的狀態、日期、付款方式與類別篩選，以及持續性載入失敗訊息
     var listHeader: some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
             statusChipStrip
@@ -128,7 +136,7 @@ private extension OrdersRegularListColumn {
             }
 
             // 持續性載入失敗才走這裡
-            // 一次性操作失敗改以 writeFailureAlert 對話框呈現，兩者不共用欄位
+            // 一次性操作失敗由容器的對話框呈現，兩者不共用欄位
             if case .failed(let message) = store.loadState {
                 Text(LocalizedStringKey(message))
                     .blTextStyle(.footnote)
@@ -181,10 +189,10 @@ private extension OrdersRegularListColumn {
     /// 一般模式的訂單列，點擊開啟詳情，長按顯示合併與刪除選單
     ///
     /// - Parameter order: 要呈現的訂單
-    /// - Returns: 可選取詳情的訂單列 view
+    /// - Returns: 可開啟詳情的訂單列
     func detailRow(order: LedgerOrder) -> some View {
         Button {
-            store.send(.orderSelected(order.id))
+            store.send(.view(.orderSelected(order.id)))
         } label: {
             OrderRowView(order: order)
                 .padding(.horizontal, BLSpacing.large)
@@ -194,18 +202,12 @@ private extension OrdersRegularListColumn {
         }
         .buttonStyle(.plain)
         .contextMenu {
-            if order.status != .merged, order.status != .cancelled {
-                Button {
-                    store.send(.mergeOrderTapped(order.id))
-                } label: {
-                    Label("合併訂單", systemImage: "arrow.triangle.merge")
-                }
-            }
-
-            Button(role: .destructive) {
-                store.send(.deleteOrderTapped(order.id))
-            } label: {
-                Label("刪除訂單", systemImage: "trash")
+            OrderDetailRowMenu(
+                detail: OrderDetailFeature.State(orderID: order.id, orders: store.$orders)
+            ) {
+                store.send(.view(.mergeOrderTapped(order.id)))
+            } onDelete: {
+                store.send(.view(.deleteOrderTapped(order.id)))
             }
         }
     }
@@ -224,17 +226,16 @@ private extension OrdersRegularListColumn {
 // MARK: - Preview
 
 #Preview("訂單清單欄") {
-    let previewState: OrdersFeature.State = {
-        var state = OrdersFeature.State()
-        state.orders = LedgerOrder.sampleOrders
-        state.hasLoaded = true
+    let previewState: OrderListFeature.State = {
+        let state = OrderListFeature.State(orders: SharedReader(value: LedgerOrder.sampleOrders))
+        state.$hasLoaded = SharedReader(value: true)
         return state
     }()
 
     OrdersRegularListColumn(
         orders: LedgerOrder.sampleOrders,
         store: Store(initialState: previewState) {
-            OrdersFeature()
+            OrderListFeature()
         }
     )
 }

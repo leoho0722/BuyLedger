@@ -6,9 +6,18 @@ paths:
 # iOS 單元測試
 
 - **單元測試放 `apps/ios/BuyLedgerTests/`，檔名對應被測型別或功能** (如 `OrdersFeatureTests.swift`)。
+- **只含 `@Test` 的 test extension 不設 MARK**；helper、fixture、nested type 所在的 extension 照 kit 的區名設 MARK。
+- **`Bool` 命名規則 (以 `is`／`has`／`can`／`should` 開頭) 同樣適用測試**。
+    - 屬性、區域變數、測試參數與 `@Test(arguments:)` 的欄位都用描述事實的名稱。
+    - 回傳 `Bool` 的方法也可用動詞式，如 `contains`、`matches`、`requires`。
+- **預期值不可由受測程式產生**：不用 production 函式 (如正規化、選項建構、確認框工廠) 計算預期，也不把 Given 或 When 執行後從 store 讀出的值當預期，否則實作出錯時預期會跟著錯。
+    - 變動的部分寫成字面值：`TestStore` 用 `$0.欄位 = 字面值`；`#expect` 以測試在 Given 自己建的輸入為底，只改要驗證的欄位。不把整筆資料展開成全欄位字面值：`TestStore` 已比對整個 State，全展開只增加 schema 新增欄位時的修改量。
+    - 狀態不變時比對 Given 輸入，或 `send` 不帶 closure 讓 `TestStore` 保證沒有變更。
+    - 要和預期值比對的資料不帶預設隨機值：`LedgerOrderItem` 等型別的 `id` 在 Given 固定 (如 `UUID(0)`)。
+    - 驗證完整結構本身時 (如確認框的文案與按鈕) 才寫完整字面值。
 - **Swift Testing 的方法層 `-only-testing` 必須帶完整的參數列**：無參數寫 `()`，例如
   `BuyLedgerTests/OrderServiceTests/fetchOrders_讀取清單_不載入照片位元組()`；省略括號會安靜地選不到方法。
-    - 參數化測試 (`@Test(arguments:)`) 要寫出參數標籤，例如 `refreshIfStale_快取年齡在七天門檻前後_依門檻決定是否刷新(ageInSeconds:expectedRefresh:)`；只寫 `()` 同樣會選到 0 條。
+    - 參數化測試 (`@Test(arguments:)`) 要寫出參數標籤，例如 `refreshIfStale_快取年齡在七天門檻前後_依門檻決定是否刷新(ageInSeconds:shouldRefresh:)`；只寫 `()` 同樣會選到 0 條。
 - **選擇性測試與變異驗證必須確認實際執行數大於 0**：`0 tests executed` 不是通過，不能用成功退出碼判定測試有效。
 - **測試替身的共享可變狀態使用 `LockIsolated`**：同步記錄呼叫與取消訊號，避免自訂 actor 或 class box 帶來不必要的隔離與排程問題。
 - **非同步結果不得以 `Task.yield` 輪詢**：用 `TestStore.receive`、`finish` 或注入的 clock 等待明確事件，避免排程快慢造成偶發假失敗。
@@ -26,10 +35,14 @@ paths:
 
 ## TCA TestStore
 
-- **斷言由效果派送的 action 造成的變更前，先 `await store.receive(\.actionName)`**：`exhaustivity = .off` 搭 `store.finish()` 不保證 `.orderWriteFailed`、`.statusChangePersisted` 這類 action 已處理完。
+- **能直接設進初始 `State` 的前置條件，不用 `send` 建立**。
+    - 必須經 reducer 或 effect 才會成立的前置 (如執行中的計時 effect)，可在 Given 用 `send`／`receive`，並斷言完整狀態變化。
+- **等待 effect 的操作放在 Then**：`store.finish()`、`clock.advance`、`continuation.finish()` 與 `continuation.yield(...)` 都屬此類。
+- **斷言由效果派送的 action 造成的變更前，先 `await store.receive(\.actionName)`**：`store.finish()` 不代替回應與 delegate 的接收，例如訂單狀態寫入要接收 `writes.statusResponse`，有後續 delegate 時也須接收。
     - 省略這步的斷言可能只是還沒跑到就通過，屬假測試；寫法參考 `CampaignReminderFeatureTests`。
 - **effect 鏈裡 reducer 以 `withLock` 寫入的共享變更，寫在觸發該鏈的 `send` 之後的第一個 `receive`**：`send` 自己的 closure 看不到 (effect 尚未執行)，鏈中實際寫入的那個 `receive` 又太晚，TestStore 會在斷言前先處理完整條鏈；預期放錯位置時，兩個斷言點都會出現 state mismatch (參考 TCA `SharingState.md` 的 Tests 節)。
     - reducer 在 `send` 的同一步同步寫入 (沒有經過 effect) 的共享變更，照一般 State 寫在該 `send` 的 closure。
+    - 鏈中有測試閘門 (替身等待 `continuation.yield`、`finish()` 才回傳) 時，TestStore 只處理到閘門前；閘門釋放後的共享寫入寫在承接回應的那個 `receive` (參考 `OrdersLoadStateTests` 的重讀測試)。
     - 非共享欄位維持在各自的步驟斷言。
 - **`StackState` 的 id 由測試用的 `StackElementID` 產生器從 0 起依序配發**：`send` 的預期 closure 可直接 `append`；`receive` 的預期 closure 取號時 reducer 已配過號，`append` 會多算一號，要以 `path[id: N] = …` 明指 id。
     - 初始 State 裡先 `showDetail` 或 `append` 的元素也佔號，N 要把它們算進去。
@@ -47,8 +60,8 @@ paths:
 
 ## 跨測試共用狀態
 
-- **測試直接改寫 `@Shared(.lookupCatalog)` 會污染同批次的其他測試**：`@Shared` 是 process 內共用，`BuyLedger.xctestplan` 又是字母序執行，外溢的狀態會讓排在後面的 snapshot 測試出現只在完整套件下重現、單獨跑卻通過的失敗。
-    - 需要改寫主檔目錄的測試一律在隔離 storage 內建立 state：使用 `LookupCatalog.withIsolatedStorage`，根狀態測試另參考 `RootFeatureTests.makeIsolatedRootState` (以 `defaultInMemoryStorage = InMemoryStorage()` 建立)。
+- **測試直接改寫具名記憶體共享資料 (`@Shared(.lookupCatalog)`、`@Shared(.currencyCodes)`) 會污染同批次的其他測試**：具名鍵在 process 內共用，`BuyLedger.xctestplan` 又是字母序執行，外溢的狀態會讓排在後面的 snapshot 測試出現只在完整套件下重現、單獨跑卻通過的失敗。
+    - 需要改寫的測試一律在隔離 storage 內建立 State：主檔可用 `LookupCatalog.withIsolatedStorage`，幣別與根狀態在建立 State 前注入 `defaultInMemoryStorage = InMemoryStorage()`；根狀態測試另參考 `RootFeatureTests.makeIsolatedRootState`。
     - 症狀是「完整回歸紅、單獨跑綠」時先查這裡，不要改 snapshot 或重錄基準圖。
     - 測試 `UserDefaults` 相依 (例如 `UserDefaultsStore`) 時使用獨立 suite，測試前後清除 persistent domain，避免偏好值跨測試外溢。
 

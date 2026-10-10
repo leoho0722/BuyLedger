@@ -28,7 +28,9 @@ extension RootFeatureTests {
         let renamedSingle = Self.rebuiltOrder(single, categories: ["服飾"])
         let renamedCosmeticsOnly = Self.rebuiltOrder(cosmeticsOnly, categories: ["彩妝保養"])
         var state = Self.makeIsolatedRootState(lookupKind: .category)
-        state.orders.orders = [multi, single, cosmeticsOnly]
+        state.orders.$orders.withLock {
+            $0 = [multi, single, cosmeticsOnly]
+        }
         state.orders.$lookupCatalog.withLock { $0.categories = ["美妝", "服飾"] }
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .rename(
             LookupRenameFormFeature.State(originalName: "美妝")
@@ -40,6 +42,10 @@ extension RootFeatureTests {
             }
         }
         let rename = LookupItemRename(oldName: "美妝", newName: "彩妝保養")
+        let cascade = OrdersCascadeOperations.Request.lookupItemRenamed(
+            kind: .category,
+            rename: rename
+        )
 
         // When
         await store.send(
@@ -72,60 +78,99 @@ extension RootFeatureTests {
             $0.more.$orders.withLock {
                 $0 = [renamedMulti, renamedSingle, renamedCosmeticsOnly]
             }
+            $0.orders.$orders.withLock {
+                $0 = [renamedMulti, renamedSingle, renamedCosmeticsOnly]
+            }
         }
         await store.receive(\.more.path[id: 0].lookupManagement.renameResponse.success, rename)
         await store.receive(\.more.path[id: 0].lookupManagement.delegate.itemRenamed, rename)
-        await store.receive(\.more.delegate, .lookupItemRenamed(kind: .category, rename: rename)) {
-            $0.orders.orders = [renamedMulti, renamedSingle, renamedCosmeticsOnly]
+        await store.receive(\.more.delegate, .lookupItemRenamed(kind: .category, rename: rename))
+        await store.receive(\.orders.cascadeRequested, cascade)
+        await store.receive(\.orders.writes.cascadeRequested, cascade) {
             $0.dashboard.orders = [renamedMulti, renamedSingle, renamedCosmeticsOnly]
             $0.insights.orders = [renamedMulti, renamedSingle, renamedCosmeticsOnly]
         }
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["服飾", "彩妝保養"])
-        #expect(store.state.orders.availableCategories.contains("彩妝保養"))
-        #expect(!store.state.orders.availableCategories.contains("美妝"))
+        #expect(store.state.orders.list.availableCategories.contains("彩妝保養"))
+        #expect(!store.state.orders.list.availableCategories.contains("美妝"))
         #expect(store.state.orders.orders == [renamedMulti, renamedSingle, renamedCosmeticsOnly])
         await store.finish()
     }
 
-    /// 訂單編輯新增的類別會同步到管理頁
+    /// 訂單編輯新增的類別在寫入成功後才同步到表單與管理頁
     @Test
-    func orders_訂單編輯中新增分類_同步至查詢管理() async {
+    func orders_訂單編輯中新增分類_成功落盤後同步至查詢管理() async {
         // Given
         let state = Self.makeIsolatedRootState(lookupKind: .category) {
             var rootState = RootFeature.State()
-            rootState.orders.editOrder = OrderEditFeature.State(
-                id: UUID(0),
-                currentDate: TestDependencies.fixedNow
+            rootState.orders.presentation.destination = .edit(
+                OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
             )
             return rootState
         }
 
+        let catalog = state.orders.$lookupCatalog
+        let observedCategories = LockIsolated<[[String]]>([])
+        let plan = OrderOptionWritePlan(
+            formID: UUID(0),
+            kind: .category,
+            name: "手工藝品",
+            flags: .none
+        )
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0.categoryService.addCategory = { _ in
+                observedCategories.withValue {
+                    $0.append(catalog.wrappedValue.categories)
+                }
             }
         }
 
         // When
-        await store.send(.orders(.editOrder(.presented(.addCategoryTapped("手工藝品"))))) {
-            $0.orders.editOrder?.availableCategories = ["手工藝品"]
-            $0.orders.editOrder?.draft.categories = ["手工藝品"]
+        await store.send(
+            .orders(
+                .presentation(
+                    .destination(.presented(.edit(.pickers(.view(.addCategoryTapped("手工藝品"))))))
+                )
+            )
+        )
+
+        // Then
+        await store.receive(
+            \.orders.presentation.destination.presented.edit.pickers.delegate,
+            .addOptionRequested(kind: .category, name: "手工藝品", flags: .none)
+        ) {
             $0.orders.$lookupCatalog.withLock {
                 $0.categories = ["手工藝品"]
             }
         }
-
-        // Then
-        // 管理頁尚未載入時也要立即讀到共用目錄的新項目
+        await store.receive(
+            \.orders.presentation.destination.presented.edit.delegate,
+            .addOptionRequested(kind: .category, name: "手工藝品", flags: .none)
+        )
+        await store.receive(\.orders.presentation.delegate.optionAddRequested, plan)
+        await store.receive(\.orders.writes.optionAddRequested, plan)
+        await store.receive(\.orders.writes.optionResponse)
+        await store.receive(\.orders.writes.delegate, .optionAdded(plan)) {
+            $0.orders.presentation.destination?.modify(\.edit) {
+                $0.pickers.availableCategories = ["手工藝品"]
+            }
+            $0.orders.presentation.destination?.modify(\.edit) {
+                $0.draft.categories = ["手工藝品"]
+            }
+        }
+        // 管理頁尚未載入時也能讀到已落盤的新項目
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["手工藝品"])
+        #expect(observedCategories.value == [[]])
+        await store.finish()
     }
 
     /// 刪除分類後，訂單編輯選單不再提供該類別
     ///
     /// - Throws: 刪除前找不到待刪類別時由 `try #require` 丟出
     @Test
-    func more_刪除分類_從訂單編輯選項移除() async throws(any Error) {
+    func more_刪除分類_從訂單編輯選項移除() async throws {
         // Given
         var state = Self.makeIsolatedRootState(lookupKind: .category)
         state.orders.$lookupCatalog.withLock { $0.categories = ["待刪類別"] }
@@ -138,7 +183,7 @@ extension RootFeatureTests {
             $0.categoryService.removeCategory = { _ in
             }
         }
-        try #require(store.state.orders.availableCategories.contains("待刪類別"))
+        try #require(store.state.orders.list.availableCategories.contains("待刪類別"))
 
         // When
         await store.send(
@@ -163,17 +208,19 @@ extension RootFeatureTests {
             }
         }
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == [])
-        #expect(!store.state.orders.availableCategories.contains("待刪類別"))
+        #expect(!store.state.orders.list.availableCategories.contains("待刪類別"))
         await store.finish()
     }
 
-    /// 分類改名失敗時保留原主檔與訂單，不送出成功改名
+    /// 分類改名寫入失敗時，類別清單與訂單維持原樣，不算改名成功
     @Test
     func more_分類改名寫入失敗_保留訂單() async {
         // Given
         let order = Self.makeOrder(id: "T-CAT-FAIL", categories: ["服飾"])
         var state = Self.makeIsolatedRootState(lookupKind: .category)
-        state.orders.orders = [order]
+        state.orders.$orders.withLock {
+            $0 = [order]
+        }
         state.orders.$lookupCatalog.withLock { $0.categories = ["服飾"] }
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .rename(
             LookupRenameFormFeature.State(originalName: "服飾")
@@ -217,7 +264,7 @@ extension RootFeatureTests {
         }
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["服飾"])
         #expect(store.state.orders.orders == [order])
-        #expect(store.state.orders.availableCategories.contains("服飾"))
+        #expect(store.state.orders.list.availableCategories.contains("服飾"))
         #expect(renameCalls.value == [LookupItemRename(oldName: "服飾", newName: "衣著")])
         await store.finish()
     }

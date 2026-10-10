@@ -15,7 +15,7 @@ extension CampaignFeatureTests {
 
     /// 編輯既有開團沒改名時直接儲存並關閉表單
     @Test
-    func destination_編輯時保留原開團名稱_成功儲存() async {
+    func presentation_編輯時保留原開團名稱_成功儲存() async {
         // Given
         let existing = Campaign.fixture(
             id: "C1",
@@ -33,7 +33,7 @@ extension CampaignFeatureTests {
         initial.$campaigns.withLock {
             $0 = [existing]
         }
-        initial.destination = .edit(editState)
+        initial.presentation.destination = .edit(editState)
 
         // 沒有結單日的舊開團，儲存草稿會以目前日期填入
         let expectedCampaign = Campaign(
@@ -58,15 +58,17 @@ extension CampaignFeatureTests {
         }
 
         // When
-        await store.send(.destination(.presented(.edit(.view(.saveButtonTapped)))))
+        await store.send(.presentation(.destination(.presented(.edit(.view(.saveButtonTapped))))))
 
         // Then
-        await store.receive(\.destination.presented.edit.delegate.saveRequested) {
-            $0.destination = nil
-            $0.presentationQueue.isFormClosing = true
+        await store.receive(\.presentation.destination.presented.edit.delegate.saveRequested) {
             $0.$campaigns.withLock {
                 $0[0] = expectedCampaign
             }
+        }
+        await store.receive(\.presentation.delegate.saveRequested) {
+            $0.presentation.destination = nil
+            $0.presentation.queue.isFormClosing = true
         }
         await store.receive(\.writes.saveRequested)
         await store.receive(\.writes.saveResponse.success)
@@ -77,7 +79,7 @@ extension CampaignFeatureTests {
 
     /// 資料原本就有同名開團時，沒改名仍可儲存且不清理重名
     @Test
-    func destination_既有資料已有同名開團_未改名仍可儲存() async {
+    func presentation_既有資料已有同名開團_未改名仍可儲存() async {
         // Given
         // 既有同名開團可維持原名，新建或改名時才檢查重複
         let campaignA = Campaign.fixture(
@@ -102,7 +104,7 @@ extension CampaignFeatureTests {
         initial.$campaigns.withLock {
             $0 = [campaignA, campaignB]
         }
-        initial.destination = .edit(editState)
+        initial.presentation.destination = .edit(editState)
 
         // 沒有結單日的舊開團，儲存草稿會以目前日期填入
         let expectedCampaign = Campaign(
@@ -127,15 +129,17 @@ extension CampaignFeatureTests {
         }
 
         // When
-        await store.send(.destination(.presented(.edit(.view(.saveButtonTapped)))))
+        await store.send(.presentation(.destination(.presented(.edit(.view(.saveButtonTapped))))))
 
         // Then
-        await store.receive(\.destination.presented.edit.delegate.saveRequested) {
-            $0.destination = nil
-            $0.presentationQueue.isFormClosing = true
+        await store.receive(\.presentation.destination.presented.edit.delegate.saveRequested) {
             $0.$campaigns.withLock {
                 $0[0] = expectedCampaign
             }
+        }
+        await store.receive(\.presentation.delegate.saveRequested) {
+            $0.presentation.destination = nil
+            $0.presentation.queue.isFormClosing = true
         }
         await store.receive(\.writes.saveRequested)
         await store.receive(\.writes.saveResponse.success)
@@ -146,7 +150,7 @@ extension CampaignFeatureTests {
 
     /// 兩個不同識別值的同名開團只修改其中一團備註時，原名直接放行且保留另一團
     @Test
-    func destination_兩個同名開團之一只改備註_儲存成功並保留另一團() async {
+    func presentation_兩個同名開團之一只改備註_儲存成功並保留另一團() async {
         // Given
         let campaignA = Campaign.fixture(
             id: "A",
@@ -171,7 +175,7 @@ extension CampaignFeatureTests {
         initial.$campaigns.withLock {
             $0 = [campaignA, campaignB]
         }
-        initial.destination = .edit(editState)
+        initial.presentation.destination = .edit(editState)
         let expectedCampaign = Campaign(
             id: "A",
             name: "重複團",
@@ -193,21 +197,23 @@ extension CampaignFeatureTests {
         }
 
         // When
-        await store.send(.destination(.presented(.edit(.view(.saveButtonTapped)))))
+        await store.send(.presentation(.destination(.presented(.edit(.view(.saveButtonTapped))))))
 
         // Then
-        await store.receive(\.destination.presented.edit.delegate.saveRequested) {
-            $0.destination = nil
-            $0.presentationQueue.isFormClosing = true
+        await store.receive(\.presentation.destination.presented.edit.delegate.saveRequested) {
             $0.$campaigns.withLock {
                 $0 = [expectedCampaign, campaignB]
             }
+        }
+        await store.receive(\.presentation.delegate.saveRequested) {
+            $0.presentation.destination = nil
+            $0.presentation.queue.isFormClosing = true
         }
         await store.receive(\.writes.saveRequested)
         await store.receive(\.writes.saveResponse.success)
         await store.receive(\.writes.delegate.saved)
         await store.finish()
-        #expect(store.state.destination == nil)
+        #expect(store.state.presentation.destination == nil)
         #expect(store.state.campaigns == [expectedCampaign, campaignB])
         #expect(savedCampaigns.value == [expectedCampaign])
     }

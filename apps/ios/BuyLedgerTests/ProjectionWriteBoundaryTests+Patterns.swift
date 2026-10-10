@@ -12,7 +12,7 @@ import Testing
 
 extension ProjectionWriteBoundaryTests {
 
-    /// 判斷單行是否修改指定 property
+    /// 判斷單行是否修改指定 `property`
     ///
     /// - Parameters:
     ///   - property: 要檢查的投影屬性名稱
@@ -129,6 +129,51 @@ extension ProjectionWriteBoundaryTests {
         return String(filePath.dropFirst(rootPath.count + 1))
     }
 
+    /// 找出外部 helper 以非 `inout` 的 `State` 參數寫入投影的位置
+    ///
+    /// - Parameters:
+    ///   - relativePath: 相對於 App 原始碼根目錄的路徑
+    ///   - source: 待掃描的原始碼內容
+    ///   - owner: 投影擁有者
+    /// - Returns: 非 `inout` 子 `State` 參數的投影寫入位置
+    /// - Throws: 正規表示式建立失敗時拋出錯誤
+    static func stateValueParameterViolations(
+        relativePath: String,
+        source: String,
+        owner: ProjectionOwner
+    ) throws(any Error) -> [Violation] {
+        guard relativePath != owner.homeFileRelativePath else {
+            return []
+        }
+        var mode = StripMode.normal
+        let lines = source.components(separatedBy: "\n").map {
+            stripCommentsAndStrings(from: $0, mode: &mode)
+        }
+        let stripped = lines.joined(separator: "\n")
+        let escapedOwner = NSRegularExpression.escapedPattern(for: owner.name)
+        let parameters = try NSRegularExpression(
+            pattern: #"\b([\p{L}_][\p{L}\p{N}_]*)\s*:\s*"# + escapedOwner + #"\.State\b"#
+        )
+        let text = stripped as NSString
+        var violations: [Violation] = []
+        for match in parameters.matches(in: stripped, range: fullRange(of: stripped)) {
+            let parameter = text.substring(with: match.range(at: 1))
+            for property in owner.properties {
+                let assignment = try assignmentPattern(prefix: parameter, property: property)
+                let mutation = try mutatingCallPattern(prefix: parameter, property: property)
+                for (index, line) in lines.enumerated() {
+                    if assignment.firstMatch(in: line, range: fullRange(of: line)) != nil
+                        || mutation.firstMatch(in: line, range: fullRange(of: line)) != nil {
+                        violations.append(
+                            Violation(file: relativePath, line: index + 1, property: property)
+                        )
+                    }
+                }
+            }
+        }
+        return violations
+    }
+
     /// 建立根狀態子層投影的賦值與變異方法比對規則，允許參數別名與跨行路徑
     ///
     /// - Parameters:
@@ -176,7 +221,7 @@ private extension ProjectionWriteBoundaryTests {
         )
     }
 
-    /// 建立「有前綴 mutating 方法呼叫」樣式：`<prefix>.<property>.<方法名>(`
+    /// 建立「有前綴 `mutating` 方法呼叫」樣式：`<prefix>.<property>.<方法名>(`
     ///
     /// - Parameters:
     ///   - prefix: 屬性前的狀態或物件名稱
@@ -209,7 +254,7 @@ private extension ProjectionWriteBoundaryTests {
         )
     }
 
-    /// 建立裸 mutating 方法呼叫樣式
+    /// 建立裸 `mutating` 方法呼叫樣式
     ///
     /// - Parameter property: 要檢查的投影屬性名稱
     /// - Returns: 不含前綴的變更呼叫比對規則

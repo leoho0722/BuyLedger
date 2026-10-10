@@ -11,240 +11,61 @@ import Testing
 
 @testable import BuyLedger
 
-/// 開團列表的載入、重試、日期投影與使用者請求測試
+/// 開團列表的日期投影與使用者請求測試
 @MainActor
 struct CampaignListFeatureTests {
 
-    /// 載入失敗只更新列表訊息，不改共用開團，也不送出通知請求
+    /// 列表出現時更新日期脈絡，並把載入需求交給容器
     @Test
-    func task_開團載入失敗_保留共用清單並呈現列表錯誤() async {
+    func task_列表出現_更新日期脈絡並委派載入() async {
         // Given
-        let campaign = Campaign.fixture(
-            id: "C1",
-            name: "既有團",
-            closeDate: nil,
-            status: .ongoing
-        )
-        let failingFetch: CampaignService.FetchCampaigns = {
-            throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
-        }
-        let store = TestStore(initialState: Self.makeState(campaigns: [campaign])) {
+        let store = TestStore(initialState: Self.makeState()) {
             CampaignListFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0.campaignService.fetchCampaigns = failingFetch
         }
 
         // When
         await store.send(.view(.task)) {
             $0.dateContext = CampaignDateContext(
-                now: TestDependencies.fixedNow,
+                now: Date(timeIntervalSince1970: 1_777_507_200),
                 calendar: TestDependencies.fixedCalendar
             )
-            $0.isLoading = true
         }
 
         // Then
-        await store.receive(\.campaignsResponse.failure) {
-            $0.isLoading = false
-            $0.errorMessage = "開團載入失敗，請稍後再試。"
-        }
+        await store.receive(\.delegate.loadRequested)
         await store.finish()
-        #expect(store.state.campaigns == [campaign])
+        #expect(store.state.hasLoaded == false)
+        #expect(store.state.isLoading == false)
+    }
+
+    /// 重試只更新日期脈絡並發出載入需求，錯誤由載入子層清除
+    @Test
+    func retryTapped_載入失敗_委派載入並保留唯讀錯誤() async {
+        // Given
+        let initial = Self.makeState()
+        initial.$errorMessage = SharedReader(value: "開團載入失敗，請稍後再試。")
+        let store = TestStore(initialState: initial) {
+            CampaignListFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+        await store.send(.view(.retryTapped)) {
+            $0.dateContext = CampaignDateContext(
+                now: Date(timeIntervalSince1970: 1_777_507_200),
+                calendar: TestDependencies.fixedCalendar
+            )
+        }
+
+        // Then
+        await store.receive(\.delegate.loadRequested)
+        await store.finish()
         #expect(store.state.loadState == .failed("開團載入失敗，請稍後再試。"))
-    }
-
-    /// 使用者重試時即使已載入，也重新讀取並清除舊錯誤
-    @Test
-    func retryTapped_已載入列表點重試_重新載入並更新日期脈絡() async {
-        // Given
-        let campaign = Campaign.fixture(
-            id: "C1",
-            name: "新資料",
-            closeDate: nil,
-            status: .ongoing
-        )
-        var initial = Self.makeState()
-        initial.hasLoaded = true
-        initial.errorMessage = "舊錯誤"
-        let calls = LockIsolated(0)
-        let store = TestStore(initialState: initial) {
-            CampaignListFeature()
-        } withDependencies: {
-            $0.date = .constant(TestDependencies.fixedNow)
-            $0.calendar = TestDependencies.fixedCalendar
-            $0.campaignService.fetchCampaigns = {
-                calls.withValue {
-                    $0 += 1
-                }
-                return [campaign]
-            }
-        }
-
-        // When
-        await store.send(.view(.retryTapped)) {
-            $0.dateContext = CampaignDateContext(
-                now: TestDependencies.fixedNow,
-                calendar: TestDependencies.fixedCalendar
-            )
-            $0.isLoading = true
-            $0.errorMessage = nil
-        }
-
-        // Then
-        await store.receive(\.campaignsResponse.success) {
-            $0.isLoading = false
-            $0.$campaigns.withLock {
-                $0 = [campaign]
-            }
-        }
-        #expect(calls.value == 1)
-        #expect(store.state.loadState == .loaded)
-    }
-
-    /// 載入失敗後重試會先清除錯誤，成功回應讓列表離開失敗狀態
-    @Test
-    func retryTapped_載入失敗後點重試_清除錯誤並重新載入成功() async {
-        // Given
-        let campaign = Campaign.fixture(
-            id: "C1",
-            name: "重試團",
-            closeDate: nil,
-            status: .ongoing
-        )
-        var initial = Self.makeState()
-        initial.errorMessage = "開團載入失敗，請稍後再試。"
-        let calls = LockIsolated(0)
-        let store = TestStore(initialState: initial) {
-            CampaignListFeature()
-        } withDependencies: {
-            $0.date = .constant(TestDependencies.fixedNow)
-            $0.calendar = TestDependencies.fixedCalendar
-            $0.campaignService.fetchCampaigns = {
-                calls.withValue {
-                    $0 += 1
-                }
-                return [campaign]
-            }
-        }
-
-        // When
-        await store.send(.view(.retryTapped)) {
-            $0.dateContext = CampaignDateContext(
-                now: TestDependencies.fixedNow,
-                calendar: TestDependencies.fixedCalendar
-            )
-            $0.isLoading = true
-            $0.errorMessage = nil
-        }
-
-        // Then
-        await store.receive(\.campaignsResponse.success) {
-            $0.isLoading = false
-            $0.hasLoaded = true
-            $0.$campaigns.withLock {
-                $0 = [campaign]
-            }
-        }
-        #expect(calls.value == 1)
-        #expect(store.state.loadState == .loaded)
-    }
-
-    /// 列表正在載入時執行外觀任務，更新日期脈絡並重新讀取開團
-    @Test
-    func task_正在載入時重複請求_更新日期脈絡並重新讀取() async {
-        // Given
-        let campaign = Campaign.fixture(
-            id: "C1",
-            name: "外觀任務團",
-            closeDate: nil,
-            status: .ongoing
-        )
-        var initial = Self.makeState()
-        initial.isLoading = true
-        let calls = LockIsolated(0)
-        let store = TestStore(initialState: initial) {
-            CampaignListFeature()
-        } withDependencies: {
-            $0.date = .constant(TestDependencies.fixedNow)
-            $0.calendar = TestDependencies.fixedCalendar
-            $0.campaignService.fetchCampaigns = {
-                calls.withValue {
-                    $0 += 1
-                }
-                return [campaign]
-            }
-        }
-
-        // When
-        await store.send(.view(.task)) {
-            $0.dateContext = CampaignDateContext(
-                now: TestDependencies.fixedNow,
-                calendar: TestDependencies.fixedCalendar
-            )
-            $0.isLoading = true
-        }
-
-        // Then
-        await store.receive(\.campaignsResponse) {
-            $0.isLoading = false
-            $0.hasLoaded = true
-            $0.$campaigns.withLock {
-                $0 = [campaign]
-            }
-        }
-        await store.finish()
-        #expect(calls.value == 1)
-        #expect(store.state.loadState == .loaded)
-    }
-
-    /// 列表正在載入時點選重試，更新日期脈絡並重新讀取開團
-    @Test
-    func retryTapped_正在載入時重複請求_更新日期脈絡並重新讀取() async {
-        // Given
-        let campaign = Campaign.fixture(
-            id: "C1",
-            name: "重試團",
-            closeDate: nil,
-            status: .ongoing
-        )
-        var initial = Self.makeState()
-        initial.isLoading = true
-        let calls = LockIsolated(0)
-        let store = TestStore(initialState: initial) {
-            CampaignListFeature()
-        } withDependencies: {
-            $0.date = .constant(TestDependencies.fixedNow)
-            $0.calendar = TestDependencies.fixedCalendar
-            $0.campaignService.fetchCampaigns = {
-                calls.withValue {
-                    $0 += 1
-                }
-                return [campaign]
-            }
-        }
-
-        // When
-        await store.send(.view(.retryTapped)) {
-            $0.dateContext = CampaignDateContext(
-                now: TestDependencies.fixedNow,
-                calendar: TestDependencies.fixedCalendar
-            )
-            $0.isLoading = true
-        }
-
-        // Then
-        await store.receive(\.campaignsResponse) {
-            $0.isLoading = false
-            $0.hasLoaded = true
-            $0.$campaigns.withLock {
-                $0 = [campaign]
-            }
-        }
-        await store.finish()
-        #expect(calls.value == 1)
-        #expect(store.state.loadState == .loaded)
     }
 }
 
@@ -252,7 +73,7 @@ struct CampaignListFeatureTests {
 
 extension CampaignListFeatureTests {
 
-    /// 建立列表的可寫開團與唯讀訂單共享資料
+    /// 建立列表的唯讀開團與訂單共享資料
     ///
     /// - Parameters:
     ///   - campaigns: 初始開團清單
@@ -263,7 +84,7 @@ extension CampaignListFeatureTests {
         orders: [LedgerOrder] = []
     ) -> CampaignListFeature.State {
         CampaignListFeature.State(
-            campaigns: Shared(value: campaigns),
+            campaigns: SharedReader(value: campaigns),
             orders: SharedReader(value: orders)
         )
     }

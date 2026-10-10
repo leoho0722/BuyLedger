@@ -18,7 +18,7 @@ extension CampaignListFeatureTests {
     func task_已載入時再次執行外觀任務_更新日期脈絡而不重複載入() async {
         // Given
         var initial = Self.makeState()
-        initial.hasLoaded = true
+        initial.$hasLoaded = SharedReader(value: true)
         initial.dateContext = CampaignDateContext(
             now: .distantPast,
             calendar: TestDependencies.fixedCalendar
@@ -34,12 +34,16 @@ extension CampaignListFeatureTests {
 
         // When
         await store.send(.view(.task)) {
-            $0.dateContext = CampaignDateContext(now: TestDependencies.fixedNow, calendar: calendar)
+            $0.dateContext = CampaignDateContext(
+                now: Date(timeIntervalSince1970: 1_777_507_200),
+                calendar: calendar
+            )
         }
 
         // Then
+        await store.receive(\.delegate.loadRequested)
         await store.finish()
-        #expect(store.state.dateContext?.now == TestDependencies.fixedNow)
+        #expect(store.state.dateContext?.now == Date(timeIntervalSince1970: 1_777_507_200))
         #expect(store.state.dateContext?.calendar.firstWeekday == 2)
     }
 
@@ -47,7 +51,7 @@ extension CampaignListFeatureTests {
     ///
     /// - Throws: 日期脈絡不存在時由 `try #require` 丟出
     @Test
-    func groupingSelected_列表停留期間注入時間跨午夜_標題維持原日期() async throws(any Error) {
+    func groupingSelected_列表停留期間注入時間跨午夜_標題維持原日期() async throws {
         // Given
         let today = Campaign.fixture(
             id: "T",
@@ -71,7 +75,7 @@ extension CampaignListFeatureTests {
             notes: ""
         )
         var initial = Self.makeState(campaigns: [today, yesterday, older])
-        initial.hasLoaded = true
+        initial.$hasLoaded = SharedReader(value: true)
         initial.dateContext = CampaignDateContext(
             now: Date(timeIntervalSince1970: 1_778_580_000),
             calendar: TestDependencies.fixedCalendar
@@ -103,7 +107,7 @@ extension CampaignListFeatureTests {
     ///
     /// - Throws: 日期脈絡不存在時由 `try #require` 丟出
     @Test
-    func task_跨午夜後重新執行外觀任務_今天區段改為昨天() async throws(any Error) {
+    func task_跨午夜後重新執行外觀任務_今天區段改為昨天() async throws {
         // Given
         let campaign = Campaign.fixture(
             id: "C1",
@@ -113,7 +117,7 @@ extension CampaignListFeatureTests {
             notes: ""
         )
         var initial = Self.makeState(campaigns: [campaign])
-        initial.hasLoaded = true
+        initial.$hasLoaded = SharedReader(value: true)
         initial.dateContext = CampaignDateContext(
             now: Date(timeIntervalSince1970: 1_778_580_000),
             calendar: TestDependencies.fixedCalendar
@@ -134,6 +138,7 @@ extension CampaignListFeatureTests {
         }
 
         // Then
+        await store.receive(\.delegate.loadRequested)
         let context = try #require(store.state.dateContext)
         let titles = store.state.dateSections.map {
             CampaignFormatters.sectionTitle(

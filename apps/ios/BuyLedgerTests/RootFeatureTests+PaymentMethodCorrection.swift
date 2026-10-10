@@ -13,7 +13,7 @@ import Testing
 
 extension RootFeatureTests {
 
-    /// 付款方式更正確認後，寫入相同的正規化訂單
+    /// 確認付款方式更正後，把依新付款方式整理過的訂單轉送去寫入
     @Test
     func more_確認付款方式更正_轉送相同正規化訂單() async {
         // Given
@@ -26,13 +26,12 @@ extension RootFeatureTests {
             reconciliationStatus: "待對帳",
             isCashOnDelivery: true
         )
-        let normalized = LedgerOrder.fixture(
-            id: "BL-PM-EDIT",
-            chargedAmount: 5_000,
-            cardlessDeductionAmount: 0,
-            cardlessSupplementAmount: 0,
+        let normalized = Self.rebuiltOrder(
+            original,
             paymentMethod: "銀行匯款",
             reconciliationStatus: "",
+            cardlessDeductionAmount: 0,
+            cardlessSupplementAmount: 0,
             isCashOnDelivery: false
         )
         let plan = PaymentMethodEditPlan(
@@ -49,7 +48,9 @@ extension RootFeatureTests {
             isCashOnDelivery: false
         )
         var state = Self.makeIsolatedRootState(lookupKind: .paymentMethod)
-        state.orders.orders = [original]
+        state.orders.$orders.withLock {
+            $0 = [original]
+        }
         state.orders.$lookupCatalog.withLock {
             $0.paymentMethods = [PaymentMethodInfo(name: "匯款", flags: originalFlags)]
         }
@@ -103,6 +104,9 @@ extension RootFeatureTests {
             $0.more.$orders.withLock {
                 $0 = [normalized]
             }
+            $0.orders.$orders.withLock {
+                $0 = [normalized]
+            }
         }
         await store.receive(
             \.more.path[id: 0].lookupManagement.correction.editResponse.success,
@@ -111,13 +115,13 @@ extension RootFeatureTests {
         await store.receive(\.more.path[id: 0].lookupManagement.correction.delegate.edited, plan)
         await store.receive(\.more.path[id: 0].lookupManagement.delegate.paymentMethodEdited, plan)
         await store.receive(\.more.delegate.paymentMethodEdited, plan)
-        await store.receive(\.orders.paymentMethodFlagsApplied) {
-            $0.orders.orders = [normalized]
+        await store.receive(\.orders.paymentMethodFlagsApplyRequested, [normalized])
+        await store.receive(\.orders.writes.paymentMethodFlagsApplyRequested, [normalized]) {
             $0.dashboard.orders = [normalized]
             $0.insights.orders = [normalized]
         }
         #expect(store.state.orders.orders == [normalized])
-        #expect(store.state.orders.paymentMethodMaster == [updatedMaster])
+        #expect(store.state.orders.lookupCatalog.paymentMethods == [updatedMaster])
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["銀行匯款"])
         #expect(
             writes.value == [
@@ -132,9 +136,9 @@ extension RootFeatureTests {
         await store.finish()
     }
 
-    /// 取消付款方式更正確認時，不寫入訂單或主檔
+    /// 取消付款方式更正時，訂單與付款方式清單都不寫入變更
     ///
-    /// - Note: `testValue` 的寫入 closure 為 `unimplemented`，非預期寫入會使測試失敗
+    /// - Note: 未覆寫付款方式寫入的依賴，若被呼叫會使測試失敗
     @Test
     func more_取消付款方式更正_保留訂單與主檔() async {
         // Given
@@ -154,7 +158,9 @@ extension RootFeatureTests {
         )
         let originalMaster = PaymentMethodInfo(name: "匯款", flags: originalFlags)
         var state = Self.makeIsolatedRootState(lookupKind: .paymentMethod)
-        state.orders.orders = [original]
+        state.orders.$orders.withLock {
+            $0 = [original]
+        }
         state.orders.$lookupCatalog.withLock { $0.paymentMethods = [originalMaster] }
         state.more.path[id: 0, case: \.lookupManagement]?.correction.pendingPlan = plan
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .retroactiveConfirmation(
@@ -185,12 +191,12 @@ extension RootFeatureTests {
             $0.more.path[id: 0, case: \.lookupManagement]?.correction.pendingPlan = nil
         }
         #expect(store.state.orders.orders == [original])
-        #expect(store.state.orders.paymentMethodMaster == [originalMaster])
+        #expect(store.state.orders.lookupCatalog.paymentMethods == [originalMaster])
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["匯款"])
         await store.finish()
     }
 
-    /// 付款方式更正寫入失敗時，保留原訂單與主檔
+    /// 付款方式更正寫入失敗時，訂單與付款方式清單都保留原樣
     @Test
     func more_付款方式更正寫入失敗_保留訂單與主檔() async {
         // Given
@@ -210,7 +216,9 @@ extension RootFeatureTests {
         )
         let originalMaster = PaymentMethodInfo(name: "匯款", flags: originalFlags)
         var state = Self.makeIsolatedRootState(lookupKind: .paymentMethod)
-        state.orders.orders = [original]
+        state.orders.$orders.withLock {
+            $0 = [original]
+        }
         state.orders.$lookupCatalog.withLock { $0.paymentMethods = [originalMaster] }
         state.more.path[id: 0, case: \.lookupManagement]?.correction.pendingPlan = plan
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .retroactiveConfirmation(
@@ -254,7 +262,7 @@ extension RootFeatureTests {
             )
         }
         #expect(store.state.orders.orders == [original])
-        #expect(store.state.orders.paymentMethodMaster == [originalMaster])
+        #expect(store.state.orders.lookupCatalog.paymentMethods == [originalMaster])
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["匯款"])
         await store.finish()
     }
@@ -276,7 +284,7 @@ private extension RootFeatureTests {
         /// 寫入的付款方式旗標
         let flags: PaymentMethodFlags
 
-        /// 傳入的正規化訂單
+        /// 寫入時傳入的訂單，已依新付款方式整理
         let orders: [LedgerOrder]
     }
 }

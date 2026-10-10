@@ -7,16 +7,26 @@
 
 import Foundation
 
-/// ``OrdersFeature`` 多選與批次改狀態子域的分支主體
-enum OrdersBatchOperations {}
+/// ``OrderListFeature`` 的多選與批次改狀態操作，直接改寫清單狀態
+enum OrdersBatchOperations {
+
+}
 
 // MARK: - Internal Method
 
 extension OrdersBatchOperations {
 
+    /// 批次更新可選的狀態，已合併僅由合併流程寫入
+    ///
+    /// - Returns: 依既有順序排列、排除已合併的狀態
+    static func targetStatuses() -> [OrderStatus] {
+        OrderStatus.allCases.filter { $0 != .merged }
+    }
+
     /// 進入／退出多選模式；退出時清空已選集合
+    ///
     /// - Parameter state: 要更新的訂單功能狀態
-    static func selectionModeToggled(state: inout OrdersFeature.State) {
+    static func selectionModeToggled(state: inout OrderListFeature.State) {
         state.isSelecting.toggle()
         if !state.isSelecting {
             state.selectedOrderIDs = []
@@ -24,10 +34,11 @@ extension OrdersBatchOperations {
     }
 
     /// 多選模式下切換單筆訂單的勾選狀態
+    ///
     /// - Parameters:
     ///   - id: 要切換勾選狀態的訂單編號
     ///   - state: 要更新的訂單功能狀態
-    static func orderSelectionToggled(_ id: LedgerOrder.ID, state: inout OrdersFeature.State) {
+    static func orderSelectionToggled(_ id: LedgerOrder.ID, state: inout OrderListFeature.State) {
         if state.selectedOrderIDs.contains(id) {
             state.selectedOrderIDs.remove(id)
         } else {
@@ -36,46 +47,42 @@ extension OrdersBatchOperations {
     }
 
     /// 全選目前篩選後清單
-    /// - Parameters:
-    ///   - state: 要更新的訂單功能狀態
-    ///   - referenceDate: 用於計算日期篩選的基準時間
-    ///   - calendar: 日期篩選使用的行事曆
-    static func selectAllTapped(
-        state: inout OrdersFeature.State,
-        referenceDate: Date,
-        calendar: Calendar
-    ) {
-        let filtered = state.filteredOrders(referenceDate: referenceDate, calendar: calendar)
+    ///
+    /// - Parameter state: 要更新的訂單功能狀態
+    static func selectAllTapped(state: inout OrderListFeature.State) {
+        let filtered = state.filteredOrders
         state.selectedOrderIDs = Set(filtered.map(\.id))
     }
 
     /// 清除目前已選集合
+    ///
     /// - Parameter state: 要更新的訂單功能狀態
-    static func clearSelectionTapped(state: inout OrdersFeature.State) {
+    static func clearSelectionTapped(state: inout OrderListFeature.State) {
         state.selectedOrderIDs = []
     }
 
-    /// 對已選訂單批次套用同一目標狀態 (目標清單已排除 merged)
+    /// 對已選訂單批次套用同一目標狀態 (目標清單已排除 `merged`)
+    ///
     /// - Parameters:
     ///   - newStatus: 批次套用的目標狀態
-    ///   - state: 將被修改的 ``OrdersFeature/State``
+    ///   - state: 將被修改的 ``OrderListFeature/State``
     /// - Returns: 實際變更的訂單；沒有變更時回傳 `nil`
     static func batchStatusChanged(
         _ newStatus: OrderStatus,
-        state: inout OrdersFeature.State
+        state: inout OrderListFeature.State
     ) -> [LedgerOrder]? {
-        // merged 僅由合併流程寫入；批次目標清單已於 view 端排除，此處為防衛
+        // `merged` 僅由合併流程寫入；批次目標清單已由 `targetStatuses()` 排除，此處為防衛
         guard newStatus != .merged else {
             return nil
         }
 
-        // 先計算完整結果，避免寫入失敗時只更新部分畫面。
+        // 先計算完整結果，避免寫入失敗時只更新部分畫面
         let selectedIDs = state.selectedOrderIDs
         let changed = state.orders
             .filter { selectedIDs.contains($0.id) && $0.status != newStatus }
             .map { $0.withStatus(newStatus) }
 
-        // 完成批次操作後退出多選並清空選取
+        // 批次送出後結束多選，讓下一次多選從空白開始
         state.isSelecting = false
         state.selectedOrderIDs = []
 
@@ -83,20 +90,5 @@ extension OrdersBatchOperations {
             return nil
         }
         return changed
-    }
-
-    /// 批次狀態變更落盤成功，套用到畫面狀態
-    /// - Parameters:
-    ///   - changedOrders: 已成功寫入的訂單
-    ///   - state: 要更新的訂單功能狀態
-    static func batchStatusChangePersisted(
-        _ changedOrders: [LedgerOrder],
-        state: inout OrdersFeature.State
-    ) {
-        for updated in changedOrders {
-            if let index = state.orders.firstIndex(where: { $0.id == updated.id }) {
-                state.orders[index] = updated
-            }
-        }
     }
 }

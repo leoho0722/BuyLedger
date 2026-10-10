@@ -28,6 +28,18 @@ struct DashboardView: View {
     /// 日期格式化使用的時區；測試可注入固定值
     @Dependency(\.timeZone) private var timeZone
 
+    /// 骨架中摘要卡的高度，隨字級縮放
+    @ScaledMetric private var heroPlaceholderHeight: CGFloat = 180
+
+    /// 骨架中每張 KPI 卡的高度，隨字級縮放
+    @ScaledMetric private var kpiPlaceholderHeight: CGFloat = 88
+
+    /// 骨架中清單卡的高度，隨字級縮放
+    @ScaledMetric private var listPlaceholderHeight: CGFloat = 240
+
+    /// onboarding 圖示底圓的直徑，與圖示同樣以 `.largeTitle` 為基準縮放
+    @ScaledMetric(relativeTo: .largeTitle) private var onboardingCircleSize: CGFloat = 132
+
     /// onboarding 圖示尺寸，隨字級縮放 (以 `.largeTitle` 為基準)
     @ScaledMetric(relativeTo: .largeTitle) private var onboardingIconSize: CGFloat = 56
 
@@ -41,15 +53,15 @@ struct DashboardView: View {
 
     /// 總覽頁骨架，導覽堆疊內依載入狀態切換內容，進入畫面時觸發載入
     var body: some View {
-        // 導覽列由 NavigationStack 建立，測試以畫面根容器判定就緒
+        // 導覽列由 `NavigationStack` 建立，測試以畫面根容器判定就緒
         NavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(palette.background)
                 .task {
                     // 進入總覽頁時先載入訂單與設定資料
-                    // refresh 只轉發，去重由 OrdersFeature 的載入守衛處理
-                    await store.send(.task).finish()
+                    // `refresh` 只轉發，去重由 `OrdersLoadFeature` 的載入守衛處理
+                    await store.send(.view(.task)).finish()
                 }
                 .rootNavigationTitle("總覽", language: language)
         }
@@ -65,8 +77,8 @@ private extension DashboardView {
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
-                    .fill(palette.fillTertiary)
-                    .frame(height: 180)
+                    .frame(height: heroPlaceholderHeight)
+                    .foregroundStyle(palette.fillTertiary)
 
                 LazyVGrid(
                     columns: DashboardKPITiles.columns(for: dynamicTypeSize),
@@ -74,14 +86,14 @@ private extension DashboardView {
                 ) {
                     ForEach(0..<4, id: \.self) { _ in
                         RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
-                            .fill(palette.fillQuaternary)
-                            .frame(height: 88)
+                            .frame(height: kpiPlaceholderHeight)
+                            .foregroundStyle(palette.fillQuaternary)
                     }
                 }
 
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
-                    .fill(palette.fillQuaternary)
-                    .frame(height: 240)
+                    .frame(height: listPlaceholderHeight)
+                    .foregroundStyle(palette.fillQuaternary)
             }
             .padding(.horizontal, BLSpacing.large)
             .padding(.vertical, BLSpacing.large)
@@ -100,14 +112,14 @@ private extension DashboardView {
         VStack(spacing: BLSpacing.large) {
             ZStack {
                 Circle()
-                    .fill(
+                    .frame(width: onboardingCircleSize, height: onboardingCircleSize)
+                    .foregroundStyle(
                         LinearGradient(
                             colors: [palette.accent, palette.indigo],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
                     )
-                    .frame(width: 132, height: 132)
 
                 Image(systemName: "shippingbox.fill")
                     .font(.system(size: onboardingIconSize, weight: .semibold))
@@ -129,7 +141,7 @@ private extension DashboardView {
             .padding(.horizontal, BLSpacing.large)
 
             Button {
-                store.send(.delegate(.newOrderTapped))
+                store.send(.view(.newOrderTapped))
             } label: {
                 Label("建立第一筆訂單", systemImage: "plus")
             }
@@ -165,9 +177,8 @@ private extension DashboardView {
 
     /// 依載入狀態切換的畫面主體：總覽內容、載入失敗或載入骨架
     var content: some View {
-        // 依序處理已載入、錯誤與載入中狀態
         // 只判斷「是否已載入」會讓失敗永遠停在轉圈
-        // 根 identifier 掛在各 loadState 分支自己的容器上，不掛最外層 group
+        // 根 identifier 掛在各 `loadState` 分支自己的容器上，不掛最外層 `Group`
         // 不合併外層元素，讓重試鈕與內容可被找到
         Group {
             switch store.loadState {
@@ -185,7 +196,7 @@ private extension DashboardView {
                     message: message,
                     retryIdentifier: BLAccessibilityID.Dashboard.loadFailureRetryButton
                 ) {
-                    store.send(.retryTapped)
+                    store.send(.view(.retryTapped))
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Dashboard.loadFailure)
 
@@ -225,7 +236,7 @@ private extension DashboardView {
     var stats: DashboardStats {
         DashboardStats(
             orders: store.orders,
-            monthlyGoal: store.monthlyProfitGoalTwd,
+            monthlyGoal: store.monthlyProfitGoalTWD,
             referenceDate: date(),
             calendar: calendar
         )

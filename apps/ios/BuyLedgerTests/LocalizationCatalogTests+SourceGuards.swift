@@ -66,7 +66,7 @@ extension LocalizationCatalogTests {
     ///
     /// - Throws: 根畫面原始檔讀取失敗時丟出錯誤
     @Test
-    func navigationTitle_七個根畫面_不得以字面值呼叫原生標題() throws(any Error) {
+    func containsForbiddenNavigationTitlePattern_七個根畫面_不得以字面值呼叫原生標題() throws(any Error) {
         // Given
         let sourceRoot = Self.iosRootURL.appending(path: "BuyLedger")
         let rootViews = [
@@ -113,43 +113,32 @@ extension LocalizationCatalogTests {
         )
     }
 
-    /// 側邊欄智慧分組列的朗讀文字不得拼接各自本地化的 `Text`
-    ///
-    /// - Throws: 側邊欄原始檔讀取失敗時丟出錯誤
-    @Test
-    func smartGroupRow_側邊欄朗讀文字_不拼接本地化文字() throws(any Error) {
-        // Given
-        let sourceURL = Self.iosRootURL
-            .appending(path: "BuyLedger/Features/App/RootSidebarLayout.swift")
-        let forbiddenPattern = Self.normalizedWhitespace(
-            "Text(LocalizedStringKey(group.status.title)) + Text(\" \\(count) 件\")"
-        )
-
-        // When
-        let source = try String(contentsOf: sourceURL, encoding: .utf8)
-        let normalizedSource = Self.normalizedWhitespace(source)
-
-        // Then
-        #expect(!normalizedSource.contains(forbiddenPattern), "朗讀文字不得拼接各自本地化的文字")
-    }
-
     /// 精簡訂單列表的篩選摘要不得拼接各自本地化的 `Text`
     ///
-    /// - Throws: 精簡訂單畫面原始檔讀取失敗時丟出錯誤
+    /// - Throws: 精簡訂單畫面或拆出的清單內容原始檔讀取失敗時丟出錯誤
     @Test
     func filterSummary_精簡訂單列表_不拼接本地化文字() throws(any Error) {
         // Given
-        let sourceURL = Self.iosRootURL
-            .appending(path: "BuyLedger/Features/Orders/OrdersCompactView.swift")
+        let sourceRoot = Self.iosRootURL.appending(path: "BuyLedger")
+        let sourcePaths = [
+            "Features/Orders/OrdersCompactView.swift",
+            "Features/Orders/Components/OrdersCompactListView.swift",
+        ]
         let forbiddenPattern = Self.normalizedWhitespace(
             "Text(\"篩選\") + Text(verbatim: \": \") + summary"
         )
+        var violatingPaths: [String] = []
 
         // When
-        let source = try String(contentsOf: sourceURL, encoding: .utf8)
-        let normalizedSource = Self.normalizedWhitespace(source)
+        for relativePath in sourcePaths {
+            let sourceURL = sourceRoot.appending(path: relativePath)
+            let source = try String(contentsOf: sourceURL, encoding: .utf8)
+            if Self.normalizedWhitespace(source).contains(forbiddenPattern) {
+                violatingPaths.append(relativePath)
+            }
+        }
 
         // Then
-        #expect(!normalizedSource.contains(forbiddenPattern), "篩選摘要不得拼接各自本地化的文字")
+        #expect(violatingPaths.isEmpty, "篩選摘要不得拼接各自本地化的文字：\(violatingPaths)")
     }
 }

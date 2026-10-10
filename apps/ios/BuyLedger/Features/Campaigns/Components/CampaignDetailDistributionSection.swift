@@ -15,6 +15,12 @@ struct CampaignDetailDistributionSection: View {
     /// App 根層依語言偏好注入的 locale
     @Environment(\.locale) private var locale
 
+    /// 分貨區沒有可見客戶時的空狀態文案
+    let emptyMessage: LocalizedStringResource
+
+    /// 是否只顯示尚未全部收款的客戶
+    let isShowingUnpaidOnly: Bool
+
     /// 點擊指定訂單收款鍵的動作
     let onReceiptToggle: (LedgerOrder.ID) -> Void
 
@@ -23,9 +29,6 @@ struct CampaignDetailDistributionSection: View {
 
     /// 由詳情 Feature 篩選好的可見分貨列
     let rows: [CampaignDistributionRow]
-
-    /// 是否只顯示尚未全部收款的客戶
-    let showsUnpaidOnly: Bool
 
     // MARK: - Body
 
@@ -62,7 +65,7 @@ private extension CampaignDetailDistributionSection {
 
     /// 依篩選開關呈現分貨空狀態
     var emptyState: some View {
-        Text(LocalizedStringKey(showsUnpaidOnly ? "全部已收款。" : "尚無歸屬此開團的訂單。"))
+        Text(emptyMessage)
             .blTextStyle(.subhead)
             .foregroundStyle(Color.blSecondaryLabel)
     }
@@ -88,7 +91,7 @@ private extension CampaignDetailDistributionSection {
         HStack(spacing: BLSpacing.small) {
             Image(systemName: row.isFullyReceived ? "checkmark.circle.fill" : "circle")
                 .foregroundStyle(row.isFullyReceived ? palette.green : Color.blSecondaryLabel)
-                .accessibilityLabel(Text(LocalizedStringKey(row.isFullyReceived ? "已收款" : "待收款")))
+                .accessibilityLabel(Text(row.receiptAccessibilityLabel))
 
             Text(row.customerName)
                 .font(BLTypographyStyle.subhead.font.weight(.medium))
@@ -177,7 +180,7 @@ private extension CampaignDetailDistributionSection {
     /// 未收款篩選的 binding，讀取傳入值並回報切換意圖
     var unpaidOnlyBinding: Binding<Bool> {
         Binding {
-            showsUnpaidOnly
+            isShowingUnpaidOnly
         } set: {
             onUnpaidOnlyChange($0)
         }
@@ -189,6 +192,8 @@ private extension CampaignDetailDistributionSection {
 #Preview("客戶分貨") {
     List {
         CampaignDetailDistributionSection(
+            emptyMessage: "尚無歸屬此開團的訂單。",
+            isShowingUnpaidOnly: false,
             onReceiptToggle: { _ in
             },
             onUnpaidOnlyChange: { _ in
@@ -196,8 +201,8 @@ private extension CampaignDetailDistributionSection {
             rows: CampaignSummary(
                 campaignName: Campaign.sampleCampaigns[0].name,
                 orders: LedgerOrder.sampleCampaignOrders
-            ).distribution,
-            showsUnpaidOnly: false
+            )
+            .distribution
         )
     }
 }
@@ -205,12 +210,13 @@ private extension CampaignDetailDistributionSection {
 #Preview("客戶分貨空狀態") {
     List {
         CampaignDetailDistributionSection(
+            emptyMessage: "尚無歸屬此開團的訂單。",
+            isShowingUnpaidOnly: false,
             onReceiptToggle: { _ in
             },
             onUnpaidOnlyChange: { _ in
             },
-            rows: [],
-            showsUnpaidOnly: false
+            rows: []
         )
     }
 }

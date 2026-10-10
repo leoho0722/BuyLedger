@@ -76,11 +76,11 @@ struct CampaignFeatureTests {
 
         // When
         await store.send(.list(.delegate(.requested(.settle("C1"))))) {
-            $0.destination = Self.settleAlert(id: "C1", name: "團")
+            $0.presentation.destination = Self.settleAlert(id: "C1", name: "團")
         }
 
         // Then
-        #expect(store.state.destination == Self.settleAlert(id: "C1", name: "團"))
+        #expect(store.state.presentation.destination == Self.settleAlert(id: "C1", name: "團"))
     }
 
     /// 點選刪除開團時，呈現包含資料影響說明的確認對話框
@@ -106,9 +106,9 @@ struct CampaignFeatureTests {
 
         // Then
         await store.receive(\.list.delegate.requested) {
-            $0.destination = Self.deletionAlert(id: "C1", name: "團")
+            $0.presentation.destination = Self.deletionAlert(id: "C1", name: "團")
         }
-        #expect(store.state.destination == Self.deletionAlert(id: "C1", name: "團"))
+        #expect(store.state.presentation.destination == Self.deletionAlert(id: "C1", name: "團"))
     }
 
     /// 容器收到切換收款請求時只送出 `delegate`，不直接修改 `State.orders`
@@ -126,10 +126,9 @@ struct CampaignFeatureTests {
         }
 
         // When
-        await store.send(.list(.delegate(.requested(.toggleReceipt(
-            orderID: "O1",
-            status: .received
-        )))))
+        await store.send(
+            .list(.delegate(.requested(.toggleReceipt(orderID: "O1", status: .received))))
+        )
 
         // Then
         await store.receive(\.delegate.receiptStatusToggled)

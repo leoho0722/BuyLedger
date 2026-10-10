@@ -59,7 +59,7 @@ struct LocalizationCatalogTests {
     /// - Parameter example: 字串目錄 key 與已驗收的英文值
     /// - Throws: 讀取字串目錄失敗時丟出錯誤
     @Test(arguments: DocumentedEnglishValue.examples)
-    func englishValue_已驗收的字串_與驗收值相同(example: DocumentedEnglishValue) throws(any Error) {
+    func stringValue_已驗收的字串_與驗收值相同(example: DocumentedEnglishValue) throws(any Error) {
         // Given
         let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
 
@@ -74,7 +74,7 @@ struct LocalizationCatalogTests {
     ///
     /// - Throws: 讀取字串目錄失敗時丟出錯誤
     @Test
-    func englishValue_中文來源_不得與英文值相同() throws(any Error) {
+    func hasUntranslatedEnglishValue_中文來源_不得與英文值相同() throws(any Error) {
         // Given
         let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
         try #require(!strings.isEmpty)
@@ -93,7 +93,7 @@ struct LocalizationCatalogTests {
     ///
     /// - Throws: 讀取字串目錄失敗時丟出錯誤
     @Test
-    func localizations_每個需翻譯條目_中英文值皆非空白() throws(any Error) {
+    func findBlankLocalizations_每個需翻譯條目_中英文值皆非空白() throws(any Error) {
         // Given
         let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
         try #require(!strings.isEmpty)
@@ -140,7 +140,7 @@ struct LocalizationCatalogTests {
     ///
     /// - Throws: 讀取字串目錄失敗時丟出錯誤
     @Test
-    func calendarUsageDescription_InfoPlist字串目錄_中英文說明皆非空白() throws(any Error) {
+    func stringValue_行事曆權限說明_中英文說明皆非空白() throws(any Error) {
         // Given
         let strings = try Self.catalogStrings(atRelativePath: Self.infoPlistCatalogPath)
         let key = "NSCalendarsFullAccessUsageDescription"
@@ -162,7 +162,7 @@ extension LocalizationCatalogTests {
     /// 已驗收的英文翻譯，每組字串目錄 key 對應一個參數化案例
     struct DocumentedEnglishValue: Sendable {
 
-        /// 實機回報過、已驗收英文值的字串目錄 key
+        /// 已驗收英文值的字串目錄條目，每組 key 與其英文值成對
         static let examples = [
             Self(key: "總覽", expectedEnglishValue: "Overview"),
             Self(key: "訂單", expectedEnglishValue: "Orders"),

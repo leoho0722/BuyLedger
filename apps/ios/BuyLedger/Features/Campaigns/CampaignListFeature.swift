@@ -6,9 +6,8 @@
 //
 
 import ComposableArchitecture
-import Foundation
 
-/// 開團列表的載入、重試、自動結束、篩選與日期投影
+/// 開團列表的載入請求、篩選與日期投影
 @Reducer
 struct CampaignListFeature {
 
@@ -18,8 +17,8 @@ struct CampaignListFeature {
     @ObservableState
     struct State: Equatable {
 
-        /// 目前的開團清單，與容器及寫入子層共用
-        @Shared var campaigns: [Campaign]
+        /// 目前的開團清單，唯讀容器與載入子層共用的資料
+        @SharedReader var campaigns: [Campaign]
 
         /// 根功能提供的唯讀訂單投影
         @SharedReader var orders: [LedgerOrder]
@@ -31,13 +30,13 @@ struct CampaignListFeature {
         var grouping: CampaignGrouping = .day
 
         /// 是否正在載入
-        var isLoading = false
+        @SharedReader var isLoading: Bool
 
-        /// 是否已完成載入，列表再次出現時會略過讀取
-        var hasLoaded = false
+        /// 是否已完成載入，由載入子層維護
+        @SharedReader var hasLoaded: Bool
 
         /// 列表內持續顯示的載入失敗訊息
-        var errorMessage: String?
+        @SharedReader var errorMessage: String?
 
         /// 最近一次列表出現或重試時記錄的現在時間與行事曆
         var dateContext: CampaignDateContext?
@@ -77,14 +76,26 @@ struct CampaignListFeature {
             return CampaignSummary.batch(campaignNames: names, orders: orders)
         }
 
-        /// 建立列表所需的共享資料
+        /// 建立列表所需的唯讀共享資料
         ///
         /// - Parameters:
-        ///   - campaigns: 可寫的開團共用引用
+        ///   - campaigns: 唯讀開團共用引用
         ///   - orders: 唯讀訂單投影
-        init(campaigns: Shared<[Campaign]>, orders: SharedReader<[LedgerOrder]>) {
+        ///   - isLoading: 載入中的共用旗標
+        ///   - hasLoaded: 已完成載入的共用旗標
+        ///   - errorMessage: 共用載入錯誤訊息
+        init(
+            campaigns: SharedReader<[Campaign]>,
+            orders: SharedReader<[LedgerOrder]>,
+            isLoading: SharedReader<Bool> = SharedReader(value: false),
+            hasLoaded: SharedReader<Bool> = SharedReader(value: false),
+            errorMessage: SharedReader<String?> = SharedReader(value: nil)
+        ) {
             self._campaigns = campaigns
             self._orders = orders
+            self._isLoading = isLoading
+            self._hasLoaded = hasLoaded
+            self._errorMessage = errorMessage
         }
 
         /// 列表載入的呈現狀態
@@ -105,7 +116,7 @@ struct CampaignListFeature {
 
     // MARK: - Action
 
-    /// 列表畫面操作、交給容器的請求與載入回應
+    /// 列表畫面操作與交給容器的請求
     enum Action {
 
         /// 使用者的列表操作
@@ -113,20 +124,10 @@ struct CampaignListFeature {
         /// - Parameter action: 實際操作
         case view(View)
 
-        /// 交給容器的請求或失敗
+        /// 交給容器的請求
         ///
         /// - Parameter action: 容器要處理的事件
         case delegate(Delegate)
-
-        /// 自動結束開團的持久化結果
-        ///
-        /// - Parameter result: 全部寫入成功或首次寫入失敗
-        case autoCloseResponse(Result<Void, PersistenceError>)
-
-        /// 載入開團清單的結果
-        ///
-        /// - Parameter result: 開團清單或載入錯誤
-        case campaignsResponse(Result<[Campaign], PersistenceError>)
 
         /// 列表畫面送出的操作
         @CasePathable
@@ -176,20 +177,17 @@ struct CampaignListFeature {
             /// - Parameter request: 開團操作
             case requested(CampaignRequest)
 
-            /// 自動結束寫入失敗，請容器呈現通知
-            case autoCloseFailed
+            /// 列表出現或重試，請容器要求載入
+            case loadRequested
         }
     }
 
     // MARK: - Dependencies
 
-    /// 開團資料來源與自動結束的持久化能力
-    @Dependency(\.campaignService) private var campaignService
-
-    /// 列表出現與結單判定的現在時間
+    /// 列表出現與重試的現在時間
     @Dependency(\.date) private var date
 
-    /// 日期分組與結單判定所用的行事曆
+    /// 日期分組所用的行事曆
     @Dependency(\.calendar) private var calendar
 
     // MARK: - Body
@@ -197,18 +195,6 @@ struct CampaignListFeature {
     /// 組合列表的事件處理
     var body: some Reducer<State, Action> {
         Reduce(core)
-    }
-}
-
-// MARK: - Nested Types
-
-private extension CampaignListFeature {
-
-    /// 開團列表讀取的取消識別值
-    enum CancelID: Hashable, Sendable {
-
-        /// 開團清單讀取
-        case load
     }
 }
 
@@ -221,15 +207,12 @@ private extension CampaignListFeature {
     /// - Parameters:
     ///   - state: 列表狀態
     ///   - action: 操作或資料回應
-    /// - Returns: 載入、持久化或委派事件
+    /// - Returns: 載入需求或使用者請求的委派事件
     func core(state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .view(.task), .view(.retryTapped):
             state.dateContext = CampaignDateContext(now: date.now, calendar: calendar)
-            if case .view(.task) = action, state.hasLoaded {
-                return .none
-            }
-            return loadCampaigns(state: &state)
+            return .send(.delegate(.loadRequested))
 
         case .view(.campaignTapped(let id)):
             return .send(.delegate(.requested(.showDetail(id))))
@@ -253,74 +236,6 @@ private extension CampaignListFeature {
 
         case .delegate:
             return .none
-
-        case .autoCloseResponse(.success):
-            return .none
-
-        case .autoCloseResponse(.failure):
-            return .send(.delegate(.autoCloseFailed))
-
-        case .campaignsResponse(.success(let loaded)):
-            return applyLoadedCampaigns(loaded, state: &state)
-
-        case .campaignsResponse(.failure):
-            state.isLoading = false
-            state.errorMessage = "開團載入失敗，請稍後再試。"
-            return .none
-        }
-    }
-
-    /// 開始讀取並取消前一次尚未完成的請求，回送單一結果
-    ///
-    /// - Parameter state: 要標記載入中的列表狀態
-    /// - Returns: 可取消的載入 effect，新請求會取代前一次讀取
-    func loadCampaigns(state: inout State) -> Effect<Action> {
-        state.isLoading = true
-        state.errorMessage = nil
-        let campaignService = campaignService
-        return .run { send in
-            do throws(PersistenceError) {
-                let campaigns = try await campaignService.fetchCampaigns()
-                await send(.campaignsResponse(.success(campaigns)))
-            } catch {
-                await send(.campaignsResponse(.failure(error)))
-            }
-        }
-        .cancellable(id: CancelID.load, cancelInFlight: true)
-    }
-
-    /// 先更新共用開團，再持久化已過結單日的狀態
-    ///
-    /// - Parameters:
-    ///   - loaded: 載入的開團
-    ///   - state: 要更新的列表狀態
-    /// - Returns: 有自動結束的開團時，依序寫回的 effect
-    func applyLoadedCampaigns(_ loaded: [Campaign], state: inout State) -> Effect<Action> {
-        state.isLoading = false
-        state.hasLoaded = true
-        let now = date.now
-        var transitioned: [Campaign] = []
-        let updated = loaded.map { campaign in
-            let evaluated = campaign.evaluatingAutoClose(asOf: now, calendar: calendar)
-            if evaluated.status != campaign.status {
-                transitioned.append(evaluated)
-            }
-            return evaluated
-        }
-        state.$campaigns.withLock { $0 = updated }
-        guard !transitioned.isEmpty else {
-            return .none
-        }
-        let campaignService = campaignService
-        return .run { [transitioned] send in
-            do throws(PersistenceError) {
-                for campaign in transitioned {
-                    try await campaignService.saveCampaign(campaign)
-                }
-                await send(.autoCloseResponse(.success(())))
-            } catch {
-                await send(.autoCloseResponse(.failure(error)))
-            }
         }
     }
 }
