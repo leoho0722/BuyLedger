@@ -46,7 +46,7 @@ extension OrdersFeatureTests {
             orderSource: "來源",
             categories: ["測試"],
             paymentMethod: "舊付款",
-            notes: "備註",
+            notes: "orders.detail.label.notes",
             reconciliationStatus: " 待對帳 ",
             campaignNames: [],
             paymentReceiptStatus: .pending,

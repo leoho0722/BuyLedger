@@ -279,16 +279,21 @@ private extension OrdersContainerPlanTests {
         customerName: String
     ) -> AlertState<OrdersPresentationFeature.Destination.Alert> {
         AlertState {
-            TextState("刪除訂單")
+            TextState("orders.detail.label.deleteOrder")
         } actions: {
             ButtonState(role: .destructive, action: .confirmDelete(orderID)) {
-                TextState("刪除")
+                TextState("common.action.button.delete")
             }
             ButtonState(role: .cancel) {
-                TextState("取消")
+                TextState("common.action.cancel")
             }
         } message: {
-            TextState("刪除「\(customerName)」的這筆訂單後無法復原。")
+            TextState(
+                LocalizedStringResource(
+                    "orders.detail.message.deleteUndoneNotice",
+                    defaultValue: "\(customerName)"
+                )
+            )
         }
     }
 
@@ -297,16 +302,16 @@ private extension OrdersContainerPlanTests {
     /// - Returns: 未啟用提示的 alert
     static func aiDisabledAlert() -> AlertState<OrdersPresentationFeature.Destination.Alert> {
         AlertState {
-            TextState("AI 商品明細總結")
+            TextState("orders.general.label.aiItemSummary")
         } actions: {
             ButtonState(role: .cancel) {
-                TextState("關閉")
+                TextState("common.action.label.close")
             }
             ButtonState(action: .goToAISettings) {
-                TextState("前往開啟")
+                TextState("orders.general.label.openSettings2")
             }
         } message: {
-            TextState("此功能需要先在「更多 → 設定」開啟 AI 商品明細總結。")
+            TextState("orders.general.message.enableAiItem")
         }
     }
 }

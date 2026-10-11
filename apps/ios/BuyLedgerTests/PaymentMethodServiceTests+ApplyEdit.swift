@@ -74,7 +74,7 @@ extension PaymentMethodServiceTests {
         let original = Self.makePaymentOrder(id: "PM-PHOTO", paymentMethod: "匯款", photos: [photo])
         let corrected = Self.makePaymentOrder(
             id: "PM-PHOTO",
-            paymentMethod: "銀行匯款",
+            paymentMethod: "orders.edit.label.bankTransfer",
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             reconciliationStatus: "",
@@ -88,7 +88,7 @@ extension PaymentMethodServiceTests {
         // When
         try await service.applyPaymentMethodEdit(
             "匯款",
-            "銀行匯款",
+            "orders.edit.label.bankTransfer",
             .none,
             [corrected]
         )
@@ -96,7 +96,7 @@ extension PaymentMethodServiceTests {
         // Then
         let fetchedOrder = try await Self.fetchOrder(id: original.id, from: database)
         let storedOrder = try #require(fetchedOrder)
-        #expect(storedOrder.paymentMethod == "銀行匯款")
+        #expect(storedOrder.paymentMethod == "orders.edit.label.bankTransfer")
         #expect(storedOrder.photos == [photo])
     }
 
@@ -112,7 +112,7 @@ extension PaymentMethodServiceTests {
         let original = Self.makePaymentOrder(id: "PM-ATOMIC", paymentMethod: "匯款")
         let corrected = Self.makePaymentOrder(
             id: original.id,
-            paymentMethod: "銀行匯款",
+            paymentMethod: "orders.edit.label.bankTransfer",
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             reconciliationStatus: "",
@@ -120,7 +120,7 @@ extension PaymentMethodServiceTests {
         )
         let missing = Self.makePaymentOrder(
             id: "order-404",
-            paymentMethod: "銀行匯款",
+            paymentMethod: "orders.edit.label.bankTransfer",
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             reconciliationStatus: "",
@@ -141,7 +141,7 @@ extension PaymentMethodServiceTests {
         do throws(PaymentMethodPersistenceError) {
             try await service.applyPaymentMethodEdit(
                 "匯款",
-                "銀行匯款",
+                "orders.edit.label.bankTransfer",
                 .none,
                 [corrected, missing]
             )
@@ -184,7 +184,7 @@ extension PaymentMethodServiceTests {
         let original = Self.makePaymentOrder(id: "PM-SAVE-FAIL", paymentMethod: "匯款")
         let corrected = Self.makePaymentOrder(
             id: original.id,
-            paymentMethod: "銀行匯款",
+            paymentMethod: "orders.edit.label.bankTransfer",
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             reconciliationStatus: "",
@@ -212,7 +212,7 @@ extension PaymentMethodServiceTests {
         do throws(PaymentMethodPersistenceError) {
             try await failingService.applyPaymentMethodEdit(
                 "匯款",
-                "銀行匯款",
+                "orders.edit.label.bankTransfer",
                 .none,
                 [corrected]
             )

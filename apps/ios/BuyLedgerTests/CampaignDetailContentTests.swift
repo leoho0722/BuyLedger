@@ -194,7 +194,7 @@ struct CampaignDetailContentTests {
         let text = try Self.localizedText(title, language: .english)
 
         // Then
-        #expect(title.key == "已結團")
+        #expect(title.key == "campaigns.list.label.settled")
         #expect(text == "Settled")
     }
 
@@ -224,7 +224,7 @@ struct CampaignDetailContentTests {
         let text = try Self.localizedText(title, language: .english)
 
         // Then
-        #expect(title.key == "結團結算")
+        #expect(title.key == "campaigns.detail.label.campaignSettlement")
         #expect(text == "Campaign Settlement")
     }
 }

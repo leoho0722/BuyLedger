@@ -40,7 +40,7 @@ struct CustomersView: View {
         .task {
             await store.send(.view(.task)).finish()
         }
-        .navigationTitle(Text("客戶名單"))
+        .navigationTitle(Text("settings.more.label.customers"))
     }
 }
 
@@ -66,9 +66,9 @@ private extension CustomersView {
     @ViewBuilder
     var emptyState: some View {
         ContentUnavailableView(
-            "尚無客戶",
+            "customers.list.label.customers",
             systemImage: "person.2",
-            description: Text("先建立訂單，這裡會自動依客戶彙總統計。")
+            description: Text("customers.list.message.createOrderSee")
         )
         .frame(maxWidth: .infinity)
         .containerRelativeFrame(.vertical)
@@ -83,7 +83,7 @@ private extension CustomersView {
     @ViewBuilder
     func topThree(customers: [CustomerRow]) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
-            Text("Top \(Self.topHighlightCount)")
+            Text(verbatim: "Top \(Self.topHighlightCount)")
                 .font(BLTypographyStyle.subhead.font.weight(.semibold))
                 .foregroundStyle(palette.secondaryLabel)
                 .textCase(.uppercase)
@@ -100,7 +100,7 @@ private extension CustomersView {
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityHint("查看 \(customer.name) 的訂單")
+                    .accessibilityHint(Text(AppLanguage.format("customers.list.accessibility.viewOrders", customer.name, locale: locale)))
                     .accessibilityIdentifier(
                         BLAccessibilityID.Customers.topCard(customerName: customer.id)
                     )
@@ -119,14 +119,14 @@ private extension CustomersView {
     func customerList(customers: [CustomerRow]) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
             HStack(alignment: .firstTextBaseline) {
-                Text("全部客戶")
+                Text("customers.list.label.allCustomers")
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
 
                 Spacer()
 
-                Text("\(customers.count) 位")
+                Text(AppLanguage.format("customers.list.label.customerCount", customers.count, locale: locale))
                     .blTextStyle(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
             }
@@ -141,7 +141,7 @@ private extension CustomersView {
                                 .contentShape(.rect)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityHint("查看 \(customer.name) 的訂單")
+                        .accessibilityHint(Text(AppLanguage.format("customers.list.accessibility.viewOrders", customer.name, locale: locale)))
                         .accessibilityIdentifier(
                             BLAccessibilityID.Customers.row(customerName: customer.id)
                         )
@@ -179,7 +179,7 @@ private extension CustomersView {
 
 // MARK: - Preview
 
-#Preview("客戶名單") {
+#Preview("settings.more.label.customers") {
     let previewState = CustomersFeature.State(orders: SharedReader(value: LedgerOrder.sampleOrders))
 
     return NavigationStack {

@@ -76,9 +76,9 @@ struct AISummaryFeatureTests {
         }
 
         // Then
-        await store.receive(\.streamFailed, "AI 總結尚未完成設定，目前無法使用。") {
+        await store.receive(\.streamFailed, "ai.summary.message.aiSummariesSet") {
             $0.phase = .failed
-            $0.errorMessage = "AI 總結尚未完成設定，目前無法使用。"
+            $0.errorMessage = "ai.summary.message.aiSummariesSet"
         }
     }
 
@@ -107,9 +107,9 @@ struct AISummaryFeatureTests {
         }
 
         // Then
-        await store.receive(\.streamFailed, "AI 服務驗證失敗，目前無法使用總結功能。") {
+        await store.receive(\.streamFailed, "ai.summary.message.aiServiceAuthentication") {
             $0.phase = .failed
-            $0.errorMessage = "AI 服務驗證失敗，目前無法使用總結功能。"
+            $0.errorMessage = "ai.summary.message.aiServiceAuthentication"
         }
     }
 
@@ -146,9 +146,9 @@ struct AISummaryFeatureTests {
         await store.receive(\.chunkReceived, "部分內容") {
             $0.summaryText = "部分內容"
         }
-        await store.receive(\.streamFailed, "連線發生問題，請檢查網路後再試。") {
+        await store.receive(\.streamFailed, "ai.summary.message.connectionProblemOccurred") {
             $0.phase = .failed
-            $0.errorMessage = "連線發生問題，請檢查網路後再試。"
+            $0.errorMessage = "ai.summary.message.connectionProblemOccurred"
         }
     }
 
@@ -243,7 +243,7 @@ struct AISummaryFeatureTests {
         await clock.advance(by: AISummaryService.overallStreamDuration)
         await store.receive(\.streamTimedOut, timeout: .seconds(2)) {
             $0.phase = .finished
-            $0.truncationMessage = "AI 總結已達時間上限，以下顯示已取得的內容；摘要已截斷。"
+            $0.truncationMessage = "ai.summary.message.aiSummaryReached"
         }
     }
 }

@@ -67,7 +67,7 @@ extension OrdersFeatureTests {
     func list_目標為已合併_拒絕寫入並呈現失敗() async {
         // Given
         let original = LedgerOrder.fixture(id: "O1", status: .confirmed)
-        let writeFailureAlert = Self.expectedWriteFailureAlert("訂單狀態更新失敗，請稍後再試。")
+        let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.orderStatusUpdated")
         let store = TestStore(initialState: OrdersFeature.State(orders: [original])) {
             OrdersFeature()
         }
@@ -128,7 +128,7 @@ extension OrdersFeatureTests {
     func list_狀態寫入失敗後再次成功_不殘留錯誤狀態() async {
         // Given
         let original = Self.makeOrder(id: "O1", categories: ["beauty"], status: .shipping)
-        let writeFailureAlert = Self.expectedWriteFailureAlert("訂單狀態更新失敗，請稍後再試。")
+        let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.orderStatusUpdated")
         var initial = OrdersFeature.State(orders: [original])
         initial.refreshDateContext(
             now: TestDependencies.fixedNow,

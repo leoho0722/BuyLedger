@@ -141,4 +141,36 @@ extension LocalizationCatalogTests {
         // Then
         #expect(violatingPaths.isEmpty, "篩選摘要不得拼接各自本地化的文字：\(violatingPaths)")
     }
+
+    /// 原始碼不得在 View 內以加號拼接 Text 視圖
+    ///
+    /// - Throws: 原始檔列舉或讀取失敗時拋出錯誤
+    @Test
+    func textConcatenation_所有原始檔_不得以加號拼接Text() throws(any Error) {
+        // Given
+        let sourceRoot = Self.iosRootURL.appending(path: "BuyLedger")
+        let enumerator = try #require(
+            FileManager.default.enumerator(at: sourceRoot, includingPropertiesForKeys: nil)
+        )
+        let swiftFiles = enumerator.compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" }
+        var violatingFiles: [String] = []
+
+        // When
+        for file in swiftFiles {
+            let relativePath = file.path.replacingOccurrences(of: sourceRoot.path + "/", with: "")
+            guard !relativePath.contains("App/Testing/") else {
+                continue
+            }
+            let source = try String(contentsOf: file, encoding: .utf8)
+            if source.range(of: "Text\\([^)]*\\)[[:space:]]*\\+[[:space:]]*Text\\(", options: .regularExpression) != nil {
+                violatingFiles.append(relativePath)
+            }
+        }
+
+        // Then
+        #expect(
+            violatingFiles.isEmpty,
+            "原始碼包含禁止的 Text 拼接反模式：\(violatingFiles)"
+        )
+    }
 }

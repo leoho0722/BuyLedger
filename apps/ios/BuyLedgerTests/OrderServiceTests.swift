@@ -146,7 +146,7 @@ extension OrderServiceTests {
                 cardlessSupplementAmount: 75,
                 orderSource: "露天",
                 categories: ["3C"],
-                paymentMethod: "銀行匯款",
+                paymentMethod: "orders.edit.label.bankTransfer",
                 notes: "更新後備註",
                 reconciliationStatus: "對帳完成",
                 campaignNames: ["夏季團"],

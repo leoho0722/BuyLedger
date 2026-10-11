@@ -300,16 +300,16 @@ private extension RootFeatureTests {
     /// - Returns: 關閉提示的 `AlertState`
     static func aiDisabledAlert() -> AlertState<OrdersPresentationFeature.Destination.Alert> {
         AlertState {
-            TextState("AI 商品明細總結")
+            TextState("orders.general.label.aiItemSummary")
         } actions: {
             ButtonState(role: .cancel) {
-                TextState("關閉")
+                TextState("common.action.label.close")
             }
             ButtonState(action: .goToAISettings) {
-                TextState("前往開啟")
+                TextState("orders.general.label.openSettings2")
             }
         } message: {
-            TextState("此功能需要先在「更多 → 設定」開啟 AI 商品明細總結。")
+            TextState("orders.general.message.enableAiItem")
         }
     }
 }

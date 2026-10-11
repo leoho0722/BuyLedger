@@ -43,7 +43,7 @@ private extension OrderDetailItemsView {
     @ViewBuilder
     var compactItemList: some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text("商品明細")
+            Text("orders.detail.label.itemDetails")
                 .blTextStyle(.headline)
 
             itemsCard
@@ -56,7 +56,7 @@ private extension OrderDetailItemsView {
     var wideItemsCard: some View {
         BLCard(padding: 0) {
             VStack(alignment: .leading, spacing: 0) {
-                Text("商品明細")
+                Text("orders.detail.label.itemDetails")
                     .padding(.horizontal, BLSpacing.large)
                     .padding(.top, BLSpacing.large)
                     .padding(.bottom, BLSpacing.small)
@@ -104,7 +104,7 @@ private extension OrderDetailItemsView {
                 Text(item.name)
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
 
-                Text("數量 \(item.quantity)")
+                Text(AppLanguage.format("orders.detail.label.quantity", item.quantity, locale: locale))
                     .blTextStyle(.caption)
                     .foregroundStyle(Color.blSecondaryLabel)
             }

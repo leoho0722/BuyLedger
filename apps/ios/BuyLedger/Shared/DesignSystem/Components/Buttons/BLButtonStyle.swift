@@ -136,20 +136,20 @@ private extension BLButtonStyle {
 
 #Preview("按鈕樣式") {
     VStack(spacing: BLSpacing.medium) {
-        Button("主要操作", systemImage: "plus") {}
+        Button("common.ui.label.primaryAction", systemImage: "plus") {}
             .buttonStyle(.blPrimary)
 
-        Button("次要操作", systemImage: "square.and.pencil") {}
+        Button("common.ui.label.secondaryAction", systemImage: "square.and.pencil") {}
             .buttonStyle(.blSecondary)
 
-        Button("純文字操作", systemImage: "arrow.clockwise") {}
+        Button("common.ui.label.textAction", systemImage: "arrow.clockwise") {}
             .buttonStyle(.blPlain)
 
         // 破壞性語意由 role 表達，樣式端不再提供破壞性變體
-        Button("刪除資料", systemImage: "trash", role: .destructive) {}
+        Button("campaigns.general.label.deleteData", systemImage: "trash", role: .destructive) {}
             .buttonStyle(.blPlain)
 
-        Button("停用中", systemImage: "plus") {}
+        Button("common.ui.label.disabled", systemImage: "plus") {}
             .buttonStyle(.blPrimary)
             .disabled(true)
     }

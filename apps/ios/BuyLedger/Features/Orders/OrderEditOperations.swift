@@ -115,16 +115,16 @@ private extension OrderEditOperations {
     func cancel(state: inout OrderEditFeature.State) -> Effect<OrderEditFeature.Action> {
         if state.isDirty {
             state.discardConfirmation = AlertState {
-                TextState("捨棄變更")
+                TextState("orders.list.label.discardChanges")
             } actions: {
                 ButtonState(role: .destructive, action: .discard) {
-                    TextState("捨棄變更")
+                    TextState("orders.list.label.discardChanges")
                 }
                 ButtonState(role: .cancel) {
-                    TextState("繼續編輯")
+                    TextState("orders.list.label.keepEditing")
                 }
             } message: {
-                TextState("這張訂單有尚未儲存的變更，離開後將不會保留。")
+                TextState("orders.edit.message.orderHasUnsaved")
             }
             return .none
         }

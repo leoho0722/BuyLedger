@@ -26,13 +26,13 @@ extension CampaignGrouping {
     var title: String {
         switch self {
         case .day:
-            "按日分組"
+            "campaigns.general.label.groupDay"
 
         case .month:
-            "按月分組"
+            "campaigns.general.label.groupMonth"
 
         case .year:
-            "按年分組"
+            "campaigns.general.label.groupYear"
         }
     }
 }

@@ -198,10 +198,10 @@ extension OrdersFeatureTests {
         await store.receive(\.writes.delegate, .failed(.save))
         await store.receive(
             \.presentation.noticeRequested,
-            .alert(Self.expectedWriteFailureAlert("訂單儲存失敗，請稍後再試。"))
+            .alert(Self.expectedWriteFailureAlert("orders.general.message.orderSavedTry"))
         ) {
             $0.presentation.queue.pendingNotice = .alert(
-                Self.expectedWriteFailureAlert("訂單儲存失敗，請稍後再試。")
+                Self.expectedWriteFailureAlert("orders.general.message.orderSavedTry")
             )
         }
 
@@ -209,7 +209,7 @@ extension OrdersFeatureTests {
         await store.send(.view(.formSheetDismissed)) {
             $0.presentation.queue.isFormClosing = false
             $0.presentation.queue.pendingNotice = nil
-            $0.presentation.destination = .alert(Self.expectedWriteFailureAlert("訂單儲存失敗，請稍後再試。"))
+            $0.presentation.destination = .alert(Self.expectedWriteFailureAlert("orders.general.message.orderSavedTry"))
         }
 
         // Then

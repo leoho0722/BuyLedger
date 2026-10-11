@@ -97,16 +97,21 @@ struct ServiceTestValueStrictnessTests {
             var initialState = OrdersFeature.State(orders: [original])
             initialState.presentation.destination = .alert(
                 AlertState {
-                    TextState("刪除訂單")
+                    TextState("orders.detail.label.deleteOrder")
                 } actions: {
                     ButtonState(role: .destructive, action: .confirmDelete(originalID)) {
-                        TextState("刪除")
+                        TextState("common.action.button.delete")
                     }
                     ButtonState(role: .cancel) {
-                        TextState("取消")
+                        TextState("common.action.cancel")
                     }
                 } message: {
-                    TextState("刪除「\(original.customer.name)」的這筆訂單後無法復原。")
+                    TextState(
+                        LocalizedStringResource(
+                            "orders.detail.message.deleteUndoneNotice",
+                            defaultValue: "\(original.customer.name)"
+                        )
+                    )
                 }
             )
             let store = TestStore(initialState: initialState) {

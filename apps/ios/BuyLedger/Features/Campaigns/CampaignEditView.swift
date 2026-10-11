@@ -35,7 +35,7 @@ struct CampaignEditView: View {
             .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.root)
             .scrollDismissesKeyboard(.interactively)
             .bind($store.focusedField, to: $focusedField)
-            .navigationTitle(Text(LocalizedStringKey(store.original == nil ? "新增開團" : "編輯開團")))
+            .navigationTitle(Text(LocalizedStringKey(store.original == nil ? "campaigns.list.label.addCampaign" : "campaigns.list.label.editCampaign")))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 cancelToolbarItem
@@ -55,8 +55,8 @@ private extension CampaignEditView {
 
     /// 開團名稱、日期、狀態與訂購提醒的輸入欄位
     var campaignInfoSection: some View {
-        Section("開團資訊") {
-            TextField("開團名稱", text: $store.draftName)
+        Section("campaigns.detail.label.campaignInformation") {
+            TextField("orders.detail.label.campaignName", text: $store.draftName)
                 .textContentType(nil)
                 .focused($focusedField, equals: .name)
                 .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.nameField)
@@ -68,25 +68,25 @@ private extension CampaignEditView {
             }
 
             // 沿用訂單編輯頁的做法：DatePicker 明確指定 locale，避免退回開發語言而顯示英文
-            DatePicker("開團日期", selection: $store.draft.openDate, displayedComponents: .date)
+            DatePicker("campaigns.detail.label.openingDate", selection: $store.draft.openDate, displayedComponents: .date)
                 .environment(\.locale, locale)
 
-            DatePicker("結單日期", selection: $store.draft.closeDate, displayedComponents: .date)
+            DatePicker("campaigns.detail.label.closeDate", selection: $store.draft.closeDate, displayedComponents: .date)
                 .environment(\.locale, locale)
 
-            Picker("狀態", selection: $store.draft.status) {
+            Picker("orders.list.label.status", selection: $store.draft.status) {
                 ForEach(CampaignStatus.allCases) {
                     Text(LocalizedStringKey($0.title))
                         .tag($0)
                 }
             }
 
-            Toggle("訂購提醒", isOn: $store.draft.wantsReminder)
+            Toggle("campaigns.detail.label.orderReminder", isOn: $store.draft.wantsReminder)
                 .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.reminderToggle)
 
             if store.draft.wantsReminder {
                 DatePicker(
-                    "提醒時間",
+                    "campaigns.detail.label.reminderTime",
                     selection: $store.draft.reminderTimestamp,
                     displayedComponents: [.date, .hourAndMinute]
                 )
@@ -97,8 +97,8 @@ private extension CampaignEditView {
 
     /// 備註欄，可輸入多行
     var notesSection: some View {
-        Section("備註") {
-            TextField("選填", text: $store.draft.notes, axis: .vertical)
+        Section("orders.detail.label.notes") {
+            TextField("orders.edit.label.optional", text: $store.draft.notes, axis: .vertical)
                 .lineLimit(2...5)
                 .textContentType(nil)
                 .focused($focusedField, equals: .notes)
@@ -113,7 +113,7 @@ private extension CampaignEditView {
             } label: {
                 Image(systemName: "xmark")
             }
-            .accessibilityLabel(Text("取消"))
+            .accessibilityLabel(Text("common.action.cancel"))
             .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.cancelButton)
         }
     }
@@ -127,7 +127,7 @@ private extension CampaignEditView {
                 Image(systemName: "checkmark")
             }
             .buttonStyle(.borderedProminent)
-            .accessibilityLabel(Text("儲存"))
+            .accessibilityLabel(Text("orders.edit.button.save"))
             .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.saveButton)
             .disabled(!store.canSave)
         }
@@ -136,7 +136,7 @@ private extension CampaignEditView {
 
 // MARK: - Preview
 
-#Preview("新增開團") {
+#Preview("campaigns.list.label.addCampaign") {
     CampaignEditView(
         store: Store(
             initialState: CampaignEditFeature.State(

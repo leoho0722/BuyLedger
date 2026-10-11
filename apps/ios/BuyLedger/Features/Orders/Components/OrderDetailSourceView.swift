@@ -28,15 +28,15 @@ struct OrderDetailSourceView: View {
     var body: some View {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                infoPair(title: "訂單來源") {
+                infoPair(title: "orders.detail.label.orderSource") {
                     orderSource
                 }
 
-                infoPair(title: "商品類別") {
+                infoPair(title: "orders.list.label.itemCategory") {
                     categories
                 }
 
-                infoPair(title: "開團") {
+                infoPair(title: "orders.detail.title.campaigns") {
                     campaigns
                 }
             }
@@ -66,7 +66,7 @@ private extension OrderDetailSourceView {
             Text(campaignNamesText)
         } else {
             // 未歸團有翻譯，需以字面值交給 `Text` 查表，經 `String` 變數傳入會原樣顯示
-            Text("未歸團")
+            Text("orders.detail.label.unassigned")
         }
     }
 

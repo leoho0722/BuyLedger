@@ -237,22 +237,28 @@ private extension FxFeature {
     static func userMessage(for error: APIError) -> LocalizedStringResource {
         switch error {
         case .invalidKey:
-            return "尚未設定 ExchangeRate-API 金鑰；無法顯示即時匯率。"
+            return "fx.rates.message.exchangeRateApiKeyMissing"
 
         case .quotaExceeded:
-            return "本月匯率 API 配額已用完；無法顯示即時匯率。"
+            return "fx.rates.message.monthsExchangerateApi"
 
         case .transport:
-            return "網路連線異常；無法顯示即時匯率，請稍後再試。"
+            return "fx.rates.message.networkErrorOccurred"
 
         case .http(let statusCode):
-            return "匯率 API 回應 HTTP \(statusCode)；無法顯示即時匯率。"
+            return LocalizedStringResource(
+                "fx.rates.message.httpErrorCode",
+                defaultValue: "\(statusCode)"
+            )
 
         case .decoding:
-            return "匯率資料格式異常；無法顯示即時匯率。"
+            return "fx.rates.message.exchangerateDataInvalid"
 
         case .apiError(let code):
-            return "匯率 API 回應錯誤 (\(code))；無法顯示即時匯率。"
+            return LocalizedStringResource(
+                "fx.rates.message.apiErrorCode",
+                defaultValue: "\(code)"
+            )
         }
     }
 

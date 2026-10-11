@@ -25,7 +25,7 @@ struct OrderMergeCandidateSheet: View {
     var body: some View {
         NavigationStack(path: stepPath) {
             candidateList
-                .navigationTitle(Text("合併訂單"))
+                .navigationTitle(Text("orders.detail.label.mergeOrders"))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
@@ -51,13 +51,13 @@ private extension OrderMergeCandidateSheet {
         } label: {
             Image(systemName: "xmark")
         }
-        .accessibilityLabel(Text("取消"))
+        .accessibilityLabel(Text("common.action.cancel"))
         .accessibilityIdentifier(BLAccessibilityID.OrderMerge.cancelButton)
     }
 
     /// 確認目前保留照片的工具列按鈕
     var continueButton: some View {
-        Button("繼續") {
+        Button("orders.list.button.continue") {
             store.send(.view(.photoStepConfirmTapped))
         }
         .accessibilityIdentifier(BLAccessibilityID.OrderMerge.photoContinueButton)
@@ -66,7 +66,7 @@ private extension OrderMergeCandidateSheet {
     /// 照片挑選步驟；返回由系統導覽處理
     var photoSelectionStep: some View {
         MergePhotoPickerSheet(store: store)
-            .navigationTitle(Text("選擇保留照片"))
+            .navigationTitle(Text("orders.merge.label.keepPhotos"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -83,9 +83,9 @@ private extension OrderMergeCandidateSheet {
         Group {
             if sections.isEmpty {
                 ContentUnavailableView(
-                    "沒有可合併的訂單",
+                    "orders.merge.label.ordersAvailableMerge",
                     systemImage: "tray",
-                    description: Text("僅能與同幣別、同客戶且非「已合併」「已取消」的訂單合併。")
+                    description: Text("orders.merge.message.ordersOnlyMerged")
                 )
                 .accessibilityIdentifier(BLAccessibilityID.OrderMerge.candidateListEmptyState)
             } else {
@@ -100,11 +100,12 @@ private extension OrderMergeCandidateSheet {
                         } footer: {
                             if section.id == sections.last?.id {
                                 Text(
-                                    """
-                                    僅列出與主訂單同幣別 (\(store.primary.currency.rawValue))、\
-                                    同客戶「\(store.primary.customer.name)」的訂單；\
-                                    選擇後會以兩筆訂單整合的資料開啟確認表單。
-                                    """
+                                    AppLanguage.format(
+                                        "orders.merge.message.candidateFilterNotice",
+                                        store.primary.currency.rawValue,
+                                        store.primary.customer.name,
+                                        locale: locale
+                                    )
                                 )
                                 .blTextStyle(.footnote)
                                 .foregroundStyle(Color.blSecondaryLabel)
@@ -118,7 +119,7 @@ private extension OrderMergeCandidateSheet {
         .searchable(
             text: $store.searchText,
             placement: .navigationBarDrawer(displayMode: .always),
-            prompt: Text("搜尋")
+            prompt: Text("common.action.action.search")
         )
     }
 

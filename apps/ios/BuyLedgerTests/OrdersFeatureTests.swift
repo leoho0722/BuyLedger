@@ -185,10 +185,10 @@ extension OrdersFeatureTests {
         _ message: LocalizedStringKey
     ) -> AlertState<OrdersPresentationFeature.Destination.Alert> {
         AlertState {
-            TextState("操作失敗")
+            TextState("orders.list.label.operationFailed")
         } actions: {
             ButtonState(role: .cancel) {
-                TextState("知道了")
+                TextState("orders.merge.label.ok")
             }
         } message: {
             TextState(message)
@@ -281,16 +281,21 @@ extension OrdersFeatureTests {
         customerName: String
     ) -> AlertState<OrdersPresentationFeature.Destination.Alert> {
         AlertState {
-            TextState("刪除訂單")
+            TextState("orders.detail.label.deleteOrder")
         } actions: {
             ButtonState(role: .destructive, action: .confirmDelete(orderID)) {
-                TextState("刪除")
+                TextState("common.action.button.delete")
             }
             ButtonState(role: .cancel) {
-                TextState("取消")
+                TextState("common.action.cancel")
             }
         } message: {
-            TextState("刪除「\(customerName)」的這筆訂單後無法復原。")
+            TextState(
+                LocalizedStringResource(
+                    "orders.detail.message.deleteUndoneNotice",
+                    defaultValue: "\(customerName)"
+                )
+            )
         }
     }
 
@@ -299,16 +304,16 @@ extension OrdersFeatureTests {
     /// - Returns: 捨棄前顯示的確認 alert
     static func expectedDiscardAlert() -> AlertState<OrderFilterFeature.Action.FilterDiscardAlert> {
         AlertState {
-            TextState("捨棄變更")
+            TextState("orders.list.label.discardChanges")
         } actions: {
             ButtonState(role: .destructive, action: .discard) {
-                TextState("捨棄變更")
+                TextState("orders.list.label.discardChanges")
             }
             ButtonState(role: .cancel) {
-                TextState("繼續編輯")
+                TextState("orders.list.label.keepEditing")
             }
         } message: {
-            TextState("這些篩選條件尚未套用，離開後將不會保留。")
+            TextState("orders.list.message.filtersHaveApplied")
         }
     }
 }

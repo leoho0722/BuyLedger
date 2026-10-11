@@ -108,6 +108,44 @@ struct BLFormattersTests {
         let ratio = Decimal(string: "0.654", locale: Self.posixLocale) ?? 0
         #expect(OrderFormatters.percent(ratio, locale: Self.locale) == "65.4%")
     }
+
+    /// 驗證日區段標題的「今天」與「昨天」依 locale 正確本地化
+    @Test func daySectionTitle_今天與昨天_依Locale本地化() {
+        var calendar = Calendar(identifier: .gregorian)
+        calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+        let now = Date(timeIntervalSince1970: 1_777_185_000)
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: now) ?? now
+
+        let todayEn = BLFormatters.daySectionTitle(
+            for: now,
+            now: now,
+            calendar: calendar,
+            locale: Locale(identifier: "en")
+        )
+        let todayZh = BLFormatters.daySectionTitle(
+            for: now,
+            now: now,
+            calendar: calendar,
+            locale: Locale(identifier: "zh-Hant")
+        )
+        let yesterdayEn = BLFormatters.daySectionTitle(
+            for: yesterday,
+            now: now,
+            calendar: calendar,
+            locale: Locale(identifier: "en")
+        )
+        let yesterdayZh = BLFormatters.daySectionTitle(
+            for: yesterday,
+            now: now,
+            calendar: calendar,
+            locale: Locale(identifier: "zh-Hant")
+        )
+
+        #expect(todayEn == "Today")
+        #expect(todayZh == "今天")
+        #expect(yesterdayEn == "Yesterday")
+        #expect(yesterdayZh == "昨天")
+    }
 }
 
 // MARK: - Static Properties

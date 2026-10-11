@@ -187,13 +187,13 @@ extension OrderMergeFeatureTests {
         // Then
         await store.receive(\.candidatePhotosResponse.failure) {
             $0.photoLoadFailureAlert = AlertState {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("無法讀取訂單照片，請稍後再試。")
+                TextState("orders.merge.message.orderPhotosLoaded")
             }
         }
         #expect(store.state.step == .selectCandidate, "載入失敗後仍可重新選取候選訂單重試")

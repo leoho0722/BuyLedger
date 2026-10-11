@@ -16,6 +16,9 @@ struct MergePhotoPickerSheet: View {
     /// 縮圖格的最小欄寬，隨字級縮放
     @ScaledMetric private var photoSize: CGFloat = 96
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrderMergeFeature>
 
@@ -41,12 +44,14 @@ private extension MergePhotoPickerSheet {
     /// 照片總數、上限與目前保留數量的說明
     var instructions: some View {
         Text(
-            """
-            兩筆訂單共有 \(store.combinedPhotos.count) 張照片，超過上限 \(LedgerOrder.maxPhotoCount) 張；\
-            請勾選要保留的照片 (已選 \(store.selectedPhotoIndices.count)/\
-            \(LedgerOrder.maxPhotoCount))，\
-            按「繼續」帶入合併後的新訂單。
-            """
+            AppLanguage.format(
+                "orders.merge.message.photoLimitNotice",
+                store.combinedPhotos.count,
+                LedgerOrder.maxPhotoCount,
+                store.selectedPhotoIndices.count,
+                LedgerOrder.maxPhotoCount,
+                locale: locale
+            )
         )
         .blTextStyle(.footnote)
         .foregroundStyle(Color.blSecondaryLabel)

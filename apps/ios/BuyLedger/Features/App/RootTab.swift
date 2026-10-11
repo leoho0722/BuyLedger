@@ -32,19 +32,19 @@ extension RootTab {
     var title: String {
         switch self {
         case .dashboard:
-            "總覽"
+            "dashboard.overview.title.overview"
 
         case .orders:
-            "訂單"
+            "orders.list.title"
 
         case .campaigns:
-            "開團"
+            "orders.detail.title.campaigns"
 
         case .insights:
-            "分析"
+            "orders.filter.title.insights"
 
         case .more:
-            "更多"
+            "common.action.label.more"
         }
     }
 

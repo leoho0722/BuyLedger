@@ -28,7 +28,7 @@ extension RootFeatureTests {
         )
         let normalized = Self.rebuiltOrder(
             original,
-            paymentMethod: "銀行匯款",
+            paymentMethod: "orders.edit.label.bankTransfer",
             reconciliationStatus: "",
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
@@ -36,12 +36,12 @@ extension RootFeatureTests {
         )
         let plan = PaymentMethodEditPlan(
             originalName: "匯款",
-            newName: "銀行匯款",
+            newName: "orders.edit.label.bankTransfer",
             flags: .none,
             hasChangedFlags: true,
             affectedOrders: [normalized]
         )
-        let updatedMaster = PaymentMethodInfo(name: "銀行匯款", flags: .none)
+        let updatedMaster = PaymentMethodInfo(name: "orders.edit.label.bankTransfer", flags: .none)
         let originalFlags = PaymentMethodFlags(
             isCardless: false,
             isBankTransfer: true,
@@ -122,12 +122,12 @@ extension RootFeatureTests {
         }
         #expect(store.state.orders.orders == [normalized])
         #expect(store.state.orders.lookupCatalog.paymentMethods == [updatedMaster])
-        #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["銀行匯款"])
+        #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["orders.edit.label.bankTransfer"])
         #expect(
             writes.value == [
                 PaymentMethodEditCall(
                     oldName: "匯款",
-                    newName: "銀行匯款",
+                    newName: "orders.edit.label.bankTransfer",
                     flags: .none,
                     orders: [normalized]
                 ),
@@ -143,10 +143,10 @@ extension RootFeatureTests {
     func more_取消付款方式更正_保留訂單與主檔() async {
         // Given
         let original = LedgerOrder.fixture(id: "BL-PM-CANCEL", paymentMethod: "匯款")
-        let correctedOrder = LedgerOrder.fixture(id: "BL-PM-CANCEL", paymentMethod: "銀行匯款")
+        let correctedOrder = LedgerOrder.fixture(id: "BL-PM-CANCEL", paymentMethod: "orders.edit.label.bankTransfer")
         let plan = PaymentMethodEditPlan(
             originalName: "匯款",
-            newName: "銀行匯款",
+            newName: "orders.edit.label.bankTransfer",
             flags: .none,
             hasChangedFlags: true,
             affectedOrders: [correctedOrder]
@@ -201,10 +201,10 @@ extension RootFeatureTests {
     func more_付款方式更正寫入失敗_保留訂單與主檔() async {
         // Given
         let original = LedgerOrder.fixture(id: "BL-PM-FAIL", paymentMethod: "匯款")
-        let correctedOrder = LedgerOrder.fixture(id: "BL-PM-FAIL", paymentMethod: "銀行匯款")
+        let correctedOrder = LedgerOrder.fixture(id: "BL-PM-FAIL", paymentMethod: "orders.edit.label.bankTransfer")
         let plan = PaymentMethodEditPlan(
             originalName: "匯款",
-            newName: "銀行匯款",
+            newName: "orders.edit.label.bankTransfer",
             flags: .none,
             hasChangedFlags: true,
             affectedOrders: [correctedOrder]

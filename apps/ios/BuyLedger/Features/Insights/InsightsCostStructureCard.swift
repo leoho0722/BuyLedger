@@ -44,7 +44,7 @@ private extension InsightsCostStructureCard {
 
     /// 固定顯示「成本結構」的卡片標題
     var title: some View {
-        Text("成本結構")
+        Text("insights.chart.label.costStructure")
             .font(BLTypographyStyle.subhead.font.weight(.semibold))
             .foregroundStyle(palette.label)
     }
@@ -54,17 +54,17 @@ private extension InsightsCostStructureCard {
         BLDonutChart(
             segments: segments.map {
                 BLDonutSegment(
-                    label: $0.label,
+                    label: language.localizedString(forKey: $0.label),
                     value: NSDecimalNumber(decimal: $0.value).doubleValue,
                     color: $0.color,
                     valueDescription: BLFormatters.twd($0.value, locale: locale)
                 )
             },
-            centerTitle: "總成本",
+            centerTitle: "orders.detail.label.totalCost",
             centerValue: BLFormatters.twd(totalCost, locale: locale),
-            axisXTitle: language.localized("類別"),
-            axisYTitle: language.localized("占比"),
-            seriesName: language.localized("圈狀圖")
+            axisXTitle: language.localized("orders.list.label.category2"),
+            axisYTitle: language.localized("orders.detail.label.share"),
+            seriesName: language.localized("orders.detail.label.donutChart")
         )
         .frame(maxWidth: .infinity)
         .accessibilityIdentifier(BLAccessibilityID.Insights.costDonut)
@@ -125,13 +125,13 @@ private extension InsightsCostStructureCard {
 
 // MARK: - Preview
 
-#Preview("成本結構") {
+#Preview("insights.chart.label.costStructure") {
     InsightsCostStructureCard(
         language: .traditionalChinese,
         segments: [
-            InsightsCostSegment(label: "商品金額", value: 12_000, color: BLPalette().accent),
-            InsightsCostSegment(label: "國內運費", value: 1_500, color: BLPalette().teal),
-            InsightsCostSegment(label: "手續費", value: 900, color: BLPalette().orange),
+            InsightsCostSegment(label: "orders.detail.label.itemCost", value: 12_000, color: BLPalette().accent),
+            InsightsCostSegment(label: "orders.detail.label.localShipping", value: 1_500, color: BLPalette().teal),
+            InsightsCostSegment(label: "orders.detail.label.fees", value: 900, color: BLPalette().orange),
         ],
         totalCost: 14_400
     )

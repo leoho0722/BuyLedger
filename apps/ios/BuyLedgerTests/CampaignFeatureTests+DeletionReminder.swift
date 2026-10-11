@@ -215,9 +215,9 @@ extension CampaignFeatureTests {
         await store.receive(\.reminder.delegate.failed, .eventRemovalAfterDeleteFailed)
         await store.receive(
             \.presentation.noticeRequested,
-            Self.failureAlert("開團已刪除，但行事曆上的提醒事件移除失敗，請自行到行事曆刪除。")
+            Self.failureAlert("campaigns.general.message.campaignDeletedBut")
         ) {
-            $0.presentation.destination = Self.failureAlert("開團已刪除，但行事曆上的提醒事件移除失敗，請自行到行事曆刪除。")
+            $0.presentation.destination = Self.failureAlert("campaigns.general.message.campaignDeletedBut")
         }
         #expect(removedCampaignIDs.value == ["C1"])
         #expect(removedCampaignNames.value == ["團"])

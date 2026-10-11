@@ -51,7 +51,7 @@ struct QuoteInputsCard: View {
     var body: some View {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                Text("商品資訊")
+                Text("quote.calculator.label.itemInformation")
                     .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
@@ -59,18 +59,18 @@ struct QuoteInputsCard: View {
                 currencyPicker
 
                 numberField(
-                    "商品定價",
+                    "quote.calculator.label.itemPrice",
                     $itemPrice,
                     currencyCode,
                     allowsDecimalEntry: true,
                     identifier: BLAccessibilityID.Quote.principalField
                 )
-                numberField("當地運費", $domesticShipping, currencyCode, allowsDecimalEntry: true)
-                numberField("國際運費", $internationalShippingTWD, "TWD/件")
-                numberField("刷卡手續費", $cardFeePercent, "%", fractionDigits: 1)
-                numberField("金流手續費", $paymentFeePercent, "%", fractionDigits: 1)
-                numberField("平台手續費", $platformFeePercent, "%", fractionDigits: 1)
-                numberField("目標毛利", $targetMarginPercent, "%")
+                numberField("quote.calculator.label.localShipping", $domesticShipping, currencyCode, allowsDecimalEntry: true)
+                numberField("orders.detail.label.internationalShipping", $internationalShippingTWD, "quote.calculator.label.twdItem")
+                numberField("orders.detail.label.cardFee", $cardFeePercent, "%", fractionDigits: 1)
+                numberField("orders.detail.label.paymentProcessingFee", $paymentFeePercent, "%", fractionDigits: 1)
+                numberField("orders.detail.label.platformFee", $platformFeePercent, "%", fractionDigits: 1)
+                numberField("quote.calculator.label.targetMargin", $targetMarginPercent, "%")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
@@ -85,7 +85,7 @@ private extension QuoteInputsCard {
     var currencyPicker: some View {
         Button(action: onCurrencyPickerTapped) {
             HStack(spacing: BLSpacing.small) {
-                Text("來源幣別")
+                Text("fx.rates.label.sourceCurrency")
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
 
@@ -143,12 +143,13 @@ private extension QuoteInputsCard {
                 .foregroundStyle(palette.secondaryLabel)
 
             TextField(
-                "0",
+                LocalizedStringKey(label),
                 value: value,
                 format: .number.precision(
                     allowsDecimalEntry ? .fractionLength(0...2) : .fractionLength(fractionDigits)
                 )
-                .grouping(.never)
+                .grouping(.never),
+                prompt: Text(verbatim: "0")
             )
             .textFieldStyle(.roundedBorder)
             .multilineTextAlignment(.trailing)

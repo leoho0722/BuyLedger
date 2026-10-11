@@ -63,7 +63,7 @@ struct DashboardView: View {
                     // `refresh` 只轉發，去重由 `OrdersLoadFeature` 的載入守衛處理
                     await store.send(.view(.task)).finish()
                 }
-                .rootNavigationTitle("總覽", language: language)
+                .rootNavigationTitle("dashboard.overview.title.overview", language: language)
         }
     }
 }
@@ -103,7 +103,7 @@ private extension DashboardView {
         }
         .scrollDisabled(true)
         .accessibilityElement()
-        .accessibilityLabel(Text("載入中"))
+        .accessibilityLabel(Text("common.action.label.loading"))
         .accessibilityIdentifier(BLAccessibilityID.Dashboard.loading)
     }
 
@@ -129,11 +129,11 @@ private extension DashboardView {
             .accessibilityHidden(true)
 
             VStack(spacing: BLSpacing.small) {
-                Text("歡迎使用 BuyLedger")
+                Text("dashboard.overview.label.welcomeBuyledger")
                     .blTextStyle(.title1)
                     .foregroundStyle(palette.label)
 
-                Text("還沒有任何訂單。建立第一筆，馬上開始追蹤代購損益。")
+                Text("dashboard.overview.message.thereOrdersYet")
                     .blTextStyle(.subhead)
                     .foregroundStyle(palette.secondaryLabel)
                     .multilineTextAlignment(.center)
@@ -143,7 +143,7 @@ private extension DashboardView {
             Button {
                 store.send(.view(.newOrderTapped))
             } label: {
-                Label("建立第一筆訂單", systemImage: "plus")
+                Label("dashboard.overview.label.createFirstOrder", systemImage: "plus")
             }
             .buttonStyle(BLButtonStyle(variant: .primary))
             .accessibilityIdentifier(BLAccessibilityID.Dashboard.emptyStateActionButton)
@@ -257,7 +257,7 @@ private extension DashboardView {
 
 // MARK: - Preview
 
-#Preview("總覽") {
+#Preview("dashboard.overview.title.overview") {
     let previewState: DashboardFeature.State = {
         var state = DashboardFeature.State()
         state.orders = LedgerOrder.sampleOrders
@@ -273,7 +273,7 @@ private extension DashboardView {
     )
 }
 
-#Preview("載入中") {
+#Preview("common.action.label.loading") {
     DashboardView(
         store: Store(initialState: DashboardFeature.State()) {
             DashboardFeature()

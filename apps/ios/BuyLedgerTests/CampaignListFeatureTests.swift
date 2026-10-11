@@ -46,7 +46,7 @@ struct CampaignListFeatureTests {
     func retryTapped_載入失敗_委派載入並保留唯讀錯誤() async {
         // Given
         let initial = Self.makeState()
-        initial.$errorMessage = SharedReader(value: "開團載入失敗，請稍後再試。")
+        initial.$errorMessage = SharedReader(value: "campaigns.list.message.campaignsLoadedTry")
         let store = TestStore(initialState: initial) {
             CampaignListFeature()
         } withDependencies: {
@@ -65,7 +65,7 @@ struct CampaignListFeatureTests {
         // Then
         await store.receive(\.delegate.loadRequested)
         await store.finish()
-        #expect(store.state.loadState == .failed("開團載入失敗，請稍後再試。"))
+        #expect(store.state.loadState == .failed("campaigns.list.message.campaignsLoadedTry"))
     }
 }
 

@@ -35,6 +35,8 @@ extension SnapshotTests {
 
             let store = Store(initialState: state) {
                 QuoteFeature()
+            } withDependencies: {
+                $0.currencyMetadataService.fetchCodes = { [] }
             }
 
             // When
@@ -66,6 +68,8 @@ extension SnapshotTests {
 
             let store = Store(initialState: state) {
                 QuoteFeature()
+            } withDependencies: {
+                $0.currencyMetadataService.fetchCodes = { [] }
             }
 
             // When
@@ -103,7 +107,7 @@ extension SnapshotTests {
     func fxView_匯率載入失敗_顯示錯誤橫幅與重試鍵() {
         TestDependencies.withFixedNow {
             // Given
-            let state = FxFeature.State(errorMessage: "網路連線異常；無法顯示即時匯率，請稍後再試。")
+            let state = FxFeature.State(errorMessage: "fx.rates.message.networkErrorOccurred")
             let store = Store<FxFeature.State, FxFeature.Action>(initialState: state) {
                 EmptyReducer()
             }

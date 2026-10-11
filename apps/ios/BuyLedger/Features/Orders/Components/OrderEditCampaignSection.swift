@@ -20,7 +20,7 @@ struct OrderEditCampaignSection: View {
 
     /// 組合區段或元件的內容
     var body: some View {
-        Section("開團與收款") {
+        Section("orders.edit.label.campaignsPayments") {
             fields
         }
     }
@@ -37,8 +37,8 @@ private extension OrderEditCampaignSection {
             // 合併情境由選擇列推入開團多選畫面
             campaignPickerRow
         } else {
-            Picker("開團", selection: campaignSelectionBinding) {
-                Text("未歸團")
+            Picker("orders.detail.title.campaigns", selection: campaignSelectionBinding) {
+                Text("orders.detail.label.unassigned")
                     .tag("")
 
                 ForEach(pickerStore.availableCampaigns, id: \.self) {
@@ -48,7 +48,7 @@ private extension OrderEditCampaignSection {
             }
         }
 
-        Picker("收款狀態", selection: $store.draft.paymentReceiptStatus) {
+        Picker("orders.edit.label.paymentStatus", selection: $store.draft.paymentReceiptStatus) {
             ForEach(PaymentReceiptStatus.allCases) {
                 Text(LocalizedStringKey($0.title))
                     .tag($0)
@@ -60,7 +60,7 @@ private extension OrderEditCampaignSection {
     /// 開團的選擇器入口，保留原有選取值與提示文字
     var campaignPickerRow: some View {
         OrderEditSelectionRow(
-            title: "開團",
+            title: "orders.detail.title.campaigns",
             identifier: BLAccessibilityID.OrderEdit.campaignRow,
             action: {
                 pickerStore.send(.view(.campaignPickerTapped))

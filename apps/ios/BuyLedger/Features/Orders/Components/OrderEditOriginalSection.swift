@@ -21,7 +21,7 @@ struct OrderEditOriginalSection: View {
     var body: some View {
         Group {
             if let original {
-                Section("原始訂單") {
+                Section("orders.edit.label.originalOrders") {
                     orderIdentifier(original.displayID)
                 }
             }
@@ -38,7 +38,7 @@ private extension OrderEditOriginalSection {
     /// - Parameter identifier: 原始訂單的顯示識別碼
     /// - Returns: 保留等寬數字的系統標籤列
     func orderIdentifier(_ identifier: String) -> some View {
-        LabeledContent("單號", value: identifier)
+        LabeledContent("orders.list.label.orderNumber", value: identifier)
             .monospacedDigit()
     }
 }

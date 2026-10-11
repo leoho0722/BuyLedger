@@ -212,10 +212,10 @@ private extension RootFeatureTests {
     static func makeOrdersLoadFailedState() -> RootFeature.State {
         var initial = Self.makeIsolatedRootState()
         initial.orders.load.$errorMessage.withLock {
-            $0 = "訂單載入失敗，請稍後再試。"
+            $0 = "orders.general.message.ordersLoadedTry"
         }
-        initial.dashboard.loadState = .failed("訂單載入失敗，請稍後再試。")
-        initial.insights.loadState = .failed("訂單載入失敗，請稍後再試。")
+        initial.dashboard.loadState = .failed("orders.general.message.ordersLoadedTry")
+        initial.insights.loadState = .failed("orders.general.message.ordersLoadedTry")
         return initial
     }
 

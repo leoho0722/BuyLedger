@@ -37,7 +37,7 @@ struct QuoteView: View {
         }
         .accessibilityIdentifier(BLAccessibilityID.Quote.root)
         .background(palette.background)
-        .navigationTitle(Text("報價試算"))
+        .navigationTitle(Text("settings.more.label.quoteCalculator"))
         .scrollDismissesKeyboard(.interactively)
         .bind($store.isAmountFieldFocused, to: $isAmountFieldFocused)
         .toolbar {
@@ -107,11 +107,11 @@ private extension QuoteView {
         let language = AppLanguage(locale: locale)
 
         return OptionPickerSheet(
-            title: "選擇來源幣別",
+            title: "fx.rates.label.selectSourceCurrency",
             allowsAdd: false,
             searchable: true,
-            emptyTitle: "尚無幣別",
-            emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
+            emptyTitle: "orders.edit.label.currenciesAvailable",
+            emptyDescription: "orders.edit.message.internetConnectionRequired",
             options: store.rateSource.availableCurrencies.map(\.rawValue),
             selected: store.rateSource.fromCurrency.rawValue,
             displayName: { code in
@@ -130,7 +130,7 @@ private extension QuoteView {
     @ViewBuilder
     var suggestedHero: some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
-            Text("建議售價")
+            Text("quote.calculator.label.suggestedPrice")
                 .font(BLTypographyStyle.caption.font.weight(.semibold))
                 .textCase(.uppercase)
 
@@ -142,18 +142,20 @@ private extension QuoteView {
 
             switch store.heroMessage {
             case .rateUnavailable:
-                Text("尚無可用匯率資料，暫時無法試算。")
+                Text("quote.calculator.message.exchangeRateAvailable")
                     .blTextStyle(.footnote)
             case let .estimate(profitTWD, marginPercent):
                 Text(
-                    """
-                    預估獲利 \(BLFormatters.twd(profitTWD, locale: locale)) · \
-                    \(BLFormatters.percent(scaled: marginPercent, locale: locale))
-                    """
+                    AppLanguage.format(
+                        "quote.calculator.label.estimatedProfit",
+                        BLFormatters.twd(profitTWD, locale: locale),
+                        BLFormatters.percent(scaled: marginPercent, locale: locale),
+                        locale: locale
+                    )
                 )
-                    .blTextStyle(.footnote)
+                .blTextStyle(.footnote)
             case .marginTooHigh:
-                Text("目標毛利需低於 100% 才能計算建議售價。")
+                Text("quote.calculator.message.targetMarginMust")
                     .blTextStyle(.footnote)
             }
         }
@@ -177,7 +179,7 @@ private extension QuoteView {
             } label: {
                 Image(systemName: "checkmark")
             }
-            .accessibilityLabel(Text("完成"))
+            .accessibilityLabel(Text("common.action.button.done"))
             .accessibilityIdentifier(BLAccessibilityID.Common.keyboardDoneButton)
         }
     }

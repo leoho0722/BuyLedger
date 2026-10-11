@@ -123,7 +123,7 @@ private extension CampaignLoadFeature {
                 $0 = false
             }
             state.$errorMessage.withLock {
-                $0 = "開團載入失敗，請稍後再試。"
+                $0 = "campaigns.list.message.campaignsLoadedTry"
             }
             return .send(.delegate(.loadFailed))
 

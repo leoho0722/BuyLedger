@@ -244,7 +244,7 @@ private extension OrdersBatchOperationsTests {
             cardlessDeductionAmount: 0,
             cardlessSupplementAmount: 0,
             orderSource: "來源",
-            categories: ["類別"],
+            categories: ["orders.list.label.category2"],
             paymentMethod: "付款",
             notes: "",
             reconciliationStatus: "",

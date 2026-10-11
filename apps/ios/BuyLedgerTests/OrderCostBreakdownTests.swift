@@ -33,7 +33,7 @@ struct OrderCostBreakdownTests {
         let components = OrderCostBreakdown.components(for: order)
 
         // Then
-        #expect(components.map(\.title) == ["商品金額", "刷卡手續費", "平台手續費", "金流手續費"])
+        #expect(components.map(\.title) == ["orders.detail.label.itemCost", "orders.detail.label.cardFee", "orders.detail.label.platformFee", "orders.detail.label.paymentProcessingFee"])
         #expect(components.map(\.value) == [100, Decimal(101) / 10, 6, Decimal(202) / 10])
         #expect(components.map(\.tone) == [.accent, .orange, .teal, .purple])
     }
@@ -55,13 +55,13 @@ struct OrderCostBreakdownTests {
             isCashOnDelivery: true
         )
         let titles = [
-            "商品金額",
-            "刷卡手續費",
-            "平台手續費",
-            "金流手續費",
-            "國內運費",
-            "國際運費",
-            "外國國內運費",
+            "orders.detail.label.itemCost",
+            "orders.detail.label.cardFee",
+            "orders.detail.label.platformFee",
+            "orders.detail.label.paymentProcessingFee",
+            "orders.detail.label.localShipping",
+            "orders.detail.label.internationalShipping",
+            "orders.detail.label.foreignLocalShipping",
         ]
         let tones: [OrderCostBreakdown.Tone] = [
             .accent,
@@ -126,7 +126,7 @@ struct OrderCostBreakdownTests {
         let components = OrderCostBreakdown.components(for: order)
 
         // Then
-        #expect(components.map(\.title) == ["商品金額", "金流手續費", "國際運費"])
+        #expect(components.map(\.title) == ["orders.detail.label.itemCost", "orders.detail.label.paymentProcessingFee", "orders.detail.label.internationalShipping"])
         #expect(components.map(\.value) == [Decimal(1) / 100, Decimal(1) / 100, Decimal(1) / 100])
         #expect(components.map(\.tone) == [.accent, .purple, .pink])
     }
@@ -181,13 +181,13 @@ struct OrderCostBreakdownTests {
         #expect(
             slices == [
                 OrderCostBreakdown.DonutSlice(
-                    label: "商品金額",
+                    label: "orders.detail.label.itemCost",
                     value: 1_200,
                     valueDescription: "NT$1,200",
                     tone: .accent
                 ),
                 OrderCostBreakdown.DonutSlice(
-                    label: "刷卡手續費",
+                    label: "orders.detail.label.cardFee",
                     value: 300,
                     valueDescription: "NT$300",
                     tone: .orange
@@ -221,13 +221,13 @@ private extension OrderCostBreakdownTests {
     static func makeDonutComponents() -> [OrderCostBreakdown.Component] {
         [
             OrderCostBreakdown.Component(
-                title: "商品金額",
+                title: "orders.detail.label.itemCost",
                 value: 1_200,
                 tone: .accent,
                 total: 1_500
             ),
             OrderCostBreakdown.Component(
-                title: "刷卡手續費",
+                title: "orders.detail.label.cardFee",
                 value: 300,
                 tone: .orange,
                 total: 1_500

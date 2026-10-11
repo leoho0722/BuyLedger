@@ -181,7 +181,7 @@ struct CampaignSummaryTests {
         let text = try Self.localizedText(label, language: .english)
 
         // Then
-        #expect(label.key == "已收款")
+        #expect(label.key == "orders.general.status.received")
         #expect(text == "Received")
     }
 
@@ -204,8 +204,8 @@ struct CampaignSummaryTests {
         let text = try Self.localizedText(label, language: .english)
 
         // Then
-        #expect(label.key == "待收款")
-        #expect(text == "Pending")
+        #expect(label.key == "orders.filter.status.pendingPayment")
+        #expect(text == "Pending Payment")
     }
 }
 

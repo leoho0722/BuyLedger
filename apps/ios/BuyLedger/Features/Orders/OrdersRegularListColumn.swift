@@ -13,6 +13,9 @@ struct OrdersRegularListColumn: View {
 
     // MARK: - Properties
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 已套用篩選的訂單，由父層單次求值後傳入
     let orders: [LedgerOrder]
 
@@ -95,7 +98,7 @@ private extension OrdersRegularListColumn {
     /// 付款方式篩選的觸發鈕，顯示目前選取的付款方式，沒有選取時顯示「全部」
     var paymentMethodFilterTrigger: some View {
         BLFilterChip(
-            title: OrderFormatters.paymentMethodFilterTitle(store.selectedPaymentMethod),
+            title: OrderFormatters.paymentMethodFilterTitle(store.selectedPaymentMethod, locale: locale),
             isSelected: store.hasPaymentMethodFilter,
             style: .purple,
             icon: "creditcard",
@@ -109,7 +112,7 @@ private extension OrdersRegularListColumn {
     /// 商品類別篩選的觸發鈕，顯示目前選取的類別，沒有選取時顯示「全部」
     var categoryFilterTrigger: some View {
         BLFilterChip(
-            title: OrderFormatters.categoryFilterTitle(store.selectedCategory),
+            title: OrderFormatters.categoryFilterTitle(store.selectedCategory, locale: locale),
             isSelected: store.hasCategoryFilter,
             style: .purple,
             icon: "tag",
@@ -172,11 +175,11 @@ private extension OrdersRegularListColumn {
     @ViewBuilder
     var listContent: some View {
         if store.isLoading {
-            ProgressView("載入訂單")
+            ProgressView("orders.list.label.loadOrders")
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, BLSpacing.large)
         } else if orders.isEmpty {
-            ContentUnavailableView("沒有符合條件的訂單", systemImage: "tray")
+            ContentUnavailableView("orders.list.label.matchingOrders", systemImage: "tray")
                 .padding(.top, BLSpacing.extraLarge)
                 .accessibilityIdentifier(BLAccessibilityID.Orders.listEmptyState)
         } else {

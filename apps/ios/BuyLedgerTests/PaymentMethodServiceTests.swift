@@ -66,11 +66,11 @@ struct PaymentMethodServiceTests {
     ///   儲存失敗時丟出 `PersistenceError.saveFailed(underlying:)`
     @Test(arguments: [
         (
-            "貨到付款",
+            "orders.list.label.cashDelivery",
             PaymentMethodFlags(isCardless: false, isBankTransfer: false, isCashOnDelivery: true)
         ),
         (
-            "銀行匯款",
+            "orders.edit.label.bankTransfer",
             PaymentMethodFlags(isCardless: false, isBankTransfer: true, isCashOnDelivery: false)
         ),
         (

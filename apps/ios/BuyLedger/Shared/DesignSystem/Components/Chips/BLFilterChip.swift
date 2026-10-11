@@ -220,10 +220,10 @@ private extension BLFilterChip.Size {
 #Preview("篩選膠囊") {
     VStack(alignment: .leading, spacing: BLSpacing.medium) {
         HStack(spacing: BLSpacing.small) {
-            BLFilterChip(title: "全部", isSelected: true) {}
-            BLFilterChip(title: "報價中", isSelected: false) {}
+            BLFilterChip(title: "common.action.label.all", isSelected: true) {}
+            BLFilterChip(title: "customers.list.label.quoting", isSelected: false) {}
             BLFilterChip(
-                title: "本月",
+                title: "orders.list.label.month",
                 isSelected: true,
                 style: .accent,
                 icon: "calendar"

@@ -168,10 +168,10 @@ extension SnapshotTests {
             TestDependencies.withFixedNow {
                 // When
                 let view = LookupNameEditorSheet(
-                    title: "重新命名商品類別",
-                    message: "改名後，引用此名稱的訂單也會一併更新。",
-                    namePlaceholder: "類別名稱",
-                    submitTitle: "儲存",
+                    title: "orders.lookup.label.renameProductCategory",
+                    message: "orders.lookup.message.ordersReferencingName",
+                    namePlaceholder: "orders.edit.label.categoryName",
+                    submitTitle: "orders.edit.button.save",
                     initialName: "服飾"
                 ) { _ in }
                 .environment(\.locale, AppLanguage.traditionalChinese.locale)

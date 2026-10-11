@@ -69,14 +69,14 @@ private extension BLCard {
 #Preview("卡片") {
     BLCard {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text("本月支出")
+            Text("common.ui.label.spendingMonth")
                 .blTextStyle(.headline)
 
-            Text("$12,480")
+            Text(verbatim: "$12,480")
                 .blTextStyle(.title2)
                 .monospacedDigit()
 
-            Text("較上月減少 8%")
+            Text("common.ui.label.eightLowerThan")
                 .blTextStyle(.footnote)
                 .foregroundStyle(Color.blSecondaryLabel)
         }

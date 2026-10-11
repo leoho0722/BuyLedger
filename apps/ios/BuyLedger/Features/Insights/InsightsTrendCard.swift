@@ -88,9 +88,9 @@ private extension InsightsTrendCard {
             data: bars,
             height: 200,
             isScrollEnabled: true,
-            axisXTitle: language.localized("項目"),
-            axisYTitle: language.localized("數值"),
-            seriesName: language.localized("長條圖")
+            axisXTitle: language.localized("orders.list.label.text"),
+            axisYTitle: language.localized("orders.detail.label.value"),
+            seriesName: language.localized("insights.chart.label.barChart")
         )
         .accessibilityIdentifier(BLAccessibilityID.Insights.trendChart)
     }

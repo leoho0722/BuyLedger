@@ -67,7 +67,7 @@ enum OrderStatusFilter: Hashable, Identifiable {
     var title: String {
         switch self {
         case .all:
-            "全部"
+            "common.action.label.all"
         case let .status(status):
             status.title
         }

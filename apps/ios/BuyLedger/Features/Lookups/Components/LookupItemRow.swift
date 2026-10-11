@@ -45,15 +45,15 @@ private extension LookupItemRow {
             Spacer()
 
             if classification.isCardless {
-                classificationBadge("無卡")
+                classificationBadge("orders.detail.label.cardless")
             }
 
             if classification.isBankTransfer {
-                classificationBadge("銀行匯款")
+                classificationBadge("orders.edit.label.bankTransfer")
             }
 
             if classification.isCashOnDelivery {
-                classificationBadge("貨到付款")
+                classificationBadge("orders.list.label.cashDelivery")
             }
         }
         .accessibilityElement(children: .combine)

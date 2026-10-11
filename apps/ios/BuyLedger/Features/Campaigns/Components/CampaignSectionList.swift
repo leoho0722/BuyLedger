@@ -150,13 +150,13 @@ private extension CampaignSectionList {
             Button {
                 onEdit(campaign.id)
             } label: {
-                Label("編輯", systemImage: "pencil")
+                Label("common.action.button.edit", systemImage: "pencil")
             }
 
             Button(role: .destructive) {
                 onDelete(campaign.id)
             } label: {
-                Label("刪除", systemImage: "trash")
+                Label("common.action.button.delete", systemImage: "trash")
             }
         }
     }

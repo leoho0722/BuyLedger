@@ -27,7 +27,7 @@ struct CampaignDetailView: View {
                 missingCampaign
             }
         }
-        .navigationTitle(Text("開團詳情"))
+        .navigationTitle(Text("orders.general.label.campaignDetails"))
         .navigationBarTitleDisplayMode(.inline)
         // 結團與刪除確認、寫入與提醒錯誤都由開團容器的 alert 呈現
         // 收款錯誤由 `OrdersView` 的 alert 呈現
@@ -40,7 +40,7 @@ private extension CampaignDetailView {
 
     /// 開團已不存在時的空狀態
     var missingCampaign: some View {
-        ContentUnavailableView("開團不存在", systemImage: "shippingbox")
+        ContentUnavailableView("campaigns.detail.label.campaignFound", systemImage: "shippingbox")
     }
 
     /// 開團詳情清單，依序組合資訊、結算與分貨三區段
@@ -85,11 +85,11 @@ private extension CampaignDetailView {
                 Button {
                     store.send(.view(.editTapped))
                 } label: {
-                    Label("編輯開團", systemImage: "pencil")
+                    Label("campaigns.list.label.editCampaign", systemImage: "pencil")
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailEditButton)
 
-                Picker("狀態", selection: statusBinding(for: content.campaign)) {
+                Picker("orders.list.label.status", selection: statusBinding(for: content.campaign)) {
                     ForEach(CampaignStatus.allCases) {
                         Text(LocalizedStringKey($0.title))
                             .tag($0)
@@ -114,11 +114,11 @@ private extension CampaignDetailView {
                 Button(role: .destructive) {
                     store.send(.view(.deleteTapped))
                 } label: {
-                    Label("刪除開團", systemImage: "trash")
+                    Label("orders.general.label.deleteCampaign", systemImage: "trash")
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailDeleteButton)
             } label: {
-                Label("更多", systemImage: "ellipsis.circle")
+                Label("common.action.label.more", systemImage: "ellipsis.circle")
             }
             .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailMoreButton)
         }
@@ -144,7 +144,7 @@ private extension CampaignDetailView {
 
 // MARK: - Preview
 
-#Preview("開團詳情") {
+#Preview("orders.general.label.campaignDetails") {
     let previewState = CampaignDetailFeature.State(
         campaignID: "CMP-SAMPLE-KR-APR",
         campaigns: SharedReader(value: Campaign.sampleCampaigns),
@@ -162,7 +162,7 @@ private extension CampaignDetailView {
     }
 }
 
-#Preview("開團不存在") {
+#Preview("campaigns.detail.label.campaignFound") {
     let previewState = CampaignDetailFeature.State(
         campaignID: "CMP-MISSING",
         campaigns: SharedReader(value: Campaign.sampleCampaigns),

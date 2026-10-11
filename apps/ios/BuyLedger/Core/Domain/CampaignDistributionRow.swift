@@ -34,7 +34,7 @@ extension CampaignDistributionRow {
 
     /// 朗讀用的收款狀態文字；全部已收款為已收款，否則為待收款
     var receiptAccessibilityLabel: LocalizedStringResource {
-        isFullyReceived ? "已收款" : "待收款"
+        isFullyReceived ? "orders.general.status.received" : "orders.filter.status.pendingPayment"
     }
 }
 

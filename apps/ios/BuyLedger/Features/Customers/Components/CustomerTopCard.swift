@@ -54,7 +54,7 @@ private extension CustomerTopCard {
 
                 HStack(spacing: 4) {
                     if customer.tier == .vip {
-                        Text("★ VIP")
+                        Text(verbatim: "★ VIP")
                             .font(BLTypographyStyle.caption.font.weight(.semibold))
                             .foregroundStyle(palette.orange)
                     } else {
@@ -63,10 +63,10 @@ private extension CustomerTopCard {
                             .foregroundStyle(palette.secondaryLabel)
                     }
 
-                    Text("·")
+                    Text(verbatim: "·")
                         .foregroundStyle(palette.secondaryLabel)
 
-                    Text("\(customer.orderCount) 單")
+                    Text(AppLanguage.format("customers.list.label.orderCount", customer.orderCount, locale: locale))
                         .blTextStyle(.caption)
                         .foregroundStyle(palette.secondaryLabel)
                 }
@@ -82,7 +82,7 @@ private extension CustomerTopCard {
     var summary: some View {
         HStack(alignment: .firstTextBaseline) {
             VStack(alignment: .leading, spacing: 2) {
-                Text("累計消費")
+                Text("customers.list.label.totalSpending")
                     .blTextStyle(.caption)
                     .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
@@ -98,7 +98,7 @@ private extension CustomerTopCard {
             Spacer()
 
             VStack(alignment: .trailing, spacing: 2) {
-                Text("最近訂單")
+                Text("customers.list.label.recentOrders")
                     .blTextStyle(.caption)
                     .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
@@ -114,7 +114,7 @@ private extension CustomerTopCard {
     var rankBadge: some View {
         let style = CustomerRankBadgeStyle.style(forRank: rank)
 
-        return Text("#\(rank)")
+        return Text(verbatim: "#\(rank)")
             .padding(.horizontal, 8)
             .padding(.vertical, 2)
             .font(BLTypographyStyle.caption.font.weight(.bold))

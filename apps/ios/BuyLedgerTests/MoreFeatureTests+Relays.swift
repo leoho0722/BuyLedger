@@ -107,10 +107,10 @@ extension MoreFeatureTests {
         }
         let plan = PaymentMethodEditPlan(
             originalName: "匯款",
-            newName: "銀行匯款",
+            newName: "orders.edit.label.bankTransfer",
             flags: .none,
             hasChangedFlags: true,
-            affectedOrders: [LedgerOrder.fixture(id: "PM-1", paymentMethod: "銀行匯款")]
+            affectedOrders: [LedgerOrder.fixture(id: "PM-1", paymentMethod: "orders.edit.label.bankTransfer")]
         )
 
         // When

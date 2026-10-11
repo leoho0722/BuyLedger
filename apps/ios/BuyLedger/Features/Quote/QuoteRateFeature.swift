@@ -51,7 +51,7 @@ struct QuoteRateFeature {
             guard !isLoading, !hasUsableRate else {
                 return nil
             }
-            return errorMessage ?? "尚無可用匯率資料，暫時無法試算。"
+            return errorMessage ?? "quote.calculator.message.exchangeRateAvailable"
         }
     }
 
@@ -210,22 +210,28 @@ private extension QuoteRateFeature {
     static func userMessage(for error: APIError) -> LocalizedStringResource {
         switch error {
         case .invalidKey:
-            return "尚未設定 ExchangeRate-API 金鑰，目前無法計算建議售價。"
+            return "quote.calculator.message.exchangeRateApiKeyMissing"
 
         case .quotaExceeded:
-            return "本月匯率 API 配額已用完，目前無法計算建議售價。"
+            return "quote.calculator.message.monthsExchangerateApi"
 
         case .transport:
-            return "網路連線異常，目前無法計算建議售價。"
+            return "quote.calculator.message.networkErrorOccurred"
 
         case .http(let statusCode):
-            return "匯率 API 回應 HTTP \(statusCode)，目前無法計算建議售價。"
+            return LocalizedStringResource(
+                "quote.calculator.message.httpErrorCode",
+                defaultValue: "\(statusCode)"
+            )
 
         case .decoding:
-            return "匯率資料格式異常，目前無法計算建議售價。"
+            return "quote.calculator.message.exchangerateDataInvalid"
 
         case .apiError(let code):
-            return "匯率 API 回應錯誤 (\(code))，目前無法計算建議售價。"
+            return LocalizedStringResource(
+                "quote.calculator.message.apiErrorCode",
+                defaultValue: "\(code)"
+            )
         }
     }
 

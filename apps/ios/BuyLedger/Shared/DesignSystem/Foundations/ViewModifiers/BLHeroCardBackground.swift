@@ -55,11 +55,11 @@ extension View {
 
 #Preview("Hero 卡底色") {
     VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
-        Text("建議售價")
+        Text("quote.calculator.label.suggestedPrice")
             .font(BLTypographyStyle.caption.font.weight(.semibold))
             .textCase(.uppercase)
 
-        Text("NT$ 1,234")
+        Text(verbatim: "NT$ 1,234")
             .font(.system(size: 40, weight: .bold))
     }
     .frame(maxWidth: .infinity, alignment: .leading)

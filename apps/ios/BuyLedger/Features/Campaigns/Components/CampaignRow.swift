@@ -62,7 +62,7 @@ private extension CampaignRow {
             )
 
             if campaign.isSettled {
-                BLStatusPill("已結團", tone: .neutral, showsIndicator: false)
+                BLStatusPill("campaigns.list.label.settled", tone: .neutral, showsIndicator: false)
             }
         }
     }
@@ -82,10 +82,12 @@ private extension CampaignRow {
     /// 訂單筆數與應收金額
     var ordersSummary: some View {
         Text(
-            """
-            \(summary.orderCount) 筆 · \
-            \(CampaignFormatters.twd(summary.receivables, locale: locale))
-            """
+            AppLanguage.format(
+                "common.general.label.ldOrders2",
+                summary.orderCount,
+                CampaignFormatters.twd(summary.receivables, locale: locale),
+                locale: locale
+            )
         )
         .blTextStyle(.subhead)
         .foregroundStyle(Color.blSecondaryLabel)
@@ -94,7 +96,7 @@ private extension CampaignRow {
     /// 到貨進度
     var deliveryProgress: some View {
         BLProgressView(
-            title: "到貨",
+            title: "campaigns.list.label.arrived",
             value: summary.deliveryRatio,
             trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
         )
@@ -103,7 +105,7 @@ private extension CampaignRow {
     /// 收款進度與已收金額
     var receiptProgress: some View {
         BLProgressView(
-            title: "收款",
+            title: "orders.detail.label.payment",
             value: summary.receivedRatio,
             tint: palette.green,
             trailingText: CampaignFormatters.twd(summary.receivedAmount, locale: locale)

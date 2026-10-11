@@ -100,7 +100,7 @@ extension OrdersLoadFeatureTests {
                 $0 = false
             }
             $0.$errorMessage.withLock {
-                $0 = "訂單載入失敗，請稍後再試。"
+                $0 = "orders.general.message.ordersLoadedTry"
             }
         }
         await store.receive(\.delegate.loadFailed)
@@ -115,7 +115,7 @@ extension OrdersLoadFeatureTests {
         let reads = LockIsolated(0)
         let initial = Self.makeState()
         initial.$errorMessage.withLock {
-            $0 = "訂單載入失敗，請稍後再試。"
+            $0 = "orders.general.message.ordersLoadedTry"
         }
         let fetch: OrderService.FetchOrders = {
             reads.withValue {

@@ -31,7 +31,7 @@ extension CampaignDetailContent {
 
     /// 結團選單項目的標題；已結團的開團顯示已結團
     var settleActionTitle: LocalizedStringResource {
-        campaign.isSettled ? "已結團" : "結團結算"
+        campaign.isSettled ? "campaigns.list.label.settled" : "campaigns.detail.label.campaignSettlement"
     }
 }
 

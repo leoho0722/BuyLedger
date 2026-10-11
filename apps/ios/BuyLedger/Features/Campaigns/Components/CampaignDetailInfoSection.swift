@@ -25,7 +25,7 @@ struct CampaignDetailInfoSection: View {
 
     /// 依序呈現團名、狀態、日期、訂購提醒與備註
     var body: some View {
-        Section("開團資訊") {
+        Section("campaigns.detail.label.campaignInformation") {
             campaignName
 
             statusRow
@@ -53,7 +53,7 @@ private extension CampaignDetailInfoSection {
 
     /// 開團狀態與已結團標記
     var statusRow: some View {
-        LabeledContent("狀態") {
+        LabeledContent("orders.list.label.status") {
             HStack(spacing: BLSpacing.extraSmall) {
                 BLStatusPill(
                     campaign.status.title,
@@ -61,7 +61,7 @@ private extension CampaignDetailInfoSection {
                 )
 
                 if campaign.isSettled {
-                    BLStatusPill("已結團", tone: .neutral, showsIndicator: false)
+                    BLStatusPill("campaigns.list.label.settled", tone: .neutral, showsIndicator: false)
                         .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSettledBadge)
                 }
             }
@@ -72,16 +72,16 @@ private extension CampaignDetailInfoSection {
     @ViewBuilder
     var dateRows: some View {
         LabeledContent(
-            "開團日期",
+            "campaigns.detail.label.openingDate",
             value: CampaignFormatters.shortDate(campaign.openDate, locale: locale)
         )
 
         if let closeDate = campaign.closeDate {
-            LabeledContent("結單日期", value: CampaignFormatters.shortDate(closeDate, locale: locale))
+            LabeledContent("campaigns.detail.label.closeDate", value: CampaignFormatters.shortDate(closeDate, locale: locale))
         }
 
         if let settledDate = campaign.settledDate {
-            LabeledContent("結團日期", value: CampaignFormatters.shortDate(settledDate, locale: locale))
+            LabeledContent("campaigns.detail.label.closingDate", value: CampaignFormatters.shortDate(settledDate, locale: locale))
         }
     }
 
@@ -90,7 +90,7 @@ private extension CampaignDetailInfoSection {
     var reminderRow: some View {
         if let reminderLink {
             LabeledContent(
-                "訂購提醒",
+                "campaigns.detail.label.orderReminder",
                 value: CampaignFormatters.reminderTimestamp(
                     reminderLink.reminderTimestamp,
                     locale: locale
@@ -112,7 +112,7 @@ private extension CampaignDetailInfoSection {
 
 // MARK: - Preview
 
-#Preview("開團資訊") {
+#Preview("campaigns.detail.label.campaignInformation") {
     List {
         CampaignDetailInfoSection(campaign: Campaign.sampleCampaigns[0], reminderLink: nil)
     }

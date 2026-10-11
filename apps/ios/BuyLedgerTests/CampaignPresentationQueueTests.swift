@@ -225,13 +225,13 @@ private extension CampaignPresentationQueueTests {
     static var firstNotice: CampaignPresentationFeature.Destination.State {
         .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("開團儲存失敗，請稍後再試。")
+                TextState("campaigns.general.message.campaignSavedTry")
             }
         )
     }
@@ -240,13 +240,13 @@ private extension CampaignPresentationQueueTests {
     static var secondNotice: CampaignPresentationFeature.Destination.State {
         .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("結團失敗，請稍後再試。")
+                TextState("campaigns.general.message.campaignSettledTry")
             }
         )
     }

@@ -84,16 +84,16 @@ extension OrdersPresentationFeature.Destination.State {
     static var aiDisabled: Self {
         .alert(
             AlertState<OrdersPresentationFeature.Destination.Alert> {
-                TextState("AI 商品明細總結")
+                TextState("orders.general.label.aiItemSummary")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("關閉")
+                    TextState("common.action.label.close")
                 }
                 ButtonState(action: .goToAISettings) {
-                    TextState("前往開啟")
+                    TextState("orders.general.label.openSettings2")
                 }
             } message: {
-                TextState("此功能需要先在「更多 → 設定」開啟 AI 商品明細總結。")
+                TextState("orders.general.message.enableAiItem")
             }
         )
     }
@@ -110,16 +110,21 @@ extension OrdersPresentationFeature.Destination.State {
     static func deleteConfirmation(for order: LedgerOrder) -> Self {
         .alert(
             AlertState<OrdersPresentationFeature.Destination.Alert> {
-                TextState("刪除訂單")
+                TextState("orders.detail.label.deleteOrder")
             } actions: {
                 ButtonState(role: .destructive, action: .confirmDelete(order.id)) {
-                    TextState("刪除")
+                    TextState("common.action.button.delete")
                 }
                 ButtonState(role: .cancel) {
-                    TextState("取消")
+                    TextState("common.action.cancel")
                 }
             } message: {
-                TextState("刪除「\(order.customer.name)」的這筆訂單後無法復原。")
+                TextState(
+                    LocalizedStringResource(
+                        "orders.detail.message.deleteUndoneNotice",
+                        defaultValue: "\(order.customer.name)"
+                    )
+                )
             }
         )
     }
@@ -131,10 +136,10 @@ extension OrdersPresentationFeature.Destination.State {
     static func writeFailure(_ message: TextState) -> Self {
         .alert(
             AlertState<OrdersPresentationFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
                 message

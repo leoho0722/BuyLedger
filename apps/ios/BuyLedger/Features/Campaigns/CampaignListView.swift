@@ -28,7 +28,7 @@ struct CampaignListView: View {
                 // 載入結果由多個分頁共用，不隨列表消失而取消
                 store.send(.view(.task))
             }
-            .rootNavigationTitle("開團", language: language)
+            .rootNavigationTitle("orders.detail.title.campaigns", language: language)
             .toolbar {
                 ToolbarItemGroup(placement: .primaryAction) {
                     filterMenu
@@ -46,8 +46,8 @@ private extension CampaignListView {
     /// 工具列的篩選與分組選單
     var filterMenu: some View {
         Menu {
-            Picker("開團狀態", selection: statusFilterBinding) {
-                Text("全部")
+            Picker("campaigns.list.label.campaignStatus", selection: statusFilterBinding) {
+                Text("common.action.label.all")
                     .tag(nil as CampaignStatus?)
 
                 ForEach(CampaignStatus.allCases) {
@@ -56,8 +56,8 @@ private extension CampaignListView {
             }
             .pickerStyle(.inline)
 
-            Menu("顯示方式") {
-                Picker("分組方式", selection: groupingBinding) {
+            Menu("campaigns.list.label.display") {
+                Picker("campaigns.list.label.group", selection: groupingBinding) {
                     ForEach(CampaignGrouping.allCases) {
                         Text(LocalizedStringKey($0.title))
                             .tag($0)
@@ -66,7 +66,7 @@ private extension CampaignListView {
                 .pickerStyle(.inline)
             }
         } label: {
-            Label("篩選與分組", systemImage: iconName)
+            Label("orders.list.label.filterGroup", systemImage: iconName)
         }
         .accessibilityIdentifier(BLAccessibilityID.Campaigns.filterMenuButton)
     }
@@ -78,16 +78,16 @@ private extension CampaignListView {
         } label: {
             Image(systemName: "plus")
         }
-        .accessibilityLabel(Text("新增開團"))
+        .accessibilityLabel(Text("campaigns.list.label.addCampaign"))
         .accessibilityIdentifier(BLAccessibilityID.Campaigns.addButton)
     }
 
     /// 完全沒有開團時的空狀態
     var emptyState: some View {
         ContentUnavailableView(
-            "尚無開團",
+            "orders.edit.label.campaigns",
             systemImage: "shippingbox",
-            description: Text("點右上角「＋」建立第一個開團，把訂單歸到團裡即可追蹤進度。")
+            description: Text("campaigns.list.message.tapTopright")
         )
         .accessibilityIdentifier(BLAccessibilityID.Campaigns.listEmptyState)
     }
@@ -95,9 +95,9 @@ private extension CampaignListView {
     /// 有開團但目前狀態篩選下沒有符合者時的空狀態
     var filteredEmptyState: some View {
         ContentUnavailableView(
-            "沒有符合的開團",
+            "campaigns.list.label.matchingCampaigns",
             systemImage: "line.3.horizontal.decrease.circle",
-            description: Text("目前的狀態篩選下沒有開團，換個篩選或選「全部」。")
+            description: Text("campaigns.list.message.campaignsMatchCurrent")
         )
     }
 
@@ -275,7 +275,7 @@ private extension CampaignListView {
         campaigns: SharedReader(value: []),
         orders: SharedReader(value: [])
     )
-    state.$errorMessage = SharedReader(value: "開團載入失敗，請稍後再試。")
+    state.$errorMessage = SharedReader(value: "campaigns.list.message.campaignsLoadedTry")
 
     return NavigationStack {
         CampaignListView(

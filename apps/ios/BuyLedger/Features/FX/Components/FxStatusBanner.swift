@@ -54,7 +54,7 @@ private extension FxStatusBanner {
             ProgressView()
                 .controlSize(.small)
 
-            Text("正在更新匯率…")
+            Text("fx.rates.label.updatingExchangeRates")
                 .blTextStyle(.footnote)
                 .foregroundStyle(palette.secondaryLabel)
 
@@ -83,7 +83,7 @@ private extension FxStatusBanner {
 
             Spacer()
 
-            Button("重試", action: onRetry)
+            Button("common.action.button.retry", action: onRetry)
                 .font(BLTypographyStyle.footnote.font.weight(.semibold))
         }
         .padding(.horizontal, BLSpacing.medium)
@@ -101,7 +101,7 @@ private extension FxStatusBanner {
                 .foregroundStyle(palette.green)
 
             Text(
-                "已連線到 ExchangeRate-API · \(FxFormatters.snapshotTimestamp(snapshotDate, locale: locale))"
+                AppLanguage.format("fx.rates.message.connectedTimestamp", FxFormatters.snapshotTimestamp(snapshotDate, locale: locale), locale: locale)
             )
                 .blTextStyle(.footnote)
                 .foregroundStyle(palette.secondaryLabel)
@@ -117,7 +117,7 @@ private extension FxStatusBanner {
 
 // MARK: - Preview
 
-#Preview("載入中") {
+#Preview("common.action.label.loading") {
     FxStatusBanner(
         isLoading: true,
         errorMessage: nil,

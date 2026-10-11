@@ -46,13 +46,13 @@ private extension PersistenceFailureView {
                 .font(.system(size: iconSize))
                 .foregroundStyle(store.phase == .blocked ? palette.red : palette.green)
 
-            Text(store.phase == .blocked ? "資料無法開啟" : "備份已保留")
+            Text(store.phase == .blocked ? "common.general.label.unableOpenData" : "common.general.label.backupKept")
                 .blTextStyle(.title2)
 
             if store.phase == .blocked {
                 blockedDetail
             } else {
-                Text("請關閉 App 後重新開啟。App 會建立一個空白資料庫供你繼續使用。")
+                Text("common.general.message.closeReopenApp")
                     .multilineTextAlignment(.center)
             }
         }
@@ -61,7 +61,7 @@ private extension PersistenceFailureView {
     /// 尚未復原時的說明、失敗原因與復原入口
     @ViewBuilder
     var blockedDetail: some View {
-        Text("帳本資料目前無法開啟。原始資料仍完整保留在這台裝置上。請勿新增或修改資料，以免資料只留在暫存記憶體中。")
+        Text("common.general.message.ledgerDataCannot")
             .multilineTextAlignment(.center)
 
         if let recoveryFailureReason = store.recoveryFailureReason {
@@ -71,7 +71,7 @@ private extension PersistenceFailureView {
                 .multilineTextAlignment(.center)
         }
 
-        Button("改用空白資料庫繼續", role: .destructive) {
+        Button("common.general.label.continueBlankDatabase", role: .destructive) {
             store.send(.view(.recoveryTapped))
         }
         .buttonStyle(.borderedProminent)
@@ -99,7 +99,7 @@ private extension PersistenceFailureView {
 
 // MARK: - Preview
 
-#Preview("資料無法開啟") {
+#Preview("common.general.label.unableOpenData") {
     PersistenceFailureView(
         store: Store(initialState: PersistenceFailureFeature.State()) {
             PersistenceFailureFeature()
@@ -107,7 +107,7 @@ private extension PersistenceFailureView {
     )
 }
 
-#Preview("備份已保留") {
+#Preview("common.general.label.backupKept") {
     var state = PersistenceFailureFeature.State()
     state.phase = .relaunchRequired
 

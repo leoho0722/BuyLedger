@@ -49,7 +49,7 @@ private extension QuoteStatusBanner {
             ProgressView()
                 .controlSize(.small)
 
-            Text("正在載入匯率…")
+            Text("quote.calculator.label.loadingExchangeRates")
                 .blTextStyle(.footnote)
                 .foregroundStyle(palette.secondaryLabel)
 
@@ -79,7 +79,7 @@ private extension QuoteStatusBanner {
             Button {
                 onRetry()
             } label: {
-                Text("重試")
+                Text("common.action.button.retry")
                     .frame(minHeight: BLHitTarget.minimum)
                     .font(BLTypographyStyle.footnote.font.weight(.semibold))
                     .contentShape(.rect)
@@ -98,7 +98,7 @@ private extension QuoteStatusBanner {
             Image(systemName: "info.circle.fill")
                 .foregroundStyle(palette.secondaryLabel)
 
-            Text("目標毛利需低於 100% 才能計算建議售價。")
+            Text("quote.calculator.message.targetMarginMust")
                 .blTextStyle(.footnote)
                 .foregroundStyle(palette.secondaryLabel)
 
@@ -123,7 +123,7 @@ private extension QuoteStatusBanner {
 
 // MARK: - Preview
 
-#Preview("載入中") {
+#Preview("common.action.label.loading") {
     QuoteStatusBanner(
         isLoading: true,
         rateUnavailableReason: nil,
@@ -136,7 +136,7 @@ private extension QuoteStatusBanner {
 #Preview("匯率不可用") {
     QuoteStatusBanner(
         isLoading: false,
-        rateUnavailableReason: "尚無可用匯率資料，暫時無法試算。",
+        rateUnavailableReason: "quote.calculator.message.exchangeRateAvailable",
         isTargetMarginBelowOneHundredPercent: true,
         onRetry: {}
     )

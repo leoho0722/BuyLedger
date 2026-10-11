@@ -117,13 +117,13 @@ struct OrderDetailFeatureTests {
         // Then
         #expect(
             components.map(\.title) == [
-                "商品金額",
-                "刷卡手續費",
-                "平台手續費",
-                "金流手續費",
-                "國內運費",
-                "國際運費",
-                "外國國內運費",
+                "orders.detail.label.itemCost",
+                "orders.detail.label.cardFee",
+                "orders.detail.label.platformFee",
+                "orders.detail.label.paymentProcessingFee",
+                "orders.detail.label.localShipping",
+                "orders.detail.label.internationalShipping",
+                "orders.detail.label.foreignLocalShipping",
             ]
         )
         #expect(components.map(\.value) == [100, 10, 20, 30, 11, 22, 33])

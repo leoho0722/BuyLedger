@@ -125,7 +125,7 @@ extension OrderServiceTests {
         )
         let source = PaymentMethodInfo(name: "匯款", flags: .none)
         let target = PaymentMethodInfo(
-            name: "銀行匯款",
+            name: "orders.edit.label.bankTransfer",
             flags: PaymentMethodFlags(
                 isCardless: false,
                 isBankTransfer: true,
@@ -173,7 +173,7 @@ extension OrderServiceTests {
         }
 
         // When
-        try await service.applyPaymentMethodRename("匯款", "銀行匯款")
+        try await service.applyPaymentMethodRename("匯款", "orders.edit.label.bankTransfer")
 
         // Then
         let methods = try await database.read { context throws(PersistenceError) in
@@ -193,7 +193,7 @@ extension OrderServiceTests {
         #expect(
             methods == [
                 PaymentMethodInfo(
-                    name: "銀行匯款",
+                    name: "orders.edit.label.bankTransfer",
                     flags: PaymentMethodFlags(
                         isCardless: true,
                         isBankTransfer: true,
@@ -203,7 +203,7 @@ extension OrderServiceTests {
             ]
         )
         let stored = try #require(try await Self.fetchOrder(id: order.id, from: database))
-        #expect(stored.paymentMethod == "銀行匯款")
+        #expect(stored.paymentMethod == "orders.edit.label.bankTransfer")
     }
 
     /// 對帳狀態改名同步合併主檔並更新訂單
@@ -218,12 +218,12 @@ extension OrderServiceTests {
         try await Self.seed([order], database: database)
         try await database.write { context throws(PersistenceError) in
             context.insert(ReconciliationStatusRecord(name: "待對帳"))
-            context.insert(ReconciliationStatusRecord(name: "已確認"))
+            context.insert(ReconciliationStatusRecord(name: "orders.detail.label.confirmed"))
         }
         let service = Self.makeService(database: database)
 
         // When
-        try await service.applyReconciliationStatusRename("待對帳", "已確認")
+        try await service.applyReconciliationStatusRename("待對帳", "orders.detail.label.confirmed")
 
         // Then
         let names = try await database.read { context throws(PersistenceError) in
@@ -231,9 +231,9 @@ extension OrderServiceTests {
                 try context.fetch(FetchDescriptor<ReconciliationStatusRecord>()).map(\.name)
             }
         }
-        #expect(names.sorted() == ["已確認"])
+        #expect(names.sorted() == ["orders.detail.label.confirmed"])
         let stored = try #require(try await Self.fetchOrder(id: order.id, from: database))
-        #expect(stored.reconciliationStatus == "已確認")
+        #expect(stored.reconciliationStatus == "orders.detail.label.confirmed")
     }
 
     /// 開團改名替換訂單陣列中的每個相符名稱

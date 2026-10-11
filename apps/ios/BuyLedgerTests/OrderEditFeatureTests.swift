@@ -62,7 +62,7 @@ struct OrderEditFeatureTests {
             isCashOnDelivery: false
         ),
         PaymentMethodInfo(
-            name: "銀行匯款",
+            name: "orders.edit.label.bankTransfer",
             isCardless: false,
             isBankTransfer: true,
             isCashOnDelivery: false
@@ -89,7 +89,7 @@ struct OrderEditFeatureTests {
         cardlessSupplementAmount: 0,
         orderSource: "蝦皮",
         categories: ["美妝"],
-        paymentMethod: "銀行匯款",
+        paymentMethod: "orders.edit.label.bankTransfer",
         notes: "",
         reconciliationStatus: "待對帳",
         campaignNames: [],

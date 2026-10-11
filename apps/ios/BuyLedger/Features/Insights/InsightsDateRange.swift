@@ -32,11 +32,11 @@ enum InsightsDateRange: String, CaseIterable, Identifiable, Sendable {
     var title: String {
         switch self {
         case .thirtyDays:
-            "30 天"
+            "insights.chart.label.thirtyDays"
         case .sixMonths:
-            "6 個月"
+            "insights.chart.label.sixMonths"
         case .twelveMonths:
-            "12 個月"
+            "dashboard.overview.label.twelveMonths"
         }
     }
 
@@ -44,11 +44,11 @@ enum InsightsDateRange: String, CaseIterable, Identifiable, Sendable {
     var trendCardTitle: String {
         switch self {
         case .thirtyDays:
-            "30 天淨獲利"
+            "insights.chart.label.thirtyDayNetProfit"
         case .sixMonths:
-            "6 個月淨獲利"
+            "insights.chart.label.sixMonthNetProfit"
         case .twelveMonths:
-            "12 個月淨獲利"
+            "insights.chart.label.twelveMonthNetProfit"
         }
     }
 }

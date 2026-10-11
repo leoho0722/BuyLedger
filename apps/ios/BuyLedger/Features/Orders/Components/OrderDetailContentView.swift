@@ -160,7 +160,7 @@ private extension OrderDetailContentView {
                     .blTextStyle(.footnote)
                     .foregroundStyle(palette.secondaryLabel)
 
-                Text("·")
+                Text(verbatim: "·")
                     .foregroundStyle(palette.secondaryLabel)
 
                 Text(CurrencyDisplayName.text(code: order.currency.rawValue, language: language))

@@ -15,7 +15,7 @@ struct OrderStatusTests {
 
     @Test func mergedCaseHasExpectedRawValueAndTitle() {
         #expect(OrderStatus.merged.rawValue == "merged")
-        #expect(OrderStatus.merged.title == "已合併")
+        #expect(OrderStatus.merged.title == "orders.list.label.merged")
     }
 
     /// 合併狀態在顯示順序上應排在已取消之後
@@ -46,7 +46,7 @@ struct OrderStatusTests {
 
     @Test func pickedUpCaseHasExpectedRawValueAndTitle() {
         #expect(OrderStatus.pickedUp.rawValue == "pickedUp")
-        #expect(OrderStatus.pickedUp.title == "已取貨")
+        #expect(OrderStatus.pickedUp.title == "common.general.label.pickedUp")
     }
 
     /// 已取貨是已實現狀態，且顯示順序排在已交付之後

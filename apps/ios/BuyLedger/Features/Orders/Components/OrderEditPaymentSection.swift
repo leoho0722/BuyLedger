@@ -41,7 +41,7 @@ private extension OrderEditPaymentSection {
     @ViewBuilder
     var fields: some View {
         OrderEditDecimalField(
-            title: "客戶實付",
+            title: "orders.edit.label.customerPayment",
             value: $store.chargedAmount,
             field: .chargedAmount,
             focusedField: focusedField,
@@ -50,14 +50,14 @@ private extension OrderEditPaymentSection {
 
         if store.isSelectedPaymentMethodCardless {
             OrderEditDecimalField(
-                title: "無卡折抵金額",
+                title: "orders.detail.label.cardlessDeduction",
                 value: $store.cardlessDeductionAmount,
                 field: .cardlessDeduction,
                 focusedField: focusedField
             )
 
             OrderEditDecimalField(
-                title: "無卡補款金額",
+                title: "orders.detail.label.cardlessTopup",
                 value: $store.draft.cardlessSupplementAmount,
                 field: .cardlessSupplement,
                 focusedField: focusedField
@@ -67,7 +67,7 @@ private extension OrderEditPaymentSection {
 
     /// 收款金額的幣別標題
     var sectionHeader: some View {
-        Text("收款金額 (NT$)")
+        Text("orders.edit.label.receivedAmountNt")
     }
 
     /// 無卡計算方式與折抵金額已夾限的提示
@@ -76,13 +76,13 @@ private extension OrderEditPaymentSection {
         if store.isSelectedPaymentMethodCardless || store.isCardlessDeductionCapped {
             VStack(alignment: .leading, spacing: BLSpacing.small) {
                 if store.isSelectedPaymentMethodCardless {
-                    Text("無卡類付款方式才會啟用「折抵」與「補款」欄位；總收款 = 客戶實付 + 補款 − 折抵。")
+                    Text("orders.edit.message.onlyCardlessPayment")
                         .blTextStyle(.footnote)
                         .foregroundStyle(Color.blSecondaryLabel)
                 }
 
                 if store.isCardlessDeductionCapped {
-                    Text("無卡折抵金額不得超過客戶實付金額，已自動調整為上限。")
+                    Text("orders.edit.message.cardlessDeductionCannot")
                         .blTextStyle(.footnote)
                         .foregroundStyle(Color.blSecondaryLabel)
                 }

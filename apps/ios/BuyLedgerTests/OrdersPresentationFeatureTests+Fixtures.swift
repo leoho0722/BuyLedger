@@ -50,10 +50,10 @@ extension OrdersPresentationFeatureTests {
     static func failureNotice(_ message: String) -> OrdersPresentationFeature.Destination.State {
         .alert(
             AlertState<OrdersPresentationFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
                 TextState(message)
@@ -67,16 +67,21 @@ extension OrdersPresentationFeatureTests {
     static func deleteAlert() -> OrdersPresentationFeature.Destination.State {
         .alert(
             AlertState<OrdersPresentationFeature.Destination.Alert> {
-                TextState("刪除訂單")
+                TextState("orders.detail.label.deleteOrder")
             } actions: {
                 ButtonState(role: .destructive, action: .confirmDelete("A")) {
-                    TextState("刪除")
+                    TextState("common.action.button.delete")
                 }
                 ButtonState(role: .cancel) {
-                    TextState("取消")
+                    TextState("common.action.cancel")
                 }
             } message: {
-                TextState("刪除後無法復原")
+                TextState(
+                    LocalizedStringResource(
+                        "orders.detail.message.deleteUndoneNotice",
+                        defaultValue: "\("A")"
+                    )
+                )
             }
         )
     }
@@ -87,16 +92,16 @@ extension OrdersPresentationFeatureTests {
     static func aiSettingsAlert() -> OrdersPresentationFeature.Destination.State {
         .alert(
             AlertState<OrdersPresentationFeature.Destination.Alert> {
-                TextState("AI 商品明細總結")
+                TextState("orders.general.label.aiItemSummary")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("關閉")
+                    TextState("common.action.label.close")
                 }
                 ButtonState(action: .goToAISettings) {
-                    TextState("前往開啟")
+                    TextState("orders.general.label.openSettings2")
                 }
             } message: {
-                TextState("此功能需要先開啟")
+                TextState("orders.general.message.enableAiItem")
             }
         )
     }

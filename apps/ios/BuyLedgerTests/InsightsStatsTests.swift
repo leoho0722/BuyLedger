@@ -84,7 +84,7 @@ struct InsightsStatsTests {
             palette: BLPalette()
         )
 
-        #expect(stats.trendDelta == "— 無對照")
+        #expect(stats.trendDelta == "insights.chart.label.comparison")
         #expect(stats.trendDeltaIsPositive == nil)
     }
 
@@ -192,7 +192,7 @@ struct InsightsStatsTests {
 
         // Then：只累加已實現訂單，且零值區段不應出現
         #expect(stats.totalCost == 800)
-        #expect(stats.costSegments.map(\.label) == ["商品金額"])
+        #expect(stats.costSegments.map(\.label) == ["orders.detail.label.itemCost"])
         #expect(stats.costSegments.first?.value == 800)
     }
 

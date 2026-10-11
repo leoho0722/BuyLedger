@@ -58,7 +58,7 @@ private extension BLPhotoThumbnail {
         }
         .buttonStyle(.plain)
         .offset(x: Layout.deleteButtonInset, y: -Layout.deleteButtonInset)
-        .accessibilityLabel("刪除照片")
+        .accessibilityLabel("common.ui.label.deletePhoto")
     }
 
     /// 縮圖本體：提供 `onTap` 時以按鈕呈現，否則維持不可互動的靜態內容
@@ -95,7 +95,7 @@ private extension BLPhotoThumbnail {
             image
                 .resizable()
                 .scaledToFill()
-                .accessibilityLabel("訂單照片")
+                .accessibilityLabel("orders.edit.label.orderPhotos")
         } else {
             RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous)
                 .fill(.quaternary)
@@ -103,7 +103,7 @@ private extension BLPhotoThumbnail {
                     Image(systemName: "photo")
                         .foregroundStyle(Color.blSecondaryLabel)
                 }
-                .accessibilityLabel("無法顯示的照片")
+                .accessibilityLabel("common.ui.label.photoUnavailable")
         }
     }
 }

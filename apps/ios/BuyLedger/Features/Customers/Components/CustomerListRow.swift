@@ -54,18 +54,20 @@ private extension CustomerListRow {
                 .foregroundStyle(palette.label)
 
             HStack(spacing: 4) {
-                Text(LocalizedStringKey(customer.tier.title))
-                    .blTextStyle(.caption)
-                    .foregroundStyle(
-                        customer.tier == .vip
-                            ? palette.orange
-                            : palette.secondaryLabel
-                    )
+                if customer.tier == .vip {
+                    Text(verbatim: "VIP")
+                        .blTextStyle(.caption)
+                        .foregroundStyle(palette.orange)
+                } else {
+                    Text(LocalizedStringKey(customer.tier.title))
+                        .blTextStyle(.caption)
+                        .foregroundStyle(palette.secondaryLabel)
+                }
 
-                Text("·")
+                Text(verbatim: "·")
                     .foregroundStyle(palette.secondaryLabel)
 
-                Text("\(customer.orderCount) 單")
+                Text(AppLanguage.format("customers.list.label.orderCount", customer.orderCount, locale: locale))
                     .blTextStyle(.caption)
                     .foregroundStyle(palette.secondaryLabel)
             }

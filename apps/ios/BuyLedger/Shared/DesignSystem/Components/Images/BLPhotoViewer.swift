@@ -110,14 +110,14 @@ private extension BLPhotoViewer {
                     toggleZoom()
                 }
                 .animation(Self.zoomAnimation(reduceMotion: reduceMotion), value: zoomScale)
-                .accessibilityLabel("訂單照片")
+                .accessibilityLabel("orders.edit.label.orderPhotos")
                 .accessibilityIdentifier(BLAccessibilityID.PhotoViewer.image)
         } else {
             Image(systemName: "photo")
                 // 保持一般字重，避免 placeholder 圖示過粗
                 .font(BLTypographyStyle.largeTitle.font)
                 .foregroundStyle(Color.blSecondaryLabel)
-                .accessibilityLabel("無法顯示的照片")
+                .accessibilityLabel("common.ui.label.photoUnavailable")
         }
     }
 }

@@ -35,12 +35,12 @@ extension LookupManagementFeatureTests {
             }
             let plan = PaymentMethodEditPlan(
                 originalName: "匯款",
-                newName: "銀行匯款",
+                newName: "orders.edit.label.bankTransfer",
                 flags: newFlags,
                 hasChangedFlags: true,
                 affectedOrders: []
             )
-            let expectedPaymentMethod = PaymentMethodInfo(name: "銀行匯款", flags: newFlags)
+            let expectedPaymentMethod = PaymentMethodInfo(name: "orders.edit.label.bankTransfer", flags: newFlags)
             let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             }
@@ -256,11 +256,11 @@ extension LookupManagementFeatureTests {
             // Then
             await store.receive(\.correction.planResponse.failure)
             await store.receive(\.correction.delegate.failed) {
-                $0.pendingAlert = Self.writeFailureAlert(message: "付款方式編輯失敗，請稍後再試。")
+                $0.pendingAlert = Self.writeFailureAlert(message: "orders.lookup.message.paymentMethodEdit")
             }
             #expect(store.state.catalog == catalog)
             #expect(store.state.hasLoadFailed == false)
-            #expect(store.state.pendingAlert == Self.writeFailureAlert(message: "付款方式編輯失敗，請稍後再試。"))
+            #expect(store.state.pendingAlert == Self.writeFailureAlert(message: "orders.lookup.message.paymentMethodEdit"))
             #expect(store.state.destination == nil)
             await store.finish()
         }
@@ -312,11 +312,11 @@ extension LookupManagementFeatureTests {
             // Then
             await store.receive(\.correction.editResponse.failure)
             await store.receive(\.correction.delegate.failed) {
-                $0.destination = Self.writeFailureAlert(message: "付款方式編輯失敗，請稍後再試。")
+                $0.destination = Self.writeFailureAlert(message: "orders.lookup.message.paymentMethodEdit")
             }
             #expect(store.state.catalog == catalog)
             #expect(store.state.hasLoadFailed == false)
-            #expect(store.state.destination == Self.writeFailureAlert(message: "付款方式編輯失敗，請稍後再試。"))
+            #expect(store.state.destination == Self.writeFailureAlert(message: "orders.lookup.message.paymentMethodEdit"))
             await store.finish()
         }
     }

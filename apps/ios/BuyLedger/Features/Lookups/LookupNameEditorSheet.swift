@@ -79,7 +79,7 @@ struct LookupNameEditorSheet: View {
         .presentationDragIndicator(.visible)
         // 有未儲存變更時阻擋下滑關閉，避免草稿靜默遺失；取消鍵改以彈窗確認
         .interactiveDismissDisabled(isDirty)
-        .alert("捨棄變更", isPresented: $isDiscardConfirmationPresented) {
+        .alert("orders.list.label.discardChanges", isPresented: $isDiscardConfirmationPresented) {
             discardChangesButton
             continueEditingButton
         } message: {
@@ -94,19 +94,19 @@ private extension LookupNameEditorSheet {
 
     /// 確認捨棄目前尚未儲存的內容
     var discardChangesButton: some View {
-        Button("捨棄變更", role: .destructive) {
+        Button("orders.list.label.discardChanges", role: .destructive) {
             dismiss()
         }
     }
 
     /// 保留內容並繼續編輯
     var continueEditingButton: some View {
-        Button("繼續編輯", role: .cancel) {}
+        Button("orders.list.label.keepEditing", role: .cancel) {}
     }
 
     /// 說明離開表單後尚未儲存的內容會被清除
     var discardConfirmationMessage: some View {
-        Text("這個項目有尚未儲存的變更，離開後將不會保留。")
+        Text("orders.lookup.message.itemHasUnsaved")
     }
 
     /// 表單內容：名稱欄位、說明與取消／儲存工具列
@@ -133,7 +133,7 @@ private extension LookupNameEditorSheet {
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
-                Button("取消") {
+                Button("common.action.cancel") {
                     if isDirty {
                         isDiscardConfirmationPresented = true
                     } else {
@@ -182,9 +182,9 @@ private extension LookupNameEditorSheet {
 
 #Preview("主檔名稱表單") {
     LookupNameEditorSheet(
-        title: "新增訂單來源",
+        title: "orders.edit.label.addOrderSource",
         message: "輸入新的訂單來源名稱，加入後會立即套用。",
-        namePlaceholder: "來源名稱",
-        submitTitle: "新增"
+        namePlaceholder: "orders.edit.label.sourceName",
+        submitTitle: "orders.list.button.add"
     ) { _ in }
 }

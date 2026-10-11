@@ -150,7 +150,7 @@ private extension DashboardKPITile {
     DashboardKPITile(
         delta: "+18.2% MoM",
         kpi: .revenue,
-        label: "營業額",
+        label: "dashboard.overview.label.revenue",
         tint: BLPalette().accent,
         trend: .up,
         value: "$53,780"

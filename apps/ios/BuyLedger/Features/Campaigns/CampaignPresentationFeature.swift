@@ -46,7 +46,7 @@ struct CampaignPresentationFeature {
         /// 容器判定名稱重名時，把原因寫回表單並維持開啟
         mutating func showNameConflict() {
             destination?.modify(\.edit) {
-                $0.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
+                $0.nameConflictMessage = "campaigns.edit.message.anotherCampaignAlready"
             }
         }
     }

@@ -179,6 +179,8 @@ private extension LocalizationCatalogTests {
             // 排除資源名稱參數，例如 Color 與 Image 的字串引數
             "\\bColor\\s*\\(\\s*\"((?:\\\\.|[^\"\\\\])*)\"",
             "\\bImage\\s*\\(\\s*\"((?:\\\\.|[^\"\\\\])*)\"",
+            // 排除 ModelConfiguration 的資料庫配置名稱
+            "\\bModelConfiguration\\s*\\(\\s*\"((?:\\\\.|[^\"\\\\])*)\"",
         ]
         var starts = Set<Int>()
         for pattern in patterns {
@@ -226,8 +228,20 @@ private extension LocalizationCatalogTests {
             return true
         }
 
-        // 排除規則 8：單獨空白或標點不是可翻譯文字
+        // 排除規則 7：系統品牌名、原文自稱與專有名詞依規格維持原文 (Verbatim)
+        let verbatimLiterals: Set<String> = ["BuyLedger", "BL", "VIP", "正體中文", "English"]
+        if verbatimLiterals.contains(literal.raw) {
+            return true
+        }
+
         let variants = literal.localizationKeyVariants
+
+        // 排除規則 8：純動態插值（字面值本身不含任何靜態可翻譯文字）
+        if Set(variants) == ["%lld", "%@"] {
+            return true
+        }
+
+        // 排除規則 9：單獨空白或標點不是可翻譯文字
         let isBlank = variants.allSatisfy {
             $0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }

@@ -100,7 +100,7 @@ private extension LookupManagementView {
                 title: store.state.kind.addFormTitle,
                 message: store.state.kind.addFormMessage,
                 namePlaceholder: store.state.kind.nameFieldPlaceholder,
-                submitTitle: "新增"
+                submitTitle: "orders.list.button.add"
             ) { name, isCardless, isBankTransfer, isCashOnDelivery in
                 addStore.send(
                     .view(
@@ -120,7 +120,7 @@ private extension LookupManagementView {
                 title: LocalizedStringKey(store.state.kind.addFormTitle),
                 message: store.state.kind.addFormMessage,
                 namePlaceholder: store.state.kind.nameFieldPlaceholder,
-                submitTitle: "新增"
+                submitTitle: "orders.list.button.add"
             ) { name in
                 addStore.send(.view(.saveButtonTapped(name: name, flags: .none)))
             }
@@ -134,9 +134,9 @@ private extension LookupManagementView {
     func renameSheet(store renameStore: StoreOf<LookupRenameFormFeature>) -> some View {
         LookupNameEditorSheet(
             title: renameSheetTitle,
-            message: "改名後，引用此名稱的訂單也會一併更新。",
+            message: "orders.lookup.message.ordersReferencingName",
             namePlaceholder: store.state.kind.nameFieldPlaceholder,
-            submitTitle: "儲存",
+            submitTitle: "orders.edit.button.save",
             initialName: renameStore.state.originalName
         ) { name in
             renameStore.send(.view(.saveButtonTapped(name: name)))
@@ -149,10 +149,10 @@ private extension LookupManagementView {
     /// - Returns: 付款方式編輯表單 view
     func paymentMethodEditSheet(store editStore: PaymentMethodEditStore) -> some View {
         PaymentMethodEditorSheet(
-            title: "編輯付款方式",
-            message: "修改名稱與分類；變更名稱會一併更新引用此付款方式的訂單。",
+            title: "orders.lookup.label.editPaymentMethod",
+            message: "orders.lookup.message.editNameTags",
             namePlaceholder: store.state.kind.nameFieldPlaceholder,
-            submitTitle: "儲存",
+            submitTitle: "orders.edit.button.save",
             initialName: editStore.state.originalName,
             initialIsCardless: editStore.state.flags.isCardless,
             initialIsBankTransfer: editStore.state.flags.isBankTransfer,
@@ -190,16 +190,16 @@ private extension LookupManagementView {
     var renameSheetTitle: LocalizedStringKey {
         switch store.state.kind {
         case .orderSource:
-            "重新命名訂單來源"
+            "orders.lookup.label.renameOrderSource"
 
         case .category:
-            "重新命名商品類別"
+            "orders.lookup.label.renameProductCategory"
 
         case .paymentMethod:
-            "重新命名付款方式"
+            "orders.lookup.label.renamePaymentMethod"
 
         case .reconciliationStatus:
-            "重新命名對帳狀態"
+            "orders.lookup.label.renameStatus"
         }
     }
 
@@ -211,7 +211,7 @@ private extension LookupManagementView {
 
 // MARK: - Preview
 
-#Preview("商品類別管理") {
+#Preview("orders.lookup.label.itemCategories") {
     NavigationStack {
         LookupManagementView(
             store: {
@@ -226,7 +226,7 @@ private extension LookupManagementView {
     }
 }
 
-#Preview("付款方式管理") {
+#Preview("orders.detail.label.paymentMethods") {
     NavigationStack {
         LookupManagementView(
             store: {
@@ -246,13 +246,13 @@ private extension LookupManagementView {
                             isCashOnDelivery: false
                         ),
                         PaymentMethodInfo(
-                            name: "銀行匯款",
+                            name: "orders.edit.label.bankTransfer",
                             isCardless: false,
                             isBankTransfer: true,
                             isCashOnDelivery: false
                         ),
                         PaymentMethodInfo(
-                            name: "貨到付款",
+                            name: "orders.list.label.cashDelivery",
                             isCardless: false,
                             isBankTransfer: false,
                             isCashOnDelivery: true

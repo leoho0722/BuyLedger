@@ -69,7 +69,7 @@ struct CampaignPresentationFeatureTests {
         var state = CampaignPresentationFeature.State()
         state.destination = Self.form
         var expectedForm = Self.formState
-        expectedForm.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
+        expectedForm.nameConflictMessage = "campaigns.edit.message.anotherCampaignAlready"
 
         // When
         state.showNameConflict()
@@ -303,13 +303,13 @@ private extension CampaignPresentationFeatureTests {
     static var notice: CampaignPresentationFeature.Destination.State {
         .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("開團儲存失敗，請稍後再試。")
+                TextState("campaigns.general.message.campaignSavedTry")
             }
         )
     }

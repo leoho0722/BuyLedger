@@ -87,12 +87,12 @@ private extension OrderEditSelectionRow {
 #Preview {
     Form {
         OrderEditSelectionRow(
-            title: "訂單來源",
+            title: "orders.detail.label.orderSource",
             identifier: BLAccessibilityID.OrderEdit.sourceRow,
             action: {
             }
         ) {
-            Text("選擇來源")
+            Text("orders.edit.label.selectSource")
         }
     }
 }

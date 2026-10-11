@@ -64,7 +64,7 @@ extension CampaignFeatureTests {
         await store.receive(\.writes.saveResponse.failure)
         await store.receive(\.writes.delegate.failed)
         await store.receive(\.presentation.noticeRequested, .writeFailure(.save)) {
-            $0.presentation.queue.pendingNotice = Self.failureAlert("開團儲存失敗，請稍後再試。")
+            $0.presentation.queue.pendingNotice = Self.failureAlert("campaigns.general.message.campaignSavedTry")
         }
         #expect(store.state.campaigns.isEmpty, "寫入失敗不應插入開團")
         #expect(savedCampaigns.value == [expectedCampaign])
@@ -108,7 +108,7 @@ extension CampaignFeatureTests {
         await store.receive(\.writes.statusResponse.failure)
         await store.receive(\.writes.delegate.failed)
         await store.receive(\.presentation.noticeRequested, .writeFailure(.status)) {
-            $0.presentation.destination = Self.failureAlert("開團狀態更新失敗，請稍後再試。")
+            $0.presentation.destination = Self.failureAlert("campaigns.general.message.campaignStatusUpdated")
         }
         #expect(store.state.campaigns == [campaign], "寫入失敗應維持先前開團資料")
         #expect(savedCampaigns.value == [expectedCampaign])
@@ -157,7 +157,7 @@ extension CampaignFeatureTests {
         await store.receive(\.writes.settleResponse.failure)
         await store.receive(\.writes.delegate.failed)
         await store.receive(\.presentation.noticeRequested, .writeFailure(.settle)) {
-            $0.presentation.destination = Self.failureAlert("結團失敗，請稍後再試。")
+            $0.presentation.destination = Self.failureAlert("campaigns.general.message.campaignSettledTry")
         }
         #expect(store.state.campaigns == [campaign], "寫入失敗不應套用結算資料")
         #expect(savedCampaigns.value == [expectedCampaign])
@@ -207,7 +207,7 @@ extension CampaignFeatureTests {
         await store.receive(\.writes.deleteResponse.failure)
         await store.receive(\.writes.delegate.failed)
         await store.receive(\.presentation.noticeRequested, .writeFailure(.delete)) {
-            $0.presentation.destination = Self.failureAlert("開團刪除失敗，請稍後再試。")
+            $0.presentation.destination = Self.failureAlert("campaigns.general.message.campaignDeletedTry")
         }
         #expect(store.state.campaigns == [campaign])
         #expect(removedCampaignIDs.value == ["C1"])

@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -47,12 +48,12 @@ extension LookupManagementFeatureTests {
                 $0.isFormSheetDismissing = true
             }
             await store.receive(\.addResponse.failure) {
-                $0.pendingAlert = Self.writeFailureAlert(message: "新增失敗，請稍後再試。")
+                $0.pendingAlert = Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
             }
             await store.send(.view(.formSheetDismissed)) {
                 $0.isFormSheetDismissing = false
                 $0.pendingAlert = nil
-                $0.destination = Self.writeFailureAlert(message: "新增失敗，請稍後再試。")
+                $0.destination = Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
             }
             await store.send(.destination(.dismiss)) {
                 $0.destination = nil
@@ -113,7 +114,7 @@ extension LookupManagementFeatureTests {
 
             // Then
             await store.receive(\.deleteResponse.failure) {
-                $0.destination = Self.writeFailureAlert(message: "刪除失敗，請稍後再試。")
+                $0.destination = Self.writeFailureAlert(message: "orders.lookup.message.itemDeletedTry")
             }
             #expect(store.state.items == ["服飾"])
             #expect(store.state.hasLoadFailed == false)
@@ -157,9 +158,9 @@ extension LookupManagementFeatureTests {
                 $0.isFormSheetDismissing = true
             }
             await store.receive(\.renameResponse.failure) {
-                $0.pendingAlert = Self.writeFailureAlert(message: "重新命名失敗，請稍後再試。")
+                $0.pendingAlert = Self.writeFailureAlert(message: "orders.lookup.message.itemRenamedTry")
             }
-            #expect(store.state.pendingAlert == Self.writeFailureAlert(message: "重新命名失敗，請稍後再試。"))
+            #expect(store.state.pendingAlert == Self.writeFailureAlert(message: "orders.lookup.message.itemRenamedTry"))
             #expect(store.state.destination == nil)
             #expect(store.state.items == ["服飾"])
             #expect(store.state.hasLoadFailed == false)

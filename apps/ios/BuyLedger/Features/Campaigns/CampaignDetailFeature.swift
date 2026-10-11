@@ -46,7 +46,7 @@ struct CampaignDetailFeature {
 
         /// 分貨區沒有可見客戶時的空狀態文案；只看未收款時表示客戶都已收款
         var distributionEmptyMessage: LocalizedStringResource {
-            isShowingUnpaidOnly ? "全部已收款。" : "尚無歸屬此開團的訂單。"
+            isShowingUnpaidOnly ? "campaigns.detail.message.allOrdersPaid" : "campaigns.detail.message.ordersAssignedCampaign"
         }
 
         /// 以容器共用的資料建立詳情狀態

@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 import SwiftUI
 import Testing
 
@@ -46,16 +47,21 @@ extension CampaignFeatureTests {
         await store.receive(\.list.delegate.requested) {
             $0.presentation.destination = .alert(
                 AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("刪除開團")
+                    TextState("orders.general.label.deleteCampaign")
                 } actions: {
                     ButtonState(role: .destructive, action: .confirmDelete("C1")) {
-                        TextState("刪除")
+                        TextState("common.action.button.delete")
                     }
                     ButtonState(role: .cancel) {
-                        TextState("取消")
+                        TextState("common.action.cancel")
                     }
                 } message: {
-                    TextState("刪除「團」後無法復原。歸屬此開團的訂單會保留，但會變回未歸團。")
+                    TextState(
+                        LocalizedStringResource(
+                            "campaigns.detail.message.deleteUndoneNotice",
+                            defaultValue: "\("團")"
+                        )
+                    )
                 }
             )
         }
@@ -69,13 +75,13 @@ extension CampaignFeatureTests {
         await store.receive(\.presentation.noticeRequested, .writeFailure(.delete)) {
             $0.presentation.destination = .alert(
                 AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("操作失敗")
+                    TextState("orders.list.label.operationFailed")
                 } actions: {
                     ButtonState(role: .cancel) {
-                        TextState("知道了")
+                        TextState("orders.merge.label.ok")
                     }
                 } message: {
-                    TextState("開團刪除失敗，請稍後再試。")
+                    TextState("campaigns.general.message.campaignDeletedTry")
                 }
             )
         }
@@ -143,16 +149,21 @@ extension CampaignFeatureTests {
         await store.receive(\.path[id: detailID].detail.delegate.requested) {
             $0.presentation.destination = .alert(
                 AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("刪除開團")
+                    TextState("orders.general.label.deleteCampaign")
                 } actions: {
                     ButtonState(role: .destructive, action: .confirmDelete("C1")) {
-                        TextState("刪除")
+                        TextState("common.action.button.delete")
                     }
                     ButtonState(role: .cancel) {
-                        TextState("取消")
+                        TextState("common.action.cancel")
                     }
                 } message: {
-                    TextState("刪除「團」後無法復原。歸屬此開團的訂單會保留，但會變回未歸團。")
+                    TextState(
+                        LocalizedStringResource(
+                            "campaigns.detail.message.deleteUndoneNotice",
+                            defaultValue: "\("團")"
+                        )
+                    )
                 }
             )
         }
@@ -166,13 +177,13 @@ extension CampaignFeatureTests {
         await store.receive(\.presentation.noticeRequested, .writeFailure(.delete)) {
             $0.presentation.destination = .alert(
                 AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("操作失敗")
+                    TextState("orders.list.label.operationFailed")
                 } actions: {
                     ButtonState(role: .cancel) {
-                        TextState("知道了")
+                        TextState("orders.merge.label.ok")
                     }
                 } message: {
-                    TextState("開團刪除失敗，請稍後再試。")
+                    TextState("campaigns.general.message.campaignDeletedTry")
                 }
             )
         }

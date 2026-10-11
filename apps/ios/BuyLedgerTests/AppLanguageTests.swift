@@ -40,14 +40,14 @@ struct AppLanguageTests {
         #expect(locale.identifier == expectedIdentifier)
     }
 
-    /// 驗證語言標題使用本地化資源
+    /// 驗證語言標題使用原文自稱 (Endonyms)
     @Test(arguments: AppLanguage.allCases)
-    func languageTitlesUseLocalizedResources(language: AppLanguage) {
+    func languageTitlesUseEndonyms(language: AppLanguage) {
         // Given
         let expectedTitle = language == .traditionalChinese ? "正體中文" : "English"
 
         // When
-        let title = String(localized: language.title)
+        let title = language.title
 
         // Then
         #expect(title == expectedTitle)

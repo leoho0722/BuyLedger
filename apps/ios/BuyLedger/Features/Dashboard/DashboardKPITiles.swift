@@ -47,7 +47,7 @@ private extension DashboardKPITiles {
         DashboardKPITile(
             delta: LocalizedStringKey(percentDeltaDisplay(stats.revenueDelta)),
             kpi: .revenue,
-            label: "營業額",
+            label: "dashboard.overview.label.revenue",
             tint: palette.accent,
             trend: trend(for: stats.revenueDelta),
             value: BLFormatters.twd(stats.revenue, locale: locale)
@@ -59,7 +59,7 @@ private extension DashboardKPITiles {
         DashboardKPITile(
             delta: LocalizedStringKey(percentDeltaDisplay(stats.costDelta)),
             kpi: .cost,
-            label: "成本",
+            label: "orders.detail.label.cost",
             tint: palette.orange,
             trend: trend(for: stats.costDelta),
             value: BLFormatters.twd(stats.cost, locale: locale)
@@ -71,7 +71,7 @@ private extension DashboardKPITiles {
         DashboardKPITile(
             delta: LocalizedStringKey(marginDeltaDisplay(stats.marginDelta)),
             kpi: .grossMargin,
-            label: "毛利率",
+            label: "orders.detail.label.grossMargin",
             tint: palette.green,
             trend: trend(for: stats.marginDelta),
             value: BLFormatters.percent(stats.margin, locale: locale)
@@ -81,9 +81,9 @@ private extension DashboardKPITiles {
     /// 進行中訂單數，沒有上月比較值，變化指標改顯示件數
     var activeOrdersTile: some View {
         DashboardKPITile(
-            delta: "\(stats.activeCount) 件進行中",
+            delta: LocalizedStringKey(AppLanguage.format("dashboard.overview.label.activeCountInProgress", stats.activeCount, locale: locale)),
             kpi: .activeOrders,
-            label: "進行中訂單",
+            label: "dashboard.overview.label.activeOrders",
             tint: palette.purple,
             trend: .unavailable,
             value: "\(stats.activeCount)"

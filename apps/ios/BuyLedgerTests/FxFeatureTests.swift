@@ -217,7 +217,7 @@ struct FxFeatureTests {
         }
         await store.receive(\.ratesResponse) {
             $0.isLoading = false
-            $0.errorMessage = "網路連線異常；無法顯示即時匯率，請稍後再試。"
+            $0.errorMessage = "fx.rates.message.networkErrorOccurred"
         }
     }
 
@@ -225,7 +225,7 @@ struct FxFeatureTests {
     @Test
     func retryTapped_重新載入_再次取得匯率與幣別() async {
         // Given
-        let initialState = FxFeature.State(errorMessage: "網路連線異常；無法顯示即時匯率，請稍後再試。")
+        let initialState = FxFeature.State(errorMessage: "fx.rates.message.networkErrorOccurred")
         let store = TestStore(initialState: initialState) {
             FxFeature()
         } withDependencies: {

@@ -94,7 +94,7 @@ private extension OrderEditPercentField {
             .keyboardType(.decimalPad)
             .focused(focusedField, equals: field)
 
-            Text("%")
+            Text(verbatim: "%")
                 .foregroundStyle(Color.blSecondaryLabel)
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
@@ -131,7 +131,7 @@ extension OrderEditPercentField {
 
     Form {
         OrderEditPercentField(
-            title: "刷卡手續費 %",
+            title: "orders.edit.label.cardFee",
             value: .constant(0.015),
             field: .cardFeeRate,
             focusedField: $focusedField

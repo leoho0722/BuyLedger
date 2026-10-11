@@ -40,7 +40,7 @@ private extension OrderDetailNotesView {
     @ViewBuilder
     var compactNotes: some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text("備註")
+            Text("orders.detail.label.notes")
                 .blTextStyle(.headline)
 
             BLCard {
@@ -58,7 +58,7 @@ private extension OrderDetailNotesView {
     var wideNotesCard: some View {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.small) {
-                Text("備註")
+                Text("orders.detail.label.notes")
                     .font(BLTypographyStyle.footnote.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)

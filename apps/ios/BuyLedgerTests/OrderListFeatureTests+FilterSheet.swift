@@ -212,16 +212,16 @@ extension OrderListFeatureTests {
             paymentMethod: nil
         )
         let expectedConfirmation = AlertState<OrderFilterFeature.Action.FilterDiscardAlert> {
-            TextState("捨棄變更")
+            TextState("orders.list.label.discardChanges")
         } actions: {
             ButtonState(role: .destructive, action: .discard) {
-                TextState("捨棄變更")
+                TextState("orders.list.label.discardChanges")
             }
             ButtonState(role: .cancel) {
-                TextState("繼續編輯")
+                TextState("orders.list.label.keepEditing")
             }
         } message: {
-            TextState("這些篩選條件尚未套用，離開後將不會保留。")
+            TextState("orders.list.message.filtersHaveApplied")
         }
 
         let store = TestStore(initialState: state.list) {

@@ -88,15 +88,15 @@ extension OrdersFeatureTests {
             }
         }
         await store.receive(\.writes.delegate, .failed(.merge))
-        await store.receive(\.presentation.noticeRequested, Self.failureNotice("合併訂單儲存失敗，請稍後再試。")) {
-            $0.presentation.queue.pendingNotice = Self.failureNotice("合併訂單儲存失敗，請稍後再試。")
+        await store.receive(\.presentation.noticeRequested, Self.failureNotice("orders.general.message.mergedOrderSaved")) {
+            $0.presentation.queue.pendingNotice = Self.failureNotice("orders.general.message.mergedOrderSaved")
         }
 
         // When
         await store.send(.view(.formSheetDismissed)) {
             $0.presentation.queue.isFormClosing = false
             $0.presentation.queue.pendingNotice = nil
-            $0.presentation.destination = Self.failureNotice("合併訂單儲存失敗，請稍後再試。")
+            $0.presentation.destination = Self.failureNotice("orders.general.message.mergedOrderSaved")
         }
 
         // Then

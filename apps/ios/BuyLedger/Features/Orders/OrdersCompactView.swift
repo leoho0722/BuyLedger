@@ -49,7 +49,7 @@ private extension OrdersCompactView {
                 .searchable(
                     text: $listStore.searchText.sending(\.view.searchTextChanged),
                     placement: .navigationBarDrawer(displayMode: .always),
-                    prompt: Text("搜尋客戶、單號或商品")
+                    prompt: Text("orders.list.placeholder.searchCustomersOrder")
                 )
                 .rootNavigationTitle(listStore.navigationTitleKey, language: language)
                 .toolbar {

@@ -42,7 +42,7 @@ private extension InsightsCampaignProfitCard {
 
     /// 固定顯示「每團毛利排行」的卡片標題
     var title: some View {
-        Text("每團毛利排行")
+        Text("insights.chart.label.campaignProfitRanking")
             .font(BLTypographyStyle.subhead.font.weight(.semibold))
             .foregroundStyle(palette.label)
     }
@@ -63,7 +63,7 @@ private extension InsightsCampaignProfitCard {
             onCampaignTapped(rank.campaignName)
         } label: {
             BLProgressView(
-                title: "\(rank.rank). \(rank.campaignName)",
+                title: String(rank.rank) + ". " + rank.campaignName,
                 value: rank.ratio,
                 tint: palette.accent,
                 trailingText: CampaignFormatters.twd(rank.profit, locale: locale)
@@ -71,7 +71,7 @@ private extension InsightsCampaignProfitCard {
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityHint("查看 \(rank.campaignName) 的詳情")
+        .accessibilityHint(Text(AppLanguage.format("insights.chart.accessibility.viewDetails", rank.campaignName, locale: locale)))
         .accessibilityValue(Text(CampaignFormatters.twd(rank.profit, locale: locale)))
         .accessibilityIdentifier(BLAccessibilityID.Insights.campaignRankRow(campaignID: rank.id))
     }
@@ -89,7 +89,7 @@ private extension InsightsCampaignProfitCard {
 
 // MARK: - Preview
 
-#Preview("每團毛利排行") {
+#Preview("insights.chart.label.campaignProfitRanking") {
     InsightsCampaignProfitCard(
         onCampaignTapped: { _ in
         },

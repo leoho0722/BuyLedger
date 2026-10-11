@@ -256,13 +256,13 @@ private extension OrderMergeFeature {
 
         case .candidatePhotosResponse(.failure):
             state.photoLoadFailureAlert = AlertState {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("無法讀取訂單照片，請稍後再試。")
+                TextState("orders.merge.message.orderPhotosLoaded")
             }
             return .none
         }

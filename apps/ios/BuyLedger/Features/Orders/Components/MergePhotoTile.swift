@@ -38,7 +38,7 @@ struct MergePhotoTile: View {
             cellContent
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isSelected ? "取消保留這張照片" : "保留這張照片")
+        .accessibilityLabel(isSelected ? "orders.general.label.doKeepPhoto" : "orders.general.label.keepPhoto")
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityIdentifier(BLAccessibilityID.OrderMerge.photoCell(index: index))
     }

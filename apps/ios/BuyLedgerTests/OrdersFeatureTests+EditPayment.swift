@@ -25,7 +25,7 @@ extension OrdersFeatureTests {
             options: OrderEditOptions(
                 paymentMethods: [
                     PaymentMethodInfo(
-                        name: "銀行匯款",
+                        name: "orders.edit.label.bankTransfer",
                         isCardless: false,
                         isBankTransfer: true,
                         isCashOnDelivery: false
@@ -35,7 +35,7 @@ extension OrdersFeatureTests {
             ),
             currentDate: TestDependencies.fixedNow
         )
-        draft.draft.paymentMethod = "銀行匯款"
+        draft.draft.paymentMethod = "orders.edit.label.bankTransfer"
         draft.draft.reconciliationStatus = "待對帳"
 
         var state = OrdersFeature.State(orders: [original])
@@ -58,7 +58,7 @@ extension OrdersFeatureTests {
         let expectedOrder = LedgerOrder.fixture(
             id: "order-1",
             categories: ["美妝"],
-            paymentMethod: "銀行匯款",
+            paymentMethod: "orders.edit.label.bankTransfer",
             reconciliationStatus: "待對帳"
         )
 
@@ -89,7 +89,7 @@ extension OrdersFeatureTests {
         let original = LedgerOrder.fixture(
             id: "order-1",
             categories: ["美妝"],
-            paymentMethod: "銀行匯款",
+            paymentMethod: "orders.edit.label.bankTransfer",
             reconciliationStatus: "待對帳"
         )
 
@@ -99,7 +99,7 @@ extension OrdersFeatureTests {
             options: OrderEditOptions(
                 paymentMethods: [
                     PaymentMethodInfo(
-                        name: "銀行匯款",
+                        name: "orders.edit.label.bankTransfer",
                         isCardless: false,
                         isBankTransfer: true,
                         isCashOnDelivery: false

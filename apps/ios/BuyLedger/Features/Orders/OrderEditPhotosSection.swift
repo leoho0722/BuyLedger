@@ -14,6 +14,9 @@ struct OrderEditPhotosSection: View {
 
     // MARK: - Properties
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrderEditPhotosFeature>
 
@@ -47,13 +50,13 @@ private extension OrderEditPhotosSection {
             HStack(spacing: BLSpacing.small) {
                 ProgressView()
 
-                Text("照片載入中…")
+                Text("orders.edit.label.loadingPhotos")
                     .blTextStyle(.subhead)
                     .foregroundStyle(Color.blSecondaryLabel)
             }
 
         case .failed:
-            Label("照片載入失敗，請稍後再試。", systemImage: "exclamationmark.triangle")
+            Label("orders.edit.message.photosLoadedTry", systemImage: "exclamationmark.triangle")
                 .blTextStyle(.subhead)
                 .foregroundStyle(Color.blSecondaryLabel)
 
@@ -89,7 +92,7 @@ private extension OrderEditPhotosSection {
 
         if store.photoImportFailureCount > 0 {
             Label(
-                "有 \(store.photoImportFailureCount) 張照片無法匯入。",
+                AppLanguage.format("orders.edit.message.photoImportFailedNotice", store.photoImportFailureCount, locale: locale),
                 systemImage: "exclamationmark.triangle"
             )
             .blTextStyle(.subhead)
@@ -102,19 +105,19 @@ private extension OrderEditPhotosSection {
                 maxSelectionCount: store.remainingPhotoCapacity,
                 matching: .images
             ) {
-                Label("加入照片", systemImage: "photo.badge.plus")
+                Label("orders.edit.label.addPhotos", systemImage: "photo.badge.plus")
             }
         }
     }
 
     /// 照片區段的目前張數與上限
     var sectionHeader: some View {
-        Text("訂單照片 (\(store.draftPhotos.count)/\(LedgerOrder.maxPhotoCount))")
+        Text(AppLanguage.format("orders.edit.label.orderPhotosCount", store.draftPhotos.count, LedgerOrder.maxPhotoCount, locale: locale))
     }
 
     /// 照片容量與儲存方式說明
     var sectionFooter: some View {
-        Text("最多 \(LedgerOrder.maxPhotoCount) 張；照片會縮圖壓縮後隨訂單儲存。")
+        Text(AppLanguage.format("orders.edit.message.photoLimitNotice", LedgerOrder.maxPhotoCount, locale: locale))
             .blTextStyle(.footnote)
             .foregroundStyle(Color.blSecondaryLabel)
     }

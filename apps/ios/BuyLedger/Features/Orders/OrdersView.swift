@@ -66,17 +66,17 @@ private extension OrdersView {
     /// 商品類別選擇器，選取後套用篩選，「全部」清除篩選
     var categoryPickerSheet: some View {
         OptionPickerSheet(
-            title: "選擇商品類別",
+            title: "orders.list.label.category1",
             allowsAdd: false,
             searchable: true,
-            emptyTitle: "沒有符合的類別",
-            emptyDescription: "試試其他搜尋關鍵字。",
+            emptyTitle: "orders.list.label.matchingCategories",
+            emptyDescription: "orders.list.message.tryAnotherSearch",
             options: listStore.availableCategories,
             selected: listStore.selectedCategory ?? "",
             onSelect: {
                 listStore.send(.view(.categoryFilterSelected($0)))
             },
-            clearOption: OptionPickerSheet.ClearOption(title: "全部") {
+            clearOption: OptionPickerSheet.ClearOption(title: "common.action.label.all") {
                 listStore.send(.view(.categoryFilterSelected(nil)))
             }
         )
@@ -85,17 +85,17 @@ private extension OrdersView {
     /// 付款方式選擇器，選取後套用篩選，「全部」清除篩選
     var paymentMethodPickerSheet: some View {
         OptionPickerSheet(
-            title: "選擇付款方式",
+            title: "orders.list.label.selectPaymentMethod",
             allowsAdd: false,
             searchable: true,
-            emptyTitle: "沒有符合的付款方式",
-            emptyDescription: "試試其他搜尋關鍵字。",
+            emptyTitle: "orders.list.label.matchingPaymentMethods",
+            emptyDescription: "orders.list.message.tryAnotherSearch",
             options: listStore.availablePaymentMethodNames,
             selected: listStore.selectedPaymentMethod ?? "",
             onSelect: {
                 listStore.send(.view(.paymentMethodFilterSelected($0)))
             },
-            clearOption: OptionPickerSheet.ClearOption(title: "全部") {
+            clearOption: OptionPickerSheet.ClearOption(title: "common.action.label.all") {
                 listStore.send(.view(.paymentMethodFilterSelected(nil)))
             }
         )
@@ -129,7 +129,7 @@ private extension OrdersView {
             .searchable(
                 text: $listStore.searchText.sending(\.view.searchTextChanged),
                 placement: .navigationBarDrawer(displayMode: .always),
-                prompt: Text("搜尋客戶、單號或商品")
+                prompt: Text("orders.list.placeholder.searchCustomersOrder")
             )
             .rootNavigationTitle(listStore.navigationTitleKey, language: language)
             .toolbar {

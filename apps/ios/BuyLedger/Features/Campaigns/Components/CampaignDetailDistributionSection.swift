@@ -54,12 +54,12 @@ private extension CampaignDetailDistributionSection {
 
     /// 分貨區段標題
     var sectionHeader: some View {
-        Text("客戶分貨")
+        Text("campaigns.detail.label.customerAllocation")
     }
 
     /// 只看未收款開關，切換意圖交由呼叫端處理
     var unpaidOnlyToggle: some View {
-        Toggle("只看未收款", isOn: unpaidOnlyBinding)
+        Toggle("campaigns.detail.label.unpaidOnly", isOn: unpaidOnlyBinding)
             .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailUnpaidToggle)
     }
 
@@ -104,7 +104,7 @@ private extension CampaignDetailDistributionSection {
             Spacer(minLength: 0)
 
             Text(
-                "\(row.totalQuantity) 件 · \(CampaignFormatters.twd(row.totalAmount, locale: locale))"
+                AppLanguage.format("campaigns.detail.label.quantityWithAmount", row.totalQuantity, CampaignFormatters.twd(row.totalAmount, locale: locale), locale: locale)
             )
             .blTextStyle(.caption)
             .foregroundStyle(Color.blSecondaryLabel)
@@ -189,10 +189,10 @@ private extension CampaignDetailDistributionSection {
 
 // MARK: - Preview
 
-#Preview("客戶分貨") {
+#Preview("campaigns.detail.label.customerAllocation") {
     List {
         CampaignDetailDistributionSection(
-            emptyMessage: "尚無歸屬此開團的訂單。",
+            emptyMessage: "campaigns.detail.message.ordersAssignedCampaign",
             isShowingUnpaidOnly: false,
             onReceiptToggle: { _ in
             },
@@ -210,7 +210,7 @@ private extension CampaignDetailDistributionSection {
 #Preview("客戶分貨空狀態") {
     List {
         CampaignDetailDistributionSection(
-            emptyMessage: "尚無歸屬此開團的訂單。",
+            emptyMessage: "campaigns.detail.message.ordersAssignedCampaign",
             isShowingUnpaidOnly: false,
             onReceiptToggle: { _ in
             },

@@ -53,7 +53,7 @@ struct OrderEditFeature {
 
         /// 依原始訂單是否存在提供標題的本地化鍵
         var navigationTitleKey: String {
-            original == nil ? "新訂單" : "編輯訂單"
+            original == nil ? "orders.list.label.newOrder" : "orders.detail.label.editOrder"
         }
 
         /// 客戶實付金額的繫結入口，修改時重新檢查折抵上限

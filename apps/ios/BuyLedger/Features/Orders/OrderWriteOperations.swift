@@ -65,34 +65,34 @@ extension OrderWriteOperations {
         var message: String {
             switch self {
             case .save:
-                return "訂單儲存失敗，請稍後再試。"
+                return "orders.general.message.orderSavedTry"
 
             case .status, .mergedStatusRejected:
-                return "訂單狀態更新失敗，請稍後再試。"
+                return "orders.general.message.orderStatusUpdated"
 
             case .batchStatus:
-                return "批次更新狀態失敗，請稍後再試。"
+                return "orders.general.message.batchStatusUpdate"
 
             case .receipt:
-                return "收款狀態更新失敗，請稍後再試。"
+                return "orders.general.message.receiptStatusUpdated"
 
             case .delete:
-                return "訂單刪除失敗，請稍後再試。"
+                return "orders.general.message.orderDeletedTry"
 
             case .merge:
-                return "合併訂單儲存失敗，請稍後再試。"
+                return "orders.general.message.mergedOrderSaved"
 
             case .option(.orderSource):
-                return "訂單來源新增失敗，請稍後再試。"
+                return "orders.general.message.orderSourceAdded"
 
             case .option(.category):
-                return "商品類別新增失敗，請稍後再試。"
+                return "orders.general.message.categoryAddedTry"
 
             case .option(.paymentMethod):
-                return "付款方式新增失敗，請稍後再試。"
+                return "orders.general.message.paymentMethodAdded"
 
             case .option(.reconciliationStatus):
-                return "對帳狀態新增失敗，請稍後再試。"
+                return "orders.general.message.reconciliationStatusAdded"
             }
         }
     }

@@ -209,7 +209,7 @@ private extension OptionPickerSheet {
             if multiSelection != nil {
                 // 多選時立即套用，完成鍵結束選取
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完成") {
+                    Button("common.action.button.done") {
                         dismiss()
                     }
                     .accessibilityIdentifier(BLAccessibilityID.OptionPicker.doneButton)
@@ -233,7 +233,7 @@ private extension OptionPickerSheet {
                 .textInputAutocapitalization(.never)
                 .autocorrectionDisabled()
 
-            Button("新增") {
+            Button("orders.list.button.add") {
                 addDraft()
             }
             .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addAlertConfirmButton)
@@ -241,7 +241,7 @@ private extension OptionPickerSheet {
                 draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
             )
 
-            Button("取消", role: .cancel) {
+            Button("common.action.cancel", role: .cancel) {
                 draft = ""
             }
             .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addAlertCancelButton)
@@ -254,7 +254,7 @@ private extension OptionPickerSheet {
                 title: addAlertTitle,
                 message: addAlertMessage,
                 namePlaceholder: addFieldPlaceholder,
-                submitTitle: "新增",
+                submitTitle: "orders.list.button.add",
                 isEmbedded: true,
                 onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
                     onAddPaymentMethod?(
@@ -279,7 +279,7 @@ private extension OptionPickerSheet {
             } label: {
                 Image(systemName: "xmark")
             }
-            .accessibilityLabel(Text("取消"))
+            .accessibilityLabel(Text("common.action.cancel"))
         }
     }
 }
@@ -379,14 +379,14 @@ private extension OptionPickerSheet {
 
 #Preview("商品類別 (可新增)") {
     OptionPickerSheet(
-        title: "選擇商品類別",
+        title: "orders.list.label.category1",
         allowsAdd: true,
-        addButtonTitle: "新增類別",
-        emptyTitle: "尚無類別",
-        emptyDescription: "透過上方「新增類別」加入第一個類別。",
-        addAlertTitle: "新增商品類別",
-        addFieldPlaceholder: "類別名稱",
-        addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
+        addButtonTitle: "orders.edit.label.addCategory",
+        emptyTitle: "orders.edit.label.categories",
+        emptyDescription: "orders.edit.message.addFirstCategory",
+        addAlertTitle: "orders.edit.label.addItemCategory",
+        addFieldPlaceholder: "orders.edit.label.categoryName",
+        addAlertMessage: "orders.edit.message.enterNewProduct",
         options: ["3C", "美妝", "精品", "食品"],
         selected: "美妝",
         onSelect: { _ in }
@@ -395,10 +395,10 @@ private extension OptionPickerSheet {
 
 #Preview("幣別 (不可新增、可搜尋)") {
     OptionPickerSheet(
-        title: "選擇幣別",
+        title: "orders.edit.label.selectCurrency",
         allowsAdd: false,
         searchable: true,
-        emptyTitle: "尚無幣別",
+        emptyTitle: "orders.edit.label.currenciesAvailable",
         emptyDescription: "需要網路連線載入幣別清單，請稍後再試。",
         options: ["TWD", "USD", "JPY", "KRW", "EUR", "CNY"],
         selected: "TWD",
@@ -411,29 +411,29 @@ private extension OptionPickerSheet {
 
 #Preview("類別篩選 (含清除選項、未選任何類別)") {
     OptionPickerSheet(
-        title: "選擇商品類別",
+        title: "orders.list.label.category1",
         allowsAdd: false,
         searchable: true,
-        emptyTitle: "沒有符合的類別",
-        emptyDescription: "試試其他搜尋關鍵字。",
+        emptyTitle: "orders.list.label.matchingCategories",
+        emptyDescription: "orders.list.message.tryAnotherSearch",
         options: ["3C", "美妝", "精品", "食品", "保健", "零食", "書籍"],
         selected: "",
         onSelect: { _ in },
-        clearOption: .init(title: "全部", onClear: {})
+        clearOption: .init(title: "common.action.label.all", onClear: {})
     )
 }
 
 #Preview("類別篩選 (含清除選項、已選美妝)") {
     OptionPickerSheet(
-        title: "選擇商品類別",
+        title: "orders.list.label.category1",
         allowsAdd: false,
         searchable: true,
-        emptyTitle: "沒有符合的類別",
-        emptyDescription: "試試其他搜尋關鍵字。",
+        emptyTitle: "orders.list.label.matchingCategories",
+        emptyDescription: "orders.list.message.tryAnotherSearch",
         options: ["3C", "美妝", "精品", "食品", "保健", "零食", "書籍"],
         selected: "美妝",
         onSelect: { _ in },
-        clearOption: .init(title: "全部", onClear: {})
+        clearOption: .init(title: "common.action.label.all", onClear: {})
     )
 }
 
@@ -441,14 +441,14 @@ private extension OptionPickerSheet {
     @Previewable @State var selections: Set<String> = ["美妝", "服飾"]
 
     OptionPickerSheet(
-        title: "選擇商品類別",
+        title: "orders.list.label.category1",
         allowsAdd: true,
-        addButtonTitle: "新增類別",
-        emptyTitle: "尚無類別",
-        emptyDescription: "透過上方「新增類別」加入第一個類別。",
-        addAlertTitle: "新增商品類別",
-        addFieldPlaceholder: "類別名稱",
-        addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
+        addButtonTitle: "orders.edit.label.addCategory",
+        emptyTitle: "orders.edit.label.categories",
+        emptyDescription: "orders.edit.message.addFirstCategory",
+        addAlertTitle: "orders.edit.label.addItemCategory",
+        addFieldPlaceholder: "orders.edit.label.categoryName",
+        addAlertMessage: "orders.edit.message.enterNewProduct",
         options: ["3C", "美妝", "服飾", "精品", "食品"],
         multiSelection: .init(
             selections: selections,
@@ -465,7 +465,7 @@ private extension OptionPickerSheet {
 
 #Preview("空狀態") {
     OptionPickerSheet(
-        title: "選擇商品類別",
+        title: "orders.list.label.category1",
         allowsAdd: false,
         emptyTitle: "尚無商品類別",
         emptyDescription: "尚未建立任何商品類別。",
@@ -476,12 +476,12 @@ private extension OptionPickerSheet {
 
 #Preview("付款方式新增") {
     OptionPickerSheet(
-        title: "選擇付款方式",
-        addButtonTitle: "新增付款方式",
-        emptyTitle: "尚無付款方式",
+        title: "orders.list.label.selectPaymentMethod",
+        addButtonTitle: "orders.edit.label.addPaymentMethod",
+        emptyTitle: "orders.edit.label.paymentMethods",
         emptyDescription: "透過上方「新增付款方式」建立第一個付款方式。",
-        addAlertTitle: "新增付款方式",
-        addFieldPlaceholder: "付款方式名稱",
+        addAlertTitle: "orders.edit.label.addPaymentMethod",
+        addFieldPlaceholder: "orders.detail.label.paymentMethodName",
         addAlertMessage: "輸入新的付款方式名稱。",
         options: ["現金", "信用卡"],
         selected: "現金",

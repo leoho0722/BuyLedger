@@ -41,21 +41,21 @@ private extension OrderEditFeesSection {
     @ViewBuilder
     var fields: some View {
         OrderEditPercentField(
-            title: "刷卡手續費 %",
+            title: "orders.edit.label.cardFee",
             value: $store.draft.cardFeeRate,
             field: .cardFeeRate,
             focusedField: focusedField
         )
 
         OrderEditPercentField(
-            title: "平台手續費 %",
+            title: "orders.edit.label.platformFee",
             value: $store.draft.platformFeeRate,
             field: .platformFeeRate,
             focusedField: focusedField
         )
 
         OrderEditPercentField(
-            title: "金流手續費 %",
+            title: "orders.edit.label.paymentProcessingFee",
             value: $store.draft.paymentFeeRate,
             field: .paymentFeeRate,
             focusedField: focusedField
@@ -64,13 +64,13 @@ private extension OrderEditFeesSection {
 
     /// 手續費的百分比標題
     var sectionHeader: some View {
-        Text("手續費 (%)")
+        Text("orders.edit.label.fees")
     }
 
     /// 百分比輸入方式與有效範圍說明
     @ViewBuilder
     var sectionFooter: some View {
-        Text("輸入百分比例如 1.5 表示 1.5%；超出 0%–100% 範圍會自動限制。")
+        Text("orders.edit.message.enter1515")
             .blTextStyle(.footnote)
             .foregroundStyle(Color.blSecondaryLabel)
     }

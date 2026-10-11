@@ -149,7 +149,7 @@ private extension AppLockFeature {
     func attemptUnlock() -> Effect<Action> {
         let biometricAuthService = biometricAuthService
         return .run { send in
-            let result = await biometricAuthService.authenticate(String(localized: "驗證身份以解鎖 App"))
+            let result = await biometricAuthService.authenticate(String(localized: "settings.preference.label.authenticateUnlockApp"))
             await send(.unlockResponse(result))
         }
     }

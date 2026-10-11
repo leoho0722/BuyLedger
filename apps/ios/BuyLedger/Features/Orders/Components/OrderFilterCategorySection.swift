@@ -44,7 +44,7 @@ private extension OrderFilterCategorySection {
                 Image(systemName: "tag")
                     .foregroundStyle(BLPalette().accent)
 
-                Text("全部")
+                Text("common.action.label.all")
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
                     .foregroundStyle(.primary)
@@ -103,9 +103,9 @@ private extension OrderFilterCategorySection {
     @ViewBuilder
     var categoryEmptyStateRow: some View {
         ContentUnavailableView(
-            "沒有符合的類別",
+            "orders.list.label.matchingCategories",
             systemImage: "tray",
-            description: Text("試試其他搜尋關鍵字，或回到設定頁新增類別。")
+            description: Text("orders.filter.message.tryAnotherSearch")
         )
     }
 
@@ -123,7 +123,7 @@ private extension OrderFilterCategorySection {
 
     /// 顯示此區段的篩選項目名稱
     var header: some View {
-        Text("商品類別")
+        Text("orders.list.label.itemCategory")
     }
 }
 

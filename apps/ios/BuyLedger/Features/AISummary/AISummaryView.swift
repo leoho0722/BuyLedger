@@ -32,7 +32,7 @@ struct AISummaryView: View {
             .task {
                 await store.send(.view(.task)).finish()
             }
-            .navigationTitle(Text("AI 商品明細總結"))
+            .navigationTitle(Text("orders.general.label.aiItemSummary"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 closeToolbarItem
@@ -50,7 +50,7 @@ private extension AISummaryView {
     /// AI 總結開始前即常駐呈現的第三方雲端資料傳送揭露
     @ViewBuilder
     var dataTransferDisclosure: some View {
-        Text("目前列表的商品明細 (類別、品名、數量、單價、幣別) 會送往第三方雲端服務；不含客戶姓名。")
+        Text("ai.summary.message.currentListsProduct")
             .blTextStyle(.footnote)
             .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -70,7 +70,7 @@ private extension AISummaryView {
             } label: {
                 Image(systemName: "xmark")
             }
-            .accessibilityLabel(Text("關閉"))
+            .accessibilityLabel(Text("common.action.label.close"))
             .accessibilityIdentifier(BLAccessibilityID.AISummary.closeButton)
         }
     }
@@ -81,11 +81,11 @@ private extension AISummaryView {
         switch store.phase {
         case .failed:
             ContentUnavailableView {
-                Label("總結失敗", systemImage: "exclamationmark.triangle")
+                Label("ai.summary.label.summaryFailed", systemImage: "exclamationmark.triangle")
             } description: {
-                Text(store.errorMessage ?? "請稍後再試。")
+                Text(store.errorMessage ?? "orders.edit.message.pleaseTryAgain")
             } actions: {
-                Button("重試") {
+                Button("common.action.button.retry") {
                     store.send(.view(.retryTapped))
                 }
                 .buttonStyle(.borderedProminent)
@@ -96,7 +96,7 @@ private extension AISummaryView {
             if store.summaryText.isEmpty {
                 VStack(spacing: BLSpacing.medium) {
                     ProgressView()
-                    Text("AI 正在分析商品明細…")
+                    Text("ai.summary.label.aiAnalyzingItem")
                         .blTextStyle(.subhead)
                         .foregroundStyle(Color.blSecondaryLabel)
                 }
@@ -111,7 +111,7 @@ private extension AISummaryView {
                             HStack(spacing: BLSpacing.extraSmall) {
                                 ProgressView()
                                     .controlSize(.small)
-                                Text("產生中…")
+                                Text("ai.summary.label.generating")
                                     .blTextStyle(.footnote)
                                     .foregroundStyle(Color.blSecondaryLabel)
                             }
@@ -146,7 +146,7 @@ private extension AISummaryView {
                 .font(BLTypographyStyle.caption2.font.weight(.semibold))
                 .accessibilityHidden(true)
 
-            Text("此內容由 AI 生成，可能包含錯誤資訊，請自行核對。")
+            Text("ai.summary.message.contentGeneratedAi")
                 .blTextStyle(.caption)
                 .multilineTextAlignment(.leading)
         }
@@ -176,7 +176,7 @@ private extension AISummaryView {
 #Preview("AI 總結失敗") {
     var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
     state.phase = .failed
-    state.errorMessage = "總結失敗，請稍後再試。"
+    state.errorMessage = "ai.summary.message.summaryFailedTry"
 
     return AISummaryView(
         store: Store(initialState: state) {
@@ -189,7 +189,7 @@ private extension AISummaryView {
     var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
     state.phase = .finished
     state.summaryText = "# 商品摘要\n\n已取得的部分內容"
-    state.truncationMessage = "AI 總結已達時間上限，以下顯示已取得的內容；摘要已截斷。"
+    state.truncationMessage = "ai.summary.message.aiSummaryReached"
 
     return AISummaryView(
         store: Store(initialState: state) {

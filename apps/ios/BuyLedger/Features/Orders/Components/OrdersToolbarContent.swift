@@ -61,7 +61,7 @@ private extension OrdersToolbarContent {
 
     /// 切換為全選目前結果或清除選取
     var selectionButton: some View {
-        Button(LocalizedStringKey(isAllFilteredSelected ? "清除" : "全選")) {
+        Button(LocalizedStringKey(isAllFilteredSelected ? "common.action.button.clear" : "orders.list.label.selectAll")) {
             store.send(.view(isAllFilteredSelected ? .clearSelectionTapped : .selectAllTapped))
         }
     }
@@ -76,21 +76,21 @@ private extension OrdersToolbarContent {
                 }
             }
         } label: {
-            Text("更改狀態")
+            Text("orders.general.label.changeStatus")
         }
         .disabled(store.selectedOrderIDs.isEmpty)
     }
 
     /// 結束多選並返回一般瀏覽模式
     var selectionDoneButton: some View {
-        Button("完成") {
+        Button("common.action.button.done") {
             store.send(.view(.selectionModeToggled))
         }
     }
 
     /// 顯示目前篩選結果的訂單筆數
     var orderCount: some View {
-        Text("\(filteredIDs.count)")
+        Text(verbatim: "\(filteredIDs.count)")
             .font(BLTypographyStyle.subhead.font.weight(.medium))
             .monospacedDigit()
             .foregroundStyle(palette.secondaryLabel)
@@ -101,7 +101,7 @@ private extension OrdersToolbarContent {
         Button {
             store.send(.view(.aiSummaryTapped))
         } label: {
-            Label("AI 總結", systemImage: "sparkles")
+            Label("orders.list.label.aiSummary", systemImage: "sparkles")
         }
         .disabled(filteredIDs.isEmpty)
         .accessibilityIdentifier(BLAccessibilityID.Orders.aiSummaryButton)
@@ -112,7 +112,7 @@ private extension OrdersToolbarContent {
         Button {
             store.send(.view(.selectionModeToggled))
         } label: {
-            Label("選取訂單", systemImage: "checklist")
+            Label("orders.list.label.selectOrders", systemImage: "checklist")
         }
         .disabled(store.orders.isEmpty)
     }
@@ -126,7 +126,7 @@ private extension OrdersToolbarContent {
         } label: {
             Image(systemName: "ellipsis.circle")
         }
-        .accessibilityLabel("更多操作")
+        .accessibilityLabel("orders.detail.label.moreActions")
         .accessibilityIdentifier(BLAccessibilityID.Orders.batchMenuButton)
     }
 
@@ -137,7 +137,7 @@ private extension OrdersToolbarContent {
         } label: {
             Image(systemName: "plus")
         }
-        .accessibilityLabel("新增訂單")
+        .accessibilityLabel("orders.edit.label.addOrder")
         .accessibilityIdentifier(BLAccessibilityID.Orders.addButton)
     }
 }

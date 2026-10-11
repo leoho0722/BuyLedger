@@ -86,10 +86,11 @@ private extension OrdersCompactListView {
     @ViewBuilder
     var unifiedFilterTrigger: some View {
         let language = AppLanguage(locale: locale)
-        let summary = Text(verbatim: store.state.filterSummary(language: language))
+        let summaryText = store.state.filterSummary(language: language)
+        let formattedTitle = language.localizedString(forKey: "orders.filter.label.filterSummary", summaryText)
 
         BLFilterChip(
-            title: "篩選: \(summary)",
+            title: LocalizedStringKey(formattedTitle),
             isSelected: store.committedFilterSelection.isActive,
             style: .purple,
             size: .large,
@@ -118,9 +119,9 @@ private extension OrdersCompactListView {
     @ViewBuilder
     var emptyState: some View {
         ContentUnavailableView(
-            "沒有符合條件的訂單",
+            "orders.list.label.matchingOrders",
             systemImage: "tray",
-            description: Text("試著調整搜尋字詞或狀態篩選。")
+            description: Text("orders.list.message.tryChangingSearch")
         )
         // 容器相對高度撐開後置中；垂直 `ScrollView` 內單設 `maxHeight` 不生效
         // 空狀態會黏在頂端而非可視區域中央
@@ -134,7 +135,7 @@ private extension OrdersCompactListView {
     @ViewBuilder
     var listSection: some View {
         if store.isLoading {
-            ProgressView("載入訂單")
+            ProgressView("orders.list.label.loadOrders")
                 .frame(maxWidth: .infinity, alignment: .center)
                 .padding(.top, BLSpacing.large)
         } else {

@@ -45,7 +45,7 @@ struct LookupCatalogTests {
         ),
         PaymentMethodFlagLookupExample(
             entries: [PaymentMethodInfo(name: "信用卡", flags: .none)],
-            name: "貨到付款",
+            name: "orders.list.label.cashDelivery",
             expectedFlags: .none
         ),
     ]
@@ -176,7 +176,7 @@ struct LookupCatalogTests {
         // Given：目錄已有貨到付款
         var catalog = LookupCatalog()
         catalog.add(
-            name: "貨到付款",
+            name: "orders.list.label.cashDelivery",
             kind: .paymentMethod,
             flags: PaymentMethodFlags(
                 isCardless: false,
@@ -186,7 +186,7 @@ struct LookupCatalogTests {
         )
 
         // When：移除貨到付款
-        catalog.remove(name: "貨到付款", kind: .paymentMethod)
+        catalog.remove(name: "orders.list.label.cashDelivery", kind: .paymentMethod)
 
         // Then：目錄不再包含付款方式
         #expect(catalog.paymentMethods.isEmpty)
@@ -209,7 +209,7 @@ struct LookupCatalogTests {
             )
         )
         catalog.add(
-            name: "銀行匯款",
+            name: "orders.edit.label.bankTransfer",
             kind: .paymentMethod,
             flags: PaymentMethodFlags(
                 isCardless: true,
@@ -219,11 +219,11 @@ struct LookupCatalogTests {
         )
 
         // When：將舊付款方式名稱改成已存在的新名稱
-        catalog.rename(from: "匯款", to: "銀行匯款", kind: .paymentMethod)
+        catalog.rename(from: "匯款", to: "orders.edit.label.bankTransfer", kind: .paymentMethod)
 
         // Then：合併後保留任一來源曾設定的每個旗標
-        #expect(catalog.names(for: .paymentMethod) == ["銀行匯款"])
-        let renamed = try #require(catalog.paymentMethods.first { $0.name == "銀行匯款" })
+        #expect(catalog.names(for: .paymentMethod) == ["orders.edit.label.bankTransfer"])
+        let renamed = try #require(catalog.paymentMethods.first { $0.name == "orders.edit.label.bankTransfer" })
         #expect(renamed.isCardless)
         #expect(renamed.isBankTransfer)
         #expect(renamed.isCashOnDelivery)

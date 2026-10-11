@@ -53,12 +53,12 @@ extension CampaignFeatureTests {
         await store.receive(\.presentation.destination.presented.edit.delegate.saveRequested)
         await store.receive(\.presentation.delegate.saveRequested) {
             $0.presentation.destination?.modify(\.edit) {
-                $0.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
+                $0.nameConflictMessage = "campaigns.edit.message.anotherCampaignAlready"
             }
         }
         #expect(
             store.state.presentation.destination?.edit?.nameConflictMessage
-                == "已有其他開團使用這個名稱，請改用不同名稱。"
+                == "campaigns.edit.message.anotherCampaignAlready"
         )
     }
 
@@ -136,7 +136,7 @@ extension CampaignFeatureTests {
         await store.receive(\.presentation.destination.presented.edit.delegate.saveRequested)
         await store.receive(\.presentation.delegate.saveRequested) {
             $0.presentation.destination?.modify(\.edit) {
-                $0.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
+                $0.nameConflictMessage = "campaigns.edit.message.anotherCampaignAlready"
             }
         }
         await store.finish()
@@ -147,7 +147,7 @@ extension CampaignFeatureTests {
             reminderTimestamp: Date(timeIntervalSince1970: 1_777_507_200)
         )
         expectedEdit.draft.name = "  母親節團  "
-        expectedEdit.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
+        expectedEdit.nameConflictMessage = "campaigns.edit.message.anotherCampaignAlready"
         #expect(store.state.presentation.destination == .edit(expectedEdit))
         #expect(store.state.campaigns == [loaded])
         #expect(saveCalls.value == 0)

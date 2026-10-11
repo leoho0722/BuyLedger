@@ -185,7 +185,7 @@ private extension AISummaryFeature {
 
         case .streamTimedOut:
             state.phase = .finished
-            state.truncationMessage = "AI 總結已達時間上限，以下顯示已取得的內容；摘要已截斷。"
+            state.truncationMessage = "ai.summary.message.aiSummaryReached"
             return .none
         }
     }
@@ -197,22 +197,28 @@ private extension AISummaryFeature {
     static func summaryFailureMessage(for error: APIError) -> LocalizedStringResource {
         switch error {
         case .invalidKey:
-            "AI 服務驗證失敗，目前無法使用總結功能。"
+            "ai.summary.message.aiServiceAuthentication"
 
         case .quotaExceeded:
-            "API 配額已用罄，請稍後再試。"
+            "ai.summary.message.apiQuotaHas"
 
         case .http(let statusCode):
-            "伺服器回應錯誤 (\(statusCode))，目前無法完成總結。"
+            LocalizedStringResource(
+                "ai.summary.message.serverErrorStatusCode",
+                defaultValue: "\(statusCode)"
+            )
 
         case .transport:
-            "連線發生問題，請檢查網路後再試。"
+            "ai.summary.message.connectionProblemOccurred"
 
         case .decoding:
-            "回應格式無法解析，請稍後再試。"
+            "ai.summary.message.responseParsedTry"
 
         case .apiError(let code):
-            "服務發生錯誤 (\(code))，請稍後再試。"
+            LocalizedStringResource(
+                "ai.summary.message.serviceErrorCode",
+                defaultValue: "\(code)"
+            )
         }
     }
 
@@ -277,14 +283,14 @@ private extension AISummaryFeature {
                     await send(.streamFailed(Self.summaryFailureMessage(for: error)))
 
                 case .unknownFailure:
-                    await send(.streamFailed("總結失敗，請稍後再試。"))
+                    await send(.streamFailed("ai.summary.message.summaryFailedTry"))
 
                 case .cancelled:
                     break
                 }
             } else {
                 AppLogger.inference.error("AI 總結無法啟動：OLLAMA_API_KEY 未注入 (xcconfig 未設定)")
-                await send(.streamFailed("AI 總結尚未完成設定，目前無法使用。"))
+                await send(.streamFailed("ai.summary.message.aiSummariesSet"))
             }
         }
         .cancellable(id: CancelID.stream, cancelInFlight: true)

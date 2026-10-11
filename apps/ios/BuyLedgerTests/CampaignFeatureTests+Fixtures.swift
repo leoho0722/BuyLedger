@@ -18,16 +18,16 @@ extension CampaignFeatureTests {
     static var accessDeniedAlert: CampaignPresentationFeature.Destination.State {
         .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("需要行事曆權限")
+                TextState("campaigns.general.label.calendarAccessRequired")
             } actions: {
                 ButtonState(action: .openSettings) {
-                    TextState("前往設定")
+                    TextState("orders.general.label.openSettings")
                 }
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("請到「設定」開啟行事曆存取權限，才能新增或移除訂購提醒。")
+                TextState("campaigns.general.message.allowCalendarAccess")
             }
         )
     }
@@ -35,16 +35,16 @@ extension CampaignFeatureTests {
     /// 表單有未儲存變更時，按下取消會呈現的捨棄確認
     static var discardAlert: AlertState<CampaignEditFeature.Action.DiscardAlert> {
         AlertState {
-            TextState("捨棄變更")
+            TextState("orders.list.label.discardChanges")
         } actions: {
             ButtonState(role: .destructive, action: .discard) {
-                TextState("捨棄變更")
+                TextState("orders.list.label.discardChanges")
             }
             ButtonState(role: .cancel) {
-                TextState("繼續編輯")
+                TextState("orders.list.label.keepEditing")
             }
         } message: {
-            TextState("這個開團有尚未儲存的變更，離開後將不會保留。")
+            TextState("campaigns.edit.message.campaignHasUnsaved")
         }
     }
 }
@@ -98,16 +98,21 @@ extension CampaignFeatureTests {
     ) -> CampaignPresentationFeature.Destination.State {
         .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("結團結算")
+                TextState("campaigns.detail.label.campaignSettlement")
             } actions: {
                 ButtonState(action: .confirmSettle(id)) {
-                    TextState("結團")
+                    TextState("campaigns.list.label.settle")
                 }
                 ButtonState(role: .cancel) {
-                    TextState("取消")
+                    TextState("common.action.cancel")
                 }
             } message: {
-                TextState("結算「\(name)」後就無法再改回進行中。確定要結團嗎？")
+                TextState(
+                    LocalizedStringResource(
+                        "campaigns.detail.message.settleUndoneNotice",
+                        defaultValue: "\(name)"
+                    )
+                )
             }
         )
     }
@@ -124,16 +129,21 @@ extension CampaignFeatureTests {
     ) -> CampaignPresentationFeature.Destination.State {
         .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("刪除開團")
+                TextState("orders.general.label.deleteCampaign")
             } actions: {
                 ButtonState(role: .destructive, action: .confirmDelete(id)) {
-                    TextState("刪除")
+                    TextState("common.action.button.delete")
                 }
                 ButtonState(role: .cancel) {
-                    TextState("取消")
+                    TextState("common.action.cancel")
                 }
             } message: {
-                TextState("刪除「\(name)」後無法復原。歸屬此開團的訂單會保留，但會變回未歸團。")
+                TextState(
+                    LocalizedStringResource(
+                        "campaigns.detail.message.deleteUndoneNotice",
+                        defaultValue: "\(name)"
+                    )
+                )
             }
         )
     }
@@ -150,22 +160,22 @@ extension CampaignFeatureTests {
             return accessDeniedAlert
 
         case .accessRestricted:
-            return titledAlert("無法使用行事曆", message: "這台裝置的行事曆存取受政策限制，暫時無法新增或移除訂購提醒。")
+            return titledAlert("campaigns.general.label.calendarUnavailable", message: "campaigns.general.message.calendarAccessRestricted")
 
         case .creationFailed:
-            return titledAlert("無法建立訂購提醒", message: "訂購提醒建立失敗，請稍後再試。")
+            return titledAlert("campaigns.general.label.unableCreateReminder", message: "campaigns.general.message.reminderCreatedPlease")
 
         case .calendarUnavailable:
-            return titledAlert("找不到可寫入的行事曆", message: "找不到可寫入的行事曆，請新增或啟用一個可寫入的行事曆後再試。")
+            return titledAlert("campaigns.reminder.label.writableCalendarFound", message: "campaigns.general.message.writableCalendarFound")
 
         case .linkRemovalFailed:
-            return failureAlert("提醒連結移除失敗，請稍後再試。")
+            return failureAlert("campaigns.general.message.removingReminderLink")
 
         case .oldEventRemovalFailed:
-            return failureAlert("提醒已更新，但舊的行事曆事件移除失敗，請自行到行事曆刪除。")
+            return failureAlert("campaigns.general.message.reminderUpdatedBut")
 
         case .eventRemovalAfterDeleteFailed:
-            return failureAlert("開團已刪除，但行事曆上的提醒事件移除失敗，請自行到行事曆刪除。")
+            return failureAlert("campaigns.general.message.campaignDeletedBut")
         }
     }
 
@@ -176,7 +186,7 @@ extension CampaignFeatureTests {
     static func failureAlert(
         _ message: LocalizedStringKey
     ) -> CampaignPresentationFeature.Destination.State {
-        titledAlert("操作失敗", message: message)
+        titledAlert("orders.list.label.operationFailed", message: message)
     }
 }
 
@@ -199,7 +209,7 @@ private extension CampaignFeatureTests {
                 TextState(title)
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
                 TextState(message)

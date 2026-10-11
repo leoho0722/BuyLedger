@@ -161,7 +161,7 @@ extension OrderListFeatureTests {
                         isCashOnDelivery: false
                     ),
                     PaymentMethodInfo(
-                        name: "貨到付款",
+                        name: "orders.list.label.cashDelivery",
                         isCardless: false,
                         isBankTransfer: false,
                         isCashOnDelivery: true

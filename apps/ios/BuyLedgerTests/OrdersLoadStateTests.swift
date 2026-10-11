@@ -38,7 +38,7 @@ struct OrdersLoadStateTests {
             $0 = true
         }
         state.load.$errorMessage.withLock {
-            $0 = "訂單載入失敗，請稍後再試。"
+            $0 = "orders.general.message.ordersLoadedTry"
         }
 
         // When
@@ -54,14 +54,14 @@ struct OrdersLoadStateTests {
         // Given
         let state = OrdersFeature.State()
         state.load.$errorMessage.withLock {
-            $0 = "訂單載入失敗，請稍後再試。"
+            $0 = "orders.general.message.ordersLoadedTry"
         }
 
         // When
         let loadState = state.loadState
 
         // Then
-        #expect(loadState == .failed("訂單載入失敗，請稍後再試。"))
+        #expect(loadState == .failed("orders.general.message.ordersLoadedTry"))
     }
 
     /// 尚未載入且沒有錯誤訊息時，狀態解析為載入中
@@ -99,13 +99,13 @@ struct OrdersLoadStateTests {
                 $0 = false
             }
             $0.load.$errorMessage.withLock {
-                $0 = "訂單載入失敗，請稍後再試。"
+                $0 = "orders.general.message.ordersLoadedTry"
             }
         }
 
         // Then
         await store.receive(\.load.delegate.loadFailed)
-        #expect(store.state.loadState == .failed("訂單載入失敗，請稍後再試。"))
+        #expect(store.state.loadState == .failed("orders.general.message.ordersLoadedTry"))
     }
 
     /// 重試成功時載入回傳訂單並清除錯誤狀態
@@ -167,7 +167,7 @@ struct OrdersLoadStateTests {
         // Given
         let initial = OrdersFeature.State()
         initial.load.$errorMessage.withLock {
-            $0 = "訂單載入失敗，請稍後再試。"
+            $0 = "orders.general.message.ordersLoadedTry"
         }
         let error = PersistenceError.fetchFailed(
             underlying: TestDependencies.makeUnderlyingError(message: "read")
@@ -182,7 +182,7 @@ struct OrdersLoadStateTests {
         // Then
         await store.receive(\.load.delegate.loadFailed)
         await store.finish()
-        #expect(store.state.loadState == .failed("訂單載入失敗，請稍後再試。"))
+        #expect(store.state.loadState == .failed("orders.general.message.ordersLoadedTry"))
         #expect(store.state.load.hasLoaded == false)
     }
 
@@ -261,7 +261,7 @@ private extension OrdersLoadStateTests {
     static func makeRetryState() -> OrdersFeature.State {
         let state = OrdersFeature.State()
         state.load.$errorMessage.withLock {
-            $0 = "訂單載入失敗，請稍後再試。"
+            $0 = "orders.general.message.ordersLoadedTry"
         }
         return state
     }

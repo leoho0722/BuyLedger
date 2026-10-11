@@ -349,7 +349,7 @@ struct QuoteFeatureTests {
     func retryTapped_匯率載入失敗_恢復可用匯率() async {
         // Given
         var initialState = QuoteFeature.State()
-        initialState.rateSource.errorMessage = "網路連線異常，目前無法計算建議售價。"
+        initialState.rateSource.errorMessage = "quote.calculator.message.networkErrorOccurred"
         let fetchedBases = LockIsolated<[CurrencyCode]>([])
         let store = TestStore(initialState: initialState) {
             QuoteFeature()
@@ -426,7 +426,7 @@ struct QuoteFeatureTests {
         let reason = state.rateSource.rateUnavailableReason
 
         // Then
-        #expect(reason == "尚無可用匯率資料，暫時無法試算。")
+        #expect(reason == "quote.calculator.message.exchangeRateAvailable")
     }
 
     /// 匯率載入中再次重試不會建立第二個請求
@@ -579,7 +579,7 @@ struct QuoteFeatureTests {
         }
         await store.receive(\.rateSource.ratesResponse.failure) {
             $0.rateSource.isLoading = false
-            $0.rateSource.errorMessage = "網路連線異常，目前無法計算建議售價。"
+            $0.rateSource.errorMessage = "quote.calculator.message.networkErrorOccurred"
         }
     }
 }

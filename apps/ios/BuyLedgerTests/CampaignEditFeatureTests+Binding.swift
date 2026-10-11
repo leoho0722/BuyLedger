@@ -43,7 +43,7 @@ extension CampaignEditFeatureTests {
         // Then
         #expect(store.draft.wantsReminder)
         #expect(store.draft.openDate == Date(timeIntervalSince1970: 86_400))
-        #expect(store.nameConflictMessage == "已有其他開團使用這個名稱，請改用不同名稱。")
+        #expect(store.nameConflictMessage == "campaigns.edit.message.anotherCampaignAlready")
     }
 }
 
@@ -60,7 +60,7 @@ private extension CampaignEditFeatureTests {
             now: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        state.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
+        state.nameConflictMessage = "campaigns.edit.message.anotherCampaignAlready"
         return Store(initialState: state) {
             CampaignEditFeature()
         }

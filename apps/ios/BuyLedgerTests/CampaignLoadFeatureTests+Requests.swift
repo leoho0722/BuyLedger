@@ -133,7 +133,7 @@ extension CampaignLoadFeatureTests {
                 $0 = false
             }
             $0.$errorMessage.withLock {
-                $0 = "開團載入失敗，請稍後再試。"
+                $0 = "campaigns.list.message.campaignsLoadedTry"
             }
         }
         await store.receive(\.delegate.loadFailed)

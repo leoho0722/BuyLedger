@@ -54,11 +54,11 @@ private extension MoreView {
     @ViewBuilder
     var entryList: some View {
         List {
-            Section("工具") {
+            Section("orders.list.label.tools") {
                 entryButton(.fx)
             }
 
-            Section("管理") {
+            Section("orders.detail.label.manage") {
                 entryButton(.customers)
 
                 entryButton(.orderSources)
@@ -72,12 +72,14 @@ private extension MoreView {
                 entryButton(.quote)
             }
 
-            Section("App") {
+            Section {
                 entryButton(.settings)
+            } header: {
+                Text(verbatim: "App")
             }
         }
         .accessibilityIdentifier(BLAccessibilityID.More.root)
-        .rootNavigationTitle("更多", language: language)
+        .rootNavigationTitle("common.action.label.more", language: language)
     }
 
     /// 建立保留系統按壓高亮的入口列與 accessibility identifier
@@ -126,13 +128,13 @@ private extension MoreView {
     func entryTitle(for entry: MoreFeature.Entry) -> String {
         switch entry {
         case .fx:
-            "匯率工具"
+            "settings.more.label.exchangeRates"
 
         case .customers:
-            "客戶名單"
+            "settings.more.label.customers"
 
         case .quote:
-            "報價試算"
+            "settings.more.label.quoteCalculator"
 
         case .orderSources:
             LookupKind.orderSource.entryTitle
@@ -147,7 +149,7 @@ private extension MoreView {
             LookupKind.reconciliationStatus.entryTitle
 
         case .settings:
-            "設定"
+            "orders.edit.title.settings"
         }
     }
 
@@ -252,7 +254,7 @@ private extension MoreView {
 
 // MARK: - Preview
 
-#Preview("更多") {
+#Preview("common.action.label.more") {
     MoreView(
         store: Store(initialState: MoreFeature.State(appVersion: "1.0")) {
             MoreFeature()

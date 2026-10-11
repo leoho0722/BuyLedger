@@ -125,16 +125,16 @@ private extension PersistenceFailureFeature {
     /// 復原前的二次確認內容，說明資料只搬到備份、不會被刪除
     var recoveryConfirmation: AlertState<Destination.Alert> {
         AlertState {
-            TextState("改用空白資料庫繼續")
+            TextState("common.general.label.continueBlankDatabase")
         } actions: {
             ButtonState(role: .destructive, action: .confirmRecovery) {
-                TextState("保留備份並繼續")
+                TextState("common.general.label.keepBackupContinue")
             }
             ButtonState(role: .cancel) {
-                TextState("取消")
+                TextState("common.action.cancel")
             }
         } message: {
-            TextState("這會將目前無法開啟的資料搬到裝置上的備份目錄。資料不會被刪除。完成後請關閉並重新開啟 App。")
+            TextState("common.general.message.movesDataCannot")
         }
     }
 

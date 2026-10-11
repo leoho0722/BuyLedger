@@ -33,8 +33,8 @@ enum BLUITestSeedData {
     )] = [
         (name: "信用卡", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
         (name: "銀行轉帳", isCardless: false, isBankTransfer: true, isCashOnDelivery: false),
-        (name: "無卡", isCardless: true, isBankTransfer: false, isCashOnDelivery: false),
-        (name: "貨到付款", isCardless: false, isBankTransfer: false, isCashOnDelivery: true),
+        (name: "orders.detail.label.cardless", isCardless: true, isBankTransfer: false, isCashOnDelivery: false),
+        (name: "orders.list.label.cashDelivery", isCardless: false, isBankTransfer: false, isCashOnDelivery: true),
         (name: "LINE Pay", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
         (name: "Apple Pay", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
     ]

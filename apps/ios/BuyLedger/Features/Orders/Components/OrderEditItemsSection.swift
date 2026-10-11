@@ -13,6 +13,9 @@ struct OrderEditItemsSection: View {
 
     // MARK: - Properties
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrderEditFeature>
 
@@ -50,14 +53,14 @@ private extension OrderEditItemsSection {
         Button {
             store.send(.view(.addItemTapped))
         } label: {
-            Label("新增商品", systemImage: "plus.circle.fill")
+            Label("orders.edit.label.addItem", systemImage: "plus.circle.fill")
         }
     }
 
     /// 商品明細標題與系統清單編輯入口
     var sectionHeader: some View {
         HStack {
-            Text("商品明細 (\(store.draft.currency.rawValue))")
+            Text(AppLanguage.format("orders.edit.label.itemDetailsCurrency", store.draft.currency.rawValue, locale: locale))
 
             Spacer()
 
@@ -75,11 +78,11 @@ private extension OrderEditItemsSection {
     @ViewBuilder
     var sectionFooter: some View {
         if store.draft.items.isEmpty {
-            Text("還沒有任何商品；點擊「新增商品」開始填寫。")
+            Text("orders.edit.message.thereItemsYet")
                 .blTextStyle(.footnote)
                 .foregroundStyle(Color.blSecondaryLabel)
         } else {
-            Text("商品單價以原始幣別記錄，總成本與獲利仍以上方「成本」欄位的 NT$ 數值為準。")
+            Text("orders.edit.message.itemPricesRecorded")
                 .blTextStyle(.footnote)
                 .foregroundStyle(Color.blSecondaryLabel)
         }
@@ -93,7 +96,7 @@ private extension OrderEditItemsSection {
     func itemEditorRow(item: Binding<LedgerOrderItem>) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             // 關閉內容類型，避免系統提供不相關建議
-            TextField("商品名稱", text: item.name, axis: .vertical)
+            TextField("orders.list.label.itemName", text: item.name, axis: .vertical)
                 .lineLimit(1...3)
                 .font(BLTypographyStyle.body.font.weight(.medium))
                 .textContentType(nil)
@@ -101,7 +104,7 @@ private extension OrderEditItemsSection {
 
             HStack(spacing: BLSpacing.medium) {
                 Stepper(value: item.quantity, in: 1...999) {
-                    Text("數量 \(item.quantity.wrappedValue)")
+                    Text(AppLanguage.format("orders.detail.label.quantity", item.quantity.wrappedValue, locale: locale))
                         .blTextStyle(.footnote)
                         .foregroundStyle(Color.blSecondaryLabel)
                 }
@@ -109,7 +112,7 @@ private extension OrderEditItemsSection {
                 Spacer()
 
                 HStack(spacing: 4) {
-                    Text("單價")
+                    Text("orders.edit.label.unitPrice")
                         .blTextStyle(.footnote)
                         .foregroundStyle(Color.blSecondaryLabel)
 

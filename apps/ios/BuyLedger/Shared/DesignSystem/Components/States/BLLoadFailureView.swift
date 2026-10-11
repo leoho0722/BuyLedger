@@ -37,7 +37,7 @@ private extension BLLoadFailureView {
     /// 失敗訊息與重試按鈕的呈現
     var failureContent: some View {
         ContentUnavailableView {
-            Label("無法載入資料", systemImage: "exclamationmark.triangle")
+            Label("common.ui.label.unableLoad", systemImage: "exclamationmark.triangle")
         } description: {
             // 訊息是 reducer 給的固定中文詞，須經 catalog 解析、不可 verbatim
             Text(LocalizedStringKey(message))
@@ -52,7 +52,7 @@ private extension BLLoadFailureView {
     /// 重試按鈕；未指定時不掛 identifier
     @ViewBuilder
     var retryButton: some View {
-        let button = Button("重試", action: onRetry)
+        let button = Button("common.action.button.retry", action: onRetry)
             .buttonStyle(.borderedProminent)
 
         if let retryIdentifier {
@@ -66,5 +66,5 @@ private extension BLLoadFailureView {
 // MARK: - Preview
 
 #Preview("載入失敗") {
-    BLLoadFailureView(message: "訂單載入失敗，請稍後再試。") {}
+    BLLoadFailureView(message: "orders.general.message.ordersLoadedTry") {}
 }

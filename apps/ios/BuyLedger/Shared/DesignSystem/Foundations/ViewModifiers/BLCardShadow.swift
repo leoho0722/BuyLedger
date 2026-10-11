@@ -63,7 +63,7 @@ extension View {
 
 #Preview("卡片陰影") {
     VStack(alignment: .leading, spacing: BLSpacing.large) {
-        Text("標準卡片陰影")
+        Text("common.ui.label.standardCardShadow")
             .padding()
             .frame(maxWidth: .infinity)
             .background(.background)
@@ -75,7 +75,7 @@ extension View {
             )
             .blCardShadow()
 
-        Text("浮層卡片陰影")
+        Text("common.ui.label.raisedCardShadow")
             .padding()
             .frame(maxWidth: .infinity)
             .background(.background)

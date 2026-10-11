@@ -116,43 +116,43 @@ extension OrderCostBreakdown {
         let codForeignDomesticShipping = order.isCashOnDelivery ? order.foreignDomesticShipping : 0
         return [
             Component(
-                title: "商品金額",
+                title: "orders.detail.label.itemCost",
                 value: order.itemCost,
                 tone: Tone.accent,
                 total: total
             ),
             Component(
-                title: "刷卡手續費",
+                title: "orders.detail.label.cardFee",
                 value: summary.cardFee,
                 tone: Tone.orange,
                 total: total
             ),
             Component(
-                title: "平台手續費",
+                title: "orders.detail.label.platformFee",
                 value: summary.platformFee,
                 tone: Tone.teal,
                 total: total
             ),
             Component(
-                title: "金流手續費",
+                title: "orders.detail.label.paymentProcessingFee",
                 value: summary.paymentFee,
                 tone: Tone.purple,
                 total: total
             ),
             Component(
-                title: "國內運費",
+                title: "orders.detail.label.localShipping",
                 value: codDomesticShipping,
                 tone: Tone.indigo,
                 total: total
             ),
             Component(
-                title: "國際運費",
+                title: "orders.detail.label.internationalShipping",
                 value: codInternationalShipping,
                 tone: Tone.pink,
                 total: total
             ),
             Component(
-                title: "外國國內運費",
+                title: "orders.detail.label.foreignLocalShipping",
                 value: codForeignDomesticShipping,
                 tone: Tone.yellow,
                 total: total

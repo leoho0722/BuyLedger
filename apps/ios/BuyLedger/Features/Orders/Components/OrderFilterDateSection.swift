@@ -72,7 +72,7 @@ private extension OrderFilterDateSection {
 
     /// 顯示此區段的篩選項目名稱
     var header: some View {
-        Text("日期區間")
+        Text("orders.list.label.dateRange")
     }
 }
 

@@ -31,16 +31,16 @@ extension LookupKind {
     var title: String {
         switch self {
         case .orderSource:
-            "訂單來源管理"
+            "orders.lookup.label.orderSources"
 
         case .category:
-            "商品類別管理"
+            "orders.lookup.label.itemCategories"
 
         case .paymentMethod:
-            "付款方式管理"
+            "orders.detail.label.paymentMethods"
 
         case .reconciliationStatus:
-            "對帳狀態管理"
+            "orders.lookup.label.reconciliationStatuses"
         }
     }
 
@@ -48,16 +48,16 @@ extension LookupKind {
     var entryTitle: String {
         switch self {
         case .orderSource:
-            "訂單來源"
+            "orders.detail.label.orderSource"
 
         case .category:
-            "商品類別"
+            "orders.list.label.itemCategory"
 
         case .paymentMethod:
-            "付款方式"
+            "orders.list.label.paymentMethod"
 
         case .reconciliationStatus:
-            "對帳狀態"
+            "orders.edit.label.reconciliationStatus"
         }
     }
 
@@ -65,16 +65,16 @@ extension LookupKind {
     var entrySubtitle: String {
         switch self {
         case .orderSource:
-            "管理訂單可選的訂單來源清單。"
+            "orders.lookup.message.manageOrderSources"
 
         case .category:
-            "管理訂單可選的商品類別清單。"
+            "orders.lookup.message.manageItemCategories"
 
         case .paymentMethod:
-            "管理訂單可選的付款方式清單。"
+            "orders.lookup.message.managePaymentMethods"
 
         case .reconciliationStatus:
-            "管理訂單可選的對帳狀態清單。"
+            "orders.lookup.message.manageReconciliationStatuses"
         }
     }
 
@@ -99,16 +99,16 @@ extension LookupKind {
     var addButtonTitle: String {
         switch self {
         case .orderSource:
-            "新增來源"
+            "orders.edit.label.addSource"
 
         case .category:
-            "新增類別"
+            "orders.edit.label.addCategory"
 
         case .paymentMethod:
-            "新增付款方式"
+            "orders.edit.label.addPaymentMethod"
 
         case .reconciliationStatus:
-            "新增對帳狀態"
+            "orders.edit.label.addStatus"
         }
     }
 
@@ -116,16 +116,16 @@ extension LookupKind {
     var emptyTitle: String {
         switch self {
         case .orderSource:
-            "尚無來源"
+            "orders.edit.label.sources"
 
         case .category:
-            "尚無類別"
+            "orders.edit.label.categories"
 
         case .paymentMethod:
-            "尚無付款方式"
+            "orders.edit.label.paymentMethods"
 
         case .reconciliationStatus:
-            "尚無對帳狀態"
+            "orders.edit.label.reconciliationStatuses"
         }
     }
 
@@ -133,16 +133,16 @@ extension LookupKind {
     var emptyDescription: String {
         switch self {
         case .orderSource:
-            "透過上方「新增來源」加入第一個訂單來源；訂單編輯時也能新增。"
+            "orders.lookup.message.useAddSource"
 
         case .category:
-            "透過上方「新增類別」加入第一個類別；訂單編輯時也能新增。"
+            "orders.lookup.message.useAddCategory"
 
         case .paymentMethod:
-            "透過上方「新增付款方式」加入第一個項目；訂單編輯時也能新增。"
+            "orders.lookup.message.useAddPayment"
 
         case .reconciliationStatus:
-            "透過上方「新增對帳狀態」加入第一個對帳狀態；訂單編輯時也能新增。"
+            "orders.lookup.message.useAddReconciliation"
         }
     }
 
@@ -150,16 +150,16 @@ extension LookupKind {
     var addFormTitle: String {
         switch self {
         case .orderSource:
-            "新增訂單來源"
+            "orders.edit.label.addOrderSource"
 
         case .category:
-            "新增商品類別"
+            "orders.edit.label.addItemCategory"
 
         case .paymentMethod:
-            "新增付款方式"
+            "orders.edit.label.addPaymentMethod"
 
         case .reconciliationStatus:
-            "新增對帳狀態"
+            "orders.edit.label.addStatus"
         }
     }
 
@@ -167,16 +167,16 @@ extension LookupKind {
     var addFormMessage: String {
         switch self {
         case .orderSource:
-            "輸入新的訂單來源名稱；不會自動套用到任何既有訂單。"
+            "orders.lookup.message.enterNewOrder"
 
         case .category:
-            "輸入新的商品類別名稱；不會自動套用到任何既有訂單。"
+            "orders.lookup.message.enterNewItem"
 
         case .paymentMethod:
-            "輸入新的付款方式名稱；不會自動套用到任何既有訂單。"
+            "orders.lookup.message.enterNewPayment"
 
         case .reconciliationStatus:
-            "輸入新的對帳狀態名稱；不會自動套用到任何既有訂單。"
+            "orders.lookup.message.enterNewReconciliation"
         }
     }
 
@@ -184,16 +184,16 @@ extension LookupKind {
     var nameFieldPlaceholder: String {
         switch self {
         case .orderSource:
-            "來源名稱"
+            "orders.edit.label.sourceName"
 
         case .category:
-            "類別名稱"
+            "orders.edit.label.categoryName"
 
         case .paymentMethod:
-            "付款方式名稱"
+            "orders.detail.label.paymentMethodName"
 
         case .reconciliationStatus:
-            "對帳狀態名稱"
+            "orders.edit.label.reconciliationStatusName"
         }
     }
 }

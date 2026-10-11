@@ -42,13 +42,13 @@ private extension DashboardRecentOrdersSection {
     /// 區段標題與「查看全部」按鈕
     var header: some View {
         HStack(alignment: .firstTextBaseline) {
-            Text("近期訂單")
+            Text("dashboard.overview.label.recentOrders")
                 .blTextStyle(.title3Bold)
                 .foregroundStyle(palette.label)
 
             Spacer()
 
-            Button("查看全部") {
+            Button("dashboard.overview.label.viewAll") {
                 store.send(.view(.viewAllOrdersTapped))
             }
             .buttonStyle(.plain)
@@ -61,9 +61,9 @@ private extension DashboardRecentOrdersSection {
     /// 沒有任何訂單時的空狀態
     var emptyState: some View {
         ContentUnavailableView(
-            "尚無訂單",
+            "dashboard.overview.label.orders",
             systemImage: "tray",
-            description: Text("先建立第一筆訂單，這裡會顯示近期紀錄。")
+            description: Text("dashboard.overview.message.createFirstOrder")
         )
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.vertical, BLSpacing.large)
@@ -104,7 +104,7 @@ private extension DashboardRecentOrdersSection {
 
 // MARK: - Preview
 
-#Preview("近期訂單") {
+#Preview("dashboard.overview.label.recentOrders") {
     DashboardRecentOrdersSection(
         recentOrders: Array(LedgerOrder.sampleOrders.prefix(4)),
         store: Store(initialState: DashboardFeature.State()) {

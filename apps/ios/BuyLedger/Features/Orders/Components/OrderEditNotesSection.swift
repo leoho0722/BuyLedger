@@ -36,7 +36,7 @@ private extension OrderEditNotesSection {
 
     /// 可輸入三至八行的選填備註
     var notesField: some View {
-        TextField("輸入備註 (選填)", text: $notes, axis: .vertical)
+        TextField("orders.edit.placeholder.enterNotesOptional", text: $notes, axis: .vertical)
             .lineLimit(3...8)
             .textContentType(.none)
             .focused(focusedField, equals: .notes)
@@ -44,7 +44,7 @@ private extension OrderEditNotesSection {
 
     /// 備註區段的標題
     var sectionHeader: some View {
-        Text("備註")
+        Text("orders.detail.label.notes")
     }
 }
 

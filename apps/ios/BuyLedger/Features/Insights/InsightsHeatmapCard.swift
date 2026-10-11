@@ -12,6 +12,9 @@ struct InsightsHeatmapCard: View {
 
     // MARK: - Properties
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 熱力圖單一格子的高度，隨字級縮放 (以 `.caption2` 為基準)
     @ScaledMetric(relativeTo: .caption2) private var heatmapCellHeight: CGFloat = 30
 
@@ -45,21 +48,21 @@ private extension InsightsHeatmapCard {
 
     /// 卡片標題，點明涵蓋的週數
     var title: some View {
-        Text("下單熱力 · 過去 \(weekCount) 週")
+        Text(AppLanguage.format("insights.chart.label.heatmapPastWeeks", weekCount, locale: locale))
             .font(BLTypographyStyle.subhead.font.weight(.semibold))
             .foregroundStyle(palette.label)
     }
 
     /// 週次標籤列最左側的空格，與星期欄對齊
     var cornerSpacer: some View {
-        Text(" ")
+        Text(verbatim: " ")
             .frame(width: heatmapWeekdayColumnWidth)
     }
 
     /// 週次標籤列，W1 為最早的一週
     var weekLabels: some View {
         ForEach(0..<weekCount, id: \.self) {
-            Text("W\($0 + 1)")
+            Text(verbatim: "W\($0 + 1)")
                 .frame(maxWidth: .infinity)
                 .blTextStyle(.caption2)
                 .foregroundStyle(palette.secondaryLabel)
@@ -85,7 +88,7 @@ private extension InsightsHeatmapCard {
         }
         // 整圖摘要：讓使用者不必逐格走過就能理解這張圖的範圍與規模
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text("下單熱力圖，涵蓋過去 \(weekCount) 週，最高單日 \(maxCount) 單"))
+        .accessibilityLabel(Text(AppLanguage.format("insights.chart.accessibility.heatmapSummary", weekCount, maxCount, locale: locale)))
     }
 
     /// 攤平後第 N 格的內容：每列第一格是星期標籤，其餘是熱力格
@@ -138,7 +141,7 @@ private extension InsightsHeatmapCard {
             .frame(height: heatmapCellHeight)
             .overlay {
                 if let depth {
-                    Text("\(count)")
+                    Text(verbatim: "\(count)")
                         .font(BLTypographyStyle.caption2.font.weight(.semibold))
                         .foregroundStyle(depth.numeral)
                         .accessibilityHidden(true)
@@ -147,8 +150,8 @@ private extension InsightsHeatmapCard {
             // 排除零值格，避免朗讀沒有意義的數字，
             // 非零格子帶上「星期 + 第幾週」讓數字有座標可依附
             .accessibilityHidden(count == 0)
-            .accessibilityLabel(Text("\(weekdayLabel) 第 \(week) 週"))
-            .accessibilityValue(Text("\(count) 單"))
+            .accessibilityLabel(Text(AppLanguage.format("insights.chart.accessibility.weekdayWeek", weekdayLabel, week, locale: locale)))
+            .accessibilityValue(Text(AppLanguage.format("insights.chart.accessibility.orderCount", count, locale: locale)))
     }
 }
 

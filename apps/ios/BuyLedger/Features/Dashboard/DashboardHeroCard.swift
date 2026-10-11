@@ -61,7 +61,7 @@ private extension DashboardHeroCard {
     var profitSummary: some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             // 層級由字重與字級表達；不透明度降階會直接損害對比
-            Text("本月 · 淨獲利")
+            Text("dashboard.overview.label.monthNet")
                 .font(BLTypographyStyle.footnote.font.weight(.medium))
 
             Text(profitDisplay(stats.profit))
@@ -75,9 +75,9 @@ private extension DashboardHeroCard {
                 Text(profitDeltaDisplay(stats.profitDelta))
                     .blTextStyle(.footnote)
 
-                Text("·")
+                Text(verbatim: "·")
 
-                Text("\(stats.orderCount) 單")
+                Text(AppLanguage.format("dashboard.overview.label.orderCount", stats.orderCount, locale: locale))
                     .blTextStyle(.footnote)
             }
         }
@@ -90,11 +90,11 @@ private extension DashboardHeroCard {
             tint: .white,
             height: 36,
             summary: sparklineSummary,
-            axisXTitle: language.localized("順序"),
-            axisYTitle: language.localized("數值"),
-            seriesName: language.localized("走勢圖")
+            axisXTitle: language.localized("orders.list.label.sequence"),
+            axisYTitle: language.localized("orders.detail.label.value"),
+            seriesName: language.localized("dashboard.overview.label.trendChart")
         ) {
-            language.localized("第 \($0) 筆")
+            language.localizedString(forKey: "common.general.label.pointLd", $0)
         }
     }
 
@@ -111,7 +111,7 @@ private extension DashboardHeroCard {
                         BLProgressViewStyle(tint: .white, track: .white.opacity(0.25))
                     )
 
-                Text("\(Int(progress * 100))% / \(BLFormatters.twd(stats.goal, locale: locale))")
+                Text(verbatim: "\(Int(progress * 100))% / \(BLFormatters.twd(stats.goal, locale: locale))")
                     .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .monospacedDigit()
             }
@@ -131,19 +131,19 @@ private extension DashboardHeroCard {
               let last = points.last,
               let lowest = points.min(),
               let highest = points.max() else {
-            return "月獲利走勢圖，目前沒有資料"
+            return "dashboard.overview.label.monthlyProfitTrend"
         }
 
         // 三個方向各自成句、不拼接片語：拼接的句子無法在其他語言正確重組
         let low = BLFormatters.twd(Decimal(lowest), locale: locale)
         let high = BLFormatters.twd(Decimal(highest), locale: locale)
         if last > first {
-            return "月獲利走勢圖，共 \(points.count) 個月，整體上升，最低 \(low)，最高 \(high)"
+            return LocalizedStringKey(AppLanguage.format("dashboard.overview.accessibility.trendUp", points.count, low, high, locale: locale))
         }
         if last < first {
-            return "月獲利走勢圖，共 \(points.count) 個月，整體下降，最低 \(low)，最高 \(high)"
+            return LocalizedStringKey(AppLanguage.format("dashboard.overview.accessibility.trendDown", points.count, low, high, locale: locale))
         }
-        return "月獲利走勢圖，共 \(points.count) 個月，整體持平，最低 \(low)，最高 \(high)"
+        return LocalizedStringKey(AppLanguage.format("dashboard.overview.accessibility.trendFlat", points.count, low, high, locale: locale))
     }
 
     /// 將獲利金額格式化為含正負號的新台幣字串

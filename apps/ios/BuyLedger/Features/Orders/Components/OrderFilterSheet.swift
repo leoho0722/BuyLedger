@@ -32,9 +32,9 @@ struct OrderFilterSheet: View {
             .searchable(
                 text: $store.filterSheetSearchText,
                 placement: .navigationBarDrawer(displayMode: .always),
-                prompt: Text("搜尋類別或付款方式")
+                prompt: Text("orders.filter.placeholder.searchCategoriesPayment")
             )
-            .navigationTitle(Text("篩選"))
+            .navigationTitle(Text("orders.list.label.filter"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 filterToolbar
@@ -61,13 +61,13 @@ private extension OrderFilterSheet {
         } label: {
             Image(systemName: "xmark")
         }
-        .accessibilityLabel(Text("取消"))
+        .accessibilityLabel(Text("common.action.cancel"))
         .accessibilityIdentifier(BLAccessibilityID.Orders.filterCancelButton)
     }
 
     /// 套用目前選取的日期、付款方式與類別
     var applyButton: some View {
-        Button("套用") {
+        Button("orders.list.button.apply") {
             store.send(.view(.filterApplyTapped))
         }
         .accessibilityIdentifier(BLAccessibilityID.Orders.filterApplyButton)

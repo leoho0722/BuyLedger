@@ -6,6 +6,7 @@
 //
 
 import ComposableArchitecture
+import Foundation
 import SwiftUI
 import Testing
 
@@ -61,13 +62,13 @@ extension CampaignFeatureTests {
         await store.receive(\.presentation.noticeRequested, .writeFailure(.save)) {
             $0.presentation.queue.pendingNotice = .alert(
                 AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("操作失敗")
+                    TextState("orders.list.label.operationFailed")
                 } actions: {
                     ButtonState(role: .cancel) {
-                        TextState("知道了")
+                        TextState("orders.merge.label.ok")
                     }
                 } message: {
-                    TextState("開團儲存失敗，請稍後再試。")
+                    TextState("campaigns.general.message.campaignSavedTry")
                 }
             )
         }
@@ -139,13 +140,13 @@ extension CampaignFeatureTests {
         await store.receive(\.presentation.noticeRequested, .writeFailure(.status)) {
             $0.presentation.destination = .alert(
                 AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("操作失敗")
+                    TextState("orders.list.label.operationFailed")
                 } actions: {
                     ButtonState(role: .cancel) {
-                        TextState("知道了")
+                        TextState("orders.merge.label.ok")
                     }
                 } message: {
-                    TextState("開團狀態更新失敗，請稍後再試。")
+                    TextState("campaigns.general.message.campaignStatusUpdated")
                 }
             )
         }
@@ -213,16 +214,21 @@ extension CampaignFeatureTests {
         await store.receive(\.path[id: detailID].detail.delegate.requested) {
             $0.presentation.destination = .alert(
                 AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("結團結算")
+                    TextState("campaigns.detail.label.campaignSettlement")
                 } actions: {
                     ButtonState(action: .confirmSettle("C1")) {
-                        TextState("結團")
+                        TextState("campaigns.list.label.settle")
                     }
                     ButtonState(role: .cancel) {
-                        TextState("取消")
+                        TextState("common.action.cancel")
                     }
                 } message: {
-                    TextState("結算「團」後就無法再改回進行中。確定要結團嗎？")
+                    TextState(
+                        LocalizedStringResource(
+                            "campaigns.detail.message.settleUndoneNotice",
+                            defaultValue: "\("團")"
+                        )
+                    )
                 }
             )
         }
@@ -236,13 +242,13 @@ extension CampaignFeatureTests {
         await store.receive(\.presentation.noticeRequested, .writeFailure(.settle)) {
             $0.presentation.destination = .alert(
                 AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("操作失敗")
+                    TextState("orders.list.label.operationFailed")
                 } actions: {
                     ButtonState(role: .cancel) {
-                        TextState("知道了")
+                        TextState("orders.merge.label.ok")
                     }
                 } message: {
-                    TextState("結團失敗，請稍後再試。")
+                    TextState("campaigns.general.message.campaignSettledTry")
                 }
             )
         }

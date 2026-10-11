@@ -92,10 +92,10 @@ struct InsightsStats {
         self.trendDeltaIsPositive = trendDelta.isPositive
         self.categories = InsightsStats.categoryBreakdown(orders: orders)
         self.costSegments = [
-            InsightsCostSegment(label: "商品金額", value: totalItem, color: palette.accent),
-            InsightsCostSegment(label: "國內運費", value: totalDom, color: palette.teal),
-            InsightsCostSegment(label: "國際運費", value: totalIntl, color: palette.purple),
-            InsightsCostSegment(label: "手續費", value: totalFees, color: palette.orange),
+            InsightsCostSegment(label: "orders.detail.label.itemCost", value: totalItem, color: palette.accent),
+            InsightsCostSegment(label: "orders.detail.label.localShipping", value: totalDom, color: palette.teal),
+            InsightsCostSegment(label: "orders.detail.label.internationalShipping", value: totalIntl, color: palette.purple),
+            InsightsCostSegment(label: "orders.detail.label.fees", value: totalFees, color: palette.orange),
         ].filter { $0.value > 0 }
         self.totalCost = totalCost
     }
@@ -282,7 +282,7 @@ private extension InsightsStats {
         locale: Locale
     ) -> (text: String, isPositive: Bool?) {
         guard let previous, previous != 0 else {
-            return ("— 無對照", nil)
+            return ("insights.chart.label.comparison", nil)
         }
         let isPositive = current >= previous
         let ratio = (current - previous) / abs(previous)

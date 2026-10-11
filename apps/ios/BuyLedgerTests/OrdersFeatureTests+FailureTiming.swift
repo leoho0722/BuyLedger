@@ -172,10 +172,10 @@ extension OrdersFeatureTests {
     ) -> OrdersPresentationFeature.Destination.State {
         .alert(
             AlertState<OrdersPresentationFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
                 TextState(message)

@@ -32,7 +32,7 @@ extension BLSearchableModifier: ViewModifier {
             content.searchable(
                 text: $text,
                 placement: .navigationBarDrawer(displayMode: .always),
-                prompt: Text("搜尋")
+                prompt: Text("common.action.action.search")
             )
         } else {
             content

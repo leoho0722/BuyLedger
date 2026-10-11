@@ -83,7 +83,7 @@ private extension OrderDetailSummaryView {
         let profitValue = OrderFormatters.signedTWD(summary.profit, locale: locale)
 
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
-            Text("獲利")
+            Text("orders.detail.label.profit")
                 .font(BLTypographyStyle.footnote.font.weight(.semibold))
                 .foregroundStyle(palette.secondaryLabel)
 
@@ -105,7 +105,7 @@ private extension OrderDetailSummaryView {
             alignment: dynamicTypeSize.isAccessibilitySize ? .leading : .trailing,
             spacing: BLSpacing.extraSmall
         ) {
-            Text("毛利率")
+            Text("orders.detail.label.grossMargin")
                 .font(BLTypographyStyle.footnote.font.weight(.semibold))
                 .foregroundStyle(palette.secondaryLabel)
 
@@ -136,7 +136,7 @@ private extension OrderDetailSummaryView {
         let revenueValue = OrderFormatters.twd(summary.revenue, locale: locale)
         let costValue = OrderFormatters.twd(summary.totalCost, locale: locale)
 
-        metric("總收款", value: revenueValue, palette: palette)
+        metric("orders.detail.label.totalPayment", value: revenueValue, palette: palette)
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.revenue))
             .accessibilityValue(revenueValue)
@@ -145,7 +145,7 @@ private extension OrderDetailSummaryView {
             Spacer()
         }
 
-        metric("總成本", value: costValue, palette: palette)
+        metric("orders.detail.label.totalCost", value: costValue, palette: palette)
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.cost))
             .accessibilityValue(costValue)
@@ -154,7 +154,7 @@ private extension OrderDetailSummaryView {
             Spacer()
         }
 
-        metric("手續費", value: OrderFormatters.twd(summary.fees, locale: locale), palette: palette)
+        metric("orders.detail.label.fees", value: OrderFormatters.twd(summary.fees, locale: locale), palette: palette)
     }
 
     /// 寬欄版面的三項財務指標，無障礙字級下改為直排
@@ -180,7 +180,7 @@ private extension OrderDetailSummaryView {
         let profitValue = OrderFormatters.signedTWD(summary.profit, locale: locale)
 
         kpiTile(
-            label: "總收款",
+            label: "orders.detail.label.totalPayment",
             value: revenueValue,
             tint: palette.accent,
             palette: palette
@@ -189,7 +189,7 @@ private extension OrderDetailSummaryView {
         .accessibilityValue(revenueValue)
 
         kpiTile(
-            label: "總成本",
+            label: "orders.detail.label.totalCost",
             value: costValue,
             tint: palette.orange,
             palette: palette
@@ -198,7 +198,7 @@ private extension OrderDetailSummaryView {
         .accessibilityValue(costValue)
 
         kpiTile(
-            label: "獲利",
+            label: "orders.detail.label.profit",
             value: profitValue,
             delta: OrderFormatters.marginPercent(summary, locale: locale),
             deltaTint: summary.profit >= 0 ? palette.green : palette.red,

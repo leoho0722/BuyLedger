@@ -23,13 +23,13 @@ extension AppLockFormatters {
     ) -> LocalizedStringKey {
         switch biometryType {
         case .faceID:
-            return "使用 Face ID 解鎖"
+            return "settings.preference.label.unlockFaceId"
 
         case .touchID:
-            return "使用 Touch ID 解鎖"
+            return "settings.preference.label.unlockTouchId"
 
         case .unavailable:
-            return "解鎖"
+            return "settings.preference.label.unlock"
         }
     }
 
@@ -42,13 +42,13 @@ extension AppLockFormatters {
     ) -> LocalizedStringKey {
         switch biometryType {
         case .faceID:
-            return "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Face ID 或密碼驗證才能繼續使用。"
+            return "settings.preference.message.whenEnabled"
 
         case .touchID:
-            return "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過 Touch ID 或密碼驗證才能繼續使用。"
+            return "settings.preference.message.whenEnabledLeaving"
 
         case .unavailable:
-            return "開啟後，離開 App 時會鎖定畫面內容；再次使用 App 時，需要通過裝置密碼驗證才能繼續使用。"
+            return "settings.preference.message.whenEnabledLeavingThe"
         }
     }
 }

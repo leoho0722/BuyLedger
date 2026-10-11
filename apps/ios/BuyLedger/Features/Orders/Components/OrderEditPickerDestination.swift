@@ -43,13 +43,13 @@ private extension OrderEditPickerDestination {
         switch route {
         case .orderSource:
             OptionPickerSheet(
-                title: "選擇訂單來源",
-                addButtonTitle: "新增來源",
-                emptyTitle: "尚無來源",
-                emptyDescription: "透過上方「新增來源」加入第一個訂單來源。",
-                addAlertTitle: "新增訂單來源",
-                addFieldPlaceholder: "來源名稱",
-                addAlertMessage: "輸入新的訂單來源名稱，加入後會立即套用至此訂單。",
+                title: "orders.edit.label.selectOrderSource",
+                addButtonTitle: "orders.edit.label.addSource",
+                emptyTitle: "orders.edit.label.sources",
+                emptyDescription: "orders.edit.message.addFirstOrder",
+                addAlertTitle: "orders.edit.label.addOrderSource",
+                addFieldPlaceholder: "orders.edit.label.sourceName",
+                addAlertMessage: "orders.edit.message.enterNewOrder",
                 options: pickerStore.availableOrderSources,
                 selected: store.draft.orderSource,
                 onSelect: {
@@ -65,13 +65,13 @@ private extension OrderEditPickerDestination {
             if store.isMergeContext {
                 // 合併時使用多選模式
                 OptionPickerSheet(
-                    title: "選擇商品類別",
-                    addButtonTitle: "新增類別",
-                    emptyTitle: "尚無類別",
-                    emptyDescription: "透過上方「新增類別」加入第一個類別。",
-                    addAlertTitle: "新增商品類別",
-                    addFieldPlaceholder: "類別名稱",
-                    addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
+                    title: "orders.list.label.category1",
+                    addButtonTitle: "orders.edit.label.addCategory",
+                    emptyTitle: "orders.edit.label.categories",
+                    emptyDescription: "orders.edit.message.addFirstCategory",
+                    addAlertTitle: "orders.edit.label.addItemCategory",
+                    addFieldPlaceholder: "orders.edit.label.categoryName",
+                    addAlertMessage: "orders.edit.message.enterNewProduct",
                     options: pickerStore.availableCategories,
                     onAdd: {
                         pickerStore.send(.view(.addCategoryTapped($0)))
@@ -86,13 +86,13 @@ private extension OrderEditPickerDestination {
                 )
             } else {
                 OptionPickerSheet(
-                    title: "選擇商品類別",
-                    addButtonTitle: "新增類別",
-                    emptyTitle: "尚無類別",
-                    emptyDescription: "透過上方「新增類別」加入第一個類別。",
-                    addAlertTitle: "新增商品類別",
-                    addFieldPlaceholder: "類別名稱",
-                    addAlertMessage: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
+                    title: "orders.list.label.category1",
+                    addButtonTitle: "orders.edit.label.addCategory",
+                    emptyTitle: "orders.edit.label.categories",
+                    emptyDescription: "orders.edit.message.addFirstCategory",
+                    addAlertTitle: "orders.edit.label.addItemCategory",
+                    addFieldPlaceholder: "orders.edit.label.categoryName",
+                    addAlertMessage: "orders.edit.message.enterNewProduct",
                     options: pickerStore.availableCategories,
                     selected: store.draft.categories.first ?? "",
                     onSelect: {
@@ -107,10 +107,10 @@ private extension OrderEditPickerDestination {
 
         case .campaign:
             OptionPickerSheet(
-                title: "選擇開團",
+                title: "orders.edit.label.selectCampaigns",
                 allowsAdd: false,
-                emptyTitle: "尚無開團",
-                emptyDescription: "請先在「開團」頁建立開團，再回到此處歸團。",
+                emptyTitle: "orders.edit.label.campaigns",
+                emptyDescription: "orders.edit.message.createCampaignCampaigns",
                 options: pickerStore.availableCampaigns,
                 multiSelection: .init(
                     selections: Set(store.draft.campaignNames),
@@ -123,13 +123,13 @@ private extension OrderEditPickerDestination {
 
         case .paymentMethod:
             OptionPickerSheet(
-                title: "選擇付款方式",
-                addButtonTitle: "新增付款方式",
-                emptyTitle: "尚無付款方式",
-                emptyDescription: "透過上方「新增付款方式」加入第一個項目。",
-                addAlertTitle: "新增付款方式",
-                addFieldPlaceholder: "付款方式名稱",
-                addAlertMessage: "輸入新的付款方式名稱，加入後會立即套用至此訂單。",
+                title: "orders.list.label.selectPaymentMethod",
+                addButtonTitle: "orders.edit.label.addPaymentMethod",
+                emptyTitle: "orders.edit.label.paymentMethods",
+                emptyDescription: "orders.edit.message.addFirstPayment",
+                addAlertTitle: "orders.edit.label.addPaymentMethod",
+                addFieldPlaceholder: "orders.detail.label.paymentMethodName",
+                addAlertMessage: "orders.edit.message.enterNewPayment",
                 options: pickerStore.availablePaymentMethods.map(\.name),
                 selected: store.draft.paymentMethod,
                 onSelect: {
@@ -154,13 +154,13 @@ private extension OrderEditPickerDestination {
 
         case .reconciliationStatus:
             OptionPickerSheet(
-                title: "選擇對帳狀態",
-                addButtonTitle: "新增對帳狀態",
-                emptyTitle: "尚無對帳狀態",
-                emptyDescription: "透過上方「新增對帳狀態」加入第一個項目。",
-                addAlertTitle: "新增對帳狀態",
-                addFieldPlaceholder: "對帳狀態名稱",
-                addAlertMessage: "輸入新的對帳狀態名稱，加入後會立即套用至此訂單。",
+                title: "orders.edit.label.reconciliationStatus2",
+                addButtonTitle: "orders.edit.label.addStatus",
+                emptyTitle: "orders.edit.label.reconciliationStatuses",
+                emptyDescription: "orders.edit.message.addFirstReconciliation",
+                addAlertTitle: "orders.edit.label.addStatus",
+                addFieldPlaceholder: "orders.edit.label.reconciliationStatusName",
+                addAlertMessage: "orders.edit.message.enterNewReconciliation",
                 options: pickerStore.availableReconciliationStatuses,
                 selected: store.draft.reconciliationStatus,
                 onSelect: {
@@ -177,11 +177,11 @@ private extension OrderEditPickerDestination {
             let language = AppLanguage(locale: locale)
 
             OptionPickerSheet(
-                title: "選擇幣別",
+                title: "orders.edit.label.selectCurrency",
                 allowsAdd: false,
                 searchable: true,
-                emptyTitle: "尚無幣別",
-                emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
+                emptyTitle: "orders.edit.label.currenciesAvailable",
+                emptyDescription: "orders.edit.message.internetConnectionRequired",
                 options: pickerStore.availableCurrencies.map(\.rawValue),
                 selected: store.draft.currency.rawValue,
                 displayName: {

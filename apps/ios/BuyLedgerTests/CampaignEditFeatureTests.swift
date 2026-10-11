@@ -57,7 +57,7 @@ struct CampaignEditFeatureTests {
             state.draft.status = .closed
 
         case .notes:
-            state.draft.notes = "備註"
+            state.draft.notes = "orders.detail.label.notes"
 
         case .wantsReminder:
             state.draft.wantsReminder = true
@@ -155,7 +155,7 @@ struct CampaignEditFeatureTests {
     func binding_修改名稱_清除過期重名訊息() async {
         // Given
         var initial = Self.makeState()
-        initial.nameConflictMessage = "已有其他開團使用這個名稱，請改用不同名稱。"
+        initial.nameConflictMessage = "campaigns.edit.message.anotherCampaignAlready"
         let store = TestStore(initialState: initial) {
             CampaignEditFeature()
         }
@@ -324,16 +324,16 @@ private extension CampaignEditFeatureTests {
     /// 捨棄確認的獨立預期文案與按鈕
     static var discardAlert: AlertState<CampaignEditFeature.Action.DiscardAlert> {
         AlertState {
-            TextState("捨棄變更")
+            TextState("orders.list.label.discardChanges")
         } actions: {
             ButtonState(role: .destructive, action: .discard) {
-                TextState("捨棄變更")
+                TextState("orders.list.label.discardChanges")
             }
             ButtonState(role: .cancel) {
-                TextState("繼續編輯")
+                TextState("orders.list.label.keepEditing")
             }
         } message: {
-            TextState("這個開團有尚未儲存的變更，離開後將不會保留。")
+            TextState("campaigns.edit.message.campaignHasUnsaved")
         }
     }
 

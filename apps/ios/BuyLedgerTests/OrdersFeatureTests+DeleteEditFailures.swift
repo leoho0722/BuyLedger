@@ -43,7 +43,7 @@ extension OrdersFeatureTests {
                 customerName: original.customer.name
             )
         )
-        let writeFailureAlert = Self.expectedWriteFailureAlert("訂單刪除失敗，請稍後再試。")
+        let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.orderDeletedTry")
 
         let store = TestStore(initialState: state) {
             OrdersFeature()
@@ -119,7 +119,7 @@ extension OrdersFeatureTests {
             return fetchedOrders
         }
         let persistedOrders = LedgerOrder.sampleOrders.map(LedgerOrder.normalizingItemIdentifiers)
-        let writeFailureAlert = Self.expectedWriteFailureAlert("訂單儲存失敗，請稍後再試。")
+        let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.orderSavedTry")
 
         var draft = OrderEditFeature.State(
             original: original,

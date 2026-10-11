@@ -45,10 +45,10 @@ private extension AppLockView {
                 .font(.system(size: iconSize))
                 .foregroundStyle(Color.blSecondaryLabel)
 
-            Text("App 已鎖定")
+            Text("settings.preference.label.appLocked")
                 .blTextStyle(.title2)
 
-            Text("請完成身份驗證以繼續使用。")
+            Text("settings.preference.message.completeAuthenticationContinue")
                 .multilineTextAlignment(.center)
 
             if store.unlockDidFail {
@@ -61,7 +61,7 @@ private extension AppLockView {
 
     /// 驗證失敗時顯示的訊息
     var failedMessage: some View {
-        Text("驗證未完成，請再試一次。")
+        Text("settings.preference.message.authenticationCompletedPlease")
             .blTextStyle(.footnote)
             .foregroundStyle(BLTone.destructive.onSurface)
             .multilineTextAlignment(.center)

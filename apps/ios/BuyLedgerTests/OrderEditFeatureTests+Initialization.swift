@@ -23,7 +23,7 @@ extension OrderEditFeatureTests {
         let title = state.navigationTitleKey
 
         // Then
-        #expect(title == "新訂單")
+        #expect(title == "orders.list.label.newOrder")
     }
 
     /// 編輯既有訂單的標題沿用「編輯訂單」本地化鍵
@@ -40,7 +40,7 @@ extension OrderEditFeatureTests {
         let title = state.navigationTitleKey
 
         // Then
-        #expect(title == "編輯訂單")
+        #expect(title == "orders.detail.label.editOrder")
     }
 
     /// 合併預填沒有原始訂單時，標題仍沿用「新訂單」本地化鍵
@@ -61,7 +61,7 @@ extension OrderEditFeatureTests {
         let title = state.navigationTitleKey
 
         // Then
-        #expect(title == "新訂單")
+        #expect(title == "orders.list.label.newOrder")
     }
 
     /// 編輯既有訂單時，草稿帶入原有欄位內容

@@ -88,7 +88,7 @@ private extension CampaignView {
 
 // MARK: - Preview
 
-#Preview("開團") {
+#Preview("orders.detail.title.campaigns") {
     CampaignView(
         store: Store(initialState: CampaignFeature.State()) {
             CampaignFeature()

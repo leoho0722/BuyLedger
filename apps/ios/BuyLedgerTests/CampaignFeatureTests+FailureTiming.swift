@@ -25,13 +25,13 @@ extension CampaignFeatureTests {
         initial.presentation.destination = .edit(editState)
         let expectedNotice: CampaignPresentationFeature.Destination.State = .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("開團儲存失敗，請稍後再試。")
+                TextState("campaigns.general.message.campaignSavedTry")
             }
         )
         let savedCampaignNames = LockIsolated<[String]>([])
@@ -100,13 +100,13 @@ extension CampaignFeatureTests {
         )
         let expectedNotice: CampaignPresentationFeature.Destination.State = .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("開團狀態自動更新失敗，請稍後再試。")
+                TextState("campaigns.general.message.automaticallyUpdatingCampaign")
             }
         )
         var initial = CampaignFeature.State()
@@ -158,24 +158,24 @@ extension CampaignFeatureTests {
         // Given
         let firstNotice: CampaignPresentationFeature.Destination.State = .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("開團儲存失敗，請稍後再試。")
+                TextState("campaigns.general.message.campaignSavedTry")
             }
         )
         let expectedNotice: CampaignPresentationFeature.Destination.State = .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("結團失敗，請稍後再試。")
+                TextState("campaigns.general.message.campaignSettledTry")
             }
         )
         var initial = CampaignFeature.State()

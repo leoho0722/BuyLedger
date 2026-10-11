@@ -41,28 +41,28 @@ private extension OrderEditCostSection {
     @ViewBuilder
     var fields: some View {
         OrderEditDecimalField(
-            title: "商品成本",
+            title: "orders.edit.label.itemCost",
             value: $store.draft.itemCost,
             field: .itemCost,
             focusedField: focusedField
         )
 
         OrderEditDecimalField(
-            title: "外國國內運費",
+            title: "orders.detail.label.foreignLocalShipping",
             value: $store.draft.foreignDomesticShipping,
             field: .foreignDomesticShipping,
             focusedField: focusedField
         )
 
         OrderEditDecimalField(
-            title: "國際運費",
+            title: "orders.detail.label.internationalShipping",
             value: $store.draft.internationalShipping,
             field: .internationalShipping,
             focusedField: focusedField
         )
 
         OrderEditDecimalField(
-            title: "國內運費",
+            title: "orders.detail.label.localShipping",
             value: $store.draft.domesticShipping,
             field: .domesticShipping,
             focusedField: focusedField
@@ -71,14 +71,14 @@ private extension OrderEditCostSection {
 
     /// 成本的幣別標題
     var sectionHeader: some View {
-        Text("成本 (NT$)")
+        Text("orders.edit.label.costNt")
     }
 
     /// 貨到付款時的運費扣除說明
     @ViewBuilder
     var sectionFooter: some View {
         if store.isSelectedPaymentMethodCOD {
-            Text("貨到付款：收款金額已含預估運費，獲利會自動扣除上方三種運費 (國內 + 國際 + 外國國內)。")
+            Text("orders.edit.message.cashDeliveryReceived")
                 .blTextStyle(.footnote)
                 .foregroundStyle(Color.blSecondaryLabel)
         }

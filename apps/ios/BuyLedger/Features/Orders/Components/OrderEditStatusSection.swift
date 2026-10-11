@@ -23,7 +23,7 @@ struct OrderEditStatusSection: View {
 
     /// 「狀態與幣別」區段，內容為狀態選單與幣別、付款方式，以及符合條件時顯示的對帳狀態選擇列
     var body: some View {
-        Section("狀態與幣別") {
+        Section("orders.edit.label.statusCurrency") {
             fields
         }
     }
@@ -36,7 +36,7 @@ private extension OrderEditStatusSection {
     /// 狀態選單與付款相關選擇列
     @ViewBuilder
     var fields: some View {
-        Picker("狀態", selection: $store.draft.status) {
+        Picker("orders.list.label.status", selection: $store.draft.status) {
             ForEach(store.availableStatuses) {
                 Text(LocalizedStringKey($0.title))
                     .tag($0)
@@ -55,7 +55,7 @@ private extension OrderEditStatusSection {
     /// 幣別的選擇器入口，顯示目前幣別的名稱
     var currencyPickerRow: some View {
         OrderEditSelectionRow(
-            title: "幣別",
+            title: "orders.edit.label.currency",
             identifier: BLAccessibilityID.OrderEdit.currencyRow,
             action: {
                 pickerStore.send(.view(.currencyPickerTapped))
@@ -73,7 +73,7 @@ private extension OrderEditStatusSection {
     /// 付款方式的選擇器入口，未選取時顯示提示文字
     var paymentMethodPickerRow: some View {
         OrderEditSelectionRow(
-            title: "付款方式",
+            title: "orders.list.label.paymentMethod",
             identifier: BLAccessibilityID.OrderEdit.paymentRow,
             action: {
                 pickerStore.send(.view(.paymentMethodPickerTapped))
@@ -81,7 +81,7 @@ private extension OrderEditStatusSection {
         ) {
             Group {
                 if store.draft.paymentMethod.isEmpty {
-                    Text("選擇付款方式")
+                    Text("orders.list.label.selectPaymentMethod")
                 } else {
                     Text(verbatim: store.draft.paymentMethod)
                 }
@@ -92,7 +92,7 @@ private extension OrderEditStatusSection {
     /// 對帳狀態的選擇器入口，未選取時顯示提示文字
     var reconciliationStatusPickerRow: some View {
         OrderEditSelectionRow(
-            title: "對帳狀態",
+            title: "orders.edit.label.reconciliationStatus",
             identifier: BLAccessibilityID.OrderEdit.reconciliationRow,
             action: {
                 pickerStore.send(.view(.reconciliationStatusPickerTapped))
@@ -100,7 +100,7 @@ private extension OrderEditStatusSection {
         ) {
             Group {
                 if store.draft.reconciliationStatus.isEmpty {
-                    Text("選擇對帳狀態")
+                    Text("orders.edit.label.reconciliationStatus2")
                 } else {
                     Text(verbatim: store.draft.reconciliationStatus)
                 }

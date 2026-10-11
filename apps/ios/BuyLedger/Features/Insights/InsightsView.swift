@@ -51,7 +51,7 @@ struct InsightsView: View {
                 .task {
                     await store.send(.view(.task)).finish()
                 }
-                .rootNavigationTitle("分析", language: language)
+                .rootNavigationTitle("orders.filter.title.insights", language: language)
         }
     }
 }
@@ -63,7 +63,7 @@ private extension InsightsView {
     /// 期間選擇器，切換走勢卡統計的期間
     var rangePicker: some View {
         // segmented picker 的選項無法個別掛 identifier，identifier 掛在 `Picker` 本體，測試端依宣告順序點選選項
-        Picker("期間", selection: $store.insightsDateRange) {
+        Picker("orders.list.label.period", selection: $store.insightsDateRange) {
             ForEach(InsightsDateRange.allCases) {
                 Text(LocalizedStringKey($0.title))
                     .tag($0)
@@ -117,9 +117,9 @@ private extension InsightsView {
     /// 沒有訂單時的空狀態，引導使用者先建立訂單
     var emptyState: some View {
         ContentUnavailableView {
-            Label("尚未有足夠可用於分析的資料", systemImage: "chart.bar.xaxis")
+            Label("insights.chart.label.enoughDataInsights", systemImage: "chart.bar.xaxis")
         } description: {
-            Text("先到「訂單」分頁新增幾筆訂單，這裡就會出現走勢、類別排行、成本結構與下單熱力圖。")
+            Text("insights.chart.message.addFewOrders")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier(BLAccessibilityID.Insights.emptyState)
@@ -149,7 +149,7 @@ private extension InsightsView {
         }
         .scrollDisabled(true)
         .accessibilityElement()
-        .accessibilityLabel(Text("載入中"))
+        .accessibilityLabel(Text("common.action.label.loading"))
         .accessibilityIdentifier(BLAccessibilityID.Common.loading("insights"))
     }
 
@@ -300,7 +300,7 @@ private extension InsightsView {
 
 // MARK: - Preview
 
-#Preview("分析") {
+#Preview("orders.filter.title.insights") {
     let previewState: InsightsFeature.State = {
         var state = InsightsFeature.State()
         state.orders = LedgerOrder.sampleOrders

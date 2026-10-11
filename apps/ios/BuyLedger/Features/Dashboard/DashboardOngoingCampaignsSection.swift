@@ -39,7 +39,7 @@ private extension DashboardOngoingCampaignsSection {
     func campaignsCard(rows: [DashboardFeature.State.OngoingCampaignRow]) -> some View {
         if !rows.isEmpty {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                Text("進行中的開團")
+                Text("dashboard.overview.label.activeCampaigns")
                     .blTextStyle(.headline)
                     .foregroundStyle(palette.label)
 
@@ -92,10 +92,12 @@ private extension DashboardOngoingCampaignsSection {
                 Spacer(minLength: 0)
 
                 Text(
-                    """
-                    \(summary.orderCount) 筆 · \
-                    \(CampaignFormatters.twd(summary.receivables, locale: locale))
-                    """
+                    AppLanguage.format(
+                        "dashboard.overview.label.campaignOrderSummary",
+                        summary.orderCount,
+                        CampaignFormatters.twd(summary.receivables, locale: locale),
+                        locale: locale
+                    )
                 )
                 .blTextStyle(.caption)
                 .foregroundStyle(palette.secondaryLabel)
@@ -103,13 +105,13 @@ private extension DashboardOngoingCampaignsSection {
             }
 
             BLProgressView(
-                title: "到貨",
+                title: "campaigns.list.label.arrived",
                 value: summary.deliveryRatio,
                 trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
             )
 
             BLProgressView(
-                title: "收款",
+                title: "orders.detail.label.payment",
                 value: summary.receivedRatio,
                 tint: palette.green,
                 trailingText: CampaignFormatters.twd(summary.receivedAmount, locale: locale)
@@ -130,7 +132,7 @@ private extension DashboardOngoingCampaignsSection {
 
 // MARK: - Preview
 
-#Preview("進行中的開團") {
+#Preview("dashboard.overview.label.activeCampaigns") {
     let previewState: DashboardFeature.State = {
         var state = DashboardFeature.State()
         state.orders = LedgerOrder.sampleCampaignOrders

@@ -20,7 +20,7 @@ extension LookupManagementFeatureTests {
             // Given
             var initialState = LookupManagementFeature.State(kind: .category)
             initialState.isFormSheetDismissing = true
-            initialState.pendingAlert = Self.writeFailureAlert(message: "新增失敗，請稍後再試。")
+            initialState.pendingAlert = Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
             let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             }
@@ -29,12 +29,12 @@ extension LookupManagementFeatureTests {
             await store.send(.view(.formSheetDismissed)) {
                 $0.isFormSheetDismissing = false
                 $0.pendingAlert = nil
-                $0.destination = Self.writeFailureAlert(message: "新增失敗，請稍後再試。")
+                $0.destination = Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
             }
 
             // Then
             #expect(store.state.isFormSheetDismissing == false)
-            #expect(store.state.destination == Self.writeFailureAlert(message: "新增失敗，請稍後再試。"))
+            #expect(store.state.destination == Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry"))
             #expect(store.state.pendingAlert == nil)
             await store.finish()
         }
@@ -55,11 +55,11 @@ extension LookupManagementFeatureTests {
 
             // When
             await store.send(.addResponse(.failure(error))) {
-                $0.destination = Self.writeFailureAlert(message: "新增失敗，請稍後再試。")
+                $0.destination = Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
             }
 
             // Then
-            #expect(store.state.destination == Self.writeFailureAlert(message: "新增失敗，請稍後再試。"))
+            #expect(store.state.destination == Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry"))
             #expect(store.state.pendingAlert == nil)
             await store.finish()
         }
@@ -84,12 +84,12 @@ extension LookupManagementFeatureTests {
 
             // When
             await store.send(.addResponse(.failure(error))) {
-                $0.pendingAlert = Self.writeFailureAlert(message: "新增失敗，請稍後再試。")
+                $0.pendingAlert = Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
             }
 
             // Then
             #expect(store.state.isFormSheetDismissing)
-            #expect(store.state.pendingAlert == Self.writeFailureAlert(message: "新增失敗，請稍後再試。"))
+            #expect(store.state.pendingAlert == Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry"))
             #expect(store.state.destination == nil)
             #expect(store.state.items == ["服飾"])
             await store.finish()

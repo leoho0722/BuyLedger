@@ -50,7 +50,7 @@ extension OrderEditFeatureTests {
     @Test(arguments: [
         (paymentMethod: "信用卡", shouldShowRow: false),
         (paymentMethod: "無卡存款", shouldShowRow: true),
-        (paymentMethod: "銀行匯款", shouldShowRow: true),
+        (paymentMethod: "orders.edit.label.bankTransfer", shouldShowRow: true),
         (paymentMethod: "未知付款方式", shouldShowRow: false),
     ])
     func shouldShowReconciliationStatusRow_依付款方式旗標_無卡或匯款才顯示(
@@ -82,7 +82,7 @@ extension OrderEditFeatureTests {
     ///   - isBankTransfer: 預期是否為銀行匯款
     @Test(arguments: [
         (paymentMethod: "信用卡", isBankTransfer: false),
-        (paymentMethod: "銀行匯款", isBankTransfer: true),
+        (paymentMethod: "orders.edit.label.bankTransfer", isBankTransfer: true),
     ])
     func isSelectedPaymentMethodBankTransfer_依付款方式查主檔_回傳匯款旗標(
         paymentMethod: String,

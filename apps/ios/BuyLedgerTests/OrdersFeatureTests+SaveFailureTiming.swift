@@ -37,20 +37,20 @@ extension OrdersFeatureTests {
         await clock.advance(by: .seconds(1))
         await store.receive(\.writes.saveResponse)
         await store.receive(\.writes.delegate.failed)
-        await store.receive(\.presentation.noticeRequested, Self.failureNotice("訂單儲存失敗，請稍後再試。")) {
-            $0.presentation.queue.pendingNotice = Self.failureNotice("訂單儲存失敗，請稍後再試。")
+        await store.receive(\.presentation.noticeRequested, Self.failureNotice("orders.general.message.orderSavedTry")) {
+            $0.presentation.queue.pendingNotice = Self.failureNotice("orders.general.message.orderSavedTry")
         }
 
         // When
         await store.send(.view(.formSheetDismissed)) {
             $0.presentation.queue.isFormClosing = false
             $0.presentation.queue.pendingNotice = nil
-            $0.presentation.destination = Self.failureNotice("訂單儲存失敗，請稍後再試。")
+            $0.presentation.destination = Self.failureNotice("orders.general.message.orderSavedTry")
         }
 
         // Then
         #expect(store.state.orders == [])
-        #expect(store.state.presentation.destination == Self.failureNotice("訂單儲存失敗，請稍後再試。"))
+        #expect(store.state.presentation.destination == Self.failureNotice("orders.general.message.orderSavedTry"))
         #expect(store.state.presentation.queue == OrdersPresentationQueue())
         await store.finish()
     }
@@ -85,11 +85,11 @@ extension OrdersFeatureTests {
         await clock.advance(by: .seconds(1))
         await store.receive(\.writes.saveResponse)
         await store.receive(\.writes.delegate.failed)
-        await store.receive(\.presentation.noticeRequested, Self.failureNotice("訂單儲存失敗，請稍後再試。")) {
-            $0.presentation.destination = Self.failureNotice("訂單儲存失敗，請稍後再試。")
+        await store.receive(\.presentation.noticeRequested, Self.failureNotice("orders.general.message.orderSavedTry")) {
+            $0.presentation.destination = Self.failureNotice("orders.general.message.orderSavedTry")
         }
         #expect(store.state.orders == [])
-        #expect(store.state.presentation.destination == Self.failureNotice("訂單儲存失敗，請稍後再試。"))
+        #expect(store.state.presentation.destination == Self.failureNotice("orders.general.message.orderSavedTry"))
         #expect(store.state.presentation.queue == OrdersPresentationQueue())
         await store.finish()
     }

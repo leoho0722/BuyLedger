@@ -20,7 +20,7 @@ struct OrdersLoadFeatureTests {
         // Given
         let order = LedgerOrder.fixture(id: "O1")
         let method = PaymentMethodInfo(
-            name: "銀行匯款",
+            name: "orders.edit.label.bankTransfer",
             isCardless: false,
             isBankTransfer: true,
             isCashOnDelivery: false
@@ -121,7 +121,7 @@ struct OrdersLoadFeatureTests {
                 $0 = false
             }
             $0.$errorMessage.withLock {
-                $0 = "訂單載入失敗，請稍後再試。"
+                $0 = "orders.general.message.ordersLoadedTry"
             }
             $0.$lookupCatalog.withLock {
                 $0.orderSources = ["IG"]

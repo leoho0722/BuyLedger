@@ -77,18 +77,18 @@ extension RootFeatureTests {
                 $0 = false
             }
             $0.orders.load.$errorMessage.withLock {
-                $0 = "訂單載入失敗，請稍後再試。"
+                $0 = "orders.general.message.ordersLoadedTry"
             }
-            $0.dashboard.loadState = .failed("訂單載入失敗，請稍後再試。")
-            $0.insights.loadState = .failed("訂單載入失敗，請稍後再試。")
+            $0.dashboard.loadState = .failed("orders.general.message.ordersLoadedTry")
+            $0.insights.loadState = .failed("orders.general.message.ordersLoadedTry")
         }
 
         // Then
         await store.receive(\.orders.load.delegate.loadFailed)
         await store.finish()
-        #expect(store.state.orders.loadState == .failed("訂單載入失敗，請稍後再試。"))
-        #expect(store.state.dashboard.loadState == .failed("訂單載入失敗，請稍後再試。"))
-        #expect(store.state.insights.loadState == .failed("訂單載入失敗，請稍後再試。"))
+        #expect(store.state.orders.loadState == .failed("orders.general.message.ordersLoadedTry"))
+        #expect(store.state.dashboard.loadState == .failed("orders.general.message.ordersLoadedTry"))
+        #expect(store.state.insights.loadState == .failed("orders.general.message.ordersLoadedTry"))
     }
 
     /// 儲存成功後，共用的訂單換成儲存後的版本，並在同一次回應中更新開團、更多頁、總覽與分析頁的訂單

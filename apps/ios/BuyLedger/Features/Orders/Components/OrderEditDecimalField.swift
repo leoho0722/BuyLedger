@@ -108,7 +108,7 @@ private extension OrderEditDecimalField {
 
     Form {
         OrderEditDecimalField(
-            title: "客戶實付",
+            title: "orders.edit.label.customerPayment",
             value: .constant(1000),
             field: .chargedAmount,
             focusedField: $focusedField,

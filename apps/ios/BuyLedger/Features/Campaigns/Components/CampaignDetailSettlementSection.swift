@@ -22,7 +22,7 @@ struct CampaignDetailSettlementSection: View {
 
     /// 依序呈現收款、進度與損益的各列
     var body: some View {
-        Section("結團結算") {
+        Section("campaigns.detail.label.campaignSettlement") {
             receivablesRow
 
             receivedRow
@@ -48,7 +48,7 @@ private extension CampaignDetailSettlementSection {
 
     /// 應收金額，合併朗讀並提供 UI 測試讀取的金額
     var receivablesRow: some View {
-        LabeledContent("應收", value: CampaignFormatters.twd(summary.receivables, locale: locale))
+        LabeledContent("campaigns.detail.label.receivable", value: CampaignFormatters.twd(summary.receivables, locale: locale))
             .accessibilityElement(children: .combine)
             .accessibilityValue(CampaignFormatters.twd(summary.receivables, locale: locale))
             .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSummary(.receivables))
@@ -56,7 +56,7 @@ private extension CampaignDetailSettlementSection {
 
     /// 已收金額，合併朗讀並提供 UI 測試讀取的金額
     var receivedRow: some View {
-        LabeledContent("已收", value: CampaignFormatters.twd(summary.receivedAmount, locale: locale))
+        LabeledContent("orders.edit.label.paid", value: CampaignFormatters.twd(summary.receivedAmount, locale: locale))
             .accessibilityElement(children: .combine)
             .accessibilityValue(CampaignFormatters.twd(summary.receivedAmount, locale: locale))
             .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSummary(.received))
@@ -65,7 +65,7 @@ private extension CampaignDetailSettlementSection {
     /// 尚未收款的金額
     var outstandingRow: some View {
         LabeledContent(
-            "未收",
+            "campaigns.detail.label.unpaid",
             value: CampaignFormatters.twd(summary.outstandingAmount, locale: locale)
         )
     }
@@ -73,7 +73,7 @@ private extension CampaignDetailSettlementSection {
     /// 收款進度與整數百分比
     var receiptProgress: some View {
         BLProgressView(
-            title: "收款進度",
+            title: "campaigns.detail.label.paymentProgress",
             value: summary.receivedRatio,
             tint: palette.green,
             trailingText: BLFormatters.percent(
@@ -87,7 +87,7 @@ private extension CampaignDetailSettlementSection {
     /// 已到貨筆數與未取消訂單筆數
     var deliveryProgress: some View {
         BLProgressView(
-            title: "到貨進度",
+            title: "campaigns.detail.label.arrivalProgress",
             value: summary.deliveryRatio,
             trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
         )
@@ -95,17 +95,17 @@ private extension CampaignDetailSettlementSection {
 
     /// 開團總成本
     var costRow: some View {
-        LabeledContent("總成本", value: CampaignFormatters.twd(summary.totalCost, locale: locale))
+        LabeledContent("orders.detail.label.totalCost", value: CampaignFormatters.twd(summary.totalCost, locale: locale))
     }
 
     /// 開團毛利
     var profitRow: some View {
-        LabeledContent("毛利", value: CampaignFormatters.twd(summary.profit, locale: locale))
+        LabeledContent("orders.detail.label.grossProfit", value: CampaignFormatters.twd(summary.profit, locale: locale))
     }
 
     /// 以實際收款為分母的利潤率
     var marginRow: some View {
-        LabeledContent("利潤率", value: BLFormatters.percent(summary.margin, locale: locale))
+        LabeledContent("campaigns.detail.label.profitMargin", value: BLFormatters.percent(summary.margin, locale: locale))
     }
 }
 
@@ -121,7 +121,7 @@ private extension CampaignDetailSettlementSection {
 
 // MARK: - Preview
 
-#Preview("結團結算") {
+#Preview("campaigns.detail.label.campaignSettlement") {
     List {
         CampaignDetailSettlementSection(
             summary: CampaignSummary(

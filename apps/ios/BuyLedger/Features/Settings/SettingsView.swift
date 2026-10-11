@@ -45,7 +45,7 @@ struct SettingsView: View {
         .task {
             await store.send(.view(.task)).finish()
         }
-        .rootNavigationTitle("設定", language: store.language)
+        .rootNavigationTitle("orders.edit.title.settings", language: store.language)
         .toolbar {
             keyboardToolbar
         }
@@ -59,11 +59,11 @@ private extension SettingsView {
 
     /// App 語言選擇區段
     var languageSection: some View {
-        Section("語言") {
-            Picker("App 語言", selection: $store.language) {
+        Section("orders.list.label.language") {
+            Picker("orders.detail.label.appLanguage", selection: $store.language) {
                 ForEach(AppLanguage.allCases) {
                     // menu 會重建選項，identifier 可能無法傳到 item
-                    Text($0.title)
+                    Text(verbatim: $0.title)
                         .accessibilityIdentifier(
                             BLAccessibilityID.Settings.languageOption($0.rawValue)
                         )
@@ -77,21 +77,21 @@ private extension SettingsView {
     /// AI 商品明細總結設定區段
     var aiSummarySection: some View {
         Section {
-            Toggle("啟用 AI 總結", isOn: $store.isAISummaryEnabled)
+            Toggle("settings.preference.label.enableAiSummary", isOn: $store.isAISummaryEnabled)
                 .accessibilityIdentifier(BLAccessibilityID.Settings.aiSummaryToggle)
 
 #if DEBUG
             NavigationLink {
                 modelPicker
             } label: {
-                LabeledContent("模型", value: store.aiSummaryModel)
+                LabeledContent("orders.general.label.model", value: store.aiSummaryModel)
             }
             .accessibilityIdentifier(BLAccessibilityID.Settings.aiSummaryModelRow)
 #endif
         } header: {
-            Text("AI 商品明細總結")
+            Text("orders.general.label.aiItemSummary")
         } footer: {
-            Text("在訂單列表點「AI 總結」(sparkles) 即可彙整目前篩選的商品明細。")
+            Text("settings.preference.message.tapAiSummary")
                 .blTextStyle(.footnote)
                 .foregroundStyle(Color.blSecondaryLabel)
         }
@@ -99,12 +99,12 @@ private extension SettingsView {
 
     /// 預設幣別設定區段
     var defaultCurrencySection: some View {
-        Section("預設幣別") {
+        Section("orders.edit.label.defaultCurrency") {
             NavigationLink {
                 currencyPicker
             } label: {
                 LabeledContent(
-                    "新訂單預設",
+                    "orders.general.label.newOrderDefault",
                     value: CurrencyDisplayName.text(
                         code: store.defaultCurrency.rawValue,
                         language: AppLanguage(locale: locale)
@@ -119,7 +119,7 @@ private extension SettingsView {
     var monthlyGoalSection: some View {
         Section {
             TextField(
-                "目標金額",
+                "dashboard.overview.label.goalAmount",
                 value: $store.monthlyProfitGoalTWD,
                 format: .number.precision(.fractionLength(0)).grouping(.never)
             )
@@ -127,9 +127,9 @@ private extension SettingsView {
             .keyboardType(.numberPad)
             .focused($isGoalFieldFocused)
         } header: {
-            Text("月度淨獲利目標 (TWD)")
+            Text("settings.preference.label.monthlyNetProfit")
         } footer: {
-            Text("Dashboard hero 卡的進度條依此值計算；設為 0 代表不顯示進度條。")
+            Text("settings.preference.message.dashboardHeroProgress")
                 .blTextStyle(.footnote)
                 .foregroundStyle(Color.blSecondaryLabel)
         }
@@ -144,7 +144,7 @@ private extension SettingsView {
             )
             .accessibilityIdentifier(BLAccessibilityID.Settings.appLockToggle)
         } header: {
-            Text("App 鎖定")
+            Text("settings.preference.label.appLock")
         } footer: {
             Text(AppLockFormatters.protectionDescription(for: store.biometryType))
                 .blTextStyle(.footnote)
@@ -154,11 +154,11 @@ private extension SettingsView {
 
     /// App 版本與作者資訊區段
     var aboutSection: some View {
-        Section("關於") {
-            LabeledContent("版本", value: store.appVersion)
+        Section("settings.preference.label.about") {
+            LabeledContent("settings.preference.label.version", value: store.appVersion)
                 .accessibilityIdentifier(BLAccessibilityID.Settings.versionRow)
 
-            LabeledContent("作者", value: "Leo Ho")
+            LabeledContent("settings.preference.label.author", value: "Leo Ho")
         }
     }
 
@@ -169,11 +169,11 @@ private extension SettingsView {
         let language = AppLanguage(locale: locale)
 
         OptionPickerSheet(
-            title: "選擇預設幣別",
+            title: "settings.preference.label.selectDefaultCurrency",
             allowsAdd: false,
             searchable: true,
-            emptyTitle: "尚無幣別",
-            emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
+            emptyTitle: "orders.edit.label.currenciesAvailable",
+            emptyDescription: "orders.edit.message.internetConnectionRequired",
             options: store.availableCurrencies.map(\.rawValue),
             selected: store.defaultCurrency.rawValue,
             displayName: {
@@ -194,15 +194,15 @@ private extension SettingsView {
     @ViewBuilder
     var modelPicker: some View {
         OptionPickerSheet(
-            title: "選擇 AI 模型",
+            title: "settings.preference.label.selectAiModel",
             allowsAdd: true,
             searchable: false,
-            addButtonTitle: "自訂模型",
-            emptyTitle: "尚無模型",
-            emptyDescription: "輸入自訂模型名稱以開始使用。",
-            addAlertTitle: "自訂 AI 模型",
-            addFieldPlaceholder: "模型名稱 (例如 gpt-oss:120b)",
-            addAlertMessage: "輸入 Ollama Cloud 上可用的模型名稱。",
+            addButtonTitle: "settings.preference.label.customModel",
+            emptyTitle: "settings.preference.label.modelsAvailable",
+            emptyDescription: "settings.preference.message.enterCustomModel",
+            addAlertTitle: "settings.preference.label.customAiModel",
+            addFieldPlaceholder: "settings.preference.message.modelNameFor",
+            addAlertMessage: "settings.preference.message.enterModelName",
             options: AISummaryModelCatalog.candidates,
             selected: store.aiSummaryModel,
             onSelect: {
@@ -228,7 +228,7 @@ private extension SettingsView {
                 Image(systemName: "checkmark")
             }
             .accessibilityIdentifier(BLAccessibilityID.Common.keyboardDoneButton)
-            .accessibilityLabel(Text("完成"))
+            .accessibilityLabel(Text("common.action.button.done"))
         }
     }
 }
@@ -249,7 +249,7 @@ private extension SettingsView {
 
 // MARK: - Preview
 
-#Preview("設定") {
+#Preview("orders.edit.title.settings") {
     NavigationStack {
         SettingsView(
             store: Store(initialState: SettingsFeature.State()) {

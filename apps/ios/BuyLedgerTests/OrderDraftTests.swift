@@ -268,7 +268,7 @@ extension OrderDraftTests {
         initials: String = "XX",
         tier: CustomerTier = .regular,
         orderSource: String = "來源",
-        categories: [String] = ["類別"],
+        categories: [String] = ["orders.list.label.category2"],
         paymentMethod: String = "付款",
         notes: String = ""
     ) -> LedgerOrder {

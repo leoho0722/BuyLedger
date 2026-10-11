@@ -14,6 +14,9 @@ struct BLBarChart: View {
 
     // MARK: - Properties
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 長條圖要呈現的資料
     let data: [BLBarChartValue]
 
@@ -24,14 +27,14 @@ struct BLBarChart: View {
     var isScrollEnabled: Bool = false
 
     /// 圖表無障礙描述 (`AXChartDescriptor`) 的 X 軸標題；預設正體中文字面值
-    var axisXTitle: String = "項目"
+    var axisXTitle: String = "orders.list.label.text"
 
     /// 圖表無障礙描述的 Y 軸標題；預設正體中文字面值，
     /// 說明同 ``axisXTitle``
-    var axisYTitle: String = "數值"
+    var axisYTitle: String = "orders.detail.label.value"
 
     /// 圖表資料序列名稱
-    var seriesName: String = "長條圖"
+    var seriesName: String = "insights.chart.label.barChart"
 
     // MARK: - Body
 
@@ -213,19 +216,17 @@ private extension BLBarChart {
         }
 
         /// 建立圖表層級的輔助技術摘要
-        /// - Parameter data: 長條圖資料
+        /// - Parameters:
+        ///   - data: 長條圖資料
+        ///   - locale: 目前的 Locale
         /// - Returns: 供輔助技術朗讀的摘要
-        static func summary(for data: [BLBarChartValue]) -> LocalizedStringKey {
+        static func summary(for data: [BLBarChartValue], locale: Locale = .current) -> LocalizedStringKey {
             guard let highest = data.max(by: { left, right in left.value < right.value }),
                   let lowest = data.min(by: { left, right in left.value < right.value })
             else {
-                return "長條圖，目前沒有資料"
+                return "common.ui.label.barChartData"
             }
-            return """
-                長條圖，共 \(data.count) 個期間，\
-                最高 \(highest.label) \(highest.valueDescription)，\
-                最低 \(lowest.label) \(lowest.valueDescription)
-                """
+            return LocalizedStringKey(AppLanguage.format("common.ui.accessibility.barChartSummary", data.count, highest.label, highest.valueDescription, lowest.label, lowest.valueDescription, locale: locale))
         }
     }
 }
@@ -246,7 +247,7 @@ private extension BLBarChart {
 
     /// 圖表層級摘要
     var accessibilitySummary: LocalizedStringKey {
-        ChartAccessibilityDescriptor.summary(for: data)
+        ChartAccessibilityDescriptor.summary(for: data, locale: locale)
     }
 
     /// 計算一個視窗內可容納的長條數 (用來決定捲動時的內容寬度)
@@ -275,7 +276,7 @@ private extension BLBarChart {
 
 // MARK: - Preview
 
-#Preview("長條圖") {
+#Preview("insights.chart.label.barChart") {
     BLBarChart(
         data: [
             BLBarChartValue(label: "1月", value: 82, valueDescription: "NT$82"),

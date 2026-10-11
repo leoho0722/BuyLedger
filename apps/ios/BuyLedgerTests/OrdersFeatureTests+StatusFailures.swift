@@ -27,7 +27,7 @@ extension OrdersFeatureTests {
             BuyLedgerDatabaseTests.removeTemporaryDirectory(at: directoryURL)
         }
         let reloadedOrders = LockIsolated<[LedgerOrder]>([])
-        let writeFailureAlert = Self.expectedWriteFailureAlert("訂單狀態更新失敗，請稍後再試。")
+        let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.orderStatusUpdated")
         let fetchOrders: OrderService.FetchOrders = {
             let orders = try await service.fetchOrders()
             reloadedOrders.setValue(orders)
@@ -101,7 +101,7 @@ extension OrdersFeatureTests {
             BuyLedgerDatabaseTests.removeTemporaryDirectory(at: directoryURL)
         }
         let reloadedOrders = LockIsolated<[LedgerOrder]>([])
-        let writeFailureAlert = Self.expectedWriteFailureAlert("收款狀態更新失敗，請稍後再試。")
+        let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.receiptStatusUpdated")
         let fetchOrders: OrderService.FetchOrders = {
             let orders = try await service.fetchOrders()
             reloadedOrders.setValue(orders)
@@ -183,7 +183,7 @@ extension OrdersFeatureTests {
             reloadedOrders.setValue(fetchedOrders)
             return fetchedOrders
         }
-        let writeFailureAlert = Self.expectedWriteFailureAlert("批次更新狀態失敗，請稍後再試。")
+        let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.batchStatusUpdate")
         var state = OrdersFeature.State(orders: orders)
         state.refreshDateContext(
             now: TestDependencies.fixedNow,

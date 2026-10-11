@@ -34,12 +34,20 @@ paths:
 
 ## 本地化
 
+- **String Catalog 英文結構化 Key 規範**：
+  Key 統一規範為 `<domain>.<component>.<elementType>.<descriptor>` 四段點記號格式 (如 `orders.list.title`、`common.action.cancel`)。各段全小寫開頭，複合單詞一律採用 `lowerCamelCase`；`descriptor` 優先使用精簡單詞 (如 `save`、`cancel`、`delete`、`pending`)，同元件內需要消除歧義時才使用複合駝峰詞 (如 `saveAndContinue`、`pendingPayment`)。
+- **嚴禁字串拼接 (Prohibition of String Concatenation)**：
+  使用者可見文案與複合訊息嚴禁在 View 內以 `+` 拼接 `Text` (例如 `Text("篩選") + Text(": ") + summary` 即屬違規)；複合訊息必須在 String Catalog 定義單一帶參數的格式化字串。
+- **多參數位置標記 (Positional Parameter Specifiers)**：
+  含兩個 (含) 以上參數之格式字串，強制使用 `%1$lld`、`%2$@` 位置標記，避免不同語言詞序調換造成型別混淆。
+- **單複數宣告走 String Catalog Substitutions**：
+  英文單複數差異交由 `.xcstrings` 的 `plural` 屬性定義，禁止在業務邏輯中以 `if count == 1` 條件分支切換文案。
 - **`Text(someString)` (型別 `String`) 走 verbatim、不會本地化**：固定詞經 `String` 變數傳進 `Text`／`Label`／`navigationTitle` 時包 `LocalizedStringKey(...)`，或把參數型別宣告為 `LocalizedStringKey` (參考 `DashboardKPITile` 的 `delta` 參數)。
-    - 帶插值的文案用 `Text(LocalizedStringKey("\(count) …"))`；不用 `String(localized:locale:)`，它走系統語言 bundle、不吃 App 內語言切換。
-    - 使用者資料 (主檔名稱、`customer.name`) 與格式化後的數字、日期維持 verbatim。
+  - 帶插值的文案用 `Text(LocalizedStringKey("\(count) …"))`；不用 `String(localized:locale:)`，它走系統語言 bundle、不吃 App 內語言切換。
+  - 使用者資料 (主檔名稱、`customer.name`) 與格式化後的數字、日期維持 verbatim。
 - **根分頁標題用 `rootNavigationTitle(_:language:)`**：`navigationTitle` 不會隨 `\.locale` 可靠地重新解析 String Catalog，改由 `AppLanguage.localized(_:)` 先解析。
-    - Orders 的多選三態標題由 `OrderListFeature.State.navigationTitleKey` 衍生；`Tab(LocalizedStringKey)` 不需要此處理。
+  - Orders 的多選三態標題由 `OrderListFeature.State.navigationTitleKey` 衍生；`Tab(LocalizedStringKey)` 不需要此處理。
 - **新增任何 UI 字串 (含 `AlertState`／`TextState`、`accessibilityLabel`) 都補 `Localizable.xcstrings` 的 `en`**，否則英文模式露出中文。
-    - 手動補 catalog 用文字插入展開格式的 entry，不整檔 `json.dump` 重寫：`.xcstrings` 是 Xcode 自訂序列化，重寫會產生巨量 diff。
-    - `LocalizationCatalogTests` 會掃描程式碼中的使用者可見字面值；型別呼叫自動涵蓋，但文字類 modifier (如 `.help`) 與 display property 是列舉清單，新增這兩類時同步補 `LocalizationCatalogTests+LiteralScan.swift` `visibleLiteralStarts` 內的 `visiblePatterns`，以及 `String+SourceLiteralScan.swift` `isDisplayScopeDeclaration` 內的 `displayProperties`。
-    - 直接作為型別呼叫引數的多行 `"""` 字面值掃描抓不到，要人工確認已進 catalog。
+  - 手動補 catalog 用文字插入展開格式的 entry，不整檔 `json.dump` 重寫：`.xcstrings` 是 Xcode 自訂序列化，重寫會產生巨量 diff。
+  - `LocalizationCatalogTests` 會掃描程式碼中的使用者可見字面值；型別呼叫自動涵蓋，但文字類 modifier (如 `.help`) 與 display property 是列舉清單，新增這兩類時同步補 `LocalizationCatalogTests+LiteralScan.swift` `visibleLiteralStarts` 內的 `visiblePatterns`，以及 `String+SourceLiteralScan.swift` `isDisplayScopeDeclaration` 內的 `displayProperties`。
+  - 直接作為型別呼叫引數的多行 `"""` 字面值掃描抓不到，要人工確認已進 catalog。

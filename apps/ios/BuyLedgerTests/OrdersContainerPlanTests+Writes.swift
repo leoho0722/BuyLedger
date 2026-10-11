@@ -204,8 +204,8 @@ extension OrdersContainerPlanTests {
     ///   - shouldPopUnavailableDetails: 是否要求移除已不存在的訂單詳情
     ///   - message: 通知內容的本地化訊息
     @Test(arguments: [
-        (OrderWriteOperations.Failure.merge, true, "合併訂單儲存失敗，請稍後再試。"),
-        (OrderWriteOperations.Failure.delete, false, "訂單刪除失敗，請稍後再試。"),
+        (OrderWriteOperations.Failure.merge, true, "orders.general.message.mergedOrderSaved"),
+        (OrderWriteOperations.Failure.delete, false, "orders.general.message.orderDeletedTry"),
     ])
     func writeResult_寫入失敗_依原因決定是否移除詳情並顯示通知(
         failure: OrderWriteOperations.Failure,
@@ -239,10 +239,10 @@ private extension OrdersContainerPlanTests {
         _ message: LocalizedStringKey
     ) -> AlertState<OrdersPresentationFeature.Destination.Alert> {
         AlertState {
-            TextState("操作失敗")
+            TextState("orders.list.label.operationFailed")
         } actions: {
             ButtonState(role: .cancel) {
-                TextState("知道了")
+                TextState("orders.merge.label.ok")
             }
         } message: {
             TextState(message)

@@ -15,9 +15,9 @@ extension PaymentReceiptStatus {
     var title: String {
         switch self {
         case .pending:
-            "待收款"
+            "orders.filter.status.pendingPayment"
         case .received:
-            "已收款"
+            "orders.general.status.received"
         }
     }
 }

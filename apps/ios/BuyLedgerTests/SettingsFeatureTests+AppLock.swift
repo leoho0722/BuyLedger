@@ -135,13 +135,13 @@ private extension SettingsFeatureTests {
     static var expectedAuthenticationFailure: SettingsFeature.Destination.State {
         .alert(
             AlertState<SettingsFeature.Destination.Alert> {
-                TextState("無法啟用 App 鎖定")
+                TextState("settings.preference.label.unableEnableApp")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("關閉")
+                    TextState("common.action.label.close")
                 }
             } message: {
-                TextState("身份驗證失敗或已取消，App 鎖定未啟用。")
+                TextState("settings.preference.message.authenticationFailedCancelled")
             }
         )
     }
@@ -150,13 +150,13 @@ private extension SettingsFeatureTests {
     static var expectedUnsupportedDevice: SettingsFeature.Destination.State {
         .alert(
             AlertState<SettingsFeature.Destination.Alert> {
-                TextState("無法啟用 App 鎖定")
+                TextState("settings.preference.label.unableEnableApp")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("關閉")
+                    TextState("common.action.label.close")
                 }
             } message: {
-                TextState("此裝置目前無法使用本機驗證，App 鎖定未啟用。")
+                TextState("settings.preference.message.deviceCannotCurrently")
             }
         )
     }

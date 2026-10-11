@@ -515,7 +515,7 @@ private extension SchemaMigrationTests {
             cardlessSupplementAmount: 0,
             orderSource: "蝦皮",
             categories: ["美妝", "服飾"],
-            paymentMethod: "貨到付款",
+            paymentMethod: "orders.list.label.cashDelivery",
             notes: "",
             reconciliationStatus: reconciliationStatus,
             campaignNames: ["春團", "夏團"],

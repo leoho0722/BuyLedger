@@ -120,13 +120,13 @@ struct PaymentMethodEditorSheet: View {
             .presentationDragIndicator(.visible)
             // 有未儲存變更時阻擋下滑關閉，避免草稿靜默遺失；取消鍵改以彈窗確認
             .interactiveDismissDisabled(isDirty)
-            .alert("捨棄變更", isPresented: $isDiscardConfirmationPresented) {
-                Button("捨棄變更", role: .destructive) {
+            .alert("orders.list.label.discardChanges", isPresented: $isDiscardConfirmationPresented) {
+                Button("orders.list.label.discardChanges", role: .destructive) {
                     dismiss()
                 }
-                Button("繼續編輯", role: .cancel) {}
+                Button("orders.list.label.keepEditing", role: .cancel) {}
             } message: {
-                Text("這個付款方式有尚未儲存的變更，離開後將不會保留。")
+                Text("common.ui.message.paymentMethodHas")
             }
         }
     }
@@ -149,7 +149,7 @@ private extension PaymentMethodEditorSheet {
                         BLAccessibilityID.LookupManagement.paymentMethodNameField
                     )
             } header: {
-                Text("付款方式名稱")
+                Text("orders.detail.label.paymentMethodName")
             } footer: {
                 if !message.isEmpty {
                     Text(LocalizedStringKey(message))
@@ -160,34 +160,34 @@ private extension PaymentMethodEditorSheet {
 
             Section {
                 Toggle(isOn: $draftIsCardless) {
-                    Text("標記為「無卡」付款方式")
+                    Text("common.ui.label.markAsCardless")
                 }
             } footer: {
-                Text("啟用後，使用此付款方式的訂單在「收款金額」區段會出現「無卡折抵金額」與「無卡補款金額」兩個欄位，並計入總收款公式。")
+                Text("common.ui.message.whenEnabledOrders")
                     .blTextStyle(.footnote)
                     .foregroundStyle(Color.blSecondaryLabel)
             }
 
             Section {
                 Toggle(isOn: $draftIsBankTransfer) {
-                    Text("標記為「銀行匯款」付款方式")
+                    Text("common.ui.label.markAsBank")
                 }
             } footer: {
-                Text("啟用後，使用此付款方式的訂單在編輯時會出現「對帳狀態」欄位，供你在款項入帳後標記對帳結果。")
+                Text("common.ui.message.whenEnabledOrdersUsing")
                     .blTextStyle(.footnote)
                     .foregroundStyle(Color.blSecondaryLabel)
             }
 
             Section {
                 Toggle(
-                    "標記為「貨到付款」付款方式",
+                    "common.ui.label.markAsCash",
                     isOn: $draftIsCashOnDelivery
                 )
                 .accessibilityIdentifier(
                     BLAccessibilityID.LookupManagement.paymentMethodCashOnDeliveryToggle
                 )
             } footer: {
-                Text("啟用後，使用此付款方式的訂單因收款金額已含預估運費，獲利會自動扣除國內、國際與外國國內三種運費。")
+                Text("common.ui.message.whenEnabled")
                     .blTextStyle(.footnote)
                     .foregroundStyle(Color.blSecondaryLabel)
             }
@@ -203,7 +203,7 @@ private extension PaymentMethodEditorSheet {
                     Button(action: cancelEditing) {
                         Image(systemName: "xmark")
                     }
-                    .accessibilityLabel(Text("取消"))
+                    .accessibilityLabel(Text("common.action.cancel"))
                 }
             }
 
@@ -318,23 +318,23 @@ private extension PaymentMethodEditorSheet {
 
 // MARK: - Preview
 
-#Preview("新增付款方式") {
+#Preview("orders.edit.label.addPaymentMethod") {
     PaymentMethodEditorSheet(
-        title: "新增付款方式",
-        message: "輸入新的付款方式名稱，加入後會立即套用至此訂單。",
-        namePlaceholder: "付款方式名稱",
-        submitTitle: "新增",
+        title: "orders.edit.label.addPaymentMethod",
+        message: "orders.edit.message.enterNewPayment",
+        namePlaceholder: "orders.detail.label.paymentMethodName",
+        submitTitle: "orders.list.button.add",
         onSubmit: { _, _, _, _ in }
     )
 }
 
-#Preview("編輯付款方式") {
+#Preview("orders.lookup.label.editPaymentMethod") {
     PaymentMethodEditorSheet(
-        title: "編輯付款方式",
-        message: "修改名稱與分類；變更名稱會一併更新引用此付款方式的訂單。",
-        namePlaceholder: "付款方式名稱",
-        submitTitle: "儲存",
-        initialName: "銀行匯款",
+        title: "orders.lookup.label.editPaymentMethod",
+        message: "orders.lookup.message.editNameTags",
+        namePlaceholder: "orders.detail.label.paymentMethodName",
+        submitTitle: "orders.edit.button.save",
+        initialName: "orders.edit.label.bankTransfer",
         initialIsBankTransfer: true,
         onSubmit: { _, _, _, _ in }
     )

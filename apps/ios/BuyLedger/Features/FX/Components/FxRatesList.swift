@@ -31,7 +31,7 @@ struct FxRatesList: View {
         BLCard(padding: 0) {
             LazyVStack(spacing: 0) {
                 HStack {
-                    Text("即時匯率 (對 TWD)")
+                    Text("fx.rates.label.liveRatesTo")
                         .font(BLTypographyStyle.subhead.font.weight(.semibold))
                         .foregroundStyle(palette.label)
 
@@ -66,7 +66,7 @@ private extension FxRatesList {
     func rateRow(currency: CurrencyCode) -> some View {
         HStack(spacing: BLSpacing.medium) {
             VStack(alignment: .leading) {
-                Text("1 \(currency.rawValue)")
+                Text(verbatim: "1 \(currency.rawValue)")
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.label)
 
@@ -99,7 +99,7 @@ private extension FxRatesList {
     /// 匯率列副標：顯示來源與時間；無 snapshot 時顯示「尚未連線」
     var rateSourceSubtitle: String {
         guard snapshotDate != nil else {
-            return "尚未連線"
+            return "fx.rates.label.connected"
         }
         return "ExchangeRate-API · \(FxFormatters.snapshotTimestamp(snapshotDate, locale: locale))"
     }

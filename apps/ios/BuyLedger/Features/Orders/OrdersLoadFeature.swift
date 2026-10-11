@@ -221,7 +221,7 @@ private extension OrdersLoadFeature {
                 $0 = false
             }
             state.$errorMessage.withLock {
-                $0 = "訂單載入失敗，請稍後再試。"
+                $0 = "orders.general.message.ordersLoadedTry"
             }
             return .send(.delegate(.loadFailed))
         }

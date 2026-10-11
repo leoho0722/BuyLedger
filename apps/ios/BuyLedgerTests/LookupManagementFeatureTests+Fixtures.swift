@@ -108,16 +108,21 @@ extension LookupManagementFeatureTests {
     static func deleteConfirmationAlert(name: String) -> LookupManagementFeature.Destination.State {
         .alert(
             AlertState<LookupManagementFeature.Destination.Alert> {
-                TextState("刪除項目")
+                TextState("orders.detail.label.deleteItem")
             } actions: {
                 ButtonState(role: .destructive, action: .confirmDelete(name: name)) {
-                    TextState("刪除")
+                    TextState("common.action.button.delete")
                 }
                 ButtonState(role: .cancel) {
-                    TextState("取消")
+                    TextState("common.action.cancel")
                 }
             } message: {
-                TextState("刪除「\(name)」後，引用它的既有訂單會失去這個欄位值。此操作無法復原。")
+                TextState(
+                    LocalizedStringResource(
+                        "orders.lookup.message.deleteUndoneNotice",
+                        defaultValue: "\(name)"
+                    )
+                )
             }
         )
     }
@@ -126,13 +131,13 @@ extension LookupManagementFeatureTests {
     ///
     /// - Parameter message: 主檔操作失敗文案
     /// - Returns: 含操作失敗 alert 的 `Destination.State`
-    static func writeFailureAlert(message: String) -> LookupManagementFeature.Destination.State {
+    static func writeFailureAlert(message: LocalizedStringResource) -> LookupManagementFeature.Destination.State {
         .alert(
             AlertState<LookupManagementFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
                 TextState(message)
@@ -149,16 +154,21 @@ extension LookupManagementFeatureTests {
     ) -> LookupManagementFeature.Destination.State {
         .alert(
             AlertState<LookupManagementFeature.Destination.Alert> {
-                TextState("更正付款方式")
+                TextState("orders.lookup.label.correctPaymentMethod")
             } actions: {
                 ButtonState(role: .destructive, action: .confirmPaymentMethodEdit) {
-                    TextState("確認更正")
+                    TextState("orders.detail.label.confirmCorrection")
                 }
                 ButtonState(role: .cancel, action: .cancelPaymentMethodEdit) {
-                    TextState("取消")
+                    TextState("common.action.cancel")
                 }
             } message: {
-                TextState("確認後將重算 \(count) 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。")
+                TextState(
+                    LocalizedStringResource(
+                        "orders.lookup.message.confirmRecalculateNotice",
+                        defaultValue: "\(count)"
+                    )
+                )
             }
         )
     }

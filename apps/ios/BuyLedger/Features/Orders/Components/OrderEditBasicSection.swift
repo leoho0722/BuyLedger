@@ -43,7 +43,7 @@ private extension OrderEditBasicSection {
     /// 客戶名稱、來源、類別與訂購日期
     @ViewBuilder
     var fields: some View {
-        TextField("客戶名稱", text: $store.draft.customerName)
+        TextField("orders.list.label.customerName", text: $store.draft.customerName)
             .textContentType(.name)
             .focused(focusedField, equals: .customerName)
             .accessibilityIdentifier(BLAccessibilityID.OrderEdit.customerField)
@@ -57,29 +57,29 @@ private extension OrderEditBasicSection {
 
     /// 基本資料的區段標題
     var sectionHeader: some View {
-        Text("基本資料")
+        Text("orders.edit.label.basicInformation")
     }
 
     /// 訂購時間與必填欄位說明
     var sectionFooter: some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             Text(
-                """
-                訂購日期：\
-                \(OrderFormatters.fullTimestamp(
-                    store.draft.date,
-                    calendar: store.calendar,
+                AppLanguage.format(
+                    "orders.edit.label.orderDateTimestamp",
+                    OrderFormatters.fullTimestamp(
+                        store.draft.date,
+                        calendar: store.calendar,
+                        locale: locale
+                    ),
                     locale: locale
                 )
-                )
-                """
             )
             .blTextStyle(.footnote)
             .foregroundStyle(Color.blSecondaryLabel)
             .monospacedDigit()
 
             if !store.canSave {
-                Text("客戶名稱、訂單來源與商品類別皆為必填欄位。")
+                Text("orders.edit.message.customerNameOrder")
                     .blTextStyle(.footnote)
                     .foregroundStyle(Color.blSecondaryLabel)
             }
@@ -89,7 +89,7 @@ private extension OrderEditBasicSection {
     /// 訂單來源的選擇器入口，保留原有選取值與提示文字
     var orderSourcePickerRow: some View {
         OrderEditSelectionRow(
-            title: "訂單來源",
+            title: "orders.detail.label.orderSource",
             identifier: BLAccessibilityID.OrderEdit.sourceRow,
             action: {
                 pickerStore.send(.view(.orderSourcePickerTapped))
@@ -97,7 +97,7 @@ private extension OrderEditBasicSection {
         ) {
             Group {
                 if store.draft.orderSource.isEmpty {
-                    Text("選擇來源")
+                    Text("orders.edit.label.selectSource")
                 } else {
                     Text(verbatim: store.draft.orderSource)
                 }
@@ -108,7 +108,7 @@ private extension OrderEditBasicSection {
     /// 商品類別的選擇器入口，保留原有選取值與提示文字
     var categoryPickerRow: some View {
         OrderEditSelectionRow(
-            title: "商品類別",
+            title: "orders.list.label.itemCategory",
             identifier: BLAccessibilityID.OrderEdit.categoryRow,
             action: {
                 pickerStore.send(.view(.categoryPickerTapped))
@@ -116,7 +116,7 @@ private extension OrderEditBasicSection {
         ) {
             Group {
                 if store.draft.categories.isEmpty {
-                    Text("選擇類別")
+                    Text("orders.edit.label.selectCategories")
                 } else {
                     Text(
                         verbatim: OrderEditDraftOperations.categoriesDisplayText(draft: store.draft)
@@ -130,7 +130,7 @@ private extension OrderEditBasicSection {
     /// 以系統精簡日期選擇器編輯日期與時分
     var orderDateRow: some View {
         DatePicker(
-            "訂購日期",
+            "orders.edit.label.orderDate",
             selection: refreshingSecondsBinding,
             displayedComponents: [.date, .hourAndMinute]
         )

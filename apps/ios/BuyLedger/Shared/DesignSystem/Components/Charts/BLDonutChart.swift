@@ -14,6 +14,9 @@ struct BLDonutChart: View {
 
     // MARK: - Properties
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 圈狀圖要呈現的區段
     let segments: [BLDonutSegment]
 
@@ -27,13 +30,13 @@ struct BLDonutChart: View {
     @ScaledMetric(relativeTo: .headline) private var diameter: CGFloat = 150
 
     /// 圖表無障礙描述 (`AXChartDescriptor`) 的 X 軸標題；預設正體中文字面值
-    var axisXTitle: String = "類別"
+    var axisXTitle: String = "orders.list.label.category2"
 
     /// 圖表無障礙描述的 Y 軸標題；預設正體中文字面值，說明同 ``axisXTitle``
-    var axisYTitle: String = "占比"
+    var axisYTitle: String = "orders.detail.label.share"
 
     /// 圖表資料序列名稱
-    var seriesName: String = "圈狀圖"
+    var seriesName: String = "orders.detail.label.donutChart"
 
     // MARK: - Body
 
@@ -52,13 +55,13 @@ private extension BLDonutChart {
         ZStack {
             Chart(segments) { segment in
                 SectorMark(
-                    angle: .value("占比", segment.value),
+                    angle: .value("orders.detail.label.share", segment.value),
                     innerRadius: .ratio(0.68),
                     angularInset: 1
                 )
                 // 以類別維度驅動配色，讓 Swift Charts 將區段身分帶進無障礙樹
                 // 直接指定色值會讓區段名稱完全不進畫面也不進輔助技術
-                .foregroundStyle(by: .value("類別", segment.label))
+                .foregroundStyle(by: .value("orders.list.label.category2", segment.label))
                 .accessibilityLabel(segment.label)
                 .accessibilityValue(segment.valueDescription)
             }
@@ -157,13 +160,15 @@ private extension BLDonutChart {
         }
 
         /// 建立圖表層級的輔助技術摘要
-        /// - Parameter segments: 圈狀圖資料
+        /// - Parameters:
+        ///   - segments: 圈狀圖資料
+        ///   - locale: 目前的 Locale
         /// - Returns: 供輔助技術朗讀的摘要
-        static func summary(for segments: [BLDonutSegment]) -> LocalizedStringKey {
+        static func summary(for segments: [BLDonutSegment], locale: Locale = .current) -> LocalizedStringKey {
             guard let largest = segments.max(by: { left, right in left.value < right.value }) else {
-                return "圈狀圖，目前沒有資料"
+                return "common.ui.label.donutChartData"
             }
-            return "圈狀圖，共 \(segments.count) 個類別，占比最高為 \(largest.label) \(largest.valueDescription)"
+            return LocalizedStringKey(AppLanguage.format("common.ui.accessibility.donutChartSummary", segments.count, largest.label, largest.valueDescription, locale: locale))
         }
     }
 }
@@ -184,13 +189,13 @@ private extension BLDonutChart {
 
     /// 圖表層級摘要
     var accessibilitySummary: LocalizedStringKey {
-        ChartAccessibilityDescriptor.summary(for: segments)
+        ChartAccessibilityDescriptor.summary(for: segments, locale: locale)
     }
 }
 
 // MARK: - Preview
 
-#Preview("圈狀圖") {
+#Preview("orders.detail.label.donutChart") {
     let palette = BLPalette()
 
     BLDonutChart(

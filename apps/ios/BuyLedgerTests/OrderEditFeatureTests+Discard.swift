@@ -28,16 +28,16 @@ extension OrderEditFeatureTests {
         // When
         await store.send(.view(.cancelTapped)) {
             $0.discardConfirmation = AlertState {
-                TextState("捨棄變更")
+                TextState("orders.list.label.discardChanges")
             } actions: {
                 ButtonState(role: .destructive, action: .discard) {
-                    TextState("捨棄變更")
+                    TextState("orders.list.label.discardChanges")
                 }
                 ButtonState(role: .cancel) {
-                    TextState("繼續編輯")
+                    TextState("orders.list.label.keepEditing")
                 }
             } message: {
-                TextState("這張訂單有尚未儲存的變更，離開後將不會保留。")
+                TextState("orders.edit.message.orderHasUnsaved")
             }
         }
 
@@ -51,10 +51,10 @@ extension OrderEditFeatureTests {
         // Given
         var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         initial.discardConfirmation = AlertState {
-            TextState("捨棄變更")
+            TextState("orders.list.label.discardChanges")
         } actions: {
             ButtonState(role: .destructive, action: .discard) {
-                TextState("捨棄變更")
+                TextState("orders.list.label.discardChanges")
             }
         }
         let dismissCallCount = LockIsolated(0)

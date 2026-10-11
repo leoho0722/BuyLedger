@@ -74,10 +74,10 @@ private extension OrderDetailMenu {
                 Image(systemName: "arrow.triangle.2.circlepath")
 
             case .wide:
-                Label("更新狀態", systemImage: "arrow.triangle.2.circlepath")
+                Label("orders.detail.label.updateStatus", systemImage: "arrow.triangle.2.circlepath")
             }
         }
-        .accessibilityLabel("更新狀態")
+        .accessibilityLabel("orders.detail.label.updateStatus")
         .accessibilityIdentifier(BLAccessibilityID.Orders.detailStatusMenuButton)
     }
 
@@ -88,7 +88,7 @@ private extension OrderDetailMenu {
                 Button {
                     store.send(.view(.mergeTapped))
                 } label: {
-                    Label("合併訂單", systemImage: "arrow.triangle.merge")
+                    Label("orders.detail.label.mergeOrders", systemImage: "arrow.triangle.merge")
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Orders.detailMergeButton)
             }
@@ -96,7 +96,7 @@ private extension OrderDetailMenu {
             Button {
                 store.send(.view(.editTapped))
             } label: {
-                Label("編輯", systemImage: "pencil")
+                Label("common.action.button.edit", systemImage: "pencil")
             }
             .accessibilityIdentifier(BLAccessibilityID.Orders.detailEditButton)
 
@@ -105,7 +105,7 @@ private extension OrderDetailMenu {
             Button(role: .destructive) {
                 store.send(.view(.deleteTapped))
             } label: {
-                Label("刪除", systemImage: "trash")
+                Label("common.action.button.delete", systemImage: "trash")
             }
             .accessibilityIdentifier(BLAccessibilityID.Orders.detailDeleteButton)
         } label: {
@@ -114,11 +114,11 @@ private extension OrderDetailMenu {
                 Image(systemName: "ellipsis.circle")
 
             case .wide:
-                Label("更多", systemImage: "ellipsis.circle")
+                Label("common.action.label.more", systemImage: "ellipsis.circle")
                     .labelStyle(.iconOnly)
             }
         }
-        .accessibilityLabel("更多操作")
+        .accessibilityLabel("orders.detail.label.moreActions")
         .accessibilityIdentifier(BLAccessibilityID.Orders.detailMoreButton)
     }
 }

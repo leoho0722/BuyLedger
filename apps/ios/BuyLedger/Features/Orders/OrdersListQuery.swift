@@ -151,7 +151,7 @@ extension OrdersListQuery {
         if let paymentMethod = selection.paymentMethod {
             parts.append(paymentMethod)
         }
-        return parts.isEmpty ? language.localized("全部") : parts.joined(separator: " · ")
+        return parts.isEmpty ? language.localized("common.action.label.all") : parts.joined(separator: " · ")
     }
 
     /// 依多選模式與選取筆數決定清單標題
@@ -162,9 +162,16 @@ extension OrdersListQuery {
     /// - Returns: 導覽標題的本地化 key
     static func navigationTitle(isSelecting: Bool, count: Int) -> String.LocalizationValue {
         guard isSelecting else {
-            return "訂單"
+            return "orders.list.title"
         }
-        return count == 0 ? "選擇訂單" : "已選 \(count) 筆"
+        guard count > 0 else {
+            return "orders.edit.label.selectOrders"
+        }
+        var string = String.LocalizationValue.StringInterpolation(literalCapacity: 34, interpolationCount: 1)
+        string.appendLiteral("orders.batch.message.selectedCount")
+        string.appendLiteral(" ")
+        string.appendInterpolation(count)
+        return String.LocalizationValue(stringInterpolation: string)
     }
 
     /// 依已載入、錯誤、載入中順序決定呈現狀態

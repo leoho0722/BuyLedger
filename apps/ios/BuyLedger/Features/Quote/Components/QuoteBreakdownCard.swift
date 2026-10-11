@@ -60,9 +60,9 @@ private extension QuoteBreakdownCard {
     var unavailableContent: some View {
         BLCard {
             ContentUnavailableView {
-                Label("尚無可用匯率資料", systemImage: "dollarsign.arrow.circlepath")
+                Label("quote.calculator.label.exchangeRateAvailable", systemImage: "dollarsign.arrow.circlepath")
             } description: {
-                Text("需要網路連線載入匯率後才能拆解成本；請稍後再試。")
+                Text("quote.calculator.message.networkConnectionNeeded")
             }
             .frame(maxWidth: .infinity)
         }
@@ -74,7 +74,7 @@ private extension QuoteBreakdownCard {
 
         return BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                Text("成本拆解")
+                Text("orders.detail.label.costBreakdown")
                     .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
@@ -86,7 +86,7 @@ private extension QuoteBreakdownCard {
                 Divider()
 
                 HStack {
-                    Text("總成本")
+                    Text("orders.detail.label.totalCost")
                         .font(BLTypographyStyle.subhead.font.weight(.semibold))
                         .foregroundStyle(palette.label)
 
@@ -157,16 +157,16 @@ private extension QuoteBreakdownCard {
     /// 成本拆解項目清單
     var items: [BreakdownItem] {
         [
-            BreakdownItem(label: "商品金額", value: itemTWD, color: palette.accent),
-            BreakdownItem(label: "當地運費", value: domesticTWD, color: palette.teal),
+            BreakdownItem(label: "orders.detail.label.itemCost", value: itemTWD, color: palette.accent),
+            BreakdownItem(label: "quote.calculator.label.localShipping", value: domesticTWD, color: palette.teal),
             BreakdownItem(
-                label: "國際運費",
+                label: "orders.detail.label.internationalShipping",
                 value: internationalShippingTWD,
                 color: palette.purple
             ),
-            BreakdownItem(label: "刷卡手續費", value: cardFeeTWD, color: palette.orange),
-            BreakdownItem(label: "金流手續費", value: paymentFeeTWD, color: palette.pink),
-            BreakdownItem(label: "平台手續費", value: platformFeeTWD, color: palette.indigo),
+            BreakdownItem(label: "orders.detail.label.cardFee", value: cardFeeTWD, color: palette.orange),
+            BreakdownItem(label: "orders.detail.label.paymentProcessingFee", value: paymentFeeTWD, color: palette.pink),
+            BreakdownItem(label: "orders.detail.label.platformFee", value: platformFeeTWD, color: palette.indigo),
         ]
     }
 }

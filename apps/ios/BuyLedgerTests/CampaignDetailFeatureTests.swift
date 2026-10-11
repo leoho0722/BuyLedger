@@ -202,7 +202,7 @@ struct CampaignDetailFeatureTests {
         let text = try Self.localizedText(message, language: .english)
 
         // Then
-        #expect(message.key == "全部已收款。")
+        #expect(message.key == "campaigns.detail.message.allOrdersPaid")
         #expect(text == "All orders are paid.")
     }
 
@@ -219,7 +219,7 @@ struct CampaignDetailFeatureTests {
         let text = try Self.localizedText(message, language: .english)
 
         // Then
-        #expect(message.key == "尚無歸屬此開團的訂單。")
+        #expect(message.key == "campaigns.detail.message.ordersAssignedCampaign")
         #expect(text == "No orders are assigned to this campaign.")
     }
 }

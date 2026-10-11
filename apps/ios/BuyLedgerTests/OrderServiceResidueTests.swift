@@ -67,7 +67,7 @@ struct OrderServiceResidueTests {
         // When
         do throws(OrderPersistenceError) {
             try await environment.service.createOrder(
-                LedgerOrder.fixture(id: "order-001", status: .quoting, notes: "新訂單")
+                LedgerOrder.fixture(id: "order-001", status: .quoting, notes: "orders.list.label.newOrder")
             )
         } catch {
             actualCollisionError = error

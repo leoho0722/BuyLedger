@@ -34,13 +34,13 @@ private extension OrderDetailCardlessView {
     var adjustmentsCard: some View {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.small) {
-                Text("無卡明細")
+                Text("orders.detail.label.cardlessDetails")
                     .font(BLTypographyStyle.footnote.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
 
                 HStack {
-                    Text("無卡折抵金額")
+                    Text("orders.detail.label.cardlessDeduction")
                         .blTextStyle(.subhead)
                         .foregroundStyle(palette.label)
 
@@ -54,7 +54,7 @@ private extension OrderDetailCardlessView {
                 .accessibilityElement(children: .combine)
 
                 HStack {
-                    Text("無卡補款金額")
+                    Text("orders.detail.label.cardlessTopup")
                         .blTextStyle(.subhead)
                         .foregroundStyle(palette.label)
 

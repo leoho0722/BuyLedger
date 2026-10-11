@@ -86,7 +86,7 @@ extension SnapshotTests {
             let state = CampaignListFeature.State(
                 campaigns: SharedReader(value: []),
                 orders: SharedReader(value: []),
-                errorMessage: SharedReader(value: "開團載入失敗，請稍後再試。")
+                errorMessage: SharedReader(value: "campaigns.list.message.campaignsLoadedTry")
             )
 
             // When

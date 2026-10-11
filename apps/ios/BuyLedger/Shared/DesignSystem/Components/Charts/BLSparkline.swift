@@ -26,18 +26,19 @@ struct BLSparkline: View {
     var summary: LocalizedStringKey? = nil
 
     /// 圖表無障礙描述 (`AXChartDescriptor`) 的 X 軸標題；預設正體中文字面值
-    var axisXTitle: String = "順序"
+    var axisXTitle: String = "orders.list.label.sequence"
 
     /// 圖表無障礙描述的 Y 軸標題；預設正體中文字面值，說明同 ``axisXTitle``
-    var axisYTitle: String = "數值"
+    var axisYTitle: String = "orders.detail.label.value"
 
     /// 圖表資料序列名稱
-    var seriesName: String = "走勢圖"
+    var seriesName: String = "dashboard.overview.label.trendChart"
 
     /// X 軸資料點的朗讀文字
     /// - Parameter ordinal: 該資料點在序列中的順位 (1-based)
-    /// - Returns: 該資料點的朗讀文字
-    var pointOrdinalDescription: (_ ordinal: Int) -> String = { ordinal in "第 \(ordinal) 筆" }
+    var pointOrdinalDescription: (_ ordinal: Int) -> String = { ordinal in
+        AppLanguage.traditionalChinese.localizedString(forKey: "common.general.label.pointLd", ordinal)
+    }
 
     // MARK: - Body
 
@@ -229,7 +230,7 @@ private extension BLSparkline {
 
 // MARK: - Preview
 
-#Preview("走勢圖") {
+#Preview("dashboard.overview.label.trendChart") {
     BLSparkline(data: [8, 12, 9, 15, 13, 18, 16, 22])
         .frame(width: 240)
         .padding()

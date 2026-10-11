@@ -59,14 +59,14 @@ private extension OrderDetailRowMenu {
     /// 請清單開始合併目前訂單的按鈕
     var mergeButton: some View {
         Button(action: onMerge) {
-            Label("合併訂單", systemImage: "arrow.triangle.merge")
+            Label("orders.detail.label.mergeOrders", systemImage: "arrow.triangle.merge")
         }
     }
 
     /// 請清單確認刪除目前訂單的按鈕
     var deleteButton: some View {
         Button(role: .destructive, action: onDelete) {
-            Label("刪除訂單", systemImage: "trash")
+            Label("orders.detail.label.deleteOrder", systemImage: "trash")
         }
     }
 }

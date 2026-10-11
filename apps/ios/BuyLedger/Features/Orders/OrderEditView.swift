@@ -86,7 +86,7 @@ private extension OrderEditView {
             } label: {
                 Image(systemName: "xmark")
             }
-            .accessibilityLabel(Text("取消"))
+            .accessibilityLabel(Text("common.action.cancel"))
             .accessibilityIdentifier(BLAccessibilityID.OrderEdit.cancelButton)
         }
 
@@ -97,7 +97,7 @@ private extension OrderEditView {
                 Image(systemName: "checkmark")
             }
             .buttonStyle(.borderedProminent)
-            .accessibilityLabel(Text("儲存"))
+            .accessibilityLabel(Text("orders.edit.button.save"))
             .accessibilityIdentifier(BLAccessibilityID.OrderEdit.saveButton)
             .keyboardShortcut(.defaultAction)
             .disabled(!store.canSave)
@@ -114,7 +114,7 @@ private extension OrderEditView {
                     Image(systemName: "checkmark")
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Common.keyboardDoneButton)
-                .accessibilityLabel(Text("完成"))
+                .accessibilityLabel(Text("common.action.button.done"))
             }
         }
     }
@@ -144,7 +144,7 @@ private extension OrderEditView {
 
 // MARK: - Preview
 
-#Preview("新訂單") {
+#Preview("orders.list.label.newOrder") {
     if let id = UUID(uuidString: "00000000-0000-0000-0000-000000000000") {
         OrderEditView(
             store: Store(
@@ -159,7 +159,7 @@ private extension OrderEditView {
     }
 }
 
-#Preview("編輯訂單") {
+#Preview("orders.detail.label.editOrder") {
     if let id = UUID(uuidString: "00000000-0000-0000-0000-000000000000") {
         OrderEditView(
             store: Store(

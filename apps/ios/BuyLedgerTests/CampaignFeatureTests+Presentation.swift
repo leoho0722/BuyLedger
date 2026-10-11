@@ -17,7 +17,7 @@ extension CampaignFeatureTests {
     @Test
     func presentation_取消無變更的表單_進入關閉中且暫存通知不提前呈現() async {
         // Given
-        let pendingNotice = Self.failureAlert("開團狀態自動更新失敗，請稍後再試。")
+        let pendingNotice = Self.failureAlert("campaigns.general.message.automaticallyUpdatingCampaign")
         var initial = CampaignFeature.State()
         initial.presentation.destination = .edit(Self.makeEditState())
         initial.presentation.queue.pendingNotice = pendingNotice
@@ -44,7 +44,7 @@ extension CampaignFeatureTests {
         var editState = Self.makeEditState()
         editState.draft.name = "團"
         editState.discardConfirmation = Self.discardAlert
-        let pendingNotice = Self.failureAlert("結團失敗，請稍後再試。")
+        let pendingNotice = Self.failureAlert("campaigns.general.message.campaignSettledTry")
         var initial = CampaignFeature.State()
         initial.presentation.destination = .edit(editState)
         initial.presentation.queue.pendingNotice = pendingNotice
@@ -79,7 +79,7 @@ extension CampaignFeatureTests {
         var editState = Self.makeEditState()
         editState.draft.name = "團"
         editState.discardConfirmation = Self.discardAlert
-        let pendingNotice = Self.failureAlert("結團失敗，請稍後再試。")
+        let pendingNotice = Self.failureAlert("campaigns.general.message.campaignSettledTry")
         var initial = CampaignFeature.State()
         initial.presentation.destination = .edit(editState)
         initial.presentation.queue.pendingNotice = pendingNotice
@@ -107,7 +107,7 @@ extension CampaignFeatureTests {
     func presentation_提示關閉後_目的地為空() async {
         // Given
         var initial = CampaignFeature.State()
-        initial.presentation.destination = Self.failureAlert("開團刪除失敗，請稍後再試。")
+        initial.presentation.destination = Self.failureAlert("campaigns.general.message.campaignDeletedTry")
         let store = TestStore(initialState: initial) {
             CampaignFeature()
         }

@@ -71,7 +71,7 @@ private extension RootSidebarLayout {
                     .listRowBackground(Color.clear)
             }
 
-            Section("工作區") {
+            Section("common.general.label.workspace") {
                 navRow(.dashboard, isSelected: selection == .tab(.dashboard))
 
                 navRow(
@@ -85,7 +85,7 @@ private extension RootSidebarLayout {
                 navRow(.insights, isSelected: selection == .tab(.insights))
             }
 
-            Section("工具") {
+            Section("orders.list.label.tools") {
                 navRow(.more, isSelected: selection == .tab(.more))
             }
         }
@@ -112,12 +112,12 @@ private extension RootSidebarLayout {
                         )
                     )
 
-                Text("BL")
+                Text(verbatim: "BL")
                     .font(BLTypographyStyle.caption.font.weight(.bold))
                     .foregroundStyle(.white)
             }
 
-            Text("BuyLedger")
+            Text(verbatim: "BuyLedger")
                 .font(BLTypographyStyle.headline.font.weight(.bold))
                 .foregroundStyle(palette.label)
 
@@ -143,7 +143,7 @@ private extension RootSidebarLayout {
             Spacer(minLength: 0)
 
             if let badgeCount, badgeCount > 0 {
-                BLBadge("\(badgeCount)", tone: .destructive, variant: .count)
+                BLBadge(String(badgeCount), tone: .destructive, variant: .count)
             }
         }
         .tag(SidebarSelection.tab(tab))

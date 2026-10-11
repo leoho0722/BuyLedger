@@ -59,13 +59,13 @@ enum OrderDatePeriod: Hashable, Identifiable, CaseIterable {
     var title: String {
         switch self {
         case .all:
-            "全部時間"
+            "orders.general.label.allTime"
         case .thisWeek:
-            "本週"
+            "orders.list.label.week"
         case .thisMonth:
-            "本月"
+            "orders.list.label.month"
         case .lastMonth:
-            "上月"
+            "orders.general.label.lastMonth"
         }
     }
 }

@@ -55,18 +55,18 @@ private extension OrderDetailCostView {
     /// 窄欄版面使用的 donut 成本拆解卡片
     var compactCostBreakdown: some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text("成本拆解")
+            Text("orders.detail.label.costBreakdown")
                 .blTextStyle(.headline)
 
             BLCard {
                 VStack(alignment: .leading, spacing: BLSpacing.large) {
                     BLDonutChart(
                         segments: donutSegments,
-                        centerTitle: "總成本",
+                        centerTitle: "orders.detail.label.totalCost",
                         centerValue: OrderFormatters.twd(order.summary.totalCost, locale: locale),
-                        axisXTitle: language.localized("類別"),
-                        axisYTitle: language.localized("占比"),
-                        seriesName: language.localized("圈狀圖")
+                        axisXTitle: language.localized("orders.list.label.category2"),
+                        axisYTitle: language.localized("orders.detail.label.share"),
+                        seriesName: language.localized("orders.detail.label.donutChart")
                     )
                     .frame(maxWidth: .infinity)
 
@@ -111,7 +111,7 @@ private extension OrderDetailCostView {
     var breakdownBarsCard: some View {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                Text("成本拆解")
+                Text("orders.detail.label.costBreakdown")
                     .font(BLTypographyStyle.footnote.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
@@ -123,7 +123,7 @@ private extension OrderDetailCostView {
                 Divider()
 
                 HStack {
-                    Text("總成本")
+                    Text("orders.detail.label.totalCost")
                         .font(BLTypographyStyle.subhead.font.weight(.semibold))
                         .foregroundStyle(palette.label)
 
@@ -190,7 +190,7 @@ private extension OrderDetailCostView {
     var donutSegments: [BLDonutSegment] {
         OrderCostBreakdown.donutSlices(for: components, locale: locale).map {
             BLDonutSegment(
-                label: $0.label,
+                label: language.localizedString(forKey: $0.label),
                 value: $0.value,
                 color: costColor(for: $0.tone),
                 valueDescription: $0.valueDescription

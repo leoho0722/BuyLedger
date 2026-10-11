@@ -56,27 +56,27 @@ extension CampaignFeatureTests {
         )
         let renameFailureNotice: CampaignPresentationFeature.Destination.State = .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("開團已儲存，但歸屬訂單的開團名稱更新失敗，請稍後再試。")
+                TextState("campaigns.general.message.campaignSavedBut")
             }
         )
         let accessDeniedNotice: CampaignPresentationFeature.Destination.State = .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("需要行事曆權限")
+                TextState("campaigns.general.label.calendarAccessRequired")
             } actions: {
                 ButtonState(action: .openSettings) {
-                    TextState("前往設定")
+                    TextState("orders.general.label.openSettings")
                 }
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("請到「設定」開啟行事曆存取權限，才能新增或移除訂購提醒。")
+                TextState("campaigns.general.message.allowCalendarAccess")
             }
         )
         let failingRename: OrderService.RenameOrderCampaign = { _, _ in
@@ -146,13 +146,13 @@ extension CampaignFeatureTests {
         )
         let expectedNotice: CampaignPresentationFeature.Destination.State = .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("操作失敗")
+                TextState("orders.list.label.operationFailed")
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
-                TextState("開團狀態更新失敗，請稍後再試。")
+                TextState("campaigns.general.message.campaignStatusUpdated")
             }
         )
         var initial = CampaignFeature.State()

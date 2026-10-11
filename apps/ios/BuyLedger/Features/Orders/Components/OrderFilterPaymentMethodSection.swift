@@ -44,7 +44,7 @@ private extension OrderFilterPaymentMethodSection {
                 Image(systemName: "creditcard")
                     .foregroundStyle(BLPalette().accent)
 
-                Text("全部")
+                Text("common.action.label.all")
                     .fixedSize(horizontal: false, vertical: true)
                     .multilineTextAlignment(.leading)
                     .foregroundStyle(.primary)
@@ -105,9 +105,9 @@ private extension OrderFilterPaymentMethodSection {
     @ViewBuilder
     var paymentMethodEmptyStateRow: some View {
         ContentUnavailableView(
-            "沒有符合的付款方式",
+            "orders.list.label.matchingPaymentMethods",
             systemImage: "tray",
-            description: Text("試試其他搜尋關鍵字，或回到設定頁新增付款方式。")
+            description: Text("orders.filter.message.tryAnother")
         )
     }
 
@@ -125,7 +125,7 @@ private extension OrderFilterPaymentMethodSection {
 
     /// 顯示此區段的篩選項目名稱
     var header: some View {
-        Text("付款方式")
+        Text("orders.list.label.paymentMethod")
     }
 }
 

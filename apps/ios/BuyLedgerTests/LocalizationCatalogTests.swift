@@ -153,6 +153,103 @@ struct LocalizationCatalogTests {
         #expect(chineseValue?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
         #expect(englishValue?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
     }
+
+    /// 字串目錄內不得殘留任何中文 Key
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func noResidualChineseKeys_字串目錄_不得含有中文Key() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+
+        // When
+        let chineseKeys = strings.keys.filter {
+            $0.range(of: "[\\u{4E00}-\\u{9FFF}]", options: .regularExpression) != nil
+        }.sorted()
+
+        // Then
+        #expect(chineseKeys.isEmpty, "字串目錄中仍殘留中文 Key：\(chineseKeys)")
+    }
+
+    /// 結構化英文 Key 符合 `<domain>.<component>.<elementType>.<descriptor>` 點記號與小駝峰規範
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func structuredKeysFormat_結構化英文Key_符合點記號與小駝峰規範() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+        let pattern = "^[a-z]+(\\.[a-z][a-zA-Z0-9]*){2,3}$"
+        var invalidKeys: [String] = []
+        var structuredCount = 0
+
+        // When
+        for (key, entry) in strings {
+            let entryDict = entry as? [String: Any]
+            let shouldTranslate = entryDict?["shouldTranslate"] as? Bool ?? true
+            guard shouldTranslate else { continue }
+
+            if key.range(of: pattern, options: .regularExpression) == nil {
+                invalidKeys.append(key)
+            } else {
+                structuredCount += 1
+            }
+        }
+
+        // Then
+        #expect(
+            invalidKeys.isEmpty,
+            "需翻譯之字串 Key 必須 100% 符合結構化英文點記號與 lowerCamelCase 格式：\(invalidKeys)"
+        )
+        #expect(structuredCount >= 475, "字串目錄中需翻譯之結構化英文 Key 應覆蓋全量條目")
+    }
+
+    /// 字串目錄內不得殘留任何 shouldTranslate == false 的非本地化條目
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func noNonTranslatableEntries_字串目錄_不得含有非本地化條目() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+
+        // When
+        let nonTranslatableKeys = strings.compactMap { key, value -> String? in
+            let dict = value as? [String: Any]
+            return dict?["shouldTranslate"] as? Bool == false ? key : nil
+        }.sorted()
+
+        // Then
+        #expect(
+            nonTranslatableKeys.isEmpty,
+            "字串目錄中仍殘留非本地化條目（應使用 Text(verbatim:)）：\(nonTranslatableKeys)"
+        )
+    }
+
+    /// 已知廢棄或重複的死碼 Key 不得存在於字串目錄
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func prunedDeadKeys_歷史廢棄與重複通用Key_不得存在於目錄() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+        let deadKeys = [
+            "common.action.label.back",
+            "common.general.action.clearSearch",
+            "common.general.label.addReminder",
+            "common.general.label.appearanceMode",
+            "common.general.label.baseCurrency",
+            "common.general.label.estimatedProfit",
+            "common.general.label.returning",
+            "orders.edit.label.automatic",
+            "orders.general.label.traditionalChinese",
+            "orders.merge.message.photoLimitNoticeLegacy"
+        ]
+
+        // When
+        let foundDeadKeys = deadKeys.filter { strings[$0] != nil }
+
+        // Then
+        #expect(foundDeadKeys.isEmpty, "已清理之死碼 Key 不得存在於目錄：\(foundDeadKeys)")
+    }
 }
 
 // MARK: - Nested Types
@@ -164,57 +261,57 @@ extension LocalizationCatalogTests {
 
         /// 已驗收英文值的字串目錄條目，每組 key 與其英文值成對
         static let examples = [
-            Self(key: "總覽", expectedEnglishValue: "Overview"),
-            Self(key: "訂單", expectedEnglishValue: "Orders"),
-            Self(key: "全部", expectedEnglishValue: "All"),
-            Self(key: "營業額", expectedEnglishValue: "Revenue"),
-            Self(key: "成本", expectedEnglishValue: "Cost"),
-            Self(key: "進行中訂單", expectedEnglishValue: "Active Orders"),
-            Self(key: "更多", expectedEnglishValue: "More"),
-            Self(key: "選擇來源幣別", expectedEnglishValue: "Select Source Currency"),
-            Self(key: "選擇預設幣別", expectedEnglishValue: "Select Default Currency"),
-            Self(key: "選擇 AI 模型", expectedEnglishValue: "Select AI Model"),
-            Self(key: "收款進度", expectedEnglishValue: "Payment Progress"),
-            Self(key: "到貨進度", expectedEnglishValue: "Arrival Progress"),
-            Self(key: "待收款", expectedEnglishValue: "Pending"),
-            Self(key: "已收款", expectedEnglishValue: "Received"),
-            Self(key: "到貨", expectedEnglishValue: "Arrived"),
-            Self(key: "收款", expectedEnglishValue: "Payment"),
-            Self(key: "今天", expectedEnglishValue: "Today"),
-            Self(key: "昨天", expectedEnglishValue: "Yesterday"),
-            Self(key: "選擇來源", expectedEnglishValue: "Select Source"),
-            Self(key: "選擇類別", expectedEnglishValue: "Select Categories"),
-            Self(key: "選擇訂單來源", expectedEnglishValue: "Select Order Source"),
+            Self(key: "dashboard.overview.title.overview", expectedEnglishValue: "Overview"),
+            Self(key: "orders.list.title", expectedEnglishValue: "Orders"),
+            Self(key: "common.action.label.all", expectedEnglishValue: "All"),
+            Self(key: "dashboard.overview.label.revenue", expectedEnglishValue: "Revenue"),
+            Self(key: "orders.detail.label.cost", expectedEnglishValue: "Cost"),
+            Self(key: "dashboard.overview.label.activeOrders", expectedEnglishValue: "Active Orders"),
+            Self(key: "common.action.label.more", expectedEnglishValue: "More"),
+            Self(key: "fx.rates.label.selectSourceCurrency", expectedEnglishValue: "Select Source Currency"),
+            Self(key: "settings.preference.label.selectDefaultCurrency", expectedEnglishValue: "Select Default Currency"),
+            Self(key: "settings.preference.label.selectAiModel", expectedEnglishValue: "Select AI Model"),
+            Self(key: "campaigns.detail.label.paymentProgress", expectedEnglishValue: "Payment Progress"),
+            Self(key: "campaigns.detail.label.arrivalProgress", expectedEnglishValue: "Arrival Progress"),
+            Self(key: "orders.filter.status.pendingPayment", expectedEnglishValue: "Pending Payment"),
+            Self(key: "orders.general.status.received", expectedEnglishValue: "Received"),
+            Self(key: "campaigns.list.label.arrived", expectedEnglishValue: "Arrived"),
+            Self(key: "orders.detail.label.payment", expectedEnglishValue: "Payment"),
+            Self(key: "common.date.today", expectedEnglishValue: "Today"),
+            Self(key: "common.date.yesterday", expectedEnglishValue: "Yesterday"),
+            Self(key: "orders.edit.label.selectSource", expectedEnglishValue: "Select Source"),
+            Self(key: "orders.edit.label.selectCategories", expectedEnglishValue: "Select Categories"),
+            Self(key: "orders.edit.label.selectOrderSource", expectedEnglishValue: "Select Order Source"),
             Self(
-                key: "輸入新的訂單來源名稱，加入後會立即套用至此訂單。",
+                key: "orders.edit.message.enterNewOrder",
                 expectedEnglishValue: "Enter a new order source name. It will be applied to this order immediately."
             ),
-            Self(key: "選擇商品類別", expectedEnglishValue: "Category"),
+            Self(key: "orders.list.label.category1", expectedEnglishValue: "Category"),
             Self(
-                key: "輸入新的商品類別名稱，加入後會立即套用至此訂單。",
+                key: "orders.edit.message.enterNewProduct",
                 expectedEnglishValue: "Enter a new product category name. It will be applied to this order immediately."
             ),
-            Self(key: "選擇付款方式", expectedEnglishValue: "Select Payment Method"),
+            Self(key: "orders.list.label.selectPaymentMethod", expectedEnglishValue: "Select Payment Method"),
             Self(
-                key: "目前列表的商品明細 (類別、品名、數量、單價、幣別) 會送往第三方雲端服務；不含客戶姓名。",
+                key: "ai.summary.message.currentListsProduct",
                 expectedEnglishValue: "The current list's product details (category, product name, quantity, unit price, and currency) are sent to a third-party cloud service; customer names are not included."
             ),
-            Self(key: "改用空白資料庫繼續", expectedEnglishValue: "Continue with a Blank Database"),
-            Self(key: "資料無法開啟", expectedEnglishValue: "Unable to Open Data"),
-            Self(key: "備份已保留", expectedEnglishValue: "Backup Kept"),
-            Self(key: "操作失敗", expectedEnglishValue: "Operation Failed"),
-            Self(key: "更正付款方式", expectedEnglishValue: "Correct Payment Method"),
-            Self(key: "確認更正", expectedEnglishValue: "Confirm Correction"),
+            Self(key: "common.general.label.continueBlankDatabase", expectedEnglishValue: "Continue with a Blank Database"),
+            Self(key: "common.general.label.unableOpenData", expectedEnglishValue: "Unable to Open Data"),
+            Self(key: "common.general.label.backupKept", expectedEnglishValue: "Backup Kept"),
+            Self(key: "orders.list.label.operationFailed", expectedEnglishValue: "Operation Failed"),
+            Self(key: "orders.lookup.label.correctPaymentMethod", expectedEnglishValue: "Correct Payment Method"),
+            Self(key: "orders.detail.label.confirmCorrection", expectedEnglishValue: "Confirm Correction"),
             Self(
-                key: "確認後將重算 %lld 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。",
+                key: "common.general.message.afterConfirmationLd",
                 expectedEnglishValue: "After confirmation, %lld existing orders will be recalculated for payment flags and profit. Deduction, supplement, or reconciliation status may be cleared. This cannot be undone."
             ),
             Self(
-                key: "付款方式編輯失敗，請稍後再試。",
+                key: "orders.lookup.message.paymentMethodEdit",
                 expectedEnglishValue: "Payment method edit failed. Please try again later."
             ),
             Self(
-                key: "AI 總結已達時間上限，以下顯示已取得的內容；摘要已截斷。",
+                key: "ai.summary.message.aiSummaryReached",
                 expectedEnglishValue: "The AI summary reached its time limit. The content received so far is shown; the summary was cut short."
             ),
         ]
@@ -283,8 +380,16 @@ private extension LocalizationCatalogTests {
         let record = strings[key] as? [String: Any]
         let localizations = record?["localizations"] as? [String: Any]
         let localization = localizations?[language] as? [String: Any]
-        let stringUnit = localization?["stringUnit"] as? [String: Any]
-        return stringUnit?["value"] as? String
+        if let stringUnit = localization?["stringUnit"] as? [String: Any] {
+            return stringUnit["value"] as? String
+        }
+        if let variations = localization?["variations"] as? [String: Any],
+           let plural = variations["plural"] as? [String: Any] {
+            let sample = plural["other"] as? [String: Any] ?? plural["one"] as? [String: Any]
+            let stringUnit = sample?["stringUnit"] as? [String: Any]
+            return stringUnit?["value"] as? String
+        }
+        return nil
     }
 
     /// 判斷條目是否為含中文、需要翻譯，但英文值仍與正體中文來源相同

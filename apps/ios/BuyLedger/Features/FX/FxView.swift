@@ -37,7 +37,7 @@ struct FxView: View {
         }
         .accessibilityIdentifier(BLAccessibilityID.Fx.root)
         .background(palette.background)
-        .navigationTitle(Text("匯率工具"))
+        .navigationTitle(Text("settings.more.label.exchangeRates"))
         .scrollDismissesKeyboard(.interactively)
         .bind($store.isAmountFieldFocused, to: $isAmountFieldFocused)
         .toolbar {
@@ -92,14 +92,14 @@ private extension FxView {
     var converterCard: some View {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                Text("從")
+                Text("orders.list.label.from")
                     .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
                     .textCase(.uppercase)
 
                 currencyPicker
 
-                Text("金額")
+                Text("orders.detail.label.amount")
                     .padding(.top, BLSpacing.small)
                     .font(BLTypographyStyle.caption.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
@@ -123,7 +123,7 @@ private extension FxView {
             store.send(.view(.currencyPickerTapped))
         } label: {
             HStack(spacing: BLSpacing.small) {
-                Text("來源幣別")
+                Text("fx.rates.label.sourceCurrency")
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.secondaryLabel)
 
@@ -160,11 +160,11 @@ private extension FxView {
         let language = AppLanguage(locale: locale)
 
         return OptionPickerSheet(
-            title: "選擇來源幣別",
+            title: "fx.rates.label.selectSourceCurrency",
             allowsAdd: false,
             searchable: true,
-            emptyTitle: "尚無幣別",
-            emptyDescription: "需要網路連線載入幣別清單；請稍後再試。",
+            emptyTitle: "orders.edit.label.currenciesAvailable",
+            emptyDescription: "orders.edit.message.internetConnectionRequired",
             options: store.availableCurrencies.map(\.rawValue),
             selected: store.fromCurrency.rawValue,
             displayName: { code in
@@ -183,7 +183,7 @@ private extension FxView {
     @ViewBuilder
     var amountField: some View {
         TextField(
-            "輸入金額",
+            "fx.rates.action.enterAmount",
             value: $store.amount,
             format: .number.precision(.fractionLength(0...2)).grouping(.never)
         )
@@ -202,7 +202,7 @@ private extension FxView {
     @ViewBuilder
     var conversionResult: some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
-            Text("= 新台幣")
+            Text("fx.rates.label.twd")
                 .font(BLTypographyStyle.caption.font.weight(.semibold))
                 .foregroundStyle(palette.accent)
 
@@ -212,7 +212,7 @@ private extension FxView {
                 .foregroundStyle(palette.accent)
 
             Text(
-                "1 \(store.fromCurrency.rawValue) = \(FxFormatters.rate(store.rate, locale: locale)) TWD"
+                verbatim: "1 \(store.fromCurrency.rawValue) = \(FxFormatters.rate(store.rate, locale: locale)) TWD"
             )
                 .blTextStyle(.caption)
                 .foregroundStyle(palette.secondaryLabel)
@@ -267,7 +267,7 @@ private extension FxView {
             } label: {
                 Image(systemName: "checkmark")
             }
-            .accessibilityLabel(Text("完成"))
+            .accessibilityLabel(Text("common.action.button.done"))
             .accessibilityIdentifier(BLAccessibilityID.Common.keyboardDoneButton)
         }
     }
@@ -311,7 +311,7 @@ private extension FxView {
         FxView(
             store: Store(
             initialState: FxFeature.State(
-                errorMessage: "匯率載入失敗，請稍後再試。"
+                errorMessage: "fx.rates.message.exchangeRatesLoaded"
             )
             ) {
                 FxFeature()

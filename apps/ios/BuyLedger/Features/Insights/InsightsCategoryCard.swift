@@ -46,14 +46,14 @@ private extension InsightsCategoryCard {
 
     /// 固定顯示「類別排行」的卡片標題
     var title: some View {
-        Text("類別排行")
+        Text("insights.chart.label.categoryRanking")
             .font(BLTypographyStyle.subhead.font.weight(.semibold))
             .foregroundStyle(palette.label)
     }
 
     /// 沒有類別資料時的提示
     var emptyState: some View {
-        Text("尚無分類資料")
+        Text("insights.chart.label.categoryData")
             .blTextStyle(.footnote)
             .foregroundStyle(palette.secondaryLabel)
     }
@@ -68,7 +68,7 @@ private extension InsightsCategoryCard {
                     .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .accessibilityHint("查看 \(category.name) 類別的訂單")
+            .accessibilityHint(Text(AppLanguage.format("insights.chart.accessibility.viewOrders", category.name, locale: locale)))
             .accessibilityValue(Text(BLFormatters.twd(category.profit, locale: locale)))
             .accessibilityIdentifier(
                 BLAccessibilityID.Insights.categoryRankRow(category: category.name)
@@ -91,7 +91,7 @@ private extension InsightsCategoryCard {
 
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text("\(rank). \(category.name)")
+                Text(verbatim: "\(rank). \(category.name)")
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .foregroundStyle(palette.label)
 
@@ -150,7 +150,7 @@ private extension InsightsCategoryCard {
 
 // MARK: - Preview
 
-#Preview("類別排行") {
+#Preview("insights.chart.label.categoryRanking") {
     InsightsCategoryCard(categories: [
         InsightsCategory(name: "美妝保養", profit: 8_600),
         InsightsCategory(name: "服飾配件", profit: 5_200),

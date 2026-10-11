@@ -28,7 +28,7 @@ extension OrderEditFeatureTests {
         )
 
         // Then
-        #expect(state.campaignsDisplayText.key == "未歸團")
+        #expect(state.campaignsDisplayText.key == "orders.detail.label.unassigned")
         #expect(text == "未歸團")
     }
 
@@ -44,7 +44,7 @@ extension OrderEditFeatureTests {
         let text = try localizedCampaignText(state.campaignsDisplayText, language: .english)
 
         // Then
-        #expect(state.campaignsDisplayText.key == "未歸團")
+        #expect(state.campaignsDisplayText.key == "orders.detail.label.unassigned")
         #expect(text == "Unassigned")
     }
 
@@ -92,14 +92,14 @@ extension OrderEditFeatureTests {
     func campaignsDisplayText_英文開團名稱等於本地化鍵_保留原始名稱() throws {
         // Given
         var state = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
-        state.draft.campaignNames = ["未歸團"]
+        state.draft.campaignNames = ["orders.detail.label.unassigned"]
 
         // When
         let text = try localizedCampaignText(state.campaignsDisplayText, language: .english)
 
         // Then
         #expect(state.campaignsDisplayText.key == "%@")
-        #expect(text == "未歸團")
+        #expect(text == "orders.detail.label.unassigned")
     }
 
     /// 結單日就是今天的開團仍在收單，列在可選的開團清單中

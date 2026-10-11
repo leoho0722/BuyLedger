@@ -35,8 +35,8 @@ enum AppLanguage: String, CaseIterable, Sendable {
 
 extension AppLanguage {
 
-    /// 顯示在介面中的名稱
-    var title: LocalizedStringResource {
+    /// 顯示在介面中的名稱 (原文自稱 Endonym)
+    var title: String {
         switch self {
         case .traditionalChinese:
             "正體中文"
@@ -69,7 +69,42 @@ extension AppLanguage {
     /// - Parameter key: String Catalog source key
     /// - Returns: 解析後的目標語言字串
     func localized(_ key: String.LocalizationValue) -> String {
-        String(localized: key, bundle: localizedBundle)
+        if let (baseKey, args) = extractKeyAndArgs(key), !args.isEmpty {
+            let format = localizedBundle.localizedString(forKey: baseKey, value: baseKey, table: nil)
+            if format != baseKey {
+                return localizedString(forKey: baseKey, arguments: args)
+            }
+        }
+        return String(localized: key, bundle: localizedBundle)
+    }
+
+    /// 使用此 App 語言的 String Catalog 解析帶引數的格式化字串 (支援單複數與位置引數)
+    /// - Parameters:
+    ///   - key: String Catalog 鍵值
+    ///   - arguments: 格式化引數清單
+    /// - Returns: 解析並格式化後的目標語言字串
+    func localizedString(forKey key: String, arguments: [CVarArg]) -> String {
+        let format = localizedBundle.localizedString(forKey: key, value: key, table: nil)
+        return String(format: format, locale: locale, arguments: arguments)
+    }
+
+    /// 使用此 App 語言的 String Catalog 解析帶引數的格式化字串 (支援單複數與位置引數)
+    /// - Parameters:
+    ///   - key: String Catalog 鍵值
+    ///   - arguments: 格式化引數清單
+    /// - Returns: 解析並格式化後的目標語言字串
+    func localizedString(forKey key: String, _ arguments: CVarArg...) -> String {
+        localizedString(forKey: key, arguments: arguments)
+    }
+
+    /// 依指定的 Locale 解析 App 語言並格式化字串
+    /// - Parameters:
+    ///   - key: String Catalog 鍵值
+    ///   - arguments: 格式化引數清單
+    ///   - locale: 目前的 Locale
+    /// - Returns: 解析並格式化後的目標語言字串
+    static func format(_ key: String, _ arguments: CVarArg..., locale: Locale) -> String {
+        AppLanguage(locale: locale).localizedString(forKey: key, arguments: arguments)
     }
 }
 
@@ -112,5 +147,40 @@ private extension AppLanguage {
 
         assertionFailure("Missing \(localeIdentifier).lproj for AppLanguage")
         return .main
+    }
+
+    /// 從 String.LocalizationValue 提取結構化 baseKey 與引數清單
+    /// - Parameter key: String.LocalizationValue 鍵值
+    /// - Returns: 若包含結構化 Key 則返回基底 Key 與引數
+    func extractKeyAndArgs(_ key: String.LocalizationValue) -> (baseKey: String, args: [CVarArg])? {
+        let mirror = Mirror(reflecting: key)
+        var keyStr: String?
+        var extractedArgs: [CVarArg] = []
+
+        for child in mirror.children {
+            if let k = child.value as? String {
+                keyStr = k
+            } else {
+                let argsMirror = Mirror(reflecting: child.value)
+                for argChild in argsMirror.children {
+                    let storageMirror = Mirror(reflecting: argChild.value)
+                    for s in storageMirror.children {
+                        let valMirror = Mirror(reflecting: s.value)
+                        for v in valMirror.children {
+                            if let cv = v.value as? CVarArg {
+                                extractedArgs.append(cv)
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        guard let rawKey = keyStr else { return nil }
+        guard let firstSpace = rawKey.firstIndex(of: " ") else {
+            return (rawKey, extractedArgs)
+        }
+        let baseKey = String(rawKey[..<firstSpace])
+        return (baseKey, extractedArgs)
     }
 }

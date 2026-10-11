@@ -38,7 +38,7 @@ private extension OrdersRegularDetailColumn {
 
     /// 沒有可顯示的選取訂單時的選擇提示
     var emptyState: some View {
-        ContentUnavailableView("選擇訂單", systemImage: "list.bullet.rectangle")
+        ContentUnavailableView("orders.edit.label.selectOrders", systemImage: "list.bullet.rectangle")
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background(palette.background)
     }

@@ -139,7 +139,7 @@ private extension OrderRowView {
                     .monospacedDigit()
                     .accessibilityHidden(true)
 
-                Text("客戶實付")
+                Text("orders.edit.label.customerPayment")
                     .blTextStyle(.caption)
                     .foregroundStyle(.tertiary)
             }

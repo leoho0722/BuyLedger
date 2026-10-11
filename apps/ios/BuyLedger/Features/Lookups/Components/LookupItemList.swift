@@ -12,6 +12,9 @@ struct LookupItemList: View {
 
     // MARK: - Properties
 
+    /// App 根層依語言偏好注入的 locale
+    @Environment(\.locale) private var locale
+
     /// 依名稱查詢付款方式分類
     let classificationForName: (String) -> PaymentMethodFlags?
 
@@ -54,7 +57,7 @@ private extension LookupItemList {
     /// 主檔載入失敗時顯示的訊息列
     var loadFailureSection: some View {
         Section {
-            Text(LocalizedStringKey("主檔載入失敗，請稍後再試。"))
+            Text(LocalizedStringKey("orders.lookup.message.masterDataLoaded"))
                 .foregroundStyle(palette.red)
                 .accessibilityIdentifier(
                     BLAccessibilityID.LookupManagement.loadFailureMessage
@@ -84,7 +87,7 @@ private extension LookupItemList {
                         Button(role: .destructive) {
                             onDelete(item)
                         } label: {
-                            Label("刪除", systemImage: "trash")
+                            Label("common.action.button.delete", systemImage: "trash")
                         }
                         .accessibilityIdentifier(
                             BLAccessibilityID.LookupManagement.deleteButton(item)
@@ -94,7 +97,7 @@ private extension LookupItemList {
                         Button(role: .destructive) {
                             onDelete(item)
                         } label: {
-                            Label("刪除", systemImage: "trash")
+                            Label("common.action.button.delete", systemImage: "trash")
                         }
                         .accessibilityIdentifier(
                             BLAccessibilityID.LookupManagement.deleteButton(item)
@@ -106,18 +109,12 @@ private extension LookupItemList {
                 }
             }
         } header: {
-            Text("目前已建立 \(items.count) 項")
+            Text(AppLanguage.format("orders.lookup.label.itemsCreated", items.count, locale: locale))
         } footer: {
             if kind == .paymentMethod {
-                Text(
-                    """
-                    「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；\
-                    「銀行匯款」標籤代表會顯示「對帳狀態」欄位；「貨到付款」標籤代表收款金額已含預估運費，\
-                    獲利會自動扣除三種運費。需要修改名稱或分類時，對該列選「編輯」即可。
-                    """
-                )
-                .blTextStyle(.footnote)
-                .foregroundStyle(Color.blSecondaryLabel)
+                Text("orders.lookup.message.paymentMethodGuide")
+                    .blTextStyle(.footnote)
+                    .foregroundStyle(Color.blSecondaryLabel)
             }
         }
     }
@@ -132,14 +129,14 @@ private extension LookupItemList {
             Button {
                 onEditPaymentMethod(item)
             } label: {
-                Label("編輯", systemImage: "pencil")
+                Label("common.action.button.edit", systemImage: "pencil")
             }
             .accessibilityIdentifier(BLAccessibilityID.LookupManagement.editButton(item))
         } else {
             Button {
                 onRename(item)
             } label: {
-                Label("重新命名", systemImage: "pencil")
+                Label("orders.lookup.label.rename", systemImage: "pencil")
             }
             .accessibilityIdentifier(BLAccessibilityID.LookupManagement.renameButton(item))
         }
@@ -186,14 +183,14 @@ private extension LookupItemList {
                         isCashOnDelivery: false
                     )
 
-                case "銀行匯款":
+                case "orders.edit.label.bankTransfer":
                     PaymentMethodFlags(
                         isCardless: false,
                         isBankTransfer: true,
                         isCashOnDelivery: false
                     )
 
-                case "貨到付款":
+                case "orders.list.label.cashDelivery":
                     PaymentMethodFlags(
                         isCardless: false,
                         isBankTransfer: false,
@@ -205,12 +202,12 @@ private extension LookupItemList {
                 }
             },
             hasLoadFailed: false,
-            items: ["信用卡", "無卡分期", "銀行匯款", "貨到付款"],
+            items: ["信用卡", "無卡分期", "orders.edit.label.bankTransfer", "orders.list.label.cashDelivery"],
             kind: .paymentMethod
         ) { _ in
         } onEditPaymentMethod: { _ in
         } onRename: { _ in
         }
-        .navigationTitle("付款方式")
+        .navigationTitle("orders.list.label.paymentMethod")
     }
 }

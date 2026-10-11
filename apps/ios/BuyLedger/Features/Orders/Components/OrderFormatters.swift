@@ -154,31 +154,39 @@ extension OrderFormatters {
     /// - Returns: 未歸團的本地化值，或保留原名稱與順序的開團文字
     static func campaignsDisplayText(_ names: [String]) -> LocalizedStringResource {
         if names.isEmpty {
-            return "未歸團"
+            return "orders.detail.label.unassigned"
         }
         return "\(names.joined(separator: "、"))"
     }
 
     /// 提供付款方式篩選觸發鈕的標題，未選取時顯示本地化的「全部」
     ///
-    /// - Parameter paymentMethod: 目前選取的付款方式；`nil` 代表全部
+    /// - Parameters:
+    ///   - paymentMethod: 目前選取的付款方式；`nil` 代表全部
+    ///   - locale: App 選定的 locale
     /// - Returns: 「付款方式：」加上付款方式原名，或本地化的「全部」
-    static func paymentMethodFilterTitle(_ paymentMethod: String?) -> LocalizedStringKey {
+    static func paymentMethodFilterTitle(_ paymentMethod: String?, locale: Locale = .current) -> LocalizedStringKey {
+        let language = AppLanguage(locale: locale)
         guard let paymentMethod else {
-            return "付款方式：\(Text("全部"))"
+            let allText = language.localized("common.action.label.all")
+            return LocalizedStringKey(language.localizedString(forKey: "orders.filter.label.paymentMethodFormat", allText))
         }
-        return "付款方式：\(Text(verbatim: paymentMethod))"
+        return LocalizedStringKey(language.localizedString(forKey: "orders.filter.label.paymentMethodFormat", paymentMethod))
     }
 
     /// 提供商品類別篩選觸發鈕的標題，未選取時顯示本地化的「全部」
     ///
-    /// - Parameter category: 目前選取的商品類別；`nil` 代表全部
+    /// - Parameters:
+    ///   - category: 目前選取的商品類別；`nil` 代表全部
+    ///   - locale: App 選定的 locale
     /// - Returns: 「類別：」加上類別原名，或本地化的「全部」
-    static func categoryFilterTitle(_ category: String?) -> LocalizedStringKey {
+    static func categoryFilterTitle(_ category: String?, locale: Locale = .current) -> LocalizedStringKey {
+        let language = AppLanguage(locale: locale)
         guard let category else {
-            return "類別：\(Text("全部"))"
+            let allText = language.localized("common.action.label.all")
+            return LocalizedStringKey(language.localizedString(forKey: "orders.filter.label.categoryFormat", allText))
         }
-        return "類別：\(Text(verbatim: category))"
+        return LocalizedStringKey(language.localizedString(forKey: "orders.filter.label.categoryFormat", category))
     }
 
     /// 將訂單類別清單格式化為 tag 顯示文字，略過空白與空字串項目

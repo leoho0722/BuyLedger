@@ -58,8 +58,8 @@ extension OrdersFeatureTests {
         await store.receive(\.writes.optionAddRequested, plan)
         await store.receive(\.writes.optionResponse)
         await store.receive(\.writes.delegate, .failed(.option(.category)))
-        await store.receive(\.presentation.noticeRequested, Self.failureNotice("商品類別新增失敗，請稍後再試。")) {
-            $0.presentation.queue.pendingNotice = Self.failureNotice("商品類別新增失敗，請稍後再試。")
+        await store.receive(\.presentation.noticeRequested, Self.failureNotice("orders.general.message.categoryAddedTry")) {
+            $0.presentation.queue.pendingNotice = Self.failureNotice("orders.general.message.categoryAddedTry")
         }
         #expect(store.state.lookupCatalog.categories == ["美妝"])
         #expect(store.state.presentation.destination?.edit == initialEdit)
@@ -75,7 +75,7 @@ extension OrdersFeatureTests {
         var initial = Self.makeOptionState()
         initial.presentation.destination = nil
         initial.presentation.queue.isFormClosing = true
-        initial.presentation.queue.pendingNotice = Self.failureNotice("商品類別新增失敗，請稍後再試。")
+        initial.presentation.queue.pendingNotice = Self.failureNotice("orders.general.message.categoryAddedTry")
         let store = TestStore(initialState: initial) {
             OrdersFeature()
         }
@@ -84,11 +84,11 @@ extension OrdersFeatureTests {
         await store.send(.view(.formSheetDismissed)) {
             $0.presentation.queue.isFormClosing = false
             $0.presentation.queue.pendingNotice = nil
-            $0.presentation.destination = Self.failureNotice("商品類別新增失敗，請稍後再試。")
+            $0.presentation.destination = Self.failureNotice("orders.general.message.categoryAddedTry")
         }
 
         // Then
-        #expect(store.state.presentation.destination == Self.failureNotice("商品類別新增失敗，請稍後再試。"))
+        #expect(store.state.presentation.destination == Self.failureNotice("orders.general.message.categoryAddedTry"))
         #expect(store.state.presentation.queue.pendingNotice == nil)
     }
 }

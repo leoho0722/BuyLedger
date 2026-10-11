@@ -48,7 +48,16 @@ extension String {
             }
             let suffix = String(decoding: scanner.units[cursor...], as: UTF16.self)
                 .replacingOccurrences(of: "%", with: "%%")
-            return Array(Set(variants.map { $0 + suffix })).sorted()
+            var allVariants = Set(variants.map { $0 + suffix })
+            if let firstInterpolation = interpolations.first {
+                let baseKeyUnits = scanner.units[0..<firstInterpolation.location]
+                let baseKey = String(decoding: baseKeyUnits, as: UTF16.self)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if !baseKey.isEmpty {
+                    allVariants.insert(baseKey)
+                }
+            }
+            return Array(allVariants).sorted()
         }
 
         /// 解析多行字串內容

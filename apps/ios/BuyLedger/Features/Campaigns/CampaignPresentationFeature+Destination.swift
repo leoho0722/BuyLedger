@@ -67,7 +67,7 @@ extension CampaignPresentationFeature.Destination.State {
 
     /// 結單日自動轉狀態的寫入失敗通知
     static var autoCloseFailure: Self {
-        operationFailure(TextState("開團狀態自動更新失敗，請稍後再試。"))
+        operationFailure(TextState("campaigns.general.message.automaticallyUpdatingCampaign"))
     }
 }
 
@@ -82,16 +82,21 @@ extension CampaignPresentationFeature.Destination.State {
     static func deleteConfirmation(for campaign: Campaign) -> Self {
         .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("刪除開團")
+                TextState("orders.general.label.deleteCampaign")
             } actions: {
                 ButtonState(role: .destructive, action: .confirmDelete(campaign.id)) {
-                    TextState("刪除")
+                    TextState("common.action.button.delete")
                 }
                 ButtonState(role: .cancel) {
-                    TextState("取消")
+                    TextState("common.action.cancel")
                 }
             } message: {
-                TextState("刪除「\(campaign.name)」後無法復原。歸屬此開團的訂單會保留，但會變回未歸團。")
+                TextState(
+                    LocalizedStringResource(
+                        "campaigns.detail.message.deleteUndoneNotice",
+                        defaultValue: "\(campaign.name)"
+                    )
+                )
             }
         )
     }
@@ -103,16 +108,21 @@ extension CampaignPresentationFeature.Destination.State {
     static func settlementConfirmation(for campaign: Campaign) -> Self {
         .alert(
             AlertState<CampaignPresentationFeature.Destination.Alert> {
-                TextState("結團結算")
+                TextState("campaigns.detail.label.campaignSettlement")
             } actions: {
                 ButtonState(action: .confirmSettle(campaign.id)) {
-                    TextState("結團")
+                    TextState("campaigns.list.label.settle")
                 }
                 ButtonState(role: .cancel) {
-                    TextState("取消")
+                    TextState("common.action.cancel")
                 }
             } message: {
-                TextState("結算「\(campaign.name)」後就無法再改回進行中。確定要結團嗎？")
+                TextState(
+                    LocalizedStringResource(
+                        "campaigns.detail.message.settleUndoneNotice",
+                        defaultValue: "\(campaign.name)"
+                    )
+                )
             }
         )
     }
@@ -124,19 +134,19 @@ extension CampaignPresentationFeature.Destination.State {
     static func writeFailure(_ failure: CampaignWritesFeature.Failure) -> Self {
         switch failure {
         case .save:
-            return operationFailure(TextState("開團儲存失敗，請稍後再試。"))
+            return operationFailure(TextState("campaigns.general.message.campaignSavedTry"))
 
         case .rename:
-            return operationFailure(TextState("開團已儲存，但歸屬訂單的開團名稱更新失敗，請稍後再試。"))
+            return operationFailure(TextState("campaigns.general.message.campaignSavedBut"))
 
         case .delete:
-            return operationFailure(TextState("開團刪除失敗，請稍後再試。"))
+            return operationFailure(TextState("campaigns.general.message.campaignDeletedTry"))
 
         case .status:
-            return operationFailure(TextState("開團狀態更新失敗，請稍後再試。"))
+            return operationFailure(TextState("campaigns.general.message.campaignStatusUpdated"))
 
         case .settle:
-            return operationFailure(TextState("結團失敗，請稍後再試。"))
+            return operationFailure(TextState("campaigns.general.message.campaignSettledTry"))
         }
     }
 
@@ -150,45 +160,45 @@ extension CampaignPresentationFeature.Destination.State {
             // 要求使用者前往系統設定卻不提供跳轉，等於把導航成本轉嫁給使用者
             return .alert(
                 AlertState<CampaignPresentationFeature.Destination.Alert> {
-                    TextState("需要行事曆權限")
+                    TextState("campaigns.general.label.calendarAccessRequired")
                 } actions: {
                     ButtonState(action: .openSettings) {
-                        TextState("前往設定")
+                        TextState("orders.general.label.openSettings")
                     }
                     ButtonState(role: .cancel) {
-                        TextState("知道了")
+                        TextState("orders.merge.label.ok")
                     }
                 } message: {
-                    TextState("請到「設定」開啟行事曆存取權限，才能新增或移除訂購提醒。")
+                    TextState("campaigns.general.message.allowCalendarAccess")
                 }
             )
 
         case .accessRestricted:
             // 裝置政策限制下無法前往設定
             return notice(
-                TextState("無法使用行事曆"),
-                message: TextState("這台裝置的行事曆存取受政策限制，暫時無法新增或移除訂購提醒。")
+                TextState("campaigns.general.label.calendarUnavailable"),
+                message: TextState("campaigns.general.message.calendarAccessRestricted")
             )
 
         case .creationFailed:
             // 權限已授予，訊息不得指向權限設定，照做也無法解決真正發生的失敗
-            return notice(TextState("無法建立訂購提醒"), message: TextState("訂購提醒建立失敗，請稍後再試。"))
+            return notice(TextState("campaigns.general.label.unableCreateReminder"), message: TextState("campaigns.general.message.reminderCreatedPlease"))
 
         case .calendarUnavailable:
             // 找不到可寫入的行事曆不是權限問題，訊息不得指向設定
             return notice(
-                TextState("找不到可寫入的行事曆"),
-                message: TextState("找不到可寫入的行事曆，請新增或啟用一個可寫入的行事曆後再試。")
+                TextState("campaigns.reminder.label.writableCalendarFound"),
+                message: TextState("campaigns.general.message.writableCalendarFound")
             )
 
         case .linkRemovalFailed:
-            return operationFailure(TextState("提醒連結移除失敗，請稍後再試。"))
+            return operationFailure(TextState("campaigns.general.message.removingReminderLink"))
 
         case .oldEventRemovalFailed:
-            return operationFailure(TextState("提醒已更新，但舊的行事曆事件移除失敗，請自行到行事曆刪除。"))
+            return operationFailure(TextState("campaigns.general.message.reminderUpdatedBut"))
 
         case .eventRemovalAfterDeleteFailed:
-            return operationFailure(TextState("開團已刪除，但行事曆上的提醒事件移除失敗，請自行到行事曆刪除。"))
+            return operationFailure(TextState("campaigns.general.message.campaignDeletedBut"))
         }
     }
 }
@@ -208,7 +218,7 @@ private extension CampaignPresentationFeature.Destination.State {
     /// - Parameter message: 失敗原因
     /// - Returns: 包含通知的 `Destination.State`
     static func operationFailure(_ message: TextState) -> Self {
-        notice(TextState("操作失敗"), message: message)
+        notice(TextState("orders.list.label.operationFailed"), message: message)
     }
 
     /// 建立只有「知道了」按鈕的一次性通知
@@ -223,7 +233,7 @@ private extension CampaignPresentationFeature.Destination.State {
                 title
             } actions: {
                 ButtonState(role: .cancel) {
-                    TextState("知道了")
+                    TextState("orders.merge.label.ok")
                 }
             } message: {
                 message
