@@ -24,6 +24,7 @@ paths:
 
 ## 依賴與替身
 
+- **具有條件分支的 typed throws 測試替身明確標註 `throws(E)`，即使區域 `let` 已指定 Service 函式型別**：不同 Swift 工具鏈的推斷結果可能不同；省略時 CI 可能將 closure 推成 `throws(any Error)`，讓 `.fetchFailed` 等錯誤 case 無法編譯。
 - **Service 的 `testValue` 全部是 `unimplemented`，測試只覆寫會被呼叫的 closure** (如 `$0.orderService.saveOrder = { _ in }`)：未覆寫的 closure 被呼叫會回報 issue 讓該測試失敗；不為了讓測試過而補滿所有 closure。
     - 以 `XxxService.testValue` 為底再覆寫可行，底座同樣是 `unimplemented`。
 - **`BuyLedgerDatabase`、`HTTPClient`、`UserDefaultsStore`、`AppConfigurationStore` 沒有 `testValue`**：測試中存取未覆寫的一律回報失敗，要用就注入 Mock。Mock 放 `BuyLedgerTests/Mocks/`。

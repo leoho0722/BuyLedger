@@ -160,7 +160,7 @@ extension OrderMergeFeatureTests {
         // Given
         let primary = Self.makeOrder(id: "O1", status: .shipping)
         let secondary = Self.makeOrder(id: "O2", status: .purchased)
-        let failingFetchPhotos: OrderService.FetchOrderPhotos = { id in
+        let failingFetchPhotos: OrderService.FetchOrderPhotos = { id throws(PersistenceError) in
             guard id != "O2" else {
                 throw .fetchFailed(
                     underlying: TestDependencies.makeUnderlyingError(message: "photo load failed")
