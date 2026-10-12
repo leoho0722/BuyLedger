@@ -218,7 +218,7 @@ extension CampaignLoadFeatureTests {
             notes: ""
         )
         let saves = LockIsolated<[Campaign]>([])
-        let failingSave: CampaignService.SaveCampaign = { campaign in
+        let failingSave: CampaignService.SaveCampaign = { campaign throws(PersistenceError) in
             saves.withValue {
                 $0.append(campaign)
             }

@@ -28,7 +28,7 @@ extension OrdersFeatureTests {
         }
         let reloadedOrders = LockIsolated<[LedgerOrder]>([])
         let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.orderStatusUpdated")
-        let fetchOrders: OrderService.FetchOrders = {
+        let fetchOrders: OrderService.FetchOrders = { () throws(PersistenceError) in
             let orders = try await service.fetchOrders()
             reloadedOrders.setValue(orders)
             return orders
@@ -102,7 +102,7 @@ extension OrdersFeatureTests {
         }
         let reloadedOrders = LockIsolated<[LedgerOrder]>([])
         let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.receiptStatusUpdated")
-        let fetchOrders: OrderService.FetchOrders = {
+        let fetchOrders: OrderService.FetchOrders = { () throws(PersistenceError) in
             let orders = try await service.fetchOrders()
             reloadedOrders.setValue(orders)
             return orders
@@ -178,7 +178,7 @@ extension OrdersFeatureTests {
             BuyLedgerDatabaseTests.removeTemporaryDirectory(at: directoryURL)
         }
         let reloadedOrders = LockIsolated<[LedgerOrder]>([])
-        let fetchOrders: OrderService.FetchOrders = {
+        let fetchOrders: OrderService.FetchOrders = { () throws(PersistenceError) in
             let fetchedOrders = try await service.fetchOrders()
             reloadedOrders.setValue(fetchedOrders)
             return fetchedOrders

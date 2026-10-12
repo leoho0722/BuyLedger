@@ -30,7 +30,7 @@ extension CampaignWritesFeatureTests {
         let campaignsAtSave = LockIsolated<[Campaign]>([])
         let campaignsAtRename = LockIsolated<[Campaign]>([])
         let renamedNames = LockIsolated<[String]>([])
-        let rename: OrderService.RenameOrderCampaign = { from, to in
+        let rename: OrderService.RenameOrderCampaign = { from, to throws(PersistenceError) in
             calls.withValue {
                 $0.append("rename")
             }

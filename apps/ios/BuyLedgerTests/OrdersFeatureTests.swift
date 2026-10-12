@@ -69,22 +69,22 @@ extension OrdersFeatureTests {
     /// - Parameter dependencies: 要注入的依賴集合
     /// - Note: 主檔失敗合併到載入回應，原有欄位不變
     static func suppressOrderLookupEffects(_ dependencies: inout DependencyValues) {
-        let failingFetchOrderSources: OrderSourceService.FetchOrderSources = {
+        let failingFetchOrderSources: OrderSourceService.FetchOrderSources = { () throws(PersistenceError) in
             throw .fetchFailed(
                 underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
             )
         }
-        let failingFetchCategories: CategoryService.FetchCategories = {
+        let failingFetchCategories: CategoryService.FetchCategories = { () throws(PersistenceError) in
             throw .fetchFailed(
                 underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
             )
         }
-        let failingFetchPaymentMethodInfos: PaymentMethodService.FetchPaymentMethodInfos = {
+        let failingFetchPaymentMethodInfos: PaymentMethodService.FetchPaymentMethodInfos = { () throws(PersistenceError) in
             throw .fetchFailed(
                 underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
             )
         }
-        let failingFetchStatuses: ReconciliationStatusService.FetchReconciliationStatuses = {
+        let failingFetchStatuses: ReconciliationStatusService.FetchReconciliationStatuses = { () throws(PersistenceError) in
             throw .fetchFailed(
                 underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
             )

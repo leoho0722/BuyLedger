@@ -104,7 +104,7 @@ extension CampaignLoadFeatureTests {
             notes: ""
         )
         let calls = LockIsolated(0)
-        let fetch: CampaignService.FetchCampaigns = {
+        let fetch: CampaignService.FetchCampaigns = { () throws(PersistenceError) in
             let count = calls.withValue {
                 $0 += 1
                 return $0

@@ -117,7 +117,7 @@ struct PersistenceFailureFeatureTests {
         expectedReason: String
     ) async {
         // Given
-        let failingQuarantineStore: PersistenceRecoveryService.QuarantineStore = {
+        let failingQuarantineStore: PersistenceRecoveryService.QuarantineStore = { () throws(PersistenceRecoveryError) in
             throw error
         }
         var initial = PersistenceFailureFeature.State()

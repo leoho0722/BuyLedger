@@ -135,7 +135,7 @@ extension OrdersFeatureTests {
             calendar: TestDependencies.fixedCalendar
         )
         let shouldFail = LockIsolated(true)
-        let saveOrder: OrderService.SaveOrder = { _ in
+        let saveOrder: OrderService.SaveOrder = { _ throws(PersistenceError) in
             if shouldFail.value {
                 throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
             }

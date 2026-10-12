@@ -18,7 +18,7 @@ extension OrdersFeatureTests {
     func presentation_新增類別寫入失敗_資料不變且暫存失敗通知() async {
         // Given
         let calls = LockIsolated<[String]>([])
-        let failingAdd: CategoryService.AddCategory = { name in
+        let failingAdd: CategoryService.AddCategory = { name throws(PersistenceError) in
             calls.withValue {
                 $0.append(name)
             }

@@ -72,7 +72,7 @@ extension OrderWritesFeatureTests {
         let clock = TestClock()
         let shared = initial.$orders
         let observed = LockIsolated<[[LedgerOrder]]>([])
-        let failingMerge: OrderService.MergeOrders = { _, _ in
+        let failingMerge: OrderService.MergeOrders = { _, _ throws(OrderPersistenceError) in
             observed.withValue {
                 $0.append(shared.wrappedValue)
             }

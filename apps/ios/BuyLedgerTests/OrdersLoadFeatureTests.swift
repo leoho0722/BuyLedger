@@ -95,7 +95,7 @@ struct OrdersLoadFeatureTests {
         initial.$lookupCatalog.withLock {
             $0.categories = ["既有類別"]
         }
-        let failingFetch: OrderService.FetchOrders = {
+        let failingFetch: OrderService.FetchOrders = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = TestStore(initialState: initial) {
@@ -212,16 +212,16 @@ extension OrdersLoadFeatureTests {
     ///
     /// - Parameter dependencies: 測試注入的依賴集合
     static func suppressLookups(_ dependencies: inout DependencyValues) {
-        let sources: OrderSourceService.FetchOrderSources = {
+        let sources: OrderSourceService.FetchOrderSources = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "lookup"))
         }
-        let categories: CategoryService.FetchCategories = {
+        let categories: CategoryService.FetchCategories = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "lookup"))
         }
-        let methods: PaymentMethodService.FetchPaymentMethodInfos = {
+        let methods: PaymentMethodService.FetchPaymentMethodInfos = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "lookup"))
         }
-        let statuses: ReconciliationStatusService.FetchReconciliationStatuses = {
+        let statuses: ReconciliationStatusService.FetchReconciliationStatuses = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "lookup"))
         }
         dependencies.orderSourceService.fetchOrderSources = sources

@@ -53,7 +53,7 @@ extension CampaignWritesFeatureTests {
         var expected = Self.campaign
         expected.status = .closed
         let calls = LockIsolated<[Campaign]>([])
-        let failingSave: CampaignService.SaveCampaign = { campaign in
+        let failingSave: CampaignService.SaveCampaign = { campaign throws(PersistenceError) in
             calls.withValue {
                 $0.append(campaign)
             }

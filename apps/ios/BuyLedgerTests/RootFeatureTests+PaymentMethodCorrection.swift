@@ -224,7 +224,7 @@ extension RootFeatureTests {
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .retroactiveConfirmation(
             affectedOrderCount: 1
         )
-        let failingApply: PaymentMethodService.ApplyPaymentMethodEdit = { _, _, _, _ in
+        let failingApply: PaymentMethodService.ApplyPaymentMethodEdit = { _, _, _, _ throws(PaymentMethodPersistenceError) in
             throw .storage(
                 .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
             )

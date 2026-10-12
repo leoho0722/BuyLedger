@@ -37,7 +37,7 @@ extension CampaignFeatureTests {
             notes: ""
         )
         let savedCampaigns = LockIsolated<[Campaign]>([])
-        let failingSave: CampaignService.SaveCampaign = { campaign in
+        let failingSave: CampaignService.SaveCampaign = { campaign throws(PersistenceError) in
             savedCampaigns.withValue {
                 $0.append(campaign)
             }
@@ -88,7 +88,7 @@ extension CampaignFeatureTests {
         var expectedCampaign = campaign
         expectedCampaign.status = .closed
         let savedCampaigns = LockIsolated<[Campaign]>([])
-        let failingSave: CampaignService.SaveCampaign = { savedCampaign in
+        let failingSave: CampaignService.SaveCampaign = { savedCampaign throws(PersistenceError) in
             savedCampaigns.withValue {
                 $0.append(savedCampaign)
             }
@@ -133,7 +133,7 @@ extension CampaignFeatureTests {
         var expectedCampaign = campaign
         expectedCampaign.settledDate = TestDependencies.fixedNow
         let savedCampaigns = LockIsolated<[Campaign]>([])
-        let failingSave: CampaignService.SaveCampaign = { savedCampaign in
+        let failingSave: CampaignService.SaveCampaign = { savedCampaign throws(PersistenceError) in
             savedCampaigns.withValue {
                 $0.append(savedCampaign)
             }
@@ -181,7 +181,7 @@ extension CampaignFeatureTests {
 
         let removedCampaignIDs = LockIsolated<[String]>([])
         let removedCampaignNames = LockIsolated<[String]>([])
-        let failingRemove: CampaignService.RemoveCampaign = { id, name in
+        let failingRemove: CampaignService.RemoveCampaign = { id, name throws(PersistenceError) in
             removedCampaignIDs.withValue {
                 $0.append(id)
             }

@@ -27,7 +27,7 @@ extension OrdersFeatureTests {
             BuyLedgerDatabaseTests.removeTemporaryDirectory(at: directoryURL)
         }
         let reloadedOrders = LockIsolated<[LedgerOrder]>([])
-        let fetchOrders: OrderService.FetchOrders = {
+        let fetchOrders: OrderService.FetchOrders = { () throws(PersistenceError) in
             let fetchedOrders = try await service.fetchOrders()
             reloadedOrders.setValue(fetchedOrders)
             return fetchedOrders
@@ -113,7 +113,7 @@ extension OrdersFeatureTests {
             BuyLedgerDatabaseTests.removeTemporaryDirectory(at: directoryURL)
         }
         let reloadedOrders = LockIsolated<[LedgerOrder]>([])
-        let fetchOrders: OrderService.FetchOrders = {
+        let fetchOrders: OrderService.FetchOrders = { () throws(PersistenceError) in
             let fetchedOrders = try await service.fetchOrders()
             reloadedOrders.setValue(fetchedOrders)
             return fetchedOrders

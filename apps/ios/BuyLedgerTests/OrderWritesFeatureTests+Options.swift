@@ -103,7 +103,7 @@ extension OrderWritesFeatureTests {
     @Test(arguments: LookupKind.allCases)
     func optionAddRequested_四種主檔寫入失敗_目錄不變且回報失敗(kind: LookupKind) async {
         // Given
-        let failingAdd: CategoryService.AddCategory = { _ in
+        let failingAdd: CategoryService.AddCategory = { _ throws(PersistenceError) in
             throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "失敗"))
         }
         let store = TestStore(initialState: Self.makeOptionWriteState()) {

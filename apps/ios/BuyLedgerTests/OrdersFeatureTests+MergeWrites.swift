@@ -36,7 +36,7 @@ extension OrdersFeatureTests {
         let sourceA = LedgerOrder.fixture(id: "A", status: .merged, categories: ["美妝"])
         let sourceB = LedgerOrder.fixture(id: "B", status: .merged, categories: ["食品"])
         let clock = TestClock()
-        let failingMerge: OrderService.MergeOrders = { _, _ in
+        let failingMerge: OrderService.MergeOrders = { _, _ throws(OrderPersistenceError) in
             do {
                 try await clock.sleep(for: .seconds(1))
             } catch {

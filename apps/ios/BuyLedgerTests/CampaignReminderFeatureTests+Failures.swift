@@ -61,7 +61,7 @@ extension CampaignReminderFeatureTests {
     @Test
     func reconcileRequested_沒有可寫入行事曆_回報行事曆無法使用() async {
         // Given
-        let failingAddReminder: CalendarReminderService.AddReminder = { _, _, _ in
+        let failingAddReminder: CalendarReminderService.AddReminder = { _, _, _ throws(CalendarReminderError) in
             throw .noWritableCalendar
         }
         let store = Self.makeStore(links: Shared(value: [:])) {
@@ -86,7 +86,7 @@ extension CampaignReminderFeatureTests {
     @Test
     func reconcileRequested_儲存行事曆事件失敗_回報建立失敗() async {
         // Given
-        let failingAddReminder: CalendarReminderService.AddReminder = { _, _, _ in
+        let failingAddReminder: CalendarReminderService.AddReminder = { _, _, _ throws(CalendarReminderError) in
             throw .system(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = Self.makeStore(links: Shared(value: [:])) {
@@ -111,7 +111,7 @@ extension CampaignReminderFeatureTests {
     @Test
     func reconcileRequested_建立事件未提供識別碼_回報建立失敗() async {
         // Given
-        let failingAddReminder: CalendarReminderService.AddReminder = { _, _, _ in
+        let failingAddReminder: CalendarReminderService.AddReminder = { _, _, _ throws(CalendarReminderError) in
             throw .eventIdentifierMissing
         }
         let store = Self.makeStore(links: Shared(value: [:])) {
@@ -135,7 +135,7 @@ extension CampaignReminderFeatureTests {
     func reconcileRequested_保存提醒連結失敗_回報建立失敗() async {
         // Given
         let savedLinks = LockIsolated<[SavedLink]>([])
-        let failingSaveLink: CampaignReminderService.SaveLink = { campaignID, link in
+        let failingSaveLink: CampaignReminderService.SaveLink = { campaignID, link throws(PersistenceError) in
             savedLinks.withValue {
                 $0.append(SavedLink(campaignID: campaignID, link: link))
             }
@@ -167,7 +167,7 @@ extension CampaignReminderFeatureTests {
     @Test
     func reconcileRequested_重建新事件失敗_保留舊連結且不移除舊事件() async {
         // Given
-        let failingAddReminder: CalendarReminderService.AddReminder = { _, _, _ in
+        let failingAddReminder: CalendarReminderService.AddReminder = { _, _, _ throws(CalendarReminderError) in
             throw .system(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = Self.makeStore(links: Shared(value: [Self.campaignID: Self.oldLink])) {
@@ -195,7 +195,7 @@ extension CampaignReminderFeatureTests {
         // Given
         let campaign = Campaign.fixture(id: Self.campaignID, name: "四月韓國團")
         let removedEventIdentifiers = LockIsolated<[String]>([])
-        let failingAddReminder: CalendarReminderService.AddReminder = { _, _, _ in
+        let failingAddReminder: CalendarReminderService.AddReminder = { _, _, _ throws(CalendarReminderError) in
             throw .noWritableCalendar
         }
         let oldLink = CampaignReminderLink(

@@ -20,7 +20,7 @@ extension CampaignReminderFeatureTests {
         let removedEventIdentifiers = LockIsolated<[String]>([])
         let removedCampaignIDs = LockIsolated<[String]>([])
         let accessRequestCount = LockIsolated(0)
-        let failingRemoveReminder: CalendarReminderService.RemoveReminder = { eventIdentifier in
+        let failingRemoveReminder: CalendarReminderService.RemoveReminder = { eventIdentifier throws(CalendarReminderError) in
             removedEventIdentifiers.withValue {
                 $0.append(eventIdentifier)
             }
@@ -59,7 +59,7 @@ extension CampaignReminderFeatureTests {
     @Test
     func reconcileRequested_移除提醒但連結移除失敗_保留連結並回報() async {
         // Given
-        let failingRemoveLink: CampaignReminderService.RemoveLink = { _ in
+        let failingRemoveLink: CampaignReminderService.RemoveLink = { _ throws(PersistenceError) in
             throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = Self.makeStore(links: Shared(value: [Self.campaignID: Self.oldLink])) {
@@ -154,7 +154,7 @@ extension CampaignReminderFeatureTests {
         // Given
         let removedEventIdentifiers = LockIsolated<[String]>([])
         let removedCampaignIDs = LockIsolated<[String]>([])
-        let failingRemoveReminder: CalendarReminderService.RemoveReminder = { eventIdentifier in
+        let failingRemoveReminder: CalendarReminderService.RemoveReminder = { eventIdentifier throws(CalendarReminderError) in
             removedEventIdentifiers.withValue {
                 $0.append(eventIdentifier)
             }

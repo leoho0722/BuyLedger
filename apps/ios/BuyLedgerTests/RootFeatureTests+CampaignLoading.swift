@@ -133,16 +133,16 @@ private extension RootFeatureTests {
     ///
     /// - Parameter dependencies: 本測試的依賴集合
     static func suppressCampaignLoadingLookups(_ dependencies: inout DependencyValues) {
-        let sources: OrderSourceService.FetchOrderSources = {
+        let sources: OrderSourceService.FetchOrderSources = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "lookup"))
         }
-        let categories: CategoryService.FetchCategories = {
+        let categories: CategoryService.FetchCategories = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "lookup"))
         }
-        let methods: PaymentMethodService.FetchPaymentMethodInfos = {
+        let methods: PaymentMethodService.FetchPaymentMethodInfos = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "lookup"))
         }
-        let statuses: ReconciliationStatusService.FetchReconciliationStatuses = {
+        let statuses: ReconciliationStatusService.FetchReconciliationStatuses = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "lookup"))
         }
         dependencies.orderSourceService.fetchOrderSources = sources

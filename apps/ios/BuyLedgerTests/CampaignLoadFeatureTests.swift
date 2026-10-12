@@ -74,7 +74,7 @@ struct CampaignLoadFeatureTests {
             settledDate: nil,
             notes: ""
         )
-        let failingFetch: CampaignService.FetchCampaigns = {
+        let failingFetch: CampaignService.FetchCampaigns = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = TestStore(initialState: Self.makeState(campaigns: [campaign])) {

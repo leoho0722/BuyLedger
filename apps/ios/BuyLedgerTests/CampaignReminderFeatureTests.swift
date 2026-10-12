@@ -91,7 +91,7 @@ struct CampaignReminderFeatureTests {
     @Test
     func linksRequested_載入失敗_連結維持空且不回報() async {
         // Given
-        let failingFetchLinks: CampaignReminderService.FetchLinks = {
+        let failingFetchLinks: CampaignReminderService.FetchLinks = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = Self.makeStore(links: Shared(value: [:])) {

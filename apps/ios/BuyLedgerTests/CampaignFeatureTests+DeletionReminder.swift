@@ -171,7 +171,7 @@ extension CampaignFeatureTests {
         let removedCampaignIDs = LockIsolated<[String]>([])
         let removedCampaignNames = LockIsolated<[String]>([])
         let removedEventIdentifiers = LockIsolated<[String]>([])
-        let failingRemoveReminder: CalendarReminderService.RemoveReminder = { identifier in
+        let failingRemoveReminder: CalendarReminderService.RemoveReminder = { identifier throws(CalendarReminderError) in
             removedEventIdentifiers.withValue {
                 $0.append(identifier)
             }

@@ -559,7 +559,7 @@ struct QuoteFeatureTests {
     @MainActor
     func retryTapped_匯率連線失敗_顯示網路異常訊息() async {
         // Given
-        let failingFetchLatest: ExchangeRateService.FetchLatest = { _ in
+        let failingFetchLatest: ExchangeRateService.FetchLatest = { _ throws(APIError) in
             throw .transport(
                 underlying: TestDependencies.makeUnderlyingError(message: "network unavailable")
             )

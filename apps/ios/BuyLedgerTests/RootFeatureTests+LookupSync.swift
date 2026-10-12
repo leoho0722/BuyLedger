@@ -226,7 +226,7 @@ extension RootFeatureTests {
             LookupRenameFormFeature.State(originalName: "服飾")
         )
         let renameCalls = LockIsolated<[LookupItemRename]>([])
-        let failingRename: OrderService.ApplyCategoryRename = { oldName, newName in
+        let failingRename: OrderService.ApplyCategoryRename = { oldName, newName throws(PersistenceError) in
             renameCalls.withValue {
                 $0.append(LookupItemRename(oldName: oldName, newName: newName))
             }

@@ -192,7 +192,7 @@ struct FxFeatureTests {
     @Test
     func task_匯率請求傳輸層失敗_結束載入並顯示網路連線異常訊息() async {
         // Given
-        let failingFetchLatest: ExchangeRateService.FetchLatest = { _ in
+        let failingFetchLatest: ExchangeRateService.FetchLatest = { _ throws(APIError) in
             throw .transport(
                 underlying: TestDependencies.makeUnderlyingError(message: "network unavailable")
             )

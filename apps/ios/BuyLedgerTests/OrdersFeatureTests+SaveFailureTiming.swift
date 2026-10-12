@@ -123,7 +123,7 @@ private extension OrdersFeatureTests {
     static func makeFailingCreateOrder(
         _ clock: TestClock<Swift.Duration>
     ) -> OrderService.CreateOrder {
-        let failingCreate: OrderService.CreateOrder = { _ in
+        let failingCreate: OrderService.CreateOrder = { _ throws(OrderPersistenceError) in
             do {
                 try await clock.sleep(for: .seconds(1))
             } catch {

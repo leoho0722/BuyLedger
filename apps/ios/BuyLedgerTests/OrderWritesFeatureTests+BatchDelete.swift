@@ -64,7 +64,7 @@ extension OrderWritesFeatureTests {
         let sharedOrders = initial.$orders
         let observedOrders = LockIsolated<[[LedgerOrder]]>([])
         let calls = LockIsolated<[[LedgerOrder]]>([])
-        let failingSave: OrderService.SaveOrders = { orders in
+        let failingSave: OrderService.SaveOrders = { orders throws(PersistenceError) in
             observedOrders.withValue {
                 $0.append(sharedOrders.wrappedValue)
             }
@@ -136,7 +136,7 @@ extension OrderWritesFeatureTests {
         let sharedOrders = initial.$orders
         let observedOrders = LockIsolated<[[LedgerOrder]]>([])
         let calls = LockIsolated<[String]>([])
-        let failingDelete: OrderService.RemoveOrder = { id in
+        let failingDelete: OrderService.RemoveOrder = { id throws(PersistenceError) in
             observedOrders.withValue {
                 $0.append(sharedOrders.wrappedValue)
             }

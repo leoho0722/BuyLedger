@@ -27,7 +27,7 @@ struct OrderEditPhotosFeatureTests {
         )
         initial.photos.draftPhotos = [Data([0x01])]
         let initialDraft = initial.draft
-        let failingFetch: OrderService.FetchOrderPhotos = { _ in
+        let failingFetch: OrderService.FetchOrderPhotos = { _ throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "照片讀取失敗"))
         }
         let store = TestStore(initialState: initial) {

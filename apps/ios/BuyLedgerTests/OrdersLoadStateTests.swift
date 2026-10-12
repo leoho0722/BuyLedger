@@ -194,7 +194,7 @@ struct OrdersLoadStateTests {
         let order = LedgerOrder.fixture(id: "RETRY-1")
         let responses = AsyncStream<Result<[LedgerOrder], PersistenceError>>.makeStream()
         let reads = LockIsolated(0)
-        let fetch: OrderService.FetchOrders = {
+        let fetch: OrderService.FetchOrders = { () throws(PersistenceError) in
             reads.withValue {
                 $0 += 1
             }

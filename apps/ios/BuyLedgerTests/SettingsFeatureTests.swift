@@ -192,7 +192,7 @@ struct SettingsFeatureTests {
         // Given
         var state = SettingsFeature.State()
         state.availableCurrencies = [.twd, .jpy]
-        let failingFetchCodes: CurrencyMetadataService.FetchCodes = {
+        let failingFetchCodes: CurrencyMetadataService.FetchCodes = { () throws(CurrencyMetadataServiceError) in
             throw .persistence(
                 .storage(
                     .fetchFailed(

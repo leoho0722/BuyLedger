@@ -77,7 +77,7 @@ extension OrdersLoadFeatureTests {
     @Test
     func loadRequested_讀取失敗_回報錯誤並委派父層() async {
         // Given
-        let fetch: OrderService.FetchOrders = {
+        let fetch: OrderService.FetchOrders = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "read"))
         }
         let store = TestStore(initialState: Self.makeState()) {

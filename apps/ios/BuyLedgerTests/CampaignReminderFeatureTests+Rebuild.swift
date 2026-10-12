@@ -253,7 +253,7 @@ extension CampaignReminderFeatureTests {
     func reconcileRequested_重建後移除舊事件失敗_保留新連結並回報() async {
         // Given
         let removedEventIdentifiers = LockIsolated<[String]>([])
-        let failingRemoveReminder: CalendarReminderService.RemoveReminder = { eventIdentifier in
+        let failingRemoveReminder: CalendarReminderService.RemoveReminder = { eventIdentifier throws(CalendarReminderError) in
             removedEventIdentifiers.withValue {
                 $0.append(eventIdentifier)
             }

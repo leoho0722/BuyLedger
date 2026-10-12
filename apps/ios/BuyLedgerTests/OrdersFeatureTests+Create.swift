@@ -173,7 +173,7 @@ extension OrdersFeatureTests {
         state.presentation.destination = .edit(draft)
 
         let expectedID = "BL-DRAFT-00000000-0000-0000-0000-000000000000"
-        let failingCreate: OrderService.CreateOrder = { _ in
+        let failingCreate: OrderService.CreateOrder = { _ throws(OrderPersistenceError) in
             throw .identifierCollision(id: expectedID)
         }
 

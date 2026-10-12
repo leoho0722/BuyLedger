@@ -19,7 +19,7 @@ extension OrdersFeatureTests {
         // Given
         let clock = TestClock()
         let stored = LockIsolated<[String]>([])
-        let delayedAdd: CategoryService.AddCategory = { name in
+        let delayedAdd: CategoryService.AddCategory = { name throws(PersistenceError) in
             do {
                 try await clock.sleep(for: .seconds(1))
             } catch {
@@ -100,7 +100,7 @@ extension OrdersFeatureTests {
             $0 = [original]
         }
         initial.presentation.destination = .edit(formA)
-        let delayedAdd: CategoryService.AddCategory = { _ in
+        let delayedAdd: CategoryService.AddCategory = { _ throws(PersistenceError) in
             do {
                 try await clock.sleep(for: .seconds(1))
             } catch {

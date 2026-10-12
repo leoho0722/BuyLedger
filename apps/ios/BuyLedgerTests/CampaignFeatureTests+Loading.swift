@@ -30,7 +30,7 @@ extension CampaignFeatureTests {
         )
         let responses = AsyncStream<Result<[Campaign], PersistenceError>>.makeStream()
         let calls = LockIsolated(0)
-        let fetch: CampaignService.FetchCampaigns = {
+        let fetch: CampaignService.FetchCampaigns = { () throws(PersistenceError) in
             calls.withValue {
                 $0 += 1
             }

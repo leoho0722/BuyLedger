@@ -79,7 +79,7 @@ extension CampaignFeatureTests {
                 TextState("campaigns.general.message.allowCalendarAccess")
             }
         )
-        let failingRename: OrderService.RenameOrderCampaign = { _, _ in
+        let failingRename: OrderService.RenameOrderCampaign = { _, _ throws(PersistenceError) in
             throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = TestStore(initialState: initial) {
@@ -162,7 +162,7 @@ extension CampaignFeatureTests {
         initial.showDetail(campaignID: "C1")
         let detailID = try #require(initial.path.ids.first)
         initial.presentation.destination = .edit(Self.makeEditState())
-        let failingSave: CampaignService.SaveCampaign = { _ in
+        let failingSave: CampaignService.SaveCampaign = { _ throws(PersistenceError) in
             throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = TestStore(initialState: initial) {

@@ -75,7 +75,7 @@ extension RootFeatureTests {
     func task_幣別快取讀取失敗_共用清單維持原值() async {
         // Given
         let underlying = NSError(domain: "CurrencyCacheTests", code: 1)
-        let failingFetch: CurrencyMetadataService.FetchCodes = {
+        let failingFetch: CurrencyMetadataService.FetchCodes = { () throws(CurrencyMetadataServiceError) in
             throw .persistence(.storage(.fetchFailed(underlying: underlying)))
         }
         let initial = withDependencies {
@@ -173,7 +173,7 @@ extension RootFeatureTests {
     func task_幣別刷新失敗_仍讀取既有快取並更新共用清單() async {
         // Given
         let calls = LockIsolated<[String]>([])
-        let failingRefresh: CurrencyMetadataService.RefreshIfStale = { _ in
+        let failingRefresh: CurrencyMetadataService.RefreshIfStale = { _ throws(CurrencyMetadataServiceError) in
             calls.withValue {
                 $0.append("refresh")
             }

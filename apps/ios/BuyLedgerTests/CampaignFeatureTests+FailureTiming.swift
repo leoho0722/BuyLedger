@@ -35,7 +35,7 @@ extension CampaignFeatureTests {
             }
         )
         let savedCampaignNames = LockIsolated<[String]>([])
-        let failingSave: CampaignService.SaveCampaign = { campaign in
+        let failingSave: CampaignService.SaveCampaign = { campaign throws(PersistenceError) in
             savedCampaignNames.withValue {
                 $0.append(campaign.name)
             }
@@ -111,7 +111,7 @@ extension CampaignFeatureTests {
         )
         var initial = CampaignFeature.State()
         initial.presentation.destination = .edit(Self.makeEditState())
-        let failingSave: CampaignService.SaveCampaign = { _ in
+        let failingSave: CampaignService.SaveCampaign = { _ throws(PersistenceError) in
             throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = TestStore(initialState: initial) {

@@ -63,7 +63,7 @@ extension CampaignWritesFeatureTests {
         // Given
         let campaigns = Shared(value: [Self.campaign])
         let calls = LockIsolated<[String]>([])
-        let failingRemove: CampaignService.RemoveCampaign = { id, name in
+        let failingRemove: CampaignService.RemoveCampaign = { id, name throws(PersistenceError) in
             calls.withValue {
                 $0.append(contentsOf: [id, name])
             }
