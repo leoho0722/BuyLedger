@@ -12,7 +12,7 @@ BuyLedger 的 Apple 平台實作。產品介紹與 monorepo 結構見 repo 根�
 - **Ollama Cloud**：訂單 AI 商品明細總結 (chat streaming，`AISummaryService`)
 - **[swift-snapshot-testing](https://github.com/pointfreeco/swift-snapshot-testing)**：UI 視覺迴歸測試
 
-Xcode 專案：`apps/ios/BuyLedger.xcodeproj`，scheme：`BuyLedger`。需要 **Xcode 26+** 與 Swift 6 toolchain。
+Xcode 專案：`apps/ios/BuyLedger.xcodeproj`，scheme：`BuyLedger`。需要 **Xcode 26+** 與 Swift 6 toolchain，App 最低支援 **iOS / iPadOS 26.0**。
 
 Xcode project 使用 file system synchronized groups，新增或搬移檔案請優先動實體資料夾，再用 build 驗證 target 仍正確包含來源與資源。
 

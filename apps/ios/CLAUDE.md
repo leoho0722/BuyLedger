@@ -21,7 +21,6 @@
 - **TCA Reducer body 寫 `some Reducer<State, Action>`，不寫 `some ReducerOf<Self>`**：後者會 circular reference。
 - **`$store.draft.name` 這類巢狀欄位綁定，SwiftUI 會寫回整個 `draft`，送出 `.set(\.draft, …)`**：TCA 的 `BindingAction ~=` 要求 key path 完全相等，reducer 的 `.binding(\.draft.name)` 永遠不成立。
     - 要對單一欄位的變更反應時，在 State 加可寫的 computed property 並讓畫面綁定它 (開團表單的 `CampaignEditFeature.State.draftName`，reducer 比對 `.binding(\.draftName)`)；其他欄位的變更走 `case .binding:`。
-- **`IPHONEOS_DEPLOYMENT_TARGET = 18.0`，`ForEach` 吃 `enumerated()` 時一律包 `Array(x.enumerated())`**：`EnumeratedSequence` 遵循 `RandomAccessCollection` 需要 iOS 26，拿掉 `Array()` 會編不過。
 - **`Feature.State` 上顯式標註的 `Sendable` 是編譯期契約，不可當冗餘刪除** (`SettingsFeature`／`FxFeature`／`QuoteFeature`／`OrderEditFeature`／`CampaignEditFeature`)：刪掉後 State 混入非 Sendable 成員也不會報錯，且沒有測試會轉紅。
     - 其餘 State 尚未統一標註是刻意保留的範圍，不要以此為由移除既有標註。
 - **`MemberImportVisibility` 已開啟：只 `import ComposableArchitecture` 的檔 (如 reducer，不 `import SwiftUI`) 若寫 `TextState("…")` 字面值或插值，要另外 `import Foundation`**：字面值走 `LocalizedStringResource` 初始化器，缺 import 會編譯失敗。
