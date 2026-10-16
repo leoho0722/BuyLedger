@@ -25,7 +25,7 @@ struct LookupItemRow: View {
         if let classification {
             classifiedRow(classification)
         } else {
-            Text(name)
+            plainRow
         }
     }
 }
@@ -59,7 +59,12 @@ private extension LookupItemRow {
         .accessibilityElement(children: .combine)
     }
 
-    /// 付款方式分類的膠囊徽章
+    /// 只顯示名稱的主檔項目列
+    var plainRow: some View {
+        Text(name)
+    }
+
+    /// 組出付款方式分類的膠囊徽章
     ///
     /// - Parameter title: 徽章文字
     /// - Returns: 分類徽章
@@ -68,11 +73,8 @@ private extension LookupItemRow {
             .padding(.horizontal, BLSpacing.small)
             .padding(.vertical, 2)
             .font(BLTypographyStyle.caption.font.weight(.semibold))
-            .foregroundStyle(.tint)
-            .background(
-                Capsule()
-                    .fill(BLPalette().accent.opacity(0.12))
-            )
+            .foregroundStyle(.blAccent)
+            .background(Capsule().fill(.blAccent.opacity(0.12)))
     }
 }
 

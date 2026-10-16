@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import SwiftUI
 
 /// 以十進位計算訂單費率與輸入百分比，保留使用者輸入的精度
 enum OrderPercentConversion {
@@ -15,6 +16,22 @@ enum OrderPercentConversion {
 // MARK: - Internal Method
 
 extension OrderPercentConversion {
+
+    /// 以畫面與測試共用的換算方式建立百分比綁定，相同費率不重複寫回
+    ///
+    /// - Parameter rate: 草稿中儲存比例值的綁定
+    /// - Returns: 顯示與接收百分比的十進位綁定
+    static func percentageBinding(for rate: Binding<Decimal>) -> Binding<Decimal> {
+        Binding {
+            OrderPercentConversion.percentage(from: rate.wrappedValue)
+        } set: { newValue in
+            let converted = OrderPercentConversion.rate(from: newValue)
+            guard converted != rate.wrappedValue else {
+                return
+            }
+            rate.wrappedValue = converted
+        }
+    }
 
     /// 將儲存的費率轉成畫面顯示的百分比
     ///

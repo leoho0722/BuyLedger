@@ -12,11 +12,14 @@ struct CampaignSectionList: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 區段標題格式化使用的日期脈絡，用來判斷「今天」「昨天」
     let dateContext: CampaignDateContext
+
+    /// 是否在每列顯示開團日期，按年分組時為 `true`
+    let isShowingOpenDate: Bool
 
     /// 長按選單刪除開團的動作
     let onDelete: (Campaign.ID) -> Void
@@ -30,11 +33,8 @@ struct CampaignSectionList: View {
     /// 要呈現的頂層日期區段，依日期由新到舊排序
     let sections: [CampaignDateSection]
 
-    /// 是否在每列顯示開團日期，按年分組時為 `true`
-    let showsOpenDate: Bool
-
-    /// 開團名稱到列彙總的字典，已由呼叫端批次投影
-    let summaries: [String: CampaignSummary]
+    /// 依開團名稱取得列彙總的查詢，已由呼叫端批次投影
+    let summaries: CampaignListFeature.RowSummaries
 
     // MARK: - Body
 
@@ -57,7 +57,7 @@ struct CampaignSectionList: View {
 
 private extension CampaignSectionList {
 
-    /// 單一頂層日期區段：頂層標題與其下各子群組
+    /// 組出單一頂層日期區段，含標題與其下各子群組
     ///
     /// - Parameter section: 要呈現的頂層區段
     /// - Returns: 區段 view
@@ -73,7 +73,7 @@ private extension CampaignSectionList {
         }
     }
 
-    /// 區段與子群組標題的文字，依日期脈絡與 locale 格式化
+    /// 依日期脈絡與 locale 格式化區段與子群組的標題文字
     ///
     /// - Parameter title: 尚未格式化的標題內容
     /// - Returns: 本地化 key 或依 locale 格式化的日期文字
@@ -85,7 +85,7 @@ private extension CampaignSectionList {
         )
     }
 
-    /// 單一日期子群組：子標題與裝著開團列的卡片
+    /// 組出單一日期子群組，含子標題與裝著開團列的卡片
     ///
     /// - Parameter subgroup: 要呈現的子群組
     /// - Returns: 子群組 view
@@ -96,7 +96,7 @@ private extension CampaignSectionList {
                     .padding(.horizontal, BLSpacing.large)
                     .padding(.top, BLSpacing.small)
                     .font(BLTypographyStyle.footnote.font.weight(.semibold))
-                    .foregroundStyle(Color.blSecondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
             }
 
             BLCard(padding: 0) {
@@ -106,7 +106,7 @@ private extension CampaignSectionList {
         }
     }
 
-    /// 卡片內依序排列的開團列，列與列之間以分隔線隔開
+    /// 依序排列卡片內的開團列，列與列之間以分隔線隔開
     ///
     /// - Parameter campaigns: 子群組內的開團
     /// - Returns: 開團列 view
@@ -123,7 +123,7 @@ private extension CampaignSectionList {
         }
     }
 
-    /// 單一開團卡片列：點擊進詳情、長按 (`contextMenu`) 可編輯／刪除
+    /// 組出單一開團卡片列，點擊進詳情，長按可編輯或刪除
     ///
     /// - Parameter campaign: 對應的開團
     /// - Returns: 開團列 view
@@ -133,11 +133,12 @@ private extension CampaignSectionList {
         } label: {
             CampaignRow(
                 campaign: campaign,
-                dateText: showsOpenDate
-                    ? CampaignFormatters.dayWithWeekday(campaign.openDate, locale: locale)
-                    : nil,
-                summary: summaries[campaign.name]
-                    ?? CampaignSummary(campaignName: campaign.name, orders: [])
+                dateText: CampaignFormatters.openDateText(
+                    campaign.openDate,
+                    isShowing: isShowingOpenDate,
+                    locale: locale
+                ),
+                summary: summaries.summary(forCampaignNamed: campaign.name)
             )
             .padding(.horizontal, BLSpacing.large)
             .padding(.vertical, BLSpacing.medium)
@@ -173,6 +174,7 @@ private extension CampaignSectionList {
                 now: Campaign.sampleCampaigns[0].openDate,
                 calendar: calendar
             ),
+            isShowingOpenDate: false,
             onDelete: { _ in
             },
             onEdit: { _ in
@@ -185,10 +187,11 @@ private extension CampaignSectionList {
                 grouping: .day,
                 calendar: calendar
             ),
-            showsOpenDate: false,
-            summaries: CampaignSummary.batch(
-                campaignNames: Campaign.sampleCampaigns.map(\.name),
-                orders: LedgerOrder.sampleCampaignOrders
+            summaries: CampaignListFeature.RowSummaries(
+                byName: CampaignSummary.batch(
+                    campaignNames: Campaign.sampleCampaigns.map(\.name),
+                    orders: LedgerOrder.sampleCampaignOrders
+                )
             )
         )
     }
@@ -203,6 +206,7 @@ private extension CampaignSectionList {
                 now: Campaign.sampleCampaigns[0].openDate,
                 calendar: calendar
             ),
+            isShowingOpenDate: true,
             onDelete: { _ in
             },
             onEdit: { _ in
@@ -215,10 +219,11 @@ private extension CampaignSectionList {
                 grouping: .year,
                 calendar: calendar
             ),
-            showsOpenDate: true,
-            summaries: CampaignSummary.batch(
-                campaignNames: Campaign.sampleCampaigns.map(\.name),
-                orders: LedgerOrder.sampleCampaignOrders
+            summaries: CampaignListFeature.RowSummaries(
+                byName: CampaignSummary.batch(
+                    campaignNames: Campaign.sampleCampaigns.map(\.name),
+                    orders: LedgerOrder.sampleCampaignOrders
+                )
             )
         )
     }

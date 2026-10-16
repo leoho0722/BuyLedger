@@ -12,7 +12,7 @@ struct CampaignDetailSettlementSection: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 由詳情 Feature 組好的開團彙總
@@ -48,18 +48,24 @@ private extension CampaignDetailSettlementSection {
 
     /// 應收金額，合併朗讀並提供 UI 測試讀取的金額
     var receivablesRow: some View {
-        LabeledContent("campaigns.detail.label.receivable", value: CampaignFormatters.twd(summary.receivables, locale: locale))
-            .accessibilityElement(children: .combine)
-            .accessibilityValue(CampaignFormatters.twd(summary.receivables, locale: locale))
-            .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSummary(.receivables))
+        LabeledContent(
+            "campaigns.detail.label.receivable",
+            value: CampaignFormatters.twd(summary.receivables, locale: locale)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(CampaignFormatters.twd(summary.receivables, locale: locale))
+        .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSummary(.receivables))
     }
 
     /// 已收金額，合併朗讀並提供 UI 測試讀取的金額
     var receivedRow: some View {
-        LabeledContent("orders.edit.label.paid", value: CampaignFormatters.twd(summary.receivedAmount, locale: locale))
-            .accessibilityElement(children: .combine)
-            .accessibilityValue(CampaignFormatters.twd(summary.receivedAmount, locale: locale))
-            .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSummary(.received))
+        LabeledContent(
+            "orders.edit.label.paid",
+            value: CampaignFormatters.twd(summary.receivedAmount, locale: locale)
+        )
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(CampaignFormatters.twd(summary.receivedAmount, locale: locale))
+        .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSummary(.received))
     }
 
     /// 尚未收款的金額
@@ -73,49 +79,50 @@ private extension CampaignDetailSettlementSection {
     /// 收款進度與整數百分比
     var receiptProgress: some View {
         BLProgressView(
+            tint: .blGreen,
             title: "campaigns.detail.label.paymentProgress",
-            value: summary.receivedRatio,
-            tint: palette.green,
-            trailingText: BLFormatters.percent(
-                Decimal(summary.receivedRatio),
-                locale: locale,
-                fractionLength: 0
-            )
+            trailingText: CampaignFormatters.receivedRatioText(
+                summary.receivedRatio,
+                locale: locale
+            ),
+            value: summary.receivedRatio
         )
     }
 
-    /// 已到貨筆數與未取消訂單筆數
+    /// 已到貨筆數與未取消且未合併的訂單筆數
     var deliveryProgress: some View {
         BLProgressView(
             title: "campaigns.detail.label.arrivalProgress",
-            value: summary.deliveryRatio,
-            trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
+            trailingText: CampaignFormatters.deliveryProgress(
+                arrived: summary.arrivedCount,
+                active: summary.activeCount
+            ),
+            value: summary.deliveryRatio
         )
     }
 
     /// 開團總成本
     var costRow: some View {
-        LabeledContent("orders.detail.label.totalCost", value: CampaignFormatters.twd(summary.totalCost, locale: locale))
+        LabeledContent(
+            "orders.detail.label.totalCost",
+            value: CampaignFormatters.twd(summary.totalCost, locale: locale)
+        )
     }
 
     /// 開團毛利
     var profitRow: some View {
-        LabeledContent("orders.detail.label.grossProfit", value: CampaignFormatters.twd(summary.profit, locale: locale))
+        LabeledContent(
+            "orders.detail.label.grossProfit",
+            value: CampaignFormatters.twd(summary.profit, locale: locale)
+        )
     }
 
     /// 以實際收款為分母的利潤率
     var marginRow: some View {
-        LabeledContent("campaigns.detail.label.profitMargin", value: BLFormatters.percent(summary.margin, locale: locale))
-    }
-}
-
-// MARK: - Private Method
-
-private extension CampaignDetailSettlementSection {
-
-    /// 目前畫面使用的色盤
-    var palette: BLPalette {
-        BLPalette()
+        LabeledContent(
+            "campaigns.detail.label.profitMargin",
+            value: BLFormatters.percent(summary.margin, locale: locale)
+        )
     }
 }
 

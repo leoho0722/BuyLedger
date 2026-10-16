@@ -38,7 +38,9 @@ struct MergePhotoTile: View {
             cellContent
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(isSelected ? "orders.general.label.doKeepPhoto" : "orders.general.label.keepPhoto")
+        .accessibilityLabel(
+            isSelected ? "orders.general.label.doKeepPhoto" : "orders.general.label.keepPhoto"
+        )
         .accessibilityAddTraits(isSelected ? .isSelected : [])
         .accessibilityIdentifier(BLAccessibilityID.OrderMerge.photoCell(index: index))
     }
@@ -57,7 +59,7 @@ private extension MergePhotoTile {
                 .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
                 .overlay {
                     RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous)
-                        .strokeBorder(isSelected ? palette.accent : Color.clear, lineWidth: 3)
+                        .strokeBorder(isSelected ? .blAccent : Color.clear, lineWidth: 3)
                 }
                 .opacity(isSelected ? 1 : 0.55)
 
@@ -78,7 +80,7 @@ private extension MergePhotoTile {
                 .fill(.quaternary)
                 .overlay {
                     Image(systemName: "photo")
-                        .foregroundStyle(Color.blSecondaryLabel)
+                        .foregroundStyle(.blSecondaryLabel)
                 }
         }
     }
@@ -88,20 +90,10 @@ private extension MergePhotoTile {
         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
             .padding(indicatorPadding)
             .symbolRenderingMode(.palette)
-            .foregroundStyle(.white, isSelected ? palette.accent : Color.black.opacity(0.35))
+            .foregroundStyle(.white, isSelected ? .blAccent : Color.black.opacity(0.35))
             // 勾號固定使用一般字重
             .font(BLTypographyStyle.title3.font.weight(.regular))
             .accessibilityHidden(true)
-    }
-}
-
-// MARK: - Private Method
-
-private extension MergePhotoTile {
-
-    /// 照片格使用的目前外觀色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 

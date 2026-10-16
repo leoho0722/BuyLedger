@@ -32,7 +32,7 @@ paths:
 ## App 鎖定
 
 - **背景上鎖的觸發訊號是 `\.scenePhase` 的 `.background`／`.active`**：採場景生命週期的 App 不會呼叫 `AppDelegate` 的 `applicationWillResignActive`／`applicationDidBecomeActive` (且已 deprecated)，掛在那裡完全不生效。
-    - `BuyLedgerApp.body` 的 `onChange(of: scenePhase, initial: true)` 經 `AppScenePhase(_:)` 轉成殼層列舉，送 `AppLockFeature` 的 `.view(.scenePhaseChanged)`；上鎖、解鎖與是否通知殼層一律由 reducer 決定，App 入口不做判斷。回到前景時 `AppLockFeature` 送 `delegate(.didBecomeActive)`，由 Root 更新開團與訂單清單的日期脈絡。
+    - `BuyLedgerApp.body` 的 `onChange(of: scenePhase, initial: true)` 經 `AppScenePhase(_:)` 轉成殼層列舉，送 `AppLockFeature` 的 `.view(.scenePhaseChanged)`；上鎖、解鎖與是否通知殼層一律由 reducer 決定，App 入口不做判斷。回到前景時 `AppLockFeature` 送 `delegate(.didBecomeActive)`，由 Root 更新開團、訂單清單、首頁與分析頁的日期脈絡。
     - 任何「畫面或系統事件到動作」的接線都要有對應測試 (`AppScenePhaseTests` 守場景階段對應，`AppLockFeatureTests` 守各階段的狀態變化)，不能只靠程式碼看起來合理。
     - **冷啟動解鎖靠 `initial: true`，這一行沒有 UI 測試守門**：拿掉後現有 `AppLockTests` 的冷啟動測試仍會通過 (啟動時 scenePhase 的後續變更也會觸發)，改動時要另外確認。
     - 背景上鎖不保證多工切換器縮圖不含內容；需要這項保證時要另以獨立 `UIWindow` 遮蔽層處理。

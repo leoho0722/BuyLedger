@@ -13,11 +13,11 @@ struct MergePhotoPickerSheet: View {
 
     // MARK: - Properties
 
+    /// App 根層依語言偏好注入的 `locale`
+    @Environment(\.locale) private var locale
+
     /// 縮圖格的最小欄寬，隨字級縮放
     @ScaledMetric private var photoSize: CGFloat = 96
-
-    /// App 根層依語言偏好注入的 locale
-    @Environment(\.locale) private var locale
 
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrderMergeFeature>
@@ -54,7 +54,7 @@ private extension MergePhotoPickerSheet {
             )
         )
         .blTextStyle(.footnote)
-        .foregroundStyle(Color.blSecondaryLabel)
+        .foregroundStyle(.blSecondaryLabel)
     }
 
     /// 照片清單在此步驟維持固定順序，以位置識別每格

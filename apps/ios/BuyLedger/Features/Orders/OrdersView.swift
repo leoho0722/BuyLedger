@@ -109,20 +109,20 @@ private extension OrdersView {
 
         NavigationStack {
             HStack(spacing: 0) {
-                OrdersRegularListColumn(orders: filteredOrders, store: listStore)
+                OrdersRegularListColumn(store: listStore, orders: filteredOrders)
                     .frame(
                         minWidth: minimumListWidth,
                         idealWidth: idealListWidth,
                         maxWidth: maximumListWidth
                     )
-                    .background(palette.background)
+                    .background(.blBackground)
                     .alert(regularAlertBinding(isDetail: false))
 
                 Divider()
 
                 OrdersRegularDetailColumn(store: store)
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .background(palette.background)
+                    .background(.blBackground)
                     .alert(regularAlertBinding(isDetail: true))
             }
             // 搜尋欄無穩定識別值，UI 測試改查 `searchFields`
@@ -136,7 +136,6 @@ private extension OrdersView {
                 OrdersToolbarContent(
                     isAllFilteredSelected: listStore.isAllFilteredSelected,
                     filteredIDs: listStore.filteredIDs,
-                    palette: palette,
                     store: listStore
                 )
             }
@@ -191,9 +190,9 @@ private extension OrdersView {
         store.scope(state: \.list, action: \.list)
     }
 
-    /// 兩欄背景與工具列使用的色盤，隨目前外觀取得對應的顏色
-    var palette: BLPalette {
-        BLPalette()
+    /// 表單的關閉動畫完成後通知容器取出暫存通知
+    func sendFormSheetDismissed() {
+        store.send(.view(.formSheetDismissed))
     }
 
     /// 寬版雙欄只在有詳情時由詳情呈現對話框，空清單則交由清單呈現
@@ -207,11 +206,6 @@ private extension OrdersView {
         }
         @Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)
         return $presentation.scope(state: \.$destination, action: \.destination).alert
-    }
-
-    /// 表單的關閉動畫完成後通知容器取出暫存通知
-    func sendFormSheetDismissed() {
-        store.send(.view(.formSheetDismissed))
     }
 }
 

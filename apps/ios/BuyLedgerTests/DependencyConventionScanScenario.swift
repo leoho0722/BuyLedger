@@ -6,7 +6,9 @@
 //
 
 /// 原始碼掃描測試用的輸入片段與預期結果命名空間
-enum DependencyConventionScanScenario {}
+enum DependencyConventionScanScenario {
+
+}
 
 // MARK: - Nested Types
 
@@ -64,22 +66,24 @@ extension DependencyConventionScanScenario {
 
 extension DependencyConventionScanScenario {
 
-    /// 組合五條依賴規則的違規案例，作為 `fragmentViolations_違規案例_回報位置與原因(scenario:)` 的參數
+    /// 組合六條依賴規則的違規案例，作為 `fragmentViolations_違規案例_回報位置與原因(scenario:)` 的參數
     static var violationCases: [ViolationCase] {
         dependencyViolationCases
             + boundaryViolationCases
             + testValueViolationCases
             + sharedContainerViolationCases
             + appModelContainerViolationCases
+            + viewViolationCases
     }
 
-    /// 組合五條依賴規則與詞法處理的合規案例，作為 `fragmentViolations_合規案例_不回報違規(scenario:)` 的參數
+    /// 組合六條依賴規則與詞法處理的合規案例，作為 `fragmentViolations_合規案例_不回報違規(scenario:)` 的參數
     static var passingCases: [PassingCase] {
         dependencyPassingCases
             + boundaryPassingCases
             + testValuePassingCases
             + sharedContainerPassingCases
             + appModelContainerPassingCases
+            + viewPassingCases
             + lexicalPassingCases
     }
 }

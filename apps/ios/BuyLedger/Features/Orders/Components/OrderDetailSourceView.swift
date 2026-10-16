@@ -83,27 +83,17 @@ private extension OrderDetailSourceView {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             Text(title)
                 .font(BLTypographyStyle.footnote.font.weight(.semibold))
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
                 .textCase(.uppercase)
 
             content()
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .fixedSize(horizontal: false, vertical: true)
                 .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                .foregroundStyle(palette.label)
+                .foregroundStyle(.blLabel)
                 .textSelection(.enabled)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-// MARK: - Private Method
-
-private extension OrderDetailSourceView {
-
-    /// 來源卡片使用的目前外觀色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 

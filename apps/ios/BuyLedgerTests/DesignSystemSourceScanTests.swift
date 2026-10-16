@@ -14,7 +14,7 @@ struct DesignSystemSourceScanTests {
     // MARK: - Properties
 
     /// 規則三的八種色相引用情境，預期行號逐列指定
-    static let namedHueCases = [
+    private static let namedHueCases = [
         SourceScanCase(source: ".foregroundStyle(.red)", expectedLineNumbers: [1]),
         SourceScanCase(source: "Color.red", expectedLineNumbers: [1]),
         SourceScanCase(source: "let colors = [.red]", expectedLineNumbers: [1]),
@@ -26,7 +26,7 @@ struct DesignSystemSourceScanTests {
     ]
 
     /// 尺寸分類的十六種詞法情境，保留規格來源文字與獨立指定的預期行號
-    static let sizeClassCases = [
+    private static let sizeClassCases = [
         SourceScanCase(
             source: #"@Environment(\.horizontalSizeClass) private var horizontalSizeClass"#,
             expectedLineNumbers: [1]
@@ -96,7 +96,7 @@ struct DesignSystemSourceScanTests {
         let lineNumbers = Self.violatingLineNumbers(
             in: source,
             matching: Self.namedHueTokenPattern,
-            honoringExemptions: true
+            shouldHonorExemptions: true
         )
 
         // Then
@@ -121,9 +121,8 @@ struct DesignSystemSourceScanTests {
     /// 規則十一：產品程式碼的尺寸分類引用只出現在版面判斷入口，豁免標記無效
     ///
     /// - Throws: 原始檔讀取或目錄掃描失敗時拋出錯誤
-    /// - Note: 掃描辨識 `//` 行註解、非巢狀的 `/* … */` 區塊註解、
-    ///   單行 `"…"` 與多行 `"""…"""` 一般字串，包含反斜線跳脫並逐個 Unicode 碼位處理；
-    ///   其餘詞法形式超出掃描保證範圍，該處與之後的程式碼都可能漏判或誤判；
+    /// - Note: 掃描辨識 `//` 行註解、非巢狀 `/* … */` 區塊註解、單行 `"…"` 與多行 `"""…"""` 一般字串，包含反斜線跳脫並逐個 Unicode 碼位處理
+    /// - Note: 其餘詞法形式超出掃描保證範圍，該處與之後的程式碼都可能漏判或誤判；
     ///   例如字串內插、原始字串與擴充分隔符號、正規表示式字面值、巢狀區塊註解
     @Test
     func sizeClassViolations_引用尺寸分類_僅出現在版面判斷入口() throws(any Error) {
@@ -191,7 +190,7 @@ struct DesignSystemSourceScanTests {
         )
     }
 
-    /// 規則一：資訊性文字使用 `Color.blSecondaryLabel`
+    /// 規則一：資訊性文字使用 `.blSecondaryLabel`
     ///
     /// - Throws: 原始檔掃描失敗時拋出錯誤
     @Test
@@ -205,11 +204,11 @@ struct DesignSystemSourceScanTests {
         // Then
         #expect(
             violations.isEmpty,
-            "以下位置直接使用系統次要色於文字，應改用 Color.blSecondaryLabel：\(Self.describe(violations))"
+            "以下位置直接使用系統次要色於文字，應改用 `.blSecondaryLabel`：\(Self.describe(violations))"
         )
     }
 
-    /// 規則二：不得直接使用系統強調色，一律經色盤的 `accent` 取用
+    /// 規則二：不得直接使用系統強調色，一律經色盤的 `.blAccent` 取用
     ///
     /// - Throws: 原始檔掃描失敗時拋出錯誤
     @Test
@@ -221,10 +220,7 @@ struct DesignSystemSourceScanTests {
         let violations = try Self.findViolations(under: root, matching: Self.accentColorPattern)
 
         // Then
-        #expect(
-            violations.isEmpty,
-            "以下位置直接使用系統強調色，應改為在該處取得色盤實例後呼叫 .accent：\(Self.describe(violations))"
-        )
+        #expect(violations.isEmpty, "以下位置直接使用系統強調色，應改用 `.blAccent`：\(Self.describe(violations))")
     }
 
     /// 規則三：元件不得直接使用系統色彩，必須經色盤取用
@@ -241,7 +237,7 @@ struct DesignSystemSourceScanTests {
         // Then
         #expect(
             violations.isEmpty,
-            "以下位置直接使用系統色相字面值，應改為在該處取得色盤實例後呼叫對應色彩屬性：\(Self.describe(violations))"
+            "以下位置直接使用系統色相字面值，應改用對應的 `bl` 前綴色盤成員，例如 `.blRed`：\(Self.describe(violations))"
         )
     }
 
@@ -257,13 +253,13 @@ struct DesignSystemSourceScanTests {
         let violations = try Self.findViolations(
             under: root,
             matching: Self.systemColorAPIPattern,
-            excludingFilesNamed: ["BLPalette.swift"]
+            excludingFilesNamed: ["Color+Semantic.swift"]
         )
 
         // Then
         #expect(
             violations.isEmpty,
-            "以下位置在色盤檔之外呼叫系統取色介面，新增系統色請加進色盤的顯示屬性再由呼叫端取用：\(Self.describe(violations))"
+            "以下位置在色盤檔之外呼叫系統取色介面，應於 `Color+Semantic.swift` 新增 `bl` 成員後以 `.blX` 取用：\(Self.describe(violations))"
         )
     }
 
@@ -279,7 +275,7 @@ struct DesignSystemSourceScanTests {
         let violations = try Self.findViolations(
             under: root,
             matching: Self.rawConstructionPattern,
-            excludingFilesNamed: ["BLPalette.swift", "BLAvatar.swift"]
+            excludingFilesNamed: ["Color+Semantic.swift", "BLAvatar.swift"]
         )
 
         // Then

@@ -78,13 +78,13 @@ private extension OrderEditPaymentSection {
                 if store.isSelectedPaymentMethodCardless {
                     Text("orders.edit.message.onlyCardlessPayment")
                         .blTextStyle(.footnote)
-                        .foregroundStyle(Color.blSecondaryLabel)
+                        .foregroundStyle(.blSecondaryLabel)
                 }
 
                 if store.isCardlessDeductionCapped {
                     Text("orders.edit.message.cardlessDeductionCannot")
                         .blTextStyle(.footnote)
-                        .foregroundStyle(Color.blSecondaryLabel)
+                        .foregroundStyle(.blSecondaryLabel)
                 }
             }
         }

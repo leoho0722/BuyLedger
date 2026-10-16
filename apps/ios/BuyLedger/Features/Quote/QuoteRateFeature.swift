@@ -53,6 +53,11 @@ struct QuoteRateFeature {
             }
             return errorMessage ?? "quote.calculator.message.exchangeRateAvailable"
         }
+
+        /// 幣別選擇清單使用的 ISO code 字串，順序與 ``availableCurrencies`` 相同
+        var availableCurrencyCodes: [String] {
+            availableCurrencies.map(\.rawValue)
+        }
     }
 
     // MARK: - Action
@@ -125,11 +130,15 @@ extension QuoteRateFeature {
 
 // MARK: - Equatable
 
-extension QuoteRateFeature.Destination.State: Equatable {}
+extension QuoteRateFeature.Destination.State: Equatable {
+
+}
 
 // MARK: - Sendable
 
-extension QuoteRateFeature.Destination.State: Sendable {}
+extension QuoteRateFeature.Destination.State: Sendable {
+
+}
 
 // MARK: - Private Method
 
@@ -144,17 +153,7 @@ private extension QuoteRateFeature {
     func core(state: inout State, action: Action) -> Effect<Action> {
         switch action {
         case .task:
-            guard !state.isLoading else {
-                return .none
-            }
-            let shouldLoadRates = state.snapshot == nil
-            if shouldLoadRates {
-                state.isLoading = true
-                state.errorMessage = nil
-            }
-            let currencyEffect = loadCurrencyCodes()
-            let ratesEffect = shouldLoadRates ? loadRates() : .none
-            return .merge(currencyEffect, ratesEffect)
+            return loadOnAppear(state: &state)
 
         case .refreshRequested:
             guard !state.isLoading else {
@@ -235,19 +234,34 @@ private extension QuoteRateFeature {
         }
     }
 
+    /// 畫面出現時載入幣別清單，尚無匯率快照時一併載入匯率
+    ///
+    /// - Parameter state: 要更新的匯率來源狀態；尚無快照時改為載入中並清除舊的失敗訊息
+    /// - Returns: 幣別清單與匯率的合併 Effect；正在載入中時為 `.none`
+    func loadOnAppear(state: inout State) -> Effect<Action> {
+        guard !state.isLoading else {
+            return .none
+        }
+        let shouldLoadRates = state.snapshot == nil
+        if shouldLoadRates {
+            state.isLoading = true
+            state.errorMessage = nil
+        }
+        let currencyEffect = loadCurrencyCodes()
+        let ratesEffect = shouldLoadRates ? loadRates() : .none
+        return .merge(currencyEffect, ratesEffect)
+    }
+
     /// 載入幣別主檔並把成功或失敗合併成單一回應
     ///
     /// - Returns: 幣別主檔載入 effect
     func loadCurrencyCodes() -> Effect<Action> {
         let currencyMetadataService = currencyMetadataService
         return .run { send in
-            do {
+            do throws(CurrencyMetadataServiceError) {
                 let codes = try await currencyMetadataService.fetchCodes()
                 await send(.currencyCodesResponse(.success(codes)))
             } catch {
-                guard let error = error as? CurrencyMetadataServiceError else {
-                    return
-                }
                 await send(.currencyCodesResponse(.failure(error)))
             }
         }
@@ -259,13 +273,10 @@ private extension QuoteRateFeature {
     func loadRates() -> Effect<Action> {
         let exchangeRateService = exchangeRateService
         return .run { send in
-            do {
+            do throws(APIError) {
                 let snapshot = try await exchangeRateService.fetchLatest(.twd)
                 await send(.ratesResponse(.success(snapshot)))
             } catch {
-                guard let error = error as? APIError else {
-                    return
-                }
                 await send(.ratesResponse(.failure(error)))
             }
         }

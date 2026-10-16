@@ -16,8 +16,13 @@ extension DependencyConventionScanTests {
     /// - Parameters:
     ///   - rule: 要套用的依賴規則
     ///   - file: 要檢查的 Swift 原始碼
+    ///   - viewTypeNames: 整棵 production 目錄中遵循 `View` 的型別名稱，只有畫面依賴規則使用
     /// - Returns: 此檔案適用的子規則與違規；規則不適用此檔案時回傳 nil
-    static func violations(of rule: ScanRule, in file: ScanFile) -> FileScanResult? {
+    static func violations(
+        of rule: ScanRule,
+        in file: ScanFile,
+        viewTypeNames: Set<String>
+    ) -> FileScanResult? {
         switch rule {
         case .dependencyTypeSubscript:
             return FileScanResult(
@@ -62,6 +67,15 @@ extension DependencyConventionScanTests {
             return FileScanResult(
                 applicableSubrules: [],
                 violations: appModelContainerViolations(in: file)
+            )
+
+        case .viewDependency:
+            guard file.sourceTree == .production else {
+                return nil
+            }
+            return FileScanResult(
+                applicableSubrules: [],
+                violations: viewDependencyViolations(in: file, viewTypeNames: viewTypeNames)
             )
         }
     }

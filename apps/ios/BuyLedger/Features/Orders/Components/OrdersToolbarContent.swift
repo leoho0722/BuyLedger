@@ -19,9 +19,6 @@ struct OrdersToolbarContent: ToolbarContent {
     /// 套用篩選後的訂單識別值，用於顯示筆數
     let filteredIDs: [LedgerOrder.ID]
 
-    /// 目前外觀使用的色盤
-    let palette: BLPalette
-
     /// 畫面的狀態與事件來源，由父層建立後傳入
     let store: StoreOf<OrderListFeature>
 
@@ -61,7 +58,11 @@ private extension OrdersToolbarContent {
 
     /// 切換為全選目前結果或清除選取
     var selectionButton: some View {
-        Button(LocalizedStringKey(isAllFilteredSelected ? "common.action.button.clear" : "orders.list.label.selectAll")) {
+        Button(
+            LocalizedStringKey(
+                isAllFilteredSelected ? "common.action.button.clear" : "orders.list.label.selectAll"
+            )
+        ) {
             store.send(.view(isAllFilteredSelected ? .clearSelectionTapped : .selectAllTapped))
         }
     }
@@ -93,7 +94,7 @@ private extension OrdersToolbarContent {
         Text(verbatim: "\(filteredIDs.count)")
             .font(BLTypographyStyle.subhead.font.weight(.medium))
             .monospacedDigit()
-            .foregroundStyle(palette.secondaryLabel)
+            .foregroundStyle(.blSecondaryLabel)
     }
 
     /// 建立目前篩選結果的 AI 總結，沒有結果時停用
@@ -151,7 +152,6 @@ private extension OrdersToolbarContent {
                 OrdersToolbarContent(
                     isAllFilteredSelected: false,
                     filteredIDs: [],
-                    palette: BLPalette(),
                     store: Store(
                         initialState: OrderListFeature.State(orders: SharedReader(value: []))
                     ) {

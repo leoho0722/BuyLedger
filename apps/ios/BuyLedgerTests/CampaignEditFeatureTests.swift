@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import Foundation
+import SwiftUI
 import Testing
 
 @testable import BuyLedger
@@ -171,43 +171,41 @@ struct CampaignEditFeatureTests {
         #expect(store.state.nameConflictMessage == nil)
     }
 
-    /// 切換提醒意圖時透過 `BindingReducer` 更新草稿開關
+    /// 切換提醒意圖時走畫面的 `@Bindable` 綁定路徑，草稿提醒開關隨之更新
     ///
-    /// - Parameter wantsReminder: 使用者選定的提醒意圖
+    /// - Parameter isReminderWanted: 使用者選定的提醒意圖
     @Test(arguments: [true, false])
-    func binding_切換提醒意圖_更新草稿提醒開關(wantsReminder: Bool) async {
+    func binding_切換提醒意圖_更新草稿提醒開關(isReminderWanted: Bool) {
         // Given
         var initial = Self.makeState()
-        initial.draft.wantsReminder = !wantsReminder
-        let store = TestStore(initialState: initial) {
+        initial.draft.wantsReminder = !isReminderWanted
+        let store = Store(initialState: initial) {
             CampaignEditFeature()
         }
+        @Bindable var bindable = store
 
         // When
-        await store.send(.binding(.set(\.draft.wantsReminder, wantsReminder))) {
-            $0.draft.wantsReminder = wantsReminder
-        }
+        $bindable.draft.wantsReminder.wrappedValue = isReminderWanted
 
         // Then
-        #expect(store.state.draft.wantsReminder == wantsReminder)
+        #expect(store.draft.wantsReminder == isReminderWanted)
     }
 
-    /// 修改提醒時間時透過 `BindingReducer` 更新草稿時間戳
+    /// 修改提醒時間時走畫面的 `@Bindable` 綁定路徑，草稿時間戳隨之更新
     @Test
-    func binding_修改提醒時間_更新草稿提醒時間() async {
+    func binding_修改提醒時間_更新草稿提醒時間() {
         // Given
         let picked = Date(timeIntervalSince1970: 3_600)
-        let store = TestStore(initialState: Self.makeState()) {
+        let store = Store(initialState: Self.makeState()) {
             CampaignEditFeature()
         }
+        @Bindable var bindable = store
 
         // When
-        await store.send(.binding(.set(\.draft.reminderTimestamp, picked))) {
-            $0.draft.reminderTimestamp = Date(timeIntervalSince1970: 3_600)
-        }
+        $bindable.draft.reminderTimestamp.wrappedValue = picked
 
         // Then
-        #expect(store.state.draft.reminderTimestamp == Date(timeIntervalSince1970: 3_600))
+        #expect(store.draft.reminderTimestamp == Date(timeIntervalSince1970: 3_600))
     }
 
     /// 名稱為空或只有空白時不送出儲存請求，也不關閉表單
@@ -231,7 +229,7 @@ struct CampaignEditFeatureTests {
         #expect(store.state.canSave == false)
     }
 
-    /// 有效名稱送出去空白名稱、原開團與完整草稿，子層維持開啟
+    /// 有效名稱去除前後空白後送出，連同原開團與完整草稿，子層維持開啟
     ///
     /// - Parameter hasOriginal: 儲存請求是否包含原開團
     @Test(arguments: [false, true])
@@ -306,9 +304,9 @@ extension CampaignEditFeatureTests {
     }
 }
 
-// MARK: - Private Method
+// MARK: - Computed Properties
 
-private extension CampaignEditFeatureTests {
+extension CampaignEditFeatureTests {
 
     /// 固定內容的原開團，供編輯與請求內容斷言使用
     static var original: Campaign {
@@ -320,6 +318,29 @@ private extension CampaignEditFeatureTests {
             notes: ""
         )
     }
+}
+
+// MARK: - Internal Method
+
+extension CampaignEditFeatureTests {
+
+    /// 建立固定識別值與時間的表單狀態
+    ///
+    /// - Parameter original: 原開團；沒有時建立新增表單
+    /// - Returns: 尚未修改的表單狀態
+    static func makeState(original: Campaign? = nil) -> CampaignEditFeature.State {
+        CampaignEditFeature.State(
+            original: original,
+            id: UUID(0),
+            currentDate: Date(timeIntervalSince1970: 0),
+            reminderTimestamp: Date(timeIntervalSince1970: 0)
+        )
+    }
+}
+
+// MARK: - Private Method
+
+private extension CampaignEditFeatureTests {
 
     /// 捨棄確認的獨立預期文案與按鈕
     static var discardAlert: AlertState<CampaignEditFeature.Action.DiscardAlert> {
@@ -335,18 +356,5 @@ private extension CampaignEditFeatureTests {
         } message: {
             TextState("campaigns.edit.message.campaignHasUnsaved")
         }
-    }
-
-    /// 建立固定識別值與時間的表單狀態
-    ///
-    /// - Parameter original: 原開團；沒有時建立新增表單
-    /// - Returns: 尚未修改的表單狀態
-    static func makeState(original: Campaign? = nil) -> CampaignEditFeature.State {
-        CampaignEditFeature.State(
-            original: original,
-            id: UUID(0),
-            currentDate: Date(timeIntervalSince1970: 0),
-            reminderTimestamp: Date(timeIntervalSince1970: 0)
-        )
     }
 }

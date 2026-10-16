@@ -43,12 +43,12 @@ paths:
 
 ## 色彩
 
-- **系統色與語意色經 `BLPalette` 取用，系統取色介面 (`Color(uiColor: .systemXxx)`) 只出現在 `BLPalette.swift`**：系統色是隨外觀、增強對比與 vibrancy 調整的動態色，不手抄十六進位值。
-    - 從原始分量建構色彩 (十六進位、RGB、色彩空間) 只允許 `BLPalette.swift` 與 `BLAvatar` (演算法漸層)。
+- **系統色與語意色經 `Color+Semantic.swift` 的色盤成員取用，系統取色介面 (`Color(uiColor: .systemXxx)`) 只出現在該檔**：系統色是隨外觀、增強對比與 vibrancy 調整的動態色，不手抄十六進位值。
+    - 成員宣告在 `extension ShapeStyle where Self == Color`：有型別脈絡 (`ShapeStyle` 泛型參數、`Color` 參數或回傳值、`[Color]` 字面值) 時寫前置點 `.blX`，沒有型別脈絡時 (如 `let color = Color.blAccent`) 才寫 `Color.blX`。
+    - 從原始分量建構色彩 (十六進位、RGB、色彩空間) 只允許 `Color+Semantic.swift` 與 `BLAvatar` (演算法漸層)。
     - 具名系統色 (強調色、綠、橘、紅、藍等) 不得直接取代色盤色，只有白、黑、透明例外。
-- **資訊性次要文字用 `Color.blSecondaryLabel`，不用系統 `.secondary`**：系統 `secondaryLabel` 淺色對比低於本專案 4.5:1 的文字地板；section footer 也不豁免。
-    - 呼叫端寫 `Color.blSecondaryLabel` 完整形式：它掛在 `Color` 上，`foregroundStyle(_:)` 的前置點縮寫解析不到。不為了支援前置點改成 `extension ShapeStyle where Self == Color` (已決定不做，避免擴大改動面)。
-- **不設全域 tint，`AccentColor` 資源維持空值**：全域 tint 會把整個 App 強制上色；自訂元件的強調色取 `BLPalette.accent`。
+- **資訊性次要文字用 `.blSecondaryLabel`，不用系統 `.secondary`**：系統 `secondaryLabel` 淺色對比低於本專案 4.5:1 的文字地板；section footer 也不豁免。
+- **不設全域 tint，`AccentColor` 資源維持空值**：全域 tint 會把整個 App 強制上色；自訂元件的強調色取 `.blAccent`。
 - **色彩不做亮暗分支，view 不為取色宣告 `@Environment(\.colorScheme)`**：唯一例外是 `BLCardShadow.swift` (深色需要不同陰影不透明度)。
 - **語意色依「疊在什麼底色上」選 `BLTone` 四軌**：
     - `BLTone` 的軌道都是讀 asset catalog 具名資源的計算屬性，不收色盤參數 (外觀與 Increase Contrast 由系統依 trait 解析)。
@@ -59,16 +59,17 @@ paths:
     - 旁有文字標籤的圖形 (如膠囊色點) 屬裝飾，豁免 3:1 並標 `.accessibilityHidden(true)`；3:1 只約束單獨承載意義的圖形。
 - **訂單狀態色由 `OrderStatus.tone` 統一映射到 `BLTone`**：依狀態的語意選色，畫面再依背景取對應色彩軌道。
     - 呼叫端不內嵌狀態到顏色的映射；新增訂單狀態時窮舉 switch 會逼出色調指派。
+- **資料型別帶語意色調與方向，不持有 `Color`，由畫面換算色彩**：如 `InsightsCostSegment.tone`、走勢方向 `BLTrend` (`init(delta:)` 依差值正負判定)；綠、紅、三級文字色等換算留在畫面的 Private Method。
 - **`Shared/DesignSystem/` 不得引用 `Core/Domain/` 的領域型別，也不得 import `ComposableArchitecture`**：領域值由呼叫端轉成 primitive 或 Design System 自有型別，架構框架的依賴容器只留在 Feature 層。
     - `LayerBoundaryTests` 掃描 `Shared/DesignSystem/` 與包含 `Generated/` 的 `Core/Domain/` 宣告清單，並以 mutation test 驗證兩條分層規則會轉紅；TCA import 比對必須涵蓋前置 attribute、限定 import 與子符號。
 - **幣別顯示名稱只能由 `CurrencyDisplayName` 提供**：`DesignSystemSourceScanTests` 掃描完整 production root，allowlist 僅為 `Shared/Localization/CurrencyDisplayName.swift`，避免任何 Feature 或其他 Shared 模組重新建立 Foundation 查表。
 - **語言判斷只能由 `AppLanguage(locale:)` 提供**：`DesignSystemSourceScanTests` 同樣掃描完整 production root，allowlist 僅為 `Shared/Localization/AppLanguage.swift`；畫面不得自行以 `languageCode?.identifier` 比對 locale，否則兩個畫面的語言判斷不一致時沒有任何測試會偵測到。
-- **彩底 hero 卡一律用 `.blHeroCardBackground()`**，不以系統色自組漸層，也不直接呼叫 `BLPalette.heroGradient`。
+- **彩底 hero 卡一律用 `.blHeroCardBackground()`**，不以系統色自組漸層，也不在其他地方讀取 `BLHeroGradientStart`／`End` 資源 (由 `BLHeroCardBackground.gradientColors` 直接讀這兩個 asset)。
     - hero 卡文字固定 `.foregroundStyle(.white)` 是刻意例外 (疊在受測漸層上取得最高對比)。
     - `BLHeroGradientStart`／`End` 沒有 High Contrast 變體，新增依賴此漸層的畫面時留意。
-- **層級用字重與字級表達，呼叫端不得用不透明度自訂降階**：色盤內為達到本專案 4.5:1 文字對比地板而定義的單一次要文字色是例外；實測顯示系統 `secondaryLabel` 在淺色外觀下未達該門檻，因此 `BLPalette.secondaryLabel` 保留 `.opacity(0.6)`。
+- **層級用字重與字級表達，呼叫端不得用不透明度自訂降階**：色盤內為達到本專案 4.5:1 文字對比地板而定義的單一次要文字色是例外；實測顯示系統 `secondaryLabel` 在淺色外觀下未達該門檻，因此 `.blSecondaryLabel` 保留 `.opacity(0.6)`。
 - **不以實色模仿系統 bar、不以半透明色模仿玻璃材質**：需要 bar 底用 `.background(.bar)` 並讓捲動內容延伸到下方。
-- **`DesignSystemSourceScanTests` 以掃描守門色彩、幣別名稱、語言判斷與版面判斷各入口**：色彩、幣別與語言規則需要例外時，在違規那一行加 `// design-system-scan-exempt: <理由>` (理由不可空)；版面規則不接受豁免標記，帶理由的標記也一樣失敗。
+- **`DesignSystemSourceScanTests` 以掃描守門色彩、幣別名稱、語言判斷與版面判斷各入口，以及元件縮放參數的傳值 (規則十二，見 `ios-accessibility-localization.md`)**：色彩、幣別與語言規則需要例外時，在違規那一行加 `// design-system-scan-exempt: <理由>` (理由不可空)；版面規則與規則十二不接受豁免標記，帶理由的標記也一樣失敗。
     - 色相名稱清單 `namedHueTokenPattern` 是封閉集合，SwiftUI 新增具名系統色時要同步補進它的兩個交替。
 - **對比門檻由 `ContrastComplianceTests` 把關** (helper 為 `ColorContrast`)。
 

@@ -114,10 +114,10 @@ private extension OrderDetailContentView {
                 .frame(width: min(max(proxy.size.width, 0), readableWidth), alignment: .topLeading)
                 .frame(maxWidth: .infinity, alignment: .top)
             }
-            .background(palette.background)
+            .background(.blBackground)
             .accessibilityIdentifier(BLAccessibilityID.Orders.detailRoot)
         }
-        .background(palette.background)
+        .background(.blBackground)
     }
 
     /// 寬欄的成本拆解與商品明細，無障礙字級下改為直排
@@ -151,39 +151,29 @@ private extension OrderDetailContentView {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             Text(order.displayID)
                 .font(BLTypographyStyle.footnote.font.monospacedDigit())
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             HStack(spacing: BLSpacing.small) {
                 BLStatusPill(order.status.title, tone: order.status.tone)
 
                 Text(OrderFormatters.shortDate(order.date, locale: locale))
                     .blTextStyle(.footnote)
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
 
                 Text(verbatim: "·")
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
 
-                Text(CurrencyDisplayName.text(code: order.currency.rawValue, language: language))
-                    .blTextStyle(.footnote)
-                    .foregroundStyle(palette.secondaryLabel)
+                Text(
+                    CurrencyDisplayName.text(
+                        code: order.currency.rawValue,
+                        language: AppLanguage(locale: locale)
+                    )
+                )
+                .blTextStyle(.footnote)
+                .foregroundStyle(.blSecondaryLabel)
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
-    }
-}
-
-// MARK: - Private Method
-
-private extension OrderDetailContentView {
-
-    /// 依目前外觀取得的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
-    /// 由 `\.locale` 換算對應的 App 語言
-    var language: AppLanguage {
-        AppLanguage(locale: locale)
     }
 }
 

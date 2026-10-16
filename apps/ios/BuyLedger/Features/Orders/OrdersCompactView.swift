@@ -37,10 +37,9 @@ private extension OrdersCompactView {
     /// 訂單清單與推入詳情共用的導覽宿主
     var navigationContent: some View {
         @Bindable var listStore = store.scope(state: \.list, action: \.list)
-        let palette = BLPalette()
         let sections = listStore.state.dateSections(locale: locale)
         return NavigationStack(path: $store.scope(state: \.detail.path, action: \.detail.path)) {
-            OrdersCompactListView(palette: palette, sections: sections, store: listStore)
+            OrdersCompactListView(store: listStore, sections: sections)
                 // 載入結果由多個分頁共用，不隨畫面消失而取消
                 .task {
                     listStore.send(.view(.task))
@@ -56,7 +55,6 @@ private extension OrdersCompactView {
                     OrdersToolbarContent(
                         isAllFilteredSelected: listStore.isAllFilteredSelected,
                         filteredIDs: listStore.filteredIDs,
-                        palette: palette,
                         store: listStore
                     )
                 }

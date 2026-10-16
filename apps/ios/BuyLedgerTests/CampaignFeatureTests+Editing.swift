@@ -76,7 +76,7 @@ extension CampaignFeatureTests {
             original: campaign,
             id: UUID(0),
             currentDate: TestDependencies.fixedNow,
-            wantsReminder: hasReminder,
+            isReminderWanted: hasReminder,
             reminderTimestamp: hasReminder ? timestamp : defaultTimestamp
         )
         let store = TestStore(initialState: initial) {

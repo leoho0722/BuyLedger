@@ -15,7 +15,7 @@ struct CustomerListRow: View {
     /// 頭像基準尺寸；列間分隔線的縮排由它推導，呼叫端不另寫死
     static let avatarSize: CGFloat = 36
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 隨 Dynamic Type 縮放的頭像尺寸
@@ -29,7 +29,13 @@ struct CustomerListRow: View {
     /// 客戶列內容
     var body: some View {
         HStack(spacing: BLSpacing.small) {
-            BLAvatar(name: customer.name, initials: customer.initials, size: avatarSize)
+            // 姓名就在同一列，頭像屬重複資訊；標為裝飾避免被朗讀兩次
+            BLAvatar(
+                name: customer.name,
+                initials: customer.initials,
+                size: avatarSize,
+                isDecorative: true
+            )
 
             identity
 
@@ -51,25 +57,31 @@ private extension CustomerListRow {
         VStack(alignment: .leading, spacing: 2) {
             Text(customer.name)
                 .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                .foregroundStyle(palette.label)
+                .foregroundStyle(.blLabel)
 
-            HStack(spacing: 4) {
+            HStack(spacing: BLSpacing.extraSmall) {
                 if customer.tier == .vip {
                     Text(verbatim: "VIP")
                         .blTextStyle(.caption)
-                        .foregroundStyle(palette.orange)
+                        .foregroundStyle(.blOrange)
                 } else {
                     Text(LocalizedStringKey(customer.tier.title))
                         .blTextStyle(.caption)
-                        .foregroundStyle(palette.secondaryLabel)
+                        .foregroundStyle(.blSecondaryLabel)
                 }
 
                 Text(verbatim: "·")
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
 
-                Text(AppLanguage.format("customers.list.label.orderCount", customer.orderCount, locale: locale))
+                Text(
+                    AppLanguage.format(
+                        "customers.list.label.orderCount",
+                        customer.orderCount,
+                        locale: locale
+                    )
+                )
                     .blTextStyle(.caption)
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
             }
         }
     }
@@ -77,16 +89,16 @@ private extension CustomerListRow {
     /// 累計消費與最近訂單日期
     var amounts: some View {
         VStack(alignment: .trailing, spacing: 2) {
-            // 金額已放入呼叫端的 accessibilityValue，避免重複朗讀
+            // 金額已放入呼叫端的 `accessibilityValue`，避免重複朗讀
             Text(BLFormatters.twd(customer.totalSpent, locale: locale))
                 .font(BLTypographyStyle.subhead.font.weight(.semibold))
                 .monospacedDigit()
-                .foregroundStyle(palette.label)
+                .foregroundStyle(.blLabel)
                 .accessibilityHidden(true)
 
             Text(BLFormatters.shortDate(customer.lastOrderDate, locale: locale))
                 .blTextStyle(.caption)
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
         }
     }
 }
@@ -101,16 +113,6 @@ extension CustomerListRow {
     /// - Returns: 分隔線的左側縮排
     static func dividerInset(avatarSize: CGFloat) -> CGFloat {
         BLSpacing.large + avatarSize + BLSpacing.small
-    }
-}
-
-// MARK: - Private Method
-
-private extension CustomerListRow {
-
-    /// 畫面色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 

@@ -90,7 +90,7 @@ extension DesignSystemSourceScanTests {
             under: productionRoot,
             matching: sizeClassReferencePattern,
             excludingRelativePaths: ["Shared/DesignSystem/Foundations/BLLayoutClass.swift"],
-            honoringExemptions: shouldHonorSizeClassExemptions
+            shouldHonorExemptions: shouldHonorSizeClassExemptions
         )
     }
 
@@ -102,7 +102,7 @@ extension DesignSystemSourceScanTests {
         violatingLineNumbers(
             in: source,
             matching: sizeClassReferencePattern,
-            honoringExemptions: shouldHonorSizeClassExemptions
+            shouldHonorExemptions: shouldHonorSizeClassExemptions
         )
     }
 
@@ -113,7 +113,7 @@ extension DesignSystemSourceScanTests {
     ///   - pattern: 要比對的違規樣式
     ///   - excludedFileNames: 不掃描的檔名集合
     ///   - excludedRelativePaths: 不掃描的相對路徑集合
-    ///   - honoringExemptions: 是否略過帶有豁免標記的違規行
+    ///   - shouldHonorExemptions: 是否略過帶有豁免標記的違規行
     /// - Returns: 按檔名與行號排序的設計系統違規清單
     /// - Throws: 原始檔讀取失敗或無法列出目錄內容時拋出錯誤
     static func findViolations(
@@ -121,7 +121,7 @@ extension DesignSystemSourceScanTests {
         matching pattern: NSRegularExpression,
         excludingFilesNamed excludedFileNames: Set<String> = [],
         excludingRelativePaths excludedRelativePaths: Set<String> = [],
-        honoringExemptions: Bool = true
+        shouldHonorExemptions: Bool = true
     ) throws(any Error) -> [Violation] {
         var violations: [Violation] = []
 
@@ -136,7 +136,7 @@ extension DesignSystemSourceScanTests {
             let lineNumbers = violatingLineNumbers(
                 in: source,
                 matching: pattern,
-                honoringExemptions: honoringExemptions
+                shouldHonorExemptions: shouldHonorExemptions
             )
             for lineNumber in lineNumbers {
                 violations.append(Violation(file: relativeFile, line: lineNumber))
@@ -153,12 +153,12 @@ extension DesignSystemSourceScanTests {
     /// - Parameters:
     ///   - source: 待分類的完整原始碼片段
     ///   - pattern: 要比對的違規樣式
-    ///   - honoringExemptions: 是否略過帶有豁免標記的違規行
+    ///   - shouldHonorExemptions: 是否略過帶有豁免標記的違規行
     /// - Returns: 違規行號，從第一行的 1 起算
     static func violatingLineNumbers(
         in source: String,
         matching pattern: NSRegularExpression,
-        honoringExemptions: Bool
+        shouldHonorExemptions: Bool
     ) -> [Int] {
         var lineNumbers: [Int] = []
         var stripMode = StripMode.normal
@@ -167,7 +167,7 @@ extension DesignSystemSourceScanTests {
             guard lineViolates(pattern, in: stripped) else {
                 continue
             }
-            if honoringExemptions && exemptionReason(onRawLine: rawLine) != nil {
+            if shouldHonorExemptions && exemptionReason(onRawLine: rawLine) != nil {
                 continue
             }
             lineNumbers.append(index + 1)
@@ -238,6 +238,21 @@ extension DesignSystemSourceScanTests {
     static func describe(_ violations: [Violation]) -> String {
         violations.map { "\($0.file):\($0.line)" }.joined(separator: "、")
     }
+
+    /// 把檔案絕對路徑轉為相對於掃描根目錄的路徑，讓違規訊息簡潔可讀
+    ///
+    /// - Parameters:
+    ///   - file: 要顯示路徑的檔案
+    ///   - root: 作為路徑起點的掃描目錄
+    /// - Returns: 檔案相對路徑；未以根目錄路徑開頭時保留絕對路徑
+    static func relativePath(of file: URL, under root: URL) -> String {
+        let filePath = file.standardizedFileURL.path
+        let rootPath = root.standardizedFileURL.path
+        guard filePath.hasPrefix(rootPath) else {
+            return filePath
+        }
+        return String(filePath.dropFirst(rootPath.count + 1))
+    }
 }
 
 // MARK: - Private Method
@@ -264,21 +279,6 @@ private extension DesignSystemSourceScanTests {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
-    }
-
-    /// 把檔案絕對路徑轉為相對於掃描根目錄的路徑，讓違規訊息簡潔可讀
-    ///
-    /// - Parameters:
-    ///   - file: 要顯示路徑的檔案
-    ///   - root: 作為路徑起點的掃描目錄
-    /// - Returns: 檔案相對路徑；未以根目錄路徑開頭時保留絕對路徑
-    static func relativePath(of file: URL, under root: URL) -> String {
-        let filePath = file.standardizedFileURL.path
-        let rootPath = root.standardizedFileURL.path
-        guard filePath.hasPrefix(rootPath) else {
-            return filePath
-        }
-        return String(filePath.dropFirst(rootPath.count + 1))
     }
 
     /// 取得該行具名豁免標記的理由，去除頭尾空白

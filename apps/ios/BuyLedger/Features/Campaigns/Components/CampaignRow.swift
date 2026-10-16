@@ -12,7 +12,7 @@ struct CampaignRow: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 對應的開團
@@ -44,7 +44,7 @@ struct CampaignRow: View {
         // 開團列合併成單一朗讀單位，VoiceOver 一次讀出主要資訊
         // 否則輔助技術要逐一走過每個子元素
         .accessibilityElement(children: .combine)
-        // 應收金額放在 accessibilityValue，讓 UI 測試讀取
+        // 應收金額放在 `accessibilityValue`，讓 UI 測試讀取
         .accessibilityValue(CampaignFormatters.twd(summary.receivables, locale: locale))
     }
 }
@@ -90,46 +90,39 @@ private extension CampaignRow {
             )
         )
         .blTextStyle(.subhead)
-        .foregroundStyle(Color.blSecondaryLabel)
+        .foregroundStyle(.blSecondaryLabel)
     }
 
     /// 到貨進度
     var deliveryProgress: some View {
         BLProgressView(
             title: "campaigns.list.label.arrived",
-            value: summary.deliveryRatio,
-            trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
+            trailingText: CampaignFormatters.deliveryProgress(
+                arrived: summary.arrivedCount,
+                active: summary.activeCount
+            ),
+            value: summary.deliveryRatio
         )
     }
 
     /// 收款進度與已收金額
     var receiptProgress: some View {
         BLProgressView(
+            tint: .blGreen,
             title: "orders.detail.label.payment",
-            value: summary.receivedRatio,
-            tint: palette.green,
-            trailingText: CampaignFormatters.twd(summary.receivedAmount, locale: locale)
+            trailingText: CampaignFormatters.twd(summary.receivedAmount, locale: locale),
+            value: summary.receivedRatio
         )
     }
 
-    /// 按年分組時列上顯示的開團日期
+    /// 顯示按年分組時列上的開團日期
     ///
     /// - Parameter text: 已格式化的開團日期
     /// - Returns: 次要色的日期標籤
     func openDateLabel(_ text: String) -> some View {
         Text(text)
             .blTextStyle(.caption)
-            .foregroundStyle(Color.blSecondaryLabel)
-    }
-}
-
-// MARK: - Private Method
-
-private extension CampaignRow {
-
-    /// 目前畫面使用的色盤
-    var palette: BLPalette {
-        BLPalette()
+            .foregroundStyle(.blSecondaryLabel)
     }
 }
 
@@ -150,7 +143,7 @@ private extension CampaignRow {
 #Preview("已結團且顯示開團日期") {
     CampaignRow(
         campaign: Campaign.sampleCampaigns[1],
-        dateText: "2026年3月1日 週日",
+        dateText: "2026 年 3 月 1 日 週日",
         summary: CampaignSummary(
             campaignName: Campaign.sampleCampaigns[1].name,
             orders: LedgerOrder.sampleCampaignOrders

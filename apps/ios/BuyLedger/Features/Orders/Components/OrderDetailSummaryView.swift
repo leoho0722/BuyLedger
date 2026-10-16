@@ -85,11 +85,11 @@ private extension OrderDetailSummaryView {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             Text("orders.detail.label.profit")
                 .font(BLTypographyStyle.footnote.font.weight(.semibold))
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             Text(profitValue)
                 .blTextStyle(.largeTitle)
-                .foregroundStyle(summary.profit >= 0 ? palette.green : palette.red)
+                .foregroundStyle(profitColor(for: summary.profit))
                 .monospacedDigit()
         }
         // 合併朗讀，主要數值由 `accessibilityValue` 承載供 UI 測試讀取
@@ -107,7 +107,7 @@ private extension OrderDetailSummaryView {
         ) {
             Text("orders.detail.label.grossMargin")
                 .font(BLTypographyStyle.footnote.font.weight(.semibold))
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             Text(OrderFormatters.marginPercent(summary, locale: locale))
                 .blTextStyle(.title3Bold)
@@ -136,7 +136,7 @@ private extension OrderDetailSummaryView {
         let revenueValue = OrderFormatters.twd(summary.revenue, locale: locale)
         let costValue = OrderFormatters.twd(summary.totalCost, locale: locale)
 
-        metric("orders.detail.label.totalPayment", value: revenueValue, palette: palette)
+        metric("orders.detail.label.totalPayment", value: revenueValue)
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.revenue))
             .accessibilityValue(revenueValue)
@@ -145,7 +145,7 @@ private extension OrderDetailSummaryView {
             Spacer()
         }
 
-        metric("orders.detail.label.totalCost", value: costValue, palette: palette)
+        metric("orders.detail.label.totalCost", value: costValue)
             .accessibilityElement(children: .combine)
             .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.cost))
             .accessibilityValue(costValue)
@@ -154,7 +154,7 @@ private extension OrderDetailSummaryView {
             Spacer()
         }
 
-        metric("orders.detail.label.fees", value: OrderFormatters.twd(summary.fees, locale: locale), palette: palette)
+        metric("orders.detail.label.fees", value: OrderFormatters.twd(summary.fees, locale: locale))
     }
 
     /// 寬欄版面的三項財務指標，無障礙字級下改為直排
@@ -179,31 +179,20 @@ private extension OrderDetailSummaryView {
         let costValue = OrderFormatters.twd(summary.totalCost, locale: locale)
         let profitValue = OrderFormatters.signedTWD(summary.profit, locale: locale)
 
-        kpiTile(
-            label: "orders.detail.label.totalPayment",
-            value: revenueValue,
-            tint: palette.accent,
-            palette: palette
-        )
-        .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.revenue))
-        .accessibilityValue(revenueValue)
+        kpiTile(label: "orders.detail.label.totalPayment", value: revenueValue, tint: .blAccent)
+            .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.revenue))
+            .accessibilityValue(revenueValue)
 
-        kpiTile(
-            label: "orders.detail.label.totalCost",
-            value: costValue,
-            tint: palette.orange,
-            palette: palette
-        )
-        .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.cost))
-        .accessibilityValue(costValue)
+        kpiTile(label: "orders.detail.label.totalCost", value: costValue, tint: .blOrange)
+            .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.cost))
+            .accessibilityValue(costValue)
 
         kpiTile(
             label: "orders.detail.label.profit",
             value: profitValue,
             delta: OrderFormatters.marginPercent(summary, locale: locale),
-            deltaTint: summary.profit >= 0 ? palette.green : palette.red,
-            tint: summary.profit >= 0 ? palette.green : palette.red,
-            palette: palette
+            deltaTint: profitColor(for: summary.profit),
+            tint: profitColor(for: summary.profit)
         )
         .accessibilityIdentifier(BLAccessibilityID.Orders.detailSummaryTile(.profit))
         .accessibilityValue(profitValue)
@@ -217,7 +206,6 @@ private extension OrderDetailSummaryView {
     ///   - delta: 副標數值，例如毛利率，可省略
     ///   - deltaTint: 副標數值的色彩，未指定時採中性色
     ///   - tint: 標籤前色點與主要數值的強調色
-    ///   - palette: 目前外觀使用的色盤
     /// - Returns: KPI 卡片 view
     @ViewBuilder
     func kpiTile(
@@ -225,8 +213,7 @@ private extension OrderDetailSummaryView {
         value: String,
         delta: String? = nil,
         deltaTint: Color? = nil,
-        tint: Color,
-        palette: BLPalette
+        tint: Color
     ) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             HStack(spacing: labelSpacing) {
@@ -238,28 +225,28 @@ private extension OrderDetailSummaryView {
 
                 Text(LocalizedStringKey(label))
                     .font(BLTypographyStyle.footnote.font.weight(.medium))
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
             }
 
             Text(value)
                 .blTextStyle(.title2)
                 .monospacedDigit()
-                .foregroundStyle(palette.label)
+                .foregroundStyle(.blLabel)
 
             if let delta {
                 Text(delta)
                     .font(BLTypographyStyle.caption.font.weight(.medium))
-                    .foregroundStyle(deltaTint ?? palette.tertiaryLabel)
+                    .foregroundStyle(deltaTint ?? .blTertiaryLabel)
                     .monospacedDigit()
             }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(BLSpacing.medium)
-        .background(palette.surface)
+        .background(.blSurface)
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous))
         .overlay {
             RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
-                .stroke(palette.separator, lineWidth: 0.5)
+                .stroke(.blSeparator, lineWidth: 0.5)
         }
         // 合併為單一朗讀單位；裝飾色點已先排除
         .accessibilityElement(children: .combine)
@@ -270,14 +257,13 @@ private extension OrderDetailSummaryView {
     /// - Parameters:
     ///   - title: 指標標題
     ///   - value: 指標值
-    ///   - palette: 目前外觀使用的色盤
     /// - Returns: 指標 view
     @ViewBuilder
-    func metric(_ title: String, value: String, palette: BLPalette) -> some View {
+    func metric(_ title: String, value: String) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             Text(LocalizedStringKey(title))
                 .blTextStyle(.caption)
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             Text(value)
                 .font(BLTypographyStyle.subhead.font.weight(.semibold))
@@ -290,9 +276,12 @@ private extension OrderDetailSummaryView {
 
 private extension OrderDetailSummaryView {
 
-    /// 依目前外觀取得的色盤
-    var palette: BLPalette {
-        BLPalette()
+    /// 依獲利正負取得對應的色盤顏色
+    ///
+    /// - Parameter profit: 訂單的獲利金額
+    /// - Returns: 獲利為零或正數時為綠色，負數時為紅色
+    func profitColor(for profit: Decimal) -> Color {
+        profit >= 0 ? .blGreen : .blRed
     }
 }
 

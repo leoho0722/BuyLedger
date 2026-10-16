@@ -70,7 +70,7 @@ paths:
     - 被現存合併結果列為來源的訂單不計入營收；合併結果刪除後來源恢復計入。不在來源訂單上寫永久標記。
     - 合併結果被取消時，來源維持排除且該筆營收不計；這與刪除後恢復計入是刻意不同的規則。
 - **客戶列的資格取自全部訂單** (成員、initials、tier、最近訂單日期)，金額與筆數取自營收歸屬子集，讓訂單全部取消的客人仍在名單且顯示零元。
-- **成長率的百分比與方向同源**：`DashboardStats.ratio` 與 `InsightsStats.trendDelta` 以同一個本期減上期的差額決定方向，分母取 `abs(previous)`。
+- **成長率的百分比與方向同源**：`DashboardStats.ratio` 與 `InsightsStats.trendRatio` 都以本期減上期的差額除以 `abs(previous)` 計算 (上期為 0 時為 `nil`)，百分比文字與 `BLTrend(delta:)` 的方向都由這個比值的正負決定。
 
 ## 生成型別 (`Core/Domain/Generated/`)
 

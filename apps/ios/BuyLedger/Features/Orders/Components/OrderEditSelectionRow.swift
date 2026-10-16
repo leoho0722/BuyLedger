@@ -13,16 +13,16 @@ struct OrderEditSelectionRow<Value: View>: View {
     // MARK: - Properties
 
     /// 開啟對應選擇器的動作
-    let action: () -> Void
+    private let action: () -> Void
 
     /// UI 測試使用的原有識別碼
-    let identifier: String
+    private let identifier: String
 
     /// 列的本地化標題
-    let title: LocalizedStringKey
+    private let title: LocalizedStringKey
 
     /// 選取值或尚未選取的提示
-    let value: Value
+    private let value: Value
 
     // MARK: - Init
 
@@ -69,7 +69,7 @@ private extension OrderEditSelectionRow {
             Spacer(minLength: BLSpacing.small)
 
             value
-                .foregroundStyle(Color.blSecondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             Image(systemName: "chevron.right")
                 .font(BLTypographyStyle.caption.font.weight(.semibold))
@@ -77,7 +77,7 @@ private extension OrderEditSelectionRow {
                 .accessibilityHidden(true)
         }
         // 系統按鈕會把標籤染成強調色，以文字色為基準讓階層樣式維持原本的灰階
-        .foregroundStyle(BLPalette().label)
+        .foregroundStyle(.blLabel)
         .contentShape(Rectangle())
     }
 }

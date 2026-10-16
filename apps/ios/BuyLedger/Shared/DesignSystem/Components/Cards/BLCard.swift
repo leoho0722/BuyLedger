@@ -12,18 +12,19 @@ struct BLCard<Content: View>: View {
 
     // MARK: - Properties
 
+    /// 卡片內顯示的內容
+    private let content: Content
+
     /// 內容與卡片邊界之間的距離
-    let padding: CGFloat
+    private let padding: CGFloat
 
     /// 卡片圓角半徑
-    let radius: CGFloat
-
-    /// 卡片內顯示的內容
-    let content: Content
+    private let radius: CGFloat
 
     // MARK: - Init
 
     /// 建立卡片容器
+    ///
     /// - Parameters:
     ///   - padding: 內容與卡片邊界之間的距離
     ///   - radius: 卡片圓角半徑
@@ -44,23 +45,13 @@ struct BLCard<Content: View>: View {
     var body: some View {
         content
             .padding(padding)
-            .background(palette.surface)
+            .background(.blSurface)
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .stroke(palette.separator, lineWidth: 0.5)
+                    .stroke(.blSeparator, lineWidth: 0.5)
             }
             .blCardShadow()
-    }
-}
-
-// MARK: - Computed Properties
-
-private extension BLCard {
-
-    /// 目前外觀對應的色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 
@@ -78,7 +69,7 @@ private extension BLCard {
 
             Text("common.ui.label.eightLowerThan")
                 .blTextStyle(.footnote)
-                .foregroundStyle(Color.blSecondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

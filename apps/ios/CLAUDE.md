@@ -114,16 +114,16 @@
 - **production code 走 `@Dependency`，不直接呼叫 `Date()`／`UUID()`／`Locale.current`／`TimeZone.current`／`Calendar.current`** (dependency 註冊處除外)。
     - Reducer 在 `// MARK: - Dependencies` 宣告 `@Dependency(\.date) private var date`，以 `date.now`、`uuid()` 取值；畫面不宣告 `@Dependency`。
     - 需要現在時間的衍生資料由 reducer 把注入值寫進 State，State 的 computed property 與畫面據此推導，不呼叫 `Date()`：`OrderListFeature.State.dateContext` 與 `CampaignListFeature.State.dateContext` 在 `view(.task)` 與 `view(.retryTapped)` 寫入，再請容器載入，不能被載入去重略過；`OrderMergeFeature` 建立時帶入清單的 `dateContext`，缺少時由容器以注入值建立。
-    - App 回到前景 (`AppLockFeature` 的 `delegate(.didBecomeActive)`) 與系統回報重大時間變更 (`SignificantTimeChangeService`，Root 的啟動子 Feature `RootLaunchFeature` 於 `view(.task)` 起監聽，以 `delegate(.significantTimeChanged)` 交 Root) 時，Root 以注入的 `date.now`、`calendar` 呼叫開團與訂單容器的 `refreshDateContext` 重寫。
-    - 過渡例外：`DashboardView`、`InsightsView` 仍宣告 `@Dependency` 並以 `func foo(referenceDate:)` 傳入注入值，依第 7 步照清單的 State 日期脈絡做法遷移。
-    - 過渡例外：`InsightsView` 的熱力圖星期標籤 (`weekdayLabels`) 以 `Calendar.current` 加 App locale 取得星期縮寫，是 production 唯一直接呼叫 `Calendar.current` 之處，依第 7 步改為注入。
+    - `DashboardFeature.State.dateContext` 與 `InsightsFeature.State.dateContext` 同樣在 `view(.task)` 與 `view(.retryTapped)` 覆寫，再送 `delegate(.refresh)`；統計與 `screenState` 以記錄的日期推導，尚未記錄日期時顯示載入骨架。
+    - App 回到前景 (`AppLockFeature` 的 `delegate(.didBecomeActive)`) 與系統回報重大時間變更 (`SignificantTimeChangeService`，Root 的啟動子 Feature `RootLaunchFeature` 於 `view(.task)` 起監聽，以 `delegate(.significantTimeChanged)` 交 Root) 時，Root 以注入的 `date.now`、`calendar` 呼叫開團、訂單容器、首頁與分析頁的 `refreshDateContext` 重寫。
+    - 遵循 `View` 的型別 (含以 extension 遵循者) 本體不宣告 `@Dependency`，production 不引用 `Calendar.current`／`Calendar.autoupdatingCurrent`，由 `DependencyConventionScanTests` 的畫面規則掃描守門。
     - 測試：`TestStore` 用 `withDependencies: { $0.date = .constant(TestDependencies.fixedNow) }`；Calendar 相關測試固定 `TimeZone(secondsFromGMT: 0)` 與 `Calendar(identifier: .gregorian)`。
         - 驗證「依注入的時區或曆法格式化」的測試例外：注入值必須與執行環境不同才分得出注入值與裝置值 (如 `DateSectionFormattingTests` 的 `Pacific/Kiritimati` 與民國曆)，不套用固定值。
 
 ## ios-dev-kit 規範與專案差異
 
 - **程式風格、排版、MARK 分區與新檔樣板一律依 `/ios-dev-kit`**：分區見 `references/formatting.md`，TCA Feature 型別見 `references/tca-architecture.md`，新檔從 `assets/templates/` 複製 (樣板選擇表見 `references/file-templates.md`)。
-    - 新增與修改的 Swift 檔依 `/ios-dev-kit` 的固定 MARK 分區；未修改的既有 Feature 檔留到第 6、7 步，不要順手重排。
+    - 新增與修改的 Swift 檔依 `/ios-dev-kit` 的固定 MARK 分區；未修改的既有 Feature 檔留到第 6 步，不要順手重排。
     - 修改 `switch` 時整理該 switch 的全部 case，避免同一個 switch 混用排版。
     - `switch` 的 `case` 之間空一行 (`formatting.md`)。
 - **註解反引號只標程式碼識別字 (型別、成員、關鍵字、檔名)**。
@@ -139,6 +139,8 @@
 - **無參數函式宣告即使超過 100 字元也維持一行**：沒有參數可供斷行，不在 `)` 後拆行。
 - **TCA `State` 本體順序為 stored properties → 非 private computed properties → init → nested types → 方法**：`formatting.md` 的巢狀型別通則把 init 排在 computed property 之前，`State` 改依 `tca-architecture.md`「computed property 放同一個 `State` 內、stored property 之後」(如 `SettingsFeature.State.snapshot` 排在 `init` 之前)。
 - **測試檔不設 `// MARK: - Tests` 分區** (使用者裁決)：`@Test` 方法與 UI 測試的 `func test…()` 直接接在 Properties／Init 之後，不同於 kit 的 `tests/Tests.swift`、`tests/UITests.swift`、`tca/FeatureTests.swift` 樣板；其餘分區照樣板。
+- **TCA View 除 `@Bindable var store` 外，可持有專案規則要求的 `@Environment` (`locale`、`dynamicTypeSize`、`blLayoutClass`)、`@ScaledMetric` 與 `static let` 常數**：kit `tca-architecture.md`「唯一的 stored property 是 store」不涵蓋這些無障礙與版面需求 (見 `ios-accessibility-localization.md`、`ios-design-system.md`)。
+    - 屬性順序為 `static let` → `@Environment` → `@ScaledMetric` → `@Bindable var store` → `@State`／`@FocusState` → `@Binding` → 一般 `let`／`var`，同一組內依名稱字母排序。
 - **由外部注入的 State 值用 `let` 且不給宣告處預設值**，只從 `init` 參數帶入 (如 `SettingsFeature.State.appVersion`)；宣告處放佔位值再於 `init` 覆寫會讓「未注入」與「注入了佔位值」無法區分。
 - **小段邏輯不為單一呼叫點抽 helper**：只被一個 computed property 使用的格式化直接寫在該 property 內 (如 `Bundle.appVersion`)。有自己輸入與輸出、超過約 15 行的獨立演算法可抽成函式或 local function；一兩行可直接寫在呼叫端的邏輯仍留在原處。
 - **reducer 的 `body` 只組合，不寫 `Reduce { state, action in }` 閉包**：分支主體抽成 `Private Method` 的第一個方法 `core(state:action:)`，`body` 寫 `Reduce(core)`。
@@ -155,7 +157,7 @@
 - **多重 trailing closure 一律多行**：`Binding { } set: { }` 寫成 `Binding {`、本體、`} set: {`、本體、`}` 逐行排列，不壓成一行；kit 只規定 View builder、modifier 與 action 的 closure 一律多行，`Binding` 的 `get`／`set` 不在其列。
 - **錯誤對應 helper 的 trailing closure 一律多行**：`{` 接在呼叫後，closure 本體縮排 4 格，`}` 單獨一行；包括 `PersistenceError.mapFetch`、`mapSave` 與 `wrapStorage`。
 - **依賴配置的過渡例外依排程處理**：局部改動沿用各列的現行位置與取用方式，避免混用架構。
-    - `Core/Dependencies/` 的跨 Feature Service (Order、Category、OrderSource、ReconciliationStatus、PaymentMethod) 依第 6、7 步搬遷；`BiometricAuthService` 由 `AppLockFeature` 與 `SettingsFeature` 共同取用且只依賴 `LocalAuthentication`，留在這裡，不屬過渡例外。
+    - `Core/Dependencies/` 的跨 Feature Service (Order、Category、OrderSource、ReconciliationStatus、PaymentMethod) 依第 6 步搬遷；`BiometricAuthService` 由 `AppLockFeature` 與 `SettingsFeature` 共同取用且只依賴 `LocalAuthentication`，留在這裡，不屬過渡例外。
     - 6c 前訂單端仍注入四種主檔 Service：`OrdersLoadFeature` 讀取後更新 `lookupCatalog`，`OrderWritesFeature` 處理表單新增選項、成功落盤才更新目錄；表單建立時由容器帶入 `OrderEditOptions`，不自行讀取選項。主檔 Service 搬遷與新增選項經 Root 轉主檔端屬 6c 範圍，局部修改沿用此分工。
     - `CampaignWritesFeature` 經 `OrderService.renameOrderCampaign` 改寫訂單內的開團名稱，依第 6 步處理。
     - `Core/Dependencies/` 的 ExchangeRate 與 CurrencyMetadata Service 依第 10 步決定位置。
@@ -174,7 +176,7 @@
         - Root 的 `RootLaunchFeature` 載入幣別快取，非空才寫入 `.currencyCodes`；Orders 以 `@SharedReader(.currencyCodes)` 建立表單選項，讀取失敗或空結果保留原值。
     - `TestStore` 不設定 `exhaustivity = .off`；`TestSuiteIntegrityTests` 要求使用數量維持 0，保持未接收 action 與未預期狀態變更都能讓測試失敗。
     - 通用 extension 放 `Shared/Extensions/`，不是 `Core/Extensions/`。
-    - 金額、百分比、日期格式化用 `BLFormatters`／`OrderFormatters`／`CampaignFormatters` 的靜態函式，不是 `FormatStyle`。
+    - 金額、百分比、日期格式化用 `BLFormatters`／`OrderFormatters`／`CampaignFormatters`／`DashboardFormatters`／`InsightsFormatters`／`CustomerFormatters`／`QuoteFormatters`／`FxFormatters` 的靜態函式，不是 `FormatStyle`。
     - 設定寫入維持 reducer 內同步呼叫，讓連續輸入依序保存，避免非同步效果重排快照。
     - `OrdersFeaturePerformanceTests` 維持 XCTest，其餘單元測試用 Swift Testing。
 

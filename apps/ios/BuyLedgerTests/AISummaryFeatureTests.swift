@@ -246,4 +246,31 @@ struct AISummaryFeatureTests {
             $0.truncationMessage = "ai.summary.message.aiSummaryReached"
         }
     }
+
+    /// 驗證沒有具體錯誤原因時，失敗訊息退回通用提示文字
+    @Test
+    func failureMessage_無錯誤原因_退回通用提示() {
+        // Given
+        let state = AISummaryFeature.State(prompt: "p", model: "m")
+
+        // When
+        let message = state.failureMessage
+
+        // Then
+        #expect(message == "orders.edit.message.pleaseTryAgain")
+    }
+
+    /// 驗證有具體錯誤原因時，失敗訊息沿用該原因而不退回通用提示
+    @Test
+    func failureMessage_有錯誤原因_沿用該原因() {
+        // Given
+        var state = AISummaryFeature.State(prompt: "p", model: "m")
+        state.errorMessage = "ai.summary.message.summaryFailedTry"
+
+        // When
+        let message = state.failureMessage
+
+        // Then
+        #expect(message == "ai.summary.message.summaryFailedTry")
+    }
 }

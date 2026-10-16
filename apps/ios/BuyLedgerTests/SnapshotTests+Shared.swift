@@ -51,6 +51,8 @@ extension SnapshotTests {
     }
 
     /// 資料無法開啟時的阻斷畫面，顯示說明文字與「改用空白資料庫繼續」按鈕
+    ///
+    /// - Note: 復原按鈕的 prominent 玻璃樣式在離屏渲染會整張變黑，改於 key window 渲染
     @Test
     func persistenceFailureView_持久化錯誤_符合基準圖() {
         TestDependencies.withFixedNow {
@@ -66,7 +68,118 @@ extension SnapshotTests {
             .frame(width: 393, height: 852)
 
             // Then
-            // 復原按鈕的 prominent 玻璃樣式在離屏渲染會整張變黑，改於 key window 渲染
+            assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
+        }
+    }
+
+    /// 新增付款方式的表單以空白名稱開啟，名稱為空時儲存鈕停用
+    ///
+    /// - Note: 表單以獨立 sheet 呈現並自帶 `NavigationStack`
+    /// - Note: 儲存鈕為 `.borderedProminent`，於 key window 渲染
+    /// - Note: 尺寸為 iPhone 直向 393 × 852
+    @Test
+    func paymentMethodEditorSheet_新增付款方式_顯示空白表單() {
+        TestDependencies.withFixedNow {
+            // Given
+
+            // When
+            let view = PaymentMethodEditorSheet(
+                title: "orders.edit.label.addPaymentMethod",
+                message: "orders.lookup.message.enterNewPayment",
+                namePlaceholder: "orders.detail.label.paymentMethodName",
+                submitTitle: "orders.list.button.add",
+                isEmbedded: false
+            ) { _, _, _, _ in
+            }
+            .environment(\.locale, AppLanguage.traditionalChinese.locale)
+            .frame(width: 393, height: 852)
+
+            // Then
+            assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
+        }
+    }
+
+    /// 編輯既有付款方式時帶入名稱與三種旗標，三個開關皆為開啟且儲存鈕可用
+    ///
+    /// - Note: 名稱非空，儲存鈕為可用狀態
+    /// - Note: 表單以獨立 sheet 呈現，於 key window 渲染
+    /// - Note: 尺寸為 iPhone 直向 393 × 852
+    @Test
+    func paymentMethodEditorSheet_編輯既有付款方式_顯示三種旗標() {
+        TestDependencies.withFixedNow {
+            // Given
+
+            // When
+            let view = PaymentMethodEditorSheet(
+                title: "orders.lookup.label.editPaymentMethod",
+                message: "orders.lookup.message.editNameTags",
+                namePlaceholder: "orders.detail.label.paymentMethodName",
+                submitTitle: "orders.edit.button.save",
+                initialName: "信用卡",
+                isInitialCardless: true,
+                isInitialBankTransfer: true,
+                isInitialCashOnDelivery: true,
+                isEmbedded: false
+            ) { _, _, _, _ in
+            }
+            .environment(\.locale, AppLanguage.traditionalChinese.locale)
+            .frame(width: 393, height: 852)
+
+            // Then
+            assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
+        }
+    }
+
+    /// AI 總結完成後顯示 Markdown 格式的摘要內容，底部附 AI 免責膠囊
+    ///
+    /// - Note: 只記錄 `.finished` 與 `.failed`；`.idle` 與 `.streaming` 會顯示進度轉圈，轉圈不是靜態畫面，不列入基準
+    /// - Note: 使用 `EmptyReducer`，`.task` 不會觸發 `AISummaryService`
+    /// - Note: 尺寸為 iPhone 直向 393 × 852
+    @Test
+    func aiSummaryView_總結完成_顯示摘要內容() {
+        TestDependencies.withFixedNow {
+            // Given
+            var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+            state.phase = .finished
+            state.summaryText = "# 商品摘要\n\n已取得的部分內容"
+
+            // When
+            let view = AISummaryView(
+                store: Store(initialState: state) {
+                    EmptyReducer()
+                }
+            )
+            .environment(\.locale, AppLanguage.traditionalChinese.locale)
+            .frame(width: 393, height: 852)
+
+            // Then
+            assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
+        }
+    }
+
+    /// AI 總結失敗時顯示失敗說明與重試鈕，不顯示摘要內容
+    ///
+    /// - Note: 重試鈕為 `.borderedProminent`，於 key window 渲染
+    /// - Note: 使用 `EmptyReducer`
+    /// - Note: 尺寸為 iPhone 直向 393 × 852
+    @Test
+    func aiSummaryView_總結失敗_顯示重試鈕() {
+        TestDependencies.withFixedNow {
+            // Given
+            var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+            state.phase = .failed
+            state.errorMessage = "ai.summary.message.summaryFailedTry"
+
+            // When
+            let view = AISummaryView(
+                store: Store(initialState: state) {
+                    EmptyReducer()
+                }
+            )
+            .environment(\.locale, AppLanguage.traditionalChinese.locale)
+            .frame(width: 393, height: 852)
+
+            // Then
             assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
         }
     }

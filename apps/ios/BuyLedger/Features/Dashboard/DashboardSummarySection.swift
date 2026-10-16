@@ -62,7 +62,7 @@ private extension DashboardSummarySection {
 
 private extension DashboardSummarySection {
 
-    /// 是否採用 hero + 3 KPI 並排版面 (版面分類為 regular)
+    /// 是否採用 hero + 3 KPI 並排版面 (版面分類為 `regular`)
     var shouldUseWideHero: Bool {
         layoutClass == .regular
     }

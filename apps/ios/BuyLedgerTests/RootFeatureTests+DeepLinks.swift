@@ -96,10 +96,18 @@ extension RootFeatureTests {
 
         let store = TestStore(initialState: state) {
             RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
-        await store.send(.dashboard(.view(.task)))
+        await store.send(.dashboard(.view(.task))) {
+            $0.dashboard.dateContext = DashboardDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+        }
 
         // Then
         await store.receive(\.dashboard.delegate.refresh)

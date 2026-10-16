@@ -16,17 +16,8 @@ struct DashboardView: View {
     /// 目前的動態字級；用來讓載入骨架的 KPI 格欄數與實際畫面一致
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
-
-    /// 月份分組與日期計算使用的行事曆
-    @Dependency(\.calendar) private var calendar
-
-    /// 用來計算「本月／上月」與日期子標的「現在」時間；測試可注入固定值
-    @Dependency(\.date) private var date
-
-    /// 日期格式化使用的時區；測試可注入固定值
-    @Dependency(\.timeZone) private var timeZone
 
     /// 骨架中摘要卡的高度，隨字級縮放
     @ScaledMetric private var heroPlaceholderHeight: CGFloat = 180
@@ -51,13 +42,13 @@ struct DashboardView: View {
 
     // MARK: - Body
 
-    /// 總覽頁骨架，導覽堆疊內依載入狀態切換內容，進入畫面時觸發載入
+    /// 總覽頁骨架，導覽堆疊內依畫面狀態切換內容，進入畫面時觸發載入
     var body: some View {
         // 導覽列由 `NavigationStack` 建立，測試以畫面根容器判定就緒
         NavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(palette.background)
+                .background(.blBackground)
                 .task {
                     // 進入總覽頁時先載入訂單與設定資料
                     // `refresh` 只轉發，去重由 `OrdersLoadFeature` 的載入守衛處理
@@ -72,13 +63,46 @@ struct DashboardView: View {
 
 private extension DashboardView {
 
+    /// 依畫面狀態切換的主體
+    ///
+    /// - Note: 狀態來源是 `DashboardFeature.State.screenState`，這裡只讀一次
+    /// - Note: 判斷順序為失敗優先；未記錄日期前只顯示骨架，不顯示首次使用或數字
+    /// - Note: 根 identifier 掛在各分支自己的容器上，不掛最外層 `Group`
+    var content: some View {
+        Group {
+            switch store.screenState {
+            case .loading:
+                loadingPlaceholder
+
+            case .failed(let message):
+                BLLoadFailureView(
+                    message: message,
+                    retryIdentifier: BLAccessibilityID.Dashboard.loadFailureRetryButton
+                ) {
+                    store.send(.view(.retryTapped))
+                }
+                .accessibilityIdentifier(BLAccessibilityID.Dashboard.loadFailure)
+
+            case .onboarding:
+                scrollContainer {
+                    onboardingHero
+                }
+
+            case .overview(let stats):
+                scrollContainer {
+                    sections(stats: stats)
+                }
+            }
+        }
+    }
+
     /// 首次載入訂單前顯示的骨架
     var loadingPlaceholder: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                     .frame(height: heroPlaceholderHeight)
-                    .foregroundStyle(palette.fillTertiary)
+                    .foregroundStyle(.blFillTertiary)
 
                 LazyVGrid(
                     columns: DashboardKPITiles.columns(for: dynamicTypeSize),
@@ -87,13 +111,13 @@ private extension DashboardView {
                     ForEach(0..<4, id: \.self) { _ in
                         RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                             .frame(height: kpiPlaceholderHeight)
-                            .foregroundStyle(palette.fillQuaternary)
+                            .foregroundStyle(.blFillQuaternary)
                     }
                 }
 
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                     .frame(height: listPlaceholderHeight)
-                    .foregroundStyle(palette.fillQuaternary)
+                    .foregroundStyle(.blFillQuaternary)
             }
             .padding(.horizontal, BLSpacing.large)
             .padding(.vertical, BLSpacing.large)
@@ -115,7 +139,7 @@ private extension DashboardView {
                     .frame(width: onboardingCircleSize, height: onboardingCircleSize)
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [palette.accent, palette.indigo],
+                            colors: [.blAccent, .blIndigo],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -131,12 +155,12 @@ private extension DashboardView {
             VStack(spacing: BLSpacing.small) {
                 Text("dashboard.overview.label.welcomeBuyledger")
                     .blTextStyle(.title1)
-                    .foregroundStyle(palette.label)
+                    .foregroundStyle(.blLabel)
 
                 Text("dashboard.overview.message.thereOrdersYet")
-                    .blTextStyle(.subhead)
-                    .foregroundStyle(palette.secondaryLabel)
                     .multilineTextAlignment(.center)
+                    .blTextStyle(.subhead)
+                    .foregroundStyle(.blSecondaryLabel)
             }
             .padding(.horizontal, BLSpacing.large)
 
@@ -155,103 +179,49 @@ private extension DashboardView {
         .accessibilityIdentifier(BLAccessibilityID.Dashboard.emptyState)
     }
 
-    /// 大標題上方的日期子標
-    var titleHeader: some View {
+    /// 組出首頁內容的共用捲動容器，onboarding 與總覽都掛同一個根 identifier
+    ///
+    /// - Parameter content: 捲動容器內的內容
+    /// - Returns: 掛有根 identifier 的捲動容器
+    func scrollContainer<Content: View>(@ViewBuilder _ content: () -> Content) -> some View {
+        ScrollView {
+            content()
+                .padding(.horizontal, BLSpacing.large)
+                .padding(.vertical, BLSpacing.large)
+                .frame(maxWidth: .infinity, alignment: .leading)
+        }
+        .accessibilityIdentifier(BLAccessibilityID.Dashboard.root)
+    }
+
+    /// 組出大標題上方的日期子標，依記錄的日期與行事曆格式化
+    ///
+    /// - Parameter dateContext: 總覽記錄的現在時間與行事曆
+    /// - Returns: 日期子標 view
+    func titleHeader(dateContext: DashboardDateContext) -> some View {
         VStack(alignment: .leading, spacing: 2) {
-            Text(currentDateSubtitle)
+            Text(DashboardFormatters.dateSubtitle(for: dateContext, locale: locale))
                 .font(BLTypographyStyle.footnote.font.weight(.medium))
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
                 .accessibilityIdentifier(BLAccessibilityID.Dashboard.currentDateSubtitle)
         }
     }
 
-    /// 依訂單資料顯示總覽或首次使用畫面
-    @ViewBuilder
-    var overview: some View {
-        if store.orders.isEmpty {
-            onboardingHero
-        } else {
-            sections(stats: stats)
-        }
-    }
-
-    /// 依載入狀態切換的畫面主體：總覽內容、載入失敗或載入骨架
-    var content: some View {
-        // 只判斷「是否已載入」會讓失敗永遠停在轉圈
-        // 根 identifier 掛在各 `loadState` 分支自己的容器上，不掛最外層 `Group`
-        // 不合併外層元素，讓重試鈕與內容可被找到
-        Group {
-            switch store.loadState {
-            case .loaded:
-                ScrollView {
-                    overview
-                        .padding(.horizontal, BLSpacing.large)
-                        .padding(.vertical, BLSpacing.large)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                }
-                .accessibilityIdentifier(BLAccessibilityID.Dashboard.root)
-
-            case .failed(let message):
-                BLLoadFailureView(
-                    message: message,
-                    retryIdentifier: BLAccessibilityID.Dashboard.loadFailureRetryButton
-                ) {
-                    store.send(.view(.retryTapped))
-                }
-                .accessibilityIdentifier(BLAccessibilityID.Dashboard.loadFailure)
-
-            case .loading:
-                loadingPlaceholder
-            }
-        }
-    }
-
-    /// 有訂單時的各區段，由上而下是日期子標、本月摘要、進行中的開團與近期訂單
+    /// 組出有訂單時的各區段，由上而下是日期子標、本月摘要、進行中的開團與近期訂單
     ///
     /// - Parameter stats: 已計算的本月統計
     /// - Returns: 各區段 view
     func sections(stats: DashboardStats) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.large) {
-            titleHeader
+            if let dateContext = store.dateContext {
+                titleHeader(dateContext: dateContext)
+            }
 
             DashboardSummarySection(language: language, stats: stats)
 
             DashboardOngoingCampaignsSection(store: store)
 
-            DashboardRecentOrdersSection(recentOrders: stats.recentOrders, store: store)
+            DashboardRecentOrdersSection(store: store, recentOrders: stats.recentOrders)
         }
-    }
-}
-
-// MARK: - Private Method
-
-private extension DashboardView {
-
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
-    /// 本月與走勢統計，以注入的現在時間與行事曆計算
-    var stats: DashboardStats {
-        DashboardStats(
-            orders: store.orders,
-            monthlyGoal: store.monthlyProfitGoalTWD,
-            referenceDate: date(),
-            calendar: calendar
-        )
-    }
-
-    /// 顯示在大標題上方、依 App 選定 locale 格式化的日期子標
-    var currentDateSubtitle: String {
-        var style = Date.FormatStyle.dateTime
-        style.timeZone = timeZone
-        style.locale = locale
-        style = style
-            .month(.wide)
-            .day(.defaultDigits)
-            .weekday(.wide)
-        return date().formatted(style)
     }
 }
 
@@ -262,6 +232,10 @@ private extension DashboardView {
         var state = DashboardFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.loadState = .loaded
+        state.dateContext = DashboardDateContext(
+            now: LedgerOrder.sampleOrders[0].date,
+            calendar: Calendar(identifier: .gregorian)
+        )
         return state
     }()
 
@@ -301,6 +275,10 @@ private extension DashboardView {
     let previewState: DashboardFeature.State = {
         var state = DashboardFeature.State()
         state.loadState = .loaded
+        state.dateContext = DashboardDateContext(
+            now: LedgerOrder.sampleOrders[0].date,
+            calendar: Calendar(identifier: .gregorian)
+        )
         return state
     }()
 

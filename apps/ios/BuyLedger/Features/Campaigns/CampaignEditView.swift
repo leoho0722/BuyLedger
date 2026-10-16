@@ -13,14 +13,14 @@ struct CampaignEditView: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
+
+    /// 表單的狀態與事件來源，由父層建立後傳入
+    @Bindable var store: StoreOf<CampaignEditFeature>
 
     /// 鍵盤焦點，鏡像表單狀態中的 `focusedField`
     @FocusState private var focusedField: CampaignEditFeature.State.Field?
-
-    /// 表單的狀態與事件來源，由開團容器開啟表單時建立
-    @Bindable var store: StoreOf<CampaignEditFeature>
 
     // MARK: - Body
 
@@ -35,7 +35,7 @@ struct CampaignEditView: View {
             .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.root)
             .scrollDismissesKeyboard(.interactively)
             .bind($store.focusedField, to: $focusedField)
-            .navigationTitle(Text(LocalizedStringKey(store.original == nil ? "campaigns.list.label.addCampaign" : "campaigns.list.label.editCampaign")))
+            .navigationTitle(Text(LocalizedStringKey(store.navigationTitleKey)))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 cancelToolbarItem
@@ -64,15 +64,23 @@ private extension CampaignEditView {
             if let nameConflictMessage = store.nameConflictMessage {
                 Text(LocalizedStringKey(nameConflictMessage))
                     .blTextStyle(.footnote)
-                    .foregroundStyle(BLPalette().red)
+                    .foregroundStyle(.blRed)
             }
 
-            // 沿用訂單編輯頁的做法：DatePicker 明確指定 locale，避免退回開發語言而顯示英文
-            DatePicker("campaigns.detail.label.openingDate", selection: $store.draft.openDate, displayedComponents: .date)
-                .environment(\.locale, locale)
+            // 沿用訂單編輯頁的做法：`DatePicker` 明確指定 `locale`，避免退回開發語言而顯示英文
+            DatePicker(
+                "campaigns.detail.label.openingDate",
+                selection: $store.draft.openDate,
+                displayedComponents: .date
+            )
+            .environment(\.locale, locale)
 
-            DatePicker("campaigns.detail.label.closeDate", selection: $store.draft.closeDate, displayedComponents: .date)
-                .environment(\.locale, locale)
+            DatePicker(
+                "campaigns.detail.label.closeDate",
+                selection: $store.draft.closeDate,
+                displayedComponents: .date
+            )
+            .environment(\.locale, locale)
 
             Picker("orders.list.label.status", selection: $store.draft.status) {
                 ForEach(CampaignStatus.allCases) {

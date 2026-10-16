@@ -1,0 +1,103 @@
+{
+  "schema": "mobilebuildmcp.output.capture-result",
+  "schemaVersion": "2",
+  "didError": false,
+  "error": null,
+  "data": {
+    "summary": {
+      "status": "SUCCEEDED"
+    },
+    "artifacts": {
+      "simulatorId": "1157F07A-104E-4268-89E6-3577AE9BA3A8"
+    },
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "0vzu5n2",
+      "seq": 1,
+      "count": 182,
+      "targets": [
+        "e14|tap|button|隱藏側邊欄||",
+        "e126|tap|button|查看全部||dashboard.recentOrders.seeAllButton"
+      ],
+      "scroll": [
+        "e19|swipe|other|側邊欄||root.sidebar",
+        "e95|swipe|scroll-view|||dashboard.root"
+      ],
+      "text": [
+        "e27|text|text|BL、BuyLedger||",
+        "e29|text|text|BuyLedger||",
+        "e28|text|text|BL||",
+        "e100|text|text|6月15日星期一||dashboard.currentDateSubtitle",
+        "e110|text|text|營業額、$43,740、+335.7% MoM|$43,740|dashboard.kpiTile.revenue",
+        "e40|text|text|總覽||root.tab.dashboard",
+        "e112|text|text|營業額||",
+        "e102|text|text|本月 · 淨獲利||",
+        "e42|text|text|總覽||",
+        "e113|text|text|$43,740||",
+        "e103|text|text|+$7,884||",
+        "e46|text|text|訂單|4 件進行中|root.tab.orders",
+        "e114|text|text|+335.7% MoM||",
+        "e48|text|text|訂單||",
+        "e49|text|text|4||",
+        "e105|text|text|·||",
+        "e104|text|text|↑ 123.5% MoM||",
+        "e106|text|text|5 單||",
+        "e115|text|text|毛利率、18.0%、-17.1 pt MoM|18.0%|dashboard.kpiTile.grossMargin",
+        "e117|text|text|毛利率||",
+        "e53|text|text|開團||root.tab.campaigns",
+        "e118|text|text|18.0%||",
+        "e55|text|text|開團||",
+        "e119|text|text|-17.1 pt MoM||",
+        "e109|text|text|9% / $80,000||",
+        "e59|text|text|分析||root.tab.insights",
+        "e61|text|text|分析||",
+        "e120|text|text|進行中訂單、4、4 件進行中|4|dashboard.kpiTile.activeOrders",
+        "e122|text|text|進行中訂單||",
+        "e123|text|text|4||",
+        "e124|text|text|4 件進行中||",
+        "e70|text|text|更多||root.tab.more",
+        "e72|text|text|更多||",
+        "e125|text|text|近期訂單||",
+        "e127|text|text|林書宇、6/11、Tamburins 香水 Chamo 50ml x1 Gentle Monster Her 02 x1、美妝、集運中|$11,800 +$2,731|dashboard.recentOrders.row:BL-2604-018",
+        "e129|text|text|林書宇||",
+        "e134|text|text|集運中||",
+        "e130|text|text|6/11||",
+        "e136|text|text|集運中||",
+        "e128|text|text|林書宇||",
+        "e131|text|text|Tamburins 香水 Chamo 50ml x1 Gentle Monster Her 02 x1||",
+        "e137|text|text|$11,800||",
+        "e138|text|text|+$2,731||",
+        "e133|text|text|美妝||",
+        "e139|text|text|Mika 周、6/9、Snidel 春季針織外套 (M) x1、服飾、已下單|$4,980 +$969|dashboard.recentOrders.row:BL-2604-017",
+        "e141|text|text|Mika 周||",
+        "e146|text|text|已下單||",
+        "e148|text|text|已下單||",
+        "e142|text|text|6/9||",
+        "e140|text|text|Mika 周||",
+        "e149|text|text|$4,980||",
+        "e143|text|text|Snidel 春季針織外套 (M) x1||",
+        "e150|text|text|+$969||",
+        "e145|text|text|服飾||",
+        "e151|text|text|Ariel 陳、6/7、Aesop Rōzu Eau de Parfum 50ml x1 Hera Black Cushion #21 x2、美妝、已交付|$9,890 +$1,328|dashboard.recentOrders.row:BL-2604-016",
+        "e153|text|text|Ariel 陳||",
+        "e158|text|text|已交付||",
+        "e154|text|text|6/7||",
+        "e160|text|text|已交付||",
+        "e152|text|text|Ariel 陳||",
+        "e155|text|text|Aesop Rōzu Eau de Parfum 50ml x1 Hera Black Cushion #21 x2||",
+        "e161|text|text|$9,890||",
+        "e162|text|text|+$1,328||",
+        "e157|text|text|美妝||"
+      ],
+      "udid": "1157F07A-104E-4268-89E6-3577AE9BA3A8"
+    }
+  },
+  "nextSteps": [
+    "Refresh after layout changes: mobilebuildmcp ui-automation snapshot-ui --simulator-id 1157F07A-104E-4268-89E6-3577AE9BA3A8",
+    "Wait for UI to settle: mobilebuildmcp ui-automation wait-for-ui --simulator-id 1157F07A-104E-4268-89E6-3577AE9BA3A8 --predicate settled",
+    "Batch same-screen taps: mobilebuildmcp ui-automation batch --json '{\"simulatorId\":\"1157F07A-104E-4268-89E6-3577AE9BA3A8\",\"steps\":[{\"action\":\"tap\",\"elementRef\":\"e14\"},{\"action\":\"tap\",\"elementRef\":\"e126\"}]}'",
+    "Tap an elementRef: mobilebuildmcp ui-automation tap --simulator-id 1157F07A-104E-4268-89E6-3577AE9BA3A8 --element-ref e14",
+    "Scroll visible content: mobilebuildmcp ui-automation swipe --simulator-id 1157F07A-104E-4268-89E6-3577AE9BA3A8 --within-element-ref e95 --direction up --distance 0.5"
+  ]
+}

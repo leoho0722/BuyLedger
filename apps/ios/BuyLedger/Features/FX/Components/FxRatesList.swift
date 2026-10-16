@@ -12,17 +12,17 @@ struct FxRatesList: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 要顯示的來源幣別清單
     let currencies: [CurrencyCode]
 
-    /// 最新匯率快照時間；無快照時為 `nil`
-    let snapshotDate: Date?
-
     /// 依幣別取得一單位對應 TWD 匯率的 closure
     let rate: (CurrencyCode) -> Decimal?
+
+    /// 最新匯率快照時間；無快照時為 `nil`
+    let snapshotDate: Date?
 
     // MARK: - Body
 
@@ -30,25 +30,9 @@ struct FxRatesList: View {
     var body: some View {
         BLCard(padding: 0) {
             LazyVStack(spacing: 0) {
-                HStack {
-                    Text("fx.rates.label.liveRatesTo")
-                        .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                        .foregroundStyle(palette.label)
+                header
 
-                    Spacer()
-                }
-                .padding(.horizontal, BLSpacing.large)
-                .padding(.top, BLSpacing.large)
-                .padding(.bottom, BLSpacing.small)
-
-                ForEach(Array(currencies.enumerated()), id: \.element) { index, currency in
-                    rateRow(currency: currency)
-
-                    if index < currencies.count - 1 {
-                        Divider()
-                            .padding(.leading, BLSpacing.large)
-                    }
-                }
+                rows
             }
         }
     }
@@ -58,6 +42,32 @@ struct FxRatesList: View {
 
 private extension FxRatesList {
 
+    /// 列表標題列，標示下方匯率皆以新台幣為基準
+    var header: some View {
+        HStack {
+            Text("fx.rates.label.liveRatesTo")
+                .font(BLTypographyStyle.subhead.font.weight(.semibold))
+                .foregroundStyle(.blLabel)
+
+            Spacer()
+        }
+        .padding(.horizontal, BLSpacing.large)
+        .padding(.top, BLSpacing.large)
+        .padding(.bottom, BLSpacing.small)
+    }
+
+    /// 依幣別逐列顯示匯率，列與列之間以分隔線隔開
+    var rows: some View {
+        ForEach(Array(currencies.enumerated()), id: \.element) { index, currency in
+            rateRow(currency: currency)
+
+            if index < currencies.count - 1 {
+                Divider()
+                    .padding(.leading, BLSpacing.large)
+            }
+        }
+    }
+
     /// 顯示單一幣別的匯率列
     ///
     /// - Parameter currency: 要顯示的幣別
@@ -66,13 +76,13 @@ private extension FxRatesList {
     func rateRow(currency: CurrencyCode) -> some View {
         HStack(spacing: BLSpacing.medium) {
             VStack(alignment: .leading) {
-                Text(verbatim: "1 \(currency.rawValue)")
+                Text(verbatim: FxFormatters.unitRateLabel(currency))
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                    .foregroundStyle(palette.label)
+                    .foregroundStyle(.blLabel)
 
-                Text(LocalizedStringKey(rateSourceSubtitle))
+                Text(FxFormatters.rateSourceSubtitle(snapshotDate: snapshotDate, locale: locale))
                     .blTextStyle(.caption)
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
             }
 
             Spacer()
@@ -80,28 +90,12 @@ private extension FxRatesList {
             Text(FxFormatters.rate(rate(currency), locale: locale))
                 .blTextStyle(.title3)
                 .monospacedDigit()
-                .foregroundStyle(palette.label)
+                .foregroundStyle(.blLabel)
         }
         .padding(.horizontal, BLSpacing.large)
         .padding(.vertical, BLSpacing.medium)
-    }
-}
-
-// MARK: - Private Method
-
-private extension FxRatesList {
-
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
-    /// 匯率列副標：顯示來源與時間；無 snapshot 時顯示「尚未連線」
-    var rateSourceSubtitle: String {
-        guard snapshotDate != nil else {
-            return "fx.rates.label.connected"
-        }
-        return "ExchangeRate-API · \(FxFormatters.snapshotTimestamp(snapshotDate, locale: locale))"
+        .accessibilityElement(children: .combine)
+        .accessibilityValue(FxFormatters.rate(rate(currency), locale: locale))
     }
 }
 
@@ -110,7 +104,6 @@ private extension FxRatesList {
 #Preview("有匯率資料") {
     FxRatesList(
         currencies: [.usd, .jpy, .krw],
-        snapshotDate: Date(timeIntervalSince1970: 1_777_000_000),
         rate: { currency in
             switch currency {
             case .usd:
@@ -122,7 +115,8 @@ private extension FxRatesList {
             default:
                 0.024
             }
-        }
+        },
+        snapshotDate: Date(timeIntervalSince1970: 1_777_000_000)
     )
     .padding()
 }
@@ -130,8 +124,10 @@ private extension FxRatesList {
 #Preview("尚無匯率資料") {
     FxRatesList(
         currencies: [.usd, .jpy],
-        snapshotDate: nil,
-        rate: { _ in nil }
+        rate: { _ in
+            nil
+        },
+        snapshotDate: nil
     )
     .padding()
 }

@@ -13,7 +13,7 @@ struct OrderEditItemsSection: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 畫面的狀態與事件來源，由父層建立後傳入
@@ -60,7 +60,13 @@ private extension OrderEditItemsSection {
     /// 商品明細標題與系統清單編輯入口
     var sectionHeader: some View {
         HStack {
-            Text(AppLanguage.format("orders.edit.label.itemDetailsCurrency", store.draft.currency.rawValue, locale: locale))
+            Text(
+                AppLanguage.format(
+                    "orders.edit.label.itemDetailsCurrency",
+                    store.draft.currency.rawValue,
+                    locale: locale
+                )
+            )
 
             Spacer()
 
@@ -80,11 +86,11 @@ private extension OrderEditItemsSection {
         if store.draft.items.isEmpty {
             Text("orders.edit.message.thereItemsYet")
                 .blTextStyle(.footnote)
-                .foregroundStyle(Color.blSecondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
         } else {
             Text("orders.edit.message.itemPricesRecorded")
                 .blTextStyle(.footnote)
-                .foregroundStyle(Color.blSecondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
         }
     }
 
@@ -104,17 +110,23 @@ private extension OrderEditItemsSection {
 
             HStack(spacing: BLSpacing.medium) {
                 Stepper(value: item.quantity, in: 1...999) {
-                    Text(AppLanguage.format("orders.detail.label.quantity", item.quantity.wrappedValue, locale: locale))
-                        .blTextStyle(.footnote)
-                        .foregroundStyle(Color.blSecondaryLabel)
+                    Text(
+                        AppLanguage.format(
+                            "orders.detail.label.quantity",
+                            item.quantity.wrappedValue,
+                            locale: locale
+                        )
+                    )
+                    .blTextStyle(.footnote)
+                    .foregroundStyle(.blSecondaryLabel)
                 }
 
                 Spacer()
 
-                HStack(spacing: 4) {
+                HStack(spacing: BLSpacing.extraSmall) {
                     Text("orders.edit.label.unitPrice")
                         .blTextStyle(.footnote)
-                        .foregroundStyle(Color.blSecondaryLabel)
+                        .foregroundStyle(.blSecondaryLabel)
 
                     TextField(
                         "",

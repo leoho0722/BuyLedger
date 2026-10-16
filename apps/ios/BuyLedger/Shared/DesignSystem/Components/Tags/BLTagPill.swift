@@ -7,23 +7,24 @@
 
 import SwiftUI
 
-/// 以 neutral 灰底膠囊呈現標籤文字，並可在膠囊外側附加前導圖示
+/// 以 `neutral` 灰底膠囊呈現標籤文字，並可在膠囊外側附加前導圖示
 struct BLTagPill: View {
 
     // MARK: - Properties
 
-    /// 膠囊內顯示的標籤文字
-    let text: String
+    /// 膠囊左側 (膠囊外) 的前導 SF Symbol 名稱；為 `nil` 時不顯示圖示
+    private let systemImage: String?
 
-    /// 膠囊左側 (膠囊外) 的前導 SF Symbol 名稱；為 nil 時不顯示圖示
-    let systemImage: String?
+    /// 膠囊內顯示的標籤文字
+    private let text: String
 
     // MARK: - Init
 
     /// 建立標籤膠囊
+    ///
     /// - Parameters:
     ///   - text: 膠囊內顯示的標籤文字
-    ///   - systemImage: 膠囊左側的前導 SF Symbol 名稱；預設為 nil (不顯示圖示)
+    ///   - systemImage: 膠囊左側的前導 SF Symbol 名稱；預設為 `nil` (不顯示圖示)
     init(_ text: String, systemImage: String? = nil) {
         self.text = text
         self.systemImage = systemImage
@@ -48,7 +49,8 @@ private extension BLTagPill {
                 Image(systemName: systemImage)
                     .blTextStyle(.caption2)
                     .imageScale(.small)
-                    .foregroundStyle(Color.blSecondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
+                    .accessibilityHidden(true)
             }
 
             // 不可用 `.fixedSize(horizontal:)`：長類別文字會被迫單行、撐爆版面寬度

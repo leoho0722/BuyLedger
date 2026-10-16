@@ -40,21 +40,12 @@ extension BLButtonStyle {
     }
 }
 
-// MARK: - Computed Properties
-
-private extension BLButtonStyle {
-
-    /// 目前外觀對應的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-}
-
 // MARK: - ButtonStyle
 
 extension BLButtonStyle: ButtonStyle {
 
     /// 回傳套用樣式後的按鈕內容
+    ///
     /// - Parameter configuration: 按鈕目前的互動狀態
     /// - Returns: 套用樣式後的按鈕內容
     func makeBody(configuration: Configuration) -> some View {
@@ -62,10 +53,11 @@ extension BLButtonStyle: ButtonStyle {
             .padding(.horizontal, variant == .plain ? 0 : 18)
             .frame(minHeight: BLHitTarget.minimum)
             .blTextStyle(.headline)
-            .foregroundStyle(foregroundColor(palette: palette))
-            .background(backgroundColor(palette: palette))
+            .foregroundStyle(foregroundColor)
+            .background(backgroundColor)
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
             .opacity(opacity(isPressed: configuration.isPressed))
+            // 縮放要在裁切之後，按下時圓角背景才會一起縮小
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
             .animation(reduceMotion ? nil : .snappy(duration: 0.14), value: configuration.isPressed)
     }
@@ -95,7 +87,33 @@ extension ButtonStyle where Self == BLButtonStyle {
 
 private extension BLButtonStyle {
 
+    /// 按鈕文字與圖示使用的色彩
+    var foregroundColor: Color {
+        switch variant {
+        case .primary:
+            .white
+
+        case .secondary, .plain:
+            .blAccent
+        }
+    }
+
+    /// 按鈕背景使用的色彩
+    var backgroundColor: Color {
+        switch variant {
+        case .primary:
+            .blAccent
+
+        case .secondary:
+            .blFillTertiary
+
+        case .plain:
+            .clear
+        }
+    }
+
     /// 依按壓與啟用狀態決定不透明度
+    ///
     /// - Parameter isPressed: 按鈕目前是否被按住
     /// - Returns: 套用於按鈕整體的不透明度
     func opacity(isPressed: Bool) -> Double {
@@ -104,52 +122,31 @@ private extension BLButtonStyle {
         }
         return isPressed ? 0.72 : 1
     }
-
-    /// 回傳按鈕前景色
-    /// - Parameter palette: 目前外觀對應的色盤
-    /// - Returns: 按鈕文字與圖示使用的色彩
-    func foregroundColor(palette: BLPalette) -> Color {
-        switch variant {
-        case .primary:
-            .white
-        case .secondary, .plain:
-            palette.accent
-        }
-    }
-
-    /// 回傳按鈕背景色
-    /// - Parameter palette: 目前外觀對應的色盤
-    /// - Returns: 按鈕背景使用的色彩
-    func backgroundColor(palette: BLPalette) -> Color {
-        switch variant {
-        case .primary:
-            palette.accent
-        case .secondary:
-            palette.fillTertiary
-        case .plain:
-            .clear
-        }
-    }
 }
 
 // MARK: - Preview
 
 #Preview("按鈕樣式") {
     VStack(spacing: BLSpacing.medium) {
-        Button("common.ui.label.primaryAction", systemImage: "plus") {}
+        Button("common.ui.label.primaryAction", systemImage: "plus") {
+        }
             .buttonStyle(.blPrimary)
 
-        Button("common.ui.label.secondaryAction", systemImage: "square.and.pencil") {}
+        Button("common.ui.label.secondaryAction", systemImage: "square.and.pencil") {
+        }
             .buttonStyle(.blSecondary)
 
-        Button("common.ui.label.textAction", systemImage: "arrow.clockwise") {}
+        Button("common.ui.label.textAction", systemImage: "arrow.clockwise") {
+        }
             .buttonStyle(.blPlain)
 
-        // 破壞性語意由 role 表達，樣式端不再提供破壞性變體
-        Button("campaigns.general.label.deleteData", systemImage: "trash", role: .destructive) {}
+        // 破壞性語意由 `role` 表達，樣式端不再提供破壞性變體
+        Button("campaigns.general.label.deleteData", systemImage: "trash", role: .destructive) {
+        }
             .buttonStyle(.blPlain)
 
-        Button("common.ui.label.disabled", systemImage: "plus") {}
+        Button("common.ui.label.disabled", systemImage: "plus") {
+        }
             .buttonStyle(.blPrimary)
             .disabled(true)
     }

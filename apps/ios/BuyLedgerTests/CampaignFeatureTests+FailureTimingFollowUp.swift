@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -28,7 +28,7 @@ extension CampaignFeatureTests {
             original: campaign,
             id: UUID(0),
             currentDate: TestDependencies.fixedNow,
-            wantsReminder: true,
+            isReminderWanted: true,
             reminderTimestamp: timestamp
         )
         editState.draft.name = "新團名"

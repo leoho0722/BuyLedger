@@ -57,7 +57,12 @@ struct FxFeature {
             availableCurrencies.filter { $0 != .twd }
         }
 
-        /// 任意幣別目前對 TWD 的匯率 (1 單位 = X TWD)
+        /// 幣別選擇清單使用的 ISO code 字串，順序與 ``availableCurrencies`` 相同
+        var availableCurrencyCodes: [String] {
+            availableCurrencies.map(\.rawValue)
+        }
+
+        /// 取得任意幣別目前對 TWD 的匯率 (1 單位 = X TWD)
         ///
         /// - Parameter currency: 要查詢的幣別
         /// - Returns: 對應的 TWD 匯率；查無匯率時為 `nil`
@@ -158,11 +163,15 @@ extension FxFeature {
 
 // MARK: - Equatable
 
-extension FxFeature.Destination.State: Equatable {}
+extension FxFeature.Destination.State: Equatable {
+
+}
 
 // MARK: - Sendable
 
-extension FxFeature.Destination.State: Sendable {}
+extension FxFeature.Destination.State: Sendable {
+
+}
 
 // MARK: - Private Method
 
@@ -255,10 +264,7 @@ private extension FxFeature {
             return "fx.rates.message.exchangerateDataInvalid"
 
         case .apiError(let code):
-            return LocalizedStringResource(
-                "fx.rates.message.apiErrorCode",
-                defaultValue: "\(code)"
-            )
+            return LocalizedStringResource("fx.rates.message.apiErrorCode", defaultValue: "\(code)")
         }
     }
 
@@ -269,22 +275,17 @@ private extension FxFeature {
         let exchangeRateService = exchangeRateService
         let currencyMetadataService = currencyMetadataService
         return .run { send in
-            do {
+            do throws(CurrencyMetadataServiceError) {
                 let codes = try await currencyMetadataService.fetchCodes()
                 await send(.currencyCodesResponse(.success(codes)))
             } catch {
-                if let error = error as? CurrencyMetadataServiceError {
-                    await send(.currencyCodesResponse(.failure(error)))
-                }
+                await send(.currencyCodesResponse(.failure(error)))
             }
 
-            do {
+            do throws(APIError) {
                 let snapshot = try await exchangeRateService.fetchLatest(.twd)
                 await send(.ratesResponse(.success(snapshot)))
             } catch {
-                guard let error = error as? APIError else {
-                    return
-                }
                 await send(.ratesResponse(.failure(error)))
             }
         }

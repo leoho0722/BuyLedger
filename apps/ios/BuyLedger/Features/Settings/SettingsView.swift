@@ -13,7 +13,7 @@ struct SettingsView: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 月度目標欄位的鍵盤焦點
@@ -93,7 +93,7 @@ private extension SettingsView {
         } footer: {
             Text("settings.preference.message.tapAiSummary")
                 .blTextStyle(.footnote)
-                .foregroundStyle(Color.blSecondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
         }
     }
 
@@ -131,7 +131,7 @@ private extension SettingsView {
         } footer: {
             Text("settings.preference.message.dashboardHeroProgress")
                 .blTextStyle(.footnote)
-                .foregroundStyle(Color.blSecondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
         }
     }
 
@@ -148,7 +148,7 @@ private extension SettingsView {
         } footer: {
             Text(AppLockFormatters.protectionDescription(for: store.biometryType))
                 .blTextStyle(.footnote)
-                .foregroundStyle(Color.blSecondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
         }
     }
 

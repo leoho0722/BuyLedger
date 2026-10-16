@@ -108,7 +108,7 @@ private extension OrderMergeCandidateSheet {
                                     )
                                 )
                                 .blTextStyle(.footnote)
-                                .foregroundStyle(Color.blSecondaryLabel)
+                                .foregroundStyle(.blSecondaryLabel)
                             }
                         }
                     }
@@ -131,7 +131,7 @@ private extension OrderMergeCandidateSheet {
         Button {
             store.send(.view(.candidateTapped(order.id)))
         } label: {
-            OrderRowView(order: order, isShowingDate: false, trailing: .chargedAmount)
+            OrderRowView(isShowingDate: false, order: order, trailing: .chargedAmount)
                 .contentShape(Rectangle())
         }
         .buttonStyle(.plain)

@@ -25,7 +25,7 @@ extension CampaignFeatureTests {
             original: scenario.original,
             id: UUID(0),
             currentDate: TestDependencies.fixedNow,
-            wantsReminder: true,
+            isReminderWanted: true,
             reminderTimestamp: scenario.reminderTimestamp
         )
         editState.draft.name = scenario.draftName

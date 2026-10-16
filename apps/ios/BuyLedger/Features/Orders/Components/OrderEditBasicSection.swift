@@ -75,13 +75,13 @@ private extension OrderEditBasicSection {
                 )
             )
             .blTextStyle(.footnote)
-            .foregroundStyle(Color.blSecondaryLabel)
+            .foregroundStyle(.blSecondaryLabel)
             .monospacedDigit()
 
             if !store.canSave {
                 Text("orders.edit.message.customerNameOrder")
                     .blTextStyle(.footnote)
-                    .foregroundStyle(Color.blSecondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
             }
         }
     }

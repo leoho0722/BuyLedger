@@ -15,14 +15,14 @@ struct QuoteStatusBanner: View {
     /// 是否正在載入匯率
     let isLoading: Bool
 
-    /// 匯率不可用時顯示的原因
-    let rateUnavailableReason: LocalizedStringResource?
-
     /// 目標毛利是否低於 100%
     let isTargetMarginBelowOneHundredPercent: Bool
 
     /// 使用者點擊重試時執行的動作
     let onRetry: () -> Void
+
+    /// 匯率不可用時顯示的原因
+    let rateUnavailableReason: LocalizedStringResource?
 
     // MARK: - Body
 
@@ -51,28 +51,28 @@ private extension QuoteStatusBanner {
 
             Text("quote.calculator.label.loadingExchangeRates")
                 .blTextStyle(.footnote)
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             Spacer()
         }
         .padding(.horizontal, BLSpacing.medium)
         .padding(.vertical, BLSpacing.small)
-        .background(palette.fillTertiary)
+        .background(.blFillTertiary)
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
     }
 
-    /// 載入失敗的狀態內容
+    /// 組出載入失敗的狀態內容
     ///
     /// - Parameter message: 要顯示的失敗訊息
     /// - Returns: 失敗狀態內容
     func failureContent(message: LocalizedStringResource) -> some View {
         HStack(alignment: .top, spacing: BLSpacing.small) {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(palette.orange)
+                .foregroundStyle(.blOrange)
 
             Text(message)
                 .blTextStyle(.footnote)
-                .foregroundStyle(palette.label)
+                .foregroundStyle(.blLabel)
 
             Spacer()
 
@@ -88,7 +88,7 @@ private extension QuoteStatusBanner {
         }
         .padding(.horizontal, BLSpacing.medium)
         .padding(.vertical, BLSpacing.small)
-        .background(palette.orange.opacity(0.12))
+        .background(.blOrange.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
     }
 
@@ -96,28 +96,18 @@ private extension QuoteStatusBanner {
     var marginWarningContent: some View {
         HStack(spacing: BLSpacing.small) {
             Image(systemName: "info.circle.fill")
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             Text("quote.calculator.message.targetMarginMust")
                 .blTextStyle(.footnote)
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             Spacer()
         }
         .padding(.horizontal, BLSpacing.medium)
         .padding(.vertical, BLSpacing.small)
-        .background(palette.fillQuaternary)
+        .background(.blFillQuaternary)
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
-    }
-}
-
-// MARK: - Private Method
-
-private extension QuoteStatusBanner {
-
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 
@@ -126,9 +116,10 @@ private extension QuoteStatusBanner {
 #Preview("common.action.label.loading") {
     QuoteStatusBanner(
         isLoading: true,
-        rateUnavailableReason: nil,
         isTargetMarginBelowOneHundredPercent: true,
-        onRetry: {}
+        onRetry: {
+        },
+        rateUnavailableReason: nil
     )
     .padding()
 }
@@ -136,9 +127,10 @@ private extension QuoteStatusBanner {
 #Preview("匯率不可用") {
     QuoteStatusBanner(
         isLoading: false,
-        rateUnavailableReason: "quote.calculator.message.exchangeRateAvailable",
         isTargetMarginBelowOneHundredPercent: true,
-        onRetry: {}
+        onRetry: {
+        },
+        rateUnavailableReason: "quote.calculator.message.exchangeRateAvailable"
     )
     .padding()
 }
@@ -146,9 +138,10 @@ private extension QuoteStatusBanner {
 #Preview("目標毛利達 100%") {
     QuoteStatusBanner(
         isLoading: false,
-        rateUnavailableReason: nil,
         isTargetMarginBelowOneHundredPercent: false,
-        onRetry: {}
+        onRetry: {
+        },
+        rateUnavailableReason: nil
     )
     .padding()
 }

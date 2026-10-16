@@ -1,8 +1,8 @@
 //
-//  BLMetrics.swift
+//  BLRadius.swift
 //  BuyLedger
 //
-//  Created by Leo Ho on 2026/4/30.
+//  Created by Leo Ho on 2026/10/16.
 //
 
 import SwiftUI
@@ -31,69 +31,22 @@ enum BLRadius {
     static let pill: CGFloat = 999
 }
 
-/// 設計系統共用間距
-enum BLSpacing {
-
-    // MARK: - Properties
-
-    /// 最小間距
-    static let extraSmall: CGFloat = 4
-
-    /// 小間距
-    static let small: CGFloat = 8
-
-    /// 中間距
-    static let medium: CGFloat = 12
-
-    /// 大間距
-    static let large: CGFloat = 16
-
-    /// 特大間距
-    static let extraLarge: CGFloat = 24
-
-    /// 區段之間的標準間距
-    static let section: CGFloat = 32
-}
-
-/// 列內元素的尺寸 token
-enum BLListMetrics {
-
-    // MARK: - Properties
-
-    /// 列內頭像的尺寸
-    static let avatarSize: CGFloat = 40
-
-    /// 分隔線的左側內縮量
-    static let dividerInset: CGFloat = BLSpacing.large + avatarSize + BLSpacing.medium
-}
-
-/// 可點擊控制項的命中區尺寸
-enum BLHitTarget {
-
-    // MARK: - Properties
-
-    /// 命中區各方向的最小尺寸
-    static let minimum: CGFloat = 44
-}
-
 // MARK: - Preview
 
 #Preview("尺寸與圓角") {
-    let palette = BLPalette()
-
     VStack(alignment: .leading, spacing: BLSpacing.large) {
         HStack(spacing: BLSpacing.medium) {
             RoundedRectangle(cornerRadius: BLRadius.extraSmall)
-                .fill(palette.accent)
                 .frame(width: 44, height: 44)
+                .foregroundStyle(.blAccent)
 
             RoundedRectangle(cornerRadius: BLRadius.medium)
-                .fill(palette.green)
                 .frame(width: 44, height: 44)
+                .foregroundStyle(.blGreen)
 
             RoundedRectangle(cornerRadius: BLRadius.extraLarge)
-                .fill(palette.orange)
                 .frame(width: 44, height: 44)
+                .foregroundStyle(.blOrange)
         }
     }
     .padding()

@@ -8,7 +8,9 @@
 import SwiftUI
 
 /// Hero 卡的底色，使用設計系統的漸層
-struct BLHeroCardBackground {}
+struct BLHeroCardBackground {
+
+}
 
 // MARK: - Computed Properties
 
@@ -16,7 +18,10 @@ extension BLHeroCardBackground {
 
     /// 漸層端點色彩，需符合白字對比度
     static var gradientColors: [Color] {
-        BLPalette.heroGradient
+        [
+            Color("BLHeroGradientStart", bundle: .assets),
+            Color("BLHeroGradientEnd", bundle: .assets),
+        ]
     }
 }
 
@@ -25,6 +30,7 @@ extension BLHeroCardBackground {
 extension BLHeroCardBackground: ViewModifier {
 
     /// 回傳套用漸層底色與圓角裁切後的內容
+    ///
     /// - Parameter content: 要套用底色的內容
     /// - Returns: 套用漸層底色與圓角裁切後的 view
     func body(content: Content) -> some View {
@@ -45,6 +51,7 @@ extension BLHeroCardBackground: ViewModifier {
 extension View {
 
     /// 套用 BuyLedger 彩底 hero 卡底色 (漸層 + 圓角裁切)
+    ///
     /// - Returns: 套用底色後的 view
     func blHeroCardBackground() -> some View {
         modifier(BLHeroCardBackground())

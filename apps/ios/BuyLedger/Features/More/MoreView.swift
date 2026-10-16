@@ -13,7 +13,7 @@ struct MoreView: View {
 
     // MARK: - Properties
 
-    /// 更多頁自己的導覽與子畫面 store
+    /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<MoreFeature>
 
     /// 根殼層傳入的顯示語系
@@ -94,7 +94,7 @@ private extension MoreView {
                 Label {
                     Text(LocalizedStringKey(entryTitle(for: entry)))
                         .font(BLTypographyStyle.body.font.weight(.medium))
-                        .foregroundStyle(palette.label)
+                        .foregroundStyle(.blLabel)
                 } icon: {
                     Image(systemName: entrySystemImage(for: entry))
                         .foregroundStyle(entryTint(for: entry))
@@ -104,7 +104,7 @@ private extension MoreView {
 
                 Image(systemName: "chevron.right")
                     .font(BLTypographyStyle.footnote.font.weight(.semibold))
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
                     .accessibilityHidden(true)
             }
         }
@@ -115,11 +115,6 @@ private extension MoreView {
 // MARK: - Private Method
 
 private extension MoreView {
-
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
 
     /// 回傳更多頁目的地的標題
     ///
@@ -192,28 +187,28 @@ private extension MoreView {
     func entryTint(for entry: MoreFeature.Entry) -> Color {
         switch entry {
         case .fx:
-            palette.accent
+            .blAccent
 
         case .customers:
-            palette.purple
+            .blPurple
 
         case .quote:
-            palette.green
+            .blGreen
 
         case .orderSources:
-            palette.teal
+            .blTeal
 
         case .categories:
-            palette.orange
+            .blOrange
 
         case .paymentMethods:
-            palette.red
+            .blRed
 
         case .reconciliationStatuses:
-            palette.indigo
+            .blIndigo
 
         case .settings:
-            palette.secondaryLabel
+            .blSecondaryLabel
         }
     }
 

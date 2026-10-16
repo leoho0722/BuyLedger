@@ -25,19 +25,19 @@ struct LookupNameEditorSheet: View {
     private let initialName: String
 
     /// 表單下方顯示的說明；空字串時不顯示
-    let message: String
+    private let message: String
 
     /// 名稱欄位尚未輸入時顯示的提示
-    let namePlaceholder: String
+    private let namePlaceholder: String
 
     /// 使用者提交有效名稱後執行的處理
-    let onSubmit: (_ name: String) -> Void
+    private let onSubmit: (_ name: String) -> Void
 
     /// 提交按鈕顯示的文字
-    let submitTitle: String
+    private let submitTitle: String
 
     /// 導覽列顯示的表單標題
-    let title: LocalizedStringKey
+    private let title: LocalizedStringKey
 
     // MARK: - Init
 
@@ -74,7 +74,7 @@ struct LookupNameEditorSheet: View {
         NavigationStack {
             formContent
         }
-        // 單一欄位加一段說明，medium 已足夠；保留 large 供最大字級時展開
+        // 單一欄位加一段說明，`.medium` 已足夠；保留 `.large` 供最大字級時展開
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
         // 有未儲存變更時阻擋下滑關閉，避免草稿靜默遺失；取消鍵改以彈窗確認
@@ -101,7 +101,8 @@ private extension LookupNameEditorSheet {
 
     /// 保留內容並繼續編輯
     var continueEditingButton: some View {
-        Button("orders.list.label.keepEditing", role: .cancel) {}
+        Button("orders.list.label.keepEditing", role: .cancel) {
+        }
     }
 
     /// 說明離開表單後尚未儲存的內容會被清除
@@ -123,7 +124,7 @@ private extension LookupNameEditorSheet {
                 if !message.isEmpty {
                     Text(LocalizedStringKey(message))
                         .blTextStyle(.footnote)
-                        .foregroundStyle(Color.blSecondaryLabel)
+                        .foregroundStyle(.blSecondaryLabel)
                 }
             }
         }
@@ -186,5 +187,6 @@ private extension LookupNameEditorSheet {
         message: "輸入新的訂單來源名稱，加入後會立即套用。",
         namePlaceholder: "orders.edit.label.sourceName",
         submitTitle: "orders.list.button.add"
-    ) { _ in }
+    ) { _ in
+    }
 }

@@ -12,14 +12,17 @@ struct CustomerTopCard: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
-    /// 名次 (1 / 2 / 3)
-    let rank: Int
+    /// 頭像尺寸，隨 Dynamic Type 縮放
+    @ScaledMetric(relativeTo: .body) private var avatarSize: CGFloat = 44
 
     /// 客戶資料
     let customer: CustomerRow
+
+    /// 名次 (1 / 2 / 3)
+    let rank: Int
 
     // MARK: - Body
 
@@ -45,30 +48,42 @@ private extension CustomerTopCard {
     /// 頭像、名稱、分級與名次
     var header: some View {
         HStack(spacing: BLSpacing.small) {
-            BLAvatar(name: customer.name, initials: customer.initials, size: 44)
+            // 姓名就在同一卡片內，頭像屬重複資訊；標為裝飾避免被朗讀兩次
+            BLAvatar(
+                name: customer.name,
+                initials: customer.initials,
+                size: avatarSize,
+                isDecorative: true
+            )
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(customer.name)
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                    .foregroundStyle(palette.label)
+                    .foregroundStyle(.blLabel)
 
-                HStack(spacing: 4) {
+                HStack(spacing: BLSpacing.extraSmall) {
                     if customer.tier == .vip {
                         Text(verbatim: "★ VIP")
                             .font(BLTypographyStyle.caption.font.weight(.semibold))
-                            .foregroundStyle(palette.orange)
+                            .foregroundStyle(.blOrange)
                     } else {
                         Text(LocalizedStringKey(customer.tier.title))
                             .blTextStyle(.caption)
-                            .foregroundStyle(palette.secondaryLabel)
+                            .foregroundStyle(.blSecondaryLabel)
                     }
 
                     Text(verbatim: "·")
-                        .foregroundStyle(palette.secondaryLabel)
+                        .foregroundStyle(.blSecondaryLabel)
 
-                    Text(AppLanguage.format("customers.list.label.orderCount", customer.orderCount, locale: locale))
+                    Text(
+                        AppLanguage.format(
+                            "customers.list.label.orderCount",
+                            customer.orderCount,
+                            locale: locale
+                        )
+                    )
                         .blTextStyle(.caption)
-                        .foregroundStyle(palette.secondaryLabel)
+                        .foregroundStyle(.blSecondaryLabel)
                 }
             }
 
@@ -84,14 +99,14 @@ private extension CustomerTopCard {
             VStack(alignment: .leading, spacing: 2) {
                 Text("customers.list.label.totalSpending")
                     .blTextStyle(.caption)
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
                     .textCase(.uppercase)
 
-                // 金額由卡片的 accessibilityValue 朗讀，這裡隱藏避免重複
+                // 金額由卡片的 `accessibilityValue` 朗讀，這裡隱藏避免重複
                 Text(BLFormatters.twd(customer.totalSpent, locale: locale))
                     .blTextStyle(.title3Bold)
                     .monospacedDigit()
-                    .foregroundStyle(palette.label)
+                    .foregroundStyle(.blLabel)
                     .accessibilityHidden(true)
             }
 
@@ -100,12 +115,12 @@ private extension CustomerTopCard {
             VStack(alignment: .trailing, spacing: 2) {
                 Text("customers.list.label.recentOrders")
                     .blTextStyle(.caption)
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
                     .textCase(.uppercase)
 
                 Text(BLFormatters.shortDate(customer.lastOrderDate, locale: locale))
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                    .foregroundStyle(palette.label)
+                    .foregroundStyle(.blLabel)
             }
         }
     }
@@ -114,23 +129,13 @@ private extension CustomerTopCard {
     var rankBadge: some View {
         let style = CustomerRankBadgeStyle.style(forRank: rank)
 
-        return Text(verbatim: "#\(rank)")
-            .padding(.horizontal, 8)
+        return Text(verbatim: CustomerFormatters.rankLabel(rank))
+            .padding(.horizontal, BLSpacing.small)
             .padding(.vertical, 2)
             .font(BLTypographyStyle.caption.font.weight(.bold))
-            .foregroundStyle(style.numeral(in: palette))
-            .background(style.background(in: palette))
+            .foregroundStyle(style.numeral)
+            .background(style.background)
             .clipShape(Capsule())
-    }
-}
-
-// MARK: - Private Method
-
-private extension CustomerTopCard {
-
-    /// 畫面色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 
@@ -138,7 +143,6 @@ private extension CustomerTopCard {
 
 #Preview("Top 客戶卡片") {
     CustomerTopCard(
-        rank: 1,
         customer: CustomerRow(
             name: "陳小美",
             initials: "陳",
@@ -146,7 +150,8 @@ private extension CustomerTopCard {
             orderCount: 12,
             totalSpent: 48_600,
             lastOrderDate: Date(timeIntervalSince1970: 1_777_000_000)
-        )
+        ),
+        rank: 1
     )
     .padding()
 }

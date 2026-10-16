@@ -48,6 +48,14 @@ extension DesignSystemSourceScanTests {
 
     /// 規則七：十六進位顏色建構子，全庫零命中 (含宣告本身)
     static let hexInitializerPattern = makePattern(#"init\(blHex|Color\(blHex"#)
+
+    /// 規則十二：`@ScaledMetric` 屬性宣告，第一組為 `private`／`fileprivate` 修飾、第二組為屬性名稱
+    static let scaledMetricDeclarationPattern = makePattern(
+        #"@ScaledMetric(?:\([^)]*\))?\s+((?:private|fileprivate)\s+)?var\s+(\w+)"#
+    )
+
+    /// 規則十二：以單一識別字為值的具名引數，第一組為引數標籤、第二組為識別字
+    static let labeledIdentifierArgumentPattern = makePattern(#"\b(\w+):\s*(\w+)\b(?!\s*[.(])"#)
 }
 
 // MARK: - Private Method

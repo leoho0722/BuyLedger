@@ -33,7 +33,7 @@ struct CampaignEditFeature {
         /// 捨棄未儲存變更的確認彈窗
         @Presents var discardConfirmation: AlertState<Action.DiscardAlert>? = nil
 
-        /// 表單的穩定識別值，供 SwiftUI sheet item 使用
+        /// 表單的穩定識別值，供 `SwiftUI` sheet item 使用
         let id: UUID
 
         /// 開啟表單時的初始草稿，用於判斷是否變更
@@ -59,26 +59,33 @@ struct CampaignEditFeature {
             !draft.name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
         }
 
+        /// 導覽標題的本地化 key；沒有原開團時為新增，否則為編輯
+        var navigationTitleKey: String {
+            original == nil
+                ? "campaigns.list.label.addCampaign"
+                : "campaigns.list.label.editCampaign"
+        }
+
         /// 依原始開團建立草稿狀態
         ///
         /// - Parameters:
         ///   - original: 要編輯的開團；`nil` 表示新增
         ///   - id: 表單識別值
         ///   - currentDate: 新開團日期與表單預設值使用的時間
-        ///   - wantsReminder: 是否建立訂購提醒
+        ///   - isReminderWanted: 是否建立訂購提醒
         ///   - reminderTimestamp: 訂購提醒時間
         init(
             original: Campaign? = nil,
             id: UUID,
             currentDate: Date,
-            wantsReminder: Bool = false,
+            isReminderWanted: Bool = false,
             reminderTimestamp: Date
         ) {
             self.original = original
             let draft = CampaignDraft(
                 original: original,
                 currentDate: currentDate,
-                wantsReminder: wantsReminder,
+                wantsReminder: isReminderWanted,
                 reminderTimestamp: reminderTimestamp
             )
             self.draft = draft
@@ -106,7 +113,7 @@ struct CampaignEditFeature {
                 original: original,
                 id: id,
                 currentDate: now,
-                wantsReminder: link != nil,
+                isReminderWanted: link != nil,
                 reminderTimestamp: link?.reminderTimestamp
                     ?? CampaignReminderRequest.defaultTimestamp(
                         closeDate: original?.closeDate,
@@ -132,7 +139,7 @@ struct CampaignEditFeature {
     /// 表單可處理的事件
     enum Action: BindableAction, Equatable {
 
-        /// SwiftUI 雙向繫結事件
+        /// `SwiftUI` 雙向繫結事件
         ///
         /// - Parameter action: 要更新的欄位與值
         case binding(BindingAction<State>)

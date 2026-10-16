@@ -14,18 +14,18 @@ struct BLPhotoThumbnail: View {
 
     // MARK: - Properties
 
+    /// 縮圖本體按鈕的 accessibility identifier (UI 測試定位用)；`nil` 代表不指定
+    var accessibilityID: String? = nil
+
     /// 縮圖要顯示的影像 data
     let imageData: Data
-
-    /// 縮圖寬高
-    var size: CGFloat = 72
 
     /// 點擊縮圖內容區時的 callback (例如開啟照片檢視)；`nil` 代表
     /// 縮圖不可點擊
     var onTap: (() -> Void)? = nil
 
-    /// 縮圖本體按鈕的 accessibility identifier (UI 測試定位用)；`nil` 代表不指定
-    var accessibilityID: String? = nil
+    /// 縮圖寬高
+    var size: CGFloat = 72
 
     /// 點擊右上角刪除鈕時的 callback
     let onDelete: () -> Void
@@ -57,6 +57,7 @@ private extension BLPhotoThumbnail {
                 .contentShape(.rect)
         }
         .buttonStyle(.plain)
+        // 位移套在按鈕樣式之後，把含命中區的整個按鈕推回角落
         .offset(x: Layout.deleteButtonInset, y: -Layout.deleteButtonInset)
         .accessibilityLabel("common.ui.label.deletePhoto")
     }
@@ -101,7 +102,7 @@ private extension BLPhotoThumbnail {
                 .fill(.quaternary)
                 .overlay {
                     Image(systemName: "photo")
-                        .foregroundStyle(Color.blSecondaryLabel)
+                        .foregroundStyle(.blSecondaryLabel)
                 }
                 .accessibilityLabel("common.ui.label.photoUnavailable")
         }
@@ -114,8 +115,6 @@ extension BLPhotoThumbnail {
 
     /// 縮圖的版面常數
     private enum Layout {
-
-        // MARK: - Properties
 
         /// 刪除圖示的視覺尺寸
         static let deleteIconSize: CGFloat = 18
@@ -132,11 +131,7 @@ extension BLPhotoThumbnail {
 
 #Preview("照片縮圖") {
     /// Preview 使用的純色 JPEG sample
-    func sampleJPEGData(
-        red: CGFloat,
-        green: CGFloat,
-        blue: CGFloat
-    ) -> Data {
+    func sampleJPEGData(red: CGFloat, green: CGFloat, blue: CGFloat) -> Data {
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let output = NSMutableData()
         guard let context = CGContext(
@@ -158,10 +153,20 @@ extension BLPhotoThumbnail {
         }
 
         context.setFillColor(
-            CGColor(red: red, green: green, blue: blue, alpha: 1)
+            CGColor(
+                red: red,
+                green: green,
+                blue: blue,
+                alpha: 1
+            )
         )
         context.fill(
-            CGRect(x: 0, y: 0, width: 240, height: 240)
+            CGRect(
+                x: 0,
+                y: 0,
+                width: 240,
+                height: 240
+            )
         )
         guard let image = context.makeImage() else {
             return Data()
@@ -173,10 +178,13 @@ extension BLPhotoThumbnail {
     }
 
     return HStack(spacing: BLSpacing.medium) {
-        BLPhotoThumbnail(imageData: sampleJPEGData(red: 0.35, green: 0.6, blue: 0.9)) {}
-        BLPhotoThumbnail(imageData: sampleJPEGData(red: 0.9, green: 0.5, blue: 0.4), size: 96) {}
+        BLPhotoThumbnail(imageData: sampleJPEGData(red: 0.35, green: 0.6, blue: 0.9)) {
+        }
+        BLPhotoThumbnail(imageData: sampleJPEGData(red: 0.9, green: 0.5, blue: 0.4), size: 96) {
+        }
         // 無法解碼的 data → placeholder
-        BLPhotoThumbnail(imageData: Data([0x00, 0x01])) {}
+        BLPhotoThumbnail(imageData: Data([0x00, 0x01])) {
+        }
     }
     .padding()
 }

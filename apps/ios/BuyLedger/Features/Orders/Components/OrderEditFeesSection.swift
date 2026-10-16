@@ -41,24 +41,24 @@ private extension OrderEditFeesSection {
     @ViewBuilder
     var fields: some View {
         OrderEditPercentField(
-            title: "orders.edit.label.cardFee",
-            value: $store.draft.cardFeeRate,
             field: .cardFeeRate,
-            focusedField: focusedField
+            focusedField: focusedField,
+            title: "orders.edit.label.cardFee",
+            value: $store.draft.cardFeeRate
         )
 
         OrderEditPercentField(
-            title: "orders.edit.label.platformFee",
-            value: $store.draft.platformFeeRate,
             field: .platformFeeRate,
-            focusedField: focusedField
+            focusedField: focusedField,
+            title: "orders.edit.label.platformFee",
+            value: $store.draft.platformFeeRate
         )
 
         OrderEditPercentField(
-            title: "orders.edit.label.paymentProcessingFee",
-            value: $store.draft.paymentFeeRate,
             field: .paymentFeeRate,
-            focusedField: focusedField
+            focusedField: focusedField,
+            title: "orders.edit.label.paymentProcessingFee",
+            value: $store.draft.paymentFeeRate
         )
     }
 
@@ -72,7 +72,7 @@ private extension OrderEditFeesSection {
     var sectionFooter: some View {
         Text("orders.edit.message.enter1515")
             .blTextStyle(.footnote)
-            .foregroundStyle(Color.blSecondaryLabel)
+            .foregroundStyle(.blSecondaryLabel)
     }
 }
 

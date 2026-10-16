@@ -7,10 +7,13 @@
 
 import SwiftUI
 import UIKit
+
 @testable import BuyLedger
 
 /// 依 WCAG 2.1 計算色彩對比比值的測試輔助工具
-enum ColorContrast {}
+enum ColorContrast {
+
+}
 
 // MARK: - Nested Types
 
@@ -18,8 +21,6 @@ extension ColorContrast {
 
     /// 解析動態色彩時所處的外觀與對比情境
     enum Appearance: CaseIterable {
-
-        // MARK: - Cases
 
         /// 淺色外觀
         case light
@@ -32,12 +33,20 @@ extension ColorContrast {
 
         /// 深色外觀且開啟提高對比
         case darkIncreasedContrast
+
+        /// 對應此情境的 trait collection，供動態色彩解析使用
+        var traitCollection: UITraitCollection {
+            let isDark = self == .dark || self == .darkIncreasedContrast
+            let isIncreased = self == .lightIncreasedContrast || self == .darkIncreasedContrast
+            return UITraitCollection { mutable in
+                mutable.userInterfaceStyle = isDark ? .dark : .light
+                mutable.accessibilityContrast = isIncreased ? .high : .normal
+            }
+        }
     }
 
     /// 已解析為 sRGB 分量的色彩
     struct Components: Equatable {
-
-        // MARK: - Data Properties
 
         /// 紅色分量
         let red: Double
@@ -55,61 +64,34 @@ extension ColorContrast {
 
 // MARK: - Internal Method
 
-extension ColorContrast.Appearance {
-
-    /// 對應此情境的 trait collection，供動態色彩解析使用
-    /// - Returns: 此情境對應的 trait collection
-    var traitCollection: UITraitCollection {
-        let isDark = self == .dark || self == .darkIncreasedContrast
-        let isIncreased = self == .lightIncreasedContrast || self == .darkIncreasedContrast
-        return UITraitCollection { mutable in
-            mutable.userInterfaceStyle = isDark ? .dark : .light
-            mutable.accessibilityContrast = isIncreased ? .high : .normal
-        }
-    }
-
-    /// 對應此情境的設計系統色盤
-    /// - Returns: 測試使用的設計系統色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-}
-
-// MARK: - Internal Method
-
 extension ColorContrast {
 
-    /// 回傳前景色疊在指定圖層堆疊之上的對比比值
-    /// - Parameters:
-    ///   - foreground: 前景色
-    ///   - layers: 由上到下排列的背景圖層
-    ///   - appearance: 解析色彩時使用的外觀情境
-    /// - Returns: 前景色與合成背景之間的對比比值
-    static func ratio(
-        _ foreground: Color,
-        on layers: [Color],
-        appearance: Appearance
-    ) -> Double {
-        let background = composite(layers, appearance: appearance)
-        let front = blend(components(of: foreground, appearance: appearance), over: background)
-        return ratio(luminance(of: front), luminance(of: background))
-    }
-
     /// 回傳前景色疊在單一不透明底色之上的對比比值
+    ///
     /// - Parameters:
     ///   - foreground: 前景色
     ///   - background: 背景色
     ///   - appearance: 解析色彩時使用的外觀情境
     /// - Returns: 前景色與背景色之間的對比比值
-    static func ratio(
-        _ foreground: Color,
-        on background: Color,
-        appearance: Appearance
-    ) -> Double {
+    static func ratio(_ foreground: Color, on background: Color, appearance: Appearance) -> Double {
         ratio(foreground, on: [background], appearance: appearance)
     }
 
+    /// 回傳前景色疊在指定圖層堆疊之上的對比比值
+    ///
+    /// - Parameters:
+    ///   - foreground: 前景色
+    ///   - layers: 由上到下排列的背景圖層
+    ///   - appearance: 解析色彩時使用的外觀情境
+    /// - Returns: 前景色與合成背景之間的對比比值
+    static func ratio(_ foreground: Color, on layers: [Color], appearance: Appearance) -> Double {
+        let background = composite(layers, appearance: appearance)
+        let front = blend(components(of: foreground, appearance: appearance), over: background)
+        return ratio(luminance(of: front), luminance(of: background))
+    }
+
     /// 將色彩解析為指定情境下的 sRGB 分量
+    ///
     /// - Parameters:
     ///   - color: 要解析的色彩
     ///   - appearance: 解析色彩時使用的外觀情境
@@ -120,7 +102,12 @@ extension ColorContrast {
         var green: CGFloat = 0
         var blue: CGFloat = 0
         var alpha: CGFloat = 0
-        resolved.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        resolved.getRed(
+            &red,
+            green: &green,
+            blue: &blue,
+            alpha: &alpha
+        )
         return Components(
             red: clamp(Double(red)),
             green: clamp(Double(green)),
@@ -135,6 +122,7 @@ extension ColorContrast {
 private extension ColorContrast {
 
     /// 由下而上合成圖層堆疊，回傳最終可見的底色分量
+    ///
     /// - Parameters:
     ///   - layers: 由上到下排列的背景圖層
     ///   - appearance: 解析色彩時使用的外觀情境
@@ -149,10 +137,16 @@ private extension ColorContrast {
                 result = current
             }
         }
-        return result ?? Components(red: 1, green: 1, blue: 1, alpha: 1)
+        return result ?? Components(
+            red: 1,
+            green: 1,
+            blue: 1,
+            alpha: 1
+        )
     }
 
     /// 以來源覆蓋 (source-over) 方式將前景合成到不透明底色上
+    ///
     /// - Parameters:
     ///   - top: 要疊加的前景分量
     ///   - base: 不透明背景分量
@@ -167,6 +161,7 @@ private extension ColorContrast {
     }
 
     /// 回傳分量對應的 WCAG 相對亮度
+    ///
     /// - Parameter components: 要計算亮度的色彩分量
     /// - Returns: WCAG 相對亮度
     static func luminance(of components: Components) -> Double {
@@ -176,6 +171,7 @@ private extension ColorContrast {
     }
 
     /// 將 sRGB 分量轉為線性光強度
+    ///
     /// - Parameter channel: sRGB 色彩分量
     /// - Returns: 線性光強度
     static func linearized(_ channel: Double) -> Double {
@@ -186,19 +182,21 @@ private extension ColorContrast {
         return pow((value + 0.055) / 1.055, 2.4)
     }
 
+    /// 將數值限制在 0 至 1 之間，避免 extended sRGB 的超界分量污染計算
+    ///
+    /// - Parameter value: 要限制的數值
+    /// - Returns: 限制在 0 至 1 之間的數值
+    static func clamp(_ value: Double) -> Double {
+        min(max(value, 0), 1)
+    }
+
     /// 回傳兩個相對亮度之間的對比比值
+    ///
     /// - Parameters:
     ///   - first: 第一個相對亮度
     ///   - second: 第二個相對亮度
     /// - Returns: 兩個相對亮度之間的對比比值
     static func ratio(_ first: Double, _ second: Double) -> Double {
         (max(first, second) + 0.05) / (min(first, second) + 0.05)
-    }
-
-    /// 將數值限制在 0 至 1 之間，避免 extended sRGB 的超界分量污染計算
-    /// - Parameter value: 要限制的數值
-    /// - Returns: 限制在 0 至 1 之間的數值
-    static func clamp(_ value: Double) -> Double {
-        min(max(value, 0), 1)
     }
 }

@@ -12,7 +12,7 @@ struct CampaignDetailInfoSection: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 目前的開團
@@ -61,8 +61,12 @@ private extension CampaignDetailInfoSection {
                 )
 
                 if campaign.isSettled {
-                    BLStatusPill("campaigns.list.label.settled", tone: .neutral, showsIndicator: false)
-                        .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSettledBadge)
+                    BLStatusPill(
+                        "campaigns.list.label.settled",
+                        tone: .neutral,
+                        showsIndicator: false
+                    )
+                    .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSettledBadge)
                 }
             }
         }
@@ -77,11 +81,17 @@ private extension CampaignDetailInfoSection {
         )
 
         if let closeDate = campaign.closeDate {
-            LabeledContent("campaigns.detail.label.closeDate", value: CampaignFormatters.shortDate(closeDate, locale: locale))
+            LabeledContent(
+                "campaigns.detail.label.closeDate",
+                value: CampaignFormatters.shortDate(closeDate, locale: locale)
+            )
         }
 
         if let settledDate = campaign.settledDate {
-            LabeledContent("campaigns.detail.label.closingDate", value: CampaignFormatters.shortDate(settledDate, locale: locale))
+            LabeledContent(
+                "campaigns.detail.label.closingDate",
+                value: CampaignFormatters.shortDate(settledDate, locale: locale)
+            )
         }
     }
 
@@ -105,7 +115,7 @@ private extension CampaignDetailInfoSection {
         if !campaign.notes.isEmpty {
             Text(campaign.notes)
                 .blTextStyle(.subhead)
-                .foregroundStyle(Color.blSecondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
         }
     }
 }

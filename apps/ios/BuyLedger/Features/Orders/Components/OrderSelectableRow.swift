@@ -13,17 +13,14 @@ struct OrderSelectableRow: View {
 
     // MARK: - Properties
 
-    /// 要呈現的訂單
-    let order: LedgerOrder
-
-    /// 目前外觀使用的色盤
-    let palette: BLPalette
+    /// 畫面的狀態與事件來源，由父層建立後傳入
+    @Bindable var store: StoreOf<OrderListFeature>
 
     /// 是否顯示訂購日期
     var isShowingDate: Bool = true
 
-    /// 畫面的狀態與事件來源，由父層建立後傳入
-    let store: StoreOf<OrderListFeature>
+    /// 要呈現的訂單
+    let order: LedgerOrder
 
     // MARK: - Body
 
@@ -48,7 +45,7 @@ private extension OrderSelectableRow {
         Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
             // 圖示維持一般字重，覆寫標題樣式預設的半粗體
             .font(BLTypographyStyle.title3.font.weight(.regular))
-            .foregroundStyle(isSelected ? palette.accent : palette.tertiaryLabel)
+            .foregroundStyle(isSelected ? .blAccent : .blTertiaryLabel)
             .accessibilityHidden(true)
     }
 
@@ -57,7 +54,7 @@ private extension OrderSelectableRow {
         HStack(spacing: BLSpacing.medium) {
             selectionIndicator
 
-            OrderRowView(order: order, isShowingDate: isShowingDate)
+            OrderRowView(isShowingDate: isShowingDate, order: order)
                 .accessibilityIdentifier(BLAccessibilityID.Orders.row(orderID: order.id))
         }
         .padding(.horizontal, BLSpacing.large)
@@ -81,11 +78,10 @@ private extension OrderSelectableRow {
 #Preview("可勾選訂單列") {
     List {
         OrderSelectableRow(
-            order: LedgerOrder.sampleOrders[0],
-            palette: BLPalette(),
             store: Store(initialState: OrderListFeature.State(orders: SharedReader(value: []))) {
                 OrderListFeature()
-            }
+            },
+            order: LedgerOrder.sampleOrders[0]
         )
     }
 }

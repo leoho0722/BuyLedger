@@ -11,7 +11,6 @@ import Testing
 @testable import BuyLedger
 
 /// 驗證分析歸屬計算
-@MainActor
 struct InsightsAttributionTests {
 
     /// 只計入被合併的原始訂單金額，排除新訂單與報價單

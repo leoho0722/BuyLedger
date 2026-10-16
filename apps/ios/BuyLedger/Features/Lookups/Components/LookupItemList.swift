@@ -12,7 +12,7 @@ struct LookupItemList: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 依名稱查詢付款方式分類
@@ -58,10 +58,8 @@ private extension LookupItemList {
     var loadFailureSection: some View {
         Section {
             Text(LocalizedStringKey("orders.lookup.message.masterDataLoaded"))
-                .foregroundStyle(palette.red)
-                .accessibilityIdentifier(
-                    BLAccessibilityID.LookupManagement.loadFailureMessage
-                )
+                .foregroundStyle(.blRed)
+                .accessibilityIdentifier(BLAccessibilityID.LookupManagement.loadFailureMessage)
         }
     }
 
@@ -76,45 +74,44 @@ private extension LookupItemList {
                 )
             } else {
                 ForEach(items, id: \.self) { item in
-                    LookupItemRow(
-                        classification: classificationForName(item),
-                        name: item
-                    )
-                    .accessibilityIdentifier(BLAccessibilityID.LookupManagement.row(item))
-                    .contextMenu {
-                        renameOrEditButton(for: item)
+                    LookupItemRow(classification: classificationForName(item), name: item)
+                        .accessibilityIdentifier(BLAccessibilityID.LookupManagement.row(item))
+                        .contextMenu {
+                            renameOrEditButton(for: item)
 
-                        Button(role: .destructive) {
-                            onDelete(item)
-                        } label: {
-                            Label("common.action.button.delete", systemImage: "trash")
+                            Button(role: .destructive) {
+                                onDelete(item)
+                            } label: {
+                                Label("common.action.button.delete", systemImage: "trash")
+                            }
+                            .accessibilityIdentifier(
+                                BLAccessibilityID.LookupManagement.deleteButton(item)
+                            )
                         }
-                        .accessibilityIdentifier(
-                            BLAccessibilityID.LookupManagement.deleteButton(item)
-                        )
-                    }
-                    .swipeActions(edge: .trailing) {
-                        Button(role: .destructive) {
-                            onDelete(item)
-                        } label: {
-                            Label("common.action.button.delete", systemImage: "trash")
-                        }
-                        .accessibilityIdentifier(
-                            BLAccessibilityID.LookupManagement.deleteButton(item)
-                        )
+                        .swipeActions(edge: .trailing) {
+                            Button(role: .destructive) {
+                                onDelete(item)
+                            } label: {
+                                Label("common.action.button.delete", systemImage: "trash")
+                            }
+                            .accessibilityIdentifier(
+                                BLAccessibilityID.LookupManagement.deleteButton(item)
+                            )
 
-                        renameOrEditButton(for: item)
-                            .tint(palette.orange)
-                    }
+                            renameOrEditButton(for: item)
+                                .tint(.blOrange)
+                        }
                 }
             }
         } header: {
-            Text(AppLanguage.format("orders.lookup.label.itemsCreated", items.count, locale: locale))
+            Text(
+                AppLanguage.format("orders.lookup.label.itemsCreated", items.count, locale: locale)
+            )
         } footer: {
             if kind == .paymentMethod {
                 Text("orders.lookup.message.paymentMethodGuide")
                     .blTextStyle(.footnote)
-                    .foregroundStyle(Color.blSecondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
             }
         }
     }
@@ -140,16 +137,6 @@ private extension LookupItemList {
             }
             .accessibilityIdentifier(BLAccessibilityID.LookupManagement.renameButton(item))
         }
-    }
-}
-
-// MARK: - Private Method
-
-private extension LookupItemList {
-
-    /// 目前畫面使用的色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 
@@ -202,7 +189,12 @@ private extension LookupItemList {
                 }
             },
             hasLoadFailed: false,
-            items: ["信用卡", "無卡分期", "orders.edit.label.bankTransfer", "orders.list.label.cashDelivery"],
+            items: [
+                "信用卡",
+                "無卡分期",
+                "orders.edit.label.bankTransfer",
+                "orders.list.label.cashDelivery",
+            ],
             kind: .paymentMethod
         ) { _ in
         } onEditPaymentMethod: { _ in

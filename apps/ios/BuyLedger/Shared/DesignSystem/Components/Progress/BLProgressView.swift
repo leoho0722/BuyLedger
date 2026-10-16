@@ -15,20 +15,20 @@ struct BLProgressView: View {
 
     // MARK: - Properties
 
-    /// 目前套用的 locale，用於格式化進度百分比
+    /// 目前套用的 `locale`，用於格式化進度百分比
     @Environment(\.locale) private var locale
-
-    /// 進度列左側顯示的標題
-    let title: String
-
-    /// 進度值，建議範圍為 `0...1`
-    let value: Double
 
     /// 可選的進度列色彩；未提供時使用主強調色
     var tint: Color? = nil
 
+    /// 進度列左側顯示的標題
+    let title: String
+
     /// 右側顯示文字；未提供時顯示百分比
     var trailingText: String? = nil
+
+    /// 進度值，建議範圍為 `0...1`
+    let value: Double
 
     // MARK: - Body
 
@@ -53,13 +53,13 @@ private extension BLProgressView {
         HStack {
             Text(LocalizedStringKey(title))
                 .font(BLTypographyStyle.caption.font.weight(.semibold))
-                .foregroundStyle(palette.label)
+                .foregroundStyle(.blLabel)
 
             Spacer()
 
             currentValueLabel(clampedValue: clampedValue)
                 .blTextStyle(.caption)
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
                 .monospacedDigit()
         }
     }
@@ -88,11 +88,6 @@ private extension BLProgressView {
 
 private extension BLProgressView {
 
-    /// 目前外觀對應的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
     /// 將進度限制在 `0...1`，讓進度條與右側文字使用同一數值
     var clampedValue: Double {
         min(max(value, 0), 1)
@@ -102,14 +97,12 @@ private extension BLProgressView {
 // MARK: - Preview
 
 #Preview("進度列") {
-    let palette = BLPalette()
-
     VStack(spacing: BLSpacing.large) {
         BLProgressView(title: "月預算", value: 0.42)
 
-        BLProgressView(title: "固定支出", value: 0.68, tint: palette.green)
+        BLProgressView(tint: .blGreen, title: "固定支出", value: 0.68)
 
-        BLProgressView(title: "超支警示", value: 0.91, tint: palette.orange)
+        BLProgressView(tint: .blOrange, title: "超支警示", value: 0.91)
     }
     .padding()
 }

@@ -12,7 +12,7 @@ struct InsightsCampaignProfitCard: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 點擊排行列的動作，帶開團名稱
@@ -44,7 +44,7 @@ private extension InsightsCampaignProfitCard {
     var title: some View {
         Text("insights.chart.label.campaignProfitRanking")
             .font(BLTypographyStyle.subhead.font.weight(.semibold))
-            .foregroundStyle(palette.label)
+            .foregroundStyle(.blLabel)
     }
 
     /// 每個開團一列可點擊的毛利進度
@@ -54,7 +54,7 @@ private extension InsightsCampaignProfitCard {
         }
     }
 
-    /// 單一開團的可點擊排行列
+    /// 組出單一開團的可點擊排行列
     ///
     /// - Parameter rank: 開團的毛利排行資料
     /// - Returns: 排行列
@@ -63,27 +63,25 @@ private extension InsightsCampaignProfitCard {
             onCampaignTapped(rank.campaignName)
         } label: {
             BLProgressView(
-                title: String(rank.rank) + ". " + rank.campaignName,
-                value: rank.ratio,
-                tint: palette.accent,
-                trailingText: CampaignFormatters.twd(rank.profit, locale: locale)
+                tint: .blAccent,
+                title: InsightsFormatters.rankTitle(rank: rank.rank, name: rank.campaignName),
+                trailingText: BLFormatters.twd(rank.profit, locale: locale),
+                value: rank.ratio
             )
             .contentShape(.rect)
         }
         .buttonStyle(.plain)
-        .accessibilityHint(Text(AppLanguage.format("insights.chart.accessibility.viewDetails", rank.campaignName, locale: locale)))
-        .accessibilityValue(Text(CampaignFormatters.twd(rank.profit, locale: locale)))
+        .accessibilityHint(
+            Text(
+                AppLanguage.format(
+                    "insights.chart.accessibility.viewDetails",
+                    rank.campaignName,
+                    locale: locale
+                )
+            )
+        )
+        .accessibilityValue(Text(BLFormatters.twd(rank.profit, locale: locale)))
         .accessibilityIdentifier(BLAccessibilityID.Insights.campaignRankRow(campaignID: rank.id))
-    }
-}
-
-// MARK: - Private Method
-
-private extension InsightsCampaignProfitCard {
-
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 

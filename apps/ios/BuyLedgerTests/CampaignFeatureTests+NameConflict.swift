@@ -18,6 +18,9 @@ extension CampaignFeatureTests {
     /// - Note: `testValue` 的 `campaignService.saveCampaign` 與
     ///   `calendarReminderService.requestAccess` 都是 `unimplemented`；重名時誤寫入或要求
     ///   行事曆權限會使測試失敗
+    ///
+    /// - Note: 表單已開啟提醒，若守門失效會觸發行事曆呼叫
+    /// - Note: 名稱前後空白不影響比對，去掉後與既有開團同名即為重名
     @Test
     func presentation_新增名稱與既有開團重複_拒絕寫入() async {
         // Given
@@ -30,11 +33,9 @@ extension CampaignFeatureTests {
         var editState = CampaignEditFeature.State(
             id: UUID(0),
             currentDate: TestDependencies.fixedNow,
-            // 開啟提醒；若守門失效應觸發行事曆呼叫
-            wantsReminder: true,
+            isReminderWanted: true,
             reminderTimestamp: TestDependencies.fixedNow
         )
-        // 前後空白不應影響比對：去掉前後空白後與既有開團同名
         editState.draft.name = "  母親節團  "
         var initial = CampaignFeature.State()
         initial.$campaigns.withLock {
@@ -69,7 +70,7 @@ extension CampaignFeatureTests {
         var editState = CampaignEditFeature.State(
             id: UUID(0),
             currentDate: TestDependencies.fixedNow,
-            wantsReminder: true,
+            isReminderWanted: true,
             reminderTimestamp: TestDependencies.fixedNow
         )
         editState.draft.name = "  母親節團  "
@@ -143,7 +144,7 @@ extension CampaignFeatureTests {
         var expectedEdit = CampaignEditFeature.State(
             id: UUID(0),
             currentDate: Date(timeIntervalSince1970: 1_777_507_200),
-            wantsReminder: true,
+            isReminderWanted: true,
             reminderTimestamp: Date(timeIntervalSince1970: 1_777_507_200)
         )
         expectedEdit.draft.name = "  母親節團  "

@@ -57,7 +57,7 @@ extension CampaignFeatureTests {
             original: scenario.original,
             id: UUID(0),
             currentDate: TestDependencies.fixedNow,
-            wantsReminder: true,
+            isReminderWanted: true,
             reminderTimestamp: scenario.reminderTimestamp
         )
         editState.draft.name = scenario.draftName
@@ -121,7 +121,7 @@ extension CampaignFeatureTests {
             original: campaign,
             id: UUID(0),
             currentDate: TestDependencies.fixedNow,
-            wantsReminder: false,
+            isReminderWanted: false,
             reminderTimestamp: timestamp
         )
         var initial = CampaignFeature.State()

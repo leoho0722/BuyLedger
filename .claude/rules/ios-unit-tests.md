@@ -92,7 +92,7 @@ paths:
 ## Snapshot 測試
 
 - **每個 snapshot 測試用 `TestDependencies.withFixedNow { ... }` 包住 view 建構與 `assertSnapshot`**，注入固定 `\.date`；測試內不直接呼叫 `Date()`。
-    - 畫面不讀時間時 (如開團列表)，改在建構 State 時帶入固定的 `dateContext`，不靠 `withFixedNow` 提供「現在」。
+    - 畫面不讀時間時 (如開團列表、首頁、分析頁)，改在建構 State 時帶入固定的 `dateContext`，不靠 `withFixedNow` 提供「現在」。
     - baseline 在 `BuyLedgerTests/__Snapshots__/<測試檔名>/`：目錄跟著呼叫 `assertSnapshot` 的測試檔名 (如 `SnapshotTests+Orders.swift` 對應 `SnapshotTests+Orders/`)；拆檔或搬移測試時基準圖要連同目錄一起搬、不重錄，沒跟著搬會被當成缺少基準圖。record 流程見 `apps/ios/README.md`。
     - 尺寸以各測試的 `.frame` 為準：iPhone 直向 393×852 (長頁面用 393×1800)、iPad 全螢幕寬版 1024×768、大尺寸 iPhone 橫向 956×440 (要露出下方卡片時只加高，如分析頁 956×1000)。
     - 依版面分類分流的畫面 (`OrdersView`、`DashboardView`、`InsightsView`) 連窄版 snapshot 也要同時注入 `.environment(\.horizontalSizeClass, …)` 與 `.environment(\.verticalSizeClass, …)`：iPhone 直向是水平 `.compact`、垂直 `.regular`，寬版是兩者都 `.regular`，iPhone 橫向是水平 `.regular`、垂直 `.compact`；只注入水平會落到 snapshot host 預設的垂直尺寸分類。

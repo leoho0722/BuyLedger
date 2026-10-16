@@ -13,7 +13,7 @@ struct LookupManagementView: View {
 
     // MARK: - Properties
 
-    /// 畫面的狀態與事件來源，由父層或 App 進入點建立後傳入
+    /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<LookupManagementFeature>
 
     // MARK: - Body
@@ -21,18 +21,18 @@ struct LookupManagementView: View {
     /// 顯示主檔清單與操作入口
     var body: some View {
         LookupItemList(
-            classificationForName: { name in
-                store.state.classification(for: name)
+            classificationForName: {
+                store.state.classification(for: $0)
             },
             hasLoadFailed: store.hasLoadFailed,
             items: store.items,
             kind: store.state.kind
-        ) { name in
-            store.send(.view(.deleteButtonTapped(name: name)))
-        } onEditPaymentMethod: { name in
-            store.send(.view(.editButtonTapped(name: name)))
-        } onRename: { name in
-            store.send(.view(.renameButtonTapped(name: name)))
+        ) {
+            store.send(.view(.deleteButtonTapped(name: $0)))
+        } onEditPaymentMethod: {
+            store.send(.view(.editButtonTapped(name: $0)))
+        } onRename: {
+            store.send(.view(.renameButtonTapped(name: $0)))
         }
         .task {
             await store.send(.view(.task)).finish()
@@ -48,23 +48,20 @@ struct LookupManagementView: View {
         .sheet(
             item: $store.scope(state: \.$destination, action: \.destination).add,
             onDismiss: sendFormSheetDismissed
-        ) { addStore in
-            addSheet(store: addStore)
+        ) {
+            addSheet(store: $0)
         }
         .sheet(
             item: $store.scope(state: \.$destination, action: \.destination).rename,
             onDismiss: sendFormSheetDismissed
-        ) { renameStore in
-            renameSheet(store: renameStore)
+        ) {
+            renameSheet(store: $0)
         }
         .sheet(
-            item: $store.scope(
-                state: \.$destination,
-                action: \.destination
-            ).editPaymentMethod,
+            item: $store.scope(state: \.$destination, action: \.destination).editPaymentMethod,
             onDismiss: sendFormSheetDismissed
-        ) { editStore in
-            paymentMethodEditSheet(store: editStore)
+        ) {
+            paymentMethodEditSheet(store: $0)
         }
         .alert($store.scope(state: \.$destination, action: \.destination).alert)
     }
@@ -80,10 +77,7 @@ private extension LookupManagementView {
             store.send(.view(.addButtonTapped))
         } label: {
             // icon-only 只留 +，完整標題留作無障礙標籤、新增流程標題仍顯示於 sheet
-            Label(
-                LocalizedStringKey(store.state.kind.addButtonTitle),
-                systemImage: "plus"
-            )
+            Label(LocalizedStringKey(store.state.kind.addButtonTitle), systemImage: "plus")
         }
         .labelStyle(.iconOnly)
         .accessibilityIdentifier(BLAccessibilityID.LookupManagement.addButton)
@@ -121,8 +115,8 @@ private extension LookupManagementView {
                 message: store.state.kind.addFormMessage,
                 namePlaceholder: store.state.kind.nameFieldPlaceholder,
                 submitTitle: "orders.list.button.add"
-            ) { name in
-                addStore.send(.view(.saveButtonTapped(name: name, flags: .none)))
+            ) {
+                addStore.send(.view(.saveButtonTapped(name: $0, flags: .none)))
             }
         }
     }
@@ -138,8 +132,8 @@ private extension LookupManagementView {
             namePlaceholder: store.state.kind.nameFieldPlaceholder,
             submitTitle: "orders.edit.button.save",
             initialName: renameStore.state.originalName
-        ) { name in
-            renameStore.send(.view(.saveButtonTapped(name: name)))
+        ) {
+            renameStore.send(.view(.saveButtonTapped(name: $0)))
         }
     }
 
@@ -154,9 +148,9 @@ private extension LookupManagementView {
             namePlaceholder: store.state.kind.nameFieldPlaceholder,
             submitTitle: "orders.edit.button.save",
             initialName: editStore.state.originalName,
-            initialIsCardless: editStore.state.flags.isCardless,
-            initialIsBankTransfer: editStore.state.flags.isBankTransfer,
-            initialIsCashOnDelivery: editStore.state.flags.isCashOnDelivery
+            isInitialCardless: editStore.state.flags.isCardless,
+            isInitialBankTransfer: editStore.state.flags.isBankTransfer,
+            isInitialCashOnDelivery: editStore.state.flags.isCashOnDelivery
         ) { name, isCardless, isBankTransfer, isCashOnDelivery in
             editStore.send(
                 .view(
@@ -203,7 +197,7 @@ private extension LookupManagementView {
         }
     }
 
-    /// 表單 sheet 關閉動畫結束後通知 Feature，讓暫存的提示接著顯示
+    /// 通知 Feature 表單 sheet 關閉動畫已結束，讓暫存的提示接著顯示
     func sendFormSheetDismissed() {
         store.send(.view(.formSheetDismissed))
     }
@@ -216,7 +210,9 @@ private extension LookupManagementView {
         LookupManagementView(
             store: {
                 var state = LookupManagementFeature.State(kind: .category)
-                state.$catalog.withLock { $0.categories = ["服飾", "美妝", "精品"] }
+                state.$catalog.withLock {
+                    $0.categories = ["服飾", "美妝", "精品"]
+                }
                 state.hasLoaded = true
                 return Store(initialState: state) {
                     LookupManagementFeature()
@@ -231,8 +227,8 @@ private extension LookupManagementView {
         LookupManagementView(
             store: {
                 var state = LookupManagementFeature.State(kind: .paymentMethod)
-                state.$catalog.withLock { catalog in
-                    catalog.paymentMethods = [
+                state.$catalog.withLock {
+                    $0.paymentMethods = [
                         PaymentMethodInfo(
                             name: "信用卡",
                             isCardless: false,
@@ -273,7 +269,9 @@ private extension LookupManagementView {
         LookupManagementView(
             store: {
                 var state = LookupManagementFeature.State(kind: .category)
-                state.$catalog.withLock { $0.categories = [] }
+                state.$catalog.withLock {
+                    $0.categories = []
+                }
                 state.hasLoaded = true
                 return Store(initialState: state) {
                     LookupManagementFeature()
@@ -288,7 +286,9 @@ private extension LookupManagementView {
         LookupManagementView(
             store: {
                 var state = LookupManagementFeature.State(kind: .category)
-                state.$catalog.withLock { $0.categories = [] }
+                state.$catalog.withLock {
+                    $0.categories = []
+                }
                 state.hasLoadFailed = true
                 state.hasLoaded = true
                 return Store(initialState: state) {

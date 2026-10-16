@@ -16,14 +16,8 @@ struct InsightsView: View {
     /// 目前版面分類，用來區分卡片上下堆疊的窄版與並列的寬版
     @Environment(\.blLayoutClass) private var layoutClass
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
-
-    /// 趨勢與熱力圖使用的行事曆
-    @Dependency(\.calendar) private var calendar
-
-    /// 用來計算趨勢期間與熱力圖的「現在」時間；測試可注入固定值
-    @Dependency(\.date) private var date
 
     /// 骨架中期間選擇器的高度，隨字級縮放
     @ScaledMetric private var rangePlaceholderHeight: CGFloat = 32
@@ -42,12 +36,12 @@ struct InsightsView: View {
 
     // MARK: - Body
 
-    /// 畫面骨架：導覽堆疊內顯示依載入狀態切換的主體，出現時載入資料，標題為「分析」
+    /// 畫面骨架：導覽堆疊內顯示依畫面狀態切換的主體，出現時載入資料，標題為「分析」
     var body: some View {
         NavigationStack {
             content
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(palette.background)
+                .background(.blBackground)
                 .task {
                     await store.send(.view(.task)).finish()
                 }
@@ -73,28 +67,13 @@ private extension InsightsView {
         .accessibilityIdentifier(BLAccessibilityID.Insights.rangePicker)
     }
 
-    /// 有訂單資料時的完整分析內容：期間選擇器與各張分析卡片
-    @ViewBuilder
-    var analyticsContent: some View {
-        let stats = InsightsStats(
-            orders: store.orders,
-            range: store.insightsDateRange,
-            referenceDate: date(),
-            calendar: calendar,
-            locale: locale,
-            palette: palette
-        )
-        // 每次 render 各計算一次排行與熱力圖
-        let campaignRanks = InsightsStats.campaignProfitRanking(
-            campaigns: store.campaigns,
-            orders: store.orders
-        )
-        let heatmapCells = InsightsStats.computeHeatmap(
-            orders: store.orders,
-            referenceDate: date(),
-            calendar: calendar
-        )
-
+    /// 組出有分析資料時的完整內容：期間選擇器與各張分析卡片
+    ///
+    /// - Parameters:
+    ///   - stats: 依記錄的日期脈絡計算的分析統計
+    ///   - heatmap: 依記錄的日期脈絡計算的下單熱力圖
+    /// - Returns: 可捲動的分析內容
+    func analyticsContent(stats: InsightsStats, heatmap: InsightsHeatmap) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 rangePicker
@@ -103,9 +82,9 @@ private extension InsightsView {
 
                 breakdownGrid(stats: stats)
 
-                campaignProfitCard(ranks: campaignRanks)
+                campaignProfitCard(ranks: store.campaignRanks)
 
-                InsightsHeatmapCard(cells: heatmapCells, weekdayLabels: weekdayLabels)
+                InsightsHeatmapCard(heatmap: heatmap, weekdayLabels: weekdayLabels)
             }
             .padding(.horizontal, BLSpacing.large)
             .padding(.vertical, BLSpacing.large)
@@ -125,21 +104,21 @@ private extension InsightsView {
         .accessibilityIdentifier(BLAccessibilityID.Insights.emptyState)
     }
 
-    /// 首次載入訂單前顯示的骨架
+    /// 載入中或尚未記錄日期時顯示的骨架
     var loadingPlaceholder: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous)
                     .frame(height: rangePlaceholderHeight)
-                    .foregroundStyle(palette.fillQuaternary)
+                    .foregroundStyle(.blFillQuaternary)
 
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                     .frame(height: trendPlaceholderHeight)
-                    .foregroundStyle(palette.fillTertiary)
+                    .foregroundStyle(.blFillTertiary)
 
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
                     .frame(height: rankingPlaceholderHeight)
-                    .foregroundStyle(palette.fillQuaternary)
+                    .foregroundStyle(.blFillQuaternary)
             }
             .padding(.horizontal, BLSpacing.large)
             .padding(.vertical, BLSpacing.large)
@@ -153,16 +132,12 @@ private extension InsightsView {
         .accessibilityIdentifier(BLAccessibilityID.Common.loading("insights"))
     }
 
-    /// 依載入狀態切換的畫面主體：分析內容、空狀態、載入失敗或載入骨架
+    /// 依畫面狀態切換的主體：載入骨架、載入失敗、空狀態或分析內容，狀態只讀一次
     var content: some View {
         Group {
-            switch store.loadState {
-            case .loaded:
-                if store.orders.isEmpty {
-                    emptyState
-                } else {
-                    analyticsContent
-                }
+            switch store.screenState {
+            case .loading:
+                loadingPlaceholder
 
             case .failed(let message):
                 BLLoadFailureView(
@@ -173,28 +148,33 @@ private extension InsightsView {
                 }
                 .accessibilityIdentifier(BLAccessibilityID.Common.loadFailure("insights"))
 
-            case .loading:
-                loadingPlaceholder
+            case .empty:
+                emptyState
+
+            case .analytics(let stats, let heatmap):
+                analyticsContent(stats: stats, heatmap: heatmap)
             }
         }
     }
 
-    /// 走勢卡，顯示目前選取期間的淨獲利與成長率
+    /// 組出走勢卡，顯示目前選取期間的淨獲利與成長率
     ///
     /// - Parameter stats: 已計算的分析資料
     /// - Returns: 走勢卡
     func trendCard(stats: InsightsStats) -> some View {
         InsightsTrendCard(
-            bars: stats.trendBars,
-            delta: stats.trendDelta,
+            bars: InsightsFormatters.trendBars(stats.trendBuckets, locale: locale),
+            delta: LocalizedStringKey(
+                InsightsFormatters.trendDelta(stats.trendRatio, locale: locale)
+            ),
             language: language,
             range: store.insightsDateRange,
             totalProfit: stats.totalProfit,
-            trend: trend(from: stats.trendDeltaIsPositive)
+            trend: BLTrend(delta: stats.trendRatio)
         )
     }
 
-    /// 類別排行與成本結構兩張卡：寬版並列，窄版上下堆疊
+    /// 組出類別排行與成本結構兩張卡：寬版並列，窄版上下堆疊
     ///
     /// - Parameter stats: 已計算的分析資料
     /// - Returns: 兩張卡的排列
@@ -217,7 +197,7 @@ private extension InsightsView {
         }
     }
 
-    /// 類別排行卡，點擊一列會要求查看該類別的訂單
+    /// 組出類別排行卡，點擊一列會要求查看該類別的訂單
     ///
     /// - Parameter stats: 已計算的分析資料
     /// - Returns: 類別排行卡
@@ -227,7 +207,7 @@ private extension InsightsView {
         }
     }
 
-    /// 成本結構卡，以圈狀圖與圖例呈現各項成本占總成本的比例
+    /// 組出成本結構卡，以圈狀圖與圖例呈現各項成本占總成本的比例
     ///
     /// - Parameter stats: 已計算的分析資料
     /// - Returns: 圈狀圖加圖例的成本結構卡
@@ -239,9 +219,9 @@ private extension InsightsView {
         )
     }
 
-    /// 每團毛利排行卡；沒有可排行的開團時隱藏，點擊一列會要求查看該開團
+    /// 組出每團毛利排行卡；沒有可排行的開團時隱藏，點擊一列會要求查看該開團
     ///
-    /// - Parameter ranks: 由 ``analyticsContent`` 一次算好的開團毛利排行
+    /// - Parameter ranks: 依開團與訂單算出的每團毛利排行
     /// - Returns: 開團毛利排行卡，無資料時為空
     @ViewBuilder
     func campaignProfitCard(ranks: [CampaignProfitRank]) -> some View {
@@ -260,41 +240,17 @@ private extension InsightsView {
 
 private extension InsightsView {
 
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
     /// 是否使用寬版面 (並列兩張卡，版面分類為 `regular`)
     var shouldUseWideLayout: Bool {
         layoutClass == .regular
     }
 
-    /// 依 App 選定 locale 顯示在熱力圖左側的星期縮寫，0 為週一、6 為週日
+    /// 熱力圖左側的星期縮寫，依記錄的行事曆與 App 選定的 `locale` 排列；尚未記錄日期時為空陣列
     var weekdayLabels: [String] {
-        var localizedCalendar = Calendar.current
-        localizedCalendar.locale = locale
-        let symbols = localizedCalendar.veryShortStandaloneWeekdaySymbols
-        return (0..<7).map {
-            symbols[($0 + 1) % symbols.count]
+        guard let calendar = store.dateContext?.calendar else {
+            return []
         }
-    }
-
-    /// 把成長率方向旗標轉成走勢卡使用的三態方向
-    ///
-    /// - Parameter isPositive: 成長率方向；`nil` 表示沒有比較值
-    /// - Returns: 上升、下降或沒有比較值
-    func trend(from isPositive: Bool?) -> InsightsTrendCard.Trend {
-        switch isPositive {
-        case .some(true):
-            .up
-
-        case .some(false):
-            .down
-
-        case nil:
-            .unavailable
-        }
+        return InsightsFormatters.weekdayLabels(calendar: calendar, locale: locale)
     }
 }
 
@@ -305,6 +261,10 @@ private extension InsightsView {
         var state = InsightsFeature.State()
         state.orders = LedgerOrder.sampleOrders
         state.loadState = .loaded
+        state.dateContext = InsightsDateContext(
+            now: LedgerOrder.sampleOrders[0].date,
+            calendar: Calendar(identifier: .gregorian)
+        )
         return state
     }()
 

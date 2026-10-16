@@ -36,49 +36,39 @@ private extension OrderDetailCardlessView {
             VStack(alignment: .leading, spacing: BLSpacing.small) {
                 Text("orders.detail.label.cardlessDetails")
                     .font(BLTypographyStyle.footnote.font.weight(.semibold))
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
                     .textCase(.uppercase)
 
                 HStack {
                     Text("orders.detail.label.cardlessDeduction")
                         .blTextStyle(.subhead)
-                        .foregroundStyle(palette.label)
+                        .foregroundStyle(.blLabel)
 
                     Spacer()
 
                     Text(OrderFormatters.minusTWD(order.cardlessDeductionAmount, locale: locale))
                         .font(BLTypographyStyle.subhead.font.weight(.semibold))
                         .monospacedDigit()
-                        .foregroundStyle(palette.red)
+                        .foregroundStyle(.blRed)
                 }
                 .accessibilityElement(children: .combine)
 
                 HStack {
                     Text("orders.detail.label.cardlessTopup")
                         .blTextStyle(.subhead)
-                        .foregroundStyle(palette.label)
+                        .foregroundStyle(.blLabel)
 
                     Spacer()
 
                     Text(OrderFormatters.plusTWD(order.cardlessSupplementAmount, locale: locale))
                         .font(BLTypographyStyle.subhead.font.weight(.semibold))
                         .monospacedDigit()
-                        .foregroundStyle(palette.green)
+                        .foregroundStyle(.blGreen)
                 }
                 .accessibilityElement(children: .combine)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-}
-
-// MARK: - Private Method
-
-private extension OrderDetailCardlessView {
-
-    /// 無卡明細使用的目前外觀色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 

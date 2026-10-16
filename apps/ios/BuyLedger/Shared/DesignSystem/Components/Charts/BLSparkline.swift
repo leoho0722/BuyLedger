@@ -20,24 +20,29 @@ struct BLSparkline: View {
     var tint: Color? = nil
 
     /// 走勢圖高度
-    var height: CGFloat = 40
+    @ScaledMetric var height: CGFloat = 40
+
+    /// 圖表無障礙描述的 X 軸標題；預設為本地化 key 字串；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
+    var axisXTitle: String = "orders.list.label.sequence"
+
+    /// 圖表無障礙描述的 Y 軸標題；預設為本地化 key 字串；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
+    var axisYTitle: String = "orders.detail.label.value"
+
+    /// 圖表資料序列名稱；預設為本地化 key 字串；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
+    var seriesName: String = "dashboard.overview.label.trendChart"
 
     /// 供輔助技術朗讀的趨勢摘要
     var summary: LocalizedStringKey? = nil
 
-    /// 圖表無障礙描述 (`AXChartDescriptor`) 的 X 軸標題；預設正體中文字面值
-    var axisXTitle: String = "orders.list.label.sequence"
-
-    /// 圖表無障礙描述的 Y 軸標題；預設正體中文字面值，說明同 ``axisXTitle``
-    var axisYTitle: String = "orders.detail.label.value"
-
-    /// 圖表資料序列名稱
-    var seriesName: String = "dashboard.overview.label.trendChart"
-
     /// X 軸資料點的朗讀文字
+    ///
     /// - Parameter ordinal: 該資料點在序列中的順位 (1-based)
-    var pointOrdinalDescription: (_ ordinal: Int) -> String = { ordinal in
-        AppLanguage.traditionalChinese.localizedString(forKey: "common.general.label.pointLd", ordinal)
+    /// - Returns: 該資料點的朗讀文字
+    var pointOrdinalDescription: (_ ordinal: Int) -> String = {
+        AppLanguage.traditionalChinese.localizedString(forKey: "common.general.label.pointLd", $0)
     }
 
     // MARK: - Body
@@ -68,12 +73,15 @@ private extension BLSparkline {
     /// 走勢圖的面積與折線內容
     @ViewBuilder
     var sparklineContent: some View {
-        GeometryReader { proxy in
-            sparkline(in: proxy.size)
+        GeometryReader {
+            sparkline(in: $0.size)
         }
     }
 
     /// 依繪製尺寸產生走勢圖面積與折線
+    ///
+    /// - Parameter size: 走勢圖的繪製尺寸
+    /// - Returns: 面積與折線疊合的走勢圖內容
     @ViewBuilder
     func sparkline(in size: CGSize) -> some View {
         let points = points(in: size)
@@ -84,8 +92,8 @@ private extension BLSparkline {
                     return
                 }
                 path.move(to: CGPoint(x: first.x, y: size.height))
-                points.forEach { point in
-                    path.addLine(to: point)
+                points.forEach {
+                    path.addLine(to: $0)
                 }
                 if let last = points.last {
                     path.addLine(to: CGPoint(x: last.x, y: size.height))
@@ -99,17 +107,13 @@ private extension BLSparkline {
                     return
                 }
                 path.move(to: first)
-                points.dropFirst().forEach { point in
-                    path.addLine(to: point)
+                points.dropFirst().forEach {
+                    path.addLine(to: $0)
                 }
             }
             .stroke(
                 lineColor,
-                style: StrokeStyle(
-                    lineWidth: 1.6,
-                    lineCap: .round,
-                    lineJoin: .round
-                )
+                style: StrokeStyle(lineWidth: 1.6, lineCap: .round, lineJoin: .round)
             )
         }
     }
@@ -121,8 +125,6 @@ private extension BLSparkline {
 
     /// 走勢圖的輔助技術描述
     struct ChartAccessibilityDescriptor: AXChartDescriptorRepresentable {
-
-        // MARK: - Properties
 
         /// 對應圖表目前呈現的數值 (依繪製順序)
         let data: [Double]
@@ -137,10 +139,13 @@ private extension BLSparkline {
         let seriesName: String
 
         /// 單一資料點的朗讀描述
+        ///
+        /// - Parameter ordinal: 該資料點在序列中的順位 (1-based)
         /// - Returns: 該資料點的朗讀文字
         let pointOrdinalDescription: (Int) -> String
 
         /// 建立目前資料的輔助技術圖表描述
+        ///
         /// - Returns: 供輔助技術使用的圖表描述
         func makeChartDescriptor() -> AXChartDescriptor {
             let lastIndex = Double(max(data.count - 1, 0))
@@ -173,6 +178,7 @@ private extension BLSparkline {
         }
 
         /// 更新既有輔助技術圖表描述的資料序列
+        ///
         /// - Parameter descriptor: 要更新的圖表描述
         func updateChartDescriptor(_ descriptor: AXChartDescriptor) {
             descriptor.series = makeChartDescriptor().series
@@ -180,14 +186,9 @@ private extension BLSparkline {
     }
 }
 
-// MARK: - Computed Properties
+// MARK: - Private Method
 
 private extension BLSparkline {
-
-    /// 目前外觀對應的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
 
     /// 供輔助技術讀取的趨勢摘要文字
     var accessibilityText: Text {
@@ -199,15 +200,11 @@ private extension BLSparkline {
 
     /// 走勢圖使用的線條色彩
     var lineColor: Color {
-        tint ?? palette.green
+        tint ?? .blGreen
     }
-}
-
-// MARK: - Private Method
-
-private extension BLSparkline {
 
     /// 將資料轉換成繪製路徑使用的座標點
+    ///
     /// - Parameter size: 圖表可用繪製尺寸
     /// - Returns: 對應到目前尺寸的座標點集合
     func points(in size: CGSize) -> [CGPoint] {

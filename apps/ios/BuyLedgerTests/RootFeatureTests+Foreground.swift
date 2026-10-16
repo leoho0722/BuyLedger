@@ -19,6 +19,14 @@ extension RootFeatureTests {
         // Given
         var initial = RootFeature.State(appVersion: "1.7.0 (312)")
         initial.more.showSettings()
+        initial.dashboard.dateContext = DashboardDateContext(
+            now: Date(timeIntervalSince1970: 1_777_420_800), // 2026-04-29 00:00 UTC
+            calendar: Self.makeStaleCalendar()
+        )
+        initial.insights.dateContext = InsightsDateContext(
+            now: Date(timeIntervalSince1970: 1_777_420_800), // 2026-04-29 00:00 UTC
+            calendar: Self.makeStaleCalendar()
+        )
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
@@ -42,6 +50,14 @@ extension RootFeatureTests {
                 calendar: TestDependencies.fixedCalendar
             )
             $0.orders.list.dateContext = OrderDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+            $0.dashboard.dateContext = DashboardDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+            $0.insights.dateContext = InsightsDateContext(
                 now: TestDependencies.fixedNow,
                 calendar: TestDependencies.fixedCalendar
             )
@@ -92,6 +108,8 @@ extension RootFeatureTests {
         await store.receive(\.appLock.delegate.didBecomeActive) {
             $0.campaigns.list.dateContext = CampaignDateContext(now: nextDay, calendar: calendar)
             $0.orders.list.dateContext = OrderDateContext(now: nextDay, calendar: calendar)
+            $0.dashboard.dateContext = DashboardDateContext(now: nextDay, calendar: calendar)
+            $0.insights.dateContext = InsightsDateContext(now: nextDay, calendar: calendar)
         }
         await store.finish()
         let context = try #require(store.state.campaigns.list.dateContext)
@@ -153,6 +171,8 @@ extension RootFeatureTests {
         await store.receive(\.launch.delegate.significantTimeChanged) {
             $0.campaigns.list.dateContext = CampaignDateContext(now: midnight, calendar: calendar)
             $0.orders.list.dateContext = OrderDateContext(now: midnight, calendar: calendar)
+            $0.dashboard.dateContext = DashboardDateContext(now: midnight, calendar: calendar)
+            $0.insights.dateContext = InsightsDateContext(now: midnight, calendar: calendar)
         }
         await store.finish()
         let context = try #require(store.state.campaigns.list.dateContext)

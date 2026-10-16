@@ -14,34 +14,36 @@ struct BLBarChart: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 長條圖要呈現的資料
     let data: [BLBarChartValue]
 
     /// 圖表高度
-    var height: CGFloat = 180
+    @ScaledMetric var height: CGFloat = 180
+
+    /// 圖表無障礙描述的 X 軸標題；預設為本地化 key 字串；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
+    var axisXTitle: String = "orders.list.label.text"
+
+    /// 圖表無障礙描述的 Y 軸標題；預設為本地化 key 字串；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
+    var axisYTitle: String = "orders.detail.label.value"
 
     /// 是否啟用水平捲動；預設關閉
     var isScrollEnabled: Bool = false
 
-    /// 圖表無障礙描述 (`AXChartDescriptor`) 的 X 軸標題；預設正體中文字面值
-    var axisXTitle: String = "orders.list.label.text"
-
-    /// 圖表無障礙描述的 Y 軸標題；預設正體中文字面值，
-    /// 說明同 ``axisXTitle``
-    var axisYTitle: String = "orders.detail.label.value"
-
-    /// 圖表資料序列名稱
+    /// 圖表資料序列名稱；預設為本地化 key 字串；
+    /// `AXChartDescriptor` 不會翻譯，呼叫端應傳入已本地化的字串
     var seriesName: String = "insights.chart.label.barChart"
 
     // MARK: - Body
 
     /// 長條圖的畫面內容
     var body: some View {
-        GeometryReader { proxy in
-            chart(palette: palette, viewportWidth: proxy.size.width)
+        GeometryReader {
+            chart(viewportWidth: $0.size.width)
         }
         .frame(height: height)
     }
@@ -52,12 +54,11 @@ struct BLBarChart: View {
 private extension BLBarChart {
 
     /// 依可用寬度繪製長條圖，必要時允許水平捲動
-    /// - Parameters:
-    ///   - palette: 目前外觀使用的色盤
-    ///   - viewportWidth: `GeometryReader` 量到的可用寬度
+    ///
+    /// - Parameter viewportWidth: `GeometryReader` 量到的可用寬度
     /// - Returns: 依可用寬度組合出的長條圖內容
     @ViewBuilder
-    func chart(palette: BLPalette, viewportWidth: CGFloat) -> some View {
+    func chart(viewportWidth: CGFloat) -> some View {
         let total = data.count
         let visibleCount = visibleBarCount(total: total, viewportWidth: viewportWidth)
 
@@ -66,44 +67,40 @@ private extension BLBarChart {
             let contentWidth = viewportWidth * CGFloat(total) / CGFloat(visibleCount)
 
             ScrollView(.horizontal, showsIndicators: false) {
-                barChart(palette: palette, renderWidth: contentWidth)
+                barChart(renderWidth: contentWidth)
                     .frame(width: contentWidth)
             }
             .defaultScrollAnchor(.trailing)
         } else {
-            barChart(palette: palette, renderWidth: viewportWidth)
+            barChart(renderWidth: viewportWidth)
         }
     }
 
     /// 建構長條圖本體；X 軸標籤依 `renderWidth` 抽稀，只在會重疊時稀疏
-    /// - Parameters:
-    ///   - palette: 目前外觀使用的色盤
-    ///   - renderWidth: 圖表實際繪製寬度 (捲動時為內容寬度，否則為視窗寬度)
-    /// - Returns: 依繪製寬度組合出的 Chart
+    ///
+    /// - Parameter renderWidth: 圖表實際繪製寬度 (捲動時為內容寬度，否則為視窗寬度)
+    /// - Returns: 依繪製寬度組合出的 `Chart`
     @ViewBuilder
-    func barChart(palette: BLPalette, renderWidth: CGFloat) -> some View {
-        let axisLabels = stridedLabels(renderWidth: renderWidth)
+    func barChart(renderWidth: CGFloat) -> some View {
+        let axisLabels = Layout.stridedLabels(data: data, renderWidth: renderWidth)
 
         Chart(Array(data.enumerated()), id: \.offset) { _, item in
-            BarMark(
-                x: .value(axisXTitle, item.label),
-                y: .value(axisYTitle, item.value)
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
-            .foregroundStyle(palette.accent.gradient)
-            .accessibilityLabel(item.label)
-            .accessibilityValue(item.valueDescription)
+            BarMark(x: .value(axisXTitle, item.label), y: .value(axisYTitle, item.value))
+                .clipShape(RoundedRectangle(cornerRadius: 4, style: .continuous))
+                .foregroundStyle(.blAccent.gradient)
+                .accessibilityLabel(item.label)
+                .accessibilityValue(item.valueDescription)
         }
         .chartYAxis(.hidden)
         .chartXAxis {
             AxisMarks(values: axisLabels) { _ in
                 AxisValueLabel()
-                    .foregroundStyle(palette.secondaryLabel)
-                    // AxisValueLabel 不是 View，改用純 Font
+                    .foregroundStyle(.blSecondaryLabel)
+                    // `AxisValueLabel` 不是 `View`，改用純 `Font`
                     .font(BLTypographyStyle.caption2.font)
             }
         }
-        .accessibilityLabel(Text(accessibilitySummary))
+        .accessibilityLabel(Text(ChartAccessibilityDescriptor.summary(for: data, locale: locale)))
         .accessibilityChartDescriptor(
             ChartAccessibilityDescriptor(
                 data: data,
@@ -120,9 +117,7 @@ private extension BLBarChart {
 private extension BLBarChart {
 
     /// 長條圖的版面常數與標籤抽稀演算法
-    private enum Layout {
-
-        // MARK: - Properties
+    enum Layout {
 
         /// X 軸標籤的最小間距
         static let minLabelSpacing: CGFloat = 28
@@ -130,17 +125,13 @@ private extension BLBarChart {
         /// 啟用捲動時的單一長條最小寬度
         static let minBarWidth: CGFloat = 44
 
-        // MARK: - Internal Method
-
         /// 依繪製寬度計算 X 軸標籤
+        ///
         /// - Parameters:
         ///   - data: 長條圖資料
         ///   - renderWidth: 圖表實際繪製寬度
         /// - Returns: 要繪製的標籤子集；資料為空時回傳空陣列
-        static func stridedLabels(
-            data: [BLBarChartValue],
-            renderWidth: CGFloat
-        ) -> [String] {
+        static func stridedLabels(data: [BLBarChartValue], renderWidth: CGFloat) -> [String] {
             let total = data.count
             guard total > 0 else {
                 return []
@@ -165,8 +156,6 @@ private extension BLBarChart {
     /// 長條圖的輔助技術描述
     struct ChartAccessibilityDescriptor: AXChartDescriptorRepresentable {
 
-        // MARK: - Properties
-
         /// 對應圖表目前呈現的資料
         let data: [BLBarChartValue]
 
@@ -179,7 +168,35 @@ private extension BLBarChart {
         /// 資料序列名稱
         let seriesName: String
 
+        /// 建立圖表層級的輔助技術摘要
+        ///
+        /// - Parameters:
+        ///   - data: 長條圖資料
+        ///   - locale: 目前的 `Locale`
+        /// - Returns: 供輔助技術朗讀的摘要
+        static func summary(
+            for data: [BLBarChartValue],
+            locale: Locale = .current
+        ) -> LocalizedStringKey {
+            guard let highest = data.max(by: { left, right in left.value < right.value }),
+                  let lowest = data.min(by: { left, right in left.value < right.value }) else {
+                return "common.ui.label.barChartData"
+            }
+            return LocalizedStringKey(
+                AppLanguage.format(
+                    "common.ui.accessibility.barChartSummary",
+                    data.count,
+                    highest.label,
+                    highest.valueDescription,
+                    lowest.label,
+                    lowest.valueDescription,
+                    locale: locale
+                )
+            )
+        }
+
         /// 建立目前資料的輔助技術圖表描述
+        ///
         /// - Returns: 供輔助技術使用的圖表描述
         func makeChartDescriptor() -> AXChartDescriptor {
             let values = data.map(\.value)
@@ -196,8 +213,8 @@ private extension BLBarChart {
             let series = AXDataSeriesDescriptor(
                 name: seriesName,
                 isContinuous: false,
-                dataPoints: data.map { item in
-                    AXDataPoint(x: item.label, y: item.value, label: item.valueDescription)
+                dataPoints: data.map {
+                    AXDataPoint(x: $0.label, y: $0.value, label: $0.valueDescription)
                 }
             )
             return AXChartDescriptor(
@@ -210,34 +227,11 @@ private extension BLBarChart {
         }
 
         /// 更新既有輔助技術圖表描述的資料序列
+        ///
         /// - Parameter descriptor: 要更新的圖表描述
         func updateChartDescriptor(_ descriptor: AXChartDescriptor) {
             descriptor.series = makeChartDescriptor().series
         }
-
-        /// 建立圖表層級的輔助技術摘要
-        /// - Parameters:
-        ///   - data: 長條圖資料
-        ///   - locale: 目前的 Locale
-        /// - Returns: 供輔助技術朗讀的摘要
-        static func summary(for data: [BLBarChartValue], locale: Locale = .current) -> LocalizedStringKey {
-            guard let highest = data.max(by: { left, right in left.value < right.value }),
-                  let lowest = data.min(by: { left, right in left.value < right.value })
-            else {
-                return "common.ui.label.barChartData"
-            }
-            return LocalizedStringKey(AppLanguage.format("common.ui.accessibility.barChartSummary", data.count, highest.label, highest.valueDescription, lowest.label, lowest.valueDescription, locale: locale))
-        }
-    }
-}
-
-// MARK: - Computed Properties
-
-private extension BLBarChart {
-
-    /// 目前外觀對應的色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 
@@ -245,12 +239,8 @@ private extension BLBarChart {
 
 private extension BLBarChart {
 
-    /// 圖表層級摘要
-    var accessibilitySummary: LocalizedStringKey {
-        ChartAccessibilityDescriptor.summary(for: data, locale: locale)
-    }
-
     /// 計算一個視窗內可容納的長條數 (用來決定捲動時的內容寬度)
+    ///
     /// - Parameters:
     ///   - total: 資料總筆數
     ///   - viewportWidth: 可用寬度
@@ -261,16 +251,6 @@ private extension BLBarChart {
         }
         let capacity = max(1, Int(viewportWidth / Layout.minBarWidth))
         return min(total, capacity)
-    }
-
-    /// 依繪製寬度計算 X 軸標籤
-    /// - Parameter renderWidth: 圖表實際繪製寬度
-    /// - Returns: 要繪製標籤的標籤子集；資料為空時回傳空陣列
-    func stridedLabels(renderWidth: CGFloat) -> [String] {
-        Layout.stridedLabels(
-            data: data,
-            renderWidth: renderWidth
-        )
     }
 }
 
@@ -291,7 +271,7 @@ private extension BLBarChart {
 #Preview("30 天逐日 (可捲動)") {
     let calendar = Calendar(identifier: .gregorian)
     let base = Date(timeIntervalSince1970: 1_777_500_000)
-    let data = (0..<30).reversed().compactMap { offset -> BLBarChartValue? in
+    let data: [BLBarChartValue] = (0..<30).reversed().compactMap { offset in
         guard let day = calendar.date(byAdding: .day, value: -offset, to: base) else {
             return nil
         }

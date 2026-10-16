@@ -13,18 +13,22 @@ struct FxView: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
-    @Environment(\.locale) private var locale
+    /// Dynamic Type 尺寸，無障礙字級時解除幣別名稱的單行限制
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    /// 金額欄位的鍵盤焦點
-    /// 實際狀態由 ``FxFeature/State/isAmountFieldFocused`` 持有
-    @FocusState private var isAmountFieldFocused: Bool
+    /// App 根層依語言偏好注入的 `locale`
+    @Environment(\.locale) private var locale
 
     /// 金額輸入欄與換算結果的字級，隨 Dynamic Type 縮放 (以 `.title` 為基準)
     @ScaledMetric(relativeTo: .title) private var heroAmountSize: CGFloat = 32
 
-    /// FX 功能 store
+    /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<FxFeature>
+
+    /// 金額欄位的鍵盤焦點
+    ///
+    /// - Note: 實際狀態由 ``FxFeature/State/isAmountFieldFocused`` 持有
+    @FocusState private var isAmountFieldFocused: Bool
 
     // MARK: - Body
 
@@ -35,16 +39,16 @@ struct FxView: View {
                 .padding(BLSpacing.large)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Fx.root)
-        .background(palette.background)
-        .navigationTitle(Text("settings.more.label.exchangeRates"))
         .scrollDismissesKeyboard(.interactively)
         .bind($store.isAmountFieldFocused, to: $isAmountFieldFocused)
-        .toolbar {
-            keyboardToolbar
-        }
         .task {
             await store.send(.view(.task)).finish()
+        }
+        .navigationTitle(Text("settings.more.label.exchangeRates"))
+        .toolbar {
+            keyboardToolbar
         }
         .sheet(
             isPresented: Binding(
@@ -65,10 +69,12 @@ private extension FxView {
     var content: some View {
         VStack(alignment: .leading, spacing: BLSpacing.large) {
             FxStatusBanner(
-                isLoading: store.isLoading,
                 errorMessage: store.errorMessage,
-                snapshotDate: store.snapshot?.date,
-                onRetry: { store.send(.view(.retryTapped)) }
+                isLoading: store.isLoading,
+                onRetry: {
+                    store.send(.view(.retryTapped))
+                },
+                snapshotDate: store.snapshot?.date
             )
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(BLAccessibilityID.Fx.statusBanner)
@@ -79,10 +85,10 @@ private extension FxView {
 
             FxRatesList(
                 currencies: store.ratesListCurrencies,
-                snapshotDate: store.snapshot?.date,
-                rate: { currency in
-                    store.state.displayRate(for: currency)
-                }
+                rate: {
+                    store.state.displayRate(for: $0)
+                },
+                snapshotDate: store.snapshot?.date
             )
         }
     }
@@ -94,7 +100,7 @@ private extension FxView {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("orders.list.label.from")
                     .font(BLTypographyStyle.caption.font.weight(.semibold))
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
                     .textCase(.uppercase)
 
                 currencyPicker
@@ -102,7 +108,7 @@ private extension FxView {
                 Text("orders.detail.label.amount")
                     .padding(.top, BLSpacing.small)
                     .font(BLTypographyStyle.caption.font.weight(.semibold))
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
                     .textCase(.uppercase)
 
                 amountField
@@ -125,7 +131,7 @@ private extension FxView {
             HStack(spacing: BLSpacing.small) {
                 Text("fx.rates.label.sourceCurrency")
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
 
                 Spacer()
 
@@ -135,18 +141,18 @@ private extension FxView {
                         language: AppLanguage(locale: locale)
                     )
                 )
-                    .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                    .foregroundStyle(palette.label)
-                    .lineLimit(1)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .font(BLTypographyStyle.subhead.font.weight(.semibold))
+                .foregroundStyle(.blLabel)
 
                 Image(systemName: "chevron.right")
                     .font(BLTypographyStyle.caption.font.weight(.semibold))
-                    .foregroundStyle(palette.tertiaryLabel)
+                    .foregroundStyle(.blTertiaryLabel)
                     .accessibilityHidden(true)
             }
             .padding(.vertical, BLSpacing.small)
             .padding(.horizontal, BLSpacing.medium)
-            .background(palette.fillTertiary)
+            .background(.blFillTertiary)
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
             .contentShape(Rectangle())
         }
@@ -165,16 +171,16 @@ private extension FxView {
             searchable: true,
             emptyTitle: "orders.edit.label.currenciesAvailable",
             emptyDescription: "orders.edit.message.internetConnectionRequired",
-            options: store.availableCurrencies.map(\.rawValue),
+            options: store.availableCurrencyCodes,
             selected: store.fromCurrency.rawValue,
-            displayName: { code in
-                CurrencyDisplayName.text(code: code, language: language)
+            displayName: {
+                CurrencyDisplayName.text(code: $0, language: language)
             },
-            searchKeywords: { code in
-                CurrencyDisplayName.searchKeywords(code: code, locale: locale)
+            searchKeywords: {
+                CurrencyDisplayName.searchKeywords(code: $0, locale: locale)
             },
-            onSelect: { code in
-                store.send(.view(.currencySelected(code)))
+            onSelect: {
+                store.send(.view(.currencySelected($0)))
             }
         )
     }
@@ -191,7 +197,7 @@ private extension FxView {
         .padding(.horizontal, BLSpacing.medium)
         .font(.system(size: heroAmountSize, weight: .bold))
         .monospacedDigit()
-        .background(palette.fillQuaternary)
+        .background(.blFillQuaternary)
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
         .keyboardType(.decimalPad)
         .focused($isAmountFieldFocused)
@@ -204,22 +210,26 @@ private extension FxView {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             Text("fx.rates.label.twd")
                 .font(BLTypographyStyle.caption.font.weight(.semibold))
-                .foregroundStyle(palette.accent)
+                .foregroundStyle(.blAccent)
 
             Text(BLFormatters.twd(store.convertedTWD, locale: locale))
                 .font(.system(size: heroAmountSize, weight: .bold))
                 .monospacedDigit()
-                .foregroundStyle(palette.accent)
+                .foregroundStyle(.blAccent)
 
             Text(
-                verbatim: "1 \(store.fromCurrency.rawValue) = \(FxFormatters.rate(store.rate, locale: locale)) TWD"
+                FxFormatters.conversionLabel(
+                    from: store.fromCurrency,
+                    rate: store.rate,
+                    locale: locale
+                )
             )
-                .blTextStyle(.caption)
-                .foregroundStyle(palette.secondaryLabel)
+            .blTextStyle(.caption)
+            .foregroundStyle(.blSecondaryLabel)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(BLSpacing.medium)
-        .background(palette.accent.opacity(0.12))
+        .background(.blAccent.opacity(0.12))
         .clipShape(RoundedRectangle(cornerRadius: BLRadius.medium, style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityValue(BLFormatters.twd(store.convertedTWD, locale: locale))
@@ -240,15 +250,12 @@ private extension FxView {
                         .font(BLTypographyStyle.footnote.font.weight(.semibold))
                         .background(
                             store.amount == value
-                                ? palette.accent.opacity(0.18)
-                                : palette.fillTertiary
+                                ? .blAccent.opacity(0.18)
+                                : .blFillTertiary
                         )
-                        .foregroundStyle(store.amount == value ? palette.accent : palette.label)
+                        .foregroundStyle(store.amount == value ? .blAccent : .blLabel)
                         .clipShape(
-                            RoundedRectangle(
-                                cornerRadius: BLRadius.small,
-                                style: .continuous
-                            )
+                            RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous)
                         )
                 }
                 .buttonStyle(.plain)
@@ -277,11 +284,6 @@ private extension FxView {
 
 private extension FxView {
 
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
     /// 預設金額按鈕使用的金額
     var presetAmounts: [Decimal] {
         [10_000, 50_000, 100_000, 500_000]
@@ -292,7 +294,11 @@ private extension FxView {
 
 #Preview("匯率工具初始") {
     NavigationStack {
-        FxView(store: Store(initialState: FxFeature.State()) { FxFeature() })
+        FxView(
+            store: Store(initialState: FxFeature.State()) {
+                FxFeature()
+            }
+        )
     }
 }
 
@@ -310,9 +316,7 @@ private extension FxView {
     NavigationStack {
         FxView(
             store: Store(
-            initialState: FxFeature.State(
-                errorMessage: "fx.rates.message.exchangeRatesLoaded"
-            )
+                initialState: FxFeature.State(errorMessage: "fx.rates.message.exchangeRatesLoaded")
             ) {
                 FxFeature()
             }

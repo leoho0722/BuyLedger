@@ -16,10 +16,11 @@ import Testing
 struct CustomersFeatureTests {
 
     /// 驗證客戶狀態依訂單彙總並按累計消費排序
+    ///
+    /// - Note: 日期皆為 2026 年 3 月指定日期的 UTC 零時
     @Test
     func customers_多筆訂單_依消費彙總並排序() {
         // Given
-        // 日期皆為 2026 年 3 月指定日期的 UTC 零時
         let orders = [
             LedgerOrder.fixture(
                 id: "1",
@@ -81,6 +82,74 @@ struct CustomersFeatureTests {
 
         // Then
         #expect(customers.isEmpty)
+    }
+
+    /// 驗證強調區塊取前三名並依序標示名次
+    @Test
+    func topCustomers_多於三位客戶_取前三並依序標示名次() {
+        // Given
+        let orders = [
+            LedgerOrder.fixture(
+                id: "1",
+                customer: LedgerCustomer(name: "Amy", initials: "AM", tier: .regular),
+                date: Date(timeIntervalSince1970: 1772323200),
+                chargedAmount: 500
+            ),
+            LedgerOrder.fixture(
+                id: "2",
+                customer: LedgerCustomer(name: "Bob", initials: "BO", tier: .regular),
+                date: Date(timeIntervalSince1970: 1772323200),
+                chargedAmount: 400
+            ),
+            LedgerOrder.fixture(
+                id: "3",
+                customer: LedgerCustomer(name: "Cara", initials: "CA", tier: .regular),
+                date: Date(timeIntervalSince1970: 1772323200),
+                chargedAmount: 300
+            ),
+            LedgerOrder.fixture(
+                id: "4",
+                customer: LedgerCustomer(name: "Dan", initials: "DA", tier: .regular),
+                date: Date(timeIntervalSince1970: 1772323200),
+                chargedAmount: 100
+            ),
+        ]
+        let state = CustomersFeature.State(orders: SharedReader(value: orders))
+
+        // When
+        let topCustomers = state.topCustomers
+
+        // Then
+        #expect(topCustomers.map(\.rank) == [1, 2, 3])
+        #expect(topCustomers.map(\.customer.name) == ["Amy", "Bob", "Cara"])
+    }
+
+    /// 驗證客戶不足三位時強調區塊只列出既有客戶
+    @Test
+    func topCustomers_客戶不足三位_只列出既有客戶() {
+        // Given
+        let orders = [
+            LedgerOrder.fixture(
+                id: "1",
+                customer: LedgerCustomer(name: "Amy", initials: "AM", tier: .regular),
+                date: Date(timeIntervalSince1970: 1772323200),
+                chargedAmount: 300
+            ),
+            LedgerOrder.fixture(
+                id: "2",
+                customer: LedgerCustomer(name: "Bob", initials: "BO", tier: .regular),
+                date: Date(timeIntervalSince1970: 1772323200),
+                chargedAmount: 400
+            ),
+        ]
+        let state = CustomersFeature.State(orders: SharedReader(value: orders))
+
+        // When
+        let topCustomers = state.topCustomers
+
+        // Then
+        #expect(topCustomers.map(\.rank) == [1, 2])
+        #expect(topCustomers.map(\.customer.name) == ["Bob", "Amy"])
     }
 
     /// 驗證畫面出現時委派訂單載入

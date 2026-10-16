@@ -13,18 +13,22 @@ struct QuoteView: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
-    @Environment(\.locale) private var locale
+    /// Dynamic Type 尺寸，無障礙字級時解除 hero 數字的單行限制
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    /// 數值欄位的鍵盤焦點
-    /// 實際狀態由 ``QuoteFeature/State/isAmountFieldFocused`` 持有
-    @FocusState private var isAmountFieldFocused: Bool
+    /// App 根層依語言偏好注入的 `locale`
+    @Environment(\.locale) private var locale
 
     /// hero 建議售價字級，隨 Dynamic Type 縮放 (以 `.largeTitle` 為基準)
     @ScaledMetric(relativeTo: .largeTitle) private var heroPriceSize: CGFloat = 40
 
-    /// 報價試算 store
+    /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<QuoteFeature>
+
+    /// 數值欄位的鍵盤焦點
+    ///
+    /// - Note: 實際狀態由 ``QuoteFeature/State/isAmountFieldFocused`` 持有
+    @FocusState private var isAmountFieldFocused: Bool
 
     // MARK: - Body
 
@@ -35,16 +39,16 @@ struct QuoteView: View {
                 .padding(BLSpacing.large)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Quote.root)
-        .background(palette.background)
-        .navigationTitle(Text("settings.more.label.quoteCalculator"))
         .scrollDismissesKeyboard(.interactively)
         .bind($store.isAmountFieldFocused, to: $isAmountFieldFocused)
-        .toolbar {
-            keyboardToolbar
-        }
         .task {
             await store.send(.view(.task)).finish()
+        }
+        .navigationTitle(Text("settings.more.label.quoteCalculator"))
+        .toolbar {
+            keyboardToolbar
         }
         .sheet(
             isPresented: Binding(
@@ -66,37 +70,41 @@ private extension QuoteView {
         VStack(alignment: .leading, spacing: BLSpacing.large) {
             QuoteStatusBanner(
                 isLoading: store.rateSource.isLoading,
-                rateUnavailableReason: store.rateSource.rateUnavailableReason,
                 isTargetMarginBelowOneHundredPercent: store.isTargetMarginBelowOneHundredPercent,
-                onRetry: { store.send(.view(.retryTapped)) }
+                onRetry: {
+                    store.send(.view(.retryTapped))
+                },
+                rateUnavailableReason: store.rateSource.rateUnavailableReason
             )
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(BLAccessibilityID.Quote.statusBanner)
 
             QuoteInputsCard(
-                currencyCode: store.rateSource.fromCurrency.rawValue,
-                itemPrice: $store.itemPrice,
+                cardFeePercent: $store.cardFeePercent,
                 domesticShipping: $store.domesticShipping,
                 internationalShippingTWD: $store.internationalShippingTWD,
-                cardFeePercent: $store.cardFeePercent,
+                itemPrice: $store.itemPrice,
                 paymentFeePercent: $store.paymentFeePercent,
                 platformFeePercent: $store.platformFeePercent,
                 targetMarginPercent: $store.targetMarginPercent,
+                currencyCode: store.rateSource.fromCurrency.rawValue,
                 focus: $isAmountFieldFocused,
-                onCurrencyPickerTapped: { store.send(.view(.currencyPickerTapped)) }
+                onCurrencyPickerTapped: {
+                    store.send(.view(.currencyPickerTapped))
+                }
             )
 
             suggestedHero
 
             QuoteBreakdownCard(
-                hasUsableRate: store.rateSource.hasUsableRate,
-                itemTWD: store.itemTWD,
-                domesticTWD: store.domesticTWD,
-                internationalShippingTWD: store.internationalShippingTWD,
                 cardFeeTWD: store.cardFeeTWD,
+                costTWD: store.costTWD,
+                domesticTWD: store.domesticTWD,
+                hasUsableRate: store.rateSource.hasUsableRate,
+                internationalShippingTWD: store.internationalShippingTWD,
+                itemTWD: store.itemTWD,
                 paymentFeeTWD: store.paymentFeeTWD,
-                platformFeeTWD: store.platformFeeTWD,
-                costTWD: store.costTWD
+                platformFeeTWD: store.platformFeeTWD
             )
         }
     }
@@ -112,16 +120,16 @@ private extension QuoteView {
             searchable: true,
             emptyTitle: "orders.edit.label.currenciesAvailable",
             emptyDescription: "orders.edit.message.internetConnectionRequired",
-            options: store.rateSource.availableCurrencies.map(\.rawValue),
+            options: store.rateSource.availableCurrencyCodes,
             selected: store.rateSource.fromCurrency.rawValue,
-            displayName: { code in
-                CurrencyDisplayName.text(code: code, language: language)
+            displayName: {
+                CurrencyDisplayName.text(code: $0, language: language)
             },
-            searchKeywords: { code in
-                CurrencyDisplayName.searchKeywords(code: code, locale: locale)
+            searchKeywords: {
+                CurrencyDisplayName.searchKeywords(code: $0, locale: locale)
             },
-            onSelect: { code in
-                store.send(.view(.currencySelected(code)))
+            onSelect: {
+                store.send(.view(.currencySelected($0)))
             }
         )
     }
@@ -134,17 +142,18 @@ private extension QuoteView {
                 .font(BLTypographyStyle.caption.font.weight(.semibold))
                 .textCase(.uppercase)
 
-            Text(heroPriceText)
+            Text(BLFormatters.twd(store.displayedSuggestedTWD, locale: locale))
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .minimumScaleFactor(dynamicTypeSize.isAccessibilitySize ? 1 : 0.7)
                 .font(.system(size: heroPriceSize, weight: .bold))
                 .monospacedDigit()
-                .lineLimit(1)
-                .minimumScaleFactor(0.7)
 
             switch store.heroMessage {
             case .rateUnavailable:
                 Text("quote.calculator.message.exchangeRateAvailable")
                     .blTextStyle(.footnote)
-            case let .estimate(profitTWD, marginPercent):
+
+            case .estimate(let profitTWD, let marginPercent):
                 Text(
                     AppLanguage.format(
                         "quote.calculator.label.estimatedProfit",
@@ -154,6 +163,7 @@ private extension QuoteView {
                     )
                 )
                 .blTextStyle(.footnote)
+
             case .marginTooHigh:
                 Text("quote.calculator.message.targetMarginMust")
                     .blTextStyle(.footnote)
@@ -165,7 +175,7 @@ private extension QuoteView {
         .blHeroCardBackground()
         .blCardShadow()
         .accessibilityElement(children: .combine)
-        .accessibilityValue(heroPriceText)
+        .accessibilityValue(BLFormatters.twd(store.displayedSuggestedTWD, locale: locale))
         .accessibilityIdentifier(BLAccessibilityID.Quote.suggestedPriceValue)
     }
 
@@ -185,30 +195,19 @@ private extension QuoteView {
     }
 }
 
-// MARK: - Private Method
-
-private extension QuoteView {
-
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
-    /// Hero 建議售價顯示文字；無法計算時顯示破折號
-    var heroPriceText: String {
-        guard let displayedSuggestedTWD = store.displayedSuggestedTWD else {
-            return "—"
-        }
-        return BLFormatters.twd(displayedSuggestedTWD, locale: locale)
-    }
-}
-
 // MARK: - Preview
 
-/// 預覽用的報價試算畫面容器
+/// 組出預覽用的報價試算畫面容器
+///
+/// - Parameter state: 預覽使用的報價試算狀態
+/// - Returns: 包在導覽堆疊內的報價試算畫面
 @MainActor private func quotePreview(state: QuoteFeature.State) -> some View {
     NavigationStack {
-        QuoteView(store: Store(initialState: state) { QuoteFeature() })
+        QuoteView(
+            store: Store(initialState: state) {
+                QuoteFeature()
+            }
+        )
     }
 }
 

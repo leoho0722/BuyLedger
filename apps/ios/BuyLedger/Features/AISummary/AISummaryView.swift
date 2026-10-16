@@ -14,7 +14,7 @@ struct AISummaryView: View {
 
     // MARK: - Properties
 
-    /// 總結功能的 store
+    /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<AISummaryFeature>
 
     // MARK: - Body
@@ -51,12 +51,12 @@ private extension AISummaryView {
     @ViewBuilder
     var dataTransferDisclosure: some View {
         Text("ai.summary.message.currentListsProduct")
-            .blTextStyle(.footnote)
-            .multilineTextAlignment(.leading)
             .frame(maxWidth: .infinity, alignment: .leading)
             .padding(.horizontal)
             .padding(.vertical, BLSpacing.small)
-            .foregroundStyle(Color.blSecondaryLabel)
+            .multilineTextAlignment(.leading)
+            .blTextStyle(.footnote)
+            .foregroundStyle(.blSecondaryLabel)
             .background(.secondary.opacity(0.08))
             .accessibilityIdentifier(BLAccessibilityID.AISummary.dataTransferDisclosure)
     }
@@ -83,7 +83,7 @@ private extension AISummaryView {
             ContentUnavailableView {
                 Label("ai.summary.label.summaryFailed", systemImage: "exclamationmark.triangle")
             } description: {
-                Text(store.errorMessage ?? "orders.edit.message.pleaseTryAgain")
+                Text(store.failureMessage)
             } actions: {
                 Button("common.action.button.retry") {
                     store.send(.view(.retryTapped))
@@ -92,13 +92,15 @@ private extension AISummaryView {
                 .accessibilityIdentifier(BLAccessibilityID.AISummary.retryButton)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
+
         case .idle, .streaming, .finished:
             if store.summaryText.isEmpty {
                 VStack(spacing: BLSpacing.medium) {
                     ProgressView()
+
                     Text("ai.summary.label.aiAnalyzingItem")
                         .blTextStyle(.subhead)
-                        .foregroundStyle(Color.blSecondaryLabel)
+                        .foregroundStyle(.blSecondaryLabel)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -111,19 +113,20 @@ private extension AISummaryView {
                             HStack(spacing: BLSpacing.extraSmall) {
                                 ProgressView()
                                     .controlSize(.small)
+
                                 Text("ai.summary.label.generating")
                                     .blTextStyle(.footnote)
-                                    .foregroundStyle(Color.blSecondaryLabel)
+                                    .foregroundStyle(.blSecondaryLabel)
                             }
                             .padding(.top, BLSpacing.small)
                         }
 
                         if let truncationMessage = store.truncationMessage {
                             Text(truncationMessage)
-                                .blTextStyle(.footnote)
-                                .multilineTextAlignment(.leading)
                                 .padding(.top, BLSpacing.small)
-                                .foregroundStyle(Color.blSecondaryLabel)
+                                .multilineTextAlignment(.leading)
+                                .blTextStyle(.footnote)
+                                .foregroundStyle(.blSecondaryLabel)
                         }
 
                         if store.phase == .finished {
@@ -147,14 +150,14 @@ private extension AISummaryView {
                 .accessibilityHidden(true)
 
             Text("ai.summary.message.contentGeneratedAi")
-                .blTextStyle(.caption)
                 .multilineTextAlignment(.leading)
+                .blTextStyle(.caption)
         }
         .padding(.vertical, 7)
         .padding(.horizontal, 14)
-        .foregroundStyle(Color.blSecondaryLabel)
+        .foregroundStyle(.blSecondaryLabel)
         .background(.secondary.opacity(0.12), in: Capsule())
-        // frame 保持在 background 外層，避免膠囊背景撐滿整列
+        // `frame` 保持在 `background` 外層，避免膠囊背景撐滿整列
         .frame(maxWidth: .infinity, alignment: .center)
     }
 }

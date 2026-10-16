@@ -13,11 +13,11 @@ struct AppLockView: View {
 
     // MARK: - Properties
 
-    /// 提供辨識類型與驗證狀態，並接收重新驗證操作的 Store
-    @Bindable var store: StoreOf<AppLockFeature>
-
     /// 隨 Dynamic Type 文字大小縮放的鎖頭圖示大小
     @ScaledMetric private var iconSize: CGFloat = 44
+
+    /// 提供辨識類型與驗證狀態，並接收重新驗證操作的 Store
+    @Bindable var store: StoreOf<AppLockFeature>
 
     // MARK: - Body
 
@@ -27,7 +27,7 @@ struct AppLockView: View {
             .padding(32)
             .frame(maxWidth: 520)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(BLPalette().plainBackground)
+            .background(.blPlainBackground)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(BLAccessibilityID.AppLock.root)
     }
@@ -43,7 +43,7 @@ private extension AppLockView {
         VStack(spacing: 20) {
             Image(systemName: "lock.fill")
                 .font(.system(size: iconSize))
-                .foregroundStyle(Color.blSecondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             Text("settings.preference.label.appLocked")
                 .blTextStyle(.title2)

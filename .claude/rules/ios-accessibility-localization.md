@@ -16,6 +16,8 @@ paths:
 - **無障礙字級改版面結構，不用縮放係數把字壓回去**：以 `dynamicTypeSize.isAccessibilitySize` 判斷 (不逐級列舉 case)，解除單行限制並降維 (多欄變單欄、橫排變堆疊)。
     - 不用 `minimumScaleFactor`／`lineLimit(1)` 抵銷使用者的字級設定。
 - **固定點數的尺寸一律 `@ScaledMetric`** (圖示、格高、欄寬、圖表直徑)：它需要 view 實例，`static let` 尺寸常數要改成實例屬性。
+    - 元件參數本身已是 `@ScaledMetric` 時 (`BLSparkline.height`、`BLBarChart.height`)，呼叫端傳基準點數，不再包一層 `@ScaledMetric`：合成 `init` 會把傳入值當成基準再縮放一次，尺寸被乘上兩次縮放倍率。
+    - 由 `DesignSystemSourceScanTests` 的規則十二守門，只辨識以單一識別字傳入的引數；傳入運算式或成員存取時人工確認。
 - **驗證特定字級用啟動參數，不改系統設定**：`--launch-args '-UIPreferredContentSizeCategoryName' --launch-args 'UICTContentSizeCategoryAccessibilityXXXL'`。
     - 常數名拼錯會靜默無效，套用後先截圖確認字級真的變了。
 - **複合列 (訂單列、開團列、KPI 格) 加 `.accessibilityElement(children: .combine)` 合併為單一朗讀單位**，合併前把純裝飾元素標 `.accessibilityHidden(true)`。
@@ -51,3 +53,4 @@ paths:
   - 手動補 catalog 用文字插入展開格式的 entry，不整檔 `json.dump` 重寫：`.xcstrings` 是 Xcode 自訂序列化，重寫會產生巨量 diff。
   - `LocalizationCatalogTests` 會掃描程式碼中的使用者可見字面值；型別呼叫自動涵蓋，但文字類 modifier (如 `.help`) 與 display property 是列舉清單，新增這兩類時同步補 `LocalizationCatalogTests+LiteralScan.swift` `visibleLiteralStarts` 內的 `visiblePatterns`，以及 `String+SourceLiteralScan.swift` `isDisplayScopeDeclaration` 內的 `displayProperties`。
   - 直接作為型別呼叫引數的多行 `"""` 字面值掃描抓不到，要人工確認已進 catalog。
+  - 回傳 `LocalizedStringKey`／`LocalizedStringResource` 的函式與屬性，本體內的字面值 (含插值) 都會被當成目錄 key 檢查：組出 verbatim 文字 (金額、百分比、`MoM` 等) 的格式化函式回傳 `String`，由呼叫端包 `LocalizedStringKey` (參考 `DashboardFormatters.percentDelta`)。

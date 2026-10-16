@@ -13,11 +13,11 @@ struct DashboardRecentOrdersSection: View {
 
     // MARK: - Properties
 
+    /// 畫面的狀態與事件來源，由父層建立後傳入
+    @Bindable var store: StoreOf<DashboardFeature>
+
     /// 近期訂單，依日期由新到舊，已由 ``DashboardStats`` 取好顯示筆數
     let recentOrders: [LedgerOrder]
-
-    /// 畫面的狀態與事件來源，由父層建立後傳入
-    let store: StoreOf<DashboardFeature>
 
     // MARK: - Body
 
@@ -44,7 +44,7 @@ private extension DashboardRecentOrdersSection {
         HStack(alignment: .firstTextBaseline) {
             Text("dashboard.overview.label.recentOrders")
                 .blTextStyle(.title3Bold)
-                .foregroundStyle(palette.label)
+                .foregroundStyle(.blLabel)
 
             Spacer()
 
@@ -52,7 +52,7 @@ private extension DashboardRecentOrdersSection {
                 store.send(.view(.viewAllOrdersTapped))
             }
             .buttonStyle(.plain)
-            .foregroundStyle(palette.accent)
+            .foregroundStyle(.blAccent)
             .font(BLTypographyStyle.subhead.font.weight(.medium))
             .accessibilityIdentifier(BLAccessibilityID.Dashboard.recentOrdersSeeAllButton)
         }
@@ -67,7 +67,7 @@ private extension DashboardRecentOrdersSection {
         )
         .frame(maxWidth: .infinity, alignment: .center)
         .padding(.vertical, BLSpacing.large)
-        .background(palette.background)
+        .background(.blBackground)
     }
 
     /// 裝著近期訂單列的卡片，列與列之間以分隔線隔開
@@ -92,34 +92,24 @@ private extension DashboardRecentOrdersSection {
     }
 }
 
-// MARK: - Private Method
-
-private extension DashboardRecentOrdersSection {
-
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-}
-
 // MARK: - Preview
 
 #Preview("dashboard.overview.label.recentOrders") {
     DashboardRecentOrdersSection(
-        recentOrders: Array(LedgerOrder.sampleOrders.prefix(4)),
         store: Store(initialState: DashboardFeature.State()) {
             DashboardFeature()
-        }
+        },
+        recentOrders: Array(LedgerOrder.sampleOrders.prefix(4))
     )
     .padding()
 }
 
 #Preview("沒有訂單") {
     DashboardRecentOrdersSection(
-        recentOrders: [],
         store: Store(initialState: DashboardFeature.State()) {
             DashboardFeature()
-        }
+        },
+        recentOrders: []
     )
     .padding()
 }

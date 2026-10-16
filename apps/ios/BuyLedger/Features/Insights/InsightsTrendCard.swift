@@ -12,7 +12,7 @@ struct InsightsTrendCard: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 總獲利金額字級，隨 Dynamic Type 縮放 (以 `.title` 為基準)
@@ -21,8 +21,8 @@ struct InsightsTrendCard: View {
     /// 走勢長條圖資料，30 天逐日、6 與 12 個月逐月
     let bars: [BLBarChartValue]
 
-    /// 與上期比較的成長率文字
-    let delta: String
+    /// 與上期比較的成長率文字，沒有比較值時為比較說明
+    let delta: LocalizedStringKey
 
     /// App 目前選用的顯示語系，用於圖表的無障礙標題
     let language: AppLanguage
@@ -34,7 +34,7 @@ struct InsightsTrendCard: View {
     let totalProfit: Decimal
 
     /// 相對上期的成長方向，決定成長率文字的顏色
-    let trend: Trend
+    let trend: BLTrend
 
     // MARK: - Body
 
@@ -62,11 +62,11 @@ private extension InsightsTrendCard {
         HStack(alignment: .firstTextBaseline) {
             Text(LocalizedStringKey(range.trendCardTitle))
                 .font(BLTypographyStyle.subhead.font.weight(.medium))
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             Spacer()
 
-            Text(LocalizedStringKey(delta))
+            Text(delta)
                 .font(BLTypographyStyle.subhead.font.weight(.semibold))
                 .foregroundStyle(deltaColor)
         }
@@ -77,7 +77,7 @@ private extension InsightsTrendCard {
         Text(BLFormatters.twd(totalProfit, locale: locale))
             .font(.system(size: heroProfitSize, weight: .bold))
             .monospacedDigit()
-            .foregroundStyle(palette.label)
+            .foregroundStyle(.blLabel)
             .accessibilityValue(Text(BLFormatters.twd(totalProfit, locale: locale)))
             .accessibilityIdentifier(BLAccessibilityID.Insights.trendTotalProfit)
     }
@@ -87,30 +87,12 @@ private extension InsightsTrendCard {
         BLBarChart(
             data: bars,
             height: 200,
-            isScrollEnabled: true,
             axisXTitle: language.localized("orders.list.label.text"),
             axisYTitle: language.localized("orders.detail.label.value"),
+            isScrollEnabled: true,
             seriesName: language.localized("insights.chart.label.barChart")
         )
         .accessibilityIdentifier(BLAccessibilityID.Insights.trendChart)
-    }
-}
-
-// MARK: - Nested Types
-
-extension InsightsTrendCard {
-
-    /// 本期相對上期的成長方向
-    enum Trend {
-
-        /// 本期不低於上期
-        case up
-
-        /// 本期低於上期
-        case down
-
-        /// 沒有上期資料可比較
-        case unavailable
     }
 }
 
@@ -118,22 +100,17 @@ extension InsightsTrendCard {
 
 private extension InsightsTrendCard {
 
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
     /// 成長率文字的顏色：上升為綠色、下降為紅色、沒有比較值為三級文字色
     var deltaColor: Color {
         switch trend {
         case .up:
-            palette.green
+            .blGreen
 
         case .down:
-            palette.red
+            .blRed
 
         case .unavailable:
-            palette.tertiaryLabel
+            .blTertiaryLabel
         }
     }
 }

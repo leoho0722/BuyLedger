@@ -15,31 +15,47 @@ import Testing
 @MainActor
 struct DashboardFeatureTests {
 
-    /// 畫面出現時送出 `.view(.task)`，功能轉成 `refresh` 委派交給根功能
+    /// 畫面出現時送出 `.view(.task)`，記錄注入的日期脈絡並轉成 `refresh` 委派交給根功能
     @Test
     func task_畫面出現_轉成refresh委派() async {
         // Given
         let store = TestStore(initialState: DashboardFeature.State()) {
             DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
-        await store.send(.view(.task))
+        await store.send(.view(.task)) {
+            $0.dateContext = DashboardDateContext(
+                now: Date(timeIntervalSince1970: 1_777_507_200),
+                calendar: TestDependencies.fixedCalendar
+            )
+        }
 
         // Then
         await store.receive(\.delegate.refresh)
     }
 
-    /// 載入失敗畫面的重試鈕與畫面出現相同，同樣轉成 `refresh` 委派
+    /// 載入失敗畫面的重試鈕與畫面出現相同，同樣記錄日期脈絡並轉成 `refresh` 委派
     @Test
     func retryTapped_點擊重試_轉成refresh委派() async {
         // Given
         let store = TestStore(initialState: DashboardFeature.State()) {
             DashboardFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
-        await store.send(.view(.retryTapped))
+        await store.send(.view(.retryTapped)) {
+            $0.dateContext = DashboardDateContext(
+                now: Date(timeIntervalSince1970: 1_777_507_200),
+                calendar: TestDependencies.fixedCalendar
+            )
+        }
 
         // Then
         await store.receive(\.delegate.refresh)

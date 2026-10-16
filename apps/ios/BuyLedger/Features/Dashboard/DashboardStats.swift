@@ -8,9 +8,21 @@
 import Foundation
 
 /// 總覽頁使用的本月與走勢統計
-struct DashboardStats {
+struct DashboardStats: Equatable {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
+
+    /// 視為「進行中」的訂單狀態集合
+    private static let activeStatuses: Set<OrderStatus> = [
+        .confirmed,
+        .purchased,
+        .shipping,
+        .partiallyArrived,
+        .arrived,
+    ]
+
+    /// 近期訂單顯示筆數
+    private static let recentOrdersCount = 4
 
     /// 本月依營收歸屬口徑計入的營業額
     let revenue: Decimal
@@ -21,10 +33,10 @@ struct DashboardStats {
     /// 本月淨獲利
     let profit: Decimal
 
-    /// 毛利率 (profit / revenue)
+    /// 毛利率 (`profit` / `revenue`)
     let margin: Decimal
 
-    /// 進行中 (confirmed / purchased / shipping) 的訂單數
+    /// 進行中 (`confirmed` / `purchased` / `shipping` / `partiallyArrived` / `arrived`) 的訂單數
     let activeCount: Int
 
     /// 本月依營收歸屬口徑計入的訂單筆數
@@ -54,29 +66,21 @@ struct DashboardStats {
     /// 毛利率相對上月的差 (百分點，0.024 即 +2.4pt)；上月無資料時為 `nil`
     let marginDelta: Decimal?
 
-    // MARK: - Static Properties
-
-    /// 視為「進行中」的訂單狀態集合
-    static let activeStatuses: Set<OrderStatus> = [
-        .confirmed,
-        .purchased,
-        .shipping,
-        .partiallyArrived,
-        .arrived,
-    ]
-
-    /// 近期訂單顯示筆數
-    static let recentOrdersCount = 4
-
     // MARK: - Init
 
     /// 依訂單清單、月度目標與基準時間計算總覽頁統計
+    ///
     /// - Parameters:
     ///   - orders: 目前的訂單清單
-    ///   - monthlyGoal: 月度淨獲利目標 (來自 SettingsFeature；`0` 代表未設定)
+    ///   - monthlyGoal: 月度淨獲利目標 (來自 `SettingsFeature`；`0` 代表未設定)
     ///   - referenceDate: 決定月份與走勢圖範圍的基準時間
     ///   - calendar: 用來算月份區間的曆法
-    init(orders: [LedgerOrder], monthlyGoal: Decimal, referenceDate: Date, calendar: Calendar) {
+    init(
+        orders: [LedgerOrder],
+        monthlyGoal: Decimal,
+        referenceDate: Date,
+        calendar: Calendar
+    ) {
         let attributedOrders = LedgerOrder.revenueAttributionOrders(from: orders)
         let current = DashboardStats.monthlyTotals(
             orders: attributedOrders,
@@ -111,7 +115,7 @@ struct DashboardStats {
         }
 
         let recent = orders
-            .sorted { $0.date > $1.date }
+            .sorted { lhs, rhs in lhs.date > rhs.date }
             .prefix(DashboardStats.recentOrdersCount)
 
         self.revenue = current.revenue
@@ -132,14 +136,8 @@ struct DashboardStats {
             current: current.revenue,
             previous: previous.revenue
         )
-        self.costDelta = DashboardStats.ratio(
-            current: current.cost,
-            previous: previous.cost
-        )
-        self.profitDelta = DashboardStats.ratio(
-            current: current.profit,
-            previous: previous.profit
-        )
+        self.costDelta = DashboardStats.ratio(current: current.cost, previous: previous.cost)
+        self.profitDelta = DashboardStats.ratio(current: current.profit, previous: previous.profit)
         self.marginDelta = previous.orderCount == 0 ? nil : current.margin - previous.margin
     }
 }
@@ -151,7 +149,14 @@ extension DashboardStats {
     /// 任意月份的彙總值，用來複用「本月」與「上月」的計算
     fileprivate struct MonthlyTotals {
 
-        // MARK: - Data Properties
+        /// 整月無資料時使用的零值彙總，避免呼叫端各自處理 `nil`
+        static let empty = MonthlyTotals(
+            revenue: 0,
+            cost: 0,
+            profit: 0,
+            margin: 0,
+            orderCount: 0
+        )
 
         /// 該月依營收歸屬口徑計入的訂單營業額總和
         let revenue: Decimal
@@ -167,17 +172,6 @@ extension DashboardStats {
 
         /// 該月的訂單筆數，用於判斷是否有資料可比較
         let orderCount: Int
-
-        // MARK: - Static Properties
-
-        /// 整月無資料時使用的零值彙總，避免呼叫端各自處理 nil
-        static let empty = MonthlyTotals(
-            revenue: 0,
-            cost: 0,
-            profit: 0,
-            margin: 0,
-            orderCount: 0
-        )
     }
 }
 
@@ -185,7 +179,8 @@ extension DashboardStats {
 
 private extension DashboardStats {
 
-    /// 計算成長率；上期為負數時以絕對值為分母
+    /// 彙總指定基準日期所在月份的訂單營業額、成本、獲利與筆數
+    ///
     /// - Parameters:
     ///   - orders: 已依營收歸屬口徑篩出的訂單清單
     ///   - calendar: 用來算月份區間的曆法
@@ -200,9 +195,7 @@ private extension DashboardStats {
             return .empty
         }
 
-        let monthOrders = orders.filter { order in
-            (interval.start..<interval.end).contains(order.date)
-        }
+        let monthOrders = orders.filter { (interval.start..<interval.end).contains($0.date) }
 
         var revenue: Decimal = 0
         var cost: Decimal = 0
@@ -224,19 +217,8 @@ private extension DashboardStats {
         )
     }
 
-    /// 計算成長率；上期為負數時以絕對值為分母
-    /// - Parameters:
-    ///   - current: 本期值
-    ///   - previous: 上期值
-    /// - Returns: 成長率 (小數)，上期為 0 時 `nil`
-    static func ratio(current: Decimal, previous: Decimal) -> Decimal? {
-        guard previous != 0 else {
-            return nil
-        }
-        return (current - previous) / abs(previous)
-    }
-
     /// 產生最近 12 個月的淨獲利走勢資料
+    ///
     /// - Parameters:
     ///   - orders: 已依營收歸屬口徑篩出的訂單清單
     ///   - calendar: 用來計算月份的曆法
@@ -248,20 +230,34 @@ private extension DashboardStats {
         referenceDate: Date
     ) -> [Double] {
         return (0..<12).reversed().map { offset in
-            guard let monthStart = calendar.date(
-                byAdding: .month,
-                value: -offset,
-                to: referenceDate
-            ),
-                  let interval = calendar.dateInterval(of: .month, for: monthStart) else {
+            let start = calendar.date(byAdding: .month, value: -offset, to: referenceDate)
+            guard let start,
+                  let interval = calendar.dateInterval(of: .month, for: start) else {
                 return 0
             }
 
             let total = orders
-                .filter { (interval.start..<interval.end).contains($0.date) }
-                .reduce(Decimal.zero) { $0 + $1.summary.profit }
+                .filter {
+                    (interval.start..<interval.end).contains($0.date)
+                }
+                .reduce(Decimal.zero) { partial, order in
+                    partial + order.summary.profit
+                }
 
             return NSDecimalNumber(decimal: total).doubleValue
         }
+    }
+
+    /// 計算成長率；上期為負數時以絕對值為分母
+    ///
+    /// - Parameters:
+    ///   - current: 本期值
+    ///   - previous: 上期值
+    /// - Returns: 成長率 (小數)，上期為 0 時 `nil`
+    static func ratio(current: Decimal, previous: Decimal) -> Decimal? {
+        guard previous != 0 else {
+            return nil
+        }
+        return (current - previous) / abs(previous)
     }
 }

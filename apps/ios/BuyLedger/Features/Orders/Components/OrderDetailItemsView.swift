@@ -61,7 +61,7 @@ private extension OrderDetailItemsView {
                     .padding(.top, BLSpacing.large)
                     .padding(.bottom, BLSpacing.small)
                     .font(BLTypographyStyle.footnote.font.weight(.semibold))
-                    .foregroundStyle(Color.blSecondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
                     .textCase(.uppercase)
 
                 itemRows
@@ -70,7 +70,7 @@ private extension OrderDetailItemsView {
         }
     }
 
-    /// 商品列卡片 (窄欄版面用，內含 BLCard 包覆)
+    /// 商品列卡片 (窄欄版面用，內含 `BLCard` 包覆)
     @ViewBuilder
     var itemsCard: some View {
         BLCard(padding: 0) {
@@ -104,9 +104,15 @@ private extension OrderDetailItemsView {
                 Text(item.name)
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
 
-                Text(AppLanguage.format("orders.detail.label.quantity", item.quantity, locale: locale))
-                    .blTextStyle(.caption)
-                    .foregroundStyle(Color.blSecondaryLabel)
+                Text(
+                    AppLanguage.format(
+                        "orders.detail.label.quantity",
+                        item.quantity,
+                        locale: locale
+                    )
+                )
+                .blTextStyle(.caption)
+                .foregroundStyle(.blSecondaryLabel)
             }
 
             Spacer()

@@ -81,6 +81,8 @@ extension RootFeatureTests {
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             Self.stubOrdersReload(
                 &$0,
                 loaded: loaded,
@@ -91,6 +93,10 @@ extension RootFeatureTests {
 
         // When
         await store.send(.dashboard(.view(.retryTapped))) {
+            $0.dashboard.dateContext = DashboardDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
             $0.orders.load.$isLoading.withLock {
                 $0 = true
             }
@@ -122,6 +128,8 @@ extension RootFeatureTests {
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             Self.stubOrdersReload(
                 &$0,
                 loaded: loaded,
@@ -132,6 +140,10 @@ extension RootFeatureTests {
 
         // When
         await store.send(.insights(.view(.retryTapped))) {
+            $0.insights.dateContext = InsightsDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
             $0.orders.load.$isLoading.withLock {
                 $0 = true
             }

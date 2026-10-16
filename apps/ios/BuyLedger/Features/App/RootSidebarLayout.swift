@@ -32,7 +32,7 @@ struct RootSidebarLayout: View {
 
     /// 側邊欄導覽的畫面內容
     var body: some View {
-        splitView
+        splitContent
     }
 }
 
@@ -42,7 +42,7 @@ private extension RootSidebarLayout {
 
     /// 根層級分欄導覽
     @ViewBuilder
-    var splitView: some View {
+    var splitContent: some View {
         NavigationSplitView {
             sidebar
         } detail: {
@@ -53,18 +53,17 @@ private extension RootSidebarLayout {
     /// 側邊欄內容
     @ViewBuilder
     var sidebar: some View {
-        let palette = BLPalette()
         let selection = currentSelection
 
         List(selection: selectionBinding) {
             Section {
-                logoRow(palette: palette)
+                logoRow
                     .listRowInsets(
                         EdgeInsets(
                             top: 6,
-                            leading: 12,
+                            leading: BLSpacing.medium,
                             bottom: 14,
-                            trailing: 12
+                            trailing: BLSpacing.medium
                         )
                     )
                     .listRowSeparator(.hidden)
@@ -95,18 +94,15 @@ private extension RootSidebarLayout {
     }
 
     /// BL gradient logo 與 App 名稱列
-    ///
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: logo 列 view
     @ViewBuilder
-    func logoRow(palette: BLPalette) -> some View {
+    var logoRow: some View {
         HStack(spacing: BLSpacing.small) {
             ZStack {
                 RoundedRectangle(cornerRadius: logoTileCornerRadius, style: .continuous)
                     .frame(width: logoTileSize, height: logoTileSize)
                     .foregroundStyle(
                         LinearGradient(
-                            colors: [palette.accent, palette.purple],
+                            colors: [.blAccent, .blPurple],
                             startPoint: .topLeading,
                             endPoint: .bottomTrailing
                         )
@@ -119,7 +115,7 @@ private extension RootSidebarLayout {
 
             Text(verbatim: "BuyLedger")
                 .font(BLTypographyStyle.headline.font.weight(.bold))
-                .foregroundStyle(palette.label)
+                .foregroundStyle(.blLabel)
 
             Spacer(minLength: 0)
         }
@@ -127,7 +123,7 @@ private extension RootSidebarLayout {
         .accessibilityElement(children: .combine)
     }
 
-    /// 主要分頁列
+    /// 顯示對應分頁的側邊欄列
     ///
     /// - Parameters:
     ///   - tab: 對應的分頁
@@ -163,7 +159,7 @@ private extension RootSidebarLayout {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
-    /// 目前選取分頁的內容
+    /// 顯示目前選取分頁的內容
     ///
     /// - Parameter selectedTab: 目前選取的主要分頁
     /// - Returns: 分頁對應的 `SwiftUI` view

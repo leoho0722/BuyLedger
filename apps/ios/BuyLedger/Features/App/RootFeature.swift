@@ -366,12 +366,14 @@ private extension RootFeature {
         }
     }
 
-    /// 以注入的現在時間與行事曆重寫開團與訂單的日期脈絡
+    /// 以注入的現在時間與行事曆重寫開團、訂單、總覽與分析的日期脈絡
     ///
     /// - Parameter state: 目前的根層狀態，直接就地修改
     func refreshDateContexts(state: inout State) {
         let context = CampaignDateContext(now: date.now, calendar: calendar)
         state.campaigns.refreshDateContext(context)
         state.orders.refreshDateContext(now: context.now, calendar: context.calendar)
+        state.dashboard.refreshDateContext(now: context.now, calendar: context.calendar)
+        state.insights.refreshDateContext(now: context.now, calendar: context.calendar)
     }
 }

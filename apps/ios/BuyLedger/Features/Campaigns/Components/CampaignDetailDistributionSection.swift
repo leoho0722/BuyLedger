@@ -12,7 +12,7 @@ struct CampaignDetailDistributionSection: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 分貨區沒有可見客戶時的空狀態文案
@@ -67,7 +67,7 @@ private extension CampaignDetailDistributionSection {
     var emptyState: some View {
         Text(emptyMessage)
             .blTextStyle(.subhead)
-            .foregroundStyle(Color.blSecondaryLabel)
+            .foregroundStyle(.blSecondaryLabel)
     }
 
     /// 每個客戶的分貨列可展開為該客戶的訂單清單
@@ -83,14 +83,14 @@ private extension CampaignDetailDistributionSection {
         }
     }
 
-    /// 分貨列標題：客戶、件數、金額與收款標記
+    /// 組出分貨列標題，含客戶、件數、金額與收款標記
     ///
     /// - Parameter row: 分貨列
     /// - Returns: 客戶分貨列的標題
     func distributionLabel(_ row: CampaignDistributionRow) -> some View {
         HStack(spacing: BLSpacing.small) {
             Image(systemName: row.isFullyReceived ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(row.isFullyReceived ? palette.green : Color.blSecondaryLabel)
+                .foregroundStyle(row.isFullyReceived ? .blGreen : .blSecondaryLabel)
                 .accessibilityLabel(Text(row.receiptAccessibilityLabel))
 
             Text(row.customerName)
@@ -104,15 +104,20 @@ private extension CampaignDetailDistributionSection {
             Spacer(minLength: 0)
 
             Text(
-                AppLanguage.format("campaigns.detail.label.quantityWithAmount", row.totalQuantity, CampaignFormatters.twd(row.totalAmount, locale: locale), locale: locale)
+                AppLanguage.format(
+                    "campaigns.detail.label.quantityWithAmount",
+                    row.totalQuantity,
+                    CampaignFormatters.twd(row.totalAmount, locale: locale),
+                    locale: locale
+                )
             )
             .blTextStyle(.caption)
-            .foregroundStyle(Color.blSecondaryLabel)
+            .foregroundStyle(.blSecondaryLabel)
             .monospacedDigit()
         }
     }
 
-    /// 分貨列展開後的單筆訂單：品項摘要、金額與收款鍵
+    /// 組出分貨列展開後的單筆訂單列，含品項摘要、金額與收款鍵
     ///
     /// - Parameter order: 該客戶在此開團的訂單
     /// - Returns: 訂單列
@@ -120,7 +125,7 @@ private extension CampaignDetailDistributionSection {
         VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
             Text(order.displayID)
                 .blTextStyle(.caption2)
-                .foregroundStyle(palette.tertiaryLabel)
+                .foregroundStyle(.blTertiaryLabel)
 
             Text(order.itemSummary)
                 .blTextStyle(.footnote)
@@ -138,7 +143,7 @@ private extension CampaignDetailDistributionSection {
         .padding(.leading, BLSpacing.small)
     }
 
-    /// 逐筆收款鍵，標籤內撐到 44pt 命中區
+    /// 組出逐筆收款鍵，標籤內撐到 44pt 命中區
     ///
     /// - Parameter order: 要切換收款狀態的訂單
     /// - Returns: 收款鍵
@@ -158,9 +163,7 @@ private extension CampaignDetailDistributionSection {
             // 命中區放在標籤內部撐到 44pt，不增加視覺尺寸
             .frame(minHeight: BLHitTarget.minimum)
             .blTextStyle(.caption)
-            .foregroundStyle(
-                order.paymentReceiptStatus == .received ? palette.green : palette.accent
-            )
+            .foregroundStyle(order.paymentReceiptStatus == .received ? .blGreen : .blAccent)
             .contentShape(.rect)
         }
         .buttonStyle(.borderless)
@@ -171,11 +174,6 @@ private extension CampaignDetailDistributionSection {
 // MARK: - Private Method
 
 private extension CampaignDetailDistributionSection {
-
-    /// 目前畫面使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
 
     /// 未收款篩選的 binding，讀取傳入值並回報切換意圖
     var unpaidOnlyBinding: Binding<Bool> {

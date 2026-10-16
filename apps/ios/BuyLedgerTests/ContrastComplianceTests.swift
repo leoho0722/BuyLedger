@@ -67,7 +67,7 @@ struct ContrastComplianceTests {
     func onSurface_文字疊在卡片表面_對比達文字下限(tone: BLTone, appearance: ColorContrast.Appearance) {
         // Given
         let text = tone.onSurface
-        let surface = appearance.palette.surface
+        let surface = Color.blSurface
 
         // When
         let ratio = ColorContrast.ratio(text, on: surface, appearance: appearance)
@@ -85,9 +85,8 @@ struct ContrastComplianceTests {
     func numeral_排名徽章數字疊在底色_對比達文字下限(rank: Int, appearance: ColorContrast.Appearance) {
         // Given
         let style = CustomerRankBadgeStyle.style(forRank: rank)
-        let palette = appearance.palette
-        let numeral = style.numeral(in: palette)
-        let layers = [style.background(in: palette), palette.surface]
+        let numeral = style.numeral
+        let layers: [Color] = [style.background, .blSurface]
 
         // When
         let ratio = ColorContrast.ratio(numeral, on: layers, appearance: appearance)
@@ -189,10 +188,7 @@ struct ContrastComplianceTests {
             appearance: appearance
         )
         var resources: [(name: String, color: Color)] = [
-            (
-                "BLRankBadgeFirstBackground",
-                CustomerRankBadgeStyle.first.background(in: appearance.palette)
-            ),
+            ("BLRankBadgeFirstBackground", CustomerRankBadgeStyle.first.background),
             ("BLHeroGradientStart", BLHeroCardBackground.gradientColors[0]),
             ("BLHeroGradientEnd", BLHeroCardBackground.gradientColors[1]),
         ]
@@ -222,14 +218,13 @@ struct ContrastComplianceTests {
     ///
     /// - Parameter appearance: 要驗證的外觀情境
     @Test(arguments: ColorContrast.Appearance.allCases)
-    func secondaryLabel_疊在三種背景_對比達文字下限(appearance: ColorContrast.Appearance) {
+    func blSecondaryLabel_疊在三種背景_對比達文字下限(appearance: ColorContrast.Appearance) {
         // Given
-        let palette = appearance.palette
-        let backgrounds = [palette.surface, palette.background, palette.secondaryBackground]
+        let backgrounds: [Color] = [.blSurface, .blBackground, .blSecondaryBackground]
 
         // When
         let ratios = backgrounds.map {
-            ColorContrast.ratio(palette.secondaryLabel, on: $0, appearance: appearance)
+            ColorContrast.ratio(.blSecondaryLabel, on: $0, appearance: appearance)
         }
 
         // Then
@@ -251,24 +246,5 @@ struct ContrastComplianceTests {
 
         // Then
         #expect(firstHue != secondHue)
-    }
-
-    /// 確認 `Color.blSecondaryLabel` 縮寫在每種外觀情境都解析成色盤的次要標籤色
-    ///
-    /// - Parameter appearance: 要驗證的外觀情境
-    @Test(arguments: ColorContrast.Appearance.allCases)
-    func blSecondaryLabel_各外觀情境_與色盤次要標籤色分量相同(appearance: ColorContrast.Appearance) {
-        // Given
-        let secondaryLabel = appearance.palette.secondaryLabel
-
-        // When
-        let shorthand = ColorContrast.components(of: .blSecondaryLabel, appearance: appearance)
-        let paletteValue = ColorContrast.components(of: secondaryLabel, appearance: appearance)
-
-        // Then
-        #expect(
-            shorthand == paletteValue,
-            "Color.blSecondaryLabel 在 \(appearance) 下與色盤次要標籤色分量不同：\(shorthand) vs \(paletteValue)"
-        )
     }
 }

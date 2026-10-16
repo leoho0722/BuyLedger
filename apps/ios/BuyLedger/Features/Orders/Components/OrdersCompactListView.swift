@@ -16,14 +16,11 @@ struct OrdersCompactListView: View {
     /// 篩選摘要使用的顯示語系
     @Environment(\.locale) private var locale
 
-    /// 清單背景與文字使用的色盤
-    let palette: BLPalette
+    /// 畫面的狀態與事件來源，由父層建立後傳入
+    @Bindable var store: StoreOf<OrderListFeature>
 
     /// 已由父層整理好的日期區段
     let sections: [OrderDateSection]
-
-    /// 畫面的狀態與事件來源，由父層建立後傳入
-    let store: StoreOf<OrderListFeature>
 
     // MARK: - Body
 
@@ -42,7 +39,7 @@ struct OrdersCompactListView: View {
             .padding(.top, BLSpacing.small)
             .padding(.bottom, BLSpacing.section)
         }
-        .background(palette.background)
+        .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Orders.listRoot)
         .scrollDismissesKeyboard(.interactively)
     }
@@ -73,9 +70,9 @@ private extension OrdersCompactListView {
     @ViewBuilder
     func chipButton(_ filter: OrderStatusFilter) -> some View {
         BLFilterChip(
-            title: LocalizedStringKey(filter.title),
             isSelected: store.selectedStatus == filter,
-            size: .large
+            size: .large,
+            title: LocalizedStringKey(filter.title)
         ) {
             store.send(.view(.statusFilterSelected(filter)))
         }
@@ -87,16 +84,19 @@ private extension OrdersCompactListView {
     var unifiedFilterTrigger: some View {
         let language = AppLanguage(locale: locale)
         let summaryText = store.state.filterSummary(language: language)
-        let formattedTitle = language.localizedString(forKey: "orders.filter.label.filterSummary", summaryText)
+        let formattedTitle = language.localizedString(
+            forKey: "orders.filter.label.filterSummary",
+            summaryText
+        )
 
         BLFilterChip(
-            title: LocalizedStringKey(formattedTitle),
-            isSelected: store.committedFilterSelection.isActive,
-            style: .purple,
-            size: .large,
             icon: "line.3.horizontal.decrease",
-            trailingIcon: "chevron.down",
-            isExpanded: true
+            isExpanded: true,
+            isSelected: store.committedFilterSelection.isActive,
+            size: .large,
+            style: .purple,
+            title: LocalizedStringKey(formattedTitle),
+            trailingIcon: "chevron.down"
         ) {
             store.send(.view(.filterSheetTapped))
         }
@@ -111,7 +111,7 @@ private extension OrdersCompactListView {
             Text(LocalizedStringKey(message))
                 .padding(.horizontal, BLSpacing.large)
                 .blTextStyle(.footnote)
-                .foregroundStyle(palette.red)
+                .foregroundStyle(.blRed)
         }
     }
 
@@ -127,7 +127,7 @@ private extension OrdersCompactListView {
         // 空狀態會黏在頂端而非可視區域中央
         .frame(maxWidth: .infinity)
         .containerRelativeFrame(.vertical)
-        .background(palette.background)
+        .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Orders.listEmptyState)
     }
 
@@ -163,18 +163,13 @@ private extension OrdersCompactListView {
             Text(LocalizedStringKey(section.title))
                 .padding(.horizontal, BLSpacing.large)
                 .font(BLTypographyStyle.footnote.font.weight(.semibold))
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             BLCard(padding: 0) {
                 VStack(spacing: 0) {
                     ForEach(Array(section.orders.enumerated()), id: \.element.id) { index, order in
                         if store.isSelecting {
-                            OrderSelectableRow(
-                                order: order,
-                                palette: palette,
-                                isShowingDate: false,
-                                store: store
-                            )
+                            OrderSelectableRow(store: store, isShowingDate: false, order: order)
                         } else {
                             navigableRow(order: order)
                         }
@@ -199,7 +194,7 @@ private extension OrdersCompactListView {
         Button {
             store.send(.view(.orderTapped(order.id)))
         } label: {
-            OrderRowView(order: order, isShowingDate: false)
+            OrderRowView(isShowingDate: false, order: order)
                 .padding(.horizontal, BLSpacing.large)
                 .padding(.vertical, BLSpacing.extraSmall)
                 .contentShape(Rectangle())
@@ -222,10 +217,9 @@ private extension OrdersCompactListView {
 
 #Preview("窄版訂單清單") {
     OrdersCompactListView(
-        palette: BLPalette(),
-        sections: [],
         store: Store(initialState: OrderListFeature.State(orders: SharedReader(value: []))) {
             OrderListFeature()
-        }
+        },
+        sections: []
     )
 }

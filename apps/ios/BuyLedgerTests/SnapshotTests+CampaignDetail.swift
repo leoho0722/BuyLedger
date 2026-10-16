@@ -72,7 +72,7 @@ extension SnapshotTests {
                 original: Self.makeDetailCampaign(),
                 id: UUID(0),
                 currentDate: TestDependencies.fixedNow,
-                wantsReminder: true,
+                isReminderWanted: true,
                 reminderTimestamp: Self.makeDetailReminderTimestamp()
             )
 

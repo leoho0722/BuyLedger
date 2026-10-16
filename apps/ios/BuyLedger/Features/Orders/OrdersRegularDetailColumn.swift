@@ -14,7 +14,7 @@ struct OrdersRegularDetailColumn: View {
     // MARK: - Properties
 
     /// 畫面的狀態與事件來源，由父層建立後傳入
-    let store: StoreOf<OrdersFeature>
+    @Bindable var store: StoreOf<OrdersFeature>
 
     // MARK: - Body
 
@@ -38,9 +38,12 @@ private extension OrdersRegularDetailColumn {
 
     /// 沒有可顯示的選取訂單時的選擇提示
     var emptyState: some View {
-        ContentUnavailableView("orders.edit.label.selectOrders", systemImage: "list.bullet.rectangle")
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(palette.background)
+        ContentUnavailableView(
+            "orders.edit.label.selectOrders",
+            systemImage: "list.bullet.rectangle"
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(.blBackground)
     }
 
     /// 選取訂單的詳情，姓名標題列疊在捲動內容上方
@@ -66,7 +69,7 @@ private extension OrdersRegularDetailColumn {
         HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
             Text(order.customer.name)
                 .blTextStyle(.title3Bold)
-                .foregroundStyle(palette.label)
+                .foregroundStyle(.blLabel)
                 .accessibilityAddTraits(.isHeader)
 
             Spacer()
@@ -80,16 +83,6 @@ private extension OrdersRegularDetailColumn {
         .frame(maxWidth: .infinity, alignment: .leading)
         // 使用系統 bar 材質保留捲動邊緣效果
         .background(.bar)
-    }
-}
-
-// MARK: - Private Method
-
-private extension OrdersRegularDetailColumn {
-
-    /// 詳情欄背景與標題文字使用的色盤，隨目前外觀取得對應的顏色
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 

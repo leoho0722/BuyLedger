@@ -14,7 +14,7 @@ struct OrderEditPhotosSection: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 畫面的狀態與事件來源，由父層建立後傳入
@@ -52,13 +52,13 @@ private extension OrderEditPhotosSection {
 
                 Text("orders.edit.label.loadingPhotos")
                     .blTextStyle(.subhead)
-                    .foregroundStyle(Color.blSecondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
             }
 
         case .failed:
             Label("orders.edit.message.photosLoadedTry", systemImage: "exclamationmark.triangle")
                 .blTextStyle(.subhead)
-                .foregroundStyle(Color.blSecondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
         case .loaded:
             loadedPhotos
@@ -73,13 +73,13 @@ private extension OrderEditPhotosSection {
                 HStack(spacing: BLSpacing.small) {
                     ForEach(Array(store.draftPhotos.enumerated()), id: \.offset) { index, data in
                         BLPhotoThumbnail(
+                            accessibilityID: BLAccessibilityID.OrderEdit.photoThumbnail(
+                                index: index
+                            ),
                             imageData: data,
                             onTap: {
                                 store.send(.view(.photoTapped(index)))
-                            },
-                            accessibilityID: BLAccessibilityID.OrderEdit.photoThumbnail(
-                                index: index
-                            )
+                            }
                         ) {
                             store.send(.view(.deletePhotoTapped(index)))
                         }
@@ -92,11 +92,15 @@ private extension OrderEditPhotosSection {
 
         if store.photoImportFailureCount > 0 {
             Label(
-                AppLanguage.format("orders.edit.message.photoImportFailedNotice", store.photoImportFailureCount, locale: locale),
+                AppLanguage.format(
+                    "orders.edit.message.photoImportFailedNotice",
+                    store.photoImportFailureCount,
+                    locale: locale
+                ),
                 systemImage: "exclamationmark.triangle"
             )
             .blTextStyle(.subhead)
-            .foregroundStyle(Color.blSecondaryLabel)
+            .foregroundStyle(.blSecondaryLabel)
         }
 
         if store.canAddMorePhotos {
@@ -112,14 +116,27 @@ private extension OrderEditPhotosSection {
 
     /// 照片區段的目前張數與上限
     var sectionHeader: some View {
-        Text(AppLanguage.format("orders.edit.label.orderPhotosCount", store.draftPhotos.count, LedgerOrder.maxPhotoCount, locale: locale))
+        Text(
+            AppLanguage.format(
+                "orders.edit.label.orderPhotosCount",
+                store.draftPhotos.count,
+                LedgerOrder.maxPhotoCount,
+                locale: locale
+            )
+        )
     }
 
     /// 照片容量與儲存方式說明
     var sectionFooter: some View {
-        Text(AppLanguage.format("orders.edit.message.photoLimitNotice", LedgerOrder.maxPhotoCount, locale: locale))
-            .blTextStyle(.footnote)
-            .foregroundStyle(Color.blSecondaryLabel)
+        Text(
+            AppLanguage.format(
+                "orders.edit.message.photoLimitNotice",
+                LedgerOrder.maxPhotoCount,
+                locale: locale
+            )
+        )
+        .blTextStyle(.footnote)
+        .foregroundStyle(.blSecondaryLabel)
     }
 }
 

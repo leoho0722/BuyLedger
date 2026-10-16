@@ -66,14 +66,23 @@ struct CampaignListFeature {
         }
 
         /// 單次掃描訂單，批次建立可見開團的列彙總；日期脈絡尚未記錄時為空
-        var rowSummaries: [String: CampaignSummary] {
+        var rowSummaries: RowSummaries {
             guard dateContext != nil else {
-                return [:]
+                return RowSummaries(byName: [:])
             }
             let names = campaigns
                 .filter { statusFilter == nil || $0.status == statusFilter }
                 .map(\.name)
-            return CampaignSummary.batch(campaignNames: names, orders: orders)
+            return RowSummaries(byName: CampaignSummary.batch(campaignNames: names, orders: orders))
+        }
+
+        /// 列表要呈現的日期區段與其日期脈絡；尚未記錄日期脈絡或篩選後沒有區段時為 `nil`
+        var visibleSections: VisibleSections? {
+            let sections = dateSections
+            guard let dateContext, !sections.isEmpty else {
+                return nil
+            }
+            return VisibleSections(sections: sections, dateContext: dateContext)
         }
 
         /// 建立列表所需的唯讀共享資料
@@ -195,6 +204,36 @@ struct CampaignListFeature {
     /// 組合列表的事件處理
     var body: some Reducer<State, Action> {
         Reduce(core)
+    }
+}
+
+// MARK: - Nested Types
+
+extension CampaignListFeature {
+
+    /// 列表各列的開團彙總，依開團名稱取用
+    struct RowSummaries: Equatable, Sendable {
+
+        /// 開團名稱到彙總的字典，只含投影過的名稱
+        let byName: [String: CampaignSummary]
+
+        /// 依開團名稱取得列彙總；未投影的名稱回傳沒有訂單的空彙總
+        ///
+        /// - Parameter name: 開團名稱
+        /// - Returns: 該開團的彙總
+        func summary(forCampaignNamed name: String) -> CampaignSummary {
+            byName[name] ?? CampaignSummary(campaignName: name, orders: [])
+        }
+    }
+
+    /// 列表要呈現的日期區段與區段標題所用的日期脈絡
+    struct VisibleSections: Equatable, Sendable {
+
+        /// 已依篩選與分組算好的頂層日期區段
+        let sections: [CampaignDateSection]
+
+        /// 列表出現時記錄的現在時間與行事曆，用來判斷「今天」「昨天」
+        let dateContext: CampaignDateContext
     }
 }
 

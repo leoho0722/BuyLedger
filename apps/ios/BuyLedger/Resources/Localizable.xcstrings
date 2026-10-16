@@ -411,13 +411,13 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld items · %@"
+            "value" : "%1$lld items · %2$@"
           }
         },
         "zh-Hant" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld 件 · %@"
+            "value" : "%1$lld 件 · %2$@"
           }
         }
       }
@@ -1465,7 +1465,7 @@
         "en" : {
           "stringUnit" : {
             "state" : "translated",
-            "value" : "%lld orders · %@"
+            "value" : "%1$lld orders · %2$@"
           }
         },
         "zh-Hant" : {
@@ -2170,6 +2170,22 @@
         }
       }
     },
+    "customers.list.label.topCount" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Top %lld"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Top %lld"
+          }
+        }
+      }
+    },
     "customers.list.label.totalSpending" : {
       "localizations" : {
         "en" : {
@@ -2595,6 +2611,23 @@
         }
       }
     },
+    "fx.rates.label.conversionRate" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 %1$@ = %2$@ TWD"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "1 %1$@ = %2$@ TWD"
+          }
+        }
+      }
+    },
     "fx.rates.label.liveRatesTo" : {
       "localizations" : {
         "en" : {
@@ -2640,6 +2673,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "來源幣別"
+          }
+        }
+      }
+    },
+    "fx.rates.label.sourceTimestamp" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ExchangeRate-API · %@"
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "ExchangeRate-API · %@"
           }
         }
       }

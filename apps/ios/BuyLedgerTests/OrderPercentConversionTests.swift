@@ -87,7 +87,7 @@ struct OrderPercentConversionTests {
         }
         @Bindable var bindable = store
         let rate = $bindable.draft[dynamicMember: field.keyPath]
-        let percentage = OrderEditPercentField.percentageBinding(for: rate)
+        let percentage = OrderPercentConversion.percentageBinding(for: rate)
 
         // When
         percentage.wrappedValue = entered
@@ -127,7 +127,7 @@ struct OrderPercentConversionTests {
             }
             rate.wrappedValue = newValue
         }
-        let percentage = OrderEditPercentField.percentageBinding(for: observedRate)
+        let percentage = OrderPercentConversion.percentageBinding(for: observedRate)
 
         // When
         percentage.wrappedValue = percentage.wrappedValue

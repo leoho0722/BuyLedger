@@ -18,11 +18,11 @@ struct OrderRowView: View {
     /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
-    /// 要顯示的訂單
-    let order: LedgerOrder
-
     /// 是否在列內顯示訂購日期
     var isShowingDate: Bool = true
+
+    /// 要顯示的訂單
+    let order: LedgerOrder
 
     /// 右欄呈現變體，預設為訂單頁的「狀態膠囊 + 實際收款 + 損益」
     var trailing: Trailing = .statusAndProfit
@@ -90,7 +90,7 @@ private extension OrderRowView {
     var dateText: some View {
         Text(OrderFormatters.shortDate(order.date, locale: locale))
             .blTextStyle(.caption)
-            .foregroundStyle(Color.blSecondaryLabel)
+            .foregroundStyle(.blSecondaryLabel)
     }
 
     /// 訂單的商品摘要，每項商品一行
@@ -98,7 +98,7 @@ private extension OrderRowView {
         Text(order.itemSummary)
             .fixedSize(horizontal: false, vertical: true)
             .blTextStyle(.footnote)
-            .foregroundStyle(Color.blSecondaryLabel)
+            .foregroundStyle(.blSecondaryLabel)
     }
 
     /// 類別 tag 膠囊
@@ -109,8 +109,6 @@ private extension OrderRowView {
     /// 右欄內容，依 ``Trailing`` 變體切換
     @ViewBuilder
     var trailingColumn: some View {
-        let palette = BLPalette()
-
         switch trailing {
         case .statusAndProfit:
             let summary = order.summary
@@ -126,7 +124,7 @@ private extension OrderRowView {
 
                 Text(OrderFormatters.signedTWD(summary.profit, locale: locale))
                     .font(BLTypographyStyle.caption.font.weight(.semibold))
-                    .foregroundStyle(summary.profit >= 0 ? palette.green : palette.red)
+                    .foregroundStyle(summary.profit >= 0 ? .blGreen : .blRed)
                     .monospacedDigit()
                     .accessibilityHidden(true)
             }

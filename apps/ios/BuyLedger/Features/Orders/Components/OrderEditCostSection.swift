@@ -80,7 +80,7 @@ private extension OrderEditCostSection {
         if store.isSelectedPaymentMethodCOD {
             Text("orders.edit.message.cashDeliveryReceived")
                 .blTextStyle(.footnote)
-                .foregroundStyle(Color.blSecondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
         }
     }
 }

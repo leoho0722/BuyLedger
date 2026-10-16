@@ -11,7 +11,7 @@ import Foundation
 
 extension DependencyConventionScanTests {
 
-    /// 檢查 Service 測試值 closure 與其他依賴的 `testValue` 宣告，供 `violations(of:in:)` 跨檔使用
+    /// 檢查 Service 測試值 closure 與其他依賴的 `testValue` 宣告，供 `violations(of:in:viewTypeNames:)` 跨檔使用
     ///
     /// - Parameter file: 要掃描的 Swift 原始碼
     /// - Returns: 未符合測試值規範的違規

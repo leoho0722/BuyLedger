@@ -168,7 +168,7 @@ extension CampaignListFeatureTests {
 
         // Then
         #expect(sections == [])
-        #expect(summaries == [:])
+        #expect(summaries.byName == [:])
     }
 
     /// 列彙總只包含篩選後可見的開團名稱，並採用唯讀訂單的金額
@@ -200,8 +200,8 @@ extension CampaignListFeatureTests {
         let summaries = state.rowSummaries
 
         // Then
-        #expect(Set(summaries.keys) == ["進行團"])
-        #expect(summaries["進行團"]?.orderCount == 1)
-        #expect(summaries["進行團"]?.receivables == 1_200)
+        #expect(Set(summaries.byName.keys) == ["進行團"])
+        #expect(summaries.byName["進行團"]?.orderCount == 1)
+        #expect(summaries.byName["進行團"]?.receivables == 1_200)
     }
 }

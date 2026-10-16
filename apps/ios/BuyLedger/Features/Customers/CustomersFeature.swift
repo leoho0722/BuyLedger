@@ -12,6 +12,11 @@ import Foundation
 @Reducer
 struct CustomersFeature {
 
+    // MARK: - Properties
+
+    /// 強調區塊顯示的前幾名客戶數量
+    static let topHighlightCount = 3
+
     // MARK: - State
 
     /// 客戶彙總功能狀態
@@ -24,6 +29,14 @@ struct CustomersFeature {
         /// 依累計消費由高到低排序的客戶彙總列
         var customers: [CustomerRow] {
             CustomerRow.aggregate(orders: orders)
+        }
+
+        /// 強調區塊的前幾名客戶，依累計消費由高到低標示名次 (由 1 起算)
+        var topCustomers: [CustomerRank] {
+            customers
+                .prefix(CustomersFeature.topHighlightCount)
+                .enumerated()
+                .map { CustomerRank(rank: $0.offset + 1, customer: $0.element) }
         }
 
         /// 以宿主提供的唯讀來源建立客戶頁

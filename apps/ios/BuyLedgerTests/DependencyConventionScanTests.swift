@@ -180,6 +180,9 @@ extension DependencyConventionScanTests {
 
         /// 禁止 App target 附掛 SwiftData model container
         case appModelContainer
+
+        /// 遵循 `View` 的型別不得宣告 `@Dependency`，production 程式碼不得讀取裝置曆法
+        case viewDependency
     }
 
     /// 分別確認掃描器涵蓋的依賴規範子範圍
@@ -260,6 +263,19 @@ extension DependencyConventionScanTests {
 
         /// 各括號擷取片段的文字；未參與匹配的群組為 nil
         let captures: [String?]
+    }
+
+    /// 原始碼中一個 `struct`、`class`、`enum` 或 `extension` 宣告的名稱、遵循情形與本體範圍
+    struct TypeDeclaration: Sendable {
+
+        /// 宣告的型別名稱，巢狀型別取最後一段
+        let name: String
+
+        /// 繼承子句 (不含 `where` 子句) 是否含整字 `View`
+        let hasViewConformance: Bool
+
+        /// 宣告本體從開括號到閉括號的範圍
+        let bodyRange: Range<String.Index>
     }
 
     /// 掃描根目錄或整理相對路徑時可能發生的錯誤

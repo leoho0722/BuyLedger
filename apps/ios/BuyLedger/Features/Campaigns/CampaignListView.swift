@@ -106,14 +106,10 @@ private extension CampaignListView {
     var loadedContent: some View {
         if store.campaigns.isEmpty {
             emptyState
+        } else if let visibleSections = store.visibleSections {
+            sectionList(visibleSections.sections, dateContext: visibleSections.dateContext)
         } else {
-            let sections = store.dateSections
-
-            if let dateContext = store.dateContext, !sections.isEmpty {
-                sectionList(sections, dateContext: dateContext)
-            } else {
-                filteredEmptyState
-            }
+            filteredEmptyState
         }
     }
 
@@ -133,7 +129,7 @@ private extension CampaignListView {
         }
     }
 
-    /// 狀態篩選選項
+    /// 建立對應開團狀態的篩選選項
     ///
     /// - Parameter status: 對應的開團狀態
     /// - Returns: 選項 view
@@ -142,7 +138,7 @@ private extension CampaignListView {
             .tag(CampaignStatus?.some(status))
     }
 
-    /// 載入失敗畫面與重試鍵
+    /// 顯示載入失敗畫面與重試鍵
     ///
     /// - Parameter message: 持續顯示的失敗訊息
     /// - Returns: 載入失敗 view
@@ -168,6 +164,7 @@ private extension CampaignListView {
     ) -> some View {
         CampaignSectionList(
             dateContext: dateContext,
+            isShowingOpenDate: store.grouping == .year,
             onDelete: {
                 store.send(.view(.deleteCampaignTapped($0)))
             },
@@ -178,7 +175,6 @@ private extension CampaignListView {
                 store.send(.view(.campaignTapped($0)))
             },
             sections: sections,
-            showsOpenDate: store.grouping == .year,
             summaries: store.rowSummaries
         )
     }

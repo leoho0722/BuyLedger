@@ -14,7 +14,7 @@ struct OrderFilterPaymentMethodSection: View {
     // MARK: - Properties
 
     /// 畫面的狀態與事件來源，由父層建立後傳入
-    let store: StoreOf<OrderFilterFeature>
+    @Bindable var store: StoreOf<OrderFilterFeature>
 
     // MARK: - Body
 
@@ -42,7 +42,7 @@ private extension OrderFilterPaymentMethodSection {
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
                 Image(systemName: "creditcard")
-                    .foregroundStyle(BLPalette().accent)
+                    .foregroundStyle(.blAccent)
 
                 Text("common.action.label.all")
                     .fixedSize(horizontal: false, vertical: true)
@@ -54,7 +54,7 @@ private extension OrderFilterPaymentMethodSection {
                 if store.pendingFilterSelection.paymentMethod == nil {
                     // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
-                        .foregroundStyle(BLPalette().accent)
+                        .foregroundStyle(.blAccent)
                         .accessibilityHidden(true)
                 }
             }
@@ -77,7 +77,7 @@ private extension OrderFilterPaymentMethodSection {
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
                 Image(systemName: "creditcard")
-                    .foregroundStyle(BLPalette().accent)
+                    .foregroundStyle(.blAccent)
 
                 Text(paymentMethod)
                     .fixedSize(horizontal: false, vertical: true)
@@ -89,7 +89,7 @@ private extension OrderFilterPaymentMethodSection {
                 if store.pendingFilterSelection.paymentMethod == paymentMethod {
                     // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
-                        .foregroundStyle(BLPalette().accent)
+                        .foregroundStyle(.blAccent)
                         .accessibilityHidden(true)
                 }
             }

@@ -14,7 +14,7 @@ struct OrderFilterDateSection: View {
     // MARK: - Properties
 
     /// 畫面的狀態與事件來源，由父層建立後傳入
-    let store: StoreOf<OrderFilterFeature>
+    @Bindable var store: StoreOf<OrderFilterFeature>
 
     // MARK: - Body
 
@@ -45,7 +45,7 @@ private extension OrderFilterDateSection {
         } label: {
             HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
                 Image(systemName: "calendar")
-                    .foregroundStyle(BLPalette().accent)
+                    .foregroundStyle(.blAccent)
 
                 Text(LocalizedStringKey(period.title))
                     .fixedSize(horizontal: false, vertical: true)
@@ -57,7 +57,7 @@ private extension OrderFilterDateSection {
                 if store.pendingFilterSelection.datePeriod == period {
                     // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
                     Image(systemName: "checkmark")
-                        .foregroundStyle(BLPalette().accent)
+                        .foregroundStyle(.blAccent)
                         .accessibilityHidden(true)
                 }
             }

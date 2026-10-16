@@ -34,23 +34,13 @@ extension BLProgressViewStyle: ProgressViewStyle {
         GeometryReader { proxy in
             ZStack(alignment: .leading) {
                 Capsule()
-                    .fill(track ?? palette.fillQuaternary)
+                    .fill(track ?? .blFillQuaternary)
 
                 Capsule()
-                    .fill(tint ?? palette.accent)
                     .frame(width: proxy.size.width * (configuration.fractionCompleted ?? 0))
+                    .foregroundStyle(tint ?? .blAccent)
             }
         }
         .frame(height: 6)
-    }
-}
-
-// MARK: - Private Method
-
-private extension BLProgressViewStyle {
-
-    /// 目前外觀對應的色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }

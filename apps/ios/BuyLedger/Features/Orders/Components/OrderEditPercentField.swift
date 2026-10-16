@@ -27,27 +27,6 @@ struct OrderEditPercentField: View {
     /// 草稿中 0 至 1 比例值的雙向綁定
     let value: Binding<Decimal>
 
-    // MARK: - Init
-
-    /// 建立與表單共用焦點的百分比欄位
-    ///
-    /// - Parameters:
-    ///   - title: 欄位的本地化標題
-    ///   - value: 草稿比例值的雙向綁定
-    ///   - field: 對應的焦點欄位
-    ///   - focusedField: 表單共用的焦點綁定
-    init(
-        title: String,
-        value: Binding<Decimal>,
-        field: OrderEditFeature.State.Field,
-        focusedField: FocusState<OrderEditFeature.State.Field?>.Binding
-    ) {
-        self.title = title
-        self.value = value
-        self.field = field
-        self.focusedField = focusedField
-    }
-
     // MARK: - Body
 
     /// 組合區段或元件的內容
@@ -82,10 +61,10 @@ private extension OrderEditPercentField {
 
     /// 百分比數值與符號，沿用共用的比例換算綁定
     var numberField: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: BLSpacing.extraSmall) {
             TextField(
                 "",
-                value: Self.percentageBinding(for: value),
+                value: OrderPercentConversion.percentageBinding(for: value),
                 format: Decimal.FormatStyle.number.precision(.fractionLength(2)).grouping(.never)
             )
             .multilineTextAlignment(.trailing)
@@ -95,32 +74,11 @@ private extension OrderEditPercentField {
             .focused(focusedField, equals: field)
 
             Text(verbatim: "%")
-                .foregroundStyle(Color.blSecondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
         }
         .frame(maxWidth: .infinity, alignment: .trailing)
         .frame(minHeight: BLHitTarget.minimum)
         .contentShape(.rect)
-    }
-}
-
-// MARK: - Internal Method
-
-extension OrderEditPercentField {
-
-    /// 以畫面與測試共用的換算方式建立百分比綁定，相同費率不重複寫回
-    ///
-    /// - Parameter rate: 草稿中儲存比例值的綁定
-    /// - Returns: 顯示與接收百分比的十進位綁定
-    static func percentageBinding(for rate: Binding<Decimal>) -> Binding<Decimal> {
-        Binding {
-            OrderPercentConversion.percentage(from: rate.wrappedValue)
-        } set: { newValue in
-            let converted = OrderPercentConversion.rate(from: newValue)
-            guard converted != rate.wrappedValue else {
-                return
-            }
-            rate.wrappedValue = converted
-        }
     }
 }
 
@@ -131,10 +89,10 @@ extension OrderEditPercentField {
 
     Form {
         OrderEditPercentField(
-            title: "orders.edit.label.cardFee",
-            value: .constant(0.015),
             field: .cardFeeRate,
-            focusedField: $focusedField
+            focusedField: $focusedField,
+            title: "orders.edit.label.cardFee",
+            value: .constant(0.015)
         )
     }
 }

@@ -12,7 +12,7 @@ struct InsightsCategoryCard: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 依獲利由高到低排列的類別
@@ -48,14 +48,14 @@ private extension InsightsCategoryCard {
     var title: some View {
         Text("insights.chart.label.categoryRanking")
             .font(BLTypographyStyle.subhead.font.weight(.semibold))
-            .foregroundStyle(palette.label)
+            .foregroundStyle(.blLabel)
     }
 
     /// 沒有類別資料時的提示
     var emptyState: some View {
         Text("insights.chart.label.categoryData")
             .blTextStyle(.footnote)
-            .foregroundStyle(palette.secondaryLabel)
+            .foregroundStyle(.blSecondaryLabel)
     }
 
     /// 依獲利排行逐列顯示的類別，每列都可點擊
@@ -68,7 +68,15 @@ private extension InsightsCategoryCard {
                     .contentShape(.rect)
             }
             .buttonStyle(.plain)
-            .accessibilityHint(Text(AppLanguage.format("insights.chart.accessibility.viewOrders", category.name, locale: locale)))
+            .accessibilityHint(
+                Text(
+                    AppLanguage.format(
+                        "insights.chart.accessibility.viewOrders",
+                        category.name,
+                        locale: locale
+                    )
+                )
+            )
             .accessibilityValue(Text(BLFormatters.twd(category.profit, locale: locale)))
             .accessibilityIdentifier(
                 BLAccessibilityID.Insights.categoryRankRow(category: category.name)
@@ -76,7 +84,7 @@ private extension InsightsCategoryCard {
         }
     }
 
-    /// 類別排行單列：名次、類別名稱、獲利金額與相對於第一名的進度條
+    /// 組出類別排行單列，依序為名次、類別名稱、獲利金額與相對於第一名的進度條
     ///
     /// - Parameters:
     ///   - rank: 名次，由 1 起算
@@ -85,30 +93,26 @@ private extension InsightsCategoryCard {
     /// - Returns: 類別列
     @ViewBuilder
     func categoryRow(rank: Int, category: InsightsCategory, tint: Color) -> some View {
-        let value = NSDecimalNumber(decimal: category.profit).doubleValue
-        let total = NSDecimalNumber(decimal: topProfit).doubleValue
-        let fraction = total > 0 ? CGFloat(value / total) : 0
-
         VStack(alignment: .leading, spacing: 6) {
             HStack {
-                Text(verbatim: "\(rank). \(category.name)")
+                Text(verbatim: InsightsFormatters.rankTitle(rank: rank, name: category.name))
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                    .foregroundStyle(palette.label)
+                    .foregroundStyle(.blLabel)
 
                 Spacer()
 
                 Text(BLFormatters.twd(category.profit, locale: locale))
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
                     .monospacedDigit()
-                    .foregroundStyle(palette.label)
+                    .foregroundStyle(.blLabel)
 
                 Image(systemName: "chevron.right")
                     .blTextStyle(.footnote)
-                    .foregroundStyle(palette.tertiaryLabel)
+                    .foregroundStyle(.blTertiaryLabel)
                     .accessibilityHidden(true)
             }
 
-            ProgressView(value: min(max(fraction, 0), 1))
+            ProgressView(value: category.ratio)
                 .progressViewStyle(BLProgressViewStyle(tint: tint))
         }
     }
@@ -118,28 +122,18 @@ private extension InsightsCategoryCard {
 
 private extension InsightsCategoryCard {
 
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
-    /// 進度條依排行順序循環使用的色盤序列
+    /// 進度條依排行順序循環使用的色彩序列
     var categoryTints: [Color] {
         [
-            palette.accent,
-            palette.purple,
-            palette.orange,
-            palette.teal,
-            palette.pink,
+            .blAccent,
+            .blPurple,
+            .blOrange,
+            .blTeal,
+            .blPink,
         ]
     }
 
-    /// 第一名類別的獲利，作為進度條比例的基準；沒有類別時為 1
-    var topProfit: Decimal {
-        categories.first?.profit ?? 1
-    }
-
-    /// 依排行順位取用循環色盤中的進度條顏色
+    /// 依排行順位取用循環色彩中的進度條顏色
     ///
     /// - Parameter index: 排行順位，由 0 起算
     /// - Returns: 該列進度條的顏色
@@ -152,9 +146,9 @@ private extension InsightsCategoryCard {
 
 #Preview("insights.chart.label.categoryRanking") {
     InsightsCategoryCard(categories: [
-        InsightsCategory(name: "美妝保養", profit: 8_600),
-        InsightsCategory(name: "服飾配件", profit: 5_200),
-        InsightsCategory(name: "零食", profit: 1_900),
+        InsightsCategory(name: "美妝保養", profit: 8_600, ratio: 1),
+        InsightsCategory(name: "服飾配件", profit: 5_200, ratio: 0.6),
+        InsightsCategory(name: "零食", profit: 1_900, ratio: 0.22),
     ]) { _ in
     }
     .padding()

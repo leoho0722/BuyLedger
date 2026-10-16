@@ -20,6 +20,39 @@ enum CustomerRankBadgeStyle {
     case other
 }
 
+// MARK: - Computed Properties
+
+extension CustomerRankBadgeStyle {
+
+    /// 徽章底色
+    var background: Color {
+        switch self {
+        case .first:
+            Color("BLRankBadgeFirstBackground", bundle: .assets)
+
+        case .second:
+            BLTone.neutral.indicator
+
+        case .other:
+            .blFillTertiary
+        }
+    }
+
+    /// 徽章數字色
+    var numeral: Color {
+        switch self {
+        case .first:
+            .white
+
+        case .second:
+            BLTone.neutral.onIndicator
+
+        case .other:
+            .blSecondaryLabel
+        }
+    }
+}
+
 // MARK: - Internal Method
 
 extension CustomerRankBadgeStyle {
@@ -32,40 +65,12 @@ extension CustomerRankBadgeStyle {
         switch rank {
         case 1:
             .first
+
         case 2:
             .second
+
         default:
             .other
-        }
-    }
-
-    /// 回傳徽章底色
-    ///
-    /// - Parameter palette: 目前外觀對應的色盤
-    /// - Returns: 徽章背景使用的色彩
-    func background(in palette: BLPalette) -> Color {
-        switch self {
-        case .first:
-            Color("BLRankBadgeFirstBackground", bundle: .assets)
-        case .second:
-            BLTone.neutral.indicator
-        case .other:
-            palette.fillTertiary
-        }
-    }
-
-    /// 回傳徽章數字色
-    ///
-    /// - Parameter palette: 目前外觀對應的色盤
-    /// - Returns: 徽章數字使用的色彩
-    func numeral(in palette: BLPalette) -> Color {
-        switch self {
-        case .first:
-            .white
-        case .second:
-            BLTone.neutral.onIndicator
-        case .other:
-            palette.secondaryLabel
         }
     }
 }

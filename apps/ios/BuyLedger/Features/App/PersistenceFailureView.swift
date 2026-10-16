@@ -13,11 +13,11 @@ struct PersistenceFailureView: View {
 
     // MARK: - Properties
 
-    /// 提供復原階段與失敗原因，並接收復原操作的 Store
-    @Bindable var store: StoreOf<PersistenceFailureFeature>
-
     /// 隨 Dynamic Type 文字大小縮放的圖示大小
     @ScaledMetric private var iconSize: CGFloat = 44
+
+    /// 提供復原階段與失敗原因，並接收復原操作的 Store
+    @Bindable var store: StoreOf<PersistenceFailureFeature>
 
     // MARK: - Body
 
@@ -27,7 +27,7 @@ struct PersistenceFailureView: View {
             .padding(32)
             .frame(maxWidth: 520)
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(palette.plainBackground)
+            .background(.blPlainBackground)
             .accessibilityElement(children: .contain)
             .accessibilityIdentifier(BLAccessibilityID.PersistenceFailure.root)
             .alert($store.scope(state: \.destination, action: \.destination).alert)
@@ -44,10 +44,14 @@ private extension PersistenceFailureView {
         VStack(spacing: 20) {
             Image(systemName: iconName)
                 .font(.system(size: iconSize))
-                .foregroundStyle(store.phase == .blocked ? palette.red : palette.green)
+                .foregroundStyle(store.phase == .blocked ? .blRed : .blGreen)
 
-            Text(store.phase == .blocked ? "common.general.label.unableOpenData" : "common.general.label.backupKept")
-                .blTextStyle(.title2)
+            Text(
+                store.phase == .blocked
+                    ? "common.general.label.unableOpenData"
+                    : "common.general.label.backupKept"
+            )
+            .blTextStyle(.title2)
 
             if store.phase == .blocked {
                 blockedDetail
@@ -67,7 +71,7 @@ private extension PersistenceFailureView {
         if let recoveryFailureReason = store.recoveryFailureReason {
             Text(recoveryFailureReason)
                 .blTextStyle(.footnote)
-                .foregroundStyle(palette.red)
+                .foregroundStyle(.blRed)
                 .multilineTextAlignment(.center)
         }
 
@@ -82,11 +86,6 @@ private extension PersistenceFailureView {
 // MARK: - Private Method
 
 private extension PersistenceFailureView {
-
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
 
     /// 依復原階段顯示阻斷或備份完成的圖示
     var iconName: String {

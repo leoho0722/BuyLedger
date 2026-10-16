@@ -36,6 +36,11 @@ struct AISummaryFeature {
 
         /// 串流逾時時顯示的截斷說明；逾時不是失敗，不使用 `errorMessage`
         var truncationMessage: LocalizedStringResource?
+
+        /// 失敗畫面顯示的訊息，沒有具體原因時退回通用提示
+        var failureMessage: LocalizedStringResource {
+            errorMessage ?? "orders.edit.message.pleaseTryAgain"
+        }
     }
 
     // MARK: - Action
@@ -165,22 +170,19 @@ private extension AISummaryFeature {
 
         case .view(.closeTapped):
             let dismissAction = dismiss
-            return .merge(
-                .cancel(id: CancelID.stream),
-                .run { _ in await dismissAction() }
-            )
+            return .merge(.cancel(id: CancelID.stream), .run { _ in await dismissAction() })
 
         case .chunkReceived(let text):
             state.summaryText += text
             return .none
 
-        case .streamFinished:
-            state.phase = .finished
-            return .none
-
         case .streamFailed(let message):
             state.phase = .failed
             state.errorMessage = message
+            return .none
+
+        case .streamFinished:
+            state.phase = .finished
             return .none
 
         case .streamTimedOut:
@@ -215,10 +217,7 @@ private extension AISummaryFeature {
             "ai.summary.message.responseParsedTry"
 
         case .apiError(let code):
-            LocalizedStringResource(
-                "ai.summary.message.serviceErrorCode",
-                defaultValue: "\(code)"
-            )
+            LocalizedStringResource("ai.summary.message.serviceErrorCode", defaultValue: "\(code)")
         }
     }
 

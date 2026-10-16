@@ -13,14 +13,14 @@ struct OrdersRegularListColumn: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
+
+    /// 畫面的狀態與事件來源，由父層建立後傳入
+    @Bindable var store: StoreOf<OrderListFeature>
 
     /// 已套用篩選的訂單，由父層單次求值後傳入
     let orders: [LedgerOrder]
-
-    /// 畫面的狀態與事件來源，由父層建立後傳入
-    let store: StoreOf<OrderListFeature>
 
     // MARK: - Body
 
@@ -32,7 +32,7 @@ struct OrdersRegularListColumn: View {
             ScrollView {
                 listContent
             }
-            .background(palette.background)
+            .background(.blBackground)
             .accessibilityIdentifier(BLAccessibilityID.Orders.listRoot)
         }
     }
@@ -72,8 +72,8 @@ private extension OrdersRegularListColumn {
     /// - Returns: 狀態篩選按鈕
     func statusChip(_ filter: OrderStatusFilter) -> some View {
         BLFilterChip(
-            title: LocalizedStringKey(filter.title),
-            isSelected: store.selectedStatus == filter
+            isSelected: store.selectedStatus == filter,
+            title: LocalizedStringKey(filter.title)
         ) {
             store.send(.view(.statusFilterSelected(filter)))
         }
@@ -86,10 +86,10 @@ private extension OrdersRegularListColumn {
     /// - Returns: 日期區間篩選按鈕
     func dateChip(_ period: OrderDatePeriod) -> some View {
         BLFilterChip(
-            title: LocalizedStringKey(period.title),
+            icon: "calendar",
             isSelected: store.selectedDatePeriod == period,
             style: .accent,
-            icon: "calendar"
+            title: LocalizedStringKey(period.title)
         ) {
             store.send(.view(.datePeriodSelected(period)))
         }
@@ -98,12 +98,15 @@ private extension OrdersRegularListColumn {
     /// 付款方式篩選的觸發鈕，顯示目前選取的付款方式，沒有選取時顯示「全部」
     var paymentMethodFilterTrigger: some View {
         BLFilterChip(
-            title: OrderFormatters.paymentMethodFilterTitle(store.selectedPaymentMethod, locale: locale),
+            icon: "creditcard",
+            isExpanded: true,
             isSelected: store.hasPaymentMethodFilter,
             style: .purple,
-            icon: "creditcard",
-            trailingIcon: "chevron.down",
-            isExpanded: true
+            title: OrderFormatters.paymentMethodFilterTitle(
+                store.selectedPaymentMethod,
+                locale: locale
+            ),
+            trailingIcon: "chevron.down"
         ) {
             store.send(.view(.paymentMethodPickerTapped))
         }
@@ -112,12 +115,12 @@ private extension OrdersRegularListColumn {
     /// 商品類別篩選的觸發鈕，顯示目前選取的類別，沒有選取時顯示「全部」
     var categoryFilterTrigger: some View {
         BLFilterChip(
-            title: OrderFormatters.categoryFilterTitle(store.selectedCategory, locale: locale),
+            icon: "tag",
+            isExpanded: true,
             isSelected: store.hasCategoryFilter,
             style: .purple,
-            icon: "tag",
-            trailingIcon: "chevron.down",
-            isExpanded: true
+            title: OrderFormatters.categoryFilterTitle(store.selectedCategory, locale: locale),
+            trailingIcon: "chevron.down"
         ) {
             store.send(.view(.categoryPickerTapped))
         }
@@ -143,7 +146,7 @@ private extension OrdersRegularListColumn {
             if case .failed(let message) = store.loadState {
                 Text(LocalizedStringKey(message))
                     .blTextStyle(.footnote)
-                    .foregroundStyle(palette.red)
+                    .foregroundStyle(.blRed)
             }
         }
         .padding(.top, BLSpacing.small)
@@ -157,7 +160,7 @@ private extension OrdersRegularListColumn {
             VStack(spacing: 0) {
                 ForEach(Array(orders.enumerated()), id: \.element.id) { index, order in
                     if store.isSelecting {
-                        OrderSelectableRow(order: order, palette: palette, store: store)
+                        OrderSelectableRow(store: store, order: order)
                     } else {
                         detailRow(order: order)
                     }
@@ -216,16 +219,6 @@ private extension OrdersRegularListColumn {
     }
 }
 
-// MARK: - Private Method
-
-private extension OrdersRegularListColumn {
-
-    /// 清單欄背景與文字使用的色盤，隨目前外觀取得對應的顏色
-    var palette: BLPalette {
-        BLPalette()
-    }
-}
-
 // MARK: - Preview
 
 #Preview("訂單清單欄") {
@@ -236,9 +229,9 @@ private extension OrdersRegularListColumn {
     }()
 
     OrdersRegularListColumn(
-        orders: LedgerOrder.sampleOrders,
         store: Store(initialState: previewState) {
             OrderListFeature()
-        }
+        },
+        orders: LedgerOrder.sampleOrders
     )
 }

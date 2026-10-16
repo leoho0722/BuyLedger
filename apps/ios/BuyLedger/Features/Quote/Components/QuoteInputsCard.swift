@@ -12,14 +12,20 @@ struct QuoteInputsCard: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// Dynamic Type 尺寸，無障礙字級時解除幣別名稱與單位的單行限制
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
-    /// 來源幣別 ISO 代碼
-    let currencyCode: String
+    /// 數值輸入框的寬度，隨 Dynamic Type 縮放
+    @ScaledMetric private var inputFieldWidth: CGFloat = 120
 
-    /// 來源幣別下的商品本金
-    @Binding var itemPrice: Decimal
+    /// 單位欄位的最小寬度，隨 Dynamic Type 縮放
+    @ScaledMetric private var unitMinWidth: CGFloat = 60
+
+    /// 刷卡手續費 %
+    @Binding var cardFeePercent: Decimal
 
     /// 來源幣別下的當地運費
     @Binding var domesticShipping: Decimal
@@ -27,8 +33,8 @@ struct QuoteInputsCard: View {
     /// 國際運費 (TWD)
     @Binding var internationalShippingTWD: Decimal
 
-    /// 刷卡手續費 %
-    @Binding var cardFeePercent: Decimal
+    /// 來源幣別下的商品本金
+    @Binding var itemPrice: Decimal
 
     /// 金流手續費 %
     @Binding var paymentFeePercent: Decimal
@@ -38,6 +44,9 @@ struct QuoteInputsCard: View {
 
     /// 目標毛利 %
     @Binding var targetMarginPercent: Decimal
+
+    /// 來源幣別 ISO 代碼
+    let currencyCode: String
 
     /// 數值欄位的鍵盤焦點，由宿主畫面持有
     var focus: FocusState<Bool>.Binding
@@ -51,10 +60,7 @@ struct QuoteInputsCard: View {
     var body: some View {
         BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                Text("quote.calculator.label.itemInformation")
-                    .font(BLTypographyStyle.caption.font.weight(.semibold))
-                    .foregroundStyle(palette.secondaryLabel)
-                    .textCase(.uppercase)
+                sectionTitle
 
                 currencyPicker
 
@@ -62,14 +68,44 @@ struct QuoteInputsCard: View {
                     "quote.calculator.label.itemPrice",
                     $itemPrice,
                     currencyCode,
-                    allowsDecimalEntry: true,
+                    isDecimalEntryAllowed: true,
                     identifier: BLAccessibilityID.Quote.principalField
                 )
-                numberField("quote.calculator.label.localShipping", $domesticShipping, currencyCode, allowsDecimalEntry: true)
-                numberField("orders.detail.label.internationalShipping", $internationalShippingTWD, "quote.calculator.label.twdItem")
-                numberField("orders.detail.label.cardFee", $cardFeePercent, "%", fractionDigits: 1)
-                numberField("orders.detail.label.paymentProcessingFee", $paymentFeePercent, "%", fractionDigits: 1)
-                numberField("orders.detail.label.platformFee", $platformFeePercent, "%", fractionDigits: 1)
+
+                numberField(
+                    "quote.calculator.label.localShipping",
+                    $domesticShipping,
+                    currencyCode,
+                    isDecimalEntryAllowed: true
+                )
+
+                numberField(
+                    "orders.detail.label.internationalShipping",
+                    $internationalShippingTWD,
+                    "quote.calculator.label.twdItem"
+                )
+
+                numberField(
+                    "orders.detail.label.cardFee",
+                    $cardFeePercent,
+                    "%",
+                    fractionDigits: 1
+                )
+
+                numberField(
+                    "orders.detail.label.paymentProcessingFee",
+                    $paymentFeePercent,
+                    "%",
+                    fractionDigits: 1
+                )
+
+                numberField(
+                    "orders.detail.label.platformFee",
+                    $platformFeePercent,
+                    "%",
+                    fractionDigits: 1
+                )
+
                 numberField("quote.calculator.label.targetMargin", $targetMarginPercent, "%")
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -81,13 +117,21 @@ struct QuoteInputsCard: View {
 
 private extension QuoteInputsCard {
 
+    /// 輸入卡頂端的區塊標題
+    var sectionTitle: some View {
+        Text("quote.calculator.label.itemInformation")
+            .font(BLTypographyStyle.caption.font.weight(.semibold))
+            .foregroundStyle(.blSecondaryLabel)
+            .textCase(.uppercase)
+    }
+
     /// 來源幣別選擇按鈕
     var currencyPicker: some View {
         Button(action: onCurrencyPickerTapped) {
             HStack(spacing: BLSpacing.small) {
                 Text("fx.rates.label.sourceCurrency")
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
 
                 Spacer()
 
@@ -97,18 +141,18 @@ private extension QuoteInputsCard {
                         language: AppLanguage(locale: locale)
                     )
                 )
-                    .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                    .foregroundStyle(palette.label)
-                    .lineLimit(1)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .font(BLTypographyStyle.subhead.font.weight(.semibold))
+                .foregroundStyle(.blLabel)
 
                 Image(systemName: "chevron.right")
                     .font(BLTypographyStyle.caption.font.weight(.semibold))
-                    .foregroundStyle(palette.tertiaryLabel)
+                    .foregroundStyle(.blTertiaryLabel)
                     .accessibilityHidden(true)
             }
             .padding(.vertical, BLSpacing.small)
             .padding(.horizontal, BLSpacing.medium)
-            .background(palette.fillTertiary)
+            .background(.blFillTertiary)
             .clipShape(RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous))
             .contentShape(Rectangle())
         }
@@ -117,14 +161,14 @@ private extension QuoteInputsCard {
         .accessibilityValue(currencyCode)
     }
 
-    /// 數值輸入列，支援直接輸入精確數值
+    /// 組出數值輸入列，支援直接輸入精確數值
     ///
     /// - Parameters:
     ///   - label: 欄位名稱
     ///   - value: 雙向繫結的值；寫入時自動 clamp 成非負數
     ///   - unit: 顯示在輸入框右側的單位字串
     ///   - fractionDigits: 顯示的小數位數
-    ///   - allowsDecimalEntry: 是否允許輸入小數
+    ///   - isDecimalEntryAllowed: 是否允許輸入小數
     ///   - identifier: UI 測試定位用的識別碼
     /// - Returns: 數值輸入列 view
     func numberField(
@@ -132,49 +176,39 @@ private extension QuoteInputsCard {
         _ value: Binding<Decimal>,
         _ unit: String,
         fractionDigits: Int = 0,
-        allowsDecimalEntry: Bool = false,
+        isDecimalEntryAllowed: Bool = false,
         identifier: String? = nil
     ) -> some View {
         HStack(spacing: BLSpacing.small) {
             Text(LocalizedStringKey(label))
-                .blTextStyle(.subhead)
                 .fixedSize(horizontal: false, vertical: true)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .foregroundStyle(palette.secondaryLabel)
+                .blTextStyle(.subhead)
+                .foregroundStyle(.blSecondaryLabel)
 
             TextField(
                 LocalizedStringKey(label),
                 value: value,
                 format: .number.precision(
-                    allowsDecimalEntry ? .fractionLength(0...2) : .fractionLength(fractionDigits)
+                    isDecimalEntryAllowed ? .fractionLength(0...2) : .fractionLength(fractionDigits)
                 )
-                .grouping(.never),
+                    .grouping(.never),
                 prompt: Text(verbatim: "0")
             )
+            .frame(width: inputFieldWidth)
             .textFieldStyle(.roundedBorder)
             .multilineTextAlignment(.trailing)
             .monospacedDigit()
-            .frame(width: 120)
-            .keyboardType(allowsDecimalEntry || fractionDigits > 0 ? .decimalPad : .numberPad)
+            .keyboardType(isDecimalEntryAllowed || fractionDigits > 0 ? .decimalPad : .numberPad)
             .focused(focus)
             .accessibilityIdentifier(identifier ?? "")
 
             Text(LocalizedStringKey(unit))
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .frame(minWidth: unitMinWidth, alignment: .leading)
                 .blTextStyle(.footnote)
-                .lineLimit(1)
-                .frame(minWidth: 60, alignment: .leading)
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
         }
-    }
-}
-
-// MARK: - Private Method
-
-private extension QuoteInputsCard {
-
-    /// 畫面色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 
@@ -184,16 +218,17 @@ private extension QuoteInputsCard {
     @Previewable @FocusState var isFocused: Bool
 
     QuoteInputsCard(
-        currencyCode: "KRW",
-        itemPrice: .constant(100_000),
+        cardFeePercent: .constant(2.5),
         domesticShipping: .constant(5_000),
         internationalShippingTWD: .constant(180),
-        cardFeePercent: .constant(2.5),
+        itemPrice: .constant(100_000),
         paymentFeePercent: .constant(1),
         platformFeePercent: .constant(1),
         targetMarginPercent: .constant(25),
+        currencyCode: "KRW",
         focus: $isFocused,
-        onCurrencyPickerTapped: {}
+        onCurrencyPickerTapped: {
+        }
     )
     .padding()
 }

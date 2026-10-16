@@ -8,74 +8,76 @@
 import SwiftUI
 
 /// 新增或編輯付款方式時的 sheet 表單
+///
 /// - Note: 以付款方式分類旗標參數化表單，領域語意由呼叫端決定
 struct PaymentMethodEditorSheet: View {
 
     // MARK: - Properties
 
-    /// 由 sheet 環境注入的 dismiss action
+    /// 由 sheet 環境注入的 `dismiss` action
     @Environment(\.dismiss) private var dismiss
 
     /// 名稱輸入草稿
     @State private var draftName: String
 
-    /// 是否標記為無卡類付款方式
-    @State private var draftIsCardless: Bool
-
-    /// 是否標記為銀行匯款類付款方式
-    @State private var draftIsBankTransfer: Bool
-
-    /// 是否標記為貨到付款類付款方式
-    @State private var draftIsCashOnDelivery: Bool
-
     /// 是否顯示「捨棄變更／繼續編輯」確認彈窗
     @State private var isDiscardConfirmationPresented = false
+
+    /// 是否標記為銀行匯款類付款方式
+    @State private var isDraftBankTransfer: Bool
+
+    /// 是否標記為無卡類付款方式
+    @State private var isDraftCardless: Bool
+
+    /// 是否標記為貨到付款類付款方式
+    @State private var isDraftCashOnDelivery: Bool
 
     /// 名稱欄位的鍵盤焦點
     @FocusState private var isNameFieldFocused: Bool
 
-    /// Sheet 的標題 (顯示在 navigation bar)
-    let title: String
-
-    /// 表單上方的說明訊息；空字串時不顯示
-    let message: String
-
-    /// 名稱 TextField 的 placeholder
-    let namePlaceholder: String
-
-    /// 提交按鈕的文字
-    let submitTitle: String
-
-    /// 是否嵌入既有導覽堆疊；預設 false 為獨立 sheet
-    let isEmbedded: Bool
-
-    /// 提交付款方式時使用的 closure，接收名稱與三個分類旗標
-    let onSubmit: SubmitAction
-
-    /// 表單初始值，用於判斷 isDirty
+    /// 表單初始值，用於判斷 `isDirty`
     private let initialName: String
 
-    /// 無卡付款方式初始值，用於判斷 isDirty
-    private let initialIsCardless: Bool
+    /// 是否嵌入既有導覽堆疊；預設 `false` 為獨立 sheet
+    private let isEmbedded: Bool
 
-    /// 銀行匯款付款方式初始值，用於判斷 isDirty
-    private let initialIsBankTransfer: Bool
+    /// 銀行匯款付款方式初始值，用於判斷 `isDirty`
+    private let isInitialBankTransfer: Bool
 
-    /// 貨到付款付款方式初始值，用於判斷 isDirty
-    private let initialIsCashOnDelivery: Bool
+    /// 無卡付款方式初始值，用於判斷 `isDirty`
+    private let isInitialCardless: Bool
+
+    /// 貨到付款付款方式初始值，用於判斷 `isDirty`
+    private let isInitialCashOnDelivery: Bool
+
+    /// 表單上方的說明訊息；空字串時不顯示
+    private let message: String
+
+    /// 名稱 `TextField` 的 placeholder
+    private let namePlaceholder: String
+
+    /// 提交付款方式時使用的 closure，接收名稱與三個分類旗標
+    private let onSubmit: SubmitAction
+
+    /// 提交按鈕的文字
+    private let submitTitle: String
+
+    /// Sheet 的標題 (顯示在 navigation bar)
+    private let title: String
 
     // MARK: - Init
 
     /// 建立付款方式 sheet
+    ///
     /// - Parameters:
     ///   - title: 導覽標題
     ///   - message: 表單上方說明；空字串時不顯示
-    ///   - namePlaceholder: 名稱 TextField placeholder
+    ///   - namePlaceholder: 名稱 `TextField` placeholder
     ///   - submitTitle: 提交按鈕文字 (新增用「新增」、編輯用「儲存」)
     ///   - initialName: 名稱初始值；編輯時帶入原名稱，新增時留空
-    ///   - initialIsCardless: 無卡付款方式初始值；編輯時帶入原狀態
-    ///   - initialIsBankTransfer: 銀行匯款付款方式初始值；編輯時帶入原狀態
-    ///   - initialIsCashOnDelivery: 貨到付款付款方式初始值；編輯時帶入原狀態
+    ///   - isInitialCardless: 無卡付款方式初始值；編輯時帶入原狀態
+    ///   - isInitialBankTransfer: 銀行匯款付款方式初始值；編輯時帶入原狀態
+    ///   - isInitialCashOnDelivery: 貨到付款付款方式初始值；編輯時帶入原狀態
     ///   - isEmbedded: 是否嵌入既有導覽堆疊；預設為 `false` 時以獨立 sheet 呈現
     ///   - onSubmit: 提交付款方式時使用的 closure，接收名稱與三個分類旗標
     init(
@@ -84,9 +86,9 @@ struct PaymentMethodEditorSheet: View {
         namePlaceholder: String,
         submitTitle: String,
         initialName: String = "",
-        initialIsCardless: Bool = false,
-        initialIsBankTransfer: Bool = false,
-        initialIsCashOnDelivery: Bool = false,
+        isInitialCardless: Bool = false,
+        isInitialBankTransfer: Bool = false,
+        isInitialCashOnDelivery: Bool = false,
         isEmbedded: Bool = false,
         onSubmit: @escaping SubmitAction
     ) {
@@ -97,13 +99,13 @@ struct PaymentMethodEditorSheet: View {
         self.isEmbedded = isEmbedded
         self.onSubmit = onSubmit
         self._draftName = State(initialValue: initialName)
-        self._draftIsCardless = State(initialValue: initialIsCardless)
-        self._draftIsBankTransfer = State(initialValue: initialIsBankTransfer)
-        self._draftIsCashOnDelivery = State(initialValue: initialIsCashOnDelivery)
+        self._isDraftCardless = State(initialValue: isInitialCardless)
+        self._isDraftBankTransfer = State(initialValue: isInitialBankTransfer)
+        self._isDraftCashOnDelivery = State(initialValue: isInitialCashOnDelivery)
         self.initialName = initialName
-        self.initialIsCardless = initialIsCardless
-        self.initialIsBankTransfer = initialIsBankTransfer
-        self.initialIsCashOnDelivery = initialIsCashOnDelivery
+        self.isInitialCardless = isInitialCardless
+        self.isInitialBankTransfer = isInitialBankTransfer
+        self.isInitialCashOnDelivery = isInitialCashOnDelivery
     }
 
     // MARK: - Body
@@ -120,11 +122,15 @@ struct PaymentMethodEditorSheet: View {
             .presentationDragIndicator(.visible)
             // 有未儲存變更時阻擋下滑關閉，避免草稿靜默遺失；取消鍵改以彈窗確認
             .interactiveDismissDisabled(isDirty)
-            .alert("orders.list.label.discardChanges", isPresented: $isDiscardConfirmationPresented) {
+            .alert(
+                "orders.list.label.discardChanges",
+                isPresented: $isDiscardConfirmationPresented
+            ) {
                 Button("orders.list.label.discardChanges", role: .destructive) {
                     dismiss()
                 }
-                Button("orders.list.label.keepEditing", role: .cancel) {}
+                Button("orders.list.label.keepEditing", role: .cancel) {
+                }
             } message: {
                 Text("common.ui.message.paymentMethodHas")
             }
@@ -136,7 +142,7 @@ struct PaymentMethodEditorSheet: View {
 
 private extension PaymentMethodEditorSheet {
 
-    /// 付款方式表單內容，依 isEmbedded 決定是否包裝導覽
+    /// 付款方式表單內容，依 `isEmbedded` 決定是否包裝導覽
     @ViewBuilder
     var formContent: some View {
         Form {
@@ -154,42 +160,39 @@ private extension PaymentMethodEditorSheet {
                 if !message.isEmpty {
                     Text(LocalizedStringKey(message))
                         .blTextStyle(.footnote)
-                        .foregroundStyle(Color.blSecondaryLabel)
+                        .foregroundStyle(.blSecondaryLabel)
                 }
             }
 
             Section {
-                Toggle(isOn: $draftIsCardless) {
+                Toggle(isOn: $isDraftCardless) {
                     Text("common.ui.label.markAsCardless")
                 }
             } footer: {
                 Text("common.ui.message.whenEnabledOrders")
                     .blTextStyle(.footnote)
-                    .foregroundStyle(Color.blSecondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
             }
 
             Section {
-                Toggle(isOn: $draftIsBankTransfer) {
+                Toggle(isOn: $isDraftBankTransfer) {
                     Text("common.ui.label.markAsBank")
                 }
             } footer: {
                 Text("common.ui.message.whenEnabledOrdersUsing")
                     .blTextStyle(.footnote)
-                    .foregroundStyle(Color.blSecondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
             }
 
             Section {
-                Toggle(
-                    "common.ui.label.markAsCash",
-                    isOn: $draftIsCashOnDelivery
-                )
-                .accessibilityIdentifier(
-                    BLAccessibilityID.LookupManagement.paymentMethodCashOnDeliveryToggle
-                )
+                Toggle("common.ui.label.markAsCash", isOn: $isDraftCashOnDelivery)
+                    .accessibilityIdentifier(
+                        BLAccessibilityID.LookupManagement.paymentMethodCashOnDeliveryToggle
+                    )
             } footer: {
                 Text("common.ui.message.whenEnabled")
                     .blTextStyle(.footnote)
-                    .foregroundStyle(Color.blSecondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
             }
         }
         .formStyle(.grouped)
@@ -213,9 +216,7 @@ private extension PaymentMethodEditorSheet {
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityLabel(Text(LocalizedStringKey(submitTitle)))
-                .accessibilityIdentifier(
-                    BLAccessibilityID.LookupManagement.paymentMethodSaveButton
-                )
+                .accessibilityIdentifier(BLAccessibilityID.LookupManagement.paymentMethodSaveButton)
                 .keyboardShortcut(.defaultAction)
                 .disabled(draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
             }
@@ -228,6 +229,7 @@ private extension PaymentMethodEditorSheet {
 extension PaymentMethodEditorSheet {
 
     /// 提交付款方式時使用的 closure，接收名稱與三個分類旗標
+    ///
     /// - Parameters:
     ///   - name: 付款方式名稱
     ///   - isCardless: 是否為無卡付款方式
@@ -239,16 +241,9 @@ extension PaymentMethodEditorSheet {
         _ isBankTransfer: Bool,
         _ isCashOnDelivery: Bool
     ) -> Void
-}
-
-// MARK: - Private Method
-
-private extension PaymentMethodEditorSheet {
 
     /// 付款方式表單用於判斷未儲存變更的值快照
     struct Snapshot: Equatable {
-
-        // MARK: - Properties
 
         /// 付款方式名稱
         let name: String
@@ -261,6 +256,42 @@ private extension PaymentMethodEditorSheet {
 
         /// 是否為貨到付款付款方式
         let isCashOnDelivery: Bool
+    }
+}
+
+// MARK: - Private Method
+
+private extension PaymentMethodEditorSheet {
+
+    /// 表單目前輸入值的快照
+    ///
+    /// - Returns: 草稿欄位組成的表單快照
+    var draftSnapshot: Snapshot {
+        Snapshot(
+            name: draftName,
+            isCardless: isDraftCardless,
+            isBankTransfer: isDraftBankTransfer,
+            isCashOnDelivery: isDraftCashOnDelivery
+        )
+    }
+
+    /// 表單開啟時初始值的快照
+    ///
+    /// - Returns: 初始欄位組成的表單快照
+    var initialSnapshot: Snapshot {
+        Snapshot(
+            name: initialName,
+            isCardless: isInitialCardless,
+            isBankTransfer: isInitialBankTransfer,
+            isCashOnDelivery: isInitialCashOnDelivery
+        )
+    }
+
+    /// 草稿是否已變更
+    ///
+    /// - Returns: 草稿與初始快照不相等時為 `true`
+    var isDirty: Bool {
+        draftSnapshot != initialSnapshot
     }
 
     /// 依表單是否變更決定直接關閉或顯示捨棄確認
@@ -280,39 +311,11 @@ private extension PaymentMethodEditorSheet {
         }
         onSubmit(
             trimmed,
-            draftIsCardless,
-            draftIsBankTransfer,
-            draftIsCashOnDelivery
+            isDraftCardless,
+            isDraftBankTransfer,
+            isDraftCashOnDelivery
         )
         dismiss()
-    }
-
-    /// 表單目前輸入值的快照
-    /// - Returns: 草稿欄位組成的表單快照
-    var draftSnapshot: Snapshot {
-        Snapshot(
-            name: draftName,
-            isCardless: draftIsCardless,
-            isBankTransfer: draftIsBankTransfer,
-            isCashOnDelivery: draftIsCashOnDelivery
-        )
-    }
-
-    /// 表單開啟時初始值的快照
-    /// - Returns: 初始欄位組成的表單快照
-    var initialSnapshot: Snapshot {
-        Snapshot(
-            name: initialName,
-            isCardless: initialIsCardless,
-            isBankTransfer: initialIsBankTransfer,
-            isCashOnDelivery: initialIsCashOnDelivery
-        )
-    }
-
-    /// 草稿是否已變更
-    /// - Returns: 草稿與初始快照不相等時為 `true`
-    var isDirty: Bool {
-        draftSnapshot != initialSnapshot
     }
 }
 
@@ -324,7 +327,8 @@ private extension PaymentMethodEditorSheet {
         message: "orders.edit.message.enterNewPayment",
         namePlaceholder: "orders.detail.label.paymentMethodName",
         submitTitle: "orders.list.button.add",
-        onSubmit: { _, _, _, _ in }
+        onSubmit: { _, _, _, _ in
+        }
     )
 }
 
@@ -335,7 +339,8 @@ private extension PaymentMethodEditorSheet {
         namePlaceholder: "orders.detail.label.paymentMethodName",
         submitTitle: "orders.edit.button.save",
         initialName: "orders.edit.label.bankTransfer",
-        initialIsBankTransfer: true,
-        onSubmit: { _, _, _, _ in }
+        isInitialBankTransfer: true,
+        onSubmit: { _, _, _, _ in
+        }
     )
 }

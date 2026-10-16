@@ -43,37 +43,32 @@ extension DependencyConventionScanTests {
         case .testValue:
             requiredSubrules = [.serviceDependency, .nonServiceDependency]
 
-        case .dependencyTypeSubscript, .sharedContainer, .appModelContainer:
+        case .dependencyTypeSubscript, .sharedContainer, .appModelContainer, .viewDependency:
             requiredSubrules = []
         }
 
+        let files = try readFiles(under: roots)
+        var viewTypeNames: Set<String> = []
+        if rule == .viewDependency {
+            viewTypeNames = collectViewTypeNames(in: files)
+        }
         var allViolations: [ScanViolation] = []
         var applicableSourceCount = 0
         var applicableSubruleCounts: [ScanSubrule: Int] = [:]
 
-        for root in roots {
-            let rootPath = root.url.standardizedFileURL.path
-            let prefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
-            for url in try swiftFiles(under: root.url) {
-                let filePath = url.standardizedFileURL.path
-                guard filePath.hasPrefix(prefix) else {
-                    throw ScanError.sourceFileOutsideRoot(path: filePath)
-                }
-                let contents = try String(contentsOf: url, encoding: .utf8)
-                let file = ScanFile(
-                    relativePath: String(filePath.dropFirst(prefix.count)),
-                    sourceTree: root.sourceTree,
-                    contents: contents
-                )
-                guard let fileScan = Self.violations(of: rule, in: file) else {
-                    continue
-                }
-                applicableSourceCount += 1
-                for subrule in fileScan.applicableSubrules {
-                    applicableSubruleCounts[subrule, default: 0] += 1
-                }
-                allViolations.append(contentsOf: fileScan.violations)
+        for file in files {
+            guard let fileScan = Self.violations(
+                of: rule,
+                in: file,
+                viewTypeNames: viewTypeNames
+            ) else {
+                continue
             }
+            applicableSourceCount += 1
+            for subrule in fileScan.applicableSubrules {
+                applicableSubruleCounts[subrule, default: 0] += 1
+            }
+            allViolations.append(contentsOf: fileScan.violations)
         }
 
         guard applicableSourceCount > 0 else {
@@ -94,7 +89,11 @@ extension DependencyConventionScanTests {
     ///   - rules: 此案例要驗證的規則
     /// - Returns: 違規清單，先依檔案路徑再依行號排序
     static func fragmentViolations(in file: ScanFile, rules: [ScanRule]) -> [ScanViolation] {
-        sorted(rules.flatMap { Self.violations(of: $0, in: file)?.violations ?? [] })
+        let viewTypeNames = collectViewTypeNames(in: [file])
+        let fileViolations = rules.flatMap {
+            Self.violations(of: $0, in: file, viewTypeNames: viewTypeNames)?.violations ?? []
+        }
+        return sorted(fileViolations)
     }
 }
 
@@ -107,6 +106,35 @@ private extension DependencyConventionScanTests {
         URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent()
             .deletingLastPathComponent()
+    }
+
+    /// 讀取所有根目錄下的 Swift 檔並標上來源類型，供跨檔規則先收集整樹資訊再逐檔檢查
+    ///
+    /// - Parameter roots: 要遞迴讀取的根目錄，依序處理
+    /// - Returns: 各根目錄下的 Swift 檔，依根目錄順序與路徑排序
+    /// - Throws: 根目錄不存在或不是目錄時丟 `ScanError.sourceRootNotFound(path:)`；檔案不在根目錄下時丟
+    ///   `ScanError.sourceFileOutsideRoot(path:)`；讀檔失敗時丟系統錯誤
+    static func readFiles(under roots: [ScanRoot]) throws(any Error) -> [ScanFile] {
+        var files: [ScanFile] = []
+        for root in roots {
+            let rootPath = root.url.standardizedFileURL.path
+            let prefix = rootPath.hasSuffix("/") ? rootPath : rootPath + "/"
+            for url in try swiftFiles(under: root.url) {
+                let filePath = url.standardizedFileURL.path
+                guard filePath.hasPrefix(prefix) else {
+                    throw ScanError.sourceFileOutsideRoot(path: filePath)
+                }
+                let contents = try String(contentsOf: url, encoding: .utf8)
+                files.append(
+                    ScanFile(
+                        relativePath: String(filePath.dropFirst(prefix.count)),
+                        sourceTree: root.sourceTree,
+                        contents: contents
+                    )
+                )
+            }
+        }
+        return files
     }
 
     /// 列出根目錄底下含子資料夾的 Swift 檔

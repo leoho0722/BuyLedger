@@ -118,12 +118,12 @@ extension RootFeatureTests {
         }
     }
 
-    /// 建立已載入開團並記下指定日期與行事曆的開團列表，供根功能的日期刷新測試使用
+    /// 建立已載入開團並記下指定日期與行事曆的根狀態，總覽與分析也記下同一組日期，供根功能的日期刷新測試使用
     ///
     /// - Parameters:
     ///   - campaigns: 列表已載入的開團
-    ///   - recordedDate: 列表先前記錄的現在時間
-    ///   - calendar: 列表先前記錄的行事曆
+    ///   - recordedDate: 各頁先前記錄的現在時間
+    ///   - calendar: 各頁先前記錄的行事曆
     /// - Returns: 帶有開團與日期資訊的根狀態
     static func makeCampaignDateState(
         campaigns: [Campaign],
@@ -139,7 +139,18 @@ extension RootFeatureTests {
             now: recordedDate,
             calendar: calendar
         )
+        state.dashboard.dateContext = DashboardDateContext(now: recordedDate, calendar: calendar)
+        state.insights.dateContext = InsightsDateContext(now: recordedDate, calendar: calendar)
         return state
+    }
+
+    /// 與 `TestDependencies.fixedCalendar` 只差週起點的舊行事曆，覆寫後必須換回注入的行事曆
+    ///
+    /// - Returns: 週起點為星期一的公曆行事曆
+    static func makeStaleCalendar() -> Calendar {
+        var calendar = TestDependencies.fixedCalendar
+        calendar.firstWeekday = 2
+        return calendar
     }
 
     /// 複製訂單並只替換指定欄位，其餘欄位保留原值

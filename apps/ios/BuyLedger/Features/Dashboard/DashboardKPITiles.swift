@@ -15,7 +15,7 @@ struct DashboardKPITiles: View {
     /// 目前的動態字級；用來在無障礙字級下把格狀改為單欄
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// KPI 卡的排列方式：寬版與 hero 卡並排時為直欄，窄版接在 hero 卡下方時為格狀
@@ -45,11 +45,13 @@ private extension DashboardKPITiles {
     /// 營業額與相對上月的變化率
     var revenueTile: some View {
         DashboardKPITile(
-            delta: LocalizedStringKey(percentDeltaDisplay(stats.revenueDelta)),
+            delta: LocalizedStringKey(
+                DashboardFormatters.percentDelta(stats.revenueDelta, locale: locale)
+            ),
             kpi: .revenue,
             label: "dashboard.overview.label.revenue",
-            tint: palette.accent,
-            trend: trend(for: stats.revenueDelta),
+            tint: .blAccent,
+            trend: BLTrend(delta: stats.revenueDelta),
             value: BLFormatters.twd(stats.revenue, locale: locale)
         )
     }
@@ -57,11 +59,13 @@ private extension DashboardKPITiles {
     /// 成本與相對上月的變化率
     var costTile: some View {
         DashboardKPITile(
-            delta: LocalizedStringKey(percentDeltaDisplay(stats.costDelta)),
+            delta: LocalizedStringKey(
+                DashboardFormatters.percentDelta(stats.costDelta, locale: locale)
+            ),
             kpi: .cost,
             label: "orders.detail.label.cost",
-            tint: palette.orange,
-            trend: trend(for: stats.costDelta),
+            tint: .blOrange,
+            trend: BLTrend(delta: stats.costDelta),
             value: BLFormatters.twd(stats.cost, locale: locale)
         )
     }
@@ -69,11 +73,13 @@ private extension DashboardKPITiles {
     /// 毛利率與相對上月的百分點差
     var grossMarginTile: some View {
         DashboardKPITile(
-            delta: LocalizedStringKey(marginDeltaDisplay(stats.marginDelta)),
+            delta: LocalizedStringKey(
+                DashboardFormatters.marginDelta(stats.marginDelta, locale: locale)
+            ),
             kpi: .grossMargin,
             label: "orders.detail.label.grossMargin",
-            tint: palette.green,
-            trend: trend(for: stats.marginDelta),
+            tint: .blGreen,
+            trend: BLTrend(delta: stats.marginDelta),
             value: BLFormatters.percent(stats.margin, locale: locale)
         )
     }
@@ -81,10 +87,16 @@ private extension DashboardKPITiles {
     /// 進行中訂單數，沒有上月比較值，變化指標改顯示件數
     var activeOrdersTile: some View {
         DashboardKPITile(
-            delta: LocalizedStringKey(AppLanguage.format("dashboard.overview.label.activeCountInProgress", stats.activeCount, locale: locale)),
+            delta: LocalizedStringKey(
+                AppLanguage.format(
+                    "dashboard.overview.label.activeCountInProgress",
+                    stats.activeCount,
+                    locale: locale
+                )
+            ),
             kpi: .activeOrders,
             label: "dashboard.overview.label.activeOrders",
-            tint: palette.purple,
+            tint: .blPurple,
             trend: .unavailable,
             value: "\(stats.activeCount)"
         )
@@ -141,56 +153,6 @@ extension DashboardKPITiles {
     static func columns(for dynamicTypeSize: DynamicTypeSize) -> [GridItem] {
         let count = dynamicTypeSize.isAccessibilitySize ? 1 : 2
         return Array(repeating: GridItem(.flexible(), spacing: BLSpacing.small), count: count)
-    }
-}
-
-// MARK: - Private Method
-
-private extension DashboardKPITiles {
-
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
-    /// 將 MoM 變化率格式化；nil 顯示「— MoM」
-    ///
-    /// - Parameter delta: 成長率，例如 `0.182` 表示 +18.2%
-    /// - Returns: KPI 卡顯示用字串
-    func percentDeltaDisplay(_ delta: Decimal?) -> String {
-        guard let delta else {
-            return "— MoM"
-        }
-        let formatted = BLFormatters.percent(delta, locale: locale)
-        let prefix = delta >= 0 ? "+" : ""
-        return "\(prefix)\(formatted) MoM"
-    }
-
-    /// 將 delta 數值轉成 KPI 卡的變化走向
-    ///
-    /// - Parameter delta: 成長率或百分點差
-    /// - Returns: 大於或等於 0 為上升、小於 0 為下降，nil 代表無上月資料可比
-    func trend(for delta: Decimal?) -> DashboardKPITile.Trend {
-        guard let delta else {
-            return .unavailable
-        }
-        return delta >= 0 ? .up : .down
-    }
-
-    /// 依 App 選定 locale 把毛利率 delta (百分點) 轉成 `+2.4 pt MoM` 風格字串
-    ///
-    /// - Parameter delta: 百分點差，例如 `0.024` 表示 +2.4pt
-    /// - Returns: KPI 卡顯示用字串
-    func marginDeltaDisplay(_ delta: Decimal?) -> String {
-        guard let delta else {
-            return "— MoM"
-        }
-        let percentagePoints = delta * 100
-        let formatted = percentagePoints.formatted(
-            .number.precision(.fractionLength(1)).locale(locale)
-        )
-        let prefix = delta >= 0 ? "+" : ""
-        return "\(prefix)\(formatted) pt MoM"
     }
 }
 

@@ -60,27 +60,17 @@ private extension OrderDetailNotesView {
             VStack(alignment: .leading, spacing: BLSpacing.small) {
                 Text("orders.detail.label.notes")
                     .font(BLTypographyStyle.footnote.font.weight(.semibold))
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
                     .textCase(.uppercase)
 
                 Text(order.notes)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .blTextStyle(.subhead)
-                    .foregroundStyle(palette.label)
+                    .foregroundStyle(.blLabel)
                     .textSelection(.enabled)
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
-    }
-}
-
-// MARK: - Private Method
-
-private extension OrderDetailNotesView {
-
-    /// 依目前外觀取得的色盤
-    var palette: BLPalette {
-        BLPalette()
     }
 }
 

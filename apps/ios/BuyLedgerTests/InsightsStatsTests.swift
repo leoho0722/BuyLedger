@@ -7,13 +7,21 @@
 
 import Foundation
 import Testing
+
 @testable import BuyLedger
 
-/// 驗證分析統計
-@MainActor
+/// 驗證分析統計的走勢區間與上期比較
 struct InsightsStatsTests {
 
-    @Test func trendBarsForThirtyDaysProduceThirtyDailyBucketsSummingToTotalProfit() {
+    // MARK: - Properties
+
+    /// `posixLocale` 是解析字面值 `Decimal` 用的固定 locale，避免十進位字串解析受執行環境影響
+    private static let posixLocale = Locale(identifier: "en_US_POSIX")
+
+    /// 三十天區間產生三十段逐日走勢，最後一段是基準日，合計等於期間總獲利
+    @Test
+    func trendBuckets_三十天區間_產生三十段逐日且合計為總獲利() {
+        // Given
         let orders = [
             Self.makeOrder(
                 id: "A",
@@ -21,23 +29,69 @@ struct InsightsStatsTests {
                 date: TestDependencies.fixedNow,
                 charged: 1_000,
                 itemCost: 300
-            )
+            ),
         ]
+
+        // When
         let stats = InsightsStats(
             orders: orders,
             range: .thirtyDays,
             referenceDate: TestDependencies.fixedNow,
-            calendar: TestDependencies.fixedCalendar,
-            locale: Locale(identifier: "zh-Hant"),
-            palette: BLPalette()
+            calendar: TestDependencies.fixedCalendar
         )
 
-        #expect(stats.trendBars.count == 30)
+        // Then
+        #expect(stats.trendBuckets.count == 30)
+        #expect(stats.trendBuckets.first?.label == "04/01")
+        #expect(stats.trendBuckets.last?.label == "04/30")
         #expect(stats.totalProfit == 700)
     }
 
-    @Test func trendDeltaComparesCurrentAgainstPriorTwelveMonthPeriodWhenBothHaveData() {
-        // 本期獲利 1000、上期獲利 400，應顯示成長。
+    /// 六個月與十二個月區間的最後一段是基準月，標籤分別為四位年與兩位年加兩位月份
+    ///
+    /// - Parameters:
+    ///   - range: 趨勢期間
+    ///   - bucketCount: 預期的段數
+    ///   - lastLabel: 預期的最後一段標籤
+    @Test(arguments: [
+        (range: InsightsDateRange.sixMonths, bucketCount: 6, lastLabel: "2026/04"),
+        (range: InsightsDateRange.twelveMonths, bucketCount: 12, lastLabel: "26/04"),
+    ])
+    func trendBuckets_六與十二個月區間_最後一段為基準月標籤(
+        range: InsightsDateRange,
+        bucketCount: Int,
+        lastLabel: String
+    ) {
+        // Given
+        let orders = [
+            Self.makeOrder(
+                id: "A",
+                status: .delivered,
+                date: TestDependencies.fixedNow,
+                charged: 1_000
+            ),
+        ]
+
+        // When
+        let stats = InsightsStats(
+            orders: orders,
+            range: range,
+            referenceDate: TestDependencies.fixedNow,
+            calendar: TestDependencies.fixedCalendar
+        )
+
+        // Then
+        #expect(stats.trendBuckets.count == bucketCount)
+        #expect(stats.trendBuckets.last?.label == lastLabel)
+    }
+
+    /// 上期有訂單時，比值為本期減上期後除以上期絕對值
+    ///
+    /// - Throws: 測試用日期或數值無法組成時丟出
+    @Test
+    func trendRatio_上期有訂單_為本期減上期除以上期絕對值() throws {
+        // Given
+        let previousDate = try Self.date(year: 2025, month: 2, day: 15)
         let orders = [
             Self.makeOrder(
                 id: "cur",
@@ -48,57 +102,103 @@ struct InsightsStatsTests {
             Self.makeOrder(
                 id: "prev",
                 status: .delivered,
-                date: Self.date(year: 2025, month: 2, day: 15),
+                date: previousDate,
                 charged: 400
             ),
         ]
+        let expectedRatio = try Self.decimal("1.5")
+
+        // When
         let stats = InsightsStats(
             orders: orders,
             range: .twelveMonths,
             referenceDate: TestDependencies.fixedNow,
-            calendar: TestDependencies.fixedCalendar,
-            locale: Locale(identifier: "zh-Hant"),
-            palette: BLPalette()
+            calendar: TestDependencies.fixedCalendar
         )
 
+        // Then
         #expect(stats.totalProfit == 1_000)
-        #expect(stats.trendDeltaIsPositive == true)
-        #expect(stats.trendDelta.hasPrefix("↑"))
+        #expect(stats.trendRatio == expectedRatio)
     }
 
-    @Test func trendDeltaHasNoComparisonWhenPriorPeriodEmpty() {
+    /// 上期沒有任何訂單時沒有比較值，比值為 `nil`
+    @Test
+    func trendRatio_上期無訂單_無比較值() {
+        // Given
         let orders = [
             Self.makeOrder(
                 id: "cur",
                 status: .delivered,
                 date: TestDependencies.fixedNow,
                 charged: 1_000
-            )
+            ),
         ]
+
+        // When
         let stats = InsightsStats(
             orders: orders,
             range: .twelveMonths,
             referenceDate: TestDependencies.fixedNow,
-            calendar: TestDependencies.fixedCalendar,
-            locale: Locale(identifier: "zh-Hant"),
-            palette: BLPalette()
+            calendar: TestDependencies.fixedCalendar
         )
 
-        #expect(stats.trendDelta == "insights.chart.label.comparison")
-        #expect(stats.trendDeltaIsPositive == nil)
+        // Then
+        #expect(stats.trendRatio == nil)
     }
 
+    /// 上期有訂單但合計獲利為零時沒有比較值，比值為 `nil`
+    ///
+    /// - Throws: 測試用日期無法組成時丟出
+    @Test
+    func trendRatio_上期合計為零_無比較值() throws {
+        // Given
+        let previousDate = try Self.date(year: 2025, month: 2, day: 15)
+        let orders = [
+            Self.makeOrder(
+                id: "cur",
+                status: .delivered,
+                date: TestDependencies.fixedNow,
+                charged: 1_000
+            ),
+            Self.makeOrder(
+                id: "prev",
+                status: .delivered,
+                date: previousDate,
+                charged: 0
+            ),
+        ]
+
+        // When
+        let stats = InsightsStats(
+            orders: orders,
+            range: .twelveMonths,
+            referenceDate: TestDependencies.fixedNow,
+            calendar: TestDependencies.fixedCalendar
+        )
+
+        // Then
+        #expect(stats.trendRatio == nil)
+    }
+
+    /// 上期獲利為負時，比值的正負與幅度依差額除以上期絕對值決定
+    ///
+    /// - Parameters:
+    ///   - current: 本期獲利
+    ///   - previous: 上期獲利
+    ///   - ratioText: 預期比值的十進位字串
+    /// - Throws: 測試用日期或數值無法組成時丟出
     @Test(arguments: [
-        (current: Decimal(50), previous: Decimal(-100), text: "↑ 150.0%", isPositive: true),
-        (current: Decimal(-50), previous: Decimal(-100), text: "↑ 50.0%", isPositive: true),
-        (current: Decimal(-200), previous: Decimal(-100), text: "↓ 100.0%", isPositive: false),
+        (current: Decimal(50), previous: Decimal(-100), ratioText: "1.5"),
+        (current: Decimal(-50), previous: Decimal(-100), ratioText: "0.5"),
+        (current: Decimal(-200), previous: Decimal(-100), ratioText: "-1"),
     ])
-    func trendDeltaUsesMatchingDirectionAndMagnitudeWhenPreviousPeriodIsNegative(
+    func trendRatio_上期為負_依差額與上期絕對值計算(
         current: Decimal,
         previous: Decimal,
-        text: String,
-        isPositive: Bool
-    ) {
+        ratioText: String
+    ) throws {
+        // Given
+        let previousDate = try Self.date(year: 2025, month: 2, day: 15)
         let orders = [
             Self.makeOrder(
                 id: "current",
@@ -110,228 +210,73 @@ struct InsightsStatsTests {
             Self.makeOrder(
                 id: "previous",
                 status: .delivered,
-                date: Self.date(year: 2025, month: 2, day: 15),
+                date: previousDate,
                 charged: previous > 0 ? previous : 0,
                 itemCost: previous < 0 ? -previous : 0
             ),
         ]
+        let expectedRatio = try Self.decimal(ratioText)
+
+        // When
         let stats = InsightsStats(
             orders: orders,
             range: .twelveMonths,
             referenceDate: TestDependencies.fixedNow,
-            calendar: TestDependencies.fixedCalendar,
-            locale: Locale(identifier: "zh-Hant"),
-            palette: BLPalette()
+            calendar: TestDependencies.fixedCalendar
         )
 
-        #expect(stats.trendDelta == text)
-        #expect(stats.trendDeltaIsPositive == isPositive)
+        // Then
+        #expect(stats.trendRatio == expectedRatio)
     }
 
-    @Test func totalProfitEqualsDecimalSumOfPeriodBuckets() {
+    /// 期間總獲利等於各段獲利的 `Decimal` 精確加總，不經過 `Double` 近似
+    ///
+    /// - Throws: 測試用日期或數值無法組成時丟出
+    @Test
+    func totalProfit_十二個月區間_等於各段小數精確加總() throws {
+        // Given
+        let firstDate = try Self.date(year: 2026, month: 3, day: 1)
+        let firstCharged = try Self.decimal("100.123456789123456789")
+        let secondCharged = try Self.decimal("200.987654321987654321")
+        let expectedTotal = try Self.decimal("301.111111111111111110")
         let orders = [
             Self.makeOrder(
                 id: "first",
                 status: .delivered,
-                date: Self.date(year: 2026, month: 3, day: 1),
-                charged: Decimal(string: "100.123456789123456789") ?? 0
+                date: firstDate,
+                charged: firstCharged
             ),
             Self.makeOrder(
                 id: "second",
                 status: .delivered,
                 date: TestDependencies.fixedNow,
-                charged: Decimal(string: "200.987654321987654321") ?? 0
+                charged: secondCharged
             ),
         ]
+
+        // When
         let stats = InsightsStats(
             orders: orders,
             range: .twelveMonths,
             referenceDate: TestDependencies.fixedNow,
-            calendar: TestDependencies.fixedCalendar,
-            locale: Locale(identifier: "zh-Hant"),
-            palette: BLPalette()
-        )
-
-        #expect(stats.totalProfit == Decimal(string: "301.111111111111111110")!)
-    }
-
-    @Test func costSegmentsExcludeZeroValueSegmentsAndTotalCostAggregatesAcrossAllRealizedOrders() {
-        // Given：兩筆已實現訂單與一筆未實現訂單
-        let orders = [
-            Self.makeOrder(
-                id: "A",
-                status: .delivered,
-                date: TestDependencies.fixedNow,
-                charged: 1_000,
-                itemCost: 500
-            ),
-            Self.makeOrder(
-                id: "B",
-                status: .pickedUp,
-                date: TestDependencies.fixedNow,
-                charged: 600,
-                itemCost: 300
-            ),
-            Self.makeOrder(
-                id: "C",
-                status: .quoting,
-                date: TestDependencies.fixedNow,
-                charged: 2_000,
-                itemCost: 900
-            ),
-        ]
-        // When：計算十二個月的成本統計
-        let stats = InsightsStats(
-            orders: orders,
-            range: .twelveMonths,
-            referenceDate: TestDependencies.fixedNow,
-            calendar: TestDependencies.fixedCalendar,
-            locale: Locale(identifier: "zh-Hant"),
-            palette: BLPalette()
-        )
-
-        // Then：只累加已實現訂單，且零值區段不應出現
-        #expect(stats.totalCost == 800)
-        #expect(stats.costSegments.map(\.label) == ["orders.detail.label.itemCost"])
-        #expect(stats.costSegments.first?.value == 800)
-    }
-
-    @Test func campaignProfitRankingSortsDescendingAndExcludesCampaignsWithoutOrders() {
-        let campaigns = [
-            Campaign(
-                id: "1", name: "A團", openDate: Date(timeIntervalSince1970: 0), status: .ongoing,
-                notes: ""),
-            Campaign(
-                id: "2", name: "B團", openDate: Date(timeIntervalSince1970: 0), status: .ongoing,
-                notes: ""),
-            Campaign(
-                id: "3", name: "C團", openDate: Date(timeIntervalSince1970: 0), status: .ongoing,
-                notes: ""),
-        ]
-        let orders = [
-            Self.makeOrder(
-                id: "O1",
-                status: .delivered,
-                date: Date(timeIntervalSince1970: 0),
-                charged: 500,
-                campaignNames: ["A團"]
-            ),
-            Self.makeOrder(
-                id: "O2",
-                status: .delivered,
-                date: Date(timeIntervalSince1970: 0),
-                charged: 2_000,
-                campaignNames: ["B團"]
-            ),
-        ]
-
-        let ranks = InsightsStats.campaignProfitRanking(campaigns: campaigns, orders: orders)
-
-        #expect(ranks.map(\.campaignName) == ["B團", "A團"])
-        #expect(ranks.map(\.rank) == [1, 2])
-        #expect(ranks.first?.ratio == 1.0)
-    }
-
-    @Test func computeHeatmapPlacesTodaysOrderInLastWeekAndCorrectWeekday() {
-        // 週四應落在星期索引 3
-        let today = TestDependencies.fixedNow
-        let orders = [Self.makeOrder(id: "A", status: .quoting, date: today, charged: 1)]
-
-        let cells = InsightsStats.computeHeatmap(
-            orders: orders,
-            referenceDate: today,
             calendar: TestDependencies.fixedCalendar
         )
 
-        let key = HeatmapKey(week: InsightsStats.heatmapWeekCount - 1, weekday: 3)
-        #expect(cells[key] == 1)
-        #expect(cells.values.reduce(0, +) == 1)
+        // Then
+        #expect(stats.totalProfit == expectedTotal)
     }
+}
 
-    @Test func computeHeatmapExcludesOrdersOlderThanTheDisplayedWindow() {
-        let oldDate = TestDependencies.fixedCalendar.date(
-            byAdding: .day, value: -100, to: TestDependencies.fixedNow)!
-        let orders = [Self.makeOrder(id: "A", status: .quoting, date: oldDate, charged: 1)]
+// MARK: - Private Method
 
-        let cells = InsightsStats.computeHeatmap(
-            orders: orders,
-            referenceDate: TestDependencies.fixedNow,
-            calendar: TestDependencies.fixedCalendar
-        )
+private extension InsightsStatsTests {
 
-        #expect(cells.isEmpty)
-    }
-
-    // MARK: - Helper
-
-    /// 建立指定年月日的 UTC 日期
+    /// 把十進位字面值字串解析為 `Decimal`，測試的預期比值由此取得
     ///
-    /// - Parameters:
-    ///   - year: 西元年
-    ///   - month: 月份
-    ///   - day: 日期
-    /// - Returns: 指定日期 UTC 零時的時間值
-    private static func date(
-        year: Int,
-        month: Int,
-        day: Int
-    ) -> Date {
-        var components = DateComponents()
-        components.calendar = Calendar(identifier: .gregorian)
-        components.timeZone = TimeZone(secondsFromGMT: 0)
-        components.year = year
-        components.month = month
-        components.day = day
-        return components.date!
-    }
-
-    /// 建立只含 InsightsStats 所需欄位的訂單
-    ///
-    /// - Parameters:
-    ///   - id: 訂單識別值
-    ///   - status: 訂單狀態
-    ///   - date: 訂單日期
-    ///   - charged: 客戶實付金額
-    ///   - itemCost: 商品成本
-    ///   - categories: 商品類別
-    ///   - campaignNames: 開團名稱
-    /// - Returns: 建立的測試訂單
-    private static func makeOrder(
-        id: String,
-        status: OrderStatus,
-        date: Date,
-        charged: Decimal,
-        itemCost: Decimal = 0,
-        categories: [String] = [],
-        campaignNames: [String] = []
-    ) -> LedgerOrder {
-        LedgerOrder(
-            id: id,
-            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
-            status: status,
-            currency: .twd,
-            date: date,
-            items: [LedgerOrderItem(name: "item", quantity: 1, unitPrice: 0)],
-            itemCost: itemCost,
-            domesticShipping: 0,
-            internationalShipping: 0,
-            foreignDomesticShipping: 0,
-            cardFeeRate: 0,
-            platformFeeRate: 0,
-            paymentFeeRate: 0,
-            chargedAmount: charged,
-            cardlessDeductionAmount: 0,
-            cardlessSupplementAmount: 0,
-            orderSource: "",
-            categories: categories,
-            paymentMethod: "",
-            notes: "",
-            reconciliationStatus: "",
-            campaignNames: campaignNames,
-            paymentReceiptStatus: .pending,
-            isCashOnDelivery: false,
-            photos: [],
-            mergedSourceIDs: []
-        )
+    /// - Parameter text: 十進位字面值字串
+    /// - Returns: 解析後的 `Decimal`
+    /// - Throws: 字串無法解析時丟出
+    static func decimal(_ text: String) throws -> Decimal {
+        try #require(Decimal(string: text, locale: posixLocale))
     }
 }

@@ -12,7 +12,7 @@ struct InsightsHeatmapCard: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 熱力圖單一格子的高度，隨字級縮放 (以 `.caption2` 為基準)
@@ -21,8 +21,8 @@ struct InsightsHeatmapCard: View {
     /// 熱力圖左側星期欄寬，隨字級縮放 (以 `.caption` 為基準)
     @ScaledMetric(relativeTo: .caption) private var heatmapWeekdayColumnWidth: CGFloat = 28
 
-    /// 每個週次與星期組合的下單筆數，沒有訂單的格子不在字典內
-    let cells: [HeatmapKey: Int]
+    /// 熱力圖的格子資料，含每個週次與星期組合的下單筆數與單日最高筆數
+    let heatmap: InsightsHeatmap
 
     /// 由週一起排列的 7 個星期縮寫，依 App 選定的語言呈現
     let weekdayLabels: [String]
@@ -50,7 +50,7 @@ private extension InsightsHeatmapCard {
     var title: some View {
         Text(AppLanguage.format("insights.chart.label.heatmapPastWeeks", weekCount, locale: locale))
             .font(BLTypographyStyle.subhead.font.weight(.semibold))
-            .foregroundStyle(palette.label)
+            .foregroundStyle(.blLabel)
     }
 
     /// 週次標籤列最左側的空格，與星期欄對齊
@@ -62,16 +62,16 @@ private extension InsightsHeatmapCard {
     /// 週次標籤列，W1 為最早的一週
     var weekLabels: some View {
         ForEach(0..<weekCount, id: \.self) {
-            Text(verbatim: "W\($0 + 1)")
+            Text(verbatim: InsightsFormatters.weekLabel($0 + 1))
                 .frame(maxWidth: .infinity)
                 .blTextStyle(.caption2)
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
         }
     }
 
     /// 全部格子，依序排出每個星期的星期標籤與各週的熱力格
     var gridCells: some View {
-        // 攤平成單層 ForEach，確保 LazyVGrid 正確建立 cell
+        // 攤平成單層 `ForEach`，確保 `LazyVGrid` 正確建立 cell
         ForEach(0..<(7 * (weekCount + 1)), id: \.self) {
             cell(at: $0)
         }
@@ -88,10 +88,19 @@ private extension InsightsHeatmapCard {
         }
         // 整圖摘要：讓使用者不必逐格走過就能理解這張圖的範圍與規模
         .accessibilityElement(children: .contain)
-        .accessibilityLabel(Text(AppLanguage.format("insights.chart.accessibility.heatmapSummary", weekCount, maxCount, locale: locale)))
+        .accessibilityLabel(
+            Text(
+                AppLanguage.format(
+                    "insights.chart.accessibility.heatmapSummary",
+                    weekCount,
+                    maxCount,
+                    locale: locale
+                )
+            )
+        )
     }
 
-    /// 攤平後第 N 格的內容：每列第一格是星期標籤，其餘是熱力格
+    /// 組出攤平後第 N 格的內容：每列第一格是星期標籤，其餘是熱力格
     ///
     /// - Parameter index: 攤平後的格子順位，由 0 起算
     /// - Returns: 星期標籤或熱力格
@@ -104,14 +113,14 @@ private extension InsightsHeatmapCard {
             weekdayColumnLabel(weekday)
         } else {
             heatmapCell(
-                count: cells[HeatmapKey(week: column - 1, weekday: weekday)] ?? 0,
+                count: heatmap.cells[InsightsHeatmap.Key(week: column - 1, weekday: weekday)] ?? 0,
                 weekdayLabel: weekdayLabels[weekday],
                 week: column
             )
         }
     }
 
-    /// 每列最左側的星期標籤
+    /// 組出每列最左側的星期標籤
     ///
     /// - Parameter weekday: 0 為週一、6 為週日
     /// - Returns: 星期標籤
@@ -119,10 +128,10 @@ private extension InsightsHeatmapCard {
         Text(weekdayLabels[weekday])
             .frame(width: heatmapWeekdayColumnWidth, alignment: .leading)
             .blTextStyle(.caption)
-            .foregroundStyle(palette.secondaryLabel)
+            .foregroundStyle(.blSecondaryLabel)
     }
 
-    /// 熱力圖單一格子，顏色深淺依訂單筆數相對於最高筆數而定
+    /// 組出熱力圖單一格子，顏色深淺依訂單筆數相對於最高筆數而定
     ///
     /// - Parameters:
     ///   - count: 訂單筆數
@@ -134,11 +143,11 @@ private extension InsightsHeatmapCard {
         let depth = BLHeatmapDepth.depth(for: count, maxCount: maxCount)
 
         // 明確設定高度撐起格子，因為 `RoundedRectangle` 沒有 intrinsic size，
-        // 在 LazyVGrid 中靠 `aspectRatio` 會被旁邊 Text 那列壓成 0 高度而完全不顯示
+        // 在 `LazyVGrid` 中靠 `aspectRatio` 會被旁邊 `Text` 那列壓成 0 高度而完全不顯示
         RoundedRectangle(cornerRadius: 4, style: .continuous)
-            .fill(depth?.background ?? palette.fillQuaternary)
             .frame(maxWidth: .infinity)
             .frame(height: heatmapCellHeight)
+            .foregroundStyle(depth?.background ?? .blFillQuaternary)
             .overlay {
                 if let depth {
                     Text(verbatim: "\(count)")
@@ -150,8 +159,25 @@ private extension InsightsHeatmapCard {
             // 排除零值格，避免朗讀沒有意義的數字，
             // 非零格子帶上「星期 + 第幾週」讓數字有座標可依附
             .accessibilityHidden(count == 0)
-            .accessibilityLabel(Text(AppLanguage.format("insights.chart.accessibility.weekdayWeek", weekdayLabel, week, locale: locale)))
-            .accessibilityValue(Text(AppLanguage.format("insights.chart.accessibility.orderCount", count, locale: locale)))
+            .accessibilityLabel(
+                Text(
+                    AppLanguage.format(
+                        "insights.chart.accessibility.weekdayWeek",
+                        weekdayLabel,
+                        week,
+                        locale: locale
+                    )
+                )
+            )
+            .accessibilityValue(
+                Text(
+                    AppLanguage.format(
+                        "insights.chart.accessibility.orderCount",
+                        count,
+                        locale: locale
+                    )
+                )
+            )
     }
 }
 
@@ -159,19 +185,9 @@ private extension InsightsHeatmapCard {
 
 private extension InsightsHeatmapCard {
 
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
     /// 熱力圖涵蓋的週數
     var weekCount: Int {
-        InsightsStats.heatmapWeekCount
-    }
-
-    /// 整張熱力圖中最高的單日訂單筆數，沒有資料時為 1
-    var maxCount: Int {
-        cells.values.max() ?? 1
+        InsightsHeatmap.weekCount
     }
 
     /// 格狀圖的欄配置：固定寬度的星期欄，加上每週一個等寬欄
@@ -179,18 +195,26 @@ private extension InsightsHeatmapCard {
         [GridItem(.fixed(heatmapWeekdayColumnWidth), spacing: 6)]
             + Array(repeating: GridItem(.flexible(), spacing: 6), count: weekCount)
     }
+
+    /// 整張熱力圖中最高的單日訂單筆數，沒有資料時為 1
+    var maxCount: Int {
+        heatmap.maxCount
+    }
 }
 
 // MARK: - Preview
 
 #Preview("下單熱力圖") {
     InsightsHeatmapCard(
-        cells: [
-            HeatmapKey(week: 7, weekday: 0): 3,
-            HeatmapKey(week: 7, weekday: 2): 1,
-            HeatmapKey(week: 6, weekday: 4): 2,
-            HeatmapKey(week: 4, weekday: 5): 5,
-        ],
+        heatmap: InsightsHeatmap(
+            cells: [
+                InsightsHeatmap.Key(week: 7, weekday: 0): 3,
+                InsightsHeatmap.Key(week: 7, weekday: 2): 1,
+                InsightsHeatmap.Key(week: 6, weekday: 4): 2,
+                InsightsHeatmap.Key(week: 4, weekday: 5): 5,
+            ],
+            maxCount: 5
+        ),
         weekdayLabels: ["一", "二", "三", "四", "五", "六", "日"]
     )
     .padding()

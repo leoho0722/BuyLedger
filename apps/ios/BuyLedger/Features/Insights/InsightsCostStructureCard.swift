@@ -12,7 +12,7 @@ struct InsightsCostStructureCard: View {
 
     // MARK: - Properties
 
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// App 目前選用的顯示語系，用於圖表的無障礙標題
@@ -46,24 +46,17 @@ private extension InsightsCostStructureCard {
     var title: some View {
         Text("insights.chart.label.costStructure")
             .font(BLTypographyStyle.subhead.font.weight(.semibold))
-            .foregroundStyle(palette.label)
+            .foregroundStyle(.blLabel)
     }
 
     /// 成本結構圈狀圖，中央顯示總成本，圖表標題隨 App 內選用的語言翻譯
     var donut: some View {
         BLDonutChart(
-            segments: segments.map {
-                BLDonutSegment(
-                    label: language.localizedString(forKey: $0.label),
-                    value: NSDecimalNumber(decimal: $0.value).doubleValue,
-                    color: $0.color,
-                    valueDescription: BLFormatters.twd($0.value, locale: locale)
-                )
-            },
-            centerTitle: "orders.detail.label.totalCost",
-            centerValue: BLFormatters.twd(totalCost, locale: locale),
             axisXTitle: language.localized("orders.list.label.category2"),
             axisYTitle: language.localized("orders.detail.label.share"),
+            centerTitle: "orders.detail.label.totalCost",
+            centerValue: BLFormatters.twd(totalCost, locale: locale),
+            segments: donutSegments,
             seriesName: language.localized("orders.detail.label.donutChart")
         )
         .frame(maxWidth: .infinity)
@@ -89,27 +82,29 @@ private extension InsightsCostStructureCard {
         .frame(maxWidth: .infinity, alignment: .leading)
     }
 
-    /// 圖例單列：色塊、區塊名稱與金額
+    /// 組出圖例單列，依序為色塊、區塊名稱與金額
     ///
     /// - Parameter segment: 成本區塊
     /// - Returns: 圖例列
     func legendRow(_ segment: InsightsCostSegment) -> some View {
         HStack(spacing: BLSpacing.small) {
             RoundedRectangle(cornerRadius: 2, style: .continuous)
-                .fill(segment.color)
                 .frame(width: 8, height: 8)
+                .foregroundStyle(color(for: segment.tone))
+                .accessibilityHidden(true)
 
             Text(LocalizedStringKey(segment.label))
                 .blTextStyle(.caption)
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             Spacer()
 
             Text(BLFormatters.twd(segment.value, locale: locale))
                 .font(BLTypographyStyle.caption.font.weight(.semibold))
                 .monospacedDigit()
-                .foregroundStyle(palette.label)
+                .foregroundStyle(.blLabel)
         }
+        .accessibilityElement(children: .combine)
     }
 }
 
@@ -117,9 +112,36 @@ private extension InsightsCostStructureCard {
 
 private extension InsightsCostStructureCard {
 
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
+    /// 圈狀圖的區段：金額與描述由 `InsightsFormatters` 換算，標籤本地化與色彩在這裡套用
+    var donutSegments: [BLDonutSegment] {
+        InsightsFormatters.costDonutSlices(segments, locale: locale).map {
+            BLDonutSegment(
+                label: language.localizedString(forKey: $0.label),
+                value: $0.value,
+                color: color(for: $0.tone),
+                valueDescription: $0.valueDescription
+            )
+        }
+    }
+
+    /// 依語意色調取得圈狀圖與圖例使用的色彩
+    ///
+    /// - Parameter tone: 成本區塊的語意色調
+    /// - Returns: 對應的色彩
+    func color(for tone: InsightsCostSegment.Tone) -> Color {
+        switch tone {
+        case .accent:
+            .blAccent
+
+        case .teal:
+            .blTeal
+
+        case .purple:
+            .blPurple
+
+        case .orange:
+            .blOrange
+        }
     }
 }
 
@@ -129,9 +151,17 @@ private extension InsightsCostStructureCard {
     InsightsCostStructureCard(
         language: .traditionalChinese,
         segments: [
-            InsightsCostSegment(label: "orders.detail.label.itemCost", value: 12_000, color: BLPalette().accent),
-            InsightsCostSegment(label: "orders.detail.label.localShipping", value: 1_500, color: BLPalette().teal),
-            InsightsCostSegment(label: "orders.detail.label.fees", value: 900, color: BLPalette().orange),
+            InsightsCostSegment(
+                label: "orders.detail.label.itemCost",
+                value: 12_000,
+                tone: .accent
+            ),
+            InsightsCostSegment(
+                label: "orders.detail.label.localShipping",
+                value: 1_500,
+                tone: .teal
+            ),
+            InsightsCostSegment(label: "orders.detail.label.fees", value: 900, tone: .orange),
         ],
         totalCost: 14_400
     )

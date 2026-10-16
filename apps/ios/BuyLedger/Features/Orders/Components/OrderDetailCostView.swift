@@ -61,11 +61,11 @@ private extension OrderDetailCostView {
             BLCard {
                 VStack(alignment: .leading, spacing: BLSpacing.large) {
                     BLDonutChart(
-                        segments: donutSegments,
-                        centerTitle: "orders.detail.label.totalCost",
-                        centerValue: OrderFormatters.twd(order.summary.totalCost, locale: locale),
                         axisXTitle: language.localized("orders.list.label.category2"),
                         axisYTitle: language.localized("orders.detail.label.share"),
+                        centerTitle: "orders.detail.label.totalCost",
+                        centerValue: OrderFormatters.twd(order.summary.totalCost, locale: locale),
+                        segments: donutSegments,
                         seriesName: language.localized("orders.detail.label.donutChart")
                     )
                     .frame(maxWidth: .infinity)
@@ -96,7 +96,7 @@ private extension OrderDetailCostView {
 
             Text(LocalizedStringKey(component.title))
                 .blTextStyle(.footnote)
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
 
             Spacer()
 
@@ -113,7 +113,7 @@ private extension OrderDetailCostView {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("orders.detail.label.costBreakdown")
                     .font(BLTypographyStyle.footnote.font.weight(.semibold))
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
                     .textCase(.uppercase)
 
                 ForEach(components) {
@@ -125,14 +125,14 @@ private extension OrderDetailCostView {
                 HStack {
                     Text("orders.detail.label.totalCost")
                         .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                        .foregroundStyle(palette.label)
+                        .foregroundStyle(.blLabel)
 
                     Spacer()
 
                     Text(OrderFormatters.twd(order.summary.totalCost, locale: locale))
                         .font(BLTypographyStyle.subhead.font.bold())
                         .monospacedDigit()
-                        .foregroundStyle(palette.label)
+                        .foregroundStyle(.blLabel)
                 }
                 .accessibilityElement(children: .combine)
             }
@@ -154,17 +154,17 @@ private extension OrderDetailCostView {
 
                 Text(LocalizedStringKey(component.title))
                     .blTextStyle(.footnote)
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
 
                 Spacer()
 
                 Text(OrderFormatters.twd(component.value, locale: locale))
                     .font(BLTypographyStyle.footnote.font.weight(.semibold))
                     .monospacedDigit()
-                    .foregroundStyle(palette.label)
+                    .foregroundStyle(.blLabel)
             }
 
-            // 軌道高度 (6 pt) 由共用樣式 BLProgressViewStyle 決定，非本檔控制
+            // 軌道高度 (6 pt) 由共用樣式 `BLProgressViewStyle` 決定，非本檔控制
             ProgressView(value: component.fraction)
                 .progressViewStyle(BLProgressViewStyle(tint: costColor(for: component.tone)))
         }
@@ -175,11 +175,6 @@ private extension OrderDetailCostView {
 // MARK: - Private Method
 
 private extension OrderDetailCostView {
-
-    /// 依目前外觀取得的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
 
     /// 由 `\.locale` 換算對應的 App 語言
     var language: AppLanguage {
@@ -205,25 +200,25 @@ private extension OrderDetailCostView {
     func costColor(for tone: OrderCostBreakdown.Tone) -> Color {
         switch tone {
         case .accent:
-            return palette.accent
+            return .blAccent
 
         case .orange:
-            return palette.orange
+            return .blOrange
 
         case .teal:
-            return palette.teal
+            return .blTeal
 
         case .purple:
-            return palette.purple
+            return .blPurple
 
         case .indigo:
-            return palette.indigo
+            return .blIndigo
 
         case .pink:
-            return palette.pink
+            return .blPink
 
         case .yellow:
-            return palette.yellow
+            return .blYellow
         }
     }
 }

@@ -13,17 +13,14 @@ struct CustomersView: View {
 
     // MARK: - Properties
 
-    /// 強調區塊顯示的客戶數量
-    private static let topHighlightCount = 3
-
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
     /// 客戶列頭像尺寸，隨 Dynamic Type 縮放
     @ScaledMetric(relativeTo: .body)
     private var customerAvatarSize: CGFloat = CustomerListRow.avatarSize
 
-    /// 訂單投影後的客戶資料來源
+    /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<CustomersFeature>
 
     // MARK: - Body
@@ -35,7 +32,7 @@ struct CustomersView: View {
                 .padding(BLSpacing.large)
                 .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .background(palette.background)
+        .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Customers.listRoot)
         .task {
             await store.send(.view(.task)).finish()
@@ -55,7 +52,7 @@ private extension CustomersView {
             if store.customers.isEmpty {
                 emptyState
             } else {
-                topThree(customers: store.customers)
+                topThree(topCustomers: store.topCustomers)
 
                 customerList(customers: store.customers)
             }
@@ -72,40 +69,52 @@ private extension CustomersView {
         )
         .frame(maxWidth: .infinity)
         .containerRelativeFrame(.vertical)
-        .background(palette.background)
+        .background(.blBackground)
         .accessibilityIdentifier(BLAccessibilityID.Customers.listEmptyState)
     }
 
-    /// 強調區塊：累計消費排名前 ``Self.topHighlightCount`` 名的客戶
+    /// 組出強調區塊，依序列出累計消費排名前幾名的客戶卡片
     ///
-    /// - Parameter customers: 已聚合的客戶清單 (依累計消費排序)
+    /// - Parameter topCustomers: 已依累計消費排序並標示名次的前幾名客戶
     /// - Returns: 強調卡片區塊
     @ViewBuilder
-    func topThree(customers: [CustomerRow]) -> some View {
+    func topThree(topCustomers: [CustomerRank]) -> some View {
         VStack(alignment: .leading, spacing: BLSpacing.medium) {
-            Text(verbatim: "Top \(Self.topHighlightCount)")
+            Text(CustomerFormatters.topCountLabel(locale: locale))
                 .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                .foregroundStyle(palette.secondaryLabel)
+                .foregroundStyle(.blSecondaryLabel)
                 .textCase(.uppercase)
 
-            LazyVGrid(columns: topThreeColumns, spacing: BLSpacing.medium) {
-                ForEach(
-                    Array(customers.prefix(Self.topHighlightCount).enumerated()),
-                    id: \.element.id
-                ) { index, customer in
+            LazyVGrid(
+                columns: [
+                    GridItem(.adaptive(minimum: 240, maximum: 360), spacing: BLSpacing.medium),
+                ],
+                spacing: BLSpacing.medium
+            ) {
+                ForEach(topCustomers) { ranked in
                     Button {
-                        store.send(.view(.customerTapped(customer.name)))
+                        store.send(.view(.customerTapped(ranked.customer.name)))
                     } label: {
-                        CustomerTopCard(rank: index + 1, customer: customer)
+                        CustomerTopCard(customer: ranked.customer, rank: ranked.rank)
                             .contentShape(.rect)
                     }
                     .buttonStyle(.plain)
-                    .accessibilityHint(Text(AppLanguage.format("customers.list.accessibility.viewOrders", customer.name, locale: locale)))
-                    .accessibilityIdentifier(
-                        BLAccessibilityID.Customers.topCard(customerName: customer.id)
+                    .accessibilityHint(
+                        Text(
+                            AppLanguage.format(
+                                "customers.list.accessibility.viewOrders",
+                                ranked.customer.name,
+                                locale: locale
+                            )
+                        )
                     )
-                    // 累計消費放在 accessibilityValue，UI 測試從 element.value 讀取
-                    .accessibilityValue(BLFormatters.twd(customer.totalSpent, locale: locale))
+                    .accessibilityIdentifier(
+                        BLAccessibilityID.Customers.topCard(customerName: ranked.customer.id)
+                    )
+                    // 累計消費放在 `accessibilityValue`，UI 測試從 `element.value` 讀取
+                    .accessibilityValue(
+                        BLFormatters.twd(ranked.customer.totalSpent, locale: locale)
+                    )
                 }
             }
         }
@@ -121,14 +130,20 @@ private extension CustomersView {
             HStack(alignment: .firstTextBaseline) {
                 Text("customers.list.label.allCustomers")
                     .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
                     .textCase(.uppercase)
 
                 Spacer()
 
-                Text(AppLanguage.format("customers.list.label.customerCount", customers.count, locale: locale))
+                Text(
+                    AppLanguage.format(
+                        "customers.list.label.customerCount",
+                        customers.count,
+                        locale: locale
+                    )
+                )
                     .blTextStyle(.footnote)
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
             }
 
             BLCard(padding: 0) {
@@ -141,11 +156,19 @@ private extension CustomersView {
                                 .contentShape(.rect)
                         }
                         .buttonStyle(.plain)
-                        .accessibilityHint(Text(AppLanguage.format("customers.list.accessibility.viewOrders", customer.name, locale: locale)))
+                        .accessibilityHint(
+                            Text(
+                                AppLanguage.format(
+                                    "customers.list.accessibility.viewOrders",
+                                    customer.name,
+                                    locale: locale
+                                )
+                            )
+                        )
                         .accessibilityIdentifier(
                             BLAccessibilityID.Customers.row(customerName: customer.id)
                         )
-                        // 累計消費放在 accessibilityValue，UI 測試從 element.value 讀取
+                        // 累計消費放在 `accessibilityValue`，UI 測試從 `element.value` 讀取
                         .accessibilityValue(BLFormatters.twd(customer.totalSpent, locale: locale))
 
                         if index < customers.count - 1 {
@@ -159,21 +182,6 @@ private extension CustomersView {
                 }
             }
         }
-    }
-}
-
-// MARK: - Private Method
-
-private extension CustomersView {
-
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
-    /// 強調卡片的欄位設定，依寬度自動 1 / 2 / 3 欄
-    var topThreeColumns: [GridItem] {
-        [GridItem(.adaptive(minimum: 240, maximum: 360), spacing: BLSpacing.medium)]
     }
 }
 

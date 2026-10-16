@@ -12,32 +12,32 @@ struct QuoteBreakdownCard: View {
 
     // MARK: - Properties
 
-    /// 是否有可用匯率資料
-    let hasUsableRate: Bool
+    /// App 根層依語言偏好注入的 `locale`
+    @Environment(\.locale) private var locale
 
-    /// 商品本金折合 TWD
-    let itemTWD: Decimal
+    /// 刷卡手續費 TWD
+    let cardFeeTWD: Decimal
+
+    /// 總成本 TWD
+    let costTWD: Decimal
 
     /// 當地運費折合 TWD
     let domesticTWD: Decimal
 
+    /// 是否有可用匯率資料
+    let hasUsableRate: Bool
+
     /// 國際運費 TWD
     let internationalShippingTWD: Decimal
 
-    /// 刷卡手續費 TWD
-    let cardFeeTWD: Decimal
+    /// 商品本金折合 TWD
+    let itemTWD: Decimal
 
     /// 金流手續費 TWD
     let paymentFeeTWD: Decimal
 
     /// 平台手續費 TWD
     let platformFeeTWD: Decimal
-
-    /// 總成本 TWD
-    let costTWD: Decimal
-
-    /// App 根層依語言偏好注入的 locale
-    @Environment(\.locale) private var locale
 
     // MARK: - Body
 
@@ -60,7 +60,10 @@ private extension QuoteBreakdownCard {
     var unavailableContent: some View {
         BLCard {
             ContentUnavailableView {
-                Label("quote.calculator.label.exchangeRateAvailable", systemImage: "dollarsign.arrow.circlepath")
+                Label(
+                    "quote.calculator.label.exchangeRateAvailable",
+                    systemImage: "dollarsign.arrow.circlepath"
+                )
             } description: {
                 Text("quote.calculator.message.networkConnectionNeeded")
             }
@@ -70,17 +73,15 @@ private extension QuoteBreakdownCard {
 
     /// 有可用匯率時的成本拆解內容
     var usableContent: some View {
-        let total = max(costTWD, 1)
-
-        return BLCard {
+        BLCard {
             VStack(alignment: .leading, spacing: BLSpacing.medium) {
                 Text("orders.detail.label.costBreakdown")
                     .font(BLTypographyStyle.caption.font.weight(.semibold))
-                    .foregroundStyle(palette.secondaryLabel)
+                    .foregroundStyle(.blSecondaryLabel)
                     .textCase(.uppercase)
 
-                ForEach(items) { item in
-                    breakdownRow(item: item, total: total)
+                ForEach(items) {
+                    breakdownRow(item: $0)
                 }
 
                 Divider()
@@ -88,36 +89,31 @@ private extension QuoteBreakdownCard {
                 HStack {
                     Text("orders.detail.label.totalCost")
                         .font(BLTypographyStyle.subhead.font.weight(.semibold))
-                        .foregroundStyle(palette.label)
+                        .foregroundStyle(.blLabel)
 
                     Spacer()
 
                     Text(BLFormatters.twd(costTWD, locale: locale))
                         .font(BLTypographyStyle.subhead.font.bold())
                         .monospacedDigit()
-                        .foregroundStyle(palette.label)
+                        .foregroundStyle(.blLabel)
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    /// 成本拆解的一列，顯示比例與 TWD 金額
+    /// 組出成本拆解的一列，顯示比例與 TWD 金額
     ///
-    /// - Parameters:
-    ///   - item: 成本拆解項目
-    ///   - total: 用來計算占比的總成本
+    /// - Parameter item: 成本拆解項目
     /// - Returns: 成本拆解列 view
     @ViewBuilder
-    func breakdownRow(item: BreakdownItem, total: Decimal) -> some View {
-        let fraction = total > 0 ? item.value / total : 0
-        let fractionDouble = NSDecimalNumber(decimal: fraction).doubleValue
-
+    func breakdownRow(item: BreakdownItem) -> some View {
         BLProgressView(
-            title: item.label,
-            value: fractionDouble,
             tint: item.color,
-            trailingText: BLFormatters.twd(item.value, locale: locale)
+            title: item.label,
+            trailingText: BLFormatters.twd(item.value, locale: locale),
+            value: QuoteFormatters.costShare(of: item.value, costTWD: costTWD)
         )
     }
 }
@@ -149,24 +145,35 @@ private extension QuoteBreakdownCard {
 
 private extension QuoteBreakdownCard {
 
-    /// 目前外觀使用的色盤
-    var palette: BLPalette {
-        BLPalette()
-    }
-
     /// 成本拆解項目清單
     var items: [BreakdownItem] {
         [
-            BreakdownItem(label: "orders.detail.label.itemCost", value: itemTWD, color: palette.accent),
-            BreakdownItem(label: "quote.calculator.label.localShipping", value: domesticTWD, color: palette.teal),
+            BreakdownItem(label: "orders.detail.label.itemCost", value: itemTWD, color: .blAccent),
+            BreakdownItem(
+                label: "quote.calculator.label.localShipping",
+                value: domesticTWD,
+                color: .blTeal
+            ),
             BreakdownItem(
                 label: "orders.detail.label.internationalShipping",
                 value: internationalShippingTWD,
-                color: palette.purple
+                color: .blPurple
             ),
-            BreakdownItem(label: "orders.detail.label.cardFee", value: cardFeeTWD, color: palette.orange),
-            BreakdownItem(label: "orders.detail.label.paymentProcessingFee", value: paymentFeeTWD, color: palette.pink),
-            BreakdownItem(label: "orders.detail.label.platformFee", value: platformFeeTWD, color: palette.indigo),
+            BreakdownItem(
+                label: "orders.detail.label.cardFee",
+                value: cardFeeTWD,
+                color: .blOrange
+            ),
+            BreakdownItem(
+                label: "orders.detail.label.paymentProcessingFee",
+                value: paymentFeeTWD,
+                color: .blPink
+            ),
+            BreakdownItem(
+                label: "orders.detail.label.platformFee",
+                value: platformFeeTWD,
+                color: .blIndigo
+            ),
         ]
     }
 }
@@ -175,28 +182,28 @@ private extension QuoteBreakdownCard {
 
 #Preview("可試算") {
     QuoteBreakdownCard(
-        hasUsableRate: true,
-        itemTWD: 3_250,
-        domesticTWD: 130,
-        internationalShippingTWD: 180,
         cardFeeTWD: 48,
+        costTWD: 3_770,
+        domesticTWD: 130,
+        hasUsableRate: true,
+        internationalShippingTWD: 180,
+        itemTWD: 3_250,
         paymentFeeTWD: 65,
-        platformFeeTWD: 97,
-        costTWD: 3_770
+        platformFeeTWD: 97
     )
     .padding()
 }
 
 #Preview("無可用匯率") {
     QuoteBreakdownCard(
-        hasUsableRate: false,
-        itemTWD: 0,
-        domesticTWD: 0,
-        internationalShippingTWD: 180,
         cardFeeTWD: 0,
+        costTWD: 180,
+        domesticTWD: 0,
+        hasUsableRate: false,
+        internationalShippingTWD: 180,
+        itemTWD: 0,
         paymentFeeTWD: 0,
-        platformFeeTWD: 0,
-        costTWD: 180
+        platformFeeTWD: 0
     )
     .padding()
 }
