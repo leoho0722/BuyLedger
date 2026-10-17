@@ -9,308 +9,251 @@ import ComposableArchitecture
 import SwiftUI
 
 /// 更多分頁的入口畫面
-///
-/// 對應設計稿 iPhone 「設定 / 更多」頁與 iPad 工具區塊的入口：以列表形式列出工具與設定子頁面，點擊後 push 到對應子畫面
 struct MoreView: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
-    /// App 根層級 store
-    @Bindable var store: StoreOf<RootFeature>
+    /// 畫面的狀態與事件來源，由父層建立後傳入
+    @Bindable var store: StoreOf<MoreFeature>
 
-    /// 目前系統深淺色外觀
-    @Environment(\.colorScheme) private var colorScheme
+    /// 根殼層傳入的顯示語系
+    let language: AppLanguage
 
-    // MARK: - View Body
+    // MARK: - Body
 
-    /// 更多頁的畫面內容
+    /// 包含更多頁清單與堆疊目的地的導覽容器
     var body: some View {
-        let palette = BLPalette()
+        NavigationStack(path: $store.scope(state: \.path, action: \.path)) {
+            entryList
+        } destination: { destinationStore in
+            switch destinationStore.case {
+            case .customers(let customersStore):
+                CustomersView(store: customersStore)
 
-        NavigationStack(path: $store.morePath) {
-            phoneContent(palette: palette)
-                .navigationDestination(for: RootFeature.MoreRoute.self) { route in
-                    destination(for: route)
-                }
-        }
-    }
-}
+            case .fx(let fxStore):
+                FxView(store: fxStore)
 
-// MARK: - Nested Types
+            case .lookupManagement(let managementStore):
+                LookupManagementView(store: managementStore)
 
-private extension MoreView {
+            case .quote(let quoteStore):
+                QuoteView(store: quoteStore)
 
-    /// 工具項目的領域定義
-    enum ToolItem: String, CaseIterable, Identifiable {
-
-        // MARK: - Cases
-
-        /// 匯率工具
-        case fx
-
-        /// 客戶名單
-        case customers
-
-        /// 報價試算
-        case quote
-
-        /// 訂單來源主檔管理
-        case orderSources
-
-        /// 商品類別主檔管理
-        case categories
-
-        /// 付款方式主檔管理
-        case paymentMethods
-
-        /// 對帳狀態主檔管理
-        case reconciliationStatuses
-
-        // MARK: - Identifiable Properties
-
-        /// 項目的穩定識別值
-        var id: String { rawValue }
-
-        // MARK: - Display Properties
-
-        /// 顯示在卡片或列表上的標題
-        var title: String {
-            switch self {
-            case .fx:
-                "匯率工具"
-            case .customers:
-                "客戶名單"
-            case .quote:
-                "報價試算"
-            case .orderSources:
-                LookupKind.orderSource.entryTitle
-            case .categories:
-                LookupKind.category.entryTitle
-            case .paymentMethods:
-                LookupKind.paymentMethod.entryTitle
-            case .reconciliationStatuses:
-                LookupKind.reconciliationStatus.entryTitle
-            }
-        }
-
-        /// 卡片副標題
-        var subtitle: String {
-            switch self {
-            case .fx:
-                "即時連線 ExchangeRate-API，將外幣換算為 TWD。"
-            case .customers:
-                "依名稱整理客戶活躍度，快速跳轉到對應訂單。"
-            case .quote:
-                "輸入成本與費率，即時看到建議售價與毛利。"
-            case .orderSources:
-                LookupKind.orderSource.entrySubtitle
-            case .categories:
-                LookupKind.category.entrySubtitle
-            case .paymentMethods:
-                LookupKind.paymentMethod.entrySubtitle
-            case .reconciliationStatuses:
-                LookupKind.reconciliationStatus.entrySubtitle
-            }
-        }
-
-        /// 對應的 SF Symbol
-        var systemImage: String {
-            switch self {
-            case .fx:
-                "dollarsign.arrow.circlepath"
-            case .customers:
-                "person.2"
-            case .quote:
-                "function"
-            case .orderSources:
-                LookupKind.orderSource.systemImage
-            case .categories:
-                LookupKind.category.systemImage
-            case .paymentMethods:
-                LookupKind.paymentMethod.systemImage
-            case .reconciliationStatuses:
-                LookupKind.reconciliationStatus.systemImage
-            }
-        }
-
-        /// 圖示色 (依語意 token)
-        /// - Parameter palette: 目前外觀使用的色盤
-        /// - Returns: 對應的色彩
-        func tint(in palette: BLPalette) -> Color {
-            switch self {
-            case .fx:
-                palette.accent
-            case .customers:
-                palette.purple
-            case .quote:
-                palette.green
-            case .orderSources:
-                palette.teal
-            case .categories:
-                palette.orange
-            case .paymentMethods:
-                palette.red
-            case .reconciliationStatuses:
-                palette.indigo
+            case .settings(let settingsStore):
+                SettingsView(store: settingsStore)
             }
         }
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension MoreView {
 
-    /// 將目的地導向到對應 view
-    /// - Parameter route: 目的地
-    /// - Returns: 對應目的地 view
+    /// 顯示工具、管理項目與設定的列表內容
     @ViewBuilder
-    func destination(for route: RootFeature.MoreRoute) -> some View {
-        switch route {
-        case .fx:
-            FxView(store: store.scope(state: \.fx, action: \.fx))
-        case .customers:
-            CustomersView(store: store)
-        case .quote:
-            QuoteView(store: store.scope(state: \.quote, action: \.quote))
-        case .orderSources:
-            LookupManagementView(
-                store: store.scope(state: \.orderSourceManagement, action: \.orderSourceManagement)
-            )
-        case .categories:
-            LookupManagementView(
-                store: store.scope(state: \.categoryManagement, action: \.categoryManagement)
-            )
-        case .paymentMethods:
-            LookupManagementView(
-                store: store.scope(state: \.paymentMethodManagement, action: \.paymentMethodManagement)
-            )
-        case .reconciliationStatuses:
-            LookupManagementView(
-                store: store.scope(state: \.reconciliationStatusManagement, action: \.reconciliationStatusManagement)
-            )
-        case .settings:
-            SettingsView(store: store.scope(state: \.settings, action: \.settings))
-        }
-    }
-
-    /// 保持 phone-friendly 的 grouped list 風格
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 列表 view
-    @ViewBuilder
-    func phoneContent(palette: BLPalette) -> some View {
+    var entryList: some View {
         List {
-            Section("工具") {
-                NavigationLink(value: RootFeature.MoreRoute.fx) {
-                    toolRow(.fx, palette: palette)
-                }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.fx.accessibilityKey))
+            Section("orders.list.label.tools") {
+                entryButton(.fx)
             }
 
-            Section("管理") {
-                NavigationLink(value: RootFeature.MoreRoute.customers) {
-                    toolRow(.customers, palette: palette)
-                }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.customers.accessibilityKey))
+            Section("orders.detail.label.manage") {
+                entryButton(.customers)
 
-                NavigationLink(value: RootFeature.MoreRoute.orderSources) {
-                    toolRow(.orderSources, palette: palette)
-                }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.orderSources.accessibilityKey))
+                entryButton(.orderSources)
 
-                NavigationLink(value: RootFeature.MoreRoute.categories) {
-                    toolRow(.categories, palette: palette)
-                }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.categories.accessibilityKey))
+                entryButton(.categories)
 
-                NavigationLink(value: RootFeature.MoreRoute.paymentMethods) {
-                    toolRow(.paymentMethods, palette: palette)
-                }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.paymentMethods.accessibilityKey))
+                entryButton(.paymentMethods)
 
-                NavigationLink(value: RootFeature.MoreRoute.reconciliationStatuses) {
-                    toolRow(.reconciliationStatuses, palette: palette)
-                }
-                .accessibilityIdentifier(
-                    BLAccessibilityID.More.row(RootFeature.MoreRoute.reconciliationStatuses.accessibilityKey)
-                )
+                entryButton(.reconciliationStatuses)
 
-                NavigationLink(value: RootFeature.MoreRoute.quote) {
-                    toolRow(.quote, palette: palette)
-                }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.quote.accessibilityKey))
+                entryButton(.quote)
             }
 
-            Section("App") {
-                NavigationLink(value: RootFeature.MoreRoute.settings) {
-                    Label {
-                        Text("設定").font(.body.weight(.medium))
-                    } icon: {
-                        Image(systemName: "gear")
-                            .foregroundStyle(palette.secondaryLabel)
-                    }
-                }
-                .accessibilityIdentifier(BLAccessibilityID.More.row(RootFeature.MoreRoute.settings.accessibilityKey))
+            Section {
+                entryButton(.settings)
+            } header: {
+                Text(verbatim: "App")
             }
         }
         .accessibilityIdentifier(BLAccessibilityID.More.root)
-        .rootNavigationTitle("更多", language: store.settings.language)
+        .rootNavigationTitle("common.action.label.more", language: language)
     }
 
-    /// iOS 列表的單列
-    /// - Parameters:
-    ///   - item: 工具項目
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 工具列 view
-    @ViewBuilder
-    func toolRow(_ item: ToolItem, palette: BLPalette) -> some View {
-        Label {
-            Text(LocalizedStringKey(item.title)).font(.body.weight(.medium))
-        } icon: {
-            Image(systemName: item.systemImage)
-                .foregroundStyle(item.tint(in: palette))
+    /// 建立保留系統按壓高亮的入口列與 accessibility identifier
+    ///
+    /// - Parameter entry: 更多頁目的地
+    /// - Returns: 對應目的地的導覽列
+    func entryButton(_ entry: MoreFeature.Entry) -> some View {
+        Button {
+            store.send(.view(.entryTapped(entry)))
+        } label: {
+            HStack {
+                Label {
+                    Text(LocalizedStringKey(entryTitle(for: entry)))
+                        .font(BLTypographyStyle.body.font.weight(.medium))
+                        .foregroundStyle(.blLabel)
+                } icon: {
+                    Image(systemName: entrySystemImage(for: entry))
+                        .foregroundStyle(entryTint(for: entry))
+                }
+
+                Spacer()
+
+                Image(systemName: "chevron.right")
+                    .font(BLTypographyStyle.footnote.font.weight(.semibold))
+                    .foregroundStyle(.blSecondaryLabel)
+                    .accessibilityHidden(true)
+            }
         }
+        .accessibilityIdentifier(accessibilityRow(for: entry))
     }
 }
 
-// MARK: - Accessibility Properties
+// MARK: - Private Method
 
-private extension RootFeature.MoreRoute {
+private extension MoreView {
 
-    /// 對應到 UI 測試 identifier 的目的地 key
+    /// 回傳更多頁目的地的標題
     ///
-    /// 刻意寫成窮舉 switch 而非字面值：新增目的地時這裡會編不過，逼出 ``BLAccessibilityID/More/Row`` 的同步更新
-    ///
-    /// 提醒：畫面上還有一份 ``MoreView/ToolItem`` 只描述工具列的呈現內容，與這條路徑無編譯期綁定；
-    /// 新增或刪除工具時 `ToolItem` 要人工一起改
-    var accessibilityKey: BLAccessibilityID.More.Row {
-        switch self {
+    /// - Parameter entry: 更多頁目的地
+    /// - Returns: 目的地標題
+    func entryTitle(for entry: MoreFeature.Entry) -> String {
+        switch entry {
         case .fx:
-            .fx
+            "settings.more.label.exchangeRates"
+
         case .customers:
-            .customers
+            "settings.more.label.customers"
+
         case .quote:
-            .quote
+            "settings.more.label.quoteCalculator"
+
         case .orderSources:
-            .orderSources
+            LookupKind.orderSource.entryTitle
+
         case .categories:
-            .categories
+            LookupKind.category.entryTitle
+
         case .paymentMethods:
-            .paymentMethods
+            LookupKind.paymentMethod.entryTitle
+
         case .reconciliationStatuses:
-            .reconciliationStatuses
+            LookupKind.reconciliationStatus.entryTitle
+
         case .settings:
-            .settings
+            "orders.edit.title.settings"
         }
+    }
+
+    /// 回傳更多頁目的地的 SF Symbol
+    ///
+    /// - Parameter entry: 更多頁目的地
+    /// - Returns: 對應的 SF Symbol 名稱
+    func entrySystemImage(for entry: MoreFeature.Entry) -> String {
+        switch entry {
+        case .fx:
+            "dollarsign.arrow.circlepath"
+
+        case .customers:
+            "person.2"
+
+        case .quote:
+            "function"
+
+        case .orderSources:
+            LookupKind.orderSource.systemImage
+
+        case .categories:
+            LookupKind.category.systemImage
+
+        case .paymentMethods:
+            LookupKind.paymentMethod.systemImage
+
+        case .reconciliationStatuses:
+            LookupKind.reconciliationStatus.systemImage
+
+        case .settings:
+            "gear"
+        }
+    }
+
+    /// 回傳更多頁目的地的圖示色彩
+    ///
+    /// - Parameter entry: 更多頁目的地
+    /// - Returns: 對應的圖示色彩
+    func entryTint(for entry: MoreFeature.Entry) -> Color {
+        switch entry {
+        case .fx:
+            .blAccent
+
+        case .customers:
+            .blPurple
+
+        case .quote:
+            .blGreen
+
+        case .orderSources:
+            .blTeal
+
+        case .categories:
+            .blOrange
+
+        case .paymentMethods:
+            .blRed
+
+        case .reconciliationStatuses:
+            .blIndigo
+
+        case .settings:
+            .blSecondaryLabel
+        }
+    }
+
+    /// 回傳更多頁目的地列的 accessibility identifier
+    ///
+    /// - Parameter entry: 更多頁目的地
+    /// - Returns: 對應目的地列的 accessibility identifier
+    func accessibilityRow(for entry: MoreFeature.Entry) -> String {
+        let row: BLAccessibilityID.More.Row
+        switch entry {
+        case .fx:
+            row = .fx
+
+        case .customers:
+            row = .customers
+
+        case .quote:
+            row = .quote
+
+        case .orderSources:
+            row = .orderSources
+
+        case .categories:
+            row = .categories
+
+        case .paymentMethods:
+            row = .paymentMethods
+
+        case .reconciliationStatuses:
+            row = .reconciliationStatuses
+
+        case .settings:
+            row = .settings
+        }
+        return BLAccessibilityID.More.row(row)
     }
 }
 
 // MARK: - Preview
 
-#Preview("更多") {
+#Preview("common.action.label.more") {
     MoreView(
-        store: Store(initialState: RootFeature.State()) {
-            RootFeature()
-        }
+        store: Store(initialState: MoreFeature.State(appVersion: "1.0")) {
+            MoreFeature()
+        },
+        language: .traditionalChinese
     )
 }

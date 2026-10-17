@@ -8,248 +8,126 @@
 import ComposableArchitecture
 import Foundation
 
-/// 訂單列表以「日」為單位分組後的單一日期區段
-struct OrderDateSection: Equatable, Identifiable, Sendable {
-
-    // MARK: - Identifiable Properties
-
-    /// 區段識別值，使用該日的起始時刻 (start of day)
-    let id: Date
-
-    // MARK: - Data Properties
-
-    /// 區段標題 (例如「今天」「昨天」「5月26日 週一」)
-    let title: String
-
-    /// 該日的訂單，依時間由新到舊排序
-    let orders: [LedgerOrder]
-}
-
-// MARK: - Internal Method
-
-extension OrderDateSection {
-
-    /// 把訂單依「日」分組為日期區段，供訂單列表與合併候選清單共用
-    ///
-    /// 分組鍵為 `calendar.startOfDay`；區段依日期由新到舊排序，段內訂單亦由新到舊排序，標題經 ``OrderFormatters/daySectionTitle(for:referenceDate:calendar:)`` 產生 (今天/昨天/格式化日期)
-    /// - Parameters:
-    ///   - orders: 要分組的訂單
-    ///   - referenceDate: 判斷「今天／昨天」的基準時間
-    ///   - calendar: 分組與標題使用的曆法
-    ///   - locale: App 選定、用於日期區段標題的 locale
-    /// - Returns: 依日期由新到舊排序的區段
-    static func group(
-        _ orders: [LedgerOrder],
-        referenceDate: Date,
-        calendar: Calendar,
-        locale: Locale
-    ) -> [OrderDateSection] {
-        let grouped = Dictionary(grouping: orders) {
-            calendar.startOfDay(for: $0.date)
-        }
-        return grouped.keys
-            .sorted(by: >)
-            .map { day in
-                OrderDateSection(
-                    id: day,
-                    title: OrderFormatters.daySectionTitle(
-                        for: day,
-                        referenceDate: referenceDate,
-                        calendar: calendar,
-                        locale: locale
-                    ),
-                    orders: (grouped[day] ?? []).sorted { $0.date > $1.date }
-                )
-            }
-    }
-}
-
-/// 訂單列表與詳情選取流程
+/// 訂單容器，持有共用訂單與各子 Feature，依事件轉送請求並套用寫入結果
 @Reducer
 struct OrdersFeature {
 
     // MARK: - State
 
-    /// 訂單功能狀態
+    /// 管理訂單列表載入、篩選、選取與呈現所需的狀態
     @ObservableState
     struct State: Equatable {
 
         /// 目前載入的訂單
-        var orders: [LedgerOrder] = []
+        @Shared var orders: [LedgerOrder]
 
-        /// 搜尋文字
-        var searchText = ""
+        /// 訂單清單的篩選、搜尋、多選與選取
+        var list: OrderListFeature.State
 
-        /// 目前套用的狀態篩選
-        var selectedStatus: OrderStatusFilter = .all
+        /// 主檔端維護的四種主檔目錄，訂單容器只讀取
+        @SharedReader(.lookupCatalog) var lookupCatalog: LookupCatalog
 
-        /// 目前套用的日期區間篩選
-        var selectedDatePeriod: OrderDatePeriod = .all
+        /// 啟動時載入的共用幣別清單，表單建立時只讀取現有值
+        @SharedReader(.currencyCodes) var currencyCodes: [CurrencyCode]
 
-        /// 目前套用的商品類別篩選；`nil` 代表全部類別
-        var selectedCategory: String?
+        /// 新訂單的預設幣別投影，只由 Root 在初始化與偏好變更時寫入
+        var defaultCurrency: CurrencyCode = .twd
 
-        /// 目前套用的付款方式篩選；`nil` 代表全部付款方式
-        var selectedPaymentMethod: String?
+        /// Root 同步的 AI 摘要開關與模型，容器只讀取
+        var aiSummarySettings: OrderAISummarySettings = OrderAISummarySettings(
+            isEnabled: SettingsSnapshot.default.isAISummaryEnabled,
+            model: SettingsSnapshot.default.aiSummaryModel
+        )
 
-        /// 目前選取的訂單編號
-        var selectedOrderID: LedgerOrder.ID?
-
-        /// 是否處於多選模式 (進入後列點擊改為勾選、顯示批次工具列)
-        var isSelecting = false
-
-        /// 多選模式下已勾選的訂單編號集合
-        var selectedOrderIDs: Set<LedgerOrder.ID> = []
-
-        /// 訂單來源主檔 (從 ``OrderSourceRepository`` 載入)
-        var orderSourceMaster: [String] = []
-
-        /// 商品類別主檔 (從 ``CategoryRepository`` 載入)
-        var categoryMaster: [String] = []
-
-        /// 付款方式主檔 (從 ``PaymentMethodRepository`` 載入)，含每筆方式是否屬於無卡類
-        var paymentMethodMaster: [PaymentMethodInfo] = []
-
-        /// 對帳狀態主檔 (從 ``ReconciliationStatusRepository`` 載入)
-        var reconciliationStatusMaster: [String] = []
-
-        /// 開團主檔 (從 ``CampaignRepository`` 載入)；持有完整 ``Campaign`` 而非僅名稱，以便訂單列表按開團狀態篩選時解析每筆訂單所屬團的狀態
+        /// 開團主檔投影，由 Root 同步，供建立訂單編輯選項
         var campaigns: [Campaign] = []
 
-        /// 目前套用的指定開團篩選；`nil` 代表全部開團
-        var selectedCampaign: String?
+        /// 訂單與主檔的載入子 Feature
+        var load: OrdersLoadFeature.State
 
-        /// 目前套用的開團狀態篩選；`nil` 代表全部狀態
-        var selectedCampaignStatus: CampaignStatus?
+        /// 訂單持久化與成功後共用資料更新的子 Feature
+        var writes: OrderWritesFeature.State
 
-        /// 指示訂單是否正在載入
-        var isLoading = false
+        /// 表單、alert 與一次性通知的呈現子 Feature
+        var presentation = OrdersPresentationFeature.State()
 
-        /// 是否已完成首次載入。`true` 後再次觸發 ``OrdersFeature/Action/task`` 會直接返回，避免在訂單為空時每次切換 tab 都重設 ``isLoading`` 造成的 UI 閃爍
-        var hasLoaded = false
+        /// iPhone 詳情堆疊與 iPad 右欄詳情的導覽子 Feature
+        var detail: OrdersDetailNavigationFeature.State
 
-        /// 載入失敗時顯示的錯誤訊息
-        var errorMessage: String?
+        /// 供 Root 與容器畫面讀取的載入投影
+        var loadState: OrdersLoadState {
+            list.loadState
+        }
 
-        /// 目前呈現中的編輯／新增表單；`nil` 表示未呈現
-        @Presents var editOrder: OrderEditFeature.State?
-
-        /// 刪除訂單前的確認 alert 狀態；`nil` 表示未呈現
+        /// 以訂單初值建立容器持有的無鍵共享引用
         ///
-        /// 使用 `AlertState` 而非 `ConfirmationDialogState`：iOS 26 起 `.confirmationDialog` 採 anchored popover 樣式，當觸發來源是 toolbar 按鈕而 modifier 又掛在 root view 上時，會出現位置偏移；改用 `.alert` 是 centered modal，跨 iOS 版本與平台都一致
-        @Presents var deletionConfirmation: AlertState<Action.Alert>?
+        /// - Parameter orders: 初始訂單，預設為空清單
+        init(orders: [LedgerOrder] = []) {
+            let sharedOrders = Shared<[LedgerOrder]>(value: orders)
+            self._orders = sharedOrders
+            self.writes = OrderWritesFeature.State(orders: sharedOrders)
+            let load = OrdersLoadFeature.State(orders: sharedOrders)
+            self.load = load
+            self.list = OrderListFeature.State(
+                orders: SharedReader(sharedOrders),
+                isLoading: SharedReader(load.$isLoading),
+                hasLoaded: SharedReader(load.$hasLoaded),
+                errorMessage: SharedReader(load.$errorMessage)
+            )
+            self.detail = OrdersDetailNavigationFeature.State(orders: SharedReader(sharedOrders))
+        }
 
-        /// AI 商品明細總結 sheet 狀態；`nil` 表示未呈現
-        @Presents var aiSummary: AISummaryFeature.State?
-
-        /// AI 功能未開啟時的提示 alert；`nil` 表示未呈現
-        @Presents var aiDisabledAlert: AlertState<Action.Alert>?
-
-        /// 「合併訂單」流程 (候選選擇 → 照片挑選) 的 sheet 狀態；`nil` 表示未呈現
-        @Presents var orderMerge: OrderMergeFeature.State?
-
-        /// iPhone (compact) 訂單詳情的導覽堆疊；push 進的每筆訂單詳情由 ``OrderDetailPath`` 承載，訂單載入／刪除／合併回滾後由 reducer 同步修剪
-        var detailPath = StackState<OrderDetailPath.State>()
-
-        /// iPhone (compact) 整合篩選 sheet (日期 + 類別 + 付款方式) 是否呈現
-        var showsFilterSheet: Bool = false
-
-        /// iPad (regular) 商品類別篩選 picker sheet 是否呈現
-        var showsCategoryPicker: Bool = false
-
-        /// iPad (regular) 付款方式篩選 picker sheet 是否呈現
-        var showsPaymentMethodPicker: Bool = false
-
-        // MARK: - Computed Properties
-
-        /// 依「已載入 → 有錯誤 → 其餘」的順序解析目前的載入狀態
+        /// 經清單套用跨功能篩選並重選第一筆，右欄詳情同步到新選取
         ///
-        /// 依賴此判定的畫面共用同一份解析，避免各自以 ``hasLoaded`` 單旗標推論而把失敗誤判成載入中
-        var loadState: LoadState {
-            if hasLoaded {
-                return .loaded
-            }
-            if let errorMessage {
-                return .failed(errorMessage)
-            }
-            return .loading
+        /// - Parameters:
+        ///   - searchText: 客戶名稱搜尋；類別導覽時為空
+        ///   - category: 精準類別；客戶導覽時為 `nil`
+        ///   - now: 導覽時的現在時間
+        ///   - calendar: 篩選使用的行事曆
+        mutating func applyFilterNavigation(
+            searchText: String,
+            category: String?,
+            now: Date,
+            calendar: Calendar
+        ) {
+            refreshDateContext(now: now, calendar: calendar)
+            list.applyFilterNavigation(searchText: searchText, category: category)
+            detail.syncRegularDetail(selectedOrderID: list.selectedOrderID)
         }
 
-        /// 對外提供給編輯表單的「可用訂單來源」清單：合併主檔與既有訂單中使用過的來源，去重後依 locale 排序。合併規則與 ``availableCategories`` 相同
-        var availableOrderSources: [String] {
-            let fromOrders = orders
-                .map { $0.orderSource.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-            var merged = Set(orderSourceMaster)
-            merged.formUnion(fromOrders)
-            return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
-        }
-
-        /// 對外提供給編輯表單的「可用類別」清單：合併主檔與既有訂單中使用過的類別，去重後依 locale 排序
+        /// 刷新清單的日期脈絡，供 Root 的前景與重大時間變更共用
         ///
-        /// 合併目的：使用者升級到主檔機制之前，舊訂單已經有 category 字串。為了不讓他們在編輯既有訂單時看到「自己用過的類別不在選單」，把訂單裡用過但主檔還沒有的也補進來。新增動作 (``addCategoryTapped``) 仍會把該值寫入主檔，所以這份合併清單會逐漸與主檔一致
-        var availableCategories: [String] {
-            let fromOrders = orders
-                .flatMap(\.categories)
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-            var merged = Set(categoryMaster)
-            merged.formUnion(fromOrders)
-            return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        /// - Parameters:
+        ///   - now: 新的現在時間
+        ///   - calendar: 新的行事曆與時區
+        mutating func refreshDateContext(now: Date, calendar: Calendar) {
+            list.dateContext = OrderDateContext(now: now, calendar: calendar)
         }
 
-        /// 對外提供給編輯表單的「可用付款方式」清單；合併規則同 ``availableCategories``，但保留 `isCardless` 旗標
+        /// 建立並呈現新訂單表單，供訂單分頁與首頁共用
         ///
-        /// 訂單裡用過但主檔還沒有的付款方式以 `isCardless == false` 補上；主檔有的則直接帶入 `isCardless`，使編輯表單能正確判斷是否顯示「無卡折抵金額」與「無卡補款金額」欄位
-        var availablePaymentMethods: [PaymentMethodInfo] {
-            var byName: [String: PaymentMethodInfo] = [:]
-            for info in paymentMethodMaster {
-                byName[info.name] = info
-            }
-            for order in orders {
-                let trimmed = order.paymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty, byName[trimmed] == nil else {
-                    continue
-                }
-                byName[trimmed] = PaymentMethodInfo(
-                    name: trimmed,
-                    isCardless: false,
-                    isBankTransfer: false,
-                    isCashOnDelivery: false
-                )
-            }
-            return byName.values
-                .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
+        /// - Parameters:
+        ///   - id: 表單識別值
+        ///   - now: 新訂單日期與評估開團結單日的現在時間
+        ///   - calendar: 建立表單時的注入行事曆
+        mutating func presentNewOrder(id: UUID, now: Date, calendar: Calendar) {
+            let destination = OrdersContainerPlan.newOrder(
+                id: id,
+                state: self,
+                now: now,
+                calendar: calendar
+            )
+            presentation.present(destination)
         }
 
-        /// 對外提供給編輯表單的「可用對帳狀態」清單：合併主檔與既有訂單中使用過的對帳狀態，去重後依 locale 排序。合併規則與 ``availableCategories`` 相同
-        var availableReconciliationStatuses: [String] {
-            let fromOrders = orders
-                .map { $0.reconciliationStatus.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-            var merged = Set(reconciliationStatusMaster)
-            merged.formUnion(fromOrders)
-            return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
-        }
-
-        /// 對外提供給編輯表單的「可用開團」清單：合併開團主檔名稱與既有訂單中使用過的開團名稱，去重後依 locale 排序。合併規則與 ``availableCategories`` 相同
-        var availableCampaigns: [String] {
-            let fromOrders = orders
-                .flatMap(\.campaignNames)
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-            var merged = Set(campaigns.map(\.name))
-            merged.formUnion(fromOrders)
-            return merged.sorted { $0.localizedStandardCompare($1) == .orderedAscending }
-        }
-
-        /// 對外提供給編輯表單下拉選單的「可歸屬開團」清單：僅取狀態為開團中 (``CampaignStatus/ongoing``) 的開團名稱，依 locale 排序
-        /// 已收單的開團不列入，避免下拉選單項目過長；正在編輯的訂單若已歸屬已收單開團，由 ``OrderEditFeature`` 的 init 自動保留該既有選項，不會遺失
-        var ongoingCampaigns: [String] {
-            let names = campaigns
-                .filter { $0.status == .ongoing }
-                .map(\.name)
-            return Set(names).sorted { $0.localizedStandardCompare($1) == .orderedAscending }
+        /// 以唯讀快照建立所有表單入口共用的選項
+        ///
+        /// - Parameters:
+        ///   - now: 評估開團結單日的現在時間
+        ///   - calendar: 結單日與完整時間使用的行事曆
+        /// - Returns: 可選主檔、進行中開團、幣別與行事曆
+        func makeEditOptions(now: Date, calendar: Calendar) -> OrderEditOptions {
+            OrdersEditorOptions.make(state: self, now: now, calendar: calendar)
         }
     }
 
@@ -257,990 +135,119 @@ struct OrdersFeature {
 
     /// 訂單功能可處理的事件
     @CasePathable
-    enum Action: BindableAction, Equatable {
+    enum Action: BindableAction {
 
-        /// SwiftUI 雙向繫結事件
+        /// `SwiftUI` 雙向繫結事件
+        ///
+        /// - Parameter action: 由 `State` 的雙向繫結產生的事件
         case binding(BindingAction<State>)
 
-        /// 畫面出現時觸發載入
-        case task
+        /// 容器畫面的使用者事件
+        ///
+        /// - Parameter action: sheet 關閉動畫完成的事件
+        case view(View)
 
-        /// 訂單載入成功
-        case ordersLoaded([LedgerOrder])
+        /// 交由父層處理的跨功能意圖
+        ///
+        /// - Parameter action: 訂單功能送出的委派
+        case delegate(Delegate)
 
-        /// 訂單載入失敗
-        case ordersFailed(String)
+        /// 詳情導覽子 Feature 的堆疊與右欄事件
+        ///
+        /// - Parameter action: iPhone 堆疊與 iPad 右欄的事件
+        case detail(OrdersDetailNavigationFeature.Action)
 
-        /// 訂單來源主檔載入完成
-        case orderSourceMasterLoaded([String])
+        /// 清單子 Feature 的互動與委派
+        ///
+        /// - Parameter action: 清單事件
+        case list(OrderListFeature.Action)
 
-        /// 商品類別主檔載入完成
-        case categoryMasterLoaded([String])
+        /// 訂單載入子 Feature 的請求、回應與失敗委派
+        ///
+        /// - Parameter action: 載入子層的事件
+        case load(OrdersLoadFeature.Action)
 
-        /// 付款方式主檔載入完成
-        case paymentMethodMasterLoaded([PaymentMethodInfo])
+        /// 呈現子 Feature 的表單、alert 與通知事件
+        ///
+        /// - Parameter action: 目的地內部事件、委派或一次性通知
+        case presentation(OrdersPresentationFeature.Action)
 
-        /// 對帳狀態主檔載入完成
-        case reconciliationStatusMasterLoaded([String])
+        /// 父層要求載入訂單或套用跨功能資料變更，由對應子 Feature 處理
+        ///
+        /// - Parameter request: 根功能送進訂單容器的請求
+        case rootRequest(OrdersRootRequest)
 
-        /// 開團主檔載入完成
-        case campaignsLoaded([Campaign])
+        /// 訂單寫入子 Feature 的請求、回應與委派
+        ///
+        /// - Parameter action: 寫入子層事件
+        case writes(OrderWritesFeature.Action)
 
-        /// 使用者切換狀態篩選
-        case statusFilterSelected(OrderStatusFilter)
-
-        /// 使用者切換日期區間篩選
-        case datePeriodSelected(OrderDatePeriod)
-
-        /// 使用者切換商品類別篩選 (`nil` = 全部)
-        case categoryFilterSelected(String?)
-
-        /// 使用者切換付款方式篩選 (`nil` = 全部)
-        case paymentMethodFilterSelected(String?)
-
-        /// 使用者切換指定開團篩選 (`nil` = 全部開團)
-        case campaignFilterSelected(String?)
-
-        /// 使用者切換開團狀態篩選 (`nil` = 全部狀態)
-        case campaignStatusFilterSelected(CampaignStatus?)
-
-        /// 使用者點擊 iPad (regular) 商品類別篩選 trigger，開啟類別 picker sheet
-        case categoryPickerTapped
-
-        /// 使用者點擊 iPad (regular) 付款方式篩選 trigger，開啟付款方式 picker sheet
-        case paymentMethodPickerTapped
-
-        /// 使用者點擊 iPhone (compact) 整合篩選 trigger，開啟篩選 sheet
-        case filterSheetTapped
-
-        /// 使用者輸入搜尋文字
-        case searchTextChanged(String)
-
-        /// 使用者選取訂單
-        case orderSelected(LedgerOrder.ID?)
-
-        /// 使用者點擊「編輯」按鈕，要求編輯指定訂單
-        case editOrderTapped(LedgerOrder.ID)
-
-        /// 使用者點擊「新訂單」按鈕，要求建立空白訂單
-        case newOrderTapped
-
-        /// 編輯／新增表單事件
-        case editOrder(PresentationAction<OrderEditFeature.Action>)
-
-        /// 使用者從訂單列 context menu 或詳情頁觸發「合併訂單」；參數為主訂單編號
-        case mergeOrderTapped(LedgerOrder.ID)
-
-        /// 合併流程 sheet 事件；完成 delegate 由父層在此回收
-        case orderMerge(PresentationAction<OrderMergeFeature.Action>)
-
-        /// 合併資料選定完成、合併 sheet 收合後，以合併草稿與保留照片開啟確認表單 (兩段 sheet 序列化呈現)
-        case mergeConfirmationReady(OrderMerge.Draft, keptPhotos: [Data])
-
-        /// 合併持久化失敗：以快照整批回復 in-memory 訂單，避免半合併狀態
-        case mergePersistenceFailed([LedgerOrder])
-
-        /// 透過詳情頁的「更新狀態」menu 直接切換訂單狀態
-        case statusChanged(LedgerOrder.ID, OrderStatus)
-
-        /// 進入／退出多選模式；退出時清空已選集合
-        case selectionModeToggled
-
-        /// 多選模式下切換單筆訂單的勾選狀態
-        case orderSelectionToggled(LedgerOrder.ID)
-
-        /// 全選目前篩選後清單
-        case selectAllTapped
-
-        /// 清除目前已選集合
-        case clearSelectionTapped
-
-        /// 對已選訂單批次套用同一目標狀態 (目標清單已排除 merged)
-        case batchStatusChanged(OrderStatus)
-
-        /// 切換訂單收款狀態 (待收款／已收款)；供開團詳情頁逐筆勾稽收款使用
-        case receiptStatusChanged(LedgerOrder.ID, PaymentReceiptStatus)
-
-        /// 使用者點擊「刪除」按鈕，要求刪除指定訂單；先以 ``deletionConfirmation`` 二次確認
-        case deleteOrderTapped(LedgerOrder.ID)
-
-        /// 刪除確認 dialog 事件
-        case deletionConfirmation(PresentationAction<Alert>)
-
-        /// 使用者點擊「AI 總結」工具列按鈕
-        case aiSummaryTapped
-
-        /// AI 總結 sheet 事件
-        case aiSummary(PresentationAction<AISummaryFeature.Action>)
-
-        /// AI 未開啟提示 alert 事件
-        case aiDisabledAlert(PresentationAction<Alert>)
-
-        /// iPhone (compact) 訂單詳情導覽堆疊事件；push／pop 由 ``Reducer/forEach(_:action:destination:fileID:filePath:line:column:)`` 自動處理
-        case detailPath(StackActionOf<OrderDetailPath>)
-
-        /// 刪除確認 dialog 與 AI 提示 alert 共用的選項
+        /// 容器畫面的使用者事件
         @CasePathable
-        enum Alert: Equatable {
+        enum View {
 
-            /// 使用者確認刪除指定訂單
-            case confirmDelete(LedgerOrder.ID)
+            /// 任一表單 sheet 的關閉動畫已完成
+            case formSheetDismissed
+        }
 
-            /// 使用者選擇前往設定開啟 AI 總結 (導覽由 ``RootFeature`` 攔截處理)
-            case goToAISettings
+        /// 訂單功能交給父層的導覽意圖
+        @CasePathable
+        enum Delegate: Equatable {
+
+            /// 要求開啟設定頁以啟用 AI 商品明細總結
+            case aiSettingsRequested
+
+            /// 請根功能將新增選項交給主檔端寫入
+            ///
+            /// - Parameter request: 保留表單識別值的新增請求
+            case optionAddRequested(LookupAdditionRequest)
+
+            /// 訂單分頁要求載入，由根功能先確認主檔目錄
+            case loadRequested
         }
     }
 
-    // MARK: - Dependency Properties
+    // MARK: - Dependencies
 
-    /// 訂單資料來源
-    @Dependency(OrderRepository.self) private var orderRepository
-
-    /// 訂單來源主檔資料來源
-    @Dependency(OrderSourceRepository.self) private var orderSourceRepository
-
-    /// 商品類別主檔資料來源
-    @Dependency(CategoryRepository.self) private var categoryRepository
-
-    /// 付款方式主檔資料來源
-    @Dependency(PaymentMethodRepository.self) private var paymentMethodRepository
-
-    /// 對帳狀態主檔資料來源
-    @Dependency(ReconciliationStatusRepository.self) private var reconciliationStatusRepository
-
-    /// 開團主檔資料來源
-    @Dependency(CampaignRepository.self) private var campaignRepository
-
-    /// 用於新訂單的 UUID 產生器，方便在測試中注入固定值
+    /// 用於新訂單編號，以及新增、有效編輯與合併確認表單的識別值，方便在測試中注入固定值
     @Dependency(\.uuid) private var uuid
 
-    /// 用於新訂單的日期來源，方便在測試中注入固定值
+    /// 用於篩選、開團結單判斷、合併、AI 摘要提示詞與建立訂單的日期來源
     @Dependency(\.date) private var date
 
-    /// 訂單篩選與日期分組所用的行事曆 (含時區)；測試可注入固定 gregorian／UTC
+    /// 用於訂單日期篩選與開團結單判斷的行事曆
     @Dependency(\.calendar) private var calendar
 
-    /// 合併流程兩段 sheet 序列化呈現的延遲時脈；測試可注入 immediate clock
-    @Dependency(\.continuousClock) private var clock
+    // MARK: - Body
 
-    /// 設定持久化來源；用於讀取 `useAiSummary` 與 `aiSummaryModel`
-    @Dependency(SettingsStorage.self) private var settingsStorage
-
-    // MARK: - Reducer Body
-
-    /// 訂單功能 reducer
+    /// 組合雙向繫結、清單與載入子層、寫入與呈現子層，最後由 `core(state:action:)` 分派請求
     var body: some Reducer<State, Action> {
         BindingReducer()
 
-        Reduce { state, action in
-            switch action {
-            case .binding:
-                return .none
-
-            case .task:
-                // 首次載入完成後就不再重觸發；否則訂單為空時每次切換 tab 都會把 `isLoading` 翻成 `true`，
-                // 讓依賴 `!isLoading` 判斷空狀態的 view 瞬間落入「有資料」分支
-                guard !state.hasLoaded, !state.isLoading else {
-                    return .none
-                }
-
-                let orderRepository = orderRepository
-                let orderSourceRepository = orderSourceRepository
-                let categoryRepository = categoryRepository
-                let paymentMethodRepository = paymentMethodRepository
-                let reconciliationStatusRepository = reconciliationStatusRepository
-                let campaignRepository = campaignRepository
-                state.isLoading = true
-                state.errorMessage = nil
-
-                return .run { send in
-                    async let orderSourcesTask: Void = {
-                        if let items = try? await orderSourceRepository.fetchOrderSources() {
-                            await send(.orderSourceMasterLoaded(items))
-                        }
-                    }()
-                    async let campaignsTask: Void = {
-                        if let items = try? await campaignRepository.fetchCampaigns() {
-                            await send(.campaignsLoaded(items))
-                        }
-                    }()
-                    async let categoriesTask: Void = {
-                        if let items = try? await categoryRepository.fetchCategories() {
-                            await send(.categoryMasterLoaded(items))
-                        }
-                    }()
-                    async let paymentMethodsTask: Void = {
-                        if let infos = try? await paymentMethodRepository.fetchPaymentMethodInfos() {
-                            await send(.paymentMethodMasterLoaded(infos))
-                        }
-                    }()
-                    async let reconciliationStatusesTask: Void = {
-                        if let items = try? await reconciliationStatusRepository.fetchReconciliationStatuses() {
-                            await send(.reconciliationStatusMasterLoaded(items))
-                        }
-                    }()
-
-                    do {
-                        let orders = try await orderRepository.fetchOrders()
-                        await send(.ordersLoaded(orders))
-                    } catch {
-                        await send(.ordersFailed("訂單載入失敗，請稍後再試。"))
-                    }
-
-                    _ = await (orderSourcesTask, campaignsTask, categoriesTask, paymentMethodsTask, reconciliationStatusesTask)
-                }
-
-            case let .orderSourceMasterLoaded(items):
-                state.orderSourceMaster = items
-                return .none
-
-            case let .categoryMasterLoaded(items):
-                state.categoryMaster = items
-                return .none
-
-            case let .paymentMethodMasterLoaded(infos):
-                state.paymentMethodMaster = infos
-                return .none
-
-            case let .reconciliationStatusMasterLoaded(items):
-                state.reconciliationStatusMaster = items
-                return .none
-
-            case let .campaignsLoaded(campaigns):
-                state.campaigns = campaigns
-                return .none
-
-            case let .ordersLoaded(orders):
-                state.isLoading = false
-                state.hasLoaded = true
-                state.orders = orders
-                state.selectedOrderID = state.selectedOrderID ?? orders.first?.id
-                pruneDetailPath(&state)
-                return .none
-
-            case let .ordersFailed(message):
-                state.isLoading = false
-                state.errorMessage = message
-                return .none
-
-            case let .statusFilterSelected(filter):
-                state.selectedStatus = filter
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
-                return .none
-
-            case let .datePeriodSelected(period):
-                state.selectedDatePeriod = period
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
-                return .none
-
-            case let .categoryFilterSelected(category):
-                state.selectedCategory = category
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
-                return .none
-
-            case let .paymentMethodFilterSelected(paymentMethod):
-                state.selectedPaymentMethod = paymentMethod
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
-                return .none
-
-            case let .campaignFilterSelected(campaign):
-                state.selectedCampaign = campaign
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
-                return .none
-
-            case let .campaignStatusFilterSelected(campaignStatus):
-                state.selectedCampaignStatus = campaignStatus
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
-                return .none
-
-            case .categoryPickerTapped:
-                state.showsCategoryPicker = true
-                return .none
-
-            case .paymentMethodPickerTapped:
-                state.showsPaymentMethodPicker = true
-                return .none
-
-            case .filterSheetTapped:
-                state.showsFilterSheet = true
-                return .none
-
-            case let .searchTextChanged(searchText):
-                state.searchText = searchText
-                state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
-                return .none
-
-            case let .orderSelected(id):
-                state.selectedOrderID = id
-                return .none
-
-            case let .editOrderTapped(id):
-                guard let order = state.orders.first(where: { $0.id == id }) else {
-                    return .none
-                }
-
-                state.editOrder = OrderEditFeature.State(
-                    original: order,
-                    id: uuid(),
-                    availableOrderSources: state.availableOrderSources,
-                    availableCategories: state.availableCategories,
-                    availablePaymentMethods: state.availablePaymentMethods,
-                    availableReconciliationStatuses: state.availableReconciliationStatuses,
-                    availableCampaigns: state.ongoingCampaigns,
-                    currentDate: date.now
-                )
-                return .none
-
-            case .newOrderTapped:
-                state.editOrder = OrderEditFeature.State(
-                    id: uuid(),
-                    availableOrderSources: state.availableOrderSources,
-                    availableCategories: state.availableCategories,
-                    availablePaymentMethods: state.availablePaymentMethods,
-                    availableReconciliationStatuses: state.availableReconciliationStatuses,
-                    availableCampaigns: state.ongoingCampaigns,
-                    currentDate: date.now
-                )
-                return .none
-
-            case .editOrder(.presented(.saveTapped)):
-                guard let editState = state.editOrder else {
-                    return .none
-                }
-
-                // 合併草稿：寫入新訂單之外，還要把來源訂單轉「已合併」，並以單一持久化操作落盤
-                if !editState.mergeSourceIDs.isEmpty {
-                    // 快照供持久化失敗時整批回復，確保 in-memory 不留半合併狀態
-                    let previousOrders = state.orders
-                    guard let savedOrder = applyEditDraft(editState, to: &state) else {
-                        return .none
-                    }
-
-                    let sourceIDs = editState.mergeSourceIDs
-                    state.orders = state.orders.map { order in
-                        guard sourceIDs.contains(order.id), order.id != savedOrder.id else {
-                            return order
-                        }
-                        return order.withStatus(.merged)
-                    }
-
-                    let orderRepository = orderRepository
-                    return .run { send in
-                        do {
-                            try await orderRepository.mergeOrders(savedOrder, sourceIDs)
-                        } catch {
-                            await send(.mergePersistenceFailed(previousOrders))
-                        }
-                    }
-                }
-
-                guard let savedOrder = applyEditDraft(editState, to: &state) else {
-                    return .none
-                }
-
-                let orderRepository = orderRepository
-                return .run { _ in
-                    // 同步觸發已下沉到 OrderRepository.saveOrder (各異動路徑統一發通知、避免漏發)
-                    try await orderRepository.saveOrder(savedOrder)
-                } catch: { _, send in
-                    await send(.ordersFailed("訂單儲存失敗，請稍後再試。"))
-                }
-
-            case let .editOrder(.presented(.addOrderSourceTapped(name))):
-                // 子 reducer 已把 name 加進 sheet 內的 availableOrderSources 並設成 draftOrderSource；
-                // 父層額外寫入主檔並更新 state.orderSourceMaster，使非編輯流程 (其他訂單) 也能看到
-                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else {
-                    return .none
-                }
-                if !state.orderSourceMaster.contains(trimmed) {
-                    var updated = state.orderSourceMaster
-                    updated.append(trimmed)
-                    state.orderSourceMaster = updated.sorted {
-                        $0.localizedStandardCompare($1) == .orderedAscending
-                    }
-                }
-                let orderSourceRepository = orderSourceRepository
-                return .run { _ in
-                    try await orderSourceRepository.addOrderSource(trimmed)
-                } catch: { _, send in
-                    await send(.ordersFailed("訂單來源新增失敗，請稍後再試。"))
-                }
-
-            case let .editOrder(.presented(.addCategoryTapped(name))):
-                // 子 reducer 已把 name 加進 sheet 內的 availableCategories 並設成 draftCategories；
-                // 父層額外寫入主檔並更新 state.categoryMaster，使非編輯流程 (管理頁、其他訂單) 也能看到
-                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else {
-                    return .none
-                }
-                if !state.categoryMaster.contains(trimmed) {
-                    var updated = state.categoryMaster
-                    updated.append(trimmed)
-                    state.categoryMaster = updated.sorted {
-                        $0.localizedStandardCompare($1) == .orderedAscending
-                    }
-                }
-                let categoryRepository = categoryRepository
-                return .run { _ in
-                    try await categoryRepository.addCategory(trimmed)
-                } catch: { _, send in
-                    await send(.ordersFailed("商品類別新增失敗，請稍後再試。"))
-                }
-
-            case let .editOrder(.presented(.addPaymentMethodTapped(name, isCardless, isBankTransfer, isCashOnDelivery))):
-                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else {
-                    return .none
-                }
-                // 同名情境：以新的 isCardless / isBankTransfer / isCashOnDelivery 覆寫，讓 sheet 內二次新增能更正先前忘記勾選的狀態
-                var updated = state.paymentMethodMaster
-                if let index = updated.firstIndex(where: { $0.name == trimmed }) {
-                    updated[index] = PaymentMethodInfo(
-                        name: trimmed,
-                        isCardless: isCardless,
-                        isBankTransfer: isBankTransfer,
-                        isCashOnDelivery: isCashOnDelivery
-                    )
-                } else {
-                    updated.append(PaymentMethodInfo(
-                        name: trimmed,
-                        isCardless: isCardless,
-                        isBankTransfer: isBankTransfer,
-                        isCashOnDelivery: isCashOnDelivery
-                    ))
-                }
-                state.paymentMethodMaster = updated.sorted {
-                    $0.name.localizedStandardCompare($1.name) == .orderedAscending
-                }
-
-                let paymentMethodRepository = paymentMethodRepository
-                return .run { _ in
-                    try await paymentMethodRepository.addPaymentMethod(trimmed, isCardless, isBankTransfer, isCashOnDelivery)
-                } catch: { _, send in
-                    await send(.ordersFailed("付款方式新增失敗，請稍後再試。"))
-                }
-
-            case let .editOrder(.presented(.addReconciliationStatusTapped(name))):
-                // 子 reducer 已把 name 加進 sheet 內的 availableReconciliationStatuses 並設成 draftReconciliationStatus；
-                // 父層額外寫入主檔並更新 state.reconciliationStatusMaster，使非編輯流程 (管理頁、其他訂單) 也能看到
-                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else {
-                    return .none
-                }
-                if !state.reconciliationStatusMaster.contains(trimmed) {
-                    var updated = state.reconciliationStatusMaster
-                    updated.append(trimmed)
-                    state.reconciliationStatusMaster = updated.sorted {
-                        $0.localizedStandardCompare($1) == .orderedAscending
-                    }
-                }
-                let reconciliationStatusRepository = reconciliationStatusRepository
-                return .run { _ in
-                    try await reconciliationStatusRepository.addReconciliationStatus(trimmed)
-                } catch: { _, send in
-                    await send(.ordersFailed("對帳狀態新增失敗，請稍後再試。"))
-                }
-
-            case .editOrder:
-                return .none
-
-            case let .mergeOrderTapped(orderID):
-                // 已合併/已取消的訂單不可作為主訂單 (入口在 view 端同樣隱藏，此處為防衛)
-                guard let primary = state.orders.first(where: { $0.id == orderID }),
-                      primary.status != .merged,
-                      primary.status != .cancelled else {
-                    return .none
-                }
-
-                state.orderMerge = OrderMergeFeature.State(primary: primary, orders: state.orders)
-                return .none
-
-            case let .orderMerge(.presented(.delegate(.completed(primary, secondary, keptPhotos)))):
-                // 以付款方式主檔旗標建構無卡判定，計算合併草稿 (純函式)
-                let cardlessNames = Set(state.availablePaymentMethods.filter(\.isCardless).map(\.name))
-                let draft = OrderMerge.makeDraft(
-                    primary: primary,
-                    secondary: secondary,
-                    now: date.now,
-                    isCardless: { cardlessNames.contains($0) }
-                )
-
-                // 先收合合併 sheet，延遲一拍再開啟確認表單，避免同 frame 換 sheet 的 presentation race
-                state.orderMerge = nil
-                let clock = clock
-                return .run { send in
-                    try? await clock.sleep(for: .milliseconds(500))
-                    await send(.mergeConfirmationReady(draft, keptPhotos: keptPhotos))
-                }
-
-            case .orderMerge:
-                return .none
-
-            case let .mergeConfirmationReady(draft, keptPhotos):
-                var editState = OrderEditFeature.State(
-                    id: uuid(),
-                    availableOrderSources: state.availableOrderSources,
-                    availableCategories: state.availableCategories,
-                    availablePaymentMethods: state.availablePaymentMethods,
-                    availableReconciliationStatuses: state.availableReconciliationStatuses,
-                    availableCampaigns: state.availableCampaigns,
-                    currentDate: date.now
-                )
-                editState.draftCustomerName = draft.customer.name
-                editState.draftOrderSource = draft.orderSource
-                editState.draftCategories = draft.categories
-                editState.draftStatus = draft.status
-                editState.draftCurrency = draft.currency
-                editState.draftChargedAmount = draft.chargedAmount
-                editState.draftCardlessDeductionAmount = draft.cardlessDeductionAmount
-                editState.draftCardlessSupplementAmount = draft.cardlessSupplementAmount
-                editState.draftItemCost = draft.itemCost
-                editState.draftDomesticShipping = draft.domesticShipping
-                editState.draftInternationalShipping = draft.internationalShipping
-                editState.draftForeignDomesticShipping = draft.foreignDomesticShipping
-                editState.draftCardFeeRate = draft.cardFeeRate
-                editState.draftPlatformFeeRate = draft.platformFeeRate
-                editState.draftPaymentFeeRate = draft.paymentFeeRate
-                editState.draftItems = draft.items
-                editState.draftNotes = draft.notes
-                editState.draftDate = draft.date
-                editState.draftPaymentMethod = draft.paymentMethod
-                editState.draftReconciliationStatus = draft.reconciliationStatus
-                editState.draftCampaignNames = draft.campaignNames
-                editState.draftPaymentReceiptStatus = draft.paymentReceiptStatus
-                editState.draftPhotos = keptPhotos
-                editState.mergeSourceIDs = draft.mergeSourceIDs
-                state.editOrder = editState
-                return .none
-
-            case let .mergePersistenceFailed(previousOrders):
-                // 持久化失敗：回復快照，新單與舊單狀態同進退；以既有錯誤訊息路徑提示
-                state.orders = previousOrders
-                pruneDetailPath(&state)
-                state.errorMessage = "合併訂單儲存失敗，請稍後再試。"
-                return .none
-
-            case let .statusChanged(orderID, newStatus):
-                guard let index = state.orders.firstIndex(where: { $0.id == orderID }) else {
-                    return .none
-                }
-
-                let existing = state.orders[index]
-                guard existing.status != newStatus else {
-                    return .none
-                }
-
-                let updated = LedgerOrder(
-                    id: existing.id,
-                    customer: existing.customer,
-                    status: newStatus,
-                    currency: existing.currency,
-                    date: existing.date,
-                    items: existing.items,
-                    itemCost: existing.itemCost,
-                    domesticShipping: existing.domesticShipping,
-                    internationalShipping: existing.internationalShipping,
-                    foreignDomesticShipping: existing.foreignDomesticShipping,
-                    cardFeeRate: existing.cardFeeRate,
-                    platformFeeRate: existing.platformFeeRate,
-                    paymentFeeRate: existing.paymentFeeRate,
-                    chargedAmount: existing.chargedAmount,
-                    cardlessDeductionAmount: existing.cardlessDeductionAmount,
-                    cardlessSupplementAmount: existing.cardlessSupplementAmount,
-                    orderSource: existing.orderSource,
-                    categories: existing.categories,
-                    paymentMethod: existing.paymentMethod,
-                    notes: existing.notes,
-                    reconciliationStatus: existing.reconciliationStatus,
-                    campaignNames: existing.campaignNames,
-                    paymentReceiptStatus: existing.paymentReceiptStatus,
-                    isCashOnDelivery: existing.isCashOnDelivery,
-                    photos: existing.photos,
-                    mergedSourceIDs: existing.mergedSourceIDs
-                )
-                state.orders[index] = updated
-
-                let orderRepository = orderRepository
-                return .run { _ in
-                    try await orderRepository.saveOrder(updated)
-                } catch: { _, send in
-                    await send(.ordersFailed("訂單狀態更新失敗，請稍後再試。"))
-                }
-
-            case .selectionModeToggled:
-                state.isSelecting.toggle()
-                if !state.isSelecting {
-                    state.selectedOrderIDs = []
-                }
-                return .none
-
-            case let .orderSelectionToggled(id):
-                if state.selectedOrderIDs.contains(id) {
-                    state.selectedOrderIDs.remove(id)
-                } else {
-                    state.selectedOrderIDs.insert(id)
-                }
-                return .none
-
-            case .selectAllTapped:
-                let filtered = state.filteredOrders(referenceDate: date.now, calendar: calendar)
-                state.selectedOrderIDs = Set(filtered.map(\.id))
-                return .none
-
-            case .clearSelectionTapped:
-                state.selectedOrderIDs = []
-                return .none
-
-            case let .batchStatusChanged(newStatus):
-                // merged 僅由合併流程寫入；批次目標清單已於 view 端排除，此處為防衛
-                guard newStatus != .merged else {
-                    return .none
-                }
-
-                // 對已選訂單逐筆重建狀態，略過已是目標狀態者；收集實際變更以單次批次落盤
-                let selectedIDs = state.selectedOrderIDs
-                var changed: [LedgerOrder] = []
-                for index in state.orders.indices {
-                    let order = state.orders[index]
-                    guard selectedIDs.contains(order.id), order.status != newStatus else {
-                        continue
-                    }
-                    let updated = order.withStatus(newStatus)
-                    state.orders[index] = updated
-                    changed.append(updated)
-                }
-
-                // 無論是否有實際變更皆退出多選並清空選取
-                state.isSelecting = false
-                state.selectedOrderIDs = []
-
-                guard !changed.isEmpty else {
-                    return .none
-                }
-
-                let orderRepository = orderRepository
-                let changedOrders = changed
-                return .run { _ in
-                    try await orderRepository.saveOrders(changedOrders)
-                } catch: { _, send in
-                    await send(.ordersFailed("批次更新狀態失敗，請稍後再試。"))
-                }
-
-            case let .receiptStatusChanged(orderID, newReceiptStatus):
-                guard let index = state.orders.firstIndex(where: { $0.id == orderID }),
-                      state.orders[index].paymentReceiptStatus != newReceiptStatus else {
-                    return .none
-                }
-
-                let existing = state.orders[index]
-                let updated = LedgerOrder(
-                    id: existing.id,
-                    customer: existing.customer,
-                    status: existing.status,
-                    currency: existing.currency,
-                    date: existing.date,
-                    items: existing.items,
-                    itemCost: existing.itemCost,
-                    domesticShipping: existing.domesticShipping,
-                    internationalShipping: existing.internationalShipping,
-                    foreignDomesticShipping: existing.foreignDomesticShipping,
-                    cardFeeRate: existing.cardFeeRate,
-                    platformFeeRate: existing.platformFeeRate,
-                    paymentFeeRate: existing.paymentFeeRate,
-                    chargedAmount: existing.chargedAmount,
-                    cardlessDeductionAmount: existing.cardlessDeductionAmount,
-                    cardlessSupplementAmount: existing.cardlessSupplementAmount,
-                    orderSource: existing.orderSource,
-                    categories: existing.categories,
-                    paymentMethod: existing.paymentMethod,
-                    notes: existing.notes,
-                    reconciliationStatus: existing.reconciliationStatus,
-                    campaignNames: existing.campaignNames,
-                    paymentReceiptStatus: newReceiptStatus,
-                    isCashOnDelivery: existing.isCashOnDelivery,
-                    photos: existing.photos,
-                    mergedSourceIDs: existing.mergedSourceIDs
-                )
-                state.orders[index] = updated
-
-                let orderRepository = orderRepository
-                return .run { _ in
-                    try await orderRepository.saveOrder(updated)
-                } catch: { _, send in
-                    await send(.ordersFailed("收款狀態更新失敗，請稍後再試。"))
-                }
-
-            case let .deleteOrderTapped(id):
-                guard let order = state.orders.first(where: { $0.id == id }) else {
-                    return .none
-                }
-
-                state.deletionConfirmation = AlertState {
-                    TextState("刪除訂單")
-                } actions: {
-                    ButtonState(role: .destructive, action: .confirmDelete(id)) {
-                        TextState("刪除")
-                    }
-                    ButtonState(role: .cancel) {
-                        TextState("取消")
-                    }
-                } message: {
-                    TextState("刪除「\(order.customer.name)」的這筆訂單後無法復原。")
-                }
-                return .none
-
-            case let .deletionConfirmation(.presented(.confirmDelete(id))):
-                guard let index = state.orders.firstIndex(where: { $0.id == id }) else {
-                    return .none
-                }
-
-                state.orders.remove(at: index)
-                pruneDetailPath(&state)
-
-                if state.selectedOrderID == id {
-                    state.selectedOrderID = state.filteredOrders(referenceDate: date.now, calendar: calendar).first?.id
-                }
-
-                if state.editOrder?.original?.id == id {
-                    state.editOrder = nil
-                }
-
-                let orderRepository = orderRepository
-                return .run { _ in
-                    try await orderRepository.removeOrder(id)
-                } catch: { _, send in
-                    await send(.ordersFailed("訂單刪除失敗，請稍後再試。"))
-                }
-
-            case .deletionConfirmation:
-                return .none
-
-            case .detailPath:
-                return .none
-
-            case .aiSummaryTapped:
-                let snapshot = settingsStorage.load()
-                guard snapshot.useAiSummary else {
-                    state.aiDisabledAlert = AlertState {
-                        TextState("AI 商品明細總結")
-                    } actions: {
-                        ButtonState(role: .cancel) {
-                            TextState("關閉")
-                        }
-                        ButtonState(action: .goToAISettings) {
-                            TextState("前往開啟")
-                        }
-                    } message: {
-                        TextState("此功能需要先在「更多 → 設定」開啟 AI 商品明細總結。")
-                    }
-                    return .none
-                }
-                state.aiSummary = AISummaryFeature.State(
-                    prompt: state.aiSummaryPrompt(referenceDate: date.now, calendar: calendar),
-                    model: snapshot.aiSummaryModel
-                )
-                return .none
-
-            // `goToAISettings` 的導覽 (切分頁 + push 設定頁) 由 ``RootFeature`` 攔截；此處 alert 由 TCA 自動關閉
-            case .aiDisabledAlert:
-                return .none
-
-            case .aiSummary:
-                return .none
-            }
-        }
-        .ifLet(\.$editOrder, action: \.editOrder) {
-            OrderEditFeature()
-        }
-        .ifLet(\.$deletionConfirmation, action: \.deletionConfirmation)
-        .ifLet(\.$orderMerge, action: \.orderMerge) {
-            OrderMergeFeature()
-        }
-        .ifLet(\.$aiSummary, action: \.aiSummary) {
-            AISummaryFeature()
-        }
-        .ifLet(\.$aiDisabledAlert, action: \.aiDisabledAlert)
-        .forEach(\.detailPath, action: \.detailPath) {
-            OrderDetailPath()
-        }
-    }
-}
-
-// MARK: - Nested Types
-
-extension OrdersFeature.State {
-
-    /// 訂單載入的三種解析結果
-    ///
-    /// 明確列出失敗分支，讓「載入中」不再兼職表示「載入失敗」
-    enum LoadState: Equatable {
-
-        // MARK: - Cases
-
-        /// 已完成載入，顯示正常內容
-        case loaded
-
-        /// 載入失敗，附帶失敗原因
-        case failed(String)
-
-        /// 載入中
-        case loading
-    }
-}
-
-// MARK: - Internal Method
-
-extension OrdersFeature.State {
-
-    // MARK: - Computed Properties
-
-    /// 依選取模式衍生的導覽標題 key；純衍生自 isSelecting/selectedOrderIDs，無注入依賴
-    var navigationTitleKey: String.LocalizationValue {
-        guard isSelecting else { 
-            return "訂單" 
-        }
-        guard !selectedOrderIDs.isEmpty else { 
-            return "選擇訂單"
-        }
-        return "已選 \(selectedOrderIDs.count) 筆"
-    }
-
-    /// 套用搜尋、狀態與日期區間篩選後的訂單
-    ///
-    /// 改成 method 後 caller 必須帶入 `referenceDate` 與 `calendar`；reducer / view 端皆由各自的 `@Dependency(\.date)` 與 `@Dependency(\.calendar)` 注入。如此可在 snapshot / unit test 中固定「現在」時間與行事曆，避免跨日或跨時區跑出不同結果
-    /// - Parameters:
-    ///   - referenceDate: 計算「本週／本月／上月」等相對區間的基準時間
-    ///   - calendar: 判斷日期區間所用的行事曆 (含時區)；測試應注入固定 gregorian／UTC
-    /// - Returns: 過濾後的訂單
-    func filteredOrders(referenceDate: Date, calendar: Calendar) -> [LedgerOrder] {
-        let normalizedQuery = searchText.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
-
-        return orders.filter { order in
-            let matchesStatus = selectedStatus.orderStatus.map { $0 == order.status } ?? true
-            let matchesSearch = normalizedQuery.isEmpty || order.searchableText.contains(normalizedQuery)
-            let matchesDate = selectedDatePeriod.includes(
-                order.date,
-                referenceDate: referenceDate,
-                calendar: calendar
-            )
-            let matchesCategory = selectedCategory.map { order.categories.contains($0) } ?? true
-            let matchesPaymentMethod = selectedPaymentMethod.map { $0 == order.paymentMethod } ?? true
-            let matchesCampaign = selectedCampaign.map { order.campaignNames.contains($0) } ?? true
-            let matchesCampaignStatus = selectedCampaignStatus.map { status in
-                campaignStatuses(for: order).contains(status)
-            } ?? true
-
-            return matchesStatus
-                && matchesSearch
-                && matchesDate
-                && matchesCategory
-                && matchesPaymentMethod
-                && matchesCampaign
-                && matchesCampaignStatus
-        }
-    }
-
-    /// 解析訂單所屬開團的狀態集合；任一所屬開團符合篩選狀態即視為命中。未歸團或在 ``campaigns`` 找不到對應開團時為空集合
-    /// - Parameter order: 要解析的訂單
-    /// - Returns: 所屬各開團的狀態集合
-    func campaignStatuses(for order: LedgerOrder) -> Set<CampaignStatus> {
-        Set(
-            order.campaignNames.compactMap { name -> CampaignStatus? in
-                let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else {
-                    return nil
-                }
-                return campaigns.first { $0.name == trimmed }?.status
-            }
-        )
-    }
-
-    /// 目前選取的訂單
-    /// - Parameters:
-    ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準
-    ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
-    /// - Returns: 對應的訂單；若 `selectedOrderID` 已不在當前篩選結果中，回傳第一筆
-    func selectedOrder(referenceDate: Date, calendar: Calendar) -> LedgerOrder? {
-        let filtered = filteredOrders(referenceDate: referenceDate, calendar: calendar)
-        guard let selectedOrderID else {
-            return filtered.first
-        }
-        return filtered.first { $0.id == selectedOrderID }
-    }
-
-    /// 將 ``filteredOrders(referenceDate:calendar:)`` 的結果以「日」為單位分組成區段，供訂單列表以日期區段標題呈現 (列內毋須再顯示日期)
-    ///
-    /// 分組與相對標題 (今天／昨天) 皆以 `referenceDate` 與 `calendar` 為基準；同一基準下結果一致
-    /// - Parameters:
-    ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準的「現在」時間
-    ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
-    ///   - locale: App 選定、用於日期區段標題的 locale
-    /// - Returns: 依日期由新到舊排序的區段；每段內訂單亦由新到舊排序
-    func dateSections(referenceDate: Date, calendar: Calendar, locale: Locale) -> [OrderDateSection] {
-        OrderDateSection.group(
-            filteredOrders(referenceDate: referenceDate, calendar: calendar),
-            referenceDate: referenceDate,
-            calendar: calendar,
-            locale: locale
-        )
-    }
-
-    /// 把目前篩選後訂單的商品明細整理成給模型的純文字摘要輸入
-    ///
-    /// 每筆訂單逐項列出「- [類別] 名稱 x數量 @ 單價 幣別」；為避免 token 爆量，最多納入 `maxItems` 個品項，超出以一行提示帶過
-    /// - Parameters:
-    ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準
-    ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
-    /// - Returns: 商品明細的純文字摘要；列表沒有任何品項時回傳提示字串
-    func aiItemsDigest(referenceDate: Date, calendar: Calendar) -> String {
-        let maxItems = 200
-        let filtered = filteredOrders(referenceDate: referenceDate, calendar: calendar)
-        var lines: [String] = []
-
-        outer: for order in filtered {
-            let categoryNames = order.categories
-                .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-                .filter { !$0.isEmpty }
-            let categoryTag = categoryNames.isEmpty ? "未分類" : categoryNames.joined(separator: "、")
-            for item in order.items {
-                let trimmedName = item.name.trimmingCharacters(in: .whitespacesAndNewlines)
-                let name = trimmedName.isEmpty ? "未命名商品" : trimmedName
-                lines.append("- [\(categoryTag)] \(name) x\(item.quantity) @ \(item.unitPrice) \(order.currency.rawValue)")
-                if lines.count >= maxItems { break outer }
-            }
+        Scope(state: \.list, action: \.list) {
+            OrderListFeature()
         }
 
-        guard !lines.isEmpty else {
-            return "(目前列表沒有任何商品明細)"
+        Scope(state: \.load, action: \.load) {
+            OrdersLoadFeature()
+        }
+        .onChange(of: \.load.hasLoaded) { _, state in
+            applyLoadedOrders(state: &state)
         }
 
-        var digest = lines.joined(separator: "\n")
-        let totalItems = filtered.reduce(0) { $0 + $1.items.count }
-        if totalItems > lines.count {
-            digest += "\n…(其餘 \(totalItems - lines.count) 個品項未列出)"
+        Scope(state: \.writes, action: \.writes) {
+            OrderWritesFeature()
         }
-        return digest
-    }
 
-    /// 組出指示模型以正體中文 Markdown 總結商品明細的完整 prompt
-    /// - Parameters:
-    ///   - referenceDate: 與 ``filteredOrders(referenceDate:calendar:)`` 同一基準
-    ///   - calendar: 與 ``filteredOrders(referenceDate:calendar:)`` 同一行事曆
-    /// - Returns: 給 Ollama 的 user prompt
-    func aiSummaryPrompt(referenceDate: Date, calendar: Calendar) -> String {
-        let categoryScope = selectedCategory.map { "(已篩選類別：\($0))" } ?? "(涵蓋目前列表所有類別)"
-        return """
-        你是個人代購 App 的分析助理。以下是目前訂單列表的商品明細\(categoryScope)，每行格式為「- [類別] 商品名稱 x數量 @ 單價 幣別」：
+        Scope(state: \.presentation, action: \.presentation) {
+            OrdersPresentationFeature()
+        }
 
-        \(aiItemsDigest(referenceDate: referenceDate, calendar: calendar))
+        Scope(state: \.detail, action: \.detail) {
+            OrdersDetailNavigationFeature()
+        }
 
-        請用正體中文、以 Markdown 格式總結這些商品明細，內容包含：
-        - 一個 `##` 層級的標題
-        - 各品項的品名以及購買的總數量 (如果品名有編號的話，請照編號排序；如果沒有編號的話，請照字母順序排序)
-
-        請以條列與粗體強調重點，全文控制在約 200–300 字。只根據上面提供的資料作答，不要杜撰未出現的商品、數字或結論。
-        """
+        Reduce(core)
     }
 }
 
@@ -1248,206 +255,190 @@ extension OrdersFeature.State {
 
 private extension OrdersFeature {
 
-    /// 將 ``OrderEditFeature`` 的草稿套用到目前訂單清單
+    /// 依收到的 Action 轉送子層請求、套用呈現與寫入結果，並回傳要執行的 Effect
+    ///
     /// - Parameters:
-    ///   - draft: 草稿狀態
-    ///   - state: 將被修改的 ``State``
-    /// - Returns: 套用後的訂單，供呼叫端進一步寫入持久化層；找不到目標訂單時回傳 `nil`
-    @discardableResult
-    func applyEditDraft(_ draft: OrderEditFeature.State, to state: inout State) -> LedgerOrder? {
-        let trimmedName = draft.draftCustomerName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedOrderSource = draft.draftOrderSource.trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedCategories = normalizedNames(draft.draftCategories)
-        let trimmedPaymentMethod = draft.draftPaymentMethod.trimmingCharacters(in: .whitespacesAndNewlines)
-        // 備註為選填欄位：只 trim 首尾空白與換行 (保留段落間的內部換行)，清空時也如實存回空字串，不像必填欄位那樣 fallback 回原值
-        let trimmedNotes = draft.draftNotes.trimmingCharacters(in: .whitespacesAndNewlines)
-        let normalizedCampaignNames = normalizedNames(draft.draftCampaignNames)
+    ///   - state: 容器目前的狀態，直接就地修改
+    ///   - action: 使用者、子 Feature 或父層事件
+    /// - Returns: 子層請求或父層委派，沒有就回 `.none`
+    func core(state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case .binding:
+            return .none
 
-        let normalizedAmount = max(0, draft.draftChargedAmount)
-        let normalizedItemCost = max(0, draft.draftItemCost)
-        let normalizedDom = max(0, draft.draftDomesticShipping)
-        let normalizedIntl = max(0, draft.draftInternationalShipping)
-        let normalizedForeignDom = max(0, draft.draftForeignDomesticShipping)
-        let normalizedCardFee = clampRate(draft.draftCardFeeRate)
-        let normalizedPlatformFee = clampRate(draft.draftPlatformFeeRate)
-        let normalizedPaymentFee = clampRate(draft.draftPaymentFeeRate)
-        // 只在選到無卡類付款方式時保留兩個金額；切回非無卡的話一律歸零，避免使用者改完付款方式仍把舊金額算進公式
-        let normalizedDeduction = draft.isSelectedPaymentMethodCardless
-            ? max(0, draft.draftCardlessDeductionAmount)
-            : 0
-        let normalizedSupplement = draft.isSelectedPaymentMethodCardless
-            ? max(0, draft.draftCardlessSupplementAmount)
-            : 0
-        // 對帳狀態僅在付款方式屬於無卡或銀行匯款時有意義；切回其他付款方式一律清成空字串，避免殘留無關狀態
-        let normalizedReconciliationStatus = draft.showsReconciliationStatusRow
-            ? draft.draftReconciliationStatus.trimmingCharacters(in: .whitespacesAndNewlines)
-            : ""
+        case .view(.formSheetDismissed):
+            state.presentation.finishFormClosing()
+            return .none
 
-        if let original = draft.original,
-           let index = state.orders.firstIndex(where: { $0.id == original.id }) {
-            let existing = state.orders[index]
-            let updatedCustomer = LedgerCustomer(
-                name: trimmedName.isEmpty ? existing.customer.name : trimmedName,
-                initials: existing.customer.initials,
-                tier: existing.customer.tier
-            )
+        case .delegate:
+            return .none
 
-            let updatedOrder = LedgerOrder(
-                id: existing.id,
-                customer: updatedCustomer,
-                status: draft.draftStatus,
-                currency: draft.draftCurrency,
-                date: draft.draftDate,
-                items: draft.draftItems,
-                itemCost: normalizedItemCost,
-                domesticShipping: normalizedDom,
-                internationalShipping: normalizedIntl,
-                foreignDomesticShipping: normalizedForeignDom,
-                cardFeeRate: normalizedCardFee,
-                platformFeeRate: normalizedPlatformFee,
-                paymentFeeRate: normalizedPaymentFee,
-                chargedAmount: normalizedAmount,
-                cardlessDeductionAmount: normalizedDeduction,
-                cardlessSupplementAmount: normalizedSupplement,
-                orderSource: trimmedOrderSource.isEmpty ? existing.orderSource : trimmedOrderSource,
-                categories: normalizedCategories.isEmpty ? existing.categories : normalizedCategories,
-                paymentMethod: trimmedPaymentMethod.isEmpty ? existing.paymentMethod : trimmedPaymentMethod,
-                notes: trimmedNotes,
-                reconciliationStatus: normalizedReconciliationStatus,
-                campaignNames: normalizedCampaignNames,
-                paymentReceiptStatus: draft.draftPaymentReceiptStatus,
-                isCashOnDelivery: draft.isSelectedPaymentMethodCOD,
-                photos: draft.draftPhotos,
-                mergedSourceIDs: existing.mergedSourceIDs
-            )
-            state.orders[index] = updatedOrder
-            return updatedOrder
-        } else {
-            let resolvedName = trimmedName.isEmpty ? "未命名客戶" : trimmedName
-            let resolvedOrderSource = trimmedOrderSource.isEmpty ? "未指定" : trimmedOrderSource
-            let resolvedCategories = normalizedCategories.isEmpty ? ["未分類"] : normalizedCategories
-            let initials = String(resolvedName.prefix(2)).uppercased()
-            let draftID = "BL-DRAFT-\(uuid().uuidString.prefix(6))"
+        case .detail(.path(.element(_, .detail(.delegate(.requested(let request)))))),
+                .detail(.regularDetail(.delegate(.requested(let request)))):
+            return fulfill(request, state: &state)
 
-            // 合併草稿沿用主訂單的客戶 (保留 initials 與 tier，避免被視為新客戶)；一般新訂單維持 .new
-            let mergePrimaryCustomer = draft.mergeSourceIDs.first
-                .flatMap { primaryID in state.orders.first { $0.id == primaryID }?.customer }
-            let resolvedCustomer = mergePrimaryCustomer.map {
-                LedgerCustomer(name: resolvedName, initials: $0.initials, tier: $0.tier)
-            } ?? LedgerCustomer(name: resolvedName, initials: initials, tier: .new)
+        case .detail:
+            return .none
 
-            let newOrder = LedgerOrder(
-                id: draftID,
-                customer: resolvedCustomer,
-                status: draft.draftStatus,
-                currency: draft.draftCurrency,
-                date: draft.draftDate,
-                items: draft.draftItems,
-                itemCost: normalizedItemCost,
-                domesticShipping: normalizedDom,
-                internationalShipping: normalizedIntl,
-                foreignDomesticShipping: normalizedForeignDom,
-                cardFeeRate: normalizedCardFee,
-                platformFeeRate: normalizedPlatformFee,
-                paymentFeeRate: normalizedPaymentFee,
-                chargedAmount: normalizedAmount,
-                cardlessDeductionAmount: normalizedDeduction,
-                cardlessSupplementAmount: normalizedSupplement,
-                orderSource: resolvedOrderSource,
-                categories: resolvedCategories,
-                paymentMethod: trimmedPaymentMethod,
-                notes: trimmedNotes,
-                reconciliationStatus: normalizedReconciliationStatus,
-                campaignNames: normalizedCampaignNames,
-                paymentReceiptStatus: draft.draftPaymentReceiptStatus,
-                isCashOnDelivery: draft.isSelectedPaymentMethodCOD,
-                photos: draft.draftPhotos,
-                mergedSourceIDs: draft.mergeSourceIDs
-            )
+        case .list(.delegate(.loadRequested)):
+            return .send(.delegate(.loadRequested))
 
-            state.orders.insert(newOrder, at: 0)
-            state.selectedOrderID = draftID
-            return newOrder
+        case .list(.delegate(.requested(let request))):
+            return fulfill(request, state: &state)
+
+        case .list(.delegate(.selectionChanged)):
+            state.detail.syncRegularDetail(selectedOrderID: state.list.selectedOrderID)
+            return .none
+
+        case .list:
+            return .none
+
+        case .load:
+            return .none
+
+        case .presentation(let action):
+            return forwardPresentation(action, state: &state)
+
+        case .rootRequest(.load):
+            return .send(.load(.loadRequested))
+
+        case .rootRequest(.cascade(let request)):
+            return .send(.writes(.cascadeRequested(request)))
+
+        case .rootRequest(.receiptStatusChange(let id, let status)):
+            return .send(.writes(.receiptToggleRequested(id: id, status: status)))
+
+        case .rootRequest(.paymentMethodFlagsApply(let orders)):
+            return .send(.writes(.paymentMethodFlagsApplyRequested(orders)))
+
+        case .rootRequest(.optionAdditionCompleted(let request, let isStored)):
+            return state.presentation.applyOptionAddition(request, isStored: isStored)
+                .map(Action.presentation)
+
+        case .writes(let action):
+            return applyWriteResult(action, state: &state)
         }
     }
 
-    /// 將手續費比例 clamp 到 `[0, 1]` 區間，避免介面誤輸入造成損益失真
-    /// - Parameter value: 待 clamp 的比例
-    /// - Returns: clamp 後的比例
-    func clampRate(_ value: Decimal) -> Decimal {
-        max(0, min(1, value))
-    }
-
-    /// 依目前 `orders` 修剪 iPhone (compact) 的訂單詳情導覽堆疊：移除對應訂單已不存在的元素
+    /// 首次載入完成後預設選取第一筆，並移除已不存在訂單的詳情、同步右欄詳情
     ///
-    /// 等價於原本 View 端 `onChange(of: store.orders)` 的收斂邏輯，改在訂單載入／刪除／合併回滾等既有 domain 事件後同步執行，讓被移除訂單的詳情頁自動 pop 回列表
-    /// - Parameter state: 將被修改的 ``State``
-    func pruneDetailPath(_ state: inout State) {
-        let availableIDs = Set(state.orders.map(\.id))
-        state.detailPath.removeAll { !availableIDs.contains($0.orderID) }
+    /// - Parameter state: 容器目前的狀態，直接就地修改
+    /// - Returns: 沒有後續效果，回傳 `.none`
+    func applyLoadedOrders(state: inout State) -> Effect<Action> {
+        guard state.load.hasLoaded else {
+            return .none
+        }
+        state.list.selectedOrderID = state.list.selectedOrderID ?? state.orders.first?.id
+        state.detail.applyLoadedOrders(selectedOrderID: state.list.selectedOrderID)
+        return .none
     }
 
-    /// 將草稿名稱陣列正規化：逐元素 trim、去除空字串與重複 (保序)
-    /// - Parameter names: 草稿陣列 (類別或開團)
-    /// - Returns: 正規化後的名稱陣列
-    func normalizedNames(_ names: [String]) -> [String] {
-        var seen = Set<String>()
-        return names
-            .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
-            .filter { !$0.isEmpty && seen.insert($0).inserted }
-    }
-}
-
-// MARK: - Private Method
-
-private extension LedgerOrder {
-
-    /// 回傳僅變更狀態的複本；``LedgerOrder`` 為 immutable struct，須以 memberwise init 重建
-    /// - Parameter newStatus: 新的訂單狀態
-    /// - Returns: 重建後的訂單
-    func withStatus(_ newStatus: OrderStatus) -> LedgerOrder {
-        LedgerOrder(
-            id: id,
-            customer: customer,
-            status: newStatus,
-            currency: currency,
-            date: date,
-            items: items,
-            itemCost: itemCost,
-            domesticShipping: domesticShipping,
-            internationalShipping: internationalShipping,
-            foreignDomesticShipping: foreignDomesticShipping,
-            cardFeeRate: cardFeeRate,
-            platformFeeRate: platformFeeRate,
-            paymentFeeRate: paymentFeeRate,
-            chargedAmount: chargedAmount,
-            cardlessDeductionAmount: cardlessDeductionAmount,
-            cardlessSupplementAmount: cardlessSupplementAmount,
-            orderSource: orderSource,
-            categories: categories,
-            paymentMethod: paymentMethod,
-            notes: notes,
-            reconciliationStatus: reconciliationStatus,
-            campaignNames: campaignNames,
-            paymentReceiptStatus: paymentReceiptStatus,
-            isCashOnDelivery: isCashOnDelivery,
-            photos: photos,
-            mergedSourceIDs: mergedSourceIDs
+    /// 依共用請求解析表單識別值與時間，再套用呈現、詳情推入或寫入轉送
+    ///
+    /// - Parameters:
+    ///   - request: 清單或詳情的操作請求
+    ///   - state: 容器目前的狀態，直接就地修改
+    /// - Returns: 轉給寫入子層的請求，其餘套用在狀態內時回傳 `.none`
+    func fulfill(_ request: OrderRequest, state: inout State) -> Effect<Action> {
+        let formID = OrdersContainerPlan.requiresFormID(request, state: state) ? uuid() : nil
+        let context = OrdersContainerPlan.requiresDateContext(request, state: state)
+            ? OrderDateContext(now: date.now, calendar: calendar) : nil
+        let outcome = OrdersContainerPlan.fulfill(
+            request,
+            state: state,
+            context: context,
+            formID: formID
         )
+        switch outcome {
+        case .none:
+            return .none
+
+        case .present(let destination):
+            state.presentation.present(destination)
+            return .none
+
+        case .showDetail(let id):
+            state.detail.showDetail(orderID: id)
+            return .none
+
+        case .write(let action):
+            return .send(.writes(action))
+        }
     }
 
-    /// 供訂單列表搜尋使用的正規化文字
-    var searchableText: String {
-        (
-            [
-                id,
-                customer.name,
-                customer.initials,
-                orderSource,
-                currency.rawValue,
-            ] + categories + items.map(\.name)
-        )
-        .joined(separator: " ")
-        .lowercased()
+    /// 轉送呈現子層的委派，合併候選與確認表單的草稿在容器計算
+    ///
+    /// - Parameters:
+    ///   - action: 呈現子層送出的事件
+    ///   - state: 容器目前的狀態，直接就地修改
+    /// - Returns: 寫入子層或父層的請求，沒有就回傳 `.none`
+    func forwardPresentation(
+        _ action: OrdersPresentationFeature.Action,
+        state: inout State
+    ) -> Effect<Action> {
+        switch action {
+        case .delegate(.saveRequested(let edit)):
+            return .send(.writes(.saveRequested(edit)))
+
+        case .delegate(.optionAddRequested(let request)):
+            return .send(.delegate(.optionAddRequested(request)))
+
+        case .delegate(.deleteConfirmed(let id)):
+            return .send(.writes(.deleteRequested(id)))
+
+        case .delegate(.aiSettingsRequested):
+            return .send(.delegate(.aiSettingsRequested))
+
+        case .delegate(.mergeCandidatesCompleted(let primary, let secondary, let photos)):
+            let draft = OrdersContainerPlan.mergeCandidateDraft(
+                primary: primary,
+                secondary: secondary,
+                state: state,
+                now: date.now
+            )
+            return .send(.presentation(.mergeCandidateCompleted(draft: draft, keptPhotos: photos)))
+
+        case .delegate(.mergeConfirmationDue(let draft, let keptPhotos)):
+            let confirmation = OrdersContainerPlan.mergeConfirmation(
+                draft: draft,
+                keptPhotos: keptPhotos,
+                state: state,
+                formID: uuid(),
+                context: OrderDateContext(now: date.now, calendar: calendar)
+            )
+            state.presentation.presentMergeConfirmation(confirmation)
+            return .none
+
+        case .destination, .mergeCandidateCompleted, .noticeRequested:
+            return .none
+        }
+    }
+
+    /// 寫入子層完成後套用結果到各子層，並回傳清單選取或一次性通知的 Effect
+    ///
+    /// - Parameters:
+    ///   - action: 寫入子層的事件，只有委派會被套用
+    ///   - state: 容器目前的狀態，直接就地修改
+    /// - Returns: 選取變更或通知的 Effect，沒有就回傳 `.none`
+    func applyWriteResult(
+        _ action: OrderWritesFeature.Action,
+        state: inout State
+    ) -> Effect<Action> {
+        guard case .delegate(let result) = action else {
+            return .none
+        }
+        let outcome = OrdersContainerPlan.writeResult(result, state: state)
+        state.detail.apply(outcome)
+        state.presentation.apply(outcome)
+        if let selection = outcome.selection {
+            state.list.selectedOrderID = selection.orderID
+            if selection.shouldNotify {
+                return .send(.list(.delegate(.selectionChanged(selection.orderID))))
+            }
+        }
+        if let notice = outcome.notice {
+            return .send(.presentation(.noticeRequested(notice)))
+        }
+        return .none
     }
 }

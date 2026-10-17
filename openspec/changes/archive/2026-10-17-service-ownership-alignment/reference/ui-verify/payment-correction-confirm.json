@@ -1,0 +1,75 @@
+{
+  "schema": "mobilebuildmcp.output.capture-result",
+  "schemaVersion": "2",
+  "didError": false,
+  "error": null,
+  "data": {
+    "summary": {
+      "status": "SUCCEEDED"
+    },
+    "artifacts": {
+      "simulatorId": "FC80961E-B153-4462-B017-3A4E2BFCFB68"
+    },
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "0lit621",
+      "seq": 96,
+      "count": 149,
+      "targets": [
+        "e54|tap|text|orders.detail.label.cardless、無卡||lookupManagement.row:orders.detail.label.cardless",
+        "e55|tap|text|orders.detail.label.cardless||",
+        "e61|tap|text|orders.list.label.cashDelivery、貨到付款||lookupManagement.row:orders.list.label.cashDelivery",
+        "e62|tap|text|orders.list.label.cashDelivery||",
+        "e15|tap|button|更多||BackButton",
+        "e17|tap|button|新增付款方式||lookupManagement.addButton",
+        "e33|tap|text|信用卡||lookupManagement.row:信用卡",
+        "e37|tap|text|銀行轉帳、銀行匯款||lookupManagement.row:銀行轉帳",
+        "e38|tap|text|銀行轉帳||",
+        "e39|tap|text|銀行匯款||",
+        "e44|tap|text|Apple Pay||lookupManagement.row:Apple Pay",
+        "e49|tap|text|LINE Pay||lookupManagement.row:LINE Pay",
+        "e56|tap|text|無卡||",
+        "e63|tap|text|貨到付款||",
+        "e81|tap|tab|總覽|0|",
+        "e83|tap|tab|訂單|0|",
+        "e85|tap|tab|開團|0|",
+        "e87|tap|tab|分析|0|",
+        "e89|tap|tab|更多|1|",
+        "e132|tap|button|取消||",
+        "e133|tap|button|確認更正||"
+      ],
+      "scroll": [
+        "e22|swipe|other|||lookupManagement.root",
+        "e111|swipe|other|更正付款方式||",
+        "e116|swipe|scroll-view|||",
+        "e129|swipe|scroll-view|||"
+      ],
+      "text": [
+        "e33|text|text|信用卡||lookupManagement.row:信用卡",
+        "e37|text|text|銀行轉帳、銀行匯款||lookupManagement.row:銀行轉帳",
+        "e38|text|text|銀行轉帳||",
+        "e39|text|text|銀行匯款||",
+        "e44|text|text|Apple Pay||lookupManagement.row:Apple Pay",
+        "e49|text|text|LINE Pay||lookupManagement.row:LINE Pay",
+        "e54|text|text|orders.detail.label.cardless、無卡||lookupManagement.row:orders.detail.label.cardless",
+        "e118|text|text|更正付款方式||",
+        "e55|text|text|orders.detail.label.cardless||",
+        "e56|text|text|無卡||",
+        "e119|text|text|確認後將重算 1 筆既有訂單的付款旗標與獲利；折抵、補款或對帳狀態可能被清除。此操作無法復原。||",
+        "e61|text|text|orders.list.label.cashDelivery、貨到付款||lookupManagement.row:orders.list.label.cashDelivery",
+        "e62|text|text|orders.list.label.cashDelivery||",
+        "e63|text|text|貨到付款||",
+        "e68|text|text|「無卡」標籤代表此付款方式會在訂單編輯顯示「無卡折抵金額」與「無卡補款金額」欄位；「銀行匯款」標籤代表會顯示「對帳狀態」欄位；「貨到付款」標籤代表收款金額已含預估運費，獲利會自動扣除三種運費。需要修改名稱或分類時，對該列選「編輯」即可。||"
+      ],
+      "udid": "FC80961E-B153-4462-B017-3A4E2BFCFB68"
+    }
+  },
+  "nextSteps": [
+    "Refresh after layout changes: mobilebuildmcp ui-automation snapshot-ui --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68",
+    "Wait for UI to settle: mobilebuildmcp ui-automation wait-for-ui --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --predicate settled",
+    "Batch same-screen taps: mobilebuildmcp ui-automation batch --json '{\"simulatorId\":\"FC80961E-B153-4462-B017-3A4E2BFCFB68\",\"steps\":[{\"action\":\"tap\",\"elementRef\":\"e15\"},{\"action\":\"tap\",\"elementRef\":\"e17\"}]}'",
+    "Tap an elementRef: mobilebuildmcp ui-automation tap --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --element-ref e54",
+    "Scroll visible content: mobilebuildmcp ui-automation swipe --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --within-element-ref e116 --direction up --distance 0.5"
+  ]
+}

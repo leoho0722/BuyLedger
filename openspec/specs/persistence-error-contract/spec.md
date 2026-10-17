@@ -1,0 +1,2442 @@
+# persistence-error-contract Specification
+
+## Purpose
+
+Define typed error contracts for SwiftData persistence, repository boundaries, and store recovery.
+
+## Requirements
+
+### Requirement: Persistence storage failures use a shared typed error
+
+The persistence layer SHALL expose PersistenceError as an Error and Sendable enum with fetchFailed, saveFailed, and containerCreationFailed cases. PersistenceError SHALL NOT conform to Equatable. Each case that wraps a failure SHALL carry that failure under an underlying label whose type is constrained to Error and Sendable, rather than only its localized description. A framework error SHALL be bridged to NSError when it is wrapped, so that its domain, code, and user info survive the boundary. An error type the application itself defines SHALL be carried without bridging, so that a caller can pattern-match its fields. SwiftData fetch failures inside a database read or write SHALL map to fetchFailed, save failures SHALL map to saveFailed, and ModelContainer creation failures SHALL map to containerCreationFailed. Callers that need to distinguish cases SHALL pattern-match the case rather than compare whole values.
+
+#### Scenario: A fetch failure is classified as a fetch failure
+
+- **WHEN** a service's database transaction cannot complete a SwiftData fetch
+- **THEN** the service throws PersistenceError.fetchFailed carrying the bridged source error
+
+##### Example: Fetching an unreadable store
+
+- **GIVEN** the database read reports a fetch failure carrying an underlying error
+- **WHEN** `OrderService.fetchOrders` performs the fetch inside a database read
+- **THEN** it throws `PersistenceError.fetchFailed(underlying:)` whose underlying error has the same domain, code, and localized description as the reported error
+
+#### Scenario: A save failure is classified as a save failure
+
+- **WHEN** the database cannot complete the save at the end of a write transaction
+- **THEN** the write throws the caller's error type wrapping PersistenceError.saveFailed carrying the bridged source error
+
+##### Example: Saving a campaign that SwiftData rejects
+
+- **GIVEN** SwiftData rejects the save because a relationship exceeds its maximum count
+- **WHEN** `CampaignService.saveCampaign` saves a campaign
+- **THEN** it throws `PersistenceError.saveFailed(underlying:)` whose underlying error has the same domain and code as the error SwiftData reported
+
+#### Scenario: A container creation failure is classified as a container failure
+
+- **WHEN** PersistenceContainer cannot create a ModelContainer
+- **THEN** the container factory maps the source error to PersistenceError.containerCreationFailed carrying the bridged error
+
+##### Example: Store parent path is a file
+
+- **GIVEN** ModelContainer creation fails because the store's parent path is an existing file
+- **WHEN** the persistence container factory creates a container
+- **THEN** the operation maps it to `PersistenceError.containerCreationFailed(underlying:)` whose underlying error has the same domain and code as the reported error
+
+#### Scenario: The original failure survives the boundary
+
+- **WHEN** a caller inspects a thrown PersistenceError for diagnostics
+- **THEN** the underlying value reports the domain, code, and user info of the failure the framework raised, not a message string reconstructed from it
+
+
+<!-- @trace
+source: service-database-layer-alignment
+updated: 2026-09-30
+code:
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Reads.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationStoreTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupItemOperations.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistenceError.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceRecoveryError.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestPhotoCache.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/Mocks/MockURLProtocol.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OpenSettingsClient.swift
+  - apps/ios/BuyLedger/App/BuyLedgerApp.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSettingsStore.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService+Dependency.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+BoundaryCases.swift
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStore.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+TestValueCases.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDateSection.swift
+  - apps/ios/BuyLedger/Resources/Config.example.xcconfig
+  - apps/ios/BuyLedgerTests/HTTPClientTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService+Dependency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestFirstReadGate.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Preview.swift
+  - apps/ios/BuyLedgerTests/PersistenceFailureFeatureTests.swift
+  - apps/ios/BuyLedgerTests/UserDefaultsStoreTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestHarness.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClientProtocol.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService+Preview.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockHTTPClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabaseProtocol.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailView_成本明細內容_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Data/OllamaChatRequest.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+DependencyCases.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+PaymentMethodCorrection.swift
+  - apps/ios/BuyLedgerTests/NameLookupPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistenceError.swift
+  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCurrencyMetadataConfigurationStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Preview.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Failures.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderError.swift
+  - apps/ios/BuyLedgerTests/OrderPersistence+LookupTesting.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestStubs.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoImportResult.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteView_非零試算輸入_顯示成本與建議售價.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Dependency.swift
+  - apps/ios/BuyLedgerTests/ReconciliationStatusServiceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService+Preview.swift
+  - apps/ios/BuyLedgerTests/FxFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceError.swift
+  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthClient.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestLoadSource.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+TestValueRules.swift
+  - apps/ios/BuyLedgerTests/ResidueProbeModels.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/ios/BuyLedger/Core/Storage/PreviewAppConfigurationStore.swift
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignRepository.swift
+  - apps/ios/BuyLedger/Core/Dependencies/NameLookupOperations.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataServiceError.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/ios/BuyLedgerTests/BiometricAuthClientTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/ios/BuyLedgerTests/BiometricAuthServiceTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase+Dependency.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Support.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+BatchWrites.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignGrouping.swift
+  - apps/ios/BuyLedgerTests/AppLockFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistence.swift
+  - apps/ios/BuyLedgerTests/RuntimeEnvironmentTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameNoOps.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Rules.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService.swift
+  - apps/ios/BuyLedgerTests/RecordDecodingTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+LexicalCases.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift
+  - apps/ios/BuyLedgerTests/TestContainerCreationLock.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateClient.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewBaseline.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Preview.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistenceError.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Merge.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCurrencyMetadataHTTPClient.swift
+  - apps/ios/BuyLedger/Features/App/PersistenceFailureFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/NameLookupPersistence.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsStore.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewRateUnavailable.1.png
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStoreProtocol.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Quarantine.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Concurrency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestErrorFactory.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_合併訂單情境_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests+Transport.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Writes.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase+Preview.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+Refresh.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignSubgroup.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderServiceTests.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockAppConfigurationStore.swift
+  - apps/ios/BuyLedger/Features/App/AppLockFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Delete.swift
+  - apps/ios/BuyLedger/App/TelemetryService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatResponse.swift
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryServiceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersRegularViewMultiSelectBaseline.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - apps/ios/BuyLedger/App/AppLaunchConfigurator.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatRequest.swift
+  - apps/ios/BuyLedger/App/TelemetryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
+  - apps/ios/BuyLedger/Core/Storage/PreviewUserDefaultsStore.swift
+  - apps/ios/BuyLedgerTests/APIErrorMappingTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Create.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewMultiSelectBaseline.1.png
+  - apps/ios/BuyLedgerTests/Mocks/MockUserDefaultsStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Renames.swift
+  - apps/ios/BuyLedgerTests/OrderSourceServiceTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift
+  - apps/ios/BuyLedgerTests/TestSuiteIntegrityTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Forms.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+WriteFailures.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/ServiceTestValueStrictnessTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests+Support.swift
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Preview.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Writes.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteRateFeature.swift
+  - apps/ios/BuyLedgerTests/SettingsServiceTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Syntax.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests+LookupRename.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+MergeFailureMapping.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests.swift
+  - apps/ios/BuyLedger/App/TelemetryService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/TelemetryClient.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService.swift
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService+Dependency.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Dependency.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewRateFailureBaseline.1.png
+  - apps/ios/BuyLedgerTests/OllamaClientTests.swift
+  - apps/ios/BuyLedgerTests/CampaignPersistenceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService.swift
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameSupport.swift
+  - apps/ios/BuyLedger/Core/Persistence/LookupRecordRenamer.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Reads.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - apps/ios/BuyLedger/Core/Environment/RuntimeEnvironment.swift
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/ExchangeRateClientTests.swift
+  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/OllamaChatResponse.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsView_一般洞察資料_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxView_已載入匯率快照_顯示連線狀態.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Lexing.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService+Preview.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+SharedCases.swift
+  - apps/ios/BuyLedgerTests/CategoryServiceTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignPersistence.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService+Dependency.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteView_沒有可用匯率_顯示錯誤狀態.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChart_近三十天資料_捲動停在最新日期.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxView_匯率載入失敗_顯示錯誤橫幅與重試鍵.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataRepository.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodCorrectionFeatureTests.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests+ApplyEdit.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockBuyLedgerDatabase.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureView_持久化錯誤_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantineClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryRepository.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+AlertTiming.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+DeleteFailure.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewLongIdentifierBaseline.1.png
+  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStore+Dependency.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService+Preview.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameFailures.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Core/Networking/AppConfiguration.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStoreProtocol.swift
+  - apps/ios/BuyLedgerTests/ExchangeRateServiceTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFocusTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/StorageFailureWrapping.swift
+  - apps/ios/BuyLedger/Core/Networking/PreviewHTTPClient.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_長訂單識別碼_顯示短識別碼.1.png
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests+LookupRenameFailures.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Matching.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Decoding.swift
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStore+Dependency.swift
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService+Preview.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Renames.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardView_一般儀表板資料_符合基準圖.1.png
+  - apps/ios/BuyLedger.xctestplan
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoImportResult.swift
+  - apps/ios/BuyLedger/Features/Lookups/PaymentMethodCorrectionFeature.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+WriteFailures.swift
+  - apps/ios/BuyLedgerTests/StorageFailureWrappingTests.swift
+  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateEndpoint.swift
+  - apps/ios/BuyLedgerTests/SettingsStoreTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Decoding.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient+Dependency.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderLink.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataCacheTests.swift
+-->
+
+---
+### Requirement: Domain persistence errors preserve semantic failures
+
+A feature whose service has semantic failures SHALL name its domain error after the feature. OrderService SHALL throw OrderError with identifierCollision(id:) when createOrder or mergeOrders finds an existing order identifier. Storage failures in those operations SHALL use the storage(PersistenceError) case of OrderError, and OrderError SHALL conform to the storage-failure wrapping protocol through that case so that the database write can wrap its own save failure. OrderError SHALL NOT conform to Equatable, and its semantic cases SHALL keep carrying the identifier that explains the failure.
+
+A service without semantic failures SHALL throw the shared PersistenceError directly rather than a feature-named wrapper. LookupService is such a service: its payment method edit selects the affected orders from storage inside its own transaction, so no caller-supplied order identifier can be missing, and every failure it reports is a storage failure.
+
+#### Scenario: Duplicate order creation remains a semantic error
+
+- **GIVEN** an order with identifier order-001 already exists
+- **WHEN** OrderService.createOrder receives another order with identifier order-001
+- **THEN** the service throws OrderError.identifierCollision(id: "order-001")
+- **AND** the existing record is not overwritten
+
+#### Scenario: A domain write exposes a mapped storage failure
+
+- **WHEN** a save fails during an OrderService write
+- **THEN** the service throws OrderError with storage(PersistenceError.saveFailed) carrying the bridged source error
+- **AND** the failed transaction's context is discarded without reaching the store
+
+##### Example: Order save failure
+
+- **GIVEN** SwiftData rejects saving an order because a relationship exceeds its maximum count
+- **WHEN** `OrderService.createOrder` attempts the save
+- **THEN** it throws `OrderError.storage(.saveFailed(underlying:))` whose underlying error has the same domain and code as the reported error
+- **AND** a later fetch does not return the order
+
+#### Scenario: A payment method edit reports storage failures directly
+
+- **WHEN** a save fails during LookupService.applyPaymentMethodEdit
+- **THEN** the service throws PersistenceError.saveFailed carrying the bridged source error
+- **AND** neither the payment method nor any order from that transaction reaches the store
+
+
+<!-- @trace
+source: service-ownership-alignment
+updated: 2026-10-17
+code:
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailNotesView.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignListFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditPaymentSection.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService.swift
+  - apps/ios/BuyLedgerTests/CampaignWritesFeatureTests+Save.swift
+  - apps/ios/BuyLedgerTests/LookupServiceTests+ReconciliationStatuses.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalogFailures.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Merge.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalogAdditionFixtures.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
+  - apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+LookupCatalogCases.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+DeletionReminder.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+StatusFailures.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Delete.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Removal.swift
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardSummarySection.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditPickerOperations.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Rename.swift
+  - apps/ios/BuyLedgerTests/LookupServiceTests+RenameSupport.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Options.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLListMetrics.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsCampaignProfitCard.swift
+  - apps/ios/BuyLedgerTests/FxFormattersTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/Components/LookupItemRow.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+FailureTimingFollowUp.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Shared/aiSummaryView_總結失敗_顯示重試鈕.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Shared/paymentMethodEditorSheet_編輯既有付款方式_顯示三種旗標.1.png
+  - apps/ios/BuyLedgerTests/OrdersPresentationFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailSummaryView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRegularDetailColumn.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Reads.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+BatchWrites.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLMetrics.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterDateSection.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupRename.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardOngoingCampaignsSection.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalogAdditionForms.swift
+  - apps/ios/BuyLedgerTests/LookupCatalogFeatureTests+Additions.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Customers/Components/CustomerListRow.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+MergeFailureMapping.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Writes.swift
+  - apps/ios/BuyLedgerTests/InsightsFeatureTests+ScreenState.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryView.swift
+  - apps/ios/BuyLedgerTests/OrderEditOptionsTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderPercentConversion.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderMerge/orderMergeCandidateSheet_無可合併訂單_顯示空狀態.1.png
+  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalogRequests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLRadius.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditPercentField.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+SharedOrders.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistenceError.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrdersCompactListView.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/OrderService+Writes.swift
+  - apps/ios/BuyLedgerTests/LookupServiceTests+PaymentMethods.swift
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Presentation.swift
+  - apps/ios/BuyLedgerTests/OrderSourceServiceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersWriteOutcome.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodCorrectionFeatureTests+Confirmation.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsView.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/ios/BuyLedgerTests/LookupServiceTests+PaymentMethodEdits.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignService.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Renames.swift
+  - apps/ios/BuyLedgerTests/DashboardFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Failures.swift
+  - apps/ios/BuyLedgerTests/InsightsFeatureTests.swift
+  - apps/ios/BuyLedger/Features/App/RootSidebarLayout.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardKPITile.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditItemsSection.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteRateFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/OrderError.swift
+  - apps/ios/BuyLedger/Features/Quote/Components/QuoteInputsCard.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameNoOps.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterCategorySection.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsHeatmapCard.swift
+  - apps/ios/BuyLedger/Features/Lookups/PaymentMethodEditPlan.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrdersToolbarContent.swift
+  - apps/ios/BuyLedgerTests/DashboardFeatureTests+DateContext.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Failures.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Insights/insightsView_已載入無訂單_顯示空狀態.1.png
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Categories.swift
+  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditFeesSection.swift
+  - apps/ios/BuyLedgerTests/DesignSystemSourceScanTests+ScaledMetricScanner.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Rename.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Shared/aiSummaryView_總結完成_顯示摘要內容.1.png
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardFormatters.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Preview.swift
+  - apps/ios/BuyLedgerTests/QuoteFormattersTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Delete.swift
+  - apps/ios/BuyLedger/Features/Quote/Components/QuoteBreakdownCard.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
+  - apps/ios/BuyLedger/Features/FX/Components/FxRatesList.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/DesignSystemSourceScanTests+Patterns.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Insights/insightsView_帶開團資料_顯示每團毛利排行卡.1.png
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+More/appLockView_解鎖失敗_顯示失敗訊息與重試鈕.1.png
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+Editing.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/OrderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/DashboardStatsTests+Progress.swift
+  - apps/ios/BuyLedgerTests/LookupServiceTests+PaymentMethodAtomicity.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsStats+Trend.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/Color+Semantic.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPreviewFixtures.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Dependency.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests+CurrencyCodes.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+PaymentMethodRename.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Components/CampaignDetailDistributionSection.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLDonutChart.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Dashboard/dashboardView_已載入無訂單_顯示首次使用畫面.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderMerge/orderMergeCandidateSheet_有可合併訂單_顯示候選清單.1.png
+  - apps/ios/BuyLedger/Features/Insights/InsightsDateContext.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Forms.swift
+  - apps/ios/BuyLedgerTests/ContrastComplianceTests.swift
+  - apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+Models.swift
+  - apps/ios/BuyLedger/Features/Lookups/Data/LookupService.swift
+  - apps/ios/BuyLedger/Shared/Extensions/Color+Extensions.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+FailureTiming.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Customers/customersView_一般客戶資料_顯示名次徽章與排行卡.1.png
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+DeleteEditFailures.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests+ApplyEdit.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Progress/BLProgressView.swift
+  - apps/ios/BuyLedgerTests/ServiceTestValueStrictnessTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterPending.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Create.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/ios/BuyLedgerTests/LookupCatalogFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DashboardStatsTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+PaymentMethodCorrection.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Customers/customersView_無客戶資料_顯示空狀態.1.png
+  - apps/ios/BuyLedgerTests/InsightsAttributionTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Components/CampaignDetailSettlementSection.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+WriteFailures.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailContentView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditOptions.swift
+  - apps/ios/BuyLedger/Features/App/AppLockView.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsStats.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignService+Reminders.swift
+  - apps/ios/BuyLedgerTests/CampaignListFeatureTests+DateContext.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderOptionWritePlan.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+OptionWriteFailures.swift
+  - apps/ios/BuyLedgerTests/CampaignWritesFeatureTests+Rename.swift
+  - apps/ios/BuyLedger/Features/FX/FxView.swift
+  - apps/ios/BuyLedgerTests/ServiceOwnershipScanTests.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardView.swift
+  - apps/ios/BuyLedger/Features/Customers/Components/CustomerTopCard.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsCategory.swift
+  - apps/ios/BuyLedgerTests/LookupServiceTests+RenameFailures.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Rules.swift
+  - apps/ios/BuyLedger/Features/Lookups/Components/LookupItemList.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Preview.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalog.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService.swift
+  - apps/ios/BuyLedgerTests/ColorContrast.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderServiceTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+CurrencyCodes.swift
+  - apps/ios/BuyLedger/Features/Quote/Components/QuoteStatusBanner.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature.swift
+  - apps/ios/BuyLedgerTests/LookupServiceTests+RenameNoOps.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Create.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupNameEditorSheet.swift
+  - apps/ios/BuyLedger/Features/Lookups/Data/LookupService+PaymentMethods.swift
+  - apps/ios/BuyLedgerTests/ReconciliationStatusServiceTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan+Writes.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsCostStructureCard.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+More/moreView_預設清單_顯示各入口.1.png
+  - apps/ios/BuyLedgerTests/CustomersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/InsightsStatsTests+Breakdown.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CategoryServiceTests.swift
+  - apps/ios/BuyLedgerTests/MoreFeatureTests+Relays.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardFeature.swift
+  - apps/ios/BuyLedger/App/Testing/DependencyValues+BLUITestLookupOverrides.swift
+  - apps/ios/BuyLedgerTests/FxFeatureTests+CurrencyCodes.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalogAdditions.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsTrendBucket.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditPhotosSection.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignPresentationFeature+Destination.swift
+  - apps/ios/BuyLedgerTests/InsightsHeatmapTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+OrdersReload.swift
+  - apps/ios/BuyLedgerTests/LookupServiceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRootRequest.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+More/appLockView_生物辨識解鎖_顯示解鎖鈕.1.png
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailSourceView.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditCampaignSection.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/OrderService+Reads.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditDraftOperations.swift
+  - apps/ios/BuyLedger/Features/Lookups/Data/LookupService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedger/Features/App/PersistenceFailureView.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Renames.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsView.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests.swift
+  - apps/ios/BuyLedgerTests/StorageFailureWrappingTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+Dashboard.swift
+  - apps/ios/BuyLedgerTests/OrdersPresentationFeatureTests+Delegate.swift
+  - apps/ios/BuyLedgerTests/LookupServiceTests+PaymentMethodFixtures.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLSparkline.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardStats.swift
+  - apps/ios/BuyLedger.xcodeproj/project.xcworkspace/xcshareddata/swiftpm/Package.resolved
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+ViewCases.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameSupport.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+PaymentMethodCorrection.swift
+  - apps/ios/BuyLedgerTests/DashboardFormattersTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+NewOrderOptions.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Components/CampaignDetailInfoSection.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+More.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+TestValueRules.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupCatalogFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditPickerDestination.swift
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedgerTests/CampaignListFeatureTests+VisibleSections.swift
+  - apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailItemsView.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsFormatters.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalogFixtures.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DeepLinks.swift
+  - apps/ios/BuyLedgerTests/DashboardFeatureTests+ScreenState.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Components/CampaignRow.swift
+  - apps/ios/BuyLedgerTests/DesignSystemSourceScanTests.swift
+  - apps/ios/BuyLedger/Features/FX/FxFormatters.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditCostSection.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersLoadFeature.swift
+  - apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+DatabaseCases.swift
+  - apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+ReferenceCases.swift
+  - apps/ios/BuyLedgerTests/InsightsFeatureTests+DateContext.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteFormatters.swift
+  - apps/ios/BuyLedgerTests/LookupServiceTests+PaymentMethodSelection.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+More/settingsView_預設偏好_顯示版本與偏好列.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Insights/insightsView_載入中_顯示載入骨架.1.png
+  - apps/ios/BuyLedgerTests/InsightsFormattersTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignReminderFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Preview.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsTrendCard.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Customers/CustomerRank.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadFeatureTests+Requests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+OptionWrites.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditBasicSection.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailCostView.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+ReminderIntegration.swift
+  - apps/ios/BuyLedgerTests/LookupServiceTests+Renames.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardKPITiles.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+ListRequests.swift
+  - apps/ios/BuyLedgerTests/ActionGroupingScanTests+Scenarios.swift
+  - apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+Rules.swift
+  - apps/ios/BuyLedgerTests/DashboardStatsTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFilterOperations.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Receipt.swift
+  - apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Merge.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsCategoryCard.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+Customers.swift
+  - apps/ios/BuyLedgerTests/CampaignEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+Insights.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+Shared.swift
+  - apps/ios/BuyLedgerTests/OrderEditCampaignOptionsTests.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteView.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Cards/BLCard.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignWritesFeature.swift
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistenceError.swift
+  - apps/ios/BuyLedgerTests/BLTrendTests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLPalette.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLHeroCardBackground.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardDateContext.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLTrend.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardRecentOrdersSection.swift
+  - apps/ios/BuyLedger/Features/Lookups/Data/LookupService+Renames.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+CampaignLoading.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/OrderService+Preview.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLBarChart.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+DeleteFailure.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditPickersFeature.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Forms/PaymentMethodEditorSheet.swift
+  - apps/ios/BuyLedgerTests/DesignSystemSourceScanTests+Scanner.swift
+  - apps/ios/BuyLedger/Features/More/MoreView.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Scanner.swift
+  - apps/ios/BuyLedger/App/Testing/DependencyValues+BLUITestOverrides.swift
+  - apps/ios/BuyLedgerTests/LookupServiceTests+Sources.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Components/CampaignSectionList.swift
+  - apps/ios/BuyLedgerTests/DesignSystemSourceScanTests+ScaledMetric.swift
+  - apps/ios/BuyLedger/Features/App/RootNavigationOperations.swift
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Writes.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Cascade.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRegularListColumn.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Reconciliation.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderMerge/mergePhotoPickerSheet_七張照片選滿上限_顯示已選與未選照片.1.png
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameFailures.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Dashboard/dashboardView_載入中_顯示載入骨架.1.png
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+LoadAndSummary.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailCardlessView.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignEditFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+Create.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedgerTests/InsightsStatsTests.swift
+  - apps/ios/BuyLedgerTests/DashboardFormattersTests+Summary.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditSelectionRow.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Foreground.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFormatters.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+SaveFailureTiming.swift
+  - apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Concurrency.swift
+  - apps/ios/BuyLedger/Features/Lookups/Data/LookupService+Preview.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupAdditionRequest.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderWriteOperations.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodCorrectionFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderMerge/mergePhotoPickerSheet_七張照片只選部分_顯示未選取照片.1.png
+  - apps/ios/BuyLedgerTests/CampaignEditFeatureTests+NavigationTitle.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLHitTarget.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsHeatmap.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+AlertTiming.swift
+  - apps/ios/BuyLedgerTests/OrderPercentConversionTests.swift
+  - apps/ios/BuyLedgerTests/ColorContrastTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Dependency.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Reminders.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+ViewRules.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupItemOperations.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsFeature.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsCostSegment.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Shared/paymentMethodEditorSheet_新增付款方式_顯示空白表單.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Preview.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/PaymentMethodCorrectionFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomersFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderWritesFeature.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomerRankBadgeStyle.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+MergeWrites.swift
+  - apps/ios/BuyLedgerTests/CampaignListFeatureTests+RowSummaries.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Rebuild.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+CampaignDetail.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPaymentMethodSection.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+NameConflict.swift
+  - apps/ios/BuyLedgerTests/CustomerFormattersTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderSelectableRow.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests+ReminderRename.swift
+  - apps/ios/BuyLedgerTests/DashboardStatsTests+Comparison.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LoadRequests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+OrderFilters.swift
+  - apps/ios/BuyLedger/Features/FX/Components/FxStatusBanner.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomersView.swift
+  - apps/ios/BuyLedger/Features/More/MoreFeature.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Progress/BLProgressViewStyle.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests.swift
+  - apps/ios/BuyLedger/Features/Customers/CustomerFormatters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersPresentationFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+LookupSync.swift
+  - apps/ios/BuyLedgerTests/CampaignFormattersTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Insights/CampaignProfitRank.swift
+  - apps/ios/BuyLedger/Features/Insights/InsightsDateRange.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/MergePhotoTile.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Buttons/BLButtonStyle.swift
+  - apps/ios/BuyLedgerTests/InsightsStatsTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderRowView.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderMerge.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLSpacing.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrdersBaseline.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+PaymentMethodStoredOrders.swift
+  - apps/ios/BuyLedger/Features/Dashboard/DashboardHeroCard.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+More/settingsView_開啟AI摘要與生物辨識_顯示對應列.1.png
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Navigation.swift
+  - apps/ios/BuyLedgerTests/OrderEditPickersFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/OrderService.swift
+-->
+
+---
+### Requirement: Currency metadata preserves cache and API error categories
+
+CurrencyMetadataService SHALL throw CurrencyMetadataServiceError.persistence(.emptyCodeList) when a refresh receives an empty code list and SHALL leave existing cached codes unchanged. Other cache fetch and save failures SHALL use CurrencyMetadataPersistenceError.storage(PersistenceError). CurrencyMetadataService SHALL use CurrencyMetadataServiceError to distinguish api(APIError) from persistence(CurrencyMetadataPersistenceError). Neither error type SHALL conform to Equatable.
+
+#### Scenario: An empty code list does not clear an existing cache
+
+- **GIVEN** the cache contains TWD and USD and is older than the refresh interval
+- **WHEN** CurrencyMetadataService.refreshIfStale receives an empty code list from the exchange rate API
+- **THEN** the service throws CurrencyMetadataServiceError.persistence(.emptyCodeList)
+- **AND** the cache still contains TWD and USD
+
+#### Scenario: An API failure is not classified as persistence failure
+
+- **WHEN** CurrencyMetadataService cannot fetch supported codes because the HTTP client throws a transport failure
+- **THEN** the service throws CurrencyMetadataServiceError.api carrying that transport failure
+
+#### Scenario: A cache failure is not classified as an API failure
+
+- **WHEN** CurrencyMetadataService cannot read or write its SwiftData cache
+- **THEN** the service throws CurrencyMetadataServiceError.persistence with the corresponding CurrencyMetadataPersistenceError
+
+##### Example: Cache save failure
+
+- **GIVEN** the cache is stale and SwiftData rejects saving the currency cache because a relationship exceeds its maximum count
+- **WHEN** `CurrencyMetadataService.refreshIfStale` writes the fetched codes
+- **THEN** it throws `CurrencyMetadataServiceError.persistence(.storage(.saveFailed(underlying:)))` whose underlying error has the same domain and code as the reported error
+
+
+<!-- @trace
+source: service-database-layer-alignment
+updated: 2026-09-30
+code:
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Reads.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationStoreTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupItemOperations.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistenceError.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceRecoveryError.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestPhotoCache.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/Mocks/MockURLProtocol.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OpenSettingsClient.swift
+  - apps/ios/BuyLedger/App/BuyLedgerApp.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSettingsStore.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService+Dependency.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+BoundaryCases.swift
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStore.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+TestValueCases.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDateSection.swift
+  - apps/ios/BuyLedger/Resources/Config.example.xcconfig
+  - apps/ios/BuyLedgerTests/HTTPClientTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService+Dependency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestFirstReadGate.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Preview.swift
+  - apps/ios/BuyLedgerTests/PersistenceFailureFeatureTests.swift
+  - apps/ios/BuyLedgerTests/UserDefaultsStoreTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestHarness.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClientProtocol.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService+Preview.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockHTTPClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabaseProtocol.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailView_成本明細內容_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Data/OllamaChatRequest.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+DependencyCases.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+PaymentMethodCorrection.swift
+  - apps/ios/BuyLedgerTests/NameLookupPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistenceError.swift
+  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCurrencyMetadataConfigurationStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Preview.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Failures.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderError.swift
+  - apps/ios/BuyLedgerTests/OrderPersistence+LookupTesting.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestStubs.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoImportResult.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteView_非零試算輸入_顯示成本與建議售價.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Dependency.swift
+  - apps/ios/BuyLedgerTests/ReconciliationStatusServiceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService+Preview.swift
+  - apps/ios/BuyLedgerTests/FxFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceError.swift
+  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthClient.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestLoadSource.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+TestValueRules.swift
+  - apps/ios/BuyLedgerTests/ResidueProbeModels.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/ios/BuyLedger/Core/Storage/PreviewAppConfigurationStore.swift
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignRepository.swift
+  - apps/ios/BuyLedger/Core/Dependencies/NameLookupOperations.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataServiceError.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/ios/BuyLedgerTests/BiometricAuthClientTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/ios/BuyLedgerTests/BiometricAuthServiceTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase+Dependency.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Support.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+BatchWrites.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignGrouping.swift
+  - apps/ios/BuyLedgerTests/AppLockFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistence.swift
+  - apps/ios/BuyLedgerTests/RuntimeEnvironmentTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameNoOps.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Rules.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService.swift
+  - apps/ios/BuyLedgerTests/RecordDecodingTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+LexicalCases.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift
+  - apps/ios/BuyLedgerTests/TestContainerCreationLock.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateClient.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewBaseline.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Preview.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistenceError.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Merge.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCurrencyMetadataHTTPClient.swift
+  - apps/ios/BuyLedger/Features/App/PersistenceFailureFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/NameLookupPersistence.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsStore.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewRateUnavailable.1.png
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStoreProtocol.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Quarantine.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Concurrency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestErrorFactory.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_合併訂單情境_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests+Transport.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Writes.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase+Preview.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+Refresh.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignSubgroup.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderServiceTests.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockAppConfigurationStore.swift
+  - apps/ios/BuyLedger/Features/App/AppLockFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Delete.swift
+  - apps/ios/BuyLedger/App/TelemetryService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatResponse.swift
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryServiceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersRegularViewMultiSelectBaseline.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - apps/ios/BuyLedger/App/AppLaunchConfigurator.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatRequest.swift
+  - apps/ios/BuyLedger/App/TelemetryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
+  - apps/ios/BuyLedger/Core/Storage/PreviewUserDefaultsStore.swift
+  - apps/ios/BuyLedgerTests/APIErrorMappingTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Create.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewMultiSelectBaseline.1.png
+  - apps/ios/BuyLedgerTests/Mocks/MockUserDefaultsStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Renames.swift
+  - apps/ios/BuyLedgerTests/OrderSourceServiceTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift
+  - apps/ios/BuyLedgerTests/TestSuiteIntegrityTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Forms.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+WriteFailures.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/ServiceTestValueStrictnessTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests+Support.swift
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Preview.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Writes.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteRateFeature.swift
+  - apps/ios/BuyLedgerTests/SettingsServiceTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Syntax.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests+LookupRename.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+MergeFailureMapping.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests.swift
+  - apps/ios/BuyLedger/App/TelemetryService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/TelemetryClient.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService.swift
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService+Dependency.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Dependency.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewRateFailureBaseline.1.png
+  - apps/ios/BuyLedgerTests/OllamaClientTests.swift
+  - apps/ios/BuyLedgerTests/CampaignPersistenceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService.swift
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameSupport.swift
+  - apps/ios/BuyLedger/Core/Persistence/LookupRecordRenamer.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Reads.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - apps/ios/BuyLedger/Core/Environment/RuntimeEnvironment.swift
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/ExchangeRateClientTests.swift
+  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/OllamaChatResponse.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsView_一般洞察資料_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxView_已載入匯率快照_顯示連線狀態.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Lexing.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService+Preview.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+SharedCases.swift
+  - apps/ios/BuyLedgerTests/CategoryServiceTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignPersistence.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService+Dependency.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteView_沒有可用匯率_顯示錯誤狀態.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChart_近三十天資料_捲動停在最新日期.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxView_匯率載入失敗_顯示錯誤橫幅與重試鍵.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataRepository.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodCorrectionFeatureTests.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests+ApplyEdit.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockBuyLedgerDatabase.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureView_持久化錯誤_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantineClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryRepository.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+AlertTiming.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+DeleteFailure.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewLongIdentifierBaseline.1.png
+  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStore+Dependency.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService+Preview.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameFailures.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Core/Networking/AppConfiguration.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStoreProtocol.swift
+  - apps/ios/BuyLedgerTests/ExchangeRateServiceTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFocusTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/StorageFailureWrapping.swift
+  - apps/ios/BuyLedger/Core/Networking/PreviewHTTPClient.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_長訂單識別碼_顯示短識別碼.1.png
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests+LookupRenameFailures.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Matching.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Decoding.swift
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStore+Dependency.swift
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService+Preview.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Renames.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardView_一般儀表板資料_符合基準圖.1.png
+  - apps/ios/BuyLedger.xctestplan
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoImportResult.swift
+  - apps/ios/BuyLedger/Features/Lookups/PaymentMethodCorrectionFeature.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+WriteFailures.swift
+  - apps/ios/BuyLedgerTests/StorageFailureWrappingTests.swift
+  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateEndpoint.swift
+  - apps/ios/BuyLedgerTests/SettingsStoreTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Decoding.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient+Dependency.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderLink.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataCacheTests.swift
+-->
+
+---
+### Requirement: Persistence boundaries use complete typed throws contracts
+
+Every throwing database operation, PersistenceContainer throwing helper, PersistenceStoreQuarantine operation, and service closure SHALL declare a concrete typed throws contract that includes every error the boundary can emit. Raw SwiftData and Foundation errors SHALL NOT escape those boundaries as the thrown error type; a wrapped source error carried under an underlying label is not an escape, because the caller still receives the declared typed error. Service closures that only use one persistence domain SHALL use the corresponding concrete typed error; a service that combines API and persistence operations SHALL use a concrete wrapper for the complete union. The database write operation SHALL be generic over a failure type that can wrap PersistenceError, so that the caller's typed error is preserved through the transaction.
+
+#### Scenario: A persistence-only service exposes the persistence error type
+
+- **WHEN** a caller invokes an OrderService operation that only performs database transactions
+- **THEN** the operation signature exposes PersistenceError or the appropriate OrderPersistenceError
+- **AND** the operation does not expose any Error
+
+##### Example: Fetching orders through the service
+
+- **GIVEN** the database read inside `OrderService.fetchOrders` throws `PersistenceError.fetchFailed(underlying:)`
+- **WHEN** a caller invokes `OrderService.fetchOrders`
+- **THEN** its typed signature remains `throws(PersistenceError)`
+
+#### Scenario: A combined service exposes its complete error union
+
+- **WHEN** a caller invokes CurrencyMetadataService.refreshIfStale
+- **THEN** the operation signature exposes CurrencyMetadataServiceError
+- **AND** the caller can distinguish API and persistence cases without inspecting an untyped error
+
+##### Example: Distinguishing API and cache failures
+
+- **GIVEN** the API can throw `.api` and the cache can throw `.persistence`
+- **WHEN** the caller invokes `refreshIfStale`
+- **THEN** the caller can pattern-match both cases on `CurrencyMetadataServiceError`
+
+#### Scenario: Raw framework errors stop at the persistence boundary
+
+- **WHEN** SwiftData or Foundation throws an error inside a persistence operation
+- **THEN** the public operation throws one of its declared typed error cases
+- **AND** the raw framework error reaches the caller only as the bridged underlying value of that typed case
+
+##### Example: Foundation save error
+
+- **GIVEN** Foundation reports a permission-denied error while writing a store file
+- **WHEN** the quarantine operation handles the failure
+- **THEN** it throws `PersistenceRecoveryError.fileMoveFailed` with the file name and that bridged error
+
+
+<!-- @trace
+source: service-database-layer-alignment
+updated: 2026-09-30
+code:
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Reads.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationStoreTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupItemOperations.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistenceError.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceRecoveryError.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestPhotoCache.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/Mocks/MockURLProtocol.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OpenSettingsClient.swift
+  - apps/ios/BuyLedger/App/BuyLedgerApp.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSettingsStore.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService+Dependency.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+BoundaryCases.swift
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStore.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+TestValueCases.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDateSection.swift
+  - apps/ios/BuyLedger/Resources/Config.example.xcconfig
+  - apps/ios/BuyLedgerTests/HTTPClientTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService+Dependency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestFirstReadGate.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Preview.swift
+  - apps/ios/BuyLedgerTests/PersistenceFailureFeatureTests.swift
+  - apps/ios/BuyLedgerTests/UserDefaultsStoreTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestHarness.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClientProtocol.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService+Preview.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockHTTPClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabaseProtocol.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailView_成本明細內容_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Data/OllamaChatRequest.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+DependencyCases.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+PaymentMethodCorrection.swift
+  - apps/ios/BuyLedgerTests/NameLookupPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistenceError.swift
+  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCurrencyMetadataConfigurationStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Preview.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Failures.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderError.swift
+  - apps/ios/BuyLedgerTests/OrderPersistence+LookupTesting.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestStubs.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoImportResult.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteView_非零試算輸入_顯示成本與建議售價.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Dependency.swift
+  - apps/ios/BuyLedgerTests/ReconciliationStatusServiceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService+Preview.swift
+  - apps/ios/BuyLedgerTests/FxFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceError.swift
+  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthClient.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestLoadSource.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+TestValueRules.swift
+  - apps/ios/BuyLedgerTests/ResidueProbeModels.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/ios/BuyLedger/Core/Storage/PreviewAppConfigurationStore.swift
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignRepository.swift
+  - apps/ios/BuyLedger/Core/Dependencies/NameLookupOperations.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataServiceError.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/ios/BuyLedgerTests/BiometricAuthClientTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/ios/BuyLedgerTests/BiometricAuthServiceTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase+Dependency.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Support.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+BatchWrites.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignGrouping.swift
+  - apps/ios/BuyLedgerTests/AppLockFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistence.swift
+  - apps/ios/BuyLedgerTests/RuntimeEnvironmentTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameNoOps.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Rules.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService.swift
+  - apps/ios/BuyLedgerTests/RecordDecodingTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+LexicalCases.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift
+  - apps/ios/BuyLedgerTests/TestContainerCreationLock.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateClient.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewBaseline.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Preview.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistenceError.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Merge.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCurrencyMetadataHTTPClient.swift
+  - apps/ios/BuyLedger/Features/App/PersistenceFailureFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/NameLookupPersistence.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsStore.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewRateUnavailable.1.png
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStoreProtocol.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Quarantine.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Concurrency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestErrorFactory.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_合併訂單情境_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests+Transport.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Writes.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase+Preview.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+Refresh.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignSubgroup.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderServiceTests.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockAppConfigurationStore.swift
+  - apps/ios/BuyLedger/Features/App/AppLockFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Delete.swift
+  - apps/ios/BuyLedger/App/TelemetryService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatResponse.swift
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryServiceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersRegularViewMultiSelectBaseline.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - apps/ios/BuyLedger/App/AppLaunchConfigurator.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatRequest.swift
+  - apps/ios/BuyLedger/App/TelemetryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
+  - apps/ios/BuyLedger/Core/Storage/PreviewUserDefaultsStore.swift
+  - apps/ios/BuyLedgerTests/APIErrorMappingTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Create.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewMultiSelectBaseline.1.png
+  - apps/ios/BuyLedgerTests/Mocks/MockUserDefaultsStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Renames.swift
+  - apps/ios/BuyLedgerTests/OrderSourceServiceTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift
+  - apps/ios/BuyLedgerTests/TestSuiteIntegrityTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Forms.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+WriteFailures.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/ServiceTestValueStrictnessTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests+Support.swift
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Preview.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Writes.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteRateFeature.swift
+  - apps/ios/BuyLedgerTests/SettingsServiceTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Syntax.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests+LookupRename.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+MergeFailureMapping.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests.swift
+  - apps/ios/BuyLedger/App/TelemetryService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/TelemetryClient.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService.swift
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService+Dependency.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Dependency.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewRateFailureBaseline.1.png
+  - apps/ios/BuyLedgerTests/OllamaClientTests.swift
+  - apps/ios/BuyLedgerTests/CampaignPersistenceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService.swift
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameSupport.swift
+  - apps/ios/BuyLedger/Core/Persistence/LookupRecordRenamer.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Reads.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - apps/ios/BuyLedger/Core/Environment/RuntimeEnvironment.swift
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/ExchangeRateClientTests.swift
+  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/OllamaChatResponse.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsView_一般洞察資料_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxView_已載入匯率快照_顯示連線狀態.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Lexing.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService+Preview.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+SharedCases.swift
+  - apps/ios/BuyLedgerTests/CategoryServiceTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignPersistence.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService+Dependency.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteView_沒有可用匯率_顯示錯誤狀態.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChart_近三十天資料_捲動停在最新日期.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxView_匯率載入失敗_顯示錯誤橫幅與重試鍵.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataRepository.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodCorrectionFeatureTests.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests+ApplyEdit.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockBuyLedgerDatabase.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureView_持久化錯誤_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantineClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryRepository.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+AlertTiming.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+DeleteFailure.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewLongIdentifierBaseline.1.png
+  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStore+Dependency.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService+Preview.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameFailures.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Core/Networking/AppConfiguration.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStoreProtocol.swift
+  - apps/ios/BuyLedgerTests/ExchangeRateServiceTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFocusTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/StorageFailureWrapping.swift
+  - apps/ios/BuyLedger/Core/Networking/PreviewHTTPClient.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_長訂單識別碼_顯示短識別碼.1.png
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests+LookupRenameFailures.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Matching.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Decoding.swift
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStore+Dependency.swift
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService+Preview.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Renames.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardView_一般儀表板資料_符合基準圖.1.png
+  - apps/ios/BuyLedger.xctestplan
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoImportResult.swift
+  - apps/ios/BuyLedger/Features/Lookups/PaymentMethodCorrectionFeature.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+WriteFailures.swift
+  - apps/ios/BuyLedgerTests/StorageFailureWrappingTests.swift
+  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateEndpoint.swift
+  - apps/ios/BuyLedgerTests/SettingsStoreTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Decoding.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient+Dependency.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderLink.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataCacheTests.swift
+-->
+
+---
+### Requirement: Store quarantine uses a separate typed recovery error
+
+PersistenceStoreQuarantine SHALL use PersistenceRecoveryError with directoryResolutionFailed, directoryCreationFailed, and fileMoveFailed(fileName:) cases, each carrying the bridged source error under an underlying label whose type is constrained to Error and Sendable. PersistenceRecoveryError SHALL NOT conform to Equatable. The operation SHALL return nil and SHALL NOT create a recovery directory when no known store file exists. The database's quarantine operation SHALL perform the move for the production store location and SHALL return nil without touching the file system for an in-memory database. PersistenceRecoveryError SHALL keep conforming to LocalizedError because its description is shown in the persistence failure screen, and that description SHALL remain the source error localized description.
+
+#### Scenario: No store files require no recovery directory
+
+- **GIVEN** the store directory contains none of the known store files
+- **WHEN** PersistenceStoreQuarantine.quarantine runs
+- **THEN** the operation returns nil
+- **AND** the backup directory remains absent
+
+#### Scenario: A file move failure identifies the file
+
+- **WHEN** moving a known store file fails
+- **THEN** the operation throws PersistenceRecoveryError.fileMoveFailed with that file name and the bridged source error
+
+##### Example: Store sidecar cannot move
+
+- **GIVEN** `BuyLedger.store-wal` cannot be moved and reports a permission-denied error
+- **WHEN** quarantine processes the sidecar
+- **THEN** it throws `PersistenceRecoveryError.fileMoveFailed(fileName: "BuyLedger.store-wal", underlying:)` whose underlying error has the same domain and code as the reported error
+
+#### Scenario: Application Support resolution failure is classified as recovery failure
+
+- **WHEN** the production database's quarantine operation cannot resolve the Application Support directory
+- **THEN** it throws PersistenceRecoveryError.directoryResolutionFailed carrying the bridged source error
+
+##### Example: Application Support lookup fails
+
+- **GIVEN** FileManager reports a no-such-file error
+- **WHEN** the production database resolves Application Support for quarantine
+- **THEN** it throws `PersistenceRecoveryError.directoryResolutionFailed(underlying:)` whose underlying error has the same domain and code as the reported error
+
+#### Scenario: An in-memory database has nothing to quarantine
+
+- **WHEN** the quarantine operation runs on a database backed by an in-memory container
+- **THEN** it returns nil
+- **AND** no directory is resolved, created, or moved
+
+#### Scenario: The failure screen still shows a readable reason
+
+- **WHEN** the persistence failure screen reports a recovery failure
+- **THEN** the shown text is the localized description of the source error
+
+
+<!-- @trace
+source: service-database-layer-alignment
+updated: 2026-09-30
+code:
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Reads.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationStoreTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupItemOperations.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistenceError.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceRecoveryError.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestPhotoCache.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/Mocks/MockURLProtocol.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OpenSettingsClient.swift
+  - apps/ios/BuyLedger/App/BuyLedgerApp.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSettingsStore.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService+Dependency.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+BoundaryCases.swift
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStore.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+TestValueCases.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDateSection.swift
+  - apps/ios/BuyLedger/Resources/Config.example.xcconfig
+  - apps/ios/BuyLedgerTests/HTTPClientTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService+Dependency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestFirstReadGate.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Preview.swift
+  - apps/ios/BuyLedgerTests/PersistenceFailureFeatureTests.swift
+  - apps/ios/BuyLedgerTests/UserDefaultsStoreTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestHarness.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClientProtocol.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService+Preview.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockHTTPClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabaseProtocol.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailView_成本明細內容_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Data/OllamaChatRequest.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+DependencyCases.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+PaymentMethodCorrection.swift
+  - apps/ios/BuyLedgerTests/NameLookupPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistenceError.swift
+  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCurrencyMetadataConfigurationStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Preview.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Failures.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderError.swift
+  - apps/ios/BuyLedgerTests/OrderPersistence+LookupTesting.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestStubs.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoImportResult.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteView_非零試算輸入_顯示成本與建議售價.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Dependency.swift
+  - apps/ios/BuyLedgerTests/ReconciliationStatusServiceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService+Preview.swift
+  - apps/ios/BuyLedgerTests/FxFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceError.swift
+  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthClient.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestLoadSource.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+TestValueRules.swift
+  - apps/ios/BuyLedgerTests/ResidueProbeModels.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/ios/BuyLedger/Core/Storage/PreviewAppConfigurationStore.swift
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignRepository.swift
+  - apps/ios/BuyLedger/Core/Dependencies/NameLookupOperations.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataServiceError.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/ios/BuyLedgerTests/BiometricAuthClientTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/ios/BuyLedgerTests/BiometricAuthServiceTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase+Dependency.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Support.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+BatchWrites.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignGrouping.swift
+  - apps/ios/BuyLedgerTests/AppLockFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistence.swift
+  - apps/ios/BuyLedgerTests/RuntimeEnvironmentTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameNoOps.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Rules.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService.swift
+  - apps/ios/BuyLedgerTests/RecordDecodingTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+LexicalCases.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift
+  - apps/ios/BuyLedgerTests/TestContainerCreationLock.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateClient.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewBaseline.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Preview.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistenceError.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Merge.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCurrencyMetadataHTTPClient.swift
+  - apps/ios/BuyLedger/Features/App/PersistenceFailureFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/NameLookupPersistence.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsStore.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewRateUnavailable.1.png
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStoreProtocol.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Quarantine.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Concurrency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestErrorFactory.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_合併訂單情境_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests+Transport.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Writes.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase+Preview.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+Refresh.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignSubgroup.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderServiceTests.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockAppConfigurationStore.swift
+  - apps/ios/BuyLedger/Features/App/AppLockFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Delete.swift
+  - apps/ios/BuyLedger/App/TelemetryService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatResponse.swift
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryServiceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersRegularViewMultiSelectBaseline.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - apps/ios/BuyLedger/App/AppLaunchConfigurator.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatRequest.swift
+  - apps/ios/BuyLedger/App/TelemetryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
+  - apps/ios/BuyLedger/Core/Storage/PreviewUserDefaultsStore.swift
+  - apps/ios/BuyLedgerTests/APIErrorMappingTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Create.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewMultiSelectBaseline.1.png
+  - apps/ios/BuyLedgerTests/Mocks/MockUserDefaultsStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Renames.swift
+  - apps/ios/BuyLedgerTests/OrderSourceServiceTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift
+  - apps/ios/BuyLedgerTests/TestSuiteIntegrityTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Forms.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+WriteFailures.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/ServiceTestValueStrictnessTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests+Support.swift
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Preview.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Writes.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteRateFeature.swift
+  - apps/ios/BuyLedgerTests/SettingsServiceTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Syntax.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests+LookupRename.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+MergeFailureMapping.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests.swift
+  - apps/ios/BuyLedger/App/TelemetryService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/TelemetryClient.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService.swift
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService+Dependency.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Dependency.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewRateFailureBaseline.1.png
+  - apps/ios/BuyLedgerTests/OllamaClientTests.swift
+  - apps/ios/BuyLedgerTests/CampaignPersistenceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService.swift
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameSupport.swift
+  - apps/ios/BuyLedger/Core/Persistence/LookupRecordRenamer.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Reads.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - apps/ios/BuyLedger/Core/Environment/RuntimeEnvironment.swift
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/ExchangeRateClientTests.swift
+  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/OllamaChatResponse.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsView_一般洞察資料_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxView_已載入匯率快照_顯示連線狀態.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Lexing.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService+Preview.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+SharedCases.swift
+  - apps/ios/BuyLedgerTests/CategoryServiceTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignPersistence.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService+Dependency.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteView_沒有可用匯率_顯示錯誤狀態.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChart_近三十天資料_捲動停在最新日期.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxView_匯率載入失敗_顯示錯誤橫幅與重試鍵.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataRepository.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodCorrectionFeatureTests.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests+ApplyEdit.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockBuyLedgerDatabase.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureView_持久化錯誤_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantineClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryRepository.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+AlertTiming.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+DeleteFailure.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewLongIdentifierBaseline.1.png
+  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStore+Dependency.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService+Preview.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameFailures.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Core/Networking/AppConfiguration.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStoreProtocol.swift
+  - apps/ios/BuyLedgerTests/ExchangeRateServiceTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFocusTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/StorageFailureWrapping.swift
+  - apps/ios/BuyLedger/Core/Networking/PreviewHTTPClient.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_長訂單識別碼_顯示短識別碼.1.png
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests+LookupRenameFailures.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Matching.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Decoding.swift
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStore+Dependency.swift
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService+Preview.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Renames.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardView_一般儀表板資料_符合基準圖.1.png
+  - apps/ios/BuyLedger.xctestplan
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoImportResult.swift
+  - apps/ios/BuyLedger/Features/Lookups/PaymentMethodCorrectionFeature.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+WriteFailures.swift
+  - apps/ios/BuyLedgerTests/StorageFailureWrappingTests.swift
+  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateEndpoint.swift
+  - apps/ios/BuyLedgerTests/SettingsStoreTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Decoding.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient+Dependency.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderLink.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataCacheTests.swift
+-->
+
+---
+### Requirement: Typed error conversion preserves existing data safety behavior
+
+Typed error conversion SHALL preserve successful persistence behavior, existing semantic error behavior, cache protection, and transaction discard behavior. The conversion SHALL NOT change schema, migration, store location, ordering, upsert semantics, cascade updates, deletion semantics, or seed semantics.
+
+#### Scenario: A failed transactional write leaves no pending mutation
+
+- **WHEN** a database write fails inside its transaction body or during save
+- **THEN** the transaction's context is discarded before the typed error is thrown
+- **AND** a later fetch does not observe the failed pending mutation
+- **AND** a later write to the same entity does not persist the failed mutation
+
+##### Example: Payment method edit is discarded
+
+- **GIVEN** an edit changes a payment method and its orders, then SwiftData rejects the save because a relationship exceeds its maximum count
+- **WHEN** `PaymentMethodService.applyPaymentMethodEdit` fails
+- **THEN** the typed storage error is thrown after the transaction's context is discarded
+- **AND** a later fetch sees the original payment method and orders
+
+#### Scenario: Successful persistence behavior remains unchanged
+
+- **WHEN** a persistence operation succeeds
+- **THEN** it returns the same values and applies the same data changes as before the error contract change
+- **AND** no schema or migration behavior changes
+
+##### Example: Successful order update
+
+- **GIVEN** an existing order is updated with valid values
+- **WHEN** `OrderService.saveOrder` succeeds
+- **THEN** a later fetch returns the updated order with the same ordering and schema behavior
+
+
+<!-- @trace
+source: service-database-layer-alignment
+updated: 2026-09-30
+code:
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Reads.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationStoreTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupItemOperations.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistenceError.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceRecoveryError.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestPhotoCache.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/Mocks/MockURLProtocol.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OpenSettingsClient.swift
+  - apps/ios/BuyLedger/App/BuyLedgerApp.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSettingsStore.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService+Dependency.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+BoundaryCases.swift
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStore.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+TestValueCases.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDateSection.swift
+  - apps/ios/BuyLedger/Resources/Config.example.xcconfig
+  - apps/ios/BuyLedgerTests/HTTPClientTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService+Dependency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestFirstReadGate.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Preview.swift
+  - apps/ios/BuyLedgerTests/PersistenceFailureFeatureTests.swift
+  - apps/ios/BuyLedgerTests/UserDefaultsStoreTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestHarness.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClientProtocol.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService+Preview.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockHTTPClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabaseProtocol.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailView_成本明細內容_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Data/OllamaChatRequest.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+DependencyCases.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+PaymentMethodCorrection.swift
+  - apps/ios/BuyLedgerTests/NameLookupPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistenceError.swift
+  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCurrencyMetadataConfigurationStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Preview.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Failures.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderError.swift
+  - apps/ios/BuyLedgerTests/OrderPersistence+LookupTesting.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestStubs.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoImportResult.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteView_非零試算輸入_顯示成本與建議售價.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Dependency.swift
+  - apps/ios/BuyLedgerTests/ReconciliationStatusServiceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService+Preview.swift
+  - apps/ios/BuyLedgerTests/FxFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceError.swift
+  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthClient.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestLoadSource.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+TestValueRules.swift
+  - apps/ios/BuyLedgerTests/ResidueProbeModels.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/ios/BuyLedger/Core/Storage/PreviewAppConfigurationStore.swift
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignRepository.swift
+  - apps/ios/BuyLedger/Core/Dependencies/NameLookupOperations.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataServiceError.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/ios/BuyLedgerTests/BiometricAuthClientTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/ios/BuyLedgerTests/BiometricAuthServiceTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase+Dependency.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Support.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+BatchWrites.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignGrouping.swift
+  - apps/ios/BuyLedgerTests/AppLockFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistence.swift
+  - apps/ios/BuyLedgerTests/RuntimeEnvironmentTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameNoOps.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Rules.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService.swift
+  - apps/ios/BuyLedgerTests/RecordDecodingTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+LexicalCases.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift
+  - apps/ios/BuyLedgerTests/TestContainerCreationLock.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateClient.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewBaseline.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Preview.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistenceError.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Merge.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCurrencyMetadataHTTPClient.swift
+  - apps/ios/BuyLedger/Features/App/PersistenceFailureFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/NameLookupPersistence.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsStore.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewRateUnavailable.1.png
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStoreProtocol.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Quarantine.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Concurrency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestErrorFactory.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_合併訂單情境_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests+Transport.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Writes.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase+Preview.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+Refresh.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignSubgroup.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderServiceTests.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockAppConfigurationStore.swift
+  - apps/ios/BuyLedger/Features/App/AppLockFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Delete.swift
+  - apps/ios/BuyLedger/App/TelemetryService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatResponse.swift
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryServiceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersRegularViewMultiSelectBaseline.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - apps/ios/BuyLedger/App/AppLaunchConfigurator.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatRequest.swift
+  - apps/ios/BuyLedger/App/TelemetryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
+  - apps/ios/BuyLedger/Core/Storage/PreviewUserDefaultsStore.swift
+  - apps/ios/BuyLedgerTests/APIErrorMappingTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Create.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewMultiSelectBaseline.1.png
+  - apps/ios/BuyLedgerTests/Mocks/MockUserDefaultsStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Renames.swift
+  - apps/ios/BuyLedgerTests/OrderSourceServiceTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift
+  - apps/ios/BuyLedgerTests/TestSuiteIntegrityTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Forms.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+WriteFailures.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/ServiceTestValueStrictnessTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests+Support.swift
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Preview.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Writes.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteRateFeature.swift
+  - apps/ios/BuyLedgerTests/SettingsServiceTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Syntax.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests+LookupRename.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+MergeFailureMapping.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests.swift
+  - apps/ios/BuyLedger/App/TelemetryService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/TelemetryClient.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService.swift
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService+Dependency.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Dependency.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewRateFailureBaseline.1.png
+  - apps/ios/BuyLedgerTests/OllamaClientTests.swift
+  - apps/ios/BuyLedgerTests/CampaignPersistenceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService.swift
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameSupport.swift
+  - apps/ios/BuyLedger/Core/Persistence/LookupRecordRenamer.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Reads.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - apps/ios/BuyLedger/Core/Environment/RuntimeEnvironment.swift
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/ExchangeRateClientTests.swift
+  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/OllamaChatResponse.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsView_一般洞察資料_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxView_已載入匯率快照_顯示連線狀態.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Lexing.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService+Preview.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+SharedCases.swift
+  - apps/ios/BuyLedgerTests/CategoryServiceTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignPersistence.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService+Dependency.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteView_沒有可用匯率_顯示錯誤狀態.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChart_近三十天資料_捲動停在最新日期.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxView_匯率載入失敗_顯示錯誤橫幅與重試鍵.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataRepository.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodCorrectionFeatureTests.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests+ApplyEdit.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockBuyLedgerDatabase.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureView_持久化錯誤_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantineClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryRepository.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+AlertTiming.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+DeleteFailure.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewLongIdentifierBaseline.1.png
+  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStore+Dependency.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService+Preview.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameFailures.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Core/Networking/AppConfiguration.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStoreProtocol.swift
+  - apps/ios/BuyLedgerTests/ExchangeRateServiceTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFocusTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/StorageFailureWrapping.swift
+  - apps/ios/BuyLedger/Core/Networking/PreviewHTTPClient.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_長訂單識別碼_顯示短識別碼.1.png
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests+LookupRenameFailures.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Matching.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Decoding.swift
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStore+Dependency.swift
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService+Preview.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Renames.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardView_一般儀表板資料_符合基準圖.1.png
+  - apps/ios/BuyLedger.xctestplan
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoImportResult.swift
+  - apps/ios/BuyLedger/Features/Lookups/PaymentMethodCorrectionFeature.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+WriteFailures.swift
+  - apps/ios/BuyLedgerTests/StorageFailureWrappingTests.swift
+  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateEndpoint.swift
+  - apps/ios/BuyLedgerTests/SettingsStoreTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Decoding.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient+Dependency.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderLink.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataCacheTests.swift
+-->
+
+---
+### Requirement: Unparsable stored raw values fail the read
+
+A persistence record SHALL NOT substitute a default domain value when a stored raw value does not match any known case. When OrderRecord cannot resolve its stored payment receipt status, or CampaignRecord cannot resolve its stored campaign status, the conversion SHALL throw PersistenceError.fetchFailed and the enclosing read SHALL fail with that error.
+
+The thrown error SHALL carry a dedicated record decoding error as its underlying value. That decoding error SHALL conform to Error and Sendable and SHALL carry four string values: the record type name, the identifier of the record that failed, the field name whose raw value could not be resolved, and the unresolved raw value itself. Because the application defines it, it SHALL be carried as the underlying value without being bridged to NSError, so that a caller can read those four values directly. PersistenceError SHALL NOT gain a new case for this failure.
+
+#### Scenario: An unknown payment receipt status fails the read
+
+- **GIVEN** a stored order row whose payment receipt status raw value matches no known case
+- **WHEN** a caller fetches orders
+- **THEN** the fetch throws PersistenceError.fetchFailed whose underlying value is the record decoding error
+- **AND** that decoding error names the order record type, the identifier of that order, the payment receipt status field, and the unresolved raw value
+- **AND** no order is returned with a substituted pending status
+
+##### Example: Order row with a retired status string
+
+- **GIVEN** an order row with identifier `order-001` stores `"legacy-status"` as its payment receipt status
+- **WHEN** `OrderService.fetchOrders` performs the fetch
+- **THEN** it throws `PersistenceError.fetchFailed` whose underlying decoding error carries record type `"OrderRecord"`, identifier `"order-001"`, field `"paymentReceiptStatus"`, and raw value `"legacy-status"`
+
+#### Scenario: An unknown campaign status fails the read
+
+- **GIVEN** a stored campaign row whose status raw value matches no known case
+- **WHEN** a caller fetches campaigns
+- **THEN** the fetch throws PersistenceError.fetchFailed whose underlying value is the record decoding error
+- **AND** that decoding error names the campaign record type, the identifier of that campaign, the status field, and the unresolved raw value
+- **AND** no campaign is returned with a substituted ongoing status
+
+#### Scenario: Known raw values convert unchanged
+
+- **WHEN** every stored raw value in a row matches a known case
+- **THEN** the conversion returns the same domain value as before this change
+
+##### Example: conversion outcome by stored raw value
+
+| Stored raw value | Result |
+| ---------------- | ------ |
+| `"pending"` | converts to the pending case |
+| `"received"` | converts to the received case |
+| `"legacy-status"` | read throws `PersistenceError.fetchFailed` carrying the decoding error |
+| `""` | read throws `PersistenceError.fetchFailed` carrying the decoding error |
+
+<!-- @trace
+source: service-database-layer-alignment
+updated: 2026-09-30
+code:
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Reads.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationStoreTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryTests.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupItemOperations.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistenceError.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceRecoveryError.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestPhotoCache.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/Mocks/MockURLProtocol.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OpenSettingsClient.swift
+  - apps/ios/BuyLedger/App/BuyLedgerApp.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSettingsStore.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService+Dependency.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+BoundaryCases.swift
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStore.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+TestValueCases.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignDateSection.swift
+  - apps/ios/BuyLedger/Resources/Config.example.xcconfig
+  - apps/ios/BuyLedgerTests/HTTPClientTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService+Dependency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestFirstReadGate.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Preview.swift
+  - apps/ios/BuyLedgerTests/PersistenceFailureFeatureTests.swift
+  - apps/ios/BuyLedgerTests/UserDefaultsStoreTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestHarness.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClientProtocol.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService+Preview.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockHTTPClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabaseProtocol.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignReminderRepository.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailView_成本明細內容_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Data/OllamaChatRequest.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+DependencyCases.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+PaymentMethodCorrection.swift
+  - apps/ios/BuyLedgerTests/NameLookupPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistenceError.swift
+  - apps/ios/BuyLedgerTests/AISummaryFeatureTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/AISummaryFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCurrencyMetadataConfigurationStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Preview.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Failures.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderError.swift
+  - apps/ios/BuyLedgerTests/OrderPersistence+LookupTesting.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestStubs.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoImportResult.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteView_非零試算輸入_顯示成本與建議售價.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Dependency.swift
+  - apps/ios/BuyLedgerTests/ReconciliationStatusServiceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService+Preview.swift
+  - apps/ios/BuyLedgerTests/FxFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceError.swift
+  - apps/ios/BuyLedger/Core/Dependencies/BiometricAuthClient.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestLoadSource.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChartThirtyDaysBaseline.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+TestValueRules.swift
+  - apps/ios/BuyLedgerTests/ResidueProbeModels.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoClient.swift
+  - apps/ios/BuyLedger/Core/Storage/PreviewAppConfigurationStore.swift
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignRepository.swift
+  - apps/ios/BuyLedger/Core/Dependencies/NameLookupOperations.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataServiceError.swift
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewLongContentBaseline.1.png
+  - apps/ios/BuyLedgerTests/BiometricAuthClientTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderRepository.swift
+  - apps/ios/BuyLedgerTests/BiometricAuthServiceTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase+Dependency.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Support.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+BatchWrites.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignGrouping.swift
+  - apps/ios/BuyLedgerTests/AppLockFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistence.swift
+  - apps/ios/BuyLedgerTests/RuntimeEnvironmentTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameNoOps.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/CalendarReminderTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Rules.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService.swift
+  - apps/ios/BuyLedgerTests/RecordDecodingTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+LexicalCases.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift
+  - apps/ios/BuyLedgerTests/TestContainerCreationLock.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateClient.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewBaseline.1.png
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Preview.swift
+  - apps/ios/BuyLedger/Core/Persistence/CurrencyMetadataPersistenceError.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Merge.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestCurrencyMetadataHTTPClient.swift
+  - apps/ios/BuyLedger/Features/App/PersistenceFailureFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/NameLookupPersistence.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsStore.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteViewRateUnavailable.1.png
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStoreProtocol.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+Quarantine.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Concurrency.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestErrorFactory.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_合併訂單情境_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests+Transport.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Writes.swift
+  - apps/ios/BuyLedger/Core/Persistence/BuyLedgerDatabase+Preview.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+Refresh.swift
+  - apps/ios/BuyLedger/Features/Campaigns/CampaignSubgroup.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderServiceTests.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockAppConfigurationStore.swift
+  - apps/ios/BuyLedger/Features/App/AppLockFeature.swift
+  - apps/ios/BuyLedgerTests/CampaignFeatureTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Delete.swift
+  - apps/ios/BuyLedger/App/TelemetryService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CalendarReminderClient.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatResponse.swift
+  - apps/ios/BuyLedgerTests/AISummaryServiceTests.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/PersistenceRecoveryServiceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersRegularViewMultiSelectBaseline.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceRepository.swift
+  - apps/ios/BuyLedger/Core/Persistence/OrderPersistence.swift
+  - apps/ios/BuyLedger/App/AppLaunchConfigurator.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaChatRequest.swift
+  - apps/ios/BuyLedger/App/TelemetryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusRepository.swift
+  - apps/ios/BuyLedger/Core/Storage/PreviewUserDefaultsStore.swift
+  - apps/ios/BuyLedgerTests/APIErrorMappingTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Create.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewBaseline.1.png
+  - apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistence.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactViewMultiSelectBaseline.1.png
+  - apps/ios/BuyLedgerTests/Mocks/MockUserDefaultsStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Renames.swift
+  - apps/ios/BuyLedgerTests/OrderSourceServiceTests.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestDependencyOverrides.swift
+  - apps/ios/BuyLedgerTests/TestSuiteIntegrityTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Forms.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+WriteFailures.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/ServiceTestValueStrictnessTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests+Support.swift
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Preview.swift
+  - apps/ios/BuyLedger/Core/Networking/OllamaClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Writes.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteRateFeature.swift
+  - apps/ios/BuyLedgerTests/SettingsServiceTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Syntax.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewMergeContextBaseline.1.png
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests+LookupRename.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+MergeFailureMapping.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests.swift
+  - apps/ios/BuyLedger/App/TelemetryService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/TelemetryClient.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService.swift
+  - apps/ios/BuyLedgerTests/OrderMergeFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService+Dependency.swift
+  - apps/ios/BuyLedgerTests/CampaignReminderFailureTests.swift
+  - apps/ios/BuyLedger/Features/App/Data/BiometricAuthService+Dependency.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignReminderPersistence.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewRateFailureBaseline.1.png
+  - apps/ios/BuyLedgerTests/OllamaClientTests.swift
+  - apps/ios/BuyLedgerTests/CampaignPersistenceTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Data/PhotoService.swift
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameSupport.swift
+  - apps/ios/BuyLedger/Core/Persistence/LookupRecordRenamer.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Reads.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewBaseline.1.png
+  - apps/ios/BuyLedger/Core/Environment/RuntimeEnvironment.swift
+  - apps/ios/BuyLedgerTests/QuoteFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxViewBaseline.1.png
+  - apps/ios/BuyLedgerTests/ExchangeRateClientTests.swift
+  - apps/ios/BuyLedgerTests/SchemaMigrationTests.swift
+  - apps/ios/BuyLedger/Features/AISummary/Data/OllamaChatResponse.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/insightsView_一般洞察資料_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxView_已載入匯率快照_顯示連線狀態.1.png
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Lexing.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService+Preview.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanScenario+SharedCases.swift
+  - apps/ios/BuyLedgerTests/CategoryServiceTests.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Fixtures.swift
+  - apps/ios/BuyLedger/Core/Persistence/CampaignPersistence.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService+Dependency.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/quoteView_沒有可用匯率_顯示錯誤狀態.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/blBarChart_近三十天資料_捲動停在最新日期.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/fxView_匯率載入失敗_顯示錯誤橫幅與重試鍵.1.png
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataRepository.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodCorrectionFeatureTests.swift
+  - apps/ios/BuyLedgerTests/PaymentMethodServiceTests+ApplyEdit.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedgerTests/Mocks/MockBuyLedgerDatabase.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/persistenceFailureView_持久化錯誤_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceStoreQuarantineClient.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryRepository.swift
+  - apps/ios/BuyLedgerTests/LookupManagementFeatureTests+AlertTiming.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+DeleteFailure.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditViewLongIdentifierBaseline.1.png
+  - apps/ios/BuyLedgerTests/SettingsFeatureTests.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStore+Dependency.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient.swift
+  - apps/ios/BuyLedger/Core/Persistence/PersistenceContainer.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService+Preview.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+RenameFailures.swift
+  - apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Dependency.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CampaignService.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStore.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CurrencyMetadataService.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Core/Networking/AppConfiguration.swift
+  - apps/ios/BuyLedger/Core/Storage/UserDefaultsStoreProtocol.swift
+  - apps/ios/BuyLedgerTests/ExchangeRateServiceTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFocusTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceResidueTests.swift
+  - apps/ios/BuyLedger/Core/Persistence/StorageFailureWrapping.swift
+  - apps/ios/BuyLedger/Core/Networking/PreviewHTTPClient.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService+Preview.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderEditView_長訂單識別碼_顯示短識別碼.1.png
+  - apps/ios/BuyLedgerTests/OrderPersistenceTests+LookupRenameFailures.swift
+  - apps/ios/BuyLedgerTests/DependencyConventionScanTests+Matching.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/orderDetailCostBreakdownBaseline.1.png
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService+Dependency.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Decoding.swift
+  - apps/ios/BuyLedger/Core/Storage/AppConfigurationStore+Dependency.swift
+  - apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService+Preview.swift
+  - apps/ios/BuyLedgerTests/AppConfigurationTests.swift
+  - apps/ios/BuyLedgerTests/OrderServiceTests+Renames.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+SaveFailure.swift
+  - apps/ios/BuyLedger/Core/Dependencies/CategoryService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ExchangeRateService.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Preview.swift
+  - apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Dependency.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests/dashboardView_一般儀表板資料_符合基準圖.1.png
+  - apps/ios/BuyLedger.xctestplan
+  - apps/ios/BuyLedger/Core/Dependencies/PhotoImportResult.swift
+  - apps/ios/BuyLedger/Features/Lookups/PaymentMethodCorrectionFeature.swift
+  - apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests+WriteFailures.swift
+  - apps/ios/BuyLedgerTests/StorageFailureWrappingTests.swift
+  - apps/ios/BuyLedger/Features/FX/FxFeature.swift
+  - apps/ios/BuyLedger/Core/Networking/ExchangeRateEndpoint.swift
+  - apps/ios/BuyLedgerTests/SettingsStoreTests.swift
+  - apps/ios/BuyLedgerTests/CampaignServiceTests+Decoding.swift
+  - apps/ios/BuyLedger/Core/Networking/HTTPClient+Dependency.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/OpenSettingsService+Dependency.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderLink.swift
+  - apps/ios/BuyLedgerTests/CurrencyMetadataCacheTests.swift
+-->

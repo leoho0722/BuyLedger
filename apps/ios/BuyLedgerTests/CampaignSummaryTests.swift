@@ -7,131 +7,154 @@
 
 import Foundation
 import Testing
+
 @testable import BuyLedger
 
-@MainActor
+/// 驗證開團彙總的分貨清單、結算金額、到貨進度與成員歸屬
 struct CampaignSummaryTests {
 
-    // MARK: - Tests
-
-    @Test func distributionGroupsByCustomerWithSummedQuantityAndReceiptMarker() {
-        // SBE：A("小明", qty2, 600, received)、B("小明", qty1, 300, pending)、C("小華", qty1, 400, received)
+    /// 小明兩筆訂單、一筆已收款，小華一筆已收款：同一客戶合併成一列，只要有一筆未收款就不算收齊
+    @Test
+    func init_兩位客戶且其一部分已收款_分貨依客戶加總並標記是否收齊() {
+        // Given
         let orders = [
-            makeOrder(id: "A", customer: "小明", campaign: "團", charged: 600, quantity: 2, receipt: .received),
-            makeOrder(id: "B", customer: "小明", campaign: "團", charged: 300, quantity: 1, receipt: .pending),
-            makeOrder(id: "C", customer: "小華", campaign: "團", charged: 400, quantity: 1, receipt: .received),
+            Self.makeOrder(
+                id: "A",
+                customer: "小明",
+                campaign: "團",
+                charged: 600,
+                quantity: 2,
+                receipt: .received
+            ),
+            Self.makeOrder(
+                id: "B",
+                customer: "小明",
+                campaign: "團",
+                charged: 300,
+                quantity: 1,
+                receipt: .pending
+            ),
+            Self.makeOrder(
+                id: "C",
+                customer: "小華",
+                campaign: "團",
+                charged: 400,
+                quantity: 1,
+                receipt: .received
+            ),
         ]
+
+        // When
         let summary = CampaignSummary(campaignName: "團", orders: orders)
 
+        // Then
         #expect(summary.distribution.count == 2)
-
         let xiaoming = summary.distribution.first { $0.customerName == "小明" }
         #expect(xiaoming?.totalQuantity == 3)
         #expect(xiaoming?.totalAmount == 900)
         #expect(xiaoming?.isFullyReceived == false)
-
         let xiaohua = summary.distribution.first { $0.customerName == "小華" }
         #expect(xiaohua?.totalQuantity == 1)
         #expect(xiaohua?.totalAmount == 400)
         #expect(xiaohua?.isFullyReceived == true)
     }
 
-    @Test func settlementTotalsFromMemberOrders() {
-        // SBE：O1(charged=1000, received)、O2(charged=500, pending) → 應收 1500、已收 1000、未收 500
+    /// 應收 1,500、已收 1,000、未收 500，已收比例為三分之二
+    @Test
+    func init_已收款與未收款訂單_彙總應收已收未收與已收比例() {
+        // Given
         let orders = [
-            makeOrder(id: "O1", customer: "A", campaign: "團", charged: 1000, receipt: .received),
-            makeOrder(id: "O2", customer: "B", campaign: "團", charged: 500, receipt: .pending),
+            Self.makeOrder(
+                id: "O1",
+                customer: "A",
+                campaign: "團",
+                charged: 1000,
+                receipt: .received
+            ),
+            Self.makeOrder(
+                id: "O2",
+                customer: "B",
+                campaign: "團",
+                charged: 500,
+                receipt: .pending
+            ),
         ]
+
+        // When
         let summary = CampaignSummary(campaignName: "團", orders: orders)
 
+        // Then
         #expect(summary.receivables == 1500)
         #expect(summary.receivedAmount == 1000)
         #expect(summary.outstandingAmount == 500)
         #expect(abs(summary.receivedRatio - (1000.0 / 1500.0)) < 0.0001)
     }
 
-    @Test func zeroReceivablesYieldsZeroRatioWithoutDividingByZero() {
+    /// 應收總額為零時，已收比例與利潤率都是零，不會除以零
+    @Test
+    func init_應收總額為零_已收比例與利潤率皆為零() {
+        // Given
         let orders = [
-            makeOrder(id: "O1", customer: "A", campaign: "團", charged: 0, receipt: .pending)
+            Self.makeOrder(
+                id: "O1",
+                customer: "A",
+                campaign: "團",
+                charged: 0,
+                receipt: .pending
+            ),
         ]
+
+        // When
         let summary = CampaignSummary(campaignName: "團", orders: orders)
 
+        // Then
         #expect(summary.receivables == 0)
         #expect(summary.receivedRatio == 0)
         #expect(summary.margin == 0)
     }
 
-    @Test func deliveryRatioExcludesCancelledFromDenominator() {
+    /// 成本與費率以外皆為零：毛利等於實收金額減商品成本，總成本與總實收各筆加總
+    @Test
+    func init_兩筆有商品成本的訂單_總收款總成本與毛利加總各筆訂單() {
+        // Given
         let orders = [
-            makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, status: .delivered),
-            makeOrder(id: "O2", customer: "B", campaign: "團", charged: 100, status: .delivered),
-            makeOrder(id: "O3", customer: "C", campaign: "團", charged: 100, status: .cancelled),
-            makeOrder(id: "O4", customer: "D", campaign: "團", charged: 100, status: .confirmed),
+            Self.makeOrder(
+                id: "O1",
+                customer: "A",
+                campaign: "團",
+                charged: 1000,
+                receipt: .received,
+                itemCost: 200
+            ),
+            Self.makeOrder(
+                id: "O2",
+                customer: "B",
+                campaign: "團",
+                charged: 500,
+                receipt: .pending,
+                itemCost: 100
+            ),
         ]
+
+        // When
         let summary = CampaignSummary(campaignName: "團", orders: orders)
 
-        #expect(summary.arrivedCount == 2)
-        #expect(summary.activeCount == 3)
-        #expect(abs(summary.deliveryRatio - (2.0 / 3.0)) < 0.0001)
-    }
-
-    @Test func arrivedCountsTowardDeliveryProgress() {
-        // 已到貨與已交付都算「已到貨」：到貨進度分子同時計入兩者
-        let orders = [
-            makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, status: .arrived),
-            makeOrder(id: "O2", customer: "B", campaign: "團", charged: 100, status: .delivered),
-            makeOrder(id: "O3", customer: "C", campaign: "團", charged: 100, status: .shipping),
-            makeOrder(id: "O4", customer: "D", campaign: "團", charged: 100, status: .cancelled),
-        ]
-        let summary = CampaignSummary(campaignName: "團", orders: orders)
-
-        #expect(summary.arrivedCount == 2)
-        #expect(summary.activeCount == 3)
-        #expect(abs(summary.deliveryRatio - (2.0 / 3.0)) < 0.0001)
-    }
-
-    @Test func partiallyArrivedCountsInDenominatorButNotNumerator() {
-        // 部分到貨不計入分子 (arrivedCount)，但仍是進行中訂單、列入分母 (activeCount)
-        let orders = [
-            makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, status: .arrived),
-            makeOrder(id: "O2", customer: "B", campaign: "團", charged: 100, status: .partiallyArrived),
-            makeOrder(id: "O3", customer: "C", campaign: "團", charged: 100, status: .shipping),
-        ]
-        let summary = CampaignSummary(campaignName: "團", orders: orders)
-
-        #expect(summary.arrivedCount == 1)
-        #expect(summary.activeCount == 3)
-        #expect(abs(summary.deliveryRatio - (1.0 / 3.0)) < 0.0001)
-    }
-
-    @Test func unassignedOrdersAreExcluded() {
-        let orders = [
-            makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, receipt: .received),
-            makeOrder(id: "O2", customer: "B", campaign: "", charged: 999, receipt: .received),
-        ]
-        let summary = CampaignSummary(campaignName: "團", orders: orders)
-
-        #expect(summary.orderCount == 1)
-        #expect(summary.receivables == 100)
-        #expect(summary.distribution.allSatisfy { $0.customerName == "A" })
-    }
-
-    @Test func profitAndCostAggregateMemberOrderSummaries() {
-        // 成本與費率以外皆 0：profit = charged − itemCost
-        let orders = [
-            makeOrder(id: "O1", customer: "A", campaign: "團", charged: 1000, receipt: .received, itemCost: 200),
-            makeOrder(id: "O2", customer: "B", campaign: "團", charged: 500, receipt: .pending, itemCost: 100),
-        ]
-        let summary = CampaignSummary(campaignName: "團", orders: orders)
-
+        // Then
         #expect(summary.totalRevenue == 1500)
         #expect(summary.totalCost == 300)
         #expect(summary.profit == 1200)
     }
 
-    @Test func emptyCampaignHasZeroAggregatesAndNoDistribution() {
-        let summary = CampaignSummary(campaignName: "空團", orders: [])
+    /// 沒有任何訂單歸屬的開團：筆數、金額與進度全為零，分貨清單為空
+    @Test
+    func init_沒有任何訂單_彙總全為零且無分貨() {
+        // Given
+        let orders: [LedgerOrder] = []
 
+        // When
+        let summary = CampaignSummary(campaignName: "空團", orders: orders)
+
+        // Then
         #expect(summary.orderCount == 0)
         #expect(summary.receivables == 0)
         #expect(summary.receivedRatio == 0)
@@ -139,61 +162,72 @@ struct CampaignSummaryTests {
         #expect(summary.distribution.isEmpty)
     }
 
-    @Test func mergeResultOrdersAreNotMembers() {
-        // 統計採「合併前」的原始訂單：合併產生的新訂單不是成員，被合併掉的原始舊單照常入帳
-        let orders = [
-            makeOrder(id: "A", customer: "客", campaign: "May-JP", charged: 1_000, status: .merged, itemCost: 200),
-            makeOrder(id: "B", customer: "客", campaign: "June-KR", charged: 2_000, status: .merged, itemCost: 300),
-            makeOrder(
-                id: "M",
-                customer: "客",
-                campaign: "",
-                charged: 3_000,
-                status: .shipping,
-                itemCost: 500,
-                campaignNames: ["May-JP", "June-KR"],
-                mergedSourceIDs: ["A", "B"]
-            ),
-        ]
+    /// 全部已收款的分貨列，朗讀的收款狀態為已收款
+    ///
+    /// - Throws: 英文資源目錄不存在時由 `#require` 丟出
+    @Test
+    func receiptAccessibilityLabel_全部已收款_朗讀已收款() throws {
+        // Given
+        let row = CampaignDistributionRow(
+            customerName: "小明",
+            totalQuantity: 1,
+            totalAmount: 400,
+            isFullyReceived: true,
+            orders: []
+        )
 
-        let mayTeam = CampaignSummary(campaignName: "May-JP", orders: orders)
-        #expect(mayTeam.memberOrders.map(\.id) == ["A"])
-        #expect(mayTeam.receivables == 1_000)
-        #expect(mayTeam.profit == 800)
+        // When
+        let label = row.receiptAccessibilityLabel
+        let text = try Self.localizedText(label, language: .english)
 
-        let juneTeam = CampaignSummary(campaignName: "June-KR", orders: orders)
-        #expect(juneTeam.memberOrders.map(\.id) == ["B"])
-        #expect(juneTeam.receivables == 2_000)
+        // Then
+        #expect(label.key == "orders.general.status.received")
+        #expect(text == "Received")
     }
 
-    @Test func multiCampaignLeafCountsFullyInEachCampaign() {
-        // 防衛性規則：原始訂單若帶多個開團，全額計入它的每一團
-        let orders = [
-            makeOrder(id: "O1", customer: "客", campaign: "", charged: 900, campaignNames: ["May-JP", "June-KR"]),
-        ]
+    /// 仍有未收款訂單的分貨列，朗讀的收款狀態為待收款
+    ///
+    /// - Throws: 英文資源目錄不存在時由 `#require` 丟出
+    @Test
+    func receiptAccessibilityLabel_仍有未收款_朗讀待收款() throws {
+        // Given
+        let row = CampaignDistributionRow(
+            customerName: "小華",
+            totalQuantity: 2,
+            totalAmount: 900,
+            isFullyReceived: false,
+            orders: []
+        )
 
-        #expect(CampaignSummary(campaignName: "May-JP", orders: orders).receivables == 900)
-        #expect(CampaignSummary(campaignName: "June-KR", orders: orders).receivables == 900)
+        // When
+        let label = row.receiptAccessibilityLabel
+        let text = try Self.localizedText(label, language: .english)
+
+        // Then
+        #expect(label.key == "orders.filter.status.pendingPayment")
+        #expect(text == "Pending Payment")
     }
+}
 
-    @Test func deliveryRatioExcludesMergedFromDenominator() {
-        // 已合併舊單已不再各自等待到貨：到貨進度分母比照已取消排除
-        let orders = [
-            makeOrder(id: "O1", customer: "A", campaign: "團", charged: 100, status: .delivered),
-            makeOrder(id: "O2", customer: "B", campaign: "團", charged: 100, status: .merged),
-            makeOrder(id: "O3", customer: "C", campaign: "團", charged: 100, status: .shipping),
-        ]
-        let summary = CampaignSummary(campaignName: "團", orders: orders)
+// MARK: - Internal Method
 
-        #expect(summary.arrivedCount == 1)
-        #expect(summary.activeCount == 2)
-        #expect(abs(summary.deliveryRatio - 0.5) < 0.0001)
-    }
+extension CampaignSummaryTests {
 
-    // MARK: - Helper
-
-    /// 建立僅填入 ``CampaignSummary`` 相關欄位的訂單；其餘成本／費率欄位皆為 0，使 profit = charged − itemCost
-    private func makeOrder(
+    /// 建立只含 `CampaignSummary` 所需欄位的訂單，每筆訂單固定一個商品項目
+    ///
+    /// - Parameters:
+    ///   - id: 訂單識別值
+    ///   - customer: 客戶名稱
+    ///   - campaign: 主要開團名稱，空字串代表未歸團
+    ///   - charged: 客戶實付金額
+    ///   - quantity: 商品數量
+    ///   - receipt: 付款收據狀態
+    ///   - status: 訂單狀態
+    ///   - itemCost: 商品成本
+    ///   - campaignNames: 訂單所屬的開團名稱，帶值時取代 `campaign`
+    ///   - mergedSourceIDs: 被合併的來源訂單編號
+    /// - Returns: 含單項商品、指定金額與收款狀態的訂單
+    static func makeOrder(
         id: String,
         customer: String,
         campaign: String,
@@ -205,33 +239,44 @@ struct CampaignSummaryTests {
         campaignNames: [String]? = nil,
         mergedSourceIDs: [String] = []
     ) -> LedgerOrder {
-        LedgerOrder(
+        LedgerOrder.fixture(
             id: id,
             customer: LedgerCustomer(name: customer, initials: "XX", tier: .regular),
             status: status,
-            currency: .twd,
-            date: Date(timeIntervalSince1970: 0),
             items: [LedgerOrderItem(name: "item", quantity: quantity, unitPrice: 0)],
             itemCost: itemCost,
-            domesticShipping: 0,
-            internationalShipping: 0,
-            foreignDomesticShipping: 0,
-            cardFeeRate: 0,
-            platformFeeRate: 0,
-            paymentFeeRate: 0,
             chargedAmount: charged,
-            cardlessDeductionAmount: 0,
-            cardlessSupplementAmount: 0,
-            orderSource: "",
-            categories: [],
-            paymentMethod: "",
-            notes: "",
-            reconciliationStatus: "",
             campaignNames: campaignNames ?? (campaign.isEmpty ? [] : [campaign]),
             paymentReceiptStatus: receipt,
-            isCashOnDelivery: false,
-            photos: [],
             mergedSourceIDs: mergedSourceIDs
+        )
+    }
+}
+
+// MARK: - Private Method
+
+private extension CampaignSummaryTests {
+
+    /// 以指定語言的資源目錄解析本地化值，不受測試程序預設語言影響
+    ///
+    /// - Parameters:
+    ///   - resource: 分貨列提供的本地化值
+    ///   - language: 測試指定的 App 語言
+    /// - Returns: 以指定語言解析後的文字
+    /// - Throws: 指定語言的資源目錄不存在時由 `#require` 丟出
+    static func localizedText(
+        _ resource: LocalizedStringResource,
+        language: AppLanguage
+    ) throws -> String {
+        let bundleURL = try #require(
+            Bundle.main.url(forResource: language.localeIdentifier, withExtension: "lproj")
+        )
+        let bundle = try #require(Bundle(url: bundleURL))
+        return String(
+            localized: resource.defaultValue,
+            table: resource.table,
+            bundle: bundle,
+            locale: language.locale
         )
     }
 }

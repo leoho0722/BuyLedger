@@ -1,0 +1,116 @@
+== [A] apps/ios/BuyLedger/App/Testing/DependencyValues+BLUITestOverrides.swift (2)
+   L197 WCL closure 簽章行寬 102 (formatting 允許，不計入失敗)
+   L228 WCL closure 簽章行寬 111 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedger/Features/Campaigns/CampaignPresentationFeature+Destination.swift (1)
+   L185 W 行寬 155
+== [A] apps/ios/BuyLedger/Features/Campaigns/CampaignReminderFeature.swift (1)
+   L65 WSIG enum case 宣告行寬 128 (formatting.md:39 維持一行，不計入失敗)
+== [A] apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift (1)
+   L1 LENB 不含檔頭與空行 359 行
+== [A] apps/ios/BuyLedger/Features/Orders/OrdersPresentationFeature.swift (1)
+   L123 WSIG enum case 宣告行寬 107 (formatting.md:39 維持一行，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/CampaignFeatureTests+DeletionReminder.swift (2)
+   L174 WCL closure 簽章行寬 121 (formatting 允許，不計入失敗)
+   L220 W 行寬 107
+== [A] apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Failures.swift (6)
+   L64 WCL closure 簽章行寬 112 (formatting 允許，不計入失敗)
+   L89 WCL closure 簽章行寬 112 (formatting 允許，不計入失敗)
+   L114 WCL closure 簽章行寬 112 (formatting 允許，不計入失敗)
+   L138 WCL closure 簽章行寬 110 (formatting 允許，不計入失敗)
+   L170 WCL closure 簽章行寬 112 (formatting 允許，不計入失敗)
+   L198 WCL closure 簽章行寬 112 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Rebuild.swift (1)
+   L256 WCL closure 簽章行寬 126 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Removal.swift (2)
+   L23 WCL closure 簽章行寬 126 (formatting 允許，不計入失敗)
+   L157 WCL closure 簽章行寬 126 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/LookupManagementFeatureTests+AlertTiming.swift (7)
+   L23 W 行寬 109
+   L32 W 行寬 102
+   L37 W 行寬 117
+   L58 W 行寬 102
+   L62 W 行寬 117
+   L87 W 行寬 103
+   L92 W 行寬 118
+== [A] apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Failures.swift (11)
+   L29 WCL closure 簽章行寬 106 (formatting 允許，不計入失敗)
+   L51 W 行寬 103
+   L56 W 行寬 102
+   L117 W 行寬 104
+   L138 WCL closure 簽章行寬 112 (formatting 允許，不計入失敗)
+   L161 W 行寬 105
+   L163 W 行寬 120
+   L196 WCL closure 簽章行寬 108 (formatting 允許，不計入失敗)
+   L199 WCL closure 簽章行寬 101 (formatting 允許，不計入失敗)
+   L202 WCL closure 簽章行寬 118 (formatting 允許，不計入失敗)
+   L205 WCL closure 簽章行寬 137 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/LookupManagementFeatureTests+PaymentMethodCorrection.swift (7)
+   L43 W 行寬 114
+   L192 WCL closure 簽章行寬 101 (formatting 允許，不計入失敗)
+   L259 W 行寬 108
+   L263 W 行寬 123
+   L298 WCL closure 簽章行寬 133 (formatting 允許，不計入失敗)
+   L315 W 行寬 107
+   L319 W 行寬 122
+== [A] apps/ios/BuyLedgerTests/MoreFeatureTests+Relays.swift (1)
+   L113 W 行寬 110
+== [A] apps/ios/BuyLedgerTests/OrderServiceResidueTests.swift (1)
+   L70 W 行寬 107
+== [A] apps/ios/BuyLedgerTests/OrdersFeatureTests+Create.swift (1)
+   L212 W 行寬 120
+== [A] apps/ios/BuyLedgerTests/OrdersFeatureTests+DeleteEditFailures.swift (2)
+   L46 W 行寬 104
+   L122 W 行寬 102
+== [A] apps/ios/BuyLedgerTests/OrdersFeatureTests+MergeWrites.swift (3)
+   L91 W 行寬 124
+   L92 W 行寬 111
+   L99 W 行寬 103
+== [A] apps/ios/BuyLedgerTests/OrdersFeatureTests+OptionWriteFailures.swift (5)
+   L61 W 行寬 124
+   L62 W 行寬 111
+   L78 W 行寬 112
+   L87 W 行寬 103
+   L91 W 行寬 118
+== [A] apps/ios/BuyLedgerTests/OrdersFeatureTests+SaveFailureTiming.swift (5)
+   L40 W 行寬 121
+   L41 W 行寬 108
+   L53 W 行寬 115
+   L88 W 行寬 121
+   L92 W 行寬 115
+== [A] apps/ios/BuyLedgerTests/OrdersFeatureTests+StatusFailures.swift (3)
+   L30 W 行寬 107
+   L104 W 行寬 109
+   L186 W 行寬 106
+== [A] apps/ios/BuyLedgerTests/OrdersFeatureTests.swift (4)
+   L72 WCL closure 簽章行寬 109 (formatting 允許，不計入失敗)
+   L77 WCL closure 簽章行寬 102 (formatting 允許，不計入失敗)
+   L82 WCL closure 簽章行寬 123 (formatting 允許，不計入失敗)
+   L87 WCL closure 簽章行寬 124 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/OrdersLoadFeatureTests.swift (1)
+   L224 WCL closure 簽章行寬 112 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/PaymentMethodCorrectionFeatureTests.swift (3)
+   L1 LEN 不含檔頭與空行 466 行
+   L258 WCL closure 簽章行寬 154 (formatting 允許，不計入失敗)
+   L486 WCL closure 簽章行寬 101 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/RootFeatureTests+CampaignLoading.swift (1)
+   L145 WCL closure 簽章行寬 112 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/RootFeatureTests+CurrencyCodes.swift (3)
+   L78 WCL closure 簽章行寬 107 (formatting 允許，不計入失敗)
+   L176 WCL closure 簽章行寬 112 (formatting 允許，不計入失敗)
+   L200 WCL closure 簽章行寬 101 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/RootFeatureTests+LookupSync.swift (1)
+   L229 WCL closure 簽章行寬 108 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/RootFeatureTests+PaymentMethodCorrection.swift (4)
+   L125 W 行寬 116
+   L146 W 行寬 117
+   L204 W 行寬 115
+   L227 WCL closure 簽章行寬 125 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/RootFeatureTests+SharedOrders.swift (1)
+   L90 W 行寬 101
+== [A] apps/ios/BuyLedgerTests/ServiceTestValueStrictnessTests.swift (5)
+   L23 WCL closure 簽章行寬 113 (formatting 允許，不計入失敗)
+   L28 WCL closure 簽章行寬 104 (formatting 允許，不計入失敗)
+   L33 WCL closure 簽章行寬 106 (formatting 允許，不計入失敗)
+   L38 WCL closure 簽章行寬 127 (formatting 允許，不計入失敗)
+   L43 WCL closure 簽章行寬 128 (formatting 允許，不計入失敗)
+TOTAL {'WCL': 38, 'W': 44, 'WSIG': 2, 'LENB': 1, 'LEN': 1} files 123 FAIL

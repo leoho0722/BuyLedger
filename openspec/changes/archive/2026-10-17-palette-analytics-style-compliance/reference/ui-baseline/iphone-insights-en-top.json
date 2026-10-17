@@ -1,0 +1,58 @@
+{
+  "schema": "mobilebuildmcp.output.capture-result",
+  "schemaVersion": "2",
+  "didError": false,
+  "error": null,
+  "data": {
+    "summary": {
+      "status": "SUCCEEDED"
+    },
+    "artifacts": {
+      "simulatorId": "DDAA3311-B464-4DD3-96B8-360B26AF1929"
+    },
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "1ctdprs",
+      "seq": 8,
+      "count": 122,
+      "targets": [
+        "e56|tap|button|1. 美妝, NT$6,915|NT$6,915|insights.categoryRank.row:美妝",
+        "e61|tap|button|2. 服飾, NT$2,505|NT$2,505|insights.categoryRank.row:服飾",
+        "e33|tap|tab|||insights.rangePicker",
+        "e34|tap|tab|30 Days|0|",
+        "e35|tap|tab|6 Months|0|",
+        "e36|tap|tab|12 Months|1|",
+        "e96|tap|tab|Overview|0|house",
+        "e98|tap|tab|Orders|0|list.bullet.rectangle",
+        "e100|tap|tab|Campaigns|0|shippingbox",
+        "e102|tap|tab|Insights|1|chart.bar.xaxis",
+        "e104|tap|tab|More|0|ellipsis.circle"
+      ],
+      "scroll": [
+        "e20|swipe|scroll-view|||insights.root",
+        "e40|swipe|scroll-view|||insights.chart.trend"
+      ],
+      "text": [
+        "e37|text|text|12-Month Net Profit||",
+        "e38|text|text|— No comparison||",
+        "e39|text|text||NT$11,412|insights.trend.totalProfit",
+        "e55|text|text|Category Ranking||",
+        "e57|text|text|1. 美妝||",
+        "e58|text|text|NT$6,915||",
+        "e62|text|text|2. 服飾||",
+        "e63|text|text|NT$2,505||",
+        "e66|text|text|Cost Structure||",
+        "e67|text|text|Total Cost||insights.chart.costDonut",
+        "e68|text|text|NT$42,368||insights.chart.costDonut"
+      ],
+      "udid": "DDAA3311-B464-4DD3-96B8-360B26AF1929"
+    }
+  },
+  "nextSteps": [
+    "Refresh after layout changes: mobilebuildmcp ui-automation snapshot-ui --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929",
+    "Wait for UI to settle: mobilebuildmcp ui-automation wait-for-ui --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929 --predicate settled",
+    "Tap an elementRef: mobilebuildmcp ui-automation tap --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929 --element-ref e56",
+    "Scroll visible content: mobilebuildmcp ui-automation swipe --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929 --within-element-ref e40 --direction up --distance 0.5"
+  ]
+}

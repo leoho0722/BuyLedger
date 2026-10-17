@@ -10,23 +10,21 @@ import SwiftUI
 /// 使用設計系統表面色、圓角與分隔線的卡片容器
 struct BLCard<Content: View>: View {
 
-    // MARK: - View Properties
-
-    /// 目前系統深淺色外觀
-    @Environment(\.colorScheme) private var colorScheme
-
-    /// 內容與卡片邊界之間的距離
-    let padding: CGFloat
-
-    /// 卡片圓角半徑
-    let radius: CGFloat
+    // MARK: - Properties
 
     /// 卡片內顯示的內容
-    let content: Content
+    private let content: Content
+
+    /// 內容與卡片邊界之間的距離
+    private let padding: CGFloat
+
+    /// 卡片圓角半徑
+    private let radius: CGFloat
 
     // MARK: - Init
 
     /// 建立卡片容器
+    ///
     /// - Parameters:
     ///   - padding: 內容與卡片邊界之間的距離
     ///   - radius: 卡片圓角半徑
@@ -41,19 +39,17 @@ struct BLCard<Content: View>: View {
         self.content = content()
     }
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 卡片的畫面內容
     var body: some View {
-        let palette = BLPalette()
-
         content
             .padding(padding)
-            .background(palette.surface)
+            .background(.blSurface)
             .clipShape(RoundedRectangle(cornerRadius: radius, style: .continuous))
             .overlay {
                 RoundedRectangle(cornerRadius: radius, style: .continuous)
-                    .stroke(palette.separator, lineWidth: 0.5)
+                    .stroke(.blSeparator, lineWidth: 0.5)
             }
             .blCardShadow()
     }
@@ -64,16 +60,16 @@ struct BLCard<Content: View>: View {
 #Preview("卡片") {
     BLCard {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text("本月支出")
+            Text("common.ui.label.spendingMonth")
                 .blTextStyle(.headline)
 
-            Text("$12,480")
+            Text(verbatim: "$12,480")
                 .blTextStyle(.title2)
                 .monospacedDigit()
 
-            Text("較上月減少 8%")
+            Text("common.ui.label.eightLowerThan")
                 .blTextStyle(.footnote)
-                .foregroundStyle(.secondary)
+                .foregroundStyle(.blSecondaryLabel)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

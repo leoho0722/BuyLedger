@@ -7,12 +7,11 @@
 
 import Foundation
 
-// MARK: - Static Properties
+// MARK: - Properties
 
 extension OrderStatus {
 
     /// 視為「已實現」的訂單狀態集合，為收益統計的單一事實來源
-    /// 「已合併」與「已取消」「報價中」同樣不屬於已實現，避免合併後重複計算收益
     static let realizedStatuses: Set<OrderStatus> = [
         .confirmed,
         .purchased,
@@ -22,9 +21,16 @@ extension OrderStatus {
         .delivered,
         .pickedUp,
     ]
+
+    /// 視為「已到貨」的訂單狀態集合，為開團到貨進度的單一事實來源
+    static let deliveryStatuses: Set<OrderStatus> = [
+        .arrived,
+        .delivered,
+        .pickedUp,
+    ]
 }
 
-// MARK: - Display Properties
+// MARK: - Computed Properties
 
 extension OrderStatus {
 
@@ -32,25 +38,25 @@ extension OrderStatus {
     var title: String {
         switch self {
         case .quoting:
-            "報價中"
+            "customers.list.label.quoting"
         case .confirmed:
-            "已確認"
+            "orders.detail.label.confirmed"
         case .purchased:
-            "已下單"
+            "common.general.label.purchased"
         case .shipping:
-            "集運中"
+            "orders.list.label.consolidating"
         case .partiallyArrived:
-            "部分到貨"
+            "common.general.label.partiallyArrived"
         case .arrived:
-            "已到貨"
+            "campaigns.detail.status.arrived"
         case .delivered:
-            "已交付"
+            "common.general.label.delivered"
         case .pickedUp:
-            "已取貨"
+            "common.general.label.pickedUp"
         case .cancelled:
-            "已取消"
+            "orders.merge.label.canceled"
         case .merged:
-            "已合併"
+            "orders.list.label.merged"
         }
     }
 }

@@ -21,26 +21,28 @@ extension LedgerOrderItem {
 
 extension LedgerOrderItem: Codable {
 
-    // MARK: CodingKeys
+    // MARK: - Nested Types
 
     /// `Codable` 使用的鍵；刻意排除 `id`
-    ///
-    /// 讓既有的持久化資料也能被讀回 (缺 id 時自動產生新的 UUID)，同時避免每次寫入都把 UUID 漏進 JSON
     private enum CodingKeys: String, CodingKey {
 
+        /// 商品名稱
         case name
 
+        /// 商品數量
         case quantity
 
+        /// 商品單價
         case unitPrice
     }
 
-    // MARK: Init
+    // MARK: - Init
 
-    /// 從 decoder 還原
+    /// 從解碼器還原訂單項目
     ///
-    /// 因生成的 init 對 `id` 帶有 `= UUID()` 預設，未提供 `id` 欄位的資料來源 (例如舊版本寫入的 SwiftData blob) 會自動補上新的 ``UUID``
-    init(from decoder: Decoder) throws {
+    /// - Parameter decoder: 用來讀取訂單項目的解碼器
+    /// - Throws: 解碼器無法讀取訂單項目時拋出錯誤
+    init(from decoder: Decoder) throws(any Error) {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         let name = try container.decode(String.self, forKey: .name)
         let quantity = try container.decode(Int.self, forKey: .quantity)
@@ -48,8 +50,11 @@ extension LedgerOrderItem: Codable {
         self.init(name: name, quantity: quantity, unitPrice: unitPrice)
     }
 
-    /// 編碼成 JSON / SwiftData blob，刻意不寫出 `id` 欄位
-    func encode(to encoder: Encoder) throws {
+    /// 將訂單項目編碼成 JSON 或 `SwiftData` 資料
+    ///
+    /// - Parameter encoder: 用來寫入訂單項目的編碼器
+    /// - Throws: 編碼器無法寫入訂單項目時拋出錯誤
+    func encode(to encoder: Encoder) throws(any Error) {
         var container = encoder.container(keyedBy: CodingKeys.self)
         try container.encode(name, forKey: .name)
         try container.encode(quantity, forKey: .quantity)

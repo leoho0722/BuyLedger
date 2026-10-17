@@ -24,7 +24,7 @@ rules:
   proposal:
     - 請使用正體中文進行撰寫
   specs:
-    - 請使用正體中文進行撰寫
+    - 目的段落請使用正體中文；requirement 與 scenario 正文維持英文
     - 使用 Given/When/Then 格式
   tasks:
     - 請使用正體中文進行撰寫

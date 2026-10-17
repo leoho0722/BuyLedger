@@ -1,0 +1,719 @@
+== [A] apps/ios/BuyLedger/Features/AISummary/AISummaryView.swift (1)
+   L95 SWC switch case 之間缺空行：case .idle, .streaming, .finished:
+== [A] apps/ios/BuyLedger/Features/App/PersistenceFailureView.swift (1)
+   L49 W 行寬 117
+== [A] apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift (3)
+   L38 W 行寬 152
+   L71 W 行寬 122
+   L74 W 行寬 121
+== [A] apps/ios/BuyLedger/Features/Campaigns/Components/CampaignDetailDistributionSection.swift (2)
+   L107 ARG4 一行內有 4 個引數或參數，超過三個要斷行：AppLanguage.format("", row.totalQuantity, Campaign
+   L107 W 行寬 171
+== [A] apps/ios/BuyLedger/Features/Campaigns/Components/CampaignDetailInfoSection.swift (3)
+   L64 W 行寬 103
+   L80 W 行寬 126
+   L84 W 行寬 130
+== [A] apps/ios/BuyLedger/Features/Campaigns/Components/CampaignDetailSettlementSection.swift (5)
+   L51 W 行寬 127
+   L59 W 行寬 119
+   L98 W 行寬 121
+   L103 W 行寬 120
+   L108 W 行寬 122
+== [A] apps/ios/BuyLedger/Features/Customers/Components/CustomerListRow.swift (1)
+   L70 W 行寬 112
+== [A] apps/ios/BuyLedger/Features/Customers/Components/CustomerTopCard.swift (1)
+   L69 W 行寬 116
+== [A] apps/ios/BuyLedger/Features/Customers/CustomerRankBadgeStyle.swift (6)
+   L35 SWC switch case 之間缺空行：case 2:
+   L37 SWC switch case 之間缺空行：default:
+   L50 SWC switch case 之間缺空行：case .second:
+   L52 SWC switch case 之間缺空行：case .other:
+   L65 SWC switch case 之間缺空行：case .second:
+   L67 SWC switch case 之間缺空行：case .other:
+== [A] apps/ios/BuyLedger/Features/Customers/CustomersView.swift (3)
+   L103 W 行寬 138
+   L129 W 行寬 111
+   L144 W 行寬 142
+== [A] apps/ios/BuyLedger/Features/Dashboard/DashboardHeroCard.swift (8)
+   L80 W 行寬 113
+   L114 W 行寬 107
+   L141 ARG4 一行內有 5 個引數或參數，超過三個要斷行：return LocalizedStringKey(AppLanguage.format("", p
+   L141 W 行寬 142
+   L144 ARG4 一行內有 5 個引數或參數，超過三個要斷行：return LocalizedStringKey(AppLanguage.format("", p
+   L144 W 行寬 144
+   L146 ARG4 一行內有 5 個引數或參數，超過三個要斷行：return LocalizedStringKey(AppLanguage.format("", p
+   L146 W 行寬 140
+== [A] apps/ios/BuyLedger/Features/Dashboard/DashboardKPITiles.swift (1)
+   L84 W 行寬 143
+== [A] apps/ios/BuyLedger/Features/Dashboard/DashboardStats.swift (18)
+   L13 MK1 MARK 段名：Data Properties
+   L57 MK1 MARK 段名：Static Properties
+   L74 DOCBL 摘要與參數標記之間缺空的 ///
+   L79 ARG4 一行內有 4 個引數或參數，超過三個要斷行：init(orders: [LedgerOrder], monthlyGoal: Decimal, 
+   L114 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L135 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 93 字元)：self.costDelta = DashboardStats.ratio(
+   L139 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 99 字元)：self.profitDelta = DashboardStats.ratio(
+   L154 MK1 MARK 段名：Data Properties
+   L154 MKN 巢狀型別內的 MARK：Data Properties
+   L171 MK1 MARK 段名：Static Properties
+   L171 MKN 巢狀型別內的 MARK：Static Properties
+   L189 DOCBL 摘要與參數標記之間缺空的 ///
+   L203 NAMED1 單一表達式的 closure 用 $0，不用具名的 order
+   L228 DOCBL 摘要與參數標記之間缺空的 ///
+   L240 DOCBL 摘要與參數標記之間缺空的 ///
+   L261 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：.filter { (interval.start..<interval.end).contains($0.date) 
+   L262 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L262 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：.reduce(Decimal.zero) { $0 + $1.summary.profit }
+== [A] apps/ios/BuyLedger/Features/FX/Components/FxRatesList.swift (2)
+   L131 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 80 字元)：FxRatesList(
+   L134 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：rate: { _ in nil }
+== [A] apps/ios/BuyLedger/Features/FX/Components/FxStatusBanner.swift (4)
+   L104 W 行寬 151
+   L125 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：onRetry: {}
+   L135 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：onRetry: {}
+   L145 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：onRetry: {}
+== [A] apps/ios/BuyLedger/Features/FX/FxView.swift (8)
+   L71 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：onRetry: { store.send(.view(.retryTapped)) }
+   L170 NAMED1 單一表達式的 closure 用 $0，不用具名的 code
+   L173 NAMED1 單一表達式的 closure 用 $0，不用具名的 code
+   L176 NAMED1 單一表達式的 closure 用 $0，不用具名的 code
+   L215 WSTR 單一字串字面值行寬 115 (列出說明，不計入失敗)
+   L248 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 94 字元)：RoundedRectangle(
+   L295 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：FxView(store: Store(initialState: FxFeature.State()) { FxFea
+   L313 CALL1 未達斷行條件卻拆成多行 (1 個，接成一行 95 字元)：initialState: FxFeature.State(
+== [A] apps/ios/BuyLedger/Features/Insights/InsightsCampaignProfitCard.swift (1)
+   L74 W 行寬 131
+== [A] apps/ios/BuyLedger/Features/Insights/InsightsCategoryCard.swift (1)
+   L71 W 行寬 130
+== [A] apps/ios/BuyLedger/Features/Insights/InsightsCostStructureCard.swift (3)
+   L132 W 行寬 113
+   L133 W 行寬 115
+   L134 W 行寬 106
+== [A] apps/ios/BuyLedger/Features/Insights/InsightsDateRange.swift (10)
+   L13 MK1 MARK 段名：Cases
+   L24 MK1 MARK 段名：Identifiable Properties
+   L27 BRACE 宣告或 guard 的大括號本體壓成單行：var id: String { rawValue }
+   L29 MK1 MARK 段名：Display Properties
+   L32 MK5 型別本體內的 computed property (應放 extension)：var title: String {
+   L36 SWC switch case 之間缺空行：case .sixMonths:
+   L38 SWC switch case 之間缺空行：case .twelveMonths:
+   L44 MK5 型別本體內的 computed property (應放 extension)：var trendCardTitle: String {
+   L48 SWC switch case 之間缺空行：case .sixMonths:
+   L50 SWC switch case 之間缺空行：case .twelveMonths:
+== [A] apps/ios/BuyLedger/Features/Insights/InsightsHeatmapCard.swift (5)
+   L91 ARG4 一行內有 4 個引數或參數，超過三個要斷行：.accessibilityLabel(Text(AppLanguage.format("", we
+   L91 W 行寬 137
+   L153 ARG4 一行內有 4 個引數或參數，超過三個要斷行：.accessibilityLabel(Text(AppLanguage.format("", we
+   L153 W 行寬 137
+   L154 W 行寬 123
+== [A] apps/ios/BuyLedger/Features/Insights/InsightsStats.swift (61)
+   L1 LEN 不含檔頭與空行 364 行
+   L14 MK1 MARK 段名：Data Properties
+   L37 MK1 MARK 段名：Static Properties
+   L45 DOCBL 摘要與參數標記之間缺空的 ///
+   L69 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L77 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L78 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L79 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L80 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L81 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L95 W 行寬 112
+   L96 W 行寬 114
+   L97 W 行寬 125
+   L98 W 行寬 108
+   L111 MK1 MARK 段名：Data Properties
+   L111 MKN 巢狀型別內的 MARK：Data Properties
+   L126 DOCBL 摘要與參數標記之間缺空的 ///
+   L132 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：.map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
+   L133 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：.filter { !$0.isEmpty }
+   L134 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：.map { ($0, order) }
+   L141 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L141 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：profit: pairs.reduce(Decimal.zero) { $0 + $1.1.summary.profi
+   L144 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L148 DOCBL 摘要與參數標記之間缺空的 ///
+   L161 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L175 DOCBL 摘要與參數標記之間缺空的 ///
+   L186 D6 註解結尾句號
+   L198 W 行寬 108
+   L230 DOCBL 摘要與參數標記之間缺空的 ///
+   L249 SWC switch case 之間缺空行：case .sixMonths:
+   L252 SWC switch case 之間缺空行：case .twelveMonths:
+   L258 W 行寬 102
+   L264 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L274 DOCBL 摘要與參數標記之間缺空的 ///
+   L295 DOCBL 摘要與參數標記之間缺空的 ///
+   L313 CLA closure 簽章多標了參數型別、async 或回傳型別：offset -> TrendBucket? in
+   L320 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：.filter { (interval.start..<interval.end).contains($0.date) 
+   L321 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L321 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：.reduce(Decimal.zero) { $0 + $1.summary.profit }
+   L347 CLA closure 簽章多標了參數型別、async 或回傳型別：offset -> TrendBucket? in
+   L354 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：.filter { (interval.start..<interval.end).contains($0.date) 
+   L355 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L355 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：.reduce(Decimal.zero) { $0 + $1.summary.profit }
+   L358 WSTR 單一字串字面值行寬 102 (列出說明，不計入失敗)
+   L359 WSTR 單一字串字面值行寬 105 (列出說明，不計入失敗)
+   L360 W 行寬 113
+   L379 TOP 第二個頂層型別：struct InsightsCategory: Identifiable {
+   L381 MK1 MARK 段名：Identifiable Properties
+   L384 BRACE 宣告或 guard 的大括號本體壓成單行：var id: String { name }
+   L386 MK1 MARK 段名：Data Properties
+   L396 TOP 第二個頂層型別：struct InsightsCostSegment: Identifiable {
+   L398 MK1 MARK 段名：Identifiable Properties
+   L401 BRACE 宣告或 guard 的大括號本體壓成單行：var id: String { label }
+   L403 MK1 MARK 段名：Data Properties
+   L416 TOP 第二個頂層型別：struct HeatmapKey: Hashable {
+   L418 MK1 MARK 段名：Data Properties
+   L428 TOP 第二個頂層型別：struct CampaignProfitRank: Identifiable {
+   L430 DUP 分區重複：Identifiable Properties 於 [381, 398, 430]
+   L430 MK1 MARK 段名：Identifiable Properties
+   L435 DUP 分區重複：Data Properties 於 [14, 386, 403, 418, 435]
+   L435 MK1 MARK 段名：Data Properties
+== [A] apps/ios/BuyLedger/Features/Lookups/Components/LookupItemList.swift (4)
+   L62 CALL1 未達斷行條件卻拆成多行 (1 個，接成一行 95 字元)：.accessibilityIdentifier(
+   L79 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 90 字元)：LookupItemRow(
+   L112 W 行寬 101
+   L205 W 行寬 103
+== [A] apps/ios/BuyLedger/Features/Lookups/LookupNameEditorSheet.swift (1)
+   L189 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：) { _ in }
+== [A] apps/ios/BuyLedger/Features/Orders/Components/MergePhotoTile.swift (1)
+   L41 W 行寬 111
+== [A] apps/ios/BuyLedger/Features/Orders/Components/OrderDetailItemsView.swift (1)
+   L107 W 行寬 103
+== [A] apps/ios/BuyLedger/Features/Orders/Components/OrderDetailSummaryView.swift (1)
+   L157 W 行寬 118
+== [A] apps/ios/BuyLedger/Features/Orders/Components/OrderEditItemsSection.swift (2)
+   L63 W 行寬 124
+   L107 W 行寬 120
+== [A] apps/ios/BuyLedger/Features/Orders/Components/OrdersCompactListView.swift (1)
+   L90 W 行寬 111
+== [A] apps/ios/BuyLedger/Features/Orders/Components/OrdersToolbarContent.swift (1)
+   L64 W 行寬 122
+== [A] apps/ios/BuyLedger/Features/Orders/OrderEditPhotosSection.swift (4)
+   L95 W 行寬 129
+   L115 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Text(AppLanguage.format("", store.draftPhotos.coun
+   L115 W 行寬 138
+   L120 W 行寬 115
+== [A] apps/ios/BuyLedger/Features/Orders/OrdersRegularDetailColumn.swift (1)
+   L41 W 行寬 102
+== [A] apps/ios/BuyLedger/Features/Orders/OrdersRegularListColumn.swift (1)
+   L101 W 行寬 105
+== [A] apps/ios/BuyLedger/Features/Quote/Components/QuoteBreakdownCard.swift (7)
+   L63 W 行寬 113
+   L82 NAMED1 單一表達式的 closure 用 $0，不用具名的 item
+   L160 W 行寬 104
+   L161 W 行寬 114
+   L167 W 行寬 106
+   L168 W 行寬 120
+   L169 W 行寬 114
+== [A] apps/ios/BuyLedger/Features/Quote/Components/QuoteInputsCard.swift (9)
+   L68 ARG4 一行內有 4 個引數或參數，超過三個要斷行：numberField("", $domesticShipping, currencyCode, a
+   L68 W 行寬 126
+   L69 W 行寬 133
+   L70 ARG4 一行內有 4 個引數或參數，超過三個要斷行：numberField("", $cardFeePercent, "", fractionDigit
+   L71 ARG4 一行內有 4 個引數或參數，超過三個要斷行：numberField("", $paymentFeePercent, "", fractionDi
+   L71 W 行寬 115
+   L72 ARG4 一行內有 4 個引數或參數，超過三個要斷行：numberField("", $platformFeePercent, "", fractionD
+   L72 W 行寬 107
+   L196 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：onCurrencyPickerTapped: {}
+== [A] apps/ios/BuyLedger/Features/Quote/Components/QuoteStatusBanner.swift (3)
+   L131 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：onRetry: {}
+   L141 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：onRetry: {}
+   L151 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：onRetry: {}
+== [A] apps/ios/BuyLedger/Features/Quote/QuoteView.swift (9)
+   L71 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：onRetry: { store.send(.view(.retryTapped)) }
+   L86 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：onCurrencyPickerTapped: { store.send(.view(.currencyPickerTa
+   L117 NAMED1 單一表達式的 closure 用 $0，不用具名的 code
+   L120 NAMED1 單一表達式的 closure 用 $0，不用具名的 code
+   L123 NAMED1 單一表達式的 closure 用 $0，不用具名的 code
+   L147 CASELET 改寫成 `case .x(let v)`，不用 `case let .x(v)`
+   L147 SWC switch case 之間缺空行：case let .estimate(profitTWD, marginPercent):
+   L157 SWC switch case 之間缺空行：case .marginTooHigh:
+   L211 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：QuoteView(store: Store(initialState: state) { QuoteFeature()
+== [A] apps/ios/BuyLedger/Shared/DesignSystem/Components/Buttons/BLButtonStyle.swift (13)
+   L43 MKPRIV private extension 的 computed property 應放 // MARK: - Private Method
+   L58 DOCBL 摘要與參數標記之間缺空的 ///
+   L99 DOCBL 摘要與參數標記之間缺空的 ///
+   L109 DOCBL 摘要與參數標記之間缺空的 ///
+   L115 SWC switch case 之間缺空行：case .secondary, .plain:
+   L121 DOCBL 摘要與參數標記之間缺空的 ///
+   L127 SWC switch case 之間缺空行：case .secondary:
+   L129 SWC switch case 之間缺空行：case .plain:
+   L139 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：Button("", systemImage: "") {}
+   L142 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：Button("", systemImage: "") {}
+   L145 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：Button("", systemImage: "") {}
+   L149 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：Button("", systemImage: "", role: .destructive) {}
+   L152 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：Button("", systemImage: "") {}
+== [A] apps/ios/BuyLedger/Shared/DesignSystem/Components/Cards/BLCard.swift (2)
+   L27 DOCBL 摘要與參數標記之間缺空的 ///
+   L57 MKPRIV private extension 的 computed property 應放 // MARK: - Private Method
+== [A] apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLBarChart.swift (24)
+   L43 NAMED1 單一表達式的 closure 用 $0，不用具名的 proxy
+   L55 DOCBL 摘要與參數標記之間缺空的 ///
+   L79 DOCBL 摘要與參數標記之間缺空的 ///
+   L88 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 89 字元)：BarMark(
+   L123 PRIV private extension 內多餘的 private：private enum Layout {
+   L125 MKN 巢狀型別內的 MARK：Properties
+   L133 MKN 巢狀型別內的 MARK：Internal Method
+   L136 DOCBL 摘要與參數標記之間缺空的 ///
+   L140 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 94 字元)：static func stridedLabels(
+   L168 MKN 巢狀型別內的 MARK：Properties
+   L183 DOCBL 摘要與參數標記之間缺空的 ///
+   L199 NAMED1 單一表達式的 closure 用 $0，不用具名的 item
+   L213 DOCBL 摘要與參數標記之間缺空的 ///
+   L219 DOCBL 摘要與參數標記之間缺空的 ///
+   L223 W 行寬 107
+   L226 GRD `else {` 要接在最後一個條件同行，不單獨成行
+   L229 ARG4 一行內有 7 個引數或參數，超過三個要斷行：return LocalizedStringKey(AppLanguage.format("", d
+   L229 W 行寬 208
+   L234 MKPRIV private extension 的 computed property 應放 // MARK: - Private Method
+   L234 MKV View 沒有 Computed Properties 分區
+   L254 DOCBL 摘要與參數標記之間缺空的 ///
+   L267 DOCBL 摘要與參數標記之間缺空的 ///
+   L270 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 66 字元)：Layout.stridedLabels(
+   L294 CLA closure 簽章多標了參數型別、async 或回傳型別：offset -> BLBarChartValue? in
+== [A] apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLDonutChart.swift (13)
+   L56 NAMED1 單一表達式的 closure 用 $0，不用具名的 segment
+   L68 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 99 字元)：.chartForegroundStyleScale(
+   L108 MKN 巢狀型別內的 MARK：Properties
+   L123 DOCBL 摘要與參數標記之間缺空的 ///
+   L139 NAMED1 單一表達式的 closure 用 $0，不用具名的 segment
+   L140 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 100 字元)：AXDataPoint(
+   L157 DOCBL 摘要與參數標記之間缺空的 ///
+   L163 DOCBL 摘要與參數標記之間缺空的 ///
+   L167 W 行寬 110
+   L171 ARG4 一行內有 5 個引數或參數，超過三個要斷行：return LocalizedStringKey(AppLanguage.format("", s
+   L171 W 行寬 175
+   L176 MKPRIV private extension 的 computed property 應放 // MARK: - Private Method
+   L176 MKV View 沒有 Computed Properties 分區
+== [A] apps/ios/BuyLedger/Shared/DesignSystem/Components/Charts/BLSparkline.swift (16)
+   L38 DOCBL 摘要與參數標記之間缺空的 ///
+   L39 NAMED1 單一表達式的 closure 用 $0，不用具名的 ordinal
+   L40 W 行寬 103
+   L71 NAMED1 單一表達式的 closure 用 $0，不用具名的 proxy
+   L78 D2 有參數缺 - Parameter：func sparkline(in size: CGSize) -> some View {
+   L78 D3 有回傳缺 - Returns：func sparkline(in size: CGSize) -> some View {
+   L87 NAMED1 單一表達式的 closure 用 $0，不用具名的 point
+   L102 NAMED1 單一表達式的 closure 用 $0，不用具名的 point
+   L108 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 85 字元)：style: StrokeStyle(
+   L125 MKN 巢狀型別內的 MARK：Properties
+   L140 DOCBL 摘要與參數標記之間缺空的 ///
+   L144 DOCBL 摘要與參數標記之間缺空的 ///
+   L176 DOCBL 摘要與參數標記之間缺空的 ///
+   L183 MKPRIV private extension 的 computed property 應放 // MARK: - Private Method
+   L183 MKV View 沒有 Computed Properties 分區
+   L211 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift (18)
+   L60 DOCBL 摘要與參數標記之間缺空的 ///
+   L132 MKPRIV private extension 的 computed property 應放 // MARK: - Private Method
+   L132 MKV View 沒有 Computed Properties 分區
+   L144 MKNX 為巢狀型別另開 extension：private extension BLFilterChip.Style {
+   L147 DOCBL 摘要與參數標記之間缺空的 ///
+   L158 SWC switch case 之間缺空行：case .accent:
+   L160 SWC switch case 之間缺空行：case .purple:
+   L166 DOCBL 摘要與參數標記之間缺空的 ///
+   L177 SWC switch case 之間缺空行：case .accent:
+   L179 SWC switch case 之間缺空行：case .purple:
+   L185 MKNX 為巢狀型別另開 extension：private extension BLFilterChip.Size {
+   L192 SWC switch case 之間缺空行：case .large:
+   L202 SWC switch case 之間缺空行：case .large:
+   L212 SWC switch case 之間缺空行：case .large:
+   L223 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：BLFilterChip(title: "", isSelected: true) {}
+   L224 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：BLFilterChip(title: "", isSelected: false) {}
+   L230 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：) {}
+   L241 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：) {}
+== [A] apps/ios/BuyLedger/Shared/DesignSystem/Components/Forms/PaymentMethodEditorSheet.swift (13)
+   L11 DOCBL 摘要與參數標記之間缺空的 ///
+   L70 DOCBL 摘要與參數標記之間缺空的 ///
+   L123 W 行寬 102
+   L127 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：Button("", role: .cancel) {}
+   L182 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 82 字元)：Toggle(
+   L216 CALL1 未達斷行條件卻拆成多行 (1 個，接成一行 100 字元)：.accessibilityIdentifier(
+   L231 DOCBL 摘要與參數標記之間缺空的 ///
+   L251 MKN 巢狀型別內的 MARK：Properties
+   L291 DOCBL 摘要與參數標記之間缺空的 ///
+   L302 DOCBL 摘要與參數標記之間缺空的 ///
+   L313 DOCBL 摘要與參數標記之間缺空的 ///
+   L327 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：onSubmit: { _, _, _, _ in }
+   L339 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：onSubmit: { _, _, _, _ in }
+== [A] apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift (9)
+   L118 MKN 巢狀型別內的 MARK：Properties
+   L135 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 78 字元)：func sampleJPEGData(
+   L160 CALL1 未達斷行條件卻拆成多行 (1 個，接成一行 83 字元)：context.setFillColor(
+   L161 ARG4 一行內有 4 個引數或參數，超過三個要斷行：CGColor(red: red, green: green, blue: blue, alpha:
+   L163 CALL1 未達斷行條件卻拆成多行 (1 個，接成一行 65 字元)：context.fill(
+   L164 ARG4 一行內有 4 個引數或參數，超過三個要斷行：CGRect(x: 0, y: 0, width: 240, height: 240)
+   L176 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：BLPhotoThumbnail(imageData: sampleJPEGData(red: 0.35, green:
+   L177 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：BLPhotoThumbnail(imageData: sampleJPEGData(red: 0.9, green: 
+   L179 NESTSL 寫在另一個 closure 內的 closure 要寫成多行：BLPhotoThumbnail(imageData: Data([0x00, 0x01])) {}
+== [A] apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift (18)
+   L41 DOCBL 摘要與參數標記之間缺空的 ///
+   L89 DOCBL 摘要與參數標記之間缺空的 ///
+   L130 PRIV private extension 內多餘的 private：private enum Layout {
+   L132 MKN 巢狀型別內的 MARK：Properties
+   L142 MKPRIV private extension 的 computed property 應放 // MARK: - Private Method
+   L142 MKV View 沒有 Computed Properties 分區
+   L162 NAMED1 單一表達式的 closure 用 $0，不用具名的 value
+   L167 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 97 字元)：zoomScale = min(
+   L209 DOCBL 摘要與參數標記之間缺空的 ///
+   L243 CLB 型別或 extension 的閉括號前有空行
+   L243 CLBX 閉括號前有空行
+   L249 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 78 字元)：func sampleJPEGData(
+   L256 GRD 第一個條件要與關鍵字同行
+   L272 GRD `else {` 要接在最後一個條件同行，不單獨成行
+   L276 CALL1 未達斷行條件卻拆成多行 (1 個，接成一行 83 字元)：context.setFillColor(
+   L277 ARG4 一行內有 4 個引數或參數，超過三個要斷行：CGColor(red: red, green: green, blue: blue, alpha:
+   L279 CALL1 未達斷行條件卻拆成多行 (1 個，接成一行 65 字元)：context.fill(
+   L280 ARG4 一行內有 4 個引數或參數，超過三個要斷行：CGRect(x: 0, y: 0, width: 480, height: 320)
+== [A] apps/ios/BuyLedger/Shared/DesignSystem/Components/Tags/BLTagPill.swift (1)
+   L24 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLMetrics.swift (4)
+   L35 TOP 第二個頂層型別：enum BLSpacing {
+   L59 TOP 第二個頂層型別：enum BLListMetrics {
+   L71 TOP 第二個頂層型別：enum BLHitTarget {
+   L73 DUP 分區重複：Properties 於 [13, 37, 61, 73]
+== [A] apps/ios/BuyLedger/Shared/DesignSystem/Foundations/ViewModifiers/BLHeroCardBackground.swift (2)
+   L28 DOCBL 摘要與參數標記之間缺空的 ///
+   L48 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedgerTests/ColorContrast.swift (25)
+   L10 TIMP @testable import 前缺空行
+   L22 MK1 MARK 段名：Cases
+   L22 MKN 巢狀型別內的 MARK：Cases
+   L40 MK1 MARK 段名：Data Properties
+   L40 MKC MARK 不是規範區名：// MARK: - Data Properties
+   L40 MKN 巢狀型別內的 MARK：Data Properties
+   L58 MKNX 為巢狀型別另開 extension：extension ColorContrast.Appearance {
+   L61 DOCBL 摘要與參數標記之間缺空的 ///
+   L62 CT 「Internal Method」區塊放了 computed property (應放 Computed Properties)：var traitCollection: UITraitCollection {
+   L72 DOCBL 摘要與參數標記之間缺空的 ///
+   L73 CT 「Internal Method」區塊放了 computed property (應放 Computed Properties)：var palette: BLPalette {
+   L78 DUP 分區重複：Internal Method 於 [56, 78]
+   L83 DOCBL 摘要與參數標記之間缺空的 ///
+   L88 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 98 字元)：static func ratio(
+   L99 DOCBL 摘要與參數標記之間缺空的 ///
+   L104 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 100 字元)：static func ratio(
+   L113 DOCBL 摘要與參數標記之間缺空的 ///
+   L123 ARG4 一行內有 4 個引數或參數，超過三個要斷行：resolved.getRed(&red, green: &green, blue: &blue, 
+   L138 DOCBL 摘要與參數標記之間缺空的 ///
+   L152 ARG4 一行內有 4 個引數或參數，超過三個要斷行：return result ?? Components(red: 1, green: 1, blue
+   L156 DOCBL 摘要與參數標記之間缺空的 ///
+   L170 DOCBL 摘要與參數標記之間缺空的 ///
+   L179 DOCBL 摘要與參數標記之間缺空的 ///
+   L190 DOCBL 摘要與參數標記之間缺空的 ///
+   L199 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedgerTests/ColorContrastTests.swift (56)
+   L11 TIMP @testable import 前缺空行
+   L16 D1 缺 ///：@Test func blackOnWhiteReachesTheMaximumRatio() {
+   L16 GWT 缺 // Given
+   L16 GWT 缺 // Then
+   L16 GWT 缺 // When
+   L16 TD @Test 缺 ///
+   L16 TNAMEL 舊式單段 lowerCamel 測試名稱：blackOnWhiteReachesTheMaximumRatio
+   L16 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L22 D1 缺 ///：@Test func whiteOnBlackReachesTheMaximumRatio() {
+   L22 GWT 缺 // Given
+   L22 GWT 缺 // Then
+   L22 GWT 缺 // When
+   L22 TD @Test 缺 ///
+   L22 TNAMEL 舊式單段 lowerCamel 測試名稱：whiteOnBlackReachesTheMaximumRatio
+   L22 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L28 D1 缺 ///：@Test func identicalColorsYieldNoContrast() {
+   L28 GWT 缺 // Given
+   L28 GWT 缺 // Then
+   L28 GWT 缺 // When
+   L28 TD @Test 缺 ///
+   L28 TNAMEL 舊式單段 lowerCamel 測試名稱：identicalColorsYieldNoContrast
+   L28 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L35 GWT 缺 // Given
+   L35 GWT 缺 // Then
+   L35 GWT 缺 // When
+   L35 TNAMEL 舊式單段 lowerCamel 測試名稱：successPillReproducesTheAuditedRatioBeforeTheChang
+   L35 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L46 D1 缺 ///：@Test func translucentForegroundIsCompositedBeforeMeasuring() {
+   L46 GWT 缺 // Given
+   L46 GWT 缺 // Then
+   L46 GWT 缺 // When
+   L46 TD @Test 缺 ///
+   L46 TNAMEL 舊式單段 lowerCamel 測試名稱：translucentForegroundIsCompositedBeforeMeasuring
+   L46 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L48 PARTW 斷行後多個參數或引數擠在同一行：Color.black.opacity(0.3), on: .white, appearance: 
+   L49 RPAR 斷行呼叫的右括號沒有單獨一行：Color.black.opacity(0.3), on: .white, appearance: 
+   L55 D1 缺 ///：@Test func layerStackIsCompositedFromTheBottomUp() {
+   L55 TD @Test 缺 ///
+   L55 TNAMEL 舊式單段 lowerCamel 測試名稱：layerStackIsCompositedFromTheBottomUp
+   L55 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L59 GWTE #expect 寫在 Given，前置條件用 try #require、斷言放 Then
+   L72 MKC MARK 不是規範區名：// MARK: 情境解析
+   L74 D1 缺 ///：@Test func appearanceResolvesDynamicColorsPerInterfaceStyle() {
+   L74 GWT 缺 // Given
+   L74 GWT 缺 // Then
+   L74 GWT 缺 // When
+   L74 TD @Test 缺 ///
+   L74 TNAMEL 舊式單段 lowerCamel 測試名稱：appearanceResolvesDynamicColorsPerInterfaceStyle
+   L74 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L83 D1 缺 ///：@Test func appearanceResolvesTheIncreasedContrastVariant() {
+   L83 GWT 缺 // Given
+   L83 GWT 缺 // Then
+   L83 GWT 缺 // When
+   L83 TD @Test 缺 ///
+   L83 TNAMEL 舊式單段 lowerCamel 測試名稱：appearanceResolvesTheIncreasedContrastVariant
+   L83 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+== [A] apps/ios/BuyLedgerTests/ContrastComplianceTests.swift (1)
+   L134 WSTR 單一字串字面值行寬 113 (列出說明，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/DashboardStatsTests.swift (169)
+   L1 LEN 不含檔頭與空行 365 行
+   L10 TIMP @testable import 前缺空行
+   L16 D1 缺 ///：@Test func currentMonthAggregatesRevenueCostAndProfitFromRealizedOrder
+   L16 GWT 缺 // Given
+   L16 GWT 缺 // Then
+   L16 GWT 缺 // When
+   L16 TD @Test 缺 ///
+   L16 TNAMEL 舊式單段 lowerCamel 測試名稱：currentMonthAggregatesRevenueCostAndProfitFromReal
+   L16 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L19 PARTW 斷行後多個參數或引數擠在同一行：id: "A", status: .delivered, date: Self.aprilDate(
+   L22 PARTW 斷行後多個參數或引數擠在同一行：id: "B", status: .shipping, date: Self.aprilDate(2
+   L23 RPAR 斷行呼叫的右括號沒有單獨一行：id: "", status: .shipping, date: Self.aprilDate(20
+   L38 D1 缺 ///：@Test func mergeSourcesAndResultAreNeverCountedTogetherAfterRevertingS
+   L38 GWT 缺 // Given
+   L38 GWT 缺 // Then
+   L38 GWT 缺 // When
+   L38 TD @Test 缺 ///
+   L38 TNAMEL 舊式單段 lowerCamel 測試名稱：mergeSourcesAndResultAreNeverCountedTogetherAfterR
+   L38 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L40 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .merged, date: Self
+   L41 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .merged, date: Self
+   L79 D1 缺 ///：@Test func chainedMergeIsCountedOnlyByFinalDashboardResult() {
+   L79 GWT 缺 // Given
+   L79 GWT 缺 // Then
+   L79 GWT 缺 // When
+   L79 TD @Test 缺 ///
+   L79 TNAMEL 舊式單段 lowerCamel 測試名稱：chainedMergeIsCountedOnlyByFinalDashboardResult
+   L79 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L80 D6 註解結尾句號
+   L82 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .delivered, date: S
+   L83 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .delivered, date: S
+   L84 PARTW 斷行後多個參數或引數擠在同一行：id: "M1", status: .merged, date: Self.aprilDate(5)
+   L86 RPAR 斷行呼叫的右括號沒有單獨一行：mergedSourceIDs: ["", ""]),
+   L87 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .delivered, date: S
+   L88 PARTW 斷行後多個參數或引數擠在同一行：id: "M2", status: .delivered, date: Self.aprilDate
+   L90 RPAR 斷行呼叫的右括號沒有單獨一行：mergedSourceIDs: ["", ""]),
+   L104 D1 缺 ///：@Test func quotingCancelledAndMergedOrdersAreExcludedFromMonthlyTotals
+   L104 GWT 缺 // Given
+   L104 GWT 缺 // Then
+   L104 GWT 缺 // When
+   L104 TD @Test 缺 ///
+   L104 TNAMEL 舊式單段 lowerCamel 測試名稱：quotingCancelledAndMergedOrdersAreExcludedFromMont
+   L104 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L106 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .quoting, date: Sel
+   L107 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .cancelled, date: S
+   L108 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .merged, date: Self
+   L110 PARTW 斷行後多個參數或引數擠在同一行：orders: orders, monthlyGoal: 0, referenceDate: Tes
+   L112 RPAR 斷行呼叫的右括號沒有單獨一行：calendar: TestDependencies.fixedCalendar)
+   L118 D1 缺 ///：@Test func deletingMergeResultRestoresItsSourcesToRevenueAttribution()
+   L118 GWT 缺 // Given
+   L118 GWT 缺 // Then
+   L118 GWT 缺 // When
+   L118 TD @Test 缺 ///
+   L118 TNAMEL 舊式單段 lowerCamel 測試名稱：deletingMergeResultRestoresItsSourcesToRevenueAttr
+   L118 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L121 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .confirmed, date: S
+   L122 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .confirmed, date: S
+   L124 PARTW 斷行後多個參數或引數擠在同一行：id: "M", status: .delivered, date: Self.aprilDate(
+   L126 RPAR 斷行呼叫的右括號沒有單獨一行：mergedSourceIDs: ["", ""])
+   L128 PARTW 斷行後多個參數或引數擠在同一行：orders: sources + [result], monthlyGoal: 0, refere
+   L130 RPAR 斷行呼叫的右括號沒有單獨一行：calendar: TestDependencies.fixedCalendar)
+   L131 PARTW 斷行後多個參數或引數擠在同一行：orders: sources, monthlyGoal: 0, referenceDate: Te
+   L133 RPAR 斷行呼叫的右括號沒有單獨一行：calendar: TestDependencies.fixedCalendar)
+   L140 D1 缺 ///：@Test func cancellingMergeResultKeepsItsSourcesExcluded() {
+   L140 GWT 缺 // Given
+   L140 GWT 缺 // Then
+   L140 GWT 缺 // When
+   L140 TD @Test 缺 ///
+   L140 TNAMEL 舊式單段 lowerCamel 測試名稱：cancellingMergeResultKeepsItsSourcesExcluded
+   L140 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L142 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .confirmed, date: S
+   L143 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .confirmed, date: S
+   L144 PARTW 斷行後多個參數或引數擠在同一行：id: "M", status: .cancelled, date: Self.aprilDate(
+   L146 RPAR 斷行呼叫的右括號沒有單獨一行：mergedSourceIDs: ["", ""]),
+   L148 PARTW 斷行後多個參數或引數擠在同一行：orders: orders, monthlyGoal: 0, referenceDate: Tes
+   L150 RPAR 斷行呼叫的右括號沒有單獨一行：calendar: TestDependencies.fixedCalendar)
+   L156 D1 缺 ///：@Test func previousMonthWithDataProducesRevenueAndProfitDelta() {
+   L156 GWT 缺 // Given
+   L156 GWT 缺 // Then
+   L156 GWT 缺 // When
+   L156 TD @Test 缺 ///
+   L156 TNAMEL 舊式單段 lowerCamel 測試名稱：previousMonthWithDataProducesRevenueAndProfitDelta
+   L156 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L159 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .delivered, date: S
+   L160 PARTW 斷行後多個參數或引數擠在同一行：id: "prev", status: .delivered, date: Self.marchDa
+   L161 RPAR 斷行呼叫的右括號沒有單獨一行：id: "", status: .delivered, date: Self.marchDate(1
+   L175 D1 缺 ///：@Test func previousMonthWithoutDataYieldsNilDeltas() {
+   L175 GWT 缺 // Given
+   L175 GWT 缺 // Then
+   L175 GWT 缺 // When
+   L175 TD @Test 缺 ///
+   L175 TNAMEL 舊式單段 lowerCamel 測試名稱：previousMonthWithoutDataYieldsNilDeltas
+   L175 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L177 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .delivered, date: S
+   L177 TRAILC 多行字面值的最後一個元素後面要加逗號：Self.makeOrder(id: "", status: .delivered, date: S
+   L192 D1 缺 ///：@Test func profitDeltaKeepsDirectionWhenPreviousMonthProfitIsNegative(
+   L192 GWT 缺 // Given
+   L192 GWT 缺 // Then
+   L192 GWT 缺 // When
+   L192 TD @Test 缺 ///
+   L192 TNAMEL 舊式單段 lowerCamel 測試名稱：profitDeltaKeepsDirectionWhenPreviousMonthProfitIs
+   L192 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L194 PARTW 斷行後多個參數或引數擠在同一行：id: "current", status: .delivered, date: Self.apri
+   L196 RPAR 斷行呼叫的右括號沒有單獨一行：itemCost: 50),
+   L197 PARTW 斷行後多個參數或引數擠在同一行：id: "previous", status: .delivered, date: Self.mar
+   L199 RPAR 斷行呼叫的右括號沒有單獨一行：itemCost: 100),
+   L211 D1 缺 ///：@Test func goalProgressClampsToOneWhenProfitExceedsGoal() {
+   L211 GWT 缺 // Given
+   L211 GWT 缺 // Then
+   L211 GWT 缺 // When
+   L211 TD @Test 缺 ///
+   L211 TNAMEL 舊式單段 lowerCamel 測試名稱：goalProgressClampsToOneWhenProfitExceedsGoal
+   L211 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L213 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .delivered, date: S
+   L213 TRAILC 多行字面值的最後一個元素後面要加逗號：Self.makeOrder(id: "", status: .delivered, date: S
+   L226 D1 缺 ///：@Test func goalProgressIsZeroWhenGoalUnset() {
+   L226 GWT 缺 // Given
+   L226 GWT 缺 // Then
+   L226 GWT 缺 // When
+   L226 TD @Test 缺 ///
+   L226 TNAMEL 舊式單段 lowerCamel 測試名稱：goalProgressIsZeroWhenGoalUnset
+   L226 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L228 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .delivered, date: S
+   L228 TRAILC 多行字面值的最後一個元素後面要加逗號：Self.makeOrder(id: "", status: .delivered, date: S
+   L240 D1 缺 ///：@Test func activeCountCountsOnlyInFlightStatuses() {
+   L240 GWT 缺 // Given
+   L240 GWT 缺 // Then
+   L240 GWT 缺 // When
+   L240 TD @Test 缺 ///
+   L240 TNAMEL 舊式單段 lowerCamel 測試名稱：activeCountCountsOnlyInFlightStatuses
+   L240 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L242 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .confirmed, date: S
+   L243 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .shipping, date: Se
+   L244 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .delivered, date: S
+   L245 ARG4 一行內有 4 個引數或參數，超過三個要斷行：Self.makeOrder(id: "", status: .quoting, date: Sel
+   L257 D1 缺 ///：@Test func recentOrdersReturnsAtMostFourNewestByDateDescending() {
+   L257 GWT 缺 // Given
+   L257 GWT 缺 // Then
+   L257 GWT 缺 // When
+   L257 TD @Test 缺 ///
+   L257 TNAMEL 舊式單段 lowerCamel 測試名稱：recentOrdersReturnsAtMostFourNewestByDateDescendin
+   L257 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L258 NAMED1 單一表達式的 closure 用 $0，不用具名的 day
+   L259 PARTW 斷行後多個參數或引數擠在同一行：id: "O\(day)", status: .delivered, date: Self.apri
+   L260 RPAR 斷行呼叫的右括號沒有單獨一行：id: "", status: .delivered, date: Self.aprilDate(d
+   L273 D1 缺 ///：@Test func sparklineHasTwelveMonthsZeroFilledWhenNoOrders() {
+   L273 GWT 缺 // Given
+   L273 GWT 缺 // Then
+   L273 GWT 缺 // When
+   L273 TD @Test 缺 ///
+   L273 TNAMEL 舊式單段 lowerCamel 測試名稱：sparklineHasTwelveMonthsZeroFilledWhenNoOrders
+   L273 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L285 D1 缺 ///：@Test func sparklineLastMonthReflectsCurrentMonthProfit() {
+   L285 GWT 缺 // Given
+   L285 GWT 缺 // Then
+   L285 GWT 缺 // When
+   L285 TD @Test 缺 ///
+   L285 TNAMEL 舊式單段 lowerCamel 測試名稱：sparklineLastMonthReflectsCurrentMonthProfit
+   L285 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L287 PARTW 斷行後多個參數或引數擠在同一行：id: "A", status: .delivered, date: Self.aprilDate(
+   L289 TRAILC 多行字面值的最後一個元素後面要加逗號：)
+   L301 MK1 MARK 段名：Helper
+   L304 DOCBL 摘要與參數標記之間缺空的 ///
+   L313 FUNWRAP 強制解包 (鐵則 3)：return components.date!
+   L317 DOCBL 摘要與參數標記之間缺空的 ///
+   L326 FUNWRAP 強制解包 (鐵則 3)：return components.date!
+   L330 DOCBL 摘要與參數標記之間缺空的 ///
+   L377 DOCBL 摘要與參數標記之間缺空的 ///
+   L381 W 行寬 105
+== [A] apps/ios/BuyLedgerTests/DependencyConventionScanTests+Rules.swift (4)
+   L95 WSTR 單一字串字面值行寬 143 (列出說明，不計入失敗)
+   L107 WSTR 單一字串字面值行寬 241 (列出說明，不計入失敗)
+   L184 WSTR 單一字串字面值行寬 192 (列出說明，不計入失敗)
+   L264 WSTR 單一字串字面值行寬 256 (列出說明，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/DesignSystemSourceScanTests.swift (1)
+   L53 WSTR 單一字串字面值行寬 125 (列出說明，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/InsightsStatsTests.swift (79)
+   L1 LEN 不含檔頭與空行 305 行
+   L10 TIMP @testable import 前缺空行
+   L16 D1 缺 ///：@Test func trendBarsForThirtyDaysProduceThirtyDailyBucketsSummingToTot
+   L16 GWT 缺 // Given
+   L16 GWT 缺 // Then
+   L16 GWT 缺 // When
+   L16 TD @Test 缺 ///
+   L16 TNAMEL 舊式單段 lowerCamel 測試名稱：trendBarsForThirtyDaysProduceThirtyDailyBucketsSum
+   L16 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L24 TRAILC 多行字面值的最後一個元素後面要加逗號：)
+   L39 D1 缺 ///：@Test func trendDeltaComparesCurrentAgainstPriorTwelveMonthPeriodWhenB
+   L39 GWT 缺 // Given
+   L39 GWT 缺 // Then
+   L39 GWT 缺 // When
+   L39 TD @Test 缺 ///
+   L39 TNAMEL 舊式單段 lowerCamel 測試名稱：trendDeltaComparesCurrentAgainstPriorTwelveMonthPe
+   L39 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L40 D6 註解結尾句號
+   L69 D1 缺 ///：@Test func trendDeltaHasNoComparisonWhenPriorPeriodEmpty() {
+   L69 GWT 缺 // Given
+   L69 GWT 缺 // Then
+   L69 GWT 缺 // When
+   L69 TD @Test 缺 ///
+   L69 TNAMEL 舊式單段 lowerCamel 測試名稱：trendDeltaHasNoComparisonWhenPriorPeriodEmpty
+   L69 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L76 TRAILC 多行字面值的最後一個元素後面要加逗號：)
+   L91 GWT 缺 // Given
+   L91 GWT 缺 // Then
+   L91 GWT 缺 // When
+   L91 TD @Test 缺 ///
+   L96 D1 缺 ///：func trendDeltaUsesMatchingDirectionAndMagnitudeWhenPreviousPeriodIsNe
+   L96 TNAMEL 舊式單段 lowerCamel 測試名稱：trendDeltaUsesMatchingDirectionAndMagnitudeWhenPre
+   L131 D1 缺 ///：@Test func totalProfitEqualsDecimalSumOfPeriodBuckets() {
+   L131 GWT 缺 // Given
+   L131 GWT 缺 // Then
+   L131 GWT 缺 // When
+   L131 TD @Test 缺 ///
+   L131 TNAMEL 舊式單段 lowerCamel 測試名稱：totalProfitEqualsDecimalSumOfPeriodBuckets
+   L131 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L155 FUNWRAP 強制解包 (鐵則 3)：#expect(stats.totalProfit == Decimal(string: "")!)
+   L158 D1 缺 ///：@Test func costSegmentsExcludeZeroValueSegmentsAndTotalCostAggregatesA
+   L158 TD @Test 缺 ///
+   L158 TNAMEL 舊式單段 lowerCamel 測試名稱：costSegmentsExcludeZeroValueSegmentsAndTotalCostAg
+   L158 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L199 D1 缺 ///：@Test func campaignProfitRankingSortsDescendingAndExcludesCampaignsWit
+   L199 GWT 缺 // Given
+   L199 GWT 缺 // Then
+   L199 GWT 缺 // When
+   L199 TD @Test 缺 ///
+   L199 TNAMEL 舊式單段 lowerCamel 測試名稱：campaignProfitRankingSortsDescendingAndExcludesCam
+   L199 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L201 PARTW 斷行後多個參數或引數擠在同一行：id: "1", name: "A團", openDate: Date(timeIntervalSi
+   L203 RPAR 斷行呼叫的右括號沒有單獨一行：notes: ""),
+   L204 PARTW 斷行後多個參數或引數擠在同一行：id: "2", name: "B團", openDate: Date(timeIntervalSi
+   L206 RPAR 斷行呼叫的右括號沒有單獨一行：notes: ""),
+   L207 PARTW 斷行後多個參數或引數擠在同一行：id: "3", name: "C團", openDate: Date(timeIntervalSi
+   L209 RPAR 斷行呼叫的右括號沒有單獨一行：notes: ""),
+   L235 D1 缺 ///：@Test func computeHeatmapPlacesTodaysOrderInLastWeekAndCorrectWeekday(
+   L235 GWT 缺 // Given
+   L235 GWT 缺 // Then
+   L235 GWT 缺 // When
+   L235 TD @Test 缺 ///
+   L235 TNAMEL 舊式單段 lowerCamel 測試名稱：computeHeatmapPlacesTodaysOrderInLastWeekAndCorrec
+   L235 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L238 ARG4 一行內有 4 個引數或參數，超過三個要斷行：let orders = [Self.makeOrder(id: "", status: .quot
+   L251 D1 缺 ///：@Test func computeHeatmapExcludesOrdersOlderThanTheDisplayedWindow() {
+   L251 GWT 缺 // Given
+   L251 GWT 缺 // Then
+   L251 GWT 缺 // When
+   L251 TD @Test 缺 ///
+   L251 TNAMEL 舊式單段 lowerCamel 測試名稱：computeHeatmapExcludesOrdersOlderThanTheDisplayedW
+   L251 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L252 PARTW 斷行後多個參數或引數擠在同一行：byAdding: .day, value: -100, to: TestDependencies.
+   L253 FUNWRAP 強制解包 (鐵則 3)：byAdding: .day, value: -100, to: TestDependencies.fixedNow)!
+   L253 RPAR 斷行呼叫的右括號沒有單獨一行：byAdding: .day, value: -100, to: TestDependencies.
+   L254 ARG4 一行內有 4 個引數或參數，超過三個要斷行：let orders = [Self.makeOrder(id: "", status: .quot
+   L265 MK1 MARK 段名：Helper
+   L274 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 71 字元)：private static func date(
+   L285 FUNWRAP 強制解包 (鐵則 3)：return components.date!
+TOTAL {'SWC': 25, 'W': 71, 'ARG4': 42, 'MK1': 21, 'DOCBL': 62, 'DOLLAR2': 14, 'CALL1': 25, 'MKN': 13, 'NAMED1': 18, 'NESTSL': 39, 'WSTR': 9, 'BRACE': 3, 'MK5': 2, 'LEN': 3, 'D6': 3, 'CLA': 3, 'TOP': 7, 'DUP': 4, 'CASELET': 1, 'MKPRIV': 7, 'PRIV': 2, 'GRD': 3, 'MKV': 5, 'D2': 1, 'D3': 1, 'MKNX': 3, 'CLB': 1, 'CLBX': 1, 'TIMP': 4, 'MKC': 2, 'CT': 2, 'D1': 31, 'GWT': 90, 'TD': 31, 'TNAMEL': 32, 'TSTL': 31, 'PARTW': 20, 'RPAR': 18, 'GWTE': 1, 'TRAILC': 6, 'FUNWRAP': 5} files 108 FAIL

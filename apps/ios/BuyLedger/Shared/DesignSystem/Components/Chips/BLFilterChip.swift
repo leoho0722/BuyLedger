@@ -8,56 +8,97 @@
 import SwiftUI
 
 /// 篩選膠囊：訂單列表的狀態、日期、類別與付款方式篩選共用
-///
-/// 抽成共用元件而非逐處修補——六處原本是彼此複製的產物，逐處補命中區會留下六份仍會再度分歧的
-/// 程式碼，且下一個新增的膠囊仍會從既有的錯誤版本複製
 struct BLFilterChip: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
-    /// 目前系統深淺色外觀
-    @Environment(\.colorScheme) private var colorScheme
-
-    /// 膠囊顯示的文字
-    let title: LocalizedStringKey
-
-    /// 是否為選取狀態
-    let isSelected: Bool
-
-    /// 選取態的語意配色
-    var style: Style = .inverted
-
-    /// 字級與水平內距的尺寸
-    var size: Size = .standard
+    /// 目前的動態字級，判斷是否為無障礙字級
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
 
     /// 選用的前綴 SF Symbol 名稱
     var icon: String? = nil
 
-    /// 選用的尾端 SF Symbol 名稱
-    var trailingIcon: String? = nil
-
     /// 是否撐滿可用寬度並允許換行 (trigger 類膠囊使用)
     var isExpanded: Bool = false
+
+    /// 是否為選取狀態
+    let isSelected: Bool
+
+    /// 字級與水平內距的尺寸
+    var size: Size = .standard
+
+    /// 選取態的語意配色
+    var style: Style = .inverted
+
+    /// 膠囊顯示的文字
+    let title: LocalizedStringKey
+
+    /// 選用的尾端 SF Symbol 名稱
+    var trailingIcon: String? = nil
 
     /// 點擊時的動作
     let action: () -> Void
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 篩選膠囊的畫面內容
     var body: some View {
-        let palette = BLPalette()
-
         Button(action: action) {
-            label(palette: palette)
-                // 命中區宣告在標籤內部才會擴大可點區域；形狀用 capsule 而非外接矩形，
+            label
+                // 命中區放在標籤內部才會擴大可點區域；形狀用 `capsule` 而非外接矩形
                 // 否則相鄰膠囊的命中區會在圓角處重疊
                 .frame(minHeight: BLHitTarget.minimum)
                 .contentShape(.capsule)
         }
         .buttonStyle(.plain)
-        // 選取態原本只以配色表達，補選取 trait 讓輔助技術與 UI 測試都讀得到、不必目視顏色
         .accessibilityAddTraits(isSelected ? .isSelected : [])
+    }
+}
+
+// MARK: - Private Views
+
+private extension BLFilterChip {
+
+    /// 膠囊的可見內容：圖示、文字與選取態配色
+    @ViewBuilder
+    var label: some View {
+        HStack(
+            alignment: isExpanded ? .firstTextBaseline : .center,
+            spacing: BLSpacing.extraSmall
+        ) {
+            if let icon {
+                Image(systemName: icon)
+                    .font(iconFont)
+            }
+
+            titleText
+
+            if let trailingIcon {
+                Image(systemName: trailingIcon)
+                    .font(iconFont)
+            }
+        }
+        .padding(.vertical, 7)
+        .padding(.horizontal, horizontalPadding)
+        .foregroundStyle(selectionForeground)
+        .background(selectionBackground)
+        .clipShape(Capsule())
+    }
+
+    /// 膠囊文字：撐滿型允許換行並靠左，其餘維持單行自然寬度
+    @ViewBuilder
+    var titleText: some View {
+        if isExpanded {
+            Text(title)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .multilineTextAlignment(.leading)
+                .font(titleFont)
+        } else {
+            Text(title)
+                .lineLimit(dynamicTypeSize.isAccessibilitySize ? nil : 1)
+                .font(titleFont)
+        }
     }
 }
 
@@ -67,8 +108,6 @@ extension BLFilterChip {
 
     /// 膠囊選取態的語意配色
     enum Style {
-
-        // MARK: - Cases
 
         /// 以反白呈現選取 (狀態篩選)
         case inverted
@@ -81,12 +120,7 @@ extension BLFilterChip {
     }
 
     /// 膠囊的字級與水平內距
-    ///
-    /// 兩種尺寸源自 compact 與 regular 版面既有的差異，抽取時原樣保留——
-    /// 統一字級會讓 compact 兩處縮小，混進本 change 不預期的視覺變化
     enum Size {
-
-        // MARK: - Cases
 
         /// `.footnote` 加 12pt 水平內距 (regular 版面)
         case standard
@@ -96,122 +130,72 @@ extension BLFilterChip {
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Method
 
 private extension BLFilterChip {
 
-    /// 膠囊的可見內容：圖示、文字與選取態配色
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 膠囊標籤 view
-    @ViewBuilder
-    func label(palette: BLPalette) -> some View {
-        HStack(alignment: isExpanded ? .firstTextBaseline : .center, spacing: 4) {
-            if let icon {
-                Image(systemName: icon)
-                    .font(size.iconFont)
-            }
-
-            titleText
-
-            if let trailingIcon {
-                Image(systemName: trailingIcon)
-                    .font(size.iconFont)
-            }
-        }
-        .foregroundStyle(style.foreground(isSelected: isSelected, palette: palette))
-        .padding(.vertical, 7)
-        .padding(.horizontal, size.horizontalPadding)
-        .background(style.background(isSelected: isSelected, palette: palette))
-        .clipShape(Capsule())
-    }
-
-    /// 膠囊文字：撐滿型允許換行並靠左，其餘維持單行自然寬度
-    @ViewBuilder
-    var titleText: some View {
-        if isExpanded {
-            Text(title)
-                .font(size.titleFont)
-                .multilineTextAlignment(.leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
-        } else {
-            Text(title)
-                .font(size.titleFont)
-                .lineLimit(1)
-        }
-    }
-}
-
-// MARK: - Private Method
-
-private extension BLFilterChip.Style {
-
-    /// 回傳膠囊前景色
-    /// - Parameters:
-    ///   - isSelected: 是否為選取狀態
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 文字與圖示使用的色彩
-    func foreground(isSelected: Bool, palette: BLPalette) -> Color {
+    /// 膠囊的文字與圖示色彩，依選取態與選取配色決定
+    var selectionForeground: Color {
         guard isSelected else {
-            return palette.secondaryLabel
+            return .blSecondaryLabel
         }
-        switch self {
+        switch style {
         case .inverted:
-            return palette.background
+            return .blBackground
+
         case .accent:
-            return palette.accent
+            return .blAccent
+
         case .purple:
-            return palette.purple
+            return .blPurple
         }
     }
 
-    /// 回傳膠囊背景色
-    /// - Parameters:
-    ///   - isSelected: 是否為選取狀態
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 膠囊底色
-    func background(isSelected: Bool, palette: BLPalette) -> Color {
+    /// 膠囊的底色，依選取態與選取配色決定
+    var selectionBackground: Color {
         guard isSelected else {
-            return palette.fillTertiary
+            return .blFillTertiary
         }
-        switch self {
+        switch style {
         case .inverted:
-            return palette.label
+            return .blLabel
+
         case .accent:
-            return palette.accent.opacity(0.18)
+            return .blAccent.opacity(0.18)
+
         case .purple:
-            return palette.purple.opacity(0.18)
+            return .blPurple.opacity(0.18)
         }
     }
-}
-
-private extension BLFilterChip.Size {
 
     /// 膠囊文字字級
     var titleFont: Font {
-        switch self {
+        switch size {
         case .standard:
-                .footnote.weight(.semibold)
+            BLTypographyStyle.footnote.font.weight(.semibold)
+
         case .large:
-                .subheadline.weight(.semibold)
+            BLTypographyStyle.subhead.font.weight(.semibold)
         }
     }
 
     /// 膠囊圖示字級
     var iconFont: Font {
-        switch self {
+        switch size {
         case .standard:
-                .caption2.weight(.semibold)
+            BLTypographyStyle.caption2.font.weight(.semibold)
+
         case .large:
-                .caption.weight(.semibold)
+            BLTypographyStyle.caption.font.weight(.semibold)
         }
     }
 
     /// 膠囊水平內距
     var horizontalPadding: CGFloat {
-        switch self {
+        switch size {
         case .standard:
-            12
+            BLSpacing.medium
+
         case .large:
             14
         }
@@ -223,20 +207,29 @@ private extension BLFilterChip.Size {
 #Preview("篩選膠囊") {
     VStack(alignment: .leading, spacing: BLSpacing.medium) {
         HStack(spacing: BLSpacing.small) {
-            BLFilterChip(title: "全部", isSelected: true) {}
-            BLFilterChip(title: "報價中", isSelected: false) {}
-            BLFilterChip(title: "本月", isSelected: true, style: .accent, icon: "calendar") {}
+            BLFilterChip(isSelected: true, title: "common.action.label.all") {
+            }
+            BLFilterChip(isSelected: false, title: "customers.list.label.quoting") {
+            }
+            BLFilterChip(
+                icon: "calendar",
+                isSelected: true,
+                style: .accent,
+                title: "orders.list.label.month"
+            ) {
+            }
         }
 
         BLFilterChip(
-            title: "篩選: 全部",
-            isSelected: false,
-            style: .purple,
-            size: .large,
             icon: "line.3.horizontal.decrease",
-            trailingIcon: "chevron.down",
-            isExpanded: true
-        ) {}
+            isExpanded: true,
+            isSelected: false,
+            size: .large,
+            style: .purple,
+            title: "篩選: 全部",
+            trailingIcon: "chevron.down"
+        ) {
+        }
     }
     .padding()
 }

@@ -8,9 +8,6 @@
 import XCTest
 
 /// 所有 UI 測試的共用基底
-///
-/// 把「首次失敗即停、固定方向、單一啟動入口、失敗附診斷」收攏在這裡，
-/// 各測試只宣告自己的啟動選項與流程
 class BLUITestCase: XCTestCase {
 
     // MARK: - Data Properties
@@ -36,8 +33,8 @@ class BLUITestCase: XCTestCase {
 extension BLUITestCase {
 
     /// 依啟動選項啟動 App
-    /// - Parameter options: 這次啟動的前置條件，預設為空資料庫加預設語言
-    /// - Returns: 已進入前景的受測 App
+    /// - Parameter options: App 啟動選項
+    /// - Returns: 已啟動的受測 App
     @discardableResult
     func launch(_ options: LaunchOptions = .default) -> XCUIApplication {
         let app = XCUIApplication()

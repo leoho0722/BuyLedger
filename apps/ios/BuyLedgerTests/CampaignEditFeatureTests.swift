@@ -6,117 +6,355 @@
 //
 
 import ComposableArchitecture
-import Foundation
+import SwiftUI
 import Testing
+
 @testable import BuyLedger
 
+/// 驗證開團表單的草稿、驗證、送出與捨棄流程
 @MainActor
 struct CampaignEditFeatureTests {
 
-    // MARK: - Tests
+    /// 新增與編輯表單在名稱修改後出現未儲存變更，改回原名後不再有未儲存變更
+    ///
+    /// - Parameter hasOriginal: 是否以既有開團建立表單
+    /// - Throws: 初始或修改後的草稿未符合前置條件時拋出測試錯誤
+    @Test(arguments: [false, true])
+    func isDirty_名稱修改後還原_恢復初始草稿(hasOriginal: Bool) throws(any Error) {
+        // Given
+        var state = Self.makeState(original: hasOriginal ? Self.original : nil)
+        try #require(state.isDirty == false)
+        state.draft.name = "四月團"
+        try #require(state.isDirty)
 
-    // MARK: Dirty State
+        // When
+        state.draft.name = hasOriginal ? "三月團" : ""
 
-    @Test func newCampaignIsNotDirtyUntilEdited() async {
-        var state = CampaignEditFeature.State(
-            id: UUID(0),
-            currentDate: TestDependencies.fixedNow,
-            reminderTimestamp: TestDependencies.fixedNow
-        )
-        #expect(state.isDirty == false)
-
-        state.draftName = "四月團"
-        #expect(state.isDirty == true)
-    }
-
-    @Test func existingCampaignIsDirtyThenCleanWhenRestored() async {
-        let original = Campaign(
-            id: "C1",
-            name: "三月團",
-            openDate: Date(timeIntervalSince1970: 0),
-            closeDate: nil,
-            status: .ongoing,
-            settledDate: nil,
-            notes: ""
-        )
-        var state = CampaignEditFeature.State(
-            original: original,
-            id: UUID(0),
-            currentDate: TestDependencies.fixedNow,
-            reminderTimestamp: TestDependencies.fixedNow
-        )
-        #expect(state.isDirty == false)
-
-        state.draftName = "四月團"
-        #expect(state.isDirty == true)
-
-        state.draftName = original.name
+        // Then
         #expect(state.isDirty == false)
     }
 
-    @Test func reminderIntentChangeMarksDirty() async {
-        var state = CampaignEditFeature.State(
-            id: UUID(0),
-            currentDate: TestDependencies.fixedNow,
-            reminderTimestamp: TestDependencies.fixedNow
-        )
-        #expect(state.isDirty == false)
+    /// 七個草稿欄位任一欄改變都應標記未儲存變更
+    ///
+    /// - Parameter field: 要獨立修改的草稿欄位
+    @Test(arguments: DraftField.allCases)
+    func isDirty_單一草稿欄位變更_標記未儲存變更(field: DraftField) {
+        // Given
+        var state = Self.makeState()
 
-        // 提醒意圖屬可儲存內容，變更應觸發 dirty
-        state.wantsReminder = true
-        #expect(state.isDirty == true)
+        // When
+        switch field {
+        case .name:
+            state.draft.name = "四月團"
+
+        case .openDate:
+            state.draft.openDate = Date(timeIntervalSince1970: 3_600)
+
+        case .closeDate:
+            state.draft.closeDate = Date(timeIntervalSince1970: 3_600)
+
+        case .status:
+            state.draft.status = .closed
+
+        case .notes:
+            state.draft.notes = "orders.detail.label.notes"
+
+        case .wantsReminder:
+            state.draft.wantsReminder = true
+
+        case .reminderTimestamp:
+            state.draft.reminderTimestamp = Date(timeIntervalSince1970: 3_600)
+        }
+
+        // Then
+        #expect(state.isDirty)
     }
 
-    @Test func reminderTimestampChangeMarksDirty() async {
-        var state = CampaignEditFeature.State(
-            id: UUID(0),
-            currentDate: TestDependencies.fixedNow,
-            wantsReminder: true,
-            reminderTimestamp: TestDependencies.fixedNow
-        )
-        #expect(state.isDirty == false)
-
-        // 提醒時間戳屬可儲存內容，inline 編輯後應觸發 dirty
-        state.reminderTimestamp = TestDependencies.fixedNow.addingTimeInterval(3600)
-        #expect(state.isDirty == true)
-    }
-
-    @Test func cancelWithChangesPresentsDiscardConfirmation() async {
-        var initial = CampaignEditFeature.State(
-            id: UUID(0),
-            currentDate: TestDependencies.fixedNow,
-            reminderTimestamp: TestDependencies.fixedNow
-        )
-        initial.draftName = "四月團"
+    /// 有變更時取消只呈現捨棄確認，不直接關閉表單
+    @Test
+    func cancelButtonTapped_草稿有變更_呈現捨棄確認() async {
+        // Given
+        var initial = Self.makeState()
+        initial.draft.name = "四月團"
+        let dismissCalls = LockIsolated(0)
         let store = TestStore(initialState: initial) {
             CampaignEditFeature()
         } withDependencies: {
-            $0.dismiss = DismissEffect { }
+            $0.dismiss = DismissEffect {
+                dismissCalls.withValue {
+                    $0 += 1
+                }
+            }
         }
-        store.exhaustivity = .off
 
-        await store.send(.cancelTapped)
-        #expect(store.state.discardConfirmation != nil)
+        // When
+        await store.send(.view(.cancelButtonTapped)) {
+            $0.discardConfirmation = Self.discardAlert
+        }
 
-        // 確認捨棄後關閉表單 (dismiss 由注入的 no-op 承接)
-        await store.send(.discardConfirmation(.presented(.discard)))
+        // Then
+        #expect(store.state.discardConfirmation == Self.discardAlert)
+        #expect(dismissCalls.value == 0)
     }
 
-    @Test func cancelWithoutChangesDismissesDirectly() async {
-        let store = TestStore(
-            initialState: CampaignEditFeature.State(
-                id: UUID(0),
-                currentDate: TestDependencies.fixedNow,
-                reminderTimestamp: TestDependencies.fixedNow
-            )
-        ) {
+    /// 確認捨棄後關閉表單，呈現狀態由 `ifLet` 清除
+    @Test
+    func discardConfirmation_確認捨棄_關閉表單並清除確認() async {
+        // Given
+        var initial = Self.makeState()
+        initial.draft.name = "四月團"
+        initial.discardConfirmation = Self.discardAlert
+        let dismissCalls = LockIsolated(0)
+        let store = TestStore(initialState: initial) {
             CampaignEditFeature()
         } withDependencies: {
-            $0.dismiss = DismissEffect { }
+            $0.dismiss = DismissEffect {
+                dismissCalls.withValue {
+                    $0 += 1
+                }
+            }
         }
-        store.exhaustivity = .off
 
-        await store.send(.cancelTapped)
+        // When
+        await store.send(.discardConfirmation(.presented(.discard))) {
+            $0.discardConfirmation = nil
+        }
+
+        // Then
+        await store.finish()
+        #expect(dismissCalls.value == 1)
         #expect(store.state.discardConfirmation == nil)
+    }
+
+    /// 未修改的草稿取消時直接關閉，不呈現捨棄確認
+    @Test
+    func cancelButtonTapped_草稿未變更_直接關閉表單() async {
+        // Given
+        let dismissCalls = LockIsolated(0)
+        let store = TestStore(initialState: Self.makeState()) {
+            CampaignEditFeature()
+        } withDependencies: {
+            $0.dismiss = DismissEffect {
+                dismissCalls.withValue {
+                    $0 += 1
+                }
+            }
+        }
+
+        // When
+        await store.send(.view(.cancelButtonTapped))
+
+        // Then
+        await store.finish()
+        #expect(store.state.discardConfirmation == nil)
+        #expect(dismissCalls.value == 1)
+    }
+
+    /// 名稱欄位的綁定屬性變更時更新草稿並清除父層寫回的重名原因
+    @Test
+    func binding_修改名稱_清除過期重名訊息() async {
+        // Given
+        var initial = Self.makeState()
+        initial.nameConflictMessage = "campaigns.edit.message.anotherCampaignAlready"
+        let store = TestStore(initialState: initial) {
+            CampaignEditFeature()
+        }
+
+        // When
+        await store.send(.binding(.set(\.draftName, "五月團"))) {
+            $0.draft.name = "五月團"
+            $0.nameConflictMessage = nil
+        }
+
+        // Then
+        #expect(store.state.draft.name == "五月團")
+        #expect(store.state.nameConflictMessage == nil)
+    }
+
+    /// 切換提醒意圖時走畫面的 `@Bindable` 綁定路徑，草稿提醒開關隨之更新
+    ///
+    /// - Parameter isReminderWanted: 使用者選定的提醒意圖
+    @Test(arguments: [true, false])
+    func binding_切換提醒意圖_更新草稿提醒開關(isReminderWanted: Bool) {
+        // Given
+        var initial = Self.makeState()
+        initial.draft.wantsReminder = !isReminderWanted
+        let store = Store(initialState: initial) {
+            CampaignEditFeature()
+        }
+        @Bindable var bindable = store
+
+        // When
+        $bindable.draft.wantsReminder.wrappedValue = isReminderWanted
+
+        // Then
+        #expect(store.draft.wantsReminder == isReminderWanted)
+    }
+
+    /// 修改提醒時間時走畫面的 `@Bindable` 綁定路徑，草稿時間戳隨之更新
+    @Test
+    func binding_修改提醒時間_更新草稿提醒時間() {
+        // Given
+        let picked = Date(timeIntervalSince1970: 3_600)
+        let store = Store(initialState: Self.makeState()) {
+            CampaignEditFeature()
+        }
+        @Bindable var bindable = store
+
+        // When
+        $bindable.draft.reminderTimestamp.wrappedValue = picked
+
+        // Then
+        #expect(store.draft.reminderTimestamp == Date(timeIntervalSince1970: 3_600))
+    }
+
+    /// 名稱為空或只有空白時不送出儲存請求，也不關閉表單
+    ///
+    /// - Parameter name: 空字串或只有空白與換行的名稱
+    @Test(arguments: ["", " \n\t "])
+    func saveButtonTapped_名稱只有空白_不送出儲存請求(name: String) async {
+        // Given
+        var initial = Self.makeState()
+        initial.draft.name = name
+        let store = TestStore(initialState: initial) {
+            CampaignEditFeature()
+        }
+
+        // When
+        await store.send(.view(.saveButtonTapped))
+
+        // Then
+        await store.finish()
+        #expect(store.state == initial)
+        #expect(store.state.canSave == false)
+    }
+
+    /// 有效名稱去除前後空白後送出，連同原開團與完整草稿，子層維持開啟
+    ///
+    /// - Parameter hasOriginal: 儲存請求是否包含原開團
+    @Test(arguments: [false, true])
+    func saveButtonTapped_名稱有效_送出完整請求且不關閉(hasOriginal: Bool) async {
+        // Given
+        let original = hasOriginal ? Self.original : nil
+        var initial = Self.makeState(original: original)
+        initial.draft.name = " \n四月團\t "
+        initial.draft.openDate = Date(timeIntervalSince1970: 3_600)
+        initial.draft.closeDate = Date(timeIntervalSince1970: 10_800)
+        initial.draft.status = .closed
+        initial.draft.notes = " 備註 "
+        initial.draft.wantsReminder = true
+        initial.draft.reminderTimestamp = Date(timeIntervalSince1970: 7_200)
+        var expectedDraft = CampaignDraft(
+            original: nil,
+            currentDate: Date(timeIntervalSince1970: 3_600),
+            wantsReminder: true,
+            reminderTimestamp: Date(timeIntervalSince1970: 7_200)
+        )
+        expectedDraft.name = " \n四月團\t "
+        expectedDraft.openDate = Date(timeIntervalSince1970: 3_600)
+        expectedDraft.closeDate = Date(timeIntervalSince1970: 10_800)
+        expectedDraft.status = .closed
+        expectedDraft.notes = " 備註 "
+        let expected = CampaignEditFeature.SaveRequest(
+            original: original,
+            name: "四月團",
+            draft: expectedDraft
+        )
+        let store = TestStore(initialState: initial) {
+            CampaignEditFeature()
+        }
+
+        // When
+        await store.send(.view(.saveButtonTapped))
+
+        // Then
+        await store.receive(\.delegate.saveRequested, expected)
+        #expect(store.state == initial)
+        #expect(store.state.canSave)
+    }
+}
+
+// MARK: - Nested Types
+
+extension CampaignEditFeatureTests {
+
+    /// 逐一驗證未儲存變更的草稿欄位
+    enum DraftField: CaseIterable, Sendable {
+
+        /// 開團名稱
+        case name
+
+        /// 開團日期
+        case openDate
+
+        /// 結單日期
+        case closeDate
+
+        /// 開團狀態
+        case status
+
+        /// 備註
+        case notes
+
+        /// 提醒意圖
+        case wantsReminder
+
+        /// 提醒時間
+        case reminderTimestamp
+    }
+}
+
+// MARK: - Computed Properties
+
+extension CampaignEditFeatureTests {
+
+    /// 固定內容的原開團，供編輯與請求內容斷言使用
+    static var original: Campaign {
+        Campaign.fixture(
+            id: "C1",
+            name: "三月團",
+            openDate: Date(timeIntervalSince1970: 0),
+            status: .ongoing,
+            notes: ""
+        )
+    }
+}
+
+// MARK: - Internal Method
+
+extension CampaignEditFeatureTests {
+
+    /// 建立固定識別值與時間的表單狀態
+    ///
+    /// - Parameter original: 原開團；沒有時建立新增表單
+    /// - Returns: 尚未修改的表單狀態
+    static func makeState(original: Campaign? = nil) -> CampaignEditFeature.State {
+        CampaignEditFeature.State(
+            original: original,
+            id: UUID(0),
+            currentDate: Date(timeIntervalSince1970: 0),
+            reminderTimestamp: Date(timeIntervalSince1970: 0)
+        )
+    }
+}
+
+// MARK: - Private Method
+
+private extension CampaignEditFeatureTests {
+
+    /// 捨棄確認的獨立預期文案與按鈕
+    static var discardAlert: AlertState<CampaignEditFeature.Action.DiscardAlert> {
+        AlertState {
+            TextState("orders.list.label.discardChanges")
+        } actions: {
+            ButtonState(role: .destructive, action: .discard) {
+                TextState("orders.list.label.discardChanges")
+            }
+            ButtonState(role: .cancel) {
+                TextState("orders.list.label.keepEditing")
+            }
+        } message: {
+            TextState("campaigns.edit.message.campaignHasUnsaved")
+        }
     }
 }

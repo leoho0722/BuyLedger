@@ -7,28 +7,47 @@
 
 import XCTest
 
-// MARK: - Internal Method
+// MARK: - Text Input
 
 /// 文字輸入 helper
-///
-/// 數字鍵盤 (numberPad/decimalPad) 沒有 return 鍵，清空重填與收鍵盤這兩個常見動作
-/// 收攏在這裡，各測試不必各寫一套
 extension XCUIElement {
 
     /// 清空欄位既有內容後輸入新文字
     ///
-    /// 先點欄位右緣聚焦並讓游標落到內容尾端，再依現值長度倒退刪除，避免舊值與新值黏在一起;
-    /// 空欄的 `value` 可能回傳 placeholder，多送的刪除鍵對空欄無副作用。全 App 負載下單次點擊可能來不及
-    /// 建立鍵盤焦點、`typeText` 會以「無鍵盤焦點」失敗，故點後等鍵盤升起確認焦點，逾時就重點 (最多三次)
     /// - Parameters:
-    ///   - text: 要輸入的新文字
-    ///   - app: 受測 App，供等待鍵盤升起以確認焦點
-    func clearAndType(_ text: String, in app: XCUIApplication) {
+    ///   - text: 要輸入的文字
+    ///   - app: 受測 App
+    ///   - timeout: 等待欄位可互動的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    func clearAndType(
+        _ text: String,
+        in app: XCUIApplication,
+        timeout: TimeInterval = 5,
+        file: StaticString = #filePath,
+        line: UInt = #line
+    ) {
+        tapAfterWaiting(
+            in: app,
+            timeout: timeout,
+            file: file,
+            line: line
+        )
+        var isKeyboardVisible = app.keyboards.firstMatch.waitForExistence(timeout: 2)
         var focusAttempts = 0
-        repeat {
-            coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
+        while !isKeyboardVisible && focusAttempts < 3 {
+            tap()
             focusAttempts += 1
-        } while !app.keyboards.firstMatch.waitForExistence(timeout: 2) && focusAttempts < 3
+            isKeyboardVisible = app.keyboards.firstMatch.waitForExistence(timeout: 2)
+        }
+        if !isKeyboardVisible {
+            app.failWithDiagnostics(
+                "點擊 identifier 為 \(identifier) 的輸入欄後鍵盤未出現",
+                file: file,
+                line: line
+            )
+            return
+        }
         if let existing = value as? String, !existing.isEmpty {
             let deletes = String(repeating: XCUIKeyboardKey.delete.rawValue, count: existing.count)
             typeText(deletes)
@@ -36,39 +55,75 @@ extension XCUIElement {
         typeText(text)
     }
 
-    /// 點鍵盤工具列的完成鍵收起數字鍵盤
+    /// 依鍵盤狀態收起數字鍵盤並解除數字欄位焦點
     ///
-    /// numberPad/decimalPad 沒有 return 鍵，只能靠工具列的完成鍵收起；
-    /// 找不到該鍵時附診斷讓測試失敗、不靜默略過
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
+    /// - Note:
+    ///   - 軟體鍵盤在 App 視窗內時，點擊工具列完成鍵；完成鍵不可直接命中時，以其可及性 frame 的中心座標點擊，並等待數字鍵盤消失
+    ///   - 軟體鍵盤不在 App 視窗內時 (硬體鍵盤接上)，送出 Return，並等待目標欄位的 `hasKeyboardFocus` 變為 `false`
+    ///   - 兩條路徑的失敗都以 `failWithDiagnostics` 回報
     func dismissNumericKeyboard(
         in app: XCUIApplication,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        let doneButton = app.buttons[BLAccessibilityID.Common.keyboardDoneButton]
-        guard doneButton.waitUntilHittable() else {
-            // failWithDiagnostics 是 XCTestCase 的方法，XCUIElement extension 取不到 test case，
-            // 故以相同素材 (截圖 + 可及性樹) 就地附診斷後 XCTFail
-            XCTContext.runActivity(named: "收數字鍵盤失敗診斷") { activity in
-                let screenshot = XCTAttachment(screenshot: app.screenshot())
-                screenshot.name = "失敗畫面"
-                screenshot.lifetime = .keepAlways
-                activity.add(screenshot)
-
-                let tree = XCTAttachment(string: app.debugDescription)
-                tree.name = "失敗時的可及性樹"
-                tree.lifetime = .keepAlways
-                activity.add(tree)
-            }
-            XCTFail("找不到數字鍵盤工具列的完成鍵，無法收起鍵盤", file: file, line: line)
+        guard exists else {
+            app.failWithDiagnostics(
+                "數字鍵盤目標欄位不存在，無法解除焦點",
+                file: file,
+                line: line
+            )
             return
         }
-        doneButton.tap()
-        // 等鍵盤確實收掉再返回:負載下鍵盤收合有延遲，若殘留會讓下一個欄位的 clearAndType 誤判「有鍵盤 = 已聚焦」而漏聚焦
-        _ = app.keyboards.firstMatch.waitForDisappearance(timeout: 5)
+
+        let keyboardFrame = app.keyboards.firstMatch.frame
+        let appWindowFrame = app.windows.firstMatch.frame
+        let isSoftwareKeyboardVisible = !keyboardFrame.isEmpty
+            && keyboardFrame.intersects(appWindowFrame)
+
+        guard isSoftwareKeyboardVisible else {
+            typeText(XCUIKeyboardKey.return.rawValue)
+            if !wait(
+                for: NSPredicate(format: "hasKeyboardFocus == false"),
+                timeout: 5
+            ) {
+                app.failWithDiagnostics(
+                    "硬體鍵盤模式下數字欄位仍保持 Keyboard Focused",
+                    file: file,
+                    line: line
+                )
+            }
+            return
+        }
+
+        let doneButton = app.buttons[BLAccessibilityID.Common.keyboardDoneButton]
+        if !doneButton.waitForExistence(timeout: 10) {
+            app.failWithDiagnostics(
+                "數字鍵盤工具列的完成鍵未出現",
+                file: file,
+                line: line
+            )
+            return
+        }
+
+        if doneButton.isHittable {
+            doneButton.tap()
+        } else {
+            doneButton
+                .coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5))
+                .tap()
+        }
+
+        // 等鍵盤收起後再返回，避免下一欄位誤判焦點。
+        if !app.keyboards.firstMatch.waitForDisappearance(timeout: 5) {
+            app.failWithDiagnostics(
+                "數字鍵盤工具列的完成鍵未能收起鍵盤",
+                file: file,
+                line: line
+            )
+        }
     }
 }

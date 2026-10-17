@@ -7,7 +7,7 @@
 
 import Foundation
 
-// MARK: - Display Properties
+// MARK: - Computed Properties
 
 extension CampaignStatus {
 
@@ -15,9 +15,9 @@ extension CampaignStatus {
     var title: String {
         switch self {
         case .ongoing:
-            "開團中"
+            "common.general.label.active"
         case .closed:
-            "已收單"
+            "common.general.label.closed"
         }
     }
 }

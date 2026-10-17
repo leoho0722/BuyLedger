@@ -1,7 +1,20 @@
 {
   "sourceLanguage" : "zh-Hant",
   "strings" : {
+    "CFBundleName" : {
+      "comment" : "Bundle name",
+      "extractionState" : "extracted_with_value",
+      "localizations" : {
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "BuyLedger"
+          }
+        }
+      }
+    },
     "NSCalendarsFullAccessUsageDescription" : {
+      "comment" : "Privacy - Calendars Full Access Usage Description",
       "localizations" : {
         "en" : {
           "stringUnit" : {
@@ -13,6 +26,23 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "需要行事曆權限，才能將開團的訂購提醒加入你的行事曆，並在你移除時刪除對應事件。"
+          }
+        }
+      }
+    },
+    "NSFaceIDUsageDescription" : {
+      "comment" : "Privacy - Face ID Usage Description",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Face ID is used to authenticate you so the app can unlock and continue after you enable App Lock."
+          }
+        },
+        "zh-Hant" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "需要使用 Face ID 驗證身份，才能在你啟用 App 鎖定後解鎖並繼續使用。"
           }
         }
       }

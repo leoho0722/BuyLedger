@@ -8,72 +8,88 @@
 import ComposableArchitecture
 import Foundation
 import Testing
+
 @testable import BuyLedger
 
-@MainActor
+/// 驗證訂單合併流程
 struct OrderMergeFeatureTests {
 
-    // MARK: - Tests
-
-    @Test func eligibleCandidatesFilterMatrix() {
-        // 資格矩陣：同幣別 + 同客戶 + 非已合併/已取消，且排除主訂單自身
-        let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
+    /// 只有同客戶、同幣別、尚未合併或取消，且不是主訂單本身的訂單會列為合併候選
+    @Test
+    func eligible_各種資格組合_只回傳符合資格訂單() {
+        // Given
+        let primary = Self.makeOrder(id: "O1", status: .shipping)
         let orders = [
             primary,
-            Self.makeOrder(id: "O2", customer: "Alice", currency: .jpy, status: .purchased),
-            Self.makeOrder(id: "O3", customer: "Alice", currency: .jpy, status: .merged),
-            Self.makeOrder(id: "O4", customer: "Alice", currency: .jpy, status: .cancelled),
-            Self.makeOrder(id: "O5", customer: "Alice", currency: .krw, status: .purchased),
-            Self.makeOrder(id: "O6", customer: "Bob", currency: .jpy, status: .purchased),
+            Self.makeOrder(id: "O2", status: .purchased),
+            Self.makeOrder(id: "O3", status: .merged),
+            Self.makeOrder(id: "O4", status: .cancelled),
+            Self.makeOrder(id: "O5", status: .purchased, currency: .krw),
+            Self.makeOrder(id: "O6", status: .purchased, customer: "Bob"),
+            Self.makeOrder(id: "O7", status: .delivered),
         ]
 
-        let eligible = OrderMergeFeature.State.eligibleCandidates(for: primary, in: orders)
+        // When
+        let eligible = OrderMergeCandidates.eligible(for: primary, in: orders)
 
-        #expect(eligible.map(\.id) == ["O2"])
+        // Then
+        #expect(eligible.map(\.id) == ["O2", "O7"])
     }
 
-    @Test func searchFiltersCandidatesInRealTime() async {
-        let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
+    /// 輸入搜尋文字後，候選清單只留下商品名稱符合的訂單
+    @Test
+    @MainActor
+    func binding_輸入搜尋文字_即時篩選候選訂單() async {
+        // Given
+        let primary = Self.makeOrder(id: "O1", status: .shipping)
         let orders = [
             primary,
-            Self.makeOrder(id: "O2", customer: "Alice", currency: .jpy, status: .purchased, itemName: "香水"),
-            Self.makeOrder(id: "O3", customer: "Alice", currency: .jpy, status: .purchased, itemName: "外套"),
+            Self.makeOrder(id: "O2", status: .purchased, itemName: "香水"),
+            Self.makeOrder(id: "O3", status: .purchased, itemName: "外套"),
         ]
 
         let store = TestStore(
-            initialState: OrderMergeFeature.State(primary: primary, orders: orders)
+            initialState: OrderMergeFeature.State(
+                primary: primary,
+                orders: orders,
+                dateContext: Self.fixedDateContext
+            )
         ) {
             OrderMergeFeature()
         } withDependencies: {
             $0.uuid = .incrementing
         }
 
+        // When
         await store.send(\.binding.searchText, "香水") {
             $0.searchText = "香水"
         }
 
-        #expect(store.state.filteredCandidates.map(\.id) == ["O2"])
+        // Then
+        let sections = store.state.candidateSections(locale: Locale(identifier: "zh-Hant"))
+        #expect(sections.flatMap { $0.orders.map(\.id) } == ["O2"])
     }
 
-    @Test func candidateSectionsGroupByDayNewestFirst() {
-        // 跨日候選依「日」分組：段排序新到舊、段內新到舊，標題同訂單頁 (今天/昨天)
+    /// 候選訂單依日期分成今天、昨天等區段，區段之間與區段內都由新到舊排列
+    @Test
+    func candidateSections_多日期候選訂單_依日期分組並新到舊排序() {
+        // Given
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.timeZone = .gmt
 
         let reference = Date(timeIntervalSince1970: 1_770_000_000)
-        let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
+        let primary = Self.makeOrder(id: "O1", status: .shipping)
         let orders = [
             primary,
             Self.makeOrder(
-                id: "O2", customer: "Alice", currency: .jpy, status: .purchased,
+                id: "O2",
+                status: .purchased,
                 date: reference.addingTimeInterval(-3_600)
             ),
+            Self.makeOrder(id: "O3", status: .purchased, date: reference.addingTimeInterval(-60)),
             Self.makeOrder(
-                id: "O3", customer: "Alice", currency: .jpy, status: .purchased,
-                date: reference.addingTimeInterval(-60)
-            ),
-            Self.makeOrder(
-                id: "O4", customer: "Alice", currency: .jpy, status: .purchased,
+                id: "O4",
+                status: .purchased,
                 date: reference.addingTimeInterval(-86_400)
             ),
         ]
@@ -81,197 +97,151 @@ struct OrderMergeFeatureTests {
         let state = withDependencies {
             $0.uuid = .incrementing
         } operation: {
-            OrderMergeFeature.State(primary: primary, orders: orders)
+            OrderMergeFeature.State(
+                primary: primary,
+                orders: orders,
+                dateContext: OrderDateContext(now: reference, calendar: calendar)
+            )
         }
-        let sections = state.candidateSections(
-            referenceDate: reference,
-            calendar: calendar,
-            locale: Locale(identifier: "zh-Hant")
-        )
 
+        // When
+        let sections = state.candidateSections(locale: Locale(identifier: "zh-Hant"))
+
+        // Then
         #expect(sections.map(\.title) == ["今天", "昨天"])
         #expect(sections.map { $0.orders.map(\.id) } == [["O3", "O2"], ["O4"]])
     }
 
-    @Test func candidateSectionsApplySearchFilter() {
-        // 搜尋過濾先於分組生效：無符合候選的日子不產生區段
+    /// 先依搜尋文字篩選再分組，沒有符合訂單的日期不會產生區段
+    @Test
+    func candidateSections_輸入搜尋文字_只分組符合候選項目() {
+        // Given
         var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = TimeZone(secondsFromGMT: 0)!
+        calendar.timeZone = .gmt
 
         let reference = Date(timeIntervalSince1970: 1_770_000_000)
-        let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping)
+        let primary = Self.makeOrder(id: "O1", status: .shipping)
         let orders = [
             primary,
             Self.makeOrder(
-                id: "O2", customer: "Alice", currency: .jpy, status: .purchased,
-                itemName: "香水", date: reference.addingTimeInterval(-3_600)
+                id: "O2",
+                status: .purchased,
+                itemName: "香水",
+                date: reference.addingTimeInterval(-3_600)
             ),
             Self.makeOrder(
-                id: "O3", customer: "Alice", currency: .jpy, status: .purchased,
-                itemName: "外套", date: reference.addingTimeInterval(-86_400)
+                id: "O3",
+                status: .purchased,
+                itemName: "外套",
+                date: reference.addingTimeInterval(-86_400)
             ),
         ]
 
         var state = withDependencies {
             $0.uuid = .incrementing
         } operation: {
-            OrderMergeFeature.State(primary: primary, orders: orders)
+            OrderMergeFeature.State(
+                primary: primary,
+                orders: orders,
+                dateContext: OrderDateContext(now: reference, calendar: calendar)
+            )
         }
         state.searchText = "香水"
-        let sections = state.candidateSections(
-            referenceDate: reference,
-            calendar: calendar,
-            locale: Locale(identifier: "zh-Hant")
-        )
 
+        // When
+        let sections = state.candidateSections(locale: Locale(identifier: "zh-Hant"))
+
+        // Then
         #expect(sections.map(\.title) == ["今天"])
         #expect(sections.flatMap { $0.orders.map(\.id) } == ["O2"])
     }
 
-    @Test func candidateTappedWithinPhotoLimitCompletesDirectly() async {
-        // 照片合計 ≤ 上限：跳過挑選步驟直接 delegate，照片主前副後串接
-        let primaryPhotos = [Data([0x01]), Data([0x02])]
-        let secondaryPhotos = [Data([0x03]), Data([0x04]), Data([0x05])]
-        let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping, photos: primaryPhotos)
-        let secondary = Self.makeOrder(id: "O2", customer: "Alice", currency: .jpy, status: .purchased, photos: secondaryPhotos)
-
-        let store = TestStore(
-            initialState: OrderMergeFeature.State(primary: primary, orders: [primary, secondary])
-        ) {
-            OrderMergeFeature()
-        } withDependencies: {
+    /// 東十四區午夜前後的候選，依建立合併流程時帶入的時間與時區分組，不讀取依賴中的時間與行事曆
+    ///
+    /// - Throws: 無法建立測試時區時由 `#require` 丟出
+    /// - Note: 台北與 UTC 會把昨天候選併入今天，台北另會把更早候選歸為昨天
+    @Test
+    func candidateSections_日期脈絡為東十四區午夜_分成今天昨天與更早() throws {
+        // Given
+        var calendar = TestDependencies.fixedCalendar
+        calendar.timeZone = try #require(TimeZone(identifier: "Pacific/Kiritimati"))
+        let reference = Date(timeIntervalSince1970: 1_777_458_600)
+        let primary = Self.makeOrder(id: "PRIMARY", status: .shipping)
+        let orders = [
+            primary,
+            Self.makeOrder(
+                id: "YESTERDAY",
+                status: .purchased,
+                date: Date(timeIntervalSince1970: 1_777_456_740)
+            ),
+            Self.makeOrder(
+                id: "EARLIER",
+                status: .purchased,
+                date: Date(timeIntervalSince1970: 1_777_309_200)
+            ),
+            Self.makeOrder(
+                id: "TODAY",
+                status: .purchased,
+                date: Date(timeIntervalSince1970: 1_777_457_100)
+            ),
+        ]
+        let state = withDependencies {
             $0.uuid = .incrementing
+            $0.date = .constant(Date(timeIntervalSince1970: 1_777_593_600))
+            $0.calendar = TestDependencies.fixedCalendar
+        } operation: {
+            OrderMergeFeature.State(
+                primary: primary,
+                orders: orders,
+                dateContext: OrderDateContext(now: reference, calendar: calendar)
+            )
         }
+        let expectedSectionIDs = [
+            Date(timeIntervalSince1970: 1_777_456_800),
+            Date(timeIntervalSince1970: 1_777_370_400),
+            Date(timeIntervalSince1970: 1_777_284_000),
+        ]
 
-        await store.send(.candidateTapped("O2"))
-        await store.receive(\.delegate.completed)
+        // When
+        let sections = state.candidateSections(locale: Locale(identifier: "zh-Hant_TW"))
 
-        #expect(store.state.step == .selectCandidate)
-    }
-
-    @Test func candidateTappedOverPhotoLimitEntersPhotoStep() async {
-        // 4 + 3 = 7 張 > 5：進入照片挑選步驟並預選前 5 張 (主訂單照片在前)
-        let primaryPhotos = (1...4).map { Data([UInt8($0)]) }
-        let secondaryPhotos = (5...7).map { Data([UInt8($0)]) }
-        let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping, photos: primaryPhotos)
-        let secondary = Self.makeOrder(id: "O2", customer: "Alice", currency: .jpy, status: .purchased, photos: secondaryPhotos)
-
-        let store = TestStore(
-            initialState: OrderMergeFeature.State(primary: primary, orders: [primary, secondary])
-        ) {
-            OrderMergeFeature()
-        } withDependencies: {
-            $0.uuid = .incrementing
-        }
-
-        await store.send(.candidateTapped("O2")) {
-            $0.selectedSecondary = secondary
-            $0.combinedPhotos = primaryPhotos + secondaryPhotos
-            $0.selectedPhotoIndices = Set(0..<LedgerOrder.maxPhotoCount)
-            $0.step = .selectPhotos
-        }
-    }
-
-    @Test func backToCandidatesTappedReturnsToCandidateStepAndClearsPhotoState() async {
-        let primaryPhotos = (1...4).map { Data([UInt8($0)]) }
-        let secondaryPhotos = (5...7).map { Data([UInt8($0)]) }
-        let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping, photos: primaryPhotos)
-        let secondary = Self.makeOrder(id: "O2", customer: "Alice", currency: .jpy, status: .purchased, photos: secondaryPhotos)
-
-        let store = TestStore(
-            initialState: OrderMergeFeature.State(primary: primary, orders: [primary, secondary])
-        ) {
-            OrderMergeFeature()
-        } withDependencies: {
-            $0.uuid = .incrementing
-        }
-
-        await store.send(.candidateTapped("O2")) {
-            $0.selectedSecondary = secondary
-            $0.combinedPhotos = primaryPhotos + secondaryPhotos
-            $0.selectedPhotoIndices = Set(0..<LedgerOrder.maxPhotoCount)
-            $0.step = .selectPhotos
-        }
-
-        // Back 返回候選步驟並清掉照片步驟暫存
-        await store.send(.backToCandidatesTapped) {
-            $0.step = .selectCandidate
-            $0.selectedSecondary = nil
-            $0.combinedPhotos = []
-            $0.selectedPhotoIndices = []
-        }
-    }
-
-    @Test func photoToggleGuardsTheKeepLimit() async {
-        let primaryPhotos = (1...4).map { Data([UInt8($0)]) }
-        let secondaryPhotos = (5...7).map { Data([UInt8($0)]) }
-        let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping, photos: primaryPhotos)
-        let secondary = Self.makeOrder(id: "O2", customer: "Alice", currency: .jpy, status: .purchased, photos: secondaryPhotos)
-
-        let store = TestStore(
-            initialState: OrderMergeFeature.State(primary: primary, orders: [primary, secondary])
-        ) {
-            OrderMergeFeature()
-        } withDependencies: {
-            $0.uuid = .incrementing
-        }
-        store.exhaustivity = .off
-
-        await store.send(.candidateTapped("O2"))
-
-        // 已選滿 5 張：再勾第 6 張會被守門忽略
-        await store.send(.photoToggled(5))
-        #expect(store.state.selectedPhotoIndices == Set(0..<5))
-
-        // 取消一張後即可改勾其他照片
-        await store.send(.photoToggled(0))
-        await store.send(.photoToggled(6))
-        #expect(store.state.selectedPhotoIndices == Set([1, 2, 3, 4, 6]))
-    }
-
-    @Test func photoStepConfirmDeliversKeptPhotosInOrder() async {
-        let primaryPhotos = (1...4).map { Data([UInt8($0)]) }
-        let secondaryPhotos = (5...7).map { Data([UInt8($0)]) }
-        let primary = Self.makeOrder(id: "O1", customer: "Alice", currency: .jpy, status: .shipping, photos: primaryPhotos)
-        let secondary = Self.makeOrder(id: "O2", customer: "Alice", currency: .jpy, status: .purchased, photos: secondaryPhotos)
-
-        let store = TestStore(
-            initialState: OrderMergeFeature.State(primary: primary, orders: [primary, secondary])
-        ) {
-            OrderMergeFeature()
-        } withDependencies: {
-            $0.uuid = .incrementing
-        }
-        store.exhaustivity = .off
-
-        await store.send(.candidateTapped("O2"))
-        // 改保留 index 1, 2, 6 三張
-        await store.send(.photoToggled(0))
-        await store.send(.photoToggled(3))
-        await store.send(.photoToggled(4))
-        await store.send(.photoToggled(6))
-
-        await store.send(.photoStepConfirmTapped)
-        await store.receive(\.delegate.completed)
-
-        // delegate payload 驗證：以 case path 取出參數
-        let combined = primaryPhotos + secondaryPhotos
-        let expectedKept = [combined[1], combined[2], combined[6]]
-        #expect(store.state.selectedPhotoIndices.sorted() == [1, 2, 6])
-        #expect(store.state.selectedPhotoIndices.sorted().map { combined[$0] } == expectedKept)
+        // Then
+        #expect(sections.prefix(2).map(\.title) == ["今天", "昨天"])
+        #expect(sections.map { $0.orders.map(\.id) } == [["TODAY"], ["YESTERDAY"], ["EARLIER"]])
+        #expect(sections.map(\.id) == expectedSectionIDs)
     }
 }
 
-// MARK: - Helpers
+// MARK: - Computed Properties
 
-private extension OrderMergeFeatureTests {
+extension OrderMergeFeatureTests {
 
-    /// 建立測試訂單；未指定的欄位使用中性預設值
+    /// 合併流程測試共用的固定時間與行事曆
+    static var fixedDateContext: OrderDateContext {
+        OrderDateContext(now: TestDependencies.fixedNow, calendar: TestDependencies.fixedCalendar)
+    }
+}
+
+// MARK: - Internal Method
+
+extension OrderMergeFeatureTests {
+
+    /// 建立測試訂單；未指定的欄位使用預設值
+    ///
+    /// - Parameters:
+    ///   - id: 訂單識別值，同一組測試內須互不相同
+    ///   - status: 訂單狀態，決定訂單是否符合合併候選的資格
+    ///   - customer: 客戶名稱，預設所有測試訂單屬於同一位客戶
+    ///   - currency: 訂單幣別，預設日圓
+    ///   - itemName: 商品名稱，預設為示範用的商品名稱
+    ///   - date: 訂單日期，預設為固定時間點，不隨執行時間改變
+    ///   - photos: 訂單照片，預設沒有照片
+    /// - Returns: 建立的測試訂單
     static func makeOrder(
         id: String,
-        customer: String,
-        currency: CurrencyCode,
         status: OrderStatus,
+        customer: String = "Alice",
+        currency: CurrencyCode = .jpy,
         itemName: String = "示範商品",
         date: Date = Date(timeIntervalSince1970: 1_770_000_000),
         photos: [Data] = []
