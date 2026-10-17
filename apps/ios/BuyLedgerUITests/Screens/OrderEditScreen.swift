@@ -8,20 +8,27 @@
 import XCTest
 
 /// 訂單編輯表單的 Page Object
-struct OrderEditScreen: Screen {
+struct OrderEditScreen {
 
     // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
+}
 
-    // MARK: - Computed Properties
+// MARK: - Computed Properties
 
-    /// 判定編輯表單已就緒的根 identifier (表單捲動容器)
-    ///
-    /// - Returns: 編輯表單的根 identifier
-    var rootIdentifier: String {
-        BLAccessibilityID.OrderEdit.root
+@MainActor
+extension OrderEditScreen {
+
+    /// 基本資料區段的訂購日期選擇器
+    var orderDatePicker: XCUIElement {
+        app.descendants(matching: .any)[BLAccessibilityID.OrderEdit.orderDatePicker]
+    }
+
+    /// 基本資料區段頁尾的訂購時間戳
+    var orderDateTimestamp: XCUIElement {
+        app.descendants(matching: .any)[BLAccessibilityID.OrderEdit.orderDateTimestamp]
     }
 }
 
@@ -36,10 +43,7 @@ extension OrderEditScreen {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Returns: 儲存按鈕是否可用
-    func isSaveEnabled(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) -> Bool {
+    func isSaveEnabled(file: StaticString = #filePath, line: UInt = #line) -> Bool {
         let button = app.buttons[BLAccessibilityID.OrderEdit.saveButton]
         if !button.waitForExistence(timeout: 10) {
             let saveButtonID = BLAccessibilityID.OrderEdit.saveButton
@@ -60,11 +64,7 @@ extension OrderEditScreen {
     ///   - name: 要填入的客戶名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func typeCustomerName(
-        _ name: String,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
+    func typeCustomerName(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
         let field = app.textFields[BLAccessibilityID.OrderEdit.customerField]
         var scrollAttempts = 0
         while scrollAttempts < 8 {
@@ -80,12 +80,8 @@ extension OrderEditScreen {
             rootElement.swipeDown()
             scrollAttempts += 1
         }
-        guard field.exists else {
-            app.failWithDiagnostics(
-                "捲動 8 次後仍找不到客戶名稱欄位",
-                file: file,
-                line: line
-            )
+        if !field.exists {
+            app.failWithDiagnostics("捲動 8 次後仍找不到客戶名稱欄位", file: file, line: line)
             return
         }
         field.clearAndType(
@@ -144,23 +140,15 @@ extension OrderEditScreen {
         let keyboard = app.keyboards.firstMatch
         if keyboard.exists {
             customerField.typeText(XCUIKeyboardKey.return.rawValue)
-            guard keyboard.waitForDisappearance(timeout: 5) else {
-                app.failWithDiagnostics(
-                    "訂單編輯的文字鍵盤未能收起",
-                    file: file,
-                    line: line
-                )
+            if !keyboard.waitForDisappearance(timeout: 5) {
+                app.failWithDiagnostics("訂單編輯的文字鍵盤未能收起", file: file, line: line)
                 return
             }
         }
 
         let row = app.descendants(matching: .any)[BLAccessibilityID.OrderEdit.currencyRow]
-        guard row.waitForExistence(timeout: 10) else {
-            app.failWithDiagnostics(
-                "找不到幣別選擇列",
-                file: file,
-                line: line
-            )
+        if !row.waitForExistence(timeout: 10) {
+            app.failWithDiagnostics("找不到幣別選擇列", file: file, line: line)
             return
         }
 
@@ -213,10 +201,7 @@ extension OrderEditScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapNumericKeyboardDone(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
+    func tapNumericKeyboardDone(file: StaticString = #filePath, line: UInt = #line) {
         let field = app.textFields[BLAccessibilityID.OrderEdit.chargedAmountField]
         field.dismissNumericKeyboard(in: app, file: file, line: line)
     }
@@ -227,11 +212,7 @@ extension OrderEditScreen {
     ///   - index: 照片縮圖的序位
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapPhotoThumbnail(
-        index: Int,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
+    func tapPhotoThumbnail(index: Int, file: StaticString = #filePath, line: UInt = #line) {
         let thumbnail = app.descendants(matching: .any)[
             BLAccessibilityID.OrderEdit.photoThumbnail(index: index)
         ]
@@ -265,6 +246,16 @@ extension OrderEditScreen {
     }
 }
 
+// MARK: - Screen
+
+extension OrderEditScreen: Screen {
+
+    /// 判定編輯表單已就緒的根 identifier (表單捲動容器)
+    var rootIdentifier: String {
+        BLAccessibilityID.OrderEdit.root
+    }
+}
+
 // MARK: - Private Method
 
 @MainActor
@@ -276,13 +267,9 @@ private extension OrderEditScreen {
     ///   - identifier: 選擇器入口列的 accessibility identifier
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func tapPickerRow(
-        _ identifier: String,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
+    func tapPickerRow(_ identifier: String, file: StaticString = #filePath, line: UInt = #line) {
         let row = app.descendants(matching: .any)[identifier]
-        if !row.isHittable {
+        if !row.isHittableOnScreen {
             app.scrollToHittable(row, within: rootElement)
         }
         row.tapAfterWaiting(in: app, file: file, line: line)

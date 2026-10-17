@@ -63,27 +63,22 @@ extension SnapshotTests {
         }
     }
 
-    /// 編輯既有開團時表單帶入名稱、日期、狀態與備註，並開啟訂購提醒顯示提醒時間
+    /// 編輯既有開團時，備註區段帶入開團備註
+    ///
+    /// - Note: 資訊區段含系統日期選擇器不做像素比對，改由 `CampaignEditDateRowTests` 守住日期列
+    /// - Note: 於 key window 渲染，與訂單編輯區段一致
     @Test
-    func campaignEditView_編輯既有開團_符合基準圖() {
+    func campaignEditNotesSection_編輯既有開團_符合基準圖() {
         TestDependencies.withFixedNow {
             // Given
-            let state = CampaignEditFeature.State(
-                original: Self.makeDetailCampaign(),
-                id: UUID(0),
-                currentDate: TestDependencies.fixedNow,
-                isReminderWanted: true,
-                reminderTimestamp: Self.makeDetailReminderTimestamp()
-            )
+            let campaign = Self.makeDetailCampaign()
 
             // When
-            let view = CampaignEditView(
-                store: Store(initialState: state) {
-                    EmptyReducer()
-                }
-            )
+            let view = SnapshotSectionView {
+                CampaignEditNotesSection(notes: .constant(campaign.notes), focusedField: $0)
+            }
             .environment(\.locale, AppLanguage.traditionalChinese.locale)
-            .frame(width: 393, height: 852)
+            .frame(width: 393, height: 200)
 
             // Then
             assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
@@ -143,7 +138,9 @@ private extension SnapshotTests {
             reminderLinks: SharedReader(value: [
                 campaign.id: CampaignReminderLink(
                     eventIdentifier: "event-campaign-detail",
-                    reminderTimestamp: makeDetailReminderTimestamp()
+                    // 早於結單日的固定提醒時間：現在時間後兩天又 9 小時
+                    reminderTimestamp: TestDependencies.fixedNow
+                        .addingTimeInterval((2 * 24 + 9) * 3_600)
                 ),
             ]),
             isShowingUnpaidOnly: Shared(value: false)
@@ -162,12 +159,5 @@ private extension SnapshotTests {
             status: .ongoing,
             notes: "美妝與服飾為主，集運倉收滿即出。"
         )
-    }
-
-    /// 取得固定的訂購提醒時間，為固定現在時間後兩天又 9 小時
-    ///
-    /// - Returns: 早於結單日的提醒時間戳
-    static func makeDetailReminderTimestamp() -> Date {
-        TestDependencies.fixedNow.addingTimeInterval((2 * 24 + 9) * 3_600)
     }
 }

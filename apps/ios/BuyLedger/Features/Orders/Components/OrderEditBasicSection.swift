@@ -40,21 +40,6 @@ struct OrderEditBasicSection: View {
 
 private extension OrderEditBasicSection {
 
-    /// 客戶名稱、來源、類別與訂購日期
-    @ViewBuilder
-    var fields: some View {
-        TextField("orders.list.label.customerName", text: $store.draft.customerName)
-            .textContentType(.name)
-            .focused(focusedField, equals: .customerName)
-            .accessibilityIdentifier(BLAccessibilityID.OrderEdit.customerField)
-
-        orderSourcePickerRow
-
-        categoryPickerRow
-
-        orderDateRow
-    }
-
     /// 基本資料的區段標題
     var sectionHeader: some View {
         Text("orders.edit.label.basicInformation")
@@ -77,6 +62,7 @@ private extension OrderEditBasicSection {
             .blTextStyle(.footnote)
             .foregroundStyle(.blSecondaryLabel)
             .monospacedDigit()
+            .accessibilityIdentifier(BLAccessibilityID.OrderEdit.orderDateTimestamp)
 
             if !store.canSave {
                 Text("orders.edit.message.customerNameOrder")
@@ -90,11 +76,10 @@ private extension OrderEditBasicSection {
     var orderSourcePickerRow: some View {
         OrderEditSelectionRow(
             title: "orders.detail.label.orderSource",
-            identifier: BLAccessibilityID.OrderEdit.sourceRow,
-            action: {
-                pickerStore.send(.view(.orderSourcePickerTapped))
-            }
+            identifier: BLAccessibilityID.OrderEdit.sourceRow
         ) {
+            pickerStore.send(.view(.orderSourcePickerTapped))
+        } value: {
             Group {
                 if store.draft.orderSource.isEmpty {
                     Text("orders.edit.label.selectSource")
@@ -109,11 +94,10 @@ private extension OrderEditBasicSection {
     var categoryPickerRow: some View {
         OrderEditSelectionRow(
             title: "orders.list.label.itemCategory",
-            identifier: BLAccessibilityID.OrderEdit.categoryRow,
-            action: {
-                pickerStore.send(.view(.categoryPickerTapped))
-            }
+            identifier: BLAccessibilityID.OrderEdit.categoryRow
         ) {
+            pickerStore.send(.view(.categoryPickerTapped))
+        } value: {
             Group {
                 if store.draft.categories.isEmpty {
                     Text("orders.edit.label.selectCategories")
@@ -136,6 +120,22 @@ private extension OrderEditBasicSection {
         )
         .datePickerStyle(.compact)
         .environment(\.locale, locale)
+        .accessibilityIdentifier(BLAccessibilityID.OrderEdit.orderDatePicker)
+    }
+
+    /// 客戶名稱、來源、類別與訂購日期
+    @ViewBuilder
+    var fields: some View {
+        TextField("orders.list.label.customerName", text: $store.draft.customerName)
+            .textContentType(.name)
+            .focused(focusedField, equals: .customerName)
+            .accessibilityIdentifier(BLAccessibilityID.OrderEdit.customerField)
+
+        orderSourcePickerRow
+
+        categoryPickerRow
+
+        orderDateRow
     }
 }
 

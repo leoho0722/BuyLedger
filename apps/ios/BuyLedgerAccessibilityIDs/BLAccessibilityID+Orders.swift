@@ -118,6 +118,12 @@ extension BLAccessibilityID {
         /// 商品類別選擇列
         static let categoryRow = "orderEdit.categoryRow"
 
+        /// 訂購日期選擇器
+        static let orderDatePicker = "orderEdit.orderDatePicker"
+
+        /// 基本資料區段頁尾的訂購時間戳
+        static let orderDateTimestamp = "orderEdit.orderDateTimestamp"
+
         /// 幣別選擇列
         static let currencyRow = "orderEdit.currencyRow"
 

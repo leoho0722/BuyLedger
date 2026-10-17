@@ -30,7 +30,7 @@ struct CampaignEditView: View {
             Form {
                 campaignInfoSection
 
-                notesSection
+                CampaignEditNotesSection(notes: $store.draft.notes, focusedField: $focusedField)
             }
             .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.root)
             .scrollDismissesKeyboard(.interactively)
@@ -74,6 +74,7 @@ private extension CampaignEditView {
                 displayedComponents: .date
             )
             .environment(\.locale, locale)
+            .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.openDatePicker)
 
             DatePicker(
                 "campaigns.detail.label.closeDate",
@@ -81,6 +82,7 @@ private extension CampaignEditView {
                 displayedComponents: .date
             )
             .environment(\.locale, locale)
+            .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.closeDatePicker)
 
             Picker("orders.list.label.status", selection: $store.draft.status) {
                 ForEach(CampaignStatus.allCases) {
@@ -99,17 +101,8 @@ private extension CampaignEditView {
                     displayedComponents: [.date, .hourAndMinute]
                 )
                 .environment(\.locale, locale)
+                .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.reminderDatePicker)
             }
-        }
-    }
-
-    /// 備註欄，可輸入多行
-    var notesSection: some View {
-        Section("orders.detail.label.notes") {
-            TextField("orders.edit.label.optional", text: $store.draft.notes, axis: .vertical)
-                .lineLimit(2...5)
-                .textContentType(nil)
-                .focused($focusedField, equals: .notes)
         }
     }
 

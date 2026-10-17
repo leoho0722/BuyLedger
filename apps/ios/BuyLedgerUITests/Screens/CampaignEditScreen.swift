@@ -16,6 +16,27 @@ struct CampaignEditScreen {
     let app: XCUIApplication
 }
 
+// MARK: - Computed Properties
+
+@MainActor
+extension CampaignEditScreen {
+
+    /// 開團資訊區段中名稱欄下方的開團日期列
+    var openDatePicker: XCUIElement {
+        app.descendants(matching: .any)[BLAccessibilityID.CampaignEdit.openDatePicker]
+    }
+
+    /// 開團資訊區段中緊接開團日期的結單日期列
+    var closeDatePicker: XCUIElement {
+        app.descendants(matching: .any)[BLAccessibilityID.CampaignEdit.closeDatePicker]
+    }
+
+    /// 訂購提醒時間選擇器，提醒開啟時才出現
+    var reminderDatePicker: XCUIElement {
+        app.descendants(matching: .any)[BLAccessibilityID.CampaignEdit.reminderDatePicker]
+    }
+}
+
 // MARK: - Internal Method
 
 @MainActor
@@ -58,14 +79,24 @@ extension CampaignEditScreen {
         )
     }
 
-    /// 切換訂購提醒開關
+    /// 切換訂購提醒開關，點內層原生開關並確認值真的改變
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
+    /// - Note: 外層開關涵蓋整列，點它的中心會落在標題文字上而不切換
     func toggleReminder(file: StaticString = #filePath, line: UInt = #line) {
         let toggle = app.switches[BLAccessibilityID.CampaignEdit.reminderToggle]
-        toggle.tapAfterWaiting(in: app, file: file, line: line)
+        if !toggle.waitForExistence(timeout: 10) {
+            app.failWithDiagnostics("找不到訂購提醒開關", file: file, line: line)
+            return
+        }
+        let previousValue = toggle.value as? String ?? ""
+        toggle.switches.firstMatch.tapAfterWaiting(in: app, file: file, line: line)
+        let changed = NSPredicate(format: "value != %@", previousValue)
+        if !toggle.wait(for: changed, timeout: 5) {
+            app.failWithDiagnostics("點擊後訂購提醒開關的值沒有改變", file: file, line: line)
+        }
     }
 
     /// 點工具列的儲存

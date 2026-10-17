@@ -103,8 +103,17 @@ extension BLAccessibilityID {
         /// 開團名稱欄位
         static let nameField = "campaignEdit.nameField"
 
+        /// 開團日期選擇器
+        static let openDatePicker = "campaignEdit.openDatePicker"
+
+        /// 結單日期選擇器
+        static let closeDatePicker = "campaignEdit.closeDatePicker"
+
         /// 開團提醒切換鈕
         static let reminderToggle = "campaignEdit.reminderToggle"
+
+        /// 訂購提醒時間選擇器，提醒開啟時才出現
+        static let reminderDatePicker = "campaignEdit.reminderDatePicker"
 
         /// 儲存開團按鈕
         static let saveButton = "campaignEdit.saveButton"

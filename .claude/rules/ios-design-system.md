@@ -81,7 +81,7 @@ paths:
     - 帶標題的進度列由 `BLProgressView` 自行排版標題與目前值，系統 `ProgressView(value:)` 只套 `BLProgressViewStyle` 畫進度條：進度語意留在系統元件；不在 `ProgressViewStyle` 內以 `configuration.label`／`currentValueLabel` 畫文字，整批 snapshot 的離屏渲染會偶發漏畫那段文字。
     - 整個 `BLProgressView` 以 `.accessibilityElement(children: .combine)` 合併，可見文字不隱藏：父層合併朗讀讀的是實際畫出的文字；隱藏文字再給 `ProgressView` 加 `.accessibilityLabel`／`.accessibilityValue`，合併朗讀會缺目前值 (由 `CampaignProgressAccessibilityTests` 守住)。
     - 訂單搜尋用 `.searchable(placement: .navigationBarDrawer(displayMode: .always))`；設定頁值選擇列用 `NavigationLink` + `LabeledContent` + `OptionPickerSheet(isEmbedded: true)`。
-- **含工具列 `.borderedProminent` 按鈕的畫面，snapshot 測試改用 `.image(drawHierarchyInKeyWindow: true)`**：離屏渲染會整張變黑，實際執行正常 (參考訂單編輯的 baseline 測試)。
+- **含工具列 `.borderedProminent` 按鈕的畫面，snapshot 測試改用 `.image(drawHierarchyInKeyWindow: true)`**：離屏渲染會整張變黑，實際執行正常 (參考 `paymentMethodEditorSheet_新增付款方式_顯示空白表單`)。
 - **破壞性用 `Button(role: .destructive)` 表達**，`BLButtonStyle` 不提供破壞性變體。
 - **自繪背景的 `ButtonStyle` 自己讀 `@Environment(\.isEnabled)`**，否則停用態看起來與可用時相同。
 - **可點擊元素用 `Button`，不用 `onTapGesture`**：手勢沒有按壓態，也不支援 switch control 與外接鍵盤。
