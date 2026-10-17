@@ -36,9 +36,6 @@ extension OrdersContainerPlan {
             )
             outcome.detailPopIDs = state.orders.first { $0.id == id }?.mergedSourceIDs ?? []
 
-        case .optionAdded(let option):
-            outcome.addedOption = option
-
         case .deleted(let id):
             outcome.detailPopIDs = [id]
             outcome.closesEditOf = id

@@ -30,6 +30,8 @@ extension RootFeatureTests {
         let campaignRelease = AsyncStream<Void>.makeStream()
         let orderRelease = AsyncStream<Void>.makeStream()
         let currencyRelease = AsyncStream<Void>.makeStream()
+        let catalogRelease = AsyncStream<Void>.makeStream()
+        let lookupReads = LockIsolated(0)
         let store = TestStore(initialState: Self.makeIsolatedRootState()) {
             RootFeature()
         } withDependencies: {
@@ -69,23 +71,46 @@ extension RootFeatureTests {
                     $0.finish()
                 }
             }
-            Self.suppressCampaignLoadingLookups(&$0)
+            Self.suppressCampaignLoadingLookups(
+                &$0,
+                release: catalogRelease.stream,
+                reads: lookupReads
+            )
         }
         await store.send(.view(.task)) {
             $0.campaigns.load.$isLoading.withLock {
                 $0 = true
             }
+        }
+        await Self.receiveLaunchCatalogRequests(in: store)
+        catalogRelease.continuation.finish()
+        await store.receive(\.more.catalog.catalogResponse, [:]) {
+            $0.more.catalog.isLoading = false
             $0.orders.load.$isLoading.withLock {
                 $0 = true
             }
         }
-        await Self.receiveLaunchLoadRequests(in: store)
+        await Self.receiveCatalogFinished(in: store)
 
         // When
-        await store.send(.orders(.loadRequested))
+        await store.send(.orders(.list(.view(.task)))) {
+            $0.orders.list.dateContext = OrderDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+        }
 
         // Then
-        await store.receive(\.orders.load.loadRequested)
+        await store.receive(\.orders.list.delegate.loadRequested)
+        await store.receive(\.orders.delegate.loadRequested)
+        await store.receive(\.more.catalogLoadRequested)
+        await store.receive(\.more.catalog.loadRequested) {
+            $0.more.catalog.isLoading = true
+        }
+        await store.receive(\.more.catalog.catalogResponse, [:]) {
+            $0.more.catalog.isLoading = false
+        }
+        await Self.receiveCatalogFinished(in: store)
         campaignRelease.continuation.finish()
         await store.receive(\.campaigns.load.campaignsResponse.success) {
             $0.campaigns.load.$isLoading.withLock {
@@ -117,6 +142,7 @@ extension RootFeatureTests {
         await store.receive(\.launch.currencyCodesResponse.success, [])
         await store.finish()
         #expect(reads.value == 1)
+        #expect(lookupReads.value == 8)
         #expect(saved.value.count == 1)
         #expect(saved.value == [closed])
         #expect(store.state.orders.campaigns == [closed])
@@ -129,25 +155,25 @@ extension RootFeatureTests {
 
 private extension RootFeatureTests {
 
-    /// 讓訂單來源、類別、付款方式與對帳狀態的讀取一律失敗，使本測試只核對開團的讀寫
+    /// 讓四種主檔讀取一律失敗，並記錄實際讀取次數以驗證重試
     ///
-    /// - Parameter dependencies: 本測試的依賴集合
-    static func suppressCampaignLoadingLookups(_ dependencies: inout DependencyValues) {
-        let sources: OrderSourceService.FetchOrderSources = { () throws(PersistenceError) in
+    /// - Parameters:
+    ///   - dependencies: 本測試的依賴集合
+    ///   - release: 控制主檔讀取何時完成的串流
+    ///   - reads: 主檔讀取次數
+    static func suppressCampaignLoadingLookups(
+        _ dependencies: inout DependencyValues,
+        release: AsyncStream<Void>,
+        reads: LockIsolated<Int>
+    ) {
+        let fetchItems: LookupService.FetchItems = { _ throws(PersistenceError) in
+            reads.withValue {
+                $0 += 1
+            }
+            var iterator = release.makeAsyncIterator()
+            _ = await iterator.next()
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "lookup"))
         }
-        let categories: CategoryService.FetchCategories = { () throws(PersistenceError) in
-            throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "lookup"))
-        }
-        let methods: PaymentMethodService.FetchPaymentMethodInfos = { () throws(PersistenceError) in
-            throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "lookup"))
-        }
-        let statuses: ReconciliationStatusService.FetchReconciliationStatuses = { () throws(PersistenceError) in
-            throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "lookup"))
-        }
-        dependencies.orderSourceService.fetchOrderSources = sources
-        dependencies.categoryService.fetchCategories = categories
-        dependencies.paymentMethodService.fetchPaymentMethodInfos = methods
-        dependencies.reconciliationStatusService.fetchReconciliationStatuses = statuses
+        dependencies.lookupService.fetchItems = fetchItems
     }
 }

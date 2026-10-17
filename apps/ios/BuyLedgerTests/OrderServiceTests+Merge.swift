@@ -14,7 +14,7 @@ extension OrderServiceTests {
 
     /// 合併新增訂單並標記來源且保留其他樣本
     ///
-    /// - Throws: 合併時以 `OrderPersistenceError` 丟出 `.identifierCollision(id:)`、
+    /// - Throws: 合併時以 `OrderError` 丟出 `.identifierCollision(id:)`、
     ///   `.storage(.fetchFailed(underlying:))` 或
     ///   `.storage(.saveFailed(underlying:))`；寫入或讀取失敗時丟出 `.saveFailed(underlying:)` 或
     ///   `.fetchFailed(underlying:)`；未取得來源或合併後訂單時由 `#require` 丟出測試斷言錯誤
@@ -89,7 +89,7 @@ extension OrderServiceTests {
     ///
     /// - Throws: 準備或讀取失敗時丟出 `.saveFailed(underlying:)` 或 `.fetchFailed(underlying:)`；
     ///   合併未丟錯誤、錯誤不是 `.identifierCollision(id:)` 或未讀回既有與來源訂單時由
-    ///   `#require` 丟出測試斷言錯誤；合併失敗時以 `OrderPersistenceError` 丟出
+    ///   `#require` 丟出測試斷言錯誤；合併失敗時以 `OrderError` 丟出
     ///   `.identifierCollision(id:)`、`.storage(.fetchFailed(underlying:))` 或
     ///   `.storage(.saveFailed(underlying:))`
     @Test
@@ -103,10 +103,10 @@ extension OrderServiceTests {
         try await Self.seed(samples, database: database)
         let attempted = Self.makeFullFieldOrder(id: existing.id, variant: .updated)
         let service = Self.makeService(database: database)
-        var actualError: OrderPersistenceError?
+        var actualError: OrderError?
 
         // When
-        do throws(OrderPersistenceError) {
+        do throws(OrderError) {
             try await service.mergeOrders(attempted, [primary.id, secondary.id])
         } catch {
             actualError = error
@@ -142,7 +142,7 @@ extension OrderServiceTests {
 
     /// 合併主體完成後資料庫失敗時不會落盤任何變更
     ///
-    /// - Throws: 寫入失敗時以 `OrderPersistenceError` 丟出 `.storage(.fetchFailed(underlying:))`；
+    /// - Throws: 寫入失敗時以 `OrderError` 丟出 `.storage(.fetchFailed(underlying:))`；
     ///   讀取失敗時丟出 `.fetchFailed(underlying:)`；未取得合併錯誤、預期的查詢失敗或原訂單時
     ///   由 `#require` 丟出測試斷言錯誤
     @Test
@@ -156,17 +156,17 @@ extension OrderServiceTests {
         let database = BuyLedgerDatabaseTests.makeDatabase(with: fixture)
         let mock = MockBuyLedgerDatabase(database: database)
         mock.mode = .writeFailureAfterBody(
-            error: OrderPersistenceError.storage(
+            error: OrderError.storage(
                 .fetchFailed(
                     underlying: TestDependencies.makeUnderlyingError(message: "write failure")
                 )
             )
         )
         let service = Self.makeService(database: mock)
-        var actualError: OrderPersistenceError?
+        var actualError: OrderError?
 
         // When
-        do throws(OrderPersistenceError) {
+        do throws(OrderError) {
             try await service.mergeOrders(
                 Self.makeOrder(id: "ORDER-MERGE-FAIL-RESULT"),
                 [initial.id]
@@ -199,7 +199,7 @@ extension OrderServiceTests {
     /// 合併操作真實存檔失敗時不會留下合併結果
     ///
     /// - Throws: `makeDiskFixture` 建立時丟出底層檔案或 SwiftData 錯誤；合併失敗時以
-    ///   `OrderPersistenceError` 丟出
+    ///   `OrderError` 丟出
     ///   `.identifierCollision(id:)`、`.storage(.fetchFailed(underlying:))` 或
     ///   `.storage(.saveFailed(underlying:))`；
     ///   讀取失敗時丟出 `.fetchFailed(underlying:)`；未取得預期合併錯誤、儲存錯誤或原訂單時由
@@ -216,10 +216,10 @@ extension OrderServiceTests {
         let mock = MockBuyLedgerDatabase(database: database)
         mock.mode = .saveFailureAfterBody
         let service = Self.makeService(database: mock)
-        var actualError: OrderPersistenceError?
+        var actualError: OrderError?
 
         // When
-        do throws(OrderPersistenceError) {
+        do throws(OrderError) {
             try await service.mergeOrders(
                 Self.makeOrder(id: "ORDER-MERGE-SAVE-FAIL-RESULT"),
                 [source.id]
@@ -256,7 +256,7 @@ extension OrderServiceTests {
 
     /// 合併僅標記兩筆來源且保留其餘四十八筆訂單狀態與照片
     ///
-    /// - Throws: 合併時以 `OrderPersistenceError` 丟出 `.identifierCollision(id:)`、
+    /// - Throws: 合併時以 `OrderError` 丟出 `.identifierCollision(id:)`、
     ///   `.storage(.fetchFailed(underlying:))` 或
     ///   `.storage(.saveFailed(underlying:))`；寫入或讀取失敗時丟出 `.saveFailed(underlying:)` 或
     ///   `.fetchFailed(underlying:)`；未讀回來源或其餘訂單時由 `#require` 丟出測試斷言錯誤

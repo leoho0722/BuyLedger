@@ -44,6 +44,9 @@ extension RootFeatureTests {
                     return .none
                 }
             }
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -60,7 +63,7 @@ extension RootFeatureTests {
         }
 
         // Then
-        await store.receive(\.orders.cascadeRequested, request)
+        await store.receive(\.orders.rootRequest.cascade, request)
         await store.receive(\.orders.writes.cascadeRequested, request) {
             $0.dashboard.orders = [expected]
             $0.insights.orders = [expected]
@@ -113,6 +116,9 @@ extension RootFeatureTests {
                     return .none
                 }
             }
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -129,7 +135,7 @@ extension RootFeatureTests {
         }
 
         // Then
-        await store.receive(\.orders.cascadeRequested, request)
+        await store.receive(\.orders.rootRequest.cascade, request)
         await store.receive(\.orders.writes.cascadeRequested, request) {
             $0.dashboard.orders = [expected]
             $0.insights.orders = [expected]
@@ -171,6 +177,9 @@ extension RootFeatureTests {
         }
         let store = TestStore(initialState: initial) {
             RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When

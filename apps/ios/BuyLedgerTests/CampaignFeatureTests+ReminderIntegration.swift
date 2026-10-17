@@ -26,7 +26,7 @@ extension CampaignFeatureTests {
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
-            $0.campaignReminderService.fetchLinks = {
+            $0.campaignService.fetchReminderLinks = {
                 ["C1": link]
             }
         }
@@ -164,7 +164,7 @@ extension CampaignFeatureTests {
                     $0.append(eventID)
                 }
             }
-            $0.campaignReminderService.removeLink = { campaignID in
+            $0.campaignService.removeReminderLink = { campaignID in
                 removedLinkIDs.withValue {
                     $0.append(campaignID)
                 }

@@ -15,56 +15,34 @@ extension OrdersFeatureTests {
 
     /// 新增類別寫入失敗時，類別清單與表單內容都維持原樣，失敗通知先暫存等表單關好
     @Test
-    func presentation_新增類別寫入失敗_資料不變且暫存失敗通知() async {
+    func rootRequest_新增類別寫入失敗_資料不變且暫存失敗通知() async {
         // Given
-        let calls = LockIsolated<[String]>([])
-        let failingAdd: CategoryService.AddCategory = { name throws(PersistenceError) in
-            calls.withValue {
-                $0.append(name)
-            }
-            throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "失敗"))
-        }
         let initialState = Self.makeOptionState()
         let initialEdit = initialState.presentation.destination?.edit
         let store = TestStore(initialState: initialState) {
             OrdersFeature()
         } withDependencies: {
-            $0.categoryService.addCategory = failingAdd
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
-        let plan = OrderOptionWritePlan(
-            formID: UUID(0),
+        let request = LookupAdditionRequest(
+            id: UUID(0),
             kind: .category,
             name: "香氛",
             flags: .none
         )
+        let notice = Self.failureNotice("orders.general.message.categoryAddedTry")
 
         // When
-        await store.send(
-            .presentation(
-                .destination(.presented(.edit(.pickers(.view(.addCategoryTapped("香氛"))))))
-            )
-        )
+        await store.send(.rootRequest(.optionAdditionCompleted(request, isStored: false)))
 
         // Then
-        await store.receive(
-            \.presentation.destination.presented.edit.pickers.delegate,
-            .addOptionRequested(kind: .category, name: "香氛", flags: .none)
-        )
-        await store.receive(
-            \.presentation.destination.presented.edit.delegate,
-            .addOptionRequested(kind: .category, name: "香氛", flags: .none)
-        )
-        await store.receive(\.presentation.delegate, .optionAddRequested(plan))
-        await store.receive(\.writes.optionAddRequested, plan)
-        await store.receive(\.writes.optionResponse)
-        await store.receive(\.writes.delegate, .failed(.option(.category)))
-        await store.receive(\.presentation.noticeRequested, Self.failureNotice("orders.general.message.categoryAddedTry")) {
-            $0.presentation.queue.pendingNotice = Self.failureNotice("orders.general.message.categoryAddedTry")
+        await store.receive(\.presentation.noticeRequested, notice) {
+            $0.presentation.queue.pendingNotice = notice
         }
         #expect(store.state.lookupCatalog.categories == ["美妝"])
         #expect(store.state.presentation.destination?.edit == initialEdit)
         #expect(store.state.presentation.destination?.alert == nil)
-        #expect(calls.value == ["香氛"])
         await store.finish()
     }
 
@@ -72,23 +50,27 @@ extension OrdersFeatureTests {
     @Test
     func formSheetDismissed_新增類別寫入失敗後表單關好_才呈現失敗通知() async {
         // Given
+        let notice = Self.failureNotice("orders.general.message.categoryAddedTry")
         var initial = Self.makeOptionState()
         initial.presentation.destination = nil
         initial.presentation.queue.isFormClosing = true
-        initial.presentation.queue.pendingNotice = Self.failureNotice("orders.general.message.categoryAddedTry")
+        initial.presentation.queue.pendingNotice = notice
         let store = TestStore(initialState: initial) {
             OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
         await store.send(.view(.formSheetDismissed)) {
             $0.presentation.queue.isFormClosing = false
             $0.presentation.queue.pendingNotice = nil
-            $0.presentation.destination = Self.failureNotice("orders.general.message.categoryAddedTry")
+            $0.presentation.destination = notice
         }
 
         // Then
-        #expect(store.state.presentation.destination == Self.failureNotice("orders.general.message.categoryAddedTry"))
+        #expect(store.state.presentation.destination == notice)
         #expect(store.state.presentation.queue.pendingNotice == nil)
     }
 }

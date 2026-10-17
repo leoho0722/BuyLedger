@@ -5,6 +5,7 @@
 //  Created by Leo Ho on 2026/10/9.
 //
 
+import Clocks
 import ComposableArchitecture
 import Foundation
 import Testing
@@ -29,6 +30,8 @@ extension OrderWritesFeatureTests {
         let store = TestStore(initialState: initial) {
             OrderWritesFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .constant(UUID(0))
             $0.orderService.mergeOrders = { order, sourceIDs in
                 observed.withValue {
@@ -72,7 +75,7 @@ extension OrderWritesFeatureTests {
         let clock = TestClock()
         let shared = initial.$orders
         let observed = LockIsolated<[[LedgerOrder]]>([])
-        let failingMerge: OrderService.MergeOrders = { _, _ throws(OrderPersistenceError) in
+        let failingMerge: OrderService.MergeOrders = { _, _ throws(OrderError) in
             observed.withValue {
                 $0.append(shared.wrappedValue)
             }
@@ -88,6 +91,8 @@ extension OrderWritesFeatureTests {
         let store = TestStore(initialState: initial) {
             OrderWritesFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .constant(UUID(0))
             $0.orderService.mergeOrders = failingMerge
         }

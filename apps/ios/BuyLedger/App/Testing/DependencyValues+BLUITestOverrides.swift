@@ -34,9 +34,9 @@ extension DependencyValues {
         applyEnvironmentOverrides(configuration)
         let database = BuyLedgerDatabase(modelContainer: container, storeLocation: storeLocation)
         self.buyLedgerDatabase = database
-        let orderService = makeOrderService(configuration, database: database)
+        self.orderService = makeOrderService(configuration, database: database)
         applyCampaignOverrides(configuration, database: database)
-        applyLookupOverrides(configuration, database: database, orderService: orderService)
+        applyLookupOverrides(configuration, database: database)
         applySystemAccessOverrides(configuration)
         applyNetworkOverrides(configuration)
         applySettingsServiceOverride(configuration)
@@ -62,7 +62,7 @@ private extension DependencyValues {
         self.uuid = .incrementing
     }
 
-    /// 訂單 Service 指向 UI 測試資料庫，並依設定包裝讀取失敗
+    /// 讓訂單 Service 指向 UI 測試資料庫，並依設定包裝讀取失敗
     ///
     /// - Parameters:
     ///   - configuration: UI 測試設定
@@ -101,7 +101,7 @@ private extension DependencyValues {
         return orderService
     }
 
-    /// 開團主檔與提醒連結指向 UI 測試資料庫，並依設定包裝開團讀寫失敗
+    /// 讓開團 Service 與提醒連結指向 UI 測試資料庫，並依設定包裝開團讀寫失敗
     ///
     /// - Parameters:
     ///   - configuration: UI 測試設定
@@ -129,133 +129,14 @@ private extension DependencyValues {
             campaignService.removeCampaign = { _, _ throws(PersistenceError) in
                 throw BLUITestErrorFactory.persistenceSaveFailed()
             }
+            campaignService.renameCampaign = { _, _ throws(PersistenceError) in
+                throw BLUITestErrorFactory.persistenceSaveFailed()
+            }
         }
 
+        // 提醒連結不受 `loadFailure` 影響：失敗情境要驗的是開團清單本身的錯誤畫面，
+        // 故 `configuration.loadFailure == .campaigns` 時僅覆寫 `fetchCampaigns`，保留 live 的提醒操作
         self.campaignService = campaignService
-        // 提醒連結不受 loadFailure 影響：失敗情境要驗的是開團清單本身的錯誤畫面
-        self.campaignReminderService = withDependencies {
-            $0.buyLedgerDatabase = database
-        } operation: {
-            CampaignReminderService.liveValue
-        }
-    }
-
-    /// 各主檔 Service 使用 UI 測試 container，並可注入讀寫失敗
-    ///
-    /// - Parameters:
-    ///   - configuration: UI 測試設定
-    ///   - database: 指向 UI 測試 container 與 store 位置的交易資料庫
-    ///   - orderService: 已套用 UI 測試設定的訂單 Service
-    mutating func applyLookupOverrides(
-        _ configuration: BLUITestConfiguration,
-        database: BuyLedgerDatabase,
-        orderService: OrderService
-    ) {
-        let shouldFail = configuration.loadFailure == .lookups
-        let shouldFailWrites = configuration.shouldFailLookupWrites
-
-        var orderSourceService = withDependencies {
-            $0.buyLedgerDatabase = database
-        } operation: {
-            OrderSourceService.liveValue
-        }
-        var categoryService = withDependencies {
-            $0.buyLedgerDatabase = database
-        } operation: {
-            CategoryService.liveValue
-        }
-        var paymentMethodService = withDependencies {
-            $0.buyLedgerDatabase = database
-        } operation: {
-            PaymentMethodService.liveValue
-        }
-        var reconciliationStatusService = withDependencies {
-            $0.buyLedgerDatabase = database
-        } operation: {
-            ReconciliationStatusService.liveValue
-        }
-        var orderService = orderService
-        var currencyMetadataService = withDependencies {
-            $0.buyLedgerDatabase = database
-            $0.httpClient = BLUITestCurrencyMetadataHTTPClient()
-            $0.appConfigurationStore = BLUITestCurrencyMetadataConfigurationStore()
-            $0.date = .constant(configuration.referenceDate)
-        } operation: {
-            CurrencyMetadataService.liveValue
-        }
-
-        if shouldFail {
-            orderSourceService.fetchOrderSources = { () throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceLoadFailed(source: .orderSources)
-            }
-            categoryService.fetchCategories = { () throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceLoadFailed(source: .categories)
-            }
-            paymentMethodService.fetchPaymentMethodInfos = { () throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceLoadFailed(source: .paymentMethodInfos)
-            }
-            reconciliationStatusService.fetchReconciliationStatuses = { () throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceLoadFailed(source: .reconciliationStatuses)
-            }
-            currencyMetadataService.fetchCodes = { () throws(CurrencyMetadataServiceError) in
-                throw BLUITestErrorFactory.currencyMetadataLoadFailed(source: .currencyCodes)
-            }
-            // 刷新也失敗，避免載入失敗時寫入資料
-            currencyMetadataService.refreshIfStale = { _ throws(CurrencyMetadataServiceError) in
-                throw BLUITestErrorFactory.currencyMetadataLoadFailed(source: .currencyCodes)
-            }
-        }
-
-        if shouldFailWrites {
-            orderSourceService.addOrderSource = { _ throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceSaveFailed()
-            }
-            orderSourceService.removeOrderSource = { _ throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceSaveFailed()
-            }
-            categoryService.addCategory = { _ throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceSaveFailed()
-            }
-            categoryService.removeCategory = { _ throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceSaveFailed()
-            }
-            paymentMethodService.addPaymentMethod = { _, _ throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceSaveFailed()
-            }
-            paymentMethodService.removePaymentMethod = { _ throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceSaveFailed()
-            }
-            paymentMethodService.applyPaymentMethodEdit = { _, _, _, _ throws(PaymentMethodPersistenceError) in
-                throw PaymentMethodPersistenceError.storage(
-                    BLUITestErrorFactory.persistenceSaveFailed()
-                )
-            }
-            reconciliationStatusService.addReconciliationStatus = { _ throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceSaveFailed()
-            }
-            reconciliationStatusService.removeReconciliationStatus = { _ throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceSaveFailed()
-            }
-            orderService.applyOrderSourceRename = { _, _ throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceSaveFailed()
-            }
-            orderService.applyCategoryRename = { _, _ throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceSaveFailed()
-            }
-            orderService.applyPaymentMethodRename = { _, _ throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceSaveFailed()
-            }
-            orderService.applyReconciliationStatusRename = { _, _ throws(PersistenceError) in
-                throw BLUITestErrorFactory.persistenceSaveFailed()
-            }
-        }
-
-        self.orderService = orderService
-        self.orderSourceService = orderSourceService
-        self.categoryService = categoryService
-        self.paymentMethodService = paymentMethodService
-        self.reconciliationStatusService = reconciliationStatusService
-        self.currencyMetadataService = currencyMetadataService
     }
 
     /// 以替身取代照片、行事曆、本機驗證與系統設定
@@ -274,7 +155,7 @@ private extension DependencyValues {
         )
     }
 
-    /// 匯率與 AI 改回固定輸出，並封死底層 HTTP，確保測試全程不打網路
+    /// 讓匯率與 AI 改回固定輸出，並封死底層 HTTP，確保測試全程不打網路
     ///
     /// - Parameter configuration: UI 測試設定
     mutating func applyNetworkOverrides(_ configuration: BLUITestConfiguration) {
@@ -292,7 +173,7 @@ private extension DependencyValues {
     mutating func applySettingsServiceOverride(_ configuration: BLUITestConfiguration) {
         var snapshot = SettingsSnapshot.default
 
-        // language 為 nil 代表不覆寫，沿用 SettingsSnapshot 的預設語言
+        // `language` 為 `nil` 代表不覆寫，沿用 `SettingsSnapshot` 的預設語言
         if let language = configuration.language {
             snapshot.language = AppLanguage(storedValue: language.rawValue)
         }

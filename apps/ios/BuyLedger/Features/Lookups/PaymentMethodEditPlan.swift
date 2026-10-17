@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// 付款方式編輯操作使用的固定資料快照
+/// 寫入完成後交給父層的結果
 struct PaymentMethodEditPlan: Equatable, Sendable {
 
     // MARK: - Properties

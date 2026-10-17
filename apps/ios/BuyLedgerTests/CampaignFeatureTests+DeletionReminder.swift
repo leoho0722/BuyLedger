@@ -15,7 +15,7 @@ extension CampaignFeatureTests {
 
     /// 刪除有提醒的開團時轉送移除提醒，共用連結清除，並以刪除結果的事件識別碼移除行事曆事件一次
     ///
-    /// - Note: 本機交易已刪除持久化連結，提醒子 Feature 只清共用連結，不呼叫 `removeLink`
+    /// - Note: 本機交易已刪除持久化連結，提醒子 Feature 只清共用連結，不呼叫 `removeReminderLink`
     @Test
     func presentation_刪除含提醒開團_轉送移除提醒並清除共用連結() async {
         // Given
@@ -60,7 +60,7 @@ extension CampaignFeatureTests {
                     $0.append(identifier)
                 }
             }
-            $0.campaignReminderService.removeLink = { campaignID in
+            $0.campaignService.removeReminderLink = { campaignID in
                 removedLinkIDs.withValue {
                     $0.append(campaignID)
                 }
@@ -90,7 +90,7 @@ extension CampaignFeatureTests {
         #expect(removedCampaignIDs.value == ["C1"])
         #expect(removedCampaignNames.value == ["團"])
         #expect(removedEventIdentifiers.value == ["EVT-1"], "刪除應以連結記錄的事件識別碼呼叫一次 removeReminder")
-        #expect(removedLinkIDs.value.isEmpty, "刪除路徑不應再呼叫 removeLink")
+        #expect(removedLinkIDs.value.isEmpty, "刪除路徑不應再呼叫 removeReminderLink")
     }
 
     /// 提醒連結尚未載入時刪除開團，仍以刪除結果帶回的事件識別碼移除行事曆事件
@@ -217,7 +217,9 @@ extension CampaignFeatureTests {
             \.presentation.noticeRequested,
             Self.failureAlert("campaigns.general.message.campaignDeletedBut")
         ) {
-            $0.presentation.destination = Self.failureAlert("campaigns.general.message.campaignDeletedBut")
+            $0.presentation.destination = Self.failureAlert(
+                "campaigns.general.message.campaignDeletedBut"
+            )
         }
         #expect(removedCampaignIDs.value == ["C1"])
         #expect(removedCampaignNames.value == ["團"])

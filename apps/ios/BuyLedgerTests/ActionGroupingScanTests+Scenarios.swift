@@ -101,7 +101,7 @@ extension ActionGroupingScanTests {
             ),
             ScanScenario(
                 name: "Root 送訂單載入請求",
-                source: ".send(.orders(.loadRequested))",
+                source: ".send(.orders(.rootRequest(.load)))",
                 rule: .reducerChildView,
                 shouldPass: true
             ),

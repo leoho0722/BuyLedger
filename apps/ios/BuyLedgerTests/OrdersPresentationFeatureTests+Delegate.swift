@@ -21,6 +21,9 @@ extension OrdersPresentationFeatureTests {
         let initial = Self.makeState(destination: .edit(edit))
         let store = TestStore(initialState: initial) {
             OrdersPresentationFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -37,6 +40,9 @@ extension OrdersPresentationFeatureTests {
         let initial = Self.makeState(destination: .edit(Self.editState()))
         let store = TestStore(initialState: initial) {
             OrdersPresentationFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -54,8 +60,8 @@ extension OrdersPresentationFeatureTests {
         await store.receive(
             \.delegate,
             .optionAddRequested(
-                OrderOptionWritePlan(
-                    formID: UUID(0),
+                LookupAdditionRequest(
+                    id: UUID(0),
                     kind: .orderSource,
                     name: "蝦皮",
                     flags: .none
@@ -73,6 +79,9 @@ extension OrdersPresentationFeatureTests {
         let initial = Self.makeState(destination: Self.mergeDestination())
         let store = TestStore(initialState: initial) {
             OrdersPresentationFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -102,6 +111,9 @@ extension OrdersPresentationFeatureTests {
         let initial = Self.makeState(destination: Self.deleteAlert())
         let store = TestStore(initialState: initial) {
             OrdersPresentationFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -120,6 +132,9 @@ extension OrdersPresentationFeatureTests {
         let initial = Self.makeState(destination: Self.aiSettingsAlert())
         let store = TestStore(initialState: initial) {
             OrdersPresentationFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When

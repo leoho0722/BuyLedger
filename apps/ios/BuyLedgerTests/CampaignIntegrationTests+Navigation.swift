@@ -277,7 +277,7 @@ private extension CampaignIntegrationTests {
             }
         }
         await store.receive(\.campaigns.delegate.receiptStatusToggled)
-        await store.receive(\.orders.receiptStatusChangeRequested)
+        await store.receive(\.orders.rootRequest.receiptStatusChange)
         await store.receive(\.orders.writes.receiptToggleRequested)
         await store.receive(\.orders.writes.receiptResponse) {
             $0.dashboard.orders = [receivedOrder]

@@ -103,12 +103,12 @@ extension OrdersFilterOperations {
     static func filterSheetTapped(state: inout OrderListFeature.State) {
         state.filterSheet = OrderFilterFeature.State(
             orders: state.$orders,
-            lookupCatalog: SharedReader(state.$lookupCatalog),
+            lookupCatalog: state.$lookupCatalog,
             committedFilterSelection: state.committedFilterSelection
         )
     }
 
-    /// 選擇整合篩選 sheet 的日期區間；僅更新未套用選擇，不 commit
+    /// 選擇整合篩選 sheet 的日期區間；僅更新暫存選擇，不改已套用的篩選
     ///
     /// - Parameters:
     ///   - period: 暫存的日期區間

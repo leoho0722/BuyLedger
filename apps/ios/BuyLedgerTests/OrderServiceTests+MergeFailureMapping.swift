@@ -5,6 +5,7 @@
 //  Created by Leo Ho on 2026/9/26.
 //
 
+import ComposableArchitecture
 import Foundation
 import SwiftData
 import Testing
@@ -24,17 +25,17 @@ extension OrderServiceTests {
             PersistenceContainer.makeInMemory(for: .testing)
         }
         let context = ModelContext(modelContainer)
-        var hasFetchedConsumedOrders = false
-        var actualError: OrderPersistenceError?
+        let hasFetchedConsumedOrders = LockIsolated(false)
+        var actualError: OrderError?
 
         // When
-        do throws(OrderPersistenceError) {
+        do throws(OrderError) {
             try OrderService.mergeOrders(
                 Self.makeOrder(id: "ORDER-MERGE-FAIL-RESULT"),
                 consumedIDs: ["ORDER-MERGE-FAIL-SOURCE"],
                 in: context
             ) { _ throws(PersistenceError) in
-                hasFetchedConsumedOrders = true
+                hasFetchedConsumedOrders.setValue(true)
                 throw PersistenceError.fetchFailed(
                     underlying: TestDependencies.makeUnderlyingError(message: "來源查詢失敗")
                 )
@@ -44,7 +45,7 @@ extension OrderServiceTests {
         }
 
         // Then
-        #expect(hasFetchedConsumedOrders)
+        #expect(hasFetchedConsumedOrders.value)
         let error = try #require(actualError)
         let actualStorageError: PersistenceError?
         switch error {

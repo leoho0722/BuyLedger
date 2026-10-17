@@ -62,12 +62,16 @@ struct OrderServiceResidueTests {
             try await environment.service.removeOrder("order-001")
         }
         environment.mock.mode = .passthrough
-        var actualCollisionError: OrderPersistenceError?
+        var actualCollisionError: OrderError?
 
         // When
-        do throws(OrderPersistenceError) {
+        do throws(OrderError) {
             try await environment.service.createOrder(
-                LedgerOrder.fixture(id: "order-001", status: .quoting, notes: "orders.list.label.newOrder")
+                LedgerOrder.fixture(
+                    id: "order-001",
+                    status: .quoting,
+                    notes: "orders.list.label.newOrder"
+                )
             )
         } catch {
             actualCollisionError = error
@@ -140,52 +144,6 @@ struct OrderServiceResidueTests {
         #expect(storedOrder.notes == "後續備註")
         #expect(storedPhotos == [Data([0x01])])
     }
-
-    /// 更新存檔失敗後改開團名稱不會帶入失敗欄位
-    ///
-    /// - Throws: 建立 fixture 或獨立容器失敗時丟出 SwiftData 底層錯誤；
-    ///   讀取失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
-    ///   改名存檔失敗時丟出 `PersistenceError.saveFailed(underlying:)`；
-    ///   前置條件或預期值不成立時由 `#require` 丟出測試斷言錯誤
-    @Test
-    func renameOrderCampaign_欄位更新儲存失敗後_不帶入失敗欄位() async throws {
-        // Given
-        let environment = try Self.makeTestEnvironment()
-        defer {
-            BuyLedgerDatabaseTests.removeTemporaryDirectory(at: environment.fixture.directoryURL)
-        }
-        try await Self.requireSeededOrder(in: environment.database)
-        environment.mock.mode = .saveFailureAfterBody
-        try await Self.requireRelationshipSaveFailure { () throws(PersistenceError) in
-            try await environment.service.saveOrder(
-                LedgerOrder.fixture(
-                    id: "order-001",
-                    status: .shipping,
-                    chargedAmount: 9_999,
-                    paymentMethod: "失敗付款",
-                    notes: "失敗備註",
-                    campaignNames: ["春團"]
-                )
-            )
-        }
-        environment.mock.mode = .passthrough
-
-        // When
-        try await environment.service.renameOrderCampaign("春團", "秋團")
-
-        // Then
-        let storedOrders = try await Self.fetchPersistedOrders(
-            from: environment.fixture.directoryURL
-        )
-        #expect(storedOrders.count == 1)
-        let storedOrder = try #require(storedOrders.first)
-        #expect(storedOrder.id == "order-001")
-        #expect(storedOrder.status == .confirmed)
-        #expect(storedOrder.notes == "原始備註")
-        #expect(storedOrder.paymentMethod == "原始付款")
-        #expect(storedOrder.chargedAmount == 1_250)
-        #expect(storedOrder.campaignNames == ["秋團"])
-    }
 }
 
 // MARK: - Nested Types
@@ -206,6 +164,23 @@ private extension OrderServiceResidueTests {
 
         /// 透過 mock 操作訂單的 Service
         let service: OrderService
+    }
+}
+
+// MARK: - Internal Method
+
+extension OrderServiceResidueTests {
+
+    /// 從同一個磁碟 store 建立另一個資料庫後讀回全部訂單
+    ///
+    /// - Parameter directoryURL: 原始 store 的暫存目錄
+    /// - Returns: 另一個資料庫讀到的完整訂單
+    /// - Throws: 獨立容器建立失敗時丟出 SwiftData 底層錯誤；
+    ///   查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`
+    static func fetchPersistedOrders(from directoryURL: URL) async throws -> [LedgerOrder] {
+        let database = try makeIndependentDatabase(at: directoryURL)
+        let service = OrderServiceTests.makeService(database: database)
+        return try await service.fetchOrders()
     }
 }
 
@@ -271,18 +246,6 @@ private extension OrderServiceResidueTests {
         try #require(order.campaignNames == ["春團"])
         let storedPhotos = try await service.fetchOrderPhotos("order-001")
         try #require(storedPhotos == photos)
-    }
-
-    /// 從同一個磁碟 store 建立另一個資料庫後讀回全部訂單
-    ///
-    /// - Parameter directoryURL: 原始 store 的暫存目錄
-    /// - Returns: 另一個資料庫讀到的完整訂單
-    /// - Throws: 獨立容器建立失敗時丟出 SwiftData 底層錯誤；
-    ///   查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`
-    static func fetchPersistedOrders(from directoryURL: URL) async throws -> [LedgerOrder] {
-        let database = try Self.makeIndependentDatabase(at: directoryURL)
-        let service = OrderServiceTests.makeService(database: database)
-        return try await service.fetchOrders()
     }
 
     /// 以原 fixture 的 store URL 建立獨立 `ModelContainer` 與資料庫

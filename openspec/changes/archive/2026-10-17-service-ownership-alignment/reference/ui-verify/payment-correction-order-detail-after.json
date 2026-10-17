@@ -1,0 +1,86 @@
+{
+  "schema": "mobilebuildmcp.output.capture-result",
+  "schemaVersion": "2",
+  "didError": false,
+  "error": null,
+  "data": {
+    "summary": {
+      "status": "SUCCEEDED"
+    },
+    "artifacts": {
+      "simulatorId": "FC80961E-B153-4462-B017-3A4E2BFCFB68"
+    },
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "168slcw",
+      "seq": 104,
+      "count": 145,
+      "targets": [
+        "e15|tap|button|訂單||BackButton",
+        "e19|tap|button|更新狀態||orders.detail.statusMenuButton",
+        "e20|tap|button|||",
+        "e24|tap|button|更多操作||orders.detail.moreButton",
+        "e25|tap|button|||",
+        "e119|tap|tab|總覽|0|",
+        "e121|tap|tab|訂單|1|",
+        "e123|tap|tab|開團|0|",
+        "e125|tap|tab|分析|0|",
+        "e127|tap|tab|更多|0|"
+      ],
+      "scroll": [
+        "e31|swipe|scroll-view|||orders.detail.root"
+      ],
+      "text": [
+        "e42|text|text|商品類別||",
+        "e43|text|text|美妝||",
+        "e44|text|text|開團||",
+        "e45|text|text|未歸團||",
+        "e46|text|text|獲利、+$510|+$510|orders.detail.summaryTile.profit",
+        "e47|text|text|獲利||",
+        "e49|text|text|毛利率||",
+        "e48|text|text|+$510||",
+        "e50|text|text|25.5%||",
+        "e51|text|text|總收款、$2,000|$2,000|orders.detail.summaryTile.revenue",
+        "e52|text|text|總收款||",
+        "e54|text|text|總成本、$1,490|$1,490|orders.detail.summaryTile.cost",
+        "e55|text|text|總成本||",
+        "e57|text|text|手續費||",
+        "e53|text|text|$2,000||",
+        "e56|text|text|$1,490||",
+        "e58|text|text|$30||",
+        "e59|text|text|成本拆解||",
+        "e60|text|text|總成本||",
+        "e61|text|text|$1,490||",
+        "e68|text|text|商品金額、$1,000||",
+        "e70|text|text|商品金額||",
+        "e71|text|text|$1,000||",
+        "e72|text|text|刷卡手續費、$30||",
+        "e74|text|text|刷卡手續費||",
+        "e75|text|text|$30||",
+        "e76|text|text|國內運費、$60||",
+        "e78|text|text|國內運費||",
+        "e79|text|text|$60||",
+        "e80|text|text|國際運費、$280||",
+        "e82|text|text|國際運費||",
+        "e83|text|text|$280||",
+        "e84|text|text|外國國內運費、$120||",
+        "e86|text|text|外國國內運費||",
+        "e87|text|text|$120||",
+        "e88|text|text|商品明細||",
+        "e89|text|text|貨到付款驗收商品、數量 1、$1,000||",
+        "e90|text|text|貨到付款驗收商品||",
+        "e92|text|text|$1,000||",
+        "e91|text|text|數量 1||"
+      ],
+      "udid": "FC80961E-B153-4462-B017-3A4E2BFCFB68"
+    }
+  },
+  "nextSteps": [
+    "Refresh after layout changes: mobilebuildmcp ui-automation snapshot-ui --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68",
+    "Wait for UI to settle: mobilebuildmcp ui-automation wait-for-ui --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --predicate settled",
+    "Batch same-screen taps: mobilebuildmcp ui-automation batch --json '{\"simulatorId\":\"FC80961E-B153-4462-B017-3A4E2BFCFB68\",\"steps\":[{\"action\":\"tap\",\"elementRef\":\"e15\"},{\"action\":\"tap\",\"elementRef\":\"e20\"}]}'",
+    "Tap an elementRef: mobilebuildmcp ui-automation tap --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --element-ref e15",
+    "Scroll visible content: mobilebuildmcp ui-automation swipe --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --within-element-ref e31 --direction up --distance 0.5"
+  ]
+}

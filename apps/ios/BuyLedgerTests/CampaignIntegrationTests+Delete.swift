@@ -152,6 +152,8 @@ extension CampaignIntegrationTests {
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.campaignService.removeCampaign = { id, name in
                 calls.withValue {
                     $0.append(contentsOf: [id, name])
@@ -213,7 +215,7 @@ extension CampaignIntegrationTests {
         await store.receive(\.campaigns.writes.delegate.deleted)
         await store.receive(\.campaigns.delegate.campaignDeleted)
         await store.receive(\.campaigns.reminder.campaignRemoved)
-        await store.receive(\.orders.cascadeRequested, cascade)
+        await store.receive(\.orders.rootRequest.cascade, cascade)
         await store.receive(\.orders.writes.cascadeRequested, cascade) {
             $0.dashboard.orders = expectedOrders
             $0.insights.orders = expectedOrders

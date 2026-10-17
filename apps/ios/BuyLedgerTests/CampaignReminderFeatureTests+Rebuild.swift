@@ -42,9 +42,9 @@ extension CampaignReminderFeatureTests {
                 }
                 return "EVT-new"
             }
-            $0.campaignReminderService.saveLink = { campaignID, link in
+            $0.campaignService.saveReminderLink = { campaignID, link in
                 operations.withValue {
-                    $0.append("saveLink")
+                    $0.append("saveReminderLink")
                 }
                 savedLinks.withValue {
                     $0.append(SavedLink(campaignID: campaignID, link: link))
@@ -73,7 +73,7 @@ extension CampaignReminderFeatureTests {
             }
         }
         await store.receive(\.oldEventRemovalResponse)
-        #expect(operations.value == ["addReminder", "saveLink", "removeReminder:EVT-old"])
+        #expect(operations.value == ["addReminder", "saveReminderLink", "removeReminder:EVT-old"])
         #expect(addedReminders.value == [expectedReminder])
         #expect(savedLinks.value == [SavedLink(campaignID: Self.campaignID, link: expectedLink)])
     }
@@ -108,9 +108,9 @@ extension CampaignReminderFeatureTests {
                 }
                 return "EVT-new"
             }
-            $0.campaignReminderService.saveLink = { campaignID, link in
+            $0.campaignService.saveReminderLink = { campaignID, link in
                 operations.withValue {
-                    $0.append("saveLink")
+                    $0.append("saveReminderLink")
                 }
                 savedLinks.withValue {
                     $0.append(SavedLink(campaignID: campaignID, link: link))
@@ -138,7 +138,7 @@ extension CampaignReminderFeatureTests {
             }
         }
         await store.receive(\.oldEventRemovalResponse)
-        #expect(operations.value == ["addReminder", "saveLink", "removeReminder:EVT-old"])
+        #expect(operations.value == ["addReminder", "saveReminderLink", "removeReminder:EVT-old"])
         #expect(addedReminders.value == [expectedReminder])
         #expect(savedLinks.value == [SavedLink(campaignID: Self.campaignID, link: expectedLink)])
     }
@@ -168,9 +168,9 @@ extension CampaignReminderFeatureTests {
                 }
                 return "E-NEW"
             }
-            $0.campaignReminderService.saveLink = { _, _ in
+            $0.campaignService.saveReminderLink = { _, _ in
                 operations.withValue {
-                    $0.append("saveLink")
+                    $0.append("saveReminderLink")
                 }
             }
             $0.calendarReminderService.removeReminder = { eventIdentifier in
@@ -198,7 +198,7 @@ extension CampaignReminderFeatureTests {
             }
         }
         await store.receive(\.oldEventRemovalResponse)
-        #expect(operations.value == ["addReminder", "saveLink", "removeReminder:E-OLD"])
+        #expect(operations.value == ["addReminder", "saveReminderLink", "removeReminder:E-OLD"])
         #expect(linksWhenRemoving.value == [expectedLink])
     }
 
@@ -218,9 +218,9 @@ extension CampaignReminderFeatureTests {
                 }
                 return "EVT-new"
             }
-            $0.campaignReminderService.saveLink = { campaignID, link in
+            $0.campaignService.saveReminderLink = { campaignID, link in
                 operations.withValue {
-                    $0.append("saveLink")
+                    $0.append("saveReminderLink")
                 }
                 savedLinks.withValue {
                     $0.append(SavedLink(campaignID: campaignID, link: link))
@@ -244,7 +244,7 @@ extension CampaignReminderFeatureTests {
             }
         }
         await store.receive(\.oldEventRemovalResponse)
-        #expect(operations.value == ["addReminder", "saveLink", "removeReminder:EVT-old"])
+        #expect(operations.value == ["addReminder", "saveReminderLink", "removeReminder:EVT-old"])
         #expect(savedLinks.value == [SavedLink(campaignID: Self.campaignID, link: Self.newLink)])
     }
 
@@ -266,7 +266,7 @@ extension CampaignReminderFeatureTests {
             $0.calendarReminderService.addReminder = { _, _, _ in
                 "EVT-new"
             }
-            $0.campaignReminderService.saveLink = { _, _ in
+            $0.campaignService.saveReminderLink = { _, _ in
             }
             $0.calendarReminderService.removeReminder = failingRemoveReminder
         }

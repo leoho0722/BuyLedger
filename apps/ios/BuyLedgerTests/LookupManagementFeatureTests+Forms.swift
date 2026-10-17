@@ -225,13 +225,17 @@ extension LookupManagementFeatureTests {
             }
             state.destination = .rename(LookupRenameFormFeature.State(originalName: "服飾"))
             @Shared(.lookupCatalog) var sharedCatalog: LookupCatalog
+            let observedKinds = LockIsolated<[LookupKind]>([])
             let writes = LockIsolated<[LookupItemRename]>([])
             let store = TestStore(initialState: state) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0.orderService.applyCategoryRename = { oldName, newName in
+                $0.lookupService.renameItem = { kind, itemRename in
+                    observedKinds.withValue {
+                        $0.append(kind)
+                    }
                     writes.withValue {
-                        $0.append(LookupItemRename(oldName: oldName, newName: newName))
+                        $0.append(itemRename)
                     }
                 }
             }
@@ -252,6 +256,7 @@ extension LookupManagementFeatureTests {
             }
             await store.receive(\.renameResponse.success, rename)
             await store.receive(\.delegate.itemRenamed, rename)
+            #expect(observedKinds.value == [.category])
             #expect(store.state.items == ["衣著"])
             #expect(writes.value == [rename])
             #expect(sharedCatalog.names(for: .category) == ["衣著"])

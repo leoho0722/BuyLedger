@@ -20,7 +20,9 @@ extension LookupManagementFeatureTests {
             // Given
             var initialState = LookupManagementFeature.State(kind: .category)
             initialState.isFormSheetDismissing = true
-            initialState.pendingAlert = Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
+            initialState.pendingAlert = Self.writeFailureAlert(
+                message: "orders.lookup.message.itemAddedTry"
+            )
             let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             }
@@ -29,12 +31,17 @@ extension LookupManagementFeatureTests {
             await store.send(.view(.formSheetDismissed)) {
                 $0.isFormSheetDismissing = false
                 $0.pendingAlert = nil
-                $0.destination = Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
+                $0.destination = Self.writeFailureAlert(
+                    message: "orders.lookup.message.itemAddedTry"
+                )
             }
 
             // Then
             #expect(store.state.isFormSheetDismissing == false)
-            #expect(store.state.destination == Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry"))
+            #expect(
+                store.state.destination
+                    == Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
+            )
             #expect(store.state.pendingAlert == nil)
             await store.finish()
         }
@@ -55,11 +62,16 @@ extension LookupManagementFeatureTests {
 
             // When
             await store.send(.addResponse(.failure(error))) {
-                $0.destination = Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
+                $0.destination = Self.writeFailureAlert(
+                    message: "orders.lookup.message.itemAddedTry"
+                )
             }
 
             // Then
-            #expect(store.state.destination == Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry"))
+            #expect(
+                store.state.destination
+                    == Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
+            )
             #expect(store.state.pendingAlert == nil)
             await store.finish()
         }
@@ -84,12 +96,17 @@ extension LookupManagementFeatureTests {
 
             // When
             await store.send(.addResponse(.failure(error))) {
-                $0.pendingAlert = Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
+                $0.pendingAlert = Self.writeFailureAlert(
+                    message: "orders.lookup.message.itemAddedTry"
+                )
             }
 
             // Then
             #expect(store.state.isFormSheetDismissing)
-            #expect(store.state.pendingAlert == Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry"))
+            #expect(
+                store.state.pendingAlert
+                    == Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
+            )
             #expect(store.state.destination == nil)
             #expect(store.state.items == ["服飾"])
             await store.finish()
@@ -108,21 +125,11 @@ extension LookupManagementFeatureTests {
             )
             var initialState = LookupManagementFeature.State(kind: .paymentMethod)
             initialState.isFormSheetDismissing = true
-            initialState.correction.pendingPlan = PaymentMethodEditPlan(
+            initialState.correction.pendingRequest = PaymentMethodCorrectionFeature.Request(
                 originalName: "現金",
                 newName: "新名稱",
                 flags: newFlags,
-                hasChangedFlags: true,
-                affectedOrders: [
-                    LedgerOrder.fixture(
-                        id: "PM-TIMING",
-                        chargedAmount: 40,
-                        cardlessDeductionAmount: 40,
-                        cardlessSupplementAmount: 0,
-                        paymentMethod: "新名稱",
-                        reconciliationStatus: "待對帳"
-                    ),
-                ]
+                hasChangedFlags: true
             )
             initialState.pendingAlert = Self.paymentMethodConfirmationAlert(count: 1)
             let store = TestStore(initialState: initialState) {

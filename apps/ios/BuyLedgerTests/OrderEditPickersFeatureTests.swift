@@ -26,6 +26,9 @@ struct OrderEditPickersFeatureTests {
         )
         let store = TestStore(initialState: initial) {
             OrderEditPickersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -36,7 +39,7 @@ struct OrderEditPickersFeatureTests {
             \.delegate,
             .addOptionRequested(kind: .category, name: "B", flags: .none)
         )
-        #expect(store.state.availableCategories == ["A"])
+        #expect(store.state.options.categories == ["A"])
     }
 
     /// 父層接收新增請求時保留草稿，僅轉送對外 delegate
@@ -51,6 +54,9 @@ struct OrderEditPickersFeatureTests {
         initial.draft.categories = ["A"]
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -65,7 +71,7 @@ struct OrderEditPickersFeatureTests {
             \.delegate,
             .addOptionRequested(kind: .category, name: "B", flags: .none)
         )
-        #expect(store.state.pickers.availableCategories == ["A"])
+        #expect(store.state.pickers.options.categories == ["A"])
         #expect(store.state.draft.categories == ["A"])
     }
 }

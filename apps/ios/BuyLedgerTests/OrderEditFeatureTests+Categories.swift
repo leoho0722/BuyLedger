@@ -21,6 +21,9 @@ extension OrderEditFeatureTests {
         initial.draft.categories = ["美妝", "服飾"]
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -46,6 +49,9 @@ extension OrderEditFeatureTests {
         initial.draft.categories = testCase.initialCategories
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -74,6 +80,9 @@ extension OrderEditFeatureTests {
         initial.draft.categories = ["美妝"]
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -88,7 +97,7 @@ extension OrderEditFeatureTests {
             \.delegate,
             .addOptionRequested(kind: .category, name: "服飾", flags: .none)
         )
-        #expect(store.state.pickers.availableCategories == initial.pickers.availableCategories)
+        #expect(store.state.pickers.options.categories == initial.pickers.options.categories)
         #expect(store.state.draft.categories == expected)
     }
 
@@ -99,6 +108,9 @@ extension OrderEditFeatureTests {
         let initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When

@@ -83,7 +83,7 @@ struct OrderEditCampaignOptionsTests {
 
         // Then
         await store.finish()
-        #expect(store.state.presentation.destination?.edit?.pickers.availableCampaigns == expected)
+        #expect(store.state.presentation.destination?.edit?.pickers.options.campaigns == expected)
         #expect(store.state.presentation.destination?.edit?.draft.campaignNames == assigned)
         #expect(store.state.presentation.destination?.edit?.isMergeContext == false)
     }
@@ -179,9 +179,10 @@ struct OrderEditCampaignOptionsTests {
         // Then
         await store.finish()
         let editor = try #require(store.state.presentation.destination?.edit)
-        #expect(editor.pickers.availableCampaigns == ["April-KR", "May-JP"])
+        #expect(editor.pickers.options.campaigns == ["April-KR", "May-JP"])
         #expect(
-            editor.pickers.availableCurrencies == [CurrencyCode(rawValue: "EUR"), .jpy, .krw, .twd]
+            editor.pickers.options.currencyCodes
+                == [CurrencyCode(rawValue: "EUR"), .jpy, .krw, .twd]
         )
         #expect(editor.draft.campaignNames == ["April-KR", "May-JP"])
         #expect(editor.isMergeContext)

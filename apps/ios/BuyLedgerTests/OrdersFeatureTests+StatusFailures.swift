@@ -17,7 +17,7 @@ extension OrdersFeatureTests {
     ///
     /// - Throws: 建立測試用的磁碟資料庫失敗時丟出檔案系統或 SwiftData 底層錯誤
     @Test
-    func loadRequested_訂單狀態寫入失敗後_讀回原訂單() async throws {
+    func rootRequest_訂單狀態寫入失敗後重新載入_讀回原訂單() async throws {
         // Given
         let original = Self.makeOrder(id: "O1", categories: ["beauty"], status: .shipping)
         let (service, directoryURL) = try OrderServiceTests.makeSaveFailingService(orders: [
@@ -27,7 +27,9 @@ extension OrdersFeatureTests {
             BuyLedgerDatabaseTests.removeTemporaryDirectory(at: directoryURL)
         }
         let reloadedOrders = LockIsolated<[LedgerOrder]>([])
-        let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.orderStatusUpdated")
+        let writeFailureAlert = Self.expectedWriteFailureAlert(
+            "orders.general.message.orderStatusUpdated"
+        )
         let fetchOrders: OrderService.FetchOrders = { () throws(PersistenceError) in
             let orders = try await service.fetchOrders()
             reloadedOrders.setValue(orders)
@@ -41,9 +43,10 @@ extension OrdersFeatureTests {
         let store = TestStore(initialState: initial) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.fetchOrders = fetchOrders
             $0.orderService.saveOrder = service.saveOrder
-            Self.suppressOrderLookupEffects(&$0)
         }
 
         await store.send(.list(.delegate(.requested(.changeStatus(id: "O1", status: .arrived)))))
@@ -55,7 +58,7 @@ extension OrdersFeatureTests {
         }
 
         // When
-        await store.send(.loadRequested) {
+        await store.send(.rootRequest(.load)) {
             $0.load.$isLoading.withLock {
                 $0 = true
             }
@@ -91,7 +94,7 @@ extension OrdersFeatureTests {
     ///
     /// - Throws: 建立測試用的磁碟資料庫失敗時丟出檔案系統或 SwiftData 底層錯誤
     @Test
-    func loadRequested_收款狀態寫入失敗後_讀回原訂單() async throws {
+    func rootRequest_收款狀態寫入失敗後重新載入_讀回原訂單() async throws {
         // Given
         let original = Self.makeOrder(id: "O1", categories: ["beauty"])
         let (service, directoryURL) = try OrderServiceTests.makeSaveFailingService(orders: [
@@ -101,7 +104,9 @@ extension OrdersFeatureTests {
             BuyLedgerDatabaseTests.removeTemporaryDirectory(at: directoryURL)
         }
         let reloadedOrders = LockIsolated<[LedgerOrder]>([])
-        let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.receiptStatusUpdated")
+        let writeFailureAlert = Self.expectedWriteFailureAlert(
+            "orders.general.message.receiptStatusUpdated"
+        )
         let fetchOrders: OrderService.FetchOrders = { () throws(PersistenceError) in
             let orders = try await service.fetchOrders()
             reloadedOrders.setValue(orders)
@@ -115,12 +120,13 @@ extension OrdersFeatureTests {
         let store = TestStore(initialState: initial) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.fetchOrders = fetchOrders
             $0.orderService.saveOrder = service.saveOrder
-            Self.suppressOrderLookupEffects(&$0)
         }
 
-        await store.send(.receiptStatusChangeRequested(id: "O1", status: .received))
+        await store.send(.rootRequest(.receiptStatusChange(id: "O1", status: .received)))
         await store.receive(\.writes.receiptToggleRequested)
         await store.receive(\.writes.receiptResponse)
         await store.receive(\.writes.delegate, .failed(.receipt))
@@ -129,7 +135,7 @@ extension OrdersFeatureTests {
         }
 
         // When
-        await store.send(.loadRequested) {
+        await store.send(.rootRequest(.load)) {
             $0.load.$isLoading.withLock {
                 $0 = true
             }
@@ -165,7 +171,7 @@ extension OrdersFeatureTests {
     ///
     /// - Throws: 建立測試用的磁碟資料庫失敗時丟出檔案系統或 SwiftData 底層錯誤；重新載入後沒有選取訂單時由 `#require` 丟出
     @Test
-    func loadRequested_批次狀態寫入失敗後_讀回原訂單() async throws {
+    func rootRequest_批次狀態寫入失敗後重新載入_讀回原訂單() async throws {
         // Given
         let orders = [
             Self.makeOrder(id: "O1", categories: ["beauty"], status: .shipping),
@@ -183,7 +189,9 @@ extension OrdersFeatureTests {
             reloadedOrders.setValue(fetchedOrders)
             return fetchedOrders
         }
-        let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.batchStatusUpdate")
+        let writeFailureAlert = Self.expectedWriteFailureAlert(
+            "orders.general.message.batchStatusUpdate"
+        )
         var state = OrdersFeature.State(orders: orders)
         state.refreshDateContext(
             now: TestDependencies.fixedNow,
@@ -195,9 +203,10 @@ extension OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.fetchOrders = fetchOrders
             $0.orderService.saveOrders = service.saveOrders
-            Self.suppressOrderLookupEffects(&$0)
         }
 
         await store.send(.list(.view(.batchStatusChanged(.arrived)))) {
@@ -213,7 +222,7 @@ extension OrdersFeatureTests {
         }
 
         // When
-        await store.send(.loadRequested) {
+        await store.send(.rootRequest(.load)) {
             $0.load.$isLoading.withLock {
                 $0 = true
             }

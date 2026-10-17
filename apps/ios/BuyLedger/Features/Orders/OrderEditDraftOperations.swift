@@ -100,7 +100,7 @@ extension OrderEditDraftOperations {
         guard !trimmed.isEmpty else {
             return nil
         }
-        return state.pickers.availablePaymentMethods.first { $0.name == trimmed }
+        return state.pickers.options.paymentMethods.first { $0.name == trimmed }
     }
 
     /// 將已選類別依原有分隔符號串接，供編輯畫面顯示
@@ -171,12 +171,15 @@ extension OrderEditDraftOperations {
     /// 選取新增的選項，合併情境新增類別時保留既有選取
     ///
     /// - Parameters:
-    ///   - plan: 新增成功的主檔項目
+    ///   - request: 新增成功的主檔新增請求
     ///   - state: 要套用選取的父層狀態
-    static func applyAddition(_ plan: OrderOptionWritePlan, state: inout OrderEditFeature.State) {
-        OrderEditPickerOperations.applyAddition(plan, state: &state.pickers)
-        let name = plan.name
-        switch plan.kind {
+    static func applyAddition(
+        _ request: LookupAdditionRequest,
+        state: inout OrderEditFeature.State
+    ) {
+        state.pickers.options.applyAddition(request)
+        let name = request.addition.name
+        switch request.kind {
         case .orderSource:
             state.draft.orderSource = name
 

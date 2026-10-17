@@ -71,16 +71,20 @@ struct CampaignServiceTests {
     func fetchCampaigns_多筆開團_依開團日期由新到舊排序() async throws {
         // Given
         let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
-        try await service.saveCampaign(Campaign.fixture(
-            id: "old",
-            name: "三月團",
-            openDate: Date(timeIntervalSince1970: 1_775_001_600)
-        ))
-        try await service.saveCampaign(Campaign.fixture(
-            id: "new",
-            name: "四月團",
-            openDate: Date(timeIntervalSince1970: 1_777_507_200)
-        ))
+        try await service.saveCampaign(
+            Campaign.fixture(
+                id: "old",
+                name: "三月團",
+                openDate: Date(timeIntervalSince1970: 1_775_001_600)
+            )
+        )
+        try await service.saveCampaign(
+            Campaign.fixture(
+                id: "new",
+                name: "四月團",
+                openDate: Date(timeIntervalSince1970: 1_777_507_200)
+            )
+        )
 
         // When
         let campaigns = try await service.fetchCampaigns()
@@ -97,16 +101,20 @@ struct CampaignServiceTests {
     func removeCampaign_識別值相符_刪除開團() async throws {
         // Given
         let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
-        try await service.saveCampaign(Campaign.fixture(
-            id: "C1",
-            name: "團一",
-            openDate: Date(timeIntervalSince1970: 1_775_779_200)
-        ))
-        try await service.saveCampaign(Campaign.fixture(
-            id: "C2",
-            name: "團二",
-            openDate: Date(timeIntervalSince1970: 1_775_779_200)
-        ))
+        try await service.saveCampaign(
+            Campaign.fixture(
+                id: "C1",
+                name: "團一",
+                openDate: Date(timeIntervalSince1970: 1_775_779_200)
+            )
+        )
+        try await service.saveCampaign(
+            Campaign.fixture(
+                id: "C2",
+                name: "團二",
+                openDate: Date(timeIntervalSince1970: 1_775_779_200)
+            )
+        )
 
         // When
         _ = try await service.removeCampaign("C1", "團一")
@@ -145,6 +153,73 @@ struct CampaignServiceTests {
         #expect(fetched.closeDate == close)
         #expect(fetched.settledDate == settled)
         #expect(fetched.isSettled)
+    }
+
+    /// 訂單更新存檔失敗後改開團名稱不會帶入失敗欄位
+    ///
+    /// - Throws: 建立 fixture 或獨立容器失敗時丟出 SwiftData 底層錯誤；
+    ///   讀取失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
+    ///   改名存檔失敗時丟出 `PersistenceError.saveFailed(underlying:)`；
+    ///   前置條件或預期值不成立時由 `#require` 丟出測試斷言錯誤
+    @Test
+    func renameCampaign_訂單更新儲存失敗後_改名不帶入失敗欄位() async throws {
+        // Given
+        let initialOrder = LedgerOrder.fixture(
+            id: "order-001",
+            status: .confirmed,
+            chargedAmount: 1_250,
+            paymentMethod: "原始付款",
+            notes: "原始備註",
+            campaignNames: ["春團"]
+        )
+        let fixture = try ResidueProbeModels.makeDiskFixture(orders: [initialOrder])
+        defer {
+            BuyLedgerDatabaseTests.removeTemporaryDirectory(at: fixture.directoryURL)
+        }
+        let database = BuyLedgerDatabaseTests.makeDatabase(with: fixture)
+        let campaign = Campaign.fixture(
+            id: "C1",
+            name: "春團",
+            openDate: Date(timeIntervalSince1970: 1_775_779_200)
+        )
+        let initialCampaignService = Self.makeService(database: database)
+        try await initialCampaignService.saveCampaign(campaign)
+        let mock = MockBuyLedgerDatabase(database: database)
+        let orderService = OrderServiceTests.makeService(database: mock)
+        let campaignService = Self.makeService(database: mock)
+        mock.mode = .saveFailureAfterBody
+        let requireFailure = OrderServiceResidueTests.requireRelationshipSaveFailure
+        try await requireFailure { () throws(PersistenceError) in
+            try await orderService.saveOrder(
+                LedgerOrder.fixture(
+                    id: "order-001",
+                    status: .shipping,
+                    chargedAmount: 9_999,
+                    paymentMethod: "失敗付款",
+                    notes: "失敗備註",
+                    campaignNames: ["春團"]
+                )
+            )
+        }
+        mock.mode = .passthrough
+        var renamedCampaign = campaign
+        renamedCampaign.name = "秋團"
+
+        // When
+        try await campaignService.renameCampaign(renamedCampaign, "春團")
+
+        // Then
+        let storedOrders = try await OrderServiceResidueTests.fetchPersistedOrders(
+            from: fixture.directoryURL
+        )
+        #expect(storedOrders.count == 1)
+        let storedOrder = try #require(storedOrders.first)
+        #expect(storedOrder.id == "order-001")
+        #expect(storedOrder.status == .confirmed)
+        #expect(storedOrder.notes == "原始備註")
+        #expect(storedOrder.paymentMethod == "原始付款")
+        #expect(storedOrder.chargedAmount == 1_250)
+        #expect(storedOrder.campaignNames == ["秋團"])
     }
 }
 

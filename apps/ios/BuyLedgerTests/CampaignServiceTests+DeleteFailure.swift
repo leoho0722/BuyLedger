@@ -21,23 +21,24 @@ extension CampaignServiceTests {
     @Test
     func removeCampaign_交易儲存失敗_保留開團訂單與提醒() async throws {
         // Given
-        let fixture = try ResidueProbeModels.makeDiskFixture(
-            orders: [LedgerOrder.fixture(id: "O1", campaignNames: ["四月團"])]
-        )
+        let fixture = try ResidueProbeModels.makeDiskFixture(orders: [
+            LedgerOrder.fixture(id: "O1", campaignNames: ["四月團"]),
+        ])
         defer {
             BuyLedgerDatabaseTests.removeTemporaryDirectory(at: fixture.directoryURL)
         }
         let database = BuyLedgerDatabaseTests.makeDatabase(with: fixture)
         let campaignService = Self.makeService(database: database)
         let orderService = OrderServiceTests.makeService(database: database)
-        let reminderService = CampaignReminderServiceTests.makeService(database: database)
-        try await campaignService.saveCampaign(Campaign.fixture(
-            id: "C1",
-            name: "四月團",
-            openDate: Date(timeIntervalSince1970: 1_775_779_200)
-        ))
+        try await campaignService.saveCampaign(
+            Campaign.fixture(
+                id: "C1",
+                name: "四月團",
+                openDate: Date(timeIntervalSince1970: 1_775_779_200)
+            )
+        )
         let reminderTimestamp = Date(timeIntervalSince1970: 1_700_000_000)
-        try await reminderService.saveLink(
+        try await campaignService.saveReminderLink(
             "C1",
             CampaignReminderLink(eventIdentifier: "EVT-1", reminderTimestamp: reminderTimestamp)
         )
@@ -69,7 +70,7 @@ extension CampaignServiceTests {
         let remainingOrders = try await orderService.fetchOrders()
         #expect(remainingOrders.map(\.id) == ["O1"])
         #expect(remainingOrders.first?.campaignNames == ["四月團"], "save 失敗時訂單的開團名稱不應被剝除")
-        let remainingLinks = try await reminderService.fetchLinks()
+        let remainingLinks = try await campaignService.fetchReminderLinks()
         #expect(
             remainingLinks["C1"] == CampaignReminderLink(
                 eventIdentifier: "EVT-1",

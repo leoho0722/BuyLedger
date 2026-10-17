@@ -189,7 +189,7 @@ extension OrderServiceTests {
 
     /// 建立訂單會以 byte 級內容完整保存多張大型照片
     ///
-    /// - Throws: 建立時以 `OrderPersistenceError` 丟出 `.identifierCollision(id:)`、
+    /// - Throws: 建立時以 `OrderError` 丟出 `.identifierCollision(id:)`、
     ///   `.storage(.fetchFailed(underlying:))` 或
     ///   `.storage(.saveFailed(underlying:))`；讀取照片失敗時丟出 `.fetchFailed(underlying:)`
     @Test

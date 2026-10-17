@@ -17,7 +17,7 @@ struct OrderEditPickerDestination: View {
     @Environment(\.locale) private var locale
 
     /// 畫面的狀態與事件來源，由父層建立後傳入
-    let store: StoreOf<OrderEditFeature>
+    @Bindable var store: StoreOf<OrderEditFeature>
 
     /// 目前呈現的選擇器或照片檢視路徑
     let route: OrderEditPickersFeature.State.PickerRoute
@@ -50,7 +50,7 @@ private extension OrderEditPickerDestination {
                 addAlertTitle: "orders.edit.label.addOrderSource",
                 addFieldPlaceholder: "orders.edit.label.sourceName",
                 addAlertMessage: "orders.edit.message.enterNewOrder",
-                options: pickerStore.availableOrderSources,
+                options: pickerStore.options.orderSources,
                 selected: store.draft.orderSource,
                 onSelect: {
                     pickerStore.send(.view(.orderSourceSelected($0)))
@@ -72,16 +72,13 @@ private extension OrderEditPickerDestination {
                     addAlertTitle: "orders.edit.label.addItemCategory",
                     addFieldPlaceholder: "orders.edit.label.categoryName",
                     addAlertMessage: "orders.edit.message.enterNewProduct",
-                    options: pickerStore.availableCategories,
+                    options: pickerStore.options.categories,
                     onAdd: {
                         pickerStore.send(.view(.addCategoryTapped($0)))
                     },
-                    multiSelection: .init(
-                        selections: Set(store.draft.categories),
-                        onToggle: {
-                            pickerStore.send(.view(.categoryToggled($0)))
-                        }
-                    ),
+                    multiSelection: .init(selections: Set(store.draft.categories)) {
+                        pickerStore.send(.view(.categoryToggled($0)))
+                    },
                     isEmbedded: true
                 )
             } else {
@@ -93,7 +90,7 @@ private extension OrderEditPickerDestination {
                     addAlertTitle: "orders.edit.label.addItemCategory",
                     addFieldPlaceholder: "orders.edit.label.categoryName",
                     addAlertMessage: "orders.edit.message.enterNewProduct",
-                    options: pickerStore.availableCategories,
+                    options: pickerStore.options.categories,
                     selected: store.draft.categories.first ?? "",
                     onSelect: {
                         pickerStore.send(.view(.categorySelected($0)))
@@ -111,13 +108,10 @@ private extension OrderEditPickerDestination {
                 allowsAdd: false,
                 emptyTitle: "orders.edit.label.campaigns",
                 emptyDescription: "orders.edit.message.createCampaignCampaigns",
-                options: pickerStore.availableCampaigns,
-                multiSelection: .init(
-                    selections: Set(store.draft.campaignNames),
-                    onToggle: {
-                        pickerStore.send(.view(.campaignToggled($0)))
-                    }
-                ),
+                options: pickerStore.options.campaigns,
+                multiSelection: .init(selections: Set(store.draft.campaignNames)) {
+                    pickerStore.send(.view(.campaignToggled($0)))
+                },
                 isEmbedded: true
             )
 
@@ -130,7 +124,7 @@ private extension OrderEditPickerDestination {
                 addAlertTitle: "orders.edit.label.addPaymentMethod",
                 addFieldPlaceholder: "orders.detail.label.paymentMethodName",
                 addAlertMessage: "orders.edit.message.enterNewPayment",
-                options: pickerStore.availablePaymentMethods.map(\.name),
+                options: pickerStore.options.paymentMethods.map(\.name),
                 selected: store.draft.paymentMethod,
                 onSelect: {
                     pickerStore.send(.view(.paymentMethodSelected($0)))
@@ -161,7 +155,7 @@ private extension OrderEditPickerDestination {
                 addAlertTitle: "orders.edit.label.addStatus",
                 addFieldPlaceholder: "orders.edit.label.reconciliationStatusName",
                 addAlertMessage: "orders.edit.message.enterNewReconciliation",
-                options: pickerStore.availableReconciliationStatuses,
+                options: pickerStore.options.reconciliationStatuses,
                 selected: store.draft.reconciliationStatus,
                 onSelect: {
                     pickerStore.send(.view(.reconciliationStatusSelected($0)))
@@ -182,7 +176,7 @@ private extension OrderEditPickerDestination {
                 searchable: true,
                 emptyTitle: "orders.edit.label.currenciesAvailable",
                 emptyDescription: "orders.edit.message.internetConnectionRequired",
-                options: pickerStore.availableCurrencies.map(\.rawValue),
+                options: pickerStore.options.currencyCodes.map(\.rawValue),
                 selected: store.draft.currency.rawValue,
                 displayName: {
                     CurrencyDisplayName.text(code: $0, language: language)

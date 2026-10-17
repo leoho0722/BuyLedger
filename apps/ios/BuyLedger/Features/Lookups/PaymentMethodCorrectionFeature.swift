@@ -7,7 +7,7 @@
 
 import ComposableArchitecture
 
-/// 找出引用原付款方式的訂單、要求確認並一起寫入更正結果 (全部成功或全部不動)
+/// 查出引用原付款方式的訂單筆數、要求確認並在交易內寫入更正結果
 @Reducer
 struct PaymentMethodCorrectionFeature {
 
@@ -20,8 +20,8 @@ struct PaymentMethodCorrectionFeature {
         /// 四種主檔共用的目錄；用來查原付款方式目前的旗標
         @Shared(.lookupCatalog) var catalog: LookupCatalog
 
-        /// 等待使用者確認的更正資料
-        var pendingPlan: PaymentMethodEditPlan?
+        /// 等待使用者確認的更正請求
+        var pendingRequest: Request?
     }
 
     // MARK: - Action
@@ -40,15 +40,17 @@ struct PaymentMethodCorrectionFeature {
         /// 使用者確認回溯更正
         case confirmed
 
-        /// 一起寫入付款方式與訂單的結果 (全部成功或全部不動)
+        /// 讀取使用原付款方式的訂單筆數後回傳的結果
+        ///
+        /// - Parameters:
+        ///   - request: 發出查詢的更正請求
+        ///   - result: 訂單筆數或讀取錯誤
+        case countResponse(request: Request, result: Result<Int, PersistenceError>)
+
+        /// 一起寫入付款方式與訂單的結果
         ///
         /// - Parameter result: 已寫入的更正資料或寫入錯誤
-        case editResponse(Result<PaymentMethodEditPlan, PaymentMethodPersistenceError>)
-
-        /// 找出使用原付款方式的訂單後回傳的結果
-        ///
-        /// - Parameter result: 更正資料或讀取錯誤
-        case planResponse(Result<PaymentMethodEditPlan, PersistenceError>)
+        case editResponse(Result<PaymentMethodEditPlan, PersistenceError>)
 
         /// 使用者送出付款方式更正資料
         ///
@@ -67,29 +69,47 @@ struct PaymentMethodCorrectionFeature {
             /// - Parameter affectedOrderCount: 需要重新計算的訂單筆數
             case confirmationRequired(affectedOrderCount: Int)
 
-            /// 付款方式與受影響訂單已一起寫入 (全部成功或全部不動)
+            /// 付款方式與受影響訂單已在交易內一起寫入
             ///
             /// - Parameter plan: 寫入完成的更正資料
             case edited(PaymentMethodEditPlan)
 
-            /// 找出引用原付款方式的訂單或一起寫入時失敗
+            /// 查詢引用原付款方式的訂單筆數或寫入更正時失敗
             case failed
         }
     }
 
     // MARK: - Dependencies
 
-    /// 讀取目前訂單以建立更正資料
-    @Dependency(\.orderService) private var orderService
-
-    /// 一次寫入付款方式與受影響訂單
-    @Dependency(\.paymentMethodService) private var paymentMethodService
+    /// 主檔與引用訂單的資料庫操作入口
+    @Dependency(\.lookupService) private var lookupService
 
     // MARK: - Body
 
     /// 只組合 reducer，更正流程由 `core(state:action:)` 處理
     var body: some Reducer<State, Action> {
         Reduce(core)
+    }
+}
+
+// MARK: - Nested Types
+
+extension PaymentMethodCorrectionFeature {
+
+    /// 付款方式更正的請求資料
+    struct Request: Equatable, Sendable {
+
+        /// 原付款方式名稱
+        let originalName: String
+
+        /// 新付款方式名稱
+        let newName: String
+
+        /// 使用者選定的分類旗標
+        let flags: PaymentMethodFlags
+
+        /// 旗標是否變更；只改名時不需確認
+        let hasChangedFlags: Bool
     }
 }
 
@@ -109,15 +129,25 @@ private extension PaymentMethodCorrectionFeature {
             return .none
 
         case .cancelled:
-            state.pendingPlan = nil
+            state.pendingRequest = nil
             return .none
 
         case .confirmed:
-            guard let plan = state.pendingPlan else {
+            guard let request = state.pendingRequest else {
                 return .none
             }
-            state.pendingPlan = nil
-            return write(plan: plan)
+            state.pendingRequest = nil
+            return write(request: request)
+
+        case .countResponse(let request, .success(let count)):
+            if count == 0 {
+                return write(request: request)
+            }
+            state.pendingRequest = request
+            return .send(.delegate(.confirmationRequired(affectedOrderCount: count)))
+
+        case .countResponse(_, .failure):
+            return .send(.delegate(.failed))
 
         case .editResponse(.success(let plan)):
             return .send(.delegate(.edited(plan)))
@@ -125,43 +155,38 @@ private extension PaymentMethodCorrectionFeature {
         case .editResponse(.failure):
             return .send(.delegate(.failed))
 
-        case .planResponse(.success(let plan)):
-            if plan.affectedOrders.isEmpty || !plan.hasChangedFlags {
-                return write(plan: plan)
-            }
-            state.pendingPlan = plan
-            return .send(
-                .delegate(.confirmationRequired(affectedOrderCount: plan.affectedOrders.count))
-            )
-
-        case .planResponse(.failure):
-            return .send(.delegate(.failed))
-
         case .requested(let originalName, let newName, let flags):
             let currentFlags = state.catalog.paymentMethodFlags(named: originalName)
             let hasChangedFlags = currentFlags != flags
-            return preparePlan(
+            let request = Request(
                 originalName: originalName,
                 newName: newName,
                 flags: flags,
                 hasChangedFlags: hasChangedFlags
             )
+            return startCorrection(request)
         }
     }
 
-    /// 一起寫入付款方式與已正規化的受影響訂單 (全部成功或全部不動)
+    /// 在交易內寫入付款方式與重算受影響訂單
     ///
-    /// - Parameter plan: 已整理完成的付款方式與受影響訂單
+    /// - Parameter request: 要寫入的更正請求
     /// - Returns: 寫入成功或失敗後送回結果
-    func write(plan: PaymentMethodEditPlan) -> Effect<Action> {
-        let paymentMethodService = paymentMethodService
+    func write(request: Request) -> Effect<Action> {
+        let lookupService = lookupService
         return .run { send in
-            do throws(PaymentMethodPersistenceError) {
-                try await paymentMethodService.applyPaymentMethodEdit(
-                    plan.originalName,
-                    plan.newName,
-                    plan.flags,
-                    plan.affectedOrders
+            do throws(PersistenceError) {
+                let affectedOrders = try await lookupService.applyPaymentMethodEdit(
+                    request.originalName,
+                    request.newName,
+                    request.flags
+                )
+                let plan = PaymentMethodEditPlan(
+                    originalName: request.originalName,
+                    newName: request.newName,
+                    flags: request.flags,
+                    hasChangedFlags: request.hasChangedFlags,
+                    affectedOrders: affectedOrders
                 )
                 await send(.editResponse(.success(plan)))
             } catch {
@@ -170,43 +195,21 @@ private extension PaymentMethodCorrectionFeature {
         }
     }
 
-    /// 找出使用原付款方式的訂單，換成新名稱並套用新旗標後整理成更正資料送回
+    /// 查出受影響的訂單筆數；旗標沒有變更時直接寫入
     ///
-    /// - Parameters:
-    ///   - originalName: 尚未更改的付款方式名稱
-    ///   - newName: 使用者輸入的新名稱
-    ///   - flags: 使用者選定的付款方式分類旗標
-    ///   - hasChangedFlags: 付款方式分類旗標是否與目錄不同
-    /// - Returns: 整理完成後回報更正資料或讀取錯誤
-    func preparePlan(
-        originalName: String,
-        newName: String,
-        flags: PaymentMethodFlags,
-        hasChangedFlags: Bool
-    ) -> Effect<Action> {
-        let orderService = orderService
+    /// - Parameter request: 使用者送出的更正請求
+    /// - Returns: 查詢或寫入的 Effect，結果分別送回 `countResponse` 與 `editResponse`
+    func startCorrection(_ request: Request) -> Effect<Action> {
+        guard request.hasChangedFlags else {
+            return write(request: request)
+        }
+        let lookupService = lookupService
         return .run { send in
             do throws(PersistenceError) {
-                let orders = try await orderService.fetchOrders()
-                let affectedOrders = orders
-                    .filter {
-                        $0.paymentMethod == originalName
-                    }
-                    .map {
-                        $0
-                            .renamingPaymentMethod(to: newName)
-                            .applyingPaymentMethodFlags(flags)
-                    }
-                let plan = PaymentMethodEditPlan(
-                    originalName: originalName,
-                    newName: newName,
-                    flags: flags,
-                    hasChangedFlags: hasChangedFlags,
-                    affectedOrders: affectedOrders
-                )
-                await send(.planResponse(.success(plan)))
+                let count = try await lookupService.countOrders(request.originalName)
+                await send(.countResponse(request: request, result: .success(count)))
             } catch {
-                await send(.planResponse(.failure(error)))
+                await send(.countResponse(request: request, result: .failure(error)))
             }
         }
     }

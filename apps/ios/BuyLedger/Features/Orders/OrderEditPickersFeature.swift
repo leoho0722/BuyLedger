@@ -17,23 +17,8 @@ struct OrderEditPickersFeature {
     @ObservableState
     struct State: Equatable, Sendable {
 
-        /// 可供選擇的訂單來源
-        var availableOrderSources: [String]
-
-        /// 可供選擇的商品類別
-        var availableCategories: [String]
-
-        /// 可選付款方式清單，含分類旗標
-        var availablePaymentMethods: [PaymentMethodInfo]
-
-        /// 可供選擇的對帳狀態
-        var availableReconciliationStatuses: [String]
-
-        /// 可供選擇的開團名稱
-        var availableCampaigns: [String]
-
-        /// 可選幣別清單；父層清單為空時使用預設幣別
-        var availableCurrencies: [CurrencyCode]
+        /// 已補齊草稿使用值並完成去重與排序的選項
+        var options: OrderEditOptions
 
         /// 目前推入的選擇器或照片檢視器；`nil` 代表未開啟
         var pickerRoute: PickerRoute?
@@ -44,13 +29,7 @@ struct OrderEditPickersFeature {
         ///   - options: 父層注入的選項清單
         ///   - draft: 只供初始化整理使用的草稿快照
         init(options: OrderEditOptions = .empty, draft: OrderDraft) {
-            let normalized = OrderEditOptionNormalizer.normalized(options: options, draft: draft)
-            self.availableOrderSources = normalized.orderSources
-            self.availableCategories = normalized.categories
-            self.availablePaymentMethods = normalized.paymentMethods
-            self.availableReconciliationStatuses = normalized.reconciliationStatuses
-            self.availableCampaigns = normalized.campaigns
-            self.availableCurrencies = normalized.currencyCodes
+            self.options = OrderEditOptionNormalizer.normalized(options: options, draft: draft)
         }
 
         /// 訂單編輯表單內可推入的選擇器與照片檢視器

@@ -41,7 +41,7 @@ private extension OrderEditCampaignSection {
                 Text("orders.detail.label.unassigned")
                     .tag("")
 
-                ForEach(pickerStore.availableCampaigns, id: \.self) {
+                ForEach(pickerStore.options.campaigns, id: \.self) {
                     Text($0)
                         .tag($0)
                 }
@@ -61,11 +61,10 @@ private extension OrderEditCampaignSection {
     var campaignPickerRow: some View {
         OrderEditSelectionRow(
             title: "orders.detail.title.campaigns",
-            identifier: BLAccessibilityID.OrderEdit.campaignRow,
-            action: {
-                pickerStore.send(.view(.campaignPickerTapped))
-            }
+            identifier: BLAccessibilityID.OrderEdit.campaignRow
         ) {
+            pickerStore.send(.view(.campaignPickerTapped))
+        } value: {
             Text(store.campaignsDisplayText)
                 .multilineTextAlignment(.trailing)
         }

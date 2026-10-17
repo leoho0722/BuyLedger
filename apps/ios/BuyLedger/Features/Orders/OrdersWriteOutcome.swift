@@ -24,9 +24,6 @@ struct OrdersWriteOutcome {
     /// 刪除的訂單若正在表單中編輯，要關閉該表單
     var closesEditOf: LedgerOrder.ID?
 
-    /// 新增的主檔選項，要寫回來源表單
-    var addedOption: OrderOptionWritePlan?
-
     /// 寫入失敗的一次性通知
     var notice: OrdersPresentationFeature.Destination.State?
 }

@@ -18,10 +18,13 @@ extension OrderEditFeatureTests {
     func pickers_新增對帳狀態尚未落盤_保留草稿與選項() async {
         // Given
         var initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
-        initial.pickers.availableReconciliationStatuses = ["待對帳"]
+        initial.pickers.options.reconciliationStatuses = ["待對帳"]
         initial.draft.reconciliationStatus = "待對帳"
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -36,7 +39,7 @@ extension OrderEditFeatureTests {
             \.delegate,
             .addOptionRequested(kind: .reconciliationStatus, name: "對帳成功", flags: .none)
         )
-        #expect(store.state.pickers.availableReconciliationStatuses == ["待對帳"])
+        #expect(store.state.pickers.options.reconciliationStatuses == ["待對帳"])
         #expect(store.state.draft.reconciliationStatus == "待對帳")
     }
 
@@ -57,7 +60,7 @@ extension OrderEditFeatureTests {
 
         // Then
         #expect(state.draft.reconciliationStatus == "待對帳")
-        #expect(state.pickers.availableReconciliationStatuses == ["待對帳"])
+        #expect(state.pickers.options.reconciliationStatuses == ["待對帳"])
     }
 
     /// 尚未開啟選擇器時，點選對帳狀態按鈕會推入對帳狀態選擇器
@@ -67,6 +70,9 @@ extension OrderEditFeatureTests {
         let initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -85,6 +91,9 @@ extension OrderEditFeatureTests {
         let initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When

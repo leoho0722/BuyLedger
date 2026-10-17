@@ -1,0 +1,53 @@
+{
+  "schema": "mobilebuildmcp.output.capture-result",
+  "schemaVersion": "2",
+  "didError": false,
+  "error": null,
+  "data": {
+    "summary": {
+      "status": "SUCCEEDED"
+    },
+    "artifacts": {
+      "simulatorId": "FC80961E-B153-4462-B017-3A4E2BFCFB68"
+    },
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "0va6f1v",
+      "seq": 78,
+      "count": 92,
+      "targets": [
+        "e15|tap|button|更多||BackButton",
+        "e17|tap|button|新增類別||lookupManagement.addButton",
+        "e33|tap|text|生活雜貨||lookupManagement.row:生活雜貨",
+        "e37|tap|text|服飾||lookupManagement.row:服飾",
+        "e42|tap|text|美妝||lookupManagement.row:美妝",
+        "e47|tap|text|精品||lookupManagement.row:精品",
+        "e52|tap|text|TOYS||lookupManagement.row:TOYS",
+        "e66|tap|tab|總覽|0|",
+        "e68|tap|tab|訂單|0|",
+        "e70|tap|tab|開團|0|",
+        "e72|tap|tab|分析|0|",
+        "e74|tap|tab|更多|1|"
+      ],
+      "scroll": [
+        "e22|swipe|other|||lookupManagement.root"
+      ],
+      "text": [
+        "e33|text|text|生活雜貨||lookupManagement.row:生活雜貨",
+        "e37|text|text|服飾||lookupManagement.row:服飾",
+        "e42|text|text|美妝||lookupManagement.row:美妝",
+        "e47|text|text|精品||lookupManagement.row:精品",
+        "e52|text|text|TOYS||lookupManagement.row:TOYS"
+      ],
+      "udid": "FC80961E-B153-4462-B017-3A4E2BFCFB68"
+    }
+  },
+  "nextSteps": [
+    "Refresh after layout changes: mobilebuildmcp ui-automation snapshot-ui --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68",
+    "Wait for UI to settle: mobilebuildmcp ui-automation wait-for-ui --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --predicate settled",
+    "Batch same-screen taps: mobilebuildmcp ui-automation batch --json '{\"simulatorId\":\"FC80961E-B153-4462-B017-3A4E2BFCFB68\",\"steps\":[{\"action\":\"tap\",\"elementRef\":\"e15\"},{\"action\":\"tap\",\"elementRef\":\"e17\"}]}'",
+    "Tap an elementRef: mobilebuildmcp ui-automation tap --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --element-ref e15",
+    "Scroll visible content: mobilebuildmcp ui-automation swipe --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --within-element-ref e22 --direction up --distance 0.5"
+  ]
+}

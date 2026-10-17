@@ -23,11 +23,11 @@ apps/ios/
 ├── BuyLedger.xcodeproj/          # Xcode 專案；project.pbxproj 提交、xcuserdata/ 不提交
 ├── BuyLedger/                    # App source root
 │   ├── App/                      # 進入點：BuyLedgerApp、WindowGroup、AppLaunchConfigurator、TelemetryService (Firebase 遙測收集)
-│   │   └── Testing/              # UI 測試啟動 harness (BLUITestConfiguration、SeedProfile、SeedData、五個啟動參數列舉 Language／LoadFailure／CalendarAccess／BiometricScenario／PersistenceMode、DependencyValues+BLUITestOverrides；#if DEBUG)，組裝根與呼叫它的啟動設定同層
+│   │   └── Testing/              # UI 測試啟動 harness (BLUITestConfiguration、SeedProfile、SeedData、五個啟動參數列舉 Language／LoadFailure／CalendarAccess／BiometricScenario／PersistenceMode、DependencyValues+BLUITestOverrides、DependencyValues+BLUITestLookupOverrides；#if DEBUG)，組裝根與呼叫它的啟動設定同層
 │   ├── Core/
 │   │   ├── Domain/               # LedgerOrder、FxRateSnapshot、FxRates、CurrencyCode 等 model
 │   │   ├── Persistence/          # BuyLedgerDatabase (actor，每次讀寫一次性 ModelContext)、PersistenceContainer、各 Record 與 schema
-│   │   ├── Dependencies/         # 跨 Feature 共用的 Service (`@Dependency(\.xxxService)` 注入)：訂單、四種主檔、幣別與匯率、BiometricAuthService；SharedKey+CurrencyCodes (記憶體內共用幣別清單)
+│   │   ├── Dependencies/         # 跨 Feature 共用的 Service (`@Dependency(\.xxxService)` 注入)：幣別與匯率、BiometricAuthService；SharedKey+CurrencyCodes (記憶體內共用幣別清單)
 │   │   ├── Storage/              # UserDefaultsStore、AppConfigurationStore (讀 Info.plist 設定) 的 protocol、實作與 Preview 替身
 │   │   ├── Networking/           # APIError、HTTPClient (send/stream)、HTTPMethod、URLRequestBuilder、ExchangeRateEndpoint (ExchangeRate-API 請求與錯誤分類)、ExchangeRateLatestResponse、ExchangeRateCodesResponse
 │   │   ├── Environment/          # RuntimeEnvironment (Preview／UI 測試／單元測試的執行環境判斷)
@@ -39,15 +39,16 @@ apps/ios/
 │   │   │   └── Data/             # SignificantTimeChangeService (系統重大時間變更監聽)、PersistenceRecoveryService (store 隔離)
 │   │   ├── Campaigns/            # 開團管理：CampaignFeature (容器)、CampaignListFeature、CampaignDetailFeature、CampaignEditFeature；無畫面的 CampaignLoadFeature (載入與自動結單)、CampaignWritesFeature、CampaignReminderFeature、CampaignPresentationFeature (表單、確認框與通知的呈現)；CampaignRequestPlan (請求分派)
 │   │   │   ├── Components/       # CampaignSectionList、CampaignRow、CampaignDetailInfoSection、CampaignDetailSettlementSection、CampaignDetailDistributionSection
-│   │   │   └── Data/             # CampaignService (開團讀寫)、CampaignReminderService (提醒連結)、CalendarReminderService (系統行事曆)、OpenSettingsService
+│   │   │   └── Data/             # CampaignService (開團與提醒連結讀寫)、CampaignReminderLink (提醒連結值型別)、CalendarReminderService (系統行事曆)、OpenSettingsService
 │   │   ├── Customers/            # 客戶名單
 │   │   │   └── Components/       # CustomerTopCard、CustomerListRow
 │   │   ├── Dashboard/            # 總覽頁；DashboardFeature.State.ongoingCampaignRows 提供進行中開團卡資料
 │   │   ├── FX/                   # 匯率工具 (FxFeature + FxView)
 │   │   │   └── Components/       # FxStatusBanner、FxRatesList
 │   │   ├── Insights/             # 趨勢分析
-│   │   ├── Lookups/              # 主檔管理 (訂單來源／商品類別／付款方式／對帳狀態)
-│   │   │   └── Components/       # LookupItemRow、LookupItemList
+│   │   ├── Lookups/              # 主檔管理 (訂單來源／商品類別／付款方式／對帳狀態)；LookupCatalogFeature 無畫面，載入與新增主檔目錄
+│   │   │   ├── Components/       # LookupItemRow、LookupItemList
+│   │   │   └── Data/             # LookupService (四種主檔的讀寫與改名、付款方式更正)
 │   │   ├── More/                 # iOS「更多」入口：MoreFeature 以 StackState 推入匯率、客戶、報價、主檔管理、設定
 │   │   ├── Orders/               # 訂單容器、清單、詳情、寫入、載入與編輯流程
 │   │   │   ├── OrdersFeature.swift               # 容器組合子 Feature，共用訂單引用與 Root 投影，core 逐 case 轉送
@@ -56,8 +57,8 @@ apps/ios/
 │   │   │   ├── OrderListFeature.swift            # 搜尋、多選、日期分組與 iPad 選取，組合篩選子 Feature
 │   │   │   ├── OrderFilterFeature.swift          # 篩選 sheet 子 Feature，暫存篩選、搜尋與捨棄確認
 │   │   │   ├── OrderDetailFeature.swift          # iPhone 推入與 iPad 右欄共用的唯讀詳情
-│   │   │   ├── OrderWritesFeature.swift          # 訂單與新增主檔選項的寫入，reducer 內更新共用資料
-│   │   │   ├── OrdersLoadFeature.swift           # 訂單與四種主檔載入、共享載入狀態
+│   │   │   ├── OrderWritesFeature.swift          # 訂單寫入與交易後的調整，reducer 內更新共用訂單
+│   │   │   ├── OrdersLoadFeature.swift           # 訂單載入與共享載入狀態
 │   │   │   ├── OrdersLoadState.swift             # 首頁、分析與清單共用的載入狀態型別
 │   │   │   ├── OrderEditFeature.swift            # 草稿、驗證、焦點、捨棄確認與存檔請求
 │   │   │   ├── OrderEditPhotosFeature.swift      # 照片載入、匯入與編輯
@@ -68,17 +69,18 @@ apps/ios/
 │   │   │   ├── OrderRequest.swift                # 清單與詳情共用請求；OrderRequestPlan 分派呈現或寫入
 │   │   │   ├── OrdersContainerPlan.swift         # 容器各 case 的純計算，+Requests／+Writes／+Presentation 分檔；回傳 OrdersRequestOutcome／OrdersWriteOutcome
 │   │   │   ├── OrdersPresentationQueue.swift     # sheet 關閉與合併轉場期間的通知佇列
+│   │   │   ├── OrdersRootRequest.swift           # 根功能送進容器的請求：載入、cascade、收款狀態、付款方式旗標與新增選項結果
 │   │   │   ├── OrdersDetailSelection.swift       # 詳情推入、失效路徑移除與右欄選取同步
 │   │   │   ├── OrdersEditorOptions.swift         # 四個編輯入口共用的 OrderEditOptions 建構
 │   │   │   ├── OrderDraft.swift                  # 訂單草稿；+WriteResult 解析建立／更新意圖
-│   │   │   ├── OrderWriteOperations.swift        # 寫入 effect (含狀態與批次狀態)；OrderOptionWritePlan／OrderMergeSavePlan 帶入寫入計畫
+│   │   │   ├── OrderWriteOperations.swift        # 寫入 effect (含狀態與批次狀態)；OrderMergeSavePlan 帶入合併寫入計畫
 │   │   │   ├── OrdersCascadeOperations.swift     # 開團與主檔交易後的訂單調整
 │   │   │   ├── OrdersListQuery.swift             # 清單衍生值；OrdersQuery 篩選、OrderDateSection 日期分組
 │   │   │   ├── OrderDateContext.swift            # 注入的現在時間與行事曆
 │   │   │   ├── OrderStatusRules.swift            # 可選狀態與合併入口資格；OrderCostBreakdown 成本、OrderSummaryPrompt 摘要提示
 │   │   │   ├── OrdersView.swift                 # compact／regular 分流與共用 sheet；OrdersCompactView、OrdersRegularListColumn／OrdersRegularDetailColumn
 │   │   │   ├── Components/       # 清單、詳情、篩選與表單區段；OrderDetailMenu／OrderDetailRowMenu 共用操作，OrderEditSelectionRow 共用選擇列；OrderFormatters 處理金額正負號與開團顯示文字
-│   │   │   └── Data/             # PhotoService (相簿選取照片的匯入)、PhotoImportResult
+│   │   │   └── Data/             # OrderService (訂單讀寫)、OrderError (訂單持久化錯誤)、PhotoService (相簿選取照片的匯入)、PhotoImportResult
 │   │   ├── Quote/                # 報價試算 (QuoteFeature + QuoteRateFeature 子 reducer + QuoteView)
 │   │   │   └── Components/       # QuoteStatusBanner、QuoteBreakdownCard、QuoteInputsCard
 │   │   └── Settings/             # SettingsFeature + SettingsView；App 鎖定的啟用驗證與失敗說明也在這裡
@@ -248,10 +250,10 @@ bun run unlock
 
 ### 資料層
 
-- **Service 層** (`Core/Dependencies/` 與各 Feature 的 `Data/`)：`OrderService` 等 Service 透過 `BuyLedgerDatabase` (`Core/Persistence/`) 操作 SwiftData，每次讀寫使用一次性 context；production 唯一的 `ModelContainer` 由 `BuyLedgerDatabaseKey.liveValue` 從 `PersistenceContainer.bootstrap` 取得，Feature 以 `@Dependency(\.xxxService)` 取用 Service。
+- **Service 層** (`Core/Dependencies/` 與各 Feature 的 `Data/`)：`OrderService` (`Features/Orders/Data/`)、`LookupService` (`Features/Lookups/Data/`)、`CampaignService` (`Features/Campaigns/Data/`) 等以資料庫為下層的 Service 透過 `BuyLedgerDatabase` (`Core/Persistence/`) 操作 SwiftData，每次讀寫使用一次性 context；production 唯一的 `ModelContainer` 由 `BuyLedgerDatabaseKey.liveValue` 從 `PersistenceContainer.bootstrap` 取得，Feature 以 `@Dependency(\.xxxService)` 取用 Service。
 - **訂單資料**：`OrdersFeature` 持有無鍵 `@Shared` 訂單，`OrderListFeature` 與 `OrderDetailFeature` 只拿 `SharedReader`；`OrdersLoadFeature` 與 `OrderWritesFeature` 在 reducer 內更新來源。Root 在來源改動的同一次 action 把訂單投影給開團、「更多」、首頁與分析，並把開團、預設幣別與 AI 摘要設定投影給 Orders。
-- **主檔資料** (訂單來源／商品類別／付款方式／對帳狀態) 以 `@Shared(.lookupCatalog)` 的 `LookupCatalog` 為單一來源；管理頁由 `LookupManagementFeature` (`Features/Lookups/`，以 `LookupKind` 分流) 提供 CRUD。訂單端由 `OrdersLoadFeature` 讀取四種主檔並更新目錄，表單新增選項由 `OrderWritesFeature` 先落盤、成功才更新目錄與目前表單。主檔改名 delegate 經 `MoreFeature` 轉送，Root 送 `.orders(.cascadeRequested)`，由 `writes` 在 reducer 內以 `OrdersCascadeOperations` 改寫共用訂單，分派經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 處理。
-- **啟動與表單選項**：Root 啟動時送訂單與開團的 `loadRequested`，開團載入與自動結單由 `CampaignLoadFeature` 負責；幣別快取載入到 `@Shared(.currencyCodes)`。訂單新增、編輯、合併確認與首頁新增都由容器建立 `OrderEditOptions` (主檔、開團、幣別與行事曆)，表單不在 `.task` 讀取選項；首頁以 `presentNewOrder` 共用新增入口。
+- **主檔資料** (訂單來源／商品類別／付款方式／對帳狀態) 以 `@Shared(.lookupCatalog)` 的 `LookupCatalog` 為單一來源，讀寫經 `LookupService` (`Features/Lookups/Data/`)。主檔目錄的寫入者是 `LookupCatalogFeature` (無畫面，載入與表單新增選項，由 `MoreFeature` 組合) 與 `LookupManagementFeature` (管理頁 CRUD，以 `LookupKind` 分流)，訂單端以 `SharedReader` 唯讀。表單新增選項經 Root 與 `MoreFeature` 交給 `LookupCatalogFeature` 先落盤，結果回到發起的表單。主檔改名由 `LookupService.renameItem` 在同一筆交易內改主檔與引用訂單；`MoreFeature` 轉送改名 delegate，Root 送 `.orders(.rootRequest(.cascade(...)))`，由 `writes` 在 reducer 內以 `OrdersCascadeOperations` 改寫共用訂單，分派經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 處理。
+- **啟動與表單選項**：Root 啟動時先送 `more.catalogLoadRequested` 讀主檔目錄，讀取結束後才送訂單的 `rootRequest(.load)`，開團則送 `campaigns.loadRequested`；開團載入與自動結單由 `CampaignLoadFeature` 負責；幣別快取載入到 `@Shared(.currencyCodes)`。訂單新增、編輯、合併確認與首頁新增都由容器建立 `OrderEditOptions` (主檔、開團、幣別與行事曆)，表單不在 `.task` 讀取選項；首頁以 `presentNewOrder` 共用新增入口。
 - `liveValue`：純本機 SwiftData，**不自動 seed**——使用者首次啟動會看到真正的空狀態。
 - `previewValue`：in-memory + 自動 seed `LedgerOrder.sampleOrders`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
 - `LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback` **僅供 Preview / 單元測試 / `previewValue`** 使用，runtime 不讀取。

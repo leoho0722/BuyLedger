@@ -33,6 +33,9 @@ extension OrderListFeatureTests {
 
         let store = TestStore(initialState: state.list) {
             OrderListFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -71,6 +74,9 @@ extension OrderListFeatureTests {
 
         let store = TestStore(initialState: state.list) {
             OrderListFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -109,6 +115,9 @@ extension OrderListFeatureTests {
 
         let store = TestStore(initialState: state.list) {
             OrderListFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -132,7 +141,7 @@ extension OrderListFeatureTests {
     ///   - searchText: 要比對的搜尋文字
     ///   - expectedCategories: 預期留下的類別
     ///   - expectedPaymentMethods: 預期留下的付款方式
-    /// - Note: 改寫 `@Shared(.lookupCatalog)`，所以在 `LookupCatalog.withIsolatedStorage` 內執行，避免污染其他測試
+    /// - Note: 以唯讀常數目錄準備分類與付款方式，清單與篩選共用同一份引用
     @Test(arguments: [
         ("boo", ["books"], [String]()),
         ("ook", ["books"], [String]()),
@@ -151,27 +160,33 @@ extension OrderListFeatureTests {
                 now: TestDependencies.fixedNow,
                 calendar: TestDependencies.fixedCalendar
             )
-            state.$lookupCatalog.withLock {
-                $0.categories = ["beauty", "snacks", "books"]
-                $0.paymentMethods = [
-                    PaymentMethodInfo(
-                        name: "轉帳",
-                        isCardless: false,
-                        isBankTransfer: true,
-                        isCashOnDelivery: false
-                    ),
-                    PaymentMethodInfo(
-                        name: "orders.list.label.cashDelivery",
-                        isCardless: false,
-                        isBankTransfer: false,
-                        isCashOnDelivery: true
-                    ),
-                ]
-            }
+            state.$lookupCatalog = SharedReader(
+                value: LookupCatalog(
+                    categories: ["beauty", "snacks", "books"],
+                    paymentMethods: [
+                        PaymentMethodInfo(
+                            name: "轉帳",
+                            isCardless: false,
+                            isBankTransfer: true,
+                            isCashOnDelivery: false
+                        ),
+                        PaymentMethodInfo(
+                            name: "orders.list.label.cashDelivery",
+                            isCardless: false,
+                            isBankTransfer: false,
+                            isCashOnDelivery: true
+                        ),
+                    ]
+                )
+            )
+            state.list.$lookupCatalog = state.$lookupCatalog
 
             state.list.filterSheet = OrderFilterFeatureTests.makeState(for: state.list)
             let store = TestStore(initialState: state.list) {
                 OrderListFeature()
+            } withDependencies: {
+                $0.date = .constant(TestDependencies.fixedNow)
+                $0.calendar = TestDependencies.fixedCalendar
             }
 
             // When

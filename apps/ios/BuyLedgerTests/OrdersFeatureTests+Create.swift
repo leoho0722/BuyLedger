@@ -36,6 +36,8 @@ extension OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .incrementing
             $0.orderService.createOrder = { order in
                 createdOrders.withValue {
@@ -108,6 +110,8 @@ extension OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .incrementing
             $0.orderService.createOrder = { order in
                 createdOrders.withValue {
@@ -173,13 +177,15 @@ extension OrdersFeatureTests {
         state.presentation.destination = .edit(draft)
 
         let expectedID = "BL-DRAFT-00000000-0000-0000-0000-000000000000"
-        let failingCreate: OrderService.CreateOrder = { _ throws(OrderPersistenceError) in
+        let failingCreate: OrderService.CreateOrder = { _ throws(OrderError) in
             throw .identifierCollision(id: expectedID)
         }
 
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .incrementing
             $0.orderService.createOrder = failingCreate
         }
@@ -209,7 +215,9 @@ extension OrdersFeatureTests {
         await store.send(.view(.formSheetDismissed)) {
             $0.presentation.queue.isFormClosing = false
             $0.presentation.queue.pendingNotice = nil
-            $0.presentation.destination = .alert(Self.expectedWriteFailureAlert("orders.general.message.orderSavedTry"))
+            $0.presentation.destination = .alert(
+                Self.expectedWriteFailureAlert("orders.general.message.orderSavedTry")
+            )
         }
 
         // Then

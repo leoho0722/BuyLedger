@@ -83,11 +83,6 @@ struct LookupManagementFeature {
         /// - Parameter action: 要轉送給根畫面的結果
         case delegate(Delegate)
 
-        /// 付款方式更正子 Feature 的事件
-        ///
-        /// - Parameter action: 付款方式更正流程的事件
-        case correction(PaymentMethodCorrectionFeature.Action)
-
         /// 表單與 alert 目的地事件
         ///
         /// - Parameter action: 目前目的地的呈現事件
@@ -97,6 +92,11 @@ struct LookupManagementFeature {
         ///
         /// - Parameter result: 新增項目或持久化錯誤
         case addResponse(Result<LookupItemAddition, PersistenceError>)
+
+        /// 付款方式更正子 Feature 的事件
+        ///
+        /// - Parameter action: 付款方式更正流程的事件
+        case correction(PaymentMethodCorrectionFeature.Action)
 
         /// 刪除寫入結果
         ///
@@ -160,20 +160,8 @@ struct LookupManagementFeature {
 
     // MARK: - Dependencies
 
-    /// 商品類別主檔操作入口
-    @Dependency(\.categoryService) private var categoryService
-
-    /// 主檔改名時同步更新引用訂單資料
-    @Dependency(\.orderService) private var orderService
-
-    /// 訂單來源主檔操作入口
-    @Dependency(\.orderSourceService) private var orderSourceService
-
-    /// 付款方式主檔操作入口
-    @Dependency(\.paymentMethodService) private var paymentMethodService
-
-    /// 對帳狀態主檔操作入口
-    @Dependency(\.reconciliationStatusService) private var reconciliationStatusService
+    /// 主檔讀寫與改名清理操作入口
+    @Dependency(\.lookupService) private var lookupService
 
     // MARK: - Body
 
@@ -242,27 +230,6 @@ private extension LookupManagementFeature {
         case .delegate:
             return .none
 
-        case .correction(.delegate(.confirmationRequired(let count))):
-            presentAlertAfterFormSheetDismissal(
-                .retroactiveConfirmation(affectedOrderCount: count),
-                state: &state
-            )
-            return .none
-
-        case .correction(.delegate(.edited(let plan))):
-            state.$catalog.withLock {
-                $0.remove(name: plan.originalName, kind: .paymentMethod)
-                $0.add(name: plan.newName, kind: .paymentMethod, flags: plan.flags)
-            }
-            return .send(.delegate(.paymentMethodEdited(plan)))
-
-        case .correction(.delegate(.failed)):
-            presentAlertAfterFormSheetDismissal(.writeFailure(.paymentMethodEdit), state: &state)
-            return .none
-
-        case .correction:
-            return .none
-
         case .destination(.presented(.add(.delegate(.saved(let name, let flags))))):
             state.destination = nil
             state.isFormSheetDismissing = true
@@ -312,6 +279,27 @@ private extension LookupManagementFeature {
             presentAlertAfterFormSheetDismissal(.writeFailure(.add), state: &state)
             return .none
 
+        case .correction(.delegate(.confirmationRequired(let count))):
+            presentAlertAfterFormSheetDismissal(
+                .retroactiveConfirmation(affectedOrderCount: count),
+                state: &state
+            )
+            return .none
+
+        case .correction(.delegate(.edited(let plan))):
+            state.$catalog.withLock {
+                $0.remove(name: plan.originalName, kind: .paymentMethod)
+                $0.add(name: plan.newName, kind: .paymentMethod, flags: plan.flags)
+            }
+            return .send(.delegate(.paymentMethodEdited(plan)))
+
+        case .correction(.delegate(.failed)):
+            presentAlertAfterFormSheetDismissal(.writeFailure(.paymentMethodEdit), state: &state)
+            return .none
+
+        case .correction:
+            return .none
+
         case .deleteResponse(.success(let name)):
             state.$catalog.withLock { $0.remove(name: name, kind: state.kind) }
             return .none
@@ -342,17 +330,11 @@ private extension LookupManagementFeature {
         }
     }
 
-    /// 用本畫面取得的五個 Service 組出主檔操作物件
+    /// 用本畫面取得的 Service 組出主檔操作物件
     ///
-    /// - Returns: 可載入、變更主檔並在改名時更新訂單的操作物件
+    /// - Returns: 可載入、變更與改名主檔的操作物件
     func itemOperations() -> LookupItemOperations {
-        LookupItemOperations(
-            categoryService: categoryService,
-            orderService: orderService,
-            orderSourceService: orderSourceService,
-            paymentMethodService: paymentMethodService,
-            reconciliationStatusService: reconciliationStatusService
-        )
+        LookupItemOperations(lookupService: lookupService)
     }
 
     /// 表單正在關閉時先暫存提示，等 `formSheetDismissed` 再呈現；沒有表單在關閉就直接呈現

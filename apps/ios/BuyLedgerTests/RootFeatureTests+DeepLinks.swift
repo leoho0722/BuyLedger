@@ -70,6 +70,9 @@ extension RootFeatureTests {
         // Given
         let store = TestStore(initialState: RootFeature.State()) {
             RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -85,14 +88,15 @@ extension RootFeatureTests {
     /// 總覽出現時檢查訂單是否需要載入，不重讀設定
     ///
     /// - Note: 未覆寫 `settingsService.load` 的依賴，若被呼叫會使測試失敗
+    /// - Note: 已載入時 `orders.rootRequest(.load)` 不再讀資料，本測試只驗轉送
     @Test
     func dashboard_總覽出現時重新整理_只重新載入訂單() async {
         // Given
-        let state = RootFeature.State()
-        // 已載入時 `orders.loadRequested` 不再讀資料，本測試只驗轉送
+        var state = RootFeature.State()
         state.orders.load.$hasLoaded.withLock {
             $0 = true
         }
+        state.more.catalog.hasLoaded = true
 
         let store = TestStore(initialState: state) {
             RootFeature()
@@ -111,7 +115,11 @@ extension RootFeatureTests {
 
         // Then
         await store.receive(\.dashboard.delegate.refresh)
-        await store.receive(\.orders.loadRequested)
+        await store.receive(\.more.catalogLoadRequested)
+        await store.receive(\.more.catalog.loadRequested)
+        await store.receive(\.more.catalog.delegate.loadFinished)
+        await store.receive(\.more.delegate.catalogLoadFinished)
+        await store.receive(\.orders.rootRequest.load)
         await store.receive(\.orders.load.loadRequested)
         await store.finish()
     }
@@ -169,6 +177,9 @@ extension RootFeatureTests {
         initial.orders.presentation.destination = .alert(Self.aiDisabledAlert())
         let store = TestStore(initialState: initial) {
             RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -201,6 +212,9 @@ extension RootFeatureTests {
         initial.orders.presentation.destination = .alert(Self.aiDisabledAlert())
         let store = TestStore(initialState: initial) {
             RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When

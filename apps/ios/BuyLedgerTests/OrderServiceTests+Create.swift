@@ -14,7 +14,7 @@ extension OrderServiceTests {
 
     /// 建立意圖會新增尚不存在的完整訂單
     ///
-    /// - Throws: 建立時以 `OrderPersistenceError` 丟出 `.identifierCollision(id:)`、
+    /// - Throws: 建立時以 `OrderError` 丟出 `.identifierCollision(id:)`、
     ///   `.storage(.fetchFailed(underlying:))` 或
     ///   `.storage(.saveFailed(underlying:))`；讀取失敗時丟出 `.fetchFailed(underlying:)`；
     ///   建立後未讀回訂單時由 `#require` 丟出測試斷言錯誤
@@ -73,7 +73,7 @@ extension OrderServiceTests {
     ///
     /// - Throws: 準備或讀取失敗時丟出 `.saveFailed(underlying:)` 或 `.fetchFailed(underlying:)`；
     ///   建立未丟錯誤、錯誤不是 `.identifierCollision(id:)` 或未讀回原訂單時由 `#require` 丟出測試斷言錯誤；
-    ///   建立失敗時以 `OrderPersistenceError` 丟出 `.identifierCollision(id:)`、
+    ///   建立失敗時以 `OrderError` 丟出 `.identifierCollision(id:)`、
     ///   `.storage(.fetchFailed(underlying:))` 或
     ///   `.storage(.saveFailed(underlying:))`
     @Test
@@ -84,10 +84,10 @@ extension OrderServiceTests {
         try await Self.seed([original], database: database)
         let service = Self.makeService(database: database)
         let duplicate = Self.makeFullFieldOrder(id: original.id, variant: .updated)
-        var actualError: OrderPersistenceError?
+        var actualError: OrderError?
 
         // When
-        do throws(OrderPersistenceError) {
+        do throws(OrderError) {
             try await service.createOrder(duplicate)
         } catch {
             actualError = error

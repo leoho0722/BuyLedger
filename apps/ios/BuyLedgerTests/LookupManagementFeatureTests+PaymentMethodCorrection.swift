@@ -40,7 +40,10 @@ extension LookupManagementFeatureTests {
                 hasChangedFlags: true,
                 affectedOrders: []
             )
-            let expectedPaymentMethod = PaymentMethodInfo(name: "orders.edit.label.bankTransfer", flags: newFlags)
+            let expectedPaymentMethod = PaymentMethodInfo(
+                name: "orders.edit.label.bankTransfer",
+                flags: newFlags
+            )
             let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             }
@@ -59,7 +62,7 @@ extension LookupManagementFeatureTests {
         }
     }
 
-    /// 編輯付款方式表單後找出受影響訂單並暫存更正確認
+    /// 編輯付款方式表單後查詢受影響訂單筆數並暫存更正確認
     @Test
     func destination_編輯付款方式且影響訂單_暫存更正確認() async {
         await LookupCatalog.withIsolatedStorage {
@@ -81,34 +84,11 @@ extension LookupManagementFeatureTests {
             initialState.destination = .editPaymentMethod(
                 PaymentMethodEditFormFeature.State(originalName: "現金", flags: originalFlags)
             )
-            let sourceOrder = LedgerOrder.fixture(
-                id: "PM-PARENT",
-                chargedAmount: 40,
-                cardlessDeductionAmount: 90,
-                cardlessSupplementAmount: -5,
-                paymentMethod: "現金",
-                reconciliationStatus: "  待對帳  "
-            )
-            let expectedOrder = LedgerOrder.fixture(
-                id: "PM-PARENT",
-                chargedAmount: 40,
-                cardlessDeductionAmount: 40,
-                cardlessSupplementAmount: 0,
-                paymentMethod: "新名稱",
-                reconciliationStatus: "待對帳"
-            )
-            let plan = PaymentMethodEditPlan(
-                originalName: "現金",
-                newName: "新名稱",
-                flags: newFlags,
-                hasChangedFlags: true,
-                affectedOrders: [expectedOrder]
-            )
             let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0.orderService.fetchOrders = {
-                    [sourceOrder]
+                $0.lookupService.countOrders = { _ in
+                    1
                 }
             }
 
@@ -127,13 +107,19 @@ extension LookupManagementFeatureTests {
                 $0.isFormSheetDismissing = true
             }
             await store.receive(\.correction.requested)
-            await store.receive(\.correction.planResponse.success, plan) {
-                $0.correction.pendingPlan = plan
+            let expectedRequest = PaymentMethodCorrectionFeature.Request(
+                originalName: "現金",
+                newName: "新名稱",
+                flags: newFlags,
+                hasChangedFlags: true
+            )
+            await store.receive(\.correction.countResponse) {
+                $0.correction.pendingRequest = expectedRequest
             }
             await store.receive(\.correction.delegate.confirmationRequired, 1) {
                 $0.pendingAlert = Self.paymentMethodConfirmationAlert(count: 1)
             }
-            #expect(store.state.correction.pendingPlan == plan)
+            #expect(store.state.correction.pendingRequest == expectedRequest)
             #expect(store.state.pendingAlert == Self.paymentMethodConfirmationAlert(count: 1))
             await store.finish()
         }
@@ -162,6 +148,12 @@ extension LookupManagementFeatureTests {
                 paymentMethod: "新名稱",
                 reconciliationStatus: "待對帳"
             )
+            let request = PaymentMethodCorrectionFeature.Request(
+                originalName: "現金",
+                newName: "新名稱",
+                flags: newFlags,
+                hasChangedFlags: true
+            )
             let plan = PaymentMethodEditPlan(
                 originalName: "現金",
                 newName: "新名稱",
@@ -173,14 +165,13 @@ extension LookupManagementFeatureTests {
             initialState.$catalog.withLock {
                 $0.paymentMethods = [PaymentMethodInfo(name: "現金", flags: originalFlags)]
             }
-            initialState.correction.pendingPlan = plan
+            initialState.correction.pendingRequest = request
             initialState.destination = Self.paymentMethodConfirmationAlert(count: 1)
             @Shared(.lookupCatalog) var sharedCatalog: LookupCatalog
             let expectedWrite = PaymentMethodCorrectionFeatureTests.PaymentMethodEditArguments(
                 oldName: "現金",
                 newName: "新名稱",
-                flags: newFlags,
-                orders: [expectedOrder]
+                flags: newFlags
             )
             let expectedPaymentMethod = PaymentMethodInfo(name: "新名稱", flags: newFlags)
             let writes = LockIsolated(
@@ -189,17 +180,17 @@ extension LookupManagementFeatureTests {
             let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0.paymentMethodService.applyPaymentMethodEdit = { oldName, newName, flags, orders in
+                $0.lookupService.applyPaymentMethodEdit = { oldName, newName, flags in
                     writes.withValue {
                         $0.append(
                             PaymentMethodCorrectionFeatureTests.PaymentMethodEditArguments(
                                 oldName: oldName,
                                 newName: newName,
-                                flags: flags,
-                                orders: orders
+                                flags: flags
                             )
                         )
                     }
+                    return [expectedOrder]
                 }
             }
 
@@ -210,7 +201,7 @@ extension LookupManagementFeatureTests {
 
             // Then
             await store.receive(\.correction.confirmed) {
-                $0.correction.pendingPlan = nil
+                $0.correction.pendingRequest = nil
                 $0.$catalog.withLock {
                     $0.paymentMethods = [expectedPaymentMethod]
                 }
@@ -237,7 +228,12 @@ extension LookupManagementFeatureTests {
                 $0 = catalog
             }
             initialState.isFormSheetDismissing = true
-            let failingFetchOrders: OrderService.FetchOrders = { () throws(PersistenceError) in
+            let changedFlags = PaymentMethodFlags(
+                isCardless: true,
+                isBankTransfer: false,
+                isCashOnDelivery: false
+            )
+            let failingCountOrders: LookupService.CountOrders = { _ throws(PersistenceError) in
                 throw .fetchFailed(
                     underlying: TestDependencies.makeUnderlyingError(message: "fetch")
                 )
@@ -245,22 +241,27 @@ extension LookupManagementFeatureTests {
             let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0.orderService.fetchOrders = failingFetchOrders
+                $0.lookupService.countOrders = failingCountOrders
             }
 
             // When
             await store.send(
-                .correction(.requested(originalName: "信用卡", newName: "信用卡", flags: .none))
+                .correction(.requested(originalName: "信用卡", newName: "信用卡", flags: changedFlags))
             )
 
             // Then
-            await store.receive(\.correction.planResponse.failure)
+            await store.receive(\.correction.countResponse)
             await store.receive(\.correction.delegate.failed) {
-                $0.pendingAlert = Self.writeFailureAlert(message: "orders.lookup.message.paymentMethodEdit")
+                $0.pendingAlert = Self.writeFailureAlert(
+                    message: "orders.lookup.message.paymentMethodEdit"
+                )
             }
             #expect(store.state.catalog == catalog)
             #expect(store.state.hasLoadFailed == false)
-            #expect(store.state.pendingAlert == Self.writeFailureAlert(message: "orders.lookup.message.paymentMethodEdit"))
+            #expect(
+                store.state.pendingAlert
+                    == Self.writeFailureAlert(message: "orders.lookup.message.paymentMethodEdit")
+            )
             #expect(store.state.destination == nil)
             await store.finish()
         }
@@ -273,50 +274,50 @@ extension LookupManagementFeatureTests {
             // Given
             let paymentMethod = PaymentMethodInfo(name: "信用卡", flags: .none)
             let catalog = LookupCatalog(paymentMethods: [paymentMethod])
-            let affectedOrder = LedgerOrder.fixture(
-                id: "PM-FAIL",
-                paymentMethod: "信用卡",
+            let flags = PaymentMethodFlags(
+                isCardless: false,
+                isBankTransfer: false,
                 isCashOnDelivery: true
             )
-            let plan = PaymentMethodEditPlan(
+            let request = PaymentMethodCorrectionFeature.Request(
                 originalName: "信用卡",
                 newName: "信用卡",
-                flags: PaymentMethodFlags(
-                    isCardless: false,
-                    isBankTransfer: false,
-                    isCashOnDelivery: true
-                ),
-                hasChangedFlags: true,
-                affectedOrders: [affectedOrder]
+                flags: flags,
+                hasChangedFlags: true
             )
             var initialState = LookupManagementFeature.State(kind: .paymentMethod)
             initialState.$catalog.withLock {
                 $0 = catalog
             }
-            initialState.correction.pendingPlan = plan
+            initialState.correction.pendingRequest = request
             let underlyingError = TestDependencies.makeUnderlyingError(message: "write")
-            let failingApplyEdit: PaymentMethodService.ApplyPaymentMethodEdit = { _, _, _, _ throws(PaymentMethodPersistenceError) in
-                throw .storage(.saveFailed(underlying: underlyingError))
+            let failingApplyEdit: LookupService.ApplyPaymentMethodEdit = { _, _, _ throws(PersistenceError) in
+                throw .saveFailed(underlying: underlyingError)
             }
             let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0.paymentMethodService.applyPaymentMethodEdit = failingApplyEdit
+                $0.lookupService.applyPaymentMethodEdit = failingApplyEdit
             }
 
             // When
             await store.send(.correction(.confirmed)) {
-                $0.correction.pendingPlan = nil
+                $0.correction.pendingRequest = nil
             }
 
             // Then
             await store.receive(\.correction.editResponse.failure)
             await store.receive(\.correction.delegate.failed) {
-                $0.destination = Self.writeFailureAlert(message: "orders.lookup.message.paymentMethodEdit")
+                $0.destination = Self.writeFailureAlert(
+                    message: "orders.lookup.message.paymentMethodEdit"
+                )
             }
             #expect(store.state.catalog == catalog)
             #expect(store.state.hasLoadFailed == false)
-            #expect(store.state.destination == Self.writeFailureAlert(message: "orders.lookup.message.paymentMethodEdit"))
+            #expect(
+                store.state.destination
+                    == Self.writeFailureAlert(message: "orders.lookup.message.paymentMethodEdit")
+            )
             await store.finish()
         }
     }

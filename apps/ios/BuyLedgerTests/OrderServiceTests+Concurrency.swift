@@ -24,8 +24,8 @@ extension OrderServiceTests {
         let results = await withTaskGroup(of: CreateAttemptResult.self) { group in
             for _ in 0..<20 {
                 group.addTask {
-                    var actualError: OrderPersistenceError?
-                    do throws(OrderPersistenceError) {
+                    var actualError: OrderError?
+                    do throws(OrderError) {
                         try await service.createOrder(order)
                     } catch {
                         actualError = error

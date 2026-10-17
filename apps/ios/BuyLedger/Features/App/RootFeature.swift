@@ -135,7 +135,7 @@ struct RootFeature {
         @CasePathable
         enum View: Equatable {
 
-            /// 請開團、訂單與啟動載入子層載入資料，並刷新共用幣別清單、監聽重大時間變更
+            /// 請開團、主檔目錄與啟動載入子層載入資料，訂單在主檔目錄讀完後才載入，並刷新共用幣別清單、監聽重大時間變更
             case task
 
             /// iPhone 分頁列切換主要分頁，保留「更多」堆疊
@@ -260,7 +260,7 @@ private extension RootFeature {
         case .view(.task):
             return .merge(
                 .send(.campaigns(.loadRequested)),
-                .send(.orders(.loadRequested)),
+                .send(.more(.catalogLoadRequested)),
                 .send(.launch(.loadRequested))
             )
 
@@ -281,29 +281,30 @@ private extension RootFeature {
             return .none
 
         case .appLock(.delegate(.didBecomeActive)):
-            refreshDateContexts(state: &state)
+            navigation.refreshDateContexts(state: &state)
             return .none
 
         case .appLock:
             return .none
 
         case .campaigns(.delegate(.campaignDeleted(let name))):
-            return .send(.orders(.cascadeRequested(.campaignDeleted(name))))
+            return .send(.orders(.rootRequest(.cascade(.campaignDeleted(name)))))
 
         case .campaigns(.delegate(.campaignRenamed(let from, let to))):
-            return .send(.orders(.cascadeRequested(.campaignRenamed(from: from, to: to))))
+            return .send(.orders(.rootRequest(.cascade(.campaignRenamed(from: from, to: to)))))
 
         case .campaigns(.delegate(.receiptStatusToggled(let orderID, let status))):
-            return .send(.orders(.receiptStatusChangeRequested(id: orderID, status: status)))
+            return .send(.orders(.rootRequest(.receiptStatusChange(id: orderID, status: status))))
 
         case .campaigns:
             return .none
 
         case .dashboard(.delegate(.refresh)), .insights(.delegate(.refresh)),
-                .more(.delegate(.ordersLoadRequested)):
-            return .send(.orders(.loadRequested))
+                .more(.delegate(.ordersLoadRequested)), .orders(.delegate(.loadRequested)):
+            return .send(.more(.catalogLoadRequested))
 
-        case .dashboard(.delegate(.campaignTapped(let name))):
+        case .dashboard(.delegate(.campaignTapped(let name))),
+                .insights(.delegate(.campaignTapped(let name))):
             navigation.showCampaign(named: name, state: &state)
             return .none
 
@@ -320,10 +321,6 @@ private extension RootFeature {
         case .dashboard:
             return .none
 
-        case .insights(.delegate(.campaignTapped(let name))):
-            navigation.showCampaign(named: name, state: &state)
-            return .none
-
         case .insights(.delegate(.categoryTapped(let name))):
             navigation.showOrders(category: name, state: &state)
             return .none
@@ -332,22 +329,32 @@ private extension RootFeature {
             return .none
 
         case .launch(.delegate(.significantTimeChanged)):
-            refreshDateContexts(state: &state)
+            navigation.refreshDateContexts(state: &state)
             return .none
 
         case .launch:
             return .none
+
+        case .more(.delegate(.catalogLoadFinished)):
+            return .send(.orders(.rootRequest(.load)))
+
+        case .more(.delegate(.optionAdditionCompleted(let request, let isStored))):
+            return .send(
+                .orders(.rootRequest(.optionAdditionCompleted(request, isStored: isStored)))
+            )
 
         case .more(.delegate(.customerSelected(let name))):
             navigation.showOrders(customer: name, state: &state)
             return .none
 
         case .more(.delegate(.lookupItemRenamed(let kind, let rename))):
-            return .send(.orders(.cascadeRequested(.lookupItemRenamed(kind: kind, rename: rename))))
+            return .send(
+                .orders(.rootRequest(.cascade(.lookupItemRenamed(kind: kind, rename: rename))))
+            )
 
         case .more(.delegate(.paymentMethodEdited(let plan))):
             // 轉送已正規化的訂單，不重算付款方式旗標，也不重複落盤
-            return .send(.orders(.paymentMethodFlagsApplyRequested(plan.affectedOrders)))
+            return .send(.orders(.rootRequest(.paymentMethodFlagsApply(plan.affectedOrders))))
 
         case .more(.delegate(.preferencesChanged(let snapshot))):
             state.preferences = snapshot
@@ -355,6 +362,9 @@ private extension RootFeature {
 
         case .more:
             return .none
+
+        case .orders(.delegate(.optionAddRequested(let request))):
+            return .send(.more(.optionAdditionRequested(request)))
 
         case .orders(.delegate(.aiSettingsRequested)):
             state.selectedTab = .more
@@ -364,16 +374,5 @@ private extension RootFeature {
         case .orders:
             return .none
         }
-    }
-
-    /// 以注入的現在時間與行事曆重寫開團、訂單、總覽與分析的日期脈絡
-    ///
-    /// - Parameter state: 目前的根層狀態，直接就地修改
-    func refreshDateContexts(state: inout State) {
-        let context = CampaignDateContext(now: date.now, calendar: calendar)
-        state.campaigns.refreshDateContext(context)
-        state.orders.refreshDateContext(now: context.now, calendar: context.calendar)
-        state.dashboard.refreshDateContext(now: context.now, calendar: context.calendar)
-        state.insights.refreshDateContext(now: context.now, calendar: context.calendar)
     }
 }

@@ -154,20 +154,25 @@ extension RootFeatureTests {
     }
 
     /// 客戶頁開始載入時，要求訂單功能檢查是否需要重新讀取資料
+    ///
+    /// - Note: 訂單已載入時，`orders.rootRequest(.load)` 不再讀取資料，本測試只驗證轉送
     @Test
     func more_客戶頁要求載入訂單_送出訂單載入() async {
         // Given
         var state = RootFeature.State()
-        // 已載入時 `orders.loadRequested` 不再讀資料，本測試只驗轉送
         state.orders.load.$hasLoaded.withLock {
             $0 = true
         }
+        state.more.catalog.hasLoaded = true
         state.more.path.append(
             .customers(CustomersFeature.State(orders: SharedReader(state.more.$orders)))
         )
 
         let store = TestStore(initialState: state) {
             RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -176,7 +181,11 @@ extension RootFeatureTests {
         // Then
         await store.receive(\.more.path[id: 0].customers.delegate.ordersLoadRequested)
         await store.receive(\.more.delegate.ordersLoadRequested)
-        await store.receive(\.orders.loadRequested)
+        await store.receive(\.more.catalogLoadRequested)
+        await store.receive(\.more.catalog.loadRequested)
+        await store.receive(\.more.catalog.delegate.loadFinished)
+        await store.receive(\.more.delegate.catalogLoadFinished)
+        await store.receive(\.orders.rootRequest.load)
         await store.receive(\.orders.load.loadRequested)
     }
 

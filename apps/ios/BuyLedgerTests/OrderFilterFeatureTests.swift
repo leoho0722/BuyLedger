@@ -21,6 +21,9 @@ struct OrderFilterFeatureTests {
         // Given
         let store = TestStore(initialState: Self.makeState()) {
             OrderFilterFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -39,6 +42,9 @@ struct OrderFilterFeatureTests {
         // Given
         let store = TestStore(initialState: Self.makeState()) {
             OrderFilterFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -57,6 +63,9 @@ struct OrderFilterFeatureTests {
         // Given
         let store = TestStore(initialState: Self.makeState()) {
             OrderFilterFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -81,6 +90,9 @@ struct OrderFilterFeatureTests {
         )
         let store = TestStore(initialState: state) {
             OrderFilterFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -102,6 +114,9 @@ struct OrderFilterFeatureTests {
         // Given
         let store = TestStore(initialState: Self.makeState()) {
             OrderFilterFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -132,6 +147,9 @@ struct OrderFilterFeatureTests {
         }
         let store = TestStore(initialState: state) {
             OrderFilterFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -158,6 +176,9 @@ struct OrderFilterFeatureTests {
         state.filterDiscardConfirmation = OrdersFeatureTests.expectedDiscardAlert()
         let store = TestStore(initialState: state) {
             OrderFilterFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -184,6 +205,9 @@ struct OrderFilterFeatureTests {
         state.filterDiscardConfirmation = OrdersFeatureTests.expectedDiscardAlert()
         let store = TestStore(initialState: state) {
             OrderFilterFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -210,6 +234,9 @@ struct OrderFilterFeatureTests {
         state.filterDiscardConfirmation = OrdersFeatureTests.expectedDiscardAlert()
         let store = TestStore(initialState: state) {
             OrderFilterFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -254,7 +281,7 @@ extension OrderFilterFeatureTests {
     ) -> OrderFilterFeature.State {
         OrderFilterFeature.State(
             orders: state.$orders,
-            lookupCatalog: SharedReader(state.$lookupCatalog),
+            lookupCatalog: state.$lookupCatalog,
             committedFilterSelection: state.committedFilterSelection
         )
     }

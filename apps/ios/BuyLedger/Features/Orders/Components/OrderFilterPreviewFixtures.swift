@@ -32,47 +32,49 @@ extension OrderFilterPreviewFixtures {
         state.selectedDatePeriod = date
         state.selectedCategory = category
         state.selectedPaymentMethod = paymentMethod
-        state.$lookupCatalog.withLock {
-            $0.categories = [
-                "3C",
-                "美妝",
-                "精品",
-                "食品",
-                "保健",
-                "零食",
-                "書籍",
-                "aespa Lemonade QQ 音樂限定禮包",
-            ]
-            $0.paymentMethods = [
-                PaymentMethodInfo(
-                    name: "信用卡",
-                    isCardless: false,
-                    isBankTransfer: false,
-                    isCashOnDelivery: false
-                ),
-                PaymentMethodInfo(
-                    name: "現金",
-                    isCardless: true,
-                    isBankTransfer: false,
-                    isCashOnDelivery: false
-                ),
-                PaymentMethodInfo(
-                    name: "銀行轉帳",
-                    isCardless: false,
-                    isBankTransfer: true,
-                    isCashOnDelivery: false
-                ),
-                PaymentMethodInfo(
-                    name: "orders.list.label.cashDelivery",
-                    isCardless: false,
-                    isBankTransfer: false,
-                    isCashOnDelivery: true
-                ),
-            ]
-        }
+        state.$lookupCatalog = SharedReader(
+            value: LookupCatalog(
+                categories: [
+                    "3C",
+                    "美妝",
+                    "精品",
+                    "食品",
+                    "保健",
+                    "零食",
+                    "書籍",
+                    "aespa Lemonade QQ 音樂限定禮包",
+                ],
+                paymentMethods: [
+                    PaymentMethodInfo(
+                        name: "信用卡",
+                        isCardless: false,
+                        isBankTransfer: false,
+                        isCashOnDelivery: false
+                    ),
+                    PaymentMethodInfo(
+                        name: "現金",
+                        isCardless: true,
+                        isBankTransfer: false,
+                        isCashOnDelivery: false
+                    ),
+                    PaymentMethodInfo(
+                        name: "銀行轉帳",
+                        isCardless: false,
+                        isBankTransfer: true,
+                        isCashOnDelivery: false
+                    ),
+                    PaymentMethodInfo(
+                        name: "orders.list.label.cashDelivery",
+                        isCardless: false,
+                        isBankTransfer: false,
+                        isCashOnDelivery: true
+                    ),
+                ]
+            )
+        )
         return OrderFilterFeature.State(
             orders: state.$orders,
-            lookupCatalog: SharedReader(state.$lookupCatalog),
+            lookupCatalog: state.$lookupCatalog,
             committedFilterSelection: state.committedFilterSelection
         )
     }

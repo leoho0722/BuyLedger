@@ -34,7 +34,6 @@ extension OrdersContainerPlanTests {
         #expect(outcome.detailPopIDs.isEmpty)
         #expect(!outcome.shouldPopUnavailableDetails)
         #expect(outcome.closesEditOf == nil)
-        #expect(outcome.addedOption == nil)
         #expect(outcome.notice == nil)
     }
 
@@ -112,34 +111,6 @@ extension OrdersContainerPlanTests {
             outcome.selection == OrdersWriteOutcome.Selection(orderID: "M", shouldNotify: false)
         )
         #expect(outcome.detailPopIDs == ["A", "B"])
-    }
-
-    /// 新增主檔選項成功時回傳待寫回來源表單的選項計畫，不改變清單選取
-    @Test
-    func writeResult_新增主檔選項_回傳待寫回表單的計畫() {
-        // Given
-        let state = Self.makeState(orders: [])
-        let flags = PaymentMethodFlags(
-            isCardless: true,
-            isBankTransfer: false,
-            isCashOnDelivery: false
-        )
-        let plan = OrderOptionWritePlan(
-            formID: UUID(5),
-            kind: .category,
-            name: "新類別",
-            flags: flags
-        )
-
-        // When
-        let outcome = OrdersContainerPlan.writeResult(.optionAdded(plan), state: state)
-
-        // Then
-        #expect(outcome.addedOption?.formID == UUID(5))
-        #expect(outcome.addedOption?.kind == .category)
-        #expect(outcome.addedOption?.name == "新類別")
-        #expect(outcome.addedOption?.flags.isCardless == true)
-        #expect(outcome.selection == nil)
     }
 
     /// 刪除目前選取的訂單時改選第一筆可見訂單，並移除詳情與正在編輯的表單
@@ -234,7 +205,7 @@ private extension OrdersContainerPlanTests {
     /// 建立寫入失敗的一次性通知，只有「知道了」按鈕且訊息為傳入的本地化鍵
     ///
     /// - Parameter message: 通知顯示的本地化訊息
-    /// - Returns: 寫入失敗的 alert
+    /// - Returns: `AlertState` 值，標題為固定的本地化鍵
     static func expectedWriteFailureAlert(
         _ message: LocalizedStringKey
     ) -> AlertState<OrdersPresentationFeature.Destination.Alert> {

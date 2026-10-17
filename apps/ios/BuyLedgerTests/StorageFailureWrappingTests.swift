@@ -13,12 +13,12 @@ import Testing
 /// 驗證資料庫寫入失敗能保留來源錯誤資訊
 struct StorageFailureWrappingTests {
 
-    /// 寫入失敗時保留來源錯誤的 domain 與 code
+    /// 寫入失敗時保留來源錯誤的 `domain` 與 `code`
     ///
     /// - Parameter scenario: 要驗證的錯誤型別
     /// - Throws: 轉換結果或錯誤 case 不符時由 `#require` 丟出測試失敗
     @Test(arguments: Scenario.allCases)
-    func storage_儲存錯誤_保留來源錯誤網域與代碼(scenario: Scenario) throws {
+    func unwrappedStorage_儲存錯誤_保留來源錯誤網域與代碼(scenario: Scenario) throws {
         // Given
         let persistenceError: PersistenceError = .saveFailed(
             underlying: NSError(domain: "TestDomain", code: 42)
@@ -56,9 +56,6 @@ extension StorageFailureWrappingTests {
         /// 訂單持久化錯誤
         case order
 
-        /// 付款方式持久化錯誤
-        case paymentMethod
-
         /// 幣別快取持久化錯誤
         case currencyMetadata
 
@@ -72,20 +69,7 @@ extension StorageFailureWrappingTests {
                 return StorageFailureWrappingTests.wrapped(error, as: PersistenceError.self)
 
             case .order:
-                let wrapped = StorageFailureWrappingTests.wrapped(
-                    error,
-                    as: OrderPersistenceError.self
-                )
-                guard case .storage(let persistenceError) = wrapped else {
-                    return nil
-                }
-                return persistenceError
-
-            case .paymentMethod:
-                let wrapped = StorageFailureWrappingTests.wrapped(
-                    error,
-                    as: PaymentMethodPersistenceError.self
-                )
+                let wrapped = StorageFailureWrappingTests.wrapped(error, as: OrderError.self)
                 guard case .storage(let persistenceError) = wrapped else {
                     return nil
                 }

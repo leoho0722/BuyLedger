@@ -21,9 +21,6 @@ struct OrderWritesFeature {
         /// 在成功回應或交易後的調整請求更新的訂單來源
         @Shared var orders: [LedgerOrder]
 
-        /// 四種主檔的共用目錄，只在新增成功回應更新
-        @Shared(.lookupCatalog) var lookupCatalog: LookupCatalog
-
         /// 接收容器持有的訂單引用
         ///
         /// - Parameter orders: 共用訂單清單
@@ -72,19 +69,7 @@ struct OrderWritesFeature {
         /// - Parameters:
         ///   - plan: 合併結果與原訂單快照
         ///   - result: 合併交易成功或失敗
-        case mergeResponse(plan: OrderMergeSavePlan, result: Result<Void, OrderPersistenceError>)
-
-        /// 新增表單要求的主檔選項，先落盤再更新目錄
-        ///
-        /// - Parameter plan: 表單識別值、主檔種類、名稱與付款方式旗標
-        case optionAddRequested(OrderOptionWritePlan)
-
-        /// 主檔新增的唯一結果，保留原表單識別值
-        ///
-        /// - Parameters:
-        ///   - plan: 原新增請求
-        ///   - result: 主檔寫入成功或失敗
-        case optionResponse(plan: OrderOptionWritePlan, result: Result<Void, PersistenceError>)
+        case mergeResponse(plan: OrderMergeSavePlan, result: Result<Void, OrderError>)
 
         /// 套用主檔交易完成後的權威訂單快照，不重複落盤
         ///
@@ -146,11 +131,6 @@ struct OrderWritesFeature {
             /// - Parameter id: 新合併訂單編號
             case merged(id: LedgerOrder.ID)
 
-            /// 新增主檔已落盤，請容器依表單識別值套用清單與選取
-            ///
-            /// - Parameter plan: 保留表單識別值與付款旗標的新值
-            case optionAdded(OrderOptionWritePlan)
-
             /// 刪除完成，請容器清理詳情與選取
             ///
             /// - Parameter id: 已刪除編號
@@ -162,18 +142,6 @@ struct OrderWritesFeature {
 
     /// 訂單持久化的寫入入口
     @Dependency(\.orderService) private var orderService
-
-    /// 訂單來源主檔操作入口
-    @Dependency(\.orderSourceService) private var orderSourceService
-
-    /// 商品類別主檔操作入口
-    @Dependency(\.categoryService) private var categoryService
-
-    /// 付款方式主檔操作入口
-    @Dependency(\.paymentMethodService) private var paymentMethodService
-
-    /// 對帳狀態主檔操作入口
-    @Dependency(\.reconciliationStatusService) private var reconciliationStatusService
 
     /// 新訂單完整識別碼的來源
     @Dependency(\.uuid) private var uuid
@@ -197,13 +165,7 @@ private extension OrderWritesFeature {
     ///   - action: 寫入請求、回應或委派
     /// - Returns: 持久化效果或交給容器的結果
     func core(state: inout State, action: Action) -> Effect<Action> {
-        let operations = OrderWriteOperations(
-            orderService: orderService,
-            orderSourceService: orderSourceService,
-            categoryService: categoryService,
-            paymentMethodService: paymentMethodService,
-            reconciliationStatusService: reconciliationStatusService
-        )
+        let operations = OrderWriteOperations(orderService: orderService)
         switch action {
         case .delegate:
             return .none
@@ -254,21 +216,6 @@ private extension OrderWritesFeature {
         case .mergeResponse(let plan, .failure):
             state.$orders.withLock { $0 = plan.previousOrders }
             return .send(.delegate(.failed(.merge)))
-
-        case .optionAddRequested(let plan):
-            guard !plan.name.isEmpty else {
-                return .none
-            }
-            return operations.addOption(plan)
-
-        case .optionResponse(let plan, .success):
-            state.$lookupCatalog.withLock {
-                $0.add(name: plan.name, kind: plan.kind, flags: plan.flags)
-            }
-            return .send(.delegate(.optionAdded(plan)))
-
-        case .optionResponse(let plan, .failure):
-            return .send(.delegate(.failed(.option(plan.kind))))
 
         case .paymentMethodFlagsApplyRequested(let orders):
             state.$orders.withLock {
@@ -341,11 +288,9 @@ private extension OrderWritesFeature {
                 operations.merge(plan)
             )
         }
-        let result = OrderDraft.resolveWriteResult(
-            edit,
-            existingOrders: state.orders,
-            newOrderID: { uuid().uuidString }
-        )
+        let result = OrderDraft.resolveWriteResult(edit, existingOrders: state.orders) {
+            uuid().uuidString
+        }
         return operations.save(result)
     }
 

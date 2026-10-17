@@ -75,13 +75,13 @@
     - 可宣告根 store 的只有三個導覽宿主 `RootView`／`RootTabLayout`／`RootSidebarLayout`，由 `LayerBoundaryTests.filesDeclaringRootStore_功能目錄_僅由三個根導覽宿主持有` 鎖住；`MoreView` 只持有 `MoreFeature` 的 scoped store。
     - 投影的變更監看集中在 `RootFeature.body` 尾端的連續 `onChange(of:)`，涵蓋訂單 (開團與「更多」的 `$orders`、總覽與分析的副本)、開團 (`orders.campaigns`、總覽與分析的副本)、載入狀態、偏好 (`appLock.isBiometricUnlockEnabled`、`dashboard.monthlyProfitGoalTWD`、`more.preferences`、`orders.defaultCurrency`、`orders.aiSummarySettings`) 與辨識類型 (`more.biometryType`)；漏掛一條會讓畫面顯示舊資料而不易察覺。
     - **父層不送出也不攔截子層的 `.view(...)` action**：子層畫面事件只由自己的 Feature 處理，父層不得以 `.send` 或 reducer case 包裝子層 `view` action。
-    - **父層要求子層載入或套用資料時，送專用請求 action，即使子層是有 View 的容器也一樣**：請求只由父層送、子層 reducer 處理，不代替使用者互動；Root 對 Orders 送 `loadRequested`、`receiptStatusChangeRequested`、`paymentMethodFlagsApplyRequested`、`cascadeRequested`，由容器轉給載入或寫入子 Feature。需要父層處理的結果經 delegate 回報，其餘成功結果由共用資料觀察。
+    - **父層要求子層載入或套用資料時，送專用請求 action，即使子層是有 View 的容器也一樣**：請求只由父層送、子層 reducer 處理，不代替使用者互動；Root 對 Orders 送 `rootRequest(OrdersRootRequest)` (`load`、`cascade`、`receiptStatusChange`、`paymentMethodFlagsApply`、`optionAdditionCompleted`)，由容器轉給載入、寫入或呈現子 Feature。需要父層處理的結果經 delegate 回報，其餘成功結果由共用資料觀察。
         - 例外：容器的無 View 呈現與導覽子 Feature (`OrdersPresentationFeature`、`OrdersDetailNavigationFeature`、`CampaignPresentationFeature`)，同一次更新內必須完成的呈現與導覽 (Root 開新訂單、寫入結果關閉表單、顯示詳情、表單關閉收尾) 由容器直接呼叫子 State 的 `mutating` 方法；寫入失敗等一次性通知仍送 `noticeRequested` action，維持下一個 action 才呈現的時序。
     - **子層啟動所需資料在建立 State 時帶齊**：`BuyLedgerApp` 讀出的設定快照與 App 版本直接傳入 `RootFeature.State`，設定頁推入時由 `MoreFeature` 以偏好與辨識類型的投影建立 `SettingsFeature.State`，首幀不依賴額外的載入 action。
     - **跨 feature 意圖由子層 reducer 以 delegate 請父層做事**：畫面只送自身 Feature 的 `view` action，由 reducer 轉成 delegate；Root 的 view case 與子層 delegate case 呼叫同一個 `RootNavigationOperations` 方法 (如 `showOrders(customer:state:)`、`showCampaign(named:state:)`)，不以 `.send` 轉成另一個根 case，也不新增平行的根 action。
 - **商業邏輯與資料計算 (彙總、分組、排序、格式化) 放 reducer 或可測試的 helper**，View (含 Swift Charts) 只負責呈現。
 - **Feature 超過 300 行依 `tca-architecture.md` 的拆分順序**：`Path`／`Destination` 移到 `<Name>+Path.swift`／`<Name>+Destination.swift` → 可獨立的流程抽成子 Feature 以 `Scope` 組合 (沒有自己 View 的子 Feature 不設 `view` 分組，由父層轉送，如 `QuoteRateFeature`、`PaymentMethodCorrectionFeature`、`OrdersPresentationFeature`、`RootLaunchFeature`)。重複的計算或讀寫分派收進同域輔助型別：純計算放無 case 的 enum，只放 `static func`，以 `inout State` 與明確參數溝通 (如 `OrdersFilterOperations`)；需要依賴的讀寫分派放持有依賴值的 struct，由 reducer 以自己的 `@Dependency` 建立 (如 `LookupItemOperations`)；需要 reducer 解析後的時間與行事曆的操作放持有這兩個值的 struct，由 reducer 以注入的 `date.now`、`calendar` 建立 (如 `RootNavigationOperations`)。
-    - 行數例外：`OrdersFeature` 以 359 行為上限 (使用者裁決)。抽出呈現與詳情導覽子 Feature 後，剩下的 Root 介面方法與投影依寫入邊界只能留主檔、`core` 依 Action 次序逐 case 轉送，再拆只會產生沒有內聚性的轉手層；6c 移走新增主檔選項的轉送後重量，回到 300 行內即撤銷。
+    - 行數例外：`OrdersFeature` 以 359 行為上限 (使用者裁決)。抽出呈現與詳情導覽子 Feature 後，剩下的 Root 介面方法與投影依寫入邊界只能留在 `OrdersFeature.swift`、`core` 依 Action 次序逐 case 轉送，再拆只會產生沒有內聚性的轉手層；行數回到 300 行內即撤銷此例外。
     - 輔助型別不宣告 `@Dependency`，也不呼叫 `Date()`／`UUID()`／`Calendar.current`，由 reducer 解析後傳入；被它跨檔呼叫的 State 方法或靜態工廠要是 internal。
     - 投影擁有者 (含 `OrdersFeature`、`CampaignFeature`) 的主檔以外不接收 `inout` 容器 State，也不外傳可寫的共享引用；輔助型別讀值快照並回傳計畫，由容器 reducer 套用，避免繞過投影與共享寫入守門。
     - 主 switch 維持窮舉、零預設分支 (`TestSuiteIntegrityTests` 守門，不得改寫成 `default:` 換行再 `return .none` 等規避形式)。
@@ -108,6 +108,11 @@
     - Client 與 Store 提供技術操作介面。`HTTPClient` 負責 HTTP 傳輸，`UserDefaultsStore` 只讀寫偏好值，`AppConfigurationStore` 只讀取並正規化 Info.plist 設定；設定 key 與快照組裝留在 `SettingsService`，API key 名稱留在使用端 (`ExchangeRateEndpoint`、`AISummaryService`)。
     - 操作本身不會失敗時不宣告 `throws`；只有會失敗的 Client、Store、Service 操作才使用 typed throws。`UserDefaultsStore`、`AppConfigurationStore` 與 `SettingsService.load`／`save` 不為符合型別樣板而加上 `throws`。
     - effect 內要把 Service 的錯誤傳進 `Result<_, PersistenceError>` 時寫 `do throws(PersistenceError) { … } catch { … }`：一般 `do`／`catch` 的 `error` 是 `any Error`，編不過。
+- **Feature 專屬 Service 只被所屬 Feature 引用**：Feature 之間的資料經父層投影或 delegate 交給，不直接取用他人的 Service。
+    - 守門為 `BuyLedgerTests/ServiceOwnershipScanTests.swift`，與下一條及訂單端只讀主檔目錄 (見 `ios-data-layer.md`) 共三條規則，都掃描 production 程式碼；`Core/` 的共用 Service 與 `App/` 組合根 (含 `App/Testing/`) 不受此規則限制。
+- **每個 Feature 至多一個以資料庫為下層的 Service** (`Features/<Feature>/Data/` 內取用 `buyLedgerDatabase` 的 Service)。
+    - 同一交易要同時改主檔與訂單時，兩者的寫入必須在擁有者 Service 的同一次 `database.write` 內 (如 `LookupService.renameItem`、`CampaignService.renameCampaign`)，這是此限制的理由。
+    - 系統 framework 的 Service (`CalendarReminderService`、`OpenSettingsService`、`PhotoService`) 不以資料庫為下層，不計入此限制。
 - **測試的相依預設值必須讓漏接設定立即失敗**：Service 的 `testValue` 每個 closure 都使用 `unimplemented(...)`；有回傳值時提供中性 `placeholder`，回傳 stream 時提供立即結束的 stream。
     - Feature 測試只覆寫該測試會呼叫的 Service closure。直接測 Service 的 `liveValue` 時，明確注入所需 Client、Store 與 Database。
     - Client、Store、Database 不宣告 `testValue`；測試使用它們時要以 `withDependencies` 注入替身，避免誤連正式網路或資料庫。
@@ -157,11 +162,9 @@
 - **多重 trailing closure 一律多行**：`Binding { } set: { }` 寫成 `Binding {`、本體、`} set: {`、本體、`}` 逐行排列，不壓成一行；kit 只規定 View builder、modifier 與 action 的 closure 一律多行，`Binding` 的 `get`／`set` 不在其列。
 - **錯誤對應 helper 的 trailing closure 一律多行**：`{` 接在呼叫後，closure 本體縮排 4 格，`}` 單獨一行；包括 `PersistenceError.mapFetch`、`mapSave` 與 `wrapStorage`。
 - **依賴配置的過渡例外依排程處理**：局部改動沿用各列的現行位置與取用方式，避免混用架構。
-    - `Core/Dependencies/` 的跨 Feature Service (Order、Category、OrderSource、ReconciliationStatus、PaymentMethod) 依第 6 步搬遷；`BiometricAuthService` 由 `AppLockFeature` 與 `SettingsFeature` 共同取用且只依賴 `LocalAuthentication`，留在這裡，不屬過渡例外。
-    - 6c 前訂單端仍注入四種主檔 Service：`OrdersLoadFeature` 讀取後更新 `lookupCatalog`，`OrderWritesFeature` 處理表單新增選項、成功落盤才更新目錄；表單建立時由容器帶入 `OrderEditOptions`，不自行讀取選項。主檔 Service 搬遷與新增選項經 Root 轉主檔端屬 6c 範圍，局部修改沿用此分工。
-    - `CampaignWritesFeature` 經 `OrderService.renameOrderCampaign` 改寫訂單內的開團名稱，依第 6 步處理。
+    - `BiometricAuthService` 由 `AppLockFeature` 與 `SettingsFeature` 共同取用且只依賴 `LocalAuthentication`，留在 `Core/Dependencies/`，不屬過渡例外。
     - `Core/Dependencies/` 的 ExchangeRate 與 CurrencyMetadata Service 依第 10 步決定位置。
-    - 錯誤型別目前沿用 `XxxPersistenceError` 命名；跨 Feature Service 搬進各 Feature 時改為 `<Feature>Error`。`CampaignService` 沿用 `PersistenceError`，不適用這條。
+    - 錯誤型別：Orders 的 Service 用 `OrderError`，Campaigns 與 Lookups 沿用共用的 `PersistenceError`，不另立 `<Feature>Error`。
     - Service 直接呼叫系統 framework (例如 EventKit、PhotosUI、LocalAuthentication、UIApplication)，依第 10 步處理。
     - `AppLaunchConfigurator` 以參數預設值注入 `CrashDiagnosticsClient`，預設正式實作並可由呼叫端替換，依第 10 步決定配置方式。
     - Service 的 `+Preview` 檔與 Service 放在一起，依第 10 步處理，不移至 `Preview Content`。

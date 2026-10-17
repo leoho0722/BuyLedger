@@ -12,19 +12,19 @@ import Testing
 
 extension OrdersLoadFeatureTests {
 
-    /// 第一次讀取尚未完成時的第二個請求不重讀訂單或主檔
+    /// 第一次讀取尚未完成時的第二個請求不重讀訂單
     @Test
     func loadRequested_第一次讀取暫停時重複請求_只讀取一次() async {
         // Given
         let order = LedgerOrder.fixture(id: "O1")
         let reads = LockIsolated(0)
-        let lookupReads = LockIsolated(0)
         let started = AsyncStream<Void>.makeStream()
         let release = AsyncStream<Void>.makeStream()
         let store = TestStore(initialState: Self.makeState()) {
             OrdersLoadFeature()
         } withDependencies: {
-            Self.suppressLookups(&$0)
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.fetchOrders = {
                 reads.withValue {
                     $0 += 1
@@ -33,12 +33,6 @@ extension OrdersLoadFeatureTests {
                 var iterator = release.stream.makeAsyncIterator()
                 _ = await iterator.next()
                 return [order]
-            }
-            $0.orderSourceService.fetchOrderSources = {
-                lookupReads.withValue {
-                    $0 += 1
-                }
-                return []
             }
         }
         await store.send(.loadRequested) {
@@ -70,7 +64,6 @@ extension OrdersLoadFeatureTests {
         }
         await store.finish()
         #expect(reads.value == 1)
-        #expect(lookupReads.value == 1)
     }
 
     /// 讀取失敗時回報錯誤並委派父層
@@ -83,8 +76,9 @@ extension OrdersLoadFeatureTests {
         let store = TestStore(initialState: Self.makeState()) {
             OrdersLoadFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.fetchOrders = fetch
-            Self.suppressLookups(&$0)
         }
 
         // When
@@ -126,8 +120,9 @@ extension OrdersLoadFeatureTests {
         let store = TestStore(initialState: initial) {
             OrdersLoadFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.fetchOrders = fetch
-            Self.suppressLookups(&$0)
         }
 
         // When
@@ -167,6 +162,9 @@ extension OrdersLoadFeatureTests {
         }
         let store = TestStore(initialState: initial) {
             OrdersLoadFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When

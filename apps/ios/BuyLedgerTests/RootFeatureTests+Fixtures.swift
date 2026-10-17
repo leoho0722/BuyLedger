@@ -14,13 +14,25 @@ import Foundation
 
 extension RootFeatureTests {
 
-    /// 依任意順序接收啟動時的五筆載入請求：啟動、訂單與開團各一筆，外加訂單與開團的轉送兩筆
+    /// 依任意順序接收目錄已載入時的九筆啟動請求，包含主檔完成通知後才送出的訂單載入
     ///
     /// - Parameter store: 已送出啟動事件的測試 `store`
     static func receiveLaunchLoadRequests(in store: TestStoreOf<RootFeature>) async {
-        for _ in 0..<5 {
+        for _ in 0..<9 {
             await store.receive { action in
-                if case .orders(.loadRequested) = action {
+                if case .more(.catalogLoadRequested) = action {
+                    return true
+                }
+                if case .more(.catalog(.loadRequested)) = action {
+                    return true
+                }
+                if case .more(.catalog(.delegate(.loadFinished))) = action {
+                    return true
+                }
+                if case .more(.delegate(.catalogLoadFinished)) = action {
+                    return true
+                }
+                if case .orders(.rootRequest(.load)) = action {
                     return true
                 }
                 if case .orders(.load(.loadRequested)) = action {
@@ -253,5 +265,36 @@ extension RootFeatureTests {
             photos: [],
             mergedSourceIDs: []
         )
+    }
+
+    /// 先接收啟動與開團轉送的四筆請求，再核對主檔開始讀取；讀取由呼叫端的串流阻擋
+    ///
+    /// - Parameter store: 已送出啟動事件且尚未釋放主檔讀取的測試 `store`
+    static func receiveLaunchCatalogRequests(in store: TestStoreOf<RootFeature>) async {
+        for _ in 0..<4 {
+            await store.receive { action in
+                switch action {
+                case .campaigns(.loadRequested), .campaigns(.load(.loadRequested)),
+                        .launch(.loadRequested), .more(.catalogLoadRequested):
+                    return true
+
+                default:
+                    return false
+                }
+            }
+        }
+        await store.receive(\.more.catalog.loadRequested) {
+            $0.more.catalog.isLoading = true
+        }
+    }
+
+    /// 接收目錄完成後逐層轉送的訂單載入請求
+    ///
+    /// - Parameter store: 已接收主檔讀取結果的測試 `store`
+    static func receiveCatalogFinished(in store: TestStoreOf<RootFeature>) async {
+        await store.receive(\.more.catalog.delegate.loadFinished)
+        await store.receive(\.more.delegate.catalogLoadFinished)
+        await store.receive(\.orders.rootRequest.load)
+        await store.receive(\.orders.load.loadRequested)
     }
 }

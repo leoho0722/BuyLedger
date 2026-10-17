@@ -24,8 +24,8 @@ struct OrdersFeature {
         /// 訂單清單的篩選、搜尋、多選與選取
         var list: OrderListFeature.State
 
-        /// 四種主檔共用的目錄
-        @Shared(.lookupCatalog) var lookupCatalog: LookupCatalog
+        /// 主檔端維護的四種主檔目錄，訂單容器只讀取
+        @SharedReader(.lookupCatalog) var lookupCatalog: LookupCatalog
 
         /// 啟動時載入的共用幣別清單，表單建立時只讀取現有值
         @SharedReader(.currencyCodes) var currencyCodes: [CurrencyCode]
@@ -157,16 +157,6 @@ struct OrdersFeature {
         /// - Parameter action: iPhone 堆疊與 iPad 右欄的事件
         case detail(OrdersDetailNavigationFeature.Action)
 
-        /// 呈現子 Feature 的表單、alert 與通知事件
-        ///
-        /// - Parameter action: 目的地內部事件、委派或一次性通知
-        case presentation(OrdersPresentationFeature.Action)
-
-        /// 父層要求套用開團刪除、開團改名或主檔改名後的訂單調整
-        ///
-        /// - Parameter request: 開團刪除、開團改名或主檔改名
-        case cascadeRequested(OrdersCascadeOperations.Request)
-
         /// 清單子 Feature 的互動與委派
         ///
         /// - Parameter action: 清單事件
@@ -177,20 +167,15 @@ struct OrdersFeature {
         /// - Parameter action: 載入子層的事件
         case load(OrdersLoadFeature.Action)
 
-        /// 父層要求載入共用訂單與主檔，由載入子 Feature 去重
-        case loadRequested
-
-        /// 父層要求套用主檔更新成功後的訂單，不重複落盤
+        /// 呈現子 Feature 的表單、alert 與通知事件
         ///
-        /// - Parameter orders: 套用付款方式旗標後的訂單
-        case paymentMethodFlagsApplyRequested([LedgerOrder])
+        /// - Parameter action: 目的地內部事件、委派或一次性通知
+        case presentation(OrdersPresentationFeature.Action)
 
-        /// 父層要求切換訂單收款狀態，供開團詳情頁逐筆勾稽收款使用
+        /// 父層要求載入訂單或套用跨功能資料變更，由對應子 Feature 處理
         ///
-        /// - Parameters:
-        ///   - id: 要更新收款狀態的訂單編號
-        ///   - status: 要套用的收款狀態
-        case receiptStatusChangeRequested(id: LedgerOrder.ID, status: PaymentReceiptStatus)
+        /// - Parameter request: 根功能送進訂單容器的請求
+        case rootRequest(OrdersRootRequest)
 
         /// 訂單寫入子 Feature 的請求、回應與委派
         ///
@@ -211,6 +196,14 @@ struct OrdersFeature {
 
             /// 要求開啟設定頁以啟用 AI 商品明細總結
             case aiSettingsRequested
+
+            /// 請根功能將新增選項交給主檔端寫入
+            ///
+            /// - Parameter request: 保留表單識別值的新增請求
+            case optionAddRequested(LookupAdditionRequest)
+
+            /// 訂單分頁要求載入，由根功能先確認主檔目錄
+            case loadRequested
         }
     }
 
@@ -287,14 +280,8 @@ private extension OrdersFeature {
         case .detail:
             return .none
 
-        case .presentation(let action):
-            return forwardPresentation(action, state: &state)
-
-        case .cascadeRequested(let request):
-            return .send(.writes(.cascadeRequested(request)))
-
         case .list(.delegate(.loadRequested)):
-            return .send(.load(.loadRequested))
+            return .send(.delegate(.loadRequested))
 
         case .list(.delegate(.requested(let request))):
             return fulfill(request, state: &state)
@@ -309,14 +296,24 @@ private extension OrdersFeature {
         case .load:
             return .none
 
-        case .loadRequested:
+        case .presentation(let action):
+            return forwardPresentation(action, state: &state)
+
+        case .rootRequest(.load):
             return .send(.load(.loadRequested))
 
-        case .paymentMethodFlagsApplyRequested(let orders):
+        case .rootRequest(.cascade(let request)):
+            return .send(.writes(.cascadeRequested(request)))
+
+        case .rootRequest(.receiptStatusChange(let id, let status)):
+            return .send(.writes(.receiptToggleRequested(id: id, status: status)))
+
+        case .rootRequest(.paymentMethodFlagsApply(let orders)):
             return .send(.writes(.paymentMethodFlagsApplyRequested(orders)))
 
-        case .receiptStatusChangeRequested(let id, let status):
-            return .send(.writes(.receiptToggleRequested(id: id, status: status)))
+        case .rootRequest(.optionAdditionCompleted(let request, let isStored)):
+            return state.presentation.applyOptionAddition(request, isStored: isStored)
+                .map(Action.presentation)
 
         case .writes(let action):
             return applyWriteResult(action, state: &state)
@@ -383,8 +380,8 @@ private extension OrdersFeature {
         case .delegate(.saveRequested(let edit)):
             return .send(.writes(.saveRequested(edit)))
 
-        case .delegate(.optionAddRequested(let plan)):
-            return .send(.writes(.optionAddRequested(plan)))
+        case .delegate(.optionAddRequested(let request)):
+            return .send(.delegate(.optionAddRequested(request)))
 
         case .delegate(.deleteConfirmed(let id)):
             return .send(.writes(.deleteRequested(id)))

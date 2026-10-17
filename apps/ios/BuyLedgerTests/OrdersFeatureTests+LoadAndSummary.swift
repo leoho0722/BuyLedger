@@ -15,7 +15,7 @@ extension OrdersFeatureTests {
 
     /// 畫面第一次出現時載入訂單清單，並自動選取第一筆訂單
     @Test
-    func loadRequested_載入訂單清單_選取第一筆訂單() async {
+    func rootRequest_載入訂單清單_選取第一筆訂單() async {
         // Given
         let orders = LedgerOrder.sampleOrders
         var state = OrdersFeature.State()
@@ -29,14 +29,15 @@ extension OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.fetchOrders = {
                 LedgerOrder.sampleOrders
             }
-            Self.suppressOrderLookupEffects(&$0)
         }
 
         // When
-        await store.send(.loadRequested) {
+        await store.send(.rootRequest(.load)) {
             $0.load.$isLoading.withLock {
                 $0 = true
             }
@@ -69,7 +70,7 @@ extension OrdersFeatureTests {
 
     /// 訂單載入只更新訂單，父層提供的開團投影不重新讀取或結單
     @Test
-    func loadRequested_已有開團投影_載入訂單後保留投影() async {
+    func rootRequest_已有開團投影後載入訂單_保留投影() async {
         // Given
         let campaign = Campaign.fixture(
             id: "C1",
@@ -85,14 +86,15 @@ extension OrdersFeatureTests {
         let store = TestStore(initialState: initial) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.fetchOrders = {
                 []
             }
-            Self.suppressOrderLookupEffects(&$0)
         }
 
         // When
-        await store.send(.loadRequested) {
+        await store.send(.rootRequest(.load)) {
             $0.load.$isLoading.withLock {
                 $0 = true
             }
@@ -175,6 +177,9 @@ extension OrdersFeatureTests {
         // Given
         let store = TestStore(initialState: OrdersFeature.State()) {
             OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When

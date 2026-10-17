@@ -7,25 +7,13 @@
 
 import ComposableArchitecture
 
-/// 以 reducer 已解析的服務建立寫入效果，不持有或更新共用狀態
+/// 以 reducer 已解析的訂單服務建立寫入效果，不持有或更新共用狀態
 struct OrderWriteOperations: Sendable {
 
     // MARK: - Properties
 
     /// 訂單持久化入口
     let orderService: OrderService
-
-    /// 訂單來源持久化入口
-    let orderSourceService: OrderSourceService
-
-    /// 商品類別持久化入口
-    let categoryService: CategoryService
-
-    /// 付款方式持久化入口
-    let paymentMethodService: PaymentMethodService
-
-    /// 對帳狀態持久化入口
-    let reconciliationStatusService: ReconciliationStatusService
 }
 
 // MARK: - Nested Types
@@ -125,40 +113,13 @@ extension OrderWriteOperations {
         )
     }
 
-    /// 依主檔種類呼叫對應服務，成功與失敗都保留表單識別值
-    ///
-    /// - Parameter plan: 已整理名稱且保留付款方式旗標的新增請求
-    /// - Returns: 保留原請求的單一回應
-    func addOption(_ plan: OrderOptionWritePlan) -> Effect<OrderWritesFeature.Action> {
-        .run { send in
-            do throws(PersistenceError) {
-                switch plan.kind {
-                case .orderSource:
-                    try await orderSourceService.addOrderSource(plan.name)
-
-                case .category:
-                    try await categoryService.addCategory(plan.name)
-
-                case .paymentMethod:
-                    try await paymentMethodService.addPaymentMethod(plan.name, plan.flags)
-
-                case .reconciliationStatus:
-                    try await reconciliationStatusService.addReconciliationStatus(plan.name)
-                }
-                await send(.optionResponse(plan: plan, result: .success(())))
-            } catch {
-                await send(.optionResponse(plan: plan, result: .failure(error)))
-            }
-        }
-    }
-
     /// 一次寫入合併結果與來源狀態，快照原樣交回 reducer
     ///
     /// - Parameter plan: 合併結果與回滾快照
     /// - Returns: 保留合併計畫的單一回應
     func merge(_ plan: OrderMergeSavePlan) -> Effect<OrderWritesFeature.Action> {
         .run { send in
-            do throws(OrderPersistenceError) {
+            do throws(OrderError) {
                 try await orderService.mergeOrders(plan.order, plan.sourceIDs)
                 await send(.mergeResponse(plan: plan, result: .success(())))
             } catch {
@@ -176,7 +137,7 @@ extension OrderWriteOperations {
             result,
             operation: { result throws(PersistenceError) in
                 if result.isNewOrder {
-                    do throws(OrderPersistenceError) {
+                    do throws(OrderError) {
                         try await orderService.createOrder(result.order)
                     } catch {
                         throw .saveFailed(underlying: error)

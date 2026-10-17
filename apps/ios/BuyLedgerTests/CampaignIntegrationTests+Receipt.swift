@@ -176,6 +176,8 @@ private extension CampaignIntegrationTests {
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.saveOrder = { order in
                 saved.withValue {
                     $0.append(order)
@@ -211,7 +213,7 @@ private extension CampaignIntegrationTests {
             }
         }
         await store.receive(\.campaigns.delegate.receiptStatusToggled)
-        await store.receive(\.orders.receiptStatusChangeRequested)
+        await store.receive(\.orders.rootRequest.receiptStatusChange)
         await store.receive(\.orders.writes.receiptToggleRequested)
         await store.receive(\.orders.writes.receiptResponse) {
             $0.dashboard.orders = context.expectedOrders

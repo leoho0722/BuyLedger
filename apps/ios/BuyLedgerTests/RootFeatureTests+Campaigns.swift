@@ -67,17 +67,12 @@ extension RootFeatureTests {
             $0.date = .constant(TestDependencies.fixedNow)
             $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .incrementing
-            $0.campaignService.saveCampaign = { campaign in
+            $0.campaignService.renameCampaign = { campaign, previousName in
                 saved.withValue {
                     $0.append(campaign)
                 }
                 calls.withValue {
-                    $0.append("save")
-                }
-            }
-            $0.orderService.renameOrderCampaign = { from, to in
-                calls.withValue {
-                    $0.append(contentsOf: ["rename", from, to])
+                    $0.append(contentsOf: ["rename", previousName, campaign.name])
                 }
             }
         }
@@ -114,18 +109,17 @@ extension RootFeatureTests {
             $0.dashboard.campaigns = [renamedCampaign]
             $0.insights.campaigns = [renamedCampaign]
         }
-        await store.receive(\.campaigns.writes.renameResponse)
         await store.receive(\.campaigns.writes.delegate.renamed)
         await store.receive(\.campaigns.writes.delegate.saved)
         await store.receive(\.campaigns.delegate.campaignRenamed)
-        await store.receive(\.orders.cascadeRequested, cascade)
+        await store.receive(\.orders.rootRequest.cascade, cascade)
         await store.receive(\.orders.writes.cascadeRequested, cascade) {
             $0.dashboard.orders = expectedOrders
             $0.insights.orders = expectedOrders
         }
         await store.finish()
         #expect(saved.value == [renamedCampaign])
-        #expect(calls.value == ["save", "rename", " \n三月日本團 \t", "三月日本團 (補)"])
+        #expect(calls.value == ["rename", " \n三月日本團 \t", "三月日本團 (補)"])
         #expect(store.state.orders.orders == expectedOrders)
         #expect(store.state.more.orders == expectedOrders)
         #expect(store.state.campaigns.orders == expectedOrders)
@@ -223,6 +217,8 @@ extension RootFeatureTests {
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.saveOrder = { order in
                 saved.withValue {
                     $0.append(order)
@@ -246,7 +242,7 @@ extension RootFeatureTests {
             }
         }
         await store.receive(\.campaigns.delegate.receiptStatusToggled)
-        await store.receive(\.orders.receiptStatusChangeRequested)
+        await store.receive(\.orders.rootRequest.receiptStatusChange)
         await store.receive(\.orders.writes.receiptToggleRequested)
         await store.receive(\.orders.writes.receiptResponse) {
             $0.dashboard.orders = expectedOrders

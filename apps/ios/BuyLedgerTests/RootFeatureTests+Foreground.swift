@@ -140,6 +140,7 @@ extension RootFeatureTests {
         initial.orders.load.$hasLoaded.withLock {
             $0 = true
         }
+        initial.more.catalog.hasLoaded = true
         let currencyRelease = AsyncStream<Void>.makeStream()
         let store = TestStore(initialState: initial) {
             RootFeature()

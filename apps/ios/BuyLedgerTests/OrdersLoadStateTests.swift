@@ -91,6 +91,9 @@ struct OrdersLoadStateTests {
         )
         let store = TestStore(initialState: initial) {
             OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -111,20 +114,21 @@ struct OrdersLoadStateTests {
     /// 重試成功時載入回傳訂單並清除錯誤狀態
     @Test
     @MainActor
-    func loadRequested_重新載入成功_恢復訂單內容() async {
+    func rootRequest_重新載入成功_恢復訂單內容() async {
         // Given
         let order = LedgerOrder.fixture(id: "RETRY-1")
         let store = TestStore(initialState: Self.makeRetryState()) {
             OrdersFeature()
         } withDependencies: {
-            OrdersLoadFeatureTests.suppressLookups(&$0)
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.fetchOrders = {
                 [order]
             }
         }
 
         // When
-        await store.send(.loadRequested) {
+        await store.send(.rootRequest(.load)) {
             $0.load.$isLoading.withLock {
                 $0 = true
             }
@@ -174,6 +178,9 @@ struct OrdersLoadStateTests {
         )
         let store = TestStore(initialState: initial) {
             OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -189,7 +196,7 @@ struct OrdersLoadStateTests {
     /// 載入失敗後切回訂單分頁，載入請求經容器再次讀取並顯示訂單
     @Test
     @MainActor
-    func loadRequested_失敗後切回訂單分頁_重讀並顯示訂單() async {
+    func rootRequest_失敗後切回訂單分頁_重讀並顯示訂單() async {
         // Given
         let order = LedgerOrder.fixture(id: "RETRY-1")
         let responses = AsyncStream<Result<[LedgerOrder], PersistenceError>>.makeStream()
@@ -209,12 +216,13 @@ struct OrdersLoadStateTests {
         let store = TestStore(initialState: Self.makeRetryState()) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.fetchOrders = fetch
-            OrdersLoadFeatureTests.suppressLookups(&$0)
         }
 
         // When
-        await store.send(.loadRequested) {
+        await store.send(.rootRequest(.load)) {
             $0.load.$isLoading.withLock {
                 $0 = true
             }

@@ -39,7 +39,7 @@ struct OrderEditFeature {
         /// 合併來源訂單編號；非空代表這是「合併訂單」的確認草稿
         var mergeSourceIDs: [LedgerOrder.ID] = []
 
-        /// 六種選項清單與選擇器的推入路由
+        /// 正規化後的選項與選擇器的推入路由
         var pickers: OrderEditPickersFeature.State
 
         /// 本次開啟表單的識別值，與訂單編號無關
@@ -225,9 +225,9 @@ struct OrderEditFeature {
 
         /// 將已落盤的主檔項目加入清單並選取
         ///
-        /// - Parameter plan: 已成功寫入的名稱與付款方式旗標
-        mutating func applyAddedOption(_ plan: OrderOptionWritePlan) {
-            OrderEditDraftOperations.applyAddition(plan, state: &self)
+        /// - Parameter request: 已成功寫入的主檔新增請求
+        mutating func applyAddedOption(_ request: LookupAdditionRequest) {
+            OrderEditDraftOperations.applyAddition(request, state: &self)
         }
     }
 

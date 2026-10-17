@@ -41,6 +41,12 @@ extension RootFeatureTests {
             hasChangedFlags: true,
             affectedOrders: [normalized]
         )
+        let request = PaymentMethodCorrectionFeature.Request(
+            originalName: "匯款",
+            newName: "orders.edit.label.bankTransfer",
+            flags: .none,
+            hasChangedFlags: true
+        )
         let updatedMaster = PaymentMethodInfo(name: "orders.edit.label.bankTransfer", flags: .none)
         let originalFlags = PaymentMethodFlags(
             isCardless: false,
@@ -51,10 +57,10 @@ extension RootFeatureTests {
         state.orders.$orders.withLock {
             $0 = [original]
         }
-        state.orders.$lookupCatalog.withLock {
+        state.more.catalog.$catalog.withLock {
             $0.paymentMethods = [PaymentMethodInfo(name: "匯款", flags: originalFlags)]
         }
-        state.more.path[id: 0, case: \.lookupManagement]?.correction.pendingPlan = plan
+        state.more.path[id: 0, case: \.lookupManagement]?.correction.pendingRequest = request
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .retroactiveConfirmation(
             affectedOrderCount: 1
         )
@@ -62,17 +68,15 @@ extension RootFeatureTests {
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0.paymentMethodService.applyPaymentMethodEdit = { oldName, newName, flags, orders in
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.lookupService.applyPaymentMethodEdit = { oldName, newName, flags in
                 writes.withValue {
                     $0.append(
-                        PaymentMethodEditCall(
-                            oldName: oldName,
-                            newName: newName,
-                            flags: flags,
-                            orders: orders
-                        )
+                        PaymentMethodEditCall(oldName: oldName, newName: newName, flags: flags)
                     )
                 }
+                return [normalized]
             }
         }
 
@@ -94,8 +98,8 @@ extension RootFeatureTests {
 
         // Then
         await store.receive(\.more.path[id: 0].lookupManagement.correction.confirmed) {
-            $0.more.path[id: 0, case: \.lookupManagement]?.correction.pendingPlan = nil
-            $0.orders.$lookupCatalog.withLock {
+            $0.more.path[id: 0, case: \.lookupManagement]?.correction.pendingRequest = nil
+            $0.more.catalog.$catalog.withLock {
                 $0.paymentMethods = [updatedMaster]
             }
             $0.campaigns.$orders.withLock {
@@ -115,21 +119,23 @@ extension RootFeatureTests {
         await store.receive(\.more.path[id: 0].lookupManagement.correction.delegate.edited, plan)
         await store.receive(\.more.path[id: 0].lookupManagement.delegate.paymentMethodEdited, plan)
         await store.receive(\.more.delegate.paymentMethodEdited, plan)
-        await store.receive(\.orders.paymentMethodFlagsApplyRequested, [normalized])
+        await store.receive(\.orders.rootRequest.paymentMethodFlagsApply, [normalized])
         await store.receive(\.orders.writes.paymentMethodFlagsApplyRequested, [normalized]) {
             $0.dashboard.orders = [normalized]
             $0.insights.orders = [normalized]
         }
         #expect(store.state.orders.orders == [normalized])
         #expect(store.state.orders.lookupCatalog.paymentMethods == [updatedMaster])
-        #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["orders.edit.label.bankTransfer"])
+        #expect(
+            store.state.more.path[id: 0, case: \.lookupManagement]?.items
+                == ["orders.edit.label.bankTransfer"]
+        )
         #expect(
             writes.value == [
                 PaymentMethodEditCall(
                     oldName: "匯款",
                     newName: "orders.edit.label.bankTransfer",
-                    flags: .none,
-                    orders: [normalized]
+                    flags: .none
                 ),
             ]
         )
@@ -143,13 +149,11 @@ extension RootFeatureTests {
     func more_取消付款方式更正_保留訂單與主檔() async {
         // Given
         let original = LedgerOrder.fixture(id: "BL-PM-CANCEL", paymentMethod: "匯款")
-        let correctedOrder = LedgerOrder.fixture(id: "BL-PM-CANCEL", paymentMethod: "orders.edit.label.bankTransfer")
-        let plan = PaymentMethodEditPlan(
+        let request = PaymentMethodCorrectionFeature.Request(
             originalName: "匯款",
             newName: "orders.edit.label.bankTransfer",
             flags: .none,
-            hasChangedFlags: true,
-            affectedOrders: [correctedOrder]
+            hasChangedFlags: true
         )
         let originalFlags = PaymentMethodFlags(
             isCardless: false,
@@ -161,13 +165,16 @@ extension RootFeatureTests {
         state.orders.$orders.withLock {
             $0 = [original]
         }
-        state.orders.$lookupCatalog.withLock { $0.paymentMethods = [originalMaster] }
-        state.more.path[id: 0, case: \.lookupManagement]?.correction.pendingPlan = plan
+        state.more.catalog.$catalog.withLock { $0.paymentMethods = [originalMaster] }
+        state.more.path[id: 0, case: \.lookupManagement]?.correction.pendingRequest = request
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .retroactiveConfirmation(
             affectedOrderCount: 1
         )
         let store = TestStore(initialState: state) {
             RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -188,7 +195,7 @@ extension RootFeatureTests {
 
         // Then
         await store.receive(\.more.path[id: 0].lookupManagement.correction.cancelled) {
-            $0.more.path[id: 0, case: \.lookupManagement]?.correction.pendingPlan = nil
+            $0.more.path[id: 0, case: \.lookupManagement]?.correction.pendingRequest = nil
         }
         #expect(store.state.orders.orders == [original])
         #expect(store.state.orders.lookupCatalog.paymentMethods == [originalMaster])
@@ -201,13 +208,11 @@ extension RootFeatureTests {
     func more_付款方式更正寫入失敗_保留訂單與主檔() async {
         // Given
         let original = LedgerOrder.fixture(id: "BL-PM-FAIL", paymentMethod: "匯款")
-        let correctedOrder = LedgerOrder.fixture(id: "BL-PM-FAIL", paymentMethod: "orders.edit.label.bankTransfer")
-        let plan = PaymentMethodEditPlan(
+        let request = PaymentMethodCorrectionFeature.Request(
             originalName: "匯款",
             newName: "orders.edit.label.bankTransfer",
             flags: .none,
-            hasChangedFlags: true,
-            affectedOrders: [correctedOrder]
+            hasChangedFlags: true
         )
         let originalFlags = PaymentMethodFlags(
             isCardless: false,
@@ -219,20 +224,20 @@ extension RootFeatureTests {
         state.orders.$orders.withLock {
             $0 = [original]
         }
-        state.orders.$lookupCatalog.withLock { $0.paymentMethods = [originalMaster] }
-        state.more.path[id: 0, case: \.lookupManagement]?.correction.pendingPlan = plan
+        state.more.catalog.$catalog.withLock { $0.paymentMethods = [originalMaster] }
+        state.more.path[id: 0, case: \.lookupManagement]?.correction.pendingRequest = request
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .retroactiveConfirmation(
             affectedOrderCount: 1
         )
-        let failingApply: PaymentMethodService.ApplyPaymentMethodEdit = { _, _, _, _ throws(PaymentMethodPersistenceError) in
-            throw .storage(
-                .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
-            )
+        let failingApply: LookupService.ApplyPaymentMethodEdit = { _, _, _ throws(PersistenceError) in
+            throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0.paymentMethodService.applyPaymentMethodEdit = failingApply
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.lookupService.applyPaymentMethodEdit = failingApply
         }
 
         // When
@@ -253,7 +258,7 @@ extension RootFeatureTests {
 
         // Then
         await store.receive(\.more.path[id: 0].lookupManagement.correction.confirmed) {
-            $0.more.path[id: 0, case: \.lookupManagement]?.correction.pendingPlan = nil
+            $0.more.path[id: 0, case: \.lookupManagement]?.correction.pendingRequest = nil
         }
         await store.receive(\.more.path[id: 0].lookupManagement.correction.editResponse.failure)
         await store.receive(\.more.path[id: 0].lookupManagement.correction.delegate.failed) {
@@ -283,8 +288,5 @@ private extension RootFeatureTests {
 
         /// 寫入的付款方式旗標
         let flags: PaymentMethodFlags
-
-        /// 寫入時傳入的訂單，已依新付款方式整理
-        let orders: [LedgerOrder]
     }
 }

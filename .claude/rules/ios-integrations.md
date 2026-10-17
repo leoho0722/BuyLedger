@@ -30,7 +30,7 @@ paths:
 - **開團訂購提醒經 `CalendarReminderService` 寫入與移除系統行事曆，請求 full access (`requestFullAccessToEvents()`)**：移除前要先 `event(withIdentifier:)` 讀回事件，write-only 讀不到。
     - Info.plist 帶 `NSCalendarsFullAccessUsageDescription`；權限在實際新增或移除時才請求，不在啟動時請求。
 - **提醒連結存 iOS 專屬的 `CampaignReminderRecord`，不進跨平台 `Campaign` schema**：`eventIdentifier` 是裝置本機資料，寫進生成型別會違反平台中立。
-    - 連結以 `CampaignReminderLink` 值型別在 `CampaignReminderService` 與 `CampaignReminderFeature` 間傳遞，連結的唯一寫入者是 `CampaignReminderFeature`。
+    - 連結以 `CampaignReminderLink` 值型別在 `CampaignService` (`fetchReminderLinks`、`saveReminderLink`、`removeReminderLink`) 與 `CampaignReminderFeature` 間傳遞；連結的寫入與移除只由 `CampaignReminderFeature` 發動，開團刪除時 `CampaignService.removeCampaign` 在同一交易清除該開團的連結。
 - **提醒是全天事件 (`isAllDay`)，時間由使用者自選並存成 `reminderTimestamp`**：事件日期取 `calendar.startOfDay(for:)`，`EKAlarm(relativeOffset:)` 以該時間戳當天的分鐘數換算秒數，標題取 `Campaign.reminderTitle`。
     - 預設值為結單日 (沒有則今天) 上午 09:00。
     - 儲存時名稱或時間戳變更即重建事件；開團詳情頁只顯示提醒時間，新增與移除走編輯頁。

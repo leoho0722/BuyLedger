@@ -5,6 +5,7 @@
 //  Created by Leo Ho on 2026/10/9.
 //
 
+import Clocks
 import ComposableArchitecture
 import SwiftUI
 import Testing
@@ -36,7 +37,7 @@ extension OrdersFeatureTests {
         let sourceA = LedgerOrder.fixture(id: "A", status: .merged, categories: ["美妝"])
         let sourceB = LedgerOrder.fixture(id: "B", status: .merged, categories: ["食品"])
         let clock = TestClock()
-        let failingMerge: OrderService.MergeOrders = { _, _ throws(OrderPersistenceError) in
+        let failingMerge: OrderService.MergeOrders = { _, _ throws(OrderError) in
             do {
                 try await clock.sleep(for: .seconds(1))
             } catch {
@@ -51,6 +52,8 @@ extension OrdersFeatureTests {
         ) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .constant(UUID(0))
             $0.orderService.mergeOrders = failingMerge
         }
@@ -88,15 +91,22 @@ extension OrdersFeatureTests {
             }
         }
         await store.receive(\.writes.delegate, .failed(.merge))
-        await store.receive(\.presentation.noticeRequested, Self.failureNotice("orders.general.message.mergedOrderSaved")) {
-            $0.presentation.queue.pendingNotice = Self.failureNotice("orders.general.message.mergedOrderSaved")
+        await store.receive(
+            \.presentation.noticeRequested,
+            Self.failureNotice("orders.general.message.mergedOrderSaved")
+        ) {
+            $0.presentation.queue.pendingNotice = Self.failureNotice(
+                "orders.general.message.mergedOrderSaved"
+            )
         }
 
         // When
         await store.send(.view(.formSheetDismissed)) {
             $0.presentation.queue.isFormClosing = false
             $0.presentation.queue.pendingNotice = nil
-            $0.presentation.destination = Self.failureNotice("orders.general.message.mergedOrderSaved")
+            $0.presentation.destination = Self.failureNotice(
+                "orders.general.message.mergedOrderSaved"
+            )
         }
 
         // Then

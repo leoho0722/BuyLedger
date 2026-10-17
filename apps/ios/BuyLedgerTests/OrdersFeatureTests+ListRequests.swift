@@ -13,7 +13,7 @@ import Testing
 
 extension OrdersFeatureTests {
 
-    /// 分頁重新出現時仍會發出載入請求，是否略過重複載入交由載入功能判斷
+    /// 分頁重新出現時先記錄日期，再交給根功能確認主檔目錄與訂單載入
     @Test
     func list_已載入分頁再次出現_先記錄日期再經容器請求載入() async {
         // Given
@@ -38,7 +38,7 @@ extension OrdersFeatureTests {
 
         // Then
         await store.receive(\.list.delegate.loadRequested)
-        await store.receive(\.load.loadRequested)
+        await store.receive(\.delegate.loadRequested)
         #expect(store.state.list.hasLoaded)
         #expect(store.state.list.isLoading == false)
     }
@@ -50,6 +50,9 @@ extension OrdersFeatureTests {
         let order = LedgerOrder.fixture(id: "A")
         let store = TestStore(initialState: OrdersFeature.State(orders: [order])) {
             OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When

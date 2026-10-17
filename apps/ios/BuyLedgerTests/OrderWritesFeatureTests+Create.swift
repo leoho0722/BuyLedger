@@ -51,6 +51,8 @@ extension OrderWritesFeatureTests {
         let store = TestStore(initialState: initial) {
             OrderWritesFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .constant(UUID(1))
             if isOriginalPresent {
                 $0.orderService.saveOrder = {
@@ -105,6 +107,8 @@ extension OrderWritesFeatureTests {
         let store = TestStore(initialState: initial) {
             OrderWritesFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .constant(UUID(1))
             $0.orderService.createOrder = { order in
                 observedOrders.withValue {
@@ -139,7 +143,7 @@ extension OrderWritesFeatureTests {
         let sharedOrders = initial.$orders
         let observedOrders = LockIsolated<[[LedgerOrder]]>([])
         let calls = LockIsolated<[LedgerOrder]>([])
-        let failingCreate: OrderService.CreateOrder = { order throws(OrderPersistenceError) in
+        let failingCreate: OrderService.CreateOrder = { order throws(OrderError) in
             observedOrders.withValue {
                 $0.append(sharedOrders.wrappedValue)
             }
@@ -152,6 +156,8 @@ extension OrderWritesFeatureTests {
         let store = TestStore(initialState: initial) {
             OrderWritesFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .constant(UUID(1))
             $0.orderService.createOrder = failingCreate
         }

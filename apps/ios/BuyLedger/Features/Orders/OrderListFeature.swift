@@ -45,8 +45,8 @@ struct OrderListFeature {
         /// 多選模式下已勾選的訂單編號集合
         var selectedOrderIDs: Set<LedgerOrder.ID> = []
 
-        /// 篩選使用的四種主檔目錄
-        @Shared(.lookupCatalog) var lookupCatalog: LookupCatalog
+        /// 主檔端維護、供篩選使用的四種唯讀主檔目錄
+        @SharedReader(.lookupCatalog) var lookupCatalog: LookupCatalog
 
         /// 目前是否正在載入，由載入子層維護
         @SharedReader var isLoading: Bool

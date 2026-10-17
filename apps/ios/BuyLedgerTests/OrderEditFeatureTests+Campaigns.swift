@@ -133,7 +133,7 @@ extension OrderEditFeatureTests {
         )
 
         // Then
-        #expect(state.pickers.availableCampaigns == ["今天團"])
+        #expect(state.pickers.options.campaigns == ["今天團"])
     }
 
     /// 狀態仍為進行中但結單日已過的開團，不列入可選清單
@@ -176,7 +176,7 @@ extension OrderEditFeatureTests {
         )
 
         // Then
-        #expect(state.pickers.availableCampaigns == ["今天團"])
+        #expect(state.pickers.options.campaigns == ["今天團"])
     }
 
     /// 選擇一個開團會取代原選取，選擇空白則清除歸屬
@@ -194,6 +194,9 @@ extension OrderEditFeatureTests {
         initial.draft.campaignNames = ["四月韓國團"]
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -227,6 +230,9 @@ extension OrderEditFeatureTests {
         initial.draft.campaignNames = testCase.initialCampaigns
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -246,6 +252,9 @@ extension OrderEditFeatureTests {
         let initial = OrderEditFeature.State(id: UUID(0), currentDate: TestDependencies.fixedNow)
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When

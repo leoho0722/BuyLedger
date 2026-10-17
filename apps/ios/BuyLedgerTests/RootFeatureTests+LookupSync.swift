@@ -31,14 +31,20 @@ extension RootFeatureTests {
         state.orders.$orders.withLock {
             $0 = [multi, single, cosmeticsOnly]
         }
-        state.orders.$lookupCatalog.withLock { $0.categories = ["美妝", "服飾"] }
+        state.more.catalog.$catalog.withLock { $0.categories = ["美妝", "服飾"] }
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .rename(
             LookupRenameFormFeature.State(originalName: "美妝")
         )
+        let renameKinds = LockIsolated<[LookupKind]>([])
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0.orderService.applyCategoryRename = { _, _ in
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.lookupService.renameItem = { kind, _ in
+                renameKinds.withValue {
+                    $0.append(kind)
+                }
             }
         }
         let rename = LookupItemRename(oldName: "美妝", newName: "彩妝保養")
@@ -69,7 +75,7 @@ extension RootFeatureTests {
         ) {
             $0.more.path[id: 0, case: \.lookupManagement]?.destination = nil
             $0.more.path[id: 0, case: \.lookupManagement]?.isFormSheetDismissing = true
-            $0.orders.$lookupCatalog.withLock {
+            $0.more.catalog.$catalog.withLock {
                 $0.categories = ["服飾", "彩妝保養"]
             }
             $0.campaigns.$orders.withLock {
@@ -85,11 +91,12 @@ extension RootFeatureTests {
         await store.receive(\.more.path[id: 0].lookupManagement.renameResponse.success, rename)
         await store.receive(\.more.path[id: 0].lookupManagement.delegate.itemRenamed, rename)
         await store.receive(\.more.delegate, .lookupItemRenamed(kind: .category, rename: rename))
-        await store.receive(\.orders.cascadeRequested, cascade)
+        await store.receive(\.orders.rootRequest.cascade, cascade)
         await store.receive(\.orders.writes.cascadeRequested, cascade) {
             $0.dashboard.orders = [renamedMulti, renamedSingle, renamedCosmeticsOnly]
             $0.insights.orders = [renamedMulti, renamedSingle, renamedCosmeticsOnly]
         }
+        #expect(renameKinds.value == [.category])
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["服飾", "彩妝保養"])
         #expect(store.state.orders.list.availableCategories.contains("彩妝保養"))
         #expect(!store.state.orders.list.availableCategories.contains("美妝"))
@@ -109,10 +116,10 @@ extension RootFeatureTests {
             return rootState
         }
 
-        let catalog = state.orders.$lookupCatalog
+        let catalog = state.more.catalog.$catalog
         let observedCategories = LockIsolated<[[String]]>([])
-        let plan = OrderOptionWritePlan(
-            formID: UUID(0),
+        let request = LookupAdditionRequest(
+            id: UUID(0),
             kind: .category,
             name: "手工藝品",
             flags: .none
@@ -120,7 +127,9 @@ extension RootFeatureTests {
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0.categoryService.addCategory = { _ in
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.lookupService.addItem = { _, _ in
                 observedCategories.withValue {
                     $0.append(catalog.wrappedValue.categories)
                 }
@@ -141,7 +150,7 @@ extension RootFeatureTests {
             \.orders.presentation.destination.presented.edit.pickers.delegate,
             .addOptionRequested(kind: .category, name: "手工藝品", flags: .none)
         ) {
-            $0.orders.$lookupCatalog.withLock {
+            $0.more.catalog.$catalog.withLock {
                 $0.categories = ["手工藝品"]
             }
         }
@@ -149,12 +158,19 @@ extension RootFeatureTests {
             \.orders.presentation.destination.presented.edit.delegate,
             .addOptionRequested(kind: .category, name: "手工藝品", flags: .none)
         )
-        await store.receive(\.orders.presentation.delegate.optionAddRequested, plan)
-        await store.receive(\.orders.writes.optionAddRequested, plan)
-        await store.receive(\.orders.writes.optionResponse)
-        await store.receive(\.orders.writes.delegate, .optionAdded(plan)) {
+        await store.receive(\.orders.presentation.delegate.optionAddRequested, request)
+        await store.receive(\.orders.delegate.optionAddRequested, request)
+        await store.receive(\.more.optionAdditionRequested, request)
+        await store.receive(\.more.catalog.additionRequested, request)
+        await store.receive(\.more.catalog.additionResponse)
+        await store.receive(\.more.catalog.delegate, .additionCompleted(request, isStored: true))
+        await store.receive(\.more.delegate, .optionAdditionCompleted(request, isStored: true))
+        await store.receive(
+            \.orders.rootRequest,
+            .optionAdditionCompleted(request, isStored: true)
+        ) {
             $0.orders.presentation.destination?.modify(\.edit) {
-                $0.pickers.availableCategories = ["手工藝品"]
+                $0.pickers.options.categories = ["手工藝品"]
             }
             $0.orders.presentation.destination?.modify(\.edit) {
                 $0.draft.categories = ["手工藝品"]
@@ -173,14 +189,20 @@ extension RootFeatureTests {
     func more_刪除分類_從訂單編輯選項移除() async throws {
         // Given
         var state = Self.makeIsolatedRootState(lookupKind: .category)
-        state.orders.$lookupCatalog.withLock { $0.categories = ["待刪類別"] }
+        state.more.catalog.$catalog.withLock { $0.categories = ["待刪類別"] }
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .deleteConfirmation(
             name: "待刪類別"
         )
+        let removeKinds = LockIsolated<[LookupKind]>([])
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0.categoryService.removeCategory = { _ in
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.lookupService.removeItem = { kind, _ in
+                removeKinds.withValue {
+                    $0.append(kind)
+                }
             }
         }
         try #require(store.state.orders.list.availableCategories.contains("待刪類別"))
@@ -203,10 +225,11 @@ extension RootFeatureTests {
 
         // Then
         await store.receive(\.more.path[id: 0].lookupManagement.deleteResponse.success, "待刪類別") {
-            $0.orders.$lookupCatalog.withLock {
+            $0.more.catalog.$catalog.withLock {
                 $0.categories = []
             }
         }
+        #expect(removeKinds.value == [.category])
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == [])
         #expect(!store.state.orders.list.availableCategories.contains("待刪類別"))
         await store.finish()
@@ -221,21 +244,27 @@ extension RootFeatureTests {
         state.orders.$orders.withLock {
             $0 = [order]
         }
-        state.orders.$lookupCatalog.withLock { $0.categories = ["服飾"] }
+        state.more.catalog.$catalog.withLock { $0.categories = ["服飾"] }
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .rename(
             LookupRenameFormFeature.State(originalName: "服飾")
         )
+        let renameKinds = LockIsolated<[LookupKind]>([])
         let renameCalls = LockIsolated<[LookupItemRename]>([])
-        let failingRename: OrderService.ApplyCategoryRename = { oldName, newName throws(PersistenceError) in
+        let failingRename: LookupService.RenameItem = { kind, itemRename throws(PersistenceError) in
+            renameKinds.withValue {
+                $0.append(kind)
+            }
             renameCalls.withValue {
-                $0.append(LookupItemRename(oldName: oldName, newName: newName))
+                $0.append(itemRename)
             }
             throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0.orderService.applyCategoryRename = failingRename
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.lookupService.renameItem = failingRename
         }
 
         // When
@@ -262,6 +291,7 @@ extension RootFeatureTests {
         await store.receive(\.more.path[id: 0].lookupManagement.renameResponse.failure) {
             $0.more.path[id: 0, case: \.lookupManagement]?.pendingAlert = .writeFailure(.rename)
         }
+        #expect(renameKinds.value == [.category])
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["服飾"])
         #expect(store.state.orders.orders == [order])
         #expect(store.state.orders.list.availableCategories.contains("服飾"))

@@ -94,43 +94,6 @@ extension OrderEditPickerOperations {
             return .send(.delegate(.currencySelected(value)))
         }
     }
-
-    /// 將已落盤的選項加入清單，保留付款方式旗標
-    ///
-    /// - Parameters:
-    ///   - plan: 已成功落盤的主檔項目
-    ///   - state: 要加入選項的子層狀態
-    static func applyAddition(
-        _ plan: OrderOptionWritePlan,
-        state: inout OrderEditPickersFeature.State
-    ) {
-        let trimmed = plan.name
-        let flags = plan.flags
-        switch plan.kind {
-        case .orderSource:
-            append(trimmed, to: &state.availableOrderSources)
-
-        case .category:
-            append(trimmed, to: &state.availableCategories)
-
-        case .paymentMethod:
-            if let index = state.availablePaymentMethods.firstIndex(where: { $0.name == trimmed }) {
-                state.availablePaymentMethods[index] = PaymentMethodInfo(
-                    name: trimmed,
-                    flags: flags
-                )
-            } else {
-                var updated = state.availablePaymentMethods
-                updated.append(PaymentMethodInfo(name: trimmed, flags: flags))
-                state.availablePaymentMethods = updated.sorted { lhs, rhs in
-                    lhs.name.localizedStandardCompare(rhs.name) == .orderedAscending
-                }
-            }
-
-        case .reconciliationStatus:
-            append(trimmed, to: &state.availableReconciliationStatuses)
-        }
-    }
 }
 
 // MARK: - Private Method
@@ -154,20 +117,5 @@ private extension OrderEditPickerOperations {
             return .none
         }
         return .send(.delegate(.addOptionRequested(kind: kind, name: trimmed, flags: flags)))
-    }
-
-    /// 清單尚無同名項目時加入名稱，並沿用自然排序
-    ///
-    /// - Parameters:
-    ///   - name: 已整理的非空名稱
-    ///   - options: 要補入新名稱的可選清單
-    static func append(_ name: String, to options: inout [String]) {
-        if !options.contains(name) {
-            var updated = options
-            updated.append(name)
-            options = updated.sorted { lhs, rhs in
-                lhs.localizedStandardCompare(rhs) == .orderedAscending
-            }
-        }
     }
 }

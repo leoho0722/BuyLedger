@@ -796,22 +796,6 @@
         }
       }
     },
-    "campaigns.general.message.campaignSavedBut" : {
-      "localizations" : {
-        "en" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "The campaign was saved, but updating its name on member orders failed. Try again later."
-          }
-        },
-        "zh-Hant" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "開團已儲存，但歸屬訂單的開團名稱更新失敗，請稍後再試。"
-          }
-        }
-      }
-    },
     "campaigns.general.message.campaignSavedTry" : {
       "localizations" : {
         "en" : {

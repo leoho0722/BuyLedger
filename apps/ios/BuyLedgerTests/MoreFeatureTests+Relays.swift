@@ -23,6 +23,9 @@ extension MoreFeatureTests {
         )
         let store = TestStore(initialState: initial) {
             MoreFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -46,6 +49,9 @@ extension MoreFeatureTests {
         )
         let store = TestStore(initialState: initial) {
             MoreFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -75,6 +81,9 @@ extension MoreFeatureTests {
         }
         let store = TestStore(initialState: initial) {
             MoreFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
         let rename = LookupItemRename(oldName: "美妝", newName: "彩妝")
 
@@ -104,13 +113,18 @@ extension MoreFeatureTests {
         }
         let store = TestStore(initialState: initial) {
             MoreFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
         let plan = PaymentMethodEditPlan(
             originalName: "匯款",
             newName: "orders.edit.label.bankTransfer",
             flags: .none,
             hasChangedFlags: true,
-            affectedOrders: [LedgerOrder.fixture(id: "PM-1", paymentMethod: "orders.edit.label.bankTransfer")]
+            affectedOrders: [
+                LedgerOrder.fixture(id: "PM-1", paymentMethod: "orders.edit.label.bankTransfer"),
+            ]
         )
 
         // When
@@ -142,6 +156,8 @@ extension MoreFeatureTests {
         let store = TestStore(initialState: initial) {
             MoreFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.settingsService.save = { snapshot in
                 saved.withValue {
                     $0.append(snapshot)
@@ -162,5 +178,131 @@ extension MoreFeatureTests {
         await store.finish()
         #expect(saved.value == [expected])
         #expect(store.state.preferences.language == .traditionalChinese)
+    }
+
+    /// 父層要求主檔目錄載入時，只轉送專用子層請求
+    @Test
+    func catalogLoadRequested_目錄已載入_轉送載入與完成通知() async {
+        // Given
+        var initial = withDependencies {
+            $0.defaultInMemoryStorage = InMemoryStorage()
+        } operation: {
+            MoreFeature.State(appVersion: "1.7.0")
+        }
+        initial.catalog.hasLoaded = true
+        let store = TestStore(initialState: initial) {
+            MoreFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+        await store.send(.catalogLoadRequested)
+
+        // Then
+        await store.receive(\.catalog.loadRequested)
+        await store.receive(\.catalog.delegate, .loadFinished)
+        await store.receive(\.delegate.catalogLoadFinished)
+        await store.finish()
+    }
+
+    /// 目錄子層完成後向根功能轉送，不直接要求訂單載入
+    @Test
+    func catalog_目錄載入完成_轉送完成委派() async {
+        // Given
+        let initial = withDependencies {
+            $0.defaultInMemoryStorage = InMemoryStorage()
+        } operation: {
+            MoreFeature.State(appVersion: "1.7.0")
+        }
+        let store = TestStore(initialState: initial) {
+            MoreFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+        await store.send(.catalog(.delegate(.loadFinished)))
+
+        // Then
+        await store.receive(\.delegate.catalogLoadFinished)
+        await store.finish()
+    }
+
+    /// 父層要求新增選項時轉給主檔端，成功後原樣轉送結果
+    @Test
+    func optionAdditionRequested_寫入成功_轉送請求與原表單的結果() async {
+        // Given
+        let initial = withDependencies {
+            $0.defaultInMemoryStorage = InMemoryStorage()
+        } operation: {
+            MoreFeature.State(appVersion: "1.7.0")
+        }
+        let release = AsyncStream<Void>.makeStream()
+        let request = LookupAdditionRequest(
+            id: UUID(3),
+            kind: .category,
+            name: "香氛",
+            flags: .none
+        )
+        let store = TestStore(initialState: initial) {
+            MoreFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.lookupService.addItem = { _, _ in
+                var iterator = release.stream.makeAsyncIterator()
+                _ = await iterator.next()
+            }
+        }
+
+        // When
+        await store.send(.optionAdditionRequested(request))
+
+        // Then
+        await store.receive(\.catalog.additionRequested, request)
+        release.continuation.finish()
+        await store.receive(\.catalog.additionResponse) {
+            $0.catalog.$catalog.withLock {
+                $0.categories = ["香氛"]
+            }
+        }
+        await store.receive(\.catalog.delegate, .additionCompleted(request, isStored: true))
+        await store.receive(\.delegate, .optionAdditionCompleted(request, isStored: true))
+        await store.finish()
+    }
+
+    /// 主檔端新增的成功與失敗結果，保留原表單識別值與儲存旗標
+    ///
+    /// - Parameter isStored: 主檔端回報的儲存結果
+    @Test(arguments: [false, true])
+    func catalog_新增選項已完成_原樣轉送結果(isStored: Bool) async {
+        // Given
+        let initial = withDependencies {
+            $0.defaultInMemoryStorage = InMemoryStorage()
+        } operation: {
+            MoreFeature.State(appVersion: "1.7.0")
+        }
+        let request = LookupAdditionRequest(
+            id: UUID(3),
+            kind: .category,
+            name: "香氛",
+            flags: .none
+        )
+        let store = TestStore(initialState: initial) {
+            MoreFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+        await store.send(.catalog(.delegate(.additionCompleted(request, isStored: isStored))))
+
+        // Then
+        await store.receive(\.delegate, .optionAdditionCompleted(request, isStored: isStored))
+        await store.finish()
     }
 }

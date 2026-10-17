@@ -23,12 +23,19 @@ extension LookupManagementFeatureTests {
                 $0.categories = ["服飾"]
             }
             state.destination = .add(LookupAddFormFeature.State(hasClassification: false))
+            let observedKinds = LockIsolated<[LookupKind]>([])
             let writtenNames = LockIsolated<[String]>([])
             let expectedAddition = LookupItemAddition(name: "手工藝品", flags: .none)
             let underlyingError = TestDependencies.makeUnderlyingError(message: "boom")
-            let failingThenSuccessfulAdd: CategoryService.AddCategory = { name throws(PersistenceError) in
+            let expectedAlert = Self.writeFailureAlert(
+                message: "orders.lookup.message.itemAddedTry"
+            )
+            let failingThenSuccessfulAdd: LookupService.AddItem = { kind, addition throws(PersistenceError) in
+                observedKinds.withValue {
+                    $0.append(kind)
+                }
                 let attempt = writtenNames.withValue {
-                    $0.append(name)
+                    $0.append(addition.name)
                     return $0.count
                 }
                 if attempt == 1 {
@@ -38,7 +45,7 @@ extension LookupManagementFeatureTests {
             let store = TestStore(initialState: state) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0.categoryService.addCategory = failingThenSuccessfulAdd
+                $0.lookupService.addItem = failingThenSuccessfulAdd
             }
             await store.send(
                 .destination(.presented(.add(.view(.saveButtonTapped(name: "手工藝品", flags: .none)))))
@@ -48,12 +55,12 @@ extension LookupManagementFeatureTests {
                 $0.isFormSheetDismissing = true
             }
             await store.receive(\.addResponse.failure) {
-                $0.pendingAlert = Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
+                $0.pendingAlert = expectedAlert
             }
             await store.send(.view(.formSheetDismissed)) {
                 $0.isFormSheetDismissing = false
                 $0.pendingAlert = nil
-                $0.destination = Self.writeFailureAlert(message: "orders.lookup.message.itemAddedTry")
+                $0.destination = expectedAlert
             }
             await store.send(.destination(.dismiss)) {
                 $0.destination = nil
@@ -80,6 +87,7 @@ extension LookupManagementFeatureTests {
 
             // Then
             #expect(store.state.isFormSheetDismissing == false)
+            #expect(observedKinds.value == [.category, .category])
             #expect(writtenNames.value == ["手工藝品", "手工藝品"])
             #expect(store.state.destination == nil)
             #expect(store.state.items == ["手工藝品", "服飾"])
@@ -97,14 +105,25 @@ extension LookupManagementFeatureTests {
                 $0.categories = ["服飾"]
             }
             state.destination = Self.deleteConfirmationAlert(name: "服飾")
+            let observedKinds = LockIsolated<[LookupKind]>([])
+            let removeCalls = LockIsolated<[String]>([])
             let underlyingError = TestDependencies.makeUnderlyingError(message: "boom")
-            let failingRemove: CategoryService.RemoveCategory = { _ throws(PersistenceError) in
+            let expectedAlert = Self.writeFailureAlert(
+                message: "orders.lookup.message.itemDeletedTry"
+            )
+            let failingRemove: LookupService.RemoveItem = { kind, name throws(PersistenceError) in
+                observedKinds.withValue {
+                    $0.append(kind)
+                }
+                removeCalls.withValue {
+                    $0.append(name)
+                }
                 throw .saveFailed(underlying: underlyingError)
             }
             let store = TestStore(initialState: state) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0.categoryService.removeCategory = failingRemove
+                $0.lookupService.removeItem = failingRemove
             }
 
             // When
@@ -114,8 +133,10 @@ extension LookupManagementFeatureTests {
 
             // Then
             await store.receive(\.deleteResponse.failure) {
-                $0.destination = Self.writeFailureAlert(message: "orders.lookup.message.itemDeletedTry")
+                $0.destination = expectedAlert
             }
+            #expect(observedKinds.value == [.category])
+            #expect(removeCalls.value == ["服飾"])
             #expect(store.state.items == ["服飾"])
             #expect(store.state.hasLoadFailed == false)
             await store.finish()
@@ -133,18 +154,25 @@ extension LookupManagementFeatureTests {
             }
             state.destination = .rename(LookupRenameFormFeature.State(originalName: "服飾"))
             let rename = LookupItemRename(oldName: "服飾", newName: "衣著")
+            let observedKinds = LockIsolated<[LookupKind]>([])
             let renameCalls = LockIsolated<[LookupItemRename]>([])
             let underlyingError = TestDependencies.makeUnderlyingError(message: "boom")
-            let failingRename: OrderService.ApplyCategoryRename = { oldName, newName throws(PersistenceError) in
+            let expectedAlert = Self.writeFailureAlert(
+                message: "orders.lookup.message.itemRenamedTry"
+            )
+            let failingRename: LookupService.RenameItem = { kind, itemRename throws(PersistenceError) in
+                observedKinds.withValue {
+                    $0.append(kind)
+                }
                 renameCalls.withValue {
-                    $0.append(LookupItemRename(oldName: oldName, newName: newName))
+                    $0.append(itemRename)
                 }
                 throw .saveFailed(underlying: underlyingError)
             }
             let store = TestStore(initialState: state) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0.orderService.applyCategoryRename = failingRename
+                $0.lookupService.renameItem = failingRename
             }
 
             // When
@@ -158,12 +186,13 @@ extension LookupManagementFeatureTests {
                 $0.isFormSheetDismissing = true
             }
             await store.receive(\.renameResponse.failure) {
-                $0.pendingAlert = Self.writeFailureAlert(message: "orders.lookup.message.itemRenamedTry")
+                $0.pendingAlert = expectedAlert
             }
-            #expect(store.state.pendingAlert == Self.writeFailureAlert(message: "orders.lookup.message.itemRenamedTry"))
+            #expect(store.state.pendingAlert == expectedAlert)
             #expect(store.state.destination == nil)
             #expect(store.state.items == ["服飾"])
             #expect(store.state.hasLoadFailed == false)
+            #expect(observedKinds.value == [.category])
             #expect(renameCalls.value == [rename])
             await store.finish()
         }
@@ -192,37 +221,18 @@ extension LookupManagementFeatureTests {
                     $0.reconciliationStatuses = ["舊項目"]
                 }
             }
+            let observedKinds = LockIsolated<[LookupKind]>([])
             let underlyingError = TestDependencies.makeUnderlyingError(message: "boom")
-            let failingOrderSources: OrderSourceService.FetchOrderSources = { () throws(PersistenceError) in
-                throw .fetchFailed(underlying: underlyingError)
-            }
-            let failingCategories: CategoryService.FetchCategories = { () throws(PersistenceError) in
-                throw .fetchFailed(underlying: underlyingError)
-            }
-            let failingPaymentMethods: PaymentMethodService.FetchPaymentMethodInfos = { () throws(PersistenceError) in
-                throw .fetchFailed(underlying: underlyingError)
-            }
-            let failingReconciliationStatuses: ReconciliationStatusService.FetchReconciliationStatuses = { () throws(PersistenceError) in
+            let failingFetchItems: LookupService.FetchItems = { requestKind throws(PersistenceError) in
+                observedKinds.withValue {
+                    $0.append(requestKind)
+                }
                 throw .fetchFailed(underlying: underlyingError)
             }
             let store = TestStore(initialState: state) {
                 LookupManagementFeature()
             } withDependencies: {
-                switch kind {
-                case .orderSource:
-                    $0.orderSourceService.fetchOrderSources = failingOrderSources
-
-                case .category:
-                    $0.categoryService.fetchCategories = failingCategories
-
-                case .paymentMethod:
-                    $0.paymentMethodService.fetchPaymentMethodInfos = failingPaymentMethods
-
-                case .reconciliationStatus:
-                    $0
-                        .reconciliationStatusService
-                        .fetchReconciliationStatuses = failingReconciliationStatuses
-                }
+                $0.lookupService.fetchItems = failingFetchItems
             }
 
             // When
@@ -232,6 +242,7 @@ extension LookupManagementFeatureTests {
             await store.receive(\.itemsResponse.failure) {
                 $0.hasLoadFailed = true
             }
+            #expect(observedKinds.value == [kind])
             #expect(store.state.items == ["舊項目"])
             #expect(store.state.hasLoaded == false)
             await store.finish()

@@ -42,9 +42,7 @@ extension CampaignFeatureTests {
         } withDependencies: {
             $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .constant(UUID(1))
-            $0.campaignService.saveCampaign = { _ in
-            }
-            $0.orderService.renameOrderCampaign = { _, _ in
+            $0.campaignService.renameCampaign = { _, _ in
             }
             $0.calendarReminderService.requestAccess = {
                 .denied
@@ -66,7 +64,6 @@ extension CampaignFeatureTests {
         }
         await store.receive(\.writes.saveRequested)
         await store.receive(\.writes.saveResponse.success)
-        await store.receive(\.writes.renameResponse)
         await store.receive(\.writes.delegate.renamed)
         await store.receive(\.writes.delegate.saved)
         await store.receive(\.delegate.campaignRenamed)

@@ -22,6 +22,8 @@ extension OrdersFeatureTests {
         let store = TestStore(initialState: Self.makeSaveTimingState()) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .constant(UUID(1))
             $0.continuousClock = clock
             $0.orderService.createOrder = Self.makeFailingCreateOrder(clock)
@@ -37,8 +39,13 @@ extension OrdersFeatureTests {
         await clock.advance(by: .seconds(1))
         await store.receive(\.writes.saveResponse)
         await store.receive(\.writes.delegate.failed)
-        await store.receive(\.presentation.noticeRequested, Self.failureNotice("orders.general.message.orderSavedTry")) {
-            $0.presentation.queue.pendingNotice = Self.failureNotice("orders.general.message.orderSavedTry")
+        await store.receive(
+            \.presentation.noticeRequested,
+            Self.failureNotice("orders.general.message.orderSavedTry")
+        ) {
+            $0.presentation.queue.pendingNotice = Self.failureNotice(
+                "orders.general.message.orderSavedTry"
+            )
         }
 
         // When
@@ -50,7 +57,10 @@ extension OrdersFeatureTests {
 
         // Then
         #expect(store.state.orders == [])
-        #expect(store.state.presentation.destination == Self.failureNotice("orders.general.message.orderSavedTry"))
+        #expect(
+            store.state.presentation.destination
+                == Self.failureNotice("orders.general.message.orderSavedTry")
+        )
         #expect(store.state.presentation.queue == OrdersPresentationQueue())
         await store.finish()
     }
@@ -63,6 +73,8 @@ extension OrdersFeatureTests {
         let store = TestStore(initialState: Self.makeSaveTimingState()) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.uuid = .constant(UUID(1))
             $0.continuousClock = clock
             $0.orderService.createOrder = Self.makeFailingCreateOrder(clock)
@@ -85,11 +97,17 @@ extension OrdersFeatureTests {
         await clock.advance(by: .seconds(1))
         await store.receive(\.writes.saveResponse)
         await store.receive(\.writes.delegate.failed)
-        await store.receive(\.presentation.noticeRequested, Self.failureNotice("orders.general.message.orderSavedTry")) {
+        await store.receive(
+            \.presentation.noticeRequested,
+            Self.failureNotice("orders.general.message.orderSavedTry")
+        ) {
             $0.presentation.destination = Self.failureNotice("orders.general.message.orderSavedTry")
         }
         #expect(store.state.orders == [])
-        #expect(store.state.presentation.destination == Self.failureNotice("orders.general.message.orderSavedTry"))
+        #expect(
+            store.state.presentation.destination
+                == Self.failureNotice("orders.general.message.orderSavedTry")
+        )
         #expect(store.state.presentation.queue == OrdersPresentationQueue())
         await store.finish()
     }
@@ -123,7 +141,7 @@ private extension OrdersFeatureTests {
     static func makeFailingCreateOrder(
         _ clock: TestClock<Swift.Duration>
     ) -> OrderService.CreateOrder {
-        let failingCreate: OrderService.CreateOrder = { _ throws(OrderPersistenceError) in
+        let failingCreate: OrderService.CreateOrder = { _ throws(OrderError) in
             do {
                 try await clock.sleep(for: .seconds(1))
             } catch {

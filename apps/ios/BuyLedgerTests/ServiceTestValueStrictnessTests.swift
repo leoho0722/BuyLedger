@@ -11,52 +11,24 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證 `TestStore` 中未覆寫的 `OrderService` closure 仍會回報未實作問題
+/// 驗證 `TestStore` 中未覆寫的主檔與訂單 Service closure 仍會回報未實作問題
 @MainActor
 struct ServiceTestValueStrictnessTests {
 
     /// 訂單載入未覆寫 `fetchOrders` 時，測試會回報該 closure 的未實作問題
     @Test
-    func loadRequested_未覆寫訂單讀取_回報未實作問題() async {
+    func rootRequest_載入未覆寫訂單讀取_回報未實作問題() async {
         await withKnownIssue {
             // Given
-            let failingFetchOrderSources: OrderSourceService.FetchOrderSources = { () throws(PersistenceError) in
-                throw .fetchFailed(
-                    underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-                )
-            }
-            let failingFetchCampaigns: CampaignService.FetchCampaigns = { () throws(PersistenceError) in
-                throw .fetchFailed(
-                    underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-                )
-            }
-            let failingFetchCategories: CategoryService.FetchCategories = { () throws(PersistenceError) in
-                throw .fetchFailed(
-                    underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-                )
-            }
-            let failingFetchPaymentMethodInfos: PaymentMethodService.FetchPaymentMethodInfos = { () throws(PersistenceError) in
-                throw .fetchFailed(
-                    underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-                )
-            }
-            let failingFetchStatuses: ReconciliationStatusService.FetchReconciliationStatuses = { () throws(PersistenceError) in
-                throw .fetchFailed(
-                    underlying: TestDependencies.makeUnderlyingError(message: "suppressed")
-                )
-            }
             let store = TestStore(initialState: OrdersFeature.State()) {
                 OrdersFeature()
             } withDependencies: {
-                $0.orderSourceService.fetchOrderSources = failingFetchOrderSources
-                $0.campaignService.fetchCampaigns = failingFetchCampaigns
-                $0.categoryService.fetchCategories = failingFetchCategories
-                $0.paymentMethodService.fetchPaymentMethodInfos = failingFetchPaymentMethodInfos
-                $0.reconciliationStatusService.fetchReconciliationStatuses = failingFetchStatuses
+                $0.date = .constant(TestDependencies.fixedNow)
+                $0.calendar = TestDependencies.fixedCalendar
             }
 
             // When
-            await store.send(.loadRequested) {
+            await store.send(.rootRequest(.load)) {
                 $0.load.$isLoading.withLock {
                     $0 = true
                 }
@@ -75,6 +47,40 @@ struct ServiceTestValueStrictnessTests {
             await store.finish()
         } matching: {
             $0.description.contains("OrderService.fetchOrders")
+        }
+    }
+
+    /// 主檔讀取替身未覆寫時，四種目錄都回報未實作問題，仍可結束載入流程
+    @Test
+    func loadRequested_未覆寫主檔讀取_回報未實作問題() async {
+        await withKnownIssue {
+            // Given
+            let initial = withDependencies {
+                $0.defaultInMemoryStorage = InMemoryStorage()
+            } operation: {
+                LookupCatalogFeature.State()
+            }
+            let store = TestStore(initialState: initial) {
+                LookupCatalogFeature()
+            } withDependencies: {
+                $0.date = .constant(TestDependencies.fixedNow)
+                $0.calendar = TestDependencies.fixedCalendar
+            }
+
+            // When
+            await store.send(.loadRequested) {
+                $0.isLoading = true
+            }
+
+            // Then
+            await store.receive(\.catalogResponse) {
+                $0.isLoading = false
+                $0.hasLoaded = true
+            }
+            await store.receive(\.delegate, .loadFinished)
+            await store.finish()
+        } matching: {
+            $0.description.contains("LookupService.fetchItems")
         }
     }
 
@@ -117,6 +123,8 @@ struct ServiceTestValueStrictnessTests {
             let store = TestStore(initialState: initialState) {
                 OrdersFeature()
             } withDependencies: {
+                $0.date = .constant(TestDependencies.fixedNow)
+                $0.calendar = TestDependencies.fixedCalendar
                 $0.orderService.saveOrder = { _ in
                 }
             }

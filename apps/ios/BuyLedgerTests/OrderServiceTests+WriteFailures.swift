@@ -26,10 +26,10 @@ extension OrderServiceTests {
         defer {
             BuyLedgerDatabaseTests.removeTemporaryDirectory(at: directoryURL)
         }
-        var actualError: OrderPersistenceError?
+        var actualError: OrderError?
 
         // When
-        do throws(OrderPersistenceError) {
+        do throws(OrderError) {
             try await service.createOrder(Self.makeOrder(id: "ORDER-SAVE-FAIL-CREATE"))
         } catch {
             actualError = error

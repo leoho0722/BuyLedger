@@ -48,14 +48,6 @@ struct CampaignReminderFeature {
         ///   - eventIdentifier: 被刪除連結的行事曆事件識別碼；沒有提醒時為 `nil`
         case campaignRemoved(campaignID: Campaign.ID, eventIdentifier: String?)
 
-        /// 載入全部提醒連結；已成功載入過就略過
-        case linksRequested
-
-        /// 依儲存結果建立、重建或移除提醒
-        ///
-        /// - Parameter request: 提醒調解所需的開團、標題、日期與提示位移
-        case reconcileRequested(CampaignReminderRequest)
-
         /// 建立新事件並寫入連結的結果
         ///
         /// - Parameters:
@@ -76,6 +68,9 @@ struct CampaignReminderFeature {
         ///   - result: 成功或持久化錯誤
         case linkRemovalResponse(campaignID: Campaign.ID, result: Result<Void, PersistenceError>)
 
+        /// 載入全部提醒連結；已成功載入過就略過
+        case linksRequested
+
         /// 提醒連結載入結果
         ///
         /// - Parameter result: 以開團識別值對應的連結或持久化錯誤
@@ -85,6 +80,11 @@ struct CampaignReminderFeature {
         ///
         /// - Parameter result: 成功或行事曆錯誤
         case oldEventRemovalResponse(Result<Void, CalendarReminderError>)
+
+        /// 依儲存結果建立、重建或移除提醒
+        ///
+        /// - Parameter request: 提醒調解所需的開團、標題、日期與提示位移
+        case reconcileRequested(CampaignReminderRequest)
 
         /// 交給父層的提醒結果
         @CasePathable
@@ -102,8 +102,8 @@ struct CampaignReminderFeature {
     /// 請求行事曆權限，並建立與移除系統行事曆事件
     @Dependency(\.calendarReminderService) private var calendarReminderService
 
-    /// 讀寫開團與行事曆事件之間的連結
-    @Dependency(\.campaignReminderService) private var campaignReminderService
+    /// 讀寫開團主檔與行事曆事件之間的連結
+    @Dependency(\.campaignService) private var campaignService
 
     // MARK: - Body
 
@@ -159,30 +159,12 @@ private extension CampaignReminderFeature {
             return .none
 
         case .campaignRemoved(let campaignID, let eventIdentifier):
-            // 本機交易已刪除持久化連結，只清共用連結，不呼叫 removeLink
+            // 本機交易已刪除持久化連結，只清共用連結，不呼叫 `removeReminderLink`
             state.$links.withLock { $0[campaignID] = nil }
             guard let eventIdentifier else {
                 return .none
             }
             return removeEvent(eventIdentifier, response: Action.eventRemovalResponse)
-
-        case .linksRequested:
-            guard !state.hasLoadedLinks else {
-                return .none
-            }
-            return loadLinks()
-
-        case .reconcileRequested(let request):
-            switch request.reconcile {
-            case .create:
-                return createReminder(request, oldEventIdentifier: nil)
-
-            case .remove(let eventIdentifier):
-                return removeReminder(request.campaignID, eventIdentifier: eventIdentifier)
-
-            case .rebuild(let oldEventIdentifier):
-                return createReminder(request, oldEventIdentifier: oldEventIdentifier)
-            }
 
         case .createResponse(let campaignID, let oldEventIdentifier, .success(let link)):
             state.$links.withLock { $0[campaignID] = link }
@@ -207,6 +189,12 @@ private extension CampaignReminderFeature {
         case .linkRemovalResponse(_, .failure):
             return .send(.delegate(.failed(.linkRemovalFailed)))
 
+        case .linksRequested:
+            guard !state.hasLoadedLinks else {
+                return .none
+            }
+            return loadLinks()
+
         case .linksResponse(.success(let links)):
             state.hasLoadedLinks = true
             state.$links.withLock { $0 = links }
@@ -217,6 +205,18 @@ private extension CampaignReminderFeature {
 
         case .oldEventRemovalResponse(.failure):
             return .send(.delegate(.failed(.oldEventRemovalFailed)))
+
+        case .reconcileRequested(let request):
+            switch request.reconcile {
+            case .create:
+                return createReminder(request, oldEventIdentifier: nil)
+
+            case .remove(let eventIdentifier):
+                return removeReminder(request.campaignID, eventIdentifier: eventIdentifier)
+
+            case .rebuild(let oldEventIdentifier):
+                return createReminder(request, oldEventIdentifier: oldEventIdentifier)
+            }
         }
     }
 
@@ -225,12 +225,12 @@ private extension CampaignReminderFeature {
     /// - Parameters:
     ///   - request: 提醒調解所需的開團、標題、日期與提示位移
     ///   - calendarReminderService: 行事曆整合操作入口
-    ///   - campaignReminderService: 提醒連結操作入口
+    ///   - campaignService: 開團與提醒連結操作入口
     /// - Returns: 已寫入的新連結；權限未授予、事件建立或連結寫入失敗時為失敗種類
     static func createLink(
         for request: CampaignReminderRequest,
         calendarReminderService: CalendarReminderService,
-        campaignReminderService: CampaignReminderService
+        campaignService: CampaignService
     ) async -> Result<CampaignReminderLink, Failure> {
         switch await calendarReminderService.requestAccess() {
         case .granted:
@@ -265,7 +265,7 @@ private extension CampaignReminderFeature {
             reminderTimestamp: request.timestamp
         )
         do throws(PersistenceError) {
-            try await campaignReminderService.saveLink(request.campaignID, link)
+            try await campaignService.saveReminderLink(request.campaignID, link)
         } catch {
             return .failure(.creationFailed)
         }
@@ -297,10 +297,10 @@ private extension CampaignReminderFeature {
     ///
     /// - Returns: 讀取完成後回報連結或錯誤
     func loadLinks() -> Effect<Action> {
-        let campaignReminderService = campaignReminderService
+        let campaignService = campaignService
         return .run { send in
             do throws(PersistenceError) {
-                let links = try await campaignReminderService.fetchLinks()
+                let links = try await campaignService.fetchReminderLinks()
                 await send(.linksResponse(.success(links)))
             } catch {
                 await send(.linksResponse(.failure(error)))
@@ -319,12 +319,12 @@ private extension CampaignReminderFeature {
         oldEventIdentifier: String?
     ) -> Effect<Action> {
         let calendarReminderService = calendarReminderService
-        let campaignReminderService = campaignReminderService
+        let campaignService = campaignService
         return .run { send in
             let result = await Self.createLink(
                 for: request,
                 calendarReminderService: calendarReminderService,
-                campaignReminderService: campaignReminderService
+                campaignService: campaignService
             )
             let response = Action.createResponse(
                 campaignID: request.campaignID,
@@ -343,11 +343,11 @@ private extension CampaignReminderFeature {
     /// - Returns: 連結清除完成後回報結果
     func removeReminder(_ campaignID: Campaign.ID, eventIdentifier: String) -> Effect<Action> {
         let calendarReminderService = calendarReminderService
-        let campaignReminderService = campaignReminderService
+        let campaignService = campaignService
         return .run { send in
             _ = try? await calendarReminderService.removeReminder(eventIdentifier)  // 事件可能已不存在
             do throws(PersistenceError) {
-                try await campaignReminderService.removeLink(campaignID)
+                try await campaignService.removeReminderLink(campaignID)
                 await send(.linkRemovalResponse(campaignID: campaignID, result: .success(())))
             } catch {
                 await send(.linkRemovalResponse(campaignID: campaignID, result: .failure(error)))

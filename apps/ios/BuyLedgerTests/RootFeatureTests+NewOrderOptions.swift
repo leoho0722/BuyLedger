@@ -64,19 +64,19 @@ extension RootFeatureTests {
         await store.finish()
         #expect(store.state.selectedTab == .orders)
         let sources = Set(
-            store.state.orders.presentation.destination?.edit?.pickers.availableOrderSources ?? []
+            store.state.orders.presentation.destination?.edit?.pickers.options.orderSources ?? []
         )
         #expect(sources == ["IG", "LINE", "蝦皮"])
         let categories = Set(
-            store.state.orders.presentation.destination?.edit?.pickers.availableCategories ?? []
+            store.state.orders.presentation.destination?.edit?.pickers.options.categories ?? []
         )
         #expect(categories == ["美妝", "服飾", "精品"])
         #expect(
-            store.state.orders.presentation.destination?.edit?.pickers.availableCampaigns
+            store.state.orders.presentation.destination?.edit?.pickers.options.campaigns
                 == ["May-JP"]
         )
         #expect(store.state.orders.presentation.destination?.edit?.draft.campaignNames == [])
-        #expect(store.state.orders.lookupCatalog.categories == ["美妝", "服飾"])
+        #expect(store.state.more.catalog.catalog.categories == ["美妝", "服飾"])
         #expect(store.state.launch.currencyCodes == [.twd, .jpy, CurrencyCode(rawValue: "EUR")])
     }
 
@@ -130,19 +130,19 @@ extension RootFeatureTests {
         await store.finish()
         #expect(store.state.selectedTab == .orders)
         let sources = Set(
-            store.state.orders.presentation.destination?.edit?.pickers.availableOrderSources ?? []
+            store.state.orders.presentation.destination?.edit?.pickers.options.orderSources ?? []
         )
         #expect(sources == ["IG", "LINE", "蝦皮"])
         let categories = Set(
-            store.state.orders.presentation.destination?.edit?.pickers.availableCategories ?? []
+            store.state.orders.presentation.destination?.edit?.pickers.options.categories ?? []
         )
         #expect(categories == ["美妝", "服飾", "精品"])
         #expect(
-            store.state.orders.presentation.destination?.edit?.pickers.availableCampaigns
+            store.state.orders.presentation.destination?.edit?.pickers.options.campaigns
                 == ["May-JP"]
         )
         #expect(store.state.orders.presentation.destination?.edit?.draft.campaignNames == [])
-        #expect(store.state.orders.lookupCatalog.categories == ["美妝", "服飾"])
+        #expect(store.state.more.catalog.catalog.categories == ["美妝", "服飾"])
         #expect(store.state.launch.currencyCodes == [.twd, .jpy, CurrencyCode(rawValue: "EUR")])
     }
 
@@ -188,7 +188,7 @@ extension RootFeatureTests {
         await store.finish()
         #expect(store.state.launch.currencyCodes == codes)
         let pickerCodes = store.state.orders.presentation.destination?.edit?.pickers
-            .availableCurrencies.map(\.rawValue)
+            .options.currencyCodes.map(\.rawValue)
         #expect(pickerCodes == expectedCodes)
     }
 
@@ -229,7 +229,7 @@ extension RootFeatureTests {
 
         // Then
         await store.finish()
-        #expect(store.state.orders.presentation.destination?.edit?.pickers.availableCampaigns == [])
+        #expect(store.state.orders.presentation.destination?.edit?.pickers.options.campaigns == [])
         #expect(store.state.orders.campaigns == [expired])
     }
 
@@ -269,7 +269,7 @@ extension RootFeatureTests {
 
         // Then
         await store.finish()
-        #expect(store.state.orders.presentation.destination?.edit?.pickers.availableCampaigns == [])
+        #expect(store.state.orders.presentation.destination?.edit?.pickers.options.campaigns == [])
         #expect(store.state.orders.campaigns == [expired])
     }
 }
@@ -284,7 +284,7 @@ private extension RootFeatureTests {
     /// - Returns: 帶有主檔、幣別、訂單與開團資料的根狀態
     static func makeNewOrderCatalogState(method: PaymentMethodInfo) -> RootFeature.State {
         var initial = Self.makeIsolatedRootState()
-        initial.orders.$lookupCatalog.withLock {
+        initial.more.catalog.$catalog.withLock {
             $0.orderSources = ["IG", "LINE"]
             $0.categories = ["美妝", "服飾"]
             $0.paymentMethods = [method]

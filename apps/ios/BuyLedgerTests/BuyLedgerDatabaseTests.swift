@@ -55,7 +55,7 @@ struct BuyLedgerDatabaseTests {
         let database = Self.makeInMemoryDatabase()
         let contextIdentifier = LockIsolated<ObjectIdentifier?>(nil)
         let saveCount = LockIsolated(0)
-        // 使用同步 block observer 立即記錄 save 通知，改用 AsyncSequence 會引入排程時序
+        // 使用同步 block observer 立即記錄 save 通知，改用 `AsyncSequence` 會引入排程時序
         let observer = NotificationCenter.default.addObserver(
             forName: ModelContext.didSave,
             object: nil,
@@ -105,8 +105,8 @@ struct BuyLedgerDatabaseTests {
         let outcomes = await withTaskGroup(of: WriteOutcome.self) { group in
             for _ in 0..<20 {
                 group.addTask {
-                    do throws(OrderPersistenceError) {
-                        try await database.write { context throws(OrderPersistenceError) in
+                    do throws(OrderError) {
+                        try await database.write { context throws(OrderError) in
                             let storedIDs: [String]
                             do {
                                 storedIDs = try context
@@ -193,7 +193,8 @@ extension BuyLedgerDatabaseTests {
 
     /// 建立使用 in-memory container 的資料庫
     ///
-    /// - Returns: `storeLocation` 為 `.inMemory` 的資料庫，容器建立經 `TestContainerCreationLock` 串行化
+    /// - Returns: `storeLocation` 為 `.inMemory` 的資料庫
+    /// - Note: 容器建立經 `TestContainerCreationLock` 串行化
     static func makeInMemoryDatabase() -> BuyLedgerDatabase {
         let container = TestContainerCreationLock.withLock {
             PersistenceContainer.makeInMemory(for: .testing)
@@ -203,7 +204,7 @@ extension BuyLedgerDatabaseTests {
 
     /// 讀取目前 store 中的訂單識別值
     ///
-    /// - Parameter context: 查詢用的 SwiftData context
+    /// - Parameter context: 查詢用的 `SwiftData` context
     /// - Returns: 依 store 回傳的順序排列之訂單識別值
     /// - Throws: 訂單讀取失敗時丟出 `PersistenceError.fetchFailed(underlying:)`
     static func orderIDs(in context: ModelContext) throws(PersistenceError) -> [String] {

@@ -184,18 +184,18 @@ struct OrdersPresentationFeatureTests {
 
     /// 新增的主檔選項寫回表單識別值相符的表單，草稿的訂單來源改為新選項
     @Test
-    func apply_新增選項且表單識別值相符_寫回來源表單() {
+    func applyOptionAddition_新增選項且表單識別值相符_寫回來源表單() {
         // Given
         var state = Self.makeState(destination: .edit(Self.editState()))
-        let plan = OrderOptionWritePlan(
-            formID: UUID(0),
+        let request = LookupAdditionRequest(
+            id: UUID(0),
             kind: .orderSource,
             name: "蝦皮",
             flags: .none
         )
 
         // When
-        state.apply(OrdersWriteOutcome(addedOption: plan))
+        _ = state.applyOptionAddition(request, isStored: true)
 
         // Then
         #expect(state.destination?.edit?.draft.orderSource == "蝦皮")
@@ -203,19 +203,19 @@ struct OrdersPresentationFeatureTests {
 
     /// 新增選項的表單識別值不符時，表單內容保持不變
     @Test
-    func apply_新增選項且表單識別值不符_表單內容不變() {
+    func applyOptionAddition_新增選項且表單識別值不符_表單內容不變() {
         // Given
         let form = OrdersPresentationFeature.Destination.State.edit(Self.editState())
         var state = Self.makeState(destination: form)
-        let plan = OrderOptionWritePlan(
-            formID: UUID(1),
+        let request = LookupAdditionRequest(
+            id: UUID(1),
             kind: .orderSource,
             name: "蝦皮",
             flags: .none
         )
 
         // When
-        state.apply(OrdersWriteOutcome(addedOption: plan))
+        _ = state.applyOptionAddition(request, isStored: true)
 
         // Then
         #expect(state.destination == form)

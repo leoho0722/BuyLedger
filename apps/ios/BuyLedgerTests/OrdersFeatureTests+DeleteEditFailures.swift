@@ -17,7 +17,7 @@ extension OrdersFeatureTests {
     ///
     /// - Throws: 建立測試用的磁碟資料庫失敗時丟出檔案系統或 SwiftData 底層錯誤
     @Test
-    func loadRequested_刪除寫入失敗後_讀回原訂單() async throws {
+    func rootRequest_刪除寫入失敗後重新載入_讀回原訂單() async throws {
         // Given
         let original = Self.makeOrder(id: "O1", categories: ["beauty"])
         let (service, directoryURL) = try OrderServiceTests.makeSaveFailingService(orders: [
@@ -43,14 +43,17 @@ extension OrdersFeatureTests {
                 customerName: original.customer.name
             )
         )
-        let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.orderDeletedTry")
+        let writeFailureAlert = Self.expectedWriteFailureAlert(
+            "orders.general.message.orderDeletedTry"
+        )
 
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.fetchOrders = fetchOrders
             $0.orderService.removeOrder = service.removeOrder
-            Self.suppressOrderLookupEffects(&$0)
         }
 
         // 選擇 alert 按鈕後 TCA 會自動清空該次呈現
@@ -66,7 +69,7 @@ extension OrdersFeatureTests {
         }
 
         // When
-        await store.send(.loadRequested) {
+        await store.send(.rootRequest(.load)) {
             $0.load.$isLoading.withLock {
                 $0 = true
             }
@@ -102,7 +105,7 @@ extension OrdersFeatureTests {
     ///
     /// - Throws: 建立測試用的磁碟資料庫失敗時丟出檔案系統或 SwiftData 底層錯誤；範例資料找不到該訂單時由 `#require` 丟出
     @Test
-    func loadRequested_編輯儲存失敗後_讀回原訂單() async throws {
+    func rootRequest_編輯儲存失敗後重新載入_讀回原訂單() async throws {
         // Given
         let originalID = "BL-2604-018"
         let original = try #require(LedgerOrder.sampleOrders.first { $0.id == originalID })
@@ -119,7 +122,9 @@ extension OrdersFeatureTests {
             return fetchedOrders
         }
         let persistedOrders = LedgerOrder.sampleOrders.map(LedgerOrder.normalizingItemIdentifiers)
-        let writeFailureAlert = Self.expectedWriteFailureAlert("orders.general.message.orderSavedTry")
+        let writeFailureAlert = Self.expectedWriteFailureAlert(
+            "orders.general.message.orderSavedTry"
+        )
 
         var draft = OrderEditFeature.State(
             original: original,
@@ -138,9 +143,10 @@ extension OrdersFeatureTests {
         let store = TestStore(initialState: state) {
             OrdersFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.fetchOrders = fetchOrders
             $0.orderService.saveOrder = service.saveOrder
-            Self.suppressOrderLookupEffects(&$0)
         }
 
         await store.send(.presentation(.destination(.presented(.edit(.view(.saveTapped))))))
@@ -164,7 +170,7 @@ extension OrdersFeatureTests {
         }
 
         // When
-        await store.send(.loadRequested) {
+        await store.send(.rootRequest(.load)) {
             $0.load.$isLoading.withLock {
                 $0 = true
             }

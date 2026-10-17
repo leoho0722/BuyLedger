@@ -38,12 +38,12 @@ extension SnapshotTests {
                     },
                     language: .traditionalChinese
                 )
-                .environment(\.locale, AppLanguage.traditionalChinese.locale)
-                .environment(\.calendar, TestDependencies.fixedCalendar)
-                .environment(\.timeZone, TestDependencies.fixedCalendar.timeZone)
-                .environment(\.horizontalSizeClass, .compact)
-                .environment(\.verticalSizeClass, .regular)
-                .frame(width: 393, height: 852)
+                    .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                    .environment(\.calendar, TestDependencies.fixedCalendar)
+                    .environment(\.timeZone, TestDependencies.fixedCalendar.timeZone)
+                    .environment(\.horizontalSizeClass, .compact)
+                    .environment(\.verticalSizeClass, .regular)
+                    .frame(width: 393, height: 852)
 
                 // Then
                 assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
@@ -78,12 +78,12 @@ extension SnapshotTests {
                     },
                     language: .traditionalChinese
                 )
-                .environment(\.locale, AppLanguage.traditionalChinese.locale)
-                .environment(\.calendar, TestDependencies.fixedCalendar)
-                .environment(\.timeZone, TestDependencies.fixedCalendar.timeZone)
-                .environment(\.horizontalSizeClass, .regular)
-                .environment(\.verticalSizeClass, .regular)
-                .frame(width: 1024, height: 768)
+                    .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                    .environment(\.calendar, TestDependencies.fixedCalendar)
+                    .environment(\.timeZone, TestDependencies.fixedCalendar.timeZone)
+                    .environment(\.horizontalSizeClass, .regular)
+                    .environment(\.verticalSizeClass, .regular)
+                    .frame(width: 1024, height: 768)
 
                 // Then
                 assertSnapshot(of: view, as: .image)
@@ -105,29 +105,32 @@ extension SnapshotTests {
                 state.load.$hasLoaded.withLock {
                     $0 = true
                 }
-                state.$lookupCatalog.withLock {
-                    $0.categories = ["服飾", "美妝"]
-                    $0.paymentMethods = [
-                        PaymentMethodInfo(
-                            name: "信用卡",
-                            isCardless: false,
-                            isBankTransfer: false,
-                            isCashOnDelivery: false
-                        ),
-                        PaymentMethodInfo(
-                            name: "銀行轉帳",
-                            isCardless: false,
-                            isBankTransfer: true,
-                            isCashOnDelivery: false
-                        ),
-                    ]
-                }
+                state.$lookupCatalog = SharedReader(
+                    value: LookupCatalog(
+                        categories: ["服飾", "美妝"],
+                        paymentMethods: [
+                            PaymentMethodInfo(
+                                name: "信用卡",
+                                isCardless: false,
+                                isBankTransfer: false,
+                                isCashOnDelivery: false
+                            ),
+                            PaymentMethodInfo(
+                                name: "銀行轉帳",
+                                isCardless: false,
+                                isBankTransfer: true,
+                                isCashOnDelivery: false
+                            ),
+                        ]
+                    )
+                )
+                state.list.$lookupCatalog = state.$lookupCatalog
                 state.list.selectedDatePeriod = .thisMonth
                 state.list.selectedCategory = "美妝"
                 state.list.selectedPaymentMethod = "信用卡"
                 let filterState = OrderFilterFeature.State(
                     orders: state.list.$orders,
-                    lookupCatalog: SharedReader(state.$lookupCatalog),
+                    lookupCatalog: state.$lookupCatalog,
                     committedFilterSelection: OrderFilterSelection(
                         datePeriod: .thisMonth,
                         category: "美妝",
@@ -141,12 +144,12 @@ extension SnapshotTests {
                         OrderFilterFeature()
                     }
                 )
-                .environment(\.locale, AppLanguage.traditionalChinese.locale)
-                .environment(\.calendar, TestDependencies.fixedCalendar)
-                .environment(\.timeZone, TestDependencies.fixedCalendar.timeZone)
-                .environment(\.horizontalSizeClass, .compact)
-                .environment(\.verticalSizeClass, .regular)
-                .frame(width: 393, height: 852)
+                    .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                    .environment(\.calendar, TestDependencies.fixedCalendar)
+                    .environment(\.timeZone, TestDependencies.fixedCalendar.timeZone)
+                    .environment(\.horizontalSizeClass, .compact)
+                    .environment(\.verticalSizeClass, .regular)
+                    .frame(width: 393, height: 852)
 
                 // Then
                 assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))

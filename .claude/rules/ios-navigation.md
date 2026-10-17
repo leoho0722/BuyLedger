@@ -10,8 +10,8 @@ paths:
 ## 根導覽與啟動
 
 - **啟動時的服務初始化集中在 `AppLaunchConfigurator.configure()`**，`AppDelegate` 只在 `didFinishLaunching` 呼叫它；新增啟動設定加在這裡。
-- **啟動載入由 Root 送 `.orders(.loadRequested)` 與 `.campaigns(.loadRequested)`**：首頁、分析、客戶頁重試也送訂單載入請求，不以子層畫面事件觸發。
-    - 清單出現或重試時先寫入 `dateContext`，再以 delegate 請容器載入；`OrdersLoadFeature`／`CampaignLoadFeature` 在載入中或已載入時略過，首次失敗後下一次請求會重讀。
+- **啟動載入由 Root 先送主檔目錄，完成後才送訂單**：`view(.task)` 送 `.more(.catalogLoadRequested)`、`.campaigns(.loadRequested)` 與 `.launch(.loadRequested)`，`.more(.delegate(.catalogLoadFinished))` 才送 `.orders(.rootRequest(.load))`。首頁、分析、客戶頁重試與訂單分頁的載入請求也都由 Root 先經主檔目錄，不以子層畫面事件觸發。
+    - 清單出現或重試時先寫入 `dateContext`，再以 delegate 請容器載入 (訂單清單經 Root 先讀主檔目錄)；`OrdersLoadFeature`／`CampaignLoadFeature` 在載入中或已載入時略過，首次失敗後下一次請求會重讀。
     - 清單的 `.task` 只呼叫 `store.send(.view(.task))`，不等待 `finish()`：讀取結果由多個分頁共用，不能因切走清單而取消容器的載入 effect；只有畫面存在時才應執行的長效 effect 才隨畫面等待。
 - **跨頁觸發新訂單由 Root 在總覽 `delegate(.newOrderTapped)` 的同一次更新內切到 `.orders` 並呼叫容器的 `presentNewOrder(id:now:calendar:)`**：從其他分頁直接設 sheet state 時 `OrdersView` 不在畫面階層，sheet 不會掛上。
     - 訂單分頁新增、編輯、合併確認與首頁新增都經容器的 `makeEditOptions(now:calendar:)` 帶入主檔、開團、幣別與行事曆；Root 不自行建立 `OrderEditFeature.State`，表單不在 `.task` 讀取選項。
@@ -66,7 +66,7 @@ paths:
 - **寫入先落盤、成功才改畫面狀態，不做樂觀更新加回滾**：訂單由 `OrderWritesFeature` 在 `statusResponse`／`batchStatusResponse`／`saveResponse`／`deleteResponse` 的成功回應內更新共用資料。
     - 訂單合併 (`mergeSourceIDs` 非空) 是保留的樂觀更新加快照回滾例外。
     - 一次性操作失敗與持續性載入失敗不共用狀態欄位：`OrdersLoadFeature.State.errorMessage` 只由載入流程更新，容器與清單以 `SharedReader` 讀取；寫入失敗經 `writes` 的 `delegate(.failed)` 交容器，容器送 `presentation(.noticeRequested(...))` 進入呈現佇列，最後呈現 `destination.alert`，隨使用者關閉而結束。共用欄位時唯一的清空點常被「已載入」旗標擋住，錯誤訊息會在後續操作成功後仍殘留。
-    - 表單新增主檔選項也由 `writes` 先落盤，成功後更新 `lookupCatalog`；請求與回應帶表單實例 id，只在目前表單 id 相符時加入並選取，不能改到關閉後重開的另一張表單。
+    - 表單新增主檔選項經 Root 與 `MoreFeature` 轉給 `LookupCatalogFeature` 先落盤，成功後才更新 `lookupCatalog`；結果以 `.orders(.rootRequest(.optionAdditionCompleted(_:isStored:)))` 送回容器。請求與回應帶表單實例 id，只在目前表單 id 相符時加入並選取，不能改到關閉後重開的另一張表單。
 - **表單先自行處理能由子層判斷的驗證**：驗證通過才送出 delegate；需要父層資料的驗證 (如 `CampaignEditFeature` 的名稱衝突) 才由父層決定是否關閉表單，拒絕時把原因寫回子層 State 顯示在表單上。
 
 ## 焦點與鍵盤

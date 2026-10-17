@@ -20,6 +20,9 @@ struct MoreFeature {
         /// 目前推入的子畫面，返回時釋放該畫面狀態
         var path = StackState<Path.State>()
 
+        /// 主檔目錄的載入與新增流程，沒有自己的畫面
+        var catalog = LookupCatalogFeature.State()
+
         /// 客戶頁的訂單投影來源，只由根功能寫入
         @Shared var orders: [LedgerOrder]
 
@@ -113,6 +116,19 @@ struct MoreFeature {
         /// - Parameter action: 導覽或子畫面事件
         case path(StackActionOf<Path>)
 
+        /// 主檔目錄子功能的請求與回應
+        ///
+        /// - Parameter action: 主檔目錄的事件
+        case catalog(LookupCatalogFeature.Action)
+
+        /// 根功能要求先確認主檔目錄已讀取，再載入訂單
+        case catalogLoadRequested
+
+        /// 根功能要求新增訂單表單的主檔選項
+        ///
+        /// - Parameter request: 發起表單的識別值、主檔種類與新增項目
+        case optionAdditionRequested(LookupAdditionRequest)
+
         /// 更多頁可送出的使用者操作
         @CasePathable
         enum View: Equatable {
@@ -126,6 +142,16 @@ struct MoreFeature {
         /// 子畫面需要根功能處理的意圖
         @CasePathable
         enum Delegate: Equatable {
+
+            /// 主檔目錄已讀取完成，可以繼續載入訂單
+            case catalogLoadFinished
+
+            /// 主檔新增已完成，原樣交回根功能
+            ///
+            /// - Parameters:
+            ///   - request: 原新增請求，保留發起表單的識別值
+            ///   - isStored: 是否寫入成功
+            case optionAdditionCompleted(LookupAdditionRequest, isStored: Bool)
 
             /// 客戶頁要求載入訂單
             case ordersLoadRequested
@@ -158,6 +184,10 @@ struct MoreFeature {
 
     /// 組合分頁邏輯與堆疊子畫面，元素移除時由 TCA 取消子畫面的 effect
     var body: some Reducer<State, Action> {
+        Scope(state: \.catalog, action: \.catalog) {
+            LookupCatalogFeature()
+        }
+
         Reduce(core)
             .forEach(\.path, action: \.path)
     }
@@ -228,7 +258,9 @@ extension MoreFeature {
 
 // MARK: - Equatable
 
-extension MoreFeature.Path.State: Equatable {}
+extension MoreFeature.Path.State: Equatable {
+
+}
 
 // MARK: - Private Method
 
@@ -276,6 +308,21 @@ private extension MoreFeature {
 
         case .path:
             return .none
+
+        case .catalog(.delegate(.loadFinished)):
+            return .send(.delegate(.catalogLoadFinished))
+
+        case .catalog(.delegate(.additionCompleted(let request, let isStored))):
+            return .send(.delegate(.optionAdditionCompleted(request, isStored: isStored)))
+
+        case .catalog:
+            return .none
+
+        case .catalogLoadRequested:
+            return .send(.catalog(.loadRequested))
+
+        case .optionAdditionRequested(let request):
+            return .send(.catalog(.additionRequested(request)))
         }
     }
 }

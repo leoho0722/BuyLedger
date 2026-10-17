@@ -28,6 +28,9 @@ struct OrderEditOptionsTests {
         initial.photos.photoLoadPhase = .loaded
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -54,6 +57,9 @@ struct OrderEditOptionsTests {
         initial.photos.photoLoadPhase = .loaded
         let store = TestStore(initialState: initial) {
             OrderEditFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -107,13 +113,13 @@ struct OrderEditOptionsTests {
         )
 
         // Then
-        #expect(state.pickers.availableOrderSources == ["A", "B"])
-        #expect(state.pickers.availableCategories == ["A", "B"])
-        #expect(state.pickers.availableReconciliationStatuses == ["A", "B"])
-        #expect(state.pickers.availableCampaigns == ["A", "B"])
-        #expect(state.pickers.availableCurrencies == [.jpy, .krw])
+        #expect(state.pickers.options.orderSources == ["A", "B"])
+        #expect(state.pickers.options.categories == ["A", "B"])
+        #expect(state.pickers.options.reconciliationStatuses == ["A", "B"])
+        #expect(state.pickers.options.campaigns == ["A", "B"])
+        #expect(state.pickers.options.currencyCodes == [.jpy, .krw])
         #expect(
-            state.pickers.availablePaymentMethods == [
+            state.pickers.options.paymentMethods == [
                 cardless,
                 PaymentMethodInfo(
                     name: "B",
@@ -150,7 +156,7 @@ struct OrderEditOptionsTests {
         )
 
         // Then
-        #expect(state.pickers.availablePaymentMethods == [method])
+        #expect(state.pickers.options.paymentMethods == [method])
         #expect(state.isSelectedPaymentMethodCardless)
         #expect(state.isSelectedPaymentMethodBankTransfer)
         #expect(state.isSelectedPaymentMethodCOD)
@@ -189,5 +195,122 @@ struct OrderEditOptionsTests {
 
         // Then
         #expect(timestamp == "2026/04/26 14:30:00")
+    }
+
+    /// 新增三種名稱選項時自然排序，重複名稱維持原清單，其餘選項與行事曆不變
+    ///
+    /// - Parameters:
+    ///   - kind: 訂單來源、商品類別或對帳狀態
+    ///   - name: 新增或重複的名稱
+    ///   - expectedNames: 去重與自然排序後的名稱
+    @Test(arguments: [
+        (LookupKind.orderSource, "A2", ["A2", "A10", "A20"]),
+        (.category, "A2", ["A2", "A10", "A20"]),
+        (.reconciliationStatus, "A2", ["A2", "A10", "A20"]),
+        (.orderSource, "A10", ["A10", "A20"]),
+        (.category, "A10", ["A10", "A20"]),
+        (.reconciliationStatus, "A10", ["A10", "A20"]),
+    ])
+    func applyAddition_新增或重複名稱_自然排序去重並保留其他欄位(
+        kind: LookupKind,
+        name: String,
+        expectedNames: [String]
+    ) {
+        // Given
+        let original = OrderEditOptions(
+            orderSources: ["A10", "A20"],
+            categories: ["A10", "A20"],
+            paymentMethods: [PaymentMethodInfo(name: "現金", flags: .none)],
+            reconciliationStatuses: ["A10", "A20"],
+            campaigns: ["May-JP"],
+            currencyCodes: [.twd],
+            calendar: TestDependencies.fixedCalendar
+        )
+        var options = original
+        let request = LookupAdditionRequest(
+            id: UUID(0),
+            kind: kind,
+            name: name,
+            flags: .none
+        )
+        var expected = original
+        switch kind {
+        case .orderSource:
+            expected.orderSources = expectedNames
+
+        case .category:
+            expected.categories = expectedNames
+
+        case .reconciliationStatus:
+            expected.reconciliationStatuses = expectedNames
+
+        case .paymentMethod:
+            Issue.record("付款方式應使用專屬測試案例")
+        }
+
+        // When
+        options.applyAddition(request)
+
+        // Then
+        #expect(options == expected)
+    }
+
+    /// 新付款方式自然排序插入，同名付款方式原位覆寫三種旗標且不重複加入
+    ///
+    /// - Parameters:
+    ///   - name: 新增或覆寫的付款方式名稱
+    ///   - isExisting: 名稱是否已在原清單中
+    ///   - isBankTransfer: 新付款方式是否為銀行匯款
+    @Test(arguments: [
+        ("A2", false, true),
+        ("A10", true, false),
+    ])
+    func applyAddition_新增或同名付款方式_自然排序去重並完整覆寫旗標(
+        name: String,
+        isExisting: Bool,
+        isBankTransfer: Bool
+    ) {
+        // Given
+        let first = PaymentMethodInfo(name: "A2", flags: .none)
+        let existing = PaymentMethodInfo(
+            name: "A10",
+            isCardless: false,
+            isBankTransfer: true,
+            isCashOnDelivery: false
+        )
+        let original = OrderEditOptions(
+            orderSources: ["LINE"],
+            categories: ["美妝"],
+            paymentMethods: isExisting ? [first, existing] : [existing],
+            reconciliationStatuses: ["待對帳"],
+            campaigns: ["May-JP"],
+            currencyCodes: [.jpy],
+            calendar: TestDependencies.fixedCalendar
+        )
+        var options = original
+        let request = LookupAdditionRequest(
+            id: UUID(0),
+            kind: .paymentMethod,
+            name: name,
+            flags: PaymentMethodFlags(
+                isCardless: true,
+                isBankTransfer: isBankTransfer,
+                isCashOnDelivery: true
+            )
+        )
+        let updated = PaymentMethodInfo(
+            name: name,
+            isCardless: true,
+            isBankTransfer: isBankTransfer,
+            isCashOnDelivery: true
+        )
+        var expected = original
+        expected.paymentMethods = isExisting ? [first, updated] : [updated, existing]
+
+        // When
+        options.applyAddition(request)
+
+        // Then
+        #expect(options == expected)
     }
 }

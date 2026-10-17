@@ -22,16 +22,22 @@ extension RootFeatureTests {
         state.orders.$orders.withLock {
             $0 = [order]
         }
-        state.orders.$lookupCatalog.withLock {
+        state.more.catalog.$catalog.withLock {
             $0.paymentMethods = [PaymentMethodInfo(name: "舊付款", flags: .none)]
         }
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .rename(
             LookupRenameFormFeature.State(originalName: "舊付款")
         )
+        let renameKinds = LockIsolated<[LookupKind]>([])
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0.orderService.applyPaymentMethodRename = { _, _ in
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.lookupService.renameItem = { kind, _ in
+                renameKinds.withValue {
+                    $0.append(kind)
+                }
             }
         }
         let rename = LookupItemRename(oldName: "舊付款", newName: "新付款")
@@ -60,7 +66,7 @@ extension RootFeatureTests {
         ) {
             $0.more.path[id: 0, case: \.lookupManagement]?.destination = nil
             $0.more.path[id: 0, case: \.lookupManagement]?.isFormSheetDismissing = true
-            $0.orders.$lookupCatalog.withLock {
+            $0.more.catalog.$catalog.withLock {
                 $0.paymentMethods = [PaymentMethodInfo(name: "新付款", flags: .none)]
             }
             $0.campaigns.$orders.withLock {
@@ -79,11 +85,12 @@ extension RootFeatureTests {
             \.more.delegate,
             .lookupItemRenamed(kind: .paymentMethod, rename: rename)
         )
-        await store.receive(\.orders.cascadeRequested, cascade)
+        await store.receive(\.orders.rootRequest.cascade, cascade)
         await store.receive(\.orders.writes.cascadeRequested, cascade) {
             $0.dashboard.orders = [renamedOrder]
             $0.insights.orders = [renamedOrder]
         }
+        #expect(renameKinds.value == [.paymentMethod])
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["新付款"])
         #expect(store.state.orders.list.availablePaymentMethods.map(\.name).contains("新付款"))
         #expect(!store.state.orders.list.availablePaymentMethods.map(\.name).contains("舊付款"))

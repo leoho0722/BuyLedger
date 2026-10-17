@@ -30,37 +30,37 @@ struct LookupManagementFeatureTests {
                 $0.paymentMethods = [PaymentMethodInfo(name: "舊付款", flags: .none)]
                 $0.reconciliationStatuses = ["舊狀態"]
             }
+            let observedKinds = LockIsolated<[LookupKind]>([])
             let store = TestStore(initialState: state) {
                 LookupManagementFeature()
             } withDependencies: {
-                switch kind {
-                case .orderSource:
-                    $0.orderSourceService.fetchOrderSources = {
-                        ["新來源"]
+                $0.lookupService.fetchItems = { requestKind in
+                    observedKinds.withValue {
+                        $0.append(requestKind)
                     }
+                    switch requestKind {
+                    case .orderSource:
+                        return LookupCatalog(orderSources: ["新來源"])
 
-                case .category:
-                    $0.categoryService.fetchCategories = {
-                        ["新類別"]
-                    }
+                    case .category:
+                        return LookupCatalog(categories: ["新類別"])
 
-                case .paymentMethod:
-                    $0.paymentMethodService.fetchPaymentMethodInfos = {
-                        [
-                            PaymentMethodInfo(
-                                name: "新付款",
-                                flags: PaymentMethodFlags(
-                                    isCardless: true,
-                                    isBankTransfer: false,
-                                    isCashOnDelivery: false
-                                )
-                            ),
-                        ]
-                    }
+                    case .paymentMethod:
+                        return LookupCatalog(
+                            paymentMethods: [
+                                PaymentMethodInfo(
+                                    name: "新付款",
+                                    flags: PaymentMethodFlags(
+                                        isCardless: true,
+                                        isBankTransfer: false,
+                                        isCashOnDelivery: false
+                                    )
+                                ),
+                            ]
+                        )
 
-                case .reconciliationStatus:
-                    $0.reconciliationStatusService.fetchReconciliationStatuses = {
-                        ["新狀態"]
+                    case .reconciliationStatus:
+                        return LookupCatalog(reconciliationStatuses: ["新狀態"])
                     }
                 }
             }
@@ -103,6 +103,7 @@ struct LookupManagementFeatureTests {
                     }
                 }
             }
+            #expect(observedKinds.value == [kind])
             await store.finish()
         }
     }
@@ -143,6 +144,7 @@ struct LookupManagementFeatureTests {
         await LookupCatalog.withIsolatedStorage {
             // Given
             @Shared(.lookupCatalog) var sharedCatalog: LookupCatalog
+            let observedKinds = LockIsolated<[LookupKind]>([])
             let writes = LockIsolated<[LookupItemAddition]>([])
             let submittedFlags = PaymentMethodFlags(
                 isCardless: false,
@@ -157,33 +159,12 @@ struct LookupManagementFeatureTests {
             let store = TestStore(initialState: initialState) {
                 LookupManagementFeature()
             } withDependencies: {
-                switch example.kind {
-                case .orderSource:
-                    $0.orderSourceService.addOrderSource = { name in
-                        writes.withValue {
-                            $0.append(LookupItemAddition(name: name, flags: .none))
-                        }
+                $0.lookupService.addItem = { kind, addition in
+                    observedKinds.withValue {
+                        $0.append(kind)
                     }
-
-                case .category:
-                    $0.categoryService.addCategory = { name in
-                        writes.withValue {
-                            $0.append(LookupItemAddition(name: name, flags: .none))
-                        }
-                    }
-
-                case .paymentMethod:
-                    $0.paymentMethodService.addPaymentMethod = { name, flags in
-                        writes.withValue {
-                            $0.append(LookupItemAddition(name: name, flags: flags))
-                        }
-                    }
-
-                case .reconciliationStatus:
-                    $0.reconciliationStatusService.addReconciliationStatus = { name in
-                        writes.withValue {
-                            $0.append(LookupItemAddition(name: name, flags: .none))
-                        }
+                    writes.withValue {
+                        $0.append(addition)
                     }
                 }
             }
@@ -226,6 +207,7 @@ struct LookupManagementFeatureTests {
                 }
             }
             await store.receive(\.addResponse.success, expectedAddition)
+            #expect(observedKinds.value == [example.kind])
             #expect(writes.value == [expectedAddition])
             #expect(store.state.items == [expectedAddition.name])
             #expect(sharedCatalog.names(for: example.kind) == ["手作小物"])
@@ -269,11 +251,15 @@ struct LookupManagementFeatureTests {
                 $0.categories = ["服飾"]
             }
             state.destination = Self.deleteConfirmationAlert(name: "服飾")
+            let observedKinds = LockIsolated<[LookupKind]>([])
             let removeCalls = LockIsolated<[String]>([])
             let store = TestStore(initialState: state) {
                 LookupManagementFeature()
             } withDependencies: {
-                $0.categoryService.removeCategory = { name in
+                $0.lookupService.removeItem = { kind, name in
+                    observedKinds.withValue {
+                        $0.append(kind)
+                    }
                     removeCalls.withValue {
                         $0.append(name)
                     }
@@ -291,6 +277,7 @@ struct LookupManagementFeatureTests {
                     $0.categories = []
                 }
             }
+            #expect(observedKinds.value == [.category])
             #expect(removeCalls.value == ["服飾"])
             #expect(store.state.items.isEmpty)
             await store.finish()

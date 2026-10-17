@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// 以根功能解析後的日期與行事曆處理跨功能導覽
+/// 以根功能解析後的日期與行事曆處理跨功能導覽與日期刷新
 struct RootNavigationOperations {
 
     // MARK: - Properties
@@ -23,35 +23,15 @@ struct RootNavigationOperations {
 
 extension RootNavigationOperations {
 
-    /// 切到訂單頁並以客戶名稱搜尋，清除原有狀態、日期與類別篩選
+    /// 以注入的現在時間與行事曆重寫開團、訂單、總覽與分析的日期脈絡
     ///
-    /// - Parameters:
-    ///   - customer: 要搜尋的客戶名稱
-    ///   - state: 要就地更新的根狀態
-    func showOrders(customer: String, state: inout RootFeature.State) {
-        state.selectedTab = .orders
-        state.orders.applyFilterNavigation(
-            searchText: customer,
-            category: nil,
-            now: referenceDate,
-            calendar: calendar
-        )
-    }
-
-    /// 切到訂單頁並只套用指定類別，清除原有狀態、日期與搜尋條件
-    ///
-    /// - Parameters:
-    ///   - category: 要精準比對的商品類別
-    ///   - state: 要就地更新的根狀態
-    func showOrders(category: String, state: inout RootFeature.State) {
-        // 類別深連結使用精準 category 篩選，避免 searchText 誤中
-        state.selectedTab = .orders
-        state.orders.applyFilterNavigation(
-            searchText: "",
-            category: category,
-            now: referenceDate,
-            calendar: calendar
-        )
+    /// - Parameter state: 目前的根層狀態，直接就地修改
+    func refreshDateContexts(state: inout RootFeature.State) {
+        let context = CampaignDateContext(now: referenceDate, calendar: calendar)
+        state.campaigns.refreshDateContext(context)
+        state.orders.refreshDateContext(now: context.now, calendar: context.calendar)
+        state.dashboard.refreshDateContext(now: context.now, calendar: context.calendar)
+        state.insights.refreshDateContext(now: context.now, calendar: context.calendar)
     }
 
     /// 切到開團頁並經單一入口推入指定開團的詳情
@@ -65,5 +45,36 @@ extension RootNavigationOperations {
             return
         }
         state.campaigns.showDetail(campaignID: id)
+    }
+
+    /// 切到訂單頁並只套用指定類別，清除原有狀態、日期與搜尋條件
+    ///
+    /// - Parameters:
+    ///   - category: 要精準比對的商品類別
+    ///   - state: 要就地更新的根狀態
+    func showOrders(category: String, state: inout RootFeature.State) {
+        // 類別深連結使用精準 `category` 篩選，避免 `searchText` 誤中
+        state.selectedTab = .orders
+        state.orders.applyFilterNavigation(
+            searchText: "",
+            category: category,
+            now: referenceDate,
+            calendar: calendar
+        )
+    }
+
+    /// 切到訂單頁並以客戶名稱搜尋，清除原有狀態、日期與類別篩選
+    ///
+    /// - Parameters:
+    ///   - customer: 要搜尋的客戶名稱
+    ///   - state: 要就地更新的根狀態
+    func showOrders(customer: String, state: inout RootFeature.State) {
+        state.selectedTab = .orders
+        state.orders.applyFilterNavigation(
+            searchText: customer,
+            category: nil,
+            now: referenceDate,
+            calendar: calendar
+        )
     }
 }

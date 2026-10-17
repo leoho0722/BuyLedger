@@ -136,9 +136,6 @@ extension CampaignPresentationFeature.Destination.State {
         case .save:
             return operationFailure(TextState("campaigns.general.message.campaignSavedTry"))
 
-        case .rename:
-            return operationFailure(TextState("campaigns.general.message.campaignSavedBut"))
-
         case .delete:
             return operationFailure(TextState("campaigns.general.message.campaignDeletedTry"))
 
@@ -182,7 +179,10 @@ extension CampaignPresentationFeature.Destination.State {
 
         case .creationFailed:
             // 權限已授予，訊息不得指向權限設定，照做也無法解決真正發生的失敗
-            return notice(TextState("campaigns.general.label.unableCreateReminder"), message: TextState("campaigns.general.message.reminderCreatedPlease"))
+            return notice(
+                TextState("campaigns.general.label.unableCreateReminder"),
+                message: TextState("campaigns.general.message.reminderCreatedPlease")
+            )
 
         case .calendarUnavailable:
             // 找不到可寫入的行事曆不是權限問題，訊息不得指向設定

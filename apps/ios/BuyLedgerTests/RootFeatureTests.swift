@@ -110,17 +110,20 @@ struct RootFeatureTests {
     func task_啟動根功能_以七天期限刷新幣別快取() async {
         // Given
         let refreshTTLs = LockIsolated<[TimeInterval]>([])
-        let initial = Self.makeIsolatedRootState()
+        var initial = Self.makeIsolatedRootState()
         initial.campaigns.load.$hasLoaded.withLock {
             $0 = true
         }
         initial.orders.load.$hasLoaded.withLock {
             $0 = true
         }
+        initial.more.catalog.hasLoaded = true
         let currencyRelease = AsyncStream<Void>.makeStream()
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.currencyMetadataService.refreshIfStale = { ttl in
                 var iterator = currencyRelease.stream.makeAsyncIterator()
                 _ = await iterator.next()
@@ -165,6 +168,9 @@ struct RootFeatureTests {
 
         let store = TestStore(initialState: state) {
             RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When

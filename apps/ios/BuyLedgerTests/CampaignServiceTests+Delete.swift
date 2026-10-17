@@ -16,7 +16,7 @@ extension CampaignServiceTests {
     ///
     /// - Throws: 開團查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
     ///   開團儲存失敗時丟出 `PersistenceError.saveFailed(underlying:)`；
-    ///   建立訂單時編號已存在丟出 `OrderPersistenceError.identifierCollision(id:)`；
+    ///   建立訂單時編號已存在丟出 `OrderError.identifierCollision(id:)`；
     ///   建立訂單查詢失敗時丟出 `.storage(.fetchFailed(underlying:))`；
     ///   建立訂單儲存失敗時丟出 `.storage(.saveFailed(underlying:))`
     @Test
@@ -25,17 +25,18 @@ extension CampaignServiceTests {
         let database = BuyLedgerDatabaseTests.makeInMemoryDatabase()
         let campaignService = Self.makeService(database: database)
         let orderService = OrderServiceTests.makeService(database: database)
-        let reminderService = CampaignReminderServiceTests.makeService(database: database)
-        try await campaignService.saveCampaign(Campaign.fixture(
-            id: "C1",
-            name: "四月團",
-            openDate: Date(timeIntervalSince1970: 1_775_779_200)
-        ))
+        try await campaignService.saveCampaign(
+            Campaign.fixture(
+                id: "C1",
+                name: "四月團",
+                openDate: Date(timeIntervalSince1970: 1_775_779_200)
+            )
+        )
         try await orderService.createOrder(
             LedgerOrder.fixture(id: "O1", campaignNames: ["四月團", "五月團"])
         )
         let reminderTimestamp = Date(timeIntervalSince1970: 1_700_000_000)
-        try await reminderService.saveLink(
+        try await campaignService.saveReminderLink(
             "C1",
             CampaignReminderLink(eventIdentifier: "EVT-1", reminderTimestamp: reminderTimestamp)
         )
@@ -50,7 +51,7 @@ extension CampaignServiceTests {
         let remainingOrders = try await orderService.fetchOrders()
         #expect(remainingOrders.map(\.id) == ["O1"])
         #expect(remainingOrders.first?.campaignNames == ["五月團"])
-        let remainingLinks = try await reminderService.fetchLinks()
+        let remainingLinks = try await campaignService.fetchReminderLinks()
         #expect(remainingLinks["C1"] == nil)
     }
 
@@ -62,11 +63,13 @@ extension CampaignServiceTests {
     func removeCampaign_沒有提醒連結_回傳空值() async throws {
         // Given
         let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
-        try await service.saveCampaign(Campaign.fixture(
-            id: "C1",
-            name: "無提醒團",
-            openDate: Date(timeIntervalSince1970: 1_775_779_200)
-        ))
+        try await service.saveCampaign(
+            Campaign.fixture(
+                id: "C1",
+                name: "無提醒團",
+                openDate: Date(timeIntervalSince1970: 1_775_779_200)
+            )
+        )
 
         // When
         let removedIdentifier = try await service.removeCampaign("C1", "無提醒團")
@@ -81,7 +84,7 @@ extension CampaignServiceTests {
     ///
     /// - Throws: 開團查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
     ///   開團儲存失敗時丟出 `PersistenceError.saveFailed(underlying:)`；
-    ///   建立訂單時編號已存在丟出 `OrderPersistenceError.identifierCollision(id:)`；
+    ///   建立訂單時編號已存在丟出 `OrderError.identifierCollision(id:)`；
     ///   建立訂單查詢失敗時丟出 `.storage(.fetchFailed(underlying:))`；
     ///   建立訂單儲存失敗時丟出 `.storage(.saveFailed(underlying:))`
     @Test

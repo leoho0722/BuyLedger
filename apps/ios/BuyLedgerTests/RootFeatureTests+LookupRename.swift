@@ -25,14 +25,20 @@ extension RootFeatureTests {
         state.orders.$orders.withLock {
             $0 = [order]
         }
-        state.orders.$lookupCatalog.withLock { $0.orderSources = ["舊來源"] }
+        state.more.catalog.$catalog.withLock { $0.orderSources = ["舊來源"] }
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .rename(
             LookupRenameFormFeature.State(originalName: "舊來源")
         )
+        let renameKinds = LockIsolated<[LookupKind]>([])
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0.orderService.applyOrderSourceRename = { _, _ in
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.lookupService.renameItem = { kind, _ in
+                renameKinds.withValue {
+                    $0.append(kind)
+                }
             }
         }
         let rename = LookupItemRename(oldName: "舊來源", newName: "新來源")
@@ -61,7 +67,7 @@ extension RootFeatureTests {
         ) {
             $0.more.path[id: 0, case: \.lookupManagement]?.destination = nil
             $0.more.path[id: 0, case: \.lookupManagement]?.isFormSheetDismissing = true
-            $0.orders.$lookupCatalog.withLock {
+            $0.more.catalog.$catalog.withLock {
                 $0.orderSources = ["新來源"]
             }
             $0.campaigns.$orders.withLock {
@@ -77,11 +83,12 @@ extension RootFeatureTests {
         await store.receive(\.more.path[id: 0].lookupManagement.renameResponse.success, rename)
         await store.receive(\.more.path[id: 0].lookupManagement.delegate.itemRenamed, rename)
         await store.receive(\.more.delegate, .lookupItemRenamed(kind: .orderSource, rename: rename))
-        await store.receive(\.orders.cascadeRequested, cascade)
+        await store.receive(\.orders.rootRequest.cascade, cascade)
         await store.receive(\.orders.writes.cascadeRequested, cascade) {
             $0.dashboard.orders = [renamedOrder]
             $0.insights.orders = [renamedOrder]
         }
+        #expect(renameKinds.value == [.orderSource])
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["新來源"])
         let sources = OrdersEditorOptions.orderSources(
             orders: store.state.orders.orders,
@@ -109,14 +116,20 @@ extension RootFeatureTests {
         state.orders.$orders.withLock {
             $0 = [order]
         }
-        state.orders.$lookupCatalog.withLock { $0.categories = ["舊類別"] }
+        state.more.catalog.$catalog.withLock { $0.categories = ["舊類別"] }
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .rename(
             LookupRenameFormFeature.State(originalName: "舊類別")
         )
+        let renameKinds = LockIsolated<[LookupKind]>([])
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0.orderService.applyCategoryRename = { _, _ in
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.lookupService.renameItem = { kind, _ in
+                renameKinds.withValue {
+                    $0.append(kind)
+                }
             }
         }
         let rename = LookupItemRename(oldName: "舊類別", newName: "新類別")
@@ -145,7 +158,7 @@ extension RootFeatureTests {
         ) {
             $0.more.path[id: 0, case: \.lookupManagement]?.destination = nil
             $0.more.path[id: 0, case: \.lookupManagement]?.isFormSheetDismissing = true
-            $0.orders.$lookupCatalog.withLock {
+            $0.more.catalog.$catalog.withLock {
                 $0.categories = ["新類別"]
             }
             $0.campaigns.$orders.withLock {
@@ -161,11 +174,12 @@ extension RootFeatureTests {
         await store.receive(\.more.path[id: 0].lookupManagement.renameResponse.success, rename)
         await store.receive(\.more.path[id: 0].lookupManagement.delegate.itemRenamed, rename)
         await store.receive(\.more.delegate, .lookupItemRenamed(kind: .category, rename: rename))
-        await store.receive(\.orders.cascadeRequested, cascade)
+        await store.receive(\.orders.rootRequest.cascade, cascade)
         await store.receive(\.orders.writes.cascadeRequested, cascade) {
             $0.dashboard.orders = [renamedOrder]
             $0.insights.orders = [renamedOrder]
         }
+        #expect(renameKinds.value == [.category])
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["新類別"])
         #expect(store.state.orders.list.availableCategories.contains("新類別"))
         #expect(!store.state.orders.list.availableCategories.contains("舊類別"))
@@ -183,16 +197,22 @@ extension RootFeatureTests {
         state.orders.$orders.withLock {
             $0 = [order]
         }
-        state.orders.$lookupCatalog.withLock {
+        state.more.catalog.$catalog.withLock {
             $0.reconciliationStatuses = ["待對帳"]
         }
         state.more.path[id: 0, case: \.lookupManagement]?.destination = .rename(
             LookupRenameFormFeature.State(originalName: "待對帳")
         )
+        let renameKinds = LockIsolated<[LookupKind]>([])
         let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
-            $0.orderService.applyReconciliationStatusRename = { _, _ in
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+            $0.lookupService.renameItem = { kind, _ in
+                renameKinds.withValue {
+                    $0.append(kind)
+                }
             }
         }
         let rename = LookupItemRename(oldName: "待對帳", newName: "已對帳")
@@ -221,7 +241,7 @@ extension RootFeatureTests {
         ) {
             $0.more.path[id: 0, case: \.lookupManagement]?.destination = nil
             $0.more.path[id: 0, case: \.lookupManagement]?.isFormSheetDismissing = true
-            $0.orders.$lookupCatalog.withLock {
+            $0.more.catalog.$catalog.withLock {
                 $0.reconciliationStatuses = ["已對帳"]
             }
             $0.campaigns.$orders.withLock {
@@ -240,11 +260,12 @@ extension RootFeatureTests {
             \.more.delegate,
             .lookupItemRenamed(kind: .reconciliationStatus, rename: rename)
         )
-        await store.receive(\.orders.cascadeRequested, cascade)
+        await store.receive(\.orders.rootRequest.cascade, cascade)
         await store.receive(\.orders.writes.cascadeRequested, cascade) {
             $0.dashboard.orders = [renamedOrder]
             $0.insights.orders = [renamedOrder]
         }
+        #expect(renameKinds.value == [.reconciliationStatus])
         #expect(store.state.more.path[id: 0, case: \.lookupManagement]?.items == ["已對帳"])
         let statuses = OrdersEditorOptions.reconciliationStatuses(
             orders: store.state.orders.orders,

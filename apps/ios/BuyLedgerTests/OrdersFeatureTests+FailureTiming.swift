@@ -28,6 +28,9 @@ extension OrdersFeatureTests {
         initial.presentation.destination = destination
         let store = TestStore(initialState: initial) {
             OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -55,6 +58,9 @@ extension OrdersFeatureTests {
         initial.presentation.queue.pendingNotice = Self.failureNotice("第一則失敗")
         let store = TestStore(initialState: initial) {
             OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -79,6 +85,9 @@ extension OrdersFeatureTests {
         )
         let store = TestStore(initialState: initial) {
             OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -102,6 +111,9 @@ extension OrdersFeatureTests {
         initial.presentation.queue.pendingNotice = Self.failureNotice("第一則失敗")
         let store = TestStore(initialState: initial) {
             OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -126,6 +138,9 @@ extension OrdersFeatureTests {
         initial.presentation.queue.pendingNotice = Self.failureNotice("第二則失敗")
         let store = TestStore(initialState: initial) {
             OrdersFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -166,7 +181,7 @@ extension OrdersFeatureTests {
     /// 建立只有「知道了」按鈕的失敗通知，供比對預期值
     ///
     /// - Parameter message: 預期通知訊息
-    /// - Returns: 只有「知道了」按鈕的失敗提示框
+    /// - Returns: `.alert` case 的目的地狀態，可直接指派給訂單分頁的目的地或暫存通知
     static func failureNotice(
         _ message: LocalizedStringKey
     ) -> OrdersPresentationFeature.Destination.State {
@@ -183,9 +198,9 @@ extension OrdersFeatureTests {
         )
     }
 
-    /// 在記憶體內的測試儲存中，建立已有「美妝」類別且開著編輯表單的訂單分頁狀態
+    /// 以唯讀常數目錄建立已有「美妝」類別且開著編輯表單的訂單分頁狀態
     ///
-    /// - Returns: 類別清單與表單都含「美妝」的訂單分頁狀態
+    /// - Returns: `OrdersFeature.State` 值，可直接作為 `TestStore` 的初始狀態
     static func makeOptionState() -> OrdersFeature.State {
         withDependencies {
             $0.defaultInMemoryStorage = InMemoryStorage()
@@ -195,9 +210,8 @@ extension OrdersFeatureTests {
                 now: TestDependencies.fixedNow,
                 calendar: TestDependencies.fixedCalendar
             )
-            state.$lookupCatalog.withLock {
-                $0.categories = ["美妝"]
-            }
+            state.$lookupCatalog = SharedReader(value: LookupCatalog(categories: ["美妝"]))
+            state.list.$lookupCatalog = state.$lookupCatalog
             state.presentation.destination = .edit(
                 OrderEditFeature.State(
                     id: UUID(0),

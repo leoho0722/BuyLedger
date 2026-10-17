@@ -119,16 +119,17 @@ extension OrdersContainerPlanTests {
     func mergeCandidateDraft_副訂單為無卡付款_採用副訂單的付款欄位() {
         // Given
         let state = Self.makeState(orders: [])
-        state.$lookupCatalog.withLock {
-            $0.paymentMethods = [
+        state.$lookupCatalog = SharedReader(
+            value: LookupCatalog(paymentMethods: [
                 PaymentMethodInfo(
                     name: "無卡付款",
                     isCardless: true,
                     isBankTransfer: false,
                     isCashOnDelivery: false
                 ),
-            ]
-        }
+            ])
+        )
+        state.list.$lookupCatalog = state.$lookupCatalog
         let primary = LedgerOrder.fixture(id: "P", paymentMethod: "現金")
         let secondary = LedgerOrder.fixture(
             id: "S",

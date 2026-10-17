@@ -46,15 +46,30 @@ struct CampaignWritesFeature {
         ///   - name: 要清除的訂單歸屬名稱
         case deleteRequested(id: Campaign.ID, name: String)
 
+        /// 本機刪除交易的回應
+        ///
+        /// - Parameter result: 刪除資料與事件識別碼，或持久化錯誤
+        case deleteResponse(Result<Deletion, PersistenceError>)
+
         /// 儲存開團，成功後接續改名與提醒意圖
         ///
         /// - Parameter plan: 已驗證並組裝完成的儲存計畫
         case saveRequested(CampaignSavePlan)
 
+        /// 開團儲存的回應
+        ///
+        /// - Parameter result: 已儲存的計畫或持久化錯誤
+        case saveResponse(Result<CampaignSavePlan, PersistenceError>)
+
         /// 寫入結算日期
         ///
         /// - Parameter id: 要結團的開團識別值
         case settleRequested(Campaign.ID)
+
+        /// 結算日期寫入的回應
+        ///
+        /// - Parameter result: 寫入時的開團快照或持久化錯誤
+        case settleResponse(Result<Campaign, PersistenceError>)
 
         /// 寫入開團狀態
         ///
@@ -62,28 +77,6 @@ struct CampaignWritesFeature {
         ///   - id: 開團識別值
         ///   - status: 要套用的新狀態
         case statusChangeRequested(id: Campaign.ID, status: CampaignStatus)
-
-        /// 本機刪除交易的回應
-        ///
-        /// - Parameter result: 刪除資料與事件識別碼，或持久化錯誤
-        case deleteResponse(Result<Deletion, PersistenceError>)
-
-        /// 訂單歸屬改名的回應
-        ///
-        /// - Parameters:
-        ///   - plan: 儲存完成後的改名與提醒計畫
-        ///   - result: 改名成功或持久化錯誤
-        case renameResponse(plan: CampaignSavePlan, result: Result<Void, PersistenceError>)
-
-        /// 開團儲存的回應
-        ///
-        /// - Parameter result: 已儲存的計畫或持久化錯誤
-        case saveResponse(Result<CampaignSavePlan, PersistenceError>)
-
-        /// 結算日期寫入的回應
-        ///
-        /// - Parameter result: 寫入時的開團快照或持久化錯誤
-        case settleResponse(Result<Campaign, PersistenceError>)
 
         /// 開團狀態寫入的回應
         ///
@@ -123,9 +116,6 @@ struct CampaignWritesFeature {
     /// 開團儲存與刪除交易
     @Dependency(\.campaignService) private var campaignService
 
-    /// 開團改名後的訂單歸屬寫入
-    @Dependency(\.orderService) private var orderService
-
     /// 確認結團當下的結算時間
     @Dependency(\.date) private var date
 
@@ -159,9 +149,6 @@ extension CampaignWritesFeature {
 
         /// 開團儲存失敗
         case save
-
-        /// 開團已儲存，但訂單歸屬改名失敗
-        case rename
 
         /// 本機刪除交易失敗
         case delete
@@ -201,31 +188,6 @@ private extension CampaignWritesFeature {
                 }
             }
 
-        case .saveRequested(let plan):
-            return save(plan.campaign) {
-                .saveResponse(
-                    $0.map { _ in
-                        plan
-                    }
-                )
-            }
-
-        case .settleRequested(let id):
-            guard var campaign = state.campaigns.first(where: { $0.id == id }),
-                  campaign.settledDate == nil else {
-                return .none
-            }
-            campaign.settledDate = date.now
-            return save(campaign, response: Action.settleResponse)
-
-        case .statusChangeRequested(let id, let status):
-            guard var campaign = state.campaigns.first(where: { $0.id == id }),
-                  campaign.status != status else {
-                return .none
-            }
-            campaign.status = status
-            return save(campaign, response: Action.statusResponse)
-
         case .deleteResponse(.success(let deletion)):
             state.$campaigns.withLock {
                 $0.removeAll {
@@ -237,20 +199,22 @@ private extension CampaignWritesFeature {
         case .deleteResponse(.failure):
             return .send(.delegate(.failed(.delete)))
 
-        case .renameResponse(let plan, .success):
-            guard let rename = plan.rename else {
-                return .send(.delegate(.saved(plan.reminder)))
-            }
-            return finishRename(plan, notifying: .renamed(from: rename.from, to: rename.to))
-
-        case .renameResponse(let plan, .failure):
-            return finishRename(plan, notifying: .failed(.rename))
+        case .saveRequested(let plan):
+            return persistSave(plan)
 
         case .saveResponse(.success(let plan)):
             return applySaved(plan, state: &state)
 
         case .saveResponse(.failure):
             return .send(.delegate(.failed(.save)))
+
+        case .settleRequested(let id):
+            guard var campaign = state.campaigns.first(where: { $0.id == id }),
+                  campaign.settledDate == nil else {
+                return .none
+            }
+            campaign.settledDate = date.now
+            return save(campaign, response: Action.settleResponse)
 
         case .settleResponse(.success(let campaign)):
             guard let index = state.campaigns.firstIndex(where: { $0.id == campaign.id }) else {
@@ -262,6 +226,14 @@ private extension CampaignWritesFeature {
         case .settleResponse(.failure):
             return .send(.delegate(.failed(.settle)))
 
+        case .statusChangeRequested(let id, let status):
+            guard var campaign = state.campaigns.first(where: { $0.id == id }),
+                  campaign.status != status else {
+                return .none
+            }
+            campaign.status = status
+            return save(campaign, response: Action.statusResponse)
+
         case .statusResponse(.success(let campaign)):
             guard let index = state.campaigns.firstIndex(where: { $0.id == campaign.id }) else {
                 return .none
@@ -272,6 +244,53 @@ private extension CampaignWritesFeature {
         case .statusResponse(.failure):
             return .send(.delegate(.failed(.status)))
         }
+    }
+
+    /// 寫入開團儲存計畫，有改名時連同訂單內的開團名稱一併改寫，結果以 `saveResponse` 送回
+    ///
+    /// - Parameter plan: 已驗證並組裝完成的儲存計畫
+    /// - Returns: 執行寫入並派送儲存回應的 Effect
+    func persistSave(_ plan: CampaignSavePlan) -> Effect<Action> {
+        let campaignService = campaignService
+        return .run { send in
+            do throws(PersistenceError) {
+                if let rename = plan.rename {
+                    try await campaignService.renameCampaign(plan.campaign, rename.from)
+                } else {
+                    try await campaignService.saveCampaign(plan.campaign)
+                }
+                await send(.saveResponse(.success(plan)))
+            } catch {
+                await send(.saveResponse(.failure(error)))
+            }
+        }
+    }
+
+    /// 把已儲存的開團依開團日期由新到舊寫入共用清單，有改名時先送出改名通知再送出儲存完成
+    ///
+    /// - Parameters:
+    ///   - plan: 已儲存的計畫
+    ///   - state: 共用開團的寫入狀態
+    /// - Returns: 沒有改名時直接送出儲存完成；有改名時先送出改名通知再送出儲存完成的效果
+    func applySaved(_ plan: CampaignSavePlan, state: inout State) -> Effect<Action> {
+        let index = state.campaigns.firstIndex(where: { $0.id == plan.campaign.id })
+        state.$campaigns.withLock {
+            if let index {
+                $0[index] = plan.campaign
+            } else {
+                $0.append(plan.campaign)
+            }
+            $0.sort { lhs, rhs in
+                lhs.openDate > rhs.openDate
+            }
+        }
+        guard let rename = plan.rename else {
+            return .send(.delegate(.saved(plan.reminder)))
+        }
+        return .concatenate(
+            .send(.delegate(.renamed(from: rename.from, to: rename.to))),
+            .send(.delegate(.saved(plan.reminder)))
+        )
     }
 
     /// 寫入開團快照，將成功與失敗合併成呼叫端指定的回應
@@ -291,51 +310,6 @@ private extension CampaignWritesFeature {
                 await send(response(.success(campaign)))
             } catch {
                 await send(response(.failure(error)))
-            }
-        }
-    }
-
-    /// 先通知容器改名結果，再一律送出儲存完成以接續提醒
-    ///
-    /// - Parameters:
-    ///   - plan: 儲存完成後的改名與提醒計畫
-    ///   - notification: 要先通知容器的改名結果
-    /// - Returns: 依序送出改名結果與儲存完成的效果
-    func finishRename(
-        _ plan: CampaignSavePlan,
-        notifying notification: Action.Delegate
-    ) -> Effect<Action> {
-        .concatenate(.send(.delegate(notification)), .send(.delegate(.saved(plan.reminder))))
-    }
-
-    /// 把已儲存的開團依開團日期由新到舊寫入共用清單，有改名時接續改寫訂單歸屬
-    ///
-    /// - Parameters:
-    ///   - plan: 已儲存的計畫
-    ///   - state: 共用開團的寫入狀態
-    /// - Returns: 沒有改名時直接送出儲存完成；有改名時為改寫訂單歸屬的效果
-    func applySaved(_ plan: CampaignSavePlan, state: inout State) -> Effect<Action> {
-        let index = state.campaigns.firstIndex(where: { $0.id == plan.campaign.id })
-        state.$campaigns.withLock {
-            if let index {
-                $0[index] = plan.campaign
-            } else {
-                $0.append(plan.campaign)
-            }
-            $0.sort { lhs, rhs in
-                lhs.openDate > rhs.openDate
-            }
-        }
-        guard let rename = plan.rename else {
-            return .send(.delegate(.saved(plan.reminder)))
-        }
-        let orderService = orderService
-        return .run { send in
-            do throws(PersistenceError) {
-                try await orderService.renameOrderCampaign(rename.from, rename.to)
-                await send(.renameResponse(plan: plan, result: .success(())))
-            } catch {
-                await send(.renameResponse(plan: plan, result: .failure(error)))
             }
         }
     }

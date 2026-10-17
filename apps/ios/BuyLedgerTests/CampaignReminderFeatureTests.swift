@@ -47,7 +47,7 @@ struct CampaignReminderFeatureTests {
         // Given
         let loadedLinks = [Self.campaignID: Self.oldLink]
         let store = Self.makeStore(links: Shared(value: [:])) {
-            $0.campaignReminderService.fetchLinks = {
+            $0.campaignService.fetchReminderLinks = {
                 loadedLinks
             }
         }
@@ -71,7 +71,7 @@ struct CampaignReminderFeatureTests {
         // Given
         let fetchCount = LockIsolated(0)
         let store = Self.makeStore(links: Shared(value: [:]), hasLoadedLinks: true) {
-            $0.campaignReminderService.fetchLinks = {
+            $0.campaignService.fetchReminderLinks = {
                 fetchCount.withValue {
                     $0 += 1
                 }
@@ -91,11 +91,11 @@ struct CampaignReminderFeatureTests {
     @Test
     func linksRequested_載入失敗_連結維持空且不回報() async {
         // Given
-        let failingFetchLinks: CampaignReminderService.FetchLinks = { () throws(PersistenceError) in
+        let failingFetchLinks: CampaignService.FetchReminderLinks = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = Self.makeStore(links: Shared(value: [:])) {
-            $0.campaignReminderService.fetchLinks = failingFetchLinks
+            $0.campaignService.fetchReminderLinks = failingFetchLinks
         }
 
         // When
@@ -135,9 +135,9 @@ struct CampaignReminderFeatureTests {
                 }
                 return "EVT-new"
             }
-            $0.campaignReminderService.saveLink = { campaignID, link in
+            $0.campaignService.saveReminderLink = { campaignID, link in
                 operations.withValue {
-                    $0.append("saveLink")
+                    $0.append("saveReminderLink")
                 }
                 savedLinks.withValue {
                     $0.append(SavedLink(campaignID: campaignID, link: link))
@@ -154,7 +154,7 @@ struct CampaignReminderFeatureTests {
                 $0[Self.campaignID] = Self.newLink
             }
         }
-        #expect(operations.value == ["requestAccess", "addReminder", "saveLink"])
+        #expect(operations.value == ["requestAccess", "addReminder", "saveReminderLink"])
         #expect(addedReminders.value == [expectedReminder])
         #expect(savedLinks.value == [SavedLink(campaignID: Self.campaignID, link: Self.newLink)])
     }
@@ -177,9 +177,9 @@ struct CampaignReminderFeatureTests {
                     $0.append("removeReminder:\(eventIdentifier)")
                 }
             }
-            $0.campaignReminderService.removeLink = { campaignID in
+            $0.campaignService.removeReminderLink = { campaignID in
                 operations.withValue {
-                    $0.append("removeLink:\(campaignID)")
+                    $0.append("removeReminderLink:\(campaignID)")
                 }
             }
         }
@@ -193,7 +193,7 @@ struct CampaignReminderFeatureTests {
                 $0[Self.campaignID] = nil
             }
         }
-        #expect(operations.value == ["removeReminder:EVT-old", "removeLink:C1"])
+        #expect(operations.value == ["removeReminder:EVT-old", "removeReminderLink:C1"])
         #expect(accessRequestCount.value == 0)
     }
 }

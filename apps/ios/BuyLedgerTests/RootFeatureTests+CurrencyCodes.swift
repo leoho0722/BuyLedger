@@ -18,7 +18,7 @@ extension RootFeatureTests {
     func task_快取包含三種幣別_共用清單更新為快取內容() async {
         // Given
         let calls = LockIsolated<[String]>([])
-        let initial = withDependencies {
+        var initial = withDependencies {
             $0.defaultInMemoryStorage = InMemoryStorage()
         } operation: {
             RootFeature.State()
@@ -29,10 +29,13 @@ extension RootFeatureTests {
         initial.orders.load.$hasLoaded.withLock {
             $0 = true
         }
+        initial.more.catalog.hasLoaded = true
         let currencyRelease = AsyncStream<Void>.makeStream()
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.currencyMetadataService.refreshIfStale = { _ in
                 var iterator = currencyRelease.stream.makeAsyncIterator()
                 _ = await iterator.next()
@@ -78,7 +81,7 @@ extension RootFeatureTests {
         let failingFetch: CurrencyMetadataService.FetchCodes = { () throws(CurrencyMetadataServiceError) in
             throw .persistence(.storage(.fetchFailed(underlying: underlying)))
         }
-        let initial = withDependencies {
+        var initial = withDependencies {
             $0.defaultInMemoryStorage = InMemoryStorage()
         } operation: {
             RootFeature.State()
@@ -92,10 +95,13 @@ extension RootFeatureTests {
         initial.orders.load.$hasLoaded.withLock {
             $0 = true
         }
+        initial.more.catalog.hasLoaded = true
         let currencyRelease = AsyncStream<Void>.makeStream()
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.currencyMetadataService.refreshIfStale = { _ in
                 var iterator = currencyRelease.stream.makeAsyncIterator()
                 _ = await iterator.next()
@@ -124,7 +130,7 @@ extension RootFeatureTests {
     @Test
     func task_幣別快取回傳空清單_共用清單維持原值() async {
         // Given
-        let initial = withDependencies {
+        var initial = withDependencies {
             $0.defaultInMemoryStorage = InMemoryStorage()
         } operation: {
             RootFeature.State()
@@ -138,10 +144,13 @@ extension RootFeatureTests {
         initial.orders.load.$hasLoaded.withLock {
             $0 = true
         }
+        initial.more.catalog.hasLoaded = true
         let currencyRelease = AsyncStream<Void>.makeStream()
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.currencyMetadataService.refreshIfStale = { _ in
                 var iterator = currencyRelease.stream.makeAsyncIterator()
                 _ = await iterator.next()
@@ -179,7 +188,7 @@ extension RootFeatureTests {
             }
             throw .api(.http(statusCode: 503))
         }
-        let initial = withDependencies {
+        var initial = withDependencies {
             $0.defaultInMemoryStorage = InMemoryStorage()
         } operation: {
             RootFeature.State()
@@ -193,10 +202,13 @@ extension RootFeatureTests {
         initial.orders.load.$hasLoaded.withLock {
             $0 = true
         }
+        initial.more.catalog.hasLoaded = true
         let currencyRelease = AsyncStream<Void>.makeStream()
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.currencyMetadataService.refreshIfStale = { ttl throws(CurrencyMetadataServiceError) in
                 var iterator = currencyRelease.stream.makeAsyncIterator()
                 _ = await iterator.next()

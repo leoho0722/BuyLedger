@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import Foundation
+import SwiftUI
 
 /// 訂單呈現子 Feature，管理表單、alert、一次性通知與合併轉場，本身不持有 View
 @Reducer
@@ -38,7 +38,7 @@ struct OrdersPresentationFeature {
             destination = current
         }
 
-        /// 合併候選完成後的確認表單，等候選關閉後才呈現
+        /// 呈現合併候選完成後的確認表單，等候選關閉後才呈現
         ///
         /// - Parameter confirmation: 已建立的合併確認表單
         mutating func presentMergeConfirmation(_ confirmation: Destination.State) {
@@ -47,7 +47,7 @@ struct OrdersPresentationFeature {
             destination = current
         }
 
-        /// 套用寫入結果：刪除正在編輯的訂單時關閉表單，新增主檔選項時寫回來源表單
+        /// 套用訂單寫入結果，刪除正在編輯的訂單時關閉表單
         ///
         /// - Parameter outcome: 寫入子層的結果計畫
         mutating func apply(_ outcome: OrdersWriteOutcome) {
@@ -57,11 +57,31 @@ struct OrdersPresentationFeature {
                 destination = nil
                 queue.beginFormClosing()
             }
-            if let option = outcome.addedOption, destination?.edit?.id == option.formID {
-                destination?.modify(\.edit) {
-                    $0.applyAddedOption(option)
-                }
+        }
+
+        /// 主檔新增成功時套用到來源表單，失敗時沿呈現佇列回報通知
+        ///
+        /// - Parameters:
+        ///   - request: 保留發起表單識別值的新增請求
+        ///   - isStored: 是否寫入成功
+        /// - Returns: 寫入失敗時送出一次性通知，成功時不送出事件
+        mutating func applyOptionAddition(
+            _ request: LookupAdditionRequest,
+            isStored: Bool
+        ) -> Effect<Action> {
+            if !isStored {
+                let message = OrderWriteOperations.Failure.option(request.kind).message
+                return .send(
+                    .noticeRequested(.writeFailure(TextState(LocalizedStringKey(message))))
+                )
             }
+            guard destination?.edit?.id == request.id else {
+                return .none
+            }
+            destination?.modify(\.edit) {
+                $0.applyAddedOption(request)
+            }
+            return .none
         }
     }
 
@@ -101,10 +121,10 @@ struct OrdersPresentationFeature {
             /// - Parameter edit: 送出存檔時的表單狀態
             case saveRequested(OrderEditFeature.State)
 
-            /// 表單請求新增主檔選項，容器轉交寫入子層
+            /// 表單請求新增主檔選項，容器經根功能轉交主檔端
             ///
-            /// - Parameter plan: 新增選項的請求
-            case optionAddRequested(OrderOptionWritePlan)
+            /// - Parameter request: 新增選項的請求
+            case optionAddRequested(LookupAdditionRequest)
 
             /// 使用者確認刪除指定訂單
             ///
@@ -178,13 +198,13 @@ private extension OrdersPresentationFeature {
             guard let formID = state.destination?.edit?.id else {
                 return .none
             }
-            let plan = OrderOptionWritePlan(
-                formID: formID,
+            let request = LookupAdditionRequest(
+                id: formID,
                 kind: kind,
                 name: name,
                 flags: flags
             )
-            return .send(.delegate(.optionAddRequested(plan)))
+            return .send(.delegate(.optionAddRequested(request)))
 
         case .destination(.presented(.merge(.delegate(.completed(
             let primary,

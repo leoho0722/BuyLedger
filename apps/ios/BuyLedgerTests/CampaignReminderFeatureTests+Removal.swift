@@ -34,7 +34,7 @@ extension CampaignReminderFeatureTests {
                 return .denied
             }
             $0.calendarReminderService.removeReminder = failingRemoveReminder
-            $0.campaignReminderService.removeLink = { campaignID in
+            $0.campaignService.removeReminderLink = { campaignID in
                 removedCampaignIDs.withValue {
                     $0.append(campaignID)
                 }
@@ -59,13 +59,13 @@ extension CampaignReminderFeatureTests {
     @Test
     func reconcileRequested_移除提醒但連結移除失敗_保留連結並回報() async {
         // Given
-        let failingRemoveLink: CampaignReminderService.RemoveLink = { _ throws(PersistenceError) in
+        let failingRemoveLink: CampaignService.RemoveReminderLink = { _ throws(PersistenceError) in
             throw .saveFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
         let store = Self.makeStore(links: Shared(value: [Self.campaignID: Self.oldLink])) {
             $0.calendarReminderService.removeReminder = { _ in
             }
-            $0.campaignReminderService.removeLink = failingRemoveLink
+            $0.campaignService.removeReminderLink = failingRemoveLink
         }
 
         // When
@@ -77,7 +77,7 @@ extension CampaignReminderFeatureTests {
         #expect(store.state.links[Self.campaignID] == Self.oldLink)
     }
 
-    /// 刪除沒有提醒的開團時只清除共用連結，不移除事件，也不呼叫 `removeLink`
+    /// 刪除沒有提醒的開團時只清除共用連結，不移除事件，也不呼叫 `removeReminderLink`
     ///
     /// - Note: 未覆寫的 `removeReminder` 是 `unimplemented`；被呼叫會使測試失敗
     @Test
@@ -85,7 +85,7 @@ extension CampaignReminderFeatureTests {
         // Given
         let removedCampaignIDs = LockIsolated<[String]>([])
         let store = Self.makeStore(links: Shared(value: [Self.campaignID: Self.oldLink])) {
-            $0.campaignReminderService.removeLink = { campaignID in
+            $0.campaignService.removeReminderLink = { campaignID in
                 removedCampaignIDs.withValue {
                     $0.append(campaignID)
                 }
@@ -104,7 +104,7 @@ extension CampaignReminderFeatureTests {
         #expect(removedCampaignIDs.value.isEmpty)
     }
 
-    /// 刪除有提醒的開團時清除共用連結並移除事件，不呼叫 `removeLink`，也不請求行事曆權限
+    /// 刪除有提醒的開團時清除共用連結並移除事件，不呼叫 `removeReminderLink`，也不請求行事曆權限
     @Test
     func campaignRemoved_有事件識別碼_清除共用連結並移除事件() async {
         // Given
@@ -123,7 +123,7 @@ extension CampaignReminderFeatureTests {
                     $0.append(eventIdentifier)
                 }
             }
-            $0.campaignReminderService.removeLink = { campaignID in
+            $0.campaignService.removeReminderLink = { campaignID in
                 removedCampaignIDs.withValue {
                     $0.append(campaignID)
                 }
@@ -131,10 +131,9 @@ extension CampaignReminderFeatureTests {
         }
 
         // When
-        await store.send(.campaignRemoved(
-            campaignID: Self.campaignID,
-            eventIdentifier: "EVT-old"
-        )) {
+        await store.send(
+            .campaignRemoved(campaignID: Self.campaignID, eventIdentifier: "EVT-old")
+        ) {
             $0.$links.withLock {
                 $0[Self.campaignID] = nil
             }
@@ -148,7 +147,7 @@ extension CampaignReminderFeatureTests {
         #expect(accessRequestCount.value == 0)
     }
 
-    /// 開團已刪除但事件移除失敗時，共用連結維持清除並回報事件移除失敗，不呼叫 `removeLink`
+    /// 開團已刪除但事件移除失敗時，共用連結維持清除並回報事件移除失敗，不呼叫 `removeReminderLink`
     @Test
     func campaignRemoved_事件移除失敗_連結維持清除並回報() async {
         // Given
@@ -162,7 +161,7 @@ extension CampaignReminderFeatureTests {
         }
         let store = Self.makeStore(links: Shared(value: [Self.campaignID: Self.oldLink])) {
             $0.calendarReminderService.removeReminder = failingRemoveReminder
-            $0.campaignReminderService.removeLink = { campaignID in
+            $0.campaignService.removeReminderLink = { campaignID in
                 removedCampaignIDs.withValue {
                     $0.append(campaignID)
                 }
@@ -170,10 +169,9 @@ extension CampaignReminderFeatureTests {
         }
 
         // When
-        await store.send(.campaignRemoved(
-            campaignID: Self.campaignID,
-            eventIdentifier: "EVT-old"
-        )) {
+        await store.send(
+            .campaignRemoved(campaignID: Self.campaignID, eventIdentifier: "EVT-old")
+        ) {
             $0.$links.withLock {
                 $0[Self.campaignID] = nil
             }

@@ -84,7 +84,7 @@ extension CampaignWritesFeatureTests {
             reminder: Self.reminder
         )
         let calls = LockIsolated<[Campaign]>([])
-        let failingSave: CampaignService.SaveCampaign = { campaign throws(PersistenceError) in
+        let failingRename: CampaignService.RenameCampaign = { campaign, _ throws(PersistenceError) in
             calls.withValue {
                 $0.append(campaign)
             }
@@ -93,7 +93,7 @@ extension CampaignWritesFeatureTests {
         let store = TestStore(initialState: CampaignWritesFeature.State(campaigns: campaigns)) {
             CampaignWritesFeature()
         } withDependencies: {
-            $0.campaignService.saveCampaign = failingSave
+            $0.campaignService.renameCampaign = failingRename
         }
 
         // When

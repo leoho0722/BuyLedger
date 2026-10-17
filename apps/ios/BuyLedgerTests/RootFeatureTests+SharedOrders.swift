@@ -20,6 +20,9 @@ extension RootFeatureTests {
         let initial = Self.makeIsolatedRootState()
         let store = TestStore(initialState: initial) {
             RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         let outcome = OrdersLoadFeature.Outcome(orders: .success(loaded))
@@ -69,6 +72,9 @@ extension RootFeatureTests {
         let outcome = OrdersLoadFeature.Outcome(orders: .failure(error))
         let store = TestStore(initialState: initial) {
             RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -87,7 +93,9 @@ extension RootFeatureTests {
         await store.receive(\.orders.load.delegate.loadFailed)
         await store.finish()
         #expect(store.state.orders.loadState == .failed("orders.general.message.ordersLoadedTry"))
-        #expect(store.state.dashboard.loadState == .failed("orders.general.message.ordersLoadedTry"))
+        #expect(
+            store.state.dashboard.loadState == .failed("orders.general.message.ordersLoadedTry")
+        )
         #expect(store.state.insights.loadState == .failed("orders.general.message.ordersLoadedTry"))
     }
 
@@ -111,6 +119,9 @@ extension RootFeatureTests {
         initial.insights.orders = [original]
         let store = TestStore(initialState: initial) {
             RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         let result = OrderDraft.WriteResult(
@@ -156,6 +167,8 @@ extension RootFeatureTests {
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
             $0.orderService.saveOrder = { order in
                 saved.withValue {
                     $0.append(order)
@@ -164,7 +177,9 @@ extension RootFeatureTests {
         }
 
         // When
-        await store.send(.orders(.receiptStatusChangeRequested(id: order.id, status: .received)))
+        await store.send(
+            .orders(.rootRequest(.receiptStatusChange(id: order.id, status: .received)))
+        )
 
         // Then
         await store.receive(\.orders.writes.receiptToggleRequested) {
