@@ -131,6 +131,11 @@ final class OrderCreateTests: BLUITestCase {
         edit.tapSave()
 
         // Then
+        // 清單一直在表單底下，要先確認表單關閉，否則表單沒關也會通過
+        if !edit.rootElement.waitForDisappearance() {
+            failWithDiagnostics(in: app, "經選擇器填寫後儲存，編輯表單未關閉")
+        }
+
         // 回到訂單清單：`lookupsOnly` 原本無訂單，建立後清單應至少出現一列
         let orders = OrdersScreen(app: app)
         if !orders.waitUntilReady() {

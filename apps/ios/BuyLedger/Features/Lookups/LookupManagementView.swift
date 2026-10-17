@@ -205,7 +205,7 @@ private extension LookupManagementView {
 
 // MARK: - Preview
 
-#Preview("orders.lookup.label.itemCategories") {
+#Preview("商品類別管理") {
     NavigationStack {
         LookupManagementView(
             store: {
@@ -222,7 +222,7 @@ private extension LookupManagementView {
     }
 }
 
-#Preview("orders.detail.label.paymentMethods") {
+#Preview("付款方式管理") {
     NavigationStack {
         LookupManagementView(
             store: {
@@ -242,13 +242,13 @@ private extension LookupManagementView {
                             isCashOnDelivery: false
                         ),
                         PaymentMethodInfo(
-                            name: "orders.edit.label.bankTransfer",
+                            name: "銀行匯款",
                             isCardless: false,
                             isBankTransfer: true,
                             isCashOnDelivery: false
                         ),
                         PaymentMethodInfo(
-                            name: "orders.list.label.cashDelivery",
+                            name: "貨到付款",
                             isCardless: false,
                             isBankTransfer: false,
                             isCashOnDelivery: true

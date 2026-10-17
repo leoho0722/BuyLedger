@@ -111,26 +111,21 @@ private extension QuoteView {
 
     /// 幣別選擇 sheet 內容
     var currencyPickerSheet: some View {
-        let locale = locale
-        let language = AppLanguage(locale: locale)
-
-        return OptionPickerSheet(
+        OptionPickerSheet(
             title: "fx.rates.label.selectSourceCurrency",
-            allowsAdd: false,
-            searchable: true,
-            emptyTitle: "orders.edit.label.currenciesAvailable",
-            emptyDescription: "orders.edit.message.internetConnectionRequired",
             options: store.rateSource.availableCurrencyCodes,
-            selected: store.rateSource.fromCurrency.rawValue,
-            displayName: {
-                CurrencyDisplayName.text(code: $0, language: language)
-            },
-            searchKeywords: {
-                CurrencyDisplayName.searchKeywords(code: $0, locale: locale)
-            },
-            onSelect: {
-                store.send(.view(.currencySelected($0)))
-            }
+            selection: .single(
+                selected: store.rateSource.fromCurrency.rawValue,
+                onSelect: {
+                    store.send(.view(.currencySelected($0)))
+                }
+            ),
+            emptyState: .init(
+                title: "orders.edit.label.currenciesAvailable",
+                description: "orders.edit.message.internetConnectionRequired"
+            ),
+            labeling: CurrencyDisplayName.optionLabeling(locale: locale),
+            isSearchEnabled: true
         )
     }
 

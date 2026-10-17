@@ -130,7 +130,7 @@ code:
 ---
 ### Requirement: Deterministic data seeding by profile
 
-The app SHALL accept a seed profile name as a launch argument and SHALL populate the in-memory store with the fixed data set that the profile declares. Every seeded date SHALL be derived from the injected reference time rather than from the system clock, so the same profile yields structurally identical data on any calendar day. An unknown or absent profile name SHALL be treated as the empty profile.
+The app SHALL accept a seed profile name as a launch argument and SHALL populate the in-memory store with the fixed data set that the profile declares. Every seeded date SHALL be derived from the injected reference time rather than from the system clock, so the same profile yields structurally identical data on any calendar day. An unknown or absent profile name SHALL be treated as the empty profile. Seeded master data names (order sources, categories, payment methods, reconciliation statuses) and the master data values that seeded orders reference SHALL be user data as a user would type it, and SHALL NOT be String Catalog keys.
 
 #### Scenario: Empty profile yields empty states
 
@@ -152,106 +152,88 @@ The app SHALL accept a seed profile name as a launch argument and SHALL populate
 - **WHEN** the app launches in UI test mode with a seed profile name that no profile declares
 - **THEN** the store is left empty, a warning is logged, and the app continues launching without crashing
 
+#### Scenario: Seeded master data names are user data
+
+- **GIVEN** any declared seed profile
+- **WHEN** the profile is seeded into an in-memory store
+- **THEN** no seeded master data name and no order source, category, payment method or reconciliation status referenced by a seeded order has the dotted shape of a String Catalog key (three or four lowerCamelCase segments, the same format the String Catalog key test enforces)
+
+##### Example: payment method names seeded with master data
+
+| Seeded payment method name | Cardless | Bank transfer | Cash on delivery |
+| --- | --- | --- | --- |
+| 信用卡 | no | no | no |
+| 銀行轉帳 | no | yes | no |
+| 無卡 | yes | no | no |
+| 貨到付款 | no | no | yes |
+| LINE Pay | no | no | no |
+| Apple Pay | no | no | no |
+
+A value such as `orders.list.label.cashDelivery` in place of 貨到付款 violates this scenario.
+
 
 <!-- @trace
-source: uitest-foundation
-updated: 2026-07-24
+source: order-editor-close-and-seed-names
+updated: 2026-10-17
 code:
-  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
-  - apps/ios/BuyLedgerUITests/Support/SheetInteraction.swift
-  - apps/ios/BuyLedgerUITests/Support/TextInput.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignFeature.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoThumbnail.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderEditDateRowTests.swift
   - apps/ios/BuyLedger/Features/Campaigns/CampaignEditView.swift
-  - apps/ios/BuyLedger/Core/Testing/BLUITestSeedData.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/States/BLLoadFailureView.swift
-  - apps/ios/BuyLedgerUITests/Support/BLUITestCase.swift
-  - apps/ios/BuyLedger/App/BuyLedgerApp.swift
-  - apps/ios/BuyLedger/Core/Testing/BLUITestSeedProfile.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/MergePhotoPickerSheet.swift
-  - apps/ios/BuyLedgerUITests/Screens/MergeFlowScreen.swift
-  - apps/ios/BuyLedgerUITests/Screens/AISummaryScreen.swift
-  - apps/ios/BuyLedgerUITests/Support/ValueParsing.swift
-  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignDetailTests.swift
-  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderMergeTests.swift
-  - apps/ios/CLAUDE.md
-  - apps/ios/BuyLedgerUITests.xctestplan
-  - apps/ios/BuyLedgerTests/BLUITestConfigurationTests.swift
-  - apps/ios/BuyLedgerUITests/KeyboardDismissTests.swift
-  - apps/ios/BuyLedgerUITests/Screens/OrderDetailScreen.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignDetailView.swift
-  - apps/ios/BuyLedgerUITests/Screens/Screen.swift
-  - apps/ios/BuyLedgerUITests/Tests/Orders/OrdersListTests.swift
-  - apps/ios/BuyLedger/Features/Customers/CustomersView.swift
-  - apps/ios/BuyLedgerUITests/Tests/Tools/FxTests.swift
-  - apps/ios/BuyLedger/Features/App/RootTabLayout.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Images/BLPhotoViewer.swift
-  - apps/ios/BuyLedgerUITests/Screens/CampaignEditScreen.swift
-  - apps/ios/BuyLedger/Features/Dashboard/DashboardView.swift
-  - apps/ios/BuyLedgerUITests/Tests/Smoke/LaunchSmokeTests.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
-  - apps/ios/BuyLedgerUITests/Screens/QuoteScreen.swift
-  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignListTests.swift
-  - apps/ios/BuyLedger/Features/More/MoreView.swift
-  - apps/ios/BuyLedger/Features/Orders/OrderEditView.swift
-  - apps/ios/BuyLedger/Features/App/RootSidebarLayout.swift
-  - apps/ios/BuyLedgerUITests/Tests/Smoke/HarnessSelfCheckTests.swift
-  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
-  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEditSections/orderEditOriginalSection_長訂單識別碼_顯示短識別碼.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Pickers/OptionPickerAddSection.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Pickers/OptionPickerSheet+Configuration.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderEditAddOptionTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditBasicSection.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEditSections/orderEditCostSection_一般既有訂單_符合基準圖.1.png
   - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCreateTests.swift
-  - apps/ios/BuyLedgerUITests/Tests/Tools/QuoteTests.swift
-  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - apps/ios/BuyLedger/Core/Testing/BLUITestHarness.swift
-  - apps/ios/BuyLedger/Features/App/RootTab.swift
-  - apps/ios/BuyLedger/Features/Campaigns/CampaignListView.swift
-  - apps/ios/BuyLedger/Features/Settings/SettingsView.swift
-  - apps/ios/BuyLedgerUITests/Tests/Insights/InsightsTests.swift
-  - apps/ios/BuyLedgerUITests/Screens/CampaignsScreen.swift
-  - apps/ios/BuyLedgerUITests/Screens/CampaignDetailScreen.swift
-  - apps/ios/BuyLedgerUITests/Support/Diagnostics.swift
-  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
-  - apps/ios/BuyLedger/Core/Testing/BLUITestDependencyOverrides.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - apps/ios/BuyLedgerUITests/Screens/InsightsScreen.swift
-  - apps/ios/BuyLedgerUITests/Screens/OrderEditScreen.swift
-  - apps/ios/BuyLedgerUITests/Screens/PhotoViewerScreen.swift
-  - apps/ios/BuyLedgerUITests/Support/MenuInteraction.swift
-  - apps/ios/BuyLedgerUITests/BuyLedgerUITestsLaunchTests.swift
-  - apps/ios/BuyLedgerUITests/Support/Assertions.swift
-  - apps/ios/BuyLedgerUITests/Screens/DashboardScreen.swift
-  - apps/ios/BuyLedgerUITests/Screens/FxScreen.swift
-  - apps/ios/BuyLedger/Features/Orders/Components/OptionPickerSheet.swift
-  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen.swift
-  - apps/ios/BuyLedgerUITests/Screens/CustomersScreen.swift
-  - apps/ios/BuyLedgerUITests/Screens/RootNavigationScreen.swift
-  - apps/ios/BuyLedgerUITests/Screens/SettingsScreen.swift
-  - apps/ios/BuyLedgerUITests/PhotoViewerPagingTests.swift
-  - apps/ios/BuyLedgerUITests/Tests/Orders/AISummaryTests.swift
-  - apps/ios/BuyLedgerUITests/Tests/Performance/LaunchPerformanceTests.swift
-  - apps/ios/BuyLedger/App/AppLaunchConfigurator.swift
-  - apps/ios/BuyLedger/Features/Insights/InsightsView.swift
-  - apps/ios/BuyLedgerTests/BLAccessibilityIDTests.swift
-  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderDetailTests.swift
-  - apps/ios/BuyLedger.xcodeproj/xcshareddata/xcschemes/BuyLedgerUITests.xcscheme
-  - apps/ios/BuyLedger/Features/AISummary/AISummaryView.swift
-  - apps/ios/BuyLedgerUITests/Screens/OptionPickerScreen.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
-  - apps/ios/BuyLedgerUITests/Tests/Customers/CustomersTests.swift
-  - apps/ios/README.md
-  - apps/ios/BuyLedger/Core/Testing/BLUITestConfiguration.swift
-  - apps/ios/BuyLedger/Features/Quote/QuoteView.swift
-  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
-  - apps/ios/BuyLedger/Features/App/RootFeature.swift
-  - apps/ios/BuyLedger/Features/FX/FxView.swift
-  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignCrudTests.swift
-  - apps/ios/BuyLedgerUITests/Support/Waiting.swift
   - apps/ios/BuyLedgerUITests/Tests/Orders/OrderEditDirtyTests.swift
-  - apps/ios/BuyLedgerUITests-Performance.xctestplan
+  - apps/ios/BuyLedger/Features/Campaigns/Components/CampaignEditNotesSection.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+Analytics.swift
+  - apps/ios/BuyLedger/Features/Quote/QuoteView.swift
+  - apps/ios/BuyLedgerUITests/Screens/CampaignEditScreen.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+Campaigns.swift
+  - apps/ios/BuyLedger/Features/Lookups/Components/LookupItemList.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEditSections/orderEditPaymentSection_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Orders.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+Builders.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedgerTests/OrderEditDraftOperationsTests.swift
+  - apps/ios/BuyLedger/Features/FX/FxView.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEditSections/orderEditFeesSection_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEditSections/orderEditPhotosSection_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderEditSections.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData.swift
   - apps/ios/BuyLedgerUITests/Support/AlertInteraction.swift
-  - apps/ios/BuyLedgerUITests/BuyLedgerUITests.swift
-  - apps/ios/BuyLedgerUITests/Support/Scrolling.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEditSections/orderEditNotesSection_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+Orders.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditView.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+CampaignDetail/campaignEditNotesSection_編輯既有開團_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEditSections/orderEditItemsSection_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEditSections/orderEditOriginalSection_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEditSections/orderEditCampaignSection_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Forms/PaymentMethodEditorSheet.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrderEditScreen.swift
+  - apps/ios/BuyLedger/Features/Lookups/LookupManagementView.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+CampaignDetail.swift
+  - apps/ios/BuyLedgerUITests/Screens/PaymentMethodEditorScreen.swift
+  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignEditDateRowTests.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Pickers/OptionPickerList.swift
+  - apps/ios/BuyLedgerUITests/Screens/OptionPickerScreen.swift
+  - apps/ios/BuyLedgerTests/SnapshotSectionView.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Campaigns.swift
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Pickers/OptionPickerSheet.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderEdit.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEditSections/orderEditCampaignSection_合併訂單情境_以頓號串接開團.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEditSections/orderEditStatusSection_一般既有訂單_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderEditPickerDestination.swift
+  - apps/ios/BuyLedgerTests/BLUITestSeedDataTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPreviewFixtures.swift
+  - apps/ios/BuyLedger/Features/Settings/SettingsView.swift
+  - apps/ios/BuyLedger/Shared/Localization/CurrencyDisplayName.swift
 -->
 
 ---

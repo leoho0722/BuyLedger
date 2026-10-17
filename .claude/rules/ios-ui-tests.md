@@ -26,6 +26,7 @@ paths:
     - 導覽列：以畫面根容器 identifier 判定就緒，導覽列用 `app.navigationBars` 定位。
     - 系統 tab bar：`AppNavigator` 依 `RootTab` 宣告順序取按鈕，再等目的地根 identifier。
     - TCA `AlertState`：以 `app.alerts.firstMatch` 判定呈現、`tapAlertButton(label:)` 依按鈕文字點擊 (計畫已鎖語言)；能自掛 identifier 的自訂 `.alert` 才用 `tapAlertButton(identifier:)`。
+    - 自訂 `.alert` 內的 `TextField` 帶不出 identifier，以 `app.alerts.firstMatch.textFields.firstMatch` 定位 (參考 `OptionPickerScreen.typeNewOptionName`)；按鈕帶得出 identifier，但會以兩層同 identifier 的 Button 出現，直接查詢要加 `.firstMatch` (`tapAlertButton(identifier:)` 已處理)。
     - `Picker(.segmented)` 的選項：identifier 掛在 `Picker`，以 `segmentedControls.buttons` 依宣告順序 `boundBy` 取。
 - **`Menu` 的 identifier 掛在 `Menu` 本身，不是 label 內的 `Label`**：選單項目掛在各 `Button`，測試以 `tapMenuItem` 先展開再點。
 - **push 目的地的返回鍵在 iPad 要 scope 到目的地那條導覽列**：`app.navigationBars.buttons.firstMatch` 可能點到側邊欄的鈕而關掉整個 sheet。

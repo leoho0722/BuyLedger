@@ -44,92 +44,84 @@ private extension OrderEditPickerDestination {
         case .orderSource:
             OptionPickerSheet(
                 title: "orders.edit.label.selectOrderSource",
-                addButtonTitle: "orders.edit.label.addSource",
-                emptyTitle: "orders.edit.label.sources",
-                emptyDescription: "orders.edit.message.addFirstOrder",
-                addAlertTitle: "orders.edit.label.addOrderSource",
-                addFieldPlaceholder: "orders.edit.label.sourceName",
-                addAlertMessage: "orders.edit.message.enterNewOrder",
                 options: pickerStore.options.orderSources,
-                selected: store.draft.orderSource,
-                onSelect: {
-                    pickerStore.send(.view(.orderSourceSelected($0)))
-                },
-                onAdd: {
+                selection: .single(
+                    selected: store.draft.orderSource,
+                    onSelect: {
+                        pickerStore.send(.view(.orderSourceSelected($0)))
+                    }
+                ),
+                addition: .prompt(
+                    .init(
+                        buttonTitle: "orders.edit.label.addSource",
+                        title: "orders.edit.label.addOrderSource",
+                        message: "orders.edit.message.enterNewOrder",
+                        placeholder: "orders.edit.label.sourceName"
+                    )
+                ) {
                     pickerStore.send(.view(.addOrderSourceTapped($0)))
                 },
+                emptyState: .init(
+                    title: "orders.edit.label.sources",
+                    description: "orders.edit.message.addFirstOrder"
+                ),
                 isEmbedded: true
             )
 
         case .category:
-            if store.isMergeContext {
-                // 合併時使用多選模式
-                OptionPickerSheet(
-                    title: "orders.list.label.category1",
-                    addButtonTitle: "orders.edit.label.addCategory",
-                    emptyTitle: "orders.edit.label.categories",
-                    emptyDescription: "orders.edit.message.addFirstCategory",
-                    addAlertTitle: "orders.edit.label.addItemCategory",
-                    addFieldPlaceholder: "orders.edit.label.categoryName",
-                    addAlertMessage: "orders.edit.message.enterNewProduct",
-                    options: pickerStore.options.categories,
-                    onAdd: {
-                        pickerStore.send(.view(.addCategoryTapped($0)))
-                    },
-                    multiSelection: .init(selections: Set(store.draft.categories)) {
-                        pickerStore.send(.view(.categoryToggled($0)))
-                    },
-                    isEmbedded: true
-                )
-            } else {
-                OptionPickerSheet(
-                    title: "orders.list.label.category1",
-                    addButtonTitle: "orders.edit.label.addCategory",
-                    emptyTitle: "orders.edit.label.categories",
-                    emptyDescription: "orders.edit.message.addFirstCategory",
-                    addAlertTitle: "orders.edit.label.addItemCategory",
-                    addFieldPlaceholder: "orders.edit.label.categoryName",
-                    addAlertMessage: "orders.edit.message.enterNewProduct",
-                    options: pickerStore.options.categories,
-                    selected: store.draft.categories.first ?? "",
-                    onSelect: {
-                        pickerStore.send(.view(.categorySelected($0)))
-                    },
-                    onAdd: {
-                        pickerStore.send(.view(.addCategoryTapped($0)))
-                    },
-                    isEmbedded: true
-                )
-            }
+            OptionPickerSheet(
+                title: "orders.list.label.category1",
+                options: pickerStore.options.categories,
+                selection: categorySelection,
+                addition: .prompt(
+                    .init(
+                        buttonTitle: "orders.edit.label.addCategory",
+                        title: "orders.edit.label.addItemCategory",
+                        message: "orders.edit.message.enterNewProduct",
+                        placeholder: "orders.edit.label.categoryName"
+                    )
+                ) {
+                    pickerStore.send(.view(.addCategoryTapped($0)))
+                },
+                emptyState: .init(
+                    title: "orders.edit.label.categories",
+                    description: "orders.edit.message.addFirstCategory"
+                ),
+                isEmbedded: true
+            )
 
         case .campaign:
             OptionPickerSheet(
                 title: "orders.edit.label.selectCampaigns",
-                allowsAdd: false,
-                emptyTitle: "orders.edit.label.campaigns",
-                emptyDescription: "orders.edit.message.createCampaignCampaigns",
                 options: pickerStore.options.campaigns,
-                multiSelection: .init(selections: Set(store.draft.campaignNames)) {
+                selection: .multiple(selections: Set(store.draft.campaignNames)) {
                     pickerStore.send(.view(.campaignToggled($0)))
                 },
+                emptyState: .init(
+                    title: "orders.edit.label.campaigns",
+                    description: "orders.edit.message.createCampaignCampaigns"
+                ),
                 isEmbedded: true
             )
 
         case .paymentMethod:
             OptionPickerSheet(
                 title: "orders.list.label.selectPaymentMethod",
-                addButtonTitle: "orders.edit.label.addPaymentMethod",
-                emptyTitle: "orders.edit.label.paymentMethods",
-                emptyDescription: "orders.edit.message.addFirstPayment",
-                addAlertTitle: "orders.edit.label.addPaymentMethod",
-                addFieldPlaceholder: "orders.detail.label.paymentMethodName",
-                addAlertMessage: "orders.edit.message.enterNewPayment",
                 options: pickerStore.options.paymentMethods.map(\.name),
-                selected: store.draft.paymentMethod,
-                onSelect: {
-                    pickerStore.send(.view(.paymentMethodSelected($0)))
-                },
-                onAddPaymentMethod: { name, isCardless, isBankTransfer, isCashOnDelivery in
+                selection: .single(
+                    selected: store.draft.paymentMethod,
+                    onSelect: {
+                        pickerStore.send(.view(.paymentMethodSelected($0)))
+                    }
+                ),
+                addition: .paymentMethod(
+                    .init(
+                        buttonTitle: "orders.edit.label.addPaymentMethod",
+                        title: "orders.edit.label.addPaymentMethod",
+                        message: "orders.edit.message.enterNewPayment",
+                        placeholder: "orders.detail.label.paymentMethodName"
+                    )
+                ) { name, isCardless, isBankTransfer, isCashOnDelivery in
                     pickerStore.send(
                         .view(
                             .addPaymentMethodTapped(
@@ -143,50 +135,56 @@ private extension OrderEditPickerDestination {
                         )
                     )
                 },
+                emptyState: .init(
+                    title: "orders.edit.label.paymentMethods",
+                    description: "orders.edit.message.addFirstPayment"
+                ),
                 isEmbedded: true
             )
 
         case .reconciliationStatus:
             OptionPickerSheet(
                 title: "orders.edit.label.reconciliationStatus2",
-                addButtonTitle: "orders.edit.label.addStatus",
-                emptyTitle: "orders.edit.label.reconciliationStatuses",
-                emptyDescription: "orders.edit.message.addFirstReconciliation",
-                addAlertTitle: "orders.edit.label.addStatus",
-                addFieldPlaceholder: "orders.edit.label.reconciliationStatusName",
-                addAlertMessage: "orders.edit.message.enterNewReconciliation",
                 options: pickerStore.options.reconciliationStatuses,
-                selected: store.draft.reconciliationStatus,
-                onSelect: {
-                    pickerStore.send(.view(.reconciliationStatusSelected($0)))
-                },
-                onAdd: {
+                selection: .single(
+                    selected: store.draft.reconciliationStatus,
+                    onSelect: {
+                        pickerStore.send(.view(.reconciliationStatusSelected($0)))
+                    }
+                ),
+                addition: .prompt(
+                    .init(
+                        buttonTitle: "orders.edit.label.addStatus",
+                        title: "orders.edit.label.addStatus",
+                        message: "orders.edit.message.enterNewReconciliation",
+                        placeholder: "orders.edit.label.reconciliationStatusName"
+                    )
+                ) {
                     pickerStore.send(.view(.addReconciliationStatusTapped($0)))
                 },
+                emptyState: .init(
+                    title: "orders.edit.label.reconciliationStatuses",
+                    description: "orders.edit.message.addFirstReconciliation"
+                ),
                 isEmbedded: true
             )
 
         case .currency:
-            let locale = locale
-            let language = AppLanguage(locale: locale)
-
             OptionPickerSheet(
                 title: "orders.edit.label.selectCurrency",
-                allowsAdd: false,
-                searchable: true,
-                emptyTitle: "orders.edit.label.currenciesAvailable",
-                emptyDescription: "orders.edit.message.internetConnectionRequired",
                 options: pickerStore.options.currencyCodes.map(\.rawValue),
-                selected: store.draft.currency.rawValue,
-                displayName: {
-                    CurrencyDisplayName.text(code: $0, language: language)
-                },
-                searchKeywords: {
-                    CurrencyDisplayName.searchKeywords(code: $0, locale: locale)
-                },
-                onSelect: {
-                    pickerStore.send(.view(.currencySelected($0)))
-                },
+                selection: .single(
+                    selected: store.draft.currency.rawValue,
+                    onSelect: {
+                        pickerStore.send(.view(.currencySelected($0)))
+                    }
+                ),
+                emptyState: .init(
+                    title: "orders.edit.label.currenciesAvailable",
+                    description: "orders.edit.message.internetConnectionRequired"
+                ),
+                labeling: CurrencyDisplayName.optionLabeling(locale: locale),
+                isSearchEnabled: true,
                 isEmbedded: true
             )
 
@@ -204,6 +202,21 @@ private extension OrderEditPickerDestination {
     /// 只負責選項清單、選擇器路由與選取請求的子 store
     var pickerStore: StoreOf<OrderEditPickersFeature> {
         store.scope(state: \.pickers, action: \.pickers)
+    }
+
+    /// 合併時使用多選模式，其餘情境使用單選
+    var categorySelection: OptionPickerSheet.Selection {
+        if store.isMergeContext {
+            return .multiple(selections: Set(store.draft.categories)) {
+                pickerStore.send(.view(.categoryToggled($0)))
+            }
+        }
+        return .single(
+            selected: store.draft.categories.first ?? "",
+            onSelect: {
+                pickerStore.send(.view(.categorySelected($0)))
+            }
+        )
     }
 }
 

@@ -338,7 +338,7 @@ private extension PaymentMethodEditorSheet {
         message: "orders.lookup.message.editNameTags",
         namePlaceholder: "orders.detail.label.paymentMethodName",
         submitTitle: "orders.edit.button.save",
-        initialName: "orders.edit.label.bankTransfer",
+        initialName: "銀行匯款",
         isInitialBankTransfer: true,
         onSubmit: { _, _, _, _ in
         }

@@ -7,152 +7,80 @@
 
 import SwiftUI
 
-/// 通用的單選字串選項 sheet
+/// 依選取與新增模式呈現字串選項的選擇器
 struct OptionPickerSheet: View {
 
     // MARK: - Properties
 
-    /// sheet 提供的 dismiss action；嵌入時返回，sheet 時關閉
+    /// 嵌入時返回上一頁，獨立 sheet 時關閉選擇器
     @Environment(\.dismiss) private var dismiss
 
-    /// 新增 alert 的名稱輸入草稿
-    @State private var draft = ""
-
-    /// 是否顯示「新增」alert (商品類別等沒有 `isCardless` 需求的入口)
-    @State private var isAddAlertPresented = false
-
-    /// 是否顯示「新增付款方式」導覽目的地
+    /// 是否推入付款方式編輯器
     @State private var isAddPaymentMethodPresented = false
 
-    /// 搜尋輸入
+    /// 搜尋欄目前的輸入
     @State private var searchText = ""
 
-    /// Sheet 的標題 (顯示在 navigation bar)
-    let title: String
+    /// 可用的新增入口；`nil` 時隱藏新增按鈕
+    let addition: Addition?
 
-    /// 是否允許在 sheet 內新增項目 (toolbar 出現「新增」按鈕)
-    let canAdd: Bool
+    /// 沒有符合選項時顯示的文案
+    let emptyState: EmptyState
 
-    /// 是否啟用搜尋欄
+    /// 是否沿用宿主的導覽堆疊
+    let isEmbedded: Bool
+
+    /// 是否顯示搜尋欄
     let isSearchEnabled: Bool
 
-    /// 「新增」按鈕顯示的標題；`allowsAdd` 為 `false` 時忽略
-    let addButtonTitle: String
+    /// 自訂顯示名稱與搜尋補充文字；`nil` 時使用原值
+    let labeling: Labeling?
 
-    /// 沒有任何選項時 ``ContentUnavailableView`` 的標題
-    let emptyTitle: String
-
-    /// 沒有任何選項時 ``ContentUnavailableView`` 的描述
-    let emptyDescription: String
-
-    /// 「新增」alert 的標題；`allowsAdd` 為 `false` 時忽略
-    let addAlertTitle: String
-
-    /// 「新增」alert 內 TextField 的 placeholder；`allowsAdd` 為 `false` 時忽略
-    let addFieldPlaceholder: String
-
-    /// 「新增」alert 的說明訊息；`allowsAdd` 為 `false` 時忽略
-    let addAlertMessage: String
-
-    /// 目前可選的選項清單
+    /// 尚未套用搜尋的完整選項清單
     let options: [String]
 
-    /// 目前已選中的選項；用來在列表中顯示勾選
-    let selected: String
+    /// 單選或多選的目前值與操作回呼
+    let selection: Selection
 
-    /// 顯示用名稱轉換；`nil` 時直接顯示 `option`
-    /// - Returns: 選項的顯示文字
-    let displayName: (@Sendable (String) -> String)?
-
-    /// 搜尋時納入比對的補充文字；用於幣別 sheet 把在地化名稱也納入搜尋
-    /// - Returns: 選項的搜尋補充文字
-    let searchKeywords: (@Sendable (String) -> String)?
-
-    /// 使用者選擇既有選項時的回呼
-    let onSelect: (String) -> Void
-
-    /// 使用者確認新增選項時的回呼
-    let onAdd: (String) -> Void
-
-    /// 付款方式新增回呼；提供時改用付款方式表單
-    let onAddPaymentMethod: PaymentMethodEditorSheet.SubmitAction?
-
-    /// 可選的「清除目前選擇」row 設定
-    let clearOption: ClearOption?
-
-    /// 可選的多選模式設定
-    let multiSelection: MultiSelection?
-
-    /// 是否嵌入既有導覽堆疊；預設 false 為獨立 sheet
-    let isEmbedded: Bool
+    /// 導覽列顯示的標題
+    let title: String
 
     // MARK: - Init
 
-    /// 建立選項選擇 sheet
+    /// 建立依選取與新增模式配置的選擇器
+    ///
     /// - Parameters:
-    ///   - title: navigation bar 顯示的標題
-    ///   - allowsAdd: 是否顯示新增。預設 `true`
-    ///   - searchable: 是否啟用搜尋欄。預設 `false`
-    ///   - addButtonTitle: 新增按鈕標題
-    ///   - emptyTitle: 沒有符合選項時顯示的標題
-    ///   - emptyDescription: 沒有符合選項時顯示的說明
-    ///   - addAlertTitle: 新增項目 alert 的標題
-    ///   - addFieldPlaceholder: 新增項目輸入欄的 placeholder
-    ///   - addAlertMessage: 新增 alert 提示訊息
-    ///   - options: 可供選擇的原始值清單
-    ///   - selected: 目前選項；clear 時以空字串表示未選
-    ///   - displayName: 自訂顯示名稱；`nil` 直接顯示原值
-    ///   - searchKeywords: 自訂搜尋補充文字；`nil` 僅以原值比對
-    ///   - onSelect: 點選既有選項時的回呼
-    ///   - onAdd: 新增項目時的回呼；停用新增或使用付款方式表單時不會呼叫
-    ///   - onAddPaymentMethod: 提供時，新增按鈕改用付款方式表單
-    ///   - clearOption: 清除選擇的 row；nil 時不顯示
-    ///   - multiSelection: 多選設定；nil 表示單選
+    ///   - title: 導覽列顯示的標題
+    ///   - options: 可供選取的原始值清單
+    ///   - selection: 單選或多選的目前值與操作回呼
+    ///   - addition: 新增入口；`nil` 時不允許新增
+    ///   - emptyState: 沒有符合選項時顯示的文案
+    ///   - labeling: 自訂顯示名稱與搜尋補充文字
+    ///   - isSearchEnabled: 是否顯示搜尋欄，預設 `false`
+    ///   - isEmbedded: 是否嵌入既有導覽堆疊，預設 `false`
     init(
         title: String,
-        allowsAdd canAdd: Bool = true,
-        searchable isSearchEnabled: Bool = false,
-        addButtonTitle: String = "",
-        emptyTitle: String,
-        emptyDescription: String,
-        addAlertTitle: String = "",
-        addFieldPlaceholder: String = "",
-        addAlertMessage: String = "",
         options: [String],
-        selected: String = "",
-        displayName: (@Sendable (String) -> String)? = nil,
-        searchKeywords: (@Sendable (String) -> String)? = nil,
-        onSelect: @escaping (String) -> Void = { _ in },
-        onAdd: @escaping (String) -> Void = { _ in },
-        onAddPaymentMethod: PaymentMethodEditorSheet.SubmitAction? = nil,
-        clearOption: ClearOption? = nil,
-        multiSelection: MultiSelection? = nil,
+        selection: Selection,
+        addition: Addition? = nil,
+        emptyState: EmptyState,
+        labeling: Labeling? = nil,
+        isSearchEnabled: Bool = false,
         isEmbedded: Bool = false
     ) {
         self.title = title
-        self.canAdd = canAdd
-        self.isSearchEnabled = isSearchEnabled
-        self.addButtonTitle = addButtonTitle
-        self.emptyTitle = emptyTitle
-        self.emptyDescription = emptyDescription
-        self.addAlertTitle = addAlertTitle
-        self.addFieldPlaceholder = addFieldPlaceholder
-        self.addAlertMessage = addAlertMessage
         self.options = options
-        self.selected = selected
-        self.displayName = displayName
-        self.searchKeywords = searchKeywords
-        self.onSelect = onSelect
-        self.onAdd = onAdd
-        self.onAddPaymentMethod = onAddPaymentMethod
-        self.clearOption = clearOption
-        self.multiSelection = multiSelection
+        self.selection = selection
+        self.addition = addition
+        self.emptyState = emptyState
+        self.labeling = labeling
+        self.isSearchEnabled = isSearchEnabled
         self.isEmbedded = isEmbedded
     }
 
     // MARK: - Body
 
-    /// 選項選擇的內容
+    /// 嵌入宿主或以獨立導覽堆疊呈現選項內容
     var body: some View {
         if isEmbedded {
             configuredContent
@@ -168,45 +96,27 @@ struct OptionPickerSheet: View {
 
 private extension OptionPickerSheet {
 
-    /// 建立標題、toolbar、搜尋與新增內容
-    @ViewBuilder
+    /// 組合新增入口、選項、搜尋與導覽目的地
     var configuredContent: some View {
         List {
-            if canAdd {
-                Section {
-                    Button {
-                        triggerAdd()
-                    } label: {
-                        Label(LocalizedStringKey(addButtonTitle), systemImage: "plus.circle.fill")
-                    }
-                    .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addButton)
+            if let addition {
+                OptionPickerAddSection(addition: addition) {
+                    isAddPaymentMethodPresented = true
                 }
             }
 
             OptionPickerList(
+                displayName: labeling?.displayName,
+                emptyState: emptyState,
                 options: filteredOptions,
-                selected: selected,
-                displayName: displayName,
-                clearOption: clearOption.map { option in
-                    ClearOption(
-                        title: option.title,
-                        onClear: {
-                            option.onClear()
-                            dismiss()
-                        }
-                    )
-                },
-                multiSelection: multiSelection,
-                onSelect: selectOption,
-                emptyTitle: emptyTitle,
-                emptyDescription: emptyDescription
+                selection: selection
             )
         }
         .accessibilityIdentifier(BLAccessibilityID.OptionPicker.root)
         .navigationTitle(Text(LocalizedStringKey(title)))
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
-            if multiSelection != nil {
+            if case .multiple = selection {
                 // 多選時立即套用，完成鍵結束選取
                 ToolbarItem(placement: .confirmationAction) {
                     Button("common.action.button.done") {
@@ -214,63 +124,33 @@ private extension OptionPickerSheet {
                     }
                     .accessibilityIdentifier(BLAccessibilityID.OptionPicker.doneButton)
                 }
+            }
 
-                // 獨立 sheet 也要提供取消出口
-                // 嵌入 (push) 時由宿主 Back 承接，不再加重複的取消
-                if !isEmbedded {
-                    cancelToolbarItem()
-                }
-            } else if !isEmbedded {
-                // 只有獨立 sheet 顯示取消鍵，push 頁面使用 Back
+            // 嵌入時由宿主的返回鍵承接，獨立 sheet 才提供取消
+            if !isEmbedded {
                 cancelToolbarItem()
             }
         }
         .modifier(BLSearchableModifier(text: $searchText, isEnabled: isSearchEnabled))
         .scrollDismissesKeyboard(.interactively)
-        .alert(LocalizedStringKey(addAlertTitle), isPresented: $isAddAlertPresented) {
-            TextField(LocalizedStringKey(addFieldPlaceholder), text: $draft)
-                .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addAlertNameField)
-                .textInputAutocapitalization(.never)
-                .autocorrectionDisabled()
-
-            Button("orders.list.button.add") {
-                addDraft()
-            }
-            .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addAlertConfirmButton)
-            .disabled(
-                draft.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-            )
-
-            Button("common.action.cancel", role: .cancel) {
-                draft = ""
-            }
-            .accessibilityIdentifier(BLAccessibilityID.OptionPicker.addAlertCancelButton)
-        } message: {
-            Text(LocalizedStringKey(addAlertMessage))
-        }
         .navigationDestination(isPresented: $isAddPaymentMethodPresented) {
-            // 付款方式以 push 呈現；其他情境維持原本導覽
-            PaymentMethodEditorSheet(
-                title: addAlertTitle,
-                message: addAlertMessage,
-                namePlaceholder: addFieldPlaceholder,
-                submitTitle: "orders.list.button.add",
-                isEmbedded: true,
-                onSubmit: { name, isCardless, isBankTransfer, isCashOnDelivery in
-                    onAddPaymentMethod?(
-                        name,
-                        isCardless,
-                        isBankTransfer,
-                        isCashOnDelivery
-                    )
-                    // 提交後回到選項頁
-                    dismiss()
-                }
-            )
+            if case .paymentMethod(let prompt, let onSubmit) = addition {
+                // 編輯器送出後自己會退回選擇器，這裡不能再包一層呼叫 `dismiss()`，否則會關掉宿主 sheet
+                PaymentMethodEditorSheet(
+                    title: prompt.title,
+                    message: prompt.message,
+                    namePlaceholder: prompt.placeholder,
+                    submitTitle: "orders.list.button.add",
+                    isEmbedded: true,
+                    onSubmit: onSubmit
+                )
+            }
         }
     }
 
-    /// 獨立 sheet 使用的取消 toolbar item
+    /// 獨立 sheet 使用的取消按鈕
+    ///
+    /// - Returns: 關閉目前選擇器的工具列項目
     @ToolbarContentBuilder
     func cancelToolbarItem() -> some ToolbarContent {
         ToolbarItem(placement: .cancellationAction) {
@@ -284,40 +164,11 @@ private extension OptionPickerSheet {
     }
 }
 
-// MARK: - Nested Types
-
-extension OptionPickerSheet {
-
-    /// 「清除目前選擇」row 的設定
-    struct ClearOption {
-
-        // MARK: - Properties
-
-        /// Clear row 的 label 文字 (例如「全部」)
-        let title: String
-
-        /// 使用者點擊清除選項列時觸發的回呼；執行後 sheet 會自動 dismiss
-        let onClear: () -> Void
-    }
-
-    /// 多選模式的設定
-    struct MultiSelection {
-
-        // MARK: - Properties
-
-        /// 目前已選取的選項集合；驅動每一列的勾選指示
-        let selections: Set<String>
-
-        /// 點擊選項時的回呼
-        let onToggle: (String) -> Void
-    }
-}
-
-// MARK: - Computed Properties
+// MARK: - Private Method
 
 private extension OptionPickerSheet {
 
-    /// 依當前搜尋字串過濾後的選項清單
+    /// 依搜尋輸入比對顯示名稱、補充文字與原值
     var filteredOptions: [String] {
         let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
         guard !trimmed.isEmpty else {
@@ -325,52 +176,15 @@ private extension OptionPickerSheet {
         }
 
         return options.filter { option in
-            let displayText = displayName?(option) ?? option
+            let displayText = labeling?.displayName(option) ?? option
             if displayText.localizedStandardContains(trimmed) {
                 return true
             }
-            if let keywords = searchKeywords?(option), keywords.localizedStandardContains(trimmed) {
+            if let keywords = labeling?.searchKeywords(option),
+               keywords.localizedStandardContains(trimmed) {
                 return true
             }
             return option.localizedStandardContains(trimmed)
-        }
-    }
-}
-
-// MARK: - Private Method
-
-private extension OptionPickerSheet {
-
-    /// 以目前草稿新增選項；空白內容不送出
-    func addDraft() {
-        let trimmed = draft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            return
-        }
-        onAdd(trimmed)
-        draft = ""
-        dismiss()
-    }
-
-    /// 選取一筆選項並依模式更新或關閉
-    /// - Parameter option: 被點擊的選項
-    func selectOption(_ option: String) {
-        if let multiSelection {
-            multiSelection.onToggle(option)
-        } else {
-            onSelect(option)
-            dismiss()
-        }
-    }
-
-    /// 新增按鈕行為；付款方式開導覽表單，其餘開 alert
-    func triggerAdd() {
-        if onAddPaymentMethod != nil {
-            // 付款方式使用導覽目的地，避免 alert 遺失旗標開關
-            isAddPaymentMethodPresented = true
-        } else {
-            draft = ""
-            isAddAlertPresented = true
         }
     }
 }
@@ -380,60 +194,81 @@ private extension OptionPickerSheet {
 #Preview("商品類別 (可新增)") {
     OptionPickerSheet(
         title: "orders.list.label.category1",
-        allowsAdd: true,
-        addButtonTitle: "orders.edit.label.addCategory",
-        emptyTitle: "orders.edit.label.categories",
-        emptyDescription: "orders.edit.message.addFirstCategory",
-        addAlertTitle: "orders.edit.label.addItemCategory",
-        addFieldPlaceholder: "orders.edit.label.categoryName",
-        addAlertMessage: "orders.edit.message.enterNewProduct",
         options: ["3C", "美妝", "精品", "食品"],
-        selected: "美妝",
-        onSelect: { _ in }
+        selection: .single(
+            selected: "美妝",
+            onSelect: { _ in
+            }
+        ),
+        addition: .prompt(
+            .init(
+                buttonTitle: "orders.edit.label.addCategory",
+                title: "orders.edit.label.addItemCategory",
+                message: "orders.edit.message.enterNewProduct",
+                placeholder: "orders.edit.label.categoryName"
+            )
+        ) { _ in
+        },
+        emptyState: .init(
+            title: "orders.edit.label.categories",
+            description: "orders.edit.message.addFirstCategory"
+        )
     )
 }
 
 #Preview("幣別 (不可新增、可搜尋)") {
     OptionPickerSheet(
         title: "orders.edit.label.selectCurrency",
-        allowsAdd: false,
-        searchable: true,
-        emptyTitle: "orders.edit.label.currenciesAvailable",
-        emptyDescription: "需要網路連線載入幣別清單，請稍後再試。",
         options: ["TWD", "USD", "JPY", "KRW", "EUR", "CNY"],
-        selected: "TWD",
-        displayName: { code in
-            CurrencyDisplayName.text(code: code, language: .traditionalChinese)
-        },
-        onSelect: { _ in }
+        selection: .single(
+            selected: "TWD",
+            onSelect: { _ in
+            }
+        ),
+        emptyState: .init(
+            title: "orders.edit.label.currenciesAvailable",
+            description: "需要網路連線載入幣別清單，請稍後再試。"
+        ),
+        labeling: CurrencyDisplayName.optionLabeling(locale: AppLanguage.traditionalChinese.locale),
+        isSearchEnabled: true
     )
 }
 
 #Preview("類別篩選 (含清除選項、未選任何類別)") {
     OptionPickerSheet(
         title: "orders.list.label.category1",
-        allowsAdd: false,
-        searchable: true,
-        emptyTitle: "orders.list.label.matchingCategories",
-        emptyDescription: "orders.list.message.tryAnotherSearch",
         options: ["3C", "美妝", "精品", "食品", "保健", "零食", "書籍"],
-        selected: "",
-        onSelect: { _ in },
-        clearOption: .init(title: "common.action.label.all", onClear: {})
+        selection: .single(
+            selected: "",
+            onSelect: { _ in
+            },
+            clear: .init(title: "common.action.label.all") {
+            }
+        ),
+        emptyState: .init(
+            title: "orders.list.label.matchingCategories",
+            description: "orders.list.message.tryAnotherSearch"
+        ),
+        isSearchEnabled: true
     )
 }
 
 #Preview("類別篩選 (含清除選項、已選美妝)") {
     OptionPickerSheet(
         title: "orders.list.label.category1",
-        allowsAdd: false,
-        searchable: true,
-        emptyTitle: "orders.list.label.matchingCategories",
-        emptyDescription: "orders.list.message.tryAnotherSearch",
         options: ["3C", "美妝", "精品", "食品", "保健", "零食", "書籍"],
-        selected: "美妝",
-        onSelect: { _ in },
-        clearOption: .init(title: "common.action.label.all", onClear: {})
+        selection: .single(
+            selected: "美妝",
+            onSelect: { _ in
+            },
+            clear: .init(title: "common.action.label.all") {
+            }
+        ),
+        emptyState: .init(
+            title: "orders.list.label.matchingCategories",
+            description: "orders.list.message.tryAnotherSearch"
+        ),
+        isSearchEnabled: true
     )
 }
 
@@ -442,23 +277,26 @@ private extension OptionPickerSheet {
 
     OptionPickerSheet(
         title: "orders.list.label.category1",
-        allowsAdd: true,
-        addButtonTitle: "orders.edit.label.addCategory",
-        emptyTitle: "orders.edit.label.categories",
-        emptyDescription: "orders.edit.message.addFirstCategory",
-        addAlertTitle: "orders.edit.label.addItemCategory",
-        addFieldPlaceholder: "orders.edit.label.categoryName",
-        addAlertMessage: "orders.edit.message.enterNewProduct",
         options: ["3C", "美妝", "服飾", "精品", "食品"],
-        multiSelection: .init(
-            selections: selections,
-            onToggle: { option in
-                if selections.contains(option) {
-                    selections.remove(option)
-                } else {
-                    selections.insert(option)
-                }
+        selection: .multiple(selections: selections) { option in
+            if selections.contains(option) {
+                selections.remove(option)
+            } else {
+                selections.insert(option)
             }
+        },
+        addition: .prompt(
+            .init(
+                buttonTitle: "orders.edit.label.addCategory",
+                title: "orders.edit.label.addItemCategory",
+                message: "orders.edit.message.enterNewProduct",
+                placeholder: "orders.edit.label.categoryName"
+            )
+        ) { _ in
+        },
+        emptyState: .init(
+            title: "orders.edit.label.categories",
+            description: "orders.edit.message.addFirstCategory"
         )
     )
 }
@@ -466,26 +304,37 @@ private extension OptionPickerSheet {
 #Preview("空狀態") {
     OptionPickerSheet(
         title: "orders.list.label.category1",
-        allowsAdd: false,
-        emptyTitle: "尚無商品類別",
-        emptyDescription: "尚未建立任何商品類別。",
         options: [],
-        onSelect: { _ in }
+        selection: .single(
+            selected: "",
+            onSelect: { _ in
+            }
+        ),
+        emptyState: .init(title: "尚無商品類別", description: "尚未建立任何商品類別。")
     )
 }
 
 #Preview("付款方式新增") {
     OptionPickerSheet(
         title: "orders.list.label.selectPaymentMethod",
-        addButtonTitle: "orders.edit.label.addPaymentMethod",
-        emptyTitle: "orders.edit.label.paymentMethods",
-        emptyDescription: "透過上方「新增付款方式」建立第一個付款方式。",
-        addAlertTitle: "orders.edit.label.addPaymentMethod",
-        addFieldPlaceholder: "orders.detail.label.paymentMethodName",
-        addAlertMessage: "輸入新的付款方式名稱。",
         options: ["現金", "信用卡"],
-        selected: "現金",
-        onSelect: { _ in },
-        onAddPaymentMethod: { _, _, _, _ in }
+        selection: .single(
+            selected: "現金",
+            onSelect: { _ in
+            }
+        ),
+        addition: .paymentMethod(
+            .init(
+                buttonTitle: "orders.edit.label.addPaymentMethod",
+                title: "orders.edit.label.addPaymentMethod",
+                message: "輸入新的付款方式名稱。",
+                placeholder: "orders.detail.label.paymentMethodName"
+            )
+        ) { _, _, _, _ in
+        },
+        emptyState: .init(
+            title: "orders.edit.label.paymentMethods",
+            description: "透過上方「新增付款方式」建立第一個付款方式。"
+        )
     )
 }

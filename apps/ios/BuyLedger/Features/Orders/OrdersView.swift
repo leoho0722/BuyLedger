@@ -67,18 +67,21 @@ private extension OrdersView {
     var categoryPickerSheet: some View {
         OptionPickerSheet(
             title: "orders.list.label.category1",
-            allowsAdd: false,
-            searchable: true,
-            emptyTitle: "orders.list.label.matchingCategories",
-            emptyDescription: "orders.list.message.tryAnotherSearch",
             options: listStore.availableCategories,
-            selected: listStore.selectedCategory ?? "",
-            onSelect: {
-                listStore.send(.view(.categoryFilterSelected($0)))
-            },
-            clearOption: OptionPickerSheet.ClearOption(title: "common.action.label.all") {
-                listStore.send(.view(.categoryFilterSelected(nil)))
-            }
+            selection: .single(
+                selected: listStore.selectedCategory ?? "",
+                onSelect: {
+                    listStore.send(.view(.categoryFilterSelected($0)))
+                },
+                clear: .init(title: "common.action.label.all") {
+                    listStore.send(.view(.categoryFilterSelected(nil)))
+                }
+            ),
+            emptyState: .init(
+                title: "orders.list.label.matchingCategories",
+                description: "orders.list.message.tryAnotherSearch"
+            ),
+            isSearchEnabled: true
         )
     }
 
@@ -86,18 +89,21 @@ private extension OrdersView {
     var paymentMethodPickerSheet: some View {
         OptionPickerSheet(
             title: "orders.list.label.selectPaymentMethod",
-            allowsAdd: false,
-            searchable: true,
-            emptyTitle: "orders.list.label.matchingPaymentMethods",
-            emptyDescription: "orders.list.message.tryAnotherSearch",
             options: listStore.availablePaymentMethodNames,
-            selected: listStore.selectedPaymentMethod ?? "",
-            onSelect: {
-                listStore.send(.view(.paymentMethodFilterSelected($0)))
-            },
-            clearOption: OptionPickerSheet.ClearOption(title: "common.action.label.all") {
-                listStore.send(.view(.paymentMethodFilterSelected(nil)))
-            }
+            selection: .single(
+                selected: listStore.selectedPaymentMethod ?? "",
+                onSelect: {
+                    listStore.send(.view(.paymentMethodFilterSelected($0)))
+                },
+                clear: .init(title: "common.action.label.all") {
+                    listStore.send(.view(.paymentMethodFilterSelected(nil)))
+                }
+            ),
+            emptyState: .init(
+                title: "orders.list.label.matchingPaymentMethods",
+                description: "orders.list.message.tryAnotherSearch"
+            ),
+            isSearchEnabled: true
         )
     }
 

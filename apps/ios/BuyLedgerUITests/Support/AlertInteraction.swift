@@ -13,6 +13,7 @@ import XCTest
 extension XCUIApplication {
 
     /// 指定 identifier 的 alert 是否呈現
+    ///
     /// - Parameters:
     ///   - identifier: alert 的 accessibility identifier
     ///   - timeout: 等待 alert 出現的秒數
@@ -22,6 +23,7 @@ extension XCUIApplication {
     }
 
     /// 點目前 alert 中指定 identifier 的按鈕
+    ///
     /// - Parameters:
     ///   - identifier: 按鈕的 accessibility identifier
     ///   - timeout: 等待按鈕可互動的秒數
@@ -33,8 +35,9 @@ extension XCUIApplication {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        let button = alerts.buttons[identifier]
-        guard button.waitUntilHittable(timeout: timeout) else {
+        // SwiftUI alert 的按鈕以兩層同 identifier 的 Button 出現，取第一個避免多重比對
+        let button = alerts.buttons[identifier].firstMatch
+        if !button.waitUntilHittable(timeout: timeout) {
             XCTFail("找不到 identifier 為 \(identifier) 的 alert 按鈕", file: file, line: line)
             return
         }
@@ -42,6 +45,7 @@ extension XCUIApplication {
     }
 
     /// 是否有任一 alert 正呈現
+    ///
     /// - Parameter timeout: 等待 alert 出現的秒數
     /// - Returns: 是否有 alert 在逾時前出現
     func alertPresented(timeout: TimeInterval = 5) -> Bool {
@@ -49,6 +53,7 @@ extension XCUIApplication {
     }
 
     /// 目前 alert 是否已消失
+    ///
     /// - Parameter timeout: 等待 alert 消失的秒數
     /// - Returns: alert 是否在逾時前消失
     func alertDismissed(timeout: TimeInterval = 5) -> Bool {
@@ -56,6 +61,7 @@ extension XCUIApplication {
     }
 
     /// 點目前 alert 中指定顯示文字的按鈕
+    ///
     /// - Parameters:
     ///   - label: 按鈕顯示文字
     ///   - timeout: 等待按鈕可互動的秒數
@@ -68,7 +74,7 @@ extension XCUIApplication {
         line: UInt = #line
     ) {
         let button = alerts.firstMatch.buttons[label]
-        guard button.waitUntilHittable(timeout: timeout) else {
+        if !button.waitUntilHittable(timeout: timeout) {
             XCTFail("找不到文字為 \(label) 的 alert 按鈕", file: file, line: line)
             return
         }
@@ -76,6 +82,7 @@ extension XCUIApplication {
     }
 
     /// 斷言目前 alert 的訊息含指定文字
+    ///
     /// - Parameters:
     ///   - substring: 預期出現於 alert 訊息中的文字
     ///   - timeout: 等待 alert 出現的秒數
@@ -88,7 +95,7 @@ extension XCUIApplication {
         line: UInt = #line
     ) {
         let alert = alerts.firstMatch
-        guard alert.waitForExistence(timeout: timeout) else {
+        if !alert.waitForExistence(timeout: timeout) {
             XCTFail("畫面上沒有呈現任何 alert，無法比對訊息", file: file, line: line)
             return
         }

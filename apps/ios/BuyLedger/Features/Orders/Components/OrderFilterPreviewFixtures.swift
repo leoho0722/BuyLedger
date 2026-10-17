@@ -8,9 +8,7 @@
 import ComposableArchitecture
 
 /// 篩選畫面 Preview 使用的固定主檔與選擇
-enum OrderFilterPreviewFixtures {
-
-}
+enum OrderFilterPreviewFixtures {}
 
 // MARK: - Internal Method
 
@@ -64,7 +62,7 @@ extension OrderFilterPreviewFixtures {
                         isCashOnDelivery: false
                     ),
                     PaymentMethodInfo(
-                        name: "orders.list.label.cashDelivery",
+                        name: "貨到付款",
                         isCardless: false,
                         isBankTransfer: false,
                         isCashOnDelivery: true

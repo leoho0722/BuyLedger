@@ -170,14 +170,14 @@ private extension LookupItemList {
                         isCashOnDelivery: false
                     )
 
-                case "orders.edit.label.bankTransfer":
+                case "銀行匯款":
                     PaymentMethodFlags(
                         isCardless: false,
                         isBankTransfer: true,
                         isCashOnDelivery: false
                     )
 
-                case "orders.list.label.cashDelivery":
+                case "貨到付款":
                     PaymentMethodFlags(
                         isCardless: false,
                         isBankTransfer: false,
@@ -192,8 +192,8 @@ private extension LookupItemList {
             items: [
                 "信用卡",
                 "無卡分期",
-                "orders.edit.label.bankTransfer",
-                "orders.list.label.cashDelivery",
+                "銀行匯款",
+                "貨到付款",
             ],
             kind: .paymentMethod
         ) { _ in

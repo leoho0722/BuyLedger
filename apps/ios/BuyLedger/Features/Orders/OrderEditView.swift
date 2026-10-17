@@ -31,8 +31,9 @@ struct OrderEditView: View {
             .accessibilityIdentifier(BLAccessibilityID.OrderEdit.root)
             .scrollDismissesKeyboard(.interactively)
             .bind($store.focusedField, to: $focusedField)
+            // 不等待完成：關閉表單的 effect 會掛在這次送出底下，推入選擇器取消 `.task` 時會一起被取消
             .task {
-                await store.send(.view(.task)).finish()
+                store.send(.view(.task))
             }
             .navigationTitle(Text(LocalizedStringKey(store.navigationTitleKey)))
             .toolbarTitleDisplayMode(.inline)

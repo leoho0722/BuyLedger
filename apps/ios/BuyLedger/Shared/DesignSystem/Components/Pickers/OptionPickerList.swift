@@ -7,53 +7,47 @@
 
 import SwiftUI
 
-/// 顯示已過濾選項的清單區段
+/// 顯示已過濾選項，依模式處理選取與清除後的返回
 struct OptionPickerList: View {
 
     // MARK: - Properties
 
-    /// 已由 OptionPickerSheet 過濾後的選項清單
-    let options: [String]
+    /// 單選與清除後返回上一頁或關閉獨立 sheet
+    @Environment(\.dismiss) private var dismiss
 
-    /// 目前已選中的選項；用來在列表中顯示勾選
-    let selected: String
-
-    /// 顯示用名稱轉換；nil 時直接顯示 option
+    /// 將原始值轉成顯示名稱；`nil` 時直接顯示原值
+    ///
+    /// - Parameter option: 選項的原始值
+    /// - Returns: 選項的顯示文字
     let displayName: (@Sendable (String) -> String)?
 
-    /// 可選的「清除目前選擇」row 設定
-    let clearOption: OptionPickerSheet.ClearOption?
+    /// 沒有符合選項時顯示的文案
+    let emptyState: OptionPickerSheet.EmptyState
 
-    /// 可選的多選模式設定
-    let multiSelection: OptionPickerSheet.MultiSelection?
+    /// 已套用搜尋的選項清單
+    let options: [String]
 
-    /// 使用者選擇既有選項時的回呼
-    let onSelect: (String) -> Void
-
-    /// 沒有任何選項時 ContentUnavailableView 的標題
-    let emptyTitle: String
-
-    /// 沒有任何選項時 ContentUnavailableView 的描述
-    let emptyDescription: String
+    /// 單選或多選的目前值與操作回呼
+    let selection: OptionPickerSheet.Selection
 
     // MARK: - Body
 
-    /// 選項清單內容，包含清除、勾選與空狀態
+    /// 組合清除選項、可選清單與空狀態
     var body: some View {
         Section {
-            if let clearOption {
-                listClearRow(clearOption)
+            if case .single(let selected, _, let clear) = selection, let clear {
+                listClearRow(clear, isSelected: selected.isEmpty)
             }
 
             if options.isEmpty {
                 ContentUnavailableView(
-                    LocalizedStringKey(emptyTitle),
+                    LocalizedStringKey(emptyState.title),
                     systemImage: "tray",
-                    description: Text(LocalizedStringKey(emptyDescription))
+                    description: Text(LocalizedStringKey(emptyState.description))
                 )
             } else {
-                ForEach(options, id: \.self) { option in
-                    listOptionRow(option)
+                ForEach(options, id: \.self) {
+                    listOptionRow($0)
                 }
             }
         }
@@ -64,13 +58,16 @@ struct OptionPickerList: View {
 
 private extension OptionPickerList {
 
-    /// 清除選項的 row；空字串時顯示勾選
-    /// - Parameter clearOption: 已設定的 clear row 設定
-    /// - Returns: 清除選項列畫面
-    @ViewBuilder
-    func listClearRow(_ clearOption: OptionPickerSheet.ClearOption) -> some View {
+    /// 清除選擇的列，尚未選取時顯示勾選
+    ///
+    /// - Parameters:
+    ///   - clearOption: 清除列的文案與操作回呼
+    ///   - isSelected: 目前是否尚未選取任何選項
+    /// - Returns: 清除選項列
+    func listClearRow(_ clearOption: OptionPickerSheet.ClearOption, isSelected: Bool) -> some View {
         Button {
             clearOption.onClear()
+            dismiss()
         } label: {
             HStack(alignment: .firstTextBaseline) {
                 Text(LocalizedStringKey(clearOption.title))
@@ -80,7 +77,7 @@ private extension OptionPickerList {
 
                 Spacer()
 
-                if selected.isEmpty {
+                if isSelected {
                     Image(systemName: "checkmark")
                         .foregroundStyle(.tint)
                         .accessibilityHidden(true)
@@ -89,16 +86,16 @@ private extension OptionPickerList {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityAddTraits(selected.isEmpty ? .isSelected : [])
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
-    /// 選項 row；單選後關閉，多選後保留 sheet
-    /// - Parameter option: 該列代表的選項字串
-    /// - Returns: 選項列畫面
-    @ViewBuilder
+    /// 可選的選項列，依選取模式顯示勾選
+    ///
+    /// - Parameter option: 該列代表的原始值
+    /// - Returns: 可點選的選項列
     func listOptionRow(_ option: String) -> some View {
         Button {
-            onSelect(option)
+            selectOption(option)
         } label: {
             HStack(alignment: .firstTextBaseline) {
                 Text(displayText(for: option))
@@ -126,20 +123,59 @@ private extension OptionPickerList {
 
 private extension OptionPickerList {
 
-    /// 取得單筆選項的顯示字串
-    /// - Parameter option: 原始選項值
-    /// - Returns: 顯示文字
+    /// 取得單筆選項的顯示文字
+    ///
+    /// - Parameter option: 選項的原始值
+    /// - Returns: 自訂名稱或原始值
     func displayText(for option: String) -> String {
         displayName?(option) ?? option
     }
 
     /// 判斷選項是否已選取
-    /// - Parameter option: 要判斷的選項
-    /// - Returns: 是否已選取
+    ///
+    /// - Parameter option: 要判斷的原始值
+    /// - Returns: 是否應顯示勾選
     func isSelected(_ option: String) -> Bool {
-        if let multiSelection {
-            return multiSelection.selections.contains(option)
+        switch selection {
+        case .single(let selected, _, _):
+            return option == selected
+
+        case .multiple(let selections, _):
+            return selections.contains(option)
         }
-        return option == selected
+    }
+
+    /// 依模式選取或切換選項，單選後關閉選擇器
+    ///
+    /// - Parameter option: 使用者點選的原始值
+    func selectOption(_ option: String) {
+        switch selection {
+        case .single(_, let onSelect, _):
+            onSelect(option)
+            dismiss()
+
+        case .multiple(_, let onToggle):
+            onToggle(option)
+        }
+    }
+}
+
+// MARK: - Preview
+
+#Preview("單選選項清單") {
+    List {
+        OptionPickerList(
+            displayName: nil,
+            emptyState: .init(
+                title: "orders.edit.label.categories",
+                description: "orders.edit.message.addFirstCategory"
+            ),
+            options: ["3C", "美妝", "食品"],
+            selection: .single(
+                selected: "美妝",
+                onSelect: { _ in
+                }
+            )
+        )
     }
 }

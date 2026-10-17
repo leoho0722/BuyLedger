@@ -16,11 +16,11 @@ struct SettingsView: View {
     /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
-    /// 月度目標欄位的鍵盤焦點
-    @FocusState private var isGoalFieldFocused: Bool
-
     /// 設定狀態、持久化事件與畫面操作來源
     @Bindable var store: StoreOf<SettingsFeature>
+
+    /// 月度目標欄位的鍵盤焦點
+    @FocusState private var isGoalFieldFocused: Bool
 
     // MARK: - Body
 
@@ -165,26 +165,21 @@ private extension SettingsView {
     /// 預設幣別選擇器
     @ViewBuilder
     var currencyPicker: some View {
-        let locale = locale
-        let language = AppLanguage(locale: locale)
-
         OptionPickerSheet(
             title: "settings.preference.label.selectDefaultCurrency",
-            allowsAdd: false,
-            searchable: true,
-            emptyTitle: "orders.edit.label.currenciesAvailable",
-            emptyDescription: "orders.edit.message.internetConnectionRequired",
             options: store.availableCurrencies.map(\.rawValue),
-            selected: store.defaultCurrency.rawValue,
-            displayName: {
-                CurrencyDisplayName.text(code: $0, language: language)
-            },
-            searchKeywords: {
-                CurrencyDisplayName.searchKeywords(code: $0, locale: locale)
-            },
-            onSelect: {
-                store.send(.view(.defaultCurrencySelected($0)))
-            },
+            selection: .single(
+                selected: store.defaultCurrency.rawValue,
+                onSelect: {
+                    store.send(.view(.defaultCurrencySelected($0)))
+                }
+            ),
+            emptyState: .init(
+                title: "orders.edit.label.currenciesAvailable",
+                description: "orders.edit.message.internetConnectionRequired"
+            ),
+            labeling: CurrencyDisplayName.optionLabeling(locale: locale),
+            isSearchEnabled: true,
             isEmbedded: true
         )
     }
@@ -195,22 +190,27 @@ private extension SettingsView {
     var modelPicker: some View {
         OptionPickerSheet(
             title: "settings.preference.label.selectAiModel",
-            allowsAdd: true,
-            searchable: false,
-            addButtonTitle: "settings.preference.label.customModel",
-            emptyTitle: "settings.preference.label.modelsAvailable",
-            emptyDescription: "settings.preference.message.enterCustomModel",
-            addAlertTitle: "settings.preference.label.customAiModel",
-            addFieldPlaceholder: "settings.preference.message.modelNameFor",
-            addAlertMessage: "settings.preference.message.enterModelName",
             options: AISummaryModelCatalog.candidates,
-            selected: store.aiSummaryModel,
-            onSelect: {
+            selection: .single(
+                selected: store.aiSummaryModel,
+                onSelect: {
+                    store.send(.view(.aiSummaryModelSelected($0)))
+                }
+            ),
+            addition: .prompt(
+                .init(
+                    buttonTitle: "settings.preference.label.customModel",
+                    title: "settings.preference.label.customAiModel",
+                    message: "settings.preference.message.enterModelName",
+                    placeholder: "settings.preference.message.modelNameFor"
+                )
+            ) {
                 store.send(.view(.aiSummaryModelSelected($0)))
             },
-            onAdd: {
-                store.send(.view(.aiSummaryModelSelected($0)))
-            },
+            emptyState: .init(
+                title: "settings.preference.label.modelsAvailable",
+                description: "settings.preference.message.enterCustomModel"
+            ),
             isEmbedded: true
         )
     }
