@@ -21,6 +21,12 @@ final class OrdersFeaturePerformanceTests: XCTestCase {
     /// 超過此耗時即判定為效能退化
     private static let regressionThreshold = Duration.seconds(3)
 
+    /// 類別分組小規模退化門檻 (2026-10-18 iPhone 17 實測 0.018 秒，取約 6 倍)
+    private static let categoryGroupsSmallScaleThreshold = Duration.milliseconds(110)
+
+    /// 類別分組大規模退化門檻 (2026-10-18 iPhone 17 實測 0.182 秒，取約 6 倍)
+    private static let categoryGroupsLargeScaleThreshold = Duration.milliseconds(1_100)
+
     /// 1,000 筆訂單、搜尋文字為空 (篩選條件最少) 時的執行成本
     func testFilteredOrders_千筆訂單無搜尋文字_耗時未超過退化門檻() {
         // Given
@@ -92,6 +98,88 @@ final class OrdersFeaturePerformanceTests: XCTestCase {
 
         // Then
         Self.assertNoRegression(elapsed, label: "testDashboardStats_千筆訂單_耗時未超過退化門檻")
+    }
+
+    /// 1,000 筆訂單、50 類別、20 開團下分組與顯示 (涵蓋非搜尋與搜尋兩條路徑) 的執行成本
+    func testCategoryGroups_小規模千筆訂單_耗時未超過退化門檻() {
+        // Given
+        let fixture = Self.makeCategoryGroupsFixture(
+            orderCount: 1_000,
+            categoryCount: 50,
+            campaignCount: 20
+        )
+        let expansion = OrderCategoryGroups.initialExpansion(
+            groups: fixture.groups,
+            selected: fixture.selected
+        )
+
+        // When
+        let elapsed = Self.clock.measure {
+            for _ in 0..<20 {
+                let groups = OrderCategoryGroups.groups(
+                    categories: fixture.categories,
+                    orders: fixture.orders,
+                    campaigns: fixture.campaigns,
+                    context: fixture.context
+                )
+                for query in ["", "類別"] {
+                    _ = OrderCategoryGroups.displayGroups(
+                        groups: groups,
+                        expansion: expansion,
+                        selected: fixture.selected,
+                        searchText: query
+                    )
+                }
+            }
+        }
+
+        // Then
+        Self.assertNoRegression(
+            elapsed,
+            threshold: Self.categoryGroupsSmallScaleThreshold,
+            label: "testCategoryGroups_小規模千筆訂單_耗時未超過退化門檻"
+        )
+    }
+
+    /// 10,000 筆訂單、500 類別、200 開團下分組與顯示 (涵蓋非搜尋與搜尋兩條路徑) 的執行成本
+    func testCategoryGroups_大規模萬筆訂單_耗時未超過退化門檻() {
+        // Given
+        let fixture = Self.makeCategoryGroupsFixture(
+            orderCount: 10_000,
+            categoryCount: 500,
+            campaignCount: 200
+        )
+        let expansion = OrderCategoryGroups.initialExpansion(
+            groups: fixture.groups,
+            selected: fixture.selected
+        )
+
+        // When
+        let elapsed = Self.clock.measure {
+            for _ in 0..<20 {
+                let groups = OrderCategoryGroups.groups(
+                    categories: fixture.categories,
+                    orders: fixture.orders,
+                    campaigns: fixture.campaigns,
+                    context: fixture.context
+                )
+                for query in ["", "類別"] {
+                    _ = OrderCategoryGroups.displayGroups(
+                        groups: groups,
+                        expansion: expansion,
+                        selected: fixture.selected,
+                        searchText: query
+                    )
+                }
+            }
+        }
+
+        // Then
+        Self.assertNoRegression(
+            elapsed,
+            threshold: Self.categoryGroupsLargeScaleThreshold,
+            label: "testCategoryGroups_大規模萬筆訂單_耗時未超過退化門檻"
+        )
     }
 }
 

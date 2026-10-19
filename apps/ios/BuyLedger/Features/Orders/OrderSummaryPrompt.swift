@@ -20,10 +20,18 @@ extension OrderSummaryPrompt {
     ///
     /// - Parameters:
     ///   - orders: 已套用篩選的訂單
-    ///   - selectedCategory: 提示文字顯示的類別範圍
+    ///   - selectedCategories: 提示文字顯示的類別集合；空集合代表全部類別
     /// - Returns: 保留原有文字與空行的提示
-    static func summaryPrompt(orders: [LedgerOrder], selectedCategory: String?) -> String {
-        let categoryScope = selectedCategory.map { "(已篩選類別：\($0))" } ?? "(涵蓋目前列表所有類別)"
+    static func summaryPrompt(orders: [LedgerOrder], selectedCategories: Set<String>) -> String {
+        let categoryNames = selectedCategories.sorted { lhs, rhs in
+            lhs.localizedStandardCompare(rhs) == .orderedAscending
+        }
+        let categoryScope: String
+        if categoryNames.isEmpty {
+            categoryScope = "(涵蓋目前列表所有類別)"
+        } else {
+            categoryScope = "(已篩選類別：\(categoryNames.joined(separator: "、")))"
+        }
         return """
             你是個人代購 App 的分析助理。以下是目前訂單列表的商品明細\(categoryScope)，每行格式為「- [類別] 商品名稱 x數量 @ 單價 幣別」：
 

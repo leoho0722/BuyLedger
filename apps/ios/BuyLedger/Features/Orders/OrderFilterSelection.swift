@@ -13,8 +13,8 @@ struct OrderFilterSelection: Equatable {
     /// 尚未套用的日期區間選擇
     var datePeriod: OrderDatePeriod = .all
 
-    /// 尚未套用的商品類別選擇；`nil` 代表全部類別
-    var category: String?
+    /// 尚未套用的商品類別集合；空集合代表全部類別
+    var categories: Set<String> = []
 
     /// 尚未套用的付款方式選擇；`nil` 代表全部付款方式
     var paymentMethod: String?
@@ -26,6 +26,6 @@ extension OrderFilterSelection {
 
     /// 是否至少有一項非預設的整合篩選條件
     var isActive: Bool {
-        datePeriod != .all || category != nil || paymentMethod != nil
+        datePeriod != .all || !categories.isEmpty || paymentMethod != nil
     }
 }

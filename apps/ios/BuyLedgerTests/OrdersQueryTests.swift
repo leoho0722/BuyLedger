@@ -231,7 +231,7 @@ struct OrdersQueryTests {
 
 private extension OrdersQueryTests {
 
-    /// 以固定時間與 UTC 行事曆執行篩選，省略的條件代表未選取
+    /// 執行固定時間與 UTC 行事曆的訂單篩選，省略的條件代表未選取
     ///
     /// - Parameters:
     ///   - orders: 要篩選的訂單
@@ -256,7 +256,7 @@ private extension OrdersQueryTests {
             orders: orders,
             selectedStatus: status,
             selectedDatePeriod: period,
-            selectedCategory: category,
+            selectedCategories: category.map { [$0] } ?? [],
             selectedPaymentMethod: paymentMethod,
             searchText: searchText,
             now: TestDependencies.fixedNow,

@@ -127,7 +127,9 @@ extension CampaignIntegrationTests {
         }
         state.dashboard.orders = orders
         state.insights.orders = orders
-        state.orders.campaigns = campaigns
+        state.orders.$campaigns.withLock {
+            $0 = campaigns
+        }
         state.dashboard.campaigns = campaigns
         state.insights.campaigns = campaigns
         return state
@@ -153,6 +155,9 @@ extension CampaignIntegrationTests {
             $0.campaigns.$campaigns.withLock {
                 $0 = campaigns
             }
+            $0.orders.$campaigns.withLock {
+                $0 = campaigns
+            }
             $0.campaigns.load.$isLoading.withLock {
                 $0 = false
             }
@@ -162,7 +167,6 @@ extension CampaignIntegrationTests {
         }
         await store.receive(\.campaigns.load.loadRequested)
         await store.receive(\.campaigns.load.campaignsResponse.success) {
-            $0.orders.campaigns = campaigns
             $0.dashboard.campaigns = campaigns
             $0.insights.campaigns = campaigns
         }

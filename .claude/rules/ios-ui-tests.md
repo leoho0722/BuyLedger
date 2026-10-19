@@ -12,6 +12,7 @@ paths:
 `BuyLedgerUITests` 共用 `Support/`、Page Object (`Screens/`) 與 `App/Testing/` 的啟動掛鉤；執行方式、測試計畫與雜訊判讀見 `apps/ios/CLAUDE.md` 的「建置與開發指令」。App 端加 identifier 時同樣適用下方「定位與 identifier」。
 
 - **選擇性執行與變異驗證必須確認實際執行數大於 0**：`0 tests executed` 不是通過，不能用成功退出碼判定測試有效。
+- **只存在於單一版面的功能，測試以 compact／regular 版面明確宣告適用範圍，不判斷裝置是 iPhone 或 iPad**：測試方法 `throws`，在 Given 內 `launch(...)` 之後立刻 `XCTSkipUnless(isCompactLayout(app)／isRegularLayout(app), "<原因與另一版面覆蓋的測試>")`，再接其他 Given 步驟。版面依 App 實際畫面判斷 (`AppNavigator.isSidebarLayout`：側邊欄＝regular、底部分頁列＝compact)；skip 條件只能是版面，不得因元素找不到或其他狀態而 skip。
 
 ## 定位與 identifier
 
@@ -57,6 +58,10 @@ paths:
     - 水平 `ScrollView` 內的照片縮圖列相同。
 - **`Form` 內的 `Toggle` 要點內層 `switches.firstMatch`，不點外層開關元素**：外層元素涵蓋整列，點它的中心會落在標題文字上而不切換 (參考 `CampaignEditScreen.toggleReminder`、`CampaignDetailScreen+Content.toggleUnpaidOnly`)。
     - 切換後以開關的 `value` 或切換造成的畫面變化斷言，否則沒切到也會假通過。
+- **List 惰性建立：sheet 停在 medium 高度或清單較長時，可視區外的列與組標題不在可及性樹上**：讀值或點擊前先捲動露出，以格子位置簽章不再變化判斷到底再換方向，不用固定次數盲滑 (參考 `OrdersScreen.revealElement`)。
+- **`swipeUp`／`swipeDown` 帶慣性，捲動後要點擊的元素先等 `frame` 連續兩次相同**：清單減速中點下去只會停住捲動、不會觸發按鈕 (參考 `OrdersScreen.waitUntilFrameStable`)。
+- **iPhone 模擬器第一鍵盤是注音，整段 `typeText` 含連續數字時第二個數字起會打成注音符號**：打完一個數字鍵盤就切回注音面板；含數字的文字逐字呼叫 `typeText` (參考 `OrdersScreen.typeSearchText`)。iPad 注音鍵盤有數字列，不會重現。
+    - 逐字輸入也才抓得到「輸入一個字後失焦」這類缺陷：整段 `typeText` 會在畫面重繪前打完。
 - **`scrollDismissesKeyboard(.interactively)` 無法以 XCUITest 合成手勢觸發，不寫 UI 測試守它 (產品端仍保留)**：`KeyboardDismissTests` 只覆蓋 return 鍵與數字鍵盤完成鍵兩條路徑。
 
 ## 轉向測試

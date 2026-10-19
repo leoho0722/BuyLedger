@@ -20,6 +20,9 @@ struct OrderFilterFeature {
         /// 清單共用的唯讀訂單，供整理已使用的選項
         @SharedReader var orders: [LedgerOrder]
 
+        /// 清單共用的唯讀開團投影，開啟後仍讀取同一份引用
+        @SharedReader var campaigns: [Campaign]
+
         /// 清單共用的唯讀主檔，開啟後仍可反映主檔更新
         @SharedReader var lookupCatalog: LookupCatalog
 
@@ -29,8 +32,17 @@ struct OrderFilterFeature {
         /// 面板尚未套用的日期、類別與付款方式
         var pendingFilterSelection: OrderFilterSelection
 
-        /// 面板內搜尋類別與付款方式的文字
+        /// 清單在開啟或刷新時提供的日期與行事曆
+        var dateContext: OrderDateContext
+
+        /// 面板內只搜尋商品類別的文字
         var filterSheetSearchText = ""
+
+        /// 開啟時計算的類別組展開狀態，後續由使用者操作更新
+        var categoryGroupExpansion: OrderCategoryGroups.Expansion
+
+        /// 類別搜尋欄是否持有輸入焦點
+        var isSearchFieldFocused = false
 
         /// 有未套用變更時顯示的捨棄確認
         @Presents var filterDiscardConfirmation: AlertState<Action.FilterDiscardAlert>?
@@ -40,34 +52,59 @@ struct OrderFilterFeature {
             pendingFilterSelection != committedFilterSelection
         }
 
-        /// 主檔與訂單類別依面板搜尋文字取出的名稱
-        var filterSheetFilteredCategories: [String] {
-            OrdersListQuery.matching(
-                OrdersListQuery.availableCategories(orders: orders, catalog: lookupCatalog),
+        /// 依最新共用資料、暫存選取與搜尋文字計算的類別分組
+        var filterSheetCategoryGroups: [OrderCategoryGroups.Display] {
+            let groups = OrderCategoryGroups.groups(
+                orders: orders,
+                campaigns: campaigns,
+                catalog: lookupCatalog,
+                context: dateContext
+            )
+            return OrderCategoryGroups.displayGroups(
+                groups: groups,
+                expansion: categoryGroupExpansion,
+                selected: pendingFilterSelection.categories,
                 searchText: filterSheetSearchText
             )
         }
 
-        /// 主檔與訂單付款方式依面板搜尋文字取出的名稱
-        var filterSheetFilteredPaymentMethods: [String] {
-            OrdersListQuery.filteredPaymentMethods(state: self)
+        /// 完整付款方式選項，類別搜尋不影響此清單
+        var availablePaymentMethodNames: [String] {
+            OrdersListQuery.availablePaymentMethods(orders: orders, catalog: lookupCatalog)
+                .map(\.name)
         }
 
         /// 以清單的共用資料與已套用篩選建立面板，搜尋文字初始為空
         ///
         /// - Parameters:
         ///   - orders: 共用訂單的唯讀引用
+        ///   - campaigns: 共用開團的唯讀引用
         ///   - lookupCatalog: 共用主檔的唯讀引用
         ///   - committedFilterSelection: 清單已套用的篩選
+        ///   - dateContext: 開啟面板時的日期脈絡
         init(
             orders: SharedReader<[LedgerOrder]>,
+            campaigns: SharedReader<[Campaign]>,
             lookupCatalog: SharedReader<LookupCatalog>,
-            committedFilterSelection: OrderFilterSelection
+            committedFilterSelection: OrderFilterSelection,
+            dateContext: OrderDateContext
         ) {
             self._orders = orders
+            self._campaigns = campaigns
             self._lookupCatalog = lookupCatalog
             self.committedFilterSelection = committedFilterSelection
             self.pendingFilterSelection = committedFilterSelection
+            self.dateContext = dateContext
+            let groups = OrderCategoryGroups.groups(
+                orders: orders.wrappedValue,
+                campaigns: campaigns.wrappedValue,
+                catalog: lookupCatalog.wrappedValue,
+                context: dateContext
+            )
+            self.categoryGroupExpansion = OrderCategoryGroups.initialExpansion(
+                groups: groups,
+                selected: committedFilterSelection.categories
+            )
         }
     }
 
@@ -105,15 +142,32 @@ struct OrderFilterFeature {
             /// - Parameter period: 暫存的日期區間
             case filterPendingDatePeriodSelected(OrderDatePeriod)
 
-            /// 選擇尚未套用的商品類別
+            /// 切換暫存類別集合中的單一類別
             ///
-            /// - Parameter category: 暫存類別；`nil` 代表全部
-            case filterPendingCategorySelected(String?)
+            /// - Parameter category: 要加入或移除的類別名稱
+            case filterPendingCategoryToggled(String)
+
+            /// 點擊全部，清空暫存類別集合
+            case filterPendingCategoriesCleared
+
+            /// 切換指定類別組的展開，搜尋中保留原本狀態
+            ///
+            /// - Parameter kind: 要切換的組別
+            case filterCategoryGroupToggled(OrderCategoryGroups.Kind)
 
             /// 選擇尚未套用的付款方式
             ///
             /// - Parameter paymentMethod: 暫存付款方式；`nil` 代表全部
             case filterPendingPaymentMethodSelected(String?)
+
+            /// 清除暫存日期、類別與付款方式，套用前不提交
+            case filterClearTapped
+
+            /// 提交搜尋輸入，清除焦點並保留搜尋文字
+            case filterSearchSubmitted
+
+            /// 清空搜尋文字，保留暫存選取與焦點
+            case filterSearchClearTapped
 
             /// 點擊套用，交給清單提交暫存選擇
             case filterApplyTapped
@@ -173,12 +227,38 @@ private extension OrderFilterFeature {
             OrdersFilterOperations.filterPendingDatePeriodSelected(period, state: &state)
             return .none
 
-        case .view(.filterPendingCategorySelected(let category)):
-            OrdersFilterOperations.filterPendingCategorySelected(category, state: &state)
+        case .view(.filterPendingCategoryToggled(let category)):
+            state.pendingFilterSelection.categories = OrderCategoryGroups.toggled(
+                category,
+                in: state.pendingFilterSelection.categories
+            )
+            return .none
+
+        case .view(.filterPendingCategoriesCleared):
+            state.pendingFilterSelection.categories = []
+            return .none
+
+        case .view(.filterCategoryGroupToggled(let kind)):
+            guard !OrderCategoryGroups.isSearching(state.filterSheetSearchText) else {
+                return .none
+            }
+            state.categoryGroupExpansion.toggle(kind)
             return .none
 
         case .view(.filterPendingPaymentMethodSelected(let paymentMethod)):
             OrdersFilterOperations.filterPendingPaymentMethodSelected(paymentMethod, state: &state)
+            return .none
+
+        case .view(.filterClearTapped):
+            state.pendingFilterSelection = OrderFilterSelection()
+            return .none
+
+        case .view(.filterSearchSubmitted):
+            state.isSearchFieldFocused = false
+            return .none
+
+        case .view(.filterSearchClearTapped):
+            state.filterSheetSearchText = ""
             return .none
 
         case .view(.filterApplyTapped):

@@ -142,11 +142,13 @@ extension RootFeatureTests {
         #expect(store.state.selectedTab == .campaigns)
     }
 
-    /// 分析頁點選類別排行時，切到訂單分頁並套用類別篩選
+    /// 分析頁點選類別排行時，切到訂單分頁並取代原本的多類別篩選
     @Test
     func insights_點選洞察分類_切至訂單頁並篩選分類() async {
         // Given
-        let store = TestStore(initialState: RootFeature.State()) {
+        var state = RootFeature.State()
+        state.orders.list.selectedCategories = ["snacks", "books"]
+        let store = TestStore(initialState: state) {
             RootFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
@@ -154,19 +156,19 @@ extension RootFeatureTests {
         }
 
         // When
-        await store.send(.insights(.delegate(.categoryTapped("美妝")))) {
+        await store.send(.insights(.delegate(.categoryTapped("beauty")))) {
             $0.selectedTab = .orders
             $0.orders.list.dateContext = OrderDateContext(
                 now: TestDependencies.fixedNow,
                 calendar: TestDependencies.fixedCalendar
             )
-            $0.orders.list.selectedCategory = "美妝"
+            $0.orders.list.selectedCategories = ["beauty"]
         }
 
         // Then
         await store.finish()
         #expect(store.state.selectedTab == .orders)
-        #expect(store.state.orders.list.selectedCategory == "美妝")
+        #expect(store.state.orders.list.selectedCategories == ["beauty"])
     }
 
     /// 更多頁沒有任何頁面時，從 AI 提示前往設定，只開一個設定頁

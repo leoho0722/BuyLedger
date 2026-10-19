@@ -20,7 +20,7 @@ extension RootFeatureTests {
         state.orders.$orders.withLock {
             $0 = LedgerOrder.sampleOrders
         }
-        state.orders.list.selectedCategory = "精品"
+        state.orders.list.selectedCategories = ["snacks", "books"]
         state.more.path.append(
             .customers(CustomersFeature.State(orders: SharedReader(state.more.$orders)))
         )
@@ -48,11 +48,11 @@ extension RootFeatureTests {
                 calendar: TestDependencies.fixedCalendar
             )
             $0.orders.list.searchText = "Alice"
-            $0.orders.list.selectedCategory = nil
+            $0.orders.list.selectedCategories = []
         }
         #expect(store.state.selectedTab == .orders)
         #expect(store.state.orders.list.searchText == "Alice")
-        #expect(store.state.orders.list.selectedCategory == nil)
+        #expect(store.state.orders.list.selectedCategories == [])
     }
 
     /// 從分析頁點選類別時，切到訂單頁並清除狀態、日期區間與搜尋文字，只套用該類別
@@ -65,6 +65,7 @@ extension RootFeatureTests {
         }
         state.orders.list.selectedStatus = .status(.delivered)
         state.orders.list.selectedDatePeriod = .thisMonth
+        state.orders.list.selectedCategories = ["snacks", "books"]
         state.orders.list.searchText = "stale query"
         state.orders.list.selectedOrderID = "BL-2604-016"
 
@@ -85,7 +86,7 @@ extension RootFeatureTests {
                 calendar: TestDependencies.fixedCalendar
             )
             $0.orders.list.searchText = ""
-            $0.orders.list.selectedCategory = "美妝"
+            $0.orders.list.selectedCategories = ["美妝"]
             $0.orders.list.selectedOrderID = "BL-2604-018"
             $0.orders.detail.regularDetail = OrderDetailFeature.State(
                 orderID: "BL-2604-018",
@@ -98,7 +99,7 @@ extension RootFeatureTests {
         #expect(store.state.orders.list.selectedStatus == .all)
         #expect(store.state.orders.list.selectedDatePeriod == .all)
         #expect(store.state.orders.list.searchText == "")
-        #expect(store.state.orders.list.selectedCategory == "美妝")
+        #expect(store.state.orders.list.selectedCategories == ["美妝"])
         #expect(store.state.orders.list.selectedOrderID == "BL-2604-018")
     }
 
@@ -107,18 +108,18 @@ extension RootFeatureTests {
     func insights_點選分類_依分類欄位而非搜尋文字篩選() async {
         // Given
         let realBeauty1 = Self.makeTestOrder(
-            id: "TEST-BEAUTY-1",
-            category: "美妝",
-            customerName: "林書宇"
+            id: "O1",
+            categories: ["beauty"],
+            customerName: "Alice"
         )
         let falsePositive = Self.makeTestOrder(
-            id: "TEST-FALSE-1",
-            category: "服飾",
-            customerName: "美妝小編"
+            id: "O2",
+            categories: ["snacks"],
+            customerName: "Beauty Bob"
         )
         let realBeauty2 = Self.makeTestOrder(
-            id: "TEST-BEAUTY-2",
-            category: "美妝",
+            id: "O3",
+            categories: ["beauty", "snacks"],
             customerName: "Carol"
         )
         let state = RootFeature.State()
@@ -134,23 +135,23 @@ extension RootFeatureTests {
         }
 
         // When
-        await store.send(.insights(.delegate(.categoryTapped("美妝")))) {
+        await store.send(.insights(.delegate(.categoryTapped("beauty")))) {
             $0.selectedTab = .orders
             $0.orders.list.dateContext = OrderDateContext(
                 now: TestDependencies.fixedNow,
                 calendar: TestDependencies.fixedCalendar
             )
-            $0.orders.list.selectedCategory = "美妝"
-            $0.orders.list.selectedOrderID = "TEST-BEAUTY-1"
+            $0.orders.list.selectedCategories = ["beauty"]
+            $0.orders.list.selectedOrderID = "O1"
             $0.orders.detail.regularDetail = OrderDetailFeature.State(
-                orderID: "TEST-BEAUTY-1",
+                orderID: "O1",
                 orders: SharedReader($0.orders.$orders)
             )
         }
 
         // Then
         let filteredIDs = store.state.orders.list.filteredOrders.map(\.id)
-        #expect(filteredIDs == ["TEST-BEAUTY-1", "TEST-BEAUTY-2"])
+        #expect(filteredIDs == ["O1", "O3"])
     }
 
     /// 客戶頁開始載入時，要求訂單功能檢查是否需要重新讀取資料

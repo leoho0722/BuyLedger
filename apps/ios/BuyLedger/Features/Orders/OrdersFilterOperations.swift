@@ -6,7 +6,6 @@
 //
 
 import ComposableArchitecture
-import Foundation
 
 /// 清單已套用篩選與篩選子層暫存選擇的狀態更新
 enum OrdersFilterOperations {
@@ -31,10 +30,9 @@ extension OrdersFilterOperations {
         state.searchText = searchText
         state.selectedStatus = .all
         state.selectedDatePeriod = .all
-        state.selectedCategory = category
+        state.selectedCategories = category.map { [$0] } ?? []
         state.selectFirstFilteredOrder()
-        let committedFilterSelection = state.committedFilterSelection
-        state.filterSheet?.committedFilterSelection = committedFilterSelection
+        OrderListDestinationOperations.syncCommittedSelection(state: &state)
     }
 
     /// 切換狀態篩選並重選第一筆
@@ -60,14 +58,17 @@ extension OrdersFilterOperations {
         state.selectFirstFilteredOrder()
     }
 
-    /// 切換商品類別篩選並重選第一筆 (`nil` = 全部類別)
+    /// 提交完整類別集合，有變更時重選第一筆並關閉選擇器
     ///
     /// - Parameters:
-    ///   - category: 要套用的商品類別；`nil` 代表全部類別
-    ///   - state: 要更新的訂單功能狀態
-    static func categoryFilterSelected(_ category: String?, state: inout OrderListFeature.State) {
-        state.selectedCategory = category
-        state.selectFirstFilteredOrder()
+    ///   - categories: 選擇器提交的類別集合
+    ///   - state: 清單目前的狀態
+    static func categoryApplied(_ categories: Set<String>, state: inout OrderListFeature.State) {
+        if categories != state.selectedCategories {
+            state.selectedCategories = categories
+            state.selectFirstFilteredOrder()
+        }
+        state.destination = nil
     }
 
     /// 切換付款方式篩選並重選第一筆 (`nil` = 全部付款方式)
@@ -83,29 +84,63 @@ extension OrdersFilterOperations {
         state.selectFirstFilteredOrder()
     }
 
-    /// 點擊 iPad (regular) 商品類別篩選 trigger，開啟類別 picker sheet
+    /// 開啟類別選擇器，以已套用集合重設草稿、搜尋與展開
     ///
-    /// - Parameter state: 要更新的訂單功能狀態
-    static func categoryPickerTapped(state: inout OrderListFeature.State) {
-        state.isCategoryPickerPresented = true
-    }
-
-    /// 點擊 iPad (regular) 付款方式篩選 trigger，開啟付款方式 picker sheet
-    ///
-    /// - Parameter state: 要更新的訂單功能狀態
-    static func paymentMethodPickerTapped(state: inout OrderListFeature.State) {
-        state.isPaymentMethodPickerPresented = true
+    /// - Parameters:
+    ///   - campaigns: 清單傳入的開團唯讀引用
+    ///   - context: 清單 reducer 已解析的日期脈絡
+    ///   - state: 要更新的清單狀態
+    static func categoryPickerTapped(
+        campaigns: SharedReader<[Campaign]>,
+        context: OrderDateContext,
+        state: inout OrderListFeature.State
+    ) {
+        state.destination = .categoryPicker(
+            OrderCategoryPickerFeature.State(
+                orders: state.$orders,
+                campaigns: campaigns,
+                lookupCatalog: state.$lookupCatalog,
+                committedCategories: state.selectedCategories,
+                dateContext: context
+            )
+        )
     }
 
     /// 開啟篩選 sheet，並以已套用值重設暫存選擇
     ///
-    /// - Parameter state: 要更新的訂單功能狀態
-    static func filterSheetTapped(state: inout OrderListFeature.State) {
-        state.filterSheet = OrderFilterFeature.State(
-            orders: state.$orders,
-            lookupCatalog: state.$lookupCatalog,
-            committedFilterSelection: state.committedFilterSelection
+    /// - Parameters:
+    ///   - campaigns: 清單傳入的開團唯讀引用
+    ///   - context: 清單 reducer 已解析的日期脈絡
+    ///   - state: 要更新的訂單功能狀態
+    static func filterSheetTapped(
+        campaigns: SharedReader<[Campaign]>,
+        context: OrderDateContext,
+        state: inout OrderListFeature.State
+    ) {
+        state.destination = .filterSheet(
+            OrderFilterFeature.State(
+                orders: state.$orders,
+                campaigns: campaigns,
+                lookupCatalog: state.$lookupCatalog,
+                committedFilterSelection: state.committedFilterSelection,
+                dateContext: context
+            )
         )
+    }
+
+    /// 清除已套用的三項篩選後重選一次，保留狀態、搜尋與目的地
+    ///
+    /// - Parameter state: 要更新的清單狀態
+    /// - Returns: 至少一項條件變更時為 `true`，原本皆為預設時為 `false`
+    static func clearFilters(state: inout OrderListFeature.State) -> Bool {
+        guard state.committedFilterSelection.isActive else {
+            return false
+        }
+        state.selectedDatePeriod = .all
+        state.selectedCategories = []
+        state.selectedPaymentMethod = nil
+        state.selectFirstFilteredOrder()
+        return true
     }
 
     /// 選擇整合篩選 sheet 的日期區間；僅更新暫存選擇，不改已套用的篩選
@@ -118,18 +153,6 @@ extension OrdersFilterOperations {
         state: inout OrderFilterFeature.State
     ) {
         state.pendingFilterSelection.datePeriod = period
-    }
-
-    /// 選擇商品類別；只更新暫存選擇
-    ///
-    /// - Parameters:
-    ///   - category: 暫存的商品類別；`nil` 代表全部類別
-    ///   - state: 要更新的訂單功能狀態
-    static func filterPendingCategorySelected(
-        _ category: String?,
-        state: inout OrderFilterFeature.State
-    ) {
-        state.pendingFilterSelection.category = category
     }
 
     /// 選擇付款方式；只更新暫存選擇
@@ -158,8 +181,8 @@ extension OrdersFilterOperations {
             state.selectedDatePeriod = selection.datePeriod
             hasFilterChanged = true
         }
-        if selection.category != state.selectedCategory {
-            state.selectedCategory = selection.category
+        if selection.categories != state.selectedCategories {
+            state.selectedCategories = selection.categories
             hasFilterChanged = true
         }
         if selection.paymentMethod != state.selectedPaymentMethod {
@@ -169,7 +192,7 @@ extension OrdersFilterOperations {
         if hasFilterChanged {
             state.selectFirstFilteredOrder()
         }
-        state.filterSheet = nil
+        state.destination = nil
     }
 
     /// 取消篩選；有變更時先確認捨棄
@@ -183,18 +206,7 @@ extension OrdersFilterOperations {
             return .cancelled
         }
 
-        state.filterDiscardConfirmation = AlertState {
-            TextState("orders.list.label.discardChanges")
-        } actions: {
-            ButtonState(role: .destructive, action: .discard) {
-                TextState("orders.list.label.discardChanges")
-            }
-            ButtonState(role: .cancel) {
-                TextState("orders.list.label.keepEditing")
-            }
-        } message: {
-            TextState("orders.list.message.filtersHaveApplied")
-        }
+        state.filterDiscardConfirmation = OrderFilterConfirmations.discardChanges(discard: .discard)
         return nil
     }
 

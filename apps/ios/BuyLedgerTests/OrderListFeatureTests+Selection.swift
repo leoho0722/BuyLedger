@@ -28,6 +28,9 @@ extension OrderListFeatureTests {
         initial.list.selectedOrderIDs = ["O1"]
         let store = TestStore(initialState: initial.list) {
             OrderListFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -56,6 +59,9 @@ extension OrderListFeatureTests {
         initial.list.isSelecting = true
         let store = TestStore(initialState: initial.list) {
             OrderListFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -73,6 +79,9 @@ extension OrderListFeatureTests {
         // Given
         let store = TestStore(initialState: OrdersFeature.State().list) {
             OrderListFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -99,6 +108,9 @@ extension OrderListFeatureTests {
         initial.list.selectedOrderIDs = ["O1"]
         let store = TestStore(initialState: initial.list) {
             OrderListFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
@@ -126,10 +138,15 @@ extension OrderListFeatureTests {
         initial.list.selectedOrderIDs = ["O1", "O2"]
         let store = TestStore(initialState: initial.list) {
             OrderListFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When
-        await store.send(.view(.clearSelectionTapped)) { $0.selectedOrderIDs = [] }
+        await store.send(.view(.clearSelectionTapped)) {
+            $0.selectedOrderIDs = []
+        }
 
         // Then
         #expect(store.state.selectedOrderIDs.isEmpty)
@@ -149,7 +166,7 @@ extension OrderListFeatureTests {
             calendar: TestDependencies.fixedCalendar
         )
         initial.list.isSelecting = true
-        initial.list.selectedCategory = "beauty"
+        initial.list.selectedCategories = ["beauty"]
         let store = TestStore(initialState: initial.list) {
             OrderListFeature()
         } withDependencies: {
@@ -158,7 +175,9 @@ extension OrderListFeatureTests {
         }
 
         // When
-        await store.send(.view(.selectAllTapped)) { $0.selectedOrderIDs = ["O1"] }
+        await store.send(.view(.selectAllTapped)) {
+            $0.selectedOrderIDs = ["O1"]
+        }
 
         // Then
         #expect(store.state.selectedOrderIDs == ["O1"])
@@ -180,6 +199,9 @@ extension OrderListFeatureTests {
         initial.list.selectedOrderIDs = ["O1"]
         let store = TestStore(initialState: initial.list) {
             OrderListFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
         }
 
         // When

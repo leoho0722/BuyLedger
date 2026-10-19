@@ -66,80 +66,110 @@ private extension OrdersRegularListColumn {
         .scrollIndicators(.hidden)
     }
 
-    /// 顯示並切換單一訂單狀態篩選
+    /// 顯示付款方式單選選單，選取後立即套用，前置勾號由系統選擇器提供
     ///
-    /// - Parameter filter: 要呈現的狀態篩選
-    /// - Returns: 狀態篩選按鈕
-    func statusChip(_ filter: OrderStatusFilter) -> some View {
-        BLFilterChip(
-            isSelected: store.selectedStatus == filter,
-            title: LocalizedStringKey(filter.title)
-        ) {
-            store.send(.view(.statusFilterSelected(filter)))
-        }
-        .accessibilityIdentifier(BLAccessibilityID.Orders.statusChip(filter.id))
-    }
+    /// - Parameter names: 可供選取的付款方式名稱清單
+    /// - Returns: 付款方式選單視圖
+    func paymentMethodFilterTrigger(names: [String]) -> some View {
+        Menu {
+            Picker(
+                selection: $store.selectedPaymentMethod.sending(\.view.paymentMethodFilterSelected)
+            ) {
+                Text("common.action.label.all")
+                    .tag(nil as String?)
+                    .accessibilityIdentifier(BLAccessibilityID.Orders.paymentMethodMenuAllOption)
+                    .accessibilityAddTraits(store.selectedPaymentMethod == nil ? .isSelected : [])
 
-    /// 顯示並切換單一日期區間篩選
-    ///
-    /// - Parameter period: 要呈現的日期區間
-    /// - Returns: 日期區間篩選按鈕
-    func dateChip(_ period: OrderDatePeriod) -> some View {
-        BLFilterChip(
-            icon: "calendar",
-            isSelected: store.selectedDatePeriod == period,
-            style: .accent,
-            title: LocalizedStringKey(period.title)
-        ) {
-            store.send(.view(.datePeriodSelected(period)))
+                ForEach(names, id: \.self) {
+                    Text($0)
+                        .tag(Optional($0))
+                        .accessibilityIdentifier(
+                            BLAccessibilityID.Orders.paymentMethodMenuOption($0)
+                        )
+                        .accessibilityAddTraits(
+                            store.selectedPaymentMethod == $0 ? .isSelected : []
+                        )
+                }
+            } label: {
+                Text("orders.list.label.selectPaymentMethod")
+            }
+            .pickerStyle(.inline)
+            .labelsHidden()
+        } label: {
+            BLFilterChipLabel(
+                icon: "creditcard",
+                isExpanded: true,
+                isSelected: store.hasPaymentMethodFilter,
+                style: .purple,
+                title: OrderFormatters.paymentMethodFilterTitle(
+                    store.selectedPaymentMethod,
+                    locale: locale
+                ),
+                trailingIcon: "chevron.down"
+            )
         }
-    }
-
-    /// 付款方式篩選的觸發鈕，顯示目前選取的付款方式，沒有選取時顯示「全部」
-    var paymentMethodFilterTrigger: some View {
-        BLFilterChip(
-            icon: "creditcard",
-            isExpanded: true,
-            isSelected: store.hasPaymentMethodFilter,
-            style: .purple,
-            title: OrderFormatters.paymentMethodFilterTitle(
-                store.selectedPaymentMethod,
-                locale: locale
-            ),
-            trailingIcon: "chevron.down"
-        ) {
-            store.send(.view(.paymentMethodPickerTapped))
-        }
+        .buttonStyle(.plain)
+        .menuIndicator(.hidden)
+        .menuOrder(.fixed)
+        .accessibilityAddTraits(store.hasPaymentMethodFilter ? .isSelected : [])
+        .accessibilityIdentifier(BLAccessibilityID.Orders.paymentMethodMenuButton)
     }
 
     /// 商品類別篩選的觸發鈕，顯示目前選取的類別，沒有選取時顯示「全部」
     var categoryFilterTrigger: some View {
-        BLFilterChip(
-            icon: "tag",
-            isExpanded: true,
-            isSelected: store.hasCategoryFilter,
-            style: .purple,
-            title: OrderFormatters.categoryFilterTitle(store.selectedCategory, locale: locale),
-            trailingIcon: "chevron.down"
-        ) {
+        Button {
             store.send(.view(.categoryPickerTapped))
+        } label: {
+            BLFilterChipLabel(
+                icon: "tag",
+                isExpanded: true,
+                isSelected: store.hasCategoryFilter,
+                style: .purple,
+                title: OrderFormatters.categoryFilterTitle(
+                    store.selectedCategories,
+                    locale: locale
+                ),
+                trailingIcon: "chevron.down"
+            )
         }
+        .buttonStyle(.plain)
+        .accessibilityAddTraits(store.hasCategoryFilter ? .isSelected : [])
+        .accessibilityIdentifier(BLAccessibilityID.Orders.categoryFilterButton)
     }
 
-    /// 清單上方的狀態、日期、付款方式與類別篩選，以及持續性載入失敗訊息
+    /// 立即清除三項篩選，原本皆為預設時由系統停用
+    var clearFiltersButton: some View {
+        Button {
+            store.send(.view(.clearFiltersTapped))
+        } label: {
+            Label("orders.filter.button.clearFilters", systemImage: "arrow.counterclockwise")
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(minHeight: BLHitTarget.minimum)
+                .labelStyle(.titleAndIcon)
+                .blTextStyle(.subhead)
+                .contentShape(Rectangle())
+        }
+        .disabled(!store.committedFilterSelection.isActive)
+        .accessibilityIdentifier(BLAccessibilityID.Orders.clearFiltersButton)
+    }
+
+    /// 清單上方的篩選、清除入口與持續性載入失敗訊息
     var listHeader: some View {
-        VStack(alignment: .leading, spacing: BLSpacing.medium) {
+        let paymentMethodNames = store.availablePaymentMethodNames
+        return VStack(alignment: .leading, spacing: BLSpacing.medium) {
             statusChipStrip
 
             dateChipStrip
 
-            if !store.availablePaymentMethods.isEmpty {
-                paymentMethodFilterTrigger
+            if !paymentMethodNames.isEmpty {
+                paymentMethodFilterTrigger(names: paymentMethodNames)
             }
 
-            if !store.availableCategories.isEmpty {
+            if store.hasAvailableCategories {
                 categoryFilterTrigger
             }
+
+            clearFiltersButton
 
             // 持續性載入失敗才走這裡
             // 一次性操作失敗由容器的對話框呈現，兩者不共用欄位
@@ -192,7 +222,37 @@ private extension OrdersRegularListColumn {
         }
     }
 
-    /// 一般模式的訂單列，點擊開啟詳情，長按顯示合併與刪除選單
+    /// 顯示並切換單一訂單狀態篩選
+    ///
+    /// - Parameter filter: 要呈現的狀態篩選
+    /// - Returns: 狀態篩選按鈕
+    func statusChip(_ filter: OrderStatusFilter) -> some View {
+        BLFilterChip(
+            isSelected: store.selectedStatus == filter,
+            title: LocalizedStringKey(filter.title)
+        ) {
+            store.send(.view(.statusFilterSelected(filter)))
+        }
+        .accessibilityIdentifier(BLAccessibilityID.Orders.statusChip(filter.id))
+    }
+
+    /// 顯示並切換單一日期區間篩選
+    ///
+    /// - Parameter period: 要呈現的日期區間
+    /// - Returns: 日期區間篩選按鈕
+    func dateChip(_ period: OrderDatePeriod) -> some View {
+        BLFilterChip(
+            icon: "calendar",
+            isSelected: store.selectedDatePeriod == period,
+            style: .accent,
+            title: LocalizedStringKey(period.title)
+        ) {
+            store.send(.view(.datePeriodSelected(period)))
+        }
+        .accessibilityIdentifier(BLAccessibilityID.Orders.dateChip(period.id))
+    }
+
+    /// 顯示一般模式的訂單列，點擊開啟詳情，長按顯示合併與刪除選單
     ///
     /// - Parameter order: 要呈現的訂單
     /// - Returns: 可開啟詳情的訂單列

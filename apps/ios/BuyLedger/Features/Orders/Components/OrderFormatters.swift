@@ -20,14 +20,14 @@ extension OrderFormatters {
     ///
     /// - Parameters:
     ///   - revenue: 實際收款
-    ///   - profit: 獲利，非負數前面加上 `+`
+    ///   - profit: 獲利，非負數前面加上「+」
     ///   - locale: App 選定、用於金額呈現的 locale
     /// - Returns: 以空格分隔的收款與獲利字串，例如「NT$1,000 +NT$200」
     static func revenueAndProfitText(revenue: Decimal, profit: Decimal, locale: Locale) -> String {
         "\(twd(revenue, locale: locale)) \(signedTWD(profit, locale: locale))"
     }
 
-    /// 將新台幣金額格式化為帶正負號的字串，非負數前面加上 `+`
+    /// 將新台幣金額格式化為帶正負號的字串，非負數前面加上「+」
     ///
     /// - Parameters:
     ///   - amount: 要格式化的金額，負數保留金額本身的負號
@@ -37,22 +37,22 @@ extension OrderFormatters {
         (amount >= 0 ? "+" : "") + twd(amount, locale: locale)
     }
 
-    /// 將金額格式化為前面一律加上 `-` 的新台幣字串
+    /// 將金額格式化為前面一律加上「-」的新台幣字串
     ///
     /// - Parameters:
     ///   - amount: 要格式化的金額，例如無卡折抵金額
     ///   - locale: App 選定、用於金額呈現的 locale
-    /// - Returns: 前面加上 `-` 的新台幣金額字串
+    /// - Returns: 前面加上「-」的新台幣金額字串
     static func minusTWD(_ amount: Decimal, locale: Locale) -> String {
         "-" + twd(amount, locale: locale)
     }
 
-    /// 將金額格式化為前面一律加上 `+` 的新台幣字串
+    /// 將金額格式化為前面一律加上「+」的新台幣字串
     ///
     /// - Parameters:
     ///   - amount: 要格式化的金額，例如無卡補款金額
     ///   - locale: App 選定、用於金額呈現的 locale
-    /// - Returns: 前面加上 `+` 的新台幣金額字串
+    /// - Returns: 前面加上「+」的新台幣金額字串
     static func plusTWD(_ amount: Decimal, locale: Locale) -> String {
         "+" + twd(amount, locale: locale)
     }
@@ -98,7 +98,7 @@ extension OrderFormatters {
     /// 將比例格式化為百分比
     ///
     /// - Parameters:
-    ///   - value: `0` 到 `1` 之間的比例
+    ///   - value: 「0」到「1」之間的比例
     ///   - locale: App 選定、用於百分比呈現的 locale
     /// - Returns: 百分比字串
     static func percent(_ value: Decimal, locale: Locale) -> String {
@@ -137,7 +137,7 @@ extension OrderFormatters {
         )
     }
 
-    /// 將日期格式化為 `yyyy/MM/dd HH:mm:ss`
+    /// 將日期格式化為 yyyy/MM/dd HH:mm:ss
     ///
     /// - Parameters:
     ///   - date: 要格式化的日期
@@ -148,15 +148,13 @@ extension OrderFormatters {
         BLFormatters.fullTimestamp(date, calendar: calendar, locale: locale)
     }
 
-    /// 提供開團選擇列的本地化值，已選開團以頓號分隔並保留原名稱
+    /// 串接已選開團名稱，以頓號分隔並保留原名稱與順序
     ///
-    /// - Parameter names: 草稿目前選取的開團名稱
-    /// - Returns: 未歸團的本地化值，或保留原名稱與順序的開團文字
-    static func campaignsDisplayText(_ names: [String]) -> LocalizedStringResource {
-        if names.isEmpty {
-            return "orders.detail.label.unassigned"
-        }
-        return "\(names.joined(separator: "、"))"
+    /// - Parameter names: 草稿目前選取的開團名稱清單
+    /// - Returns: 以頓號分隔的開團名稱字串
+    /// - Note: 僅負責串接名稱，呼叫端需先處理空陣列情況
+    static func campaignsDisplayText(_ names: [String]) -> String {
+        names.joined(separator: "、")
     }
 
     /// 提供付款方式篩選觸發鈕的標題，未選取時顯示本地化的「全部」
@@ -165,28 +163,43 @@ extension OrderFormatters {
     ///   - paymentMethod: 目前選取的付款方式；`nil` 代表全部
     ///   - locale: App 選定的 locale
     /// - Returns: 「付款方式：」加上付款方式原名，或本地化的「全部」
-    static func paymentMethodFilterTitle(_ paymentMethod: String?, locale: Locale = .current) -> LocalizedStringKey {
+    static func paymentMethodFilterTitle(
+        _ paymentMethod: String?,
+        locale: Locale
+    ) -> LocalizedStringKey {
         let language = AppLanguage(locale: locale)
-        guard let paymentMethod else {
-            let allText = language.localized("common.action.label.all")
-            return LocalizedStringKey(language.localizedString(forKey: "orders.filter.label.paymentMethodFormat", allText))
-        }
-        return LocalizedStringKey(language.localizedString(forKey: "orders.filter.label.paymentMethodFormat", paymentMethod))
+        let current = paymentMethod ?? language.localized("common.action.label.all")
+        return LocalizedStringKey(
+            language.localizedString(forKey: "orders.filter.label.paymentMethodFormat", current)
+        )
     }
 
-    /// 提供商品類別篩選觸發鈕的標題，未選取時顯示本地化的「全部」
+    /// 提供商品類別篩選觸發鈕的標題，多選時顯示本地化項數
     ///
     /// - Parameters:
-    ///   - category: 目前選取的商品類別；`nil` 代表全部
+    ///   - categories: 目前選取的商品類別；空集合代表全部
     ///   - locale: App 選定的 locale
-    /// - Returns: 「類別：」加上類別原名，或本地化的「全部」
-    static func categoryFilterTitle(_ category: String?, locale: Locale = .current) -> LocalizedStringKey {
+    /// - Returns: 「類別：」加上類別原名、項數或本地化的「全部」
+    static func categoryFilterTitle(
+        _ categories: Set<String>,
+        locale: Locale
+    ) -> LocalizedStringKey {
         let language = AppLanguage(locale: locale)
-        guard let category else {
-            let allText = language.localized("common.action.label.all")
-            return LocalizedStringKey(language.localizedString(forKey: "orders.filter.label.categoryFormat", allText))
+        if categories.count >= 2 {
+            return LocalizedStringKey(
+                language.localizedString(
+                    forKey: "orders.filter.label.categoryCountFormat",
+                    categories.count
+                )
+            )
         }
-        return LocalizedStringKey(language.localizedString(forKey: "orders.filter.label.categoryFormat", category))
+        let sortedCategories = categories.sorted { lhs, rhs in
+            lhs.localizedStandardCompare(rhs) == .orderedAscending
+        }
+        let current = sortedCategories.first ?? language.localized("common.action.label.all")
+        return LocalizedStringKey(
+            language.localizedString(forKey: "orders.filter.label.categoryFormat", current)
+        )
     }
 
     /// 將訂單類別清單格式化為 tag 顯示文字，略過空白與空字串項目

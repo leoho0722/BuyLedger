@@ -21,6 +21,9 @@ struct OrderListFeature {
         /// 容器、載入與寫入子層共用的唯讀訂單
         @SharedReader var orders: [LedgerOrder]
 
+        /// 容器由 Root 同步的開團投影，清單只共用唯讀引用
+        @SharedReader var campaigns: [Campaign]
+
         /// 用於過濾訂單列表的搜尋文字
         var searchText = ""
 
@@ -30,8 +33,8 @@ struct OrderListFeature {
         /// 目前套用的日期區間篩選
         var selectedDatePeriod: OrderDatePeriod = .all
 
-        /// 目前套用的商品類別篩選；`nil` 代表全部類別
-        var selectedCategory: String?
+        /// 目前套用的商品類別集合；空集合代表全部類別
+        var selectedCategories: Set<String> = []
 
         /// 目前套用的付款方式篩選；`nil` 代表全部付款方式
         var selectedPaymentMethod: String?
@@ -60,14 +63,8 @@ struct OrderListFeature {
         /// 最近一次出現、重試或 Root 刷新時記錄的時間與行事曆
         var dateContext: OrderDateContext?
 
-        /// iPhone (compact) 整合篩選 sheet 的暫存流程
-        @Presents var filterSheet: OrderFilterFeature.State?
-
-        /// iPad (regular) 商品類別篩選 picker sheet 是否呈現
-        var isCategoryPickerPresented: Bool = false
-
-        /// iPad (regular) 付款方式篩選 picker sheet 是否呈現
-        var isPaymentMethodPickerPresented: Bool = false
+        /// 清單目前呈現的篩選目的地
+        @Presents var destination: Destination.State?
 
         /// 依多選筆數顯示清單標題
         var navigationTitleKey: String.LocalizationValue {
@@ -78,14 +75,14 @@ struct OrderListFeature {
         var committedFilterSelection: OrderFilterSelection {
             OrderFilterSelection(
                 datePeriod: selectedDatePeriod,
-                category: selectedCategory,
+                categories: selectedCategories,
                 paymentMethod: selectedPaymentMethod
             )
         }
 
         /// 是否已套用商品類別篩選
         var hasCategoryFilter: Bool {
-            selectedCategory != nil
+            !selectedCategories.isEmpty
         }
 
         /// 是否已套用付款方式篩選
@@ -98,19 +95,14 @@ struct OrderListFeature {
             OrdersListQuery.filteredOrders(state: self)
         }
 
-        /// 篩選結果的訂單識別值，供窄版與寬版工具列共用
-        var filteredIDs: [LedgerOrder.ID] {
-            filteredOrders.map(\.id)
-        }
-
-        /// 非空的篩選結果是否全部已勾選，允許另有篩選外的勾選
-        var isAllFilteredSelected: Bool {
-            OrdersListQuery.isAllFilteredSelected(state: self)
-        }
-
         /// 主檔與訂單已使用的類別
         var availableCategories: [String] {
             OrdersListQuery.availableCategories(orders: orders, catalog: lookupCatalog)
+        }
+
+        /// 主檔或訂單是否含有可用類別
+        var hasAvailableCategories: Bool {
+            OrdersListQuery.hasAvailableCategories(orders: orders, catalog: lookupCatalog)
         }
 
         /// 主檔與訂單已使用的付款方式
@@ -132,16 +124,19 @@ struct OrderListFeature {
         ///
         /// - Parameters:
         ///   - orders: 共用訂單的唯讀引用
+        ///   - campaigns: 容器提供的開團唯讀引用
         ///   - isLoading: 載入中的旗標
         ///   - hasLoaded: 已載入的旗標
         ///   - errorMessage: 載入錯誤訊息
         init(
             orders: SharedReader<[LedgerOrder]>,
+            campaigns: SharedReader<[Campaign]> = SharedReader(value: []),
             isLoading: SharedReader<Bool> = SharedReader(value: false),
             hasLoaded: SharedReader<Bool> = SharedReader(value: false),
             errorMessage: SharedReader<String?> = SharedReader(value: nil)
         ) {
             self._orders = orders
+            self._campaigns = campaigns
             self._isLoading = isLoading
             self._hasLoaded = hasLoaded
             self._errorMessage = errorMessage
@@ -155,12 +150,18 @@ struct OrderListFeature {
             OrdersListQuery.filterSummary(selection: committedFilterSelection, language: language)
         }
 
-        /// 依記錄的時間與呼叫端語系產生日期區段
+        /// 取得清單與工具列共用的單次篩選結果
         ///
-        /// - Parameter locale: 畫面選用的語系
-        /// - Returns: 由新到舊排列的區段
-        func dateSections(locale: Locale) -> [OrderDateSection] {
-            OrdersListQuery.dateSections(state: self, locale: locale)
+        /// - Returns: 相同篩選結果的訂單、識別值與全選狀態
+        func listSnapshot() -> OrderListSnapshot {
+            OrdersListQuery.listSnapshot(state: self)
+        }
+
+        /// 更新清單與已開啟面板的日期脈絡，保留草稿
+        ///
+        /// - Parameter context: Root 或清單 reducer 提供的日期與行事曆
+        mutating func refreshDateContext(_ context: OrderDateContext) {
+            OrderListDestinationOperations.refreshDateContext(context, state: &self)
         }
 
         /// 將右欄選取重設為篩選結果的第一筆
@@ -198,10 +199,10 @@ struct OrderListFeature {
         /// - Parameter action: 操作請求或選取變更
         case delegate(Delegate)
 
-        /// 篩選 sheet 的呈現與子層事件
+        /// 篩選目的地的呈現與子層事件
         ///
         /// - Parameter action: 暫存選擇、套用或關閉
-        case filterSheet(PresentationAction<OrderFilterFeature.Action>)
+        case destination(PresentationAction<Destination.Action>)
 
         /// 清單畫面送出的互動
         @CasePathable
@@ -223,11 +224,6 @@ struct OrderListFeature {
             /// - Parameter period: 要套用的日期區間
             case datePeriodSelected(OrderDatePeriod)
 
-            /// 使用者切換商品類別篩選
-            ///
-            /// - Parameter category: 商品類別；`nil` 表示全部類別
-            case categoryFilterSelected(String?)
-
             /// 使用者切換付款方式篩選
             ///
             /// - Parameter paymentMethod: 付款方式；`nil` 表示全部付款方式
@@ -236,11 +232,11 @@ struct OrderListFeature {
             /// 使用者點擊 iPad (regular) 商品類別篩選 trigger，開啟類別 picker sheet
             case categoryPickerTapped
 
-            /// 使用者點擊 iPad (regular) 付款方式篩選 trigger，開啟付款方式 picker sheet
-            case paymentMethodPickerTapped
-
             /// 使用者點擊 iPhone (compact) 整合篩選 trigger，開啟篩選 sheet
             case filterSheetTapped
+
+            /// 清除已套用的日期、付款方式與類別，保留狀態與搜尋
+            case clearFiltersTapped
 
             /// 使用者輸入搜尋文字
             ///
@@ -331,9 +327,7 @@ struct OrderListFeature {
     var body: some Reducer<State, Action> {
         BindingReducer()
         Reduce(core)
-            .ifLet(\.$filterSheet, action: \.filterSheet) {
-                OrderFilterFeature()
-            }
+            .ifLet(\.$destination, action: \.destination)
     }
 }
 
@@ -349,16 +343,33 @@ private extension OrderListFeature {
     /// - Returns: 容器需要處理的請求
     func core(state: inout State, action: Action) -> Effect<Action> {
         defer {
-            let committed = state.committedFilterSelection
-            state.filterSheet?.committedFilterSelection = committed
+            OrderListDestinationOperations.syncCommittedSelection(state: &state)
         }
         switch action {
         case .binding:
             return .none
 
         case .view(.task), .view(.retryTapped):
-            state.dateContext = OrderDateContext(now: date.now, calendar: calendar)
+            state.refreshDateContext(OrderDateContext(now: date.now, calendar: calendar))
             return .send(.delegate(.loadRequested))
+
+        case .view(.categoryPickerTapped), .view(.filterSheetTapped):
+            let context = state.dateContext ?? OrderDateContext(now: date.now, calendar: calendar)
+            state.refreshDateContext(context)
+            if case .view(.categoryPickerTapped) = action {
+                OrdersFilterOperations.categoryPickerTapped(
+                    campaigns: state.$campaigns,
+                    context: context,
+                    state: &state
+                )
+            } else {
+                OrdersFilterOperations.filterSheetTapped(
+                    campaigns: state.$campaigns,
+                    context: context,
+                    state: &state
+                )
+            }
+            return .none
 
         case .view(let view):
             guard let delegate = OrderListInteraction.apply(view, state: &state) else {
@@ -369,20 +380,8 @@ private extension OrderListFeature {
         case .delegate:
             return .none
 
-        case .filterSheet(.presented(.delegate(.applied(let selection)))):
-            let previousID = state.selectedOrderID
-            OrdersFilterOperations.filterApplied(selection, state: &state)
-            guard previousID != state.selectedOrderID else {
-                return .none
-            }
-            return .send(.delegate(.selectionChanged(state.selectedOrderID)))
-
-        case .filterSheet(.presented(.delegate(.cancelled))):
-            state.filterSheet = nil
-            return .none
-
-        case .filterSheet:
-            return .none
+        case .destination(let action):
+            return OrderListDestinationOperations.apply(action, state: &state)
         }
     }
 }

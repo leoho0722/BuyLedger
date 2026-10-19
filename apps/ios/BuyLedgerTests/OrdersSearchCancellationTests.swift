@@ -59,7 +59,7 @@ struct OrdersSearchCancellationTests {
     func searchTextChanged_取消搜尋且有類別篩選_保留其他篩選() async {
         // Given
         var initial = OrderListFeatureTests.makeState(orders: Self.orders)
-        initial.selectedCategory = "美妝"
+        initial.selectedCategories = ["美妝"]
         initial.searchText = "小美"
         initial.selectedOrderID = "A"
         let store = TestStore(initialState: initial) {
@@ -77,7 +77,7 @@ struct OrdersSearchCancellationTests {
 
         // Then
         await store.receive(\.delegate.selectionChanged)
-        #expect(store.state.selectedCategory == "美妝")
+        #expect(store.state.selectedCategories == ["美妝"])
         let restored = store.state.filteredOrders
         #expect(restored.map(\.id) == ["A", "B"])
     }

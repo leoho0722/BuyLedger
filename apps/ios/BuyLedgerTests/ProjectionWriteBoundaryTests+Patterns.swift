@@ -84,7 +84,7 @@ extension ProjectionWriteBoundaryTests {
         NSRange(text.startIndex..<text.endIndex, in: text)
     }
 
-    /// 把違規清單格式化為人可讀的條列訊息
+    /// 格式化違規清單為人可讀之條列訊息
     ///
     /// - Parameter violations: 掃描命中的違規清單
     /// - Returns: 人可讀的違規說明
@@ -114,21 +114,6 @@ extension ProjectionWriteBoundaryTests {
         return files
     }
 
-    /// 把檔案絕對路徑轉為相對於掃描根目錄的路徑
-    ///
-    /// - Parameters:
-    ///   - file: 要轉換路徑的檔案
-    ///   - root: 掃描根目錄
-    /// - Returns: 檔案相對路徑
-    static func relativePath(of file: URL, under root: URL) -> String {
-        let filePath = file.standardizedFileURL.path
-        let rootPath = root.standardizedFileURL.path
-        guard filePath.hasPrefix(rootPath) else {
-            return filePath
-        }
-        return String(filePath.dropFirst(rootPath.count + 1))
-    }
-
     /// 找出外部 helper 以非 `inout` 的 `State` 參數寫入投影的位置
     ///
     /// - Parameters:
@@ -154,10 +139,9 @@ extension ProjectionWriteBoundaryTests {
         let parameters = try NSRegularExpression(
             pattern: #"\b([\p{L}_][\p{L}\p{N}_]*)\s*:\s*"# + escapedOwner + #"\.State\b"#
         )
-        let text = stripped as NSString
         var violations: [Violation] = []
         for match in parameters.matches(in: stripped, range: fullRange(of: stripped)) {
-            let parameter = text.substring(with: match.range(at: 1))
+            let parameter = (stripped as NSString).substring(with: match.range(at: 1))
             for property in owner.properties {
                 let assignment = try assignmentPattern(prefix: parameter, property: property)
                 let mutation = try mutatingCallPattern(prefix: parameter, property: property)
@@ -189,9 +173,10 @@ extension ProjectionWriteBoundaryTests {
         let property = NSRegularExpression.escapedPattern(for: property)
         let methods = mutatingMethodNames.map(NSRegularExpression.escapedPattern(for:))
             .joined(separator: "|")
-        let member = #"\b[\p{L}_$][\p{L}\p{N}_$]*\s*\.\s*"# + key + #"\s*\.\s*"# + property
+        let member = #"\b[\p{L}_$][\p{L}\p{N}_$]*\s*\.\s*"#
+            + key + #"\s*\.\s*\$?"# + property
         let assignment = #"(?:\[[^\]]*\]\s*)?(?:=(?!=)|\+=|-=|\*=|/=)"#
-        let mutation = #"\.\s*(?:"# + methods + #")\s*\("#
+        let mutation = #"\.\s*(?:(?:"# + methods + #")\s*\(|withLock\b)"#
         return try NSRegularExpression(
             pattern: member + #"\b\s*(?:"# + assignment + "|" + mutation + ")"
         )
@@ -221,7 +206,7 @@ private extension ProjectionWriteBoundaryTests {
         )
     }
 
-    /// 建立「有前綴 `mutating` 方法呼叫」樣式：`<prefix>.<property>.<方法名>(`
+    /// 建立「有前綴 `mutating` 方法呼叫」樣式：<prefix>.<property>.<方法名>(
     ///
     /// - Parameters:
     ///   - prefix: 屬性前的狀態或物件名稱
@@ -250,7 +235,7 @@ private extension ProjectionWriteBoundaryTests {
     static func bareAssignmentPattern(property: String) throws(any Error) -> NSRegularExpression {
         let escaped = NSRegularExpression.escapedPattern(for: property)
         return try NSRegularExpression(
-            pattern: #"(?<![\w.])"# + escaped + #"\b\s*(?:\[[^\]]*\]\s*)?(?:=(?!=)|\+=|-=|\*=|/=)"#
+            pattern: #"(?<![\w.$])"# + escaped + #"\b\s*(?:\[[^\]]*\]\s*)?(?:=(?!=)|\+=|-=|\*=|/=)"#
         )
     }
 
@@ -264,7 +249,7 @@ private extension ProjectionWriteBoundaryTests {
         let alternation = mutatingMethodNames.map(NSRegularExpression.escapedPattern(for:))
             .joined(separator: "|")
         return try NSRegularExpression(
-            pattern: #"(?<![\w.])"# + escaped + #"\.(?:"# + alternation + #")\s*\("#
+            pattern: #"(?<![\w.$])"# + escaped + #"\.(?:"# + alternation + #")\s*\("#
         )
     }
 }

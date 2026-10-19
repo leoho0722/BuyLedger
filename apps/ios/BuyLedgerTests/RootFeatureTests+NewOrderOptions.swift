@@ -206,7 +206,9 @@ extension RootFeatureTests {
         let expired = Campaign.fixture(name: "May-JP", closeDate: closingDate)
         var initial = Self.makeIsolatedRootState()
         initial.selectedTab = .dashboard
-        initial.orders.campaigns = [expired]
+        initial.orders.$campaigns.withLock {
+            $0 = [expired]
+        }
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
@@ -247,7 +249,9 @@ extension RootFeatureTests {
         let expired = Campaign.fixture(name: "May-JP", closeDate: closingDate)
         var initial = Self.makeIsolatedRootState()
         initial.selectedTab = .orders
-        initial.orders.campaigns = [expired]
+        initial.orders.$campaigns.withLock {
+            $0 = [expired]
+        }
         let store = TestStore(initialState: initial) {
             RootFeature()
         } withDependencies: {
@@ -283,7 +287,7 @@ private extension RootFeatureTests {
     /// - Parameter method: 主檔中已登錄的付款方式
     /// - Returns: 帶有主檔、幣別、訂單與開團資料的根狀態
     static func makeNewOrderCatalogState(method: PaymentMethodInfo) -> RootFeature.State {
-        var initial = Self.makeIsolatedRootState()
+        let initial = Self.makeIsolatedRootState()
         initial.more.catalog.$catalog.withLock {
             $0.orderSources = ["IG", "LINE"]
             $0.categories = ["美妝", "服飾"]
@@ -303,10 +307,12 @@ private extension RootFeatureTests {
                 ),
             ]
         }
-        initial.orders.campaigns = [
-            Campaign.fixture(id: "MAY", name: "May-JP"),
-            Campaign.fixture(id: "APRIL", name: "April-KR", status: .closed),
-        ]
+        initial.orders.$campaigns.withLock {
+            $0 = [
+                Campaign.fixture(id: "MAY", name: "May-JP"),
+                Campaign.fixture(id: "APRIL", name: "April-KR", status: .closed),
+            ]
+        }
         return initial
     }
 }

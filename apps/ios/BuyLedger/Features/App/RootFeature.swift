@@ -6,7 +6,6 @@
 //
 
 import ComposableArchitecture
-import Foundation
 
 /// App 根層級狀態與導覽
 @Reducer
@@ -212,7 +211,9 @@ struct RootFeature {
             return .none
         }
         .onChange(of: \.campaigns.campaigns) { _, state in
-            state.orders.campaigns = state.campaigns.campaigns
+            state.orders.$campaigns.withLock {
+                $0 = state.campaigns.campaigns
+            }
             state.dashboard.campaigns = state.campaigns.campaigns
             state.insights.campaigns = state.campaigns.campaigns
             return .none

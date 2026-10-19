@@ -17,36 +17,29 @@ struct OrderEditCampaignOptionsTests {
 
     /// 編輯入口只帶入進行中開團，並保留既有訂單的已收單歸屬
     ///
-    /// - Parameters:
-    ///   - hasJuneCampaign: 是否另有六月進行中開團
-    ///   - assigned: 既有訂單的開團歸屬
-    ///   - expected: 除未歸團外可選的開團名稱
-    @Test(arguments: [
-        (false, [], ["May-JP"]),
-        (false, ["April-KR"], ["April-KR", "May-JP"]),
-        (true, [], ["June-US", "May-JP"]),
-    ])
-    func list_進行中與已收單開團_保留進行中與既有歸屬(
-        hasJuneCampaign: Bool,
-        assigned: [String],
-        expected: [String]
-    ) async {
+    /// - Parameter testCase: 編輯開團選項案例
+    @Test(arguments: Self.campaignOptionCases)
+    func list_進行中與已收單開團_保留進行中與既有歸屬(testCase: CampaignOptionCase) async {
         // Given
-        var initial = withDependencies {
+        let initial = withDependencies {
             $0.defaultInMemoryStorage = InMemoryStorage()
         } operation: {
             OrdersFeature.State()
         }
-        let order = LedgerOrder.fixture(id: "ORDER", campaignNames: assigned)
+        let order = LedgerOrder.fixture(id: "ORDER", campaignNames: testCase.assigned)
         initial.$orders.withLock {
             $0 = [order]
         }
-        initial.campaigns = [
-            Campaign.fixture(id: "MAY", name: "May-JP"),
-            Campaign.fixture(id: "APRIL", name: "April-KR", status: .closed),
-        ]
-        if hasJuneCampaign {
-            initial.campaigns.append(Campaign.fixture(id: "JUNE", name: "June-US"))
+        initial.$campaigns.withLock {
+            $0 = [
+                Campaign.fixture(id: "MAY", name: "May-JP"),
+                Campaign.fixture(id: "APRIL", name: "April-KR", status: .closed),
+            ]
+        }
+        if testCase.hasJuneCampaign {
+            initial.$campaigns.withLock {
+                $0.append(Campaign.fixture(id: "JUNE", name: "June-US"))
+            }
         }
         let store = TestStore(initialState: initial) {
             OrdersFeature()
@@ -65,7 +58,7 @@ struct OrderEditCampaignOptionsTests {
                     isCashOnDelivery: false
                 ),
             ],
-            campaigns: expected,
+            campaigns: testCase.expected,
             calendar: TestDependencies.fixedCalendar
         )
 
@@ -83,9 +76,10 @@ struct OrderEditCampaignOptionsTests {
 
         // Then
         await store.finish()
-        #expect(store.state.presentation.destination?.edit?.pickers.options.campaigns == expected)
-        #expect(store.state.presentation.destination?.edit?.draft.campaignNames == assigned)
-        #expect(store.state.presentation.destination?.edit?.isMergeContext == false)
+        let editor = store.state.presentation.destination?.edit
+        #expect(editor?.pickers.options.campaigns == testCase.expected)
+        #expect(editor?.draft.campaignNames == testCase.assigned)
+        #expect(editor?.isMergeContext == false)
     }
 
     /// 合併確認保留來源訂單的已收單開團與快取沒有的幣別，排除無關已收單開團
@@ -94,7 +88,7 @@ struct OrderEditCampaignOptionsTests {
     @Test
     func presentation_合併確認到期且來源含已收單開團與舊幣別_保留歸屬並提供多選() async throws {
         // Given
-        var initial = withDependencies {
+        let initial = withDependencies {
             $0.defaultInMemoryStorage = InMemoryStorage()
         } operation: {
             @Shared(.currencyCodes) var currencyCodes: [CurrencyCode]
@@ -116,11 +110,13 @@ struct OrderEditCampaignOptionsTests {
         initial.$orders.withLock {
             $0 = [primary, secondary]
         }
-        initial.campaigns = [
-            Campaign.fixture(id: "MAY", name: "May-JP"),
-            Campaign.fixture(id: "APRIL", name: "April-KR", status: .closed),
-            Campaign.fixture(id: "MARCH", name: "March-TW", status: .closed),
-        ]
+        initial.$campaigns.withLock {
+            $0 = [
+                Campaign.fixture(id: "MAY", name: "May-JP"),
+                Campaign.fixture(id: "APRIL", name: "April-KR", status: .closed),
+                Campaign.fixture(id: "MARCH", name: "March-TW", status: .closed),
+            ]
+        }
         let draft = OrderMerge.makeDraft(
             primary: primary,
             secondary: secondary,
@@ -187,5 +183,47 @@ struct OrderEditCampaignOptionsTests {
         #expect(editor.draft.campaignNames == ["April-KR", "May-JP"])
         #expect(editor.isMergeContext)
         #expect(store.state.currencyCodes == [.twd, .jpy, CurrencyCode(rawValue: "EUR")])
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrderEditCampaignOptionsTests {
+
+    /// 編輯開團選項案例
+    struct CampaignOptionCase: Sendable {
+
+        /// 是否另有六月進行中開團
+        let hasJuneCampaign: Bool
+
+        /// 既有訂單的開團歸屬
+        let assigned: [String]
+
+        /// 除未歸團外可選的開團名稱
+        let expected: [String]
+    }
+}
+
+// MARK: - Private Method
+
+private extension OrderEditCampaignOptionsTests {
+
+    /// 編輯開團選項的字面值案例
+    ///
+    /// - Note: 只建立值，不存取測試的主執行緒狀態
+    nonisolated static var campaignOptionCases: [CampaignOptionCase] {
+        [
+            CampaignOptionCase(hasJuneCampaign: false, assigned: [], expected: ["May-JP"]),
+            CampaignOptionCase(
+                hasJuneCampaign: false,
+                assigned: ["April-KR"],
+                expected: ["April-KR", "May-JP"]
+            ),
+            CampaignOptionCase(
+                hasJuneCampaign: true,
+                assigned: [],
+                expected: ["June-US", "May-JP"]
+            ),
+        ]
     }
 }

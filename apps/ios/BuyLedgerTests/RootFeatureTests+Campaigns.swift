@@ -13,6 +13,42 @@ import Testing
 
 extension RootFeatureTests {
 
+    /// 根功能更新開團後，已保留的清單引用仍讀到最新投影
+    @Test
+    func campaigns_根功能更新開團_既有清單引用讀到新值() async {
+        // Given
+        let campaign = Campaign.fixture(id: "C1", name: "更新團", openDate: TestDependencies.fixedNow)
+        let initial = Self.makeIsolatedRootState()
+        let listCampaigns = initial.orders.list.$campaigns
+        let store = TestStore(initialState: initial) {
+            RootFeature()
+        } withDependencies: {
+            $0.date = .constant(TestDependencies.fixedNow)
+            $0.calendar = TestDependencies.fixedCalendar
+        }
+
+        // When
+        await store.send(.campaigns(.load(.campaignsResponse(.success([campaign]))))) {
+            $0.campaigns.$campaigns.withLock {
+                $0 = [campaign]
+            }
+            $0.campaigns.load.$hasLoaded.withLock {
+                $0 = true
+            }
+            $0.orders.$campaigns.withLock {
+                $0 = [campaign]
+            }
+            $0.dashboard.campaigns = [campaign]
+            $0.insights.campaigns = [campaign]
+        }
+
+        // Then
+        await store.finish()
+        #expect(store.state.orders.campaigns == [campaign])
+        #expect(store.state.orders.list.campaigns == [campaign])
+        #expect(listCampaigns.wrappedValue == [campaign])
+    }
+
     /// 在開團列表開啟編輯並儲存改名，只換掉目標開團的名稱；同一筆訂單的其他開團與其他訂單維持不變
     @Test
     func campaigns_開團改名_同步更新多開團訂單() async {
@@ -89,6 +125,9 @@ extension RootFeatureTests {
             $0.campaigns.$campaigns.withLock {
                 $0 = [renamedCampaign]
             }
+            $0.orders.$campaigns.withLock {
+                $0 = [renamedCampaign]
+            }
             $0.campaigns.$orders.withLock {
                 $0 = expectedOrders
             }
@@ -105,7 +144,6 @@ extension RootFeatureTests {
         }
         await store.receive(\.campaigns.writes.saveRequested)
         await store.receive(\.campaigns.writes.saveResponse.success) {
-            $0.orders.campaigns = [renamedCampaign]
             $0.dashboard.campaigns = [renamedCampaign]
             $0.insights.campaigns = [renamedCampaign]
         }
@@ -167,6 +205,9 @@ extension RootFeatureTests {
             $0.campaigns.$campaigns.withLock {
                 $0 = loaded
             }
+            $0.orders.$campaigns.withLock {
+                $0 = loaded
+            }
             $0.campaigns.load.$isLoading.withLock {
                 $0 = false
             }
@@ -176,7 +217,6 @@ extension RootFeatureTests {
         }
         await store.receive(\.campaigns.load.loadRequested)
         await store.receive(\.campaigns.load.campaignsResponse.success) {
-            $0.orders.campaigns = loaded
             $0.dashboard.campaigns = loaded
             $0.insights.campaigns = loaded
         }

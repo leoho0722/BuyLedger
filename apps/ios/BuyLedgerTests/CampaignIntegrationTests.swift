@@ -61,6 +61,9 @@ struct CampaignIntegrationTests {
             $0.campaigns.$campaigns.withLock {
                 $0 = loaded
             }
+            $0.orders.$campaigns.withLock {
+                $0 = loaded
+            }
             $0.campaigns.load.$isLoading.withLock {
                 $0 = false
             }
@@ -70,7 +73,6 @@ struct CampaignIntegrationTests {
         }
         await store.receive(\.campaigns.load.loadRequested)
         await store.receive(\.campaigns.load.campaignsResponse.success) {
-            $0.orders.campaigns = loaded
             $0.dashboard.campaigns = loaded
             $0.insights.campaigns = loaded
         }

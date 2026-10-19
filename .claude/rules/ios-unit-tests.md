@@ -87,7 +87,7 @@ paths:
 
 - **用 `ContinuousClock` 計時加顯式上限斷言，不用 `measure { }`**：MobileBuildMCP 拆成 `build-for-testing` + `test-without-building` 執行，`.xctestrun` 讀不到 baseline，`measure` 恆為通過。
     - 門檻抓數量級退化 (約正常耗時的 6 倍)，不沿用舊 baseline 的 10 倍餘裕 (在此工具鏈下等同恆真)。
-    - 已從 `BuyLedger.xctestplan` 排除，單獨跑用 `-only-testing:BuyLedgerTests/OrdersFeaturePerformanceTests`。
+    - 列在 `BuyLedger.xctestplan` 的 `skippedTests`，`-only-testing:BuyLedgerTests/OrdersFeaturePerformanceTests` 不會覆寫它 (執行數為 0)；單獨跑時暫時把它移出 `skippedTests`，跑完還原。
 
 ## Snapshot 測試
 
@@ -95,6 +95,7 @@ paths:
     - 畫面不讀時間時 (如開團列表、首頁、分析頁)，改在建構 State 時帶入固定的 `dateContext`，不靠 `withFixedNow` 提供「現在」。
     - baseline 在 `BuyLedgerTests/__Snapshots__/<測試檔名>/`：目錄跟著呼叫 `assertSnapshot` 的測試檔名 (如 `SnapshotTests+Orders.swift` 對應 `SnapshotTests+Orders/`)；拆檔或搬移測試時基準圖要連同目錄一起搬、不重錄，沒跟著搬會被當成缺少基準圖。record 流程見 `apps/ios/README.md`。
     - 尺寸以各測試的 `.frame` 為準：iPhone 直向 393×852 (長頁面用 393×1800)、iPad 全螢幕寬版 1024×768、大尺寸 iPhone 橫向 956×440 (要露出下方卡片時只加高，如分析頁 956×1000)。
+    - 以 sheet 內容 View 為拍攝對象時 (如 `OrderFilterSheet`、`OrderCategoryPickerSheet`) 用 `.image(drawHierarchyInKeyWindow: true)`：離屏渲染的 `.image` 會錄成整張白圖；錄製後逐張目視確認不是空白 (參考 `SnapshotTests+OrderFilterEmptyStates`)。
     - 依版面分類分流的畫面 (`OrdersView`、`DashboardView`、`InsightsView`) 連窄版 snapshot 也要同時注入 `.environment(\.horizontalSizeClass, …)` 與 `.environment(\.verticalSizeClass, …)`：iPhone 直向是水平 `.compact`、垂直 `.regular`，寬版是兩者都 `.regular`，iPhone 橫向是水平 `.regular`、垂直 `.compact`；只注入水平會落到 snapshot host 預設的垂直尺寸分類。
 - **執行前的模擬器外觀設定見 `apps/ios/CLAUDE.md`；含 `.borderedProminent` 工具列按鈕的畫面的渲染方式見 `ios-design-system.md`**。
 - **編輯表單 (訂單、開團) 逐區段拍攝，含系統 `DatePicker` 的區段不拍**：compact `DatePicker` 的日期膠囊會隨真實時間在數字、年月日與折成兩行之間切換，注入時間控制不到，整張表單的基準圖只在部分時段成立。

@@ -97,43 +97,10 @@ extension SnapshotTests {
         await LookupCatalog.withIsolatedStorage {
             TestDependencies.withFixedNow {
                 // Given
-                var state = OrdersFeature.State(orders: [Self.makeOrdersBaselineOrder()])
-                state.refreshDateContext(
-                    now: TestDependencies.fixedNow,
-                    calendar: TestDependencies.fixedCalendar
-                )
-                state.load.$hasLoaded.withLock {
-                    $0 = true
-                }
-                state.$lookupCatalog = SharedReader(
-                    value: LookupCatalog(
-                        categories: ["服飾", "美妝"],
-                        paymentMethods: [
-                            PaymentMethodInfo(
-                                name: "信用卡",
-                                isCardless: false,
-                                isBankTransfer: false,
-                                isCashOnDelivery: false
-                            ),
-                            PaymentMethodInfo(
-                                name: "銀行轉帳",
-                                isCardless: false,
-                                isBankTransfer: true,
-                                isCashOnDelivery: false
-                            ),
-                        ]
-                    )
-                )
-                state.list.$lookupCatalog = state.$lookupCatalog
-                state.list.selectedDatePeriod = .thisMonth
-                state.list.selectedCategory = "美妝"
-                state.list.selectedPaymentMethod = "信用卡"
-                let filterState = OrderFilterFeature.State(
-                    orders: state.list.$orders,
-                    lookupCatalog: state.$lookupCatalog,
-                    committedFilterSelection: OrderFilterSelection(
+                let filterState = OrderFilterPreviewFixtures.makeState(
+                    selection: OrderFilterSelection(
                         datePeriod: .thisMonth,
-                        category: "美妝",
+                        categories: ["美妝"],
                         paymentMethod: "信用卡"
                     )
                 )
@@ -156,13 +123,44 @@ extension SnapshotTests {
             }
         }
     }
+
+    /// 兩組同時展開時，長類別名稱完整換行且保留多選標記
+    @Test
+    func orderFilterSheet_已收單展開含長名稱_符合基準圖() {
+        TestDependencies.withFixedNow {
+            // Given
+            let state = OrderFilterPreviewFixtures.makeState(
+                selection: OrderFilterSelection(
+                    datePeriod: .thisMonth,
+                    categories: ["美妝", "書籍"],
+                    paymentMethod: "信用卡"
+                )
+            )
+
+            // When
+            let view = OrderFilterSheet(
+                store: Store(initialState: state) {
+                    OrderFilterFeature()
+                }
+            )
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                .environment(\.calendar, TestDependencies.fixedCalendar)
+                .environment(\.timeZone, TestDependencies.fixedCalendar.timeZone)
+                .environment(\.horizontalSizeClass, .compact)
+                .environment(\.verticalSizeClass, .regular)
+                .frame(width: 393, height: 852)
+
+            // Then
+            assertSnapshot(of: view, as: .image(drawHierarchyInKeyWindow: true))
+        }
+    }
 }
 
 // MARK: - Private Method
 
 private extension SnapshotTests {
 
-    /// 建立包含運費與三種手續費的固定訂單，供詳情與篩選基準畫面使用
+    /// 建立包含運費與三種手續費的固定訂單，供詳情基準畫面使用
     ///
     /// - Returns: 不讀取系統時間或隨機識別值的訂單
     static func makeOrdersBaselineOrder() -> LedgerOrder {

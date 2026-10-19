@@ -8,25 +8,26 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 訂單篩選表單的日期區間區段
+/// 篩選表單的日期選單列，只更新暫存日期
 struct OrderFilterDateSection: View {
 
     // MARK: - Properties
 
-    /// 畫面的狀態與事件來源，由父層建立後傳入
+    /// 畫面的狀態與事件來源
     @Bindable var store: StoreOf<OrderFilterFeature>
 
     // MARK: - Body
 
-    /// 顯示日期區間篩選的區段與選項列
+    /// 日期選單與目前暫存值
     var body: some View {
-        Section {
-            ForEach(OrderDatePeriod.orderBrowsingCases) {
-                datePeriodRow($0)
-            }
-        } header: {
-            header
+        Menu {
+            datePicker
+        } label: {
+            menuLabel
         }
+        .buttonStyle(.plain)
+        .menuOrder(.fixed)
+        .accessibilityIdentifier(BLAccessibilityID.Orders.filterDateMenuButton)
     }
 }
 
@@ -34,55 +35,62 @@ struct OrderFilterDateSection: View {
 
 private extension OrderFilterDateSection {
 
-    /// 日期區間選項列
-    ///
-    /// - Parameter period: 該列代表的日期區間
-    /// - Returns: 可選取的篩選列
-    @ViewBuilder
-    func datePeriodRow(_ period: OrderDatePeriod) -> some View {
-        Button {
-            store.send(.view(.filterPendingDatePeriodSelected(period)))
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
-                Image(systemName: "calendar")
-                    .foregroundStyle(.blAccent)
-
-                Text(LocalizedStringKey(period.title))
-                    .fixedSize(horizontal: false, vertical: true)
-                    .multilineTextAlignment(.leading)
-                    .foregroundStyle(.primary)
-
-                Spacer()
-
-                if store.pendingFilterSelection.datePeriod == period {
-                    // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(.blAccent)
-                        .accessibilityHidden(true)
-                }
+    /// 以原生單選語意標記目前暫存日期
+    var datePicker: some View {
+        Picker(
+            selection: $store.pendingFilterSelection.datePeriod
+                .sending(\.view.filterPendingDatePeriodSelected)
+        ) {
+            ForEach(OrderDatePeriod.orderBrowsingCases) {
+                Text(LocalizedStringKey($0.title))
+                    .tag($0)
+                    .accessibilityIdentifier(BLAccessibilityID.Orders.filterDatePeriod($0.id))
+                    .accessibilityAddTraits(
+                        store.pendingFilterSelection.datePeriod == $0 ? .isSelected : []
+                    )
             }
-            .contentShape(Rectangle())
+        } label: {
+            Text("orders.list.label.dateRange")
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(
-            store.pendingFilterSelection.datePeriod == period ? .isSelected : []
-        )
-        .accessibilityIdentifier(BLAccessibilityID.Orders.filterDatePeriod(period.id))
+        .pickerStyle(.inline)
+        .labelsHidden()
     }
 
-    /// 顯示此區段的篩選項目名稱
-    var header: some View {
-        Text("orders.list.label.dateRange")
+    /// 日期標題、暫存值與指示箭頭對齊第一行基線，長文允許換行
+    var menuLabel: some View {
+        HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
+            Image(systemName: "calendar")
+                .foregroundStyle(.blAccent)
+                .accessibilityHidden(true)
+
+            Text("orders.list.label.dateRange")
+                .fixedSize(horizontal: false, vertical: true)
+                .foregroundStyle(.blLabel)
+
+            Spacer(minLength: BLSpacing.small)
+
+            Text(LocalizedStringKey(store.pendingFilterSelection.datePeriod.title))
+                .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(.trailing)
+                .foregroundStyle(.blSecondaryLabel)
+
+            Image(systemName: "chevron.up.chevron.down")
+                .foregroundStyle(.blAccent)
+                .accessibilityHidden(true)
+        }
+        .frame(maxWidth: .infinity, minHeight: BLHitTarget.minimum, alignment: .leading)
+        .blTextStyle(.body)
+        .contentShape(Rectangle())
     }
 }
 
 // MARK: - Preview
 
-#Preview("日期區間篩選") {
+#Preview("日期區間選單") {
     List {
         OrderFilterDateSection(
             store: Store(
-                initialState: OrderFilterPreviewFixtures.makeState(date: .all, category: nil)
+                initialState: OrderFilterPreviewFixtures.makeState(date: .thisMonth, category: nil)
             ) {
                 OrderFilterFeature()
             }

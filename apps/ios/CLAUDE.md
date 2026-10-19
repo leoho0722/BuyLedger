@@ -60,6 +60,7 @@
     - `simulator launch-app` 會結束並重開 App，不會把背景中的 App 帶回前景；驗證背景與前景改按 `ui-automation button --button-type lock`，再按兩次 `home` 喚醒並解鎖裝置。畫面一閃即過時 (如自動解鎖) 用 `simulator record-video` 錄影逐格確認。
     - `--launch-args` 的純數字值會被當成數字而驗證失敗，改用 `--json '{"launchArgs":[...]}'`；`-BLUITest` 模式的設定存在記憶體，驗證「重開後仍保留設定」要以正式模式啟動。
     - 列位於分頁列範圍下方時 `touch` 會點到分頁列，先捲動讓目標露出再點。
+    - sheet 內 `List` 的最後一列，`ui-automation` 的 `touch` 與 `tap` 可能回報成功卻沒有觸發，同一 sheet 的其他列正常。遇到時改以 XCUITest 驗證 (正式 UI 測試，或量完即刪的暫時測試)，不反覆重試。
     - iPad 模擬器的多工模式要維持「全螢幕 App」：「視窗 App」模式下 `snapshot-ui` 會失敗 (無法取得可及性樹)。
 - **macOS BSD `sed -E` 清尾隨空白用 `[[:space:]]+$`，不用 `[ \t]`**：`[ \t]` 會匹配字面的反斜線與 `t`，把行尾的 t 一起吃掉，落在註解或字串內時編譯器不會發現。
 
@@ -73,7 +74,7 @@
     - `LayerBoundaryTests` 會納入 `Core/Domain/Generated/` 的宣告名稱，並以變異驗證確認兩條守門真的會轉紅。
 - **綁 store 的畫面只吃自己 feature 的 scoped store**：跨 feature 資料走根 feature 單向同步的唯讀投影，跨 feature 意圖以 delegate action 交給根 feature，由根 feature 呼叫共用的導覽操作，不新增平行的根 case；純顯示值 (如目前的 App 語言) 走建構參數。
     - 可宣告根 store 的只有三個導覽宿主 `RootView`／`RootTabLayout`／`RootSidebarLayout`，由 `LayerBoundaryTests.filesDeclaringRootStore_功能目錄_僅由三個根導覽宿主持有` 鎖住；`MoreView` 只持有 `MoreFeature` 的 scoped store。
-    - 投影的變更監看集中在 `RootFeature.body` 尾端的連續 `onChange(of:)`，涵蓋訂單 (開團與「更多」的 `$orders`、總覽與分析的副本)、開團 (`orders.campaigns`、總覽與分析的副本)、載入狀態、偏好 (`appLock.isBiometricUnlockEnabled`、`dashboard.monthlyProfitGoalTWD`、`more.preferences`、`orders.defaultCurrency`、`orders.aiSummarySettings`) 與辨識類型 (`more.biometryType`)；漏掛一條會讓畫面顯示舊資料而不易察覺。
+    - 投影的變更監看集中在 `RootFeature.body` 尾端的連續 `onChange(of:)`，涵蓋訂單 (開團與「更多」的 `$orders`、總覽與分析的副本)、開團 (`orders.$campaigns`、總覽與分析的副本)、載入狀態、偏好 (`appLock.isBiometricUnlockEnabled`、`dashboard.monthlyProfitGoalTWD`、`more.preferences`、`orders.defaultCurrency`、`orders.aiSummarySettings`) 與辨識類型 (`more.biometryType`)；漏掛一條會讓畫面顯示舊資料而不易察覺。
     - **父層不送出也不攔截子層的 `.view(...)` action**：子層畫面事件只由自己的 Feature 處理，父層不得以 `.send` 或 reducer case 包裝子層 `view` action。
     - **父層要求子層載入或套用資料時，送專用請求 action，即使子層是有 View 的容器也一樣**：請求只由父層送、子層 reducer 處理，不代替使用者互動；Root 對 Orders 送 `rootRequest(OrdersRootRequest)` (`load`、`cascade`、`receiptStatusChange`、`paymentMethodFlagsApply`、`optionAdditionCompleted`)，由容器轉給載入、寫入或呈現子 Feature。需要父層處理的結果經 delegate 回報，其餘成功結果由共用資料觀察。
         - 例外：容器的無 View 呈現與導覽子 Feature (`OrdersPresentationFeature`、`OrdersDetailNavigationFeature`、`CampaignPresentationFeature`)，同一次更新內必須完成的呈現與導覽 (Root 開新訂單、寫入結果關閉表單、顯示詳情、表單關閉收尾) 由容器直接呼叫子 State 的 `mutating` 方法；寫入失敗等一次性通知仍送 `noticeRequested` action，維持下一個 action 才呈現的時序。
@@ -176,6 +177,7 @@
     - `@Shared` 用於主檔目錄 `@Shared(.lookupCatalog)`、幣別清單 `@Shared(.currencyCodes)` 與容器內的無鍵共享資料，寫入責任見 `ios-data-layer.md`。
         - `OrdersFeature` 持有無鍵共享訂單，建立時把同一引用交給子層；只有 `OrdersLoadFeature` 與 `OrderWritesFeature` 在 reducer 內以 `withLock` 更新，容器不寫，清單與詳情只拿 `SharedReader`；載入狀態也由 `OrdersLoadFeature` 共享給容器與清單。
         - `CampaignFeature` 以無鍵 `@Shared` 持有開團、訂單投影、提醒連結與只看未收款；`MoreFeature.State.orders` 是客戶頁讀取的訂單投影。開團與「更多」的訂單投影僅由 Root 更新，不能與 Orders 的資料來源混用。
+        - `OrdersFeature.State.campaigns` 是無鍵 `@Shared` 開團投影，清單以同一份 `SharedReader` 讀取；容器可寫，但只有 Root 在 reducer 內以 `orders.$campaigns.withLock` 同步，`ProjectionWriteBoundaryTests` 守門訂單範圍的寫入、可寫引用外傳與重綁。
         - Root 的 `RootLaunchFeature` 載入幣別快取，非空才寫入 `.currencyCodes`；Orders 以 `@SharedReader(.currencyCodes)` 建立表單選項，讀取失敗或空結果保留原值。
     - `TestStore` 不設定 `exhaustivity = .off`；`TestSuiteIntegrityTests` 要求使用數量維持 0，保持未接收 action 與未預期狀態變更都能讓測試失敗。
     - 通用 extension 放 `Shared/Extensions/`，不是 `Core/Extensions/`。

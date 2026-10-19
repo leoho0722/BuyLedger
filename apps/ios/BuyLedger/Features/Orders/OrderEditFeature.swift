@@ -123,7 +123,9 @@ struct OrderEditFeature {
 
         /// 開團選擇列的本地化值；未選時使用「未歸團」的既有本地化鍵
         var campaignsDisplayText: LocalizedStringResource {
-            OrderFormatters.campaignsDisplayText(draft.campaignNames)
+            draft.campaignNames.isEmpty
+                ? "orders.detail.label.unassigned"
+                : "\(OrderFormatters.campaignsDisplayText(draft.campaignNames))"
         }
 
         /// 依原始訂單與父層帶入的選項建立草稿狀態
@@ -376,9 +378,7 @@ private extension OrderEditFeature {
 
         case .discardConfirmation(.presented(.discard)):
             state.focusedField = nil
-            return .run { _ in
-                await dismiss()
-            }
+            return .run { _ in await dismiss() }
 
         case .discardConfirmation:
             return .none

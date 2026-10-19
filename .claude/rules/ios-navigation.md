@@ -52,7 +52,7 @@ paths:
     - 已在 sheet 內要開子畫面或選擇器時走 push，不疊第二層 sheet；訂單編輯以 `OrderEditPickersFeature.State.PickerRoute` + `navigationDestination(for:)` 驅動 (不用 `navigationDestination(item:)`，它會造成 test target 連結失敗)。
     - `OptionPickerSheet`／`PaymentMethodEditorSheet` 以 `isEmbedded: true` 嵌入宿主堆疊，預設 `false` 為自帶 `NavigationStack` 的單層 sheet。
     - 開團的操作確認 (刪除、結團) 與寫入、提醒失敗提示只由容器的呈現子 Feature (`CampaignPresentationFeature`) 呈現，確認結果以 delegate 交容器寫入；詳情沒有 `destination`，只以 `delegate(.requested)` 請容器處理；表單自身的捨棄確認 (`CampaignEditFeature.discardConfirmation`) 保留在表單內。
-    - 訂單呈現子 Feature 的 `Destination` 統一呈現 edit、merge、aiSummary 與 alert (刪除確認、寫入失敗、AI 摘要未啟用)，存檔、新增選項、刪除確認與 AI 設定以 delegate 交容器；清單與詳情只以 `delegate(.requested(OrderRequest))` 請容器處理。篩選 sheet 的捨棄確認留在清單，編輯表單的捨棄確認留在表單。
+    - 訂單呈現子 Feature 的 `Destination` 統一呈現 edit、merge、aiSummary 與 alert (刪除確認、寫入失敗、AI 摘要未啟用)，存檔、新增選項、刪除確認與 AI 設定以 delegate 交容器；清單與詳情只以 `delegate(.requested(OrderRequest))` 請容器處理。清單的篩選 sheet (iPhone) 與類別選擇器 (iPad) 是清單自己的 `destination` (`OrderListFeature+Destination`)，不經容器呈現，捨棄確認各留在 `OrderFilterFeature`／`OrderCategoryPickerFeature`；編輯表單的捨棄確認留在表單。
 - **容器直接設定 `destination` 呈現的 sheet，若 sheet 內會推入子畫面，內容畫面的 `.task` 不可 `await store.send(...).finish()`**：呈現子 Feature 的 `ifLet` 沒參與那次呈現，TCA 的 dismiss effect 延到第一個送進呈現 reducer 的 action 才啟動，等於掛在 `.task` 這次送出底下；推入子畫面時 `.task` 被取消，dismiss effect 跟著取消，之後 `@Dependency(\.dismiss)` 不再關閉 sheet (參考 `OrderEditView`)。
     - 需要隨畫面取消的長效 effect 改由 reducer 以 cancel id 管理，不靠 `.task` 等待完成。
 - **`NavigationStack` 外層的 `.alert` 在 iPad 的 `NavigationSplitView` 中無法顯示在推入的頁面之上 (`.sheet` 可以)**：容器統一呈現 alert 時，把 alert 綁定掛在目前最上層的畫面，堆疊為空時掛根內容、有推入時掛最上層目的地，另一處給 `.constant(nil)` (參考 `CampaignView.alertBinding(isDetail:)`)。
@@ -80,5 +80,7 @@ paths:
     - 收鍵盤一律把焦點設為 `nil`／`false`，不呼叫 UIKit 的 `endEditing`；`.searchable` 畫面由系統提供 Cancel 鈕與捲動收合。
 - **焦點狀態放 `Feature.State`**：view 的 `@FocusState` 只當鏡像，以 `.bind($store.focusedField, to: $focusedField)` 連結，讓自動聚焦與清除焦點能由 TestStore 涵蓋。
     - 焦點 enum case 依畫面視覺順序宣告 (參考 `OrderEditFeature.State.Field`)。
+- **輸入會改變清單內容的 `TextField` 不放 `List` 的 section header**：內容變動時 header 會重建，輸入一個字就失焦、鍵盤收起；改放獨立 section 的普通列並給固定 `.id` (參考 `OrderCategoryFilterRows.SearchRow` 的類別搜尋)。
+    - insetGrouped 會以儲存格圓角遮罩列的內容與背景，沒有公開 API 可關閉；列內灰底改用 `Capsule`，與儲存格輪廓一致。
 - **數字鍵盤工具列只放一個「完成」**，不加上一欄／下一欄箭頭。
     - 只在焦點位於數字欄時顯示 (參考 `OrderEditFeature.State.isNumericFieldFocused`)，整個畫面只有數字欄時才可無條件顯示；完成鍵以 store binding 把 `focusedField` 設為 `nil`。

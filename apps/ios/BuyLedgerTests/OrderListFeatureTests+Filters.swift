@@ -85,15 +85,18 @@ extension OrderListFeatureTests {
 
     /// 清除分類篩選後，清單回到全部訂單並改選第一筆
     @Test
-    func categoryFilterSelected_清除分類篩選_顯示全部訂單() async {
+    func destination_清除分類篩選_顯示全部訂單() async {
         // Given
         var initial = OrdersFeature.State(orders: LedgerOrder.sampleOrders)
         initial.refreshDateContext(
             now: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        initial.list.selectedCategory = "服飾"
+        initial.list.selectedCategories = ["服飾", "書籍"]
         initial.list.selectedOrderID = "BL-2604-017"
+        initial.list.destination = .categoryPicker(
+            OrderCategoryPickerFeatureTests.makeState(for: initial.list)
+        )
         let store = TestStore(initialState: initial.list) {
             OrderListFeature()
         } withDependencies: {
@@ -102,9 +105,10 @@ extension OrderListFeatureTests {
         }
 
         // When
-        await store.send(.view(.categoryFilterSelected(nil))) {
-            $0.selectedCategory = nil
+        await store.send(.destination(.presented(.categoryPicker(.delegate(.applied([])))))) {
+            $0.selectedCategories = []
             $0.selectedOrderID = "BL-2604-018"
+            $0.destination = nil
         }
 
         // Then
@@ -126,7 +130,7 @@ extension OrderListFeatureTests {
 
     /// 已套用狀態篩選時再選分類，只留下兩個條件都符合的訂單
     @Test
-    func categoryFilterSelected_分類與狀態篩選並用_只顯示同時相符訂單() async {
+    func destination_分類與狀態篩選並用_只顯示同時相符訂單() async {
         // Given
         var initial = OrdersFeature.State(orders: [
             OrdersFeatureTests.makeOrder(id: "O1", category: "beauty", status: .shipping),
@@ -138,6 +142,9 @@ extension OrderListFeatureTests {
             calendar: TestDependencies.fixedCalendar
         )
         initial.list.selectedStatus = .shipping
+        initial.list.destination = .categoryPicker(
+            OrderCategoryPickerFeatureTests.makeState(for: initial.list)
+        )
         let store = TestStore(initialState: initial.list) {
             OrderListFeature()
         } withDependencies: {
@@ -146,9 +153,12 @@ extension OrderListFeatureTests {
         }
 
         // When
-        await store.send(.view(.categoryFilterSelected("beauty"))) {
-            $0.selectedCategory = "beauty"
+        await store.send(
+            .destination(.presented(.categoryPicker(.delegate(.applied(["beauty"])))))
+        ) {
+            $0.selectedCategories = ["beauty"]
             $0.selectedOrderID = "O1"
+            $0.destination = nil
         }
 
         // Then
@@ -211,7 +221,7 @@ extension OrderListFeatureTests {
             now: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        initial.list.selectedCategory = "beauty"
+        initial.list.selectedCategories = ["beauty"]
         let store = TestStore(initialState: initial.list) {
             OrderListFeature()
         } withDependencies: {
@@ -233,7 +243,7 @@ extension OrderListFeatureTests {
 
     /// 訂單有多個分類時，只要其中一個符合所選分類就顯示
     @Test
-    func categoryFilterSelected_訂單含多個分類_符合任一分類即顯示() async {
+    func destination_訂單含多個分類_符合任一分類即顯示() async {
         // Given
         var initial = OrdersFeature.State(orders: [
             OrdersFeatureTests.makeOrder(id: "O1", categories: ["beauty"], status: .purchased),
@@ -253,6 +263,9 @@ extension OrderListFeatureTests {
             now: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
+        initial.list.destination = .categoryPicker(
+            OrderCategoryPickerFeatureTests.makeState(for: initial.list)
+        )
         let store = TestStore(initialState: initial.list) {
             OrderListFeature()
         } withDependencies: {
@@ -261,9 +274,12 @@ extension OrderListFeatureTests {
         }
 
         // When
-        await store.send(.view(.categoryFilterSelected("beauty"))) {
-            $0.selectedCategory = "beauty"
+        await store.send(
+            .destination(.presented(.categoryPicker(.delegate(.applied(["beauty"])))))
+        ) {
+            $0.selectedCategories = ["beauty"]
             $0.selectedOrderID = "O1"
+            $0.destination = nil
         }
 
         // Then

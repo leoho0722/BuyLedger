@@ -54,8 +54,11 @@ apps/ios/
 │   │   │   ├── OrdersFeature.swift               # 容器組合子 Feature，共用訂單引用與 Root 投影，core 逐 case 轉送
 │   │   │   ├── OrdersPresentationFeature.swift   # 無畫面子 Feature：edit／merge／aiSummary／alert 呈現 (+Destination)、通知佇列與合併轉場
 │   │   │   ├── OrdersDetailNavigationFeature.swift # 無畫面子 Feature：iPhone 詳情堆疊 (+Path) 與 iPad 右欄同步
-│   │   │   ├── OrderListFeature.swift            # 搜尋、多選、日期分組與 iPad 選取，組合篩選子 Feature
-│   │   │   ├── OrderFilterFeature.swift          # 篩選 sheet 子 Feature，暫存篩選、搜尋與捨棄確認
+│   │   │   ├── OrderListFeature.swift            # 搜尋、多選、日期分組與 iPad 選取；destination (+Destination) 呈現篩選 sheet 與 iPad 類別選擇器
+│   │   │   ├── OrderFilterFeature.swift          # iPhone 篩選 sheet 子 Feature，暫存日期、付款方式與類別，搜尋與捨棄確認
+│   │   │   ├── OrderCategoryPickerFeature.swift  # iPad 類別選擇器子 Feature，暫存類別、搜尋與捨棄確認
+│   │   │   ├── OrderCategoryGroups.swift         # 類別依開團中／已收單分組、搜尋與展開狀態的純計算，兩平台共用；groups(orders:campaigns:catalog:context:) 為兩個篩選畫面共用入口
+│   │   │   ├── OrderFilterConfirmations.swift    # 篩選 sheet 與 iPad 類別選擇器共用的捨棄確認
 │   │   │   ├── OrderDetailFeature.swift          # iPhone 推入與 iPad 右欄共用的唯讀詳情
 │   │   │   ├── OrderWritesFeature.swift          # 訂單寫入與交易後的調整，reducer 內更新共用訂單
 │   │   │   ├── OrdersLoadFeature.swift           # 訂單載入與共享載入狀態
@@ -79,7 +82,7 @@ apps/ios/
 │   │   │   ├── OrderDateContext.swift            # 注入的現在時間與行事曆
 │   │   │   ├── OrderStatusRules.swift            # 可選狀態與合併入口資格；OrderCostBreakdown 成本、OrderSummaryPrompt 摘要提示
 │   │   │   ├── OrdersView.swift                 # compact／regular 分流與共用 sheet；OrdersCompactView、OrdersRegularListColumn／OrdersRegularDetailColumn
-│   │   │   ├── Components/       # 清單、詳情、篩選與表單區段；OrderDetailMenu／OrderDetailRowMenu 共用操作，OrderEditSelectionRow 共用選擇列；OrderFormatters 處理金額正負號與開團顯示文字
+│   │   │   ├── Components/       # 清單、詳情、篩選與表單區段；OrderDetailMenu／OrderDetailRowMenu 共用操作，OrderEditSelectionRow 共用選擇列；OrderCategoryFilterRows 為兩個類別篩選畫面共用的搜尋列、全部列與空狀態列；OrderFormatters 處理金額正負號與開團顯示文字
 │   │   │   └── Data/             # OrderService (訂單讀寫)、OrderError (訂單持久化錯誤)、PhotoService (相簿選取照片的匯入)、PhotoImportResult
 │   │   ├── Quote/                # 報價試算 (QuoteFeature + QuoteRateFeature 子 reducer + QuoteView)
 │   │   │   └── Components/       # QuoteStatusBanner、QuoteBreakdownCard、QuoteInputsCard

@@ -5,7 +5,6 @@
 //  Created by Leo Ho on 2026/10/9.
 //
 
-import ComposableArchitecture
 import Foundation
 
 // MARK: - Internal Method
@@ -79,7 +78,7 @@ extension OrdersContainerPlan {
                     AISummaryFeature.State(
                         prompt: OrderSummaryPrompt.summaryPrompt(
                             orders: state.list.filteredOrders,
-                            selectedCategory: state.list.selectedCategory
+                            selectedCategories: state.list.selectedCategories
                         ),
                         model: state.aiSummarySettings.model
                     )

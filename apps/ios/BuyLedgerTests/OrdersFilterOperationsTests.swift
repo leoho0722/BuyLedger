@@ -53,17 +53,20 @@ struct OrdersFilterOperationsTests {
 
     /// 驗證切換類別時重選第一筆相符訂單
     @Test
-    func categoryFilterSelected_切換類別_重選第一筆相符訂單() {
+    func categoryApplied_切換類別_重選第一筆相符訂單並關閉() {
         // Given
         let initialOrders = [makeOrder(id: "A", category: "美妝"), makeOrder(id: "B", category: "服飾")]
         var state = OrderListFeatureTests.makeState(orders: initialOrders)
+        state.selectedCategories = ["beauty", "books"]
+        state.destination = .categoryPicker(OrderCategoryPickerFeatureTests.makeState(for: state))
 
         // When
-        OrdersFilterOperations.categoryFilterSelected("服飾", state: &state)
+        OrdersFilterOperations.categoryApplied(["服飾"], state: &state)
 
         // Then
-        #expect(state.selectedCategory == "服飾")
+        #expect(state.selectedCategories == ["服飾"])
         #expect(state.selectedOrderID == "B")
+        #expect(state.destination == nil)
     }
 
     /// 驗證切換付款方式時重選第一筆相符訂單
@@ -83,22 +86,105 @@ struct OrdersFilterOperationsTests {
         #expect(state.selectedOrderID == "B")
     }
 
-    /// 驗證各種篩選值是否依非預設值判斷為已啟用
-    @Test
-    func isActive_各種篩選值_依非預設值判斷() {
+    /// 任一非預設欄位啟用篩選，全部預設時停用
+    ///
+    /// - Parameter testCase: 已套用的日期、類別、付款方式與預期的啟用狀態
+    @Test(arguments: [
+        ActiveFilterCase(
+            date: OrderDatePeriod.all,
+            categories: Set<String>(),
+            paymentMethod: nil,
+            isActive: false,
+        ),
+        ActiveFilterCase(
+            date: .thisWeek,
+            categories: Set<String>(),
+            paymentMethod: nil,
+            isActive: true,
+        ),
+        ActiveFilterCase(
+            date: .all,
+            categories: Set<String>(["美妝"]),
+            paymentMethod: nil,
+            isActive: true,
+        ),
+        ActiveFilterCase(
+            date: .all,
+            categories: Set<String>(),
+            paymentMethod: "信用卡",
+            isActive: true,
+        ),
+        ActiveFilterCase(
+            date: .thisWeek,
+            categories: Set<String>(["美妝"]),
+            paymentMethod: nil,
+            isActive: true,
+        ),
+        ActiveFilterCase(
+            date: .thisWeek,
+            categories: Set<String>(),
+            paymentMethod: "信用卡",
+            isActive: true,
+        ),
+        ActiveFilterCase(
+            date: .all,
+            categories: Set<String>(["美妝"]),
+            paymentMethod: "信用卡",
+            isActive: true,
+        ),
+        ActiveFilterCase(
+            date: .thisWeek,
+            categories: Set<String>(["美妝"]),
+            paymentMethod: "信用卡",
+            isActive: true,
+        ),
+        ActiveFilterCase(
+            date: .all,
+            categories: Set<String>(["美妝", "書籍"]),
+            paymentMethod: nil,
+            isActive: true,
+        ),
+        ActiveFilterCase(
+            date: .all,
+            categories: Set<String>([""]),
+            paymentMethod: nil,
+            isActive: true,
+        ),
+    ])
+    func isActive_各種篩選值_依非預設值判斷(testCase: ActiveFilterCase) {
         // Given
-        let cases: [(OrderFilterSelection, Bool)] = [
-            (.init(), false),
-            (.init(datePeriod: .thisWeek), true),
-            (.init(category: "美妝"), true),
-            (.init(paymentMethod: "信用卡"), true),
-        ]
+        let selection = OrderFilterSelection(
+            datePeriod: testCase.date,
+            categories: testCase.categories,
+            paymentMethod: testCase.paymentMethod
+        )
 
         // When
-        let active = cases.map { $0.0.isActive }
+        let hasActiveFilter = selection.isActive
 
         // Then
-        #expect(active == [false, true, true, true])
+        #expect(hasActiveFilter == testCase.isActive)
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrdersFilterOperationsTests {
+
+    /// 篩選條件與預期啟用狀態的案例
+    struct ActiveFilterCase: Sendable {
+
+        /// 日期區間
+        let date: OrderDatePeriod
+
+        /// 類別集合
+        let categories: Set<String>
+
+        /// 付款方式，`nil` 代表全部
+        let paymentMethod: String?
+
+        /// 真值表的預期結果
+        let isActive: Bool
     }
 }
 
@@ -106,7 +192,7 @@ struct OrdersFilterOperationsTests {
 
 extension OrdersFilterOperationsTests {
 
-    /// 依固定行事曆與 UTC 時區建立指定年月日的日期
+    /// 建立固定行事曆與 UTC 時區的指定年月日日期
     ///
     /// - Parameters:
     ///   - year: 西元年

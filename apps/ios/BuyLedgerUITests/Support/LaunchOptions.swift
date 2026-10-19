@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// 描述一次 App 啟動的前置條件，並序列化成 App 端 harness 認得的啟動參數
+/// 描述一次 App 啟動的前置條件，並序列化成 App 端測試啟動掛鉤認得的啟動參數
 struct LaunchOptions {
 
     // MARK: - Properties
@@ -97,6 +97,12 @@ extension LaunchOptions {
 
         /// 橫跨十二個月、每月至少一筆，供走勢與熱力圖斷言
         case insightsRange
+
+        /// 類別篩選的一般情境，開團中與已收單類別各至少一個，供多選與套用流程斷言
+        case categoryFilter
+
+        /// 類別篩選的大量情境，300 個商品類別與 30 種付款方式，供捲動與搜尋斷言
+        case categoryFilterLarge
     }
 
     /// App 內語言，`rawValue` 對齊 App 端 `BLUITestLanguage`

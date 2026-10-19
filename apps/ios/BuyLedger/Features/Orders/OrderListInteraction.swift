@@ -25,7 +25,7 @@ extension OrderListInteraction {
         state: inout OrderListFeature.State
     ) -> OrderListFeature.Action.Delegate? {
         switch action {
-        case .task, .retryTapped:
+        case .task, .retryTapped, .categoryPickerTapped, .filterSheetTapped:
             return nil
 
         case .statusFilterSelected(let filter):
@@ -36,25 +36,15 @@ extension OrderListInteraction {
             OrdersFilterOperations.datePeriodSelected(period, state: &state)
             return .selectionChanged(state.selectedOrderID)
 
-        case .categoryFilterSelected(let category):
-            OrdersFilterOperations.categoryFilterSelected(category, state: &state)
-            return .selectionChanged(state.selectedOrderID)
-
         case .paymentMethodFilterSelected(let paymentMethod):
             OrdersFilterOperations.paymentMethodFilterSelected(paymentMethod, state: &state)
             return .selectionChanged(state.selectedOrderID)
 
-        case .categoryPickerTapped:
-            OrdersFilterOperations.categoryPickerTapped(state: &state)
-            return nil
-
-        case .paymentMethodPickerTapped:
-            OrdersFilterOperations.paymentMethodPickerTapped(state: &state)
-            return nil
-
-        case .filterSheetTapped:
-            OrdersFilterOperations.filterSheetTapped(state: &state)
-            return nil
+        case .clearFiltersTapped:
+            guard OrdersFilterOperations.clearFilters(state: &state) else {
+                return nil
+            }
+            return .selectionChanged(state.selectedOrderID)
 
         case .searchTextChanged(let searchText):
             OrdersFilterOperations.searchTextChanged(searchText, state: &state)

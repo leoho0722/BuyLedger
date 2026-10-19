@@ -90,6 +90,7 @@ extension ProjectionWriteBoundaryTests {
             return []
         }
         var violations = try rootProjectionViolations(relativePath: relativePath, source: source)
+        violations += try sharedCampaignViolations(relativePath: relativePath, source: source)
         for owner in projectionOwners {
             violations += try findBlockContextViolations(
                 in: source,
@@ -168,6 +169,21 @@ extension ProjectionWriteBoundaryTests {
             }
         }
         return violations
+    }
+
+    /// 把檔案絕對路徑轉為相對於掃描根目錄的路徑
+    ///
+    /// - Parameters:
+    ///   - file: 要轉換路徑的檔案
+    ///   - root: 掃描根目錄
+    /// - Returns: 檔案相對路徑
+    static func relativePath(of file: URL, under root: URL) -> String {
+        let filePath = file.standardizedFileURL.path
+        let rootPath = root.standardizedFileURL.path
+        guard filePath.hasPrefix(rootPath) else {
+            return filePath
+        }
+        return String(filePath.dropFirst(rootPath.count + 1))
     }
 
     /// 禁止根功能以外透過根狀態的子層路徑寫入投影，來源資料不受此規則限制

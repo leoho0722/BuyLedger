@@ -16,6 +16,20 @@ enum OrdersListQuery {
 
 extension OrdersListQuery {
 
+    /// 篩選一次後產生清單與工具列共用的顯示資料
+    ///
+    /// - Parameter state: 清單的篩選值、唯讀訂單與勾選集合
+    /// - Returns: 保留來源順序的訂單、識別值與全選狀態
+    static func listSnapshot(state: OrderListFeature.State) -> OrderListSnapshot {
+        let orders = filteredOrders(state: state)
+        let ids = orders.map(\.id)
+        return OrderListSnapshot(
+            orders: orders,
+            ids: ids,
+            isAllSelected: isAllFilteredSelected(ids: ids, selectedOrderIDs: state.selectedOrderIDs)
+        )
+    }
+
     /// 依清單記錄的時間套用全部篩選，尚未記錄日期時為空
     ///
     /// - Parameter state: 清單的篩選值與唯讀資料
@@ -28,7 +42,7 @@ extension OrdersListQuery {
             orders: state.orders,
             selectedStatus: state.selectedStatus,
             selectedDatePeriod: state.selectedDatePeriod,
-            selectedCategory: state.selectedCategory,
+            selectedCategories: state.selectedCategories,
             selectedPaymentMethod: state.selectedPaymentMethod,
             searchText: state.searchText,
             now: context.now,
@@ -36,48 +50,71 @@ extension OrdersListQuery {
         )
     }
 
-    /// 判斷非空篩選結果是否全部已勾選，不排除篩選外的勾選
-    ///
-    /// - Parameter state: 篩選結果與已勾選識別值
-    /// - Returns: 至少一筆篩選結果且每筆都已勾選時為真
-    static func isAllFilteredSelected(state: OrderListFeature.State) -> Bool {
-        let ids = state.filteredIDs
-        return !ids.isEmpty && ids.allSatisfy { state.selectedOrderIDs.contains($0) }
-    }
-
     /// 以清單記錄的日期產生分組標題與訂單區段
     ///
     /// - Parameters:
-    ///   - state: 清單狀態
+    ///   - orders: 已篩選的訂單
+    ///   - context: 清單記錄的時間與行事曆；尚未記錄時為 `nil`
     ///   - locale: 日期標題使用的語系
     /// - Returns: 由新到舊排列的日期區段
-    static func dateSections(state: OrderListFeature.State, locale: Locale) -> [OrderDateSection] {
-        guard let context = state.dateContext else {
+    static func dateSections(
+        orders: [LedgerOrder],
+        context: OrderDateContext?,
+        locale: Locale
+    ) -> [OrderDateSection] {
+        guard let context else {
             return []
         }
         return OrderDateSection.group(
-            filteredOrders(state: state),
+            orders,
             referenceDate: context.now,
             calendar: context.calendar,
             locale: locale
         )
     }
 
-    /// 主檔與訂單已使用的類別，去重後排序
+    /// 取得主檔與訂單已使用的類別，去重後排序
     ///
     /// - Parameters:
     ///   - orders: 訂單快照
     ///   - catalog: 主檔目錄
     /// - Returns: 去重後依語言排序的類別
     static func availableCategories(orders: [LedgerOrder], catalog: LookupCatalog) -> [String] {
+        mergedCategories(orders: orders, catalog: catalog).sorted { lhs, rhs in
+            lhs.localizedStandardCompare(rhs) == .orderedAscending
+        }
+    }
+
+    /// 合併主檔與訂單的商品類別，主檔類別原樣保留，訂單類別去除前後空白與換行並略過空字串
+    ///
+    /// - Parameters:
+    ///   - orders: 訂單快照
+    ///   - catalog: 主檔目錄
+    /// - Returns: 去重後未排序的類別集合
+    static func mergedCategories(orders: [LedgerOrder], catalog: LookupCatalog) -> Set<String> {
         let fromOrders = orders
             .flatMap(\.categories)
             .map { $0.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         var merged = Set(catalog.categories)
         merged.formUnion(fromOrders)
-        return merged.sorted { lhs, rhs in
-            lhs.localizedStandardCompare(rhs) == .orderedAscending
+        return merged
+    }
+
+    /// 檢查主檔或訂單中是否含有可用商品類別
+    ///
+    /// - Parameters:
+    ///   - orders: 訂單快照
+    ///   - catalog: 主檔目錄
+    /// - Returns: 主檔類別非空或任一訂單含去空白後非空的類別時為 `true`，否則為 `false`
+    static func hasAvailableCategories(orders: [LedgerOrder], catalog: LookupCatalog) -> Bool {
+        if !catalog.categories.isEmpty {
+            return true
+        }
+        return orders.contains {
+            $0.categories.contains {
+                !$0.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            }
         }
     }
 
@@ -113,27 +150,6 @@ extension OrdersListQuery {
             }
     }
 
-    /// 以篩選 sheet 的搜尋文字比對付款方式名稱
-    ///
-    /// - Parameter state: 篩選子層的唯讀資料與搜尋文字
-    /// - Returns: 符合搜尋條件的名稱
-    static func filteredPaymentMethods(state: OrderFilterFeature.State) -> [String] {
-        let names = availablePaymentMethods(orders: state.orders, catalog: state.lookupCatalog)
-            .map(\.name)
-        return matching(names, searchText: state.filterSheetSearchText)
-    }
-
-    /// 以去除前後空白的搜尋文字比對主檔名稱
-    ///
-    /// - Parameters:
-    ///   - names: 可用名稱
-    ///   - searchText: 篩選 sheet 的搜尋文字
-    /// - Returns: 相符名稱；空查詢回傳全部
-    static func matching(_ names: [String], searchText: String) -> [String] {
-        let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? names : names.filter { $0.localizedStandardContains(trimmed) }
-    }
-
     /// 本地化已套用篩選的固定詞，主檔名稱與分隔符保留原文
     ///
     /// - Parameters:
@@ -145,13 +161,24 @@ extension OrdersListQuery {
         if selection.datePeriod != .all {
             parts.append(language.localized(String.LocalizationValue(selection.datePeriod.title)))
         }
-        if let category = selection.category {
+        let categories = selection.categories.sorted { lhs, rhs in
+            lhs.localizedStandardCompare(rhs) == .orderedAscending
+        }
+        if categories.count >= 2 {
+            parts.append(
+                language.localizedString(
+                    forKey: "orders.filter.label.categoryCount",
+                    categories.count
+                )
+            )
+        } else if let category = categories.first {
             parts.append(category)
         }
         if let paymentMethod = selection.paymentMethod {
             parts.append(paymentMethod)
         }
-        return parts.isEmpty ? language.localized("common.action.label.all") : parts.joined(separator: " · ")
+        return parts.isEmpty
+            ? language.localized("common.action.label.all") : parts.joined(separator: " · ")
     }
 
     /// 依多選模式與選取筆數決定清單標題
@@ -167,7 +194,10 @@ extension OrdersListQuery {
         guard count > 0 else {
             return "orders.edit.label.selectOrders"
         }
-        var string = String.LocalizationValue.StringInterpolation(literalCapacity: 34, interpolationCount: 1)
+        var string = String.LocalizationValue.StringInterpolation(
+            literalCapacity: 34,
+            interpolationCount: 1
+        )
         string.appendLiteral("orders.batch.message.selectedCount")
         string.appendLiteral(" ")
         string.appendInterpolation(count)
@@ -188,5 +218,23 @@ extension OrdersListQuery {
             return .failed(errorMessage)
         }
         return .loading
+    }
+}
+
+// MARK: - Private Method
+
+private extension OrdersListQuery {
+
+    /// 判斷非空篩選結果是否全部已勾選，不排除篩選外的勾選
+    ///
+    /// - Parameters:
+    ///   - ids: 已篩選的訂單識別值
+    ///   - selectedOrderIDs: 已勾選的訂單識別值
+    /// - Returns: 至少一筆篩選結果且每筆都已勾選時為真
+    static func isAllFilteredSelected(
+        ids: [LedgerOrder.ID],
+        selectedOrderIDs: Set<LedgerOrder.ID>
+    ) -> Bool {
+        !ids.isEmpty && ids.allSatisfy { selectedOrderIDs.contains($0) }
     }
 }

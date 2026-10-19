@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -82,7 +82,9 @@ extension OrdersFeatureTests {
             now: TestDependencies.fixedNow,
             calendar: TestDependencies.fixedCalendar
         )
-        initial.campaigns = [campaign]
+        initial.$campaigns.withLock {
+            $0 = [campaign]
+        }
         let store = TestStore(initialState: initial) {
             OrdersFeature()
         } withDependencies: {

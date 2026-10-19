@@ -122,7 +122,9 @@ extension RootFeatureTests {
             $0.campaigns.$campaigns.withLock {
                 $0 = [closed]
             }
-            $0.orders.campaigns = [closed]
+            $0.orders.$campaigns.withLock {
+                $0 = [closed]
+            }
             $0.dashboard.campaigns = [closed]
             $0.insights.campaigns = [closed]
         }

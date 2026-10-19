@@ -27,6 +27,36 @@ extension BLAccessibilityID {
         /// 訂單篩選按鈕
         static let filterButton = "orders.list.filterButton"
 
+        /// 寬版付款方式篩選選單的觸發鈕
+        static let paymentMethodMenuButton = "orders.list.paymentMethodMenu"
+
+        /// 寬版付款方式篩選選單的全部選項
+        static let paymentMethodMenuAllOption = "orders.list.paymentMethodMenu.all"
+
+        /// 寬版類別選擇器的觸發鈕
+        static let categoryFilterButton = "orders.list.categoryFilterButton"
+
+        /// 寬版清單立即清除篩選的按鈕
+        static let clearFiltersButton = "orders.list.clearFiltersButton"
+
+        /// 寬版類別選擇器 sheet
+        static let categoryPickerSheet = "orders.categoryPicker"
+
+        /// 類別選擇器的完成按鈕
+        static let categoryPickerDoneButton = "orders.categoryPicker.doneButton"
+
+        /// 類別選擇器的取消按鈕
+        static let categoryPickerCancelButton = "orders.categoryPicker.cancelButton"
+
+        /// 類別選擇器的搜尋欄
+        static let categoryPickerSearchField = "orders.categoryPicker.searchField"
+
+        /// 類別選擇器的清除搜尋按鈕
+        static let categoryPickerSearchClearButton = "orders.categoryPicker.clearSearchButton"
+
+        /// 類別選擇器的全部類別選項
+        static let categoryPickerAllOption = "orders.categoryPicker.all"
+
         /// AI 摘要按鈕
         static let aiSummaryButton = "orders.list.aiSummaryButton"
 
@@ -38,6 +68,27 @@ extension BLAccessibilityID {
 
         /// 取消篩選按鈕
         static let filterCancelButton = "orders.filterSheet.cancelButton"
+
+        /// 篩選 sheet 的清除篩選按鈕
+        static let filterClearButton = "orders.filterSheet.clearButton"
+
+        /// 篩選 sheet 的日期選單觸發鈕
+        static let filterDateMenuButton = "orders.filterSheet.dateMenu"
+
+        /// 篩選 sheet 的付款方式選單觸發鈕
+        static let filterPaymentMethodMenuButton = "orders.filterSheet.paymentMethodMenu"
+
+        /// 篩選 sheet 的付款方式全部選項
+        static let filterPaymentMethodAllOption = "orders.filterSheet.paymentMethodMenu.all"
+
+        /// 篩選 sheet 的類別搜尋欄
+        static let filterSearchField = "orders.filterSheet.searchField"
+
+        /// 篩選 sheet 的清除搜尋按鈕
+        static let filterSearchClearButton = "orders.filterSheet.clearSearchButton"
+
+        /// 篩選 sheet 的全部類別選項
+        static let filterCategoryAllOption = "orders.filterSheet.categoryAll"
 
         /// 訂單詳情頁的根 accessibility identifier
         static let detailRoot = "orders.detail.root"
@@ -78,6 +129,14 @@ extension BLAccessibilityID {
             option("orders.list.statusChip", key: filterID)
         }
 
+        /// 日期瀏覽膠囊，key 取 ``OrderDatePeriod`` 的 `id`
+        ///
+        /// - Parameter periodID: 日期期間識別值
+        /// - Returns: 對應日期膠囊的 accessibility identifier
+        static func dateChip(_ periodID: String) -> String {
+            option("orders.list.dateChip", key: periodID)
+        }
+
         /// 訂單列，key 取訂單編號
         ///
         /// - Parameter orderID: 訂單編號
@@ -86,12 +145,44 @@ extension BLAccessibilityID {
             BLAccessibilityID.row("orders.list.row", key: orderID)
         }
 
-        /// 篩選 sheet 的日期期間膠囊，key 取 ``OrderDatePeriod`` 的 `id`
+        /// 篩選 sheet 的日期選單選項，key 取 ``OrderDatePeriod`` 的 `id`
         ///
         /// - Parameter periodID: 日期期間識別值
-        /// - Returns: 對應日期期間膠囊的 accessibility identifier
+        /// - Returns: 對應日期選單選項的 accessibility identifier
         static func filterDatePeriod(_ periodID: String) -> String {
             option("orders.filterSheet.datePeriod", key: periodID)
+        }
+
+        /// 寬版付款方式篩選選單的選項，key 取付款方式名稱
+        ///
+        /// - Parameter name: 付款方式名稱
+        /// - Returns: 對應付款方式選項的 accessibility identifier
+        static func paymentMethodMenuOption(_ name: String) -> String {
+            option("orders.list.paymentMethodMenu.option", key: name)
+        }
+
+        /// 篩選 sheet 的付款方式選項，key 取付款方式名稱
+        ///
+        /// - Parameter name: 付款方式名稱
+        /// - Returns: 對應付款方式選項的 accessibility identifier
+        static func filterPaymentMethodOption(_ name: String) -> String {
+            option("orders.filterSheet.paymentMethodMenu.option", key: name)
+        }
+
+        /// 類別分組的組標題，key 取組別種類的識別值
+        ///
+        /// - Parameter kindID: 組別種類的識別值
+        /// - Returns: 對應組標題的 accessibility identifier
+        static func categoryGroupHeader(_ kindID: String) -> String {
+            option("orders.filter.categoryGroup", key: kindID)
+        }
+
+        /// 類別格，key 取類別名稱
+        ///
+        /// - Parameter name: 類別名稱
+        /// - Returns: 對應類別格的 accessibility identifier
+        static func categoryCell(_ name: String) -> String {
+            option("orders.filter.category", key: name)
         }
 
         /// 詳情獲利摘要卡，主要數值放各卡的 accessibility value

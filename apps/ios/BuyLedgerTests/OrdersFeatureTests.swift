@@ -7,7 +7,6 @@
 
 import ComposableArchitecture
 import SwiftUI
-import Testing
 
 @testable import BuyLedger
 
@@ -34,29 +33,6 @@ extension OrdersFeatureTests {
 
         /// 預期篩選出的訂單識別碼
         let expectedOrderIDs: [String]
-    }
-
-    /// iPad 寬版畫面訂單列表欄上方篩選按鈕開啟的選擇器
-    ///
-    /// - Note: 用於測試方法的參數型別，須為 internal
-    enum FilterPicker: CaseIterable, Sendable {
-
-        /// 類別選擇器
-        case category
-
-        /// 付款方式選擇器
-        case paymentMethod
-
-        /// 指向這個選擇器是否顯示的狀態欄位
-        var keyPath: any WritableKeyPath<OrderListFeature.State, Bool> & Sendable {
-            switch self {
-            case .category:
-                \.isCategoryPickerPresented
-
-            case .paymentMethod:
-                \.isPaymentMethodPickerPresented
-            }
-        }
     }
 }
 

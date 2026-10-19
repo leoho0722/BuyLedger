@@ -72,76 +72,8 @@ extension CampaignIntegrationTests {
             photos: [],
             mergedSourceIDs: []
         )
-        let expectedFirst = LedgerOrder(
-            id: "O1",
-            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
-            status: .confirmed,
-            currency: .twd,
-            date: Date(timeIntervalSince1970: 1_777_507_200),
-            items: [
-                LedgerOrderItem(
-                    id: UUID(0),
-                    name: "item",
-                    quantity: 1,
-                    unitPrice: 0
-                ),
-            ],
-            itemCost: 0,
-            domesticShipping: 0,
-            internationalShipping: 0,
-            foreignDomesticShipping: 0,
-            cardFeeRate: 0,
-            platformFeeRate: 0,
-            paymentFeeRate: 0,
-            chargedAmount: 100,
-            cardlessDeductionAmount: 0,
-            cardlessSupplementAmount: 0,
-            orderSource: "",
-            categories: [],
-            paymentMethod: "",
-            notes: "",
-            reconciliationStatus: "",
-            campaignNames: [],
-            paymentReceiptStatus: .pending,
-            isCashOnDelivery: false,
-            photos: [],
-            mergedSourceIDs: []
-        )
-        let expectedSecond = LedgerOrder(
-            id: "O2",
-            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
-            status: .confirmed,
-            currency: .twd,
-            date: Date(timeIntervalSince1970: 1_777_507_200),
-            items: [
-                LedgerOrderItem(
-                    id: UUID(0),
-                    name: "item",
-                    quantity: 1,
-                    unitPrice: 0
-                ),
-            ],
-            itemCost: 0,
-            domesticShipping: 0,
-            internationalShipping: 0,
-            foreignDomesticShipping: 0,
-            cardFeeRate: 0,
-            platformFeeRate: 0,
-            paymentFeeRate: 0,
-            chargedAmount: 100,
-            cardlessDeductionAmount: 0,
-            cardlessSupplementAmount: 0,
-            orderSource: "",
-            categories: [],
-            paymentMethod: "",
-            notes: "",
-            reconciliationStatus: "",
-            campaignNames: [],
-            paymentReceiptStatus: .pending,
-            isCashOnDelivery: false,
-            photos: [],
-            mergedSourceIDs: []
-        )
+        let expectedFirst = Self.rebuilt(first, campaignNames: [])
+        let expectedSecond = Self.rebuilt(second, campaignNames: [])
         let expectedOrders = [expectedFirst, expectedSecond, other]
         let cascade = OrdersCascadeOperations.Request.campaignDeleted("四月團")
         let calls = LockIsolated<[String]>([])
@@ -177,6 +109,7 @@ extension CampaignIntegrationTests {
                     TextState(
                         LocalizedStringResource(
                             "campaigns.detail.message.deleteUndoneNotice",
+                            // 需透過字串內插保留 LocalizedStringResource 帶參數之鍵值格式
                             defaultValue: "\("四月團")"
                         )
                     )
@@ -196,6 +129,9 @@ extension CampaignIntegrationTests {
             $0.campaigns.$campaigns.withLock {
                 $0 = [otherCampaign]
             }
+            $0.orders.$campaigns.withLock {
+                $0 = [otherCampaign]
+            }
             $0.campaigns.$orders.withLock {
                 $0 = expectedOrders
             }
@@ -208,7 +144,6 @@ extension CampaignIntegrationTests {
         }
         await store.receive(\.campaigns.writes.deleteRequested)
         await store.receive(\.campaigns.writes.deleteResponse.success) {
-            $0.orders.campaigns = [otherCampaign]
             $0.dashboard.campaigns = [otherCampaign]
             $0.insights.campaigns = [otherCampaign]
         }

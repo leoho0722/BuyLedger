@@ -46,7 +46,8 @@ paths:
 - **訂單資料以 `OrdersFeature.State.orders` 的無鍵 `@Shared` 為來源**：容器建立同一份引用交給子層，清單與詳情只接 `SharedReader`，容器本身不寫。
     - 只有 `OrdersLoadFeature` (套用讀取結果) 與 `OrderWritesFeature` (寫入結果、cascade、付款方式旗標套用) 在 reducer 內以 `withLock` 更新來源；不在 `.run` effect 內寫，也不外傳可寫引用，`ProjectionWriteBoundaryTests` 分別守住來源與 Root 的投影寫入。
     - Root 的 `onChange(of: \.orders.orders)` 在實際修改來源的那一次 action 同步開團、「更多」、總覽與分析；這一次是載入回應、寫入回應或 `writes` 套用 cascade 的 action，不能以最初請求或 delegate 的時點代替。
-    - `campaigns`、`defaultCurrency`、`aiSummarySettings` 是 Root 寫入 Orders 的投影，Orders 內部與 helper 只讀；Root 透過容器的 State 方法處理新訂單、日期刷新與篩選導覽，不直接改清單子 State。
+    - `campaigns` 是容器持有的無鍵 `@Shared` 開團投影，清單只接同一份 `SharedReader`；容器可寫，但只有 Root 在 reducer 內以 `state.orders.$campaigns.withLock` 同步，Orders 內部與 helper 不寫入、不外傳可寫引用或重綁 projected reference，由 `ProjectionWriteBoundaryTests` 守門。
+    - `defaultCurrency`、`aiSummarySettings` 是 Root 寫入 Orders 的投影，Orders 內部與 helper 只讀；Root 透過容器的 State 方法處理新訂單、日期刷新與篩選導覽，不直接改清單子 State。
 - **幣別清單以 `@Shared(.currencyCodes)` 在記憶體內共用**：Root 的 `RootLaunchFeature` 在 `refreshIfStale` 後讀一次 `fetchCodes`，刷新失敗也讀快取，成功且非空才更新；Orders 只以 `@SharedReader(.currencyCodes)` 建立選項。
     - 讀取失敗或空結果保留原值；只有共用清單為空時，表單選項才使用 `CurrencyCode.defaults`。
 - **付款方式旗標正規化只有 `LedgerOrder.applyingPaymentMethodFlags(...)` 一處**：折抵上限、對帳狀態清空、貨到付款運費三條規則都在這裡，手動編輯與回溯更正共用。

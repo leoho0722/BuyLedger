@@ -90,3 +90,4 @@ paths:
     - 尺寸取 `BLHitTarget.minimum`；形狀用元件自身形狀 (膠囊用 `.contentShape(.capsule)`)，避免相鄰命中區在圓角處重疊。
     - 需要維持貼齊角落的外觀時用 `.offset(...)` 推回原位；命中區撐高造成的版面位移是必然代價，元件視覺尺寸不變。
 - **`Label` 在 `Form`／`List` row 內且後接 `Spacer` 時加 `.labelStyle(.titleAndIcon)`**，否則 icon 與文字被撐到兩端。
+- **`List` 列設定 (`listRowInsets`／`listRowSeparator`／`listRowBackground`) 必須是列 View 最外層的修飾**：外面再包 `.onGeometryChange` 等修飾會讓列設定失效 (列內距回到預設、分隔線重現)，`formatting.md` 的 modifier 四組順序不適用於列設定 (參考 `OrderCategoryGrid.gridRow`)。

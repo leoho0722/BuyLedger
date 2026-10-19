@@ -104,7 +104,7 @@ extension OrderEditFeatureTests {
 
     /// 結單日就是今天的開團仍在收單，列在可選的開團清單中
     @Test
-    func init_開團今日到期_仍列入進行中清單() async {
+    func init_開團今日到期_仍列入進行中清單() {
         // Given
         let campaign = Campaign(
             id: "C1",
@@ -115,12 +115,14 @@ extension OrderEditFeatureTests {
             settledDate: nil,
             notes: ""
         )
-        var orders = withDependencies {
+        let orders = withDependencies {
             $0.defaultInMemoryStorage = InMemoryStorage()
         } operation: {
             OrdersFeature.State()
         }
-        orders.campaigns = [campaign]
+        orders.$campaigns.withLock {
+            $0 = [campaign]
+        }
 
         // When
         let state = OrderEditFeature.State(
@@ -138,7 +140,7 @@ extension OrderEditFeatureTests {
 
     /// 狀態仍為進行中但結單日已過的開團，不列入可選清單
     @Test
-    func init_結單日已過但狀態仍進行中_不列入清單() async {
+    func init_結單日已過但狀態仍進行中_不列入清單() {
         // Given
         let yesterdayCampaign = Campaign(
             id: "C1",
@@ -158,12 +160,14 @@ extension OrderEditFeatureTests {
             settledDate: nil,
             notes: ""
         )
-        var orders = withDependencies {
+        let orders = withDependencies {
             $0.defaultInMemoryStorage = InMemoryStorage()
         } operation: {
             OrdersFeature.State()
         }
-        orders.campaigns = [yesterdayCampaign, todayCampaign]
+        orders.$campaigns.withLock {
+            $0 = [yesterdayCampaign, todayCampaign]
+        }
 
         // When
         let state = OrderEditFeature.State(

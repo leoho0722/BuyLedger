@@ -27,6 +27,24 @@ extension ProjectionWriteBoundaryTests {
         // Then
         #expect(violations.count == scenario.expectedCount)
     }
+
+    /// 共享開團投影只允許根功能寫入，訂單端只傳遞唯讀引用
+    ///
+    /// - Parameter scenario: 原始碼路徑、共享開團的正反片段與固定預期筆數
+    /// - Throws: 正規表示式建立失敗時拋出錯誤
+    @Test(arguments: Self.sharedCampaignProjectionScenarios)
+    func projectionViolations_共享開團正反片段_符合預期違規筆數(scenario: SharedOrderScenario) throws {
+        // Given
+
+        // When
+        let violations = try Self.projectionViolations(
+            relativePath: scenario.relativePath,
+            source: scenario.source
+        )
+
+        // Then
+        #expect(violations.count == scenario.expectedCount)
+    }
 }
 
 // MARK: - Private Method
@@ -39,7 +57,7 @@ private extension ProjectionWriteBoundaryTests {
             SharedOrderScenario(
                 relativePath: "Features/App/RootFeature.swift",
                 source: """
-                state.orders.campaigns = []
+                state.orders.$campaigns.withLock { $0 = [] }
                 state.orders.defaultCurrency = .jpy
                 state.orders.aiSummarySettings = settings
                 """,

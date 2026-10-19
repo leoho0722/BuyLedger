@@ -14,6 +14,30 @@ import Testing
 /// AI 商品摘要與完整提示文字的既有行為測試
 struct OrderSummaryPromptTests {
 
+    /// 提示範圍涵蓋全部選取類別，名稱依語言排序
+    ///
+    /// - Parameters:
+    ///   - categories: 已選取類別
+    ///   - expectedScope: 規格表對應的範圍文字
+    @Test(arguments: [
+        (Set<String>(), "(涵蓋目前列表所有類別)"),
+        (Set<String>(["美妝"]), "(已篩選類別：美妝)"),
+        (Set<String>(["書籍", "美妝"]), "(已篩選類別：美妝、書籍)"),
+    ])
+    func summaryPrompt_類別範圍範例_列出排序後的選取名稱(categories: Set<String>, expectedScope: String) {
+        // Given
+        let orders: [LedgerOrder] = []
+
+        // When
+        let prompt = OrderSummaryPrompt.summaryPrompt(
+            orders: orders,
+            selectedCategories: categories
+        )
+
+        // Then
+        #expect(prompt.contains(expectedScope))
+    }
+
     /// 空訂單清單或沒有品項時，提示保留空明細文字
     ///
     /// - Parameter hasOrder: 是否提供沒有品項的訂單
@@ -23,7 +47,7 @@ struct OrderSummaryPromptTests {
         let orders = hasOrder ? [LedgerOrder.fixture(date: TestDependencies.fixedNow)] : []
 
         // When
-        let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategory: nil)
+        let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategories: [])
 
         // Then
         #expect(prompt.contains("\n\n(目前列表沒有任何商品明細)\n\n"))
@@ -70,7 +94,7 @@ struct OrderSummaryPromptTests {
         ]
 
         // When
-        let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategory: nil)
+        let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategories: [])
 
         // Then
         let expected = """
@@ -110,7 +134,7 @@ struct OrderSummaryPromptTests {
         ]
 
         // When
-        let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategory: nil)
+        let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategories: [])
 
         // Then
         #expect(prompt.contains("\n\n" + expected + "\n\n"))
@@ -149,7 +173,7 @@ struct OrderSummaryPromptTests {
             + "- [未分類] B x2 @ 20 TWD\n…(其餘 2 個品項未列出)"
 
         // When
-        let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategory: nil)
+        let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategories: [])
 
         // Then
         #expect(prompt.contains("\n\n" + expected + "\n\n"))
@@ -162,7 +186,7 @@ struct OrderSummaryPromptTests {
         let orders: [LedgerOrder] = []
 
         // When
-        let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategory: nil)
+        let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategories: [])
 
         // Then
         #expect(prompt == """
@@ -193,7 +217,7 @@ struct OrderSummaryPromptTests {
         ]
 
         // When
-        let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategory: "書籍")
+        let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategories: ["書籍"])
 
         // Then
         #expect(prompt == """

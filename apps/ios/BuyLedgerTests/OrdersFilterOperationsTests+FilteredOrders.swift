@@ -50,7 +50,7 @@ extension OrdersFilterOperationsTests {
         var state = try makeFilteredOrdersState()
 
         // When
-        state.selectedCategory = "美妝"
+        state.selectedCategories = ["美妝"]
 
         // Then
         #expect(state.filteredOrders.map(\.id) == ["O1", "O3"])

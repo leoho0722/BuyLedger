@@ -31,6 +31,46 @@ enum BLUITestSeedData {
             AAAAAAAAAAAAA//EABQQAQAAAAAAAAAAAAAAAAAAAAD/2gAIAQEAAD8Ad//Z
             """
 
+    /// 基本付款方式主檔 (6 筆)
+    private static let defaultPaymentMethods: [PaymentMethodSeed] = [
+        PaymentMethodSeed(
+            name: "信用卡",
+            isCardless: false,
+            isBankTransfer: false,
+            isCashOnDelivery: false
+        ),
+        PaymentMethodSeed(
+            name: "銀行轉帳",
+            isCardless: false,
+            isBankTransfer: true,
+            isCashOnDelivery: false
+        ),
+        PaymentMethodSeed(
+            name: "無卡",
+            isCardless: true,
+            isBankTransfer: false,
+            isCashOnDelivery: false
+        ),
+        PaymentMethodSeed(
+            name: "貨到付款",
+            isCardless: false,
+            isBankTransfer: false,
+            isCashOnDelivery: true
+        ),
+        PaymentMethodSeed(
+            name: "LINE Pay",
+            isCardless: false,
+            isBankTransfer: false,
+            isCashOnDelivery: false
+        ),
+        PaymentMethodSeed(
+            name: "Apple Pay",
+            isCardless: false,
+            isBankTransfer: false,
+            isCashOnDelivery: false
+        ),
+    ]
+
     /// 種子資料使用的 Gregorian／UTC 行事曆
     static let calendar: Calendar = {
         var calendar = Calendar(identifier: .gregorian)
@@ -38,6 +78,27 @@ enum BLUITestSeedData {
 
         return calendar
     }()
+}
+
+// MARK: - Nested Types
+
+extension BLUITestSeedData {
+
+    /// UI 測試付款方式的名稱與付款分類
+    struct PaymentMethodSeed: Sendable {
+
+        /// 顯示於付款方式選項的名稱
+        let name: String
+
+        /// 是否屬於無卡付款
+        let isCardless: Bool
+
+        /// 是否屬於銀行轉帳
+        let isBankTransfer: Bool
+
+        /// 是否屬於貨到付款
+        let isCashOnDelivery: Bool
+    }
 }
 
 // MARK: - Internal Method
@@ -63,6 +124,68 @@ extension BLUITestSeedData {
         } catch {
             // 種子寫不進測試 container 時每條 UI 測試的前提都不成立，直接中止讓失敗立即浮現
             fatalError("[BuyLedger][UITest] 種子資料寫入失敗：\(error)")
+        }
+    }
+
+    /// 使用基本六種付款方式寫入主檔
+    ///
+    /// - Parameters:
+    ///   - context: 寫入用的 context
+    ///   - categoryNames: 要寫入的商品類別，預設為基本四類
+    static func insertLookups(
+        into context: ModelContext,
+        categoryNames: [String] = BLUITestSeedData.categoryNames
+    ) {
+        insertLookups(
+            into: context,
+            categoryNames: categoryNames,
+            paymentMethods: defaultPaymentMethods
+        )
+    }
+
+    /// 寫入主檔：訂單來源、商品類別、付款方式與對帳狀態
+    ///
+    /// - Parameters:
+    ///   - context: 寫入用的 context
+    ///   - categoryNames: 要寫入的商品類別，預設為基本四類
+    ///   - paymentMethods: 要寫入的付款方式
+    static func insertLookups(
+        into context: ModelContext,
+        categoryNames: [String] = BLUITestSeedData.categoryNames,
+        paymentMethods: [PaymentMethodSeed]
+    ) {
+        for name in orderSourceNames {
+            context.insert(OrderSourceRecord(name: name))
+        }
+
+        for name in categoryNames {
+            context.insert(CategoryRecord(name: name))
+        }
+
+        for method in paymentMethods {
+            context.insert(
+                PaymentMethodRecord(
+                    name: method.name,
+                    isCardless: method.isCardless,
+                    isBankTransfer: method.isBankTransfer,
+                    isCashOnDelivery: method.isCashOnDelivery
+                )
+            )
+        }
+
+        for name in reconciliationStatusNames {
+            context.insert(ReconciliationStatusRecord(name: name))
+        }
+    }
+
+    /// 把領域訂單逐筆轉成持久化記錄寫入
+    ///
+    /// - Parameters:
+    ///   - orders: 要寫入的訂單
+    ///   - context: 寫入用的 context
+    static func insertOrders(_ orders: [LedgerOrder], into context: ModelContext) {
+        for order in orders {
+            context.insert(OrderRecord(order: order))
         }
     }
 }
@@ -141,58 +264,12 @@ private extension BLUITestSeedData {
         case .insightsRange:
             insertLookups(into: context)
             insertOrders(makeInsightsRangeOrders(referenceDate: referenceDate), into: context)
-        }
-    }
 
-    /// 寫入四種主檔共 17 筆
-    ///
-    /// - Parameter context: 寫入用的 context
-    static func insertLookups(into context: ModelContext) {
-        for name in orderSourceNames {
-            context.insert(OrderSourceRecord(name: name))
-        }
+        case .categoryFilter:
+            seedCategoryFilter(into: context, referenceDate: referenceDate)
 
-        for name in categoryNames {
-            context.insert(CategoryRecord(name: name))
-        }
-
-        let paymentMethods: [(
-            name: String,
-            isCardless: Bool,
-            isBankTransfer: Bool,
-            isCashOnDelivery: Bool
-        )] = [
-            (name: "信用卡", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
-            (name: "銀行轉帳", isCardless: false, isBankTransfer: true, isCashOnDelivery: false),
-            (name: "無卡", isCardless: true, isBankTransfer: false, isCashOnDelivery: false),
-            (name: "貨到付款", isCardless: false, isBankTransfer: false, isCashOnDelivery: true),
-            (name: "LINE Pay", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
-            (name: "Apple Pay", isCardless: false, isBankTransfer: false, isCashOnDelivery: false),
-        ]
-        for method in paymentMethods {
-            context.insert(
-                PaymentMethodRecord(
-                    name: method.name,
-                    isCardless: method.isCardless,
-                    isBankTransfer: method.isBankTransfer,
-                    isCashOnDelivery: method.isCashOnDelivery
-                )
-            )
-        }
-
-        for name in reconciliationStatusNames {
-            context.insert(ReconciliationStatusRecord(name: name))
-        }
-    }
-
-    /// 把領域訂單逐筆轉成持久化記錄寫入
-    ///
-    /// - Parameters:
-    ///   - orders: 要寫入的訂單
-    ///   - context: 寫入用的 context
-    static func insertOrders(_ orders: [LedgerOrder], into context: ModelContext) {
-        for order in orders {
-            context.insert(OrderRecord(order: order))
+        case .categoryFilterLarge:
+            seedCategoryFilterLarge(into: context, referenceDate: referenceDate)
         }
     }
 }

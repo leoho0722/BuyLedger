@@ -18,22 +18,26 @@ struct OrderFilterSheet: View {
 
     // MARK: - Body
 
-    /// 篩選表單骨架，依序顯示日期、付款方式與類別區段
+    /// 依序呈現篩選條件、兩列選單與類別區段，分組只讀取一次
     var body: some View {
+        let groups = store.filterSheetCategoryGroups
         NavigationStack {
             List {
-                OrderFilterDateSection(store: store)
+                Section {
+                    OrderFilterDateSection(store: store)
 
-                OrderFilterPaymentMethodSection(store: store)
+                    OrderFilterPaymentMethodSection(store: store)
+                } header: {
+                    conditionsHeader
+                }
+                .textCase(nil)
 
-                OrderFilterCategorySection(store: store)
+                OrderFilterCategorySection(store: store, groups: groups)
             }
+            .listStyle(.insetGrouped)
+            .environment(\.defaultMinListRowHeight, BLHitTarget.minimum)
             .accessibilityIdentifier(BLAccessibilityID.Orders.filterSheet)
-            .searchable(
-                text: $store.filterSheetSearchText,
-                placement: .navigationBarDrawer(displayMode: .always),
-                prompt: Text("orders.filter.placeholder.searchCategoriesPayment")
-            )
+            .scrollDismissesKeyboard(.interactively)
             .navigationTitle(Text("orders.list.label.filter"))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -54,6 +58,36 @@ struct OrderFilterSheet: View {
 
 private extension OrderFilterSheet {
 
+    /// 篩選條件標題與清除暫存入口，預設值時由系統停用
+    var conditionsHeader: some View {
+        HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
+            Text("orders.filter.label.conditions")
+                .fixedSize(horizontal: false, vertical: true)
+                .blTextStyle(.subhead)
+                .foregroundStyle(.blSecondaryLabel)
+
+            Spacer(minLength: BLSpacing.small)
+
+            clearFiltersButton
+        }
+    }
+
+    /// 重設暫存日期、付款方式與類別，套用前不提交
+    var clearFiltersButton: some View {
+        Button {
+            store.send(.view(.filterClearTapped))
+        } label: {
+            Label("orders.filter.button.clearFilters", systemImage: "arrow.counterclockwise")
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(minHeight: BLHitTarget.minimum)
+                .labelStyle(.titleAndIcon)
+                .blTextStyle(.subhead)
+                .contentShape(Rectangle())
+        }
+        .disabled(!store.pendingFilterSelection.isActive)
+        .accessibilityIdentifier(BLAccessibilityID.Orders.filterClearButton)
+    }
+
     /// 取消並在必要時確認捨棄尚未套用的篩選
     var cancelButton: some View {
         Button {
@@ -70,6 +104,7 @@ private extension OrderFilterSheet {
         Button("orders.list.button.apply") {
             store.send(.view(.filterApplyTapped))
         }
+        .buttonStyle(.borderedProminent)
         .accessibilityIdentifier(BLAccessibilityID.Orders.filterApplyButton)
     }
 
@@ -108,12 +143,28 @@ private extension OrderFilterSheet {
     )
 }
 
-#Preview("整合篩選 sheet (.all + 含長類別名)") {
+#Preview("整合篩選 sheet (兩組展開含長名稱)") {
     OrderFilterSheet(
         store: Store(
             initialState: OrderFilterPreviewFixtures.makeState(
-                date: .all,
-                category: "aespa Lemonade QQ 音樂限定禮包"
+                selection: OrderFilterSelection(
+                    datePeriod: .thisMonth,
+                    categories: ["美妝", "書籍"],
+                    paymentMethod: "信用卡"
+                )
+            )
+        ) {
+            OrderFilterFeature()
+        }
+    )
+}
+
+#Preview("整合篩選 sheet (搜尋食)") {
+    OrderFilterSheet(
+        store: Store(
+            initialState: OrderFilterPreviewFixtures.makeState(
+                selection: OrderFilterSelection(),
+                searchText: "食"
             )
         ) {
             OrderFilterFeature()

@@ -6,7 +6,7 @@
 //
 
 import ComposableArchitecture
-import SwiftUI
+import Foundation
 import Testing
 
 @testable import BuyLedger
@@ -38,7 +38,7 @@ struct OrderFilterFeatureTests {
 
     /// 調整類別只改暫存值
     @Test
-    func filterPendingCategorySelected_選擇美妝_保留已套用類別() async {
+    func filterPendingCategoryToggled_選擇美妝_保留已套用類別() async {
         // Given
         let store = TestStore(initialState: Self.makeState()) {
             OrderFilterFeature()
@@ -48,13 +48,13 @@ struct OrderFilterFeatureTests {
         }
 
         // When
-        await store.send(.view(.filterPendingCategorySelected("美妝"))) {
-            $0.pendingFilterSelection.category = "美妝"
+        await store.send(.view(.filterPendingCategoryToggled("美妝"))) {
+            $0.pendingFilterSelection.categories = ["美妝"]
         }
 
         // Then
-        #expect(store.state.committedFilterSelection.category == nil)
-        #expect(store.state.pendingFilterSelection.category == "美妝")
+        #expect(store.state.committedFilterSelection.categories == [])
+        #expect(store.state.pendingFilterSelection.categories == ["美妝"])
     }
 
     /// 調整付款方式只改暫存值
@@ -85,7 +85,7 @@ struct OrderFilterFeatureTests {
         var state = Self.makeState()
         state.pendingFilterSelection = OrderFilterSelection(
             datePeriod: .thisMonth,
-            category: "美妝",
+            categories: ["美妝"],
             paymentMethod: "信用卡"
         )
         let store = TestStore(initialState: state) {
@@ -101,10 +101,10 @@ struct OrderFilterFeatureTests {
         // Then
         await store.receive(
             \.delegate.applied,
-            OrderFilterSelection(datePeriod: .thisMonth, category: "美妝", paymentMethod: "信用卡")
+            OrderFilterSelection(datePeriod: .thisMonth, categories: ["美妝"], paymentMethod: "信用卡")
         )
         #expect(store.state.committedFilterSelection.datePeriod == .all)
-        #expect(store.state.committedFilterSelection.category == nil)
+        #expect(store.state.committedFilterSelection.categories == [])
         #expect(store.state.committedFilterSelection.paymentMethod == nil)
     }
 
@@ -132,7 +132,7 @@ struct OrderFilterFeatureTests {
     func filterCancelTapped_仍有暫存變更_呈現捨棄確認() async {
         // Given
         var state = Self.makeState()
-        state.pendingFilterSelection.category = "美妝"
+        state.pendingFilterSelection.categories = ["美妝", "書籍"]
         let confirmation = AlertState<OrderFilterFeature.Action.FilterDiscardAlert> {
             TextState("orders.list.label.discardChanges")
         } actions: {
@@ -158,8 +158,8 @@ struct OrderFilterFeatureTests {
         }
 
         // Then
-        #expect(store.state.pendingFilterSelection.category == "美妝")
-        #expect(store.state.committedFilterSelection.category == nil)
+        #expect(store.state.pendingFilterSelection.categories == ["美妝", "書籍"])
+        #expect(store.state.committedFilterSelection.categories == [])
         #expect(store.state.filterDiscardConfirmation == confirmation)
     }
 
@@ -170,7 +170,7 @@ struct OrderFilterFeatureTests {
         var state = Self.makeState()
         state.pendingFilterSelection = OrderFilterSelection(
             datePeriod: .thisMonth,
-            category: "美妝",
+            categories: ["美妝", "書籍"],
             paymentMethod: "信用卡"
         )
         state.filterDiscardConfirmation = OrdersFeatureTests.expectedDiscardAlert()
@@ -185,14 +185,14 @@ struct OrderFilterFeatureTests {
         await store.send(.filterDiscardConfirmation(.presented(.discard))) {
             $0.filterDiscardConfirmation = nil
             $0.pendingFilterSelection.datePeriod = .all
-            $0.pendingFilterSelection.category = nil
+            $0.pendingFilterSelection.categories = []
             $0.pendingFilterSelection.paymentMethod = nil
         }
 
         // Then
         await store.receive(\.delegate.cancelled)
         #expect(store.state.pendingFilterSelection.datePeriod == .all)
-        #expect(store.state.pendingFilterSelection.category == nil)
+        #expect(store.state.pendingFilterSelection.categories == [])
         #expect(store.state.pendingFilterSelection.paymentMethod == nil)
     }
 
@@ -201,7 +201,7 @@ struct OrderFilterFeatureTests {
     func filterDiscardConfirmation_繼續編輯_保留暫存選擇() async {
         // Given
         var state = Self.makeState()
-        state.pendingFilterSelection.category = "美妝"
+        state.pendingFilterSelection.categories = ["美妝"]
         state.filterDiscardConfirmation = OrdersFeatureTests.expectedDiscardAlert()
         let store = TestStore(initialState: state) {
             OrderFilterFeature()
@@ -216,8 +216,8 @@ struct OrderFilterFeatureTests {
         }
 
         // Then
-        #expect(store.state.pendingFilterSelection.category == "美妝")
-        #expect(store.state.committedFilterSelection.category == nil)
+        #expect(store.state.pendingFilterSelection.categories == ["美妝"])
+        #expect(store.state.committedFilterSelection.categories == [])
     }
 
     /// 已套用值不是預設時，捨棄還原目前三欄並通知清單關閉
@@ -227,7 +227,7 @@ struct OrderFilterFeatureTests {
         var state = Self.makeState()
         state.committedFilterSelection = OrderFilterSelection(
             datePeriod: .thisWeek,
-            category: "美妝",
+            categories: ["美妝"],
             paymentMethod: "現金"
         )
         state.pendingFilterSelection = OrderFilterSelection()
@@ -243,14 +243,14 @@ struct OrderFilterFeatureTests {
         await store.send(.filterDiscardConfirmation(.presented(.discard))) {
             $0.filterDiscardConfirmation = nil
             $0.pendingFilterSelection.datePeriod = .thisWeek
-            $0.pendingFilterSelection.category = "美妝"
+            $0.pendingFilterSelection.categories = ["美妝"]
             $0.pendingFilterSelection.paymentMethod = "現金"
         }
 
         // Then
         await store.receive(\.delegate.cancelled)
         #expect(store.state.pendingFilterSelection.datePeriod == .thisWeek)
-        #expect(store.state.pendingFilterSelection.category == "美妝")
+        #expect(store.state.pendingFilterSelection.categories == ["美妝"])
         #expect(store.state.pendingFilterSelection.paymentMethod == "現金")
     }
 }
@@ -259,15 +259,26 @@ struct OrderFilterFeatureTests {
 
 extension OrderFilterFeatureTests {
 
-    /// 建立沒有訂單與主檔、使用全部篩選的子層狀態
+    /// 建立沒有訂單、可指定類別與已套用篩選的子層狀態
     ///
+    /// - Parameters:
+    ///   - categories: 可用的主檔類別，預設為空
+    ///   - committedFilterSelection: 已套用篩選，預設為全部
     /// - Returns: 不存取持久化主檔的測試初始值
     /// - Note: 只建立值，不存取測試的主執行緒狀態
-    nonisolated static func makeState() -> OrderFilterFeature.State {
+    nonisolated static func makeState(
+        categories: [String] = [],
+        committedFilterSelection: OrderFilterSelection = OrderFilterSelection()
+    ) -> OrderFilterFeature.State {
         OrderFilterFeature.State(
             orders: SharedReader(value: []),
-            lookupCatalog: SharedReader(value: LookupCatalog()),
-            committedFilterSelection: OrderFilterSelection()
+            campaigns: SharedReader(value: []),
+            lookupCatalog: SharedReader(value: LookupCatalog(categories: categories)),
+            committedFilterSelection: committedFilterSelection,
+            dateContext: OrderDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
         )
     }
 
@@ -281,8 +292,13 @@ extension OrderFilterFeatureTests {
     ) -> OrderFilterFeature.State {
         OrderFilterFeature.State(
             orders: state.$orders,
+            campaigns: state.$campaigns,
             lookupCatalog: state.$lookupCatalog,
-            committedFilterSelection: state.committedFilterSelection
+            committedFilterSelection: state.committedFilterSelection,
+            dateContext: state.dateContext ?? OrderDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
         )
     }
 }

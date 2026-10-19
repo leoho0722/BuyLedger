@@ -22,7 +22,7 @@ extension OrdersQuery {
     ///   - orders: 要篩選的訂單
     ///   - selectedStatus: 訂單狀態條件
     ///   - selectedDatePeriod: 相對日期區間條件
-    ///   - selectedCategory: 商品類別條件
+    ///   - selectedCategories: 商品類別集合；空集合代表全部類別
     ///   - selectedPaymentMethod: 付款方式條件
     ///   - searchText: 訂單與品項搜尋文字
     ///   - now: 相對日期區間的基準時間
@@ -32,7 +32,7 @@ extension OrdersQuery {
         orders: [LedgerOrder],
         selectedStatus: OrderStatusFilter,
         selectedDatePeriod: OrderDatePeriod,
-        selectedCategory: String?,
+        selectedCategories: Set<String>,
         selectedPaymentMethod: String?,
         searchText: String,
         now: Date,
@@ -55,9 +55,8 @@ extension OrdersQuery {
             ) else {
                 return false
             }
-            let isCategoryMatch = selectedCategory.map {
-                order.categories.contains($0)
-            } ?? true
+            let isCategoryMatch = selectedCategories.isEmpty
+                || !selectedCategories.isDisjoint(with: order.categories)
             guard isCategoryMatch else {
                 return false
             }

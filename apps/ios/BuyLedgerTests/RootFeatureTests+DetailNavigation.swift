@@ -45,7 +45,7 @@ extension RootFeatureTests {
                 now: TestDependencies.fixedNow,
                 calendar: TestDependencies.fixedCalendar
             )
-            $0.orders.list.selectedCategory = "美妝"
+            $0.orders.list.selectedCategories = ["美妝"]
             $0.orders.list.selectedOrderID = "B"
             $0.orders.detail.regularDetail = OrderDetailFeature.State(
                 orderID: "B",

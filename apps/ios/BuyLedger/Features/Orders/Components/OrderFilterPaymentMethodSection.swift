@@ -8,25 +8,26 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 訂單篩選表單的付款方式區段
+/// 篩選表單的付款方式選單列，選項不受類別搜尋影響
 struct OrderFilterPaymentMethodSection: View {
 
     // MARK: - Properties
 
-    /// 畫面的狀態與事件來源，由父層建立後傳入
+    /// 畫面的狀態與事件來源
     @Bindable var store: StoreOf<OrderFilterFeature>
 
     // MARK: - Body
 
-    /// 顯示付款方式篩選的區段與選項列
+    /// 完整付款方式選單與目前暫存值
     var body: some View {
-        Section {
-            paymentMethodClearRow
-
-            optionRows
-        } header: {
-            header
+        Menu {
+            paymentMethodPicker
+        } label: {
+            menuLabel
         }
+        .buttonStyle(.plain)
+        .menuOrder(.fixed)
+        .accessibilityIdentifier(BLAccessibilityID.Orders.filterPaymentMethodMenuButton)
     }
 }
 
@@ -34,108 +35,83 @@ struct OrderFilterPaymentMethodSection: View {
 
 private extension OrderFilterPaymentMethodSection {
 
-    /// 清除付款方式篩選，點選後保留篩選表單
-    @ViewBuilder
-    var paymentMethodClearRow: some View {
-        Button {
-            store.send(.view(.filterPendingPaymentMethodSelected(nil)))
-        } label: {
-            HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
-                Image(systemName: "creditcard")
-                    .foregroundStyle(.blAccent)
+    /// 全部與可用付款方式以原生單選語意標記暫存值
+    var paymentMethodPicker: some View {
+        Picker(
+            selection: $store.pendingFilterSelection.paymentMethod
+                .sending(\.view.filterPendingPaymentMethodSelected)
+        ) {
+            Text("common.action.label.all")
+                .tag(nil as String?)
+                .accessibilityIdentifier(BLAccessibilityID.Orders.filterPaymentMethodAllOption)
+                .accessibilityAddTraits(
+                    store.pendingFilterSelection.paymentMethod == nil ? .isSelected : []
+                )
 
-                Text("common.action.label.all")
-                    .fixedSize(horizontal: false, vertical: true)
-                    .multilineTextAlignment(.leading)
-                    .foregroundStyle(.primary)
-
-                Spacer()
-
-                if store.pendingFilterSelection.paymentMethod == nil {
-                    // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(.blAccent)
-                        .accessibilityHidden(true)
-                }
+            ForEach(store.availablePaymentMethodNames, id: \.self) {
+                Text($0)
+                    .tag(Optional($0))
+                    .accessibilityIdentifier(BLAccessibilityID.Orders.filterPaymentMethodOption($0))
+                    .accessibilityAddTraits(
+                        store.pendingFilterSelection.paymentMethod == $0 ? .isSelected : []
+                    )
             }
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(
-            store.pendingFilterSelection.paymentMethod == nil ? .isSelected : []
-        )
-    }
-
-    /// 顯示付款方式名稱與勾選狀態
-    ///
-    /// - Parameter paymentMethod: 該列代表的付款方式名稱
-    /// - Returns: 可選取的篩選列
-    @ViewBuilder
-    func paymentMethodRow(_ paymentMethod: String) -> some View {
-        Button {
-            store.send(.view(.filterPendingPaymentMethodSelected(paymentMethod)))
         } label: {
-            HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
-                Image(systemName: "creditcard")
-                    .foregroundStyle(.blAccent)
-
-                Text(paymentMethod)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .multilineTextAlignment(.leading)
-                    .foregroundStyle(.primary)
-
-                Spacer()
-
-                if store.pendingFilterSelection.paymentMethod == paymentMethod {
-                    // 選取態改由標準選取特徵表達，勾選符號僅作視覺提示
-                    Image(systemName: "checkmark")
-                        .foregroundStyle(.blAccent)
-                        .accessibilityHidden(true)
-                }
-            }
-            .contentShape(Rectangle())
+            Text("orders.list.label.paymentMethod")
         }
-        .buttonStyle(.plain)
-        .accessibilityAddTraits(
-            store.pendingFilterSelection.paymentMethod == paymentMethod ? .isSelected : []
-        )
+        .pickerStyle(.inline)
+        .labelsHidden()
     }
 
-    /// 沒有符合付款方式時的空狀態列
-    @ViewBuilder
-    var paymentMethodEmptyStateRow: some View {
-        ContentUnavailableView(
-            "orders.list.label.matchingPaymentMethods",
-            systemImage: "tray",
-            description: Text("orders.filter.message.tryAnother")
-        )
+    /// 付款標題、暫存值與指示箭頭對齊第一行基線，長文允許換行
+    var menuLabel: some View {
+        HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
+            Image(systemName: "creditcard")
+                .foregroundStyle(.blAccent)
+                .accessibilityHidden(true)
+
+            Text("orders.list.label.paymentMethod")
+                .fixedSize(horizontal: false, vertical: true)
+                .foregroundStyle(.blLabel)
+
+            Spacer(minLength: BLSpacing.small)
+
+            paymentMethodValue
+                .fixedSize(horizontal: false, vertical: true)
+                .multilineTextAlignment(.trailing)
+                .foregroundStyle(.blSecondaryLabel)
+
+            Image(systemName: "chevron.up.chevron.down")
+                .foregroundStyle(.blAccent)
+                .accessibilityHidden(true)
+        }
+        .frame(maxWidth: .infinity, minHeight: BLHitTarget.minimum, alignment: .leading)
+        .blTextStyle(.body)
+        .contentShape(Rectangle())
     }
 
-    /// 符合搜尋的選項，沒有符合項目時顯示空狀態
+    /// 付款方式名稱保持原文，未選取時使用本地化的全部
     @ViewBuilder
-    var optionRows: some View {
-        if store.filterSheetFilteredPaymentMethods.isEmpty {
-            paymentMethodEmptyStateRow
+    var paymentMethodValue: some View {
+        if let name = store.pendingFilterSelection.paymentMethod {
+            Text(name)
         } else {
-            ForEach(store.filterSheetFilteredPaymentMethods, id: \.self) {
-                paymentMethodRow($0)
-            }
+            Text("common.action.label.all")
         }
-    }
-
-    /// 顯示此區段的篩選項目名稱
-    var header: some View {
-        Text("orders.list.label.paymentMethod")
     }
 }
 
 // MARK: - Preview
 
-#Preview("付款方式篩選") {
+#Preview("付款方式選單") {
     List {
         OrderFilterPaymentMethodSection(
             store: Store(
-                initialState: OrderFilterPreviewFixtures.makeState(date: .all, category: nil)
+                initialState: OrderFilterPreviewFixtures.makeState(
+                    date: .all,
+                    category: nil,
+                    paymentMethod: "銀行轉帳"
+                )
             ) {
                 OrderFilterFeature()
             }

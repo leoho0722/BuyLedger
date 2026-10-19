@@ -10,8 +10,6 @@
 /// UI 測試啟動時要寫入的種子資料組合
 enum BLUITestSeedProfile: String, CaseIterable, Equatable, Sendable {
 
-    // MARK: - Cases
-
     /// 完全不寫入 (共 0 筆)，用於驗證各畫面的空狀態
     case empty
 
@@ -44,6 +42,12 @@ enum BLUITestSeedProfile: String, CaseIterable, Equatable, Sendable {
 
     /// 12 個月的訂單資料，供走勢圖與熱力圖測試
     case insightsRange
+
+    /// 分類篩選的一般情境：2 個進行中開團、1 個已收單開團、10 筆訂單與 8 個商品類別
+    case categoryFilter
+
+    /// 分類篩選的大量情境：300 個商品類別 (5 個進行中) 與 30 種付款方式
+    case categoryFilterLarge
 }
 
 #endif

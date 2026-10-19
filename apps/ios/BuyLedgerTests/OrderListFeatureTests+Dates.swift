@@ -57,7 +57,12 @@ extension OrderListFeatureTests {
         )
 
         // Then
-        let sections = state.list.dateSections(locale: Locale(identifier: "zh-Hant_TW"))
+        let snapshot = state.list.listSnapshot()
+        let sections = OrdersListQuery.dateSections(
+            orders: snapshot.orders,
+            context: state.list.dateContext,
+            locale: Locale(identifier: "zh-Hant_TW")
+        )
         #expect(sections.map(\.title) == ["昨天"])
         #expect(sections.flatMap(\.orders).map(\.id) == ["APRIL"])
     }
@@ -82,7 +87,12 @@ extension OrderListFeatureTests {
         )
 
         // Then
-        let sections = state.list.dateSections(locale: Locale(identifier: "zh-Hant_TW"))
+        let snapshot = state.list.listSnapshot()
+        let sections = OrdersListQuery.dateSections(
+            orders: snapshot.orders,
+            context: state.list.dateContext,
+            locale: Locale(identifier: "zh-Hant_TW")
+        )
         #expect(sections.map(\.title) == ["今天"])
         #expect(sections.map { $0.orders.map(\.id) } == [["LATE", "EARLY"]])
         #expect(state.list.dateContext?.calendar.timeZone.secondsFromGMT() == 28_800)
@@ -90,17 +100,42 @@ extension OrderListFeatureTests {
 
     /// 尚未記錄日期時，清單與日期區段均不取用系統時間
     @Test
-    func filteredOrders_沒有日期脈絡_回傳空清單與空區段() {
+    func listSnapshot_沒有日期脈絡_回傳空清單與空區段() {
         // Given
         var state = Self.makeState(orders: [LedgerOrder.fixture(id: "A")])
         state.dateContext = nil
 
         // When
-        let orders = state.filteredOrders
-        let sections = state.dateSections(locale: Locale(identifier: "zh-Hant_TW"))
+        let snapshot = state.listSnapshot()
+        let sections = OrdersListQuery.dateSections(
+            orders: snapshot.orders,
+            context: state.dateContext,
+            locale: Locale(identifier: "zh-Hant_TW")
+        )
 
         // Then
-        #expect(orders.isEmpty)
-        #expect(sections.isEmpty)
+        #expect(snapshot.orders == [])
+        #expect(sections == [])
+    }
+
+    /// 已記錄日期但篩選無結果時，不產生日期區段
+    @Test
+    func dateSections_篩選無結果_回傳空區段() {
+        // Given
+        var state = Self.makeState(orders: [
+            LedgerOrder.fixture(id: "A", date: TestDependencies.fixedNow, categories: ["美妝"]),
+        ])
+        state.selectedCategories = ["食品"]
+
+        // When
+        let snapshot = state.listSnapshot()
+        let sections = OrdersListQuery.dateSections(
+            orders: snapshot.orders,
+            context: state.dateContext,
+            locale: Locale(identifier: "zh-Hant_TW")
+        )
+
+        // Then
+        #expect(sections == [])
     }
 }

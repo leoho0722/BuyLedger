@@ -37,7 +37,12 @@ private extension OrdersCompactView {
     /// 訂單清單與推入詳情共用的導覽宿主
     var navigationContent: some View {
         @Bindable var listStore = store.scope(state: \.list, action: \.list)
-        let sections = listStore.state.dateSections(locale: locale)
+        let snapshot = listStore.state.listSnapshot()
+        let sections = OrdersListQuery.dateSections(
+            orders: snapshot.orders,
+            context: listStore.dateContext,
+            locale: locale
+        )
         return NavigationStack(path: $store.scope(state: \.detail.path, action: \.detail.path)) {
             OrdersCompactListView(store: listStore, sections: sections)
                 // 載入結果由多個分頁共用，不隨畫面消失而取消
@@ -53,13 +58,15 @@ private extension OrdersCompactView {
                 .rootNavigationTitle(listStore.navigationTitleKey, language: language)
                 .toolbar {
                     OrdersToolbarContent(
-                        isAllFilteredSelected: listStore.isAllFilteredSelected,
-                        filteredIDs: listStore.filteredIDs,
+                        isAllFilteredSelected: snapshot.isAllSelected,
+                        filteredIDs: snapshot.ids,
                         store: listStore
                     )
                 }
                 .alert(alertBinding(isDetail: false))
-                .sheet(item: $listStore.scope(state: \.$filterSheet, action: \.filterSheet)) {
+                .sheet(
+                    item: $listStore.scope(state: \.$destination, action: \.destination).filterSheet
+                ) {
                     OrderFilterSheet(store: $0)
                 }
         } destination: { pathStore in

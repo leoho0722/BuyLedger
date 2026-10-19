@@ -39,8 +39,8 @@ struct OrdersFeature {
             model: SettingsSnapshot.default.aiSummaryModel
         )
 
-        /// 開團主檔投影，由 Root 同步，供建立訂單編輯選項
-        var campaigns: [Campaign] = []
+        /// 由 Root 同步的開團投影，清單共用唯讀引用，表單選項只讀取
+        @Shared(value: []) var campaigns: [Campaign]
 
         /// 訂單與主檔的載入子 Feature
         var load: OrdersLoadFeature.State
@@ -70,6 +70,7 @@ struct OrdersFeature {
             self.load = load
             self.list = OrderListFeature.State(
                 orders: SharedReader(sharedOrders),
+                campaigns: SharedReader(_campaigns),
                 isLoading: SharedReader(load.$isLoading),
                 hasLoaded: SharedReader(load.$hasLoaded),
                 errorMessage: SharedReader(load.$errorMessage)
@@ -101,7 +102,7 @@ struct OrdersFeature {
         ///   - now: 新的現在時間
         ///   - calendar: 新的行事曆與時區
         mutating func refreshDateContext(now: Date, calendar: Calendar) {
-            list.dateContext = OrderDateContext(now: now, calendar: calendar)
+            list.refreshDateContext(OrderDateContext(now: now, calendar: calendar))
         }
 
         /// 建立並呈現新訂單表單，供訂單分頁與首頁共用

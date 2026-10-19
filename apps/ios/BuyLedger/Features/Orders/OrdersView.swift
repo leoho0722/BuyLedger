@@ -63,59 +63,15 @@ struct OrdersView: View {
 
 private extension OrdersView {
 
-    /// 商品類別選擇器，選取後套用篩選，「全部」清除篩選
-    var categoryPickerSheet: some View {
-        OptionPickerSheet(
-            title: "orders.list.label.category1",
-            options: listStore.availableCategories,
-            selection: .single(
-                selected: listStore.selectedCategory ?? "",
-                onSelect: {
-                    listStore.send(.view(.categoryFilterSelected($0)))
-                },
-                clear: .init(title: "common.action.label.all") {
-                    listStore.send(.view(.categoryFilterSelected(nil)))
-                }
-            ),
-            emptyState: .init(
-                title: "orders.list.label.matchingCategories",
-                description: "orders.list.message.tryAnotherSearch"
-            ),
-            isSearchEnabled: true
-        )
-    }
-
-    /// 付款方式選擇器，選取後套用篩選，「全部」清除篩選
-    var paymentMethodPickerSheet: some View {
-        OptionPickerSheet(
-            title: "orders.list.label.selectPaymentMethod",
-            options: listStore.availablePaymentMethodNames,
-            selection: .single(
-                selected: listStore.selectedPaymentMethod ?? "",
-                onSelect: {
-                    listStore.send(.view(.paymentMethodFilterSelected($0)))
-                },
-                clear: .init(title: "common.action.label.all") {
-                    listStore.send(.view(.paymentMethodFilterSelected(nil)))
-                }
-            ),
-            emptyState: .init(
-                title: "orders.list.label.matchingPaymentMethods",
-                description: "orders.list.message.tryAnotherSearch"
-            ),
-            isSearchEnabled: true
-        )
-    }
-
     /// 寬版的清單與詳情兩欄佈局，共用搜尋、工具列與篩選選擇器
     @ViewBuilder
     var regularSplitContent: some View {
         @Bindable var listStore = store.scope(state: \.list, action: \.list)
-        let filteredOrders = listStore.filteredOrders
+        let snapshot = listStore.state.listSnapshot()
 
         NavigationStack {
             HStack(spacing: 0) {
-                OrdersRegularListColumn(store: listStore, orders: filteredOrders)
+                OrdersRegularListColumn(store: listStore, orders: snapshot.orders)
                     .frame(
                         minWidth: minimumListWidth,
                         idealWidth: idealListWidth,
@@ -140,8 +96,8 @@ private extension OrdersView {
             .rootNavigationTitle(listStore.navigationTitleKey, language: language)
             .toolbar {
                 OrdersToolbarContent(
-                    isAllFilteredSelected: listStore.isAllFilteredSelected,
-                    filteredIDs: listStore.filteredIDs,
+                    isAllFilteredSelected: snapshot.isAllSelected,
+                    filteredIDs: snapshot.ids,
                     store: listStore
                 )
             }
@@ -150,14 +106,13 @@ private extension OrdersView {
         .task {
             listStore.send(.view(.task))
         }
-        .sheet(item: $listStore.scope(state: \.$filterSheet, action: \.filterSheet)) {
+        .sheet(item: $listStore.scope(state: \.$destination, action: \.destination).filterSheet) {
             OrderFilterSheet(store: $0)
         }
-        .sheet(isPresented: $listStore.isCategoryPickerPresented) {
-            categoryPickerSheet
-        }
-        .sheet(isPresented: $listStore.isPaymentMethodPickerPresented) {
-            paymentMethodPickerSheet
+        .sheet(
+            item: $listStore.scope(state: \.$destination, action: \.destination).categoryPicker
+        ) {
+            OrderCategoryPickerSheet(store: $0)
         }
     }
 
@@ -190,11 +145,6 @@ private extension OrdersView {
 // MARK: - Private Method
 
 private extension OrdersView {
-
-    /// 清單子 Feature 的狀態與互動入口
-    var listStore: StoreOf<OrderListFeature> {
-        store.scope(state: \.list, action: \.list)
-    }
 
     /// 表單的關閉動畫完成後通知容器取出暫存通知
     func sendFormSheetDismissed() {

@@ -99,91 +99,17 @@ extension CampaignIntegrationTests {
             mergedSourceIDs: []
         )
         let initialOrders = [order1, order2, other, unassigned]
-        let expectedOrder1 = LedgerOrder(
-            id: "O1",
-            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
-            status: .confirmed,
-            currency: .twd,
-            date: Date(timeIntervalSince1970: 1_777_507_200),
-            items: [
-                LedgerOrderItem(
-                    id: UUID(0),
-                    name: "item",
-                    quantity: 1,
-                    unitPrice: 0
-                ),
-            ],
-            itemCost: 0,
-            domesticShipping: 0,
-            internationalShipping: 0,
-            foreignDomesticShipping: 0,
-            cardFeeRate: 0,
-            platformFeeRate: 0,
-            paymentFeeRate: 0,
-            chargedAmount: 100,
-            cardlessDeductionAmount: 0,
-            cardlessSupplementAmount: 0,
-            orderSource: "",
-            categories: [],
-            paymentMethod: "",
-            notes: "",
-            reconciliationStatus: "",
-            campaignNames: ["新團"],
-            paymentReceiptStatus: .pending,
-            isCashOnDelivery: false,
-            photos: [],
-            mergedSourceIDs: []
-        )
-        let expectedOrder2 = LedgerOrder(
-            id: "O2",
-            customer: LedgerCustomer(name: "客戶", initials: "XX", tier: .regular),
-            status: .confirmed,
-            currency: .twd,
-            date: Date(timeIntervalSince1970: 1_777_507_200),
-            items: [
-                LedgerOrderItem(
-                    id: UUID(0),
-                    name: "item",
-                    quantity: 1,
-                    unitPrice: 0
-                ),
-            ],
-            itemCost: 0,
-            domesticShipping: 0,
-            internationalShipping: 0,
-            foreignDomesticShipping: 0,
-            cardFeeRate: 0,
-            platformFeeRate: 0,
-            paymentFeeRate: 0,
-            chargedAmount: 100,
-            cardlessDeductionAmount: 0,
-            cardlessSupplementAmount: 0,
-            orderSource: "",
-            categories: [],
-            paymentMethod: "",
-            notes: "",
-            reconciliationStatus: "",
-            campaignNames: ["新團"],
-            paymentReceiptStatus: .pending,
-            isCashOnDelivery: false,
-            photos: [],
-            mergedSourceIDs: []
-        )
+        let expectedOrder1 = Self.rebuilt(order1, campaignNames: ["新團"])
+        let expectedOrder2 = Self.rebuilt(order2, campaignNames: ["新團"])
         let expectedOrders = [
             expectedOrder1,
             expectedOrder2,
             other,
             unassigned,
         ]
-        let expectedCampaign = Campaign(
-            id: "C1",
-            name: "新團",
-            openDate: Date(timeIntervalSince1970: 1_777_507_200),
-            closeDate: Date(timeIntervalSince1970: 1_777_507_200),
-            status: .ongoing,
-            settledDate: nil,
-            notes: ""
-        )
+        var expectedCampaign = campaign
+        expectedCampaign.name = "新團"
+        expectedCampaign.closeDate = Date(timeIntervalSince1970: 1_777_507_200)
         let cascade = OrdersCascadeOperations.Request.campaignRenamed(from: "舊團", to: "新團")
         let calls = LockIsolated<[String]>([])
         let saved = LockIsolated<[Campaign]>([])
@@ -237,6 +163,9 @@ extension CampaignIntegrationTests {
             $0.campaigns.$campaigns.withLock {
                 $0 = [expectedCampaign]
             }
+            $0.orders.$campaigns.withLock {
+                $0 = [expectedCampaign]
+            }
             $0.campaigns.$orders.withLock {
                 $0 = expectedOrders
             }
@@ -253,7 +182,6 @@ extension CampaignIntegrationTests {
         }
         await store.receive(\.campaigns.writes.saveRequested)
         await store.receive(\.campaigns.writes.saveResponse.success) {
-            $0.orders.campaigns = [expectedCampaign]
             $0.dashboard.campaigns = [expectedCampaign]
             $0.insights.campaigns = [expectedCampaign]
         }
