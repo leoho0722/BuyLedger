@@ -16,17 +16,22 @@ paths:
 - **跨頁觸發新訂單由 Root 在總覽 `delegate(.newOrderTapped)` 的同一次更新內切到 `.orders` 並呼叫容器的 `presentNewOrder(id:now:calendar:)`**：從其他分頁直接設 sheet state 時 `OrdersView` 不在畫面階層，sheet 不會掛上。
     - 訂單分頁新增、編輯、合併確認與首頁新增都經容器的 `makeEditOptions(now:calendar:)` 帶入主檔、開團、幣別與行事曆；Root 不自行建立 `OrderEditFeature.State`，表單不在 `.task` 讀取選項。
 - **Orders 的編輯、合併與 AI 摘要 sheet 綁定呈現子 Feature (`OrdersPresentationFeature`) 的同一個 `destination`，掛在 `OrdersView` 外層**：以 `@Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)` 取得子 store，經 `$presentation.scope(state: \.$destination, action: \.destination)` 的各 case 呈現，iPhone／iPad 共用，不移到平台分流後的子 view。
-- **不用 `.toolbar` 的 `.bottomBar`**：批次與選取操作放 `.primaryAction` 等頂部 placement，筆數由 `navigationTitle` 承載 (`OrderListFeature.State.navigationTitleKey`)。
+- **不用 `.toolbar` 的 `.bottomBar`**：批次與選取操作放 `.primaryAction` 等頂部 placement；compact 的筆數由 `navigationTitle` 承載 (`OrderListFeature.State.navigationTitleKey`)，regular 清單欄由欄內頂部承載 (見下方 inline 標題條目)。
     - compact 的底部 tab bar 會蓋住 `.bottomBar`；iPad 可拖曳視窗的下緣可能超出螢幕。
 - **訂單多選工具列與可勾選列只有一份定義** (`Features/Orders/Components/` 的 `OrdersToolbarContent`／`OrderSelectableRow`)，compact 與 regular 共用，不各自維護等價實作。
+- **訂單詳情工具列只有一份定義** (`OrderDetailToolbarContent`)：寬版詳情欄與 iPhone 推入詳情共用，`OrderDetailMenu` 不分版面外觀；標題用系統導覽列，不自繪標題列。
+- **regular 版面的分欄型態由 `RootSidebarLayout.SplitColumns` 宣告**：`splitColumns(for:)` 是「哪些分頁是清單加詳情」的唯一對應。新增清單加詳情分頁時在這裡加 `.listDetail` 對應，並在 `splitContent` 加對應的三欄分支；其他分頁共用同一個單欄分支，切換分頁時不重建 split view。
+    - 不綁 `columnVisibility`、不指定 split view style：側邊欄是否並排由系統決定 (窄的 iPad 直向會收起，由「顯示側邊欄」鈕或左緣滑動叫出，叫出後覆蓋在清單上)；`.balanced` 改變不了三欄直向的覆蓋。
+    - **欄寬在宣告欄位的地方設定** (`RootSidebarLayout` 的欄位閉包或欄位根 view)：掛在 `.searchable` 內層的 `navigationSplitViewColumnWidth` 不生效。訂單清單欄寬由 `RootSidebarLayout` 依清單欄左緣與三欄右緣計算，側邊欄並排時與詳情欄平分、其餘 320；直向的 content 欄有系統上限，動態要求超過上限時系統會收起清單欄，所以平分只在側邊欄並排時套用，也不以量到的欄寬回寫欄寬。
+    - **含 `.searchable` 的 split view 欄用 inline 標題**：大標題在搜尋結束 (收鍵盤或清除文字) 後會留白不顯示標題並把搜尋欄下推。regular 訂單清單欄的標題固定為「訂單」，多選筆數一律放欄內頂部 (`OrdersRegularListColumn.selectionSummary`)：直向窄欄放不下 inline 標題與多選工具列，兩處都顯示又會重複。
 - **每個目的地只有一條抵達路徑**：清單點擊與深連結寫入同一條路徑；「更多」分頁以 `MoreFeature.State.path` 的 `StackState<Path.State>` 驅動，列點擊與深連結只呼叫 `showSettings()` 這類 State 方法，在同一次狀態更新內先清空再推入。
     - 用堆疊狀態而非「呈現旗標加去重判斷」，讓不合法狀態無法表達。
     - **切離「更多」前先清空堆疊**：路徑非空時改 `selectedTab` 會讓 iPad 的 `NavigationSplitView` 觸發 assertion 崩潰 (iPhone 不會，容易漏測)。Root 的 `sidebarTabSelected` 先 `state.more.popToRoot()`；從「更多」堆疊交出跨分頁意圖的子畫面 (目前只有客戶頁) 由 `MoreFeature` 先清空 path 再送 delegate；iPhone `TabView` 走 `tabSelected` 並保留「更多」堆疊。新增會切離「更多」的推入點都走這兩條之一。
 - **開團詳情以 `CampaignFeature.State.path` 的 `StackState<Path.State>` 推入，列表點擊與深連結都只呼叫 `CampaignFeature.State.showDetail(campaignID:)`**：同一次更新內先 `removeAll()` 再 `append`，找不到開團時不動。
     - production 移除堆疊內的單一元素用 `pop(from:)`，不用 `StackState.removeAll(where:)`：它走 `RangeReplaceableCollection` 預設實作，會重配所有元素的 id，畫面可能 pop 再 push；開團以 `popDetail(campaignID:)` 移除已刪除開團的詳情。
 - **訂單 iPhone 詳情以詳情導覽子 Feature (`OrdersDetailNavigationFeature`) 的 `path` (`StackState<Path.State>`) 推入，`Path` 只含 `detail(OrderDetailFeature)`**：顯示詳情經 `detail.showDetail(orderID:)`，同一次更新內先清空再推入；刪除與合併後用 `path.popDetail(orderID:)`，內部以 `pop(from:)` 保留前方元素的識別值。
-    - iPad 右欄以 scoped store 使用同一個 `OrderDetailFeature`；同一子 Feature 的 `regularDetail` 在清單的選取變更 delegate 與首次載入完成時由容器同步 (`detail.syncRegularDetail(selectedOrderID:)`、`detail.applyLoadedOrders(selectedOrderID:)`)，選取的訂單不變時沿用既有詳情，不因與選取無關的回應重建。
-    - 客戶名稱與類別深連結由 Root 呼叫容器的 `applyFilterNavigation(searchText:category:now:calendar:)`，容器套用清單篩選、重選第一筆並同步右欄，Root 不直接改清單的篩選欄位。
+    - iPad 詳情欄以 scoped store 使用同一個 `OrderDetailFeature`；同一子 Feature 的 `regularDetail` 在清單的選取變更 delegate 與首次載入完成時由容器同步 (`detail.syncRegularDetail(selectedOrderID:)`、`detail.applyLoadedOrders(selectedOrderID:)`)，選取的訂單不變時沿用既有詳情，不因與選取無關的回應重建。
+    - 客戶名稱與類別深連結由 Root 呼叫容器的 `applyFilterNavigation(searchText:category:now:calendar:)`，容器套用清單篩選、重選第一筆並同步詳情欄，Root 不直接改清單的篩選欄位。
 - **側邊欄只列目的地，選取狀態由 `RootFeature.State.selectedTab` 衍生**：`RootSidebarLayout.SidebarSelection` 對應分頁列，不另設一套選取狀態；「訂單」列的進行中徽章由 `SidebarBadgeCounts.activeOrderCount` 計算。
 
 ## App 鎖定
@@ -57,6 +62,7 @@ paths:
     - 需要隨畫面取消的長效 effect 改由 reducer 以 cancel id 管理，不靠 `.task` 等待完成。
 - **`NavigationStack` 外層的 `.alert` 在 iPad 的 `NavigationSplitView` 中無法顯示在推入的頁面之上 (`.sheet` 可以)**：容器統一呈現 alert 時，把 alert 綁定掛在目前最上層的畫面，堆疊為空時掛根內容、有推入時掛最上層目的地，另一處給 `.constant(nil)` (參考 `CampaignView.alertBinding(isDetail:)`)。
     - 同一個綁定同時掛兩處會破壞 iPhone：兩層各自呈現同一個 alert。
+    - 訂單三欄的對話框只掛在清單欄 (content 欄的 `OrdersView.regularListContent`)，詳情欄不掛 alert：三欄沒有推入頁面，單一掛載即可蓋過兩欄；這是此條對「推入頁面」情境的特例。
 - **push 目的地不自帶 `NavigationStack`**：巢狀 stack 會弄壞推進與 pop 動畫；嵌入元件不自帶 stack、不設關閉鈕，標題掛在內容上，由宿主 Back 返回。
 - **編輯類 sheet (訂單、開團、付款方式) 防未儲存變更遺失**：以單一草稿值型別對照開啟時的初始草稿判斷 dirty (closure 元件用初始值快照)，sheet 掛 `.interactiveDismissDisabled(<isDirty>)`，取消鍵於 dirty 時彈「捨棄變更／繼續編輯」確認。
     - 確認用 `AlertState`／`.alert`，不用 `.confirmationDialog`：取消鍵在 toolbar，iOS 26 起從 toolbar 觸發的 `.confirmationDialog` 會位置偏移。

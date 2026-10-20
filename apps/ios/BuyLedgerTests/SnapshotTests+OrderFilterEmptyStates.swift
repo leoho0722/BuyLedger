@@ -14,9 +14,12 @@ import Testing
 
 extension SnapshotTests {
 
-    /// 寬版訂單清單在主檔與訂單都沒有付款方式與類別時，不顯示付款方式 Menu 與類別觸發鈕
+    /// 寬版清單欄在主檔與訂單都沒有付款方式與類別時，不顯示付款方式 Menu 與類別觸發鈕
+    ///
+    /// - Note: 只拍清單欄，三欄組合由 `OrderRegularColumnScopeTests` 守
+    /// - Note: 離屏渲染畫不出工具列項目，筆數、「⋯」「+」與多選控制項由 `OrderRegularColumnScopeTests` 守
     @Test
-    func ordersView_寬版無付款方式與類別_符合基準圖() async {
+    func ordersView_寬版清單欄無付款方式與類別_符合基準圖() async {
         await LookupCatalog.withIsolatedStorage {
             TestDependencies.withFixedNow {
                 // Given
@@ -31,18 +34,20 @@ extension SnapshotTests {
                 }
 
                 // When
-                let view = OrdersView(
-                    store: Store(initialState: state) {
-                        OrdersFeature()
-                    },
-                    language: .traditionalChinese
-                )
-                    .environment(\.locale, AppLanguage.traditionalChinese.locale)
-                    .environment(\.calendar, TestDependencies.fixedCalendar)
-                    .environment(\.timeZone, TestDependencies.fixedCalendar.timeZone)
-                    .environment(\.horizontalSizeClass, .regular)
-                    .environment(\.verticalSizeClass, .regular)
-                    .frame(width: 1024, height: 768)
+                let view = NavigationStack {
+                    OrdersView(
+                        store: Store(initialState: state) {
+                            OrdersFeature()
+                        },
+                        language: .traditionalChinese
+                    )
+                }
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                .environment(\.calendar, TestDependencies.fixedCalendar)
+                .environment(\.timeZone, TestDependencies.fixedCalendar.timeZone)
+                .environment(\.horizontalSizeClass, .regular)
+                .environment(\.verticalSizeClass, .regular)
+                .frame(width: 320, height: 768)
 
                 // Then
                 assertSnapshot(of: view, as: .image)

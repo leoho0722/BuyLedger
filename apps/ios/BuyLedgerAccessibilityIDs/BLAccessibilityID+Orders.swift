@@ -24,6 +24,24 @@ extension BLAccessibilityID {
         /// 批次操作選單按鈕
         static let batchMenuButton = "orders.list.batchMenuButton"
 
+        /// 「⋯」選單內的選取訂單項目
+        static let selectionModeButton = "orders.list.selectionModeButton"
+
+        /// 多選模式的全選與清除切換鈕
+        static let selectAllButton = "orders.list.selectAllButton"
+
+        /// 多選模式的批次狀態選單
+        static let batchStatusMenuButton = "orders.list.batchStatusMenuButton"
+
+        /// 多選模式的完成按鈕
+        static let selectionDoneButton = "orders.list.selectionDoneButton"
+
+        /// 一般模式工具列左側的訂單筆數文字
+        static let orderCountLabel = "orders.list.orderCount"
+
+        /// 寬版清單欄多選模式的已選筆數文字
+        static let selectionSummary = "orders.list.selectionSummary"
+
         /// 訂單篩選按鈕
         static let filterButton = "orders.list.filterButton"
 
@@ -107,6 +125,9 @@ extension BLAccessibilityID {
 
         /// 訂單詳情刪除按鈕
         static let detailDeleteButton = "orders.detail.deleteButton"
+
+        /// 寬版詳情欄沒有選取訂單時的空狀態
+        static let detailEmptyState = "orders.detail.emptyState"
 
         /// 詳情財務摘要卡的種類
         enum SummaryTile: String {

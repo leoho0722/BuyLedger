@@ -38,6 +38,7 @@ paths:
     - 隨元件尺寸等比縮放的字級 (`BLAvatar` 縮寫、`@ScaledMetric` 驅動的數字) 維持 `.font(.system(size:))`。
 - **版面判斷只經 `BLLayoutClass`／`blLayoutClass`**：畫面宣告 `@Environment(\.blLayoutClass) private var layoutClass` 後比對 `.compact`／`.regular`；production 程式在 `Shared/DesignSystem/Foundations/BLLayoutClass.swift` 以外不引用 `horizontalSizeClass`／`verticalSizeClass` (讀取、寫入 environment、成員存取都算)。
     - regular 版面要水平與垂直尺寸分類都是 regular (iPad 全螢幕)：只看水平會把大尺寸 iPhone 橫向誤判成 iPad，窄視窗的 iPad 與 iPhone 任何方向都是 compact 版面。
+    - 版面由 `RootView` 依視窗決定一次，以 `.environment(\.blLayoutClass, …)` 交給子樹：split view 的欄位可能回報與視窗不同的尺寸分類 (例如 content 欄的水平分類為 compact)，子樹不得自行重新推導。沒有經過 `RootView` 的 Preview 與截圖測試由尺寸分類推導。
     - 由 `DesignSystemSourceScanTests` 的 `sizeClassViolations_引用尺寸分類_僅出現在版面判斷入口` (規則十一) 守住，不接受 `design-system-scan-exempt` 豁免標記。
     - 掃描保證只涵蓋剝除器建模的詞法形式：`//` 行註解、非巢狀的 `/* … */` 區塊註解、單行與多行一般字串。字串內插、原始字串與擴充分隔符號 (`#"…"#`)、正規表示式字面值、巢狀區塊註解在保證範圍外，該處與其後幾行的引用都可能漏判或誤判，寫這些形式時人工複核。
 

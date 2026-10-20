@@ -65,6 +65,7 @@ private extension OrdersToolbarContent {
         ) {
             store.send(.view(isAllFilteredSelected ? .clearSelectionTapped : .selectAllTapped))
         }
+        .accessibilityIdentifier(BLAccessibilityID.Orders.selectAllButton)
     }
 
     /// 顯示批次狀態選項，未選取訂單時停用
@@ -80,6 +81,7 @@ private extension OrdersToolbarContent {
             Text("orders.general.label.changeStatus")
         }
         .disabled(store.selectedOrderIDs.isEmpty)
+        .accessibilityIdentifier(BLAccessibilityID.Orders.batchStatusMenuButton)
     }
 
     /// 結束多選並返回一般瀏覽模式
@@ -87,6 +89,7 @@ private extension OrdersToolbarContent {
         Button("common.action.button.done") {
             store.send(.view(.selectionModeToggled))
         }
+        .accessibilityIdentifier(BLAccessibilityID.Orders.selectionDoneButton)
     }
 
     /// 顯示目前篩選結果的訂單筆數
@@ -95,6 +98,7 @@ private extension OrdersToolbarContent {
             .font(BLTypographyStyle.subhead.font.weight(.medium))
             .monospacedDigit()
             .foregroundStyle(.blSecondaryLabel)
+            .accessibilityIdentifier(BLAccessibilityID.Orders.orderCountLabel)
     }
 
     /// 建立目前篩選結果的 AI 總結，沒有結果時停用
@@ -116,6 +120,7 @@ private extension OrdersToolbarContent {
             Label("orders.list.label.selectOrders", systemImage: "checklist")
         }
         .disabled(store.orders.isEmpty)
+        .accessibilityIdentifier(BLAccessibilityID.Orders.selectionModeButton)
     }
 
     /// 顯示 AI 總結與多選模式入口

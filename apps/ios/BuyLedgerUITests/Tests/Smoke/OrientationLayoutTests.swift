@@ -57,48 +57,6 @@ final class OrientationLayoutTests: BLUITestCase {
 @MainActor
 private extension OrientationLayoutTests {
 
-    /// 轉為橫向並等到 App 視窗寬大於高，完成後附上橫向視窗的點數尺寸
-    ///
-    /// - Parameter app: 受測 App
-    /// - Throws: 逾時仍未轉為橫向時拋出測試錯誤
-    func rotateToLandscape(_ app: XCUIApplication) throws(any Error) {
-        // 先註冊還原再轉向，測試失敗時方向也會轉回直向
-        addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
-        XCUIDevice.shared.orientation = .landscapeLeft
-        try requireCondition(waitForLandscapeWindow(of: app), in: app, "轉向後 App 視窗寬仍未大於高")
-
-        let size = app.windows.firstMatch.frame.size
-        let sizeText = "landscape window size: \(size.width) x \(size.height)"
-        let attachment = XCTAttachment(string: sizeText)
-        attachment.name = "橫向視窗點數尺寸"
-        attachment.lifetime = .keepAlways
-        add(attachment)
-    }
-
-    /// 在逾時內輪詢 App 視窗，直到寬大於高
-    ///
-    /// - Parameters:
-    ///   - app: 受測 App
-    ///   - timeout: 等待視窗轉為橫向的秒數
-    /// - Returns: 視窗是否在逾時前轉為橫向
-    func waitForLandscapeWindow(of app: XCUIApplication, timeout: TimeInterval = 15) -> Bool {
-        let window = app.windows.firstMatch
-        guard window.waitForExistence(timeout: timeout) else {
-            return false
-        }
-
-        let deadline = Date().addingTimeInterval(timeout)
-        repeat {
-            let size = window.frame.size
-            if size.width > size.height {
-                return true
-            }
-            // 轉向動畫期間視窗尺寸尚未定案，讓出 run loop 後重查
-            RunLoop.current.run(until: Date().addingTimeInterval(0.25))
-        } while Date() < deadline
-        return false
-    }
-
     /// 斷言 iPad 橫向仍是側邊欄版面：有側邊欄，訂單頁沒有整合篩選鈕
     ///
     /// - Parameter app: 受測 App

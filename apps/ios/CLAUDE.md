@@ -158,7 +158,7 @@
 - **錯誤可忽略且 catch 只有註解時，改用同一行附理由的 `try?`**：只有註解的 catch 視為空 catch；`catch { return }` 含實際敘述，不屬此例。
 - **Preview seed 或 UI 測試環境無法建立時保留 `fatalError`**：在呼叫前以 `//` 說明無法繼續的原因，讓資料庫定義或測試環境問題立即失敗。
 - **UI 測試以 `-BLUITest` 加一組 `-BLUITest<名稱>` 啟動參數指定資料與情境，不用 kit 的 `-uiTesting` 加 `launchEnvironment["UITEST_SCENARIO"]`**：參數由 `LaunchOptions` 組出，App 端 `BLUITestConfiguration` 解析；沒有 `-BLUITest` 時整套測試掛鉤都不生效。
-    - 新增情境時在 `LaunchOptions` 與 `BLUITestConfiguration` 各加對應欄位，不改走環境變數。
+    - 新增情境時在 `LaunchOptions` 與 `BLUITestConfiguration` 各加對應欄位，不改走環境變數；UIKit 本身認得的系統參數 (如 `-UIPreferredContentSizeCategoryName`) 只加在 `LaunchOptions`。
 - **建構裝 closure 的相依 struct 時一律多行**：型別名稱與左括號 (例如 `Self(`) 同行，右括號 `)` 單獨一行；每個引數各占一行。即使只有一個 closure 且呼叫不超過 100 字元也照此，涵蓋 Service、Client、Store 的 dependency、preview、測試替身與覆寫。
 - **多重 trailing closure 一律多行**：`Binding { } set: { }` 寫成 `Binding {`、本體、`} set: {`、本體、`}` 逐行排列，不壓成一行；kit 只規定 View builder、modifier 與 action 的 closure 一律多行，`Binding` 的 `get`／`set` 不在其列。
 - **錯誤對應 helper 的 trailing closure 一律多行**：`{` 接在呼叫後，closure 本體縮排 4 格，`}` 單獨一行；包括 `PersistenceError.mapFetch`、`mapSave` 與 `wrapStorage`。

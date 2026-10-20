@@ -13,6 +13,9 @@ struct OrdersRegularListColumn: View {
 
     // MARK: - Properties
 
+    /// 目前使用的動態字級大小
+    @Environment(\.dynamicTypeSize) private var dynamicTypeSize
+
     /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
@@ -24,13 +27,21 @@ struct OrdersRegularListColumn: View {
 
     // MARK: - Body
 
-    /// 清單欄骨架：上方是篩選區，下方是可捲動的訂單內容
+    /// 清單欄骨架：一般字級固定篩選區於頂部，輔助字級時篩選區隨清單捲動，避免被壓縮重疊
     var body: some View {
         VStack(spacing: 0) {
-            listHeader
+            if !dynamicTypeSize.isAccessibilitySize {
+                listHeader
+            }
 
             ScrollView {
-                listContent
+                VStack(spacing: 0) {
+                    if dynamicTypeSize.isAccessibilitySize {
+                        listHeader
+                    }
+
+                    listContent
+                }
             }
             .background(.blBackground)
             .accessibilityIdentifier(BLAccessibilityID.Orders.listRoot)
@@ -153,10 +164,24 @@ private extension OrdersRegularListColumn {
         .accessibilityIdentifier(BLAccessibilityID.Orders.clearFiltersButton)
     }
 
-    /// 清單上方的篩選、清除入口與持續性載入失敗訊息
+    /// 多選模式的已選筆數，與 iPhone 多選標題同一份文字
+    ///
+    /// - Note: 直向清單欄放不下 inline 標題與多選工具列，筆數改顯示在這裡
+    var selectionSummary: some View {
+        Text(verbatim: AppLanguage(locale: locale).localized(store.navigationTitleKey))
+            .blTextStyle(.headline)
+            .foregroundStyle(.blLabel)
+            .accessibilityIdentifier(BLAccessibilityID.Orders.selectionSummary)
+    }
+
+    /// 清單上方的多選筆數、篩選、清除入口與持續性載入失敗訊息
     var listHeader: some View {
         let paymentMethodNames = store.availablePaymentMethodNames
         return VStack(alignment: .leading, spacing: BLSpacing.medium) {
+            if store.isSelecting {
+                selectionSummary
+            }
+
             statusChipStrip
 
             dateChipStrip

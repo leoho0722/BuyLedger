@@ -8,7 +8,7 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 寬版 (iPad 全螢幕) 訂單瀏覽的詳情欄，顯示選取訂單的詳情與姓名標題列
+/// 寬版 (iPad 全螢幕) 訂單瀏覽的詳情欄，以系統導覽列顯示選取訂單的客戶名稱與操作選單
 struct OrdersRegularDetailColumn: View {
 
     // MARK: - Properties
@@ -44,9 +44,11 @@ private extension OrdersRegularDetailColumn {
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(.blBackground)
+        .accessibilityElement(children: .contain)
+        .accessibilityIdentifier(BLAccessibilityID.Orders.detailEmptyState)
     }
 
-    /// 選取訂單的詳情，姓名標題列疊在捲動內容上方
+    /// 選取訂單的詳情與系統導覽列
     ///
     /// - Parameters:
     ///   - order: 要顯示的訂單
@@ -54,35 +56,11 @@ private extension OrdersRegularDetailColumn {
     /// - Returns: 詳情 view
     func detail(order: LedgerOrder, store: StoreOf<OrderDetailFeature>) -> some View {
         OrderDetailView(store: store, layout: .wide)
-            .safeAreaInset(edge: .top, spacing: 0) {
-                titleBar(order: order, store: store)
+            .navigationTitle(Text(verbatim: order.customer.name))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                OrderDetailToolbarContent(store: store)
             }
-    }
-
-    /// 詳情欄頂部的姓名列，含狀態更新與更多操作選單
-    ///
-    /// - Parameters:
-    ///   - order: 要顯示的訂單
-    ///   - store: 右欄詳情的狀態與互動入口
-    /// - Returns: 自繪標題列 view
-    func titleBar(order: LedgerOrder, store: StoreOf<OrderDetailFeature>) -> some View {
-        HStack(alignment: .firstTextBaseline, spacing: BLSpacing.small) {
-            Text(order.customer.name)
-                .blTextStyle(.title3Bold)
-                .foregroundStyle(.blLabel)
-                .accessibilityAddTraits(.isHeader)
-
-            Spacer()
-
-            OrderDetailMenu(kind: .status, layout: .wide, store: store)
-
-            OrderDetailMenu(kind: .more, layout: .wide, store: store)
-        }
-        .padding(.horizontal, BLSpacing.large)
-        .padding(.vertical, BLSpacing.medium)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        // 使用系統 bar 材質保留捲動邊緣效果
-        .background(.bar)
     }
 }
 
@@ -99,9 +77,11 @@ private extension OrdersRegularDetailColumn {
         return state
     }()
 
-    OrdersRegularDetailColumn(
-        store: Store(initialState: previewState) {
-            OrdersFeature()
-        }
-    )
+    NavigationStack {
+        OrdersRegularDetailColumn(
+            store: Store(initialState: previewState) {
+                OrdersFeature()
+            }
+        )
+    }
 }

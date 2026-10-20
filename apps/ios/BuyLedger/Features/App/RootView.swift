@@ -42,15 +42,18 @@ struct RootView: View {
 private extension RootView {
 
     /// 依版面分類選擇對應的根層級導覽佈局
-    @ViewBuilder
     var layout: some View {
-        switch layoutClass {
-        case .compact:
-            RootTabLayout(store: store, language: store.preferences.language)
+        Group {
+            switch layoutClass {
+            case .compact:
+                RootTabLayout(store: store, language: store.preferences.language)
 
-        case .regular:
-            RootSidebarLayout(store: store, language: store.preferences.language)
+            case .regular:
+                RootSidebarLayout(store: store, language: store.preferences.language)
+            }
         }
+        // split view 的欄位會回報自己的尺寸分類，子樹改用視窗的版面
+        .environment(\.blLayoutClass, layoutClass)
     }
 
     /// 持久層正常時的主內容，依鎖定狀態切換鎖定畫面與一般佈局；啟動工作只在這一層執行

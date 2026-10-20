@@ -16,15 +16,6 @@ struct OrdersView: View {
     /// 目前版面分類，用來區分窄版 (含 iPhone 橫向) 與寬版 (iPad 全螢幕) 佈局
     @Environment(\.blLayoutClass) private var layoutClass
 
-    /// 寬版清單偏好的欄寬，隨文字大小調整
-    @ScaledMetric(relativeTo: .body) private var idealListWidth: CGFloat = 320
-
-    /// 寬版清單的欄寬上限，隨文字大小調整
-    @ScaledMetric(relativeTo: .body) private var maximumListWidth: CGFloat = 360
-
-    /// 寬版清單的欄寬下限，隨文字大小調整
-    @ScaledMetric(relativeTo: .body) private var minimumListWidth: CGFloat = 280
-
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<OrdersFeature>
 
@@ -63,29 +54,18 @@ struct OrdersView: View {
 
 private extension OrdersView {
 
-    /// 寬版的清單與詳情兩欄佈局，共用搜尋、工具列與篩選選擇器
+    /// 寬版的訂單清單欄，承載搜尋、工具列與篩選選擇器
     @ViewBuilder
-    var regularSplitContent: some View {
+    var regularListContent: some View {
         @Bindable var listStore = store.scope(state: \.list, action: \.list)
+        @Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)
         let snapshot = listStore.state.listSnapshot()
 
-        NavigationStack {
-            HStack(spacing: 0) {
-                OrdersRegularListColumn(store: listStore, orders: snapshot.orders)
-                    .frame(
-                        minWidth: minimumListWidth,
-                        idealWidth: idealListWidth,
-                        maxWidth: maximumListWidth
-                    )
-                    .background(.blBackground)
-                    .alert(regularAlertBinding(isDetail: false))
-
-                Divider()
-
-                OrdersRegularDetailColumn(store: store)
-                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-                    .background(.blBackground)
-                    .alert(regularAlertBinding(isDetail: true))
+        OrdersRegularListColumn(store: listStore, orders: snapshot.orders)
+            .background(.blBackground)
+            // 載入結果由多個分頁共用，不隨畫面消失而取消
+            .task {
+                listStore.send(.view(.task))
             }
             // 搜尋欄無穩定識別值，UI 測試改查 `searchFields`
             .searchable(
@@ -93,7 +73,10 @@ private extension OrdersView {
                 placement: .navigationBarDrawer(displayMode: .always),
                 prompt: Text("orders.list.placeholder.searchCustomersOrder")
             )
-            .rootNavigationTitle(listStore.navigationTitleKey, language: language)
+            // 多選筆數由清單欄頂部顯示，標題固定為訂單
+            .rootNavigationTitle("orders.list.title", language: language)
+            // 大標題在搜尋結束後會留白且不顯示標題，並把搜尋欄下推
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 OrdersToolbarContent(
                     isAllFilteredSelected: snapshot.isAllSelected,
@@ -101,19 +84,17 @@ private extension OrdersView {
                     store: listStore
                 )
             }
-        }
-        // 載入結果由多個分頁共用，不隨畫面消失而取消
-        .task {
-            listStore.send(.view(.task))
-        }
-        .sheet(item: $listStore.scope(state: \.$destination, action: \.destination).filterSheet) {
-            OrderFilterSheet(store: $0)
-        }
-        .sheet(
-            item: $listStore.scope(state: \.$destination, action: \.destination).categoryPicker
-        ) {
-            OrderCategoryPickerSheet(store: $0)
-        }
+            .alert($presentation.scope(state: \.$destination, action: \.destination).alert)
+            .sheet(
+                item: $listStore.scope(state: \.$destination, action: \.destination).filterSheet
+            ) {
+                OrderFilterSheet(store: $0)
+            }
+            .sheet(
+                item: $listStore.scope(state: \.$destination, action: \.destination).categoryPicker
+            ) {
+                OrderCategoryPickerSheet(store: $0)
+            }
     }
 
     /// 依版面分類選擇對應的訂單瀏覽內容
@@ -124,22 +105,9 @@ private extension OrdersView {
             OrdersCompactView(store: store, language: language)
 
         case .regular:
-            regularSplitContent
+            regularListContent
         }
     }
-}
-
-// MARK: - Nested Types
-
-private extension OrdersView {
-
-    /// 最上層畫面持有的唯一對話框綁定
-    typealias AlertBinding = Binding<
-        Store<
-            AlertState<OrdersPresentationFeature.Destination.Alert>,
-            OrdersPresentationFeature.Destination.Alert
-        >?
-    >
 }
 
 // MARK: - Private Method
@@ -150,38 +118,27 @@ private extension OrdersView {
     func sendFormSheetDismissed() {
         store.send(.view(.formSheetDismissed))
     }
-
-    /// 寬版雙欄只在有詳情時由詳情呈現對話框，空清單則交由清單呈現
-    ///
-    /// - Parameter isDetail: 是否為右側詳情欄
-    /// - Returns: 最上層欄位的對話框綁定，其餘為常數 `nil`
-    func regularAlertBinding(isDetail: Bool) -> AlertBinding {
-        let hasDetail = store.detail.regularDetail?.order != nil
-        guard isDetail == hasDetail else {
-            return .constant(nil)
-        }
-        @Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)
-        return $presentation.scope(state: \.$destination, action: \.destination).alert
-    }
 }
 
 // MARK: - Preview
 
 #Preview("訂單瀏覽") {
     let previewState: OrdersFeature.State = {
-        var state = OrdersFeature.State(orders: LedgerOrder.sampleOrders)
+        let state = OrdersFeature.State(orders: LedgerOrder.sampleOrders)
         state.load.$hasLoaded.withLock {
             $0 = true
         }
-        state.list.selectedOrderID = LedgerOrder.sampleOrders.first?.id
-        state.detail.syncRegularDetail(selectedOrderID: state.list.selectedOrderID)
         return state
     }()
 
-    OrdersView(
-        store: Store(initialState: previewState) {
-            OrdersFeature()
-        },
-        language: .traditionalChinese
-    )
+    // 固定寬版清單欄：compact 分支自帶 NavigationStack，外層再包會疊成兩層
+    NavigationStack {
+        OrdersView(
+            store: Store(initialState: previewState) {
+                OrdersFeature()
+            },
+            language: .traditionalChinese
+        )
+        .environment(\.blLayoutClass, .regular)
+    }
 }

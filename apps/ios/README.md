@@ -53,13 +53,13 @@ apps/ios/
 │   │   ├── Orders/               # 訂單容器、清單、詳情、寫入、載入與編輯流程
 │   │   │   ├── OrdersFeature.swift               # 容器組合子 Feature，共用訂單引用與 Root 投影，core 逐 case 轉送
 │   │   │   ├── OrdersPresentationFeature.swift   # 無畫面子 Feature：edit／merge／aiSummary／alert 呈現 (+Destination)、通知佇列與合併轉場
-│   │   │   ├── OrdersDetailNavigationFeature.swift # 無畫面子 Feature：iPhone 詳情堆疊 (+Path) 與 iPad 右欄同步
+│   │   │   ├── OrdersDetailNavigationFeature.swift # 無畫面子 Feature：iPhone 詳情堆疊 (+Path) 與 iPad 詳情欄同步
 │   │   │   ├── OrderListFeature.swift            # 搜尋、多選、日期分組與 iPad 選取；destination (+Destination) 呈現篩選 sheet 與 iPad 類別選擇器
 │   │   │   ├── OrderFilterFeature.swift          # iPhone 篩選 sheet 子 Feature，暫存日期、付款方式與類別，搜尋與捨棄確認
 │   │   │   ├── OrderCategoryPickerFeature.swift  # iPad 類別選擇器子 Feature，暫存類別、搜尋與捨棄確認
 │   │   │   ├── OrderCategoryGroups.swift         # 類別依開團中／已收單分組、搜尋與展開狀態的純計算，兩平台共用；groups(orders:campaigns:catalog:context:) 為兩個篩選畫面共用入口
 │   │   │   ├── OrderFilterConfirmations.swift    # 篩選 sheet 與 iPad 類別選擇器共用的捨棄確認
-│   │   │   ├── OrderDetailFeature.swift          # iPhone 推入與 iPad 右欄共用的唯讀詳情
+│   │   │   ├── OrderDetailFeature.swift          # iPhone 推入與 iPad 詳情欄共用的唯讀詳情
 │   │   │   ├── OrderWritesFeature.swift          # 訂單寫入與交易後的調整，reducer 內更新共用訂單
 │   │   │   ├── OrdersLoadFeature.swift           # 訂單載入與共享載入狀態
 │   │   │   ├── OrdersLoadState.swift             # 首頁、分析與清單共用的載入狀態型別
@@ -73,7 +73,7 @@ apps/ios/
 │   │   │   ├── OrdersContainerPlan.swift         # 容器各 case 的純計算，+Requests／+Writes／+Presentation 分檔；回傳 OrdersRequestOutcome／OrdersWriteOutcome
 │   │   │   ├── OrdersPresentationQueue.swift     # sheet 關閉與合併轉場期間的通知佇列
 │   │   │   ├── OrdersRootRequest.swift           # 根功能送進容器的請求：載入、cascade、收款狀態、付款方式旗標與新增選項結果
-│   │   │   ├── OrdersDetailSelection.swift       # 詳情推入、失效路徑移除與右欄選取同步
+│   │   │   ├── OrdersDetailSelection.swift       # 詳情推入、失效路徑移除與詳情欄選取同步
 │   │   │   ├── OrdersEditorOptions.swift         # 四個編輯入口共用的 OrderEditOptions 建構
 │   │   │   ├── OrderDraft.swift                  # 訂單草稿；+WriteResult 解析建立／更新意圖
 │   │   │   ├── OrderWriteOperations.swift        # 寫入 effect (含狀態與批次狀態)；OrderMergeSavePlan 帶入合併寫入計畫
@@ -81,8 +81,8 @@ apps/ios/
 │   │   │   ├── OrdersListQuery.swift             # 清單衍生值；OrdersQuery 篩選、OrderDateSection 日期分組
 │   │   │   ├── OrderDateContext.swift            # 注入的現在時間與行事曆
 │   │   │   ├── OrderStatusRules.swift            # 可選狀態與合併入口資格；OrderCostBreakdown 成本、OrderSummaryPrompt 摘要提示
-│   │   │   ├── OrdersView.swift                 # compact／regular 分流與共用 sheet；OrdersCompactView、OrdersRegularListColumn／OrdersRegularDetailColumn
-│   │   │   ├── Components/       # 清單、詳情、篩選與表單區段；OrderDetailMenu／OrderDetailRowMenu 共用操作，OrderEditSelectionRow 共用選擇列；OrderCategoryFilterRows 為兩個類別篩選畫面共用的搜尋列、全部列與空狀態列；OrderFormatters 處理金額正負號與開團顯示文字
+│   │   │   ├── OrdersView.swift                 # compact 分流與共用 sheet；regular 只產出清單欄 (regularListContent)；OrdersCompactView、OrdersRegularListColumn、OrdersRegularDetailColumn (詳情欄)
+│   │   │   ├── Components/       # 清單、詳情、篩選與表單區段；OrderDetailMenu／OrderDetailRowMenu 共用操作，OrderDetailToolbarContent 為 iPhone 推入詳情與 iPad 詳情欄共用的詳情工具列，OrderEditSelectionRow 共用選擇列；OrderCategoryFilterRows 為兩個類別篩選畫面共用的搜尋列、全部列與空狀態列；OrderFormatters 處理金額正負號與開團顯示文字
 │   │   │   └── Data/             # OrderService (訂單讀寫)、OrderError (訂單持久化錯誤)、PhotoService (相簿選取照片的匯入)、PhotoImportResult
 │   │   ├── Quote/                # 報價試算 (QuoteFeature + QuoteRateFeature 子 reducer + QuoteView)
 │   │   │   └── Components/       # QuoteStatusBanner、QuoteBreakdownCard、QuoteInputsCard
@@ -242,12 +242,12 @@ bun run unlock
 
 | 版面分類 | Layout | 說明 |
 |---|---|---|
-| regular 版面 (水平與垂直尺寸分類都是 regular，例如 iPad 全螢幕) | `RootSidebarLayout` | `NavigationSplitView` + sidebar，無 inspector |
+| regular 版面 (水平與垂直尺寸分類都是 regular，例如 iPad 全螢幕) | `RootSidebarLayout` | `NavigationSplitView`；訂單分頁為側邊欄、清單、詳情三欄，其他分頁為側邊欄與內容兩欄 |
 | compact 版面 (其餘組合，含 iPhone 任何機型橫向與 iPad 窄視窗) | `RootTabLayout` | `TabView` |
 
-版面分類只由 `BLLayoutClass` (`Shared/DesignSystem/Foundations/`) 判斷，畫面以 `@Environment(\.blLayoutClass)` 讀取，不直接讀 `horizontalSizeClass`／`verticalSizeClass`。大尺寸 iPhone 橫向的水平尺寸分類是 regular，但垂直是 compact，所以仍走 compact 版面。
+版面分類由 `BLLayoutClass` (`Shared/DesignSystem/Foundations/`) 判斷，畫面以 `@Environment(\.blLayoutClass)` 讀取，不直接讀 `horizontalSizeClass`／`verticalSizeClass`。`RootView` 依視窗決定一次版面，並以 `.environment(\.blLayoutClass, …)` 交給子樹；split view 欄位回報的尺寸分類不在子樹重新推導。沒有經過 `RootView` 的 Preview 與截圖測試，由尺寸分類推導。大尺寸 iPhone 橫向的水平尺寸分類是 regular，但垂直是 compact，所以仍走 compact 版面。
 
-`OrdersView` 依版面分類分流：compact 版面 → `OrdersCompactView` (`NavigationStack`)；regular 版面 → `NavigationStack` 內以 `HStack` 自排「清單 + 詳情」兩欄，欄內容抽成 `OrdersRegularListColumn` 與 `OrdersRegularDetailColumn` (不用巢狀 `NavigationSplitView`，避免兩層 split 互搶寬度)。iPhone 以詳情導覽子 Feature (`OrdersDetailNavigationFeature`) 的 `StackState` 推入 `OrderDetailFeature`，iPad 右欄以同一子 Feature 的 `regularDetail` 使用同一個 Feature。編輯、合併與 AI 摘要 sheet 綁定呈現子 Feature (`OrdersPresentationFeature`) 的單一 `destination`，一律掛在 `OrdersView` 外層，兩種版面共用。總覽頁 (hero 與 KPI 卡) 與分析頁 (卡片) 同樣依版面分類排列：regular 版面並排，compact 版面上下堆疊。
+`OrdersView` 依版面分類分流：compact 版面 → `OrdersCompactView` (`NavigationStack`)；regular 版面 → 根層三欄的清單欄 (`regularListContent`)，搜尋欄、標題、工具列與清單 sheet 都在清單欄內 (多選筆數顯示在清單欄頂部)，清單欄寬由 `RootSidebarLayout` 設定 (側邊欄並排時與詳情欄平分)，詳情欄由 `OrdersRegularDetailColumn` 提供，導覽列顯示客戶名稱與操作選單。詳情工具列與 iPhone 推入詳情共用 `OrderDetailToolbarContent`。iPhone 以詳情導覽子 Feature (`OrdersDetailNavigationFeature`) 的 `StackState` 推入 `OrderDetailFeature`，iPad 詳情欄以同一子 Feature 的 `regularDetail` 使用同一個 Feature。編輯、合併與 AI 摘要 sheet 綁定呈現子 Feature (`OrdersPresentationFeature`) 的單一 `destination`，一律掛在 `OrdersView` 外層，兩種版面共用。總覽頁 (hero 與 KPI 卡) 與分析頁 (卡片) 同樣依版面分類排列：regular 版面並排，compact 版面上下堆疊。
 
 「更多」分頁由 `MoreFeature` 以 `StackState` 推入匯率工具、客戶名單、報價試算、四種主檔管理與設定，返回即釋放子畫面狀態；iPhone 切換分頁時保留堆疊，iPad 側邊欄切換前先清空 (`NavigationSplitView` 在路徑非空時切分頁會崩潰)。
 

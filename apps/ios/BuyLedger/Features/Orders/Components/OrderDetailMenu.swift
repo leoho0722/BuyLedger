@@ -8,7 +8,7 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 推入詳情與右欄共用的狀態、更多操作選單
+/// 推入詳情與詳情欄共用的狀態、更多操作選單
 struct OrderDetailMenu: View {
 
     // MARK: - Properties
@@ -16,35 +16,13 @@ struct OrderDetailMenu: View {
     /// 此處顯示的操作選單
     let kind: Kind
 
-    /// 保留窄欄工具列與寬欄標題列的原有外觀
-    let layout: OrderDetailView.OrderDetailLayout
-
     /// 提供操作選項與委派入口的詳情 store
     let store: StoreOf<OrderDetailFeature>
 
     // MARK: - Body
 
-    /// 依版面保留選單大小與樣式
+    /// 顯示對應分類的操作選單
     var body: some View {
-        switch layout {
-        case .compact:
-            menu
-
-        case .wide:
-            menu
-                .menuStyle(.borderlessButton)
-                .controlSize(.small)
-        }
-    }
-}
-
-// MARK: - Private Views
-
-private extension OrderDetailMenu {
-
-    /// 狀態或更多操作的選單
-    @ViewBuilder
-    var menu: some View {
         switch kind {
         case .status:
             statusMenu
@@ -53,6 +31,11 @@ private extension OrderDetailMenu {
             moreMenu
         }
     }
+}
+
+// MARK: - Private Views
+
+private extension OrderDetailMenu {
 
     /// 將目前狀態標記勾號，選取時送出詳情事件
     var statusMenu: some View {
@@ -69,13 +52,7 @@ private extension OrderDetailMenu {
                 }
             }
         } label: {
-            switch layout {
-            case .compact:
-                Image(systemName: "arrow.triangle.2.circlepath")
-
-            case .wide:
-                Label("orders.detail.label.updateStatus", systemImage: "arrow.triangle.2.circlepath")
-            }
+            Image(systemName: "arrow.triangle.2.circlepath")
         }
         .accessibilityLabel("orders.detail.label.updateStatus")
         .accessibilityIdentifier(BLAccessibilityID.Orders.detailStatusMenuButton)
@@ -109,14 +86,7 @@ private extension OrderDetailMenu {
             }
             .accessibilityIdentifier(BLAccessibilityID.Orders.detailDeleteButton)
         } label: {
-            switch layout {
-            case .compact:
-                Image(systemName: "ellipsis.circle")
-
-            case .wide:
-                Label("common.action.label.more", systemImage: "ellipsis.circle")
-                    .labelStyle(.iconOnly)
-            }
+            Image(systemName: "ellipsis.circle")
         }
         .accessibilityLabel("orders.detail.label.moreActions")
         .accessibilityIdentifier(BLAccessibilityID.Orders.detailMoreButton)
@@ -143,11 +113,12 @@ extension OrderDetailMenu {
 #Preview("詳情選單") {
     OrderDetailMenu(
         kind: .more,
-        layout: .wide,
-        store: Store(initialState: OrderDetailFeature.State(
-            orderID: LedgerOrder.sampleOrders[0].id,
-            orders: SharedReader(value: LedgerOrder.sampleOrders)
-        )) {
+        store: Store(
+            initialState: OrderDetailFeature.State(
+                orderID: LedgerOrder.sampleOrders[0].id,
+                orders: SharedReader(value: LedgerOrder.sampleOrders)
+            )
+        ) {
             OrderDetailFeature()
         }
     )

@@ -138,12 +138,14 @@ extension SnapshotTests {
         }
     }
 
-    /// 寬版 (iPad 的 `regular` 寬度) 訂單頁進入多選並勾選第一筆時，清單顯示選取列
+    /// 寬版清單欄進入多選並勾選第一筆時，清單顯示選取列
     ///
+    /// - Note: 只拍清單欄，三欄組合由 `OrderRegularColumnScopeTests` 守
+    /// - Note: 離屏渲染畫不出工具列項目，筆數、「⋯」「+」與多選控制項由 `OrderRegularColumnScopeTests` 守
     /// - Note: 水平與垂直尺寸分類都設為 `.regular` 模擬 iPad 版面，不需要 iPad 模擬器
     /// - Note: 使用離屏快照，避免 key window 尺寸造成不穩定
     @Test
-    func ordersView_寬版多選模式_顯示選取列() {
+    func ordersView_寬版清單欄多選模式_顯示選取列() {
         TestDependencies.withFixedNow {
             // Given
             var state = OrdersFeature.State(orders: LedgerOrder.sampleOrders)
@@ -158,16 +160,57 @@ extension SnapshotTests {
             state.list.selectedOrderIDs = [LedgerOrder.sampleOrders[0].id]
 
             // When
-            let view = OrdersView(
-                store: Store(initialState: state) {
-                    OrdersFeature()
-                },
-                language: .traditionalChinese
-            )
+            let view = NavigationStack {
+                OrdersView(
+                    store: Store(initialState: state) {
+                        OrdersFeature()
+                    },
+                    language: .traditionalChinese
+                )
+            }
             .environment(\.locale, AppLanguage.traditionalChinese.locale)
             .environment(\.horizontalSizeClass, .regular)
             .environment(\.verticalSizeClass, .regular)
-            .frame(width: 1024, height: 768)
+            .frame(width: 320, height: 768)
+
+            // Then
+            assertSnapshot(of: view, as: .image)
+        }
+    }
+
+    /// 寬版清單欄在最大輔助字級時，篩選區隨清單捲動、膠囊不重疊
+    ///
+    /// - Note: 只拍清單欄，三欄組合由 `OrderRegularColumnScopeTests` 守
+    /// - Note: 離屏渲染畫不出工具列項目，筆數、「⋯」「+」與多選控制項由 `OrderRegularColumnScopeTests` 守
+    /// - Note: 水平與垂直尺寸分類都設為 `.regular` 模擬 iPad 版面，不需要 iPad 模擬器
+    /// - Note: 使用離屏快照，避免 key window 尺寸造成不穩定
+    @Test
+    func ordersView_寬版清單欄最大輔助字級_符合基準圖() {
+        TestDependencies.withFixedNow {
+            // Given
+            var state = OrdersFeature.State(orders: LedgerOrder.sampleOrders)
+            state.refreshDateContext(
+                now: TestDependencies.fixedNow,
+                calendar: TestDependencies.fixedCalendar
+            )
+            state.load.$hasLoaded.withLock {
+                $0 = true
+            }
+
+            // When
+            let view = NavigationStack {
+                OrdersView(
+                    store: Store(initialState: state) {
+                        OrdersFeature()
+                    },
+                    language: .traditionalChinese
+                )
+            }
+            .environment(\.locale, AppLanguage.traditionalChinese.locale)
+            .environment(\.horizontalSizeClass, .regular)
+            .environment(\.verticalSizeClass, .regular)
+            .environment(\.dynamicTypeSize, .accessibility5)
+            .frame(width: 320, height: 768)
 
             // Then
             assertSnapshot(of: view, as: .image)

@@ -25,6 +25,12 @@ struct RootSidebarLayout: View {
     /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<RootFeature>
 
+    /// 訂單清單欄左緣的視窗座標，並排的側邊欄會把它往右推
+    @State private var orderListColumnMinX: CGFloat = 0
+
+    /// 訂單三欄右緣的視窗座標
+    @State private var orderSplitMaxX: CGFloat = 0
+
     /// App 目前選用的顯示語系
     let language: AppLanguage
 
@@ -40,13 +46,39 @@ struct RootSidebarLayout: View {
 
 private extension RootSidebarLayout {
 
-    /// 根層級分欄導覽
+    /// 根層級分欄導覽，依分頁的分欄型態切換三欄與單內容欄
     @ViewBuilder
     var splitContent: some View {
-        NavigationSplitView {
-            sidebar
-        } detail: {
-            destination(selectedTab: store.selectedTab)
+        switch splitColumns(for: store.selectedTab) {
+        case .listDetail(.orders):
+            NavigationSplitView {
+                sidebar
+            } content: {
+                OrdersView(
+                    store: store.scope(state: \.orders, action: \.orders),
+                    language: language
+                )
+                .onGeometryChange(for: CGFloat.self) {
+                    $0.frame(in: .global).minX
+                } action: {
+                    orderListColumnMinX = $0
+                }
+                .navigationSplitViewColumnWidth(orderListColumnTargetWidth)
+            } detail: {
+                OrdersRegularDetailColumn(store: store.scope(state: \.orders, action: \.orders))
+            }
+            .onGeometryChange(for: CGFloat.self) {
+                $0.frame(in: .global).maxX
+            } action: {
+                orderSplitMaxX = $0
+            }
+
+        case .single(let tab):
+            NavigationSplitView {
+                sidebar
+            } detail: {
+                singleColumnContent(tab)
+            }
         }
     }
 
@@ -88,9 +120,9 @@ private extension RootSidebarLayout {
                 navRow(.more, isSelected: selection == .tab(.more))
             }
         }
-        .navigationSplitViewColumnWidth(min: 220, ideal: 240, max: 280)
         .listStyle(.sidebar)
         .accessibilityIdentifier(BLAccessibilityID.Root.sidebar)
+        .navigationSplitViewColumnWidth(min: 220, ideal: 240, max: 280)
     }
 
     /// BL gradient logo 與 App 名稱列
@@ -159,21 +191,18 @@ private extension RootSidebarLayout {
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
-    /// 顯示目前選取分頁的內容
+    /// 顯示單欄分頁的內容
     ///
-    /// - Parameter selectedTab: 目前選取的主要分頁
+    /// - Parameter tab: 單欄分頁
     /// - Returns: 分頁對應的 `SwiftUI` view
     @ViewBuilder
-    func destination(selectedTab: RootTab) -> some View {
-        switch selectedTab {
+    func singleColumnContent(_ tab: SingleColumnTab) -> some View {
+        switch tab {
         case .dashboard:
             DashboardView(
                 store: store.scope(state: \.dashboard, action: \.dashboard),
                 language: language
             )
-
-        case .orders:
-            OrdersView(store: store.scope(state: \.orders, action: \.orders), language: language)
 
         case .campaigns:
             CampaignView(
@@ -202,14 +231,59 @@ private extension RootSidebarLayout {
 
         /// 主要分頁
         ///
-        /// - Parameter tab: 對應的主要分頁
+        /// - Parameter rootTab: 對應的主要分頁
         case tab(RootTab)
+    }
+
+    /// regular 版面依分頁決定的分欄型態
+    enum SplitColumns {
+
+        /// 清單與詳情兩欄並排的分頁
+        ///
+        /// - Parameter listDetailTab: 清單與詳情分頁
+        case listDetail(ListDetailTab)
+
+        /// 只有單一內容欄的分頁
+        ///
+        /// - Parameter singleColumnTab: 單欄分頁
+        case single(SingleColumnTab)
+    }
+
+    /// 清單與詳情兩欄的分頁
+    enum ListDetailTab {
+
+        /// 訂單清單與詳情
+        case orders
+    }
+
+    /// 單一內容欄的分頁
+    enum SingleColumnTab {
+
+        /// 總覽
+        case dashboard
+
+        /// 開團
+        case campaigns
+
+        /// 分析
+        case insights
+
+        /// 更多
+        case more
     }
 }
 
 // MARK: - Private Method
 
 private extension RootSidebarLayout {
+
+    /// 訂單清單欄的目標欄寬：側邊欄並排時與詳情欄平分剩餘寬度，其餘情況沿用 320
+    var orderListColumnTargetWidth: CGFloat {
+        guard orderListColumnMinX > 0, orderSplitMaxX > orderListColumnMinX else {
+            return 320
+        }
+        return (orderSplitMaxX - orderListColumnMinX) / 2
+    }
 
     /// 目前選取的側邊欄項目
     var currentSelection: SidebarSelection {
@@ -228,6 +302,29 @@ private extension RootSidebarLayout {
             case nil:
                 return
             }
+        }
+    }
+
+    /// 依分頁決定分欄型態，訂單是唯一的清單與詳情分頁
+    ///
+    /// - Parameter tab: 目前選取的主要分頁
+    /// - Returns: 分頁對應的分欄型態
+    func splitColumns(for tab: RootTab) -> SplitColumns {
+        switch tab {
+        case .orders:
+            .listDetail(.orders)
+
+        case .dashboard:
+            .single(.dashboard)
+
+        case .campaigns:
+            .single(.campaigns)
+
+        case .insights:
+            .single(.insights)
+
+        case .more:
+            .single(.more)
         }
     }
 }

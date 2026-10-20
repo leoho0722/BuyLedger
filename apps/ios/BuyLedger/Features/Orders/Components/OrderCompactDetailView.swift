@@ -25,13 +25,7 @@ struct OrderCompactDetailView: View {
                 .navigationTitle(Text(verbatim: order.customer.name))
                 .navigationBarTitleDisplayMode(.inline)
                 .toolbar {
-                    ToolbarItem(placement: .primaryAction) {
-                        OrderDetailMenu(kind: .status, layout: .compact, store: store)
-                    }
-
-                    ToolbarItem(placement: .primaryAction) {
-                        OrderDetailMenu(kind: .more, layout: .compact, store: store)
-                    }
+                    OrderDetailToolbarContent(store: store)
                 }
         }
     }
@@ -42,10 +36,12 @@ struct OrderCompactDetailView: View {
 #Preview("推入訂單詳情") {
     NavigationStack {
         OrderCompactDetailView(
-            store: Store(initialState: OrderDetailFeature.State(
-                orderID: LedgerOrder.sampleOrders[0].id,
-                orders: SharedReader(value: LedgerOrder.sampleOrders)
-            )) {
+            store: Store(
+                initialState: OrderDetailFeature.State(
+                    orderID: LedgerOrder.sampleOrders[0].id,
+                    orders: SharedReader(value: LedgerOrder.sampleOrders)
+                )
+            ) {
                 OrderDetailFeature()
             }
         )

@@ -52,7 +52,7 @@ struct OrderListSnapshotSourceScanTests {
     /// - Throws: 原始碼讀取、單元定位或正規表示式建立失敗時拋出
     @Test(arguments: [
         ("OrdersCompactView.swift", "var navigationContent: some View"),
-        ("OrdersView.swift", "var regularSplitContent: some View"),
+        ("OrdersView.swift", "var regularListContent: some View"),
     ])
     func listSnapshot_兩種版面路徑_各取一次快照且重用工具列值(file: String, declaration: String) throws {
         // Given

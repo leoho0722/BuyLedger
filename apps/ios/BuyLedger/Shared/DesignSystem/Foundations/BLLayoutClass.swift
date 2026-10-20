@@ -36,8 +36,21 @@ enum BLLayoutClass: Equatable, Sendable {
 
 extension EnvironmentValues {
 
-    /// 由目前水平與垂直尺寸分類推導的唯讀版面
+    /// 根層決定並寫入環境的版面，未決定時為 `nil`
+    @Entry private var decidedLayoutClass: BLLayoutClass? = nil
+
+    /// 版面分類，根層已決定時沿用其值，否則依水平與垂直尺寸分類推導
+    ///
+    /// - Note: Preview 與截圖測試沒有根層決定值，因此由尺寸分類推導
     var blLayoutClass: BLLayoutClass {
-        BLLayoutClass(horizontal: horizontalSizeClass, vertical: verticalSizeClass)
+        get {
+            if let decidedLayoutClass {
+                return decidedLayoutClass
+            }
+            return BLLayoutClass(horizontal: horizontalSizeClass, vertical: verticalSizeClass)
+        }
+        set {
+            decidedLayoutClass = newValue
+        }
     }
 }

@@ -12,7 +12,7 @@ paths:
 `BuyLedgerUITests` 共用 `Support/`、Page Object (`Screens/`) 與 `App/Testing/` 的啟動掛鉤；執行方式、測試計畫與雜訊判讀見 `apps/ios/CLAUDE.md` 的「建置與開發指令」。App 端加 identifier 時同樣適用下方「定位與 identifier」。
 
 - **選擇性執行與變異驗證必須確認實際執行數大於 0**：`0 tests executed` 不是通過，不能用成功退出碼判定測試有效。
-- **只存在於單一版面的功能，測試以 compact／regular 版面明確宣告適用範圍，不判斷裝置是 iPhone 或 iPad**：測試方法 `throws`，在 Given 內 `launch(...)` 之後立刻 `XCTSkipUnless(isCompactLayout(app)／isRegularLayout(app), "<原因與另一版面覆蓋的測試>")`，再接其他 Given 步驟。版面依 App 實際畫面判斷 (`AppNavigator.isSidebarLayout`：側邊欄＝regular、底部分頁列＝compact)；skip 條件只能是版面，不得因元素找不到或其他狀態而 skip。
+- **只存在於單一版面的功能，測試以 compact／regular 版面明確宣告適用範圍，不判斷裝置是 iPhone 或 iPad**：測試方法 `throws`，在 Given 內 `launch(...)` 之後立刻 `XCTSkipUnless(isCompactLayout(app)／isRegularLayout(app), "<原因與另一版面覆蓋的測試>")`，再接其他 Given 步驟。版面依 App 實際畫面判斷 (`AppNavigator.isSidebarLayout`：側邊欄或訂單清單與詳情並排＝regular、底部分頁列＝compact)；skip 條件只能是版面，不得因元素找不到或其他狀態而 skip。
 
 ## 定位與 identifier
 
@@ -29,6 +29,7 @@ paths:
     - TCA `AlertState`：以 `app.alerts.firstMatch` 判定呈現、`tapAlertButton(label:)` 依按鈕文字點擊 (計畫已鎖語言)；能自掛 identifier 的自訂 `.alert` 才用 `tapAlertButton(identifier:)`。
     - 自訂 `.alert` 內的 `TextField` 帶不出 identifier，以 `app.alerts.firstMatch.textFields.firstMatch` 定位 (參考 `OptionPickerScreen.typeNewOptionName`)；按鈕帶得出 identifier，但會以兩層同 identifier 的 Button 出現，直接查詢要加 `.firstMatch` (`tapAlertButton(identifier:)` 已處理)。
     - `Picker(.segmented)` 的選項：identifier 掛在 `Picker`，以 `segmentedControls.buttons` 依宣告順序 `boundBy` 取。
+    - `.searchable` 的搜尋欄與其內建清除鈕：搜尋欄用 `OrdersScreen.hittableSearchField()` (見下方 sheet 疊搜尋欄一條)，清除鈕取該搜尋欄的 `buttons.firstMatch` (標籤隨系統語言變動)。
 - **`Menu` 的 identifier 掛在 `Menu` 本身，不是 label 內的 `Label`**：選單項目掛在各 `Button`，測試以 `tapMenuItem` 先展開再點。
 - **push 目的地的返回鍵在 iPad 要 scope 到目的地那條導覽列**：`app.navigationBars.buttons.firstMatch` 可能點到側邊欄的鈕而關掉整個 sheet。
 - **sheet 疊在有搜尋欄的畫面上時，`app.searchFields.firstMatch` 會取到底層那一個**：iPad 的側邊欄版面讓底層 Orders 搜尋欄排在前面，iPhone 恰好順序相反所以不會中；改用 `app.searchFields.allElementsBoundByIndex.first(where: \.isHittableOnScreen)` 取第一個可互動的，取不到就 `failWithDiagnostics`。同型陷阱也適用於其他在 sheet 內重複出現的系統元件。
@@ -37,13 +38,17 @@ paths:
 ## 資料與相依
 
 - **測試前以 `LaunchOptions` 指定 seed profile 與語言**：模擬器首次啟動是空狀態。
+    - 驗證輔助字級用 `LaunchOptions.contentSizeCategory`：序列化為 UIKit 系統參數 `-UIPreferredContentSizeCategoryName`，不經 `BLUITestConfiguration` (參考 `OrderRegularAccessibilitySizeTests`)。
     - `BLUITestHarness` 依 `BLUITestConfiguration` 建立測試 container (in-memory 或 persistent)，`DependencyValues+BLUITestOverrides.swift` 注入固定時間、`buyLedgerDatabase` 與外部相依替身；整套 harness 以 `#if DEBUG` 圈住，啟動掛鉤集中在 `AppLaunchConfigurator`。
 - **外部相依一律走 test double**：`PhotoService`／`CalendarReminderService`／`ExchangeRateService` 在 UI 測試模式換成不開系統彈窗、不打網路的替身。
 - **`DependencyValues+BLUITestOverrides.swift` 以注入的 `BuyLedgerDatabase` 組出 Service，不得在 `prepareDependencies` 的 closure 內讀 `$0.xxxService` 當底座**：`@Dependency` 在 `liveValue` 建立時擷取當下的 `_current`，不是正在準備的 `$0`，會拿到正式 store。
     - 需要包上失敗 closure 的 Service，以 `withDependencies { $0.buyLedgerDatabase = database } operation: { XxxService.liveValue }` 建立，改寫 closure 後再指派給 `$0.xxxService`。
     - `BuyLedgerDatabase` 的 `storeLocation` 如實傳入：in-memory 用 `.inMemory`，persistent 用 `.directory(<store 所在目錄>)`，不一律標成 in-memory。
 - **找不到 App 元素一律 `failWithDiagnostics` (附截圖與可及性樹)，不用 `XCTSkip` 掩蓋**：`XCTSkip` 只留給真正的外部環境差異 (如系統文字選單)，並寫明原因。
-- **compact 與 regular 版面差異由 `AppNavigator` 吸收** (compact 版面是底部分頁列，含 iPhone 任何方向與 iPad 窄視窗；regular 版面是 iPad 全螢幕的側邊欄)。
+- **compact 與 regular 版面差異由 `AppNavigator` 吸收** (compact 版面是底部分頁列，含 iPhone 任何方向與 iPad 窄視窗；regular 版面是 iPad 全螢幕的側邊欄，側邊欄收起時仍是 regular)。
+    - 側邊欄未出現而訂單清單與詳情並排時，`isSidebarLayout` 仍判為 regular；`selectTab` 在 regular 版面先從左緣拖曳叫出側邊欄 (`revealSidebarIfCollapsed`)。有目的地根容器的分頁一律等待根容器 (`destinationRootIdentifier(for:)`)，沒有根容器的分頁才依版面等待側邊欄列或底部分頁按鈕的選取態。
+- **欄位歸屬以 `Support/HorizontalBounds.swift` 取得的 frame 比對**：iPadOS 26 的內容會延伸到浮動側邊欄底下，捲動容器 (如 `Orders.listRoot`) 的左緣是 0，不能當欄位的左界；改用側邊欄右緣或畫面內可見的列當左界。
+    - 量欄寬時以左右內距相同的列推算 (`2 × (捲動容器右緣 − 列中心)`，參考 `OrderRegularColumnWidthTests`)；欄寬隨量到的視窗座標更新，斷言前在逾時內重量。
 
 ## 輸入、捲動與鍵盤
 
@@ -68,7 +73,7 @@ paths:
 
 - **轉向測試 (`XCUIDevice.shared.orientation`) 執行時，模擬器前端的 Device Hub 不可開著**：開著時裝置方向會改變但介面不轉，App 視窗維持直向，測試在等「視窗寬大於高」時逾時；關閉 Device Hub 後即恢復。
     - Device Hub 的旋轉鈕只轉外框，Orientation 選單也不一定讓介面轉向 (iPad 會轉、iPhone 17 Pro Max 不會)，兩者都不能用來驗證橫向版面。
-    - 轉向後等到 `app.windows.firstMatch` 寬大於高才斷言或截圖 (參考 `OrientationLayoutTests`)：setter 只設定裝置方向，沒等就斷言會在直向取得 compact 版面而誤判通過。
+    - 轉向後等到 `app.windows.firstMatch` 寬大於高才斷言或截圖 (`Support/Orientation.swift` 的 `rotateToLandscape`，轉回直向用 `rotateToPortrait`)：setter 只設定裝置方向，沒等就斷言會在直向取得 compact 版面而誤判通過。
 - **轉向測試失敗且 App 視窗維持直向時，先重開模擬器再重跑，重開後仍失敗才是真問題**：模擬器長時間連續跑 UI 測試後，`XCUIDevice.shared.orientation` 可能只改變裝置方向、介面不轉，屬環境狀態，不是產品或測試缺陷。
     - 判別：`OrientationLayoutTests` 在「轉向後 App 視窗寬仍未大於高」失敗，且單獨重跑同樣失敗；沒有特定測試類別會穩定觸發，不必逐類排查，也不改測試碼或放寬等待。
     - 重開機：`mobilebuildmcp` 沒有關機指令，先開啟 Device Hub 再結束它 (結束時會把模擬器全部關機)，再以 `mobilebuildmcp simulator-management boot` 開機。

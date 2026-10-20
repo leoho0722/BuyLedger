@@ -51,11 +51,13 @@ extension SnapshotTests {
         }
     }
 
-    /// iPad 選取含成本明細的訂單後，清單右欄顯示詳情與操作選單
+    /// 寬版詳情欄選取含成本明細的訂單時，顯示詳情內容
     ///
+    /// - Note: 只拍詳情欄，三欄組合由 `OrderRegularColumnScopeTests` 守
+    /// - Note: 離屏渲染畫不出工具列項目，導覽列標題與詳情選單由 `OrderRegularColumnScopeTests` 守
     /// - Note: 使用離屏渲染 (不經過螢幕上的視窗)，避免 iPhone 模擬器的 key window 裁切寬版畫面
     @Test
-    func ordersView_寬版選取含成本明細訂單_符合基準圖() async {
+    func ordersRegularDetailColumn_寬版詳情欄選取含成本明細訂單_符合基準圖() async {
         await LookupCatalog.withIsolatedStorage {
             TestDependencies.withFixedNow {
                 // Given
@@ -72,18 +74,19 @@ extension SnapshotTests {
                 state.detail.syncRegularDetail(selectedOrderID: state.list.selectedOrderID)
 
                 // When
-                let view = OrdersView(
-                    store: Store(initialState: state) {
-                        OrdersFeature()
-                    },
-                    language: .traditionalChinese
-                )
-                    .environment(\.locale, AppLanguage.traditionalChinese.locale)
-                    .environment(\.calendar, TestDependencies.fixedCalendar)
-                    .environment(\.timeZone, TestDependencies.fixedCalendar.timeZone)
-                    .environment(\.horizontalSizeClass, .regular)
-                    .environment(\.verticalSizeClass, .regular)
-                    .frame(width: 1024, height: 768)
+                let view = NavigationStack {
+                    OrdersRegularDetailColumn(
+                        store: Store(initialState: state) {
+                            OrdersFeature()
+                        }
+                    )
+                }
+                .environment(\.locale, AppLanguage.traditionalChinese.locale)
+                .environment(\.calendar, TestDependencies.fixedCalendar)
+                .environment(\.timeZone, TestDependencies.fixedCalendar.timeZone)
+                .environment(\.horizontalSizeClass, .regular)
+                .environment(\.verticalSizeClass, .regular)
+                .frame(width: 704, height: 768)
 
                 // Then
                 assertSnapshot(of: view, as: .image)

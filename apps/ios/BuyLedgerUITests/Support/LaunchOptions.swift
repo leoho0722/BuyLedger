@@ -7,7 +7,7 @@
 
 import Foundation
 
-/// 描述一次 App 啟動的前置條件，並序列化成 App 端測試啟動掛鉤認得的啟動參數
+/// 描述一次 App 啟動的前置條件，並序列化為 App 測試掛鉤與 UIKit 系統使用的啟動參數
 struct LaunchOptions {
 
     // MARK: - Properties
@@ -23,6 +23,11 @@ struct LaunchOptions {
 
     /// 覆寫的 App 內語言，`nil` 代表沿用預設語言 (正體中文)
     var language: Language?
+
+    /// 覆寫 UIKit 系統字級，`nil` 代表沿用系統設定
+    ///
+    /// - Note: 這是 UIKit 系統參數，不經 `BLUITestConfiguration` 解析
+    var contentSizeCategory: ContentSizeCategory?
 
     /// 行事曆權限的模擬結果
     var calendarAccess: CalendarAccess = .granted
@@ -115,6 +120,13 @@ extension LaunchOptions {
         case english
     }
 
+    /// UIKit 系統字級，`rawValue` 傳給 `-UIPreferredContentSizeCategoryName`
+    enum ContentSizeCategory: String {
+
+        /// 最大輔助字級
+        case accessibilityExtraExtraExtraLarge = "UICTContentSizeCategoryAccessibilityXXXL"
+    }
+
     /// 行事曆權限的模擬結果，`rawValue` 對齊 App 端 `BLUITestCalendarAccess`
     enum CalendarAccess: String {
 
@@ -178,6 +190,9 @@ extension LaunchOptions {
         }
         if let language {
             arguments += ["-BLUITestLanguage", language.rawValue]
+        }
+        if let contentSizeCategory {
+            arguments += ["-UIPreferredContentSizeCategoryName", contentSizeCategory.rawValue]
         }
         arguments += ["-BLUITestCalendarAccess", calendarAccess.rawValue]
         arguments += ["-BLUITestLoadFailure", loadFailure.rawValue]

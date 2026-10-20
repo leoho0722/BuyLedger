@@ -21,12 +21,17 @@ struct RootNavigationScreen: Screen {
     // MARK: - Init
 
     /// 由受測 App 建立，並據以組出導覽分流器
+    ///
+    /// - Parameter app: 受測 App
     init(app: XCUIApplication) {
         self.app = app
         self.navigator = AppNavigator(app: app)
     }
+}
 
-    // MARK: - Computed Properties
+// MARK: - Computed Properties
+
+extension RootNavigationScreen {
 
     /// 判定根導覽就緒的根 identifier
     ///
@@ -161,11 +166,13 @@ extension RootNavigationScreen {
 
 private extension RootNavigationScreen {
 
-    /// 切到指定分頁並等待就緒
+    /// 切頁後優先等待目的地根容器，未指定時才依版面等待選取態
     ///
     /// - Parameters:
     ///   - tab: 目標分頁
     ///   - timeout: 等待目標分頁就緒的秒數
+    ///   - file: 失敗時回報的檔案位置
+    ///   - line: 失敗時回報的行號
     /// - Returns: 目標分頁是否在逾時前就緒
     func go(
         to tab: AppNavigator.Tab,
@@ -173,40 +180,46 @@ private extension RootNavigationScreen {
         file: StaticString,
         line: UInt
     ) -> Bool {
+        let isSidebarLayout = navigator.isSidebarLayout
+        let identifier = destinationRootIdentifier(for: tab)
         navigator.selectTab(tab, file: file, line: line)
-        if let identifier = destinationRootIdentifier(for: tab) {
-            return app.descendants(matching: .any)[identifier].waitForExistence(timeout: timeout)
-        }
-        return selectionElement(for: tab).wait(
-            for: NSPredicate(format: "isSelected == true"), timeout: timeout)
+        let deadline = Date.now.addingTimeInterval(timeout)
+        repeat {
+            if let identifier {
+                if app.descendants(matching: .any)[identifier].exists {
+                    return true
+                }
+            } else {
+                let selection = isSidebarLayout
+                    ? sidebarTabElement(for: tab)
+                    : tabBarButtonElement(for: tab)
+                if selection.exists && selection.isSelected {
+                    return true
+                }
+            }
+            _ = XCTWaiter().wait(for: [XCTestExpectation()], timeout: 0.1)
+        } while Date.now < deadline
+        return false
     }
 
-    /// 目的地畫面的根 identifier
+    /// 用於判定切頁就緒的目的地根 identifier
     ///
     /// - Parameter tab: 目標分頁
-    /// - Returns: 目的地根 identifier；底部 tab bar 分頁回傳 `nil`
+    /// - Returns: 目的地根 identifier；未指定根容器的分頁回傳 `nil` 並沿用選取態判斷
     func destinationRootIdentifier(for tab: AppNavigator.Tab) -> String? {
         switch tab {
         case .dashboard:
             BLAccessibilityID.Dashboard.root
 
+        case .orders:
+            BLAccessibilityID.Orders.listRoot
+
         case .more:
             BLAccessibilityID.More.root
 
-        case .orders, .campaigns, .insights:
+        case .campaigns, .insights:
             nil
         }
-    }
-
-    /// 依當前版面取承載選取態的元素
-    ///
-    /// - Parameter tab: 要查詢的分頁
-    /// - Returns: 承載分頁選取態的 UI 元素
-    func selectionElement(for tab: AppNavigator.Tab) -> XCUIElement {
-        if navigator.isSidebarLayout {
-            return sidebarTabElement(for: tab)
-        }
-        return tabBarButtonElement(for: tab)
     }
 
     /// 側邊欄的分頁列元素
@@ -214,7 +227,7 @@ private extension RootNavigationScreen {
     /// - Parameter tab: 要查詢的分頁
     /// - Returns: 側邊欄中的分頁元素
     func sidebarTabElement(for tab: AppNavigator.Tab) -> XCUIElement {
-        // 分頁列是合併朗讀的 staticText，因此以 any 查詢。
+        // 分頁列是合併朗讀的 staticText，因此以 any 查詢
         app.descendants(matching: .any)[BLAccessibilityID.Root.tab(tab.identifierKey)]
     }
 
