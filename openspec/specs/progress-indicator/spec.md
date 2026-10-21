@@ -30,7 +30,7 @@ Which of these tests lost a title before the fix varied with the simulator state
 
 #### Scenario: Bar-only progress keeps a single bar
 
-- **WHEN** a progress indicator is created with a value but without a title or current value, such as the dashboard monthly goal bar, the insights category ranking bar and the order detail cost bar
+- **WHEN** a progress indicator is created with a value but without a title or current value, such as the dashboard monthly goal bar and the insights category ranking bar
 - **THEN** it draws only the progress bar, and the rendered image is identical to the approved baseline
 
 ##### Example: bar-only progress indicators and the snapshots that show them
@@ -39,17 +39,29 @@ Which of these tests lost a title before the fix varied with the simulator state
 | --- | --- |
 | dashboard monthly goal bar in the hero card | `dashboardView_一般儀表板資料_符合基準圖` |
 | insights category ranking bar | `insightsView_一般洞察資料_符合基準圖` |
-| order detail cost component bar | `orderDetailView_成本明細內容_符合基準圖` |
 
 
 <!-- @trace
-source: progress-title-render-reliability
-updated: 2026-10-06
+source: order-detail-single-layout
+updated: 2026-10-22
 code:
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Progress/BLProgressView.swift
-  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Progress/BLProgressViewStyle.swift
-  - apps/ios/BuyLedgerTests/SnapshotTests+Dashboard.swift
-  - apps/ios/BuyLedgerUITests/Tests/Campaigns/CampaignProgressAccessibilityTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCostBreakdown.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailContentView.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCompactDetailView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRegularDetailColumn.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/ordersRegularDetailColumn_寬版詳情欄選取含成本明細訂單_符合基準圖.1.png
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailNotesView.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailItemsView.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrdersBaseline.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailCostView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedgerTests/ActionGroupingScanTests.swift
+  - apps/ios/BuyLedgerTests/OrderCostBreakdownTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailView.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderDetailSummaryView.swift
 -->
 
 ---

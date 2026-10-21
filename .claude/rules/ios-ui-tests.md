@@ -74,6 +74,14 @@ paths:
 - **轉向測試 (`XCUIDevice.shared.orientation`) 執行時，模擬器前端的 Device Hub 不可開著**：開著時裝置方向會改變但介面不轉，App 視窗維持直向，測試在等「視窗寬大於高」時逾時；關閉 Device Hub 後即恢復。
     - Device Hub 的旋轉鈕只轉外框，Orientation 選單也不一定讓介面轉向 (iPad 會轉、iPhone 17 Pro Max 不會)，兩者都不能用來驗證橫向版面。
     - 轉向後等到 `app.windows.firstMatch` 寬大於高才斷言或截圖 (`Support/Orientation.swift` 的 `rotateToLandscape`，轉回直向用 `rotateToPortrait`)：setter 只設定裝置方向，沒等就斷言會在直向取得 compact 版面而誤判通過。
+- **需要實測橫向畫面時，以 Xcode 27.1 MCP 的 `orientation` 指令轉向**：介面會跟著轉，回傳完整的橫向截圖；Device Hub 的旋轉鈕與 Orientation 選單不能驗證橫向版面 (見上一條)。
+    - 只支援 iOS 27 以上的模擬器；UI 測試仍只跑 iOS 26.x。
+    - 互動交給載入 `device-interaction` skill 的子代理：以 `DeviceInteractionStartSession` (不綁 workspace) 開連線，`DeviceInteractionSynthesize` 帶 `activationBundleId` 操作；以結構檔的 `Application UI orientation` 與 Window frame 確認方向。
+    - 建置走 `mobilebuildmcp` (`build-and-run` 裝好再連線)，不讓 Xcode 建置。
+    - 首次使用要在 Xcode 授權 MCP：授權時開另一個空白專案，不開 BuyLedger 專案，因為 Xcode 開啟 BuyLedger 時可能刪除 `Package.resolved`。
+    - 連線回報 cannot be connected 時關掉 session，以新名稱重開：同名 session 短時間內不能重用。
+    - 用完一定要 `DeviceInteractionEndSession`。
+    - Device Hub 開著不影響 Xcode MCP 轉向，但不與 XCUITest 轉向測試同時進行 (後者要關閉 Device Hub)。
 - **轉向測試失敗且 App 視窗維持直向時，先重開模擬器再重跑，重開後仍失敗才是真問題**：模擬器長時間連續跑 UI 測試後，`XCUIDevice.shared.orientation` 可能只改變裝置方向、介面不轉，屬環境狀態，不是產品或測試缺陷。
     - 判別：`OrientationLayoutTests` 在「轉向後 App 視窗寬仍未大於高」失敗，且單獨重跑同樣失敗；沒有特定測試類別會穩定觸發，不必逐類排查，也不改測試碼或放寬等待。
     - 重開機：`mobilebuildmcp` 沒有關機指令，先開啟 Device Hub 再結束它 (結束時會把模擬器全部關機)，再以 `mobilebuildmcp simulator-management boot` 開機。

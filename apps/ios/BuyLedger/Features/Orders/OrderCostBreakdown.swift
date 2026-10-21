@@ -41,7 +41,7 @@ extension OrderCostBreakdown {
         case yellow
     }
 
-    /// 一項成本的標題、金額、占比與語意色調
+    /// 一項成本的標題、金額與語意色調
     struct Component: Equatable, Identifiable, Sendable {
 
         /// 成本項目名稱
@@ -50,32 +50,8 @@ extension OrderCostBreakdown {
         /// 成本項目金額
         let value: Decimal
 
-        /// 占訂單總成本的比例，介於 `0` 與 `1` 之間，供進度條使用
-        let fraction: Double
-
         /// 畫面應使用的色調
         let tone: Tone
-
-        /// 建立成本項目，並依訂單總成本算出占比
-        ///
-        /// - Parameters:
-        ///   - title: 成本項目名稱
-        ///   - value: 成本項目金額
-        ///   - tone: 畫面應使用的色調
-        ///   - total: 訂單總成本，非正數時以 `1` 作為分母
-        init(
-            title: String,
-            value: Decimal,
-            tone: Tone,
-            total: Decimal
-        ) {
-            let totalValue = NSDecimalNumber(decimal: total).doubleValue
-            let amount = NSDecimalNumber(decimal: value).doubleValue
-            self.title = title
-            self.value = value
-            self.fraction = max(0, min(1, amount / (totalValue > 0 ? totalValue : 1)))
-            self.tone = tone
-        }
 
         /// 以原有標題識別成本項目
         var id: String {
@@ -107,10 +83,9 @@ extension OrderCostBreakdown {
     /// 整理商品、手續費與貨到付款運費，只保留正值項目
     ///
     /// - Parameter order: 要顯示成本拆解的訂單
-    /// - Returns: 保留既有順序、標題與金額的成本項目，各項附上占總成本的比例
+    /// - Returns: 保留既有順序、標題與金額的成本項目
     static func components(for order: LedgerOrder) -> [Component] {
         let summary = order.summary
-        let total = summary.totalCost
         let codDomesticShipping = order.isCashOnDelivery ? order.domesticShipping : 0
         let codInternationalShipping = order.isCashOnDelivery ? order.internationalShipping : 0
         let codForeignDomesticShipping = order.isCashOnDelivery ? order.foreignDomesticShipping : 0
@@ -118,44 +93,37 @@ extension OrderCostBreakdown {
             Component(
                 title: "orders.detail.label.itemCost",
                 value: order.itemCost,
-                tone: Tone.accent,
-                total: total
+                tone: Tone.accent
             ),
             Component(
                 title: "orders.detail.label.cardFee",
                 value: summary.cardFee,
-                tone: Tone.orange,
-                total: total
+                tone: Tone.orange
             ),
             Component(
                 title: "orders.detail.label.platformFee",
                 value: summary.platformFee,
-                tone: Tone.teal,
-                total: total
+                tone: Tone.teal
             ),
             Component(
                 title: "orders.detail.label.paymentProcessingFee",
                 value: summary.paymentFee,
-                tone: Tone.purple,
-                total: total
+                tone: Tone.purple
             ),
             Component(
                 title: "orders.detail.label.localShipping",
                 value: codDomesticShipping,
-                tone: Tone.indigo,
-                total: total
+                tone: Tone.indigo
             ),
             Component(
                 title: "orders.detail.label.internationalShipping",
                 value: codInternationalShipping,
-                tone: Tone.pink,
-                total: total
+                tone: Tone.pink
             ),
             Component(
                 title: "orders.detail.label.foreignLocalShipping",
                 value: codForeignDomesticShipping,
-                tone: Tone.yellow,
-                total: total
+                tone: Tone.yellow
             ),
         ]
             .filter { $0.value > 0 }

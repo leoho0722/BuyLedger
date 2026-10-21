@@ -12,23 +12,14 @@ struct OrderDetailNotesView: View {
 
     // MARK: - Properties
 
-    /// 詳情採用的窄欄或寬欄版面
-    let layout: OrderDetailView.OrderDetailLayout
-
     /// 目前詳情顯示的訂單
     let order: LedgerOrder
 
     // MARK: - Body
 
-    /// 詳情區段的畫面骨架
+    /// 呈現備註標題與內文，並允許選取內文文字
     var body: some View {
-        switch layout {
-        case .compact:
-            compactNotes
-
-        case .wide:
-            wideNotesCard
-        }
+        notesSection
     }
 }
 
@@ -36,9 +27,9 @@ struct OrderDetailNotesView: View {
 
 private extension OrderDetailNotesView {
 
-    /// 窄欄版面的唯讀備註卡片，由父層判斷有備註時顯示
+    /// 顯示唯讀備註卡片，由父層判斷有備註時呈現
     @ViewBuilder
-    var compactNotes: some View {
+    var notesSection: some View {
         VStack(alignment: .leading, spacing: BLSpacing.small) {
             Text("orders.detail.label.notes")
                 .blTextStyle(.headline)
@@ -53,29 +44,10 @@ private extension OrderDetailNotesView {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
-
-    /// 寬欄版面的唯讀備註卡片
-    var wideNotesCard: some View {
-        BLCard {
-            VStack(alignment: .leading, spacing: BLSpacing.small) {
-                Text("orders.detail.label.notes")
-                    .font(BLTypographyStyle.footnote.font.weight(.semibold))
-                    .foregroundStyle(.blSecondaryLabel)
-                    .textCase(.uppercase)
-
-                Text(order.notes)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .blTextStyle(.subhead)
-                    .foregroundStyle(.blLabel)
-                    .textSelection(.enabled)
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
 }
 
 // MARK: - Preview
 
 #Preview("訂單詳情區段") {
-    OrderDetailNotesView(layout: .compact, order: LedgerOrder.sampleOrders[0])
+    OrderDetailNotesView(order: LedgerOrder.sampleOrders[0])
 }

@@ -95,7 +95,8 @@ paths:
     - 畫面不讀時間時 (如開團列表、首頁、分析頁)，改在建構 State 時帶入固定的 `dateContext`，不靠 `withFixedNow` 提供「現在」。
     - baseline 在 `BuyLedgerTests/__Snapshots__/<測試檔名>/`：目錄跟著呼叫 `assertSnapshot` 的測試檔名 (如 `SnapshotTests+Orders.swift` 對應 `SnapshotTests+Orders/`)；拆檔或搬移測試時基準圖要連同目錄一起搬、不重錄，沒跟著搬會被當成缺少基準圖。record 流程見 `apps/ios/README.md`。
     - 尺寸以各測試的 `.frame` 為準：iPhone 直向 393×852 (長頁面用 393×1800)、iPad 全螢幕寬版 1024×768、大尺寸 iPhone 橫向 956×440 (要露出下方卡片時只加高，如分析頁 956×1000)。
-    - 訂單三欄分欄拍：清單欄 320×768、詳情欄 704×768，各自包 `NavigationStack` 後渲染；離屏渲染畫不出工具列項目，工具列與欄位組合由 UI 測試守，snapshot 只守欄內內容。
+    - 訂單三欄只拍清單欄 320×768，包 `NavigationStack` 後渲染；離屏渲染畫不出工具列項目，工具列與欄位組合由 UI 測試守，snapshot 只守欄內內容。
+        - 詳情欄不拍：內容與 iPhone 推入詳情是同一份程式碼 (`OrderDetailView`)，由 iPhone 詳情截圖守；多拍一張只會讓每次調整詳情內容多重錄一張。
     - 以 sheet 內容 View 為拍攝對象時 (如 `OrderFilterSheet`、`OrderCategoryPickerSheet`) 用 `.image(drawHierarchyInKeyWindow: true)`：離屏渲染的 `.image` 會錄成整張白圖；錄製後逐張目視確認不是空白 (參考 `SnapshotTests+OrderFilterEmptyStates`)。
     - 依版面分類分流的畫面 (`OrdersView`、`DashboardView`、`InsightsView`) 連窄版 snapshot 也要同時注入 `.environment(\.horizontalSizeClass, …)` 與 `.environment(\.verticalSizeClass, …)`：iPhone 直向是水平 `.compact`、垂直 `.regular`，寬版是兩者都 `.regular`，iPhone 橫向是水平 `.regular`、垂直 `.compact`；只注入水平會落到 snapshot host 預設的垂直尺寸分類。
 - **執行前的模擬器外觀設定見 `apps/ios/CLAUDE.md`；含 `.borderedProminent` 工具列按鈕的畫面的渲染方式見 `ios-design-system.md`**。

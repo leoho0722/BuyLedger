@@ -48,7 +48,6 @@ struct ActionGroupingScanTests {
         "Features/Orders/OrdersRegularListColumn.swift",
         "Features/Orders/OrdersRegularDetailColumn.swift",
         "Features/Orders/Components/OrderDetailView.swift",
-        "Features/Orders/Components/OrderCompactDetailView.swift",
         "Features/Orders/Components/OrderDetailContentView.swift",
         "Features/Orders/Components/OrderDetailCostView.swift",
         "Features/Orders/Components/OrderDetailItemsView.swift",

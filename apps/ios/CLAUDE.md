@@ -62,6 +62,7 @@
     - 列位於分頁列範圍下方時 `touch` 會點到分頁列，先捲動讓目標露出再點。
     - sheet 內 `List` 的最後一列，`ui-automation` 的 `touch` 與 `tap` 可能回報成功卻沒有觸發，同一 sheet 的其他列正常。遇到時改以 XCUITest 驗證 (正式 UI 測試，或量完即刪的暫時測試)，不反覆重試。
     - iPad 模擬器的多工模式要維持「全螢幕 App」：「視窗 App」模式下 `snapshot-ui` 會失敗 (無法取得可及性樹)。
+- **需要實測橫向畫面時改用 Xcode 27.1 MCP 的 `orientation` 指令轉向，前提與流程見 `.claude/rules/ios-ui-tests.md` 的「轉向測試」段**：`mobilebuildmcp` 沒有轉向指令，Device Hub 轉向不能驗證版面；該規則檔只在碰到 UI 測試檔時自動載入，不寫 UI 測試的實測要主動讀它。
 - **macOS BSD `sed -E` 清尾隨空白用 `[[:space:]]+$`，不用 `[ \t]`**：`[ \t]` 會匹配字面的反斜線與 `t`，把行尾的 t 一起吃掉，落在註解或字串內時編譯器不會發現。
 
 ## 架構分層

@@ -19,7 +19,9 @@ paths:
 - **不用 `.toolbar` 的 `.bottomBar`**：批次與選取操作放 `.primaryAction` 等頂部 placement；compact 的筆數由 `navigationTitle` 承載 (`OrderListFeature.State.navigationTitleKey`)，regular 清單欄由欄內頂部承載 (見下方 inline 標題條目)。
     - compact 的底部 tab bar 會蓋住 `.bottomBar`；iPad 可拖曳視窗的下緣可能超出螢幕。
 - **訂單多選工具列與可勾選列只有一份定義** (`Features/Orders/Components/` 的 `OrdersToolbarContent`／`OrderSelectableRow`)，compact 與 regular 共用，不各自維護等價實作。
-- **訂單詳情工具列只有一份定義** (`OrderDetailToolbarContent`)：寬版詳情欄與 iPhone 推入詳情共用，`OrderDetailMenu` 不分版面外觀；標題用系統導覽列，不自繪標題列。
+- **訂單詳情畫面只有一份定義** (`OrderDetailView`)：iPad 詳情欄與 iPhone 推入詳情都直接使用 `OrderDetailView(store:)`，內容排版不分版面，不為寬版另做分支。
+    - 客戶名稱 inline 標題與工具列 (`OrderDetailToolbarContent`) 由 `OrderDetailView` 在有訂單時自己宣告，呼叫端不另外包裝：兩處各自包裝時可能只改到一處，現有測試不能保證兩處始終一致。`OrdersRegularDetailColumn` 只負責無選取或選取的訂單已不存在時的空狀態。
+    - `OrderDetailMenu` 不分版面外觀；標題用系統導覽列，不自繪標題列。
 - **regular 版面的分欄型態由 `RootSidebarLayout.SplitColumns` 宣告**：`splitColumns(for:)` 是「哪些分頁是清單加詳情」的唯一對應。新增清單加詳情分頁時在這裡加 `.listDetail` 對應，並在 `splitContent` 加對應的三欄分支；其他分頁共用同一個單欄分支，切換分頁時不重建 split view。
     - 不綁 `columnVisibility`、不指定 split view style：側邊欄是否並排由系統決定 (窄的 iPad 直向會收起，由「顯示側邊欄」鈕或左緣滑動叫出，叫出後覆蓋在清單上)；`.balanced` 改變不了三欄直向的覆蓋。
     - **欄寬在宣告欄位的地方設定** (`RootSidebarLayout` 的欄位閉包或欄位根 view)：掛在 `.searchable` 內層的 `navigationSplitViewColumnWidth` 不生效。訂單清單欄寬由 `RootSidebarLayout` 依清單欄左緣與三欄右緣計算，側邊欄並排時與詳情欄平分、其餘 320；直向的 content 欄有系統上限，動態要求超過上限時系統會收起清單欄，所以平分只在側邊欄並排時套用，也不以量到的欄寬回寫欄寬。

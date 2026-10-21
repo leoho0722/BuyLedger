@@ -8,7 +8,7 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 寬版 (iPad 全螢幕) 訂單瀏覽的詳情欄，以系統導覽列顯示選取訂單的客戶名稱與操作選單
+/// regular 版面三欄中的訂單詳情欄
 struct OrdersRegularDetailColumn: View {
 
     // MARK: - Properties
@@ -18,14 +18,14 @@ struct OrdersRegularDetailColumn: View {
 
     // MARK: - Body
 
-    /// 有選取的訂單時顯示詳情，沒有時顯示選擇提示
+    /// 選取訂單仍存在時顯示共用詳情畫面，否則顯示選擇提示
     var body: some View {
         if let detailStore = store.scope(
             state: \.detail.regularDetail,
             action: \.detail.regularDetail
         ),
-           let order = detailStore.order {
-            detail(order: order, store: detailStore)
+           detailStore.order != nil {
+            OrderDetailView(store: detailStore)
         } else {
             emptyState
         }
@@ -46,21 +46,6 @@ private extension OrdersRegularDetailColumn {
         .background(.blBackground)
         .accessibilityElement(children: .contain)
         .accessibilityIdentifier(BLAccessibilityID.Orders.detailEmptyState)
-    }
-
-    /// 選取訂單的詳情與系統導覽列
-    ///
-    /// - Parameters:
-    ///   - order: 要顯示的訂單
-    ///   - store: 右欄詳情的狀態與互動入口
-    /// - Returns: 詳情 view
-    func detail(order: LedgerOrder, store: StoreOf<OrderDetailFeature>) -> some View {
-        OrderDetailView(store: store, layout: .wide)
-            .navigationTitle(Text(verbatim: order.customer.name))
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                OrderDetailToolbarContent(store: store)
-            }
     }
 }
 

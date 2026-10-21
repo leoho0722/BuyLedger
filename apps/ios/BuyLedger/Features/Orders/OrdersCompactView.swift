@@ -72,7 +72,7 @@ private extension OrdersCompactView {
         } destination: { pathStore in
             switch pathStore.case {
             case .detail(let detailStore):
-                OrderCompactDetailView(store: detailStore)
+                OrderDetailView(store: detailStore)
                     .alert(alertBinding(isDetail: true))
             }
         }
@@ -96,7 +96,7 @@ private extension OrdersCompactView {
 
 private extension OrdersCompactView {
 
-    /// 唯一對話框只交給目前最上層的清單或推入詳情
+    /// 提供對話框綁定，讓提示只出現在目前最上層的清單或推入詳情
     ///
     /// - Parameter isDetail: 是否為推入的詳情畫面
     /// - Returns: 最上層畫面的對話框綁定，其餘為常數 `nil`
