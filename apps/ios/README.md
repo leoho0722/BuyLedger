@@ -104,6 +104,7 @@ apps/ios/
 │   ├── Screens/                  # Page Object
 │   └── Tests/                    # 流程與冒煙測試，依功能分組
 │       └── More/                 # 「更多」入口的主檔管理流程
+├── scripts/                      # upload-testflight.sh (Release 打包並上傳 TestFlight)
 ├── BuyLedger.xctestplan          # 主 scheme 測試計畫 (鎖 zh-Hant/TW、字母序執行、覆蓋率僅統計 App target)
 ├── BuyLedgerUITests.xctestplan   # UI 主回歸測試計畫 (鎖 zh-Hant/TW、關閉隨機順序)
 └── BuyLedgerUITests-Performance.xctestplan  # UI 效能測試計畫 (啟動量測，獨立於主回歸)
@@ -233,6 +234,30 @@ bun run unlock
 ```
 
 生成檔與 schema 一起 commit。生成檔在磁碟上**預設唯讀** (`generate` 會 chmod `0o444` 防手改)；Xcode 編譯只讀取、不受影響，重生成會自動解鎖重寫。`Core/Domain/` 是 file system synchronized group，新增／刪除型別後請 iOS + iPadOS 各 build 一次，確認新檔被正確拾取。手寫業務邏輯 (computed properties、display title、自訂 `Codable`) 放在與型別同名的 extension 檔，不放生成檔。
+
+### 6. 發佈 TestFlight
+
+先在 `project.pbxproj` 改好 `BuyLedger` target 的 `MARKETING_VERSION` 與 `CURRENT_PROJECT_VERSION` (兩個測試 target 同步為相同值) 並提交、標 `ios-v<版號>` tag，再從 repo 根目錄執行：
+
+```bash
+# Release 打包並上傳 TestFlight (上傳前會詢問確認，加 --yes 略過)
+apps/ios/scripts/upload-testflight.sh
+
+# 只打包並匯出 .ipa 到本機，不上傳
+apps/ios/scripts/upload-testflight.sh --export-only
+
+# 改用 App Store Connect API key 驗證 (三個變數要同時設定)
+ASC_KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_XXXX.p8 \
+ASC_KEY_ID=XXXX \
+ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
+  apps/ios/scripts/upload-testflight.sh
+```
+
+- 未設定 API key 時沿用 Xcode Settings › Accounts 已登入的帳號，該帳號要能發佈 team `23JEQ2524P`。
+- 腳本不遞增 build 號，上傳時也關閉 Xcode 的自動改號，上傳的版號與 build 號就是提交的值；同一版號的 build 號不可重複上傳。
+- `BuyLedger/`、`BuyLedger.xcodeproj/`、`BuyLedgerAccessibilityIDs/` 有未提交變更時拒絕打包；HEAD 沒有對應的 `ios-v<版號>` tag 時只警告。
+- archive 放在 `~/Library/Developer/Xcode/Archives/`，Xcode Organizer 看得到；每次執行的 `ExportOptions.plist`、log 與 `--export-only` 匯出的 .ipa 放在 `apps/ios/build/testflight/<版號>-<build>-<時間>/` (已 gitignore)。
+- 打包後若 `.xcstrings` 被 Xcode 改寫，腳本會列出變更，確認後再還原。
 
 ## 架構速覽
 

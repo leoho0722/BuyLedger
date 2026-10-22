@@ -29,8 +29,11 @@
 
 ## 建置與開發指令
 
-- **不退回原生 `xcodebuild`／`xcrun`／`simctl`**，明文例外有三項：
+- **不退回原生 `xcodebuild`／`xcrun`／`simctl`**，明文例外有四項：
     - `agvtool` (版本管理不在 MobileBuildMCP 能力範圍)。
+    - `scripts/upload-testflight.sh` 以 `xcodebuild archive`／`-exportArchive` 打包上傳 TestFlight (MobileBuildMCP 沒有 archive 與 export 工具)；發版一律跑這支腳本，不另寫 xcodebuild 指令。
+        - 腳本不遞增 build 號，執行前先提交版號。
+        - 代為執行上傳前要先取得使用者確認。
     - CI (`.github/workflows/ci.yml`) 以 `npm install -g mobilebuildmcp@<釘選版本>` 安裝 CLI，之後所有 build 與 test 仍經它執行；升級 CLI 時同步更新 workflow 的釘選版本。
     - `xcrun xcresulttool get test-results summary --path <bundle>` 僅用於唯讀讀取 result bundle 摘要 (MobileBuildMCP 沒有等價指令)。
 - **每次 build 或 build-and-run 前先 `cd apps/ios && agvtool next-version -all` 把 build number +1**，跑 test 不遞增 (test binary 不會安裝或散佈，遞增只製造 pbxproj 雜訊)。
