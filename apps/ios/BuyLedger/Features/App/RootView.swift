@@ -8,43 +8,65 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// App 根畫面，依平台與水平尺寸切換主要導覽樣式
+/// App 根畫面，依版面分類切換主要導覽樣式
 struct RootView: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
-    /// App 根層級 store
+    /// 目前版面分類，窄版使用底部分頁列，寬版使用側邊欄
+    @Environment(\.blLayoutClass) private var layoutClass
+
+    /// 畫面的狀態與事件來源，由 App 進入點建立後傳入
     @Bindable var store: StoreOf<RootFeature>
 
-    /// 目前水平尺寸分類
-    @Environment(\.horizontalSizeClass)
-    private var horizontalSizeClass
+    // MARK: - Body
 
-    // MARK: - View Body
-
-    /// App 根畫面的內容
-    ///
-    /// 外觀一律跟隨系統：外觀是系統層級設定，App 內重複切換會讓使用者困惑系統設定是否生效
+    /// 根畫面骨架：持久層無法開啟時顯示復原畫面，否則顯示主內容，並套用 App 選用的語系
     var body: some View {
-        layout
-            .environment(\.locale, store.settings.language.locale)
-            .task {
-                await store.send(.task).finish()
+        Group {
+            if let failureStore = store.scope(
+                state: \.persistenceFailure,
+                action: \.persistenceFailure.presented
+            ) {
+                PersistenceFailureView(store: failureStore)
+            } else {
+                mainContent
             }
+        }
+        .environment(\.locale, store.preferences.language.locale)
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension RootView {
 
-    /// 依尺寸分類選擇對應的根層級導覽佈局
-    @ViewBuilder
+    /// 依版面分類選擇對應的根層級導覽佈局
     var layout: some View {
-        if horizontalSizeClass == .compact {
-            RootTabLayout(store: store, language: store.settings.language)
-        } else {
-            RootSidebarLayout(store: store, language: store.settings.language)
+        Group {
+            switch layoutClass {
+            case .compact:
+                RootTabLayout(store: store, language: store.preferences.language)
+
+            case .regular:
+                RootSidebarLayout(store: store, language: store.preferences.language)
+            }
+        }
+        // split view 的欄位會回報自己的尺寸分類，子樹改用視窗的版面
+        .environment(\.blLayoutClass, layoutClass)
+    }
+
+    /// 持久層正常時的主內容，依鎖定狀態切換鎖定畫面與一般佈局；啟動工作只在這一層執行
+    var mainContent: some View {
+        Group {
+            if store.appLock.isLocked {
+                AppLockView(store: store.scope(state: \.appLock, action: \.appLock))
+            } else {
+                layout
+            }
+        }
+        .task {
+            await store.send(.view(.task)).finish()
         }
     }
 }

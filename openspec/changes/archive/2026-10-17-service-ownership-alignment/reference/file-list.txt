@@ -1,0 +1,199 @@
+# 本 change 的檔案清單 (2026-10-16 盤點，worktree /Users/leoho/Develop/BuyLedger-6c)
+# 每列後面是負責的 task；0.1 以「修改」與「搬移」段的現有 Swift 檔量測基準 (搬移以原路徑量測)
+# 標「刪除」的搬移列與刪除段的檔在刪除前只做讓編譯通過的最小修改，不整檔對齊、不列入基準與整檔檢查
+# 新增檔建立後加入整檔檢查；因 300 行上限另拆的檔加到「新增」段並在 task 下方註明
+
+## 修改 (111)
+apps/ios/BuyLedger/App/Testing/DependencyValues+BLUITestOverrides.swift	1.4 1.5 1.6 3.1
+apps/ios/BuyLedger/Features/App/RootFeature.swift	1.7 2.4 2.5
+apps/ios/BuyLedger/Features/App/RootNavigationOperations.swift	2.4
+apps/ios/BuyLedger/Features/Campaigns/CampaignPresentationFeature+Destination.swift	1.4
+apps/ios/BuyLedger/Features/Campaigns/CampaignReminderFeature.swift	1.5
+apps/ios/BuyLedger/Features/Campaigns/CampaignWritesFeature.swift	1.4
+apps/ios/BuyLedger/Features/Campaigns/Data/CampaignService+Dependency.swift	1.4 1.5
+apps/ios/BuyLedger/Features/Campaigns/Data/CampaignService+Preview.swift	1.4 1.5
+apps/ios/BuyLedger/Features/Campaigns/Data/CampaignService.swift	1.4 1.5
+apps/ios/BuyLedger/Features/Lookups/LookupItemOperations.swift	2.2
+apps/ios/BuyLedger/Features/Lookups/LookupManagementFeature.swift	2.2
+apps/ios/BuyLedger/Features/Lookups/PaymentMethodCorrectionFeature.swift	2.3
+apps/ios/BuyLedger/Features/Lookups/PaymentMethodEditPlan.swift	2.3
+apps/ios/BuyLedger/Features/More/MoreFeature.swift	2.4 2.5
+apps/ios/BuyLedger/Features/Orders/Components/OrderEditCampaignSection.swift	3.2
+apps/ios/BuyLedger/Features/Orders/Components/OrderEditPickerDestination.swift	3.2
+apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPreviewFixtures.swift	2.6
+apps/ios/BuyLedger/Features/Orders/OrderEditDraftOperations.swift	1.2 3.2
+apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift	1.2 3.2
+apps/ios/BuyLedger/Features/Orders/OrderEditOptions.swift	3.2
+apps/ios/BuyLedger/Features/Orders/OrderEditPickerOperations.swift	1.2 3.2
+apps/ios/BuyLedger/Features/Orders/OrderEditPickersFeature.swift	3.2
+apps/ios/BuyLedger/Features/Orders/OrderListFeature.swift	2.6
+apps/ios/BuyLedger/Features/Orders/OrderWriteOperations.swift	1.1 1.2 2.5
+apps/ios/BuyLedger/Features/Orders/OrderWritesFeature.swift	1.1 1.2 2.5
+apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan+Writes.swift	2.5
+apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift	1.7 2.4 2.5 2.6
+apps/ios/BuyLedger/Features/Orders/OrdersFilterOperations.swift	2.6
+apps/ios/BuyLedger/Features/Orders/OrdersLoadFeature.swift	2.4
+apps/ios/BuyLedger/Features/Orders/OrdersPresentationFeature.swift	1.2 2.5
+apps/ios/BuyLedger/Features/Orders/OrdersWriteOutcome.swift	1.2 2.5
+apps/ios/BuyLedgerTests/ActionGroupingScanTests+Scenarios.swift	1.7
+apps/ios/BuyLedgerTests/BuyLedgerDatabaseTests.swift	1.1
+apps/ios/BuyLedgerTests/CampaignFeatureTests+DeletionReminder.swift	1.5
+apps/ios/BuyLedgerTests/CampaignFeatureTests+FailureTimingFollowUp.swift	1.4
+apps/ios/BuyLedgerTests/CampaignFeatureTests+ReminderIntegration.swift	1.5
+apps/ios/BuyLedgerTests/CampaignFeatureTests+ReminderRename.swift	1.4 1.5
+apps/ios/BuyLedgerTests/CampaignIntegrationTests+Delete.swift	1.7
+apps/ios/BuyLedgerTests/CampaignIntegrationTests+Navigation.swift	1.7
+apps/ios/BuyLedgerTests/CampaignIntegrationTests+Receipt.swift	1.7
+apps/ios/BuyLedgerTests/CampaignIntegrationTests+Rename.swift	1.4 1.7
+apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Failures.swift	1.5
+apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Rebuild.swift	1.5
+apps/ios/BuyLedgerTests/CampaignReminderFeatureTests+Removal.swift	1.5
+apps/ios/BuyLedgerTests/CampaignReminderFeatureTests.swift	1.5
+apps/ios/BuyLedgerTests/CampaignServiceTests+Delete.swift	1.1 1.5
+apps/ios/BuyLedgerTests/CampaignServiceTests+DeleteFailure.swift	1.5
+apps/ios/BuyLedgerTests/CampaignServiceTests.swift	1.4 3.1
+apps/ios/BuyLedgerTests/CampaignWritesFeatureTests+Rename.swift	1.4
+apps/ios/BuyLedgerTests/CampaignWritesFeatureTests+Save.swift	1.4
+apps/ios/BuyLedgerTests/LookupManagementFeatureTests+AlertTiming.swift	2.3
+apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Failures.swift	2.2
+apps/ios/BuyLedgerTests/LookupManagementFeatureTests+Forms.swift	2.2
+apps/ios/BuyLedgerTests/LookupManagementFeatureTests+PaymentMethodCorrection.swift	2.3
+apps/ios/BuyLedgerTests/LookupManagementFeatureTests.swift	2.2
+apps/ios/BuyLedgerTests/MoreFeatureTests+Relays.swift	2.4 2.5
+apps/ios/BuyLedgerTests/OrderEditCampaignOptionsTests.swift	3.2
+apps/ios/BuyLedgerTests/OrderEditFeatureTests+Campaigns.swift	3.2
+apps/ios/BuyLedgerTests/OrderEditFeatureTests+Categories.swift	3.2
+apps/ios/BuyLedgerTests/OrderEditFeatureTests+Reconciliation.swift	3.2
+apps/ios/BuyLedgerTests/OrderEditOptionsTests.swift	3.2
+apps/ios/BuyLedgerTests/OrderEditPickersFeatureTests.swift	3.2
+apps/ios/BuyLedgerTests/OrderFilterFeatureTests.swift	2.6
+apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterPending.swift	2.6
+apps/ios/BuyLedgerTests/OrderServiceResidueTests.swift	1.1 3.1
+apps/ios/BuyLedgerTests/OrderServiceTests+BatchWrites.swift	1.1
+apps/ios/BuyLedgerTests/OrderServiceTests+Concurrency.swift	1.1
+apps/ios/BuyLedgerTests/OrderServiceTests+Create.swift	1.1
+apps/ios/BuyLedgerTests/OrderServiceTests+Merge.swift	1.1
+apps/ios/BuyLedgerTests/OrderServiceTests+MergeFailureMapping.swift	1.1
+apps/ios/BuyLedgerTests/OrderServiceTests+WriteFailures.swift	1.1
+apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Create.swift	1.1
+apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Merge.swift	1.1
+apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Presentation.swift	2.6
+apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Writes.swift	1.2 2.5
+apps/ios/BuyLedgerTests/OrdersFeatureTests+Create.swift	1.1
+apps/ios/BuyLedgerTests/OrdersFeatureTests+DeleteEditFailures.swift	1.7 2.4
+apps/ios/BuyLedgerTests/OrdersFeatureTests+FailureTiming.swift	2.6
+apps/ios/BuyLedgerTests/OrdersFeatureTests+ListRequests.swift	2.4
+apps/ios/BuyLedgerTests/OrdersFeatureTests+LoadAndSummary.swift	1.7 2.4
+apps/ios/BuyLedgerTests/OrdersFeatureTests+MergeWrites.swift	1.1
+apps/ios/BuyLedgerTests/OrdersFeatureTests+OptionWriteFailures.swift	1.2 2.5
+apps/ios/BuyLedgerTests/OrdersFeatureTests+OptionWrites.swift	1.2 2.5 2.6 3.2
+apps/ios/BuyLedgerTests/OrdersFeatureTests+SaveFailureTiming.swift	1.1
+apps/ios/BuyLedgerTests/OrdersFeatureTests+StatusFailures.swift	1.7 2.4
+apps/ios/BuyLedgerTests/OrdersFeatureTests.swift	2.4
+apps/ios/BuyLedgerTests/OrdersLoadFeatureTests+Requests.swift	2.4
+apps/ios/BuyLedgerTests/OrdersLoadFeatureTests.swift	2.4
+apps/ios/BuyLedgerTests/OrdersLoadStateTests.swift	1.7 2.4
+apps/ios/BuyLedgerTests/OrdersPresentationFeatureTests+Delegate.swift	1.2 2.5
+apps/ios/BuyLedgerTests/OrdersPresentationFeatureTests.swift	1.2 2.5
+apps/ios/BuyLedgerTests/PaymentMethodCorrectionFeatureTests.swift	2.3
+apps/ios/BuyLedgerTests/RootFeatureTests+CampaignLoading.swift	1.7 2.4
+apps/ios/BuyLedgerTests/RootFeatureTests+Campaigns.swift	1.4 1.7
+apps/ios/BuyLedgerTests/RootFeatureTests+Cascade.swift	1.7
+apps/ios/BuyLedgerTests/RootFeatureTests+CurrencyCodes.swift	2.4
+apps/ios/BuyLedgerTests/RootFeatureTests+DeepLinks.swift	1.7 2.4
+apps/ios/BuyLedgerTests/RootFeatureTests+Fixtures.swift	1.7 2.4
+apps/ios/BuyLedgerTests/RootFeatureTests+Foreground.swift	2.4
+apps/ios/BuyLedgerTests/RootFeatureTests+LoadRequests.swift	1.7 2.4
+apps/ios/BuyLedgerTests/RootFeatureTests+LookupRename.swift	1.7 2.2 2.6 3.2
+apps/ios/BuyLedgerTests/RootFeatureTests+LookupSync.swift	1.2 1.7 2.2 2.5 2.6 3.2
+apps/ios/BuyLedgerTests/RootFeatureTests+NewOrderOptions.swift	2.5 2.6 3.2
+apps/ios/BuyLedgerTests/RootFeatureTests+OrderFilters.swift	1.7 2.4
+apps/ios/BuyLedgerTests/RootFeatureTests+PaymentMethodCorrection.swift	1.7 2.3 2.6
+apps/ios/BuyLedgerTests/RootFeatureTests+PaymentMethodRename.swift	1.7 2.2 2.6 3.2
+apps/ios/BuyLedgerTests/RootFeatureTests+SharedOrders.swift	1.7
+apps/ios/BuyLedgerTests/RootFeatureTests.swift	2.4
+apps/ios/BuyLedgerTests/ServiceTestValueStrictnessTests.swift	1.7 2.4
+apps/ios/BuyLedgerTests/SnapshotTests+OrdersBaseline.swift	2.6
+apps/ios/BuyLedgerTests/StorageFailureWrappingTests.swift	1.1 3.1
+
+## 搬移 (git mv，13)
+apps/ios/BuyLedger/Core/Dependencies/OrderService.swift -> apps/ios/BuyLedger/Features/Orders/Data/OrderService.swift	1.1 3.1
+apps/ios/BuyLedger/Core/Dependencies/OrderService+Dependency.swift -> apps/ios/BuyLedger/Features/Orders/Data/OrderService+Dependency.swift	1.1 3.1
+apps/ios/BuyLedger/Core/Dependencies/OrderService+Preview.swift -> apps/ios/BuyLedger/Features/Orders/Data/OrderService+Preview.swift	1.1 3.1
+apps/ios/BuyLedger/Core/Dependencies/OrderService+Reads.swift -> apps/ios/BuyLedger/Features/Orders/Data/OrderService+Reads.swift	1.1
+apps/ios/BuyLedger/Core/Dependencies/OrderService+Renames.swift -> apps/ios/BuyLedger/Features/Orders/Data/OrderService+Renames.swift	1.1，3.1 刪除
+apps/ios/BuyLedger/Core/Dependencies/OrderService+Writes.swift -> apps/ios/BuyLedger/Features/Orders/Data/OrderService+Writes.swift	1.1
+apps/ios/BuyLedger/Core/Persistence/OrderPersistenceError.swift -> apps/ios/BuyLedger/Features/Orders/Data/OrderError.swift	1.1
+apps/ios/BuyLedger/Features/Orders/OrderOptionWritePlan.swift -> apps/ios/BuyLedger/Features/Lookups/LookupAdditionRequest.swift	1.2
+apps/ios/BuyLedgerTests/OrderServiceTests+Renames.swift -> apps/ios/BuyLedgerTests/LookupServiceTests+Renames.swift	1.3 3.1
+apps/ios/BuyLedgerTests/OrderServiceTests+RenameFailures.swift -> apps/ios/BuyLedgerTests/LookupServiceTests+RenameFailures.swift	1.1 1.3
+apps/ios/BuyLedgerTests/OrderServiceTests+RenameNoOps.swift -> apps/ios/BuyLedgerTests/LookupServiceTests+RenameNoOps.swift	1.3 3.1
+apps/ios/BuyLedgerTests/OrderServiceTests+RenameSupport.swift -> apps/ios/BuyLedgerTests/LookupServiceTests+RenameSupport.swift	1.3 3.1
+apps/ios/BuyLedgerTests/CampaignReminderServiceTests.swift -> apps/ios/BuyLedgerTests/CampaignServiceTests+Reminders.swift	1.5
+
+## 新增 (38)
+apps/ios/BuyLedger/App/Testing/DependencyValues+BLUITestLookupOverrides.swift	1.6 3.1
+apps/ios/BuyLedger/Features/Campaigns/Data/CampaignService+Reminders.swift	1.5
+apps/ios/BuyLedger/Features/Lookups/Data/LookupService+Dependency.swift	1.3
+apps/ios/BuyLedger/Features/Lookups/Data/LookupService+PaymentMethods.swift	1.3 3.1
+apps/ios/BuyLedger/Features/Lookups/Data/LookupService+Preview.swift	1.3
+apps/ios/BuyLedger/Features/Lookups/Data/LookupService+Renames.swift	1.3 3.1
+apps/ios/BuyLedger/Features/Lookups/Data/LookupService.swift	1.3
+apps/ios/BuyLedger/Features/Lookups/LookupCatalogFeature.swift	2.1 3.4
+apps/ios/BuyLedger/Features/Orders/OrdersRootRequest.swift	1.7 2.5
+apps/ios/BuyLedgerTests/CampaignServiceTests+Rename.swift	1.4 (CampaignServiceTests.swift 超過 300 行而另拆)
+apps/ios/BuyLedgerTests/LookupCatalogFeatureTests.swift	2.1
+apps/ios/BuyLedgerTests/LookupCatalogFeatureTests+Additions.swift	2.1 (超過 300 行，依受測行為拆出新增情境)
+apps/ios/BuyLedgerTests/LookupServiceTests+PaymentMethodAtomicity.swift	1.3 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/LookupServiceTests+PaymentMethodEdits.swift	1.3 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/LookupServiceTests+PaymentMethodFixtures.swift	1.3 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/LookupServiceTests+PaymentMethodSelection.swift	1.3 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/LookupServiceTests+PaymentMethods.swift	1.3
+apps/ios/BuyLedgerTests/LookupServiceTests+ReconciliationStatuses.swift	1.3 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/LookupServiceTests+Sources.swift	1.3 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/LookupServiceTests.swift	1.3
+apps/ios/BuyLedgerTests/PaymentMethodCorrectionFeatureTests+Confirmation.swift	2.3
+apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalog.swift	2.4 2.5 3.2
+apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalogAdditionFixtures.swift	2.5 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalogAdditionForms.swift	2.5 3.2 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalogAdditions.swift	2.5 3.2 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalogFailures.swift	2.4 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalogFixtures.swift	2.4 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/RootFeatureTests+LookupCatalogRequests.swift	2.4 3.2 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/RootFeatureTests+OrdersReload.swift	2.4 (主題檔，避免超過 300 行)
+apps/ios/BuyLedgerTests/ServiceOwnershipScanTests.swift	3.3
+apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+DatabaseCases.swift	3.3 (依 DependencyConventionScanTests 的拆法，避免超過 300 行)
+apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+Fixtures.swift	3.3 (依 DependencyConventionScanTests 的拆法，避免超過 300 行)
+apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+Models.swift	3.3 (依 DependencyConventionScanTests 的拆法，避免超過 300 行)
+apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+ReferenceCases.swift	3.3 (依 DependencyConventionScanTests 的拆法，避免超過 300 行)
+apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+Rules.swift	3.3 (依 DependencyConventionScanTests 的拆法，避免超過 300 行)
+apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+Scanner.swift	3.3 (依 DependencyConventionScanTests 的拆法，避免超過 300 行)
+apps/ios/BuyLedgerTests/ServiceOwnershipScanTests+LookupCatalogCases.swift	verify 後補測試 (訂單端只讀主檔目錄的片段案例)
+apps/ios/BuyLedgerTests/LookupManagementFeatureTests+PaymentMethodStoredOrders.swift	verify 後補測試 (規格範例 orders not yet loaded into memory)
+
+## 刪除 (22)
+apps/ios/BuyLedger/Core/Dependencies/CategoryService+Dependency.swift	3.1
+apps/ios/BuyLedger/Core/Dependencies/CategoryService+Preview.swift	3.1
+apps/ios/BuyLedger/Core/Dependencies/CategoryService.swift	3.1
+apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Dependency.swift	3.1
+apps/ios/BuyLedger/Core/Dependencies/OrderSourceService+Preview.swift	3.1
+apps/ios/BuyLedger/Core/Dependencies/OrderSourceService.swift	3.1
+apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Dependency.swift	3.1
+apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService+Preview.swift	3.1
+apps/ios/BuyLedger/Core/Dependencies/PaymentMethodService.swift	3.1
+apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Dependency.swift	3.1
+apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService+Preview.swift	3.1
+apps/ios/BuyLedger/Core/Dependencies/ReconciliationStatusService.swift	3.1
+apps/ios/BuyLedger/Core/Persistence/PaymentMethodPersistenceError.swift	3.1
+apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Dependency.swift	1.5
+apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService+Preview.swift	1.5
+apps/ios/BuyLedger/Features/Campaigns/Data/CampaignReminderService.swift	1.5
+apps/ios/BuyLedgerTests/CategoryServiceTests.swift	3.1
+apps/ios/BuyLedgerTests/OrderSourceServiceTests.swift	3.1
+apps/ios/BuyLedgerTests/OrderWritesFeatureTests+Options.swift	1.2 最小修改，2.5 刪除
+apps/ios/BuyLedgerTests/PaymentMethodServiceTests+ApplyEdit.swift	3.1
+apps/ios/BuyLedgerTests/PaymentMethodServiceTests.swift	3.1
+apps/ios/BuyLedgerTests/ReconciliationStatusServiceTests.swift	3.1
+
+## 非 Swift 檔 (1，不列入 style_checks.py)
+apps/ios/BuyLedger/Resources/Localizable.xcstrings	1.4

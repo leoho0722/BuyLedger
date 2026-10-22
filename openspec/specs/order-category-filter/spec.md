@@ -8,66 +8,352 @@ TBD - created by archiving change 'ai-product-summary'. Update Purpose after arc
 
 ### Requirement: Category filter on the orders list
 
-The orders list SHALL provide a product-category filter that coexists with the existing status, date-period, and search filters on iOS and iPadOS. The filter SHALL offer an "all categories" option plus one option per available category. The available categories SHALL be sourced from the existing merged category options (category master plus categories used by orders). Selecting "all categories" SHALL clear the category constraint.
+The orders list SHALL provide a product-category filter that coexists with the existing status, date-period, payment-method, and search filters on iOS and iPadOS. The category filter SHALL hold a set of selected categories, so that the user can select any number of categories at once. The filter SHALL offer an "all categories" option plus one option per available category. The available categories SHALL be sourced from the existing merged category options (category master plus categories used by orders). Selecting "all categories" SHALL empty the selected set, which clears the category constraint.
 
 #### Scenario: Select a specific category
 
-- **WHEN** the user selects a specific category in the filter
-- **THEN** the orders list shows only orders whose category list contains the selected category, while still honoring the active status, date-period, and search filters
+- **WHEN** the user's selected category set is {`beauty`}
+- **THEN** the orders list shows only orders whose category list contains `beauty`, while still honoring the active status, date-period, payment-method, and search filters
+
+#### Scenario: Select several categories
+
+- **WHEN** the user's selected category set is {`beauty`, `books`}
+- **THEN** the orders list shows every order whose category list contains `beauty` or `books`, while still honoring the other active filters
 
 #### Scenario: Select all categories
 
 - **WHEN** the user selects the "all categories" option
-- **THEN** the category constraint is cleared and the orders list is no longer narrowed by category
+- **THEN** the selected category set becomes empty and the orders list is no longer narrowed by category
+
+
+<!-- @trace
+source: order-filter-sheet-redesign
+updated: 2026-10-19
+code:
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterPresentation.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerRoot.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Dismissal.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Groups.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DetailNavigation.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Expansion.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPreviewFixtures.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderCategoryPickerSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests+Assertions.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGridTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterLabels.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSummary.swift
+  - apps/ios/BuyLedgerTests/BLUITestSeedDataTests+CategoryFilter.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterSelection.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Clear.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Orders.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetLargeTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderFilterEmptyStates.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterDateSection.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPaymentMethodSection.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryGroups.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/ordersView_寬版無付款方式與類別_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderRegularClearFiltersTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DeepLinks.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedProfile.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersListQuery.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_大尺寸iPhone橫向_顯示單欄清單與整合篩選鈕.1.png
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+RegularFilters.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+OrderFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterConfirmations.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryReveal.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_長名稱同列等高_符合基準圖.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Display.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Queries.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterPending.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerSync.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Patterns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilter.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_無障礙字級單欄_符合基準圖.1.png
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilterLarge.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFormatters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRegularListColumn.swift
+  - apps/ios/BuyLedgerTests/OrderEditCampaignOptionsTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Search.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/ordersView_寬版選取含成本明細訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Destination.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature+Destination.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests.swift
+  - apps/ios/BuyLedgerTests/OrderSummaryPromptTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListSnapshotSourceScanTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Snapshot.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaignScenarios.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryPickerSheet.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已選日期類別付款方式_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Search.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterDelegates.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListInteraction.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerApply.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryFilterRows.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterFixtures.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+NewOrderOptions.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderPaymentMethodMenuTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderSummaryPrompt.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Filters.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+CampaignLoading.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrdersBaseline.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryPickerFeature.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Presentation.swift
+  - apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChipLabel.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Dates.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+ClearFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListDestinationOperations.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterCategorySection.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaigns.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests+Categories.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已收單展開含長名稱_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Delete.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilters.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilteredOrders.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFilterOperations.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+LoadAndSummary.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerLargeTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Orders.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_單一類別保留一欄寬_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/OrdersQuery.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListSnapshot.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderFilterSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_欄數減一_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Support/PlatformScope.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+EntryPoint.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Rename.swift
+-->
 
 ---
 ### Requirement: Category filter combines with existing filters
 
-The filtered orders result SHALL be the conjunction of the status, search, date-period, and category predicates. A category constraint SHALL match an order only when the order's category list contains the selected category.
+The filtered orders result SHALL be the conjunction of the status, search, date-period, payment-method, and category predicates. A category constraint SHALL match an order when the order's category list contains at least one category of the selected set; an empty selected set SHALL match every order.
 
 #### Scenario: Category combined with status filter
 
 - **WHEN** both a status filter and a category filter are active
-- **THEN** only orders matching both the status and the category appear in the list
+- **THEN** only orders matching the status and containing at least one selected category appear in the list
 
 ##### Example: conjunction of filters with multi-category orders
 
-- **GIVEN** orders: O1(categories=["beauty"], status=purchased), O2(categories=["beauty", "snacks"], status=quoting), O3(categories=["snacks"], status=purchased), O4(categories=["beauty", "snacks"], status=purchased)
-- **WHEN** the status filter is "purchased" and the category filter is "beauty"
-- **THEN** the list shows exactly { O1, O4 }
+- **GIVEN** orders: O1(categories=["beauty"], status=purchased), O2(categories=["beauty", "snacks"], status=quoting), O3(categories=["snacks"], status=purchased), O4(categories=["books"], status=purchased), O5(categories=[], status=purchased)
+
+| Status filter | Selected categories | Listed orders |
+| --- | --- | --- |
+| purchased | {beauty} | { O1 } |
+| purchased | {beauty, snacks} | { O1, O3 } |
+| purchased | {books} | { O4 } |
+| purchased | none | { O1, O3, O4, O5 } |
+| all | {snacks} | { O2, O3 } |
 
 #### Scenario: Selection recomputes the active selection
 
-- **WHEN** the user changes the category filter
+- **WHEN** the committed category set changes
 - **THEN** the system recomputes the currently selected order to the first order of the newly filtered list
 
 
 <!-- @trace
-source: add-order-merge
-updated: 2026-06-07
+source: order-filter-sheet-redesign
+updated: 2026-10-19
 code:
-  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
-  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
-  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterPresentation.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerRoot.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Dismissal.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Groups.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DetailNavigation.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Expansion.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPreviewFixtures.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderCategoryPickerSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests+Assertions.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGridTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterLabels.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSummary.swift
+  - apps/ios/BuyLedgerTests/BLUITestSeedDataTests+CategoryFilter.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterSelection.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Clear.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Orders.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetLargeTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderFilterEmptyStates.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterDateSection.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPaymentMethodSection.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryGroups.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/ordersView_寬版無付款方式與類別_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderRegularClearFiltersTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DeepLinks.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedProfile.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersListQuery.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_大尺寸iPhone橫向_顯示單欄清單與整合篩選鈕.1.png
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+RegularFilters.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+OrderFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterConfirmations.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryReveal.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_長名稱同列等高_符合基準圖.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Display.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Queries.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterPending.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerSync.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Patterns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilter.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_無障礙字級單欄_符合基準圖.1.png
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilterLarge.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFormatters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRegularListColumn.swift
+  - apps/ios/BuyLedgerTests/OrderEditCampaignOptionsTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Search.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/ordersView_寬版選取含成本明細訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Destination.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature+Destination.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests.swift
+  - apps/ios/BuyLedgerTests/OrderSummaryPromptTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListSnapshotSourceScanTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Snapshot.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaignScenarios.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryPickerSheet.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已選日期類別付款方式_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Search.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterDelegates.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListInteraction.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerApply.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryFilterRows.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterFixtures.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+NewOrderOptions.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderPaymentMethodMenuTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderSummaryPrompt.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Filters.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+CampaignLoading.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrdersBaseline.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryPickerFeature.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Presentation.swift
+  - apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChipLabel.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Dates.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+ClearFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListDestinationOperations.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterCategorySection.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaigns.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests+Categories.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已收單展開含長名稱_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Delete.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilters.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilteredOrders.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFilterOperations.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+LoadAndSummary.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerLargeTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Orders.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_單一類別保留一欄寬_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/OrdersQuery.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListSnapshot.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderFilterSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_欄數減一_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Support/PlatformScope.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+EntryPoint.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Rename.swift
 -->
 
 ---
 ### Requirement: Deep link from analytics applies the category filter
 
-When the user taps a category row in the analytics page's category ranking, the app SHALL navigate to the orders tab and apply the tapped category as the active category filter on the orders list. The active category filter value SHALL drive both the orders list filtering and the visual state of the category filter trigger button and picker sheet (trigger label and picker selected-row indicator compare against the active category filter value). The orders list SHALL be filtered by containment against each order's category list — it SHALL NOT rely on text search to approximate the filter.
+When the user taps a category row in the analytics page's category ranking, the app SHALL navigate to the orders tab and set the orders list's selected category set to exactly the tapped category. The selected category set SHALL drive both the orders list filtering and the visual state of the category filter trigger and category grid (trigger label and selected cells compare against the selected set). The orders list SHALL be filtered by containment against each order's category list — it SHALL NOT rely on text search to approximate the filter.
 
 #### Scenario: Tapping a category row navigates and applies the filter
 
 - **WHEN** the user is on the analytics page and taps the category row whose name is "beauty"
 - **THEN** the active tab changes to "orders"
-- **AND** the orders list's active category filter equals "beauty"
-- **AND** the category filter trigger button label reads `類別：beauty` and the trigger background uses the active-selection style
-- **AND** opening the picker sheet shows the `beauty` row as the currently selected row
+- **AND** the orders list's selected category set equals {"beauty"}
+- **AND** on iPadOS the category filter trigger label reads `類別：beauty` and the trigger background uses the active-selection style
+- **AND** opening the category grid shows the `beauty` cell as the only selected cell
 - **AND** the orders list contains exactly those orders whose category list contains "beauty"
 
 ##### Example: deep link with mixed-category data
@@ -76,61 +362,325 @@ When the user taps a category row in the analytics page's category ranking, the 
 - **WHEN** the user taps the "beauty" row in the analytics category ranking
 - **THEN** the orders list contains exactly { O1, O3 } and excludes O2, even though O2's customer name contains the substring "Beauty"
 
+#### Scenario: Tapping a category row replaces an earlier multi-selection
+
+- **WHEN** the orders list has the selected category set {"snacks", "books"}, then the user taps the "beauty" row on the analytics page
+- **THEN** the selected category set equals {"beauty"}
+
 #### Scenario: Tapping a category row resets unrelated orders-list filters
 
 - **WHEN** the user has the orders list state with status filter "delivered" and date-period filter "this month", then taps a category row on the analytics page
 - **THEN** the status filter resets to "all"
 - **AND** the date-period filter resets to "all"
 - **AND** the search text is cleared
-- **AND** the active category filter equals the tapped category
+- **AND** the selected category set equals the tapped category alone
 
 
 <!-- @trace
-source: add-order-merge
-updated: 2026-06-07
+source: order-filter-sheet-redesign
+updated: 2026-10-19
 code:
-  - apps/apple/BuyLedger/Features/Orders/OrdersView.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersCompactView.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersMacView.swift
-  - apps/apple/BuyLedgerTests/OrderMergeFeatureTests.swift
-  - apps/apple/BuyLedger/Features/Orders/OrdersFeature.swift
-  - apps/apple/BuyLedger/Features/Orders/Components/OrderRowView.swift
-  - apps/apple/BuyLedger/Features/Orders/Components/OrderMergeCandidateSheet.swift
-  - apps/apple/BuyLedger/Features/Orders/OrderMergeFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterPresentation.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerRoot.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Dismissal.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Groups.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DetailNavigation.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Expansion.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPreviewFixtures.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderCategoryPickerSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests+Assertions.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGridTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterLabels.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSummary.swift
+  - apps/ios/BuyLedgerTests/BLUITestSeedDataTests+CategoryFilter.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterSelection.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Clear.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Orders.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetLargeTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderFilterEmptyStates.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterDateSection.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPaymentMethodSection.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryGroups.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/ordersView_寬版無付款方式與類別_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderRegularClearFiltersTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DeepLinks.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedProfile.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersListQuery.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_大尺寸iPhone橫向_顯示單欄清單與整合篩選鈕.1.png
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+RegularFilters.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+OrderFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterConfirmations.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryReveal.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_長名稱同列等高_符合基準圖.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Display.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Queries.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterPending.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerSync.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Patterns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilter.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_無障礙字級單欄_符合基準圖.1.png
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilterLarge.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFormatters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRegularListColumn.swift
+  - apps/ios/BuyLedgerTests/OrderEditCampaignOptionsTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Search.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/ordersView_寬版選取含成本明細訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Destination.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature+Destination.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests.swift
+  - apps/ios/BuyLedgerTests/OrderSummaryPromptTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListSnapshotSourceScanTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Snapshot.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaignScenarios.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryPickerSheet.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已選日期類別付款方式_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Search.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterDelegates.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListInteraction.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerApply.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryFilterRows.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterFixtures.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+NewOrderOptions.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderPaymentMethodMenuTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderSummaryPrompt.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Filters.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+CampaignLoading.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrdersBaseline.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryPickerFeature.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Presentation.swift
+  - apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChipLabel.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Dates.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+ClearFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListDestinationOperations.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterCategorySection.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaigns.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests+Categories.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已收單展開含長名稱_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Delete.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilters.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilteredOrders.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFilterOperations.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+LoadAndSummary.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerLargeTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Orders.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_單一類別保留一欄寬_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/OrdersQuery.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListSnapshot.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderFilterSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_欄數減一_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Support/PlatformScope.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+EntryPoint.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Rename.swift
 -->
 
 ---
 ### Requirement: Cross-feature navigations reset the category filter
 
-Cross-feature navigations into the orders list SHALL reset the orders list's active category filter to "all categories" unless the navigation explicitly applies a category. This applies to navigations originating from smart group selection (status-based deep links) and from customer-name selection. This prevents a stale category filter from intersecting with the new navigation's filters and producing an empty list.
-
-#### Scenario: Smart group deep link clears a stale category filter
-
-- **WHEN** the user has the orders list category filter set to "beauty", then taps the "shipping" smart group from another page
-- **THEN** the active tab changes to "orders"
-- **AND** the status filter equals "shipping"
-- **AND** the active category filter resets to "all categories"
-- **AND** the orders list contains every order with status "shipping" regardless of category
+Cross-feature navigations into the orders list SHALL reset the orders list's selected category set to empty ("all categories") unless the navigation explicitly applies a category. This applies to navigations originating from customer-name selection. This prevents a stale category filter from intersecting with the new navigation's filters and producing an empty list.
 
 #### Scenario: Customer deep link clears a stale category filter
 
-- **WHEN** the user has the orders list category filter set to "snacks", then taps the customer name "Alice" from the customers page
+- **WHEN** the user has the orders list selected category set {"snacks", "books"}, then taps the customer name "Alice" from the customers page
 - **THEN** the active tab changes to "orders"
 - **AND** the orders list's search text equals "Alice"
-- **AND** the active category filter resets to "all categories"
+- **AND** the selected category set becomes empty
+
 
 <!-- @trace
-source: fix-category-deep-link-filter
-updated: 2026-05-28
+source: order-filter-sheet-redesign
+updated: 2026-10-19
 code:
-  - apps/apple/BuyLedger/Features/App/RootFeature.swift
-  - apps/apple/BuyLedgerTests/RootFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterPresentation.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerRoot.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Dismissal.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Groups.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DetailNavigation.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Expansion.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPreviewFixtures.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderCategoryPickerSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests+Assertions.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGridTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterLabels.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSummary.swift
+  - apps/ios/BuyLedgerTests/BLUITestSeedDataTests+CategoryFilter.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterSelection.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Clear.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Orders.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetLargeTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderFilterEmptyStates.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterDateSection.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPaymentMethodSection.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryGroups.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/ordersView_寬版無付款方式與類別_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderRegularClearFiltersTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DeepLinks.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedProfile.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersListQuery.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_大尺寸iPhone橫向_顯示單欄清單與整合篩選鈕.1.png
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+RegularFilters.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+OrderFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterConfirmations.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryReveal.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_長名稱同列等高_符合基準圖.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Display.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Queries.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterPending.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerSync.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Patterns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilter.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_無障礙字級單欄_符合基準圖.1.png
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilterLarge.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFormatters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRegularListColumn.swift
+  - apps/ios/BuyLedgerTests/OrderEditCampaignOptionsTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Search.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/ordersView_寬版選取含成本明細訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Destination.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature+Destination.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests.swift
+  - apps/ios/BuyLedgerTests/OrderSummaryPromptTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListSnapshotSourceScanTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Snapshot.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaignScenarios.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryPickerSheet.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已選日期類別付款方式_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Search.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterDelegates.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListInteraction.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerApply.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryFilterRows.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterFixtures.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+NewOrderOptions.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderPaymentMethodMenuTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderSummaryPrompt.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Filters.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+CampaignLoading.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrdersBaseline.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryPickerFeature.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Presentation.swift
+  - apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChipLabel.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Dates.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+ClearFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListDestinationOperations.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterCategorySection.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaigns.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests+Categories.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已收單展開含長名稱_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Delete.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilters.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilteredOrders.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFilterOperations.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+LoadAndSummary.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerLargeTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Orders.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_單一類別保留一欄寬_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/OrdersQuery.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListSnapshot.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderFilterSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_欄數減一_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Support/PlatformScope.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+EntryPoint.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Rename.swift
 -->
 
 ---
 ### Requirement: Category filter is presented as a trigger button with a searchable picker sheet
 
-On iPadOS the orders list category filter SHALL be rendered as a single capsule-shaped trigger button. The trigger button SHALL display the currently active category selection in its label so the user can identify the active selection without opening the picker. The category filter SHALL NOT be rendered as a horizontally scrolling row of capsule chips and SHALL NOT be rendered as an inline Menu.
+In this requirement "iPadOS" means the regular-width orders layout; an iPad window that uses the compact orders layout exposes the category filter through the unified filter sheet instead. On iPadOS the orders list category filter SHALL be rendered as a single capsule-shaped trigger button. The trigger button SHALL summarize the committed category selection in its label so the user can identify it without opening the picker. The category filter SHALL NOT be rendered as a horizontally scrolling row of capsule chips and SHALL NOT be rendered as an inline Menu.
 
 On iOS in the Compact size class the orders list category filter SHALL instead be folded into the unified filter sheet defined by the `order-filter-sheet` capability. The dedicated category trigger described in this requirement SHALL NOT be rendered in that size class.
 
@@ -138,35 +688,37 @@ The trigger button SHALL occupy the full available horizontal width of the order
 
 The trigger button label SHALL be composed of, in order:
 1. A leading tag icon consistent with the icon previously used by the category chips.
-2. A text segment of the form `類別：<current>`, where `<current>` is `全部` when no category is selected, and the category name otherwise. The text segment SHALL support multi-line wrapping when the category name exceeds the available single-line width — the capsule SHALL grow vertically to fit the wrapped text rather than truncating it.
+2. A text segment of the form `類別：<current>`, where `<current>` is `全部` when the selected set is empty, the category name when exactly one category is selected, and `<N> 項` when N ≥ 2 categories are selected. The text segment SHALL support multi-line wrapping when the category name exceeds the available single-line width — the capsule SHALL grow vertically to fit the wrapped text rather than truncating it.
 3. A trailing chevron-down indicator that communicates the control opens a picker sheet.
 
 When the label wraps to multiple lines, the leading tag icon and the trailing chevron-down icon SHALL align to the first text baseline rather than the vertical center of the capsule.
 
-The trigger button SHALL apply a filled capsule background. The fill SHALL be the active-selection style when a category is selected and the inactive-selection style otherwise, so the user can tell from the trigger alone whether a category filter is currently applied.
+The trigger button SHALL apply a filled capsule background. The fill SHALL be the active-selection style when at least one category is selected and the inactive-selection style otherwise, so the user can tell from the trigger alone whether a category filter is currently applied.
 
 The trigger button SHALL only be rendered when the set of available categories is non-empty. When no categories are available, the category filter UI on iPadOS SHALL be hidden, matching the prior behavior.
 
-Tapping the trigger button SHALL present a category picker sheet that:
-1. Lists, in order, a "clear" row labeled `全部` (which clears the active category filter when tapped) followed by one row per entry in the available categories list (which sets the active category to that name when tapped).
-2. Provides a search field that filters the category rows in real time. The "clear" row SHALL remain visible regardless of the search input.
-3. Marks exactly one row as the currently selected row — the "clear" row when no category is selected, or the matching category row otherwise — with a visually distinguishable indicator such as a leading or trailing checkmark glyph.
-4. Dismisses itself after the user taps any row.
+Tapping the trigger button SHALL present a category picker sheet titled `選擇商品類別` that:
+1. Holds a pending category set seeded from the committed set when presented, together with an empty search text and group expansion computed by the "Category options are grouped by campaign activity" requirement. The pending set, search text, and expansion SHALL be held by the orders feature rather than by the view.
+2. Shows, in order, a search field with the prompt `搜尋類別`, an "all categories" row labeled `全部`, and the grouped category grid shared with the iPhone unified filter sheet. The search narrows the grid with the same rules as the iPhone unified filter sheet search; the `全部` row stays visible regardless of the search text.
+3. Toggles a category's membership in the pending set when its cell is tapped, and empties the pending set when the `全部` row is tapped, without dismissing the sheet and without changing the committed selection.
+4. Presents a confirmation control labeled `完成` that commits the pending set as the committed selection, recomputes the currently selected order once when the set changed, and dismisses the sheet.
+5. Presents a cancellation control that never commits the pending set. When the pending set differs from the committed set, cancelling SHALL ask for confirmation and swiping down SHALL NOT dismiss the sheet, as defined by the sheet-dismissal-safeguard capability.
 
-#### Scenario: Trigger label reflects the active selection on iPadOS
+#### Scenario: Trigger label reflects the committed selection on iPadOS
 
 - **GIVEN** the orders list is displayed on iPadOS and has at least one available category
-- **WHEN** the active category filter is "all categories" (no specific category selected)
+- **WHEN** the committed category set is empty
 - **THEN** the trigger button label reads `類別：全部`
 - **AND** the trigger background uses the inactive-selection style
 
 ##### Example: trigger labels under different selections
 
-| Active selection           | Trigger label  | Trigger background style |
-| -------------------------- | -------------- | ------------------------ |
-| none ("all categories")    | `類別：全部`   | inactive                 |
-| "beauty"                   | `類別：beauty` | active                   |
-| "snacks"                   | `類別：snacks` | active                   |
+| Committed set | Trigger label | Trigger background style |
+| --- | --- | --- |
+| empty ("all categories") | `類別：全部` | inactive |
+| {"beauty"} | `類別：beauty` | active |
+| {"beauty", "snacks"} | `類別：2 項` | active |
+| {"beauty", "snacks", "books"} | `類別：3 項` | active |
 
 #### Scenario: Dedicated category trigger is not rendered on iOS Compact
 
@@ -175,43 +727,644 @@ Tapping the trigger button SHALL present a category picker sheet that:
 - **THEN** the dedicated category trigger described in this requirement is not rendered
 - **AND** the category filter is exposed instead through the unified filter sheet defined by the `order-filter-sheet` capability
 
-#### Scenario: Picker sheet lists clear row and all categories with a selection indicator
+#### Scenario: Picker sheet seeds the pending set and marks selected cells
 
-- **GIVEN** the orders list is displayed on iPadOS with available categories `["beauty", "snacks", "books"]` and the active category filter is "snacks"
+- **GIVEN** the orders list is displayed on iPadOS with available categories `["beauty", "snacks", "books"]` and the committed set is {"snacks"}
 - **WHEN** the user taps the trigger button and the picker sheet opens
-- **THEN** the picker shows rows in order: `全部`, `beauty`, `snacks`, `books`
-- **AND** the `snacks` row is marked as the currently selected row
-- **AND** no other row is marked as currently selected
+- **THEN** the pending set is {"snacks"} and the `snacks` cell is the only selected cell
+- **AND** the `全部` row is not marked
 
-#### Scenario: Selecting a category from the picker sheet updates the filter
+#### Scenario: Toggling cells and tapping done commits the pending set
 
-- **GIVEN** the orders list is displayed on iPadOS with the category filter currently `全部` (no category selected)
-- **WHEN** the user opens the picker sheet and taps the `beauty` row
-- **THEN** the active category filter equals "beauty"
+- **GIVEN** the picker sheet is open on iPadOS with an empty committed set
+- **WHEN** the user taps the `beauty` cell and the `books` cell, then taps `完成`
+- **THEN** the committed set becomes {"beauty", "books"}
 - **AND** the picker sheet dismisses
-- **AND** the trigger button label reads `類別：beauty` and the trigger background uses the active-selection style
-- **AND** the orders list is filtered to orders whose category list contains "beauty" (combined with any other active filters)
-- **AND** reopening the picker sheet shows `beauty` as the currently selected row
+- **AND** the trigger button label reads `類別：2 項` and the trigger background uses the active-selection style
+- **AND** the orders list shows orders whose category list contains `beauty` or `books`, combined with any other active filters
 
-#### Scenario: Selecting the clear row from the picker sheet clears the filter
+#### Scenario: Toggling cells does not change the committed set before done
 
-- **GIVEN** the orders list is displayed on iPadOS
-- **WHEN** the user opens the picker sheet while a specific category is active and taps the `全部` row
-- **THEN** the active category filter is cleared
-- **AND** the picker sheet dismisses
+- **GIVEN** the picker sheet is open on iPadOS with the committed set {"snacks"}
+- **WHEN** the user taps the `beauty` cell
+- **THEN** the pending set is {"snacks", "beauty"} and the committed set is still {"snacks"}
+- **AND** the orders list behind the sheet is still filtered by {"snacks"}
+
+#### Scenario: Tapping the all row and done clears the filter
+
+- **GIVEN** the picker sheet is open on iPadOS with the committed set {"beauty"}
+- **WHEN** the user taps the `全部` row and then `完成`
+- **THEN** the committed set becomes empty
 - **AND** the trigger button label reads `類別：全部` and the trigger background uses the inactive-selection style
-- **AND** the orders list is no longer narrowed by category
 
-#### Scenario: Search filters the category rows but preserves the clear row
+#### Scenario: Cancelling with pending changes asks before discarding
 
-- **GIVEN** the orders list is displayed on iPadOS with available categories `["beauty", "snacks", "books"]` and the picker sheet is open
-- **WHEN** the user types `boo` into the search field
-- **THEN** the picker shows the `全部` row at the top and the `books` row as the only matching category row
-- **AND** the `beauty` and `snacks` rows are not shown
+- **GIVEN** the picker sheet is open on iPadOS with the committed set {"beauty"} and the user has tapped the `books` cell
+- **WHEN** the user taps the cancellation control and confirms discarding
+- **THEN** the committed set is still {"beauty"} and the sheet dismisses
 
 #### Scenario: Category filter is hidden when no categories are available on iPadOS
 
-- **GIVEN** the orders list is displayed on iPadOS and the merged available categories list is empty
+- **GIVEN** the orders list is displayed on iPadOS, the merged available categories list is empty, and the selected category set is empty
 - **WHEN** the orders list is displayed
 - **THEN** the trigger button is not rendered
-- **AND** the active category filter remains cleared
+- **AND** the selected category set remains empty
+
+#### Scenario: A selection whose categories disappear is kept until cleared
+
+- **GIVEN** the selected category set is {"beauty"} on iPadOS
+- **WHEN** the orders and the category master no longer contain "beauty", so the available categories list becomes empty
+- **THEN** the selected category set stays {"beauty"} and the orders list stays filtered by it
+- **AND** the clear-filters control is enabled, and tapping it empties the selected category set
+
+#### Scenario: Search in the picker narrows cells and keeps selections
+
+- **GIVEN** the picker sheet is open on iPadOS with the pending set {"美妝", "書籍"} and categories `美妝`, `3C`, `零食` in 開團中 and `精品`, `食品`, `書籍` in 已收單
+- **WHEN** the user types `食` into the search field
+- **THEN** the grid shows only `零食` and `食品`, both groups expanded, and the `全部` row stays visible
+- **AND** after the search text is cleared the pending set is still {"美妝", "書籍"}
+
+
+<!-- @trace
+source: order-filter-sheet-redesign
+updated: 2026-10-19
+code:
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterPresentation.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerRoot.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Dismissal.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Groups.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DetailNavigation.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Expansion.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPreviewFixtures.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderCategoryPickerSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests+Assertions.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGridTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterLabels.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSummary.swift
+  - apps/ios/BuyLedgerTests/BLUITestSeedDataTests+CategoryFilter.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterSelection.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Clear.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Orders.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetLargeTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderFilterEmptyStates.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterDateSection.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPaymentMethodSection.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryGroups.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/ordersView_寬版無付款方式與類別_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderRegularClearFiltersTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DeepLinks.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedProfile.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersListQuery.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_大尺寸iPhone橫向_顯示單欄清單與整合篩選鈕.1.png
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+RegularFilters.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+OrderFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterConfirmations.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryReveal.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_長名稱同列等高_符合基準圖.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Display.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Queries.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterPending.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerSync.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Patterns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilter.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_無障礙字級單欄_符合基準圖.1.png
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilterLarge.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFormatters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRegularListColumn.swift
+  - apps/ios/BuyLedgerTests/OrderEditCampaignOptionsTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Search.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/ordersView_寬版選取含成本明細訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Destination.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature+Destination.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests.swift
+  - apps/ios/BuyLedgerTests/OrderSummaryPromptTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListSnapshotSourceScanTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Snapshot.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaignScenarios.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryPickerSheet.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已選日期類別付款方式_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Search.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterDelegates.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListInteraction.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerApply.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryFilterRows.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterFixtures.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+NewOrderOptions.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderPaymentMethodMenuTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderSummaryPrompt.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Filters.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+CampaignLoading.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrdersBaseline.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryPickerFeature.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Presentation.swift
+  - apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChipLabel.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Dates.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+ClearFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListDestinationOperations.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterCategorySection.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaigns.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests+Categories.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已收單展開含長名稱_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Delete.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilters.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilteredOrders.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFilterOperations.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+LoadAndSummary.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerLargeTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Orders.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_單一類別保留一欄寬_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/OrdersQuery.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListSnapshot.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderFilterSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_欄數減一_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Support/PlatformScope.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+EntryPoint.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Rename.swift
+-->
+
+---
+### Requirement: Category options are grouped by campaign activity
+
+Wherever the category filter options are offered (the iPhone unified filter sheet and the iPadOS category picker sheet), the available categories SHALL be split into two groups derived from the orders, without any stored grouping:
+
+- The `開團中` group SHALL contain every available category for which at least one order whose category list contains it is assigned to a campaign that is ongoing. Whether a campaign is ongoing SHALL be evaluated with `Campaign.evaluatingAutoClose(asOf:calendar:)` using the orders list's recorded current time and calendar; a campaign name that matches no known campaign SHALL NOT count as ongoing.
+- The `已收單` group SHALL contain every other available category, including master categories that no order uses and categories used only by orders without an ongoing campaign.
+
+Each category SHALL appear in exactly one group. Within a group, categories SHALL be ordered by name using a locale-aware standard comparison. The `開團中` group SHALL be listed before the `已收單` group.
+
+Each group SHALL be presented under a header that toggles the group between expanded and collapsed. The header SHALL show the group title, the number of categories the group currently shows, and, when at least one category of the group is in the pending selection, an indicator `已選 <N>` with the number of selected categories in that group. A collapsed group SHALL hide its category cells but keep its header.
+
+The expansion SHALL be recomputed every time a category picker surface is presented, as follows:
+1. The `開團中` group is expanded.
+2. The `已收單` group is collapsed, except that it is expanded when any category of the `已收單` group is in the pending selection, or when the `開團中` group has no category.
+3. A group with no category is hidden, so when no category belongs to `開團中` only the `已收單` group is shown, expanded.
+
+Toggling a header SHALL change only that group's expansion for the current presentation. A search is active when the search text, after trimming whitespace and newlines, is non-empty; a text made only of whitespace is not a search. While a search is active, every shown group SHALL be displayed expanded regardless of its stored expansion, and tapping its header SHALL leave the stored expansion unchanged; once the search ends, each group returns to its stored expansion. The `已選 <N>` indicator SHALL count every selected category of the group, including selected categories that the search hides. The expansion and the search text are presentation state and SHALL NOT make the sheet dirty.
+
+#### Scenario: Categories are grouped by ongoing campaigns
+
+- **WHEN** the category groups are computed for the example data below
+- **THEN** each category lands in the listed group
+
+##### Example: grouping from orders and campaigns
+
+- **GIVEN** campaigns: 春季團 (ongoing), 冬季團 (closed), 舊團 (status ongoing but its close date passed before the recorded current time); master categories: `美妝`, `書籍`, `保健`; orders: O1(categories=["美妝"], campaigns=["春季團"]), O2(categories=["3C", "零食"], campaigns=["冬季團", "春季團"]), O3(categories=["精品"], campaigns=["冬季團"]), O4(categories=["食品"], campaigns=["舊團"]), O5(categories=["書籍"], campaigns=[]), O6(categories=["精品"], campaigns=["已刪除團"])
+
+| Category | Group | Reason |
+| --- | --- | --- |
+| `3C` | 開團中 | O2 includes the ongoing 春季團 |
+| `美妝` | 開團中 | O1 is in the ongoing 春季團 |
+| `零食` | 開團中 | O2 includes the ongoing 春季團 |
+| `保健` | 已收單 | master category used by no order |
+| `書籍` | 已收單 | O5 has no campaign |
+| `精品` | 已收單 | 冬季團 is closed and 已刪除團 matches no known campaign |
+| `食品` | 已收單 | 舊團 auto-closes at the recorded current time |
+
+#### Scenario: Default expansion when opening
+
+- **GIVEN** both groups have categories and no category of the 已收單 group is selected
+- **WHEN** a category picker surface is presented
+- **THEN** the 開團中 group is expanded and the 已收單 group is collapsed
+
+#### Scenario: A selected archived category expands its group
+
+- **GIVEN** the committed selection is {`美妝`, `書籍`} where `美妝` is in 開團中 and `書籍` is in 已收單
+- **WHEN** a category picker surface is presented
+- **THEN** both groups are expanded
+- **AND** the 開團中 header shows `已選 1` and the 已收單 header shows `已選 1`
+
+#### Scenario: No ongoing category shows only the archived group expanded
+
+- **GIVEN** no available category belongs to the 開團中 group
+- **WHEN** a category picker surface is presented
+- **THEN** the 開團中 group and its header are not shown
+- **AND** the 已收單 group is shown expanded
+
+#### Scenario: Toggling a header collapses and expands a group
+
+- **GIVEN** a category picker surface is open with the 開團中 group expanded
+- **WHEN** the user taps the 開團中 header twice
+- **THEN** after the first tap the group's cells are hidden and its header remains, and after the second tap the cells are shown again
+- **AND** the pending selection is unchanged
+
+#### Scenario: Header taps during a search do not change the stored expansion
+
+- **GIVEN** a category picker surface is open with the 已收單 group collapsed
+- **WHEN** the user types `食`, taps the 已收單 header, and then clears the search text
+- **THEN** the 已收單 group is collapsed again
+
+#### Scenario: Whitespace is not a search
+
+- **GIVEN** a category picker surface is open with the 已收單 group collapsed
+- **WHEN** the search text is three spaces
+- **THEN** every category is shown as if no search were typed and the 已收單 group stays collapsed
+
+#### Scenario: Selected count includes hidden selections
+
+- **GIVEN** the 已收單 group has the pending selection {`食品`, `書籍`}
+- **WHEN** the user types `食`
+- **THEN** the 已收單 group shows only `食品` and its header still shows `已選 2`
+
+#### Scenario: Expansion resets on the next presentation
+
+- **GIVEN** the user collapsed the 開團中 group and then closed the picker surface
+- **WHEN** the picker surface is presented again
+- **THEN** the 開團中 group is expanded
+
+
+<!-- @trace
+source: order-filter-sheet-redesign
+updated: 2026-10-19
+code:
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterPresentation.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerRoot.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Dismissal.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Groups.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DetailNavigation.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Expansion.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPreviewFixtures.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderCategoryPickerSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests+Assertions.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGridTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterLabels.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSummary.swift
+  - apps/ios/BuyLedgerTests/BLUITestSeedDataTests+CategoryFilter.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterSelection.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Clear.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Orders.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetLargeTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderFilterEmptyStates.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterDateSection.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPaymentMethodSection.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryGroups.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/ordersView_寬版無付款方式與類別_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderRegularClearFiltersTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DeepLinks.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedProfile.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersListQuery.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_大尺寸iPhone橫向_顯示單欄清單與整合篩選鈕.1.png
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+RegularFilters.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+OrderFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterConfirmations.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryReveal.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_長名稱同列等高_符合基準圖.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Display.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Queries.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterPending.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerSync.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Patterns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilter.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_無障礙字級單欄_符合基準圖.1.png
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilterLarge.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFormatters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRegularListColumn.swift
+  - apps/ios/BuyLedgerTests/OrderEditCampaignOptionsTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Search.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/ordersView_寬版選取含成本明細訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Destination.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature+Destination.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests.swift
+  - apps/ios/BuyLedgerTests/OrderSummaryPromptTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListSnapshotSourceScanTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Snapshot.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaignScenarios.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryPickerSheet.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已選日期類別付款方式_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Search.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterDelegates.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListInteraction.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerApply.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryFilterRows.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterFixtures.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+NewOrderOptions.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderPaymentMethodMenuTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderSummaryPrompt.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Filters.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+CampaignLoading.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrdersBaseline.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryPickerFeature.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Presentation.swift
+  - apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChipLabel.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Dates.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+ClearFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListDestinationOperations.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterCategorySection.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaigns.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests+Categories.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已收單展開含長名稱_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Delete.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilters.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilteredOrders.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFilterOperations.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+LoadAndSummary.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerLargeTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Orders.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_單一類別保留一欄寬_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/OrdersQuery.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListSnapshot.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderFilterSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_欄數減一_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Support/PlatformScope.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+EntryPoint.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Rename.swift
+-->
+
+---
+### Requirement: Category options render as an equal-height fixed-column grid
+
+The grouped category options SHALL be rendered by one shared grid view used by both the iPhone unified filter sheet and the iPadOS category picker sheet. Within each expanded group the cells SHALL be laid out in a fixed number of equally wide columns that fill rows from leading to trailing edge. The column count SHALL be the number of columns of at least the minimum cell width (which scales with Dynamic Type) that fit the width actually available to the grid, and never less than one; at accessibility text sizes the grid SHALL use a single column. Every cell SHALL be independently tappable: tapping one cell SHALL toggle only that cell, even when other cells share its row. Every cell SHALL show the full category name, wrapping onto additional lines instead of truncating, and all cells in the same row SHALL share the height of the tallest cell in that row. A row that holds fewer categories than the column count SHALL keep every cell at the width of one column instead of stretching its cells across the row. Each cell SHALL keep a hit region of at least 44 points in both dimensions.
+
+The number of categories, orders, and campaigns is unbounded and unknown in advance. The grid and its grouping SHALL behave correctly for any count, from a single category to hundreds of categories: rows SHALL be created as they scroll into view rather than all at once. Merging and grouping the categories SHALL scan the orders, their category references, and their campaign references a bounded number of times rather than once per category, sorting the K category names SHALL cost no more than O(K log K), and searching and counting selections SHALL be proportional to the number of categories.
+
+A selected cell SHALL be distinguishable by more than color: it SHALL show a checkmark glyph in addition to its selected appearance, and it SHALL expose the selected accessibility trait. The checkmark glyph itself SHALL be hidden from accessibility. An unselected cell SHALL NOT expose the selected trait.
+
+#### Scenario: Long names wrap and keep the row aligned
+
+- **GIVEN** a group whose second row holds `書籍` and `aespa Lemonade QQ 音樂限定禮包` at the default text size
+- **WHEN** the grid is rendered
+- **THEN** the long name wraps onto several lines without truncation
+- **AND** the `書籍` cell in the same row has the same height as the long-name cell
+
+#### Scenario: Few categories keep the column width
+
+- **GIVEN** a group shows fewer categories than the column count
+- **WHEN** the grid is rendered
+- **THEN** each of those cells has the same width as a cell in a full row, and the rest of the row is empty
+
+##### Example: partial rows with three columns
+
+| Categories in the group | Rows | Cells in the last row |
+| --- | --- | --- |
+| 1 | 1 | 1 cell, one column wide |
+| 2 | 1 | 2 cells, each one column wide |
+| 3 | 1 | 3 cells filling the row |
+| 4 | 2 | 1 cell, one column wide |
+
+#### Scenario: Many categories remain usable
+
+- **GIVEN** the 已收單 group holds 300 categories
+- **WHEN** the user expands the group, scrolls to the last category, selects it together with one 開團中 category, and applies the filter
+- **THEN** both categories are in the committed set and the orders list is filtered by them
+- **AND** typing a search text narrows the 300 categories to the matching ones
+
+#### Scenario: Accessibility text sizes use one column
+
+- **GIVEN** the user's Dynamic Type size is an accessibility size
+- **WHEN** the grid is rendered
+- **THEN** every category cell occupies a full row
+
+#### Scenario: Column count follows the available width
+
+- **WHEN** the same grid is rendered in surfaces of different widths at the default text size
+- **THEN** a wider surface shows at least as many columns as a narrower one, and a surface narrower than two minimum cells shows one column
+
+#### Scenario: Cells in one row are tapped independently
+
+- **GIVEN** a row shows `美妝`, `3C`, and `零食` and none is selected
+- **WHEN** the user taps `3C`
+- **THEN** only `3C` becomes selected
+
+#### Scenario: Selected cells expose the selected trait
+
+- **GIVEN** the pending selection is {`美妝`}
+- **WHEN** the grid is rendered
+- **THEN** the `美妝` cell shows a checkmark and exposes the selected accessibility trait
+- **AND** the other cells do not expose the selected trait
+
+<!-- @trace
+source: order-filter-sheet-redesign
+updated: 2026-10-19
+code:
+  - apps/ios/BuyLedgerTests/OrdersContainerPlanTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterPresentation.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerRoot.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Dismissal.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Groups.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DetailNavigation.swift
+  - apps/ios/BuyLedgerUITests/Support/LaunchOptions.swift
+  - apps/ios/CLAUDE.md
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Expansion.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPreviewFixtures.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderCategoryPickerSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests+Assertions.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGridTests.swift
+  - apps/ios/BuyLedgerTests/OrderEditFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterLabels.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSummary.swift
+  - apps/ios/BuyLedgerTests/BLUITestSeedDataTests+CategoryFilter.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterSelection.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Categories.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Clear.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Fixtures.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPicker.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Orders.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerUITests/Support/AppNavigator.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersView.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetLargeTests.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderFilterEmptyStates.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterDateSection.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterPaymentMethodSection.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryGroups.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/ordersView_寬版無付款方式與類別_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderRegularClearFiltersTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+DeepLinks.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedProfile.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersListQuery.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Selection.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_大尺寸iPhone橫向_顯示單欄清單與整合篩選鈕.1.png
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+RegularFilters.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+OrderFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterFeature.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderFilterConfirmations.swift
+  - apps/ios/BuyLedgerUITests/Screens/OrdersScreen+CategoryReveal.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_長名稱同列等高_符合基準圖.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChip.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+Display.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Queries.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterPending.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersView_寬版多選模式_顯示選取列.1.png
+  - apps/ios/BuyLedger/Features/App/RootFeature.swift
+  - apps/ios/BuyLedgerTests/OrdersFeaturePerformanceTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerSync.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Patterns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilter.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_無障礙字級單欄_符合基準圖.1.png
+  - apps/ios/BuyLedger/Resources/Localizable.xcstrings
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData+CategoryFilterLarge.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFormatters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersRegularListColumn.swift
+  - apps/ios/BuyLedgerTests/OrderEditCampaignOptionsTests.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+Campaigns.swift
+  - apps/ios/BuyLedger/App/Testing/BLUITestSeedData.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests+Search.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersCompactView.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/ordersView_寬版選取含成本明細訂單_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Destination.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListFeature+Destination.swift
+  - apps/ios/BuyLedger.xcodeproj/project.pbxproj
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_一般訂單清單_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderFilterSheetTests.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests.swift
+  - apps/ios/BuyLedgerTests/OrderSummaryPromptTests.swift
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterSheet.swift
+  - apps/ios/BuyLedgerTests/OrderListSnapshotSourceScanTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Snapshot.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaignScenarios.swift
+  - apps/ios/BuyLedgerTests/OrderFilterFeatureTests.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryPickerSheet.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已選日期類別付款方式_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/OrderCategoryPickerFeatureTests+Search.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+FilterDelegates.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListInteraction.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+CategoryPickerApply.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderCategoryFilterRows.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilterFixtures.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+NewOrderOptions.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrderCategoryGrid.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderPaymentMethodMenuTests.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderSummaryPrompt.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Filters.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+Scanner.swift
+  - apps/ios/BuyLedgerTests/RootFeatureTests+CampaignLoading.swift
+  - apps/ios/BuyLedgerTests/SnapshotTests+OrdersBaseline.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilterSheet.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderCategoryPickerFeature.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Presentation.swift
+  - apps/ios/BuyLedgerTests/OrdersSearchCancellationTests.swift
+  - apps/ios/README.md
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_多選模式_顯示勾選與工具列.1.png
+  - apps/ios/BuyLedger/Shared/DesignSystem/Components/Chips/BLFilterChipLabel.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+Dates.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+ClearFilters.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListDestinationOperations.swift
+  - apps/ios/BuyLedger/Features/Orders/Components/OrderFilterCategorySection.swift
+  - apps/ios/BuyLedgerTests/ProjectionWriteBoundaryTests+SharedCampaigns.swift
+  - apps/ios/BuyLedgerTests/OrdersQueryTests+Categories.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrdersBaseline/orderFilterSheet_已收單展開含長名稱_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Delete.swift
+  - apps/ios/BuyLedgerTests/OrderListFeatureTests+ClearFilters.swift
+  - apps/ios/BuyLedgerTests/OrdersFilterOperationsTests+FilteredOrders.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersFilterOperations.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+Orders/ordersCompactView_長內容訂單清單_避免撐寬版面.1.png
+  - apps/ios/BuyLedgerTests/OrdersFeatureTests+LoadAndSummary.swift
+  - apps/ios/BuyLedgerUITests/Tests/Orders/OrderCategoryPickerLargeTests.swift
+  - apps/ios/BuyLedgerAccessibilityIDs/BLAccessibilityID+Orders.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_單一類別保留一欄寬_符合基準圖.1.png
+  - apps/ios/BuyLedger/Features/Orders/OrdersQuery.swift
+  - apps/ios/BuyLedger/Features/Orders/OrderListSnapshot.swift
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderFilterEmptyStates/orderFilterSheet_搜尋無符合類別_符合基準圖.1.png
+  - apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderCategoryGrid/orderCategoryGrid_欄數減一_符合基準圖.1.png
+  - apps/ios/BuyLedgerUITests/Support/PlatformScope.swift
+  - apps/ios/BuyLedger/Features/Orders/OrdersContainerPlan+Requests.swift
+  - apps/ios/BuyLedgerTests/OrderCategoryGroupsTests+EntryPoint.swift
+  - apps/ios/BuyLedgerTests/CampaignIntegrationTests+Rename.swift
+-->

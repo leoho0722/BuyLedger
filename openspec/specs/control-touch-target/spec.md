@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'hig-blocker-remediation'. Update Purpose after archive.
+本規格涵蓋可點擊控制項熱區的最小尺寸門檻，包括熱區至少 44 點見方且獨立於可見尺寸、由控制項自身標籤內容建立而非容器邊距、無確認步驟的破壞性控制項同受此門檻約束。不涵蓋 `gesture-and-target-affordance` 所訂的個別元件 (如篩選晶片、資料異動控制項) 透過共用元件落實此門檻的方式，以及手勢功能的可見替代方案。
 
 ## Requirements
 

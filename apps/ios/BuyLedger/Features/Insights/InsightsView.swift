@@ -9,122 +9,82 @@ import ComposableArchitecture
 import SwiftUI
 
 /// 分析分頁的主要畫面
-///
-/// 對應設計稿 iPhone / iPad 的「分析」頁：bar chart 走勢、商品類別排行、成本結構 donut、N 週下單熱力圖 (N 由 ``InsightsStats/heatmapWeekCount`` 控制)；可切換期間、可點擊類別 drill-down 到訂單頁
 struct InsightsView: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
-    /// App 根層級 store
-    @Bindable var store: StoreOf<RootFeature>
+    /// 目前版面分類，用來區分卡片上下堆疊的窄版與並列的寬版
+    @Environment(\.blLayoutClass) private var layoutClass
 
-    /// 目前系統深淺色外觀
-    @Environment(\.colorScheme) private var colorScheme
-
-    /// 目前水平尺寸分類，用來在 iOS 上區分 iPhone (compact) 與 iPad (regular)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
-    /// 用來計算趨勢期間與熱力圖的「現在」時間；測試可注入固定值
-    @Dependency(\.date) private var date
+    /// 骨架中期間選擇器的高度，隨字級縮放
+    @ScaledMetric private var rangePlaceholderHeight: CGFloat = 32
 
-    /// 趨勢分組與熱力圖週界計算所用的行事曆 (含時區)；測試可注入固定 gregorian／UTC
-    @Dependency(\.calendar) private var calendar
+    /// 骨架中排行卡的高度，隨字級縮放
+    @ScaledMetric private var rankingPlaceholderHeight: CGFloat = 220
 
-    /// hero 總獲利金額字級，隨 Dynamic Type 縮放 (以 `.title` 為基準)
-    @ScaledMetric(relativeTo: .title) private var heroProfitSize: CGFloat = 28
+    /// 骨架中走勢卡的高度，隨字級縮放
+    @ScaledMetric private var trendPlaceholderHeight: CGFloat = 280
 
-    /// 熱力圖左側星期欄寬，隨字級縮放 (以 `.caption` 為基準)
-    @ScaledMetric(relativeTo: .caption) private var heatmapWeekdayColumnWidth: CGFloat = 28
+    /// 畫面的狀態與事件來源，由父層建立後傳入
+    @Bindable var store: StoreOf<InsightsFeature>
 
-    /// 熱力圖單一格子的高度，隨字級縮放 (以 `.caption2` 為基準)
-    ///
-    /// 由型別層級常數改為實例屬性——`@ScaledMetric` 需要 view 實例才能讀到環境字級
-    @ScaledMetric(relativeTo: .caption2) private var heatmapCellHeight: CGFloat = 30
+    /// App 目前選用的顯示語系
+    let language: AppLanguage
 
-    // MARK: - View Body
+    // MARK: - Body
 
-    /// 分析頁的畫面內容
-    ///
-    /// 訂單為空時改顯示 ``emptyState(palette:)``——空圖表 ($0、空 heatmap) 對使用者沒有價值且容易誤導
-    /// 首次載入完成前 (``OrdersFeature/State/hasLoaded`` 為 `false`) 顯示中性 ``loadingPlaceholder(palette:)``，
-    /// 避免訂單為空時每次切換 tab 因 `isLoading` 暫時翻成 `true` 而落入「有資料」分支造成閃爍
+    /// 畫面骨架：導覽堆疊內顯示依畫面狀態切換的主體，出現時載入資料，標題為「分析」
     var body: some View {
-        let palette = BLPalette()
-
-        // 三分支解析：已載入顯示內容、有錯誤顯示失敗與重試、其餘才是載入中。
-        // 只判斷「是否已載入」會讓失敗永遠停在轉圈
-        let core = Group {
-            switch store.orders.loadState {
-            case .loaded:
-                if store.orders.orders.isEmpty {
-                    emptyState(palette: palette)
-                } else {
-                    analyticsContent(palette: palette)
+        NavigationStack {
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.blBackground)
+                .task {
+                    await store.send(.view(.task)).finish()
                 }
-
-            case let .failed(message):
-                BLLoadFailureView(
-                    message: message,
-                    retryIdentifier: BLAccessibilityID.Common.loadFailureRetryButton("insights")
-                ) {
-                    store.send(.orders(.task))
-                }
-                .accessibilityIdentifier(BLAccessibilityID.Common.loadFailure("insights"))
-
-            case .loading:
-                loadingPlaceholder(palette: palette)
-            }
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(palette.background)
-        .task {
-            await store.send(.orders(.task)).finish()
-        }
-        return NavigationStack {
-            core
-                .rootNavigationTitle("分析", language: store.settings.language)
+                .rootNavigationTitle("orders.filter.title.insights", language: language)
         }
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension InsightsView {
 
-    /// 有訂單資料時的完整分析內容
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 分析內容 view
-    @ViewBuilder
-    func analyticsContent(palette: BLPalette) -> some View {
-        let stats = InsightsStats(
-            orders: store.orders.orders,
-            range: store.insightsDateRange,
-            referenceDate: date(),
-            calendar: calendar,
-            locale: locale,
-            palette: palette
-        )
-        // 掃全部訂單的排行與熱力圖在一次 render 內各算一次，避免 card view builder 每次重算
-        let campaignRanks = InsightsStats.campaignProfitRanking(
-            campaigns: store.campaigns.campaigns,
-            orders: store.orders.orders
-        )
-        let heatmapCells = InsightsStats.computeHeatmap(
-            orders: store.orders.orders,
-            referenceDate: date(),
-            calendar: calendar
-        )
+    /// 期間選擇器，切換走勢卡統計的期間
+    var rangePicker: some View {
+        // segmented picker 的選項無法個別掛 identifier，identifier 掛在 `Picker` 本體，測試端依宣告順序點選選項
+        Picker("orders.list.label.period", selection: $store.insightsDateRange) {
+            ForEach(InsightsDateRange.allCases) {
+                Text(LocalizedStringKey($0.title))
+                    .tag($0)
+            }
+        }
+        .pickerStyle(.segmented)
+        .accessibilityIdentifier(BLAccessibilityID.Insights.rangePicker)
+    }
 
+    /// 組出有分析資料時的完整內容：期間選擇器與各張分析卡片
+    ///
+    /// - Parameters:
+    ///   - stats: 依記錄的日期脈絡計算的分析統計
+    ///   - heatmap: 依記錄的日期脈絡計算的下單熱力圖
+    /// - Returns: 可捲動的分析內容
+    func analyticsContent(stats: InsightsStats, heatmap: InsightsHeatmap) -> some View {
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 rangePicker
-                trendCard(stats: stats, palette: palette)
-                breakdownGrid(stats: stats, palette: palette)
-                campaignProfitCard(ranks: campaignRanks, palette: palette)
-                heatmapCard(cells: heatmapCells, palette: palette)
+
+                trendCard(stats: stats)
+
+                breakdownGrid(stats: stats)
+
+                campaignProfitCard(ranks: store.campaignRanks)
+
+                InsightsHeatmapCard(heatmap: heatmap, weekdayLabels: weekdayLabels)
             }
             .padding(.horizontal, BLSpacing.large)
             .padding(.vertical, BLSpacing.large)
@@ -134,409 +94,145 @@ private extension InsightsView {
     }
 
     /// 沒有訂單時的空狀態，引導使用者先建立訂單
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 空狀態 view
-    @ViewBuilder
-    func emptyState(palette: BLPalette) -> some View {
+    var emptyState: some View {
         ContentUnavailableView {
-            Label("尚未有足夠可用於分析的資料", systemImage: "chart.bar.xaxis")
+            Label("insights.chart.label.enoughDataInsights", systemImage: "chart.bar.xaxis")
         } description: {
-            Text("先到「訂單」分頁新增幾筆訂單，這裡就會出現走勢、類別排行、成本結構與下單熱力圖。")
+            Text("insights.chart.message.addFewOrders")
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .accessibilityIdentifier(BLAccessibilityID.Insights.emptyState)
     }
 
-    /// 首次載入訂單前顯示的骨架
-    ///
-    /// 骨架以真實版面結構呈現 (期間選擇器、走勢卡、並列卡) 而非通用方塊，
-    /// 使內容就緒時版面不跳動；轉圈延遲逾一秒後才疊加
-    /// - Parameter palette: 目前外觀使用的色盤
-    /// - Returns: 骨架 view
-    @ViewBuilder
-    func loadingPlaceholder(palette: BLPalette) -> some View {
+    /// 載入中或尚未記錄日期時顯示的骨架
+    var loadingPlaceholder: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: BLSpacing.large) {
                 RoundedRectangle(cornerRadius: BLRadius.small, style: .continuous)
-                    .fill(palette.fillQuaternary)
-                    .frame(height: 32)
+                    .frame(height: rangePlaceholderHeight)
+                    .foregroundStyle(.blFillQuaternary)
 
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
-                    .fill(palette.fillTertiary)
-                    .frame(height: 280)
+                    .frame(height: trendPlaceholderHeight)
+                    .foregroundStyle(.blFillTertiary)
 
                 RoundedRectangle(cornerRadius: BLRadius.large, style: .continuous)
-                    .fill(palette.fillQuaternary)
-                    .frame(height: 220)
+                    .frame(height: rankingPlaceholderHeight)
+                    .foregroundStyle(.blFillQuaternary)
             }
             .padding(.horizontal, BLSpacing.large)
             .padding(.vertical, BLSpacing.large)
         }
-        .scrollDisabled(true)
         .overlay {
-            DelayedProgressView()
+            BLDelayedProgressView()
         }
+        .scrollDisabled(true)
         .accessibilityElement()
-        .accessibilityLabel(Text("載入中"))
+        .accessibilityLabel(Text("common.action.label.loading"))
         .accessibilityIdentifier(BLAccessibilityID.Common.loading("insights"))
     }
 
-    /// 期間選擇器
-    @ViewBuilder
-    var rangePicker: some View {
-        // segmented Picker 的選項掛不上 identifier (同 tab bar)；測試端以 rangePicker 定位後取 segmentedControls.buttons 依序點選
-        Picker("期間", selection: $store.insightsDateRange) {
-            ForEach(InsightsDateRange.allCases) { range in
-                Text(LocalizedStringKey(range.title))
-                    .tag(range)
-            }
-        }
-        .pickerStyle(.segmented)
-        .accessibilityIdentifier(BLAccessibilityID.Insights.rangePicker)
-    }
+    /// 依畫面狀態切換的主體：載入骨架、載入失敗、空狀態或分析內容，狀態只讀一次
+    var content: some View {
+        Group {
+            switch store.screenState {
+            case .loading:
+                loadingPlaceholder
 
-    /// 走勢卡
-    /// - Parameters:
-    ///   - stats: 已計算的分析資料
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 走勢卡 view
-    @ViewBuilder
-    func trendCard(stats: InsightsStats, palette: BLPalette) -> some View {
-        BLCard {
-            VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                HStack(alignment: .firstTextBaseline) {
-                    Text(LocalizedStringKey(store.insightsDateRange.trendCardTitle))
-                        .font(.subheadline.weight(.medium))
-                        .foregroundStyle(palette.secondaryLabel)
-
-                    Spacer()
-
-                    Text(LocalizedStringKey(stats.trendDelta))
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(trendDeltaColor(stats.trendDeltaIsPositive, palette: palette))
+            case .failed(let message):
+                BLLoadFailureView(
+                    message: message,
+                    retryIdentifier: BLAccessibilityID.Common.loadFailureRetryButton("insights")
+                ) {
+                    store.send(.view(.retryTapped))
                 }
+                .accessibilityIdentifier(BLAccessibilityID.Common.loadFailure("insights"))
 
-                Text(formatTwd(stats.totalProfit))
-                    .font(.system(size: heroProfitSize, weight: .bold))
-                    .monospacedDigit()
-                    .foregroundStyle(palette.label)
+            case .empty:
+                emptyState
 
-                BLBarChart(
-                    data: stats.trendBars,
-                    height: 200,
-                    isScrollEnabled: true
-                )
-                .accessibilityIdentifier(BLAccessibilityID.Insights.trendChart)
+            case .analytics(let stats, let heatmap):
+                analyticsContent(stats: stats, heatmap: heatmap)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 
-    /// 類別排行 + 成本結構並列
-    /// - Parameters:
-    ///   - stats: 已計算的分析資料
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 並列卡片 view
+    /// 組出走勢卡，顯示目前選取期間的淨獲利與成長率
+    ///
+    /// - Parameter stats: 已計算的分析資料
+    /// - Returns: 走勢卡
+    func trendCard(stats: InsightsStats) -> some View {
+        InsightsTrendCard(
+            bars: InsightsFormatters.trendBars(stats.trendBuckets, locale: locale),
+            delta: LocalizedStringKey(
+                InsightsFormatters.trendDelta(stats.trendRatio, locale: locale)
+            ),
+            language: language,
+            range: store.insightsDateRange,
+            totalProfit: stats.totalProfit,
+            trend: BLTrend(delta: stats.trendRatio)
+        )
+    }
+
+    /// 組出類別排行與成本結構兩張卡：寬版並列，窄版上下堆疊
+    ///
+    /// - Parameter stats: 已計算的分析資料
+    /// - Returns: 兩張卡的排列
     @ViewBuilder
-    func breakdownGrid(stats: InsightsStats, palette: BLPalette) -> some View {
-        if useWideLayout {
+    func breakdownGrid(stats: InsightsStats) -> some View {
+        if shouldUseWideLayout {
             HStack(alignment: .top, spacing: BLSpacing.medium) {
-                categoryCard(stats: stats, palette: palette)
+                categoryCard(stats: stats)
                     .frame(maxWidth: .infinity)
-                costStructureCard(stats: stats, palette: palette)
+
+                costStructureCard(stats: stats)
                     .frame(maxWidth: .infinity)
             }
         } else {
             VStack(spacing: BLSpacing.medium) {
-                categoryCard(stats: stats, palette: palette)
-                costStructureCard(stats: stats, palette: palette)
+                categoryCard(stats: stats)
+
+                costStructureCard(stats: stats)
             }
         }
     }
 
-    /// 每團毛利排行卡：依毛利由高到低排序各開團 (排除無歸屬訂單的團)；點擊跳到該開團詳情。沒有可排行的開團時整卡隱藏
-    /// - Parameters:
-    ///   - ranks: 由 ``analyticsContent(palette:)`` 一次算好的開團毛利排行
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 開團毛利排行卡 view (無資料時為 `EmptyView`)
+    /// 組出類別排行卡，點擊一列會要求查看該類別的訂單
+    ///
+    /// - Parameter stats: 已計算的分析資料
+    /// - Returns: 類別排行卡
+    func categoryCard(stats: InsightsStats) -> some View {
+        InsightsCategoryCard(categories: stats.categories) {
+            store.send(.view(.categoryTapped($0)))
+        }
+    }
+
+    /// 組出成本結構卡，以圈狀圖與圖例呈現各項成本占總成本的比例
+    ///
+    /// - Parameter stats: 已計算的分析資料
+    /// - Returns: 圈狀圖加圖例的成本結構卡
+    func costStructureCard(stats: InsightsStats) -> some View {
+        InsightsCostStructureCard(
+            language: language,
+            segments: stats.costSegments,
+            totalCost: stats.totalCost
+        )
+    }
+
+    /// 組出每團毛利排行卡；沒有可排行的開團時隱藏，點擊一列會要求查看該開團
+    ///
+    /// - Parameter ranks: 依開團與訂單算出的每團毛利排行
+    /// - Returns: 開團毛利排行卡，無資料時為空
     @ViewBuilder
-    func campaignProfitCard(ranks: [CampaignProfitRank], palette: BLPalette) -> some View {
+    func campaignProfitCard(ranks: [CampaignProfitRank]) -> some View {
         if !ranks.isEmpty {
-            BLCard {
-                VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                    Text("每團毛利排行")
-                        .font(.subheadline.weight(.semibold))
-                        .foregroundStyle(palette.label)
-
-                    ForEach(ranks) { rank in
-                        Button {
-                            store.send(.campaignSelected(rank.campaignName))
-                        } label: {
-                            BLProgressBar(
-                                title: "\(rank.rank). \(rank.campaignName)",
-                                value: rank.ratio,
-                                tint: palette.accent,
-                                trailingText: CampaignFormatters.twd(rank.profit, locale: locale)
-                            )
-                            .contentShape(.rect)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("查看 \(rank.campaignName) 的詳情")
-                        .accessibilityIdentifier(BLAccessibilityID.Insights.campaignRankRow(campaignID: rank.id))
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
+            InsightsCampaignProfitCard(
+                onCampaignTapped: {
+                    store.send(.view(.campaignTapped($0)))
+                },
+                ranks: ranks
+            )
         }
-    }
-
-    /// 類別排行卡
-    /// - Parameters:
-    ///   - stats: 已計算的分析資料
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 類別卡 view
-    @ViewBuilder
-    func categoryCard(stats: InsightsStats, palette: BLPalette) -> some View {
-        BLCard {
-            VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                Text("類別排行")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(palette.label)
-
-                if stats.categories.isEmpty {
-                    Text("尚無分類資料")
-                        .font(.footnote)
-                        .foregroundStyle(palette.secondaryLabel)
-                } else {
-                    let topProfit = stats.categories.first?.profit ?? 1
-                    ForEach(Array(stats.categories.enumerated()), id: \.element.name) { index, category in
-                        Button {
-                            store.send(.categorySelected(category.name))
-                        } label: {
-                            categoryRow(
-                                rank: index + 1,
-                                category: category,
-                                topProfit: topProfit,
-                                tint: categoryTints(palette: palette)[index % categoryTints(palette: palette).count],
-                                palette: palette
-                            )
-                            .contentShape(.rect)
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityHint("查看 \(category.name) 類別的訂單")
-                        .accessibilityIdentifier(BLAccessibilityID.Insights.categoryRankRow(category: category.name))
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    /// 類別排行單列
-    /// - Parameters:
-    ///   - rank: 名次
-    ///   - category: 類別資料
-    ///   - topProfit: 第一名的獲利金額 (作為比例基準)
-    ///   - tint: bar 顏色
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 類別列 view
-    @ViewBuilder
-    func categoryRow(
-        rank: Int,
-        category: InsightsCategory,
-        topProfit: Decimal,
-        tint: Color,
-        palette: BLPalette
-    ) -> some View {
-        let value = NSDecimalNumber(decimal: category.profit).doubleValue
-        let total = NSDecimalNumber(decimal: topProfit).doubleValue
-        let fraction = total > 0 ? CGFloat(value / total) : 0
-
-        VStack(alignment: .leading, spacing: 6) {
-            HStack {
-                Text("\(rank). \(category.name)")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(palette.label)
-
-                Spacer()
-
-                Text(formatTwd(category.profit))
-                    .font(.subheadline.weight(.semibold))
-                    .monospacedDigit()
-                    .foregroundStyle(palette.label)
-
-                Image(systemName: "chevron.right")
-                    .font(.footnote)
-                    .foregroundStyle(palette.tertiaryLabel)
-                    .accessibilityHidden(true)
-            }
-
-            GeometryReader { geo in
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(palette.fillQuaternary)
-                    Capsule()
-                        .fill(tint)
-                        .frame(width: max(0, geo.size.width * fraction))
-                }
-            }
-            .frame(height: 6)
-        }
-    }
-
-    /// 成本結構 donut 卡
-    /// - Parameters:
-    ///   - stats: 已計算的分析資料
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 成本結構卡 view
-    @ViewBuilder
-    func costStructureCard(stats: InsightsStats, palette: BLPalette) -> some View {
-        BLCard {
-            VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                Text("成本結構")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(palette.label)
-
-                VStack(alignment: .leading, spacing: BLSpacing.large) {
-                    BLDonutChart(
-                        segments: stats.costSegments.map {
-                            BLDonutSegment(
-                                label: $0.label,
-                                value: NSDecimalNumber(decimal: $0.value).doubleValue,
-                                color: $0.color,
-                                valueDescription: formatTwd($0.value)
-                            )
-                        },
-                        centerTitle: "總成本",
-                        centerValue: formatTwd(stats.totalCost)
-                    )
-                    .frame(maxWidth: .infinity)
-                    .accessibilityIdentifier(BLAccessibilityID.Insights.costDonut)
-
-                    VStack(alignment: .leading, spacing: BLSpacing.small) {
-                        ForEach(stats.costSegments) { segment in
-                            HStack(spacing: BLSpacing.small) {
-                                RoundedRectangle(cornerRadius: 2, style: .continuous)
-                                    .fill(segment.color)
-                                    .frame(width: 8, height: 8)
-
-                                Text(LocalizedStringKey(segment.label))
-                                    .font(.caption)
-                                    .foregroundStyle(palette.secondaryLabel)
-
-                                Spacer()
-
-                                Text(formatTwd(segment.value))
-                                    .font(.caption.weight(.semibold))
-                                    .monospacedDigit()
-                                    .foregroundStyle(palette.label)
-                            }
-                        }
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-            }
-        }
-    }
-
-    /// 過去 N 週的下單熱力圖；N 由 ``InsightsStats/heatmapWeekCount`` 決定
-    /// - Parameters:
-    ///   - cells: 由 ``analyticsContent(palette:)`` 一次算好的熱力圖格值
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 熱力圖卡 view
-    @ViewBuilder
-    func heatmapCard(cells: [HeatmapKey: Int], palette: BLPalette) -> some View {
-        let weekCount = InsightsStats.heatmapWeekCount
-        let maxCount = cells.values.max() ?? 1
-
-        BLCard {
-            VStack(alignment: .leading, spacing: BLSpacing.medium) {
-                Text("下單熱力 · 過去 \(weekCount) 週")
-                    .font(.subheadline.weight(.semibold))
-                    .foregroundStyle(palette.label)
-
-                LazyVGrid(
-                    columns: [GridItem(.fixed(heatmapWeekdayColumnWidth), spacing: 6)] + Array(
-                        repeating: GridItem(.flexible(), spacing: 6),
-                        count: weekCount
-                    ),
-                    spacing: 6
-                ) {
-                    Text(" ")
-                        .frame(width: heatmapWeekdayColumnWidth)
-
-                    ForEach(0..<weekCount, id: \.self) { week in
-                        Text("W\(week + 1)")
-                            .font(.caption2)
-                            .foregroundStyle(palette.secondaryLabel)
-                            .frame(maxWidth: .infinity)
-                    }
-
-                    // 攤平成單層 ForEach；LazyVGrid 只可靠展開直接子層的 ForEach，
-                    // 外層 ForEach 內再巢狀 ForEach (且帶 sibling Text) 時，巢狀那層不會被攤成 cell
-                    ForEach(0..<(7 * (weekCount + 1)), id: \.self) { index in
-                        let weekday = index / (weekCount + 1)
-                        let column = index % (weekCount + 1)
-
-                        if column == 0 {
-                            Text(weekdayLabel(weekday))
-                                .font(.caption)
-                                .foregroundStyle(palette.secondaryLabel)
-                                .frame(width: heatmapWeekdayColumnWidth, alignment: .leading)
-                        } else {
-                            heatmapCell(
-                                count: cells[HeatmapKey(week: column - 1, weekday: weekday)] ?? 0,
-                                maxCount: maxCount,
-                                weekday: weekdayLabel(weekday),
-                                week: column,
-                                palette: palette
-                            )
-                        }
-                    }
-                }
-                // 整圖摘要：讓使用者不必逐格走過就能理解這張圖的範圍與規模
-                .accessibilityElement(children: .contain)
-                .accessibilityLabel(Text("下單熱力圖，涵蓋過去 \(weekCount) 週，最高單日 \(maxCount) 單"))
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-        }
-    }
-
-    /// 熱力圖單一 cell
-    /// - Parameters:
-    ///   - count: 訂單筆數
-    ///   - maxCount: 整張熱力圖中最高的訂單筆數，用來決定相對深淺
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: cell view
-    @ViewBuilder
-    func heatmapCell(
-        count: Int,
-        maxCount: Int,
-        weekday: String,
-        week: Int,
-        palette: BLPalette
-    ) -> some View {
-        let depth = BLHeatmapDepth.depth(for: count, maxCount: maxCount)
-
-        // 用明確高度撐起格子；`RoundedRectangle` 是 Shape 無 intrinsic size，
-        // 在 LazyVGrid 中靠 `aspectRatio` 會被旁邊 Text 那列壓成 0 高度而完全不顯示
-        RoundedRectangle(cornerRadius: 4, style: .continuous)
-            .fill(depth?.background ?? palette.fillQuaternary)
-            .frame(maxWidth: .infinity)
-            .frame(height: heatmapCellHeight)
-            .overlay {
-                if let depth {
-                    Text("\(count)")
-                        .font(.caption2.weight(.semibold))
-                        .foregroundStyle(depth.numeral)
-                        .accessibilityHidden(true)
-                }
-            }
-            // 零值格子排除於無障礙樹外，否則輔助技術要逐一朗讀七十次沒有位置資訊的數字；
-            // 非零格子帶上「星期 + 第幾週」讓數字有座標可依附
-            .accessibilityHidden(count == 0)
-            .accessibilityLabel(Text("\(weekday) 第 \(week) 週"))
-            .accessibilityValue(Text("\(count) 單"))
     }
 }
 
@@ -544,80 +240,38 @@ private extension InsightsView {
 
 private extension InsightsView {
 
-    // MARK: Layout
-
-    /// 是否使用寬版面 (並列兩張卡)
-    var useWideLayout: Bool {
-        return horizontalSizeClass != .compact
+    /// 是否使用寬版面 (並列兩張卡，版面分類為 `regular`)
+    var shouldUseWideLayout: Bool {
+        layoutClass == .regular
     }
 
-    /// 類別 bar 的色盤序列
-    func categoryTints(palette: BLPalette) -> [Color] {
-        [
-            palette.accent,
-            palette.purple,
-            palette.orange,
-            palette.teal,
-            palette.pink
-        ]
-    }
-
-    /// 依 App 選定 locale 顯示在熱力圖左側的星期縮寫
-    /// - Parameter index: 0 為週一、6 為週日
-    /// - Returns: 依選定 locale 呈現的星期縮寫
-    func weekdayLabel(_ index: Int) -> String {
-        var localizedCalendar = Calendar.current
-        localizedCalendar.locale = locale
-        let symbols = localizedCalendar.veryShortStandaloneWeekdaySymbols
-        let mondayFirstIndex = (index + 1) % symbols.count
-        return symbols[mondayFirstIndex]
-    }
-
-    // MARK: Heatmap
-
-    // MARK: Formatting
-
-    /// 依 App 選定 locale 將金額格式化為新台幣 (無小數位)
-    /// - Parameter amount: 金額
-    /// - Returns: 依選定 locale 呈現的金額字串
-    func formatTwd(_ amount: Decimal) -> String {
-        amount.formatted(
-            .currency(code: CurrencyCode.twd.code)
-            .precision(.fractionLength(0))
-            .locale(locale)
-        )
-    }
-
-    /// 將 ``InsightsStats/trendDeltaIsPositive`` 轉成顯示色：上升綠、下降紅、無對照灰
-    /// - Parameters:
-    ///   - isPositive: 方向旗標
-    ///   - palette: 目前外觀使用的色盤
-    /// - Returns: 對應的字色
-    func trendDeltaColor(_ isPositive: Bool?, palette: BLPalette) -> Color {
-        switch isPositive {
-        case .some(true):
-            return palette.green
-        case .some(false):
-            return palette.red
-        case .none:
-            return palette.tertiaryLabel
+    /// 熱力圖左側的星期縮寫，依記錄的行事曆與 App 選定的 `locale` 排列；尚未記錄日期時為空陣列
+    var weekdayLabels: [String] {
+        guard let calendar = store.dateContext?.calendar else {
+            return []
         }
+        return InsightsFormatters.weekdayLabels(calendar: calendar, locale: locale)
     }
 }
 
 // MARK: - Preview
 
-#Preview("分析") {
-    let previewState: RootFeature.State = {
-        var state = RootFeature.State()
-        state.orders.orders = LedgerOrder.sampleOrders
-        state.orders.hasLoaded = true
+#Preview("orders.filter.title.insights") {
+    let previewState: InsightsFeature.State = {
+        var state = InsightsFeature.State()
+        state.orders = LedgerOrder.sampleOrders
+        state.loadState = .loaded
+        state.dateContext = InsightsDateContext(
+            now: LedgerOrder.sampleOrders[0].date,
+            calendar: Calendar(identifier: .gregorian)
+        )
         return state
     }()
 
-    return InsightsView(
+    InsightsView(
         store: Store(initialState: previewState) {
-            RootFeature()
-        }
+            InsightsFeature()
+        },
+        language: .traditionalChinese
     )
 }

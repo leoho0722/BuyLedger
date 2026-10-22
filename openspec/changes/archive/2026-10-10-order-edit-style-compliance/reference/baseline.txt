@@ -1,0 +1,212 @@
+== [A] apps/ios/BuyLedger/Features/Orders/OrderEditFeature.swift (3)
+   L1 LEN 不含檔頭與空行 893 行
+   L969 MKNX 為巢狀型別另開 extension：extension OrderEditFeature.State {
+   L1074 MKNX 為巢狀型別另開 extension：extension OrderEditFeature.State {
+== [A] apps/ios/BuyLedger/Features/Orders/OrderEditView.swift (55)
+   L1 LEN 不含檔頭與空行 927 行
+   L15 MK1 MARK 段名：View Properties
+   L29 MK1 MARK 段名：View Body
+   L70 NAMED1 單一表達式的 closure 用 $0，不用具名的 status
+   L132 NAMED1 單一表達式的 closure 用 $0，不用具名的 name
+   L139 NAMED1 單一表達式的 closure 用 $0，不用具名的 status
+   L148 PARTW 斷行後多個參數或引數擠在同一行：title: "外國國內運費", value: $store.draft.foreignDomest
+   L150 RPAR 斷行呼叫的右括號沒有單獨一行：field: .foreignDomesticShipping)
+   L151 PARTW 斷行後多個參數或引數擠在同一行：title: "國際運費", value: $store.draft.internationalSh
+   L153 RPAR 斷行呼叫的右括號沒有單獨一行：field: .internationalShipping)
+   L154 PARTW 斷行後多個參數或引數擠在同一行：title: "國內運費", value: $store.draft.domesticShippin
+   L156 RPAR 斷行呼叫的右括號沒有單獨一行：field: .domesticShipping)
+   L232 D6 註解結尾句號
+   L262 MK1 MARK 段名：ViewBuilder
+   L267 DOCBL 摘要與參數標記之間缺空的 ///
+   L283 NAMED1 單一表達式的 closure 用 $0，不用具名的 source
+   L286 NAMED1 單一表達式的 closure 用 $0，不用具名的 name
+   L294 D6 註解結尾句號
+   L304 NAMED1 單一表達式的 closure 用 $0，不用具名的 name
+   L309 NAMED1 單一表達式的 closure 用 $0，不用具名的 category
+   L326 NAMED1 單一表達式的 closure 用 $0，不用具名的 category
+   L329 NAMED1 單一表達式的 closure 用 $0，不用具名的 name
+   L345 NAMED1 單一表達式的 closure 用 $0，不用具名的 name
+   L363 NAMED1 單一表達式的 closure 用 $0，不用具名的 method
+   L392 NAMED1 單一表達式的 closure 用 $0，不用具名的 status
+   L395 NAMED1 單一表達式的 closure 用 $0，不用具名的 name
+   L413 NAMED1 單一表達式的 closure 用 $0，不用具名的 code
+   L416 NAMED1 單一表達式的 closure 用 $0，不用具名的 code
+   L419 NAMED1 單一表達式的 closure 用 $0，不用具名的 code
+   L425 CASELET 改寫成 `case .x(let v)`，不用 `case let .x(v)`
+   L426 D6 註解結尾句號
+   L429 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 73 字元)：BLPhotoViewer(
+   L651 NAMED1 單一表達式的 closure 用 $0，不用具名的 offsets
+   L666 D6 註解結尾句號
+   L723 CLP closure 參數列獨佔一行：index, data in
+   L723 CLSIG closure 簽章跨行，參數列與 in 寫在 { 同一行
+   L730 RPAR 斷行呼叫的右括號沒有單獨一行：index: index)
+   L770 DOCBL 摘要與參數標記之間缺空的 ///
+   L775 D6 註解結尾句號
+   L815 DOCBL 摘要與參數標記之間缺空的 ///
+   L833 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 86 字元)：decimalNumberField(
+   L845 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 86 字元)：decimalNumberField(
+   L855 DOCBL 摘要與參數標記之間缺空的 ///
+   L867 NAMED1 單一表達式的 closure 用 $0，不用具名的 newValue
+   L891 DOCBL 摘要與參數標記之間缺空的 ///
+   L902 CALL1 未達斷行條件卻拆成多行 (3 個，接成一行 99 字元)：TextField(
+   L916 D6 註解結尾句號
+   L921 DOCBL 摘要與參數標記之間缺空的 ///
+   L960 CASECONT 多 pattern case 未排滿 100 就斷行 (下一項 `.cardFeeRate,` 仍放得下)
+   L961 CASECONT 多 pattern case 未排滿 100 就斷行 (下一項 `.itemQuantity,` 仍放得下)
+   L964 SWC switch case 之間缺空行：case .customerName, .itemName, .notes, .none:
+   L985 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 100 字元)：Binding(
+   L1001 CALL1 未達斷行條件卻拆成多行 (2 個，接成一行 91 字元)：Binding(
+   L1014 FUNWRAP 強制解包 (鐵則 3)：id: UUID(uuidString: "")!,
+   L1028 FUNWRAP 強制解包 (鐵則 3)：id: UUID(uuidString: "")!,
+== [A] apps/ios/BuyLedger/Features/Orders/OrderDraft.swift (16)
+   L1 LEN 不含檔頭與空行 325 行
+   L15 MK1 MARK 段名：Data Properties
+   L86 DOCBL 摘要與參數標記之間缺空的 ///
+   L96 D6 註解結尾句號
+   L98 PARTW 斷行後多個參數或引數擠在同一行：originalCardlessDeduction, max(0, original?.charge
+   L126 MK1 MARK 段名：Data Properties
+   L126 MKN 巢狀型別內的 MARK：Data Properties
+   L144 DOCBL 摘要與參數標記之間缺空的 ///
+   L156 D6 註解結尾句號
+   L204 DOCBL 摘要與參數標記之間缺空的 ///
+   L220 DOCBL 摘要與參數標記之間缺空的 ///
+   L248 DOCBL 摘要與參數標記之間缺空的 ///
+   L326 D6 註解結尾句號
+   L327 OPEOL 運算子放在行尾就斷行：let resolvedCustomer =
+   L365 DOCBL 摘要與參數標記之間缺空的 ///
+   L372 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedger/Features/Orders/OrdersMergeFlowOperations.swift (7)
+   L19 D2 有參數缺 - Parameter：static func mergeOrderTapped(_ orderID: LedgerOrder.ID, stat
+   L30 DOCBL 摘要與參數標記之間缺空的 ///
+   L58 DOCBL 摘要與參數標記之間缺空的 ///
+   L108 D2 有參數缺 - Parameter：static func mergePersistenceFailed(
+   L118 DOCBL 摘要與參數標記之間缺空的 ///
+   L129 PARTW 斷行後多個參數或引數擠在同一行：guard sourceIDs.contains(order.id), order.id != sa
+   L130 RPAR 斷行呼叫的右括號沒有單獨一行：editState, to: &state, newOrderID: newOrderID) els
+== [A] apps/ios/BuyLedger/Features/Orders/OrdersFeature.swift (1)
+   L1 LEN 不含檔頭與空行 1182 行
+== [A] apps/ios/BuyLedger/Features/Orders/OrdersFeature+StateQuery.swift (13)
+   L13 MKNX 為巢狀型別另開 extension：extension OrdersFeature.State {
+   L22 D9 associated value 缺 - Parameter：case failed(String)
+   L49 MKNX 為巢狀型別另開 extension：extension OrdersFeature.State {
+   L98 MKNX 為巢狀型別另開 extension：extension OrdersFeature.State {
+   L116 DOCBL 摘要與參數標記之間缺空的 ///
+   L162 DOCBL 摘要與參數標記之間缺空的 ///
+   L175 DOCBL 摘要與參數標記之間缺空的 ///
+   L194 DOCBL 摘要與參數標記之間缺空的 ///
+   L212 WSTR 單一字串字面值行寬 113 (列出說明，不計入失敗)
+   L223 DOLLAR2 兩個以上參數的 closure 要具名，不用 $1 簡寫
+   L231 DOCBL 摘要與參數標記之間缺空的 ///
+   L253 MKNX 為巢狀型別另開 extension：private extension OrdersFeature.State {
+   L256 DOCBL 摘要與參數標記之間缺空的 ///
+== [A] apps/ios/BuyLedgerTests/OrderEditFeatureTests.swift (1)
+   L1 LEN 不含檔頭與空行 1604 行
+== [A] apps/ios/BuyLedgerTests/OrderEditFocusTests.swift (1)
+   L149 WCL closure 簽章行寬 102 (formatting 允許，不計入失敗)
+== [A] apps/ios/BuyLedgerTests/OrderDraftTests.swift (103)
+   L11 TIMP @testable import 前缺空行
+   L17 GWT 缺 // Given
+   L17 GWT 缺 // Then
+   L17 GWT 缺 // When
+   L17 TNAMEL 舊式單段 lowerCamel 測試名稱：editingExistingOrderFallsBackToExistingValuesWhenD
+   L17 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L25 PARTW 斷行後多個參數或引數擠在同一行：original: existing, id: UUID(0), currentDate: Test
+   L26 RPAR 斷行呼叫的右括號沒有單獨一行：original: existing, id: UUID(0), currentDate: Test
+   L32 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [existing], newOrderID:
+   L33 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [existing], newOrderID:
+   L44 GWT 缺 // Given
+   L44 GWT 缺 // Then
+   L44 GWT 缺 // When
+   L44 TNAMEL 舊式單段 lowerCamel 測試名稱：newOrderUsesDefaultsWhenDraftFieldsAreEmpty
+   L44 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L51 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [], newOrderID: { "GENI
+   L52 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [], newOrderID: { "" })
+   L65 GWT 缺 // Given
+   L65 GWT 缺 // Then
+   L65 GWT 缺 // When
+   L65 TNAMEL 舊式單段 lowerCamel 測試名稱：nonCardlessPaymentMethodZeroesCardlessAmountsAndCl
+   L65 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L69 PARTW 斷行後多個參數或引數擠在同一行：name: "信用卡", isCardless: false, isBankTransfer: fa
+   L70 RPAR 斷行呼叫的右括號沒有單獨一行：name: "", isCardless: false, isBankTransfer: false
+   L70 TRAILC 多行字面值的最後一個元素後面要加逗號：name: "", isCardless: false, isBankTransfer: false
+   L79 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [], newOrderID: { "GENI
+   L80 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [], newOrderID: { "" })
+   L88 GWT 缺 // Given
+   L88 GWT 缺 // Then
+   L88 GWT 缺 // When
+   L88 TNAMEL 舊式單段 lowerCamel 測試名稱：cardlessPaymentMethodPreservesCardlessAmountsAndRe
+   L88 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L92 PARTW 斷行後多個參數或引數擠在同一行：name: "無卡存款", isCardless: true, isBankTransfer: fa
+   L93 RPAR 斷行呼叫的右括號沒有單獨一行：name: "", isCardless: true, isBankTransfer: false,
+   L93 TRAILC 多行字面值的最後一個元素後面要加逗號：name: "", isCardless: true, isBankTransfer: false,
+   L103 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [], newOrderID: { "GENI
+   L104 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [], newOrderID: { "" })
+   L112 GWT 缺 // Given
+   L112 GWT 缺 // Then
+   L112 GWT 缺 // When
+   L112 TNAMEL 舊式單段 lowerCamel 測試名稱：feeRatesAreClampedToUnitInterval
+   L112 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L118 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [], newOrderID: { "GENI
+   L119 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [], newOrderID: { "" })
+   L127 GWT 缺 // Given
+   L127 GWT 缺 // Then
+   L127 GWT 缺 // When
+   L127 TNAMEL 舊式單段 lowerCamel 測試名稱：negativeAmountsAreClampedToZero
+   L127 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L135 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [], newOrderID: { "GENI
+   L136 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [], newOrderID: { "" })
+   L146 GWT 缺 // Given
+   L146 GWT 缺 // Then
+   L146 GWT 缺 // When
+   L146 TNAMEL 舊式單段 lowerCamel 測試名稱：mergeDraftReusesPrimaryOrderCustomerInitialsAndTie
+   L146 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L147 PARTW 斷行後多個參數或引數擠在同一行：id: "BL-PRIMARY", customerName: "王小明", initials: "
+   L148 RPAR 斷行呼叫的右括號沒有單獨一行：id: "", customerName: "", initials: "", tier: .vip
+   L153 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [primary], newOrderID: 
+   L154 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [primary], newOrderID: 
+   L164 GWT 缺 // Given
+   L164 GWT 缺 // Then
+   L164 GWT 缺 // When
+   L164 TNAMEL 舊式單段 lowerCamel 測試名稱：plainNewOrderDerivesInitialsFromNameAndDefaultsToN
+   L164 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L168 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [], newOrderID: { "GENI
+   L169 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [], newOrderID: { "" })
+   L177 TNAME 測試名稱不符 `<方法>_<情境>_<預期>` (後兩段用正體中文)：existingOrderWritesPhotos_onlyWhenLoadedAndEdited
+   L177 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L180 PARTW 斷行後多個參數或引數擠在同一行：original: existing, id: UUID(0), currentDate: Test
+   L181 RPAR 斷行呼叫的右括號沒有單獨一行：original: existing, id: UUID(0), currentDate: Test
+   L187 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [existing], newOrderID:
+   L188 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [existing], newOrderID:
+   L196 TNAME 測試名稱不符 `<方法>_<情境>_<預期>` (後兩段用正體中文)：existingOrderPreservesPhotos_whenLoadedAndUnedited
+   L196 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L199 PARTW 斷行後多個參數或引數擠在同一行：original: existing, id: UUID(0), currentDate: Test
+   L200 RPAR 斷行呼叫的右括號沒有單獨一行：original: existing, id: UUID(0), currentDate: Test
+   L206 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [existing], newOrderID:
+   L207 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [existing], newOrderID:
+   L218 TNAME 測試名稱不符 `<方法>_<情境>_<預期>` (後兩段用正體中文)：existingOrder_unloadedPhotos_doesNotWritePhotos
+   L244 GWT 缺 // Given
+   L244 GWT 缺 // Then
+   L244 GWT 缺 // When
+   L244 TNAMEL 舊式單段 lowerCamel 測試名稱：newOrderAlwaysWritesPhotosRegardlessOfEditedFlag
+   L244 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L249 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [], newOrderID: { "GENI
+   L250 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [], newOrderID: { "" })
+   L258 GWT 缺 // Given
+   L258 GWT 缺 // Then
+   L258 GWT 缺 // When
+   L258 TNAMEL 舊式單段 lowerCamel 測試名稱：categoriesAndCampaignNamesAreNormalized
+   L258 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L263 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [], newOrderID: { "GENI
+   L264 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [], newOrderID: { "" })
+   L271 GWT 缺 // Given
+   L271 GWT 缺 // Then
+   L271 GWT 缺 // When
+   L271 TNAMEL 舊式單段 lowerCamel 測試名稱：notesClearedIsPersistedAsEmptyStringNotFallenBackT
+   L271 TSTL `@Test` 與 `func` 寫在同一行，樣板是 `@Test` 單獨一行
+   L273 PARTW 斷行後多個參數或引數擠在同一行：original: existing, id: UUID(0), currentDate: Test
+   L274 RPAR 斷行呼叫的右括號沒有單獨一行：original: existing, id: UUID(0), currentDate: Test
+   L277 PARTW 斷行後多個參數或引數擠在同一行：editState, existingOrders: [existing], newOrderID:
+   L278 RPAR 斷行呼叫的右括號沒有單獨一行：editState, existingOrders: [existing], newOrderID:
+== [A] apps/ios/BuyLedgerTests/OrdersFeatureTests.swift (1)
+   L1 LEN 不含檔頭與空行 2910 行
+TOTAL {'LEN': 6, 'MKNX': 6, 'MK1': 5, 'NAMED1': 18, 'PARTW': 25, 'RPAR': 25, 'D6': 9, 'DOCBL': 22, 'CASELET': 1, 'CALL1': 6, 'CLP': 1, 'CLSIG': 1, 'CASECONT': 2, 'SWC': 1, 'FUNWRAP': 2, 'MKN': 1, 'OPEOL': 1, 'D2': 2, 'D9': 1, 'WSTR': 1, 'DOLLAR2': 1, 'WCL': 1, 'TIMP': 1, 'GWT': 33, 'TNAMEL': 11, 'TSTL': 13, 'TRAILC': 2, 'TNAME': 3} files 15 FAIL

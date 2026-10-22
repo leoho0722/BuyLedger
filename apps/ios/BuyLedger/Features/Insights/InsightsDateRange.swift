@@ -8,9 +8,7 @@
 import Foundation
 
 /// 分析頁可選的趨勢期間
-enum InsightsDateRange: String, CaseIterable, Identifiable, Sendable {
-
-    // MARK: - Cases
+enum InsightsDateRange: String, CaseIterable, Sendable {
 
     /// 過去 30 天
     case thirtyDays
@@ -20,35 +18,47 @@ enum InsightsDateRange: String, CaseIterable, Identifiable, Sendable {
 
     /// 過去 12 個月
     case twelveMonths
+}
 
-    // MARK: - Identifiable Properties
+// MARK: - Computed Properties
 
-    /// 區間穩定識別
-    var id: String { rawValue }
-
-    // MARK: - Display Properties
+extension InsightsDateRange {
 
     /// 顯示在 segmented control 上的標題
     var title: String {
         switch self {
         case .thirtyDays:
-            "30 天"
+            "insights.chart.label.thirtyDays"
+
         case .sixMonths:
-            "6 個月"
+            "insights.chart.label.sixMonths"
+
         case .twelveMonths:
-            "12 個月"
+            "dashboard.overview.label.twelveMonths"
         }
     }
 
-    /// 顯示在 trend card 上的子標題
+    /// 趨勢卡片標題
     var trendCardTitle: String {
         switch self {
         case .thirtyDays:
-            "30 天淨獲利"
+            "insights.chart.label.thirtyDayNetProfit"
+
         case .sixMonths:
-            "6 個月淨獲利"
+            "insights.chart.label.sixMonthNetProfit"
+
         case .twelveMonths:
-            "12 個月淨獲利"
+            "insights.chart.label.twelveMonthNetProfit"
         }
+    }
+}
+
+// MARK: - Identifiable
+
+extension InsightsDateRange: Identifiable {
+
+    /// 用 raw value 當識別值
+    var id: String {
+        rawValue
     }
 }

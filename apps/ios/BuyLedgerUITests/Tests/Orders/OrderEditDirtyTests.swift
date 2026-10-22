@@ -7,40 +7,65 @@
 
 import XCTest
 
-/// 訂單編輯表單有未儲存變更時，取消所觸發的捨棄確認流程測試
-///
-/// 捨棄確認是 TCA `AlertState`、掛不上 identifier，故以「有無 alert 呈現」判定，按鈕以顯示文字定位 (主回歸測試計畫已鎖定 zh-Hant/TW，按鈕文字為決定值)。
-/// 兩條分支各驗一次：點「繼續編輯」收回 alert 仍停在表單、點「捨棄變更」離開表單回清單
+/// 訂單編輯表單按取消時的關閉與捨棄確認流程測試
 final class OrderEditDirtyTests: BLUITestCase {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 造成未儲存變更用的客戶名稱草稿
     private static let draftCustomerName = "草稿客戶"
 
-    /// 捨棄確認 alert 的「繼續編輯」按鈕文字 (``OrderEditFeature`` 的 cancel 角色按鈕)
+    /// 捨棄確認 alert 的繼續編輯按鈕文字
     private static let continueEditingLabel = "繼續編輯"
 
-    /// 捨棄確認 alert 的「捨棄變更」按鈕文字 (``OrderEditFeature`` 的 destructive 角色按鈕)
+    /// 捨棄確認 alert 的捨棄變更按鈕文字
     private static let discardLabel = "捨棄變更"
 
-    // MARK: - Tests
-
-    /// 填一點東西後點取消，出現捨棄確認 alert；點「繼續編輯」alert 收回、仍停在表單
+    /// 進過選擇器再返回且未修改時，取消直接關閉表單並回到清單
     @MainActor
-    func testCancelWithChangesThenContinueEditingStaysOnForm() {
+    func testCancel_進過選擇器返回且未修改_關閉表單() {
+        // Given
         let app = launch(LaunchOptions(seed: .lookupsOnly))
         let edit = openOrderEdit(app)
+        edit.openSourcePicker()
+        let picker = OptionPickerScreen(app: app)
+        if !picker.waitUntilReady() {
+            failWithDiagnostics(in: app, "選擇器根 identifier「\(picker.rootIdentifier)」逾時仍未出現")
+        }
+        picker.tapBack()
+        if !edit.waitUntilReady() {
+            failWithDiagnostics(in: app, "從選擇器返回後編輯表單未就緒")
+        }
 
-        edit.typeCustomerName(Self.draftCustomerName)
+        // When
         edit.tapCancel()
 
+        // Then
+        if !edit.rootElement.waitForDisappearance() {
+            failWithDiagnostics(in: app, "進過選擇器返回後點取消，編輯表單未關閉")
+        }
+        let orders = OrdersScreen(app: app)
+        if !orders.waitUntilReady() {
+            failWithDiagnostics(in: app, "取消後未回到訂單清單，根 identifier 逾時仍未出現")
+        }
+    }
+
+    /// 選擇繼續編輯後，alert 消失且仍在表單
+    @MainActor
+    func testCancel_有變更後選繼續編輯_停留在表單() {
+        // Given
+        let app = launch(LaunchOptions(seed: .lookupsOnly))
+        let edit = openOrderEdit(app)
+        edit.typeCustomerName(Self.draftCustomerName)
+        edit.tapCancel()
         if !app.alertPresented() {
             failWithDiagnostics(in: app, "有未儲存變更時點取消，捨棄確認 alert 未呈現")
         }
 
+        // When
         app.tapAlertButton(label: Self.continueEditingLabel)
 
+        // Then
         if !app.alertDismissed() {
             failWithDiagnostics(in: app, "點「繼續編輯」後捨棄確認 alert 未收回")
         }
@@ -49,21 +74,22 @@ final class OrderEditDirtyTests: BLUITestCase {
         }
     }
 
-    /// 填一點東西後點取消，出現捨棄確認 alert；點「捨棄變更」離開表單、回到訂單清單
+    /// 選擇捨棄變更後離開表單並回到清單
     @MainActor
-    func testCancelWithChangesThenDiscardLeavesForm() {
+    func testCancel_有變更後選捨棄變更_關閉表單並回到清單() {
+        // Given
         let app = launch(LaunchOptions(seed: .lookupsOnly))
         let edit = openOrderEdit(app)
-
         edit.typeCustomerName(Self.draftCustomerName)
         edit.tapCancel()
-
         if !app.alertPresented() {
             failWithDiagnostics(in: app, "有未儲存變更時點取消，捨棄確認 alert 未呈現")
         }
 
+        // When
         app.tapAlertButton(label: Self.discardLabel)
 
+        // Then
         // 捨棄後表單關閉，回到訂單清單
         let editRoot = app.descendants(matching: .any)[BLAccessibilityID.OrderEdit.root]
         if !editRoot.waitForDisappearance() {
@@ -82,11 +108,12 @@ final class OrderEditDirtyTests: BLUITestCase {
 private extension OrderEditDirtyTests {
 
     /// 切到訂單分頁、點新增並等編輯表單就緒，回傳編輯表單 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
-    /// - Returns: 已就緒的訂單編輯 Page Object
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
+    /// - Returns: 已就緒的訂單編輯表單 Page Object
     @MainActor
     func openOrderEdit(
         _ app: XCUIApplication,
@@ -94,8 +121,13 @@ private extension OrderEditDirtyTests {
         line: UInt = #line
     ) -> OrderEditScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToOrders() {
-            failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
+        if !root.goToOrders(file: file, line: line) {
+            failWithDiagnostics(
+                in: app,
+                "切到訂單分頁後畫面未就緒",
+                file: file,
+                line: line
+            )
         }
 
         let orders = OrdersScreen(app: app)
@@ -108,7 +140,7 @@ private extension OrderEditDirtyTests {
             )
         }
 
-        orders.tapAddOrder()
+        orders.tapAddOrder(file: file, line: line)
 
         let edit = OrderEditScreen(app: app)
         if !edit.waitUntilReady() {

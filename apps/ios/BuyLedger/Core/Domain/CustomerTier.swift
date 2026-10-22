@@ -7,7 +7,7 @@
 
 import Foundation
 
-// MARK: - Display Properties
+// MARK: - Computed Properties
 
 extension CustomerTier {
 
@@ -15,9 +15,9 @@ extension CustomerTier {
     var title: String {
         switch self {
         case .new:
-            "新客"
+            "customers.list.label.new"
         case .regular:
-            "常客"
+            "customers.list.label.returning"
         case .vip:
             "VIP"
         }

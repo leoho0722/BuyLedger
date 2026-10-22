@@ -1,0 +1,91 @@
+{
+  "schema": "mobilebuildmcp.output.capture-result",
+  "schemaVersion": "2",
+  "didError": false,
+  "error": null,
+  "data": {
+    "summary": {
+      "status": "SUCCEEDED"
+    },
+    "artifacts": {
+      "simulatorId": "FC80961E-B153-4462-B017-3A4E2BFCFB68"
+    },
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "1phcwhs",
+      "seq": 15,
+      "count": 193,
+      "targets": [
+        "e16|tap|button|訂單||BackButton",
+        "e20|tap|button|更新狀態||orders.detail.statusMenuButton",
+        "e21|tap|button|||",
+        "e25|tap|button|更多操作||orders.detail.moreButton",
+        "e26|tap|button|||",
+        "e108|tap|tab|總覽|0|house",
+        "e110|tap|tab|訂單|1|list.bullet.rectangle",
+        "e112|tap|tab|開團|0|shippingbox",
+        "e114|tap|tab|分析|0|chart.bar.xaxis",
+        "e116|tap|tab|更多|0|ellipsis.circle",
+        "e142|tap|button|編輯訂單||BackButton",
+        "e155|tap|button|新增類別||optionPicker.addButton",
+        "e162|tap|button|生活雜貨||optionPicker.optionRow:生活雜貨",
+        "e166|tap|button|服飾||optionPicker.optionRow:服飾",
+        "e171|tap|button|美妝||optionPicker.optionRow:美妝",
+        "e176|tap|button|精品||optionPicker.optionRow:精品",
+        "e181|tap|button|TOYS||optionPicker.optionRow:TOYS"
+      ],
+      "scroll": [
+        "e32|swipe|scroll-view|||orders.detail.root",
+        "e148|swipe|other|||optionPicker.root"
+      ],
+      "text": [
+        "e45|text|text|BL-2604-018||",
+        "e46|text|text|集運中||",
+        "e50|text|text|·||",
+        "e49|text|text|6/11||",
+        "e51|text|text|韓元||",
+        "e48|text|text|集運中||",
+        "e157|text|text|新增類別||",
+        "e52|text|text|訂單來源||",
+        "e53|text|text|蝦皮||",
+        "e54|text|text|商品類別||",
+        "e55|text|text|美妝||",
+        "e56|text|text|開團||",
+        "e57|text|text|四月韓國團||",
+        "e58|text|text|獲利、+$2,731|+$2,731|orders.detail.summaryTile.profit",
+        "e59|text|text|獲利||",
+        "e61|text|text|毛利率||",
+        "e60|text|text|+$2,731||",
+        "e62|text|text|23.1%||",
+        "e182|text|text|TOYS||",
+        "e63|text|text|總收款、$11,800|$11,800|orders.detail.summaryTile.revenue",
+        "e64|text|text|總收款||",
+        "e66|text|text|總成本、$9,069|$9,069|orders.detail.summaryTile.cost",
+        "e67|text|text|總成本||",
+        "e69|text|text|手續費||",
+        "e65|text|text|$11,800||",
+        "e68|text|text|$9,069||",
+        "e70|text|text|$177||",
+        "e71|text|text|成本拆解||",
+        "e72|text|text|總成本||",
+        "e73|text|text|$9,069||",
+        "e77|text|text|商品金額、$8,892||",
+        "e79|text|text|商品金額||",
+        "e80|text|text|$8,892||",
+        "e81|text|text|刷卡手續費、$177||",
+        "e83|text|text|刷卡手續費||",
+        "e84|text|text|$177||",
+        "e85|text|text|商品明細||"
+      ],
+      "udid": "FC80961E-B153-4462-B017-3A4E2BFCFB68"
+    }
+  },
+  "nextSteps": [
+    "Refresh after layout changes: mobilebuildmcp ui-automation snapshot-ui --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68",
+    "Wait for UI to settle: mobilebuildmcp ui-automation wait-for-ui --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --predicate settled",
+    "Batch same-screen taps: mobilebuildmcp ui-automation batch --json '{\"simulatorId\":\"FC80961E-B153-4462-B017-3A4E2BFCFB68\",\"steps\":[{\"action\":\"tap\",\"elementRef\":\"e16\"},{\"action\":\"tap\",\"elementRef\":\"e21\"}]}'",
+    "Tap an elementRef: mobilebuildmcp ui-automation tap --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --element-ref e16",
+    "Scroll visible content: mobilebuildmcp ui-automation swipe --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --within-element-ref e32 --direction up --distance 0.5"
+  ]
+}

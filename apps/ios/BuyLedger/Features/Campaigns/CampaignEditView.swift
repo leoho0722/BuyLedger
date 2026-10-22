@@ -11,112 +11,137 @@ import SwiftUI
 /// 新增或編輯開團的表單
 struct CampaignEditView: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
-    /// 表單 store
-    @Bindable var store: StoreOf<CampaignEditFeature>
-
-    /// 鍵盤焦點；實際狀態由 ``CampaignEditFeature/State/focusedField`` 持有
-    @FocusState private var focusedField: CampaignEditFeature.State.Field?
-
-    /// App 根層依語言偏好注入的 locale
+    /// App 根層依語言偏好注入的 `locale`
     @Environment(\.locale) private var locale
 
-    // MARK: - View Body
+    /// 表單的狀態與事件來源，由父層建立後傳入
+    @Bindable var store: StoreOf<CampaignEditFeature>
 
-    /// 表單的畫面內容
+    /// 鍵盤焦點，鏡像表單狀態中的 `focusedField`
+    @FocusState private var focusedField: CampaignEditFeature.State.Field?
+
+    // MARK: - Body
+
+    /// 組合表單區段、工具列與捨棄確認
     var body: some View {
         NavigationStack {
             Form {
-                Section("開團資訊") {
-                    TextField("開團名稱", text: $store.draftName)
-                        .textContentType(.none)
-                        .focused($focusedField, equals: .name)
-                        .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.nameField)
+                campaignInfoSection
 
-                    DatePicker(
-                        "開團日期",
-                        selection: $store.draftOpenDate,
-                        displayedComponents: .date
-                    )
-                    .environment(\.locale, locale)
-
-                    DatePicker(
-                        "結單日期",
-                        selection: $store.draftCloseDate,
-                        displayedComponents: .date
-                    )
-                    .environment(\.locale, locale)
-
-                    Picker("狀態", selection: $store.draftStatus) {
-                        ForEach(CampaignStatus.allCases) { status in
-                            Text(LocalizedStringKey(status.title)).tag(status)
-                        }
-                    }
-
-                    Toggle("訂購提醒", isOn: $store.wantsReminder)
-                        .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.reminderToggle)
-
-                    if store.wantsReminder {
-                        // 提醒時間以原生 inline DatePicker 編輯 (同上方開團／結單日期列)，點擊跳系統月曆／時間浮層
-                        DatePicker(
-                            "提醒時間",
-                            selection: $store.reminderTimestamp,
-                            displayedComponents: [.date, .hourAndMinute]
-                        )
-                        .environment(\.locale, locale)
-                    }
-                }
-
-                Section("備註") {
-                    TextField("選填", text: $store.draftNotes, axis: .vertical)
-                        .textContentType(.none)
-                        .focused($focusedField, equals: .notes)
-                        .lineLimit(2...5)
-                }
+                CampaignEditNotesSection(notes: $store.draft.notes, focusedField: $focusedField)
             }
             .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.root)
-            .navigationTitle(Text(LocalizedStringKey(store.original == nil ? "新增開團" : "編輯開團")))
             .scrollDismissesKeyboard(.interactively)
             .bind($store.focusedField, to: $focusedField)
+            .navigationTitle(Text(LocalizedStringKey(store.navigationTitleKey)))
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button {
-                        store.send(.cancelTapped)
-                    } label: {
-                        Image(systemName: "xmark")
-                    }
-                    .accessibilityLabel(Text("取消"))
-                    .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.cancelButton)
-                }
+                cancelToolbarItem
 
-                ToolbarItem(placement: .confirmationAction) {
-                    Button {
-                        store.send(.saveTapped)
-                    } label: {
-                        Image(systemName: "checkmark")
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .accessibilityLabel(Text("儲存"))
-                    .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.saveButton)
-                    .disabled(store.draftName.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-                }
+                saveToolbarItem
             }
         }
-        // 有未儲存變更時阻擋下滑關閉，避免草稿靜默遺失；取消鍵改以彈窗確認
+        // 有未儲存變更時阻擋下滑關閉，取消鍵改以彈窗確認
         .interactiveDismissDisabled(store.isDirty)
         .alert($store.scope(state: \.discardConfirmation, action: \.discardConfirmation))
     }
 }
 
+// MARK: - Private Views
+
+private extension CampaignEditView {
+
+    /// 開團名稱、日期、狀態與訂購提醒的輸入欄位
+    var campaignInfoSection: some View {
+        Section("campaigns.detail.label.campaignInformation") {
+            TextField("orders.detail.label.campaignName", text: $store.draftName)
+                .textContentType(nil)
+                .focused($focusedField, equals: .name)
+                .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.nameField)
+
+            if let nameConflictMessage = store.nameConflictMessage {
+                Text(LocalizedStringKey(nameConflictMessage))
+                    .blTextStyle(.footnote)
+                    .foregroundStyle(.blRed)
+            }
+
+            // 沿用訂單編輯頁的做法：`DatePicker` 明確指定 `locale`，避免退回開發語言而顯示英文
+            DatePicker(
+                "campaigns.detail.label.openingDate",
+                selection: $store.draft.openDate,
+                displayedComponents: .date
+            )
+            .environment(\.locale, locale)
+            .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.openDatePicker)
+
+            DatePicker(
+                "campaigns.detail.label.closeDate",
+                selection: $store.draft.closeDate,
+                displayedComponents: .date
+            )
+            .environment(\.locale, locale)
+            .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.closeDatePicker)
+
+            Picker("orders.list.label.status", selection: $store.draft.status) {
+                ForEach(CampaignStatus.allCases) {
+                    Text(LocalizedStringKey($0.title))
+                        .tag($0)
+                }
+            }
+
+            Toggle("campaigns.detail.label.orderReminder", isOn: $store.draft.wantsReminder)
+                .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.reminderToggle)
+
+            if store.draft.wantsReminder {
+                DatePicker(
+                    "campaigns.detail.label.reminderTime",
+                    selection: $store.draft.reminderTimestamp,
+                    displayedComponents: [.date, .hourAndMinute]
+                )
+                .environment(\.locale, locale)
+                .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.reminderDatePicker)
+            }
+        }
+    }
+
+    /// 送出取消意圖，是否顯示捨棄確認由表單決定
+    var cancelToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button {
+                store.send(.view(.cancelButtonTapped))
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .accessibilityLabel(Text("common.action.cancel"))
+            .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.cancelButton)
+        }
+    }
+
+    /// 名稱有效時可送出儲存意圖，重名由父層以最新清單驗證
+    var saveToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .confirmationAction) {
+            Button {
+                store.send(.view(.saveButtonTapped))
+            } label: {
+                Image(systemName: "checkmark")
+            }
+            .buttonStyle(.borderedProminent)
+            .accessibilityLabel(Text("orders.edit.button.save"))
+            .accessibilityIdentifier(BLAccessibilityID.CampaignEdit.saveButton)
+            .disabled(!store.canSave)
+        }
+    }
+}
+
 // MARK: - Preview
 
-#Preview("新增開團") {
+#Preview("campaigns.list.label.addCampaign") {
     CampaignEditView(
         store: Store(
             initialState: CampaignEditFeature.State(
-                id: UUID(uuidString: "00000000-0000-0000-0000-000000000000")!,
+                id: UUID(uuid: (0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0)),
                 currentDate: Date(timeIntervalSince1970: 0),
                 reminderTimestamp: Date(timeIntervalSince1970: 0)
             )

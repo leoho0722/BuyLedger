@@ -8,50 +8,42 @@
 import XCTest
 
 /// 開團的新增與刪除流程測試
-///
-/// 一律以 accessibility identifier 定位；找不到 App 元素即附診斷失敗、不 skip。
-/// 新增以空資料庫驗「新增後列表多一列」，刪除走「取消」分支只驗確認 alert 有出現又能收回、開團未被刪除，不真的刪除資料
 final class CampaignCrudTests: BLUITestCase {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 新增開團填入的名稱 (使用者資料，中英兩語言皆可輸入)
     private static let newCampaignName = "測試開團"
 
-    /// campaignsWithOrders 用來進詳情的四月韓國團開團 id (進行中)
+    /// `campaignsWithOrders` 用來進詳情的四月韓國團開團 id (進行中)
     private static let koreaCampaignID = "CMP-SAMPLE-KR-APR"
 
-    // MARK: - Tests
-
-    /// 完整新增：點新增 → 表單就緒 → 填名稱 → 儲存 → 回列表且列表多出一列
+    /// 新增開團後，確認列表多出一列
+    ///
+    /// - Note: 空資料庫新增並儲存開團後回到開團列表，列表應至少有一列
     @MainActor
-    func testCreateCampaignAppearsInList() {
+    func testTapSave_新增開團並輸入名稱_列表出現開團() {
+        // Given
         let app = launch(LaunchOptions(seed: .empty))
-
         let root = RootNavigationScreen(app: app)
         if !root.goToCampaigns() {
             failWithDiagnostics(in: app, "切到開團分頁後畫面未就緒")
         }
-
         let campaigns = CampaignsScreen(app: app)
-        campaigns.tapAdd()
-
         let edit = CampaignEditScreen(app: app)
+        campaigns.tapAdd()
         if !edit.waitUntilReady() {
-            failWithDiagnostics(
-                in: app,
-                "點新增後編輯表單根 identifier「\(edit.rootIdentifier)」逾時仍未出現"
-            )
+            failWithDiagnostics(in: app, "點新增後編輯表單根 identifier「\(edit.rootIdentifier)」逾時仍未出現")
         }
-
         edit.typeName(Self.newCampaignName)
+
+        // When
         edit.tapSave()
 
-        // 回到開團列表：empty 原本無開團，建立後列表容器應出現且至少有一列
+        // Then
         if !campaigns.waitUntilReady() {
             failWithDiagnostics(in: app, "儲存後開團列表根 identifier「\(campaigns.rootIdentifier)」逾時仍未出現")
         }
-
         let prefix = BLAccessibilityID.Campaigns.row(campaignID: "")
         let anyCampaignRow = app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier BEGINSWITH %@", prefix))
@@ -61,25 +53,26 @@ final class CampaignCrudTests: BLUITestCase {
         }
     }
 
-    /// 刪除流程：更多 → 刪除 → 確認 alert → 取消；alert 收回且開團未被刪除
+    /// 刪除流程：更多 → 刪除 → 確認 alert → 取消；alert 收回且詳情仍停留
     @MainActor
-    func testDeleteFlowCancelKeepsCampaign() {
+    func testCancelDelete_刪除確認選取消_停留在開團詳情() {
+        // Given
         let app = launch(LaunchOptions(seed: .campaignsWithOrders))
         let detail = openCampaignDetail(app, campaignID: Self.koreaCampaignID)
-
         detail.openMoreMenu()
         if !detail.tapDelete() {
             failWithDiagnostics(in: app, "更多選單的刪除項目未出現或不可點")
         }
-
-        if !detail.deleteConfirmExists() {
+        if !detail.isDeleteConfirmationPresented() {
             failWithDiagnostics(in: app, "點刪除後，刪除確認 alert 未呈現")
         }
+        app.assertAlertMessage(contains: "後無法復原", timeout: 5)
 
+        // When
         detail.cancelDelete()
 
-        // 取消後 alert 應收回，且開團未被刪除、詳情仍停留
-        if !detail.confirmationDismissed() {
+        // Then
+        if !detail.isConfirmationDismissed() {
             failWithDiagnostics(in: app, "點取消後，刪除確認 alert 未收回")
         }
         if !detail.waitUntilReady() {
@@ -93,11 +86,12 @@ final class CampaignCrudTests: BLUITestCase {
 private extension CampaignCrudTests {
 
     /// 切到開團分頁、點指定開團進詳情並等就緒，回傳詳情 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - campaignID: 要進入詳情的開團 id
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - campaignID: 要開啟的開團識別值
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的開團詳情 Page Object
     @MainActor
     func openCampaignDetail(
@@ -107,8 +101,13 @@ private extension CampaignCrudTests {
         line: UInt = #line
     ) -> CampaignDetailScreen {
         let root = RootNavigationScreen(app: app)
-        if !root.goToCampaigns() {
-            failWithDiagnostics(in: app, "切到開團分頁後畫面未就緒", file: file, line: line)
+        if !root.goToCampaigns(file: file, line: line) {
+            failWithDiagnostics(
+                in: app,
+                "切到開團分頁後畫面未就緒",
+                file: file,
+                line: line
+            )
         }
 
         let campaigns = CampaignsScreen(app: app)
@@ -121,7 +120,7 @@ private extension CampaignCrudTests {
             )
         }
 
-        campaigns.tapCampaign(campaignID: campaignID)
+        campaigns.tapCampaign(campaignID: campaignID, file: file, line: line)
 
         let detail = CampaignDetailScreen(app: app)
         if !detail.waitUntilReady() {

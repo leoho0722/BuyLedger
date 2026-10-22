@@ -8,291 +8,120 @@
 import ComposableArchitecture
 import SwiftUI
 
-/// 開團詳情：開團資訊、結團結算 (收款面與損益面)、客戶分貨清單與逐筆收款勾稽
-///
-/// 吃 ``RootFeature`` store：開團本身取自 `store.campaigns`，分貨與結算由 ``CampaignSummary`` 自 `store.orders.orders` 投影
+/// 開團詳情的清單容器與編輯、狀態、結團、刪除選單
 struct CampaignDetailView: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
-    /// App 根層級 store
-    @Bindable var store: StoreOf<RootFeature>
+    /// 畫面的狀態與事件來源，由父層建立後傳入
+    @Bindable var store: StoreOf<CampaignDetailFeature>
 
-    /// App 根層依語言偏好注入的 locale
-    @Environment(\.locale) private var locale
+    // MARK: - Body
 
-    /// 要顯示的開團識別值
-    let campaignID: Campaign.ID
-
-    /// 目前顯示的開團；若已被刪除則為 `nil`
-    private var campaign: Campaign? {
-        store.campaigns.campaigns.first { $0.id == campaignID }
-    }
-
-    // MARK: - View Body
-
-    /// 開團詳情的畫面內容
+    /// 有內容時呈現三個詳情區段，開團不存在時顯示空狀態
     var body: some View {
         Group {
-            if let campaign {
-                detail(for: campaign)
+            if let content = store.content {
+                detail(for: content)
             } else {
-                ContentUnavailableView("開團不存在", systemImage: "shippingbox")
+                missingCampaign
             }
         }
-        .navigationTitle(Text("開團詳情"))
+        .navigationTitle(Text("orders.general.label.campaignDetails"))
         .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            if let campaign {
-                ToolbarItem(placement: .primaryAction) {
-                    Menu {
-                        Button {
-                            store.send(.campaigns(.editCampaignTapped(campaign.id)))
-                        } label: {
-                            Label("編輯開團", systemImage: "pencil")
-                        }
-                        .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailEditButton)
-
-                        Picker("狀態", selection: statusBinding(for: campaign)) {
-                            ForEach(CampaignStatus.allCases) { status in
-                                Text(LocalizedStringKey(status.title)).tag(status)
-                            }
-                        }
-
-                        Button {
-                            store.send(.campaigns(.settleTapped(campaign.id)))
-                        } label: {
-                            Label(
-                                LocalizedStringKey(campaign.isSettled ? "已結團" : "結團結算"),
-                                systemImage: "checkmark.seal"
-                            )
-                        }
-                        .disabled(campaign.isSettled)
-                        .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSettleButton)
-
-                        Divider()
-
-                        // 列表的長按刪除保留，這裡提供不依賴手勢的可見替代入口
-                        Button(role: .destructive) {
-                            store.send(.campaigns(.detailDeleteCampaignTapped(campaign.id)))
-                        } label: {
-                            Label("刪除開團", systemImage: "trash")
-                        }
-                        .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailDeleteButton)
-                    } label: {
-                        Label("更多", systemImage: "ellipsis.circle")
-                    }
-                    .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailMoreButton)
-                }
-            }
-        }
-        // 結團/刪除由本頁 toolbar 選單觸發，alert 掛在本頁 (堆疊最上層) 才會在 iPad 疊到 push 出來的詳情上方;
-        // 掛在被詳情蓋住的列表頁上時，iPad 不會呈現。刪除用詳情專屬的 detailDeletionConfirmation，避免與列表頁的 deletionConfirmation 重複繫結
-        .alert(
-            $store.scope(state: \.campaigns.settleConfirmation, action: \.campaigns.settleConfirmation)
-        )
-        .alert(
-            $store.scope(state: \.campaigns.detailDeletionConfirmation, action: \.campaigns.detailDeletionConfirmation)
-        )
+        // 結團與刪除確認、寫入與提醒錯誤都由開團容器的 alert 呈現
+        // 收款錯誤由 `OrdersView` 的 alert 呈現
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension CampaignDetailView {
 
-    /// 開團詳情主體
-    /// - Parameter campaign: 目前的開團
-    /// - Returns: 詳情 list view
-    @ViewBuilder
-    func detail(for campaign: Campaign) -> some View {
-        let summary = CampaignSummary(campaignName: campaign.name, orders: store.orders.orders)
+    /// 開團已不存在時的空狀態
+    var missingCampaign: some View {
+        ContentUnavailableView("campaigns.detail.label.campaignFound", systemImage: "shippingbox")
+    }
+
+    /// 開團詳情清單，依序組合資訊、結算與分貨三區段
+    ///
+    /// - Parameter content: 由詳情 Feature 組好的開團、彙總、可見分貨列與提醒連結
+    /// - Returns: 詳情清單與工具列
+    func detail(for content: CampaignDetailContent) -> some View {
         List {
-            infoSection(campaign: campaign)
-            settlementSection(summary)
-            distributionSection(summary)
+            CampaignDetailInfoSection(
+                campaign: content.campaign,
+                reminderLink: content.reminderLink
+            )
+
+            CampaignDetailSettlementSection(summary: content.summary)
+
+            CampaignDetailDistributionSection(
+                emptyMessage: store.distributionEmptyMessage,
+                isShowingUnpaidOnly: store.isShowingUnpaidOnly,
+                onReceiptToggle: {
+                    store.send(.view(.receiptToggleTapped($0)))
+                },
+                onUnpaidOnlyChange: {
+                    store.send(.view(.unpaidOnlyToggled($0)))
+                },
+                rows: content.distribution
+            )
         }
         .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailRoot)
+        .toolbar {
+            actionsToolbar(for: content)
+        }
     }
 
-    /// 開團資訊區段
-    /// - Parameter campaign: 目前的開團
-    /// - Returns: 資訊區段 view
-    @ViewBuilder
-    func infoSection(campaign: Campaign) -> some View {
-        Section("開團資訊") {
-            Text(campaign.name)
-                .font(.body.weight(.semibold))
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity, alignment: .leading)
+    /// 工具列的更多選單：編輯、改狀態、結團與刪除
+    ///
+    /// - Parameter content: 目前的詳情內容
+    /// - Returns: 工具列內容
+    @ToolbarContentBuilder
+    func actionsToolbar(for content: CampaignDetailContent) -> some ToolbarContent {
+        ToolbarItem(placement: .primaryAction) {
+            Menu {
+                Button {
+                    store.send(.view(.editTapped))
+                } label: {
+                    Label("campaigns.list.label.editCampaign", systemImage: "pencil")
+                }
+                .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailEditButton)
 
-            LabeledContent("狀態") {
-                HStack(spacing: BLSpacing.extraSmall) {
-                    BLStatusPill(campaign.status.title, tone: CampaignStatusStyle.tone(for: campaign.status))
-                    if campaign.isSettled {
-                        BLStatusPill("已結團", tone: .neutral, showsIndicator: false)
+                Picker("orders.list.label.status", selection: statusBinding(for: content.campaign)) {
+                    ForEach(CampaignStatus.allCases) {
+                        Text(LocalizedStringKey($0.title))
+                            .tag($0)
                     }
                 }
-            }
-
-            LabeledContent("開團日期", value: CampaignFormatters.shortDate(campaign.openDate, locale: locale))
-
-            if let closeDate = campaign.closeDate {
-                LabeledContent("結單日期", value: CampaignFormatters.shortDate(closeDate, locale: locale))
-            }
-
-            if let settledDate = campaign.settledDate {
-                LabeledContent("結團日期", value: CampaignFormatters.shortDate(settledDate, locale: locale))
-            }
-
-            if let reminderLink = store.campaigns.reminderLinks[campaign.id] {
-                // 純顯示：有新增提醒時才顯示其日期與提示時間 (新增/移除/改時間走「編輯開團」)
-                LabeledContent("訂購提醒", value: CampaignFormatters.reminderTimestamp(reminderLink.reminderTimestamp, locale: locale))
-            }
-
-            if !campaign.notes.isEmpty {
-                Text(campaign.notes)
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            }
-        }
-    }
-
-    /// 結團結算區段：收款面與損益面
-    /// - Parameter summary: 由 ``detail(for:)`` 一次算好的開團彙總
-    /// - Returns: 結算區段 view
-    @ViewBuilder
-    func settlementSection(_ summary: CampaignSummary) -> some View {
-        Section("結團結算") {
-            // combine + accessibilityValue 讓金額落在該元素的 value,UI 測試以 identifier 定位後才讀得到
-            LabeledContent("應收", value: CampaignFormatters.twd(summary.receivables, locale: locale))
-                .accessibilityElement(children: .combine)
-                .accessibilityValue(CampaignFormatters.twd(summary.receivables, locale: locale))
-                .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSummary(.receivables))
-            LabeledContent("已收", value: CampaignFormatters.twd(summary.receivedAmount, locale: locale))
-                .accessibilityElement(children: .combine)
-                .accessibilityValue(CampaignFormatters.twd(summary.receivedAmount, locale: locale))
-                .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSummary(.received))
-            LabeledContent("未收", value: CampaignFormatters.twd(summary.outstandingAmount, locale: locale))
-
-            BLProgressBar(
-                title: "收款進度",
-                value: summary.receivedRatio,
-                tint: .green,
-                trailingText: percentString(summary.receivedRatio)
-            )
-
-            BLProgressBar(
-                title: "到貨進度",
-                value: summary.deliveryRatio,
-                trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
-            )
-
-            LabeledContent("總成本", value: CampaignFormatters.twd(summary.totalCost, locale: locale))
-            LabeledContent("毛利", value: CampaignFormatters.twd(summary.profit, locale: locale))
-            LabeledContent(
-                "利潤率",
-                value: summary.margin.formatted(.percent.precision(.fractionLength(1)).locale(locale))
-            )
-        }
-    }
-
-    /// 客戶分貨區段：可切換只看未收款，每列可展開檢視品項與逐筆收款
-    /// - Parameter summary: 由 ``detail(for:)`` 一次算好的開團彙總
-    /// - Returns: 分貨區段 view
-    @ViewBuilder
-    func distributionSection(_ summary: CampaignSummary) -> some View {
-        let showsUnpaidOnly = store.campaigns.showsUnpaidOnly
-        let rows = showsUnpaidOnly ? summary.unpaidDistribution : summary.distribution
-
-        Section {
-            Toggle("只看未收款", isOn: unpaidOnlyBinding)
-                .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailUnpaidToggle)
-
-            if rows.isEmpty {
-                Text(LocalizedStringKey(
-                    showsUnpaidOnly ? "全部已收款。" : "尚無歸屬此開團的訂單。"
-                ))
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-            } else {
-                ForEach(rows) { row in
-                    DisclosureGroup {
-                        ForEach(row.orders) { order in
-                            orderRow(order)
-                        }
-                    } label: {
-                        distributionLabel(row)
-                    }
-                }
-            }
-        } header: {
-            Text("客戶分貨")
-        }
-    }
-
-    /// 分貨列標題：客戶、件數、金額與收款標記
-    /// - Parameter row: 分貨列
-    /// - Returns: 標題 view
-    @ViewBuilder
-    func distributionLabel(_ row: CampaignDistributionRow) -> some View {
-        HStack(spacing: BLSpacing.small) {
-            Image(systemName: row.isFullyReceived ? "checkmark.circle.fill" : "circle")
-                .foregroundStyle(row.isFullyReceived ? Color.green : Color.secondary)
-
-            Text(row.customerName)
-                .font(.subheadline.weight(.medium))
-
-            Spacer(minLength: 0)
-
-            Text("\(row.totalQuantity) 件 · \(CampaignFormatters.twd(row.totalAmount, locale: locale))")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .monospacedDigit()
-        }
-    }
-
-    /// 分貨列展開後的單筆訂單：品項摘要與收款狀態切換
-    /// - Parameter order: 該客戶在此開團的訂單
-    /// - Returns: 訂單列 view
-    @ViewBuilder
-    func orderRow(_ order: LedgerOrder) -> some View {
-        VStack(alignment: .leading, spacing: BLSpacing.extraSmall) {
-            Text(order.id)
-                .font(.caption2)
-                .foregroundStyle(.tertiary)
-
-            Text(order.itemSummary)
-                .font(.footnote)
-
-            HStack {
-                Text(CampaignFormatters.twd(order.chargedAmount, locale: locale))
-                    .font(.footnote.weight(.medium))
-                    .monospacedDigit()
-
-                Spacer(minLength: 0)
 
                 Button {
-                    store.send(.orders(.receiptStatusChanged(
-                        order.id,
-                        order.paymentReceiptStatus == .received ? .pending : .received
-                    )))
+                    store.send(.view(.settleTapped))
                 } label: {
                     Label {
-                        Text(LocalizedStringKey(order.paymentReceiptStatus.title))
+                        Text(content.settleActionTitle)
                     } icon: {
-                        Image(systemName: order.paymentReceiptStatus == .received ? "checkmark.circle.fill" : "circle")
+                        Image(systemName: "checkmark.seal")
                     }
-                    .font(.caption)
-                    .foregroundStyle(order.paymentReceiptStatus == .received ? Color.green : Color.accentColor)
-                    // 這顆會改資料且無確認，命中區宣告在標籤內部撐到 44pt；視覺尺寸不變
-                    .frame(minHeight: BLHitTarget.minimum)
-                    .contentShape(.rect)
                 }
-                .buttonStyle(.borderless)
+                .disabled(content.campaign.isSettled)
+                .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailSettleButton)
+
+                Divider()
+
+                // 列表的長按刪除保留，這裡提供不依賴手勢的可見替代入口
+                Button(role: .destructive) {
+                    store.send(.view(.deleteTapped))
+                } label: {
+                    Label("orders.general.label.deleteCampaign", systemImage: "trash")
+                }
+                .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailDeleteButton)
+            } label: {
+                Label("common.action.label.more", systemImage: "ellipsis.circle")
             }
+            .accessibilityIdentifier(BLAccessibilityID.Campaigns.detailMoreButton)
         }
-        .padding(.leading, BLSpacing.small)
     }
 }
 
@@ -300,50 +129,53 @@ private extension CampaignDetailView {
 
 private extension CampaignDetailView {
 
-    /// 狀態 Picker 的 binding：選取後送出 ``CampaignFeature/Action/statusChanged(_:_:)``
+    /// 狀態選擇器的 binding，選取後送出 `statusChanged`
+    ///
     /// - Parameter campaign: 目前的開團
     /// - Returns: 對應的狀態 binding
     func statusBinding(for campaign: Campaign) -> Binding<CampaignStatus> {
-        Binding(
-            get: { campaign.status },
-            set: { store.send(.campaigns(.statusChanged(campaign.id, $0))) }
-        )
-    }
-
-    /// 「只看未收款」Toggle 的 binding：切換後送出 ``CampaignFeature/Action/unpaidOnlyToggled(_:)``
-    var unpaidOnlyBinding: Binding<Bool> {
-        Binding(
-            get: { store.campaigns.showsUnpaidOnly },
-            set: { store.send(.campaigns(.unpaidOnlyToggled($0))) }
-        )
-    }
-
-    /// 依 App 選定 locale 將比例格式化為百分比字串
-    /// - Parameter value: 介於 0 與 1 之間的比例
-    /// - Returns: 含整數百分比的字串
-    func percentString(_ value: Double) -> String {
-        value.formatted(.percent.precision(.fractionLength(0)).locale(locale))
+        Binding {
+            campaign.status
+        } set: {
+            store.send(.view(.statusChanged($0)))
+        }
     }
 }
 
 // MARK: - Preview
 
-#Preview("開團詳情") {
-    let previewState: RootFeature.State = {
-        var state = RootFeature.State()
-        state.orders.orders = LedgerOrder.sampleCampaignOrders
-        state.orders.hasLoaded = true
-        state.campaigns.campaigns = Campaign.sampleCampaigns
-        state.campaigns.hasLoaded = true
-        return state
-    }()
+#Preview("orders.general.label.campaignDetails") {
+    let previewState = CampaignDetailFeature.State(
+        campaignID: "CMP-SAMPLE-KR-APR",
+        campaigns: SharedReader(value: Campaign.sampleCampaigns),
+        orders: SharedReader(value: LedgerOrder.sampleCampaignOrders),
+        reminderLinks: SharedReader(value: [:]),
+        isShowingUnpaidOnly: Shared(value: false)
+    )
 
     return NavigationStack {
         CampaignDetailView(
             store: Store(initialState: previewState) {
-                RootFeature()
-            },
-            campaignID: "CMP-SAMPLE-KR-APR"
+                CampaignDetailFeature()
+            }
+        )
+    }
+}
+
+#Preview("campaigns.detail.label.campaignFound") {
+    let previewState = CampaignDetailFeature.State(
+        campaignID: "CMP-MISSING",
+        campaigns: SharedReader(value: Campaign.sampleCampaigns),
+        orders: SharedReader(value: LedgerOrder.sampleCampaignOrders),
+        reminderLinks: SharedReader(value: [:]),
+        isShowingUnpaidOnly: Shared(value: false)
+    )
+
+    return NavigationStack {
+        CampaignDetailView(
+            store: Store(initialState: previewState) {
+                CampaignDetailFeature()
+            }
         )
     }
 }

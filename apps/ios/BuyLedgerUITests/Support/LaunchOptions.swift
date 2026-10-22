@@ -7,13 +7,13 @@
 
 import Foundation
 
-/// 描述一次 App 啟動的前置條件，並序列化成 App 端 harness 認得的啟動參數
-///
-/// 測試只宣告要什麼狀態 (資料、語言、時間、外部相依行為)，序列化細節收在這裡；
-/// 參數名稱必須與 App 端 `BLUITestConfiguration` 的解析逐字對齊，改一邊要同步改另一邊
+/// 描述一次 App 啟動的前置條件，並序列化為 App 測試掛鉤與 UIKit 系統使用的啟動參數
 struct LaunchOptions {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
+
+    /// 空資料庫 + 預設語言的最小啟動條件
+    static let `default` = LaunchOptions()
 
     /// 要注入的種子資料組合
     var seed: SeedProfile = .empty
@@ -24,61 +24,50 @@ struct LaunchOptions {
     /// 覆寫的 App 內語言，`nil` 代表沿用預設語言 (正體中文)
     var language: Language?
 
+    /// 覆寫 UIKit 系統字級，`nil` 代表沿用系統設定
+    ///
+    /// - Note: 這是 UIKit 系統參數，不經 `BLUITestConfiguration` 解析
+    var contentSizeCategory: ContentSizeCategory?
+
     /// 行事曆權限的模擬結果
     var calendarAccess: CalendarAccess = .granted
 
     /// 要模擬的載入失敗情境
     var loadFailure: LoadFailure = .none
 
+    /// 是否讓四種主檔的新增、刪除與改名寫入失敗
+    var shouldFailLookupWrites = false
+
+    /// 是否讓開團的儲存與刪除寫入失敗
+    var shouldFailCampaignWrites = false
+
     /// 覆寫的預設幣別三碼代號，`nil` 代表沿用預設
     var defaultCurrencyCode: String?
 
     /// 覆寫的每月利潤目標 (TWD)，`nil` 代表沿用預設
-    var monthlyProfitGoalTwd: Int?
+    var monthlyProfitGoalTWD: Int?
 
     /// 是否開啟 AI 商品明細總結，開啟後 AI 走固定輸出的替身
-    var useAiSummary: Bool = false
+    var shouldUseAISummary: Bool = false
 
-    // MARK: - Static Properties
+    /// App 鎖定是否於啟動時已開啟，開啟時鎖定相關測試不必先走一遍設定頁
+    var isAppLockEnabled: Bool = false
 
-    /// 空資料庫 + 預設語言的最小啟動條件
-    static let `default` = LaunchOptions()
+    /// 本機驗證替身的情境
+    var biometricScenario: BiometricScenario = .success
 
-    // MARK: - Computed Properties
+    /// UI 測試資料庫的儲存方式
+    var persistenceMode: PersistenceMode = .inMemory
 
-    /// 序列化成 `XCUIApplication.launchArguments`
-    ///
-    /// 一律帶 `-BLUITest` 開啟測試模式，其餘旗標只在對應欄位有值時加入
-    var launchArguments: [String] {
-        var arguments = ["-BLUITest", "-BLUITestSeed", seed.rawValue]
-
-        if let referenceDate {
-            arguments += ["-BLUITestNow", Self.iso8601String(from: referenceDate)]
-        }
-        if let language {
-            arguments += ["-BLUITestLanguage", language.rawValue]
-        }
-        arguments += ["-BLUITestCalendarAccess", calendarAccess.rawValue]
-        arguments += ["-BLUITestLoadFailure", loadFailure.rawValue]
-        if let defaultCurrencyCode {
-            arguments += ["-BLUITestDefaultCurrency", defaultCurrencyCode]
-        }
-        if let monthlyProfitGoalTwd {
-            arguments += ["-BLUITestMonthlyGoal", String(monthlyProfitGoalTwd)]
-        }
-        if useAiSummary {
-            arguments.append("-BLUITestAiSummary")
-        }
-
-        return arguments
-    }
+    /// 是否清除本機測試資料庫 (`-BLUITestResetPersistentStore`)；僅在 `.persistent` 模式有效
+    var shouldResetPersistentStore = false
 }
 
 // MARK: - Nested Types
 
 extension LaunchOptions {
 
-    /// 種子資料組合，rawValue 對齊 App 端 `BLUITestSeedProfile`
+    /// 種子資料組合，`rawValue` 對齊 App 端 `BLUITestSeedProfile`
     enum SeedProfile: String {
 
         /// 完全空的資料庫
@@ -92,6 +81,12 @@ extension LaunchOptions {
 
         /// 主檔加完整訂單集合，涵蓋多種狀態
         case fullOrders
+
+        /// 一筆使用信用卡且尚未標記貨到付款的訂單，供回溯重算驗收
+        case paymentMethodCorrection
+
+        /// 2 筆來源訂單與 1 筆合併結果，供營收歸屬跨畫面一致性驗收
+        case revenueAttribution
 
         /// 完整訂單再加已指派開團的訂單
         case campaignsWithOrders
@@ -107,9 +102,15 @@ extension LaunchOptions {
 
         /// 橫跨十二個月、每月至少一筆，供走勢與熱力圖斷言
         case insightsRange
+
+        /// 類別篩選的一般情境，開團中與已收單類別各至少一個，供多選與套用流程斷言
+        case categoryFilter
+
+        /// 類別篩選的大量情境，300 個商品類別與 30 種付款方式，供捲動與搜尋斷言
+        case categoryFilterLarge
     }
 
-    /// App 內語言，rawValue 對齊 App 端 `BLUITestLanguage`
+    /// App 內語言，`rawValue` 對齊 App 端 `BLUITestLanguage`
     enum Language: String {
 
         /// 正體中文
@@ -119,7 +120,14 @@ extension LaunchOptions {
         case english
     }
 
-    /// 行事曆權限的模擬結果，rawValue 對齊 App 端 `BLUITestCalendarAccess`
+    /// UIKit 系統字級，`rawValue` 傳給 `-UIPreferredContentSizeCategoryName`
+    enum ContentSizeCategory: String {
+
+        /// 最大輔助字級
+        case accessibilityExtraExtraExtraLarge = "UICTContentSizeCategoryAccessibilityXXXL"
+    }
+
+    /// 行事曆權限的模擬結果，`rawValue` 對齊 App 端 `BLUITestCalendarAccess`
     enum CalendarAccess: String {
 
         /// 授予完整權限
@@ -129,7 +137,27 @@ extension LaunchOptions {
         case denied
     }
 
-    /// 載入失敗情境，rawValue 對齊 App 端 `BLUITestLoadFailure`
+    /// 本機驗證替身的情境，`rawValue` 對齊 App 端 `BLUITestBiometricScenario`
+    enum BiometricScenario: String {
+
+        /// 驗證一律成功
+        case success
+
+        /// 驗證一律失敗
+        case failure
+    }
+
+    /// UI 測試資料庫的儲存方式
+    enum PersistenceMode: String {
+
+        /// 每次啟動建立新的記憶體資料庫
+        case inMemory
+
+        /// 使用可跨 App 重啟讀取的本機資料庫
+        case persistent
+    }
+
+    /// 載入失敗情境，`rawValue` 對齊 App 端 `BLUITestLoadFailure`
     enum LoadFailure: String {
 
         /// 不模擬失敗
@@ -149,19 +177,67 @@ extension LaunchOptions {
     }
 }
 
+// MARK: - Computed Properties
+
+extension LaunchOptions {
+
+    /// 序列化成 `XCUIApplication.launchArguments`，即傳給受測 App 的啟動參數
+    var launchArguments: [String] {
+        var arguments = ["-BLUITest", "-BLUITestSeed", seed.rawValue]
+
+        if let referenceDate {
+            arguments += ["-BLUITestNow", Self.iso8601String(from: referenceDate)]
+        }
+        if let language {
+            arguments += ["-BLUITestLanguage", language.rawValue]
+        }
+        if let contentSizeCategory {
+            arguments += ["-UIPreferredContentSizeCategoryName", contentSizeCategory.rawValue]
+        }
+        arguments += ["-BLUITestCalendarAccess", calendarAccess.rawValue]
+        arguments += ["-BLUITestLoadFailure", loadFailure.rawValue]
+        if shouldFailLookupWrites {
+            arguments.append("-BLUITestLookupWriteFailure")
+        }
+        if shouldFailCampaignWrites {
+            arguments.append("-BLUITestCampaignWriteFailure")
+        }
+        if let defaultCurrencyCode {
+            arguments += ["-BLUITestDefaultCurrency", defaultCurrencyCode]
+        }
+        if let monthlyProfitGoalTWD {
+            arguments += ["-BLUITestMonthlyGoal", String(monthlyProfitGoalTWD)]
+        }
+        if shouldUseAISummary {
+            arguments.append("-BLUITestAiSummary")
+        }
+        if isAppLockEnabled {
+            arguments.append("-BLUITestAppLockEnabled")
+        }
+        arguments += ["-BLUITestBiometricScenario", biometricScenario.rawValue]
+        if persistenceMode != .inMemory {
+            arguments += ["-BLUITestPersistence", persistenceMode.rawValue]
+        }
+        if shouldResetPersistentStore {
+            arguments.append("-BLUITestResetPersistentStore")
+        }
+
+        return arguments
+    }
+}
+
 // MARK: - Private Method
 
 private extension LaunchOptions {
 
     /// 把參考時間序列化成 App 端解析採用的 ISO8601 字串
     ///
-    /// `ISO8601DateFormatter` 非 `Sendable`，不能當 static 常數共用，故每次呼叫時建立 (成本低)
-    /// - Parameter date: 參考時間
-    /// - Returns: UTC 的 ISO8601 字串
+    /// - Parameter date: 要序列化的日期
+    /// - Returns: ISO8601 格式的 UTC 字串
     static func iso8601String(from date: Date) -> String {
         let formatter = ISO8601DateFormatter()
         formatter.formatOptions = [.withInternetDateTime]
-        formatter.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
+        formatter.timeZone = .gmt
         return formatter.string(from: date)
     }
 }

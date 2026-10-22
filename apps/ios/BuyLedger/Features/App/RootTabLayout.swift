@@ -11,7 +11,7 @@ import SwiftUI
 /// iPhone 使用的分頁導覽
 struct RootTabLayout: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
     /// App 根層級 store
     @Bindable var store: StoreOf<RootFeature>
@@ -19,14 +19,11 @@ struct RootTabLayout: View {
     /// App 目前選用的顯示語系
     let language: AppLanguage
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 分頁導覽的畫面內容
-    ///
-    /// 底部分頁列的按鈕掛不上 identifier：identifier 不論加在 `Tab` 或其 label 上都不會傳到分頁按鈕 (實測)。
-    /// UI 測試改由導覽分流器依 `RootTab.allCases` 的順序取按鈕，再等該分頁的畫面根 identifier 確認切換成功
     var body: some View {
-        TabView(selection: $store.selectedTab.sending(\.tabSelected)) {
+        TabView(selection: $store.selectedTab.sending(\.view.tabSelected)) {
             ForEach(RootTab.allCases) { tab in
                 Tab(LocalizedStringKey(tab.title), systemImage: tab.systemImage, value: tab) {
                     destination(for: tab)
@@ -36,26 +33,40 @@ struct RootTabLayout: View {
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension RootTabLayout {
 
     /// 回傳指定分頁的主要內容
+    ///
     /// - Parameter tab: 要顯示的分頁
     /// - Returns: 分頁對應的 SwiftUI view
     @ViewBuilder
     func destination(for tab: RootTab) -> some View {
         switch tab {
         case .dashboard:
-            DashboardView(store: store)
+            DashboardView(
+                store: store.scope(state: \.dashboard, action: \.dashboard),
+                language: language
+            )
+
         case .orders:
             OrdersView(store: store.scope(state: \.orders, action: \.orders), language: language)
+
         case .campaigns:
-            CampaignListView(store: store)
+            CampaignView(
+                store: store.scope(state: \.campaigns, action: \.campaigns),
+                language: language
+            )
+
         case .insights:
-            InsightsView(store: store)
+            InsightsView(
+                store: store.scope(state: \.insights, action: \.insights),
+                language: language
+            )
+
         case .more:
-            MoreView(store: store)
+            MoreView(store: store.scope(state: \.more, action: \.more), language: language)
         }
     }
 }

@@ -6,7 +6,6 @@
 //
 
 import ComposableArchitecture
-import Foundation
 
 /// App 根層級狀態與導覽
 @Reducer
@@ -18,434 +17,227 @@ struct RootFeature {
     @ObservableState
     struct State: Equatable {
 
+        /// 持久層開啟失敗時的阻斷畫面；`nil` 時才可呈現正常導覽
+        @Presents var persistenceFailure: PersistenceFailureFeature.State?
+
         /// 目前選取的主要分頁
         var selectedTab: RootTab = .dashboard
 
+        /// 啟動時載入、由設定委派更新的完整偏好
+        var preferences: SettingsSnapshot
+
+        /// 常駐殼層的鎖定與解鎖狀態
+        var appLock: AppLockFeature.State
+
+        /// 啟動載入與幣別快取的子功能狀態
+        var launch = RootLaunchFeature.State()
+
         /// 訂單功能狀態
-        var orders = OrdersFeature.State()
+        var orders: OrdersFeature.State
 
-        /// 客戶彙總功能狀態；``orders`` 內容經 reducer 的 onChange 與 ``OrdersFeature/State/orders`` 保持同步
-        var customers = CustomersFeature.State()
-
-        /// 開團功能狀態
+        /// 開團功能狀態；``CampaignFeature/State/orders`` 投影經 reducer 的 `onChange(of:)` 與訂單保持同步
         var campaigns = CampaignFeature.State()
 
-        /// 匯率工具狀態
-        var fx = FxFeature.State()
+        /// 總覽功能狀態；四份投影皆由 reducer 的變更監看與對應來源保持同步
+        var dashboard = DashboardFeature.State()
 
-        /// 報價試算狀態
-        var quote = QuoteFeature.State()
+        /// 分析功能狀態與選取的趨勢期間
+        var insights = InsightsFeature.State()
 
-        /// 設定頁狀態
-        var settings = SettingsFeature.State()
+        /// 更多頁的堆疊導覽與子畫面投影
+        var more: MoreFeature.State
 
-        /// 訂單來源主檔管理狀態；理由同 ``categoryManagement``
-        var orderSourceManagement = LookupManagementFeature.State(kind: .orderSource)
-
-        /// 商品類別主檔管理狀態；放在 root 是為了攔截 `renameRequested` 等動作後同步 ``OrdersFeature/State`` 的 in-memory 副本 (cascade)
-        var categoryManagement = LookupManagementFeature.State(kind: .category)
-
-        /// 付款方式主檔管理狀態；理由同 ``categoryManagement``
-        var paymentMethodManagement = LookupManagementFeature.State(kind: .paymentMethod)
-
-        /// 對帳狀態主檔管理狀態；理由同 ``categoryManagement``
-        var reconciliationStatusManagement = LookupManagementFeature.State(kind: .reconciliationStatus)
-
-        /// 「更多」分頁的導覽路徑
+        /// 依持久層結果與設定狀態初始化畫面
         ///
-        /// 清單點擊與深連結寫入同一條路徑，讓每個目的地只有一條抵達路徑——
-        /// 原本清單走推進連結、深連結走呈現旗標，兩者互不知情因而能疊出第二層設定頁
-        var morePath: [MoreRoute] = []
-
-        /// 分析頁目前選取的趨勢期間；由 state 擁有以避免 iPad 側邊欄切換分頁重建 View 時被重置
-        var insightsDateRange: InsightsDateRange = .twelveMonths
+        /// - Parameters:
+        ///   - persistenceStatus: 持久層啟動狀態
+        ///   - preferences: 啟動時已載入的完整偏好
+        ///   - appVersion: App 版本與建置號顯示文字
+        ///   - orders: 建立容器時帶入的訂單功能狀態
+        init(
+            persistenceStatus: PersistenceContainer.Status = .healthy,
+            preferences: SettingsSnapshot = .default,
+            appVersion: String = "—",
+            orders: OrdersFeature.State = OrdersFeature.State()
+        ) {
+            if case .degraded = persistenceStatus {
+                persistenceFailure = PersistenceFailureFeature.State()
+            }
+            self.preferences = preferences
+            self.orders = orders
+            appLock = AppLockFeature.State(
+                isBiometricUnlockEnabled: preferences.isBiometricUnlockEnabled,
+                isLocked: preferences.isBiometricUnlockEnabled
+            )
+            more = MoreFeature.State(appVersion: appVersion)
+            more.preferences = preferences
+            dashboard.monthlyProfitGoalTWD = preferences.monthlyProfitGoalTWD
+            self.orders.defaultCurrency = preferences.defaultCurrency
+            self.orders.aiSummarySettings = OrderAISummarySettings(
+                isEnabled: preferences.isAISummaryEnabled,
+                model: preferences.aiSummaryModel
+            )
+        }
     }
 
     // MARK: - Action
 
-    /// App 根層級可處理的事件
-    @CasePathable
-    enum Action: BindableAction, Equatable {
+    /// App 根層級可處理的事件，依送出者與子層分組
+    enum Action {
 
-        /// SwiftUI 雙向繫結事件 (分析頁期間、設定深連結開關等純 UI 狀態)
-        case binding(BindingAction<State>)
-
-        /// App 啟動觸發；目前用來把 ExchangeRate-API `/codes` cache 在 TTL 內更新
-        case task
-
-        /// 使用者切換主要分頁
-        case tabSelected(RootTab)
-
-        /// 從非訂單分頁 (如 Dashboard 的 onboarding) 發起「新訂單」流程
+        /// 根導覽宿主送出的畫面事件
         ///
-        /// 會同時把 selectedTab 切到 `.orders` 並把 ``OrdersFeature/State/editOrder`` 設好，讓 ``OrdersView`` 的 sheet 能立刻顯示
-        case startNewOrder
+        /// - Parameter action: 啟動或切換導覽的操作
+        case view(View)
 
-        /// 使用者從側邊欄智慧分組點擊狀態，跳到訂單頁並套用篩選
-        case smartGroupSelected(OrderStatus)
+        /// 持久層失敗時的復原流程
+        ///
+        /// - Parameter action: 阻斷畫面的呈現或復原事件
+        case persistenceFailure(PresentationAction<PersistenceFailureFeature.Action>)
 
-        /// 使用者從客戶名單點擊客戶，跳到訂單頁並把搜尋字串設為客戶名
-        case customerSelected(String)
-
-        /// 使用者從分析頁點擊類別 bar，跳到訂單頁並把搜尋字串設為類別名
-        case categorySelected(String)
-
-        /// 使用者從 Dashboard 開團卡或 Insights 開團排行點擊某個開團，跳到開團頁並開啟該團詳情
-        case campaignSelected(String)
-
-        /// 訂單功能事件
-        case orders(OrdersFeature.Action)
-
-        /// 客戶彙總功能事件
-        case customers(CustomersFeature.Action)
+        /// 殼層鎖定與場景生命週期事件
+        ///
+        /// - Parameter action: 鎖定功能送出的事件
+        case appLock(AppLockFeature.Action)
 
         /// 開團功能事件
+        ///
+        /// - Parameter action: 開團功能送出的事件
         case campaigns(CampaignFeature.Action)
 
-        /// 匯率工具事件
-        case fx(FxFeature.Action)
+        /// 總覽功能事件
+        ///
+        /// - Parameter action: 總覽功能送出的事件
+        case dashboard(DashboardFeature.Action)
 
-        /// 報價試算事件
-        case quote(QuoteFeature.Action)
+        /// 分析功能事件
+        ///
+        /// - Parameter action: 分析功能送出的事件
+        case insights(InsightsFeature.Action)
 
-        /// 設定頁事件
-        case settings(SettingsFeature.Action)
+        /// 啟動載入功能事件
+        ///
+        /// - Parameter action: 啟動載入功能送出的事件
+        case launch(RootLaunchFeature.Action)
 
-        /// 訂單來源主檔管理事件
-        case orderSourceManagement(LookupManagementFeature.Action)
+        /// 更多頁堆疊與子畫面委派
+        ///
+        /// - Parameter action: 更多頁功能送出的事件
+        case more(MoreFeature.Action)
 
-        /// 商品類別主檔管理事件
-        case categoryManagement(LookupManagementFeature.Action)
+        /// 訂單功能事件
+        ///
+        /// - Parameter action: 訂單功能送出的事件
+        case orders(OrdersFeature.Action)
 
-        /// 付款方式主檔管理事件
-        case paymentMethodManagement(LookupManagementFeature.Action)
+        /// 根導覽宿主的使用者操作
+        @CasePathable
+        enum View: Equatable {
 
-        /// 對帳狀態主檔管理事件
-        case reconciliationStatusManagement(LookupManagementFeature.Action)
+            /// 請開團、主檔目錄與啟動載入子層載入資料，訂單在主檔目錄讀完後才載入，並刷新共用幣別清單、監聽重大時間變更
+            case task
+
+            /// iPhone 分頁列切換主要分頁，保留「更多」堆疊
+            ///
+            /// - Parameter tab: 要切換到的主要分頁
+            case tabSelected(RootTab)
+
+            /// iPad 側邊欄切換分頁前先清空「更多」堆疊；選取目前分頁時不處理
+            ///
+            /// - Parameter tab: 要切換到的主要分頁
+            case sidebarTabSelected(RootTab)
+        }
     }
 
-    // MARK: - Dependency Properties
+    // MARK: - Dependencies
 
-    /// 用來計算跨頁跳轉時的「目前」時間 (套用到 ``OrdersFeature/State/filteredOrders(referenceDate:calendar:)``)；測試可注入固定值
+    /// 跨頁導覽使用的目前時間；測試可注入固定值
     @Dependency(\.date) private var date
 
-    /// 跨頁發起新訂單時，``OrderEditFeature/State`` 的識別值來源；測試可注入固定值
+    /// 跨頁建立訂單時使用的表單識別值
     @Dependency(\.uuid) private var uuid
 
-    /// 跨頁跳轉重算選取訂單時，訂單篩選所用的行事曆 (含時區)；測試可注入固定值
+    /// 跨頁篩選訂單時使用的行事曆
     @Dependency(\.calendar) private var calendar
 
-    /// 幣別主檔資料來源；App 啟動時打 ExchangeRate-API `/codes` 並 cache 7 天
-    @Dependency(CurrencyMetadataRepository.self) private var currencyMetadataRepository
+    // MARK: - Body
 
-    // MARK: - Reducer Body
-
-    /// App 根層級 reducer
+    /// 組合子層與根邏輯；保留 `CombineReducers`，讓尾端 `onChange` 看到子層變更後再同步投影
     var body: some Reducer<State, Action> {
-        BindingReducer()
-
         CombineReducers {
-            Scope(state: \.orders, action: \.orders) {
-                OrdersFeature()
+            Scope(state: \.appLock, action: \.appLock) {
+                AppLockFeature()
             }
 
-            Scope(state: \.customers, action: \.customers) {
-                CustomersFeature()
+            Scope(state: \.launch, action: \.launch) {
+                RootLaunchFeature()
+            }
+
+            Scope(state: \.orders, action: \.orders) {
+                OrdersFeature()
             }
 
             Scope(state: \.campaigns, action: \.campaigns) {
                 CampaignFeature()
             }
 
-            Scope(state: \.fx, action: \.fx) {
-                FxFeature()
+            Scope(state: \.dashboard, action: \.dashboard) {
+                DashboardFeature()
             }
 
-            Scope(state: \.quote, action: \.quote) {
-                QuoteFeature()
+            Scope(state: \.insights, action: \.insights) {
+                InsightsFeature()
             }
 
-            Scope(state: \.settings, action: \.settings) {
-                SettingsFeature()
+            Scope(state: \.more, action: \.more) {
+                MoreFeature()
             }
 
-            Scope(state: \.orderSourceManagement, action: \.orderSourceManagement) {
-                LookupManagementFeature()
-            }
-
-            Scope(state: \.categoryManagement, action: \.categoryManagement) {
-                LookupManagementFeature()
-            }
-
-            Scope(state: \.paymentMethodManagement, action: \.paymentMethodManagement) {
-                LookupManagementFeature()
-            }
-
-            Scope(state: \.reconciliationStatusManagement, action: \.reconciliationStatusManagement) {
-                LookupManagementFeature()
-            }
-
-            Reduce { state, action in
-                switch action {
-                case .binding:
-                    return .none
-
-                case .task:
-                    let currencyMetadataRepository = currencyMetadataRepository
-                    return .merge(
-                        .send(.settings(.task)),
-                        .run { _ in
-                            // TTL 7 天：7 * 24 * 3600 = 604_800 秒
-                            _ = try? await currencyMetadataRepository.refreshIfStale(604_800)
-                        }
-                    )
-                    
-                case let .tabSelected(tab):
-                    state.selectedTab = tab
-                    return .none
-
-                case .startNewOrder:
-                    state.selectedTab = .orders
-                    state.orders.editOrder = OrderEditFeature.State(id: uuid(), currentDate: date.now)
-                    return .none
-                    
-                case let .smartGroupSelected(status):
-                    // 只切換狀態篩選；不再靜默覆寫使用者既有的日期區間與類別篩選——
-                    // 覆寫本身不是必要行為而是實作副作用，要套用一組預設篩選應以可見方式呈現
-                    state.selectedTab = .orders
-                    state.orders.selectedStatus = .status(status)
-                    state.orders.selectedOrderID = state.orders.filteredOrders(
-                        referenceDate: date.now,
-                        calendar: calendar
-                    ).first?.id
-                    return .none
-                    
-                case let .customerSelected(name):
-                    // 客戶頁掛在「更多」分頁的導覽路徑下 (morePath = [.customers])，深連結切到訂單分頁前先清空該路徑：
-                    // 否則 iPad 的 NavigationSplitView 會在路徑仍非空時切換分欄，於 boundPathChange 觸發 assertion 崩潰
-                    state.morePath.removeAll()
-                    state.selectedTab = .orders
-                    state.orders.searchText = name
-                    state.orders.selectedStatus = .all
-                    state.orders.selectedDatePeriod = .all
-                    // 同 smart group：客戶名深連結時清掉殘留類別篩選
-                    state.orders.selectedCategory = nil
-                    state.orders.selectedOrderID = state.orders.filteredOrders(
-                        referenceDate: date.now,
-                        calendar: calendar
-                    ).first?.id
-                    return .none
-                    
-                case let .categorySelected(category):
-                    // 從分析頁類別排行深連結進訂單頁時，以 `selectedCategory` 精準欄位比對而非 `searchText` 模糊比對：
-                    // 後者會把品名/客戶名等含相同字串的訂單誤包進來，也讓訂單頁的類別篩選膠囊無法 highlight
-                    state.selectedTab = .orders
-                    state.orders.searchText = ""
-                    state.orders.selectedStatus = .all
-                    state.orders.selectedDatePeriod = .all
-                    state.orders.selectedCategory = category
-                    state.orders.selectedOrderID = state.orders.filteredOrders(
-                        referenceDate: date.now,
-                        calendar: calendar
-                    ).first?.id
-                    return .none
-                    
-                case let .campaignSelected(name):
-                    // 從 Dashboard 開團卡或 Insights 開團排行深連結：切到開團頁並選取該團
-                    // (CampaignListView 觀察 selectedCampaignID 後 push 詳情)
-                    state.selectedTab = .campaigns
-                    state.campaigns.selectedCampaignID = state.campaigns.campaigns.first { $0.name == name }?.id
-                    return .none
-                    
-                    // AI 未開啟提示 alert 的「前往開啟」：導覽由 root 負責
-                case .orders(.aiDisabledAlert(.presented(.goToAISettings))):
-                    // 切到「更多」分頁並 push 設定頁
-                    state.selectedTab = .more
-                    // 同一次狀態更新內先清空再推入，確保設定頁永遠只有一份且掛在根層
-                    state.morePath = [.settings]
-                    return .none
-                    
-                case .orders:
-                    return .none
-                    
-                case .customers:
-                    return .none
-                    
-                case let .campaigns(.campaignRenamed(from, to)):
-                    // CampaignFeature 已處理開團主檔與訂單表 (DB) 的 cascade；此處只同步 OrdersFeature 的 in-memory 副本
-                    let trimmedFrom = from.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
-                    if !trimmedFrom.isEmpty,
-                       !trimmedTo.isEmpty,
-                       trimmedFrom != trimmedTo {
-                        state.orders.orders = state.orders.orders.map { order in
-                            guard order.campaignNames.contains(trimmedFrom) else {
-                                return order
-                            }
-                            return rebuildOrder(
-                                order,
-                                campaignNames: order.campaignNames.map { $0 == trimmedFrom ? trimmedTo : $0 }
-                            )
-                        }
-                    }
-                    state.orders.campaigns = state.campaigns.campaigns
-                    return .none
-
-                case .campaigns:
-                    // 任何開團變更 (載入／自動轉狀態／新增／狀態／結團／刪除) 後，同步 OrdersFeature 的開團副本，
-                    // 供訂單編輯選團與訂單列表按開團狀態篩選使用
-                    state.orders.campaigns = state.campaigns.campaigns
-                    return .none
-
-                case .fx:
-                    return .none
-
-                case .quote:
-                    return .none
-
-                case .settings:
-                    return .none
-
-                case let .orderSourceManagement(.renameRequested(from, to)):
-                    cascadeRename(kind: .orderSource, from: from, to: to, in: &state)
-                    return .none
-
-                case let .orderSourceManagement(.addConfirmed(name, _, _, _)):
-                    // 訂單來源無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數
-                    addOrderSourceToOrdersMaster(name: name, in: &state)
-                    return .none
-
-                case let .orderSourceManagement(.deleteRequested(name)):
-                    removeFromOrdersMaster(kind: .orderSource, name: name, in: &state)
-                    return .none
-
-                case .orderSourceManagement:
-                    return .none
-
-                case let .categoryManagement(.renameRequested(from, to)):
-                    cascadeRename(kind: .category, from: from, to: to, in: &state)
-                    return .none
-
-                case let .categoryManagement(.addConfirmed(name, _, _, _)):
-                    // 商品類別無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數
-                    addCategoryToOrdersMaster(name: name, in: &state)
-                    return .none
-
-                case let .categoryManagement(.deleteRequested(name)):
-                    removeFromOrdersMaster(kind: .category, name: name, in: &state)
-                    return .none
-
-                case .categoryManagement:
-                    return .none
-
-                case let .paymentMethodManagement(.renameRequested(from, to)):
-                    cascadeRename(kind: .paymentMethod, from: from, to: to, in: &state)
-                    return .none
-
-                case let .paymentMethodManagement(.addConfirmed(name, isCardless, isBankTransfer, isCashOnDelivery)):
-                    addPaymentMethodToOrdersMaster(
-                        name: name,
-                        isCardless: isCardless,
-                        isBankTransfer: isBankTransfer,
-                        isCashOnDelivery: isCashOnDelivery,
-                        in: &state
-                    )
-                    return .none
-
-                case let .paymentMethodManagement(.deleteRequested(name)):
-                    removeFromOrdersMaster(kind: .paymentMethod, name: name, in: &state)
-                    return .none
-
-                case let .paymentMethodManagement(.editConfirmed(originalName, name, isCardless, isBankTransfer, isCashOnDelivery)):
-                    let trimmedOriginal = originalName.trimmingCharacters(in: .whitespacesAndNewlines)
-                    let trimmedNew = name.trimmingCharacters(in: .whitespacesAndNewlines)
-                    guard !trimmedNew.isEmpty else {
-                        return .none
-                    }
-                    // 名稱變更先 cascade 到 in-memory master 與訂單表 (rename 會合併舊旗標)，
-                    // 再以使用者實際勾選權威覆寫旗標，確保可取消勾選
-                    if trimmedNew != trimmedOriginal {
-                        cascadeRename(
-                            kind: .paymentMethod,
-                            from: trimmedOriginal,
-                            to: trimmedNew,
-                            in: &state
-                        )
-                    }
-                    addPaymentMethodToOrdersMaster(
-                        name: trimmedNew,
-                        isCardless: isCardless,
-                        isBankTransfer: isBankTransfer,
-                        isCashOnDelivery: isCashOnDelivery,
-                        in: &state
-                    )
-                    return .none
-
-                case .paymentMethodManagement:
-                    return .none
-
-                case let .reconciliationStatusManagement(.renameRequested(from, to)):
-                    cascadeRename(kind: .reconciliationStatus, from: from, to: to, in: &state)
-                    return .none
-
-                case let .reconciliationStatusManagement(.addConfirmed(name, _, _, _)):
-                    // 對帳狀態無 isCardless / isBankTransfer / isCashOnDelivery 概念，直接忽略後三個參數
-                    addReconciliationStatusToOrdersMaster(name: name, in: &state)
-                    return .none
-
-                case let .reconciliationStatusManagement(.deleteRequested(name)):
-                    removeFromOrdersMaster(kind: .reconciliationStatus, name: name, in: &state)
-                    return .none
-
-                case .reconciliationStatusManagement:
-                    return .none
+            Reduce(core)
+                .ifLet(\.$persistenceFailure, action: \.persistenceFailure) {
+                    PersistenceFailureFeature()
                 }
-            }
         }
         .onChange(of: \.orders.orders) { _, state in
-            // CustomersFeature 的訂單投影與 OrdersFeature 保持同步；onChange 只偵測「本 reducer 直接造成」的變化，
-            // 故需 CombineReducers 把上述所有 Scope 與 Reduce 併成同一個 base，才能涵蓋 cascade rename 等改在 Root 自身 Reduce 內的路徑
-            state.customers.orders = state.orders.orders
+            let orders = state.orders.orders
+            state.campaigns.$orders.withLock {
+                $0 = orders
+            }
+            state.more.$orders.withLock {
+                $0 = orders
+            }
+            state.dashboard.orders = state.orders.orders
+            state.insights.orders = state.orders.orders
             return .none
         }
-    }
-}
-
-// MARK: - Nested Types
-
-extension RootFeature {
-
-    /// 「更多」分頁可抵達的目的地
-    ///
-    /// 值導向堆疊讓「同一個目的地被推兩次」這種不合法狀態根本無法表達，
-    /// 而不是靠去重判斷把它擋掉
-    enum MoreRoute: Hashable, CaseIterable {
-
-        // MARK: - Cases
-
-        /// 匯率工具
-        case fx
-
-        /// 客戶名單
-        case customers
-
-        /// 報價試算
-        case quote
-
-        /// 訂單來源主檔管理
-        case orderSources
-
-        /// 商品類別主檔管理
-        case categories
-
-        /// 付款方式主檔管理
-        case paymentMethods
-
-        /// 對帳狀態主檔管理
-        case reconciliationStatuses
-
-        /// 設定
-        case settings
+        .onChange(of: \.campaigns.campaigns) { _, state in
+            state.orders.$campaigns.withLock {
+                $0 = state.campaigns.campaigns
+            }
+            state.dashboard.campaigns = state.campaigns.campaigns
+            state.insights.campaigns = state.campaigns.campaigns
+            return .none
+        }
+        .onChange(of: \.orders.loadState) { _, state in
+            state.dashboard.loadState = state.orders.loadState
+            state.insights.loadState = state.orders.loadState
+            return .none
+        }
+        .onChange(of: \.preferences) { _, state in
+            state.appLock.isBiometricUnlockEnabled = state.preferences.isBiometricUnlockEnabled
+            state.more.preferences = state.preferences
+            state.dashboard.monthlyProfitGoalTWD = state.preferences.monthlyProfitGoalTWD
+            state.orders.defaultCurrency = state.preferences.defaultCurrency
+            state.orders.aiSummarySettings = OrderAISummarySettings(
+                isEnabled: state.preferences.isAISummaryEnabled,
+                model: state.preferences.aiSummaryModel
+            )
+            return .none
+        }
+        .onChange(of: \.appLock.biometryType) { _, state in
+            state.more.biometryType = state.appLock.biometryType
+            return .none
+        }
     }
 }
 
@@ -453,306 +245,135 @@ extension RootFeature {
 
 private extension RootFeature {
 
-    /// 在 root 端 cascade 主檔更名到 ``OrdersFeature/State`` 的 in-memory 副本，避免 LookupManagement 只更新 DB 但 OrdersFeature 拿到的還是舊字串
-    /// - Parameters:
-    ///   - kind: 要 cascade 的主檔型別
-    ///   - from: 舊名稱
-    ///   - to: 新名稱
-    ///   - state: 要修改的 ``RootFeature/State``
-    func cascadeRename(
-        kind: LookupKind,
-        from: String,
-        to: String,
-        in state: inout State
-    ) {
-        let trimmedFrom = from.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedTo = to.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmedFrom.isEmpty,
-              !trimmedTo.isEmpty,
-              trimmedFrom != trimmedTo else {
-            return
-        }
+    /// 以根功能解析後的時間與行事曆建立共用導覽操作
+    var navigation: RootNavigationOperations {
+        RootNavigationOperations(referenceDate: date.now, calendar: calendar)
+    }
 
-        switch kind {
-        case .orderSource:
-            state.orders.orderSourceMaster = renameInList(
-                state.orders.orderSourceMaster,
-                from: trimmedFrom,
-                to: trimmedTo
+    /// 依收到的事件更新 App 根層狀態，並回傳要執行的 Effect
+    ///
+    /// - Parameters:
+    ///   - state: 目前的根層狀態，直接就地修改
+    ///   - action: 這次收到的根層事件
+    /// - Returns: 接下來要執行的 Effect，沒有就回 `.none`
+    func core(state: inout State, action: Action) -> Effect<Action> {
+        switch action {
+        case .view(.task):
+            return .merge(
+                .send(.campaigns(.loadRequested)),
+                .send(.more(.catalogLoadRequested)),
+                .send(.launch(.loadRequested))
             )
-            state.orders.orders = state.orders.orders.map { order in
-                guard order.orderSource == trimmedFrom else {
-                    return order
-                }
-                return rebuildOrder(order, orderSource: trimmedTo)
+
+        case .view(.tabSelected(let tab)):
+            state.selectedTab = tab
+            return .none
+
+        case .view(.sidebarTabSelected(let tab)):
+            guard tab != state.selectedTab else {
+                return .none
             }
+            // 「更多」路徑非空時切分頁會讓 iPad 的 `NavigationSplitView` 崩潰，先清空
+            state.more.popToRoot()
+            state.selectedTab = tab
+            return .none
 
-        case .category:
-            state.orders.categoryMaster = renameInList(
-                state.orders.categoryMaster,
-                from: trimmedFrom,
-                to: trimmedTo
+        case .persistenceFailure:
+            return .none
+
+        case .appLock(.delegate(.didBecomeActive)):
+            navigation.refreshDateContexts(state: &state)
+            return .none
+
+        case .appLock:
+            return .none
+
+        case .campaigns(.delegate(.campaignDeleted(let name))):
+            return .send(.orders(.rootRequest(.cascade(.campaignDeleted(name)))))
+
+        case .campaigns(.delegate(.campaignRenamed(let from, let to))):
+            return .send(.orders(.rootRequest(.cascade(.campaignRenamed(from: from, to: to)))))
+
+        case .campaigns(.delegate(.receiptStatusToggled(let orderID, let status))):
+            return .send(.orders(.rootRequest(.receiptStatusChange(id: orderID, status: status))))
+
+        case .campaigns:
+            return .none
+
+        case .dashboard(.delegate(.refresh)), .insights(.delegate(.refresh)),
+                .more(.delegate(.ordersLoadRequested)), .orders(.delegate(.loadRequested)):
+            return .send(.more(.catalogLoadRequested))
+
+        case .dashboard(.delegate(.campaignTapped(let name))),
+                .insights(.delegate(.campaignTapped(let name))):
+            navigation.showCampaign(named: name, state: &state)
+            return .none
+
+        case .dashboard(.delegate(.newOrderTapped)):
+            // `OrdersView` 必須先進入畫面階層，才能掛上它持有的新訂單 sheet
+            state.selectedTab = .orders
+            state.orders.presentNewOrder(id: uuid(), now: date.now, calendar: calendar)
+            return .none
+
+        case .dashboard(.delegate(.viewAllOrdersTapped)):
+            state.selectedTab = .orders
+            return .none
+
+        case .dashboard:
+            return .none
+
+        case .insights(.delegate(.categoryTapped(let name))):
+            navigation.showOrders(category: name, state: &state)
+            return .none
+
+        case .insights:
+            return .none
+
+        case .launch(.delegate(.significantTimeChanged)):
+            navigation.refreshDateContexts(state: &state)
+            return .none
+
+        case .launch:
+            return .none
+
+        case .more(.delegate(.catalogLoadFinished)):
+            return .send(.orders(.rootRequest(.load)))
+
+        case .more(.delegate(.optionAdditionCompleted(let request, let isStored))):
+            return .send(
+                .orders(.rootRequest(.optionAdditionCompleted(request, isStored: isStored)))
             )
-            state.orders.orders = state.orders.orders.map { order in
-                guard order.categories.contains(trimmedFrom) else {
-                    return order
-                }
-                return rebuildOrder(
-                    order,
-                    categories: order.categories.map { $0 == trimmedFrom ? trimmedTo : $0 }
-                )
-            }
 
-        case .paymentMethod:
-            state.orders.paymentMethodMaster = renamePaymentMethods(
-                state.orders.paymentMethodMaster,
-                from: trimmedFrom,
-                to: trimmedTo
+        case .more(.delegate(.customerSelected(let name))):
+            navigation.showOrders(customer: name, state: &state)
+            return .none
+
+        case .more(.delegate(.lookupItemRenamed(let kind, let rename))):
+            return .send(
+                .orders(.rootRequest(.cascade(.lookupItemRenamed(kind: kind, rename: rename))))
             )
-            state.orders.orders = state.orders.orders.map { order in
-                guard order.paymentMethod == trimmedFrom else {
-                    return order
-                }
-                return rebuildOrder(order, paymentMethod: trimmedTo)
-            }
 
-        case .reconciliationStatus:
-            state.orders.reconciliationStatusMaster = renameInList(
-                state.orders.reconciliationStatusMaster,
-                from: trimmedFrom,
-                to: trimmedTo
-            )
-            state.orders.orders = state.orders.orders.map { order in
-                guard order.reconciliationStatus == trimmedFrom else {
-                    return order
-                }
-                return rebuildOrder(order, reconciliationStatus: trimmedTo)
-            }
-        }
-    }
+        case .more(.delegate(.paymentMethodEdited(let plan))):
+            // 轉送已正規化的訂單，不重算付款方式旗標，也不重複落盤
+            return .send(.orders(.rootRequest(.paymentMethodFlagsApply(plan.affectedOrders))))
 
-    /// 把 ``LookupManagementFeature`` 新增的訂單來源加進 ``OrdersFeature/State/orderSourceMaster`` 副本
-    /// - Parameters:
-    ///   - name: 新增名稱
-    ///   - state: 要修改的 ``RootFeature/State``
-    func addOrderSourceToOrdersMaster(
-        name: String,
-        in state: inout State
-    ) {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            return
-        }
-        guard !state.orders.orderSourceMaster.contains(trimmed) else {
-            return
-        }
+        case .more(.delegate(.preferencesChanged(let snapshot))):
+            state.preferences = snapshot
+            return .none
 
-        var updated = state.orders.orderSourceMaster
-        updated.append(trimmed)
-        state.orders.orderSourceMaster = updated.sorted {
-            $0.localizedStandardCompare($1) == .orderedAscending
-        }
-    }
+        case .more:
+            return .none
 
-    /// 把 ``LookupManagementFeature`` 新增的商品類別加進 ``OrdersFeature/State/categoryMaster`` 副本
-    /// - Parameters:
-    ///   - name: 新增名稱
-    ///   - state: 要修改的 ``RootFeature/State``
-    func addCategoryToOrdersMaster(
-        name: String,
-        in state: inout State
-    ) {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            return
-        }
-        guard !state.orders.categoryMaster.contains(trimmed) else {
-            return
-        }
+        case .orders(.delegate(.optionAddRequested(let request))):
+            return .send(.more(.optionAdditionRequested(request)))
 
-        var updated = state.orders.categoryMaster
-        updated.append(trimmed)
-        state.orders.categoryMaster = updated.sorted {
-            $0.localizedStandardCompare($1) == .orderedAscending
-        }
-    }
+        case .orders(.delegate(.aiSettingsRequested)):
+            state.selectedTab = .more
+            state.more.showSettings()
+            return .none
 
-    /// 把 ``LookupManagementFeature`` 新增的付款方式 (含 `isCardless`、`isBankTransfer` 與 `isCashOnDelivery`) 加進 ``OrdersFeature/State/paymentMethodMaster`` 副本；若名稱已存在則僅更新旗標
-    /// - Parameters:
-    ///   - name: 新增名稱
-    ///   - isCardless: 是否屬於無卡類付款方式
-    ///   - isBankTransfer: 是否屬於銀行匯款類付款方式
-    ///   - isCashOnDelivery: 是否屬於貨到付款類付款方式
-    ///   - state: 要修改的 ``RootFeature/State``
-    func addPaymentMethodToOrdersMaster(
-        name: String,
-        isCardless: Bool,
-        isBankTransfer: Bool,
-        isCashOnDelivery: Bool,
-        in state: inout State
-    ) {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            return
+        case .orders:
+            return .none
         }
-
-        var updated = state.orders.paymentMethodMaster
-        if let index = updated.firstIndex(where: { $0.name == trimmed }) {
-            updated[index] = PaymentMethodInfo(
-                name: trimmed,
-                isCardless: isCardless,
-                isBankTransfer: isBankTransfer,
-                isCashOnDelivery: isCashOnDelivery
-            )
-        } else {
-            updated.append(
-                PaymentMethodInfo(
-                    name: trimmed,
-                    isCardless: isCardless,
-                    isBankTransfer: isBankTransfer,
-                    isCashOnDelivery: isCashOnDelivery
-                )
-            )
-        }
-        state.orders.paymentMethodMaster = updated.sorted {
-            $0.name.localizedStandardCompare($1.name) == .orderedAscending
-        }
-    }
-
-    /// 把 ``LookupManagementFeature`` 新增的對帳狀態加進 ``OrdersFeature/State/reconciliationStatusMaster`` 副本
-    /// - Parameters:
-    ///   - name: 新增名稱
-    ///   - state: 要修改的 ``RootFeature/State``
-    func addReconciliationStatusToOrdersMaster(
-        name: String,
-        in state: inout State
-    ) {
-        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else {
-            return
-        }
-        guard !state.orders.reconciliationStatusMaster.contains(trimmed) else {
-            return
-        }
-
-        var updated = state.orders.reconciliationStatusMaster
-        updated.append(trimmed)
-        state.orders.reconciliationStatusMaster = updated.sorted {
-            $0.localizedStandardCompare($1) == .orderedAscending
-        }
-    }
-
-    /// 把 ``LookupManagementFeature`` 刪除的項目從 ``OrdersFeature/State`` 的 master 副本中移除
-    /// - Parameters:
-    ///   - kind: 主檔型別
-    ///   - name: 要移除的名稱
-    ///   - state: 要修改的 ``RootFeature/State``
-    func removeFromOrdersMaster(
-        kind: LookupKind,
-        name: String,
-        in state: inout State
-    ) {
-        switch kind {
-        case .orderSource:
-            state.orders.orderSourceMaster.removeAll { $0 == name }
-        case .category:
-            state.orders.categoryMaster.removeAll { $0 == name }
-        case .paymentMethod:
-            state.orders.paymentMethodMaster.removeAll { $0.name == name }
-        case .reconciliationStatus:
-            state.orders.reconciliationStatusMaster.removeAll { $0 == name }
-        }
-    }
-
-    /// 把 [PaymentMethodInfo] 中名稱為 `oldName` 的項目改名為 `newName`，保留原有 `isCardless`、`isBankTransfer` 與 `isCashOnDelivery`；若 `newName` 已存在則合併 (任一邊曾標記無卡／銀行匯款／貨到付款的就視為該類)
-    /// - Parameters:
-    ///   - list: 原始陣列
-    ///   - oldName: 舊名稱
-    ///   - newName: 新名稱
-    /// - Returns: 重新命名後的排序陣列
-    func renamePaymentMethods(
-        _ list: [PaymentMethodInfo],
-        from oldName: String,
-        to newName: String
-    ) -> [PaymentMethodInfo] {
-        var byName: [String: PaymentMethodInfo] = [:]
-        for info in list {
-            let key = info.name == oldName ? newName : info.name
-            let merged = byName[key]
-            let isCardless = info.isCardless || (merged?.isCardless ?? false)
-            let isBankTransfer = info.isBankTransfer || (merged?.isBankTransfer ?? false)
-            let isCashOnDelivery = info.isCashOnDelivery || (merged?.isCashOnDelivery ?? false)
-            byName[key] = PaymentMethodInfo(
-                name: key,
-                isCardless: isCardless,
-                isBankTransfer: isBankTransfer,
-                isCashOnDelivery: isCashOnDelivery
-            )
-        }
-        return byName.values
-            .sorted { $0.name.localizedStandardCompare($1.name) == .orderedAscending }
-    }
-
-    /// 把 list 中等於 `oldName` 的項目替換成 `newName`，去重後依 locale 排序
-    /// - Parameters:
-    ///   - list: 原始陣列
-    ///   - oldName: 舊名稱
-    ///   - newName: 新名稱
-    /// - Returns: 重新命名後的排序陣列
-    func renameInList(
-        _ list: [String],
-        from oldName: String,
-        to newName: String
-    ) -> [String] {
-        let replaced = list.map { $0 == oldName ? newName : $0 }
-        return Array(Set(replaced))
-            .sorted { $0.localizedStandardCompare($1) == .orderedAscending }
-    }
-
-    /// 因為 ``LedgerOrder`` 是 immutable struct，更新 orderSource、categories 或 paymentMethod 必須以 memberwise init 重建
-    /// - Parameters:
-    ///   - order: 原本的訂單
-    ///   - orderSource: 若不為 `nil` 則覆寫 orderSource
-    ///   - categories: 若不為 `nil` 則覆寫 categories
-    ///   - paymentMethod: 若不為 `nil` 則覆寫 paymentMethod
-    ///   - reconciliationStatus: 若不為 `nil` 則覆寫 reconciliationStatus
-    ///   - campaignNames: 若不為 `nil` 則覆寫 campaignNames
-    /// - Returns: 重建後的訂單
-    func rebuildOrder(
-        _ order: LedgerOrder,
-        orderSource: String? = nil,
-        categories: [String]? = nil,
-        paymentMethod: String? = nil,
-        reconciliationStatus: String? = nil,
-        campaignNames: [String]? = nil
-    ) -> LedgerOrder {
-        LedgerOrder(
-            id: order.id,
-            customer: order.customer,
-            status: order.status,
-            currency: order.currency,
-            date: order.date,
-            items: order.items,
-            itemCost: order.itemCost,
-            domesticShipping: order.domesticShipping,
-            internationalShipping: order.internationalShipping,
-            foreignDomesticShipping: order.foreignDomesticShipping,
-            cardFeeRate: order.cardFeeRate,
-            platformFeeRate: order.platformFeeRate,
-            paymentFeeRate: order.paymentFeeRate,
-            chargedAmount: order.chargedAmount,
-            cardlessDeductionAmount: order.cardlessDeductionAmount,
-            cardlessSupplementAmount: order.cardlessSupplementAmount,
-            orderSource: orderSource ?? order.orderSource,
-            categories: categories ?? order.categories,
-            paymentMethod: paymentMethod ?? order.paymentMethod,
-            notes: order.notes,
-            reconciliationStatus: reconciliationStatus ?? order.reconciliationStatus,
-            campaignNames: campaignNames ?? order.campaignNames,
-            paymentReceiptStatus: order.paymentReceiptStatus,
-            isCashOnDelivery: order.isCashOnDelivery,
-            photos: order.photos,
-            mergedSourceIDs: order.mergedSourceIDs
-        )
     }
 }

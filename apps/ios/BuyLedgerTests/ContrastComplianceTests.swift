@@ -7,161 +7,190 @@
 
 import SwiftUI
 import Testing
+
 @testable import BuyLedger
 
 /// 承載資訊的文字在四種外觀情境下的對比下限
-///
-/// 涵蓋狀態膠囊、徽章、客戶排名徽章、熱力圖與頭像；圖形元素若旁有文字標籤則屬裝飾、
-/// 不在此列 (詳見 design-system-color-contrast spec)
 @MainActor
 struct ContrastComplianceTests {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 承載資訊的文字對比下限
-    static let textFloor = 4.5
+    private static let textFloor = 4.5
 
     /// 所有需要驗證的外觀情境
-    static let appearances = ColorContrast.Appearance.allCases
+    private static let appearances = ColorContrast.Appearance.allCases
 
-    // MARK: - Tests
-
-    // MARK: 狀態膠囊與徽章
-
+    /// 確認狀態膠囊文字疊在膠囊底色上，每種外觀情境都達到文字對比下限
+    ///
+    /// - Parameters:
+    ///   - tone: 要驗證的語意色軌
+    ///   - appearance: 要驗證的外觀情境
     @Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)
-    func statusPillLabelMeetsTheTextFloor(tone: BLTone, appearance: ColorContrast.Appearance) {
-        let ratio = ColorContrast.ratio(tone.onSurface, on: tone.background, appearance: appearance)
+    func onSurface_膠囊文字疊在膠囊底色_對比達文字下限(tone: BLTone, appearance: ColorContrast.Appearance) {
+        // Given
+        let text = tone.onSurface
+        let background = tone.background
 
-        #expect(
-            ratio >= Self.textFloor,
-            "\(tone) 膠囊文字在 \(appearance) 下僅 \(ratio)"
-        )
+        // When
+        let ratio = ColorContrast.ratio(text, on: background, appearance: appearance)
+
+        // Then
+        #expect(ratio >= Self.textFloor, "\(tone) 膠囊文字在 \(appearance) 下僅 \(ratio)")
     }
 
+    /// 確認計數徽章數字疊在實心底色上，每種外觀情境都達到文字對比下限
+    ///
+    /// - Parameters:
+    ///   - tone: 要驗證的語意色軌
+    ///   - appearance: 要驗證的外觀情境
     @Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)
-    func countBadgeNumeralMeetsTheTextFloor(tone: BLTone, appearance: ColorContrast.Appearance) {
-        let ratio = ColorContrast.ratio(tone.onIndicator, on: tone.indicator, appearance: appearance)
+    func onIndicator_計數徽章數字疊在實心底_對比達文字下限(tone: BLTone, appearance: ColorContrast.Appearance) {
+        // Given
+        let numeral = tone.onIndicator
+        let indicator = tone.indicator
 
-        #expect(
-            ratio >= Self.textFloor,
-            "\(tone) 計數徽章數字在 \(appearance) 下僅 \(ratio)"
-        )
+        // When
+        let ratio = ColorContrast.ratio(numeral, on: indicator, appearance: appearance)
+
+        // Then
+        #expect(ratio >= Self.textFloor, "\(tone) 計數徽章數字在 \(appearance) 下僅 \(ratio)")
     }
 
+    /// 確認表面文字疊在卡片表面上，每種外觀情境都達到文字對比下限
+    ///
+    /// - Parameters:
+    ///   - tone: 要驗證的語意色軌
+    ///   - appearance: 要驗證的外觀情境
     @Test(arguments: BLTone.allCases, ColorContrast.Appearance.allCases)
-    func surfaceTextRemainsLegibleOnTheCardSurface(
-        tone: BLTone,
-        appearance: ColorContrast.Appearance
-    ) {
-        let ratio = ColorContrast.ratio(
-            tone.onSurface,
-            on: appearance.palette.surface,
-            appearance: appearance
-        )
+    func onSurface_文字疊在卡片表面_對比達文字下限(tone: BLTone, appearance: ColorContrast.Appearance) {
+        // Given
+        let text = tone.onSurface
+        let surface = Color.blSurface
 
-        #expect(
-            ratio >= Self.textFloor,
-            "\(tone) 表面文字疊在卡片上在 \(appearance) 下僅 \(ratio)"
-        )
+        // When
+        let ratio = ColorContrast.ratio(text, on: surface, appearance: appearance)
+
+        // Then
+        #expect(ratio >= Self.textFloor, "\(tone) 表面文字疊在卡片上在 \(appearance) 下僅 \(ratio)")
     }
 
-    // MARK: 客戶排名徽章
-
+    /// 確認前三名的排名徽章數字疊在徽章底色與卡片上，每種外觀情境都達到文字對比下限
+    ///
+    /// - Parameters:
+    ///   - rank: 要驗證的名次
+    ///   - appearance: 要驗證的外觀情境
     @Test(arguments: [1, 2, 3], ColorContrast.Appearance.allCases)
-    func rankBadgeNumeralMeetsTheTextFloor(rank: Int, appearance: ColorContrast.Appearance) {
+    func numeral_排名徽章數字疊在底色_對比達文字下限(rank: Int, appearance: ColorContrast.Appearance) {
+        // Given
         let style = CustomerRankBadgeStyle.style(forRank: rank)
-        let palette = appearance.palette
-        let ratio = ColorContrast.ratio(
-            style.numeral(in: palette),
-            on: [style.background(in: palette), palette.surface],
-            appearance: appearance
-        )
+        let numeral = style.numeral
+        let layers: [Color] = [style.background, .blSurface]
 
-        #expect(
-            ratio >= Self.textFloor,
-            "第 \(rank) 名徽章數字在 \(appearance) 下僅 \(ratio)"
-        )
+        // When
+        let ratio = ColorContrast.ratio(numeral, on: layers, appearance: appearance)
+
+        // Then
+        #expect(ratio >= Self.textFloor, "第 \(rank) 名徽章數字在 \(appearance) 下僅 \(ratio)")
     }
 
-    // MARK: 熱力圖
-
+    /// 確認熱力圖各級數的數字疊在該級底色上，每種外觀情境都達到文字對比下限
+    ///
+    /// - Parameters:
+    ///   - depth: 要驗證的熱力圖級數
+    ///   - appearance: 要驗證的外觀情境
     @Test(arguments: BLHeatmapDepth.allCases, ColorContrast.Appearance.allCases)
-    func heatmapNumeralMeetsTheTextFloor(
-        depth: BLHeatmapDepth,
-        appearance: ColorContrast.Appearance
-    ) {
-        let ratio = ColorContrast.ratio(depth.numeral, on: depth.background, appearance: appearance)
+    func numeral_熱力圖數字疊在底色_對比達文字下限(depth: BLHeatmapDepth, appearance: ColorContrast.Appearance) {
+        // Given
+        let numeral = depth.numeral
+        let background = depth.background
 
-        #expect(
-            ratio >= Self.textFloor,
-            "熱力圖第 \(depth.rawValue) 級數字在 \(appearance) 下僅 \(ratio)"
-        )
+        // When
+        let ratio = ColorContrast.ratio(numeral, on: background, appearance: appearance)
+
+        // Then
+        #expect(ratio >= Self.textFloor, "熱力圖第 \(depth.rawValue) 級數字在 \(appearance) 下僅 \(ratio)")
     }
 
+    /// 確認熱力圖相鄰兩級的底色對比至少 1.2，肉眼分得出深淺
+    ///
+    /// - Parameter appearance: 要驗證的外觀情境
     @Test(arguments: ColorContrast.Appearance.allCases)
-    func adjacentHeatmapDepthsAreVisiblyDistinct(appearance: ColorContrast.Appearance) {
+    func background_相鄰熱力圖級數_底色可目視區分(appearance: ColorContrast.Appearance) {
+        // Given
         let levels = BLHeatmapDepth.allCases
-        for (lower, upper) in zip(levels, levels.dropFirst()) {
-            let ratio = ColorContrast.ratio(lower.background, on: upper.background, appearance: appearance)
 
+        // When
+        let ratios = zip(levels, levels.dropFirst()).map { lower, upper in
+            ColorContrast.ratio(lower.background, on: upper.background, appearance: appearance)
+        }
+
+        // Then
+        for (index, ratio) in ratios.enumerated() {
             #expect(
                 ratio >= 1.2,
-                "熱力圖第 \(lower.rawValue) 與第 \(upper.rawValue) 級底色在 \(appearance) 下僅差 \(ratio)"
+                "熱力圖第 \(levels[index].rawValue) 與第 \(levels[index + 1].rawValue) 級底色在 \(appearance) 下僅差 \(ratio)"
             )
         }
     }
 
-    // MARK: 頭像
-
-    /// 涵蓋色輪上八個代表色相，含審查報告點名的黃綠區段
+    /// 涵蓋色輪上八個代表色相與黃綠區段，確認頭像的白色縮寫達到文字對比下限
+    ///
+    /// - Parameter hue: 要驗證的色相
     @Test(arguments: [0.0, 0.125, 0.166, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875])
-    func avatarInitialsMeetTheTextFloorAcrossHues(hue: Double) {
-        for color in BLAvatar.gradientColors(forHue: hue) {
-            for appearance in Self.appearances {
-                let ratio = ColorContrast.ratio(.white, on: color, appearance: appearance)
+    func gradientColors_代表色相的頭像漸層_白色縮寫達文字對比下限(hue: Double) {
+        // Given
+        let colors = BLAvatar.gradientColors(forHue: hue)
 
-                #expect(
-                    ratio >= Self.textFloor,
-                    "色相 \(hue) 的頭像縮寫在 \(appearance) 下僅 \(ratio)"
-                )
+        // When
+        let ratios = Self.appearances.map { appearance in
+            colors.map {
+                ColorContrast.ratio(.white, on: $0, appearance: appearance)
+            }
+        }
+
+        // Then
+        for (appearance, appearanceRatios) in zip(Self.appearances, ratios) {
+            for ratio in appearanceRatios {
+                #expect(ratio >= Self.textFloor, "色相 \(hue) 的頭像縮寫在 \(appearance) 下僅 \(ratio)")
             }
         }
     }
 
-    // MARK: 總覽頁主卡
-
-    /// 主卡文字為純白疊在漸層上；漸層兩端與其中點皆須達標
+    /// 確認彩底主卡的白字疊在漸層兩端時，每種外觀情境都達到文字對比下限
+    ///
+    /// - Parameter appearance: 要驗證的外觀情境
     @Test(arguments: ColorContrast.Appearance.allCases)
-    func heroCardWhiteTextMeetsTheFloorOnBothGradientEnds(appearance: ColorContrast.Appearance) {
-        let ends = [
-            Color("BLHeroGradientStart", bundle: .assets),
-            Color("BLHeroGradientEnd", bundle: .assets),
-        ]
-        for end in ends {
-            let ratio = ColorContrast.ratio(.white, on: end, appearance: appearance)
+    func gradientColors_彩底主卡漸層兩端_白字達文字對比下限(appearance: ColorContrast.Appearance) {
+        // Given
+        let ends = BLHeroCardBackground.gradientColors
 
-            #expect(
-                ratio >= Self.textFloor,
-                "主卡白字在 \(appearance) 下對漸層端僅 \(ratio)"
-            )
+        // When
+        let ratios = ends.map {
+            ColorContrast.ratio(.white, on: $0, appearance: appearance)
+        }
+
+        // Then
+        for ratio in ratios {
+            #expect(ratio >= Self.textFloor, "主卡白字在 \(appearance) 下對漸層端僅 \(ratio)")
         }
     }
 
-    // MARK: 具名色彩資源解析
-
-    /// 具名色彩資源缺失時 SwiftUI 會靜默回退為系統預設色，不會有編譯或執行期警訊
+    /// 確認每個具名色彩資源都真的解析到資源，沒有靜默回退成系統預設色
     ///
-    /// 對比斷言本身抓不到這種情形 (回退色之間仍可能達標)，故逐一比對「一定不存在的名稱」
-    /// 所回退到的色值，確認每支資源都真的解析到了
+    /// - Parameter appearance: 要驗證的外觀情境
     @Test(arguments: ColorContrast.Appearance.allCases)
-    func everyNamedColorResourceActuallyResolves(appearance: ColorContrast.Appearance) {
+    func components_所有具名色彩資源_皆解析到資源而非系統預設色(appearance: ColorContrast.Appearance) {
+        // Given
         let fallback = ColorContrast.components(
             of: Color("BLToneResourceThatDoesNotExist", bundle: .assets),
             appearance: appearance
         )
-
-        var resources: [(String, Color)] = [
-            ("BLRankBadgeFirstBackground", CustomerRankBadgeStyle.first.background(in: appearance.palette)),
+        var resources: [(name: String, color: Color)] = [
+            ("BLRankBadgeFirstBackground", CustomerRankBadgeStyle.first.background),
+            ("BLHeroGradientStart", BLHeroCardBackground.gradientColors[0]),
+            ("BLHeroGradientEnd", BLHeroCardBackground.gradientColors[1]),
         ]
         for tone in BLTone.allCases {
             resources.append(("\(tone) onSurface", tone.onSurface))
@@ -174,40 +203,48 @@ struct ContrastComplianceTests {
             resources.append(("熱力圖第 \(depth.rawValue) 級數字", depth.numeral))
         }
 
-        for (name, color) in resources {
-            #expect(
-                ColorContrast.components(of: color, appearance: appearance) != fallback,
-                "\(name) 在 \(appearance) 下回退為系統預設色，代表具名資源沒有解析到"
-            )
+        // When
+        let resolved = resources.map {
+            ($0.name, ColorContrast.components(of: $0.color, appearance: appearance))
+        }
+
+        // Then
+        for (name, components) in resolved {
+            #expect(components != fallback, "\(name) 在 \(appearance) 下回退為系統預設色，代表具名資源沒有解析到")
         }
     }
 
-    // MARK: 次要標籤色
-
-    /// 涵蓋改走次要標籤色的圖表軸標籤與區段標題
+    /// 涵蓋改走次要標籤色的圖表軸標籤與區段標題，確認它疊在三種背景上都達到文字對比下限
     ///
-    /// 這些文字原先誤用第三層標籤色，在淺色外觀下僅約 2.1:1
+    /// - Parameter appearance: 要驗證的外觀情境
     @Test(arguments: ColorContrast.Appearance.allCases)
-    func secondaryLabelTextMeetsTheTextFloor(appearance: ColorContrast.Appearance) {
-        let palette = appearance.palette
-        for background in [palette.surface, palette.background, palette.secondaryBackground] {
-            let ratio = ColorContrast.ratio(
-                palette.secondaryLabel,
-                on: background,
-                appearance: appearance
-            )
+    func blSecondaryLabel_疊在三種背景_對比達文字下限(appearance: ColorContrast.Appearance) {
+        // Given
+        let backgrounds: [Color] = [.blSurface, .blBackground, .blSecondaryBackground]
 
-            #expect(
-                ratio >= Self.textFloor,
-                "次要標籤色在 \(appearance) 下僅 \(ratio)"
-            )
+        // When
+        let ratios = backgrounds.map {
+            ColorContrast.ratio(.blSecondaryLabel, on: $0, appearance: appearance)
+        }
+
+        // Then
+        for ratio in ratios {
+            #expect(ratio >= Self.textFloor, "次要標籤色在 \(appearance) 下僅 \(ratio)")
         }
     }
 
-    @Test func distinctNamesKeepDistinctAvatarHues() {
-        let first = BLAvatar.hueValue(for: "王小明")
-        let second = BLAvatar.hueValue(for: "李大華")
+    /// 確認兩個不同的姓名對應到不同的頭像色相
+    @Test
+    func hueValue_兩個不同姓名_色相不同() {
+        // Given
+        let firstName = "王小明"
+        let secondName = "李大華"
 
-        #expect(first != second)
+        // When
+        let firstHue = BLAvatar.hueValue(for: firstName)
+        let secondHue = BLAvatar.hueValue(for: secondName)
+
+        // Then
+        #expect(firstHue != secondHue)
     }
 }

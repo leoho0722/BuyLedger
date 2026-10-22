@@ -7,304 +7,435 @@
 
 import Foundation
 import Testing
-@testable import BuyLedger
 
+/// 驗證本地化字串目錄
 struct LocalizationCatalogTests {
 
-    // MARK: - Tests
+    // MARK: - Properties
 
-    @Test func catalogContainsCompleteTraditionalChineseAndEnglishValues() throws {
-        let catalogURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appending(path: "BuyLedger/Resources/Localizable.xcstrings")
-        let data = try Data(contentsOf: catalogURL)
-        let root = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        let sourceLanguage = try #require(root["sourceLanguage"] as? String)
-        let strings = try #require(root["strings"] as? [String: Any])
+    /// native `navigationTitle` 不得直接接收的本地化字面值 pattern
+    static let forbiddenNavigationTitlePatterns = [
+        ".navigationTitle(\"",
+        ".navigationTitle(Text(\"",
+        ".navigationTitle(Text(LocalizedStringKey(",
+    ]
 
+    /// modifier 字串引數前的最大比對長度
+    static let modifierArgumentLookaheadLimit = 160
+
+    /// 往回檢查行事曆標題的行數
+    static let calendarTitleLookbackLines = 3
+
+    /// 主要字串目錄相對於 `apps/ios` 的路徑
+    private static let localizableCatalogPath = "BuyLedger/Resources/Localizable.xcstrings"
+
+    /// Info.plist 字串目錄相對於 `apps/ios` 的路徑
+    private static let infoPlistCatalogPath = "BuyLedger/Resources/InfoPlist.xcstrings"
+
+    /// 程式中使用者可見的字串字面值都已收錄於字串目錄
+    ///
+    /// - Throws: 讀取字串目錄、原始檔或建立掃描規則失敗時拋出錯誤
+    @Test
+    func missingUserVisibleCodeLiterals_程式字面值_皆已收錄於目錄() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+        let sourceRoot = Self.iosRootURL.appending(path: "BuyLedger")
+
+        // When
+        let missingCodeLiterals = try Self.missingUserVisibleCodeLiterals(
+            in: sourceRoot,
+            catalogKeys: Set(strings.keys)
+        )
+
+        // Then
+        #expect(
+            missingCodeLiterals.isEmpty,
+            "程式使用但目錄未收錄的使用者可見字串：\(missingCodeLiterals.map { "\($0.key) [\($0.location)]" })"
+        )
+    }
+
+    /// 實機回報過的字串，英文值與已驗收的翻譯相同；完整性由程式字面值的掃描檢查
+    ///
+    /// - Parameter example: 字串目錄 key 與已驗收的英文值
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test(arguments: DocumentedEnglishValue.examples)
+    func stringValue_已驗收的字串_與驗收值相同(example: DocumentedEnglishValue) throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+
+        // When
+        let englishValue = Self.stringValue(forKey: example.key, language: "en", in: strings)
+
+        // Then
+        #expect(englishValue == example.expectedEnglishValue, "字串目錄條目缺少英文值或與驗收值不同：\(example.key)")
+    }
+
+    /// 含中文的條目，英文值不得與中文 source 相同
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func hasUntranslatedEnglishValue_中文來源_不得與英文值相同() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+        try #require(!strings.isEmpty)
+
+        // When
+        let untranslatedChineseKeys = strings
+            .filter { Self.hasUntranslatedEnglishValue(key: $0.key, value: $0.value) }
+            .keys
+            .sorted()
+
+        // Then
+        #expect(untranslatedChineseKeys.isEmpty, "英文翻譯仍與中文來源相同：\(untranslatedChineseKeys)")
+    }
+
+    /// 每個需要翻譯的條目，正體中文與英文值都不是空白
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func findBlankLocalizations_每個需翻譯條目_中英文值皆非空白() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+        try #require(!strings.isEmpty)
+
+        // When
+        let blankLocalizations = Self.findBlankLocalizations(in: strings)
+
+        // Then
+        #expect(blankLocalizations.isEmpty, "缺少或空白的本地化值：\(blankLocalizations)")
+    }
+
+    /// 字串目錄以正體中文作為來源語言
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func sourceLanguage_字串目錄_為正體中文() throws(any Error) {
+        // Given
+        let root = try Self.catalogRoot(atRelativePath: Self.localizableCatalogPath)
+
+        // When
+        let sourceLanguage = root["sourceLanguage"] as? String
+
+        // Then
         #expect(sourceLanguage == "zh-Hant")
-        #expect(!strings.isEmpty)
+    }
 
-        let requiredProgrammaticKeys = [
-            "自動", "淺色", "深色",
-            "報價中", "已確認", "已下單", "集運中", "部分到貨", "已到貨", "已交付", "已取貨", "已取消", "已合併",
-            "待收款", "已收款", "新客", "常客", "VIP", "開團中", "已收單",
-            "按日分組", "按月分組", "按年分組",
-            "全部時間", "本週", "本月", "上月",
-            "30 天", "6 個月", "12 個月", "30 天淨獲利", "6 個月淨獲利", "12 個月淨獲利",
-            "訂單來源管理", "商品類別管理", "付款方式管理", "對帳狀態管理",
-            "管理訂單可選的訂單來源清單。", "管理訂單可選的商品類別清單。", "管理訂單可選的付款方式清單。", "管理訂單可選的對帳狀態清單。",
-            "新增來源", "新增類別", "新增付款方式", "新增對帳狀態",
-            "尚無來源", "尚無類別", "尚無付款方式", "尚無對帳狀態",
-            "透過上方「新增來源」加入第一個訂單來源；訂單編輯時也能新增。",
-            "透過上方「新增類別」加入第一個類別；訂單編輯時也能新增。",
-            "透過上方「新增付款方式」加入第一個項目；訂單編輯時也能新增。",
-            "透過上方「新增對帳狀態」加入第一個對帳狀態；訂單編輯時也能新增。",
-            "新增訂單來源", "新增商品類別", "來源名稱", "類別名稱", "對帳狀態名稱",
-            "輸入新的訂單來源名稱；不會自動套用到任何既有訂單。",
-            "輸入新的商品類別名稱；不會自動套用到任何既有訂單。",
-            "輸入新的付款方式名稱；不會自動套用到任何既有訂單。",
-            "輸入新的對帳狀態名稱；不會自動套用到任何既有訂單。",
-            "無卡", "銀行匯款", "貨到付款",
-            "— 無對照", "基準幣別", "尚未連線", "請稍後再試。",
-            "搜尋客戶、單號或商品", "返回",
-            "商品定價", "當地運費", "國際運費", "刷卡手續費", "金流手續費", "平台手續費", "目標毛利", "商品金額", "TWD/件",
-            "重新命名訂單來源", "重新命名商品類別", "重新命名付款方式", "重新命名對帳狀態",
-            " %lld 件",
-            "即時連線 ExchangeRate-API，將外幣換算為 TWD。",
-            "依名稱整理客戶活躍度，快速跳轉到對應訂單。",
-            "輸入成本與費率，即時看到建議售價與毛利。"
-        ]
-        let missingProgrammaticKeys = requiredProgrammaticKeys.filter { strings[$0] == nil }
-        #expect(missingProgrammaticKeys.isEmpty, "缺少由程式組成的顯示字串：\(missingProgrammaticKeys)")
+    /// 舊 popup 的新增提醒與移除提醒文案未在現行畫面顯示，不得重新收錄於字串目錄
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func retiredKeys_舊提醒文案_不得復活於目錄() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+        let retiredKeys = ["新增提醒", "移除提醒"]
 
-        let requiredEnglishValues = [
-            "總覽": "Overview",
-            "訂單": "Orders",
-            "全部": "All",
-            "營業額": "Revenue",
-            "成本": "Cost",
-            "進行中訂單": "Active Orders",
-            "更多": "More",
-            "選擇來源幣別": "Select Source Currency",
-            "選擇預設幣別": "Select Default Currency",
-            "選擇 AI 模型": "Select AI Model",
-            "收款進度": "Payment Progress",
-            "到貨進度": "Arrival Progress",
-            "待收款": "Pending",
-            "已收款": "Received",
-            "到貨": "Arrived",
-            "收款": "Payment",
-            "今天": "Today",
-            "昨天": "Yesterday",
-            "選擇來源": "Select Source",
-            "選擇類別": "Select Categories",
-            "選擇訂單來源": "Select Order Source",
-            "輸入新的訂單來源名稱，加入後會立即套用至此訂單。": "Enter a new order source name. It will be applied to this order immediately.",
-            "選擇商品類別": "Category",
-            "輸入新的商品類別名稱，加入後會立即套用至此訂單。": "Enter a new product category name. It will be applied to this order immediately.",
-            "選擇付款方式": "Select Payment Method",
-        ]
-        for (key, expectedEnglishValue) in requiredEnglishValues {
-            let entry = try #require(strings[key] as? [String: Any], "缺少實機回報的 key：\(key)")
-            let localizations = try #require(entry["localizations"] as? [String: Any])
-            let english = try #require(localizations["en"] as? [String: Any])
-            let stringUnit = try #require(english["stringUnit"] as? [String: Any])
-            let value = try #require(stringUnit["value"] as? String)
-            #expect(value == expectedEnglishValue)
-        }
+        // When
+        let revivedKeys = retiredKeys.filter { strings[$0] != nil }
 
-        let allowedSameSourceAndEnglishValues: Set<String> = ["VIP"]
-        let untranslatedChineseKeys = strings.compactMap { key, value -> String? in
-            guard key.range(of: "[\\u{3400}-\\u{9FFF}]", options: .regularExpression) != nil,
-                  let entry = value as? [String: Any],
-                  entry["shouldTranslate"] as? Bool != false,
-                  let localizations = entry["localizations"] as? [String: Any],
-                  let traditionalChinese = localizations["zh-Hant"] as? [String: Any],
-                  let traditionalChineseUnit = traditionalChinese["stringUnit"] as? [String: Any],
-                  let traditionalChineseValue = traditionalChineseUnit["value"] as? String,
-                  let english = localizations["en"] as? [String: Any],
-                  let englishUnit = english["stringUnit"] as? [String: Any],
-                  let englishValue = englishUnit["value"] as? String,
-                  traditionalChineseValue == englishValue,
-                  !allowedSameSourceAndEnglishValues.contains(key) else {
-                return nil
+        // Then
+        #expect(revivedKeys.isEmpty, "已退役字串不得復活：\(revivedKeys)")
+    }
+
+    /// 行事曆權限說明在 Info.plist 字串目錄有正體中文與英文版本
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func stringValue_行事曆權限說明_中英文說明皆非空白() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.infoPlistCatalogPath)
+        let key = "NSCalendarsFullAccessUsageDescription"
+
+        // When
+        let chineseValue = Self.stringValue(forKey: key, language: "zh-Hant", in: strings)
+        let englishValue = Self.stringValue(forKey: key, language: "en", in: strings)
+
+        // Then
+        #expect(chineseValue?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
+        #expect(englishValue?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
+    }
+
+    /// 字串目錄內不得殘留任何中文 Key
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func noResidualChineseKeys_字串目錄_不得含有中文Key() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+
+        // When
+        let chineseKeys = strings.keys.filter {
+            $0.range(of: "[\\u{4E00}-\\u{9FFF}]", options: .regularExpression) != nil
+        }.sorted()
+
+        // Then
+        #expect(chineseKeys.isEmpty, "字串目錄中仍殘留中文 Key：\(chineseKeys)")
+    }
+
+    /// 結構化英文 Key 符合 `<domain>.<component>.<elementType>.<descriptor>` 點記號與小駝峰規範
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func structuredKeysFormat_結構化英文Key_符合點記號與小駝峰規範() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+        let pattern = "^[a-z]+(\\.[a-z][a-zA-Z0-9]*){2,3}$"
+        var invalidKeys: [String] = []
+        var structuredCount = 0
+
+        // When
+        for (key, entry) in strings {
+            let entryDict = entry as? [String: Any]
+            let shouldTranslate = entryDict?["shouldTranslate"] as? Bool ?? true
+            guard shouldTranslate else { continue }
+
+            if key.range(of: pattern, options: .regularExpression) == nil {
+                invalidKeys.append(key)
+            } else {
+                structuredCount += 1
             }
-            return key
         }
-        #expect(untranslatedChineseKeys.isEmpty, "English translation 仍與中文 source 相同：\(untranslatedChineseKeys)")
 
-        for (key, value) in strings {
-            let entry = try #require(value as? [String: Any], "\(key) 缺少 catalog entry")
-            if entry["shouldTranslate"] as? Bool == false {
+        // Then
+        #expect(
+            invalidKeys.isEmpty,
+            "需翻譯之字串 Key 必須 100% 符合結構化英文點記號與 lowerCamelCase 格式：\(invalidKeys)"
+        )
+        #expect(structuredCount >= 475, "字串目錄中需翻譯之結構化英文 Key 應覆蓋全量條目")
+    }
+
+    /// 字串目錄內不得殘留任何 shouldTranslate == false 的非本地化條目
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func noNonTranslatableEntries_字串目錄_不得含有非本地化條目() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+
+        // When
+        let nonTranslatableKeys = strings.compactMap { key, value -> String? in
+            let dict = value as? [String: Any]
+            return dict?["shouldTranslate"] as? Bool == false ? key : nil
+        }.sorted()
+
+        // Then
+        #expect(
+            nonTranslatableKeys.isEmpty,
+            "字串目錄中仍殘留非本地化條目（應使用 Text(verbatim:)）：\(nonTranslatableKeys)"
+        )
+    }
+
+    /// 已知廢棄或重複的死碼 Key 不得存在於字串目錄
+    ///
+    /// - Throws: 讀取字串目錄失敗時丟出錯誤
+    @Test
+    func prunedDeadKeys_歷史廢棄與重複通用Key_不得存在於目錄() throws(any Error) {
+        // Given
+        let strings = try Self.catalogStrings(atRelativePath: Self.localizableCatalogPath)
+        let deadKeys = [
+            "common.action.label.back",
+            "common.general.action.clearSearch",
+            "common.general.label.addReminder",
+            "common.general.label.appearanceMode",
+            "common.general.label.baseCurrency",
+            "common.general.label.estimatedProfit",
+            "common.general.label.returning",
+            "orders.edit.label.automatic",
+            "orders.general.label.traditionalChinese",
+            "orders.merge.message.photoLimitNoticeLegacy"
+        ]
+
+        // When
+        let foundDeadKeys = deadKeys.filter { strings[$0] != nil }
+
+        // Then
+        #expect(foundDeadKeys.isEmpty, "已清理之死碼 Key 不得存在於目錄：\(foundDeadKeys)")
+    }
+}
+
+// MARK: - Nested Types
+
+extension LocalizationCatalogTests {
+
+    /// 已驗收的英文翻譯，每組字串目錄 key 對應一個參數化案例
+    struct DocumentedEnglishValue: Sendable {
+
+        /// 已驗收英文值的字串目錄條目，每組 key 與其英文值成對
+        static let examples = [
+            Self(key: "dashboard.overview.title.overview", expectedEnglishValue: "Overview"),
+            Self(key: "orders.list.title", expectedEnglishValue: "Orders"),
+            Self(key: "common.action.label.all", expectedEnglishValue: "All"),
+            Self(key: "dashboard.overview.label.revenue", expectedEnglishValue: "Revenue"),
+            Self(key: "orders.detail.label.cost", expectedEnglishValue: "Cost"),
+            Self(key: "dashboard.overview.label.activeOrders", expectedEnglishValue: "Active Orders"),
+            Self(key: "common.action.label.more", expectedEnglishValue: "More"),
+            Self(key: "fx.rates.label.selectSourceCurrency", expectedEnglishValue: "Select Source Currency"),
+            Self(key: "settings.preference.label.selectDefaultCurrency", expectedEnglishValue: "Select Default Currency"),
+            Self(key: "settings.preference.label.selectAiModel", expectedEnglishValue: "Select AI Model"),
+            Self(key: "campaigns.detail.label.paymentProgress", expectedEnglishValue: "Payment Progress"),
+            Self(key: "campaigns.detail.label.arrivalProgress", expectedEnglishValue: "Arrival Progress"),
+            Self(key: "orders.filter.status.pendingPayment", expectedEnglishValue: "Pending Payment"),
+            Self(key: "orders.general.status.received", expectedEnglishValue: "Received"),
+            Self(key: "campaigns.list.label.arrived", expectedEnglishValue: "Arrived"),
+            Self(key: "orders.detail.label.payment", expectedEnglishValue: "Payment"),
+            Self(key: "common.date.today", expectedEnglishValue: "Today"),
+            Self(key: "common.date.yesterday", expectedEnglishValue: "Yesterday"),
+            Self(key: "orders.edit.label.selectSource", expectedEnglishValue: "Select Source"),
+            Self(key: "orders.edit.label.selectCategories", expectedEnglishValue: "Select Categories"),
+            Self(key: "orders.edit.label.selectOrderSource", expectedEnglishValue: "Select Order Source"),
+            Self(
+                key: "orders.edit.message.enterNewOrder",
+                expectedEnglishValue: "Enter a new order source name. It will be applied to this order immediately."
+            ),
+            Self(key: "orders.list.label.category1", expectedEnglishValue: "Category"),
+            Self(
+                key: "orders.edit.message.enterNewProduct",
+                expectedEnglishValue: "Enter a new product category name. It will be applied to this order immediately."
+            ),
+            Self(key: "orders.list.label.selectPaymentMethod", expectedEnglishValue: "Select Payment Method"),
+            Self(
+                key: "ai.summary.message.currentListsProduct",
+                expectedEnglishValue: "The current list's product details (category, product name, quantity, unit price, and currency) are sent to a third-party cloud service; customer names are not included."
+            ),
+            Self(key: "common.general.label.continueBlankDatabase", expectedEnglishValue: "Continue with a Blank Database"),
+            Self(key: "common.general.label.unableOpenData", expectedEnglishValue: "Unable to Open Data"),
+            Self(key: "common.general.label.backupKept", expectedEnglishValue: "Backup Kept"),
+            Self(key: "orders.list.label.operationFailed", expectedEnglishValue: "Operation Failed"),
+            Self(key: "orders.lookup.label.correctPaymentMethod", expectedEnglishValue: "Correct Payment Method"),
+            Self(key: "orders.detail.label.confirmCorrection", expectedEnglishValue: "Confirm Correction"),
+            Self(
+                key: "common.general.message.afterConfirmationLd",
+                expectedEnglishValue: "After confirmation, %lld existing orders will be recalculated for payment flags and profit. Deduction, supplement, or reconciliation status may be cleared. This cannot be undone."
+            ),
+            Self(
+                key: "orders.lookup.message.paymentMethodEdit",
+                expectedEnglishValue: "Payment method edit failed. Please try again later."
+            ),
+            Self(
+                key: "ai.summary.message.aiSummaryReached",
+                expectedEnglishValue: "The AI summary reached its time limit. The content received so far is shown; the summary was cut short."
+            ),
+        ]
+
+        /// 字串目錄的 key
+        let key: String
+
+        /// 該 key 已驗收的英文值
+        let expectedEnglishValue: String
+    }
+}
+
+// MARK: - Computed Properties
+
+extension LocalizationCatalogTests {
+
+    /// 測試 target 所在的 iOS 平台目錄 (`apps/ios`)，由本檔位置推得
+    static var iosRootURL: URL {
+        URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()
+            .deletingLastPathComponent()
+    }
+}
+
+// MARK: - Private Method
+
+private extension LocalizationCatalogTests {
+
+    /// 讀取字串目錄檔的 `strings` 內容
+    ///
+    /// - Parameter relativePath: 字串目錄檔相對於 `apps/ios` 的路徑
+    /// - Returns: 以 key 為索引的條目內容
+    /// - Throws: 讀檔失敗，或內容缺少 `strings` 時丟出錯誤
+    static func catalogStrings(
+        atRelativePath relativePath: String
+    ) throws(any Error) -> [String: Any] {
+        let root = try Self.catalogRoot(atRelativePath: relativePath)
+        return try #require(root["strings"] as? [String: Any])
+    }
+
+    /// 讀取字串目錄檔的頂層 JSON 物件
+    ///
+    /// - Parameter relativePath: 字串目錄檔相對於 `apps/ios` 的路徑
+    /// - Returns: 解析後的頂層 JSON 物件
+    /// - Throws: 讀檔失敗，或內容不是 JSON 物件時丟出錯誤
+    static func catalogRoot(
+        atRelativePath relativePath: String
+    ) throws(any Error) -> [String: Any] {
+        let catalogURL = Self.iosRootURL.appending(path: relativePath)
+        let data = try Data(contentsOf: catalogURL)
+        return try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
+    }
+
+    /// 取得條目在指定語言下的字串值
+    ///
+    /// - Parameters:
+    ///   - key: 字串目錄的 key
+    ///   - language: 語言代碼，例如 `en`
+    ///   - strings: 字串目錄的 `strings` 內容
+    /// - Returns: 該語言的字串值，缺少條目或該語言時為 `nil`
+    static func stringValue(
+        forKey key: String,
+        language: String,
+        in strings: [String: Any]
+    ) -> String? {
+        let record = strings[key] as? [String: Any]
+        let localizations = record?["localizations"] as? [String: Any]
+        let localization = localizations?[language] as? [String: Any]
+        if let stringUnit = localization?["stringUnit"] as? [String: Any] {
+            return stringUnit["value"] as? String
+        }
+        if let variations = localization?["variations"] as? [String: Any],
+           let plural = variations["plural"] as? [String: Any] {
+            let sample = plural["other"] as? [String: Any] ?? plural["one"] as? [String: Any]
+            let stringUnit = sample?["stringUnit"] as? [String: Any]
+            return stringUnit?["value"] as? String
+        }
+        return nil
+    }
+
+    /// 判斷條目是否為含中文、需要翻譯，但英文值仍與正體中文來源相同
+    ///
+    /// - Parameters:
+    ///   - key: 字串目錄的 key
+    ///   - value: 該 key 的條目內容
+    /// - Returns: 英文值仍與中文來源相同且不在允許清單時為 `true`
+    static func hasUntranslatedEnglishValue(key: String, value: Any) -> Bool {
+        let allowedSameSourceAndEnglishValues: Set<String> = ["VIP"]
+        guard key.range(of: "[\\u{3400}-\\u{9FFF}]", options: .regularExpression) != nil,
+              let entry = value as? [String: Any],
+              entry["shouldTranslate"] as? Bool != false,
+              let localizations = entry["localizations"] as? [String: Any],
+              let traditionalChinese = localizations["zh-Hant"] as? [String: Any],
+              let traditionalChineseUnit = traditionalChinese["stringUnit"] as? [String: Any],
+              let traditionalChineseValue = traditionalChineseUnit["value"] as? String,
+              let english = localizations["en"] as? [String: Any],
+              let englishUnit = english["stringUnit"] as? [String: Any],
+              let englishValue = englishUnit["value"] as? String,
+              traditionalChineseValue == englishValue,
+              !allowedSameSourceAndEnglishValues.contains(key) else {
+            return false
+        }
+        return true
+    }
+
+    /// 找出需要翻譯、卻缺少或只有空白值的語言版本
+    ///
+    /// - Parameter strings: 字串目錄的 `strings` 內容
+    /// - Returns: 依 key 排序的 `key [語言]` 清單
+    static func findBlankLocalizations(in strings: [String: Any]) -> [String] {
+        var blankLocalizations: [String] = []
+        for key in strings.keys.sorted() {
+            let record = strings[key] as? [String: Any]
+            guard record?["shouldTranslate"] as? Bool != false else {
                 continue
             }
-            let localizations = try #require(
-                entry["localizations"] as? [String: Any],
-                "\(key) 缺少 localizations"
-            )
-
             for language in ["zh-Hant", "en"] {
-                let localization = try #require(
-                    localizations[language] as? [String: Any],
-                    "\(key) 缺少 \(language) localization"
-                )
-                let stringUnit = try #require(
-                    localization["stringUnit"] as? [String: Any],
-                    "\(key) 缺少 \(language) stringUnit"
-                )
-                let translatedValue = try #require(
-                    stringUnit["value"] as? String,
-                    "\(key) 缺少 \(language) value"
-                )
-
-                #expect(!translatedValue.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
+                let value = Self.stringValue(forKey: key, language: language, in: strings)
+                let isBlank = value?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ?? true
+                if isBlank {
+                    blankLocalizations.append("\(key) [\(language)]")
+                }
             }
         }
-    }
-
-    @Test func calendarPermissionDescriptionIsLocalized() throws {
-        let catalogURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appending(path: "BuyLedger/Resources/InfoPlist.xcstrings")
-        let data = try Data(contentsOf: catalogURL)
-        let root = try #require(JSONSerialization.jsonObject(with: data) as? [String: Any])
-        let strings = try #require(root["strings"] as? [String: Any])
-        let entry = try #require(strings["NSCalendarsFullAccessUsageDescription"] as? [String: Any])
-        let localizations = try #require(entry["localizations"] as? [String: Any])
-
-        for language in ["zh-Hant", "en"] {
-            let localization = try #require(localizations[language] as? [String: Any])
-            let stringUnit = try #require(localization["stringUnit"] as? [String: Any])
-            let value = try #require(stringUnit["value"] as? String)
-            #expect(!value.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
-        }
-    }
-
-    @Test func presentationBoundariesDoNotBypassSelectedAppLocale() throws {
-        let sourceRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appending(path: "BuyLedger")
-        let enumerator = try #require(
-            FileManager.default.enumerator(
-                at: sourceRoot,
-                includingPropertiesForKeys: nil
-            )
-        )
-        let swiftFiles = enumerator.compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" }
-        var hardCodedTraditionalChineseLocales: [String] = []
-
-        for file in swiftFiles {
-            let source = try String(contentsOf: file, encoding: .utf8)
-            let relativePath = file.path.replacingOccurrences(of: sourceRoot.path + "/", with: "")
-
-            if source.contains(".locale(Locale(identifier: \"zh_TW\"))") {
-                hardCodedTraditionalChineseLocales.append(relativePath)
-            }
-        }
-
-        #expect(
-            hardCodedTraditionalChineseLocales.isEmpty,
-            "Presentation formatters must use the selected App locale: \(hardCodedTraditionalChineseLocales)"
-        )
-    }
-
-    @Test func rootNavigationTitlesResolveUsingTheSelectedAppLanguage() {
-        #expect(AppLanguage.english.localized("總覽") == "Overview")
-        #expect(AppLanguage.traditionalChinese.localized("總覽") == "總覽")
-        #expect(AppLanguage.english.localized("訂單") == "Orders")
-        #expect(AppLanguage.traditionalChinese.localized("訂單") == "訂單")
-        #expect(AppLanguage.english.localized("開團") == "Campaigns")
-        #expect(AppLanguage.traditionalChinese.localized("開團") == "開團")
-        #expect(AppLanguage.english.localized("分析") == "Insights")
-        #expect(AppLanguage.traditionalChinese.localized("分析") == "分析")
-        #expect(AppLanguage.english.localized("更多") == "More")
-        #expect(AppLanguage.traditionalChinese.localized("更多") == "更多")
-    }
-
-    @Test func ordersNavigationTitleKeysFollowSelectionState() {
-        var state = OrdersFeature.State()
-
-        #expect(AppLanguage.english.localized(state.navigationTitleKey) == "Orders")
-        #expect(AppLanguage.traditionalChinese.localized(state.navigationTitleKey) == "訂單")
-
-        state.isSelecting = true
-
-        #expect(AppLanguage.english.localized(state.navigationTitleKey) == "Select Orders")
-        #expect(AppLanguage.traditionalChinese.localized(state.navigationTitleKey) == "選擇訂單")
-
-        state.selectedOrderIDs = ["O1", "O2"]
-
-        #expect(AppLanguage.english.localized(state.navigationTitleKey) == "2 Selected")
-        #expect(AppLanguage.traditionalChinese.localized(state.navigationTitleKey) == "已選 2 筆")
-    }
-
-    @Test func rootNavigationTitlesUseTheExplicitLanguageModifier() throws {
-        let sourceRoot = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appending(path: "BuyLedger")
-        let rootViews = [
-            "Features/Dashboard/DashboardView.swift",
-            "Features/Orders/OrdersCompactView.swift",
-            "Features/Orders/OrdersView.swift",
-            "Features/Campaigns/CampaignListView.swift",
-            "Features/Insights/InsightsView.swift",
-            "Features/More/MoreView.swift",
-            "Features/Settings/SettingsView.swift",
-        ]
-
-        for relativePath in rootViews {
-            let source = try String(contentsOf: sourceRoot.appending(path: relativePath), encoding: .utf8)
-            #expect(
-                !source.contains(".navigationTitle(\"")
-                    && !source.contains(".navigationTitle(Text(\"")
-                    && !source.contains(".navigationTitle(Text(LocalizedStringKey("),
-                "\(relativePath) must not pass localized literals to native navigationTitle."
-            )
-        }
-    }
-
-    @Test func campaignDetailReceiptStatusesCrossLocalizationBoundary() throws {
-        let sourceURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appending(path: "BuyLedger/Features/Campaigns/CampaignDetailView.swift")
-        let source = try String(contentsOf: sourceURL, encoding: .utf8)
-
-        #expect(
-            source.contains("Text(LocalizedStringKey(order.paymentReceiptStatus.title))"),
-            "Campaign detail receipt statuses must be resolved through the String Catalog."
-        )
-    }
-
-    @Test func sidebarSmartGroupAccessibilityDoesNotConcatenateLocalizedText() throws {
-        let sourceURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appending(path: "BuyLedger/Features/App/RootSidebarLayout.swift")
-        let source = try String(contentsOf: sourceURL, encoding: .utf8)
-
-        #expect(
-            !source.contains("Text(LocalizedStringKey(group.status.title)) + Text(\" \\(count) 件\")"),
-            "Accessibility text must not concatenate separately localized Text values."
-        )
-    }
-
-    @Test func compactOrderFilterSummaryDoesNotConcatenateLocalizedText() throws {
-        let sourceURL = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
-            .appending(path: "BuyLedger/Features/Orders/OrdersCompactView.swift")
-        let source = try String(contentsOf: sourceURL, encoding: .utf8)
-
-        #expect(
-            !source.contains("Text(\"篩選\") + Text(verbatim: \": \") + summary"),
-            "Filter summaries must not concatenate separately localized Text values."
-        )
-    }
-
-    @Test func englishLocaleFormatsTheJuly18SpecExampleWithoutChineseDateText() throws {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = try #require(TimeZone(secondsFromGMT: 0))
-        let reportedDate = try #require(
-            calendar.date(from: DateComponents(year: 2026, month: 7, day: 18, hour: 12))
-        )
-        let referenceDate = try #require(
-            calendar.date(from: DateComponents(year: 2026, month: 7, day: 20, hour: 12))
-        )
-
-        let title = OrderFormatters.daySectionTitle(
-            for: reportedDate,
-            referenceDate: referenceDate,
-            calendar: calendar,
-            locale: Locale(identifier: "en")
-        )
-
-        #expect(title.contains("July"))
-        #expect(title.range(of: "[\\u{3400}-\\u{9FFF}]", options: .regularExpression) == nil)
+        return blankLocalizations
     }
 }

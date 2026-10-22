@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'ui-polish-and-safeguards'. Update Purpose after archive.
+本規格涵蓋非刪除類不可逆狀態轉換與暫存變更的防護，包括活動結算等不可逆轉換的確認、篩選 sheet 等暫存變更 sheet 抵抗意外關閉、多選揀選器提供非完成的退出方式。不涵蓋 `destructive-action-safeguard` 所訂的刪除類破壞性動作確認，以及 `sheet-dismissal-safeguard` 所訂的訂單、活動、付款方式三個編輯 sheet 的防護。
 
 ## Requirements
 

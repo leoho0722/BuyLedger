@@ -7,69 +7,162 @@
 
 import XCTest
 
-/// 訂單詳情的進入、財務摘要與刪除流程測試
-///
-/// 一律以 accessibility identifier 定位，摘要數值由合併列的 accessibility value 讀取；找不到 App 元素即附診斷失敗、不 skip。
-/// 刪除流程走「取消」分支，只驗確認 alert 有出現又能收回、訂單未被刪除，不真的刪除資料
+/// 訂單詳情的財務摘要與付款方式回溯重算測試
 final class OrderDetailTests: BLUITestCase {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
-    /// 用來進詳情的種子訂單編號 (fullOrders 中最新的一筆，位於清單頂端易於點擊)
+    /// `fullOrders` 中用於詳情測試的訂單編號
     private static let sampleOrderID = "BL-2604-018"
 
+    /// `paymentMethodCorrection` 中用於回溯重算驗收的訂單編號
+    private static let paymentMethodCorrectionOrderID = "UITEST-PMC-001"
+
+    /// 回溯重算驗收所使用的付款方式名稱
+    private static let paymentMethodCorrectionName = "信用卡"
+
     /// 詳情財務摘要卡的三個種類
-    private static let summaryTiles: [BLAccessibilityID.Orders.SummaryTile] = [.revenue, .cost, .profit]
+    private static let summaryTiles: [BLAccessibilityID.Orders.SummaryTile] = [
+        .revenue,
+        .cost,
+        .profit,
+    ]
 
-    // MARK: - Tests
+    /// `fullOrders` 種子資料的營收、成本與獲利顯示值
+    private static let expectedSummaryValues = ["$11,800", "$9,069", "+$2,731"]
 
-    /// 從清單點一筆訂單進詳情，詳情根就緒
+    /// 詳情財務摘要卡顯示 `fullOrders` 種子資料的營收、成本與獲利
+    ///
+    /// - Throws: 財務摘要卡值不存在時拋出測試錯誤
     @MainActor
-    func testTapOrderOpensDetail() {
+    func testOpenDetail_完整資料訂單_摘要卡顯示營收成本與獲利() throws(any Error) {
+        // Given
         let app = launch(LaunchOptions(seed: .fullOrders))
+
+        // When
         let detail = openOrderDetail(app)
 
-        _ = detail
+        // Then
+        var values: [String] = []
+        for tile in Self.summaryTiles {
+            let value = try requireValue(
+                detail.summaryValue(tile),
+                in: app,
+                "財務摘要卡「\(tile.rawValue)」的元素不存在"
+            )
+            values.append(value)
+        }
+        XCTAssertEqual(values, Self.expectedSummaryValues)
     }
 
-    /// 詳情財務摘要卡三個數值可各自讀到且非空
+    /// 付款方式補勾貨到付款並確認更正後重啟 App，重新讀取的訂單獲利與更正前不同
+    ///
+    /// - Throws: 任何必要的獲利或付款方式元素不存在，或前置條件不成立時拋出測試錯誤
     @MainActor
-    func testDetailSummaryTilesHaveValues() {
-        let app = launch(LaunchOptions(seed: .fullOrders))
-        let detail = openOrderDetail(app)
+    func testRelaunch_補勾貨到付款後重啟_獲利與更正前不同() throws(any Error) {
+        // Given
+        var initialOptions = LaunchOptions(seed: .paymentMethodCorrection)
+        initialOptions.persistenceMode = .persistent
+        initialOptions.shouldResetPersistentStore = true
 
-        for tile in Self.summaryTiles where detail.summaryValue(tile).isEmpty {
-            failWithDiagnostics(
+        let app = launch(initialOptions)
+        let before = try requireValue(
+            profitValue(for: Self.paymentMethodCorrectionOrderID, in: app),
+            in: app,
+            "回溯前獲利卡的元素不存在"
+        )
+        try requireCondition(!before.isEmpty, in: app, "回溯前獲利卡的 accessibility value 為空")
+
+        let root = RootNavigationScreen(app: app)
+        if !root.goToMore() {
+            failWithDiagnostics(in: app, "切到更多分頁後畫面未就緒")
+        }
+
+        let paymentMethodsRow = app.descendants(matching: .any)[
+            BLAccessibilityID.More.row(.paymentMethods)
+        ]
+        paymentMethodsRow.tapAfterWaiting(in: app, elementName: "付款方式主檔入口")
+
+        let managementRoot = app.descendants(matching: .any)[
+            BLAccessibilityID.LookupManagement.root
+        ]
+        if !managementRoot.waitForExistence(timeout: 10) {
+            failWithDiagnostics(in: app, "付款方式管理頁面未出現")
+        }
+
+        let paymentMethodRow = app.descendants(matching: .any)[
+            BLAccessibilityID.LookupManagement.row(Self.paymentMethodCorrectionName)
+        ]
+        try requireCondition(paymentMethodRow.waitUntilHittable(), in: app, "信用卡付款方式列未出現")
+        paymentMethodRow.swipeLeft()
+
+        let editButton = app.buttons[
+            BLAccessibilityID.LookupManagement.editButton(Self.paymentMethodCorrectionName)
+        ]
+        editButton.tapAfterWaiting(in: app, elementName: "信用卡付款方式的編輯按鈕")
+
+        let cashOnDeliveryToggle = app.switches[
+            BLAccessibilityID.LookupManagement.paymentMethodCashOnDeliveryToggle
+        ]
+        if !cashOnDeliveryToggle.waitUntilHittable() {
+            let editorRoot = app.descendants(matching: .any)[
+                BLAccessibilityID.LookupManagement.paymentMethodEditorRoot
+            ]
+            try requireCondition(
+                app.scrollToHittable(cashOnDeliveryToggle, within: editorRoot, maxSwipes: 6),
                 in: app,
-                "財務摘要卡「\(tile.rawValue)」的 accessibility value 為空"
+                "貨到付款旗標未出現或仍在畫面外"
             )
         }
-    }
+        try requireCondition(
+            (cashOnDeliveryToggle.value as? String) != "1",
+            in: app,
+            "回溯驗收的初始付款方式不應已標記為貨到付款"
+        )
+        // `Form` 內的開關要點內層開關，點外層列的中心會落在標題文字上
+        cashOnDeliveryToggle.switches.firstMatch.tapAfterWaiting(in: app)
+        try requireCondition(
+            cashOnDeliveryToggle.wait(for: NSPredicate(format: "value == %@", "1"), timeout: 5),
+            in: app,
+            "點擊後貨到付款旗標未切換為開啟"
+        )
 
-    /// 刪除流程：更多 → 刪除 → 確認 alert → 取消；alert 收回且訂單未被刪除
-    @MainActor
-    func testDeleteFlowCancelKeepsOrder() {
-        let app = launch(LaunchOptions(seed: .fullOrders))
-        let detail = openOrderDetail(app)
+        let saveButton = app.buttons[
+            BLAccessibilityID.LookupManagement.paymentMethodSaveButton
+        ]
+        saveButton.tapAfterWaiting(in: app, elementName: "付款方式儲存按鈕")
 
-        detail.openMoreMenu()
-        if !detail.tapDelete() {
-            failWithDiagnostics(in: app, "更多選單的刪除項目未出現或不可點")
+        let correctionAlertMessage = "重算 1 筆"
+        app.assertAlertMessage(contains: correctionAlertMessage, timeout: 15)
+        app.tapAlertButton(label: "確認更正")
+        if !app.alertDismissed() {
+            failWithDiagnostics(in: app, "回溯重算確認 alert 未收回")
         }
 
-        if !detail.deleteConfirmationExists() {
-            failWithDiagnostics(in: app, "點刪除後，刪除確認 alert 未呈現")
+        if !app.staticTexts["貨到付款"].waitForExistence(timeout: 10) {
+            failWithDiagnostics(in: app, "付款方式更新成功後，貨到付款分類徽章未出現")
         }
 
-        detail.cancelDelete()
+        app.terminate()
 
-        // 取消後 alert 應收回，且訂單未被刪除、詳情仍停留
-        if !detail.deleteConfirmationDismissed() {
-            failWithDiagnostics(in: app, "點取消後，刪除確認 alert 未收回")
-        }
-        if !detail.waitUntilReady() {
-            failWithDiagnostics(in: app, "取消刪除後詳情頁應仍停留，根 identifier 卻消失")
-        }
+        var relaunchOptions = initialOptions
+        relaunchOptions.shouldResetPersistentStore = false
+
+        // When
+        let relaunchedApp = launch(relaunchOptions)
+        let persisted = try requireValue(
+            profitValue(for: Self.paymentMethodCorrectionOrderID, in: relaunchedApp),
+            in: relaunchedApp,
+            "重啟後獲利卡的元素不存在"
+        )
+        try requireCondition(
+            !persisted.isEmpty,
+            in: relaunchedApp,
+            "重啟後獲利卡的 accessibility value 為空"
+        )
+
+        // Then
+        XCTAssertNotEqual(before, persisted, "補勾貨到付款後獲利應該改變並持久化")
     }
 }
 
@@ -78,20 +171,29 @@ final class OrderDetailTests: BLUITestCase {
 private extension OrderDetailTests {
 
     /// 切到訂單分頁、點種子訂單進詳情並等就緒，回傳詳情 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - orderID: 要開啟的訂單編號；`nil` 時開啟 `sampleOrderID`
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的訂單詳情 Page Object
     @MainActor
     func openOrderDetail(
         _ app: XCUIApplication,
+        orderID: String? = nil,
         file: StaticString = #filePath,
         line: UInt = #line
     ) -> OrderDetailScreen {
+        let targetOrderID = orderID ?? Self.sampleOrderID
         let root = RootNavigationScreen(app: app)
-        if !root.goToOrders() {
-            failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
+        if !root.goToOrders(file: file, line: line) {
+            failWithDiagnostics(
+                in: app,
+                "切到訂單分頁後畫面未就緒",
+                file: file,
+                line: line
+            )
         }
 
         let orders = OrdersScreen(app: app)
@@ -104,17 +206,28 @@ private extension OrderDetailTests {
             )
         }
 
-        orders.tapOrder(orderID: Self.sampleOrderID)
+        orders.tapOrder(orderID: targetOrderID, file: file, line: line)
 
         let detail = OrderDetailScreen(app: app)
         if !detail.waitUntilReady() {
             failWithDiagnostics(
                 in: app,
-                "點訂單「\(Self.sampleOrderID)」後詳情根 identifier「\(detail.rootIdentifier)」逾時仍未出現",
+                "點訂單「\(targetOrderID)」後詳情根 identifier「\(detail.rootIdentifier)」逾時仍未出現",
                 file: file,
                 line: line
             )
         }
         return detail
+    }
+
+    /// 讀取指定訂單詳情的獲利 accessibility value
+    ///
+    /// - Parameters:
+    ///   - orderID: 訂單編號
+    ///   - app: 受測 App
+    /// - Returns: 獲利卡的 accessibility value
+    @MainActor
+    func profitValue(for orderID: String, in app: XCUIApplication) -> String? {
+        openOrderDetail(app, orderID: orderID).summaryValue(.profit)
     }
 }

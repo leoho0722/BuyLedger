@@ -1,0 +1,85 @@
+{
+  "schema": "mobilebuildmcp.output.capture-result",
+  "schemaVersion": "2",
+  "didError": false,
+  "error": null,
+  "data": {
+    "summary": {
+      "status": "SUCCEEDED"
+    },
+    "artifacts": {
+      "simulatorId": "DDAA3311-B464-4DD3-96B8-360B26AF1929"
+    },
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "1ts7npy",
+      "seq": 3,
+      "count": 152,
+      "targets": [
+        "e65|tap|button|查看全部||dashboard.recentOrders.seeAllButton",
+        "e126|tap|tab|總覽|1|house",
+        "e128|tap|tab|訂單|0|list.bullet.rectangle",
+        "e130|tap|tab|開團|0|shippingbox",
+        "e132|tap|tab|分析|0|chart.bar.xaxis",
+        "e134|tap|tab|更多|0|ellipsis.circle"
+      ],
+      "scroll": [
+        "e20|swipe|scroll-view|||dashboard.root"
+      ],
+      "text": [
+        "e33|text|text|6月15日星期一||dashboard.currentDateSubtitle",
+        "e35|text|text|本月 · 淨獲利||",
+        "e36|text|text|+$7,884||",
+        "e38|text|text|·||",
+        "e37|text|text|↑ 123.5% MoM||",
+        "e39|text|text|5 單||",
+        "e42|text|text|9% / $80,000||",
+        "e44|text|text|營業額、$43,740、+335.7% MoM|$43,740|dashboard.kpiTile.revenue",
+        "e49|text|text|成本、$35,856、+450.6% MoM|$35,856|dashboard.kpiTile.cost",
+        "e46|text|text|營業額||",
+        "e51|text|text|成本||",
+        "e47|text|text|$43,740||",
+        "e52|text|text|$35,856||",
+        "e48|text|text|+335.7% MoM||",
+        "e53|text|text|+450.6% MoM||",
+        "e54|text|text|毛利率、18.0%、-17.1 pt MoM|18.0%|dashboard.kpiTile.grossMargin",
+        "e59|text|text|進行中訂單、4、4 件進行中|4|dashboard.kpiTile.activeOrders",
+        "e56|text|text|毛利率||",
+        "e61|text|text|進行中訂單||",
+        "e57|text|text|18.0%||",
+        "e62|text|text|4||",
+        "e58|text|text|-17.1 pt MoM||",
+        "e63|text|text|4 件進行中||",
+        "e64|text|text|近期訂單||",
+        "e66|text|text|林書宇、6/11、Tamburins 香水 Chamo 50ml x1 Gentle Monster Her 02 x1、美妝、集運中|$11,800 +$2,731|dashboard.recentOrders.row:BL-2604-018",
+        "e68|text|text|林書宇||",
+        "e73|text|text|集運中||",
+        "e69|text|text|6/11||",
+        "e75|text|text|集運中||",
+        "e67|text|text|林書宇||",
+        "e70|text|text|Tamburins 香水 Chamo 50ml x1 Gentle Monster Her 02 x1||",
+        "e76|text|text|$11,800||",
+        "e77|text|text|+$2,731||",
+        "e72|text|text|美妝||",
+        "e78|text|text|Mika 周、6/9、Snidel 春季針織外套 (M) x1、服飾、已下單|$4,980 +$969|dashboard.recentOrders.row:BL-2604-017",
+        "e80|text|text|Mika 周||",
+        "e85|text|text|已下單||",
+        "e87|text|text|已下單||",
+        "e81|text|text|6/9||",
+        "e79|text|text|Mika 周||",
+        "e88|text|text|$4,980||",
+        "e82|text|text|Snidel 春季針織外套 (M) x1||",
+        "e89|text|text|+$969||",
+        "e84|text|text|服飾||"
+      ],
+      "udid": "DDAA3311-B464-4DD3-96B8-360B26AF1929"
+    }
+  },
+  "nextSteps": [
+    "Refresh after layout changes: mobilebuildmcp ui-automation snapshot-ui --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929",
+    "Wait for UI to settle: mobilebuildmcp ui-automation wait-for-ui --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929 --predicate settled",
+    "Scroll visible content: mobilebuildmcp ui-automation swipe --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929 --within-element-ref e20 --direction up --distance 0.5",
+    "Tap an elementRef: mobilebuildmcp ui-automation tap --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929 --element-ref e65"
+  ]
+}

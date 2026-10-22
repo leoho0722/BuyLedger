@@ -2,7 +2,7 @@
 
 ## Purpose
 
-TBD - created by archiving change 'dynamic-type-and-grouping'. Update Purpose after archive.
+本規格涵蓋動態字級下的版面適應規則，包括到達輔助字級時的結構重排、資訊性文字以換行而非縮小填滿字級變化、需容納文字的固定點值尺寸隨字級縮放。不涵蓋 `design-system-hygiene` 所訂的文字元件內距與指示元件尺寸隨字級縮放，本規格只涉及容納文字的版面尺寸縮放。
 
 ## Requirements
 

@@ -1,0 +1,628 @@
+[
+  {
+    "label": "snapshot-round-1",
+    "command": [
+      "mobilebuildmcp",
+      "--log-level",
+      "error",
+      "simulator",
+      "test",
+      "--project-path",
+      "apps/ios/BuyLedger.xcodeproj",
+      "--scheme",
+      "BuyLedger",
+      "--simulator-id",
+      "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+      "--extra-args",
+      "-only-testing:BuyLedgerTests/SnapshotTests"
+    ],
+    "exitCode": 1,
+    "bundle": "/Users/leoho/Library/Developer/MobileBuildMCP/workspaces/BuyLedger-61c22e57ebf6/result-bundles/test_sim_2026-10-12T14-50-47-489Z_pid60378_0e39b1c4.xcresult",
+    "log": "/Users/leoho/Library/Developer/MobileBuildMCP/workspaces/BuyLedger-61c22e57ebf6/logs/test_sim_2026-10-12T14-50-47-488Z_pid60378_816aad01.log",
+    "summary": {
+      "devicesAndConfigurations": [
+        {
+          "device": {
+            "architecture": "arm64",
+            "deviceId": "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+            "deviceName": "iPhone 17",
+            "modelName": "iPhone 17",
+            "osBuildNumber": "23F73",
+            "osVersion": "26.5",
+            "platform": "iOS Simulator"
+          },
+          "expectedFailures": 0,
+          "failedTests": 4,
+          "passedTests": 38,
+          "skippedTests": 0,
+          "testPlanConfiguration": {
+            "configurationId": "1",
+            "configurationName": "zh-Hant TW"
+          }
+        }
+      ],
+      "environmentDescription": "BuyLedger · Built with macOS 27.0.1",
+      "expectedFailures": 0,
+      "failedTests": 4,
+      "finishTime": 1791816691.483,
+      "passedTests": 36,
+      "result": "Failed",
+      "runtimeWarnings": [],
+      "skippedTests": 0,
+      "startTime": 1791816669.693,
+      "statistics": [
+        {
+          "subtitle": "4 test runs",
+          "title": "2 tests ran with dynamic parameters"
+        }
+      ],
+      "testFailures": [
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/BE470A20-37DB-4842-A212-D0849673FA91/tmp/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 3,
+          "testIdentifierString": "SnapshotTests/campaignEditView_編輯既有開團_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/campaignEditView_%E7%B7%A8%E8%BC%AF%E6%97%A2%E6%9C%89%E9%96%8B%E5%9C%98_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "campaignEditView_編輯既有開團_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/BE470A20-37DB-4842-A212-D0849673FA91/tmp/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 22,
+          "testIdentifierString": "SnapshotTests/orderEditView_一般既有訂單_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E4%B8%80%E8%88%AC%E6%97%A2%E6%9C%89%E8%A8%82%E5%96%AE_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "orderEditView_一般既有訂單_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/BE470A20-37DB-4842-A212-D0849673FA91/tmp/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 23,
+          "testIdentifierString": "SnapshotTests/orderEditView_合併訂單情境_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E5%90%88%E4%BD%B5%E8%A8%82%E5%96%AE%E6%83%85%E5%A2%83_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "orderEditView_合併訂單情境_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/BE470A20-37DB-4842-A212-D0849673FA91/tmp/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 24,
+          "testIdentifierString": "SnapshotTests/orderEditView_長訂單識別碼_顯示短識別碼()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E9%95%B7%E8%A8%82%E5%96%AE%E8%AD%98%E5%88%A5%E7%A2%BC_%E9%A1%AF%E7%A4%BA%E7%9F%AD%E8%AD%98%E5%88%A5%E7%A2%BC()",
+          "testName": "orderEditView_長訂單識別碼_顯示短識別碼()"
+        }
+      ],
+      "title": "Test - BuyLedger",
+      "topInsights": [],
+      "totalTestCount": 40
+    },
+    "unimplementedOrNoReporterIssues": [],
+    "issueClassification": {
+      "expectedStrictnessIssues": 0,
+      "unexpectedOrderEditLoadIssues": 0,
+      "noTestReporterIssues": 0
+    }
+  },
+  {
+    "label": "snapshot-round-2",
+    "command": [
+      "mobilebuildmcp",
+      "--log-level",
+      "error",
+      "simulator",
+      "test",
+      "--project-path",
+      "apps/ios/BuyLedger.xcodeproj",
+      "--scheme",
+      "BuyLedger",
+      "--simulator-id",
+      "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+      "--extra-args",
+      "-only-testing:BuyLedgerTests/SnapshotTests"
+    ],
+    "exitCode": 1,
+    "bundle": "/Users/leoho/Library/Developer/MobileBuildMCP/workspaces/BuyLedger-61c22e57ebf6/result-bundles/test_sim_2026-10-12T14-51-33-054Z_pid61275_b380582d.xcresult",
+    "log": "/Users/leoho/Library/Developer/MobileBuildMCP/workspaces/BuyLedger-61c22e57ebf6/logs/test_sim_2026-10-12T14-51-33-054Z_pid61275_467d378d.log",
+    "summary": {
+      "devicesAndConfigurations": [
+        {
+          "device": {
+            "architecture": "arm64",
+            "deviceId": "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+            "deviceName": "iPhone 17",
+            "modelName": "iPhone 17",
+            "osBuildNumber": "23F73",
+            "osVersion": "26.5",
+            "platform": "iOS Simulator"
+          },
+          "expectedFailures": 0,
+          "failedTests": 4,
+          "passedTests": 38,
+          "skippedTests": 0,
+          "testPlanConfiguration": {
+            "configurationId": "1",
+            "configurationName": "zh-Hant TW"
+          }
+        }
+      ],
+      "environmentDescription": "BuyLedger · Built with macOS 27.0.1",
+      "expectedFailures": 0,
+      "failedTests": 4,
+      "finishTime": 1791816725.488,
+      "passedTests": 36,
+      "result": "Failed",
+      "runtimeWarnings": [],
+      "skippedTests": 0,
+      "startTime": 1791816705.267,
+      "statistics": [
+        {
+          "subtitle": "4 test runs",
+          "title": "2 tests ran with dynamic parameters"
+        }
+      ],
+      "testFailures": [
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/DDA4600B-822B-45BA-BFE7-40BF9084F4EE/tmp/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 3,
+          "testIdentifierString": "SnapshotTests/campaignEditView_編輯既有開團_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/campaignEditView_%E7%B7%A8%E8%BC%AF%E6%97%A2%E6%9C%89%E9%96%8B%E5%9C%98_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "campaignEditView_編輯既有開團_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/DDA4600B-822B-45BA-BFE7-40BF9084F4EE/tmp/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 22,
+          "testIdentifierString": "SnapshotTests/orderEditView_一般既有訂單_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E4%B8%80%E8%88%AC%E6%97%A2%E6%9C%89%E8%A8%82%E5%96%AE_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "orderEditView_一般既有訂單_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/DDA4600B-822B-45BA-BFE7-40BF9084F4EE/tmp/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 23,
+          "testIdentifierString": "SnapshotTests/orderEditView_合併訂單情境_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E5%90%88%E4%BD%B5%E8%A8%82%E5%96%AE%E6%83%85%E5%A2%83_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "orderEditView_合併訂單情境_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/DDA4600B-822B-45BA-BFE7-40BF9084F4EE/tmp/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 24,
+          "testIdentifierString": "SnapshotTests/orderEditView_長訂單識別碼_顯示短識別碼()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E9%95%B7%E8%A8%82%E5%96%AE%E8%AD%98%E5%88%A5%E7%A2%BC_%E9%A1%AF%E7%A4%BA%E7%9F%AD%E8%AD%98%E5%88%A5%E7%A2%BC()",
+          "testName": "orderEditView_長訂單識別碼_顯示短識別碼()"
+        }
+      ],
+      "title": "Test - BuyLedger",
+      "topInsights": [],
+      "totalTestCount": 40
+    },
+    "unimplementedOrNoReporterIssues": [],
+    "issueClassification": {
+      "expectedStrictnessIssues": 0,
+      "unexpectedOrderEditLoadIssues": 0,
+      "noTestReporterIssues": 0
+    }
+  },
+  {
+    "label": "snapshot-round-3",
+    "command": [
+      "mobilebuildmcp",
+      "--log-level",
+      "error",
+      "simulator",
+      "test",
+      "--project-path",
+      "apps/ios/BuyLedger.xcodeproj",
+      "--scheme",
+      "BuyLedger",
+      "--simulator-id",
+      "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+      "--extra-args",
+      "-only-testing:BuyLedgerTests/SnapshotTests"
+    ],
+    "exitCode": 1,
+    "bundle": "/Users/leoho/Library/Developer/MobileBuildMCP/workspaces/BuyLedger-61c22e57ebf6/result-bundles/test_sim_2026-10-12T14-52-07-057Z_pid61738_570f63bf.xcresult",
+    "log": "/Users/leoho/Library/Developer/MobileBuildMCP/workspaces/BuyLedger-61c22e57ebf6/logs/test_sim_2026-10-12T14-52-07-057Z_pid61738_6f12e69d.log",
+    "summary": {
+      "devicesAndConfigurations": [
+        {
+          "device": {
+            "architecture": "arm64",
+            "deviceId": "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+            "deviceName": "iPhone 17",
+            "modelName": "iPhone 17",
+            "osBuildNumber": "23F73",
+            "osVersion": "26.5",
+            "platform": "iOS Simulator"
+          },
+          "expectedFailures": 0,
+          "failedTests": 4,
+          "passedTests": 38,
+          "skippedTests": 0,
+          "testPlanConfiguration": {
+            "configurationId": "1",
+            "configurationName": "zh-Hant TW"
+          }
+        }
+      ],
+      "environmentDescription": "BuyLedger · Built with macOS 27.0.1",
+      "expectedFailures": 0,
+      "failedTests": 4,
+      "finishTime": 1791816759.164,
+      "passedTests": 36,
+      "result": "Failed",
+      "runtimeWarnings": [],
+      "skippedTests": 0,
+      "startTime": 1791816739.382,
+      "statistics": [
+        {
+          "subtitle": "4 test runs",
+          "title": "2 tests ran with dynamic parameters"
+        }
+      ],
+      "testFailures": [
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/9B038854-2282-47B8-921C-778484DF3765/tmp/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 3,
+          "testIdentifierString": "SnapshotTests/campaignEditView_編輯既有開團_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/campaignEditView_%E7%B7%A8%E8%BC%AF%E6%97%A2%E6%9C%89%E9%96%8B%E5%9C%98_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "campaignEditView_編輯既有開團_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/9B038854-2282-47B8-921C-778484DF3765/tmp/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 22,
+          "testIdentifierString": "SnapshotTests/orderEditView_一般既有訂單_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E4%B8%80%E8%88%AC%E6%97%A2%E6%9C%89%E8%A8%82%E5%96%AE_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "orderEditView_一般既有訂單_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/9B038854-2282-47B8-921C-778484DF3765/tmp/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 23,
+          "testIdentifierString": "SnapshotTests/orderEditView_合併訂單情境_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E5%90%88%E4%BD%B5%E8%A8%82%E5%96%AE%E6%83%85%E5%A2%83_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "orderEditView_合併訂單情境_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/9B038854-2282-47B8-921C-778484DF3765/tmp/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 24,
+          "testIdentifierString": "SnapshotTests/orderEditView_長訂單識別碼_顯示短識別碼()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E9%95%B7%E8%A8%82%E5%96%AE%E8%AD%98%E5%88%A5%E7%A2%BC_%E9%A1%AF%E7%A4%BA%E7%9F%AD%E8%AD%98%E5%88%A5%E7%A2%BC()",
+          "testName": "orderEditView_長訂單識別碼_顯示短識別碼()"
+        }
+      ],
+      "title": "Test - BuyLedger",
+      "topInsights": [],
+      "totalTestCount": 40
+    },
+    "unimplementedOrNoReporterIssues": [],
+    "issueClassification": {
+      "expectedStrictnessIssues": 0,
+      "unexpectedOrderEditLoadIssues": 0,
+      "noTestReporterIssues": 0
+    }
+  },
+  {
+    "label": "snapshot-round-4",
+    "command": [
+      "mobilebuildmcp",
+      "--log-level",
+      "error",
+      "simulator",
+      "test",
+      "--project-path",
+      "apps/ios/BuyLedger.xcodeproj",
+      "--scheme",
+      "BuyLedger",
+      "--simulator-id",
+      "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+      "--extra-args",
+      "-only-testing:BuyLedgerTests/SnapshotTests"
+    ],
+    "exitCode": 1,
+    "bundle": "/Users/leoho/Library/Developer/MobileBuildMCP/workspaces/BuyLedger-61c22e57ebf6/result-bundles/test_sim_2026-10-12T14-52-40-766Z_pid62242_9f969ff6.xcresult",
+    "log": "/Users/leoho/Library/Developer/MobileBuildMCP/workspaces/BuyLedger-61c22e57ebf6/logs/test_sim_2026-10-12T14-52-40-766Z_pid62242_3c91b381.log",
+    "summary": {
+      "devicesAndConfigurations": [
+        {
+          "device": {
+            "architecture": "arm64",
+            "deviceId": "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+            "deviceName": "iPhone 17",
+            "modelName": "iPhone 17",
+            "osBuildNumber": "23F73",
+            "osVersion": "26.5",
+            "platform": "iOS Simulator"
+          },
+          "expectedFailures": 0,
+          "failedTests": 4,
+          "passedTests": 38,
+          "skippedTests": 0,
+          "testPlanConfiguration": {
+            "configurationId": "1",
+            "configurationName": "zh-Hant TW"
+          }
+        }
+      ],
+      "environmentDescription": "BuyLedger · Built with macOS 27.0.1",
+      "expectedFailures": 0,
+      "failedTests": 4,
+      "finishTime": 1791816792.07,
+      "passedTests": 36,
+      "result": "Failed",
+      "runtimeWarnings": [],
+      "skippedTests": 0,
+      "startTime": 1791816772.698,
+      "statistics": [
+        {
+          "subtitle": "4 test runs",
+          "title": "2 tests ran with dynamic parameters"
+        }
+      ],
+      "testFailures": [
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/E68C9DD1-A256-4E6A-944E-AFAFD172CF12/tmp/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 3,
+          "testIdentifierString": "SnapshotTests/campaignEditView_編輯既有開團_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/campaignEditView_%E7%B7%A8%E8%BC%AF%E6%97%A2%E6%9C%89%E9%96%8B%E5%9C%98_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "campaignEditView_編輯既有開團_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/E68C9DD1-A256-4E6A-944E-AFAFD172CF12/tmp/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 22,
+          "testIdentifierString": "SnapshotTests/orderEditView_一般既有訂單_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E4%B8%80%E8%88%AC%E6%97%A2%E6%9C%89%E8%A8%82%E5%96%AE_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "orderEditView_一般既有訂單_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/E68C9DD1-A256-4E6A-944E-AFAFD172CF12/tmp/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 23,
+          "testIdentifierString": "SnapshotTests/orderEditView_合併訂單情境_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E5%90%88%E4%BD%B5%E8%A8%82%E5%96%AE%E6%83%85%E5%A2%83_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "orderEditView_合併訂單情境_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/E68C9DD1-A256-4E6A-944E-AFAFD172CF12/tmp/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 24,
+          "testIdentifierString": "SnapshotTests/orderEditView_長訂單識別碼_顯示短識別碼()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E9%95%B7%E8%A8%82%E5%96%AE%E8%AD%98%E5%88%A5%E7%A2%BC_%E9%A1%AF%E7%A4%BA%E7%9F%AD%E8%AD%98%E5%88%A5%E7%A2%BC()",
+          "testName": "orderEditView_長訂單識別碼_顯示短識別碼()"
+        }
+      ],
+      "title": "Test - BuyLedger",
+      "topInsights": [],
+      "totalTestCount": 40
+    },
+    "unimplementedOrNoReporterIssues": [],
+    "issueClassification": {
+      "expectedStrictnessIssues": 0,
+      "unexpectedOrderEditLoadIssues": 0,
+      "noTestReporterIssues": 0
+    }
+  },
+  {
+    "label": "snapshot-round-5",
+    "command": [
+      "mobilebuildmcp",
+      "--log-level",
+      "error",
+      "simulator",
+      "test",
+      "--project-path",
+      "apps/ios/BuyLedger.xcodeproj",
+      "--scheme",
+      "BuyLedger",
+      "--simulator-id",
+      "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+      "--extra-args",
+      "-only-testing:BuyLedgerTests/SnapshotTests"
+    ],
+    "exitCode": 1,
+    "bundle": "/Users/leoho/Library/Developer/MobileBuildMCP/workspaces/BuyLedger-61c22e57ebf6/result-bundles/test_sim_2026-10-12T14-53-13-474Z_pid62671_d5ee172d.xcresult",
+    "log": "/Users/leoho/Library/Developer/MobileBuildMCP/workspaces/BuyLedger-61c22e57ebf6/logs/test_sim_2026-10-12T14-53-13-474Z_pid62671_bb804e65.log",
+    "summary": {
+      "devicesAndConfigurations": [
+        {
+          "device": {
+            "architecture": "arm64",
+            "deviceId": "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+            "deviceName": "iPhone 17",
+            "modelName": "iPhone 17",
+            "osBuildNumber": "23F73",
+            "osVersion": "26.5",
+            "platform": "iOS Simulator"
+          },
+          "expectedFailures": 0,
+          "failedTests": 4,
+          "passedTests": 38,
+          "skippedTests": 0,
+          "testPlanConfiguration": {
+            "configurationId": "1",
+            "configurationName": "zh-Hant TW"
+          }
+        }
+      ],
+      "environmentDescription": "BuyLedger · Built with macOS 27.0.1",
+      "expectedFailures": 0,
+      "failedTests": 4,
+      "finishTime": 1791816824.761,
+      "passedTests": 36,
+      "result": "Failed",
+      "runtimeWarnings": [],
+      "skippedTests": 0,
+      "startTime": 1791816805.228,
+      "statistics": [
+        {
+          "subtitle": "4 test runs",
+          "title": "2 tests ran with dynamic parameters"
+        }
+      ],
+      "testFailures": [
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/BC609ED3-8CE3-4AE8-904D-27130FBB720F/tmp/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 3,
+          "testIdentifierString": "SnapshotTests/campaignEditView_編輯既有開團_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/campaignEditView_%E7%B7%A8%E8%BC%AF%E6%97%A2%E6%9C%89%E9%96%8B%E5%9C%98_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "campaignEditView_編輯既有開團_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/BC609ED3-8CE3-4AE8-904D-27130FBB720F/tmp/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 22,
+          "testIdentifierString": "SnapshotTests/orderEditView_一般既有訂單_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E4%B8%80%E8%88%AC%E6%97%A2%E6%9C%89%E8%A8%82%E5%96%AE_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "orderEditView_一般既有訂單_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/BC609ED3-8CE3-4AE8-904D-27130FBB720F/tmp/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 23,
+          "testIdentifierString": "SnapshotTests/orderEditView_合併訂單情境_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E5%90%88%E4%BD%B5%E8%A8%82%E5%96%AE%E6%83%85%E5%A2%83_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "orderEditView_合併訂單情境_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/BC609ED3-8CE3-4AE8-904D-27130FBB720F/tmp/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 24,
+          "testIdentifierString": "SnapshotTests/orderEditView_長訂單識別碼_顯示短識別碼()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E9%95%B7%E8%A8%82%E5%96%AE%E8%AD%98%E5%88%A5%E7%A2%BC_%E9%A1%AF%E7%A4%BA%E7%9F%AD%E8%AD%98%E5%88%A5%E7%A2%BC()",
+          "testName": "orderEditView_長訂單識別碼_顯示短識別碼()"
+        }
+      ],
+      "title": "Test - BuyLedger",
+      "topInsights": [],
+      "totalTestCount": 40
+    },
+    "unimplementedOrNoReporterIssues": [],
+    "issueClassification": {
+      "expectedStrictnessIssues": 0,
+      "unexpectedOrderEditLoadIssues": 0,
+      "noTestReporterIssues": 0
+    }
+  },
+  {
+    "label": "full-unit-regression",
+    "command": [
+      "mobilebuildmcp",
+      "--log-level",
+      "error",
+      "simulator",
+      "test",
+      "--project-path",
+      "apps/ios/BuyLedger.xcodeproj",
+      "--scheme",
+      "BuyLedger",
+      "--simulator-id",
+      "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+      "--extra-args",
+      "-only-testing:BuyLedgerTests"
+    ],
+    "exitCode": 1,
+    "bundle": "/Users/leoho/Library/Developer/MobileBuildMCP/workspaces/BuyLedger-61c22e57ebf6/result-bundles/test_sim_2026-10-12T14-53-46-211Z_pid63105_3a6fcf84.xcresult",
+    "log": "/Users/leoho/Library/Developer/MobileBuildMCP/workspaces/BuyLedger-61c22e57ebf6/logs/test_sim_2026-10-12T14-53-46-211Z_pid63105_aa18b060.log",
+    "summary": {
+      "devicesAndConfigurations": [
+        {
+          "device": {
+            "architecture": "arm64",
+            "deviceId": "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+            "deviceName": "iPhone 17",
+            "modelName": "iPhone 17",
+            "osBuildNumber": "23F73",
+            "osVersion": "26.5",
+            "platform": "iOS Simulator"
+          },
+          "expectedFailures": 2,
+          "failedTests": 4,
+          "passedTests": 2096,
+          "skippedTests": 0,
+          "testPlanConfiguration": {
+            "configurationId": "1",
+            "configurationName": "zh-Hant TW"
+          }
+        }
+      ],
+      "environmentDescription": "BuyLedger · Built with macOS 27.0.1",
+      "expectedFailures": 2,
+      "failedTests": 4,
+      "finishTime": 1791816929.131,
+      "passedTests": 1397,
+      "result": "Failed",
+      "runtimeWarnings": [],
+      "skippedTests": 0,
+      "startTime": 1791816840.386,
+      "statistics": [
+        {
+          "subtitle": "883 test runs",
+          "title": "184 tests ran with dynamic parameters"
+        }
+      ],
+      "testFailures": [
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/E40802C4-64B6-40E7-A848-C708C9821E2B/tmp/SnapshotTests+CampaignDetail/campaignEditView_編輯既有開團_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 1351,
+          "testIdentifierString": "SnapshotTests/campaignEditView_編輯既有開團_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/campaignEditView_%E7%B7%A8%E8%BC%AF%E6%97%A2%E6%9C%89%E9%96%8B%E5%9C%98_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "campaignEditView_編輯既有開團_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/E40802C4-64B6-40E7-A848-C708C9821E2B/tmp/SnapshotTests+OrderEdit/orderEditView_一般既有訂單_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 1370,
+          "testIdentifierString": "SnapshotTests/orderEditView_一般既有訂單_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E4%B8%80%E8%88%AC%E6%97%A2%E6%9C%89%E8%A8%82%E5%96%AE_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "orderEditView_一般既有訂單_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/E40802C4-64B6-40E7-A848-C708C9821E2B/tmp/SnapshotTests+OrderEdit/orderEditView_合併訂單情境_符合基準圖.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 1371,
+          "testIdentifierString": "SnapshotTests/orderEditView_合併訂單情境_符合基準圖()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E5%90%88%E4%BD%B5%E8%A8%82%E5%96%AE%E6%83%85%E5%A2%83_%E7%AC%A6%E5%90%88%E5%9F%BA%E6%BA%96%E5%9C%96()",
+          "testName": "orderEditView_合併訂單情境_符合基準圖()"
+        },
+        {
+          "failureText": "Issue recorded: Snapshot does not match reference.\n\n@−\n\"file:///Users/leoho/Develop/BuyLedger/apps/ios/BuyLedgerTests/__Snapshots__/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png\"\n@+\n\"file:///Users/leoho/Library/Developer/CoreSimulator/Devices/DDAA3311-B464-4DD3-96B8-360B26AF1929/data/Containers/Data/Application/E40802C4-64B6-40E7-A848-C708C9821E2B/tmp/SnapshotTests+OrderEdit/orderEditView_長訂單識別碼_顯示短識別碼.1.png\"\n\nTo configure output for a custom diff tool, use 'withSnapshotTesting'. For example:\n\n    withSnapshotTesting(diffTool: .ksdiff) {\n      // ...\n    }\n\nNewly-taken snapshot does not match reference.",
+          "targetName": "BuyLedgerTests",
+          "testIdentifier": 1372,
+          "testIdentifierString": "SnapshotTests/orderEditView_長訂單識別碼_顯示短識別碼()",
+          "testIdentifierURL": "test://com.apple.xcode/BuyLedger/BuyLedgerTests/SnapshotTests/orderEditView_%E9%95%B7%E8%A8%82%E5%96%AE%E8%AD%98%E5%88%A5%E7%A2%BC_%E9%A1%AF%E7%A4%BA%E7%9F%AD%E8%AD%98%E5%88%A5%E7%A2%BC()",
+          "testName": "orderEditView_長訂單識別碼_顯示短識別碼()"
+        }
+      ],
+      "title": "Test - BuyLedger",
+      "topInsights": [
+        {
+          "category": "Longest Test Runs",
+          "impact": "39% of duration",
+          "text": "4 longest test runs with outlier durations exceeding 1.59s (three standard deviations)"
+        }
+      ],
+      "totalTestCount": 1403
+    },
+    "unimplementedOrNoReporterIssues": [
+      "↳ Unimplemented: OrderService.fetchOrders …",
+      "↳ Unimplemented: OrderService.removeOrder …"
+    ],
+    "issueClassification": {
+      "expectedStrictnessIssues": 2,
+      "unexpectedOrderEditLoadIssues": 0,
+      "noTestReporterIssues": 0,
+      "sourceTests": [
+        "ServiceTestValueStrictnessTests/loadRequested_未覆寫訂單讀取_回報未實作問題()",
+        "ServiceTestValueStrictnessTests/presentation_只覆寫儲存_刪除仍回報未實作問題()"
+      ],
+      "evidence": "Log records each issue as known inside the named test; both tests use withKnownIssue matching the specific Service closure."
+    }
+  }
+]

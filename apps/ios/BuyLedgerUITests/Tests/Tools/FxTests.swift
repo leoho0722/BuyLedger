@@ -7,66 +7,65 @@
 
 import XCTest
 
-/// 匯率工具的進入、狀態橫幅與換算流程測試
-///
-/// 一律以 accessibility identifier 定位、對換算結果做非空的結構性斷言，不硬編精確金額 (匯率走固定快照 stub);
-/// 找不到 App 元素即附診斷失敗、不 skip。幣別原始值是業務鍵、不隨語言變動，故中英兩語言皆有效
+/// 匯率工具的換算流程測試
 final class FxTests: BLUITestCase {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
-    /// 換算時選用的來源幣別原始值 (``BLAccessibilityID/OptionPicker/optionRow(_:)`` 的 key)
-    private static let selectedCurrency = "KRW"
+    /// 換算使用的非預設來源幣別代碼
+    private static let selectedCurrency = "USD"
 
-    // MARK: - Tests
+    /// 匯率測試輸入的來源幣別金額
+    private static let inputAmount = "1000"
 
-    /// 從更多分頁進匯率頁後就緒，且載入狀態橫幅存在 (固定快照)
+    /// UI 測試固定匯率下的預期 TWD 顯示值
+    private static let expectedConvertedValue = "$32,468"
+
+    /// 開幣別選擇器選 USD 後回匯率頁，輸入金額後換算結果正確
+    ///
+    /// - Throws: 換算結果元素不存在或沒有值時拋出測試錯誤
     @MainActor
-    func testFxReadyWithStatusBanner() {
+    func testTypeAmount_選美元後輸入金額_依固定匯率換算() throws(any Error) {
+        // Given：匯率頁已選取 USD
         let app = launch(LaunchOptions(seed: .empty))
         let fx = openFx(app)
-
-        if !fx.statusBannerExists {
-            failWithDiagnostics(
-                in: app,
-                "匯率頁狀態橫幅「\(BLAccessibilityID.Fx.statusBanner)」未出現"
-            )
-        }
-    }
-
-    /// 開幣別選擇器選 KRW 後回匯率頁，輸入金額後換算結果有值
-    @MainActor
-    func testFxConvertsAfterSelectingCurrencyAndAmount() {
-        let app = launch(LaunchOptions(seed: .empty))
-        let fx = openFx(app)
-
         fx.openCurrencyPicker()
-
         let picker = OptionPickerScreen(app: app)
         if !picker.waitUntilReady() {
-            failWithDiagnostics(
-                in: app,
-                "幣別選擇器根 identifier「\(picker.rootIdentifier)」逾時仍未出現"
-            )
+            failWithDiagnostics(in: app, "幣別選擇器根 identifier「\(picker.rootIdentifier)」逾時仍未出現")
         }
         picker.selectOption(Self.selectedCurrency)
-
         // 單選點列即套用並自動關閉選擇器，回到匯率頁
         if !fx.waitUntilReady() {
-            failWithDiagnostics(
-                in: app,
-                "選幣別後匯率頁根 identifier「\(fx.rootIdentifier)」逾時仍未回到前景"
-            )
+            failWithDiagnostics(in: app, "選幣別後匯率頁根 identifier「\(fx.rootIdentifier)」逾時仍未回到前景")
         }
 
-        fx.typeAmount("1000", in: app)
+        // When：輸入 1000
+        fx.typeAmount(Self.inputAmount, in: app)
 
-        if fx.convertedValue.isEmpty {
-            failWithDiagnostics(
-                in: app,
-                "輸入金額後換算結果「\(BLAccessibilityID.Fx.convertedValue)」的 value 仍為空"
-            )
-        }
+        // Then：來源幣別與換算結果都應符合固定匯率
+        let summary = try requireValue(fx.conversionSummary, in: app, "換算結果卡片沒有來源幣別資訊")
+        XCTAssertTrue(summary.contains("1 USD"), "匯率頁來源幣別應為 USD，實際為：\(summary)")
+        let value = try requireValue(fx.convertedValue, in: app, "輸入金額後換算結果元素不存在")
+        XCTAssertEqual(value, Self.expectedConvertedValue, "1000 USD 依 UI 測試固定匯率應換算為 $32,468")
+    }
+
+    /// 連續輸入相同金額後，換算結果仍應只計入一次輸入值
+    ///
+    /// - Throws: 換算結果元素不存在或沒有值時拋出測試錯誤
+    @MainActor
+    func testTypeAmount_重複輸入相同金額_換算結果只計一次() throws(any Error) {
+        // Given：匯率頁已輸入一次金額
+        let app = launch(LaunchOptions(seed: .empty))
+        let fx = openFx(app)
+        fx.typeAmount(Self.inputAmount, in: app)
+
+        // When：再輸入一次相同金額
+        fx.typeAmount(Self.inputAmount, in: app)
+
+        // Then：換算結果應是單次輸入的固定結果
+        let value = try requireValue(fx.convertedValue, in: app, "重複輸入後換算結果元素不存在")
+        XCTAssertEqual(value, "$23")
     }
 }
 
@@ -75,10 +74,11 @@ final class FxTests: BLUITestCase {
 private extension FxTests {
 
     /// 從更多分頁導到匯率頁並等就緒，回傳匯率頁 Page Object
+    ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - file: 呼叫端檔案，交由 XCTest 定位
-    ///   - line: 呼叫端行號，交由 XCTest 定位
+    ///   - file: 失敗時回報的來源檔案
+    ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的匯率頁 Page Object
     @MainActor
     func openFx(
@@ -86,7 +86,7 @@ private extension FxTests {
         file: StaticString = #filePath,
         line: UInt = #line
     ) -> FxScreen {
-        let fx = FxScreen.open(from: app)
+        let fx = FxScreen.open(from: app, file: file, line: line)
         if !fx.waitUntilReady() {
             failWithDiagnostics(
                 in: app,

@@ -10,7 +10,7 @@ import Foundation
 /// 訂單財務試算後的摘要
 struct OrderSummary: Equatable {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 實際收款
     let revenue: Decimal
@@ -31,10 +31,6 @@ struct OrderSummary: Equatable {
     let totalCost: Decimal
 
     /// 貨到付款時計入總成本的運費合計 (國內 + 國際 + 來源國當地國內運費)
-    ///
-    /// 非貨到付款訂單一律為 `0`
-    /// 貨到付款收取的金額已含預估運費，因此這三種運費計入 ``totalCost``
-    /// 提供此欄位讓成本拆解能單獨列出該項
     let codShippingCost: Decimal
 
     /// 稅費與成本後的獲利
@@ -47,12 +43,12 @@ struct OrderSummary: Equatable {
 
     /// 依訂單資料建立財務摘要
     ///
-    /// 公式重點：
-    /// - `revenue = chargedAmount + cardlessSupplementAmount − cardlessDeductionAmount`，無卡折抵自 revenue 中扣除、無卡補款加回 revenue；對非無卡訂單兩個欄位皆為 `0`，等同維持舊行為
-    /// - 手續費仍以 `chargedAmount` 為基準，因為刷卡 / 平台 / 金流手續費的計算對象是原始收款金額，不會因為使用者另外用儲值金折抵或事後補款而改變
-    /// - `totalCost = itemCost + fees + codShippingCost`：國內運費、國際運費與來源國當地國內運費「正常情況下」由客人另外支付、不計入成本 (`codShippingCost == 0`)
-    ///   但 **貨到付款** (`order.isCashOnDelivery == true`) 收取的金額已含預估的三種運費，因此 `codShippingCost = domesticShipping + internationalShipping + foreignDomesticShipping` 計入總成本，還原真實獲利
-    /// - `profit = revenue − totalCost`、`margin = profit / revenue`；`revenue == 0` 時 margin 維持 `0`
+    /// - Note: `revenue` 等於 `chargedAmount` 加上無卡補款再扣除無卡折抵；非無卡訂單的兩欄皆為 `0`
+    /// - Note: 寫入層限制折抵不超過收款，但舊資料仍可能為負
+    /// - Note: 手續費以原始收款 `chargedAmount` 計算，不受無卡補款或折抵影響
+    /// - Note: `totalCost` 等於 `itemCost`、`fees` 與 `codShippingCost` 的總和；只有貨到付款會計入三種運費
+    /// - Note: `profit` 等於 `revenue` 減去 `totalCost`
+    /// - Note: `margin` 等於 `profit / revenue`；`revenue == 0` 時為 `0`，呈現層對 `revenue <= 0` 顯示空值
     /// - Parameter order: 要計算的訂單
     init(order: LedgerOrder) {
         let cardFee = order.chargedAmount * order.cardFeeRate
@@ -62,7 +58,7 @@ struct OrderSummary: Equatable {
         let revenue = order.chargedAmount
             + order.cardlessSupplementAmount
             - order.cardlessDeductionAmount
-        // 貨到付款收取的金額已含預估的三種運費，故計入總成本；一般訂單運費由客人另付、不計入成本，故為 0
+        // 貨到付款已含運費，計入成本；其他訂單由客人另付。
         let codShippingCost: Decimal
         if order.isCashOnDelivery {
             codShippingCost = order.domesticShipping

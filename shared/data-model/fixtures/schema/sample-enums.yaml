@@ -9,6 +9,8 @@ types:
         doc: 進行中。
       - name: archived
         doc: 已封存。
+      - name: partiallyArrived
+        doc: 部分到貨 (示範多字駝峰式 case 的平台命名轉換)。
 
   - name: SampleTag
     kind: wrapper

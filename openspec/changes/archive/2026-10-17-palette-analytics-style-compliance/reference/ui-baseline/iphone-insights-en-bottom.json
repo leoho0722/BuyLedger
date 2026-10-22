@@ -1,0 +1,82 @@
+{
+  "schema": "mobilebuildmcp.output.capture-result",
+  "schemaVersion": "2",
+  "didError": false,
+  "error": null,
+  "data": {
+    "summary": {
+      "status": "SUCCEEDED"
+    },
+    "artifacts": {
+      "simulatorId": "DDAA3311-B464-4DD3-96B8-360B26AF1929"
+    },
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "0rhaa11",
+      "seq": 11,
+      "count": 196,
+      "targets": [
+        "e45|tap|button|1. 美妝, NT$6,915|NT$6,915|insights.categoryRank.row:美妝",
+        "e50|tap|button|2. 服飾, NT$2,505|NT$2,505|insights.categoryRank.row:服飾",
+        "e170|tap|tab|Overview|0|house",
+        "e172|tap|tab|Orders|0|list.bullet.rectangle",
+        "e174|tap|tab|Campaigns|0|shippingbox",
+        "e176|tap|tab|Insights|1|chart.bar.xaxis",
+        "e178|tap|tab|More|0|ellipsis.circle"
+      ],
+      "scroll": [
+        "e20|swipe|scroll-view|||insights.root"
+      ],
+      "text": [
+        "e44|text|text|Category Ranking||",
+        "e46|text|text|1. 美妝||",
+        "e47|text|text|NT$6,915||",
+        "e51|text|text|2. 服飾||",
+        "e52|text|text|NT$2,505||",
+        "e55|text|text|Cost Structure||",
+        "e56|text|text|Total Cost||insights.chart.costDonut",
+        "e57|text|text|NT$42,368||insights.chart.costDonut",
+        "e63|text|text|Item Cost||",
+        "e64|text|text|NT$41,011||",
+        "e65|text|text|Local Shipping||",
+        "e66|text|text|NT$450||",
+        "e67|text|text|International Shipping||",
+        "e68|text|text|NT$2,270||",
+        "e69|text|text|Fees||",
+        "e70|text|text|NT$1,357||",
+        "e71|text|text|Order Heatmap · Past 8 Weeks||",
+        "e74|text|text|W1||",
+        "e75|text|text|W2||",
+        "e76|text|text|W3||",
+        "e77|text|text|W4||",
+        "e78|text|text|W5||",
+        "e79|text|text|W6||",
+        "e80|text|text|W7||",
+        "e81|text|text|W8||",
+        "e82|text|text|M||",
+        "e98|text|text|T Week 7|1 orders|",
+        "e91|text|text|T||",
+        "e106|text|text|W Week 6|1 orders|",
+        "e100|text|text|W||",
+        "e114|text|text|T Week 5|1 orders|",
+        "e116|text|text|T Week 7|1 orders|",
+        "e109|text|text|T||",
+        "e124|text|text|F Week 6|1 orders|",
+        "e118|text|text|F||",
+        "e133|text|text|S Week 6|1 orders|",
+        "e127|text|text|S||",
+        "e141|text|text|S Week 5|1 orders|",
+        "e142|text|text|S Week 6|1 orders|",
+        "e136|text|text|S||"
+      ],
+      "udid": "DDAA3311-B464-4DD3-96B8-360B26AF1929"
+    }
+  },
+  "nextSteps": [
+    "Refresh after layout changes: mobilebuildmcp ui-automation snapshot-ui --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929",
+    "Wait for UI to settle: mobilebuildmcp ui-automation wait-for-ui --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929 --predicate settled",
+    "Tap an elementRef: mobilebuildmcp ui-automation tap --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929 --element-ref e45",
+    "Scroll visible content: mobilebuildmcp ui-automation swipe --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929 --within-element-ref e20 --direction up --distance 0.5"
+  ]
+}

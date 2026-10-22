@@ -1,0 +1,3410 @@
+{
+  "schema": "mobilebuildmcp.output.capture-result",
+  "schemaVersion": "2",
+  "didError": false,
+  "error": null,
+  "data": {
+    "summary": {
+      "status": "SUCCEEDED"
+    },
+    "artifacts": {
+      "simulatorId": "DDAA3311-B464-4DD3-96B8-360B26AF1929"
+    },
+    "capture": {
+      "type": "runtime-snapshot",
+      "protocol": "rs/1",
+      "simulatorId": "DDAA3311-B464-4DD3-96B8-360B26AF1929",
+      "screenHash": "0hedi4c",
+      "seq": 9,
+      "capturedAtMs": 1792169251366,
+      "expiresAtMs": 1792169311366,
+      "elements": [
+        {
+          "ref": "e1",
+          "role": "application",
+          "label": "BuyLedger",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": []
+        },
+        {
+          "ref": "e2",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e3",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e4",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e5",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e6",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e7",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e8",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e9",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e10",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e11",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e12",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e13",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e14",
+          "role": "other",
+          "identifier": "總覽",
+          "frame": {
+            "x": 0,
+            "y": 62,
+            "width": 402,
+            "height": 127
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e15",
+          "role": "other",
+          "label": "總覽",
+          "frame": {
+            "x": 16,
+            "y": 116,
+            "width": 113.33,
+            "height": 71.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e16",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e17",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e18",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e19",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e20",
+          "role": "scroll-view",
+          "identifier": "dashboard.root",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch",
+            "swipeWithin"
+          ]
+        },
+        {
+          "ref": "e21",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e22",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 170.8
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e23",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 726.2,
+            "width": 402,
+            "height": 147.8
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e24",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e25",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 726.2,
+            "width": 402,
+            "height": 147.8
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e26",
+          "role": "image",
+          "identifier": "AdditionalDimmingOverlay",
+          "frame": {
+            "x": -120,
+            "y": 731,
+            "width": 642,
+            "height": 286
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e27",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 726.2,
+            "width": 402,
+            "height": 147.8
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e28",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 726.2,
+            "width": 402,
+            "height": 147.8
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e29",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 726.2,
+            "width": 402,
+            "height": 147.8
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e30",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 726.2,
+            "width": 402,
+            "height": 147.8
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e31",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 726.2,
+            "width": 402,
+            "height": 147.8
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e32",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 189,
+            "width": 402,
+            "height": 4209
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": []
+        },
+        {
+          "ref": "e33",
+          "role": "text",
+          "label": "4月30日星期四",
+          "identifier": "dashboard.currentDateSubtitle",
+          "frame": {
+            "x": 16,
+            "y": 205,
+            "width": 295.67,
+            "height": 52.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e34",
+          "role": "other",
+          "value": "+$11,412",
+          "identifier": "dashboard.kpiTile.netProfit",
+          "frame": {
+            "x": 16,
+            "y": 273.67,
+            "width": 370,
+            "height": 508
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e35",
+          "role": "text",
+          "label": "本月 · 淨獲利",
+          "frame": {
+            "x": 32,
+            "y": 289.67,
+            "width": 247.33,
+            "height": 52.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e36",
+          "role": "text",
+          "label": "+$11,412",
+          "frame": {
+            "x": 32,
+            "y": 346.33,
+            "width": 294.67,
+            "height": 73.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e37",
+          "role": "text",
+          "label": "— MoM",
+          "frame": {
+            "x": 32,
+            "y": 429,
+            "width": 144,
+            "height": 52.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e38",
+          "role": "text",
+          "label": "·",
+          "frame": {
+            "x": 184,
+            "y": 423.67,
+            "width": 25.33,
+            "height": 63.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e39",
+          "role": "text",
+          "label": "7 單",
+          "frame": {
+            "x": 217.33,
+            "y": 429,
+            "width": 75.67,
+            "height": 52.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e40",
+          "role": "other",
+          "label": "月獲利走勢圖，共 12 個月，整體上升，最低 $0，最高 $11,412",
+          "frame": {
+            "x": 31.2,
+            "y": 500.2,
+            "width": 339.6,
+            "height": 100.13
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e41",
+          "role": "other",
+          "value": "14%",
+          "frame": {
+            "x": 32,
+            "y": 686,
+            "width": 182,
+            "height": 6
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e42",
+          "role": "text",
+          "label": "14% / $80,000",
+          "frame": {
+            "x": 222,
+            "y": 612.33,
+            "width": 148,
+            "height": 153.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e43",
+          "role": "other",
+          "frame": {
+            "x": 15.75,
+            "y": 793.42,
+            "width": 370.5,
+            "height": 831.17
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": []
+        },
+        {
+          "ref": "e44",
+          "role": "text",
+          "label": "營業額、$53,780、— MoM",
+          "value": "$53,780",
+          "identifier": "dashboard.kpiTile.revenue",
+          "frame": {
+            "x": 15.75,
+            "y": 793.42,
+            "width": 370.5,
+            "height": 202.17
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": []
+        },
+        {
+          "ref": "e45",
+          "role": "other",
+          "frame": {
+            "x": 28,
+            "y": 828,
+            "width": 8,
+            "height": 8
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e46",
+          "role": "text",
+          "label": "營業額",
+          "frame": {
+            "x": 42,
+            "y": 805.67,
+            "width": 125,
+            "height": 52.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e47",
+          "role": "text",
+          "label": "$53,780",
+          "frame": {
+            "x": 28,
+            "y": 862.33,
+            "width": 223.33,
+            "height": 65.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": []
+        },
+        {
+          "ref": "e48",
+          "role": "text",
+          "label": "— MoM",
+          "frame": {
+            "x": 28,
+            "y": 932,
+            "width": 142.67,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e49",
+          "role": "text",
+          "label": "成本、$42,368、— MoM",
+          "value": "$42,368",
+          "identifier": "dashboard.kpiTile.cost",
+          "frame": {
+            "x": 15.75,
+            "y": 1003.08,
+            "width": 370.5,
+            "height": 202.17
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e50",
+          "role": "other",
+          "frame": {
+            "x": 28,
+            "y": 1037.67,
+            "width": 8,
+            "height": 8
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e51",
+          "role": "text",
+          "label": "成本",
+          "frame": {
+            "x": 42,
+            "y": 1015.33,
+            "width": 83.33,
+            "height": 52.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e52",
+          "role": "text",
+          "label": "$42,368",
+          "frame": {
+            "x": 28,
+            "y": 1072,
+            "width": 223.33,
+            "height": 65.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e53",
+          "role": "text",
+          "label": "— MoM",
+          "frame": {
+            "x": 28,
+            "y": 1141.67,
+            "width": 142.67,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e54",
+          "role": "text",
+          "label": "毛利率、21.2%、— MoM",
+          "value": "21.2%",
+          "identifier": "dashboard.kpiTile.grossMargin",
+          "frame": {
+            "x": 15.75,
+            "y": 1212.75,
+            "width": 370.5,
+            "height": 202.17
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e55",
+          "role": "other",
+          "frame": {
+            "x": 28,
+            "y": 1247.33,
+            "width": 8,
+            "height": 8
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e56",
+          "role": "text",
+          "label": "毛利率",
+          "frame": {
+            "x": 42,
+            "y": 1225,
+            "width": 125,
+            "height": 52.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e57",
+          "role": "text",
+          "label": "21.2%",
+          "frame": {
+            "x": 28,
+            "y": 1281.67,
+            "width": 166,
+            "height": 65.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e58",
+          "role": "text",
+          "label": "— MoM",
+          "frame": {
+            "x": 28,
+            "y": 1351.33,
+            "width": 142.67,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e59",
+          "role": "text",
+          "label": "進行中訂單、4、4 件進行中",
+          "value": "4",
+          "identifier": "dashboard.kpiTile.activeOrders",
+          "frame": {
+            "x": 15.75,
+            "y": 1422.42,
+            "width": 370.5,
+            "height": 202.17
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e60",
+          "role": "other",
+          "frame": {
+            "x": 28,
+            "y": 1457,
+            "width": 8,
+            "height": 8
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e61",
+          "role": "text",
+          "label": "進行中訂單",
+          "frame": {
+            "x": 42,
+            "y": 1434.67,
+            "width": 208,
+            "height": 52.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e62",
+          "role": "text",
+          "label": "4",
+          "frame": {
+            "x": 28,
+            "y": 1491.33,
+            "width": 35.33,
+            "height": 65.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e63",
+          "role": "text",
+          "label": "4 件進行中",
+          "frame": {
+            "x": 28,
+            "y": 1561,
+            "width": 199,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e64",
+          "role": "text",
+          "label": "近期訂單",
+          "frame": {
+            "x": 16,
+            "y": 1640.67,
+            "width": 207.67,
+            "height": 65.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e65",
+          "role": "button",
+          "label": "查看全部",
+          "identifier": "dashboard.recentOrders.seeAllButton",
+          "frame": {
+            "x": 293.33,
+            "y": 1646.33,
+            "width": 92.67,
+            "height": 116.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e66",
+          "role": "text",
+          "label": "林書宇、4/26、Tamburins 香水 Chamo 50ml x1 Gentle Monster Her 02 x1、美妝、集運中",
+          "value": "$11,800 +$2,731",
+          "identifier": "dashboard.recentOrders.row:BL-2604-018",
+          "frame": {
+            "x": 32,
+            "y": 1779,
+            "width": 293.67,
+            "height": 714
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e67",
+          "role": "text",
+          "label": "林書宇",
+          "frame": {
+            "x": 32,
+            "y": 2116,
+            "width": 40,
+            "height": 40
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e68",
+          "role": "text",
+          "label": "林書宇",
+          "frame": {
+            "x": 84,
+            "y": 1779,
+            "width": 139,
+            "height": 58.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e69",
+          "role": "text",
+          "label": "4/26",
+          "frame": {
+            "x": 84,
+            "y": 1845.67,
+            "width": 90.33,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e70",
+          "role": "text",
+          "label": "Tamburins 香水 Chamo 50ml x1 Gentle Monster Her 02 x1",
+          "frame": {
+            "x": 84,
+            "y": 1905,
+            "width": 241.67,
+            "height": 312.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e71",
+          "role": "image",
+          "label": "標籤",
+          "identifier": "tag",
+          "frame": {
+            "x": 87,
+            "y": 2243.33,
+            "width": 35.33,
+            "height": 35.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e72",
+          "role": "text",
+          "label": "美妝",
+          "frame": {
+            "x": 130,
+            "y": 2225.67,
+            "width": 138.67,
+            "height": 70.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e73",
+          "role": "text",
+          "label": "集運中",
+          "frame": {
+            "x": 84,
+            "y": 2304.33,
+            "width": 199.33,
+            "height": 70.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e74",
+          "role": "other",
+          "frame": {
+            "x": 112.67,
+            "y": 2331.67,
+            "width": 16,
+            "height": 16
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e75",
+          "role": "text",
+          "label": "集運中",
+          "frame": {
+            "x": 132.67,
+            "y": 2314,
+            "width": 122,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e76",
+          "role": "text",
+          "label": "$11,800",
+          "frame": {
+            "x": 84,
+            "y": 2379,
+            "width": 199.33,
+            "height": 58.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e77",
+          "role": "text",
+          "label": "+$2,731",
+          "frame": {
+            "x": 107.67,
+            "y": 2441.67,
+            "width": 175.67,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e78",
+          "role": "text",
+          "label": "Mika 周、4/24、Snidel 春季針織外套 (M) x1、服飾、已下單",
+          "value": "$4,980 +$969",
+          "identifier": "dashboard.recentOrders.row:BL-2604-017",
+          "frame": {
+            "x": 32,
+            "y": 2510,
+            "width": 303.33,
+            "height": 558
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e79",
+          "role": "text",
+          "label": "Mika 周",
+          "frame": {
+            "x": 32,
+            "y": 2769,
+            "width": 40,
+            "height": 40
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e80",
+          "role": "text",
+          "label": "Mika 周",
+          "frame": {
+            "x": 84,
+            "y": 2510,
+            "width": 162,
+            "height": 58.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e81",
+          "role": "text",
+          "label": "4/24",
+          "frame": {
+            "x": 84,
+            "y": 2576.67,
+            "width": 89,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e82",
+          "role": "text",
+          "label": "Snidel 春季針織外套 (M) x1",
+          "frame": {
+            "x": 84,
+            "y": 2636,
+            "width": 251.33,
+            "height": 156.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e83",
+          "role": "image",
+          "label": "標籤",
+          "identifier": "tag",
+          "frame": {
+            "x": 87,
+            "y": 2818.33,
+            "width": 35.33,
+            "height": 35.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e84",
+          "role": "text",
+          "label": "服飾",
+          "frame": {
+            "x": 130,
+            "y": 2800.67,
+            "width": 138.67,
+            "height": 70.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e85",
+          "role": "text",
+          "label": "已下單",
+          "frame": {
+            "x": 84,
+            "y": 2879.33,
+            "width": 199.33,
+            "height": 70.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e86",
+          "role": "other",
+          "frame": {
+            "x": 112.67,
+            "y": 2906.67,
+            "width": 16,
+            "height": 16
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e87",
+          "role": "text",
+          "label": "已下單",
+          "frame": {
+            "x": 132.67,
+            "y": 2889,
+            "width": 122,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e88",
+          "role": "text",
+          "label": "$4,980",
+          "frame": {
+            "x": 115,
+            "y": 2954,
+            "width": 168.33,
+            "height": 58.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e89",
+          "role": "text",
+          "label": "+$969",
+          "frame": {
+            "x": 145.67,
+            "y": 3016.67,
+            "width": 137.67,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e90",
+          "role": "text",
+          "label": "Ariel 陳、4/22、Aesop Rōzu Eau de Parfum 50ml x1 Hera Black Cushion #21 x2、美妝、已交付",
+          "value": "$9,890 +$1,328",
+          "identifier": "dashboard.recentOrders.row:BL-2604-016",
+          "frame": {
+            "x": 32,
+            "y": 3085,
+            "width": 331.67,
+            "height": 714
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e91",
+          "role": "text",
+          "label": "Ariel 陳",
+          "frame": {
+            "x": 32,
+            "y": 3422,
+            "width": 40,
+            "height": 40
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e92",
+          "role": "text",
+          "label": "Ariel 陳",
+          "frame": {
+            "x": 84,
+            "y": 3085,
+            "width": 156.67,
+            "height": 58.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e93",
+          "role": "text",
+          "label": "4/22",
+          "frame": {
+            "x": 84,
+            "y": 3151.67,
+            "width": 88.33,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e94",
+          "role": "text",
+          "label": "Aesop Rōzu Eau de Parfum 50ml x1 Hera Black Cushion #21 x2",
+          "frame": {
+            "x": 84,
+            "y": 3211,
+            "width": 279.67,
+            "height": 312.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e95",
+          "role": "image",
+          "label": "標籤",
+          "identifier": "tag",
+          "frame": {
+            "x": 87,
+            "y": 3549.33,
+            "width": 35.33,
+            "height": 35.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e96",
+          "role": "text",
+          "label": "美妝",
+          "frame": {
+            "x": 130,
+            "y": 3531.67,
+            "width": 138.67,
+            "height": 70.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e97",
+          "role": "text",
+          "label": "已交付",
+          "frame": {
+            "x": 84,
+            "y": 3610.33,
+            "width": 199.33,
+            "height": 70.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e98",
+          "role": "other",
+          "frame": {
+            "x": 112.67,
+            "y": 3637.67,
+            "width": 16,
+            "height": 16
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e99",
+          "role": "text",
+          "label": "已交付",
+          "frame": {
+            "x": 132.67,
+            "y": 3620,
+            "width": 122,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e100",
+          "role": "text",
+          "label": "$9,890",
+          "frame": {
+            "x": 115,
+            "y": 3685,
+            "width": 168.33,
+            "height": 58.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e101",
+          "role": "text",
+          "label": "+$1,328",
+          "frame": {
+            "x": 107.67,
+            "y": 3747.67,
+            "width": 175.67,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e102",
+          "role": "text",
+          "label": "Joyce 黃、4/21、Polène Numéro Un Nano 米色 x1、精品、報價中",
+          "value": "$0 -$13,728",
+          "identifier": "dashboard.recentOrders.row:BL-2604-015",
+          "frame": {
+            "x": 32,
+            "y": 3816,
+            "width": 295,
+            "height": 558
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e103",
+          "role": "text",
+          "label": "Joyce 黃",
+          "frame": {
+            "x": 32,
+            "y": 4075,
+            "width": 40,
+            "height": 40
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e104",
+          "role": "text",
+          "label": "Joyce 黃",
+          "frame": {
+            "x": 84,
+            "y": 3816,
+            "width": 187.67,
+            "height": 58.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e105",
+          "role": "text",
+          "label": "4/21",
+          "frame": {
+            "x": 84,
+            "y": 3882.67,
+            "width": 83,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e106",
+          "role": "text",
+          "label": "Polène Numéro Un Nano 米色 x1",
+          "frame": {
+            "x": 84,
+            "y": 3942,
+            "width": 243,
+            "height": 156.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e107",
+          "role": "image",
+          "label": "標籤",
+          "identifier": "tag",
+          "frame": {
+            "x": 87,
+            "y": 4124.33,
+            "width": 35.33,
+            "height": 35.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e108",
+          "role": "text",
+          "label": "精品",
+          "frame": {
+            "x": 130,
+            "y": 4106.67,
+            "width": 138.67,
+            "height": 70.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e109",
+          "role": "text",
+          "label": "報價中",
+          "frame": {
+            "x": 84,
+            "y": 4185.33,
+            "width": 199.33,
+            "height": 70.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e110",
+          "role": "other",
+          "frame": {
+            "x": 112.67,
+            "y": 4212.67,
+            "width": 16,
+            "height": 16
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e111",
+          "role": "text",
+          "label": "報價中",
+          "frame": {
+            "x": 132.67,
+            "y": 4195,
+            "width": 122,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e112",
+          "role": "text",
+          "label": "$0",
+          "frame": {
+            "x": 220.67,
+            "y": 4260,
+            "width": 62.67,
+            "height": 58.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e113",
+          "role": "text",
+          "label": "-$13,728",
+          "frame": {
+            "x": 88.67,
+            "y": 4322.67,
+            "width": 194.67,
+            "height": 51.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": false
+          },
+          "actions": []
+        },
+        {
+          "ref": "e114",
+          "role": "slider",
+          "label": "垂直捲軸, 7頁",
+          "value": "0%",
+          "frame": {
+            "x": 369,
+            "y": 189,
+            "width": 30,
+            "height": 602
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e115",
+          "role": "other",
+          "frame": {
+            "x": 396,
+            "y": 192,
+            "width": 3,
+            "height": 116.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e116",
+          "role": "slider",
+          "label": "垂直捲軸, 7頁",
+          "value": "0%",
+          "frame": {
+            "x": 369,
+            "y": 189,
+            "width": 30,
+            "height": 602
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e117",
+          "role": "other",
+          "frame": {
+            "x": 396,
+            "y": 192,
+            "width": 3,
+            "height": 116.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e118",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e119",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e120",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 791,
+            "width": 402,
+            "height": 83
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e121",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 0,
+            "width": 402,
+            "height": 874
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e122",
+          "role": "other",
+          "label": "標籤頁列",
+          "frame": {
+            "x": 0,
+            "y": 791,
+            "width": 402,
+            "height": 83
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e123",
+          "role": "other",
+          "frame": {
+            "x": 21,
+            "y": 791,
+            "width": 360,
+            "height": 62
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e124",
+          "role": "other",
+          "frame": {
+            "x": 21,
+            "y": 791,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e125",
+          "role": "other",
+          "frame": {
+            "x": 21,
+            "y": 791,
+            "width": 360,
+            "height": 62
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e126",
+          "role": "tab",
+          "label": "總覽",
+          "value": "1",
+          "frame": {
+            "x": 25,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "tap",
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e127",
+          "role": "image",
+          "label": "住家",
+          "identifier": "house.fill",
+          "frame": {
+            "x": 47,
+            "y": 801,
+            "width": 33.33,
+            "height": 28
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e128",
+          "role": "tab",
+          "label": "訂單",
+          "value": "0",
+          "frame": {
+            "x": 93.75,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "tap",
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e129",
+          "role": "image",
+          "label": "list.bullet.rectangle.fill",
+          "identifier": "list.bullet.rectangle.fill",
+          "frame": {
+            "x": 115.75,
+            "y": 802.33,
+            "width": 33,
+            "height": 25
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e130",
+          "role": "tab",
+          "label": "開團",
+          "value": "0",
+          "frame": {
+            "x": 162.5,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "tap",
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e131",
+          "role": "image",
+          "label": "紙箱",
+          "identifier": "shippingbox.fill",
+          "frame": {
+            "x": 186.5,
+            "y": 800.67,
+            "width": 29.33,
+            "height": 28.67
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e132",
+          "role": "tab",
+          "label": "分析",
+          "value": "0",
+          "frame": {
+            "x": 231.25,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "tap",
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e133",
+          "role": "image",
+          "label": "chart.bar.xaxis",
+          "identifier": "chart.bar.xaxis",
+          "frame": {
+            "x": 254.25,
+            "y": 802.33,
+            "width": 31.67,
+            "height": 25.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e134",
+          "role": "tab",
+          "label": "更多",
+          "value": "0",
+          "frame": {
+            "x": 300,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "tap",
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e135",
+          "role": "image",
+          "label": "更多",
+          "identifier": "ellipsis.circle.fill",
+          "frame": {
+            "x": 325,
+            "y": 801.33,
+            "width": 27.33,
+            "height": 27.33
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e136",
+          "role": "other",
+          "frame": {
+            "x": 25,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e137",
+          "role": "other",
+          "frame": {
+            "x": 25,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e138",
+          "role": "other",
+          "frame": {
+            "x": 25,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e139",
+          "role": "other",
+          "frame": {
+            "x": 25,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e140",
+          "role": "other",
+          "frame": {
+            "x": 25,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e141",
+          "role": "other",
+          "frame": {
+            "x": 25,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e142",
+          "role": "other",
+          "frame": {
+            "x": 25,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e143",
+          "role": "other",
+          "frame": {
+            "x": 25,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e144",
+          "role": "other",
+          "frame": {
+            "x": 25,
+            "y": 795,
+            "width": 77,
+            "height": 54
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e145",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 791,
+            "width": 402,
+            "height": 83
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e146",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 791,
+            "width": 402,
+            "height": 83
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e147",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 791,
+            "width": 402,
+            "height": 83
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e148",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 791,
+            "width": 402,
+            "height": 83
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e149",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 791,
+            "width": 402,
+            "height": 83
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e150",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 791,
+            "width": 402,
+            "height": 83
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e151",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 791,
+            "width": 402,
+            "height": 83
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        },
+        {
+          "ref": "e152",
+          "role": "other",
+          "frame": {
+            "x": 0,
+            "y": 791,
+            "width": 402,
+            "height": 83
+          },
+          "state": {
+            "enabled": true,
+            "visible": true
+          },
+          "actions": [
+            "longPress",
+            "touch"
+          ]
+        }
+      ],
+      "actions": [
+        {
+          "action": "longPress",
+          "elementRef": "e2"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e2"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e3"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e3"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e4"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e4"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e5"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e5"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e6"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e6"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e7"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e7"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e8"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e8"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e9"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e9"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e10"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e10"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e11"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e11"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e12"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e12"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e13"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e13"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e14"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e14"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e15",
+          "label": "總覽"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e15",
+          "label": "總覽"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e16"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e16"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e17"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e17"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e18"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e18"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e19"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e19"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e20"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e20"
+        },
+        {
+          "action": "swipeWithin",
+          "elementRef": "e20"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e21"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e21"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e22"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e22"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e23"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e23"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e24"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e24"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e25"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e25"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e26"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e26"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e27"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e27"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e28"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e28"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e29"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e29"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e30"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e30"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e31"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e31"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e33",
+          "label": "4月30日星期四"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e33",
+          "label": "4月30日星期四"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e34"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e34"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e35",
+          "label": "本月 · 淨獲利"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e35",
+          "label": "本月 · 淨獲利"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e36",
+          "label": "+$11,412"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e36",
+          "label": "+$11,412"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e37",
+          "label": "— MoM"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e37",
+          "label": "— MoM"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e38",
+          "label": "·"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e38",
+          "label": "·"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e39",
+          "label": "7 單"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e39",
+          "label": "7 單"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e40",
+          "label": "月獲利走勢圖，共 12 個月，整體上升，最低 $0，最高 $11,412"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e40",
+          "label": "月獲利走勢圖，共 12 個月，整體上升，最低 $0，最高 $11,412"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e41"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e41"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e42",
+          "label": "14% / $80,000"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e42",
+          "label": "14% / $80,000"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e45"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e45"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e46",
+          "label": "營業額"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e46",
+          "label": "營業額"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e114",
+          "label": "垂直捲軸, 7頁"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e114",
+          "label": "垂直捲軸, 7頁"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e115"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e115"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e116",
+          "label": "垂直捲軸, 7頁"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e116",
+          "label": "垂直捲軸, 7頁"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e117"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e117"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e118"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e118"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e119"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e119"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e120"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e120"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e121"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e121"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e122",
+          "label": "標籤頁列"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e122",
+          "label": "標籤頁列"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e123"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e123"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e124"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e124"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e125"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e125"
+        },
+        {
+          "action": "tap",
+          "elementRef": "e126",
+          "label": "總覽"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e126",
+          "label": "總覽"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e126",
+          "label": "總覽"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e127",
+          "label": "住家"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e127",
+          "label": "住家"
+        },
+        {
+          "action": "tap",
+          "elementRef": "e128",
+          "label": "訂單"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e128",
+          "label": "訂單"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e128",
+          "label": "訂單"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e129",
+          "label": "list.bullet.rectangle.fill"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e129",
+          "label": "list.bullet.rectangle.fill"
+        },
+        {
+          "action": "tap",
+          "elementRef": "e130",
+          "label": "開團"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e130",
+          "label": "開團"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e130",
+          "label": "開團"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e131",
+          "label": "紙箱"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e131",
+          "label": "紙箱"
+        },
+        {
+          "action": "tap",
+          "elementRef": "e132",
+          "label": "分析"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e132",
+          "label": "分析"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e132",
+          "label": "分析"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e133",
+          "label": "chart.bar.xaxis"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e133",
+          "label": "chart.bar.xaxis"
+        },
+        {
+          "action": "tap",
+          "elementRef": "e134",
+          "label": "更多"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e134",
+          "label": "更多"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e134",
+          "label": "更多"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e135",
+          "label": "更多"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e135",
+          "label": "更多"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e136"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e136"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e137"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e137"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e138"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e138"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e139"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e139"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e140"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e140"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e141"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e141"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e142"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e142"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e143"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e143"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e144"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e144"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e145"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e145"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e146"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e146"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e147"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e147"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e148"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e148"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e149"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e149"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e150"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e150"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e151"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e151"
+        },
+        {
+          "action": "longPress",
+          "elementRef": "e152"
+        },
+        {
+          "action": "touch",
+          "elementRef": "e152"
+        }
+      ]
+    }
+  },
+  "nextSteps": [
+    "Refresh after layout changes: mobilebuildmcp ui-automation snapshot-ui --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929",
+    "Wait for UI to settle: mobilebuildmcp ui-automation wait-for-ui --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929 --predicate settled",
+    "Scroll visible content: mobilebuildmcp ui-automation swipe --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929 --within-element-ref e20 --direction up --distance 0.5",
+    "Tap an elementRef: mobilebuildmcp ui-automation tap --simulator-id DDAA3311-B464-4DD3-96B8-360B26AF1929 --element-ref e126"
+  ]
+}

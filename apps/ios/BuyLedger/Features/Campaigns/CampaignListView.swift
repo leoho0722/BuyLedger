@@ -9,222 +9,174 @@ import ComposableArchitecture
 import SwiftUI
 
 /// 開團列表：顯示每個開團的狀態與彙總進度 (到貨／收款)，點擊進入詳情
-///
-/// 沿用 ``DashboardView`` / ``InsightsView`` 直接吃 ``RootFeature`` store 的作法，以便同時讀取開團 (`store.campaigns`) 與訂單 (`store.orders.orders`)；分貨與進度由 ``CampaignSummary`` 自訂單投影
 struct CampaignListView: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
-    /// App 根層級 store
-    @Bindable var store: StoreOf<RootFeature>
+    /// 開團列表的狀態與事件來源，由父層以 `store.scope` 傳入
+    @Bindable var store: StoreOf<CampaignListFeature>
 
-    /// App 根層依語言偏好注入的 locale
-    @Environment(\.locale) private var locale
+    /// App 目前選用的顯示語系
+    let language: AppLanguage
 
-    /// 用於日期區段「今天／昨天」相對標題的「現在」時間；測試可注入固定值
-    @Dependency(\.date) private var date
+    // MARK: - Body
 
-    /// 開團日期分組所用的行事曆 (含時區)；測試可注入固定值
-    @Dependency(\.calendar) private var calendar
-
-    // MARK: - View Body
-
-    /// 開團列表的畫面內容
+    /// 依載入狀態切換內容，並掛上根標題、工具列與載入任務
     var body: some View {
-        NavigationStack(path: campaignPath) {
-            content
-                .rootNavigationTitle("開團", language: store.settings.language)
-                .toolbar {
-                    ToolbarItemGroup(placement: .primaryAction) {
-                        Menu {
-                            Picker("開團狀態", selection: statusFilterBinding) {
-                                Text("全部").tag(CampaignStatus?.none)
-                                ForEach(CampaignStatus.allCases) { status in
-                                    Text(LocalizedStringKey(status.title)).tag(CampaignStatus?.some(status))
-                                }
-                            }
-                            .pickerStyle(.inline)
+        content
+            .task {
+                // 載入結果由多個分頁共用，不隨列表消失而取消
+                store.send(.view(.task))
+            }
+            .rootNavigationTitle("orders.detail.title.campaigns", language: language)
+            .toolbar {
+                ToolbarItemGroup(placement: .primaryAction) {
+                    filterMenu
 
-                            Menu("顯示方式") {
-                                Picker("分組方式", selection: groupingBinding) {
-                                    ForEach(CampaignGrouping.allCases) { grouping in
-                                        Text(LocalizedStringKey(grouping.title)).tag(grouping)
-                                    }
-                                }
-                                .pickerStyle(.inline)
-                            }
-                        } label: {
-                            Label(
-                                "篩選與分組",
-                                systemImage: store.campaigns.statusFilter == nil
-                                    ? "line.3.horizontal.decrease.circle"
-                                    : "line.3.horizontal.decrease.circle.fill"
-                            )
-                        }
-                        .accessibilityIdentifier(BLAccessibilityID.Campaigns.filterMenuButton)
-
-                        Button {
-                            store.send(.campaigns(.newCampaignTapped))
-                        } label: {
-                            Image(systemName: "plus")
-                        }
-                        .accessibilityLabel(Text("新增開團"))
-                        .accessibilityIdentifier(BLAccessibilityID.Campaigns.addButton)
-                    }
+                    addCampaignButton
                 }
-                .navigationDestination(for: String.self) { id in
-                    CampaignDetailView(store: store, campaignID: id)
-                }
-        }
-        .sheet(
-            item: $store.scope(state: \.campaigns.editCampaign, action: \.campaigns.editCampaign)
-        ) { editStore in
-            CampaignEditView(store: editStore)
-        }
-        // 刪除確認也在此掛一份:列表列的長按 contextMenu 刪除是在列表層 (未 push 詳情) 觸發,需由列表頁承接 alert;
-        // 詳情頁 toolbar 選單觸發的刪除/結團則由 ``CampaignDetailView`` 自己承接 (iPad 才會疊在 push 出來的詳情上方)
-        .alert(
-            $store.scope(state: \.campaigns.deletionConfirmation, action: \.campaigns.deletionConfirmation)
-        )
-        .alert(
-            $store.scope(state: \.campaigns.reminderAccessAlert, action: \.campaigns.reminderAccessAlert)
-        )
-        .task {
-            await store.send(.campaigns(.task)).finish()
-        }
+            }
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension CampaignListView {
 
-    /// 依載入與資料狀態切換列表、空狀態或載入中
+    /// 工具列的篩選與分組選單
+    var filterMenu: some View {
+        Menu {
+            Picker("campaigns.list.label.campaignStatus", selection: statusFilterBinding) {
+                Text("common.action.label.all")
+                    .tag(nil as CampaignStatus?)
+
+                ForEach(CampaignStatus.allCases) {
+                    statusFilterOption($0)
+                }
+            }
+            .pickerStyle(.inline)
+
+            Menu("campaigns.list.label.display") {
+                Picker("campaigns.list.label.group", selection: groupingBinding) {
+                    ForEach(CampaignGrouping.allCases) {
+                        Text(LocalizedStringKey($0.title))
+                            .tag($0)
+                    }
+                }
+                .pickerStyle(.inline)
+            }
+        } label: {
+            Label("orders.list.label.filterGroup", systemImage: iconName)
+        }
+        .accessibilityIdentifier(BLAccessibilityID.Campaigns.filterMenuButton)
+    }
+
+    /// 工具列的「新增開團」按鈕
+    var addCampaignButton: some View {
+        Button {
+            store.send(.view(.newCampaignTapped))
+        } label: {
+            Image(systemName: "plus")
+        }
+        .accessibilityLabel(Text("campaigns.list.label.addCampaign"))
+        .accessibilityIdentifier(BLAccessibilityID.Campaigns.addButton)
+    }
+
+    /// 完全沒有開團時的空狀態
+    var emptyState: some View {
+        ContentUnavailableView(
+            "orders.edit.label.campaigns",
+            systemImage: "shippingbox",
+            description: Text("campaigns.list.message.tapTopright")
+        )
+        .accessibilityIdentifier(BLAccessibilityID.Campaigns.listEmptyState)
+    }
+
+    /// 有開團但目前狀態篩選下沒有符合者時的空狀態
+    var filteredEmptyState: some View {
+        ContentUnavailableView(
+            "campaigns.list.label.matchingCampaigns",
+            systemImage: "line.3.horizontal.decrease.circle",
+            description: Text("campaigns.list.message.campaignsMatchCurrent")
+        )
+    }
+
+    /// 載入完成後依有無開團與篩選結果，顯示空狀態或區段清單
+    @ViewBuilder
+    var loadedContent: some View {
+        if store.campaigns.isEmpty {
+            emptyState
+        } else if let visibleSections = store.visibleSections {
+            sectionList(visibleSections.sections, dateContext: visibleSections.dateContext)
+        } else {
+            filteredEmptyState
+        }
+    }
+
+    /// 依載入狀態切換載入失敗畫面、載入中指示或載入完成的內容
     @ViewBuilder
     var content: some View {
-        if store.campaigns.campaigns.isEmpty {
-            if store.campaigns.isLoading && !store.campaigns.hasLoaded {
-                ProgressView()
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-            } else {
-                ContentUnavailableView(
-                    "尚無開團",
-                    systemImage: "shippingbox",
-                    description: Text("點右上角「＋」建立第一個開團，把訂單歸到團裡即可追蹤進度。")
-                )
-                .accessibilityIdentifier(BLAccessibilityID.Campaigns.listEmptyState)
-            }
-        } else {
-            let sections = store.campaigns.dateSections(
-                referenceDate: date.now,
-                calendar: calendar,
-                locale: locale
-            )
-            if sections.isEmpty {
-                ContentUnavailableView(
-                    "沒有符合的開團",
-                    systemImage: "line.3.horizontal.decrease.circle",
-                    description: Text("目前的狀態篩選下沒有開團，換個篩選或選「全部」。")
-                )
-            } else {
-                ScrollView {
-                    LazyVStack(alignment: .leading, spacing: BLSpacing.large) {
-                        ForEach(sections) { section in
-                            sectionView(section)
-                        }
-                    }
-                    .padding(.top, BLSpacing.small)
-                    .padding(.bottom, BLSpacing.large)
-                }
-                .accessibilityIdentifier(BLAccessibilityID.Campaigns.listRoot)
-            }
+        switch store.loadState {
+        case .failed(let message):
+            loadFailure(message: message)
+
+        case .loading:
+            ProgressView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+
+        case .loaded:
+            loadedContent
         }
     }
 
-    /// 單一頂層日期區段：頂層標題 (月／年／日) + 其下各子群組
-    /// - Parameter section: 要呈現的頂層區段
-    /// - Returns: 區段 view
-    @ViewBuilder
-    func sectionView(_ section: CampaignDateSection) -> some View {
-        VStack(alignment: .leading, spacing: BLSpacing.small) {
-            Text(LocalizedStringKey(section.title))
-                .font(.subheadline.weight(.bold))
-                .padding(.horizontal, BLSpacing.large)
-
-            ForEach(section.subgroups) { subgroup in
-                subgroupView(subgroup)
-            }
-        }
+    /// 建立對應開團狀態的篩選選項
+    ///
+    /// - Parameter status: 對應的開團狀態
+    /// - Returns: 選項 view
+    func statusFilterOption(_ status: CampaignStatus) -> some View {
+        Text(LocalizedStringKey(status.title))
+            .tag(CampaignStatus?.some(status))
     }
 
-    /// 單一子群組：可選的日期小標 (完全自繪、可控上下間距) + 該群組的開團卡片
-    /// - Parameter subgroup: 要呈現的子群組
-    /// - Returns: 子群組 view
-    @ViewBuilder
-    func subgroupView(_ subgroup: CampaignSubgroup) -> some View {
-        VStack(alignment: .leading, spacing: BLSpacing.small) {
-            if let subTitle = subgroup.title {
-                Text(subTitle)
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, BLSpacing.large)
-                    .padding(.top, BLSpacing.small)
-            }
-
-            BLCard(padding: 0) {
-                VStack(spacing: 0) {
-                    ForEach(Array(subgroup.campaigns.enumerated()), id: \.element.id) { index, campaign in
-                        campaignRowButton(campaign)
-
-                        if index < subgroup.campaigns.count - 1 {
-                            Divider()
-                                .padding(.horizontal, BLSpacing.large)
-                        }
-                    }
-                }
-            }
-            .padding(.horizontal, BLSpacing.large)
+    /// 顯示載入失敗畫面與重試鍵
+    ///
+    /// - Parameter message: 持續顯示的失敗訊息
+    /// - Returns: 載入失敗 view
+    func loadFailure(message: String) -> some View {
+        BLLoadFailureView(
+            message: message,
+            retryIdentifier: BLAccessibilityID.Campaigns.listLoadFailureRetryButton
+        ) {
+            store.send(.view(.retryTapped))
         }
+        .accessibilityIdentifier(BLAccessibilityID.Campaigns.listLoadFailure)
     }
 
-    /// 單一開團卡片列：點擊進詳情、長按 (contextMenu) 可編輯／刪除
-    /// - Parameter campaign: 對應的開團
-    /// - Returns: 開團列 view
-    @ViewBuilder
-    func campaignRowButton(_ campaign: Campaign) -> some View {
-        Button {
-            store.send(.campaigns(.campaignSelected(campaign.id)))
-        } label: {
-            CampaignRow(
-                campaign: campaign,
-                summary: CampaignSummary(
-                    campaignName: campaign.name,
-                    orders: store.orders.orders
-                ),
-                dateText: store.campaigns.grouping == .year
-                    ? CampaignFormatters.dayWithWeekday(campaign.openDate, locale: locale)
-                    : nil
-            )
-            .padding(.horizontal, BLSpacing.large)
-            .padding(.vertical, BLSpacing.medium)
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .contentShape(Rectangle())
-        }
-        .buttonStyle(.plain)
-        .accessibilityIdentifier(BLAccessibilityID.Campaigns.row(campaignID: campaign.id))
-        .contextMenu {
-            Button {
-                store.send(.campaigns(.editCampaignTapped(campaign.id)))
-            } label: {
-                Label("編輯", systemImage: "pencil")
-            }
-
-            Button(role: .destructive) {
-                store.send(.campaigns(.deleteCampaignTapped(campaign.id)))
-            } label: {
-                Label("刪除", systemImage: "trash")
-            }
-        }
+    /// 依日期區段呈現開團，操作一律轉成列表的 view action
+    ///
+    /// - Parameters:
+    ///   - sections: 已依篩選與分組算好的日期區段
+    ///   - dateContext: 列表記錄的現在時間與行事曆
+    /// - Returns: 區段清單 view
+    func sectionList(
+        _ sections: [CampaignDateSection],
+        dateContext: CampaignDateContext
+    ) -> some View {
+        CampaignSectionList(
+            dateContext: dateContext,
+            isShowingOpenDate: store.grouping == .year,
+            onDelete: {
+                store.send(.view(.deleteCampaignTapped($0)))
+            },
+            onEdit: {
+                store.send(.view(.editCampaignTapped($0)))
+            },
+            onSelect: {
+                store.send(.view(.campaignTapped($0)))
+            },
+            sections: sections,
+            summaries: store.rowSummaries
+        )
     }
 }
 
@@ -232,118 +184,101 @@ private extension CampaignListView {
 
 private extension CampaignListView {
 
-    /// 以 ``CampaignFeature/State/selectedCampaignID`` 驅動的 `NavigationStack` 路徑 (0 或 1 筆)
-    ///
-    /// 採用原生值導向的 `navigationDestination(for:)` 而非 `navigationDestination(item:)`：後者在低於 iOS 17 的部署目標會解析到 SwiftUINavigation 的 backport overload，導致連結到該符號；改用以開團 id 為值的路徑可避開此相依，並同時支援列表點擊與 Dashboard／Insights 的深連結
-    var campaignPath: Binding<[String]> {
-        Binding(
-            get: { store.campaigns.selectedCampaignID.map { [$0] } ?? [] },
-            set: { store.send(.campaigns(.campaignSelected($0.last))) }
-        )
+    /// 篩選與分組選單的圖示，有套用狀態篩選時改用實心圖示
+    var iconName: String {
+        store.statusFilter == nil
+            ? "line.3.horizontal.decrease.circle"
+            : "line.3.horizontal.decrease.circle.fill"
     }
 
-    /// 工具列篩選 Menu 用的 binding：選取後送出 ``CampaignFeature/Action/statusFilterSelected(_:)``
+    /// 狀態篩選 binding；選取後送出 `statusFilterSelected`
     var statusFilterBinding: Binding<CampaignStatus?> {
-        Binding(
-            get: { store.campaigns.statusFilter },
-            set: { store.send(.campaigns(.statusFilterSelected($0))) }
-        )
-    }
-
-    /// 工具列分組 Menu 用的 binding：選取後送出 ``CampaignFeature/Action/groupingSelected(_:)``
-    var groupingBinding: Binding<CampaignGrouping> {
-        Binding(
-            get: { store.campaigns.grouping },
-            set: { store.send(.campaigns(.groupingSelected($0))) }
-        )
-    }
-}
-
-// MARK: - Campaign Row
-
-/// 開團列表的單列：團名、狀態、筆數／金額與到貨／收款進度
-private struct CampaignRow: View {
-
-    // MARK: - View Properties
-
-    /// 對應的開團
-    let campaign: Campaign
-
-    /// 由訂單投影的彙總
-    let summary: CampaignSummary
-
-    /// 區段標題粗於「日」時 (按月／按年) 於列上顯示的開團日期；`nil` 表示不顯示 (按日分組時日期已在區段標題)
-    let dateText: String?
-
-    /// App 根層依語言偏好注入的 locale
-    @Environment(\.locale) private var locale
-
-    // MARK: - View Body
-
-    /// 單列的畫面內容
-    var body: some View {
-        VStack(alignment: .leading, spacing: BLSpacing.small) {
-            if let dateText {
-                Text(dateText)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-
-            HStack(alignment: .top, spacing: BLSpacing.small) {
-                Text(campaign.name)
-                    .font(.headline)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .frame(maxWidth: .infinity, alignment: .leading)
-
-                VStack(alignment: .trailing, spacing: BLSpacing.extraSmall) {
-                    BLStatusPill(campaign.status.title, tone: CampaignStatusStyle.tone(for: campaign.status))
-
-                    if campaign.isSettled {
-                        BLStatusPill("已結團", tone: .neutral, showsIndicator: false)
-                    }
-                }
-            }
-
-            Text("\(summary.orderCount) 筆 · \(CampaignFormatters.twd(summary.receivables, locale: locale))")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-
-            BLProgressBar(
-                title: "到貨",
-                value: summary.deliveryRatio,
-                trailingText: "\(summary.arrivedCount)/\(summary.activeCount)"
-            )
-
-            BLProgressBar(
-                title: "收款",
-                value: summary.receivedRatio,
-                tint: .green,
-                trailingText: CampaignFormatters.twd(summary.receivedAmount, locale: locale)
-            )
+        Binding {
+            store.statusFilter
+        } set: {
+            store.send(.view(.statusFilterSelected($0)))
         }
-        // 開團列由日期、名稱、狀態與多個進度組成；合併為單一朗讀單位，
-        // 否則輔助技術要逐一走過每個子元素
-        .accessibilityElement(children: .combine)
-        // 合併列的應收金額改由 accessibilityValue 承載，UI 測試以 row identifier 定位後讀 element.value
-        .accessibilityValue(CampaignFormatters.twd(summary.receivables, locale: locale))
+    }
+
+    /// 分組 binding；選取後送出 `groupingSelected`
+    var groupingBinding: Binding<CampaignGrouping> {
+        Binding {
+            store.grouping
+        } set: {
+            store.send(.view(.groupingSelected($0)))
+        }
     }
 }
 
 // MARK: - Preview
 
 #Preview("開團列表") {
-    let previewState: RootFeature.State = {
-        var state = RootFeature.State()
-        state.orders.orders = LedgerOrder.sampleCampaignOrders
-        state.orders.hasLoaded = true
-        state.campaigns.campaigns = Campaign.sampleCampaigns
-        state.campaigns.hasLoaded = true
-        return state
-    }()
-
-    return CampaignListView(
-        store: Store(initialState: previewState) {
-            RootFeature()
-        }
+    var state = CampaignListFeature.State(
+        campaigns: SharedReader(value: Campaign.sampleCampaigns),
+        orders: SharedReader(value: LedgerOrder.sampleCampaignOrders)
     )
+    state.$hasLoaded = SharedReader(value: true)
+    state.dateContext = CampaignDateContext(
+        now: Campaign.sampleCampaigns.first?.openDate ?? .distantPast,
+        calendar: Calendar(identifier: .gregorian)
+    )
+
+    return NavigationStack {
+        CampaignListView(
+            store: Store(initialState: state) {
+                CampaignListFeature()
+            },
+            language: .traditionalChinese
+        )
+    }
+}
+
+#Preview("開團列表載入中") {
+    let state = CampaignListFeature.State(
+        campaigns: SharedReader(value: []),
+        orders: SharedReader(value: [])
+    )
+
+    return NavigationStack {
+        CampaignListView(
+            store: Store(initialState: state) {
+                EmptyReducer()
+            },
+            language: .traditionalChinese
+        )
+    }
+}
+
+#Preview("開團列表空狀態") {
+    let state = CampaignListFeature.State(
+        campaigns: SharedReader(value: []),
+        orders: SharedReader(value: [])
+    )
+    state.$hasLoaded = SharedReader(value: true)
+
+    return NavigationStack {
+        CampaignListView(
+            store: Store(initialState: state) {
+                EmptyReducer()
+            },
+            language: .traditionalChinese
+        )
+    }
+}
+
+#Preview("開團列表載入失敗") {
+    let state = CampaignListFeature.State(
+        campaigns: SharedReader(value: []),
+        orders: SharedReader(value: [])
+    )
+    state.$errorMessage = SharedReader(value: "campaigns.list.message.campaignsLoadedTry")
+
+    return NavigationStack {
+        CampaignListView(
+            store: Store(initialState: state) {
+                EmptyReducer()
+            },
+            language: .traditionalChinese
+        )
+    }
 }

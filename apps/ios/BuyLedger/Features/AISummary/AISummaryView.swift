@@ -10,48 +10,70 @@ import SwiftUI
 import Textual
 
 /// AI 商品明細總結 sheet
-///
-/// 串流期間以 ``StructuredText`` 漸進渲染 Markdown；尚無內容時顯示讀取中，失敗時顯示錯誤態與重試。樣式比照 ``PaymentMethodEditorSheet``
 struct AISummaryView: View {
 
-    // MARK: - View Properties
+    // MARK: - Properties
 
-    /// 總結功能的 store
+    /// 畫面的狀態與事件來源，由父層建立後傳入
     @Bindable var store: StoreOf<AISummaryFeature>
 
-    // MARK: - View Body
+    // MARK: - Body
 
     /// 總結 sheet 的內容
     var body: some View {
         NavigationStack {
-            content
-                .accessibilityElement(children: .contain)
-                .accessibilityIdentifier(BLAccessibilityID.AISummary.root)
-                .navigationTitle(Text("AI 商品明細總結"))
-                .navigationBarTitleDisplayMode(.inline)
-                .toolbar {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button {
-                            store.send(.closeTapped)
-                        } label: {
-                            Image(systemName: "xmark")
-                        }
-                        .accessibilityLabel(Text("關閉"))
-                        .accessibilityIdentifier(BLAccessibilityID.AISummary.closeButton)
-                    }
-                }
-                .task {
-                    await store.send(.task).finish()
-                }
+            VStack(alignment: .leading, spacing: 0) {
+                dataTransferDisclosure
+
+                content
+                    .accessibilityElement(children: .contain)
+                    .accessibilityIdentifier(BLAccessibilityID.AISummary.root)
+            }
+            .task {
+                await store.send(.view(.task)).finish()
+            }
+            .navigationTitle(Text("orders.general.label.aiItemSummary"))
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                closeToolbarItem
+            }
         }
         .presentationDetents([.medium, .large])
         .presentationDragIndicator(.visible)
     }
 }
 
-// MARK: - ViewBuilder
+// MARK: - Private Views
 
 private extension AISummaryView {
+
+    /// AI 總結開始前即常駐呈現的第三方雲端資料傳送揭露
+    @ViewBuilder
+    var dataTransferDisclosure: some View {
+        Text("ai.summary.message.currentListsProduct")
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .padding(.horizontal)
+            .padding(.vertical, BLSpacing.small)
+            .multilineTextAlignment(.leading)
+            .blTextStyle(.footnote)
+            .foregroundStyle(.blSecondaryLabel)
+            .background(.secondary.opacity(0.08))
+            .accessibilityIdentifier(BLAccessibilityID.AISummary.dataTransferDisclosure)
+    }
+
+    /// 總結 sheet 的關閉按鈕
+    @ToolbarContentBuilder
+    var closeToolbarItem: some ToolbarContent {
+        ToolbarItem(placement: .cancellationAction) {
+            Button {
+                store.send(.view(.closeTapped))
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .accessibilityLabel(Text("common.action.label.close"))
+            .accessibilityIdentifier(BLAccessibilityID.AISummary.closeButton)
+        }
+    }
 
     /// 依目前串流階段呈現的主內容
     @ViewBuilder
@@ -59,24 +81,26 @@ private extension AISummaryView {
         switch store.phase {
         case .failed:
             ContentUnavailableView {
-                Label("總結失敗", systemImage: "exclamationmark.triangle")
+                Label("ai.summary.label.summaryFailed", systemImage: "exclamationmark.triangle")
             } description: {
-                Text(store.errorMessage ?? "請稍後再試。")
+                Text(store.failureMessage)
             } actions: {
-                Button("重試") {
-                    store.send(.retryTapped)
+                Button("common.action.button.retry") {
+                    store.send(.view(.retryTapped))
                 }
                 .buttonStyle(.borderedProminent)
                 .accessibilityIdentifier(BLAccessibilityID.AISummary.retryButton)
             }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
 
         case .idle, .streaming, .finished:
             if store.summaryText.isEmpty {
                 VStack(spacing: BLSpacing.medium) {
                     ProgressView()
-                    Text("AI 正在分析商品明細…")
-                        .font(.subheadline)
-                        .foregroundStyle(.secondary)
+
+                    Text("ai.summary.label.aiAnalyzingItem")
+                        .blTextStyle(.subhead)
+                        .foregroundStyle(.blSecondaryLabel)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
             } else {
@@ -89,11 +113,20 @@ private extension AISummaryView {
                             HStack(spacing: BLSpacing.extraSmall) {
                                 ProgressView()
                                     .controlSize(.small)
-                                Text("產生中…")
-                                    .font(.footnote)
-                                    .foregroundStyle(.secondary)
+
+                                Text("ai.summary.label.generating")
+                                    .blTextStyle(.footnote)
+                                    .foregroundStyle(.blSecondaryLabel)
                             }
                             .padding(.top, BLSpacing.small)
+                        }
+
+                        if let truncationMessage = store.truncationMessage {
+                            Text(truncationMessage)
+                                .padding(.top, BLSpacing.small)
+                                .multilineTextAlignment(.leading)
+                                .blTextStyle(.footnote)
+                                .foregroundStyle(.blSecondaryLabel)
                         }
 
                         if store.phase == .finished {
@@ -113,32 +146,57 @@ private extension AISummaryView {
     var aiDisclaimerCapsule: some View {
         HStack(spacing: BLSpacing.extraSmall) {
             Image(systemName: "sparkles")
-                .font(.caption2.weight(.semibold))
+                .font(BLTypographyStyle.caption2.font.weight(.semibold))
                 .accessibilityHidden(true)
 
-            Text("此內容由 AI 生成，可能包含錯誤資訊，請自行核對。")
-                .font(.caption)
+            Text("ai.summary.message.contentGeneratedAi")
                 .multilineTextAlignment(.leading)
+                .blTextStyle(.caption)
         }
-        .foregroundStyle(.secondary)
         .padding(.vertical, 7)
         .padding(.horizontal, 14)
+        .foregroundStyle(.blSecondaryLabel)
         .background(.secondary.opacity(0.12), in: Capsule())
+        // `frame` 保持在 `background` 外層，避免膠囊背景撐滿整列
         .frame(maxWidth: .infinity, alignment: .center)
     }
 }
 
 // MARK: - Preview
 
-#Preview("AI 總結") {
-    AISummaryView(
-        store: Store(
-            initialState: AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
-        ) {
+#Preview("AI 總結串流中") {
+    var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+    state.phase = .streaming
+    state.summaryText = "# 商品摘要\n\nAI 正在產生內容"
+
+    return AISummaryView(
+        store: Store(initialState: state) {
             AISummaryFeature()
-        } withDependencies: {
-            $0[OllamaClient.self] = .previewValue
-            $0.appConfiguration = .previewValue
+        }
+    )
+}
+
+#Preview("AI 總結失敗") {
+    var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+    state.phase = .failed
+    state.errorMessage = "ai.summary.message.summaryFailedTry"
+
+    return AISummaryView(
+        store: Store(initialState: state) {
+            AISummaryFeature()
+        }
+    )
+}
+
+#Preview("AI 總結逾時截斷") {
+    var state = AISummaryFeature.State(prompt: "範例 prompt", model: "gemma4:31b-cloud")
+    state.phase = .finished
+    state.summaryText = "# 商品摘要\n\n已取得的部分內容"
+    state.truncationMessage = "ai.summary.message.aiSummaryReached"
+
+    return AISummaryView(
+        store: Store(initialState: state) {
+            AISummaryFeature()
         }
     )
 }

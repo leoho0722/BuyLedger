@@ -1,0 +1,81 @@
+{
+  "schema": "mobilebuildmcp.output.capture-result",
+  "schemaVersion": "2",
+  "didError": false,
+  "error": null,
+  "data": {
+    "summary": {
+      "status": "SUCCEEDED"
+    },
+    "artifacts": {
+      "simulatorId": "FC80961E-B153-4462-B017-3A4E2BFCFB68"
+    },
+    "capture": {
+      "type": "runtime-snapshot",
+      "rs": "1",
+      "screenHash": "1jum7fb",
+      "seq": 22,
+      "count": 136,
+      "targets": [
+        "e15|tap|button|訂單||BackButton",
+        "e19|tap|button|更新狀態||orders.detail.statusMenuButton",
+        "e20|tap|button|||",
+        "e24|tap|button|更多操作||orders.detail.moreButton",
+        "e25|tap|button|||",
+        "e107|tap|tab|總覽|0|house",
+        "e109|tap|tab|訂單|1|list.bullet.rectangle",
+        "e111|tap|tab|開團|0|shippingbox",
+        "e113|tap|tab|分析|0|chart.bar.xaxis",
+        "e115|tap|tab|更多|0|ellipsis.circle"
+      ],
+      "scroll": [
+        "e31|swipe|scroll-view|||orders.detail.root"
+      ],
+      "text": [
+        "e44|text|text|BL-2604-018||",
+        "e45|text|text|集運中||",
+        "e49|text|text|·||",
+        "e48|text|text|6/11||",
+        "e50|text|text|韓元||",
+        "e47|text|text|集運中||",
+        "e51|text|text|訂單來源||",
+        "e52|text|text|蝦皮||",
+        "e53|text|text|商品類別||",
+        "e54|text|text|美妝||",
+        "e55|text|text|開團||",
+        "e56|text|text|KRAPR||",
+        "e57|text|text|獲利、+$2,731|+$2,731|orders.detail.summaryTile.profit",
+        "e58|text|text|獲利||",
+        "e60|text|text|毛利率||",
+        "e59|text|text|+$2,731||",
+        "e61|text|text|23.1%||",
+        "e62|text|text|總收款、$11,800|$11,800|orders.detail.summaryTile.revenue",
+        "e63|text|text|總收款||",
+        "e65|text|text|總成本、$9,069|$9,069|orders.detail.summaryTile.cost",
+        "e66|text|text|總成本||",
+        "e68|text|text|手續費||",
+        "e64|text|text|$11,800||",
+        "e67|text|text|$9,069||",
+        "e69|text|text|$177||",
+        "e70|text|text|成本拆解||",
+        "e71|text|text|總成本||",
+        "e72|text|text|$9,069||",
+        "e76|text|text|商品金額、$8,892||",
+        "e78|text|text|商品金額||",
+        "e79|text|text|$8,892||",
+        "e80|text|text|刷卡手續費、$177||",
+        "e82|text|text|刷卡手續費||",
+        "e83|text|text|$177||",
+        "e84|text|text|商品明細||"
+      ],
+      "udid": "FC80961E-B153-4462-B017-3A4E2BFCFB68"
+    }
+  },
+  "nextSteps": [
+    "Refresh after layout changes: mobilebuildmcp ui-automation snapshot-ui --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68",
+    "Wait for UI to settle: mobilebuildmcp ui-automation wait-for-ui --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --predicate settled",
+    "Batch same-screen taps: mobilebuildmcp ui-automation batch --json '{\"simulatorId\":\"FC80961E-B153-4462-B017-3A4E2BFCFB68\",\"steps\":[{\"action\":\"tap\",\"elementRef\":\"e15\"},{\"action\":\"tap\",\"elementRef\":\"e20\"}]}'",
+    "Tap an elementRef: mobilebuildmcp ui-automation tap --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --element-ref e15",
+    "Scroll visible content: mobilebuildmcp ui-automation swipe --simulator-id FC80961E-B153-4462-B017-3A4E2BFCFB68 --within-element-ref e31 --direction up --distance 0.5"
+  ]
+}

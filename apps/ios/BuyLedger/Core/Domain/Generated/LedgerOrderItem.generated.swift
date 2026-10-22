@@ -8,14 +8,12 @@
 
 import Foundation
 
-/// 訂單中的單一商品項目
-///
-/// id 為穩定識別值，與 name / quantity / unitPrice 等內容欄位解耦，使內容變動時識別保持不變 (支援清單／表單內的逐項編輯)
+/// 訂單中的商品項目
 struct LedgerOrderItem: Equatable, Identifiable, Sendable {
 
     // MARK: - Data Properties
 
-    /// 商品項目的穩定識別值，與內容無關
+    /// 商品項目的穩定識別值
     let id: UUID
 
     /// 商品名稱
@@ -24,12 +22,12 @@ struct LedgerOrderItem: Equatable, Identifiable, Sendable {
     /// 商品數量
     var quantity: Int
 
-    /// 商品在原始幣別中的單價
+    /// 商品單價
     var unitPrice: Decimal
 
     // MARK: - Init
 
-    /// 建立 LedgerOrderItem
+    /// 以必填欄位建立值，宣告了預設值的欄位可以省略
     init(
         id: UUID = UUID(),
         name: String,

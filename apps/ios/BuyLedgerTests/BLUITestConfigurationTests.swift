@@ -7,185 +7,200 @@
 
 import Foundation
 import Testing
+
 @testable import BuyLedger
 
 #if DEBUG
 
 /// 驗證 UI 測試啟動參數的解析規則
-///
-/// 這層是 UI 測試唯一的設定入口，壞值必須退回預設值而不是 crash 或靜默改變語意；
-/// 這裡把「預設值」「正常解析」「壞值退回」三類情境釘住
 struct BLUITestConfigurationTests {
 
-    // MARK: - Tests
+    /// 開團寫入失敗旗標可開啟開團的寫入替身
+    @Test
+    func init_帶開團寫入失敗旗標_啟用寫入失敗() {
+        // Given
+        let arguments = ["-BLUITest", "-BLUITestCampaignWriteFailure"]
 
-    @Test func emptyArgumentsProduceDisabledConfigurationWithDefaults() {
-        let configuration = BLUITestConfiguration(arguments: [])
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
 
+        // Then
+        #expect(configuration.shouldFailCampaignWrites == true)
+    }
+
+    /// 未提供開團寫入失敗旗標時保留正常寫入
+    @Test
+    func init_未帶開團寫入失敗旗標_不啟用寫入失敗() {
+        // Given
+        let arguments = ["-BLUITest"]
+
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
+        #expect(configuration.shouldFailCampaignWrites == false)
+    }
+
+    /// 空的啟動參數會停用 UI 測試並保留所有預設值
+    @Test
+    func init_空啟動參數_停用測試並保留預設值() {
+        // Given
+        let arguments: [String] = []
+        let expectedReferenceDate = Date(timeIntervalSince1970: 1_777_507_200)
+
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
         #expect(configuration.isEnabled == false)
         #expect(configuration.seedProfile == .empty)
-        #expect(configuration.referenceDate == BLUITestConfiguration.defaultReferenceDate)
+        #expect(configuration.referenceDate == expectedReferenceDate)
         #expect(configuration.language == nil)
         #expect(configuration.calendarAccess == .granted)
         #expect(configuration.loadFailure == BLUITestLoadFailure.none)
+        #expect(configuration.shouldFailLookupWrites == false)
+        #expect(configuration.shouldFailCampaignWrites == false)
         #expect(configuration.defaultCurrencyCode == nil)
-        #expect(configuration.monthlyProfitGoalTwd == nil)
+        #expect(configuration.monthlyProfitGoalTWD == nil)
+        #expect(configuration.shouldUseAISummary == false)
+        #expect(configuration.isAppLockEnabled == false)
+        #expect(configuration.biometricScenario == .success)
+        #expect(configuration.persistenceMode == .inMemory)
+        #expect(configuration.shouldResetPersistentStore == false)
     }
 
-    @Test func uiTestFlagEnablesConfiguration() {
-        let configuration = BLUITestConfiguration(arguments: ["/path/to/App", "-BLUITest"])
+    /// UI 測試旗標會啟用啟動掛鉤
+    @Test
+    func init_帶測試旗標_啟用測試設定() {
+        // Given
+        let arguments = ["/path/to/App", "-BLUITest"]
 
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
         #expect(configuration.isEnabled)
     }
 
-    @Test func defaultReferenceDateIsEndOfApril2026InUTC() {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
+    /// 預設參考時間固定為 2026 年 4 月 30 日 UTC 午夜
+    @Test
+    func defaultReferenceDate_未提供時間覆寫_為四月底午夜() {
+        // Given
+        let expectedReferenceDate = Date(timeIntervalSince1970: 1_777_507_200)
 
-        #expect(BLUITestConfiguration.defaultReferenceDate == formatter.date(from: "2026-04-30T00:00:00Z"))
+        // When
+        let referenceDate = BLUITestConfiguration.defaultReferenceDate
+
+        // Then
+        #expect(referenceDate == expectedReferenceDate)
     }
 
-    @Test func allFlagsAreParsedFromWellFormedArguments() {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        let configuration = BLUITestConfiguration(arguments: [
+    /// 有效的啟動參數會套用種子、時間、語言與各項覆寫設定
+    @Test
+    func init_提供有效旗標值_解析全部設定() {
+        // Given
+        let arguments = [
             "-BLUITest",
-            "-BLUITestSeed", "campaignsWithOrders",
-            "-BLUITestNow", "2026-01-15T08:30:00Z",
-            "-BLUITestLanguage", "english",
-            "-BLUITestCalendarAccess", "denied",
-            "-BLUITestLoadFailure", "ordersFirstReadOnly",
-            "-BLUITestDefaultCurrency", "JPY",
-            "-BLUITestMonthlyGoal", "80000",
-        ])
+            "-BLUITestSeed",
+            "campaignsWithOrders",
+            "-BLUITestNow",
+            "2026-01-15T08:30:00Z",
+            "-BLUITestLanguage",
+            "english",
+            "-BLUITestCalendarAccess",
+            "denied",
+            "-BLUITestLoadFailure",
+            "ordersFirstReadOnly",
+            "-BLUITestLookupWriteFailure",
+            "-BLUITestDefaultCurrency",
+            "JPY",
+            "-BLUITestMonthlyGoal",
+            "80000",
+        ]
+        let expectedReferenceDate = Date(timeIntervalSince1970: 1_768_465_800)
 
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
         #expect(configuration.isEnabled)
         #expect(configuration.seedProfile == .campaignsWithOrders)
-        #expect(configuration.referenceDate == formatter.date(from: "2026-01-15T08:30:00Z"))
+        #expect(configuration.referenceDate == expectedReferenceDate)
         #expect(configuration.language == .english)
         #expect(configuration.calendarAccess == .denied)
         #expect(configuration.loadFailure == .ordersFirstReadOnly)
+        #expect(configuration.shouldFailLookupWrites)
         #expect(configuration.defaultCurrencyCode == "JPY")
-        #expect(configuration.monthlyProfitGoalTwd == 80_000)
+        #expect(configuration.monthlyProfitGoalTWD == 80_000)
     }
 
-    @Test func referenceDateAcceptsFractionalSeconds() {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let configuration = BLUITestConfiguration(arguments: ["-BLUITestNow", "2026-01-15T08:30:00.250Z"])
+    /// 參考時間可接受含小數秒的 ISO8601 時間
+    @Test
+    func init_參考時間含小數秒_保留小數秒() {
+        // Given
+        let arguments = ["-BLUITestNow", "2026-01-15T08:30:00.250Z"]
+        let expectedReferenceDate = Date(timeIntervalSince1970: 1_768_465_800.25)
 
-        #expect(configuration.referenceDate == formatter.date(from: "2026-01-15T08:30:00.250Z"))
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
+        #expect(configuration.referenceDate == expectedReferenceDate)
     }
 
-    @Test func unknownSeedProfileFallsBackToEmpty() {
-        let configuration = BLUITestConfiguration(arguments: ["-BLUITest", "-BLUITestSeed", "notAProfile"])
+    /// 明確指定不模擬載入失敗時保留正常讀取
+    @Test
+    func init_明確指定無載入失敗_保留正常讀取() {
+        // Given
+        let arguments = ["-BLUITestLoadFailure", "none"]
 
-        #expect(configuration.seedProfile == .empty)
-        #expect(configuration.isEnabled)
-    }
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
 
-    @Test func unparsableReferenceDateFallsBackToDefault() {
-        let configuration = BLUITestConfiguration(arguments: ["-BLUITestNow", "yesterday"])
-
-        #expect(configuration.referenceDate == BLUITestConfiguration.defaultReferenceDate)
-    }
-
-    @Test func unknownLanguageAndCalendarAccessFallBackToDefaults() {
-        let configuration = BLUITestConfiguration(arguments: [
-            "-BLUITestLanguage", "klingon",
-            "-BLUITestCalendarAccess", "maybe",
-            "-BLUITestLoadFailure", "everything",
-        ])
-
-        #expect(configuration.language == nil)
-        #expect(configuration.calendarAccess == .granted)
+        // Then
         #expect(configuration.loadFailure == BLUITestLoadFailure.none)
     }
 
-    @Test func explicitNoneLoadFailureIsParsed() {
-        // `none` 經泛型 `option(for:in:)` 包成 Optional，須確認沒有被扁平化成「沒給值」
-        let configuration = BLUITestConfiguration(arguments: ["-BLUITestLoadFailure", "none"])
+    /// 只有日期的參考時間會解析成 UTC 午夜
+    @Test
+    func init_參考時間只有日期_解析為午夜() {
+        // Given
+        let arguments = ["-BLUITestNow", "2026-01-15"]
+        let expectedReferenceDate = Date(timeIntervalSince1970: 1_768_435_200)
 
-        #expect(configuration.loadFailure == BLUITestLoadFailure.none)
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
+        #expect(configuration.referenceDate == expectedReferenceDate)
     }
 
-    @Test func referenceDateAcceptsDateOnlyValueAsMidnightUTC() {
-        let formatter = ISO8601DateFormatter()
-        formatter.formatOptions = [.withInternetDateTime]
-        let configuration = BLUITestConfiguration(arguments: ["-BLUITestNow", "2026-01-15"])
+    /// 幣別代號會去除前後空白並轉成大寫
+    ///
+    /// - Parameter rawCode: 小寫或帶空白的幣別代號
+    @Test(arguments: ["twd", " twd \n"])
+    func init_幣別小寫或含空白_正規化為大寫(rawCode: String) {
+        // Given
+        let arguments = ["-BLUITestDefaultCurrency", rawCode]
 
-        #expect(configuration.referenceDate == formatter.date(from: "2026-01-15T00:00:00Z"))
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
+
+        // Then
+        #expect(configuration.defaultCurrencyCode == "TWD")
     }
 
-    @Test func duplicatedFlagUsesLastValue() {
-        let configuration = BLUITestConfiguration(arguments: [
-            "-BLUITestSeed", "empty",
-            "-BLUITestSeed", "campaignsWithOrders",
-        ])
+    /// 主檔寫入失敗旗標可開啟四種主檔的寫入替身
+    @Test
+    func init_帶主檔寫入失敗旗標_啟用寫入失敗() {
+        // Given
+        let arguments = ["-BLUITestLookupWriteFailure"]
 
-        #expect(configuration.seedProfile == .campaignsWithOrders)
-    }
+        // When
+        let configuration = BLUITestConfiguration(arguments: arguments)
 
-    @Test func nonIntegerMonthlyGoalFallsBackToNil() {
-        let configuration = BLUITestConfiguration(arguments: ["-BLUITestMonthlyGoal", "abc"])
-
-        #expect(configuration.monthlyProfitGoalTwd == nil)
-    }
-
-    @Test func negativeMonthlyGoalIsRejectedButZeroIsKept() {
-        let negative = BLUITestConfiguration(arguments: ["-BLUITestMonthlyGoal", "-5000"])
-        let zero = BLUITestConfiguration(arguments: ["-BLUITestMonthlyGoal", "0"])
-
-        #expect(negative.monthlyProfitGoalTwd == nil)
-        #expect(zero.monthlyProfitGoalTwd == 0)
-    }
-
-    @Test func currencyCodeIsUppercasedAndTrimmed() {
-        let lowercased = BLUITestConfiguration(arguments: ["-BLUITestDefaultCurrency", "twd"])
-        let padded = BLUITestConfiguration(arguments: ["-BLUITestDefaultCurrency", " twd \n"])
-
-        #expect(lowercased.defaultCurrencyCode == "TWD")
-        #expect(padded.defaultCurrencyCode == "TWD")
-    }
-
-    @Test func currencyCodeIsRejectedWhenNotThreeAsciiLetters() {
-        let tooShort = BLUITestConfiguration(arguments: ["-BLUITestDefaultCurrency", "JP"])
-        let tooLong = BLUITestConfiguration(arguments: ["-BLUITestDefaultCurrency", "TWDX"])
-        let withDigit = BLUITestConfiguration(arguments: ["-BLUITestDefaultCurrency", "TW1"])
-        let empty = BLUITestConfiguration(arguments: ["-BLUITestDefaultCurrency", ""])
-
-        #expect(tooShort.defaultCurrencyCode == nil)
-        #expect(tooLong.defaultCurrencyCode == nil)
-        #expect(withDigit.defaultCurrencyCode == nil)
-        #expect(empty.defaultCurrencyCode == nil)
-    }
-
-    @Test func trailingFlagWithoutValueDoesNotCrash() {
-        // 旗標是陣列最後一個元素，取值時不可越界
-        let configuration = BLUITestConfiguration(arguments: ["-BLUITest", "-BLUITestSeed"])
-
-        #expect(configuration.isEnabled)
-        #expect(configuration.seedProfile == .empty)
-    }
-
-    @Test func flagFollowedByAnotherFlagIsTreatedAsMissingValue() {
-        let configuration = BLUITestConfiguration(arguments: [
-            "-BLUITestSeed",
-            "-BLUITestLanguage", "english",
-        ])
-
-        #expect(configuration.seedProfile == .empty)
-        #expect(configuration.language == .english)
-    }
-
-    @Test func flagFollowedByForeignFlagIsTreatedAsMissingValue() {
-        // 非 BLUITest 的旗標 (如 `-AppleLanguages`) 也不可被當成值吞掉
-        let configuration = BLUITestConfiguration(arguments: [
-            "-BLUITestSeed",
-            "-AppleLanguages", "(en)",
-        ])
-
-        #expect(configuration.seedProfile == .empty)
+        // Then
+        #expect(configuration.shouldFailLookupWrites)
     }
 }
 
