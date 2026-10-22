@@ -276,9 +276,7 @@ private extension DesignSystemSourceScanTests {
 
     /// 測試 target 所在的 iOS 平台目錄
     static var iosRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        TestPaths.iosRoot
     }
 
     /// 取得該行具名豁免標記的理由，去除頭尾空白

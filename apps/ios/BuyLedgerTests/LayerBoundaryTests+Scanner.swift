@@ -235,9 +235,7 @@ private extension LayerBoundaryTests {
 
     /// 提供測試 target 所在的 iOS 平台目錄
     static var iosRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        TestPaths.iosRoot
     }
 
     /// 提供包含手寫與生成領域型別的掃描根目錄

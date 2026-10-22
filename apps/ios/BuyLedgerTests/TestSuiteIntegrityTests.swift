@@ -87,9 +87,7 @@ private extension TestSuiteIntegrityTests {
 
     /// 測試 target 所在的 iOS 平台目錄
     static var iosRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        TestPaths.iosRoot
     }
 
     /// 受窮舉檢查數量守門掃描的測試目錄

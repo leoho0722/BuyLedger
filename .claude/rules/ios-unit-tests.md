@@ -6,6 +6,7 @@ paths:
 # iOS 單元測試
 
 - **單元測試放 `apps/ios/BuyLedgerTests/`，檔名對應被測型別或功能** (如 `OrdersFeatureTests.swift`)。
+- **讀原始碼或設定檔的測試以 `TestPaths.iosRoot` 取得 `apps/ios`**，不以 `#filePath` 往上退固定層數：測試檔搬到其他層級時，固定層數會指錯目錄。
 - **只含 `@Test` 的 test extension 不設 MARK**；helper、fixture、nested type 所在的 extension 照 kit 的區名設 MARK。
 - **`Bool` 命名規則 (以 `is`／`has`／`can`／`should` 開頭) 同樣適用測試**。
     - 屬性、區域變數、測試參數與 `@Test(arguments:)` 的欄位都用描述事實的名稱。

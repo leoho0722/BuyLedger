@@ -330,9 +330,7 @@ extension LocalizationCatalogTests {
 
     /// 測試 target 所在的 iOS 平台目錄 (`apps/ios`)，由本檔位置推得
     static var iosRootURL: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        TestPaths.iosRoot
     }
 }
 

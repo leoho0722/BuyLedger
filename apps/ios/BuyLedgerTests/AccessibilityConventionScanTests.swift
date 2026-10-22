@@ -49,9 +49,7 @@ private extension AccessibilityConventionScanTests {
 
     /// 測試 target 所在的 iOS 平台目錄
     static var iosRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        TestPaths.iosRoot
     }
 
     /// App target 的掃描目錄

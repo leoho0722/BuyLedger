@@ -42,9 +42,7 @@ private extension NumericInputGroupingScanTests {
 
     /// 測試 target 所在的 iOS 平台目錄
     static var iosRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        TestPaths.iosRoot
     }
 
     /// 受掃描的產品程式碼目錄；只含 App target 本身，排除生成檔目錄

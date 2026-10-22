@@ -103,9 +103,7 @@ private extension DependencyConventionScanTests {
 
     /// `BuyLedger` 與 `BuyLedgerTests` 的共同上層目錄
     static var iosRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        TestPaths.iosRoot
     }
 
     /// 讀取所有根目錄下的 Swift 檔並標上來源類型，供跨檔規則先收集整樹資訊再逐檔檢查

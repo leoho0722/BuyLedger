@@ -99,9 +99,7 @@ private extension PrivacyManifestTests {
     /// - Parameter relativePath: 相對於 source tree 的檔案路徑
     /// - Returns: 對應的檔案 URL
     static func sourceURL(for relativePath: String) -> URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        TestPaths.iosRoot
             .appending(path: relativePath)
     }
 }

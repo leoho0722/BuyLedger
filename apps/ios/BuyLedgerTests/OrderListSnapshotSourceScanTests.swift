@@ -98,9 +98,7 @@ private extension OrderListSnapshotSourceScanTests {
     /// - Returns: 可供方法定位與呼叫次數檢查的程式碼
     /// - Throws: 檔案無法讀取時拋出
     static func source(named name: String) throws -> String {
-        let url = URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        let url = TestPaths.iosRoot
             .appending(path: "BuyLedger/Features/Orders")
             .appending(path: name)
         let text = try String(contentsOf: url, encoding: .utf8)

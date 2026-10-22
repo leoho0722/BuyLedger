@@ -237,9 +237,7 @@ private extension ActionGroupingScanTests {
 
     /// 測試 target 所在的 iOS 平台目錄
     static var iosRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        TestPaths.iosRoot
     }
 
     /// App 正式程式碼的根目錄

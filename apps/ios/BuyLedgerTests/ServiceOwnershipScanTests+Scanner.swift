@@ -13,9 +13,7 @@ extension ServiceOwnershipScanTests {
 
     /// 由目前測試檔位置定位同一 checkout 的正式原始碼
     static var productionRoot: URL {
-        URL(fileURLWithPath: #filePath)
-            .deletingLastPathComponent()
-            .deletingLastPathComponent()
+        TestPaths.iosRoot
             .appending(path: "BuyLedger")
     }
 }
