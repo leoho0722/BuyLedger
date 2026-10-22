@@ -43,7 +43,7 @@ extension DependencyConventionScanScenario {
             ViolationCase(
                 name: "HTTP client 宣告 testValue",
                 source: "static var testValue: HTTPClientProtocol { PreviewHTTPClient() }",
-                relativePath: "Core/Networking/HTTPClient+Dependency.swift",
+                relativePath: "Core/Networking/Client/HTTPClient+Dependency.swift",
                 sourceTree: .production,
                 rules: [.testValue],
                 expectedLine: 1,
@@ -105,7 +105,7 @@ extension DependencyConventionScanScenario {
             PassingCase(
                 name: "Client dependency 只提供 live value",
                 source: "static var liveValue: any HTTPClientProtocol { HTTPClient() }",
-                relativePath: "Core/Networking/HTTPClient+Dependency.swift",
+                relativePath: "Core/Networking/Client/HTTPClient+Dependency.swift",
                 sourceTree: .production,
                 rules: [.testValue]
             ),

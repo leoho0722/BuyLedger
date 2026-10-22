@@ -83,7 +83,7 @@ paths:
 
 ## Schema 與遷移
 
-- **改 schema 前先 invoke `/swiftdata-schema-migration`**：schema 全定義在 `Core/Persistence/BuyLedgerSchema.swift` (`VersionedSchema` + `BuyLedgerMigrationPlan`)，目前的 floor 與 target 以 `BuyLedgerMigrationPlan.schemas` 為準。
+- **改 schema 前先 invoke `/swiftdata-schema-migration`**：schema 全定義在 `Core/Persistence/Database/BuyLedgerSchema.swift` (`VersionedSchema` + `BuyLedgerMigrationPlan`)，目前的 floor 與 target 以 `BuyLedgerMigrationPlan.schemas` 為準。
 - **floor 以外每個保留版本把當時的 `@Model` 凍結為內嵌 shadow**：target 的 `models` 引用 top-level `@Model`，改 top-level 型別會破壞舊版指紋、導致遷移失敗。
     - shadow 註解寫明「僅為保住該版本指紋而凍結，runtime 恆為空、勿新增讀寫」，不保留已移除機制的描述。
 - **遷移方式依改動類型選擇**：

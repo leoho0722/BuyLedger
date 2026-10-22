@@ -15,7 +15,7 @@ extension DependencyConventionScanScenario {
             ViolationCase(
                 name: "正式程式碼讀取共用容器",
                 source: "PersistenceContainer.shared",
-                relativePath: "Core/Persistence/PersistenceContainer.swift",
+                relativePath: "Core/Persistence/Database/PersistenceContainer.swift",
                 sourceTree: .production,
                 rules: [.sharedContainer],
                 expectedLine: 1,

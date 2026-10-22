@@ -30,10 +30,15 @@ apps/ios/
 │   │       └── Overrides/        # DependencyValues+BLUITestOverrides／+BLUITestLookupOverrides，依啟動設定換上替身
 │   ├── Core/
 │   │   ├── Domain/               # LedgerOrder、FxRateSnapshot、FxRates、CurrencyCode 等 model
-│   │   ├── Persistence/          # BuyLedgerDatabase (actor，每次讀寫一次性 ModelContext)、PersistenceContainer、各 Record 與 schema
+│   │   ├── Persistence/
+│   │   │   ├── Database/         # BuyLedgerDatabase (actor，每次讀寫一次性 ModelContext)、PersistenceContainer、BuyLedgerSchema、store 隔離
+│   │   │   ├── Records/          # 各 SwiftData @Model Record 與 NameLookupRecordProtocol
+│   │   │   └── Errors/           # PersistenceError、PersistenceRecoveryError、RecordDecodingError 等持久化錯誤
 │   │   ├── Dependencies/         # 跨 Feature 共用的 Service (`@Dependency(\.xxxService)` 注入)：幣別與匯率、BiometricAuthService；SharedKey+CurrencyCodes (記憶體內共用幣別清單)
 │   │   ├── Storage/              # UserDefaultsStore、AppConfigurationStore (讀 Info.plist 設定) 的 protocol、實作與 Preview 替身
-│   │   ├── Networking/           # APIError、HTTPClient (send/stream)、HTTPMethod、URLRequestBuilder、ExchangeRateEndpoint (ExchangeRate-API 請求與錯誤分類)、ExchangeRateLatestResponse、ExchangeRateCodesResponse
+│   │   ├── Networking/
+│   │   │   ├── Client/           # APIError、HTTPClient (send/stream)、HTTPMethod、URLRequestBuilder 與 Preview 替身
+│   │   │   └── ExchangeRate/     # ExchangeRateEndpoint (ExchangeRate-API 請求與錯誤分類)、ExchangeRateLatestResponse、ExchangeRateCodesResponse
 │   │   ├── Environment/          # RuntimeEnvironment (Preview／UI 測試／單元測試的執行環境判斷)
 │   │   ├── Diagnostics/          # 啟動診斷送往當機診斷服務的可替換介面 (CrashDiagnosticsClient)
 │   │   ├── Telemetry/            # TelemetryService：啟動時開啟 Firebase Analytics／Crashlytics／Performance 收集
@@ -290,7 +295,7 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 - `liveValue`：純本機 SwiftData，**不自動 seed**——使用者首次啟動會看到真正的空狀態。
 - `previewValue`：in-memory + 自動 seed `LedgerOrder.sampleOrders`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
 - `LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback` **僅供 Preview / 單元測試 / `previewValue`** 使用，runtime 不讀取。
-- **Schema 版本化**：`Core/Persistence/BuyLedgerSchema.swift` 以 `VersionedSchema` (floor `BuyLedgerSchemaV15` → target `BuyLedgerSchemaV17`) + `BuyLedgerMigrationPlan` 管理遷移。新增欄位／表走 lightweight、改既有欄位型別或 `@Model` 類別名走 custom dump-and-restore；版本移除、shadow 凍結等硬規則見 [`.claude/rules/ios-data-layer.md`](../../.claude/rules/ios-data-layer.md) 的「Schema 與遷移」。開團訂購提醒連結表 `CampaignReminderRecord` 是唯一的 iOS-only 表 (記行事曆 `eventIdentifier` 與提醒時間戳，與跨平台 `Campaign` 解耦、不入跨平台 schema)。
+- **Schema 版本化**：`Core/Persistence/Database/BuyLedgerSchema.swift` 以 `VersionedSchema` (floor `BuyLedgerSchemaV15` → target `BuyLedgerSchemaV17`) + `BuyLedgerMigrationPlan` 管理遷移。新增欄位／表走 lightweight、改既有欄位型別或 `@Model` 類別名走 custom dump-and-restore；版本移除、shadow 凍結等硬規則見 [`.claude/rules/ios-data-layer.md`](../../.claude/rules/ios-data-layer.md) 的「Schema 與遷移」。開團訂購提醒連結表 `CampaignReminderRecord` 是唯一的 iOS-only 表 (記行事曆 `eventIdentifier` 與提醒時間戳，與跨平台 `Campaign` 解耦、不入跨平台 schema)。
 
 ### 隱私與遙測
 
@@ -308,7 +313,7 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 
 ### 外部 API
 
-ExchangeRate-API v6 有兩個 endpoint：`latest/{base}` (匯率) 與 `codes` (幣別清單)，請求組裝、解碼與服務錯誤分類集中在 `ExchangeRateEndpoint` (`Core/Networking/`)。runtime 有兩個 call：`ExchangeRateService.fetchLatest(.twd)` (`Core/Dependencies/`) 取最新匯率；App 啟動時經 `CurrencyMetadataService.refreshIfStale` 打 `/codes` 載入幣別主檔並 cache 7 天 (幣別清單不再 hardcode)。
+ExchangeRate-API v6 有兩個 endpoint：`latest/{base}` (匯率) 與 `codes` (幣別清單)，請求組裝、解碼與服務錯誤分類集中在 `ExchangeRateEndpoint` (`Core/Networking/ExchangeRate/`)。runtime 有兩個 call：`ExchangeRateService.fetchLatest(.twd)` (`Core/Dependencies/`) 取最新匯率；App 啟動時經 `CurrencyMetadataService.refreshIfStale` 打 `/codes` 載入幣別主檔並 cache 7 天 (幣別清單不再 hardcode)。
 
 `AISummaryService` (`Features/AISummary/Data/`) 串接 Ollama Cloud chat streaming (`POST https://ollama.com/api/chat`)，在訂單詳情串流產生 Markdown 商品明細總結；缺金鑰或服務錯誤時進入 failed 狀態並提供重試，面板關閉時取消串流。逐位元組串流走 `HTTPClientProtocol.stream`。
 

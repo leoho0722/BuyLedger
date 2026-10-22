@@ -89,7 +89,7 @@ extension DependencyConventionScanScenario {
             PassingCase(
                 name: "Schema 型別陣列不是依賴下標",
                 source: "Schema([OrderRecord.self, CampaignRecord.self])",
-                relativePath: "Core/Persistence/BuyLedgerSchema.swift",
+                relativePath: "Core/Persistence/Database/BuyLedgerSchema.swift",
                 sourceTree: .production,
                 rules: [.dependencyTypeSubscript]
             ),
