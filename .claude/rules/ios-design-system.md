@@ -3,7 +3,7 @@ paths:
   - "apps/ios/BuyLedger/Shared/DesignSystem/**"
   - "apps/ios/BuyLedger/Core/Extensions/**"
   - "apps/ios/BuyLedger/Core/Formatters/**"
-  - "apps/ios/BuyLedger/Features/**/*{View,Sheet,Layout,Row,Content,Column,Card,Section,Tile,Tiles}.swift"
+  - "apps/ios/BuyLedger/Features/**/*{View,Sheet,Layout,Row,Content,Column,Card,Section,Tile,Tiles,List,Banner,Menu,Field,Destination}.swift"
   - "apps/ios/BuyLedger/Features/**/Components/**"
   - "apps/ios/BuyLedger/Resources/Assets.xcassets/**"
   - "apps/ios/BuyLedgerTests/{DesignSystemSourceScanTests,ContrastComplianceTests}.swift"

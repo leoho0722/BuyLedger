@@ -184,6 +184,14 @@
   - 改到的檔整檔對齊，不因只改一行延後；未改到的檔不順手重排。
   - 以下是本專案與 kit 不同或 kit 未涵蓋的規則。
 
+### Feature 目錄
+
+- **Feature 依 kit 分 `Presentation/`、`Domain/`、`Data/`，沒有內容的層不建資料夾**：根畫面放 `Presentation/Root/`。
+  - 無畫面的子 Feature 也各自一個資料夾，資料夾名等於型別前綴 (如 `Presentation/CampaignLoad/`)。
+  - 只給單一畫面用的子 View 放該畫面資料夾；跨畫面共用的放 `Presentation/Components/`；`<Feature>Formatters` 與狀態樣式放 `Presentation/Formatting/`。
+  - 檔案多的畫面資料夾再依用途分 `Views/`、`Operations/`、`Queries/`、`Models/`、`Requests/`、`Plans/` 等子資料夾，Feature 本體留在畫面資料夾最上層 (如 `Orders/Presentation/OrderEdit/`)。
+  - `Data/` 有多個 Service 時依 Service 分子資料夾 (如 `Campaigns/Data/Campaign/`)，只有一個時不再分。
+
 ### 測試
 
 - **UI 測試以 `-BLUITest` 加一組 `-BLUITest<名稱>` 啟動參數指定資料與情境**，不用 kit 的 `-uiTesting` 加 `launchEnvironment["UITEST_SCENARIO"]`：參數由 `LaunchOptions` 組出、App 端 `BLUITestConfiguration` 解析，沒有 `-BLUITest` 時整套測試掛鉤都不生效。
@@ -213,7 +221,6 @@
   - Service 直接呼叫系統 framework (例如 EventKit、PhotosUI、LocalAuthentication、UIApplication)。
   - `AppLaunchConfigurator` 以參數預設值注入 `CrashDiagnosticsClient`，預設正式實作並可由呼叫端替換。
   - Service 的 `+Preview` 檔與 Service 放在一起，不移至 `Preview Content`。
-  - Feature 專屬 Service 放在該 Feature 的 `Data/`，Feature 其他檔案維持扁平結構。
   - `BiometricAuthService` 由 `AppLockFeature` 與 `SettingsFeature` 共同取用且只依賴 `LocalAuthentication`，留在 `Core/Dependencies/`，不屬過渡例外。
 - **已決定改依 kit、尚未遷移**：
   - 格式化：現有 `BLFormatters` 與各 `<Feature>Formatters` 的靜態函式待改為 `FormatStyle`；新增的格式化依 kit 寫 `FormatStyle`。
