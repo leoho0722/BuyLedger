@@ -22,7 +22,7 @@ BuyLedger (repo)/
 │   └── workflows/ci.yml                  # codegen 漂移檢查 + iOS 單元測試 (push / PR / 手動觸發)
 ├── apps/                                 # 可部署單元 (每個平台一個子目錄)
 │   ├── ios/                              # Apple 平台 App (iOS / iPadOS)
-│   │   ├── BuyLedger.xcodeproj/          # Xcode 專案；project.pbxproj 提交、xcuserdata/ 不提交
+│   │   ├── BuyLedger.xcodeproj/          # Xcode 專案；project.xcproj (JSON 格式) 提交、xcuserdata/ 不提交
 │   │   ├── BuyLedger/                    # App source root (App / Core / Features / Shared / Resources)
 │   │   ├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
 │   │   └── BuyLedgerUITests/             # UI 與啟動畫面測試

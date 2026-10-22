@@ -29,16 +29,16 @@
 
 ## 建置與開發指令
 
-- **不退回原生 `xcodebuild`／`xcrun`／`simctl`**，明文例外有四項：
-    - `agvtool` (版本管理不在 MobileBuildMCP 能力範圍)。
+- **不退回原生 `xcodebuild`／`xcrun`／`simctl`**，明文例外有三項：
     - `scripts/upload-testflight.sh` 以 `xcodebuild archive`／`-exportArchive` 打包上傳 TestFlight (MobileBuildMCP 沒有 archive 與 export 工具)；發版一律跑這支腳本，不另寫 xcodebuild 指令。
         - 腳本不遞增 build 號，執行前先提交版號。
         - 代為執行上傳前要先取得使用者確認。
     - CI (`.github/workflows/ci.yml`) 以 `npm install -g mobilebuildmcp@<釘選版本>` 安裝 CLI，之後所有 build 與 test 仍經它執行；升級 CLI 時同步更新 workflow 的釘選版本。
     - `xcrun xcresulttool get test-results summary --path <bundle>` 僅用於唯讀讀取 result bundle 摘要 (MobileBuildMCP 沒有等價指令)。
-- **每次 build 或 build-and-run 前先 `cd apps/ios && agvtool next-version -all` 把 build number +1**，跑 test 不遞增 (test binary 不會安裝或散佈，遞增只製造 pbxproj 雜訊)。
-    - 同一輪以 `&&` 串接的多平台 build 只遞增一次；遞增產生的 pbxproj 變更隨當次工作 commit，不丟棄。
-- **改 marketing version 直接編輯 pbxproj 的 `MARKETING_VERSION`**：`agvtool new-marketing-version` 會報 Cannot find YES 且不更新 pbxproj (版號在 build settings，Info.plist 沒有版號 key)。
+- **每次 build 或 build-and-run 前把 `project.xcproj` 中 App 與兩個測試 target 的 `CURRENT_PROJECT_VERSION` 一起 +1**，跑 test 不遞增 (test binary 不會安裝或散佈，遞增只製造專案檔雜訊)。
+    - 不用 `agvtool`：它寫死讀 `project.pbxproj`，不支援 JSON 格式的專案檔。
+    - 同一輪以 `&&` 串接的多平台 build 只遞增一次；遞增產生的專案檔變更隨當次工作 commit，不丟棄。
+- **改 marketing version 直接編輯 `project.xcproj` 中 App 與兩個測試 target 的 `MARKETING_VERSION`**。
 - **模擬器跑 App 用 `build-and-run`**，不先 `build` 再 `build-and-run`。
 - **iOS 與 iPadOS simulator build 共用 `build.db`，要序列化 (`cmd1 && cmd2`)**：並行會 `database is locked`。
 - **看詳細 build error 加 `mobilebuildmcp --log-level error <subcommand>`**，否則只回 `BUILD FAILED`。
@@ -46,9 +46,8 @@
     - CI 找不到符合版本的執行環境時 job 要明確失敗，不退回舊版執行環境。
 - **erase 模擬器是安全的復原手段**，不影響 `DatePicker` 的日期格式。
     - 進系統設定可用 `mobilebuildmcp ui-automation` (`simulator launch-app --bundle-id com.apple.Preferences` 後 `snapshot-ui`／`tap`)，不需要 `computer-use`；但設定頁的開關與滑桿不一定能取得 ref。
-- **加 SPM 產品一律在 Xcode 操作，不手改 pbxproj**。
+- **加 SPM 產品直接編輯 `project.xcproj` (JSON 格式)**，改完以 `mobilebuildmcp` 建置確認套件解析與連結。
     - 原始碼直接具名使用 TCA 傳遞相依的 API (如 `@Shared`／`SharedKey`) 時，要把該套件產品加入 `BuyLedger` 與 `BuyLedgerTests` 的連結清單：只靠 `@_exported import` 會編譯通過、連結失敗 (`Undefined symbols ... nominal type descriptor`)。
-    - 加入沒有宣告 traits 的套件 (如 `swift-sharing`) 後，Xcode 可能在其 `XCRemoteSwiftPackageReference` 插入空的 `traits = ( );`，使依賴解析失敗 (`Disabled default traits ... declares no traits`)；移除該套件的這個區塊即可 (`swift-composable-architecture` 本身有宣告 traits，同樣的空區塊合法、不要動)。
 - **跑 snapshot 測試前把模擬器外觀鎖淺色** (`mobilebuildmcp simulator-management set-appearance --mode light`)：自動外觀入夜切深色會讓整批 baseline 誤判失敗。
 - **UI 測試 (`BuyLedgerUITests`) 走獨立 scheme，只覆蓋 iOS 26.x 模擬器**：
     - `-only-testing` 跑 UI 測試要指定 `BuyLedgerUITests` scheme；該 target 不在 `BuyLedger` scheme 的 test plan 內，指定 `--scheme BuyLedger` 會回「isn't a member of the specified test plan or scheme」。

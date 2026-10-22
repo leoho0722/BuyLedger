@@ -3,7 +3,7 @@ paths:
   - "apps/ios/BuyLedger/App/AppLaunchConfigurator.swift"
   - "apps/ios/BuyLedger/App/TelemetryService*.swift"
   - "apps/ios/BuyLedger/Resources/**"
-  - "apps/ios/BuyLedger.xcodeproj/project.pbxproj"
+  - "apps/ios/BuyLedger.xcodeproj/project.xcproj"
   - "apps/ios/BuyLedgerTests/PrivacyManifestTests.swift"
   - ".github/workflows/**"
 ---
@@ -28,6 +28,6 @@ paths:
     - 乾淨 clone 缺少設定檔時，一般啟動也會在 `FirebaseApp.configure()` 崩潰 (單元測試與 UI 測試模式略過 Firebase 初始化，不受影響)。
     - 本機開發用真實的 `GoogleService-Info.plist`，不拿範本覆蓋。
     - 範本值一律是明顯的假字串，且列在 membership 排除清單內、不進 bundle。
-- **目前沒有 entitlements 檔**：加 App Groups／CloudKit／Push 時新增 `BuyLedger/Resources/BuyLedger.entitlements` 並在 pbxproj 設 `CODE_SIGN_ENTITLEMENTS`，否則 runtime 讀不到設定的 entitlements。
+- **目前沒有 entitlements 檔**：加 App Groups／CloudKit／Push 時新增 `BuyLedger/Resources/BuyLedger.entitlements` 並在 `project.xcproj` 設 `CODE_SIGN_ENTITLEMENTS`，否則 runtime 讀不到設定的 entitlements。
     - CloudKit container、`aps-environment` 等 key 等 Apple Developer 帳號 provision 之後才加 (未 provision 會讓 codesign 失敗)。
     - CloudKit container、iCloud capability 與 entitlements 的變更要在 PR 中明確說明。

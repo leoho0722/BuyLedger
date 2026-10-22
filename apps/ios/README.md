@@ -20,7 +20,7 @@ Xcode project 使用 file system synchronized groups，新增或搬移檔案請�
 
 ```text
 apps/ios/
-├── BuyLedger.xcodeproj/          # Xcode 專案；project.pbxproj 提交、xcuserdata/ 不提交
+├── BuyLedger.xcodeproj/          # Xcode 專案；project.xcproj (JSON 格式) 提交、xcuserdata/ 不提交
 ├── BuyLedger/                    # App source root
 │   ├── App/                      # 進入點：BuyLedgerApp、WindowGroup、AppLaunchConfigurator、TelemetryService (Firebase 遙測收集)
 │   │   └── Testing/              # UI 測試啟動 harness (BLUITestConfiguration、SeedProfile、SeedData、五個啟動參數列舉 Language／LoadFailure／CalendarAccess／BiometricScenario／PersistenceMode、DependencyValues+BLUITestOverrides、DependencyValues+BLUITestLookupOverrides；#if DEBUG)，組裝根與呼叫它的啟動設定同層
@@ -136,7 +136,7 @@ App 使用兩把 API key，皆透過 `Config.xcconfig` 注入 (機密)：
 
 `Config.xcconfig` 已列入 `.gitignore`，**請勿提交**。
 
-注入鏈路說明 (兩把 key 相同)：`Config.xcconfig` → pbxproj 的 `baseConfigurationReference` 掛到 app target 的 Debug + Release config → `Info.plist` 內以 `$(EXCHANGE_RATE_API_KEY)` / `$(OLLAMA_API_KEY)` 引用 build setting，build 時被注入 → `AppConfigurationStoreKey.liveValue` 提供的 `AppConfigurationStore` 從 `Bundle.main` 的 Info.plist 讀回並正規化 (去除空白，空字串或未展開的 `$(KEY)` 視為未設定)。以上是金鑰如何進到產物內；金鑰進到產物後，兩個服務的實際請求皆以 Authorization header (`Bearer <key>`) 攜帶金鑰，端點路徑本身不含金鑰。
+注入鏈路說明 (兩把 key 相同)：`Config.xcconfig` → `project.xcproj` 中 app target 的 `specialized-configurations` 掛到 Debug + Release config → `Info.plist` 內以 `$(EXCHANGE_RATE_API_KEY)` / `$(OLLAMA_API_KEY)` 引用 build setting，build 時被注入 → `AppConfigurationStoreKey.liveValue` 提供的 `AppConfigurationStore` 從 `Bundle.main` 的 Info.plist 讀回並正規化 (去除空白，空字串或未展開的 `$(KEY)` 視為未設定)。以上是金鑰如何進到產物內；金鑰進到產物後，兩個服務的實際請求皆以 Authorization header (`Bearer <key>`) 攜帶金鑰，端點路徑本身不含金鑰。
 
 未設 key 時 App 仍可啟動：匯率工具與報價頁顯示「尚未設定 ExchangeRate-API 金鑰」橫幅；AI 總結面板顯示「尚未設定 OLLAMA_API_KEY。」並提供重試。
 
@@ -237,7 +237,7 @@ bun run unlock
 
 ### 6. 發佈 TestFlight
 
-先在 `project.pbxproj` 改好 `BuyLedger` target 的 `MARKETING_VERSION` 與 `CURRENT_PROJECT_VERSION` (兩個測試 target 同步為相同值) 並提交、標 `ios-v<版號>` tag，再從 repo 根目錄執行：
+先在 `project.xcproj` 改好 `BuyLedger` target 的 `MARKETING_VERSION` 與 `CURRENT_PROJECT_VERSION` (兩個測試 target 同步為相同值) 並提交、標 `ios-v<版號>` tag，再從 repo 根目錄執行：
 
 ```bash
 # Release 打包並上傳 TestFlight (上傳前會詢問確認，加 --yes 略過)
