@@ -35,7 +35,7 @@ private extension ServiceOwnershipScanTests {
     /// 涵蓋縮寫、完整與跨行資料庫 key path，以及不應計數的服務與目錄
     static var databaseCases: [DatabaseCase] {
         let campaign = serviceSource(
-            path: "Features/Campaigns/Data/CampaignService+Dependency.swift",
+            path: "Features/Campaigns/Data/Campaign/CampaignService+Dependency.swift",
             key: "campaignService",
             typeName: "CampaignService",
             databaseCode: #"@Dependency(\.buyLedgerDatabase) var database"#
@@ -63,12 +63,12 @@ private extension ServiceOwnershipScanTests {
             """
         )
         let system = serviceSource(
-            path: "Features/Campaigns/Data/CalendarReminderService+Dependency.swift",
+            path: "Features/Campaigns/Data/CalendarReminder/CalendarReminderService+Dependency.swift",
             key: "calendarReminderService",
             typeName: "CalendarReminderService"
         )
         let nonCode = serviceSource(
-            path: "Features/Campaigns/Data/CalendarReminderService+Dependency.swift",
+            path: "Features/Campaigns/Data/CalendarReminder/CalendarReminderService+Dependency.swift",
             key: "calendarReminderService",
             typeName: "CalendarReminderService",
             databaseCode: #"""

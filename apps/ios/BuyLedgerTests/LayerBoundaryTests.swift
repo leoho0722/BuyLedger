@@ -28,9 +28,9 @@ struct LayerBoundaryTests {
 
     /// 允許持有根功能 store 的三個導覽宿主
     private static let rootStoreWhitelist: Set<String> = [
-        "Features/App/RootView.swift",
-        "Features/App/RootTabLayout.swift",
-        "Features/App/RootSidebarLayout.swift",
+        "Features/App/Presentation/Root/RootView.swift",
+        "Features/App/Presentation/Root/RootTabLayout.swift",
+        "Features/App/Presentation/Root/RootSidebarLayout.swift",
     ]
 
     /// 確認掃描涵蓋足量的正式原始碼與功能層宣告

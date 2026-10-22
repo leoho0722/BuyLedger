@@ -71,7 +71,7 @@ extension DependencyConventionScanScenario {
             ViolationCase(
                 name: "App View 附掛 SwiftData container",
                 source: "RootView().modelContainer(container)",
-                relativePath: "Features/App/RootView.swift",
+                relativePath: "Features/App/Presentation/Root/RootView.swift",
                 sourceTree: .production,
                 rules: [.appModelContainer],
                 expectedLine: 1,
@@ -87,7 +87,7 @@ extension DependencyConventionScanScenario {
             PassingCase(
                 name: "字串與註解內提及 SwiftData container",
                 source: #"let example = ".modelContainer("; // .modelContainer("#,
-                relativePath: "Features/App/RootView.swift",
+                relativePath: "Features/App/Presentation/Root/RootView.swift",
                 sourceTree: .production,
                 rules: [.appModelContainer]
             ),

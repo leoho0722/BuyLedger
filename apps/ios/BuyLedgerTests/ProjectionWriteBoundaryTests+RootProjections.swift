@@ -52,92 +52,92 @@ extension ProjectionWriteBoundaryTests {
         static var allCases: [Self] {
             [
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "state.more.preferences = .default",
                     expectedCount: 1
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "state.more.biometryType = .faceID",
                     expectedCount: 1
                 ),
                 Self(
-                    relativePath: "Features/App/RootFeature.swift",
+                    relativePath: "Features/App/Presentation/Root/RootFeature.swift",
                     source: "state.more.preferences = .default; state.more.biometryType = .faceID",
                     expectedCount: 0
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "state.appLock.isBiometricUnlockEnabled = true",
                     expectedCount: 1
                 ),
                 Self(
-                    relativePath: "Features/App/RootFeature.swift",
+                    relativePath: "Features/App/Presentation/Root/RootFeature.swift",
                     source: "state.appLock.isBiometricUnlockEnabled = true",
                     expectedCount: 0
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "state.dashboard.orders = []",
                     expectedCount: 1
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "state.campaigns.campaigns = []",
                     expectedCount: 0
                 ),
                 Self(
-                    relativePath: "Features/App/RootFeature.swift",
+                    relativePath: "Features/App/Presentation/Root/RootFeature.swift",
                     source: "state.dashboard.orders = []",
                     expectedCount: 0
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "state.insights.campaigns.removeAll()",
                     expectedCount: 1
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "state.customers.orders[0] = order",
                     expectedCount: 1
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "state.orders.orders.append(order)",
                     expectedCount: 0
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "let text = \"state.dashboard.orders = []\"",
                     expectedCount: 0
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "func update(root: inout RootFeature.State) { root.dashboard.orders = [] }",
                     expectedCount: 1
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "// state.dashboard.orders = []\n/* state.insights.orders.removeAll() */",
                     expectedCount: 0
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "state.campaigns.orders = []",
                     expectedCount: 1
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "let unchanged = state.dashboard.orders == []",
                     expectedCount: 0
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "state.dashboard.monthlyProfitGoalTWD += 1",
                     expectedCount: 1
                 ),
                 Self(
-                    relativePath: "Features/App/RootNavigationOperations.swift",
+                    relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                     source: "state\n    .dashboard\n    .orders = []",
                     expectedCount: 1
                 ),

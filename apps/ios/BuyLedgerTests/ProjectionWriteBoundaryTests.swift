@@ -13,7 +13,7 @@ struct ProjectionWriteBoundaryTests {
     // MARK: - Properties
 
     /// `RootFeature.swift` 的相對路徑；掃描時排除唯一合法寫入者
-    static let rootFeatureRelativePath = "Features/App/RootFeature.swift"
+    static let rootFeatureRelativePath = "Features/App/Presentation/Root/RootFeature.swift"
 
     /// `Generated` 目錄不納入掃描
     static let excludedDirectoryName = "Generated"
@@ -32,37 +32,37 @@ struct ProjectionWriteBoundaryTests {
         ProjectionOwner(
             name: "MoreFeature",
             rootStateKey: "more",
-            homeFileRelativePath: "Features/More/MoreFeature.swift",
+            homeFileRelativePath: "Features/More/Presentation/Root/MoreFeature.swift",
             properties: ["preferences", "biometryType"]
         ),
         ProjectionOwner(
             name: "AppLockFeature",
             rootStateKey: "appLock",
-            homeFileRelativePath: "Features/App/AppLockFeature.swift",
+            homeFileRelativePath: "Features/App/Presentation/AppLock/AppLockFeature.swift",
             properties: ["isBiometricUnlockEnabled"]
         ),
         ProjectionOwner(
             name: "CampaignFeature",
             rootStateKey: "campaigns",
-            homeFileRelativePath: "Features/Campaigns/CampaignFeature.swift",
+            homeFileRelativePath: "Features/Campaigns/Presentation/Root/CampaignFeature.swift",
             properties: ["orders"]
         ),
         ProjectionOwner(
             name: "CustomersFeature",
             rootStateKey: "customers",
-            homeFileRelativePath: "Features/Customers/CustomersFeature.swift",
+            homeFileRelativePath: "Features/Customers/Presentation/Root/CustomersFeature.swift",
             properties: ["orders"]
         ),
         ProjectionOwner(
             name: "DashboardFeature",
             rootStateKey: "dashboard",
-            homeFileRelativePath: "Features/Dashboard/DashboardFeature.swift",
+            homeFileRelativePath: "Features/Dashboard/Presentation/Root/DashboardFeature.swift",
             properties: ["orders", "campaigns", "monthlyProfitGoalTWD", "loadState"]
         ),
         ProjectionOwner(
             name: "InsightsFeature",
             rootStateKey: "insights",
-            homeFileRelativePath: "Features/Insights/InsightsFeature.swift",
+            homeFileRelativePath: "Features/Insights/Presentation/Root/InsightsFeature.swift",
             properties: ["orders", "campaigns", "loadState"]
         ),
     ]
@@ -104,67 +104,67 @@ struct ProjectionWriteBoundaryTests {
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            relativePath: "Features/Campaigns/Presentation/Root/CampaignFeature.swift",
             source: "state.campaigns.$orders.withLock { $0 = [] }",
             expectedCount: 2
         ),
         SharedOrderScenario(
-            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            relativePath: "Features/Campaigns/Presentation/Root/CampaignFeature.swift",
             source: "CampaignListFeature.State(orders: state.$orders)",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            relativePath: "Features/Campaigns/Presentation/Root/CampaignFeature.swift",
             source: "SharedReader(state.$orders)",
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/App/RootFeature.swift",
+            relativePath: "Features/App/Presentation/Root/RootFeature.swift",
             source: "state.campaigns.$orders.withLock { $0 = orders }",
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            relativePath: "Features/Campaigns/Presentation/Root/CampaignFeature.swift",
             source: "let orders = state.$orders",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            relativePath: "Features/Campaigns/Presentation/Root/CampaignFeature.swift",
             source: "SharedReader(\n    state.campaigns.$orders\n)",
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            relativePath: "Features/Campaigns/Presentation/Root/CampaignFeature.swift",
             source: "// state.$orders.withLock { $0 = [] }\n/* let orders = state.$orders */",
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/Campaigns/CampaignFeature.swift",
+            relativePath: "Features/Campaigns/Presentation/Root/CampaignFeature.swift",
             source: "let example = \"state.$orders.withLock { $0 = [] }\"",
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/More/MoreFeature.swift",
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 2
         ),
         SharedOrderScenario(
-            relativePath: "Features/More/MoreFeature.swift",
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
             source: "CustomersFeature.State(orders: state.$orders)",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/More/MoreFeature.swift",
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
             source: "let leakedOrders = state.$orders",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/More/MoreFeature.swift",
+            relativePath: "Features/More/Presentation/Root/MoreFeature.swift",
             source: "CustomersFeature.State(orders: SharedReader(\n    state.more.$orders\n))",
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/App/RootFeature.swift",
+            relativePath: "Features/App/Presentation/Root/RootFeature.swift",
             source: "state.more.$orders.withLock { $0 = orders }",
             expectedCount: 0
         ),
@@ -288,12 +288,12 @@ struct ProjectionWriteBoundaryTests {
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/App/RootSidebarLayout.swift",
+            relativePath: "Features/App/Presentation/Root/RootSidebarLayout.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/App/RootSidebarLayout.swift",
+            relativePath: "Features/App/Presentation/Root/RootSidebarLayout.swift",
             source: "OrdersFeature.State(orders: orders)",
             expectedCount: 0
         ),

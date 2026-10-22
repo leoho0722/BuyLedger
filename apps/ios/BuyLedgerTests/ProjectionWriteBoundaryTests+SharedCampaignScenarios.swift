@@ -13,17 +13,17 @@ extension ProjectionWriteBoundaryTests {
     static var sharedCampaignProjectionScenarios: [SharedOrderScenario] {
         [
             SharedOrderScenario(
-                relativePath: "Features/App/RootFeature.swift",
+                relativePath: "Features/App/Presentation/Root/RootFeature.swift",
                 source: "state.orders.$campaigns.withLock { $0 = loaded }",
                 expectedCount: 0
             ),
             SharedOrderScenario(
-                relativePath: "Features/Campaigns/CampaignFeature.swift",
+                relativePath: "Features/Campaigns/Presentation/Root/CampaignFeature.swift",
                 source: "state.$campaigns.withLock { $0 = loaded }",
                 expectedCount: 0
             ),
             SharedOrderScenario(
-                relativePath: "Features/Campaigns/CampaignWritesFeature.swift",
+                relativePath: "Features/Campaigns/Presentation/CampaignWrites/CampaignWritesFeature.swift",
                 source: "state.$campaigns.withLock { $0 = loaded }",
                 expectedCount: 0
             ),
@@ -134,12 +134,12 @@ extension ProjectionWriteBoundaryTests {
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/App/RootNavigationOperations.swift",
+                relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                 source: "root.orders.$campaigns.withLock { $0 = [] }",
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/App/RootNavigationOperations.swift",
+                relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                 source: "root.orders.$campaigns = replacement",
                 expectedCount: 1
             ),

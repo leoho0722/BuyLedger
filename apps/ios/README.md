@@ -44,23 +44,70 @@ apps/ios/
 │   │   ├── Telemetry/            # TelemetryService：啟動時開啟 Firebase Analytics／Crashlytics／Performance 收集
 │   │   └── Extensions/           # 系統型別的通用 extension (Bundle／Decimal／Image，一型一檔)
 │   ├── Features/                 # 依功能切分的 TCA feature
-│   │   ├── AISummary/            # 訂單 AI 商品明細總結 (Ollama Cloud 串流)
+│   │   ├── AISummary/            # 訂單 AI 商品明細總結 (Ollama Cloud 串流)，依 ios-dev-kit 的 Feature 結構分層
+│   │   │   ├── Presentation/
+│   │   │   │   └── Root/         # AISummaryFeature + AISummaryView
 │   │   │   └── Data/             # AISummaryService、OllamaChatRequest、OllamaChatResponse
-│   │   ├── App/                  # RootFeature (殼層) + RootView + RootSidebarLayout / RootTabLayout；RootNavigationOperations (跨頁導覽)、無畫面的 RootLaunchFeature (啟動幣別載入與重大時間變更) + RootLaunchOperations (其 effect)、SidebarBadgeCounts (分頁徽章計數與朗讀值)；AppLockFeature + AppLockView + AppScenePhase + AppLockFormatters
-│   │   │   └── Data/             # SignificantTimeChangeService (系統重大時間變更監聽)、PersistenceRecoveryService (store 隔離)
-│   │   ├── Campaigns/            # 開團管理：CampaignFeature (容器)、CampaignListFeature、CampaignDetailFeature、CampaignEditFeature；無畫面的 CampaignLoadFeature (載入與自動結單)、CampaignWritesFeature、CampaignReminderFeature、CampaignPresentationFeature (表單、確認框與通知的呈現)；CampaignRequestPlan (請求分派)
-│   │   │   ├── Components/       # CampaignSectionList、CampaignRow、CampaignDetailInfoSection、CampaignDetailSettlementSection、CampaignDetailDistributionSection
-│   │   │   └── Data/             # CampaignService (開團與提醒連結讀寫)、CampaignReminderLink (提醒連結值型別)、CalendarReminderService (系統行事曆)、OpenSettingsService
-│   │   ├── Customers/            # 客戶名單
-│   │   │   └── Components/       # CustomerTopCard、CustomerListRow
-│   │   ├── Dashboard/            # 總覽頁；DashboardFeature.State.ongoingCampaignRows 提供進行中開團卡資料
-│   │   ├── FX/                   # 匯率工具 (FxFeature + FxView)
-│   │   │   └── Components/       # FxStatusBanner、FxRatesList
-│   │   ├── Insights/             # 趨勢分析
-│   │   ├── Lookups/              # 主檔管理 (訂單來源／商品類別／付款方式／對帳狀態)；LookupCatalogFeature 無畫面，載入與新增主檔目錄
-│   │   │   ├── Components/       # LookupItemRow、LookupItemList
+│   │   ├── App/                  # App 殼層，依 ios-dev-kit 的 Feature 結構分層
+│   │   │   ├── Presentation/
+│   │   │   │   ├── Root/         # RootFeature (殼層) + RootView + RootSidebarLayout / RootTabLayout；RootNavigationOperations (跨頁導覽)、SidebarBadgeCounts (分頁徽章計數與朗讀值)
+│   │   │   │   ├── RootLaunch/   # 無畫面的 RootLaunchFeature (啟動幣別載入與重大時間變更) + RootLaunchOperations (其 effect)
+│   │   │   │   ├── AppLock/      # AppLockFeature + AppLockView + AppLockFormatters
+│   │   │   │   └── PersistenceFailure/ # PersistenceFailureFeature + PersistenceFailureView (資料庫無法開啟時的復原畫面)
+│   │   │   ├── Domain/           # RootTab (分頁列舉)、AppScenePhase (殼層的場景階段)
+│   │   │   └── Data/
+│   │   │       ├── PersistenceRecovery/   # PersistenceRecoveryService (store 隔離)
+│   │   │       └── SignificantTimeChange/ # SignificantTimeChangeService (系統重大時間變更監聽)
+│   │   ├── Campaigns/            # 開團管理，依 ios-dev-kit 的 Feature 結構分層
+│   │   │   ├── Presentation/
+│   │   │   │   ├── Root/         # CampaignFeature (容器，+Path) + CampaignView；CampaignRequest、CampaignRequestPlan (請求分派)
+│   │   │   │   ├── CampaignList/ # CampaignListFeature
+│   │   │   │   │   ├── Views/    # CampaignListView、CampaignSectionList、CampaignRow
+│   │   │   │   │   └── Queries/  # 日期區段與分組：CampaignDateSectionBuilder、CampaignDateSection、CampaignSubgroup、CampaignSectionTitle、CampaignGrouping
+│   │   │   │   ├── CampaignDetail/ # CampaignDetailFeature + CampaignDetailView、CampaignDetailContent 與資訊／結算／分布區段
+│   │   │   │   ├── CampaignEdit/ # CampaignEditFeature + CampaignEditView、CampaignEditNotesSection、CampaignDraft
+│   │   │   │   ├── CampaignLoad/ # 無畫面的 CampaignLoadFeature (載入與自動結單)
+│   │   │   │   ├── CampaignWrites/ # 無畫面的 CampaignWritesFeature + CampaignSavePlan
+│   │   │   │   ├── CampaignReminder/ # 無畫面的 CampaignReminderFeature + CampaignReminderRequest、CampaignReminderReconcile
+│   │   │   │   ├── CampaignPresentation/ # 無畫面的 CampaignPresentationFeature (表單、確認框與通知的呈現，+Destination) + CampaignPresentationQueue
+│   │   │   │   └── Formatting/   # CampaignFormatters、CampaignStatusStyle (狀態的視覺語意)
+│   │   │   ├── Domain/           # CampaignDateContext (列表記錄的現在時間與行事曆)
+│   │   │   └── Data/
+│   │   │       ├── Campaign/     # CampaignService (開團與提醒連結讀寫) + CampaignReminderLink (提醒連結值型別)
+│   │   │       ├── CalendarReminder/ # CalendarReminderService (系統行事曆) + CalendarReminderError
+│   │   │       └── OpenSettings/ # OpenSettingsService
+│   │   ├── Customers/            # 客戶名單，依 ios-dev-kit 的 Feature 結構分層
+│   │   │   └── Presentation/
+│   │   │       ├── Root/         # CustomersFeature + CustomersView、CustomerTopCard、CustomerListRow；顯示用的 CustomerRow、CustomerRank
+│   │   │       └── Formatting/   # CustomerFormatters、CustomerRankBadgeStyle (名次徽章配色)
+│   │   ├── Dashboard/            # 總覽頁，依 ios-dev-kit 的 Feature 結構分層
+│   │   │   ├── Presentation/
+│   │   │   │   ├── Root/         # DashboardFeature (State.ongoingCampaignRows 提供進行中開團卡資料)
+│   │   │   │   │   └── Views/    # DashboardView 與摘要、主卡、KPI、進行中開團、近期訂單區段
+│   │   │   │   └── Formatting/   # DashboardFormatters
+│   │   │   └── Domain/           # DashboardStats (本月與走勢統計)、DashboardDateContext
+│   │   ├── FX/                   # 匯率工具，依 ios-dev-kit 的 Feature 結構分層
+│   │   │   └── Presentation/
+│   │   │       ├── Root/         # FxFeature + FxView、FxStatusBanner、FxRatesList
+│   │   │       └── Formatting/   # FxFormatters
+│   │   ├── Insights/             # 趨勢分析，依 ios-dev-kit 的 Feature 結構分層
+│   │   │   ├── Presentation/
+│   │   │   │   ├── Root/         # InsightsFeature
+│   │   │   │   │   └── Views/    # InsightsView 與走勢、成本結構、每團毛利、熱力圖、類別排行五張卡
+│   │   │   │   └── Formatting/   # InsightsFormatters
+│   │   │   └── Domain/           # InsightsStats (+Trend) 與各卡的統計資料、InsightsDateRange、InsightsDateContext
+│   │   ├── Lookups/              # 主檔管理 (訂單來源／商品類別／付款方式／對帳狀態)，依 ios-dev-kit 的 Feature 結構分層
+│   │   │   ├── Presentation/
+│   │   │   │   ├── Root/         # LookupManagementFeature (+Destination)；LookupItemOperations (讀寫分派)
+│   │   │   │   │   └── Views/    # LookupManagementView、LookupItemList、LookupItemRow、LookupNameEditorSheet
+│   │   │   │   ├── LookupAddForm/、LookupRenameForm/、PaymentMethodEditForm/ # 三種表單的無畫面 Feature (由 LookupNameEditorSheet 呈現)
+│   │   │   │   ├── PaymentMethodCorrection/ # 無畫面的 PaymentMethodCorrectionFeature (付款方式更正確認與寫入)
+│   │   │   │   └── LookupCatalog/ # 無畫面的 LookupCatalogFeature，載入與新增主檔目錄
+│   │   │   ├── Domain/           # LookupCatalog + SharedKey+LookupCatalog、LookupKind、新增／改名請求與付款方式編輯結果
 │   │   │   └── Data/             # LookupService (四種主檔的讀寫與改名、付款方式更正)
-│   │   ├── More/                 # iOS「更多」入口：MoreFeature 以 StackState 推入匯率、客戶、報價、主檔管理、設定
+│   │   ├── More/                 # iOS「更多」入口，依 ios-dev-kit 的 Feature 結構分層
+│   │   │   └── Presentation/
+│   │   │       └── Root/         # MoreFeature (以 StackState 推入匯率、客戶、報價、主檔管理、設定) + MoreView
 │   │   ├── Orders/               # 訂單容器、清單、詳情、寫入、載入與編輯流程，依 ios-dev-kit 的 Feature 結構分層
 │   │   │   ├── Presentation/
 │   │   │   │   ├── Root/         # OrdersFeature (容器組合子 Feature，共用訂單引用與 Root 投影，core 逐 case 轉送)
@@ -94,9 +141,15 @@ apps/ios/
 │   │   │   └── Data/
 │   │   │       ├── Order/        # OrderService (訂單讀寫，+Reads／+Writes)、OrderError (訂單持久化錯誤)
 │   │   │       └── Photo/        # PhotoService (相簿選取照片的匯入)、PhotoImportResult
-│   │   ├── Quote/                # 報價試算 (QuoteFeature + QuoteRateFeature 子 reducer + QuoteView)
-│   │   │   └── Components/       # QuoteStatusBanner、QuoteBreakdownCard、QuoteInputsCard
-│   │   └── Settings/             # SettingsFeature + SettingsView；App 鎖定的啟用驗證與失敗說明也在這裡
+│   │   ├── Quote/                # 報價試算，依 ios-dev-kit 的 Feature 結構分層
+│   │   │   └── Presentation/
+│   │   │       ├── Root/         # QuoteFeature + QuoteView、QuoteStatusBanner、QuoteBreakdownCard、QuoteInputsCard
+│   │   │       ├── QuoteRate/    # 無畫面的 QuoteRateFeature 子 reducer (匯率來源與來源幣別選擇)
+│   │   │       └── Formatting/   # QuoteFormatters
+│   │   └── Settings/             # 設定，依 ios-dev-kit 的 Feature 結構分層
+│   │       ├── Presentation/
+│   │       │   └── Root/         # SettingsFeature (+Destination) + SettingsView；App 鎖定的啟用驗證與失敗說明也在這裡
+│   │       ├── Domain/           # SettingsSnapshot (設定持久化的最小快照)、AISummaryModelCatalog (Ollama 模型目錄)
 │   │       └── Data/             # SettingsService (使用者偏好的讀寫)
 │   ├── Shared/
 │   │   ├── Localization/         # 跨 feature 共用的語言型別 (AppLanguage 與 rootNavigationTitle 修飾子)、幣別顯示名稱單一入口 (CurrencyDisplayName)
@@ -287,7 +340,7 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 
 ### 資料層
 
-- **Service 層** (`Core/Dependencies/` 與各 Feature 的 `Data/`)：`OrderService` (`Features/Orders/Data/Order/`)、`LookupService` (`Features/Lookups/Data/`)、`CampaignService` (`Features/Campaigns/Data/`) 等以資料庫為下層的 Service 透過 `BuyLedgerDatabase` (`Core/Persistence/`) 操作 SwiftData，每次讀寫使用一次性 context；production 唯一的 `ModelContainer` 由 `BuyLedgerDatabaseKey.liveValue` 從 `PersistenceContainer.bootstrap` 取得，Feature 以 `@Dependency(\.xxxService)` 取用 Service。
+- **Service 層** (`Core/Dependencies/` 與各 Feature 的 `Data/`)：`OrderService` (`Features/Orders/Data/Order/`)、`LookupService` (`Features/Lookups/Data/`)、`CampaignService` (`Features/Campaigns/Data/Campaign/`) 等以資料庫為下層的 Service 透過 `BuyLedgerDatabase` (`Core/Persistence/`) 操作 SwiftData，每次讀寫使用一次性 context；production 唯一的 `ModelContainer` 由 `BuyLedgerDatabaseKey.liveValue` 從 `PersistenceContainer.bootstrap` 取得，Feature 以 `@Dependency(\.xxxService)` 取用 Service。
 - **訂單資料**：`OrdersFeature` 持有無鍵 `@Shared` 訂單，`OrderListFeature` 與 `OrderDetailFeature` 只拿 `SharedReader`；`OrdersLoadFeature` 與 `OrderWritesFeature` 在 reducer 內更新來源。Root 在來源改動的同一次 action 把訂單投影給開團、「更多」、首頁與分析，並把開團、預設幣別與 AI 摘要設定投影給 Orders。
 - **主檔資料** (訂單來源／商品類別／付款方式／對帳狀態) 以 `@Shared(.lookupCatalog)` 的 `LookupCatalog` 為單一來源，讀寫經 `LookupService` (`Features/Lookups/Data/`)。主檔目錄的寫入者是 `LookupCatalogFeature` (無畫面，載入與表單新增選項，由 `MoreFeature` 組合) 與 `LookupManagementFeature` (管理頁 CRUD，以 `LookupKind` 分流)，訂單端以 `SharedReader` 唯讀。表單新增選項經 Root 與 `MoreFeature` 交給 `LookupCatalogFeature` 先落盤，結果回到發起的表單。主檔改名由 `LookupService.renameItem` 在同一筆交易內改主檔與引用訂單；`MoreFeature` 轉送改名 delegate，Root 送 `.orders(.rootRequest(.cascade(...)))`，由 `writes` 在 reducer 內以 `OrdersCascadeOperations` 改寫共用訂單，分派經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 處理。
 - **啟動與表單選項**：Root 啟動時先送 `more.catalogLoadRequested` 讀主檔目錄，讀取結束後才送訂單的 `rootRequest(.load)`，開團則送 `campaigns.loadRequested`；開團載入與自動結單由 `CampaignLoadFeature` 負責；幣別快取載入到 `@Shared(.currencyCodes)`。訂單新增、編輯、合併確認與首頁新增都由容器建立 `OrderEditOptions` (主檔、開團、幣別與行事曆)，表單不在 `.task` 讀取選項；首頁以 `presentNewOrder` 共用新增入口。
@@ -304,10 +357,10 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 
 「更多 → 設定」的「帳本保護」區塊提供單一開關：開啟時同時啟用「App 進入背景即上鎖」與「回到前景或冷啟動需通過驗證才顯示內容」兩項保護，關閉時完全回到現況。啟用路徑本身需先通過一次系統本機驗證 (`BiometricAuthService`，`LAContext` 的 `.deviceOwnerAuthentication` 政策，涵蓋生物辨識與裝置密碼後備)，成功才寫入偏好；失敗、取消或裝置不支援則開關回到關閉並以對話框說明原因。上鎖只保證回到前景需要驗證，不保證多工切換器縮圖排除內容 (已知取捨，見 [`.claude/rules/ios-navigation.md`](../../.claude/rules/ios-navigation.md) 的「App 鎖定」)。
 
-- `AppLockFeature` (`Features/App/`)：鎖定／解鎖狀態機，常駐於 `RootFeature.State.appLock`，啟用狀態由 Root 依偏好同步。
-- `SettingsFeature` (`Features/Settings/`)：負責啟用前的驗證與失敗說明，成功才寫回 `SettingsService`，並以 `delegate(.preferencesChanged)` 回報給 Root。
-- `AppLockView` (`Features/App/`)：鎖定時取代整個正常介面的阻斷畫面，提供「重新驗證」(不提供跳過)。
-- `AppScenePhase` (`Features/App/`)：`BuyLedgerApp` 把 `\.scenePhase` 轉成這個殼層列舉，送 `AppLockFeature` 的 `.view(.scenePhaseChanged)`，進入背景上鎖、回到前景或冷啟動驗證解鎖由 reducer 決定；觸發訊號的選擇見 [`.claude/rules/ios-navigation.md`](../../.claude/rules/ios-navigation.md) 的「App 鎖定」。
+- `AppLockFeature` (`Features/App/Presentation/AppLock/`)：鎖定／解鎖狀態機，常駐於 `RootFeature.State.appLock`，啟用狀態由 Root 依偏好同步。
+- `SettingsFeature` (`Features/Settings/Presentation/Root/`)：負責啟用前的驗證與失敗說明，成功才寫回 `SettingsService`，並以 `delegate(.preferencesChanged)` 回報給 Root。
+- `AppLockView` (`Features/App/Presentation/AppLock/`)：鎖定時取代整個正常介面的阻斷畫面，提供「重新驗證」(不提供跳過)。
+- `AppScenePhase` (`Features/App/Domain/`)：`BuyLedgerApp` 把 `\.scenePhase` 轉成這個殼層列舉，送 `AppLockFeature` 的 `.view(.scenePhaseChanged)`，進入背景上鎖、回到前景或冷啟動驗證解鎖由 reducer 決定；觸發訊號的選擇見 [`.claude/rules/ios-navigation.md`](../../.claude/rules/ios-navigation.md) 的「App 鎖定」。
 - UI 測試以 `-BLUITestAppLockEnabled` 直接抵達鎖定狀態、`-BLUITestBiometricScenario` 選擇驗證情境，全程不觸發系統生物辨識提示。
 
 ### 外部 API

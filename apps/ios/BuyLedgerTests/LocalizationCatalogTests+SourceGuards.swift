@@ -70,13 +70,13 @@ extension LocalizationCatalogTests {
         // Given
         let sourceRoot = Self.iosRootURL.appending(path: "BuyLedger")
         let rootViews = [
-            "Features/Dashboard/DashboardView.swift",
+            "Features/Dashboard/Presentation/Root/Views/DashboardView.swift",
             "Features/Orders/Presentation/Root/Views/OrdersCompactView.swift",
             "Features/Orders/Presentation/Root/Views/OrdersView.swift",
-            "Features/Campaigns/CampaignListView.swift",
-            "Features/Insights/InsightsView.swift",
-            "Features/More/MoreView.swift",
-            "Features/Settings/SettingsView.swift",
+            "Features/Campaigns/Presentation/CampaignList/Views/CampaignListView.swift",
+            "Features/Insights/Presentation/Root/Views/InsightsView.swift",
+            "Features/More/Presentation/Root/MoreView.swift",
+            "Features/Settings/Presentation/Root/SettingsView.swift",
         ]
         var violatingViews: [String] = []
 
@@ -100,7 +100,7 @@ extension LocalizationCatalogTests {
     func campaignDetailDistributionSection_收款狀態文字_經字串目錄本地化() throws(any Error) {
         // Given
         let sourceURL = Self.iosRootURL
-            .appending(path: "BuyLedger/Features/Campaigns/Components")
+            .appending(path: "BuyLedger/Features/Campaigns/Presentation/CampaignDetail")
             .appending(path: "CampaignDetailDistributionSection.swift")
 
         // When

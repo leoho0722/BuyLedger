@@ -23,7 +23,7 @@ extension DependencyConventionScanScenario {
                     }
                 }
                 """#,
-                relativePath: "Features/Dashboard/DashboardView.swift",
+                relativePath: "Features/Dashboard/Presentation/Root/Views/DashboardView.swift",
                 sourceTree: .production,
                 rules: [.viewDependency],
                 expectedLine: 2,
@@ -182,7 +182,7 @@ extension DependencyConventionScanScenario {
                     }
                 }
                 """#,
-                relativePath: "Features/Dashboard/DashboardFeature.swift",
+                relativePath: "Features/Dashboard/Presentation/Root/DashboardFeature.swift",
                 sourceTree: .production,
                 rules: [.viewDependency]
             ),

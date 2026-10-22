@@ -2,7 +2,8 @@
 paths:
   - "apps/ios/BuyLedger/Core/**"
   - "apps/ios/BuyLedger/Features/{Orders,Campaigns,Lookups,Customers,Dashboard,Insights,More}/**"
-  - "apps/ios/BuyLedger/Features/App/Root{Feature,NavigationOperations,LaunchFeature,LaunchOperations}.swift"
+  - "apps/ios/BuyLedger/Features/App/Presentation/Root/Root{Feature,NavigationOperations}.swift"
+  - "apps/ios/BuyLedger/Features/App/Presentation/RootLaunch/RootLaunch{Feature,Operations}.swift"
   - "apps/ios/BuyLedgerTests/*{Persistence,Migration,Database,Residue}*.swift"
   - "apps/ios/BuyLedgerTests/{Order,Campaign,Lookup}Service*.swift"
 ---

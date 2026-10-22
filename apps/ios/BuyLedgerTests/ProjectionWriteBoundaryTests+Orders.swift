@@ -55,7 +55,7 @@ private extension ProjectionWriteBoundaryTests {
     static var ordersProjectionScenarios: [SharedOrderScenario] {
         [
             SharedOrderScenario(
-                relativePath: "Features/App/RootFeature.swift",
+                relativePath: "Features/App/Presentation/Root/RootFeature.swift",
                 source: """
                 state.orders.$campaigns.withLock { $0 = [] }
                 state.orders.defaultCurrency = .jpy
@@ -64,7 +64,7 @@ private extension ProjectionWriteBoundaryTests {
                 expectedCount: 0
             ),
             SharedOrderScenario(
-                relativePath: "Features/App/RootNavigationOperations.swift",
+                relativePath: "Features/App/Presentation/Root/RootNavigationOperations.swift",
                 source: """
                 root.orders.campaigns.removeAll()
                 root.orders.defaultCurrency = .jpy
