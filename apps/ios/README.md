@@ -117,7 +117,7 @@ apps/ios/
 App 使用兩把 API key，皆透過 `Config.xcconfig` 注入 (機密)：
 
 | 變數 | 用途 | 申請位置 |
-|---|---|---|
+| --- | --- | --- |
 | `EXCHANGE_RATE_API_KEY` | 匯率與幣別清單 (ExchangeRate-API v6) | [exchangerate-api.com](https://www.exchangerate-api.com)；30 日 sparkline 需 Pro/Business 方案 |
 | `OLLAMA_API_KEY` | 訂單 AI 商品明細總結 (Ollama Cloud chat streaming) | [ollama.com](https://ollama.com) → Account → API keys |
 
@@ -266,7 +266,7 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 `BuyLedgerApp.swift` 以單一 `RootFeature` store 驅動：`WindowGroup` 掛上 `RootView`；啟動時讀出一次設定快照直接傳入 `RootFeature.State`，首幀即使用已保存的語言、月目標與鎖定狀態；SwiftData container 不經 SwiftUI environment 注入，統一由 `BuyLedgerDatabase` 持有。單元測試 host 不建立根畫面，`BuyLedgerApp.init` 在 `RuntimeEnvironment.isUnitTesting` 時直接略過。`RootFeature.State.selectedTab` 驅動兩種 layout，由 `RootView` 依版面分類選擇：
 
 | 版面分類 | Layout | 說明 |
-|---|---|---|
+| --- | --- | --- |
 | regular 版面 (水平與垂直尺寸分類都是 regular，例如 iPad 全螢幕) | `RootSidebarLayout` | `NavigationSplitView`；訂單分頁為側邊欄、清單、詳情三欄，其他分頁為側邊欄與內容兩欄 |
 | compact 版面 (其餘組合，含 iPhone 任何機型橫向與 iPad 窄視窗) | `RootTabLayout` | `TabView` |
 

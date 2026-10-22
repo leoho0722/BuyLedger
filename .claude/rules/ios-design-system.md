@@ -2,6 +2,7 @@
 paths:
   - "apps/ios/BuyLedger/Shared/DesignSystem/**"
   - "apps/ios/BuyLedger/Core/Extensions/**"
+  - "apps/ios/BuyLedger/Core/Formatters/**"
   - "apps/ios/BuyLedger/Features/**/*{View,Sheet,Layout,Row,Content,Column,Card,Section,Tile,Tiles}.swift"
   - "apps/ios/BuyLedger/Features/**/Components/**"
   - "apps/ios/BuyLedger/Resources/Assets.xcassets/**"
@@ -28,9 +29,9 @@ paths:
 ## 單一來源
 
 - **必須對齊的尺寸由單一來源推導，不各自寫死** (`BLListMetrics.dividerInset` 由 `avatarSize` 推導)：各自寫死會在一方改動時默默錯開。
-- **金額與百分比格式化走 `BLFormatters`**，畫面不另寫等價的 `.formatted(.currency(...))`／`.formatted(.percent(...))`。
-    - `OrderFormatters`／`CampaignFormatters` 只保留 feature 專屬方法，TWD 金額與比例百分比一律委派 `BLFormatters`。
-    - 兩個 `shortDate` 同名但格式不同 (`OrderFormatters` 用 `.month(.defaultDigits).day(.defaultDigits)`、`CampaignFormatters` 用 `.month(.abbreviated).day()`)，不可合併。
+- **金額與百分比格式化依 kit 寫成自訂 `FormatStyle` (放 `Core/Formatters/`)，畫面以 `Text(_:format:)`／`formatted(_:)` 套用，不各自重寫等價設定**；要用 `<Feature>Formatters` 靜態函式時先與使用者個案討論。
+    - 現有靜態函式遷移前維持：`OrderFormatters`／`CampaignFormatters` 只保留 feature 專屬方法，TWD 金額與比例百分比一律委派 `BLFormatters`。
+    - 兩個 `shortDate` 同名但格式不同 (`OrderFormatters` 用 `.month(.defaultDigits).day(.defaultDigits)`、`CampaignFormatters` 用 `.month(.abbreviated).day()`)，遷移時也不可合併。
 - **字級一律走 `BLTypographyStyle` token**：View 用 `.blTextStyle(_:)`，需要 `Font` 值才用 `BLTypographyStyle.<case>.font`，不手寫 `.font(.footnote)` 等字面值。
     - token 沒內建的字重用 `BLTypographyStyle.<case>.font.weight(_:)` 組合。
     - 只有代表獨立具名層級的字重才新增 case (如 `title3Bold`)；純強調用的組合 (`subheadline` 搭 `.semibold` 等) 不論出現幾次都留在呼叫端。
