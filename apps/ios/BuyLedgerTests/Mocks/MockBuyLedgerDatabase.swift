@@ -129,6 +129,7 @@ extension MockBuyLedgerDatabase: BuyLedgerDatabaseProtocol {
         }
         if case .readFailure(let failureCall, let error) = mode, call == failureCall {
             guard let failure = error as? Failure else {
+                // 注入的錯誤與 `Failure` 型別不符代表測試設定寫錯，無法照設定丟出
                 preconditionFailure("MockBuyLedgerDatabase 的 read 錯誤型別不符")
             }
             throw failure
@@ -162,6 +163,7 @@ extension MockBuyLedgerDatabase: BuyLedgerDatabaseProtocol {
             return try await database.write { context throws(Failure) in
                 _ = try body(context)
                 guard let failure = error as? Failure else {
+                    // 注入的錯誤與 `Failure` 型別不符代表測試設定寫錯，無法照設定丟出
                     preconditionFailure("MockBuyLedgerDatabase 的 write 錯誤型別不符")
                 }
                 throw failure
