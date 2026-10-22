@@ -23,7 +23,11 @@ apps/ios/
 ├── BuyLedger.xcodeproj/          # Xcode 專案；project.xcproj (JSON 格式) 提交、xcuserdata/ 不提交
 ├── BuyLedger/                    # App source root
 │   ├── App/                      # 進入點：BuyLedgerApp、WindowGroup、AppLaunchConfigurator、TelemetryService (Firebase 遙測收集)
-│   │   └── Testing/              # UI 測試啟動 harness (BLUITestConfiguration、SeedProfile、SeedData、五個啟動參數列舉 Language／LoadFailure／CalendarAccess／BiometricScenario／PersistenceMode、DependencyValues+BLUITestOverrides、DependencyValues+BLUITestLookupOverrides；#if DEBUG)，組裝根與呼叫它的啟動設定同層
+│   │   └── Testing/              # UI 測試啟動 harness (#if DEBUG)，組裝根與呼叫它的啟動設定同層；進入點 BLUITestHarness
+│   │       ├── Configuration/    # 啟動參數解析 BLUITestConfiguration 與五個參數列舉 Language／LoadFailure／CalendarAccess／BiometricScenario／PersistenceMode
+│   │       ├── Seed/             # 種子資料組合 BLUITestSeedProfile 與依組合寫入的 BLUITestSeedData (+各情境資料)
+│   │       ├── TestDoubles/      # 依賴替身：幣別 API client 與設定來源、記憶體設定、照片快取、首讀失敗閘門、錯誤工廠與共用 stub
+│   │       └── Overrides/        # DependencyValues+BLUITestOverrides／+BLUITestLookupOverrides，依啟動設定換上替身
 │   ├── Core/
 │   │   ├── Domain/               # LedgerOrder、FxRateSnapshot、FxRates、CurrencyCode 等 model
 │   │   ├── Persistence/          # BuyLedgerDatabase (actor，每次讀寫一次性 ModelContext)、PersistenceContainer、各 Record 與 schema
