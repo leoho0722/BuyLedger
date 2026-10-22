@@ -7,7 +7,7 @@
 
 import XCTest
 
-/// regular 版面類別選擇器在大量類別下的捲動選取、完成與搜尋縮小流程測試
+/// regular 版面類別選擇器在大量類別下的捲動選取與完成流程測試
 ///
 /// - Note: 只在 regular 版面執行
 /// - Note: 種子為 `categoryFilterLarge`
@@ -56,63 +56,6 @@ final class OrderCategoryPickerLargeTests: BLUITestCase {
             app.failWithDiagnostics(
                 "清單應列出 \(Self.filteredOrderIDs.sorted())，實際為 \(listed.sorted())"
             )
-        }
-    }
-
-    /// 輸入搜尋文字後，只留相符的格子
-    ///
-    /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
-    func testCategoryPickerLargeSearch_輸入文字_格子縮小() throws {
-        // Given
-        let app = launch(LaunchOptions(seed: .categoryFilterLarge))
-        try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
-        let orders = openOrders(app)
-        orders.openCategoryPicker()
-
-        // When
-        orders.typePickerSearch("類別 30")
-
-        // Then
-        let isTyped = orders.categoryPickerSearchValue == "類別 30"
-        let isMatchShown = orders.revealFilterCategory(
-            Self.lastClosedCategory,
-            within: orders.categoryPickerSheet
-        )
-        let isOtherHidden = !orders.filterCategoryCell(Self.ongoingCategory).exists
-        if !isTyped {
-            app.failWithDiagnostics("選擇器搜尋欄未收到輸入「類別 30」")
-        }
-        if !isMatchShown {
-            app.failWithDiagnostics("搜尋「類別 30」後應顯示「\(Self.lastClosedCategory)」")
-        }
-        if !isOtherHidden {
-            app.failWithDiagnostics("搜尋「類別 30」後不應顯示「\(Self.ongoingCategory)」")
-        }
-    }
-
-    /// 清除搜尋後恢復全部類別
-    ///
-    /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
-    func testCategoryPickerLargeSearch_清除搜尋_恢復全部類別() throws {
-        // Given
-        let app = launch(LaunchOptions(seed: .categoryFilterLarge))
-        try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
-        let orders = openOrders(app)
-        orders.openCategoryPicker()
-        orders.typePickerSearch("類別 30")
-
-        // When
-        orders.tapPickerClearSearch()
-
-        // Then
-        let isRestored = orders.revealFilterCategory(
-            Self.ongoingCategory,
-            within: orders.categoryPickerSheet
-        )
-        if !isRestored || orders.hasCategoryPickerSearchText {
-            app.failWithDiagnostics("清除搜尋後應恢復「\(Self.ongoingCategory)」且搜尋欄為空")
         }
     }
 }

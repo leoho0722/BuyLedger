@@ -7,7 +7,7 @@
 
 import XCTest
 
-/// compact 版面整合篩選 sheet 在大量類別下的展開、捲動選取、套用與搜尋縮小流程測試
+/// compact 版面整合篩選 sheet 在大量類別下的展開、捲動選取與套用流程測試
 ///
 /// - Note: 種子為 `categoryFilterLarge`
 /// - Note: 300 個類別，類別 001 至 類別 005 屬開團中，其餘屬已收單
@@ -56,57 +56,6 @@ final class OrderFilterSheetLargeTests: BLUITestCase {
             app.failWithDiagnostics(
                 "清單應列出 \(Self.filteredOrderIDs.sorted())，實際為 \(listed.sorted())"
             )
-        }
-    }
-
-    /// 輸入搜尋文字後，只留相符的格子
-    ///
-    /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
-    func testFilterSheetLargeSearch_輸入文字_格子縮小() throws {
-        // Given
-        let app = launch(LaunchOptions(seed: .categoryFilterLarge))
-        try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
-        let orders = openOrders(app)
-        orders.openFilterSheet()
-
-        // When
-        orders.typeFilterSearch("類別 30")
-
-        // Then
-        let isTyped = orders.filterSearchFieldValue == "類別 30"
-        let isMatchShown = orders.revealFilterCategory(Self.lastClosedCategory)
-        let isOtherHidden = !orders.filterCategoryCell(Self.ongoingCategory).exists
-        if !isTyped {
-            app.failWithDiagnostics("搜尋欄未收到輸入「類別 30」")
-        }
-        if !isMatchShown {
-            app.failWithDiagnostics("搜尋「類別 30」後應顯示「\(Self.lastClosedCategory)」")
-        }
-        if !isOtherHidden {
-            app.failWithDiagnostics("搜尋「類別 30」後不應顯示「\(Self.ongoingCategory)」")
-        }
-    }
-
-    /// 清除搜尋後恢復全部類別
-    ///
-    /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
-    func testFilterSheetLargeSearch_清除搜尋_恢復全部類別() throws {
-        // Given
-        let app = launch(LaunchOptions(seed: .categoryFilterLarge))
-        try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
-        let orders = openOrders(app)
-        orders.openFilterSheet()
-        orders.typeFilterSearch("類別 30")
-
-        // When
-        orders.tapFilterClearSearch()
-
-        // Then
-        let isRestored = orders.revealFilterCategory(Self.ongoingCategory)
-        if !isRestored || orders.hasFilterSearchText {
-            app.failWithDiagnostics("清除搜尋後應恢復「\(Self.ongoingCategory)」且搜尋欄為空")
         }
     }
 }

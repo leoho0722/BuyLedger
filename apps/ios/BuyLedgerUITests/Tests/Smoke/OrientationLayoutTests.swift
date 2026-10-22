@@ -118,7 +118,7 @@ private extension OrientationLayoutTests {
         try attachScreenshot(named: "橫向首頁 KPI 卡", of: app)
     }
 
-    /// 確認視窗仍是橫向後附上整個 App 的截圖，附件保留在 result bundle
+    /// 確認視窗仍是橫向後附上 App 的截圖 (橫向時只擷取到部分畫面)，附件保留在 result bundle
     ///
     /// - Parameters:
     ///   - name: 附件名稱
@@ -134,7 +134,7 @@ private extension OrientationLayoutTests {
         add(attachment)
     }
 
-    /// 以大步幅的無慣性拖曳把目標捲進畫面；捲不到不算失敗，露出與否由截圖人工確認
+    /// 捲動目標進入畫面 (以大步幅的無慣性拖曳)；捲不到不算失敗，露出與否由截圖人工確認
     ///
     /// - Parameters:
     ///   - element: 要捲進畫面的目標元素
@@ -164,7 +164,7 @@ private extension OrientationLayoutTests {
 
         let rowPrefix = BLAccessibilityID.Orders.row(orderID: "")
         let firstRow = rows(withIdentifierPrefix: rowPrefix, in: app).firstMatch
-        try requireCondition(firstRow.waitForExistence(timeout: 10), in: app, "訂單清單沒有訂單列")
+        try requireCondition(firstRow.waitUntilHittable(), in: app, "訂單清單沒有可點的訂單列")
         try attachScreenshot(named: "橫向訂單頁", of: app)
     }
 
@@ -179,7 +179,7 @@ private extension OrientationLayoutTests {
         return app.descendants(matching: .any).matching(predicate)
     }
 
-    /// 把分析頁的類別排行與成本結構卡片依序捲進畫面，各附一張截圖
+    /// 捲動分析頁的類別排行與成本結構卡片進入畫面，依序各附一張截圖
     ///
     /// - Parameter app: 受測 App
     /// - Throws: 分析頁、類別排行列或成本結構圖未就緒，或視窗已不是橫向時拋出測試錯誤
@@ -195,7 +195,7 @@ private extension OrientationLayoutTests {
         scrollIntoView(categoryRow, within: insights.rootElement, in: app)
         try attachScreenshot(named: "橫向分析頁 類別排行", of: app)
 
-        try requireCondition(insights.costDonutExists, in: app, "分析頁沒有成本結構圖")
+        try requireCondition(insights.revealCostDonut(), in: app, "分析頁沒有成本結構圖")
         let donut = app.descendants(matching: .any)[BLAccessibilityID.Insights.costDonut]
         scrollIntoView(donut, within: insights.rootElement, in: app)
         try attachScreenshot(named: "橫向分析頁 成本結構", of: app)

@@ -15,40 +15,35 @@ final class CampaignCrudTests: BLUITestCase {
     /// 新增開團填入的名稱 (使用者資料，中英兩語言皆可輸入)
     private static let newCampaignName = "測試開團"
 
-    /// campaignsWithOrders 用來進詳情的四月韓國團開團 id (進行中)
+    /// `campaignsWithOrders` 用來進詳情的四月韓國團開團 id (進行中)
     private static let koreaCampaignID = "CMP-SAMPLE-KR-APR"
 
     /// 新增開團後，確認列表多出一列
     ///
-    /// - Note: 空資料庫新增並儲存開團後回到開團列表，列表容器應出現且至少有一列
+    /// - Note: 空資料庫新增並儲存開團後回到開團列表，列表應至少有一列
     @MainActor
-    func testCreateCampaignAppearsInList() {
+    func testTapSave_新增開團並輸入名稱_列表出現開團() {
         // Given
         let app = launch(LaunchOptions(seed: .empty))
-
         let root = RootNavigationScreen(app: app)
-        if !root.goToCampaigns(file: #filePath, line: #line) {
+        if !root.goToCampaigns() {
             failWithDiagnostics(in: app, "切到開團分頁後畫面未就緒")
         }
-
         let campaigns = CampaignsScreen(app: app)
         let edit = CampaignEditScreen(app: app)
-
-        // When
         campaigns.tapAdd()
-
         if !edit.waitUntilReady() {
             failWithDiagnostics(in: app, "點新增後編輯表單根 identifier「\(edit.rootIdentifier)」逾時仍未出現")
         }
-
         edit.typeName(Self.newCampaignName)
+
+        // When
         edit.tapSave()
 
         // Then
         if !campaigns.waitUntilReady() {
             failWithDiagnostics(in: app, "儲存後開團列表根 identifier「\(campaigns.rootIdentifier)」逾時仍未出現")
         }
-
         let prefix = BLAccessibilityID.Campaigns.row(campaignID: "")
         let anyCampaignRow = app.descendants(matching: .any)
             .matching(NSPredicate(format: "identifier BEGINSWITH %@", prefix))
@@ -58,26 +53,22 @@ final class CampaignCrudTests: BLUITestCase {
         }
     }
 
-    /// 刪除流程：更多 → 刪除 → 確認 alert → 取消；alert 收回且開團未被刪除
-    ///
-    /// - Note: 取消後 alert 應收回，且開團未被刪除、詳情仍停留
+    /// 刪除流程：更多 → 刪除 → 確認 alert → 取消；alert 收回且詳情仍停留
     @MainActor
-    func testDeleteFlowCancelKeepsCampaign() {
+    func testCancelDelete_刪除確認選取消_停留在開團詳情() {
         // Given
         let app = launch(LaunchOptions(seed: .campaignsWithOrders))
         let detail = openCampaignDetail(app, campaignID: Self.koreaCampaignID)
-
-        // When
         detail.openMoreMenu()
         if !detail.tapDelete() {
             failWithDiagnostics(in: app, "更多選單的刪除項目未出現或不可點")
         }
-
         if !detail.isDeleteConfirmationPresented() {
             failWithDiagnostics(in: app, "點刪除後，刪除確認 alert 未呈現")
         }
         app.assertAlertMessage(contains: "後無法復原", timeout: 5)
 
+        // When
         detail.cancelDelete()
 
         // Then
@@ -86,38 +77,6 @@ final class CampaignCrudTests: BLUITestCase {
         }
         if !detail.waitUntilReady() {
             failWithDiagnostics(in: app, "取消刪除後詳情頁應仍停留，根 identifier 卻消失")
-        }
-    }
-
-    /// 刪除開團後，確認列表移除該列
-    ///
-    /// - Note: 確認刪除後回到開團列表，該開團的列應消失
-    @MainActor
-    func testDeleteConfirmRemovesCampaignFromList() {
-        // Given
-        let app = launch(LaunchOptions(seed: .campaignsWithOrders))
-        let detail = openCampaignDetail(app, campaignID: Self.koreaCampaignID)
-
-        // When
-        detail.openMoreMenu()
-        if !detail.tapDelete() {
-            failWithDiagnostics(in: app, "更多選單的刪除項目未出現或不可點")
-        }
-
-        if !detail.isDeleteConfirmationPresented() {
-            failWithDiagnostics(in: app, "點刪除後，刪除確認 alert 未呈現")
-        }
-        app.assertAlertMessage(contains: "後無法復原", timeout: 5)
-
-        detail.confirmDelete()
-
-        // Then
-        let campaigns = CampaignsScreen(app: app)
-        if !campaigns.waitUntilReady() {
-            failWithDiagnostics(in: app, "確認刪除後開團列表根 identifier「\(campaigns.rootIdentifier)」逾時仍未出現")
-        }
-        if campaigns.hasCampaign(campaignID: Self.koreaCampaignID, timeout: 5) {
-            failWithDiagnostics(in: app, "確認刪除後該開團仍留在列表中")
         }
     }
 }

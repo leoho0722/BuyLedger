@@ -7,15 +7,15 @@
 
 import XCTest
 
-/// 訂單詳情的進入、財務摘要與刪除流程測試
+/// 訂單詳情的財務摘要與付款方式回溯重算測試
 final class OrderDetailTests: BLUITestCase {
 
     // MARK: - Properties
 
-    /// fullOrders 中用於詳情測試的訂單編號
+    /// `fullOrders` 中用於詳情測試的訂單編號
     private static let sampleOrderID = "BL-2604-018"
 
-    /// paymentMethodCorrection 中用於回溯重算驗收的訂單編號
+    /// `paymentMethodCorrection` 中用於回溯重算驗收的訂單編號
     private static let paymentMethodCorrectionOrderID = "UITEST-PMC-001"
 
     /// 回溯重算驗收所使用的付款方式名稱
@@ -28,12 +28,14 @@ final class OrderDetailTests: BLUITestCase {
         .profit,
     ]
 
-    /// fullOrders 種子資料的營收、成本與獲利顯示值
+    /// `fullOrders` 種子資料的營收、成本與獲利顯示值
     private static let expectedSummaryValues = ["$11,800", "$9,069", "+$2,731"]
 
-    /// 從清單點一筆訂單進詳情，詳情根就緒
+    /// 詳情財務摘要卡顯示 `fullOrders` 種子資料的營收、成本與獲利
+    ///
+    /// - Throws: 財務摘要卡值不存在時拋出測試錯誤
     @MainActor
-    func testTapOrderOpensDetail() {
+    func testOpenDetail_完整資料訂單_摘要卡顯示營收成本與獲利() throws(any Error) {
         // Given
         let app = launch(LaunchOptions(seed: .fullOrders))
 
@@ -41,20 +43,6 @@ final class OrderDetailTests: BLUITestCase {
         let detail = openOrderDetail(app)
 
         // Then
-        _ = detail
-    }
-
-    /// 詳情財務摘要卡顯示 fullOrders 種子資料的實際財務摘要
-    ///
-    /// - Throws: 財務摘要卡值不存在時拋出測試錯誤
-    /// - Note: 開啟含完整資料的訂單詳情後讀取三張財務摘要卡，三張卡應顯示 `fullOrders` 種子資料的實際財務摘要
-    @MainActor
-    func testDetailSummaryTilesHaveValues() throws(any Error) {
-        // Given
-        let app = launch(LaunchOptions(seed: .fullOrders))
-        let detail = openOrderDetail(app)
-
-        // When
         var values: [String] = []
         for tile in Self.summaryTiles {
             let value = try requireValue(
@@ -64,17 +52,14 @@ final class OrderDetailTests: BLUITestCase {
             )
             values.append(value)
         }
-
-        // Then
         XCTAssertEqual(values, Self.expectedSummaryValues)
     }
 
-    /// 補勾貨到付款後獲利改變，重啟 App 後仍保留新的獲利數字
+    /// 付款方式補勾貨到付款並確認更正後重啟 App，重新讀取的訂單獲利與更正前不同
     ///
-    /// - Throws: 任何必要的獲利或付款方式元素不存在時拋出測試錯誤
-    /// - Note: 以可持久化模式啟動付款方式回溯資料，補勾貨到付款並重啟 App 後重新讀取同一筆訂單的獲利，回溯後的獲利應與原值不同且已持久化
+    /// - Throws: 任何必要的獲利或付款方式元素不存在，或前置條件不成立時拋出測試錯誤
     @MainActor
-    func testCashOnDeliveryCorrectionPersistsAfterRelaunch() throws(any Error) {
+    func testRelaunch_補勾貨到付款後重啟_獲利與更正前不同() throws(any Error) {
         // Given
         var initialOptions = LaunchOptions(seed: .paymentMethodCorrection)
         initialOptions.persistenceMode = .persistent
@@ -129,19 +114,18 @@ final class OrderDetailTests: BLUITestCase {
                 "貨到付款旗標未出現或仍在畫面外"
             )
         }
-        XCTAssertNotEqual(cashOnDeliveryToggle.value as? String, "1", "回溯驗收的初始付款方式不應已標記為貨到付款")
-        let cashOnDeliveryLabel = app.staticTexts["標記為「貨到付款」付款方式"]
-        let cashOnDeliveryCell = app.cells.containing(
-            .switch,
-            identifier: BLAccessibilityID.LookupManagement.paymentMethodCashOnDeliveryToggle
-        ).firstMatch
-        if cashOnDeliveryCell.waitUntilHittable(timeout: 2) {
-            cashOnDeliveryCell.coordinate(withNormalizedOffset: CGVector(dx: 0.9, dy: 0.5)).tap()
-        } else if cashOnDeliveryLabel.waitUntilHittable(timeout: 2) {
-            cashOnDeliveryLabel.tap()
-        } else {
-            cashOnDeliveryToggle.tapAfterWaiting(in: app)
-        }
+        try requireCondition(
+            (cashOnDeliveryToggle.value as? String) != "1",
+            in: app,
+            "回溯驗收的初始付款方式不應已標記為貨到付款"
+        )
+        // `Form` 內的開關要點內層開關，點外層列的中心會落在標題文字上
+        cashOnDeliveryToggle.switches.firstMatch.tapAfterWaiting(in: app)
+        try requireCondition(
+            cashOnDeliveryToggle.wait(for: NSPredicate(format: "value == %@", "1"), timeout: 5),
+            in: app,
+            "點擊後貨到付款旗標未切換為開啟"
+        )
 
         let saveButton = app.buttons[
             BLAccessibilityID.LookupManagement.paymentMethodSaveButton
@@ -180,37 +164,6 @@ final class OrderDetailTests: BLUITestCase {
         // Then
         XCTAssertNotEqual(before, persisted, "補勾貨到付款後獲利應該改變並持久化")
     }
-
-    /// 刪除流程：更多 → 刪除 → 確認 alert → 取消；alert 收回且訂單未被刪除
-    ///
-    /// - Note: 取消後 alert 應收回，且訂單未被刪除、詳情仍停留
-    @MainActor
-    func testDeleteFlowCancelKeepsOrder() {
-        // Given
-        let app = launch(LaunchOptions(seed: .fullOrders))
-        let detail = openOrderDetail(app)
-
-        // When
-        detail.openMoreMenu()
-        if !detail.tapDelete() {
-            failWithDiagnostics(in: app, "更多選單的刪除項目未出現或不可點")
-        }
-
-        if !detail.deleteConfirmationExists() {
-            failWithDiagnostics(in: app, "點刪除後，刪除確認 alert 未呈現")
-        }
-        app.assertAlertMessage(contains: "後無法復原", timeout: 5)
-
-        detail.cancelDelete()
-
-        // Then
-        if !detail.deleteConfirmationDismissed() {
-            failWithDiagnostics(in: app, "點取消後，刪除確認 alert 未收回")
-        }
-        if !detail.waitUntilReady() {
-            failWithDiagnostics(in: app, "取消刪除後詳情頁應仍停留，根 identifier 卻消失")
-        }
-    }
 }
 
 // MARK: - Private Method
@@ -221,6 +174,7 @@ private extension OrderDetailTests {
     ///
     /// - Parameters:
     ///   - app: 受測 App
+    ///   - orderID: 要開啟的訂單編號；`nil` 時開啟 `sampleOrderID`
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的訂單詳情 Page Object

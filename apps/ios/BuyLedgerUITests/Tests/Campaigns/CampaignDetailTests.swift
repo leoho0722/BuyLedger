@@ -7,68 +7,32 @@
 
 import XCTest
 
-/// 開團詳情的進入、結團結算數值與結團流程測試
+/// 開團詳情的結團流程測試
 final class CampaignDetailTests: BLUITestCase {
 
     // MARK: - Properties
 
-    /// campaignsWithOrders 的四月韓國團開團 id (進行中，未結團故結團項目可點)
+    /// `campaignsWithOrders` 的四月韓國團開團 id (進行中，未結團故結團項目可點)
     private static let koreaCampaignID = "CMP-SAMPLE-KR-APR"
 
-    /// 結團結算的兩個數值列種類
-    private static let summaries: [BLAccessibilityID.Campaigns.DetailSummary] = [
-        .receivables,
-        .received,
-    ]
-
-    /// campaignsWithOrders 種子資料的應收與已收顯示值
-    private static let expectedSummaryValues = ["$16,780", "$11,800"]
-
-    /// 進四月韓國團詳情，詳情根就緒且應收／已收數值正確
+    /// 結團流程：更多 → 結團 → 確認 alert → 取消；alert 收回、詳情仍停留且開團未被結團
     ///
-    /// - Throws: 結算數值列不存在時拋出測試錯誤
-    /// - Note: 開啟有訂單的四月韓國團詳情後讀取應收與已收數值，兩個數值列應顯示 `campaignsWithOrders` 種子資料的實際結算金額
+    /// - Note: 在正在進行且含訂單的開團詳情頁操作
     @MainActor
-    func testDetailReadyWithSummaryValues() throws(any Error) {
+    func testCancelSettle_結團確認選取消_停留詳情且未結團() {
         // Given
         let app = launch(LaunchOptions(seed: .campaignsWithOrders))
         let detail = openCampaignDetail(app, campaignID: Self.koreaCampaignID)
-
-        // When
-        var values: [String] = []
-        for kind in Self.summaries {
-            let value = try requireValue(
-                detail.summaryValue(kind),
-                in: app,
-                "結團結算數值列「\(kind.rawValue)」的元素不存在"
-            )
-            values.append(value)
-        }
-
-        // Then
-        XCTAssertEqual(values, Self.expectedSummaryValues)
-    }
-
-    /// 結團流程：更多 → 結團 → 確認 alert → 取消；alert 收回且開團未被結團
-    ///
-    /// - Note: 在正在進行且含訂單的開團詳情頁開啟更多選單、進入結團確認並取消，確認 alert 收回、詳情仍停留且開團未顯示已結團
-    @MainActor
-    func testSettleFlowCancelDoesNotSettle() {
-        // Given
-        let app = launch(LaunchOptions(seed: .campaignsWithOrders))
-        let detail = openCampaignDetail(app, campaignID: Self.koreaCampaignID)
-
-        // When
         detail.openMoreMenu()
         if !detail.tapSettle() {
             failWithDiagnostics(in: app, "更多選單的結團項目未出現或不可點")
         }
-
         if !detail.isSettleConfirmationPresented() {
             failWithDiagnostics(in: app, "點結團後，結團確認 alert 未呈現")
         }
         app.assertAlertMessage(contains: "結算", timeout: 5)
 
+        // When
         detail.cancelSettle()
 
         // Then

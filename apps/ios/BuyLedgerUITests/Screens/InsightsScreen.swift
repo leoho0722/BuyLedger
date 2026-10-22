@@ -8,53 +8,15 @@
 import XCTest
 
 /// 分析頁的 Page Object
-struct InsightsScreen: Screen {
+struct InsightsScreen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
+
+    /// 分段的宣告序位，對齊 `InsightsDateRange`
+    private static let rangeOrder = ["thirtyDays", "sixMonths", "twelveMonths"]
 
     /// 受測 App
     let app: XCUIApplication
-
-    // MARK: - Static Properties
-
-    /// 分段的宣告序位，對齊 InsightsDateRange
-    private static let rangeOrder = ["thirtyDays", "sixMonths", "twelveMonths"]
-
-    // MARK: - Computed Properties
-
-    /// 判定分析頁已就緒的根 identifier (分析內容捲動容器)
-    ///
-    /// - Returns: 分析頁根容器的 identifier
-    var rootIdentifier: String {
-        BLAccessibilityID.Insights.root
-    }
-
-    /// 是否正顯示尚無足夠資料的空狀態
-    ///
-    /// - Returns: 是否顯示空狀態
-    var isEmptyStateShown: Bool {
-        app.descendants(matching: .any)[BLAccessibilityID.Insights.emptyState].exists
-    }
-
-    /// 走勢圖容器是否存在
-    ///
-    /// - Returns: 走勢圖容器是否在逾時前出現
-    var trendChartExists: Bool {
-        app.descendants(matching: .any)[BLAccessibilityID.Insights.trendChart].waitForExistence(
-            timeout: 10)
-    }
-
-    /// 成本結構 donut 容器是否存在
-    ///
-    /// - Returns: 成本結構容器是否存在
-    var costDonutExists: Bool {
-        let donut = app.descendants(matching: .any)[BLAccessibilityID.Insights.costDonut]
-        if donut.waitForExistence(timeout: 5) {
-            return true
-        }
-        app.scrollToHittable(donut, within: rootElement, maxSwipes: 6)
-        return donut.exists
-    }
 }
 
 // MARK: - Internal Method
@@ -68,11 +30,7 @@ extension InsightsScreen {
     ///   - rangeID: 趨勢期間的 identifier
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func selectRange(
-        _ rangeID: String,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
+    func selectRange(_ rangeID: String, file: StaticString = #filePath, line: UInt = #line) {
         let byID = app.segmentedControls.buttons[BLAccessibilityID.Insights.rangeSegment(rangeID)]
         if byID.waitUntilHittable(timeout: 3) {
             byID.tap()
@@ -104,24 +62,6 @@ extension InsightsScreen {
         return app.segmentedControls.buttons.element(boundBy: index).isSelected
     }
 
-    /// 點指定開團 id 的每團毛利排行列，深連結到該開團詳情
-    ///
-    /// - Parameters:
-    ///   - campaignID: 開團 id
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    func tapCampaignRank(
-        campaignID: String,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        let row = app.descendants(matching: .any)[
-            BLAccessibilityID.Insights.campaignRankRow(campaignID: campaignID)
-        ]
-        app.scrollToHittable(row, within: rootElement)
-        row.tapAfterWaiting(in: app, file: file, line: line)
-    }
-
     /// 讀取趨勢卡總獲利的 accessibility value
     ///
     /// - Returns: 趨勢卡總獲利的 accessibility value；元素不存在時為 `nil`
@@ -144,6 +84,19 @@ extension InsightsScreen {
         return accessibilityValue(of: element)
     }
 
+    /// 捲到成本結構 donut，回傳它是否出現
+    ///
+    /// - Returns: 成本結構 donut 是否在等待或捲動後出現
+    @discardableResult
+    func revealCostDonut() -> Bool {
+        let donut = app.descendants(matching: .any)[BLAccessibilityID.Insights.costDonut]
+        if donut.waitForExistence(timeout: 5) {
+            return true
+        }
+        app.scrollToHittable(donut, within: rootElement, maxSwipes: 6)
+        return donut.exists
+    }
+
     /// 讀取指定開團排行列的獲利 accessibility value
     ///
     /// - Parameter campaignID: 開團識別值
@@ -153,6 +106,18 @@ extension InsightsScreen {
             BLAccessibilityID.Insights.campaignRankRow(campaignID: campaignID)
         ]
         return accessibilityValue(of: element)
+    }
+}
+
+// MARK: - Screen
+
+extension InsightsScreen: Screen {
+
+    /// 以 `BLAccessibilityID.Insights.root` 指定分析內容的捲動容器為根元素
+    ///
+    /// - Returns: 分析頁根元素的 `identifier`
+    var rootIdentifier: String {
+        BLAccessibilityID.Insights.root
     }
 }
 

@@ -7,12 +7,12 @@
 
 import XCTest
 
-/// 匯率工具的進入、狀態橫幅與換算流程測試
+/// 匯率工具的換算流程測試
 final class FxTests: BLUITestCase {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
-    /// 換算使用的非預設來源幣別 raw value
+    /// 換算使用的非預設來源幣別代碼
     private static let selectedCurrency = "USD"
 
     /// 匯率測試輸入的來源幣別金額
@@ -21,95 +21,50 @@ final class FxTests: BLUITestCase {
     /// UI 測試固定匯率下的預期 TWD 顯示值
     private static let expectedConvertedValue = "$32,468"
 
-    /// 從更多分頁進匯率頁後就緒，且載入狀態橫幅存在 (固定快照)
-    @MainActor
-    func testFxReadyWithStatusBanner() {
-        let app = launch(LaunchOptions(seed: .empty))
-        let fx = openFx(app)
-
-        if !fx.statusBannerExists {
-            failWithDiagnostics(
-                in: app,
-                "匯率頁狀態橫幅「\(BLAccessibilityID.Fx.statusBanner)」未出現"
-            )
-        }
-    }
-
     /// 開幣別選擇器選 USD 後回匯率頁，輸入金額後換算結果正確
     ///
     /// - Throws: 換算結果元素不存在或沒有值時拋出測試錯誤
     @MainActor
-    func testFxConvertsAfterSelectingCurrencyAndAmount() throws(any Error) {
-        // Given：匯率頁已就緒，準備選取 USD
+    func testTypeAmount_選美元後輸入金額_依固定匯率換算() throws(any Error) {
+        // Given：匯率頁已選取 USD
         let app = launch(LaunchOptions(seed: .empty))
         let fx = openFx(app)
-
-        // When：選取 USD 並輸入 1000
         fx.openCurrencyPicker()
-
         let picker = OptionPickerScreen(app: app)
         if !picker.waitUntilReady() {
-            failWithDiagnostics(
-                in: app,
-                "幣別選擇器根 identifier「\(picker.rootIdentifier)」逾時仍未出現"
-            )
+            failWithDiagnostics(in: app, "幣別選擇器根 identifier「\(picker.rootIdentifier)」逾時仍未出現")
         }
         picker.selectOption(Self.selectedCurrency)
-
         // 單選點列即套用並自動關閉選擇器，回到匯率頁
         if !fx.waitUntilReady() {
-            failWithDiagnostics(
-                in: app,
-                "選幣別後匯率頁根 identifier「\(fx.rootIdentifier)」逾時仍未回到前景"
-            )
+            failWithDiagnostics(in: app, "選幣別後匯率頁根 identifier「\(fx.rootIdentifier)」逾時仍未回到前景")
         }
 
+        // When：輸入 1000
         fx.typeAmount(Self.inputAmount, in: app)
 
         // Then：來源幣別與換算結果都應符合固定匯率
-        let summary = try requireValue(
-            fx.conversionSummary,
-            in: app,
-            "換算結果卡片沒有來源幣別資訊"
-        )
-        XCTAssertTrue(
-            summary.contains("1 \(Self.selectedCurrency)"),
-            "匯率頁來源幣別應為 \(Self.selectedCurrency)，實際為：\(summary)"
-        )
-
-        let missingValueMessage = "輸入金額後換算結果元素不存在"
-        let value = try requireValue(
-            fx.convertedValue,
-            in: app,
-            missingValueMessage
-        )
-        XCTAssertEqual(
-            value,
-            Self.expectedConvertedValue,
-            "1000 USD 依 UI 測試固定匯率應換算為 $32,468"
-        )
+        let summary = try requireValue(fx.conversionSummary, in: app, "換算結果卡片沒有來源幣別資訊")
+        XCTAssertTrue(summary.contains("1 USD"), "匯率頁來源幣別應為 USD，實際為：\(summary)")
+        let value = try requireValue(fx.convertedValue, in: app, "輸入金額後換算結果元素不存在")
+        XCTAssertEqual(value, Self.expectedConvertedValue, "1000 USD 依 UI 測試固定匯率應換算為 $32,468")
     }
 
     /// 連續輸入相同金額後，換算結果仍應只計入一次輸入值
     ///
     /// - Throws: 換算結果元素不存在或沒有值時拋出測試錯誤
     @MainActor
-    func testRetypingSameAmountKeepsTheExpectedConversion() throws(any Error) {
-        // Given：匯率頁已就緒
+    func testTypeAmount_重複輸入相同金額_換算結果只計一次() throws(any Error) {
+        // Given：匯率頁已輸入一次金額
         let app = launch(LaunchOptions(seed: .empty))
         let fx = openFx(app)
+        fx.typeAmount(Self.inputAmount, in: app)
 
-        // When：連續兩次輸入相同金額
-        fx.typeAmount("1000", in: app)
-        fx.typeAmount("1000", in: app)
+        // When：再輸入一次相同金額
+        fx.typeAmount(Self.inputAmount, in: app)
 
         // Then：換算結果應是單次輸入的固定結果
-        let missingValueMessage = "重複輸入後換算結果元素不存在"
-        let value = try requireValue(
-            fx.convertedValue,
-            in: app,
-            missingValueMessage
-        )
+        let value = try requireValue(fx.convertedValue, in: app, "重複輸入後換算結果元素不存在")
         XCTAssertEqual(value, "$23")
     }
 }

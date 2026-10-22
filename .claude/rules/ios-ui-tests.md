@@ -84,5 +84,5 @@ paths:
     - Device Hub 開著不影響 Xcode MCP 轉向，但不與 XCUITest 轉向測試同時進行 (後者要關閉 Device Hub)。
 - **轉向測試失敗且 App 視窗維持直向時，先重開模擬器再重跑，重開後仍失敗才是真問題**：模擬器長時間連續跑 UI 測試後，`XCUIDevice.shared.orientation` 可能只改變裝置方向、介面不轉，屬環境狀態，不是產品或測試缺陷。
     - 判別：`OrientationLayoutTests` 在「轉向後 App 視窗寬仍未大於高」失敗，且單獨重跑同樣失敗；沒有特定測試類別會穩定觸發，不必逐類排查，也不改測試碼或放寬等待。
-    - 重開機：`mobilebuildmcp` 沒有關機指令，先開啟 Device Hub 再結束它 (結束時會把模擬器全部關機)，再以 `mobilebuildmcp simulator-management boot` 開機。
+    - 重開機：`mobilebuildmcp` 沒有關機指令，先開啟 Device Hub 再結束它 (結束時會把模擬器全部關機)，再以 `mobilebuildmcp simulator-management boot` 開機。開啟用 `mobilebuildmcp simulator-management open`，結束用 `osascript -e 'tell application "DeviceHub" to quit'` (App 名稱是 `DeviceHub`)。
 - **橫向時 `XCTAttachment(screenshot:)` 的截圖只擷取到部分畫面**：判讀版面以可見部分為準，不因看不到右側元素就判定版面錯誤；需要完整畫面時另以 `mobilebuildmcp ui-automation screenshot` 取得。

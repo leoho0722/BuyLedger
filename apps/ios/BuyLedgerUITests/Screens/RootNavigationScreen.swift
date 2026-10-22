@@ -8,15 +8,15 @@
 import XCTest
 
 /// 根導覽的 Page Object
-struct RootNavigationScreen: Screen {
+struct RootNavigationScreen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
 
     /// 吸收兩種版面差異的導覽分流器
-    let navigator: AppNavigator
+    private let navigator: AppNavigator
 
     // MARK: - Init
 
@@ -26,18 +26,6 @@ struct RootNavigationScreen: Screen {
     init(app: XCUIApplication) {
         self.app = app
         self.navigator = AppNavigator(app: app)
-    }
-}
-
-// MARK: - Computed Properties
-
-extension RootNavigationScreen {
-
-    /// 判定根導覽就緒的根 identifier
-    ///
-    /// - Returns: 根導覽使用的 identifier
-    var rootIdentifier: String {
-        BLAccessibilityID.Dashboard.root
     }
 }
 
@@ -149,16 +137,17 @@ extension RootNavigationScreen {
             line: line
         )
     }
+}
 
-    /// 查詢分頁是否為選取態，供選取態斷言使用
+// MARK: - Screen
+
+extension RootNavigationScreen: Screen {
+
+    /// 以 `BLAccessibilityID.Dashboard.root` 指定根導覽的就緒判定，啟動後預設停在總覽頁
     ///
-    /// - Parameter tab: 要查詢的分頁
-    /// - Returns: 分頁是否為選取態
-    func isTabSelected(_ tab: AppNavigator.Tab) -> Bool {
-        if navigator.isSidebarLayout {
-            return sidebarTabElement(for: tab).isSelected
-        }
-        return tabBarButtonElement(for: tab).isSelected
+    /// - Returns: 總覽頁根元素的 `identifier`
+    var rootIdentifier: String {
+        BLAccessibilityID.Dashboard.root
     }
 }
 
@@ -166,7 +155,7 @@ extension RootNavigationScreen {
 
 private extension RootNavigationScreen {
 
-    /// 切頁後優先等待目的地根容器，未指定時才依版面等待選取態
+    /// 切頁後優先等待目的地根容器，未指定根容器的分頁才依版面等待選取態
     ///
     /// - Parameters:
     ///   - tab: 目標分頁
@@ -227,7 +216,7 @@ private extension RootNavigationScreen {
     /// - Parameter tab: 要查詢的分頁
     /// - Returns: 側邊欄中的分頁元素
     func sidebarTabElement(for tab: AppNavigator.Tab) -> XCUIElement {
-        // 分頁列是合併朗讀的 staticText，因此以 any 查詢
+        // 分頁列是合併朗讀的 `staticText`，因此以 `.any` 查詢
         app.descendants(matching: .any)[BLAccessibilityID.Root.tab(tab.identifierKey)]
     }
 

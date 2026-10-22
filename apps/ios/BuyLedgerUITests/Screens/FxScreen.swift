@@ -8,9 +8,9 @@
 import XCTest
 
 /// 匯率工具頁的 Page Object
-struct FxScreen: Screen {
+struct FxScreen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
@@ -20,25 +20,11 @@ struct FxScreen: Screen {
 
 extension FxScreen {
 
-    /// 判定匯率頁已就緒的根 identifier (捲動容器)
-    ///
-    /// - Returns: 匯率頁根容器的 identifier
-    var rootIdentifier: String {
-        BLAccessibilityID.Fx.root
-    }
-
-    /// 載入或錯誤狀態橫幅是否存在
-    ///
-    /// - Returns: 狀態橫幅是否存在
-    var statusBannerExists: Bool {
-        app.descendants(matching: .any)[BLAccessibilityID.Fx.statusBanner].exists
-    }
-
     /// 換算後 TWD 結果的 accessibility value
     ///
     /// - Returns: 換算結果的 accessibility value；元素不存在時為 `nil`
     var convertedValue: String? {
-        // 合併朗讀的卡片在 XCUITest 歸為 staticText，故以 any 查詢而非 otherElements
+        // 合併朗讀的卡片在 XCUITest 歸為 `staticText`，故以 `.any` 查詢而非 `otherElements`
         let element = app.descendants(matching: .any)[BLAccessibilityID.Fx.convertedValue]
         guard element.waitForExistence(timeout: 10) else {
             return nil
@@ -120,5 +106,17 @@ extension FxScreen {
             line: line
         )
         field.dismissNumericKeyboard(in: app, file: file, line: line)
+    }
+}
+
+// MARK: - Screen
+
+extension FxScreen: Screen {
+
+    /// 以 `BLAccessibilityID.Fx.root` 指定匯率頁的捲動容器為根元素
+    ///
+    /// - Returns: 匯率頁根元素的 `identifier`
+    var rootIdentifier: String {
+        BLAccessibilityID.Fx.root
     }
 }

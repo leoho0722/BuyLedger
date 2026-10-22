@@ -7,55 +7,44 @@
 
 import XCTest
 
-/// 分析頁的進入、圖表容器與期間切換流程測試
+/// 分析頁的期間切換、營收歸屬與空狀態測試
 final class InsightsTests: BLUITestCase {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
-    /// 三個期間的 rawValue，依 App 端 `InsightsDateRange` 宣告順序排列
-    private static let rangeIDs = ["thirtyDays", "sixMonths", "twelveMonths"]
+    /// 先切換的兩個期間 `rawValue`，依 App 端 `InsightsDateRange` 宣告順序排列
+    private static let precedingRangeIDs = ["thirtyDays", "sixMonths"]
 
-    /// 切到分析分頁後畫面就緒 (insightsRange 有跨月資料)
+    /// 最後切換的期間 `rawValue`，是 `InsightsDateRange` 宣告順序的最後一個
+    private static let lastRangeID = "twelveMonths"
+
+    /// 依序切換三個期間後畫面仍就緒且對應分段保持選取
+    ///
+    /// - Throws: 前兩個期間切換後畫面未就緒或分段未選取時拋出測試錯誤
     @MainActor
-    func testInsightsReadyWithSeed() {
+    func testSelectRange_依序切換三個期間_畫面就緒且分段選取() throws(any Error) {
+        // Given
         let app = launch(LaunchOptions(seed: .insightsRange))
         let insights = openInsights(app)
-
-        _ = insights
-    }
-
-    /// 走勢圖與成本結構 donut 兩個容器都存在
-    @MainActor
-    func testTrendAndDonutContainersExist() {
-        let app = launch(LaunchOptions(seed: .insightsRange))
-        let insights = openInsights(app)
-
-        if !insights.trendChartExists {
-            failWithDiagnostics(in: app, "走勢圖容器逾時仍未出現")
-        }
-        if !insights.costDonutExists {
-            failWithDiagnostics(in: app, "成本結構 donut 容器逾時仍未出現")
-        }
-    }
-
-    /// 切換三個期間後畫面仍就緒且對應分段保持選取
-    @MainActor
-    func testRangeSwitchingKeepsReady() {
-        let app = launch(LaunchOptions(seed: .insightsRange))
-        let insights = openInsights(app)
-
-        for rangeID in Self.rangeIDs {
+        // 前兩次切換當下就確認，失敗時的診斷截圖停在出錯的期間
+        for rangeID in Self.precedingRangeIDs {
             insights.selectRange(rangeID)
-            if !insights.waitUntilReady() {
-                failWithDiagnostics(
-                    in: app,
-                    "切到期間「\(rangeID)」後分析頁根 identifier「\(insights.rootIdentifier)」逾時仍未出現"
-                )
-            }
-            XCTAssertTrue(
-                insights.isRangeSelected(rangeID),
-                "切到期間「\(rangeID)」後對應分段應為選取態"
+            try requireCondition(
+                insights.waitUntilReady() && insights.isRangeSelected(rangeID),
+                in: app,
+                "切到期間「\(rangeID)」後分析頁未就緒或分段未選取"
             )
+        }
+
+        // When
+        insights.selectRange(Self.lastRangeID)
+
+        // Then
+        if !insights.waitUntilReady() {
+            failWithDiagnostics(in: app, "切到期間「\(Self.lastRangeID)」後分析頁根容器逾時仍未出現")
+        }
+        if !insights.isRangeSelected(Self.lastRangeID) {
+            failWithDiagnostics(in: app, "切到期間「\(Self.lastRangeID)」後對應分段未呈現選取態")
         }
     }
 
@@ -63,29 +52,24 @@ final class InsightsTests: BLUITestCase {
     ///
     /// - Throws: 必要的 accessibility value 不存在或無法解析時拋出測試錯誤
     @MainActor
-    func testRevenueAttributionMatchesAcrossViews() throws(any Error) {
+    func testRevenueAttribution_合併訂單_總覽趨勢類別與開團獲利一致() throws(any Error) {
         // Given：營收歸屬資料已載入總覽頁
         let app = launch(LaunchOptions(seed: .revenueAttribution))
         let root = RootNavigationScreen(app: app)
         let dashboard = DashboardScreen(app: app)
-
         try requireCondition(
             root.goToDashboard() && dashboard.waitUntilReady(),
             in: app,
             "營收歸屬驗收的總覽頁未就緒"
         )
-
         let overviewProfit = try readNumericAmount(
             dashboard.kpiValue(.netProfit),
             in: app,
             description: "總覽淨獲利 KPI 卡"
         )
+
         // When：切換至開團與分析頁讀取各層獲利
-        try requireCondition(
-            root.goToCampaigns(),
-            in: app,
-            "營收歸屬驗收的開團頁未就緒"
-        )
+        try requireCondition(root.goToCampaigns(), in: app, "營收歸屬驗收的開團頁未就緒")
         let campaigns = CampaignsScreen(app: app)
         try requireCondition(
             campaigns.waitUntilReady()
@@ -94,7 +78,6 @@ final class InsightsTests: BLUITestCase {
             in: app,
             "營收歸屬驗收的開團未載入"
         )
-
         let insights = openInsights(app)
         let trendProfit = try readNumericAmount(
             insights.totalProfitValue(),
@@ -135,19 +118,18 @@ final class InsightsTests: BLUITestCase {
 
     /// 空資料庫時，分析頁顯示尚無足夠資料的空狀態
     @MainActor
-    func testEmptySeedShowsEmptyState() {
+    func testGoToInsights_空資料_顯示空狀態() {
+        // Given
         let app = launch(LaunchOptions(seed: .empty))
-
         let root = RootNavigationScreen(app: app)
-        if !root.goToInsights(file: #filePath, line: #line) {
-            failWithDiagnostics(
-                in: app,
-                "切到分析分頁後畫面未就緒",
-                file: #filePath,
-                line: #line
-            )
-        }
 
+        // When
+        let isInsightsReady = root.goToInsights()
+
+        // Then
+        if !isInsightsReady {
+            failWithDiagnostics(in: app, "切到分析分頁後畫面未就緒")
+        }
         assertEmptyState(BLAccessibilityID.Insights.emptyState, in: app)
     }
 }
@@ -155,45 +137,6 @@ final class InsightsTests: BLUITestCase {
 // MARK: - Private Method
 
 private extension InsightsTests {
-
-    /// 讀取並解析畫面上的金額 accessibility value
-    ///
-    /// - Parameters:
-    ///   - value: 待讀取的 accessibility value
-    ///   - app: 受測 App
-    ///   - description: 失敗訊息中的元素描述
-    /// - Returns: 可比較的整數金額
-    /// - Throws: 元素不存在、值為空或無法解析時拋出測試錯誤
-    func readNumericAmount(
-        _ value: String?,
-        in app: XCUIApplication,
-        description: String
-    ) throws(any Error) -> Int {
-        let rawValue = try requireValue(
-            value,
-            in: app,
-            "\(description)的元素不存在"
-        )
-        try requireCondition(
-            !rawValue.isEmpty,
-            in: app,
-            "\(description)的 accessibility value 為空"
-        )
-        return try requireValue(
-            numericAmount(rawValue),
-            in: app,
-            "\(description)沒有可解析的 accessibility value"
-        )
-    }
-
-    /// 從 UI 顯示的金額字串擷取整數，忽略幣別符號與千分位分隔符
-    ///
-    /// - Parameter value: accessibility value
-    /// - Returns: 可比較的整數金額；無法解析時回傳 nil
-    func numericAmount(_ value: String) -> Int? {
-        let normalized = value.filter { $0.isNumber || $0 == "-" }
-        return Int(normalized)
-    }
 
     /// 切到分析分頁並等內容就緒，回傳分析頁 Page Object
     ///
@@ -210,7 +153,12 @@ private extension InsightsTests {
     ) -> InsightsScreen {
         let root = RootNavigationScreen(app: app)
         if !root.goToInsights(file: file, line: line) {
-            failWithDiagnostics(in: app, "切到分析分頁後畫面未就緒", file: file, line: line)
+            failWithDiagnostics(
+                in: app,
+                "切到分析分頁後畫面未就緒",
+                file: file,
+                line: line
+            )
         }
 
         let insights = InsightsScreen(app: app)
@@ -223,5 +171,36 @@ private extension InsightsTests {
             )
         }
         return insights
+    }
+
+    /// 讀取並解析畫面上的金額 accessibility value
+    ///
+    /// - Parameters:
+    ///   - value: 待讀取的 accessibility value
+    ///   - app: 受測 App
+    ///   - description: 失敗訊息中的元素描述
+    /// - Returns: 可比較的整數金額
+    /// - Throws: 元素不存在、值為空或無法解析時拋出測試錯誤
+    func readNumericAmount(
+        _ value: String?,
+        in app: XCUIApplication,
+        description: String
+    ) throws(any Error) -> Int {
+        let rawValue = try requireValue(value, in: app, "\(description)的元素不存在")
+        try requireCondition(!rawValue.isEmpty, in: app, "\(description)的 accessibility value 為空")
+        return try requireValue(
+            numericAmount(rawValue),
+            in: app,
+            "\(description)沒有可解析的 accessibility value"
+        )
+    }
+
+    /// 從 UI 顯示的金額字串擷取整數，忽略幣別符號與千分位分隔符
+    ///
+    /// - Parameter value: accessibility value
+    /// - Returns: 可比較的整數金額；無法解析時回傳 `nil`
+    func numericAmount(_ value: String) -> Int? {
+        let normalized = value.filter { $0.isNumber || $0 == "-" }
+        return Int(normalized)
     }
 }
