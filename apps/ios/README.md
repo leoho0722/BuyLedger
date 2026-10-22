@@ -169,10 +169,9 @@ apps/ios/
 │   ├── Fixtures/                 # Campaign、LedgerOrder 的測試用固定資料
 │   └── Support/                  # TestDependencies、TestPaths 與測試容器等共用輔助
 ├── BuyLedgerUITests/             # XCUITest
-│   ├── Support/                  # 共用互動 helper
-│   ├── Screens/                  # Page Object
-│   └── Tests/                    # 流程與冒煙測試，依功能分組
-│       └── More/                 # 「更多」入口的主檔管理流程
+│   ├── Support/                  # 共用 helper：Launch (BLUITestCase、LaunchOptions、AppNavigator)、Interactions (alert、選單、sheet、輸入、捲動)、Assertions (斷言、等待、診斷)、Layout (欄位邊界、轉向、平台範圍)
+│   ├── Screens/                  # Page Object，依區域分 App、Orders、Campaigns、Dashboard、Insights、Customers、More、Tools，跨區共用的選擇器與編輯器放 Shared
+│   └── Tests/                    # 流程與冒煙測試，依功能分組 (Orders 再分 Filters、Regular、Edit、Detail)；More 為「更多」入口的主檔管理流程
 ├── scripts/                      # upload-testflight.sh (Release 打包並上傳 TestFlight)
 ├── BuyLedger.xctestplan          # 主 scheme 測試計畫 (鎖 zh-Hant/TW、字母序執行、覆蓋率僅統計 App target)
 ├── BuyLedgerUITests.xctestplan   # UI 主回歸測試計畫 (鎖 zh-Hant/TW、關閉隨機順序)
