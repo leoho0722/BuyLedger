@@ -183,7 +183,6 @@
         - `OrdersFeature.State.campaigns` 是無鍵 `@Shared` 開團投影，清單以同一份 `SharedReader` 讀取；容器可寫，但只有 Root 在 reducer 內以 `orders.$campaigns.withLock` 同步，`ProjectionWriteBoundaryTests` 守門訂單範圍的寫入、可寫引用外傳與重綁。
         - Root 的 `RootLaunchFeature` 載入幣別快取，非空才寫入 `.currencyCodes`；Orders 以 `@SharedReader(.currencyCodes)` 建立表單選項，讀取失敗或空結果保留原值。
     - `TestStore` 不設定 `exhaustivity = .off`；`TestSuiteIntegrityTests` 要求使用數量維持 0，保持未接收 action 與未預期狀態變更都能讓測試失敗。
-    - 通用 extension 放 `Shared/Extensions/`，不是 `Core/Extensions/`。
     - 金額、百分比、日期格式化用 `BLFormatters`／`OrderFormatters`／`CampaignFormatters`／`DashboardFormatters`／`InsightsFormatters`／`CustomerFormatters`／`QuoteFormatters`／`FxFormatters` 的靜態函式，不是 `FormatStyle`。
     - 設定寫入維持 reducer 內同步呼叫，讓連續輸入依序保存，避免非同步效果重排快照。
     - `OrdersFeaturePerformanceTests` 維持 XCTest，其餘單元測試用 Swift Testing。

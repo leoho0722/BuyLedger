@@ -1,7 +1,7 @@
 ---
 paths:
   - "apps/ios/BuyLedger/Shared/DesignSystem/**"
-  - "apps/ios/BuyLedger/Shared/Extensions/**"
+  - "apps/ios/BuyLedger/Core/Extensions/**"
   - "apps/ios/BuyLedger/Features/**/*{View,Sheet,Layout,Row,Content,Column,Card,Section,Tile,Tiles}.swift"
   - "apps/ios/BuyLedger/Features/**/Components/**"
   - "apps/ios/BuyLedger/Resources/Assets.xcassets/**"
@@ -23,7 +23,7 @@ paths:
 - **元件上移到 `Shared/DesignSystem/` 須同時滿足三條件**：不綁 store、以 closure 與呼叫端溝通、不依賴任何 Feature 型別；任一不滿足就留在 feature 底下，即使被多個 feature 呼叫。
     - 帶領域詞彙不構成上移理由 (`PaymentMethodEditorSheet` 以布林旗標參數化才得以上移)；每個新元件都逐條核對三條件。
 - **與特定元件耦合的 extension 留在元件檔**：`blCardShadow()`／`blTextStyle()` 與其 `ViewModifier` 同檔，`ButtonStyle where Self == BLButtonStyle` 的工廠留在 `BLButtonStyle.swift`。
-    - 可獨立重用的通用 extension 才進 `Shared/Extensions/`，一型一檔 `<型別>+Extensions.swift`。
+    - 可獨立重用的通用 extension 才抽出，依 kit 放 `Core/Extensions/`，一型一檔 `<型別>+Extensions.swift`。
 
 ## 單一來源
 

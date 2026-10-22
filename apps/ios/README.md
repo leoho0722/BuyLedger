@@ -31,7 +31,8 @@ apps/ios/
 │   │   ├── Storage/              # UserDefaultsStore、AppConfigurationStore (讀 Info.plist 設定) 的 protocol、實作與 Preview 替身
 │   │   ├── Networking/           # APIError、HTTPClient (send/stream)、HTTPMethod、URLRequestBuilder、ExchangeRateEndpoint (ExchangeRate-API 請求與錯誤分類)、ExchangeRateLatestResponse、ExchangeRateCodesResponse
 │   │   ├── Environment/          # RuntimeEnvironment (Preview／UI 測試／單元測試的執行環境判斷)
-│   │   └── Diagnostics/          # 啟動診斷送往當機診斷服務的可替換介面 (CrashDiagnosticsClient)
+│   │   ├── Diagnostics/          # 啟動診斷送往當機診斷服務的可替換介面 (CrashDiagnosticsClient)
+│   │   └── Extensions/           # 系統型別的通用 extension (Bundle／Decimal／Image，一型一檔)
 │   ├── Features/                 # 依功能切分的 TCA feature
 │   │   ├── AISummary/            # 訂單 AI 商品明細總結 (Ollama Cloud 串流)
 │   │   │   └── Data/             # AISummaryService、OllamaChatRequest、OllamaChatResponse
@@ -94,7 +95,6 @@ apps/ios/
 │   │   ├── DesignSystem/
 │   │   │   ├── Foundations/      # 色盤、字級、間距、圓角等 token，BLLayoutClass 版面分類、BLFormatters 金額與日期區段／完整時間格式化
 │   │   │   └── Components/       # BLAvatar、BLBadge、BLCard、BLBarChart、Pickers (OptionPickerSheet)、Forms (PaymentMethodEditorSheet) 等元件
-│   │   └── Extensions/           # Swift/SwiftUI 內建型別的通用 extension (Image/Color/Locale/Decimal 等，一型一檔)
 │   └── Resources/                # Info.plist、entitlements、PrivacyInfo.xcprivacy (隱私資訊清單)、Config.example.xcconfig (範本，實際 Config.xcconfig 自填且 gitignored)、assets
 ├── BuyLedgerAccessibilityIDs/    # UI 測試 identifier 常數，BLAccessibilityID 依區域分檔為 +<區域>.swift (共用資料夾，同時編入 App 與 UITests 兩個 target)
 ├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
