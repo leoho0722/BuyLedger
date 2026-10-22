@@ -61,40 +61,39 @@ apps/ios/
 │   │   │   ├── Components/       # LookupItemRow、LookupItemList
 │   │   │   └── Data/             # LookupService (四種主檔的讀寫與改名、付款方式更正)
 │   │   ├── More/                 # iOS「更多」入口：MoreFeature 以 StackState 推入匯率、客戶、報價、主檔管理、設定
-│   │   ├── Orders/               # 訂單容器、清單、詳情、寫入、載入與編輯流程
-│   │   │   ├── OrdersFeature.swift               # 容器組合子 Feature，共用訂單引用與 Root 投影，core 逐 case 轉送
-│   │   │   ├── OrdersPresentationFeature.swift   # 無畫面子 Feature：edit／merge／aiSummary／alert 呈現 (+Destination)、通知佇列與合併轉場
-│   │   │   ├── OrdersDetailNavigationFeature.swift # 無畫面子 Feature：iPhone 詳情堆疊 (+Path) 與 iPad 詳情欄同步
-│   │   │   ├── OrderListFeature.swift            # 搜尋、多選、日期分組與 iPad 選取；destination (+Destination) 呈現篩選 sheet 與 iPad 類別選擇器
-│   │   │   ├── OrderFilterFeature.swift          # iPhone 篩選 sheet 子 Feature，暫存日期、付款方式與類別，搜尋與捨棄確認
-│   │   │   ├── OrderCategoryPickerFeature.swift  # iPad 類別選擇器子 Feature，暫存類別、搜尋與捨棄確認
-│   │   │   ├── OrderCategoryGroups.swift         # 類別依開團中／已收單分組、搜尋與展開狀態的純計算，兩平台共用；groups(orders:campaigns:catalog:context:) 為兩個篩選畫面共用入口
-│   │   │   ├── OrderFilterConfirmations.swift    # 篩選 sheet 與 iPad 類別選擇器共用的捨棄確認
-│   │   │   ├── OrderDetailFeature.swift          # iPhone 推入與 iPad 詳情欄共用的唯讀詳情
-│   │   │   ├── OrderWritesFeature.swift          # 訂單寫入與交易後的調整，reducer 內更新共用訂單
-│   │   │   ├── OrdersLoadFeature.swift           # 訂單載入與共享載入狀態
-│   │   │   ├── OrdersLoadState.swift             # 首頁、分析與清單共用的載入狀態型別
-│   │   │   ├── OrderEditFeature.swift            # 草稿、驗證、焦點、捨棄確認與存檔請求
-│   │   │   ├── OrderEditPhotosFeature.swift      # 照片載入、匯入與編輯
-│   │   │   ├── OrderEditPickersFeature.swift     # 六種選項清單、選擇器路由與操作請求
-│   │   │   ├── OrderEditPhotosSection.swift      # 綁照片子 store 的表單區段
-│   │   │   ├── OrderMergeFeature.swift           # 合併候選與照片挑選，建立時帶入日期脈絡
-│   │   │   ├── OrderMergeCandidates.swift        # 合併候選資格的純計算規則
-│   │   │   ├── OrderRequest.swift                # 清單與詳情共用請求；OrderRequestPlan 分派呈現或寫入
-│   │   │   ├── OrdersContainerPlan.swift         # 容器各 case 的純計算，+Requests／+Writes／+Presentation 分檔；回傳 OrdersRequestOutcome／OrdersWriteOutcome
-│   │   │   ├── OrdersPresentationQueue.swift     # sheet 關閉與合併轉場期間的通知佇列
-│   │   │   ├── OrdersRootRequest.swift           # 根功能送進容器的請求：載入、cascade、收款狀態、付款方式旗標與新增選項結果
-│   │   │   ├── OrdersDetailSelection.swift       # 詳情推入、失效路徑移除與詳情欄選取同步
-│   │   │   ├── OrdersEditorOptions.swift         # 四個編輯入口共用的 OrderEditOptions 建構
-│   │   │   ├── OrderDraft.swift                  # 訂單草稿；+WriteResult 解析建立／更新意圖
-│   │   │   ├── OrderWriteOperations.swift        # 寫入 effect (含狀態與批次狀態)；OrderMergeSavePlan 帶入合併寫入計畫
-│   │   │   ├── OrdersCascadeOperations.swift     # 開團與主檔交易後的訂單調整
-│   │   │   ├── OrdersListQuery.swift             # 清單衍生值；OrdersQuery 篩選、OrderDateSection 日期分組
-│   │   │   ├── OrderDateContext.swift            # 注入的現在時間與行事曆
-│   │   │   ├── OrderStatusRules.swift            # 可選狀態與合併入口資格；OrderCostBreakdown 成本、OrderSummaryPrompt 摘要提示
-│   │   │   ├── OrdersView.swift                 # compact 分流與共用 sheet；regular 只產出清單欄 (regularListContent)；OrdersCompactView、OrdersRegularListColumn、OrdersRegularDetailColumn (詳情欄)
-│   │   │   ├── Components/       # 清單、詳情、篩選與表單區段；OrderDetailMenu／OrderDetailRowMenu 共用操作，OrderDetailToolbarContent 為 iPhone 推入詳情與 iPad 詳情欄共用的詳情工具列，OrderEditSelectionRow 共用選擇列；OrderCategoryFilterRows 為兩個類別篩選畫面共用的搜尋列、全部列與空狀態列；OrderFormatters 處理金額正負號與開團顯示文字
-│   │   │   └── Data/             # OrderService (訂單讀寫)、OrderError (訂單持久化錯誤)、PhotoService (相簿選取照片的匯入)、PhotoImportResult
+│   │   ├── Orders/               # 訂單容器、清單、詳情、寫入、載入與編輯流程，依 ios-dev-kit 的 Feature 結構分層
+│   │   │   ├── Presentation/
+│   │   │   │   ├── Root/         # OrdersFeature (容器組合子 Feature，共用訂單引用與 Root 投影，core 逐 case 轉送)
+│   │   │   │   │   ├── Views/    # OrdersView (compact 分流與共用 sheet)、OrdersCompactView、OrdersRegularListColumn／OrdersRegularDetailColumn、OrdersToolbarContent
+│   │   │   │   │   ├── Requests/ # OrdersRootRequest (根功能送進容器的請求)、OrderRequest + OrderRequestPlan (清單與詳情共用請求)
+│   │   │   │   │   └── Plans/    # OrdersContainerPlan (+Requests／+Writes／+Presentation，回傳 OrdersRequestOutcome／OrdersWriteOutcome)、OrdersEditorOptions、OrdersMergeFlowOperations、OrderSummaryPrompt
+│   │   │   │   ├── OrderList/    # OrderListFeature (搜尋、多選、日期分組與 iPad 選取；+Destination 呈現篩選 sheet 與 iPad 類別選擇器)
+│   │   │   │   │   ├── Views/    # OrdersCompactListView、OrderSelectableRow
+│   │   │   │   │   ├── Operations/ # OrderListInteraction、OrderListDestinationOperations、OrdersBatchOperations、OrdersFilterOperations
+│   │   │   │   │   └── Queries/  # OrdersListQuery、OrdersQuery、OrderListSnapshot、OrderDateSection
+│   │   │   │   ├── OrderDetail/  # OrderDetailFeature (iPhone 推入與 iPad 詳情欄共用的唯讀詳情)、OrderCostBreakdown
+│   │   │   │   │   └── Views/    # OrderDetailView 與內容、成本、品項、備註、來源、摘要等子 View，OrderDetailToolbarContent、OrderDetailMenu
+│   │   │   │   ├── OrdersDetailNavigation/ # 無畫面子 Feature：iPhone 詳情堆疊 (+Path) 與 iPad 詳情欄同步；OrdersDetailSelection
+│   │   │   │   ├── OrderEdit/    # OrderEditFeature (草稿、驗證、焦點、捨棄確認與存檔請求)
+│   │   │   │   │   ├── Views/    # OrderEditView、OrderEditDecimalField／PercentField、OrderEditSelectionRow、OrderEditPickerDestination
+│   │   │   │   │   │   └── Sections/ # 基本、開團、成本、費用、品項、備註、原始、付款、狀態九個表單區段
+│   │   │   │   │   ├── Models/   # OrderDraft (+WriteResult)、OrderEditOptions
+│   │   │   │   │   └── Operations/ # OrderEditOperations、OrderEditDraftOperations、OrderEditOptionNormalizer、OrderPercentConversion
+│   │   │   │   ├── OrderEditPhotos/ # OrderEditPhotosFeature (照片載入、匯入與編輯) + OrderEditPhotosSection
+│   │   │   │   ├── OrderEditPickers/ # OrderEditPickersFeature (六種選項清單、選擇器路由與操作請求) + OrderEditPickerOperations
+│   │   │   │   ├── OrderFilter/  # OrderFilterFeature (iPhone 篩選 sheet，暫存日期、付款方式與類別)、OrderFilterSelection、OrderFilterConfirmations (與類別選擇器共用的捨棄確認)
+│   │   │   │   │   └── Views/    # OrderFilterSheet 與日期、付款方式、類別三個區段，OrderFilterPreviewFixtures
+│   │   │   │   ├── OrderCategoryPicker/ # OrderCategoryPickerFeature (iPad 類別選擇器) + OrderCategoryPickerSheet
+│   │   │   │   ├── OrderMerge/   # OrderMergeFeature (合併候選與照片挑選) + 候選 sheet 與照片挑選；OrderMergeCandidates (合併資格的純計算)
+│   │   │   │   ├── OrdersLoad/   # 無畫面的 OrdersLoadFeature (訂單載入與共享載入狀態)
+│   │   │   │   ├── OrderWrites/  # 無畫面的 OrderWritesFeature (寫入與交易後的調整) + OrderWriteOperations、OrderMergeSavePlan、OrdersCascadeOperations
+│   │   │   │   ├── OrdersPresentation/ # 無畫面子 Feature：edit／merge／aiSummary／alert 呈現 (+Destination)；OrdersPresentationQueue (通知佇列與合併轉場)
+│   │   │   │   ├── Components/   # 跨畫面共用：OrderRowView、OrderDetailRowMenu、OrderCategoryGrid、OrderCategoryFilterRows (兩個類別篩選畫面共用的搜尋列、全部列與空狀態列)
+│   │   │   │   └── Formatting/   # OrderFormatters、OrderStatus+Presentation
+│   │   │   ├── Domain/           # OrderDateContext、OrderDatePeriod、OrderStatusFilter、OrderStatusRules (可選狀態與合併入口資格)、OrderCategoryGroups (類別分組的純計算)、OrdersLoadState (首頁、分析與清單共用)、OrderAISummarySettings、LedgerOrder+OrderMutation
+│   │   │   └── Data/
+│   │   │       ├── Order/        # OrderService (訂單讀寫，+Reads／+Writes)、OrderError (訂單持久化錯誤)
+│   │   │       └── Photo/        # PhotoService (相簿選取照片的匯入)、PhotoImportResult
 │   │   ├── Quote/                # 報價試算 (QuoteFeature + QuoteRateFeature 子 reducer + QuoteView)
 │   │   │   └── Components/       # QuoteStatusBanner、QuoteBreakdownCard、QuoteInputsCard
 │   │   └── Settings/             # SettingsFeature + SettingsView；App 鎖定的啟用驗證與失敗說明也在這裡
@@ -288,7 +287,7 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 
 ### 資料層
 
-- **Service 層** (`Core/Dependencies/` 與各 Feature 的 `Data/`)：`OrderService` (`Features/Orders/Data/`)、`LookupService` (`Features/Lookups/Data/`)、`CampaignService` (`Features/Campaigns/Data/`) 等以資料庫為下層的 Service 透過 `BuyLedgerDatabase` (`Core/Persistence/`) 操作 SwiftData，每次讀寫使用一次性 context；production 唯一的 `ModelContainer` 由 `BuyLedgerDatabaseKey.liveValue` 從 `PersistenceContainer.bootstrap` 取得，Feature 以 `@Dependency(\.xxxService)` 取用 Service。
+- **Service 層** (`Core/Dependencies/` 與各 Feature 的 `Data/`)：`OrderService` (`Features/Orders/Data/Order/`)、`LookupService` (`Features/Lookups/Data/`)、`CampaignService` (`Features/Campaigns/Data/`) 等以資料庫為下層的 Service 透過 `BuyLedgerDatabase` (`Core/Persistence/`) 操作 SwiftData，每次讀寫使用一次性 context；production 唯一的 `ModelContainer` 由 `BuyLedgerDatabaseKey.liveValue` 從 `PersistenceContainer.bootstrap` 取得，Feature 以 `@Dependency(\.xxxService)` 取用 Service。
 - **訂單資料**：`OrdersFeature` 持有無鍵 `@Shared` 訂單，`OrderListFeature` 與 `OrderDetailFeature` 只拿 `SharedReader`；`OrdersLoadFeature` 與 `OrderWritesFeature` 在 reducer 內更新來源。Root 在來源改動的同一次 action 把訂單投影給開團、「更多」、首頁與分析，並把開團、預設幣別與 AI 摘要設定投影給 Orders。
 - **主檔資料** (訂單來源／商品類別／付款方式／對帳狀態) 以 `@Shared(.lookupCatalog)` 的 `LookupCatalog` 為單一來源，讀寫經 `LookupService` (`Features/Lookups/Data/`)。主檔目錄的寫入者是 `LookupCatalogFeature` (無畫面，載入與表單新增選項，由 `MoreFeature` 組合) 與 `LookupManagementFeature` (管理頁 CRUD，以 `LookupKind` 分流)，訂單端以 `SharedReader` 唯讀。表單新增選項經 Root 與 `MoreFeature` 交給 `LookupCatalogFeature` 先落盤，結果回到發起的表單。主檔改名由 `LookupService.renameItem` 在同一筆交易內改主檔與引用訂單；`MoreFeature` 轉送改名 delegate，Root 送 `.orders(.rootRequest(.cascade(...)))`，由 `writes` 在 reducer 內以 `OrdersCascadeOperations` 改寫共用訂單，分派經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 處理。
 - **啟動與表單選項**：Root 啟動時先送 `more.catalogLoadRequested` 讀主檔目錄，讀取結束後才送訂單的 `rootRequest(.load)`，開團則送 `campaigns.loadRequested`；開團載入與自動結單由 `CampaignLoadFeature` 負責；幣別快取載入到 `@Shared(.currencyCodes)`。訂單新增、編輯、合併確認與首頁新增都由容器建立 `OrderEditOptions` (主檔、開團、幣別與行事曆)，表單不在 `.task` 讀取選項；首頁以 `presentNewOrder` 共用新增入口。

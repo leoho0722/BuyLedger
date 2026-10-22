@@ -73,7 +73,7 @@ private extension ProjectionWriteBoundaryTests {
                 expectedCount: 3
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: """
                 struct OrdersFeature {
                     func core(state: inout State) {
@@ -108,7 +108,7 @@ private extension ProjectionWriteBoundaryTests {
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersContainerPlan.swift",
+                relativePath: "Features/Orders/Presentation/Root/Plans/OrdersContainerPlan.swift",
                 source: """
                 func update(child: OrdersFeature.State) {
                     var child = child
@@ -127,7 +127,7 @@ private extension ProjectionWriteBoundaryTests {
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: """
                 struct OrdersFeature {
                     struct State {

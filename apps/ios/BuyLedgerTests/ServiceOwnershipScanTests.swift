@@ -123,13 +123,13 @@ struct ServiceOwnershipScanTests {
         [SourceFile](),
         [
             SourceFile(
-                path: "Features/Orders/Data/OrderService+Dependency.swift",
+                path: "Features/Orders/Data/Order/OrderService+Dependency.swift",
                 contents: "struct Other { var orderService: OrderService }"
             ),
         ],
         [
             SourceFile(
-                path: "Features/Orders/Data/OrderService+Preview.swift",
+                path: "Features/Orders/Data/Order/OrderService+Preview.swift",
                 contents: "extension DependencyValues { var orderService: OrderService {} }"
             ),
         ],

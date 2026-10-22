@@ -15,7 +15,7 @@ extension DependencyConventionScanScenario {
             ViolationCase(
                 name: "Feature 直接讀取 Database",
                 source: #"@Dependency(\.buyLedgerDatabase) private var database"#,
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 sourceTree: .production,
                 rules: [.featureBoundary],
                 expectedLine: 1,
@@ -45,7 +45,7 @@ extension DependencyConventionScanScenario {
             ViolationCase(
                 name: "Feature 直接使用 SwiftData context",
                 source: "let context: ModelContext",
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 sourceTree: .production,
                 rules: [.featureBoundary],
                 expectedLine: 1,
@@ -84,7 +84,7 @@ extension DependencyConventionScanScenario {
                 @Dependency(\.buyLedgerDatabase) private var database
                 let context: ModelContext
                 """#,
-                relativePath: "Features/Orders/Data/OrderService.swift",
+                relativePath: "Features/Orders/Data/Order/OrderService.swift",
                 sourceTree: .production,
                 rules: [.featureBoundary]
             ),

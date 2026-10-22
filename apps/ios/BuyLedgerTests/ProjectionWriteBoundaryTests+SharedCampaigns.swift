@@ -26,7 +26,7 @@ extension ProjectionWriteBoundaryTests {
 
         // When
         let violations = try Self.projectionViolations(
-            relativePath: "Features/Orders/OrderListFeature.swift",
+            relativePath: "Features/Orders/Presentation/OrderList/OrderListFeature.swift",
             source: source
         )
 
@@ -61,9 +61,9 @@ extension ProjectionWriteBoundaryTests {
             .joined(separator: "\n")
         let text = stripped as NSString
         let declaration = #"@SharedReader\s+var\s+campaigns\b"#
-        let isReaderFile = relativePath != "Features/Orders/OrdersFeature.swift"
+        let isReaderFile = relativePath != "Features/Orders/Presentation/Root/OrdersFeature.swift"
             && stripped.range(of: declaration, options: .regularExpression) != nil
-        let referencePattern = relativePath == "Features/Orders/OrdersFeature.swift"
+        let referencePattern = relativePath == "Features/Orders/Presentation/Root/OrdersFeature.swift"
             ? #"(?:\$|\b_)campaigns\b"# : #"\$campaigns\b"#
         let references = try NSRegularExpression(pattern: referencePattern)
         let readerPrefix = try NSRegularExpression(

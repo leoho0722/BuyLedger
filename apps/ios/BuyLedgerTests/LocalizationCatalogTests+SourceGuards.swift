@@ -71,8 +71,8 @@ extension LocalizationCatalogTests {
         let sourceRoot = Self.iosRootURL.appending(path: "BuyLedger")
         let rootViews = [
             "Features/Dashboard/DashboardView.swift",
-            "Features/Orders/OrdersCompactView.swift",
-            "Features/Orders/OrdersView.swift",
+            "Features/Orders/Presentation/Root/Views/OrdersCompactView.swift",
+            "Features/Orders/Presentation/Root/Views/OrdersView.swift",
             "Features/Campaigns/CampaignListView.swift",
             "Features/Insights/InsightsView.swift",
             "Features/More/MoreView.swift",
@@ -121,8 +121,8 @@ extension LocalizationCatalogTests {
         // Given
         let sourceRoot = Self.iosRootURL.appending(path: "BuyLedger")
         let sourcePaths = [
-            "Features/Orders/OrdersCompactView.swift",
-            "Features/Orders/Components/OrdersCompactListView.swift",
+            "Features/Orders/Presentation/Root/Views/OrdersCompactView.swift",
+            "Features/Orders/Presentation/OrderList/Views/OrdersCompactListView.swift",
         ]
         let forbiddenPattern = Self.normalizedWhitespace(
             "Text(\"篩選\") + Text(verbatim: \": \") + summary"

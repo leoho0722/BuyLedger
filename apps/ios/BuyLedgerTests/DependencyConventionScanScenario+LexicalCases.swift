@@ -40,7 +40,7 @@ extension DependencyConventionScanScenario {
                 ModelContainer
                 """#
                 """##,
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 sourceTree: .production,
                 rules: DependencyConventionScanTests.ScanRule.allCases
             ),

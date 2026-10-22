@@ -133,8 +133,8 @@ extension ProjectionWriteBoundaryTests {
 
         let writerPaths = [
             rootFeatureRelativePath,
-            "Features/Orders/OrdersLoadFeature.swift",
-            "Features/Orders/OrderWritesFeature.swift",
+            "Features/Orders/Presentation/OrdersLoad/OrdersLoadFeature.swift",
+            "Features/Orders/Presentation/OrderWrites/OrderWritesFeature.swift",
         ]
         if !writerPaths.contains(relativePath) {
             let writes = try NSRegularExpression(pattern: #"\$orders\b\s*\.\s*withLock\b"#)

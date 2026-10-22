@@ -15,7 +15,7 @@ extension ServiceOwnershipScanTests {
     static var referenceServices: [SourceFile] {
         [
             serviceSource(
-                path: "Features/Orders/Data/OrderService+Dependency.swift",
+                path: "Features/Orders/Data/Order/OrderService+Dependency.swift",
                 key: "orderService",
                 typeName: "OrderService",
                 databaseCode: #"@Dependency(\.buyLedgerDatabase) var database"#

@@ -26,7 +26,7 @@ struct ProjectionWriteBoundaryTests {
         ProjectionOwner(
             name: "OrdersFeature",
             rootStateKey: "orders",
-            homeFileRelativePath: "Features/Orders/OrdersFeature.swift",
+            homeFileRelativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
             properties: ["campaigns", "defaultCurrency", "aiSummarySettings"]
         ),
         ProjectionOwner(
@@ -87,7 +87,7 @@ struct ProjectionWriteBoundaryTests {
     /// 涵蓋完整路徑、值參數、唯讀轉換，以及註解與字串的守門案例
     static let sharedOrderScenarios: [SharedOrderScenario] = [
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersCascadeOperations.swift",
+            relativePath: "Features/Orders/Presentation/OrderWrites/OrdersCascadeOperations.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 1
         ),
@@ -169,17 +169,17 @@ struct ProjectionWriteBoundaryTests {
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersCascadeOperations.swift",
+            relativePath: "Features/Orders/Presentation/OrderWrites/OrdersCascadeOperations.swift",
             source: "state.campaigns.$orders.withLock { $0 = orders }",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersCascadeOperations.swift",
+            relativePath: "Features/Orders/Presentation/OrderWrites/OrdersCascadeOperations.swift",
             source: "state.more.$orders.withLock { $0 = orders }",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersCascadeOperations.swift",
+            relativePath: "Features/Orders/Presentation/OrderWrites/OrdersCascadeOperations.swift",
             source: "OrdersFeature.State(orders: orders)",
             expectedCount: 0
         ),
@@ -188,7 +188,7 @@ struct ProjectionWriteBoundaryTests {
     /// 訂單資料來源的合法寫入者與唯讀容器及 helper 的正反案例
     static let sharedOrderWriterScenarios: [SharedOrderScenario] = [
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersFeature.swift",
+            relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 1
         ),
@@ -198,7 +198,7 @@ struct ProjectionWriteBoundaryTests {
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersLoadFeature.swift",
+            relativePath: "Features/Orders/Presentation/OrdersLoad/OrdersLoadFeature.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 0
         ),
@@ -208,7 +208,7 @@ struct ProjectionWriteBoundaryTests {
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrderWritesFeature.swift",
+            relativePath: "Features/Orders/Presentation/OrderWrites/OrderWritesFeature.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 0
         ),
@@ -218,72 +218,72 @@ struct ProjectionWriteBoundaryTests {
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersBatchOperations.swift",
+            relativePath: "Features/Orders/Presentation/OrderList/Operations/OrdersBatchOperations.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersBatchOperations.swift",
+            relativePath: "Features/Orders/Presentation/OrderList/Operations/OrdersBatchOperations.swift",
             source: "OrdersFeature.State(orders: orders)",
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersMergeFlowOperations.swift",
+            relativePath: "Features/Orders/Presentation/Root/Plans/OrdersMergeFlowOperations.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersMergeFlowOperations.swift",
+            relativePath: "Features/Orders/Presentation/Root/Plans/OrdersMergeFlowOperations.swift",
             source: "OrdersFeature.State(orders: orders)",
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrderDraft+WriteResult.swift",
+            relativePath: "Features/Orders/Presentation/OrderEdit/Models/OrderDraft+WriteResult.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrderDraft+WriteResult.swift",
+            relativePath: "Features/Orders/Presentation/OrderEdit/Models/OrderDraft+WriteResult.swift",
             source: "OrdersFeature.State(orders: orders)",
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersView.swift",
+            relativePath: "Features/Orders/Presentation/Root/Views/OrdersView.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersView.swift",
+            relativePath: "Features/Orders/Presentation/Root/Views/OrdersView.swift",
             source: "OrdersFeature.State(orders: orders)",
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersCompactView.swift",
+            relativePath: "Features/Orders/Presentation/Root/Views/OrdersCompactView.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersCompactView.swift",
+            relativePath: "Features/Orders/Presentation/Root/Views/OrdersCompactView.swift",
             source: "OrdersFeature.State(orders: orders)",
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersRegularListColumn.swift",
+            relativePath: "Features/Orders/Presentation/Root/Views/OrdersRegularListColumn.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersRegularListColumn.swift",
+            relativePath: "Features/Orders/Presentation/Root/Views/OrdersRegularListColumn.swift",
             source: "OrdersFeature.State(orders: orders)",
             expectedCount: 0
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersRegularDetailColumn.swift",
+            relativePath: "Features/Orders/Presentation/Root/Views/OrdersRegularDetailColumn.swift",
             source: "state.$orders.withLock { $0 = [] }",
             expectedCount: 1
         ),
         SharedOrderScenario(
-            relativePath: "Features/Orders/OrdersRegularDetailColumn.swift",
+            relativePath: "Features/Orders/Presentation/Root/Views/OrdersRegularDetailColumn.swift",
             source: "OrdersFeature.State(orders: orders)",
             expectedCount: 0
         ),

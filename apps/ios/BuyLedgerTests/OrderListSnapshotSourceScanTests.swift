@@ -19,7 +19,7 @@ struct OrderListSnapshotSourceScanTests {
     @Test
     func listSnapshot_建立清單快照_僅呼叫一次篩選() throws {
         // Given
-        let source = try Self.source(named: "OrdersListQuery.swift")
+        let source = try Self.source(named: "Presentation/OrderList/Queries/OrdersListQuery.swift")
 
         // When
         let body = try Self.body(of: "static func listSnapshot(", in: source)
@@ -34,7 +34,7 @@ struct OrderListSnapshotSourceScanTests {
     @Test
     func listSnapshot_清單狀態入口_只轉交一次快照計算() throws {
         // Given
-        let source = try Self.source(named: "OrderListFeature.swift")
+        let source = try Self.source(named: "Presentation/OrderList/OrderListFeature.swift")
 
         // When
         let body = try Self.body(of: "func listSnapshot()", in: source)
@@ -51,8 +51,8 @@ struct OrderListSnapshotSourceScanTests {
     ///   - declaration: 要檢查的畫面建構單元
     /// - Throws: 原始碼讀取、單元定位或正規表示式建立失敗時拋出
     @Test(arguments: [
-        ("OrdersCompactView.swift", "var navigationContent: some View"),
-        ("OrdersView.swift", "var regularListContent: some View"),
+        ("Presentation/Root/Views/OrdersCompactView.swift", "var navigationContent: some View"),
+        ("Presentation/Root/Views/OrdersView.swift", "var regularListContent: some View"),
     ])
     func listSnapshot_兩種版面路徑_各取一次快照且重用工具列值(file: String, declaration: String) throws {
         // Given
@@ -78,7 +78,7 @@ struct OrderListSnapshotSourceScanTests {
     @Test(arguments: ["static func dateSections(", "static func isAllFilteredSelected("])
     func dateSectionsAndSelection_輔助方法_不再次篩選(declaration: String) throws {
         // Given
-        let source = try Self.source(named: "OrdersListQuery.swift")
+        let source = try Self.source(named: "Presentation/OrderList/Queries/OrdersListQuery.swift")
 
         // When
         let body = try Self.body(of: declaration, in: source)

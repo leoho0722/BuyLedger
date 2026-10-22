@@ -18,7 +18,7 @@ paths:
 - **Orders 的編輯、合併與 AI 摘要 sheet 綁定呈現子 Feature (`OrdersPresentationFeature`) 的同一個 `destination`，掛在 `OrdersView` 外層**：以 `@Bindable var presentation = store.scope(state: \.presentation, action: \.presentation)` 取得子 store，經 `$presentation.scope(state: \.$destination, action: \.destination)` 的各 case 呈現，iPhone／iPad 共用，不移到平台分流後的子 view。
 - **不用 `.toolbar` 的 `.bottomBar`**：批次與選取操作放 `.primaryAction` 等頂部 placement；compact 的筆數由 `navigationTitle` 承載 (`OrderListFeature.State.navigationTitleKey`)，regular 清單欄由欄內頂部承載 (見下方 inline 標題條目)。
     - compact 的底部 tab bar 會蓋住 `.bottomBar`；iPad 可拖曳視窗的下緣可能超出螢幕。
-- **訂單多選工具列與可勾選列只有一份定義** (`Features/Orders/Components/` 的 `OrdersToolbarContent`／`OrderSelectableRow`)，compact 與 regular 共用，不各自維護等價實作。
+- **訂單多選工具列與可勾選列只有一份定義** (`Features/Orders/Presentation/` 下 `Root/Views/` 的 `OrdersToolbarContent` 與 `OrderList/Views/` 的 `OrderSelectableRow`)，compact 與 regular 共用，不各自維護等價實作。
 - **訂單詳情畫面只有一份定義** (`OrderDetailView`)：iPad 詳情欄與 iPhone 推入詳情都直接使用 `OrderDetailView(store:)`，內容排版不分版面，不為寬版另做分支。
     - 客戶名稱 inline 標題與工具列 (`OrderDetailToolbarContent`) 由 `OrderDetailView` 在有訂單時自己宣告，呼叫端不另外包裝：兩處各自包裝時可能只改到一處，現有測試不能保證兩處始終一致。`OrdersRegularDetailColumn` 只負責無選取或選取的訂單已不存在時的空狀態。
     - `OrderDetailMenu` 不分版面外觀；標題用系統導覽列，不自繪標題列。

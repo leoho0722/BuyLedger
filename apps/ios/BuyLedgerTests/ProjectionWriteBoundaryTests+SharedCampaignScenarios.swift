@@ -28,7 +28,7 @@ extension ProjectionWriteBoundaryTests {
                 expectedCount: 0
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: """
                 struct OrdersFeature {
                     struct State {
@@ -43,7 +43,7 @@ extension ProjectionWriteBoundaryTests {
                 expectedCount: 0
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "SharedReader(state.$campaigns)",
                 expectedCount: 0
             ),
@@ -53,7 +53,7 @@ extension ProjectionWriteBoundaryTests {
                 expectedCount: 0
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "// state.$campaigns.withLock { $0 = [] }\n/* let copy = state.$campaigns */",
                 expectedCount: 0
             ),
@@ -63,7 +63,7 @@ extension ProjectionWriteBoundaryTests {
                 expectedCount: 0
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "state.$campaigns.withLock { $0 = [] }",
                 expectedCount: 1
             ),
@@ -73,7 +73,7 @@ extension ProjectionWriteBoundaryTests {
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: """
                 struct OrdersFeature {
                     func core(state: inout State) {
@@ -93,7 +93,7 @@ extension ProjectionWriteBoundaryTests {
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "OrderListFeature.State(campaigns: state.$campaigns)",
                 expectedCount: 1
             ),
@@ -103,7 +103,7 @@ extension ProjectionWriteBoundaryTests {
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "let leaked = state.$campaigns",
                 expectedCount: 1
             ),
@@ -113,7 +113,7 @@ extension ProjectionWriteBoundaryTests {
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: """
                 extension OrdersFeature.State {
                     mutating func rebind() {
@@ -129,7 +129,7 @@ extension ProjectionWriteBoundaryTests {
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "$campaigns = replacement",
                 expectedCount: 1
             ),
@@ -144,47 +144,47 @@ extension ProjectionWriteBoundaryTests {
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "_campaigns.withLock { $0 = [] }",
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "state._campaigns = replacement",
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "helper(_campaigns)",
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "init() {\n    _campaigns.withLock { $0 = [] }\n}",
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "init() {\n    helper(_campaigns)\n}",
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "init() {\n    self._campaigns = Shared(value: [])\n}",
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrderListFeature.swift",
+                relativePath: "Features/Orders/Presentation/OrderList/OrderListFeature.swift",
                 source: "self._campaigns = campaigns",
                 expectedCount: 0
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "init() { }\nfunc read() {\n    SharedReader(_campaigns)\n}",
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrderListFeature.swift",
+                relativePath: "Features/Orders/Presentation/OrderList/OrderListFeature.swift",
                 source: "@SharedReader var campaigns: [Campaign]\nOrderFilterFeature.State(campaigns: state.$campaigns)",
                 expectedCount: 0
             ),
@@ -194,7 +194,7 @@ extension ProjectionWriteBoundaryTests {
                 expectedCount: 1
             ),
             SharedOrderScenario(
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 source: "@SharedReader var campaigns: [Campaign]\nOrderFilterFeature.State(campaigns: state.$campaigns)",
                 expectedCount: 1
             ),

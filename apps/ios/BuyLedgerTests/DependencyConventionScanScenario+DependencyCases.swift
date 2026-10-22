@@ -16,7 +16,7 @@ extension DependencyConventionScanScenario {
             ViolationCase(
                 name: "Reducer 以型別取得依賴",
                 source: "@Dependency(OrderService.self) private var orderService",
-                relativePath: "Features/Orders/OrdersFeature.swift",
+                relativePath: "Features/Orders/Presentation/Root/OrdersFeature.swift",
                 sourceTree: .production,
                 rules: [.dependencyTypeSubscript],
                 expectedLine: 1,
