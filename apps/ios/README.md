@@ -159,8 +159,15 @@ apps/ios/
 │   │   │   └── Components/       # BLAvatar、BLBadge、BLCard、BLBarChart、Pickers (OptionPickerSheet)、Forms (PaymentMethodEditorSheet) 等元件
 │   └── Resources/                # Info.plist、entitlements、PrivacyInfo.xcprivacy (隱私資訊清單)、Config.example.xcconfig (範本，實際 Config.xcconfig 自填且 gitignored)、assets
 ├── BuyLedgerAccessibilityIDs/    # UI 測試 identifier 常數，BLAccessibilityID 依區域分檔為 +<區域>.swift (共用資料夾，同時編入 App 與 UITests 兩個 target)
-├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
-│   └── Mocks/                    # BuyLedgerDatabase、HTTPClient、UserDefaultsStore、AppConfigurationStore 的 Mock 與 MockURLProtocol
+├── BuyLedgerTests/               # 單元測試，依 ios-dev-kit 鏡像正式程式碼到 Feature 層
+│   ├── Features/<Feature>/       # 各功能的 reducer、Service 與計算測試
+│   ├── Core/、Shared/、App/Testing/ # 對應正式程式碼同名目錄的測試
+│   ├── AccessibilityIDs/         # BLAccessibilityID 測試
+│   ├── Guards/                   # 原始碼掃描與守門測試；多檔的守門依類別分資料夾 (LayerBoundary、DependencyConvention、ProjectionWriteBoundary、ServiceOwnership、LocalizationCatalog 等)，共用掃描器放 Scanning/
+│   ├── SnapshotTests/            # swift-snapshot-testing 測試；baseline 在 __Snapshots__/<測試檔名>/
+│   ├── Mocks/                    # BuyLedgerDatabase、HTTPClient、UserDefaultsStore、AppConfigurationStore 的 Mock 與 MockURLProtocol
+│   ├── Fixtures/                 # Campaign、LedgerOrder 的測試用固定資料
+│   └── Support/                  # TestDependencies、TestPaths 與測試容器等共用輔助
 ├── BuyLedgerUITests/             # XCUITest
 │   ├── Support/                  # 共用互動 helper
 │   ├── Screens/                  # Page Object
@@ -375,4 +382,4 @@ ExchangeRate-API v6 有兩個 endpoint：`latest/{base}` (匯率) 與 `codes` (�
 
 ### Snapshot baseline 漂移
 
-設計大改時請刪掉對應 baseline (`BuyLedgerTests/__Snapshots__/SnapshotTests*/*.png`，依測試檔分資料夾) 讓下一次跑測試自動重建。Baseline 失準若不是來自設計變動，先確認測試是否走 `TestDependencies.withFixedNow { ... }` 注入固定 `Date`、`TimeZone`、`Calendar`。
+設計大改時請刪掉對應 baseline (`BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotTests*/*.png`，依測試檔分資料夾) 讓下一次跑測試自動重建。Baseline 失準若不是來自設計變動，先確認測試是否走 `TestDependencies.withFixedNow { ... }` 注入固定 `Date`、`TimeZone`、`Calendar`。

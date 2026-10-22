@@ -5,7 +5,8 @@ paths:
 
 # iOS 單元測試
 
-- **單元測試放 `apps/ios/BuyLedgerTests/`，檔名對應被測型別或功能** (如 `OrdersFeatureTests.swift`)。
+- **單元測試放 `apps/ios/BuyLedgerTests/`，依 kit 鏡像正式程式碼到 Feature 層，檔名對應被測型別或功能** (如 `Features/Orders/OrdersFeatureTests.swift`)。
+    - `Core/<能力>/`、`Shared/<模組>/`、`App/Testing/` 同樣鏡像；原始碼掃描與守門測試放 `Guards/`，snapshot 測試放 `SnapshotTests/`，`<Model>+Fixture` 放 `Fixtures/`，其他共用輔助放 `Support/`。
 - **讀原始碼或設定檔的測試以 `TestPaths.iosRoot` 取得 `apps/ios`**，不以 `#filePath` 往上退固定層數：測試檔搬到其他層級時，固定層數會指錯目錄。
 - **只含 `@Test` 的 test extension 不設 MARK**；helper、fixture、nested type 所在的 extension 照 kit 的區名設 MARK。
 - **`Bool` 命名規則 (以 `is`／`has`／`can`／`should` 開頭) 同樣適用測試**。
@@ -94,7 +95,7 @@ paths:
 
 - **每個 snapshot 測試用 `TestDependencies.withFixedNow { ... }` 包住 view 建構與 `assertSnapshot`**，注入固定 `\.date`；測試內不直接呼叫 `Date()`。
     - 畫面不讀時間時 (如開團列表、首頁、分析頁)，改在建構 State 時帶入固定的 `dateContext`，不靠 `withFixedNow` 提供「現在」。
-    - baseline 在 `BuyLedgerTests/__Snapshots__/<測試檔名>/`：目錄跟著呼叫 `assertSnapshot` 的測試檔名 (如 `SnapshotTests+Orders.swift` 對應 `SnapshotTests+Orders/`)；拆檔或搬移測試時基準圖要連同目錄一起搬、不重錄，沒跟著搬會被當成缺少基準圖。record 流程見 `apps/ios/README.md`。
+    - baseline 在 `BuyLedgerTests/SnapshotTests/__Snapshots__/<測試檔名>/`：目錄跟著呼叫 `assertSnapshot` 的測試檔名 (如 `SnapshotTests+Orders.swift` 對應 `SnapshotTests+Orders/`)；拆檔或搬移測試時基準圖要連同目錄一起搬、不重錄，沒跟著搬會被當成缺少基準圖。record 流程見 `apps/ios/README.md`。
     - 尺寸以各測試的 `.frame` 為準：iPhone 直向 393×852 (長頁面用 393×1800)、iPad 全螢幕寬版 1024×768、大尺寸 iPhone 橫向 956×440 (要露出下方卡片時只加高，如分析頁 956×1000)。
     - 訂單三欄只拍清單欄 320×768，包 `NavigationStack` 後渲染；離屏渲染畫不出工具列項目，工具列與欄位組合由 UI 測試守，snapshot 只守欄內內容。
         - 詳情欄不拍：內容與 iPhone 推入詳情是同一份程式碼 (`OrderDetailView`)，由 iPhone 詳情截圖守；多拍一張只會讓每次調整詳情內容多重錄一張。

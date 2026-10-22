@@ -4,9 +4,9 @@ paths:
   - "apps/ios/BuyLedger/Shared/**"
   - "apps/ios/BuyLedger/Core/{Domain,Networking}/**"
   - "apps/ios/BuyLedger/**/*.xcstrings"
-  - "apps/ios/BuyLedgerTests/LocalizationCatalogTests*.swift"
-  - "apps/ios/BuyLedgerTests/*+SourceLiteralScan.swift"
-  - "apps/ios/BuyLedgerTests/AccessibilityConventionScanTests.swift"
+  - "apps/ios/BuyLedgerTests/Guards/LocalizationCatalog/LocalizationCatalogTests*.swift"
+  - "apps/ios/BuyLedgerTests/Guards/Scanning/*+SourceLiteralScan.swift"
+  - "apps/ios/BuyLedgerTests/Guards/AccessibilityConventionScanTests.swift"
 ---
 
 # iOS 無障礙與本地化

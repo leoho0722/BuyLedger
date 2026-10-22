@@ -150,7 +150,7 @@
 - **Feature 專屬 Service 只被所屬 Feature 引用**：Feature 之間的資料經父層投影或 delegate 交給，不直接取用他人的 Service。
 - **每個 Feature 至多一個以資料庫為下層的 Service** (`Features/<Feature>/Data/` 內取用 `buyLedgerDatabase` 者)：同一交易要同時改主檔與訂單時，寫入必須在擁有者 Service 的同一次 `database.write` 內 (如 `LookupService.renameItem`、`CampaignService.renameCampaign`)。
   - 系統 framework 的 Service (`CalendarReminderService`、`OpenSettingsService`、`PhotoService`) 不以資料庫為下層，不計入。
-  - 以上兩條與訂單端只讀主檔目錄 (見 `ios-data-layer.md`) 由 `BuyLedgerTests/ServiceOwnershipScanTests.swift` 掃描 production 程式碼守門；`Core/` 的共用 Service 與 `App/` 組合根 (含 `App/Testing/`) 不受限。
+  - 以上兩條與訂單端只讀主檔目錄 (見 `ios-data-layer.md`) 由 `BuyLedgerTests/Guards/ServiceOwnership/ServiceOwnershipScanTests.swift` 掃描 production 程式碼守門；`Core/` 的共用 Service 與 `App/` 組合根 (含 `App/Testing/`) 不受限。
 
 ### SwiftData 容器與範例資料
 
