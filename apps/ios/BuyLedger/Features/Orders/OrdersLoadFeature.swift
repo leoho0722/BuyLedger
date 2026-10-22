@@ -75,7 +75,7 @@ struct OrdersLoadFeature {
     // MARK: - Body
 
     /// 組合載入請求與讀取回應的處理
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
     }
 }

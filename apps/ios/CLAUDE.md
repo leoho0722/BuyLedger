@@ -18,7 +18,6 @@
 ## 技術棧 gotcha
 
 - **`SWIFT_DEFAULT_ACTOR_ISOLATION = nonisolated`，不改成 `MainActor`**：`MainActor` 會讓 SwiftData `@Model` 與 `@ModelActor` 編不過；需要主執行緒的型別個別標 `@MainActor`。
-- **TCA Reducer body 寫 `some Reducer<State, Action>`，不寫 `some ReducerOf<Self>`**：後者會 circular reference。
 - **`$store.draft.name` 這類巢狀欄位綁定，SwiftUI 會寫回整個 `draft`，送出 `.set(\.draft, …)`**：TCA 的 `BindingAction ~=` 要求 key path 完全相等，reducer 的 `.binding(\.draft.name)` 永遠不成立。
     - 要對單一欄位的變更反應時，在 State 加可寫的 computed property 並讓畫面綁定它 (開團表單的 `CampaignEditFeature.State.draftName`，reducer 比對 `.binding(\.draftName)`)；其他欄位的變更走 `case .binding:`。
 - **`Feature.State` 上顯式標註的 `Sendable` 是編譯期契約，不可當冗餘刪除** (`SettingsFeature`／`FxFeature`／`QuoteFeature`／`OrderEditFeature`／`CampaignEditFeature`)：刪掉後 State 混入非 Sendable 成員也不會報錯，且沒有測試會轉紅。
@@ -174,7 +173,6 @@
     - Service 的 `+Preview` 檔與 Service 放在一起，依第 10 步處理，不移至 `Preview Content`。
     - Feature 專屬 Service 放在該 Feature 的 `Data/`；Feature 其他檔案維持扁平結構，依第 10 步決定目錄調整。
 - **本專案既有架構與 `/ios-dev-kit` 的差異，新程式碼沿用現行寫法**：
-    - Reducer body 型別用 `some Reducer<State, Action>` (見技術棧 gotcha)，不用樣板的 `some ReducerOf<Self>`。
     - 內部回應保留具體錯誤型別：`<名詞>Response(Result<T, PersistenceError>)` 等與 Service 的 typed throws 一致，不改成 kit 樣板的 `any Error`。
     - `MoreFeature` 是 App 殼層的分頁宿主，沒有自己的領域資料；它的 `Path` 引用其他 Feature 模組的 Feature 型別，視為 kit「跨 Feature 模組導航只在 App 層」的殼層例外，目錄暫留 `Features/More/`，依第 10 步調整。
     - `@Shared` 用於主檔目錄 `@Shared(.lookupCatalog)`、幣別清單 `@Shared(.currencyCodes)` 與容器內的無鍵共享資料，寫入責任見 `ios-data-layer.md`。

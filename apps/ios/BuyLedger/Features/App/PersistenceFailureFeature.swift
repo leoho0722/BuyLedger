@@ -65,7 +65,7 @@ struct PersistenceFailureFeature {
     // MARK: - Body
 
     /// 組合復原邏輯與確認視窗，具體事件由 `core(state:action:)` 處理
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }

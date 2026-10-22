@@ -222,7 +222,7 @@ struct OrderEditPickersFeature {
     // MARK: - Body
 
     /// 組合選擇器路由繫結與畫面事件處理
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
 
         Reduce(core)

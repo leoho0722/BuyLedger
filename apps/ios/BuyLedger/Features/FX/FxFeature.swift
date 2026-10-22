@@ -141,7 +141,7 @@ struct FxFeature {
     // MARK: - Body
 
     /// 組合雙向繫結、匯率工具自己的邏輯 (`core(state:action:)`) 與幣別選擇流程
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
         Reduce(core)
             .ifLet(\.$destination, action: \.destination)

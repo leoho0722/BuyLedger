@@ -84,7 +84,7 @@ struct AppLockFeature {
     // MARK: - Body
 
     /// 組合鎖定與解鎖邏輯，不參與設定頁的啟用驗證或持久化
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
     }
 }

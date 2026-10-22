@@ -89,7 +89,7 @@ struct CampaignLoadFeature {
     // MARK: - Body
 
     /// 組合開團載入的事件處理
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
     }
 }

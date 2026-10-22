@@ -196,7 +196,7 @@ struct CampaignFeature {
     // MARK: - Body
 
     /// 組合各子 Feature，容器自己的轉送與分派邏輯在 `core(state:action:)`
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Scope(state: \.load, action: \.load) {
             CampaignLoadFeature()
         }

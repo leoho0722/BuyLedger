@@ -197,7 +197,7 @@ struct CampaignEditFeature {
     // MARK: - Body
 
     /// 組合繫結、表單邏輯與捨棄確認
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
         Reduce(core)
             .ifLet(\.$discardConfirmation, action: \.discardConfirmation)

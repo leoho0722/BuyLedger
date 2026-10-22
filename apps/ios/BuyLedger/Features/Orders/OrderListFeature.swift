@@ -324,7 +324,7 @@ struct OrderListFeature {
     // MARK: - Body
 
     /// 組合清單繫結、互動與篩選子層
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
         Reduce(core)
             .ifLet(\.$destination, action: \.destination)

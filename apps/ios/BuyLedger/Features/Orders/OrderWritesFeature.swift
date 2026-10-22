@@ -149,7 +149,7 @@ struct OrderWritesFeature {
     // MARK: - Body
 
     /// 組合寫入請求與回應處理
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
     }
 }

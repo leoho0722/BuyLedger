@@ -175,7 +175,7 @@ struct OrderMergeFeature {
     // MARK: - Body
 
     /// 合併流程 reducer
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
 
         Reduce(core)

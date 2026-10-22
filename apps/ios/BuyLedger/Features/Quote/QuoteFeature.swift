@@ -180,7 +180,7 @@ struct QuoteFeature {
     // MARK: - Body
 
     /// 報價 reducer
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
 
         Scope(state: \.rateSource, action: \.rateSource) {

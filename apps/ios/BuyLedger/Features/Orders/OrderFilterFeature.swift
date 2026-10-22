@@ -201,7 +201,7 @@ struct OrderFilterFeature {
     // MARK: - Body
 
     /// 組合搜尋繫結、面板互動與捨棄確認
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
         Reduce(core)
             .ifLet(\.$filterDiscardConfirmation, action: \.filterDiscardConfirmation)

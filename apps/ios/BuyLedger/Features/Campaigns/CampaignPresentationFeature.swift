@@ -100,7 +100,7 @@ struct CampaignPresentationFeature {
     // MARK: - Body
 
     /// 組合目的地，呈現與關閉的邏輯在 `core(state:action:)`
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }

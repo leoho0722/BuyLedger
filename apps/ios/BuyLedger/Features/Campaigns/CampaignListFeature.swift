@@ -202,7 +202,7 @@ struct CampaignListFeature {
     // MARK: - Body
 
     /// 組合列表的事件處理
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
     }
 }

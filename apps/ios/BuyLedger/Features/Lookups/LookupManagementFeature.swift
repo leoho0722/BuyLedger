@@ -166,7 +166,7 @@ struct LookupManagementFeature {
     // MARK: - Body
 
     /// 組合付款方式更正、核心邏輯與目的地 reducer
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Scope(state: \.correction, action: \.correction) {
             PaymentMethodCorrectionFeature()
         }

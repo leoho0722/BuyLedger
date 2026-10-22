@@ -109,7 +109,7 @@ struct QuoteRateFeature {
     // MARK: - Body
 
     /// 只負責組合 reducer：匯率來源自己的邏輯在 `core(state:action:)`，另接上幣別選擇流程
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }

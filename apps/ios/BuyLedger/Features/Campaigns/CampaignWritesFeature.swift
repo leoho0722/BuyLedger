@@ -122,7 +122,7 @@ struct CampaignWritesFeature {
     // MARK: - Body
 
     /// 組合寫入流程，不持有畫面或提示
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
     }
 }

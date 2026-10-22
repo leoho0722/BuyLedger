@@ -159,7 +159,7 @@ struct OrdersPresentationFeature {
     // MARK: - Body
 
     /// 組合目的地與事件處理，本層自己的邏輯放在 `core(state:action:)`
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
             .ifLet(\.$destination, action: \.destination)
     }

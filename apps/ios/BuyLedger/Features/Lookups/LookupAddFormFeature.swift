@@ -65,7 +65,7 @@ struct LookupAddFormFeature {
     // MARK: - Body
 
     /// 只組合 reducer，表單送出的驗證由 `core(state:action:)` 處理
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
     }
 }

@@ -222,7 +222,7 @@ struct OrdersFeature {
     // MARK: - Body
 
     /// 組合雙向繫結、清單與載入子層、寫入與呈現子層，最後由 `core(state:action:)` 分派請求
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
 
         Scope(state: \.list, action: \.list) {

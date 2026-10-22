@@ -101,7 +101,7 @@ struct OrdersDetailNavigationFeature {
     // MARK: - Body
 
     /// 組合堆疊與右欄詳情子層，本層沒有自身邏輯
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
             .forEach(\.path, action: \.path)
             .ifLet(\.regularDetail, action: \.regularDetail) {

@@ -187,7 +187,7 @@ struct InsightsFeature {
     // MARK: - Body
 
     /// 只負責組合 reducer，本畫面自己的邏輯在 `core(state:action:)`
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
 
         Reduce(core)

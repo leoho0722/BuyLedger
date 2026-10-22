@@ -334,7 +334,7 @@ struct OrderEditFeature {
     // MARK: - Body
 
     /// 組合草稿繫結、照片、選項選擇與表單事件處理
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
 
         Scope(state: \.photos, action: \.photos) {

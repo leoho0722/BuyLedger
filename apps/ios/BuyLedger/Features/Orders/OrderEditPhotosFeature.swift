@@ -145,7 +145,7 @@ struct OrderEditPhotosFeature {
     // MARK: - Body
 
     /// 組合照片繫結與區段事件處理
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         BindingReducer()
 
         Reduce(core)

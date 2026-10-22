@@ -92,7 +92,7 @@ struct CustomersFeature {
     // MARK: - Body
 
     /// 只負責組合 reducer，客戶頁自己的邏輯在 `core(state:action:)`
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
     }
 }

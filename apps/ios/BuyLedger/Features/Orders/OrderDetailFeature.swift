@@ -164,7 +164,7 @@ struct OrderDetailFeature {
     // MARK: - Body
 
     /// 將互動轉成請求，不啟動非同步工作
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
     }
 }

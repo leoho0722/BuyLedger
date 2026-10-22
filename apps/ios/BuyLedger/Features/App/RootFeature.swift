@@ -163,7 +163,7 @@ struct RootFeature {
     // MARK: - Body
 
     /// 組合子層與根邏輯；保留 `CombineReducers`，讓尾端 `onChange` 看到子層變更後再同步投影
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         CombineReducers {
             Scope(state: \.appLock, action: \.appLock) {
                 AppLockFeature()

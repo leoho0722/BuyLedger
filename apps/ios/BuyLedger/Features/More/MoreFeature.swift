@@ -183,7 +183,7 @@ struct MoreFeature {
     // MARK: - Body
 
     /// 組合分頁邏輯與堆疊子畫面，元素移除時由 TCA 取消子畫面的 effect
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Scope(state: \.catalog, action: \.catalog) {
             LookupCatalogFeature()
         }

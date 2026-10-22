@@ -130,7 +130,7 @@ struct CampaignDetailFeature {
     // MARK: - Body
 
     /// 只組合 reducer，操作由 `core(state:action:)` 處理
-    var body: some Reducer<State, Action> {
+    var body: some ReducerOf<Self> {
         Reduce(core)
     }
 }
