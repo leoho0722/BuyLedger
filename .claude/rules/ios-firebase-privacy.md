@@ -1,7 +1,7 @@
 ---
 paths:
   - "apps/ios/BuyLedger/App/AppLaunchConfigurator.swift"
-  - "apps/ios/BuyLedger/App/TelemetryService*.swift"
+  - "apps/ios/BuyLedger/Core/Telemetry/TelemetryService*.swift"
   - "apps/ios/BuyLedger/Resources/**"
   - "apps/ios/BuyLedger.xcodeproj/project.xcproj"
   - "apps/ios/BuyLedgerTests/PrivacyManifestTests.swift"

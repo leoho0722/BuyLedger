@@ -22,7 +22,7 @@ Xcode project 使用 file system synchronized groups，新增或搬移檔案請�
 apps/ios/
 ├── BuyLedger.xcodeproj/          # Xcode 專案；project.xcproj (JSON 格式) 提交、xcuserdata/ 不提交
 ├── BuyLedger/                    # App source root
-│   ├── App/                      # 進入點：BuyLedgerApp、WindowGroup、AppLaunchConfigurator、TelemetryService (Firebase 遙測收集)
+│   ├── App/                      # 進入點：BuyLedgerApp、WindowGroup、AppDelegate、AppLaunchConfigurator
 │   │   └── Testing/              # UI 測試啟動 harness (#if DEBUG)，組裝根與呼叫它的啟動設定同層；進入點 BLUITestHarness
 │   │       ├── Configuration/    # 啟動參數解析 BLUITestConfiguration 與五個參數列舉 Language／LoadFailure／CalendarAccess／BiometricScenario／PersistenceMode
 │   │       ├── Seed/             # 種子資料組合 BLUITestSeedProfile 與依組合寫入的 BLUITestSeedData (+各情境資料)
@@ -36,6 +36,7 @@ apps/ios/
 │   │   ├── Networking/           # APIError、HTTPClient (send/stream)、HTTPMethod、URLRequestBuilder、ExchangeRateEndpoint (ExchangeRate-API 請求與錯誤分類)、ExchangeRateLatestResponse、ExchangeRateCodesResponse
 │   │   ├── Environment/          # RuntimeEnvironment (Preview／UI 測試／單元測試的執行環境判斷)
 │   │   ├── Diagnostics/          # 啟動診斷送往當機診斷服務的可替換介面 (CrashDiagnosticsClient)
+│   │   ├── Telemetry/            # TelemetryService：啟動時開啟 Firebase Analytics／Crashlytics／Performance 收集
 │   │   └── Extensions/           # 系統型別的通用 extension (Bundle／Decimal／Image，一型一檔)
 │   ├── Features/                 # 依功能切分的 TCA feature
 │   │   ├── AISummary/            # 訂單 AI 商品明細總結 (Ollama Cloud 串流)

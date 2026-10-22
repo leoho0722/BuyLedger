@@ -33,7 +33,7 @@ extension ServiceOwnershipScanTests {
                 databaseCode: #"@Dependency(\.buyLedgerDatabase) var database"#
             ),
             serviceSource(
-                path: "App/TelemetryService+Dependency.swift",
+                path: "Core/Telemetry/TelemetryService+Dependency.swift",
                 key: "telemetryService",
                 typeName: "TelemetryService"
             ),
