@@ -9,7 +9,7 @@
 
 extension DependencyConventionScanScenario {
 
-    /// 型別下標規則拒絕型別注入，以及 `+Dependency.swift` 中 `DependencyValues` accessor 以外的下標，
+    /// 型別下標規則拒絕型別注入，以及宣告 `DependencyKey` 的檔案中 `DependencyValues` accessor 以外的下標，
     /// 供 `violationCases` 跨檔組合使用
     static var dependencyViolationCases: [ViolationCase] {
         [
@@ -45,18 +45,23 @@ extension DependencyConventionScanScenario {
             ),
             ViolationCase(
                 name: "DependencyValues 以外使用 accessor 下標",
-                source: "extension OtherValues { var service: OrderService { get { self[OrderService.self] } } }",
-                relativePath: "Core/Dependencies/OrderService+Dependency.swift",
+                source: """
+                extension OrderService: DependencyKey {}
+                extension OtherValues {
+                    var service: OrderService { get { self[OrderService.self] } }
+                }
+                """,
+                relativePath: "Features/Orders/Data/Order/OrderService.swift",
                 sourceTree: .production,
                 rules: [.dependencyTypeSubscript],
-                expectedLine: 1,
+                expectedLine: 3,
                 expectedReference: "self[OrderService.self]",
                 expectedReason: "不得以型別下標讀取依賴"
             ),
             ViolationCase(
-                name: "非 Dependency 檔使用 accessor 下標",
+                name: "未宣告 DependencyKey 的檔案使用 accessor 下標",
                 source: "extension DependencyValues { var service: OrderService { get { self[OrderService.self] } } }",
-                relativePath: "Core/Dependencies/OrderService.swift",
+                relativePath: "Features/Orders/Data/Order/OrderService+Reads.swift",
                 sourceTree: .production,
                 rules: [.dependencyTypeSubscript],
                 expectedLine: 1,
@@ -80,9 +85,26 @@ extension DependencyConventionScanScenario {
     static var dependencyPassingCases: [PassingCase] {
         [
             PassingCase(
-                name: "DependencyValues accessor 使用型別下標",
-                source: "extension DependencyValues { var orderService: OrderService { get { self[OrderService.self] } } }",
-                relativePath: "Core/Dependencies/OrderService+Dependency.swift",
+                name: "Service 的 DependencyValues accessor 使用型別下標",
+                source: """
+                extension OrderService: DependencyKey {}
+                extension DependencyValues {
+                    var orderService: OrderService { get { self[OrderService.self] } }
+                }
+                """,
+                relativePath: "Features/Orders/Data/Order/OrderService.swift",
+                sourceTree: .production,
+                rules: [.dependencyTypeSubscript]
+            ),
+            PassingCase(
+                name: "Client 的 DependencyValues accessor 使用 Key 型別下標",
+                source: """
+                enum HTTPClientKey: DependencyKey {}
+                extension DependencyValues {
+                    var httpClient: any HTTPClientProtocol { get { self[HTTPClientKey.self] } }
+                }
+                """,
+                relativePath: "Core/Networking/Client/HTTPClient.swift",
                 sourceTree: .production,
                 rules: [.dependencyTypeSubscript]
             ),

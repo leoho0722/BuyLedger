@@ -27,13 +27,13 @@ extension ServiceOwnershipScanTests {
                 databaseCode: #"@Dependency(\DependencyValues.buyLedgerDatabase) var database"#
             ),
             serviceSource(
-                path: "Core/Dependencies/CurrencyMetadataService+Dependency.swift",
+                path: "Core/Currency/CurrencyMetadataService.swift",
                 key: "currencyMetadataService",
                 typeName: "CurrencyMetadataService",
                 databaseCode: #"@Dependency(\.buyLedgerDatabase) var database"#
             ),
             serviceSource(
-                path: "Core/Telemetry/TelemetryService+Dependency.swift",
+                path: "Core/Telemetry/TelemetryService.swift",
                 key: "telemetryService",
                 typeName: "TelemetryService"
             ),

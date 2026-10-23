@@ -15,25 +15,37 @@ extension DependencyConventionScanScenario {
             ViolationCase(
                 name: "Service 測試值提供可執行 closure",
                 source: """
-                static var testValue: Self {
-                    Self(
-                        fetchCategories: {
-                            []
-                        }
-                    )
+                extension CategoryService: DependencyKey {
+                    static var testValue: Self {
+                        Self(
+                            fetchCategories: {
+                                []
+                            }
+                        )
+                    }
                 }
                 """,
-                relativePath: "Core/Dependencies/CategoryService+Dependency.swift",
+                relativePath: "Features/Lookups/Data/CategoryService.swift",
                 sourceTree: .production,
                 rules: [.testValue],
-                expectedLine: 3,
+                expectedLine: 4,
                 expectedReference: "fetchCategories: { [] }",
                 expectedReason: "CategoryService.fetchCategories 必須以 unimplemented( 開頭"
             ),
             ViolationCase(
                 name: "Service 沒有 testValue",
-                source: "enum CategoryServiceKey {}",
-                relativePath: "Core/Dependencies/CategoryService+Dependency.swift",
+                source: "extension CategoryService: DependencyKey {}",
+                relativePath: "Features/Lookups/Data/CategoryService.swift",
+                sourceTree: .production,
+                rules: [.testValue],
+                expectedLine: 1,
+                expectedReference: "testValue",
+                expectedReason: "CategoryService 必須宣告測試值"
+            ),
+            ViolationCase(
+                name: "Service 的 +Dependency 檔沒有 testValue",
+                source: "extension CategoryService: DependencyKey {}",
+                relativePath: "Features/Lookups/Data/CategoryService+Dependency.swift",
                 sourceTree: .production,
                 rules: [.testValue],
                 expectedLine: 1,
@@ -42,41 +54,51 @@ extension DependencyConventionScanScenario {
             ),
             ViolationCase(
                 name: "HTTP client 宣告 testValue",
-                source: "static var testValue: HTTPClientProtocol { PreviewHTTPClient() }",
-                relativePath: "Core/Networking/Client/HTTPClient+Dependency.swift",
+                source: """
+                enum HTTPClientKey: DependencyKey {
+                    static var testValue: HTTPClientProtocol { PreviewHTTPClient() }
+                }
+                """,
+                relativePath: "Core/Networking/Client/HTTPClient.swift",
                 sourceTree: .production,
                 rules: [.testValue],
-                expectedLine: 1,
+                expectedLine: 2,
                 expectedReference: "var testValue",
                 expectedReason: "Client、Store 與 Database 的 Dependency 不得宣告 testValue"
             ),
             ViolationCase(
                 name: "新增 Client 宣告 testValue",
-                source: "static let testValue = KeychainClient()",
-                relativePath: "Core/Security/KeychainClient+Dependency.swift",
+                source: """
+                enum KeychainClientKey: DependencyKey {
+                    static let testValue = KeychainClient()
+                }
+                """,
+                relativePath: "Core/Security/KeychainClient.swift",
                 sourceTree: .production,
                 rules: [.testValue],
-                expectedLine: 1,
+                expectedLine: 2,
                 expectedReference: "let testValue",
                 expectedReason: "Client、Store 與 Database 的 Dependency 不得宣告 testValue"
             ),
             ViolationCase(
                 name: "Service 第二個引數使用可執行 closure",
                 source: """
-                static var testValue: Self {
-                    Self(
-                        fetchCategories: unimplemented(
-                            "CategoryService.fetchCategories",
-                            placeholder: []
-                        ),
-                        saveCategory: { _ in }
-                    )
+                extension CategoryService: DependencyKey {
+                    static var testValue: Self {
+                        Self(
+                            fetchCategories: unimplemented(
+                                "CategoryService.fetchCategories",
+                                placeholder: []
+                            ),
+                            saveCategory: { _ in }
+                        )
+                    }
                 }
                 """,
-                relativePath: "Core/Dependencies/CategoryService+Dependency.swift",
+                relativePath: "Features/Lookups/Data/CategoryService.swift",
                 sourceTree: .production,
                 rules: [.testValue],
-                expectedLine: 7,
+                expectedLine: 8,
                 expectedReference: "saveCategory: { _ in }",
                 expectedReason: "CategoryService.saveCategory 必須以 unimplemented( 開頭"
             ),
@@ -89,23 +111,36 @@ extension DependencyConventionScanScenario {
             PassingCase(
                 name: "Service 測試值 closure 全部未實作",
                 source: """
-                static var testValue: Self {
-                    Self(
-                        fetchCategories: unimplemented(
-                            "CategoryService.fetchCategories",
-                            placeholder: []
+                extension CategoryService: DependencyKey {
+                    static var testValue: Self {
+                        Self(
+                            fetchCategories: unimplemented(
+                                "CategoryService.fetchCategories",
+                                placeholder: []
+                            )
                         )
-                    )
+                    }
                 }
                 """,
-                relativePath: "Core/Dependencies/CategoryService+Dependency.swift",
+                relativePath: "Features/Lookups/Data/CategoryService.swift",
                 sourceTree: .production,
                 rules: [.testValue]
             ),
             PassingCase(
                 name: "Client dependency 只提供 live value",
-                source: "static var liveValue: any HTTPClientProtocol { HTTPClient() }",
-                relativePath: "Core/Networking/Client/HTTPClient+Dependency.swift",
+                source: """
+                enum HTTPClientKey: DependencyKey {
+                    static var liveValue: any HTTPClientProtocol { HTTPClient() }
+                }
+                """,
+                relativePath: "Core/Networking/Client/HTTPClient.swift",
+                sourceTree: .production,
+                rules: [.testValue]
+            ),
+            PassingCase(
+                name: "未宣告 DependencyKey 的 Service 檔不套用測試值規則",
+                source: "extension CategoryService { static func fetchAll() -> [String] { [] } }",
+                relativePath: "Features/Lookups/Data/CategoryService+Reads.swift",
                 sourceTree: .production,
                 rules: [.testValue]
             ),

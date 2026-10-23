@@ -5,23 +5,24 @@
 //  Created by Leo Ho on 2026/9/26.
 //
 
+import ComposableArchitecture
 import Foundation
 import SwiftData
 
 /// 讀取與更新支援幣別主檔的操作入口；
-/// 正式實作在 `liveValue`、測試預設值在 `testValue`、Preview 假資料在 `previewValue`
+/// 正式實作在 `liveValue`、Preview 假資料在 `previewValue`、測試預設值在 `testValue`
 struct CurrencyMetadataService: Sendable {
 
     // MARK: - Properties
 
-    /// 讀取目前快取中的 ISO 4217 幣別代碼並排序
+    /// 讀取目前快取中的幣別代碼 (如 TWD、USD) 並排序
     ///
     /// - Returns: 已排序的支援幣別代碼
     /// - Throws: 讀取快取失敗時丟出
     ///   `.persistence(.storage(.fetchFailed(underlying:)))`
     var fetchCodes: FetchCodes
 
-    /// 快取過期或不存在時重新取得資料並寫回非空結果
+    /// 快取過期或不存在時重新取得幣別清單並存回快取，快取仍有效時不重抓
     ///
     /// - Parameter ttl: 判斷快取是否過期的存活時間門檻
     /// - Returns: `true` 表示實際更新、`false` 表示快取仍有效
@@ -46,9 +47,64 @@ extension CurrencyMetadataService {
     ) async throws(CurrencyMetadataServiceError) -> Bool
 }
 
-// MARK: - Internal Method
+// MARK: - DependencyKey
 
-extension CurrencyMetadataService {
+extension CurrencyMetadataService: DependencyKey {
+
+    /// 正式 App 使用注入的資料庫、HTTP、設定來源與目前時間；
+    /// 必須是 computed property，測試才能用 `withDependencies` 換掉 Database、Client、Store 與時間
+    static var liveValue: Self {
+        @Dependency(\.buyLedgerDatabase) var database
+        @Dependency(\.httpClient) var httpClient
+        @Dependency(\.appConfigurationStore) var configurationStore
+        @Dependency(\.date) var date
+
+        return Self(
+            fetchCodes: { () throws(CurrencyMetadataServiceError) in
+                try await Self.loadCodes(from: database)
+            },
+            refreshIfStale: { ttl throws(CurrencyMetadataServiceError) in
+                try await Self.refreshCodesIfNeeded(
+                    ttl: ttl,
+                    database: database,
+                    httpClient: httpClient,
+                    configurationStore: configurationStore,
+                    now: {
+                        date.now
+                    }
+                )
+            }
+        )
+    }
+
+    #if DEBUG
+
+    /// Preview 從共用的記憶體資料庫讀取預先放入的預設幣別
+    static var previewValue: Self {
+        assert(
+            RuntimeEnvironment.allowsPreviewStub,
+            "CurrencyMetadataService.previewValue 只能在 Preview、UI Test 或單元測試中使用"
+        )
+        return liveValue
+    }
+
+    #endif
+
+    /// 測試預設值；每個 closure 都必須由測試明確覆寫
+    static var testValue: Self {
+        Self(
+            fetchCodes: unimplemented("CurrencyMetadataService.fetchCodes", placeholder: []),
+            refreshIfStale: unimplemented(
+                "CurrencyMetadataService.refreshIfStale",
+                placeholder: false
+            )
+        )
+    }
+}
+
+// MARK: - Private Method
+
+private extension CurrencyMetadataService {
 
     /// 從資料庫讀取並排序快取中的幣別代碼
     ///
@@ -83,7 +139,7 @@ extension CurrencyMetadataService {
     ///   - ttl: 判斷快取是否過期的存活時間門檻
     ///   - database: 執行快取讀寫的資料庫
     ///   - httpClient: 傳送幣別清單請求的 HTTP client
-    ///   - configurationStore: 提供 API key 的設定來源
+    ///   - configurationStore: 提供 API 金鑰的設定來源
     ///   - now: 判斷快取時間與標記更新時間的目前時刻
     /// - Returns: `true` 表示實際更新、`false` 表示快取仍有效
     /// - Throws: API 失敗時丟出 `.api(.invalidKey)`、`.api(.transport(underlying:))`、
@@ -101,9 +157,9 @@ extension CurrencyMetadataService {
         let latestUpdate: Date?
         do throws(PersistenceError) {
             latestUpdate = try await database.read { context throws(PersistenceError) in
-                var descriptor = FetchDescriptor<CurrencyMetadataRecord>(
-                    sortBy: [SortDescriptor(\.lastUpdated, order: .reverse)]
-                )
+                var descriptor = FetchDescriptor<CurrencyMetadataRecord>(sortBy: [
+                    SortDescriptor(\.lastUpdated, order: .reverse),
+                ])
                 descriptor.fetchLimit = 1
                 return try PersistenceError.mapFetch {
                     try context.fetch(descriptor).first?.lastUpdated
@@ -150,17 +206,12 @@ extension CurrencyMetadataService {
         }
         return true
     }
-}
-
-// MARK: - Private Method
-
-private extension CurrencyMetadataService {
 
     /// 從 ExchangeRate-API 取得原始支援幣別代碼
     ///
     /// - Parameters:
     ///   - httpClient: 傳送幣別清單請求的 HTTP client
-    ///   - configurationStore: 提供 API key 的設定來源
+    ///   - configurationStore: 提供 API 金鑰的設定來源
     /// - Returns: API 回傳的支援幣別代碼
     /// - Throws: 缺少金鑰，或服務回報金鑰無效、帳號停用時丟出 `.api(.invalidKey)`；
     ///   金鑰含控制字元、URL 無效或傳輸失敗時丟出 `.api(.transport(underlying:))`；
@@ -193,5 +244,16 @@ private extension CurrencyMetadataService {
         } catch {
             throw .api(error)
         }
+    }
+}
+
+// MARK: - DependencyValues
+
+extension DependencyValues {
+
+    /// 供 reducer 以 `@Dependency(\.currencyMetadataService)` 取得的 Currency Metadata Service
+    var currencyMetadataService: CurrencyMetadataService {
+        get { self[CurrencyMetadataService.self] }
+        set { self[CurrencyMetadataService.self] = newValue }
     }
 }

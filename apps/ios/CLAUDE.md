@@ -158,7 +158,7 @@
   - Service 透過 `@Dependency(\.buyLedgerDatabase)` 共用該 Database，不另建容器或存取全域單例；工廠函式 (`make`、`makeBootstrap`) 維持 `private`。
 - **Production `liveValue` 不載入範例資料**，首次啟動是真正的空狀態；`LedgerOrder.sampleOrders`、`FxRateSnapshot.fallback`、`FxRates` 只用於 Preview 與測試。
   - 不以 Database 為下層的 Service 由各自的 `previewValue` 提供固定假資料。
-  - 以 Database 為下層的 Service 共用一個記憶體 Database，只 seed 一次 `LedgerOrder.sampleOrders`；其 `previewValue` 通過環境 assert 後回傳 `liveValue`。
+  - 以 Database 為下層的 Service 共用一個記憶體 Database，只 seed 一次 `LedgerOrder.sampleOrders` 與 `CurrencyCode.defaults` (幣別快取標成永不過期，Preview 不發網路請求)；其 `previewValue` 通過環境 assert 後回傳 `liveValue`。
 
 ### 時間、地區與識別碼
 
@@ -216,14 +216,13 @@
 局部改動沿用各項的現行位置與寫法，不順手遷移，避免混用架構。
 
 - **依第 10 步處理**：
-  - `Core/Dependencies/` 的 ExchangeRate 與 CurrencyMetadata Service 待定位置。
   - 錯誤型別：Orders 的 Service 用 `OrderError`，Campaigns 與 Lookups 沿用共用的 `PersistenceError`，不另立 `<Feature>Error`。
   - Service 直接呼叫系統 framework (例如 EventKit、PhotosUI、LocalAuthentication、UIApplication)。
   - `AppLaunchConfigurator` 以參數預設值注入 `CrashDiagnosticsClient`，預設正式實作並可由呼叫端替換。
-  - Service 的 `+Preview` 檔與 Service 放在一起，不移至 `Preview Content`。
-  - `BiometricAuthService` 由 `AppLockFeature` 與 `SettingsFeature` 共同取用且只依賴 `LocalAuthentication`，留在 `Core/Dependencies/`，不屬過渡例外。
 - **已決定改依 kit、尚未遷移**：
   - 格式化：現有 `BLFormatters` 與各 `<Feature>Formatters` 的靜態函式待改為 `FormatStyle`；新增的格式化依 kit 寫 `FormatStyle`。
+  - Service 單檔：`Features/` 的 Service 仍拆成 `+Dependency`、`+Preview` 與 `+Reads` 等子領域檔，待依 kit 併回主檔。
+  - 測試拆檔：現有的 `<Type>Tests+<行為>.swift`、`<Scenario>+<X>Cases.swift` 跨檔 extension 待另開 change 拆成獨立測試型別 (`<TypeUnderTest><行為>Tests`)；新寫的測試直接用獨立型別，style 閘門不對既有分檔逐檔判違規。
 
 ## 已裁定的產品決策
 

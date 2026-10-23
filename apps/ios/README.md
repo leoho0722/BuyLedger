@@ -34,7 +34,8 @@ apps/ios/
 │   │   │   ├── Database/         # BuyLedgerDatabase (actor，每次讀寫一次性 ModelContext)、PersistenceContainer、BuyLedgerSchema、store 隔離
 │   │   │   ├── Records/          # 各 SwiftData @Model Record 與 NameLookupRecordProtocol
 │   │   │   └── Errors/           # PersistenceError、PersistenceRecoveryError、RecordDecodingError 等持久化錯誤
-│   │   ├── Dependencies/         # 跨 Feature 共用的 Service (`@Dependency(\.xxxService)` 注入)：幣別與匯率、BiometricAuthService；SharedKey+CurrencyCodes (記憶體內共用幣別清單)
+│   │   ├── Authentication/       # BiometricAuthService：裝置本機驗證與生物辨識類型 (App 鎖定與設定頁共用)
+│   │   ├── Currency/             # 跨 Feature 共用的幣別與匯率 Service：CurrencyMetadataService (幣別主檔快取)、ExchangeRateService (最新匯率)；SharedKey+CurrencyCodes (記憶體內共用幣別清單)
 │   │   ├── Storage/              # UserDefaultsStore、AppConfigurationStore (讀 Info.plist 設定) 的 protocol、實作與 Preview 替身
 │   │   ├── Networking/
 │   │   │   ├── Client/           # APIError、HTTPClient (send/stream)、HTTPMethod、URLRequestBuilder 與 Preview 替身
@@ -346,12 +347,12 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 
 ### 資料層
 
-- **Service 層** (`Core/Dependencies/` 與各 Feature 的 `Data/`)：`OrderService` (`Features/Orders/Data/Order/`)、`LookupService` (`Features/Lookups/Data/`)、`CampaignService` (`Features/Campaigns/Data/Campaign/`) 等以資料庫為下層的 Service 透過 `BuyLedgerDatabase` (`Core/Persistence/`) 操作 SwiftData，每次讀寫使用一次性 context；production 唯一的 `ModelContainer` 由 `BuyLedgerDatabaseKey.liveValue` 從 `PersistenceContainer.bootstrap` 取得，Feature 以 `@Dependency(\.xxxService)` 取用 Service。
+- **Service 層** (`Core/` 依能力分的 `Authentication/`、`Currency/`、`Telemetry/` 與各 Feature 的 `Data/`)：`OrderService` (`Features/Orders/Data/Order/`)、`LookupService` (`Features/Lookups/Data/`)、`CampaignService` (`Features/Campaigns/Data/Campaign/`) 等以資料庫為下層的 Service 透過 `BuyLedgerDatabase` (`Core/Persistence/`) 操作 SwiftData，每次讀寫使用一次性 context；production 唯一的 `ModelContainer` 由 `BuyLedgerDatabaseKey.liveValue` 從 `PersistenceContainer.bootstrap` 取得，Feature 以 `@Dependency(\.xxxService)` 取用 Service。
 - **訂單資料**：`OrdersFeature` 持有無鍵 `@Shared` 訂單，`OrderListFeature` 與 `OrderDetailFeature` 只拿 `SharedReader`；`OrdersLoadFeature` 與 `OrderWritesFeature` 在 reducer 內更新來源。Root 在來源改動的同一次 action 把訂單投影給開團、「更多」、首頁與分析，並把開團、預設幣別與 AI 摘要設定投影給 Orders。
 - **主檔資料** (訂單來源／商品類別／付款方式／對帳狀態) 以 `@Shared(.lookupCatalog)` 的 `LookupCatalog` 為單一來源，讀寫經 `LookupService` (`Features/Lookups/Data/`)。主檔目錄的寫入者是 `LookupCatalogFeature` (無畫面，載入與表單新增選項，由 `MoreFeature` 組合) 與 `LookupManagementFeature` (管理頁 CRUD，以 `LookupKind` 分流)，訂單端以 `SharedReader` 唯讀。表單新增選項經 Root 與 `MoreFeature` 交給 `LookupCatalogFeature` 先落盤，結果回到發起的表單。主檔改名由 `LookupService.renameItem` 在同一筆交易內改主檔與引用訂單；`MoreFeature` 轉送改名 delegate，Root 送 `.orders(.rootRequest(.cascade(...)))`，由 `writes` 在 reducer 內以 `OrdersCascadeOperations` 改寫共用訂單，分派經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 處理。
 - **啟動與表單選項**：Root 啟動時先送 `more.catalogLoadRequested` 讀主檔目錄，讀取結束後才送訂單的 `rootRequest(.load)`，開團則送 `campaigns.loadRequested`；開團載入與自動結單由 `CampaignLoadFeature` 負責；幣別快取載入到 `@Shared(.currencyCodes)`。訂單新增、編輯、合併確認與首頁新增都由容器建立 `OrderEditOptions` (主檔、開團、幣別與行事曆)，表單不在 `.task` 讀取選項；首頁以 `presentNewOrder` 共用新增入口。
 - `liveValue`：純本機 SwiftData，**不自動 seed**——使用者首次啟動會看到真正的空狀態。
-- `previewValue`：in-memory + 自動 seed `LedgerOrder.sampleOrders`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
+- `previewValue`：in-memory + 自動 seed `LedgerOrder.sampleOrders` 與預設幣別 `CurrencyCode.defaults`，讓 SwiftUI Preview 與 snapshot 測試看得到內容。
 - `LedgerOrder.sampleOrders` 與 `FxRateSnapshot.fallback` **僅供 Preview / 單元測試 / `previewValue`** 使用，runtime 不讀取。
 - **Schema 版本化**：`Core/Persistence/Database/BuyLedgerSchema.swift` 以 `VersionedSchema` (floor `BuyLedgerSchemaV15` → target `BuyLedgerSchemaV17`) + `BuyLedgerMigrationPlan` 管理遷移。新增欄位／表走 lightweight、改既有欄位型別或 `@Model` 類別名走 custom dump-and-restore；版本移除、shadow 凍結等硬規則見 [`.claude/rules/ios-data-layer.md`](../../.claude/rules/ios-data-layer.md) 的「Schema 與遷移」。開團訂購提醒連結表 `CampaignReminderRecord` 是唯一的 iOS-only 表 (記行事曆 `eventIdentifier` 與提醒時間戳，與跨平台 `Campaign` 解耦、不入跨平台 schema)。
 
@@ -371,7 +372,7 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 
 ### 外部 API
 
-ExchangeRate-API v6 有兩個 endpoint：`latest/{base}` (匯率) 與 `codes` (幣別清單)，請求組裝、解碼與服務錯誤分類集中在 `ExchangeRateEndpoint` (`Core/Networking/ExchangeRate/`)。runtime 有兩個 call：`ExchangeRateService.fetchLatest(.twd)` (`Core/Dependencies/`) 取最新匯率；App 啟動時經 `CurrencyMetadataService.refreshIfStale` 打 `/codes` 載入幣別主檔並 cache 7 天 (幣別清單不再 hardcode)。
+ExchangeRate-API v6 有兩個 endpoint：`latest/{base}` (匯率) 與 `codes` (幣別清單)，請求組裝、解碼與服務錯誤分類集中在 `ExchangeRateEndpoint` (`Core/Networking/ExchangeRate/`)。runtime 有兩個 call：`ExchangeRateService.fetchLatest(.twd)` (`Core/Currency/`) 取最新匯率；App 啟動時經 `CurrencyMetadataService.refreshIfStale` 打 `/codes` 載入幣別主檔並 cache 7 天 (幣別清單不再 hardcode)。
 
 `AISummaryService` (`Features/AISummary/Data/`) 串接 Ollama Cloud chat streaming (`POST https://ollama.com/api/chat`)，在訂單詳情串流產生 Markdown 商品明細總結；缺金鑰或服務錯誤時進入 failed 狀態並提供重試，面板關閉時取消串流。逐位元組串流走 `HTTPClientProtocol.stream`。
 

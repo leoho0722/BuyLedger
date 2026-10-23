@@ -42,7 +42,7 @@ extension DependencyConventionScanTests {
 
         case .testValue:
             guard file.sourceTree == .production,
-                  file.relativePath.hasSuffix("+Dependency.swift") else {
+                  declaresDependencyKey(in: blankedCommentsAndStrings(in: file.contents)) else {
                 return nil
             }
             let filename = URL(fileURLWithPath: file.relativePath).lastPathComponent
@@ -80,6 +80,16 @@ extension DependencyConventionScanTests {
         }
     }
 
+    /// 判斷原始碼是否以 `enum`、`struct` 或 `extension` 宣告 `DependencyKey` 遵循，
+    /// 供型別下標、測試值與服務擁有權規則辨識依賴註冊檔
+    ///
+    /// - Parameter source: 已移除註解與字串的原始碼
+    /// - Returns: 含 `DependencyKey` 遵循宣告時為 `true`
+    static func declaresDependencyKey(in source: String) -> Bool {
+        let pattern = #"\b(?:enum|struct|extension)\s+\w+\s*:[^{]*\bDependencyKey\b"#
+        return !matches(pattern, in: source).isEmpty
+    }
+
     /// 比對大寫開頭、以 Service 結尾且可帶分類的 Swift 檔名，供邊界與測試值規則共用
     ///
     /// - Parameter filename: Swift 檔案名稱
@@ -104,6 +114,7 @@ private extension DependencyConventionScanTests {
                 let openingBrace = source.index(before: match.range.upperBound)
                 return matchingDelimiter(in: source, openingAt: openingBrace)
             }
+        let isDependencyRegistration = declaresDependencyKey(in: source)
         var violations: [ScanViolation] = []
 
         let dependencyPattern = #"@Dependency\s*\(\s*[A-Za-z_][A-Za-z0-9_]*(?:<[^<>]+>)?(?:\.[A-Za-z_][A-Za-z0-9_]*(?:<[^<>]+>)?)*\.self\s*\)"#
@@ -140,7 +151,7 @@ private extension DependencyConventionScanTests {
             let start = match.range.lowerBound
             let isWithinDependencyValuesExtension = extensionRanges.contains { $0.contains(start) }
             let isDependencyValuesAccessor = base == "self"
-                && file.relativePath.hasSuffix("+Dependency.swift")
+                && isDependencyRegistration
                 && isWithinDependencyValuesExtension
             guard !isDependencyValuesAccessor, let base, !nonDependencyBases.contains(base) else {
                 continue

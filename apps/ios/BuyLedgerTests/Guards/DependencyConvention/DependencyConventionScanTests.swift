@@ -194,10 +194,10 @@ extension DependencyConventionScanTests {
         /// Service 原始碼中的跨 Service 依賴
         case serviceFile
 
-        /// Service 的 `+Dependency.swift` 測試值
+        /// 宣告 `DependencyKey` 的 Service 檔的測試值
         case serviceDependency
 
-        /// 非 Service 的 `+Dependency.swift` 測試值
+        /// 宣告 `DependencyKey` 的 Client、Store 與 Database 檔的測試值
         case nonServiceDependency
     }
 
@@ -261,7 +261,7 @@ extension DependencyConventionScanTests {
         /// 命中在原始碼字串中的範圍
         let range: Range<String.Index>
 
-        /// 各括號擷取片段的文字；未參與匹配的群組為 nil
+        /// 各括號擷取片段的文字；未參與匹配的群組為 `nil`
         let captures: [String?]
     }
 
@@ -325,7 +325,7 @@ extension DependencyConventionScanTests {
         /// 外層字串使用的分隔符
         let delimiter: StringDelimiter
 
-        /// 外層插值原本的括號深度；外層不在插值內時為 nil
+        /// 外層插值原本的括號深度；外層不在插值內時為 `nil`
         let interpolationDepth: Int?
     }
 }

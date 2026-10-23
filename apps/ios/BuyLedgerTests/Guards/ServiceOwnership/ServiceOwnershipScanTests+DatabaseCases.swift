@@ -32,7 +32,7 @@ extension ServiceOwnershipScanTests {
 
 private extension ServiceOwnershipScanTests {
 
-    /// 涵蓋縮寫、完整與跨行資料庫 key path，以及不應計數的服務與目錄
+    /// 涵蓋縮寫、完整與跨行資料庫 key path、寫在 Service 主檔的依賴註冊，以及不應計數的服務與目錄
     static var databaseCases: [DatabaseCase] {
         let campaign = serviceSource(
             path: "Features/Campaigns/Data/Campaign/CampaignService+Dependency.swift",
@@ -76,12 +76,16 @@ private extension ServiceOwnershipScanTests {
             let note = #"@Dependency(\DependencyValues.buyLedgerDatabase)"#
             """#
         )
+        let merged = SourceFile(
+            path: "Features/Campaigns/Data/Campaign/CampaignService.swift",
+            contents: campaign.contents
+        )
         let coreFirst = SourceFile(
-            path: "Core/Dependencies/CampaignService+Dependency.swift",
+            path: "Core/Currency/CampaignService.swift",
             contents: campaign.contents
         )
         let coreSecond = SourceFile(
-            path: "Core/Dependencies/ExtraCampaignService+Dependency.swift",
+            path: "Core/Currency/ExtraCampaignService.swift",
             contents: full.contents
         )
         let appFirst = SourceFile(
@@ -141,6 +145,15 @@ private extension ServiceOwnershipScanTests {
             ),
             DatabaseCase(
                 files: [campaign, multiline],
+                expected: [
+                    DatabaseViolation(
+                        feature: "Campaigns",
+                        services: ["CampaignService", "ExtraCampaignService"]
+                    ),
+                ]
+            ),
+            DatabaseCase(
+                files: [merged, short],
                 expected: [
                     DatabaseViolation(
                         feature: "Campaigns",

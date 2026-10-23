@@ -40,16 +40,16 @@ private extension DependencyConventionScanTests {
     /// 找出 Service 測試值中未使用 `unimplemented` 的 closure
     ///
     /// - Parameters:
-    ///   - file: 要掃描的 Service 的 `+Dependency.swift` 檔
+    ///   - file: 要掃描的 Service 依賴註冊檔
     ///   - source: 已移除註解與字串的原始碼
-    ///   - filename: Service 的 `+Dependency.swift` 檔名
+    ///   - filename: Service 依賴註冊檔的檔名，`+` 之前的部分是 Service 型別名稱
     /// - Returns: 缺少測試值宣告、建構呼叫或 closure 不符規範，以及內容無法解析的違規
     static func serviceTestValueViolations(
         in file: ScanFile,
         source: String,
         filename: String
     ) -> [ScanViolation] {
-        let serviceName = String(filename.dropLast("+Dependency.swift".count))
+        let serviceName = String(filename.dropLast(".swift".count).prefix { $0 != "+" })
         let testValueProperties = matches(
             #"\b(?:var\s+testValue\b[^{}]*\{|let\s+testValue\b(?:\s*:\s*[^=\n]+)?\s*=)"#,
             in: source

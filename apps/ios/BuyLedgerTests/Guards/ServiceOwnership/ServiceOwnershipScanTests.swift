@@ -115,7 +115,7 @@ struct ServiceOwnershipScanTests {
         }
     }
 
-    /// 沒有檔案、宣告不在依賴擴充或檔名不適用時都不得視為通過
+    /// 沒有檔案、宣告不在依賴擴充或檔案未宣告 `DependencyKey` 時都不得視為通過
     ///
     /// - Parameter files: 沒有適用服務宣告的記憶體片段
     /// - Throws: 掃描沒有拋出預期錯誤時由 `#require` 丟出

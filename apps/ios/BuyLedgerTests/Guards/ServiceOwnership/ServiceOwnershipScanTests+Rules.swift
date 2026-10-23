@@ -11,13 +11,16 @@ import Foundation
 
 extension ServiceOwnershipScanTests {
 
-    /// 從依賴擴充的直接成員收集服務，註解與字串應已清空
+    /// 收集宣告 `DependencyKey` 的檔案中，`DependencyValues` 擴充第一層的服務屬性
     ///
     /// - Parameter files: 已清空非程式碼文字的原始碼
     /// - Returns: 依宣告檔與鍵值排序的服務清單
     static func collectedServices(in files: [SourceFile]) -> [ServiceDeclaration] {
         var services: [ServiceDeclaration] = []
-        for file in files where file.path.hasSuffix("+Dependency.swift") {
+        let registrationFiles = files.filter {
+            DependencyConventionScanTests.declaresDependencyKey(in: $0.contents)
+        }
+        for file in registrationFiles {
             let source = file.contents
             let extensionMatches = DependencyConventionScanTests.matches(
                 #"\bextension\s+DependencyValues\b[^{}]*\{"#,
@@ -39,8 +42,16 @@ extension ServiceOwnershipScanTests {
             )
             let hasDatabase = !databaseMatches.isEmpty
             for declaration in declarations {
-                let isDependencyMember = extensions.contains {
-                    isDirectMember(at: declaration.range.lowerBound, of: $0, in: source)
+                let isDependencyMember = extensions.contains { range in
+                    guard range.contains(declaration.range.lowerBound) else {
+                        return false
+                    }
+                    // 只認擴充第一層大括號內的宣告，避免收集巢狀型別內的同名屬性
+                    let depth = source[range.lowerBound..<declaration.range.lowerBound]
+                        .reduce(0) { depth, character in
+                            depth + (character == "{" ? 1 : 0) - (character == "}" ? 1 : 0)
+                        }
+                    return depth == 1
                 }
                 guard isDependencyMember,
                       declaration.captures.count == 2,
@@ -68,7 +79,7 @@ extension ServiceOwnershipScanTests {
     ///
     /// - Parameters:
     ///   - files: 已清空非程式碼文字的原始碼
-    ///   - services: 依宣告目錄收集的服務清單
+    ///   - services: 依宣告檔收集的服務清單
     /// - Returns: 含引用檔案、key path 起始行與服務鍵值的違規
     static func foreignReferences(
         in files: [SourceFile],
@@ -99,9 +110,9 @@ extension ServiceOwnershipScanTests {
         }
     }
 
-    /// 同一功能 Data 目錄內的資料庫服務依型別去重，系統服務與共用目錄不計入
+    /// 找出同一功能 Data 目錄內重複的資料庫服務型別，系統服務與共用目錄不計入
     ///
-    /// - Parameter services: 依宣告目錄收集的服務清單
+    /// - Parameter services: 依宣告檔收集的服務清單
     /// - Returns: 同一功能超過一個資料庫服務時的功能與型別名稱
     static func duplicateDatabaseServices(
         in services: [ServiceDeclaration]
@@ -153,28 +164,7 @@ extension ServiceOwnershipScanTests {
 
 private extension ServiceOwnershipScanTests {
 
-    /// 檢查宣告是否為擴充的直接成員，避免收集巢狀型別內的同名屬性
-    ///
-    /// - Parameters:
-    ///   - index: 宣告的起始位置
-    ///   - range: `DependencyValues` 擴充的完整範圍
-    ///   - source: 已清空非程式碼文字的原始碼
-    /// - Returns: 宣告位於擴充第一層大括號內時為真
-    static func isDirectMember(
-        at index: String.Index,
-        of range: Range<String.Index>,
-        in source: String
-    ) -> Bool {
-        guard range.contains(index) else {
-            return false
-        }
-        let depth = source[range.lowerBound..<index].reduce(0) { depth, character in
-            depth + (character == "{" ? 1 : 0) - (character == "}" ? 1 : 0)
-        }
-        return depth == 1
-    }
-
-    /// 由正式原始碼相對路徑取得功能名稱，Core 與 App 組合根為共用
+    /// 取得正式原始碼相對路徑所屬的功能名稱，Core 與 App 組合根為共用
     ///
     /// - Parameter path: App 根目錄下的相對路徑
     /// - Returns: Features 的第一層功能名稱，其他目錄為 `nil`

@@ -55,7 +55,7 @@ extension DependencyConventionScanScenario {
             ViolationCase(
                 name: "Service 透過 key path 取得另一個 Service",
                 source: #"@Dependency(\.settingsService) private var settingsService"#,
-                relativePath: "Core/Dependencies/OrderService.swift",
+                relativePath: "Features/Orders/Data/Order/OrderService.swift",
                 sourceTree: .production,
                 rules: [.featureBoundary],
                 expectedLine: 1,
@@ -65,7 +65,7 @@ extension DependencyConventionScanScenario {
             ViolationCase(
                 name: "Service 直接讀取另一個 live value",
                 source: "SettingsService.liveValue",
-                relativePath: "Core/Dependencies/OrderService.swift",
+                relativePath: "Features/Orders/Data/Order/OrderService.swift",
                 sourceTree: .production,
                 rules: [.featureBoundary],
                 expectedLine: 1,
@@ -91,14 +91,14 @@ extension DependencyConventionScanScenario {
             PassingCase(
                 name: "沒有加號的 Service 檔可引用自身",
                 source: #"@Dependency(\.settingsService) private var settingsService"#,
-                relativePath: "Core/Dependencies/SettingsService.swift",
+                relativePath: "Features/Settings/Data/SettingsService.swift",
                 sourceTree: .production,
                 rules: [.featureBoundary]
             ),
             PassingCase(
                 name: "縮寫開頭的 Service 檔可引用自身",
                 source: #"@Dependency(\.aiSummaryService) private var service"#,
-                relativePath: "Core/Dependencies/AISummaryService.swift",
+                relativePath: "Features/AISummary/Data/AISummaryService.swift",
                 sourceTree: .production,
                 rules: [.featureBoundary]
             ),

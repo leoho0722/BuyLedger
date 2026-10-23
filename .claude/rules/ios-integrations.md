@@ -2,7 +2,7 @@
 paths:
   - "apps/ios/BuyLedger/Core/Networking/**"
   - "apps/ios/BuyLedger/Core/Storage/AppConfigurationStore*.swift"
-  - "apps/ios/BuyLedger/Core/Dependencies/{CurrencyMetadata,ExchangeRate}Service*.swift"
+  - "apps/ios/BuyLedger/Core/Currency/{CurrencyMetadata,ExchangeRate}Service*.swift"
   - "apps/ios/BuyLedger/Core/Persistence/**/*{CurrencyMetadata,CampaignReminder}*.swift"
   - "apps/ios/BuyLedger/Features/AISummary/**"
   - "apps/ios/BuyLedger/Features/Campaigns/**"
