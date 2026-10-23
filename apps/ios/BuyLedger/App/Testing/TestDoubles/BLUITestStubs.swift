@@ -36,7 +36,7 @@ enum BLUITestStubs {
     /// UI 測試用本機驗證回覆延遲，讓重試中間狀態可被 XCUITest 觀察
     private static let biometricResponseDelay = Duration.seconds(3)
 
-    /// AI 總結替身的固定輸出，建立串流時一次全部 yield 完 (不模擬串流節奏)
+    /// AI 摘要替身的固定輸出，建立串流時一次全部 `yield` 完 (不模擬串流節奏)
     private static let aiSummaryChunks = [
         "## 商品明細總結\n\n",
         "本批訂單以 3C 配件為主，重點如下：\n\n",
@@ -46,7 +46,10 @@ enum BLUITestStubs {
 
     /// 假影像的色盤：相鄰兩張顏色不同，縮圖可肉眼區分
     private static let photoPalette: [UIColor] = [
-        .systemBlue, .systemPink, .systemGreen, .systemOrange,
+        .systemBlue,
+        .systemPink,
+        .systemGreen,
+        .systemOrange,
     ]
 
     /// 假影像的邊長 (點)
@@ -91,8 +94,8 @@ extension BLUITestStubs {
     static func makeCalendarReminderService(
         access: BLUITestCalendarAccess
     ) -> CalendarReminderService {
-        // UI 測試只需模擬 granted 與 denied
-        let resolvedAccess: CalendarReminderService.AccessResult
+        // UI 測試只需模擬 `granted` 與 `denied`
+        let resolvedAccess: CalendarAccessResult
         if access == .granted {
             resolvedAccess = .granted
         } else {

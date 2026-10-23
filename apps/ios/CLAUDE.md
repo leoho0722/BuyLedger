@@ -190,7 +190,7 @@
   - 無畫面的子 Feature 也各自一個資料夾，資料夾名等於型別前綴 (如 `Presentation/CampaignLoad/`)。
   - 只給單一畫面用的子 View 放該畫面資料夾；跨畫面共用的放 `Presentation/Components/`；`<Feature>Formatters` 與狀態樣式放 `Presentation/Formatting/`。
   - 檔案多的畫面資料夾再依用途分 `Views/`、`Operations/`、`Queries/`、`Models/`、`Requests/`、`Plans/` 等子資料夾，Feature 本體留在畫面資料夾最上層 (如 `Orders/Presentation/OrderEdit/`)。
-  - `Data/` 有多個 Service 時依 Service 分子資料夾 (如 `Campaigns/Data/Campaign/`)，只有一個時不再分。
+  - `Data/` 只平放 Service 主檔，有多個 Service 也不分子資料夾；Service 的錯誤型別與交給 Presentation 的值型別放 `Domain/` (如 `OrderError`、`CampaignReminderLink`)，只給 Service 內部用的傳輸型別留在 `Data/` (如 `OllamaChatRequest`)。
 
 ### 測試
 
@@ -221,7 +221,6 @@
   - `AppLaunchConfigurator` 以參數預設值注入 `CrashDiagnosticsClient`，預設正式實作並可由呼叫端替換。
 - **已決定改依 kit、尚未遷移**：
   - 格式化：現有 `BLFormatters` 與各 `<Feature>Formatters` 的靜態函式待改為 `FormatStyle`；新增的格式化依 kit 寫 `FormatStyle`。
-  - Service 單檔：`Features/` 的 Service 仍拆成 `+Dependency`、`+Preview` 與 `+Reads` 等子領域檔，待依 kit 併回主檔。
   - 測試拆檔：現有的 `<Type>Tests+<行為>.swift`、`<Scenario>+<X>Cases.swift` 跨檔 extension 待另開 change 拆成獨立測試型別 (`<TypeUnderTest><行為>Tests`)；新寫的測試直接用獨立型別，style 閘門不對既有分檔逐檔判違規。
 
 ## 已裁定的產品決策

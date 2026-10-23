@@ -21,6 +21,4 @@ enum OrderError: Error, Sendable {
 
 // MARK: - StorageFailureWrapping
 
-extension OrderError: StorageFailureWrapping {
-
-}
+extension OrderError: StorageFailureWrapping {}

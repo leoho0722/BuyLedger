@@ -56,9 +56,7 @@ apps/ios/
 │   │   │   │   ├── AppLock/      # AppLockFeature + AppLockView + AppLockFormatters
 │   │   │   │   └── PersistenceFailure/ # PersistenceFailureFeature + PersistenceFailureView (資料庫無法開啟時的復原畫面)
 │   │   │   ├── Domain/           # RootTab (分頁列舉)、AppScenePhase (殼層的場景階段)
-│   │   │   └── Data/
-│   │   │       ├── PersistenceRecovery/   # PersistenceRecoveryService (store 隔離)
-│   │   │       └── SignificantTimeChange/ # SignificantTimeChangeService (系統重大時間變更監聽)
+│   │   │   └── Data/             # PersistenceRecoveryService (store 隔離)、SignificantTimeChangeService (系統重大時間變更監聽)
 │   │   ├── Campaigns/            # 開團管理，依 ios-dev-kit 的 Feature 結構分層
 │   │   │   ├── Presentation/
 │   │   │   │   ├── Root/         # CampaignFeature (容器，+Path) + CampaignView；CampaignRequest、CampaignRequestPlan (請求分派)
@@ -72,11 +70,8 @@ apps/ios/
 │   │   │   │   ├── CampaignReminder/ # 無畫面的 CampaignReminderFeature + CampaignReminderRequest、CampaignReminderReconcile
 │   │   │   │   ├── CampaignPresentation/ # 無畫面的 CampaignPresentationFeature (表單、確認框與通知的呈現，+Destination) + CampaignPresentationQueue
 │   │   │   │   └── Formatting/   # CampaignFormatters、CampaignStatusStyle (狀態的視覺語意)
-│   │   │   ├── Domain/           # CampaignDateContext (列表記錄的現在時間與行事曆)
-│   │   │   └── Data/
-│   │   │       ├── Campaign/     # CampaignService (開團與提醒連結讀寫) + CampaignReminderLink (提醒連結值型別)
-│   │   │       ├── CalendarReminder/ # CalendarReminderService (系統行事曆) + CalendarReminderError
-│   │   │       └── OpenSettings/ # OpenSettingsService
+│   │   │   ├── Domain/           # CampaignDateContext (列表記錄的現在時間與行事曆)、CampaignReminderLink (提醒連結值型別)、CalendarAccessResult (行事曆權限結果)、CalendarReminderError
+│   │   │   └── Data/             # CampaignService (開團與提醒連結讀寫)、CalendarReminderService (系統行事曆)、OpenSettingsService
 │   │   ├── Customers/            # 客戶名單，依 ios-dev-kit 的 Feature 結構分層
 │   │   │   └── Presentation/
 │   │   │       ├── Root/         # CustomersFeature + CustomersView、CustomerTopCard、CustomerListRow；顯示用的 CustomerRow、CustomerRank
@@ -138,10 +133,8 @@ apps/ios/
 │   │   │   │   ├── OrdersPresentation/ # 無畫面子 Feature：edit／merge／aiSummary／alert 呈現 (+Destination)；OrdersPresentationQueue (通知佇列與合併轉場)
 │   │   │   │   ├── Components/   # 跨畫面共用：OrderRowView、OrderDetailRowMenu、OrderCategoryGrid、OrderCategoryFilterRows (兩個類別篩選畫面共用的搜尋列、全部列與空狀態列)
 │   │   │   │   └── Formatting/   # OrderFormatters、OrderStatus+Presentation
-│   │   │   ├── Domain/           # OrderDateContext、OrderDatePeriod、OrderStatusFilter、OrderStatusRules (可選狀態與合併入口資格)、OrderCategoryGroups (類別分組的純計算)、OrdersLoadState (首頁、分析與清單共用)、OrderAISummarySettings、LedgerOrder+OrderMutation
-│   │   │   └── Data/
-│   │   │       ├── Order/        # OrderService (訂單讀寫，+Reads／+Writes)、OrderError (訂單持久化錯誤)
-│   │   │       └── Photo/        # PhotoService (相簿選取照片的匯入)、PhotoImportResult
+│   │   │   ├── Domain/           # OrderDateContext、OrderDatePeriod、OrderStatusFilter、OrderStatusRules (可選狀態與合併入口資格)、OrderCategoryGroups (類別分組的純計算)、OrdersLoadState (首頁、分析與清單共用)、OrderAISummarySettings、LedgerOrder+OrderMutation、OrderError (訂單持久化錯誤)、PhotoImportResult
+│   │   │   └── Data/             # OrderService (訂單讀寫)、PhotoService (相簿選取照片的匯入)
 │   │   ├── Quote/                # 報價試算，依 ios-dev-kit 的 Feature 結構分層
 │   │   │   └── Presentation/
 │   │   │       ├── Root/         # QuoteFeature + QuoteView、QuoteStatusBanner、QuoteBreakdownCard、QuoteInputsCard
@@ -347,7 +340,7 @@ ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx \
 
 ### 資料層
 
-- **Service 層** (`Core/` 依能力分的 `Authentication/`、`Currency/`、`Telemetry/` 與各 Feature 的 `Data/`)：`OrderService` (`Features/Orders/Data/Order/`)、`LookupService` (`Features/Lookups/Data/`)、`CampaignService` (`Features/Campaigns/Data/Campaign/`) 等以資料庫為下層的 Service 透過 `BuyLedgerDatabase` (`Core/Persistence/`) 操作 SwiftData，每次讀寫使用一次性 context；production 唯一的 `ModelContainer` 由 `BuyLedgerDatabaseKey.liveValue` 從 `PersistenceContainer.bootstrap` 取得，Feature 以 `@Dependency(\.xxxService)` 取用 Service。
+- **Service 層** (`Core/` 依能力分的 `Authentication/`、`Currency/`、`Telemetry/` 與各 Feature 的 `Data/`)：`OrderService` (`Features/Orders/Data/`)、`LookupService` (`Features/Lookups/Data/`)、`CampaignService` (`Features/Campaigns/Data/`) 等以資料庫為下層的 Service 透過 `BuyLedgerDatabase` (`Core/Persistence/`) 操作 SwiftData，每次讀寫使用一次性 context；production 唯一的 `ModelContainer` 由 `BuyLedgerDatabaseKey.liveValue` 從 `PersistenceContainer.bootstrap` 取得，Feature 以 `@Dependency(\.xxxService)` 取用 Service。
 - **訂單資料**：`OrdersFeature` 持有無鍵 `@Shared` 訂單，`OrderListFeature` 與 `OrderDetailFeature` 只拿 `SharedReader`；`OrdersLoadFeature` 與 `OrderWritesFeature` 在 reducer 內更新來源。Root 在來源改動的同一次 action 把訂單投影給開團、「更多」、首頁與分析，並把開團、預設幣別與 AI 摘要設定投影給 Orders。
 - **主檔資料** (訂單來源／商品類別／付款方式／對帳狀態) 以 `@Shared(.lookupCatalog)` 的 `LookupCatalog` 為單一來源，讀寫經 `LookupService` (`Features/Lookups/Data/`)。主檔目錄的寫入者是 `LookupCatalogFeature` (無畫面，載入與表單新增選項，由 `MoreFeature` 組合) 與 `LookupManagementFeature` (管理頁 CRUD，以 `LookupKind` 分流)，訂單端以 `SharedReader` 唯讀。表單新增選項經 Root 與 `MoreFeature` 交給 `LookupCatalogFeature` 先落盤，結果回到發起的表單。主檔改名由 `LookupService.renameItem` 在同一筆交易內改主檔與引用訂單；`MoreFeature` 轉送改名 delegate，Root 送 `.orders(.rootRequest(.cascade(...)))`，由 `writes` 在 reducer 內以 `OrdersCascadeOperations` 改寫共用訂單，分派經 `LookupKind.isReferenced(by:name:)`／`LookupKind.renamingReference(in:from:to:)` 處理。
 - **啟動與表單選項**：Root 啟動時先送 `more.catalogLoadRequested` 讀主檔目錄，讀取結束後才送訂單的 `rootRequest(.load)`，開團則送 `campaigns.loadRequested`；開團載入與自動結單由 `CampaignLoadFeature` 負責；幣別快取載入到 `@Shared(.currencyCodes)`。訂單新增、編輯、合併確認與首頁新增都由容器建立 `OrderEditOptions` (主檔、開團、幣別與行事曆)，表單不在 `.task` 讀取選項；首頁以 `presentNewOrder` 共用新增入口。
