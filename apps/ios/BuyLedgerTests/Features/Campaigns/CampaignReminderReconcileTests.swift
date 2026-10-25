@@ -10,7 +10,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證提醒調解與結單日或今天的預設提醒時間
+/// `CampaignReminderReconcile` 與 `CampaignReminderRequest.defaultTimestamp` 的單元測試
 struct CampaignReminderReconcileTests {
 
     // MARK: - Properties
@@ -24,7 +24,7 @@ struct CampaignReminderReconcileTests {
     /// 六種基本輸入與缺少原開團的兩種情境，預期調解各自明寫
     private static let reconcileScenarios: [ReconcileScenario] = [
         ReconcileScenario(
-            wantsReminder: true,
+            isReminderWanted: true,
             existingLink: nil,
             originalTitle: nil,
             newTitle: "「四月團」訂購提醒",
@@ -32,7 +32,7 @@ struct CampaignReminderReconcileTests {
             expected: .create
         ),
         ReconcileScenario(
-            wantsReminder: true,
+            isReminderWanted: true,
             existingLink: existingLink,
             originalTitle: "「四月團」訂購提醒",
             newTitle: "「四月團」訂購提醒",
@@ -40,7 +40,7 @@ struct CampaignReminderReconcileTests {
             expected: nil
         ),
         ReconcileScenario(
-            wantsReminder: true,
+            isReminderWanted: true,
             existingLink: existingLink,
             originalTitle: "「四月團」訂購提醒",
             newTitle: "「五月團」訂購提醒",
@@ -48,7 +48,7 @@ struct CampaignReminderReconcileTests {
             expected: .rebuild(oldEventIdentifier: "OLD-EVENT")
         ),
         ReconcileScenario(
-            wantsReminder: true,
+            isReminderWanted: true,
             existingLink: existingLink,
             originalTitle: "「四月團」訂購提醒",
             newTitle: "「四月團」訂購提醒",
@@ -56,7 +56,7 @@ struct CampaignReminderReconcileTests {
             expected: .rebuild(oldEventIdentifier: "OLD-EVENT")
         ),
         ReconcileScenario(
-            wantsReminder: false,
+            isReminderWanted: false,
             existingLink: existingLink,
             originalTitle: "「四月團」訂購提醒",
             newTitle: "「五月團」訂購提醒",
@@ -64,7 +64,7 @@ struct CampaignReminderReconcileTests {
             expected: .remove(eventIdentifier: "OLD-EVENT")
         ),
         ReconcileScenario(
-            wantsReminder: false,
+            isReminderWanted: false,
             existingLink: nil,
             originalTitle: nil,
             newTitle: "「四月團」訂購提醒",
@@ -72,7 +72,7 @@ struct CampaignReminderReconcileTests {
             expected: nil
         ),
         ReconcileScenario(
-            wantsReminder: true,
+            isReminderWanted: true,
             existingLink: existingLink,
             originalTitle: nil,
             newTitle: "「五月團」訂購提醒",
@@ -80,7 +80,7 @@ struct CampaignReminderReconcileTests {
             expected: nil
         ),
         ReconcileScenario(
-            wantsReminder: true,
+            isReminderWanted: true,
             existingLink: existingLink,
             originalTitle: nil,
             newTitle: "「五月團」訂購提醒",
@@ -89,7 +89,7 @@ struct CampaignReminderReconcileTests {
         ),
     ]
 
-    /// 依提醒意圖、連結、原標題與時間差異決定建立、移除、重建或維持
+    /// 驗證依提醒意圖、既有連結、原標題與時間差異，決定建立、移除、重建或維持
     ///
     /// - Parameter scenario: 獨立列出輸入與預期調解的測試情境
     @Test(arguments: CampaignReminderReconcileTests.reconcileScenarios)
@@ -98,7 +98,7 @@ struct CampaignReminderReconcileTests {
 
         // When
         let reconcile = CampaignReminderReconcile.decide(
-            wantsReminder: scenario.wantsReminder,
+            wantsReminder: scenario.isReminderWanted,
             existingLink: scenario.existingLink,
             originalTitle: scenario.originalTitle,
             newTitle: scenario.newTitle,
@@ -109,23 +109,15 @@ struct CampaignReminderReconcileTests {
         #expect(reconcile == scenario.expected)
     }
 
-    /// 有結單日取結單日，沒有則取注入的今天，兩者都設定為上午九點
+    /// 驗證有結單日時取結單日、沒有時取注入的今天，皆以 UTC 曆法取上午九點
     ///
-    /// - Parameters:
-    ///   - hasCloseDate: 是否提供與今天不同日期的結單日
-    ///   - expectedTimestamp: 以字面值指定的預期提醒時間戳
-    /// - Throws: 無法建立 UTC 時區時拋出測試錯誤
-    @Test(arguments: [
-        (true, Date(timeIntervalSince1970: 1_778_576_400)),
-        (false, Date(timeIntervalSince1970: 1_778_230_800)),
-    ])
-    func defaultTimestamp_結單日有無設定_取對應日期上午九點(
-        hasCloseDate: Bool,
-        expectedTimestamp: Date
-    ) throws(any Error) {
+    /// - Parameter scenario: 是否提供結單日與以字面值指定的預期提醒時間戳
+    /// - Throws: 無法建立 UTC 時區時丟出測試錯誤
+    @Test(arguments: DefaultTimestampCase.allCases)
+    func defaultTimestamp_結單日有無設定_取對應日期上午九點(scenario: DefaultTimestampCase) throws {
         // Given
         let calendar = try TestDependencies.makeUTCCalendar()
-        let closeDate = hasCloseDate ? Date(timeIntervalSince1970: 1_778_604_015) : nil
+        let closeDate = scenario.hasCloseDate ? Date(timeIntervalSince1970: 1_778_604_015) : nil
         let now = Date(timeIntervalSince1970: 1_778_264_430)
 
         // When
@@ -136,7 +128,7 @@ struct CampaignReminderReconcileTests {
         )
 
         // Then
-        #expect(timestamp == expectedTimestamp)
+        #expect(timestamp == scenario.expectedTimestamp)
     }
 }
 
@@ -148,7 +140,7 @@ extension CampaignReminderReconcileTests {
     struct ReconcileScenario: Sendable {
 
         /// 使用者是否要保留提醒
-        let wantsReminder: Bool
+        let isReminderWanted: Bool
 
         /// 已存在的事件識別值與提醒時間
         let existingLink: CampaignReminderLink?
@@ -164,5 +156,24 @@ extension CampaignReminderReconcileTests {
 
         /// 此組輸入應得到的調解結果
         let expected: CampaignReminderReconcile?
+    }
+
+    /// 結單日有無設定與預期的預設提醒時間戳
+    struct DefaultTimestampCase: Sendable {
+
+        /// 有結單日取結單日上午九點、沒有則取今天上午九點的兩種案例
+        static let allCases = [
+            Self(hasCloseDate: true, expectedTimestamp: Date(timeIntervalSince1970: 1_778_576_400)),
+            Self(
+                hasCloseDate: false,
+                expectedTimestamp: Date(timeIntervalSince1970: 1_778_230_800)
+            ),
+        ]
+
+        /// 是否提供與今天不同日期的結單日
+        let hasCloseDate: Bool
+
+        /// 以字面值指定的預期提醒時間戳
+        let expectedTimestamp: Date
     }
 }

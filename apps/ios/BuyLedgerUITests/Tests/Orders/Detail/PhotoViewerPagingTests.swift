@@ -7,41 +7,39 @@
 
 import XCTest
 
-/// 照片檢視器推進呈現與換頁的回歸測試
+/// 照片檢視器推進呈現與換頁的回歸 UI 測試
+@MainActor
 final class PhotoViewerPagingTests: BLUITestCase {
 
-    // MARK: - Static Properties
+    // MARK: - Properties
 
     /// 帶滿張照片的種子訂單編號 (`photos` profile 的唯一訂單)
     private static let photoOrderID = "UITEST-PHT-001"
 
-    /// 驗證照片檢視器可換頁並返回編輯表單
-    @MainActor
-    func testPushedViewerPagesBetweenPhotosAndPopsBack() {
+    /// 驗證照片檢視器停在第一張時左滑，計數從 1/5 換到 2/5，之後可返回編輯表單
+    ///
+    /// - Throws: 檢視器未推進呈現或未顯示第一張的計數時丟出測試錯誤
+    /// - Note: 同次照片檢視流程先換頁再返回，後續觀察用來確認換頁後仍能回到原編輯表單
+    func testSwipeToNextPhoto_檢視器顯示第一張_換到第二張後可返回編輯表單() throws {
+        // Given
         let app = launch(LaunchOptions(seed: .photos))
         let edit = openEditFormOfPhotoOrder(app)
-
         edit.tapPhotoThumbnail(index: 0)
-
-        // 關鍵斷言一：檢視器成功推進 (容器根 identifier 出現、置中計數標題為 1/5)
         let viewer = PhotoViewerScreen(app: app)
-        if !viewer.waitUntilReady() {
-            failWithDiagnostics(
-                in: app,
-                "點縮圖後檢視器根 identifier「\(viewer.rootIdentifier)」逾時仍未推進呈現"
-            )
-        }
-        if !viewer.hasPageCount("1/5") {
-            failWithDiagnostics(in: app, "檢視器推進後導覽列未顯示計數 1/5")
-        }
+        try requireCondition(
+            viewer.waitUntilReady(),
+            in: app,
+            "點縮圖後檢視器根 identifier「\(viewer.rootIdentifier)」逾時仍未推進呈現"
+        )
+        try requireCondition(viewer.hasPageCount("1/5"), in: app, "檢視器推進後導覽列未顯示計數 1/5")
 
-        // 關鍵斷言二：橫向左滑換到第二張 (計數變為 2/5)
+        // When
         viewer.swipeToNextPhoto()
+
+        // Then
         if !viewer.hasPageCount("2/5") {
             failWithDiagnostics(in: app, "檢視器內左滑後導覽列未換頁至 2/5")
         }
-
-        // 關鍵斷言三：宿主堆疊的 Back 返回編輯表單
         viewer.tapBack()
         let viewerRoot = app.descendants(matching: .any)[BLAccessibilityID.PhotoViewer.root]
         if !viewerRoot.waitForDisappearance() {
@@ -58,12 +56,12 @@ final class PhotoViewerPagingTests: BLUITestCase {
 private extension PhotoViewerPagingTests {
 
     /// 切到訂單分頁、點帶照片訂單進詳情、再從更多選單進編輯表單並等就緒
+    ///
     /// - Parameters:
     ///   - app: 受測 App
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的訂單編輯表單 Page Object
-    @MainActor
     func openEditFormOfPhotoOrder(
         _ app: XCUIApplication,
         file: StaticString = #filePath,
@@ -71,7 +69,12 @@ private extension PhotoViewerPagingTests {
     ) -> OrderEditScreen {
         let root = RootNavigationScreen(app: app)
         if !root.goToOrders() {
-            failWithDiagnostics(in: app, "切到訂單分頁後畫面未就緒", file: file, line: line)
+            failWithDiagnostics(
+                in: app,
+                "切到訂單分頁後畫面未就緒",
+                file: file,
+                line: line
+            )
         }
 
         let orders = OrdersScreen(app: app)
@@ -98,7 +101,12 @@ private extension PhotoViewerPagingTests {
 
         detail.openMoreMenu()
         if !detail.tapEdit() {
-            failWithDiagnostics(in: app, "更多選單的編輯項目未出現或不可點", file: file, line: line)
+            failWithDiagnostics(
+                in: app,
+                "更多選單的編輯項目未出現或不可點",
+                file: file,
+                line: line
+            )
         }
 
         let edit = OrderEditScreen(app: app)

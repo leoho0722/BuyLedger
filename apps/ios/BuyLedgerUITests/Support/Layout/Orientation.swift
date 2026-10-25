@@ -15,8 +15,8 @@ extension XCTestCase {
     /// 轉為橫向並等到 App 視窗寬大於高，完成後附上橫向視窗的點數尺寸
     ///
     /// - Parameter app: 受測 App
-    /// - Throws: 逾時仍未轉為橫向時拋出測試錯誤
-    func rotateToLandscape(_ app: XCUIApplication) throws(any Error) {
+    /// - Throws: 逾時仍未轉為橫向時丟出測試錯誤
+    func rotateToLandscape(_ app: XCUIApplication) throws {
         // 先註冊還原再轉向，測試失敗時方向也會轉回直向
         addTeardownBlock { XCUIDevice.shared.orientation = .portrait }
         XCUIDevice.shared.orientation = .landscapeLeft
@@ -33,8 +33,8 @@ extension XCTestCase {
     /// 轉回直向並等到 App 視窗高大於寬
     ///
     /// - Parameter app: 受測 App
-    /// - Throws: 逾時仍未轉為直向時拋出測試錯誤
-    func rotateToPortrait(_ app: XCUIApplication) throws(any Error) {
+    /// - Throws: 逾時仍未轉為直向時丟出測試錯誤
+    func rotateToPortrait(_ app: XCUIApplication) throws {
         XCUIDevice.shared.orientation = .portrait
         try requireCondition(
             waitForWindow(of: app, timeout: 15) { $0.height > $0.width },

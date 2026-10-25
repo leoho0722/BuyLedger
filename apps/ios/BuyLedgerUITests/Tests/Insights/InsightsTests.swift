@@ -7,22 +7,23 @@
 
 import XCTest
 
-/// 分析頁的期間切換、營收歸屬與空狀態測試
+/// 分析頁期間切換、營收歸屬與空狀態的 UI 測試
+@MainActor
 final class InsightsTests: BLUITestCase {
 
     // MARK: - Properties
 
-    /// 先切換的兩個期間 `rawValue`，依 App 端 `InsightsDateRange` 宣告順序排列
+    /// 最後一個期間之前依序切換的兩個期間 `rawValue`，順序同 App 端 `InsightsDateRange` 的宣告順序
     private static let precedingRangeIDs = ["thirtyDays", "sixMonths"]
 
-    /// 最後切換的期間 `rawValue`，是 `InsightsDateRange` 宣告順序的最後一個
+    /// 最後切換的期間 `rawValue`，即 `InsightsDateRange` 宣告順序中的最後一個
     private static let lastRangeID = "twelveMonths"
 
-    /// 依序切換三個期間後畫面仍就緒且對應分段保持選取
+    /// 驗證依序切換三個期間時，每次切換後分析頁都就緒且對應分段保持選取
     ///
-    /// - Throws: 前兩個期間切換後畫面未就緒或分段未選取時拋出測試錯誤
-    @MainActor
-    func testSelectRange_依序切換三個期間_畫面就緒且分段選取() throws(any Error) {
+    /// - Throws: 前兩個期間切換後畫面未就緒或分段未選取時丟出測試錯誤
+    /// - Note: 情境流程：受測的就是依序切換，前兩次切換放 Given，最後一次切換為受測動作
+    func testSelectRange_依序切換三個期間_畫面就緒且分段選取() throws {
         // Given
         let app = launch(LaunchOptions(seed: .insightsRange))
         let insights = openInsights(app)
@@ -48,12 +49,12 @@ final class InsightsTests: BLUITestCase {
         }
     }
 
-    /// 合併訂單的總覽、趨勢、類別與開團獲利口徑一致
+    /// 驗證合併訂單後，總覽與趨勢的總獲利皆為 6,730，美妝與服飾類別的獲利分別為 3,850 與 2,880，兩個開團也分別為 3,850 與 2,880，合計都等於 6,730
     ///
-    /// - Throws: 必要的 accessibility value 不存在或無法解析時拋出測試錯誤
-    @MainActor
-    func testRevenueAttribution_合併訂單_總覽趨勢類別與開團獲利一致() throws(any Error) {
-        // Given：營收歸屬資料已載入總覽頁
+    /// - Throws: 必要的 accessibility value 不存在或無法解析時丟出測試錯誤
+    /// - Note: 先在總覽與開團頁確認營收歸屬資料已載入，再切到分析頁比對數字
+    func testRevenueAttribution_合併訂單_總覽趨勢類別與開團獲利一致() throws {
+        // Given
         let app = launch(LaunchOptions(seed: .revenueAttribution))
         let root = RootNavigationScreen(app: app)
         let dashboard = DashboardScreen(app: app)
@@ -68,7 +69,6 @@ final class InsightsTests: BLUITestCase {
             description: "總覽淨獲利 KPI 卡"
         )
 
-        // When：切換至開團與分析頁讀取各層獲利
         try requireCondition(root.goToCampaigns(), in: app, "營收歸屬驗收的開團頁未就緒")
         let campaigns = CampaignsScreen(app: app)
         try requireCondition(
@@ -78,7 +78,11 @@ final class InsightsTests: BLUITestCase {
             in: app,
             "營收歸屬驗收的開團未載入"
         )
+
+        // When
         let insights = openInsights(app)
+
+        // Then
         let trendProfit = try readNumericAmount(
             insights.totalProfitValue(),
             in: app,
@@ -104,20 +108,17 @@ final class InsightsTests: BLUITestCase {
             in: app,
             description: "開團 UITEST-REV-CAM-002 排行"
         )
-
-        // Then：總覽、類別與開團獲利合計一致
         XCTAssertEqual(overviewProfit, 6_730, "總覽應只計入合併結果的獲利")
-        XCTAssertEqual(trendProfit, overviewProfit, "趨勢總獲利應與總覽一致")
+        XCTAssertEqual(trendProfit, 6_730, "趨勢總獲利應與總覽一致")
         XCTAssertEqual(categoryAProfit, 3_850, "美妝類別應只計入來源訂單獲利")
         XCTAssertEqual(categoryBProfit, 2_880, "服飾類別應只計入來源訂單獲利")
-        XCTAssertEqual(categoryAProfit + categoryBProfit, overviewProfit, "類別獲利合計應與總覽一致")
+        XCTAssertEqual(categoryAProfit + categoryBProfit, 6_730, "類別獲利合計應與總覽一致")
         XCTAssertEqual(campaignAProfit, 3_850, "美妝開團應只計入來源訂單獲利")
         XCTAssertEqual(campaignBProfit, 2_880, "服飾開團應只計入來源訂單獲利")
-        XCTAssertEqual(campaignAProfit + campaignBProfit, overviewProfit, "開團獲利合計應與總覽一致")
+        XCTAssertEqual(campaignAProfit + campaignBProfit, 6_730, "開團獲利合計應與總覽一致")
     }
 
-    /// 空資料庫時，分析頁顯示尚無足夠資料的空狀態
-    @MainActor
+    /// 驗證空資料時切到分析分頁，顯示尚無足夠資料的空狀態
     func testGoToInsights_空資料_顯示空狀態() {
         // Given
         let app = launch(LaunchOptions(seed: .empty))
@@ -145,7 +146,6 @@ private extension InsightsTests {
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的分析頁 Page Object
-    @MainActor
     func openInsights(
         _ app: XCUIApplication,
         file: StaticString = #filePath,
@@ -180,12 +180,12 @@ private extension InsightsTests {
     ///   - app: 受測 App
     ///   - description: 失敗訊息中的元素描述
     /// - Returns: 可比較的整數金額
-    /// - Throws: 元素不存在、值為空或無法解析時拋出測試錯誤
+    /// - Throws: 元素不存在、值為空或無法解析時丟出測試錯誤
     func readNumericAmount(
         _ value: String?,
         in app: XCUIApplication,
         description: String
-    ) throws(any Error) -> Int {
+    ) throws -> Int {
         let rawValue = try requireValue(value, in: app, "\(description)的元素不存在")
         try requireCondition(!rawValue.isEmpty, in: app, "\(description)的 accessibility value 為空")
         return try requireValue(

@@ -8,9 +8,9 @@
 import XCTest
 
 /// 報價試算頁的 Page Object
-struct QuoteScreen: Screen {
+struct QuoteScreen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
@@ -18,20 +18,14 @@ struct QuoteScreen: Screen {
 
 // MARK: - Computed Properties
 
+@MainActor
 extension QuoteScreen {
-
-    /// 判定報價頁已就緒的根 identifier (捲動容器)
-    ///
-    /// - Returns: 報價頁根容器的 identifier
-    var rootIdentifier: String {
-        BLAccessibilityID.Quote.root
-    }
 
     /// 建議售價 hero 卡的 accessibility value
     ///
     /// - Returns: 建議售價的 accessibility value；元素不存在時為 `nil`
     var suggestedPriceValue: String? {
-        // 合併朗讀的卡片在 XCUITest 歸為 staticText，故以 any 查詢而非 otherElements
+        // 合併朗讀的卡片在 XCUITest 歸為 `staticText`，故以 `any` 查詢而非 `otherElements`
         let element = app.descendants(matching: .any)[BLAccessibilityID.Quote.suggestedPriceValue]
         guard element.waitForExistence(timeout: 10) else {
             return nil
@@ -42,20 +36,12 @@ extension QuoteScreen {
     /// 來源幣別按鈕的 ISO 代碼
     ///
     /// - Returns: 來源幣別代碼；元素不存在時為 `nil`
-    @MainActor
     var sourceCurrencyCode: String? {
         let element = app.descendants(matching: .any)[BLAccessibilityID.Quote.currencyPickerButton]
         guard element.waitForExistence(timeout: 10) else {
             return nil
         }
         return element.value as? String
-    }
-
-    /// 匯率不可用橫幅是否存在
-    ///
-    /// - Returns: 匯率不可用橫幅是否存在
-    var statusBannerExists: Bool {
-        app.descendants(matching: .any)[BLAccessibilityID.Quote.statusBanner].exists
     }
 }
 
@@ -92,8 +78,9 @@ extension QuoteScreen {
     ///   - line: 失敗時回報的行號
     func openCurrencyPicker(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.descendants(matching: .any)[BLAccessibilityID.Quote.currencyPickerButton]
-        if !button.isHittable {
-            app.scrollToHittable(button, within: rootElement)
+        if !button.isHittableOnScreen, !app.scrollToHittable(button, within: rootElement) {
+            app.failWithDiagnostics("捲動後來源幣別按鈕仍未穩定或不可點", file: file, line: line)
+            return
         }
         button.tapAfterWaiting(in: app, file: file, line: line)
     }
@@ -112,7 +99,10 @@ extension QuoteScreen {
         line: UInt = #line
     ) {
         let field = app.textFields[BLAccessibilityID.Quote.principalField]
-        app.scrollToHittable(field, within: rootElement)
+        guard app.scrollToHittable(field, within: rootElement) else {
+            app.failWithDiagnostics("捲動後金額欄位仍未穩定或不可點", file: file, line: line)
+            return
+        }
         field.clearAndType(
             amount,
             in: app,
@@ -130,5 +120,15 @@ extension QuoteScreen {
     func tapRetry(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.buttons[BLAccessibilityID.Quote.retryButton]
         button.tapAfterWaiting(in: app, file: file, line: line)
+    }
+}
+
+// MARK: - Screen
+
+extension QuoteScreen: Screen {
+
+    /// 判定報價頁已就緒的根 identifier (捲動容器)
+    var rootIdentifier: String {
+        BLAccessibilityID.Quote.root
     }
 }

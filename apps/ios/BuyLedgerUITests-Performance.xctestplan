@@ -24,7 +24,7 @@
   "testTargets" : [
     {
       "selectedTests" : [
-        "LaunchPerformanceTests\/testLaunchPerformance()"
+        "LaunchPerformanceTests\/testLaunch_冷啟動_量測啟動時間()"
       ],
       "target" : {
         "containerPath" : "container:BuyLedger.xcodeproj",

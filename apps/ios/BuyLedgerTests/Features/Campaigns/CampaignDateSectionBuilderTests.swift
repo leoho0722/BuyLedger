@@ -10,16 +10,16 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證開團日期區段依分組粒度分桶與排序，並由格式化函式轉成畫面標題
+/// `CampaignDateSectionBuilder` 的單元測試，涵蓋依分組粒度分桶、排序與各區段的標題值
 struct CampaignDateSectionBuilderTests {
 
-    /// 日分組時同一天的開團併成一個區段，區段由新到舊，且每個區段只有一個沒有標題的子群組
+    /// 驗證日分組時，同一天的開團併成一個區段，區段與區段內的開團都由新到舊排列，每個區段只有一個沒有標題的子群組
     ///
     /// - Throws: 測試日期解析或行事曆建立失敗時丟出錯誤
     @Test
-    func sections_日分組_同日併入單一區段且依日期由新到舊() throws(any Error) {
+    func sections_日分組_同日併入單一區段且依日期由新到舊() throws {
         // Given
-        let calendar = try Self.makeCalendar(secondsFromGMT: 0)
+        let calendar = try CampaignDateSectionBuilderTestSupport.makeCalendar(secondsFromGMT: 0)
         let campaigns = [
             Campaign.fixture(
                 id: "ID-舊團",
@@ -42,9 +42,9 @@ struct CampaignDateSectionBuilderTests {
                 openDate: Date(timeIntervalSince1970: 1_778_616_000)
             ),
         ]
-        let may12 = try Self.makeDate("2026-05-12T00:00:00Z")
-        let may11 = try Self.makeDate("2026-05-11T00:00:00Z")
-        let may8 = try Self.makeDate("2026-05-08T00:00:00Z")
+        let may12 = try CampaignDateSectionBuilderTestSupport.makeDate("2026-05-12T00:00:00Z")
+        let may11 = try CampaignDateSectionBuilderTestSupport.makeDate("2026-05-11T00:00:00Z")
+        let may8 = try CampaignDateSectionBuilderTestSupport.makeDate("2026-05-08T00:00:00Z")
 
         // When
         let sections = CampaignDateSectionBuilder.sections(
@@ -67,13 +67,13 @@ struct CampaignDateSectionBuilderTests {
         #expect(names == [[["今天晚團", "今天早團"]], [["昨天團"]], [["舊團"]]])
     }
 
-    /// 月分組時頂層依年月分區，每個區段再依日切成子群組，區段與子群組都由新到舊
+    /// 驗證月分組時，頂層區段依年月分區，每個區段再依日切成子群組，區段與子群組都由新到舊
     ///
     /// - Throws: 測試日期解析或行事曆建立失敗時丟出錯誤
     @Test
-    func sections_月分組_頂層為年月且子群組依日由新到舊() throws(any Error) {
+    func sections_月分組_頂層為年月且子群組依日由新到舊() throws {
         // Given
-        let calendar = try Self.makeCalendar(secondsFromGMT: 0)
+        let calendar = try CampaignDateSectionBuilderTestSupport.makeCalendar(secondsFromGMT: 0)
         let campaigns = [
             Campaign.fixture(
                 id: "ID-四月底團",
@@ -96,11 +96,11 @@ struct CampaignDateSectionBuilderTests {
                 openDate: Date(timeIntervalSince1970: 1_778_616_000)
             ),
         ]
-        let may = try Self.makeDate("2026-05-01T00:00:00Z")
-        let april = try Self.makeDate("2026-04-01T00:00:00Z")
-        let may12 = try Self.makeDate("2026-05-12T00:00:00Z")
-        let may8 = try Self.makeDate("2026-05-08T00:00:00Z")
-        let april30 = try Self.makeDate("2026-04-30T00:00:00Z")
+        let may = try CampaignDateSectionBuilderTestSupport.makeDate("2026-05-01T00:00:00Z")
+        let april = try CampaignDateSectionBuilderTestSupport.makeDate("2026-04-01T00:00:00Z")
+        let may12 = try CampaignDateSectionBuilderTestSupport.makeDate("2026-05-12T00:00:00Z")
+        let may8 = try CampaignDateSectionBuilderTestSupport.makeDate("2026-05-08T00:00:00Z")
+        let april30 = try CampaignDateSectionBuilderTestSupport.makeDate("2026-04-30T00:00:00Z")
         let expectedSubtitles: [[CampaignSectionTitle?]] = [
             [.day(may12), .day(may8)],
             [.day(april30)],
@@ -127,13 +127,13 @@ struct CampaignDateSectionBuilderTests {
         #expect(names == [[["五月中晚團", "五月中團"], ["五月初團"]], [["四月底團"]]])
     }
 
-    /// 年分組時頂層依年分區，同一個月的開團併入同一個月子群組，區段與子群組都由新到舊
+    /// 驗證年分組時，頂層區段依年分區，同一個月的開團併入同一個月子群組，區段與子群組都由新到舊
     ///
     /// - Throws: 測試日期解析或行事曆建立失敗時丟出錯誤
     @Test
-    func sections_年分組_頂層為年且同月併入單一月子群組() throws(any Error) {
+    func sections_年分組_頂層為年且同月併入單一月子群組() throws {
         // Given
-        let calendar = try Self.makeCalendar(secondsFromGMT: 0)
+        let calendar = try CampaignDateSectionBuilderTestSupport.makeCalendar(secondsFromGMT: 0)
         let campaigns = [
             Campaign.fixture(
                 id: "ID-去年底團",
@@ -156,11 +156,11 @@ struct CampaignDateSectionBuilderTests {
                 openDate: Date(timeIntervalSince1970: 1_778_580_000)
             ),
         ]
-        let year2026 = try Self.makeDate("2026-01-01T00:00:00Z")
-        let year2025 = try Self.makeDate("2025-01-01T00:00:00Z")
-        let may = try Self.makeDate("2026-05-01T00:00:00Z")
-        let march = try Self.makeDate("2026-03-01T00:00:00Z")
-        let december = try Self.makeDate("2025-12-01T00:00:00Z")
+        let year2026 = try CampaignDateSectionBuilderTestSupport.makeDate("2026-01-01T00:00:00Z")
+        let year2025 = try CampaignDateSectionBuilderTestSupport.makeDate("2025-01-01T00:00:00Z")
+        let may = try CampaignDateSectionBuilderTestSupport.makeDate("2026-05-01T00:00:00Z")
+        let march = try CampaignDateSectionBuilderTestSupport.makeDate("2026-03-01T00:00:00Z")
+        let december = try CampaignDateSectionBuilderTestSupport.makeDate("2025-12-01T00:00:00Z")
         let expectedSubtitles: [[CampaignSectionTitle?]] = [
             [.month(may), .month(march)],
             [.month(december)],
@@ -187,14 +187,14 @@ struct CampaignDateSectionBuilderTests {
         #expect(names == [[["五月中團", "五月初團"], ["三月團"]], [["去年底團"]]])
     }
 
-    /// 沒有任何開團時不產生區段，三種分組粒度都一樣
+    /// 驗證沒有任何開團時，三種分組粒度都回傳空陣列，不產生區段
     ///
     /// - Parameter grouping: 頂層區段的分組粒度
     /// - Throws: 行事曆建立失敗時丟出錯誤
     @Test(arguments: CampaignGrouping.allCases)
-    func sections_沒有開團_回傳空陣列(grouping: CampaignGrouping) throws(any Error) {
+    func sections_沒有開團_回傳空陣列(grouping: CampaignGrouping) throws {
         // Given
-        let calendar = try Self.makeCalendar(secondsFromGMT: 0)
+        let calendar = try CampaignDateSectionBuilderTestSupport.makeCalendar(secondsFromGMT: 0)
 
         // When
         let sections = CampaignDateSectionBuilder.sections(
@@ -206,41 +206,5 @@ struct CampaignDateSectionBuilderTests {
 
         // Then
         #expect(sections.isEmpty)
-    }
-}
-
-// MARK: - Internal Method
-
-extension CampaignDateSectionBuilderTests {
-
-    /// 建立以 UTC 為時區的現在時間與行事曆
-    ///
-    /// - Parameter now: 帶 `Z` 時區的 ISO 8601 現在時間
-    /// - Returns: 現在時間與 UTC 西曆組成的日期脈絡
-    /// - Throws: 時間字串格式不符時丟出解析錯誤
-    static func makeContext(now: String) throws(any Error) -> CampaignDateContext {
-        let currentDate = try makeDate(now)
-        let calendar = try makeCalendar(secondsFromGMT: 0)
-        return CampaignDateContext(now: currentDate, calendar: calendar)
-    }
-
-    /// 解析 ISO 8601 時間字串，讓測試輸入與預期值都以字面日期呈現
-    ///
-    /// - Parameter text: 帶 `Z` 時區的 ISO 8601 時間字串
-    /// - Returns: 對應的時間點
-    /// - Throws: 字串格式不符時丟出解析錯誤
-    static func makeDate(_ text: String) throws(any Error) -> Date {
-        try Date(text, strategy: .iso8601)
-    }
-
-    /// 建立固定與 UTC 時差的西曆
-    ///
-    /// - Parameter secondsFromGMT: 與 UTC 相差的秒數
-    /// - Returns: 使用該時區的西曆
-    /// - Throws: 該時差無法建立時區時由 `#require` 丟出測試斷言錯誤
-    static func makeCalendar(secondsFromGMT: Int) throws(any Error) -> Calendar {
-        var calendar = Calendar(identifier: .gregorian)
-        calendar.timeZone = try #require(TimeZone(secondsFromGMT: secondsFromGMT))
-        return calendar
     }
 }

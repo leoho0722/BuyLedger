@@ -10,10 +10,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證水平與垂直尺寸分類的九種組合只在雙向常規時使用寬版
+/// `BLLayoutClass` 的單元測試，涵蓋水平與垂直尺寸分類的九種組合
 struct BLLayoutClassTests {
 
-    /// 只有水平與垂直都為 `.regular` 時回傳寬版，其餘組合皆回傳窄版
+    /// 驗證只有水平與垂直都為 `.regular` 時回傳寬版，其餘組合皆回傳窄版
     ///
     /// - Parameter scenario: 兩個尺寸分類與獨立指定的預期版面
     @Test(arguments: SizeClassCase.allCases)
@@ -39,7 +39,7 @@ extension BLLayoutClassTests {
     /// 水平與垂直尺寸分類及該組合應使用的版面
     struct SizeClassCase: Sendable {
 
-        /// 窮舉 `.compact`、`.regular` 與 `nil` 的九種組合，預期結果逐筆指定
+        /// `.compact`、`.regular` 與 `nil` 的九種組合，每組的預期版面逐筆指定
         static let allCases = [
             Self(horizontal: .compact, vertical: .compact, expected: .compact),
             Self(horizontal: .compact, vertical: .regular, expected: .compact),

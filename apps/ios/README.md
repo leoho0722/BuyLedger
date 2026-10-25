@@ -154,14 +154,14 @@ apps/ios/
 │   └── Resources/                # Info.plist、entitlements、PrivacyInfo.xcprivacy (隱私資訊清單)、Config.example.xcconfig (範本，實際 Config.xcconfig 自填且 gitignored)、assets
 ├── BuyLedgerAccessibilityIDs/    # UI 測試 identifier 常數，BLAccessibilityID 依區域分檔為 +<區域>.swift (共用資料夾，同時編入 App 與 UITests 兩個 target)
 ├── BuyLedgerTests/               # 單元測試，依 ios-dev-kit 鏡像正式程式碼到 Feature 層
-│   ├── Features/<Feature>/       # 各功能的 reducer、Service 與計算測試
+│   ├── Features/<Feature>/       # 各功能的 reducer、Service 與計算測試；同資料夾多個測試型別共用的 helper 放 <Base>TestSupport
 │   ├── Core/、Shared/、App/Testing/ # 對應正式程式碼同名目錄的測試
 │   ├── AccessibilityIDs/         # BLAccessibilityID 測試
 │   ├── Guards/                   # 原始碼掃描與守門測試；多檔的守門依類別分資料夾 (LayerBoundary、DependencyConvention、ProjectionWriteBoundary、ServiceOwnership、LocalizationCatalog 等)，共用掃描器放 Scanning/
 │   ├── SnapshotTests/            # swift-snapshot-testing 測試；baseline 在 __Snapshots__/<測試檔名>/
 │   ├── Mocks/                    # BuyLedgerDatabase、HTTPClient、UserDefaultsStore、AppConfigurationStore 的 Mock 與 MockURLProtocol
 │   ├── Fixtures/                 # Campaign、LedgerOrder 的測試用固定資料
-│   └── Support/                  # TestDependencies、TestPaths 與測試容器等共用輔助
+│   └── Support/                  # TestDependencies、TestPaths、測試容器與跨資料夾共用的 <Base>TestSupport
 ├── BuyLedgerUITests/             # XCUITest
 │   ├── Support/                  # 共用 helper：Launch (BLUITestCase、LaunchOptions、AppNavigator)、Interactions (alert、選單、sheet、輸入、捲動)、Assertions (斷言、等待、診斷)、Layout (欄位邊界、轉向、平台範圍)
 │   ├── Screens/                  # Page Object，依區域分 App、Orders、Campaigns、Dashboard、Insights、Customers、More、Tools，跨區共用的選擇器與編輯器放 Shared
@@ -375,4 +375,4 @@ ExchangeRate-API v6 有兩個 endpoint：`latest/{base}` (匯率) 與 `codes` (�
 
 ### Snapshot baseline 漂移
 
-設計大改時請刪掉對應 baseline (`BuyLedgerTests/SnapshotTests/__Snapshots__/SnapshotTests*/*.png`，依測試檔分資料夾) 讓下一次跑測試自動重建。Baseline 失準若不是來自設計變動，先確認測試是否走 `TestDependencies.withFixedNow { ... }` 注入固定 `Date`、`TimeZone`、`Calendar`。
+設計大改時請刪掉對應 baseline (`BuyLedgerTests/SnapshotTests/__Snapshots__/Snapshot*Tests/*.png`，依測試檔分資料夾) 讓下一次跑測試自動重建。Baseline 失準若不是來自設計變動，先確認測試是否走 `TestDependencies.withFixedNow { ... }` 注入固定 `Date`、`TimeZone`、`Calendar`。

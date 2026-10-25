@@ -5,12 +5,11 @@
 //  Created by Leo Ho on 2026/5/2.
 //
 
-import Foundation
 import XCTest
 
 @testable import BuyLedger
 
-/// 衡量訂單清單的 `filteredOrders` 與總覽統計 `DashboardStats` 在大量訂單下的執行耗時是否退化
+/// 訂單清單篩選、總覽統計與類別分組的效能測試，以 `ContinuousClock` 計時，耗時超過退化門檻即失敗
 final class OrdersFeaturePerformanceTests: XCTestCase {
 
     // MARK: - Properties
@@ -18,7 +17,7 @@ final class OrdersFeaturePerformanceTests: XCTestCase {
     /// 計時用的時鐘，不受系統時間調整影響
     private static let clock = ContinuousClock()
 
-    /// 超過此耗時即判定為效能退化
+    /// 判定效能退化的耗時上限
     private static let regressionThreshold = Duration.seconds(3)
 
     /// 類別分組小規模退化門檻 (2026-10-18 iPhone 17 實測 0.018 秒，取約 6 倍)
@@ -27,10 +26,10 @@ final class OrdersFeaturePerformanceTests: XCTestCase {
     /// 類別分組大規模退化門檻 (2026-10-18 iPhone 17 實測 0.182 秒，取約 6 倍)
     private static let categoryGroupsLargeScaleThreshold = Duration.milliseconds(1_100)
 
-    /// 1,000 筆訂單、搜尋文字為空 (篩選條件最少) 時的執行成本
+    /// 驗證 1,000 筆訂單、搜尋文字為空 (篩選條件最少) 時，連續 20 次取 `filteredOrders` 的耗時未超過退化門檻
     func testFilteredOrders_千筆訂單無搜尋文字_耗時未超過退化門檻() {
         // Given
-        let state = OrderListFeatureTests.makeState(orders: Self.makeOrders(count: 1_000))
+        let state = OrderListFeatureTestSupport.makeState(orders: Self.makeOrders(count: 1_000))
 
         // When
         let elapsed = Self.clock.measure {
@@ -43,10 +42,12 @@ final class OrdersFeaturePerformanceTests: XCTestCase {
         Self.assertNoRegression(elapsed, label: "testFilteredOrders_千筆訂單無搜尋文字_耗時未超過退化門檻")
     }
 
-    /// 1,000 筆訂單、搜尋文字命中部分訂單時的執行成本
-    func testFilteredOrders_千筆訂單搜尋命中半數_耗時未超過退化門檻() {
+    /// 驗證 1,000 筆訂單搜尋「even」命中 600 筆時，連續 20 次篩選的耗時未超過退化門檻
+    ///
+    /// - Note: 命中內容是偶數客戶 500 筆與類別「evenly numbered」200 筆的聯集
+    func testFilteredOrders_千筆訂單搜尋命中六百筆_耗時未超過退化門檻() {
         // Given
-        var state = OrderListFeatureTests.makeState(orders: Self.makeOrders(count: 1_000))
+        var state = OrderListFeatureTestSupport.makeState(orders: Self.makeOrders(count: 1_000))
         state.searchText = "even"
 
         // When
@@ -57,13 +58,15 @@ final class OrdersFeaturePerformanceTests: XCTestCase {
         }
 
         // Then
-        Self.assertNoRegression(elapsed, label: "testFilteredOrders_千筆訂單搜尋命中半數_耗時未超過退化門檻")
+        Self.assertNoRegression(elapsed, label: "testFilteredOrders_千筆訂單搜尋命中六百筆_耗時未超過退化門檻")
     }
 
-    /// 1,000 筆訂單同時套用狀態、日期區間與搜尋文字時的執行成本
+    /// 驗證 1,000 筆訂單同時套用搜尋、狀態與日期條件時，連續 20 次篩選的耗時未超過退化門檻
+    ///
+    /// - Note: 條件為搜尋「evenly numbered」、狀態 `delivered` 與日期區間 `thisMonth`
     func testFilteredOrders_千筆訂單全部篩選同時套用_耗時未超過退化門檻() {
         // Given
-        var state = OrderListFeatureTests.makeState(orders: Self.makeOrders(count: 1_000))
+        var state = OrderListFeatureTestSupport.makeState(orders: Self.makeOrders(count: 1_000))
         state.searchText = "evenly numbered"
         state.selectedStatus = .status(.delivered)
         state.selectedDatePeriod = .thisMonth
@@ -79,7 +82,7 @@ final class OrdersFeaturePerformanceTests: XCTestCase {
         Self.assertNoRegression(elapsed, label: "testFilteredOrders_千筆訂單全部篩選同時套用_耗時未超過退化門檻")
     }
 
-    /// 1,000 筆訂單下的總覽統計耗時基準
+    /// 驗證 1,000 筆訂單的總覽統計，連續 20 次建立 `DashboardStats` 的耗時未超過退化門檻
     func testDashboardStats_千筆訂單_耗時未超過退化門檻() {
         // Given
         let orders = Self.makeOrders(count: 1_000)
@@ -100,10 +103,10 @@ final class OrdersFeaturePerformanceTests: XCTestCase {
         Self.assertNoRegression(elapsed, label: "testDashboardStats_千筆訂單_耗時未超過退化門檻")
     }
 
-    /// 1,000 筆訂單、50 類別、20 開團下分組與顯示 (涵蓋非搜尋與搜尋兩條路徑) 的執行成本
+    /// 驗證 1,000 筆訂單、50 類別、20 開團的類別分組，連續 20 輪分組後分別以空搜尋文字與「類別」顯示，耗時未超過小規模退化門檻
     func testCategoryGroups_小規模千筆訂單_耗時未超過退化門檻() {
         // Given
-        let fixture = Self.makeCategoryGroupsFixture(
+        let fixture = OrdersFeaturePerformanceTestSupport.makeCategoryGroupsFixture(
             orderCount: 1_000,
             categoryCount: 50,
             campaignCount: 20
@@ -141,10 +144,10 @@ final class OrdersFeaturePerformanceTests: XCTestCase {
         )
     }
 
-    /// 10,000 筆訂單、500 類別、200 開團下分組與顯示 (涵蓋非搜尋與搜尋兩條路徑) 的執行成本
+    /// 驗證 10,000 筆訂單、500 類別、200 開團的類別分組，連續 20 輪分組後分別以空搜尋文字與「類別」顯示，耗時未超過大規模退化門檻
     func testCategoryGroups_大規模萬筆訂單_耗時未超過退化門檻() {
         // Given
-        let fixture = Self.makeCategoryGroupsFixture(
+        let fixture = OrdersFeaturePerformanceTestSupport.makeCategoryGroupsFixture(
             orderCount: 10_000,
             categoryCount: 500,
             campaignCount: 200

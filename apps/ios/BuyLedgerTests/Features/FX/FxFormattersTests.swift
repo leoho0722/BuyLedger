@@ -10,10 +10,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證匯率工具的格式化輸出，預期值以字面值比對
+/// `FxFormatters` 的單元測試，預期值為字面值，直接比對格式化後的字串
 struct FxFormattersTests {
 
-    /// 一單位幣別的標籤為數字一加上幣別代碼
+    /// 驗證 `unitRateLabel` 對美元回傳 1 加上幣別代碼的標籤
     @Test
     func unitRateLabel_美元_顯示一單位與代碼() {
         // Given
@@ -26,7 +26,7 @@ struct FxFormattersTests {
         #expect(label == "1 USD")
     }
 
-    /// 有匯率時換算說明依 App 語言呈現來源幣別與四位小數的匯率
+    /// 驗證有匯率時，`conversionLabel` 依 App 語言呈現來源幣別與四位小數的匯率
     @Test
     func conversionLabel_有匯率_顯示來源幣別與四位小數匯率() {
         // Given
@@ -43,7 +43,7 @@ struct FxFormattersTests {
         #expect(label == "1 KRW = 0.0240 TWD")
     }
 
-    /// 沒有匯率時換算說明的匯率位置顯示破折號
+    /// 驗證沒有匯率時，`conversionLabel` 的匯率位置顯示破折號，來源與目標幣別照常顯示
     @Test
     func conversionLabel_無匯率_匯率位置顯示破折號() {
         // Given
@@ -60,7 +60,7 @@ struct FxFormattersTests {
         #expect(label == "1 USD = — TWD")
     }
 
-    /// 尚未取得匯率快照時副標顯示尚未連線
+    /// 驗證尚未取得匯率快照時，`rateSourceSubtitle` 顯示「尚未連線」
     @Test
     func rateSourceSubtitle_無快照_顯示尚未連線() {
         // Given
@@ -76,7 +76,7 @@ struct FxFormattersTests {
         #expect(subtitle == "尚未連線")
     }
 
-    /// 有匯率快照時副標以來源名稱開頭，後接快照時間
+    /// 驗證有匯率快照時，`rateSourceSubtitle` 以來源名稱 ExchangeRate-API 開頭
     @Test
     func rateSourceSubtitle_有快照_以來源名稱開頭() {
         // Given

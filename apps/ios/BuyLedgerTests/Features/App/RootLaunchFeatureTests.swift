@@ -11,11 +11,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// `RootLaunchFeature` 的單元測試：啟動時的幣別快取寫入與系統時間變更委派
+/// `RootLaunchFeature` 的單元測試，涵蓋啟動時的幣別快取寫入，以及系統時間變更的通知
 @MainActor
 struct RootLaunchFeatureTests {
 
-    /// 啟動載入以七天期限刷新幣別，接著讀取快取並回報結果
+    /// 驗證啟動載入時以七天期限刷新幣別，接著讀取快取並回報結果，刷新在讀取之前進行
     @Test
     func loadRequested_啟動載入_以七天期限刷新後讀取快取() async {
         // Given
@@ -57,7 +57,7 @@ struct RootLaunchFeatureTests {
         #expect(calls.value == ["refresh", "fetch"])
     }
 
-    /// 系統回報重大時間變更時，送出委派交給根功能重寫日期脈絡
+    /// 驗證收到系統的重大時間變更時，送出時間變更通知，之後才回報幣別讀取結果
     @Test
     func loadRequested_收到重大時間變更_送出時間變更委派() async {
         // Given
@@ -92,7 +92,7 @@ struct RootLaunchFeatureTests {
         await store.finish()
     }
 
-    /// 快取回傳非空清單時，共用幣別清單改為快取內容
+    /// 驗證快取回傳非空清單時，共用幣別清單改為快取內容
     @Test
     func currencyCodesResponse_成功且非空_寫入共用幣別清單() async {
         // Given
@@ -117,7 +117,7 @@ struct RootLaunchFeatureTests {
         #expect(store.state.currencyCodes == [.twd, .jpy, CurrencyCode(rawValue: "EUR")])
     }
 
-    /// 快取回傳空清單時，保留原有的非空共用清單
+    /// 驗證快取回傳空清單時，保留原有的非空共用清單
     @Test
     func currencyCodesResponse_成功但為空_保留原共用清單() async {
         // Given
@@ -136,7 +136,7 @@ struct RootLaunchFeatureTests {
         #expect(store.state.currencyCodes == [.usd])
     }
 
-    /// 快取讀取失敗時，保留原有的非空共用清單
+    /// 驗證快取讀取失敗時，保留原有的非空共用清單
     @Test
     func currencyCodesResponse_讀取失敗_保留原共用清單() async {
         // Given

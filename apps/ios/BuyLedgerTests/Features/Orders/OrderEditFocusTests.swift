@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證訂單編輯表單的焦點管理
+/// `OrderEditFeature` 的單元測試，以 TestStore 逐步驗證表單開啟、取消與儲存時的焦點變化
 struct OrderEditFocusTests {
 
     // MARK: - Properties
@@ -19,7 +19,7 @@ struct OrderEditFocusTests {
     /// 供「編輯既有訂單」情境使用的訂單
     private static let existingOrder = LedgerOrder.fixture(id: "EXISTING")
 
-    /// 開啟空白訂單時將焦點放在第一個欄位
+    /// 驗證開啟空白訂單時，`.task` 把焦點放到第一個欄位，即顧客名稱
     @Test
     @MainActor
     func task_開啟空白訂單_聚焦第一欄位() async {
@@ -36,7 +36,7 @@ struct OrderEditFocusTests {
         #expect(store.state.focusedField == .customerName)
     }
 
-    /// 編輯既有訂單不搶焦點，讓使用者自行決定要改哪一欄
+    /// 驗證開啟既有訂單時，`.task` 不設定焦點，由使用者自行決定要改哪一欄
     @Test
     @MainActor
     func task_開啟既有訂單_不搶走焦點() async {
@@ -51,7 +51,7 @@ struct OrderEditFocusTests {
         #expect(store.state.focusedField == nil)
     }
 
-    /// 未修改的表單按下取消時，清除目前已取得的輸入焦點
+    /// 驗證未修改的表單按下取消時，原本在顧客名稱的焦點被清除
     @Test
     @MainActor
     func cancelTapped_表單未修改_清除焦點() async {
@@ -72,7 +72,7 @@ struct OrderEditFocusTests {
         #expect(store.state.focusedField == nil)
     }
 
-    /// 儲存表單時清除目前已取得的輸入焦點
+    /// 驗證顧客名稱欄位有焦點時按下儲存，焦點被清除，並送出儲存請求
     @Test
     @MainActor
     func saveTapped_欄位有焦點_清除焦點() async {
@@ -100,9 +100,7 @@ struct OrderEditFocusTests {
         #expect(store.state.focusedField == nil)
     }
 
-    /// 建立新訂單的初始表單沒有焦點
-    ///
-    /// - Note: 父層關閉後重新開啟表單的焦點行為由父層測試負責
+    /// 驗證新建表單剛建構、尚未收到 `.task` 時，`focusedField` 為 `nil`
     @Test
     func init_新建表單初始狀態_沒有焦點() {
         // Given

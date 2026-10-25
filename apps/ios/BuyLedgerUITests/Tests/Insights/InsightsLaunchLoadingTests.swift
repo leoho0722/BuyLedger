@@ -7,16 +7,16 @@
 
 import XCTest
 
-/// 冷啟動直接開分析頁的開團毛利排行載入測試
+/// 冷啟動直接開分析頁時，開團毛利排行載入的 UI 測試
+@MainActor
 final class InsightsLaunchLoadingTests: BLUITestCase {
 
     // MARK: - Properties
 
-    /// `campaignsWithOrders` 種子包含有歸屬訂單的兩個開團
+    /// 有歸屬訂單的兩個開團唯一識別碼，位於 `campaignsWithOrders` 種子中
     private static let campaignIDs = ["CMP-SAMPLE-KR-APR", "CMP-SAMPLE-JP-MAR"]
 
-    /// 冷啟動先開分析頁時，排行列出兩個開團，不需先進開團分頁
-    @MainActor
+    /// 驗證冷啟動先開分析頁時，每團毛利排行列出兩個開團，不需先進入開團分頁
     func testInsightsLaunch_先開分析頁_每團毛利排行列出開團() {
         // Given
         let app = launch(LaunchOptions(seed: .campaignsWithOrders))

@@ -12,20 +12,20 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證資料庫交易的 context 隔離、寫入與復原邊界
+/// `BuyLedgerDatabase` 的單元測試，涵蓋交易的 context 隔離、寫入與復原邊界
 struct BuyLedgerDatabaseTests {
 
-    /// 每次讀取使用新 `ModelContext` 且不保留前次未儲存的模型
+    /// 驗證連續讀取時每次都使用新的 `ModelContext`，前次未儲存的模型不會帶入下一次讀取
     ///
-    /// - Throws: store 讀取失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；fixture 建立失敗時丟出底層錯誤
+    /// - Throws: 資料庫讀取失敗時丟出持久化讀取錯誤；測試資料建立失敗時丟出底層錯誤
     @Test
     func read_連續讀取_每次建立新資料上下文並隔離未儲存模型() async throws {
         // Given
         let fixture = try ResidueProbeModels.makeDiskFixture()
         defer {
-            Self.removeTemporaryDirectory(at: fixture.directoryURL)
+            BuyLedgerDatabaseTestSupport.removeTemporaryDirectory(at: fixture.directoryURL)
         }
-        let database = Self.makeDatabase(with: fixture)
+        let database = BuyLedgerDatabaseTestSupport.makeDatabase(with: fixture)
 
         // When
         await database.read { context in
@@ -45,14 +45,13 @@ struct BuyLedgerDatabaseTests {
         #expect(!secondRead.parentNames.contains("read-pending"))
     }
 
-    /// 成功寫入只送出一次 `save()` 通知並將訂單保存至 store
+    /// 驗證成功寫入只觸發一次儲存通知，且訂單可於之後的讀取中讀回
     ///
-    /// - Throws: 儲存失敗時丟出 `PersistenceError.saveFailed(underlying:)`；
-    ///   讀回失敗時丟出 `PersistenceError.fetchFailed(underlying:)`
+    /// - Throws: 資料庫儲存或讀回失敗時丟出對應的持久化錯誤
     @Test
     func write_操作成功_僅儲存一次且可讀回訂單() async throws {
         // Given
-        let database = Self.makeInMemoryDatabase()
+        let database = BuyLedgerDatabaseTestSupport.makeInMemoryDatabase()
         let contextIdentifier = LockIsolated<ObjectIdentifier?>(nil)
         let saveCount = LockIsolated(0)
         // 使用同步 block observer 立即記錄 save 通知，改用 `AsyncSequence` 會引入排程時序
@@ -86,19 +85,19 @@ struct BuyLedgerDatabaseTests {
 
         // Then
         let storedIDs = try await database.read { context throws(PersistenceError) in
-            try Self.orderIDs(in: context)
+            try BuyLedgerDatabaseTestSupport.orderIDs(in: context)
         }
         #expect(saveCount.value == 1)
         #expect(storedIDs == ["DATABASE-SAVE-ONCE"])
     }
 
-    /// 二十個相同識別值的並發 `write` 只建立一筆訂單
+    /// 驗證二十個相同識別值的並發 `write` 只建立一筆訂單，其餘十九筆回報識別值撞號
     ///
-    /// - Throws: 最後讀取 store 失敗時丟出 `PersistenceError.fetchFailed(underlying:)`
+    /// - Throws: 最後讀取資料庫失敗時丟出持久化讀取錯誤
     @Test
     func write_相同識別值並行寫入_只建立一筆() async throws {
         // Given
-        let database = Self.makeInMemoryDatabase()
+        let database = BuyLedgerDatabaseTestSupport.makeInMemoryDatabase()
         let orderID = "order-001"
 
         // When
@@ -138,7 +137,7 @@ struct BuyLedgerDatabaseTests {
 
         // Then
         let storedIDs = try await database.read { context throws(PersistenceError) in
-            try Self.orderIDs(in: context)
+            try BuyLedgerDatabaseTestSupport.orderIDs(in: context)
         }
         #expect(outcomes.filter { $0 == .created }.count == 1)
         #expect(outcomes.filter { $0 == .collision }.count == 19)
@@ -162,54 +161,5 @@ extension BuyLedgerDatabaseTests {
 
         /// 發生非預期錯誤
         case unexpected
-    }
-}
-
-// MARK: - Internal Method
-
-extension BuyLedgerDatabaseTests {
-
-    /// 移除測試建立的暫存資料夾；移除失敗時以 `Issue.record` 記錄測試失敗
-    ///
-    /// - Parameter directoryURL: 暫存 store 所在目錄
-    static func removeTemporaryDirectory(at directoryURL: URL) {
-        do {
-            try FileManager.default.removeItem(at: directoryURL)
-        } catch {
-            Issue.record("無法移除資料庫測試暫存目錄：\(error.localizedDescription)")
-        }
-    }
-
-    /// 以 fixture 建立磁碟資料庫
-    ///
-    /// - Parameter fixture: 含容器與 store 目錄的測試 fixture
-    /// - Returns: 使用 fixture store 位置的資料庫
-    static func makeDatabase(with fixture: ResidueProbeModels.DiskFixture) -> BuyLedgerDatabase {
-        BuyLedgerDatabase(
-            modelContainer: fixture.container,
-            storeLocation: .directory(fixture.directoryURL)
-        )
-    }
-
-    /// 建立使用 in-memory container 的資料庫
-    ///
-    /// - Returns: `storeLocation` 為 `.inMemory` 的資料庫
-    /// - Note: 容器建立經 `TestContainerCreationLock` 串行化
-    static func makeInMemoryDatabase() -> BuyLedgerDatabase {
-        let container = TestContainerCreationLock.withLock {
-            PersistenceContainer.makeInMemory(for: .testing)
-        }
-        return BuyLedgerDatabase(modelContainer: container, storeLocation: .inMemory)
-    }
-
-    /// 讀取目前 store 中的訂單識別值
-    ///
-    /// - Parameter context: 查詢用的 `SwiftData` context
-    /// - Returns: 依 store 回傳的順序排列之訂單識別值
-    /// - Throws: 訂單讀取失敗時丟出 `PersistenceError.fetchFailed(underlying:)`
-    static func orderIDs(in context: ModelContext) throws(PersistenceError) -> [String] {
-        try PersistenceError.mapFetch {
-            try context.fetch(FetchDescriptor<OrderRecord>()).map(\.id)
-        }
     }
 }

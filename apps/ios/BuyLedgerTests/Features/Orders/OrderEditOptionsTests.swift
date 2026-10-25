@@ -11,10 +11,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證訂單編輯選項在初始化時整理，畫面出現時只處理焦點與照片
+/// `OrderEditFeature` 與 `OrderEditOptions` 的單元測試，涵蓋初始化整理選項、畫面載入與新增選項套用
 struct OrderEditOptionsTests {
 
-    /// 新訂單表單出現時只設定初始焦點，所有服務維持未實作也不讀取選項
+    /// 驗證新訂單表單出現時只設定初始焦點，照片維持已載入，且不呼叫任何服務
     @Test
     @MainActor
     func task_新訂單且所有服務維持未實作_只設定初始焦點() async {
@@ -43,7 +43,7 @@ struct OrderEditOptionsTests {
         #expect(store.state.photos.photoLoadPhase == .loaded)
     }
 
-    /// 照片已載入的既有訂單表單出現時，所有服務維持未實作也不讀取選項
+    /// 驗證照片已載入的既有訂單表單出現時，不呼叫任何服務，也不設定焦點
     @Test
     @MainActor
     func task_照片已載入的既有訂單且所有服務維持未實作_不讀取任何資料() async {
@@ -70,7 +70,7 @@ struct OrderEditOptionsTests {
         #expect(store.state.focusedField == nil)
     }
 
-    /// 選項依名稱去重並補入既有草稿的值，付款旗標以最後一筆主檔為準
+    /// 驗證選項去重，將草稿已有但選項缺少的值去除前後空白後補入清單，同名付款方式旗標以最後一筆主檔為準，且初始化不算修改
     @Test
     func init_選項重複且缺少草稿值_整理清單並保留付款旗標() {
         // Given
@@ -132,7 +132,7 @@ struct OrderEditOptionsTests {
         #expect(state.isDirty == false)
     }
 
-    /// 草稿既有付款名稱與主檔相同時，保留主檔的三種分類旗標
+    /// 驗證草稿的付款方式去除空白後與主檔同名時，無卡、匯款與貨到付款的旗標沿用主檔
     @Test
     func init_草稿付款方式存在主檔_保留主檔旗標() {
         // Given
@@ -162,7 +162,7 @@ struct OrderEditOptionsTests {
         #expect(state.isSelectedPaymentMethodCOD)
     }
 
-    /// 完整時間以表單建立時注入的東十四區時區 (`Pacific/Kiritimati`) 顯示
+    /// 驗證完整時間依注入行事曆的東十四區時區格式化，顯示為 2026/04/26 14:30:00，不跟隨執行環境的時區
     ///
     /// - Throws: 時區或指定訂單時間無法建立時由 `#require` 丟出
     @Test
@@ -197,25 +197,22 @@ struct OrderEditOptionsTests {
         #expect(timestamp == "2026/04/26 14:30:00")
     }
 
-    /// 新增三種名稱選項時自然排序，重複名稱維持原清單，其餘選項與行事曆不變
+    /// 驗證新增訂單來源、商品類別或對帳狀態時，名稱依自然排序插入 (如 A2 排在 A10 前)，重複名稱不改動清單，其餘選項與行事曆不變
     ///
-    /// - Parameters:
-    ///   - kind: 訂單來源、商品類別或對帳狀態
-    ///   - name: 新增或重複的名稱
-    ///   - expectedNames: 去重與自然排序後的名稱
+    /// - Parameter testCase: 測試輸入與字面值預期結果
     @Test(arguments: [
-        (LookupKind.orderSource, "A2", ["A2", "A10", "A20"]),
-        (.category, "A2", ["A2", "A10", "A20"]),
-        (.reconciliationStatus, "A2", ["A2", "A10", "A20"]),
-        (.orderSource, "A10", ["A10", "A20"]),
-        (.category, "A10", ["A10", "A20"]),
-        (.reconciliationStatus, "A10", ["A10", "A20"]),
+        NameAdditionCase(kind: .orderSource, name: "A2", expectedNames: ["A2", "A10", "A20"]),
+        NameAdditionCase(kind: .category, name: "A2", expectedNames: ["A2", "A10", "A20"]),
+        NameAdditionCase(
+            kind: .reconciliationStatus,
+            name: "A2",
+            expectedNames: ["A2", "A10", "A20"]
+        ),
+        NameAdditionCase(kind: .orderSource, name: "A10", expectedNames: ["A10", "A20"]),
+        NameAdditionCase(kind: .category, name: "A10", expectedNames: ["A10", "A20"]),
+        NameAdditionCase(kind: .reconciliationStatus, name: "A10", expectedNames: ["A10", "A20"]),
     ])
-    func applyAddition_新增或重複名稱_自然排序去重並保留其他欄位(
-        kind: LookupKind,
-        name: String,
-        expectedNames: [String]
-    ) {
+    func applyAddition_新增或重複名稱_自然排序去重並保留其他欄位(testCase: NameAdditionCase) {
         // Given
         let original = OrderEditOptions(
             orderSources: ["A10", "A20"],
@@ -229,23 +226,20 @@ struct OrderEditOptionsTests {
         var options = original
         let request = LookupAdditionRequest(
             id: UUID(0),
-            kind: kind,
-            name: name,
+            kind: testCase.kind.lookupKind,
+            name: testCase.name,
             flags: .none
         )
         var expected = original
-        switch kind {
+        switch testCase.kind {
         case .orderSource:
-            expected.orderSources = expectedNames
+            expected.orderSources = testCase.expectedNames
 
         case .category:
-            expected.categories = expectedNames
+            expected.categories = testCase.expectedNames
 
         case .reconciliationStatus:
-            expected.reconciliationStatuses = expectedNames
-
-        case .paymentMethod:
-            Issue.record("付款方式應使用專屬測試案例")
+            expected.reconciliationStatuses = testCase.expectedNames
         }
 
         // When
@@ -255,21 +249,14 @@ struct OrderEditOptionsTests {
         #expect(options == expected)
     }
 
-    /// 新付款方式自然排序插入，同名付款方式原位覆寫三種旗標且不重複加入
+    /// 驗證新增付款方式時，不同名的依自然排序插入，同名的原位覆寫為新的三種旗標且不重複加入
     ///
-    /// - Parameters:
-    ///   - name: 新增或覆寫的付款方式名稱
-    ///   - isExisting: 名稱是否已在原清單中
-    ///   - isBankTransfer: 新付款方式是否為銀行匯款
+    /// - Parameter testCase: 測試輸入與字面值預期結果
     @Test(arguments: [
-        ("A2", false, true),
-        ("A10", true, false),
+        PaymentMethodAdditionCase(name: "A2", isExisting: false, isBankTransfer: true),
+        PaymentMethodAdditionCase(name: "A10", isExisting: true, isBankTransfer: false),
     ])
-    func applyAddition_新增或同名付款方式_自然排序去重並完整覆寫旗標(
-        name: String,
-        isExisting: Bool,
-        isBankTransfer: Bool
-    ) {
+    func applyAddition_新增或同名付款方式_自然排序去重並完整覆寫旗標(testCase: PaymentMethodAdditionCase) {
         // Given
         let first = PaymentMethodInfo(name: "A2", flags: .none)
         let existing = PaymentMethodInfo(
@@ -281,7 +268,7 @@ struct OrderEditOptionsTests {
         let original = OrderEditOptions(
             orderSources: ["LINE"],
             categories: ["美妝"],
-            paymentMethods: isExisting ? [first, existing] : [existing],
+            paymentMethods: testCase.isExisting ? [first, existing] : [existing],
             reconciliationStatuses: ["待對帳"],
             campaigns: ["May-JP"],
             currencyCodes: [.jpy],
@@ -291,26 +278,84 @@ struct OrderEditOptionsTests {
         let request = LookupAdditionRequest(
             id: UUID(0),
             kind: .paymentMethod,
-            name: name,
+            name: testCase.name,
             flags: PaymentMethodFlags(
                 isCardless: true,
-                isBankTransfer: isBankTransfer,
+                isBankTransfer: testCase.isBankTransfer,
                 isCashOnDelivery: true
             )
         )
         let updated = PaymentMethodInfo(
-            name: name,
+            name: testCase.name,
             isCardless: true,
-            isBankTransfer: isBankTransfer,
+            isBankTransfer: testCase.isBankTransfer,
             isCashOnDelivery: true
         )
         var expected = original
-        expected.paymentMethods = isExisting ? [first, updated] : [updated, existing]
+        expected.paymentMethods = testCase.isExisting ? [first, updated] : [updated, existing]
 
         // When
         options.applyAddition(request)
 
         // Then
         #expect(options == expected)
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrderEditOptionsTests {
+
+    /// 只包含以名稱新增的三種選項，付款方式另有旗標測試
+    enum NameOptionKind: Sendable {
+
+        /// 訂單來源
+        case orderSource
+
+        /// 商品類別
+        case category
+
+        /// 對帳狀態
+        case reconciliationStatus
+
+        /// 新增請求使用的主檔種類
+        var lookupKind: LookupKind {
+            switch self {
+            case .orderSource:
+                .orderSource
+
+            case .category:
+                .category
+
+            case .reconciliationStatus:
+                .reconciliationStatus
+            }
+        }
+    }
+
+    /// 付款方式新增或覆寫的輸入旗標
+    struct PaymentMethodAdditionCase: Sendable {
+
+        /// 新增或覆寫的付款方式名稱
+        let name: String
+
+        /// 名稱是否已在原清單中
+        let isExisting: Bool
+
+        /// 新付款方式是否為銀行匯款
+        let isBankTransfer: Bool
+    }
+
+    /// 名稱選項的新增輸入與預期排序
+    struct NameAdditionCase: Sendable {
+
+        /// 訂單來源、商品類別或對帳狀態
+        let kind: NameOptionKind
+
+        /// 新增或重複的名稱
+        let name: String
+
+        /// 去重與自然排序後的名稱
+        let expectedNames: [String]
     }
 }

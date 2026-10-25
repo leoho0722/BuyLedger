@@ -4,7 +4,7 @@ paths:
   - "apps/ios/BuyLedger/Shared/**"
   - "apps/ios/BuyLedger/Core/{Domain,Networking}/**"
   - "apps/ios/BuyLedger/**/*.xcstrings"
-  - "apps/ios/BuyLedgerTests/Guards/LocalizationCatalog/LocalizationCatalogTests*.swift"
+  - "apps/ios/BuyLedgerTests/Guards/LocalizationCatalog/*.swift"
   - "apps/ios/BuyLedgerTests/Guards/Scanning/*+SourceLiteralScan.swift"
   - "apps/ios/BuyLedgerTests/Guards/AccessibilityConventionScanTests.swift"
 ---
@@ -52,6 +52,6 @@ paths:
   - Orders 的多選三態標題由 `OrderListFeature.State.navigationTitleKey` 衍生；`Tab(LocalizedStringKey)` 不需要此處理。
 - **新增任何 UI 字串 (含 `AlertState`／`TextState`、`accessibilityLabel`) 都補 `Localizable.xcstrings` 的 `en`**，否則英文模式露出中文。
   - 手動補 catalog 用文字插入展開格式的 entry，不整檔 `json.dump` 重寫：`.xcstrings` 是 Xcode 自訂序列化，重寫會產生巨量 diff。
-  - `LocalizationCatalogTests` 會掃描程式碼中的使用者可見字面值；型別呼叫自動涵蓋，但文字類 modifier (如 `.help`) 與 display property 是列舉清單，新增這兩類時同步補 `LocalizationCatalogTests+LiteralScan.swift` `visibleLiteralStarts` 內的 `visiblePatterns`，以及 `String+SourceLiteralScan.swift` `isDisplayScopeDeclaration` 內的 `displayProperties`。
+  - `LocalizationCatalogTests` 會掃描程式碼中的使用者可見字面值；型別呼叫自動涵蓋，但文字類 modifier (如 `.help`) 與 display property 是列舉清單，新增這兩類時同步補 `LocalizationCatalogLiteralScan.swift` `visibleLiteralStarts` 內的 `visiblePatterns`，以及 `String+SourceLiteralScan.swift` `isDisplayScopeDeclaration` 內的 `displayProperties`。
   - 直接作為型別呼叫引數的多行 `"""` 字面值掃描抓不到，要人工確認已進 catalog。
   - 回傳 `LocalizedStringKey`／`LocalizedStringResource` 的函式與屬性，本體內的字面值 (含插值) 都會被當成目錄 key 檢查：組出 verbatim 文字 (金額、百分比、`MoM` 等) 的格式化函式回傳 `String`，由呼叫端包 `LocalizedStringKey` (參考 `DashboardFormatters.percentDelta`)。

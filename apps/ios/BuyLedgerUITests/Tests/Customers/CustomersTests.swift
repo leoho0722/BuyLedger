@@ -7,16 +7,16 @@
 
 import XCTest
 
-/// 客戶名單點選客戶切到訂單與空狀態測試
+/// 客戶名單的 UI 測試，涵蓋點選客戶切到訂單清單與空狀態
+@MainActor
 final class CustomersTests: BLUITestCase {
 
     // MARK: - Properties
 
-    /// `customerRanking` 中累計消費最高的客戶名，用來點選客戶列
+    /// `customerRanking` 種子中累計消費最高的客戶名稱，用來點選客戶列
     private static let topCustomerName = "林書宇"
 
-    /// 點客戶列後直接切到該客戶的訂單，訂單清單畫面出現
-    @MainActor
+    /// 驗證有客戶排行資料時，點選累計消費最高的客戶列後，畫面切到訂單頁且訂單清單就緒
     func testTapCustomer_有客戶排行資料_切到訂單清單() {
         // Given
         let app = launch(LaunchOptions(seed: .customerRanking))
@@ -35,8 +35,7 @@ final class CustomersTests: BLUITestCase {
         }
     }
 
-    /// 空資料庫時，客戶名單顯示尚無客戶的空狀態
-    @MainActor
+    /// 驗證空資料時進入客戶名單，顯示尚無客戶的空狀態
     func testOpenCustomers_空資料_顯示空狀態() {
         // Given
         let app = launch(LaunchOptions(seed: .empty))
@@ -60,7 +59,6 @@ private extension CustomersTests {
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的客戶頁 Page Object
-    @MainActor
     func openCustomers(
         _ app: XCUIApplication,
         file: StaticString = #filePath,

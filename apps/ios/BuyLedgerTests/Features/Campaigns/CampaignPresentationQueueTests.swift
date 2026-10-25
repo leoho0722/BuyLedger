@@ -11,10 +11,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證開團通知佇列的三態：表單開啟、關閉中、已關閉
+/// `CampaignPresentationQueue` 的單元測試，涵蓋表單開啟、關閉中與已關閉三種狀態下的通知呈現
 struct CampaignPresentationQueueTests {
 
-    /// 表單已關閉時，通知直接設進目的地，不經暫存
+    /// 驗證表單已關閉時，通知直接設進目的地，不經暫存
     @Test
     func present_表單已關閉_直接設進目的地() {
         // Given
@@ -30,7 +30,7 @@ struct CampaignPresentationQueueTests {
         #expect(queue.isFormClosing == false)
     }
 
-    /// 表單已關閉且另一個提示顯示中時，新通知直接取代它
+    /// 驗證表單已關閉且另一個提示顯示中時，新通知直接取代原提示
     @Test
     func present_表單已關閉且提示顯示中_直接取代原提示() {
         // Given
@@ -45,7 +45,7 @@ struct CampaignPresentationQueueTests {
         #expect(queue.pendingNotice == nil)
     }
 
-    /// 表單開啟中，通知先暫存，不取代使用者正在編輯的表單
+    /// 驗證表單開啟中時，通知先暫存，不取代使用者正在編輯的表單，表單維持開啟
     @Test
     func present_表單開啟中_暫存通知且表單維持開啟() {
         // Given
@@ -61,7 +61,7 @@ struct CampaignPresentationQueueTests {
         #expect(queue.isFormClosing == false)
     }
 
-    /// 表單關閉中，目的地已清空也先暫存通知，避免設進正在關閉的 sheet
+    /// 驗證表單關閉中時，即使目的地已清空，通知也先暫存，避免設進正在關閉的 sheet
     @Test
     func present_表單關閉中_暫存通知而不設進目的地() {
         // Given
@@ -78,7 +78,7 @@ struct CampaignPresentationQueueTests {
         #expect(queue.isFormClosing)
     }
 
-    /// 表單關閉中連續到達兩則通知，只保留最新一則
+    /// 驗證表單關閉中連續收到兩則通知時，暫存只保留最新一則
     @Test
     func present_關閉中連續兩則_只保留最新一則() {
         // Given
@@ -95,7 +95,7 @@ struct CampaignPresentationQueueTests {
         #expect(destination == nil)
     }
 
-    /// 父層接受儲存後標記表單關閉中
+    /// 驗證儲存被接受時標記表單關閉中，暫存通知為空
     @Test
     func beginFormClosing_父層接受儲存_標記關閉中() {
         // Given
@@ -109,7 +109,7 @@ struct CampaignPresentationQueueTests {
         #expect(queue.pendingNotice == nil)
     }
 
-    /// 關閉事件送達時目的地仍是表單 (取消無變更、確認捨棄、下滑關閉)，標記關閉中
+    /// 驗證關閉事件送達時目的地仍是表單 (取消無變更、確認捨棄、下滑關閉)，標記關閉中
     @Test
     func markFormClosing_目的地仍是表單_標記關閉中() {
         // Given
@@ -122,7 +122,7 @@ struct CampaignPresentationQueueTests {
         #expect(queue.isFormClosing)
     }
 
-    /// 關閉的是提示而不是表單時，不進入關閉中
+    /// 驗證關閉的是提示而不是表單時，不進入關閉中
     @Test
     func markFormClosing_目的地是提示_維持已關閉() {
         // Given
@@ -135,7 +135,7 @@ struct CampaignPresentationQueueTests {
         #expect(queue.isFormClosing == false)
     }
 
-    /// 目的地已經清空 (儲存後 sheet 回報關閉) 時，不重複標記也不誤標
+    /// 驗證目的地已清空 (儲存後 sheet 回報關閉) 時，不重複標記也不誤標
     @Test
     func markFormClosing_目的地已清空_維持已關閉() {
         // Given
@@ -148,7 +148,7 @@ struct CampaignPresentationQueueTests {
         #expect(queue.isFormClosing == false)
     }
 
-    /// sheet 關閉動畫結束後，暫存的通知移進目的地並清空暫存
+    /// 驗證 sheet 關閉動畫結束時，暫存的通知移進目的地並清空暫存
     @Test
     func finishFormClosing_有暫存通知_移進目的地並清空暫存() {
         // Given
@@ -166,7 +166,7 @@ struct CampaignPresentationQueueTests {
         #expect(queue.isFormClosing == false)
     }
 
-    /// 沒有暫存通知時，只清除關閉旗標，目的地保持原樣
+    /// 驗證沒有暫存通知時，只清除關閉中旗標，目的地保持原樣
     @Test
     func finishFormClosing_沒有暫存通知_只清除關閉旗標() {
         // Given
@@ -183,22 +183,22 @@ struct CampaignPresentationQueueTests {
         #expect(queue.isFormClosing == false)
     }
 
-    /// 通知移出後再次收到關閉回呼，不會把已關閉的通知重新設回目的地
+    /// 驗證暫存通知已移出後再次收到關閉回呼時，目的地維持呈現中的提示，不被清空
     @Test
-    func finishFormClosing_通知已移出後再次呼叫_目的地維持清空() {
+    func finishFormClosing_通知已移出後再次呼叫_維持目的地原提示() {
         // Given
         var queue = CampaignPresentationQueue()
-        var destination: CampaignPresentationFeature.Destination.State?
+        var destination: CampaignPresentationFeature.Destination.State? = Self.firstNotice
 
         // When
         queue.finishFormClosing(into: &destination)
 
         // Then
-        #expect(destination == nil)
+        #expect(destination == Self.firstNotice)
         #expect(queue.pendingNotice == nil)
     }
 
-    /// 關閉回呼前又開了新的表單時，暫存的通知繼續等到那個表單關閉
+    /// 驗證關閉回呼前又開了新表單時，暫存的通知繼續等到那個表單關閉
     @Test
     func finishFormClosing_目的地又開了新表單_暫存通知繼續等待() {
         // Given

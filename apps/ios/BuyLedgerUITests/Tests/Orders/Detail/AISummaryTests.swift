@@ -7,23 +7,25 @@
 
 import XCTest
 
-/// AI 商品明細總結入口的兩條分支測試
+/// AI 商品明細總結入口的 UI 測試，分別涵蓋未開啟與已開啟兩條分支
+@MainActor
 final class AISummaryTests: BLUITestCase {
 
     // MARK: - Properties
 
-    /// AI 關閉提示 alert 的關閉按鈕文字
+    /// AI 未開啟提示 alert 的關閉按鈕文字
     private static let aiDisabledCloseLabel = "關閉"
 
-    /// 未開啟 AI 時點「AI 總結」入口，彈出未開啟提示 alert；點「關閉」收回
-    @MainActor
-    func testAiSummaryDisabledShowsAlertThenCloses() {
+    /// 驗證未開啟 AI 時點「AI 總結」，彈出未開啟提示 alert，且可關閉
+    ///
+    /// - Note: 關閉同次操作顯示的提示並確認收回，避免入口能顯示提示卻讓使用者無法離開
+    func testTapAISummary_AI未開啟_顯示提示且可關閉() {
         // Given
         let app = launch(LaunchOptions(seed: .fullOrders))
         let orders = openOrdersList(app)
 
         // When
-        orders.tapAiSummary()
+        orders.tapAISummary()
 
         // Then
         if !app.alertPresented() {
@@ -37,15 +39,16 @@ final class AISummaryTests: BLUITestCase {
         }
     }
 
-    /// 開啟 AI 時點「AI 總結」入口，推出總結 sheet；就緒後點關閉收回
-    @MainActor
-    func testAiSummaryEnabledOpensSheetThenCloses() {
+    /// 驗證開啟 AI 時點「AI 總結」，呈現總結 sheet，且可關閉
+    ///
+    /// - Note: 關閉同次操作推出的總結並確認收回，避免入口能推出 sheet 卻讓使用者無法返回
+    func testTapAISummary_AI已開啟_推出總結且可關閉() {
         // Given
         let app = launch(LaunchOptions(seed: .fullOrders, shouldUseAISummary: true))
         let orders = openOrdersList(app)
 
         // When
-        orders.tapAiSummary()
+        orders.tapAISummary()
 
         // Then
         let summary = AISummaryScreen(app: app)
@@ -76,7 +79,6 @@ private extension AISummaryTests {
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的訂單清單 Page Object
-    @MainActor
     func openOrdersList(
         _ app: XCUIApplication,
         file: StaticString = #filePath,

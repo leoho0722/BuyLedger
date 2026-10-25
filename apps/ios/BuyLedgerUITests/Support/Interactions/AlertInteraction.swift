@@ -12,7 +12,7 @@ import XCTest
 /// Alert 的定位與斷言 helper
 extension XCUIApplication {
 
-    /// 指定 identifier 的 alert 是否呈現
+    /// 等待指定 identifier 的 alert 呈現
     ///
     /// - Parameters:
     ///   - identifier: alert 的 accessibility identifier
@@ -35,16 +35,16 @@ extension XCUIApplication {
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
-        // SwiftUI alert 的按鈕以兩層同 identifier 的 Button 出現，取第一個避免多重比對
+        // SwiftUI alert 的按鈕以兩層同 identifier 的 `Button` 出現，取第一個避免多重比對
         let button = alerts.buttons[identifier].firstMatch
         if !button.waitUntilHittable(timeout: timeout) {
-            XCTFail("找不到 identifier 為 \(identifier) 的 alert 按鈕", file: file, line: line)
+            failWithDiagnostics("找不到 identifier 為 \(identifier) 的 alert 按鈕", file: file, line: line)
             return
         }
         button.tap()
     }
 
-    /// 是否有任一 alert 正呈現
+    /// 等待任一 alert 呈現
     ///
     /// - Parameter timeout: 等待 alert 出現的秒數
     /// - Returns: 是否有 alert 在逾時前出現
@@ -52,7 +52,7 @@ extension XCUIApplication {
         alerts.firstMatch.waitForExistence(timeout: timeout)
     }
 
-    /// 目前 alert 是否已消失
+    /// 等待目前 alert 消失
     ///
     /// - Parameter timeout: 等待 alert 消失的秒數
     /// - Returns: alert 是否在逾時前消失
@@ -75,7 +75,7 @@ extension XCUIApplication {
     ) {
         let button = alerts.firstMatch.buttons[label]
         if !button.waitUntilHittable(timeout: timeout) {
-            XCTFail("找不到文字為 \(label) 的 alert 按鈕", file: file, line: line)
+            failWithDiagnostics("找不到文字為 \(label) 的 alert 按鈕", file: file, line: line)
             return
         }
         button.tap()
@@ -96,7 +96,7 @@ extension XCUIApplication {
     ) {
         let alert = alerts.firstMatch
         if !alert.waitForExistence(timeout: timeout) {
-            XCTFail("畫面上沒有呈現任何 alert，無法比對訊息", file: file, line: line)
+            failWithDiagnostics("畫面上沒有呈現任何 alert，無法比對訊息", file: file, line: line)
             return
         }
         let predicate = NSPredicate(format: "label CONTAINS %@", substring)

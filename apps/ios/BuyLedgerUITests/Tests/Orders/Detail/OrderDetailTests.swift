@@ -7,7 +7,8 @@
 
 import XCTest
 
-/// 訂單詳情的財務摘要與付款方式回溯重算測試
+/// 訂單詳情的財務摘要與付款方式回溯重算的 UI 測試
+@MainActor
 final class OrderDetailTests: BLUITestCase {
 
     // MARK: - Properties
@@ -21,7 +22,7 @@ final class OrderDetailTests: BLUITestCase {
     /// 回溯重算驗收所使用的付款方式名稱
     private static let paymentMethodCorrectionName = "信用卡"
 
-    /// 詳情財務摘要卡的三個種類
+    /// 詳情財務摘要卡的三個種類，依序為營收、成本與獲利
     private static let summaryTiles: [BLAccessibilityID.Orders.SummaryTile] = [
         .revenue,
         .cost,
@@ -31,11 +32,10 @@ final class OrderDetailTests: BLUITestCase {
     /// `fullOrders` 種子資料的營收、成本與獲利顯示值
     private static let expectedSummaryValues = ["$11,800", "$9,069", "+$2,731"]
 
-    /// 詳情財務摘要卡顯示 `fullOrders` 種子資料的營收、成本與獲利
+    /// 驗證開啟完整資料的訂單詳情時，財務摘要卡的營收、成本與獲利依序為 $11,800、$9,069 與 +$2,731
     ///
-    /// - Throws: 財務摘要卡值不存在時拋出測試錯誤
-    @MainActor
-    func testOpenDetail_完整資料訂單_摘要卡顯示營收成本與獲利() throws(any Error) {
+    /// - Throws: 財務摘要卡值不存在時丟出測試錯誤
+    func testOpenDetail_完整資料訂單_摘要卡顯示營收成本與獲利() throws {
         // Given
         let app = launch(LaunchOptions(seed: .fullOrders))
 
@@ -55,11 +55,10 @@ final class OrderDetailTests: BLUITestCase {
         XCTAssertEqual(values, Self.expectedSummaryValues)
     }
 
-    /// 付款方式補勾貨到付款並確認更正後重啟 App，重新讀取的訂單獲利與更正前不同
+    /// 驗證付款方式補勾貨到付款並確認回溯更正後，重啟 App 讀到的訂單獲利由 +$970 改為 +$510，代表三種運費已計入並持久化
     ///
-    /// - Throws: 任何必要的獲利或付款方式元素不存在，或前置條件不成立時拋出測試錯誤
-    @MainActor
-    func testRelaunch_補勾貨到付款後重啟_獲利與更正前不同() throws(any Error) {
+    /// - Throws: 任何必要的獲利或付款方式元素不存在，或前置條件不成立時丟出測試錯誤
+    func testRelaunch_補勾貨到付款後重啟_獲利持久化為五百一十元() throws {
         // Given
         var initialOptions = LaunchOptions(seed: .paymentMethodCorrection)
         initialOptions.persistenceMode = .persistent
@@ -139,7 +138,10 @@ final class OrderDetailTests: BLUITestCase {
             failWithDiagnostics(in: app, "回溯重算確認 alert 未收回")
         }
 
-        if !app.staticTexts["貨到付款"].waitForExistence(timeout: 10) {
+        if !paymentMethodRow.wait(
+            for: NSPredicate(format: "label CONTAINS %@", "貨到付款"),
+            timeout: 10
+        ) {
             failWithDiagnostics(in: app, "付款方式更新成功後，貨到付款分類徽章未出現")
         }
 
@@ -150,6 +152,8 @@ final class OrderDetailTests: BLUITestCase {
 
         // When
         let relaunchedApp = launch(relaunchOptions)
+
+        // Then
         let persisted = try requireValue(
             profitValue(for: Self.paymentMethodCorrectionOrderID, in: relaunchedApp),
             in: relaunchedApp,
@@ -161,8 +165,8 @@ final class OrderDetailTests: BLUITestCase {
             "重啟後獲利卡的 accessibility value 為空"
         )
 
-        // Then
-        XCTAssertNotEqual(before, persisted, "補勾貨到付款後獲利應該改變並持久化")
+        XCTAssertEqual(before, "+$970")
+        XCTAssertEqual(persisted, "+$510", "補勾貨到付款後獲利應扣除三種運費並持久化")
     }
 }
 
@@ -178,7 +182,6 @@ private extension OrderDetailTests {
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的訂單詳情 Page Object
-    @MainActor
     func openOrderDetail(
         _ app: XCUIApplication,
         orderID: String? = nil,
@@ -226,7 +229,6 @@ private extension OrderDetailTests {
     ///   - orderID: 訂單編號
     ///   - app: 受測 App
     /// - Returns: 獲利卡的 accessibility value
-    @MainActor
     func profitValue(for orderID: String, in app: XCUIApplication) -> String? {
         openOrderDetail(app, orderID: orderID).summaryValue(.profit)
     }

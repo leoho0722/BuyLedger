@@ -8,21 +8,12 @@
 import XCTest
 
 /// 訂單詳情頁的 Page Object
-struct OrderDetailScreen: Screen {
+struct OrderDetailScreen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
-
-    // MARK: - Computed Properties
-
-    /// 判定詳情頁已就緒的根 identifier (詳情捲動容器)
-    ///
-    /// - Returns: 訂單詳情根容器的 identifier
-    var rootIdentifier: String {
-        BLAccessibilityID.Orders.detailRoot
-    }
 }
 
 // MARK: - Internal Method
@@ -97,7 +88,7 @@ extension OrderDetailScreen {
         app.tapMenuItem(BLAccessibilityID.Orders.detailDeleteButton, file: file, line: line)
     }
 
-    /// 刪除確認 alert 是否呈現
+    /// 等待刪除確認 alert 呈現
     ///
     /// - Parameter timeout: 等待 alert 出現的秒數
     /// - Returns: alert 是否在逾時前出現
@@ -106,7 +97,7 @@ extension OrderDetailScreen {
         app.alertPresented(timeout: timeout)
     }
 
-    /// 刪除確認 alert 是否已消失
+    /// 等待刪除確認 alert 消失
     ///
     /// - Parameter timeout: 等待 alert 消失的秒數
     /// - Returns: alert 是否在逾時前消失
@@ -131,5 +122,15 @@ extension OrderDetailScreen {
     ///   - line: 失敗時回報的行號
     func cancelDelete(file: StaticString = #filePath, line: UInt = #line) {
         app.tapAlertButton(label: "取消", file: file, line: line)
+    }
+}
+
+// MARK: - Screen
+
+extension OrderDetailScreen: Screen {
+
+    /// 判定詳情頁已就緒的根 identifier (詳情捲動容器)
+    var rootIdentifier: String {
+        BLAccessibilityID.Orders.detailRoot
     }
 }

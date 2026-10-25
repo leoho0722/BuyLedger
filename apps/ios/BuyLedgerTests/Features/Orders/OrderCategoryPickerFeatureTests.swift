@@ -6,46 +6,45 @@
 //
 
 import ComposableArchitecture
-import Foundation
 import Testing
 
 @testable import BuyLedger
 
-/// 類別選擇器的初始集合、分組與 dirty 規則
-@MainActor
+/// `OrderCategoryPickerFeature` 的單元測試，涵蓋初始集合、分組與未套用變更的判定
 struct OrderCategoryPickerFeatureTests {
 
-    /// 依已選類別計算展開，已移除的類別仍保留於暫存
+    /// 驗證開啟選擇器時，已套用與暫存集合都複製傳入的已選類別，展開依已選類別計算，已移除的類別仍保留在暫存中
     ///
-    /// - Parameters:
-    ///   - selected: 已套用的集合
-    ///   - expanded: 預期展開的組別
+    /// - Parameter testCase: 已選類別與預期展開的組別
     @Test(arguments: Self.initialCases)
-    func init_開啟類別選擇器_複製集合並計算展開(selected: Set<String>, expanded: Set<OrderCategoryGroups.Kind>) {
+    func init_開啟類別選擇器_複製集合並計算展開(testCase: InitialCase) {
         // Given
-        let selection = selected
+        let selection = testCase.selected
 
         // When
-        let state = Self.makeGroupedState(committed: selection)
+        let state = OrderCategoryPickerFeatureTestSupport.makeGroupedState(committed: selection)
 
         // Then
         #expect(state.committedCategories == selection)
         #expect(state.pendingCategories == selection)
-        #expect(state.groupExpansion.expandedKinds == expanded)
+        #expect(state.groupExpansion.expandedKinds == testCase.expanded)
         #expect(state.searchText == "")
         #expect(state.isSearchFieldFocused == false)
         #expect(state.discardConfirmation == nil)
         #expect(state.hasUnappliedChanges == false)
     }
 
-    /// 規格的 snacks 選取在唯一已收單組內標記，「全部」選項維持未選取
+    /// 驗證已選 snacks 且沒有開團時，唯一的已收單組展開並標記 snacks 為已選，「全部」選項維持未選取
     @Test
     func init_已選零食且沒有開團_展開已收單並標記選取() {
         // Given
         let categories = ["beauty", "snacks", "books"]
 
         // When
-        let state = Self.makeState(categories: categories, committed: ["snacks"])
+        let state = OrderCategoryPickerFeatureTestSupport.makeState(
+            categories: categories,
+            committed: ["snacks"]
+        )
 
         // Then
         #expect(state.pendingCategories == ["snacks"])
@@ -63,13 +62,13 @@ struct OrderCategoryPickerFeatureTests {
         )
     }
 
-    /// dirty 只比較完整集合，不把呈現欄位加入比較
+    /// 驗證未套用變更只依暫存與已套用的集合內容判定，順序不同不算變更，增加、替換或清空類別都算變更
     ///
     /// - Parameter dirtyCase: 集合差異測試案例
     @Test(arguments: Self.dirtyCases)
     func hasUnappliedChanges_比較暫存與已套用集合_依集合差異判斷(dirtyCase: DirtyCase) {
         // Given
-        var state = Self.makeState(committed: dirtyCase.committed)
+        var state = OrderCategoryPickerFeatureTestSupport.makeState(committed: dirtyCase.committed)
         state.pendingCategories = dirtyCase.pending
 
         // When
@@ -79,11 +78,11 @@ struct OrderCategoryPickerFeatureTests {
         #expect(hasUnappliedChanges == dirtyCase.hasChanges)
     }
 
-    /// 搜尋、焦點與組別展開不構成未套用的使用者資料
+    /// 驗證只變更搜尋文字、焦點與組別展開時，不算有未套用變更
     @Test
     func hasUnappliedChanges_只改搜尋焦點與展開_維持未變更() {
         // Given
-        var state = Self.makeGroupedState(committed: ["美妝"])
+        var state = OrderCategoryPickerFeatureTestSupport.makeGroupedState(committed: ["美妝"])
         state.searchText = "食"
         state.isSearchFieldFocused = true
         state.groupExpansion.expandedKinds = [.closed]
@@ -95,11 +94,11 @@ struct OrderCategoryPickerFeatureTests {
         #expect(hasChanges == false)
     }
 
-    /// 重新建立面板時不繼承前次操作留下的收合
+    /// 驗證重新建立選擇器狀態時，不沿用前次收合的開團中組，展開狀態依初始規則重算為開團中展開
     @Test
     func init_前次已收合開團中_再次開啟重算展開() {
         // Given
-        var previous = Self.makeGroupedState()
+        var previous = OrderCategoryPickerFeatureTestSupport.makeGroupedState()
         previous.groupExpansion.expandedKinds = []
 
         // When
@@ -120,6 +119,16 @@ struct OrderCategoryPickerFeatureTests {
 
 extension OrderCategoryPickerFeatureTests {
 
+    /// 初始化測試的單一案例，含已選集合與預期展開的組別
+    struct InitialCase: Sendable {
+
+        /// 已套用的集合
+        let selected: Set<String>
+
+        /// 預期展開的組別
+        let expanded: Set<OrderCategoryGroups.Kind>
+    }
+
     /// 集合差異比對的測試案例
     struct DirtyCase: Sendable {
 
@@ -129,90 +138,8 @@ extension OrderCategoryPickerFeatureTests {
         /// 暫存集合
         let pending: Set<String>
 
-        /// 字面值的 dirty 預期
+        /// 是否有未套用變更的字面值預期
         let hasChanges: Bool
-    }
-}
-
-// MARK: - Internal Method
-
-extension OrderCategoryPickerFeatureTests {
-
-    /// 建立隔離的類別主檔與固定日期，不讀持久化目錄
-    ///
-    /// - Parameters:
-    ///   - categories: 可用類別名稱
-    ///   - committed: 已套用類別集合
-    /// - Returns: 已建立暫存集合的選擇器
-    static func makeState(
-        categories: [String] = [],
-        committed: Set<String> = []
-    ) -> OrderCategoryPickerFeature.State {
-        OrderCategoryPickerFeature.State(
-            orders: SharedReader(value: []),
-            campaigns: SharedReader(value: []),
-            lookupCatalog: SharedReader(value: LookupCatalog(categories: categories)),
-            committedCategories: committed,
-            dateContext: OrderDateContext(
-                now: TestDependencies.fixedNow,
-                calendar: TestDependencies.fixedCalendar
-            )
-        )
-    }
-
-    /// 沿用 iPhone 規格的兩組資料，但不使用其結果作為預期
-    ///
-    /// - Parameter committed: 已套用類別集合
-    /// - Returns: 開團中三類、已收單三類的選擇器
-    static func makeGroupedState(committed: Set<String> = []) -> OrderCategoryPickerFeature.State {
-        let source = OrderFilterFeatureTests.makeGroupedState(
-            selection: OrderFilterSelection(categories: committed)
-        )
-        return OrderCategoryPickerFeature.State(
-            orders: source.$orders,
-            campaigns: source.$campaigns,
-            lookupCatalog: source.$lookupCatalog,
-            committedCategories: committed,
-            dateContext: source.dateContext
-        )
-    }
-
-    /// 建立承接清單共用引用與比較基準之選擇器狀態
-    ///
-    /// - Parameter state: 清單狀態
-    /// - Returns: 保留同一份資料引用的選擇器
-    /// - Note: 只建立值，不存取測試的主執行緒狀態
-    nonisolated static func makeState(
-        for state: OrderListFeature.State
-    ) -> OrderCategoryPickerFeature.State {
-        OrderCategoryPickerFeature.State(
-            orders: state.$orders,
-            campaigns: state.$campaigns,
-            lookupCatalog: state.$lookupCatalog,
-            committedCategories: state.selectedCategories,
-            dateContext: state.dateContext ?? OrderDateContext(
-                now: TestDependencies.fixedNow,
-                calendar: TestDependencies.fixedCalendar
-            )
-        )
-    }
-
-    /// 建立捨棄確認對話方塊之字面值預期
-    ///
-    /// - Returns: 字面值的確認資料
-    static func expectedDiscardAlert() -> AlertState<OrderCategoryPickerFeature.Action.DiscardAlert> {
-        AlertState {
-            TextState("orders.list.label.discardChanges")
-        } actions: {
-            ButtonState(role: .destructive, action: .discard) {
-                TextState("orders.list.label.discardChanges")
-            }
-            ButtonState(role: .cancel) {
-                TextState("orders.list.label.keepEditing")
-            }
-        } message: {
-            TextState("orders.list.message.filtersHaveApplied")
-        }
     }
 }
 
@@ -221,20 +148,16 @@ extension OrderCategoryPickerFeatureTests {
 private extension OrderCategoryPickerFeatureTests {
 
     /// 預設、已選已收單與已移除類別的展開案例
-    ///
-    /// - Note: 只建立值，不存取測試的主執行緒狀態
-    nonisolated static var initialCases: [(Set<String>, Set<OrderCategoryGroups.Kind>)] {
+    static var initialCases: [InitialCase] {
         [
-            (Set<String>(), [.ongoing]),
-            (Set<String>(["美妝", "書籍"]), [.ongoing, .closed]),
-            (Set<String>(["已移除"]), [.ongoing]),
+            InitialCase(selected: [], expanded: [.ongoing]),
+            InitialCase(selected: ["美妝", "書籍"], expanded: [.ongoing, .closed]),
+            InitialCase(selected: ["已移除"], expanded: [.ongoing]),
         ]
     }
 
     /// 相等、增加、等量替換、清空與不同順序的集合比較案例
-    ///
-    /// - Note: 只建立值，不存取測試的主執行緒狀態
-    nonisolated static var dirtyCases: [DirtyCase] {
+    static var dirtyCases: [DirtyCase] {
         [
             DirtyCase(committed: [], pending: [], hasChanges: false),
             DirtyCase(committed: ["beauty"], pending: ["beauty"], hasChanges: false),

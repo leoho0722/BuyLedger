@@ -10,10 +10,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 確認系統回報的驗證結果與辨識類型都轉成正確的 App 值
+/// `BiometricAuthService` 的單元測試，涵蓋系統驗證結果與生物辨識類型的映射
 struct BiometricAuthServiceTests {
 
-    /// 系統回報驗證成功時，即使提供錯誤仍回報成功
+    /// 驗證系統回報成功時，不論是否同時提供底層錯誤，結果都是成功
     ///
     /// - Parameter error: 模擬系統同時提供的底層錯誤
     @Test(arguments: [nil, NSError(domain: "com.leoho.BuyLedger.test", code: -1)])
@@ -27,7 +27,7 @@ struct BiometricAuthServiceTests {
         #expect(result == .success)
     }
 
-    /// 失敗時沒有底層錯誤或錯誤不是 `LAError` 都回報一般失敗
+    /// 驗證系統回報失敗、且沒有錯誤或錯誤不是 `LAError` 時，結果都是一般失敗
     ///
     /// - Parameter error: 模擬系統回報的底層錯誤
     @Test(arguments: [nil, NSError(domain: "com.leoho.BuyLedger.test", code: -1)])
@@ -41,7 +41,7 @@ struct BiometricAuthServiceTests {
         #expect(result == .failure)
     }
 
-    /// 使用者、系統或 App 取消的 `LAError` 會映射為已取消
+    /// 驗證使用者、系統或 App 取消的 `LAError` 會映射為已取消
     ///
     /// - Parameter code: 本次映射使用的取消類錯誤碼
     @Test(arguments: [LAError.Code.userCancel, .systemCancel, .appCancel])
@@ -56,7 +56,7 @@ struct BiometricAuthServiceTests {
         #expect(result == .cancelled)
     }
 
-    /// 非取消類的 `LAError` 會映射為一般失敗
+    /// 驗證非取消類的 `LAError`，如生物辨識不可用、未登錄、鎖定或認證失敗，都映射為一般失敗
     ///
     /// - Parameter code: 本次映射使用的非取消類錯誤碼
     @Test(arguments: [
@@ -77,27 +77,37 @@ struct BiometricAuthServiceTests {
         #expect(result == .failure)
     }
 
-    /// 依裝置回報的生物辨識類型映射種類；Optic ID 尚未在支援裝置上提供，因此映射為不可用
+    /// 驗證裝置回報的生物辨識類型映射為對應種類，無生物辨識與 Optic ID 都映射為不可用 (Optic ID 尚未在支援裝置上提供)
     ///
-    /// - Parameters:
-    ///   - biometryType: 裝置回報的生物辨識類型
-    ///   - expectedKind: 預期映射的生物辨識種類
+    /// - Parameter scenario: 裝置回報的生物辨識類型與預期映射的種類
     @Test(arguments: [
-        (LABiometryType.none, BiometricAuthService.BiometryKind.unavailable),
-        (.touchID, .touchID),
-        (.faceID, .faceID),
-        (.opticID, .unavailable),
+        BiometryCase(biometryType: LABiometryType.none, expectedKind: .unavailable),
+        BiometryCase(biometryType: .touchID, expectedKind: .touchID),
+        BiometryCase(biometryType: .faceID, expectedKind: .faceID),
+        BiometryCase(biometryType: .opticID, expectedKind: .unavailable),
     ])
-    func mapBiometryType_裝置生物辨識類型_回傳對應種類(
-        biometryType: LABiometryType,
-        expectedKind: BiometricAuthService.BiometryKind
-    ) {
+    func mapBiometryType_裝置生物辨識類型_回傳對應種類(scenario: BiometryCase) {
         // Given
 
         // When
-        let result = BiometricAuthService.mapBiometryType(biometryType)
+        let result = BiometricAuthService.mapBiometryType(scenario.biometryType)
 
         // Then
-        #expect(result == expectedKind)
+        #expect(result == scenario.expectedKind)
+    }
+}
+
+// MARK: - Nested Types
+
+extension BiometricAuthServiceTests {
+
+    /// 生物辨識類型映射的測試案例：裝置回報的類型與預期映射的種類
+    struct BiometryCase: Sendable {
+
+        /// 裝置回報的生物辨識類型
+        let biometryType: LABiometryType
+
+        /// 預期映射的生物辨識種類
+        let expectedKind: BiometricAuthService.BiometryKind
     }
 }

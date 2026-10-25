@@ -11,11 +11,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證 `TestStore` 中未覆寫的主檔與訂單 Service closure 仍會回報未實作問題
+/// Service 測試替身守門規則的單元測試，涵蓋未覆寫主檔與訂單 closure 時，TestStore 仍回報未實作問題
 @MainActor
 struct ServiceTestValueStrictnessTests {
 
-    /// 訂單載入未覆寫 `fetchOrders` 時，測試會回報該 closure 的未實作問題
+    /// 驗證訂單載入未覆寫 `fetchOrders` 時，`TestStore` 回報 `OrderService.fetchOrders` 的未實作問題，載入仍會結束並標記為已載入
     @Test
     func rootRequest_載入未覆寫訂單讀取_回報未實作問題() async {
         await withKnownIssue {
@@ -50,7 +50,7 @@ struct ServiceTestValueStrictnessTests {
         }
     }
 
-    /// 主檔讀取替身未覆寫時，四種目錄都回報未實作問題，仍可結束載入流程
+    /// 驗證主檔讀取未覆寫時，TestStore 回報 `LookupService.fetchItems` 的未實作問題，載入仍會結束並通知主檔載入完成
     @Test
     func loadRequested_未覆寫主檔讀取_回報未實作問題() async {
         await withKnownIssue {
@@ -84,14 +84,14 @@ struct ServiceTestValueStrictnessTests {
         }
     }
 
-    /// 確認刪除只覆寫 `saveOrder` 時，未覆寫的 `removeOrder` 仍回報未實作問題
+    /// 驗證確認刪除時 `removeOrder` 未覆寫，仍回報 `OrderService.removeOrder` 的未實作問題
     ///
     /// - Throws: 找不到測試訂單時由 `try #require` 丟出
     /// - Note: 沒有回傳值的 typed throws closure 未覆寫時，`unimplemented` 回報問題後無法丟出該 typed 錯誤
     /// - Note: 只能以 `Void` 繼續執行，所以刪除流程走成功路徑並送出 `writes.deleteResponse`
     /// - Note: 測試守的是問題訊息指名 `OrderService.removeOrder`
     @Test
-    func presentation_只覆寫儲存_刪除仍回報未實作問題() async throws {
+    func presentation_確認刪除_刪除仍回報未實作問題() async throws {
         try await withKnownIssue {
             // Given
             let originalID = "BL-2604-018"
@@ -125,8 +125,6 @@ struct ServiceTestValueStrictnessTests {
             } withDependencies: {
                 $0.date = .constant(TestDependencies.fixedNow)
                 $0.calendar = TestDependencies.fixedCalendar
-                $0.orderService.saveOrder = { _ in
-                }
             }
 
             // When

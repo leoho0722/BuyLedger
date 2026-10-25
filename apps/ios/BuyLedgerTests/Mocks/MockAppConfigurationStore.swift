@@ -9,7 +9,7 @@ import ComposableArchitecture
 
 @testable import BuyLedger
 
-/// 以可設定結果並記錄呼叫的方式模擬 App 設定讀取
+/// 模擬 App 設定讀取的替身，可設定回傳值並記錄呼叫，供測試注入
 final class MockAppConfigurationStore: Sendable {
 
     // MARK: - Properties
@@ -38,7 +38,7 @@ extension MockAppConfigurationStore {
         stringReceivedArgumentsState.withValue { $0 }
     }
 
-    /// 設定 `string(forKey:)` 依 `key` 回傳的值
+    /// 依 `key` 對應的 `string(forKey:)` 回傳值，由測試設定
     var stringResult: [String: String] {
         get {
             stringResultState.withValue { $0 }

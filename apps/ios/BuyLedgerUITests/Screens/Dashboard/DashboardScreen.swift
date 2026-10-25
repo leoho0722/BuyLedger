@@ -21,8 +21,6 @@ struct DashboardScreen {
 extension DashboardScreen {
 
     /// 是否正顯示尚無資料的引導空狀態
-    ///
-    /// - Returns: 是否顯示空狀態
     var isEmptyStateShown: Bool {
         app.descendants(matching: .any)[BLAccessibilityID.Dashboard.emptyState].exists
     }
@@ -52,7 +50,7 @@ extension DashboardScreen {
         button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
-    /// 等待首頁載入失敗畫面收回
+    /// 等待首頁載入失敗畫面消失
     ///
     /// - Parameter timeout: 等待失敗畫面消失的秒數
     /// - Returns: 載入失敗畫面是否在逾時前消失
@@ -61,7 +59,7 @@ extension DashboardScreen {
             .waitForDisappearance(timeout: timeout)
     }
 
-    /// 確認首頁開團卡列出指定開團，並將該列捲入可見範圍
+    /// 等待指定開團列出現於首頁開團卡，並捲入可見範圍
     ///
     /// - Parameters:
     ///   - campaignID: 開團編號
@@ -145,9 +143,7 @@ extension DashboardScreen {
 
 extension DashboardScreen: Screen {
 
-    /// 以 `BLAccessibilityID.Dashboard.root` 指定總覽頁的根元素
-    ///
-    /// - Returns: 總覽頁根元素的 `identifier`
+    /// 判定總覽頁已就緒的根元素 identifier
     var rootIdentifier: String {
         BLAccessibilityID.Dashboard.root
     }

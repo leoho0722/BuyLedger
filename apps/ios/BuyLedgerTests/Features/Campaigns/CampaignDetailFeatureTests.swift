@@ -11,17 +11,17 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證開團詳情的內容、收款切換、只看未收款與轉送給容器的請求
-@MainActor
+/// `CampaignDetailFeature` 的單元測試，以 TestStore 逐步驗證收款切換與送出的請求，並直接讀取 State 的內容與只看未收款
 struct CampaignDetailFeatureTests {
 
-    /// 收款鍵依訂單目前狀態請求切成相反狀態：已收款切回待收款，其他切成已收款
+    /// 驗證收款鍵依訂單目前的收款狀態送出請求：已收款切回待收款，其他狀態切成已收款
     ///
     /// - Parameter example: 訂單目前的收款狀態與預期請求的下一個狀態
     @Test(arguments: [
         ReceiptToggleExample(current: .pending, expected: .received),
         ReceiptToggleExample(current: .received, expected: .pending),
     ])
+    @MainActor
     func receiptToggleTapped_依目前狀態_請求切成相反狀態(example: ReceiptToggleExample) async {
         // Given
         let store = Self.makeStore(orders: [Self.makeOrder(id: "O1", receipt: example.current)])
@@ -36,8 +36,9 @@ struct CampaignDetailFeatureTests {
         )
     }
 
-    /// 收款鍵指向不存在的訂單時不送出任何請求，也不改變共用資料
+    /// 驗證收款鍵指向不存在的訂單時不送出任何請求，訂單與只看未收款的共用值都維持不變
     @Test
+    @MainActor
     func receiptToggleTapped_找不到訂單_不送出請求() async {
         // Given
         let store = Self.makeStore(orders: [Self.makeOrder(id: "O1", receipt: .pending)])
@@ -51,10 +52,11 @@ struct CampaignDetailFeatureTests {
         #expect(store.state.isShowingUnpaidOnly == false)
     }
 
-    /// 切換只看未收款時寫入共用值，不送出任何請求
+    /// 驗證只看未收款切換時，新值寫入共用的篩選值，不送出任何請求
     ///
     /// - Parameter isOn: 切換後的篩選狀態
     @Test(arguments: [true, false])
+    @MainActor
     func unpaidOnlyToggled_切換篩選_寫入共用值(isOn: Bool) async {
         // Given
         let store = Self.makeStore(isShowingUnpaidOnly: !isOn)
@@ -70,8 +72,9 @@ struct CampaignDetailFeatureTests {
         #expect(store.state.isShowingUnpaidOnly == isOn)
     }
 
-    /// 點擊編輯時請求容器開啟該團的編輯表單
+    /// 驗證點擊編輯時，詳情只送出編輯該團的請求，自身狀態不變
     @Test
+    @MainActor
     func editTapped_點擊編輯_送出編輯請求() async {
         // Given
         let store = Self.makeStore()
@@ -83,8 +86,9 @@ struct CampaignDetailFeatureTests {
         await store.receive(\.delegate.requested, .edit("C1"))
     }
 
-    /// 點擊結團時請求容器確認結團，詳情不自行寫入
+    /// 驗證點擊結團時，詳情只送出結團請求，不自行寫入開團
     @Test
+    @MainActor
     func settleTapped_點擊結團_送出結團請求() async {
         // Given
         let store = Self.makeStore()
@@ -96,8 +100,9 @@ struct CampaignDetailFeatureTests {
         await store.receive(\.delegate.requested, .settle("C1"))
     }
 
-    /// 選擇新狀態時請求容器變更該團狀態，詳情不自行改共用開團
+    /// 驗證選擇新狀態時，詳情只送出變更該團狀態的請求，共用的開團狀態維持原值
     @Test
+    @MainActor
     func statusChanged_選擇新狀態_送出變更狀態請求() async {
         // Given
         let store = Self.makeStore()
@@ -110,8 +115,9 @@ struct CampaignDetailFeatureTests {
         #expect(store.state.content?.campaign.status == .ongoing)
     }
 
-    /// 點擊刪除時請求容器確認刪除該團
+    /// 驗證點擊刪除時，詳情只送出刪除該團的請求，自身狀態不變
     @Test
+    @MainActor
     func deleteTapped_點擊刪除_送出刪除請求() async {
         // Given
         let store = Self.makeStore()
@@ -123,11 +129,11 @@ struct CampaignDetailFeatureTests {
         await store.receive(\.delegate.requested, .delete("C1"))
     }
 
-    /// 開團存在時 `content` 組出該團內容並帶入共用的提醒連結與訂單
+    /// 驗證開團存在時，`content` 組出該團內容，並帶入共用的訂單與提醒連結
     ///
     /// - Throws: 內容不存在時由 `try #require` 丟出
     @Test
-    func content_開團存在_帶入共用的訂單與提醒連結() throws(any Error) {
+    func content_開團存在_帶入共用的訂單與提醒連結() throws {
         // Given
         let link = CampaignReminderLink(
             eventIdentifier: "EVT-1",
@@ -148,7 +154,7 @@ struct CampaignDetailFeatureTests {
         #expect(result.reminderLink == link)
     }
 
-    /// 共用的開團清單移除該團後，`content` 立即變成空，畫面顯示「開團不存在」
+    /// 驗證共用的開團清單移除該團後，`content` 立即變成 `nil`
     @Test
     func content_共用開團被移除_變成空內容() {
         // Given
@@ -170,7 +176,7 @@ struct CampaignDetailFeatureTests {
         #expect(state.content == nil)
     }
 
-    /// 開啟共用的只看未收款後，`content` 只留下仍有未收款的客戶
+    /// 驗證開啟共用的只看未收款後，`content` 的分貨列只留下仍有未收款的客戶，彙總的分貨仍含全部客戶
     @Test
     func content_開啟只看未收款_只留未收款客戶() {
         // Given
@@ -189,7 +195,7 @@ struct CampaignDetailFeatureTests {
         #expect(state.content?.summary.distribution.count == 2)
     }
 
-    /// 只看未收款時，分貨區空狀態表示客戶都已收款
+    /// 驗證只看未收款時，分貨區的空狀態訊息為全部已收款 (英文為 All orders are paid.)
     ///
     /// - Throws: 英文資源目錄不存在時由 `#require` 丟出
     @Test
@@ -206,7 +212,7 @@ struct CampaignDetailFeatureTests {
         #expect(text == "All orders are paid.")
     }
 
-    /// 未開啟只看未收款時，分貨區空狀態表示開團尚無歸屬訂單
+    /// 驗證未開啟只看未收款時，分貨區的空狀態訊息為尚無歸屬此開團的訂單 (英文為 No orders are assigned to this campaign.)
     ///
     /// - Throws: 英文資源目錄不存在時由 `#require` 丟出
     @Test
@@ -248,7 +254,8 @@ private extension CampaignDetailFeatureTests {
     /// - Parameters:
     ///   - orders: 唯讀的訂單投影
     ///   - isShowingUnpaidOnly: 「只看未收款」的初始值
-    /// - Returns: 顯示開團 `C1` 詳情的 store
+    /// - Returns: 顯示開團 C1 詳情的 store
+    @MainActor
     static func makeStore(
         orders: [LedgerOrder] = [],
         isShowingUnpaidOnly: Bool = false
@@ -260,7 +267,7 @@ private extension CampaignDetailFeatureTests {
         }
     }
 
-    /// 建立顯示開團 `C1` 的詳情狀態
+    /// 建立顯示開團 C1 的詳情狀態
     ///
     /// - Parameters:
     ///   - orders: 唯讀的訂單投影
@@ -281,7 +288,7 @@ private extension CampaignDetailFeatureTests {
         )
     }
 
-    /// 建立歸屬開團 `C1` 的測試訂單
+    /// 建立歸屬開團 C1 的測試訂單
     ///
     /// - Parameters:
     ///   - id: 訂單識別值

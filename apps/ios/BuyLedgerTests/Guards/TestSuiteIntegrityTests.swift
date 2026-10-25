@@ -8,7 +8,7 @@
 import Foundation
 import Testing
 
-/// 移除整行註解後掃描原始碼，守住測試目錄的 `TestStore` 窮舉上限、App target 的預設分支規則與網址憑證內插規則
+/// 測試套件完整性的單元測試，以移除整行註解後的原始碼檢查 TestStore 窮舉上限、App 預設分支與網址憑證內插規則
 struct TestSuiteIntegrityTests {
 
     // MARK: - Properties
@@ -17,17 +17,17 @@ struct TestSuiteIntegrityTests {
     /// `withExhaustivity(.off)`；目前為 0，不得新增任何一處
     private static let exhaustivityOffUpperBound = 0
 
-    /// 比對全文中以空白或註解分隔的 `default:` 與 `return .none`
+    /// `default:` 與 `return .none` 之間以空白或行尾註解分隔的比對樣式
     private static let defaultNoneBranchPattern = #"default:(?:\s|//[^\n]*\n)*return\s+\.none"#
 
-    /// 比對內插運算式中名稱含 `url`／`request` (不分大小寫) 的識別字或成員名稱
+    /// 字串內插運算式中名稱含 `url`／`request` (不分大小寫) 的識別字或成員名稱的比對樣式
     private static let credentialPattern = #"(?i)\\\([^\n)]*\b\w*(?:url|request)\w*\b[^\n)]*\)"#
 
-    /// 掃描移除整行註解後的測試目錄全文，關閉 `TestStore` 窮舉檢查的總處數不得超過 `exhaustivityOffUpperBound`
+    /// 驗證移除整行註解後的測試目錄全文中，關閉 `TestStore` 窮舉檢查的處數不超過 `exhaustivityOffUpperBound`
     ///
-    /// - Throws: 建立正規表示式失敗、目錄無法列舉 (`#require` 失敗) 或原始碼讀取失敗時丟出
+    /// - Throws: 建立正規表示式失敗、目錄無法列舉 (`#require` 失敗) 或原始碼讀取失敗時丟出錯誤
     @Test
-    func exhaustivityOffUpperBound_窮舉檢查關閉處_不超過記錄上限() throws(any Error) {
+    func exhaustivityOffUpperBound_窮舉檢查關閉處_不超過記錄上限() throws {
         // Given
         let pattern = #"exhaustivity\s*=\s*\.off|withExhaustivity\s*\(\s*\.off"#
         let root = Self.testRoot
@@ -43,11 +43,11 @@ struct TestSuiteIntegrityTests {
         )
     }
 
-    /// 掃描移除整行註解後的 App target 全文，不得出現 `default:` 接 `return .none` 的預設分支
+    /// 驗證移除整行註解後的 App target 全文不出現 `default:` 接 `return .none` 的預設分支，兩者之間隔著空白或行尾註解也算命中
     ///
-    /// - Throws: 建立正規表示式失敗、目錄無法列舉 (`#require` 失敗) 或原始碼讀取失敗時丟出
+    /// - Throws: 建立正規表示式失敗、目錄無法列舉 (`#require` 失敗) 或原始碼讀取失敗時丟出錯誤
     @Test
-    func defaultNoneBranches_生產碼預設分支回傳無效果_不存在() throws(any Error) {
+    func defaultNoneBranches_生產碼預設分支回傳無效果_不存在() throws {
         // Given
         let pattern = Self.defaultNoneBranchPattern
         let root = Self.productionRoot
@@ -63,11 +63,11 @@ struct TestSuiteIntegrityTests {
         )
     }
 
-    /// 掃描移除整行註解後的 App target 全文，字串內插不得放入名稱含 `url`／`request` 的識別字或成員存取，避免網址中的憑證外洩
+    /// 驗證移除整行註解後的 App target 全文中，字串內插不放入名稱含 `url`／`request` (不分大小寫) 的識別字或成員存取，避免網址中的憑證外洩
     ///
-    /// - Throws: 建立正規表示式失敗、目錄無法列舉 (`#require` 失敗) 或原始碼讀取失敗時丟出
+    /// - Throws: 建立正規表示式失敗、目錄無法列舉 (`#require` 失敗) 或原始碼讀取失敗時丟出錯誤
     @Test
-    func credentialBearingURLInterpolations_生產碼憑證網址內插_不存在() throws(any Error) {
+    func credentialBearingURLInterpolations_生產碼憑證網址內插_不存在() throws {
         // Given
         let pattern = Self.credentialPattern
         let root = Self.productionRoot
@@ -100,17 +100,17 @@ private extension TestSuiteIntegrityTests {
         iosRoot.appending(path: "BuyLedger")
     }
 
-    /// 遞迴讀取目錄下的 `.swift` 檔，移除整行註解後以完整檔案內容計算命中次數
+    /// 遞迴讀取目錄下的 .swift 檔，移除整行註解後以完整檔案內容計算命中次數
     ///
     /// - Parameters:
     ///   - pattern: 要比對移除註解後原始碼的正規表示式
     ///   - root: 遞迴掃描的資料夾
-    /// - Returns: 掃描的 `.swift` 檔數與命中總數
-    /// - Throws: 正規表示式建立失敗、掃描目錄無法列舉 (`#require` 失敗) 或原始檔讀取失敗時丟出
+    /// - Returns: 掃描的 .swift 檔數與命中總數
+    /// - Throws: 正規表示式建立失敗、掃描目錄無法列舉 (`#require` 失敗) 或原始檔讀取失敗時丟出錯誤
     static func countMatches(
         pattern: String,
         under root: URL
-    ) throws(any Error) -> (fileCount: Int, matchCount: Int) {
+    ) throws -> (fileCount: Int, matchCount: Int) {
         let expression = try NSRegularExpression(pattern: pattern)
         let enumerator = try #require(
             FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)

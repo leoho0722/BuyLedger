@@ -7,7 +7,8 @@
 
 import XCTest
 
-/// 匯率工具的換算流程測試
+/// 匯率工具的換算流程 UI 測試
+@MainActor
 final class FxTests: BLUITestCase {
 
     // MARK: - Properties
@@ -21,12 +22,11 @@ final class FxTests: BLUITestCase {
     /// UI 測試固定匯率下的預期 TWD 顯示值
     private static let expectedConvertedValue = "$32,468"
 
-    /// 開幣別選擇器選 USD 後回匯率頁，輸入金額後換算結果正確
+    /// 驗證匯率頁選 USD 後回到匯率頁，輸入 1000 時，換算結果卡片顯示 1 USD，換算結果依固定匯率為 $32,468
     ///
-    /// - Throws: 換算結果元素不存在或沒有值時拋出測試錯誤
-    @MainActor
-    func testTypeAmount_選美元後輸入金額_依固定匯率換算() throws(any Error) {
-        // Given：匯率頁已選取 USD
+    /// - Throws: 換算結果元素不存在或沒有值時丟出測試錯誤
+    func testTypeAmount_選美元後輸入金額_依固定匯率換算() throws {
+        // Given
         let app = launch(LaunchOptions(seed: .empty))
         let fx = openFx(app)
         fx.openCurrencyPicker()
@@ -40,30 +40,29 @@ final class FxTests: BLUITestCase {
             failWithDiagnostics(in: app, "選幣別後匯率頁根 identifier「\(fx.rootIdentifier)」逾時仍未回到前景")
         }
 
-        // When：輸入 1000
+        // When
         fx.typeAmount(Self.inputAmount, in: app)
 
-        // Then：來源幣別與換算結果都應符合固定匯率
+        // Then
         let summary = try requireValue(fx.conversionSummary, in: app, "換算結果卡片沒有來源幣別資訊")
         XCTAssertTrue(summary.contains("1 USD"), "匯率頁來源幣別應為 USD，實際為：\(summary)")
         let value = try requireValue(fx.convertedValue, in: app, "輸入金額後換算結果元素不存在")
         XCTAssertEqual(value, Self.expectedConvertedValue, "1000 USD 依 UI 測試固定匯率應換算為 $32,468")
     }
 
-    /// 連續輸入相同金額後，換算結果仍應只計入一次輸入值
+    /// 驗證匯率頁連續輸入兩次相同金額 1000 後，換算結果為單次輸入的 $23，不會計入兩次
     ///
-    /// - Throws: 換算結果元素不存在或沒有值時拋出測試錯誤
-    @MainActor
-    func testTypeAmount_重複輸入相同金額_換算結果只計一次() throws(any Error) {
-        // Given：匯率頁已輸入一次金額
+    /// - Throws: 換算結果元素不存在或沒有值時丟出測試錯誤
+    func testTypeAmount_重複輸入相同金額_換算結果只計一次() throws {
+        // Given
         let app = launch(LaunchOptions(seed: .empty))
         let fx = openFx(app)
         fx.typeAmount(Self.inputAmount, in: app)
 
-        // When：再輸入一次相同金額
+        // When
         fx.typeAmount(Self.inputAmount, in: app)
 
-        // Then：換算結果應是單次輸入的固定結果
+        // Then
         let value = try requireValue(fx.convertedValue, in: app, "重複輸入後換算結果元素不存在")
         XCTAssertEqual(value, "$23")
     }
@@ -80,7 +79,6 @@ private extension FxTests {
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的匯率頁 Page Object
-    @MainActor
     func openFx(
         _ app: XCUIApplication,
         file: StaticString = #filePath,

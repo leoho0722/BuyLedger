@@ -10,12 +10,12 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證幣別主檔 Service 在 Preview 讀取預先放入資料庫的預設幣別
+/// `CurrencyMetadataService` 的單元測試，涵蓋 Preview 環境的預置快取
 struct CurrencyMetadataServicePreviewTests {
 
-    /// Preview 讀取幣別時拿到預先放入的預設幣別，依代碼排序
+    /// 驗證 Preview 讀取幣別時，回傳預先放入的預設幣別，並依代碼的自然排序排列
     ///
-    /// - Throws: 讀取快取失敗時丟出 `.persistence(.storage(.fetchFailed(underlying:)))`
+    /// - Throws: 讀取快取失敗時丟出持久化讀取錯誤
     @Test
     func previewValue_讀取幣別_回傳排序後的預設幣別() async throws {
         // Given
@@ -35,9 +35,9 @@ struct CurrencyMetadataServicePreviewTests {
         #expect(codes == ["CNY", "JPY", "KRW", "TWD", "USD"].map { CurrencyCode(rawValue: $0) })
     }
 
-    /// Preview 檢查快取時預先放入的幣別仍有效，不讀 API 金鑰也不發出請求
+    /// 驗證 Preview 快取仍在七天期限內時，不重新抓取，也不讀取 API 金鑰或發出請求
     ///
-    /// - Throws: 讀取快取失敗時丟出 `.persistence(.storage(.fetchFailed(underlying:)))`
+    /// - Throws: 讀取快取失敗時丟出持久化讀取錯誤
     @Test
     func previewValue_檢查快取_不重新抓取也不發出請求() async throws {
         // Given

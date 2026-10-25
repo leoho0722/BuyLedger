@@ -8,22 +8,22 @@
 import CoreGraphics
 import XCTest
 
-/// regular 訂單篩選區在標準與最大輔助字級的捲動歸屬守門
+/// regular 訂單篩選區在標準與最大輔助字級下的捲動歸屬守門 UI 測試
+@MainActor
 final class OrderRegularAccessibilitySizeTests: BLUITestCase {
 
     // MARK: - Properties
 
-    /// regular 測試的版面限制與 compact 覆蓋來源
+    /// 版面不符時略過測試的原因，說明 compact 篩選由 `OrderFilterSheetTests` 覆蓋
     private static let layoutScopeReason = """
     篩選區歸屬只適用 regular 版面
     compact 篩選由 OrderFilterSheetTests 覆蓋
     """
 
-    /// 直向最大輔助字級的篩選控制項位於清單捲動區內，並依序排列
+    /// 驗證 regular 版面直向最大輔助字級時，篩選控制項位於清單捲動範圍內，依序排列且彼此不重疊
     ///
-    /// - Throws: 版面不適用、必要元素缺少或篩選控制項越界時拋出測試錯誤
-    @MainActor
-    func testRegularFilters_直向最大輔助字級_篩選區在清單捲動範圍內且不重疊() throws(any Error) {
+    /// - Throws: 版面不適用、必要元素缺少或篩選控制項越界時丟出測試錯誤
+    func testRegularFilters_直向最大輔助字級_篩選區在清單捲動範圍內且不重疊() throws {
         // Given
         let options = LaunchOptions(
             seed: .categoryFilter,
@@ -39,11 +39,10 @@ final class OrderRegularAccessibilitySizeTests: BLUITestCase {
         try assertScrollableFilters(in: app)
     }
 
-    /// 橫向最大輔助字級的篩選控制項位於清單捲動區內，並依序排列
+    /// 驗證 regular 版面轉為橫向、最大輔助字級時，篩選控制項位於清單捲動範圍內，依序排列且彼此不重疊
     ///
-    /// - Throws: 版面不適用、必要元素缺少或篩選控制項越界時拋出測試錯誤
-    @MainActor
-    func testRegularFilters_橫向最大輔助字級_篩選區在清單捲動範圍內且不重疊() throws(any Error) {
+    /// - Throws: 版面不適用、必要元素缺少或篩選控制項越界時丟出測試錯誤
+    func testRegularFilters_橫向最大輔助字級_篩選區在清單捲動範圍內且不重疊() throws {
         // Given
         let options = LaunchOptions(
             seed: .categoryFilter,
@@ -51,20 +50,19 @@ final class OrderRegularAccessibilitySizeTests: BLUITestCase {
         )
         let app = launch(options)
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
+        try openOrders(in: app)
 
         // When
-        try openOrders(in: app)
         try rotateToLandscape(app)
 
         // Then
         try assertScrollableFilters(in: app)
     }
 
-    /// 標準字級的篩選區仍固定在清單捲動區上方
+    /// 驗證 regular 版面標準字級時，篩選區固定在清單捲動範圍上方，清除篩選鈕不進入捲動範圍
     ///
-    /// - Throws: 版面不適用、必要元素缺少或篩選區進入捲動範圍時拋出測試錯誤
-    @MainActor
-    func testRegularFilters_標準字級_篩選區固定在清單捲動範圍上方() throws(any Error) {
+    /// - Throws: 版面不適用、必要元素缺少或篩選區進入捲動範圍時丟出測試錯誤
+    func testRegularFilters_標準字級_篩選區固定在清單捲動範圍上方() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
         try XCTSkipUnless(isRegularLayout(app), Self.layoutScopeReason)
@@ -91,14 +89,13 @@ final class OrderRegularAccessibilitySizeTests: BLUITestCase {
 
 // MARK: - Private Method
 
-@MainActor
 private extension OrderRegularAccessibilitySizeTests {
 
     /// 切到訂單分頁並等待清單根容器就緒
     ///
     /// - Parameter app: 受測 App
-    /// - Throws: 訂單分頁或清單根容器未就緒時拋出測試錯誤
-    func openOrders(in app: XCUIApplication) throws(any Error) {
+    /// - Throws: 訂單分頁或清單根容器未就緒時丟出測試錯誤
+    func openOrders(in app: XCUIApplication) throws {
         let root = RootNavigationScreen(app: app)
         try requireCondition(root.goToOrders(), in: app, "找不到元素：訂單分頁根容器")
         let orders = OrdersScreen(app: app)
@@ -108,8 +105,8 @@ private extension OrderRegularAccessibilitySizeTests {
     /// 逐項確認篩選控制項位於捲動範圍內，且與前一項沒有重疊
     ///
     /// - Parameter app: 受測 App
-    /// - Throws: 必要元素缺少、篩選控制項越界或相鄰控制項重疊時拋出測試錯誤
-    func assertScrollableFilters(in app: XCUIApplication) throws(any Error) {
+    /// - Throws: 必要元素缺少、篩選控制項越界或相鄰控制項重疊時丟出測試錯誤
+    func assertScrollableFilters(in app: XCUIApplication) throws {
         let list = app.descendants(matching: .any)[BLAccessibilityID.Orders.listRoot]
         let listFrame = try requireValidFrame(of: list, in: app, context: "訂單清單捲動範圍")
         let filters: [(identifier: String, name: String)] = [

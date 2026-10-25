@@ -10,8 +10,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// 承載資訊的文字在四種外觀情境下的對比下限
-@MainActor
+/// `ColorContrast` 的單元測試，涵蓋設計系統文字與底色在四種外觀下的對比下限
 struct ContrastComplianceTests {
 
     // MARK: - Properties
@@ -22,7 +21,7 @@ struct ContrastComplianceTests {
     /// 所有需要驗證的外觀情境
     private static let appearances = ColorContrast.Appearance.allCases
 
-    /// 確認狀態膠囊文字疊在膠囊底色上，每種外觀情境都達到文字對比下限
+    /// 驗證狀態膠囊文字疊在膠囊底色上，每種語意色軌與外觀情境都達到文字對比下限
     ///
     /// - Parameters:
     ///   - tone: 要驗證的語意色軌
@@ -40,7 +39,7 @@ struct ContrastComplianceTests {
         #expect(ratio >= Self.textFloor, "\(tone) 膠囊文字在 \(appearance) 下僅 \(ratio)")
     }
 
-    /// 確認計數徽章數字疊在實心底色上，每種外觀情境都達到文字對比下限
+    /// 驗證計數徽章數字疊在實心底色上，每種語意色軌與外觀情境都達到文字對比下限
     ///
     /// - Parameters:
     ///   - tone: 要驗證的語意色軌
@@ -58,7 +57,7 @@ struct ContrastComplianceTests {
         #expect(ratio >= Self.textFloor, "\(tone) 計數徽章數字在 \(appearance) 下僅 \(ratio)")
     }
 
-    /// 確認表面文字疊在卡片表面上，每種外觀情境都達到文字對比下限
+    /// 驗證表面文字疊在卡片表面上，每種語意色軌與外觀情境都達到文字對比下限
     ///
     /// - Parameters:
     ///   - tone: 要驗證的語意色軌
@@ -76,7 +75,7 @@ struct ContrastComplianceTests {
         #expect(ratio >= Self.textFloor, "\(tone) 表面文字疊在卡片上在 \(appearance) 下僅 \(ratio)")
     }
 
-    /// 確認前三名的排名徽章數字疊在徽章底色與卡片上，每種外觀情境都達到文字對比下限
+    /// 驗證前三名排名徽章的數字疊在徽章底色與卡片上，每個名次與外觀情境都達到文字對比下限
     ///
     /// - Parameters:
     ///   - rank: 要驗證的名次
@@ -95,7 +94,7 @@ struct ContrastComplianceTests {
         #expect(ratio >= Self.textFloor, "第 \(rank) 名徽章數字在 \(appearance) 下僅 \(ratio)")
     }
 
-    /// 確認熱力圖各級數的數字疊在該級底色上，每種外觀情境都達到文字對比下限
+    /// 驗證熱力圖各級的數字疊在該級底色上，每級與外觀情境都達到文字對比下限
     ///
     /// - Parameters:
     ///   - depth: 要驗證的熱力圖級數
@@ -113,7 +112,7 @@ struct ContrastComplianceTests {
         #expect(ratio >= Self.textFloor, "熱力圖第 \(depth.rawValue) 級數字在 \(appearance) 下僅 \(ratio)")
     }
 
-    /// 確認熱力圖相鄰兩級的底色對比至少 1.2，肉眼分得出深淺
+    /// 驗證熱力圖相鄰兩級的底色對比至少為 1.2，肉眼可分辨深淺
     ///
     /// - Parameter appearance: 要驗證的外觀情境
     @Test(arguments: ColorContrast.Appearance.allCases)
@@ -135,10 +134,11 @@ struct ContrastComplianceTests {
         }
     }
 
-    /// 涵蓋色輪上八個代表色相與黃綠區段，確認頭像的白色縮寫達到文字對比下限
+    /// 驗證頭像白色縮寫在色輪八個代表色相與黃綠區段的漸層上，都達到文字對比下限
     ///
     /// - Parameter hue: 要驗證的色相
     @Test(arguments: [0.0, 0.125, 0.166, 0.25, 0.375, 0.5, 0.625, 0.75, 0.875])
+    @MainActor
     func gradientColors_代表色相的頭像漸層_白色縮寫達文字對比下限(hue: Double) {
         // Given
         let colors = BLAvatar.gradientColors(forHue: hue)
@@ -158,10 +158,11 @@ struct ContrastComplianceTests {
         }
     }
 
-    /// 確認彩底主卡的白字疊在漸層兩端時，每種外觀情境都達到文字對比下限
+    /// 驗證彩底主卡的白字疊在漸層兩端時，每種外觀情境都達到文字對比下限
     ///
     /// - Parameter appearance: 要驗證的外觀情境
     @Test(arguments: ColorContrast.Appearance.allCases)
+    @MainActor
     func gradientColors_彩底主卡漸層兩端_白字達文字對比下限(appearance: ColorContrast.Appearance) {
         // Given
         let ends = BLHeroCardBackground.gradientColors
@@ -177,10 +178,11 @@ struct ContrastComplianceTests {
         }
     }
 
-    /// 確認每個具名色彩資源都真的解析到資源，沒有靜默回退成系統預設色
+    /// 驗證每個具名色彩資源都解析到資源，而非靜默回退成系統預設色
     ///
     /// - Parameter appearance: 要驗證的外觀情境
     @Test(arguments: ColorContrast.Appearance.allCases)
+    @MainActor
     func components_所有具名色彩資源_皆解析到資源而非系統預設色(appearance: ColorContrast.Appearance) {
         // Given
         let fallback = ColorContrast.components(
@@ -214,7 +216,7 @@ struct ContrastComplianceTests {
         }
     }
 
-    /// 涵蓋改走次要標籤色的圖表軸標籤與區段標題，確認它疊在三種背景上都達到文字對比下限
+    /// 驗證改走次要標籤色的圖表軸標籤與區段標題，疊在三種背景上都達到文字對比下限
     ///
     /// - Parameter appearance: 要驗證的外觀情境
     @Test(arguments: ColorContrast.Appearance.allCases)
@@ -233,8 +235,9 @@ struct ContrastComplianceTests {
         }
     }
 
-    /// 確認兩個不同的姓名對應到不同的頭像色相
+    /// 驗證兩個不同的姓名對應到不同的頭像色相
     @Test
+    @MainActor
     func hueValue_兩個不同姓名_色相不同() {
         // Given
         let firstName = "王小明"

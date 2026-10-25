@@ -11,10 +11,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 直接測試批次狀態操作
+/// `OrdersBatchOperations` 的單元測試，多數直接對 State 呼叫操作，批次寫入回應以 TestStore 驗證
 struct OrdersBatchOperationsTests {
 
-    /// 批次工具列保留所有既有狀態的順序，並排除已合併
+    /// 驗證批次狀態清單依既有順序列出除已合併外的所有狀態
     @Test
     func targetStatuses_批次狀態清單_保留順序並排除已合併() {
         // Given
@@ -37,11 +37,11 @@ struct OrdersBatchOperationsTests {
         #expect(statuses == expectedStatuses)
     }
 
-    /// 驗證一般模式時進入多選
+    /// 驗證一般模式下切換多選時，`isSelecting` 變為 `true`
     @Test
     func selectionModeToggled_一般模式_進入多選() {
         // Given
-        var state = OrderListFeatureTests.makeState()
+        var state = OrderListFeatureTestSupport.makeState()
 
         // When
         OrdersBatchOperations.selectionModeToggled(state: &state)
@@ -50,11 +50,11 @@ struct OrdersBatchOperationsTests {
         #expect(state.isSelecting == true)
     }
 
-    /// 驗證多選模式時退出並清空選取
+    /// 驗證多選模式下切換多選時，`isSelecting` 變為 `false`，已選的訂單也一併清空
     @Test
     func selectionModeToggled_多選模式_退出並清空選取() {
         // Given
-        var state = OrderListFeatureTests.makeState()
+        var state = OrderListFeatureTestSupport.makeState()
         state.isSelecting = true
         state.selectedOrderIDs = ["A", "B"]
 
@@ -66,11 +66,11 @@ struct OrdersBatchOperationsTests {
         #expect(state.selectedOrderIDs.isEmpty)
     }
 
-    /// 驗證未勾選的訂單點選後被勾選
+    /// 驗證點選未勾選的訂單時，該訂單的識別值加入 `selectedOrderIDs`
     @Test
     func orderSelectionToggled_未勾選的訂單_勾選該訂單() {
         // Given
-        var state = OrderListFeatureTests.makeState()
+        var state = OrderListFeatureTestSupport.makeState()
 
         // When
         OrdersBatchOperations.orderSelectionToggled("A", state: &state)
@@ -79,11 +79,11 @@ struct OrdersBatchOperationsTests {
         #expect(state.selectedOrderIDs == ["A"])
     }
 
-    /// 驗證已勾選的訂單再點一次時取消勾選
+    /// 驗證點選已勾選的訂單時，該訂單的識別值從 `selectedOrderIDs` 移除
     @Test
     func orderSelectionToggled_已勾選的訂單_取消勾選() {
         // Given
-        var state = OrderListFeatureTests.makeState()
+        var state = OrderListFeatureTestSupport.makeState()
         state.selectedOrderIDs = ["A"]
 
         // When
@@ -93,11 +93,11 @@ struct OrdersBatchOperationsTests {
         #expect(state.selectedOrderIDs.isEmpty)
     }
 
-    /// 驗證清單有篩選時只選相符訂單
+    /// 驗證清單套用狀態篩選時，全選只選取符合篩選的訂單，被篩掉的訂單不會被選取
     @Test
     func selectAllTapped_清單有篩選_只選相符訂單() {
         // Given
-        var state = OrderListFeatureTests.makeState(orders: [
+        var state = OrderListFeatureTestSupport.makeState(orders: [
             makeOrder(id: "A", status: .quoting),
             makeOrder(id: "B", status: .delivered),
         ])
@@ -110,11 +110,11 @@ struct OrdersBatchOperationsTests {
         #expect(state.selectedOrderIDs == ["A"])
     }
 
-    /// 驗證已有選取時清空所有選取的訂單
+    /// 驗證已有選取時，清除選取會把 `selectedOrderIDs` 清空
     @Test
     func clearSelectionTapped_已有選取_清空集合() {
         // Given
-        var state = OrderListFeatureTests.makeState()
+        var state = OrderListFeatureTestSupport.makeState()
         state.selectedOrderIDs = ["A", "B"]
 
         // When
@@ -124,11 +124,13 @@ struct OrdersBatchOperationsTests {
         #expect(state.selectedOrderIDs.isEmpty)
     }
 
-    /// 目標狀態為已合併時不改任何訂單，多選與選取都保留
+    /// 驗證批次目標狀態為已合併時，回傳 `nil`，不改任何訂單，多選與已選的訂單都保留
     @Test
     func batchStatusChanged_目標為已合併_保留狀態與選取() {
         // Given
-        var state = OrderListFeatureTests.makeState(orders: [makeOrder(id: "A", status: .quoting)])
+        var state = OrderListFeatureTestSupport.makeState(orders: [
+            makeOrder(id: "A", status: .quoting),
+        ])
         state.isSelecting = true
         state.selectedOrderIDs = ["A"]
 
@@ -142,11 +144,11 @@ struct OrdersBatchOperationsTests {
         #expect(state.orders[0].status == .quoting)
     }
 
-    /// 只更新已選且狀態不同的訂單
+    /// 驗證批次改狀態時，只有已選且狀態不同的訂單會列入變更結果，已是目標狀態或未選取的訂單都不變
     @Test
     func batchStatusChanged_混合狀態與選取_只請求實際變更() {
         // Given
-        var state = OrderListFeatureTests.makeState(orders: [
+        var state = OrderListFeatureTestSupport.makeState(orders: [
             makeOrder(id: "A", status: .quoting),
             makeOrder(id: "B", status: .delivered),
             makeOrder(id: "C", status: .quoting),
@@ -161,11 +163,11 @@ struct OrdersBatchOperationsTests {
         #expect(changed?.map(\.id) == ["A"])
     }
 
-    /// 沒有訂單實際變更時仍退出多選並清空選取
+    /// 驗證批次目標狀態與現況相同時，回傳 `nil`，仍會退出多選並清空已選的訂單
     @Test
     func batchStatusChanged_狀態沒有變更_退出並清空選取() {
         // Given
-        var state = OrderListFeatureTests.makeState(orders: [
+        var state = OrderListFeatureTestSupport.makeState(orders: [
             makeOrder(id: "A", status: .delivered),
         ])
         state.isSelecting = true
@@ -181,7 +183,7 @@ struct OrdersBatchOperationsTests {
         #expect(state.selectedOrderIDs.isEmpty)
     }
 
-    /// 批次成功回應經寫入子層，依編號套用變更並保留其他訂單
+    /// 驗證批次寫入成功的回應到達時，依訂單編號套用變更，其他訂單保持不變
     @Test
     @MainActor
     func writes_批次寫入成功_依編號套用變更() async {

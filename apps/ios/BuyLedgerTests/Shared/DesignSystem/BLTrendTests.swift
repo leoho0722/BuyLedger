@@ -10,10 +10,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證由差值判定走勢方向時，缺值、負值、零與正值各自對應的方向
+/// `BLTrend` 的單元測試，涵蓋由差值判定走勢方向的四種輸入
 struct BLTrendTests {
 
-    /// 差值為缺值、負值、零與正值時，判定對應的走勢方向；零歸為上升
+    /// 驗證差值為缺值時判定為 `.unavailable`，為負時判定為 `.down`，為零或為正時判定為 `.up`
     ///
     /// - Parameter scenario: 差值與該差值應判定的走勢方向
     @Test(arguments: DeltaCase.allCases)
@@ -37,7 +37,7 @@ extension BLTrendTests {
     /// 一組差值輸入與它應判定的走勢方向
     struct DeltaCase: Sendable {
 
-        /// 窮舉缺值、負值、零與正值，預期結果逐筆指定
+        /// 缺值、負值、零與正值四種差值，每種的預期方向逐筆指定
         static let allCases = [
             Self(delta: nil, expected: .unavailable),
             Self(delta: Decimal(-0.05), expected: .down),

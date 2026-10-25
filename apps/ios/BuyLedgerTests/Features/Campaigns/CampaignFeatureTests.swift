@@ -10,11 +10,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// 以 `TestStore` 逐步驗證 `CampaignFeature` 的狀態轉換與副作用
+/// `CampaignFeature` 的單元測試，以 `TestStore` 逐步驗證狀態轉換與副作用
 @MainActor
 struct CampaignFeatureTests {
 
-    /// 容器收到變更狀態請求時先寫入，成功後才更新清單
+    /// 驗證列表要求變更開團狀態時，寫入的開團帶著新狀態，寫入成功後清單同步更新
     @Test
     func list_要求變更開團狀態_寫入後更新清單狀態() async {
         // Given
@@ -56,7 +56,7 @@ struct CampaignFeatureTests {
         #expect(savedCampaigns.value == [expectedCampaign])
     }
 
-    /// 未結算的開團按下結團時，先呈現點明無法改回的確認對話框，不直接寫入
+    /// 驗證列表要求結團未結算的開團時，先呈現點明無法改回的確認對話框，不直接寫入
     @Test
     func list_要求結團_呈現結團確認() async {
         // Given
@@ -76,14 +76,20 @@ struct CampaignFeatureTests {
 
         // When
         await store.send(.list(.delegate(.requested(.settle("C1"))))) {
-            $0.presentation.destination = Self.settleAlert(id: "C1", name: "團")
+            $0.presentation.destination = CampaignFeatureTestSupport.settleAlert(
+                id: "C1",
+                name: "團"
+            )
         }
 
         // Then
-        #expect(store.state.presentation.destination == Self.settleAlert(id: "C1", name: "團"))
+        #expect(
+            store.state.presentation.destination
+                == CampaignFeatureTestSupport.settleAlert(id: "C1", name: "團")
+        )
     }
 
-    /// 點選刪除開團時，呈現包含資料影響說明的確認對話框
+    /// 驗證列表點選刪除開團時，呈現包含資料影響說明的確認對話框
     @Test
     func list_清單中的開團要求刪除_呈現刪除確認() async {
         // Given
@@ -106,12 +112,18 @@ struct CampaignFeatureTests {
 
         // Then
         await store.receive(\.list.delegate.requested) {
-            $0.presentation.destination = Self.deletionAlert(id: "C1", name: "團")
+            $0.presentation.destination = CampaignFeatureTestSupport.deletionAlert(
+                id: "C1",
+                name: "團"
+            )
         }
-        #expect(store.state.presentation.destination == Self.deletionAlert(id: "C1", name: "團"))
+        #expect(
+            store.state.presentation.destination
+                == CampaignFeatureTestSupport.deletionAlert(id: "C1", name: "團")
+        )
     }
 
-    /// 容器收到切換收款請求時只送出 `delegate`，不直接修改 `State.orders`
+    /// 驗證列表要求切換收款狀態時，只送出 `delegate.receiptStatusToggled`，不直接修改 `State.orders`
     @Test
     func list_要求切換收款狀態_送出委派且不改本地狀態() async {
         // Given

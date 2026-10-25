@@ -11,10 +11,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證設定預設值、月度目標讀取與既有偏好 key
+/// `SettingsService` 的單元測試，涵蓋設定預設值、月度目標讀取與既有偏好 key 的相容
 struct SettingsServiceTests {
 
-    /// 缺少字串偏好時使用語言、幣別與模型預設值，月度目標依儲存狀態讀取並沿用既有 key
+    /// 驗證缺少字串偏好時，語言、幣別與模型使用預設值，月度目標依儲存狀態讀取，並沿用既有的偏好 key
     ///
     /// - Parameter scenario: 月度目標的儲存情境
     @Test(arguments: MonthlyGoalScenario.allCases)
@@ -53,7 +53,7 @@ struct SettingsServiceTests {
         )
     }
 
-    /// 儲存完整設定快照後可從偏好讀回相同內容
+    /// 驗證儲存完整設定快照後讀回相同內容，並以既有的偏好 key 逐項寫入字串、數值與布林值
     @Test
     func save_完整設定快照_儲存後讀回相同設定() {
         // Given
@@ -98,7 +98,7 @@ struct SettingsServiceTests {
         #expect(userDefaultsStore.boolSetReceivedArguments.map(\.value) == [true, true])
     }
 
-    /// 既有偏好 key 仍能還原完整設定快照
+    /// 驗證以既有偏好 key 寫入的各項值，載入時能還原為完整的設定快照
     @Test
     func load_既有偏好鍵_還原完整設定快照() {
         // Given

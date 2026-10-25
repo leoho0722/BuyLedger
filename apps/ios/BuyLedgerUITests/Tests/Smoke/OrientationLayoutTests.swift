@@ -5,71 +5,102 @@
 //  Created by Leo Ho on 2026/10/4.
 //
 
-import UIKit
 import XCTest
 
-/// 裝置轉為橫向後的根導覽與訂單版面測試，並附上橫向的首頁、訂單與分析頁截圖
+/// 裝置轉為橫向後的根導覽與訂單版面 UI 測試，並附上橫向的首頁、訂單與分析頁截圖
+@MainActor
 final class OrientationLayoutTests: BLUITestCase {
 
-    /// iPhone 轉為橫向後維持底部分頁列與整合篩選鈕，iPad 維持側邊欄且不顯示整合篩選鈕
+    /// 驗證轉為橫向後，compact 版面仍有底部分頁列與整合篩選鈕，regular 版面仍有側邊欄且不顯示整合篩選鈕
     ///
-    /// - Throws: 轉向未完成，或根導覽與訂單篩選的版面不符預期時拋出測試錯誤
-    @MainActor
-    func testRotateToLandscape_含開團與訂單資料_根導覽與訂單篩選符合裝置版面() throws(any Error) {
+    /// - Throws: 轉向未完成，或根導覽與訂單篩選的版面不符預期時丟出測試錯誤
+    /// - Note: 版面在直向啟動時判斷，轉向後的斷言才能抓到版面類別被轉向改變
+    func testRotateToLandscape_含開團與訂單資料_根導覽與訂單篩選符合裝置版面() throws {
         // Given
         let app = launch(LaunchOptions(seed: .campaignsWithOrders))
         let root = RootNavigationScreen(app: app)
         try requireCondition(root.waitUntilReady(), in: app, "直向啟動後根導覽未就緒")
+        try requireCondition(root.goToOrders(), in: app, "直向切到訂單分頁後畫面未就緒")
+        let isRegularBeforeRotation = isRegularLayout(app)
 
         // When
         try rotateToLandscape(app)
 
         // Then
-        if UIDevice.current.userInterfaceIdiom == .pad {
+        if isRegularBeforeRotation {
             try assertRegularLayout(in: app)
         } else {
             try assertCompactLayout(in: app)
         }
     }
 
-    /// 轉為橫向後依序附上首頁、訂單頁與分析頁的截圖，供人工確認各頁排列
+    /// 驗證首頁轉為橫向後仍就緒並附上截圖，供人工確認排列
     ///
-    /// - Throws: 轉向未完成，或任一頁的畫面與元素未就緒時拋出測試錯誤
-    @MainActor
-    func testRotateToLandscape_含開團與訂單資料_首頁訂單與分析頁附上橫向截圖() throws(any Error) {
+    /// - Throws: 轉向未完成，或畫面與元素未就緒時丟出測試錯誤
+    func testRotateToLandscape_含開團與訂單資料_首頁附上橫向截圖() throws {
         // Given
         let app = launch(LaunchOptions(seed: .campaignsWithOrders))
         let root = RootNavigationScreen(app: app)
         try requireCondition(root.waitUntilReady(), in: app, "直向啟動後根導覽未就緒")
+        try requireCondition(root.goToDashboard(), in: app, "直向切到首頁後畫面未就緒")
 
         // When
         try rotateToLandscape(app)
 
         // Then
         try captureDashboard(in: app)
+    }
+
+    /// 驗證訂單頁轉為橫向後仍就緒並附上截圖，供人工確認排列
+    ///
+    /// - Throws: 轉向未完成，或畫面與元素未就緒時丟出測試錯誤
+    func testRotateToLandscape_含開團與訂單資料_訂單頁附上橫向截圖() throws {
+        // Given
+        let app = launch(LaunchOptions(seed: .campaignsWithOrders))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.waitUntilReady(), in: app, "直向啟動後根導覽未就緒")
+        try requireCondition(root.goToOrders(), in: app, "直向切到訂單頁後畫面未就緒")
+
+        // When
+        try rotateToLandscape(app)
+
+        // Then
         try captureOrders(in: app)
+    }
+
+    /// 驗證分析頁轉為橫向後仍就緒並附上截圖，供人工確認排列
+    ///
+    /// - Throws: 轉向未完成，或畫面與元素未就緒時丟出測試錯誤
+    func testRotateToLandscape_含開團與訂單資料_分析頁附上橫向截圖() throws {
+        // Given
+        let app = launch(LaunchOptions(seed: .campaignsWithOrders))
+        let root = RootNavigationScreen(app: app)
+        try requireCondition(root.waitUntilReady(), in: app, "直向啟動後根導覽未就緒")
+        try requireCondition(root.goToInsights(), in: app, "直向切到分析頁後畫面未就緒")
+
+        // When
+        try rotateToLandscape(app)
+
+        // Then
         try captureInsights(in: app)
     }
 }
 
 // MARK: - Private Method
 
-@MainActor
 private extension OrientationLayoutTests {
 
-    /// 斷言 iPad 橫向仍是側邊欄版面：有側邊欄，訂單頁沒有整合篩選鈕
+    /// 斷言 regular 版面橫向仍是側邊欄版面：有側邊欄，訂單頁沒有整合篩選鈕
     ///
     /// - Parameter app: 受測 App
-    /// - Throws: 缺側邊欄或訂單清單未就緒時拋出測試錯誤
-    func assertRegularLayout(in app: XCUIApplication) throws(any Error) {
+    /// - Throws: 缺側邊欄或訂單清單未就緒時丟出測試錯誤
+    func assertRegularLayout(in app: XCUIApplication) throws {
         let sidebar = app.descendants(matching: .any)[BLAccessibilityID.Root.sidebar]
-        try requireCondition(sidebar.waitForExistence(timeout: 10), in: app, "iPad 橫向沒有側邊欄")
+        try requireCondition(sidebar.waitForExistence(timeout: 10), in: app, "regular 版面橫向沒有側邊欄")
 
-        let root = RootNavigationScreen(app: app)
-        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try requireCondition(OrdersScreen(app: app).waitUntilReady(), in: app, "訂單清單未就緒")
         if filterButton(in: app).waitForExistence(timeout: 2) {
-            failWithDiagnostics(in: app, "iPad 橫向不應顯示整合篩選鈕")
+            failWithDiagnostics(in: app, "regular 版面橫向不應顯示整合篩選鈕")
         }
     }
 
@@ -81,35 +112,31 @@ private extension OrientationLayoutTests {
         app.descendants(matching: .any)[BLAccessibilityID.Orders.filterButton]
     }
 
-    /// 斷言 iPhone 橫向仍是分頁列版面：有底部分頁列、沒有側邊欄，訂單頁有整合篩選鈕
+    /// 斷言 compact 版面橫向仍是分頁列版面：有底部分頁列、沒有側邊欄，訂單頁有整合篩選鈕
     ///
     /// - Parameter app: 受測 App
-    /// - Throws: 分頁列缺席、出現側邊欄或缺整合篩選鈕時拋出測試錯誤
-    func assertCompactLayout(in app: XCUIApplication) throws(any Error) {
+    /// - Throws: 分頁列缺席、出現側邊欄或缺整合篩選鈕時丟出測試錯誤
+    func assertCompactLayout(in app: XCUIApplication) throws {
         try requireCondition(
             app.tabBars.firstMatch.waitForExistence(timeout: 10),
             in: app,
-            "iPhone 橫向沒有底部分頁列"
+            "compact 版面橫向沒有底部分頁列"
         )
-        try requireCondition(!AppNavigator(app: app).isSidebarLayout, in: app, "iPhone 橫向出現側邊欄")
+        try requireCondition(!AppNavigator(app: app).isSidebarLayout, in: app, "compact 版面橫向出現側邊欄")
 
-        let root = RootNavigationScreen(app: app)
-        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
         try requireCondition(
             filterButton(in: app).waitForExistence(timeout: 10),
             in: app,
-            "iPhone 橫向的訂單頁沒有整合篩選鈕"
+            "compact 版面橫向的訂單頁沒有整合篩選鈕"
         )
     }
 
     /// 等首頁 KPI 卡出現後附上截圖，再把 KPI 卡捲進畫面附上第二張
     ///
     /// - Parameter app: 受測 App
-    /// - Throws: 首頁或 KPI 卡未就緒，或視窗已不是橫向時拋出測試錯誤
-    func captureDashboard(in app: XCUIApplication) throws(any Error) {
-        let root = RootNavigationScreen(app: app)
+    /// - Throws: 首頁或 KPI 卡未就緒，或視窗已不是橫向時丟出測試錯誤
+    func captureDashboard(in app: XCUIApplication) throws {
         let dashboard = DashboardScreen(app: app)
-        try requireCondition(root.goToDashboard(), in: app, "切到首頁分頁後畫面未就緒")
         try requireCondition(dashboard.kpiValue(.revenue) != nil, in: app, "橫向首頁沒有營收 KPI 卡")
         try attachScreenshot(named: "橫向首頁", of: app)
 
@@ -123,8 +150,8 @@ private extension OrientationLayoutTests {
     /// - Parameters:
     ///   - name: 附件名稱
     ///   - app: 受測 App
-    /// - Throws: 視窗已不是橫向時拋出測試錯誤
-    func attachScreenshot(named name: String, of app: XCUIApplication) throws(any Error) {
+    /// - Throws: 視窗已不是橫向時丟出測試錯誤
+    func attachScreenshot(named name: String, of app: XCUIApplication) throws {
         let isLandscape = waitForLandscapeWindow(of: app, timeout: 5)
         try requireCondition(isLandscape, in: app, "截圖「\(name)」前視窗不是橫向")
 
@@ -156,10 +183,8 @@ private extension OrientationLayoutTests {
     /// 等訂單清單出現訂單列後附上截圖
     ///
     /// - Parameter app: 受測 App
-    /// - Throws: 訂單頁或訂單列未就緒，或視窗已不是橫向時拋出測試錯誤
-    func captureOrders(in app: XCUIApplication) throws(any Error) {
-        let root = RootNavigationScreen(app: app)
-        try requireCondition(root.goToOrders(), in: app, "切到訂單分頁後畫面未就緒")
+    /// - Throws: 訂單頁或訂單列未就緒，或視窗已不是橫向時丟出測試錯誤
+    func captureOrders(in app: XCUIApplication) throws {
         try requireCondition(OrdersScreen(app: app).waitUntilReady(), in: app, "訂單清單未就緒")
 
         let rowPrefix = BLAccessibilityID.Orders.row(orderID: "")
@@ -182,11 +207,9 @@ private extension OrientationLayoutTests {
     /// 捲動分析頁的類別排行與成本結構卡片進入畫面，依序各附一張截圖
     ///
     /// - Parameter app: 受測 App
-    /// - Throws: 分析頁、類別排行列或成本結構圖未就緒，或視窗已不是橫向時拋出測試錯誤
-    func captureInsights(in app: XCUIApplication) throws(any Error) {
-        let root = RootNavigationScreen(app: app)
+    /// - Throws: 分析頁、類別排行列或成本結構圖未就緒，或視窗已不是橫向時丟出測試錯誤
+    func captureInsights(in app: XCUIApplication) throws {
         let insights = InsightsScreen(app: app)
-        try requireCondition(root.goToInsights(), in: app, "切到分析分頁後畫面未就緒")
         try requireCondition(insights.waitUntilReady(), in: app, "分析頁未就緒")
 
         let rowPrefix = BLAccessibilityID.Insights.categoryRankRow(category: "")

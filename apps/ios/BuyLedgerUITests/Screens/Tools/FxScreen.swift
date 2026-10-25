@@ -18,6 +18,7 @@ struct FxScreen {
 
 // MARK: - Computed Properties
 
+@MainActor
 extension FxScreen {
 
     /// 換算後 TWD 結果的 accessibility value
@@ -35,7 +36,6 @@ extension FxScreen {
     /// 換算結果卡片合併朗讀後的完整 accessibility text
     ///
     /// - Returns: 包含來源幣別與匯率資訊的完整文字；元素不存在時為 `nil`
-    @MainActor
     var conversionSummary: String? {
         let element = app.descendants(matching: .any)[BLAccessibilityID.Fx.convertedValue]
         guard element.waitForExistence(timeout: 10) else {
@@ -78,8 +78,9 @@ extension FxScreen {
     ///   - line: 失敗時回報的行號
     func openCurrencyPicker(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.descendants(matching: .any)[BLAccessibilityID.Fx.currencyPickerButton]
-        if !button.isHittable {
-            app.scrollToHittable(button, within: rootElement)
+        if !button.isHittableOnScreen, !app.scrollToHittable(button, within: rootElement) {
+            app.failWithDiagnostics("捲動後來源幣別按鈕仍未穩定或不可點", file: file, line: line)
+            return
         }
         button.tapAfterWaiting(in: app, file: file, line: line)
     }
@@ -98,7 +99,10 @@ extension FxScreen {
         line: UInt = #line
     ) {
         let field = app.textFields[BLAccessibilityID.Fx.amountField]
-        app.scrollToHittable(field, within: rootElement)
+        guard app.scrollToHittable(field, within: rootElement) else {
+            app.failWithDiagnostics("捲動後金額欄位仍未穩定或不可點", file: file, line: line)
+            return
+        }
         field.clearAndType(
             amount,
             in: app,
@@ -113,9 +117,7 @@ extension FxScreen {
 
 extension FxScreen: Screen {
 
-    /// 以 `BLAccessibilityID.Fx.root` 指定匯率頁的捲動容器為根元素
-    ///
-    /// - Returns: 匯率頁根元素的 `identifier`
+    /// 判定匯率頁已就緒的根元素 identifier (捲動容器)
     var rootIdentifier: String {
         BLAccessibilityID.Fx.root
     }

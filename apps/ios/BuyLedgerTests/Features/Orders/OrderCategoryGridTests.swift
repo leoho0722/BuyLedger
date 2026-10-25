@@ -10,13 +10,13 @@ import Testing
 
 @testable import BuyLedger
 
-/// 類別格子的欄數計算與段落切分
+/// `OrderCategoryGrid` 的單元測試，涵蓋欄數計算與類別切段
 struct OrderCategoryGridTests {
 
     // MARK: - Properties
 
-    /// 最小格寬 96pt、間距 8pt 時，寬度對應的欄數；無障礙字級固定單欄
-    static let columnCases: [ColumnCase] = [
+    /// 欄數計算的測試案例，涵蓋寬度、最小格寬與無障礙字級的組合
+    private static let columnCases: [ColumnCase] = [
         ColumnCase(
             width: 256,
             minimumCellWidth: 96,
@@ -89,8 +89,8 @@ struct OrderCategoryGridTests {
         ),
     ]
 
-    /// 三欄切段的測試案例清單
-    static let rowSplitCases: [RowSplitCase] = [
+    /// 三欄切段的測試案例，涵蓋一至四個類別的每列格數與佔位格數
+    private static let rowSplitCases: [RowSplitCase] = [
         RowSplitCase(categories: ["美妝"], expectedCells: [1], expectedPlaceholders: [2]),
         RowSplitCase(categories: ["美妝", "3C"], expectedCells: [2], expectedPlaceholders: [1]),
         RowSplitCase(categories: ["美妝", "3C", "零食"], expectedCells: [3], expectedPlaceholders: [0]),
@@ -101,10 +101,11 @@ struct OrderCategoryGridTests {
         ),
     ]
 
-    /// 依寬度、最小格寬與間距回報欄數，無障礙字級固定單欄
+    /// 驗證欄數依寬度、最小格寬與間距算出，寬度不足一欄時仍為一欄，無障礙字級不論寬度固定為一欄
     ///
     /// - Parameter columnCase: 寬度與格寬測試案例
     @Test(arguments: OrderCategoryGridTests.columnCases)
+    @MainActor
     func columnCount_寬度與最小格寬組合_回傳對應欄數(columnCase: ColumnCase) {
         // Given
         let isAccessibility = columnCase.isAccessibilitySize
@@ -121,10 +122,11 @@ struct OrderCategoryGridTests {
         #expect(columns == columnCase.expectedColumns)
     }
 
-    /// 三欄時依類別數切段，最後一段補齊佔位格
+    /// 驗證三欄時類別依數量切成多列，最後一列不足三格時以佔位格補齊
     ///
     /// - Parameter splitCase: 切段測試案例
     @Test(arguments: OrderCategoryGridTests.rowSplitCases)
+    @MainActor
     func rows_三欄切段_最後一列補齊佔位格(splitCase: RowSplitCase) {
         // Given
         let columnCount = 3
@@ -141,8 +143,9 @@ struct OrderCategoryGridTests {
         #expect(rows.map(\.placeholderCount) == splitCase.expectedPlaceholders)
     }
 
-    /// 切段後依原順序展開，不遺漏也不重複類別
+    /// 驗證類別切段後依原順序展開，與輸入清單相同，不遺漏也不重複
     @Test
+    @MainActor
     func rows_切段後依原順序展開_不遺漏不重複() {
         // Given
         let categories = ["美妝", "3C", "零食", "書籍", "服飾", "食品", "文具"]
@@ -159,8 +162,9 @@ struct OrderCategoryGridTests {
         #expect(rows.flatMap(\.categories) == categories)
     }
 
-    /// 多段類別時，列識別值為組別種類與段序號
+    /// 驗證類別分成多列時，各列的識別值由組別種類與從零起算的列序號組成
     @Test
+    @MainActor
     func rows_多段類別_列識別值為組別與段序號() {
         // Given
         let categories = ["美妝", "3C", "零食", "書籍"]
@@ -182,9 +186,10 @@ struct OrderCategoryGridTests {
         )
     }
 
-    /// 無障礙單欄時，每個類別獨立一列且沒有佔位格
+    /// 驗證欄數為一時，每個類別各自獨立成列，且沒有佔位格
     @Test
-    func rows_無障礙單欄_每個類別獨立一列() {
+    @MainActor
+    func rows_單欄_每個類別獨立一列() {
         // Given
         let categories = ["美妝", "3C"]
         let columnCount = 1
@@ -201,8 +206,9 @@ struct OrderCategoryGridTests {
         #expect(rows.map(\.placeholderCount) == [0, 0])
     }
 
-    /// 類別清單為空時回傳空陣列
+    /// 驗證類別清單為空時，切段後不產生任何列
     @Test
+    @MainActor
     func rows_類別清單為空_回傳空陣列() {
         // Given
         let categories: [String] = []
@@ -224,10 +230,10 @@ struct OrderCategoryGridTests {
 
 extension OrderCategoryGridTests {
 
-    /// 寬度對應欄數的測試案例
+    /// `columnCount` 參數化測試的單一案例，含寬度、最小格寬、間距、是否無障礙字級與預期欄數
     struct ColumnCase: Sendable {
 
-        /// 列容器寬度
+        /// 列的可用寬度
         let width: CGFloat
 
         /// 最小格寬
@@ -239,20 +245,20 @@ extension OrderCategoryGridTests {
         /// 是否為無障礙字級
         let isAccessibilitySize: Bool
 
-        /// 規格對應的欄數
+        /// 預期欄數
         let expectedColumns: Int
     }
 
-    /// 三欄切段的測試案例
+    /// `rows` 三欄切段測試的單一案例，含待切段的類別與各列的格數、佔位格數
     struct RowSplitCase: Sendable {
 
         /// 可見類別
         let categories: [String]
 
-        /// 每段的類別數
+        /// 每列的類別格數
         let expectedCells: [Int]
 
-        /// 每段的佔位格數
+        /// 每列的佔位格數
         let expectedPlaceholders: [Int]
     }
 }

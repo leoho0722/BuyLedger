@@ -24,7 +24,7 @@ paths:
     - closure 是同步的，網路、行事曆、使用者確認等 `await` 步驟留在 Service 或 Feature，分成多次 `read`／`write`：`refreshIfStale`、付款方式更正 (確認前讀筆數、確認後寫入)、行事曆都不是單一交易。
     - 改動 `BuyLedgerDatabase` 的 context 生命週期或錯誤處理後跑 `OrderServiceResidueTests` (刪除首次儲存失敗後重試、同 id 建立、同 id 更新三個情境) 與 `CampaignServiceTests` 的 `renameCampaign_訂單更新儲存失敗後_改名不帶入失敗欄位`。
 - **資料表無唯一性約束 (CloudKit 限制)，「查撞號再插入」必須在同一個 `write` closure 內完成**：`BuyLedgerDatabase` 是 actor 且 closure 同步執行，其他寫入插不進查詢與插入之間；拆成兩次呼叫會讓同編號並發寫入各自查無、各自插入。
-    - live 只有一個 `BuyLedgerDatabase` 實例 (依賴快取只求值一次 `BuyLedgerDatabaseKey.liveValue`)，Service 內不另建；`OrderServiceTests.liveValue_連續解析兩次_取得同一資料庫實例()` 與 `createOrder_並行建立相同識別值_只成功一筆其餘明確撞號()` 守門。
+    - live 只有一個 `BuyLedgerDatabase` 實例 (依賴快取只求值一次 `BuyLedgerDatabaseKey.liveValue`)，Service 內不另建；`OrderServiceTests.liveValue_連續解析兩次_取得同一資料庫實例()` 與 `OrderServiceConcurrencyTests.createOrder_並行建立相同識別值_只成功一筆其餘明確撞號()` 守門。
 - **`LedgerOrder.id` 存完整長度的隨機識別碼，不截短**；需要短碼顯示時用 `LedgerOrder.displayID`。
 - **`LedgerOrder` 是 immutable struct**：改欄位用 memberwise init 重建整筆 (參考 `renaming*`／`removingCampaign` 系列擴充方法)。
 - **照片位元組不隨訂單列常駐**：`OrderService.fetchOrders` 以 `propertiesToFetch` 排除 `photos` (回傳空陣列不代表沒有照片)，需要時用 `fetchOrderPhotos`；高頻的整表或多筆讀取路徑不得碰 `photos`。
@@ -41,13 +41,13 @@ paths:
     - `NameLookupRecordProtocol` 協定遵循放各記錄檔尾端的 extension，不碰型別主體：主體變動會改變 SwiftData 指紋、破壞 migration。
 - **開團資料以 `CampaignFeature.State` 的無鍵 `@Shared` 為來源**：`campaigns`、`orders` (訂單投影)、`reminderLinks`、`isShowingUnpaidOnly` 四份，建立容器時同時指派給自己與各子 Feature 的 State，父子共用同一份引用。
     - 子 Feature 的 `init` 對唯讀資料只接 `SharedReader`，由父層以 `SharedReader(_:)` 轉換後傳入：`SharedReader` 沒有 setter 與 `withLock`，列表與詳情在編譯期就無法寫入投影與連結。
-    - 開團與「更多」的訂單投影僅由 Root 以 `state.campaigns.$orders.withLock` 與 `state.more.$orders.withLock` 寫入，不能當成訂單資料來源；`Features/Campaigns/` 與 `Features/More/` 內投影的 `$orders` 只能作為 `SharedReader(` 的引數，`ProjectionWriteBoundaryTests` 守門。
+    - 開團與「更多」的訂單投影僅由 Root 以 `state.campaigns.$orders.withLock` 與 `state.more.$orders.withLock` 寫入，不能當成訂單資料來源；`Features/Campaigns/` 與 `Features/More/` 內投影的 `$orders` 只能作為 `SharedReader(` 的引數，`ProjectionWriteBoundary*Tests` 守門。
     - `MoreFeature.State.orders` 是同型的投影，推入客戶頁時以 `SharedReader(state.$orders)` 傳入。
     - 共享寫入在 reducer 內同步完成，不移到 effect 裡再回送：`RootFeature` 的 `onChange(of: \.campaigns.campaigns)` 只觀察得到 reducer 內的 `withLock`。
 - **訂單資料以 `OrdersFeature.State.orders` 的無鍵 `@Shared` 為來源**：容器建立同一份引用交給子層，清單與詳情只接 `SharedReader`，容器本身不寫。
-    - 只有 `OrdersLoadFeature` (套用讀取結果) 與 `OrderWritesFeature` (寫入結果、cascade、付款方式旗標套用) 在 reducer 內以 `withLock` 更新來源；不在 `.run` effect 內寫，也不外傳可寫引用，`ProjectionWriteBoundaryTests` 分別守住來源與 Root 的投影寫入。
+    - 只有 `OrdersLoadFeature` (套用讀取結果) 與 `OrderWritesFeature` (寫入結果、cascade、付款方式旗標套用) 在 reducer 內以 `withLock` 更新來源；不在 `.run` effect 內寫，也不外傳可寫引用，`ProjectionWriteBoundary*Tests` 分別守住來源與 Root 的投影寫入。
     - Root 的 `onChange(of: \.orders.orders)` 在實際修改來源的那一次 action 同步開團、「更多」、總覽與分析；這一次是載入回應、寫入回應或 `writes` 套用 cascade 的 action，不能以最初請求或 delegate 的時點代替。
-    - `campaigns` 是容器持有的無鍵 `@Shared` 開團投影，清單只接同一份 `SharedReader`；容器可寫，但只有 Root 在 reducer 內以 `state.orders.$campaigns.withLock` 同步，Orders 內部與 helper 不寫入、不外傳可寫引用或重綁 projected reference，由 `ProjectionWriteBoundaryTests` 守門。
+    - `campaigns` 是容器持有的無鍵 `@Shared` 開團投影，清單只接同一份 `SharedReader`；容器可寫，但只有 Root 在 reducer 內以 `state.orders.$campaigns.withLock` 同步，Orders 內部與 helper 不寫入、不外傳可寫引用或重綁 projected reference，由 `ProjectionWriteBoundary*Tests` 守門。
     - `defaultCurrency`、`aiSummarySettings` 是 Root 寫入 Orders 的投影，Orders 內部與 helper 只讀；Root 透過容器的 State 方法處理新訂單、日期刷新與篩選導覽，不直接改清單子 State。
 - **幣別清單以 `@Shared(.currencyCodes)` 在記憶體內共用**：Root 的 `RootLaunchFeature` 在 `refreshIfStale` 後讀一次 `fetchCodes`，刷新失敗也讀快取，成功且非空才更新；Orders 只以 `@SharedReader(.currencyCodes)` 建立選項。
     - 讀取失敗或空結果保留原值；只有共用清單為空時，表單選項才使用 `CurrencyCode.defaults`。

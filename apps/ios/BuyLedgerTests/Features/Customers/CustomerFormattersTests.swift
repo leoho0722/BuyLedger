@@ -10,10 +10,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證客戶名單的名次與強調區塊標題文字
+/// `CustomerFormatters` 的單元測試，涵蓋客戶名單的名次文字與強調區塊標題
 struct CustomerFormattersTests {
 
-    /// 驗證名次膠囊以井字號接名次數字
+    /// 驗證名次為一時，名次膠囊的文字是井字號接名次數字
     @Test
     func rankLabel_名次為一_回傳井字號加名次() {
         // Given
@@ -26,19 +26,18 @@ struct CustomerFormattersTests {
         #expect(label == "#1")
     }
 
-    /// 驗證強調區塊標題在英文與正體中文都顯示前三名
-    @Test
-    func topCountLabel_英文與正體中文_皆顯示前三名() {
+    /// 驗證強調區塊標題在英文與正體中文下都固定顯示「Top 3」，不隨語言改為中文
+    ///
+    /// - Parameter language: 顯示語言
+    @Test(arguments: [AppLanguage.english, .traditionalChinese])
+    func topCountLabel_英文或正體中文_顯示前三名(language: AppLanguage) {
         // Given
-        let english = AppLanguage.english.locale
-        let traditionalChinese = AppLanguage.traditionalChinese.locale
+        let locale = language.locale
 
         // When
-        let englishLabel = CustomerFormatters.topCountLabel(locale: english)
-        let chineseLabel = CustomerFormatters.topCountLabel(locale: traditionalChinese)
+        let label = CustomerFormatters.topCountLabel(locale: locale)
 
         // Then
-        #expect(englishLabel == "Top 3")
-        #expect(chineseLabel == "Top 3")
+        #expect(label == "Top 3")
     }
 }

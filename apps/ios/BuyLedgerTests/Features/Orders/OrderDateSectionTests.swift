@@ -10,10 +10,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 訂單日期分組的空清單、午夜邊界與排序測試
+/// `OrderDateSection` 的單元測試，涵蓋空清單、午夜邊界與排序
 struct OrderDateSectionTests {
 
-    /// 空清單不產生日期區段
+    /// 驗證沒有訂單時，分組結果不產生任何日期區段
     @Test
     func group_沒有訂單_回傳空區段() {
         // Given
@@ -31,7 +31,7 @@ struct OrderDateSectionTests {
         #expect(sections.isEmpty)
     }
 
-    /// 午夜前後分成不同區段，各區段與區段內都由新到舊排序
+    /// 驗證未排序的訂單依日分組，午夜前一秒歸入昨天、午夜當下歸入今天，各區段與區段內都由新到舊排列
     @Test
     func group_午夜邊界與未排序訂單_依日分組並由新到舊() {
         // Given

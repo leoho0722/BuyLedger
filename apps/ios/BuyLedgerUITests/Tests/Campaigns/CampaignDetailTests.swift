@@ -7,7 +7,8 @@
 
 import XCTest
 
-/// 開團詳情的結團流程測試
+/// 開團詳情結團流程的 UI 測試
+@MainActor
 final class CampaignDetailTests: BLUITestCase {
 
     // MARK: - Properties
@@ -15,10 +16,9 @@ final class CampaignDetailTests: BLUITestCase {
     /// `campaignsWithOrders` 的四月韓國團開團 id (進行中，未結團故結團項目可點)
     private static let koreaCampaignID = "CMP-SAMPLE-KR-APR"
 
-    /// 結團流程：更多 → 結團 → 確認 alert → 取消；alert 收回、詳情仍停留且開團未被結團
+    /// 驗證進行中且含訂單的開團詳情點結團後，確認 alert 訊息含「結算」，選取消後 alert 消失、詳情頁仍停留且開團未結團
     ///
-    /// - Note: 在正在進行且含訂單的開團詳情頁操作
-    @MainActor
+    /// - Note: 情境流程：更多 → 結團 → 確認 alert 放 Given，點取消為受測動作
     func testCancelSettle_結團確認選取消_停留詳情且未結團() {
         // Given
         let app = launch(LaunchOptions(seed: .campaignsWithOrders))
@@ -60,7 +60,6 @@ private extension CampaignDetailTests {
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的開團詳情 Page Object
-    @MainActor
     func openCampaignDetail(
         _ app: XCUIApplication,
         campaignID: String,

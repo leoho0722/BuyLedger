@@ -7,10 +7,11 @@
 
 import XCTest
 
-/// compact 版面整合篩選 sheet 在大量類別下的展開、捲動選取與套用流程測試
+/// compact 版面整合篩選 sheet 在大量類別下的展開、捲動選取與套用流程 UI 測試
 ///
 /// - Note: 種子為 `categoryFilterLarge`
 /// - Note: 300 個類別，類別 001 至 類別 005 屬開團中，其餘屬已收單
+@MainActor
 final class OrderFilterSheetLargeTests: BLUITestCase {
 
     // MARK: - Properties
@@ -27,25 +28,27 @@ final class OrderFilterSheetLargeTests: BLUITestCase {
         "UITEST-CFL-300",
     ]
 
-    /// 展開已收單、捲到末格並選取，再選一個開團中類別後套用，觸發鈕為兩項且清單列出兩筆
+    /// 驗證 compact 版面的篩選 sheet 展開已收單、捲到末格並選取，再選一個開團中類別後套用，篩選入口顯示「2 項類別」且清單列出兩筆訂單
     ///
-    /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
+    /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面；開啟篩選 sheet 時已收單組不是已收合狀態時丟出測試錯誤
     func testFilterSheetLargeApply_展開已收單捲到末格_觸發鈕兩項且結果兩筆() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilterLarge))
         try XCTSkipUnless(isCompactLayout(app), "篩選 sheet 只存在於 compact 版面，regular 版面改由類別選擇器測試覆蓋")
         let orders = openOrders(app)
+        let filterSheet = OrderFilterSheetScreen(app: app)
         orders.openFilterSheet()
-        if orders.filterGroupValue("closed") != "已收合" {
-            app.failWithDiagnostics("前提不成立：已收單組開啟時應為已收合")
-        }
+        try requireCondition(
+            filterSheet.filterGroupValue("closed") == "已收合",
+            in: app,
+            "前提不成立：已收單組開啟時應為已收合"
+        )
+        filterSheet.tapFilterGroupHeader("closed")
+        filterSheet.tapFilterCategory(Self.lastClosedCategory)
+        filterSheet.tapFilterCategory(Self.ongoingCategory)
 
         // When
-        orders.tapFilterGroupHeader("closed")
-        orders.tapFilterCategory(Self.lastClosedCategory)
-        orders.tapFilterCategory(Self.ongoingCategory)
-        orders.tapFilterApply()
+        filterSheet.tapFilterApply()
 
         // Then
         if !orders.filterTriggerLabel.contains("2 項類別") {
@@ -71,7 +74,6 @@ private extension OrderFilterSheetLargeTests {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Returns: 訂單清單的 Page Object
-    @MainActor
     func openOrders(
         _ app: XCUIApplication,
         file: StaticString = #filePath,

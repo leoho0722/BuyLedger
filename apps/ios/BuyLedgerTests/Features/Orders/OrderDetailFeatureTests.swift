@@ -11,11 +11,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證訂單詳情的內容、狀態選項與交給容器的操作請求
-@MainActor
+/// `OrderDetailFeature` 的單元測試，涵蓋詳情內容、狀態選項與送出的操作請求
 struct OrderDetailFeatureTests {
 
-    /// 一般訂單排除已合併，保留其餘狀態的原有順序
+    /// 驗證一般訂單的可選狀態不含已合併，其餘狀態依既有順序排列
     @Test
     func selectableStatuses_一般訂單_排除已合併() {
         // Given
@@ -40,7 +39,7 @@ struct OrderDetailFeatureTests {
         )
     }
 
-    /// 已合併訂單保留已合併選項
+    /// 驗證已合併訂單的可選狀態在既有順序後多出已合併，其餘與一般訂單相同
     @Test
     func selectableStatuses_已合併訂單_保留全部狀態() {
         // Given
@@ -66,28 +65,26 @@ struct OrderDetailFeatureTests {
         )
     }
 
-    /// 取消與已合併不能合併，一般訂單仍可合併
+    /// 驗證已確認的訂單可合併，已取消與已合併的訂單不可合併
     ///
-    /// - Parameters:
-    ///   - status: 訂單目前狀態
-    ///   - canBeMerged: 預期的合併資格
+    /// - Parameter testCase: 訂單狀態與預期合併資格
     @Test(arguments: [
-        (OrderStatus.confirmed, true),
-        (OrderStatus.cancelled, false),
-        (OrderStatus.merged, false),
+        MergeEligibilityCase(status: .confirmed, canBeMerged: true),
+        MergeEligibilityCase(status: .cancelled, canBeMerged: false),
+        MergeEligibilityCase(status: .merged, canBeMerged: false),
     ])
-    func canMerge_不同訂單狀態_依規則提供資格(status: OrderStatus, canBeMerged: Bool) {
+    func canMerge_不同訂單狀態_依規則提供資格(testCase: MergeEligibilityCase) {
         // Given
-        let state = Self.makeState(status: status)
+        let state = Self.makeState(status: testCase.status)
 
         // When
         let canMerge = state.canMerge
 
         // Then
-        #expect(canMerge == canBeMerged)
+        #expect(canMerge == testCase.canBeMerged)
     }
 
-    /// 詳情從共用訂單取出商品、三種手續費與貨到付款運費
+    /// 驗證貨到付款的訂單，詳情從共用資料取出七項成本，含三種手續費與三種運費，並帶出金額與色調
     @Test
     func costComponents_貨到付款_提供七項金額與色調() {
         // Given
@@ -132,7 +129,7 @@ struct OrderDetailFeatureTests {
         )
     }
 
-    /// 共用資料更新後，詳情訂單與成本跟著更新
+    /// 驗證共用訂單更新後，詳情的訂單狀態、合併資格與成本立即反映新值
     @Test
     func order_共用訂單更新_立即讀取新值() {
         // Given
@@ -150,7 +147,7 @@ struct OrderDetailFeatureTests {
         #expect(state.costComponents.map(\.value) == [200])
     }
 
-    /// 訂單不存在時不提供可操作的內容
+    /// 驗證找不到訂單時，訂單為 `nil`，狀態選項與成本為空，也無法合併
     @Test
     func order_找不到訂單_清空內容與選項() {
         // Given
@@ -166,8 +163,9 @@ struct OrderDetailFeatureTests {
         #expect(state.costComponents.isEmpty)
     }
 
-    /// 狀態選單只送請求，不自行變更訂單
+    /// 驗證選擇已到貨時，詳情只送出變更狀態的請求，訂單狀態本身不變
     @Test
+    @MainActor
     func statusChanged_選擇已到貨_委派狀態請求() async {
         // Given
         let store = Self.makeStore()
@@ -180,8 +178,9 @@ struct OrderDetailFeatureTests {
         #expect(store.state.order?.status == .confirmed)
     }
 
-    /// 編輯選單將目前訂單識別值交給容器
+    /// 驗證點按編輯時，送出帶有目前訂單識別值的編輯請求
     @Test
+    @MainActor
     func editTapped_點擊編輯_委派編輯請求() async {
         // Given
         let store = Self.makeStore()
@@ -193,8 +192,9 @@ struct OrderDetailFeatureTests {
         await store.receive(\.delegate.requested, .edit("A"))
     }
 
-    /// 合併選單將目前訂單識別值交給容器
+    /// 驗證點按合併時，送出帶有目前訂單識別值的合併請求
     @Test
+    @MainActor
     func mergeTapped_點擊合併_委派合併請求() async {
         // Given
         let store = Self.makeStore()
@@ -206,8 +206,9 @@ struct OrderDetailFeatureTests {
         await store.receive(\.delegate.requested, .merge("A"))
     }
 
-    /// 刪除選單只請容器確認，不自行刪除訂單
+    /// 驗證點按刪除時，只送出刪除請求，訂單本身仍保留在共用資料中
     @Test
+    @MainActor
     func deleteTapped_點擊刪除_委派刪除請求() async {
         // Given
         let store = Self.makeStore()
@@ -218,6 +219,21 @@ struct OrderDetailFeatureTests {
         // Then
         await store.receive(\.delegate.requested, .delete("A"))
         #expect(store.state.orders.map(\.id) == ["A"])
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrderDetailFeatureTests {
+
+    /// 合併資格測試的單一案例，含訂單狀態與預期的合併資格
+    struct MergeEligibilityCase: Sendable {
+
+        /// 訂單目前狀態
+        let status: OrderStatus
+
+        /// 是否可以合併
+        let canBeMerged: Bool
     }
 }
 
@@ -237,9 +253,10 @@ private extension OrderDetailFeatureTests {
         return OrderDetailFeature.State(orderID: "A", orders: SharedReader(orders))
     }
 
-    /// 建立可接受詳情操作的測試容器
+    /// 建立以已確認訂單 A 為初始狀態的詳情 TestStore，供詳情操作測試使用
     ///
-    /// - Returns: 顯示已確認訂單 A 的 `TestStore`
+    /// - Returns: 初始狀態為已確認訂單 A 的 TestStore
+    @MainActor
     static func makeStore() -> TestStoreOf<OrderDetailFeature> {
         TestStore(initialState: makeState(status: .confirmed)) {
             OrderDetailFeature()

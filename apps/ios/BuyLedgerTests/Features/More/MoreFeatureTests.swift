@@ -11,11 +11,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證更多頁建立各目的地，並帶入需要的建構資料
+/// `MoreFeature` 的單元測試，以 TestStore 驗證更多頁推入各目的地時，建立的狀態與帶入的建構資料
 @MainActor
 struct MoreFeatureTests {
 
-    /// 匯率頁返回再進入時建立新狀態，不保留輸入或載入中的旗標
+    /// 驗證匯率頁返回後再進入時建立新狀態，來源幣別與金額回到預設值，且不保留載入中的旗標
     @Test
     func entryTapped_返回後再進入匯率頁_重設輸入與載入狀態() async {
         // Given
@@ -44,7 +44,7 @@ struct MoreFeatureTests {
         await store.finish()
     }
 
-    /// 客戶頁推入當下即可讀到更多頁的訂單投影
+    /// 驗證推入客戶頁時，客戶頁從推入當下就讀到更多頁的同一份訂單投影
     @Test
     func entryTapped_推入客戶頁_讀取同一份訂單投影() async {
         // Given
@@ -57,7 +57,9 @@ struct MoreFeatureTests {
 
         // When
         await store.send(.view(.entryTapped(.customers))) {
-            $0.path.append(.customers(CustomersFeature.State(orders: SharedReader($0.$orders))))
+            $0.path.append(
+                .customers(CustomersFeature.State(orders: SharedReader(initial.$orders)))
+            )
         }
 
         // Then
@@ -66,7 +68,7 @@ struct MoreFeatureTests {
         await store.finish()
     }
 
-    /// 訂單來源列建立訂單來源主檔頁
+    /// 驗證點選訂單來源列時，推入的主檔頁種類為訂單來源，且路徑只有這一頁
     @Test
     func entryTapped_推入訂單來源頁_建立對應種類() async {
         // Given
@@ -80,7 +82,7 @@ struct MoreFeatureTests {
         await store.finish()
     }
 
-    /// 商品類別列建立商品類別主檔頁
+    /// 驗證點選商品類別列時，推入的主檔頁種類為商品類別，且路徑只有這一頁
     @Test
     func entryTapped_推入商品類別頁_建立對應種類() async {
         // Given
@@ -94,7 +96,7 @@ struct MoreFeatureTests {
         await store.finish()
     }
 
-    /// 付款方式列建立付款方式主檔頁
+    /// 驗證點選付款方式列時，推入的主檔頁種類為付款方式，且路徑只有這一頁
     @Test
     func entryTapped_推入付款方式頁_建立對應種類() async {
         // Given
@@ -108,7 +110,7 @@ struct MoreFeatureTests {
         await store.finish()
     }
 
-    /// 對帳狀態列建立對帳狀態主檔頁
+    /// 驗證點選對帳狀態列時，推入的主檔頁種類為對帳狀態，且路徑只有這一頁
     @Test
     func entryTapped_推入對帳狀態頁_建立對應種類() async {
         // Given
@@ -122,7 +124,7 @@ struct MoreFeatureTests {
         await store.finish()
     }
 
-    /// 報價頁返回再進入時重設金額與費率，匯率來源也重新建立
+    /// 驗證報價頁返回後再進入時，商品價格、運費、各項費率與目標毛利都回到零，匯率來源回到韓圓並重新建立
     @Test
     func entryTapped_返回後再進入報價頁_重設試算輸入與匯率來源() async {
         // Given
@@ -161,7 +163,7 @@ struct MoreFeatureTests {
         await store.finish()
     }
 
-    /// 設定列清空既有路徑後，以偏好、版本與辨識類型建立唯一設定頁
+    /// 驗證點選設定列時，先清空既有路徑，再以偏好、版本與辨識類型建立唯一的設定頁
     @Test
     func entryTapped_推入設定頁_帶入偏好版本與辨識類型() async {
         // Given

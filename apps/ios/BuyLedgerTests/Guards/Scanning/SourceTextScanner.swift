@@ -53,7 +53,7 @@ extension SourceTextScanner {
     /// 掃描一個字串字面值本體 (開頭引號之後) 直到其配對的結尾引號
     ///
     /// - Parameter start: 開頭引號之後的位置
-    /// - Returns: 字串結束位置，找不到配對的結尾引號時為 `nil`
+    /// - Returns: 結尾引號的位置，找不到配對的結尾引號時為 `nil`
     func scanStringLiteralBody(from start: Int) -> Int? {
         let quote = Self.quote
         let backslash = Self.backslash
@@ -84,7 +84,7 @@ extension SourceTextScanner {
 
     /// 找出字串內的頂層插值範圍
     ///
-    /// - Returns: 頂層插值範圍
+    /// - Returns: 各頂層插值的 `NSRange`，範圍涵蓋 `\(` 到配對的 `)`
     func topLevelInterpolationRanges() -> [NSRange] {
         let backslash = Self.backslash
         let openParen = Self.openParen
@@ -112,7 +112,7 @@ extension SourceTextScanner {
     /// 找到指定位置所在行的結尾
     ///
     /// - Parameter start: 開始往後找的位置
-    /// - Returns: 行尾位置
+    /// - Returns: 換行字元的位置，後方沒有換行時為來源的 UTF-16 長度
     func endOfLineIndex(from start: Int) -> Int {
         var index = start
         while index < units.count, units[index] != Self.newline {
@@ -124,7 +124,7 @@ extension SourceTextScanner {
     /// 跳過一段 `/* ... */` 區塊註解
     ///
     /// - Parameter start: 區塊註解開頭 `/*` 之後的位置
-    /// - Returns: 區塊註解結束位置，沒有結尾時為 `nil`
+    /// - Returns: `*/` 之後的位置，沒有結尾時為 `nil`
     func skipBlockComment(from start: Int) -> Int? {
         let slash = Self.slash
         let star = Self.star
@@ -146,7 +146,7 @@ private extension SourceTextScanner {
     /// 跳過插值內容，依括號深度處理巢狀字串
     ///
     /// - Parameter openParenIndex: 插值左括號的位置
-    /// - Returns: 插值結束位置，括號沒有配對時為 `nil`
+    /// - Returns: 插值右括號之後的位置，括號沒有配對時為 `nil`
     func skipInterpolation(openParenIndex: Int) -> Int? {
         let quote = Self.quote
         let backslash = Self.backslash

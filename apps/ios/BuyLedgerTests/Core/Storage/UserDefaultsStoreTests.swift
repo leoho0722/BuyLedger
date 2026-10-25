@@ -10,7 +10,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證偏好儲存的技術讀寫介面
+/// `UserDefaultsStore` 的單元測試，涵蓋偏好的讀寫往返與存在判斷
 struct UserDefaultsStoreTests {
 
     /// 驗證字串、浮點數與布林值可透過 `UserDefaults` 往返
@@ -43,7 +43,7 @@ struct UserDefaultsStoreTests {
         #expect(actualValue == scenario.expectedValue)
     }
 
-    /// 驗證 `hasValue(forKey:)` 區分缺少的 `key` 與已儲存的值
+    /// 驗證 `hasValue(forKey:)` 在未寫入時為 `false`，寫入 `0.0` 後為 `true`，即使值為零也算已儲存
     ///
     /// - Throws: 建立隔離 suite 或必要條件不符時由 `#require` 丟出測試失敗
     @Test
@@ -78,7 +78,7 @@ extension UserDefaultsStoreTests {
         /// 布林值偏好
         case bool
 
-        /// 提供本案例使用的隔離 suite 名稱
+        /// 本案例使用的隔離 suite 名稱
         var suiteName: String {
             switch self {
             case .string:
@@ -92,7 +92,7 @@ extension UserDefaultsStoreTests {
             }
         }
 
-        /// 提供本案例使用的偏好 `key`
+        /// 本案例使用的偏好 `key`
         var key: String {
             switch self {
             case .string:
@@ -106,7 +106,7 @@ extension UserDefaultsStoreTests {
             }
         }
 
-        /// 提供本案例的固定預期值
+        /// 本案例的固定預期值
         var expectedValue: StoredValue {
             switch self {
             case .string:
@@ -121,7 +121,7 @@ extension UserDefaultsStoreTests {
         }
     }
 
-    /// 比較測試讀回的偏好值
+    /// 測試讀回偏好值的包裝型別，供比對使用
     enum StoredValue: Equatable, Sendable {
 
         /// 字串值
@@ -140,7 +140,7 @@ extension UserDefaultsStoreTests {
         case bool(Bool)
     }
 
-    /// 建立並清除獨立的 `UserDefaults` suite
+    /// 獨立 `UserDefaults` suite 的暫存夾具
     private final class SuiteFixture {
 
         /// 要使用的 suite 名稱

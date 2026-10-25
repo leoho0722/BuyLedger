@@ -11,11 +11,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證選項子功能的新增請求與父層草稿套用，新增請求完成前不改動清單與草稿
+/// `OrderEditPickersFeature` 與 `OrderEditFeature` 的單元測試，涵蓋新增選項請求與完成前的清單、草稿維持原值
 @MainActor
 struct OrderEditPickersFeatureTests {
 
-    /// 子層只送出整理後的新增請求，清單維持原值
+    /// 驗證分類輸入的首尾空白與換行去除後送出新增請求，清單維持原值
     @Test
     func addCategoryTapped_子層新增選項_保留清單並送出寫入請求() async {
         // Given
@@ -42,7 +42,7 @@ struct OrderEditPickersFeatureTests {
         #expect(store.state.options.categories == ["A"])
     }
 
-    /// 父層接收新增請求時保留草稿，僅轉送對外 delegate
+    /// 驗證選項選擇器送來新增分類的請求時，編輯表單保留清單與草稿，只把請求原樣送出
     @Test
     func pickers_子層新增分類_保留清單草稿並轉送主檔請求() async {
         // Given

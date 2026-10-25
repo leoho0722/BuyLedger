@@ -7,14 +7,15 @@
 
 import XCTest
 
-/// 啟動與分頁切換的冒煙測試
+/// 啟動與分頁切換的冒煙 UI 測試
+@MainActor
 final class LaunchSmokeTests: BLUITestCase {
 
-    /// 從總覽依序切到其他四個分頁再切回總覽，每次切換後目的地畫面都就緒
+    /// 驗證從總覽依序切過其他四個分頁時，每次切換後目的地畫面都就緒，切回總覽後總覽畫面也就緒
     ///
-    /// - Throws: 根導覽或前四次分頁切換的前置條件不成立時拋出測試錯誤
-    @MainActor
-    func testGoToDashboard_依序切過其他四個分頁後_總覽畫面就緒() throws(any Error) {
+    /// - Throws: 根導覽或前四次分頁切換的前置條件不成立時丟出測試錯誤
+    /// - Note: 情境流程：煙霧測試依序切過四個分頁，前四次切換放 Given，切回總覽為受測動作
+    func testGoToDashboard_依序切過其他四個分頁後_總覽畫面就緒() throws {
         // Given
         let app = launch(LaunchOptions(seed: .fullOrders))
         let root = RootNavigationScreen(app: app)

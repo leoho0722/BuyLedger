@@ -13,14 +13,14 @@ import ComposableArchitecture
 
 extension LookupCatalog {
 
-    /// 在獨立的記憶體儲存中執行主檔目錄測試
+    /// 以獨立的預設記憶體儲存執行 `operation`，讓具名共享的主檔目錄不跨測試外溢
     ///
     /// - Parameter operation: 要在隔離儲存中執行的操作
     /// - Returns: 操作的結果
-    /// - Throws: 操作拋出的錯誤
+    /// - Throws: 操作丟出的錯誤
     @MainActor
     static func withIsolatedStorage<Output>(
-        _ operation: () async throws(any Error) -> Output
+        _ operation: () async throws -> Output
     ) async rethrows -> Output {
         try await withDependencies {
             $0.defaultInMemoryStorage = InMemoryStorage()

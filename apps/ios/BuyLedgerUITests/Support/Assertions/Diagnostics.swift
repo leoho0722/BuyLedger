@@ -11,7 +11,7 @@ import XCTest
 
 extension XCUIApplication {
 
-    /// 附上截圖與可及性樹，讓找不到元素時直接失敗
+    /// 附上截圖與可及性樹，再記錄測試失敗
     ///
     /// - Parameters:
     ///   - message: 失敗訊息
@@ -41,7 +41,7 @@ extension XCUIApplication {
 
 extension XCTestCase {
 
-    /// 附上截圖與可及性樹，讓找不到元素時直接失敗
+    /// 附上受測 App 的截圖與可及性樹，再記錄測試失敗
     ///
     /// - Parameters:
     ///   - app: 受測 App

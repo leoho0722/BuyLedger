@@ -5,8 +5,8 @@
 //  Created by Leo Ho on 2026/7/24.
 //
 
-import XCTest
 import CoreGraphics
+import XCTest
 
 // MARK: - Nested Types
 
@@ -37,7 +37,7 @@ extension XCTestCase {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Returns: 已解包的前置值
-    /// - Throws: 前置值不存在時拋出測試錯誤
+    /// - Throws: 前置值不存在時丟出測試錯誤
     func requireValue<Value>(
         _ value: Value?,
         in app: XCUIApplication,
@@ -52,7 +52,7 @@ extension XCTestCase {
         throw UIAssertionError.missingValue
     }
 
-    /// 驗證測試前置條件；失敗時附上 UI 診斷並停止目前測試
+    /// 確認測試前置條件成立；失敗時附上 UI 診斷並停止目前測試
     ///
     /// - Parameters:
     ///   - condition: 待驗證的條件
@@ -60,7 +60,7 @@ extension XCTestCase {
     ///   - message: 條件不成立時的失敗訊息
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Throws: 前置條件不成立時拋出測試錯誤
+    /// - Throws: 前置條件不成立時丟出測試錯誤
     func requireCondition(
         _ condition: @autoclosure () -> Bool,
         in app: XCUIApplication,
@@ -73,29 +73,6 @@ extension XCTestCase {
         }
         app.failWithDiagnostics(message, file: file, line: line)
         throw UIAssertionError.conditionFailed
-    }
-
-    /// 確認已停在指定畫面
-    ///
-    /// - Parameters:
-    ///   - screen: 要確認的 Page Object
-    ///   - timeout: 等待畫面就緒的秒數
-    ///   - file: 失敗時回報的檔案位置
-    ///   - line: 失敗時回報的行號
-    func assertNavigationTitle(
-        for screen: Screen,
-        timeout: TimeInterval = 10,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
-        if !screen.waitUntilReady(timeout: timeout) {
-            failWithDiagnostics(
-                in: screen.app,
-                "畫面未就緒，根 identifier「\(screen.rootIdentifier)」逾時仍未出現",
-                file: file,
-                line: line
-            )
-        }
     }
 
     /// 確認空狀態容器存在
@@ -140,7 +117,12 @@ extension XCTestCase {
         line: UInt = #line
     ) {
         if !element.exists {
-            failWithDiagnostics(in: app, "待驗命中區的元素不存在", file: file, line: line)
+            failWithDiagnostics(
+                in: app,
+                "待驗命中區的元素不存在",
+                file: file,
+                line: line
+            )
             return
         }
         let frame = element.frame

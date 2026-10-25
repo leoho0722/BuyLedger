@@ -60,7 +60,7 @@ extension CampaignsScreen {
         app.descendants(matching: .any)[BLAccessibilityID.Campaigns.row(campaignID: campaignID)]
     }
 
-    /// 列表是否含指定開團 id 的列
+    /// 等待指定開團 id 的列出現於列表
     ///
     /// - Parameters:
     ///   - campaignID: 開團 id

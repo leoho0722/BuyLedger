@@ -10,7 +10,7 @@ import SwiftData
 
 @testable import BuyLedger
 
-/// 建立交易隔離測試使用的暫存 store 與模型
+/// 交易隔離測試用的暫存 store 與探測模型
 enum ResidueProbeModels {
 
     // MARK: - Properties
@@ -48,7 +48,7 @@ extension ResidueProbeModels {
         /// parent 名稱
         var name: String
 
-        /// 最多只能關聯兩個子項
+        /// 最多可關聯兩個子項的關係
         @Relationship(
             deleteRule: .nullify,
             maximumModelCount: 2,

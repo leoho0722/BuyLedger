@@ -8,21 +8,12 @@
 import XCTest
 
 /// AI 商品明細總結 sheet 的 Page Object
-struct AISummaryScreen: Screen {
+struct AISummaryScreen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
-
-    // MARK: - Computed Properties
-
-    /// 判定總結 sheet 已就緒的根 identifier (內容容器)
-    ///
-    /// - Returns: 總結 sheet 內容容器的 identifier
-    var rootIdentifier: String {
-        BLAccessibilityID.AISummary.root
-    }
 }
 
 // MARK: - Internal Method
@@ -30,7 +21,7 @@ struct AISummaryScreen: Screen {
 @MainActor
 extension AISummaryScreen {
 
-    /// 點導覽列的關閉收起 sheet
+    /// 點導覽列的關閉按鈕，收起 sheet
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
@@ -40,7 +31,7 @@ extension AISummaryScreen {
         button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
-    /// 點錯誤態的重試
+    /// 點錯誤態的重試按鈕
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
@@ -48,5 +39,15 @@ extension AISummaryScreen {
     func tapRetry(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.buttons[BLAccessibilityID.AISummary.retryButton]
         button.tapAfterWaiting(in: app, file: file, line: line)
+    }
+}
+
+// MARK: - Screen
+
+extension AISummaryScreen: Screen {
+
+    /// 判定總結 sheet 已就緒的根 identifier (內容容器)
+    var rootIdentifier: String {
+        BLAccessibilityID.AISummary.root
     }
 }

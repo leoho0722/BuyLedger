@@ -10,14 +10,14 @@ import Testing
 
 @testable import BuyLedger
 
-/// 日期區段標題與完整時間使用注入行事曆時區的測試
+/// `OrderFormatters` 與 `CampaignFormatters` 的單元測試，日期的時區與曆法由注入的行事曆決定
 struct DateSectionFormattingTests {
 
-    /// 同年日標題以注入時區的月日與星期呈現，不套用裝置的前一天
+    /// 驗證午夜後半小時以注入時區判定日期，與參照日同年時，日標題只顯示該日的月日與星期，不變成裝置時區的前一天
     ///
     /// - Throws: 時區或測試日期建立失敗時丟出錯誤
     @Test
-    func daySectionTitle_注入時區午夜後半小時_顯示當天月日星期() throws(any Error) {
+    func daySectionTitle_注入時區午夜後半小時_顯示當天月日星期() throws {
         // Given
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: "Pacific/Kiritimati"))
@@ -43,11 +43,11 @@ struct DateSectionFormattingTests {
         #expect(title == "4月26日週日")
     }
 
-    /// 注入時區的月初午夜後半小時仍屬當月，年月區段以該時區顯示當年當月，不套用裝置時區的上個月
+    /// 驗證月初午夜後半小時以注入時區仍屬當月，年月區段標題顯示該時區的年與月，不變成裝置時區的上個月
     ///
     /// - Throws: 時區或測試日期建立失敗時丟出錯誤
     @Test
-    func sectionTitle_年月區段_顯示注入時區的當年當月() throws(any Error) {
+    func sectionTitle_年月區段_顯示注入時區的當年當月() throws {
         // Given
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: "Pacific/Kiritimati"))
@@ -73,11 +73,11 @@ struct DateSectionFormattingTests {
         #expect(title == "2026年5月")
     }
 
-    /// 注入時區的月初午夜後半小時仍屬當月，月區段以該時區顯示當月，不套用裝置時區的上個月
+    /// 驗證月初午夜後半小時以注入時區仍屬當月，月區段標題顯示該月，不變成裝置時區的上個月
     ///
     /// - Throws: 時區或測試日期建立失敗時丟出錯誤
     @Test
-    func sectionTitle_月區段_顯示注入時區的當月() throws(any Error) {
+    func sectionTitle_月區段_顯示注入時區的當月() throws {
         // Given
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: "Pacific/Kiritimati"))
@@ -99,11 +99,11 @@ struct DateSectionFormattingTests {
         #expect(title == "5月")
     }
 
-    /// 完整時間以注入時區的年月日與時分秒呈現
+    /// 驗證完整時間以注入行事曆的時區呈現，輸出補零的西曆年月日與二十四小時制時分秒，不換算成裝置時區
     ///
     /// - Throws: 時區或測試日期建立失敗時丟出錯誤
     @Test
-    func fullTimestamp_注入時區下午兩點半_顯示當地完整時間() throws(any Error) {
+    func fullTimestamp_注入時區下午兩點半_顯示當地完整時間() throws {
         // Given
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = try #require(TimeZone(identifier: "Pacific/Kiritimati"))
@@ -128,12 +128,12 @@ struct DateSectionFormattingTests {
         #expect(timestamp == "2026/04/26 14:30:00")
     }
 
-    /// 注入民國曆行事曆時，完整時間的年月日仍以西曆印出
+    /// 驗證注入民國曆行事曆時，完整時間仍以西曆印出年月日，年份為 2026 而非民國年
     ///
     /// - Throws: 時區建立失敗時丟出錯誤
     /// - Note: 日期以時間戳記給定，不用 `calendar.date(from:)`，它會把 2026 當成民國年
     @Test
-    func fullTimestamp_民國曆行事曆_仍以西曆顯示年月日() throws(any Error) {
+    func fullTimestamp_民國曆行事曆_仍以西曆顯示年月日() throws {
         // Given
         var calendar = Calendar(identifier: .republicOfChina)
         calendar.timeZone = try #require(TimeZone(identifier: "Asia/Taipei"))

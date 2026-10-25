@@ -9,19 +9,19 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證主檔目錄的新增、移除、改名與旗標查詢規則
+/// `LookupCatalog` 的單元測試，涵蓋新增、移除、改名與旗標查詢規則
 struct LookupCatalogTests {
 
     // MARK: - Properties
 
-    /// 第一筆付款方式只有銀行匯款旗標
+    /// 只含銀行匯款旗標的付款方式旗標
     private static let bankTransferFlags = PaymentMethodFlags(
         isCardless: false,
         isBankTransfer: true,
         isCashOnDelivery: false
     )
 
-    /// 第二筆付款方式只有無卡旗標
+    /// 只含無卡旗標的付款方式旗標
     private static let cardlessFlags = PaymentMethodFlags(
         isCardless: true,
         isBankTransfer: false,
@@ -50,76 +50,108 @@ struct LookupCatalogTests {
         ),
     ]
 
-    /// 新增名稱只有主檔的項目後依本地排序呈現
+    /// 四種主檔各自替換時的預期結果，只有指定種類更新，其餘清單保留舊值
+    private static let replaceItemsScenarios: [ReplaceItemsScenario] = [
+        ReplaceItemsScenario(
+            kind: .orderSource,
+            expectedOrderSources: ["新來源"],
+            expectedCategories: ["舊分類"],
+            expectedPaymentMethods: [PaymentMethodInfo(name: "舊付款", flags: .none)],
+            expectedReconciliationStatuses: ["舊狀態"]
+        ),
+        ReplaceItemsScenario(
+            kind: .category,
+            expectedOrderSources: ["舊來源"],
+            expectedCategories: ["新分類"],
+            expectedPaymentMethods: [PaymentMethodInfo(name: "舊付款", flags: .none)],
+            expectedReconciliationStatuses: ["舊狀態"]
+        ),
+        ReplaceItemsScenario(
+            kind: .paymentMethod,
+            expectedOrderSources: ["舊來源"],
+            expectedCategories: ["舊分類"],
+            expectedPaymentMethods: [PaymentMethodInfo(name: "新付款", flags: .none)],
+            expectedReconciliationStatuses: ["舊狀態"]
+        ),
+        ReplaceItemsScenario(
+            kind: .reconciliationStatus,
+            expectedOrderSources: ["舊來源"],
+            expectedCategories: ["舊分類"],
+            expectedPaymentMethods: [PaymentMethodInfo(name: "舊付款", flags: .none)],
+            expectedReconciliationStatuses: ["新狀態"]
+        ),
+    ]
+
+    /// 驗證只有名稱的主檔已有一個項目時，再新增另一個名稱，兩者依繁體中文排序呈現
     ///
     /// - Parameter kind: 要測試的主檔種類
     @Test(arguments: [LookupKind.orderSource, .category, .reconciliationStatus])
-    func addingNameOnlyKindInsertsSorted(kind: LookupKind) {
-        // Given：目錄尚無此種類的項目
+    func add_只有名稱的種類_依本地排序插入(kind: LookupKind) {
+        // Given
         var catalog = LookupCatalog()
-
-        // When：加入兩個不同名稱
         catalog.add(name: "蘋果", kind: kind)
+
+        // When
         catalog.add(name: "香蕉", kind: kind)
 
-        // Then：名稱依繁體中文排序
+        // Then
         #expect(catalog.names(for: kind) == ["香蕉", "蘋果"])
     }
 
-    /// 空白名稱不會新增到只有名稱的主檔
+    /// 驗證只有名稱的主檔沒有項目時，新增只有空白的名稱，該種類仍是空清單
     ///
     /// - Parameter kind: 要測試的主檔種類
     @Test(arguments: [LookupKind.orderSource, .category, .reconciliationStatus])
-    func addingBlankNameIsNoOp(kind: LookupKind) {
-        // Given：目錄沒有該種類的項目
+    func add_空白名稱_不新增項目(kind: LookupKind) {
+        // Given
         var catalog = LookupCatalog()
 
-        // When：新增只有空白的名稱
+        // When
         catalog.add(name: "   ", kind: kind)
 
-        // Then：該種類仍是空清單
+        // Then
         #expect(catalog.names(for: kind).isEmpty)
     }
 
-    /// 移除只有名稱的主檔項目
+    /// 驗證只有名稱的主檔已有一個項目時，移除後該種類不再包含該項目
     ///
     /// - Parameter kind: 要測試的主檔種類
     @Test(arguments: [LookupKind.orderSource, .category, .reconciliationStatus])
-    func removingNameOnlyKindDeletesEntry(kind: LookupKind) {
-        // Given：目錄已有一個項目
+    func remove_只有名稱的種類_刪除該項目(kind: LookupKind) {
+        // Given
         var catalog = LookupCatalog()
         catalog.add(name: "既有", kind: kind)
 
-        // When：移除該項目
+        // When
         catalog.remove(name: "既有", kind: kind)
 
-        // Then：該種類不再包含項目
+        // Then
         #expect(catalog.names(for: kind).isEmpty)
     }
 
-    /// 更名只有名稱的主檔項目
+    /// 驗證只有名稱的主檔改名後，目錄只保留新名稱
     ///
     /// - Parameter kind: 要測試的主檔種類
     @Test(arguments: [LookupKind.orderSource, .category, .reconciliationStatus])
-    func renamingNameOnlyKindReplacesOldName(kind: LookupKind) {
-        // Given：目錄已有舊名稱
+    func rename_只有名稱的種類_以新名稱取代舊名稱(kind: LookupKind) {
+        // Given
         var catalog = LookupCatalog()
         catalog.add(name: "舊名", kind: kind)
 
-        // When：將舊名稱改為新名稱
+        // When
         catalog.rename(from: "舊名", to: "新名", kind: kind)
 
-        // Then：目錄只保留新名稱
+        // Then
         #expect(catalog.names(for: kind) == ["新名"])
     }
 
-    /// 新增付款方式時保存其分類旗標
+    /// 驗證目錄尚無付款方式時，新增帶無卡旗標的付款方式，目錄保存該付款方式與旗標
     @Test
-    func addingPaymentMethodStoresFlags() {
-        // Given：目錄尚無付款方式
+    func add_付款方式_保存分類旗標() {
+        // Given
         var catalog = LookupCatalog()
 
-        // When：新增帶無卡旗標的付款方式
+        // When
         catalog.add(
             name: "無卡存款",
             kind: .paymentMethod,
@@ -130,7 +162,7 @@ struct LookupCatalogTests {
             )
         )
 
-        // Then：目錄保存該付款方式與旗標
+        // Then
         #expect(
             catalog.paymentMethods == [
                 PaymentMethodInfo(
@@ -138,23 +170,19 @@ struct LookupCatalogTests {
                     isCardless: true,
                     isBankTransfer: false,
                     isCashOnDelivery: false
-                )
+                ),
             ]
         )
     }
 
-    /// 同名付款方式再次新增時以新旗標覆寫原項目
+    /// 驗證目錄已有同名的無旗標付款方式時，以銀行匯款旗標再次新增，目錄只留一筆且採用新旗標
     @Test
-    func addingPaymentMethodSameNameOverwritesFlags() {
-        // Given：目錄已存在沒有旗標的付款方式
+    func add_付款方式同名_以新旗標覆寫() {
+        // Given
         var catalog = LookupCatalog()
-        catalog.add(
-            name: "綠界",
-            kind: .paymentMethod,
-            flags: .none
-        )
+        catalog.add(name: "綠界", kind: .paymentMethod, flags: .none)
 
-        // When：以銀行匯款旗標再次新增同名項目
+        // When
         catalog.add(
             name: "綠界",
             kind: .paymentMethod,
@@ -165,15 +193,15 @@ struct LookupCatalogTests {
             )
         )
 
-        // Then：目錄只有一筆且採用新旗標
+        // Then
         #expect(catalog.paymentMethods.count == 1)
         #expect(catalog.paymentMethods.first?.isBankTransfer == true)
     }
 
-    /// 移除付款方式時刪除對應項目
+    /// 驗證目錄已有貨到付款方式時，移除後 `paymentMethods` 為空
     @Test
-    func removingPaymentMethodDeletesEntry() {
-        // Given：目錄已有貨到付款
+    func remove_付款方式_刪除對應項目() {
+        // Given
         var catalog = LookupCatalog()
         catalog.add(
             name: "orders.list.label.cashDelivery",
@@ -185,19 +213,19 @@ struct LookupCatalogTests {
             )
         )
 
-        // When：移除貨到付款
+        // When
         catalog.remove(name: "orders.list.label.cashDelivery", kind: .paymentMethod)
 
-        // Then：目錄不再包含付款方式
+        // Then
         #expect(catalog.paymentMethods.isEmpty)
     }
 
-    /// 重新命名付款方式時，任一方為真的旗標都應保留下來
+    /// 驗證付款方式改名到已存在的名稱時，合併結果保留新舊兩側任一為真的旗標
     ///
-    /// - Throws: 合併後付款方式不存在時拋出測試錯誤
+    /// - Throws: 合併後付款方式不存在時丟出測試錯誤
     @Test
-    func renamingPaymentMethodMergesFlagsWhenEitherSideIsTrue() throws {
-        // Given：同一付款方式的新舊名稱各有不同旗標
+    func rename_付款方式合併_保留任一方為真的旗標() throws {
+        // Given
         var catalog = LookupCatalog()
         catalog.add(
             name: "匯款",
@@ -218,38 +246,40 @@ struct LookupCatalogTests {
             )
         )
 
-        // When：將舊付款方式名稱改成已存在的新名稱
+        // When
         catalog.rename(from: "匯款", to: "orders.edit.label.bankTransfer", kind: .paymentMethod)
 
-        // Then：合併後保留任一來源曾設定的每個旗標
+        // Then
         #expect(catalog.names(for: .paymentMethod) == ["orders.edit.label.bankTransfer"])
-        let renamed = try #require(catalog.paymentMethods.first { $0.name == "orders.edit.label.bankTransfer" })
+        let renamed = try #require(
+            catalog.paymentMethods.first { $0.name == "orders.edit.label.bankTransfer" }
+        )
         #expect(renamed.isCardless)
         #expect(renamed.isBankTransfer)
         #expect(renamed.isCashOnDelivery)
     }
 
-    /// 查詢重複名稱時採用第一筆的分類旗標
+    /// 驗證目錄包含重複名稱時，`paymentMethodFlags(named:)` 回傳第一筆同名項目的旗標
     ///
     /// - Parameter example: 目錄內容、查詢名稱與預期旗標
     @Test(arguments: LookupCatalogTests.paymentMethodFlagLookupExamples)
-    func paymentMethodFlagsUsesFirstMatchingEntry(example: PaymentMethodFlagLookupExample) {
-        // Given：目錄包含指定順序的付款方式
+    func paymentMethodFlags_重複名稱_採用第一筆的旗標(example: PaymentMethodFlagLookupExample) {
+        // Given
         let catalog = LookupCatalog(paymentMethods: example.entries)
 
-        // When：依名稱查詢分類旗標
+        // When
         let flags = catalog.paymentMethodFlags(named: example.name)
 
-        // Then：回傳第一筆同名項目的旗標或沒有旗標
+        // Then
         #expect(flags == example.expectedFlags)
     }
 
-    /// 只替換指定主檔種類的清單
+    /// 驗證原目錄與新目錄都有四種主檔項目時，`replaceItems(of:from:)` 只替換指定種類，其餘清單保留舊值
     ///
-    /// - Parameter kind: 要替換的主檔種類
-    @Test(arguments: LookupKind.allCases)
-    func replaceItemsChangesOnlyRequestedKind(kind: LookupKind) {
-        // Given：原目錄與載入完成的新目錄都有四種主檔項目
+    /// - Parameter scenario: 要替換的主檔種類與替換後四種清單的預期值
+    @Test(arguments: LookupCatalogTests.replaceItemsScenarios)
+    func replaceItems_指定種類_只更新該種類(scenario: ReplaceItemsScenario) {
+        // Given
         var catalog = LookupCatalog(
             orderSources: ["舊來源"],
             categories: ["舊分類"],
@@ -262,50 +292,42 @@ struct LookupCatalogTests {
             paymentMethods: [PaymentMethodInfo(name: "新付款", flags: .none)],
             reconciliationStatuses: ["新狀態"]
         )
-        let expectedPaymentMethods = kind == .paymentMethod
-            ? fetchedCatalog.paymentMethods
-            : [PaymentMethodInfo(name: "舊付款", flags: .none)]
 
-        // When：以新目錄替換指定種類
-        catalog.replaceItems(of: kind, from: fetchedCatalog)
+        // When
+        catalog.replaceItems(of: scenario.kind, from: fetchedCatalog)
 
-        // Then：只有指定種類更新，其餘清單保留舊值
-        #expect(catalog.orderSources == (kind == .orderSource ? ["新來源"] : ["舊來源"]))
-        #expect(catalog.categories == (kind == .category ? ["新分類"] : ["舊分類"]))
-        #expect(
-            catalog.paymentMethods == expectedPaymentMethods
-        )
-        #expect(
-            catalog.reconciliationStatuses
-                == (kind == .reconciliationStatus ? ["新狀態"] : ["舊狀態"])
-        )
+        // Then
+        #expect(catalog.orderSources == scenario.expectedOrderSources)
+        #expect(catalog.categories == scenario.expectedCategories)
+        #expect(catalog.paymentMethods == scenario.expectedPaymentMethods)
+        #expect(catalog.reconciliationStatuses == scenario.expectedReconciliationStatuses)
     }
 
-    /// 新名稱為空白時不更動原項目
+    /// 驗證目錄已有舊名稱時，以空白名稱更名，原名稱仍保留
     @Test
-    func renamingToBlankNameIsNoOp() {
-        // Given：目錄已有舊名稱
+    func rename_新名稱為空白_不更動原項目() {
+        // Given
         var catalog = LookupCatalog()
         catalog.add(name: "舊名", kind: .category)
 
-        // When：使用空白名稱更名
+        // When
         catalog.rename(from: "舊名", to: "   ", kind: .category)
 
-        // Then：原名稱仍保留
+        // Then
         #expect(catalog.names(for: .category) == ["舊名"])
     }
 
-    /// 新名稱與原名稱相同時不更動項目
+    /// 驗證目錄已有一個名稱時，以相同名稱更名，項目保持不變
     @Test
-    func renamingToSameNameIsNoOp() {
-        // Given：目錄已有一個名稱
+    func rename_新名稱與原名稱相同_不更動項目() {
+        // Given
         var catalog = LookupCatalog()
         catalog.add(name: "同名", kind: .category)
 
-        // When：以相同名稱更名
+        // When
         catalog.rename(from: "同名", to: "同名", kind: .category)
 
-        // Then：原名稱保持不變
+        // Then
         #expect(catalog.names(for: .category) == ["同名"])
     }
 }
@@ -317,13 +339,32 @@ extension LookupCatalogTests {
     /// 一筆付款方式旗標查詢測試資料
     struct PaymentMethodFlagLookupExample: Sendable {
 
-        /// 查詢目錄中的付款方式
+        /// 目錄內的付款方式項目
         let entries: [PaymentMethodInfo]
 
-        /// 要查詢的付款方式名稱
+        /// 查詢用的付款方式名稱
         let name: String
 
-        /// 預期取得的付款方式旗標
+        /// 預期的付款方式旗標
         let expectedFlags: PaymentMethodFlags
+    }
+
+    /// 一組要替換的主檔種類與替換後四種清單的預期值
+    struct ReplaceItemsScenario: Sendable {
+
+        /// 要替換的主檔種類
+        let kind: LookupKind
+
+        /// 替換後的訂單來源清單
+        let expectedOrderSources: [String]
+
+        /// 替換後的商品類別清單
+        let expectedCategories: [String]
+
+        /// 替換後的付款方式清單
+        let expectedPaymentMethods: [PaymentMethodInfo]
+
+        /// 替換後的對帳狀態清單
+        let expectedReconciliationStatuses: [String]
     }
 }

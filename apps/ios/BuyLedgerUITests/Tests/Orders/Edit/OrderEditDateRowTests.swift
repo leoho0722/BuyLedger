@@ -7,32 +7,33 @@
 
 import XCTest
 
-/// 訂單編輯基本資料區段的訂購日期列與頁尾時間戳，取代該區段的像素比對
+/// 訂單編輯基本資料區段的訂購日期列與頁尾時間戳 UI 測試，以可及性元素斷言取代該區段的像素比對
+@MainActor
 final class OrderEditDateRowTests: BLUITestCase {
 
     // MARK: - Properties
 
-    /// `minimalOrders` 中訂購日期為參考日當天的訂單
+    /// 訂購日期為參考日當天的訂單編號，位於 `minimalOrders` 種子中
     private static let orderID = "UITEST-MIN-001"
 
     /// 參考時間 2026-04-30 00:00 (UTC) 當天的頁尾時間戳，UI 測試模式的行事曆時區為 UTC
     private static let expectedTimestamp = "訂購日期：2026/04/30 00:00:00"
 
-    /// 編輯既有訂單時，訂購日期列存在，頁尾時間戳顯示訂單的訂購時間
-    @MainActor
+    /// 驗證編輯既有訂單時，訂購日期列存在，頁尾時間戳顯示「訂購日期：2026/04/30 00:00:00」
     func testOrderDateRow_編輯既有訂單_顯示日期列與頁尾時間戳() {
         // Given
         let app = launch(LaunchOptions(seed: .minimalOrders))
         let detail = openOrderDetail(in: app)
         let edit = OrderEditScreen(app: app)
+        detail.openMoreMenu()
 
         // When
-        detail.openMoreMenu()
-        if !detail.tapEdit() {
-            failWithDiagnostics(in: app, "詳情更多選單的編輯入口未出現或不可點")
-        }
+        let isEditTapped = detail.tapEdit()
 
         // Then
+        if !isEditTapped {
+            failWithDiagnostics(in: app, "詳情更多選單的編輯入口未出現或不可點")
+        }
         if !edit.waitUntilReady() {
             failWithDiagnostics(in: app, "點編輯後訂單編輯表單未出現")
         }
@@ -55,7 +56,6 @@ private extension OrderEditDateRowTests {
     ///
     /// - Parameter app: 受測 App
     /// - Returns: 已就緒的訂單詳情 Page Object
-    @MainActor
     func openOrderDetail(in app: XCUIApplication) -> OrderDetailScreen {
         let root = RootNavigationScreen(app: app)
         if !root.goToOrders() {

@@ -7,7 +7,8 @@
 
 import XCTest
 
-/// 訂單詳情更多選單的編輯、合併與刪除入口測試，涵蓋 iPhone 推入與 iPad 右欄
+/// 訂單詳情更多選單的編輯、合併與刪除入口 UI 測試，涵蓋 iPhone 推入與 iPad 右欄
+@MainActor
 final class OrderDetailMenuTests: BLUITestCase {
 
     // MARK: - Properties
@@ -18,8 +19,7 @@ final class OrderDetailMenuTests: BLUITestCase {
     /// `mergeCandidates` 中可與詳情訂單合併的候選編號
     private static let candidateOrderID = "UITEST-MRG-002"
 
-    /// 更多選單可開啟編輯表單，未修改就取消會回到原訂單詳情
-    @MainActor
+    /// 驗證從更多選單開啟編輯後未修改就取消，表單收回並回到原訂單詳情，營收仍為 $1,200
     func testOrderDetailMoreMenu_點編輯後取消_返回原訂單詳情() {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
@@ -43,8 +43,7 @@ final class OrderDetailMenuTests: BLUITestCase {
         assertOriginalDetailIsDisplayed(detail, in: app)
     }
 
-    /// 更多選單可開啟合併候選畫面，取消後仍保留原訂單詳情
-    @MainActor
+    /// 驗證從更多選單開啟合併候選，列出可合併訂單後取消，候選畫面收回並回到原訂單詳情，營收仍為 $1,200
     func testOrderDetailMoreMenu_點合併後取消_返回原訂單詳情() {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
@@ -71,8 +70,7 @@ final class OrderDetailMenuTests: BLUITestCase {
         assertOriginalDetailIsDisplayed(detail, in: app)
     }
 
-    /// 更多選單可開啟刪除確認，取消後訂單與詳情仍保留
-    @MainActor
+    /// 驗證從更多選單點刪除後取消，確認 alert 收回，原訂單詳情仍保留且營收為 $1,200
     func testOrderDetailMoreMenu_點刪除後取消_保留原訂單詳情() {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
@@ -101,11 +99,10 @@ final class OrderDetailMenuTests: BLUITestCase {
 
 private extension OrderDetailMenuTests {
 
-    /// 透過共用導覽開啟可合併的種子訂單，讓 Page Object 吸收兩種版面的差異
+    /// 切到訂單分頁並點開可合併的種子訂單，iPhone 與 iPad 的版面差異由導覽 Page Object 處理
     ///
     /// - Parameter app: 受測 App
     /// - Returns: 已開啟的原訂單詳情
-    @MainActor
     func openMergeableOrderDetail(in app: XCUIApplication) -> OrderDetailScreen {
         let root = RootNavigationScreen(app: app)
         if !root.goToOrders() {
@@ -126,7 +123,6 @@ private extension OrderDetailMenuTests {
     /// - Parameters:
     ///   - detail: 原訂單詳情的 Page Object
     ///   - app: 受測 App
-    @MainActor
     func assertOriginalDetailIsDisplayed(_ detail: OrderDetailScreen, in app: XCUIApplication) {
         if !detail.waitUntilReady() {
             failWithDiagnostics(in: app, "原訂單詳情未顯示")

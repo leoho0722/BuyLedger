@@ -20,7 +20,7 @@ extension String {
         /// 字面值內容在原始碼中的 UTF-16 起點
         let start: Int
 
-        /// 字面值可能對應的字串目錄 key，插值依型別展開成 `%@` 與 `%lld` 兩種
+        /// 字面值可能對應的字串目錄 key，每個插值各有 `%@` 與 `%lld` 兩種展開，所有組合都列出
         var localizationKeyVariants: [String] {
             let unescaped = logicalValue
                 .replacingOccurrences(of: "\\n", with: "\n")
@@ -60,7 +60,7 @@ extension String {
             return Array(allVariants).sorted()
         }
 
-        /// 解析多行字串內容
+        /// 多行字串去掉首尾三引號行與縮排後的內容，行尾為反斜線的續行不保留換行
         private var logicalValue: String {
             guard raw.contains("\n") else {
                 return raw
@@ -108,7 +108,7 @@ extension String {
         /// - Parameters:
         ///   - offset: 要查詢的 UTF-16 offset
         ///   - ranges: 原始碼的行範圍
-        /// - Returns: 命中的行號；找不到時回傳 0
+        /// - Returns: 包含該位置的行號；不在任何行內時 (如多行字串起點落在換行上) 回傳起點不晚於該位置的最後一行，都沒有時為 0
         static func lineNumber(
             containingUTF16Offset offset: Int,
             in ranges: [SourceLineRange]
@@ -134,7 +134,7 @@ extension String {
 
 extension String {
 
-    /// 掃描原始碼中所有頂層字串字面值的起訖位置
+    /// 原始碼中所有頂層字串字面值的起訖位置，略過行註解與區塊註解
     var literalMatches: [SourceLiteral] {
         let quote = SourceTextScanner.quote
         let slash = SourceTextScanner.slash
@@ -187,7 +187,7 @@ extension String {
 
 extension String {
 
-    /// 判斷指定行是否只有註解或空白
+    /// 判斷指定行去除前導空白後是否以註解標記開頭
     ///
     /// - Parameters:
     ///   - lineNumber: 要檢查的行號
@@ -201,9 +201,9 @@ extension String {
         return trimmed.hasPrefix("//") || trimmed.hasPrefix("*") || trimmed.hasPrefix("/*")
     }
 
-    /// 移除 `#Preview` 區塊內容，保留原始行數供掃描使用
+    /// 以空白取代 `#Preview` 區塊，保留原始行數與 UTF-16 位置供掃描使用
     ///
-    /// - Returns: 移除 preview 內容後的原始碼
+    /// - Returns: 以空白取代 `#Preview` 區塊後的原始碼
     func withPreviewBlocksRemoved() -> String {
         var output: [String] = []
         var previewBraceDepth = 0
@@ -226,10 +226,10 @@ extension String {
 
     /// 找出符合指定正規表示式的字串 literal 起始位置
     ///
-    /// - Parameter pattern: 要比對的正規表示式
+    /// - Parameter pattern: 要比對的正規表示式，第一個擷取群組須框出字串字面值本體 (不含引號)
     /// - Returns: 命中 literal 的 UTF-16 起始位置集合
-    /// - Throws: 正規表示式建立失敗時拋出錯誤
-    func literalCaptureStarts(matching pattern: String) throws(any Error) -> Set<Int> {
+    /// - Throws: 正規表示式建立失敗時丟出錯誤
+    func literalCaptureStarts(matching pattern: String) throws -> Set<Int> {
         let expression = try NSRegularExpression(pattern: pattern)
         let fullRange = NSRange(location: 0, length: utf16.count)
         var starts = Set<Int>()
@@ -252,12 +252,12 @@ extension String {
     ///   - lineRanges: 原始碼行範圍
     ///   - lines: 原始碼行
     /// - Returns: 顯示範圍內的字串起始位置
-    /// - Throws: 正規表示式建立失敗時拋出錯誤
+    /// - Throws: 正規表示式建立失敗時丟出錯誤
     func literalStartsInsideDisplayScopes(
         literalMatches: [SourceLiteral],
         lineRanges: [SourceLineRange],
         lines: [String]
-    ) throws(any Error) -> Set<Int> {
+    ) throws -> Set<Int> {
         var starts = Set<Int>()
         var braceDepth = 0
         // 每個 scope 記錄結束門檻，依 `braceDepth` 判斷是否結束
@@ -295,11 +295,11 @@ extension String {
 
 private extension String {
 
-    /// 這一行是否宣告了會回傳使用者可見文案的屬性或函式
+    /// 是否宣告了會回傳使用者可見文案的屬性或函式
     ///
-    /// - Throws: 正規表示式建立失敗時拋出錯誤
+    /// - Throws: 正規表示式建立失敗時丟出錯誤
     var isDisplayScopeDeclaration: Bool {
-        get throws(any Error) {
+        get throws {
             guard contains("{") else {
                 return false
             }

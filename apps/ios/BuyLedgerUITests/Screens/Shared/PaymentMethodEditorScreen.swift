@@ -37,7 +37,7 @@ extension PaymentMethodEditorScreen {
         )
     }
 
-    /// 點工具列的送出
+    /// 點工具列的儲存按鈕
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置

@@ -97,15 +97,27 @@ extension InsightsScreen {
         return donut.exists
     }
 
-    /// 讀取指定開團排行列的獲利 accessibility value
+    /// 讀取指定開團排行列的毛利 accessibility value
     ///
     /// - Parameter campaignID: 開團識別值
-    /// - Returns: 開團獲利的 accessibility value；元素不存在時為 `nil`
+    /// - Returns: 開團毛利的 accessibility value；元素不存在時為 `nil`
     func campaignProfit(campaignID: String) -> String? {
         let element = app.descendants(matching: .any)[
             BLAccessibilityID.Insights.campaignRankRow(campaignID: campaignID)
         ]
         return accessibilityValue(of: element)
+    }
+
+    /// 等待指定開團的毛利排行列出現在可及性樹上
+    ///
+    /// - Parameter campaignID: 開團識別值
+    /// - Returns: 是否找到該排行列
+    /// - Note: 排行在惰性容器內，畫面外的列查 `isHittable` 會因 `frame` 無效而報錯，只確認列已出現
+    func hasCampaignRank(campaignID: String) -> Bool {
+        let row = app.descendants(matching: .any)[
+            BLAccessibilityID.Insights.campaignRankRow(campaignID: campaignID)
+        ]
+        return row.waitForExistence(timeout: 10)
     }
 }
 
@@ -113,9 +125,7 @@ extension InsightsScreen {
 
 extension InsightsScreen: Screen {
 
-    /// 以 `BLAccessibilityID.Insights.root` 指定分析內容的捲動容器為根元素
-    ///
-    /// - Returns: 分析頁根元素的 `identifier`
+    /// 判定分析頁已就緒的根元素 identifier (分析內容捲動容器)
     var rootIdentifier: String {
         BLAccessibilityID.Insights.root
     }
@@ -126,7 +136,7 @@ extension InsightsScreen: Screen {
 @MainActor
 private extension InsightsScreen {
 
-    /// 將元素捲入分析頁可見範圍後讀取 accessibility value；讀值驗證不要求元素可點
+    /// 嘗試將元素捲入分析頁可見範圍，再讀取 accessibility value，不要求元素可點
     ///
     /// - Parameter element: 要讀取的元素
     /// - Returns: 元素的 accessibility value；元素不存在時為 `nil`

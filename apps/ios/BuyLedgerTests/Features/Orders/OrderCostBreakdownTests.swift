@@ -10,7 +10,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// 訂單成本組成的金額、順序與語意色調測試
+/// `OrderCostBreakdown` 的單元測試，涵蓋成本項目的金額、順序與語意色調
 struct OrderCostBreakdownTests {
 
     /// 驗證一般訂單保留商品與三種手續費，排除三種運費
@@ -45,7 +45,7 @@ struct OrderCostBreakdownTests {
         #expect(components.map(\.tone) == [.accent, .orange, .teal, .purple])
     }
 
-    /// 驗證貨到付款的七項成本保留原始標題、金額與色調順序
+    /// 驗證貨到付款時依序列出七項成本，含三種運費，各項的標題與識別值相同，金額與色調一一對應
     @Test
     func components_貨到付款_含三種運費與七種色調() {
         // Given
@@ -90,7 +90,7 @@ struct OrderCostBreakdownTests {
         #expect(components.map(\.tone) == tones)
     }
 
-    /// 驗證零值與負值的成本項目不出現在拆解清單
+    /// 驗證金額與費率為零或負值時，所有成本項目都不出現在拆解清單
     ///
     /// - Parameter value: 零或負的測試金額與費率
     @Test(arguments: [Decimal(0), Decimal(-1)])
@@ -116,7 +116,7 @@ struct OrderCostBreakdownTests {
         #expect(components.isEmpty)
     }
 
-    /// 驗證篩掉零值後仍保留正值項目的標題與對應色調
+    /// 驗證零值項目被篩掉，金額僅 0.01 的極小正值仍保留，並保留各自的標題與色調
     @Test
     func components_零值與極小正值混合_只保留正值() {
         // Given
@@ -144,7 +144,7 @@ struct OrderCostBreakdownTests {
         #expect(components.map(\.tone) == [.accent, .purple, .pink])
     }
 
-    /// 驗證圈狀圖區段依成本順序產生名稱、金額、本地化描述與語意色調
+    /// 驗證多項成本依序產生圈狀圖區段，金額描述以 en 地區格式化為 NT$1,200 這類字串，標題與色調沿用成本項目
     @Test
     func donutSlices_多項成本_依序產生各區段的字面值() {
         // Given
@@ -173,7 +173,7 @@ struct OrderCostBreakdownTests {
         )
     }
 
-    /// 驗證沒有成本項目時回傳空的區段清單
+    /// 驗證成本清單為空時，圈狀圖不產生任何區段
     @Test
     func donutSlices_沒有成本項目_回傳空陣列() {
         // Given

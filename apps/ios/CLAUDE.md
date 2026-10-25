@@ -207,7 +207,7 @@
 - **`@Shared` 依 kit 規範，要用 `.inMemory` key 時先與使用者個案討論**：現行的 `.inMemory` key 有主檔目錄 `.lookupCatalog` 與幣別清單 `.currencyCodes`；另有容器內的無鍵共享資料，寫入責任見 `ios-data-layer.md`。
   - `OrdersFeature` 持有無鍵共享訂單，建立時把同一引用交給子層；只有 `OrdersLoadFeature` 與 `OrderWritesFeature` 在 reducer 內以 `withLock` 更新，容器不寫，清單與詳情只拿 `SharedReader`；載入狀態也由 `OrdersLoadFeature` 共享給容器與清單。
   - `CampaignFeature` 以無鍵 `@Shared` 持有開團、訂單投影、提醒連結與只看未收款；`MoreFeature.State.orders` 是客戶頁讀取的訂單投影。開團與「更多」的訂單投影僅由 Root 更新，不能與 Orders 的資料來源混用。
-  - `OrdersFeature.State.campaigns` 是無鍵 `@Shared` 開團投影，清單以同一份 `SharedReader` 讀取；容器可寫，但只有 Root 在 reducer 內以 `orders.$campaigns.withLock` 同步，`ProjectionWriteBoundaryTests` 守門訂單範圍的寫入、可寫引用外傳與重綁。
+  - `OrdersFeature.State.campaigns` 是無鍵 `@Shared` 開團投影，清單以同一份 `SharedReader` 讀取；容器可寫，但只有 Root 在 reducer 內以 `orders.$campaigns.withLock` 同步，`Guards/ProjectionWriteBoundary/` 的守門測試 (`ProjectionWriteBoundary*Tests`) 守住訂單範圍的寫入、可寫引用外傳與重綁。
   - Root 的 `RootLaunchFeature` 載入幣別快取，非空才寫入 `.currencyCodes`；Orders 以 `@SharedReader(.currencyCodes)` 建立表單選項，讀取失敗或空結果保留原值。
 - **格式化依 kit 用 `FormatStyle`，要用 `<Feature>Formatters` 靜態函式時先與使用者個案討論**：`FormatStyle` 較接近 SwiftUI 原生寫法；現有的靜態函式見下方「過渡例外」。
 
@@ -221,7 +221,6 @@
   - `AppLaunchConfigurator` 以參數預設值注入 `CrashDiagnosticsClient`，預設正式實作並可由呼叫端替換。
 - **已決定改依 kit、尚未遷移**：
   - 格式化：現有 `BLFormatters` 與各 `<Feature>Formatters` 的靜態函式待改為 `FormatStyle`；新增的格式化依 kit 寫 `FormatStyle`。
-  - 測試拆檔：現有的 `<Type>Tests+<行為>.swift`、`<Scenario>+<X>Cases.swift` 跨檔 extension 待另開 change 拆成獨立測試型別 (`<TypeUnderTest><行為>Tests`)；新寫的測試直接用獨立型別，style 閘門不對既有分檔逐檔判違規。
 
 ## 已裁定的產品決策
 

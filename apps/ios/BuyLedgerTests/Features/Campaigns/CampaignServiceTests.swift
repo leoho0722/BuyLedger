@@ -5,22 +5,23 @@
 //  Created by Leo Ho on 2026/9/26.
 //
 
-import ComposableArchitecture
 import Foundation
 import Testing
 
 @testable import BuyLedger
 
-/// 驗證開團 Service 的讀取、寫入與刪除行為
+/// `CampaignService` 的單元測試，涵蓋開團的讀取、寫入與刪除
 struct CampaignServiceTests {
 
-    /// 全新資料庫不預先帶入任何開團，讀取回傳空陣列
+    /// 驗證全新資料庫不預先帶入任何開團，讀取回傳空陣列
     ///
     /// - Throws: 讀取失敗時丟出 `PersistenceError.fetchFailed(underlying:)`
     @Test
     func fetchCampaigns_全新資料庫_回傳空陣列() async throws {
         // Given
-        let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
+        let service = CampaignServiceTestSupport.makeService(
+            database: BuyLedgerDatabaseTestSupport.makeInMemoryDatabase()
+        )
 
         // When
         let campaigns = try await service.fetchCampaigns()
@@ -29,14 +30,16 @@ struct CampaignServiceTests {
         #expect(campaigns.isEmpty)
     }
 
-    /// 相同識別值再次儲存時不新增第二筆，原有開團的名稱與狀態都更新為新值
+    /// 驗證以相同識別值再次儲存時不新增第二筆，原有開團的名稱與狀態都更新為新值
     ///
     /// - Throws: 查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
     ///   儲存失敗時丟出 `PersistenceError.saveFailed(underlying:)`；前置條件不成立時由 `#require` 丟出測試斷言錯誤
     @Test
     func saveCampaign_開團識別值相同_更新既有開團() async throws {
         // Given
-        let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
+        let service = CampaignServiceTestSupport.makeService(
+            database: BuyLedgerDatabaseTestSupport.makeInMemoryDatabase()
+        )
         let campaign = Campaign.fixture(
             id: "C1",
             name: "四月韓國團",
@@ -63,14 +66,16 @@ struct CampaignServiceTests {
         #expect(afterUpdate.first?.status == .closed)
     }
 
-    /// 讀取多筆開團時依開團日期由新到舊排列，而不是依儲存先後
+    /// 驗證讀取多筆開團時依開團日期由新到舊排列，不依儲存先後
     ///
     /// - Throws: 查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
     ///   儲存失敗時丟出 `PersistenceError.saveFailed(underlying:)`
     @Test
     func fetchCampaigns_多筆開團_依開團日期由新到舊排序() async throws {
         // Given
-        let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
+        let service = CampaignServiceTestSupport.makeService(
+            database: BuyLedgerDatabaseTestSupport.makeInMemoryDatabase()
+        )
         try await service.saveCampaign(
             Campaign.fixture(
                 id: "old",
@@ -93,14 +98,16 @@ struct CampaignServiceTests {
         #expect(campaigns.map(\.id) == ["new", "old"])
     }
 
-    /// 依識別值刪除開團，只移除相符的那一筆，其他開團保留
+    /// 驗證依識別值刪除開團時，只移除相符的那一筆，其他開團保留
     ///
     /// - Throws: 查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
     ///   儲存失敗時丟出 `PersistenceError.saveFailed(underlying:)`
     @Test
     func removeCampaign_識別值相符_刪除開團() async throws {
         // Given
-        let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
+        let service = CampaignServiceTestSupport.makeService(
+            database: BuyLedgerDatabaseTestSupport.makeInMemoryDatabase()
+        )
         try await service.saveCampaign(
             Campaign.fixture(
                 id: "C1",
@@ -124,14 +131,16 @@ struct CampaignServiceTests {
         #expect(campaigns.map(\.id) == ["C2"])
     }
 
-    /// 儲存後保留開團的結單與結算日期
+    /// 驗證開團的結單日與結算日期經儲存與讀取後保留原值
     ///
     /// - Throws: 查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
     ///   儲存失敗時丟出 `PersistenceError.saveFailed(underlying:)`；預期結果不成立時由 `#require` 丟出測試斷言錯誤
     @Test
     func saveCampaign_結單與結算日期_往返後保留原日期() async throws {
         // Given
-        let service = Self.makeService(database: BuyLedgerDatabaseTests.makeInMemoryDatabase())
+        let service = CampaignServiceTestSupport.makeService(
+            database: BuyLedgerDatabaseTestSupport.makeInMemoryDatabase()
+        )
         let close = Date(timeIntervalSince1970: 1_700_000_000)
         let settled = Date(timeIntervalSince1970: 1_800_000_000)
         var campaign = Campaign.fixture(
@@ -155,7 +164,7 @@ struct CampaignServiceTests {
         #expect(fetched.isSettled)
     }
 
-    /// 訂單更新存檔失敗後改開團名稱不會帶入失敗欄位
+    /// 驗證訂單更新存檔失敗後再改開團名稱，訂單保留失敗前的欄位，只有開團名稱連動更新
     ///
     /// - Throws: 建立 fixture 或獨立容器失敗時丟出 SwiftData 底層錯誤；
     ///   讀取失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
@@ -174,21 +183,21 @@ struct CampaignServiceTests {
         )
         let fixture = try ResidueProbeModels.makeDiskFixture(orders: [initialOrder])
         defer {
-            BuyLedgerDatabaseTests.removeTemporaryDirectory(at: fixture.directoryURL)
+            BuyLedgerDatabaseTestSupport.removeTemporaryDirectory(at: fixture.directoryURL)
         }
-        let database = BuyLedgerDatabaseTests.makeDatabase(with: fixture)
+        let database = BuyLedgerDatabaseTestSupport.makeDatabase(with: fixture)
         let campaign = Campaign.fixture(
             id: "C1",
             name: "春團",
             openDate: Date(timeIntervalSince1970: 1_775_779_200)
         )
-        let initialCampaignService = Self.makeService(database: database)
+        let initialCampaignService = CampaignServiceTestSupport.makeService(database: database)
         try await initialCampaignService.saveCampaign(campaign)
         let mock = MockBuyLedgerDatabase(database: database)
-        let orderService = OrderServiceTests.makeService(database: mock)
-        let campaignService = Self.makeService(database: mock)
+        let orderService = OrderServiceTestSupport.makeService(database: mock)
+        let campaignService = CampaignServiceTestSupport.makeService(database: mock)
         mock.mode = .saveFailureAfterBody
-        let requireFailure = OrderServiceResidueTests.requireRelationshipSaveFailure
+        let requireFailure = OrderServiceResidueTestSupport.requireRelationshipSaveFailure
         try await requireFailure { () throws(PersistenceError) in
             try await orderService.saveOrder(
                 LedgerOrder.fixture(
@@ -209,7 +218,7 @@ struct CampaignServiceTests {
         try await campaignService.renameCampaign(renamedCampaign, "春團")
 
         // Then
-        let storedOrders = try await OrderServiceResidueTests.fetchPersistedOrders(
+        let storedOrders = try await OrderServiceResidueTestSupport.fetchPersistedOrders(
             from: fixture.directoryURL
         )
         #expect(storedOrders.count == 1)
@@ -220,22 +229,5 @@ struct CampaignServiceTests {
         #expect(storedOrder.paymentMethod == "原始付款")
         #expect(storedOrder.chargedAmount == 1_250)
         #expect(storedOrder.campaignNames == ["秋團"])
-    }
-}
-
-// MARK: - Internal Method
-
-extension CampaignServiceTests {
-
-    /// 以注入的資料庫建立正式 `CampaignService`
-    ///
-    /// - Parameter database: 要提供給 Service 的資料庫
-    /// - Returns: 已擷取資料庫依賴的 `CampaignService`
-    static func makeService(database: any BuyLedgerDatabaseProtocol) -> CampaignService {
-        withDependencies {
-            $0.buyLedgerDatabase = database
-        } operation: {
-            CampaignService.liveValue
-        }
     }
 }

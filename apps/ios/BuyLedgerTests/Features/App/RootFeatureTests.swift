@@ -12,10 +12,9 @@ import Testing
 @testable import BuyLedger
 
 /// `RootFeature` 的單元測試：分頁切換、跨頁跳轉與跨功能資料同步
-@MainActor
 struct RootFeatureTests {
 
-    /// 資料庫無法開啟時，根畫面一建立就顯示阻擋畫面
+    /// 驗證持久化狀態降級時，根狀態建立當下就帶入阻斷階段的持久層失敗畫面
     @Test
     func init_持久化狀態降級_呈現阻擋畫面() {
         // Given
@@ -27,7 +26,7 @@ struct RootFeatureTests {
         #expect(state.persistenceFailure?.phase == .blocked)
     }
 
-    /// 資料庫正常開啟時，根畫面不顯示阻擋畫面
+    /// 驗證持久化狀態正常時，根狀態不帶入持久層失敗畫面
     @Test
     func init_持久化狀態正常_不呈現阻擋畫面() {
         // Given
@@ -39,26 +38,24 @@ struct RootFeatureTests {
         #expect(state.persistenceFailure == nil)
     }
 
-    /// 建立根狀態時，App 鎖定狀態要與已保存的生物辨識解鎖設定一致
+    /// 驗證建立根狀態時，App 鎖定狀態與已保存的生物辨識解鎖設定一致，啟用時一開始即鎖定
     ///
-    /// - Parameters:
-    ///   - isBiometricUnlockEnabled: 是否啟用生物辨識解鎖
-    ///   - isExpectedLocked: 預期的初始鎖定狀態
-    @Test(arguments: [(true, true), (false, false)])
-    func init_生物辨識解鎖設定_鎖定狀態與設定一致(isBiometricUnlockEnabled: Bool, isExpectedLocked: Bool) {
+    /// - Parameter scenario: 是否啟用生物辨識解鎖與預期的初始鎖定狀態
+    @Test(arguments: BiometricLockCase.allCases)
+    func init_生物辨識解鎖設定_鎖定狀態與設定一致(scenario: BiometricLockCase) {
         // Given
         var snapshot = SettingsSnapshot.default
-        snapshot.isBiometricUnlockEnabled = isBiometricUnlockEnabled
+        snapshot.isBiometricUnlockEnabled = scenario.isBiometricUnlockEnabled
 
         // When
         let state = RootFeature.State(preferences: snapshot)
 
         // Then
-        #expect(state.appLock.isLocked == isExpectedLocked)
-        #expect(state.appLock.isBiometricUnlockEnabled == isBiometricUnlockEnabled)
+        #expect(state.appLock.isLocked == scenario.isExpectedLocked)
+        #expect(state.appLock.isBiometricUnlockEnabled == scenario.isBiometricUnlockEnabled)
     }
 
-    /// 根畫面與更多頁一建立就帶入已保存的設定與 App 版本
+    /// 驗證建立根狀態時，已保存的設定與 App 版本同時帶入根偏好與更多頁
     @Test
     func init_注入已保存設定_殼層與更多頁持有偏好與版本() {
         // Given
@@ -78,7 +75,7 @@ struct RootFeatureTests {
         #expect(state.more.appVersion == "1.7.0 (312)")
     }
 
-    /// 總覽頁一開始就使用已保存的月目標 (50,000 元)，不必等設定頁改值
+    /// 驗證建立根狀態時，總覽頁首幀就使用已保存的月目標 (50,000 元)，不必等設定頁改值
     @Test
     func init_已保存月目標_總覽首幀使用該目標() {
         // Given
@@ -93,7 +90,7 @@ struct RootFeatureTests {
         #expect(state.dashboard.monthlyProfitGoalTWD == 50_000)
     }
 
-    /// App 重新啟動時，根畫面一律從總覽分頁開始
+    /// 驗證以預設參數建立根狀態時，選取的分頁是總覽
     @Test
     func init_預設參數_選取總覽分頁() {
         // Given
@@ -105,12 +102,13 @@ struct RootFeatureTests {
         #expect(state.selectedTab == .dashboard)
     }
 
-    /// App 啟動只以七天期限刷新幣別，不觸發設定或 App 鎖定動作
+    /// 驗證 App 啟動時以七天期限刷新幣別快取，過程中不觸發設定或 App 鎖定的動作
     @Test
+    @MainActor
     func task_啟動根功能_以七天期限刷新幣別快取() async {
         // Given
         let refreshTTLs = LockIsolated<[TimeInterval]>([])
-        var initial = Self.makeIsolatedRootState()
+        var initial = RootFeatureTestSupport.makeIsolatedRootState()
         initial.campaigns.load.$hasLoaded.withLock {
             $0 = true
         }
@@ -146,18 +144,19 @@ struct RootFeatureTests {
         await store.send(.view(.task))
 
         // Then
-        await Self.receiveLaunchLoadRequests(in: store)
+        await RootFeatureTestSupport.receiveLaunchLoadRequests(in: store)
         currencyRelease.continuation.finish()
         await store.receive(\.launch.currencyCodesResponse.success, [])
         await store.finish()
         #expect(refreshTTLs.value == [604_800])
     }
 
-    /// iPhone 切換主要分頁時保留「更多」路徑
+    /// 驗證 iPhone 切換主要分頁時，更多頁的導覽路徑保留不清空
     @Test
+    @MainActor
     func tabSelected_更多路徑非空_保留路徑() async {
         // Given
-        var state = Self.makeIsolatedRootState {
+        var state = RootFeatureTestSupport.makeIsolatedRootState {
             var initial = RootFeature.State()
             initial.more.path.append(
                 .lookupManagement(LookupManagementFeature.State(kind: .category))
@@ -181,5 +180,26 @@ struct RootFeatureTests {
         // Then
         #expect(store.state.selectedTab == .orders)
         #expect(store.state.more.path == state.more.path)
+    }
+}
+
+// MARK: - Nested Types
+
+extension RootFeatureTests {
+
+    /// 一組生物辨識解鎖設定與預期初始鎖定狀態的測試案例
+    struct BiometricLockCase: Sendable {
+
+        /// 啟用時一開始就鎖定、未啟用時不鎖定的兩種案例
+        static let allCases = [
+            Self(isBiometricUnlockEnabled: true, isExpectedLocked: true),
+            Self(isBiometricUnlockEnabled: false, isExpectedLocked: false),
+        ]
+
+        /// 是否啟用生物辨識解鎖
+        let isBiometricUnlockEnabled: Bool
+
+        /// 是否預期一開始即鎖定
+        let isExpectedLocked: Bool
     }
 }

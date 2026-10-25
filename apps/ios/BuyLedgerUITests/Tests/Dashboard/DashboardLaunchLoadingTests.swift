@@ -7,16 +7,16 @@
 
 import XCTest
 
-/// 首頁冷啟動的開團載入與首次訂單讀取失敗後重試測試
+/// 首頁冷啟動的開團載入與首次訂單讀取失敗後重試的 UI 測試
+@MainActor
 final class DashboardLaunchLoadingTests: BLUITestCase {
 
     // MARK: - Properties
 
-    /// `campaignsWithOrders` 中進行中的四月韓國團編號
+    /// 進行中的四月韓國團唯一識別碼，位於 `campaignsWithOrders` 種子中
     private static let koreaCampaignID = "CMP-SAMPLE-KR-APR"
 
-    /// 冷啟動停在首頁時，開團卡應列出四月韓國團
-    @MainActor
+    /// 驗證冷啟動停在首頁時，首頁的開團卡列出進行中的四月韓國團
     func testDashboardLaunch_停在首頁_開團卡列出進行中開團() {
         // Given
         let options = LaunchOptions(seed: .campaignsWithOrders)
@@ -35,8 +35,7 @@ final class DashboardLaunchLoadingTests: BLUITestCase {
         }
     }
 
-    /// 首次讀取訂單失敗時顯示失敗與重試按鈕，重試成功後顯示近期訂單
-    @MainActor
+    /// 驗證首次讀取訂單失敗時，首頁顯示載入失敗，按下重試成功後失敗畫面消失，並出現種子中的近期訂單
     func testDashboardRetry_首次訂單讀取失敗_重試後顯示訂單資料() {
         // Given
         let app = launch(LaunchOptions(seed: .minimalOrders, loadFailure: .ordersFirstReadOnly))

@@ -10,7 +10,7 @@ import Foundation
 
 @testable import BuyLedger
 
-/// 記錄各傳輸方法收到的請求並回傳預先設定的 data 結果
+/// `HTTPClientProtocol` 的替身，記錄收到的請求，並回傳預先設定的 `data(for:)` 結果，供測試注入
 final class MockHTTPClient: Sendable {
 
     // MARK: - Properties
@@ -55,7 +55,7 @@ extension MockHTTPClient {
         dataReceivedArgumentsState.withValue { $0 }
     }
 
-    /// 設定 `data(for:)` 的回傳結果
+    /// `data(for:)` 的回傳結果，測試中可設定
     var dataResult: Result<(Data, HTTPURLResponse), APIError> {
         get {
             dataResultState.withValue { $0 }
@@ -94,10 +94,10 @@ extension MockHTTPClient: HTTPClientProtocol {
         return try result.get()
     }
 
-    /// 記錄請求並以 transport 錯誤拒絕串流
+    /// 記錄請求，並一律丟出 `.transport` 錯誤，不回傳串流
     ///
     /// - Parameter request: 呼叫端送來的 `URLRequest`
-    /// - Returns: 此 mock 不會回傳串流
+    /// - Returns: 此替身不會回傳串流
     /// - Throws: 一律丟出 `.transport(underlying:)`
     /// - Note: 測試中無法建立 `URLSession.AsyncBytes`，因此不提供可設定的成功結果
     func bytes(

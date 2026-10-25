@@ -7,10 +7,11 @@
 
 import XCTest
 
-/// regular 版面付款方式 Menu 選取後的清單變化測試
+/// regular 版面付款方式 Menu 選取後的清單變化 UI 測試
 ///
 /// - Note: 只在 regular 版面執行
 /// - Note: 種子為 `categoryFilter`
+@MainActor
 final class OrderPaymentMethodMenuTests: BLUITestCase {
 
     // MARK: - Properties
@@ -27,10 +28,9 @@ final class OrderPaymentMethodMenuTests: BLUITestCase {
         "UITEST-CF-010",
     ]
 
-    /// 付款方式 Menu 選信用卡後，觸發鈕顯示該付款方式且清單只列信用卡的 8 筆
+    /// 驗證付款方式 Menu 選信用卡後，觸發鈕顯示「信用卡」，清單只列出信用卡的 8 筆訂單
     ///
     /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
     func testPaymentMethodMenu_選信用卡_清單只列信用卡八筆() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
@@ -62,10 +62,9 @@ final class OrderPaymentMethodMenuTests: BLUITestCase {
         }
     }
 
-    /// 付款方式 Menu 選信用卡後，觸發鈕標記為已選取
+    /// 驗證付款方式 Menu 未選擇時觸發鈕不標記為已選取，選信用卡後才標記為已選取
     ///
     /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
     func testPaymentMethodMenu_選信用卡_觸發鈕標記已選取() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))

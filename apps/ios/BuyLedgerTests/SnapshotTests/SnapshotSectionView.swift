@@ -22,7 +22,7 @@ struct SnapshotSectionView<Field: Hashable, Content: View>: View {
 
     // MARK: - Body
 
-    /// 以分組樣式的表單包住區段
+    /// 包住區段內容的分組樣式表單
     var body: some View {
         Form {
             content($focusedField)

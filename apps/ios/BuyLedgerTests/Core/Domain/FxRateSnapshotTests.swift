@@ -10,11 +10,12 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證匯率快照轉換成新台幣匯率的規則
+/// `FxRateSnapshot` 的單元測試，涵蓋換算新台幣匯率
 struct FxRateSnapshotTests {
 
-    /// 驗證查詢新台幣時固定回傳一
-    @Test func twdRateReturnsOneForTwd() {
+    /// 驗證查詢新台幣本身時，不論快照中的匯率為何，都回傳 1
+    @Test
+    func twdRate_查詢新台幣_回傳一() {
         // Given
         let snapshot = FxRateSnapshot(
             date: Date(timeIntervalSince1970: 0),
@@ -29,8 +30,9 @@ struct FxRateSnapshotTests {
         #expect(rate == 1)
     }
 
-    /// 驗證新台幣為基準時回傳指定幣別匯率的倒數
-    @Test func twdRateReturnsInverseForTwdBase() {
+    /// 驗證快照以新台幣為基準時，回傳指定幣別匯率的倒數，例如匯率 0.125 得到 8
+    @Test
+    func twdRate_新台幣為基準_回傳指定幣別匯率的倒數() {
         // Given
         let snapshot = FxRateSnapshot(
             date: Date(timeIntervalSince1970: 0),
@@ -45,8 +47,9 @@ struct FxRateSnapshotTests {
         #expect(rate == 8)
     }
 
-    /// 驗證指定幣別為基準時回傳快照中的新台幣匯率
-    @Test func twdRateReturnsTwdRateForCurrencyBase() {
+    /// 驗證查詢幣別即為快照基準時，直接回傳快照中記錄的新台幣匯率，不做換算
+    @Test
+    func twdRate_指定幣別為基準_回傳快照中的新台幣匯率() {
         // Given
         let snapshot = FxRateSnapshot(
             date: Date(timeIntervalSince1970: 0),
@@ -61,8 +64,9 @@ struct FxRateSnapshotTests {
         #expect(rate == 31.5)
     }
 
-    /// 驗證沒有可用換算路徑時回傳 nil
-    @Test func twdRateReturnsNilForUnavailableCurrency() {
+    /// 驗證快照缺少查詢幣別的匯率時回傳 `nil`，例如只有美元匯率卻查詢日圓
+    @Test
+    func twdRate_無可用換算路徑_回傳空值() {
         // Given
         let snapshot = FxRateSnapshot(
             date: Date(timeIntervalSince1970: 0),

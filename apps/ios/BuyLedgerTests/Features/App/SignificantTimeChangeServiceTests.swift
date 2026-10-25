@@ -10,10 +10,10 @@ import UIKit
 
 @testable import BuyLedger
 
-/// 系統重大時間變更通知與殼層串流接線的單元測試
+/// `SignificantTimeChangeService` 的單元測試，以 `NotificationCenter` 發出系統的重大時間變更通知驅動 `liveValue` 串流
 struct SignificantTimeChangeServiceTests {
 
-    /// 訂閱後發送系統重大時間變更通知，第一個串流元素立即可供讀取
+    /// 驗證訂閱後系統發出重大時間變更通知，串流會送出元素，超過一分鐘未收到即視為失敗
     @Test(.timeLimit(.minutes(1)))
     func liveValue_系統發出重大時間變更通知_串流收到元素() async {
         // Given
@@ -25,9 +25,9 @@ struct SignificantTimeChangeServiceTests {
             name: UIApplication.significantTimeChangeNotification,
             object: nil
         )
-        let received = await iterator.next()
 
         // Then
+        let received: Void? = await iterator.next()
         #expect(received != nil)
     }
 }

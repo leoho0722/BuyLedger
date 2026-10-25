@@ -7,15 +7,15 @@
 
 import XCTest
 
-/// App 鎖定畫面的介面測試
+/// App 鎖定畫面的 UI 測試
+@MainActor
 final class AppLockTests: BLUITestCase {
 
-    /// 失敗替身讓自動解鎖停留在鎖定畫面
+    /// 驗證生物辨識替身失敗時，點重新驗證後，重試產生新的失敗結果，且仍停留在鎖定畫面
     ///
-    /// - Throws: 失敗訊息不存在或重試結果未重新出現時拋出測試錯誤
-    /// - Note: App 鎖定已啟用且生物辨識替身會失敗，點擊重新驗證後，重試完成會收到新的失敗結果且仍停留在鎖定畫面
-    @MainActor
-    func testAppLockEnabledStartsLockedAndStaysLockedWhenAuthenticationFails() throws(any Error) {
+    /// - Throws: 失敗訊息不存在、重試未進入執行中或重試結果未重新出現時丟出測試錯誤
+    /// - Note: App 鎖定已啟用且生物辨識替身會失敗
+    func testTapRetry_驗證替身失敗_重試後仍停在鎖定畫面() throws {
         // Given
         let app = launch(
             LaunchOptions(seed: .empty, isAppLockEnabled: true, biometricScenario: .failure)
@@ -34,11 +34,11 @@ final class AppLockTests: BLUITestCase {
         try requireCondition(lockScreen.waitForInitialFailure(), in: app, "冷啟動失敗結果未出現，無法驗證重新驗證流程")
 
         // When
-        lockScreen.tapRetry(file: #filePath, line: #line)
-
-        try requireCondition(lockScreen.waitForRetryToBegin(), in: app, "重新驗證未進入執行中狀態")
+        lockScreen.tapRetry()
 
         // Then
+        // 先等到重試進入執行中，之後恢復可用時的失敗訊息才是重試產生的新結果，不會沿用冷啟動的失敗
+        try requireCondition(lockScreen.waitForRetryToBegin(), in: app, "重新驗證未進入執行中狀態")
         try requireCondition(lockScreen.waitForFailedRetryResult(), in: app, "重新驗證沒有完成一次新的失敗驗證")
         if !lockScreen.isDisplayed {
             failWithDiagnostics(in: app, "重新驗證失敗後鎖定畫面不應消失")
@@ -47,9 +47,8 @@ final class AppLockTests: BLUITestCase {
         assertNoSystemBiometricPrompt(in: app)
     }
 
-    /// 冷啟動自動解鎖成功後顯示一般內容
-    @MainActor
-    func testAppLockEnabledUnlocksAutomaticallyWhenAuthenticationSucceeds() {
+    /// 驗證 App 鎖定已啟用且生物辨識替身成功時，冷啟動後自動解鎖，顯示一般內容
+    func testLaunch_App鎖定啟用且驗證成功_自動解鎖顯示一般內容() {
         // Given
         let options = LaunchOptions(
             seed: .empty,
@@ -70,9 +69,8 @@ final class AppLockTests: BLUITestCase {
         assertNoSystemBiometricPrompt(in: app)
     }
 
-    /// 未帶旗標時的既有行為不變：不進入鎖定畫面，直接看到一般內容
-    @MainActor
-    func testProtectionDisabledByDefaultShowsNormalContentDirectly() {
+    /// 驗證未帶鎖定旗標啟動時，不進入鎖定畫面，直接看到一般內容，既有行為不變
+    func testLaunch_未啟用App鎖定_直接顯示一般內容() {
         // Given
         let options = LaunchOptions(seed: .empty)
 
@@ -97,10 +95,9 @@ final class AppLockTests: BLUITestCase {
 
 private extension AppLockTests {
 
-    /// 驗證 SpringBoard 沒有系統生物辨識提示
+    /// 確認 SpringBoard 沒有系統生物辨識彈窗，有則附診斷失敗
     ///
     /// - Parameter app: 受測 App，用於附上失敗診斷
-    @MainActor
     func assertNoSystemBiometricPrompt(in app: XCUIApplication) {
         let springboard = XCUIApplication(bundleIdentifier: "com.apple.springboard")
         if springboard.alerts.count > 0 {

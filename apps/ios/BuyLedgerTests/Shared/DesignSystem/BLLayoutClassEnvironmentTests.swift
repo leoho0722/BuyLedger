@@ -11,71 +11,160 @@ import UIKit
 
 @testable import BuyLedger
 
-/// 驗證同一視窗的尺寸分類改變時，既有探測畫面會觀察到版面更新
-@MainActor
+/// `BLLayoutClass` 的單元測試，涵蓋環境值與同一視窗尺寸分類切換的觀察結果
 struct BLLayoutClassEnvironmentTests {
 
-    /// 垂直尺寸分類由常規切到緊湊再還原時，同一畫面依序觀察到寬版、窄版、寬版
+    /// 驗證垂直尺寸分類由常規切到緊湊時，同一畫面依序觀察到寬版與窄版
     ///
-    /// - Throws: 等待場景被取消、無已連線的視窗場景，或初始版面不為寬版時拋出測試錯誤
+    /// - Throws: 等待場景被取消或無已連線的視窗場景時丟出錯誤
     @Test
-    func blLayoutClass_垂直尺寸分類往返_依序回報寬版窄版寬版() async throws(any Error) {
+    @MainActor
+    func blLayoutClass_垂直尺寸分類由常規切到緊湊_依序回報寬版與窄版() async throws {
         // Given
         let sizeClass = \UITraitOverrides.verticalSizeClass
+        let initialSizeClass: UIUserInterfaceSizeClass = .regular
+        let targetSizeClass: UIUserInterfaceSizeClass = .compact
 
         // When
-        guard let observed = try await Self.observeLayoutClasses(
+        let observed = try await Self.observeLayoutClasses(
             toggling: sizeClass,
-            makeRootView: { LayoutProbeView(continuation: $0) }
-        ) else {
+            from: initialSizeClass,
+            to: targetSizeClass
+        ) { LayoutProbeView(continuation: $0) }
+        guard let observed else {
             return
         }
 
         // Then
-        #expect(observed == [.regular, .compact, .regular])
+        #expect(observed == [.regular, .compact])
     }
 
-    /// 水平尺寸分類由常規切到緊湊再還原時，同一畫面依序觀察到寬版、窄版、寬版
+    /// 驗證垂直尺寸分類由緊湊還原為常規時，同一畫面依序觀察到窄版與寬版
     ///
-    /// - Throws: 等待場景被取消、無已連線的視窗場景，或初始版面不為寬版時拋出測試錯誤
+    /// - Throws: 等待場景被取消或無已連線的視窗場景時丟出錯誤
     @Test
-    func blLayoutClass_水平尺寸分類往返_依序回報寬版窄版寬版() async throws(any Error) {
+    @MainActor
+    func blLayoutClass_垂直尺寸分類由緊湊還原_依序回報窄版與寬版() async throws {
+        // Given
+        let sizeClass = \UITraitOverrides.verticalSizeClass
+        let initialSizeClass: UIUserInterfaceSizeClass = .compact
+        let targetSizeClass: UIUserInterfaceSizeClass = .regular
+
+        // When
+        let observed = try await Self.observeLayoutClasses(
+            toggling: sizeClass,
+            from: initialSizeClass,
+            to: targetSizeClass
+        ) { LayoutProbeView(continuation: $0) }
+        guard let observed else {
+            return
+        }
+
+        // Then
+        #expect(observed == [.compact, .regular])
+    }
+
+    /// 驗證水平尺寸分類由常規切到緊湊時，同一畫面依序觀察到寬版與窄版
+    ///
+    /// - Throws: 等待場景被取消或無已連線的視窗場景時丟出錯誤
+    @Test
+    @MainActor
+    func blLayoutClass_水平尺寸分類由常規切到緊湊_依序回報寬版與窄版() async throws {
         // Given
         let sizeClass = \UITraitOverrides.horizontalSizeClass
+        let initialSizeClass: UIUserInterfaceSizeClass = .regular
+        let targetSizeClass: UIUserInterfaceSizeClass = .compact
 
         // When
-        guard let observed = try await Self.observeLayoutClasses(
+        let observed = try await Self.observeLayoutClasses(
             toggling: sizeClass,
-            makeRootView: { LayoutProbeView(continuation: $0) }
-        ) else {
+            from: initialSizeClass,
+            to: targetSizeClass
+        ) { LayoutProbeView(continuation: $0) }
+        guard let observed else {
             return
         }
 
         // Then
-        #expect(observed == [.regular, .compact, .regular])
+        #expect(observed == [.regular, .compact])
     }
 
-    /// 子樹水平尺寸分類固定為緊湊時，仍沿用根層決定的版面，並隨視窗水平尺寸分類依序回報寬版、窄版、寬版
+    /// 驗證水平尺寸分類由緊湊還原為常規時，同一畫面依序觀察到窄版與寬版
     ///
-    /// - Throws: 等待場景被取消、無已連線的視窗場景，或初始版面不為寬版時拋出測試錯誤
+    /// - Throws: 等待場景被取消或無已連線的視窗場景時丟出錯誤
     @Test
-    func blLayoutClass_子樹水平尺寸分類為緊湊_沿用根層決定值依序回報寬版窄版寬版() async throws(any Error) {
+    @MainActor
+    func blLayoutClass_水平尺寸分類由緊湊還原_依序回報窄版與寬版() async throws {
         // Given
         let sizeClass = \UITraitOverrides.horizontalSizeClass
+        let initialSizeClass: UIUserInterfaceSizeClass = .compact
+        let targetSizeClass: UIUserInterfaceSizeClass = .regular
 
         // When
-        guard let observed = try await Self.observeLayoutClasses(
+        let observed = try await Self.observeLayoutClasses(
             toggling: sizeClass,
-            makeRootView: { NestedLayoutProbeView(continuation: $0) }
-        ) else {
+            from: initialSizeClass,
+            to: targetSizeClass
+        ) { LayoutProbeView(continuation: $0) }
+        guard let observed else {
             return
         }
 
         // Then
-        #expect(observed == [.regular, .compact, .regular])
+        #expect(observed == [.compact, .regular])
     }
 
-    /// 根層已決定為寬版而水平尺寸分類為緊湊時，子樹讀到寬版
+    /// 驗證子樹水平尺寸分類為緊湊時，沿用根層決定的版面，根層由常規切到緊湊時依序觀察到寬版與窄版
+    ///
+    /// - Throws: 等待場景被取消或無已連線的視窗場景時丟出錯誤
+    @Test
+    @MainActor
+    func blLayoutClass_子樹水平緊湊且根層改為緊湊_依序回報寬版與窄版() async throws {
+        // Given
+        let sizeClass = \UITraitOverrides.horizontalSizeClass
+        let initialSizeClass: UIUserInterfaceSizeClass = .regular
+        let targetSizeClass: UIUserInterfaceSizeClass = .compact
+
+        // When
+        let observed = try await Self.observeLayoutClasses(
+            toggling: sizeClass,
+            from: initialSizeClass,
+            to: targetSizeClass
+        ) { NestedLayoutProbeView(continuation: $0) }
+        guard let observed else {
+            return
+        }
+
+        // Then
+        #expect(observed == [.regular, .compact])
+    }
+
+    /// 驗證子樹水平尺寸分類為緊湊時，沿用根層決定的版面，根層由緊湊還原為常規時依序觀察到窄版與寬版
+    ///
+    /// - Throws: 等待場景被取消或無已連線的視窗場景時丟出錯誤
+    @Test
+    @MainActor
+    func blLayoutClass_子樹水平緊湊且根層還原_依序回報窄版與寬版() async throws {
+        // Given
+        let sizeClass = \UITraitOverrides.horizontalSizeClass
+        let initialSizeClass: UIUserInterfaceSizeClass = .compact
+        let targetSizeClass: UIUserInterfaceSizeClass = .regular
+
+        // When
+        let observed = try await Self.observeLayoutClasses(
+            toggling: sizeClass,
+            from: initialSizeClass,
+            to: targetSizeClass
+        ) { NestedLayoutProbeView(continuation: $0) }
+        guard let observed else {
+            return
+        }
+
+        // Then
+        #expect(observed == [.compact, .regular])
+    }
+
+    /// 驗證根層已決定為寬版且水平尺寸分類為緊湊時，子樹讀到寬版
     @Test
     func blLayoutClass_根層已決定寬版且水平緊湊_讀到寬版() {
         // Given
@@ -91,7 +180,7 @@ struct BLLayoutClassEnvironmentTests {
         #expect(layoutClass == .regular)
     }
 
-    /// 沒有根層決定值且水平與垂直尺寸分類皆為常規時，依尺寸分類推導為寬版
+    /// 驗證沒有根層決定值且水平與垂直尺寸分類皆為常規時，依尺寸分類推導為寬版
     @Test
     func blLayoutClass_無根層決定值且尺寸分類皆為常規_讀到寬版() {
         // Given
@@ -106,7 +195,7 @@ struct BLLayoutClassEnvironmentTests {
         #expect(layoutClass == .regular)
     }
 
-    /// 沒有根層決定值且水平尺寸分類為緊湊時，依尺寸分類推導為窄版
+    /// 驗證沒有根層決定值且水平尺寸分類為緊湊時，依尺寸分類推導為窄版
     @Test
     func blLayoutClass_無根層決定值且水平緊湊_讀到窄版() {
         // Given
@@ -144,7 +233,7 @@ private extension BLLayoutClassEnvironmentTests {
         case streamEnded
     }
 
-    /// 只透過環境讀取版面，並在出現與變更時交給紀錄串流
+    /// 只透過環境讀取版面的探測畫面，出現與版面變更時交給紀錄串流
     struct LayoutProbeView: View {
 
         /// 同一畫面在尺寸分類變更後重新讀取的版面
@@ -160,7 +249,7 @@ private extension BLLayoutClassEnvironmentTests {
             self.continuation = continuation
         }
 
-        /// 探測畫面的骨架，在出現與版面改變時回報觀察值
+        /// 探測畫面的主體，出現與版面改變時回報觀察值
         var body: some View {
             probeSurface
                 .onAppear {
@@ -177,7 +266,7 @@ private extension BLLayoutClassEnvironmentTests {
         }
     }
 
-    /// 仿照 `RootView` 把根層版面交給子樹，子樹的水平尺寸分類固定為緊湊以模擬 split view 的內容欄
+    /// 仿照 `RootView` 交給子樹版面的巢狀探測畫面，子樹水平尺寸分類固定為緊湊，模擬 split view 的內容欄
     struct NestedLayoutProbeView: View {
 
         /// 父層依視窗尺寸分類讀到的版面
@@ -193,7 +282,7 @@ private extension BLLayoutClassEnvironmentTests {
             self.continuation = continuation
         }
 
-        /// 把根層版面交給子樹，子樹以探測畫面回報讀到的版面
+        /// 根層版面交給子樹的主體，子樹以探測畫面回報讀到的版面
         var body: some View {
             LayoutProbeView(continuation: continuation)
                 .environment(\.blLayoutClass, layoutClass)
@@ -204,20 +293,25 @@ private extension BLLayoutClassEnvironmentTests {
 
 // MARK: - Private Method
 
+@MainActor
 private extension BLLayoutClassEnvironmentTests {
 
-    /// 以同一個視窗與畫面將指定的尺寸分類由常規切到緊湊再還原，回傳依序觀察到的版面
+    /// 以同一個視窗與畫面將指定的尺寸分類由起始值切到目標值，回傳起始與切換後依序觀察到的版面
     ///
     /// - Parameters:
     ///   - sizeClass: 要切換的尺寸分類，另一個尺寸分類全程維持常規
+    ///   - initial: 畫面出現時的尺寸分類
+    ///   - target: 切換後的尺寸分類
     ///   - makeRootView: 以紀錄入口建立探測畫面，決定觀察的是哪一層的版面
-    /// - Returns: 初始、切到緊湊、還原後依序觀察到的版面，任一步無法取得時為 `nil`
-    /// - Throws: 等待場景被取消、無已連線的視窗場景，或初始版面不為寬版時拋出測試錯誤
+    /// - Returns: 起始與切換後依序觀察到的版面，任一步無法取得時為 `nil`
+    /// - Throws: 等待場景被取消或無已連線的視窗場景時丟出錯誤
     /// - Note: 視窗、探測畫面與紀錄串流在整個呼叫內沿用，不在切換之間重建
     static func observeLayoutClasses<Content: View>(
         toggling sizeClass: SizeClassKeyPath,
+        from initial: UIUserInterfaceSizeClass,
+        to target: UIUserInterfaceSizeClass,
         makeRootView: (AsyncStream<BLLayoutClass>.Continuation) -> Content
-    ) async throws(any Error) -> [BLLayoutClass]? {
+    ) async throws -> [BLLayoutClass]? {
         let windowScene = try #require(
             try await Self.connectedWindowScene(),
             "等待 20 次後仍無已連線的 UIWindowScene"
@@ -240,33 +334,29 @@ private extension BLLayoutClassEnvironmentTests {
         }
         hostingController.traitOverrides.horizontalSizeClass = .regular
         hostingController.traitOverrides.verticalSizeClass = .regular
+        hostingController.traitOverrides[keyPath: sizeClass] = initial
         window.isHidden = false
         hostingController.updateTraitsIfNeeded()
         hostingController.view.updateTraitsIfNeeded()
         window.layoutIfNeeded()
-        guard let initial = await Self.nextLayoutClass(in: recorder.stream) else {
+        guard let initialLayoutClass = await Self.nextLayoutClass(in: recorder.stream) else {
             return nil
         }
-        try #require(initial == .regular)
-        var observed = [initial]
-        for target in [UIUserInterfaceSizeClass.compact, .regular] {
-            hostingController.traitOverrides[keyPath: sizeClass] = target
-            hostingController.updateTraitsIfNeeded()
-            hostingController.view.updateTraitsIfNeeded()
-            window.layoutIfNeeded()
-            guard let next = await Self.nextLayoutClass(in: recorder.stream) else {
-                return nil
-            }
-            observed.append(next)
+        hostingController.traitOverrides[keyPath: sizeClass] = target
+        hostingController.updateTraitsIfNeeded()
+        hostingController.view.updateTraitsIfNeeded()
+        window.layoutIfNeeded()
+        guard let targetLayoutClass = await Self.nextLayoutClass(in: recorder.stream) else {
+            return nil
         }
-        return observed
+        return [initialLayoutClass, targetLayoutClass]
     }
 
     /// 在主執行緒有限次等待單元測試宿主的視窗場景連線
     ///
     /// - Returns: 最多等待 20 次取得的視窗場景，仍未連線時為 `nil`
-    /// - Throws: 等待期間被取消時拋出 `CancellationError`
-    static func connectedWindowScene() async throws(any Error) -> UIWindowScene? {
+    /// - Throws: 等待期間被取消時丟出 `CancellationError`
+    static func connectedWindowScene() async throws -> UIWindowScene? {
         for _ in 0..<20 {
             let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
             if let scene = scenes.first {

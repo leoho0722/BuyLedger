@@ -42,7 +42,7 @@ extension CampaignEditScreen {
 @MainActor
 extension CampaignEditScreen {
 
-    /// 儲存按鈕目前是否可用
+    /// 判定儲存按鈕目前是否可用
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
@@ -79,7 +79,7 @@ extension CampaignEditScreen {
         )
     }
 
-    /// 切換訂購提醒開關，點內層原生開關並確認值真的改變
+    /// 切換訂購提醒開關，點內層原生開關並確認值已改變
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置

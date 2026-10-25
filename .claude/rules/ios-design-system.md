@@ -6,7 +6,7 @@ paths:
   - "apps/ios/BuyLedger/Features/**/*{View,Sheet,Layout,Row,Content,Column,Card,Section,Tile,Tiles,List,Banner,Menu,Field,Destination}.swift"
   - "apps/ios/BuyLedger/Features/**/Components/**"
   - "apps/ios/BuyLedger/Resources/Assets.xcassets/**"
-  - "apps/ios/BuyLedgerTests/Guards/DesignSystemSourceScan/DesignSystemSourceScanTests*.swift"
+  - "apps/ios/BuyLedgerTests/Guards/DesignSystemSourceScan/*.swift"
   - "apps/ios/BuyLedgerTests/Shared/DesignSystem/ContrastComplianceTests.swift"
 ---
 

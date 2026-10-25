@@ -8,14 +8,14 @@
 import ComposableArchitecture
 import Foundation
 
-/// 依授權標頭回傳固定 HTTP 狀態、本文或傳輸錯誤的 `URLProtocol` 替身；
-/// 由 URL Loading System 在其他執行緒呼叫，可變狀態只有以 `LockIsolated` 保護的 static 回應表，
-/// 故標記 `@unchecked Sendable`
+/// 依授權標頭回傳固定 HTTP 狀態、本文或傳輸錯誤的 `URLProtocol` 替身
+///
+/// - Note: URL Loading System 在其他執行緒呼叫，可變狀態只有 `LockIsolated` 保護的靜態回應表，故標記 `@unchecked Sendable`
 final class MockURLProtocol: URLProtocol, @unchecked Sendable {
 
     // MARK: - Properties
 
-    /// 依授權標頭保存尚未使用的回應
+    /// 依授權標頭索引、尚未被請求取用的回應
     private static let responsesState = LockIsolated<[String: StubResponse]>([:])
 }
 
@@ -26,7 +26,7 @@ extension MockURLProtocol {
     /// 單次回應的狀態碼、本文與可選的傳輸失敗
     private struct StubResponse: Sendable {
 
-        /// 決定測試請求收到的 HTTP 成功或失敗狀態
+        /// 測試請求收到的 HTTP 狀態碼
         let statusCode: Int
 
         /// 無傳輸錯誤時送出的本文；有錯誤時只送出前 `afterByteCount` 個位元組
@@ -77,10 +77,10 @@ extension MockURLProtocol {
 
 extension MockURLProtocol {
 
-    /// 接受測試建立的 `URLSession` 請求
+    /// 接受所有請求，交由此 protocol 處理
     ///
     /// - Parameter request: `URLSession` 提供的請求
-    /// - Returns: 固定回傳 `true`，讓測試請求交由此 protocol 處理
+    /// - Returns: 固定回傳 `true`
     override class func canInit(with request: URLRequest) -> Bool {
         true
     }
@@ -93,7 +93,7 @@ extension MockURLProtocol {
         request
     }
 
-    /// 回傳預先設定的狀態、本文與可選傳輸錯誤
+    /// 取出並移除授權標頭對應的預先設定回應，回傳其狀態、本文與可選傳輸錯誤；找不到回應時回報錯誤
     override func startLoading() {
         if let authorization = request.value(forHTTPHeaderField: "Authorization"),
            let stub = Self.responsesState.withValue({ $0.removeValue(forKey: authorization) }),
@@ -128,7 +128,7 @@ extension MockURLProtocol {
         }
     }
 
-    /// 此測試替身不需要額外處理停止載入
+    /// 略過停止載入的處理，回應已於 `startLoading()` 中同步送出
     override func stopLoading() {
     }
 }

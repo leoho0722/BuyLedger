@@ -42,7 +42,7 @@ extension CustomersScreen {
         return CustomersScreen(app: app)
     }
 
-    /// 點指定客戶名的客戶列，直接切到該客戶的訂單
+    /// 捲動露出指定客戶名的客戶列後點擊，切到該客戶的訂單
     ///
     /// - Parameters:
     ///   - customerName: 客戶名稱
@@ -50,7 +50,10 @@ extension CustomersScreen {
     ///   - line: 失敗時回報的行號
     func tapCustomer(customerName: String, file: StaticString = #filePath, line: UInt = #line) {
         let row = customerRow(customerName: customerName)
-        app.scrollToHittable(row, within: rootElement)
+        guard app.scrollToHittable(row, within: rootElement) else {
+            app.failWithDiagnostics("捲動後客戶列仍未穩定或不可點", file: file, line: line)
+            return
+        }
         row.tapAfterWaiting(in: app, file: file, line: line)
     }
 }
@@ -59,9 +62,7 @@ extension CustomersScreen {
 
 extension CustomersScreen: Screen {
 
-    /// 以 `BLAccessibilityID.Customers.listRoot` 指定客戶名單的捲動容器為根元素
-    ///
-    /// - Returns: 客戶名單根元素的 `identifier`
+    /// 判定客戶名單已就緒的根元素 identifier (捲動容器)
     var rootIdentifier: String {
         BLAccessibilityID.Customers.listRoot
     }

@@ -11,11 +11,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證主檔目錄的載入、讀取失敗保留與新增寫入
+/// `LookupCatalogFeature` 的單元測試，以 TestStore 逐步驗證主檔目錄的載入與讀取失敗保留
 @MainActor
 struct LookupCatalogFeatureTests {
 
-    /// 四種主檔都讀取成功時設為已載入，並以字面值替換四份目錄
+    /// 驗證四種主檔都讀取成功時，`hasLoaded` 設為 `true`，四份目錄換成讀到的內容，並回報 `delegate(.loadFinished)`
     @Test
     func loadRequested_四種主檔都讀取成功_設定已載入並回報完成() async {
         await LookupCatalog.withIsolatedStorage {
@@ -63,7 +63,7 @@ struct LookupCatalogFeatureTests {
         }
     }
 
-    /// 付款方式讀取失敗時，其他種類照常替換，但不設為已載入
+    /// 驗證付款方式讀取失敗時，其他種類照常替換，`hasLoaded` 維持 `false`
     @Test
     func loadRequested_付款方式讀取失敗_其他種類照常替換且不設為已載入() async {
         await LookupCatalog.withIsolatedStorage {
@@ -103,12 +103,12 @@ struct LookupCatalogFeatureTests {
         }
     }
 
-    /// 付款方式讀取失敗時保留原有付款方式，不以空清單覆寫
+    /// 驗證付款方式讀取失敗時，`paymentMethods` 保留原有的付款方式，不以空清單覆寫，`hasLoaded` 維持 `false`
     @Test
     func loadRequested_付款方式讀取失敗_保留原有付款方式() async {
         await LookupCatalog.withIsolatedStorage {
             // Given
-            var initialState = LookupCatalogFeature.State()
+            let initialState = LookupCatalogFeature.State()
             initialState.$catalog.withLock {
                 $0.paymentMethods = [PaymentMethodInfo(name: "信用卡", flags: .none)]
             }
@@ -142,12 +142,12 @@ struct LookupCatalogFeatureTests {
         }
     }
 
-    /// 上次有一種讀取失敗時，下一次載入請求重新讀取四種主檔
+    /// 驗證尚未全部讀取成功 (`hasLoaded` 為 `false`) 時，載入請求會重新讀取四種主檔
     @Test
-    func loadRequested_上次有一種讀取失敗_再次請求重讀四種() async {
+    func loadRequested_尚未全部讀取成功_重讀四種() async {
         await LookupCatalog.withIsolatedStorage {
             // Given
-            var initialState = LookupCatalogFeature.State()
+            let initialState = LookupCatalogFeature.State()
             initialState.$catalog.withLock {
                 $0.categories = ["服飾"]
             }
@@ -184,7 +184,7 @@ struct LookupCatalogFeatureTests {
         }
     }
 
-    /// 已全部讀取過時不重讀，立即回報完成且目錄不變
+    /// 驗證 `hasLoaded` 為 `true` 時，載入請求不重讀，立即回報完成且目錄不變
     @Test
     func loadRequested_已全部讀取過_不讀取並立即回報完成() async {
         await LookupCatalog.withIsolatedStorage {
@@ -211,7 +211,7 @@ struct LookupCatalogFeatureTests {
         }
     }
 
-    /// 讀取進行中再次請求載入時略過，不重讀也不送出任何動作
+    /// 驗證 `isLoading` 為 `true` 時，再次請求載入會略過，維持載入中，不重讀也不送出任何動作
     @Test
     func loadRequested_讀取進行中_略過不重讀() async {
         await LookupCatalog.withIsolatedStorage {
@@ -230,6 +230,7 @@ struct LookupCatalogFeatureTests {
 
             // Then
             await store.finish()
+            #expect(store.state.isLoading == true)
         }
     }
 }

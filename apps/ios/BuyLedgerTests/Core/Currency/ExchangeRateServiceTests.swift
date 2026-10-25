@@ -11,12 +11,12 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證匯率 Service 的請求與回應處理
+/// `ExchangeRateService` 的單元測試，涵蓋請求組裝與回應解碼
 struct ExchangeRateServiceTests {
 
-    /// 金鑰含控制字元時不送出請求，並保留不含憑證的診斷錯誤
+    /// 驗證金鑰含控制字元時，請求在送出前就被拒絕，底層錯誤為 `com.leoho.BuyLedger.networking` 網域的 URL 組合失敗，且不發出請求
     ///
-    /// - Throws: 沒有取得預期的 `.transport(underlying:)` 時由 `#require` 丟出測試斷言錯誤
+    /// - Throws: 沒有取得預期的傳輸錯誤時丟出測試斷言錯誤
     @Test
     func fetchLatest_金鑰含控制字元_送出前拒絕且不洩漏憑證() async throws {
         // Given
@@ -26,7 +26,7 @@ struct ExchangeRateServiceTests {
         var actualError: APIError?
 
         // When
-        do throws(APIError) {
+        do {
             _ = try await service.fetchLatest(.usd)
         } catch {
             actualError = error
@@ -50,9 +50,9 @@ struct ExchangeRateServiceTests {
         #expect(httpClient.dataReceivedArguments.isEmpty)
     }
 
-    /// 缺少 API key 時回報無效憑證且不送出請求
+    /// 驗證缺少 API key 時回報無效憑證，且不送出請求
     ///
-    /// - Throws: Service 未拋出錯誤時由 `try #require` 丟出測試斷言錯誤
+    /// - Throws: Service 未丟出錯誤時由 `try #require` 丟出測試斷言錯誤
     @Test
     func fetchLatest_缺少金鑰_回報無效憑證() async throws {
         // Given
@@ -61,7 +61,7 @@ struct ExchangeRateServiceTests {
         var actualError: APIError?
 
         // When
-        do throws(APIError) {
+        do {
             _ = try await service.fetchLatest(.usd)
         } catch {
             actualError = error
@@ -81,12 +81,9 @@ struct ExchangeRateServiceTests {
         #expect(httpClient.dataCallCount == 0)
     }
 
-    /// 成功請求只以 Bearer 形式將金鑰放進 Authorization header，且請求網址不含金鑰
+    /// 驗證成功請求以 Bearer 形式把金鑰放進 Authorization header，且請求網址不含金鑰
     ///
-    /// - Throws: Service 失敗時丟出 `.invalidKey`、`.transport(underlying:)`、`.http(statusCode:)`、
-    ///   `.decoding(underlying:)`、`.quotaExceeded` 或 `.apiError(code:)`；response fixture 建立
-    ///   失敗時由 `try #require` 丟出測試斷言錯誤；沒有記錄送出的請求或請求沒有網址時，
-    ///   也由 `try #require` 丟出測試斷言錯誤
+    /// - Throws: 連線、回應或服務端驗證失敗時丟出 API 錯誤；無法建立回應資料或沒有記錄請求網址時丟出測試斷言錯誤
     @Test
     func fetchLatest_成功請求_金鑰只放授權標頭() async throws {
         // Given
@@ -95,7 +92,7 @@ struct ExchangeRateServiceTests {
         let responseBody = Data(responseJSON.utf8)
         let httpClient = MockHTTPClient()
         httpClient.dataResult = .success(
-            try CurrencyMetadataServiceTests.makeHTTPResponse(body: responseBody)
+            try CurrencyMetadataServiceTestSupport.makeHTTPResponse(body: responseBody)
         )
         let service = Self.makeService(httpClient: httpClient, apiKey: key)
 
@@ -110,11 +107,9 @@ struct ExchangeRateServiceTests {
         #expect(request.value(forHTTPHeaderField: "Authorization") == "Bearer \(key)")
     }
 
-    /// 成功回應時依 API 時間、基準幣別與所有匯率建立快照
+    /// 驗證成功回應時，快照以回應的更新時間為日期、以回應的基準幣別為基準，並收錄全部匯率
     ///
-    /// - Throws: Service 失敗時丟出 `.invalidKey`、`.transport(underlying:)`、`.http(statusCode:)`、
-    ///   `.decoding(underlying:)`、`.quotaExceeded` 或 `.apiError(code:)`；HTTP response fixture
-    ///   建立失敗時由 `#require` 丟出測試斷言錯誤
+    /// - Throws: 連線、回應或服務端驗證失敗時丟出 API 錯誤；無法建立回應資料時丟出測試斷言錯誤
     @Test
     func fetchLatest_成功回應_解碼完整匯率快照() async throws {
         // Given
@@ -122,7 +117,7 @@ struct ExchangeRateServiceTests {
         let responseBody = Data(responseJSON.utf8)
         let httpClient = MockHTTPClient()
         httpClient.dataResult = .success(
-            try CurrencyMetadataServiceTests.makeHTTPResponse(body: responseBody)
+            try CurrencyMetadataServiceTestSupport.makeHTTPResponse(body: responseBody)
         )
         let service = Self.makeService(httpClient: httpClient, apiKey: "network-test-key")
 
@@ -135,23 +130,22 @@ struct ExchangeRateServiceTests {
         #expect(snapshot.rates == [.twd: Decimal(32.5), .jpy: Decimal(150)])
     }
 
-    /// 缺少必要回應欄位時分類為解碼錯誤，保留底層錯誤網域且只送出一次請求
+    /// 驗證缺少必要回應欄位時分類為解碼錯誤，底層錯誤網域為 `NSCocoaErrorDomain`，且只送出一次請求
     ///
-    /// - Throws: 未取得預期 `.decoding(underlying:)` 或 fixture 建立失敗時由 `#require` 丟出
-    ///   測試斷言錯誤
+    /// - Throws: 未取得預期的解碼錯誤或無法建立回應資料時丟出測試斷言錯誤
     @Test
     func fetchLatest_缺少必要欄位_分類為解碼錯誤() async throws {
         // Given
         let malformedBody = Data(#"{"conversion_rates":{}}"#.utf8)
         let httpClient = MockHTTPClient()
         httpClient.dataResult = .success(
-            try CurrencyMetadataServiceTests.makeHTTPResponse(body: malformedBody)
+            try CurrencyMetadataServiceTestSupport.makeHTTPResponse(body: malformedBody)
         )
         let service = Self.makeService(httpClient: httpClient, apiKey: "network-test-key")
         var actualError: APIError?
 
         // When
-        do throws(APIError) {
+        do {
             _ = try await service.fetchLatest(.usd)
         } catch {
             actualError = error
@@ -172,9 +166,9 @@ struct ExchangeRateServiceTests {
         #expect(httpClient.dataCallCount == 1)
     }
 
-    /// 無法辨識的服務結果會保留原始結果字串
+    /// 驗證無法辨識的回應結果值歸類為 `.apiError`，錯誤碼保留原始結果字串，且只送出一次請求
     ///
-    /// - Throws: fixture 建立失敗時丟出底層錯誤；Service 未拋出錯誤時由 `try #require`
+    /// - Throws: fixture 建立失敗時丟出底層錯誤；Service 未丟出錯誤時由 `try #require`
     ///   丟出測試斷言錯誤
     @Test
     func fetchLatest_未知結果_分類為服務錯誤() async throws {
@@ -182,13 +176,13 @@ struct ExchangeRateServiceTests {
         let responseBody = Data(#"{"result":"partial"}"#.utf8)
         let httpClient = MockHTTPClient()
         httpClient.dataResult = .success(
-            try CurrencyMetadataServiceTests.makeHTTPResponse(body: responseBody)
+            try CurrencyMetadataServiceTestSupport.makeHTTPResponse(body: responseBody)
         )
         let service = Self.makeService(httpClient: httpClient, apiKey: "network-test-key")
         var actualError: APIError?
 
         // When
-        do throws(APIError) {
+        do {
             _ = try await service.fetchLatest(.usd)
         } catch {
             actualError = error
@@ -220,7 +214,9 @@ private extension ExchangeRateServiceTests {
     ///   - apiKey: 要提供給 Service 的 API key
     /// - Returns: 已擷取測試依賴的正式 Service
     static func makeService(httpClient: MockHTTPClient, apiKey: String?) -> ExchangeRateService {
-        let configurationStore = CurrencyMetadataServiceTests.makeConfigurationStore(apiKey: apiKey)
+        let configurationStore = CurrencyMetadataServiceTestSupport.makeConfigurationStore(
+            apiKey: apiKey
+        )
         return withDependencies {
             $0.httpClient = httpClient
             $0.appConfigurationStore = configurationStore

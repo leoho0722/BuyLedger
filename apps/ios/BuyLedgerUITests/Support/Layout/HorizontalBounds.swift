@@ -22,7 +22,7 @@ extension XCTestCase {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Returns: 已確認有限且非空的容器範圍
-    /// - Throws: 容器不存在或範圍無效時拋出測試錯誤
+    /// - Throws: 容器不存在或範圍無效時丟出測試錯誤
     func requireValidFrame(
         of element: XCUIElement,
         in app: XCUIApplication,
@@ -59,7 +59,7 @@ extension XCTestCase {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Returns: 已確認可互動的元素範圍
-    /// - Throws: 元素不存在、不可互動或範圍無效時拋出測試錯誤
+    /// - Throws: 元素不存在、不可互動或範圍無效時丟出測試錯誤
     func requireHittableFrame(
         of element: XCUIElement,
         in app: XCUIApplication,
@@ -88,7 +88,7 @@ extension XCTestCase {
     ///   - tolerance: 允許的點數誤差
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Throws: 元素無法取得或左右緣越界時拋出測試錯誤
+    /// - Throws: 元素無法取得或左右緣越界時丟出測試錯誤
     func assertHorizontalBounds(
         of element: XCUIElement,
         within container: XCUIElement,
@@ -133,7 +133,7 @@ extension XCTestCase {
     ///   - tolerance: 允許的點數誤差
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Throws: 元素無法取得或左右緣越界時拋出測試錯誤
+    /// - Throws: 元素無法取得或左右緣越界時丟出測試錯誤
     func assertHorizontalBounds(
         of element: XCUIElement,
         between lowerBound: CGFloat,
@@ -172,7 +172,7 @@ extension XCTestCase {
     ///   - tolerance: 允許的點數誤差
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    /// - Throws: 容器無法取得、左側出現空隙或右緣未貼齊時拋出測試錯誤
+    /// - Throws: 容器無法取得、左側出現空隙或右緣未貼齊時丟出測試錯誤
     func assertHorizontalFill(
         of content: XCUIElement,
         after leading: XCUIElement,

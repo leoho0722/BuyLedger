@@ -11,16 +11,16 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證 `OrdersFilterOperations` 的狀態變化
+/// `OrdersFilterOperations` 的單元測試，直接呼叫各篩選方法並斷言狀態變化，另含 `OrderFilterSelection.isActive` 的真值表
 struct OrdersFilterOperationsTests {
 
-    /// 驗證切換狀態時重選第一筆相符訂單
+    /// 驗證切換為 `delivered` 狀態時，`selectedStatus` 更新，選取改為第一筆相符的 B
     @Test
     func statusFilterSelected_切換狀態_重選第一筆相符訂單() {
         // Given
-        var state = OrderListFeatureTests.makeState(orders: [
-            makeOrder(id: "A", status: .quoting),
-            makeOrder(id: "B", status: .delivered),
+        var state = OrderListFeatureTestSupport.makeState(orders: [
+            OrdersFilterOperationsTestSupport.makeOrder(id: "A", status: .quoting),
+            OrdersFilterOperationsTestSupport.makeOrder(id: "B", status: .delivered),
         ])
 
         // When
@@ -31,16 +31,16 @@ struct OrdersFilterOperationsTests {
         #expect(state.selectedOrderID == "B")
     }
 
-    /// 驗證切換日期時重選第一筆相符訂單
+    /// 驗證切換為 `thisMonth` 時，三月的 A 被排除，選取改為第一筆相符的 B
     ///
-    /// - Throws: 日期無法建立時拋出測試錯誤
+    /// - Throws: 日期無法建立時丟出測試錯誤
     @Test
     func datePeriodSelected_切換日期_重選第一筆相符訂單() throws {
         // Given
-        let march = try Self.date(year: 2026, month: 3, day: 15)
-        var state = OrderListFeatureTests.makeState(orders: [
-            makeOrder(id: "A", date: march),
-            makeOrder(id: "B", date: TestDependencies.fixedNow),
+        let march = try OrdersFilterOperationsTestSupport.date(year: 2026, month: 3, day: 15)
+        var state = OrderListFeatureTestSupport.makeState(orders: [
+            OrdersFilterOperationsTestSupport.makeOrder(id: "A", date: march),
+            OrdersFilterOperationsTestSupport.makeOrder(id: "B", date: TestDependencies.fixedNow),
         ])
 
         // When
@@ -51,14 +51,19 @@ struct OrdersFilterOperationsTests {
         #expect(state.selectedOrderID == "B")
     }
 
-    /// 驗證切換類別時重選第一筆相符訂單
+    /// 驗證套用類別「服飾」時，已套用類別更新、選取改為第一筆相符的 B，並關閉類別選擇器
     @Test
     func categoryApplied_切換類別_重選第一筆相符訂單並關閉() {
         // Given
-        let initialOrders = [makeOrder(id: "A", category: "美妝"), makeOrder(id: "B", category: "服飾")]
-        var state = OrderListFeatureTests.makeState(orders: initialOrders)
+        let initialOrders = [
+            OrdersFilterOperationsTestSupport.makeOrder(id: "A", category: "美妝"),
+            OrdersFilterOperationsTestSupport.makeOrder(id: "B", category: "服飾"),
+        ]
+        var state = OrderListFeatureTestSupport.makeState(orders: initialOrders)
         state.selectedCategories = ["beauty", "books"]
-        state.destination = .categoryPicker(OrderCategoryPickerFeatureTests.makeState(for: state))
+        state.destination = .categoryPicker(
+            OrderCategoryPickerFeatureTestSupport.makeState(for: state)
+        )
 
         // When
         OrdersFilterOperations.categoryApplied(["服飾"], state: &state)
@@ -69,13 +74,13 @@ struct OrdersFilterOperationsTests {
         #expect(state.destination == nil)
     }
 
-    /// 驗證切換付款方式時重選第一筆相符訂單
+    /// 驗證切換為付款方式「現金」時，已套用付款方式更新，選取改為第一筆相符的 B
     @Test
     func paymentMethodFilterSelected_切換付款方式_重選第一筆相符訂單() {
         // Given
-        var state = OrderListFeatureTests.makeState(orders: [
-            makeOrder(id: "A", paymentMethod: "信用卡"),
-            makeOrder(id: "B", paymentMethod: "現金"),
+        var state = OrderListFeatureTestSupport.makeState(orders: [
+            OrdersFilterOperationsTestSupport.makeOrder(id: "A", paymentMethod: "信用卡"),
+            OrdersFilterOperationsTestSupport.makeOrder(id: "B", paymentMethod: "現金"),
         ])
 
         // When
@@ -86,7 +91,7 @@ struct OrdersFilterOperationsTests {
         #expect(state.selectedOrderID == "B")
     }
 
-    /// 任一非預設欄位啟用篩選，全部預設時停用
+    /// 驗證日期、類別或付款方式任一偏離預設時篩選啟用，類別集合只要非空即算啟用 (連只含空字串也算)，三者皆為預設時停用
     ///
     /// - Parameter testCase: 已套用的日期、類別、付款方式與預期的啟用狀態
     @Test(arguments: [
@@ -94,61 +99,61 @@ struct OrdersFilterOperationsTests {
             date: OrderDatePeriod.all,
             categories: Set<String>(),
             paymentMethod: nil,
-            isActive: false,
+            isActive: false
         ),
         ActiveFilterCase(
             date: .thisWeek,
             categories: Set<String>(),
             paymentMethod: nil,
-            isActive: true,
+            isActive: true
         ),
         ActiveFilterCase(
             date: .all,
             categories: Set<String>(["美妝"]),
             paymentMethod: nil,
-            isActive: true,
+            isActive: true
         ),
         ActiveFilterCase(
             date: .all,
             categories: Set<String>(),
             paymentMethod: "信用卡",
-            isActive: true,
+            isActive: true
         ),
         ActiveFilterCase(
             date: .thisWeek,
             categories: Set<String>(["美妝"]),
             paymentMethod: nil,
-            isActive: true,
+            isActive: true
         ),
         ActiveFilterCase(
             date: .thisWeek,
             categories: Set<String>(),
             paymentMethod: "信用卡",
-            isActive: true,
+            isActive: true
         ),
         ActiveFilterCase(
             date: .all,
             categories: Set<String>(["美妝"]),
             paymentMethod: "信用卡",
-            isActive: true,
+            isActive: true
         ),
         ActiveFilterCase(
             date: .thisWeek,
             categories: Set<String>(["美妝"]),
             paymentMethod: "信用卡",
-            isActive: true,
+            isActive: true
         ),
         ActiveFilterCase(
             date: .all,
             categories: Set<String>(["美妝", "書籍"]),
             paymentMethod: nil,
-            isActive: true,
+            isActive: true
         ),
         ActiveFilterCase(
             date: .all,
             categories: Set<String>([""]),
             paymentMethod: nil,
-            isActive: true,
+            isActive: true
         ),
     ])
     func isActive_各種篩選值_依非預設值判斷(testCase: ActiveFilterCase) {
@@ -183,83 +188,7 @@ extension OrdersFilterOperationsTests {
         /// 付款方式，`nil` 代表全部
         let paymentMethod: String?
 
-        /// 真值表的預期結果
+        /// 是否預期有啟用篩選條件
         let isActive: Bool
-    }
-}
-
-// MARK: - Internal Method
-
-extension OrdersFilterOperationsTests {
-
-    /// 建立固定行事曆與 UTC 時區的指定年月日日期
-    ///
-    /// - Parameters:
-    ///   - year: 西元年
-    ///   - month: 月份
-    ///   - day: 日期
-    /// - Returns: 指定日期 UTC 零時的時間值
-    /// - Throws: 年月日無法組成日期時拋出測試錯誤
-    static func date(year: Int, month: Int, day: Int) throws -> Date {
-        var components = DateComponents()
-        components.calendar = TestDependencies.fixedCalendar
-        components.timeZone = TimeZone(secondsFromGMT: 0)
-        components.year = year
-        components.month = month
-        components.day = day
-        return try #require(components.date)
-    }
-
-    /// 建立僅供篩選測試使用的最小訂單；非相關欄位以零值或佔位填入
-    ///
-    /// - Parameters:
-    ///   - id: 訂單識別值
-    ///   - status: 訂單狀態
-    ///   - date: 訂單日期
-    ///   - category: 商品類別
-    ///   - paymentMethod: 付款方式
-    /// - Returns: 建立的測試訂單
-    func makeOrder(
-        id: String,
-        status: OrderStatus = .quoting,
-        date: Date = TestDependencies.fixedNow,
-        category: String = "類別",
-        paymentMethod: String = "付款"
-    ) -> LedgerOrder {
-        LedgerOrder(
-            id: id,
-            customer: LedgerCustomer(name: "客戶\(id)", initials: "XX", tier: .new),
-            status: status,
-            currency: .twd,
-            date: date,
-            items: [
-                LedgerOrderItem(
-                    id: UUID(0),
-                    name: "商品",
-                    quantity: 1,
-                    unitPrice: 100
-                ),
-            ],
-            itemCost: 0,
-            domesticShipping: 0,
-            internationalShipping: 0,
-            foreignDomesticShipping: 0,
-            cardFeeRate: 0,
-            platformFeeRate: 0,
-            paymentFeeRate: 0,
-            chargedAmount: 0,
-            cardlessDeductionAmount: 0,
-            cardlessSupplementAmount: 0,
-            orderSource: "來源",
-            categories: [category],
-            paymentMethod: paymentMethod,
-            notes: "",
-            reconciliationStatus: "",
-            campaignNames: [],
-            paymentReceiptStatus: .pending,
-            isCashOnDelivery: false,
-            photos: [],
-            mergedSourceIDs: []
-        )
     }
 }

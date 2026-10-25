@@ -10,20 +10,18 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證開團詳情的彙總、分貨篩選與提醒連結
+/// `CampaignDetailContent` 的單元測試，涵蓋開團詳情的彙總、分貨篩選與提醒連結
 struct CampaignDetailContentTests {
 
-    /// 切換只看未收款時只篩選可見客戶，彙總與客戶所屬訂單維持完整
+    /// 驗證切換只看未收款時，分貨列只留下仍有未收款的客戶，彙總與客戶所屬的訂單維持完整
     ///
-    /// - Parameters:
-    ///   - isShowingUnpaidOnly: 是否只顯示尚未全部收款的客戶
-    ///   - expectedNames: 預期可見的客戶名稱
-    /// - Throws: 詳情內容或未收款客戶不存在時拋出測試錯誤
-    @Test(arguments: [(false, ["Alice", "Bob"]), (true, ["Bob"])])
-    func make_切換只看未收款_保留對應客戶分貨列(
-        isShowingUnpaidOnly: Bool,
-        expectedNames: [String]
-    ) throws(any Error) {
+    /// - Parameter scenario: 是否只顯示尚未全部收款的客戶，與預期可見的客戶名稱
+    /// - Throws: 詳情內容不存在，或分貨列中找不到 Bob 時丟出測試錯誤
+    @Test(arguments: [
+        UnpaidFilterCase(isShowingUnpaidOnly: false, expectedNames: ["Alice", "Bob"]),
+        UnpaidFilterCase(isShowingUnpaidOnly: true, expectedNames: ["Bob"]),
+    ])
+    func make_切換只看未收款_保留對應客戶分貨列(scenario: UnpaidFilterCase) throws {
         // Given
         let campaign = Campaign.fixture(
             id: "C2",
@@ -73,7 +71,7 @@ struct CampaignDetailContentTests {
             campaigns: [otherCampaign, campaign],
             orders: orders,
             links: [:],
-            isShowingUnpaidOnly: isShowingUnpaidOnly
+            isShowingUnpaidOnly: scenario.isShowingUnpaidOnly
         )
 
         // Then
@@ -86,7 +84,7 @@ struct CampaignDetailContentTests {
         #expect(content.summary.receivedAmount == 125)
         #expect(content.summary.outstandingAmount == 50)
         #expect(content.summary.distribution.map(\.customerName) == ["Alice", "Bob"])
-        #expect(content.distribution.map(\.customerName) == expectedNames)
+        #expect(content.distribution.map(\.customerName) == scenario.expectedNames)
         #expect(content.reminderLink == nil)
         let bob = try #require(content.distribution.first { $0.customerName == "Bob" })
         #expect(bob.totalQuantity == 4)
@@ -95,7 +93,7 @@ struct CampaignDetailContentTests {
         #expect(bob.orders.map(\.id).sorted() == ["B", "C"])
     }
 
-    /// 指定開團不存在時，即使清單中有其他開團也不組出詳情
+    /// 驗證指定的開團識別值不在清單中時，即使清單有其他開團，`make` 也回傳 `nil`
     @Test
     func make_指定開團不存在_回傳空內容() {
         // Given
@@ -125,12 +123,11 @@ struct CampaignDetailContentTests {
         #expect(content == nil)
     }
 
-    /// 多個開團的提醒連結同時存在時，只取得指定識別值的連結
+    /// 驗證提醒連結字典同時有多個開團時，詳情只取得指定開團識別值對應的連結
     ///
-    /// - Parameter hasMatchingLink: 是否提供指定開團的提醒連結
-    /// - Throws: 指定開團的詳情內容不存在時拋出測試錯誤
-    @Test(arguments: [true, false])
-    func make_提醒連結有無對應識別值_只取得指定開團的連結(hasMatchingLink: Bool) throws(any Error) {
+    /// - Throws: 指定開團的詳情內容不存在時丟出測試錯誤
+    @Test
+    func make_提醒連結含指定識別值_只取得指定開團的連結() throws {
         // Given
         let campaign = Campaign.fixture(
             id: "C2",
@@ -141,15 +138,13 @@ struct CampaignDetailContentTests {
             eventIdentifier: "EVENT-C2",
             reminderTimestamp: Date(timeIntervalSince1970: 3_600)
         )
-        var links = [
+        let links = [
             "C1": CampaignReminderLink(
                 eventIdentifier: "EVENT-C1",
                 reminderTimestamp: Date(timeIntervalSince1970: 7_200)
             ),
+            "C2": matchingLink,
         ]
-        if hasMatchingLink {
-            links["C2"] = matchingLink
-        }
 
         // When
         let result = CampaignDetailContent.make(
@@ -162,12 +157,46 @@ struct CampaignDetailContentTests {
 
         // Then
         let content = try #require(result)
-        #expect(content.reminderLink == (hasMatchingLink ? matchingLink : nil))
+        #expect(content.reminderLink == matchingLink)
         #expect(content.summary.orderCount == 0)
         #expect(content.distribution.isEmpty)
     }
 
-    /// 已結團的開團，結團選單顯示已結團
+    /// 驗證只有其他開團有提醒連結時，詳情的提醒連結為 `nil`，也不帶入其他開團的連結
+    ///
+    /// - Throws: 指定開團的詳情內容不存在時丟出測試錯誤
+    @Test
+    func make_提醒連結不含指定識別值_不取得任何連結() throws {
+        // Given
+        let campaign = Campaign.fixture(
+            id: "C2",
+            name: "四月團",
+            openDate: Date(timeIntervalSince1970: 0)
+        )
+        let links = [
+            "C1": CampaignReminderLink(
+                eventIdentifier: "EVENT-C1",
+                reminderTimestamp: Date(timeIntervalSince1970: 7_200)
+            ),
+        ]
+
+        // When
+        let result = CampaignDetailContent.make(
+            campaignID: "C2",
+            campaigns: [campaign],
+            orders: [],
+            links: links,
+            isShowingUnpaidOnly: false
+        )
+
+        // Then
+        let content = try #require(result)
+        #expect(content.reminderLink == nil)
+        #expect(content.summary.orderCount == 0)
+        #expect(content.distribution.isEmpty)
+    }
+
+    /// 驗證已結團的開團，結團按鈕的標題為「已結團」(英文為 Settled)
     ///
     /// - Throws: 詳情內容不存在或英文資源目錄不存在時由 `#require` 丟出
     @Test
@@ -198,7 +227,7 @@ struct CampaignDetailContentTests {
         #expect(text == "Settled")
     }
 
-    /// 進行中的開團，結團選單顯示結團結算
+    /// 驗證進行中的開團，結團按鈕的標題為「結團結算」(英文為 Campaign Settlement)
     ///
     /// - Throws: 詳情內容不存在或英文資源目錄不存在時由 `#require` 丟出
     @Test
@@ -229,11 +258,26 @@ struct CampaignDetailContentTests {
     }
 }
 
+// MARK: - Nested Types
+
+extension CampaignDetailContentTests {
+
+    /// 只看未收款的案例：是否只顯示未收款客戶，與預期可見的客戶名稱
+    struct UnpaidFilterCase: Sendable {
+
+        /// 是否只顯示尚未全部收款的客戶
+        let isShowingUnpaidOnly: Bool
+
+        /// 預期可見的客戶名稱，依分貨列順序排列
+        let expectedNames: [String]
+    }
+}
+
 // MARK: - Private Method
 
 private extension CampaignDetailContentTests {
 
-    /// 建立固定識別值與成本的訂單，隔離分貨篩選所需的資料
+    /// 建立商品識別值固定的測試訂單，供分貨篩選測試使用
     ///
     /// - Parameters:
     ///   - id: 訂單識別值

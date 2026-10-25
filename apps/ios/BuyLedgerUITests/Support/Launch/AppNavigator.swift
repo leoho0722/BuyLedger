@@ -35,12 +35,10 @@ extension AppNavigator {
         /// 分析頁
         case insights
 
-        /// 更多與設定頁
+        /// 更多頁
         case more
 
         /// 對應的 identifier key，與 App 端 `RootTab` 同序
-        ///
-        /// - Returns: 對應的 accessibility identifier key
         var identifierKey: BLAccessibilityID.Root.Tab {
             switch self {
             case .dashboard:
@@ -66,9 +64,8 @@ extension AppNavigator {
 
 extension AppNavigator {
 
-    /// 等待根導覽或訂單並排內容出現後判斷是否為 regular 版面
+    /// 目前是否為 regular 版面，等待根導覽或訂單並排內容出現後判定
     ///
-    /// - Returns: 目前是否使用側邊欄版面
     /// - Note: 側邊欄出現即為 regular，分頁列出現即為 compact
     /// - Note: 兩者皆未出現時，訂單清單與詳情或詳情空狀態同時存在也視為 regular
     /// - Note: 逾時仍無法辨識根導覽或訂單並排內容時讓測試失敗

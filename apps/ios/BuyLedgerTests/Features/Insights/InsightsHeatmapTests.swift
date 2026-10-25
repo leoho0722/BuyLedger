@@ -10,15 +10,15 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證下單熱力圖的格子座標與最高筆數
-extension InsightsStatsTests {
+/// `InsightsHeatmap` 的單元測試，涵蓋格子座標與最高筆數
+struct InsightsHeatmapTests {
 
-    /// 今天的訂單落在最後一週，星期索引為 3 (週四)
+    /// 驗證 `make` 把今天的訂單放入最後一週的格子，星期索引為 3 (週四)
     @Test
     func make_今天的訂單_落在最後一週與對應星期() {
         // Given
         let orders = [
-            Self.makeOrder(
+            InsightsStatsTestSupport.makeOrder(
                 id: "A",
                 status: .quoting,
                 date: TestDependencies.fixedNow,
@@ -39,18 +39,18 @@ extension InsightsStatsTests {
         #expect(heatmap.maxCount == 1)
     }
 
-    /// 同一天多筆訂單的筆數加總在同一格，單日最高筆數取該格數值
+    /// 驗證 `make` 把同一天多筆訂單的筆數加總在同一格，`maxCount` 取該格的數值
     @Test
     func make_同一天多筆訂單_最高筆數為該日筆數() {
         // Given
         let orders = [
-            Self.makeOrder(
+            InsightsStatsTestSupport.makeOrder(
                 id: "A",
                 status: .quoting,
                 date: TestDependencies.fixedNow,
                 charged: 1
             ),
-            Self.makeOrder(
+            InsightsStatsTestSupport.makeOrder(
                 id: "B",
                 status: .quoting,
                 date: TestDependencies.fixedNow,
@@ -70,7 +70,7 @@ extension InsightsStatsTests {
         #expect(heatmap.maxCount == 2)
     }
 
-    /// 超出顯示週數的訂單不計入，沒有資料時單日最高筆數為 1
+    /// 驗證超出顯示週數的訂單不計入 `cells`，沒有資料時 `maxCount` 為 1
     ///
     /// - Throws: 測試用日期無法組成時丟出
     @Test
@@ -84,7 +84,7 @@ extension InsightsStatsTests {
             )
         )
         let orders = [
-            Self.makeOrder(
+            InsightsStatsTestSupport.makeOrder(
                 id: "A",
                 status: .quoting,
                 date: oldDate,

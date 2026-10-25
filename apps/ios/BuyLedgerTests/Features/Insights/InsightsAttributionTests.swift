@@ -10,10 +10,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證分析歸屬計算
+/// `InsightsStats` 的單元測試，涵蓋類別歸屬計算與類別標籤文字
 struct InsightsAttributionTests {
 
-    /// 只計入被合併的原始訂單金額，排除新訂單與報價單
+    /// 驗證 `categoryBreakdown` 遇到合併結果與報價單時，只計入被合併的原始訂單 A、B，排除合併結果 M 與報價單 D
     @Test
     func categoryBreakdown_合併訂單與報價單_只計被合併的原始訂單() {
         // Given
@@ -54,7 +54,7 @@ struct InsightsAttributionTests {
         #expect(breakdown.first { $0.name == "snacks" }?.profit == 2_000)
     }
 
-    /// 連續合併後各原始訂單仍只計一次，beauty 為 A 加 C，snacks 為 B
+    /// 驗證連續合併後，各原始訂單仍只計一次，beauty 為 A 加 C，snacks 為 B
     @Test
     func categoryBreakdown_連續合併_各原始訂單只計一次() {
         // Given
@@ -101,28 +101,26 @@ struct InsightsAttributionTests {
         #expect(breakdown.first { $0.name == "snacks" }?.profit == 2_000)
     }
 
-    /// 多個類別以頓號串接成單一文字，空陣列與空白項目不顯示
+    /// 驗證 `OrderFormatters.categoriesTagText` 以頓號串接多個類別，空陣列與空白項目不顯示
     ///
-    /// - Parameters:
-    ///   - categories: 商品類別
-    ///   - expected: 預期顯示的標籤文字
+    /// - Parameter scenario: 商品類別與預期顯示的標籤文字
     @Test(arguments: [
-        (categories: ["服飾"], expected: "服飾"),
-        (categories: ["服飾", "美妝"], expected: "服飾、美妝"),
-        (categories: [String](), expected: ""),
-        (categories: ["   "], expected: ""),
+        CategoriesTagTextScenario(categories: ["服飾"], expected: "服飾"),
+        CategoriesTagTextScenario(categories: ["服飾", "美妝"], expected: "服飾、美妝"),
+        CategoriesTagTextScenario(categories: [], expected: ""),
+        CategoriesTagTextScenario(categories: ["   "], expected: ""),
     ])
-    func categoriesTagText_類別數量與空白_頓號串接或省略(categories: [String], expected: String) {
+    func categoriesTagText_類別數量與空白_頓號串接或省略(scenario: CategoriesTagTextScenario) {
         // Given
 
         // When
-        let text = OrderFormatters.categoriesTagText(for: categories)
+        let text = OrderFormatters.categoriesTagText(for: scenario.categories)
 
         // Then
-        #expect(text == expected)
+        #expect(text == scenario.expected)
     }
 
-    /// 原始訂單的多個類別各自完整計入，沒有類別的訂單不歸入任何類別
+    /// 驗證 `categoryBreakdown` 中，多類別訂單 C 在每個類別各完整計入，沒有類別的訂單 E 不歸入任何類別
     @Test
     func categoryBreakdown_多類別與無類別訂單_各類別完整計入無類別排除() {
         // Given
@@ -147,6 +145,21 @@ struct InsightsAttributionTests {
         // Then
         #expect(breakdown.map(\.name).sorted() == ["beauty", "snacks"])
         #expect(breakdown.allSatisfy { $0.profit == 900 })
+    }
+}
+
+// MARK: - Nested Types
+
+extension InsightsAttributionTests {
+
+    /// 一組商品類別與預期顯示的標籤文字
+    struct CategoriesTagTextScenario: Sendable {
+
+        /// 商品類別，空陣列代表沒有類別
+        let categories: [String]
+
+        /// 預期顯示的標籤文字
+        let expected: String
     }
 }
 

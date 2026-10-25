@@ -11,11 +11,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 以 `TestStore` 驗證設定狀態、持久化與系統服務互動
-@MainActor
+/// `SettingsFeature` 的單元測試，以 TestStore 逐步驗證設定狀態、保存與系統服務互動
 struct SettingsFeatureTests {
 
-    /// 初始設定狀態採用產品指定的語言、幣別與功能預設值
+    /// 驗證未帶參數建立的設定狀態採用產品指定的語言、幣別與功能預設值，版本號為占位字元
     @Test
     func init_產品預設設定_提供預設值() {
         // Given
@@ -33,10 +32,11 @@ struct SettingsFeatureTests {
         #expect(state.isBiometricUnlockEnabled == false)
     }
 
-    /// 每個持久化 binding 更新狀態並寫入對應的完整設定快照
+    /// 驗證每個持久化欄位的 binding 改變時，狀態更新，並同步保存完整的設定快照
     ///
     /// - Parameter binding: 要驗證的持久化欄位
     @Test(arguments: PersistedBinding.allCases)
+    @MainActor
     func binding_持久化欄位改變_同步儲存設定快照(binding: PersistedBinding) async {
         // Given
         let saved = LockIsolated<SettingsSnapshot?>(nil)
@@ -58,12 +58,29 @@ struct SettingsFeatureTests {
         #expect(saved.value == binding.expectedSnapshot)
     }
 
-    /// 連續修改目標金額時，每次 reducer 更新都依序保存
+    /// 驗證連續修改月度目標 (依序為 1、12、120) 時，每次改動都同步保存，且保存順序與輸入順序相同
+    ///
+    /// - Note: 以同步的連續輸入驗證保存順序，延後到非同步效果才寫入時也會失敗
     @Test
-    func binding_連續修改月度目標_依輸入順序儲存() async {
+    @MainActor
+    func binding_連續修改月度目標_依輸入順序儲存() {
         // Given
+        let initialSnapshot = SettingsSnapshot(
+            language: .traditionalChinese,
+            defaultCurrency: .twd,
+            monthlyProfitGoalTWD: 80_000,
+            isAISummaryEnabled: false,
+            aiSummaryModel: "gemma4:31b-cloud",
+            isBiometricUnlockEnabled: false
+        )
+        var firstSnapshot = initialSnapshot
+        firstSnapshot.monthlyProfitGoalTWD = 1
+        var secondSnapshot = initialSnapshot
+        secondSnapshot.monthlyProfitGoalTWD = 12
+        var thirdSnapshot = initialSnapshot
+        thirdSnapshot.monthlyProfitGoalTWD = 120
         let saved = LockIsolated<[SettingsSnapshot]>([])
-        let store = TestStore(initialState: SettingsFeature.State()) {
+        let store = Store(initialState: SettingsFeature.State(snapshot: initialSnapshot)) {
             SettingsFeature()
         } withDependencies: {
             $0.settingsService.save = { snapshot in
@@ -72,29 +89,22 @@ struct SettingsFeatureTests {
                 }
             }
         }
-        await store.send(\.binding.monthlyProfitGoalTWD, 1) {
-            $0.monthlyProfitGoalTWD = 1
-        }
-        await store.receive(\.delegate.preferencesChanged)
-        await store.send(\.binding.monthlyProfitGoalTWD, 12) {
-            $0.monthlyProfitGoalTWD = 12
-        }
-        await store.receive(\.delegate.preferencesChanged)
 
         // When
-        await store.send(\.binding.monthlyProfitGoalTWD, 120) {
-            $0.monthlyProfitGoalTWD = 120
-        }
+        store.send(.binding(.set(\.monthlyProfitGoalTWD, 1)))
+        store.send(.binding(.set(\.monthlyProfitGoalTWD, 12)))
+        store.send(.binding(.set(\.monthlyProfitGoalTWD, 120)))
 
         // Then
-        await store.receive(\.delegate.preferencesChanged)
-        #expect(saved.value.map(\.monthlyProfitGoalTWD) == [1, 12, 120])
+        #expect(saved.value == [firstSnapshot, secondSnapshot, thirdSnapshot])
+        #expect(store.monthlyProfitGoalTWD == 120)
     }
 
-    /// 月度目標欄位的鍵盤焦點改變時只更新焦點狀態，不寫入設定
+    /// 驗證月度目標欄位的鍵盤焦點改變時，只更新焦點狀態，不寫入設定
     ///
     /// - Note: `testValue` 的 `save` 為 `unimplemented`，非預期儲存會使測試失敗
     @Test
+    @MainActor
     func binding_鍵盤焦點改變_不儲存設定快照() async {
         // Given
         let store = TestStore(initialState: SettingsFeature.State()) {
@@ -110,11 +120,12 @@ struct SettingsFeatureTests {
         #expect(store.state.isGoalFieldFocused)
     }
 
-    /// 選擇日圓時持久化事件解析後的日圓幣別
+    /// 驗證選擇日圓時，預設幣別改為日圓，並保存幣別為日圓的設定快照
     ///
-    /// - Throws: 設定快照未被保存時拋出錯誤
+    /// - Throws: 設定快照未被保存時丟出錯誤
     @Test
-    func defaultCurrencySelected_選擇日圓_儲存所選幣別() async throws(any Error) {
+    @MainActor
+    func defaultCurrencySelected_選擇日圓_儲存所選幣別() async throws {
         // Given
         let saved = LockIsolated<SettingsSnapshot?>(nil)
         let store = TestStore(initialState: SettingsFeature.State()) {
@@ -136,11 +147,12 @@ struct SettingsFeatureTests {
         #expect(snapshot.defaultCurrency == .jpy)
     }
 
-    /// 選擇摘要模型時將模型識別值保存至設定快照
+    /// 驗證選擇摘要模型時，模型識別值更新為所選值，並寫入設定快照
     ///
-    /// - Throws: 設定快照未被保存時拋出錯誤
+    /// - Throws: 設定快照未被保存時丟出錯誤
     @Test
-    func aiSummaryModelSelected_選擇摘要模型_儲存選取值() async throws(any Error) {
+    @MainActor
+    func aiSummaryModelSelected_選擇摘要模型_儲存選取值() async throws {
         // Given
         let saved = LockIsolated<SettingsSnapshot?>(nil)
         let store = TestStore(initialState: SettingsFeature.State()) {
@@ -162,8 +174,9 @@ struct SettingsFeatureTests {
         #expect(snapshot.aiSummaryModel == "deepseek-v3.1:671b")
     }
 
-    /// 幣別服務成功回傳時，載入清單並保留目前預設幣別
+    /// 驗證幣別服務成功回傳時，可選幣別換成排序後的新清單，清單並納入目前的預設幣別，預設幣別不變
     @Test
+    @MainActor
     func task_載入可用幣別_保留預設幣別() async {
         // Given
         var state = SettingsFeature.State()
@@ -186,8 +199,9 @@ struct SettingsFeatureTests {
         }
     }
 
-    /// 畫面出現時讀取幣別主檔失敗，可選幣別維持原本的清單，不清空也不改寫
+    /// 驗證讀取幣別主檔失敗時，可選幣別維持原本的清單，不清空也不改寫
     @Test
+    @MainActor
     func task_載入幣別失敗_保留目前清單() async {
         // Given
         var state = SettingsFeature.State()
@@ -215,8 +229,9 @@ struct SettingsFeatureTests {
         #expect(store.state.availableCurrencies == [.twd, .jpy])
     }
 
-    /// 畫面出現時幣別主檔回傳空清單，不以空清單覆蓋，可選幣別維持原本的清單
+    /// 驗證幣別主檔回傳空清單時，不以空清單覆蓋既有清單，可選幣別維持原本的內容
     @Test
+    @MainActor
     func task_載入空幣別清單_保留目前清單() async {
         // Given
         var state = SettingsFeature.State()

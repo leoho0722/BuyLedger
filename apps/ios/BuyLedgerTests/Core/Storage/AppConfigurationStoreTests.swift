@@ -10,11 +10,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證 `Info.plist` 設定的讀取與正規化
+/// `AppConfigurationStore` 的單元測試，涵蓋 `Info.plist` 設定的讀取與正規化
 struct AppConfigurationStoreTests {
 
-    /// 驗證 `Info.plist` 字串正規化：去除前後空白，缺少、空白或未展開的同名佔位值回傳 `nil`，
-    /// 其他佔位字串原樣保留
+    /// 驗證 `Info.plist` 字串去除前後空白，缺少、空白或未展開的同名佔位值回傳 `nil`，其他佔位字串原樣保留
     ///
     /// - Parameter scenario: 原始輸入與預期輸出
     /// - Throws: 建立目錄、序列化 plist 或寫檔失敗時丟出底層錯誤；載入測試 `Bundle` 失敗時
@@ -40,25 +39,25 @@ extension AppConfigurationStoreTests {
     /// `Info.plist` 字串正規化的固定測試案例
     enum Scenario: CaseIterable, Sendable {
 
-        /// 前後空白應移除
+        /// 設定值前後帶有空白
         case trimsAPIKey
 
-        /// 缺少的 `key` 應回傳 nil
+        /// 設定檔缺少要查詢的 `key`
         case returnsNilForMissingKey
 
-        /// 空字串與全空白值都應回傳 nil
+        /// 設定值為空字串或全為空白
         case returnsNilForEmptyAndWhitespace
 
-        /// 未展開的同名佔位字串應回傳 nil
+        /// 設定值是與 `key` 同名且未展開的佔位字串
         case returnsNilForUnexpandedPlaceholder
 
-        /// 與 `key` 不同的佔位字串應保留
+        /// 設定值是與 `key` 不同名的佔位字串
         case preservesDifferentPlaceholder
 
-        /// 沒有佔位字串的一般值仍應移除前後空白
+        /// 設定值是不含佔位字串的一般值，前後帶有空白
         case trimsLiteralWithoutPlaceholder
 
-        /// 提供測試案例的原始 `Info.plist` 值
+        /// 本案例的原始 `Info.plist` 值
         var infoDictionary: [String: Any] {
             switch self {
             case .trimsAPIKey:
@@ -84,7 +83,7 @@ extension AppConfigurationStoreTests {
             }
         }
 
-        /// 提供本案例要查詢的 `key`
+        /// 本案例要查詢的 `key`
         var keys: [String] {
             switch self {
             case .trimsAPIKey, .returnsNilForMissingKey, .returnsNilForUnexpandedPlaceholder:
@@ -101,7 +100,7 @@ extension AppConfigurationStoreTests {
             }
         }
 
-        /// 提供本案例的字面預期值
+        /// 本案例的字面預期值
         var expectedValues: [String?] {
             switch self {
             case .trimsAPIKey:
@@ -122,10 +121,10 @@ extension AppConfigurationStoreTests {
         }
     }
 
-    /// 建立並清除獨立的測試 `Bundle`
+    /// 獨立測試 `Bundle` 的暫存目錄夾具
     private final class BundleFixture {
 
-        /// 提供測試 `Info.plist` 的 `Bundle`
+        /// 測試 `Info.plist` 所在的 `Bundle`
         let bundle: Bundle
 
         /// 測試 `Bundle` 的暫存目錄

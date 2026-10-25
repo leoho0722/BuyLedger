@@ -11,9 +11,9 @@ import Testing
 /// `SourceTextScanner` 與 `String.literalMatches` 的單元測試，位置一律為 UTF-16 offset
 struct SourceTextScannerTests {
 
-    /// 字面值本體含 `\"` 跳脫引號時，結束位置是真正的結尾引號
+    /// 驗證字面值本體含 `\"` 跳脫引號時，結束位置是真正的結尾引號，不會停在跳脫的引號上
     ///
-    /// fixture 為不含開頭引號的字面值本體，從 0 起掃描
+    /// - Note: fixture 為不含開頭引號的字面值本體，從 0 起掃描
     @Test
     func scanStringLiteralBody_含跳脫引號_回傳真正的結尾引號位置() {
         // Given
@@ -26,9 +26,9 @@ struct SourceTextScannerTests {
         #expect(end == 13)
     }
 
-    /// 插值內的巢狀括號與巢狀字串配對完成後，字面值才會結束
+    /// 驗證插值內含巢狀括號與巢狀字串時，內層引號不會提前結束字面值，要等插值括號配對完成才回傳真正的結尾引號位置
     ///
-    /// - Parameter testCase: 字面值本體 (不含開頭引號) 與預期的結尾引號位置
+    /// - Parameter testCase: 字面值本體 (不含開頭引號)、掃描起點與預期的結尾引號位置
     @Test(arguments: [
         PositionCase(source: #"a\(f(x)) b" tail"#, start: 0, expected: 10),
         PositionCase(source: #"a\(f(x) + g("y")) b" tail"#, start: 0, expected: 19),
@@ -44,7 +44,7 @@ struct SourceTextScannerTests {
         #expect(end == testCase.expected)
     }
 
-    /// 只回傳頂層插值的範圍，巢狀括號不另外切成多段，被跳脫的反斜線後方括號不算插值
+    /// 驗證只回傳頂層插值的範圍，巢狀括號不另外切成段，被跳脫的反斜線後面的括號不算插值
     ///
     /// - Parameter testCase: 掃描的字串與預期的頂層插值範圍
     @Test(arguments: [
@@ -66,7 +66,7 @@ struct SourceTextScannerTests {
         #expect(ranges == testCase.expected)
     }
 
-    /// 指定位置之後還有換行時，回傳下一個換行字元的位置
+    /// 驗證指定位置之後有換行時，回傳其後第一個換行字元的位置，起點本身是換行字元時回傳起點
     ///
     /// - Parameter testCase: 原始碼、起點與預期的換行位置
     @Test(arguments: [
@@ -85,7 +85,7 @@ struct SourceTextScannerTests {
         #expect(index == testCase.expected)
     }
 
-    /// 指定位置之後沒有換行時，回傳 UTF-16 code unit 的總數
+    /// 驗證指定位置之後沒有換行時，回傳來源的 UTF-16 長度，起點位於換行之後也一樣
     ///
     /// - Parameter testCase: 原始碼、起點與預期的行尾位置
     @Test(arguments: [
@@ -103,7 +103,7 @@ struct SourceTextScannerTests {
         #expect(index == testCase.expected)
     }
 
-    /// 區塊註解有結尾時，回傳結尾 `*/` 之後的位置
+    /// 驗證區塊註解有結尾時，回傳 `*/` 之後的位置，即使註解後面還有程式碼
     ///
     /// - Parameter testCase: 原始碼、`/*` 之後的起點與預期的結尾後位置
     @Test(arguments: [
@@ -121,7 +121,7 @@ struct SourceTextScannerTests {
         #expect(end == testCase.expected)
     }
 
-    /// 區塊註解沒有結尾時回傳 `nil`
+    /// 驗證區塊註解缺少結尾 `*/` 時回傳 `nil`，尾端只有星號也不算結尾
     @Test
     func skipBlockComment_沒有結尾_回傳nil() {
         // Given
@@ -134,7 +134,7 @@ struct SourceTextScannerTests {
         #expect(end == nil)
     }
 
-    /// 行註解內的引號不當成字面值，下一行真正的字面值仍被找到
+    /// 驗證行註解內的引號不算字面值，下一行的真正字面值仍會被找到
     @Test
     func literalMatches_行註解內含引號_只找出真正的字面值() {
         // Given
@@ -152,7 +152,7 @@ struct SourceTextScannerTests {
         #expect(literals.map(\.start) == [9, 32])
     }
 
-    /// 區塊註解內的引號不當成字面值，同行註解之後真正的字面值仍被找到
+    /// 驗證區塊註解內的引號不算字面值，同一行註解之後的真正字面值仍會被找到
     @Test
     func literalMatches_區塊註解內含引號_只找出真正的字面值() {
         // Given

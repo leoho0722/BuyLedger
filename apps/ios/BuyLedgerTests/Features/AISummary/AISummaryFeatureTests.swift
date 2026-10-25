@@ -12,12 +12,12 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證 AI 商品摘要流程
-@MainActor
+/// `AISummaryFeature` 的單元測試，以 TestStore 逐步驗證串流、失敗與關閉流程
 struct AISummaryFeatureTests {
 
-    /// 驗證串流片段依序累積到摘要內容，完成後 `phase` 轉為 `.finished`
+    /// 驗證畫面送出 `.view(.task)` 後，串流的三段片段依序累積到 `summaryText`，串流結束時 `phase` 轉為 `.finished`
     @Test
+    @MainActor
     func task_收到多段摘要_依序累積並標記完成() async {
         // Given
         let clock = TestClock()
@@ -58,8 +58,9 @@ struct AISummaryFeatureTests {
         }
     }
 
-    /// 驗證缺少 API 金鑰時轉為失敗並顯示設定未完成訊息
+    /// 驗證缺少 API 金鑰時，`.view(.task)` 讓 `phase` 經 `.streaming` 轉為 `.failed`，`errorMessage` 為設定未完成的提示
     @Test
+    @MainActor
     func task_缺少API金鑰_顯示設定未完成訊息() async {
         // Given
         let store = TestStore(initialState: AISummaryFeature.State(prompt: "p", model: "m")) {
@@ -82,8 +83,9 @@ struct AISummaryFeatureTests {
         }
     }
 
-    /// 驗證 API 金鑰錯誤時顯示驗證失敗訊息
+    /// 驗證金鑰有值但服務以 `APIError.invalidKey` 回報金鑰無效時，`phase` 轉為 `.failed`，並顯示 AI 服務驗證失敗的提示
     @Test
+    @MainActor
     func task_服務回報金鑰無效_顯示驗證失敗訊息() async {
         // Given
         let clock = TestClock()
@@ -113,8 +115,9 @@ struct AISummaryFeatureTests {
         }
     }
 
-    /// 驗證傳輸失敗時保留部分內容並顯示友善連線錯誤訊息
+    /// 驗證串流送出部分內容後傳輸失敗 (`APIError.transport`) 時，`summaryText` 保留內容，`phase` 轉為 `.failed`，並顯示連線問題提示
     @Test
+    @MainActor
     func task_收到部分內容後傳輸失敗_保留內容並顯示連線錯誤() async {
         // Given
         let clock = TestClock()
@@ -152,8 +155,9 @@ struct AISummaryFeatureTests {
         }
     }
 
-    /// 驗證關閉摘要面板會取消串流並執行 `dismiss`，`phase` 維持 `.streaming`、不轉為失敗
+    /// 驗證串流進行中按下關閉時，串流被取消、`dismiss` 執行一次，`phase` 維持 `.streaming` 而不轉為失敗
     @Test
+    @MainActor
     func closeTapped_串流進行中_取消串流並關閉摘要() async {
         // Given
         let clock = TestClock()
@@ -197,8 +201,9 @@ struct AISummaryFeatureTests {
         #expect(dismissCallCount.value == 1)
     }
 
-    /// 驗證串流逾時時保留部分內容並顯示截斷訊息
+    /// 驗證串流超過總時限時，已收到的內容保留，`phase` 轉為 `.finished` 而非失敗，並設定 `truncationMessage` 為截斷提示
     @Test
+    @MainActor
     func task_串流超過總時限_保留部分內容並標記截斷() async {
         // Given
         let clock = TestClock()
@@ -247,7 +252,7 @@ struct AISummaryFeatureTests {
         }
     }
 
-    /// 驗證沒有具體錯誤原因時，失敗訊息退回通用提示文字
+    /// 驗證 `State` 的 `errorMessage` 為 `nil` 時，`failureMessage` 退回通用的重試提示
     @Test
     func failureMessage_無錯誤原因_退回通用提示() {
         // Given
@@ -260,7 +265,7 @@ struct AISummaryFeatureTests {
         #expect(message == "orders.edit.message.pleaseTryAgain")
     }
 
-    /// 驗證有具體錯誤原因時，失敗訊息沿用該原因而不退回通用提示
+    /// 驗證 `State` 的 `errorMessage` 有值時，`failureMessage` 沿用該訊息，不退回通用提示
     @Test
     func failureMessage_有錯誤原因_沿用該原因() {
         // Given

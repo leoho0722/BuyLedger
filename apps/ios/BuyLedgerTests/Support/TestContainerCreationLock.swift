@@ -24,7 +24,7 @@ extension TestContainerCreationLock {
     ///
     /// - Parameter operation: 建立容器的同步操作
     /// - Returns: 建立操作的結果
-    /// - Throws: 重新丟出 `operation` 拋出的 `Failure`
+    /// - Throws: 原樣丟出 `operation` 的 `Failure`
     /// - Note: 不使用 `LockIsolated`，因為它要求 closure 與回傳值符合 `Sendable`
     static func withLock<Value, Failure: Error>(
         _ operation: () throws(Failure) -> Value

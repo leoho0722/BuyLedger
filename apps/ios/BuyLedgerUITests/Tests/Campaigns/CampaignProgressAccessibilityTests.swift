@@ -7,16 +7,16 @@
 
 import XCTest
 
-/// 開團列合併朗讀的進度標題與目前值測試，守住標題依 App 語言顯示且接在目前值之前
+/// 開團列合併朗讀的進度標題與目前值的 UI 測試，以列的無障礙標籤斷言標題依 App 語言顯示且接在目前值之前
+@MainActor
 final class CampaignProgressAccessibilityTests: BLUITestCase {
 
     // MARK: - Properties
 
-    /// `campaignsWithOrders` 的四月韓國團開團 id
+    /// 四月韓國團的唯一識別碼，位於 `campaignsWithOrders` 種子中
     private static let koreaCampaignID = "CMP-SAMPLE-KR-APR"
 
-    /// 正體中文模式下，四月韓國團列依序朗讀每個進度標題與其後的目前值
-    @MainActor
+    /// 驗證正體中文模式下，四月韓國團列的無障礙標籤依序含「到貨、0/3、收款、$11,800」，每個進度標題後接著它的目前值
     func testCampaignRowLabel_正體中文_進度標題後接目前值() {
         // Given
         let app = launch(LaunchOptions(seed: .campaignsWithOrders))
@@ -32,8 +32,7 @@ final class CampaignProgressAccessibilityTests: BLUITestCase {
         )
     }
 
-    /// 英文模式下，四月韓國團列的進度標題為英文且各自接在目前值之前
-    @MainActor
+    /// 驗證英文模式下，四月韓國團列的無障礙標籤依序含「Arrived, 0/3, Payment, NT$11,800」，進度標題為英文且後接目前值
     func testCampaignRowLabel_英文_進度標題為英文且後接目前值() {
         // Given
         let app = launch(LaunchOptions(seed: .campaignsWithOrders, language: .english))
@@ -54,16 +53,16 @@ final class CampaignProgressAccessibilityTests: BLUITestCase {
 
 private extension CampaignProgressAccessibilityTests {
 
-    /// 切到開團分頁，等四月韓國團列的 label 含指定片段後回傳當下的 label
+    /// 切到開團分頁，等四月韓國團列的 `label` 含指定片段後回傳當下的 `label`
     ///
     /// - Parameters:
     ///   - app: 受測 App
-    ///   - fragment: 預期 label 含有的片段
+    ///   - fragment: 預期 `label` 含有的片段
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 四月韓國團列當下的無障礙標籤
-    /// - Note: 只等片段出現以避開載入中的中間狀態，逾時不判失敗，是否符合預期由呼叫端斷言
-    @MainActor
+    /// - Note: 只等片段出現，避開載入中的中間狀態
+    /// - Note: 逾時不判失敗，是否符合預期由呼叫端斷言
     func readKoreaCampaignRowLabel(
         in app: XCUIApplication,
         awaiting fragment: String,

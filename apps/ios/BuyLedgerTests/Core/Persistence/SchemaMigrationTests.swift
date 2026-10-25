@@ -11,14 +11,14 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證 V15 至 V17 遷移與同版本資料庫開啟
+/// `BuyLedgerMigrationPlan` 的單元測試，涵蓋 V15 至 V17 的遷移與同版本資料庫開啟
 struct SchemaMigrationTests {
 
-    /// V15 升至 V16 後保留對帳狀態與主檔
+    /// 驗證 V15 升至 V16 後，對帳狀態與對帳主檔都保留
     ///
-    /// - Throws: 暫存 store 建立、遷移或資料讀取失敗時拋出錯誤；遷移後筆數不是 2 時由 `#require` 拋出
+    /// - Throws: 暫存 store 建立、遷移或資料讀取失敗時丟出錯誤；遷移後筆數不是 2 時由 `#require` 丟出
     @Test
-    func stages_V15資料庫升至V16_保留對帳狀態與主檔() throws(any Error) {
+    func stages_V15資料庫升至V16_保留對帳狀態與主檔() throws {
         // Given
         let storeURL = try Self.makeTemporaryStoreURL()
         defer {
@@ -40,13 +40,13 @@ struct SchemaMigrationTests {
             at: storeURL,
             migrationPlan: BuyLedgerMigrationPlan.self
         )
+
+        // Then
         let statuses = try Self.fetchReconciliationStatuses(
             at: storeURL,
             versionedSchema: BuyLedgerSchemaV16.self,
             migrationPlan: BuyLedgerMigrationPlan.self
         )
-
-        // Then
         try #require(migrated.count == 2)
         let ordersByID = Dictionary(migrated.map { ($0.id, $0) }) { first, _ in first }
         #expect(ordersByID["BL-V15-000"]?.reconciliationStatus == "對帳成功")
@@ -54,11 +54,11 @@ struct SchemaMigrationTests {
         #expect(statuses.sorted() == masterNames.sorted())
     }
 
-    /// V16 資料庫以 V16 schema 開啟後保留陣列欄位、對帳狀態與照片
+    /// 驗證 V16 資料庫以 V16 schema 重新開啟後，陣列欄位、對帳狀態與照片都保留
     ///
-    /// - Throws: 暫存 store 建立、資料寫入或讀取失敗時拋出錯誤；讀回筆數不是 1 時由 `#require` 拋出
+    /// - Throws: 暫存 store 建立、資料寫入或讀取失敗時丟出錯誤；讀回筆數不是 1 時由 `#require` 丟出
     @Test
-    func schemas_V16資料庫以V16開啟_讀回陣列欄位對帳狀態與照片() throws(any Error) {
+    func schemas_V16資料庫以V16開啟_讀回陣列欄位對帳狀態與照片() throws {
         // Given
         let storeURL = try Self.makeTemporaryStoreURL()
         defer {
@@ -102,11 +102,11 @@ struct SchemaMigrationTests {
         #expect(order.photos == [photo])
     }
 
-    /// 真實 bootstrap 重開 V17 資料庫後維持正常狀態並保留陣列欄位與照片
+    /// 驗證以真實 bootstrap 重開 V17 資料庫後，狀態維持正常，陣列欄位與照片都保留
     ///
-    /// - Throws: 暫存 store 建立、資料寫入或讀取失敗時拋出錯誤；開啟狀態不是 `.healthy` 或讀回筆數不是 1 時由 `#require` 拋出
+    /// - Throws: 暫存 store 建立、資料寫入或讀取失敗時丟出錯誤；開啟狀態不是 `.healthy` 或讀回筆數不是 1 時由 `#require` 丟出
     @Test
-    func makeBootstrapForTesting_V17資料庫重新開啟_維持正常狀態並保留陣列欄位與照片() throws(any Error) {
+    func makeBootstrapForTesting_V17資料庫重新開啟_維持正常狀態並保留陣列欄位與照片() throws {
         // Given
         let storeURL = try Self.makeTemporaryStoreURL()
         defer {
@@ -136,10 +136,10 @@ struct SchemaMigrationTests {
         let reopened = TestContainerCreationLock.withLock {
             PersistenceContainer.makeBootstrapForTesting(storeURL: storeURL)
         }
-        let reopenedContext = ModelContext(reopened.container)
-        let orders = try reopenedContext.fetch(FetchDescriptor<OrderRecord>())
 
         // Then
+        let reopenedContext = ModelContext(reopened.container)
+        let orders = try reopenedContext.fetch(FetchDescriptor<OrderRecord>())
         try #require(reopened.status == .healthy)
         try #require(orders.count == 1)
         let order = try #require(orders.first)
@@ -151,32 +151,34 @@ struct SchemaMigrationTests {
         #expect(order.photos == [photo])
     }
 
-    /// V17 schema 不包含同步資料模型
-    @Test
-    func models_V17資料模型_不包含同步實體() {
+    /// 驗證 V15 與 V16 保留兩種同步實體，V17 的模型清單則排除它們
+    ///
+    /// - Parameter scenario: 要讀取的 schema 版本，以及是否應包含同步實體
+    @Test(arguments: [
+        SchemaModelCase(versionedSchema: BuyLedgerSchemaV15.self, hasSyncEntities: true),
+        SchemaModelCase(versionedSchema: BuyLedgerSchemaV16.self, hasSyncEntities: true),
+        SchemaModelCase(versionedSchema: BuyLedgerSchemaV17.self, hasSyncEntities: false),
+    ])
+    func models_各版本資料模型_依版本包含或排除同步實體(scenario: SchemaModelCase) {
         // Given
         let syncMetaModelName = "SyncMeta"
         let syncQueueItemModelName = "SyncQueueItem"
 
         // When
-        let v15Names = BuyLedgerSchemaV15.models.map { String(describing: $0) }
-        let v16Names = BuyLedgerSchemaV16.models.map { String(describing: $0) }
-        let v17Names = BuyLedgerSchemaV17.models.map { String(describing: $0) }
+        let modelNames = scenario.versionedSchema.models.map { String(describing: $0) }
 
         // Then
-        #expect(v15Names.contains { $0.contains(syncMetaModelName) })
-        #expect(v15Names.contains { $0.contains(syncQueueItemModelName) })
-        #expect(v16Names.contains { $0.contains(syncMetaModelName) })
-        #expect(v16Names.contains { $0.contains(syncQueueItemModelName) })
-        #expect(!v17Names.contains { $0.contains(syncMetaModelName) })
-        #expect(!v17Names.contains { $0.contains(syncQueueItemModelName) })
+        #expect(modelNames.contains { $0.contains(syncMetaModelName) } == scenario.hasSyncEntities)
+        #expect(
+            modelNames.contains { $0.contains(syncQueueItemModelName) } == scenario.hasSyncEntities
+        )
     }
 
-    /// V16 升至 V17 後保留訂單照片與對帳主檔
+    /// 驗證 V16 升至 V17 後，訂單照片與對帳狀態主檔都保留
     ///
-    /// - Throws: 暫存 store 建立、遷移或資料讀取失敗時拋出錯誤；遷移後筆數不是 2 時由 `#require` 拋出
+    /// - Throws: 暫存 store 建立、遷移或資料讀取失敗時丟出錯誤；遷移後筆數不是 2 時由 `#require` 丟出
     @Test
-    func stages_V16資料庫升至V17_保留訂單照片與對帳主檔() throws(any Error) {
+    func stages_V16資料庫升至V17_保留訂單照片與對帳主檔() throws {
         // Given
         let storeURL = try Self.makeTemporaryStoreURL()
         defer {
@@ -200,13 +202,13 @@ struct SchemaMigrationTests {
             at: storeURL,
             migrationPlan: BuyLedgerMigrationPlan.self
         )
+
+        // Then
         let statuses = try Self.fetchReconciliationStatuses(
             at: storeURL,
             versionedSchema: BuyLedgerSchemaV17.self,
             migrationPlan: BuyLedgerMigrationPlan.self
         )
-
-        // Then
         try #require(migrated.count == 2)
         let ordersByID = Dictionary(migrated.map { ($0.id, $0) }) { first, _ in first }
         #expect(ordersByID["BL-V16-000"]?.categories == ["美妝", "服飾"])
@@ -219,11 +221,11 @@ struct SchemaMigrationTests {
         #expect(statuses.sorted() == masterNames.sorted())
     }
 
-    /// V15 經 V16 升至 V17 後保留對帳狀態、照片與主檔
+    /// 驗證 V15 經 V16 升至 V17 後，對帳狀態、照片與對帳主檔都保留
     ///
-    /// - Throws: 暫存 store 建立、遷移或資料讀取失敗時拋出錯誤；遷移後筆數不是 2 時由 `#require` 拋出
+    /// - Throws: 暫存 store 建立、遷移或資料讀取失敗時丟出錯誤；遷移後筆數不是 2 時由 `#require` 丟出
     @Test
-    func stages_V15資料庫升至V17_保留對帳狀態照片與主檔() throws(any Error) {
+    func stages_V15資料庫升至V17_保留對帳狀態照片與主檔() throws {
         // Given
         let storeURL = try Self.makeTemporaryStoreURL()
         defer {
@@ -244,13 +246,13 @@ struct SchemaMigrationTests {
             at: storeURL,
             migrationPlan: BuyLedgerMigrationPlan.self
         )
+
+        // Then
         let statuses = try Self.fetchReconciliationStatuses(
             at: storeURL,
             versionedSchema: BuyLedgerSchemaV17.self,
             migrationPlan: BuyLedgerMigrationPlan.self
         )
-
-        // Then
         try #require(migrated.count == 2)
         let ordersByID = Dictionary(migrated.map { ($0.id, $0) }) { first, _ in first }
         #expect(ordersByID["BL-V15-000"]?.reconciliationStatus == "對帳成功")
@@ -262,11 +264,11 @@ struct SchemaMigrationTests {
         #expect(statuses.sorted() == masterNames.sorted())
     }
 
-    /// 同版本 schema 新增單欄索引後直接開啟並保留資料
+    /// 驗證同版本 schema 新增單欄索引後，不經遷移直接開啟，且既有資料保留
     ///
-    /// - Throws: 暫存 store 建立、資料寫入、索引 schema 開啟或資料讀取失敗時拋出錯誤；讀回筆數不是 1 時由 `#require` 拋出
+    /// - Throws: 暫存 store 建立、資料寫入、索引 schema 開啟或資料讀取失敗時丟出錯誤；讀回筆數不是 1 時由 `#require` 丟出
     @Test
-    func init_同版本schema加單欄索引_直接開啟並保留資料() throws(any Error) {
+    func init_同版本schema加單欄索引_直接開啟並保留資料() throws {
         // Given
         let storeURL = try Self.makeTemporaryStoreURL()
         defer {
@@ -293,12 +295,12 @@ struct SchemaMigrationTests {
             migrationPlan: nil,
             url: storeURL
         )
+
+        // Then
         let indexedContext = ModelContext(indexedContainer)
         let probes = try indexedContext.fetch(
             FetchDescriptor<IndexAdditionIndexedSchema.ProbeRecord>()
         )
-
-        // Then
         try #require(probes.count == 1)
         let probe = try #require(probes.first)
         #expect(probe.identifier == "probe-001")
@@ -310,12 +312,22 @@ struct SchemaMigrationTests {
 
 extension SchemaMigrationTests {
 
+    /// 各 schema 版本的模型清單案例，指定同步實體的包含契約
+    struct SchemaModelCase: Sendable {
+
+        /// 受測的凍結 schema 版本
+        let versionedSchema: any VersionedSchema.Type
+
+        /// 該版本是否應同時包含兩種同步實體
+        let hasSyncEntities: Bool
+    }
+
     /// 代表尚未建立單欄索引的測試 schema
     ///
     /// - Note: `@Model` 巨集展開在檔案層級，巢狀型別不能是 `private`
     enum IndexAdditionNoIndexSchema: VersionedSchema {
 
-        /// 保存探針欄位以驗證新增索引時既有資料仍可讀取
+        /// 保存探針欄位的測試模型，用來驗證新增索引時既有資料仍可讀取
         ///
         /// - Note: 須與 `IndexAdditionIndexedSchema.ProbeRecord` 使用相同類別名稱，讓 SwiftData 將兩者視為同一張表
         @Model
@@ -331,14 +343,14 @@ extension SchemaMigrationTests {
             ///
             /// - Parameters:
             ///   - identifier: 記錄識別值
-            ///   - label: 驗證資料保留的文字
+            ///   - label: 要寫入的文字，用來確認原始資料保留
             init(identifier: String, label: String) {
                 self.identifier = identifier
                 self.label = label
             }
         }
 
-        /// 與加索引版相同，模擬不拉新版本
+        /// 版本號與加索引版相同，模擬不拉新版本
         static var versionIdentifier: Schema.Version {
             Schema.Version(1, 0, 0)
         }
@@ -354,7 +366,7 @@ extension SchemaMigrationTests {
     /// - Note: `@Model` 巨集展開在檔案層級，巢狀型別不能是 `private`
     enum IndexAdditionIndexedSchema: VersionedSchema {
 
-        /// 以單欄索引驗證同版本 schema 可直接開啟
+        /// 加上單欄索引的測試模型，用來驗證同版本 schema 可直接開啟
         ///
         /// - Note: 須與 `IndexAdditionNoIndexSchema.ProbeRecord` 使用相同類別名稱，讓 SwiftData 將兩者視為同一張表
         @Model
@@ -373,14 +385,14 @@ extension SchemaMigrationTests {
             ///
             /// - Parameters:
             ///   - identifier: 記錄識別值
-            ///   - label: 驗證資料保留的文字
+            ///   - label: 要寫入的文字，用來確認原始資料保留
             init(identifier: String, label: String) {
                 self.identifier = identifier
                 self.label = label
             }
         }
 
-        /// 與無索引版相同，模擬不拉新版本
+        /// 版本號與無索引版相同，模擬不拉新版本
         static var versionIdentifier: Schema.Version {
             Schema.Version(1, 0, 0)
         }
@@ -399,8 +411,8 @@ private extension SchemaMigrationTests {
     /// 建立每個測試獨立的磁碟 store URL
     ///
     /// - Returns: 暫存 store 路徑
-    /// - Throws: 暫存目錄建立失敗時拋出檔案系統錯誤
-    static func makeTemporaryStoreURL() throws(any Error) -> URL {
+    /// - Throws: 暫存目錄建立失敗時丟出檔案系統錯誤
+    static func makeTemporaryStoreURL() throws -> URL {
         let directory = FileManager.default.temporaryDirectory
             .appending(path: "BuyLedgerMigrationTests", directoryHint: .isDirectory)
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
@@ -432,13 +444,13 @@ private extension SchemaMigrationTests {
     ///   - photo: 每筆訂單要寫入的照片資料
     ///   - reconciliationStatuses: 每筆訂單的對帳狀態，筆數也是訂單筆數
     ///   - masterNames: V15 對帳狀態主檔的全部名稱
-    /// - Throws: SwiftData 容器建立或初始資料寫入失敗時拋出錯誤
+    /// - Throws: SwiftData 容器建立或初始資料寫入失敗時丟出錯誤
     static func seedV15Store(
         at url: URL,
         photo: Data,
         reconciliationStatuses: [String],
         masterNames: [String]
-    ) throws(any Error) {
+    ) throws {
         let container = try makeContainer(
             versionedSchema: BuyLedgerSchemaV15.self,
             migrationPlan: nil,
@@ -470,12 +482,12 @@ private extension SchemaMigrationTests {
     ///   - migrationPlan: 開啟 store 時使用的遷移計畫，無遷移時傳入 `nil`
     ///   - url: store 的檔案 URL
     /// - Returns: 已開啟的 SwiftData 容器
-    /// - Throws: SwiftData 容器建立失敗時拋出錯誤
+    /// - Throws: SwiftData 容器建立失敗時丟出錯誤
     static func makeContainer(
         versionedSchema: any VersionedSchema.Type,
         migrationPlan: (any SchemaMigrationPlan.Type)?,
         url: URL
-    ) throws(any Error) -> ModelContainer {
+    ) throws -> ModelContainer {
         let schema = Schema(versionedSchema: versionedSchema)
         let configuration = ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)
 
@@ -532,11 +544,11 @@ private extension SchemaMigrationTests {
     ///   - url: store 的檔案 URL
     ///   - migrationPlan: 開啟 store 時使用的遷移計畫
     /// - Returns: V16 schema 的訂單記錄
-    /// - Throws: SwiftData 容器建立或訂單讀取失敗時拋出錯誤
+    /// - Throws: SwiftData 容器建立或訂單讀取失敗時丟出錯誤
     static func fetchV16Orders(
         at url: URL,
         migrationPlan: any SchemaMigrationPlan.Type
-    ) throws(any Error) -> [BuyLedgerSchemaV16.OrderRecord] {
+    ) throws -> [BuyLedgerSchemaV16.OrderRecord] {
         let container = try makeContainer(
             versionedSchema: BuyLedgerSchemaV16.self,
             migrationPlan: migrationPlan,
@@ -554,12 +566,12 @@ private extension SchemaMigrationTests {
     ///   - versionedSchema: 要開啟的版本化 schema
     ///   - migrationPlan: 開啟 store 時使用的遷移計畫
     /// - Returns: 對帳狀態名稱
-    /// - Throws: SwiftData 容器建立或主檔讀取失敗時拋出錯誤
+    /// - Throws: SwiftData 容器建立或主檔讀取失敗時丟出錯誤
     static func fetchReconciliationStatuses(
         at url: URL,
         versionedSchema: any VersionedSchema.Type,
         migrationPlan: any SchemaMigrationPlan.Type
-    ) throws(any Error) -> [String] {
+    ) throws -> [String] {
         let container = try makeContainer(
             versionedSchema: versionedSchema,
             migrationPlan: migrationPlan,
@@ -578,12 +590,12 @@ private extension SchemaMigrationTests {
     ///   - url: 要建立的 store URL
     ///   - orderPhotos: 訂單識別值對應的照片清單
     ///   - masterNames: 對帳狀態主檔的全部名稱
-    /// - Throws: SwiftData 容器建立或初始資料寫入失敗時拋出錯誤
+    /// - Throws: SwiftData 容器建立或初始資料寫入失敗時丟出錯誤
     static func seedV16Store(
         at url: URL,
         orderPhotos: [String: [Data]],
         masterNames: [String]
-    ) throws(any Error) {
+    ) throws {
         let container = try makeContainer(
             versionedSchema: BuyLedgerSchemaV16.self,
             migrationPlan: nil,
@@ -613,11 +625,11 @@ private extension SchemaMigrationTests {
     ///   - url: store 的檔案 URL
     ///   - migrationPlan: 開啟 store 時使用的遷移計畫
     /// - Returns: V17 訂單記錄
-    /// - Throws: SwiftData 容器建立或訂單讀取失敗時拋出錯誤
+    /// - Throws: SwiftData 容器建立或訂單讀取失敗時丟出錯誤
     static func fetchOrders(
         at url: URL,
         migrationPlan: any SchemaMigrationPlan.Type
-    ) throws(any Error) -> [OrderRecord] {
+    ) throws -> [OrderRecord] {
         let container = try makeContainer(
             versionedSchema: BuyLedgerSchemaV17.self,
             migrationPlan: migrationPlan,

@@ -6,17 +6,16 @@
 //
 
 import Foundation
-import SwiftData
 import Testing
 
 @testable import BuyLedger
 
-/// 驗證訂單寫入失敗後不會污染後續交易
+/// `OrderService` 的單元測試，以磁碟 store 讓寫入失敗後重試，涵蓋失敗不污染後續交易
 struct OrderServiceResidueTests {
 
-    /// 刪除存檔失敗後再次刪除會移除原訂單
+    /// 驗證 `removeOrder` 首次存檔失敗後重試，第二次刪除成功，磁碟 store 中不再有該訂單
     ///
-    /// - Throws: 建立 fixture 或獨立容器失敗時丟出 SwiftData 底層錯誤；
+    /// - Throws: 建立 fixture 或開啟獨立 store 失敗時丟出 SwiftData 底層錯誤；
     ///   讀取失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
     ///   刪除存檔失敗時丟出 `PersistenceError.saveFailed(underlying:)`；
     ///   前置條件或預期值不成立時由 `#require` 丟出測試斷言錯誤
@@ -25,28 +24,31 @@ struct OrderServiceResidueTests {
         // Given
         let environment = try Self.makeTestEnvironment()
         defer {
-            BuyLedgerDatabaseTests.removeTemporaryDirectory(at: environment.fixture.directoryURL)
+            BuyLedgerDatabaseTestSupport.removeTemporaryDirectory(
+                at: environment.fixture.directoryURL
+            )
         }
         try await Self.requireSeededOrder(in: environment.database)
         environment.mock.mode = .saveFailureAfterBody
-        try await Self.requireRelationshipSaveFailure { () throws(PersistenceError) in
-            try await environment.service.removeOrder("order-001")
-        }
+        try await OrderServiceResidueTestSupport
+            .requireRelationshipSaveFailure { () throws(PersistenceError) in
+                try await environment.service.removeOrder("order-001")
+            }
         environment.mock.mode = .passthrough
 
         // When
         try await environment.service.removeOrder("order-001")
 
         // Then
-        let storedOrders = try await Self.fetchPersistedOrders(
+        let storedOrders = try await OrderServiceResidueTestSupport.fetchPersistedOrders(
             from: environment.fixture.directoryURL
         )
         #expect(storedOrders.isEmpty)
     }
 
-    /// 刪除存檔失敗後同編號建立會回報撞號且只保留原訂單
+    /// 驗證刪除存檔失敗後，同編號的 `createOrder` 丟出撞號錯誤，磁碟 store 只剩原訂單且狀態不變
     ///
-    /// - Throws: 建立 fixture 或獨立容器失敗時丟出 SwiftData 底層錯誤；
+    /// - Throws: 建立 fixture 或開啟獨立 store 失敗時丟出 SwiftData 底層錯誤；
     ///   讀取失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
     ///   前置條件或預期值不成立時由 `#require` 丟出測試斷言錯誤
     @Test
@@ -54,18 +56,21 @@ struct OrderServiceResidueTests {
         // Given
         let environment = try Self.makeTestEnvironment()
         defer {
-            BuyLedgerDatabaseTests.removeTemporaryDirectory(at: environment.fixture.directoryURL)
+            BuyLedgerDatabaseTestSupport.removeTemporaryDirectory(
+                at: environment.fixture.directoryURL
+            )
         }
         try await Self.requireSeededOrder(in: environment.database)
         environment.mock.mode = .saveFailureAfterBody
-        try await Self.requireRelationshipSaveFailure { () throws(PersistenceError) in
-            try await environment.service.removeOrder("order-001")
-        }
+        try await OrderServiceResidueTestSupport
+            .requireRelationshipSaveFailure { () throws(PersistenceError) in
+                try await environment.service.removeOrder("order-001")
+            }
         environment.mock.mode = .passthrough
         var actualCollisionError: OrderError?
 
         // When
-        do throws(OrderError) {
+        do {
             try await environment.service.createOrder(
                 LedgerOrder.fixture(
                     id: "order-001",
@@ -89,7 +94,7 @@ struct OrderServiceResidueTests {
         }
         let collisionID = try #require(actualCollisionID)
         #expect(collisionID == "order-001")
-        let storedOrders = try await Self.fetchPersistedOrders(
+        let storedOrders = try await OrderServiceResidueTestSupport.fetchPersistedOrders(
             from: environment.fixture.directoryURL
         )
         #expect(storedOrders.count == 1)
@@ -98,9 +103,9 @@ struct OrderServiceResidueTests {
         #expect(storedOrder.status == .confirmed)
     }
 
-    /// 刪除存檔失敗後同編號更新仍只保留一筆並套用新欄位
+    /// 驗證刪除存檔失敗後，同編號的 `saveOrder` 只留下一筆，欄位改為新值，既有照片保留
     ///
-    /// - Throws: 建立 fixture 或獨立容器失敗時丟出 SwiftData 底層錯誤；
+    /// - Throws: 建立 fixture 或開啟獨立 store 失敗時丟出 SwiftData 底層錯誤；
     ///   讀取失敗時丟出 `PersistenceError.fetchFailed(underlying:)`；
     ///   更新存檔失敗時丟出 `PersistenceError.saveFailed(underlying:)`；
     ///   前置條件或預期值不成立時由 `#require` 丟出測試斷言錯誤
@@ -110,13 +115,16 @@ struct OrderServiceResidueTests {
         let photos = [Data([0x01])]
         let environment = try Self.makeTestEnvironment(photos: photos)
         defer {
-            BuyLedgerDatabaseTests.removeTemporaryDirectory(at: environment.fixture.directoryURL)
+            BuyLedgerDatabaseTestSupport.removeTemporaryDirectory(
+                at: environment.fixture.directoryURL
+            )
         }
         try await Self.requireSeededOrder(in: environment.database, photos: photos)
         environment.mock.mode = .saveFailureAfterBody
-        try await Self.requireRelationshipSaveFailure { () throws(PersistenceError) in
-            try await environment.service.removeOrder("order-001")
-        }
+        try await OrderServiceResidueTestSupport
+            .requireRelationshipSaveFailure { () throws(PersistenceError) in
+                try await environment.service.removeOrder("order-001")
+            }
         environment.mock.mode = .passthrough
 
         // When
@@ -131,8 +139,10 @@ struct OrderServiceResidueTests {
         )
 
         // Then
-        let database = try Self.makeIndependentDatabase(at: environment.fixture.directoryURL)
-        let service = OrderServiceTests.makeService(database: database)
+        let database = try OrderServiceResidueTestSupport.makeIndependentDatabase(
+            at: environment.fixture.directoryURL
+        )
+        let service = OrderServiceTestSupport.makeService(database: database)
         let storedOrders = try await service.fetchOrders()
         let storedPhotos = try await service.fetchOrderPhotos("order-001")
         #expect(storedOrders.count == 1)
@@ -148,10 +158,10 @@ struct OrderServiceResidueTests {
 
 // MARK: - Nested Types
 
-private extension OrderServiceResidueTests {
+extension OrderServiceResidueTests {
 
     /// 單次殘留測試共用的 store、資料庫、mock 與 Service
-    struct TestEnvironment {
+    private struct TestEnvironment {
 
         /// 暫存磁碟 fixture
         let fixture: ResidueProbeModels.DiskFixture
@@ -167,23 +177,6 @@ private extension OrderServiceResidueTests {
     }
 }
 
-// MARK: - Internal Method
-
-extension OrderServiceResidueTests {
-
-    /// 從同一個磁碟 store 建立另一個資料庫後讀回全部訂單
-    ///
-    /// - Parameter directoryURL: 原始 store 的暫存目錄
-    /// - Returns: 另一個資料庫讀到的完整訂單
-    /// - Throws: 獨立容器建立失敗時丟出 SwiftData 底層錯誤；
-    ///   查詢失敗時丟出 `PersistenceError.fetchFailed(underlying:)`
-    static func fetchPersistedOrders(from directoryURL: URL) async throws -> [LedgerOrder] {
-        let database = try makeIndependentDatabase(at: directoryURL)
-        let service = OrderServiceTests.makeService(database: database)
-        return try await service.fetchOrders()
-    }
-}
-
 // MARK: - Private Method
 
 private extension OrderServiceResidueTests {
@@ -193,12 +186,12 @@ private extension OrderServiceResidueTests {
     /// - Parameter photos: 要先存入初始訂單的照片
     /// - Returns: fixture、正式資料庫、失敗控制 mock 與訂單 Service
     /// - Throws: 建立暫存 store 或寫入初始資料失敗時丟出底層錯誤
-    static func makeTestEnvironment(photos: [Data] = []) throws -> TestEnvironment {
+    private static func makeTestEnvironment(photos: [Data] = []) throws -> TestEnvironment {
         let order = Self.initialOrder(photos: photos)
         let fixture = try ResidueProbeModels.makeDiskFixture(orders: [order])
-        let database = BuyLedgerDatabaseTests.makeDatabase(with: fixture)
+        let database = BuyLedgerDatabaseTestSupport.makeDatabase(with: fixture)
         let mock = MockBuyLedgerDatabase(database: database)
-        let service = OrderServiceTests.makeService(database: mock)
+        let service = OrderServiceTestSupport.makeService(database: mock)
         return TestEnvironment(
             fixture: fixture,
             database: database,
@@ -223,7 +216,7 @@ private extension OrderServiceResidueTests {
         )
     }
 
-    /// 驗證寫入交易前 store 已包含範例訂單的原始欄位
+    /// 確認寫入交易前 store 已含範例訂單的原始欄位
     ///
     /// - Parameters:
     ///   - database: 含初始訂單的資料庫
@@ -234,7 +227,7 @@ private extension OrderServiceResidueTests {
         in database: BuyLedgerDatabase,
         photos: [Data] = []
     ) async throws {
-        let service = OrderServiceTests.makeService(database: database)
+        let service = OrderServiceTestSupport.makeService(database: database)
         let orders = try await service.fetchOrders()
         try #require(orders.count == 1)
         let order = try #require(orders.first)
@@ -246,21 +239,5 @@ private extension OrderServiceResidueTests {
         try #require(order.campaignNames == ["春團"])
         let storedPhotos = try await service.fetchOrderPhotos("order-001")
         try #require(storedPhotos == photos)
-    }
-
-    /// 以原 fixture 的 store URL 建立獨立 `ModelContainer` 與資料庫
-    ///
-    /// - Parameter directoryURL: 原 fixture 的暫存 store 目錄
-    /// - Returns: 連接相同 store URL 的另一個資料庫
-    /// - Throws: SwiftData 容器建立失敗時丟出底層錯誤
-    static func makeIndependentDatabase(at directoryURL: URL) throws -> BuyLedgerDatabase {
-        let configuration = ModelConfiguration(
-            url: ResidueProbeModels.storeURL(in: directoryURL),
-            cloudKitDatabase: .none
-        )
-        let container = try TestContainerCreationLock.withLock {
-            try ModelContainer(for: ResidueProbeModels.schema, configurations: [configuration])
-        }
-        return BuyLedgerDatabase(modelContainer: container, storeLocation: .directory(directoryURL))
     }
 }

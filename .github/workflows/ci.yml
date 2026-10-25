@@ -56,7 +56,7 @@ jobs:
         # GoogleService-Info.plist 被 .gitignore 排除；值一律為明顯佔位字串，不含任何真實識別碼
         run: |
           cp apps/ios/BuyLedger/Resources/GoogleService-Info.example.plist apps/ios/BuyLedger/Resources/GoogleService-Info.plist
-          # 複製後只修改 CI 產生的檔案，將 API_KEY placeholder 換成格式合法的範例 key。
+          # 複製後只修改 CI 產生的檔案，將 API_KEY placeholder 換成格式合法的範例 key
           plutil -replace API_KEY -string "A00000000000000000000000000000000000000" apps/ios/BuyLedger/Resources/GoogleService-Info.plist
 
       - name: Restore API key configuration from committed template
@@ -97,8 +97,25 @@ jobs:
             --scheme BuyLedger \
             --simulator-id "${{ steps.sim.outputs.simulator-id }}" \
             --extra-args "-only-testing:BuyLedgerTests" \
-            --extra-args "-skip-testing:BuyLedgerTests/SnapshotTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotCampaignDetailTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotCampaignsTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotCustomersTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotDashboardTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotInsightsTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotLookupsTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotMoreTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotOrderCategoryGridTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotOrderDetailTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotOrderEditSectionsTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotOrderEditTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotOrderFilterEmptyStatesTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotOrderMergeTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotOrdersBaselineTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotOrdersTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotSharedTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/SnapshotToolsTests" \
             --extra-args "-skip-testing:BuyLedgerTests/OrdersFeaturePerformanceTests" \
+            --extra-args "-skip-testing:BuyLedgerTests/OrdersFeatureFilterSheetPerformanceTests" \
             --extra-args "-parallel-testing-enabled" \
             --extra-args "NO" \
             --extra-args "-enableCodeCoverage" \
@@ -136,7 +153,7 @@ jobs:
       - name: Restore Firebase configuration from committed template
         run: |
           cp apps/ios/BuyLedger/Resources/GoogleService-Info.example.plist apps/ios/BuyLedger/Resources/GoogleService-Info.plist
-          # 複製後只修改 CI 產生的檔案，將 API_KEY placeholder 換成格式合法的範例 key。
+          # 複製後只修改 CI 產生的檔案，將 API_KEY placeholder 換成格式合法的範例 key
           plutil -replace API_KEY -string "A00000000000000000000000000000000000000" apps/ios/BuyLedger/Resources/GoogleService-Info.plist
 
       - name: Restore API key configuration from committed template

@@ -11,10 +11,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證開團呈現子 Feature 的 `State` 方法，以及目的地事件、一次性通知與系統設定的 `Action` 轉送
+/// `CampaignPresentationFeature` 的單元測試，直接呼叫 `State` 方法，並以 TestStore 驗證目的地事件、一次性通知與系統設定的 `Action` 處理
 struct CampaignPresentationFeatureTests {
 
-    /// 使用者觸發的表單直接設進目的地，不經暫存佇列
+    /// 驗證沒有呈現中的目的地時，表單直接設進目的地，不經暫存佇列
     @Test
     func present_沒有呈現中的目的地_直接設進表單() {
         // Given
@@ -29,7 +29,7 @@ struct CampaignPresentationFeatureTests {
         #expect(state.queue.isFormClosing == false)
     }
 
-    /// sheet 關閉動畫結束後，暫存的通知移進目的地並清除關閉旗標
+    /// 驗證 sheet 關閉動畫結束時，暫存的通知移進目的地，並清除關閉中旗標
     @Test
     func finishFormClosing_關閉中有暫存通知_通知移進目的地() {
         // Given
@@ -46,7 +46,7 @@ struct CampaignPresentationFeatureTests {
         #expect(state.queue.isFormClosing == false)
     }
 
-    /// 父層接受儲存後清空表單，並標記表單開始關閉
+    /// 驗證表單開啟中儲存被接受時，目的地清空並標記關閉中，且不留暫存通知
     @Test
     func closeFormForSave_表單開啟中_清空目的地並標記關閉中() {
         // Given
@@ -62,7 +62,7 @@ struct CampaignPresentationFeatureTests {
         #expect(state.queue.pendingNotice == nil)
     }
 
-    /// 名稱重複時把原因寫進表單，表單維持開啟且佇列不受影響
+    /// 驗證表單開啟中顯示名稱重複時，重名原因寫進表單，表單維持開啟，且不影響通知佇列
     @Test
     func showNameConflict_表單開啟中_寫入重名原因且表單維持開啟() {
         // Given
@@ -80,7 +80,7 @@ struct CampaignPresentationFeatureTests {
         #expect(state.queue.pendingNotice == nil)
     }
 
-    /// 表單被取消或下滑關閉時清空目的地，並標記表單開始關閉，等動畫結束再呈現暫存通知
+    /// 驗證表單被取消或下滑關閉時，目的地清空並標記關閉中
     @Test
     @MainActor
     func destination_關閉表單_清空目的地並標記關閉中() async {
@@ -102,7 +102,7 @@ struct CampaignPresentationFeatureTests {
         #expect(store.state.queue.isFormClosing)
     }
 
-    /// 提示 alert 被關閉時只清空目的地，不標記表單關閉中
+    /// 驗證提示 alert 被關閉時，只清空目的地，不標記表單關閉中
     @Test
     @MainActor
     func destination_關閉提示_只清空目的地() async {
@@ -123,7 +123,7 @@ struct CampaignPresentationFeatureTests {
         #expect(store.state.queue.isFormClosing == false)
     }
 
-    /// 表單名稱通過本地驗證後，把完整的儲存請求交給容器，表單本身維持開啟
+    /// 驗證表單以有效名稱送出時，會送出完整的儲存請求，表單本身維持開啟
     @Test
     @MainActor
     func destination_表單送出名稱_轉交儲存意圖() async {
@@ -149,7 +149,7 @@ struct CampaignPresentationFeatureTests {
         #expect(store.state.destination == .edit(editState))
     }
 
-    /// 刪除確認按下確定後，把要刪除的開團識別值交給容器，提示在呈現後清空
+    /// 驗證刪除確認按下確定後，會送出要刪除的開團識別值，提示隨即關閉
     @Test
     @MainActor
     func destination_確認刪除_轉交刪除意圖() async {
@@ -170,7 +170,7 @@ struct CampaignPresentationFeatureTests {
         #expect(store.state.destination == nil)
     }
 
-    /// 結團確認按下確定後，把要結團的開團識別值交給容器，提示在呈現後清空
+    /// 驗證結團確認按下確定後，會送出要結團的開團識別值，提示隨即關閉
     @Test
     @MainActor
     func destination_確認結團_轉交結團意圖() async {
@@ -191,7 +191,7 @@ struct CampaignPresentationFeatureTests {
         #expect(store.state.destination == nil)
     }
 
-    /// 權限提示的「前往設定」以注入的服務開啟系統設定一次，提示在呈現後清空
+    /// 驗證權限提示按下前往設定時，以注入的服務開啟系統設定一次，提示隨即關閉
     @Test
     @MainActor
     func destination_前往設定_呼叫開啟設定服務() async {
@@ -219,7 +219,7 @@ struct CampaignPresentationFeatureTests {
         #expect(openCount.value == 1)
     }
 
-    /// 表單開啟中收到通知，先暫存且保留正在編輯的表單
+    /// 驗證表單開啟中收到通知時，通知先暫存，正在編輯的表單保留
     @Test
     @MainActor
     func noticeRequested_表單開啟中_暫存通知且保留表單() async {
@@ -240,7 +240,7 @@ struct CampaignPresentationFeatureTests {
         #expect(store.state.queue.isFormClosing == false)
     }
 
-    /// 表單關閉中收到通知，先暫存且目的地維持空白，等關閉動畫結束才呈現
+    /// 驗證表單關閉中收到通知時，通知先暫存，目的地維持空白
     @Test
     @MainActor
     func noticeRequested_表單關閉中_暫存通知且目的地維持空白() async {
@@ -261,7 +261,7 @@ struct CampaignPresentationFeatureTests {
         #expect(store.state.queue.isFormClosing)
     }
 
-    /// 沒有表單也不在關閉中時，通知直接設進目的地
+    /// 驗證沒有表單且不在關閉中時，通知直接設進目的地
     @Test
     @MainActor
     func noticeRequested_沒有表單_直接呈現通知() async {

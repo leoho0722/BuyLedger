@@ -7,7 +7,8 @@
 
 import XCTest
 
-/// 訂單清單的狀態篩選、搜尋與空狀態流程測試
+/// 訂單清單的狀態篩選、搜尋與空狀態流程 UI 測試
+@MainActor
 final class OrdersListTests: BLUITestCase {
 
     // MARK: - Properties
@@ -27,8 +28,7 @@ final class OrdersListTests: BLUITestCase {
     /// `fullOrders` 中客戶為「Mika 周」的訂單編號 (供搜尋排除斷言)
     private static let mikaCustomerOrderID = "BL-2604-017"
 
-    /// 選「已確認」後，已確認的訂單留在清單，集運中的訂單被篩掉
-    @MainActor
+    /// 驗證選「已確認」狀態後，已確認的訂單留在清單，集運中的訂單被篩掉
     func testSelectStatusChip_選已確認_留下已確認訂單並篩掉集運中訂單() {
         // Given
         let app = launch(LaunchOptions(seed: .fullOrders))
@@ -51,9 +51,10 @@ final class OrdersListTests: BLUITestCase {
         }
     }
 
-    /// 輸入某客戶名後，該客戶的訂單留在清單，他人的訂單被篩掉
-    @MainActor
-    func testSearch_輸入客戶名稱_留下該客戶訂單並篩掉他人訂單() {
+    /// 驗證搜尋輸入「林書宇」後，該客戶的兩筆訂單留在清單，「Mika 周」的訂單被篩掉
+    ///
+    /// - Throws: 找不到可互動的搜尋欄時丟出測試錯誤
+    func testSearch_輸入客戶名稱_留下該客戶訂單並篩掉他人訂單() throws {
         // Given
         let app = launch(LaunchOptions(seed: .fullOrders))
         let orders = openOrdersList(app)
@@ -63,7 +64,7 @@ final class OrdersListTests: BLUITestCase {
 
         // When
         // 客戶名屬使用者資料、可作為文字輸入；斷言仍走訂單列 identifier
-        orders.search("林書宇")
+        try orders.search("林書宇")
 
         // Then
         for orderID in Self.linCustomerOrderIDs where !orders.hasOrder(orderID: orderID) {
@@ -74,15 +75,16 @@ final class OrdersListTests: BLUITestCase {
         }
     }
 
-    /// 搜尋不存在的關鍵字時，清單顯示空狀態
-    @MainActor
-    func testSearch_沒有符合的訂單_顯示空狀態() {
+    /// 驗證搜尋不存在的關鍵字「ZZZ-NO-SUCH-ORDER」時，清單顯示空狀態
+    ///
+    /// - Throws: 找不到可互動的搜尋欄時丟出測試錯誤
+    func testSearch_沒有符合的訂單_顯示空狀態() throws {
         // Given
         let app = launch(LaunchOptions(seed: .fullOrders))
         let orders = openOrdersList(app)
 
         // When
-        orders.search("ZZZ-NO-SUCH-ORDER")
+        try orders.search("ZZZ-NO-SUCH-ORDER")
 
         // Then
         assertEmptyState(BLAccessibilityID.Orders.listEmptyState, in: app)
@@ -100,7 +102,6 @@ private extension OrdersListTests {
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的訂單清單 Page Object
-    @MainActor
     func openOrdersList(
         _ app: XCUIApplication,
         file: StaticString = #filePath,

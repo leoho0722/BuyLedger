@@ -11,11 +11,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證既有訂單與合併確認入口的開團選項，保留已選的收單開團
+/// `OrdersFeature` 的單元測試，以 TestStore 逐步驗證既有訂單與合併確認兩個入口的開團選項
 @MainActor
 struct OrderEditCampaignOptionsTests {
 
-    /// 編輯入口只帶入進行中開團，並保留既有訂單的已收單歸屬
+    /// 驗證從訂單列表進入編輯時，開團選項只列進行中開團與本訂單已歸屬的已收單開團，草稿保留既有歸屬，且非合併編輯
     ///
     /// - Parameter testCase: 編輯開團選項案例
     @Test(arguments: Self.campaignOptionCases)
@@ -82,7 +82,7 @@ struct OrderEditCampaignOptionsTests {
         #expect(editor?.isMergeContext == false)
     }
 
-    /// 合併確認保留來源訂單的已收單開團與快取沒有的幣別，排除無關已收單開團
+    /// 驗證合併確認到期時，開團選項只含來源訂單的開團，草稿保留這些歸屬，幣別選項補上快取沒有的訂單幣別且不改寫快取
     ///
     /// - Throws: 合併確認表單未建立時由 `#require` 丟出
     @Test

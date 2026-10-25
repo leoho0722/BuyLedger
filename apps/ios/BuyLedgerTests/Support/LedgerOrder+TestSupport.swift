@@ -14,7 +14,7 @@ import Foundation
 
 extension LedgerOrder {
 
-    /// 抹平持久化 round-trip 重新產生的 `LedgerOrderItem.id` 後比較整筆訂單
+    /// 將持久化往返後重新產生的 `LedgerOrderItem.id` 改為固定值，以便整筆比較訂單
     ///
     /// - Parameter order: 要正規化的訂單
     /// - Returns: 品項識別值固定後的訂單
@@ -26,12 +26,12 @@ extension LedgerOrder {
             status: order.status,
             currency: order.currency,
             date: order.date,
-            items: order.items.map { item in
+            items: order.items.map {
                 LedgerOrderItem(
                     id: placeholderID,
-                    name: item.name,
-                    quantity: item.quantity,
-                    unitPrice: item.unitPrice
+                    name: $0.name,
+                    quantity: $0.quantity,
+                    unitPrice: $0.unitPrice
                 )
             },
             itemCost: order.itemCost,

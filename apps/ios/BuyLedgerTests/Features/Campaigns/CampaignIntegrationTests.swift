@@ -11,11 +11,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// 經列表、詳情與 Service 驗證開團的載入、刪除、改名與收款切換，以及根功能的訂單投影同步
+/// `RootFeature` 的單元測試，涵蓋開團載入與訂單投影同步到各頁
 @MainActor
 struct CampaignIntegrationTests {
 
-    /// 列表出現後由 Service 載入開團，根功能同步訂單、總覽與分析的開團副本
+    /// 驗證列表出現時由服務載入一次開團，載入結果同步到開團、訂單、總覽與分析的開團副本
     @Test
     func campaigns_列表出現並載入開團_同步各頁開團副本() async {
         // Given
@@ -84,7 +84,7 @@ struct CampaignIntegrationTests {
         #expect(store.state.insights.campaigns == loaded)
     }
 
-    /// 訂單投影更新後同步開團摘要
+    /// 驗證訂單投影更新後，開團摘要的訂單數與應收金額隨之更新
     ///
     /// - Throws: 初始摘要與第一筆訂單不符時由 `try #require` 丟出
     @Test
@@ -196,7 +196,7 @@ struct CampaignIntegrationTests {
             $0.orders.list.selectedOrderID = "O1"
             $0.orders.detail.regularDetail = OrderDetailFeature.State(
                 orderID: "O1",
-                orders: SharedReader($0.orders.$orders)
+                orders: SharedReader(initial.orders.$orders)
             )
             $0.campaigns.$orders.withLock {
                 $0 = updatedOrders

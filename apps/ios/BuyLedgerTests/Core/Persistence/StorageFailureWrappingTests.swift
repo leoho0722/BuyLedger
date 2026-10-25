@@ -10,12 +10,12 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證資料庫寫入失敗能保留來源錯誤資訊
+/// `PersistenceError` 的單元測試，涵蓋包裝進各領域錯誤後的來源資訊保留
 struct StorageFailureWrappingTests {
 
-    /// 寫入失敗時保留來源錯誤的 `domain` 與 `code`
+    /// 驗證寫入錯誤經各包裝型別取出後，來源錯誤的 `domain` 與 `code` 不變
     ///
-    /// - Parameter scenario: 要驗證的錯誤型別
+    /// - Parameter scenario: 要驗證的包裝型別
     /// - Throws: 轉換結果或錯誤 case 不符時由 `#require` 丟出測試失敗
     @Test(arguments: Scenario.allCases)
     func unwrappedStorage_儲存錯誤_保留來源錯誤網域與代碼(scenario: Scenario) throws {

@@ -7,40 +7,40 @@
 
 import SwiftUI
 import Testing
+
 @testable import BuyLedger
 
-/// 驗證 zoomAnimation 的兩種結果
+/// `BLPhotoViewer` 的單元測試，涵蓋 `zoomAnimation` 的兩種結果
 struct BLPhotoViewerTests {
 
-    /// 減少動態效果時不使用縮放動畫
-    @Test func zoomAnimation_isNilWhenReduceMotionIsEnabled() {
-        // Given：裝置啟用減少動態效果
-        let reduceMotion = true
+    /// 驗證減少動態效果開啟時，`zoomAnimation` 回傳 `nil`，不使用縮放動畫
+    @Test
+    func zoomAnimation_減少動態效果_不使用縮放動畫() {
+        // Given
+        let isReduceMotionEnabled = true
 
-        // When：取得相片檢視器的縮放動畫
-        let actual = BLPhotoViewer.zoomAnimation(reduceMotion: reduceMotion)
+        // When
+        let actual = BLPhotoViewer.zoomAnimation(reduceMotion: isReduceMotionEnabled)
 
-        // Then：不應使用縮放動畫
+        // Then
         #expect(actual == nil)
     }
 
-    /// 偏好關閉時，縮放動畫應維持原本的快速動畫，而非 `nil`
+    /// 驗證減少動態效果關閉時，縮放動畫維持 `.snappy(duration: 0.2)`，而非 `nil`
     ///
-    /// - Throws: 動畫不存在時拋出測試錯誤
+    /// - Throws: 動畫不存在時丟出測試錯誤
     @Test
-    func zoomAnimation_isNonNilWhenReduceMotionIsDisabled() throws(any Error) {
-        // Given：裝置未啟用減少動態效果
-        let reduceMotion = false
+    func zoomAnimation_關閉減少動態效果_保留快速縮放動畫() throws {
+        // Given
+        let isReduceMotionEnabled = false
 
-        // When：取得相片檢視器的縮放動畫
+        // When
         let actual = try #require(
-            BLPhotoViewer.zoomAnimation(reduceMotion: reduceMotion),
+            BLPhotoViewer.zoomAnimation(reduceMotion: isReduceMotionEnabled),
             "關閉減少動態效果時應使用縮放動畫"
         )
 
-        // Then：動畫應是預期的快速縮放動畫
-        #expect(
-            String(reflecting: actual) == String(reflecting: Animation.snappy(duration: 0.2))
-        )
+        // Then
+        #expect(String(reflecting: actual) == String(reflecting: Animation.snappy(duration: 0.2)))
     }
 }

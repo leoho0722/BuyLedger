@@ -21,7 +21,7 @@ struct MergeFlowScreen {
 @MainActor
 extension MergeFlowScreen {
 
-    /// 候選清單是否含指定訂單編號的列
+    /// 等待指定訂單編號的候選列出現
     ///
     /// - Parameters:
     ///   - orderID: 訂單編號
@@ -57,9 +57,7 @@ extension MergeFlowScreen {
 
 extension MergeFlowScreen: Screen {
 
-    /// 以 `BLAccessibilityID.OrderMerge.candidateListRoot` 指定合併候選 sheet 的根元素
-    ///
-    /// - Returns: 候選清單捲動容器的 `identifier`
+    /// 合併候選 sheet 的根元素 identifier，即候選清單捲動容器
     var rootIdentifier: String {
         BLAccessibilityID.OrderMerge.candidateListRoot
     }

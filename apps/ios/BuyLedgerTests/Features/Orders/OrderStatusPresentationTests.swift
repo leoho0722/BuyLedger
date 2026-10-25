@@ -9,36 +9,49 @@ import Testing
 
 @testable import BuyLedger
 
-/// 訂單狀態語意色調的對應測試，確認每個狀態與設計規格一致
+/// `OrderStatus` 的單元測試，逐一核對各狀態的語意色調
 ///
-/// - Note: 落實 interface-consistency 的「Purchased status reads as progress, not warning」
-/// - Note: 落實 interface-consistency 的「Statuses genuinely needing attention keep the warning color」
+/// - Note: 依 interface-consistency 規格，已採購屬進行中，不使用警示色
+/// - Note: 需要注意的狀態保留警示色
 struct OrderStatusPresentationTests {
 
-    /// 確認訂單狀態顯示的色調與規格指定的色調相同
+    /// 驗證各訂單狀態的語意色調與設計規格指定的 `BLTone` 相同 (如 `cancelled` 為 `destructive`)
     ///
-    /// - Parameters:
-    ///   - status: 要查詢色調的訂單狀態
-    ///   - tone: 規格指定的語意色調
+    /// - Parameter testCase: 訂單狀態與預期語意色調
     @Test(arguments: [
-        (OrderStatus.quoting, BLTone.informative),
-        (.confirmed, .accent),
-        (.purchased, .informative),
-        (.shipping, .informative),
-        (.partiallyArrived, .warning),
-        (.arrived, .accent),
-        (.delivered, .success),
-        (.pickedUp, .success),
-        (.cancelled, .destructive),
-        (.merged, .neutral),
+        StatusToneCase(status: .quoting, tone: .informative),
+        StatusToneCase(status: .confirmed, tone: .accent),
+        StatusToneCase(status: .purchased, tone: .informative),
+        StatusToneCase(status: .shipping, tone: .informative),
+        StatusToneCase(status: .partiallyArrived, tone: .warning),
+        StatusToneCase(status: .arrived, tone: .accent),
+        StatusToneCase(status: .delivered, tone: .success),
+        StatusToneCase(status: .pickedUp, tone: .success),
+        StatusToneCase(status: .cancelled, tone: .destructive),
+        StatusToneCase(status: .merged, tone: .neutral),
     ])
-    func tone_各訂單狀態_對應設計系統語意色調(status: OrderStatus, tone: BLTone) {
+    func tone_各訂單狀態_對應設計系統語意色調(testCase: StatusToneCase) {
         // Given
 
         // When
-        let actualTone = status.tone
+        let actualTone = testCase.status.tone
 
         // Then
-        #expect(actualTone == tone)
+        #expect(actualTone == testCase.tone)
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrderStatusPresentationTests {
+
+    /// 訂單狀態與設計系統色調的對應
+    struct StatusToneCase: Sendable {
+
+        /// 要查詢色調的訂單狀態
+        let status: OrderStatus
+
+        /// 規格指定的語意色調
+        let tone: BLTone
     }
 }

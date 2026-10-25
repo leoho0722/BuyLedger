@@ -10,10 +10,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證開團提醒的標題格式
+/// `Campaign` 的單元測試，涵蓋行事曆提醒標題
 struct CalendarReminderTests {
 
-    /// 行事曆事件標題固定為「開團名稱」訂購提醒，讓使用者在行事曆認得是哪一團的提醒
+    /// 驗證 `Campaign.reminderTitle` 用引號包住開團名稱，後接「訂購提醒」，讓使用者在行事曆認得是哪一團的提醒
     @Test
     func reminderTitle_開團名稱_引號包住名稱後接訂購提醒() {
         // Given

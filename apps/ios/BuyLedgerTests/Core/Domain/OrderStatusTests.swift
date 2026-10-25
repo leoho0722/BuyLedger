@@ -7,77 +7,138 @@
 
 import Foundation
 import Testing
+
 @testable import BuyLedger
 
-@MainActor
-/// 驗證訂單狀態的顯示與分組
+/// `OrderStatus` 的單元測試，涵蓋顯示文字與分組
 struct OrderStatusTests {
 
-    @Test func mergedCaseHasExpectedRawValueAndTitle() {
-        #expect(OrderStatus.merged.rawValue == "merged")
-        #expect(OrderStatus.merged.title == "orders.list.label.merged")
+    /// 驗證合併狀態使用固定的 `merged` 儲存值，避免既有資料無法讀回
+    @Test
+    func rawValue_合併狀態_儲存值為合併() {
+        // Given
+
+        // When
+        let rawValue = OrderStatus.merged.rawValue
+
+        // Then
+        #expect(rawValue == "merged")
     }
 
-    /// 合併狀態在顯示順序上應排在已取消之後
+    /// 驗證合併狀態的顯示文字，使用訂單清單的合併本地化鍵
+    @Test
+    func title_合併狀態_顯示合併鍵() {
+        // Given
+
+        // When
+        let title = OrderStatus.merged.title
+
+        // Then
+        #expect(title == "orders.list.label.merged")
+    }
+
+    /// 驗證 `allCases` 的宣告順序中，合併狀態位於已取消之後
     ///
-    /// - Throws: 狀態清單缺少預期 case 時拋出測試錯誤
-    @Test func mergedStatus_isOrderedAfterCancelled() throws {
-        // Given：取得所有訂單狀態
+    /// - Throws: 狀態清單缺少預期 case 時丟出測試錯誤
+    @Test
+    func allCases_合併狀態_排在已取消之後() throws {
+        // Given
         let allCases = OrderStatus.allCases
 
-        // When：找出合併與已取消的順序位置
+        // When
         let mergedIndex = try #require(allCases.firstIndex(of: .merged))
         let cancelledIndex = try #require(allCases.firstIndex(of: .cancelled))
 
-        // Then：合併應排在已取消之後
+        // Then
         #expect(mergedIndex > cancelledIndex)
     }
 
-    @Test func mergedIsExcludedFromRealizedStatuses() {
-        #expect(!OrderStatus.realizedStatuses.contains(.merged))
+    /// 驗證 `realizedStatuses` 不含合併狀態，且依序為明列的七種狀態
+    @Test
+    func realizedStatuses_合併狀態_不計入已實現狀態() {
+        // Given
+
+        // When
+        let realizedStatuses = OrderStatus.realizedStatuses
+
+        // Then
+        #expect(!realizedStatuses.contains(.merged))
         #expect(
-            OrderStatus.realizedStatuses
+            realizedStatuses
                 == [
-                    .confirmed, .purchased, .shipping, .partiallyArrived, .arrived, .delivered,
+                    .confirmed,
+                    .purchased,
+                    .shipping,
+                    .partiallyArrived,
+                    .arrived,
+                    .delivered,
                     .pickedUp,
                 ]
         )
     }
 
-    @Test func pickedUpCaseHasExpectedRawValueAndTitle() {
-        #expect(OrderStatus.pickedUp.rawValue == "pickedUp")
-        #expect(OrderStatus.pickedUp.title == "common.general.label.pickedUp")
+    /// 驗證已取貨狀態使用固定的 `pickedUp` 儲存值，避免既有資料無法讀回
+    @Test
+    func rawValue_已取貨狀態_儲存值為已取貨() {
+        // Given
+
+        // When
+        let rawValue = OrderStatus.pickedUp.rawValue
+
+        // Then
+        #expect(rawValue == "pickedUp")
     }
 
-    /// 已取貨是已實現狀態，且顯示順序排在已交付之後
-    @Test func pickedUpStatus_isRealized() {
-        // Given：取得已實現狀態
+    /// 驗證已取貨狀態的顯示文字，沿用共用的已取貨本地化鍵
+    @Test
+    func title_已取貨狀態_顯示已取貨鍵() {
+        // Given
+
+        // When
+        let title = OrderStatus.pickedUp.title
+
+        // Then
+        #expect(title == "common.general.label.pickedUp")
+    }
+
+    /// 驗證已取貨狀態屬於 `realizedStatuses`
+    @Test
+    func realizedStatuses_已取貨狀態_屬於已實現狀態() {
+        // Given
         let realizedStatuses = OrderStatus.realizedStatuses
 
-        // When：檢查已取貨是否屬於已實現狀態
+        // When
         let isRealized = realizedStatuses.contains(.pickedUp)
 
-        // Then：已取貨應屬於已實現狀態
+        // Then
         #expect(isRealized)
     }
 
-    /// 已取貨的顯示順序應排在已交付之後
+    /// 驗證 `allCases` 的宣告順序中，已取貨位於已交付之後
     ///
-    /// - Throws: 狀態清單缺少預期 case 時拋出測試錯誤
-    @Test func pickedUpStatus_isOrderedAfterDelivered() throws {
-        // Given：取得所有訂單狀態
+    /// - Throws: 狀態清單缺少預期 case 時丟出測試錯誤
+    @Test
+    func allCases_已取貨狀態_排在已交付之後() throws {
+        // Given
         let allCases = OrderStatus.allCases
 
-        // When：找出已取貨與已交付的順序位置
+        // When
         let pickedUpIndex = try #require(allCases.firstIndex(of: .pickedUp))
         let deliveredIndex = try #require(allCases.firstIndex(of: .delivered))
 
-        // Then：已取貨應排在已交付之後
+        // Then
         #expect(pickedUpIndex > deliveredIndex)
     }
 
-    @Test func statusFilterBrowsingCasesIncludeMerged() {
-        // 狀態篩選也要包含已合併，讓使用者找得到舊訂單
-        #expect(OrderStatusFilter.orderBrowsingCases.contains(.status(.merged)))
+    /// 驗證 `OrderStatusFilter.orderBrowsingCases` 包含已合併狀態，讓使用者能找到舊訂單
+    @Test
+    func orderBrowsingCases_狀態篩選_包含已合併() {
+        // Given
+
+        // When
+        let browsingCases = OrderStatusFilter.orderBrowsingCases
+
+        // Then
+        #expect(browsingCases.contains(.status(.merged)))
     }
 }

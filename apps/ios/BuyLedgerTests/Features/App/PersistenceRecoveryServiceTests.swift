@@ -11,10 +11,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證 `PersistenceRecoveryService` 把 store 隔離交給 Database
+/// `PersistenceRecoveryService` 的單元測試，以磁碟上的 store 檔確認 Service 透過 Database 搬移檔案
 struct PersistenceRecoveryServiceTests {
 
-    /// 確認復原 Service 將 store 隔離工作交給 Database
+    /// 驗證復原時 Service 透過注入的 Database，把磁碟上的 store 檔移到隔離目錄 Recovered-1，原位置不再有 store 檔
     ///
     /// - Throws: 暫存資料庫建立失敗時丟出底層錯誤；store 檔不存在時 `#require` 會使測試失敗；
     ///   隔離目錄建立失敗時丟出 `.directoryCreationFailed`；store 檔搬移失敗時丟出 `.fileMoveFailed`
@@ -23,9 +23,9 @@ struct PersistenceRecoveryServiceTests {
         // Given
         let fixture = try ResidueProbeModels.makeDiskFixture()
         defer {
-            BuyLedgerDatabaseTests.removeTemporaryDirectory(at: fixture.directoryURL)
+            BuyLedgerDatabaseTestSupport.removeTemporaryDirectory(at: fixture.directoryURL)
         }
-        let database = BuyLedgerDatabaseTests.makeDatabase(with: fixture)
+        let database = BuyLedgerDatabaseTestSupport.makeDatabase(with: fixture)
         let fileManager = FileManager.default
         let storeURL = ResidueProbeModels.storeURL(in: fixture.directoryURL)
         try #require(fileManager.fileExists(atPath: storeURL.path))

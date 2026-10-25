@@ -11,12 +11,12 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證總覽功能
-@MainActor
+/// `DashboardFeature` 的單元測試，以 TestStore 核對重新整理與導覽請求，並檢查進行中開團列
 struct DashboardFeatureTests {
 
-    /// 畫面出現時送出 `.view(.task)`，記錄注入的日期脈絡並轉成 `refresh` 委派交給根功能
+    /// 驗證畫面出現送出 `.view(.task)` 時，`dateContext` 記錄注入的現在時間與行事曆，並轉成 `delegate(.refresh)` 交給根功能
     @Test
+    @MainActor
     func task_畫面出現_轉成refresh委派() async {
         // Given
         let store = TestStore(initialState: DashboardFeature.State()) {
@@ -38,8 +38,9 @@ struct DashboardFeatureTests {
         await store.receive(\.delegate.refresh)
     }
 
-    /// 載入失敗畫面的重試鈕與畫面出現相同，同樣記錄日期脈絡並轉成 `refresh` 委派
+    /// 驗證點擊重試時，`dateContext` 記錄注入的現在時間與行事曆，並轉成 `delegate(.refresh)`，與畫面出現相同
     @Test
+    @MainActor
     func retryTapped_點擊重試_轉成refresh委派() async {
         // Given
         let store = TestStore(initialState: DashboardFeature.State()) {
@@ -61,8 +62,9 @@ struct DashboardFeatureTests {
         await store.receive(\.delegate.refresh)
     }
 
-    /// 點擊進行中開團卡，把開團名稱交給根功能，不改動狀態
+    /// 驗證點擊進行中開團卡時，把開團名稱以 `delegate(.campaignTapped)` 交給根功能，State 維持不變
     @Test
+    @MainActor
     func campaignTapped_點擊進行中開團卡_轉成帶開團名稱的委派() async {
         // Given
         let store = TestStore(initialState: DashboardFeature.State()) {
@@ -76,8 +78,9 @@ struct DashboardFeatureTests {
         await store.receive(\.delegate.campaignTapped, "四月韓國團")
     }
 
-    /// 點擊「建立第一筆訂單」，轉成新訂單委派，不改動狀態
+    /// 驗證點擊「建立第一筆訂單」時，轉成 `delegate(.newOrderTapped)`，State 維持不變
     @Test
+    @MainActor
     func newOrderTapped_點擊建立第一筆訂單_轉成新訂單委派() async {
         // Given
         let store = TestStore(initialState: DashboardFeature.State()) {
@@ -91,8 +94,9 @@ struct DashboardFeatureTests {
         await store.receive(\.delegate.newOrderTapped)
     }
 
-    /// 點擊「查看全部」，轉成查看全部訂單委派，不改動狀態
+    /// 驗證點擊「查看全部」時，轉成 `delegate(.viewAllOrdersTapped)`，State 維持不變
     @Test
+    @MainActor
     func viewAllOrdersTapped_點擊查看全部_轉成查看全部委派() async {
         // Given
         let store = TestStore(initialState: DashboardFeature.State()) {
@@ -106,7 +110,7 @@ struct DashboardFeatureTests {
         await store.receive(\.delegate.viewAllOrdersTapped)
     }
 
-    /// 沒有進行中的開團時，進行中開團列為空
+    /// 驗證開團都已結束時，`ongoingCampaignRows` 為空陣列
     @Test
     func ongoingCampaignRows_沒有進行中開團_回傳空陣列() {
         // Given
@@ -120,7 +124,7 @@ struct DashboardFeatureTests {
         #expect(rows.isEmpty)
     }
 
-    /// 只列出進行中的開團，並依開團清單的順序排列
+    /// 驗證 `ongoingCampaignRows` 只列出進行中的開團，並保留 `campaigns` 清單的順序
     @Test
     func ongoingCampaignRows_混合開團狀態_只列進行中且依清單順序() {
         // Given
@@ -138,9 +142,9 @@ struct DashboardFeatureTests {
         #expect(names == ["甲團", "丙團"])
     }
 
-    /// 進行中開團的彙總依歸屬訂單計算，數字以字面值比對
+    /// 驗證進行中開團有兩筆歸屬訂單時，`summary` 依訂單彙總出訂單數、應收、已收、到貨筆數、有效筆數 (未取消、未合併) 與到貨比例
     @Test
-    func ongoingCampaignRows_進行中開團有訂單_彙總與字面值相符() {
+    func ongoingCampaignRows_進行中開團有訂單_彙總訂單數應收已收與到貨() {
         // Given
         var state = DashboardFeature.State()
         state.campaigns = [Campaign.fixture(id: "C1", name: "甲團", status: .ongoing)]
@@ -173,7 +177,7 @@ struct DashboardFeatureTests {
         #expect(summary?.deliveryRatio == 0.5)
     }
 
-    /// 進行中的開團沒有歸屬訂單時仍保留該列，彙總為零
+    /// 驗證進行中開團沒有歸屬訂單時，`ongoingCampaignRows` 仍保留該列，`summary` 的訂單數、應收與到貨比例皆為零
     @Test
     func ongoingCampaignRows_進行中開團沒有訂單_彙總為零() {
         // Given

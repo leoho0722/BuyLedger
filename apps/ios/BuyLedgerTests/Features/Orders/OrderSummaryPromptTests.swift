@@ -11,34 +11,32 @@ import Testing
 
 @testable import BuyLedger
 
-/// AI 商品摘要與完整提示文字的既有行為測試
+/// `OrderSummaryPrompt` 的單元測試，鎖定既有的提示文字格式，包含類別範圍、空明細、名稱整理與二百筆上限
 struct OrderSummaryPromptTests {
 
-    /// 提示範圍涵蓋全部選取類別，名稱依語言排序
+    /// 驗證提示範圍在已選類別為空時寫為涵蓋所有類別，有選取時列出排序後的類別名稱並以頓號串接
     ///
-    /// - Parameters:
-    ///   - categories: 已選取類別
-    ///   - expectedScope: 規格表對應的範圍文字
+    /// - Parameter testCase: 已選類別與範圍文字的預期
     @Test(arguments: [
-        (Set<String>(), "(涵蓋目前列表所有類別)"),
-        (Set<String>(["美妝"]), "(已篩選類別：美妝)"),
-        (Set<String>(["書籍", "美妝"]), "(已篩選類別：美妝、書籍)"),
+        CategoryScopeCase(categories: [], expectedScope: "(涵蓋目前列表所有類別)"),
+        CategoryScopeCase(categories: ["美妝"], expectedScope: "(已篩選類別：美妝)"),
+        CategoryScopeCase(categories: ["書籍", "美妝"], expectedScope: "(已篩選類別：美妝、書籍)"),
     ])
-    func summaryPrompt_類別範圍範例_列出排序後的選取名稱(categories: Set<String>, expectedScope: String) {
+    func summaryPrompt_類別範圍範例_列出排序後的選取名稱(testCase: CategoryScopeCase) {
         // Given
         let orders: [LedgerOrder] = []
 
         // When
         let prompt = OrderSummaryPrompt.summaryPrompt(
             orders: orders,
-            selectedCategories: categories
+            selectedCategories: testCase.categories
         )
 
         // Then
-        #expect(prompt.contains(expectedScope))
+        #expect(prompt.contains(testCase.expectedScope))
     }
 
-    /// 空訂單清單或沒有品項時，提示保留空明細文字
+    /// 驗證列表沒有任何商品明細 (無訂單或訂單沒有品項) 時，提示在明細處保留「目前列表沒有任何商品明細」並前後空一行
     ///
     /// - Parameter hasOrder: 是否提供沒有品項的訂單
     @Test(arguments: [false, true])
@@ -53,7 +51,7 @@ struct OrderSummaryPromptTests {
         #expect(prompt.contains("\n\n(目前列表沒有任何商品明細)\n\n"))
     }
 
-    /// 類別與品名去掉首尾空白，空白類別略過、沒有類別時顯示「未分類」，空白品名顯示「未命名商品」，順序與數值不變
+    /// 驗證類別與品名去除首尾空白後呈現，空白類別略過、無類別時顯示「未分類」，空白品名顯示「未命名商品」，順序、數量、單價與幣別原樣保留
     @Test
     func summaryPrompt_空白類別品名與多幣別_保留原有格式() {
         // Given
@@ -105,20 +103,27 @@ struct OrderSummaryPromptTests {
         #expect(prompt.contains("\n\n\(expected)\n\n"))
     }
 
-    /// 摘要在二百筆邊界保留固定筆數，只在超過時顯示省略提示
+    /// 驗證品項數在二百筆上下時，提示最多列出二百筆明細，只有超過時才在結尾顯示省略的筆數
     ///
-    /// - Parameters:
-    ///   - count: 測試訂單的品項數
-    ///   - expected: 依固定格式組出的期望商品明細文字
+    /// - Parameter testCase: 品項數與截取後的明細預期
     @Test(arguments: [
-        (199, String(repeating: "- [未分類] A x1 @ 10 TWD\n", count: 198)
-            + "- [未分類] A x1 @ 10 TWD"),
-        (200, String(repeating: "- [未分類] A x1 @ 10 TWD\n", count: 199)
-            + "- [未分類] A x1 @ 10 TWD"),
-        (201, String(repeating: "- [未分類] A x1 @ 10 TWD\n", count: 199)
-            + "- [未分類] A x1 @ 10 TWD\n…(其餘 1 個品項未列出)"),
+        ItemLimitCase(
+            count: 199,
+            expected: String(repeating: "- [未分類] A x1 @ 10 TWD\n", count: 198)
+                + "- [未分類] A x1 @ 10 TWD"
+        ),
+        ItemLimitCase(
+            count: 200,
+            expected: String(repeating: "- [未分類] A x1 @ 10 TWD\n", count: 199)
+                + "- [未分類] A x1 @ 10 TWD"
+        ),
+        ItemLimitCase(
+            count: 201,
+            expected: String(repeating: "- [未分類] A x1 @ 10 TWD\n", count: 199)
+                + "- [未分類] A x1 @ 10 TWD\n…(其餘 1 個品項未列出)"
+        ),
     ])
-    func summaryPrompt_品項數在上限前後_只截取二百筆(count: Int, expected: String) {
+    func summaryPrompt_品項數在上限前後_只截取二百筆(testCase: ItemLimitCase) {
         // Given
         let item = LedgerOrderItem(
             id: UUID(0),
@@ -129,7 +134,7 @@ struct OrderSummaryPromptTests {
         let orders = [
             LedgerOrder.fixture(
                 date: TestDependencies.fixedNow,
-                items: Array(repeating: item, count: count)
+                items: Array(repeating: item, count: testCase.count)
             ),
         ]
 
@@ -137,10 +142,10 @@ struct OrderSummaryPromptTests {
         let prompt = OrderSummaryPrompt.summaryPrompt(orders: orders, selectedCategories: [])
 
         // Then
-        #expect(prompt.contains("\n\n" + expected + "\n\n"))
+        #expect(prompt.contains("\n\n" + testCase.expected + "\n\n"))
     }
 
-    /// 品項上限跨訂單累計，省略數也包含後續訂單
+    /// 驗證明細上限跨訂單累計，超過二百筆後略過所有後續訂單的品項，省略數也一併計入
     @Test
     func summaryPrompt_跨訂單超過上限_略過所有後續品項() {
         // Given
@@ -179,7 +184,7 @@ struct OrderSummaryPromptTests {
         #expect(prompt.contains("\n\n" + expected + "\n\n"))
     }
 
-    /// 未篩選類別的提示保留完整原文與空行
+    /// 驗證沒有訂單且未篩選類別時，提示的完整原文 (含範圍文字與空明細) 與空行格式不變
     @Test
     func summaryPrompt_沒有類別篩選_顯示所有類別範圍() {
         // Given
@@ -202,7 +207,7 @@ struct OrderSummaryPromptTests {
             """)
     }
 
-    /// 已篩選類別的提示保留指定類別與商品明細
+    /// 驗證指定類別篩選時，提示的完整原文顯示該類別與對應的商品明細
     @Test
     func summaryPrompt_指定類別篩選_顯示類別與明細() {
         // Given
@@ -231,5 +236,30 @@ struct OrderSummaryPromptTests {
 
             請以條列與粗體強調重點，全文控制在約 200–300 字。只根據上面提供的資料作答，不要杜撰未出現的商品、數字或結論。
             """)
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrderSummaryPromptTests {
+
+    /// 摘要提示的類別範圍與預期文字
+    struct CategoryScopeCase: Sendable {
+
+        /// 已選取類別
+        let categories: Set<String>
+
+        /// 規格表對應的範圍文字
+        let expectedScope: String
+    }
+
+    /// 二百筆明細上限前後的輸入與完整預期
+    struct ItemLimitCase: Sendable {
+
+        /// 測試訂單的品項數
+        let count: Int
+
+        /// 依固定格式組出的預期商品明細文字
+        let expected: String
     }
 }

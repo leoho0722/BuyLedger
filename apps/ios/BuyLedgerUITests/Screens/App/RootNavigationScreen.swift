@@ -7,7 +7,7 @@
 
 import XCTest
 
-/// 根導覽的 Page Object
+/// 根導覽的 Page Object，供 UI 測試切換分頁並等待目的地就緒
 struct RootNavigationScreen {
 
     // MARK: - Properties
@@ -20,7 +20,7 @@ struct RootNavigationScreen {
 
     // MARK: - Init
 
-    /// 由受測 App 建立，並據以組出導覽分流器
+    /// 保存受測 App，並以它建立導覽分流器
     ///
     /// - Parameter app: 受測 App
     init(app: XCUIApplication) {
@@ -117,7 +117,7 @@ extension RootNavigationScreen {
         )
     }
 
-    /// 切到更多與設定頁，待其就緒才回傳
+    /// 切到更多頁，待其就緒才回傳
     ///
     /// - Parameters:
     ///   - timeout: 等待更多頁就緒的秒數
@@ -143,9 +143,7 @@ extension RootNavigationScreen {
 
 extension RootNavigationScreen: Screen {
 
-    /// 以 `BLAccessibilityID.Dashboard.root` 指定根導覽的就緒判定，啟動後預設停在總覽頁
-    ///
-    /// - Returns: 總覽頁根元素的 `identifier`
+    /// 根導覽就緒判定用的 identifier，取總覽頁根元素 (啟動後預設停在總覽頁)
     var rootIdentifier: String {
         BLAccessibilityID.Dashboard.root
     }
@@ -191,7 +189,7 @@ private extension RootNavigationScreen {
         return false
     }
 
-    /// 用於判定切頁就緒的目的地根 identifier
+    /// 取目標分頁的根 identifier，供判定切頁就緒
     ///
     /// - Parameter tab: 目標分頁
     /// - Returns: 目的地根 identifier；未指定根容器的分頁回傳 `nil` 並沿用選取態判斷
@@ -211,7 +209,7 @@ private extension RootNavigationScreen {
         }
     }
 
-    /// 側邊欄的分頁列元素
+    /// 取側邊欄中指定分頁的元素
     ///
     /// - Parameter tab: 要查詢的分頁
     /// - Returns: 側邊欄中的分頁元素
@@ -220,7 +218,7 @@ private extension RootNavigationScreen {
         app.descendants(matching: .any)[BLAccessibilityID.Root.tab(tab.identifierKey)]
     }
 
-    /// 分頁列的系統 tab bar 按鈕
+    /// 取底部分頁列中指定分頁的按鈕
     ///
     /// - Parameter tab: 要查詢的分頁
     /// - Returns: 底部分頁列中的按鈕

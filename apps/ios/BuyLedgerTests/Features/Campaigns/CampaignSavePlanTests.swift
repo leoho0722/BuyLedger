@@ -10,12 +10,12 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證儲存計畫的欄位組裝、改名與提醒，以及父層重名判斷
+/// `CampaignSavePlan` 的單元測試，涵蓋欄位組裝、改名連動與提醒請求的產生
 struct CampaignSavePlanTests {
 
     // MARK: - Properties
 
-    /// 含結算日期的原始開團，驗證編輯時不清除封存資訊
+    /// 含結算日期的原始開團，用來確認編輯時不清除結算日期
     private static let original = Campaign.fixture(
         id: "ORIGINAL",
         name: "原團",
@@ -26,32 +26,21 @@ struct CampaignSavePlanTests {
         notes: "原備註"
     )
 
-    /// 新增採呼叫端識別值，編輯保留原識別值與結算日期，並套用草稿及去空白備註
+    /// 驗證新增時採用呼叫端給的新識別值且沒有結算日期，名稱與備註去除頭尾空白後組入開團，不產生提醒請求
     ///
-    /// - Parameter isEditing: 是否帶入原開團
-    /// - Throws: 無法建立 UTC 時區時拋出測試錯誤
-    @Test(arguments: [true, false])
-    func make_新增或編輯_組出識別值草稿與原結算日期(isEditing: Bool) throws(any Error) {
+    /// - Throws: 無法建立 UTC 時區時丟出測試錯誤
+    @Test
+    func make_新增_組出新識別值與空結算日期() throws {
         // Given
         let calendar = try TestDependencies.makeUTCCalendar()
-        var draft = Self.draft(original: isEditing ? Self.original : nil)
-        draft.name = "  新團  "
-        draft.openDate = Date(timeIntervalSince1970: 4_000)
-        draft.closeDate = Date(timeIntervalSince1970: 5_000)
-        draft.status = .closed
-        draft.notes = "  新備註\n "
-        let request = CampaignEditFeature.SaveRequest(
-            original: isEditing ? Self.original : nil,
-            name: "新團",
-            draft: draft
-        )
+        let request = Self.makeEditedRequest(original: nil)
         let expected = Campaign(
-            id: isEditing ? "ORIGINAL" : "NEW-ID",
+            id: "NEW-ID",
             name: "新團",
             openDate: Date(timeIntervalSince1970: 4_000),
             closeDate: Date(timeIntervalSince1970: 5_000),
             status: .closed,
-            settledDate: isEditing ? Date(timeIntervalSince1970: 3_000) : nil,
+            settledDate: nil,
             notes: "新備註"
         )
 
@@ -68,12 +57,43 @@ struct CampaignSavePlanTests {
         #expect(plan.reminder == nil)
     }
 
-    /// 新開團與原名未變不改訂單歸屬，原開團改名才提供完整前後名稱
+    /// 驗證編輯時保留原開團的識別值與結算日期，其餘欄位採用草稿內容，且不產生提醒請求
+    ///
+    /// - Throws: 無法建立 UTC 時區時丟出測試錯誤
+    @Test
+    func make_編輯_保留原識別值與結算日期() throws {
+        // Given
+        let calendar = try TestDependencies.makeUTCCalendar()
+        let request = Self.makeEditedRequest(original: Self.original)
+        let expected = Campaign(
+            id: "ORIGINAL",
+            name: "新團",
+            openDate: Date(timeIntervalSince1970: 4_000),
+            closeDate: Date(timeIntervalSince1970: 5_000),
+            status: .closed,
+            settledDate: Date(timeIntervalSince1970: 3_000),
+            notes: "新備註"
+        )
+
+        // When
+        let plan = CampaignSavePlan.make(
+            request: request,
+            existingLink: nil,
+            newID: "NEW-ID",
+            calendar: calendar
+        )
+
+        // Then
+        #expect(plan.campaign == expected)
+        #expect(plan.reminder == nil)
+    }
+
+    /// 驗證新增或原名未變時不產生改名連動，只有原開團改名才提供從原名到新名的連動
     ///
     /// - Parameter scenario: 原名稱、新名稱與獨立指定的改名連動
-    /// - Throws: 無法建立 UTC 時區時拋出測試錯誤
+    /// - Throws: 無法建立 UTC 時區時丟出測試錯誤
     @Test(arguments: RenameCase.allCases)
-    func make_原名有無變更_僅原開團改名時產生連動(scenario: RenameCase) throws(any Error) {
+    func make_原名有無變更_僅原開團改名時產生連動(scenario: RenameCase) throws {
         // Given
         let calendar = try TestDependencies.makeUTCCalendar()
         let original = scenario.originalName.map { name in
@@ -99,16 +119,16 @@ struct CampaignSavePlanTests {
         #expect(plan.rename == scenario.expectedRename)
     }
 
-    /// 儲存計畫保留提醒調解與完整事件參數，無需調解時沒有提醒請求
+    /// 驗證提醒意圖與既有連結的組合，需要調解時產生建立、重建或移除的完整提醒請求，無需調解時不產生請求
     ///
     /// - Parameter scenario: 提醒意圖、既有連結與獨立指定的預期調解
-    /// - Throws: 無法建立 UTC 時區時拋出測試錯誤
+    /// - Throws: 無法建立 UTC 時區時丟出測試錯誤
     @Test(arguments: ReminderCase.allCases)
-    func make_提醒意圖與既有連結_組出完整請求或略過(scenario: ReminderCase) throws(any Error) {
+    func make_提醒意圖與既有連結_組出完整請求或略過(scenario: ReminderCase) throws {
         // Given
         let calendar = try TestDependencies.makeUTCCalendar()
         var draft = Self.draft(original: Self.original)
-        draft.wantsReminder = scenario.wantsReminder
+        draft.wantsReminder = scenario.isReminderWanted
         draft.reminderTimestamp = scenario.timestamp
         let request = CampaignEditFeature.SaveRequest(
             original: Self.original,
@@ -124,10 +144,9 @@ struct CampaignSavePlanTests {
             CampaignReminderRequest(
                 campaignID: "ORIGINAL",
                 reconcile: $0,
-                title: scenario.name == "新團" ? "「新團」訂購提醒" : "「原團」訂購提醒",
+                title: scenario.expectedTitle,
                 eventDate: Date(timeIntervalSince1970: 0),
-                alarmOffset: scenario.timestamp == Date(timeIntervalSince1970: 3_600)
-                    ? 3_600 : 7_200,
+                alarmOffset: scenario.expectedAlarmOffset,
                 timestamp: scenario.timestamp
             )
         }
@@ -179,51 +198,63 @@ extension CampaignSavePlanTests {
         /// 提醒意圖、連結與名稱或時間差異對應的建立、移除、重建或略過結果
         static let allCases = [
             Self(
-                wantsReminder: true,
+                isReminderWanted: true,
                 hasLink: false,
                 name: "原團",
                 timestamp: Date(timeIntervalSince1970: 3_600),
-                expected: .create
+                expected: .create,
+                expectedTitle: "「原團」訂購提醒",
+                expectedAlarmOffset: 3_600
             ),
             Self(
-                wantsReminder: false,
+                isReminderWanted: false,
                 hasLink: false,
                 name: "原團",
                 timestamp: Date(timeIntervalSince1970: 3_600),
-                expected: nil
+                expected: nil,
+                expectedTitle: "「原團」訂購提醒",
+                expectedAlarmOffset: 3_600
             ),
             Self(
-                wantsReminder: true,
+                isReminderWanted: true,
                 hasLink: true,
                 name: "原團",
                 timestamp: Date(timeIntervalSince1970: 3_600),
-                expected: nil
+                expected: nil,
+                expectedTitle: "「原團」訂購提醒",
+                expectedAlarmOffset: 3_600
             ),
             Self(
-                wantsReminder: true,
+                isReminderWanted: true,
                 hasLink: true,
                 name: "新團",
                 timestamp: Date(timeIntervalSince1970: 3_600),
-                expected: .rebuild(oldEventIdentifier: "OLD")
+                expected: .rebuild(oldEventIdentifier: "OLD"),
+                expectedTitle: "「新團」訂購提醒",
+                expectedAlarmOffset: 3_600
             ),
             Self(
-                wantsReminder: true,
+                isReminderWanted: true,
                 hasLink: true,
                 name: "原團",
                 timestamp: Date(timeIntervalSince1970: 7_200),
-                expected: .rebuild(oldEventIdentifier: "OLD")
+                expected: .rebuild(oldEventIdentifier: "OLD"),
+                expectedTitle: "「原團」訂購提醒",
+                expectedAlarmOffset: 7_200
             ),
             Self(
-                wantsReminder: false,
+                isReminderWanted: false,
                 hasLink: true,
                 name: "原團",
                 timestamp: Date(timeIntervalSince1970: 3_600),
-                expected: .remove(eventIdentifier: "OLD")
+                expected: .remove(eventIdentifier: "OLD"),
+                expectedTitle: "「原團」訂購提醒",
+                expectedAlarmOffset: 3_600
             ),
         ]
 
         /// 是否要保留提醒
-        let wantsReminder: Bool
+        let isReminderWanted: Bool
 
         /// 是否已有事件連結
         let hasLink: Bool
@@ -234,14 +265,34 @@ extension CampaignSavePlanTests {
         /// 使用者選定的提醒時間
         let timestamp: Date
 
-        /// 獨立指定的預期調解
+        /// 獨立指定的預期調解；`nil` 表示沒有提醒請求
         let expected: CampaignReminderReconcile?
+
+        /// 獨立指定的預期標題，沒有預期請求時不比對
+        let expectedTitle: String
+
+        /// 獨立指定的預期提醒偏移秒數，沒有預期請求時不比對
+        let expectedAlarmOffset: TimeInterval
     }
 }
 
 // MARK: - Private Method
 
 private extension CampaignSavePlanTests {
+
+    /// 組出草稿已改成含空白的新名稱、日期、狀態與備註的儲存請求
+    ///
+    /// - Parameter original: 要編輯的原開團；`nil` 表示新增
+    /// - Returns: 名稱與備註待去除頭尾空白的儲存請求
+    static func makeEditedRequest(original: Campaign?) -> CampaignEditFeature.SaveRequest {
+        var draft = Self.draft(original: original)
+        draft.name = "  新團  "
+        draft.openDate = Date(timeIntervalSince1970: 4_000)
+        draft.closeDate = Date(timeIntervalSince1970: 5_000)
+        draft.status = .closed
+        draft.notes = "  新備註\n "
+        return CampaignEditFeature.SaveRequest(original: original, name: "新團", draft: draft)
+    }
 
     /// 建立無提醒意圖的固定草稿
     ///

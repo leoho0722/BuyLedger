@@ -37,7 +37,7 @@ extension OrderEditScreen {
 @MainActor
 extension OrderEditScreen {
 
-    /// 儲存按鈕目前是否可用
+    /// 判定儲存按鈕目前是否可用
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
@@ -66,22 +66,8 @@ extension OrderEditScreen {
     ///   - line: 失敗時回報的行號
     func typeCustomerName(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
         let field = app.textFields[BLAccessibilityID.OrderEdit.customerField]
-        var scrollAttempts = 0
-        while scrollAttempts < 8 {
-            if !field.exists {
-                rootElement.swipeDown()
-                scrollAttempts += 1
-                continue
-            }
-            let fieldFrame = field.frame
-            if !fieldFrame.isEmpty && rootElement.frame.intersects(fieldFrame) {
-                break
-            }
-            rootElement.swipeDown()
-            scrollAttempts += 1
-        }
-        if !field.exists {
-            app.failWithDiagnostics("捲動 8 次後仍找不到客戶名稱欄位", file: file, line: line)
+        guard revealFormElement(field, isSwipingUp: false) else {
+            app.failWithDiagnostics("捲到頂端或達 8 次上限後仍找不到可點的客戶名稱欄位", file: file, line: line)
             return
         }
         field.clearAndType(
@@ -92,7 +78,7 @@ extension OrderEditScreen {
         )
     }
 
-    /// 送出文字欄位的 return，驗證一般鍵盤的收起路徑
+    /// 點客戶名稱欄後按 return 送出，走一般鍵盤的收起路徑
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
@@ -160,13 +146,13 @@ extension OrderEditScreen {
     /// - Parameters:
     ///   - amount: 要填入的金額文字
     ///   - app: 受測 App
-    ///   - dismissKeyboard: 是否在輸入後收起數字鍵盤
+    ///   - shouldDismissKeyboard: 是否在輸入後收起數字鍵盤
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     func typeChargedAmount(
         _ amount: String,
         in app: XCUIApplication,
-        dismissKeyboard: Bool = true,
+        shouldDismissKeyboard: Bool = true,
         file: StaticString = #filePath,
         line: UInt = #line
     ) {
@@ -174,7 +160,7 @@ extension OrderEditScreen {
         // 使用預設拖曳範圍，避免 iPhone 找不到可點擊位置
         if !app.scrollToHittableGently(field, within: rootElement) {
             // XCTest 的第一次點擊會觸發原生 scroll-to-focus
-            // 之後再交給共用輸入 helper
+            // 之後才由 `clearAndType` 輸入
             field.tap()
         }
         guard field.waitUntilHittableOrFail(
@@ -191,7 +177,7 @@ extension OrderEditScreen {
             file: file,
             line: line
         )
-        if dismissKeyboard {
+        if shouldDismissKeyboard {
             field.dismissNumericKeyboard(in: app, file: file, line: line)
         }
     }
@@ -216,12 +202,11 @@ extension OrderEditScreen {
         let thumbnail = app.descendants(matching: .any)[
             BLAccessibilityID.OrderEdit.photoThumbnail(index: index)
         ]
-        var attempts = 0
-        while !thumbnail.exists, attempts < 8 {
-            rootElement.swipeUp()
-            attempts += 1
+        if !revealFormElement(thumbnail, isSwipingUp: true),
+           !app.scrollToHittable(thumbnail, within: rootElement) {
+            app.failWithDiagnostics("捲到照片區底端或達上限後仍找不到可點的照片縮圖", file: file, line: line)
+            return
         }
-        app.scrollToHittable(thumbnail, within: rootElement)
         thumbnail.tapAfterWaiting(in: app, file: file, line: line)
     }
 
@@ -261,6 +246,39 @@ extension OrderEditScreen: Screen {
 @MainActor
 private extension OrderEditScreen {
 
+    /// 依指定方向尋找表單元素，位置簽章不再變動或達八次上限時停止
+    ///
+    /// - Parameters:
+    ///   - element: 要捲進可點範圍的表單元素
+    ///   - isSwipingUp: 是否向上滑動以尋找下方內容
+    /// - Returns: 目標是否已連續兩次取得相同的有效框線且可點
+    func revealFormElement(_ element: XCUIElement, isSwipingUp: Bool) -> Bool {
+        let container = rootElement
+        guard container.waitForExistence(timeout: 5) else {
+            return false
+        }
+        if element.snapshotFrame != nil, element.waitUntilStableAndHittable(timeout: 1) {
+            return true
+        }
+        var previous = app.scrollPositionSignature(in: container)
+        for _ in 0..<8 {
+            if isSwipingUp {
+                container.swipeUp()
+            } else {
+                container.swipeDown()
+            }
+            if element.waitUntilStableAndHittable(timeout: 1) {
+                return true
+            }
+            let current = app.scrollPositionSignature(in: container)
+            if let current, current == previous {
+                return false
+            }
+            previous = current
+        }
+        return element.waitUntilStableAndHittable(timeout: 1)
+    }
+
     /// 點某個選擇器入口列開啟選擇器
     ///
     /// - Parameters:
@@ -269,8 +287,9 @@ private extension OrderEditScreen {
     ///   - line: 失敗時回報的行號
     func tapPickerRow(_ identifier: String, file: StaticString = #filePath, line: UInt = #line) {
         let row = app.descendants(matching: .any)[identifier]
-        if !row.isHittableOnScreen {
-            app.scrollToHittable(row, within: rootElement)
+        if !row.isHittableOnScreen, !app.scrollToHittable(row, within: rootElement) {
+            app.failWithDiagnostics("捲動後選擇器入口列仍未穩定或不可點", file: file, line: line)
+            return
         }
         row.tapAfterWaiting(in: app, file: file, line: line)
     }

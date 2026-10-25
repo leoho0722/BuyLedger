@@ -11,11 +11,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// 開團載入、錯誤恢復與自動結單的測試
+/// `CampaignLoadFeature` 的單元測試，以 TestStore 逐步驗證載入流程、失敗錯誤回報與已載入時略過讀取
 @MainActor
 struct CampaignLoadFeatureTests {
 
-    /// 載入成功後更新共用清單與載入旗標
+    /// 驗證讀取成功時，共用的開團清單更新，載入中旗標清為 `false`、已載入旗標設為 `true`
     @Test
     func loadRequested_讀取成功_共用清單與載入狀態更新() async {
         // Given
@@ -28,7 +28,7 @@ struct CampaignLoadFeatureTests {
             settledDate: nil,
             notes: ""
         )
-        let store = TestStore(initialState: Self.makeState()) {
+        let store = TestStore(initialState: CampaignLoadFeatureTestSupport.makeState()) {
             CampaignLoadFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
@@ -61,7 +61,7 @@ struct CampaignLoadFeatureTests {
         #expect(store.state.campaigns == [campaign])
     }
 
-    /// 載入失敗保留資料，旗標允許下次重試並向容器回報
+    /// 驗證讀取失敗時，共用清單保留原值，已載入旗標維持 `false` 以便下次重試，並送出載入失敗的通知
     @Test
     func loadRequested_讀取失敗_保留共用清單並委派錯誤() async {
         // Given
@@ -77,7 +77,9 @@ struct CampaignLoadFeatureTests {
         let failingFetch: CampaignService.FetchCampaigns = { () throws(PersistenceError) in
             throw .fetchFailed(underlying: TestDependencies.makeUnderlyingError(message: "boom"))
         }
-        let store = TestStore(initialState: Self.makeState(campaigns: [campaign])) {
+        let store = TestStore(
+            initialState: CampaignLoadFeatureTestSupport.makeState(campaigns: [campaign])
+        ) {
             CampaignLoadFeature()
         } withDependencies: {
             $0.campaignService.fetchCampaigns = failingFetch
@@ -109,11 +111,11 @@ struct CampaignLoadFeatureTests {
         #expect(store.state.isLoading == false)
     }
 
-    /// 成功載入後重複請求不再呼叫讀取服務
+    /// 驗證已載入後再次請求時略過讀取，載入中旗標維持 `false`
     @Test
     func loadRequested_已載入_略過讀取() async {
         // Given
-        let initial = Self.makeState()
+        let initial = CampaignLoadFeatureTestSupport.makeState()
         initial.$hasLoaded.withLock {
             $0 = true
         }
@@ -128,22 +130,5 @@ struct CampaignLoadFeatureTests {
         await store.finish()
         #expect(store.state.hasLoaded)
         #expect(store.state.isLoading == false)
-    }
-}
-
-// MARK: - Internal Method
-
-extension CampaignLoadFeatureTests {
-
-    /// 建立獨立的開團共用資料
-    ///
-    /// - Parameter campaigns: 初始開團
-    /// - Returns: 尚未開始載入的狀態
-    static func makeState(campaigns: [Campaign] = []) -> CampaignLoadFeature.State {
-        let shared = Shared<[Campaign]>(value: [])
-        shared.withLock {
-            $0 = campaigns
-        }
-        return CampaignLoadFeature.State(campaigns: shared)
     }
 }

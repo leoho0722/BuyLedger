@@ -10,13 +10,12 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證 HTTP client 的請求與錯誤處理
+/// `HTTPClient` 的單元測試，涵蓋請求組裝與錯誤分類
 struct HTTPClientTests {
 
-    /// 驗證 HTTP client 保留請求 `URL`、方法、標頭、內容與逾時
+    /// 驗證 `send` 建立的請求保留 `URL`、POST 方法、標頭、本文與 12.5 秒逾時
     ///
-    /// - Throws: 測試前置條件或請求檢查未通過時，由 `#require` 丟出測試失敗；
-    ///   傳輸失敗時丟出 `.transport(underlying:)`，狀態碼不在 200 至 299 時丟出 `.http(statusCode:)`
+    /// - Throws: 測試前置條件或請求檢查未通過時丟出測試斷言錯誤；傳輸失敗時丟出網路錯誤，狀態碼不在 200 至 299 時丟出 HTTP 狀態錯誤
     @Test
     func send_自訂方法標頭本文與逾時_完整建立請求() async throws {
         // Given
@@ -55,7 +54,7 @@ struct HTTPClientTests {
         #expect(request.timeoutInterval == 12.5)
     }
 
-    /// 驗證非 2xx 狀態碼會分類為 `APIError.http`
+    /// 驗證回應狀態碼為 300 (非 2xx) 時歸類為 `APIError.http`，並保留該狀態碼
     ///
     /// - Throws: 測試 URL、`HTTPURLResponse` 建立失敗，或預期的 HTTP 錯誤 case 未出現時，
     ///   由 `#require` 丟出測試失敗
@@ -96,7 +95,7 @@ struct HTTPClientTests {
         #expect(statusCode == 300)
     }
 
-    /// `data(for:)` 丟出的 `.transport(underlying:)` 經 `send` 原樣轉送，底層錯誤的 `domain`、`code` 與說明都不變
+    /// 驗證 `data(for:)` 丟出的 `.transport(underlying:)` 經 `send` 原樣轉送，底層錯誤的 `domain`、`code` 與說明都不變
     ///
     /// - Throws: 測試 URL 建立失敗，或預期的錯誤 case／底層資訊未出現時，
     ///   由 `#require` 丟出測試失敗
@@ -137,7 +136,7 @@ struct HTTPClientTests {
         #expect(actualUnderlying.localizedDescription == expectedUnderlying.localizedDescription)
     }
 
-    /// 驗證串流請求保留方法、標頭、本文與逾時
+    /// 驗證 `stream` 送出的請求保留 POST 方法、標頭、本文與 12.5 秒逾時，且只呼叫一次 `bytes(for:)`
     ///
     /// - Throws: 建立測試 URL 失敗、串流沒有丟出任何錯誤，或 `bytes(for:)` 沒有收到請求時，由 `#require` 丟出
     @Test
@@ -185,7 +184,7 @@ struct HTTPClientTests {
         #expect(request.timeoutInterval == 12.5)
     }
 
-    /// 驗證串流回應非 2xx 時分類為 `APIError.http`
+    /// 驗證串流回應狀態碼為 503 (非 2xx) 時歸類為 `APIError.http`，並保留該狀態碼
     ///
     /// - Throws: 建立測試 URL 失敗或串流沒有丟出任何錯誤時，由 `#require` 丟出
     @Test

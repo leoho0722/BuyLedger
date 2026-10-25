@@ -11,11 +11,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證分析功能
+/// `InsightsFeature` 的單元測試，以 TestStore 核對期間選取及重新整理、開團與類別查看請求
 @MainActor
 struct InsightsFeatureTests {
 
-    /// 分析區間切換後保留在 feature state 內
+    /// 驗證切換分析區間為 `.thirtyDays` 後，`insightsDateRange` 保留所選期間
     @Test
     func binding_切換分析區間_保留所選期間() async {
         // Given
@@ -32,7 +32,7 @@ struct InsightsFeatureTests {
         #expect(store.state.insightsDateRange == .thirtyDays)
     }
 
-    /// 畫面出現時送出 `.view(.task)`，記錄注入的日期脈絡並轉成 `refresh` 委派交給根功能
+    /// 驗證畫面出現送出 `.view(.task)` 時，`dateContext` 記錄注入的現在時間與行事曆，並轉成 `delegate(.refresh)` 交給根功能
     @Test
     func task_畫面出現_轉成refresh委派() async {
         // Given
@@ -55,7 +55,7 @@ struct InsightsFeatureTests {
         await store.receive(\.delegate.refresh)
     }
 
-    /// 載入失敗畫面的重試鈕與畫面出現相同，同樣記錄日期脈絡並轉成 `refresh` 委派
+    /// 驗證點擊重試時，`dateContext` 記錄注入的現在時間與行事曆，並轉成 `delegate(.refresh)`，與畫面出現相同
     @Test
     func retryTapped_點擊重試_轉成refresh委派() async {
         // Given
@@ -78,7 +78,7 @@ struct InsightsFeatureTests {
         await store.receive(\.delegate.refresh)
     }
 
-    /// 點擊毛利排行的某一團，把開團名稱交給根功能，不改動狀態
+    /// 驗證點擊毛利排行中的開團時，把開團名稱以 `delegate(.campaignTapped)` 交給根功能，State 維持不變
     @Test
     func campaignTapped_點擊毛利排行開團_轉成帶開團名稱的委派() async {
         // Given
@@ -93,7 +93,7 @@ struct InsightsFeatureTests {
         await store.receive(\.delegate.campaignTapped, "四月韓國團")
     }
 
-    /// 點擊類別排行的某個類別，把類別名稱交給根功能，不改動狀態
+    /// 驗證點擊類別排行中的類別時，把類別名稱以 `delegate(.categoryTapped)` 交給根功能，State 維持不變
     @Test
     func categoryTapped_點擊類別排行_轉成帶類別名稱的委派() async {
         // Given

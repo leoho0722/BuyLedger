@@ -10,11 +10,12 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證客戶彙總列的營收歸屬與保留規則
+/// `CustomerRow` 的單元測試，涵蓋客戶彙總列的營收歸屬與保留規則
 struct CustomerRowTests {
 
-    /// 驗證合併訂單與取消訂單不重複計入營收
-    @Test func totalSpentAndOrderCountExcludeCancelledAndMergeResultOrders() {
+    /// 驗證客戶彙總的消費與筆數只計入營收歸屬的訂單，合併來源與取消訂單不計入，合併結果計入，最近訂單日期仍取全部訂單
+    @Test
+    func aggregate_含取消與合併來源訂單_只計營收歸屬的消費與筆數() {
         // Given
         let orders = [
             LedgerOrder.fixture(
@@ -48,7 +49,7 @@ struct CustomerRowTests {
                 customer: LedgerCustomer(name: "Amy", initials: "AM", tier: .regular),
                 date: date(2026, 3, 5),
                 chargedAmount: 200
-            )
+            ),
         ]
 
         // When
@@ -60,8 +61,9 @@ struct CustomerRowTests {
         #expect(amy?.lastOrderDate == date(2026, 3, 5))
     }
 
-    /// 驗證只有取消訂單的客戶仍保留且消費為零
-    @Test func customerWithOnlyCancelledOrdersRemainsListedWithZeroSpend() {
+    /// 驗證只有取消訂單的客戶仍保留在名單中，消費與筆數都為零
+    @Test
+    func aggregate_只有取消訂單的客戶_保留列表且消費為零() {
         // Given
         let orders = [
             LedgerOrder.fixture(
@@ -70,7 +72,7 @@ struct CustomerRowTests {
                 status: .cancelled,
                 date: date(2026, 3, 2),
                 chargedAmount: 200
-            )
+            ),
         ]
 
         // When
@@ -86,27 +88,20 @@ struct CustomerRowTests {
 
 private extension CustomerRowTests {
 
-    /// 以固定 gregorian/UTC 曆建立指定年月日的日期，確保跨機器一致
+    /// 以固定的公曆與 UTC 時區建立指定年月日的日期，確保跨機器一致
     ///
     /// - Parameters:
     ///   - year: 西元年
     ///   - month: 月份
     ///   - day: 日期
     /// - Returns: 指定日期 UTC 零時的時間值
-    func date(
-        _ year: Int,
-        _ month: Int,
-        _ day: Int
-    ) -> Date {
+    func date(_ year: Int, _ month: Int, _ day: Int) -> Date {
         var calendar = Calendar(identifier: .gregorian)
         calendar.timeZone = TimeZone(secondsFromGMT: 0) ?? .gmt
         guard let date = calendar.date(
-            from: DateComponents(
-                year: year,
-                month: month,
-                day: day
-            )
+            from: DateComponents(year: year, month: month, day: day)
         ) else {
+            // 日期皆為測試固定值，無法建立代表前置資料有誤，後續比對無法繼續
             preconditionFailure("測試日期建立失敗")
         }
         return date

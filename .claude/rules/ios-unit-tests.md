@@ -5,10 +5,11 @@ paths:
 
 # iOS 單元測試
 
-- **單元測試放 `apps/ios/BuyLedgerTests/`，依 kit 鏡像正式程式碼到 Feature 層，檔名對應被測型別或功能** (如 `Features/Orders/OrdersFeatureTests.swift`)。
-    - `Core/<能力>/`、`Shared/<模組>/`、`App/Testing/` 同樣鏡像；原始碼掃描與守門測試放 `Guards/`，snapshot 測試放 `SnapshotTests/`，`<Model>+Fixture` 放 `Fixtures/`，其他共用輔助放 `Support/`。
+- **單元測試放 `apps/ios/BuyLedgerTests/`，依 kit 鏡像正式程式碼到 Feature 層，檔名對應被測型別或功能** (如 `Features/Orders/OrderListFeatureTests.swift`)。
+    - `Core/<能力>/`、`Shared/<模組>/`、`App/Testing/` 同樣鏡像；原始碼掃描與守門測試放 `Guards/`，snapshot 測試放 `SnapshotTests/`；共用 helper 與 fixture 的位置依 kit `file-templates.md` tests 一節。
+- **Guards 子資料夾之間共用的掃描型別放 `Guards/Scanning/`**：Guards 自己的掃描 helper 依職責命名成型別 (如 `LayerBoundaryScanner`)，不併進 TestSupport。
 - **讀原始碼或設定檔的測試以 `TestPaths.iosRoot` 取得 `apps/ios`**，不以 `#filePath` 往上退固定層數：測試檔搬到其他層級時，固定層數會指錯目錄。
-- **只含 `@Test` 的 test extension 不設 MARK**；helper、fixture、nested type 所在的 extension 照 kit 的區名設 MARK。
+- **helper、fixture、nested type 所在的 extension 照 kit 的區名設 MARK**。
 - **`Bool` 命名規則 (以 `is`／`has`／`can`／`should` 開頭) 同樣適用測試**。
     - 屬性、區域變數、測試參數與 `@Test(arguments:)` 的欄位都用描述事實的名稱。
     - 回傳 `Bool` 的方法也可用動詞式，如 `contains`、`matches`、`requires`。
@@ -17,9 +18,9 @@ paths:
     - 狀態不變時比對 Given 輸入，或 `send` 不帶 closure 讓 `TestStore` 保證沒有變更。
     - 要和預期值比對的資料不帶預設隨機值：`LedgerOrderItem` 等型別的 `id` 在 Given 固定 (如 `UUID(0)`)。
     - 驗證完整結構本身時 (如確認框的文案與按鈕) 才寫完整字面值。
-- **Swift Testing 的方法層 `-only-testing` 必須帶完整的參數列**：無參數寫 `()`，例如
-  `BuyLedgerTests/OrderServiceTests/fetchOrders_讀取清單_不載入照片位元組()`；省略括號會安靜地選不到方法。
-    - 參數化測試 (`@Test(arguments:)`) 要寫出參數標籤，例如 `refreshIfStale_快取年齡在七天門檻前後_依門檻決定是否刷新(ageInSeconds:shouldRefresh:)`；只寫 `()` 同樣會選到 0 條。
+- **Swift Testing 的方法層 `-only-testing` 必須帶完整的參數列**。
+    - 無參數寫 `()`，例如 `BuyLedgerTests/OrderServiceReadsTests/fetchOrders_讀取清單_不載入照片位元組()`；省略括號會安靜地選不到方法。
+    - 參數化測試 (`@Test(arguments:)`) 要寫出參數標籤，例如 `refreshIfStale_快取年齡在七天門檻前後_依門檻決定是否刷新(scenario:)`；只寫 `()` 同樣會選到 0 條。
 - **選擇性測試與變異驗證必須確認實際執行數大於 0**：`0 tests executed` 不是通過，不能用成功退出碼判定測試有效。
 - **測試替身的共享可變狀態使用 `LockIsolated`**：同步記錄呼叫與取消訊號，避免自訂 actor 或 class box 帶來不必要的隔離與排程問題。
 - **非同步結果不得以 `Task.yield` 輪詢**：用 `TestStore.receive`、`finish` 或注入的 clock 等待明確事件，避免排程快慢造成偶發假失敗。
@@ -30,10 +31,10 @@ paths:
 - **Service 的 `testValue` 全部是 `unimplemented`，測試只覆寫會被呼叫的 closure** (如 `$0.orderService.saveOrder = { _ in }`)：未覆寫的 closure 被呼叫會回報 issue 讓該測試失敗；不為了讓測試過而補滿所有 closure。
     - 以 `XxxService.testValue` 為底再覆寫可行，底座同樣是 `unimplemented`。
 - **`BuyLedgerDatabase`、`HTTPClient`、`UserDefaultsStore`、`AppConfigurationStore` 沒有 `testValue`**：測試中存取未覆寫的一律回報失敗，要用就注入 Mock。Mock 放 `BuyLedgerTests/Mocks/`。
-- **Service 測試先注入下層的 Database／Client／Store (或其 Mock)，再取得 `liveValue`**：`withDependencies { $0.buyLedgerDatabase = database } operation: { OrderService.liveValue }` (參考 `OrderServiceTests.makeService(database:)`)。
+- **Service 測試先注入下層的 Database／Client／Store (或其 Mock)，再取得 `liveValue`**：`withDependencies { $0.buyLedgerDatabase = database } operation: { OrderService.liveValue }` (參考 `OrderServiceTestSupport.makeService(database:)`)。
     - 不在另一個 `withDependencies` 的準備 closure 內取 `.liveValue`：`@Dependency` 在 `liveValue` 建立時擷取當下的 `_current`，不是正在準備的 `$0`，會拿到 live 依賴。
 - **驗證「寫入失敗不落盤」用 `MockBuyLedgerDatabase` 的 `.saveFailureAfterBody` 搭磁碟 store，不用直接拋錯的替身**：拋錯替身不碰資料庫，「沒留下半套資料」恆真。
-    - `.saveFailureAfterBody` 要求容器 schema 含 `ResidueProbeModels` 的探測 model，磁碟 store 以 `ResidueProbeModels.makeDiskFixture` 建立 (參考 `OrderServiceTests.makeSaveFailingService(orders:)`)。
+    - `.saveFailureAfterBody` 要求容器 schema 含 `ResidueProbeModels` 的探測 model，磁碟 store 以 `ResidueProbeModels.makeDiskFixture` 建立 (參考 `OrderServiceTestSupport.makeSaveFailingService(orders:)`)。
 - **單元測試 host 不建立根畫面**：`BuyLedgerApp.init` 與 `AppLaunchConfigurator.configure` 在 `RuntimeEnvironment.isUnitTesting` 時直接略過；啟動時才會呼叫的依賴 (如 `SettingsService.load`) 若寫在略過條件之外，`unimplemented` 會把 issue 歸到隨機的測試。
 
 ## TCA TestStore
@@ -54,7 +55,7 @@ paths:
 - **`@Reducer enum` 的 case 不能以 `destination?.edit?.x = …` 設值** (setter unavailable)：production 與 TestStore 的斷言 closure 都用 `destination?.modify(\.edit) { $0.x = … }`；讀取可以用 `?.edit?.x`。
 - **binding 行為測試要走畫面實際的綁定路徑**：以 `Store` 建立、`@Bindable var bindable = store`，對 `$bindable.<屬性>.wrappedValue` 指派；`TestStore` 送 `.set(\.draft.name, …)` 守不住畫面實際送出的 action。
     - `$store.draft.name` 這類巢狀欄位綁定送出的是整個 `draft` 的 `.set(\.draft, …)`，`BindingAction` 要 key path 完全相等才比對得上 (見 `apps/ios/CLAUDE.md`)。
-    - 同時寫一條「改其他欄位不觸發該反應」的測試，才分得出正確與錯誤實作 (參考 `CampaignEditFeatureTests+Binding`)。
+    - 同時寫一條「改其他欄位不觸發該反應」的測試，才分得出正確與錯誤實作 (參考 `CampaignEditFeatureBindingTests`)。
 - **純 `AlertState` 的 `.ifLet` 收到 `.presented` 動作後會自動清空該呈現**：清空發生在 `base._reduce` 之後，父層 reducer 仍讀得到該次呈現的值；窮舉測試依實際行為核對 `$0.xxx = nil`，不憑直覺增減。
 - **`AISummaryFeature` 串流測試一律注入同一個 `TestClock`**：測試環境的 `\.continuousClock` 可能是 `ImmediateClock`，逾時計時器會搶在串流前結束。
     - `$0.continuousClock` 與串流替身共用該 clock 的 `sleep(for:)`，以 `advance(by:)` 推進；替身內不用 `ContinuousClock` 或 `Task.sleep`。
@@ -64,7 +65,7 @@ paths:
 ## 跨測試共用狀態
 
 - **測試直接改寫具名記憶體共享資料 (`@Shared(.lookupCatalog)`、`@Shared(.currencyCodes)`) 會污染同批次的其他測試**：具名鍵在 process 內共用，`BuyLedger.xctestplan` 又是字母序執行，外溢的狀態會讓排在後面的 snapshot 測試出現只在完整套件下重現、單獨跑卻通過的失敗。
-    - 需要改寫的測試一律在隔離 storage 內建立 State：主檔可用 `LookupCatalog.withIsolatedStorage`，幣別與根狀態在建立 State 前注入 `defaultInMemoryStorage = InMemoryStorage()`；根狀態測試另參考 `RootFeatureTests.makeIsolatedRootState`。
+    - 需要改寫的測試一律在隔離 storage 內建立 State：主檔可用 `LookupCatalog.withIsolatedStorage`，幣別與根狀態在建立 State 前注入 `defaultInMemoryStorage = InMemoryStorage()`；根狀態測試另參考 `RootFeatureTestSupport.makeIsolatedRootState`。
     - 症狀是「完整回歸紅、單獨跑綠」時先查這裡，不要改 snapshot 或重錄基準圖。
     - 測試 `UserDefaults` 相依 (例如 `UserDefaultsStore`) 時使用獨立 suite，測試前後清除 persistent domain，避免偏好值跨測試外溢。
 
@@ -85,21 +86,23 @@ paths:
 - **`BuyLedger.xctestplan` 的 `BuyLedgerTests` 關閉平行執行 (`"parallelizable" : false`)，不得改回平行**：同一 process 內並行使用多個版本化 schema 的容器 (`SchemaMigrationTests` 的舊版 schema 與其他 SwiftData 測試) 時，SwiftData `save` 會從 `KeyedEncodingContainer.encodeNil` 丟出 Objective-C 例外，整個測試 process 崩潰。
     - 再出現 `Crash: BuyLedger` 時，先查 test plan 是否被改回平行，以及崩潰報告 `~/Library/Logs/DiagnosticReports/BuyLedger-*.ips` 的崩潰執行緒。
 
-## 效能測試 (`OrdersFeaturePerformanceTests`)
+## 效能測試 (`OrdersFeaturePerformanceTests`、`OrdersFeatureFilterSheetPerformanceTests`)
 
 - **用 `ContinuousClock` 計時加顯式上限斷言，不用 `measure { }`**：MobileBuildMCP 拆成 `build-for-testing` + `test-without-building` 執行，`.xctestrun` 讀不到 baseline，`measure` 恆為通過。
-    - 門檻抓數量級退化 (約正常耗時的 6 倍)，不沿用舊 baseline 的 10 倍餘裕 (在此工具鏈下等同恆真)。
-    - 列在 `BuyLedger.xctestplan` 的 `skippedTests`，`-only-testing:BuyLedgerTests/OrdersFeaturePerformanceTests` 不會覆寫它 (執行數為 0)；單獨跑時暫時把它移出 `skippedTests`，跑完還原。
+    - 門檻抓數量級退化 (約正常耗時的 6 倍)；過寬的門檻在此工具鏈下等同恆真。
+    - 兩個類別都列在 `BuyLedger.xctestplan` 的 `skippedTests`，`-only-testing:BuyLedgerTests/<類別>` 不會覆寫它 (執行數為 0)；單獨跑時暫時把它移出 `skippedTests`，跑完還原。
+    - 新增效能測試類別時同步加進 `skippedTests` 與 `.github/workflows/ci.yml` 的 `-skip-testing`：兩邊都依類別名列舉，漏加會讓完整回歸與 CI 跑到效能測試。
 
 ## Snapshot 測試
 
 - **每個 snapshot 測試用 `TestDependencies.withFixedNow { ... }` 包住 view 建構與 `assertSnapshot`**，注入固定 `\.date`；測試內不直接呼叫 `Date()`。
     - 畫面不讀時間時 (如開團列表、首頁、分析頁)，改在建構 State 時帶入固定的 `dateContext`，不靠 `withFixedNow` 提供「現在」。
-    - baseline 在 `BuyLedgerTests/SnapshotTests/__Snapshots__/<測試檔名>/`：目錄跟著呼叫 `assertSnapshot` 的測試檔名 (如 `SnapshotTests+Orders.swift` 對應 `SnapshotTests+Orders/`)；拆檔或搬移測試時基準圖要連同目錄一起搬、不重錄，沒跟著搬會被當成缺少基準圖。record 流程見 `apps/ios/README.md`。
+    - baseline 在 `BuyLedgerTests/SnapshotTests/__Snapshots__/<測試檔名>/`：目錄跟著呼叫 `assertSnapshot` 的測試檔名 (如 `SnapshotOrdersTests.swift` 對應 `SnapshotOrdersTests/`)；拆檔或搬移測試時基準圖要連同目錄一起搬、不重錄，沒跟著搬會被當成缺少基準圖。record 流程見 `apps/ios/README.md`。
+    - 新增 `Snapshot<X>Tests` 時在 `.github/workflows/ci.yml` 補一條 `-skip-testing:BuyLedgerTests/Snapshot<X>Tests`：CI 逐一列名略過快照，漏加的類別會在 CI 執行。
     - 尺寸以各測試的 `.frame` 為準：iPhone 直向 393×852 (長頁面用 393×1800)、iPad 全螢幕寬版 1024×768、大尺寸 iPhone 橫向 956×440 (要露出下方卡片時只加高，如分析頁 956×1000)。
     - 訂單三欄只拍清單欄 320×768，包 `NavigationStack` 後渲染；離屏渲染畫不出工具列項目，工具列與欄位組合由 UI 測試守，snapshot 只守欄內內容。
         - 詳情欄不拍：內容與 iPhone 推入詳情是同一份程式碼 (`OrderDetailView`)，由 iPhone 詳情截圖守；多拍一張只會讓每次調整詳情內容多重錄一張。
-    - 以 sheet 內容 View 為拍攝對象時 (如 `OrderFilterSheet`、`OrderCategoryPickerSheet`) 用 `.image(drawHierarchyInKeyWindow: true)`：離屏渲染的 `.image` 會錄成整張白圖；錄製後逐張目視確認不是空白 (參考 `SnapshotTests+OrderFilterEmptyStates`)。
+    - 以 sheet 內容 View 為拍攝對象時 (如 `OrderFilterSheet`、`OrderCategoryPickerSheet`) 用 `.image(drawHierarchyInKeyWindow: true)`：離屏渲染的 `.image` 會錄成整張白圖；錄製後逐張目視確認不是空白 (參考 `SnapshotOrderFilterEmptyStatesTests`)。
     - 依版面分類分流的畫面 (`OrdersView`、`DashboardView`、`InsightsView`) 連窄版 snapshot 也要同時注入 `.environment(\.horizontalSizeClass, …)` 與 `.environment(\.verticalSizeClass, …)`：iPhone 直向是水平 `.compact`、垂直 `.regular`，寬版是兩者都 `.regular`，iPhone 橫向是水平 `.regular`、垂直 `.compact`；只注入水平會落到 snapshot host 預設的垂直尺寸分類。
 - **執行前的模擬器外觀設定見 `apps/ios/CLAUDE.md`；含 `.borderedProminent` 工具列按鈕的畫面的渲染方式見 `ios-design-system.md`**。
 - **編輯表單 (訂單、開團) 逐區段拍攝，含系統 `DatePicker` 的區段不拍**：compact `DatePicker` 的日期膠囊會隨真實時間在數字、年月日與折成兩行之間切換，注入時間控制不到，整張表單的基準圖只在部分時段成立。

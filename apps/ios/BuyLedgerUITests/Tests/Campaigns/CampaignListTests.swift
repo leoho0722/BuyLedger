@@ -7,11 +7,11 @@
 
 import XCTest
 
-/// 開團列表的空狀態測試
+/// 開團列表空狀態的 UI 測試
+@MainActor
 final class CampaignListTests: BLUITestCase {
 
-    /// 空資料庫時，開團列表顯示尚無開團的空狀態
-    @MainActor
+    /// 驗證空資料時切到開團分頁，列表顯示尚無開團的空狀態
     func testGoToCampaigns_空資料_顯示空狀態() {
         // Given
         let app = launch(LaunchOptions(seed: .empty))

@@ -10,10 +10,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證訂單清單的載入狀態與重試結果
+/// `OrdersFeature.State` 的單元測試，涵蓋 `loadState` 與重試流程
 struct OrdersLoadStateTests {
 
-    /// 已完成首次載入時，狀態解析為已載入內容
+    /// 驗證 `hasLoaded` 為真時，`loadState` 解析為 `loaded`
     @Test
     func loadState_訂單已載入_解析為內容狀態() {
         // Given
@@ -29,7 +29,7 @@ struct OrdersLoadStateTests {
         #expect(loadState == .loaded)
     }
 
-    /// 已載入狀態優先於殘留的錯誤訊息
+    /// 驗證 `hasLoaded` 為真且 `errorMessage` 仍有殘留時，`loadState` 解析為 `loaded`，已載入優先於錯誤
     @Test
     func loadState_已載入但殘留錯誤訊息_仍解析為內容狀態() {
         // Given
@@ -48,7 +48,7 @@ struct OrdersLoadStateTests {
         #expect(loadState == .loaded)
     }
 
-    /// 尚未載入且有錯誤訊息時，狀態包含該失敗原因
+    /// 驗證尚未載入且 `errorMessage` 有值時，`loadState` 解析為 `failed`，並帶著該錯誤訊息
     @Test
     func loadState_尚未載入且有錯誤_解析為失敗狀態() {
         // Given
@@ -64,7 +64,7 @@ struct OrdersLoadStateTests {
         #expect(loadState == .failed("orders.general.message.ordersLoadedTry"))
     }
 
-    /// 尚未載入且沒有錯誤訊息時，狀態解析為載入中
+    /// 驗證尚未載入且 `errorMessage` 為 `nil` 時，`loadState` 解析為 `loading`
     @Test
     func loadState_尚未載入且沒有錯誤_解析為載入狀態() {
         // Given
@@ -77,7 +77,7 @@ struct OrdersLoadStateTests {
         #expect(loadState == .loading)
     }
 
-    /// 訂單請求失敗時停止載入並顯示失敗原因
+    /// 驗證載入失敗時停止載入、顯示失敗原因並回報失敗通知，`loadState` 解析為 `failed`
     @Test
     @MainActor
     func load_訂單載入失敗_顯示失敗原因() async {
@@ -111,13 +111,14 @@ struct OrdersLoadStateTests {
         #expect(store.state.loadState == .failed("orders.general.message.ordersLoadedTry"))
     }
 
-    /// 重試成功時載入回傳訂單並清除錯誤狀態
+    /// 驗證根功能要求重新載入且讀取成功時，錯誤訊息清除，訂單換成讀回的結果並選取 RETRY-1，`loadState` 解析為 `loaded`
     @Test
     @MainActor
     func rootRequest_重新載入成功_恢復訂單內容() async {
         // Given
         let order = LedgerOrder.fixture(id: "RETRY-1")
-        let store = TestStore(initialState: Self.makeRetryState()) {
+        let initial = Self.makeRetryState()
+        let store = TestStore(initialState: initial) {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
@@ -153,7 +154,7 @@ struct OrdersLoadStateTests {
             $0.list.selectedOrderID = "RETRY-1"
             $0.detail.regularDetail = OrderDetailFeature.State(
                 orderID: "RETRY-1",
-                orders: SharedReader($0.$orders)
+                orders: SharedReader(initial.$orders)
             )
         }
         await store.finish()
@@ -162,7 +163,7 @@ struct OrdersLoadStateTests {
         #expect(store.state.loadState == .loaded)
     }
 
-    /// 已在失敗狀態時再收到相同失敗，保留錯誤且不自動重試
+    /// 驗證已在失敗狀態時再收到相同的載入失敗，`errorMessage` 保留、`hasLoaded` 維持 `false`，且不自動重試
     ///
     /// - Note: `TestStore` 會要求測試接收每一個產生的 action，漏接的自動重試會使測試失敗
     @Test
@@ -193,7 +194,7 @@ struct OrdersLoadStateTests {
         #expect(store.state.load.hasLoaded == false)
     }
 
-    /// 載入失敗後切回訂單分頁，載入請求經容器再次讀取並顯示訂單
+    /// 驗證失敗後根功能要求重新載入，讀取只執行一次，讀回的訂單更新到列表並選取 RETRY-1，`loadState` 解析為 `loaded`
     @Test
     @MainActor
     func rootRequest_失敗後切回訂單分頁_重讀並顯示訂單() async {
@@ -213,7 +214,8 @@ struct OrdersLoadStateTests {
             }
             return try result.get()
         }
-        let store = TestStore(initialState: Self.makeRetryState()) {
+        let initial = Self.makeRetryState()
+        let store = TestStore(initialState: initial) {
             OrdersFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
@@ -248,7 +250,7 @@ struct OrdersLoadStateTests {
             $0.list.selectedOrderID = "RETRY-1"
             $0.detail.regularDetail = OrderDetailFeature.State(
                 orderID: "RETRY-1",
-                orders: SharedReader($0.$orders)
+                orders: SharedReader(initial.$orders)
             )
         }
         await store.finish()
@@ -265,7 +267,7 @@ private extension OrdersLoadStateTests {
 
     /// 建立已有載入錯誤的重試初值，供 `TestStore` 的重新載入測試使用
     ///
-    /// - Returns: 尚未載入且含錯誤訊息的訂單容器
+    /// - Returns: 尚未載入且含錯誤訊息的訂單分頁狀態
     static func makeRetryState() -> OrdersFeature.State {
         let state = OrdersFeature.State()
         state.load.$errorMessage.withLock {

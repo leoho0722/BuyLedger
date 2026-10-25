@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// 系統搜尋列取消後的篩選狀態
+/// `OrderListFeature` 的單元測試，以 TestStore 逐步驗證系統搜尋列取消後的篩選狀態
 @MainActor
 struct OrdersSearchCancellationTests {
 
@@ -24,13 +24,13 @@ struct OrdersSearchCancellationTests {
         makeOrder(id: "C", customer: "阿華", category: "零食"),
     ]
 
-    /// 取消搜尋後恢復完整清單
+    /// 驗證搜尋列取消、查詢改為空字串時，查詢清空，選取的 A 維持不變，清單恢復為 A、B、C 三筆，並送出 `delegate.selectionChanged`
     ///
-    /// - Throws: 搜尋前置條件不成立時拋出測試錯誤
+    /// - Throws: 搜尋前置條件不成立時丟出測試錯誤
     @Test
     func searchTextChanged_取消搜尋_清空查詢並恢復完整清單() async throws {
         // Given
-        var initial = OrderListFeatureTests.makeState(orders: Self.orders)
+        var initial = OrderListFeatureTestSupport.makeState(orders: Self.orders)
         initial.searchText = "小美"
         initial.selectedOrderID = "A"
         try #require(initial.filteredOrders.map(\.id) == ["A"])
@@ -54,11 +54,11 @@ struct OrdersSearchCancellationTests {
         #expect(restored.map(\.id) == ["A", "B", "C"])
     }
 
-    /// 取消搜尋只解除查詢，其他篩選條件維持不變
+    /// 驗證搜尋列取消時只解除查詢，已套用的類別篩選維持「美妝」，清單剩 A、B 兩筆，並送出 `delegate.selectionChanged`
     @Test
     func searchTextChanged_取消搜尋且有類別篩選_保留其他篩選() async {
         // Given
-        var initial = OrderListFeatureTests.makeState(orders: Self.orders)
+        var initial = OrderListFeatureTestSupport.makeState(orders: Self.orders)
         initial.selectedCategories = ["美妝"]
         initial.searchText = "小美"
         initial.selectedOrderID = "A"

@@ -11,11 +11,13 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證訂單表單的必填守門與父層存檔接線
+/// `OrderEditFeature` 的單元測試，以 `TestStore` 逐步驗證必填守門，以及存檔請求如何經 `OrdersFeature` 寫入
 @MainActor
 struct OrderSaveGuardTests {
 
-    /// 來源缺漏時經父層請求存檔，不寫入也不關閉表單
+    /// 驗證訂單來源空白時從 `OrdersFeature` 送出表單的存檔動作，不寫入訂單，表單保持開啟且焦點維持在顧客名稱欄
+    ///
+    /// - Note: 未覆寫的 `createOrder` 被呼叫時測試會失敗
     @Test
     func presentation_訂單來源空白時存檔_不寫入且表單保持開啟() async {
         // Given
@@ -24,16 +26,10 @@ struct OrderSaveGuardTests {
         edit.focusedField = .customerName
         var initial = OrdersFeature.State()
         initial.presentation.destination = .edit(edit)
-        let writeCount = LockIsolated(0)
         let store = TestStore(initialState: initial) {
             OrdersFeature()
         } withDependencies: {
             $0.uuid = .incrementing
-            $0.orderService.createOrder = { _ in
-                writeCount.withValue {
-                    $0 += 1
-                }
-            }
         }
 
         // When
@@ -41,12 +37,11 @@ struct OrderSaveGuardTests {
 
         // Then
         await store.finish()
-        #expect(writeCount.value == 0)
         #expect(store.state == initial)
         #expect(store.state.presentation.destination?.edit?.focusedField == .customerName)
     }
 
-    /// 必填完整時只經存檔 delegate 寫入一次，並關閉表單
+    /// 驗證必填完整時存檔，只經 `orderService.createOrder` 寫入一次，編號在送出存檔請求通知之後才產生，寫入後關閉表單並選取新訂單
     @Test
     func presentation_必填完整時存檔_寫入一次並關閉表單() async {
         // Given
@@ -78,7 +73,7 @@ struct OrderSaveGuardTests {
                 OrdersFeature()
             }
         } withDependencies: {
-            // 編號在 reducer 內同步產生，可辨識寫入是否早於存檔 delegate
+            // 編號在 reducer 內同步產生，可辨識寫入是否早於存檔請求通知
             $0.uuid = UUIDGenerator {
                 idGeneratedAfterSaveRequest.withValue {
                     $0.append(hasSaveRequest.value)
@@ -120,7 +115,7 @@ struct OrderSaveGuardTests {
         ) {
             $0.detail.regularDetail = OrderDetailFeature.State(
                 orderID: "BL-DRAFT-00000000-0000-0000-0000-000000000000",
-                orders: SharedReader($0.$orders)
+                orders: SharedReader(initial.$orders)
             )
         }
         await store.finish()
@@ -134,30 +129,27 @@ struct OrderSaveGuardTests {
         )
     }
 
-    /// 任何必填缺漏時，子層不改狀態、不送 delegate，也不呼叫 dismiss
+    /// 驗證任一必填欄位缺漏 (含只有空白字元) 時按下存檔，`OrderEditFeature` 的狀態不變、不送存檔請求通知，也不呼叫 `dismiss`
     ///
-    /// - Parameters:
-    ///   - customerName: 顧客名稱，空白或只含空白字元時視為缺漏
-    ///   - orderSource: 訂單來源，空白或只含空白字元時視為缺漏
-    ///   - categories: 商品類別，空陣列或所有項目皆為空白時視為缺漏
+    /// - Parameter testCase: 必填欄位缺漏的草稿輸入
     @Test(arguments: [
-        ("", "IG", ["美妝"]),
-        (" \n\t ", "IG", ["美妝"]),
-        ("林書宇", "", ["美妝"]),
-        ("林書宇", " \n\t ", ["美妝"]),
-        ("林書宇", "IG", [String]()),
-        ("林書宇", "IG", ["", " \n\t "]),
+        MissingRequiredFieldsCase(customerName: "", orderSource: "IG", categories: ["美妝"]),
+        MissingRequiredFieldsCase(customerName: " \n\t ", orderSource: "IG", categories: ["美妝"]),
+        MissingRequiredFieldsCase(customerName: "林書宇", orderSource: "", categories: ["美妝"]),
+        MissingRequiredFieldsCase(customerName: "林書宇", orderSource: " \n\t ", categories: ["美妝"]),
+        MissingRequiredFieldsCase(customerName: "林書宇", orderSource: "IG", categories: []),
+        MissingRequiredFieldsCase(
+            customerName: "林書宇",
+            orderSource: "IG",
+            categories: ["", " \n\t "]
+        ),
     ])
-    func saveTapped_必填缺漏_保留狀態且不送存檔請求(
-        customerName: String,
-        orderSource: String,
-        categories: [String]
-    ) async {
+    func saveTapped_必填缺漏_保留狀態且不送存檔請求(testCase: MissingRequiredFieldsCase) async {
         // Given
         var initial = Self.makeEditState()
-        initial.draft.customerName = customerName
-        initial.draft.orderSource = orderSource
-        initial.draft.categories = categories
+        initial.draft.customerName = testCase.customerName
+        initial.draft.orderSource = testCase.orderSource
+        initial.draft.categories = testCase.categories
         initial.focusedField = .chargedAmount
         let dismissCount = LockIsolated(0)
         let store = TestStore(initialState: initial) {
@@ -180,7 +172,7 @@ struct OrderSaveGuardTests {
         #expect(dismissCount.value == 0)
     }
 
-    /// 去除前後空白後必填完整時，子層清焦點並送 delegate 後關閉
+    /// 驗證必填欄位含前後空白時仍視為完整，存檔後清除焦點、送出存檔請求通知 並關閉表單，草稿內容維持含空白的原始輸入
     @Test
     func saveTapped_必填含前後空白_送出存檔請求並關閉() async {
         // Given
@@ -215,11 +207,29 @@ struct OrderSaveGuardTests {
     }
 }
 
+// MARK: - Nested Types
+
+extension OrderSaveGuardTests {
+
+    /// 必填欄位缺漏的草稿輸入
+    struct MissingRequiredFieldsCase: Sendable {
+
+        /// 空白或只含空白字元時視為缺漏的顧客名稱
+        let customerName: String
+
+        /// 空白或只含空白字元時視為缺漏的訂單來源
+        let orderSource: String
+
+        /// 空陣列或所有項目皆空白時視為缺漏的商品類別
+        let categories: [String]
+    }
+}
+
 // MARK: - Private Method
 
 private extension OrderSaveGuardTests {
 
-    /// 建立符合規格情境的必填完整草稿
+    /// 建立必填欄位齊全的表單狀態
     ///
     /// - Returns: 顧客林書宇、來源 IG、類別美妝的表單狀態
     static func makeEditState() -> OrderEditFeature.State {

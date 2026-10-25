@@ -7,13 +7,15 @@
 
 import Foundation
 import Testing
+
 @testable import BuyLedger
 
-/// 驗證 ``CurrencyDisplayName`` 的幣別名稱與搜尋關鍵字
+/// ``CurrencyDisplayName`` 的單元測試，涵蓋幣別名稱與搜尋關鍵字
 struct CurrencyDisplayNameTests {
 
-    /// 正體中文顯示已知幣別時回傳本地化名稱
-    @Test func textUsesLocalizedNameInTraditionalChinese() {
+    /// 驗證正體中文顯示已知幣別時，回傳本地化名稱，例如 TWD 顯示為「新台幣」
+    @Test
+    func text_正體中文_回傳本地化名稱() {
         // Given
         let code = "TWD"
 
@@ -21,13 +23,12 @@ struct CurrencyDisplayNameTests {
         let text = CurrencyDisplayName.text(code: code, language: .traditionalChinese)
 
         // Then
-        #expect(
-            text == "新台幣"
-        )
+        #expect(text == "新台幣")
     }
 
-    /// 英文顯示已知幣別時回傳 ISO 代碼
-    @Test func textUsesCodeInEnglish() {
+    /// 驗證英文顯示已知幣別時回傳 ISO 代碼
+    @Test
+    func text_英文_回傳ISO代碼() {
         // Given
         let code = "TWD"
 
@@ -35,13 +36,12 @@ struct CurrencyDisplayNameTests {
         let text = CurrencyDisplayName.text(code: code, language: .english)
 
         // Then
-        #expect(
-            text == "TWD"
-        )
+        #expect(text == "TWD")
     }
 
-    /// 顯示未知幣別時回傳原始 ISO 代碼
-    @Test func textFallsBackToCodeForUnknownCurrency() {
+    /// 驗證顯示未知幣別 (如 ZZZ) 時，原樣回傳該代碼
+    @Test
+    func text_未知幣別_回傳原始ISO代碼() {
         // Given
         let code = "ZZZ"
 
@@ -49,13 +49,12 @@ struct CurrencyDisplayNameTests {
         let text = CurrencyDisplayName.text(code: code, language: .traditionalChinese)
 
         // Then
-        #expect(
-            text == "ZZZ"
-        )
+        #expect(text == "ZZZ")
     }
 
-    /// 正體中文搜尋時回傳目前 locale 的本地化名稱
-    @Test func searchKeywordsUsesTraditionalChineseLocaleName() {
+    /// 驗證 `zh-Hant-TW` 地區搜尋 TWD 時，回傳本地化名稱「新台幣」
+    @Test
+    func searchKeywords_正體中文地區_回傳本地化名稱() {
         // Given
         let code = "TWD"
         let locale = Locale(identifier: "zh-Hant-TW")
@@ -64,13 +63,12 @@ struct CurrencyDisplayNameTests {
         let keywords = CurrencyDisplayName.searchKeywords(code: code, locale: locale)
 
         // Then
-        #expect(
-            keywords == "新台幣"
-        )
+        #expect(keywords == "新台幣")
     }
 
-    /// 英文搜尋時回傳目前 locale 的本地化名稱
-    @Test func searchKeywordsUsesEnglishLocaleName() {
+    /// 驗證 `en` 地區搜尋 TWD 時，回傳英文名稱 New Taiwan Dollar
+    @Test
+    func searchKeywords_英文地區_回傳本地化名稱() {
         // Given
         let code = "TWD"
         let locale = Locale(identifier: "en")
@@ -79,13 +77,12 @@ struct CurrencyDisplayNameTests {
         let keywords = CurrencyDisplayName.searchKeywords(code: code, locale: locale)
 
         // Then
-        #expect(
-            keywords == "New Taiwan Dollar"
-        )
+        #expect(keywords == "New Taiwan Dollar")
     }
 
-    /// 搜尋未知幣別時回傳空字串
-    @Test func searchKeywordsReturnsEmptyForUnknownCurrency() {
+    /// 驗證搜尋未知幣別 (如 ZZZ) 時回傳空字串
+    @Test
+    func searchKeywords_未知幣別_回傳空字串() {
         // Given
         let code = "ZZZ"
         let locale = Locale(identifier: "en")
@@ -94,8 +91,6 @@ struct CurrencyDisplayNameTests {
         let keywords = CurrencyDisplayName.searchKeywords(code: code, locale: locale)
 
         // Then
-        #expect(
-            keywords.isEmpty
-        )
+        #expect(keywords.isEmpty)
     }
 }

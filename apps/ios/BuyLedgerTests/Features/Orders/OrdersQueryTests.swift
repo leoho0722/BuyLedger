@@ -11,23 +11,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 訂單篩選各條件、交集與日期邊界的行為測試
+/// `OrdersQuery` 的單元測試，逐項斷言各篩選條件、條件交集與日期邊界的行為
 struct OrdersQueryTests {
 
-    /// 空清單不產生任何篩選結果
-    @Test
-    func filteredOrders_空清單_回傳空清單() {
-        // Given
-        let orders: [LedgerOrder] = []
-
-        // When
-        let result = filtered(orders: orders)
-
-        // Then
-        #expect(result.isEmpty)
-    }
-
-    /// 沒有篩選條件時保留輸入順序，空白搜尋不篩除資料
+    /// 驗證沒有篩選條件且搜尋文字只有空白與換行時，訂單保留輸入順序，不被篩除
     @Test
     func filteredOrders_沒有篩選與空白搜尋_保留輸入順序() {
         // Given
@@ -43,110 +30,79 @@ struct OrdersQueryTests {
         #expect(result.map(\.id) == ["z", "a"])
     }
 
-    /// 各狀態篩選只保留該狀態的訂單，全部狀態篩選則保留所有訂單
+    /// 驗證各狀態篩選只保留同狀態的訂單，全部狀態時保留所有狀態的訂單
     ///
-    /// - Parameters:
-    ///   - status: 要套用的狀態篩選
-    ///   - expected: 字面值定義的訂單識別值
-    @Test(arguments: [
-        (
-            OrderStatusFilter.all,
-            [
-                "quoting",
-                "confirmed",
-                "purchased",
-                "shipping",
-                "partiallyArrived",
-                "arrived",
-                "delivered",
-                "pickedUp",
-                "cancelled",
-                "merged",
-            ],
-        ),
-        (.status(.quoting), ["quoting"]),
-        (.status(.confirmed), ["confirmed"]),
-        (.status(.purchased), ["purchased"]),
-        (.status(.shipping), ["shipping"]),
-        (.status(.partiallyArrived), ["partiallyArrived"]),
-        (.status(.arrived), ["arrived"]),
-        (.status(.delivered), ["delivered"]),
-        (.status(.pickedUp), ["pickedUp"]),
-        (.status(.cancelled), ["cancelled"]),
-        (.status(.merged), ["merged"]),
-    ])
-    func filteredOrders_所有狀態篩選_僅保留指定狀態(status: OrderStatusFilter, expected: [String]) {
+    /// - Parameter scenario: 要套用的狀態篩選與字面值定義的訂單識別值
+    @Test(arguments: StatusFilterCase.allCases)
+    func filteredOrders_所有狀態篩選_僅保留指定狀態(scenario: StatusFilterCase) {
         // Given
         let orders = OrderStatus.allCases.map {
             LedgerOrder.fixture(id: $0.rawValue, status: $0, date: TestDependencies.fixedNow)
         }
 
         // When
-        let result = filtered(orders: orders, status: status)
+        let result = filtered(orders: orders, status: scenario.status)
 
         // Then
-        #expect(result.map(\.id) == expected)
+        #expect(result.map(\.id) == scenario.expectedIDs)
     }
 
-    /// 類別與付款方式各自以精確值篩選，未選取時不排除
+    /// 驗證類別篩選以精確值比對，未選取時不排除，大小寫不同或不存在的類別都不符合
     ///
-    /// - Parameters:
-    ///   - selection: 篩選值，包含未選取、符合與不符合
-    ///   - expected: 字面值定義的訂單識別值
-    @Test(arguments: [
-        (nil as String?, ["match", "other"]),
-        ("Selected", ["match"]),
-        ("selected", []),
-        ("missing", []),
-    ])
-    func filteredOrders_類別與付款方式篩選_各自保留精確符合者(selection: String?, expected: [String]) {
+    /// - Parameter scenario: 篩選值 (未選取、符合與不符合) 與字面值定義的訂單識別值
+    @Test(arguments: SelectionCase.allCases)
+    func filteredOrders_類別篩選_只保留精確符合者(scenario: SelectionCase) {
         // Given
-        let orders = [
-            LedgerOrder.fixture(
-                id: "match",
-                date: TestDependencies.fixedNow,
-                categories: ["other", "Selected"],
-                paymentMethod: "Selected"
-            ),
-            LedgerOrder.fixture(id: "other", date: TestDependencies.fixedNow),
-        ]
+        let orders = Self.makeSelectionOrders()
 
         // When
-        let categories = filtered(orders: orders, category: selection)
-        let payments = filtered(orders: orders, paymentMethod: selection)
-        let combined = filtered(
+        let result = filtered(orders: orders, category: scenario.selection)
+
+        // Then
+        #expect(result.map(\.id) == scenario.expectedIDs)
+    }
+
+    /// 驗證付款方式篩選以精確值比對，未選取時不排除，大小寫不同或不存在的付款方式都不符合
+    ///
+    /// - Parameter scenario: 篩選值 (未選取、符合與不符合) 與字面值定義的訂單識別值
+    @Test(arguments: SelectionCase.allCases)
+    func filteredOrders_付款方式篩選_只保留精確符合者(scenario: SelectionCase) {
+        // Given
+        let orders = Self.makeSelectionOrders()
+
+        // When
+        let result = filtered(orders: orders, paymentMethod: scenario.selection)
+
+        // Then
+        #expect(result.map(\.id) == scenario.expectedIDs)
+    }
+
+    /// 驗證類別與付款方式同時套用，並與狀態、本月日期條件組合時，仍以精確值比對，未選取時不排除
+    ///
+    /// - Parameter scenario: 篩選值 (未選取、符合與不符合) 與字面值定義的訂單識別值
+    @Test(arguments: SelectionCase.allCases)
+    func filteredOrders_類別與付款方式組合_只保留精確符合者(scenario: SelectionCase) {
+        // Given
+        let orders = Self.makeSelectionOrders()
+
+        // When
+        let result = filtered(
             orders: orders,
             status: .status(.confirmed),
             period: .thisMonth,
-            category: selection,
-            paymentMethod: selection
+            category: scenario.selection,
+            paymentMethod: scenario.selection
         )
 
         // Then
-        #expect(categories.map(\.id) == expected)
-        #expect(payments.map(\.id) == expected)
-        #expect(combined.map(\.id) == expected)
+        #expect(result.map(\.id) == scenario.expectedIDs)
     }
 
-    /// 搜尋比對訂單編號、客戶名稱與縮寫、來源、幣別、類別與商品名稱，不分大小寫，首尾空白不影響結果
+    /// 驗證搜尋比對訂單編號、客戶名稱與縮寫、來源、幣別、類別與商品名稱，不分大小寫且忽略首尾空白，備註、付款方式與開團名稱不在搜尋範圍內
     ///
-    /// - Parameters:
-    ///   - query: 要搜尋的欄位內容
-    ///   - expected: 字面值定義的訂單識別值
-    @Test(arguments: [
-        ("  ALPHA-ID\n", ["Alpha-ID"]),
-        ("小明", ["Alpha-ID"]),
-        ("xm", ["Alpha-ID"]),
-        ("sourceabc", ["Alpha-ID"]),
-        ("jpy", ["Alpha-ID"]),
-        ("分類甲", ["Alpha-ID"]),
-        ("widget", ["Alpha-ID"]),
-        ("只在備註", []),
-        ("只在付款", []),
-        ("只在開團", []),
-        ("missing", []),
-    ])
-    func filteredOrders_搜尋既有欄位與非搜尋欄位_只回傳符合者(query: String, expected: [String]) {
+    /// - Parameter scenario: 要搜尋的欄位內容與字面值定義的訂單識別值
+    @Test(arguments: SearchCase.allCases)
+    func filteredOrders_搜尋既有欄位與非搜尋欄位_只回傳符合者(scenario: SearchCase) {
         // Given
         let orders = [
             LedgerOrder.fixture(
@@ -171,37 +127,17 @@ struct OrdersQueryTests {
         ]
 
         // When
-        let result = filtered(orders: orders, searchText: query)
+        let result = filtered(orders: orders, searchText: scenario.query)
 
         // Then
-        #expect(result.map(\.id) == expected)
+        #expect(result.map(\.id) == scenario.expectedIDs)
     }
 
-    /// 日期區間包含起點並排除終點，週與月的邊界使用固定 UTC 行事曆
+    /// 驗證日期區間包含起點、排除終點，週與月的邊界以固定 UTC 行事曆計算，九個邊界訂單依各區間判定去留
     ///
-    /// - Parameters:
-    ///   - period: 要套用的日期區間
-    ///   - expected: 字面值定義的訂單識別值
-    @Test(arguments: [
-        (
-            OrderDatePeriod.all,
-            [
-                "feb-end",
-                "mar-start",
-                "mar-end",
-                "apr-start",
-                "week-before",
-                "week-start",
-                "apr-end",
-                "may-start",
-                "week-end",
-            ],
-        ),
-        (.thisWeek, ["week-start", "apr-end", "may-start"]),
-        (.thisMonth, ["apr-start", "week-before", "week-start", "apr-end"]),
-        (.lastMonth, ["mar-start", "mar-end"]),
-    ])
-    func filteredOrders_日期區間端點_包含起點排除終點(period: OrderDatePeriod, expected: [String]) {
+    /// - Parameter scenario: 要套用的日期區間與字面值定義的訂單識別值
+    @Test(arguments: DatePeriodCase.allCases)
+    func filteredOrders_日期區間端點_包含起點排除終點(scenario: DatePeriodCase) {
         // Given
         let now = TestDependencies.fixedNow
         let boundaries: [(String, TimeInterval)] = [
@@ -220,16 +156,152 @@ struct OrdersQueryTests {
         }
 
         // When
-        let result = filtered(orders: orders, period: period)
+        let result = filtered(orders: orders, period: scenario.period)
 
         // Then
-        #expect(result.map(\.id) == expected)
+        #expect(result.map(\.id) == scenario.expectedIDs)
+    }
+}
+
+// MARK: - Nested Types
+
+extension OrdersQueryTests {
+
+    /// 狀態篩選與預期保留的訂單識別值
+    struct StatusFilterCase: Sendable {
+
+        /// 全部狀態與各單一狀態的篩選案例，逐一列出預期保留的訂單識別值
+        static let allCases = [
+            Self(
+                status: .all,
+                expectedIDs: [
+                    "quoting",
+                    "confirmed",
+                    "purchased",
+                    "shipping",
+                    "partiallyArrived",
+                    "arrived",
+                    "delivered",
+                    "pickedUp",
+                    "cancelled",
+                    "merged",
+                ]
+            ),
+            Self(status: .status(.quoting), expectedIDs: ["quoting"]),
+            Self(status: .status(.confirmed), expectedIDs: ["confirmed"]),
+            Self(status: .status(.purchased), expectedIDs: ["purchased"]),
+            Self(status: .status(.shipping), expectedIDs: ["shipping"]),
+            Self(status: .status(.partiallyArrived), expectedIDs: ["partiallyArrived"]),
+            Self(status: .status(.arrived), expectedIDs: ["arrived"]),
+            Self(status: .status(.delivered), expectedIDs: ["delivered"]),
+            Self(status: .status(.pickedUp), expectedIDs: ["pickedUp"]),
+            Self(status: .status(.cancelled), expectedIDs: ["cancelled"]),
+            Self(status: .status(.merged), expectedIDs: ["merged"]),
+        ]
+
+        /// 要套用的狀態篩選
+        let status: OrderStatusFilter
+
+        /// 字面值定義的訂單識別值
+        let expectedIDs: [String]
+    }
+
+    /// 類別或付款方式的篩選值與預期保留的訂單識別值
+    struct SelectionCase: Sendable {
+
+        /// 未選取、大小寫相符、大小寫不符與不存在四種篩選值
+        static let allCases = [
+            Self(selection: nil, expectedIDs: ["match", "other"]),
+            Self(selection: "Selected", expectedIDs: ["match"]),
+            Self(selection: "selected", expectedIDs: []),
+            Self(selection: "missing", expectedIDs: []),
+        ]
+
+        /// 篩選值，`nil` 代表未選取
+        let selection: String?
+
+        /// 字面值定義的訂單識別值
+        let expectedIDs: [String]
+    }
+
+    /// 搜尋文字與預期保留的訂單識別值
+    struct SearchCase: Sendable {
+
+        /// 可搜尋欄位命中，以及只出現在備註、付款方式、開團或不存在時不命中的案例
+        static let allCases = [
+            Self(query: "  ALPHA-ID\n", expectedIDs: ["Alpha-ID"]),
+            Self(query: "小明", expectedIDs: ["Alpha-ID"]),
+            Self(query: "xm", expectedIDs: ["Alpha-ID"]),
+            Self(query: "sourceabc", expectedIDs: ["Alpha-ID"]),
+            Self(query: "jpy", expectedIDs: ["Alpha-ID"]),
+            Self(query: "分類甲", expectedIDs: ["Alpha-ID"]),
+            Self(query: "widget", expectedIDs: ["Alpha-ID"]),
+            Self(query: "只在備註", expectedIDs: []),
+            Self(query: "只在付款", expectedIDs: []),
+            Self(query: "只在開團", expectedIDs: []),
+            Self(query: "missing", expectedIDs: []),
+        ]
+
+        /// 要搜尋的欄位內容
+        let query: String
+
+        /// 字面值定義的訂單識別值
+        let expectedIDs: [String]
+    }
+
+    /// 日期區間與預期保留的訂單識別值
+    struct DatePeriodCase: Sendable {
+
+        /// 全部、本週、本月與上個月四種區間
+        static let allCases = [
+            Self(
+                period: .all,
+                expectedIDs: [
+                    "feb-end",
+                    "mar-start",
+                    "mar-end",
+                    "apr-start",
+                    "week-before",
+                    "week-start",
+                    "apr-end",
+                    "may-start",
+                    "week-end",
+                ]
+            ),
+            Self(period: .thisWeek, expectedIDs: ["week-start", "apr-end", "may-start"]),
+            Self(
+                period: .thisMonth,
+                expectedIDs: ["apr-start", "week-before", "week-start", "apr-end"]
+            ),
+            Self(period: .lastMonth, expectedIDs: ["mar-start", "mar-end"]),
+        ]
+
+        /// 要套用的日期區間
+        let period: OrderDatePeriod
+
+        /// 字面值定義的訂單識別值
+        let expectedIDs: [String]
     }
 }
 
 // MARK: - Private Method
 
 private extension OrdersQueryTests {
+
+    /// 建立類別與付款方式篩選共用的兩筆訂單，只有識別值 match 的訂單含「Selected」類別與付款方式
+    ///
+    /// - Returns: 符合與不符合篩選值的兩筆訂單
+    static func makeSelectionOrders() -> [LedgerOrder] {
+        [
+            LedgerOrder.fixture(
+                id: "match",
+                date: TestDependencies.fixedNow,
+                categories: ["other", "Selected"],
+                paymentMethod: "Selected"
+            ),
+            LedgerOrder.fixture(id: "other", date: TestDependencies.fixedNow),
+        ]
+    }
 
     /// 執行固定時間與 UTC 行事曆的訂單篩選，省略的條件代表未選取
     ///

@@ -24,7 +24,7 @@ struct LaunchOptions {
     /// 覆寫的 App 內語言，`nil` 代表沿用預設語言 (正體中文)
     var language: Language?
 
-    /// 覆寫 UIKit 系統字級，`nil` 代表沿用系統設定
+    /// 覆寫的 UIKit 系統字級，`nil` 代表沿用系統設定
     ///
     /// - Note: 這是 UIKit 系統參數，不經 `BLUITestConfiguration` 解析
     var contentSizeCategory: ContentSizeCategory?
@@ -140,10 +140,10 @@ extension LaunchOptions {
     /// 本機驗證替身的情境，`rawValue` 對齊 App 端 `BLUITestBiometricScenario`
     enum BiometricScenario: String {
 
-        /// 驗證一律成功
+        /// 本機驗證一律成功
         case success
 
-        /// 驗證一律失敗
+        /// 本機驗證一律失敗
         case failure
     }
 
@@ -181,7 +181,7 @@ extension LaunchOptions {
 
 extension LaunchOptions {
 
-    /// 序列化成 `XCUIApplication.launchArguments`，即傳給受測 App 的啟動參數
+    /// 傳給受測 App 的啟動參數，即序列化後的 `XCUIApplication.launchArguments`
     var launchArguments: [String] {
         var arguments = ["-BLUITest", "-BLUITestSeed", seed.rawValue]
 

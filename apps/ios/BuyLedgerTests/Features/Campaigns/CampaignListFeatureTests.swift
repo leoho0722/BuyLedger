@@ -11,15 +11,15 @@ import Testing
 
 @testable import BuyLedger
 
-/// 開團列表的日期投影與使用者請求測試
+/// `CampaignListFeature` 的單元測試，以 TestStore 逐步驗證日期脈絡更新與載入請求
 @MainActor
 struct CampaignListFeatureTests {
 
-    /// 列表出現時更新日期脈絡，並把載入需求交給容器
+    /// 驗證列表出現時更新日期脈絡並送出載入請求，不改動載入中與已載入的旗標
     @Test
     func task_列表出現_更新日期脈絡並委派載入() async {
         // Given
-        let store = TestStore(initialState: Self.makeState()) {
+        let store = TestStore(initialState: CampaignListFeatureTestSupport.makeState()) {
             CampaignListFeature()
         } withDependencies: {
             $0.date = .constant(TestDependencies.fixedNow)
@@ -41,11 +41,11 @@ struct CampaignListFeatureTests {
         #expect(store.state.isLoading == false)
     }
 
-    /// 重試只更新日期脈絡並發出載入需求，錯誤由載入子層清除
+    /// 驗證載入失敗後按下重試，只更新日期脈絡並送出載入請求，列表不清除唯讀的錯誤訊息
     @Test
     func retryTapped_載入失敗_委派載入並保留唯讀錯誤() async {
         // Given
-        let initial = Self.makeState()
+        let initial = CampaignListFeatureTestSupport.makeState()
         initial.$errorMessage = SharedReader(value: "campaigns.list.message.campaignsLoadedTry")
         let store = TestStore(initialState: initial) {
             CampaignListFeature()
@@ -66,26 +66,5 @@ struct CampaignListFeatureTests {
         await store.receive(\.delegate.loadRequested)
         await store.finish()
         #expect(store.state.loadState == .failed("campaigns.list.message.campaignsLoadedTry"))
-    }
-}
-
-// MARK: - Internal Method
-
-extension CampaignListFeatureTests {
-
-    /// 建立列表的唯讀開團與訂單共享資料
-    ///
-    /// - Parameters:
-    ///   - campaigns: 初始開團清單
-    ///   - orders: 初始訂單投影
-    /// - Returns: 尚未載入的列表狀態
-    static func makeState(
-        campaigns: [Campaign] = [],
-        orders: [LedgerOrder] = []
-    ) -> CampaignListFeature.State {
-        CampaignListFeature.State(
-            campaigns: SharedReader(value: campaigns),
-            orders: SharedReader(value: orders)
-        )
     }
 }

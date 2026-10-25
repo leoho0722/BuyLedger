@@ -11,10 +11,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證匯率 Service 把服務端錯誤代碼轉成 `APIError`
+/// `ExchangeRateService` 的單元測試，涵蓋服務端錯誤代碼對應至 `APIError` 的結果
 struct APIErrorMappingTests {
 
-    /// 無效金鑰或停用帳號代碼都轉換為無效金鑰錯誤
+    /// 驗證 `invalid-key` 與 `inactive-account` 兩種錯誤代碼都轉為無效金鑰錯誤
     ///
     /// - Parameter errorCode: 服務回應中的錯誤代碼
     /// - Throws: `fetchLatest` 沒有丟出任何錯誤，或建立測試 HTTP 回應失敗時由 `#require` 丟出
@@ -25,7 +25,7 @@ struct APIErrorMappingTests {
         var actualError: APIError?
 
         // When
-        do throws(APIError) {
+        do {
             _ = try await service.fetchLatest(.usd)
         } catch {
             actualError = error
@@ -44,7 +44,7 @@ struct APIErrorMappingTests {
         #expect(isInvalidKey)
     }
 
-    /// 配額用盡代碼轉換為配額錯誤
+    /// 驗證 `quota-reached` 代碼轉為 `.quotaExceeded`
     ///
     /// - Throws: `fetchLatest` 沒有丟出任何錯誤，或建立測試 HTTP 回應失敗時由 `#require` 丟出
     @Test
@@ -54,7 +54,7 @@ struct APIErrorMappingTests {
         var actualError: APIError?
 
         // When
-        do throws(APIError) {
+        do {
             _ = try await service.fetchLatest(.usd)
         } catch {
             actualError = error
@@ -73,7 +73,7 @@ struct APIErrorMappingTests {
         #expect(isQuotaExceeded)
     }
 
-    /// 未知服務錯誤代碼保留原始代碼供上層處理
+    /// 驗證未知的服務錯誤代碼 (如 `malformed-request`) 歸為 `.apiError`，並保留原始代碼供上層處理
     ///
     /// - Throws: `fetchLatest` 沒有丟出任何錯誤，或建立測試 HTTP 回應失敗時由 `#require` 丟出
     @Test
@@ -83,7 +83,7 @@ struct APIErrorMappingTests {
         var actualError: APIError?
 
         // When
-        do throws(APIError) {
+        do {
             _ = try await service.fetchLatest(.usd)
         } catch {
             actualError = error
@@ -111,14 +111,14 @@ private extension APIErrorMappingTests {
     ///
     /// - Parameter errorCode: 服務回應中的錯誤代碼
     /// - Returns: 使用測試 HTTP 回應與 API 金鑰的正式 Service
-    /// - Throws: 建立測試 HTTP 回應失敗時拋出錯誤
+    /// - Throws: 建立測試 HTTP 回應失敗時丟出錯誤
     static func makeService(errorCode: String) throws -> ExchangeRateService {
         let responseBody = Data(#"{"result":"error","error-type":"\#(errorCode)"}"#.utf8)
         let httpClient = MockHTTPClient()
         httpClient.dataResult = .success(
-            try CurrencyMetadataServiceTests.makeHTTPResponse(body: responseBody)
+            try CurrencyMetadataServiceTestSupport.makeHTTPResponse(body: responseBody)
         )
-        let configurationStore = CurrencyMetadataServiceTests.makeConfigurationStore(
+        let configurationStore = CurrencyMetadataServiceTestSupport.makeConfigurationStore(
             apiKey: "network-test-key"
         )
         return withDependencies {

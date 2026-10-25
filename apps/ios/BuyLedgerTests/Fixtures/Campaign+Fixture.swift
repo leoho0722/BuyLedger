@@ -13,7 +13,7 @@ import Foundation
 
 extension Campaign {
 
-    /// 建立欄位都有固定預設值的開團，預設開團日期為 2026 年 4 月 1 日零點 (UTC)
+    /// 建立測試用開團，未指定的欄位取固定預設值，開團日期預設為 2026 年 4 月 1 日零點 (UTC)
     ///
     /// - Parameters:
     ///   - id: 開團識別值
@@ -23,7 +23,7 @@ extension Campaign {
     ///   - status: 開團狀態
     ///   - settledDate: 結團日期；`nil` 表示尚未結團
     ///   - notes: 開團備註
-    /// - Returns: 指定欄位值、其餘欄位固定的開團
+    /// - Returns: 套用參數後的開團，其餘欄位為固定值
     static func fixture(
         id: Campaign.ID = "fixture-campaign-id",
         name: String = "測試開團",

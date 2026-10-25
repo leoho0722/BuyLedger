@@ -11,15 +11,15 @@ import SwiftData
 
 @testable import BuyLedger
 
-/// 以 `LockIsolated` 保護呼叫紀錄並控制資料庫失敗情境
+/// 包裝 `BuyLedgerDatabase` 的替身，依 `mode` 注入讀寫失敗並記錄呼叫次數，供失敗情境的測試使用
 final class MockBuyLedgerDatabase: Sendable {
 
     // MARK: - Properties
 
-    /// 要轉送操作的 `BuyLedgerDatabase`
+    /// 實際執行讀寫的 `BuyLedgerDatabase`
     private let database: BuyLedgerDatabase
 
-    /// 此 mock 使用的失敗模式
+    /// 目前的失敗模式，決定讀寫是否注入失敗
     private let modeState = LockIsolated(Mode.passthrough)
 
     /// 讀寫與隔離 store 的呼叫次數
@@ -27,7 +27,7 @@ final class MockBuyLedgerDatabase: Sendable {
 
     // MARK: - Init
 
-    /// 建立初始為直通模式的資料庫 mock
+    /// 建立初始為直通模式的資料庫替身
     ///
     /// - Parameter database: 要包裝的正式資料庫
     init(database: BuyLedgerDatabase) {
@@ -39,31 +39,31 @@ final class MockBuyLedgerDatabase: Sendable {
 
 extension MockBuyLedgerDatabase {
 
-    /// 資料庫操作的控制模式
+    /// 讀寫替身的控制模式，決定是否注入失敗，讀取失敗時另指定第幾次呼叫注入
     enum Mode: Sendable {
 
-        /// 所有操作直接轉送正式資料庫
+        /// 讀寫皆直接交給正式資料庫執行，不注入失敗
         case passthrough
 
-        /// 在指定的讀取呼叫直接拋出錯誤
+        /// 指定序號的讀取呼叫丟出注入的錯誤
         ///
         /// - Parameters:
         ///   - call: 要注入錯誤的讀取呼叫序號
-        ///   - error: 要拋出的錯誤
+        ///   - error: 要丟出的錯誤
         case readFailure(call: Int, error: any Error & Sendable)
 
-        /// 執行交易主體後直接拋出指定錯誤
+        /// 交易主體執行後丟出指定錯誤
         ///
-        /// - Parameter error: 要拋出的錯誤
+        /// - Parameter error: 要丟出的錯誤
         case writeFailureAfterBody(error: any Error & Sendable)
 
-        /// 執行交易主體後插入違反子項上限的模型
+        /// 交易主體執行後插入違反子項上限的探測模型，使保存失敗
         ///
         /// - Note: 測試容器的 schema 必須同時包含 `ResidueProbeParent` 與 `ResidueProbeChild`
         case saveFailureAfterBody
     }
 
-    /// 記錄讀寫與隔離 store 的呼叫次數
+    /// 讀取、寫入與隔離 store 各自的呼叫次數
     private struct CallCounts: Sendable {
 
         /// 已呼叫的讀取次數
@@ -81,7 +81,7 @@ extension MockBuyLedgerDatabase {
 
 extension MockBuyLedgerDatabase {
 
-    /// 設定此 mock 使用的失敗模式
+    /// 目前的失敗模式，測試中可切換
     var mode: Mode {
         get {
             modeState.withValue { $0 }
@@ -111,7 +111,7 @@ extension MockBuyLedgerDatabase {
 
 extension MockBuyLedgerDatabase: BuyLedgerDatabaseProtocol {
 
-    /// 記錄讀取並依模式轉送或注入失敗
+    /// 記錄讀取呼叫，依模式注入失敗或交給正式資料庫執行
     ///
     /// - Parameter body: 要在底層資料庫執行的讀取操作
     /// - Returns: 讀取操作的領域資料
@@ -137,12 +137,12 @@ extension MockBuyLedgerDatabase: BuyLedgerDatabaseProtocol {
         return try await database.read(body)
     }
 
-    /// 記錄寫入並依模式轉送或注入失敗
+    /// 記錄寫入呼叫，依模式注入失敗或交給正式資料庫執行
     ///
     /// - Parameter body: 要在底層資料庫執行的寫入操作
     /// - Returns: 寫入操作的領域資料
     /// - Throws: `.writeFailureAfterBody` 時丟出注入的錯誤；`body` 失敗時丟出其 `Failure`；
-    ///   `.saveFailureAfterBody` 插入違規資料等保存失敗時丟出
+    ///   `.saveFailureAfterBody` 插入違規資料導致保存失敗時丟出
     ///   `Failure.storage(.saveFailed(underlying:))`
     ///
     /// - Note: 注入錯誤與 `Failure` 型別不符代表測試設定錯誤，視為程式錯誤
@@ -184,7 +184,7 @@ extension MockBuyLedgerDatabase: BuyLedgerDatabaseProtocol {
         }
     }
 
-    /// 記錄呼叫並轉送資料庫的 store 隔離操作
+    /// 記錄隔離呼叫，並交給正式資料庫隔離 store
     ///
     /// - Returns: 實際建立的備份目錄；`inMemory` 資料庫時為 `nil`
     /// - Throws: 路徑解析失敗時丟出 `.directoryResolutionFailed`；

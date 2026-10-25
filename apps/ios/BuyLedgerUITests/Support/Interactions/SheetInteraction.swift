@@ -7,13 +7,13 @@
 
 import XCTest
 
-/// 關閉 sheet 的下滑互動 helper
-
 // MARK: - Internal Method
 
+/// 關閉 sheet 的下滑互動 helper
 extension XCUIApplication {
 
-    /// 下滑關閉非 dirty 的 sheet
+    /// 下滑關閉沒有變更的 sheet
+    ///
     /// - Parameters:
     ///   - sheetRoot: sheet 的根元素
     ///   - timeout: 等待 sheet 消失的秒數
@@ -24,12 +24,16 @@ extension XCUIApplication {
         return sheetRoot.waitForDisappearance(timeout: timeout)
     }
 
-    /// 驗證 dirty 的 sheet 擋下下滑關閉
+    /// 下滑有變更的 sheet，確認在觀察期間未關閉
+    ///
     /// - Parameters:
     ///   - sheetRoot: sheet 的根元素
-    ///   - settleTimeout: 等待回彈完成的秒數
+    ///   - settleTimeout: 觀察 sheet 是否消失的秒數
     /// - Returns: sheet 是否仍留在畫面上
-    func expectSheetBlocksSwipeDismiss(_ sheetRoot: XCUIElement, settleTimeout: TimeInterval = 2) -> Bool {
+    func expectSheetBlocksSwipeDismiss(
+        _ sheetRoot: XCUIElement,
+        settleTimeout: TimeInterval = 2
+    ) -> Bool {
         dragSheetDown(sheetRoot)
         return !sheetRoot.waitForDisappearance(timeout: settleTimeout)
     }
@@ -40,6 +44,7 @@ extension XCUIApplication {
 private extension XCUIApplication {
 
     /// 從 sheet 上緣中央往下拖出下滑手勢
+    ///
     /// - Parameter sheetRoot: sheet 的根元素
     func dragSheetDown(_ sheetRoot: XCUIElement) {
         let start = sheetRoot.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.02))

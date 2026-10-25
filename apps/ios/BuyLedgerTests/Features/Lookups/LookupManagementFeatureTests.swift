@@ -6,16 +6,15 @@
 //
 
 import ComposableArchitecture
-import Foundation
 import Testing
 
 @testable import BuyLedger
 
-/// 驗證主檔目錄載入、表單操作與付款方式更正
+/// `LookupManagementFeature` 的單元測試，以 TestStore 逐步驗證主檔目錄的載入、項目的新增與刪除
 @MainActor
 struct LookupManagementFeatureTests {
 
-    /// 載入指定種類時只替換該目錄清單，並清除載入錯誤
+    /// 驗證任一種類載入成功時，只替換該種類的目錄清單、其他種類維持原樣，並清除載入失敗的標記
     ///
     /// - Parameter kind: 要載入的主檔種類
     @Test(arguments: LookupKind.allCases)
@@ -46,18 +45,16 @@ struct LookupManagementFeatureTests {
                         return LookupCatalog(categories: ["新類別"])
 
                     case .paymentMethod:
-                        return LookupCatalog(
-                            paymentMethods: [
-                                PaymentMethodInfo(
-                                    name: "新付款",
-                                    flags: PaymentMethodFlags(
-                                        isCardless: true,
-                                        isBankTransfer: false,
-                                        isCashOnDelivery: false
-                                    )
-                                ),
-                            ]
-                        )
+                        return LookupCatalog(paymentMethods: [
+                            PaymentMethodInfo(
+                                name: "新付款",
+                                flags: PaymentMethodFlags(
+                                    isCardless: true,
+                                    isBankTransfer: false,
+                                    isCashOnDelivery: false
+                                )
+                            ),
+                        ])
 
                     case .reconciliationStatus:
                         return LookupCatalog(reconciliationStatuses: ["新狀態"])
@@ -108,9 +105,9 @@ struct LookupManagementFeatureTests {
         }
     }
 
-    /// 點擊新增時呈現符合目前主檔種類的表單
+    /// 驗證點擊新增時，依目前的主檔種類呈現新增表單，是否帶付款方式分類由案例決定
     ///
-    /// - Parameter example: 主檔種類與表單分類狀態
+    /// - Parameter example: 主檔種類與表單是否帶付款方式分類
     @Test(arguments: LookupAdditionExample.examples)
     func addButtonTapped_點擊新增_呈現對應表單(example: LookupAdditionExample) async {
         await LookupCatalog.withIsolatedStorage {
@@ -128,15 +125,16 @@ struct LookupManagementFeatureTests {
 
             // Then
             #expect(
-                store.state.destination == .add(
-                    LookupAddFormFeature.State(hasClassification: example.hasClassification)
-                )
+                store.state.destination
+                    == .add(
+                        LookupAddFormFeature.State(hasClassification: example.hasClassification)
+                    )
             )
             await store.finish()
         }
     }
 
-    /// 新增表單修剪前後空白後將預期名稱與旗標寫入 service 和目錄
+    /// 驗證新增名稱前後含空白時，寫入服務與目錄的都是修剪後的名稱，旗標依案例保留或捨棄
     ///
     /// - Parameter example: 主檔種類及該種類應寫入的付款方式旗標
     @Test(arguments: LookupAdditionExample.examples)
@@ -215,7 +213,7 @@ struct LookupManagementFeatureTests {
         }
     }
 
-    /// 點擊刪除時顯示對應主檔名稱的確認 alert
+    /// 驗證點擊刪除時，呈現帶入該項目名稱的刪除確認框，目錄內容維持不變
     @Test
     func deleteButtonTapped_點擊刪除_呈現刪除確認() async {
         await LookupCatalog.withIsolatedStorage {
@@ -230,16 +228,21 @@ struct LookupManagementFeatureTests {
 
             // When
             await store.send(.view(.deleteButtonTapped(name: "服飾"))) {
-                $0.destination = Self.deleteConfirmationAlert(name: "服飾")
+                $0.destination = LookupManagementFeatureTestSupport.deleteConfirmationAlert(
+                    name: "服飾"
+                )
             }
 
             // Then
-            #expect(store.state.destination == Self.deleteConfirmationAlert(name: "服飾"))
+            #expect(
+                store.state.destination
+                    == LookupManagementFeatureTestSupport.deleteConfirmationAlert(name: "服飾")
+            )
             await store.finish()
         }
     }
 
-    /// 確認刪除後呼叫 service 並從共用目錄移除項目
+    /// 驗證確認刪除後，服務以該種類與名稱被呼叫一次，共用目錄與清單都移除該項目
     ///
     /// - Note: 寫入失敗保留項目由 `destination_刪除寫入失敗_保留項目並呈現通知()` 覆蓋
     @Test
@@ -250,7 +253,9 @@ struct LookupManagementFeatureTests {
             state.$catalog.withLock {
                 $0.categories = ["服飾"]
             }
-            state.destination = Self.deleteConfirmationAlert(name: "服飾")
+            state.destination = LookupManagementFeatureTestSupport.deleteConfirmationAlert(
+                name: "服飾"
+            )
             let observedKinds = LockIsolated<[LookupKind]>([])
             let removeCalls = LockIsolated<[String]>([])
             let store = TestStore(initialState: state) {
@@ -282,5 +287,39 @@ struct LookupManagementFeatureTests {
             #expect(store.state.items.isEmpty)
             await store.finish()
         }
+    }
+}
+
+// MARK: - Nested Types
+
+extension LookupManagementFeatureTests {
+
+    /// 新增流程的參數化測試案例，每筆描述一種主檔的表單是否帶分類，以及新增後預期保存的付款方式旗標
+    struct LookupAdditionExample: Sendable {
+
+        /// 每種主檔各一筆的新增案例，非付款方式捨棄送入的旗標，付款方式則保留
+        static let examples = [
+            Self(kind: .orderSource, hasClassification: false, expectedFlags: .none),
+            Self(kind: .category, hasClassification: false, expectedFlags: .none),
+            Self(
+                kind: .paymentMethod,
+                hasClassification: true,
+                expectedFlags: PaymentMethodFlags(
+                    isCardless: false,
+                    isBankTransfer: true,
+                    isCashOnDelivery: false
+                )
+            ),
+            Self(kind: .reconciliationStatus, hasClassification: false, expectedFlags: .none),
+        ]
+
+        /// 要新增的主檔種類
+        let kind: LookupKind
+
+        /// 此主檔種類是否保留付款方式分類
+        let hasClassification: Bool
+
+        /// 此案例新增後預期保存的付款方式旗標
+        let expectedFlags: PaymentMethodFlags
     }
 }

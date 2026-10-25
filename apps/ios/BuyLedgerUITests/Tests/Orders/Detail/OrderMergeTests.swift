@@ -7,7 +7,8 @@
 
 import XCTest
 
-/// 訂單合併確認表單的關閉流程測試
+/// 訂單合併確認表單關閉流程的 UI 測試
+@MainActor
 final class OrderMergeTests: BLUITestCase {
 
     // MARK: - Properties
@@ -18,8 +19,7 @@ final class OrderMergeTests: BLUITestCase {
     /// 可合併的候選訂單編號 (推進合併時點選)
     private static let candidateOrderID = "UITEST-MRG-002"
 
-    /// 合併確認的預填資料屬於初始草稿，未修改時可下滑關閉
-    @MainActor
+    /// 驗證合併確認的預填資料仍是初始草稿時，下滑可直接關閉，不跳出捨棄確認，並回到來源訂單詳情
     func testDismissSheetBySwipe_合併確認未修改_關閉表單並回到詳情() {
         // Given
         let app = launch(LaunchOptions(seed: .mergeCandidates))
@@ -62,7 +62,6 @@ private extension OrderMergeTests {
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的合併候選流程 Page Object
-    @MainActor
     func openMergeCandidates(
         _ app: XCUIApplication,
         file: StaticString = #filePath,

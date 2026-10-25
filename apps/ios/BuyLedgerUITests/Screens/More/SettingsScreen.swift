@@ -8,25 +8,20 @@
 import XCTest
 
 /// 設定頁的 Page Object
-struct SettingsScreen: Screen {
+struct SettingsScreen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
+}
 
-    // MARK: - Computed Properties
+// MARK: - Computed Properties
 
-    /// 設定頁的畫面根 identifier
-    ///
-    /// - Returns: 設定頁的根 identifier
-    var rootIdentifier: String {
-        BLAccessibilityID.Settings.root
-    }
+@MainActor
+extension SettingsScreen {
 
-    /// 版本資訊列承載的文字 (label 串接 value)，列不存在時回 nil
-    ///
-    /// - Returns: 版本資訊列的合併文字；列不存在時為 `nil`
+    /// 版本資訊列的合併文字 (`label` 串接 `value`)，列不存在時為 `nil`
     var versionText: String? {
         let row = element(BLAccessibilityID.Settings.versionRow)
         guard row.exists else {
@@ -38,6 +33,7 @@ struct SettingsScreen: Screen {
 
 // MARK: - Internal Method
 
+@MainActor
 extension SettingsScreen {
 
     /// 從「更多」分頁導航到設定頁並回傳就緒的 Page Object
@@ -93,11 +89,7 @@ extension SettingsScreen {
     ///   - value: 每月目標金額
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func setMonthlyGoal(
-        _ value: Int,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
+    func setMonthlyGoal(_ value: Int, file: StaticString = #filePath, line: UInt = #line) {
         let field = app.textFields[BLAccessibilityID.Settings.monthlyGoalField]
         field.clearAndType(
             String(value),
@@ -113,9 +105,18 @@ extension SettingsScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func toggleAiSummary(file: StaticString = #filePath, line: UInt = #line) {
+    func toggleAISummary(file: StaticString = #filePath, line: UInt = #line) {
         let toggle = app.switches[BLAccessibilityID.Settings.aiSummaryToggle]
-        toggle.tapAfterWaiting(in: app, file: file, line: line)
+        if !toggle.waitForExistence(timeout: 10) {
+            app.failWithDiagnostics("找不到 AI 總結開關", file: file, line: line)
+            return
+        }
+        let previousValue = toggle.value as? String ?? ""
+        toggle.switches.firstMatch.tapAfterWaiting(in: app, file: file, line: line)
+        let changed = NSPredicate(format: "value != %@", previousValue)
+        if !toggle.wait(for: changed, timeout: 5) {
+            app.failWithDiagnostics("點擊後 AI 總結開關的值沒有改變", file: file, line: line)
+        }
     }
 
     /// 點預設幣別列推進到幣別選擇器
@@ -129,8 +130,19 @@ extension SettingsScreen {
     }
 }
 
+// MARK: - Screen
+
+extension SettingsScreen: Screen {
+
+    /// 設定頁的畫面根 identifier
+    var rootIdentifier: String {
+        BLAccessibilityID.Settings.root
+    }
+}
+
 // MARK: - Private Method
 
+@MainActor
 private extension SettingsScreen {
 
     /// 以 identifier 命中畫面上的元素 (不限型別)

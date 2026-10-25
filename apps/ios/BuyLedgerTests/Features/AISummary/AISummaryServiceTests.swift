@@ -11,10 +11,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證 AI 摘要 Service 的請求、金鑰與串流處理
+/// `AISummaryService` 的單元測試，以替身 HTTP 客戶端與設定來源取代網路與正式設定
 struct AISummaryServiceTests {
 
-    /// 驗證合法串流行能取出文字內容，並標記尚未完成 (`done` 為 `false`)
+    /// 驗證 `parse(line:)` 解析未完成的合法串流行時，取出文字 `content`，`done` 為 `false`
     ///
     /// - Throws: 預期的解析結果不存在時由 `#require` 丟出測試失敗
     @Test
@@ -31,7 +31,7 @@ struct AISummaryServiceTests {
         #expect(parsed.done == false)
     }
 
-    /// 驗證串流最後一行取出空的文字內容，並標記串流完成 (`done` 為 `true`)
+    /// 驗證 `parse(line:)` 解析最後的完成行時，`content` 為空字串，`done` 為 `true`
     ///
     /// - Throws: 預期的解析結果不存在時由 `#require` 丟出測試失敗
     @Test
@@ -48,7 +48,7 @@ struct AISummaryServiceTests {
         #expect(parsed.done)
     }
 
-    /// 驗證缺少 `message` 欄位的行仍可解析 (不回傳 `nil`)，文字內容為空且 `done` 為 `true`
+    /// 驗證 `parse(line:)` 遇到缺少 `message` 欄位的行時仍回傳解析結果 (不回傳 `nil`)，`content` 為空，`done` 為 `true`
     ///
     /// - Throws: 預期的解析結果不存在時由 `#require` 丟出測試失敗
     @Test
@@ -65,7 +65,7 @@ struct AISummaryServiceTests {
         #expect(parsed.done)
     }
 
-    /// 驗證空白、空字串、非 JSON 與被截斷的 JSON 行都回傳 `nil`，而不是空內容的解析結果
+    /// 驗證 `parse(line:)` 遇到空白、空字串、非 JSON 或被截斷的 JSON 行時都回傳 `nil`，而不是空內容的解析結果
     ///
     /// - Parameter line: 要解析的空白或格式錯誤文字
     @Test(arguments: ["   ", "", "this is not json", "{\"message\": "])
@@ -79,7 +79,7 @@ struct AISummaryServiceTests {
         #expect(parsed == nil)
     }
 
-    /// 驗證預覽替身會輸出固定的 Markdown 摘要
+    /// 驗證 `previewValue` 的 `streamSummary` 依序輸出固定的五段 Markdown 摘要片段
     ///
     /// - Throws: 預覽串流失敗時由 stream 丟出錯誤
     @Test
@@ -105,11 +105,18 @@ struct AISummaryServiceTests {
         )
     }
 
-    /// 驗證摘要請求包含模型、訊息、授權與串流設定
+    /// 驗證 `streamSummary` 送出的請求格式正確，連線失敗時以 `.transport` 結束
     ///
-    /// - Throws: 請求本文不是合法 JSON 時丟出 `JSONSerialization` 的解析錯誤；沒有丟出 `APIError`
+    /// - Throws: 請求本文不是合法 JSON 時由 `JSONSerialization` 丟出解析錯誤；沒有收到 `APIError`
     ///   (預期為 `.transport` 錯誤)、沒有記錄到請求、請求沒有本文、本文不是 JSON 物件或
     ///   `messages` 形狀不符時由 `#require` 丟出測試斷言錯誤
+    /// - Note: 請求方法為 POST
+    /// - Note: 端點為 Ollama 聊天端點 (https://ollama.com/api/chat)
+    /// - Note: 授權標頭為 Bearer 加上 API 金鑰
+    /// - Note: 逾時為 60 秒
+    /// - Note: JSON 本文的 `model` 為指定模型
+    /// - Note: JSON 本文的 `stream` 為 `true`
+    /// - Note: JSON 本文的 `messages` 內容為提示的 `user` 訊息
     @Test
     func streamSummary_指定模型提示與金鑰_送出串流請求() async throws {
         // Given
@@ -159,31 +166,26 @@ struct AISummaryServiceTests {
         #expect(messages.map { $0["content"] } == ["摘要提示"])
     }
 
-    /// 驗證 Service 會依 HTTP 狀態分類金鑰與其他錯誤
+    /// 驗證 `streamSummary` 遇到非成功狀態碼時，401 與 403 歸為 `.invalidKey`，其他狀態碼保留原碼為 `.http(statusCode:)`
     ///
-    /// - Parameters:
-    ///   - statusCode: 固定回傳的 HTTP 狀態碼
-    ///   - expectedError: 預期的錯誤分類
+    /// - Parameter scenario: 固定回傳的 HTTP 狀態碼與預期的錯誤分類
     /// - Throws: 預期的 API 錯誤未出現時由 `#require` 丟出測試失敗
     @Test(arguments: [
-        (401, ErrorClassification.invalidKey),
-        (403, .invalidKey),
-        (500, .http(statusCode: 500)),
+        HTTPStatusErrorScenario(statusCode: 401, expectedError: .invalidKey),
+        HTTPStatusErrorScenario(statusCode: 403, expectedError: .invalidKey),
+        HTTPStatusErrorScenario(statusCode: 500, expectedError: .http(statusCode: 500)),
     ])
-    func streamSummary_非成功狀態碼_依狀態分類錯誤(
-        statusCode: Int,
-        expectedError: ErrorClassification
-    ) async throws {
+    func streamSummary_非成功狀態碼_依狀態分類錯誤(scenario: HTTPStatusErrorScenario) async throws {
         // Given
-        let apiKey = "summary-status-\(statusCode)"
+        let apiKey = "summary-status-\(scenario.statusCode)"
         let authorization = "Bearer \(apiKey)"
         MockURLProtocol.setStub(
             authorization: authorization,
-            statusCode: statusCode,
+            statusCode: scenario.statusCode,
             body: Data("error".utf8)
         )
         let service = withDependencies {
-            $0.httpClient = makeHTTPClient()
+            $0.httpClient = AISummaryServiceTestSupport.makeHTTPClient()
         } operation: {
             AISummaryService.liveValue
         }
@@ -209,7 +211,7 @@ struct AISummaryServiceTests {
         case .transport, .decoding, .apiError, .quotaExceeded:
             actualErrorClassification = .other
         }
-        #expect(actualErrorClassification == expectedError)
+        #expect(actualErrorClassification == scenario.expectedError)
     }
 
     /// 驗證摘要串流依序輸出各段內容，略過空內容與無法解析的行，收到 `done` 後不再輸出
@@ -235,7 +237,7 @@ struct AISummaryServiceTests {
             body: responseBody
         )
         let service = withDependencies {
-            $0.httpClient = makeHTTPClient()
+            $0.httpClient = AISummaryServiceTestSupport.makeHTTPClient()
         } operation: {
             AISummaryService.liveValue
         }
@@ -250,7 +252,7 @@ struct AISummaryServiceTests {
         #expect(chunks == ["第一段", "第二段"])
     }
 
-    /// 驗證讀取 API 金鑰時向設定來源查詢一次 `OLLAMA_API_KEY`，並回傳該來源提供的值
+    /// 驗證 `apiKey()` 向設定來源查詢一次 `OLLAMA_API_KEY`，並回傳該來源提供的值
     @Test
     func apiKey_設定來源含Ollama金鑰_回傳金鑰並記錄查詢鍵() {
         // Given
@@ -276,12 +278,12 @@ struct AISummaryServiceTests {
 
 extension AISummaryServiceTests {
 
-    /// Service 錯誤的測試分類
+    /// `APIError` 的測試分類，供斷言只比對錯誤屬於哪一類
     ///
-    /// - Note: 用於測試方法的參數型別，須為 internal
+    /// - Note: 用於測試方法的參數型別，須為 `internal`
     enum ErrorClassification: Equatable, Sendable {
 
-        /// 回應 401 與 403 都應歸為金鑰無效 (`APIError.invalidKey`)
+        /// 金鑰無效 (`APIError.invalidKey`)，對應 HTTP 401 與 403
         case invalidKey
 
         /// 其他非 2xx 狀態碼保留原碼 (`APIError.http(statusCode:)`)
@@ -293,18 +295,14 @@ extension AISummaryServiceTests {
         /// 測試預期不會出現
         case other
     }
-}
 
-// MARK: - Internal Method
+    /// 一組固定 HTTP 狀態碼與預期錯誤分類的測試資料
+    struct HTTPStatusErrorScenario: Sendable {
 
-extension AISummaryServiceTests {
+        /// 固定回傳的 HTTP 狀態碼
+        let statusCode: Int
 
-    /// 建立使用 `MockURLProtocol` 的 HTTP client
-    ///
-    /// - Returns: 使用 `.ephemeral` session 的 HTTP client
-    func makeHTTPClient() -> HTTPClient {
-        let configuration = URLSessionConfiguration.ephemeral
-        configuration.protocolClasses = [MockURLProtocol.self]
-        return HTTPClient(session: URLSession(configuration: configuration))
+        /// 預期的錯誤分類
+        let expectedError: ErrorClassification
     }
 }

@@ -10,26 +10,42 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證系統場景階段與殼層場景階段的對應
+/// `AppScenePhase` 的單元測試，以 `ScenePhase` 逐一驗證轉換後的 App 自訂場景階段
 struct AppScenePhaseTests {
 
-    /// 三種系統階段各自保留相同的殼層語意
+    /// 驗證系統的作用中、非作用中與背景三種場景階段，各自轉成對應的自訂場景階段
     ///
-    /// - Parameters:
-    ///   - phase: 系統回報的場景階段
-    ///   - expected: 獨立列出的預期殼層階段
-    @Test(arguments: [
-        (ScenePhase.active, AppScenePhase.active),
-        (.inactive, .inactive),
-        (.background, .background),
-    ])
-    func init_系統場景階段_對應自訂列舉(phase: ScenePhase, expected: AppScenePhase) {
+    /// - Parameter scenario: 系統回報的場景階段與預期的自訂場景階段
+    @Test(arguments: PhaseCase.allCases)
+    func init_系統場景階段_對應自訂列舉(scenario: PhaseCase) {
         // Given
 
         // When
-        let result = AppScenePhase(phase)
+        let result = AppScenePhase(scenario.phase)
 
         // Then
-        #expect(result == expected)
+        #expect(result == scenario.expectedPhase)
+    }
+}
+
+// MARK: - Nested Types
+
+extension AppScenePhaseTests {
+
+    /// 一組系統場景階段與其預期自訂場景階段的測試案例
+    struct PhaseCase: Sendable {
+
+        /// 作用中、非作用中與背景三種系統階段各自的預期自訂場景階段
+        static let allCases = [
+            Self(phase: .active, expectedPhase: .active),
+            Self(phase: .inactive, expectedPhase: .inactive),
+            Self(phase: .background, expectedPhase: .background),
+        ]
+
+        /// 系統回報的場景階段
+        let phase: ScenePhase
+
+        /// 預期的自訂場景階段
+        let expectedPhase: AppScenePhase
     }
 }

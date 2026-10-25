@@ -12,10 +12,10 @@ import Testing
 
 #if DEBUG
 
-/// 驗證 UI 測試啟動參數的解析規則
+/// `BLUITestConfiguration` 的單元測試，涵蓋 UI 測試啟動參數的解析
 struct BLUITestConfigurationTests {
 
-    /// 開團寫入失敗旗標可開啟開團的寫入替身
+    /// 驗證帶入開團寫入失敗旗標時，設定要求開團寫入失敗
     @Test
     func init_帶開團寫入失敗旗標_啟用寫入失敗() {
         // Given
@@ -28,7 +28,7 @@ struct BLUITestConfigurationTests {
         #expect(configuration.shouldFailCampaignWrites == true)
     }
 
-    /// 未提供開團寫入失敗旗標時保留正常寫入
+    /// 驗證未帶開團寫入失敗旗標時，開團寫入維持正常、不設定失敗
     @Test
     func init_未帶開團寫入失敗旗標_不啟用寫入失敗() {
         // Given
@@ -41,7 +41,7 @@ struct BLUITestConfigurationTests {
         #expect(configuration.shouldFailCampaignWrites == false)
     }
 
-    /// 空的啟動參數會停用 UI 測試並保留所有預設值
+    /// 驗證沒有任何啟動參數時，UI 測試停用，其餘設定皆為預設值
     @Test
     func init_空啟動參數_停用測試並保留預設值() {
         // Given
@@ -69,7 +69,7 @@ struct BLUITestConfigurationTests {
         #expect(configuration.shouldResetPersistentStore == false)
     }
 
-    /// UI 測試旗標會啟用啟動掛鉤
+    /// 驗證啟動參數含執行檔路徑與 `-BLUITest` 時，啟用 UI 測試設定
     @Test
     func init_帶測試旗標_啟用測試設定() {
         // Given
@@ -82,7 +82,7 @@ struct BLUITestConfigurationTests {
         #expect(configuration.isEnabled)
     }
 
-    /// 預設參考時間固定為 2026 年 4 月 30 日 UTC 午夜
+    /// 驗證未提供參考時間時，預設參考時間為 2026 年 4 月 30 日 UTC 午夜
     @Test
     func defaultReferenceDate_未提供時間覆寫_為四月底午夜() {
         // Given
@@ -95,7 +95,7 @@ struct BLUITestConfigurationTests {
         #expect(referenceDate == expectedReferenceDate)
     }
 
-    /// 有效的啟動參數會套用種子、時間、語言與各項覆寫設定
+    /// 驗證提供全部有效旗標值時，種子、時間、語言與各項覆寫都套用
     @Test
     func init_提供有效旗標值_解析全部設定() {
         // Given
@@ -134,7 +134,7 @@ struct BLUITestConfigurationTests {
         #expect(configuration.monthlyProfitGoalTWD == 80_000)
     }
 
-    /// 參考時間可接受含小數秒的 ISO8601 時間
+    /// 驗證 ISO8601 參考時間含小數秒時，解析結果保留小數秒
     @Test
     func init_參考時間含小數秒_保留小數秒() {
         // Given
@@ -148,7 +148,7 @@ struct BLUITestConfigurationTests {
         #expect(configuration.referenceDate == expectedReferenceDate)
     }
 
-    /// 明確指定不模擬載入失敗時保留正常讀取
+    /// 驗證明確指定不模擬載入失敗時，讀取維持正常
     @Test
     func init_明確指定無載入失敗_保留正常讀取() {
         // Given
@@ -161,7 +161,7 @@ struct BLUITestConfigurationTests {
         #expect(configuration.loadFailure == BLUITestLoadFailure.none)
     }
 
-    /// 只有日期的參考時間會解析成 UTC 午夜
+    /// 驗證只有日期的參考時間解析為當日 UTC 午夜
     @Test
     func init_參考時間只有日期_解析為午夜() {
         // Given
@@ -175,7 +175,7 @@ struct BLUITestConfigurationTests {
         #expect(configuration.referenceDate == expectedReferenceDate)
     }
 
-    /// 幣別代號會去除前後空白並轉成大寫
+    /// 驗證小寫或前後帶空白的幣別代號，會正規化為大寫的三碼代號
     ///
     /// - Parameter rawCode: 小寫或帶空白的幣別代號
     @Test(arguments: ["twd", " twd \n"])
@@ -190,7 +190,7 @@ struct BLUITestConfigurationTests {
         #expect(configuration.defaultCurrencyCode == "TWD")
     }
 
-    /// 主檔寫入失敗旗標可開啟四種主檔的寫入替身
+    /// 驗證帶入主檔寫入失敗旗標時，設定要求主檔寫入失敗
     @Test
     func init_帶主檔寫入失敗旗標_啟用寫入失敗() {
         // Given

@@ -7,13 +7,13 @@
 
 import XCTest
 
-/// 訂單編輯表單收鍵盤路徑的回歸測試
+/// 訂單編輯表單收鍵盤路徑的回歸 UI 測試
+@MainActor
 final class KeyboardDismissTests: BLUITestCase {
 
-    /// 一般文字鍵盤的 return 應收起鍵盤
-    @MainActor
-    func testReturnKeyDismissesTextKeyboard() {
-        // Given：訂單編輯表單已聚焦客戶名稱欄位並顯示文字鍵盤
+    /// 驗證新增訂單表單的客戶名稱欄聚焦並顯示文字鍵盤時，按下 return 後鍵盤收起
+    func testSubmitCustomerName_文字鍵盤顯示中_按return收起鍵盤() {
+        // Given
         let app = launch(LaunchOptions(seed: .lookupsOnly))
         let edit = openNewOrderForm(in: app)
         edit.typeCustomerName("測試客戶")
@@ -23,38 +23,30 @@ final class KeyboardDismissTests: BLUITestCase {
             failWithDiagnostics(in: app, "輸入後鍵盤未呈現")
         }
 
-        // When：按下文字鍵盤的 return
+        // When
         edit.submitCustomerName()
 
-        // Then：文字鍵盤應收起
-        XCTAssertTrue(
-            keyboard.waitForDisappearance(timeout: 5),
-            "一般鍵盤的 return 應收起鍵盤"
-        )
+        // Then
+        XCTAssertTrue(keyboard.waitForDisappearance(timeout: 5), "一般鍵盤的 return 應收起鍵盤")
     }
 
-    /// 數字鍵盤的工具列完成鍵應收起鍵盤
-    @MainActor
-    func testNumericKeyboardToolbarDismissesKeyboard() {
-        // Given：訂單編輯表單已開啟
+    /// 驗證新增訂單輸入金額並顯示數字鍵盤時，點數字鍵盤工具列的完成鍵，鍵盤收起
+    func testTapNumericKeyboardDone_數字鍵盤顯示中_收起鍵盤() {
+        // Given
         let app = launch(LaunchOptions(seed: .lookupsOnly))
         let edit = openNewOrderForm(in: app)
-
-        // When：輸入金額並按下數字鍵盤工具列的完成鍵
-        edit.typeChargedAmount("123", in: app, dismissKeyboard: false)
+        edit.typeChargedAmount("123", in: app, shouldDismissKeyboard: false)
 
         let keyboard = app.keyboards.firstMatch
         if !keyboard.waitForExistence(timeout: 5) {
             failWithDiagnostics(in: app, "聚焦實付金額後數字鍵盤未呈現")
         }
 
+        // When
         edit.tapNumericKeyboardDone()
 
-        // Then：數字鍵盤應收起
-        XCTAssertTrue(
-            keyboard.waitForDisappearance(timeout: 5),
-            "數字鍵盤的工具列完成鍵應收起鍵盤"
-        )
+        // Then
+        XCTAssertTrue(keyboard.waitForDisappearance(timeout: 5), "數字鍵盤的工具列完成鍵應收起鍵盤")
     }
 }
 
@@ -66,7 +58,6 @@ private extension KeyboardDismissTests {
     ///
     /// - Parameter app: 受測 App
     /// - Returns: 已就緒的訂單編輯表單 Page Object
-    @MainActor
     func openNewOrderForm(in app: XCUIApplication) -> OrderEditScreen {
         let root = RootNavigationScreen(app: app)
         if !root.goToOrders() {

@@ -7,11 +7,11 @@
 
 import XCTest
 
-/// 開團編輯資訊區段的日期列，取代該區段的像素比對
+/// 開團編輯資訊區段日期列的 UI 測試，以可及性元素斷言取代該區段的像素比對
+@MainActor
 final class CampaignEditDateRowTests: BLUITestCase {
 
-    /// 開啟新增開團表單時，顯示開團與結單日期列，提醒未開啟所以沒有提醒時間列
-    @MainActor
+    /// 驗證按下新增後，表單顯示開團與結單日期列，且提醒未開啟時不出現提醒時間列
     func testDateRows_新增開團_顯示開團與結單日期列且無提醒時間列() {
         // Given
         let app = launch(LaunchOptions(seed: .empty))
@@ -34,8 +34,7 @@ final class CampaignEditDateRowTests: BLUITestCase {
         XCTAssertFalse(edit.reminderDatePicker.exists, "提醒未開啟時不應出現提醒時間列")
     }
 
-    /// 打開新增開團表單的訂購提醒後，出現提醒時間列
-    @MainActor
+    /// 驗證在新增開團表單開啟訂購提醒後，出現提醒時間列
     func testReminderDateRow_開啟訂購提醒_出現提醒時間列() {
         // Given
         let app = launch(LaunchOptions(seed: .empty))
@@ -65,7 +64,6 @@ private extension CampaignEditDateRowTests {
     /// - Parameter app: 受測 App
     /// - Returns: 開團分頁的 Page Object
     /// - Note: 空資料時列表容器不存在，就緒判斷交給 `goToCampaigns`
-    @MainActor
     func openCampaigns(in app: XCUIApplication) -> CampaignsScreen {
         let root = RootNavigationScreen(app: app)
         if !root.goToCampaigns() {

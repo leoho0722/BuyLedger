@@ -7,7 +7,8 @@
 
 import XCTest
 
-/// 訂單編輯表單按取消時的關閉與捨棄確認流程測試
+/// 訂單編輯表單按取消時的關閉與捨棄確認流程 UI 測試
+@MainActor
 final class OrderEditDirtyTests: BLUITestCase {
 
     // MARK: - Properties
@@ -21,8 +22,7 @@ final class OrderEditDirtyTests: BLUITestCase {
     /// 捨棄確認 alert 的捨棄變更按鈕文字
     private static let discardLabel = "捨棄變更"
 
-    /// 進過選擇器再返回且未修改時，取消直接關閉表單並回到清單
-    @MainActor
+    /// 驗證開過訂單來源選擇器並返回、表單未修改時按取消，表單直接關閉並回到訂單清單
     func testCancel_進過選擇器返回且未修改_關閉表單() {
         // Given
         let app = launch(LaunchOptions(seed: .lookupsOnly))
@@ -50,8 +50,7 @@ final class OrderEditDirtyTests: BLUITestCase {
         }
     }
 
-    /// 選擇繼續編輯後，alert 消失且仍在表單
-    @MainActor
+    /// 驗證表單有未儲存變更時按取消，選「繼續編輯」後捨棄確認 alert 收回，且仍停留在編輯表單
     func testCancel_有變更後選繼續編輯_停留在表單() {
         // Given
         let app = launch(LaunchOptions(seed: .lookupsOnly))
@@ -74,8 +73,7 @@ final class OrderEditDirtyTests: BLUITestCase {
         }
     }
 
-    /// 選擇捨棄變更後離開表單並回到清單
-    @MainActor
+    /// 驗證表單有未儲存變更時按取消，選「捨棄變更」後編輯表單關閉，並回到訂單清單
     func testCancel_有變更後選捨棄變更_關閉表單並回到清單() {
         // Given
         let app = launch(LaunchOptions(seed: .lookupsOnly))
@@ -114,7 +112,6 @@ private extension OrderEditDirtyTests {
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的訂單編輯表單 Page Object
-    @MainActor
     func openOrderEdit(
         _ app: XCUIApplication,
         file: StaticString = #filePath,

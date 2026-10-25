@@ -13,7 +13,7 @@ import Foundation
 
 extension LedgerOrder {
 
-    /// 建立欄位都有固定預設值的測試訂單
+    /// 建立測試用訂單，未指定的欄位取固定預設值
     ///
     /// - Parameters:
     ///   - id: 訂單識別值
@@ -42,14 +42,10 @@ extension LedgerOrder {
     ///   - isCashOnDelivery: 是否為貨到付款
     ///   - photos: 訂單照片
     ///   - mergedSourceIDs: 合併前的訂單編號
-    /// - Returns: 固定內容的測試訂單
+    /// - Returns: 套用參數後的訂單，其餘欄位為固定值
     static func fixture(
         id: String = "fixture-order-id",
-        customer: LedgerCustomer = LedgerCustomer(
-            name: "測試客戶",
-            initials: "TC",
-            tier: .regular
-        ),
+        customer: LedgerCustomer = LedgerCustomer(name: "測試客戶", initials: "TC", tier: .regular),
         status: OrderStatus = .confirmed,
         currency: CurrencyCode = .twd,
         date: Date = Date(timeIntervalSince1970: 0),

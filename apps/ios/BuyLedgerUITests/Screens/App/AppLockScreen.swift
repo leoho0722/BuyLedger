@@ -7,22 +7,13 @@
 
 import XCTest
 
-/// App 鎖定畫面的 Page Object
-struct AppLockScreen: Screen {
+/// App 鎖定畫面的 Page Object，供 UI 測試等待驗證結果並重新驗證
+struct AppLockScreen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
-
-    // MARK: - Computed Properties
-
-    /// 判定畫面已就緒的根元素 identifier
-    ///
-    /// - Returns: 鎖定畫面根元素的 identifier
-    var rootIdentifier: String {
-        BLAccessibilityID.AppLock.root
-    }
 }
 
 // MARK: - Internal Method
@@ -30,7 +21,7 @@ struct AppLockScreen: Screen {
 @MainActor
 extension AppLockScreen {
 
-    /// 等待冷啟動的第一次驗證失敗結果
+    /// 等待冷啟動後第一次驗證失敗的訊息出現
     ///
     /// - Parameter timeout: 等待失敗訊息出現的秒數
     /// - Returns: 失敗訊息是否在逾時前出現
@@ -39,16 +30,13 @@ extension AppLockScreen {
         return failedMessage.waitForExistence(timeout: timeout)
     }
 
-    /// 等待重新驗證進入執行中
+    /// 等待重新驗證開始，即重試按鈕停用
     ///
     /// - Parameter timeout: 等待按鈕停用的秒數
     /// - Returns: 按鈕是否在逾時前停用
     func waitForRetryToBegin(timeout: TimeInterval = 10) -> Bool {
         let retryButton = app.buttons[BLAccessibilityID.AppLock.retryButton]
-        return retryButton.wait(
-            for: NSPredicate(format: "isEnabled == false"),
-            timeout: timeout
-        )
+        return retryButton.wait(for: NSPredicate(format: "isEnabled == false"), timeout: timeout)
     }
 
     /// 等待重新驗證完成並再次顯示失敗訊息
@@ -75,5 +63,15 @@ extension AppLockScreen {
     func tapRetry(file: StaticString = #filePath, line: UInt = #line) {
         let button = app.buttons[BLAccessibilityID.AppLock.retryButton]
         button.tapAfterWaiting(in: app, file: file, line: line)
+    }
+}
+
+// MARK: - Screen
+
+extension AppLockScreen: Screen {
+
+    /// 判定畫面已就緒的根元素 identifier
+    var rootIdentifier: String {
+        BLAccessibilityID.AppLock.root
     }
 }

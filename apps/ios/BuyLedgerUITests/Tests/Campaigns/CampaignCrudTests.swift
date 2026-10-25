@@ -7,7 +7,8 @@
 
 import XCTest
 
-/// 開團的新增與刪除流程測試
+/// 開團新增與刪除流程的 UI 測試
+@MainActor
 final class CampaignCrudTests: BLUITestCase {
 
     // MARK: - Properties
@@ -15,13 +16,13 @@ final class CampaignCrudTests: BLUITestCase {
     /// 新增開團填入的名稱 (使用者資料，中英兩語言皆可輸入)
     private static let newCampaignName = "測試開團"
 
-    /// `campaignsWithOrders` 用來進詳情的四月韓國團開團 id (進行中)
+    /// `campaignsWithOrders` 情境的四月韓國團開團 id (進行中)
     private static let koreaCampaignID = "CMP-SAMPLE-KR-APR"
 
-    /// 新增開團後，確認列表多出一列
+    /// 驗證空資料庫新增開團並輸入名稱後儲存，開團列表出現名稱符合的開團列
     ///
-    /// - Note: 空資料庫新增並儲存開團後回到開團列表，列表應至少有一列
-    @MainActor
+    /// - Note: 情境流程：切到開團分頁、點新增並輸入名稱放 Given，點儲存為受測動作
+    /// - Note: 以列 identifier 前綴加上名稱定位該列
     func testTapSave_新增開團並輸入名稱_列表出現開團() {
         // Given
         let app = launch(LaunchOptions(seed: .empty))
@@ -45,16 +46,23 @@ final class CampaignCrudTests: BLUITestCase {
             failWithDiagnostics(in: app, "儲存後開團列表根 identifier「\(campaigns.rootIdentifier)」逾時仍未出現")
         }
         let prefix = BLAccessibilityID.Campaigns.row(campaignID: "")
-        let anyCampaignRow = app.descendants(matching: .any)
-            .matching(NSPredicate(format: "identifier BEGINSWITH %@", prefix))
+        let newCampaignRow = app.descendants(matching: .any)
+            .matching(
+                NSPredicate(
+                    format: "identifier BEGINSWITH %@ AND label CONTAINS %@",
+                    prefix,
+                    Self.newCampaignName
+                )
+            )
             .firstMatch
-        if !anyCampaignRow.waitForExistence(timeout: 10) {
-            failWithDiagnostics(in: app, "建立開團後列表仍無任何開團列")
+        if !newCampaignRow.waitForExistence(timeout: 10) {
+            failWithDiagnostics(in: app, "建立開團後列表沒有名稱為「\(Self.newCampaignName)」的開團列")
         }
     }
 
-    /// 刪除流程：更多 → 刪除 → 確認 alert → 取消；alert 收回且詳情仍停留
-    @MainActor
+    /// 驗證開團詳情點刪除後，確認 alert 訊息含「後無法復原」，選取消後 alert 消失且詳情頁仍停留
+    ///
+    /// - Note: 情境流程：更多 → 刪除 → 確認 alert 放 Given，點取消為受測動作
     func testCancelDelete_刪除確認選取消_停留在開團詳情() {
         // Given
         let app = launch(LaunchOptions(seed: .campaignsWithOrders))
@@ -93,7 +101,6 @@ private extension CampaignCrudTests {
     ///   - file: 失敗時回報的來源檔案
     ///   - line: 失敗時回報的來源行號
     /// - Returns: 已就緒的開團詳情 Page Object
-    @MainActor
     func openCampaignDetail(
         _ app: XCUIApplication,
         campaignID: String,

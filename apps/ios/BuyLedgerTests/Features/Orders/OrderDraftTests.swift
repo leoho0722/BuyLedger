@@ -11,14 +11,14 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證 `OrderDraft` 的訂單建構邏輯
+/// `OrderDraft.resolveWriteResult` 的單元測試，涵蓋空白欄位的回退與預設、數值夾限與正規化
 struct OrderDraftTests {
 
-    /// 編輯時空白主檔欄位回退既有值
+    /// 驗證編輯既有訂單時，草稿中空白的客戶名稱、來源、類別與付款方式都沿用原值，訂單編號也不變
     @Test
     func resolveWriteResult_編輯既有訂單欄位為空_沿用既有值() {
         // Given
-        let existing = Self.makeOrder(
+        let existing = OrderDraftTestSupport.makeOrder(
             id: "BL-001",
             customerName: "老客戶",
             orderSource: "蝦皮",
@@ -36,11 +36,9 @@ struct OrderDraftTests {
         editState.draft.paymentMethod = ""
 
         // When
-        let result = OrderDraft.resolveWriteResult(
-            editState,
-            existingOrders: [existing],
-            newOrderID: { "unused" }
-        )
+        let result = OrderDraft.resolveWriteResult(editState, existingOrders: [existing]) {
+            "unused"
+        }
 
         // Then
         #expect(result.order.customer.name == "老客戶")
@@ -51,7 +49,7 @@ struct OrderDraftTests {
         #expect(result.order.id == existing.id)
     }
 
-    /// 新建時空白欄位使用預設值；付款方式保持空白
+    /// 驗證新建訂單時，空白的客戶、來源與類別改用預設值，付款方式則保持空白
     @Test
     func resolveWriteResult_新建訂單欄位為空_使用預設值() {
         // Given
@@ -62,11 +60,7 @@ struct OrderDraftTests {
         editState.draft.paymentMethod = ""
 
         // When
-        let result = OrderDraft.resolveWriteResult(
-            editState,
-            existingOrders: [],
-            newOrderID: { "GENID" }
-        )
+        let result = OrderDraft.resolveWriteResult(editState, existingOrders: []) { "GENID" }
 
         // Then
         #expect(result.order.customer.name == "未命名客戶")
@@ -79,7 +73,7 @@ struct OrderDraftTests {
         #expect(result.order.id == "BL-DRAFT-GENID")
     }
 
-    /// 非無卡付款時，無卡金額歸零且清空對帳狀態
+    /// 驗證付款方式不是無卡時，無卡扣抵與補足金額歸零，對帳狀態也清空
     @Test
     func resolveWriteResult_非無卡付款_無卡金額歸零且清空對帳狀態() {
         // Given
@@ -104,11 +98,7 @@ struct OrderDraftTests {
         editState.draft.reconciliationStatus = "已對帳"
 
         // When
-        let result = OrderDraft.resolveWriteResult(
-            editState,
-            existingOrders: [],
-            newOrderID: { "GENID" }
-        )
+        let result = OrderDraft.resolveWriteResult(editState, existingOrders: []) { "GENID" }
 
         // Then
         #expect(result.order.cardlessDeductionAmount == 0)
@@ -116,7 +106,7 @@ struct OrderDraftTests {
         #expect(result.order.reconciliationStatus == "")
     }
 
-    /// 無卡付款方式時，對帳狀態保留並去除前後空白，無卡金額維持草稿值
+    /// 驗證付款方式為無卡時，無卡扣抵與補足金額保留草稿值，對帳狀態去除前後空白後存入
     @Test
     func resolveWriteResult_無卡付款_保留無卡金額與對帳狀態() {
         // Given
@@ -142,11 +132,7 @@ struct OrderDraftTests {
         editState.draft.reconciliationStatus = " 已對帳 "
 
         // When
-        let result = OrderDraft.resolveWriteResult(
-            editState,
-            existingOrders: [],
-            newOrderID: { "GENID" }
-        )
+        let result = OrderDraft.resolveWriteResult(editState, existingOrders: []) { "GENID" }
 
         // Then
         #expect(result.order.cardlessDeductionAmount == 500)
@@ -154,7 +140,7 @@ struct OrderDraftTests {
         #expect(result.order.reconciliationStatus == "已對帳")
     }
 
-    /// 費率超過上限時夾限為 1，負值夾限為 0
+    /// 驗證費率超過上限時夾限為 1，負值夾限為 0，結果一律落在零到一之間
     @Test
     func resolveWriteResult_費率超出範圍_夾限在零到一之間() {
         // Given
@@ -164,11 +150,7 @@ struct OrderDraftTests {
         editState.draft.paymentFeeRate = 2
 
         // When
-        let result = OrderDraft.resolveWriteResult(
-            editState,
-            existingOrders: [],
-            newOrderID: { "GENID" }
-        )
+        let result = OrderDraft.resolveWriteResult(editState, existingOrders: []) { "GENID" }
 
         // Then
         #expect(result.order.cardFeeRate == 1)
@@ -176,7 +158,7 @@ struct OrderDraftTests {
         #expect(result.order.paymentFeeRate == 1)
     }
 
-    /// 金額欄位為負值時夾限為 0
+    /// 驗證金額欄位為負值時夾限為 0，涵蓋收款金額、商品金額與三種運費
     @Test
     func resolveWriteResult_金額為負值_夾限為零() {
         // Given
@@ -188,11 +170,7 @@ struct OrderDraftTests {
         editState.draft.foreignDomesticShipping = -30
 
         // When
-        let result = OrderDraft.resolveWriteResult(
-            editState,
-            existingOrders: [],
-            newOrderID: { "GENID" }
-        )
+        let result = OrderDraft.resolveWriteResult(editState, existingOrders: []) { "GENID" }
 
         // Then
         #expect(result.order.chargedAmount == 0)
@@ -202,7 +180,7 @@ struct OrderDraftTests {
         #expect(result.order.foreignDomesticShipping == 0)
     }
 
-    /// 類別與開團名稱會去除前後空白、空字串與重複值，並保留原本順序
+    /// 驗證類別與開團名稱去除前後空白與空字串，重複的值只留第一次出現，並保留原本的順序
     @Test
     func resolveWriteResult_類別與開團名稱含空白或重複_正規化並保留順序() {
         // Given
@@ -211,22 +189,22 @@ struct OrderDraftTests {
         editState.draft.campaignNames = ["A團", " A團 ", "", "B團"]
 
         // When
-        let result = OrderDraft.resolveWriteResult(
-            editState,
-            existingOrders: [],
-            newOrderID: { "GENID" }
-        )
+        let result = OrderDraft.resolveWriteResult(editState, existingOrders: []) { "GENID" }
 
         // Then
         #expect(result.order.categories == ["美妝", "服飾"])
         #expect(result.order.campaignNames == ["A團", "B團"])
     }
 
-    /// 備註可清空並存回空字串，不沿用既有備註
+    /// 驗證草稿備註只有空白時存為空字串，不沿用既有的備註
     @Test
     func resolveWriteResult_備註清空_存為空字串() {
         // Given
-        let existing = Self.makeOrder(id: "BL-001", customerName: "客戶", notes: "舊備註")
+        let existing = OrderDraftTestSupport.makeOrder(
+            id: "BL-001",
+            customerName: "客戶",
+            notes: "舊備註"
+        )
         var editState = OrderEditFeature.State(
             original: existing,
             id: UUID(0),
@@ -235,70 +213,11 @@ struct OrderDraftTests {
         editState.draft.notes = "   "
 
         // When
-        let result = OrderDraft.resolveWriteResult(
-            editState,
-            existingOrders: [existing],
-            newOrderID: { "unused" }
-        )
+        let result = OrderDraft.resolveWriteResult(editState, existingOrders: [existing]) {
+            "unused"
+        }
 
         // Then
         #expect(result.order.notes == "")
-    }
-}
-
-// MARK: - Internal Method
-
-extension OrderDraftTests {
-
-    /// 建立僅供草稿建構測試使用的最小訂單；非相關欄位以零值或佔位值填入
-    ///
-    /// - Parameters:
-    ///   - id: 訂單識別值
-    ///   - customerName: 客戶名稱
-    ///   - initials: 客戶縮寫
-    ///   - tier: 客戶等級
-    ///   - orderSource: 訂單來源
-    ///   - categories: 商品類別
-    ///   - paymentMethod: 付款方式
-    ///   - notes: 備註
-    /// - Returns: 建立的測試訂單
-    static func makeOrder(
-        id: String,
-        customerName: String,
-        initials: String = "XX",
-        tier: CustomerTier = .regular,
-        orderSource: String = "來源",
-        categories: [String] = ["orders.list.label.category2"],
-        paymentMethod: String = "付款",
-        notes: String = ""
-    ) -> LedgerOrder {
-        LedgerOrder(
-            id: id,
-            customer: LedgerCustomer(name: customerName, initials: initials, tier: tier),
-            status: .quoting,
-            currency: .twd,
-            date: TestDependencies.fixedNow,
-            items: [],
-            itemCost: 0,
-            domesticShipping: 0,
-            internationalShipping: 0,
-            foreignDomesticShipping: 0,
-            cardFeeRate: 0,
-            platformFeeRate: 0,
-            paymentFeeRate: 0,
-            chargedAmount: 0,
-            cardlessDeductionAmount: 0,
-            cardlessSupplementAmount: 0,
-            orderSource: orderSource,
-            categories: categories,
-            paymentMethod: paymentMethod,
-            notes: notes,
-            reconciliationStatus: "",
-            campaignNames: [],
-            paymentReceiptStatus: .pending,
-            isCashOnDelivery: false,
-            photos: [],
-            mergedSourceIDs: []
-        )
     }
 }

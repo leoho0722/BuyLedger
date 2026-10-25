@@ -61,7 +61,7 @@ paths:
     - 查詢對到多個元素時 (如 identifier 擴散到圖表內的文字) 讀 `frame` 也會記錄失敗，`isHittableOnScreen` 以 `firstMatch` 判斷；新增讀 `frame` 的 helper 比照處理。
     - 目標不可點時由 `Scrolling` helper 捲動後再等，不用 `isHittable` 述詞輪詢，避免 XCTest 先記錄失敗而走不到捲動備援。
     - 水平 `ScrollView` 內的照片縮圖列相同。
-- **`Form` 內的 `Toggle` 要點內層 `switches.firstMatch`，不點外層開關元素**：外層元素涵蓋整列，點它的中心會落在標題文字上而不切換 (參考 `CampaignEditScreen.toggleReminder`、`CampaignDetailScreen+Content.toggleUnpaidOnly`)。
+- **`Form` 內的 `Toggle` 要點內層 `switches.firstMatch`，不點外層開關元素**：外層元素涵蓋整列，點它的中心會落在標題文字上而不切換 (參考 `CampaignEditScreen.toggleReminder`、`CampaignDetailScreen.toggleUnpaidOnly`)。
     - 切換後以開關的 `value` 或切換造成的畫面變化斷言，否則沒切到也會假通過。
 - **List 惰性建立：sheet 停在 medium 高度或清單較長時，可視區外的列與組標題不在可及性樹上**：讀值或點擊前先捲動露出，以格子位置簽章不再變化判斷到底再換方向，不用固定次數盲滑 (參考 `OrdersScreen.revealElement`)。
 - **`swipeUp`／`swipeDown` 帶慣性，捲動後要點擊的元素先等 `frame` 連續兩次相同**：清單減速中點下去只會停住捲動、不會觸發按鈕 (參考 `OrdersScreen.waitUntilFrameStable`)。

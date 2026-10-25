@@ -7,10 +7,11 @@
 
 import XCTest
 
-/// regular 版面類別選擇器的多選、完成、下滑與捨棄確認、搜尋流程測試
+/// regular 版面類別選擇器的多選、完成、下滑與捨棄確認、搜尋流程 UI 測試
 ///
 /// - Note: 只在 regular 版面執行
 /// - Note: 種子為 `categoryFilter`
+@MainActor
 final class OrderCategoryPickerTests: BLUITestCase {
 
     // MARK: - Properties
@@ -25,41 +26,41 @@ final class OrderCategoryPickerTests: BLUITestCase {
         "UITEST-CF-010",
     ]
 
-    /// 同一列點 3C 與美妝後完成，觸發鈕顯示兩項且清單列出六筆
+    /// 驗證 regular 版面類別選擇器同一列點 3C 與美妝後完成，類別觸發鈕顯示「類別：2 項」，清單列出六筆訂單
     ///
     /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
     func testCategoryPickerMultiSelect_同列點兩格並完成_觸發鈕顯示兩項() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
         try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
+        let picker = OrderCategoryPickerScreen(app: app)
         orders.openCategoryPicker()
+        picker.tapPickerCategory("3C")
+        picker.tapPickerCategory("美妝")
 
         // When
-        orders.tapPickerCategory("3C")
-        orders.tapPickerCategory("美妝")
-        orders.tapPickerDone()
+        picker.tapPickerDone()
 
         // Then
         assertTrigger(orders, contains: "類別：2 項")
         assertListedOrderIDs(Self.threeCAndBeautyOrderIDs, orders)
     }
 
-    /// 有未套用變更時下滑類別選擇器不關閉
+    /// 驗證類別選擇器有未套用的變更時，下滑不會關閉選擇器
     ///
     /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
     func testCategoryPickerSwipeDown_有未套用變更_不關閉() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
         try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
+        let picker = OrderCategoryPickerScreen(app: app)
         orders.openCategoryPicker()
-        orders.tapPickerCategory("美妝")
+        picker.tapPickerCategory("美妝")
 
         // When
-        let isBlocked = orders.categoryPickerBlocksSwipeDismiss()
+        let isBlocked = picker.categoryPickerBlocksSwipeDismiss()
 
         // Then
         if !isBlocked {
@@ -67,47 +68,48 @@ final class OrderCategoryPickerTests: BLUITestCase {
         }
     }
 
-    /// 取消有變更的選擇器，捨棄確認選繼續編輯後選擇器保持開啟且選取保留
+    /// 驗證類別選擇器有變更時按取消，捨棄確認選「繼續編輯」後，選擇器保持開啟且「美妝」仍為選中
     ///
-    /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
+    /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面；捨棄確認未呈現時丟出測試錯誤
     func testCategoryPickerCancel_捨棄確認選繼續編輯_留在選擇器() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
         try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
+        let picker = OrderCategoryPickerScreen(app: app)
         orders.openCategoryPicker()
-        orders.tapPickerCategory("美妝")
+        picker.tapPickerCategory("美妝")
+        picker.tapPickerCancel()
+        try requireCondition(app.alertPresented(), in: app, "取消有變更的選擇器後捨棄確認未呈現")
 
         // When
-        orders.tapPickerCancel()
         orders.tapDiscardKeepEditing()
 
         // Then
-        if !orders.categoryPickerSheet.exists {
+        if !picker.categoryPickerSheet.exists {
             app.failWithDiagnostics("選繼續編輯後類別選擇器應保持開啟")
         }
-        if !orders.isPickerCategorySelected("美妝") {
+        if !picker.isPickerCategorySelected("美妝") {
             app.failWithDiagnostics("選繼續編輯後美妝應仍為選中")
         }
     }
 
-    /// 輸入搜尋文字後只留相符類別
+    /// 驗證類別選擇器搜尋欄輸入「食」後收到該文字，相符的零食列顯示，不符的美妝列隱藏
     ///
     /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
-    func testCategoryPickerSearch_輸入文字_只留相符類別() throws {
+    func testCategoryPickerSearch_輸入文字_顯示相符並隱藏不符類別() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
         try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
+        let picker = OrderCategoryPickerScreen(app: app)
         orders.openCategoryPicker()
 
         // When
-        orders.typePickerSearch("食")
+        picker.typePickerSearch("食")
 
         // Then
-        let isTyped = orders.categoryPickerSearchValue == "食"
+        let isTyped = picker.categoryPickerSearchValue == "食"
         let isMatchShown = orders.filterCategoryCell("零食").waitForExistence(timeout: 5)
         let isOtherHidden = !orders.filterCategoryCell("美妝").exists
         if !isTyped {
@@ -121,24 +123,24 @@ final class OrderCategoryPickerTests: BLUITestCase {
         }
     }
 
-    /// 清除搜尋後恢復全部類別
+    /// 驗證輸入「食」後清除搜尋，被篩掉的「美妝」恢復顯示，且搜尋欄為空
     ///
     /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
-    func testCategoryPickerSearch_清除搜尋_恢復全部類別() throws {
+    func testCategoryPickerSearch_清除搜尋_恢復被篩掉的類別並清空搜尋欄() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilter))
         try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
+        let picker = OrderCategoryPickerScreen(app: app)
         orders.openCategoryPicker()
-        orders.typePickerSearch("食")
+        picker.typePickerSearch("食")
 
         // When
-        orders.tapPickerClearSearch()
+        picker.tapPickerClearSearch()
 
         // Then
-        let isRestored = orders.revealFilterCategory("美妝", within: orders.categoryPickerSheet)
-        if !isRestored || orders.hasCategoryPickerSearchText {
+        let isRestored = orders.revealFilterCategory("美妝", within: picker.categoryPickerSheet)
+        if !isRestored || picker.hasCategoryPickerSearchText {
             app.failWithDiagnostics("清除搜尋後應恢復美妝且搜尋欄為空")
         }
     }
@@ -155,7 +157,6 @@ private extension OrderCategoryPickerTests {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Returns: 訂單清單的 Page Object
-    @MainActor
     func openOrders(
         _ app: XCUIApplication,
         file: StaticString = #filePath,
@@ -179,7 +180,6 @@ private extension OrderCategoryPickerTests {
     ///   - fragment: 預期包含的文字
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    @MainActor
     func assertTrigger(
         _ orders: OrdersScreen,
         contains fragment: String,
@@ -202,7 +202,6 @@ private extension OrderCategoryPickerTests {
     ///   - orders: 訂單清單的 Page Object
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    @MainActor
     func assertListedOrderIDs(
         _ expected: Set<String>,
         _ orders: OrdersScreen,

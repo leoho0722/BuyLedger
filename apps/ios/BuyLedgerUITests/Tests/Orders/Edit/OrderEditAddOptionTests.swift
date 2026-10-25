@@ -7,7 +7,8 @@
 
 import XCTest
 
-/// 在訂單編輯表單內新增主檔選項的流程測試
+/// 在訂單編輯表單內新增主檔選項的 UI 流程測試
+@MainActor
 final class OrderEditAddOptionTests: BLUITestCase {
 
     // MARK: - Properties
@@ -18,8 +19,7 @@ final class OrderEditAddOptionTests: BLUITestCase {
     /// 新增的付款方式名稱，以英文避免輸入法影響輸入
     private static let newPaymentMethod = "JKO Pay"
 
-    /// 從訂單來源選擇器以名稱輸入新增來源後，選擇器關閉且表單選取新來源
-    @MainActor
+    /// 驗證在訂單來源選擇器新增「Pinkoi」後，選擇器關閉，表單的訂單來源改為選取該項目
     func testAddOrderSource_從訂單來源選擇器輸入名稱新增_關閉選擇器並選取新來源() {
         // Given
         let app = launch(LaunchOptions(seed: .lookupsOnly))
@@ -51,8 +51,9 @@ final class OrderEditAddOptionTests: BLUITestCase {
         }
     }
 
-    /// 從付款方式選擇器新增付款方式後，回到選擇器並選取新項目，訂單表單仍保留
-    @MainActor
+    /// 驗證在付款方式選擇器新增「JKO Pay」後，選擇器出現該項目，返回的訂單表單付款方式改選該項目
+    ///
+    /// - Note: 同次新增付款方式後返回原表單，後續觀察用來確認表單未關閉且已選取新增項目
     func testAddPaymentMethod_從付款方式選擇器新增_回到選擇器且表單保留() {
         // Given
         let app = launch(LaunchOptions(seed: .lookupsOnly))
@@ -107,7 +108,6 @@ private extension OrderEditAddOptionTests {
     ///
     /// - Parameter app: 受測 App
     /// - Returns: 已就緒的訂單編輯表單 Page Object
-    @MainActor
     func openOrderEdit(_ app: XCUIApplication) -> OrderEditScreen {
         let root = RootNavigationScreen(app: app)
         if !root.goToOrders() {

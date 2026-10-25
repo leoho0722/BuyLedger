@@ -29,8 +29,9 @@ extension OptionPickerScreen {
     ///   - line: 失敗時回報的行號
     func selectOption(_ value: String, file: StaticString = #filePath, line: UInt = #line) {
         let row = app.descendants(matching: .any)[BLAccessibilityID.OptionPicker.optionRow(value)]
-        if !row.isHittableOnScreen {
-            app.scrollToHittable(row, within: rootElement)
+        if !row.isHittableOnScreen, !app.scrollToHittable(row, within: rootElement) {
+            app.failWithDiagnostics("捲動後選項列仍未穩定或不可點", file: file, line: line)
+            return
         }
         row.tapAfterWaiting(in: app, file: file, line: line)
     }
@@ -41,17 +42,15 @@ extension OptionPickerScreen {
     ///   - text: 要搜尋的關鍵字
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func search(_ text: String, file: StaticString = #filePath, line: UInt = #line) {
-        if let field = app.searchFields.allElementsBoundByIndex.first(where: \.isHittableOnScreen) {
-            field.clearAndType(
-                text,
-                in: app,
-                file: file,
-                line: line
-            )
-        } else {
-            app.failWithDiagnostics("找不到可互動的選項搜尋欄", file: file, line: line)
-        }
+    /// - Throws: 找不到可互動的搜尋欄時丟出測試錯誤
+    func search(_ text: String, file: StaticString = #filePath, line: UInt = #line) throws {
+        let field = try OrdersScreen(app: app).hittableSearchField(file: file, line: line)
+        field.clearAndType(
+            text,
+            in: app,
+            file: file,
+            line: line
+        )
     }
 
     /// 讀取指定選項列的 accessibility label
@@ -91,7 +90,7 @@ extension OptionPickerScreen {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     func typeNewOptionName(_ name: String, file: StaticString = #filePath, line: UInt = #line) {
-        // SwiftUI alert 內的 TextField 不帶出 identifier，改取 alert 內唯一的文字欄
+        // SwiftUI alert 內的 `TextField` 不帶出 identifier，改取 alert 內唯一的文字欄
         let field = app.alerts.firstMatch.textFields.firstMatch
         field.clearAndType(
             name,
@@ -124,7 +123,7 @@ extension OptionPickerScreen {
         button.tapAfterWaiting(in: app, file: file, line: line)
     }
 
-    /// 走宿主堆疊的 Back 返回推入選擇器的表單，不選取任何選項
+    /// 點可互動的 Back 鍵，返回推入選擇器的表單，不選取任何選項
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置

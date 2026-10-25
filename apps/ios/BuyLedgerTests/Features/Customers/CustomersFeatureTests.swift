@@ -11,11 +11,10 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證客戶彙總與客戶頁交給更多頁的委派
-@MainActor
+/// `CustomersFeature` 的單元測試，涵蓋客戶彙總、強調區塊，以及客戶頁送給更多頁的載入與點選事件
 struct CustomersFeatureTests {
 
-    /// 驗證客戶狀態依訂單彙總並按累計消費排序
+    /// 驗證客戶名單依訂單彙總，並依累計消費由高到低排序，筆數與最近訂單日期各自計算
     ///
     /// - Note: 日期皆為 2026 年 3 月指定日期的 UTC 零時
     @Test
@@ -84,7 +83,7 @@ struct CustomersFeatureTests {
         #expect(customers.isEmpty)
     }
 
-    /// 驗證強調區塊取前三名並依序標示名次
+    /// 驗證客戶超過三位時，強調區塊只取消費前三名，並依序標示第一到第三名
     @Test
     func topCustomers_多於三位客戶_取前三並依序標示名次() {
         // Given
@@ -124,7 +123,7 @@ struct CustomersFeatureTests {
         #expect(topCustomers.map(\.customer.name) == ["Amy", "Bob", "Cara"])
     }
 
-    /// 驗證客戶不足三位時強調區塊只列出既有客戶
+    /// 驗證客戶不足三位時，強調區塊只列出既有客戶，依消費排序並從第一名起算
     @Test
     func topCustomers_客戶不足三位_只列出既有客戶() {
         // Given
@@ -152,8 +151,9 @@ struct CustomersFeatureTests {
         #expect(topCustomers.map(\.customer.name) == ["Bob", "Amy"])
     }
 
-    /// 驗證畫面出現時委派訂單載入
+    /// 驗證客戶頁出現時，向更多頁送出訂單載入請求
     @Test
+    @MainActor
     func task_客戶頁出現_委派訂單載入() async {
         // Given
         let initial = CustomersFeature.State(orders: SharedReader(value: []))
@@ -168,8 +168,9 @@ struct CustomersFeatureTests {
         await store.receive(\.delegate.ordersLoadRequested)
     }
 
-    /// 驗證客戶點選轉為 `customerSelected` delegate
+    /// 驗證點選客戶時，向更多頁送出 `customerSelected`，帶出被點選的客戶名稱
     @Test
+    @MainActor
     func customerTapped_點選客戶_委派選取名稱() async {
         // Given
         let initial = CustomersFeature.State(orders: SharedReader(value: []))

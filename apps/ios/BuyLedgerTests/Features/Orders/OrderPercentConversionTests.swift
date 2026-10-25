@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證費率換算與畫面使用的百分比綁定，避免精度遺失或未編輯就寫回草稿
+/// `OrderPercentConversion` 的單元測試，綁定測試以 `Store` 搭配 `@Bindable` 走與畫面相同的寫回路徑
 struct OrderPercentConversionTests {
 
     // MARK: - Properties
@@ -45,27 +45,41 @@ struct OrderPercentConversionTests {
         ),
     ]
 
-    /// 費率範例全程以十進位換算，超過兩位小數時先捨入百分比
+    /// 驗證規格範例的百分比先四捨五入到小數點後兩位，再除以一百換算為費率
     ///
     /// - Parameter example: 規格範例與獨立的期望字面值
     /// - Throws: 範例字面值無法建立 `Decimal` 時丟出測試失敗
     @Test(arguments: Self.examples)
-    func rate_範例百分比_精確儲存並顯示捨入值(example: ConversionExample) throws {
+    func rate_範例百分比_捨入兩位小數後換算費率(example: ConversionExample) throws {
         // Given
         let entered = try #require(example.entered)
         let expectedRate = try #require(example.stored)
-        let expectedPercentage = try #require(example.displayed)
 
         // When
         let rate = OrderPercentConversion.rate(from: entered)
-        let percentage = OrderPercentConversion.percentage(from: rate)
 
         // Then
         #expect(rate == expectedRate)
+    }
+
+    /// 驗證規格範例的儲存費率換算為百分比後，符合捨入到小數點後兩位的字面值
+    ///
+    /// - Parameter example: 規格範例與獨立的期望字面值
+    /// - Throws: 範例字面值無法建立 `Decimal` 時丟出測試失敗
+    @Test(arguments: Self.examples)
+    func percentage_範例費率_換算回捨入後的百分比(example: ConversionExample) throws {
+        // Given
+        let storedRate = try #require(example.stored)
+        let expectedPercentage = try #require(example.displayed)
+
+        // When
+        let percentage = OrderPercentConversion.percentage(from: storedRate)
+
+        // Then
         #expect(percentage == expectedPercentage)
     }
 
-    /// 三種費率欄都經畫面相同的綁定入口寫入，讀取時顯示規格指定的值
+    /// 驗證三種費率欄透過畫面綁定輸入規格範例時，草稿寫入捨入後的費率、讀回的百分比符合規格，且草稿標為已修改
     ///
     /// - Parameters:
     ///   - example: 規格範例與獨立的期望字面值
@@ -98,7 +112,7 @@ struct OrderPercentConversionTests {
         #expect(store.state.isDirty)
     }
 
-    /// 只讀取並寫回目前顯示值時，不傳遞寫入也不讓草稿變成已修改
+    /// 驗證三種費率欄讀出顯示的百分比再原樣寫回時，不寫入費率欄，草稿內容不變且不標為已修改
     ///
     /// - Parameter field: 要驗證的費率欄位
     /// - Throws: 費率字面值無法建立 `Decimal` 時丟出測試失敗
@@ -139,7 +153,7 @@ struct OrderPercentConversionTests {
         #expect(store.state.isDirty == false)
     }
 
-    /// 負數百分比的中點同樣向遠離零的方向捨入，範圍夾限仍由存檔流程處理
+    /// 驗證負數百分比的中點 (如 -4.565) 向遠離零的方向捨入成 -0.0457，範圍夾限仍由存檔流程處理
     ///
     /// - Throws: 百分比字面值無法建立 `Decimal` 時丟出測試失敗
     @Test
@@ -184,7 +198,7 @@ extension OrderPercentConversionTests {
         /// 收款手續費
         case paymentFee
 
-        /// 對應畫面巢狀草稿綁定的費率欄位
+        /// 草稿中存放此費率的欄位 key path
         var keyPath: WritableKeyPath<OrderDraft, Decimal> {
             switch self {
             case .cardFee:

@@ -9,7 +9,7 @@ import ComposableArchitecture
 
 @testable import BuyLedger
 
-/// 以可設定的讀取結果與呼叫記錄模擬偏好儲存
+/// `UserDefaultsStoreProtocol` 的替身，可設定讀取結果並記錄呼叫，供測試注入
 ///
 /// - Note: 寫入值暫存在記憶體，供 `SettingsService` 儲存後讀回測試使用
 final class MockUserDefaultsStore: Sendable {
@@ -19,7 +19,7 @@ final class MockUserDefaultsStore: Sendable {
     /// `string(forKey:)` 的呼叫次數
     private let stringCallCountState = LockIsolated(0)
 
-    /// `string(forKey:)` 依呼叫順序收到的 key
+    /// `string(forKey:)` 依呼叫順序收到的 `key`
     private let stringReceivedArgumentsState = LockIsolated<[String]>([])
 
     /// `string(forKey:)` 的回傳結果
@@ -28,7 +28,7 @@ final class MockUserDefaultsStore: Sendable {
     /// `double(forKey:)` 的呼叫次數
     private let doubleCallCountState = LockIsolated(0)
 
-    /// `double(forKey:)` 依呼叫順序收到的 key
+    /// `double(forKey:)` 依呼叫順序收到的 `key`
     private let doubleReceivedArgumentsState = LockIsolated<[String]>([])
 
     /// `double(forKey:)` 的回傳結果
@@ -37,19 +37,16 @@ final class MockUserDefaultsStore: Sendable {
     /// `bool(forKey:)` 的呼叫次數
     private let boolCallCountState = LockIsolated(0)
 
-    /// `bool(forKey:)` 依呼叫順序收到的 key
+    /// `bool(forKey:)` 依呼叫順序收到的 `key`
     private let boolReceivedArgumentsState = LockIsolated<[String]>([])
-
-    /// `bool(forKey:)` 的回傳結果
-    private let boolResultState = LockIsolated(false)
 
     /// `hasValue(forKey:)` 的呼叫次數
     private let hasValueCallCountState = LockIsolated(0)
 
-    /// `hasValue(forKey:)` 依呼叫順序收到的 key
+    /// `hasValue(forKey:)` 依呼叫順序收到的 `key`
     private let hasValueReceivedArgumentsState = LockIsolated<[String]>([])
 
-    /// `hasValue(forKey:)` 的回傳結果
+    /// 是否讓 `hasValue(forKey:)` 在無已儲存值時回傳 `true`
     private let hasValueResultState = LockIsolated(false)
 
     /// `set(_:forKey:)` 字串方法的呼叫次數
@@ -78,13 +75,13 @@ final class MockUserDefaultsStore: Sendable {
 
 extension MockUserDefaultsStore {
 
-    /// 儲存方法收到的值與偏好 key
+    /// 儲存方法收到的值與偏好 `key`
     struct SetArgument<Value: Sendable>: Sendable {
 
         /// 呼叫端傳入的值
         let value: Value
 
-        /// 呼叫端傳入的偏好 key
+        /// 呼叫端傳入的偏好 `key`
         let key: String
     }
 
@@ -117,12 +114,12 @@ extension MockUserDefaultsStore {
         stringCallCountState.withValue { $0 }
     }
 
-    /// `string(forKey:)` 收到的 key
+    /// `string(forKey:)` 收到的 `key`
     var stringReceivedArguments: [String] {
         stringReceivedArgumentsState.withValue { $0 }
     }
 
-    /// 設定 `string(forKey:)` 的回傳結果
+    /// `string(forKey:)` 的回傳結果，測試中可設定
     var stringResult: String? {
         get {
             stringResultState.withValue { $0 }
@@ -137,12 +134,12 @@ extension MockUserDefaultsStore {
         doubleCallCountState.withValue { $0 }
     }
 
-    /// `double(forKey:)` 收到的 key
+    /// `double(forKey:)` 收到的 `key`
     var doubleReceivedArguments: [String] {
         doubleReceivedArgumentsState.withValue { $0 }
     }
 
-    /// 設定 `double(forKey:)` 的回傳結果
+    /// `double(forKey:)` 的回傳結果，測試中可設定
     var doubleResult: Double {
         get {
             doubleResultState.withValue { $0 }
@@ -157,19 +154,9 @@ extension MockUserDefaultsStore {
         boolCallCountState.withValue { $0 }
     }
 
-    /// `bool(forKey:)` 收到的 key
+    /// `bool(forKey:)` 收到的 `key`
     var boolReceivedArguments: [String] {
         boolReceivedArgumentsState.withValue { $0 }
-    }
-
-    /// 設定 `bool(forKey:)` 的回傳結果
-    var boolResult: Bool {
-        get {
-            boolResultState.withValue { $0 }
-        }
-        set {
-            boolResultState.withValue { $0 = newValue }
-        }
     }
 
     /// `hasValue(forKey:)` 的呼叫次數
@@ -177,12 +164,12 @@ extension MockUserDefaultsStore {
         hasValueCallCountState.withValue { $0 }
     }
 
-    /// `hasValue(forKey:)` 收到的 key
+    /// `hasValue(forKey:)` 收到的 `key`
     var hasValueReceivedArguments: [String] {
         hasValueReceivedArgumentsState.withValue { $0 }
     }
 
-    /// 設定 `hasValue(forKey:)` 的回傳結果
+    /// 是否讓 `hasValue(forKey:)` 在無已儲存值時回傳 `true`，測試中可設定
     var hasValueResult: Bool {
         get {
             hasValueResultState.withValue { $0 }
@@ -227,10 +214,10 @@ extension MockUserDefaultsStore {
 
 extension MockUserDefaultsStore: UserDefaultsStoreProtocol {
 
-    /// 記錄字串查詢的 `key`
+    /// 記錄字串查詢的 `key`，並回傳已保存的字串或 `stringResult`
     ///
-    /// - Parameter key: 呼叫端查詢的偏好 key
-    /// - Returns: 該 key 寫入過字串時回傳該值，否則回傳 `stringResult`
+    /// - Parameter key: 呼叫端查詢的偏好 `key`
+    /// - Returns: 該 `key` 寫入過字串時回傳該值，否則回傳 `stringResult`
     func string(forKey key: String) -> String? {
         stringCallCountState.withValue { $0 += 1 }
         stringReceivedArgumentsState.withValue { $0.append(key) }
@@ -241,10 +228,10 @@ extension MockUserDefaultsStore: UserDefaultsStoreProtocol {
         return stringResultState.withValue { $0 }
     }
 
-    /// 記錄浮點數查詢的 `key`
+    /// 記錄浮點數查詢的 `key`，並回傳已保存的浮點數或 `doubleResult`
     ///
-    /// - Parameter key: 呼叫端查詢的偏好 key
-    /// - Returns: 該 key 寫入過浮點數時回傳該值，否則回傳 `doubleResult`
+    /// - Parameter key: 呼叫端查詢的偏好 `key`
+    /// - Returns: 該 `key` 寫入過浮點數時回傳該值，否則回傳 `doubleResult`
     func double(forKey key: String) -> Double {
         doubleCallCountState.withValue { $0 += 1 }
         doubleReceivedArgumentsState.withValue { $0.append(key) }
@@ -255,10 +242,10 @@ extension MockUserDefaultsStore: UserDefaultsStoreProtocol {
         return doubleResultState.withValue { $0 }
     }
 
-    /// 記錄布林值查詢的 `key`
+    /// 記錄布林值查詢的 `key`，並回傳已保存的布林值或 `false`
     ///
-    /// - Parameter key: 呼叫端查詢的偏好 key
-    /// - Returns: 該 key 寫入過布林值時回傳該值，否則回傳 `boolResult`
+    /// - Parameter key: 呼叫端查詢的偏好 `key`
+    /// - Returns: 該 `key` 寫入過布林值時回傳該值，否則回傳 `false`
     func bool(forKey key: String) -> Bool {
         boolCallCountState.withValue { $0 += 1 }
         boolReceivedArgumentsState.withValue { $0.append(key) }
@@ -266,12 +253,12 @@ extension MockUserDefaultsStore: UserDefaultsStoreProtocol {
            case .bool(value: let value) = storedValue {
             return value
         }
-        return boolResultState.withValue { $0 }
+        return false
     }
 
-    /// 記錄是否有值時查詢的 `key`
+    /// 記錄 `key` 並回傳是否已有偏好值
     ///
-    /// - Parameter key: 呼叫端查詢的偏好 key
+    /// - Parameter key: 呼叫端查詢的偏好 `key`
     /// - Returns: `key` 有已儲存值時為 `true`，否則回傳 `hasValueResult`
     func hasValue(forKey key: String) -> Bool {
         hasValueCallCountState.withValue { $0 += 1 }
@@ -282,33 +269,33 @@ extension MockUserDefaultsStore: UserDefaultsStoreProtocol {
         return hasValueResultState.withValue { $0 }
     }
 
-    /// 記錄字串與 key，並保存在測試替身記憶體
+    /// 記錄字串與 `key`，並保存在測試替身記憶體
     ///
     /// - Parameters:
     ///   - value: 呼叫端傳入的字串
-    ///   - key: 呼叫端傳入的偏好 key
+    ///   - key: 呼叫端傳入的偏好 `key`
     func set(_ value: String, forKey key: String) {
         stringSetCallCountState.withValue { $0 += 1 }
         stringSetReceivedArgumentsState.withValue { $0.append(SetArgument(value: value, key: key)) }
         storedValuesState.withValue { $0[key] = .string(value: value) }
     }
 
-    /// 記錄浮點數與 key，並保存在測試替身記憶體
+    /// 記錄浮點數與 `key`，並保存在測試替身記憶體
     ///
     /// - Parameters:
     ///   - value: 呼叫端傳入的浮點數
-    ///   - key: 呼叫端傳入的偏好 key
+    ///   - key: 呼叫端傳入的偏好 `key`
     func set(_ value: Double, forKey key: String) {
         doubleSetCallCountState.withValue { $0 += 1 }
         doubleSetReceivedArgumentsState.withValue { $0.append(SetArgument(value: value, key: key)) }
         storedValuesState.withValue { $0[key] = .double(value: value) }
     }
 
-    /// 記錄布林值與 key，並保存在測試替身記憶體
+    /// 記錄布林值與 `key`，並保存在測試替身記憶體
     ///
     /// - Parameters:
     ///   - value: 呼叫端傳入的布林值
-    ///   - key: 呼叫端傳入的偏好 key
+    ///   - key: 呼叫端傳入的偏好 `key`
     func set(_ value: Bool, forKey key: String) {
         boolSetCallCountState.withValue { $0 += 1 }
         boolSetReceivedArgumentsState.withValue { $0.append(SetArgument(value: value, key: key)) }

@@ -7,10 +7,11 @@
 
 import XCTest
 
-/// regular 版面類別選擇器在大量類別下的捲動選取與完成流程測試
+/// regular 版面類別選擇器在大量類別下的捲動選取與完成流程 UI 測試
 ///
 /// - Note: 只在 regular 版面執行
 /// - Note: 種子為 `categoryFilterLarge`
+@MainActor
 final class OrderCategoryPickerLargeTests: BLUITestCase {
 
     // MARK: - Properties
@@ -27,25 +28,27 @@ final class OrderCategoryPickerLargeTests: BLUITestCase {
         "UITEST-CFL-300",
     ]
 
-    /// 展開已收單、捲到末格並選取，再選一個開團中類別後完成，觸發鈕為兩項且清單列出兩筆
+    /// 驗證在 regular 版面展開已收單、捲到末格並選取，再選一個開團中類別後完成，類別觸發鈕顯示「類別：2 項」且清單列出兩筆訂單
     ///
-    /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面
-    @MainActor
+    /// - Throws: 版面不符時由 `XCTSkip` 宣告適用版面；開啟選擇器時已收單組不是已收合狀態時丟出測試錯誤
     func testCategoryPickerLargeApply_捲到末格並選開團中類別_觸發鈕顯示兩項() throws {
         // Given
         let app = launch(LaunchOptions(seed: .categoryFilterLarge))
         try XCTSkipUnless(isRegularLayout(app), "類別選擇器只存在於 regular 版面，compact 版面由篩選 sheet 測試覆蓋")
         let orders = openOrders(app)
+        let picker = OrderCategoryPickerScreen(app: app)
         orders.openCategoryPicker()
-        if orders.pickerGroupValue("closed") != "已收合" {
-            app.failWithDiagnostics("前提不成立：已收單組開啟時應為已收合")
-        }
+        try requireCondition(
+            picker.pickerGroupValue("closed") == "已收合",
+            in: app,
+            "前提不成立：已收單組開啟時應為已收合"
+        )
+        picker.tapPickerGroupHeader("closed")
+        picker.tapPickerCategory(Self.lastClosedCategory)
+        picker.tapPickerCategory(Self.ongoingCategory)
 
         // When
-        orders.tapPickerGroupHeader("closed")
-        orders.tapPickerCategory(Self.lastClosedCategory)
-        orders.tapPickerCategory(Self.ongoingCategory)
-        orders.tapPickerDone()
+        picker.tapPickerDone()
 
         // Then
         if !orders.categoryTriggerLabel.contains("類別：2 項") {
@@ -71,7 +74,6 @@ private extension OrderCategoryPickerLargeTests {
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
     /// - Returns: 訂單清單的 Page Object
-    @MainActor
     func openOrders(
         _ app: XCUIApplication,
         file: StaticString = #filePath,

@@ -12,11 +12,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證照片子功能的失敗處理與父層草稿保護
+/// `OrderEditFeature` 與 `OrderEditPhotosFeature` 的單元測試，涵蓋照片讀取失敗時保留草稿與部分匯入失敗回報
 @MainActor
 struct OrderEditPhotosFeatureTests {
 
-    /// 照片讀取失敗時只更新載入階段，保留草稿與原本的照片
+    /// 驗證既有訂單的照片讀取失敗時，只把載入階段改為失敗，草稿與原有照片保留，且不算修改
     @Test
     func photos_畫面出現且照片讀取失敗_保留草稿並標記失敗() async {
         // Given
@@ -51,7 +51,7 @@ struct OrderEditPhotosFeatureTests {
         #expect(store.state.isDirty == false)
     }
 
-    /// 部分匯入失敗時加入成功的照片，清空選取並回報本批失敗張數
+    /// 驗證部分照片匯入失敗時，成功的照片加入草稿、選取清空，並回報本批失敗 1 張
     @Test
     func binding_匯入部分失敗_只加入成功照片並回報失敗張數() async {
         // Given

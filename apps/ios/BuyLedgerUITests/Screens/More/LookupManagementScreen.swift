@@ -41,17 +41,10 @@ extension LookupManagementScreen {
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func openCategoryManagement(
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
+    func openCategoryManagement(file: StaticString = #filePath, line: UInt = #line) {
         let root = RootNavigationScreen(app: app)
         guard root.goToMore(file: file, line: line) else {
-            app.failWithDiagnostics(
-                "切到更多分頁後畫面未就緒",
-                file: file,
-                line: line
-            )
+            app.failWithDiagnostics("切到更多分頁後畫面未就緒", file: file, line: line)
             return
         }
 
@@ -66,11 +59,7 @@ extension LookupManagementScreen {
         )
 
         if !waitUntilReady() {
-            app.failWithDiagnostics(
-                "商品類別管理頁面未出現",
-                file: file,
-                line: line
-            )
+            app.failWithDiagnostics("商品類別管理頁面未出現", file: file, line: line)
         }
     }
 
@@ -80,11 +69,7 @@ extension LookupManagementScreen {
     ///   - name: 要新增的主檔名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func addItem(
-        named name: String,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
+    func addItem(named name: String, file: StaticString = #filePath, line: UInt = #line) {
         addButton.tapAfterWaiting(
             in: app,
             elementName: "主檔新增按鈕",
@@ -109,11 +94,7 @@ extension LookupManagementScreen {
     ) {
         let row = itemRow(named: oldName)
         guard row.waitUntilHittable(timeout: 10) else {
-            app.failWithDiagnostics(
-                "商品類別「\(oldName)」列未出現或無法操作",
-                file: file,
-                line: line
-            )
+            app.failWithDiagnostics("商品類別「\(oldName)」列未出現或無法操作", file: file, line: line)
             return
         }
         row.swipeLeft()
@@ -141,22 +122,14 @@ extension LookupManagementScreen {
     ///   - name: 要刪除的主檔名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func deleteItem(
-        named name: String,
-        file: StaticString = #filePath,
-        line: UInt = #line
-    ) {
+    func deleteItem(named name: String, file: StaticString = #filePath, line: UInt = #line) {
         guard requestDeletion(named: name, file: file, line: line) else {
             return
         }
 
         let alert = app.alerts.firstMatch
         if !alert.waitForDisappearance(timeout: 5) {
-            app.failWithDiagnostics(
-                "確認刪除後 alert 未收回",
-                file: file,
-                line: line
-            )
+            app.failWithDiagnostics("確認刪除後 alert 未收回", file: file, line: line)
         }
     }
 
@@ -174,11 +147,7 @@ extension LookupManagementScreen {
     ) -> Bool {
         let row = itemRow(named: name)
         guard row.waitUntilHittable(timeout: 10) else {
-            app.failWithDiagnostics(
-                "商品類別「\(name)」列未出現或無法操作",
-                file: file,
-                line: line
-            )
+            app.failWithDiagnostics("商品類別「\(name)」列未出現或無法操作", file: file, line: line)
             return false
         }
         row.swipeLeft()
@@ -192,11 +161,7 @@ extension LookupManagementScreen {
 
         let alert = app.alerts.firstMatch
         guard alert.waitForExistence(timeout: 10) else {
-            app.failWithDiagnostics(
-                "刪除確認 alert 未出現",
-                file: file,
-                line: line
-            )
+            app.failWithDiagnostics("刪除確認 alert 未出現", file: file, line: line)
             return false
         }
         app.tapAlertButton(label: "刪除", file: file, line: line)
@@ -209,8 +174,6 @@ extension LookupManagementScreen {
 extension LookupManagementScreen: Screen {
 
     /// 判定主檔管理頁已就緒的根 identifier
-    ///
-    /// - Returns: 主檔管理頁根元素的 identifier
     var rootIdentifier: String {
         BLAccessibilityID.LookupManagement.root
     }
@@ -227,13 +190,14 @@ private extension LookupManagementScreen {
     ///   - name: 要送出的主檔名稱
     ///   - file: 失敗時回報的檔案位置
     ///   - line: 失敗時回報的行號
-    func enterName(
-        _ name: String,
-        file: StaticString,
-        line: UInt
-    ) {
+    func enterName(_ name: String, file: StaticString, line: UInt) {
         let field = app.textFields[BLAccessibilityID.LookupManagement.nameField]
-        field.clearAndType(name, in: app, file: file, line: line)
+        field.clearAndType(
+            name,
+            in: app,
+            file: file,
+            line: line
+        )
 
         let submitButton = app.buttons[BLAccessibilityID.LookupManagement.nameSubmitButton]
         submitButton.tapAfterWaiting(

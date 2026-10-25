@@ -11,11 +11,11 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證持久層失敗畫面的復原確認與結果
+/// `PersistenceFailureFeature` 的單元測試，以 TestStore 逐步驗證持久層失敗畫面的復原確認與結果
 @MainActor
 struct PersistenceFailureFeatureTests {
 
-    /// 未確認復原時只顯示確認視窗
+    /// 驗證尚未確認時按下復原，只呈現確認視窗，畫面仍維持阻斷
     ///
     /// - Note: `testValue` 的 `quarantineStore` 為 `unimplemented`，非預期呼叫會使測試失敗
     @Test
@@ -34,7 +34,7 @@ struct PersistenceFailureFeatureTests {
         #expect(store.state.phase == .blocked)
     }
 
-    /// 取消確認時關閉視窗且不執行復原
+    /// 驗證取消復原確認時關閉確認視窗，畫面仍維持阻斷，且不執行復原
     ///
     /// - Note: `testValue` 的 `quarantineStore` 為 `unimplemented`，非預期呼叫會使測試失敗
     @Test
@@ -55,7 +55,7 @@ struct PersistenceFailureFeatureTests {
         #expect(store.state.phase == .blocked)
     }
 
-    /// 確認復原後把資料庫檔案搬到隔離備份一次，搬移成功就切到要求重新啟動的階段
+    /// 驗證確認復原後 `quarantineStore` 只呼叫一次，隔離成功即切到要求重新啟動的階段
     @Test
     func destination_確認復原且隔離完成_要求重新啟動() async {
         // Given
@@ -85,40 +85,14 @@ struct PersistenceFailureFeatureTests {
         #expect(callCount.value == 1)
     }
 
-    /// 確認復原後隔離目錄建立或解析失敗時，畫面顯示底層錯誤原因，並維持阻斷不切到重新啟動
+    /// 驗證確認復原後隔離目錄建立或解析失敗時，畫面顯示底層錯誤的訊息作為原因，並維持阻斷、不切到重新啟動
     ///
-    /// - Parameters:
-    ///   - error: 隔離失敗的分類與底層錯誤
-    ///   - expectedReason: 預期顯示的底層錯誤訊息
-    @Test(arguments: [
-        (
-            PersistenceRecoveryError.directoryCreationFailed(
-                underlying: NSError(
-                    domain: "com.leoho.BuyLedger.recovery-test",
-                    code: 1,
-                    userInfo: [NSLocalizedDescriptionKey: "Backup could not be created."]
-                )
-            ),
-            "Backup could not be created."
-        ),
-        (
-            .directoryResolutionFailed(
-                underlying: NSError(
-                    domain: "com.leoho.BuyLedger.recovery-test",
-                    code: 2,
-                    userInfo: [NSLocalizedDescriptionKey: "Application Support 無法解析。"]
-                )
-            ),
-            "Application Support 無法解析。"
-        ),
-    ])
-    func destination_確認復原但隔離目錄建立或解析失敗_顯示原因並維持阻斷(
-        error: PersistenceRecoveryError,
-        expectedReason: String
-    ) async {
+    /// - Parameter scenario: 隔離失敗的分類與底層錯誤，以及預期顯示的底層錯誤訊息
+    @Test(arguments: QuarantineFailureCase.allCases)
+    func destination_確認復原但隔離目錄建立或解析失敗_顯示原因並維持阻斷(scenario: QuarantineFailureCase) async {
         // Given
         let failingQuarantineStore: PersistenceRecoveryService.QuarantineStore = { () throws(PersistenceRecoveryError) in
-            throw error
+            throw scenario.error
         }
         var initial = PersistenceFailureFeature.State()
         initial.destination = .alert(Self.expectedConfirmationAlert)
@@ -135,7 +109,7 @@ struct PersistenceFailureFeatureTests {
 
         // Then
         await store.receive(\.recoveryResponse) {
-            $0.recoveryFailureReason = expectedReason
+            $0.recoveryFailureReason = scenario.expectedReason
         }
         await store.finish()
     }
@@ -143,10 +117,44 @@ struct PersistenceFailureFeatureTests {
 
 // MARK: - Nested Types
 
-private extension PersistenceFailureFeatureTests {
+extension PersistenceFailureFeatureTests {
 
     /// 復原確認視窗的型別
     typealias ConfirmationAlert = AlertState<PersistenceFailureFeature.Destination.Alert>
+
+    /// 一組隔離失敗的測試案例，含失敗分類、底層錯誤與預期顯示的原因
+    struct QuarantineFailureCase: Sendable {
+
+        /// 隔離目錄建立失敗與解析失敗兩種案例，各自帶不同的底層錯誤訊息
+        static let allCases = [
+            Self(
+                error: .directoryCreationFailed(
+                    underlying: NSError(
+                        domain: "com.leoho.BuyLedger.recovery-test",
+                        code: 1,
+                        userInfo: [NSLocalizedDescriptionKey: "Backup could not be created."]
+                    )
+                ),
+                expectedReason: "Backup could not be created."
+            ),
+            Self(
+                error: .directoryResolutionFailed(
+                    underlying: NSError(
+                        domain: "com.leoho.BuyLedger.recovery-test",
+                        code: 2,
+                        userInfo: [NSLocalizedDescriptionKey: "Application Support 無法解析。"]
+                    )
+                ),
+                expectedReason: "Application Support 無法解析。"
+            ),
+        ]
+
+        /// 隔離失敗的分類與底層錯誤
+        let error: PersistenceRecoveryError
+
+        /// 預期顯示的底層錯誤訊息
+        let expectedReason: String
+    }
 }
 
 // MARK: - Private Method

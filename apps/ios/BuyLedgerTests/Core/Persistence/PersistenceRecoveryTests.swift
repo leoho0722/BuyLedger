@@ -11,7 +11,7 @@ import Testing
 
 @testable import BuyLedger
 
-/// 驗證 store 隔離復原與容器建立錯誤分類
+/// `PersistenceStoreQuarantine` 與 `PersistenceContainer` 的單元測試，涵蓋 store 隔離、復原錯誤與容器建立
 struct PersistenceRecoveryTests {
 
     // MARK: - Properties
@@ -20,12 +20,12 @@ struct PersistenceRecoveryTests {
     private static let testRoot = FileManager.default.temporaryDirectory
         .appendingPathComponent("BuyLedgerPersistenceRecoveryTests", isDirectory: true)
 
-    /// 隔離指定資料目錄時移動 store 與 sidecar 檔案並保留位元內容
+    /// 驗證隔離指定資料目錄時，store 與 sidecar 檔案都被移走，且位元內容保留不變
     ///
-    /// - Throws: 測試目錄建立或檔案寫入、讀取失敗時拋出底層檔案錯誤；隔離失敗時拋出 `PersistenceRecoveryError`；
-    ///   沒有回傳隔離目錄時由 `#require` 拋出
+    /// - Throws: 測試目錄建立或檔案寫入、讀取失敗時丟出底層檔案錯誤；建立隔離目錄或搬移檔案失敗時丟出復原錯誤；
+    ///   沒有回傳隔離目錄時由 `#require` 丟出
     @Test
-    func quarantine_指定資料目錄_移動資料庫檔案並保留內容() throws(any Error) {
+    func quarantine_指定資料目錄_移動資料庫檔案並保留內容() throws {
         // Given
         let sourceDirectory = try Self.prepareDirectory(named: "move-preserves-contents")
         let backupDirectory = try Self.prepareDirectory(named: "move-preserves-contents-backups")
@@ -41,17 +41,17 @@ struct PersistenceRecoveryTests {
         let recovered = try #require(recoveredDirectory)
         for (name, contents) in expectedFiles {
             let sourceURL = sourceDirectory.appendingPathComponent(name)
-            #expect(!FileManager.default.fileExists(atPath: sourceURL.path))
             let recoveredContents = try Data(contentsOf: recovered.appendingPathComponent(name))
+            #expect(!FileManager.default.fileExists(atPath: sourceURL.path))
             #expect(recoveredContents == contents)
         }
     }
 
-    /// 隔離目錄的第一個序號已存在時改用下一個序號
+    /// 驗證隔離目錄的第一個序號已存在時，改用下一個序號 `Recovered-2`
     ///
-    /// - Throws: 測試目錄建立或檔案寫入失敗時拋出底層檔案錯誤；隔離失敗時拋出 `PersistenceRecoveryError`
+    /// - Throws: 測試目錄建立或檔案寫入失敗時丟出底層檔案錯誤；建立隔離目錄或搬移檔案失敗時丟出復原錯誤
     @Test
-    func quarantine_目標序號已存在_使用下一個復原序號() throws(any Error) {
+    func quarantine_目標序號已存在_使用下一個復原序號() throws {
         // Given
         let sourceDirectory = try Self.prepareDirectory(named: "increments-index")
         let backupDirectory = try Self.prepareDirectory(named: "increments-index-backups")
@@ -71,11 +71,11 @@ struct PersistenceRecoveryTests {
         #expect(recoveredDirectory?.lastPathComponent == "Recovered-2")
     }
 
-    /// 來源沒有 store 檔案時回傳 nil 且不建立隔離目錄
+    /// 驗證來源沒有 store 檔案時回傳 `nil`，且不建立隔離目錄
     ///
-    /// - Throws: 測試來源目錄建立失敗時拋出底層檔案錯誤；隔離失敗時拋出 `PersistenceRecoveryError`
+    /// - Throws: 測試來源目錄建立失敗時丟出底層檔案錯誤；建立隔離目錄或搬移檔案失敗時丟出復原錯誤
     @Test
-    func quarantine_沒有資料庫檔案_回傳空值且不建立目錄() throws(any Error) {
+    func quarantine_沒有資料庫檔案_回傳空值且不建立目錄() throws {
         // Given
         let sourceDirectory = try Self.prepareDirectory(named: "nothing-to-quarantine")
         let backupDirectory = sourceDirectory.appendingPathComponent("backups", isDirectory: true)
@@ -91,11 +91,11 @@ struct PersistenceRecoveryTests {
         #expect(!FileManager.default.fileExists(atPath: backupDirectory.path))
     }
 
-    /// 隔離目錄路徑已是檔案時回報目錄建立錯誤與底層 Cocoa 錯誤碼
+    /// 驗證隔離目錄路徑已是檔案時，回報目錄建立錯誤，底層為 `NSCocoaErrorDomain` 的檔案已存在錯誤
     ///
-    /// - Throws: 測試檔案建立失敗，或未取得預期錯誤時由 `#require` 拋出錯誤
+    /// - Throws: 測試檔案建立失敗，或未取得預期錯誤時由 `#require` 丟出錯誤
     @Test
-    func quarantine_建立備份目錄失敗_回報復原錯誤() throws(any Error) {
+    func quarantine_建立備份目錄失敗_回報復原錯誤() throws {
         // Given
         let sourceDirectory = try Self.prepareDirectory(named: "backup-path-is-file")
         let backupPath = sourceDirectory.appendingPathComponent("backup-target", isDirectory: true)
@@ -115,18 +115,22 @@ struct PersistenceRecoveryTests {
 
         // Then
         let error = try #require(actualError)
+        let actualCocoaError: NSError?
         switch error {
         case .directoryCreationFailed(let underlying):
-            let cocoaError = underlying as NSError
-            #expect(cocoaError.domain == NSCocoaErrorDomain)
-            #expect(cocoaError.code == NSFileWriteFileExistsError)
+            actualCocoaError = underlying as NSError
 
         case .directoryResolutionFailed, .fileMoveFailed:
-            Issue.record("預期會得到 directoryCreationFailed 復原錯誤。")
+            actualCocoaError = nil
         }
+        let cocoaError = try #require(actualCocoaError)
+        #expect(cocoaError.domain == NSCocoaErrorDomain)
+        #expect(cocoaError.code == NSFileWriteFileExistsError)
     }
 
-    /// `PersistenceRecoveryError` 的顯示文字沿用底層錯誤描述
+    /// 驗證 `.directoryCreationFailed` 含底層錯誤時，`errorDescription` 保留底層說明
+    ///
+    /// - Note: 底層說明為「Recovery directory is unavailable.」
     @Test
     func errorDescription_復原錯誤包含底層原因_回傳底層本地化說明() {
         // Given
@@ -144,11 +148,11 @@ struct PersistenceRecoveryTests {
         #expect(actualDescription == "Recovery directory is unavailable.")
     }
 
-    /// `BuyLedger.store-wal` 被鎖定無法搬移時，搬檔失敗應指出該 sidecar 檔名與底層權限錯誤
+    /// 驗證 `BuyLedger.store-wal` 被鎖定無法搬移時，錯誤指出該 sidecar 檔名與底層權限錯誤
     ///
-    /// - Throws: 測試檔案建立或鎖定設定失敗時拋出錯誤；未取得預期錯誤時由 `#require` 拋出
+    /// - Throws: 測試檔案建立或鎖定設定失敗時丟出錯誤；未取得預期錯誤時由 `#require` 丟出
     @Test
-    func quarantine_移動資料庫檔案失敗_回報檔名與底層錯誤() throws(any Error) {
+    func quarantine_移動資料庫檔案失敗_回報檔名與底層錯誤() throws {
         // Given
         let sourceDirectory = try Self.prepareDirectory(named: "sidecar-file-is-locked")
         let backupDirectory = try Self.prepareDirectory(named: "sidecar-file-is-locked-backups")
@@ -175,23 +179,29 @@ struct PersistenceRecoveryTests {
 
         // Then
         let error = try #require(actualError)
+        let actualFileName: String?
+        let actualCocoaError: NSError?
         switch error {
         case .fileMoveFailed(let fileName, let underlying):
-            #expect(fileName == "BuyLedger.store-wal")
-            let cocoaError = underlying as NSError
-            #expect(cocoaError.domain == NSCocoaErrorDomain)
-            #expect(cocoaError.code == NSFileWriteNoPermissionError)
+            actualFileName = fileName
+            actualCocoaError = underlying as NSError
 
         case .directoryResolutionFailed, .directoryCreationFailed:
-            Issue.record("錯誤應為 fileMoveFailed 復原錯誤")
+            actualFileName = nil
+            actualCocoaError = nil
         }
+        let fileName = try #require(actualFileName)
+        #expect(fileName == "BuyLedger.store-wal")
+        let cocoaError = try #require(actualCocoaError)
+        #expect(cocoaError.domain == NSCocoaErrorDomain)
+        #expect(cocoaError.code == NSFileWriteNoPermissionError)
     }
 
-    /// 舊版 schema 無法遷移時以 `degraded` 狀態啟動並完整保留來源 store
+    /// 驗證舊版 schema 無法遷移時，以 `degraded` 狀態啟動，且來源 store 原地完整保留
     ///
-    /// - Throws: 測試目錄建立、舊版資料庫建立或檔案讀取失敗時拋出錯誤；建立後檔案組合不符時由 `#require` 拋出
+    /// - Throws: 測試目錄建立、舊版資料庫建立或檔案讀取失敗時丟出錯誤；建立後檔案組合不符時由 `#require` 丟出
     @Test
-    func makeBootstrapForTesting_資料庫無法遷移_原地保留資料庫() throws(any Error) {
+    func makeBootstrapForTesting_資料庫無法遷移_原地保留資料庫() throws {
         // Given
         let sourceDirectory = try Self.prepareDirectory(named: "below-migration-floor")
         let storeURL = sourceDirectory.appendingPathComponent("BuyLedger.store")
@@ -199,7 +209,9 @@ struct PersistenceRecoveryTests {
 
         let originalFiles = try Self.storeFiles(in: sourceDirectory)
         let expectedNames: Set<String> = [
-            "BuyLedger.store", "BuyLedger.store-wal", "BuyLedger.store-shm",
+            "BuyLedger.store",
+            "BuyLedger.store-wal",
+            "BuyLedger.store-shm",
         ]
         try #require(Set(originalFiles.keys) == expectedNames)
 
@@ -209,19 +221,19 @@ struct PersistenceRecoveryTests {
         }
 
         // Then
-        #expect(bootstrap.status != .healthy)
         let preservedFiles = try Self.storeFiles(in: sourceDirectory)
-        #expect(preservedFiles == originalFiles)
         let sourceContents = try FileManager.default.contentsOfDirectory(
             atPath: sourceDirectory.path
         )
+        #expect(bootstrap.status != .healthy)
+        #expect(preservedFiles == originalFiles)
         #expect(!sourceContents.contains { $0.hasPrefix("Recovered-") })
 
         // 保留容器以避免 SQLite 釋放時 checkpoint 並刪除 -wal／-shm，造成檔案比對失真
         withExtendedLifetime(sourceContainer) {}
     }
 
-    /// 資料庫容器整個 process 只建立一次，之後每次取用 `bootstrap` 都拿到同一個 `ModelContainer`
+    /// 驗證連續取用 `bootstrap` 都回傳同一個 `ModelContainer`，容器在 process 內只建立一次
     @Test
     func bootstrap_連續存取_回傳同一容器() {
         // Given
@@ -235,11 +247,11 @@ struct PersistenceRecoveryTests {
         #expect(first === second)
     }
 
-    /// 資料庫父目錄不存在時建立目錄並回傳持久化容器
+    /// 驗證資料庫父目錄不存在時，建立目錄並回傳持久化容器
     ///
-    /// - Throws: 資料庫資料夾或容器建立失敗時拋出 `PersistenceError.containerCreationFailed(underlying:)`
+    /// - Throws: 資料庫資料夾或容器建立失敗時丟出持久化容器建立錯誤
     @Test
-    func makePersistentForTesting_資料庫目錄不存在_建立目錄並回傳容器() throws(any Error) {
+    func makePersistentForTesting_資料庫目錄不存在_建立目錄並回傳容器() throws {
         // Given
         let root = Self.testRoot.appendingPathComponent(
             "creates-missing-store-directory-\(UUID().uuidString)",
@@ -262,11 +274,11 @@ struct PersistenceRecoveryTests {
         withExtendedLifetime(container) {}
     }
 
-    /// 建立持久化容器時無法建立父目錄應分類為容器建立失敗
+    /// 驗證父路徑是檔案時，建立持久化容器失敗並分類為 `containerCreationFailed`
     ///
-    /// - Throws: 測試檔案建立失敗，或未取得預期錯誤時由 `#require` 拋出錯誤
+    /// - Throws: 測試檔案建立失敗，或未取得預期錯誤時由 `#require` 丟出錯誤
     @Test
-    func makePersistentForTesting_父路徑是檔案_回報容器建立錯誤() throws(any Error) {
+    func makePersistentForTesting_父路徑是檔案_回報容器建立錯誤() throws {
         // Given
         let root = try Self.prepareDirectory(named: "container-parent-is-file")
         let blockedParent = root.appendingPathComponent("blocked-parent")
@@ -288,15 +300,17 @@ struct PersistenceRecoveryTests {
 
         // Then
         let error = try #require(actualError)
+        let actualCocoaError: NSError?
         switch error {
         case .containerCreationFailed(let underlying):
-            let cocoaError = underlying as NSError
-            #expect(cocoaError.domain == NSCocoaErrorDomain)
-            #expect(cocoaError.code == NSFileWriteFileExistsError)
+            actualCocoaError = underlying as NSError
 
         case .fetchFailed, .saveFailed:
-            Issue.record("預期為 containerCreationFailed PersistenceError。")
+            actualCocoaError = nil
         }
+        let cocoaError = try #require(actualCocoaError)
+        #expect(cocoaError.domain == NSCocoaErrorDomain)
+        #expect(cocoaError.code == NSFileWriteFileExistsError)
     }
 }
 
@@ -324,7 +338,7 @@ extension PersistenceRecoveryTests {
             }
         }
 
-        /// 固定為 14，低於 `BuyLedgerMigrationPlan.schemas` 最舊的 V15，讓啟動時找不到遷移路徑
+        /// 版本號固定為 14，低於 `BuyLedgerMigrationPlan.schemas` 最舊的 V15，讓啟動時找不到遷移路徑
         static var versionIdentifier: Schema.Version {
             Schema.Version(14, 0, 0)
         }
@@ -344,8 +358,8 @@ private extension PersistenceRecoveryTests {
     ///
     /// - Parameter name: 暫存目錄名稱
     /// - Returns: 建立的暫存目錄
-    /// - Throws: 暫存目錄建立失敗時拋出錯誤
-    static func prepareDirectory(named name: String) throws(any Error) -> URL {
+    /// - Throws: 暫存目錄建立失敗時丟出錯誤
+    static func prepareDirectory(named name: String) throws -> URL {
         var index = 1
 
         while true {
@@ -368,9 +382,9 @@ private extension PersistenceRecoveryTests {
     ///
     /// - Parameter directory: store 所在的目錄
     /// - Returns: 寫入的檔案內容
-    /// - Throws: 測試檔案寫入失敗時拋出錯誤
+    /// - Throws: 測試檔案寫入失敗時丟出錯誤
     @discardableResult
-    static func writeStoreFiles(in directory: URL) throws(any Error) -> [String: Data] {
+    static func writeStoreFiles(in directory: URL) throws -> [String: Data] {
         let files = [
             "BuyLedger.store": Data([0x01, 0x02, 0x03]),
             "BuyLedger.store-wal": Data([0x04, 0x05]),
@@ -389,8 +403,8 @@ private extension PersistenceRecoveryTests {
     ///
     /// - Parameter url: store 路徑
     /// - Returns: 建立的 `ModelContainer`
-    /// - Throws: 測試容器建立或資料寫入失敗時拋出錯誤
-    static func createBelowFloorStore(at url: URL) throws(any Error) -> ModelContainer {
+    /// - Throws: 測試容器建立或資料寫入失敗時丟出錯誤
+    static func createBelowFloorStore(at url: URL) throws -> ModelContainer {
         let schema = Schema(versionedSchema: Self.BelowMigrationFloorSchema.self)
         let configuration = ModelConfiguration(schema: schema, url: url, cloudKitDatabase: .none)
         let container = try TestContainerCreationLock.withLock {
@@ -406,8 +420,8 @@ private extension PersistenceRecoveryTests {
     ///
     /// - Parameter directory: store 所在的目錄
     /// - Returns: store 檔案內容
-    /// - Throws: 測試檔案讀取失敗時拋出錯誤
-    static func storeFiles(in directory: URL) throws(any Error) -> [String: Data] {
+    /// - Throws: 測試檔案讀取失敗時丟出錯誤
+    static func storeFiles(in directory: URL) throws -> [String: Data] {
         try FileManager.default.contentsOfDirectory(atPath: directory.path)
             .filter { $0.hasPrefix("BuyLedger.store") }
             .reduce(into: [:]) { files, name in

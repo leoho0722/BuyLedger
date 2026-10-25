@@ -7,22 +7,13 @@
 
 import XCTest
 
-/// 照片檢視器 (BLPhotoViewer) 的 Page Object
-struct PhotoViewerScreen: Screen {
+/// 照片檢視器 (`BLPhotoViewer`) 的 Page Object
+struct PhotoViewerScreen {
 
-    // MARK: - Data Properties
+    // MARK: - Properties
 
     /// 受測 App
     let app: XCUIApplication
-
-    // MARK: - Computed Properties
-
-    /// 判定檢視器已推進呈現的根 identifier (檢視器容器)
-    ///
-    /// - Returns: 檢視器根容器的 identifier
-    var rootIdentifier: String {
-        BLAccessibilityID.PhotoViewer.root
-    }
 }
 
 // MARK: - Internal Method
@@ -30,7 +21,7 @@ struct PhotoViewerScreen: Screen {
 @MainActor
 extension PhotoViewerScreen {
 
-    /// 導覽列是否顯示指定的換頁計數
+    /// 等待導覽列出現指定的換頁計數
     ///
     /// - Parameters:
     ///   - text: 預期顯示的換頁計數文字
@@ -58,7 +49,7 @@ extension PhotoViewerScreen {
         image.swipeLeft()
     }
 
-    /// 走宿主堆疊的 Back 返回編輯表單
+    /// 點識別碼含斜線的導覽列 Back 鍵，返回編輯表單
     ///
     /// - Parameters:
     ///   - file: 失敗時回報的檔案位置
@@ -74,5 +65,15 @@ extension PhotoViewerScreen {
             file: file,
             line: line
         )
+    }
+}
+
+// MARK: - Screen
+
+extension PhotoViewerScreen: Screen {
+
+    /// 判定檢視器已推進呈現的根 identifier (檢視器容器)
+    var rootIdentifier: String {
+        BLAccessibilityID.PhotoViewer.root
     }
 }
