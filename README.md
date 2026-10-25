@@ -20,12 +20,16 @@
 BuyLedger (repo)/
 ├── .github/                              # 版本庫層級自動化 (CI workflow)
 │   └── workflows/ci.yml                  # codegen 漂移檢查 + iOS 單元測試 (push / PR / 手動觸發)
+├── .claude/                              # AI 協作設定：rules/ (依目錄載入的規則)、skills/
+├── .archify/                             # 整體與各 Feature 的架構圖 (HTML) 與繪製來源
 ├── apps/                                 # 可部署單元 (每個平台一個子目錄)
 │   ├── ios/                              # Apple 平台 App (iOS / iPadOS)
 │   │   ├── BuyLedger.xcodeproj/          # Xcode 專案；project.xcproj (JSON 格式) 提交、xcuserdata/ 不提交
 │   │   ├── BuyLedger/                    # App source root (App / Core / Features / Shared / Resources)
+│   │   ├── BuyLedgerAccessibilityIDs/    # UI 測試 identifier 常數 (App 與 UITests 共用)
 │   │   ├── BuyLedgerTests/               # 單元測試 + swift-snapshot-testing baseline
-│   │   └── BuyLedgerUITests/             # UI 與啟動畫面測試
+│   │   ├── BuyLedgerUITests/             # UI 與啟動畫面測試
+│   │   └── scripts/                      # TestFlight 打包上傳腳本
 │   └── android/                          # (未來，尚未建立) Android App
 ├── shared/                               # 跨平台共享內容
 │   └── data-model/                       # 跨平台 Data Model schema 與產生器
@@ -36,28 +40,22 @@ BuyLedger (repo)/
 └── assets/                               # README 圖片等共用素材
 ```
 
-**佈局契約**：可部署單元一律放 `apps/` (每個平台一個子目錄)，跨平台共享內容放 `shared/`，`openspec/`、`assets/` 與版本庫層級自動化 `.github/` 留在根目錄 (管轄所有平台，不屬於任一平台目錄)。`apps/ios` 與 `shared/data-model` 均已實際動工；`apps/android` 為文件化保留位置，待動工時才建立 (目前不放 stub)。
+**佈局契約**：可部署單元放 `apps/<platform>/`，跨平台共享內容放 `shared/`，管轄所有平台的 `openspec/`、`assets/`、`.github/` 留在根目錄。尚未動工的平台 (如 `apps/android`) 只在文件中保留位置，動工時才建立目錄，repo 不放 stub。
 
 ## 平台導覽
 
-| 平台                         | 位置            | 開發指南                                                                                           |
-|------------------------------|-----------------|----------------------------------------------------------------------------------------------------|
-| Apple (iOS / iPadOS)         | `apps/ios/`   | [apps/ios/README.md](apps/ios/README.md)：技術棧、環境設定、build / test、架構速覽、Troubleshooting |
-| Android                      | `apps/android/` | (未來，尚未建立)                                                                                    |
+| 平台 | 位置 | 開發指南 |
+| --- | --- | --- |
+| Apple (iOS / iPadOS) | `apps/ios/` | [apps/ios/README.md](apps/ios/README.md)：技術棧、環境設定、build / test、CI、發佈、架構速覽 |
+| Android | `apps/android/` | (未來，尚未建立) |
 
 各平台與 shared 模組的 AI 協作硬規則見該目錄的 `CLAUDE.md` (如 `apps/ios/CLAUDE.md`、`shared/data-model/CLAUDE.md`)，只涉特定子目錄的規則在 `.claude/rules/`；跨平台通用規範見根目錄 [`CLAUDE.md`](CLAUDE.md)。
 
 ## 產品政策
 
-- **UI 寧可顯示空狀態也不顯示假資料**——API 失敗或無資料時顯示空狀態，不繪空圖表也不退回 hardcoded 數字。
-- **幣別清單動態載入、不可 hardcode**——cache 7 天。
+- **UI 寧可顯示空狀態也不顯示假資料**：API 失敗或無資料時顯示空狀態，不繪空圖表也不退回 hardcoded 數字。
+- **幣別清單動態載入、不可 hardcode**：快取 7 天。
 
 ## Spec-Driven Development
 
-本專案採用 [Spectra](https://github.com/kaochenlong/spectra-app) (SDD)：
-
-- 規格在 `openspec/specs/`
-- 變更提案在 `openspec/changes/`
-- 工作流程：`discuss?` → `propose` → `apply` ⇄ `ingest` → `archive`
-
-詳細 workflow 與貢獻者注意事項見 `CLAUDE.md`。
+本專案採用 [Spectra](https://github.com/kaochenlong/spectra-app) (SDD)：規格在 `openspec/specs/`，變更提案在 `openspec/changes/`，工作流程為 `discuss?` → `propose` → `apply` ⇄ `ingest` → `verify` / `review` → `archive`。各步驟的 skill 與貢獻者注意事項見 [`CLAUDE.md`](CLAUDE.md)。

@@ -2,15 +2,14 @@
 //  Config.example.xcconfig
 //  BuyLedger
 //
-//  將此檔複製成 `Config.xcconfig`（已加入 .gitignore），填入個人 API key 後在
-//  Xcode → Project → Info → Configurations 把 Debug 與 Release 的 Configuration
-//  指向 `Config.xcconfig`。
+//  將此檔複製成 `Config.xcconfig` (已加入 .gitignore) 並填入個人 API key；
+//  app target 的 Debug 與 Release configuration 已指向 `Config.xcconfig`，不需另外設定
 //
 //  Info.plist 已經以 `$(EXCHANGE_RATE_API_KEY)` 引用此變數，App 執行時由
 //  `AppConfigurationStoreKey.liveValue` 提供的 `AppConfigurationStore` 從 `Bundle.main` 的 Info.plist 讀回
 //
 
-// 申請於 https://www.exchangerate-api.com/ — 30 日 sparkline 需要 Pro/Business 方案
+// 申請於 https://www.exchangerate-api.com/ — 匯率與幣別清單走 ExchangeRate-API v6
 EXCHANGE_RATE_API_KEY =
 
 // 申請於 https://ollama.com/ (Account → API keys) — AI 商品明細總結走 Ollama Cloud chat streaming
