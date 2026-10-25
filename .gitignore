@@ -94,3 +94,12 @@ shared/data-model/generator/node_modules
 
 # mobilebuildmcp 本機 session defaults (含機器專屬絕對路徑與模擬器 UDID，不入庫)
 .mobilebuildmcp/
+
+# archify：只追蹤架構圖 HTML 與繪製來源，檢查紀錄、log 與修圖過程的中間檔不進版控 (內含本機路徑)
+.archify/**
+!.archify/**/
+!.archify/**/*.html
+!.archify/**/candidate.json
+!.archify/**/feature-views.json
+.archify/**/review-*/
+.archify/**/visual-check/

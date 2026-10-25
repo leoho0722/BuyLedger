@@ -1,0 +1,272 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · App 殼層與根協調",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-features-20261024-132242/app/app.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "entry",
+      "type": "frontend",
+      "label": "BuyLedgerApp / RootView",
+      "sublabel": "啟動 Store、選擇導覽與阻斷畫面",
+      "pos": [
+        40,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/App/BuyLedgerApp.swift",
+          "line": 28,
+          "end_line": 69
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootView.swift",
+          "line": 24,
+          "end_line": 69
+        }
+      ]
+    },
+    {
+      "id": "root",
+      "type": "backend",
+      "label": "RootFeature",
+      "sublabel": "組合 Features、投影與 delegate",
+      "pos": [
+        435,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 165,
+          "end_line": 240
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 259,
+          "end_line": 377
+        }
+      ]
+    },
+    {
+      "id": "launch",
+      "type": "backend",
+      "label": "RootLaunch",
+      "sublabel": "幣別快取刷新與時間變動監聽",
+      "pos": [
+        435,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/RootLaunch/RootLaunchOperations.swift",
+          "line": 26,
+          "end_line": 61
+        }
+      ]
+    },
+    {
+      "id": "lock",
+      "type": "security",
+      "label": "AppLockFeature",
+      "sublabel": "啟用時背景上鎖、驗證後解鎖",
+      "pos": [
+        830,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/AppLock/AppLockFeature.swift",
+          "line": 120,
+          "end_line": 154
+        }
+      ]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "裝置擁有者驗證",
+      "sublabel": "LAContext：生物辨識或密碼",
+      "pos": [
+        830,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Authentication/BiometricAuthService.swift",
+          "line": 130,
+          "end_line": 155
+        }
+      ]
+    },
+    {
+      "id": "failure",
+      "type": "frontend",
+      "label": "PersistenceFailure",
+      "sublabel": "阻斷主內容，成功復原後須重啟",
+      "pos": [
+        40,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/PersistenceFailure/PersistenceFailureFeature.swift",
+          "line": 147,
+          "end_line": 181
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootView.swift",
+          "line": 24,
+          "end_line": 69
+        }
+      ]
+    },
+    {
+      "id": "recovery",
+      "type": "backend",
+      "label": "Recovery Service",
+      "sublabel": "使用者二次確認後要求復原",
+      "pos": [
+        40,
+        655
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Data/PersistenceRecoveryService.swift",
+          "line": 33,
+          "end_line": 43
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/PersistenceFailure/PersistenceFailureFeature.swift",
+          "line": 147,
+          "end_line": 181
+        }
+      ]
+    },
+    {
+      "id": "quarantine",
+      "type": "database",
+      "label": "資料庫隔離備份",
+      "sublabel": "BuyLedgerDatabase 搬移原 store",
+      "pos": [
+        435,
+        655
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Persistence/Database/BuyLedgerDatabase.swift",
+          "line": 131,
+          "end_line": 153
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "entry-to-root",
+      "from": "entry",
+      "to": "root",
+      "label": "建立 Store"
+    },
+    {
+      "id": "root-to-launch",
+      "from": "root",
+      "to": "launch",
+      "label": "啟動工作"
+    },
+    {
+      "id": "root-to-lock",
+      "from": "root",
+      "to": "lock",
+      "label": "組合鎖定"
+    },
+    {
+      "id": "lock-to-auth",
+      "from": "lock",
+      "to": "auth",
+      "label": "要求驗證"
+    },
+    {
+      "id": "entry-to-failure",
+      "from": "entry",
+      "to": "failure",
+      "label": "啟動失敗時"
+    },
+    {
+      "id": "failure-to-recovery",
+      "from": "failure",
+      "to": "recovery",
+      "label": "確認後復原"
+    },
+    {
+      "id": "recovery-to-quarantine",
+      "from": "recovery",
+      "to": "quarantine",
+      "label": "隔離搬移"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Root 是跨功能協調者",
+      "items": [
+        "訂單、開團、偏好與載入狀態由 Root 投影到其他 Feature；跨頁操作透過 delegate 回到 Root。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "啟動工作與鎖定分開管理",
+      "items": [
+        "RootLaunch 合併幣別更新及時間監聽；AppLock 在啟用時處理背景上鎖與裝置驗證。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "復原保留原始資料",
+      "items": [
+        "資料庫失敗會先阻斷主內容；使用者二次確認後隔離原 store，完成後要求重新啟動。"
+      ]
+    }
+  ]
+}

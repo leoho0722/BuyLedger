@@ -1,0 +1,267 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · Quote 報價試算架構",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-features-20261024-132242/quote/quote.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "quote",
+      "type": "frontend",
+      "label": "QuoteFeature",
+      "sublabel": "輸入金額、費率與目標毛利",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteFeature.swift",
+          "line": 183,
+          "end_line": 188
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteFeature.swift",
+          "line": 226,
+          "end_line": 250
+        }
+      ]
+    },
+    {
+      "id": "rate",
+      "type": "backend",
+      "label": "QuoteRateFeature",
+      "sublabel": "來源幣別、快照與幣別選擇",
+      "pos": [
+        435,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Quote/Presentation/QuoteRate/QuoteRateFeature.swift",
+          "line": 237,
+          "end_line": 282
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Quote/Presentation/QuoteRate/QuoteRateFeature.swift",
+          "line": 21,
+          "end_line": 59
+        }
+      ]
+    },
+    {
+      "id": "rates",
+      "type": "backend",
+      "label": "ExchangeRateService",
+      "sublabel": "以 TWD 為基準的匯率快照",
+      "pos": [
+        830,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Currency/ExchangeRateService.swift",
+          "line": 44,
+          "end_line": 69
+        }
+      ]
+    },
+    {
+      "id": "http",
+      "type": "backend",
+      "label": "HTTPClient",
+      "sublabel": "URLSession 執行匯率請求",
+      "pos": [
+        830,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Networking/Client/HTTPClient.swift",
+          "line": 157,
+          "end_line": 195
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "external",
+      "label": "ExchangeRate-API",
+      "sublabel": "HTTPS v6 / latest endpoint",
+      "pos": [
+        830,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Networking/ExchangeRate/ExchangeRateEndpoint.swift",
+          "line": 33,
+          "end_line": 53
+        }
+      ]
+    },
+    {
+      "id": "calc",
+      "type": "backend",
+      "label": "成本與毛利計算",
+      "sublabel": "商品、運費、費用均以 Decimal 計算",
+      "pos": [
+        40,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteFeature.swift",
+          "line": 48,
+          "end_line": 113
+        }
+      ]
+    },
+    {
+      "id": "result",
+      "type": "frontend",
+      "label": "建議售價與空狀態",
+      "sublabel": "匯率可用且毛利低於 100% 才顯示",
+      "pos": [
+        40,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteFeature.swift",
+          "line": 116,
+          "end_line": 132
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteFeature.swift",
+          "line": 48,
+          "end_line": 113
+        }
+      ]
+    },
+    {
+      "id": "metadata",
+      "type": "backend",
+      "label": "CurrencyMetadataService",
+      "sublabel": "讀取本機可選幣別",
+      "pos": [
+        435,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Currency/CurrencyMetadataService.swift",
+          "line": 115,
+          "end_line": 133
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "quote-to-rate",
+      "from": "quote",
+      "to": "rate",
+      "label": "轉送事件"
+    },
+    {
+      "id": "rate-to-rates",
+      "from": "rate",
+      "to": "rates",
+      "label": "fetchLatest"
+    },
+    {
+      "id": "rates-to-http",
+      "from": "rates",
+      "to": "http",
+      "label": "送出請求"
+    },
+    {
+      "id": "http-to-api",
+      "from": "http",
+      "to": "api",
+      "label": "HTTPS"
+    },
+    {
+      "id": "quote-to-calc",
+      "from": "quote",
+      "to": "calc",
+      "label": "輸入與匯率"
+    },
+    {
+      "id": "calc-to-result",
+      "from": "calc",
+      "to": "result",
+      "label": "套用呈現條件"
+    },
+    {
+      "id": "rate-to-metadata",
+      "from": "rate",
+      "to": "metadata",
+      "label": "fetchCodes"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "匯率由子功能維護",
+      "items": [
+        "QuoteRate 管理來源幣別與快照，首次出現時視需要載入匯率，並讀取本機幣別主檔。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "試算留在本機",
+      "items": [
+        "QuoteFeature.State 將商品、運費與手續費轉成 TWD 成本，以目標毛利推導售價並向上取到 10 元。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "無效條件不產生報價",
+      "items": [
+        "沒有可用匯率或目標毛利達 100% 時不顯示建議售價；報價流程不寫入訂單資料庫。"
+      ]
+    }
+  ]
+}

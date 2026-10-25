@@ -1,0 +1,245 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · Orders 訂單架構",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-features-20261024-132242/orders/orders.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "root",
+      "type": "backend",
+      "label": "RootFeature",
+      "sublabel": "導覽意圖、主檔、偏好與開團投影",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 165,
+          "end_line": 240
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 259,
+          "end_line": 377
+        }
+      ]
+    },
+    {
+      "id": "orders",
+      "type": "backend",
+      "label": "OrdersFeature",
+      "sublabel": "@Shared orders 與操作分派",
+      "pos": [
+        435,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift",
+          "line": 17,
+          "end_line": 78
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift",
+          "line": 225,
+          "end_line": 251
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift",
+          "line": 343,
+          "end_line": 391
+        }
+      ]
+    },
+    {
+      "id": "read",
+      "type": "frontend",
+      "label": "清單與詳情",
+      "sublabel": "List / Detail 以 SharedReader 讀取",
+      "pos": [
+        830,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift",
+          "line": 17,
+          "end_line": 78
+        }
+      ]
+    },
+    {
+      "id": "presentation",
+      "type": "frontend",
+      "label": "編輯與確認呈現",
+      "sublabel": "表單、刪除、合併與 AI sheet",
+      "pos": [
+        40,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift",
+          "line": 343,
+          "end_line": 391
+        }
+      ]
+    },
+    {
+      "id": "io",
+      "type": "backend",
+      "label": "載入與寫入子層",
+      "sublabel": "OrdersLoad / OrderWrites",
+      "pos": [
+        435,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Presentation/OrdersLoad/OrdersLoadFeature.swift",
+          "line": 105,
+          "end_line": 140
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Presentation/OrderWrites/OrderWriteOperations.swift",
+          "line": 116,
+          "end_line": 151
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "type": "backend",
+      "label": "OrderService",
+      "sublabel": "訂單、照片與合併的資料操作",
+      "pos": [
+        830,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Data/OrderService.swift",
+          "line": 170,
+          "end_line": 217
+        }
+      ]
+    },
+    {
+      "id": "database",
+      "type": "database",
+      "label": "BuyLedgerDatabase",
+      "sublabel": "獨立 ModelContext、交易後 save",
+      "pos": [
+        830,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Persistence/Database/BuyLedgerDatabase.swift",
+          "line": 93,
+          "end_line": 123
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "root-to-orders",
+      "from": "root",
+      "to": "orders",
+      "label": "投影與請求"
+    },
+    {
+      "id": "orders-to-read",
+      "from": "orders",
+      "to": "read",
+      "label": "共享讀取"
+    },
+    {
+      "id": "orders-to-presentation",
+      "from": "orders",
+      "to": "presentation",
+      "label": "管理呈現"
+    },
+    {
+      "id": "orders-to-io",
+      "from": "orders",
+      "to": "io",
+      "label": "分派操作"
+    },
+    {
+      "id": "io-to-service",
+      "from": "io",
+      "to": "service",
+      "label": "讀取 / 寫入"
+    },
+    {
+      "id": "service-to-database",
+      "from": "service",
+      "to": "database",
+      "label": "actor 交易"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "容器集中分派意圖",
+      "items": [
+        "List 與 Detail 發出操作請求，由 OrdersFeature 選擇呈現、寫入或導覽，不直接執行持久化。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "一份共享訂單來源",
+      "items": [
+        "載入與寫入子層共同操作 @Shared orders；清單與詳情以 SharedReader 持續讀取更新。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "持久化由資料服務執行",
+      "items": [
+        "OrderService 經資料庫 actor 讀寫訂單及照片；新增、一般儲存、照片變更與合併走各自對應操作。"
+      ]
+    }
+  ]
+}

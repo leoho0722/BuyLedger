@@ -1,0 +1,950 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · App 整體架構",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-20261024-115559/buyledger.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "entry",
+      "type": "frontend",
+      "label": "BuyLedgerApp",
+      "sublabel": "AppDelegate · 啟動組裝",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        220,
+        74
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/App/BuyLedgerApp.swift",
+          "line": 28,
+          "end_line": 69
+        },
+        {
+          "path": "apps/ios/BuyLedger/App/AppLaunchConfigurator.swift",
+          "line": 43,
+          "end_line": 66
+        }
+      ]
+    },
+    {
+      "id": "telemetry",
+      "type": "backend",
+      "label": "遙測與診斷",
+      "sublabel": "TelemetryService · CrashDiagnostics",
+      "pos": [
+        385,
+        40
+      ],
+      "size": [
+        250,
+        74
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Telemetry/TelemetryService.swift",
+          "line": 41,
+          "end_line": 59
+        },
+        {
+          "path": "apps/ios/BuyLedger/App/AppLaunchConfigurator.swift",
+          "line": 47,
+          "end_line": 66
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Diagnostics/CrashDiagnosticsClient.swift",
+          "line": 11,
+          "end_line": 31
+        }
+      ]
+    },
+    {
+      "id": "firebase",
+      "type": "cloud",
+      "label": "Firebase",
+      "sublabel": "Analytics · Crashlytics · Performance",
+      "pos": [
+        810,
+        40
+      ],
+      "size": [
+        260,
+        74
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Telemetry/TelemetryService.swift",
+          "line": 8,
+          "end_line": 25
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Telemetry/TelemetryService.swift",
+          "line": 43,
+          "end_line": 58
+        }
+      ]
+    },
+    {
+      "id": "root",
+      "type": "frontend",
+      "label": "RootFeature / RootView",
+      "sublabel": "啟動・鎖定・導覽・投影",
+      "pos": [
+        40,
+        225
+      ],
+      "size": [
+        220,
+        86
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 165,
+          "end_line": 240
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootView.swift",
+          "line": 24,
+          "end_line": 69
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/AppLock/AppLockFeature.swift",
+          "line": 120,
+          "end_line": 154
+        }
+      ],
+      "tag": "持久層正常且解鎖才顯示主畫面"
+    },
+    {
+      "id": "business",
+      "type": "frontend",
+      "label": "訂單與開團",
+      "sublabel": "Orders · Campaigns",
+      "pos": [
+        385,
+        225
+      ],
+      "size": [
+        250,
+        78
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift",
+          "line": 17,
+          "end_line": 78
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Presentation/OrderWrites/OrderWriteOperations.swift",
+          "line": 116,
+          "end_line": 151
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignReminder/CampaignReminderFeature.swift",
+          "line": 230,
+          "end_line": 272
+        }
+      ]
+    },
+    {
+      "id": "crud",
+      "type": "backend",
+      "label": "業務資料服務",
+      "sublabel": "Order / Campaign / Lookup Service",
+      "pos": [
+        810,
+        225
+      ],
+      "size": [
+        260,
+        78
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Data/OrderService.swift",
+          "line": 170,
+          "end_line": 217
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Data/CampaignService.swift",
+          "line": 118,
+          "end_line": 153
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Lookups/Data/LookupService.swift",
+          "line": 112,
+          "end_line": 160
+        }
+      ]
+    },
+    {
+      "id": "reports",
+      "type": "frontend",
+      "label": "總覽與趨勢分析",
+      "sublabel": "Dashboard · Insights",
+      "pos": [
+        385,
+        1205
+      ],
+      "size": [
+        250,
+        74
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 201,
+          "end_line": 224
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/DashboardFeature.swift",
+          "line": 1,
+          "end_line": 70
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Insights/Presentation/Root/InsightsFeature.swift",
+          "line": 1,
+          "end_line": 75
+        }
+      ]
+    },
+    {
+      "id": "database",
+      "type": "backend",
+      "label": "BuyLedgerDatabase",
+      "sublabel": "actor · 一次性 ModelContext",
+      "pos": [
+        810,
+        415
+      ],
+      "size": [
+        260,
+        78
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Persistence/Database/BuyLedgerDatabase.swift",
+          "line": 93,
+          "end_line": 123
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Persistence/Database/BuyLedgerDatabase.swift",
+          "line": 159,
+          "end_line": 175
+        }
+      ]
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "本機 SwiftData",
+      "sublabel": "BuyLedger.store · Schema V17",
+      "pos": [
+        810,
+        600
+      ],
+      "size": [
+        260,
+        78
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Persistence/Database/PersistenceContainer.swift",
+          "line": 181,
+          "end_line": 215
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Persistence/Database/PersistenceContainer.swift",
+          "line": 237,
+          "end_line": 248
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Persistence/Database/BuyLedgerSchema.swift",
+          "line": 608,
+          "end_line": 628
+        }
+      ],
+      "tag": "CloudKit 同步關閉"
+    },
+    {
+      "id": "more",
+      "type": "frontend",
+      "label": "更多與工具入口",
+      "sublabel": "More · Customers · FX · Quote · Settings",
+      "pos": [
+        40,
+        415
+      ],
+      "size": [
+        250,
+        78
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+          "line": 20,
+          "end_line": 89
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/FX/Presentation/Root/FxFeature.swift",
+          "line": 274,
+          "end_line": 291
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift",
+          "line": 240,
+          "end_line": 255
+        }
+      ]
+    },
+    {
+      "id": "fx",
+      "type": "backend",
+      "label": "匯率與幣別服務",
+      "sublabel": "ExchangeRate / CurrencyMetadata",
+      "pos": [
+        385,
+        605
+      ],
+      "size": [
+        250,
+        78
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Currency/ExchangeRateService.swift",
+          "line": 44,
+          "end_line": 69
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Currency/CurrencyMetadataService.swift",
+          "line": 150,
+          "end_line": 207
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/RootLaunch/RootLaunchOperations.swift",
+          "line": 38,
+          "end_line": 50
+        }
+      ],
+      "tag": "幣別清單快取 7 天"
+    },
+    {
+      "id": "http",
+      "type": "backend",
+      "label": "HTTPClient",
+      "sublabel": "URLSession · JSON / AsyncBytes",
+      "pos": [
+        810,
+        805
+      ],
+      "size": [
+        260,
+        78
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Networking/Client/HTTPClient.swift",
+          "line": 157,
+          "end_line": 195
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Networking/Client/HTTPClient.swift",
+          "line": 200,
+          "end_line": 220
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Networking/ExchangeRate/ExchangeRateEndpoint.swift",
+          "line": 33,
+          "end_line": 53
+        }
+      ]
+    },
+    {
+      "id": "rates-api",
+      "type": "cloud",
+      "label": "ExchangeRate-API",
+      "sublabel": "v6 · latest / codes",
+      "pos": [
+        810,
+        1005
+      ],
+      "size": [
+        260,
+        74
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Networking/ExchangeRate/ExchangeRateEndpoint.swift",
+          "line": 33,
+          "end_line": 53
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Currency/ExchangeRateService.swift",
+          "line": 50,
+          "end_line": 68
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Currency/CurrencyMetadataService.swift",
+          "line": 221,
+          "end_line": 244
+        }
+      ]
+    },
+    {
+      "id": "ai",
+      "type": "backend",
+      "label": "AI 摘要",
+      "sublabel": "AISummaryFeature · AISummaryService",
+      "pos": [
+        385,
+        805
+      ],
+      "size": [
+        250,
+        78
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryFeature.swift",
+          "line": 228,
+          "end_line": 295
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift",
+          "line": 87,
+          "end_line": 156
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrderSummaryPrompt.swift",
+          "line": 25,
+          "end_line": 45
+        }
+      ],
+      "tag": "選用；需 OLLAMA_API_KEY"
+    },
+    {
+      "id": "ollama",
+      "type": "cloud",
+      "label": "Ollama Cloud",
+      "sublabel": "POST /api/chat · 文字串流",
+      "pos": [
+        385,
+        1005
+      ],
+      "size": [
+        250,
+        74
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift",
+          "line": 17,
+          "end_line": 35
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift",
+          "line": 95,
+          "end_line": 129
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "type": "backend",
+      "label": "SettingsService",
+      "sublabel": "語言・預設幣別・目標・AI・App 鎖",
+      "pos": [
+        40,
+        805
+      ],
+      "size": [
+        250,
+        78
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift",
+          "line": 65,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "defaults",
+      "type": "database",
+      "label": "UserDefaultsStore",
+      "sublabel": "使用者偏好持久化",
+      "pos": [
+        40,
+        1005
+      ],
+      "size": [
+        250,
+        74
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Storage/UserDefaultsStore.swift",
+          "line": 84,
+          "end_line": 124
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift",
+          "line": 103,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "device",
+      "type": "backend",
+      "label": "裝置整合服務",
+      "sublabel": "BiometricAuth · CalendarReminder · Photo",
+      "pos": [
+        385,
+        415
+      ],
+      "size": [
+        285,
+        78
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Authentication/BiometricAuthService.swift",
+          "line": 130,
+          "end_line": 155
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService.swift",
+          "line": 64,
+          "end_line": 125
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Data/PhotoService.swift",
+          "line": 33,
+          "end_line": 56
+        }
+      ]
+    },
+    {
+      "id": "apple",
+      "type": "external",
+      "label": "Apple 系統能力",
+      "sublabel": "LocalAuthentication · EventKit · PhotosUI",
+      "pos": [
+        810,
+        1205
+      ],
+      "size": [
+        285,
+        78
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Authentication/BiometricAuthService.swift",
+          "line": 132,
+          "end_line": 155
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService.swift",
+          "line": 69,
+          "end_line": 108
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Data/PhotoService.swift",
+          "line": 8,
+          "end_line": 56
+        }
+      ]
+    },
+    {
+      "id": "shared",
+      "type": "frontend",
+      "label": "Shared 共用呈現",
+      "sublabel": "DesignSystem · Localization · Media",
+      "pos": [
+        40,
+        605
+      ],
+      "size": [
+        250,
+        78
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Shared/DesignSystem/Foundations/BLLayoutClass.swift",
+          "line": 10,
+          "end_line": 54
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreView.swift",
+          "line": 89,
+          "end_line": 108
+        },
+        {
+          "path": "apps/ios/BuyLedger/Shared/Media/PhotoDataProcessor.swift",
+          "line": 12,
+          "end_line": 38
+        }
+      ]
+    },
+    {
+      "id": "schema",
+      "type": "backend",
+      "label": "跨平台模型 Schema",
+      "sublabel": "shared/data-model/schema/*.yaml",
+      "pos": [
+        40,
+        1435
+      ],
+      "size": [
+        250,
+        74
+      ],
+      "sources": [
+        {
+          "path": "shared/data-model/codegen.yaml",
+          "line": 1,
+          "end_line": 8
+        },
+        {
+          "path": "shared/data-model/generator/package.json",
+          "line": 11,
+          "end_line": 16
+        }
+      ]
+    },
+    {
+      "id": "codegen",
+      "type": "backend",
+      "label": "datamodel-gen",
+      "sublabel": "Bun · YAML → 驗證 → Swift",
+      "pos": [
+        385,
+        1435
+      ],
+      "size": [
+        250,
+        74
+      ],
+      "sources": [
+        {
+          "path": "shared/data-model/generator/src/datamodel-gen.ts",
+          "line": 977,
+          "end_line": 999
+        },
+        {
+          "path": "shared/data-model/generator/src/datamodel-gen.ts",
+          "line": 1006,
+          "end_line": 1016
+        }
+      ]
+    },
+    {
+      "id": "models",
+      "type": "backend",
+      "label": "Core / Domain / Generated",
+      "sublabel": "LedgerOrder · Campaign · CurrencyCode",
+      "pos": [
+        810,
+        1435
+      ],
+      "size": [
+        285,
+        74
+      ],
+      "sources": [
+        {
+          "path": "shared/data-model/codegen.yaml",
+          "line": 4,
+          "end_line": 8
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Domain/Generated/LedgerOrder.generated.swift",
+          "line": 5,
+          "end_line": 32
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Persistence/Records/OrderRecord.swift",
+          "line": 8,
+          "end_line": 40
+        }
+      ],
+      "tag": "編譯進 App 的值型別"
+    }
+  ],
+  "connections": [
+    {
+      "id": "entry-to-root",
+      "from": "entry",
+      "to": "root",
+      "label": "建立 Store",
+      "variant": "emphasis"
+    },
+    {
+      "id": "entry-to-telemetry",
+      "from": "entry",
+      "to": "telemetry",
+      "label": "正式啟動"
+    },
+    {
+      "id": "telemetry-to-firebase",
+      "from": "telemetry",
+      "to": "firebase",
+      "label": "啟用收集"
+    },
+    {
+      "id": "root-to-business",
+      "from": "root",
+      "to": "business",
+      "label": "Scope",
+      "variant": "emphasis"
+    },
+    {
+      "id": "business-to-crud",
+      "from": "business",
+      "to": "crud",
+      "label": "Effect 讀寫",
+      "variant": "emphasis"
+    },
+    {
+      "id": "crud-to-database",
+      "from": "crud",
+      "to": "database",
+      "label": "async 交易",
+      "variant": "emphasis"
+    },
+    {
+      "id": "database-to-store",
+      "from": "database",
+      "to": "store",
+      "label": "save()",
+      "variant": "emphasis"
+    },
+    {
+      "id": "root-to-reports",
+      "from": "root",
+      "to": "reports",
+      "label": "唯讀投影"
+    },
+    {
+      "id": "root-to-more",
+      "from": "root",
+      "to": "more",
+      "label": "Scope"
+    },
+    {
+      "id": "more-to-crud",
+      "from": "more",
+      "to": "crud",
+      "label": "主檔管理"
+    },
+    {
+      "id": "more-to-fx",
+      "from": "more",
+      "to": "fx",
+      "label": "匯率 / 報價"
+    },
+    {
+      "id": "more-to-settings",
+      "from": "more",
+      "to": "settings",
+      "label": "偏好操作"
+    },
+    {
+      "id": "settings-to-defaults",
+      "from": "settings",
+      "to": "defaults",
+      "label": "讀寫偏好"
+    },
+    {
+      "id": "fx-to-database",
+      "from": "fx",
+      "to": "database",
+      "label": "幣別快取"
+    },
+    {
+      "id": "fx-to-http",
+      "from": "fx",
+      "to": "http",
+      "label": "GET"
+    },
+    {
+      "id": "http-to-rates-api",
+      "from": "http",
+      "to": "rates-api",
+      "label": "HTTPS · Bearer"
+    },
+    {
+      "id": "business-to-ai",
+      "from": "business",
+      "to": "ai",
+      "label": "摘要 sheet"
+    },
+    {
+      "id": "ai-to-http",
+      "from": "ai",
+      "to": "http",
+      "label": "POST 串流"
+    },
+    {
+      "id": "http-to-ollama",
+      "from": "http",
+      "to": "ollama",
+      "label": "HTTPS · Bearer"
+    },
+    {
+      "id": "root-to-device",
+      "from": "root",
+      "to": "device",
+      "label": "鎖定時驗證"
+    },
+    {
+      "id": "business-to-device",
+      "from": "business",
+      "to": "device",
+      "label": "照片 / 開團提醒"
+    },
+    {
+      "id": "device-to-apple",
+      "from": "device",
+      "to": "apple",
+      "label": "系統驗證 / 行事曆授權"
+    },
+    {
+      "id": "root-to-shared",
+      "from": "root",
+      "to": "shared",
+      "label": "共用 UI 與格式"
+    },
+    {
+      "id": "schema-to-codegen",
+      "from": "schema",
+      "to": "codegen",
+      "label": "generate"
+    },
+    {
+      "id": "codegen-to-models",
+      "from": "codegen",
+      "to": "models",
+      "label": "寫出 .generated.swift"
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "本機 SwiftData 持久層",
+      "wraps": [
+        "database",
+        "store"
+      ],
+      "pad": 24
+    },
+    {
+      "kind": "region",
+      "label": "開發期 · 跨平台資料模型生成",
+      "wraps": [
+        "schema",
+        "codegen",
+        "models"
+      ],
+      "pad": 25
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "閱讀範圍與入口",
+      "items": [
+        "這是已實作 iOS / iPadOS App 的子系統總覽；節點會合併合作的 Feature 與服務，沒有逐一列出 View、Reducer 或 helper。",
+        "BuyLedgerApp 建立 Root Store；RootView 依 BLLayoutClass 選擇底部分頁列或側邊欄。",
+        "持久層開啟失敗時阻擋一般介面；App 鎖啟用時先經本機驗證，再顯示導覽。"
+      ]
+    },
+    {
+      "dot": "cyan",
+      "title": "全部 Feature 與分工",
+      "items": [
+        "App：Root、RootLaunch、AppLock、PersistenceFailure；負責組裝、啟動、復原與根導覽。",
+        "Orders：清單、詳情、篩選、編輯、合併、照片、載入、寫入與呈現；子 Feature 透過共享引用或唯讀投影合作。",
+        "Campaigns：開團清單、詳情、編輯、結單與行事曆提醒。",
+        "Dashboard / Insights：消費 Root 同步的訂單、開團與載入狀態，計算統計並呈現圖表。",
+        "More：管理工具堆疊；Customers 由訂單投影彙整客戶，FX 顯示匯率，Quote 試算報價，Lookups 管理四種主檔，Settings 管理偏好。",
+        "AISummary：由訂單畫面呈現的選用摘要 sheet，串流顯示 AI 文字。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "狀態與寫入的所有權",
+      "items": [
+        "Root 將 Orders / Campaigns 的資料與設定單向投影到其他 Feature；跨頁意圖由 delegate 回 Root，統一處理導覽與請求。",
+        "啟動並行載入開團、主檔目錄與幣別；主檔目錄完成後才請 Orders 載入訂單。",
+        "OrderService、CampaignService、LookupService 各自透過 BuyLedgerDatabase 操作資料；每次交易建立新的 ModelContext，成功後才保存。",
+        "總覽、趨勢與客戶是記憶體中的衍生資料，沒有獨立的遠端分析服務或客戶資料庫。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "本機資料與復原",
+      "items": [
+        "目前 Schema V17 包含 8 種持久化記錄：訂單、開團、商品類別、付款方式、訂單來源、對帳狀態、幣別快取及開團提醒連結。",
+        "正式檔案為 Application Support / BuyLedger.store；CloudKitOption 保留設定能力，但正式 ModelConfiguration 明確關閉同步。",
+        "資料庫開啟失敗時只用空的記憶體容器承載復原畫面；PersistenceRecoveryService 透過 Database 隔離原 store 與附屬檔。",
+        "照片經 PhotoService / Shared.Media 降採樣並轉為 JPEG，最後仍由 OrderService 寫入訂單記錄。"
+      ]
+    },
+    {
+      "dot": "violet",
+      "title": "網路與設定來源",
+      "items": [
+        "ExchangeRateService 取得即時匯率；CurrencyMetadataService 從同一 API 更新支援幣別，SwiftData 快取有效期由啟動流程指定為 7 天。",
+        "AISummaryService 將商品明細 prompt 送往 Ollama Cloud /api/chat，透過 HTTPClient 的 AsyncBytes 逐段更新摘要；30 秒截止或關閉面板會取消串流。",
+        "HTTPClient 是真正執行 URLSession 傳輸的實作；雲端箭頭代表請求及其回應，沒有另外架設 BuyLedger API Server。",
+        "ExchangeRate 與 Ollama 金鑰由建置設定注入 Info.plist，再由 AppConfigurationStore 讀取；請求使用 Authorization: Bearer。",
+        "設定值透過 SettingsService → UserDefaultsStore 保存，不寫入業務資料庫。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "系統整合與共用層",
+      "items": [
+        "AppLock / Settings 透過 BiometricAuthService 使用 LocalAuthentication，系統負責生物辨識或裝置密碼驗證。",
+        "CampaignReminderFeature 先取得行事曆授權，再請 CalendarReminderService 建立 EventKit 事件，最後由 CampaignService 保存 eventIdentifier 連結。",
+        "照片只載入使用者在 PhotosUI 選取的內容；PhotoService 處理匯入，OrderService 負責持久化。",
+        "Shared.DesignSystem 提供 token、元件與版面分類；Localization 提供語言與顯示名稱；Media 提供影像處理。Core 提供持久化、網路、驗證、幣別、環境、記錄與診斷。"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "開發期模型生成",
+      "items": [
+        "底部流程是開發期生成作業，與上方 App 執行時呼叫分開閱讀。",
+        "shared/data-model/schema 是資料形狀的來源；datamodel-gen 解析 YAML、驗證 IR，並寫出 Core/Domain/Generated 的 Swift 值型別。",
+        "目前 codegen.yaml 僅接 Swift 產線；Kotlin / TypeScript emitter 的存在不代表有 Android 或 Web App。",
+        "Feature / Domain 與 Data 交換值型別，SwiftData Record 負責持久化形狀；圖中沒有把生成型別當成資料庫表。"
+      ]
+    },
+    {
+      "dot": "slate",
+      "title": "程式碼依據",
+      "items": [
+        "來源固定為 Git revision 19ef9ccc292806b3e838dcb561688bfc404409d1；各節點可查看檔案與行號。",
+        "目前工作區的未提交變更位於測試、文件與 openspec/changes/test-extension-split；正式 App 與 shared/data-model 的內容與此 revision 相同。"
+      ]
+    }
+  ]
+}

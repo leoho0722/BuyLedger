@@ -1,0 +1,213 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · Lookups 主檔架構",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-features-20261024-132242/lookups/lookups.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "catalog",
+      "type": "backend",
+      "label": "LookupCatalogFeature",
+      "sublabel": "@Shared 目錄：載入與新增",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Lookups/Presentation/LookupCatalog/LookupCatalogFeature.swift",
+          "line": 171,
+          "end_line": 207
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "type": "backend",
+      "label": "LookupService",
+      "sublabel": "主檔 CRUD 與付款更正交易",
+      "pos": [
+        435,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Lookups/Data/LookupService.swift",
+          "line": 112,
+          "end_line": 165
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "BuyLedgerDatabase",
+      "sublabel": "主檔與受影響訂單同一交易",
+      "pos": [
+        830,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Persistence/Database/BuyLedgerDatabase.swift",
+          "line": 93,
+          "end_line": 123
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Lookups/Data/LookupService.swift",
+          "line": 112,
+          "end_line": 165
+        }
+      ]
+    },
+    {
+      "id": "management",
+      "type": "frontend",
+      "label": "LookupManagement",
+      "sublabel": "依 LookupKind 共用管理畫面",
+      "pos": [
+        40,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Lookups/Presentation/Root/LookupManagementFeature.swift",
+          "line": 233,
+          "end_line": 294
+        }
+      ]
+    },
+    {
+      "id": "operations",
+      "type": "backend",
+      "label": "項目操作與追溯更正",
+      "sublabel": "旗標影響訂單時須先確認",
+      "pos": [
+        435,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Lookups/Presentation/Root/LookupItemOperations.swift",
+          "line": 28,
+          "end_line": 92
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Lookups/Presentation/PaymentMethodCorrection/PaymentMethodCorrectionFeature.swift",
+          "line": 130,
+          "end_line": 214
+        }
+      ]
+    },
+    {
+      "id": "root",
+      "type": "backend",
+      "label": "More → Root → Orders",
+      "sublabel": "套用已持久化的改名 / 更正結果",
+      "pos": [
+        40,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+          "line": 275,
+          "end_line": 325
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 259,
+          "end_line": 377
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "catalog-to-service",
+      "from": "catalog",
+      "to": "service",
+      "label": "讀取 / 新增"
+    },
+    {
+      "id": "management-to-operations",
+      "from": "management",
+      "to": "operations",
+      "label": "表單 / 確認"
+    },
+    {
+      "id": "operations-to-service",
+      "from": "operations",
+      "to": "service",
+      "label": "通過條件後寫入"
+    },
+    {
+      "id": "service-to-db",
+      "from": "service",
+      "to": "db",
+      "label": "讀寫交易"
+    },
+    {
+      "id": "management-to-root",
+      "from": "management",
+      "to": "root",
+      "label": "成功後 delegate"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "四種主檔共用結構",
+      "items": [
+        "來源、類別、付款方式與對帳狀態透過 LookupKind 共用目錄與管理功能，目錄使用 @Shared 讓讀者同步。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "付款旗標更正有確認條件",
+      "items": [
+        "旗標變更先查受影響訂單數；有影響時等待確認，取消不寫入，無影響或無旗標變更可直接執行。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "結果同步避免重複寫入",
+      "items": [
+        "LookupService 在交易內完成付款方式與訂單更正；More 與 Root 轉送結果，Orders 只套用記憶體投影。"
+      ]
+    }
+  ]
+}

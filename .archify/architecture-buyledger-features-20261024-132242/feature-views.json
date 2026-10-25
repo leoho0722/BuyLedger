@@ -1,0 +1,614 @@
+[
+  {
+    "id": "app",
+    "label": "App 殼層",
+    "title": "App 殼層與根協調",
+    "description": "聚焦啟動、跨功能狀態投影、App 鎖定與持久層失敗時的復原入口。",
+    "diagram": "projects/buyledger/diagrams/app.html",
+    "points": [
+      [
+        "Root 是跨功能協調者",
+        "訂單、開團、偏好與載入狀態由 Root 投影到其他 Feature；跨頁操作透過 delegate 回到 Root。"
+      ],
+      [
+        "啟動工作與鎖定分開管理",
+        "RootLaunch 合併幣別更新及時間監聽；AppLock 在啟用時處理背景上鎖與裝置驗證。"
+      ],
+      [
+        "復原保留原始資料",
+        "資料庫失敗會先阻斷主內容；使用者二次確認後隔離原 store，完成後要求重新啟動。"
+      ]
+    ],
+    "sources": [
+      {
+        "label": "根功能組合與投影",
+        "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+        "line": 165,
+        "endLine": 240,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift#L165-L240"
+      },
+      {
+        "label": "根畫面與失敗分支",
+        "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootView.swift",
+        "line": 24,
+        "endLine": 69,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/App/Presentation/Root/RootView.swift#L24-L69"
+      },
+      {
+        "label": "啟動工作",
+        "path": "apps/ios/BuyLedger/Features/App/Presentation/RootLaunch/RootLaunchOperations.swift",
+        "line": 26,
+        "endLine": 61,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/App/Presentation/RootLaunch/RootLaunchOperations.swift#L26-L61"
+      },
+      {
+        "label": "二次確認與復原",
+        "path": "apps/ios/BuyLedger/Features/App/Presentation/PersistenceFailure/PersistenceFailureFeature.swift",
+        "line": 147,
+        "endLine": 181,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/App/Presentation/PersistenceFailure/PersistenceFailureFeature.swift#L147-L181"
+      }
+    ]
+  },
+  {
+    "id": "orders",
+    "label": "訂單 Orders",
+    "title": "Orders 訂單架構",
+    "description": "追蹤訂單容器如何組合清單、詳情、編輯呈現，以及共用訂單的載入與寫入。",
+    "diagram": "projects/buyledger/diagrams/orders.html",
+    "points": [
+      [
+        "容器集中分派意圖",
+        "List 與 Detail 發出操作請求，由 OrdersFeature 選擇呈現、寫入或導覽，不直接執行持久化。"
+      ],
+      [
+        "一份共享訂單來源",
+        "載入與寫入子層共同操作 @Shared orders；清單與詳情以 SharedReader 持續讀取更新。"
+      ],
+      [
+        "持久化由資料服務執行",
+        "OrderService 經資料庫 actor 讀寫訂單及照片；新增、一般儲存、照片變更與合併走各自對應操作。"
+      ]
+    ],
+    "sources": [
+      {
+        "label": "訂單共享狀態與子層",
+        "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift",
+        "line": 17,
+        "endLine": 78,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift#L17-L78"
+      },
+      {
+        "label": "容器 reducer 組合",
+        "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift",
+        "line": 225,
+        "endLine": 251,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Orders/Presentation/Root/OrdersFeature.swift#L225-L251"
+      },
+      {
+        "label": "寫入操作選擇",
+        "path": "apps/ios/BuyLedger/Features/Orders/Presentation/OrderWrites/OrderWriteOperations.swift",
+        "line": 116,
+        "endLine": 151,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Orders/Presentation/OrderWrites/OrderWriteOperations.swift#L116-L151"
+      },
+      {
+        "label": "訂單資料服務",
+        "path": "apps/ios/BuyLedger/Features/Orders/Data/OrderService.swift",
+        "line": 170,
+        "endLine": 217,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Orders/Data/OrderService.swift#L170-L217"
+      }
+    ]
+  },
+  {
+    "id": "campaigns",
+    "label": "開團 Campaigns",
+    "title": "Campaigns 開團架構",
+    "description": "聚焦開團讀寫、自動結團、跨訂單通知，以及有授權條件的行事曆提醒。",
+    "diagram": "projects/buyledger/diagrams/campaigns.html",
+    "points": [
+      [
+        "載入與寫入各有責任",
+        "CampaignLoad 讀取並評估自動結團；CampaignWrites 寫入成功後才更新共用清單並通知改名。"
+      ],
+      [
+        "Root 同步訂單投影",
+        "開團改名與刪除會經 delegate 交回 Root，讓 Orders 套用已完成持久化的連動結果。"
+      ],
+      [
+        "提醒須通過行事曆授權",
+        "提醒控制層先要求授權，CalendarReminderService 檢查可寫行事曆；事件新增成功後才保存事件連結。"
+      ]
+    ],
+    "sources": [
+      {
+        "label": "開團容器分派",
+        "path": "apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignFeature.swift",
+        "line": 235,
+        "endLine": 308,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignFeature.swift#L235-L308"
+      },
+      {
+        "label": "載入與自動結團",
+        "path": "apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignLoad/CampaignLoadFeature.swift",
+        "line": 150,
+        "endLine": 199,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignLoad/CampaignLoadFeature.swift#L150-L199"
+      },
+      {
+        "label": "提醒建立與連結",
+        "path": "apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignReminder/CampaignReminderFeature.swift",
+        "line": 230,
+        "endLine": 272,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignReminder/CampaignReminderFeature.swift#L230-L272"
+      },
+      {
+        "label": "EventKit 實際操作",
+        "path": "apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService.swift",
+        "line": 64,
+        "endLine": 125,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService.swift#L64-L125"
+      }
+    ]
+  },
+  {
+    "id": "dashboard",
+    "label": "總覽 Dashboard",
+    "title": "Dashboard 總覽架構",
+    "description": "呈現由 Root 注入的唯讀投影，如何轉成本月指標、近期訂單與開團摘要。",
+    "diagram": "projects/buyledger/diagrams/dashboard.html",
+    "points": [
+      [
+        "資料由根功能投影",
+        "Dashboard 沒有自己的資料服務；Root 將訂單、開團、載入狀態與月獲利目標同步進 State。"
+      ],
+      [
+        "統計使用明確日期脈絡",
+        "日期與行事曆從依賴注入記錄，再計算本月營收、成本、淨利、目標進度與近 12 個月走勢。"
+      ],
+      [
+        "跨頁操作回到 Root",
+        "重試、建立訂單、查看全部與點選開團皆送出 delegate；畫面依 screenState 呈現失敗、骨架、首次使用或總覽。"
+      ]
+    ],
+    "sources": [
+      {
+        "label": "Root 資料投影",
+        "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+        "line": 165,
+        "endLine": 240,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift#L165-L240"
+      },
+      {
+        "label": "總覽狀態與衍生統計",
+        "path": "apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/DashboardFeature.swift",
+        "line": 21,
+        "endLine": 79,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/DashboardFeature.swift#L21-L79"
+      },
+      {
+        "label": "總覽統計計算",
+        "path": "apps/ios/BuyLedger/Features/Dashboard/Domain/DashboardStats.swift",
+        "line": 78,
+        "endLine": 141,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Dashboard/Domain/DashboardStats.swift#L78-L141"
+      },
+      {
+        "label": "畫面動作與委派",
+        "path": "apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/DashboardFeature.swift",
+        "line": 205,
+        "endLine": 224,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/DashboardFeature.swift#L205-L224"
+      }
+    ]
+  },
+  {
+    "id": "insights",
+    "label": "分析 Insights",
+    "title": "Insights 分析架構",
+    "description": "拆解區間選擇、獲利趨勢、類別與開團排行，以及下單熱力圖的計算來源。",
+    "diagram": "projects/buyledger/diagrams/insights.html",
+    "points": [
+      [
+        "區間是功能內狀態",
+        "InsightsFeature 管理分析期間與日期脈絡，資料本身由 Root 同步，沒有獨立持久化流程。"
+      ],
+      [
+        "各指標保留自己的口徑",
+        "獲利趨勢依選取期間計算；類別、成本、開團排行與熱力圖依各自定義彙總，不將所有圖表誤視為同一區間。"
+      ],
+      [
+        "點選結果轉為訂單篩選",
+        "開團或類別點選透過 delegate 交回 Root；空資料、載入與失敗各自有畫面分支。"
+      ]
+    ],
+    "sources": [
+      {
+        "label": "分析狀態與衍生資料",
+        "path": "apps/ios/BuyLedger/Features/Insights/Presentation/Root/InsightsFeature.swift",
+        "line": 21,
+        "endLine": 84,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Insights/Presentation/Root/InsightsFeature.swift#L21-L84"
+      },
+      {
+        "label": "趨勢與成本統計",
+        "path": "apps/ios/BuyLedger/Features/Insights/Domain/InsightsStats.swift",
+        "line": 39,
+        "endLine": 94,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Insights/Domain/InsightsStats.swift#L39-L94"
+      },
+      {
+        "label": "類別與開團排行",
+        "path": "apps/ios/BuyLedger/Features/Insights/Domain/InsightsStats.swift",
+        "line": 105,
+        "endLine": 160,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Insights/Domain/InsightsStats.swift#L105-L160"
+      },
+      {
+        "label": "下單熱力圖",
+        "path": "apps/ios/BuyLedger/Features/Insights/Domain/InsightsHeatmap.swift",
+        "line": 51,
+        "endLine": 70,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Insights/Domain/InsightsHeatmap.swift#L51-L70"
+      }
+    ]
+  },
+  {
+    "id": "customers",
+    "label": "客戶 Customers",
+    "title": "Customers 客戶架構",
+    "description": "客戶頁從唯讀訂單計算彙總，選取客戶後由 More 與 Root 導覽回訂單。",
+    "diagram": "projects/buyledger/diagrams/customers.html",
+    "points": [
+      [
+        "客戶資料來自訂單",
+        "More 推入 Customers 時提供持續更新的 SharedReader，不另外建立客戶資料庫或網路服務。"
+      ],
+      [
+        "同名客戶合併統計",
+        "CustomerRow 以姓名分組，依營收歸屬計算消費與訂單數；客戶清單按累計消費排序，前 3 名作為強調卡。"
+      ],
+      [
+        "導覽由根功能完成",
+        "頁面載入與客戶點選先委派 More；選取後 More 清空堆疊，Root 再切換並篩選 Orders。"
+      ]
+    ],
+    "sources": [
+      {
+        "label": "客戶共享投影與 Top 3",
+        "path": "apps/ios/BuyLedger/Features/Customers/Presentation/Root/CustomersFeature.swift",
+        "line": 24,
+        "endLine": 47,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Customers/Presentation/Root/CustomersFeature.swift#L24-L47"
+      },
+      {
+        "label": "同名聚合與營收口徑",
+        "path": "apps/ios/BuyLedger/Features/Customers/Presentation/Root/CustomerRow.swift",
+        "line": 42,
+        "endLine": 68,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Customers/Presentation/Root/CustomerRow.swift#L42-L68"
+      },
+      {
+        "label": "More 轉送客戶操作",
+        "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+        "line": 275,
+        "endLine": 325,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift#L275-L325"
+      },
+      {
+        "label": "Root 導覽與投影",
+        "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+        "line": 259,
+        "endLine": 377,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift#L259-L377"
+      }
+    ]
+  },
+  {
+    "id": "more",
+    "label": "更多 More",
+    "title": "More 導覽樞紐架構",
+    "description": "區分持續存在的主檔目錄，與由 StackState 推入後隨返回釋放的工具頁。",
+    "diagram": "projects/buyledger/diagrams/more.html",
+    "points": [
+      [
+        "入口與實作功能分離",
+        "More 只負責選擇導覽目的地；FX、Customers、Quote、LookupManagement 與 Settings 的邏輯各自留在子功能。"
+      ],
+      [
+        "主檔目錄有獨立生命週期",
+        "LookupCatalog 不依附堆疊畫面，負責主檔載入及訂單表單的新增選項請求。"
+      ],
+      [
+        "跨功能結果向上轉送",
+        "客戶選取、主檔改名、付款方式更正與偏好變更皆由 More 轉送 Root；進入設定前會清空舊堆疊。"
+      ]
+    ],
+    "sources": [
+      {
+        "label": "More 入口與目的地建立",
+        "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+        "line": 49,
+        "endLine": 89,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift#L49-L89"
+      },
+      {
+        "label": "五種 Path 功能",
+        "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+        "line": 198,
+        "endLine": 228,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift#L198-L228"
+      },
+      {
+        "label": "跨功能委派與目錄請求",
+        "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+        "line": 275,
+        "endLine": 325,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift#L275-L325"
+      },
+      {
+        "label": "目錄資料操作",
+        "path": "apps/ios/BuyLedger/Features/Lookups/Presentation/LookupCatalog/LookupCatalogFeature.swift",
+        "line": 171,
+        "endLine": 207,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Lookups/Presentation/LookupCatalog/LookupCatalogFeature.swift#L171-L207"
+      }
+    ]
+  },
+  {
+    "id": "fx",
+    "label": "匯率 FX",
+    "title": "FX 匯率架構",
+    "description": "匯率快照與幣別清單分開取得，網路呼叫經注入的 HTTPClient 執行。",
+    "diagram": "projects/buyledger/diagrams/fx.html",
+    "points": [
+      [
+        "匯率與幣別來源分開",
+        "FxFeature 先讀取本機幣別主檔，再向 ExchangeRateService 取得以 TWD 為基準的最新匯率。"
+      ],
+      [
+        "HTTP 由注入的客戶端執行",
+        "服務檢查 API key，透過 endpoint 與 HTTPClient 發出請求；錯誤回到功能狀態供畫面顯示。"
+      ],
+      [
+        "主檔刷新屬於啟動工作",
+        "幣別快取的 TTL 刷新由 RootLaunch 協調；FX 本身透過 fetchCodes 讀取已存在的快取。"
+      ]
+    ],
+    "sources": [
+      {
+        "label": "匯率功能的兩種讀取",
+        "path": "apps/ios/BuyLedger/Features/FX/Presentation/Root/FxFeature.swift",
+        "line": 274,
+        "endLine": 291,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/FX/Presentation/Root/FxFeature.swift#L274-L291"
+      },
+      {
+        "label": "匯率服務",
+        "path": "apps/ios/BuyLedger/Core/Currency/ExchangeRateService.swift",
+        "line": 44,
+        "endLine": 69,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Core/Currency/ExchangeRateService.swift#L44-L69"
+      },
+      {
+        "label": "本機幣別清單",
+        "path": "apps/ios/BuyLedger/Core/Currency/CurrencyMetadataService.swift",
+        "line": 115,
+        "endLine": 133,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Core/Currency/CurrencyMetadataService.swift#L115-L133"
+      },
+      {
+        "label": "外部 endpoint",
+        "path": "apps/ios/BuyLedger/Core/Networking/ExchangeRate/ExchangeRateEndpoint.swift",
+        "line": 33,
+        "endLine": 53,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Core/Networking/ExchangeRate/ExchangeRateEndpoint.swift#L33-L53"
+      }
+    ]
+  },
+  {
+    "id": "quote",
+    "label": "報價 Quote",
+    "title": "Quote 報價試算架構",
+    "description": "分開匯率來源與本機 Decimal 試算，明確標示建議售價的有效條件。",
+    "diagram": "projects/buyledger/diagrams/quote.html",
+    "points": [
+      [
+        "匯率由子功能維護",
+        "QuoteRate 管理來源幣別與快照，首次出現時視需要載入匯率，並讀取本機幣別主檔。"
+      ],
+      [
+        "試算留在本機",
+        "QuoteFeature.State 將商品、運費與手續費轉成 TWD 成本，以目標毛利推導售價並向上取到 10 元。"
+      ],
+      [
+        "無效條件不產生報價",
+        "沒有可用匯率或目標毛利達 100% 時不顯示建議售價；報價流程不寫入訂單資料庫。"
+      ]
+    ],
+    "sources": [
+      {
+        "label": "報價容器與事件轉送",
+        "path": "apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteFeature.swift",
+        "line": 226,
+        "endLine": 250,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteFeature.swift#L226-L250"
+      },
+      {
+        "label": "匯率子功能載入",
+        "path": "apps/ios/BuyLedger/Features/Quote/Presentation/QuoteRate/QuoteRateFeature.swift",
+        "line": 237,
+        "endLine": 282,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Quote/Presentation/QuoteRate/QuoteRateFeature.swift#L237-L282"
+      },
+      {
+        "label": "成本與建議售價計算",
+        "path": "apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteFeature.swift",
+        "line": 48,
+        "endLine": 113,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteFeature.swift#L48-L113"
+      },
+      {
+        "label": "有效性與呈現條件",
+        "path": "apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteFeature.swift",
+        "line": 116,
+        "endLine": 132,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Quote/Presentation/Root/QuoteFeature.swift#L116-L132"
+      }
+    ]
+  },
+  {
+    "id": "lookups",
+    "label": "主檔 Lookups",
+    "title": "Lookups 主檔架構",
+    "description": "涵蓋四種主檔的共用目錄、管理畫面，以及付款方式更正前的影響確認。",
+    "diagram": "projects/buyledger/diagrams/lookups.html",
+    "points": [
+      [
+        "四種主檔共用結構",
+        "來源、類別、付款方式與對帳狀態透過 LookupKind 共用目錄與管理功能，目錄使用 @Shared 讓讀者同步。"
+      ],
+      [
+        "付款旗標更正有確認條件",
+        "旗標變更先查受影響訂單數；有影響時等待確認，取消不寫入，無影響或無旗標變更可直接執行。"
+      ],
+      [
+        "結果同步避免重複寫入",
+        "LookupService 在交易內完成付款方式與訂單更正；More 與 Root 轉送結果，Orders 只套用記憶體投影。"
+      ]
+    ],
+    "sources": [
+      {
+        "label": "目錄載入與新增",
+        "path": "apps/ios/BuyLedger/Features/Lookups/Presentation/LookupCatalog/LookupCatalogFeature.swift",
+        "line": 171,
+        "endLine": 207,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Lookups/Presentation/LookupCatalog/LookupCatalogFeature.swift#L171-L207"
+      },
+      {
+        "label": "主檔管理結果",
+        "path": "apps/ios/BuyLedger/Features/Lookups/Presentation/Root/LookupManagementFeature.swift",
+        "line": 233,
+        "endLine": 294,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Lookups/Presentation/Root/LookupManagementFeature.swift#L233-L294"
+      },
+      {
+        "label": "付款方式確認與寫入",
+        "path": "apps/ios/BuyLedger/Features/Lookups/Presentation/PaymentMethodCorrection/PaymentMethodCorrectionFeature.swift",
+        "line": 130,
+        "endLine": 214,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Lookups/Presentation/PaymentMethodCorrection/PaymentMethodCorrectionFeature.swift#L130-L214"
+      },
+      {
+        "label": "主檔資料庫交易",
+        "path": "apps/ios/BuyLedger/Features/Lookups/Data/LookupService.swift",
+        "line": 112,
+        "endLine": 165,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Lookups/Data/LookupService.swift#L112-L165"
+      }
+    ]
+  },
+  {
+    "id": "settings",
+    "label": "設定 Settings",
+    "title": "Settings 偏好架構",
+    "description": "偏好存檔、Root 同步與啟用 App 鎖定前的裝置驗證各有清楚責任。",
+    "diagram": "projects/buyledger/diagrams/settings.html",
+    "points": [
+      [
+        "先存檔再同步其他功能",
+        "偏好變更先交 SettingsService 保存，接著以 preferencesChanged 快照回到 More 與 Root。"
+      ],
+      [
+        "偏好使用 UserDefaults",
+        "SettingsService 經注入的 UserDefaultsStore 保存語言、幣別、月目標、AI 設定及 App 鎖定開關。"
+      ],
+      [
+        "啟用鎖定先驗證",
+        "裝置支援且本機驗證成功才將鎖定設為啟用並存檔；失敗與取消保留原設定並顯示提示。"
+      ]
+    ],
+    "sources": [
+      {
+        "label": "設定操作與存檔委派",
+        "path": "apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift",
+        "line": 189,
+        "endLine": 250,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift#L189-L250"
+      },
+      {
+        "label": "偏好持久化",
+        "path": "apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift",
+        "line": 65,
+        "endLine": 119,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift#L65-L119"
+      },
+      {
+        "label": "鎖定啟用驗證",
+        "path": "apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift",
+        "line": 268,
+        "endLine": 281,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift#L268-L281"
+      },
+      {
+        "label": "跨功能偏好同步",
+        "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+        "line": 165,
+        "endLine": 240,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift#L165-L240"
+      }
+    ]
+  },
+  {
+    "id": "ai-summary",
+    "label": "AI 摘要",
+    "title": "AISummary 串流摘要架構",
+    "description": "由 Orders 已篩選訂單建立提示，經有時限且可取消的串流取得 Ollama 摘要。",
+    "diagram": "projects/buyledger/diagrams/ai-summary.html",
+    "points": [
+      [
+        "提示只取必要的訂單項目",
+        "Orders 使用目前篩選後的訂單與類別建立提示，列出最多前 200 個商品項目的數量、單價及幣別。"
+      ],
+      [
+        "串流狀態由 Feature 控制",
+        "AISummaryFeature 檢查 API key、逐段更新摘要並處理錯誤；重試會取消先前工作，關閉 sheet 也會取消。"
+      ],
+      [
+        "服務與傳輸分工",
+        "AISummaryService 編碼請求並解析 NDJSON；HTTPClient 執行串流，TaskGroup 與 30 秒時限競賽後取消剩餘工作。"
+      ]
+    ],
+    "sources": [
+      {
+        "label": "功能啟用與提示入口",
+        "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan+Requests.swift",
+        "line": 72,
+        "endLine": 85,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan+Requests.swift#L72-L85"
+      },
+      {
+        "label": "提示內容與 200 項上限",
+        "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrderSummaryPrompt.swift",
+        "line": 25,
+        "endLine": 90,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrderSummaryPrompt.swift#L25-L90"
+      },
+      {
+        "label": "串流與逾時控制",
+        "path": "apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryFeature.swift",
+        "line": 228,
+        "endLine": 295,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryFeature.swift#L228-L295"
+      },
+      {
+        "label": "服務、NDJSON 與取消",
+        "path": "apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift",
+        "line": 87,
+        "endLine": 156,
+        "href": "https://github.com/leoho0722/BuyLedger/blob/19ef9ccc292806b3e838dcb561688bfc404409d1/apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift#L87-L156"
+      }
+    ]
+  }
+]

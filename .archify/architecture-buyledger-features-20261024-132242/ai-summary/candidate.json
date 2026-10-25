@@ -1,0 +1,218 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · AISummary 串流摘要架構",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-features-20261024-132242/ai-summary/ai-summary.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "orders",
+      "type": "frontend",
+      "label": "Orders / SummaryPrompt",
+      "sublabel": "功能啟用才呈現，最多前 200 項",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrdersContainerPlan+Requests.swift",
+          "line": 72,
+          "end_line": 85
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Orders/Presentation/Root/Plans/OrderSummaryPrompt.swift",
+          "line": 25,
+          "end_line": 90
+        }
+      ]
+    },
+    {
+      "id": "feature",
+      "type": "backend",
+      "label": "AISummaryFeature",
+      "sublabel": "檢查 key、分段更新與錯誤狀態",
+      "pos": [
+        435,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryFeature.swift",
+          "line": 228,
+          "end_line": 295
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryFeature.swift",
+          "line": 168,
+          "end_line": 173
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "type": "backend",
+      "label": "AISummaryService",
+      "sublabel": "JSON 請求、NDJSON 解析與取消",
+      "pos": [
+        830,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift",
+          "line": 87,
+          "end_line": 156
+        }
+      ]
+    },
+    {
+      "id": "http",
+      "type": "backend",
+      "label": "HTTPClient.stream",
+      "sublabel": "URLSession bytes 串流傳輸",
+      "pos": [
+        830,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Networking/Client/HTTPClient.swift",
+          "line": 200,
+          "end_line": 220
+        }
+      ]
+    },
+    {
+      "id": "ollama",
+      "type": "external",
+      "label": "Ollama Cloud",
+      "sublabel": "HTTPS POST /api/chat + Bearer",
+      "pos": [
+        830,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift",
+          "line": 17,
+          "end_line": 35
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift",
+          "line": 87,
+          "end_line": 156
+        }
+      ]
+    },
+    {
+      "id": "clock",
+      "type": "backend",
+      "label": "ContinuousClock / TaskGroup",
+      "sublabel": "30 秒逾時與串流競賽後取消",
+      "pos": [
+        435,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/AISummary/Presentation/Root/AISummaryFeature.swift",
+          "line": 228,
+          "end_line": 295
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/AISummary/Data/AISummaryService.swift",
+          "line": 17,
+          "end_line": 35
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "orders-to-feature",
+      "from": "orders",
+      "to": "feature",
+      "label": "啟用時送 prompt"
+    },
+    {
+      "id": "feature-to-service",
+      "from": "feature",
+      "to": "service",
+      "label": "有 API key 時"
+    },
+    {
+      "id": "service-to-http",
+      "from": "service",
+      "to": "http",
+      "label": "stream 請求"
+    },
+    {
+      "id": "http-to-ollama",
+      "from": "http",
+      "to": "ollama",
+      "label": "HTTPS POST"
+    },
+    {
+      "id": "feature-to-clock",
+      "from": "feature",
+      "to": "clock",
+      "label": "並行逾時監控"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "提示只取必要的訂單項目",
+      "items": [
+        "Orders 使用目前篩選後的訂單與類別建立提示，列出最多前 200 個商品項目的數量、單價及幣別。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "串流狀態由 Feature 控制",
+      "items": [
+        "AISummaryFeature 檢查 API key、逐段更新摘要並處理錯誤；重試會取消先前工作，關閉 sheet 也會取消。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "服務與傳輸分工",
+      "items": [
+        "AISummaryService 編碼請求並解析 NDJSON；HTTPClient 執行串流，TaskGroup 與 30 秒時限競賽後取消剩餘工作。"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,246 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · More 導覽樞紐架構",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-features-20261024-132242/more/more.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "root",
+      "type": "backend",
+      "label": "RootFeature",
+      "sublabel": "同步訂單、偏好與裝置資料",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 165,
+          "end_line": 240
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 259,
+          "end_line": 377
+        }
+      ]
+    },
+    {
+      "id": "more",
+      "type": "backend",
+      "label": "MoreFeature",
+      "sublabel": "入口分派、共享投影與 delegate",
+      "pos": [
+        435,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+          "line": 49,
+          "end_line": 89
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+          "line": 275,
+          "end_line": 325
+        }
+      ]
+    },
+    {
+      "id": "path",
+      "type": "backend",
+      "label": "StackState<Path.State>",
+      "sublabel": "推入建立、返回釋放子畫面",
+      "pos": [
+        830,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+          "line": 20,
+          "end_line": 33
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+          "line": 198,
+          "end_line": 228
+        }
+      ]
+    },
+    {
+      "id": "destinations",
+      "type": "frontend",
+      "label": "五種導覽目的地",
+      "sublabel": "客戶、匯率、報價、主檔、設定",
+      "pos": [
+        830,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+          "line": 49,
+          "end_line": 89
+        }
+      ]
+    },
+    {
+      "id": "catalog",
+      "type": "backend",
+      "label": "LookupCatalogFeature",
+      "sublabel": "常駐：四種主檔載入與新增",
+      "pos": [
+        435,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Lookups/Presentation/LookupCatalog/LookupCatalogFeature.swift",
+          "line": 171,
+          "end_line": 207
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "type": "backend",
+      "label": "LookupService",
+      "sublabel": "fetchItems / addItem",
+      "pos": [
+        435,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Lookups/Data/LookupService.swift",
+          "line": 112,
+          "end_line": 165
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "BuyLedgerDatabase",
+      "sublabel": "主檔本機讀寫交易",
+      "pos": [
+        830,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Persistence/Database/BuyLedgerDatabase.swift",
+          "line": 93,
+          "end_line": 123
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "root-to-more",
+      "from": "root",
+      "to": "more",
+      "label": "更新投影"
+    },
+    {
+      "id": "more-to-root",
+      "from": "more",
+      "to": "root",
+      "label": "轉送 delegate"
+    },
+    {
+      "id": "more-to-path",
+      "from": "more",
+      "to": "path",
+      "label": "選擇入口"
+    },
+    {
+      "id": "path-to-destinations",
+      "from": "path",
+      "to": "destinations",
+      "label": "建立目的地"
+    },
+    {
+      "id": "more-to-catalog",
+      "from": "more",
+      "to": "catalog",
+      "label": "載入 / 新增"
+    },
+    {
+      "id": "catalog-to-service",
+      "from": "catalog",
+      "to": "service",
+      "label": "主檔操作"
+    },
+    {
+      "id": "service-to-db",
+      "from": "service",
+      "to": "db",
+      "label": "actor 交易"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "入口與實作功能分離",
+      "items": [
+        "More 只負責選擇導覽目的地；FX、Customers、Quote、LookupManagement 與 Settings 的邏輯各自留在子功能。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "主檔目錄有獨立生命週期",
+      "items": [
+        "LookupCatalog 不依附堆疊畫面，負責主檔載入及訂單表單的新增選項請求。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "跨功能結果向上轉送",
+      "items": [
+        "客戶選取、主檔改名、付款方式更正與偏好變更皆由 More 轉送 Root；進入設定前會清空舊堆疊。"
+      ]
+    }
+  ]
+}

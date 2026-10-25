@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · Dashboard 總覽架構",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-features-20261024-132242/dashboard/dashboard.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "root",
+      "type": "backend",
+      "label": "RootFeature",
+      "sublabel": "訂單、開團、載入狀態與月目標",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 165,
+          "end_line": 240
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 259,
+          "end_line": 377
+        }
+      ]
+    },
+    {
+      "id": "feature",
+      "type": "backend",
+      "label": "DashboardFeature",
+      "sublabel": "唯讀投影與 screenState",
+      "pos": [
+        435,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/DashboardFeature.swift",
+          "line": 21,
+          "end_line": 79
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/DashboardFeature.swift",
+          "line": 205,
+          "end_line": 224
+        }
+      ]
+    },
+    {
+      "id": "stats",
+      "type": "backend",
+      "label": "DashboardStats",
+      "sublabel": "本月 KPI、上月比較、12 月走勢",
+      "pos": [
+        830,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Dashboard/Domain/DashboardStats.swift",
+          "line": 78,
+          "end_line": 141
+        }
+      ]
+    },
+    {
+      "id": "date",
+      "type": "backend",
+      "label": "日期脈絡",
+      "sublabel": "@Dependency date / calendar",
+      "pos": [
+        435,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/DashboardFeature.swift",
+          "line": 179,
+          "end_line": 209
+        }
+      ]
+    },
+    {
+      "id": "view",
+      "type": "frontend",
+      "label": "DashboardView",
+      "sublabel": "失敗、載入、首次使用、總覽",
+      "pos": [
+        830,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Dashboard/Presentation/Root/Views/DashboardView.swift",
+          "line": 73,
+          "end_line": 96
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "root-to-feature",
+      "from": "root",
+      "to": "feature",
+      "label": "更新投影"
+    },
+    {
+      "id": "feature-to-root",
+      "from": "feature",
+      "to": "root",
+      "label": "刷新 / 導覽"
+    },
+    {
+      "id": "feature-to-stats",
+      "from": "feature",
+      "to": "stats",
+      "label": "計算統計"
+    },
+    {
+      "id": "feature-to-date",
+      "from": "feature",
+      "to": "date",
+      "label": "記錄時間"
+    },
+    {
+      "id": "stats-to-view",
+      "from": "stats",
+      "to": "view",
+      "label": "總覽內容"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "資料由根功能投影",
+      "items": [
+        "Dashboard 沒有自己的資料服務；Root 將訂單、開團、載入狀態與月獲利目標同步進 State。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "統計使用明確日期脈絡",
+      "items": [
+        "日期與行事曆從依賴注入記錄，再計算本月營收、成本、淨利、目標進度與近 12 個月走勢。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "跨頁操作回到 Root",
+      "items": [
+        "重試、建立訂單、查看全部與點選開團皆送出 delegate；畫面依 screenState 呈現失敗、骨架、首次使用或總覽。"
+      ]
+    }
+  ]
+}

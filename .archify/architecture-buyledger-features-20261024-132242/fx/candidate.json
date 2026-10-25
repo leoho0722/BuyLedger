@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · FX 匯率架構",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-features-20261024-132242/fx/fx.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "fx",
+      "type": "frontend",
+      "label": "FxFeature",
+      "sublabel": "幣別選擇、載入狀態與快照",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/FX/Presentation/Root/FxFeature.swift",
+          "line": 274,
+          "end_line": 291
+        }
+      ]
+    },
+    {
+      "id": "rates",
+      "type": "backend",
+      "label": "ExchangeRateService",
+      "sublabel": "API key 檢查、取得 TWD 基準",
+      "pos": [
+        435,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Currency/ExchangeRateService.swift",
+          "line": 44,
+          "end_line": 69
+        }
+      ]
+    },
+    {
+      "id": "http",
+      "type": "backend",
+      "label": "HTTPClient",
+      "sublabel": "URLSession 執行 HTTP 請求",
+      "pos": [
+        830,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Networking/Client/HTTPClient.swift",
+          "line": 157,
+          "end_line": 195
+        }
+      ]
+    },
+    {
+      "id": "api",
+      "type": "external",
+      "label": "ExchangeRate-API",
+      "sublabel": "HTTPS v6 / latest endpoint",
+      "pos": [
+        830,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Networking/ExchangeRate/ExchangeRateEndpoint.swift",
+          "line": 33,
+          "end_line": 53
+        }
+      ]
+    },
+    {
+      "id": "metadata",
+      "type": "backend",
+      "label": "CurrencyMetadataService",
+      "sublabel": "fetchCodes 讀取幣別主檔",
+      "pos": [
+        40,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Currency/CurrencyMetadataService.swift",
+          "line": 115,
+          "end_line": 133
+        }
+      ]
+    },
+    {
+      "id": "db",
+      "type": "database",
+      "label": "BuyLedgerDatabase",
+      "sublabel": "讀取已快取的 CurrencyRecord",
+      "pos": [
+        40,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Persistence/Database/BuyLedgerDatabase.swift",
+          "line": 93,
+          "end_line": 123
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Currency/CurrencyMetadataService.swift",
+          "line": 115,
+          "end_line": 133
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "fx-to-rates",
+      "from": "fx",
+      "to": "rates",
+      "label": "fetchLatest"
+    },
+    {
+      "id": "rates-to-http",
+      "from": "rates",
+      "to": "http",
+      "label": "送出請求"
+    },
+    {
+      "id": "http-to-api",
+      "from": "http",
+      "to": "api",
+      "label": "HTTPS"
+    },
+    {
+      "id": "fx-to-metadata",
+      "from": "fx",
+      "to": "metadata",
+      "label": "fetchCodes"
+    },
+    {
+      "id": "metadata-to-db",
+      "from": "metadata",
+      "to": "db",
+      "label": "讀取主檔"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "匯率與幣別來源分開",
+      "items": [
+        "FxFeature 先讀取本機幣別主檔，再向 ExchangeRateService 取得以 TWD 為基準的最新匯率。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "HTTP 由注入的客戶端執行",
+      "items": [
+        "服務檢查 API key，透過 endpoint 與 HTTPClient 發出請求；錯誤回到功能狀態供畫面顯示。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "主檔刷新屬於啟動工作",
+      "items": [
+        "幣別快取的 TTL 刷新由 RootLaunch 協調；FX 本身透過 fetchCodes 讀取已存在的快取。"
+      ]
+    }
+  ]
+}

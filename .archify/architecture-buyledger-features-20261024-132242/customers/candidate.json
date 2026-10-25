@@ -1,0 +1,181 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · Customers 客戶架構",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-features-20261024-132242/customers/customers.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "projection",
+      "type": "backend",
+      "label": "Root → More 投影",
+      "sublabel": "@Shared orders 由根功能同步",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 165,
+          "end_line": 240
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+          "line": 49,
+          "end_line": 89
+        }
+      ]
+    },
+    {
+      "id": "customers",
+      "type": "frontend",
+      "label": "CustomersFeature",
+      "sublabel": "SharedReader orders 與 Top 3",
+      "pos": [
+        435,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Customers/Presentation/Root/CustomersFeature.swift",
+          "line": 24,
+          "end_line": 47
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Customers/Presentation/Root/CustomersFeature.swift",
+          "line": 110,
+          "end_line": 120
+        }
+      ]
+    },
+    {
+      "id": "rows",
+      "type": "backend",
+      "label": "CustomerRow.aggregate",
+      "sublabel": "同名聚合、依累計消費排序",
+      "pos": [
+        830,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Customers/Presentation/Root/CustomerRow.swift",
+          "line": 42,
+          "end_line": 68
+        }
+      ]
+    },
+    {
+      "id": "more",
+      "type": "backend",
+      "label": "MoreFeature",
+      "sublabel": "轉送載入與選取客戶的 delegate",
+      "pos": [
+        435,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+          "line": 275,
+          "end_line": 325
+        }
+      ]
+    },
+    {
+      "id": "orders",
+      "type": "frontend",
+      "label": "Root → Orders",
+      "sublabel": "切到訂單並套用客戶篩選",
+      "pos": [
+        40,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 259,
+          "end_line": 377
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "projection-to-customers",
+      "from": "projection",
+      "to": "customers",
+      "label": "注入讀取來源"
+    },
+    {
+      "id": "customers-to-rows",
+      "from": "customers",
+      "to": "rows",
+      "label": "彙總訂單"
+    },
+    {
+      "id": "customers-to-more",
+      "from": "customers",
+      "to": "more",
+      "label": "載入 / 點選"
+    },
+    {
+      "id": "more-to-orders",
+      "from": "more",
+      "to": "orders",
+      "label": "轉送導覽"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "客戶資料來自訂單",
+      "items": [
+        "More 推入 Customers 時提供持續更新的 SharedReader，不另外建立客戶資料庫或網路服務。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "同名客戶合併統計",
+      "items": [
+        "CustomerRow 以姓名分組，依營收歸屬計算消費與訂單數；客戶清單按累計消費排序，前 3 名作為強調卡。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "導覽由根功能完成",
+      "items": [
+        "頁面載入與客戶點選先委派 More；選取後 More 清空堆疊，Root 再切換並篩選 Orders。"
+      ]
+    }
+  ]
+}

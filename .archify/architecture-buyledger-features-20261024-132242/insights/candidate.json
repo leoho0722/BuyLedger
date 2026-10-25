@@ -1,0 +1,203 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · Insights 分析架構",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-features-20261024-132242/insights/insights.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "root",
+      "type": "backend",
+      "label": "RootFeature",
+      "sublabel": "訂單、開團與載入狀態投影",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 165,
+          "end_line": 240
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 259,
+          "end_line": 377
+        }
+      ]
+    },
+    {
+      "id": "feature",
+      "type": "backend",
+      "label": "InsightsFeature",
+      "sublabel": "區間選擇、日期與 screenState",
+      "pos": [
+        435,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Insights/Presentation/Root/InsightsFeature.swift",
+          "line": 21,
+          "end_line": 84
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Insights/Presentation/Root/InsightsFeature.swift",
+          "line": 207,
+          "end_line": 226
+        }
+      ]
+    },
+    {
+      "id": "stats",
+      "type": "backend",
+      "label": "InsightsStats",
+      "sublabel": "趨勢、類別、成本與開團排行",
+      "pos": [
+        830,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Insights/Domain/InsightsStats.swift",
+          "line": 39,
+          "end_line": 94
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Insights/Domain/InsightsStats.swift",
+          "line": 105,
+          "end_line": 160
+        }
+      ]
+    },
+    {
+      "id": "heatmap",
+      "type": "backend",
+      "label": "InsightsHeatmap",
+      "sublabel": "依注入日期計算每天下單數",
+      "pos": [
+        435,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Insights/Domain/InsightsHeatmap.swift",
+          "line": 51,
+          "end_line": 70
+        }
+      ]
+    },
+    {
+      "id": "view",
+      "type": "frontend",
+      "label": "InsightsView",
+      "sublabel": "有訂單與有效日期才呈現分析",
+      "pos": [
+        830,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Insights/Presentation/Root/Views/InsightsView.swift",
+          "line": 138,
+          "end_line": 157
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Insights/Presentation/Root/InsightsFeature.swift",
+          "line": 21,
+          "end_line": 84
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "root-to-feature",
+      "from": "root",
+      "to": "feature",
+      "label": "更新投影"
+    },
+    {
+      "id": "feature-to-root",
+      "from": "feature",
+      "to": "root",
+      "label": "刷新 / 篩選"
+    },
+    {
+      "id": "feature-to-stats",
+      "from": "feature",
+      "to": "stats",
+      "label": "衍生分析"
+    },
+    {
+      "id": "feature-to-heatmap",
+      "from": "feature",
+      "to": "heatmap",
+      "label": "計算熱力圖"
+    },
+    {
+      "id": "stats-to-view",
+      "from": "stats",
+      "to": "view",
+      "label": "指標與排行"
+    },
+    {
+      "id": "heatmap-to-view",
+      "from": "heatmap",
+      "to": "view",
+      "label": "每日格數"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "區間是功能內狀態",
+      "items": [
+        "InsightsFeature 管理分析期間與日期脈絡，資料本身由 Root 同步，沒有獨立持久化流程。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "各指標保留自己的口徑",
+      "items": [
+        "獲利趨勢依選取期間計算；類別、成本、開團排行與熱力圖依各自定義彙總，不將所有圖表誤視為同一區間。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "點選結果轉為訂單篩選",
+      "items": [
+        "開團或類別點選透過 delegate 交回 Root；空資料、載入與失敗各自有畫面分支。"
+      ]
+    }
+  ]
+}

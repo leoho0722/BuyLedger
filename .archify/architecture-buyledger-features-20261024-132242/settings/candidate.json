@@ -1,0 +1,251 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · Settings 偏好架構",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-features-20261024-132242/settings/settings.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "root",
+      "type": "backend",
+      "label": "More / Root",
+      "sublabel": "建立偏好快照並同步跨功能設定",
+      "pos": [
+        435,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+          "line": 49,
+          "end_line": 89
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/More/Presentation/Root/MoreFeature.swift",
+          "line": 275,
+          "end_line": 325
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 165,
+          "end_line": 240
+        }
+      ]
+    },
+    {
+      "id": "settings",
+      "type": "frontend",
+      "label": "SettingsFeature",
+      "sublabel": "語言、幣別、目標、AI 與 App 鎖定",
+      "pos": [
+        435,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift",
+          "line": 189,
+          "end_line": 250
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "type": "backend",
+      "label": "SettingsService",
+      "sublabel": "載入與保存 SettingsSnapshot",
+      "pos": [
+        830,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Settings/Data/SettingsService.swift",
+          "line": 65,
+          "end_line": 119
+        }
+      ]
+    },
+    {
+      "id": "defaults",
+      "type": "database",
+      "label": "UserDefaultsStore",
+      "sublabel": "UserDefaults 持久化偏好",
+      "pos": [
+        830,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Storage/UserDefaultsStore.swift",
+          "line": 84,
+          "end_line": 124
+        }
+      ]
+    },
+    {
+      "id": "auth",
+      "type": "security",
+      "label": "啟用鎖定驗證",
+      "sublabel": "裝置支援且驗證成功才存啟用",
+      "pos": [
+        435,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift",
+          "line": 268,
+          "end_line": 281
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift",
+          "line": 189,
+          "end_line": 250
+        }
+      ]
+    },
+    {
+      "id": "context",
+      "type": "security",
+      "label": "BiometricAuthService",
+      "sublabel": "LAContext 驗證裝置擁有者",
+      "pos": [
+        435,
+        655
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Authentication/BiometricAuthService.swift",
+          "line": 130,
+          "end_line": 155
+        }
+      ]
+    },
+    {
+      "id": "metadata",
+      "type": "backend",
+      "label": "CurrencyMetadataService",
+      "sublabel": "取得可選預設幣別",
+      "pos": [
+        40,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Settings/Presentation/Root/SettingsFeature.swift",
+          "line": 253,
+          "end_line": 265
+        },
+        {
+          "path": "apps/ios/BuyLedger/Core/Currency/CurrencyMetadataService.swift",
+          "line": 115,
+          "end_line": 133
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "root-to-settings",
+      "from": "root",
+      "to": "settings",
+      "label": "注入快照"
+    },
+    {
+      "id": "settings-to-root",
+      "from": "settings",
+      "to": "root",
+      "label": "存檔後 delegate"
+    },
+    {
+      "id": "settings-to-service",
+      "from": "settings",
+      "to": "service",
+      "label": "保存偏好"
+    },
+    {
+      "id": "service-to-defaults",
+      "from": "service",
+      "to": "defaults",
+      "label": "讀取 / 寫入"
+    },
+    {
+      "id": "settings-to-auth",
+      "from": "settings",
+      "to": "auth",
+      "label": "啟用鎖定時"
+    },
+    {
+      "id": "auth-to-context",
+      "from": "auth",
+      "to": "context",
+      "label": "要求驗證"
+    },
+    {
+      "id": "settings-to-metadata",
+      "from": "settings",
+      "to": "metadata",
+      "label": "fetchCodes"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "先存檔再同步其他功能",
+      "items": [
+        "偏好變更先交 SettingsService 保存，接著以 preferencesChanged 快照回到 More 與 Root。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "偏好使用 UserDefaults",
+      "items": [
+        "SettingsService 經注入的 UserDefaultsStore 保存語言、幣別、月目標、AI 設定及 App 鎖定開關。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "啟用鎖定先驗證",
+      "items": [
+        "裝置支援且本機驗證成功才將鎖定設為啟用並存檔；失敗與取消保留原設定並顯示提示。"
+      ]
+    }
+  ]
+}

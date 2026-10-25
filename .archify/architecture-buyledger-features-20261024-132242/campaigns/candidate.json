@@ -1,0 +1,273 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "BuyLedger · Campaigns 開團架構",
+    "locale": "zh-TW",
+    "output": ".archify/architecture-buyledger-features-20261024-132242/campaigns/campaigns.html",
+    "quality_profile": "showcase",
+    "repository": {
+      "url": "https://github.com/leoho0722/BuyLedger.git",
+      "revision": "19ef9ccc292806b3e838dcb561688bfc404409d1",
+      "link_mode": "web"
+    }
+  },
+  "components": [
+    {
+      "id": "campaign",
+      "type": "backend",
+      "label": "CampaignFeature",
+      "sublabel": "組合清單、詳情與編輯呈現",
+      "pos": [
+        40,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignFeature.swift",
+          "line": 198,
+          "end_line": 220
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignFeature.swift",
+          "line": 235,
+          "end_line": 308
+        }
+      ]
+    },
+    {
+      "id": "operations",
+      "type": "backend",
+      "label": "載入與寫入子層",
+      "sublabel": "讀取、自動結團、儲存與改名",
+      "pos": [
+        435,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignLoad/CampaignLoadFeature.swift",
+          "line": 150,
+          "end_line": 199
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignWrites/CampaignWritesFeature.swift",
+          "line": 249,
+          "end_line": 293
+        }
+      ]
+    },
+    {
+      "id": "service",
+      "type": "backend",
+      "label": "CampaignService",
+      "sublabel": "開團與 reminder link 資料操作",
+      "pos": [
+        830,
+        40
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Data/CampaignService.swift",
+          "line": 118,
+          "end_line": 155
+        }
+      ]
+    },
+    {
+      "id": "reminder",
+      "type": "backend",
+      "label": "CampaignReminder",
+      "sublabel": "協調授權、事件與持久化連結",
+      "pos": [
+        40,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Presentation/CampaignReminder/CampaignReminderFeature.swift",
+          "line": 230,
+          "end_line": 272
+        }
+      ]
+    },
+    {
+      "id": "calendar",
+      "type": "backend",
+      "label": "CalendarReminderService",
+      "sublabel": "可寫行事曆檢查、事件新增 / 移除",
+      "pos": [
+        40,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService.swift",
+          "line": 64,
+          "end_line": 125
+        }
+      ]
+    },
+    {
+      "id": "eventkit",
+      "type": "external",
+      "label": "EventKit 行事曆",
+      "sublabel": "取得完整授權後寫入 EKEvent",
+      "pos": [
+        435,
+        450
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Data/CalendarReminderService.swift",
+          "line": 64,
+          "end_line": 125
+        }
+      ]
+    },
+    {
+      "id": "database",
+      "type": "database",
+      "label": "BuyLedgerDatabase",
+      "sublabel": "開團與事件連結的本機交易",
+      "pos": [
+        830,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Core/Persistence/Database/BuyLedgerDatabase.swift",
+          "line": 93,
+          "end_line": 123
+        }
+      ]
+    },
+    {
+      "id": "root",
+      "type": "backend",
+      "label": "Root / Orders",
+      "sublabel": "同步已持久化的改名與刪除結果",
+      "pos": [
+        435,
+        245
+      ],
+      "size": [
+        240,
+        72
+      ],
+      "sources": [
+        {
+          "path": "apps/ios/BuyLedger/Features/Campaigns/Presentation/Root/CampaignFeature.swift",
+          "line": 235,
+          "end_line": 308
+        },
+        {
+          "path": "apps/ios/BuyLedger/Features/App/Presentation/Root/RootFeature.swift",
+          "line": 259,
+          "end_line": 377
+        }
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "campaign-to-operations",
+      "from": "campaign",
+      "to": "operations",
+      "label": "分派讀寫"
+    },
+    {
+      "id": "operations-to-service",
+      "from": "operations",
+      "to": "service",
+      "label": "資料操作"
+    },
+    {
+      "id": "service-to-database",
+      "from": "service",
+      "to": "database",
+      "label": "actor 交易"
+    },
+    {
+      "id": "campaign-to-reminder",
+      "from": "campaign",
+      "to": "reminder",
+      "label": "提醒請求"
+    },
+    {
+      "id": "reminder-to-calendar",
+      "from": "reminder",
+      "to": "calendar",
+      "label": "要求事件"
+    },
+    {
+      "id": "calendar-to-eventkit",
+      "from": "calendar",
+      "to": "eventkit",
+      "label": "授權且可寫時"
+    },
+    {
+      "id": "reminder-to-service",
+      "from": "reminder",
+      "to": "service",
+      "label": "事件成功存 link"
+    },
+    {
+      "id": "campaign-to-root",
+      "from": "campaign",
+      "to": "root",
+      "label": "成功後通知"
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "載入與寫入各有責任",
+      "items": [
+        "CampaignLoad 讀取並評估自動結團；CampaignWrites 寫入成功後才更新共用清單並通知改名。"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Root 同步訂單投影",
+      "items": [
+        "開團改名與刪除會經 delegate 交回 Root，讓 Orders 套用已完成持久化的連動結果。"
+      ]
+    },
+    {
+      "dot": "amber",
+      "title": "提醒須通過行事曆授權",
+      "items": [
+        "提醒控制層先要求授權，CalendarReminderService 檢查可寫行事曆；事件新增成功後才保存事件連結。"
+      ]
+    }
+  ]
+}
