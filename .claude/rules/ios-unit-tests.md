@@ -96,6 +96,8 @@ paths:
 ## Snapshot 測試
 
 - **`ViewLayoutMeasurementSupport` 渲染 host 以 `additionalSafeAreaInsets` 注入安全區時，`List`／`Form` 會自行避開，與真實裝置及分欄欄位語意相反**：不以 rendered 測試驗證 `List`／`Form` 安全區置中；單元測試只驗純邊距計算，實際列位置以 live UI 幾何量測。
+- **`ViewLayoutMeasurementSupport.measureLayout` 會抵銷裝置左右的系統安全區，左右安全區只來自傳入的 `additionalSafeAreaInsets`**：CI 挑最新系統的 iPhone，目前是 iPhone Duo，它的右側有系統安全區，不抵銷時同樣的容器在 CI 會變窄。
+    - CI 紅、本機綠時，先查 CI log 的 `simulatorId` 是哪台裝置，再用同一台和同一組 `-only-testing`／`-skip-testing` 重現：CI 輸出的 `testFailures` 可能是空的，看不到失敗名稱。
 - **每個 snapshot 測試用 `TestDependencies.withFixedNow { ... }` 包住 view 建構與 `assertSnapshot`**，注入固定 `\.date`；測試內不直接呼叫 `Date()`。
     - 畫面不讀時間時 (如開團列表、首頁、分析頁)，改在建構 State 時帶入固定的 `dateContext`，不靠 `withFixedNow` 提供「現在」。
     - baseline 在 `BuyLedgerTests/SnapshotTests/__Snapshots__/<測試檔名>/`：目錄跟著呼叫 `assertSnapshot` 的測試檔名 (如 `SnapshotOrdersTests.swift` 對應 `SnapshotOrdersTests/`)；拆檔或搬移測試時基準圖要連同目錄一起搬、不重錄，沒跟著搬會被當成缺少基準圖。record 流程見 `apps/ios/README.md`。

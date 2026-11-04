@@ -27,7 +27,7 @@ extension ViewLayoutMeasurementSupport {
     /// 視圖佈局與安全區測量結果快照
     struct Snapshot: Equatable, Sendable {
 
-        /// UIKit hosting view 之 bounds 實測值
+        /// UIKit hosting view 之 `bounds` 實測值
         let hostBounds: CGRect
 
         /// UIKit hosting view 之有效 `safeAreaInsets` 實測值
@@ -42,7 +42,7 @@ extension ViewLayoutMeasurementSupport {
         /// SwiftUI 根層 `GeometryProxy.safeAreaInsets` 實測值
         let rootSafeAreaInsets: EdgeInsets
 
-        /// SwiftUI 根層座標空間原點相對於 global 之位置實測值
+        /// SwiftUI 根層座標空間原點相對於 `global` 之位置實測值
         let rootGlobalOrigin: CGPoint
 
         /// 前景 anchor 之內部內容 `frame` (相對於根具名座標空間) 實測值 (raw `frame`)
@@ -71,7 +71,7 @@ extension ViewLayoutMeasurementSupport {
             )
         }
 
-        /// 輸出完整的佈局與座標診斷字串
+        /// 完整的佈局與座標診斷字串，測試失敗時印出以便比對
         var diagnosticDescription: String {
             """
             [ViewLayoutMeasurementSupport.Snapshot Diagnostic]
@@ -90,7 +90,7 @@ extension ViewLayoutMeasurementSupport {
     }
 
     /// 根層幾何與內部前景 anchor 的單次測量樣本
-    struct Sample: Equatable, Sendable {
+    private struct Sample: Equatable, Sendable {
 
         /// 根層幾何之實測尺寸
         let rootSize: CGSize
@@ -108,7 +108,7 @@ extension ViewLayoutMeasurementSupport {
     /// 前景內容之 `frame` 傳遞 `PreferenceKey`
     struct InnerFramePreferenceKey: PreferenceKey {
 
-        /// 預設 `frame` 值，未觸發前為 nil
+        /// 預設 `frame` 值，未觸發前為 `nil`
         static let defaultValue: CGRect? = nil
 
         /// 合併 preference 值，取最新有效 `frame`
@@ -123,7 +123,7 @@ extension ViewLayoutMeasurementSupport {
 
     /// 追蹤與記錄佈局樣本之主執行緒記錄器，具備修訂版本號與安靜區間收斂檢查能力
     @MainActor
-    final class SampleRecorder {
+    private final class SampleRecorder {
 
         /// 最新測量到的佈局樣本
         private(set) var latestSample: Sample?
@@ -161,25 +161,24 @@ extension ViewLayoutMeasurementSupport {
                     return nil
                 }
 
-                guard let currentSample = latestSample else {
+                if let currentSample = latestSample {
+                    guard now + quietDuration <= deadline else {
+                        return nil
+                    }
+
+                    let observedRevision = revision
+                    try await clock.sleep(for: quietDuration)
+
+                    let wakeTime = clock.now
+                    if wakeTime <= deadline && revision == observedRevision {
+                        return currentSample
+                    }
+                } else {
                     let pollInterval: Duration = .milliseconds(10)
                     guard now + pollInterval < deadline else {
                         return nil
                     }
                     try await clock.sleep(for: pollInterval)
-                    continue
-                }
-
-                guard now + quietDuration <= deadline else {
-                    return nil
-                }
-
-                let observedRevision = revision
-                try await clock.sleep(for: quietDuration)
-
-                let wakeTime = clock.now
-                if wakeTime <= deadline && revision == observedRevision {
-                    return currentSample
                 }
             }
         }
@@ -197,12 +196,12 @@ extension ViewLayoutMeasurementSupport {
         /// 建構內部受測內容之閉包
         @ViewBuilder let makeContent: () -> Content
 
-        /// 以根層 `GeometryReader` 提供測量空間並把內部 anchor 樣本送至 `MainActor` recorder
+        /// 探針畫面：根層 `GeometryReader` 提供測量空間，內部 anchor 樣本送至 `MainActor` recorder
         var body: some View {
             GeometryReader { rootProxy in
                 makeContent()
-                    .onPreferenceChange(InnerFramePreferenceKey.self) { innerFrame in
-                        reportSample(rootProxy: rootProxy, innerFrame: innerFrame)
+                    .onPreferenceChange(InnerFramePreferenceKey.self) {
+                        reportSample(rootProxy: rootProxy, innerFrame: $0)
                     }
             }
             .coordinateSpace(name: ViewLayoutMeasurementSupport.coordinateSpaceName)
@@ -236,30 +235,15 @@ extension ViewLayoutMeasurementSupport {
 @MainActor
 extension ViewLayoutMeasurementSupport {
 
-    /// 在主執行緒有限次等待已連線的 `UIWindowScene`
-    ///
-    /// - Returns: 最多等待 20 次取得的視窗場景，仍未連線時為 `nil`
-    /// - Throws: 等待期間被取消時丟出 `CancellationError`
-    static func connectedWindowScene() async throws -> UIWindowScene? {
-        for _ in 0..<20 {
-            let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
-            if let scene = scenes.first {
-                return scene
-            }
-            try await ContinuousClock().sleep(for: .milliseconds(100))
-        }
-        return nil
-    }
-
     /// 在真實 `UIWindowScene` 宿主中測量視圖之佈局快照
     ///
     /// - Parameters:
     ///   - containerSize: 視窗與宿主控制器之容器尺寸
-    ///   - additionalSafeAreaInsets: 注入宿主控制器之額外安全區邊距
+    ///   - additionalSafeAreaInsets: 注入宿主控制器之額外安全區邊距，裝置左右的系統安全區會先抵銷
     ///   - dynamicTypeSize: 注入環境之 Dynamic Type 字級
     ///   - makeView: 視圖建構閉包
     /// - Returns: 測量完成之 `Snapshot` 快照，逾時未取得時為 `nil`
-    /// - Throws: 無連線視窗場景時丟出錯誤
+    /// - Throws: 無連線視窗場景時 `#require` 丟出錯誤；等待期間被取消時丟出 `CancellationError`
     static func measureLayout<Content: View>(
         containerSize: CGSize,
         additionalSafeAreaInsets: UIEdgeInsets = .zero,
@@ -267,7 +251,7 @@ extension ViewLayoutMeasurementSupport {
         @ViewBuilder makeView: @escaping () -> Content
     ) async throws -> Snapshot? {
         let windowScene = try #require(
-            try await Self.connectedWindowScene(),
+            try await Self.waitForConnectedWindowScene(),
             "等待 20 次後仍無已連線的 UIWindowScene"
         )
         let recorder = SampleRecorder()
@@ -277,18 +261,28 @@ extension ViewLayoutMeasurementSupport {
             makeContent: makeView
         )
         let hostingController = UIHostingController(rootView: probe)
-        hostingController.additionalSafeAreaInsets = additionalSafeAreaInsets
         hostingController.view.frame = CGRect(origin: .zero, size: containerSize)
 
         let window = UIWindow(windowScene: windowScene)
         window.frame = CGRect(origin: .zero, size: containerSize)
-        window.rootViewController = hostingController
+        // 視窗有畫面才回報裝置安全區，用空畫面讀取才不會留下受測畫面的舊樣本
+        window.rootViewController = UIViewController()
         defer {
             window.isHidden = true
             window.rootViewController = nil
         }
 
         window.isHidden = false
+        window.layoutIfNeeded()
+        // 抵銷裝置左右的系統安全區 (如 Duo)，讓同樣的容器尺寸在各裝置量到相同結果
+        let deviceInsets = window.safeAreaInsets
+        hostingController.additionalSafeAreaInsets = UIEdgeInsets(
+            top: additionalSafeAreaInsets.top,
+            left: additionalSafeAreaInsets.left - deviceInsets.left,
+            bottom: additionalSafeAreaInsets.bottom,
+            right: additionalSafeAreaInsets.right - deviceInsets.right
+        )
+        window.rootViewController = hostingController
         hostingController.updateTraitsIfNeeded()
         hostingController.view.updateTraitsIfNeeded()
         hostingController.view.setNeedsLayout()
@@ -313,5 +307,26 @@ extension ViewLayoutMeasurementSupport {
             rootGlobalOrigin: sample.rootGlobalOrigin,
             innerContentFrame: sample.innerContentFrame
         )
+    }
+}
+
+// MARK: - Private Method
+
+@MainActor
+private extension ViewLayoutMeasurementSupport {
+
+    /// 在主執行緒有限次等待已連線的 `UIWindowScene`
+    ///
+    /// - Returns: 最多等待 20 次取得的視窗場景，仍未連線時為 `nil`
+    /// - Throws: 等待期間被取消時丟出 `CancellationError`
+    static func waitForConnectedWindowScene() async throws -> UIWindowScene? {
+        for _ in 0..<20 {
+            let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+            if let scene = scenes.first {
+                return scene
+            }
+            try await ContinuousClock().sleep(for: .milliseconds(100))
+        }
+        return nil
     }
 }
